@@ -80,7 +80,11 @@
 #include "hartsconfig.h"
 #include "HARTS.h"
 #if defined(HARTS_HAS_OPENCL)
+#ifdef __APPLE__
+#include "OpenCL/cl.hpp"
+#else
 #include "CL/cl.hpp"
+#endif
 
 #define OPENCL_CHECK_ERR( err, name ) do {                                                                          \
    if( err != CL_SUCCESS ) {                                                                                        \
@@ -1863,6 +1867,13 @@ CRB<TruthModelType>::offline()
     double delta_du;
     size_type index;
 
+    int Nrestart = option(_name="crb.restart-from-N").template as<int>();
+
+    if( Nrestart == 0 )
+        rebuild_database=true;
+    if( Nrestart > 0 )
+        rebuild_database=false;
+
     //if M_N == 0 then there is not an already existing database
     if ( rebuild_database || M_N == 0)
     {
@@ -2254,14 +2265,43 @@ CRB<TruthModelType>::offline()
         // scm offline stage: build C_K
         this->loadSCMDB();
 
-        mu = M_current_mu;
-        if( proc_number == 0 )
+        bool restart = false;
+        int wnmu_nb_elements=M_WNmu->nbElements();
+        if( Nrestart > 1 && Nrestart < wnmu_nb_elements )
+            restart = true;
+
+        if( restart )
         {
-            std::cout<<"we are going to enrich the reduced basis"<<std::endl;
-            std::cout<<"there are "<<M_N<<" elements in the database"<<std::endl;
+            int number_of_elem_to_remove = wnmu_nb_elements - Nrestart ;
+
+            for(int i=0; i<number_of_elem_to_remove; i++)
+            {
+                if( i==number_of_elem_to_remove-1 )
+                    mu = M_WNmu->lastElement();
+                M_WNmu->pop_back();
+                M_rbconv.left.erase( M_N-i );
+            }
+
+            M_model->rBFunctionSpace()->deleteLastPrimalBasisElements( number_of_elem_to_remove );
+            if( solve_dual_problem )
+                M_model->rBFunctionSpace()->deleteLastDualBasisElements( number_of_elem_to_remove );
+
+            M_N = Nrestart;
+            if( proc_number == 0 )
+                std::cout<<"Restart the RB construction at N = "<<Nrestart<<std::endl;
+            LOG( INFO ) << "Restart the RB construction at N = "<<Nrestart;
         }
-        LOG(INFO) <<"we are going to enrich the reduced basis"<<std::endl;
-        LOG(INFO) <<"there are "<<M_N<<" elements in the database"<<std::endl;
+        else
+        {
+            mu = M_current_mu;
+            if( proc_number == 0 )
+            {
+                std::cout<<"We are going to enrich the reduced basis"<<std::endl;
+                std::cout<<"There are "<<M_N<<" elements in the database"<<std::endl;
+            }
+            LOG(INFO) <<"we are going to enrich the reduced basis"<<std::endl;
+            LOG(INFO) <<"there are "<<M_N<<" elements in the database"<<std::endl;
+        }
     }//end of else associated to if ( rebuild_databse )
 
     //sparse_matrix_ptrtype M,Adu,At;
@@ -7882,7 +7922,17 @@ template<typename TruthModelType>
 bool
 CRB<TruthModelType>::rebuildDB()
 {
-    bool rebuild = option(_name="crb.rebuild-database").template as<bool>();
+    bool rebuild_db = option(_name="crb.rebuild-database").template as<bool>();
+    int Nrestart = option(_name="crb.restart-from-N").template as<int>();
+    bool rebuild=false;
+    if ( rebuild_db && Nrestart < 1 )
+    {
+        rebuild=true;
+    }
+    if( M_N == 0 )
+    {
+        rebuild=true;
+    }
     return rebuild;
 }
 
@@ -7915,8 +7965,8 @@ template<typename TruthModelType>
 bool
 CRB<TruthModelType>::loadDB()
 {
-    if ( this->rebuildDB() )
-        return false;
+    //if ( this->rebuildDB() )
+    //    return false;
 
     if( this->isDBLoaded() )
         return true;

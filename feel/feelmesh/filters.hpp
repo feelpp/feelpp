@@ -1467,13 +1467,13 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-             typename std::list<boost::reference_wrapper<typename MeshTraits<MeshType>::element_type const> >::const_iterator,
-             typename std::list<boost::reference_wrapper<typename MeshTraits<MeshType>::element_type const> >::const_iterator,
-             boost::shared_ptr<std::list<boost::reference_wrapper<typename MeshTraits<MeshType>::element_type const> > >
+             typename std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::element_type const> >::const_iterator,
+             typename std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::element_type const> >::const_iterator,
+             boost::shared_ptr<std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::element_type const> > >
              >
 elements( MeshType const& mesh, bool addExtendedMPIElt )
 {
-    typedef std::list<boost::reference_wrapper<typename MeshTraits<MeshType>::element_type const> > cont_range_type;
+    typedef std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::element_type const> > cont_range_type;
     boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
 
     for ( auto const& elt : elements(mesh) )
@@ -1509,8 +1509,51 @@ elements( MeshType const& mesh, bool addExtendedMPIElt )
                               myelts );
 }
 
+template<typename MeshType>
+boost::tuple<mpl::size_t<MESH_FACES>,
+             typename std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::face_type const> >::const_iterator,
+             typename std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::face_type const> >::const_iterator,
+             boost::shared_ptr<std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::face_type const> > >
+             >
+boundaryfaces( MeshType const& mesh, bool addExtendedMPIElt )
+{
+    typedef std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::face_type const> > cont_range_type;
+    boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
+
+    for ( auto const& theface : boundaryfaces(mesh) )
+    {
+        myelts->push_back(boost::cref(theface));
+    }
+
+    if ( addExtendedMPIElt )
+    {
+        //std::set<size_type> faceGhostDone;
+        auto face_it = mesh->interProcessFaces().first;
+        auto const face_en = mesh->interProcessFaces().second;
+        for ( ; face_it!=face_en ; ++face_it )
+        {
+            auto const& elt0 = face_it->element0();
+            auto const& elt1 = face_it->element1();
+            const bool elt0isGhost = elt0.isGhostCell();
+            auto const& eltOffProc = (elt0isGhost)?elt0:elt1;
+
+            for ( size_type f = 0; f < mesh->numLocalFaces(); f++ )
+            {
+                auto const& theface = eltOffProc.face(f);
+                if ( theface.isOnBoundary() ) //&& faceGhostDone.find( theface.id() ) == faceGhostDone.end() )
+                    myelts->push_back(boost::cref(theface));
+            }
+        }
+    }
+
+    return boost::make_tuple( mpl::size_t<MESH_FACES>(),
+                              myelts->begin(),
+                              myelts->end(),
+                              myelts );
 
 }
+
+} // namespace Feel
 
 
 #endif

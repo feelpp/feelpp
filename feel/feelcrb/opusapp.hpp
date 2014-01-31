@@ -302,6 +302,7 @@ public:
 
             if( crb->isDBLoaded() )
             {
+                int Nrestart = option(_name="crb.restart-from-N").template as<int>();
                 bool do_offline = false;
                 int current_dimension = crb->dimension();
                 int dimension_max = option(_name="crb.dimension-max").template as<int>();
@@ -313,6 +314,9 @@ public:
                     do_offline = true;
 
                 if( current_dimension < dimension_max && !crb_use_predefined )
+                    do_offline=true;
+
+                if( Nrestart > 1 )
                     do_offline=true;
 
                 if( ! do_offline )
@@ -431,9 +435,7 @@ public:
                     crb->printMuSelection();
             }
 
-            auto exporter = Exporter<typename crbmodel_type::mesh_type>::New( "ensight" );
-            if( export_solution )
-                exporter->step( 0 )->setMesh( model->functionSpace()->mesh() );
+            auto e = exporter( _mesh= model->functionSpace()->mesh()  );
 
             printParameterHdr( ostr, model->parameterSpace()->dimension(), hdrs[M_mode] );
 
@@ -679,7 +681,8 @@ public:
 
                                 LOG(INFO) << "compute output\n";
                                 if( export_solution )
-                                    exporter->step(0)->add( u_fem.name(), u_fem );
+                                    e->add( u_fem.name(), u_fem );
+                                //e->step(0)->add( u_fem.name(), u_fem );
                                 //model->solve( mu );
                                 std::vector<double> o = boost::assign::list_of( model->output( output_index,mu , u_fem, true) )( ti.elapsed() );
                                 if(proc_number == Environment::worldComm().masterRank() ) std::cout << "output=" << o[0] << "\n";
@@ -733,7 +736,7 @@ public:
                                 u_crb.setName( u_crb_str.str()  );
                                 LOG(INFO) << "export u_crb \n";
                                 if( export_solution )
-                                    exporter->step(0)->add( u_crb.name(), u_crb );
+                                    e->add( u_crb.name(), u_crb );
 
                                 double relative_error = -1;
                                 double relative_estimated_error = -1;
@@ -776,7 +779,7 @@ public:
                                     if( export_solution )
                                     {
                                         LOG(INFO) << "export u_fem \n";
-                                        exporter->step(0)->add( u_fem.name(), u_fem );
+                                        e->add( u_fem.name(), u_fem );
                                     }
                                     std::vector<double> ofem = boost::assign::list_of( model->output( output_index,mu, u_fem ) )( ti.elapsed() );
 
@@ -793,7 +796,7 @@ public:
                                     u_error_str << "u_error(" << mu_str.str() << ")";
                                     u_error.setName( u_error_str.str()  );
                                     if( export_solution )
-                                        exporter->step(0)->add( u_error.name(), u_error );
+                                        e->add( u_error.name(), u_error );
                                     LOG(INFO) << "L2(fem)=" << l2Norm( u_fem )    << "\n";
                                     LOG(INFO) << "H1(fem)=" << h1Norm( u_fem )    << "\n";
                                     l2_error = l2Norm( u_error )/l2Norm( u_fem );
@@ -1310,7 +1313,7 @@ public:
 
             //model->computationalTimeEimStatistics();
             if( export_solution )
-                exporter->save();
+                e->save();
 
             if( proc_number == Environment::worldComm().masterRank() ) std::cout << ostr.str() << "\n";
 
