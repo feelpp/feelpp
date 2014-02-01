@@ -244,6 +244,8 @@ public:
             int NlogEquidistributedScm = option(_name="crb.scm.use-logEquidistributed-C").template as<int>();
             int NequidistributedScm = option(_name="crb.scm.use-equidistributed-C").template as<int>();
             typename crb_type::sampling_ptrtype Sampling( new typename crb_type::sampling_type( model->parameterSpace() ) );
+            bool all_proc_have_same_sampling=true;
+
             if( crb_use_predefined )
             {
                 file_name = ( boost::format("SamplingWNmu") ).str();
@@ -252,18 +254,18 @@ public:
             {
                 file_name = ( boost::format("SamplingWNmu") ).str();
                 if( NlogEquidistributed > 0 )
-                    Sampling->logEquidistribute( NlogEquidistributed );
+                    Sampling->logEquidistribute( NlogEquidistributed,all_proc_have_same_sampling );
                 if( Nequidistributed > 0 )
-                    Sampling->equidistribute( Nequidistributed );
+                    Sampling->equidistribute( Nequidistributed,all_proc_have_same_sampling );
                 Sampling->writeOnFile(file_name);
             }
             if( NlogEquidistributedScm+NequidistributedScm > 0 )
             {
                 file_name = ( boost::format("SamplingC") ).str();
                 if( NlogEquidistributedScm > 0 )
-                    Sampling->logEquidistribute( NlogEquidistributedScm );
+                    Sampling->logEquidistribute( NlogEquidistributedScm,all_proc_have_same_sampling );
                 if( NequidistributedScm > 0 )
-                    Sampling->equidistribute( NequidistributedScm );
+                    Sampling->equidistribute( NequidistributedScm,all_proc_have_same_sampling );
                 Sampling->writeOnFile(file_name);
             }
 
@@ -395,7 +397,6 @@ public:
             //here we can be interested by computing FEM and CRB solutions
             //so it is important that every proc has the same sampling (for FEM solution)
             bool all_proc_have_same_sampling=true;
-
             switch ( run_sampling_type )
             {
             default:
