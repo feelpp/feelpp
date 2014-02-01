@@ -3,9 +3,9 @@
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2013-12-24
+       Date: 2014-01-30
 
-  Copyright (C) 2013 Feel++ Consortium
+  Copyright (C) 2014 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -22,31 +22,40 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file pdh.hpp
+   \file worldscomm.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2013-12-24
+   \date 2014-01-30
  */
-#if !defined(FEELPP_PDH_HPP)
-#define FEELPP_PDH_HPP
+#ifndef FEELPP_WORLDSCOMM_HPP
+#define FEELPP_WORLDSCOMM_HPP 1
 
-#include <feel/feeldiscr/functionspace.hpp>
+#include <vector>
+
+#include <feel/feelcore/worldcomm.hpp>
 
 namespace Feel {
 
 /**
-   Given a \p mesh, build a function space of discontinuous function which are
-   piecewise polynomial of degree (total or in each variable) less than k.
-*/
-template<int Order,template<class, uint16_type, class> class Pts = PointSetEquiSpaced,typename MeshType>
-inline
-boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Discontinuous,Pts>>>>
-Pdh( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
+ * a set of worlds communicator
+ *
+ * @author Christophe Prud'homme
+ * @see
+ */
+class WorldsComm : public std::vector<WorldComm>
 {
-    return FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Discontinuous,Pts>>>::New( _mesh=mesh,
-                                                                                     _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
-                                                                                     _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
+public:
+    typedef std::vector<WorldComm> super;
+
+    WorldsComm( std::vector<WorldComm> const& s ) : super(s) {}
+    WorldsComm( std::vector<WorldComm>&& s ) : super(s) {}
+};
+
+inline WorldsComm
+worldsComm( WorldComm const& wc )
+{
+    return WorldsComm( std::vector<WorldComm>( 1, wc ) );
 }
 
-}
 
-#endif /* FEELPP_PDH_HPP */
+}
+#endif /* FEELPP_WORLDSCOMM_HPP */

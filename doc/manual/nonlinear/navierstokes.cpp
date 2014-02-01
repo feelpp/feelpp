@@ -112,8 +112,8 @@ public:
 
     /*basis*/
 
-    typedef Lagrange<3, Vectorial> basis_u_type;
-    typedef Lagrange<2, Scalar> basis_p_type;
+    typedef Lagrange<6, Vectorial> basis_u_type;
+    typedef Lagrange<5, Scalar> basis_p_type;
     typedef Lagrange<0, Scalar> basis_l_type;
 #if 1
     typedef bases<basis_u_type,basis_p_type, basis_l_type> basis_type;
@@ -414,6 +414,8 @@ void Steady_Ns::run()
     auto f = expr<2,1,7>( f_g, vars, "f" );
     ///////////////////////////////////////////////////////////////////////////////
 
+    //u=vf::project(Vh->template functionSpace<0>(), elements(mesh), zero<2,1>());
+    //p=vf::project(Vh->template functionSpace<1>(), elements(mesh), constant(0.0));
 
     u=vf::project(Vh->functionSpace<0>(), elements(mesh),u_exact);
     p=vf::project(Vh->functionSpace<1>(), elements(mesh),p_exact);
