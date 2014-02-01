@@ -1027,7 +1027,8 @@ public:
      */
     sampling_type randomSampling( int N )
     {
-        M_Xi->randomize( N );
+        bool same_sampling_on_all_proc=false;
+        M_Xi->randomize( N , same_sampling_on_all_proc );
         return *M_Xi;
     }
 
@@ -1036,7 +1037,8 @@ public:
      */
     sampling_type equidistributedSampling( int N )
     {
-        M_Xi->equidistribute( N );
+        bool same_sampling_on_all_proc=false;
+        M_Xi->equidistribute( N , same_sampling_on_all_proc );
         return *M_Xi;
     }
 
@@ -1897,13 +1899,16 @@ CRB<TruthModelType>::offline()
         std::ifstream file ( file_name );
         if( ! file )
         {
+            if( Environment::worldComm().isMasterRank() )
+                std::cout<<"[CRB] on va generer .... "<<std::endl;
             // random sampling
+            std::string supersamplingname =(boost::format("Dmu-%1%-generated-by-master-proc") %sampling_size ).str();
             if( sampling_mode == "log-random" )
-                M_Xi->randomize( sampling_size , all_proc_same_sampling );
+                M_Xi->randomize( sampling_size , all_proc_same_sampling , supersamplingname );
             else if( sampling_mode == "log-equidistribute" )
-                M_Xi->logEquidistribute( sampling_size , all_proc_same_sampling );
+                M_Xi->logEquidistribute( sampling_size , all_proc_same_sampling , supersamplingname );
             else if( sampling_mode == "equidistribute" )
-                M_Xi->equidistribute( sampling_size , all_proc_same_sampling );
+                M_Xi->equidistribute( sampling_size , all_proc_same_sampling , supersamplingname );
             else
                 throw std::logic_error( "[CRB::offline] ERROR invalid option crb.sampling-mode, please select between log-random, log-equidistribute or equidistribute" );
             M_Xi->writeOnFile(file_name);
@@ -2174,16 +2179,20 @@ CRB<TruthModelType>::offline()
                 bool broadcast=false;
                 mu = M_Dmu->element( broadcast );
             }
-            else
-            {
-                // start with M_C = { arg min mu, mu \in Xi }
-                //the min is a local min so don't check
-                bool check=false;
-                boost::tie( mu, index ) = M_Xi->min( check );
-            }
         }
-        //every proc must have the same parameter mu
-        boost::mpi::broadcast( Environment::worldComm() , mu , master_proc );
+        if( M_error_type == CRB_NO_RESIDUAL )
+        {
+            //every proc must have the same parameter mu
+            boost::mpi::broadcast( Environment::worldComm() , mu , master_proc );
+        }
+
+        if( M_error_type != CRB_NO_RESIDUAL )
+        {
+            // start with M_C = { arg min mu, mu \in Xi }
+            //the min is a global min so we can check
+            bool check=true;
+            boost::tie( mu, index ) = M_Xi->min( check );
+        }
 
         int size = mu.size();
         if( proc_number == master_proc )
