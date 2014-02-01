@@ -636,13 +636,13 @@ CRBSCM<TruthModelType>::offlineNoSCM()
 #endif
     LOG( INFO )<<"eigenvalue ( min ) for mu_ref : "<<eigen_value;
 
-#if 0
+
     if( option(_name="crb.scm.check-eigenvector").template as<bool>() )
     {
         auto eigen_vector = modes.begin()->second.template get<2>();
         checkEigenVectorEigenValue( sym, inner_prod, eigen_vector, eigen_value );
     }
-#endif
+
     //store the eigen value in M_C_eigenvalues
     M_C_eigenvalues[0] = modes.begin()->second.template get<0>();
 
@@ -967,8 +967,8 @@ CRBSCM<TruthModelType>::checkEigenVectorEigenValue( sparse_matrix_ptrtype const&
     double energyAwAw = A->energy( Aw , Aw );
     double energyAwBw = A->energy( Aw , Bw );
     double energyBwBw = A->energy( Bw , Bw );
-    CHECK( math::abs(energyAwAw - energyAwBw) <  1e-12 )<<"eigen vector and/or eigen value not satisfy generalized eigenvalue problem : math::abs(energyAwAw - energyAwBw) = "<<math::abs(energyAwAw - energyAwBw)<<std::endl;
-    CHECK( math::abs(energyAwAw - energyAwBw) <  1e-12 )<<"eigen vector and/or eigen value not satisfy generalized eigenvalue problem : math::abs(energyAwAw - energyAwBw) = "<<math::abs(energyAwAw - energyAwBw)<<std::endl;
+    CHECK( math::abs(energyAwAw - energyAwBw) <  1e-11 )<<"eigen vector and/or eigen value not satisfy generalized eigenvalue problem : math::abs(energyAwAw - energyAwBw) = "<<math::abs(energyAwAw - energyAwBw)<<std::endl;
+    CHECK( math::abs(energyAwAw - energyAwBw) <  1e-11 )<<"eigen vector and/or eigen value not satisfy generalized eigenvalue problem : math::abs(energyAwAw - energyAwBw) = "<<math::abs(energyAwAw - energyAwBw)<<std::endl;
 }
 
 template<typename TruthModelType>

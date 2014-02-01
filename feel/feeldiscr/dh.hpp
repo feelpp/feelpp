@@ -3,9 +3,9 @@
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2013-12-24
+       Date: 2014-01-30
 
-  Copyright (C) 2013 Feel++ Consortium
+  Copyright (C) 2014 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -22,34 +22,35 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file pch.hpp
+   \file dh.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2013-12-24
+   \date 2014-01-30
  */
-#ifndef FEELPP_PCH_H
-#define FEELPP_PCH_H 1
+#ifndef FEELPP_DH_H
+#define FEELPP_DH_H 1
 
+#include <feel/feelpoly/raviartthomas.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 
 namespace Feel {
 
 /**
- * \fn Pch<k,MeshType>
+ * \fn Dh<k,MeshType>
  *
  * build a function space of continuous function which are piecewise polynomial
  * of degree (total or in each variable) less than k.
  */
-template<int Order,template<class, uint16_type, class> class Pts = PointSetEquiSpaced,typename MeshType>
+template<int Order,typename MeshType>
 inline
-boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous,Pts>>,Periodicity <NoPeriodicity>>>
-Pch( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
+boost::shared_ptr<FunctionSpace<MeshType,bases<RaviartThomas<Order>>,Periodicity <NoPeriodicity>>>
+Dh( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
 {
-    return FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous,Pts>>, Periodicity <NoPeriodicity>>::New( _mesh=mesh,
-                                                                                                               _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
-                                                                                                               _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
+    return FunctionSpace<MeshType,bases<RaviartThomas<Order>>, Periodicity <NoPeriodicity>>::New( _mesh=mesh,
+                                                                                                  _worldscomm=worldsComm( mesh->worldComm() ),
+                                                                                                  _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
 }
 
 
 } // Feel
 
-#endif /* FEELPP_PCH_H */
+#endif /* FEELPP_DH_H */

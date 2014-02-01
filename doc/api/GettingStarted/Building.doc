@@ -1,6 +1,6 @@
 /* -*- mode: c++; coding: utf-8 -*- */
 namespace Feel {
-/** \page Building Building Feel++
+/** \page BuildingP Building Feel++
 \author Christophe Prud'homme
 \author Alexandre Ancel
 
@@ -53,7 +53,7 @@ compilation and installation of the \feel librairies.<br>
 This is the list of all the librairies you must have installed on your
 computer, and the \lstinline|*-dev| packages for some of them. <br>
 Required packages :
-\li g++ (4.6, 4.7 or higher) OR Clang (3.2 or later)
+\li g++ (4.7, 4.8) OR Clang (3.3, 3.4)
 \li MPI : openmpi (preferred) or mpich
 \li Boost >= 1.49
 \li Petsc >= 3.2
@@ -241,7 +241,7 @@ This requires MacPorts to be at least on version 2.2.1 for the flag to be recogn
 <hr>
 
 \section Compiling Compiling Feel++
-Feel build system uses <a href="http://www.cmake.org"><tt>cmake</tt></a> as its build system. Check that \cmake is using gcc4.6 (or a higher version) or clang++ as C++ compiler (you can use the option <tt>CMAKE_CXX_COMPILER=<path>/g++-4.6</tt> where the <tt>path</tt> depends on your OS, it's probably <tt>/usr/bin</tt> or
+Feel build system uses <a href="http://www.cmake.org"><tt>cmake</tt></a> as its build system. Check that \cmake is using gcc4.7 (or a higher version) or clang++ as C++ compiler (you can use the option <tt>CMAKE_CXX_COMPILER=<path>/g++-4.7</tt> where the <tt>path</tt> depends on your OS, it's probably <tt>/usr/bin</tt> or
 <tt>/opt/local/bin</tt> but you can also change it with the command <tt>ccmake</tt>
 and press <tt>t</tt> for advanced options).
 \feel, using <tt>cmake</tt>, can be built either in source and out of source and different

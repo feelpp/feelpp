@@ -2507,9 +2507,16 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     gmc_expr_ptrtype gmcExpr( new gmc_expr_type( elt_it->gm(),*elt_it, geopcExpr ) );
     map_gmc_expr_type mapgmcExpr( fusion::make_pair<vf::detail::gmc<0> >( gmcExpr ) );
     //-----------------------------------------------//
-    pc_formTest_ptrtype geopcFormTest( new pc_formTest_type( __form.gm(), __form.testSpace()->fe()->points() ) );
+    pc_formTest_ptrtype geopcFormTest( new pc_formTest_type( __form.gm(), __form.template testFiniteElement<false>()->points() ) );
+    VLOG(2) << "pts non mortar : " << __form.template testFiniteElement<false>()->points();
     gmc_formTest_ptrtype gmcFormTest( new gmc_formTest_type( __form.gm(), __form.testSpace()->mesh()->element( 0 ), geopcFormTest ) );
     map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTest ) );
+
+    // mortar
+    pc_formTest_ptrtype geopcFormTestMortar( new pc_formTest_type( __form.gm(), __form.template testFiniteElement<true>()->points() ) );
+    VLOG(2) << "pts mortar : " << __form.template testFiniteElement<true>()->points();
+    gmc_formTest_ptrtype gmcFormTestMortar( new gmc_formTest_type( __form.gm(), __form.testSpace()->mesh()->element( 0 ), geopcFormTestMortar ) );
+    map_gmc_formTest_type mapgmcFormTestMortar( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTestMortar ) );
     //-----------------------------------------------//
     pc_formTrial_ptrtype geopcFormTrial( new pc_formTrial_type( __form.gmTrial(), __form.trialSpace()->fe()->points() ) );
     gmc_formTrial_ptrtype gmcFormTrial( new gmc_formTrial_type( __form.gmTrial(), __form.trialSpace()->mesh()->element( 0 ), geopcFormTrial ) );
@@ -2523,7 +2530,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
                                                this->expression(),
                                                imRange ) );
     mortar_focb_ptrtype formcm( new form_mortar_context_type( __form,
-                                                              mapgmcFormTest,
+                                                              mapgmcFormTestMortar,
                                                               mapgmcFormTrial,
                                                               mapgmcExpr,
                                                               this->expression(),
@@ -2550,6 +2557,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
             auto const& map = res_it->template get<1>();
             auto map_it = map.begin();
             auto const map_en = map.end();
+
             for ( ; map_it != map_en ; ++map_it )
             {
                 auto const idEltTrial = map_it->first;
@@ -2565,23 +2573,28 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
                 bool isFirstExperience = true;
                 for ( ; gmcExpr_it != gmcExpr_en ; ++gmcExpr_it )
                 {
-                    geopcFormTest->update( gmcExpr_it->template get<2>() );
                     geopcFormTrial->update( gmcExpr_it->template get<3>() );
-
-                    gmcFormTest->update( eltTest,geopcFormTest );
                     gmcFormTrial->update( eltTrial,geopcFormTrial );
-
-                    map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTest ) );
                     map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrial ) );
                     map_gmc_expr_type mapgmcExpr( fusion::make_pair<vf::detail::gmc<0> >( gmcExpr_it->template get<1>() ) );
 
                     if ( eltTest.isOnBoundary() )
                     {
-                        formcm->updateInCaseOfInterpolate( mapgmcFormTest, mapgmcFormTrial, mapgmcExpr, gmcExpr_it->template get<0>() );
+                        geopcFormTestMortar->update( gmcExpr_it->template get<2>() );
+                        gmcFormTestMortar->update( eltTest,geopcFormTestMortar );
+
+                        map_gmc_formTest_type mapgmcFormTestMortar( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTestMortar ) );
+
+                        formcm->updateInCaseOfInterpolate( mapgmcFormTestMortar, mapgmcFormTrial, mapgmcExpr, gmcExpr_it->template get<0>() );
                         formcm->integrateInCaseOfInterpolate( gmcExpr_it->template get<0>(),isFirstExperience );
                     }
                     else
                     {
+                        geopcFormTest->update( gmcExpr_it->template get<2>() );
+                        gmcFormTest->update( eltTest,geopcFormTest );
+
+                        map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTest ) );
+
                         formc->updateInCaseOfInterpolate( mapgmcFormTest, mapgmcFormTrial, mapgmcExpr, gmcExpr_it->template get<0>() );
                         formc->integrateInCaseOfInterpolate( gmcExpr_it->template get<0>(),isFirstExperience );
                     }

@@ -130,7 +130,7 @@ public:
 
     OpusApp( AboutData const& ad, po::options_description const& od )
         :
-        super( ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add( feel_options() ).add( eimOptions() ) ),
+        super( ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add( feel_options() ).add( eimOptions() ).add( podOptions() ) ),
         M_mode( ( CRBModelMode )option(_name=_o( this->about().appName(),"run.mode" )).template as<int>() )
         {
             this->init();
@@ -138,7 +138,7 @@ public:
 
     OpusApp( AboutData const& ad, po::options_description const& od, CRBModelMode mode )
         :
-        super( ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add( feel_options() ).add( eimOptions() ) ),
+        super( ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add( feel_options() ).add( eimOptions() ).add( podOptions() ) ),
         M_mode( mode )
         {
             this->init();
@@ -146,14 +146,14 @@ public:
 
     OpusApp( int argc, char** argv, AboutData const& ad, po::options_description const& od )
         :
-        super( ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add( feel_options() ).add( eimOptions() ) ),
+        super( ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add( feel_options() ).add( eimOptions() ).add( podOptions() )  ),
         M_mode( ( CRBModelMode )option(_name=_o( this->about().appName(),"run.mode" )).template as<int>() )
         {
             this->init();
         }
     OpusApp( int argc, char** argv, AboutData const& ad, po::options_description const& od, CRBModelMode mode )
         :
-        super( ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add( feel_options() ).add( eimOptions() ) ),
+        super( ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add( feel_options() ).add( eimOptions() ).add( podOptions() ) ),
         M_mode( mode )
         {
             this->init();
@@ -244,6 +244,8 @@ public:
             int NlogEquidistributedScm = option(_name="crb.scm.use-logEquidistributed-C").template as<int>();
             int NequidistributedScm = option(_name="crb.scm.use-equidistributed-C").template as<int>();
             typename crb_type::sampling_ptrtype Sampling( new typename crb_type::sampling_type( model->parameterSpace() ) );
+            bool all_proc_have_same_sampling=true;
+
             if( crb_use_predefined )
             {
                 file_name = ( boost::format("SamplingWNmu") ).str();
@@ -252,18 +254,18 @@ public:
             {
                 file_name = ( boost::format("SamplingWNmu") ).str();
                 if( NlogEquidistributed > 0 )
-                    Sampling->logEquidistribute( NlogEquidistributed );
+                    Sampling->logEquidistribute( NlogEquidistributed,all_proc_have_same_sampling );
                 if( Nequidistributed > 0 )
-                    Sampling->equidistribute( Nequidistributed );
+                    Sampling->equidistribute( Nequidistributed,all_proc_have_same_sampling );
                 Sampling->writeOnFile(file_name);
             }
             if( NlogEquidistributedScm+NequidistributedScm > 0 )
             {
                 file_name = ( boost::format("SamplingC") ).str();
                 if( NlogEquidistributedScm > 0 )
-                    Sampling->logEquidistribute( NlogEquidistributedScm );
+                    Sampling->logEquidistribute( NlogEquidistributedScm,all_proc_have_same_sampling );
                 if( NequidistributedScm > 0 )
-                    Sampling->equidistribute( NequidistributedScm );
+                    Sampling->equidistribute( NequidistributedScm,all_proc_have_same_sampling );
                 Sampling->writeOnFile(file_name);
             }
 
@@ -302,6 +304,7 @@ public:
 
             if( crb->isDBLoaded() )
             {
+                int Nrestart = option(_name="crb.restart-from-N").template as<int>();
                 bool do_offline = false;
                 int current_dimension = crb->dimension();
                 int dimension_max = option(_name="crb.dimension-max").template as<int>();
@@ -313,6 +316,9 @@ public:
                     do_offline = true;
 
                 if( current_dimension < dimension_max && !crb_use_predefined )
+                    do_offline=true;
+
+                if( Nrestart > 1 )
                     do_offline=true;
 
                 if( ! do_offline )
@@ -391,7 +397,6 @@ public:
             //here we can be interested by computing FEM and CRB solutions
             //so it is important that every proc has the same sampling (for FEM solution)
             bool all_proc_have_same_sampling=true;
-
             switch ( run_sampling_type )
             {
             default:
@@ -431,9 +436,7 @@ public:
                     crb->printMuSelection();
             }
 
-            auto exporter = Exporter<typename crbmodel_type::mesh_type>::New( "ensight" );
-            if( export_solution )
-                exporter->step( 0 )->setMesh( model->functionSpace()->mesh() );
+            auto e = exporter( _mesh= model->functionSpace()->mesh()  );
 
             printParameterHdr( ostr, model->parameterSpace()->dimension(), hdrs[M_mode] );
 
@@ -679,7 +682,8 @@ public:
 
                                 LOG(INFO) << "compute output\n";
                                 if( export_solution )
-                                    exporter->step(0)->add( u_fem.name(), u_fem );
+                                    e->add( u_fem.name(), u_fem );
+                                //e->step(0)->add( u_fem.name(), u_fem );
                                 //model->solve( mu );
                                 std::vector<double> o = boost::assign::list_of( model->output( output_index,mu , u_fem, true) )( ti.elapsed() );
                                 if(proc_number == Environment::worldComm().masterRank() ) std::cout << "output=" << o[0] << "\n";
@@ -733,7 +737,7 @@ public:
                                 u_crb.setName( u_crb_str.str()  );
                                 LOG(INFO) << "export u_crb \n";
                                 if( export_solution )
-                                    exporter->step(0)->add( u_crb.name(), u_crb );
+                                    e->add( u_crb.name(), u_crb );
 
                                 double relative_error = -1;
                                 double relative_estimated_error = -1;
@@ -776,7 +780,7 @@ public:
                                     if( export_solution )
                                     {
                                         LOG(INFO) << "export u_fem \n";
-                                        exporter->step(0)->add( u_fem.name(), u_fem );
+                                        e->add( u_fem.name(), u_fem );
                                     }
                                     std::vector<double> ofem = boost::assign::list_of( model->output( output_index,mu, u_fem ) )( ti.elapsed() );
 
@@ -793,7 +797,7 @@ public:
                                     u_error_str << "u_error(" << mu_str.str() << ")";
                                     u_error.setName( u_error_str.str()  );
                                     if( export_solution )
-                                        exporter->step(0)->add( u_error.name(), u_error );
+                                        e->add( u_error.name(), u_error );
                                     LOG(INFO) << "L2(fem)=" << l2Norm( u_fem )    << "\n";
                                     LOG(INFO) << "H1(fem)=" << h1Norm( u_fem )    << "\n";
                                     l2_error = l2Norm( u_error )/l2Norm( u_fem );
@@ -1113,7 +1117,7 @@ public:
                                         //LOG(INFO) << "N=" << N << " " << rel_err << " " << l2_error << " " << h1_error << " " <<condition_number<<"\n";
                                         if ( proc_number == Environment::worldComm().masterRank() )
                                         {
-                                            std::cout << "N=" << N << " " <<"OutputError = "<<rel_err <<" OutputErrorEstimated = "<<relative_estimated_error
+                                            std::cout << "N=" << N << "Output =  "<< output_fem <<" OutputError = "<<rel_err <<" OutputErrorEstimated = "<<relative_estimated_error
                                                       <<"  L2Error = "<< l2_error << "  H1Error = " << h1_error <<std::endl;
 
                                             if( N == Nmax )
@@ -1310,7 +1314,7 @@ public:
 
             //model->computationalTimeEimStatistics();
             if( export_solution )
-                exporter->save();
+                e->save();
 
             if( proc_number == Environment::worldComm().masterRank() ) std::cout << ostr.str() << "\n";
 
