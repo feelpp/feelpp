@@ -72,10 +72,6 @@ public:
     typedef typename mesh_type::element_type geoelement_type;
     static const uint16_type Dim = geoelement_type::nDim;
 
-    typedef Feel::details::FmsHeap<value_type> heap_type;
-    typedef typename heap_type::heap_entry_type heap_entry_type;
-
-
     ReinitializerFMS( functionspace_ptrtype const& __functionspace,
                       periodicity_type __periodicity=NoPeriodicity());
 
@@ -99,6 +95,8 @@ public:
 
 private:
 
+    typedef Feel::details::FmsHeap<value_type> heap_type;
+    typedef typename heap_type::heap_entry_type heap_entry_type;
     typedef Feel::details::FmsPoint<value_type, Dim> point_type;
 
     /* The map indexes are the global indexes on the PROC and the set contains the global indexes on the CLUSTER of its neigbors */
@@ -110,7 +108,7 @@ private:
     inline size_type processorToCluster( size_type dof )
     { return M_functionspace->dof()->mapGlobalProcessToGlobalCluster( dof ); }
 
-    void reduceDonePoints(element_type const& __v, heap_type& theHeap, element_type& status, std::set<size_type>& done );
+    void reduceDonePoints(element_type const& __v, element_type& status, std::set<size_type>& done, bool useMarker2AsDoneMarker );
 
     void reduceClosePoints(heap_type& theHeap, element_type& status );
 
@@ -144,8 +142,7 @@ private:
     std::vector<point_type> M_coords;
     vf::node_type M_translation;
     const size_type firstDof;
-    const uint16_type ndofOnCluster;
-
+    int nbTotalDone;
 };
 
 // Instantiate 2d and 3d only when compiling reinit_fms.cpp (where FEELPP_INSTANTIATE_FMS is defined), else "extern" avoid useless instantiation
