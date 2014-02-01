@@ -40,6 +40,7 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feelcore/worldcomm.hpp>
+#include <feel/feelcore/worldscomm.hpp>
 #include <feel/feelcore/about.hpp>
 #include <feel/options.hpp>
 #if defined ( FEELPP_HAS_PETSC_H )
@@ -384,6 +385,15 @@ private:
 
     //! process command-line/config-file options
     static void doOptions( int argc, char** argv, po::options_description const& desc, std::string const& appName );
+
+    /**
+     * \fn void generateOLFiles( std::string const& appName )
+     * \brief Generate configuration files for interaction with Gmsh through OneLab.
+     * \author Carolina Diaz, Jérôme Boeglin, Sébastien Landré
+     *
+     * @param appName Name of the application.
+     */
+    static void generateOLFiles( std::string const& appName );
     static void processGenericOptions();
     static void parseAndStoreOptions( po::command_line_parser parser, bool extra_parser = false );
 

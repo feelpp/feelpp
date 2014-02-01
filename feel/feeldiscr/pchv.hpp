@@ -38,12 +38,12 @@ namespace Feel {
    which are piecewise polynomial of degree (total or in each variable) less
    than k using Lagrange basis functions
  */
-template<int Order,typename MeshType>
+template<int Order,template<class, uint16_type, class> class Pts = PointSetEquiSpaced,typename MeshType>
 inline
-boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order,Vectorial>>>>
+boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order,Vectorial,Continuous,Pts>>>>
 Pchv( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false  )
 {
-    return FunctionSpace<MeshType,bases<Lagrange<Order,Vectorial>>>::New( _mesh=mesh,
+    return FunctionSpace<MeshType,bases<Lagrange<Order,Vectorial,Continuous,Pts>>>::New( _mesh=mesh,
                                                                           _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
                                                                           _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
 }

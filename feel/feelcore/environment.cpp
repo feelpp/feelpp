@@ -168,6 +168,190 @@ dupargv (char** argv)
   copy[argc] = NULL;
   return copy;
 }
+
+void
+Environment::generateOLFiles( std::string const& appName)
+{
+  //Application path
+  std::string appPath;
+  char *buf;
+  ssize_t bufsize;
+  char path[4096];
+  bufsize = readlink("/proc/self/exe",path,sizeof(path) - 1);
+  if(bufsize != -1)
+  {
+    path[bufsize] = '\0';
+  }
+  appPath.assign(path);
+
+  /*
+  std::cout << fs::current_path() << std::endl;
+  std::cout << appName << std::endl;
+  std::cout << appPath << std::endl;
+  */
+  
+  std::ofstream ol;
+  ol.open(appPath + ".ol", std::ofstream::out | std::ofstream::trunc); //.ol file
+  std::ofstream cfgol;
+  cfgol.open(appPath + ".onelab.cfg.ol", std::ofstream::out | std::ofstream::trunc); //.cfg.ol file
+  const std::vector<boost::shared_ptr<po::option_description>>& listOpt = Environment::optionsDescription().options(); //Fetching options in an option_description vector
+
+  for(boost::shared_ptr<po::option_description> option : listOpt)
+  {
+      //Informations about the option
+      std::string optName = option->format_name().erase(0,2);//Putting the option name in a variable for easier manipulations
+      std::string defVal = option->format_parameter(); //Putting the option default value in a variable for easier manipulations
+      std::string desc=option->description(); // Option description
+
+      //std::cout << optName << ";" << defVal << ";" << desc << std::endl;
+
+      std::string ens,funcName,test;
+      if(defVal.size() > 3) // We want defVal.size() > 3 to exclude options without a default value
+      {
+          defVal.erase(0,6); // Removing "arg" and a space and the first parenthesis
+          defVal.erase(defVal.size()-1,1); // Removing closing parenthesis
+      }
+      else
+      {
+          defVal = "";
+      }
+
+      std::vector<std::string> strings; //Vector of the split name
+      boost::split(strings,optName,boost::is_any_of(".")); //Spliting option name
+      ens = "";
+      if(strings.size() > 1)
+      {
+          ens = strings[0]; //Getting the first split element for the option set in the .cfg.ol file
+          for(size_t i = 1; i < strings.size() - 1; i++) //Getting the option set
+          {
+            ens += "/" + strings[i];
+          }
+      }
+      funcName = strings[strings.size() - 1]; //Raw option name
+
+      //std::cout << ens << " " << funcName << std::endl;
+
+      /* skip some options */
+      if(funcName == "generate-ol" ||
+         funcName == "config-file")
+      {
+          continue;
+      }
+
+      //std::cout << defVal << std::endl;
+      
+      /*po::shared_ptr<po::value_semantic> value = const_pointer_cast<po::value_semantic>(option->semantic());
+      po::shared_ptr<po::typed_value<int>> tvalue = dynamic_pointer_cast<po::typed_value<int>>(value);
+      cout<<tvalue<<endl;*/
+
+
+      /* if an option has been set either through command line */
+      /* or through the initial config file */
+      /* we use its configuration */
+      //if(S_vm.count(optName) && !(S_vm[optName].defaulted()))
+      if(S_vm.count(optName))
+      {
+          std::ostringstream oss;
+          oss << defVal;
+          //std::cout << defVal;
+          const std::type_info & ti = S_vm[optName].value().type();
+          if(ti == typeid(bool))
+          {
+              oss.str("");
+              oss << (S_vm[optName].as<bool>() ? 1 : 0);
+          }
+          else if(ti == typeid(int))
+          {
+              oss.str("");
+              oss << S_vm[optName].as<int>();
+          }
+          else if(ti == typeid(float))
+          {
+              oss.str("");
+              oss << S_vm[optName].as<float>();
+          }
+          else if(ti == typeid(double))
+          {
+              oss.str("");
+              oss << S_vm[optName].as<double>();
+          }
+          else if(ti == typeid(std::string))
+          {
+              oss.str("");
+              oss <<  S_vm[optName].as<std::string>();
+          }
+          defVal = oss.str();
+          //std::cout << " " << defVal << std::endl;
+      }
+
+      /* Force Gmsh as a the default exporter */
+      /* as we are using OneLab */
+      if(ens == "exporter" && funcName == "format")
+      {
+          defVal = "gmsh";
+      }
+
+      if(defVal.size() != 0) //Excluding options without a default value
+      {
+          if(isdigit(defVal.at(0))) //If the first char is a digit, option is a number
+          {
+              if(ens != "")
+              {
+  			      ol << funcName << ".number(" << defVal << ", Parameters/" << ens << "/);" << " # "<< desc << std::endl;
+			      cfgol << optName << "=OL.get(Parameters/" << ens << "/" << funcName << ")" << std::endl;
+              }
+              else
+              {
+  			      ol << funcName << ".number(" << defVal << ", Parameters/);" << " # "<< desc << std::endl;
+			      cfgol << optName << "=OL.get(Parameters/" << funcName << ")" << std::endl;
+              }
+          }
+          else if(isalpha(defVal.at(0))) //Else, it's a string
+          {
+              if(ens != "")
+              {
+  			      ol << funcName << ".string(" << defVal << ", Parameters/" << ens << "/);" << " # "<< desc << std::endl;
+			      cfgol << optName << "=OL.get(Parameters/" << ens << "/" << funcName << ")" << std::endl;
+              }
+              else
+              {
+  			      ol << funcName << ".string(" << defVal << ", Parameters/);" << " # "<< desc << std::endl;
+			      cfgol << optName << "=OL.get(Parameters/" << funcName << ")" << std::endl;
+              }
+          }
+      }
+  }
+
+  ol << "" << std::endl;
+  
+  /* Mesher instructions */
+  ol << "Mesher.register(native,/usr/bin/gmsh);" << std::endl;
+  /*
+  ol << "Mesher.in(feel.geo);" << std::endl;
+  ol << "Mesher.out(feel.msh);" << std::endl;
+  */
+  ol << "OL.if(OL.get(Parameters/gmsh/filename) == untitled.geo)" << std::endl;
+  ol << "OL.msg(No geo file specified. Using a default one);" << std::endl;
+  ol << "OL.endif" << std::endl;
+  
+  /* Application instructions */
+  //ol << "FeelApp.register(interfaced, mpirun -np " << worldComm().size() << " " + appPath + ");" << std::endl;
+  ol << "FeelApp.register(interfaced, " + appPath + ");" << std::endl;
+  ol << "FeelApp.in(OL.get(Arguments/FileName).onelab.cfg.ol);" << std::endl;
+  ol << "FeelApp.run( --config-file OL.get(Arguments/FileName).onelab.cfg --nochdir );" << std::endl;
+  ol << "FeelApp.out(" + appName + "-1_0.msh);" << std::endl;
+
+  /* Take into account th fact that we use MPI */
+  /* Generating multiple output files, so we merge them */
+  //for(int i = 0; i < worldComm().size(); i++)
+  //{
+    ol << "FeelApp.merge(" + appName + "-1_0.msh);" << std::endl;
+  //}
+  
+  ol.close();
+  cfgol.close();
+}
+
 void
 Environment::processGenericOptions()
 {
@@ -272,8 +456,6 @@ Environment::processGenericOptions()
         {
             std::cout << optionsDescription() << "\n";
         }
-
-
     }
     if ( S_vm.count( "verbose" ) ||
          S_vm.count( "help" ) ||
@@ -423,8 +605,29 @@ Environment::doOptions( int argc, char** argv, po::options_description const& de
                 po::notify( S_vm );
             }
         }
-    }
 
+
+        /* handle the generation of onelab files after having processed */
+        /* the regular config file, so we have parsed user defined parameters */
+        /* or restored a previous configuration */
+        if ( worldComm().isMasterRank() )
+        {
+            if ( S_vm.count( "generate-ol" ) )
+            {
+                Environment::generateOLFiles( appName );
+            }
+        }
+        if ( S_vm.count( "generate-ol" ) )
+        {
+            if ( Environment::initialized() )
+            {
+                worldComm().barrier();
+                MPI_Finalize();
+            }
+            exit(0);
+        }
+        
+    }
     // catches program_options exceptions
     catch ( boost::program_options::multiple_occurrences const& e )
     {

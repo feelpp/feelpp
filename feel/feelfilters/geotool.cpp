@@ -2491,7 +2491,8 @@ runCylindre( data_geo_ptrtype dg )
     writeLine( 10, dg, 5, 10 );
     writeLine( 11, dg, 2, 7 );
     writeLine( 12, dg, 8, 3 );
-    writeLineLoop( 13, dg, Loop()>>9>>-6>>12>>2 );
+    //writeLineLoop( 13, dg, Loop()>>9>>-6>>12>>2 );
+    writeLineLoop( 13, dg, Loop()>>-9>>-2>>-12>>6 );
     writeLineLoop( 15, dg, Loop()>>9>>7>>-10>>-3 );
     writeLineLoop( 17, dg, Loop()>>10>>8>>-11>>-4 );
     writeLineLoop( 19, dg, Loop()>>11>>5>>12>>-1 );

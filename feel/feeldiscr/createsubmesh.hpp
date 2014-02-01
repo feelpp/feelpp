@@ -179,14 +179,13 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
     auto const enListRange = M_listRange.end();
     for ( ; itListRange!=enListRange ; ++itListRange)
     {
-    iterator_type it, en;
-    boost::tie( boost::tuples::ignore, it, en ) = *itListRange;
-
+    auto it = itListRange->template get<1>();
+    auto const en = itListRange->template get<2>();
 
     for ( ; it != en; ++ it )
     {
         element_type const& oldElem = *it;
-        VLOG(2) << "create sub mesh element from "  << it->id() << "\n";google::FlushLogFiles(google::GLOG_INFO);
+        VLOG(2) << "create sub mesh element from "  << oldElem.id() << "\n";google::FlushLogFiles(google::GLOG_INFO);
         // copy element so that we can modify it
         element_type newElem = oldElem;
 
@@ -273,8 +272,8 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
 
         // Add an equivalent element type to the new_mesh
         auto const& e = newMesh->addElement( newElem );
-        new_element_id[it->id()]= e.id();
-        M_smd->bm.insert( typename smd_type::bm_type::value_type( e.id(), it->id() ) );
+        new_element_id[oldElem.id()]= e.id();
+        M_smd->bm.insert( typename smd_type::bm_type::value_type( e.id(), oldElem.id() ) );
 
         // Maybe add faces for this element
         for ( unsigned int s=0; s<oldElem.numTopologicalFaces; s++ )
@@ -524,6 +523,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
 
     //-----------------------------------------------------------//
 
+    typedef typename mesh_type::face_type face_type;
     typedef typename mesh_faces_type::element_type new_element_type;
     typedef typename mesh_faces_type::face_type new_face_type;
 
@@ -549,15 +549,15 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
     auto const enListRange = M_listRange.end();
     for ( ; itListRange!=enListRange ; ++itListRange)
     {
-    iterator_type it, en;
-    boost::tie( boost::tuples::ignore, it, en ) = *itListRange;
+    auto it = itListRange->template get<1>();
+    auto const en = itListRange->template get<2>();
 
     DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] extracting " << std::distance(it,en)  << " faces " << "\n";
     for ( ; it != en; ++ it )
     {
         // create a new element
-        auto const& oldElem = *it;
-        DVLOG(2) << "[Mesh<Shape,T>::createSubmesh]   + face : " << it->id() << "\n";
+        face_type const& oldElem = *it;
+        DVLOG(2) << "[Mesh<Shape,T>::createSubmesh]   + face : " << oldElem.id() << "\n";
 
         if ( nProc > 1 && this->subMeshIsOnBoundaryFaces() )
             CHECK( oldElem.isOnBoundary() ) << "error : use mpi optimzation subMeshIsOnBoundaryFaces but an internal face is added";
@@ -570,7 +570,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
         newElem.setMarker2( oldElem.marker2().value() );
         newElem.setMarker3( oldElem.marker3().value() );
 
-        CHECK( !oldElem.isGhostCell() ) << "only actif elt\n";
+        //CHECK( !oldElem.isGhostCell() ) << "only actif elt\n";
         // reset partitioning data
         newElem.setProcessIdInPartition( proc_id );
         newElem.setNumberOfPartitions( 1 );
@@ -653,8 +653,8 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
 
         // Add an equivalent element type to the new_mesh
         auto const& e = newMesh->addElement( newElem );
-        new_element_id[it->id()]= e.id();
-        M_smd->bm.insert( typename smd_type::bm_type::value_type( e.id(), it->id() ) );
+        new_element_id[oldElem.id()]= e.id();
+        M_smd->bm.insert( typename smd_type::bm_type::value_type( e.id(), oldElem.id() ) );
 
 
     } // end for it
