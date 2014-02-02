@@ -92,6 +92,9 @@ public:
     element_type march ( element_type const& phi, bool useMarker2AsDoneMarker=false )
     { return this->operator()( phi, useMarker2AsDoneMarker) ; }
 
+    element_type march ( element_ptrtype phi, bool useMarker2AsDoneMarker=false )
+    { return this->operator()( *phi, useMarker2AsDoneMarker) ; }
+
 
 private:
 
@@ -108,7 +111,7 @@ private:
     inline size_type processorToCluster( size_type dof )
     { return M_functionspace->dof()->mapGlobalProcessToGlobalCluster( dof ); }
 
-    void reduceDonePoints(element_type const& __v, element_type& status, std::set<size_type>& done, bool useMarker2AsDoneMarker );
+    void reduceDonePoints(element_type const& __v, element_type& status, std::set<size_type>& done );
 
     void reduceClosePoints(heap_type& theHeap, element_type& status );
 
