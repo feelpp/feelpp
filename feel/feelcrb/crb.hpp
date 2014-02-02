@@ -1899,8 +1899,6 @@ CRB<TruthModelType>::offline()
         std::ifstream file ( file_name );
         if( ! file )
         {
-            if( Environment::worldComm().isMasterRank() )
-                std::cout<<"[CRB] on va generer .... "<<std::endl;
             // random sampling
             std::string supersamplingname =(boost::format("Dmu-%1%-generated-by-master-proc") %sampling_size ).str();
             if( sampling_mode == "log-random" )
@@ -3110,7 +3108,8 @@ CRB<TruthModelType>::offline()
         if ( option(_name="crb.check.rb").template as<int>() == 1 )std::cout << "  -- check reduced basis done in " << timer2.elapsed() << "s\n";
 
         timer2.restart();
-        LOG(INFO) << "time: " << timer.elapsed() << "\n";
+        if( Environment::worldComm().isMasterRank() )
+            std::cout << "time: " << timer.elapsed() << std::endl;
         if( proc_number == 0 ) std::cout << "============================================================\n";
         LOG(INFO) <<"========================================"<<"\n";
 
