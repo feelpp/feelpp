@@ -60,7 +60,7 @@ ReinitializerFMS( functionspace_ptrtype const& __functionspace,
 template<typename FunctionSpaceType, typename periodicity_type>
 void
 ReinitializerFMS<FunctionSpaceType, periodicity_type>::
-reduceDonePoints(element_type const& __v, element_type& status, std::set<size_type>& done, bool useMarker2AsDoneMarker )
+reduceDonePoints(element_type const& __v, element_type& status, std::set<size_type>& done )
 {
   /*  Communicate the DONE points across all the processes  */
 
@@ -234,7 +234,7 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
         }
 
     // //communicate the DONE list between all the proc
-    reduceDonePoints(__v, status, done, useMarker2AsDoneMarker );
+    reduceDonePoints(__v, status, done );
 
     heap_type theHeap;
     // initialize close distances in heap and mark close points in status array
