@@ -967,8 +967,8 @@ CRBSCM<TruthModelType>::checkEigenVectorEigenValue( sparse_matrix_ptrtype const&
     double energyAwAw = A->energy( Aw , Aw );
     double energyAwBw = A->energy( Aw , Bw );
     double energyBwBw = A->energy( Bw , Bw );
-    CHECK( math::abs(energyAwAw - energyAwBw) <  1e-12 )<<"eigen vector and/or eigen value not satisfy generalized eigenvalue problem : math::abs(energyAwAw - energyAwBw) = "<<math::abs(energyAwAw - energyAwBw)<<std::endl;
-    CHECK( math::abs(energyAwAw - energyAwBw) <  1e-12 )<<"eigen vector and/or eigen value not satisfy generalized eigenvalue problem : math::abs(energyAwAw - energyAwBw) = "<<math::abs(energyAwAw - energyAwBw)<<std::endl;
+    CHECK( math::abs(energyAwAw - energyAwBw) <  1e-11 )<<"eigen vector and/or eigen value not satisfy generalized eigenvalue problem : math::abs(energyAwAw - energyAwBw) = "<<math::abs(energyAwAw - energyAwBw)<<std::endl;
+    CHECK( math::abs(energyAwAw - energyAwBw) <  1e-11 )<<"eigen vector and/or eigen value not satisfy generalized eigenvalue problem : math::abs(energyAwAw - energyAwBw) = "<<math::abs(energyAwAw - energyAwBw)<<std::endl;
 }
 
 template<typename TruthModelType>
