@@ -1027,7 +1027,8 @@ public:
      */
     sampling_type randomSampling( int N )
     {
-        M_Xi->randomize( N );
+        bool same_sampling_on_all_proc=false;
+        M_Xi->randomize( N , same_sampling_on_all_proc );
         return *M_Xi;
     }
 
@@ -1036,7 +1037,8 @@ public:
      */
     sampling_type equidistributedSampling( int N )
     {
-        M_Xi->equidistribute( N );
+        bool same_sampling_on_all_proc=false;
+        M_Xi->equidistribute( N , same_sampling_on_all_proc );
         return *M_Xi;
     }
 
@@ -1487,6 +1489,7 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
         M_bdf_primal->shiftRight( u );
         if ( ! M_model->isSteady() )
         {
+            u.close();
             if(POD_WN )
             {
                 M_bdf_primal_save->shiftRight( u );
@@ -1675,15 +1678,15 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
             M_preconditioner_dual->setMatrix( Adu );
             if ( reuse_prec )
             {
-                auto ret = M_backend_dual->solve( _matrix=Adu, _solution=udu, _rhs=Rhs,  _prec=M_preconditioner_dual, _reuse_prec=( M_bdf_primal->iteration() >=2 ) );
+                auto ret = M_backend_dual->solve( _matrix=Adu, _solution=udu, _rhs=Rhs,  _prec=M_preconditioner_dual, _reuse_prec=( M_bdf_dual->iteration() >=2 ) );
                 if  ( !ret.template get<0>() )
-                    LOG(INFO)<<"[CRB] WARNING : at time "<<M_bdf_primal->time()<<" we have not converged ( nb_it : "<<ret.template get<1>()<<" and residual : "<<ret.template get<2>() <<" ) \n";
+                    LOG(INFO)<<"[CRB] WARNING : at time "<<M_bdf_dual->time()<<" we have not converged ( nb_it : "<<ret.template get<1>()<<" and residual : "<<ret.template get<2>() <<" ) \n";
             }
             else
             {
                 auto ret = M_backend_dual->solve( _matrix=Adu, _solution=udu, _rhs=Rhs ,  _prec=M_preconditioner_dual );
                 if ( !ret.template get<0>() )
-                    LOG(INFO)<<"[CRB] WARNING : at time "<<M_bdf_primal->time()<<" we have not converged ( nb_it : "<<ret.template get<1>()<<" and residual : "<<ret.template get<2>() <<" ) \n";
+                    LOG(INFO)<<"[CRB] WARNING : at time "<<M_bdf_dual->time()<<" we have not converged ( nb_it : "<<ret.template get<1>()<<" and residual : "<<ret.template get<2>() <<" ) \n";
             }
 
             //on each subspace the norme of the increment is computed and then we perform the sum
@@ -1706,9 +1709,10 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
 
         if ( ! M_model->isSteady() )
         {
+            udu.close();
             if( POD_WN )
             {
-                M_bdf_primal_save->shiftRight( udu );
+                M_bdf_dual_save->shiftRight( udu );
             }
             else
             {
@@ -1896,12 +1900,13 @@ CRB<TruthModelType>::offline()
         if( ! file )
         {
             // random sampling
+            std::string supersamplingname =(boost::format("Dmu-%1%-generated-by-master-proc") %sampling_size ).str();
             if( sampling_mode == "log-random" )
-                M_Xi->randomize( sampling_size , all_proc_same_sampling );
+                M_Xi->randomize( sampling_size , all_proc_same_sampling , supersamplingname );
             else if( sampling_mode == "log-equidistribute" )
-                M_Xi->logEquidistribute( sampling_size , all_proc_same_sampling );
+                M_Xi->logEquidistribute( sampling_size , all_proc_same_sampling , supersamplingname );
             else if( sampling_mode == "equidistribute" )
-                M_Xi->equidistribute( sampling_size , all_proc_same_sampling );
+                M_Xi->equidistribute( sampling_size , all_proc_same_sampling , supersamplingname );
             else
                 throw std::logic_error( "[CRB::offline] ERROR invalid option crb.sampling-mode, please select between log-random, log-equidistribute or equidistribute" );
             M_Xi->writeOnFile(file_name);
@@ -2172,16 +2177,20 @@ CRB<TruthModelType>::offline()
                 bool broadcast=false;
                 mu = M_Dmu->element( broadcast );
             }
-            else
-            {
-                // start with M_C = { arg min mu, mu \in Xi }
-                //the min is a local min so don't check
-                bool check=false;
-                boost::tie( mu, index ) = M_Xi->min( check );
-            }
         }
-        //every proc must have the same parameter mu
-        boost::mpi::broadcast( Environment::worldComm() , mu , master_proc );
+        if( M_error_type == CRB_NO_RESIDUAL )
+        {
+            //every proc must have the same parameter mu
+            boost::mpi::broadcast( Environment::worldComm() , mu , master_proc );
+        }
+
+        if( M_error_type != CRB_NO_RESIDUAL )
+        {
+            // start with M_C = { arg min mu, mu \in Xi }
+            //the min is a global min so we can check
+            bool check=true;
+            boost::tie( mu, index ) = M_Xi->min( check );
+        }
 
         int size = mu.size();
         if( proc_number == master_proc )
@@ -2501,47 +2510,62 @@ CRB<TruthModelType>::offline()
             LOG(INFO)<<"[CRB::offline] start of POD \n";
 
             pod_ptrtype POD = pod_ptrtype( new pod_type(  ) );
+            bool POD_WN = option(_name="crb.apply-POD-to-WN").template as<bool>() ;
 
             if ( seek_mu_in_complement ) // M_mode_number == 1 )
             {
-                //in this case, it's the first time that we add mu
-                POD->setNm( M_Nm );
+                if( POD_WN )
+                {
+                    POD->setNm( -1 );
+                }
+                else
+                {
+                    //in this case, it's the first time that we add mu
+                    POD->setNm( M_Nm );
+                }
             }
             else
             {
-                //in this case we have to count mu occurrences in WMmu (mode_number)
-                //to add the mode_number^th mode in the basis
-                M_mode_number=1;
-                BOOST_FOREACH( auto _mu, *M_WNmu )
+                if( POD_WN )
                 {
-                    if( mu == _mu )
-                        M_mode_number++;
+                    POD->setNm( -1 );
                 }
-
-                POD->setNm( M_mode_number*M_Nm );
-                int size = mu.size();
-                LOG(INFO)<<"... CRB M_mode_number = "<<M_mode_number<<"\n";
-                LOG(INFO)<<"for mu = [ ";
-
-                for ( int i=0; i<size-1; i++ ) LOG(INFO)<<mu[i]<<" , ";
-
-                LOG(INFO)<<mu[ size-1 ];
-                LOG(INFO)<<" ]\n";
-
-                double Tf = M_model->timeFinal();
-                double dt = M_model->timeStep();
-                int nb_mode_max = Tf/dt;
-
-                if ( M_mode_number>=nb_mode_max-1 )
+                else
                 {
-                    if( proc_number == master_proc )
+                    //in this case we have to count mu occurrences in WMmu (mode_number)
+                    //to add the mode_number^th mode in the basis
+                    M_mode_number=1;
+                    BOOST_FOREACH( auto _mu, *M_WNmu )
                     {
-                        std::cout<<"Error : we access to "<<M_mode_number<<"^th mode"<<std::endl;
-                        std::cout<<"parameter choosen : [ ";
-                        for ( int i=0; i<size-1; i++ ) std::cout<<mu[i]<<" , ";
-                        std::cout<<mu[ size-1 ]<<" ] "<<std::endl;
+                        if( mu == _mu )
+                            M_mode_number++;
                     }
-                    throw std::logic_error( "[CRB::offline] ERROR during the construction of the reduced basis, one parameter has been choosen too many times" );
+
+                    POD->setNm( M_mode_number*M_Nm );
+                    int size = mu.size();
+                    LOG(INFO)<<"... CRB M_mode_number = "<<M_mode_number<<"\n";
+                    LOG(INFO)<<"for mu = [ ";
+
+                    for ( int i=0; i<size-1; i++ ) LOG(INFO)<<mu[i]<<" , ";
+
+                    LOG(INFO)<<mu[ size-1 ];
+                    LOG(INFO)<<" ]\n";
+
+                    double Tf = M_model->timeFinal();
+                    double dt = M_model->timeStep();
+                    int nb_mode_max = Tf/dt;
+
+                    if ( M_mode_number>=nb_mode_max-1 )
+                    {
+                        if( proc_number == master_proc )
+                        {
+                            std::cout<<"Error : we access to "<<M_mode_number<<"^th mode"<<std::endl;
+                            std::cout<<"parameter choosen : [ ";
+                            for ( int i=0; i<size-1; i++ ) std::cout<<mu[i]<<" , ";
+                            std::cout<<mu[ size-1 ]<<" ] "<<std::endl;
+                        }
+                        throw std::logic_error( "[CRB::offline] ERROR during the construction of the reduced basis, one parameter has been choosen too many times" );
+                    }
                 }
             }
 
@@ -2563,17 +2587,29 @@ CRB<TruthModelType>::offline()
 
             if ( !seek_mu_in_complement )
             {
-                for ( size_type i=0; i<M_Nm; i++ )
-                {
-                    M_model->rBFunctionSpace()->addPrimalBasisElement( ModeSet[M_mode_number*M_Nm-1+i] );
-                    //M_WN.push_back( ModeSet[M_mode_number*M_Nm-1+i] ) ;
-                    //M_WN.push_back( ModeSet[M_mode_number-1] ) ;
-                }
-            }
 
+                if( POD_WN )
+                {
+                    int imax = ModeSet.size();
+                    for ( size_type i=0; i<imax; i++ )
+                    {
+                        M_model->rBFunctionSpace()->addPrimalBasisElement( ModeSet[i] );
+                    }
+                }
+                else
+                {
+                    for ( size_type i=0; i<M_Nm; i++ )
+                    {
+                        M_model->rBFunctionSpace()->addPrimalBasisElement( ModeSet[M_mode_number*M_Nm-1+i] );
+                        //M_WN.push_back( ModeSet[M_mode_number*M_Nm-1+i] ) ;
+                        //M_WN.push_back( ModeSet[M_mode_number-1] ) ;
+                    }
+                }
+            }//! seek in complement
             else
             {
-                for ( size_type i=0; i<M_Nm; i++ )
+                int imax = ModeSet.size();
+                for ( size_type i=0; i<imax; i++ )
                 {
                     M_model->rBFunctionSpace()->addPrimalBasisElement( ModeSet[i] );
                     //M_WN.push_back( ModeSet[i] ) ;
@@ -2590,16 +2626,27 @@ CRB<TruthModelType>::offline()
 
                 if ( !seek_mu_in_complement )
                 {
-                    for ( size_type i=0; i<M_Nm; i++ )
+                    if( POD_WN )
                     {
-                        M_model->rBFunctionSpace()->addDualBasisElement( ModeSetdu[M_mode_number*M_Nm-1+i] );
-                        //M_WNdu.push_back( ModeSetdu[M_mode_number*M_Nm-1+i] ) ;
+                        int imax = ModeSetdu.size();
+                        for ( size_type i=0; i<imax; i++ )
+                        {
+                            M_model->rBFunctionSpace()->addDualBasisElement( ModeSet[i] );
+                        }
                     }
-                }
-
+                    else
+                    {
+                        for ( size_type i=0; i<M_Nm; i++ )
+                        {
+                            M_model->rBFunctionSpace()->addDualBasisElement( ModeSetdu[M_mode_number*M_Nm-1+i] );
+                            //M_WNdu.push_back( ModeSetdu[M_mode_number*M_Nm-1+i] ) ;
+                        }
+                    }
+                }//! seek mu in complement
                 else
                 {
-                    for ( size_type i=0; i<M_Nm; i++ )
+                    int imax = ModeSetdu.size();
+                    for ( size_type i=0; i<imax; i++ )
                     {
                         M_model->rBFunctionSpace()->addDualBasisElement( ModeSetdu[i] );
                         //M_WNdu.push_back( ModeSetdu[i] ) ;
@@ -2631,7 +2678,6 @@ CRB<TruthModelType>::offline()
             number_of_added_elements=1;
 
         M_N+=number_of_added_elements;
-
 
         bool POD_WN = option(_name="crb.apply-POD-to-WN").template as<bool>() ;
         if(  POD_WN &&  ! M_model->isSteady() )
@@ -3062,7 +3108,8 @@ CRB<TruthModelType>::offline()
         if ( option(_name="crb.check.rb").template as<int>() == 1 )std::cout << "  -- check reduced basis done in " << timer2.elapsed() << "s\n";
 
         timer2.restart();
-        LOG(INFO) << "time: " << timer.elapsed() << "\n";
+        if( Environment::worldComm().isMasterRank() )
+            std::cout << "time: " << timer.elapsed() << std::endl;
         if( proc_number == 0 ) std::cout << "============================================================\n";
         LOG(INFO) <<"========================================"<<"\n";
 
@@ -5165,7 +5212,7 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
 
 
     if( proc == master_proc )
-        std::cout<< std::setprecision(15)<<"[CRB maxerror] proc "<< proc<<" delta_pr : "<<delta_pr<<" - delta_du : "<<delta_du<<" at index : "<<_index<<std::endl;
+        std::cout<< std::setprecision(15)<<"[CRB maxerror] proc "<< proc<<" delta_pr : "<<delta_pr<<" -- delta_du : "<<delta_du<<" -- output error : "<<maxerr<<std::endl;
     lb( N, mu, uN, uNdu , uNold ,uNduold );
 
     return boost::make_tuple( maxerr, mu , delta_pr, delta_du);
@@ -7875,8 +7922,8 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
     bool current_option=option(_name="crb.is-model-executed-in-steady-mode").template as<bool>();
     if( M_model_executed_in_steady_mode != current_option )
     {
-        if( M_model_executed_in_steady_mode )
-            throw std::logic_error( "[CRB::loadDB] ERROR in the database used the model was executed in steady mode but now you want to execute it in transient mode. Change the option or rebuild the database using --crb.rebuild-database=true" );
+        if( M_model_executed_in_steady_mode && Environment::worldComm().isMasterRank() )
+            std::cout<<"[CRB::loadDB] WARNING in the database used, the model was executed in steady mode but now you want to execute it in transient mode. make sure that --crb.rebuild-database=true"<<std::endl;
     }
 #if 0
     std::cout << "[loadDB] output index : " << M_output_index << "\n"
