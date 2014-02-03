@@ -813,7 +813,7 @@ public:
          * \param all_procs_have_same_sampling (boolean)
          * \param file_name : file name where the sampling is written
          */
-        void equidistribute( int N , bool all_procs_have_same_sampling, std::string file_name="" )
+        void equidistribute( int N , bool all_procs_have_same_sampling=true, std::string file_name="" )
             {
                 this->clear();
 
