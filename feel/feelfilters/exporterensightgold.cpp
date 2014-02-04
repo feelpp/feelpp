@@ -6,6 +6,7 @@
        Date: 2007-07-21
 
   Copyright (C) 2007 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2011 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -21,13 +22,8 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-/**
-   \file exporterensight.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2007-07-21
- */
-#ifndef __EXPORTERENSIGHTGOLD_CPP
-#define __EXPORTERENSIGHTGOLD_CPP
+#ifndef FEELPP_EXPORTERENSIGHTGOLD_CPP
+#define FEELPP_EXPORTERENSIGHTGOLD_CPP 1
 
 #include <feel/feelcore/feel.hpp>
 
@@ -175,22 +171,6 @@ ExporterEnsightGold<MeshType,N>::writeSoSFile() const
             exit( 0 );
         }
 
-#if 0
-        __out << "FORMAT:\n"
-              << "type: master_server gold \n"
-              << "SERVERS\n"
-              << "number of servers: " << this->worldComm().globalSize() << "\n";
-
-        for ( int pid = 0 ; pid < this->worldComm().globalSize(); ++pid )
-        {
-
-            __out << "#Server " << pid+1 << "\n"
-                  << "machine id: " << mpi::environment::processor_name() << "\n"
-                  << "executable: /usr/local/bin/ensight76/bin/ensight7.server\n"
-                  << "data_path: " << fs::current_path().string() << "\n"
-                  << "casefile: " << this->prefix() << "-" << this->worldComm().globalSize() << "_" << pid << ".case\n";
-        }
-#else
         __out << "FORMAT:\n"
               << "type: master_server gold \n\n"
               << "MULTIPLE_CASEFILES\n"
@@ -201,7 +181,30 @@ ExporterEnsightGold<MeshType,N>::writeSoSFile() const
               << "cfiles increment: 1\n\n"
               << "SERVERS\n"
               << "number of servers: "<< (this->worldComm().globalSize()/100)+1 <<" repeat\n";
-#endif
+
+        //
+        // save also a sos that paraview can understand, the previous format
+        // does not seem to be supported by paraview
+        //
+        std::ostringstream filestrparaview;
+        filestrparaview << this->path() << "/" << this->prefix() << "-paraview-" << this->worldComm().globalSize() << ".sos";
+        std::ofstream __outparaview( filestrparaview.str().c_str() );
+
+        __outparaview << "FORMAT:\n"
+                      << "type: master_server gold \n"
+                      << "SERVERS\n"
+                      << "number of servers: " << this->worldComm().globalSize() << "\n";
+
+        for ( int pid = 0 ; pid < this->worldComm().globalSize(); ++pid )
+        {
+
+            __outparaview << "#Server " << pid+1 << "\n"
+                          << "machine id: " << mpi::environment::processor_name() << "\n"
+                          << "executable: /usr/local/bin/ensight76/bin/ensight7.server\n"
+                          << "data_path: " << fs::current_path().string() << "\n"
+                          << "casefile: " << this->prefix() << "-" << this->worldComm().globalSize() << "_" << pid << ".case\n";
+        }
+
     }
 }
 template<typename MeshType, int N>
@@ -603,62 +606,64 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
 
         auto __mesh = __step->mesh();
 
-        BOOST_FOREACH( auto m, __mesh->markerNames() )
+        if ( option( _name="exporter.ensightgold.save-face" ).template as<bool>() )
         {
-            if ( m.second[1] != __mesh->nDim-1 )
-                continue;
-            VLOG(1) << "writing face with marker " << m.first << " with id " << m.second[0];
-            auto pairit = __mesh->facesWithMarker( m.second[0], __mesh->worldComm().localRank() );
-            auto fit = pairit.first;
-            auto fen = pairit.second;
-            Feel::detail::MeshPoints<float> mp( __mesh.get(), fit, fen, true,true );
-            int __ne = std::distance( fit, fen );
-
-            int nverts = fit->numLocalVertices;
-            DVLOG(2) << "Faces : " << __ne << "\n";
-
-            strcpy( buffer, "part" );
-            __out.write( ( char * ) & buffer, sizeof( buffer ) );
-            int partid = m.second[0];
-            __out.write( ( char * ) & partid, sizeof(int) );
-
-            strcpy( buffer, "coordinates" );
-            __out.write( ( char * ) & buffer, sizeof( buffer ) );
-
-            // write values
-            fit = pairit.first;
-            fen = pairit.second;
-
-            uint16_type nComponents = __var->second.nComponents;
-            if ( __var->second.is_vectorial )
-                nComponents = 3;
-
-            std::vector<float> field( nComponents*mp.ids.size(), 0. );
-            for( ; fit != fen; ++fit )
+            BOOST_FOREACH( auto m, __mesh->markerNames() )
             {
-                for ( uint16_type c = 0; c < nComponents; ++c )
+                if ( m.second[1] != __mesh->nDim-1 )
+                    continue;
+                VLOG(1) << "writing face with marker " << m.first << " with id " << m.second[0];
+                auto pairit = __mesh->facesWithMarker( m.second[0], __mesh->worldComm().localRank() );
+                auto fit = pairit.first;
+                auto fen = pairit.second;
+                Feel::detail::MeshPoints<float> mp( __mesh.get(), fit, fen, true,true );
+                int __ne = std::distance( fit, fen );
+
+                int nverts = fit->numLocalVertices;
+                DVLOG(2) << "Faces : " << __ne << "\n";
+
+                strcpy( buffer, "part" );
+                __out.write( ( char * ) & buffer, sizeof( buffer ) );
+                int partid = m.second[0];
+                __out.write( ( char * ) & partid, sizeof(int) );
+
+                strcpy( buffer, "coordinates" );
+                __out.write( ( char * ) & buffer, sizeof( buffer ) );
+
+                // write values
+                fit = pairit.first;
+                fen = pairit.second;
+
+                uint16_type nComponents = __var->second.nComponents;
+                if ( __var->second.is_vectorial )
+                    nComponents = 3;
+
+                std::vector<float> field( nComponents*mp.ids.size(), 0. );
+                for( ; fit != fen; ++fit )
                 {
-
-                    for ( size_type j = 0; j < nverts; j++ )
+                    for ( uint16_type c = 0; c < nComponents; ++c )
                     {
-                        int pid = mp.old2new[fit->point( j ).id()]-1;
-                        size_type global_node_id = mp.ids.size()*c + pid ;
-                        if ( c < __var->second.nComponents )
-                        {
-                            size_type thedof =  __var->second.start() +
-                                boost::get<0>(__var->second.functionSpace()->dof()->faceLocalToGlobal( fit->id(), j, c ));
 
-                            field[global_node_id] = __var->second.globalValue( thedof );
+                        for ( size_type j = 0; j < nverts; j++ )
+                        {
+                            int pid = mp.old2new[fit->point( j ).id()]-1;
+                            size_type global_node_id = mp.ids.size()*c + pid ;
+                            if ( c < __var->second.nComponents )
+                            {
+                                size_type thedof =  __var->second.start() +
+                                    boost::get<0>(__var->second.functionSpace()->dof()->faceLocalToGlobal( fit->id(), j, c ));
+
+                                field[global_node_id] = __var->second.globalValue( thedof );
+                            }
+                            else
+                                field[global_node_id] = 0;
                         }
-                        else
-                            field[global_node_id] = 0;
                     }
                 }
-            }
-            CHECK( field.size() == mp.ids.size() ) << "Invalid face field size, observed: " << field.size() << " expected: " << mp.ids.size() << "\n";
-            __out.write( ( char * ) field.data(), field.size() * sizeof( float ) );
-        } // boundaries loop
-
+                CHECK( field.size() == mp.ids.size() ) << "Invalid face field size, observed: " << field.size() << " expected: " << mp.ids.size() << "\n";
+                __out.write( ( char * ) field.data(), field.size() * sizeof( float ) );
+            } // boundaries loop
+        }
         typename mesh_type::parts_const_iterator_type p_it = __step->mesh()->beginParts();
         typename mesh_type::parts_const_iterator_type p_en = __step->mesh()->endParts();
 
@@ -895,73 +900,76 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
     strcpy( buffer, "element id given" );
     __out.write( ( char * ) & buffer, sizeof( buffer ) );
 
-    BOOST_FOREACH( auto m, __mesh->markerNames() )
+    if ( option( _name="exporter.ensightgold.save-face" ).template as<bool>() )
     {
-        if ( m.second[1] != __mesh->nDim-1 )
-            continue;
-        VLOG(1) << "writing face with marker " << m.first << " with id " << m.second[0];
-        auto pairit = __mesh->facesWithMarker( m.second[0], __mesh->worldComm().localRank() );
-        auto fit = pairit.first;
-        auto fen = pairit.second;
-        Feel::detail::MeshPoints<float> mp( __mesh, fit, fen, true, true );
-        int __ne = std::distance( fit, fen );
-        int nverts = fit->numLocalVertices;
-        DVLOG(2) << "Faces : " << __ne << "\n";
-
-        strcpy( buffer, "part" );
-        __out.write( ( char * ) & buffer, sizeof( buffer ) );
-        int partid = m.second[0];
-        __out.write( ( char * ) & partid, sizeof(int) );
-
-        sprintf( buffer, "%s", m.first.c_str() );
-        __out.write( ( char * ) & buffer, sizeof( buffer ) );
-
-        strcpy( buffer, "coordinates" );
-        __out.write( ( char * ) & buffer, sizeof( buffer ) );
-
-        // write points coordinates
-        fit = pairit.first;
-        fen = pairit.second;
-
-        size_type __nv = mp.ids.size();
-        __out.write( ( char * ) &__nv, sizeof( int ) );
-        __out.write( ( char * ) & mp.ids.front(), mp.ids.size() * sizeof( int ) );
-        __out.write( ( char * ) mp.coords.data(), mp.coords.size() * sizeof( float ) );
-
-        // write connectivity
-        fit = pairit.first;
-        fen = pairit.second;
-
-        strcpy( buffer, M_face_type.c_str() );
-        __out.write( ( char * ) & buffer, sizeof( buffer ) );
-        VLOG(1) << "face type " << buffer;
-
-        __out.write( ( char * ) &__ne, sizeof( int ) );
-        VLOG(1) << "n faces " << __ne;
-
-        idelem.resize( __ne );
-        fit = pairit.first;
-        size_type e = 0;
-        for ( ; fit != fen; ++fit, ++e )
+        BOOST_FOREACH( auto m, __mesh->markerNames() )
         {
-            idelem[e] = fit->id() + 1;
-        }
-        CHECK( e == idelem.size() ) << "Invalid number of face id for part " << m.first;
-        __out.write( ( char * ) & idelem.front(), idelem.size() * sizeof( int ) );
+            if ( m.second[1] != __mesh->nDim-1 )
+                continue;
+            VLOG(1) << "writing face with marker " << m.first << " with id " << m.second[0];
+            auto pairit = __mesh->facesWithMarker( m.second[0], __mesh->worldComm().localRank() );
+            auto fit = pairit.first;
+            auto fen = pairit.second;
+            Feel::detail::MeshPoints<float> mp( __mesh, fit, fen, true, true );
+            int __ne = std::distance( fit, fen );
+            int nverts = fit->numLocalVertices;
+            DVLOG(2) << "Faces : " << __ne << "\n";
 
-        idelem.resize( __ne*nverts );
-        fit = pairit.first;
-        e = 0;
-        for( ; fit != fen; ++fit, ++e )
-        {
-            for ( size_type j = 0; j < nverts; j++ )
+            strcpy( buffer, "part" );
+            __out.write( ( char * ) & buffer, sizeof( buffer ) );
+            int partid = m.second[0];
+            __out.write( ( char * ) & partid, sizeof(int) );
+
+            sprintf( buffer, "%s", m.first.c_str() );
+            __out.write( ( char * ) & buffer, sizeof( buffer ) );
+
+            strcpy( buffer, "coordinates" );
+            __out.write( ( char * ) & buffer, sizeof( buffer ) );
+
+            // write points coordinates
+            fit = pairit.first;
+            fen = pairit.second;
+
+            size_type __nv = mp.ids.size();
+            __out.write( ( char * ) &__nv, sizeof( int ) );
+            __out.write( ( char * ) & mp.ids.front(), mp.ids.size() * sizeof( int ) );
+            __out.write( ( char * ) mp.coords.data(), mp.coords.size() * sizeof( float ) );
+
+            // write connectivity
+            fit = pairit.first;
+            fen = pairit.second;
+
+            strcpy( buffer, M_face_type.c_str() );
+            __out.write( ( char * ) & buffer, sizeof( buffer ) );
+            VLOG(1) << "face type " << buffer;
+
+            __out.write( ( char * ) &__ne, sizeof( int ) );
+            VLOG(1) << "n faces " << __ne;
+
+            idelem.resize( __ne );
+            fit = pairit.first;
+            size_type e = 0;
+            for ( ; fit != fen; ++fit, ++e )
             {
-                // ensight id start at 1
-                idelem[e*nverts+j] = mp.old2new[fit->point( j ).id()];
+                idelem[e] = fit->id() + 1;
             }
+            CHECK( e == idelem.size() ) << "Invalid number of face id for part " << m.first;
+            __out.write( ( char * ) & idelem.front(), idelem.size() * sizeof( int ) );
+
+            idelem.resize( __ne*nverts );
+            fit = pairit.first;
+            e = 0;
+            for( ; fit != fen; ++fit, ++e )
+            {
+                for ( size_type j = 0; j < nverts; j++ )
+                {
+                    // ensight id start at 1
+                    idelem[e*nverts+j] = mp.old2new[fit->point( j ).id()];
+                }
+            }
+            CHECK( e*nverts == idelem.size() ) << "Invalid number of faces " << e*nverts << " != " << idelem.size() << " in connectivity for part " << m.first;
+            __out.write( ( char * ) &idelem.front() , __ne*nverts*sizeof( int ) );
         }
-        CHECK( e*nverts == idelem.size() ) << "Invalid number of faces " << e*nverts << " != " << idelem.size() << " in connectivity for part " << m.first;
-        __out.write( ( char * ) &idelem.front() , __ne*nverts*sizeof( int ) );
     }
     typename mesh_type::parts_const_iterator_type p_it = __mesh->beginParts();
     typename mesh_type::parts_const_iterator_type p_en = __mesh->endParts();
@@ -1126,4 +1134,4 @@ template class ExporterEnsightGold<Mesh<Hypercube<2,3> > >;
 #endif // FEELPP_INSTANTIATION_MODE
 #endif
 }
-#endif // __EXPORTERENSIGHT_CPP
+#endif // FEELPP_EXPORTERENSIGHT_CPP
