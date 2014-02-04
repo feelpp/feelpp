@@ -607,7 +607,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
         {
             if ( m.second[1] != __mesh->nDim-1 )
                 continue;
-            LOG(INFO) << "writing face with marker " << m.first << " with id " << m.second[0];
+            VLOG(1) << "writing face with marker " << m.first << " with id " << m.second[0];
             auto pairit = __mesh->facesWithMarker( m.second[0], __mesh->worldComm().localRank() );
             auto fit = pairit.first;
             auto fen = pairit.second;
@@ -646,7 +646,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
                         if ( c < __var->second.nComponents )
                         {
                             size_type thedof =  __var->second.start() +
-                                boost::get<0>( __var->second.functionSpace()->dof()->faceLocalToGlobal( fit->id(), j, c ) );
+                                boost::get<0>(__var->second.functionSpace()->dof()->faceLocalToGlobal( fit->id(), j, c ));
 
                             field[global_node_id] = __var->second.globalValue( thedof );
                         }
@@ -666,51 +666,40 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
         {
             strcpy( buffer, "part" );
             __out.write( ( char * ) & buffer, sizeof( buffer ) );
+
             int partid = p_it->first;
             __out.write( ( char * ) & partid, sizeof(int) );
-            DVLOG(2) << "part " << buffer << "\n";
+            VLOG(1) << "part " << buffer << "\n";
+
             strcpy( buffer, "coordinates" );
             __out.write( ( char * ) & buffer, sizeof( buffer ) );
             uint16_type nComponents = __var->second.nComponents;
 
-            LOG(INFO) << "nComponents field: " << nComponents;
+            VLOG(1) << "nComponents field: " << nComponents;
             if ( __var->second.is_vectorial )
             {
                 nComponents = 3;
-                LOG(INFO) << "nComponents field(is_vectorial): " << nComponents;
+                VLOG(1) << "nComponents field(is_vectorial): " << nComponents;
             }
 
-
-
-            //typename mesh_type::element_const_iterator elt_it, elt_en;
-            //boost::tie( boost::tuples::ignore, elt_it, elt_en ) = elements( *__step->mesh() );
-
-#if 0
-            typename mesh_type::marker_element_const_iterator elt_it;
-            typename mesh_type::marker_element_const_iterator elt_en;
-            elt_it = __mesh->elementsByMarker().begin();
-            elt_en = __mesh->elementsByMarker().end();
-#else
             auto r = elements(__mesh,true);
             auto elt_it = r.template get<1>();
             auto elt_en = r.template get<2>();
-#endif
+
             Feel::detail::MeshPoints<float> mp( __step->mesh().get(), elt_it, elt_en, true, true );
-            //boost::tie( elt_it, elt_en ) = __step->mesh()->elementsWithMarker( p_it->first,
-            //__var->second.worldComm().localRank() ); // important localRank!!!!
 
             size_type __field_size = mp.ids.size();
             if ( __var->second.is_vectorial )
                 __field_size *= 3;
             ublas::vector<float> __field( __field_size, 0. );
             size_type e = 0;
-            LOG(INFO) << "field size=" << __field_size;
+            VLOG(1) << "field size=" << __field_size;
             if ( !__var->second.areGlobalValuesUpdated() )
                 __var->second.updateGlobalValues();
 
             for ( ; elt_it != elt_en; ++elt_it )
             {
-                LOG(INFO) << "is ghost cell " << elt_it->get().isGhostCell();
+                VLOG(3) << "is ghost cell " << elt_it->get().isGhostCell();
                 for ( uint16_type c = 0; c < __var->second.nComponents; ++c )
                 {
                     for ( uint16_type p = 0; p < __step->mesh()->numLocalVertices(); ++p, ++e )
@@ -727,7 +716,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
                             size_type dof_id = boost::get<0>( __var->second.functionSpace()->dof()->localToGlobal( elt_it->get().id(),p, c ) );
 
                             __field[global_node_id] = __var->second.globalValue( dof_id );
-                            LOG(INFO) << "v[" << global_node_id << "]=" << __var->second.globalValue( dof_id ) << "  dof_id:" << dof_id;
+                            DVLOG(3) << "v[" << global_node_id << "]=" << __var->second.globalValue( dof_id ) << "  dof_id:" << dof_id;
                         }
 
                         else
@@ -744,7 +733,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
         {
             strcpy(buffer,"END TIME STEP");
             __out.write((char*)&buffer,sizeof(buffer));
-            LOG(INFO) << "out: " << buffer;
+            VLOG(1) << "out: " << buffer;
         }
         DVLOG(2) << "[ExporterEnsightGold::saveNodal] saving " << __varfname.str() << "done\n";
         ++__var;
@@ -890,7 +879,7 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
     {
         strcpy(buffer,"BEGIN TIME STEP");
         __out.write((char*)&buffer,sizeof(buffer));
-        LOG(INFO) << "out : " << buffer;
+        VLOG(1) << "out : " << buffer;
 
     }
 
@@ -910,7 +899,7 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
     {
         if ( m.second[1] != __mesh->nDim-1 )
             continue;
-        LOG(INFO) << "writing face with marker " << m.first << " with id " << m.second[0];
+        VLOG(1) << "writing face with marker " << m.first << " with id " << m.second[0];
         auto pairit = __mesh->facesWithMarker( m.second[0], __mesh->worldComm().localRank() );
         auto fit = pairit.first;
         auto fen = pairit.second;
@@ -945,10 +934,10 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
 
         strcpy( buffer, M_face_type.c_str() );
         __out.write( ( char * ) & buffer, sizeof( buffer ) );
-        LOG(INFO) << "face type " << buffer;
+        VLOG(1) << "face type " << buffer;
 
         __out.write( ( char * ) &__ne, sizeof( int ) );
-        LOG(INFO) << "n faces " << __ne;
+        VLOG(1) << "n faces " << __ne;
 
         idelem.resize( __ne );
         fit = pairit.first;
@@ -989,11 +978,11 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
         auto elt_it2 = r2.template get<1>();
         auto elt_en2 = r2.template get<2>();
 
-        LOG(INFO) << "material : " << p_it->first << " total nb element: " << std::distance(elt_it, elt_en );
-        LOG(INFO) << "material : " << p_it->first << " ghost nb element: " << std::distance(elt_it1, elt_en1 );
-        LOG(INFO) << "material : " << p_it->first << " local nb element: " << std::distance(elt_it2, elt_en2 );
+        VLOG(1) << "material : " << p_it->first << " total nb element: " << std::distance(elt_it, elt_en );
+        VLOG(1) << "material : " << p_it->first << " ghost nb element: " << std::distance(elt_it1, elt_en1 );
+        VLOG(1) << "material : " << p_it->first << " local nb element: " << std::distance(elt_it2, elt_en2 );
         Feel::detail::MeshPoints<float> mp( __mesh, elt_it, elt_en, true, true );
-        LOG(INFO) << "mesh pts size : " << mp.ids.size();
+        VLOG(1) << "mesh pts size : " << mp.ids.size();
 
         strcpy( buffer, "part" );
         __out.write( ( char * ) & buffer, sizeof( buffer ) );
@@ -1038,7 +1027,7 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
         r = markedelements(__mesh, p_it->first, EntityProcessType::LOCAL_ONLY );
         elt_it = r.template get<1>();
         elt_en = r.template get<2>();
-        LOG(INFO) << "material : " << p_it->first << " local nb element: " << std::distance(elt_it, elt_en );
+        VLOG(1) << "material : " << p_it->first << " local nb element: " << std::distance(elt_it, elt_en );
         idelem.resize( __ne*__mesh->numLocalVertices() );
         size_type e=0;
         for (  ; elt_it != elt_en; ++elt_it, ++e )
@@ -1047,7 +1036,7 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
             {
                 // ensight id start at 1
                 idelem[e*__mesh->numLocalVertices()+j] = mp.old2new[elt_it->get().point( j ).id()];
-                CHECK( (idelem[e*__mesh->numLocalVertices()+j] > 0) && (idelem[e*__mesh->numLocalVertices()+j] <= __nv ) )
+                DCHECK( (idelem[e*__mesh->numLocalVertices()+j] > 0) && (idelem[e*__mesh->numLocalVertices()+j] <= __nv ) )
                     << "Invalid entry : " << idelem[e*__mesh->numLocalVertices()+j]
                     << " at index : " << e*__mesh->numLocalVertices()+j
                     << " element :  " << e
@@ -1066,7 +1055,7 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
             __out.write( ( char * ) & buffer, sizeof( buffer ) );
 
             int __ne = std::distance( elt_it1, elt_en1 );
-            LOG(INFO) << "material : " << p_it->first << " ghost nb element: " << __ne;
+            VLOG(1) << "material : " << p_it->first << " ghost nb element: " << __ne;
 
             __out.write( ( char * ) &__ne, sizeof( int ) );
 
@@ -1091,7 +1080,7 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
                 {
                     // ensight id start at 1
                     idelem[e*__mesh->numLocalVertices()+j] = mp.old2new[elt_it1->get().point( j ).id()];
-                    CHECK( idelem[e*__mesh->numLocalVertices()+j] > 0 )
+                    DCHECK( idelem[e*__mesh->numLocalVertices()+j] > 0 )
                         << "Invalid entry : " << idelem[e*__mesh->numLocalVertices()+j]
                         << " at index : " << e*__mesh->numLocalVertices()+j
                         << " element :  " << e
@@ -1107,7 +1096,7 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
     {
         strcpy(buffer,"END TIME STEP");
         __out.write((char*)&buffer,sizeof(buffer));
-        LOG(INFO) << "out : " << buffer;
+        VLOG(1) << "out : " << buffer;
     }
 }
 
