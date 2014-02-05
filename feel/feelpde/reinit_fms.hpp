@@ -50,6 +50,9 @@ class ReinitializerFMS
 {
 public:
 
+    static_assert( FunctionSpaceType::fe_type::nOrder == 1, "FunctionSpaceType needs to be a finite element space of order 1");
+    static_assert( ! FunctionSpaceType::is_periodic , "Space for fast marching must be non periodic, but periodicity can be given as second template argument");
+
     /** @name Typedefs
      */
     //@{
