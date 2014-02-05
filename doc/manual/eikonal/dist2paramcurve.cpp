@@ -68,7 +68,6 @@ int main( int argc, char** argv )
 
 
 
-
   // ------------- epitrochoid --------------
   const double a_epi=0.1; // 1 / nb_branch
   const double b_epi=0.8;
@@ -81,22 +80,59 @@ int main( int argc, char** argv )
   // ----------------------------------------
 
 
+  // ------------- sickle cell shape --------------
+  const double r1=0.5, r2=0.21, hcell=0.2;
+  const double t1 = std::asin( hcell / r1 );
+  const double t2 = std::asin( hcell / r2 );
+  const double ofx = r1*cos(t1)-r2*cos(t2);
+  const double x0 = -0.3, y0 = 0.5;
 
-  // // ------------- heart --------------------
-  // auto x_heart = [&](double t) -> double { return cos(t) / 2.; };
-  // auto y_heart = [&](double t) -> double { return (sin(t) + std::sqrt( std::abs( cos(t) ) )) / 2.; } ;
 
-  // auto heart = disttocurve->fromParametrizedCurve( x_heart, y_heart,
-  //                                                  0, 100, option("gmsh.hsize").as<double>()/5. );
-  // *heart = fm->march( heart, true );
-  // // ----------------------------------------
+  std::cout<<"t1 = "<<t1<<", t2="<<t2<<std::endl;
 
+  auto x_sc = [&](double t) -> double
+      {
+          if ( (t >= -t1) && (t <= t1) )
+              return r1 * cos(t) + x0;
+          else if ( (t > t1) && (t <= t1+2*t2) )
+              return r2 * cos(-(t-t1-t2)) + ofx + x0;
+          else
+              {
+                  std::cout<<"x oor : t = "<<t<<std::endl;
+                  return 0.5;
+              }
+      };
+
+  auto y_sc = [&](double t) -> double
+      {
+          if ( (t >= -t1) && (t <= t1) )
+              return r1 * sin(t) + y0;
+          else if ( (t > t1) && (t <= t1+2*t2) )
+              return r2 * sin(-(t-t1-t2)) + y0;
+          else
+              {
+                  std::cout<<"y oor : t = "<<t<<std::endl;
+                  return 0.5;
+              }
+      };
+
+  auto sickle_cell = disttocurve->fromParametrizedCurve( /* x(t), y(t) */
+                                                        x_sc, y_sc,
+                                                        /* tstart, tend, dt */
+                                                        -t1, t1+2*t2, option("gmsh.hsize").as<double>()/10.,
+                                                        /* broeaden detection, broadening parameter */
+                                                         true, option("gmsh.hsize").as<double>() / 50.,
+                                                        /* export points */
+                                                         true);
+
+  *sickle_cell = fm->march( sickle_cell, true );
+  // ----------------------------------------
 
 
   auto exp = exporter(_mesh=mesh, _name="dist2paramcurve");
   exp->step(0)->add("ellipse", *ellipse);
   exp->step(0)->add("epitro", *epitro);
-  //  exp->step(0)->add("heart", *heart);
+  exp->step(0)->add("sickle_cell", *sickle_cell);
   exp->save();
 
 
