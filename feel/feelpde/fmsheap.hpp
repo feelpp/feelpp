@@ -140,6 +140,12 @@ public:
     }
 
 
+    typename std::vector<heap_entry_type>::iterator begin()
+    { return M_heap.begin(); }
+
+    typename std::vector<heap_entry_type>::iterator end()
+    { return M_heap.end(); }
+
 private:
 
     typedef std::vector<heap_entry_type> heapvect_type;

@@ -2040,9 +2040,10 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, IteratorType it, IteratorType en, con
     size_type p = 0;
     for( ; it != en; ++it )
     {
-        for ( size_type j = 0; j < it->numLocalVertices; j++ )
+        auto const& elt = boost::unwrap_ref( *it );
+        for ( size_type j = 0; j < elt.numLocalVertices; j++ )
         {
-            int pid = it->point( j ).id();
+            int pid = elt.point( j ).id();
             auto ins = nodeset.insert( pid );
             if ( ins.second )
             {

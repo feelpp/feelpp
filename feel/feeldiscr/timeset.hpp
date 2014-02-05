@@ -586,7 +586,7 @@ public:
         template<typename FunctionType>
         void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<true> )
         {
-
+            bool extendeddof = (option(_name="exporter.format").template as<std::string>() == "ensightgold");
             if ( FunctionType::is_scalar )
             {
                 boost::timer t;
@@ -594,9 +594,10 @@ public:
                 if ( !M_ts->M_scalar_p1 )
                 {
                     M_ts->M_scalar_p1 = scalar_p1_space_ptrtype( new scalar_p1_space_type ( M_mesh.get(),
-                                         MESH_RENUMBER | MESH_CHECK,
-                                         typename scalar_p1_space_type::periodicity_type(),
-                                         func.worldsComm() ) );
+                                                                                            MESH_RENUMBER | MESH_CHECK,
+                                                                                            typename scalar_p1_space_type::periodicity_type(),
+                                                                                            func.worldsComm(),
+                                                                                            std::vector<bool>(1,extendeddof) ) );
                     M_scalar_p1 = M_ts->M_scalar_p1;
                     DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p1 created\n";
                 }
@@ -609,9 +610,10 @@ public:
                 if ( M_mesh.get() != M_ts->M_scalar_p1->mesh() && !M_scalar_p1 )
                 {
                     M_scalar_p1 = scalar_p1_space_ptrtype( new scalar_p1_space_type ( M_mesh.get(),
-                                                            MESH_RENUMBER | MESH_CHECK,
-                                                            typename scalar_p1_space_type::periodicity_type(),
-                                                            func.worldsComm() ) );
+                                                                                      MESH_RENUMBER | MESH_CHECK,
+                                                                                      typename scalar_p1_space_type::periodicity_type(),
+                                                                                      func.worldsComm(),
+                                                                                      std::vector<bool>(1,extendeddof)) );
                     DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p1 created\n";
                 }
 
@@ -632,9 +634,10 @@ public:
                 if ( !M_ts->M_vector_p1 )
                 {
                     M_ts->M_vector_p1 = vector_p1_space_ptrtype( new vector_p1_space_type ( M_mesh.get(),
-                                         MESH_RENUMBER | MESH_CHECK,
-                                         typename vector_p1_space_type::periodicity_type(),
-                                         func.worldsComm() ) );
+                                                                                            MESH_RENUMBER | MESH_CHECK,
+                                                                                            typename vector_p1_space_type::periodicity_type(),
+                                                                                            func.worldsComm(),
+                                                                                            std::vector<bool>(1,extendeddof) ) );
                     M_vector_p1 = M_ts->M_vector_p1;
                     DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p1 created\n";
                 }
@@ -647,9 +650,10 @@ public:
                 if ( M_mesh.get() != M_ts->M_vector_p1->mesh() && !M_vector_p1 )
                 {
                     M_vector_p1 = vector_p1_space_ptrtype( new vector_p1_space_type ( M_mesh.get(),
-                                                            MESH_RENUMBER | MESH_CHECK,
-                                                            typename vector_p1_space_type::periodicity_type(),
-                                                            func.worldsComm() ) );
+                                                                                      MESH_RENUMBER | MESH_CHECK,
+                                                                                      typename vector_p1_space_type::periodicity_type(),
+                                                                                      func.worldsComm(),
+                                                                                      std::vector<bool>(1,extendeddof) ) );
                     DVLOG(2) << "[timeset::add] setmesh :  " << t.elapsed() << "\n";
                     DVLOG(2) << "[TimeSet::setMesh] setMesh space vector p1 created\n";
                 }
@@ -676,6 +680,7 @@ public:
         template<typename FunctionType>
         void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<false> )
         {
+            bool extendeddof = (option(_name="exporter.format").template as<std::string>() == "ensightgold");
             if ( !func.worldComm().isActive() ) return;
 
             if ( FunctionType::is_scalar )
@@ -683,9 +688,10 @@ public:
                 if ( !M_ts->M_scalar_p0 )
                 {
                     M_ts->M_scalar_p0 = scalar_p0_space_ptrtype( new scalar_p0_space_type ( M_mesh.get(),
-                                         MESH_RENUMBER | MESH_CHECK,
-                                         typename scalar_p0_space_type::periodicity_type(),
-                                         func.worldsComm() ) );
+                                                                                            MESH_RENUMBER | MESH_CHECK,
+                                                                                            typename scalar_p0_space_type::periodicity_type(),
+                                                                                            func.worldsComm(),
+                                                                                            std::vector<bool>(1,extendeddof) ) );
                     M_scalar_p0 = M_ts->M_scalar_p0;
                     DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p0 created\n";
                 }
@@ -698,9 +704,10 @@ public:
                 if ( M_mesh.get() != M_ts->M_scalar_p0->mesh() && !M_scalar_p0 )
                 {
                     M_scalar_p0 = scalar_p0_space_ptrtype( new scalar_p0_space_type ( M_mesh.get(),
-                                                            MESH_RENUMBER | MESH_CHECK,
-                                                            typename scalar_p0_space_type::periodicity_type(),
-                                                            func.worldsComm() ) );
+                                                                                      MESH_RENUMBER | MESH_CHECK,
+                                                                                      typename scalar_p0_space_type::periodicity_type(),
+                                                                                      func.worldsComm(),
+                                                                                      std::vector<bool>(1,extendeddof) ) );
                     DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p0 created\n";
                 }
 
@@ -720,9 +727,10 @@ public:
                 if ( !M_ts->M_vector_p0 )
                 {
                     M_ts->M_vector_p0 = vector_p0_space_ptrtype( new vector_p0_space_type ( M_mesh.get(),
-                                         MESH_RENUMBER | MESH_CHECK,
-                                         typename vector_p0_space_type::periodicity_type(),
-                                         func.worldsComm() ) );
+                                                                                            MESH_RENUMBER | MESH_CHECK,
+                                                                                            typename vector_p0_space_type::periodicity_type(),
+                                                                                            func.worldsComm(),
+                                                                                            std::vector<bool>(1,extendeddof) ) );
                     M_vector_p0 = M_ts->M_vector_p0;
                     DVLOG(2) << "[TimeSet::setMesh] setMesh space vector p0 created\n";
                 }
@@ -735,9 +743,10 @@ public:
                 if (  M_mesh.get() != M_ts->M_vector_p0->mesh() && !M_vector_p0 )
                 {
                     M_vector_p0 = vector_p0_space_ptrtype( new vector_p0_space_type ( M_mesh.get(),
-                                                            MESH_RENUMBER | MESH_CHECK,
-                                                            typename vector_p0_space_type::periodicity_type(),
-                                                            func.worldsComm() ) );
+                                                                                      MESH_RENUMBER | MESH_CHECK,
+                                                                                      typename vector_p0_space_type::periodicity_type(),
+                                                                                      func.worldsComm(),
+                                                                                      std::vector<bool>(1,extendeddof) ) );
                     DVLOG(2) << "[TimeSet::setMesh] setMesh space vector p0 created\n";
                     //M_tensor2_p0 = tensor2_p0_space_ptrtype( new tensor2_p0_space_type ( M_mesh.get() ) );
                 }

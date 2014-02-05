@@ -37,6 +37,7 @@
 
 namespace Feel
 {
+enum class EntityProcessType {LOCAL_ONLY,GHOST_ONLY,ALL};
 
 template<size_t S, class ITERATOR>
 ITERATOR begin( boost::tuple<mpl::size_t<S>,ITERATOR,ITERATOR> &range )
@@ -1498,6 +1499,56 @@ elements( MeshType const& mesh, bool addExtendedMPIElt )
 
             // add elt in range
             myelts->push_back(boost::cref(eltOffProc));
+
+            eltGhostDone.insert( eltOffProc.id() );
+        }
+    }
+
+    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+                              myelts->begin(),
+                              myelts->end(),
+                              myelts );
+}
+
+
+template<typename MeshType>
+boost::tuple<mpl::size_t<MESH_ELEMENTS>,
+             typename std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::element_type const> >::const_iterator,
+             typename std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::element_type const> >::const_iterator,
+             boost::shared_ptr<std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::element_type const> > >
+             >
+markedelements( MeshType const& mesh, boost::any const& flag, EntityProcessType entity )
+{
+    typedef std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::element_type const> > cont_range_type;
+    boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
+
+    flag_type theflag = mesh->markerId( flag );
+
+    if ( ( entity == EntityProcessType::LOCAL_ONLY ) || ( entity == EntityProcessType::ALL ) )
+        for ( auto const& elt : markedelements(mesh,flag) )
+        {
+            myelts->push_back(boost::cref(elt));
+        }
+
+    if ( ( entity == EntityProcessType::GHOST_ONLY ) || ( entity == EntityProcessType::ALL ) )
+    {
+        std::set<size_type> eltGhostDone;
+
+        auto face_it = mesh->interProcessFaces().first;
+        auto const face_en = mesh->interProcessFaces().second;
+        for ( ; face_it!=face_en ; ++face_it )
+        {
+            auto const& elt0 = face_it->element0();
+            auto const& elt1 = face_it->element1();
+            const bool elt0isGhost = elt0.isGhostCell();
+            auto const& eltOffProc = (elt0isGhost)?elt0:elt1;
+
+            if ( eltGhostDone.find( eltOffProc.id() ) != eltGhostDone.end() ) continue;
+
+
+            // add elt in range
+            if ( eltOffProc.marker().value() == theflag )
+                myelts->push_back(boost::cref(eltOffProc));
 
             eltGhostDone.insert( eltOffProc.id() );
         }

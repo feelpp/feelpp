@@ -218,6 +218,28 @@ Mesh<Shape, T, Tag>::updateForUse()
             VLOG(2) << "[Mesh::updateForUse] update edges : " << ti.elapsed() << "\n";
         }
 
+        if ( this->worldComm().localSize()>1 )
+        {
+            if ( this->components().test( MESH_UPDATE_FACES ) )
+            {
+                // warning : this function change the isOnBoundary for ghost faces
+                // so need call before updateOnBoundary()
+                if ( false )
+                    this->updateEntitiesCoDimensionOneGhostCellByUsingBlockingComm();
+                else
+                    this->updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm();
+
+                auto ipfRange = this->interProcessFaces();
+                for ( auto itf = ipfRange.first, enf = ipfRange.second ; itf!=enf ; ++itf )
+                    this->addFaceNeighborSubdomain( itf->partition2() );
+            }
+
+            auto iv = this->beginGhostElement();
+            auto const en = this->endGhostElement();
+            for ( ; iv != en; ++iv )
+                this->addNeighborSubdomain( iv->processId() );
+        }
+
         if ( this->components().test( MESH_UPDATE_FACES ) ||
              this->components().test( MESH_UPDATE_EDGES )
             )
@@ -306,29 +328,6 @@ Mesh<Shape, T, Tag>::updateForUse()
         }
     }
 
-#if defined(FEELPP_ENABLE_MPI_MODE)
-    if ( this->components().test( MESH_UPDATE_FACES ) && this->worldComm().localSize()>1 )
-    {
-        if ( false )
-            this->updateEntitiesCoDimensionOneGhostCellByUsingBlockingComm();
-        else
-            this->updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm();
-
-        auto ipfRange = this->interProcessFaces();
-        for ( auto itf = ipfRange.first, enf = ipfRange.second ; itf!=enf ; ++itf )
-            this->addFaceNeighborSubdomain( itf->partition2() );
-    }
-
-    if ( this->worldComm().localSize()>1 )
-    {
-        auto iv = this->beginGhostElement();
-        auto const en = this->endGhostElement();
-        for ( ; iv != en; ++iv )
-            this->addNeighborSubdomain( iv->processId() );
-    }
-
-
-#endif
 
     this->updateNumGlobalElements();
 

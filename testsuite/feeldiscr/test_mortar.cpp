@@ -254,10 +254,11 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
     //auto mesh = loadMesh( _mesh=new Mesh<Simplex<2,1,2> >, _h=option(_name="gmsh.hsize2").template as<double>() );
     //auto mesh2 = loadMesh( _mesh=new Mesh<Simplex<2,1,2> >, _h=option(_name="gmsh.hsize2").template as<double>() );
 
+#if 1
     auto mesh = createGMSHMesh( _mesh=new Mesh<Hypercube<2,1,2> >,
                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                                 _desc=domain( _name="mesh", _addmidpoint=false, _usenames=false, _shape="hypercube",
-                                              _dim=2,
+                                              _dim=2, _h=option(_name="gmsh.hsize2").template as<double>(),
                                               _convex="Hypercube",_structured=1,
                                               _xmin=0., _xmax=1., _ymin=0., _ymax=1.
                                               )
@@ -271,6 +272,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
                                                _xmin=0., _xmax=1., _ymin=1., _ymax=2.
                                                )
                                  );
+#endif
 
 
     auto testmesh = createSubmesh(mesh, markedfaces(mesh,(boost::any)4),Environment::worldComm() );
@@ -333,6 +335,14 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
     BOOST_CHECK_CLOSE( c_m( l, v ), 1, 1e-13 );
     BOOST_CHECK_CLOSE( c_m( l, w ), 0.5, 1e-13 );
     BOOST_CHECK_CLOSE( c_m( l, z ), 1./3., (T::value>=2)?1e-13:10 );
+
+
+    // build matrix C_m without mortar space
+    BOOST_TEST_MESSAGE( "build bilinear form c_m(Xh,Vh)" );
+    auto c_m1 = form2(_test=Xh, _trial=Vh);
+    BOOST_TEST_MESSAGE( "integrate" );
+    c_m1 = integrate(_range=elements(testmesh),_expr=idt(v)*id(u));
+    c_m1.matrixPtr()->printMatlab( "C_m1.m" );
 
 }
 
