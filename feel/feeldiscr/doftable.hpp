@@ -605,6 +605,31 @@ public:
             //DCHECK( it.first != M_el_l2g.left.end() ) << "Invalid element dof entry " << ElId;
             return std::make_pair( lower, upper );
         }
+
+    template<typename ElemTest,typename ElemTrial>
+    std::vector<uint16_type> const& localIndices( ElemTest const& eltTest, ElemTrial const& eltTrial  ) const
+    {
+        return localIndices( eltTest,eltTrial,mpl::bool_<ElemTest::nDim==1 && ElemTrial::nDim==1>() );
+    }
+    template<typename ElemTest,typename ElemTrial>
+    std::vector<uint16_type> const& localIndices( ElemTest const& eltTest, ElemTrial const& eltTrial, mpl::false_ ) const
+    {
+        return M_localIndicesIdentity;
+    }
+    template<typename ElemTest,typename ElemTrial>
+    std::vector<uint16_type> const& localIndices( ElemTest const& eltTest, ElemTrial const& eltTrial, mpl::true_ ) const
+    {
+        double dotVec= ublas::inner_prod( ublas::column(eltTest.G(),1)  - ublas::column(eltTest.G(),0),
+                                          ublas::column(eltTrial.G(),1) - ublas::column(eltTrial.G(),0) );
+        CHECK( std::abs( dotVec ) > 1e-9 ) << " inner_prod is null " << dotVec << "\n";
+
+        if ( dotVec > 0 ) // identity permutation
+            return M_localIndicesIdentity;
+        else // reverse permutation
+            return  M_localIndicesPerm;
+    }
+
+
     global_dof_type const& localToGlobal( const size_type ElId,
                                           const uint16_type localNode,
                                           const uint16_type c = 0 ) const
@@ -1297,6 +1322,10 @@ private:
 
     bool M_buildDofTableMPIExtended;
 
+
+    std::vector<uint16_type> M_localIndicesPerm, M_localIndicesIdentity;
+
+
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
@@ -1319,7 +1348,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( mesh_type& me
     M_face_sign(),
     M_dof_indices(),
     M_periodicity( periodicity ),
-    M_buildDofTableMPIExtended( false )
+    M_buildDofTableMPIExtended( false ),
+    M_localIndicesPerm( nDofPerElement ),
+    M_localIndicesIdentity( nDofPerElement )
 {
     VLOG(2) << "[dof] is_periodic = " << is_periodic << "\n";
     size_type start_next_free_dof = 0;
@@ -1347,7 +1378,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( fe_ptrtype co
     M_face_sign(),
     M_dof_indices(),
     M_periodicity( periodicity ),
-    M_buildDofTableMPIExtended( false )
+    M_buildDofTableMPIExtended( false ),
+    M_localIndicesPerm( nDofPerElement ),
+    M_localIndicesIdentity( nDofPerElement )
 {
 }
 
@@ -1366,7 +1399,10 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( const self_ty
     M_face_sign( dof2.M_face_sign ),
     M_dof_indices( dof2.M_dof_indices ),
     M_periodicity( dof2.M_periodicity ),
-    M_buildDofTableMPIExtended( dof2.M_buildDofTableMPIExtended )
+    M_buildDofTableMPIExtended( dof2.M_buildDofTableMPIExtended ),
+    M_localIndicesPerm( dof2.M_localIndicesPerm ),
+    M_localIndicesIdentity( dof2.M_localIndicesIdentity )
+
 {
 }
 
@@ -1936,6 +1972,21 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
     FEELPP_ASSERT( nldof == fe_type::nLocalDof )
     ( nldof )
     ( fe_type::nLocalDof ).error( "Something wrong in FE specification" ) ;
+
+
+    int ncdof  = is_product?nComponents:1;
+
+    for ( uint16_type i=0;i<FEType::nLocalDof;++i)
+        for ( uint16_type c=0;c<ncdof;++c)
+        {
+            M_localIndicesIdentity[FEType::nLocalDof*c+i] = FEType::nLocalDof*c + i;
+
+            if ( i < fe_type::nDofPerVertex*element_type::numVertices )
+                M_localIndicesPerm[FEType::nLocalDof*c+i] = FEType::nLocalDof*c + fe_type::nDofPerVertex*element_type::numVertices-1-i;
+            else if ( i < fe_type::nDofPerVertex*element_type::numVertices + fe_type::nDofPerEdge * element_type::numEdges )
+                M_localIndicesPerm[FEType::nLocalDof*c+i] = FEType::nLocalDof*c + 2*fe_type::nDofPerVertex*element_type::numVertices +
+                    fe_type::nDofPerEdge*element_type::numEdges-1-i;
+        }
 
     // compute the number of dof on current processor
     auto it_elt = M.beginElementWithProcessId();
