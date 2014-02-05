@@ -245,7 +245,7 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
 
 
     // for debug purpuses only
-    auto checkHeap = [&] (std::string msg = "")
+    auto checkHeap = [&] (std::string msg)
         {
 #if 0
         for (auto entry : theHeap )
@@ -319,7 +319,7 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
 
           }
 
-        checkHeap();
+        checkHeap("in loop");
 
 #if defined( FM_EXPORT )
         count_iteration++;
