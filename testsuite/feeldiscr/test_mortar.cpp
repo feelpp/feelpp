@@ -191,11 +191,12 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh, T, order_types )
 
 
     BOOST_TEST_MESSAGE( "test_mortar_integrate_submesh for order : " << T::value );
-    auto mesh = loadMesh( _mesh=new Mesh<Simplex<2,1,2> > );
+    auto mesh = loadMesh( _mesh=new Mesh<Simplex<2,1,2> >, _h=option(_name="gmsh.hsize2").template as<double>() );
     auto mesh2 = loadMesh( _mesh=new Mesh<Simplex<2,1,2> >, _h=option(_name="gmsh.hsize2").template as<double>() );
 
-    auto testmesh = createSubmesh(mesh, markedfaces(mesh,(boost::any)1),Environment::worldComm() );
-    auto trialmesh = createSubmesh(mesh2, markedfaces(mesh2,(boost::any)1),Environment::worldComm() );
+    auto testmesh = createSubmesh(mesh, markedfaces(mesh,(boost::any)2),Environment::worldComm() );
+    auto trialmesh = createSubmesh(mesh2, markedfaces(mesh2,(boost::any)4),Environment::worldComm() );
+
     auto Xh = Pch<T::value>(testmesh);
     auto Vh = Pch<T::value>(trialmesh);
     auto Mh = Moch<T::value>(testmesh);
@@ -332,6 +333,83 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
     BOOST_CHECK_CLOSE( c_m( l, v ), 1, 1e-13 );
     BOOST_CHECK_CLOSE( c_m( l, w ), 0.5, 1e-13 );
     BOOST_CHECK_CLOSE( c_m( l, z ), 1./3., (T::value>=2)?1e-13:10 );
+
+}
+
+
+BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
+{
+    using namespace Feel;
+    Feel::Environment::changeRepository( boost::format( "/testsuite/feeldiscr/%1%/test_mortar_integrate_submesh2/h_%2%/P%3%/" )
+                                         % Feel::Environment::about().appName()
+                                         % option(_name="gmsh.hsize2").template as<double>()
+                                         % T::value );
+
+
+    BOOST_TEST_MESSAGE( "test_mortar_integrate_submesh for order : " << T::value );
+    //auto mesh = loadMesh( _mesh=new Mesh<Simplex<2,1,2> >, _h=option(_name="gmsh.hsize2").template as<double>() );
+    //auto mesh2 = loadMesh( _mesh=new Mesh<Simplex<2,1,2> >, _h=option(_name="gmsh.hsize2").template as<double>() );
+
+    auto mesh = createGMSHMesh( _mesh=new Mesh<Hypercube<2,1,2> >,
+                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
+                                _desc=domain( _name="mesh", _addmidpoint=false, _usenames=false, _shape="hypercube",
+                                              _dim=2, _h=option(_name="gmsh.hsize2").template as<double>(),
+                                              _convex="Hypercube",
+                                              _xmin=0., _xmax=1., _ymin=0., _ymax=1.
+                                              )
+                                );
+
+    auto mesh2 = createGMSHMesh( _mesh=new Mesh<Hypercube<2,1,2> >,
+                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
+                                 _desc=domain( _name="mesh2", _addmidpoint=false, _usenames=false, _shape="hypercube",
+                                               _dim=2, _h=option(_name="gmsh.hsize2").template as<double>(),
+                                               _convex="Hypercube",
+                                               _xmin=0., _xmax=1., _ymin=1., _ymax=2.
+                                               )
+                                 );
+
+
+    auto testmesh = createSubmesh(mesh, markedfaces(mesh,4),Environment::worldComm() );
+    auto trialmesh = createSubmesh(mesh2, markedfaces(mesh2,2),Environment::worldComm() );
+    auto Xh = Pch<T::value>(testmesh);
+    auto Vh = Pch<T::value>(trialmesh);
+    auto Mh = Moch<T::value>(testmesh);
+
+    BOOST_CHECK_MESSAGE(Mh->is_mortar == true, "Space should be mortar" ) ;
+    BOOST_CHECK_MESSAGE(Mh->isMortar() == true, "Space should be mortar" ) ;
+
+
+    BOOST_TEST_MESSAGE( "n elements : " << nelements( elements(testmesh) ) );
+    BOOST_TEST_MESSAGE( "n boundary elements : " << nelements( boundaryelements(testmesh) ) );
+    BOOST_TEST_MESSAGE( "n internal elements : " << nelements( internalelements(testmesh) ) );
+
+    for( auto const& dof : Mh->dof()->localDof() )
+    {
+        LOG(INFO) << "local dof element " << dof.first.elementId() << " id:" << dof.first.localDof()
+                  << " global dof : " << dof.second.index();
+    }
+
+    BOOST_TEST_MESSAGE( "build Xh element" );
+    auto u = Xh->element();
+    auto v = Vh->element();
+    BOOST_TEST_MESSAGE( "build Mh element" );
+    auto l = Mh->element();
+    BOOST_TEST_MESSAGE( "build bilinear form c_s(Mh,Xh)" );
+    auto c_s = form2(_test=Mh, _trial=Xh), cs1= form2(_test=Mh, _trial=Xh);
+    BOOST_TEST_MESSAGE( "integrate" );
+    c_s = integrate(_range=internalelements(testmesh),_expr=idt(u)*print(id(l),"test func internal"));
+    c_s += integrate(_range=boundaryelements(testmesh),_expr=idt(u)*print(id(l),"test func boundary"));
+    cs1 = integrate(_range=internalelements(testmesh),_expr=idt(u)*id(l));
+    cs1 += integrate(_range=boundaryelements(testmesh),_expr=idt(u));
+    BOOST_TEST_MESSAGE( "printMatlab" );
+    c_s.matrixPtr()->printMatlab( "C_s.m" );
+    cs1.matrixPtr()->printMatlab( "C_s1.m" );
+    BOOST_TEST_MESSAGE( "build bilinear form c_m(Mh,Vh)" );
+    auto c_m = form2(_test=Mh, _trial=Vh);
+    BOOST_TEST_MESSAGE( "integrate" );
+    c_m = integrate(_range=internalelements(testmesh),_expr=idt(v)*id(l));
+    c_m += integrate(_range=boundaryelements(testmesh),_expr=idt(v));
+    c_m.matrixPtr()->printMatlab( "C_m.m" );
 
 }
 
