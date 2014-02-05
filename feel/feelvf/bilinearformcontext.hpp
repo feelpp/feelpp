@@ -530,23 +530,28 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
                           ( mpl::int_<shape::M>, mpl::int_<shape::N> ) );
 
 
-    test_geometric_mapping_context_type const& _gmc = *fusion::at_key<gmc<0> >( M_test_gmc );
-    DVLOG(2) << "[BilinearForm::integrate] local assembly in element " << _gmc.id() << "\n";
+    test_geometric_mapping_context_type const& _gmcTest = *fusion::at_key<gmc<0> >( M_test_gmc );
+    trial_geometric_mapping_context_type const& _gmcTrial = *fusion::at_key<gmc<0> >( M_trial_gmc );
+    DVLOG(2) << "[BilinearForm::integrate] local assembly in element " << _gmcTest.id() << "\n";
 
-    if ( !UseMortar || !M_test_dof->mesh()->isBoundaryElement( _gmc.id() ) )
+    auto mapLocDofTrial = M_trial_dof->localIndices( _gmcTest.element(), _gmcTrial.element() );
+
+    if ( !UseMortar || !M_test_dof->mesh()->isBoundaryElement( _gmcTest.id() ) )
     {
         if ( isFirstExperience )
             for ( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
                 for ( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
                 {
-                    M_rep( i, j ) = M_integrator( *M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
+                    //M_rep( i, j ) = M_integrator( *M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
+                    M_rep( i, mapLocDofTrial[j] ) = M_integrator( *M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
                 }
 
         else
             for ( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
                 for ( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
                 {
-                    M_rep( i, j ) += M_integrator( *M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
+                    //M_rep( i, j ) += M_integrator( *M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
+                    M_rep( i, mapLocDofTrial[j] ) += M_integrator( *M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
                 }
     }
     else
@@ -555,14 +560,16 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
             for ( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
                 for ( uint16_type i = 0; i < uint16_type(test_dof_type::nDofPerElement-1); ++i )
                 {
-                    M_mortar_rep( i, j ) = M_integrator( *M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
+                    //M_mortar_rep( i, j ) = M_integrator( *M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
+                    M_mortar_rep( i, mapLocDofTrial[j] ) = M_integrator( *M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
                 }
 
         else
             for ( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
                 for ( uint16_type i = 0; i < uint16_type(test_dof_type::nDofPerElement-1); ++i )
                 {
-                    M_mortar_rep( i, j ) += M_integrator( *M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
+                    //M_mortar_rep( i, j ) += M_integrator( *M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
+                    M_mortar_rep( i, mapLocDofTrial[j] ) += M_integrator( *M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
                 }
     }
 }
