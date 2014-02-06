@@ -1,0 +1,3 @@
+[submodule "research/rb4aero"]
+	path = research/rb4aero
+	url = ../rb4aero
