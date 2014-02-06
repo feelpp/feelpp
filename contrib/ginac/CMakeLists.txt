@@ -42,7 +42,7 @@ include(CheckIncludeFile)
 check_include_file("stdint.h" HAVE_STDINT_H)
 check_include_file("unistd.h" HAVE_UNISTD_H)
 
-# Check Python version 
+# Check Python version
 # If python is version 3, we need to patch the scripts/yaptu.py file
 # (exec is a statement in Python 2 and a function in Python 3)
 FIND_PACKAGE(PythonInterp)
@@ -195,10 +195,12 @@ add_definitions(-DHAVE_CONFIG_H)
 
 add_subdirectory(ginac)
 add_subdirectory(tools)
-add_subdirectory(check)
+# feel++ edit
+#add_subdirectory(check)
 if (BISON_FOUND AND FLEX_FOUND)
 	add_subdirectory(ginsh)
 endif()
+# feel++ edit
 #if (MAKEINFO)
 #	add_subdirectory(doc)
 #endif()
