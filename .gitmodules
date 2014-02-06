@@ -1,0 +1,4 @@
+[submodule "rb4aero"]
+	path = research/rb4aero
+	url = https://github.com/feelpp/rb4aero
+    fetchRecurseSubmodules = on-demand
