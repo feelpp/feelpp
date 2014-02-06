@@ -661,6 +661,8 @@ struct updateDataMapProcessStandard
         const size_type nLocWithGhost=x->dof()->nLocalDofWithGhost(myrank);
         const size_type nLocWithoutGhost=x->dof()->nLocalDofWithoutGhost(myrank);
 
+        M_dm->addNeighborSubdomains( x->dof()->neighborSubdomains() );
+
         for (int proc = 0 ; proc < worldsize ; ++proc)
         {
             if ( M_cursor==0 )
