@@ -1590,9 +1590,11 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
     if ( this->worldComm().localSize()>1 )
     {
         bool isP0continuous = isP0Continuous<fe_type>::result;
-
-        if ( !isP0continuous )//this->M_n_dofs>1 )
+        if ( !isP0continuous )
         {
+            // add neighbor partition
+            this->setNeighborSubdomains(M.neighborSubdomains());
+
             VLOG(2) << "[build] call buildGhostDofMap () with god rank " << this->worldComm().godRank()  << "\n";
             this->buildGhostDofMap( M );
             VLOG(2) << "[build] callFINISH buildGhostDofMap () with god rank " << this->worldComm().godRank()  << "\n";
@@ -1603,6 +1605,11 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
         }
         else
         {
+            // add all partition as neighbor (if has localdof)
+            for ( rank_type proc=0; proc<this->worldComm().localSize(); ++proc )
+                if ( proc!=this->worldComm().rank() && this->nLocalDofWithGhost(proc) > 0 )
+                    this->addNeighborSubdomain( proc );
+
             int themasterRank = 0;
             bool findMasterProc=false;
             for ( int proc=0; proc<this->worldComm().localSize(); ++proc )
