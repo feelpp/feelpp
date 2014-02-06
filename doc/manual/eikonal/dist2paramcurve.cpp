@@ -32,6 +32,7 @@
 #include <feel/feelfilters/unithypercube.hpp>
 #include <feel/feelpde/reinit_fms.hpp>
 #include <feel/feelpde/disttocurve.hpp>
+//#include <math.h>
 
 using namespace Feel;
 using namespace Feel::vf;
@@ -63,10 +64,12 @@ int main( int argc, char** argv )
                                                     0,    /*tStart*/
                                                     6.29, /*tEnd*/
                                                     option("gmsh.hsize").as<double>() / 2. /*dt*/ );
-  *ellipse = fm->march( ellipse, true );
+    std::cout<<"test"<<std::endl;
+
+*ellipse = fm->march( ellipse, true );
   // ------------------------------------
 
-
+  std::cout<<"test"<<std::endl;
 
   // ------------- epitrochoid --------------
   const double a_epi=0.1; // 1 / nb_branch
@@ -80,61 +83,70 @@ int main( int argc, char** argv )
   // ----------------------------------------
 
 
-  // ------------- sickle cell shape --------------
-  const double r1=0.5, r2=0.21, hcell=0.2;
-  const double t1 = std::asin( hcell / r1 );
-  const double t2 = std::asin( hcell / r2 );
-  const double ofx = r1*cos(t1)-r2*cos(t2);
-  const double x0 = -0.3, y0 = 0.5;
+  // ------------- Sick cell --------------
+
+  const double R1=0.5; // 1 / nb_branch
+  const double R2=0.21;
+  const double H=0.2;
+  const double l=option("gmsh.hsize").as<double>();
+
+  const double dt1=l/R1;
+  const double dt2=l/R2;
+
+  const double t1=asin(H/R1);
+  const double t2=asin(H/R2);
+
+  const double X=R1*cos(t1)-R2*cos(t2);
+
+  auto x_sc = [&](double t) -> double {
+      if ((-t1+dt1 <= t) && (t <= t1-dt1))
+          return R1*cos(t)-0.3;
+
+      else if ((t1 - dt1 < t) && (t <= t1 + dt2))
+          return R1*cos(t1-dt1)-0.3 +  (t-(t1-dt1))/(t1+dt2-(t1-dt1)) *(R2*cos(t2-dt2)+X-0.3-(R1*cos(t1-dt1)-0.3 ));
+
+      else if ((t1+dt2 < t) && (t <= t1+2*t2-dt2))
+          return R2*cos(-(t-t1-t2))+X-0.3;
+
+      else if ((t1+2*t2-dt2 < t) && (t <= t1+2*t2+dt1))
+          return R2*cos(-(t2-dt2))+X-0.3 + (t-(t1+2*t2-dt2))/(t1+2*t2+dt1-(t1+2*t2-dt2))*(R1*cos(-t1+dt1)-0.3-(R2*cos(-(t2-dt2))+X-0.3 ));
+
+      else
+          return 0.5;
+
+  };
 
 
-  std::cout<<"t1 = "<<t1<<", t2="<<t2<<std::endl;
+  auto y_sc = [&](double t) -> double {
+      if ((-t1+dt1 <= t) && (t <= t1-dt1))
+          return R1*sin(t)+0.5;
 
-  auto x_sc = [&](double t) -> double
-      {
-          if ( (t >= -t1) && (t <= t1) )
-              return r1 * cos(t) + x0;
-          else if ( (t > t1) && (t <= t1+2*t2) )
-              return r2 * cos(-(t-t1-t2)) + ofx + x0;
-          else
-              {
-                  std::cout<<"x oor : t = "<<t<<std::endl;
-                  return 0.5;
-              }
-      };
+      else if ((t1 - dt1 < t) && (t <= t1 + dt2))
+          return R1*sin(t1-dt1)+0.5 +  (t-(t1-dt1))/(t1+dt2-(t1-dt1))*(R2*sin(t2-dt2)+0.5-(R1*sin(t1-dt1)+0.5 ));
 
-  auto y_sc = [&](double t) -> double
-      {
-          if ( (t >= -t1) && (t <= t1) )
-              return r1 * sin(t) + y0;
-          else if ( (t > t1) && (t <= t1+2*t2) )
-              return r2 * sin(-(t-t1-t2)) + y0;
-          else
-              {
-                  std::cout<<"y oor : t = "<<t<<std::endl;
-                  return 0.5;
-              }
-      };
+      else if ((t1+dt2 < t) && (t <= t1+2*t2-dt2))
+          return R2*sin(-(t-t1-t2))+0.5;
 
-  auto sickle_cell = disttocurve->fromParametrizedCurve( /* x(t), y(t) */
-                                                        x_sc, y_sc,
-                                                        /* tstart, tend, dt */
-                                                        -t1, t1+2*t2, option("gmsh.hsize").as<double>()/10.,
-                                                        /* broeaden detection, broadening parameter */
-                                                         true, option("gmsh.hsize").as<double>() / 50.,
-                                                        /* export points */
-                                                         true);
+      else if ((t1+2*t2-dt2 < t) && (t <= t1+2*t2+dt1))
+          return R2*sin(-(t2-dt2)) + 0.5 + (t-(t1+2*t2-dt2))/(t1+2*t2+dt1-(t1+2*t2-dt2))*(R1*sin(-t1+dt1)+0.5-(R2*sin(-(t2-dt2))+0.5));
 
-  *sickle_cell = fm->march( sickle_cell, true );
-  // ----------------------------------------
+      else
+          return 0.5;
+
+  };
+
+  std::cout<<"test"<<std::endl;
+
+  auto sick_cell = disttocurve->fromParametrizedCurve( x_sc, y_sc,
+                                                    -t1+dt1, t1+2*t2+dt1, option("gmsh.hsize").as<double>()/5. );
+  *sick_cell = fm->march( sick_cell, true );
+
 
 
   auto exp = exporter(_mesh=mesh, _name="dist2paramcurve");
   exp->step(0)->add("ellipse", *ellipse);
   exp->step(0)->add("epitro", *epitro);
-  exp->step(0)->add("sickle_cell", *sickle_cell);
+  exp->step(0)->add("sick_cell",*sick_cell);
   exp->save();
-
-
 
 }

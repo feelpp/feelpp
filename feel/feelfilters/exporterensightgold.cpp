@@ -660,7 +660,6 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
                         }
                     }
                 }
-                CHECK( field.size() == mp.ids.size() ) << "Invalid face field size, observed: " << field.size() << " expected: " << mp.ids.size() << "\n";
                 __out.write( ( char * ) field.data(), field.size() * sizeof( float ) );
             } // boundaries loop
         }
@@ -729,7 +728,6 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
                     }
                 }
             }
-            CHECK( __field.size() == mp.ids.size() ) << "Invalid field size, observed: " << __field.size() << " expected: " << mp.ids.size() << "\n";
             __out.write( ( char * ) __field.data().begin(), __field.size() * sizeof( float ) );
 
         } // parts loop
