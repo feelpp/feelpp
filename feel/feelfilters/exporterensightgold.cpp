@@ -728,7 +728,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
                     }
                 }
             }
-            __Out.write( ( char * ) __field.data().begin(), __field.size() * sizeof( float ) );
+            __out.write( ( char * ) __field.data().begin(), __field.size() * sizeof( float ) );
 
         } // parts loop
 
