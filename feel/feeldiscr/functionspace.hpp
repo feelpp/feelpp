@@ -1857,7 +1857,7 @@ public:
             return M_Xh.get();
         }
 
-        node_type node(int i) const
+        node_type const& node(int i) const
         {
             int size = M_t.size();
             CHECK( i < size ) <<" i  = "<<i<<" and the context has "<< size<<" points \n";
