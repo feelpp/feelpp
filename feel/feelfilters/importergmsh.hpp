@@ -705,8 +705,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     std::list<Feel::detail::GMSHElement> __et; // tags in each element
     std::map<int,int> __idGmshToFeel; // id Gmsh to id Feel
     std::map<int,int> __gt;
-    std::map<int,int> proc2elt;
-    const bool linearpartition = option(_name="partition.linear").as<bool>();
+    std::map<int,int> proc2elt;    const bool linearpartition = option(_name="partition.linear").template as<bool>();
 
     if ( !binary )
     {
