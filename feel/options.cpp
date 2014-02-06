@@ -178,7 +178,7 @@ on_options( std::string const& prefix )
 {
     po::options_description _options( "Dirichlet treatment options " + prefix + " options" );
     _options.add_options()
-        ( prefixvm( prefix,"on.type" ).c_str(), Feel::po::value<int>()->default_value( ON_ELIMINATION ), "Strong Dirichlet conditions treatment type" )
+        ( prefixvm( prefix,"on.type" ).c_str(), Feel::po::value<std::string>()->default_value( "elimination" ), "Strong Dirichlet conditions treatment type: elimination, elimination_symmetric, penalisation" )
         ( prefixvm( prefix,"on.verbose" ).c_str(), Feel::po::value<bool>()->default_value( false ), "print in logfiles information about Dirichlet conditions treatment" )
         ;
     return _options;
