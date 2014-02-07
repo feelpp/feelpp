@@ -213,7 +213,7 @@ namespace Feel
 
             if (exportPoints)
                 {
-                    std::string expName = exportName.empty() ? "nodes.particles" : exportName;
+                    std::string expName = exportName.empty() ? "nodes.particles" : exportName+".particles";
                     nodeFile.open(expName, std::ofstream::out);
                 }
 
@@ -349,19 +349,18 @@ namespace Feel
                         if ( closestDist < (*shape)(indexGlobDof) * (*shape)(indexGlobDof) )
                             {
                                 const node_type closestPointCoord = tNodeMap[ closestPoint ];
-
                                 // (tx, ty) = vector tangent to the parametrized curve at the closest point on param curve
                                 double tx, ty;
                                 // try to get the point next to the closest point (in the particular case where closest point is the last point, get the previous one)
                                 try
                                     {
-                                        const node_type closestPointPlusDtCoord = tNodeMap[ closestPoint + M_dt ];
+                                        const node_type closestPointPlusDtCoord = tNodeMap.at( closestPoint + M_dt );
                                         tx = closestPointPlusDtCoord[0] - closestPointCoord[0];
                                         ty = closestPointPlusDtCoord[1] - closestPointCoord[1];
                                     }
                                 catch (const std::out_of_range& oor)
                                     {
-                                        const node_type closestPointMinusDtCoord = tNodeMap[ closestPoint - M_dt ];
+                                        const node_type closestPointMinusDtCoord = tNodeMap.at( closestPoint - M_dt );
                                         tx =  closestPointCoord[0] - closestPointMinusDtCoord[0];
                                         ty =  closestPointCoord[1] - closestPointMinusDtCoord[1];
                                     }
@@ -375,7 +374,6 @@ namespace Feel
 
                                 const double prodVecSign = vx * ty - vy * tx > 0 ? 1 : -1;
                                 (*shape)( indexGlobDof ) = std::sqrt(closestDist) * prodVecSign;
-
                             }
                     }
 
