@@ -6,7 +6,8 @@
        Date: 2005-11-27
 
   Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2006,2007 UniversitÃ© Joseph Fourier (Grenoble I)
+  Copyright (C) 2006,2007 Universite Joseph Fourier (Grenoble I)
+  Copyright (C) 2011-2014 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -22,13 +23,8 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-/**
-   \file enums.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2005-11-27
- */
-#ifndef __FeelAlgEnums_H
-#define __FeelAlgEnums_H 1
+#ifndef FEELPP_ALG_ENUMS_HPP
+#define FEELPP_ALG_ENUMS_HPP 1
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/feelpetsc.hpp>
@@ -39,27 +35,16 @@ namespace Feel
 /**
  * Context for 'on' operation on sparse matrices
  */
-#if 0
-enum ZeroOutOptions
+enum class OnContext
 {
-    PENALISATION                = 0x1, /**< penalisation */
-    ELIMINATION                 = 0x2 /**< elimination */
+    NONE                        = 0x0, /**< none */
+    ELIMINATION                 = 0x1, /**< elimination */
+    PENALISATION                = 0x2, /**< penalisation */
+    ELIMINATION_KEEP_DIAGONAL   = 0x4, /**< enables elimination and keep diagonal entry(ie don't put 1), modify rhs accordingly */
+    ELIMINATION_SYMMETRIC       = 0x8  /**< enables elimination and make a symmetric elimination */
 };
-enum EliminationOptions
-{
-    ELIMINATION_KEEP_DIAGONAL   = 0x1, /**< enables elimination and keep diagonal entry(ie don't put 1), modify rhs accordingly */
-    ELIMINATION_SYMMETRIC       = 0x2  /**< enables elimination and make a symmetric elimination */
-};
-#else
-enum on_context_type
-{
-    ON_NONE                        = 0x0, /**< none */
-    ON_ELIMINATION                 = 0x1, /**< elimination */
-    ON_PENALISATION                = 0x2, /**< penalisation */
-    ON_ELIMINATION_KEEP_DIAGONAL   = 0x4, /**< enables elimination and keep diagonal entry(ie don't put 1), modify rhs accordingly */
-    ON_ELIMINATION_SYMMETRIC       = 0x8  /**< enables elimination and make a symmetric elimination */
-};
-#endif
+extern std::map<std::string, OnContext> OnContextMap;
+
 
 enum   MatrixProperties
 {
@@ -305,4 +290,4 @@ const auto MATSOLVER_DEFAULT = MATSOLVER_PETSC;
 #endif
 
 } // Feel
-#endif /* __FeelAlgEnums_H */
+#endif /* FEELPP_ALG_ENUMS_HPP */

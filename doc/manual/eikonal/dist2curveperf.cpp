@@ -79,6 +79,8 @@ int main( int argc, char** argv )
     const double eSH1 = std::sqrt( integrate(elements(mesh),
                                              (gradv( phi ) - gradv( initShape )) * trans( gradv( phi ) - gradv( initShape ) ) ).evaluate()(0,0) );
 
+    const double area = integrate(elements(mesh), idv(phi) < 0 ).evaluate()(0,0);
+
 
     std::ostringstream resFileName;
     resFileName<< "res_order_" <<order
@@ -91,6 +93,7 @@ int main( int argc, char** argv )
             << std::left<<std::setw(15) << "el2"
             << std::left<<std::setw(15) << "esh1"
             << std::left<<std::setw(15) << "eh1"
+            << std::left<<std::setw(15) << "area"
             << std::left<<std::setw(15) << "tinitfms"
             << std::left<<std::setw(15) << "tmarch"
             << std::endl
@@ -100,6 +103,7 @@ int main( int argc, char** argv )
             << std::left<<std::setw(15) << eL2
             << std::left<<std::setw(15) << eSH1
             << std::left<<std::setw(15) << eH1
+            << std::left<<std::setw(15) << area
             << std::left<<std::setw(15) << timeInitFms
             << std::left<<std::setw(15) << timeMarch
             << std::endl;

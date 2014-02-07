@@ -184,6 +184,7 @@ DataMap::DataMap( DataMap const & dm )
     M_myglobalelements(),
     M_mapGlobalProcessToGlobalCluster( dm.M_mapGlobalProcessToGlobalCluster ),
     M_mapGlobalClusterToGlobalProcess( dm.M_mapGlobalClusterToGlobalProcess ),
+    M_neighbor_processors( dm.M_neighbor_processors ),
     M_worldComm( dm.M_worldComm )
 {}
 DataMap::~DataMap()
@@ -206,6 +207,7 @@ DataMap::operator=( DataMap const& dm )
         M_myglobalelements = dm.M_myglobalelements;
         M_mapGlobalProcessToGlobalCluster = dm.M_mapGlobalProcessToGlobalCluster;
         M_mapGlobalClusterToGlobalProcess = dm.M_mapGlobalClusterToGlobalProcess;
+        M_neighbor_processors = dm.M_neighbor_processors;
     }
 
     return *this;

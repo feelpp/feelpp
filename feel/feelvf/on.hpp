@@ -459,7 +459,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
                                         thedof ) != dofs.end() )
                             continue;
 
-                        if ( M_on_strategy.test( ON_ELIMINATION|ON_ELIMINATION_SYMMETRIC ) )
+                        if ( M_on_strategy.test( size_type(OnContext::ELIMINATION)|size_type(OnContext::ELIMINATION_SYMMETRIC) ) )
                         {
                             DVLOG(2) << "Eliminating row " << thedof << " using value : " << __value << "\n";
 
@@ -477,8 +477,8 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
                             //M_rhs.set( thedof, __value );
                         }
 
-                        else if (  M_on_strategy.test( ON_PENALISATION ) &&
-                                   !M_on_strategy.test( ON_ELIMINATION | ON_ELIMINATION_SYMMETRIC ) )
+                        else if (  M_on_strategy.test( OnContext::PENALISATION ) &&
+                                   !M_on_strategy.test( size_type(OnContext::ELIMINATION) | size_type(OnContext::ELIMINATION_SYMMETRIC) ) )
                         {
                             __form.set( thedof, thedof, 1.0*1e30 );
                             M_rhs->set( thedof, __value*1e30 );
@@ -594,7 +594,7 @@ BOOST_PARAMETER_FUNCTION(
 
     ( optional
       ( prefix,   ( std::string ), "" )
-      ( type,   ( int ), option(_prefix=prefix,_name="on.type").template as<int>() )
+      ( type,   ( std::string ), option(_prefix=prefix,_name="on.type").template as<std::string>() )
       ( verbose,   ( bool ), option(_prefix=prefix,_name="on.verbose").template as<bool>() )
         )
     )
@@ -603,25 +603,25 @@ BOOST_PARAMETER_FUNCTION(
                                                             element,
                                                             Feel::vf::detail::getRhsVector(rhs),
                                                             expr,
-                                                            on_context_type(type) );
+                                                            size_type(OnContextMap[type]) );
     if ( verbose )
     {
         LOG(INFO) << "Dirichlet condition over : "<< nelements(range) << " faces";
-        switch( type )
+        switch( OnContextMap[type] )
         {
-        case ON_ELIMINATION:
+        case OnContext::ELIMINATION:
             LOG(INFO) << "treatment of Dirichlet condition: " << type << " (elimination, unsymmetric)";
             break;
-        case ON_ELIMINATION|ON_ELIMINATION_KEEP_DIAGONAL:
-            LOG(INFO) << "treatment of Dirichlet condition: " << type << " (elimination and keep diagonal, unsymmetric)";
-            break;
-        case ON_ELIMINATION_SYMMETRIC:
+        // case size_type(OnContext::ELIMINATION)|size_type(OnContext::ELIMINATION_KEEP_DIAGONAL):
+        //     LOG(INFO) << "treatment of Dirichlet condition: " << type << " (elimination and keep diagonal, unsymmetric)";
+        //     break;
+        case OnContext::ELIMINATION_SYMMETRIC:
             LOG(INFO) << "treatment of Dirichlet condition: " << type << " (elimination, symmetric, more expensive than unsymmetric treatment)";
             break;
-        case ON_ELIMINATION_SYMMETRIC|ON_ELIMINATION_KEEP_DIAGONAL:
-            LOG(INFO) << "treatment of Dirichlet condition: " << type << " (elimination and keep diagonal, symmetric, more expensive than unsymmetric treatment)";
-            break;
-        case ON_PENALISATION:
+        // case size_type(OnContext::ELIMINATION_SYMMETRIC)|size_type(OnContext::ELIMINATION_KEEP_DIAGONAL):
+        //     LOG(INFO) << "treatment of Dirichlet condition: " << type << " (elimination and keep diagonal, symmetric, more expensive than unsymmetric treatment)";
+        //     break;
+        case OnContext::PENALISATION:
             LOG(INFO) << "treatment of Dirichlet condition: " << type << " (penalisation, symmetric, very big value on diagonal)";
             break;
         default:

@@ -122,6 +122,44 @@ namespace Feel
         }
 
 
+        // same function as the previous one but extract the functions x(t), y(t) from a tuple
+        element_ptrtype fromParametrizedCurve( std::tuple< std::function<double(double)>, std::function<double(double)> > paramFct,
+                                               double tStart, double tEnd, double dt,
+                                               bool broadenCurveForElementDetection = true,
+                                               double broadenessAmplitude = option("gmsh.hsize").as<double>() / 2,
+                                               bool exportPoints = false,
+                                               std::string exportName=""
+                                               )
+        {
+            return this->fromParametrizedCurve( get<0>(paramFct),
+                                                get<1>(paramFct),
+                                                tStart,  tEnd,  dt,
+                                                broadenCurveForElementDetection,
+                                                broadenessAmplitude,
+                                                exportPoints,
+                                                exportName );
+        }
+
+        // same function as the previous one but extract the functions x(t), y(t), tStart, tEnd, from a tuple ( can use the functions given in curveparametrizations.hpp )
+        element_ptrtype fromParametrizedCurve( std::tuple< std::function<double(double)>, std::function<double(double)>, double, double > paramFct,
+                                               double dt,
+                                               bool broadenCurveForElementDetection = true,
+                                               double broadenessAmplitude = option("gmsh.hsize").as<double>() / 2,
+                                               bool exportPoints = false,
+                                               std::string exportName=""
+                                               )
+        {
+            return this->fromParametrizedCurve( get<0>(paramFct),
+                                                get<1>(paramFct),
+                                                get<2>(paramFct),
+                                                get<3>(paramFct),
+                                                dt,
+                                                broadenCurveForElementDetection,
+                                                broadenessAmplitude,
+                                                exportPoints,
+                                                exportName );
+        }
+
 
 
     private :

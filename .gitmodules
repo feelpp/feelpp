@@ -1,0 +1,44 @@
+[submodule "dot"]
+	path = projects/dot
+	url = https://github.com/feelpp/dot
+    fetchRecurseSubmodules = on-demand
+[submodule "fsi"]
+	path = projects/fsi
+	url = https://github.com/feelpp/fsi
+    fetchRecurseSubmodules = on-demand
+[submodule "hifimagnet"]
+	path = projects/hifimagnet
+	url = https://github.com/feelpp/hifimagnet
+    fetchRecurseSubmodules = on-demand
+[submodule "hamm"]
+	path = projects/hamm
+	url = https://github.com/feelpp/hamm
+    fetchRecurseSubmodules = on-demand
+[submodule "pmp"]
+	path = projects/pmp
+	url = https://github.com/feelpp/pmp
+    fetchRecurseSubmodules = on-demand
+[submodule "rb"]
+	path = projects/rb
+	url = https://github.com/feelpp/rb
+    fetchRecurseSubmodules = on-demand
+[submodule "rb4aero"]
+	path = projects/rb4aero
+	url = https://github.com/feelpp/rb4aero
+    fetchRecurseSubmodules = on-demand
+[submodule "cemosis"]
+	path = projects/cemosis
+	url = https://github.com/feelpp/cemosis
+    fetchRecurseSubmodules = on-demand
+[submodule "bubble"]
+	path = projects/bubble
+	url = https://github.com/feelpp/bubble
+    fetchRecurseSubmodules = on-demand
+[submodule "gazomat"]
+	path = projects/gazomat
+	url = https://github.com/feelpp/gazomat
+    fetchRecurseSubmodules = on-demand
+[submodule "po"]
+	path = projects/po
+	url = https://github.com/feelpp/po
+    fetchRecurseSubmodules = on-demand
