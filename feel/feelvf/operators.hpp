@@ -227,14 +227,14 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 struct HasTestFunction                                  \
             {                                                           \
                 static const bool result = VF_OP_SWITCH( BOOST_PP_OR( VF_OP_TYPE_IS_TRIAL( T ), VF_OP_TYPE_IS_VALUE( T ) ), false , \
-                                                         (boost::is_same<Func,fe_type>::value||boost::is_same<Func,mortar_fe_type>::value) ); \
+                                                         (boost::is_same<Func,fe_type>::value||(element_type::is_mortar&&boost::is_same<Func,mortar_fe_type>::value)) ); \
             };                                                          \
                                                                         \
             template<typename Func>                                     \
                 struct HasTrialFunction                                 \
             {                                                           \
                 static const bool result = VF_OP_SWITCH( VF_OP_TYPE_IS_TRIAL( T ), \
-                                                         (boost::is_same<Func,fe_type>::value||boost::is_same<Func,mortar_fe_type>::value), false ); \
+                                                         (boost::is_same<Func,fe_type>::value||(element_type::is_mortar&&boost::is_same<Func,mortar_fe_type>::value)), false ); \
             };                                                          \
                                                                         \
                                                                         \
@@ -318,7 +318,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 static const bool fe_ok  = mpl::if_<mpl::bool_<VF_OP_TYPE_IS_VALUE( T )>, \
                                                     mpl::bool_<true>,   \
                                                     typename mpl::or_<boost::is_same<typename ttt<basis_context_type>::type::reference_element_type, fe_type>, \
-                                                                      boost::is_same<typename ttt<basis_context_type>::type::reference_element_type, mortar_fe_type> \
+                                                                      mpl::and_<mpl::bool_<element_type::is_mortar>,boost::is_same<typename ttt<basis_context_type>::type::reference_element_type, mortar_fe_type> > \
                                                                       >::type >::type::value; \
                 struct is_zero {                                        \
                     /*static const bool value = !(dim_ok && fe_ok);*/   \
