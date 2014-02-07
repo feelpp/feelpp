@@ -661,6 +661,8 @@ struct updateDataMapProcessStandard
         const size_type nLocWithGhost=x->dof()->nLocalDofWithGhost(myrank);
         const size_type nLocWithoutGhost=x->dof()->nLocalDofWithoutGhost(myrank);
 
+        M_dm->addNeighborSubdomains( x->dof()->neighborSubdomains() );
+
         for (int proc = 0 ; proc < worldsize ; ++proc)
         {
             if ( M_cursor==0 )
@@ -1857,7 +1859,7 @@ public:
             return M_Xh.get();
         }
 
-        node_type node(int i) const
+        node_type const& node(int i) const
         {
             int size = M_t.size();
             CHECK( i < size ) <<" i  = "<<i<<" and the context has "<< size<<" points \n";
@@ -1934,6 +1936,7 @@ public:
         static const uint16_type nComponents2 = functionspace_type::nComponents2;
         static const uint16_type nComponents = functionspace_type::nComponents;
         static const uint16_type nSpaces = functionspace_type::nSpaces;
+        static const bool is_mortar = functionspace_type::is_mortar;
 
         /** @name Typedefs
          */

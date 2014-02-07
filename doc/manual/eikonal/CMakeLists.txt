@@ -27,3 +27,6 @@ feelpp_add_application(dist2walls SRCS dist2walls.cpp LINK_LIBRARIES ${FEELPP_LI
 feelpp_add_application(dist2wallsoptimized SRCS dist2wallsoptimized.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES})
 
 feelpp_add_application(dist2curve SRCS dist2curve.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES})
+feelpp_add_application(dist2curveperf SRCS dist2curveperf.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES})
+feelpp_add_application(dist2curveho SRCS dist2curveho.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES})
+feelpp_add_application(dist2paramcurve SRCS dist2paramcurve.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES})

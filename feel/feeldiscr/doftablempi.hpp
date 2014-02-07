@@ -1112,6 +1112,28 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMapExtende
     this->M_mapGlobalProcessToGlobalCluster.resize( this->M_n_localWithGhost_df[myRank],invalid_size_type_value );
 
     //------------------------------------------------------------------------------//
+    // update doftable for face
+    DofFromBoundary<self_type, fe_type> dfb( this, *M_fe );
+    face_it = mesh.interProcessFaces().first;
+    std::set<size_type> faceGhostDone;
+    for ( ; face_it!=face_en ; ++face_it )
+    {
+        auto const& elt0 = face_it->element0();
+        auto const& elt1 = face_it->element1();
+        const bool elt0isGhost = elt0.isGhostCell();
+        auto const& eltOffProc = (elt0isGhost)?elt0:elt1;
+        for ( size_type f = 0; f < mesh.numLocalFaces(); f++ )
+        {
+            auto const& theface = eltOffProc.face(f);
+            if ( theface.isGhostCell() && faceGhostDone.find( theface.id() ) == faceGhostDone.end() )
+            {
+                auto faceIt = mesh.faceIterator( theface.id() );
+                dfb.add( faceIt );
+                faceGhostDone.insert( theface.id() );
+            }
+        }
+    }
+    //------------------------------------------------------------------------------//
     // update M_locglob_indices and M_locglob_signs
     face_it = mesh.interProcessFaces().first;
     for ( ; face_it!=face_en ; ++face_it )

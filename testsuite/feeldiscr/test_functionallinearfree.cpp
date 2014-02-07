@@ -101,8 +101,9 @@ testFunctionalLinearFree()
     double norm_vector_functional = vector_functional->l2Norm();
     double norm_vector_functionalfree = vector_functionalfree->l2Norm();
 
-    BOOST_CHECK_SMALL( math::abs(result-resultfree), 1e-15 );
-    BOOST_CHECK_SMALL( math::abs(norm_vector_functional-norm_vector_functionalfree), 1e-15 );
+    double epsilon=1e-13;
+    BOOST_CHECK_SMALL( math::abs(result-resultfree), epsilon );
+    BOOST_CHECK_SMALL( math::abs(norm_vector_functional-norm_vector_functionalfree), epsilon );
 }
 
 
@@ -154,9 +155,10 @@ testFunctionalLinearComposite()
     double result = functional->operator()( element );
     double result_free = functionalfree->operator()( element );
 
-    BOOST_CHECK_SMALL( math::abs(result_composite-result_compositefree), 5.7e-14 );
-    BOOST_CHECK_SMALL( math::abs(result-result_compositefree), 5.7e-14 );
-    BOOST_CHECK_SMALL( math::abs(result_free-result_compositefree), 1e-15 );
+    double epsilon=1e-13;
+    BOOST_CHECK_SMALL( math::abs(result_composite-result_compositefree), epsilon );
+    BOOST_CHECK_SMALL( math::abs(result-result_compositefree), epsilon );
+    BOOST_CHECK_SMALL( math::abs(result_free-result_compositefree), epsilon );
 
 
     //test access functions
@@ -187,13 +189,13 @@ testFunctionalLinearComposite()
     double norm_vectorfree1 = vector_free1->l2Norm();
     double norm_vectorfree2 = vector_free2->l2Norm();
 
-    BOOST_CHECK_SMALL( math::abs(norm_vector_composite1 - norm_vector_compositefree1 ), 1e-15 );
-    BOOST_CHECK_SMALL( math::abs(norm_vector_composite2 - norm_vector_compositefree2 ), 1e-15 );
-    BOOST_CHECK_SMALL( math::abs(norm_vector1 - norm_vector_composite1 ), 1e-15 );
-    BOOST_CHECK_SMALL( math::abs(norm_vector2 - norm_vector_composite2 ), 1e-15 );
-    BOOST_CHECK_SMALL( math::abs(norm_vector2 - norm_vector_compositefree2 ), 1e-15 );
-    BOOST_CHECK_SMALL( math::abs(norm_vectorfree2 - norm_vector_compositefree2 ), 1e-15 );
-    BOOST_CHECK_SMALL( math::abs(norm_vectorfree1 - norm_vector_compositefree1 ), 1e-15 );
+    BOOST_CHECK_SMALL( math::abs(norm_vector_composite1 - norm_vector_compositefree1 ), epsilon );
+    BOOST_CHECK_SMALL( math::abs(norm_vector_composite2 - norm_vector_compositefree2 ), epsilon );
+    BOOST_CHECK_SMALL( math::abs(norm_vector1 - norm_vector_composite1 ), epsilon );
+    BOOST_CHECK_SMALL( math::abs(norm_vector2 - norm_vector_composite2 ), epsilon );
+    BOOST_CHECK_SMALL( math::abs(norm_vector2 - norm_vector_compositefree2 ), epsilon );
+    BOOST_CHECK_SMALL( math::abs(norm_vectorfree2 - norm_vector_compositefree2 ), epsilon );
+    BOOST_CHECK_SMALL( math::abs(norm_vectorfree1 - norm_vector_compositefree1 ), epsilon );
 
     //test sum of all vectors
     bool scalars_are_one=true;
@@ -210,9 +212,9 @@ testFunctionalLinearComposite()
     double norm_sum_functional = vec->l2Norm();
     double norm_sum_functionalfree = vec_free->l2Norm();
 
-    BOOST_CHECK_SMALL( math::abs(norm_sum_composite - norm_sum_functional), 1e-14 );
-    BOOST_CHECK_SMALL( math::abs(norm_sum_compositefree - norm_sum_functionalfree), 1e-14 );
-    BOOST_CHECK_SMALL( math::abs(norm_sum_compositefree - norm_sum_functional), 1e-14 );
+    BOOST_CHECK_SMALL( math::abs(norm_sum_composite - norm_sum_functional), epsilon );
+    BOOST_CHECK_SMALL( math::abs(norm_sum_compositefree - norm_sum_functionalfree), epsilon );
+    BOOST_CHECK_SMALL( math::abs(norm_sum_compositefree - norm_sum_functional), epsilon );
 
 }
 /**

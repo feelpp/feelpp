@@ -390,6 +390,19 @@ public:
 
     void updateDataInWorld();
 
+
+    typename std::set<rank_type>::const_iterator beginNeighborSubdomains() const { return M_neighbor_processors.begin(); }
+    typename std::set<rank_type>::const_iterator endNeighborSubdomains() const { return M_neighbor_processors.end(); }
+    std::set<rank_type> const& neighborSubdomains() const { return M_neighbor_processors; }
+    void setNeighborSubdomains( std::set<rank_type> const& neigh) { M_neighbor_processors=neigh; }
+    void addNeighborSubdomain( rank_type p ) { M_neighbor_processors.insert( p ); }
+    void addNeighborSubdomains( std::set<rank_type> const& neigh )
+    {
+        for ( rank_type procIdNeigh : neigh )
+            M_neighbor_processors.insert( procIdNeigh );
+    }
+
+
     //! \return true if DataMap is close, false otherwise
     bool closed() const
     {
@@ -488,10 +501,15 @@ protected:
     std::vector<size_type> M_mapGlobalClusterToGlobalProcess;
 
     /**
+     *The processors who neighbor the current processor
+     */
+    std::set<rank_type> M_neighbor_processors;
+
+    /**
      * Communicator
      */
-    //mpi::communicator M_comm;
     WorldComm M_worldComm;
+
 private:
 
 };

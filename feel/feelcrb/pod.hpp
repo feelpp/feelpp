@@ -461,19 +461,45 @@ int POD<TruthModelType>::pod( mode_set_type& ModeSet, bool is_primal, const wn_t
     //tab will contains index of maximum eigenvalues
     std::vector<int> max_idx;
     std::vector<double> copy_eigen_values ( eigen_values );
-    for(int maxmode=0; maxmode<M_Nm; maxmode++)
+    int number_of_good_eigenvectors=0;
+    bool go = true;
+    double min_eigenvalue = option(_name="pod.minimum-eigenvalue").template as<double>();
+    //for(int maxmode=0; maxmode<M_Nm; maxmode++)
+    auto max = std::max_element( copy_eigen_values.begin(), copy_eigen_values.end() );
+    double idx = std::distance( copy_eigen_values.begin(), max );
+    if( *max < min_eigenvalue )
+        go=false;
+    while( go )
     {
-        auto max = std::max_element( copy_eigen_values.begin(), copy_eigen_values.end() );
-        double idx = std::distance( copy_eigen_values.begin(), max );
+        number_of_good_eigenvectors++;
         max_idx.push_back( idx );
         copy_eigen_values[idx]=0;
+        max = std::max_element( copy_eigen_values.begin(), copy_eigen_values.end() );
+        idx = std::distance( copy_eigen_values.begin(), max );
+        if( *max < min_eigenvalue )
+            go = false;
+        if( number_of_good_eigenvectors == M_Nm )
+            go = false;
+        if( number_of_good_eigenvectors == number_of_eigenvalues )
+            go = false;
     }
 
+    CHECK( number_of_good_eigenvectors > 0 )<<"The max eigenvalue "<<*max<<" is under the minimum eigenvalue set by the user "<<min_eigenvalue<<" and we have zero eigenvectors !\n";
+
     int position_of_largest_eigenvalue=max_idx[0];
-    int number_of_good_eigenvectors = number_of_eigenvalues - too_small_index;
+
+    if( M_Nm == -1 )
+    {
+        //in this case the user doesn't know a priori
+        //what value give to M_Nm
+        //this case appears for when apply-POD-to-WN=true
+        M_Nm = number_of_good_eigenvectors;
+    }
     if ( M_Nm > number_of_good_eigenvectors && number_of_good_eigenvectors>0 && is_primal )
     {
-        M_Nm=number_of_good_eigenvectors;
+        //in this case, the user set M_Nm but with respect to
+        //the minimum eigenvalue set, we don't find enough eigenvectors
+        M_Nm = number_of_good_eigenvectors;
     }
 
     for ( int i=0; i<M_Nm; i++ )
@@ -503,7 +529,6 @@ int POD<TruthModelType>::pod( mode_set_type& ModeSet, bool is_primal, const wn_t
             {
                 double psi_k = real( eigen_solver.eigenvectors().col( position_of_largest_eigenvalue )[index] );
                 mode->add( psi_k , elements_set[j] );
-                double nn = elements_set[j].l2Norm();
                 index++;
             }
         }//if use elements set
@@ -536,7 +561,7 @@ int POD<TruthModelType>::pod( mode_set_type& ModeSet, bool is_primal, const wn_t
             {
                 auto modej = ModeSet[j-1];
                 double prod = M_model->scalarProductForPod( modei , modej );
-                CHECK( prod < 1e-11 )<<"scalar product between mode "<<i<<" and mode "<<j<<" is not null and is "<<prod<<"\n";
+                CHECK( prod < 1e-10 )<<"scalar product between mode "<<i<<" and mode "<<j<<" is not null and is "<<prod<<"\n";
             }
             double eigenvalue = eigen_values[ position_of_largest_eigenvalue ];
             double prod = M_model->scalarProductForPod( modei , modei );

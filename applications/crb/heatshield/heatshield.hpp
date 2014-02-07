@@ -50,7 +50,7 @@
 #include <feel/feelcrb/parameterspace.hpp>
 #include <feel/feelcrb/modelcrbbase.hpp>
 
-#include <feel/feeldiscr/bdf2.hpp>
+#include <feel/feelts/bdf.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/LU>
@@ -72,6 +72,7 @@ makeHeatShieldOptions()
     // mesh parameters
     ( "hsize", Feel::po::value<double>()->default_value( 1e-1 ), "first h value to start convergence" )
     ( "mshfile", Feel::po::value<std::string>()->default_value( "" ), "name of the gmsh file input")
+    ( "do-not-use-operators-free", Feel::po::value<bool>()->default_value( true ), "never use operators free if true" )
     ( "do-export", Feel::po::value<bool>()->default_value( false ), "export results if true" )
     ( "beta.A0", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for A0" )
     ( "beta.A1", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for A1" )
@@ -909,22 +910,45 @@ void HeatShield<Order>::initModel()
 
     M_bdf = bdf( _space=Xh, _vm=M_vm, _name="heatshield" , _prefix="heatshield" );
 
-
-    M_Aqm_free.resize( this->Qa() );
-    for(int q=0; q<Qa(); q++)
-        M_Aqm_free[q].resize( 1 );
-
-    M_Mqm_free.resize( this->Qm() );
-    for(int q=0; q<Qm(); q++)
-        M_Mqm_free[q].resize( 1 );
-
-    M_Fqm_free.resize( this->Nl() );
-    for(int l=0; l<Nl(); l++)
+    bool dont_use_operators_free = option(_name="do-not-use-operators-free").template as<bool>() ;
+    if( dont_use_operators_free )
     {
-        M_Fqm_free[l].resize( Ql(l) );
-        for(int q=0; q<Ql(l) ; q++)
+        M_Aqm.resize( this->Qa() );
+        for(int q=0; q<Qa(); q++)
+            M_Aqm[q].resize( 1 );
+
+        M_Mqm.resize( this->Qm() );
+        for(int q=0; q<Qm(); q++)
+            M_Mqm[q].resize( 1 );
+
+        M_Fqm.resize( this->Nl() );
+        for(int l=0; l<Nl(); l++)
         {
-            M_Fqm_free[l][q].resize(1);
+            M_Fqm[l].resize( Ql(l) );
+            for(int q=0; q<Ql(l) ; q++)
+            {
+                M_Fqm[l][q].resize(1);
+            }
+        }
+    }
+    else
+    {
+        M_Aqm_free.resize( this->Qa() );
+        for(int q=0; q<Qa(); q++)
+            M_Aqm_free[q].resize( 1 );
+
+        M_Mqm_free.resize( this->Qm() );
+        for(int q=0; q<Qm(); q++)
+            M_Mqm_free[q].resize( 1 );
+
+        M_Fqm_free.resize( this->Nl() );
+        for(int l=0; l<Nl(); l++)
+        {
+            M_Fqm_free[l].resize( Ql(l) );
+            for(int q=0; q<Ql(l) ; q++)
+            {
+                M_Fqm_free[l][q].resize(1);
+            }
         }
     }
 
@@ -942,11 +966,11 @@ void HeatShield<Order>::initModel()
     LOG(INFO) << "Number of dof " << Xh->nLocalDof() << "\n";
 
     assemble();
-    PsLogger ps("ps-Model");
-    ps.log("after assemble");
-    if (option(_name="crb.stock-matrices").template as<bool>() )
+    //PsLogger ps("ps-Model");
+    //ps.log("after assemble");
+    if (option(_name="crb.stock-matrices").template as<bool>() && !dont_use_operators_free )
         stockAffineDecomposition();
-    ps.log("after stocking matrices");
+    //ps.log("after stocking matrices");
 
 
 } // HeatShield::init
@@ -961,33 +985,51 @@ void HeatShield<Order>::assemble()
     u = Xh->element();
     v = Xh->element();
 
-    auto expr_a00 = integrate( _range= elements( mesh ), _expr= gradt( u )*trans( grad( v ) ) );
-    auto operatorfree00=opLinearFree( _domainSpace=Xh , _imageSpace=Xh , _expr=expr_a00 , _backend=backend );
-    operatorfree00->setName("A0");
-    M_Aqm_free[0][0]=operatorfree00;
+    if( option(_name="do-not-use-operators-free").template as<bool>() )
+    {
+        M_Aqm[0][0] = backend->newMatrix( Xh, Xh );
+        M_Aqm[1][0] = backend->newMatrix( Xh, Xh );
+        M_Aqm[2][0] = backend->newMatrix( Xh, Xh );
+        M_Mqm[0][0] = backend->newMatrix( Xh, Xh );
+        M_Fqm[0][0][0] = backend->newVector( Xh );
+        M_Fqm[1][0][0] = backend->newVector( Xh );
+        form2(Xh, Xh, M_Aqm[0][0]) = integrate( _range= elements( mesh ), _expr= gradt( u )*trans( grad( v ) ) );
+        form2(Xh, Xh, M_Aqm[1][0]) = integrate( _range= markedfaces( mesh, "left" ), _expr= idt( u )*id( v ) );
+        form2(Xh, Xh, M_Aqm[2][0]) = integrate( _range= markedfaces( mesh, "gamma_holes" ), _expr= idt( u )*id( v ) );
+        form2(Xh, Xh, M_Mqm[0][0]) = integrate ( _range=elements( mesh ), _expr=idt( u )*id( v ) );
+        form1(Xh, M_Fqm[0][0][0]) = integrate( _range=markedfaces( mesh,"left" ), _expr= id( v ) ) ;
+        form1(Xh, M_Fqm[1][0][0]) = integrate( _range=elements( mesh ), _expr= id( v ) ) ;
+    }
+    else
+    {
+        auto expr_a00 = integrate( _range= elements( mesh ), _expr= gradt( u )*trans( grad( v ) ) );
+        auto operatorfree00=opLinearFree( _domainSpace=Xh , _imageSpace=Xh , _expr=expr_a00 , _backend=backend );
+        operatorfree00->setName("A0");
+        M_Aqm_free[0][0]=operatorfree00;
 
-    auto expr_a10  = integrate( _range= markedfaces( mesh, "left" ), _expr= idt( u )*id( v ) );
-    auto operatorfree10=opLinearFree( _domainSpace=Xh , _imageSpace=Xh , _expr=expr_a10 , _backend=backend );
-    operatorfree10->setName("A1");
-    M_Aqm_free[1][0]=operatorfree10;
+        auto expr_a10  = integrate( _range= markedfaces( mesh, "left" ), _expr= idt( u )*id( v ) );
+        auto operatorfree10=opLinearFree( _domainSpace=Xh , _imageSpace=Xh , _expr=expr_a10 , _backend=backend );
+        operatorfree10->setName("A1");
+        M_Aqm_free[1][0]=operatorfree10;
 
-    auto expr_a20  = integrate( _range= markedfaces( mesh, "gamma_holes" ), _expr= idt( u )*id( v ) );
-    auto operatorfree20=opLinearFree( _domainSpace=Xh , _imageSpace=Xh , _expr=expr_a20 , _backend=backend );
-    operatorfree20->setName("A2");
-    M_Aqm_free[2][0]=operatorfree20;
+        auto expr_a20  = integrate( _range= markedfaces( mesh, "gamma_holes" ), _expr= idt( u )*id( v ) );
+        auto operatorfree20=opLinearFree( _domainSpace=Xh , _imageSpace=Xh , _expr=expr_a20 , _backend=backend );
+        operatorfree20->setName("A2");
+        M_Aqm_free[2][0]=operatorfree20;
 
-    auto expr_f000 = integrate( _range=markedfaces( mesh,"left" ), _expr= id( v ) ) ;
-    auto functionalfree000 = functionalLinearFree( _space=Xh , _expr=expr_f000 , _backend=backend );
-    auto expr_f100 = integrate( _range=elements( mesh ), _expr= id( v ) ) ;
-    auto functionalfree100 = functionalLinearFree( _space=Xh , _expr=expr_f100 , _backend=backend );
-    M_Fqm_free[0][0][0]=functionalfree000;
-    M_Fqm_free[1][0][0]=functionalfree100;
+        auto expr_f000 = integrate( _range=markedfaces( mesh,"left" ), _expr= id( v ) ) ;
+        auto functionalfree000 = functionalLinearFree( _space=Xh , _expr=expr_f000 , _backend=backend );
+        auto expr_f100 = integrate( _range=elements( mesh ), _expr= id( v ) ) ;
+        auto functionalfree100 = functionalLinearFree( _space=Xh , _expr=expr_f100 , _backend=backend );
+        M_Fqm_free[0][0][0]=functionalfree000;
+        M_Fqm_free[1][0][0]=functionalfree100;
 
-    //mass matrix
-    auto expr_m00 = integrate ( _range=elements( mesh ), _expr=idt( u )*id( v ) );
-    auto operatorfreeM10=opLinearFree( _domainSpace=Xh , _imageSpace=Xh , _expr=expr_m00 , _backend=backend );
-    operatorfreeM10->setName("mass");
-    M_Mqm_free[0][0]=operatorfreeM10;
+        //mass matrix
+        auto expr_m00 = integrate ( _range=elements( mesh ), _expr=idt( u )*id( v ) );
+        auto operatorfreeM10=opLinearFree( _domainSpace=Xh , _imageSpace=Xh , _expr=expr_m00 , _backend=backend );
+        operatorfreeM10->setName("mass");
+        M_Mqm_free[0][0]=operatorfreeM10;
+    }
 
     //for scalarProduct
     M = backend->newMatrix( _test=Xh, _trial=Xh );
@@ -1015,19 +1057,19 @@ void HeatShield<Order>::assemble()
     D = backend->newMatrix( Xh, Xh );
     F = backend->newVector( Xh );
 
-
-    M_compositeA = opLinearComposite( _domainSpace=Xh , _imageSpace=Xh );
-    M_compositeA->addList( M_Aqm_free );
-    M_compositeM = opLinearComposite( _domainSpace=Xh , _imageSpace=Xh );
-    M_compositeM->addList( M_Mqm_free );
-    M_compositeF.resize( this->Nl() );
-    for(int output=0; output<this->Nl(); output++)
+    if( ! option(_name="do-not-use-operators-free").template as<bool>() )
     {
-        M_compositeF[output]=functionalLinearComposite( _space=Xh );
-        M_compositeF[output]->addList( M_Fqm_free[output] );
+        M_compositeA = opLinearComposite( _domainSpace=Xh , _imageSpace=Xh );
+        M_compositeA->addList( M_Aqm_free );
+        M_compositeM = opLinearComposite( _domainSpace=Xh , _imageSpace=Xh );
+        M_compositeM->addList( M_Mqm_free );
+        M_compositeF.resize( this->Nl() );
+        for(int output=0; output<this->Nl(); output++)
+        {
+            M_compositeF[output]=functionalLinearComposite( _space=Xh );
+            M_compositeF[output]->addList( M_Fqm_free[output] );
+        }
     }
-
-
 
 }
 

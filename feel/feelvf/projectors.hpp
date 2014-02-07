@@ -220,8 +220,6 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
 
     const uint16_type ndofv = functionspace_type::fe_type::nDof;
 
-    //iterator_type it, en;
-    //boost::tie( boost::tuples::ignore, it, en ) = M_range;
     auto it = M_range.template get<1>();
     auto const en = M_range.template get<2>();
 
@@ -370,7 +368,8 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
 
     // mesh element
     typedef typename element_type::functionspace_type::mesh_type::element_type geoelement_type;
-    typedef typename geoelement_type::face_type face_type;
+    typedef typename element_type::functionspace_type::mesh_type::face_type face_type;
+    //typedef typename geoelement_type::face_type face_type;
 
     // geometric mapping context
     typedef typename geoelement_type::gm_type gm_type;
@@ -415,8 +414,8 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
 
     fe_type const* __fe = __v.functionSpace()->fe().get();
 
-    iterator_type __face_it, __face_en;
-    boost::tie( boost::tuples::ignore, __face_it, __face_en ) = M_range;
+    auto __face_it = M_range.template get<1>();
+    auto const __face_en = M_range.template get<2>();
 
     if ( __face_it == __face_en )
         return __v;
@@ -452,10 +451,10 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
             FEELPP_ASSERT( __geopc1[__f][__p]->nPoints() ).error( "invalid number of points for geopc1" );
         }
     }
-
-    uint16_type __face_id = __face_it->pos_first();
-    gmc_ptrtype __c( new gmc_type( __gm, __face_it->element( 0 ), __geopc, __face_id ) );
-    gmc1_ptrtype __c1( new gmc1_type( __gm1, __face_it->element( 0 ), __geopc1, __face_id ) );
+    face_type const& firstFace = *__face_it;
+    uint16_type __face_id = firstFace.pos_first();
+    gmc_ptrtype __c( new gmc_type( __gm, firstFace.element( 0 ), __geopc, __face_id ) );
+    gmc1_ptrtype __c1( new gmc1_type( __gm1, firstFace.element( 0 ), __geopc1, __face_id ) );
 
     map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
     t_expr_type expr( basis_type::isomorphism( M_expr ), mapgmc );
@@ -482,21 +481,22 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
 
     for ( ; __face_it != __face_en; ++__face_it )
     {
-        FEELPP_ASSERT( __face_it->isOnBoundary() && !__face_it->isConnectedTo1() )
-        ( __face_it->marker() )
-        ( __face_it->isOnBoundary() )
-        ( __face_it->ad_first() )
-        ( __face_it->pos_first() )
-        ( __face_it->ad_second() )
-        ( __face_it->pos_second() )
-        ( __face_it->id() ).warn( "inconsistent data face" );
-        DVLOG(2) << "[projector] FACE_ID = " << __face_it->id()
-                      << " element id= " << __face_it->ad_first()
-                      << " pos in elt= " << __face_it->pos_first()
-                      << " marker: " << __face_it->marker() << "\n";
-        DVLOG(2) << "[projector] FACE_ID = " << __face_it->id() << " real pts=" << __face_it->G() << "\n";
+        face_type const& curFace = *__face_it;
+        FEELPP_ASSERT( curFace.isOnBoundary() && !curFace.isConnectedTo1() )
+        ( curFace.marker() )
+        ( curFace.isOnBoundary() )
+        ( curFace.ad_first() )
+        ( curFace.pos_first() )
+        ( curFace.ad_second() )
+        ( curFace.pos_second() )
+        ( curFace.id() ).warn( "inconsistent data face" );
+        DVLOG(2) << "[projector] FACE_ID = " << curFace.id()
+                      << " element id= " << curFace.ad_first()
+                      << " pos in elt= " << curFace.pos_first()
+                      << " marker: " << curFace.marker() << "\n";
+        DVLOG(2) << "[projector] FACE_ID = " << curFace.id() << " real pts=" << curFace.G() << "\n";
 
-        uint16_type __face_id = __face_it->pos_first();
+        uint16_type __face_id = curFace.pos_first();
 
         std::pair<size_type,size_type> range_dof( std::make_pair( __v.start(),
                 __v.functionSpace()->nDof() ) );
@@ -509,9 +509,9 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
         case GeomapStrategyType::GEOMAP_OPT:
         case GeomapStrategyType::GEOMAP_HO:
         {
-            __c->update( __face_it->element( 0 ), __face_id );
-            DVLOG(2) << "[projector] FACE_ID = " << __face_it->id() << "  ref pts=" << __c->xRefs() << "\n";
-            DVLOG(2) << "[projector] FACE_ID = " << __face_it->id() << " real pts=" << __c->xReal() << "\n";
+            __c->update( curFace.element( 0 ), __face_id );
+            DVLOG(2) << "[projector] FACE_ID = " << curFace.id() << "  ref pts=" << __c->xRefs() << "\n";
+            DVLOG(2) << "[projector] FACE_ID = " << curFace.id() << " real pts=" << __c->xReal() << "\n";
 
             map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
 
@@ -525,7 +525,7 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
                         typename expression_type::value_type __value = expr.evalq( c1, c2, l );
 
                         size_type thedof =  __v.start() +
-                                            boost::get<0>( __dof->faceLocalToGlobal( __face_it->id(), l, c1 ) );
+                                            boost::get<0>( __dof->faceLocalToGlobal( curFace.id(), l, c1 ) );
 
                         if ( sum )
                             __v( thedof ) +=  __value;
@@ -539,9 +539,9 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
 
         case GeomapStrategyType::GEOMAP_O1:
         {
-            __c1->update( __face_it->element( 0 ), __face_id );
-            DVLOG(2) << "[projector] FACE_ID = " << __face_it->id() << "  ref pts=" << __c1->xRefs() << "\n";
-            DVLOG(2) << "[projector] FACE_ID = " << __face_it->id() << " real pts=" << __c1->xReal() << "\n";
+            __c1->update( curFace.element( 0 ), __face_id );
+            DVLOG(2) << "[projector] FACE_ID = " << curFace.id() << "  ref pts=" << __c1->xRefs() << "\n";
+            DVLOG(2) << "[projector] FACE_ID = " << curFace.id() << " real pts=" << __c1->xReal() << "\n";
 
             map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
 
@@ -556,7 +556,7 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
                         typename expression_type::value_type __value = expr1.evalq( c1, c2, l );
 
                         size_type thedof =  __v.start() +
-                                            boost::get<0>( __dof->faceLocalToGlobal( __face_it->id(), l, c1 ) );
+                                            boost::get<0>( __dof->faceLocalToGlobal( curFace.id(), l, c1 ) );
 
                         if ( sum )
                             __v( thedof ) +=  __value;

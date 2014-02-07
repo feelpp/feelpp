@@ -26,9 +26,9 @@ ReinitializerFMS( functionspace_ptrtype const& __functionspace,
     M_neighbors(),
     M_coords( __functionspace->dof()->nDof() ),
     M_translation( __periodicity.translation() ),
-    firstDof( M_functionspace->dof()->firstDofGlobalCluster() ),
-    ndofOnCluster( __functionspace->dof()->nDof() )
+    firstDof( M_functionspace->dof()->firstDofGlobalCluster() )
 {
+
     const uint16_type ndofv = functionspace_type::fe_type::nDof;
 
     auto it = M_functionspace->mesh()->beginElementWithProcessId();
@@ -55,37 +55,45 @@ ReinitializerFMS( functionspace_ptrtype const& __functionspace,
                       M_neighbors[indices[k]].insert( indices[j] );
                     }
         }
-
 }
 
 template<typename FunctionSpaceType, typename periodicity_type>
 void
 ReinitializerFMS<FunctionSpaceType, periodicity_type>::
-reduceDonePoints(element_type const& __v, heap_type& theHeap, element_type& status, std::set<size_type>& done )
+reduceDonePoints(element_type const& __v, element_type& status, std::set<size_type>& done )
 {
   /*  Communicate the DONE points across all the processes  */
 
   if (Environment::worldComm().size() == 1)
-    return ;
+    {
+      nbTotalDone = done.size();
+      return ;
+    }
 
   /* make the sum of the DONE(=2) + FAR(=0)
      the sum is then communicated through all the processors ( close() ) */
   checkStatus->zero();
 
   for (size_type k = 0 ; k < M_functionspace->nLocalDof() ; ++k)
-    checkStatus->add(k, status(k) == DONE ? 1 : 0);
+      checkStatus->add(k, status(k) == DONE ? 1 : 0);
 
   // communications are done here. The sum of the real values and ghost values is done
   // thus if a dof has been set to DONE, even on a ghost value, checkStatus is 1
   checkStatus->close();
 
+  int nbDoneWithoutGhost=0;
   for (size_type k = 0 ; k < M_functionspace->nLocalDof() ; ++k)
     if ( (*checkStatus)(k) )
       {
         done.insert( k );
         status.set(k, DONE);
+        if (! M_functionspace->dof()->dofGlobalProcessIsGhost( k ) )
+          ++nbDoneWithoutGhost;    
       }
-
+       
+  nbTotalDone = mpi::all_reduce(Environment::worldComm().globalComm(),
+                                nbDoneWithoutGhost,
+                                std::plus<size_type>() );
 }
 
 
@@ -151,6 +159,9 @@ reduceClosePoints(heap_type& theHeap, element_type& status )
                   else
                     theHeap.push( newEntry );
                 }
+
+          status(k) = CLOSE;
+
         }
 }
 
@@ -179,18 +190,19 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
 
     /* VD, sometime, I need to give myself the elements which are already done, thus use marker2*/
     if (useMarker2AsDoneMarker)
-        {
-            auto it_marked = M_functionspace->mesh()->elementsWithMarker2(1, M_functionspace->mesh()->worldComm().localRank()).first;
-            auto en_marked = M_functionspace->mesh()->elementsWithMarker2(1, M_functionspace->mesh()->worldComm().localRank()).second;
+      {
+        auto it_marked = M_functionspace->mesh()->elementsWithMarker2(1, M_functionspace->mesh()->worldComm().localRank()).first;
+        auto en_marked = M_functionspace->mesh()->elementsWithMarker2(1, M_functionspace->mesh()->worldComm().localRank()).second;
 
-            for ( ; it_marked!=en_marked ; ++it_marked )
-                    for ( uint16_type j = 0; j < ndofv; ++j )
-                        {
-                            size_type index = M_functionspace->dof()->localToGlobal(*it_marked, j, 0).index();
-                            done.insert( index );
-                            status[index] = DONE;
-                        }
-        }
+        for ( ; it_marked!=en_marked ; ++it_marked )
+          for ( uint16_type j = 0; j < ndofv; ++j )
+            {
+              size_type index = M_functionspace->dof()->localToGlobal(*it_marked, j, 0).index();
+              done.insert( index );
+              status[index] = DONE;
+            }
+      }
+
     else
         {
           auto it = M_functionspace->mesh()->beginElementWithProcessId();
@@ -221,65 +233,61 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
                 }
         }
 
-    heap_type theHeap;
-
     // //communicate the DONE list between all the proc
-    if ( ! useMarker2AsDoneMarker )
-      reduceDonePoints(__v, theHeap, status, done );
+    reduceDonePoints(__v, status, done );
 
+    heap_type theHeap;
     // initialize close distances in heap and mark close points in status array
     for ( auto dit = done.begin(); dit != done.end(); ++dit )
       fmsHeapUpdate( *dit, __v, status, theHeap );
 
     done.clear(); // not needed any more, save memory...
 
-    reduceClosePoints( theHeap, status );
 
-#if 0
     // for debug purpuses only
-    auto checkHeap = [&] ()
+    auto checkHeap = [&] (std::string msg)
         {
+#if 0
         for (auto entry : theHeap )
           CHECK( status( entry.second ) == CLOSE )
+            << std::endl << msg << std::endl
             << "on proc " << Environment::worldComm().rank()
             << " the entry at ldof "<< entry.second
             << " and entry at cdof "<< processorToCluster( entry.second )
             << " is marked as " << status( entry.first ) <<std::endl ;
-      };
 #endif
+        };
 
-    size_type sumAllSizes= mpi::all_reduce(Environment::worldComm().globalComm(),
-                                           theHeap.size(),
-                                           std::plus<size_type>() );
 
-    // marching loop
-    // continue since all the Heap are not at 0
-    int count_iteration = 0;
+    checkHeap( "before reduce close points" );
+    reduceClosePoints( theHeap, status );
+    checkHeap( "after reduce close points" );
 
-    while ( sumAllSizes )
+    auto minNewEntry = [](std::pair<heap_entry_type, size_type> a,
+                          std::pair<heap_entry_type, size_type> b)
+      { // return the entry having the minimum abs(phi) value
+        return std::abs(a.first.first) < std::abs(b.first.first) ? a : b; };
+
+
+    const int nbTotalIterFM = M_functionspace->dof()->nDof() - nbTotalDone;
+
+    unsigned int count_iteration=0;
+        
+    for (int i=0; i<nbTotalIterFM; ++i)
       {
-
         /*VD : the heap is sorted with the smallest phi value
           at the top.
           thus, the new accepted element is always the top of the heap */
 
-        auto newAccepted = theHeap.front();
+        // contains entry type and global index on Cluster
+        std::pair<heap_entry_type, size_type> newAccepted = { theHeap.front(), processorToCluster(theHeap.front().second) };
 
         // the real new accepted value is the min of all the phi computed in the heaps
         newAccepted = mpi::all_reduce(Environment::worldComm().globalComm(),
                                       newAccepted,
-                                      theHeap.min);
+                                      minNewEntry);
 
-        size_type newIdOnCluster = 0;
-        // extract the global on cluster index of the point accepted
-        if ( theHeap.front() == newAccepted )
-          newIdOnCluster = processorToCluster(newAccepted.second);
-
-
-        // propagate the global id on cluster of the new accepted to all the proc
-        newIdOnCluster = mpi::all_reduce(Environment::worldComm().globalComm(),
-                                         newIdOnCluster,
-                                         mpi::maximum<size_type>() );
+        size_type newIdOnCluster = newAccepted.second;
 
         bool dofIsPresentOnProcess = false;
 
@@ -302,24 +310,19 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
 
             status[newIdOnProc] = DONE;
 
-            __v[newIdOnProc] = newAccepted.first;
+            __v[newIdOnProc] = newAccepted.first.first;
 
             fmsHeapUpdate( newIdOnProc, __v, status, theHeap );
 
             if (M_periodicity.isPeriodic())
-              updatePeriodicPoint(newAccepted, __v, status, theHeap);
+              updatePeriodicPoint(newAccepted.first, __v, status, theHeap);
 
           }
 
-        sumAllSizes = mpi::all_reduce(Environment::worldComm().globalComm(),
-                                      theHeap.size(),
-                                      std::plus<size_type>() );
-
-        // avoid infinite loop if a heap is not cleaned correctly for any reason
-        // CHECK(++count_iteration < ndofOnCluster)<<"something is wrong in fastmarching loop. The march should converge in less than ndofOnCluster = "
-        //                                         <<ndofOnCluster<<" iterations and still has not converged in "<<count_iteration<<" iterations"<<std::endl;
+        checkHeap("in loop");
 
 #if defined( FM_EXPORT )
+        count_iteration++;
         ex->step(count_iteration)->add("v", __v);
         ex->step(count_iteration)->add("status", status);
         ex->save();

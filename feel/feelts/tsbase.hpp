@@ -90,6 +90,7 @@ public:
         M_n_restart( 0 ),
         M_restart( false ),
         M_restartPath( "" ),
+        M_restartStepBeforeLastSave( 0 ),
         M_restartAtLastSave( false ),
         M_saveInFile( true ),
         M_saveFreq( 1 ),
@@ -112,6 +113,7 @@ public:
         M_n_restart( 0 ),
         M_restart( vm[prefixvm( prefix, "bdf.restart" )].as<bool>() ),
         M_restartPath( vm[prefixvm( prefix, "bdf.restart.path" )].as<std::string>() ),
+        M_restartStepBeforeLastSave( vm[prefixvm( prefix, "bdf.restart.step-before-last-save" )].as<int>() ),
         M_restartAtLastSave( vm[prefixvm( prefix, "bdf.restart.at-last-save" )].as<bool>() ),
         M_saveInFile( vm[prefixvm( prefix, "bdf.save" )].as<bool>() ),
         M_saveFreq( vm[prefixvm( prefix, "bdf.save.freq" )].as<int>() ),
@@ -134,6 +136,7 @@ public:
         M_n_restart( 0 ),
         M_restart( false ),
         M_restartPath( "" ),
+        M_restartStepBeforeLastSave( 0 ),
         M_restartAtLastSave( false ),
         M_saveInFile( true ),
         M_saveFreq( 1 ),
@@ -156,6 +159,7 @@ public:
         M_n_restart( b.M_n_restart ),
         M_restart( b.M_restart ),
         M_restartPath( b.M_restartPath ),
+        M_restartStepBeforeLastSave( b.M_restartStepBeforeLastSave ),
         M_restartAtLastSave( b.M_restartAtLastSave ),
         M_time_values_map( b.M_time_values_map ),
         M_saveInFile( b.M_saveInFile ),
@@ -183,6 +187,7 @@ public:
             M_state = b.M_state;
             M_restart = b.M_restart;
             M_restartPath = b.M_restartPath;
+            M_restartStepBeforeLastSave = b.M_restartStepBeforeLastSave;
             M_restartAtLastSave = b.M_restartAtLastSave;
 
             M_saveInFile = b.M_saveInFile;
@@ -223,6 +228,13 @@ public:
         }
 
         DVLOG(2) << "[BDF::serialize] serialize BDFBase done\n";
+    }
+
+    //! reload metadata to get all time step already done
+    void reloadMetaData()
+    {
+        CHECK(  M_restart ) <<" bdf is not in restart mode ";
+        this->init();
     }
 
     //! return the order in time
@@ -271,6 +283,12 @@ public:
     bool isRestart() const
     {
         return M_restart;
+    }
+
+    //! return the step index before the last used to restart
+    int restartStepBeforeLastSave() const
+    {
+        return M_restartStepBeforeLastSave;
     }
 
     //! return value of do restart at last save
@@ -554,6 +572,9 @@ protected:
     //! restart path
     fs::path M_restartPath;
 
+    //! do restart with the ieme step before the last save
+    int M_restartStepBeforeLastSave;
+
     //! do restart with ti the last save
     bool M_restartAtLastSave;
 
@@ -623,7 +644,16 @@ protected:
                 //bdfloader.load();
 
                 // modify Ti with last saved time
-                if (this->doRestartAtLastSave()) M_Ti = M_time_values_map.back();
+                if ( this->doRestartAtLastSave() )
+                    M_Ti = M_time_values_map.back();
+                // modify Ti with ieme step before the last
+                if ( this->restartStepBeforeLastSave() > 0 )
+                {
+                    const int nbTimeStep = M_time_values_map.size();
+                    CHECK( nbTimeStep-1-this->restartStepBeforeLastSave() >=0 ) << "error with restartStepBeforeLastSave " << this->restartStepBeforeLastSave()
+                                                                               << "must be less to " << nbTimeStep << std::endl;
+                    M_Ti =  M_time_values_map[ nbTimeStep-1-this->restartStepBeforeLastSave() ];
+                }
 
                 M_iteration = 0;
                 // look for M_ti in the time values
