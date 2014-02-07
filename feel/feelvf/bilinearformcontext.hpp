@@ -532,9 +532,10 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 
     test_geometric_mapping_context_type const& _gmcTest = *fusion::at_key<gmc<0> >( M_test_gmc );
     trial_geometric_mapping_context_type const& _gmcTrial = *fusion::at_key<gmc<0> >( M_trial_gmc );
-    DVLOG(2) << "[BilinearForm::integrate] local assembly in element " << _gmcTest.id() << "\n";
+    LOG(INFO) << "[BilinearForm::integrate] local assembly in element test " << _gmcTest.id() << " trial : " << _gmcTrial.id();
 
     auto mapLocDofTrial = M_trial_dof->localIndices( _gmcTest.element(), _gmcTrial.element() );
+    std::for_each( mapLocDofTrial.begin(), mapLocDofTrial.end(), []( int i ) { LOG(INFO) << "mapLocDofTrial index " << i; } );
 
     if ( !UseMortar || !M_test_dof->mesh()->isBoundaryElement( _gmcTest.id() ) )
     {
@@ -542,7 +543,6 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
             for ( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
                 for ( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
                 {
-                    //M_rep( i, j ) = M_integrator( *M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
                     M_rep( i, mapLocDofTrial[j] ) = M_integrator( *M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
                 }
 
@@ -550,9 +550,9 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
             for ( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
                 for ( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
                 {
-                    //M_rep( i, j ) += M_integrator( *M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
                     M_rep( i, mapLocDofTrial[j] ) += M_integrator( *M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
                 }
+        LOG(INFO) << "M_rep = " << M_rep*6/0.25;
     }
     else
     {
@@ -560,7 +560,6 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
             for ( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
                 for ( uint16_type i = 0; i < uint16_type(test_dof_type::nDofPerElement-1); ++i )
                 {
-                    //M_mortar_rep( i, j ) = M_integrator( *M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
                     M_mortar_rep( i, mapLocDofTrial[j] ) = M_integrator( *M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
                 }
 
@@ -568,10 +567,11 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
             for ( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
                 for ( uint16_type i = 0; i < uint16_type(test_dof_type::nDofPerElement-1); ++i )
                 {
-                    //M_mortar_rep( i, j ) += M_integrator( *M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
                     M_mortar_rep( i, mapLocDofTrial[j] ) += M_integrator( *M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
                 }
+        LOG(INFO) << "M_mortar_rep = " << M_mortar_rep*6/0.25;
     }
+
 }
 template<typename FE1,  typename FE2, typename ElemContType>
 template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext,bool UseMortar>
@@ -705,7 +705,8 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     {
         M_local_rows.array() = M_test_dof->localToGlobalIndices( eltTest ).array() + row_start;
         M_local_cols.array() = M_trial_dof->localToGlobalIndices( eltTrial ).array() + col_start;
-
+        LOG(INFO) << "M_local_rows: " << M_local_rows;
+        LOG(INFO) << "M_local_cols: " << M_local_cols;
 #if 0
         bool do_less = ( ( M_form.isPatternDefault() &&
                            ( M_test_dof->nComponents == M_trial_dof->nComponents ) ) &&
@@ -718,7 +719,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
             M_local_colsigns = M_trial_dof->localToGlobalSigns( eltTrial );
             M_rep.array() *= ( M_local_rowsigns*M_local_colsigns.transpose() ).array().template cast<value_type>();
         }
-
+        LOG(INFO) << "add rep : " << M_rep;
         M_form.addMatrix( M_local_rows.data(), M_local_rows.size(),
                           M_local_cols.data(), M_local_cols.size(),
                           M_rep.data() );
@@ -727,8 +728,10 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     else
     {
         M_mortar_local_rows.array() = M_test_dof->localToGlobalIndices( eltTest ).array() + row_start;
-        M_local_cols.array() = M_trial_dof->localToGlobalIndices( eltTrial ).array() + col_start;
 
+        M_local_cols.array() = M_trial_dof->localToGlobalIndices( eltTrial ).array() + col_start;
+        LOG(INFO) << "M_mortar_local_rows: " << M_mortar_local_rows;
+        LOG(INFO) << "M_local_cols: " << M_local_cols;
 #if 0
         bool do_less = ( ( M_form.isPatternDefault() &&
                            ( M_test_dof->nComponents == M_trial_dof->nComponents ) ) &&
@@ -741,7 +744,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
             M_local_colsigns = M_trial_dof->localToGlobalSigns( eltTrial );
             M_rep.array() *= ( M_local_rowsigns*M_local_colsigns.transpose() ).array().template cast<value_type>();
         }
-
+        LOG(INFO) << "add mortar rep : " << M_mortar_rep;
         M_form.addMatrix( M_mortar_local_rows.data(), M_mortar_local_rows.size(),
                           M_local_cols.data(), M_local_cols.size(),
                           M_mortar_rep.data() );
