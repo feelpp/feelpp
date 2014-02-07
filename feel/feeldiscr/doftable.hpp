@@ -860,7 +860,6 @@ public:
      */
     void buildBoundaryDofMap( mesh_type& mesh );
 
-#if defined(FEELPP_ENABLE_MPI_MODE)
     /**
      * build the GlobalProcessToGlobalClusterDof table
      */
@@ -869,8 +868,6 @@ public:
     /**
      * subroutines
      */
-    void buildGhostInterProcessDofMap( mesh_type& mesh,
-                                       std::map<size_type,boost::tuple<size_type,size_type> > & mapInterProcessDof );
     void buildGlobalProcessToGlobalClusterDofMapContinuous( mesh_type& mesh );
     void buildGlobalProcessToGlobalClusterDofMapContinuousActifDof( mesh_type& mesh,
                                                                     std::vector< std::map<size_type,std::set<std::vector<size_type> > > > & listToSend,
@@ -880,31 +877,13 @@ public:
                                                                                 std::set<int> const& procRecvData );
     void buildGlobalProcessToGlobalClusterDofMapContinuousGhostDofNonBlockingComm( mesh_type& mesh,
                                                                                    std::vector< std::map<size_type,std::set<std::vector<size_type> > > > const& listToSend,
-        std::set<int> const& procRecvData );
+                                                                                   std::set<int> const& procRecvData );
     void buildGlobalProcessToGlobalClusterDofMapDiscontinuous();
-
-    void buildGhostInterProcessDofMapInit( mesh_type& mesh,
-                                           std::vector< std::map<size_type,std::set<boost::tuple<size_type,uint16_type> > > > & listToSend );
-    boost::tuple<bool, std::vector< std::map<size_type,std::set<boost::tuple<size_type,uint16_type> > > > >
-    buildGhostInterProcessDofMapRecursive( mesh_type& mesh,
-                                           std::vector< std::map<size_type,std::set<boost::tuple<size_type,uint16_type> > > > const& listToSend,
-                                           std::map<size_type,boost::tuple<size_type,size_type> > & mapInterProcessDof,
-                                           std::vector< std::set<size_type > > & memoryFace );
-
-    void buildDofNotPresent( std::map<size_type,boost::tuple<size_type,size_type> > const & mapInterProcessDof,
-                             std::map<size_type,boost::tuple<size_type,size_type> > & setInterProcessDofNotPresent );
-
-    void buildGlobalProcessToGlobalClusterDofMap( mesh_type& mesh,
-            std::map<size_type,boost::tuple<size_type,size_type> > const& setInterProcessDofNotPresent );
-    void updateGhostGlobalDof( std::map<size_type,boost::tuple<size_type,size_type> > const& setInterProcessDofNotPresent );
 
     void buildGhostDofMapExtended( mesh_type& mesh );
 
-#endif
     bool buildDofTableMPIExtended() const { return M_buildDofTableMPIExtended; }
     void setBuildDofTableMPIExtended( bool b ) { M_buildDofTableMPIExtended = b; }
-
-
 
     /**
      * \return the dictionnary for the global dof
