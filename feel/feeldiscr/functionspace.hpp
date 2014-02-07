@@ -1936,6 +1936,7 @@ public:
         static const uint16_type nComponents2 = functionspace_type::nComponents2;
         static const uint16_type nComponents = functionspace_type::nComponents;
         static const uint16_type nSpaces = functionspace_type::nSpaces;
+        static const bool is_mortar = functionspace_type::is_mortar;
 
         /** @name Typedefs
          */
