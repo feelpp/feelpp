@@ -363,6 +363,10 @@ GraphCSR::updateDataMap( vf::BlocksBase<self_ptrtype> const & blockSet )
     for ( uint16_type i=0 ; i<nRow; ++i)
     {
         auto const& mapRowOnBlock = blockSet(i,0)->mapRow();
+
+        for ( rank_type procIdNeigh : mapRowOnBlock.neighborSubdomains() )
+            M_mapRow->addNeighborSubdomain(procIdNeigh);
+
         const size_type firstBlockDofGC =  mapRowOnBlock.firstDofGlobalCluster(myrank);
 
         for (size_type gdof = mapRowOnBlock.firstDof(myrank) ; gdof < mapRowOnBlock.nLocalDofWithGhost(myrank) ; ++gdof )
@@ -394,6 +398,10 @@ GraphCSR::updateDataMap( vf::BlocksBase<self_ptrtype> const & blockSet )
     for ( uint16_type j=0 ; j<nCol; ++j)
     {
         auto const& mapColOnBlock = blockSet(0,j)->mapCol();
+
+        for ( rank_type procIdNeigh : mapColOnBlock.neighborSubdomains() )
+            M_mapCol->addNeighborSubdomain(procIdNeigh);
+
         const size_type firstBlockDofGC =  mapColOnBlock.firstDofGlobalCluster( myrank );
 
         for (size_type gdof = mapColOnBlock.firstDof(myrank) ; gdof < mapColOnBlock.nLocalDofWithGhost(myrank) ; ++gdof )
@@ -864,6 +872,74 @@ GraphCSR::close()
 
     if ( nProc > 1 )
         {
+#if 1
+            std::vector< boost::tuple< std::vector<size_type>,std::vector<size_type> > > vecToSendBase( nProc );
+            std::vector< boost::tuple< std::vector<size_type>,std::vector<size_type> > > vecToRecvBase( nProc );
+
+            const rank_type myrank = M_mapRow->worldComm().rank();
+#if 0
+            std::ostringstream ostr;ostr << myrank << " :";
+            for ( rank_type idNeigh : M_mapRow->neighborSubdomains() )
+                ostr << " " << idNeigh;
+            std::cout << ostr.str() << "\n";
+#endif
+            // init data to send and counter of request
+            int nbRequestToSend = 0, nbRequestToRecv = 0;
+            for ( rank_type procIdNeigh : M_mapRow->neighborSubdomains() )
+            {
+                if ( procIdNeigh < myrank )
+                {
+                    vecToSend[procIdNeigh].resize(memory_n_send[procIdNeigh]);
+                    vecToSend_nElt[procIdNeigh].resize( memory_graphMPI[procIdNeigh].size() );
+                    auto vtsit = vecToSend[procIdNeigh].begin();
+                    auto it_mem = memory_graphMPI[procIdNeigh].begin();
+                    auto const en_mem = memory_graphMPI[procIdNeigh].end();
+                    for ( int cpt = 0 ; it_mem !=en_mem ; ++it_mem)
+                    {
+                        vtsit = std::copy( it_mem->begin(), it_mem->end(), vtsit );
+                        vecToSend_nElt[procIdNeigh][cpt] = it_mem->size();
+                        ++cpt;
+                    }
+                    vecToSendBase[procIdNeigh] = boost::make_tuple( vecToSend[procIdNeigh],vecToSend_nElt[procIdNeigh] );
+                    ++nbRequestToSend;
+                }
+                else
+                {
+                    ++nbRequestToRecv;
+                }
+            }
+
+            // do isend/irecv
+            int nbRequest = nbRequestToSend+nbRequestToRecv;
+            mpi::request * reqs = new mpi::request[nbRequest];
+            int cptRequest=0;
+            for ( rank_type procIdNeigh : M_mapRow->neighborSubdomains() )
+            {
+                if ( procIdNeigh < myrank )
+                {
+                    reqs[cptRequest] = this->worldComm().globalComm().isend( procIdNeigh, 0, vecToSendBase[procIdNeigh] );
+                    ++cptRequest;
+                }
+                else
+                {
+                    reqs[cptRequest] = this->worldComm().globalComm().irecv( procIdNeigh, 0, vecToRecvBase[procIdNeigh] );
+                    ++cptRequest;
+                }
+            }
+            // wait all requests
+            mpi::wait_all(reqs, reqs + nbRequest);
+            // delete reqs because finish comm
+            delete [] reqs;
+
+            for ( rank_type procIdNeigh : M_mapRow->neighborSubdomains() )
+            {
+                if ( procIdNeigh > myrank )
+                {
+                    vecToRecv[procIdNeigh] = vecToRecvBase[procIdNeigh].get<0>();
+                    vecToRecv_nElt[procIdNeigh] = vecToRecvBase[procIdNeigh].get<1>();
+                }
+            }
+#else
             // init container to send
             for ( int proc=0; proc<nProc; ++proc )
                 {
@@ -910,7 +986,7 @@ GraphCSR::close()
                                 }
                         }
                 }
-
+#endif
             //------------------------------------------------------
             //this->worldComm().globalComm().barrier();
             //------------------------------------------------------

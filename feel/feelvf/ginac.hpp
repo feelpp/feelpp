@@ -155,13 +155,13 @@ namespace GiNaC
     * The string format is: "GiNaC::ex,GiNaC::symbol,GiNaC::symbol,..."
     *
     * ### example :
-    * ```auto a = parse("sqrt(x*y),x,y")```
+    * ```auto a = parse("sqrt(x*y):x:y")```
     *
     * \return a pair containing the GiNaC expression, and a vector of GiNaC symbols.
     */
     inline
     std::pair< ex, std::vector<symbol> >
-    parse( std::string const& str, std::string const& seps=",", std::vector<symbol> const& params = std::vector<symbol>())
+    parse( std::string const& str, std::string const& seps=":", std::vector<symbol> const& params = std::vector<symbol>())
     {
         using namespace Feel;
         using GiNaC::symbol;
