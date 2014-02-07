@@ -22,7 +22,7 @@
 #
 #
 cmake_minimum_required (VERSION 2.8.7)
-
+ cmake_policy(SET CMP0022 NEW)
 #
 # Bug in cmake that delete destroy library path if LIBRARY_PATH is not empty
 # Ugly hack that disable the environement variable
