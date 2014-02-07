@@ -237,6 +237,21 @@ public :
         return M;
     }
 
+    void partitionMesh( std::string mshfile , std::string target , int dimension, int order )
+    {
+        int N = Environment::worldComm().globalSize();
+
+        if( Environment::worldComm().isMasterRank() )
+            std::cout<<"[ModelCrbBase] generate target file : "<<target<<" from "<<mshfile<<std::endl;
+
+            Gmsh gmsh( dimension,
+                       order,
+                       Environment::worldComm() );
+           gmsh.setNumberOfPartitions( N );
+           gmsh.rebuildPartitionMsh( mshfile /*mesh with 1 partition*/, target /*mesh with N partitions*/ );
+    }
+
+
     /**
      * compute statistics on vectors
      * arguments : vectors of double and associated names
