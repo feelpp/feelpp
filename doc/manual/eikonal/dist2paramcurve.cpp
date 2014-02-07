@@ -32,7 +32,7 @@
 #include <feel/feelfilters/unithypercube.hpp>
 #include <feel/feelpde/reinit_fms.hpp>
 #include <feel/feelpde/disttocurve.hpp>
-//#include <math.h>
+#include <feel/feelpde/curveparametrizations.hpp>
 
 using namespace Feel;
 using namespace Feel::vf;
@@ -64,12 +64,21 @@ int main( int argc, char** argv )
                                                     0,    /*tStart*/
                                                     6.29, /*tEnd*/
                                                     option("gmsh.hsize").as<double>() / 2. /*dt*/ );
-    std::cout<<"test"<<std::endl;
-
-*ellipse = fm->march( ellipse, true );
+  *ellipse = fm->march( ellipse, true );
   // ------------------------------------
 
-  std::cout<<"test"<<std::endl;
+
+
+
+  // ------------- pre defined ellipse --------------
+  auto ellipseParam = Feel::ellipseParametrization( 0.25, 0.28, 0.5, 0.5 );
+  auto predefEllipse = disttocurve->fromParametrizedCurve(ellipseParam,
+                                                          option("gmsh.hsize").as<double>() / 2. );
+  *predefEllipse = fm->march( predefEllipse, true );
+  // ------------------------------------------------
+
+
+
 
   // ------------- epitrochoid --------------
   const double a_epi=0.1; // 1 / nb_branch
@@ -83,12 +92,17 @@ int main( int argc, char** argv )
   // ----------------------------------------
 
 
-  // ------------- Sick cell --------------
 
-  const double R1=0.5; // 1 / nb_branch
+
+  // ------------- Sickle cell --------------
+  const double R1=0.5;
   const double R2=0.21;
-  const double H=0.2;
-  const double l=option("gmsh.hsize").as<double>();
+  const double H=0.2; // height of the cell
+  const double l=option("gmsh.hsize").as<double>(); // length of the cut at the peak (top and bottom)
+
+  // position of the sickle cell (the center of the first circle)
+  const double dx = 0.;
+  const double dy = 0.5;
 
   const double dt1=l/R1;
   const double dt2=l/R2;
@@ -100,53 +114,73 @@ int main( int argc, char** argv )
 
   auto x_sc = [&](double t) -> double {
       if ((-t1+dt1 <= t) && (t <= t1-dt1))
-          return R1*cos(t)-0.3;
+          return R1*cos(t)+dx;
 
       else if ((t1 - dt1 < t) && (t <= t1 + dt2))
-          return R1*cos(t1-dt1)-0.3 +  (t-(t1-dt1))/(t1+dt2-(t1-dt1)) *(R2*cos(t2-dt2)+X-0.3-(R1*cos(t1-dt1)-0.3 ));
+          return R1*cos(t1-dt1) + dx +  (t-(t1-dt1))/(t1+dt2-(t1-dt1)) *(R2*cos(t2-dt2)+X+dx-(R1*cos(t1-dt1)+dx ));
 
       else if ((t1+dt2 < t) && (t <= t1+2*t2-dt2))
-          return R2*cos(-(t-t1-t2))+X-0.3;
+          return R2*cos(-(t-t1-t2))+X+dx;
 
       else if ((t1+2*t2-dt2 < t) && (t <= t1+2*t2+dt1))
-          return R2*cos(-(t2-dt2))+X-0.3 + (t-(t1+2*t2-dt2))/(t1+2*t2+dt1-(t1+2*t2-dt2))*(R1*cos(-t1+dt1)-0.3-(R2*cos(-(t2-dt2))+X-0.3 ));
+          return R2*cos(-(t2-dt2))+X+dx + (t-(t1+2*t2-dt2))/(t1+2*t2+dt1-(t1+2*t2-dt2))*(R1*cos(-t1+dt1)+dx-(R2*cos(-(t2-dt2))+X+dx ));
 
       else
           return 0.5;
-
   };
-
 
   auto y_sc = [&](double t) -> double {
       if ((-t1+dt1 <= t) && (t <= t1-dt1))
-          return R1*sin(t)+0.5;
+          return R1*sin(t)+dy;
 
       else if ((t1 - dt1 < t) && (t <= t1 + dt2))
-          return R1*sin(t1-dt1)+0.5 +  (t-(t1-dt1))/(t1+dt2-(t1-dt1))*(R2*sin(t2-dt2)+0.5-(R1*sin(t1-dt1)+0.5 ));
+          return R1*sin(t1-dt1)+dy +  (t-(t1-dt1))/(t1+dt2-(t1-dt1))*(R2*sin(t2-dt2)+dy-(R1*sin(t1-dt1)+dy ));
 
       else if ((t1+dt2 < t) && (t <= t1+2*t2-dt2))
-          return R2*sin(-(t-t1-t2))+0.5;
+          return R2*sin(-(t-t1-t2))+dy;
 
       else if ((t1+2*t2-dt2 < t) && (t <= t1+2*t2+dt1))
-          return R2*sin(-(t2-dt2)) + 0.5 + (t-(t1+2*t2-dt2))/(t1+2*t2+dt1-(t1+2*t2-dt2))*(R1*sin(-t1+dt1)+0.5-(R2*sin(-(t2-dt2))+0.5));
+          return R2*sin(-(t2-dt2)) + dy + (t-(t1+2*t2-dt2))/(t1+2*t2+dt1-(t1+2*t2-dt2))*(R1*sin(-t1+dt1)+dy-(R2*sin(-(t2-dt2))+dy));
 
       else
           return 0.5;
-
   };
 
-  std::cout<<"test"<<std::endl;
 
-  auto sick_cell = disttocurve->fromParametrizedCurve( x_sc, y_sc,
-                                                    -t1+dt1, t1+2*t2+dt1, option("gmsh.hsize").as<double>()/5. );
-  *sick_cell = fm->march( sick_cell, true );
+  auto sickle_cell = disttocurve->fromParametrizedCurve(/* x(t), y(t) */
+                                                        x_sc, y_sc,
+                                                        /* tStart, tEnd, dt */
+                                                       -t1+dt1, t1+2*t2+dt1, option("gmsh.hsize").as<double>()/8.,
+                                                        /* broaden points for detection, broadening thickness, export points*/
+                                                        true, option("gmsh.hsize").as<double>() / 10., true );
+  *sickle_cell = fm->march( sickle_cell, true );
+  // ----------------------------------------
+
+
+
+
+  // ------------- pre-defined Sickle cell  --------------
+  auto scpredef = Feel::crescentParametrization(R1, R2, H, l, 0.5, 0.5);
+
+  auto siclkeCellPredefied = disttocurve->fromParametrizedCurve( get<0>(scpredef),
+                                                                 get<1>(scpredef),
+                                                                 get<2>(scpredef),
+                                                                 get<3>(scpredef),
+                                                                 option("gmsh.hsize").as<double>()/8.,
+                                                                 true, option("gmsh.hsize").as<double>() / 10., true, "sc_pred" );
+
+  *siclkeCellPredefied = fm->march( siclkeCellPredefied, true );
+  // ----------------------------------------
+
 
 
 
   auto exp = exporter(_mesh=mesh, _name="dist2paramcurve");
   exp->step(0)->add("ellipse", *ellipse);
+  exp->step(0)->add("predefEllipse", *predefEllipse);
   exp->step(0)->add("epitro", *epitro);
-  exp->step(0)->add("sick_cell",*sick_cell);
+  exp->step(0)->add("sickle_cell",*sickle_cell);
+  exp->step(0)->add("siclkeCellPredefied",*siclkeCellPredefied);
   exp->save();
 
 }
