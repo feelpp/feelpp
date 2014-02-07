@@ -416,16 +416,34 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
     //------------------------------------------------------------------------------//
     // update datamap info
     CHECK( this->M_n_localWithGhost_df[myRank] >= nDofNotPresent ) << "invalid data\n" << std::endl;
-    const size_type mynDofWithoutGhost = this->M_n_localWithGhost_df[myRank] - nDofNotPresent;
+    //const size_type mynDofWithoutGhost = this->M_n_localWithGhost_df[myRank] - nDofNotPresent;
+    this->M_n_localWithoutGhost_df[myRank] = this->M_n_localWithGhost_df[myRank] - nDofNotPresent;
+#if 0
     mpi::all_gather( this->worldComm(),
                      mynDofWithoutGhost,
                      this->M_n_localWithoutGhost_df );
+#else
+    std::vector<boost::tuple<size_type,size_type,size_type> > dataRecvFromGather;
+    auto dataSendToGather = boost::make_tuple(this->M_first_df[myRank],this->M_n_localWithGhost_df[myRank],this->M_n_localWithoutGhost_df[myRank]);
+    mpi::all_gather( this->worldComm(),
+                     dataSendToGather,
+                     dataRecvFromGather );
+
+    for (int p=0;p<this->worldComm().localSize();++p)
+    {
+        this->M_first_df[p] = dataRecvFromGather[p].template get<0>();
+        this->M_n_localWithGhost_df[p] = dataRecvFromGather[p].template get<1>();
+        this->M_last_df[p] = (this->M_n_localWithGhost_df[p] > 0)? this->M_first_df[p] + this->M_n_localWithGhost_df[p] - 1 : this->M_first_df[p];
+        this->M_n_localWithoutGhost_df[p] = dataRecvFromGather[p].template get<2>();
+    }
+#endif
 
     this->M_n_dofs=0;
     for ( int proc=0; proc<this->worldComm().size(); ++proc )
     {
         this->M_n_dofs+=this->M_n_localWithoutGhost_df[proc];
     }
+
 
     this->M_first_df_globalcluster[0]=0;//this->M_first_df[0];
     if ( this->M_n_localWithoutGhost_df[0] > 0 )

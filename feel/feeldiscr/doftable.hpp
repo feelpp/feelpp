@@ -2068,21 +2068,35 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
 #endif
     const size_type thelastDof = ( !hasNoElt )?next_free_dof-1:0;
 
-    std::vector<boost::tuple<bool,size_type,size_type> > dataRecvFromGather;
-    auto dataSendToGather = boost::make_tuple(hasNoElt,theFirstDf,thelastDof);
-    mpi::all_gather( this->worldComm().localComm(),
-                     dataSendToGather,
-                     dataRecvFromGather );
+    const rank_type myrank = this->worldComm().localRank();
 
-    for (int p=0;p<this->worldComm().localSize();++p)
+    if ( isP0Continuous<fe_type>::result || !is_continuous )
     {
-        bool procHasNoElt = dataRecvFromGather[p].template get<0>();
-        this->M_first_df[p] = dataRecvFromGather[p].template get<1>();
-        this->M_last_df[p] = dataRecvFromGather[p].template get<2>();
+        std::vector<boost::tuple<bool,size_type,size_type> > dataRecvFromGather;
+        auto dataSendToGather = boost::make_tuple(hasNoElt,theFirstDf,thelastDof);
+        mpi::all_gather( this->worldComm().localComm(),
+                         dataSendToGather,
+                         dataRecvFromGather );
 
-        size_type mynDofWithGhost = ( !procHasNoElt )?
-            this->M_last_df[p] - this->M_first_df[p] + 1 : 0;
-        this->M_n_localWithGhost_df[p] = mynDofWithGhost;
+        for (int p=0;p<this->worldComm().localSize();++p)
+        {
+            bool procHasNoElt = dataRecvFromGather[p].template get<0>();
+            this->M_first_df[p] = dataRecvFromGather[p].template get<1>();
+            this->M_last_df[p] = dataRecvFromGather[p].template get<2>();
+
+            size_type mynDofWithGhost = ( !procHasNoElt )?
+                this->M_last_df[p] - this->M_first_df[p] + 1 : 0;
+            this->M_n_localWithGhost_df[p] = mynDofWithGhost;
+        }
+    }
+    else
+    {
+        // up only with myrank (completed in buildGhostDofMap)
+        this->M_first_df[myrank] = theFirstDf;
+        this->M_last_df[myrank] = thelastDof;
+        size_type mynDofWithGhost = ( !hasNoElt )?
+            this->M_last_df[myrank] - this->M_first_df[myrank] + 1 : 0;
+        this->M_n_localWithGhost_df[myrank] = mynDofWithGhost;
     }
 
 #if 0
@@ -2093,9 +2107,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
 #endif
 
     // only true in sequential, redefine in buildDofGhostMap
-    this->M_n_localWithoutGhost_df[this->worldComm().localRank()]=this->M_n_localWithGhost_df[this->worldComm().localRank()];
-    this->M_first_df_globalcluster[this->worldComm().localRank()]=this->M_first_df[this->worldComm().localRank()];
-    this->M_last_df_globalcluster[this->worldComm().localRank()]=this->M_last_df[this->worldComm().localRank()];
+    this->M_n_localWithoutGhost_df[myrank]=this->M_n_localWithGhost_df[myrank];
+    this->M_first_df_globalcluster[myrank]=this->M_first_df[myrank];
+    this->M_last_df_globalcluster[myrank]=this->M_last_df[myrank];
     this->M_n_dofs = next_free_dof;
 
     it_elt = M.beginElementWithProcessId();
