@@ -184,13 +184,15 @@ private:
             {
                 n = elt.neighbor( 1 );
                 CHECK( n.first != invalid_size_type_value ) << "the element should be connected to at least one other element, it is not the case";
-                size_type gDof = M_doftable->mesh()->element( n.first ).point(0).id()*fe_type::nDofPerVertex;
-                LOG(INFO) << "inserting vertex dof " << gDof << "," << next_free_dof << "," << ie;
-                M_doftable->insertDof( ie, lc++, 1, boost::make_tuple( 0, 0, gDof ), processor, next_free_dof, 1, false, global_shift, elt.point(1).marker() );
-                gDof = ( elt.point( 0 ).id() ) * mortar_fe_type::nDofPerVertex;
+
+                size_type gDof = ( elt.point( 0 ).id() ) * mortar_fe_type::nDofPerVertex;
                 LOG(INFO) << "inserting vertex dof " << gDof << "," << next_free_dof << "," << ie;
                 M_doftable->insertDof( ie, lc++, 0, boost::make_tuple( 0, 0, gDof ),
                                        processor, next_free_dof, 1, false, global_shift, elt.point( 0 ).marker() );
+
+                gDof = M_doftable->mesh()->element( n.first ).point(0).id()*fe_type::nDofPerVertex;
+                LOG(INFO) << "inserting vertex dof " << gDof << "," << next_free_dof << "," << ie;
+                M_doftable->insertDof( ie, lc++, 1, boost::make_tuple( 0, 0, gDof ), processor, next_free_dof, 1, false, global_shift, elt.point(1).marker() );
             }
 
 

@@ -137,7 +137,8 @@ gmsh_options( std::string const& prefix )
 #else
         ( prefixvm( prefix,"gmsh.partitioner" ).c_str(), Feel::po::value<int>()->default_value( GMSH_PARTITIONER_DEFAULT ), "Gmsh partitioner (1=CHACO)" )
 #endif
-        ( prefixvm( prefix,"gmsh.format" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "Gmsh file format (0=ASCII, 1=BINARY)" );
+        ( prefixvm( prefix,"gmsh.format" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "Gmsh file format (0=ASCII, 1=BINARY)" )
+        ( prefixvm( prefix,"partition.linear" ).c_str(), Feel::po::value<bool>()->default_value( false ), "linear partitioning if true (false otherwise)" );
 
 
     return _options;
@@ -177,7 +178,7 @@ on_options( std::string const& prefix )
 {
     po::options_description _options( "Dirichlet treatment options " + prefix + " options" );
     _options.add_options()
-        ( prefixvm( prefix,"on.type" ).c_str(), Feel::po::value<int>()->default_value( ON_ELIMINATION ), "Strong Dirichlet conditions treatment type" )
+        ( prefixvm( prefix,"on.type" ).c_str(), Feel::po::value<std::string>()->default_value( "elimination" ), "Strong Dirichlet conditions treatment type: elimination, elimination_symmetric, penalisation" )
         ( prefixvm( prefix,"on.verbose" ).c_str(), Feel::po::value<bool>()->default_value( false ), "print in logfiles information about Dirichlet conditions treatment" )
         ;
     return _options;
@@ -213,6 +214,7 @@ po::options_description bdf_options( std::string const& prefix )
     ( prefixvm( prefix, "bdf.restart" ).c_str(), Feel::po::value<bool>()->default_value( false ), "do a restart " )
     ( prefixvm( prefix, "bdf.restart.path" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "path where we reload old data" )
     ( prefixvm( prefix, "bdf.restart.at-last-save" ).c_str(), Feel::po::value<bool>()->default_value( false ), "do a restart with ti the last save " )
+    ( prefixvm( prefix, "bdf.restart.step-before-last-save" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "do a restart with ti the ieme step before last save " )
     ( prefixvm( prefix, "bdf.iterations-between-order-change" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "iteration between time order change" )
     ( prefixvm( prefix, "bdf.save" ).c_str(), Feel::po::value<bool>()->default_value( true ), "save elements in file " )
     ( prefixvm( prefix, "bdf.save.freq" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "freq for save elements in file " )
@@ -401,6 +403,7 @@ podOptions( std::string const& prefix )
     ( "pod.store-pod-matrix"   , Feel::po::value<bool>()->default_value( false ), "indicate if we store the pod matrix on a file" )
     ( "pod.store-pod-matrix-format-octave"   , Feel::po::value<bool>()->default_value( false ), "indicate if we store the pod matrix on a file with octave format" )
     ("pod.check-orthogonality",Feel::po::value<bool>()->default_value( true ), "check orthogonality of modes")
+    ("pod.minimum-eigenvalue",Feel::po::value<double>()->default_value( 1e-11 ), "minimum acceptable value for eigenvalues")
     ;
 
     return podoptions;
