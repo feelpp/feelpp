@@ -186,6 +186,11 @@ public:
         //super(v,index),
         M_destroy_vec_on_exit( false )
     {
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunsequenced"
+#endif
+        
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
 
         VectorPetsc<T> const* V = dynamic_cast<VectorPetsc<T> const*> ( &v );
@@ -207,6 +212,10 @@ public:
         this->M_is_initialized = true;
         /* close */
         this->close(); /* no // assembly required */
+#endif
+        
+#if defined(__clang__)
+#pragma clang diagnostic pop
 #endif
     }
 

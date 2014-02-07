@@ -137,7 +137,8 @@ gmsh_options( std::string const& prefix )
 #else
         ( prefixvm( prefix,"gmsh.partitioner" ).c_str(), Feel::po::value<int>()->default_value( GMSH_PARTITIONER_DEFAULT ), "Gmsh partitioner (1=CHACO)" )
 #endif
-        ( prefixvm( prefix,"gmsh.format" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "Gmsh file format (0=ASCII, 1=BINARY)" );
+        ( prefixvm( prefix,"gmsh.format" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "Gmsh file format (0=ASCII, 1=BINARY)" )
+        ( prefixvm( prefix,"partition.linear" ).c_str(), Feel::po::value<bool>()->default_value( false ), "linear partitioning if true (false otherwise)" );
 
 
     return _options;
@@ -177,7 +178,7 @@ on_options( std::string const& prefix )
 {
     po::options_description _options( "Dirichlet treatment options " + prefix + " options" );
     _options.add_options()
-        ( prefixvm( prefix,"on.type" ).c_str(), Feel::po::value<int>()->default_value( ON_ELIMINATION ), "Strong Dirichlet conditions treatment type" )
+        ( prefixvm( prefix,"on.type" ).c_str(), Feel::po::value<std::string>()->default_value( "elimination" ), "Strong Dirichlet conditions treatment type: elimination, elimination_symmetric, penalisation" )
         ( prefixvm( prefix,"on.verbose" ).c_str(), Feel::po::value<bool>()->default_value( false ), "print in logfiles information about Dirichlet conditions treatment" )
         ;
     return _options;

@@ -154,31 +154,57 @@ ExporterEnsight<MeshType,N>::_F_writeSoSFile() const
     // only on proc 0
     if ( this->worldComm().rank() == this->worldComm().masterRank() )
     {
-        std::ostringstream filestr;
-        filestr << this->path() << "/" << this->prefix() << "-" << this->worldComm().globalSize() << ".sos";
-        std::ofstream __out( filestr.str().c_str() );
-
-        if ( __out.fail() )
+        // first save for paraview
         {
-            DVLOG(2) << "cannot open " << filestr.str()  << "\n";
-            exit( 0 );
+            std::ostringstream filestr;
+            filestr << this->path() << "/" << this->prefix() << "-paraview-" << this->worldComm().globalSize() << ".sos";
+            std::ofstream __out( filestr.str().c_str() );
+            
+            if ( __out.fail() )
+            {
+                DVLOG(2) << "cannot open " << filestr.str()  << "\n";
+                exit( 0 );
+            }
+            
+            __out << "FORMAT:\n"
+                << "type: master_server gold \n"
+                << "SERVERS\n"
+                << "number of servers: " << this->worldComm().globalSize() << "\n";
+            
+            for ( int pid = 0 ; pid < this->worldComm().globalSize(); ++pid )
+            {
+                
+                __out << "#Server " << pid+1 << "\n"
+                    << "machine id: " << mpi::environment::processor_name() << "\n"
+                    << "executable: /usr/local/bin/ensight76/bin/ensight7.server\n"
+                    << "data_path: " << fs::current_path().string() << "\n"
+                    << "casefile: " << this->prefix() << "-" << this->worldComm().globalSize() << "_" << pid << ".case\n";
+            }
+            __out.close();
         }
-
-        __out << "FORMAT:\n"
-              << "type: master_server gold \n"
-              << "SERVERS\n"
-              << "number of servers: " << this->worldComm().globalSize() << "\n";
-
-        for ( int pid = 0 ; pid < this->worldComm().globalSize(); ++pid )
         {
-
-            __out << "#Server " << pid+1 << "\n"
-                  << "machine id: " << mpi::environment::processor_name() << "\n"
-                  << "executable: /usr/local/bin/ensight76/bin/ensight7.server\n"
-                  << "data_path: " << fs::current_path().string() << "\n"
-                  << "casefile: " << this->prefix() << "-" << this->worldComm().globalSize() << "_" << pid << ".case\n";
+            // second save for ensight
+            std::ostringstream filestr;
+            filestr << this->path() << "/" << this->prefix() << "-" << this->worldComm().globalSize() << ".sos";
+            std::ofstream __out( filestr.str().c_str() );
+        
+            if ( __out.fail() )
+            {
+                DVLOG(2) << "cannot open " << filestr.str()  << "\n";
+                exit( 0 );
+            }
+            __out << "FORMAT:\n"
+            << "type: master_server gold \n\n"
+            << "MULTIPLE_CASEFILES\n"
+            << "total number of cfiles: " << this->worldComm().globalSize() << "\n"
+            << "# cfiles global path: " << fs::current_path().string() << "\n"
+            << "cfiles pattern: "<<this->prefix() << "-" << this->worldComm().globalSize() << "_*.case\n"
+            << "cfiles start number: 0\n"
+            << "cfiles increment: 1\n\n"
+            << "SERVERS\n"
+            << "number of servers: "<< (this->worldComm().globalSize()/100)+1 <<" repeat\n";
+            __out.close();
         }
-        __out.close();
     }
 }
 template<typename MeshType, int N>
