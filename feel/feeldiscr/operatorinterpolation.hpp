@@ -296,7 +296,6 @@ private:
 
     void updateSameMesh();
     void updateNoRelationMesh();
-#if defined(FEELPP_ENABLE_MPI_MODE)
     void updateNoRelationMeshMPI();
     void updateNoRelationMeshMPI_run(bool buildNonZeroMatrix=true);
 
@@ -341,7 +340,6 @@ private:
                                               std::vector<std::set<size_type> > & dof_searchWithProc,
                                               bool extrapolation_mode,
                                               extrapolation_memory_type & dof_extrapolationData);
-#endif // MPI_MODE
 
     std::list<range_iterator> M_listRange;
     WorldComm M_WorldCommFusion;
@@ -727,21 +725,13 @@ void
 OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::updateSameMesh()
 {
     //std::cout << "OperatorInterpolation::updateSameMesh start " << std::endl;
-#if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
-    const size_type proc_id              = this->dualImageSpace()->mesh()->worldComm().localRank();
-    const size_type nrow_dof_on_proc     = this->dualImageSpace()->nLocalDof();
-    const size_type firstrow_dof_on_proc = this->dualImageSpace()->dof()->firstDof( proc_id );
-    const size_type lastrow_dof_on_proc  = this->dualImageSpace()->dof()->lastDof( proc_id );
-    const size_type firstcol_dof_on_proc = this->domainSpace()->dof()->firstDof( proc_id );
-    const size_type lastcol_dof_on_proc  = this->domainSpace()->dof()->lastDof( proc_id );
-#else
     const size_type proc_id              = this->dualImageSpace()->worldsComm()[0].localRank();
     const size_type nrow_dof_on_proc     = this->dualImageSpace()->nLocalDof();
     const size_type firstrow_dof_on_proc = this->dualImageSpace()->dof()->firstDofGlobalCluster( proc_id );
     const size_type lastrow_dof_on_proc  = this->dualImageSpace()->dof()->lastDofGlobalCluster( proc_id );
     const size_type firstcol_dof_on_proc = this->domainSpace()->dof()->firstDofGlobalCluster( proc_id );
     const size_type lastcol_dof_on_proc  = this->domainSpace()->dof()->lastDofGlobalCluster( proc_id );
-#endif
+
 #if 0
     graph_ptrtype sparsity_graph( new graph_type( nrow_dof_on_proc,
                                                   firstrow_dof_on_proc, lastrow_dof_on_proc,
@@ -810,13 +800,9 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                 if ( !dof_done[i] )
                 {
 
-#if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
-                    const auto ig1 = i;
-                    const auto theproc = imagedof->worldComm().localRank();
-#else // WITH MPI
                     const auto ig1 = imagedof->mapGlobalProcessToGlobalCluster()[i];
                     const auto theproc = imagedof->procOnGlobalCluster( ig1 );
-#endif
+
                     auto& row = sparsity_graph->row( ig1 );
                     row.template get<0>() = theproc;
                     const size_type il1 = ig1 - imagedof->firstDofGlobalCluster( theproc );
@@ -836,11 +822,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                             const size_type j =  boost::get<0>( domaindof->localToGlobal( domain_eid, jloc, comp ) );
 
                             //up the pattern graph
-#if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
-                            row.template get<2>().insert( j );
-#else // WITH MPI
                             row.template get<2>().insert( domaindof->mapGlobalProcessToGlobalCluster()[j] );
-#endif
+
                             // get interpolated value
                             const value_type v = Mloc( domain_basis_type::nComponents1*jloc +
                                                        comp*domain_basis_type::nComponents1*domain_basis_type::nLocalDof +
@@ -1026,8 +1009,6 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 //-----------------------------------------------------------------------------------------------------------------//
 //-----------------------------------------------------------------------------------------------------------------//
 //-----------------------------------------------------------------------------------------------------------------//
-
-#if defined(FEELPP_ENABLE_MPI_MODE) // WITH MPI
 
 template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange,typename InterpType>
 void
@@ -2422,7 +2403,6 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
     return boost::make_tuple(memmapGdof,memmapComp,pointsSearched,memmap_vertices);
 }
 
-#endif // WITH MPI
 
 
 //-----------------------------------------------------------------------------------------------------------------//

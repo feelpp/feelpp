@@ -864,12 +864,10 @@ void
 OperatorLagrangeP1<space_type>::buildOperator()
 {
     // construct the p1 space and set the operator
-#if defined(FEELPP_ENABLE_MPI_MODE)
+
     //auto Xh_image = dual_image_space_type::New(_mesh=M_mesh,_worldscomm=worldsComm);
     auto Xh_image = dual_image_space_type::New(_mesh=M_mesh,_worldscomm=std::vector<WorldComm>(dual_image_space_type::nSpaces,M_mesh->worldComm() ) );
-#else
-    auto Xh_image = dual_image_space_type::New(_mesh=M_mesh);
-#endif
+
     this->init( this->domainSpace(),
                 Xh_image,
                 this->backend(),
