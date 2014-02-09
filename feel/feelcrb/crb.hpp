@@ -7906,9 +7906,17 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
     if( option(_name="crb.use-newton").template as<bool>() != M_use_newton  )
         {
             if( M_use_newton )
-                throw std::logic_error( "[CRB::loadDB] ERROR in the database used the option use-newton=true and it's not the case in your option" );
+            {
+                if( Environment::worldComm().isMasterRank() )
+                    std::cout<<"[CRB::loadDB] WARNING in the database used the option use-newton=true and it's not the case in your options so make sure that crb.rebuild-database=true !" <<std::endl;
+                LOG( INFO )<<"[CRB::loadDB] WARNING in the database used the option use-newton=true and it's not the case in your options so make sure that crb.rebuild-database=true !" ;
+            }
             else
-                throw std::logic_error( "[CRB::loadDB] ERROR in the database used the option use-newton=false and it's not the case in your option" );
+            {
+                if( Environment::worldComm().isMasterRank() )
+                    std::cout<< "[CRB::loadDB] WARNING in the database used the option use-newton=false and it's not the case in your options so make sure that crb.rebuild-database=true !"<<std::endl;
+                LOG( INFO )<< "[CRB::loadDB] WARNING in the database used the option use-newton=false and it's not the case in your options so make sure that crb.rebuild-database=true !";
+            }
         }
 
     ar & BOOST_SERIALIZATION_NVP( M_primal_apee_basis );
@@ -7924,6 +7932,7 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
     {
         if( M_model_executed_in_steady_mode && Environment::worldComm().isMasterRank() )
             std::cout<<"[CRB::loadDB] WARNING in the database used, the model was executed in steady mode but now you want to execute it in transient mode. make sure that --crb.rebuild-database=true"<<std::endl;
+        LOG( INFO ) <<"[CRB::loadDB] WARNING in the database used, the model was executed in steady mode but now you want to execute it in transient mode. make sure that --crb.rebuild-database=true";
     }
 #if 0
     std::cout << "[loadDB] output index : " << M_output_index << "\n"
