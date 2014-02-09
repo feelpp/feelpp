@@ -143,7 +143,7 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
 
         for ( ; it != en; ++ it )
         {
-            geoelement_type const& curElt = *it;
+            geoelement_type const& curElt = boost::unwrap_ref(*it);
             __c->update( curElt );
             fectx->update( __c, pc );
             std::fill( fvalues.data(), fvalues.data()+fvalues.num_elements(), f_fectx_type::id_type::Zero() );
