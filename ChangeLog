@@ -20,10 +20,15 @@
      integration in parallel (1D, 2D and 3D)
    - Support discontinuous integration over a range of element (a subset of
      faces), see https://github.com/feelpp/feelpp/issues/227
+   - Support ghost cells in ensightgold format for better visualisation (without
+     artefacts between subdomain in 3D), see #243
+   - Support mortar function spaces, see <a
+     href="https://github.com/feelpp/feelpp/issues/36>#36</a>
+
 
    \subsection issues0970 Noteworthy Issues
 
-   -
+   - <a href="https://github.com/feelpp/feelpp/issues/198">#198</a> FEELPP_ENABLE_MPI_MODE=OFF code branches are unmaintained and are removed
 
    \section feelpp0960 Feel++ Release 0.96.0
    release date 01-02-2014
