@@ -125,14 +125,6 @@ extern "C"
         Feel::SolverNonLinearPetsc<double>* solver =
             static_cast<Feel::SolverNonLinearPetsc<double>*> ( ctx );
 
-#if !defined(FEELPP_ENABLE_MPI_MODE)
-        boost::shared_ptr<Feel::Vector<double> > R( new Feel::VectorPetsc<double>( r ) );
-        boost::shared_ptr<Feel::MatrixSparse<double> >  PC;
-        boost::shared_ptr<Feel::Vector<double> > X_global( new Feel::VectorPetsc<double>( x ) );
-        boost::shared_ptr<Feel::Vector<double> > X_local( new Feel::VectorPetsc<double>( X_global->size() ) );
-
-        X_global->localize ( *X_local );
-#else
         boost::shared_ptr<Feel::Vector<double> > R;
         boost::shared_ptr<Feel::Vector<double> > X_global;
 
@@ -147,8 +139,6 @@ extern "C"
             R.reset( new Feel::VectorPetsc<double>( r ) );
             X_global.reset( new Feel::VectorPetsc<double>( x ) );
         }
-
-#endif
 
         //if (solver->residual != NULL) solver->residual (X_local, R);
         if ( solver->residual != NULL ) solver->residual ( X_global, R );
@@ -173,15 +163,6 @@ extern "C"
         Feel::SolverNonLinearPetsc<double>* solver =
             static_cast<Feel::SolverNonLinearPetsc<double>*> ( ctx );
 
-#if !defined(FEELPP_ENABLE_MPI_MODE)
-        boost::shared_ptr<Feel::Vector<double> > R;
-        boost::shared_ptr<Feel::MatrixSparse<double> >  PC( new Feel::MatrixPetsc<double>( *pc ) );
-        boost::shared_ptr<Feel::MatrixSparse<double> >  Jac( new Feel::MatrixPetsc<double>( *jac ) );
-        boost::shared_ptr<Feel::Vector<double> > X_global( new Feel::VectorPetsc<double>( x ) );
-        boost::shared_ptr<Feel::Vector<double> > X_local( new Feel::VectorPetsc<double>( X_global->size() ) );
-
-        X_global->localize ( *X_local );
-#else // MPI
         boost::shared_ptr<Feel::MatrixSparse<double> > Jac;
         boost::shared_ptr<Feel::Vector<double> > X_global;
 
@@ -196,8 +177,6 @@ extern "C"
             Jac.reset( new Feel::MatrixPetsc<double>( *jac,solver->mapRowPtr(),solver->mapColPtr() ) );
             X_global.reset( new Feel::VectorPetsc<double>( x,solver->mapColPtr() ) );
         }
-
-#endif
 
         //if (solver->jacobian != NULL) solver->jacobian (X_local, PC );
         if ( solver->jacobian != NULL ) solver->jacobian ( X_global, Jac );
@@ -686,11 +665,6 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
 
     int ierr=0;
 
-#if !defined(FEELPP_ENABLE_MPI_MODE)
-    MatrixPetsc<T>* jac = dynamic_cast<MatrixPetsc<T>*>( jac_in.get() );
-    VectorPetsc<T>* x   = dynamic_cast<VectorPetsc<T>*>( x_in.get() );
-    VectorPetsc<T>* r   = dynamic_cast<VectorPetsc<T>*>( r_in.get() );
-#else // MPI
     MatrixPetsc<T>* jac;
     VectorPetsc<T>* x;
     VectorPetsc<T>* r;
@@ -711,9 +685,6 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
 
     this->setMapRow( jac_in->mapRowPtr() );
     this->setMapCol( jac_in->mapColPtr() );
-
-#endif
-
 
     // We cast to pointers so we can be sure that they succeeded
     // by comparing the result against NULL.

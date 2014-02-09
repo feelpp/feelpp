@@ -3006,8 +3006,6 @@ public:
                 ct_type ct( *this, ublas::range( nbdof_start, nbdof_start+space->nLocalDof() ),
                             M_functionspace->template functionSpace<i>()->dof() );
 
-#if defined(FEELPP_ENABLE_MPI_MODE)
-
                 // update M_containersOffProcess<i> : send
                 if ( this->worldComm().globalSize()>1 && updateOffViews && !this->functionSpace()->hasEntriesForAllSpaces() )
                 {
@@ -3019,7 +3017,6 @@ public:
                     fusion::for_each( *M_containersOffProcess, Feel::detail::SendContainersOn<i,functionspace_type>( this->functionSpace(), dataToSend ) );
                 }
 
-#endif
                 DVLOG(2) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
                 DVLOG(2) << "Element <" << i << ">::range.start :  "<<  ct.start()<< "\n";
                 return typename mpl::at_c<element_vector_type,i>::type( space, ct, name );
@@ -3032,15 +3029,12 @@ public:
 
                 fusion::for_each( *M_containersOffProcess, Feel::detail::InitializeContainersOff<i,functionspace_type>( this->functionSpace() ) );
 
-#if defined(FEELPP_ENABLE_MPI_MODE)
-
                 // update M_containersOffProcess<i> : recv
                 if ( this->worldComm().globalSize()>1 && updateOffViews && !this->functionSpace()->hasEntriesForAllSpaces() )
                 {
                     fusion::for_each( *M_containersOffProcess, Feel::detail::RecvContainersOff<i,functionspace_type>( this->functionSpace() ) );
                 }
 
-#endif
                 // build a subrange view identical
                 ct_type ct( *fusion::at_c<i>( *M_containersOffProcess ),
                             ublas::range( 0, space->nLocalDof() ),
@@ -3073,8 +3067,6 @@ public:
                             ublas::range( nbdof_start, nbdof_start+space->nLocalDof() ),
                             M_functionspace->template functionSpace<i>()->dof() );
 
-#if defined(FEELPP_ENABLE_MPI_MODE)
-
                 // update M_containersOffProcess<i> : send
                 if ( this->worldComm().globalSize()>1 && updateOffViews && !this->functionSpace()->hasEntriesForAllSpaces() )
                 {
@@ -3086,8 +3078,6 @@ public:
                     fusion::for_each( *M_containersOffProcess, Feel::detail::SendContainersOn<i,functionspace_type>( this->functionSpace(), dataToSend ) );
                 }
 
-#endif
-
                 DVLOG(2) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
                 DVLOG(2) << "Element <" << i << ">::range.start :  "<<  ct.start()<< "\n";
                 return typename mpl::at_c<element_vector_type,i>::type( space, ct, name );
@@ -3095,15 +3085,11 @@ public:
 
             else
             {
-#if defined(FEELPP_ENABLE_MPI_MODE)
-
                 // update M_containersOffProcess<i> : recv
                 if ( this->worldComm().globalSize()>1 && updateOffViews && !this->functionSpace()->hasEntriesForAllSpaces() )
                 {
                     fusion::for_each( *M_containersOffProcess, Feel::detail::RecvContainersOff<i,functionspace_type>( this->functionSpace() ) );
                 }
-
-#endif
 
                 // build a subrange view identical
                 ct_type ct( *fusion::at_c<i>( *M_containersOffProcess ),
@@ -3541,28 +3527,6 @@ public:
     {
         return pointer_type( new functionspace_type( __m, dofindices ) );
     }
-#if !defined( FEELPP_ENABLE_MPI_MODE)
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( pointer_type ),
-                                     static New,
-                                     tag,
-                                     ( required
-                                       ( mesh,* )
-                                     )
-                                     ( optional
-                                       ( components, ( size_type ), MESH_RENUMBER | MESH_CHECK )
-                                       ( periodicity,*,periodicity_type() )
-                                     )
-                                   )
-    {
-        return NewImpl( mesh, components, periodicity );
-    }
-    static pointer_type NewImpl( mesh_ptrtype const& __m,
-                                 size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
-                                 periodicity_type periodicity = periodicity_type() )
-    {
-        return pointer_type( new functionspace_type( __m, mesh_components, periodicity ) );
-    }
-#else
     BOOST_PARAMETER_MEMBER_FUNCTION( ( pointer_type ),
                                      static New,
                                      tag,
@@ -3589,8 +3553,6 @@ public:
 
         return pointer_type( new functionspace_type( __m, mesh_components, periodicity, worldsComm, extendedDofTable ) );
     }
-
-#endif
     /**
      * initialize the function space
      */
@@ -4459,18 +4421,6 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
                                                                                     this->worldsComm(),
                                                                                     this->extendedDofTableComposite() ) );
 
-#if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
-    M_dof = dof_ptrtype( new dof_type( this->nDof(), this->nLocalDof() ) );
-    DVLOG(2) << "calling nDof(<composite>)" << this->nDof() << "\n";
-    DVLOG(2) << "calling init(<composite>) end\n";
-
-    proc_dist_map_type emptyMap;
-    procDistMap = fusion::accumulate( M_functionspaces,
-                                      emptyMap,
-                                      Feel::detail::searchIndicesBySpace<proc_dist_map_type>() );
-    M_dofOnOff = M_dof;
-#else // new version with MPI
-
     if ( this->worldComm().globalSize()>1 )
     {
         if ( this->hasEntriesForAllSpaces() )
@@ -4548,8 +4498,6 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
         M_dofOnOff = dofInitTool.dataMapOnOff();
         M_dofOnOff->setNDof( this->nDof() );
     }
-
-#endif
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>

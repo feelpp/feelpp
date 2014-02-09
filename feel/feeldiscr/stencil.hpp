@@ -326,13 +326,7 @@ public:
         :
         _M_X1( Xh ),
         _M_X2( Yh ),
-#if !defined(FEELPP_ENABLE_MPI_MODE)
-        M_graph( new graph_type( Xh->nLocalDof(),
-                                 Xh->nDofStart(), Xh->nDofStart()+ Xh->nLocalDof()-1,
-                                 Yh->nDofStart(), Yh->nDofStart()+ Yh->nLocalDof()-1 ) ),
-#else
         M_graph( new graph_type( Xh->dof(),Yh->dof() ) ),
-#endif
         M_block_pattern( block_pattern ),
         M_rangeIteratorTest( r ),
         M_rangeIteratorExtended( rangeExtended )
