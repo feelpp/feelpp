@@ -339,8 +339,8 @@ public:
 
             if ( Type == 1 )
             {
-                for ( int c2 = 0; c2 < left_shape::N; ++ c2 )
-                    for ( int c1 = 0; c1 < left_shape::M; ++ c1 )
+                for ( int c1 = 0; c1 < left_shape::M; ++ c1 )
+                    for ( int c2 = 0; c2 < left_shape::N; ++ c2 )
                     {
                         res += M_l_tensor_expr.evalq( c1, c2, q )*M_r_tensor_expr.evalq( c1, c2, q );
                     }
@@ -355,12 +355,14 @@ public:
 
             if ( Type == 1 )
             {
-                for ( int c2 = 0; c2 < left_shape::N; ++ c2 )
-                    for ( int c1 = 0; c1 < left_shape::M; ++ c1 )
+                for ( uint16_type l = 0; l < left_shape::M; ++l )
+                {
+                    for ( int c2 = 0; c2 < left_shape::N; ++ c2 )
                     {
-                        auto a = M_l_tensor_expr.evalq( c1, c2, q );
+                        auto a = M_l_tensor_expr.evalq( l, c2, q );
                         res += a*a;
                     }
+                }
             }
             if ( ApplySqrt )
                 return math::sqrt(res);
