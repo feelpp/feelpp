@@ -45,7 +45,7 @@ boost::shared_ptr<Mesh<Simplex<2,Ngeo> > >
 unitCircle( double h = option(_name="gmsh.hsize").template as<double>() )
 {
     return createGMSHMesh(_mesh=new Mesh<Simplex<2,Ngeo> >,
-                          _desc=domain( _name="square",
+                          _desc=domain( _name="circle",
                                         _shape="ellipsoid",
                                         _dim=2,
                                         _xmin=-1,

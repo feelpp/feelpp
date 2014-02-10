@@ -113,7 +113,7 @@ struct GMSHElement
                  int e,
                  int _numPartitions,
                  int _partition,
-                 std::vector<int> const& _ghosts,
+                 std::vector<rank_type> const& _ghosts,
                  int _parent,
                  int _dom1, int _dom2,
                  int _numVertices,
@@ -196,7 +196,7 @@ struct GMSHElement
     void updatePartition( std::map<int,int> const& p2e, int worldcommrank, int worldcommsize )
         {
             partition = num;
-            for( int& g : ghosts )
+            for( auto& g : ghosts )
                 g = p2e.at(g)-1;
             setPartition( worldcommrank, worldcommsize );
         }
@@ -208,7 +208,7 @@ struct GMSHElement
     //! partitioning info
     int numPartitions;
     int partition;
-    std::vector<int> ghosts;
+    std::vector<rank_type> ghosts;
     bool is_on_processor;
     bool is_ghost;
     int ghost_partition_id;
@@ -713,7 +713,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
         {
           int num, type, physical = 0, elementary = 0, parent = 0;
           int dom1 = 0, dom2 = 0, numVertices;
-          std::vector<int> ghosts;
+          std::vector<rank_type> ghosts;
           int numTags;
           // some faces may not be associated to a partition in the mesh file,
           // hence will be read given the partition id 0 and will be discarded
@@ -806,7 +806,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
             unsigned int n = 1 + numTags + numVertices;
             std::vector<int> data(n);
             std::vector<int> indices( numVertices );
-            std::vector<int> ghosts;
+            std::vector<rank_type> ghosts;
 
             for(int i = 0; i < numElems; i++)
             {
