@@ -465,11 +465,12 @@ TestHDiv::exampleProblem1()
     auto p_rt = U_rt.element<1>( "p" );
     auto q_rt = V_rt.element<1>( "q" );
 
+    auto epsilon = 1e-7;
+
     auto F_rt = M_backend->newVector( Yh );
     auto darcyRT_rhs = form1( _test=Yh, _vector=F_rt );
     // fq
     darcyRT_rhs += integrate( _range=elements(mesh), _expr=f*id(q_rt) );
-    F_rt->close();
 
     auto M_rt = M_backend->newMatrix( Yh, Yh );
     auto darcyRT = form2( _test=Yh, _trial=Yh, _matrix=M_rt);
@@ -480,10 +481,11 @@ TestHDiv::exampleProblem1()
     // div(u) q
     darcyRT += integrate( _range=elements(mesh), _expr = divt(u_rt)*id(q_rt) );
 
-    //boundary condition
-    darcyRT += on( _range=boundaryfaces(mesh), _element=u_rt, _rhs=darcyRT_rhs,_expr=cst(0.) );
+    //espilon pq
+    darcyRT += integrate( _range=elements(mesh), _expr=epsilon*idt(p_rt)*id(q_rt) );
 
-    M_rt->close();
+    //boundary condition
+    //darcyRT += on( _range=elements(mesh), _element=u_rt, _rhs=darcyRT_rhs,_expr=cst(0.) );
 
     // Solve problem
     backend(_rebuild=true)->solve( _matrix=M_rt, _solution=U_rt, _rhs=F_rt );
@@ -516,18 +518,18 @@ TestHDiv::exampleProblem1()
 void
 TestHDiv::testProjector(gmsh_ptrtype ( *one_element_mesh_desc_fun )( double ))
 {
-    // mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-    //                                     _desc=domain( _name= ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1 ).str() ,
-    //                                             _shape="hypercube",
-    //                                             _usenames=true,
-    //                                             _dim=2,
-    //                                             _h=meshSize,
-    //                                             _xmin=-1,_xmax=1,
-    //                                             _ymin=-1,_ymax=1 ) );
+    mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
+                                        _desc=domain( _name= ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1 ).str() ,
+                                                _shape="hypercube",
+                                                _usenames=true,
+                                                _dim=2,
+                                                _h=meshSize,
+                                                _xmin=-1,_xmax=1,
+                                                _ymin=-1,_ymax=1 ) );
 
     // Only one element in the mesh - TEMPORARLY
-    mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-                                        _desc = one_element_mesh_desc_fun( 2 ) );
+    // mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
+    //                                     _desc = one_element_mesh_desc_fun( 2 ) );
 
     space_ptrtype Xh = space_type::New( mesh );
     lagrange_space_v_ptrtype Yh_v = lagrange_space_v_type::New( mesh ); //lagrange vectorial space
@@ -562,7 +564,7 @@ TestHDiv::testProjector(gmsh_ptrtype ( *one_element_mesh_desc_fun )( double ))
     std::cout << "error H1: " << math::sqrt( h1_s->energy( error_h1, error_h1 ) ) << "\n";
     BOOST_CHECK_SMALL( math::sqrt( h1_s->energy( error_h1, error_h1 ) ), 1e-13 );
     BOOST_TEST_MESSAGE("HDIV projection : error[div(E)-f]");
-    std::cout << "error div(f): " << math::sqrt( l2norm_div ) << "\n";
+    std::cout << "error div(f): " << l2norm_div << "\n";
     BOOST_CHECK_SMALL( l2norm_div, 1e-13 );
 
     std::string proj_name = "projection";
@@ -785,12 +787,11 @@ BOOST_AUTO_TEST_CASE( test_hdiv_N0_real3 )
 
 BOOST_AUTO_TEST_CASE( test_hdiv_projection_ref )
 {
+    BOOST_TEST_MESSAGE( "*** projection on reference element ***" );
+    Feel::TestHDiv t;
     Feel::Environment::changeRepository( boost::format( "/testsuite/feeldiscr/%1%/test_projection/%2%/" )
                                          % Feel::Environment::about().appName()
                                          % "ref" );
-
-    BOOST_TEST_MESSAGE( "*** projection on reference element ***" );
-    Feel::TestHDiv t;
     t.testProjector(&Feel::oneelement_geometry_ref);
 }
 BOOST_AUTO_TEST_CASE( test_hdiv_projection_real1 )
