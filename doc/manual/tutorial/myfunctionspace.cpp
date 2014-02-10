@@ -66,8 +66,8 @@ int main( int argc, char** argv )
     auto w = Xh->element( "w" );
 
     // build the interpolant
-    u = vf::project( _space=Xh, _range=elements( mesh ), _expr=g );
-    w = vf::project( _space=Xh, _range=elements( mesh ), _expr=idv( u )-g );
+    u.on( _range=elements( mesh ), _expr=g );
+    w.on( _range=elements( mesh ), _expr=idv( u )-g );
 
     // compute L2 norms
     double L2g = normL2( elements( mesh ), g );
