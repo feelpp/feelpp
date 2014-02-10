@@ -430,7 +430,7 @@ TestHDiv::exampleProblem1()
 
     auto K = eye<2>(); // Hydraulic conductivity tensor
     auto Lambda = eye<2>(); // Hydraulic resistivity tensor
-    auto f = 0; // Null source
+    auto f = Px()+Py(); // int_omega f = 0
 
     // ****** Primal formulation - with Lagrange ******
     lagrange_space_s_ptrtype Xh = lagrange_space_s_type::New( mesh );
@@ -457,8 +457,8 @@ TestHDiv::exampleProblem1()
 
     // ****** Dual-mixed solving - with Raviart Thomas ******
     prod_space_ptrtype Yh = prod_space_type::New( mesh );
-    auto U_rt = Yh->element( "(u,p)" );
-    auto V_rt = Yh->element( "(v,q)" );
+    auto U_rt = Yh->element( "(u,p)" ); //trial
+    auto V_rt = Yh->element( "(v,q)" ); //test
 
     auto u_rt = U_rt.element<0>( "u" ); //velocity field
     auto v_rt = V_rt.element<0>( "v" ); // potential field
@@ -468,19 +468,25 @@ TestHDiv::exampleProblem1()
     auto F_rt = M_backend->newVector( Yh );
     auto darcyRT_rhs = form1( _test=Yh, _vector=F_rt );
     // fq
-    darcyRT_rhs = integrate( _range=elements(mesh), _expr=f*id(q_rt) );
+    darcyRT_rhs += integrate( _range=elements(mesh), _expr=f*id(q_rt) );
+    F_rt->close();
 
     auto M_rt = M_backend->newMatrix( Yh, Yh );
     auto darcyRT = form2( _test=Yh, _trial=Yh, _matrix=M_rt);
     // Lambda u v
-    darcyRT = integrate( _range=elements(mesh), _expr=trans(idt(u_rt))*Lambda*id(v_rt) );
+    darcyRT = integrate( _range=elements(mesh), _expr = -trans(idt(u_rt))*Lambda*id(v_rt) );
     // p div(v)
     darcyRT += integrate( _range=elements(mesh), _expr = idt(p_rt)*div(v_rt) );
     // div(u) q
     darcyRT += integrate( _range=elements(mesh), _expr = divt(u_rt)*id(q_rt) );
 
+    //boundary condition
+    darcyRT += on( _range=boundaryfaces(mesh), _element=u_rt, _rhs=darcyRT_rhs,_expr=cst(0.) );
+
+    M_rt->close();
+
     // Solve problem
-    M_backend->solve( _matrix=M_rt, _solution=U_rt, _rhs=F_rt );
+    backend(_rebuild=true)->solve( _matrix=M_rt, _solution=U_rt, _rhs=F_rt );
 
     std::cout << "[Darcy] RT solve done" << std::endl;
 
@@ -504,7 +510,6 @@ TestHDiv::exampleProblem1()
     exporter_pro1->step( 0 )->add( "velocity_RT", u_rt );
     exporter_pro1->step( 0 )->add( "potential_RT", p_rt );
     exporter_pro1->save();
-
 }
 
 
@@ -816,12 +821,12 @@ BOOST_AUTO_TEST_CASE( test_hdiv_projection_real3 )
     t.testProjector(&Feel::oneelement_geometry_real_3);
 }
 
-// BOOST_AUTO_TEST_CASE( test_hdiv_example_1 )
-// {
-//     BOOST_TEST_MESSAGE( "*** resolution of Darcy problem ***" );
-//     Feel::TestHDiv t;
-//     t.exampleProblem1();
-// }
+BOOST_AUTO_TEST_CASE( test_hdiv_example_1 )
+{
+    BOOST_TEST_MESSAGE( "*** resolution of Darcy problem ***" );
+    Feel::TestHDiv t;
+    t.exampleProblem1();
+}
 
 BOOST_AUTO_TEST_SUITE_END()
 #else
