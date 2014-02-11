@@ -259,8 +259,10 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( gmshimportexport, T, dim_types )
                       std::distance( meshimp->beginFaceOnBoundary(), meshimp->endFaceOnBoundary() ) );
     BOOST_CHECK_EQUAL( std::distance( mesh->beginElement(), mesh->endElement() ),
                        std::distance( meshimp->beginElement(), meshimp->endElement() ) );
-    BOOST_CHECK_EQUAL( integrate( boundaryfaces( mesh ), cst( 1. ) ).evaluate() ,
-                       integrate( boundaryfaces( meshimp ), cst( 1. ) ).evaluate() );
+
+    double r1 = integrate( _range=boundaryfaces( mesh ), _expr=cst( 1. ) ).evaluate()(0,0);
+    double r2 = integrate( _range=boundaryfaces( meshimp ), _expr=cst( 1. ) ).evaluate()(0,0);
+    BOOST_CHECK_SMALL( std::abs(r1-r2),1e-12 );
 
     BOOST_TEST_MESSAGE( "[gmshimportexport] for dimension " << T::value << " done.\n" );
 }
