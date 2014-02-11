@@ -388,6 +388,9 @@ crbOptions( std::string const& prefix )
 
     ( "crb.use-accurate-apee",Feel::po::value<bool>()->default_value( false ), "use a posteriori error estimators from F.Casenave's paper if true, classic one else")
     ( "crb.optimize-offline-residual",Feel::po::value<bool>()->default_value( false ), "use optimize way for offline residual computation if true (temporary option)")
+
+    ( "crb.user-parameters",Feel::po::value<std::string>()->default_value( "" ), "values of parameters (used for one feel)")
+    ( "crb.select-parameter-via-one-feel",Feel::po::value<bool>()->default_value( false ), "specify that we want to excute code with parameters defined by user via option user-parameters")
     ;
 
     crboptions
