@@ -396,40 +396,40 @@ public:
             boost::split( str, vary_only_parameter_components, boost::is_any_of(" "), boost::token_compress_on );
             int number_str=str.size();
             CHECK( number_str < 4 )<<"Error when using option crb.vary-only-parameter-components, at maximum we can vary 2 components of the parameter";
+            int vary_mu_comp0=-1,vary_mu_comp1=-1;
             if( number_str > 0 )
             {
                 Sampling->clear();
                 compute_fem=false;
                 compute_stat=false;
-
-                int comp0=-1,comp1=-1,size=-1;
+                int size=-1;
                 //here only one component vary
                 if( number_str == 2 )
                 {
-                    comp0 = boost::lexical_cast<int>( str[0] );
+                    vary_mu_comp0 = boost::lexical_cast<int>( str[0] );
                     size = boost::lexical_cast<int>( str[1] );
                     run_sampling_size=size;
                 }
                 else
                 {
-                    comp0 = boost::lexical_cast<int>( str[0] );
-                    comp1 = boost::lexical_cast<int>( str[1] );
+                    vary_mu_comp0 = boost::lexical_cast<int>( str[0] );
+                    vary_mu_comp1 = boost::lexical_cast<int>( str[1] );
                     size = boost::lexical_cast<int>( str[2] );
                     run_sampling_size=size*size;
                 }
 
                 parameter_type user_mu ( model->parameterSpace() );
                 double mu_size = user_mu.size();
-                CHECK( comp0 < mu_size )<<"[OpusApp] error using crb.vary-only-parameter-components, the component "<<comp0<<" can't vary because parameter have a total of only "<<mu_size<<" components\n";
+                CHECK( vary_mu_comp0 < mu_size )<<"[OpusApp] error using crb.vary-only-parameter-components, the component "<<vary_mu_comp0<<" can't vary because parameter have a total of only "<<mu_size<<" components\n";
                 if( number_str == 3 )
                 {
-                    CHECK( comp1 < mu_size )<<"[OpusApp] error using crb.vary-only-parameter-components, the component "<<comp1<<" can't vary because parameter have a total of only "<<mu_size<<" components\n";
+                    CHECK( vary_mu_comp1 < mu_size )<<"[OpusApp] error using crb.vary-only-parameter-components, the component "<<vary_mu_comp1<<" can't vary because parameter have a total of only "<<mu_size<<" components\n";
                 }
 
                 std::vector< int > sampling_each_direction ( mu_size );
                 for(int i=0; i<mu_size; i++)
                 {
-                    if( i == comp0 || i == comp1 )
+                    if( i == vary_mu_comp0 || i == vary_mu_comp1 )
                         sampling_each_direction[i]=size;
                     else
                         sampling_each_direction[i]=0;
@@ -542,6 +542,10 @@ public:
             }
 
             std::ofstream file_summary_of_simulations( ( boost::format( "summary_of_simulations_%d" ) %dim ).str().c_str() ,std::ios::out | std::ios::app );
+            std::ofstream file_outputs_geo_gmsh ( "GMSH-outputs.geo", std::ios::out );
+            std::ofstream file_estimated_outputs_geo_gmsh ( "GMSH-estimated-outputs.geo" , std::ios::out );
+            file_outputs_geo_gmsh << "View \" outputs \" {\n";
+            file_estimated_outputs_geo_gmsh << "View \" estimated errors on outputs \" {\n";
 
             int curpar = 0;
 
@@ -837,6 +841,14 @@ public:
                                 double solution_estimated_error = all_upper_bounds.template get<1>();
                                 double dual_solution_estimated_error = all_upper_bounds.template get<2>();
 
+                                double ocrb = o.template get<0>();
+                                if( vary_mu_comp0 > -1 )
+                                {
+                                    double x = mu(vary_mu_comp0);
+                                    file_outputs_geo_gmsh << "SP("<<x<<",0,0){"<<ocrb<<", -1};\n";
+                                    file_estimated_outputs_geo_gmsh << "SP("<<x<<",0,0){"<<output_estimated_error<<", -1};\n";
+                                }
+
                                 if ( compute_fem )
                                 {
 									bool use_newton = option(_name="crb.use-newton").template as<bool>();
@@ -864,7 +876,6 @@ public:
                                     }
                                     std::vector<double> ofem = boost::assign::list_of( model->output( output_index,mu, u_fem ) )( ti.elapsed() );
 
-                                    double ocrb = o.template get<0>();
                                     relative_error = std::abs( ofem[0]- ocrb) /ofem[0];
                                     relative_estimated_error = output_estimated_error / ofem[0];
 
@@ -932,10 +943,10 @@ public:
                                     //if( ! boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value )
                                     //    throw std::logic_error( "ERROR TYPE must be 2 when using CRBTrilinear (no error estimation)" );
                                     double ocrb = o.template get<0>();
-                                    std::vector<double> v = boost::assign::list_of( output_fem )( time_fem )( ocrb )( relative_estimated_error )( ti.elapsed() ) ( relative_error )( condition_number )( l2_error )( h1_error ) ;
+                                    std::vector<double> v = boost::assign::list_of( output_fem )( time_fem )( ocrb )( relative_estimated_error )( ti.elapsed() ) ( output_estimated_error )( condition_number )( l2_error )( h1_error ) ;
                                     if( proc_number == Environment::worldComm().masterRank() )
                                     {
-                                        std::cout << "output=" << ocrb << " with " << o.template get<1>() << " basis functions  (relative error estimation on this output : " << relative_estimated_error<<") \n";
+                                        std::cout << "output=" << ocrb << " with " << o.template get<1>() << " basis functions  (error estimation on this output : " << output_estimated_error<<") \n";
                                         //std::ofstream file_summary_of_simulations( ( boost::format( "summary_of_simulations_%d" ) % o.template get<2>() ).str().c_str() ,std::ios::out | std::ios::app );
                                         printEntry( file_summary_of_simulations, mu, v );
                                         printEntry( ostr, mu, v );
@@ -1391,6 +1402,12 @@ public:
                     LOG( INFO ) << "------------------------------------------------------------";
                 }
             }
+
+            std::string conclude=" }; \n View[0].Axes = 1;\n View[0].Type = 2;\n";
+            file_estimated_outputs_geo_gmsh<<conclude;
+            file_outputs_geo_gmsh<<conclude;
+            file_estimated_outputs_geo_gmsh.close();
+            file_outputs_geo_gmsh.close();
 
             //model->computationalTimeEimStatistics();
             if( export_solution )
