@@ -364,6 +364,7 @@ public:
 
             bool use_predefined_sampling = option(_name="crb.use-predefined-test-sampling").template as<bool>();
             bool select_parameter_via_one_feel=option( _name="crb.select-parameter-via-one-feel").template as<bool>();
+            bool sampling_is_already_generated=false;
             if( select_parameter_via_one_feel )
             {
                 run_sampling_size=1;
@@ -386,6 +387,55 @@ public:
                     user_mu( i ) = mu;
                 }
                 Sampling->addElement( user_mu );
+                sampling_is_already_generated=true;
+            }
+
+
+            std::string vary_only_parameter_components = option(_name="crb.vary-only-parameter-components").template as<std::string>();
+            std::vector< std::string > str;
+            boost::split( str, vary_only_parameter_components, boost::is_any_of(" "), boost::token_compress_on );
+            int number_str=str.size();
+            CHECK( number_str < 4 )<<"Error when using option crb.vary-only-parameter-components, at maximum we can vary 2 components of the parameter";
+            if( number_str > 0 )
+            {
+                Sampling->clear();
+                compute_fem=false;
+                compute_stat=false;
+
+                int comp0=-1,comp1=-1,size=-1;
+                //here only one component vary
+                if( number_str == 2 )
+                {
+                    comp0 = boost::lexical_cast<int>( str[0] );
+                    size = boost::lexical_cast<int>( str[1] );
+                    run_sampling_size=size;
+                }
+                else
+                {
+                    comp0 = boost::lexical_cast<int>( str[0] );
+                    comp1 = boost::lexical_cast<int>( str[1] );
+                    size = boost::lexical_cast<int>( str[2] );
+                    run_sampling_size=size*size;
+                }
+
+                parameter_type user_mu ( model->parameterSpace() );
+                double mu_size = user_mu.size();
+                CHECK( comp0 < mu_size )<<"[OpusApp] error using crb.vary-only-parameter-components, the component "<<comp0<<" can't vary because parameter have a total of only "<<mu_size<<" components\n";
+                if( number_str == 3 )
+                {
+                    CHECK( comp1 < mu_size )<<"[OpusApp] error using crb.vary-only-parameter-components, the component "<<comp1<<" can't vary because parameter have a total of only "<<mu_size<<" components\n";
+                }
+
+                std::vector< int > sampling_each_direction ( mu_size );
+                for(int i=0; i<mu_size; i++)
+                {
+                    if( i == comp0 || i == comp1 )
+                        sampling_each_direction[i]=size;
+                    else
+                        sampling_each_direction[i]=0;
+                }
+                Sampling->logEquidistributeProduct( sampling_each_direction );
+                sampling_is_already_generated=true;
             }
 
             if( n_eval_computational_time > 0 )
@@ -422,7 +472,7 @@ public:
             //here we can be interested by computing FEM and CRB solutions
             //so it is important that every proc has the same sampling (for FEM solution)
             bool all_proc_have_same_sampling=true;
-            if( ! select_parameter_via_one_feel )
+            if( ! sampling_is_already_generated )
             {
                 switch ( run_sampling_type )
                 {
