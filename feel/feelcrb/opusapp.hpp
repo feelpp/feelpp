@@ -342,7 +342,6 @@ public:
         {
 
             bool export_solution = option(_name=_o( this->about().appName(),"export-solution" )).template as<bool>();
-
             int proc_number =  Environment::worldComm().globalRank();
 
             if ( this->vm().count( "help" ) )
@@ -362,6 +361,32 @@ public:
             int n_eval_computational_time = option(_name="eim.computational-time-neval").template as<int>();
             bool compute_fem = option(_name="crb.compute-fem-during-online").template as<bool>();
             bool compute_stat =  option(_name="crb.compute-stat").template as<bool>();
+
+            bool use_predefined_sampling = option(_name="crb.use-predefined-test-sampling").template as<bool>();
+            bool select_parameter_via_one_feel=option( _name="crb.select-parameter-via-one-feel").template as<bool>();
+            if( select_parameter_via_one_feel )
+            {
+                run_sampling_size=1;
+                Sampling->clear();
+                //in this case we want to visualize RB solution with parameters from one feel interface
+                compute_fem=false;
+                compute_stat=false;
+
+                //parameters are given by a vector of double
+                std::string string_parameters = option(_name="crb.user-parameters").template as< std::string >();
+                std::vector< std::string > str;
+                boost::split( str, string_parameters, boost::is_any_of(" "), boost::token_compress_on );
+                parameter_type user_mu ( model->parameterSpace() );
+                double user_parameter_size = str.size();
+                double mu_size = user_mu.size();
+                CHECK( user_parameter_size == mu_size )<<"[OpusApp] Error : parameters must have "<<mu_size<<" components and "<<user_parameter_size<<" have been given by the user \n";
+                for(int i=0; i<mu_size; i++)
+                {
+                    double mu = boost::lexical_cast<double>( str[i] );
+                    user_mu( i ) = mu;
+                }
+                Sampling->addElement( user_mu );
+            }
 
             if( n_eval_computational_time > 0 )
             {
@@ -397,21 +422,24 @@ public:
             //here we can be interested by computing FEM and CRB solutions
             //so it is important that every proc has the same sampling (for FEM solution)
             bool all_proc_have_same_sampling=true;
-            switch ( run_sampling_type )
+            if( ! select_parameter_via_one_feel )
             {
-            default:
-            case SamplingMode::RANDOM:
-                Sampling->randomize( run_sampling_size , all_proc_have_same_sampling );
-                break;
+                switch ( run_sampling_type )
+                {
+                default:
+                case SamplingMode::RANDOM:
+                    Sampling->randomize( run_sampling_size , all_proc_have_same_sampling );
+                    break;
 
-            case SamplingMode::EQUIDISTRIBUTED:
-                Sampling->equidistribute( run_sampling_size , all_proc_have_same_sampling );
-                break;
+                case SamplingMode::EQUIDISTRIBUTED:
+                    Sampling->equidistribute( run_sampling_size , all_proc_have_same_sampling );
+                    break;
 
-            case SamplingMode::LOGEQUIDISTRIBUTED:
-                Sampling->logEquidistribute( run_sampling_size , all_proc_have_same_sampling );
-                break;
-            }
+                case SamplingMode::LOGEQUIDISTRIBUTED:
+                    Sampling->logEquidistribute( run_sampling_size , all_proc_have_same_sampling );
+                    break;
+                }
+            }// ! select_parameter_via_one_feel
 
 
             std::map<CRBModelMode,std::vector<std::string> > hdrs;
@@ -499,7 +527,7 @@ public:
              * mu_0= [ value0 , value1 , ... ]
              * mu_1= [ value0 , value1 , ... ]
              **/
-            if( option(_name="crb.use-predefined-test-sampling").template as<bool>() || option(_name="crb.script-mode").template as<bool>() )
+            if(  use_predefined_sampling || option(_name="crb.script-mode").template as<bool>() )
             {
                 std::string file_name = ( boost::format("SamplingForTest") ).str();
                 std::ifstream file ( file_name );
@@ -737,7 +765,9 @@ public:
                                 u_crb.setName( u_crb_str.str()  );
                                 LOG(INFO) << "export u_crb \n";
                                 if( export_solution )
+                                {
                                     e->add( u_crb.name(), u_crb );
+                                }
 
                                 double relative_error = -1;
                                 double relative_estimated_error = -1;
