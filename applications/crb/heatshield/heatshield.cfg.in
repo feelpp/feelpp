@@ -1,15 +1,15 @@
 #mesh size
 hsize=1.5e-1
-#hsize=1.5e-1
-do-export=false
+
 
 #name of the .msh file
 #for example :
 #mshfile = /home/veys/feel/geofiles/heatshield/heatshield_h3e-1_np2.msh
 
-[heatshield.run]
-mode=2
-sampling.size=10
+[heatshield]
+run.mode=2
+run.sampling.size=10
+export-solution=false
 
 [heatshield.bdf]
 order=1
