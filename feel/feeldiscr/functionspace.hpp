@@ -6614,6 +6614,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     std::vector<bool> points_done( this->functionSpace()->dof()->nLocalDof()/this->nComponents );
     std::fill( points_done.begin(), points_done.end(),false );
 
+    const int ncdof  = fe_type::is_product?nComponents:1;
     for ( ; it!=en ; ++it )
     {
         geoelement_type const& curElt = boost::unwrap_ref(*it);
@@ -6627,8 +6628,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
 
             for ( uint16_type __j = 0; __j < ndofv; ++__j )
             {
-                for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
-                    //for ( uint16_type c2 = 0; c2 < shape::N;++c2 )
+
+                for ( uint16_type c1 = 0; c1 < ncdof; ++c1 )
                 {
                     if ( accumulate )
                         this->plus_assign( curElt.id(), __j, c1, tensor_expr.evalq( c1, 0, __j ) );
@@ -6648,7 +6649,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
 
             for ( uint16_type __j = 0; __j < ndofv; ++__j )
             {
-                for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
+                for ( uint16_type c1 = 0; c1 < ncdof; ++c1 )
                     //for ( uint16_type c2 = 0; c2 < shape::N;++c2 )
                 {
                     if ( accumulate )
@@ -6672,7 +6673,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
 
                 for ( uint16_type __j = 0; __j < ndofv; ++__j )
                 {
-                    for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
+                    for ( uint16_type c1 = 0; c1 < ncdof; ++c1 )
                         //for ( uint16_type c2 = 0; c2 < shape::N;++c2 )
                     {
                         if ( accumulate )
@@ -6692,7 +6693,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
 
                 for ( uint16_type __j = 0; __j < ndofv; ++__j )
                 {
-                    for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
+                    for ( uint16_type c1 = 0; c1 < ncdof; ++c1 )
                         //for ( uint16_type c2 = 0; c2 < shape::N;++c2 )
                     {
                         if ( accumulate )
@@ -6708,7 +6709,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
         }
 
         //if P0 continuous finish loop here
-        if (fe_type::isLagrangeP0Continuous )
+        if ( isP0Continuous<fe_type>::result )
         {
             break;
         }
