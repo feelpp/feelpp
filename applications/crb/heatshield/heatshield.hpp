@@ -73,7 +73,6 @@ makeHeatShieldOptions()
     ( "hsize", Feel::po::value<double>()->default_value( 1e-1 ), "first h value to start convergence" )
     ( "mshfile", Feel::po::value<std::string>()->default_value( "" ), "name of the gmsh file input")
     ( "do-not-use-operators-free", Feel::po::value<bool>()->default_value( true ), "never use operators free if true" )
-    ( "do-export", Feel::po::value<bool>()->default_value( false ), "export results if true" )
     ( "beta.A0", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for A0" )
     ( "beta.A1", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for A1" )
     ( "beta.A2", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for A2" )
@@ -722,7 +721,6 @@ HeatShield<Order>::HeatShield( po::variables_map const& vm )
     M_is_steady( option(_name="crb.is-model-executed-in-steady-mode").template as<bool>() ),
     meshSize( vm["hsize"].as<double>() ),
     export_number( 0 ),
-    do_export( vm["do-export"].as<bool>() ),
     M_Dmu( new parameterspace_type )
 {
         M_preconditionerl2 = preconditioner(_pc=(PreconditionerType) M_backendl2->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
