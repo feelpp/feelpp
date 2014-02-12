@@ -387,13 +387,15 @@ private:
     static void doOptions( int argc, char** argv, po::options_description const& desc, std::string const& appName );
 
     /**
-     * \fn void generateOLFiles( std::string const& appName )
+     * \fn void generateOLFiles( int argc, char ** argv, std::string const& appName )
      * \brief Generate configuration files for interaction with Gmsh through OneLab.
      * \author Carolina Diaz, Jérôme Boeglin, Sébastien Landré
      *
+     * @param argc Number of application arguments.
+     * @param argv Application arguments.
      * @param appName Name of the application.
      */
-    static void generateOLFiles( std::string const& appName );
+    static void generateOLFiles( int argc, char ** argv, std::string const& appName );
     static void processGenericOptions();
     static void parseAndStoreOptions( po::command_line_parser parser, bool extra_parser = false );
 

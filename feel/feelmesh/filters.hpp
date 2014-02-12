@@ -1022,13 +1022,32 @@ boost::tuple<mpl::size_t<MESH_FACES>,
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
     return Feel::detail::markedfaces( mesh, mesh->markerName( __marker ), meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
+template<typename MeshType>
+std::list<boost::tuple<mpl::size_t<MESH_FACES>,
+                       typename MeshTraits<MeshType>::marker_face_const_iterator,
+                       typename MeshTraits<MeshType>::marker_face_const_iterator> >
+markedfaces( MeshType const& mesh,
+             std::list<std::string> const& __markers )
+{
+    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
+    std::list<boost::tuple<mpl::size_t<MESH_FACES>,
+                           typename MeshTraits<MeshType>::marker_face_const_iterator,
+                           typename MeshTraits<MeshType>::marker_face_const_iterator> > list_faces;
+    for( auto it = __markers.begin(), en = __markers.end(); it != en; ++it )
+    {
+        flag_type theflag = mesh->markerId( *it );
+        VLOG(2) << "[markedfaces] flag: " << theflag << "\n";
+        list_faces.push_back( Feel::detail::markedfaces( mesh, theflag, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() ) );
+    }
+    return list_faces;
+}
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_FACES>,
       typename MeshTraits<MeshType>::marker_face_const_iterator,
       typename MeshTraits<MeshType>::marker_face_const_iterator>
       markedfaces( MeshType const& mesh,
-                   boost::any __marker )
+                   boost::any const& __marker )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
     flag_type theflag = mesh->markerId( __marker );
@@ -1057,25 +1076,6 @@ markedfaces( MeshType const& mesh,
     return list_faces;
 }
 
-template<typename MeshType>
-std::list<boost::tuple<mpl::size_t<MESH_FACES>,
-                       typename MeshTraits<MeshType>::marker_face_const_iterator,
-                       typename MeshTraits<MeshType>::marker_face_const_iterator> >
-markedfaces( MeshType const& mesh,
-             std::list<std::string> __markers )
-{
-    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    std::list<boost::tuple<mpl::size_t<MESH_FACES>,
-                           typename MeshTraits<MeshType>::marker_face_const_iterator,
-                           typename MeshTraits<MeshType>::marker_face_const_iterator> > list_faces;
-    for( auto it = __markers.begin(), en = __markers.end(); it != en; ++it )
-    {
-        flag_type theflag = mesh->markerId( *it );
-        VLOG(2) << "[markedfaces] flag: " << theflag << "\n";
-        list_faces.push_back( Feel::detail::markedfaces( mesh, theflag, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() ) );
-    }
-    return list_faces;
-}
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_FACES>,

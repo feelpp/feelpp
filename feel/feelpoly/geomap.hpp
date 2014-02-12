@@ -29,6 +29,8 @@
 #include <boost/none_t.hpp>
 #endif /* BOOST_VERSION >= 103400 */
 
+#include <Eigen/Core>
+
 #include <boost/mpl/vector.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/optional.hpp>
@@ -691,6 +693,7 @@ class Context
         M_CS( PDim, PDim ),
         M_CSi( PDim, PDim ),
         M_B( NDim, PDim ),
+        M_Ptangent( NDim, NDim ),
         M_B3( boost::extents[NDim][NDim][PDim][PDim] ),
         M_id( __e.id() ),
         M_e_marker( __e.marker() ),
@@ -756,6 +759,7 @@ Context( gm_ptrtype __gm,
     M_CS( PDim, PDim ),
     M_CSi( PDim, PDim ),
     M_B( NDim, PDim ),
+    M_Ptangent( NDim, NDim ),
     M_B3( boost::extents[NDim][NDim][PDim][PDim] ),
     M_id( __e.id() ),
     M_e_marker( __e.marker() ),
@@ -815,6 +819,7 @@ Context( gmc_ptrtype& p )
     M_CS( p->M_CS ),
     M_CSi( p->M_CSi ),
     M_B( p->M_B ),
+    M_Ptangent( p->M_Ptangent ),
     M_B3( p->M_B3 ),
     M_id( p->M_id ),
     M_e_marker( p->M_e_marker ),
@@ -1208,6 +1213,15 @@ value_type B( int c1, int c2, int q ) const
 {
     //BOOST_STATIC_ASSERT( vm::has_kb<context>::value );
     return B( q, mpl::bool_<is_linear>() )( c1, c2 );
+}
+
+matrix_type const& projectorTangent( int i ) const
+{
+    return M_Ptangent;
+}
+value_type projectorTangent( int c1, int c2, int q ) const
+{
+    return M_Ptangent(c1,c2);
 }
 
 matrix_type const& K( int i ) const
@@ -1768,14 +1782,23 @@ void updateJKBN( mpl::bool_<true>  )
 
     if ( vm::has_tangent<context>::value && ( M_face_id != invalid_uint16_type_value ) )
     {
-        // t = |\hat{e}|*o_K*(K*t_ref)/|e| where o_K is the sign(e*x_K(\hat{e}))
-        ublas::axpy_prod( M_K,
-                          M_gm->referenceConvex().tangent( M_face_id ),
-                          M_t_real,
-                          true );
-        double ratio = M_gm->referenceConvex().h( M_face_id )/M_h_face;
+        if ( NDim == 2 )
+        {
+            // t = |\hat{e}|*o_K*(K*t_ref)/|e| where o_K is the sign(e*x_K(\hat{e}))
+            ublas::axpy_prod( M_K,
+                              M_gm->referenceConvex().tangent( M_face_id ),
+                              M_t_real,
+                              true );
+            double ratio = M_gm->referenceConvex().h( M_face_id )/M_h_face;
 
-        M_t_real *= ratio;
+            M_t_real *= ratio;
+        }
+
+        // compute projector on tangent plane
+        Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> > P(M_Ptangent.data().begin(), NDim, NDim);
+        P.setIdentity(NDim, NDim);
+        Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> > N(M_u_n_real.data().begin(), NDim,1);
+        P.noalias() -= N*N.transpose();
     }
 
 }
@@ -1951,6 +1974,8 @@ matrix_type M_K;
 matrix_type M_CS;
 matrix_type M_CSi;
 matrix_type M_B;
+matrix_type M_Ptangent;
+
 boost::multi_array<value_type,4> M_B3;
 
 size_type M_id;

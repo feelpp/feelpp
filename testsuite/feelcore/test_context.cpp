@@ -39,19 +39,19 @@
 BOOST_AUTO_TEST_CASE( test_context )
 {
     using namespace Feel;
-    Context ctx( ON_ELIMINATION | ON_ELIMINATION_KEEP_DIAGONAL );
-    BOOST_CHECK_EQUAL( ctx.test( ON_PENALISATION ), false );
-    BOOST_CHECK_EQUAL( ctx.test( ON_ELIMINATION ), true );
-    BOOST_CHECK_EQUAL( ctx.test( ON_ELIMINATION_KEEP_DIAGONAL ), true );
-    BOOST_CHECK_EQUAL( ctx.test( ON_ELIMINATION_SYMMETRIC ), false );
+    Context ctx( int(OnContext::ELIMINATION) | int(OnContext::ELIMINATION_KEEP_DIAGONAL) );
+    BOOST_CHECK_EQUAL( ctx.test( OnContext::PENALISATION ), false );
+    BOOST_CHECK_EQUAL( ctx.test( OnContext::ELIMINATION ), true );
+    BOOST_CHECK_EQUAL( ctx.test( OnContext::ELIMINATION_KEEP_DIAGONAL ), true );
+    BOOST_CHECK_EQUAL( ctx.test( OnContext::ELIMINATION_SYMMETRIC ), false );
 
 
-    ctx = ON_ELIMINATION | ON_ELIMINATION_SYMMETRIC;
-    BOOST_CHECK_EQUAL( ctx.test( ON_PENALISATION ), false );
-    BOOST_CHECK_EQUAL( ctx.test( ON_ELIMINATION ), true );
-    BOOST_CHECK_EQUAL( ctx.test( ON_ELIMINATION_KEEP_DIAGONAL ), false );
-    BOOST_CHECK_EQUAL( ctx.test( ON_ELIMINATION_SYMMETRIC ), true );
-    BOOST_CHECK_EQUAL( ctx.test( ON_ELIMINATION_SYMMETRIC | ON_ELIMINATION ), true );
+    ctx = int(OnContext::ELIMINATION) | int(OnContext::ELIMINATION_SYMMETRIC);
+    BOOST_CHECK_EQUAL( ctx.test( OnContext::PENALISATION ), false );
+    BOOST_CHECK_EQUAL( ctx.test( OnContext::ELIMINATION ), true );
+    BOOST_CHECK_EQUAL( ctx.test( OnContext::ELIMINATION_KEEP_DIAGONAL ), false );
+    BOOST_CHECK_EQUAL( ctx.test( OnContext::ELIMINATION_SYMMETRIC ), true );
+    BOOST_CHECK_EQUAL( ctx.test( int(OnContext::ELIMINATION_SYMMETRIC) | int(OnContext::ELIMINATION) ), true );
 
 #if 0
     detail::Flags<on_context_type> oct;
@@ -59,10 +59,10 @@ BOOST_AUTO_TEST_CASE( test_context )
     //FEELPP_DECLARE_FLAGS( onct, on_context_type );
 
 
-    onct |= ( ON_ELIMINATION|ON_ELIMINATION_SYMMETRIC );
-    BOOST_CHECK_EQUAL( onct.testFlag( ON_ELIMINATION ), true );
-    BOOST_CHECK_EQUAL( onct.testFlag( ON_ELIMINATION_KEEP_DIAGONAL ), false );
-    BOOST_CHECK_EQUAL( onct.testFlag( ON_ELIMINATION_SYMMETRIC ), true );
+    onct |= ( OnContext::ELIMINATION|OnContext::ELIMINATION_SYMMETRIC );
+    BOOST_CHECK_EQUAL( onct.testFlag( OnContext::ELIMINATION ), true );
+    BOOST_CHECK_EQUAL( onct.testFlag( OnContext::ELIMINATION_KEEP_DIAGONAL ), false );
+    BOOST_CHECK_EQUAL( onct.testFlag( OnContext::ELIMINATION_SYMMETRIC ), true );
 #endif
 }
 
@@ -79,4 +79,3 @@ BOOST_AUTO_TEST_CASE( test_context_matrix_properties )
     BOOST_CHECK_EQUAL( ctx.test( HERMITIAN ), true );
 
 }
-
