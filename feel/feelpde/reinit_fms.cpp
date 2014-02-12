@@ -88,9 +88,9 @@ reduceDonePoints(element_type const& __v, element_type& status, std::set<size_ty
         done.insert( k );
         status.set(k, DONE);
         if (! M_functionspace->dof()->dofGlobalProcessIsGhost( k ) )
-          ++nbDoneWithoutGhost;    
+          ++nbDoneWithoutGhost;
       }
-       
+
   nbTotalDone = mpi::all_reduce(Environment::worldComm().globalComm(),
                                 nbDoneWithoutGhost,
                                 std::plus<size_type>() );
@@ -119,7 +119,7 @@ reduceClosePoints(heap_type& theHeap, element_type& status )
   checkStatus->close();
   valueAtClose->close();
 
-  // store global id of every CLOSE value and its phi associated value 
+  // store global id of every CLOSE value and its phi associated value
   std::map< size_type, value_type > phiValueAtGlobalId;
 
   for (size_type k = 0 ; k < M_functionspace->nLocalDof() ; ++k)
@@ -243,6 +243,9 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
 
     done.clear(); // not needed any more, save memory...
 
+    // if there is no interface, do nothing
+    if (nbTotalDone == 0)
+        return __v;
 
     // for debug purpuses only
     auto checkHeap = [&] (std::string msg)
@@ -272,7 +275,7 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
     const int nbTotalIterFM = M_functionspace->dof()->nDof() - nbTotalDone;
 
     unsigned int count_iteration=0;
-        
+
     for (int i=0; i<nbTotalIterFM; ++i)
       {
         /*VD : the heap is sorted with the smallest phi value

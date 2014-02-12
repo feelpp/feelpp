@@ -24,8 +24,10 @@ NPROCS=$1
 
 # if a onelab.cfg file exists
 if [[ -f "$1.onelab.cfg" ]]; then
-		echo "Restoring previous configuration from \"$1.onelab.cfg\""
-    PCONFIG="--config-file $1.onelab.cfg"
+	# we do not restore the previous configuration for the moment
+    #echo "Restoring previous configuration from \"$1.onelab.cfg\""
+    #PCONFIG="--config-file $1.onelab.cfg"
+    PCONFIG=""
 fi
 
 	  # Force regenration with previous parameters
