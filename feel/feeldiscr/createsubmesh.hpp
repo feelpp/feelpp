@@ -403,7 +403,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
                     newElem.setProcessId(oldElem.processId());
                     newElem.clearIdInOthersPartitions();
 
-                    std::vector<int> newNeighborPartitionIds(1);
+                    std::vector<rank_type> newNeighborPartitionIds(1);
                     newNeighborPartitionIds[0]=newMesh->worldComm().localRank();
                     newElem.setNeighborPartitionIds( newNeighborPartitionIds );
 
@@ -736,7 +736,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
                     //CHECK( proc==old_elem.processId() ) << "invalid process id\n";
                     newElem.setProcessId( proc );
                     //newElem.clearIdInOthersPartitions();
-                    std::vector<int> newNeighborPartitionIds(1);
+                    std::vector<rank_type> newNeighborPartitionIds(1);
                     newNeighborPartitionIds[0]=newMesh->worldComm().localRank();
                     newElem.setNeighborPartitionIds( newNeighborPartitionIds );
 
