@@ -857,6 +857,7 @@ public :
 
         static const uint16_type nRealDim = mesh_type::nRealDim;
         static const bool is_composite = functionspace_type::is_composite;
+        static const bool is_mortar = functionspace_type::is_mortar;
 
         typedef typename mpl::if_<mpl::bool_<is_composite>,
                                   mpl::identity<boost::none_t>,

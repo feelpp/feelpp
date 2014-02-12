@@ -40,18 +40,8 @@
 
 #include <testsuite/testsuite.hpp>
 
-#include <feel/feelalg/backend.hpp>
-#include <feel/feelfilters/creategmshmesh.hpp>
-#include <feel/feelfilters/domain.hpp>
-#include <feel/feelfilters/exporter.hpp>
-#include <feel/feelvf/form.hpp>
-#include <feel/feelvf/operators.hpp>
-#include <feel/feelvf/operations.hpp>
-#include <feel/feelvf/on.hpp>
+#include <feel/feel.hpp>
 #include <feel/feelpoly/raviartthomas.hpp>
-#include <feel/feelvf/vf.hpp>
-#include <feel/feeldiscr/projector.hpp>
-
 
 namespace Feel
 {
@@ -367,16 +357,20 @@ public:
     typedef bases<RaviartThomas<0> > basis_type;
     typedef bases<Lagrange<1,Vectorial> > lagrange_basis_v_type; //P1 vectorial space
     typedef bases<Lagrange<1,Scalar> > lagrange_basis_s_type; //P1 scalar space
+    typedef bases< RaviartThomas<0>, Lagrange<1,Scalar> > prod_basis_type; //For Darcy : (u,p) (\in H_div x L2)
     //! the approximation function space type
     typedef FunctionSpace<mesh_type, basis_type> space_type;
     typedef FunctionSpace<mesh_type, lagrange_basis_s_type> lagrange_space_s_type;
     typedef FunctionSpace<mesh_type, lagrange_basis_v_type> lagrange_space_v_type;
+    typedef FunctionSpace<mesh_type, prod_basis_type> prod_space_type;
     //! the approximation function space type (shared_ptr<> type)
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef boost::shared_ptr<lagrange_space_s_type> lagrange_space_s_ptrtype;
     typedef boost::shared_ptr<lagrange_space_v_type> lagrange_space_v_ptrtype;
+    typedef boost::shared_ptr<prod_space_type> prod_space_ptrtype;
     //! an element type of the approximation function space
     typedef typename space_type::element_type element_type;
+    typedef typename prod_space_type::element_type prod_element_type;
 
     //! the exporter factory type
     typedef Exporter<mesh_type> export_type;
@@ -404,7 +398,7 @@ public:
     /**
      * run the application
      */
-    void shape_functions( gmsh_ptrtype ( *one_element_mesh )( double ), double );
+    void shape_functions( gmsh_ptrtype ( *one_element_mesh )( double ));
     void testProjector(gmsh_ptrtype ( *one_element_mesh_desc_fun )( double ));
     void exampleProblem1();
 
@@ -421,13 +415,10 @@ private:
 }; //TestHDiv
 
 // Resolve problem curl(curl(u)) + u = f with cross_prod(u,n) = 0 on boundary
-#if 0
+
 void
 TestHDiv::exampleProblem1()
 {
-    using namespace Feel::vf;
-    // then a fine mesh which we use to export the basis function to
-    // visualize them
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _desc=domain( _name= ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1 ).str() ,
                                                 _shape="hypercube",
@@ -437,66 +428,108 @@ TestHDiv::exampleProblem1()
                                                 _xmin=-1,_xmax=1,
                                                 _ymin=-1,_ymax=1 ) );
 
-    // Xh : space build with Nedelec elements
-    space_ptrtype Xh = space_type::New( mesh );
-    element_type u( Xh, "u" ); //solution
-    element_type phi( Xh, "v" ); //test function
+    auto K = eye<2>(); // Hydraulic conductivity tensor
+    auto Lambda = eye<2>(); // Hydraulic resistivity tensor
+    auto f = Px()+Py(); // int_omega f = 0
 
-    auto u_exact = ( 1-Py()*Py() )*unitX() + ( 1-Px()*Px() )*unitY(); //exact solution (analytical)
-    auto f = ( 3-Py()*Py() )*unitX() + ( 3-Px()*Px() )*unitY(); //f = curl(curl(u_exact)) + u_exact
+    // ****** Primal formulation - with Lagrange ******
+    lagrange_space_s_ptrtype Xh = lagrange_space_s_type::New( mesh );
+    lagrange_space_v_ptrtype Xhvec = lagrange_space_v_type::New( mesh );
+    auto p_l = Xh->element( "p" );
+    auto u_l = Xhvec->element( "u" );
+    auto q_l = Xh->element( "q" );
 
-    //variationnal formulation : curl(curl(u)) + u = f
-    auto F = M_backend->newVector( Xh );
-    form1( _test=Xh, _vector=F, _init=true ) = integrate( _range=elements(mesh), _expr=trans(f)*id(phi) );
+    auto F_l = M_backend->newVector( Xh );
+    auto darcyL_rhs = form1( _test=Xh, _vector=F_l );
+    // fq
+    darcyL_rhs = integrate( _range=elements(mesh), _expr=f*id(q_l) );
 
-    auto M = M_backend->newMatrix( Xh, Xh );
-    form2( _test=Xh, _trial=Xh, _matrix=M, _init=true) = integrate(elements(mesh), trans(curlt(u))*curl(phi) + trans(idt(u))*id(phi) );
-    //form2( _test=Xh, _trial=Xh, _matrix=M, _init=true) = integrate(_range=elements(mesh), _expr=cst(0.) );
+    auto M_l = M_backend->newMatrix( Xh, Xh );
+    auto darcyL = form2( _test=Xh, _trial=Xh, _matrix=M_l);
+    darcyL = integrate( _range=elements(mesh), _expr=grad(q_l)*K*trans(gradt(p_l)) );
 
-    //! solve the system for V
-    M_backend->solve( _matrix=M, _solution=u, _rhs=F );
+    // Solve problem (p)
+    M_backend->solve( _matrix=M_l, _solution=p_l, _rhs=F_l );
+    // Deduce u :
+    u_l = vf::project( Xhvec, elements(mesh), -K*trans(gradv(p_l)) );
 
-    // auto hcurl = opProjection( _domainSpace=Xh, _imageSpace=Xh, _type=HCURL );
-    // auto u_hcurl = hcurl->project( _expr=trans( f ) );
-    //auto u_exact_hcurl = hcurl->project( _expr=trans( u_exact ) );
-    //auto error_hcurl = hcurl->project( _expr=trans( u_exact-idv( u_hcurl ) ) );
+    std::cout << "[Darcy] Lagrange solve done" << std::endl;
 
-    auto hcurl = opProjection( _domainSpace=Xh, _imageSpace=Xh, _type=HCURL );
-    auto error_hcurl = hcurl->project( _expr=trans( u_exact - idv(u) ) );
-    std::cout << "error Hcurl: " << math::sqrt( hcurl->energy( error_hcurl, error_hcurl ) ) << "\n";
+    // ****** Dual-mixed solving - with Raviart Thomas ******
+    prod_space_ptrtype Yh = prod_space_type::New( mesh );
+    auto U_rt = Yh->element( "(u,p)" ); //trial
+    auto V_rt = Yh->element( "(v,q)" ); //test
 
-    std::string pro1_name = "problem1";
+    auto u_rt = U_rt.element<0>( "u" ); //velocity field
+    auto v_rt = V_rt.element<0>( "v" ); // potential field
+    auto p_rt = U_rt.element<1>( "p" );
+    auto q_rt = V_rt.element<1>( "q" );
+
+    auto epsilon = 1e-7;
+
+    auto F_rt = M_backend->newVector( Yh );
+    auto darcyRT_rhs = form1( _test=Yh, _vector=F_rt );
+    // fq
+    darcyRT_rhs += integrate( _range=elements(mesh), _expr=f*id(q_rt) );
+
+    auto M_rt = M_backend->newMatrix( Yh, Yh );
+    auto darcyRT = form2( _test=Yh, _trial=Yh, _matrix=M_rt);
+    // Lambda u v
+    darcyRT = integrate( _range=elements(mesh), _expr = -trans(idt(u_rt))*Lambda*id(v_rt) );
+    // p div(v)
+    darcyRT += integrate( _range=elements(mesh), _expr = idt(p_rt)*div(v_rt) );
+    // div(u) q
+    darcyRT += integrate( _range=elements(mesh), _expr = divt(u_rt)*id(q_rt) );
+
+    //espilon pq
+    darcyRT += integrate( _range=elements(mesh), _expr=epsilon*idt(p_rt)*id(q_rt) );
+
+    //boundary condition
+    //darcyRT += on( _range=elements(mesh), _element=u_rt, _rhs=darcyRT_rhs,_expr=cst(0.) );
+
+    // Solve problem
+    backend(_rebuild=true)->solve( _matrix=M_rt, _solution=U_rt, _rhs=F_rt );
+
+    std::cout << "[Darcy] RT solve done" << std::endl;
+
+    // ****** Compute error ******
+    auto l2err_u = normL2( _range=elements(mesh), _expr=idv(u_l) - idv(u_rt) );
+    auto l2err_p = normL2( _range=elements(mesh), _expr=idv(p_l) - idv(p_rt) );
+
+    std::cout << "||u(primal) - u(dual-mixed)|| = " << l2err_u << std::endl;
+    std::cout << "||p(primal) - p(dual-mixed)|| = " << l2err_p << std::endl;
+
+    // ****** Export results ******
     export_ptrtype exporter_pro1( export_type::New( this->vm(),
                                   ( boost::format( "%1%-%2%-%3%" )
                                     % this->about().appName()
                                     % ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1 ).str()
-                                    % pro1_name ).str() ) );
+                                    % "darcy" ).str() ) );
 
     exporter_pro1->step( 0 )->setMesh( mesh );
-    exporter_pro1->step( 0 )->add( "solution u", u );
-    exporter_pro1->step( 0 )->add( "error", error_hcurl );
+    exporter_pro1->step( 0 )->add( "velocity_L", u_l );
+    exporter_pro1->step( 0 )->add( "potential_L", p_l );
+    exporter_pro1->step( 0 )->add( "velocity_RT", u_rt );
+    exporter_pro1->step( 0 )->add( "potential_RT", p_rt );
     exporter_pro1->save();
-
 }
-#endif
+
 
 void
 TestHDiv::testProjector(gmsh_ptrtype ( *one_element_mesh_desc_fun )( double ))
 {
-    //    using namespace Feel::vf;
-
-    // mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-    //                                     _desc=domain( _name= ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1 ).str() ,
-    //                                             _shape="hypercube",
-    //                                             _usenames=true,
-    //                                             _dim=2,
-    //                                             _h=meshSize,
-    //                                             _xmin=-1,_xmax=1,
-    //                                             _ymin=-1,_ymax=1 ) );
-
-    // Only one element in the mesh
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-                                        _desc = one_element_mesh_desc_fun( 2 ) );
+                                        _desc=domain( _name= ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1 ).str() ,
+                                                _shape="hypercube",
+                                                _usenames=true,
+                                                _dim=2,
+                                                _h=meshSize,
+                                                _xmin=-1,_xmax=1,
+                                                _ymin=-1,_ymax=1 ) );
+
+    // Only one element in the mesh - TEMPORARLY
+    // mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
+    //                                     _desc = one_element_mesh_desc_fun( 2 ) );
 
     space_ptrtype Xh = space_type::New( mesh );
     lagrange_space_v_ptrtype Yh_v = lagrange_space_v_type::New( mesh ); //lagrange vectorial space
@@ -531,7 +564,7 @@ TestHDiv::testProjector(gmsh_ptrtype ( *one_element_mesh_desc_fun )( double ))
     std::cout << "error H1: " << math::sqrt( h1_s->energy( error_h1, error_h1 ) ) << "\n";
     BOOST_CHECK_SMALL( math::sqrt( h1_s->energy( error_h1, error_h1 ) ), 1e-13 );
     BOOST_TEST_MESSAGE("HDIV projection : error[div(E)-f]");
-    std::cout << "error div(f): " << math::sqrt( l2norm_div ) << "\n";
+    std::cout << "error div(f): " << l2norm_div << "\n";
     BOOST_CHECK_SMALL( l2norm_div, 1e-13 );
 
     std::string proj_name = "projection";
@@ -544,16 +577,17 @@ TestHDiv::testProjector(gmsh_ptrtype ( *one_element_mesh_desc_fun )( double ))
     exporter_proj->step( 0 )->setMesh( mesh );
     exporter_proj->step( 0 )->add( "proj_L2_E", E_l2 );
     exporter_proj->step( 0 )->add( "proj_H1_E", E_h1 );
-    exporter_proj->step( 0 )->add( "proj_Hcurl_E", E_hdiv );
+    exporter_proj->step( 0 )->add( "proj_HDiv_E", E_hdiv );
     exporter_proj->save();
 }
+
 void
-TestHDiv::shape_functions( gmsh_ptrtype ( *one_element_mesh_desc_fun )( double ), double hsize )
+TestHDiv::shape_functions( gmsh_ptrtype ( *one_element_mesh_desc_fun )( double ) )
 {
     //    using namespace Feel::vf;
 
     mesh_ptrtype oneelement_mesh = createGMSHMesh( _mesh=new mesh_type,
-                                   _desc = one_element_mesh_desc_fun( hsize ) );
+                                   _desc = one_element_mesh_desc_fun( 2 ) );
 
     // then a fine mesh which we use to export the basis function to  visualize them
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
@@ -729,94 +763,71 @@ BOOST_AUTO_TEST_CASE( test_hdiv_N0_ref )
 {
     BOOST_TEST_MESSAGE( "*** shape functions on reference element (1 elt) ***" );
     Feel::TestHDiv t;
-    t.shape_functions( &Feel::oneelement_geometry_ref, 2);
+    t.shape_functions( &Feel::oneelement_geometry_ref );
 }
 BOOST_AUTO_TEST_CASE( test_hdiv_N0_real1 )
 {
     BOOST_TEST_MESSAGE( "*** shape functions on real element - homothetic transfo (1 elt) ***" );
     Feel::TestHDiv t;
-    t.shape_functions( &Feel::oneelement_geometry_real_1, 2);
+    t.shape_functions( &Feel::oneelement_geometry_real_1 );
 }
 BOOST_AUTO_TEST_CASE( test_hdiv_N0_real2 )
 {
     BOOST_TEST_MESSAGE( "*** shape functions on real element - rotation pi/2 (1 elt) ***" );
     Feel::TestHDiv t;
-    t.shape_functions( &Feel::oneelement_geometry_real_2, 2);
+    t.shape_functions( &Feel::oneelement_geometry_real_2 );
 }
 
 BOOST_AUTO_TEST_CASE( test_hdiv_N0_real3 )
 {
     BOOST_TEST_MESSAGE( "*** shape functions on real element - rotation -pi/2 (1 elt) ***" );
     Feel::TestHDiv t;
-    t.shape_functions( &Feel::oneelement_geometry_real_3, 2);
+    t.shape_functions( &Feel::oneelement_geometry_real_3 );
 }
-
-// BOOST_AUTO_TEST_CASE( test_hdiv_N0_ref_2 )
-// {
-//     BOOST_TEST_MESSAGE( "*** shape functions on reference element (>1 elt) ***" );
-//     Feel::TestHDiv t;
-//     t.shape_functions( &Feel::oneelement_geometry_ref, 1);
-// }
-// BOOST_AUTO_TEST_CASE( test_hdiv_N0_real1_2 )
-// {
-//     BOOST_TEST_MESSAGE( "*** shape functions on real element - homothetic transfo (>1 elt) ***" );
-//     Feel::TestHDiv t;
-//     t.shape_functions( &Feel::oneelement_geometry_real_1, 1);
-// }
-// BOOST_AUTO_TEST_CASE( test_hdiv_N0_real2_2 )
-// {
-//     BOOST_TEST_MESSAGE( "*** shape functions on real element - rotation (>1 elt) ***" );
-//     Feel::TestHDiv t;
-//     t.shape_functions( &Feel::oneelement_geometry_real_2, 1);
-// }
 
 BOOST_AUTO_TEST_CASE( test_hdiv_projection_ref )
 {
+    BOOST_TEST_MESSAGE( "*** projection on reference element ***" );
+    Feel::TestHDiv t;
     Feel::Environment::changeRepository( boost::format( "/testsuite/feeldiscr/%1%/test_projection/%2%/" )
                                          % Feel::Environment::about().appName()
                                          % "ref" );
-
-    BOOST_TEST_MESSAGE( "*** projection on reference element ***" );
-    Feel::TestHDiv t;
     t.testProjector(&Feel::oneelement_geometry_ref);
 }
 BOOST_AUTO_TEST_CASE( test_hdiv_projection_real1 )
 {
+    BOOST_TEST_MESSAGE( "*** projection on real element - homothetic transfo***" );
+    Feel::TestHDiv t;
     Feel::Environment::changeRepository( boost::format( "/testsuite/feeldiscr/%1%/test_projection/%2%/" )
                                          % Feel::Environment::about().appName()
                                          % "real_1" );
-
-    BOOST_TEST_MESSAGE( "*** projection on real element - homothetic transfo***" );
-    Feel::TestHDiv t;
     t.testProjector(&Feel::oneelement_geometry_real_1);
 }
 BOOST_AUTO_TEST_CASE( test_hdiv_projection_real2 )
 {
+    BOOST_TEST_MESSAGE( "*** projection on real element - rotation pi/2 ***" );
+    Feel::TestHDiv t;
     Feel::Environment::changeRepository( boost::format( "/testsuite/feeldiscr/%1%/test_projection/%2%/" )
                                          % Feel::Environment::about().appName()
                                          % "real_2" );
-
-    BOOST_TEST_MESSAGE( "*** projection on real element - rotation pi/2 ***" );
-    Feel::TestHDiv t;
     t.testProjector(&Feel::oneelement_geometry_real_2);
 }
 BOOST_AUTO_TEST_CASE( test_hdiv_projection_real3 )
 {
+    BOOST_TEST_MESSAGE( "*** projection on real element - rotation -pi/2 ***" );
+    Feel::TestHDiv t;
     Feel::Environment::changeRepository( boost::format( "/testsuite/feeldiscr/%1%/test_projection/%2%/" )
                                          % Feel::Environment::about().appName()
                                          % "real_2" );
-
-    BOOST_TEST_MESSAGE( "*** projection on real element - rotation -pi/2 ***" );
-    Feel::TestHDiv t;
     t.testProjector(&Feel::oneelement_geometry_real_3);
 }
 
-// BOOST_AUTO_TEST_CASE( test_hdiv_example_1 )
-// {
-//     BOOST_TEST_MESSAGE( "Problem1 : Darcy" );
-//     Feel::TestHDiv t;
-//     t.exampleProblem1();
-// }
+BOOST_AUTO_TEST_CASE( test_hdiv_example_1 )
+{
+    BOOST_TEST_MESSAGE( "*** resolution of Darcy problem ***" );
+    Feel::TestHDiv t;
+    t.exampleProblem1();
+}
 
 BOOST_AUTO_TEST_SUITE_END()
 #else

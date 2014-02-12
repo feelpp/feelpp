@@ -32,12 +32,14 @@
 #include <feel/feelfilters/creategmshmesh.hpp>
 #include <feel/feelfilters/domain.hpp>
 #include <feel/feelfilters/exporter.hpp>
+#include <feel/feelfilters/unitsquare.hpp>
 #include <feel/feelvf/form.hpp>
 #include <feel/feelvf/operators.hpp>
 #include <feel/feelvf/operations.hpp>
 #include <feel/feelvf/ginac.hpp>
 #include <feel/feelvf/norm2.hpp>
 #include <feel/feelvf/on.hpp>
+#include <feel/feelvf/matvec.hpp>
 
 /** use Feel namespace */
 using namespace Feel;
@@ -96,14 +98,25 @@ public :
 
         if ( Environment::rank() == 0 )
             BOOST_TEST_MESSAGE( "time sqrt(inner(u,u))=" << ti.elapsed() << "s" );
-        BOOST_CHECK_CLOSE( a, b, 1e-13 );
+        BOOST_CHECK_CLOSE( a, b, 1e-4 );
     }
 };
 
 
 #if defined(USE_BOOST_TEST)
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), feel_options() );
-BOOST_AUTO_TEST_SUITE( inner )
+BOOST_AUTO_TEST_SUITE( inner_suite )
+
+BOOST_AUTO_TEST_CASE( test_0 )
+{
+    auto mesh = unitSquare();
+    double a = integrate( _range= elements( mesh ), _expr= norm2(vec(cst(1.),cst(1.))) ).evaluate()( 0,0 );
+    double b = integrate( _range= elements( mesh ), _expr= sqrt(inner(vec(cst(1.),cst(1.)),vec(cst(1.),cst(1.)) ) ) ).evaluate()( 0,0 );
+    BOOST_CHECK_CLOSE( a, sqrt(2.), 1e-13);
+    BOOST_CHECK_CLOSE( b, sqrt(2.), 1e-13);
+    BOOST_CHECK_CLOSE( a, b, 1e-13 );
+
+}
 
 BOOST_AUTO_TEST_CASE( test_1 )
 {

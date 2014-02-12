@@ -31,6 +31,8 @@
 #include <feel/feeldiscr/odh.hpp>
 #include <feel/feeldiscr/moch.hpp>
 #include <feel/feeldiscr/thch.hpp>
+#include <feel/feeldiscr/dh.hpp>
+#include <feel/feeldiscr/dhpdh.hpp>
 
 // operations
 #include <feel/feeldiscr/elementdiv.hpp>

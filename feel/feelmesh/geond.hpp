@@ -744,7 +744,8 @@ public:
 
             if ( tags[2] > 1 )
             {
-                std::vector<int> p( tags[2]-1 );
+                // ghosts
+                std::vector<rank_type> p( tags[2]-1 );
 
                 for ( size_type i = 0; i < p.size(); ++i )
                 {

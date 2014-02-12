@@ -73,7 +73,6 @@ makeHeatShieldOptions()
     ( "hsize", Feel::po::value<double>()->default_value( 1e-1 ), "first h value to start convergence" )
     ( "mshfile", Feel::po::value<std::string>()->default_value( "" ), "name of the gmsh file input")
     ( "do-not-use-operators-free", Feel::po::value<bool>()->default_value( true ), "never use operators free if true" )
-    ( "do-export", Feel::po::value<bool>()->default_value( false ), "export results if true" )
     ( "beta.A0", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for A0" )
     ( "beta.A1", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for A1" )
     ( "beta.A2", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for A2" )
@@ -722,7 +721,6 @@ HeatShield<Order>::HeatShield( po::variables_map const& vm )
     M_is_steady( option(_name="crb.is-model-executed-in-steady-mode").template as<bool>() ),
     meshSize( vm["hsize"].as<double>() ),
     export_number( 0 ),
-    do_export( vm["do-export"].as<bool>() ),
     M_Dmu( new parameterspace_type )
 {
         M_preconditionerl2 = preconditioner(_pc=(PreconditionerType) M_backendl2->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
@@ -886,8 +884,18 @@ void HeatShield<Order>::initModel()
     }
     else
     {
+        int N = Environment::worldComm().globalSize();
+        std::string mshfile = option("mshfile").as<std::string>();
+        auto pos = mshfile.find(".msh");
+        mshfile.erase( pos , 4);
+        std::string filename = (boost::format(mshfile+"-np%1%.msh") %N ).str();
+        if( !fs::exists( filename ) )
+        {
+            super_type::partitionMesh( mshfile, filename , 2 , 1 );
+        }
         mesh = loadGMSHMesh( _mesh=new mesh_type,
                              _filename=option("mshfile").as<std::string>(),
+                             _rebuild_partitions=false,
                              _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER );
     }
 
@@ -897,7 +905,11 @@ void HeatShield<Order>::initModel()
      */
     Xh = space_type::New( mesh );
     continuous_p0 = continuous_p0_space_type::New( mesh );
-    std::cout << "Number of dof " << Xh->nLocalDof() << "\n";
+    if( Environment::worldComm().isMasterRank() )
+    {
+        std::cout << "Number of local dof " << Xh->nLocalDof() << "\n";
+        std::cout << "Number of dof " << Xh->nDof() << "\n";
+    }
     LOG(INFO) << "Number of dof " << Xh->nLocalDof() << "\n";
 
     RbXh = rbfunctionspace_type::New( _model=this->shared_from_this() , _mesh=mesh );
@@ -1404,6 +1416,7 @@ double HeatShield<Order>::output( int output_index, parameter_type const& mu, el
     pT->close();
     double s=0;
 
+    bool dont_use_operators_free = option(_name="do-not-use-operators-free").template as<bool>() ;
     auto fqm = backend->newVector( Xh );
     if ( output_index<2 )
     {
@@ -1411,9 +1424,16 @@ double HeatShield<Order>::output( int output_index, parameter_type const& mu, el
         {
             for ( int m=0; m<mMaxF(output_index,q); m++ )
             {
-                M_Fqm_free[output_index][q][m]->containerPtr( fqm );
-                s += M_betaFqm[output_index][q][m]*dot( *fqm , *pT );
-                // s += M_betaFqm[output_index][q][m]*dot( *M_Fqm[output_index][q][m], *pT );
+                if( dont_use_operators_free )
+                {
+                    s += M_betaFqm[output_index][q][m]*dot( *M_Fqm[output_index][q][m] , *pT );
+                }
+                else
+                {
+                    M_Fqm_free[output_index][q][m]->containerPtr( fqm );
+                    s += M_betaFqm[output_index][q][m]*dot( *fqm , *pT );
+                    // s += M_betaFqm[output_index][q][m]*dot( *M_Fqm[output_index][q][m], *pT );
+                }
             }
         }
     }

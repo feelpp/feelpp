@@ -1308,7 +1308,6 @@ Mesh<Shape, T, Tag>::removeFacesFromBoundary( std::initializer_list<uint16_type>
                    } );
 }
 
-#if defined(FEELPP_ENABLE_MPI_MODE)
 template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingBlockingComm()
@@ -1865,8 +1864,6 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
 
 }
 
-
-#endif // defined(FEELPP_ENABLE_MPI_MODE)
 
 
 template<typename Shape, typename T, int Tag>

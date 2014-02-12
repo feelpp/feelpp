@@ -1585,9 +1585,10 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
         else
         {
             // add all partition as neighbor (if has localdof)
-            for ( rank_type proc=0; proc<this->worldComm().localSize(); ++proc )
-                if ( proc!=this->worldComm().rank() && this->nLocalDofWithGhost(proc) > 0 )
-                    this->addNeighborSubdomain( proc );
+            if ( this->nLocalDofWithGhost() > 0 )
+                for ( rank_type proc=0; proc<this->worldComm().localSize(); ++proc )
+                    if ( proc!=this->worldComm().rank() && this->nLocalDofWithGhost(proc) > 0 )
+                        this->addNeighborSubdomain( proc );
 
             int themasterRank = 0;
             bool findMasterProc=false;
@@ -2868,8 +2869,6 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::pointIdToDofRelation(st
 
 
 
-#if defined(FEELPP_ENABLE_MPI_MODE)
 #include <feel/feeldiscr/doftablempi.hpp>
-#endif
 
 #endif //FEELPP_DOFTABLE_HH
