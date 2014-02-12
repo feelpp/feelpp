@@ -102,6 +102,9 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
     gm_ptrtype __gm = space->gm();
     typedef typename gm_type::precompute_ptrtype geopc_ptrtype;
     typedef typename gm_type::precompute_type geopc_type;
+    typedef typename domain_gm_type::precompute_ptrtype domain_geopc_ptrtype;
+    typedef typename domain_gm_type::precompute_type domain_geopc_type;
+
     geopc_ptrtype __geopc( new geopc_type( __gm, __basis->dual().points() ) );
 
 
@@ -143,7 +146,7 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
 
         for ( ; it != en; ++ it )
         {
-            geoelement_type const& curElt = *it;
+            domain_geoelement_type const& curElt = boost::unwrap_ref(*it);
             __c->update( curElt );
             fectx->update( __c, pc );
             std::fill( fvalues.data(), fvalues.data()+fvalues.num_elements(), f_fectx_type::id_type::Zero() );
@@ -234,8 +237,6 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
     {
         DVLOG(2) << "[interpolate] different meshes\n";
         domain_gm_ptrtype __dgm = f.functionSpace()->gm();
-        typedef typename domain_gm_type::precompute_ptrtype domain_geopc_ptrtype;
-        typedef typename domain_gm_type::precompute_type domain_geopc_type;
         // get only one point
         typename matrix_node<value_type>::type pts( mesh_type::nDim, 1 );
         ublas::column( pts, 0 ) = ublas::column( __basis->dual().points(), 0 );
@@ -275,7 +276,7 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
 
         for ( ; it != en; ++ it )
         {
-            geoelement_type const& curElt = *it;
+            domain_geoelement_type const& curElt = boost::unwrap_ref(*it);
             __c->update( curElt );
             meshinv.pointsInConvex( curElt.id(), itab );
 

@@ -4,6 +4,7 @@
 #include <feel/options.hpp>
 #include <feel/feelfilters/geotool.hpp>
 #include <feel/feelvf/vf.hpp>
+#include <feel/feeldiscr/pch.hpp>
 
 using namespace Feel;
 using namespace Feel::vf;
@@ -40,24 +41,26 @@ inline
 AboutData
 makeAbout()
 {
-    AboutData about( "Test_Geotool" ,
-                     "Test_Geotool" ,
+    AboutData about( "test_geotool" ,
+                     "test_geotool" ,
                      "0.1",
-                     "test geotool",
+                     "test_geotool",
                      Feel::AboutData::License_GPL,
                      "Copyright (c) 2010 Universite Joseph Fourier" );
 
-    about.addAuthor( "Vincent Chabannes", "developer", "vincent.chabannes@imag.fr", "" );
+    about.addAuthor( "Vincent Chabannes", "developer", "vincent.chabannes@feelpp.org", "" );
     return about;
 }
 
 //-----------------------------------------------------//
 
-void runRectangle( Application_ptrtype testApp )
+void runRectangle()
 {
     typedef Mesh<Simplex<2,1,2> > mesh_type;
 
-    double meshSize = testApp->vm()["hsize"].as<double>();
+    if ( Environment::worldComm().isMasterRank() ) BOOST_MESSAGE( "runRectangle" );
+
+    double meshSize = option(_name="hsize").as<double>();
 
     GeoTool::Node x1( 0,0 );
     GeoTool::Node x2( 4,1 );
@@ -80,16 +83,20 @@ void runRectangle( Application_ptrtype testApp )
     auto lg2 = integrate( _range=markedfaces( mesh,"Boundary2" ),
                           _expr=cst(1.) ).evaluate()( 0,0 );
     BOOST_CHECK_CLOSE( lg2, 6., 1e-9 );
+
+    auto Xh = Pch<3>(mesh);
 }
 
 //-----------------------------------------------------//
 
-void runRectangleWithPerfo( Application_ptrtype testApp )
+void runRectangleWithPerfo()
 {
 #if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 2 )
     typedef Mesh<Simplex<2,2,2> > mesh_type;
 
-    double meshSize = testApp->vm()["hsize"].as<double>();
+    if ( Environment::worldComm().isMasterRank() ) BOOST_MESSAGE( "runRectangleWithPerfo" );
+
+    double meshSize = option(_name="hsize").as<double>();
 
     GeoTool::Node x1( 0,0 );
     GeoTool::Node x2( 1,1 );
@@ -124,16 +131,20 @@ void runRectangleWithPerfo( Application_ptrtype testApp )
     auto lg2 = integrate( _range=markedfaces( mesh,"Boundary2" ),
                           _expr=cst(1.) ).evaluate()( 0,0 );
     BOOST_CHECK_CLOSE( lg2, 2*M_PI*(0.1+0.2), 1e-5 );
+
+    auto Xh = Pch<3>(mesh);
 #endif
 }
 
 //-----------------------------------------------------//
 
-void runRectangleWithConformalInternalShape( Application_ptrtype testApp )
+void runRectangleWithConformalInternalShape()
 {
     typedef Mesh<Simplex<2,1,2> > mesh_type;
 
-    double meshSize = testApp->vm()["hsize"].as<double>();
+    if ( Environment::worldComm().isMasterRank() ) BOOST_MESSAGE( "runRectangleWithConformalInternalShape" );
+
+    double meshSize = option(_name="hsize").as<double>();
 
     GeoTool::Node x1( 0,0 );
     GeoTool::Node x2( 1,1 );
@@ -177,15 +188,19 @@ void runRectangleWithConformalInternalShape( Application_ptrtype testApp )
     auto lg3 = integrate( _range=markedfaces( mesh,"Boundary3" ),
                           _expr=cst(1.) ).evaluate()( 0,0 );
     BOOST_CHECK_CLOSE( lg3, 2*M_PI*0.2, 1e-1 );
+
+    auto Xh = Pch<3>(mesh);
 }
 
 //-----------------------------------------------------//
 
-void runSpecial1a( Application_ptrtype testApp )
+void runSpecial1a()
 {
     typedef Mesh<Simplex<2,1,2> > mesh_type;
 
-    double meshSize = testApp->vm()["hsize"].as<double>()*4;
+    if ( Environment::worldComm().isMasterRank() ) BOOST_MESSAGE( "runSpecial1a" );
+
+    double meshSize = option(_name="hsize").as<double>()*4;
 
     GeoTool::Node x1( -0.3,-2.3 );
     GeoTool::Node x2( 11.3,2.3 );
@@ -200,16 +215,19 @@ void runSpecial1a( Application_ptrtype testApp )
 
     auto mesh = (R-S).createMesh(_mesh=new mesh_type,
                              _name="domainSpecial1a" );
+    auto Xh = Pch<3>(mesh);
 }
 
 //-----------------------------------------------------//
 
-void runHexahedron( Application_ptrtype testApp )
+void runHexahedron()
 {
 
     typedef Mesh<Simplex<3,1,3> > mesh_type;
 
-    double meshSize = testApp->vm()["hsize3d"].as<double>();
+    if ( Environment::worldComm().isMasterRank() ) BOOST_MESSAGE( "runHexahedron" );
+
+    double meshSize = option(_name="hsize3d").as<double>();
 
     GeoTool::Node x1(-1,-1,-1);
     GeoTool::Node x2( 1,-1,-1);
@@ -235,16 +253,23 @@ void runHexahedron( Application_ptrtype testApp )
     auto area = integrate( _range=elements( mesh ),
                            _expr=cst(1.) ).evaluate()( 0,0 );
     BOOST_CHECK_CLOSE( area, 8., 1e-9 );
+
+    typedef Mesh<Simplex<2,1,3> > mesh_surf_type;
+    auto meshSurf = H.createMesh(_mesh=new mesh_surf_type,
+                                 _name="domainHexahedronSurf" );
+    auto Xh = Pch<3>(meshSurf);
 }
 
 //-----------------------------------------------------//
 
-void runCylinder( Application_ptrtype testApp )
+void runCylinder()
 {
 #if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 2 )
     typedef Mesh<Simplex<3,2,3> > mesh_type;
 
-    double meshSize = testApp->vm()["hsize3d"].as<double>();
+    if ( Environment::worldComm().isMasterRank() ) BOOST_MESSAGE( "runCylinder" );
+
+    double meshSize = option(_name="hsize3d").as<double>();
 
     GeoTool::Node Centre(0,0,0);
     GeoTool::Node Rayon( 0.5);
@@ -262,16 +287,23 @@ void runCylinder( Application_ptrtype testApp )
     auto area = integrate( _range=elements( mesh ),
                            _expr=cst(1.) ).evaluate()( 0,0 );
     BOOST_CHECK_CLOSE( area, M_PI*0.5*0.5*5, 1e-3 );
+
+    typedef Mesh<Simplex<2,2,3> > mesh_surf_type;
+    auto meshSurf = C.createMesh(_mesh=new mesh_surf_type,
+                             _name="domainCylinderSurf" );
+    auto Xh = Pch<3>(meshSurf);
 #endif
 }
 
 //-----------------------------------------------------//
 
-void runCubeWithPerfo( Application_ptrtype testApp )
+void runCubeWithPerfo()
 {
     typedef Mesh<Simplex<3,1,3> > mesh_type;
 
-    double meshSize = testApp->vm()["hsize3d"].as<double>();
+    if ( Environment::worldComm().isMasterRank() ) BOOST_MESSAGE( "runCubeWithPerfo" );
+
+    double meshSize = option(_name="hsize3d").as<double>();
 
     GeoTool::Node x1(0,0,0);
     GeoTool::Node x2(1,1,1);
@@ -293,15 +325,22 @@ void runCubeWithPerfo( Application_ptrtype testApp )
     auto area = integrate( _range=elements( mesh ),
                            _expr=cst(1.) ).evaluate()( 0,0 );
     BOOST_CHECK_CLOSE( area, 1-0.4*0.4*0.4, 1e-8 );
+
+    typedef Mesh<Simplex<2,1,3> > mesh_surf_type;
+    auto meshSurf = (C/*-C2*/).createMesh(_mesh=new mesh_surf_type,
+                                      _name="domainCubeWithPerfoSurf" );
+    auto Xh = Pch<3>(meshSurf);
 }
 
 //-----------------------------------------------------//
 
-void runCubeWithConformalInternalShape( Application_ptrtype testApp )
+void runCubeWithConformalInternalShape()
 {
     typedef Mesh<Simplex<3,1,3> > mesh_type;
 
-    double meshSize = testApp->vm()["hsize3d"].as<double>();
+    if ( Environment::worldComm().isMasterRank() ) BOOST_MESSAGE( "runCubeWithConformalInternalShape" );
+
+    double meshSize = option(_name="hsize3d").as<double>();
 
     GeoTool::Node x1(0,0,0);
     GeoTool::Node x2(1,1,1);
@@ -325,16 +364,40 @@ void runCubeWithConformalInternalShape( Application_ptrtype testApp )
     auto area = integrate( _range=elements( mesh ),
                            _expr=cst(1.) ).evaluate()( 0,0 );
     BOOST_CHECK_CLOSE( area, 1., 1e-8 );
+
+    typedef Mesh<Simplex<2,1,3> > mesh_surf_type;
+    auto meshSurf = ((C-C2)+C2).createMesh(_mesh=new mesh_surf_type,
+                                       _name="domainCubeWithConformalInternalShapeSurf",
+                                       _optimize3d_netgen=false // else bug with last gmsh-devel(svn.rev:13736)
+                                       );
+    auto Xh = Pch<3>(meshSurf);
 }
 
 //-----------------------------------------------------//
+//-----------------------------------------------------//
+//-----------------------------------------------------//
+
+void runGeneric3d(typename GeoTool::GeoGMSHTool geo, std::string name)
+{
+    typedef Mesh<Simplex<3,1,3> > mesh_type;
+    auto mesh = geo.createMesh(_mesh=new mesh_type,
+                               _name=name );
+
+    typedef Mesh<Simplex<2,1,3> > mesh_surf_type;
+    auto meshSurf = geo.createMesh(_mesh=new mesh_surf_type,
+                              _name=name+"Surf" );
+    auto Xh = Pch<3>(meshSurf);
+}
+
 
 #if 0
-void runSphereHollow( Application_ptrtype testApp )
+void runSphereHollow()
 {
     typedef Mesh<Simplex<3,1,3> > mesh_type;
 
-    double meshSize = testApp->vm()["hsize3d"].as<double>()/3.;
+    if ( Environment::worldComm().isMasterRank() ) BOOST_MESSAGE( "runSphereHollow" );
+
+    double meshSize = option(_name="hsize3d").as<double>()/3.;
 
    GeoTool::Sphere S1(meshSize,"S1",
                        GeoTool::Node(0.5,0,0),
@@ -347,16 +410,18 @@ void runSphereHollow( Application_ptrtype testApp )
     S2.setMarker(_type="surface",_name="FictitiousBoundary",_markerAll=true);
     S2.setMarker(_type="volume",_name="Sphere",_markerAll=true);
 
-    auto mesh = (S2-S1).createMesh(_mesh=new mesh_type,
-                              _name="domainSphere" );
+    runGeneric3d(S2-S1,"domainSphere");
 }
 #endif
 
 #if 0
-void runTetrahedron( Application_ptrtype testApp )
+void runTetrahedron()
 {
     typedef Mesh<Simplex<3,1,3> > mesh_type;
-    double meshSize = testApp->vm()["hsize3d"].as<double>()/3.;
+
+    if ( Environment::worldComm().isMasterRank() ) BOOST_MESSAGE( "runTetrahedron" );
+
+    double meshSize = option(_name="hsize3d").as<double>()/3.;
 
     GeoTool::Node x1( -1,-1,-1 );
     GeoTool::Node x2(  1,-1,-1 );
@@ -368,12 +433,29 @@ void runTetrahedron( Application_ptrtype testApp )
     R.setMarker(_type="surface",_name="Boundary3",_marker3=true);
     R.setMarker(_type="surface",_name="Boundary4",_marker4=true);
     R.setMarker(_type="volume",_name="Omega",_markerAll=true);
-    auto mesh = R.createMesh(_mesh=new mesh_type,
-                             _name="domainTetra",
-                             _hmax=meshSize );
 
+    runGeneric3d(R,"domainTetra");
 }
 #endif
+
+#if 0
+void runSpecial3D_1()
+{
+    typedef Mesh<Simplex<3,1,3> > mesh_type;
+
+    if ( Environment::worldComm().isMasterRank() ) BOOST_MESSAGE( "runSpecial3D_1" );
+
+    double meshSize = option(_name="hsize3d").as<double>()/3.;
+
+    GeoTool::Special3D_1 S( meshSize/3.,"shapeStruct");
+    S.setMarker(_type="surface",_name="fsiwall",_marker1=true);
+    S.setMarker(_type="surface",_name="wallcylinder",_marker2=true);
+    S.setMarker(_type="volume",_name="OmegaStruct",_markerAll=true);
+
+    runGeneric3d(S,"domainSpecial3D_1");
+}
+#endif
+
 
 } // namespace test_geotool
 
@@ -383,31 +465,20 @@ BOOST_AUTO_TEST_SUITE( interp_geotool )
 
 BOOST_AUTO_TEST_CASE( interp_geotool )
 {
+    test_geotool::runRectangle();
+    test_geotool::runRectangleWithPerfo();
+    test_geotool::runRectangleWithConformalInternalShape();
+    test_geotool::runSpecial1a();
+    test_geotool::runHexahedron();
+    test_geotool::runCylinder();
+    test_geotool::runCubeWithPerfo();
+    test_geotool::runCubeWithConformalInternalShape();
+#if 0
+    test_geotool::runSphereHollow();
+    test_geotool::runTetrahedron();
+    test_geotool::runSpecial3D_1();
+#endif
 
-    using namespace test_geotool;
-
-    using namespace Feel::vf;
-
-    auto testApp = Application_ptrtype( new Application_type( boost::unit_test::framework::master_test_suite().argc,
-                                                              boost::unit_test::framework::master_test_suite().argv,
-                                                              test_geotool::makeAbout(),
-                                                              test_geotool::makeOptions()
-                                                              ) );
-
-    testApp->changeRepository( boost::format( "/testsuite/feelfilters/%1%/" )
-                                % testApp->about().appName()
-                              );
-
-    test_geotool::runRectangle(testApp);
-    test_geotool::runRectangleWithPerfo(testApp);
-    test_geotool::runRectangleWithConformalInternalShape(testApp);
-    test_geotool::runSpecial1a(testApp);
-    test_geotool::runHexahedron(testApp);
-    test_geotool::runCylinder(testApp);
-    test_geotool::runCubeWithPerfo(testApp);
-    test_geotool::runCubeWithConformalInternalShape(testApp);
-    //test_geotool::runSphere(testApp);
-    //test_geotool::runTetrahedron(testApp);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

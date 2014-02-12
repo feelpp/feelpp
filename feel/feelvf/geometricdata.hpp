@@ -7,6 +7,7 @@
 
   Copyright (C) 2006 EPFL
   Copyright (C) 2007-2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2010-2014 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -73,7 +74,7 @@ const size_type jkp = vm::KB|vm::JACOBIAN|vm::POINT;
 #if 1
 # define VF_GD                                                          \
    BOOST_PP_TUPLE_TO_LIST(                                              \
-       21,                                                              \
+       22,                                                              \
       (                                                                 \
        ( N       , GDN       , 0, jkbn, Vectorial, M_gmc->unitNormal( q )[ c1 ] , 0), \
        ( Nx      , GDNx      , 0, jkbn, Scalar   , M_gmc->unitNormal( q )[ 0 ]  , 0), \
@@ -81,6 +82,7 @@ const size_type jkp = vm::KB|vm::JACOBIAN|vm::POINT;
        ( Nz      , GDNz      , 2, jkbn, Scalar   , M_gmc->unitNormal( q )[ 2 ]  , 0), \
        ( Nref    , GDNref    , 0, 0, Vectorial, M_gmc->refNormal( q )[ c1 ] , 0), \
        ( normalNorm, GDnormalNorm, 0, 0, Scalar, M_gmc->normalNorm( q ) , 0), \
+       ( pT      , GDpT      , 0, jt, Tensor2, M_gmc->projectorTangent( c1, c2, q), 0), \
        ( T       , GDT       , 0, jt, Vectorial, M_gmc->tangent( q )[ c1 ], 0), \
        ( Tx      , GDTx      , 0, jt, Scalar   , M_gmc->tangent( q )[ 0 ] , 0), \
        ( Ty      , GDTy      , 1, jt, Scalar   , M_gmc->tangent( q )[ 1 ] , 0), \
