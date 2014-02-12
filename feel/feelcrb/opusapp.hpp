@@ -1404,7 +1404,8 @@ public:
                 }
             }
 
-            std::string conclude=" }; \n View[0].Axes = 1;\n View[0].Type = 2;\n";
+            std::string conclude=" }; \n vid = PostProcessing.NbViews-1;\n View[vid].Axes = 1;\n View[vid].Type = 2;\n";
+
             file_estimated_outputs_geo_gmsh<<conclude;
             file_outputs_geo_gmsh<<conclude;
             file_estimated_outputs_geo_gmsh.close();
