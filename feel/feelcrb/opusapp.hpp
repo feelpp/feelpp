@@ -1404,7 +1404,13 @@ public:
                 }
             }
 
-            std::string conclude=" }; \n vid = PostProcessing.NbViews-1;\n View[vid].Axes = 1;\n View[vid].Type = 2;\n";
+            std::string conclude=" }; \n ";
+            conclude += "vid = PostProcessing.NbViews-1;\n";
+            conclude += "View[vid].Axes = 1;\n"; 
+            conclude += "View[vid].Type = 2;\n\n";
+            conclude += "For i In {0:vid-1}\n";
+            conclude += "  View[i].Visible=0;\n";
+            conclude += "EndFor\n";
 
             file_estimated_outputs_geo_gmsh<<conclude;
             file_outputs_geo_gmsh<<conclude;
