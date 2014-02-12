@@ -1,11 +1,11 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*-
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2009-01-14
+       Date: 2014-02-06
 
-  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2014 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -21,14 +21,15 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-/**
-   \file opusmodel_211.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2009-01-14
- */
-#include <opusmodel_impl.hpp>
+#include <feel/feelalg/enums.hpp>
 
-namespace Feel
-{
-template class OpusModel<2,1,3>;
+namespace Feel {
+
+std::map<std::string, OnContext> OnContextMap = {
+    {"none", OnContext::NONE},
+    {"elimination", OnContext::ELIMINATION},
+    {"penalisation", OnContext::PENALISATION},
+    {"elimination_symmetric", OnContext::ELIMINATION_SYMMETRIC}
+};
+
 }

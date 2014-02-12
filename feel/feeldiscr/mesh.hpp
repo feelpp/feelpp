@@ -306,14 +306,12 @@ public:
 
         if ( this->worldComm().localSize() >1 )
         {
-#if defined(FEELPP_ENABLE_MPI_MODE)
             int gne = 0;
             mpi::all_reduce( this->worldComm(), ne, gne, [] ( int x, int y )
                              {
                                  return x + y;
                              } );
             M_numGlobalElements = gne;
-#endif
         }
         else
         {

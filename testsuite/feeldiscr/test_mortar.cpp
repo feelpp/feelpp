@@ -323,7 +323,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
     cs1.matrixPtr()->printMatlab( "C_s1.m" );
 
     BOOST_CHECK_CLOSE( c_s( l, u ), 1, 1e-13 );
-    BOOST_CHECK_CLOSE( cs1( l, u ), 1, 1e-13 );
+    if ( T::value == 1 )
+        BOOST_CHECK_CLOSE( cs1( l, u ), 1, 1e-13 );
     BOOST_CHECK_CLOSE( c_s( l, u1 ), 0.5, 1e-13 );
     BOOST_CHECK_CLOSE( c_s( l, u2 ), 1./3., (T::value>=2)?1e-13:10 );
 
@@ -343,6 +344,12 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
     BOOST_TEST_MESSAGE( "integrate" );
     c_m1 = integrate(_range=elements(testmesh),_expr=idt(v)*id(u));
     c_m1.matrixPtr()->printMatlab( "C_m1.m" );
+
+    BOOST_TEST_MESSAGE( "build bilinear form c_s2(Xh,Xh)" );
+    auto c_s2 = form2(_test=Xh, _trial=Xh);
+    BOOST_TEST_MESSAGE( "integrate" );
+    c_s2 = integrate(_range=elements(testmesh),_expr=idt(u)*id(u));
+    c_s2.matrixPtr()->printMatlab( "C_s2.m" );
 
 }
 

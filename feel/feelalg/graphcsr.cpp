@@ -363,6 +363,10 @@ GraphCSR::updateDataMap( vf::BlocksBase<self_ptrtype> const & blockSet )
     for ( uint16_type i=0 ; i<nRow; ++i)
     {
         auto const& mapRowOnBlock = blockSet(i,0)->mapRow();
+
+        for ( rank_type procIdNeigh : mapRowOnBlock.neighborSubdomains() )
+            M_mapRow->addNeighborSubdomain(procIdNeigh);
+
         const size_type firstBlockDofGC =  mapRowOnBlock.firstDofGlobalCluster(myrank);
 
         for (size_type gdof = mapRowOnBlock.firstDof(myrank) ; gdof < mapRowOnBlock.nLocalDofWithGhost(myrank) ; ++gdof )
@@ -394,6 +398,10 @@ GraphCSR::updateDataMap( vf::BlocksBase<self_ptrtype> const & blockSet )
     for ( uint16_type j=0 ; j<nCol; ++j)
     {
         auto const& mapColOnBlock = blockSet(0,j)->mapCol();
+
+        for ( rank_type procIdNeigh : mapColOnBlock.neighborSubdomains() )
+            M_mapCol->addNeighborSubdomain(procIdNeigh);
+
         const size_type firstBlockDofGC =  mapColOnBlock.firstDofGlobalCluster( myrank );
 
         for (size_type gdof = mapColOnBlock.firstDof(myrank) ; gdof < mapColOnBlock.nLocalDofWithGhost(myrank) ; ++gdof )
@@ -732,11 +740,7 @@ GraphCSR::close()
     DVLOG(2) << "[close] M_n_total_nz=" << M_n_total_nz.size() << "\n";
     DVLOG(2) << "[close] M_storage size=" << M_storage.size() << "\n";
     DVLOG(2) << "[close] nrows=" << this->size() << "\n";
-#if !defined(FEELPP_ENABLE_MPI_MODE)
-    M_n_total_nz.resize( M_last_row_entry_on_proc+1/*M_storage.size()*/ );
-    M_n_nz.resize( M_last_row_entry_on_proc+1/*M_storage.size()*/ );
-    M_n_oz.resize( M_last_row_entry_on_proc+1/*M_storage.size()*/ );
-#else // MPI
+
     M_n_total_nz.resize( this->mapRow().nLocalDofWithGhost(),0 );//this->lastRowEntryOnProc()-this->firstRowEntryOnProc()+1 );
     M_n_nz.resize( this->mapRow().nLocalDofWithGhost(),0 );//this->lastRowEntryOnProc()-this->firstRowEntryOnProc()+1 );
     M_n_oz.resize( this->mapRow().nLocalDofWithGhost(),0 );//this->lastRowEntryOnProc()-this->firstRowEntryOnProc()+1 );
@@ -755,13 +759,12 @@ GraphCSR::close()
     std::vector<size_type> memory_n_send(this->worldComm().globalSize() );
 
     for ( int proc=0 ; proc<nProc ; ++proc )
-        {
-            vecToSend[proc].clear();
-            vecToRecv[proc].clear();
-            vecToSend_nElt[proc].clear();
-            vecToRecv_nElt[proc].clear();
-        }
-#endif
+    {
+        vecToSend[proc].clear();
+        vecToRecv[proc].clear();
+        vecToSend_nElt[proc].clear();
+        vecToRecv_nElt[proc].clear();
+    }
 
     std::fill( M_n_nz.begin(), M_n_nz.end(), 0 );
     std::fill( M_n_oz.begin(), M_n_oz.end(), 0 );
@@ -782,28 +785,24 @@ GraphCSR::close()
             size_type vec_size = irow.get<2>().size();
 
             FEELPP_ASSERT( globalindex >= firstRowEntryOnProc() )
-            ( globalindex <= lastRowEntryOnProc() )
-            ( globalindex )( firstRowEntryOnProc() )
-            ( lastRowEntryOnProc() ).error ( "invalid local/global index" );
+                ( globalindex <= lastRowEntryOnProc() )
+                ( globalindex )( firstRowEntryOnProc() )
+                ( lastRowEntryOnProc() ).error ( "invalid local/global index" );
             FEELPP_ASSERT( globalindex >= 0 )( globalindex < M_n_total_nz.size() )
-            ( globalindex )
-            ( M_n_total_nz.size() ).error ( "invalid local/global index for M_n_total_nz" );
+                ( globalindex )
+                ( M_n_total_nz.size() ).error ( "invalid local/global index for M_n_total_nz" );
             M_n_total_nz[localindex] = vec_size;
             sum_nz += vec_size;
 
             for ( auto vecit = boost::get<2>( irow ).begin(), vecen = boost::get<2>( irow ).end(); vecit != vecen; ++vecit )
             {
-#if defined(FEELPP_ENABLE_MPI_MODE) // MPI
-
                 if ( ( *vecit < firstColEntryOnProc() ) ||
                      ( *vecit > lastColEntryOnProc() ) )
                 {
                     // entry is off block-diagonal
                     ++M_n_oz[localindex];
                 }
-
                 else
-#endif
                 {
                     // entry is in block-diagonal
                     ++M_n_nz[localindex];
@@ -823,7 +822,6 @@ GraphCSR::close()
 
         else
         {
-#if defined(FEELPP_ENABLE_MPI_MODE) // MPI
             // Get the row of the sparsity pattern
             const auto dofOnGlobalCluster = it->first;
             row_type const& irow = it->second;
@@ -853,216 +851,174 @@ GraphCSR::close()
 
             memory_graphMPI[procOnGlobalCluster].push_back(vecDofCol);//boost::make_tuple( irow.get<1>(),vecDofCol));
             memory_n_send[procOnGlobalCluster]+=vecDofCol.size();
-
-#endif // MPI
         }
 
     }
 
 
-#if defined(FEELPP_ENABLE_MPI_MODE) // MPI
-
     if ( nProc > 1 )
+    {
+#if 1
+        std::vector< boost::tuple< std::vector<size_type>,std::vector<size_type> > > vecToSendBase( nProc );
+        std::vector< boost::tuple< std::vector<size_type>,std::vector<size_type> > > vecToRecvBase( nProc );
+
+        const rank_type myrank = M_mapRow->worldComm().rank();
+
+        // init data to send and counter of request
+        int nbRequestToSend = 0, nbRequestToRecv = 0;
+        for ( rank_type procIdNeigh : M_mapRow->neighborSubdomains() )
         {
-            // init container to send
-            for ( int proc=0; proc<nProc; ++proc )
+            if ( procIdNeigh < myrank )
+            {
+                vecToSend[procIdNeigh].resize(memory_n_send[procIdNeigh]);
+                vecToSend_nElt[procIdNeigh].resize( memory_graphMPI[procIdNeigh].size() );
+                auto vtsit = vecToSend[procIdNeigh].begin();
+                auto it_mem = memory_graphMPI[procIdNeigh].begin();
+                auto const en_mem = memory_graphMPI[procIdNeigh].end();
+                for ( int cpt = 0 ; it_mem !=en_mem ; ++it_mem)
                 {
-                    vecToSend_nElt[proc].resize( memory_graphMPI[proc].size() );
-                    vecToSend[proc].resize(memory_n_send[proc]);
-                    auto vtsit = vecToSend[proc].begin();
-                    auto it_mem = memory_graphMPI[proc].begin();
-                    auto en_mem = memory_graphMPI[proc].end();
-                    for ( int cpt = 0; it_mem !=en_mem ; ++it_mem)
-                        {
-                            //vtsit = std::copy( boost::get<1>( *it_mem ).begin(), boost::get<1>( *it_mem ).end(), vtsit );
-                            vtsit = std::copy( it_mem->begin(), it_mem->end(), vtsit );
-                            vecToSend_nElt[proc][cpt] = it_mem->size();
-                            ++cpt;
-                        }
+                    vtsit = std::copy( it_mem->begin(), it_mem->end(), vtsit );
+                    vecToSend_nElt[procIdNeigh][cpt] = it_mem->size();
+                    ++cpt;
                 }
+                vecToSendBase[procIdNeigh] = boost::make_tuple( vecToSend[procIdNeigh],vecToSend_nElt[procIdNeigh] );
+                ++nbRequestToSend;
+            }
+            else
+            {
+                ++nbRequestToRecv;
+            }
+        }
 
-            //------------------------------------------------------
-            //this->worldComm().globalComm().barrier();
-            //------------------------------------------------------
+        // do isend/irecv
+        int nbRequest = nbRequestToSend+nbRequestToRecv;
+        mpi::request * reqs = new mpi::request[nbRequest];
+        int cptRequest=0;
+        for ( rank_type procIdNeigh : M_mapRow->neighborSubdomains() )
+        {
+            if ( procIdNeigh < myrank )
+            {
+                reqs[cptRequest] = this->worldComm().globalComm().isend( procIdNeigh, 0, vecToSendBase[procIdNeigh] );
+                ++cptRequest;
+            }
+            else
+            {
+                reqs[cptRequest] = this->worldComm().globalComm().irecv( procIdNeigh, 0, vecToRecvBase[procIdNeigh] );
+                ++cptRequest;
+            }
+        }
+        // wait all requests
+        mpi::wait_all(reqs, reqs + nbRequest);
+        // delete reqs because finish comm
+        delete [] reqs;
 
-            std::vector<size_type> nDataSize_vec(nProc);
-            for ( int proc=0; proc<nProc; ++proc )
+        for ( rank_type procIdNeigh : M_mapRow->neighborSubdomains() )
+        {
+            if ( procIdNeigh > myrank )
+            {
+                vecToRecv[procIdNeigh] = vecToRecvBase[procIdNeigh].get<0>();
+                vecToRecv_nElt[procIdNeigh] = vecToRecvBase[procIdNeigh].get<1>();
+            }
+        }
+        //------------------------------------------------------
+        //this->worldComm().globalComm().barrier();
+        //------------------------------------------------------
+        for ( int proc=0; proc<nProc; ++proc )
+        {
+            if (vecToRecv[proc].size()>0 )
+            {
+                for (int cpt=0,istart=0;cpt<vecToRecv_nElt[proc].size();++cpt)
                 {
-                    const auto nDataSize = vecToSend[proc].size();
-                    mpi::all_gather( this->worldComm().globalComm(),
-                                     nDataSize,
-                                     nDataSize_vec );
+                    const auto nRecvElt = vecToRecv_nElt[proc][cpt];
 
-                    for ( int proc2=0; proc2<nProc; ++proc2 )
+                    size_type globalindex = vecToRecv[proc][istart];
+
+                    DCHECK( this->mapRow().dofGlobalClusterIsOnProc( globalindex ) ) << " GlobalCluster dofGlobalClusterIsOnProc Is not on proc "
+                                                                                     << " with globalindex " << globalindex << "\n";
+
+                    size_type localindex = this->mapRow().mapGlobalClusterToGlobalProcess( globalindex - this->mapRow().firstDofGlobalCluster()  );
+
+                    bool hasEntry = this->storage().find( globalindex )!=this->end();
+                    row_type& row = this->row( globalindex );
+                    if ( !hasEntry )
+                    {
+                        row.get<0>()=proc_id;
+                        row.get<1>()=localindex;
+                    }
+
+                    for ( int k=2;k<nRecvElt;++k)
+                    {
+                        bool isInserted = false;
+                        if ( row.get<2>().find( vecToRecv[proc][istart+k] ) == row.get<2>().end() )
                         {
-                            if ( nDataSize_vec[proc2] > 0 && proc!=proc2)
-                                {
-                                    if (proc_id==proc2) // send
-                                        {
-                                            this->worldComm().globalComm().send( proc, 0, vecToSend_nElt[proc] );
-                                            this->worldComm().globalComm().send( proc, 1, vecToSend[proc] );
-                                        }
-                                    else if (proc_id==proc) // recv
-                                        {
-                                            this->worldComm().globalComm().recv( proc2, 0, vecToRecv_nElt[proc2] );
-                                            this->worldComm().globalComm().recv( proc2, 1, vecToRecv[proc2] );
-                                        }
-                                }
+                            row.get<2>().insert( vecToRecv[proc][istart+k] );
+                            isInserted = true;
                         }
-                }
 
-            //------------------------------------------------------
-            //this->worldComm().globalComm().barrier();
-            //------------------------------------------------------
-            for ( int proc=0; proc<nProc; ++proc )
-                {
-                    if (vecToRecv[proc].size()>0 )
+                        if ( !this->mapCol().dofGlobalClusterIsOnProc(vecToRecv[proc][istart+k]) )
                         {
-                            for (int cpt=0,istart=0;cpt<vecToRecv_nElt[proc].size();++cpt)
-                                {
-                                    const auto nRecvElt = vecToRecv_nElt[proc][cpt];
-
-                                    size_type globalindex = vecToRecv[proc][istart];
-
-                                    DCHECK( this->mapRow().dofGlobalClusterIsOnProc( globalindex ) ) << " GlobalCluster dofGlobalClusterIsOnProc Is not on proc "
-                                                                                                     << " with globalindex " << globalindex << "\n";
-
-                                    size_type localindex = this->mapRow().mapGlobalClusterToGlobalProcess( globalindex - this->mapRow().firstDofGlobalCluster()  );
-
-                                    bool hasEntry = this->storage().find( globalindex )!=this->end();
-                                    row_type& row = this->row( globalindex );
-                                    if ( !hasEntry )
-                                        {
-                                            row.get<0>()=proc_id;
-                                            row.get<1>()=localindex;
-                                        }
-
-                                    for ( int k=2;k<nRecvElt;++k)
-                                        {
-                                            bool isInserted = false;
-                                            if ( row.get<2>().find( vecToRecv[proc][istart+k] ) == row.get<2>().end() )
-                                                {
-                                                    row.get<2>().insert( vecToRecv[proc][istart+k] );
-                                                    isInserted = true;
-                                                }
-
-                                            if ( !this->mapCol().dofGlobalClusterIsOnProc(vecToRecv[proc][istart+k]) )
-                                                {
-                                                    if ( isInserted )
-                                                        {
-                                                            ++M_n_oz[localindex];
-                                                            ++sum_nz;
-                                                        }
-                                                }
-
-                                            else
-                                                {
-                                                    if ( isInserted )
-                                                        {
-                                                            ++M_n_nz[localindex];
-                                                            ++sum_nz;
-                                                        }
-                                                }
-                                        }
-
-                                    istart += nRecvElt;
-                                }
+                            if ( isInserted )
+                            {
+                                ++M_n_oz[localindex];
+                                ++sum_nz;
+                            }
                         }
+
+                        else
+                        {
+                            if ( isInserted )
+                            {
+                                ++M_n_nz[localindex];
+                                ++sum_nz;
+                            }
+                        }
+                    }
+
+                    istart += nRecvElt;
                 }
-        } //if ( nProc > 1 )
+            }
+        }
+    } //if ( nProc > 1 )
 #endif // MPI_MODE
 
 
 
-#if 1 // build ia,ja
-#if 0
-    M_ia.resize( M_storage.size()+1 );
-    M_ja.resize( sum_nz );
-    M_a.resize(  sum_nz, 0. );
-    size_type col_cursor = 0;
-    auto jait = M_ja.begin();
-
-    for ( auto it = M_storage.begin(), en = M_storage.end()  ; it != en; ++it )
-    {
-        row_type const& irow = it->second;
-        size_type localindex = boost::get<1>( irow );
-        M_ia[localindex] = col_cursor;
-        jait = std::copy( boost::get<2>( irow ).begin(), boost::get<2>( irow ).end(), jait );
-        col_cursor+=boost::get<2>( irow ).size();
-    }
-
-    M_ia[M_storage.size()] = sum_nz;
-#else
-
-#if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
-    M_ia.resize( M_last_row_entry_on_proc+2,0 );
-    M_ja.resize( sum_nz );
-    M_a.resize(  sum_nz, 0. );
-    size_type col_cursor = 0;
-    auto jait = M_ja.begin();
-    //for( auto it = M_storage.begin(), en = M_storage.end()  ; it != en; ++it )
-
-    for ( int i = 0 ; i<( M_last_row_entry_on_proc+1 ); ++i )
-    {
-        if ( M_storage.find( i )!=M_storage.end() )
-        {
-            row_type const& irow = this->row( i );
-            size_type localindex = boost::get<1>( irow );
-            M_ia[localindex] = col_cursor;
-            jait = std::copy( boost::get<2>( irow ).begin(), boost::get<2>( irow ).end(), jait );
-            col_cursor+=boost::get<2>( irow ).size();
-        }
-
-        else
-        {
-            M_ia[i] = col_cursor;
-        }
-    }
-
-    M_ia[M_last_row_entry_on_proc+1] = sum_nz;
-
-#else // MPI
     size_type nRowLoc = this->lastRowEntryOnProc()-this->firstRowEntryOnProc()+1;
     if ( nRowLoc>1 || ( sum_nz>0 )/* nRowLoc==1 && this->worldComm().globalRank()==4)*/ )
+    {
+        M_ia.resize( nRowLoc+1,0 );
+        M_ja.resize( /*sum_n_nz*/sum_nz, 0. );
+        //M_a.resize(  /*sum_n_nz*/sum_nz, 0. );
+        size_type col_cursor = 0;
+        auto jait = M_ja.begin();
+
+        for ( size_type i = 0 ; i< nRowLoc; ++i )
         {
-            M_ia.resize( nRowLoc+1,0 );
-            M_ja.resize( /*sum_n_nz*/sum_nz, 0. );
-            //M_a.resize(  /*sum_n_nz*/sum_nz, 0. );
-            size_type col_cursor = 0;
-            auto jait = M_ja.begin();
+            if ( M_storage.find( this->firstRowEntryOnProc()+i )!=M_storage.end() )
+            {
+                row_type const& irow = this->row( this->firstRowEntryOnProc()+i );
+                //size_type localindex = boost::get<1>( irow );
+                M_ia[i/*localindex*/] = col_cursor;
+                jait = std::copy( boost::get<2>( irow ).begin(), boost::get<2>( irow ).end(), jait );
 
-            for ( size_type i = 0 ; i< nRowLoc; ++i )
-                {
-                    if ( M_storage.find( this->firstRowEntryOnProc()+i )!=M_storage.end() )
-                        {
-                            row_type const& irow = this->row( this->firstRowEntryOnProc()+i );
-                            //size_type localindex = boost::get<1>( irow );
-                            M_ia[i/*localindex*/] = col_cursor;
-                            jait = std::copy( boost::get<2>( irow ).begin(), boost::get<2>( irow ).end(), jait );
+                col_cursor+=boost::get<2>( irow ).size();
+            }
 
-                            col_cursor+=boost::get<2>( irow ).size();
-                        }
-
-                    else
-                        {
-                            M_ia[i] = col_cursor;
-                        }
-                }
-
-            M_ia[nRowLoc] = /*sum_n_nz*/sum_nz;
+            else
+            {
+                M_ia[i] = col_cursor;
+            }
         }
+
+        M_ia[nRowLoc] = /*sum_n_nz*/sum_nz;
+    }
     else
-        {
-            M_ia.resize( 1,0 );
-            M_ja.resize( 0 );
-            M_a.resize(  0 );
+    {
+        M_ia.resize( 1,0 );
+        M_ja.resize( 0 );
+        M_a.resize(  0 );
 
-        }
-#endif // MPI
-#endif // 0
-#endif // 1 build ia,ja
-
-
+    }
 } // close
 
 

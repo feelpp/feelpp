@@ -170,42 +170,48 @@ dupargv (char** argv)
 }
 
 void
-Environment::generateOLFiles( std::string const& appName)
+Environment::generateOLFiles( int argc, char** argv, std::string const& appName)
 {
   //Application path
-  std::string appPath;
-  char *buf;
-  ssize_t bufsize;
-  char path[4096];
-  bufsize = readlink("/proc/self/exe",path,sizeof(path) - 1);
-  if(bufsize != -1)
-  {
-    path[bufsize] = '\0';
-  }
-  appPath.assign(path);
+  bool isNum = false;
+  fs::path p(argv[0]);
+  std::ostringstream appPath;
 
-  /*
+  appPath.str("");
+
   std::cout << fs::current_path() << std::endl;
   std::cout << appName << std::endl;
-  std::cout << appPath << std::endl;
-  */
-  
+  std::cout << appPath.str() << std::endl;
+
+  /* get app name */
+  appPath.str("");
+  appPath << fs::absolute(p).string();
+  std::cout << appPath.str() << std::endl;
+
+  std::ostringstream optionPath;
+
   std::ofstream ol;
-  ol.open(appPath + ".ol", std::ofstream::out | std::ofstream::trunc); //.ol file
+  ol.open(appPath.str() + ".ol", std::ofstream::out | std::ofstream::trunc); //.ol file
   std::ofstream cfgol;
-  cfgol.open(appPath + ".onelab.cfg.ol", std::ofstream::out | std::ofstream::trunc); //.cfg.ol file
+  cfgol.open(appPath.str() + ".onelab.cfg.ol", std::ofstream::out | std::ofstream::trunc); //.cfg.ol file
   const std::vector<boost::shared_ptr<po::option_description>>& listOpt = Environment::optionsDescription().options(); //Fetching options in an option_description vector
 
   for(boost::shared_ptr<po::option_description> option : listOpt)
   {
       //Informations about the option
       std::string optName = option->format_name().erase(0,2);//Putting the option name in a variable for easier manipulations
-      std::string defVal = option->format_parameter(); //Putting the option default value in a variable for easier manipulations
+      std::string defVal = ""; //option->format_parameter(); //Putting the option default value in a variable for easier manipulations
       std::string desc=option->description(); // Option description
+
+      // reset option path
+      optionPath.str("");
+      // reset type
+      isNum = false;
 
       //std::cout << optName << ";" << defVal << ";" << desc << std::endl;
 
       std::string ens,funcName,test;
+      /*
       if(defVal.size() > 3) // We want defVal.size() > 3 to exclude options without a default value
       {
           defVal.erase(0,6); // Removing "arg" and a space and the first parenthesis
@@ -215,16 +221,17 @@ Environment::generateOLFiles( std::string const& appName)
       {
           defVal = "";
       }
+      */
 
       std::vector<std::string> strings; //Vector of the split name
       boost::split(strings,optName,boost::is_any_of(".")); //Spliting option name
       ens = "";
       if(strings.size() > 1)
       {
-          ens = strings[0]; //Getting the first split element for the option set in the .cfg.ol file
+          ens = strings[0] + "/"; //Getting the first split element for the option set in the .cfg.ol file
           for(size_t i = 1; i < strings.size() - 1; i++) //Getting the option set
           {
-            ens += "/" + strings[i];
+            ens += strings[i] + "/";
           }
       }
       funcName = strings[strings.size() - 1]; //Raw option name
@@ -238,13 +245,6 @@ Environment::generateOLFiles( std::string const& appName)
           continue;
       }
 
-      //std::cout << defVal << std::endl;
-      
-      /*po::shared_ptr<po::value_semantic> value = const_pointer_cast<po::value_semantic>(option->semantic());
-      po::shared_ptr<po::typed_value<int>> tvalue = dynamic_pointer_cast<po::typed_value<int>>(value);
-      cout<<tvalue<<endl;*/
-
-
       /* if an option has been set either through command line */
       /* or through the initial config file */
       /* we use its configuration */
@@ -252,74 +252,105 @@ Environment::generateOLFiles( std::string const& appName)
       if(S_vm.count(optName))
       {
           std::ostringstream oss;
-          oss << defVal;
+          oss.str("");
           //std::cout << defVal;
-          const std::type_info & ti = S_vm[optName].value().type();
-          if(ti == typeid(bool))
+          
+          //std::cout << "Entry for " << optName << ": ";
+          if(S_vm[optName].defaulted())
           {
-              oss.str("");
-              oss << (S_vm[optName].as<bool>() ? 1 : 0);
+            //std::cout << "defaulted ";
+            optionPath << "GeneralParameters/" << ens;
           }
-          else if(ti == typeid(int))
+          else
           {
-              oss.str("");
-              oss << S_vm[optName].as<int>();
+            optionPath << "DefinedParameters/" << ens;
           }
-          else if(ti == typeid(float))
+          
+          //optionPath << "Parameters/" << ens;
+
+          if(optName == "licence")
           {
-              oss.str("");
-              oss << S_vm[optName].as<float>();
+              const std::type_info & ti = S_vm[optName].value().type();
+              std::cout << ti.name() << " " << std::endl;
           }
-          else if(ti == typeid(double))
+
+          if(S_vm[optName].empty())
           {
-              oss.str("");
-              oss << S_vm[optName].as<double>();
+            //std::cout << "empty ";
           }
-          else if(ti == typeid(std::string))
+          else
           {
-              oss.str("");
-              oss <<  S_vm[optName].as<std::string>();
+              const std::type_info & ti = S_vm[optName].value().type();
+              //std::cout << ti.name() << " ";
+              if(ti == typeid(bool))
+              {
+                  oss.str("");
+                  oss << (S_vm[optName].as<bool>() ? "1" : "0");
+                  isNum = false;
+              }
+              else if(ti == typeid(int))
+              {
+                  oss.str("");
+                  oss << S_vm[optName].as<int>();
+                  isNum = true;
+              }
+              else if(ti == typeid(size_type))
+              {
+                  oss.str("");
+                  oss << S_vm[optName].as<size_type>();
+                  isNum = true;
+              }
+              else if(ti == typeid(float))
+              {
+                  oss.str("");
+                  oss << S_vm[optName].as<float>();
+                  isNum = true;
+              }
+              else if(ti == typeid(double))
+              {
+                  oss.str("");
+                  oss << S_vm[optName].as<double>();
+                  isNum = true;
+              }
+              else if(ti == typeid(std::string))
+              {
+                  oss.str("");
+                  oss <<  S_vm[optName].as<std::string>();
+                  isNum = false;
+              }
+              else 
+              {
+                  std::cout << "Unknown type for parameter " << optName << "(" << typeid(void).name() << ")" << std::endl;
+                  isNum = false;
+              }
           }
+          //std::cout << oss.str() << std::endl;
           defVal = oss.str();
-          //std::cout << " " << defVal << std::endl;
-      }
 
       /* Force Gmsh as a the default exporter */
       /* as we are using OneLab */
-      if(ens == "exporter" && funcName == "format")
+      if(ens == "exporter/" && funcName == "format")
       {
           defVal = "gmsh";
       }
 
+      /*
       if(defVal.size() != 0) //Excluding options without a default value
       {
-          if(isdigit(defVal.at(0))) //If the first char is a digit, option is a number
+      */
+          if(isNum)
           {
-              if(ens != "")
-              {
-  			      ol << funcName << ".number(" << defVal << ", Parameters/" << ens << "/);" << " # "<< desc << std::endl;
-			      cfgol << optName << "=OL.get(Parameters/" << ens << "/" << funcName << ")" << std::endl;
-              }
-              else
-              {
-  			      ol << funcName << ".number(" << defVal << ", Parameters/);" << " # "<< desc << std::endl;
-			      cfgol << optName << "=OL.get(Parameters/" << funcName << ")" << std::endl;
-              }
+              ol << funcName << ".number(" << defVal << ", " << optionPath.str() << ");" << " # "<< desc << std::endl;
+              cfgol << optName << "=OL.get(" << optionPath.str() << funcName << ")" << std::endl;
           }
-          else if(isalpha(defVal.at(0))) //Else, it's a string
+          else 
           {
-              if(ens != "")
-              {
-  			      ol << funcName << ".string(" << defVal << ", Parameters/" << ens << "/);" << " # "<< desc << std::endl;
-			      cfgol << optName << "=OL.get(Parameters/" << ens << "/" << funcName << ")" << std::endl;
-              }
-              else
-              {
-  			      ol << funcName << ".string(" << defVal << ", Parameters/);" << " # "<< desc << std::endl;
-			      cfgol << optName << "=OL.get(Parameters/" << funcName << ")" << std::endl;
-              }
+              ol << funcName << ".string(" << defVal << ", " << optionPath.str() << ");" << " # "<< desc << std::endl;
+              cfgol << optName << "=OL.get(" << optionPath.str() << funcName << ")" << std::endl;
           }
+      //}
       }
+
   }
 
   ol << "" << std::endl;
@@ -335,8 +366,8 @@ Environment::generateOLFiles( std::string const& appName)
   ol << "OL.endif" << std::endl;
   
   /* Application instructions */
-  //ol << "FeelApp.register(interfaced, mpirun -np " << worldComm().size() << " " + appPath + ");" << std::endl;
-  ol << "FeelApp.register(interfaced, " + appPath + ");" << std::endl;
+  //ol << "FeelApp.register(interfaced, mpirun -np " << worldComm().size() << " " + appPath.str() + ");" << std::endl;
+  ol << "FeelApp.register(interfaced, " + appPath.str() + ");" << std::endl;
   ol << "FeelApp.in(OL.get(Arguments/FileName).onelab.cfg.ol);" << std::endl;
   ol << "FeelApp.run( --config-file OL.get(Arguments/FileName).onelab.cfg --nochdir );" << std::endl;
   ol << "FeelApp.out(" + appName + "-1_0.msh);" << std::endl;
@@ -614,7 +645,7 @@ Environment::doOptions( int argc, char** argv, po::options_description const& de
         {
             if ( S_vm.count( "generate-ol" ) )
             {
-                Environment::generateOLFiles( appName );
+                Environment::generateOLFiles( argc, argv, appName );
             }
         }
         if ( S_vm.count( "generate-ol" ) )

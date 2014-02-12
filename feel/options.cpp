@@ -138,20 +138,7 @@ gmsh_options( std::string const& prefix )
         ( prefixvm( prefix,"gmsh.partitioner" ).c_str(), Feel::po::value<int>()->default_value( GMSH_PARTITIONER_DEFAULT ), "Gmsh partitioner (1=CHACO)" )
 #endif
         ( prefixvm( prefix,"gmsh.format" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "Gmsh file format (0=ASCII, 1=BINARY)" )
-        ( prefixvm( prefix,"gmsh.substructuring" ).c_str(), Feel::po::value<bool>()->default_value( 0 ), "Generate substructuration (0=false, 1=true)" )
-        // domain
-        ( prefixvm( prefix,"gmsh.domain.dim" ).c_str(), Feel::po::value<int>()->default_value( 3 ), "Gmsh domain dimension" )
-        ( prefixvm( prefix,"gmsh.domain.xmin" ).c_str(), Feel::po::value<double>()->default_value( 0. ), "Gmsh domain xmin" )
-        ( prefixvm( prefix,"gmsh.domain.xmax" ).c_str(), Feel::po::value<double>()->default_value( 1. ), "Gmsh domain xmax" )
-        ( prefixvm( prefix,"gmsh.domain.ymin" ).c_str(), Feel::po::value<double>()->default_value( 0. ), "Gmsh domain ymin" )
-        ( prefixvm( prefix,"gmsh.domain.ymax" ).c_str(), Feel::po::value<double>()->default_value( 1. ), "Gmsh domain ymax" )
-        ( prefixvm( prefix,"gmsh.domain.zmin" ).c_str(), Feel::po::value<double>()->default_value( 0. ), "Gmsh domain zmin" )
-        ( prefixvm( prefix,"gmsh.domain.zmax" ).c_str(), Feel::po::value<double>()->default_value( 1. ), "Gmsh domain zmax" )
-
-        ( prefixvm( prefix,"gmsh.domain.usenames" ).c_str(), Feel::po::value<bool>()->default_value( 0 ), "Gmsh domain use string name for physicals" )
-
-        ( prefixvm( prefix,"gmsh.domain.substructuring" ).c_str(), Feel::po::value<bool>()->default_value( 0 ), "Generate substructuration (0=false, 1=true)" );
-
+        ( prefixvm( prefix,"partition.linear" ).c_str(), Feel::po::value<bool>()->default_value( false ), "linear partitioning if true (false otherwise)" );
 
     return _options;
 
@@ -192,7 +179,7 @@ on_options( std::string const& prefix )
 {
     po::options_description _options( "Dirichlet treatment options " + prefix + " options" );
     _options.add_options()
-        ( prefixvm( prefix,"on.type" ).c_str(), Feel::po::value<int>()->default_value( ON_ELIMINATION ), "Strong Dirichlet conditions treatment type" )
+        ( prefixvm( prefix,"on.type" ).c_str(), Feel::po::value<std::string>()->default_value( "elimination" ), "Strong Dirichlet conditions treatment type: elimination, elimination_symmetric, penalisation" )
         ( prefixvm( prefix,"on.verbose" ).c_str(), Feel::po::value<bool>()->default_value( false ), "print in logfiles information about Dirichlet conditions treatment" )
         ;
     return _options;
@@ -401,6 +388,11 @@ crbOptions( std::string const& prefix )
     ( "crb.system-memory-evolution-on-all-procs",Feel::po::value<bool>()->default_value( false ), "same than system-memory-evolution but on all processors")
 
     ( "crb.use-accurate-apee",Feel::po::value<bool>()->default_value( false ), "use a posteriori error estimators from F.Casenave's paper if true, classic one else")
+    ( "crb.optimize-offline-residual",Feel::po::value<bool>()->default_value( false ), "use optimize way for offline residual computation if true (temporary option)")
+
+    ( "crb.user-parameters",Feel::po::value<std::string>()->default_value( "1 2" ), "values of parameters (used for one feel)")
+    ( "crb.select-parameter-via-one-feel",Feel::po::value<bool>()->default_value( false ), "specify that we want to excute code with parameters defined by user via option user-parameters")
+   ( "crb.vary-only-parameter-components",Feel::po::value<std::string>()->default_value( "" ), "specify which parameter component vary (max : 2 components) and how many values we take in each direction. For example 2 6 10 means that component 2 and 6 of our parameter will vary on the log-equidistributed sampling of size 10x10")
     ;
 
     crboptions

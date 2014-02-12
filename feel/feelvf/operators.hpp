@@ -227,26 +227,29 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 struct HasTestFunction                                  \
             {                                                           \
                 static const bool result = VF_OP_SWITCH( BOOST_PP_OR( VF_OP_TYPE_IS_TRIAL( T ), VF_OP_TYPE_IS_VALUE( T ) ), false , \
-                                                         (boost::is_same<Func,fe_type>::value||boost::is_same<Func,mortar_fe_type>::value) ); \
+                                                         (boost::is_same<Func,fe_type>::value||(element_type::is_mortar&&boost::is_same<Func,mortar_fe_type>::value)) ); \
             };                                                          \
                                                                         \
             template<typename Func>                                     \
                 struct HasTrialFunction                                 \
             {                                                           \
                 static const bool result = VF_OP_SWITCH( VF_OP_TYPE_IS_TRIAL( T ), \
-                                                         (boost::is_same<Func,fe_type>::value||boost::is_same<Func,mortar_fe_type>::value), false ); \
+                                                         (boost::is_same<Func,fe_type>::value||(element_type::is_mortar&&boost::is_same<Func,mortar_fe_type>::value)), false ); \
             };                                                          \
                                                                         \
                                                                         \
-            VF_OPERATOR_NAME( O ) ( element_type const& v )             \
-                : M_v ( boost::cref(v) )                               \
+            VF_OPERATOR_NAME( O ) ( element_type const& v, bool useInterpWithConfLoc=false ) \
+              : M_v ( boost::cref(v) ),                                 \
+              M_useInterpWithConfLoc( useInterpWithConfLoc )            \
             {                                                           \
                 if ( VF_OP_TYPE_IS_VALUE( T ) )                         \
                     v.updateGlobalValues();                             \
                 DVLOG(2) << "[" BOOST_PP_STRINGIZE(VF_OPERATOR_NAME( O )) "] default constructor\n"; \
             }                                                           \
             VF_OPERATOR_NAME( O )( VF_OPERATOR_NAME( O ) const& op )    \
-                : M_v ( op.M_v )                                      \
+              : M_v ( op.M_v ),                                         \
+              M_useInterpWithConfLoc( op.M_useInterpWithConfLoc )       \
+                                                                        \
             {                                                           \
                 DVLOG(2) << "[" BOOST_PP_STRINGIZE(VF_OPERATOR_NAME( O )) "] copy constructor\n"; \
             }                                                           \
@@ -260,6 +263,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 operator()( TheExpr const& e  ) { return *this; }       \
                                                                         \
             element_type const& e() const { return M_v; }              \
+            bool useInterpWithConfLoc() const { return M_useInterpWithConfLoc; } \
             template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t> \
                 struct tensor                                           \
             {                                                           \
@@ -318,7 +322,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 static const bool fe_ok  = mpl::if_<mpl::bool_<VF_OP_TYPE_IS_VALUE( T )>, \
                                                     mpl::bool_<true>,   \
                                                     typename mpl::or_<boost::is_same<typename ttt<basis_context_type>::type::reference_element_type, fe_type>, \
-                                                                      boost::is_same<typename ttt<basis_context_type>::type::reference_element_type, mortar_fe_type> \
+                                                                      mpl::and_<mpl::bool_<element_type::is_mortar>,boost::is_same<typename ttt<basis_context_type>::type::reference_element_type, mortar_fe_type> > \
                                                                       >::type >::type::value; \
                 struct is_zero {                                        \
                     /*static const bool value = !(dim_ok && fe_ok);*/   \
@@ -513,7 +517,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                         M_expr.e().VF_OPERATOR_SYMBOL( O )( *M_ctx, M_loc ); \
                     else  {                                             \
                         matrix_node_type __ptsreal = M_expr.e().ptsInContext(*fusion::at_key<key_type>( geom ), mpl::int_<2>()); \
-                        M_expr.e().BOOST_PP_CAT(VF_OPERATOR_SYMBOL( O ),Interpolate)( /**M_ctx,*/ __ptsreal, M_loc, false/*true*/, \
+                        M_expr.e().BOOST_PP_CAT(VF_OPERATOR_SYMBOL( O ),Interpolate)( /**M_ctx,*/ __ptsreal, M_loc, M_expr.useInterpWithConfLoc()/*false*//*true*/, \
                                                                                       fusion::at_key<key_type>( geom )->element().face( fusion::at_key<key_type>( geom )->faceId() ).vertices() ); \
                     }                                                   \
                 }                                                       \
@@ -531,7 +535,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                         auto setOfPts = ( fusion::at_key<key_type>( geom )->faceId() != invalid_uint16_type_value )? \
                           fusion::at_key<key_type>( geom )->element().face( fusion::at_key<key_type>( geom )->faceId() ).vertices() : \
                           fusion::at_key<key_type>( geom )->element().vertices(); \
-                        M_expr.e().BOOST_PP_CAT(VF_OPERATOR_SYMBOL( O ),Interpolate)( /**M_ctx,*/ __ptsreal, M_loc, false/*true*/, setOfPts  ); \
+                        M_expr.e().BOOST_PP_CAT(VF_OPERATOR_SYMBOL( O ),Interpolate)( /**M_ctx,*/ __ptsreal, M_loc, M_expr.useInterpWithConfLoc()/*false*//*true*/, setOfPts  ); \
                     }                                                   \
                 }                                                       \
                 void update( Geo_t const& geom, mpl::bool_<false> )     \
@@ -726,25 +730,26 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
         protected:                                                      \
             VF_OPERATOR_NAME( O ) () {}                                 \
             boost::reference_wrapper<const element_type>  M_v;         \
+            bool M_useInterpWithConfLoc;                                     \
         };                                                              \
     template <class ELEM                                                \
               BOOST_PP_IF( VF_OP_TYPE_IS_GENERIC( T ),  BOOST_PP_COMMA, BOOST_PP_EMPTY )() \
         BOOST_PP_IF( VF_OP_TYPE_IS_GENERIC( T ),  BOOST_PP_IDENTITY( VF_OP_TYPE_TYPE( T ) sw ), BOOST_PP_EMPTY )() > \
     inline Expr< VF_OPERATOR_NAME( O )< ELEM, VF_OP_TYPE_OBJECT(T)> >   \
-    BOOST_PP_CAT( VF_OPERATOR_SYMBOL(O), VF_OP_TYPE_SUFFIX(T) )( ELEM const& expr ) \
+    BOOST_PP_CAT( VF_OPERATOR_SYMBOL(O), VF_OP_TYPE_SUFFIX(T) )( ELEM const& expr,bool useInterpWithConfLoc=false ) \
         {                                                               \
             typedef VF_OPERATOR_NAME( O )< ELEM, VF_OP_TYPE_OBJECT(T)> expr_t; \
-            return Expr< expr_t >(  expr_t(expr) );                     \
+            return Expr< expr_t >(  expr_t(expr,useInterpWithConfLoc) ); \
         }                                                               \
                                                                         \
     template <class ELEM                                                \
               BOOST_PP_IF( VF_OP_TYPE_IS_GENERIC( T ),  BOOST_PP_COMMA, BOOST_PP_EMPTY )() \
         BOOST_PP_IF( VF_OP_TYPE_IS_GENERIC( T ),  BOOST_PP_IDENTITY( VF_OP_TYPE_TYPE( T ) sw ), BOOST_PP_EMPTY )() > \
     inline Expr< VF_OPERATOR_NAME( O )< ELEM, VF_OP_TYPE_OBJECT(T)> >   \
-    BOOST_PP_CAT( VF_OPERATOR_SYMBOL(O), VF_OP_TYPE_SUFFIX(T) )( boost::shared_ptr<ELEM> expr ) \
+    BOOST_PP_CAT( VF_OPERATOR_SYMBOL(O), VF_OP_TYPE_SUFFIX(T) )( boost::shared_ptr<ELEM> expr,bool useInterpWithConfLoc=false ) \
         {                                                               \
             typedef VF_OPERATOR_NAME( O )< ELEM, VF_OP_TYPE_OBJECT(T)> expr_t; \
-            return Expr< expr_t >(  expr_t(*expr) );                     \
+            return Expr< expr_t >(  expr_t(*expr,useInterpWithConfLoc) ); \
         }                                                               \
 
 /**/

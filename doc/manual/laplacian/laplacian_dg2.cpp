@@ -55,7 +55,19 @@ int main(int argc, char**argv )
                                   _email="feelpp-devel@feelpp.org"));
 
     //auto mesh = unitSquare();
-    auto mesh = loadMesh( _mesh=new Mesh<Hypercube<2>> );
+    auto mesh = loadMesh( _mesh=new Mesh<Hypercube<2>>, _h=option(_name="gmsh.hsize2").template as<double>() );
+    // auto mesh = createGMSHMesh( _mesh=new Mesh<Hypercube<2,1,2> >,
+    //                             _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
+    //                             _desc=domain( _name="dgmesh", _addmidpoint=false, _usenames=false, _shape="hypercube",
+    //                                           _dim=2, _h=option(_name="gmsh.hsize2").template as<double>(),
+    //                                           _convex="Hypercube",
+    //                                           _xmin=0., _xmax=1., _ymin=0., _ymax=1.
+    //                                             ),
+    //                             _structured=1
+    //                             //_partitions=commSelf.localSize(),
+    //                             //_worldcomm=commSelf
+    //                             );
+
     //auto mesh = loadMesh( _mesh=new Mesh<Simplex<2>> );
     //auto mesh = unitCube();
 
@@ -88,6 +100,9 @@ int main(int argc, char**argv )
     a += on( _range=boundaryfaces(mesh), _element=u, _rhs=l, _expr=cst(0.));
 
     a.solve(_rhs=l,_solution=u);
+
+    if ( Environment::numberOfProcessors() == 1 )
+        u.printMatlab( "u.m" );
 
     auto p = opProjection( _domainSpace=Xh, _imageSpace=Xh, _type=L2 );
     auto uc = p->project( idv(u) );

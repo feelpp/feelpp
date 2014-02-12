@@ -190,16 +190,7 @@ private:
     void addVertexBoundaryDof( FaceIterator face_it, bool useConnection0, uint16_type& lc, mpl::bool_<true>, mpl::int_<1>  )
     {
         BOOST_STATIC_ASSERT( face_type::numVertices );
-#if !defined(FEELPP_ENABLE_MPI_MODE)
-        // id of the element adjacent to the face
-        // \warning NEED TO INVESTIGATE THIS
-        size_type iElAd = face_it->ad_first();
-        FEELPP_ASSERT( iElAd != invalid_size_type_value )( face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
-        // local id of the face in its adjacent element
-        uint16_type iFaEl = face_it->pos_first();
-        FEELPP_ASSERT( iFaEl != invalid_uint16_type_value ).error ( "invalid element index in face" );
-#else // MPI
         uint16_type iFaEl;
         size_type iElAd;
 
@@ -223,7 +214,6 @@ private:
             FEELPP_ASSERT( iFaEl != invalid_uint16_type_value ).error ( "invalid element index in face" );
         }
 
-#endif
         // Loop number of Dof per vertex
         const int ncdof = is_product?nComponents:1;
 
@@ -243,16 +233,7 @@ private:
     void addVertexBoundaryDof( FaceIterator face_it, bool useConnection0, uint16_type& lc, mpl::bool_<true>, mpl::int_<2>  )
     {
         BOOST_STATIC_ASSERT( face_type::numVertices );
-#if !defined(FEELPP_ENABLE_MPI_MODE)
-        // id of the element adjacent to the face
-        // \warning NEED TO INVESTIGATE THIS
-        size_type iElAd = face_it->ad_first();
-        FEELPP_ASSERT( iElAd != invalid_size_type_value )( face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
-        // local id of the face in its adjacent element
-        uint16_type iFaEl = face_it->pos_first();
-        FEELPP_ASSERT( iFaEl != invalid_uint16_type_value ).error ( "invalid element index in face" );
-#else // MPI
         uint16_type iFaEl;
         size_type iElAd;
 
@@ -274,8 +255,6 @@ private:
             iFaEl = face_it->pos_second();
             FEELPP_ASSERT( iFaEl != invalid_uint16_type_value ).error ( "invalid element index in face" );
         }
-#endif
-
         size_type ndofF = ( face_type::numVertices * fe_type::nDofPerVertex +
                             face_type::numEdges * fe_type::nDofPerEdge +
                             face_type::numFaces * fe_type::nDofPerFace );
@@ -328,16 +307,6 @@ private:
     template<typename FaceIterator>
     void addEdgeBoundaryDof( FaceIterator face_it, bool useConnection0, uint16_type& lc, mpl::bool_<true>, mpl::int_<2> )
     {
-#if !defined(FEELPP_ENABLE_MPI_MODE)
-        // id of the element adjacent to the face
-        // \warning NEED TO INVESTIGATE THIS
-        size_type iElAd = face_it->ad_first();
-        FEELPP_ASSERT( iElAd != invalid_size_type_value )
-        ( face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
-
-        // local id of the face in its adjacent element
-        uint16_type iFaEl = face_it->pos_first();
-#else // MPI
         uint16_type iFaEl;
         size_type iElAd;
 
@@ -362,9 +331,6 @@ private:
             // local id of the face in its adjacent element
             iFaEl = face_it->pos_second();
         }
-
-#endif
-
 
         FEELPP_ASSERT( iFaEl != invalid_uint16_type_value ).error ( "invalid element index in face" );
 #if !defined(NDEBUG)
@@ -399,16 +365,6 @@ private:
     void addEdgeBoundaryDof( FaceIterator face_it, bool useConnection0, uint16_type& lc, mpl::bool_<true>, mpl::int_<3> )
     {
         //BOOST_STATIC_ASSERT( face_type::numEdges );
-#if !defined(FEELPP_ENABLE_MPI_MODE)
-        // id of the element adjacent to the face
-        // \warning NEED TO INVESTIGATE THIS
-        size_type iElAd = face_it->ad_first();
-        FEELPP_ASSERT( iElAd != invalid_size_type_value )( face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
-
-        // local id of the face in its adjacent element
-        uint16_type iFaEl = face_it->pos_first();
-        FEELPP_ASSERT( iFaEl != invalid_uint16_type_value ).error ( "invalid element index in face" );
-#else // MPI
         uint16_type iFaEl;
         size_type iElAd;
 
@@ -431,8 +387,6 @@ private:
             // local id of the face in its adjacent element
             iFaEl = face_it->pos_second();
         }
-
-#endif
 
 #if !defined(NDEBUG)
         DVLOG(4) << " local face id : " << iFaEl << "\n";
@@ -484,16 +438,6 @@ private:
     template<typename FaceIterator>
     void addFaceBoundaryDof( FaceIterator face_it, bool useConnection0, uint16_type& lc, mpl::bool_<true> )
         {
-#if !defined(FEELPP_ENABLE_MPI_MODE)
-            // id of the element adjacent to the face
-            // \warning NEED TO INVESTIGATE THIS
-            size_type iElAd = face_it->ad_first();
-            FEELPP_ASSERT( iElAd != invalid_size_type_value )( face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
-
-            // local id of the face in its adjacent element
-            uint16_type iFaEl = face_it->pos_first();
-            FEELPP_ASSERT( iFaEl != invalid_uint16_type_value ).error ( "invalid element index in face" );
-#else // MPI
             uint16_type iFaEl;
             size_type iElAd;
 
@@ -516,8 +460,6 @@ private:
                 // local id of the face in its adjacent element
                 iFaEl = face_it->pos_second();
             }
-
-#endif
 
 #if !defined(NDEBUG)
             DVLOG(4) << " local face id : " << iFaEl << "\n";
