@@ -1475,6 +1475,11 @@ public:
         return M_model->readConvergenceDataFromFile( vector, filename );
     }
 
+    void generateGeoFileForOutputPlot(  vectorN_type outputs, vectorN_type parameter, vectorN_type estimated_error )
+    {
+        return M_model->generateGeoFileForOutputPlot( outputs, parameter, estimated_error );
+    }
+
     void writeConvergenceStatistics( std::vector< vectorN_type > const& vector, std::string filename )
     {
         return M_model->writeConvergenceStatistics( vector, filename );
