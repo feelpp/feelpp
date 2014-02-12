@@ -397,7 +397,7 @@ public:
             int number_str=str.size();
             CHECK( number_str < 4 )<<"Error when using option crb.vary-only-parameter-components, at maximum we can vary 2 components of the parameter";
             int vary_mu_comp0=-1,vary_mu_comp1=-1;
-            if( number_str > 0 )
+            if( number_str > 1 )
             {
                 Sampling->clear();
                 compute_fem=false;
