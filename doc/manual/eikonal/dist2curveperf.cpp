@@ -39,7 +39,7 @@ using namespace Feel::vf;
 
 int main( int argc, char** argv )
 {
-    const int dim = 2;
+    const int dim = 3;
     const int order = 1;
 
     boost::timer chrono;
@@ -101,7 +101,7 @@ int main( int argc, char** argv )
 
             << std::left<<std::setw(15) << option("gmsh.hsize").as<double>()
             << std::left<<std::setw(15) << Environment::worldComm().size()
-            << std::left<<std::setw(15) << Xh->dof()-nDof()
+            << std::left<<std::setw(15) << Xh->dof()->nDof()
             << std::left<<std::setw(15) << eL2
             << std::left<<std::setw(15) << eSH1
             << std::left<<std::setw(15) << eH1
