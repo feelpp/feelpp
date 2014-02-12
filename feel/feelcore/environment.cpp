@@ -179,14 +179,16 @@ Environment::generateOLFiles( int argc, char** argv, std::string const& appName)
 
   appPath.str("");
 
+  /*
   std::cout << fs::current_path() << std::endl;
   std::cout << appName << std::endl;
   std::cout << appPath.str() << std::endl;
+  */
 
   /* get app name */
   appPath.str("");
   appPath << fs::absolute(p).string();
-  std::cout << appPath.str() << std::endl;
+  //std::cout << appPath.str() << std::endl;
 
   std::ostringstream optionPath;
 
