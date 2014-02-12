@@ -2869,8 +2869,6 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::pointIdToDofRelation(st
 
 
 
-#if defined(FEELPP_ENABLE_MPI_MODE)
 #include <feel/feeldiscr/doftablempi.hpp>
-#endif
 
 #endif //FEELPP_DOFTABLE_HH
