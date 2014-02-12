@@ -402,6 +402,7 @@ public:
                 Sampling->clear();
                 compute_fem=false;
                 compute_stat=false;
+                export_solution=false;
                 int size=-1;
                 //here only one component vary
                 if( number_str == 2 )
