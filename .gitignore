@@ -36,7 +36,6 @@
 /auto
 /autom4te.cache
 /cmake_install.cmake
-/configure
 /ctest.make
 /feel-ctest-continuous.cmake
 /feel.kdev4
