@@ -19,22 +19,29 @@ fi
 #    exit
 #fi
 
-if [[ -f "$1.onelab.cfg" ]]; then
-		echo "Restoring previous configuration from \"$1.onelab.cfg\""
-		PCONFIG="--config-file $1.onelab.cfg"
-fi
-
 # Store desired number of processors
 NPROCS=$1
 
-# Launch the feel++ application to generate the OneLab files
-# echo "$* --generate-ol ${PCONFIG}"
-# shift
-# eval "mpirun -np ${NPROCS} $* --generate-ol ${PCONFIG}"
-#shift
-eval "$* --generate-ol ${PCONFIG}"
+# if a onelab.cfg file exists
+if [[ -f "$1.onelab.cfg" ]]; then
+		echo "Restoring previous configuration from \"$1.onelab.cfg\""
+    PCONFIG="--config-file $1.onelab.cfg"
+fi
 
-# echo $?
+	  # Force regenration with previous parameters
+	  #eval "$1 --config-file $1.onelab.cfg --generate-ol"
+#else
+    # Launch the feel++ application to generate the OneLab files
+    # echo "$* --generate-ol ${PCONFIG}"
+    # shift
+    # eval "mpirun -np ${NPROCS} $* --generate-ol ${PCONFIG}"
+    # shift
+   	eval "$* --generate-ol ${PCONFIG}"
+#fi
+
+if [[ $? -ne 0 ]]; then
+	exit 1
+fi
 
 # Launch Gmsh with the OneLab files
 gmsh $1.ol

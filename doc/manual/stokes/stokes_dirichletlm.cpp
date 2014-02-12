@@ -77,7 +77,7 @@ void runStokesDirichletLM()
     std::string configstr = (boost::format("%1%dGeo%2%")%Dim %OrderGeo).str();
 
     auto mesh = createMeshStokesDirichletLM<OrderGeo>( mpl::int_<Dim>() );
-    std::list<std::string> listMarker;listMarker.push_back("inlet");listMarker.push_back("wall");
+    std::list<std::string> listMarker{"inlet","wall"};
     auto submesh = createSubmesh(mesh,markedfaces(mesh,listMarker));
 
     auto Vh1 = THch<OrderGeo>(mesh);

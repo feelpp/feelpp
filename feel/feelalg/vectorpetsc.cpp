@@ -915,8 +915,6 @@ template <typename T>
 void
 VectorPetscMPI<T>::duplicateFromOtherPartition( Vector<T> const& vecInput)
 {
-#if defined(FEELPP_ENABLE_MPI_MODE) // WITH MPI
-
     auto testCommActivities_this=this->map().worldComm().hasMultiLocalActivity();
 
     if (testCommActivities_this.template get<0>())
@@ -940,8 +938,6 @@ VectorPetscMPI<T>::duplicateFromOtherPartition( Vector<T> const& vecInput)
         {
             this->duplicateFromOtherPartition_run( vecInput );
         }
-
-#endif // MPI
 }
 
 //----------------------------------------------------------------------------------------------------//
@@ -950,8 +946,6 @@ template <typename T>
 void
 VectorPetscMPI<T>::duplicateFromOtherPartition_run( Vector<T> const& vecInput)
 {
-#if defined(FEELPP_ENABLE_MPI_MODE) // WITH MPI
-
     std::list<boost::tuple<size_type,size_type> > memory_dofCluster;
     std::vector<size_type> dofClusterMissing;
     std::vector<size_type> originaldofClusterMissing;
@@ -960,35 +954,35 @@ VectorPetscMPI<T>::duplicateFromOtherPartition_run( Vector<T> const& vecInput)
     std::vector<int> dofClusterMissing_RequestIsFind;
 
     if (this->map().worldComm().isActive())
+    {
+        const size_type mynWithGhost = this->map().mapGlobalProcessToGlobalCluster().size();
+        for (size_type k=0;k<mynWithGhost;++k)
         {
-            const size_type mynWithGhost = this->map().mapGlobalProcessToGlobalCluster().size();
-            for (size_type k=0;k<mynWithGhost;++k)
-                {
-                    const size_type convert_dofProcess = k;
-                    const size_type convert_dofCluster = this->map().mapGlobalProcessToGlobalCluster()[k];
-                    const size_type original_dofCluster = convert_dofCluster;
-                    const size_type original_firstDofCluster = vecInput.map().firstDofGlobalCluster();
-                    if ( original_dofCluster>=vecInput.map().firstDofGlobalCluster() &&
-                         original_dofCluster<=vecInput.map().lastDofGlobalCluster() )
-                        {
-                            const size_type original_dofProcess = vecInput.map().mapGlobalClusterToGlobalProcess()[original_dofCluster-original_firstDofCluster];
-                            this->set( convert_dofProcess, vecInput(original_dofProcess) );
-                        }
-                    else
-                        {
-                            memory_dofCluster.push_back( boost::make_tuple(k,original_dofCluster) );
-                        }
-                }
-            // init data to send
-            dofClusterMissing.resize(memory_dofCluster.size());
-            originaldofClusterMissing.resize(memory_dofCluster.size());
-            auto it_dof = memory_dofCluster.begin();
-            for (int k=0;k<dofClusterMissing.size();++k,++it_dof)
-                {
-                    dofClusterMissing[k]=it_dof->get<0>();
-                    originaldofClusterMissing[k]=it_dof->get<1>();
-                }
+            const size_type convert_dofProcess = k;
+            const size_type convert_dofCluster = this->map().mapGlobalProcessToGlobalCluster()[k];
+            const size_type original_dofCluster = convert_dofCluster;
+            const size_type original_firstDofCluster = vecInput.map().firstDofGlobalCluster();
+            if ( original_dofCluster>=vecInput.map().firstDofGlobalCluster() &&
+                 original_dofCluster<=vecInput.map().lastDofGlobalCluster() )
+            {
+                const size_type original_dofProcess = vecInput.map().mapGlobalClusterToGlobalProcess()[original_dofCluster-original_firstDofCluster];
+                this->set( convert_dofProcess, vecInput(original_dofProcess) );
+            }
+            else
+            {
+                memory_dofCluster.push_back( boost::make_tuple(k,original_dofCluster) );
+            }
         }
+        // init data to send
+        dofClusterMissing.resize(memory_dofCluster.size());
+        originaldofClusterMissing.resize(memory_dofCluster.size());
+        auto it_dof = memory_dofCluster.begin();
+        for (int k=0;k<dofClusterMissing.size();++k,++it_dof)
+        {
+            dofClusterMissing[k]=it_dof->get<0>();
+            originaldofClusterMissing[k]=it_dof->get<1>();
+        }
+    }
 
     auto worldCommFusion = this->map().worldComm()+vecInput.map().worldComm();
     std::vector<rank_type> globalRankToFusionRank_this(this->map().worldComm().globalSize());
@@ -1012,128 +1006,124 @@ VectorPetscMPI<T>::duplicateFromOtherPartition_run( Vector<T> const& vecInput)
     int firstActiveProc_this=0;
     bool findFirstActive_this=false;
     while (!findFirstActive_this)
+    {
+        if (thisProcIsActive_fusion[firstActiveProc_this])
         {
-            if (thisProcIsActive_fusion[firstActiveProc_this])
-                {
-                    findFirstActive_this=true;
-                }
-            else ++firstActiveProc_this;
+            findFirstActive_this=true;
         }
+        else ++firstActiveProc_this;
+    }
     int firstActiveProc_input=0;
     bool findFirstActive_input=false;
     while (!findFirstActive_input)
+    {
+        if (inputProcIsActive_fusion[firstActiveProc_input])
         {
-            if (inputProcIsActive_fusion[firstActiveProc_input])
-                {
-                    findFirstActive_input=true;
-                }
-            else ++firstActiveProc_input;
+            findFirstActive_input=true;
         }
+        else ++firstActiveProc_input;
+    }
 
 
     for (int p=0;p<globalRankToFusionRank_this.size(); ++p)
-        {
-            if (!this->map().worldComm().isActive()) globalRankToFusionRank_this[p]=p%this->map().worldComm().globalSize()+firstActiveProc_this; // FAIRE COMMMUNICATION!!!!!
-        }
+    {
+        if (!this->map().worldComm().isActive()) globalRankToFusionRank_this[p]=p%this->map().worldComm().globalSize()+firstActiveProc_this; // FAIRE COMMMUNICATION!!!!!
+    }
     for (int p=0;p<globalRankToFusionRank_input.size(); ++p)
-        {
-            if (!vecInput.map().worldComm().isActive()) globalRankToFusionRank_input[p]=p%vecInput.map().worldComm().globalSize()+firstActiveProc_input; // FAIRE COMMMUNICATION!!!!!
-        }
+    {
+        if (!vecInput.map().worldComm().isActive()) globalRankToFusionRank_input[p]=p%vecInput.map().worldComm().globalSize()+firstActiveProc_input; // FAIRE COMMMUNICATION!!!!!
+    }
 
     std::vector<std::list<int> > searchDistribution(this->map().worldComm().globalSize());
     for (int p=0;p<this->map().worldComm().globalSize();++p)
+    {
+        searchDistribution[p].clear();
+        for (int q=0;q<vecInput.map().worldComm().globalSize();++q)
         {
-            searchDistribution[p].clear();
-            for (int q=0;q<vecInput.map().worldComm().globalSize();++q)
-                {
-                    //if (q!=p)
-                    if( (globalRankToFusionRank_this[p])!=globalRankToFusionRank_input[q] )
-                        {
-                            searchDistribution[p].push_back(q);
-                        }
-                }
+            //if (q!=p)
+            if( (globalRankToFusionRank_this[p])!=globalRankToFusionRank_input[q] )
+            {
+                searchDistribution[p].push_back(q);
+            }
         }
+    }
 
 #if 0
     vecInput.map().worldComm().globalComm().barrier();
     for (int p=0;p<vecInput.map().worldComm().globalSize();++p)
+    {
+        if (p==vecInput.map().worldComm().globalRank())
         {
-            if (p==vecInput.map().worldComm().globalRank())
-                {
-                    std::cout << "I am proc " << p << "\n";
-                    for (int q=0;q<this->map().worldComm().globalSize();++q)
-                        {
-                            auto it_list = searchDistribution[q].begin();
-                            auto en_list = searchDistribution[q].end();
-                            for ( ; it_list!=en_list;++it_list) { std::cout << *it_list <<" "; }
-                            std::cout << std::endl;
-                        }
-                }
-            vecInput.map().worldComm().globalComm().barrier();
+            std::cout << "I am proc " << p << "\n";
+            for (int q=0;q<this->map().worldComm().globalSize();++q)
+            {
+                auto it_list = searchDistribution[q].begin();
+                auto en_list = searchDistribution[q].end();
+                for ( ; it_list!=en_list;++it_list) { std::cout << *it_list <<" "; }
+                std::cout << std::endl;
+            }
         }
+        vecInput.map().worldComm().globalComm().barrier();
+    }
 #endif
 
 
     for (int proc=0;proc<this->map().worldComm().globalSize();++proc)
+    {
+        for (auto it_rankLocalization=searchDistribution[proc].begin(),en_rankLocalization=searchDistribution[proc].end();
+             it_rankLocalization!=en_rankLocalization;++it_rankLocalization)
         {
-            for (auto it_rankLocalization=searchDistribution[proc].begin(),en_rankLocalization=searchDistribution[proc].end();
-                 it_rankLocalization!=en_rankLocalization;++it_rankLocalization)
+            const int rankLocalization = *it_rankLocalization;
+            if ( this->map().worldComm().globalRank() == proc  && thisProcIsActive_fusion[worldCommFusion.globalRank()] )  // send info to rankLocalization
+            {
+                const int rankToSend = globalRankToFusionRank_input[rankLocalization];
+                worldCommFusion.globalComm().send(rankToSend,0,originaldofClusterMissing );
+            }
+            else if ( vecInput.map().worldComm().globalRank()==rankLocalization && inputProcIsActive_fusion[worldCommFusion.globalRank()] )
+            {
+                const int rankToRecv = globalRankToFusionRank_this[proc];
+                worldCommFusion.globalComm().recv(rankToRecv,0,originaldofClusterMissing_recv );
+
+                const size_type nDataRecv = originaldofClusterMissing_recv.size();
+                dofClusterMissing_RequestVal.resize(nDataRecv);
+                dofClusterMissing_RequestIsFind.resize(nDataRecv);
+                for (size_type k=0;k<nDataRecv;++k)
                 {
-                    const int rankLocalization = *it_rankLocalization;
-                    if ( this->map().worldComm().globalRank() == proc  && thisProcIsActive_fusion[worldCommFusion.globalRank()] )  // send info to rankLocalization
-                        {
-                            const int rankToSend = globalRankToFusionRank_input[rankLocalization];
-                            worldCommFusion.globalComm().send(rankToSend,0,originaldofClusterMissing );
-                        }
-                    else if ( vecInput.map().worldComm().globalRank()==rankLocalization && inputProcIsActive_fusion[worldCommFusion.globalRank()] )
-                        {
-                            const int rankToRecv = globalRankToFusionRank_this[proc];
-                            worldCommFusion.globalComm().recv(rankToRecv,0,originaldofClusterMissing_recv );
-
-                            const size_type nDataRecv = originaldofClusterMissing_recv.size();
-                            dofClusterMissing_RequestVal.resize(nDataRecv);
-                            dofClusterMissing_RequestIsFind.resize(nDataRecv);
-                            for (size_type k=0;k<nDataRecv;++k)
-                                {
-                                    const size_type original_firstDofCluster = vecInput.map().firstDofGlobalCluster();
-                                    const size_type original_dofCluster = originaldofClusterMissing_recv[k];
-                                    if (original_dofCluster >=vecInput.map().firstDofGlobalCluster() && original_dofCluster<=vecInput.map().lastDofGlobalCluster())
-                                        {
-                                            const size_type original_dofProcess = vecInput.map().mapGlobalClusterToGlobalProcess()[original_dofCluster-original_firstDofCluster];
-                                            dofClusterMissing_RequestVal[k]=vecInput(original_dofProcess);
-                                            dofClusterMissing_RequestIsFind[k]=1;
-                                        }
-                                    else dofClusterMissing_RequestIsFind[k]=0;
-                                }
-                            worldCommFusion.globalComm().send( rankToRecv, 1, dofClusterMissing_RequestVal );
-                            worldCommFusion.globalComm().send( rankToRecv, 2, dofClusterMissing_RequestIsFind );
-                        }
-
-                    if ( this->map().worldComm().globalRank() == proc && thisProcIsActive_fusion[worldCommFusion.globalRank()]  )
-                        {
-                            const int rankToRecv = globalRankToFusionRank_input[rankLocalization];
-                            worldCommFusion.globalComm().recv( rankToRecv, 1, dofClusterMissing_RequestVal );
-                            worldCommFusion.globalComm().recv( rankToRecv, 2, dofClusterMissing_RequestIsFind );
-
-                            const size_type nDataRecv = dofClusterMissing_RequestVal.size();
-                            for (size_type k=0;k<nDataRecv;++k)
-                                {
-                                    if (dofClusterMissing_RequestIsFind[k])
-                                        {
-                                            const size_type convert_dofProcess = dofClusterMissing[k];
-                                            this->set( convert_dofProcess,dofClusterMissing_RequestVal[k]);
-                                        }
-                                }
-                        }
-                    //---------------------------------------
-                    worldCommFusion.globalComm().barrier();
-                    //---------------------------------------
+                    const size_type original_firstDofCluster = vecInput.map().firstDofGlobalCluster();
+                    const size_type original_dofCluster = originaldofClusterMissing_recv[k];
+                    if (original_dofCluster >=vecInput.map().firstDofGlobalCluster() && original_dofCluster<=vecInput.map().lastDofGlobalCluster())
+                    {
+                        const size_type original_dofProcess = vecInput.map().mapGlobalClusterToGlobalProcess()[original_dofCluster-original_firstDofCluster];
+                        dofClusterMissing_RequestVal[k]=vecInput(original_dofProcess);
+                        dofClusterMissing_RequestIsFind[k]=1;
+                    }
+                    else dofClusterMissing_RequestIsFind[k]=0;
                 }
+                worldCommFusion.globalComm().send( rankToRecv, 1, dofClusterMissing_RequestVal );
+                worldCommFusion.globalComm().send( rankToRecv, 2, dofClusterMissing_RequestIsFind );
+            }
+
+            if ( this->map().worldComm().globalRank() == proc && thisProcIsActive_fusion[worldCommFusion.globalRank()]  )
+            {
+                const int rankToRecv = globalRankToFusionRank_input[rankLocalization];
+                worldCommFusion.globalComm().recv( rankToRecv, 1, dofClusterMissing_RequestVal );
+                worldCommFusion.globalComm().recv( rankToRecv, 2, dofClusterMissing_RequestIsFind );
+
+                const size_type nDataRecv = dofClusterMissing_RequestVal.size();
+                for (size_type k=0;k<nDataRecv;++k)
+                {
+                    if (dofClusterMissing_RequestIsFind[k])
+                    {
+                        const size_type convert_dofProcess = dofClusterMissing[k];
+                        this->set( convert_dofProcess,dofClusterMissing_RequestVal[k]);
+                    }
+                }
+            }
+            //---------------------------------------
+            worldCommFusion.globalComm().barrier();
+            //---------------------------------------
         }
-
-
-#endif // MPI
-
+    }
 }
 
 //----------------------------------------------------------------------------------------------------//
