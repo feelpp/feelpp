@@ -28,7 +28,7 @@ include (FindPackageHandleStandardArgs)
 # otherwise in the second instance it will pich the standard version installed on the system if
 # it is available
 
-find_program( GMSH_EXECUTABLE 
+find_program( GMSH_EXECUTABLE
   NAMES gmsh
   PATHS
   $ENV{GMSH_DIR}/bin
@@ -79,7 +79,7 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
     ${CMAKE_BINARY_DIR}/contrib/gmsh
     ${CMAKE_SYSTEM_PREFIX_PATH}
     PATH_SUFFIXES
-    lib )
+    lib lib/x86_64-linux-gnu/ )
 
   if( NOT GMSH_LIBRARY )
     if(APPLE)
@@ -112,7 +112,7 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
       PATH_SUFFIXES
       lib  )
   ENDIF()
-  
+
   FIND_PACKAGE_HANDLE_STANDARD_ARGS (GMSH DEFAULT_MSG
     GMSH_INCLUDE_DIR GMSH_LIBRARY GMSH_EXECUTABLE
     )

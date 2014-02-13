@@ -397,11 +397,12 @@ public:
             int number_str=str.size();
             CHECK( number_str < 4 )<<"Error when using option crb.vary-only-parameter-components, at maximum we can vary 2 components of the parameter";
             int vary_mu_comp0=-1,vary_mu_comp1=-1;
-            if( number_str > 0 )
+            if( number_str > 1 )
             {
                 Sampling->clear();
                 compute_fem=false;
                 compute_stat=false;
+                export_solution=false;
                 int size=-1;
                 //here only one component vary
                 if( number_str == 2 )
@@ -542,10 +543,10 @@ public:
             }
 
             std::ofstream file_summary_of_simulations( ( boost::format( "summary_of_simulations_%d" ) %dim ).str().c_str() ,std::ios::out | std::ios::app );
-            std::ofstream file_outputs_geo_gmsh ( "GMSH-outputs.geo", std::ios::out );
-            std::ofstream file_estimated_outputs_geo_gmsh ( "GMSH-estimated-outputs.geo" , std::ios::out );
-            file_outputs_geo_gmsh << "View \" outputs \" {\n";
-            file_estimated_outputs_geo_gmsh << "View \" estimated errors on outputs \" {\n";
+
+            vectorN_type outputs_storage( run_sampling_size );
+            vectorN_type mu0_storage( run_sampling_size );
+            vectorN_type estimated_error_outputs_storage( run_sampling_size );
 
             int curpar = 0;
 
@@ -845,8 +846,10 @@ public:
                                 if( vary_mu_comp0 > -1 )
                                 {
                                     double x = mu(vary_mu_comp0);
-                                    file_outputs_geo_gmsh << "SP("<<x<<",0,0){"<<ocrb<<", -1};\n";
-                                    file_estimated_outputs_geo_gmsh << "SP("<<x<<",0,0){"<<output_estimated_error<<", -1};\n";
+                                    double mu0 = mu(vary_mu_comp0);
+                                    outputs_storage(curpar-1)=ocrb;
+                                    mu0_storage(curpar-1)=mu0;
+                                    estimated_error_outputs_storage(curpar-1)=output_estimated_error;
                                 }
 
                                 if ( compute_fem )
@@ -1403,11 +1406,7 @@ public:
                 }
             }
 
-            std::string conclude=" }; \n View[0].Axes = 1;\n View[0].Type = 2;\n";
-            file_estimated_outputs_geo_gmsh<<conclude;
-            file_outputs_geo_gmsh<<conclude;
-            file_estimated_outputs_geo_gmsh.close();
-            file_outputs_geo_gmsh.close();
+            model->generateGeoFileForOutputPlot( outputs_storage , mu0_storage, estimated_error_outputs_storage );
 
             //model->computationalTimeEimStatistics();
             if( export_solution )
