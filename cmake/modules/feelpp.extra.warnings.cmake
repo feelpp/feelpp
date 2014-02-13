@@ -95,3 +95,8 @@ if(FEELPP_EXTRA_WARNINGS)
     set(FEELPP_FLAGS "${FEELPP_FLAGS} /W4")
   endif()
 endif()
+
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+   set(FEELPP_FLAGS "${FEELPP_FLAGS} -fmacro-backtrace-limit=0" )
+   set(FEELPP_FLAGS "${FEELPP_FLAGS} -ftemplate-backtrace-limit=0" )
+endif()
