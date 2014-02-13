@@ -110,6 +110,9 @@ while [ -n "$1" ]; do
       _WANT_LOCAL_CONFIG=yes
        LOCAL_CONFIG_DIR=CMake.local
        ;;
+   --no-projects|--no-research)
+       _DISABLE_RESEARCH=yes
+       ;;
 
    -Wno-dev)
        _WANT_DEV_WARNINGS="-Wno-dev"
@@ -184,6 +187,9 @@ echo "SET(ENABLE_CUDA ${ENABLE_CUDA} CACHE BOOL \"Project enable cuda\" FORCE)" 
 if [ "X${GMSH_DIR}" != "X" ]; then
 echo "set(GMSH_INCLUDE_DIR           \"${GMSH_DIR}/include\" CACHE PATH \"root directory\" FORCE)" >> cmake.configure
 echo "set(GMSH_LIBRARY_PATH          \"${GMSH_DIR}/lib\" CACHE PATH \"root directory\" FORCE)" >> cmake.configure
+fi
+if [ "X${_DISABLE_RESEARCH}" != "X" ]; then
+echo "option(FEELPP__ENANLE_RESEARCH OFF CACHE PATH \"enable research projects\" FORCE)" >> cmake.configure
 fi
 
 
