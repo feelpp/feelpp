@@ -1178,7 +1178,7 @@ inline
 Expr< GinacExVF<ExprT,Order> >
 expr( std::string const& s, std::vector<GiNaC::symbol> const& lsym, std::pair<GiNaC::symbol,ExprT> const& e, std::string filename="" )
 {
-    return Expr< GinacExVF<ExprT,2> >(  GinacExVF<ExprT,Order>( parse(s,lsym), lsym, e, filename ) );
+    return Expr< GinacExVF<ExprT,Order> >(  GinacExVF<ExprT,Order>( parse(s,lsym), lsym, e, filename ) );
 }
 
 
