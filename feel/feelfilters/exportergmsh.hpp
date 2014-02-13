@@ -190,8 +190,7 @@ private:
 } // Feel
 
 //#if !defined( FEELPP_INSTANTIATION_MODE )
-# include <feel/feelfilters/exportergmsh.cpp>
+# include <feel/feelfilters/exportergmsh_impl.hpp>
 //#endif // FEELPP_INSTANTIATION_MODE
 
 #endif /* __ExporterGmsh_H */
-
