@@ -144,7 +144,7 @@ public:
 				const char* filename_pattern = "./GiNaCXXXXXX";
 				char* new_filename = new char[strlen(filename_pattern)+1];
 				strcpy(new_filename, filename_pattern);
-				if (!mktemp(new_filename)) {
+				if (!mkstemp(new_filename)) {
 					delete[] new_filename;
 					throw std::runtime_error("mktemp failed");
 				}
