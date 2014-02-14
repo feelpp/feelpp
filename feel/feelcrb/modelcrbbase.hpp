@@ -442,19 +442,41 @@ public :
      */
     void generateGeoFileForOutputPlot(  vectorN_type outputs, vectorN_type parameter, vectorN_type estimated_error )
     {
+        bool use_estimated_error=true;
+        if( estimated_error(0) < 0 )
+            use_estimated_error=false;
+
         Eigen::MatrixXf::Index index;
         double min_output = outputs.minCoeff(&index);
         double min_scale=std::floor(min_output);
         double x=0;
         double output=0;
+        double estimated_down=0;
+        double estimated_up=0;
+        double delta=0;
 
         std::ofstream file_outputs_geo_gmsh ( "GMSH-outputs.geo", std::ios::out );
         file_outputs_geo_gmsh << "View \" outputs \" {\n";
         for(int i=0; i<outputs.size(); i++)
         {
-            x=parameter(i);
-            output=outputs(i);
-            file_outputs_geo_gmsh << "SP("<<x<<",0,0){"<<output<<", "<<min_scale<<"};\n";
+            if( use_estimated_error )
+            {
+                delta=estimated_error(i);
+                x=parameter(i);
+                estimated_down=outputs(i);
+                output=outputs(i)+delta/2.0;
+                estimated_up=estimated_down+delta;
+                file_outputs_geo_gmsh <<std::setprecision(14)<< "SP("<<x<<",0,0){"<<output<<", "<<min_scale<<"};\n";
+                file_outputs_geo_gmsh <<std::setprecision(14)<< "SP("<<x<<",0,0){"<<estimated_down<<", "<<min_scale<<"};\n";
+                file_outputs_geo_gmsh <<std::setprecision(14)<< "SP("<<x<<",0,0){"<<estimated_up<<", "<<min_scale<<"};\n";
+                file_outputs_geo_gmsh <<std::setprecision(14)<< "SP("<<x<<",0,0){"<<output<<", "<<min_scale<<"};\n";
+            }
+            else
+            {
+                x=parameter(i);
+                output=outputs(i);
+                file_outputs_geo_gmsh << "SP("<<x<<",0,0){"<<output<<", "<<min_scale<<"};\n";
+            }
         }
 
         std::string conclude=" }; \n ";

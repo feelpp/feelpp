@@ -1,0 +1,207 @@
+#!/bin/sh
+
+usage()
+{
+  msg=$1
+  if [ -n "$msg" ]; then
+    echo "Error: $msg"
+  fi
+  cat <<EOT
+$0 [options...]
+Options:
+-d, --debug                         debug mode
+-r, --release                       release mode
+    --prefix=PATH                   define install path
+-v, --verbose                       enable verbose output
+-h, --help                          help page
+    --<package>-dir=PACKAGE_PATH    define <package> install directory
+    --disable-<package>             disable <package>
+EOT
+}
+
+
+_HAS_ERROR=no
+_WANT_HELP=no
+PROJECT_INSTALL_PREFIX=`pwd`
+PROJECTSRCROOT=`dirname $0`
+
+# If an environment variable PWD exists, use first that one because it is
+# preferable than the command `pwd` which does not take into account linls and
+# may show NFS mountpoints (on some platforms)
+
+if [ "X${BUILDROOT}" = "X" ]; then
+  if [ "X${PWD}" = "X" ]; then
+    BUILDROOT=`pwd`
+  else
+    BUILDROOT=${PWD}
+  fi
+fi
+
+_WANT_DEBUG=no
+_WANT_CHECK=no
+_HAS_CONFIG=no
+_WANT_DEV_WARNINGS=
+_WANT_NUMERICS=TRUE
+_WANT_LOCAL_CONFIG=no
+ENABLE_NUMA=TRUE
+ENABLE_CUDA=TRUE
+
+THISCOMMAND="$0 $@"
+
+while [ -n "$1" ]; do
+   case $1 in
+   --prefix=*)
+       PROJECT_INSTALL_PREFIX=`echo $1 | sed "s,^--prefix=\(.*\),\1,"`
+       export PROJECT_INSTALL_PREFIX
+       ;;
+   --mpi-dir=*)
+       MPI_ROOT=`echo $1 | sed "s,^--mpi-dir=\(.*\),\1,"`
+       export MPI_ROOT
+       ;;
+   --tbb-dir=*)
+       TBB_ROOT=`echo $1 | sed "s,^--tbb-dir=\(.*\),\1,"`
+       export MPI_ROOT
+       ;;
+   --mkl-dir=*)
+       MKL_ROOT=`echo $1 | sed "s,^--mkl-dir=\(.*\),\1,"`
+       export MKL_ROOT
+       ;;
+   --numa-dir=*)
+       NUMA_ROOT=`echo $1 | sed "s,^--numa-dir=\(.*\),\1,"`
+       export NUMA_ROOT
+       ;;
+   --disable-numa)
+       ENABLE_NUMA=FALSE
+       ;;
+   --cuda-dir=*)
+       CUDA_ROOT=`echo $1 | sed "s,^--cuda-dir=\(.*\),\1,"`
+       export CUDA_ROOT
+       ;;
+   --disable-cuda)
+       ENABLE_CUDA=FALSE
+       ;;
+   --boost-dir=*)
+       BOOST_ROOT=`echo $1 | sed "s,^--boost-dir=\(.*\),\1,"`
+       export BOOST_ROOT
+       ;;
+   --eigen3-dir=*)
+       EIGEN3_ROOT=`echo $1 | sed "s,^--eigen3-dir=\(.*\),\1,"`
+       export EIGEN3_ROOT
+       ;;
+   --gmsh-dir=*)
+       GMSH_DIR=`echo $1 | sed "s,^--gmsh-dir=\(.*\),\1,"`
+       export GMSH_DIR
+       ;;
+   --petsc-dir=*)
+       PETSC_DIR=`echo $1 | sed "s,^--petsc-dir=\(.*\),\1,"`
+       export PETSC_DIR
+       ;;
+   --debug|-d)
+       _WANT_DEBUG=yes
+       _WANT_CHECK=yes
+       ;;
+   --check)
+       _WANT_CHECK=yes
+       ;;
+   --release|-r)
+       _WANT_DEBUG=no
+       ;;
+   --local-config)
+      _WANT_LOCAL_CONFIG=yes
+       LOCAL_CONFIG_DIR=CMake.local
+       ;;
+   --no-projects|--no-research)
+       _DISABLE_RESEARCH=yes
+       ;;
+
+   -Wno-dev)
+       _WANT_DEV_WARNINGS="-Wno-dev"
+       ;;
+   -h | -help | --help | -?)
+       _WANT_HELP=yes
+        usage
+        exit 0
+	;;
+   *)
+       echo $1: param�tre inconnu
+       _WANT_HELP=yes;
+       _HAS_ERROR=yes
+       usage
+       exit 0
+	;;
+   esac
+   shift
+done
+
+cat <<EOT >reconfigure
+#!/bin/sh
+echo "Execute: CC=\"$CC\" CXX=\"$CXX\" $THISCOMMAND"
+CC="$CC" CXX="$CXX" $THISCOMMAND
+EOT
+`chmod +x reconfigure`
+
+# switch to ifp config when hostname is irlin*
+if [ "${_WANT_LOCAL_CONFIG}" = "yes" ] ; then
+  CMAKE_FIND_DIR=${LOCAL_CONFIG_DIR}
+else
+  CMAKE_FIND_DIR=CMake
+fi
+
+echo BUILDROOT=${BUILDROOT}
+echo INSTALL_PREFIX=${PROJECT_INSTALL_PREFIX}
+echo CMAKE_FIND_DIR=${CMAKE_FIND_DIR}
+
+echo "# Do not edit" > cmake.configure
+if [ "X${PROJECT_INSTALL_PREFIX}" != "X" ]; then
+  echo "SET(CMAKE_INSTALL_PREFIX \"${PROJECT_INSTALL_PREFIX}\" CACHE PATH \"Installation directory\" FORCE)" >> cmake.configure
+fi
+echo "SET(BUILDROOT ${BUILDROOT} CACHE PATH \"Compilation directory\")" >> cmake.configure
+echo "SET(CMAKE_INSTALL_PREFIX \"${PROJECT_INSTALL_PREFIX}\" CACHE PATH \"Installation directory\" FORCE)" >> cmake.configure
+echo "SET(PROJECT_ROOT ${PROJECTSRCROOT} CACHE PATH "Project root")" >> cmake.configure
+echo "SET(ARCH \"`arch`\" CACHE STRING \"Project ARCH\" FORCE)" >> cmake.configure
+if [ "X${MKL_ROOT}" != "X" ]; then
+echo "set(MKL_INCLUDE_PATH             \"${MKL_ROOT}/include\" CACHE PATH \"root directory\" FORCE)" >> cmake.configure
+echo "set(MKL_LIBRARY_PATH             \"${MKL_ROOT}/lib/em64t\" CACHE PATH \"root directory\" FORCE)" >> cmake.configure
+fi
+if [ "X${EIGEN3_ROOT}" != "X" ]; then
+echo "set(EIGEN3_INCLUDE_PATH          \"${EIGEN3_ROOT}/include/eigen3\" CACHE PATH \"root directory\" FORCE)" >> cmake.configure
+fi
+if [ "X${CUDA_ROOT}" != "X" ]; then
+echo "set(CUDA_INCLUDE_PATH            \"${CUDA_ROOT}/cuda/include\" CACHE PATH \"root directory\" FORCE)" >> cmake.configure
+echo "set(CUDA_LIBRARY_PATH            \"${CUDA_ROOT}/cuda/lib64\" CACHE PATH \"root directory\" FORCE)" >> cmake.configure
+fi
+if [ "X${TBB_ROOT}" != "X" ]; then
+echo "set(TBB_INCLUDE_PATH             \"${TBB_ROOT}/include\" CACHE PATH \"root directory\" FORCE)" >> cmake.configure
+echo "set(TBB_LIBRARY_PATH             \"${TBB_ROOT}/lib\" CACHE PATH \"root directory\" FORCE)" >> cmake.configure
+fi
+if [ "X${BOOST_ROOT}" != "X" ]; then
+echo "set(BOOST_INCLUDE_PATH           \"${BOOST_ROOT}/include\" CACHE PATH \"root directory\" FORCE)" >> cmake.configure
+echo "set(BOOST_LIBRARY_PATH           \"${BOOST_ROOT}/lib\" CACHE PATH \"root directory\" FORCE)" >> cmake.configure
+fi
+if [ "X${NUMA_ROOT}" != "X" ]; then
+echo "set(NUMA_INCLUDE_PATH            \"${NUMA_ROOT}/include\" CACHE PATH \"root directory\" FORCE)" >> cmake.configure
+echo "set(NUMA_LIBRARY_PATH            \"${NUMA_ROOT}/lib64\" CACHE PATH \"root directory\" FORCE)" >> cmake.configure
+fi
+echo "SET(ENABLE_NUMA ${ENABLE_NUMA} CACHE BOOL \"Project enable numa\" FORCE)" >> cmake.configure
+echo "SET(ENABLE_CUDA ${ENABLE_CUDA} CACHE BOOL \"Project enable cuda\" FORCE)" >> cmake.configure
+if [ "X${GMSH_DIR}" != "X" ]; then
+echo "set(GMSH_INCLUDE_DIR           \"${GMSH_DIR}/include\" CACHE PATH \"root directory\" FORCE)" >> cmake.configure
+echo "set(GMSH_LIBRARY_PATH          \"${GMSH_DIR}/lib\" CACHE PATH \"root directory\" FORCE)" >> cmake.configure
+fi
+if [ "X${_DISABLE_RESEARCH}" != "X" ]; then
+echo "option(FEELPP__ENANLE_RESEARCH OFF CACHE PATH \"enable research projects\" FORCE)" >> cmake.configure
+fi
+
+
+if [ "${_WANT_DEBUG}" = "yes" ]; then
+  echo 'Configuration en mode debug'
+  BUILDTYPE=Debug
+else
+  BUILDTYPE=Release
+fi
+
+if [ -f CMakeCache.txt ]; then
+  /bin/rm CMakeCache.txt
+fi
+
+cmake -Ccmake.configure -DCMAKE_VERBOSE_MAKEFILE:BOOL=TRUE -DCMAKE_BUILD_TYPE:STRING=${BUILDTYPE} TRUE ${PROJECTSRCROOT}
