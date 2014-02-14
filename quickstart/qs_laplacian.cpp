@@ -32,7 +32,7 @@ int main(int argc, char**argv )
     a = integrate(_range=elements(mesh),
                   _expr=gradt(u)*trans(grad(v)) );
     a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u,
-          _expr=expr( option(_name="functions.g").as<std::string>() ) );
+          _expr=expr1( option(_name="functions.g").as<std::string>(), "T",sin(pi*Px()) ) );
     a.solve(_rhs=l,_solution=u);
     //# endmarker3 #
 
