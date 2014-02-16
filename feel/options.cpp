@@ -61,7 +61,8 @@ generic_options()
     generic.add_options()
         ( "authors", "prints the authors list" )
         ( "copyright", "prints the copyright statement" )
-        ( "help", "prints this help message" )
+        ( "help", "prints this help message associated with the Feel++ application options" )
+        ( "help-lib", "prints the help message associated with the Feel++ library options" )
         ( "license", "prints the license text" )
         ( "version", "prints the version" )
         ( "v", po::value<int>()->default_value(0), "verbosity level" )
@@ -497,8 +498,6 @@ feel_options( std::string const& prefix  )
 
         ;
 
-    if ( prefix.empty() )
-        opt.add( generic_options() );
     return opt;
 
 }
