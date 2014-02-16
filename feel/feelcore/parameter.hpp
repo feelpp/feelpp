@@ -156,6 +156,7 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( geoentity )
     BOOST_PARAMETER_NAME( pointset )
     BOOST_PARAMETER_NAME( desc )
+    BOOST_PARAMETER_NAME( desc_lib )
     BOOST_PARAMETER_NAME( shape )
     BOOST_PARAMETER_NAME( convex )
 // project and integrate
