@@ -454,14 +454,20 @@ template<typename MeshType, int N>
 void
 ExporterGmsh<MeshType,N>::gmshSaveElementsEnd( std::ostream& out ) const
 {
-    out << "$EndElements\n";
-}
+    out << "$EndElements\n";}
+
 
 
 template<typename MeshType, int N>
 void
 ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh, size_type indexEltStart ) const
 {
+    auto eltOnProccess = elements( mesh );
+    auto elt_it = eltOnProccess.template get<1>();
+    auto elt_en = eltOnProccess.template get<2>();
+    std::map<int,int> pids;
+    int pid = 0;
+    std::for_each( elt_it, elt_en, [&pid,&pids]( typename MeshType::element_type const& e ){ pids[e.id()]=pid++; });
 
     //auto allmarkedfaces = markedfaces( mesh );
     auto allmarkedfaces = boundaryfaces( mesh );
@@ -492,15 +498,30 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
 
         else if ( FEELPP_GMSH_FORMAT_VERSION==std::string( "2.2" ) )
         {
-            uint16_type nbTag = 3 + face_it->numberOfPartitions();
+            uint16_type nbTag = 3;
+            if ( option(_name="partition.linear" ).template as<bool>() )
+            {
+                nbTag += 1;
+            }
+            else
+                nbTag += face_it->numberOfPartitions();
             out << " " << nbTag
                 << " " << face_it->marker().value()
-                << " " << face_it->marker2().value()
-                << " " << face_it->numberOfPartitions()
-                << " " << face_it->processId()+1;
+                << " " << face_it->marker2().value();
 
-            for ( size_type i=0 ; i<face_it->numberOfNeighborPartitions(); ++i )
-                out << " " << -( face_it->neighborPartitionIds()[i]+1 );
+
+            if ( option(_name="partition.linear" ).template as<bool>() )
+            {
+                out << " " <<  1
+                    << " " << pids[face_it->element0().id()]+1;
+            }
+            else
+            {
+                out << " " << face_it->numberOfPartitions()
+                    << " " << face_it->processId()+1;
+                for ( size_type i=0 ; i<face_it->numberOfNeighborPartitions(); ++i )
+                    out << " " << -( face_it->neighborPartitionIds()[i]+1 );
+            }
         }
 
         // node-number-list
@@ -515,11 +536,8 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
     } // faces
 
 
-    auto eltOnProccess = elements( mesh );
-    auto elt_it = eltOnProccess.template get<1>();
-    auto elt_en = eltOnProccess.template get<2>();
 
-    for ( ; elt_it != elt_en; ++elt_it )
+    for ( ; elt_it != elt_en; ++elt_it, ++pid )
     {
         out << elem_number++ <<" ";
         out << ordering.type();
@@ -532,15 +550,38 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
 
         else if ( FEELPP_GMSH_FORMAT_VERSION== std::string( "2.2" ) )
         {
-            uint16_type nbTag = 3 + elt_it->numberOfPartitions();
+            std::vector<int> f;
+            uint16_type nbTag = 3;
+
+            if ( option(_name="partition.linear" ).template as<bool>() )
+            {
+                for ( size_type i=0 ; i< elt_it->nNeighbors(); ++i )
+                    if ( elt_it->neighbor(i).first != invalid_size_type_value )
+                        f.push_back( elt_it->neighbor(i).first );
+
+                nbTag+=f.size()+1;
+            }
+            else
+                nbTag+=elt_it->numberOfPartitions();
             out << " " << nbTag
                 << " " << elt_it->marker().value()
-                << " " << elt_it->marker2().value()
-                << " " << elt_it->numberOfPartitions()
-                << " " << elt_it->processId()+1;
+                << " " << elt_it->marker2().value();
 
-            for ( size_type i=0 ; i<elt_it->numberOfNeighborPartitions(); ++i )
-                out << " " << -( elt_it->neighborPartitionIds()[i]+1 );
+            if ( option(_name="partition.linear" ).template as<bool>() )
+            {
+
+                out << " " << f.size()+1 << " " << pids[elt_it->id()]+1;
+                for( auto i : f )
+                    out << " " << -( pids[i]+1 );
+            }
+            else
+            {
+                out << " " << elt_it->numberOfPartitions()
+                    << " " << elt_it->processId()+1;
+
+                for ( size_type i=0 ; i<elt_it->numberOfNeighborPartitions(); ++i )
+                    out << " " << -( elt_it->neighborPartitionIds()[i]+1 );
+            }
         }
 
         for ( uint16_type p=0; p<element_type::numPoints; ++p )

@@ -705,7 +705,6 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     std::list<Feel::detail::GMSHElement> __et; // tags in each element
     std::map<int,int> __idGmshToFeel; // id Gmsh to id Feel
     std::map<int,int> __gt;
-    std::map<int,int> proc2elt;    const bool linearpartition = option(_name="partition.linear").template as<bool>();
 
     if ( !binary )
     {
@@ -769,12 +768,9 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
 
           // WARNING: we had another condition if the number of processors and
           // elements is the same, in that case we store everything for now
-          if ( ( linearpartition == false ) &&
-               (( gmshElt.isOnProcessor() == false) ||
+          if ( (( gmshElt.isOnProcessor() == false) ||
                 gmshElt.isIgnored(M_ignorePhysicalGroup.begin(), M_ignorePhysicalGroup.end()) ) )
               continue;
-          if ( linearpartition )
-              proc2elt[partition]=num-1;
           __et.push_back( gmshElt );
 
           if ( __gt.find( type ) != __gt.end() )
@@ -850,12 +846,9 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
                                                    numVertices, indices,
                                                    this->worldComm().localRank(),this->worldComm().localSize() );
 
-                if ( ( linearpartition == false ) &&
-                     ( gmshElt.isOnProcessor() == false ||
+                if ( ( gmshElt.isOnProcessor() == false ||
                        gmshElt.isIgnored(M_ignorePhysicalGroup.begin(), M_ignorePhysicalGroup.end()) ) )
                     continue;
-                if ( linearpartition )
-                    proc2elt[partition]=num-1;
                 __et.push_back( gmshElt );
 
                 if ( __gt.find( type ) != __gt.end() )
@@ -925,12 +918,6 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     }
     // we are done reading the MSH file
 
-    // now we update the partition so that the process id corresponds to the element id-1
-    if  ( linearpartition )
-        for( auto& elt : __et )
-        {
-            elt.updatePartition( proc2elt, this->worldComm().localRank(),this->worldComm().localSize() );
-        }
 
     std::map<int,boost::tuple<int,int> > mapGhostElt;
     std::vector<int> nbMsgToRecv( this->worldComm().localSize(),0 );
