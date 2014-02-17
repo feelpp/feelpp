@@ -45,6 +45,9 @@ generic_options();
 po::options_description
 feel_options( std::string const& prefix = "" );
 
+inline po::options_description
+feel_nooptions() { return po::options_description(); }
+
 //! add benchmark options to feel++ applications
 po::options_description benchmark_options( std::string const& prefix = "" );
 
