@@ -53,6 +53,9 @@
 #include <feel/feelcore/feelpetsc.hpp>
 #include <feel/options.hpp>
 
+#define stringize2(x) #x
+#define stringize(x) stringize2(x)
+
 namespace GiNaC {
 extern void cleanup_ex( bool verbose );
 }
@@ -170,186 +173,226 @@ dupargv (char** argv)
 }
 
 void
-Environment::generateOLFiles( std::string const& appName)
+Environment::generateOLFiles( int argc, char** argv, std::string const& appName)
 {
-  //Application path
-  std::string appPath;
-  char *buf;
-  ssize_t bufsize;
-  char path[4096];
-  bufsize = readlink("/proc/self/exe",path,sizeof(path) - 1);
-  if(bufsize != -1)
-  {
-    path[bufsize] = '\0';
-  }
-  appPath.assign(path);
+    //Application path
+    bool isNum = false;
+    fs::path p(argv[0]);
+    std::ostringstream appPath;
 
-  /*
-  std::cout << fs::current_path() << std::endl;
-  std::cout << appName << std::endl;
-  std::cout << appPath << std::endl;
-  */
-  
-  std::ofstream ol;
-  ol.open(appPath + ".ol", std::ofstream::out | std::ofstream::trunc); //.ol file
-  std::ofstream cfgol;
-  cfgol.open(appPath + ".onelab.cfg.ol", std::ofstream::out | std::ofstream::trunc); //.cfg.ol file
-  const std::vector<boost::shared_ptr<po::option_description>>& listOpt = Environment::optionsDescription().options(); //Fetching options in an option_description vector
+    appPath.str("");
 
-  for(boost::shared_ptr<po::option_description> option : listOpt)
-  {
-      //Informations about the option
-      std::string optName = option->format_name().erase(0,2);//Putting the option name in a variable for easier manipulations
-      std::string defVal = option->format_parameter(); //Putting the option default value in a variable for easier manipulations
-      std::string desc=option->description(); // Option description
+    /*
+      std::cout << fs::current_path() << std::endl;
+      std::cout << appName << std::endl;
+      std::cout << appPath.str() << std::endl;
+    */
 
-      //std::cout << optName << ";" << defVal << ";" << desc << std::endl;
+    /* get app name */
+    appPath.str("");
+    appPath << fs::absolute(p).string();
+    //std::cout << appPath.str() << std::endl;
 
-      std::string ens,funcName,test;
-      if(defVal.size() > 3) // We want defVal.size() > 3 to exclude options without a default value
-      {
-          defVal.erase(0,6); // Removing "arg" and a space and the first parenthesis
-          defVal.erase(defVal.size()-1,1); // Removing closing parenthesis
-      }
-      else
-      {
-          defVal = "";
-      }
+    std::ostringstream optionPath;
 
-      std::vector<std::string> strings; //Vector of the split name
-      boost::split(strings,optName,boost::is_any_of(".")); //Spliting option name
-      ens = "";
-      if(strings.size() > 1)
-      {
-          ens = strings[0]; //Getting the first split element for the option set in the .cfg.ol file
-          for(size_t i = 1; i < strings.size() - 1; i++) //Getting the option set
-          {
-            ens += "/" + strings[i];
-          }
-      }
-      funcName = strings[strings.size() - 1]; //Raw option name
+    std::ofstream ol;
+    ol.open(appPath.str() + ".ol", std::ofstream::out | std::ofstream::trunc); //.ol file
+    std::ofstream cfgol;
+    cfgol.open(appPath.str() + ".onelab.cfg.ol", std::ofstream::out | std::ofstream::trunc); //.cfg.ol file
+    std::map<std::string, std::vector<boost::shared_ptr<po::option_description> >> moptions{
+        {"Feelpp", Environment::optionsDescriptionLibrary().options() },
+        {S_about.appName(), Environment::optionsDescriptionApplication().options() },
+    };
 
-      //std::cout << ens << " " << funcName << std::endl;
+    for( auto o : moptions )
+    {
+        for(boost::shared_ptr<po::option_description> option : o.second )
+        {
+            //Informations about the option
+            std::string optName = option->format_name().erase(0,2);//Putting the option name in a variable for easier manipulations
+            std::string defVal = ""; //option->format_parameter(); //Putting the option default value in a variable for easier manipulations
+            std::string desc=option->description(); // Option description
 
-      /* skip some options */
-      if(funcName == "generate-ol" ||
-         funcName == "config-file")
-      {
-          continue;
-      }
+            // reset option path
+            optionPath.str("");
+            // reset type
+            isNum = false;
 
-      //std::cout << defVal << std::endl;
-      
-      /*po::shared_ptr<po::value_semantic> value = const_pointer_cast<po::value_semantic>(option->semantic());
-      po::shared_ptr<po::typed_value<int>> tvalue = dynamic_pointer_cast<po::typed_value<int>>(value);
-      cout<<tvalue<<endl;*/
+            //std::cout << optName << ";" << defVal << ";" << desc << std::endl;
 
-
-      /* if an option has been set either through command line */
-      /* or through the initial config file */
-      /* we use its configuration */
-      //if(S_vm.count(optName) && !(S_vm[optName].defaulted()))
-      if(S_vm.count(optName))
-      {
-          std::ostringstream oss;
-          oss << defVal;
-          //std::cout << defVal;
-          const std::type_info & ti = S_vm[optName].value().type();
-          if(ti == typeid(bool))
-          {
-              oss.str("");
-              oss << (S_vm[optName].as<bool>() ? 1 : 0);
-          }
-          else if(ti == typeid(int))
-          {
-              oss.str("");
-              oss << S_vm[optName].as<int>();
-          }
-          else if(ti == typeid(float))
-          {
-              oss.str("");
-              oss << S_vm[optName].as<float>();
-          }
-          else if(ti == typeid(double))
-          {
-              oss.str("");
-              oss << S_vm[optName].as<double>();
-          }
-          else if(ti == typeid(std::string))
-          {
-              oss.str("");
-              oss <<  S_vm[optName].as<std::string>();
-          }
-          defVal = oss.str();
-          //std::cout << " " << defVal << std::endl;
-      }
-
-      /* Force Gmsh as a the default exporter */
-      /* as we are using OneLab */
-      if(ens == "exporter" && funcName == "format")
-      {
-          defVal = "gmsh";
-      }
-
-      if(defVal.size() != 0) //Excluding options without a default value
-      {
-          if(isdigit(defVal.at(0))) //If the first char is a digit, option is a number
-          {
-              if(ens != "")
+            std::string ens,funcName,test;
+            /*
+              if(defVal.size() > 3) // We want defVal.size() > 3 to exclude options without a default value
               {
-  			      ol << funcName << ".number(" << defVal << ", Parameters/" << ens << "/);" << " # "<< desc << std::endl;
-			      cfgol << optName << "=OL.get(Parameters/" << ens << "/" << funcName << ")" << std::endl;
+              defVal.erase(0,6); // Removing "arg" and a space and the first parenthesis
+              defVal.erase(defVal.size()-1,1); // Removing closing parenthesis
               }
               else
               {
-  			      ol << funcName << ".number(" << defVal << ", Parameters/);" << " # "<< desc << std::endl;
-			      cfgol << optName << "=OL.get(Parameters/" << funcName << ")" << std::endl;
+              defVal = "";
               }
-          }
-          else if(isalpha(defVal.at(0))) //Else, it's a string
-          {
-              if(ens != "")
-              {
-  			      ol << funcName << ".string(" << defVal << ", Parameters/" << ens << "/);" << " # "<< desc << std::endl;
-			      cfgol << optName << "=OL.get(Parameters/" << ens << "/" << funcName << ")" << std::endl;
-              }
-              else
-              {
-  			      ol << funcName << ".string(" << defVal << ", Parameters/);" << " # "<< desc << std::endl;
-			      cfgol << optName << "=OL.get(Parameters/" << funcName << ")" << std::endl;
-              }
-          }
-      }
-  }
+            */
 
-  ol << "" << std::endl;
-  
-  /* Mesher instructions */
-  ol << "Mesher.register(native,/usr/bin/gmsh);" << std::endl;
-  /*
-  ol << "Mesher.in(feel.geo);" << std::endl;
-  ol << "Mesher.out(feel.msh);" << std::endl;
-  */
-  ol << "OL.if(OL.get(Parameters/gmsh/filename) == untitled.geo)" << std::endl;
-  ol << "OL.msg(No geo file specified. Using a default one);" << std::endl;
-  ol << "OL.endif" << std::endl;
-  
-  /* Application instructions */
-  //ol << "FeelApp.register(interfaced, mpirun -np " << worldComm().size() << " " + appPath + ");" << std::endl;
-  ol << "FeelApp.register(interfaced, " + appPath + ");" << std::endl;
-  ol << "FeelApp.in(OL.get(Arguments/FileName).onelab.cfg.ol);" << std::endl;
-  ol << "FeelApp.run( --config-file OL.get(Arguments/FileName).onelab.cfg --nochdir );" << std::endl;
-  ol << "FeelApp.out(" + appName + "-1_0.msh);" << std::endl;
+            std::vector<std::string> strings; //Vector of the split name
+            boost::split(strings,optName,boost::is_any_of(".")); //Spliting option name
+            ens = "";
+            if(strings.size() > 1)
+            {
+                ens = strings[0] + "/"; //Getting the first split element for the option set in the .cfg.ol file
+                for(size_t i = 1; i < strings.size() - 1; i++) //Getting the option set
+                {
+                    ens += strings[i] + "/";
+                }
+            }
+            funcName = strings[strings.size() - 1]; //Raw option name
 
-  /* Take into account th fact that we use MPI */
-  /* Generating multiple output files, so we merge them */
-  //for(int i = 0; i < worldComm().size(); i++)
-  //{
+            //std::cout << ens << " " << funcName << std::endl;
+
+            /* skip some options */
+            if(funcName == "generate-ol" ||
+               funcName == "config-file")
+            {
+                continue;
+            }
+
+            /* if an option has been set either through command line */
+            /* or through the initial config file */
+            /* we use its configuration */
+            //if(S_vm.count(optName) && !(S_vm[optName].defaulted()))
+            if(S_vm.count(optName))
+            {
+                std::ostringstream oss;
+                oss.str("");
+                //std::cout << defVal;
+
+                //std::cout << "Entry for " << optName << ": ";
+                if(S_vm[optName].defaulted())
+                {
+                    //std::cout << "defaulted ";
+                    optionPath << "GeneralParameters/" << o.first << "/" << ens;
+                }
+                else
+                {
+                    optionPath << "DefinedParameters/" << o.first << "/" << ens;
+                }
+
+                //optionPath << "Parameters/" << ens;
+
+                if(optName == "licence")
+                {
+                    const std::type_info & ti = S_vm[optName].value().type();
+                    std::cout << ti.name() << " " << std::endl;
+                }
+
+                if(S_vm[optName].empty())
+                {
+                    //std::cout << "empty ";
+                }
+                else
+                {
+                    const std::type_info & ti = S_vm[optName].value().type();
+                    //std::cout << ti.name() << " ";
+                    if(ti == typeid(bool))
+                    {
+                        oss.str("");
+                        oss << (S_vm[optName].as<bool>() ? "1" : "0");
+                        isNum = false;
+                    }
+                    else if(ti == typeid(int))
+                    {
+                        oss.str("");
+                        oss << S_vm[optName].as<int>();
+                        isNum = true;
+                    }
+                    else if(ti == typeid(size_type))
+                    {
+                        oss.str("");
+                        oss << S_vm[optName].as<size_type>();
+                        isNum = true;
+                    }
+                    else if(ti == typeid(float))
+                    {
+                        oss.str("");
+                        oss << S_vm[optName].as<float>();
+                        isNum = true;
+                    }
+                    else if(ti == typeid(double))
+                    {
+                        oss.str("");
+                        oss << S_vm[optName].as<double>();
+                        isNum = true;
+                    }
+                    else if(ti == typeid(std::string))
+                    {
+                        oss.str("");
+                        oss <<  S_vm[optName].as<std::string>();
+                        isNum = false;
+                    }
+                    else
+                    {
+                        std::cout << "Unknown type for parameter " << optName << "(" << typeid(void).name() << ")" << std::endl;
+                        isNum = false;
+                    }
+                }
+                //std::cout << oss.str() << std::endl;
+                defVal = oss.str();
+
+                /* Force Gmsh as a the default exporter */
+                /* as we are using OneLab */
+                if(ens == "exporter/" && funcName == "format")
+                {
+                    defVal = "gmsh";
+                }
+
+                /*
+                  if(defVal.size() != 0) //Excluding options without a default value
+                  {
+                */
+                if(isNum)
+                {
+                    ol << funcName << ".number(" << defVal << ", " << optionPath.str() << ");" << " # "<< desc << std::endl;
+                    cfgol << optName << "=OL.get(" << optionPath.str() << funcName << ")" << std::endl;
+                }
+                else
+                {
+                    ol << funcName << ".string(" << defVal << ", " << optionPath.str() << ");" << " # "<< desc << std::endl;
+                    cfgol << optName << "=OL.get(" << optionPath.str() << funcName << ")" << std::endl;
+                }
+                //}
+            }
+
+        }
+    }
+
+    ol << "" << std::endl;
+
+    /* Mesher instructions */
+    ol << "Mesher.register(native," << stringize(GMSH_EXECUTABLE) << ");" << std::endl;
+    /*
+      ol << "Mesher.in(feel.geo);" << std::endl;
+      ol << "Mesher.out(feel.msh);" << std::endl;
+    */
+    ol << "OL.if(OL.get(Parameters/gmsh/filename) == untitled.geo)" << std::endl;
+    ol << "OL.msg(No geo file specified. Using a default one);" << std::endl;
+    ol << "OL.endif" << std::endl;
+    //ol << "OL.setAttribute( /GeneralParameters/Feel++, )
+
+    /* Application instructions */
+    //ol << "FeelApp.register(interfaced, mpirun -np " << worldComm().size() << " " + appPath.str() + ");" << std::endl;
+    ol << "FeelApp.register(interfaced, " + appPath.str() + ");" << std::endl;
+    ol << "FeelApp.in(OL.get(Arguments/FileName).onelab.cfg.ol);" << std::endl;
+    ol << "FeelApp.run( --config-file OL.get(Arguments/FileName).onelab.cfg --nochdir );" << std::endl;
+    ol << "FeelApp.out(" + appName + "-1_0.msh);" << std::endl;
+
+    /* Take into account th fact that we use MPI */
+    /* Generating multiple output files, so we merge them */
+    //for(int i = 0; i < worldComm().size(); i++)
+    //{
     ol << "FeelApp.merge(" + appName + "-1_0.msh);" << std::endl;
-  //}
-  
-  ol.close();
-  cfgol.close();
+    //}
+
+    ol.close();
+    cfgol.close();
 }
 
 void
@@ -402,6 +445,7 @@ Environment::processGenericOptions()
 
         if ( S_vm.count( "verbose" ) ||
              S_vm.count( "help" ) ||
+             S_vm.count( "help-lib" ) ||
              S_vm.count( "version" ) ||
              S_vm.count( "copyright" ) ||
              S_vm.count( "license" ) ||
@@ -454,11 +498,20 @@ Environment::processGenericOptions()
 
         if ( S_vm.count( "help" ) )
         {
-            std::cout << optionsDescription() << "\n";
+            std::cout << optionsDescriptionApplication() << "\n";
+            std::cout << file_options(S_about.appName()) << "\n";
+            std::cout << generic_options() << "\n";
+        }
+        if ( S_vm.count( "help-lib" ) )
+        {
+            std::cout << optionsDescriptionLibrary() << "\n";
+            std::cout << file_options(S_about.appName()) << "\n";
+            std::cout << generic_options() << "\n";
         }
     }
     if ( S_vm.count( "verbose" ) ||
          S_vm.count( "help" ) ||
+         S_vm.count( "help-lib" ) ||
          S_vm.count( "version" ) ||
          S_vm.count( "copyright" ) ||
          S_vm.count( "license" ) ||
@@ -527,7 +580,10 @@ Environment::parseAndStoreOptions( po::command_line_parser parser, bool extra_pa
 
 
 void
-Environment::doOptions( int argc, char** argv, po::options_description const& desc, std::string const& appName )
+Environment::doOptions( int argc, char** argv,
+                        po::options_description const& desc,
+                        po::options_description const& desc_lib,
+                        std::string const& appName )
 {
     //std::locale::global(std::locale(""));
     try
@@ -547,7 +603,7 @@ Environment::doOptions( int argc, char** argv, po::options_description const& de
                 LOG(INFO) << "Reading " << S_vm["config-file"].as<std::string>() << "...";
 
                 std::ifstream ifs( S_vm["config-file"].as<std::string>().c_str() );
-                po::store( parse_config_file( ifs, desc, true ), S_vm );
+                po::store( parse_config_file( ifs, *S_desc, true ), S_vm );
                 po::notify( S_vm );
             }
         }
@@ -599,7 +655,7 @@ Environment::doOptions( int argc, char** argv, po::options_description const& de
             {
                 LOG(INFO) << "Reading  " << config_name << "...\n";
                 std::ifstream ifs( config_name.c_str() );
-                store( parse_config_file( ifs, desc, true ), S_vm );
+                store( parse_config_file( ifs, *S_desc, true ), S_vm );
                 LOG(INFO) << "Reading  " << config_name << " done.\n";
                 //po::store(po::parse_command_line(argc, argv, desc), S_vm);
                 po::notify( S_vm );
@@ -614,7 +670,7 @@ Environment::doOptions( int argc, char** argv, po::options_description const& de
         {
             if ( S_vm.count( "generate-ol" ) )
             {
-                Environment::generateOLFiles( appName );
+                Environment::generateOLFiles( argc, argv, appName );
             }
         }
         if ( S_vm.count( "generate-ol" ) )
@@ -626,7 +682,7 @@ Environment::doOptions( int argc, char** argv, po::options_description const& de
             }
             exit(0);
         }
-        
+
     }
     // catches program_options exceptions
     catch ( boost::program_options::multiple_occurrences const& e )
@@ -797,7 +853,10 @@ Environment::Environment( int& argc, char**& argv )
 }
 
 void
-Environment::init( int argc, char** argv, po::options_description const& desc, AboutData const& about )
+Environment::init( int argc, char** argv,
+                   po::options_description const& desc,
+                   po::options_description const& desc_lib,
+                   AboutData const& about )
 {
     S_worldcomm = worldcomm_type::New();
     CHECK( S_worldcomm ) << "Feel++ Environment: creang worldcomm failed!";
@@ -883,7 +942,7 @@ Environment::init( int argc, char** argv, po::options_description const& desc, A
 
 
     S_about = about;
-    doOptions( argc, envargv, *S_desc, about.appName() );
+    doOptions( argc, envargv, desc, desc_lib, about.appName() );
 
     // make sure that we pass the proper verbosity level to glog
     if ( S_vm.count("v") )
@@ -1242,6 +1301,8 @@ Environment::logMemoryUsage( std::string const& message )
 AboutData Environment::S_about;
 po::variables_map Environment::S_vm;
 boost::shared_ptr<po::options_description> Environment::S_desc;
+boost::shared_ptr<po::options_description> Environment::S_desc_app;
+boost::shared_ptr<po::options_description> Environment::S_desc_lib;
 std::vector<std::string> Environment::S_to_pass_further;
 
 boost::signals2::signal<void()> Environment::S_deleteObservers;
