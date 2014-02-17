@@ -53,7 +53,7 @@ namespace Feel
         static_assert( FunctionSpaceP0Type::fe_type::nOrder == 0, "FunctionSpaceP0Type needs to be a finite element space of order 0");
         static_assert( FunctionSpaceP0Type::fe_type::continuity_type::is_discontinuous_totally, "P0 space has to be discontinuous");
         static_assert( FunctionSpaceP1Type::fe_type::nOrder == 1, "FunctionSpaceP1Type needs to be a finite element space of order 1");
-        static_assert( FunctionSpaceP1Type::fe_type::nRealDim == 2, "DistToCurve works only in 2D for now");
+        //        static_assert( FunctionSpaceP1Type::fe_type::nRealDim == 2, "DistToCurve works only in 2D for now");
 
         typedef DistToCurve<FunctionSpaceP0Type, FunctionSpaceP1Type> self_type;
         typedef boost::shared_ptr< self_type > self_ptrtype;
@@ -71,10 +71,12 @@ namespace Feel
             :
             firstDof( spaceP1->dof()->firstDofGlobalCluster() ),
             ndofv( FunctionSpaceP1Type::fe_type::nDof ),
+            dim(FunctionSpaceP1Type::fe_type::nRealDim),
             M_spaceP0( spaceP0 ),
             M_spaceP1( spaceP1 ),
             M_mesh( spaceP1->mesh() ),
-            M_dt(0)
+            M_dt1(0),
+            M_dt2(0)
         {
             // make the map ghostClusterToProc
             // TODO : should be in datamap.hpp
@@ -96,18 +98,27 @@ namespace Feel
         // TODO : create the same function where the points are read from a file (x,y) with M_dt = 1
 
 
-        element_ptrtype fromParametrizedCurve( std::function<double(double)> xexpr,
-                                               std::function<double(double)> yexpr,
-                                               double tStart, double tEnd, double dt,
+        element_ptrtype fromParametrizedCurve( std::function<double(double,double)> xexpr,
+                                               std::function<double(double,double)> yexpr,
+                                               std::function<double(double,double)> zexpr,
+                                               double t1Start, double t1End, double dt1,
+                                               double t2Start, double t2End, double dt2,
                                                bool broadenCurveForElementDetection = true,
                                                double broadenessAmplitude = option("gmsh.hsize").as<double>() / 2,
                                                bool exportPoints = false,
                                                std::string exportName=""
                                                )
         {
-            generatePointsFromParametrization(xexpr, yexpr,
-                                              tStart, tEnd, dt,
-                                              exportPoints, exportName);
+            if (dim==2)
+                generatePointsFromParametrization2d(xexpr, yexpr,
+                                                    t1Start, t1End, dt1,
+                                                    exportPoints, exportName);
+            if (dim==3)
+                generatePointsFromParametrization3d(xexpr, yexpr, zexpr,
+                                                    t1Start, t1End, dt1,
+                                                    t2Start, t2End, dt2,
+                                                    exportPoints, exportName);
+
 
             locateElementsCrossedByCurve(broadenCurveForElementDetection, broadenessAmplitude );
 
@@ -168,6 +179,9 @@ namespace Feel
         const size_type firstDof;
         const uint16_type ndofv;
 
+        const int dim;
+        int periodT2;
+
         // function spaces
         spaceP0_ptrtype M_spaceP0;
         spaceP1_ptrtype M_spaceP1;
@@ -177,8 +191,8 @@ namespace Feel
 
         // contains parameter t, node
         std::map< double, node_type > tNodeMap;
-        double M_dt;
-
+        double M_dt1;
+        double M_dt2;
         // contains as key the id of an element and value the numbers of the nodes (t) which are crossing it
         std::map<size_type, std::vector<double> > pointsAtIndex;
 
@@ -198,16 +212,17 @@ namespace Feel
         {
             tNodeMap.clear();
             pointsAtIndex.clear();
-            M_dt=0;
+            M_dt1=0;
+            M_dt2=0;
         }
 
 
 
-        void generatePointsFromParametrization( std::function<double(double)> xexpr, std::function<double(double)> yexpr,
-                                                double tStart, double tEnd, double dt,
+        void generatePointsFromParametrization2d( std::function<double(double,double)> xexpr, std::function<double(double,double)> yexpr,
+                                                double t1Start, double t1End, double dt1,
                                                 bool exportPoints = false, std::string exportName="" )
         {
-            M_dt = dt;
+            M_dt1 = dt1;
 
             std::ofstream nodeFile;
 
@@ -217,13 +232,17 @@ namespace Feel
                     nodeFile.open(expName, std::ofstream::out);
                 }
 
-            for (double t=tStart; t<tEnd; t+=dt)
+            int count=0;
+
+            for (double t=t1Start; t<t1End; t+=dt1)
                 {
                     node_type node(2);
-                    node[0] = xexpr(t);
-                    node[1] = yexpr(t);
+                    node[0] = xexpr(t,0.);
+                    node[1] = yexpr(t,0.);
 
-                    tNodeMap[ t ] = node;
+                    tNodeMap[ count ] = node;
+
+                    count++;
 
                     if (exportPoints)
                         nodeFile << node[0] << "," << node[1] << ","<< "0" <<std::endl;
@@ -235,6 +254,58 @@ namespace Feel
         } // generatePointsFromParametrization
 
 
+
+
+        void generatePointsFromParametrization3d( std::function<double(double,double)> xexpr, std::function<double(double,double)> yexpr, std::function<double(double,double)> zexpr,
+                                                  double t1Start, double t1End, double dt1,
+                                                  double t2Start, double t2End, double dt2,
+                                                  bool exportPoints = false, std::string exportName="" )
+        {
+            M_dt1 = dt1;
+            M_dt2 = dt2;
+
+            std::ofstream nodeFile;
+
+            if (exportPoints)
+                {
+                    std::string expName = exportName.empty() ? "nodes.particles" : exportName+".particles";
+                    nodeFile.open(expName, std::ofstream::out);
+                }
+
+            int count=0;
+
+            int count2;
+
+            for (double t1=t1Start; t1<t1End; t1+=dt1)
+                {
+                    count2=0;
+
+                    for (double t2=t2Start; t2<t2End; t2+=dt2)
+                        {
+                            node_type node(3);
+                            node[0] = xexpr(t1,t2);
+                            node[1] = yexpr(t1,t2);
+                            node[2] = zexpr(t1,t2);
+
+                            tNodeMap[count] = node;
+
+                            if (exportPoints)
+                                nodeFile << node[0] << "," << node[1] << ","<< node[2] <<std::endl;
+
+                            count=count+1;
+                            count2++;
+                        }
+
+                    std::cout<<count2<<std::endl;
+
+                }
+
+            periodT2=count2;
+
+            if (exportPoints)
+                nodeFile.close();
+
+        } // generatePointsFromParametrization
 
 
 
@@ -257,16 +328,28 @@ namespace Feel
             std::default_random_engine re( (unsigned int)time(0) );
             std::uniform_real_distribution<double> smallRd( -randomnessAmplitude, randomnessAmplitude );
 
+            std::ofstream nodeRdm("nodeRdm.particles",std::ofstream::out);
+
             for (auto const& tnode : tNodeMap)
                 {
                     node_type nodeToAdd = tnode.second;
+
+
                     if (randomlyBroadenNodesPositions)
-                        {
-                            nodeToAdd[0] += smallRd(re);
-                            nodeToAdd[1] += smallRd(re);
-                        }
+                        for (int i=0; i<dim; ++i)
+                            {
+                                nodeToAdd[i] += smallRd(re);
+                                nodeRdm<<nodeToAdd[i];
+                                if (i<(dim-1))
+                                    nodeRdm<<",";
+                                else
+                                    nodeRdm<<std::endl;
+                            }
+
                     ctx.add( nodeToAdd );
                 }
+
+            nodeRdm.close();
 
             auto allIndexes = ids.evaluate( ctx );
             const int nbPtContext = ctx.nPoints();
@@ -305,19 +388,29 @@ namespace Feel
 
         element_ptrtype makeDistanceFunctionSequential()
         {
-            CHECK( M_dt > 0 )<<"\n Intervall between the points of the curve has to be set (either the dt of the parametrized curve or an integer 1 if curve is read from a file\n";
-
+            CHECK( M_dt1 >= 0 )<<"\n Intervall between the points of the curve has to be set (either the dt of the parametrized curve or an integer 1 if curve is read from a file\n";
+            CHECK( M_dt2 >= 0 )<<"\n Intervall between the points of the curve has to be set (either the dt of the parametrized curve or an integer 1 if curve is read from a file\n";
             const double bigdouble = 1e8;
 
             auto shape = M_spaceP1->elementPtr();
             *shape = vf::project(M_spaceP1, elements(M_mesh), cst(bigdouble) );
 
+
+
             // squared distance between a point where only its "t" is given, and a node (x,y)
-            auto distToPt = [this] (double t, double x, double y) -> double
+            auto distToPt = [this] (double t, double x, double y, double z) -> double
                 {
                     node_type node = this->tNodeMap[ t ];
-                    return (x - node[0])*(x - node[0]) + (y - node[1])*(y - node[1]);
+
+
+                    if (dim==2)
+                        return (x - node[0])*(x - node[0]) + (y - node[1])*(y - node[1]);
+
+                    if (dim==3)
+                        return (x - node[0])*(x - node[0]) + (y - node[1])*(y - node[1]) + (z - node[2])*(z - node[2]);
+
                 };
+
 
             auto it_elt = M_mesh->elementsWithMarker2(1, M_mesh->worldComm().localRank()).first;
             auto en_elt = M_mesh->elementsWithMarker2(1, M_mesh->worldComm().localRank()).second;
@@ -328,17 +421,21 @@ namespace Feel
                         double closestDist = bigdouble;
                         double closestPoint = bigdouble;
 
+
                         const size_type indexGlobDof = M_spaceP1->dof()->localToGlobal(it_elt->id(), j, 0).index();
+
 
                         // coords of the dof
                         const double xdof = M_spaceP1->dof()->dofPoint( indexGlobDof ).template get<0>()[0];
                         const double ydof = M_spaceP1->dof()->dofPoint( indexGlobDof ).template get<0>()[1];
+                        const double zdof = dim==3 ? M_spaceP1->dof()->dofPoint( indexGlobDof ).template get<0>()[2] : 0;
 
                         // find the point in the element having the closest distance with the dof. This distance will be the value of shape at this dof (if a smaller distance on the same dof is not found in an other element).
                         //This method assumes that the distance between the points of the curve is very small compared to the size of the mesh
+
                         for (auto const& pt : pointsAtIndex[ it_elt->id() ] )
                             {
-                                const double dtp = distToPt( pt, xdof, ydof );
+                                const double dtp = distToPt( pt, xdof, ydof, zdof );
                                 if( dtp < closestDist )
                                     {
                                         closestDist = dtp;
@@ -346,36 +443,83 @@ namespace Feel
                                     }
                             }
 
+
                         if ( closestDist < (*shape)(indexGlobDof) * (*shape)(indexGlobDof) )
                             {
                                 const node_type closestPointCoord = tNodeMap[ closestPoint ];
                                 // (tx, ty) = vector tangent to the parametrized curve at the closest point on param curve
-                                double tx, ty;
+                                double t1x, t1y, t1z, t2x, t2y, t2z;
                                 // try to get the point next to the closest point (in the particular case where closest point is the last point, get the previous one)
                                 try
                                     {
-                                        const node_type closestPointPlusDtCoord = tNodeMap.at( closestPoint + M_dt );
-                                        tx = closestPointPlusDtCoord[0] - closestPointCoord[0];
-                                        ty = closestPointPlusDtCoord[1] - closestPointCoord[1];
-                                    }
-                                catch (const std::out_of_range& oor)
-                                    {
-                                        const node_type closestPointMinusDtCoord = tNodeMap.at( closestPoint - M_dt );
-                                        tx =  closestPointCoord[0] - closestPointMinusDtCoord[0];
-                                        ty =  closestPointCoord[1] - closestPointMinusDtCoord[1];
+                                        const node_type closestPointPlusDtCoord = tNodeMap.at(closestPoint + 1.);
+                                        t2x = closestPointPlusDtCoord[0] - closestPointCoord[0];
+                                        t2y = closestPointPlusDtCoord[1] - closestPointCoord[1];
+                                        t2z = dim==3 ? closestPointPlusDtCoord[2] - closestPointCoord[2] : 0;
                                     }
 
+
+
+                                catch (const std::out_of_range& oor)
+                                    {
+                                        const node_type closestPointMinusDtCoord = tNodeMap.at(closestPoint - 1.);
+                                        t2x =  closestPointCoord[0] - closestPointMinusDtCoord[0];
+                                        t2y =  closestPointCoord[1] - closestPointMinusDtCoord[1];
+                                        t2z =  dim ==3 ? closestPointCoord[2] - closestPointMinusDtCoord[2] : 0;
+                                    }
+
+
+
+                                try
+                                    {
+                                        const node_type closestPointPlusDtCoord = tNodeMap.at(closestPoint + periodT2);
+                                        t1x = closestPointPlusDtCoord[0] - closestPointCoord[0];
+                                        t1y = closestPointPlusDtCoord[1] - closestPointCoord[1];
+                                        t1z = dim==3 ? closestPointPlusDtCoord[2] - closestPointCoord[2] : 0;
+                                    }
+
+
+
+                                catch (const std::out_of_range& oor)
+                                    {
+
+                                        const node_type closestPointMinusDtCoord = tNodeMap.at(closestPoint - periodT2);
+                                        t1x =  closestPointCoord[0] - closestPointMinusDtCoord[0];
+                                        t1y =  closestPointCoord[1] - closestPointMinusDtCoord[1];
+                                        t1z =  dim ==3 ? closestPointCoord[2] - closestPointMinusDtCoord[2] : 0;
+                                    }
+
+
                                 // (vx, vy) = vector pointing from the closest point on curve to the concerned dof
+
                                 const double vx = xdof - closestPointCoord[0];
                                 const double vy = ydof - closestPointCoord[1];
+                                const double vz = dim==3 ? zdof - closestPointCoord[2] : 0;
+
 
                                 // the sign of the distance function is ruled by the vectorial product of the tangent vector and the vector v : sign(v x t)
                                 // in 3D, it should be somthing like :  sign( (v x t) . n ) where n is the normal of the param surface pointing outward
 
-                                const double prodVecSign = vx * ty - vy * tx > 0 ? 1 : -1;
-                                (*shape)( indexGlobDof ) = std::sqrt(closestDist) * prodVecSign;
+
+                                const double prodVecSign2d = vx * t1y - vy * t1x > 0 ? 1 : -1;
+                                const double nx = t1y*t2z-t1z*t2y;
+                                const double ny = t1z*t2x-t1x*t2z;
+                                const double nz = t1x*t2y-t1y*t2x;
+                                const double prodScalSign3d = vx * nx + vy * ny + vz * nz > 0 ? 1 : -1;
+
+                                if (dim==2)
+                                    (*shape)( indexGlobDof ) = std::sqrt(closestDist) * prodVecSign2d;
+
+                                if (dim==3)
+                                    (*shape)( indexGlobDof ) = std::sqrt(closestDist) * prodScalSign3d;
+
+
                             }
                     }
+
+            auto exp=exporter(M_mesh,"expDist2Curv");
+            exp->step(0)->add("shape",*shape);
+            exp->save();
 
             return shape;
 
