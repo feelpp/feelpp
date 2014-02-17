@@ -37,6 +37,9 @@
 #cmakedefine FEELPP_HAS_GLPK_H
 
 /* Define to 1 if you have the Gmsh headers available. */
+#cmakedefine GMSH_EXECUTABLE @GMSH_EXECUTABLE@
+
+/* Define to 1 if you have the Gmsh headers available. */
 #cmakedefine FEELPP_HAS_GMSH_H
 
 /* Define to 1 if you have the Gmsh library available. */
