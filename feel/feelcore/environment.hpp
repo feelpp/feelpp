@@ -161,11 +161,28 @@ public:
         {
             char** argv = args[_argv];
             int argc = args[_argc];
-            S_desc = boost::shared_ptr<po::options_description>( new po::options_description( args[_desc | Feel::feel_options()] ) );
+            S_desc_app = boost::shared_ptr<po::options_description>( new po::options_description( args[_desc] ) );
+            S_desc_lib = boost::shared_ptr<po::options_description>( new po::options_description( args[_desc_lib | Feel::feel_options()] ) );
             AboutData about = args[_about| makeAbout(argv[0])];
-            S_desc->add( file_options( about.appName() ) );
+            S_desc = boost::shared_ptr<po::options_description>( new po::options_description( ) );
+            S_desc->add( *S_desc_app );
 
-            init( argc, argv, *S_desc, about );
+            // try to see if the feel++ lib options are already in S_desc_app, if yes then we do not add S_desc_lib
+            // otherwise we will have duplicated options
+            std::vector<boost::shared_ptr<po::option_description>> opts = Environment::optionsDescriptionApplication().options();
+            auto it = std::find_if( opts.begin(), opts.end(),
+                                    []( boost::shared_ptr<po::option_description> const&o )
+                                    {
+                                        return o->format_name().erase(0,2) == "backend";
+                                    });
+
+            if   ( it == opts.end() )
+                S_desc->add( *S_desc_lib );
+            S_desc->add( file_options( about.appName() ) );
+            S_desc->add( generic_options() );
+
+
+            init( argc, argv, *S_desc, *S_desc_lib, about );
             if ( S_vm.count("nochdir") == 0 )
             {
                 std::string defaultdir = about.appName();
@@ -178,7 +195,8 @@ public:
             }
         }
 
-    void init( int argc, char** argv, po::options_description const& desc, AboutData const& about );
+    void init( int argc, char** argv, po::options_description const& desc,
+               po::options_description const& desc_lib, AboutData const& about );
 
     /** Shuts down the Feel environment.
      *
@@ -257,6 +275,16 @@ public:
      * return options description data structure
      */
     static po::options_description const& optionsDescription() { return *S_desc; }
+
+    /**
+     * return options description data structure
+     */
+    static po::options_description const& optionsDescriptionApplication() { return *S_desc_app; }
+
+    /**
+     * return the options description for the Feel++ library
+     */
+    static po::options_description const& optionsDescriptionLibrary() { return *S_desc_lib; }
 
     //@}
 
@@ -384,7 +412,10 @@ private:
     static void changeRepositoryImpl( boost::format fmt, std::string const& logfile, bool add_subdir_np );
 
     //! process command-line/config-file options
-    static void doOptions( int argc, char** argv, po::options_description const& desc, std::string const& appName );
+    static void doOptions( int argc, char** argv,
+                           po::options_description const& desc,
+                           po::options_description const& desc_lib,
+                           std::string const& appName );
 
     /**
      * \fn void generateOLFiles( int argc, char ** argv, std::string const& appName )
@@ -411,6 +442,8 @@ private:
     static AboutData S_about;
     static po::variables_map S_vm;
     static boost::shared_ptr<po::options_description> S_desc;
+    static boost::shared_ptr<po::options_description> S_desc_app;
+    static boost::shared_ptr<po::options_description> S_desc_lib;
     static std::vector<std::string> S_to_pass_further;
 
     static boost::signals2::signal<void()> S_deleteObservers;
@@ -433,6 +466,7 @@ public:
          (argv,*))
         (optional
          (desc,*)
+         (desc_lib,*)
          (about,*)
          (directory,( std::string ))
             )) // no semicolon

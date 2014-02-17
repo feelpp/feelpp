@@ -197,6 +197,7 @@ make_bfassign3( BFType& lf,
     return BFAssign3<BFType,ExprType,TrialSpaceType>( lf, expr, trial_space, trial_index );
 }
 
+class BilinearFormBase {};
 
 /*!
   \class BilinearForm
@@ -208,7 +209,7 @@ make_bfassign3( BFType& lf,
 template<typename FE1,
          typename FE2,
          typename ElemContType = VectorUblas<typename FE1::value_type> >
-class BilinearForm
+class BilinearForm : public BilinearFormBase
 {
 public:
 

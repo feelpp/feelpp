@@ -196,6 +196,9 @@ enum SpectralTransformType {SHIFT=0,
                             FOLD,
                             CAYLEY
                            };
+
+extern std::map<std::string, size_type> EigenMap;
+
 /**
  * Defines an \p enum for various linear solver packages.  This
  * allows for run-time switching between solver packages
