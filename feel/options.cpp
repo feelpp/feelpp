@@ -61,7 +61,8 @@ generic_options()
     generic.add_options()
         ( "authors", "prints the authors list" )
         ( "copyright", "prints the copyright statement" )
-        ( "help", "prints this help message" )
+        ( "help", "prints this help message associated with the Feel++ application options" )
+        ( "help-lib", "prints the help message associated with the Feel++ library options" )
         ( "license", "prints the license text" )
         ( "version", "prints the version" )
         ( "v", po::value<int>()->default_value(0), "verbosity level" )
@@ -387,6 +388,11 @@ crbOptions( std::string const& prefix )
     ( "crb.system-memory-evolution-on-all-procs",Feel::po::value<bool>()->default_value( false ), "same than system-memory-evolution but on all processors")
 
     ( "crb.use-accurate-apee",Feel::po::value<bool>()->default_value( false ), "use a posteriori error estimators from F.Casenave's paper if true, classic one else")
+    ( "crb.optimize-offline-residual",Feel::po::value<bool>()->default_value( false ), "use optimize way for offline residual computation if true (temporary option)")
+
+    ( "crb.user-parameters",Feel::po::value<std::string>()->default_value( "1 2" ), "values of parameters (used for one feel)")
+    ( "crb.select-parameter-via-one-feel",Feel::po::value<bool>()->default_value( false ), "specify that we want to excute code with parameters defined by user via option user-parameters")
+   ( "crb.vary-only-parameter-components",Feel::po::value<std::string>()->default_value( "" ), "specify which parameter component vary (max : 2 components) and how many values we take in each direction. For example 2 6 10 means that component 2 and 6 of our parameter will vary on the log-equidistributed sampling of size 10x10")
     ;
 
     crboptions
@@ -492,8 +498,6 @@ feel_options( std::string const& prefix  )
 
         ;
 
-    if ( prefix.empty() )
-        opt.add( generic_options() );
     return opt;
 
 }

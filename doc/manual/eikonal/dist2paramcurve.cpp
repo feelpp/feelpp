@@ -65,16 +65,18 @@ int main( int argc, char** argv )
                                                     6.29, /*tEnd*/
                                                     option("gmsh.hsize").as<double>() / 2. /*dt*/ );
   *ellipse = fm->march( ellipse, true );
+  std::cout<<"ellipse done"<<std::endl;
   // ------------------------------------
 
 
 
 
   // ------------- pre defined ellipse --------------
-  auto ellipseParam = Feel::ellipseParametrization( 0.25, 0.28, 0.5, 0.5 );
+  auto ellipseParam = CurveParametrization::ellipse( 0.25, 0.28, 0.5, 0.5 );
   auto predefEllipse = disttocurve->fromParametrizedCurve(ellipseParam,
                                                           option("gmsh.hsize").as<double>() / 2. );
   *predefEllipse = fm->march( predefEllipse, true );
+  std::cout<<"predef ellipse done"<<std::endl;
   // ------------------------------------------------
 
 
@@ -89,6 +91,7 @@ int main( int argc, char** argv )
   auto epitro = disttocurve->fromParametrizedCurve( x_epi, y_epi,
                                                     0, 100, option("gmsh.hsize").as<double>()/2. );
   *epitro = fm->march( epitro, true );
+  std::cout<<"epitroch done"<<std::endl;
   // ----------------------------------------
 
 
@@ -154,13 +157,14 @@ int main( int argc, char** argv )
                                                         /* broaden points for detection, broadening thickness, export points*/
                                                         true, option("gmsh.hsize").as<double>() / 10., true );
   *sickle_cell = fm->march( sickle_cell, true );
+  std::cout<<"sc done"<<std::endl;
   // ----------------------------------------
 
 
 
 
   // ------------- pre-defined Sickle cell  --------------
-  auto scpredef = Feel::crescentParametrization(R1, R2, H, l, 0.5, 0.5);
+  auto scpredef = CurveParametrization::crescent(R1, R2, H, l, 0.5, 0.5);
 
   auto siclkeCellPredefied = disttocurve->fromParametrizedCurve( get<0>(scpredef),
                                                                  get<1>(scpredef),
@@ -170,6 +174,7 @@ int main( int argc, char** argv )
                                                                  true, option("gmsh.hsize").as<double>() / 10., true, "sc_pred" );
 
   *siclkeCellPredefied = fm->march( siclkeCellPredefied, true );
+  std::cout<<"predef sc done"<<std::endl;
   // ----------------------------------------
 
 

@@ -557,6 +557,7 @@ public:
         /**
          * \brief create a sampling with log-equidistributed elements
          * \param N : vector containing the number of samples on each direction
+         * if N[direction] < 1 then we take minimum value for this direction
          */
         void logEquidistributeProduct( std::vector<int> N )
         {
@@ -571,10 +572,21 @@ public:
                 std::vector< std::vector< double > > components;
                 components.resize( number_of_directions );
 
+                auto min=M_space->min();
+
                 for(int direction=0; direction<number_of_directions; direction++)
                 {
-                    std::vector<double> coeff_vector = parameterspace_type::logEquidistributeInDirection( M_space , direction , N[direction] );
-                    components[direction]= coeff_vector ;
+                    if( N[direction] > 0 )
+                    {
+                        std::vector<double> coeff_vector = parameterspace_type::logEquidistributeInDirection( M_space , direction , N[direction] );
+                        components[direction]= coeff_vector ;
+                    }
+                    else
+                    {
+                        std::vector<double> coeff_vector( 1 );
+                        coeff_vector[0]=min(direction);
+                        components[direction] = coeff_vector ;
+                    }
                 }
 
                 generateElementsProduct( components );

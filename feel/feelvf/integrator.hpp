@@ -3027,8 +3027,8 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                             bool check=true;
                             for ( uint16_type i=0;i<__c01->nPoints() && check;++i )
                             {
-                                LOG(INFO) << "c0.xreal = " << __c01->xReal(i);
-                                LOG(INFO) << "c1.xreal(" << __p << ") = " << __c11->xReal(i);
+                                //LOG(INFO) << "c0.xreal = " << __c01->xReal(i);
+                                //LOG(INFO) << "c1.xreal(" << __p << ") = " << __c11->xReal(i);
                                 for (uint16_type d=0;d<gmc1_type::NDim;++d)
                                     check = check && ( std::abs(__c01->xReal(i)[d] - __c11->xReal(i)[d])<1e-8 );
                             }
