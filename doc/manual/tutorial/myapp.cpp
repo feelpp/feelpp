@@ -7,7 +7,7 @@
   Date: 2013-02-07
 
   Copyright (C) 2008-2009 Université Joseph Fourier (Grenoble I)
-  Copyright (C) 2013 Feel++ Consortium
+  Copyright (C) 2013-2014 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -23,15 +23,7 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-/**
-   \file myapp.cpp
-   \author Guillaume DOLLÉ <guillaume.dolle@math.unistra.fr>
-   \date 2013-02-07
- */
-
 #include <feel/feelcore/environment.hpp>
-
-using namespace Feel;
 
 /**
  * Program entry point
@@ -40,9 +32,10 @@ using namespace Feel;
 //# marker1 #
 int main( int argc, char* argv[] )
 {
+    using namespace Feel;
+
     // create custom command option
     po::options_description app_options( "MyApp options" );
-    app_options.add( feel_options() );
     app_options.add_options()
 	( "value",
           po::value<double>() -> default_value(4.2),
@@ -67,4 +60,3 @@ int main( int argc, char* argv[] )
 } // main
 //# endmarker1 #
 //\endcode
-
