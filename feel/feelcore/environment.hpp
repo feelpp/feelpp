@@ -161,7 +161,7 @@ public:
         {
             char** argv = args[_argv];
             int argc = args[_argc];
-            S_desc_app = boost::shared_ptr<po::options_description>( new po::options_description( args[_desc] ) );
+            S_desc_app = boost::shared_ptr<po::options_description>( new po::options_description( args[_desc|Feel::feel_nooptions()] ) );
             S_desc_lib = boost::shared_ptr<po::options_description>( new po::options_description( args[_desc_lib | Feel::feel_options()] ) );
             AboutData about = args[_about| makeAbout(argv[0])];
             S_desc = boost::shared_ptr<po::options_description>( new po::options_description( ) );
