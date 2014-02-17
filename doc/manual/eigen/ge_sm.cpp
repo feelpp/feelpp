@@ -3,8 +3,6 @@
 #include <feel/options.hpp>
 #include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
-#include <feel/feeldiscr/region.hpp>
-#include <feel/feelpoly/im.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelpoly/polynomialset.hpp>
@@ -13,7 +11,6 @@
 #include <feel/feelfilters/geotool.hpp>
 /** use Feel namespace */
 using namespace Feel;
-using namespace Feel::vf;
 
 
 template<int Dim, int Order>
@@ -24,18 +21,12 @@ public Simget
     typedef Simget super;
 public:
     typedef double value_type;
-    typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
-    typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
-    typedef typename backend_type::vector_type vector_type;
     typedef Simplex<Dim> convex_type;
     typedef Mesh<convex_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
     typedef bases<Lagrange<Order,Scalar> > basis_type;
     typedef FunctionSpace<mesh_type, basis_type> space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
-    typedef typename space_type::element_type element_type;
-    typedef Exporter<mesh_type> export_type;
 
     void run();
 private:
@@ -72,42 +63,7 @@ EigenProblem<Dim, Order>::run()
     auto b = form2( _test=Xh, _trial=Xh);
     b = integrate( elements(mesh), idt( u )*id( v ) );
 
-
-    int nev = option(_name="solvereigen.nev").template as<int>();
-    int ncv = option(_name="solvereigen.ncv").template as<int>();;
-
-    double eigen_real, eigen_imag;
-
-    SolverEigen<double>::eigenmodes_type modes;
-
-    if ( Environment::worldComm().isMasterRank() )
-    {
-        std::cout << "nev= " << nev <<std::endl;
-        std::cout << "ncv= " << ncv <<std::endl;
-    }
-
-    modes=
-    eigs( _matrixA=a.matrixPtr(),
-         _matrixB=b.matrixPtr(),
-          _nev=nev,
-          _ncv=ncv,
-          _transform=SINVERT,
-          _spectrum=SMALLEST_MAGNITUDE,
-          _verbose = true );
-
-    auto femodes = std::vector<decltype( Xh->element() )>( modes.size(), Xh->element() );
-
-    if ( !modes.empty() )
-    {
-        LOG(INFO) << "eigenvalue " << 0 << " = (" << modes.begin()->second.get<0>() << "," <<  modes.begin()->second.get<1>() << ")\n";
-
-        int i = 0;
-        for( auto const& mode : modes )
-        {
-            std::cout << " -- eigenvalue " << i << " = (" << mode.second.get<0>() << "," <<  mode.second.get<1>() << ")\n";
-            femodes[i++] = *mode.second.get<2>();
-        }
-    }
+    auto modes= veigs( _formA=a, _formB=b );
 
     auto e =  exporter( _mesh=mesh );
 
@@ -115,9 +71,9 @@ EigenProblem<Dim, Order>::run()
     {
         LOG(INFO) << "exportResults starts\n";
         int i = 0;
-        for( auto const& mode: femodes )
+        for( auto const& mode: modes )
         {
-            e->add( ( boost::format( "mode-%1%" ) % i++ ).str(), mode );
+            e->add( ( boost::format( "mode-%1%" ) % i++ ).str(), mode.second );
         }
 
         e->save();
@@ -133,18 +89,13 @@ main( int argc, char** argv )
 
     Environment env( _argc=argc, _argv=argv,
                      _desc=feel_options(),
-                    _about=about(_name="ge_sm",
-                                 _author="Christophe Prud'homme",
-                                 _email="christophe.prudhomme@feelpp.org") );
+                     _about=about(_name="ge_sm",
+                                  _author="Christophe Prud'homme",
+                                  _email="christophe.prudhomme@feelpp.org") );
 
     Application app;
 
     app.add( new EigenProblem<2,2>() );
-    app.add( new EigenProblem<3,2>() );
+    //app.add( new EigenProblem<3,2>() );
     app.run();
 }
-
-
-
-
-
