@@ -52,6 +52,7 @@ int main( int argc, char** argv )
     auto fm = fms( Xh1 );
 
     // ------------- ellipse --------------
+#if 0
     const double a_ell=0.2;
     const double b_ell=0.3;
     const double c_ell=0.4;
@@ -71,7 +72,7 @@ int main( int argc, char** argv )
 
     *ellipse = fm->march( ellipse, true );
 
-    auto mark2=vf::project(Xh0,marked2elements(mesh,1),cst(1));
+#endif
 
     //sickle_cell
 
@@ -114,18 +115,14 @@ int main( int argc, char** argv )
                                                           t2max,
                                                           option("gmsh.hsize").as<double>() / 16.,
                                                           true,option("gmsh.hsize").as<double>() / 3,true,"cell");
-    std::cout<<"test"<<std::endl;
 
     *sickle_cell = fm->march( sickle_cell, true );
-
-
-
   // ------------------------------------
 
+    auto mark2=vf::project(Xh0,marked2elements(mesh,1),cst(1));
 
     auto exp = exporter(_mesh=mesh, _name="dist2paramcurve");
-
-    exp->step(0)->add("ellipse", *ellipse);
+    //    exp->step(0)->add("ellipse", *ellipse);
     exp->step(0)->add("mark2",mark2);
     exp->step(0)->add("sickle_cell",*sickle_cell);
 
