@@ -25,4 +25,5 @@ set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 feelpp_add_application( thermalfin SRCS thermalfin.cpp LABEL doc GEO thermalfin.geo CFG thermalfin.cfg )
 feelpp_add_application( resistance SRCS resistance.cpp LABEL doc)
 feelpp_add_application( heatsink SRCS heatsink.cpp LABEL doc CFG heatsink.cfg GEO heatsink2d.geo)
-feelpp_add_application( ground SRCS ground.cpp  LABEL doc CFG ground.cfg ground-realistic.cfg GEO ground.geo  ) #ground1.cfg ground2.cfg ground3.cfg )
+
+feelpp_add_application( ground2DP2 SRCS ground.cpp  LABEL doc DEFS FEELPP_DIM=2 FEELPP_ORDER=2 CFG ground.cfg ground-realistic.cfg GEO ground2D.geo  )
