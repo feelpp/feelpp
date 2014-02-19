@@ -263,16 +263,18 @@ solvereigen_options( std::string const& prefix )
     //int ncv,                  // number of basis vectors
     //const double tol,         // solver tolerance
     //const unsigned int m_its) // maximum number of iterations
-    po::options_description _options( "Solver EigenValue Slepc -- " + prefix + " solver options" );
+    po::options_description _options( "Solver EigenValue SLEPc -- " + prefix + " solver options" );
     _options.add_options()
     // solver options
-    ( ( _prefix+"solvereigen.solver-type" ).c_str(), Feel::po::value<int>()->default_value( KRYLOVSCHUR ), "type of eigenvalue solver" )
-    ( ( _prefix+"solvereigen.problem-type" ).c_str(), Feel::po::value<int>()->default_value( NHEP ), "type of eigenvalue problem" )
-    ( ( _prefix+"solvereigen.position" ).c_str(), Feel::po::value<int>()->default_value( LARGEST_MAGNITUDE ), "eigenvalue solver position in spectrum: LARGEST_MAGNITUDE=0, SMALLEST_MAGNITUDE=1, LARGEST_REAL=2, SMALLEST_REAL=3, LARGEST_IMAGINARY=4, SMALLEST_IMAGINARY=5" )
-    ( ( _prefix+"solvereigen.nev" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "number of requested eigenpairs" )
-    ( ( _prefix+"solvereigen.ncv" ).c_str(), Feel::po::value<int>()->default_value( 3 ), "number of basis vectors" )
-    ( ( _prefix+"solvereigen.tol" ).c_str(), Feel::po::value<double>()->default_value( 1e-10 ), "solver tolerance" )
-    ( ( _prefix+"solvereigen.maxiter" ).c_str(), Feel::po::value<int>()->default_value( 10000 ), "maximum number of iterations" );
+        ( ( _prefix+"solvereigen.solver" ).c_str(), Feel::po::value<std::string>()->default_value( "krylovschur" ), "type of eigenvalue solver. Choice: power,lapack,subspace,arnoldi,krylovschur,arpack" )
+        ( ( _prefix+"solvereigen.problem" ).c_str(), Feel::po::value<std::string>()->default_value( "nhep" ), "type of eigenvalue problem. Choice: nhep, hep, gnhep, ghep, pgnhep" )
+        ( ( _prefix+"solvereigen.spectrum" ).c_str(), Feel::po::value<std::string>()->default_value( "largest_magnitude" ), "eigenvalue solver position in spectrum. Choice: largest_magnitude, smallest_magnitude, largest_real, smallest_real, largest_imaginary, smallest_imaginary" )
+        ( ( _prefix+"solvereigen.transform" ).c_str(), Feel::po::value<std::string>()->default_value( "shift" ), "spectral transformation. Choice: shift, shift_invert, fold, cayley" )
+        ( ( _prefix+"solvereigen.nev" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "number of requested eigenpairs" )
+        ( ( _prefix+"solvereigen.ncv" ).c_str(), Feel::po::value<int>()->default_value( 3 ), "number of basis vectors" )
+        ( ( _prefix+"solvereigen.tolerance" ).c_str(), Feel::po::value<double>()->default_value( 1e-10 ), "solver tolerance" )
+        ( ( _prefix+"solvereigen.maxiter" ).c_str(), Feel::po::value<int>()->default_value( 10000 ), "maximum number of iterations" )
+        ( ( _prefix+"solvereigen.verbose" ).c_str(), Feel::po::value<bool>()->default_value( false ), "verbose eigen solver" );
 
     return _options;
 }

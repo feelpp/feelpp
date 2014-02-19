@@ -29,7 +29,37 @@ std::map<std::string, OnContext> OnContextMap = {
     {"none", OnContext::NONE},
     {"elimination", OnContext::ELIMINATION},
     {"penalisation", OnContext::PENALISATION},
-    {"elimination_symmetric", OnContext::ELIMINATION_SYMMETRIC}
+    {"elimination_symmetric", OnContext::ELIMINATION_SYMMETRIC},
+
+};
+
+
+std::map<std::string, size_type> EigenMap = {
+    // solver type
+    {"power", POWER},
+    {"laplack", LAPACK},
+    {"subspace", SUBSPACE},
+    {"arnoldi", ARNOLDI},
+    {"krylovschur", KRYLOVSCHUR },
+    {"arpack", ARPACK },
+    // problem type
+    { "nhep",  NHEP },
+    { "hep",  HEP },
+    { "gnhep",  GNHEP },
+    { "ghep",  GHEP },
+    { "pgnhep",  PGNHEP },
+    // spectrum type
+    {"largest_magnitude", LARGEST_MAGNITUDE },
+    {"smallest_magnitude", SMALLEST_MAGNITUDE },
+    {"largest_real", LARGEST_REAL },
+    {"smallest_real", SMALLEST_REAL },
+    {"largest_imaginary", LARGEST_IMAGINARY },
+    {"smallest_imaginary", SMALLEST_IMAGINARY },
+    // spectral transform type
+    {"shift", SHIFT },
+    {"shift_invert", SINVERT },
+    {"fold", FOLD },
+    {"cayley", CAYLEY }
 };
 
 }
