@@ -485,6 +485,10 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
 #endif
         break;
 
+    case NONE_PRECOND:
+        ierr = PCSetType( pc,( char* ) PCNONE );
+        CHKERRABORT( worldComm.globalComm(),ierr );
+        break;
 
     default:
         std::cerr << "ERROR:  Unsupported PETSC Preconditioner: "
