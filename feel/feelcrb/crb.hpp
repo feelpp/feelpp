@@ -344,15 +344,23 @@ public:
             LOG(INFO) << "Database " << this->lookForDB() << " available and loaded\n";
         //this will be in the offline step (it's only when we enrich or create the database that we want to have access to elements of the RB)
         M_elements_database.setMN( M_N );
-        if( M_elements_database.loadDB() )
+        bool load_elements_db= option(_name="crb.load-elements-database").template as<bool>();
+        if( load_elements_db )
         {
-            LOG(INFO) << "database for basis functions " << M_elements_database.lookForDB() << " available and loaded\n";
-            auto basis_functions = M_elements_database.wn();
-            M_model->rBFunctionSpace()->setBasis( basis_functions );
-        }
-        else
-        {
-            LOG( INFO ) <<"no database for basis functions loaded. Start from the begining";
+            if( M_elements_database.loadDB() )
+            {
+                if( Environment::worldComm().isMasterRank() )
+                    std::cout<<"database for basis functions " << M_elements_database.lookForDB() << " available and loaded"<<std::endl;
+                LOG(INFO) << "database for basis functions " << M_elements_database.lookForDB() << " available and loaded\n";
+                auto basis_functions = M_elements_database.wn();
+                M_model->rBFunctionSpace()->setBasis( basis_functions );
+            }
+            else
+            {
+               if( Environment::worldComm().isMasterRank() )
+                   std::cout<<"Warning ! No database for basis functions loaded. Start from the begining"<<std::endl;
+                LOG( INFO ) <<"no database for basis functions loaded. Start from the begining";
+            }
         }
 
         M_preconditioner_primal = preconditioner(_pc=(PreconditionerType) M_backend_primal->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
@@ -4053,7 +4061,12 @@ CRB<TruthModelType>::updateJacobian( const map_dense_vector_type& map_X, map_den
     //map_J.setZero( N , N );
     map_J.setZero( );
     beta_vector_type betaJqm;
-    boost::tie( boost::tuples::ignore, betaJqm, boost::tuples::ignore ) = M_model->computeBetaQm( this->expansion( map_X , N , M_model->rBFunctionSpace()->primalRB() ), mu , 0 );
+    bool load_elements_db=option(_name="crb.load-elements-database").template as<bool>();
+    if( load_elements_db )
+        boost::tie( boost::tuples::ignore, betaJqm, boost::tuples::ignore ) = M_model->computeBetaQm( this->expansion( map_X , N , M_model->rBFunctionSpace()->primalRB() ), mu , 0 );
+    else
+        boost::tie( boost::tuples::ignore, betaJqm, boost::tuples::ignore ) = M_model->computeBetaQm( mu , 0 );
+
     for ( size_type q = 0; q < M_model->Qa(); ++q )
     {
         for(int m=0; m<M_model->mMaxA(q); m++)
@@ -4067,7 +4080,12 @@ CRB<TruthModelType>::updateResidual( const map_dense_vector_type& map_X, map_den
 {
     map_R.setZero( );
     std::vector< beta_vector_type > betaRqm;
-    boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaRqm ) = M_model->computeBetaQm( this->expansion( map_X , N , M_model->rBFunctionSpace()->primalRB() ), mu , 0 );
+    bool load_elements_db=option(_name="crb.load-elements-database").template as<bool>();
+    if( load_elements_db )
+        boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaRqm ) = M_model->computeBetaQm( this->expansion( map_X , N , M_model->rBFunctionSpace()->primalRB() ), mu , 0 );
+    else
+        boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaRqm ) = M_model->computeBetaQm( mu , 0 );
+
     for ( size_type q = 0; q < M_model->Ql( 0 ); ++q )
     {
         for(int m=0; m<M_model->mMaxF(0,q); m++)
@@ -4108,7 +4126,12 @@ CRB<TruthModelType>::newton(  size_type N, parameter_type const& mu , vectorN_ty
 
     vectorN_type L ( ( int )N );
     std::vector<beta_vector_type> betaFqm;
-    boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaFqm ) = M_model->computeBetaQm( this->expansion( uN , N , M_model->rBFunctionSpace()->primalRB()  ), mu , 0 );
+    bool load_elements_db=option(_name="crb.load-elements-database").template as<bool>();
+    if( load_elements_db )
+        boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaFqm ) = M_model->computeBetaQm( this->expansion( uN , N , M_model->rBFunctionSpace()->primalRB()  ), mu , 0 );
+    else
+        boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaFqm ) = M_model->computeBetaQm( mu , 0 );
+
     L.setZero( N );
     for ( size_type q = 0; q < M_model->Ql( M_output_index ); ++q )
     {
@@ -4394,6 +4417,8 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
     double fixedpoint_critical_value  = option(_name="crb.fixedpoint-critical-value").template as<double>();
     double increment = increment_fixedpoint_tol;
 
+    bool load_elements_db=option(_name="crb.load-elements-database").template as<bool>();
+
     computeProjectionInitialGuess( mu , N , uN[0] );
     //for ( double time=time_step; time<time_for_output+time_step; time+=time_step )
     for ( double time=time_step; math::abs(time - time_for_output - time_step) > 1e-9; time+=time_step )
@@ -4427,7 +4452,10 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
 
         do
         {
-            boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( this->expansion( uN[time_index] , N , M_model->rBFunctionSpace()->primalRB() ), mu ,time );
+            if( load_elements_db )
+                boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( this->expansion( uN[time_index] , N , M_model->rBFunctionSpace()->primalRB() ), mu ,time );
+            else
+                boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time );
 
             A.setZero( N,N );
             for ( size_type q = 0; q < M_model->Qa(); ++q )
@@ -7490,8 +7518,13 @@ CRB<TruthModelType>::computeOnlinePrimalApeeVector( parameter_type const& mu , v
     beta_vector_type betaMqm;
     std::vector<beta_vector_type> betaFqm;
 
+    bool load_elements_db=option(_name="crb.load-elements-database").template as<bool>();
+
     //get beta coefficients
-    boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( this->expansion( uN , N , M_model->rBFunctionSpace()->primalRB() ), mu ,time );
+    if( load_elements_db )
+        boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( this->expansion( uN , N , M_model->rBFunctionSpace()->primalRB() ), mu ,time );
+    else
+        boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time );
 
     int idx=0;//start
 
@@ -7598,8 +7631,13 @@ CRB<TruthModelType>::computeOnlineDualApeeVector( parameter_type const& mu , vec
     beta_vector_type betaMqm;
     std::vector<beta_vector_type> betaFqm;
 
+    bool load_elements_db=option(_name="crb.load-elements-database").template as<bool>();
+
     //get beta coefficients
-    boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( this->expansion( uNdu , N , M_model->rBFunctionSpace()->dualRB() ), mu ,time );
+    if( load_elements_db )
+        boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( this->expansion( uNdu , N , M_model->rBFunctionSpace()->dualRB() ), mu ,time );
+    else
+        boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time );
 
     int idx=0;//start
 
