@@ -697,6 +697,8 @@ Backend<T>::pcEnumType() const
 
     else if ( this->pcType()=="gamg" )   return GAMG_PRECOND;
 
+    else if ( this->pcType()=="none" )   return NONE_PRECOND;
+
     else return LU_PRECOND;
 
 } // Backend::pcEnumType
