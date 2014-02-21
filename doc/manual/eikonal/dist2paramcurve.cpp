@@ -85,13 +85,13 @@ int main( int argc, char** argv )
   // ------------- epitrochoid --------------
   const double a_epi=0.1; // 1 / nb_branch
   const double b_epi=0.8;
-  auto x_epi = [&](double t) -> double { return ((1+a_epi) * cos(a_epi*t) - a_epi*b_epi * cos( (1+a_epi) * t )) / 10 + 0.5; };
-  auto y_epi = [&](double t) -> double { return ((1+a_epi) * sin(a_epi*t) - a_epi*b_epi * sin( (1+a_epi) * t )) / 10 + 0.5; };
+  auto x_epi = [&](double t) -> double { return ((1+a_epi) * cos(a_epi*t) - a_epi*b_epi * cos( (1+a_epi) * t )) / 4 + 0.5; };
+  auto y_epi = [&](double t) -> double { return ((1+a_epi) * sin(a_epi*t) - a_epi*b_epi * sin( (1+a_epi) * t )) / 4 + 0.5; };
 
   auto epitro = disttocurve->fromParametrizedCurve( x_epi, y_epi,
                                                     0, 100, option("gmsh.hsize").as<double>()/2. );
   *epitro = fm->march( epitro, true );
-  std::cout<<"epitroch done"<<std::endl;
+  std::cout<<"epitrochoid done"<<std::endl;
   // ----------------------------------------
 
 
