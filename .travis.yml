@@ -1,0 +1,16 @@
+git:
+  submodules: false
+language: cpp
+compiler:
+  - clang
+before_install:
+  - sudo apt-get install libboost-all-dev libboost-mpi-dev mpi-default-dev mpi-default-bin libeigen3-dev libcln-dev
+	       libslepc3.4.2-dev libxml2-dev libgmsh-dev gmsh bison flex doxygen doxygen-latex
+	       transfig imagemagick libtbb-dev libann-dev libglpk-dev
+before_script:
+  - mkdir opt && cd opt && ../configure -r
+script:
+  - make -j4
+branches:
+  only:
+    - develop
