@@ -12,7 +12,7 @@ before_script:
   - export CXX=/usr/bin/clang++      
   - mkdir opt && cd opt && ../configure -r
 script:
-  - make -j4
+  - make -j2
 branches:
   only:
     - develop
