@@ -27,3 +27,8 @@ branches:
     - develop
 cache:
  - apt
+notifications:
+  email:
+    recipients:
+      - feelpp-devel@feelpp.org
+    on_success: change
