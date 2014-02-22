@@ -14,7 +14,7 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   message(STATUS "clang version :  ${CMAKE_CXX_COMPILER_VERSION}")
   # require at least clang 3.3
   if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.3)
-    message(FATAL_ERROR "Clang version must be at least 3.3! we have clang ${CMAKE_CXX_COMPILER_VERSION}")
+#    message(FATAL_ERROR "Clang version must be at least 3.3! we have clang ${CMAKE_CXX_COMPILER_VERSION}")
   endif()
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
   message(STATUS "Intel version :  ${CMAKE_CXX_COMPILER_VERSION}")
