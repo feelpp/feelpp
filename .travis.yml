@@ -4,8 +4,11 @@ language: cpp
 compiler:
   - clang
 before_install:
-  - sudo apt-get install clang-3.3 libboost1.48-all-dev libboost1.48-mpi-dev mpi-default-dev mpi-default-bin libeigen3-dev libcln-dev petsc-dev libxml2-dev gmsh bison flex doxygen doxygen-latex transfig imagemagick libtbb-dev libann-dev libglpk-dev
+  - sudo add-apt-repository  ppa:mapnik/boost
+  - sudo add-apt-repository ppa:kalakris/eigen
+  - sudo apt-get install clang-3.3 libboost1.54-all-dev mpi-default-dev mpi-default-bin libeigen3-dev libcln-dev petsc-dev libxml2-dev gmsh bison flex doxygen doxygen-latex transfig imagemagick libtbb-dev libann-dev libglpk-dev
 before_script:
+  - export CXX=/usr/bin/clang++      
   - mkdir opt && cd opt && ../configure -r
 script:
   - make -j4
