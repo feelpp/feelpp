@@ -17,8 +17,8 @@ install:
 # Install clang 3.3
   - if [ "$CXX" = "clang++" ]; then sudo apt-get install -qq clang-3.3; fi
   - if [ "$CXX" = "clang++" ]; then export CXX="/usr/bin/clang++" CC="/usr/bin/clang"; fi
-  - if [ "$CXX" = "clang++" ]; then mkdir opt && cd opt && ../configure -r; fi
-  - if [ "$CXX" = "g++" ]; then mkdir opt && cd opt && ../configure -r -Og -v; fi
+#  - if [ "$CXX" = "clang++" ]; then mkdir opt && cd opt && ../configure -r; fi
+  - mkdir opt && cd opt && ../configure -r -Og -v
 script:
   - make -j2 feelpp
   - make feelpp_qs_laplacian
