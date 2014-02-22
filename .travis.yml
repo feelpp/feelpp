@@ -3,17 +3,27 @@ git:
 language: cpp
 compiler:
   - clang
+  - gcc
 before_install:
-  - sudo add-apt-repository  -y ppa:mapnik/boost-backports-1-54
+  - sudo add-apt-repository -y ppa:mapnik/boost-backports-1-54
   - sudo add-apt-repository -y ppa:kalakris/eigen
-  - sudo apt-get update
-  - sudo apt-get install clang-3.3 libboost1.54-all-dev mpi-default-dev mpi-default-bin libeigen3-dev libcln-dev petsc-dev libxml2-dev gmsh bison flex doxygen doxygen-latex transfig imagemagick libtbb-dev libann-dev libglpk-dev
-before_script:
-  - export CXX=/usr/bin/clang++      
+  - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test 
+  - sudo apt-get -qq update
+  - sudo apt-get install -qq libboost1.54-all-dev mpi-default-dev mpi-default-bin libeigen3-dev libcln-dev petsc-dev libxml2-dev gmsh bison flex doxygen doxygen-latex transfig imagemagick libtbb-dev libann-dev libglpk-dev
+install:
+# Install gcc 4.8
+  - if [ "$CXX" = "g++" ]; then sudo apt-get install -qq g++-4.8; fi
+  - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
+# Install clang 3.3
+  - if [ "$CXX" = "clang++ ]; then sudo apt-get install -qq clang-3.3; fi
+  - if [ "$CXX" = "clang++ ]; then export CXX="/usr/bin/clang++" CC="/usr/bin/clang"; fi
   - mkdir opt && cd opt && ../configure -r
 script:
   - make -j2 feelpp
   - make feelpp_qs_laplacian
+after_script: make check
 branches:
   only:
     - develop
+cache:
+ - apt
