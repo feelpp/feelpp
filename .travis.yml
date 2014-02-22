@@ -15,9 +15,11 @@ install:
   - if [ "$CXX" = "g++" ]; then sudo apt-get install -qq g++-4.8; fi
   - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
 # Install clang 3.3
-  - if [ "$CXX" = "clang++ ]; then sudo apt-get install -qq clang-3.3; fi
-  - if [ "$CXX" = "clang++ ]; then export CXX="/usr/bin/clang++" CC="/usr/bin/clang"; fi
-  - mkdir opt && cd opt && ../configure -r
+  - if [ "$CXX" = "clang++" ]; then sudo apt-get install -qq clang-3.3; fi
+  - if [ "$CXX" = "clang++" ]; then export CXX="/usr/bin/clang++" CC="/usr/bin/clang"; fi
+  - mkdir opt
+  - if [ "$CXX" = "clang++" ]; then cd opt && ../configure -r; fi
+  - if [ "$CXX" = "g++" ]; then cd opt && ../configure -r -Og -v; fi
 script:
   - make -j2 feelpp
   - make feelpp_qs_laplacian
