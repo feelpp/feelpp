@@ -37,6 +37,7 @@ if [ "X${BUILDROOT}" = "X" ]; then
   fi
 fi
 
+_WANT_VERBOSE=no
 _WANT_DEBUG=no
 _WANT_CHECK=no
 _HAS_CONFIG=no
@@ -102,6 +103,9 @@ while [ -n "$1" ]; do
        ;;
    --check)
        _WANT_CHECK=yes
+       ;;
+   --verbose|-v)
+       _WANT_VERBOSE=yes
        ;;
    --release|-r)
        _WANT_DEBUG=no
@@ -204,4 +208,4 @@ if [ -f CMakeCache.txt ]; then
   /bin/rm CMakeCache.txt
 fi
 
-cmake -Ccmake.configure -DCMAKE_VERBOSE_MAKEFILE:BOOL=TRUE -DCMAKE_BUILD_TYPE:STRING=${BUILDTYPE} TRUE ${PROJECTSRCROOT}
+cmake -Ccmake.configure -DCMAKE_VERBOSE_MAKEFILE:BOOL=${_WANT_VERBOSE} -DCMAKE_BUILD_TYPE:STRING=${BUILDTYPE} TRUE ${PROJECTSRCROOT}
