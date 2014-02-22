@@ -6,6 +6,7 @@ compiler:
 before_install:
   - sudo add-apt-repository  -y ppa:mapnik/boost-backports-1-54
   - sudo add-apt-repository -y ppa:kalakris/eigen
+  - sudo apt-get update
   - sudo apt-get install clang-3.3 libboost1.54-all-dev mpi-default-dev mpi-default-bin libeigen3-dev libcln-dev petsc-dev libxml2-dev gmsh bison flex doxygen doxygen-latex transfig imagemagick libtbb-dev libann-dev libglpk-dev
 before_script:
   - export CXX=/usr/bin/clang++      
