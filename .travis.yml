@@ -4,7 +4,7 @@ language: cpp
 compiler:
   - clang
 before_install:
-  - sudo apt-get install libboost-all-dev libboost-mpi-dev mpi-default-dev mpi-default-bin libeigen3-dev libcln-dev petsc-dev libxml2-dev libgmsh gmsh bison flex doxygen doxygen-latex transfig imagemagick libtbb-dev libann-dev libglpk-dev
+  - sudo apt-get install libboost-all-dev libboost-mpi-dev mpi-default-dev mpi-default-bin libeigen3-dev libcln-dev petsc-dev libxml2-dev gmsh bison flex doxygen doxygen-latex transfig imagemagick libtbb-dev libann-dev libglpk-dev
 before_script:
   - mkdir opt && cd opt && ../configure -r
 script:
