@@ -12,7 +12,8 @@ before_script:
   - export CXX=/usr/bin/clang++      
   - mkdir opt && cd opt && ../configure -r
 script:
-  - make -j2
+  - make -j2 feelpp
+  - make feelpp_qs_laplacian
 branches:
   only:
     - develop
