@@ -39,6 +39,7 @@ fi
 
 _WANT_VERBOSE=no
 _WANT_DEBUG=no
+_WANT_OG=no
 _WANT_CHECK=no
 _HAS_CONFIG=no
 _WANT_DEV_WARNINGS=
@@ -109,6 +110,9 @@ while [ -n "$1" ]; do
        ;;
    --release|-r)
        _WANT_DEBUG=no
+       ;;
+   --Og)
+       _WANT_OG=no
        ;;
    --local-config)
       _WANT_LOCAL_CONFIG=yes
@@ -193,7 +197,10 @@ echo "set(GMSH_INCLUDE_DIR           \"${GMSH_DIR}/include\" CACHE PATH \"root d
 echo "set(GMSH_LIBRARY_PATH          \"${GMSH_DIR}/lib\" CACHE PATH \"root directory\" FORCE)" >> cmake.configure
 fi
 if [ "X${_DISABLE_RESEARCH}" != "X" ]; then
-echo "option(FEELPP__ENANLE_RESEARCH OFF CACHE PATH \"enable research projects\" FORCE)" >> cmake.configure
+echo "option(FEELPP__ENABLE_RESEARCH OFF CACHE PATH \"enable research projects\" FORCE)" >> cmake.configure
+fi
+if [ "X${_WANT_OG}" != "X" ]; then
+echo "CMAKE_CXX_FLAGS_RELEASE=\"-Og -DNDEBUG\"" >> cmake.configure
 fi
 
 
