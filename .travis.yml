@@ -32,3 +32,6 @@ notifications:
     recipients:
       - feelpp-devel@feelpp.org
     on_success: change
+matrix:
+  allow_failures:
+  - gcc
