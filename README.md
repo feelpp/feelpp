@@ -10,7 +10,7 @@ Some basic installation procedure are available in the INSTALL.org file.
 
 ## Build Status
 
-Feel++ uses Travis-CI for continuous integration. =
+Feel++ uses Travis-CI for continuous integration. 
 Travis-CI Build Status :
 [![Build Status](https://travis-ci.org/feelpp/feelpp.png?branch=develop)](https://travis-ci.org/feelpp/feelpp)
 
