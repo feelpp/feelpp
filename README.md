@@ -5,7 +5,14 @@ Feel++ is a C++ library for arbitrary order Galerkin methods (e.g. finite and sp
  - build mathematical software that follows closely the mathematical abstractions associated with partial differential equations (PDE)
  - the creation of a library entirely in C++ allowing to create C++ complex and typically multi-physics applications such as fluid-structure interaction or mass transport in haemodynamic
 
+
 Some basic installation procedure are available in the INSTALL.org file.
+
+## Build Status
+
+Feel++ uses Travis-CI for continuous integration. =
+Travis-CI Build Status :
+[![Build Status](https://travis-ci.org/feelpp/feelpp.png?branch=develop)](https://travis-ci.org/feelpp/feelpp)
 
 ## Documentation
 
