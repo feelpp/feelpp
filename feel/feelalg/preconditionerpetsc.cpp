@@ -475,6 +475,7 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
         CHKERRABORT( worldComm.globalComm(),ierr );
         break;
 
+#if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR >= 2)
     case GAMG_PRECOND:
         ierr = PCSetType( pc,( char* ) PCGAMG );
         CHKERRABORT( worldComm.globalComm(),ierr );
@@ -484,6 +485,9 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
         CHKERRABORT( worldComm.globalComm(),ierr );
 #endif
         break;
+#else
+        LOG(WARNING) << "PETSc GAMG is available from PETSc version >= 3.2";
+#endif
 
     case NONE_PRECOND:
         ierr = PCSetType( pc,( char* ) PCNONE );
