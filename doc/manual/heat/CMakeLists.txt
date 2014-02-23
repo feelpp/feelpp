@@ -26,4 +26,5 @@ feelpp_add_application( thermalfin SRCS thermalfin.cpp LABEL doc GEO thermalfin.
 feelpp_add_application( resistance SRCS resistance.cpp LABEL doc)
 feelpp_add_application( heatsink SRCS heatsink.cpp LABEL doc CFG heatsink.cfg GEO heatsink2d.geo)
 
-feelpp_add_application( ground2DP2 SRCS ground.cpp  LABEL doc DEFS FEELPP_DIM=2 FEELPP_ORDER=2 CFG ground.cfg ground-realistic.cfg GEO ground2D.geo  )
+feelpp_add_application( ground2DP2 SRCS ground.cpp  LABEL doc DEFS FEELPP_DIM=2 FEELPP_ORDER=2
+  CFG ground.cfg ground-realistic.cfg ground-realistic-2.cfg GEO ground2D.geo  )
