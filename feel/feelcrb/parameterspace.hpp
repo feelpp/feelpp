@@ -442,7 +442,7 @@ public:
 
                 bool generate_the_file=false;
                 std::ifstream file ( file_name );
-                if( ! file )
+                if( !file || all_procs_have_same_sampling )
                 {
                     generate_the_file=true;
                 }
