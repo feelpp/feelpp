@@ -111,9 +111,9 @@ while [ -n "$1" ]; do
    --release|-r)
        _WANT_DEBUG=no
        ;;
-   --og)
-       _WANT_OG=no
-       ;;
+#   --og)
+#       _WANT_OG=no
+#       ;;
    --local-config)
       _WANT_LOCAL_CONFIG=yes
        LOCAL_CONFIG_DIR=CMake.local
@@ -199,9 +199,9 @@ fi
 if [ "X${_DISABLE_RESEARCH}" != "X" ]; then
 echo "option(FEELPP__ENABLE_RESEARCH OFF CACHE PATH \"enable research projects\" FORCE)" >> cmake.configure
 fi
-if [ "X${_WANT_OG}" != "X" ]; then
-echo "set( CMAKE_CXX_FLAGS_RELEASE \"-Og -DNDEBUG\" CACHE PATH \"CXX Release Flags \" FORCE)" >> cmake.configure
-fi
+#if [ "X${_WANT_OG}" != "X" ]; then
+#echo "set( CMAKE_CXX_FLAGS_RELEASE \"-Og -DNDEBUG\" CACHE PATH \"CXX Release Flags \" FORCE)" >> cmake.configure
+#fi
 
 
 if [ "${_WANT_DEBUG}" = "yes" ]; then
