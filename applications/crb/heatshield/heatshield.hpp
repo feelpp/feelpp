@@ -73,6 +73,7 @@ makeHeatShieldOptions()
     ( "hsize", Feel::po::value<double>()->default_value( 1e-1 ), "first h value to start convergence" )
     ( "mshfile", Feel::po::value<std::string>()->default_value( "" ), "name of the gmsh file input")
     ( "do-not-use-operators-free", Feel::po::value<bool>()->default_value( true ), "never use operators free if true" )
+    ( "load-mesh-already-partitioned", Feel::po::value<bool>()->default_value( "true" ), "load a mesh from mshfile that is already partitioned if true, else the mesh loaded need to be partitioned")
     ( "beta.A0", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for A0" )
     ( "beta.A1", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for A1" )
     ( "beta.A2", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for A2" )
@@ -884,19 +885,32 @@ void HeatShield<Order>::initModel()
     }
     else
     {
-        int N = Environment::worldComm().globalSize();
-        std::string mshfile = option("mshfile").as<std::string>();
-        auto pos = mshfile.find(".msh");
-        mshfile.erase( pos , 4);
-        std::string filename = (boost::format(mshfile+"-np%1%.msh") %N ).str();
-        if( !fs::exists( filename ) )
+
+        bool load_mesh_already_partitioned=option(_name="load-mesh-already-partitioned").template as<bool>();
+        if( load_mesh_already_partitioned )
         {
-            super_type::partitionMesh( mshfile, filename , 2 , 1 );
+            int N = Environment::worldComm().globalSize();
+            std::string mshfile = option("mshfile").as<std::string>();
+            std::string mshfile_complete = option("mshfile").as<std::string>();
+            auto pos = mshfile.find(".msh");
+            mshfile.erase( pos , 4);
+            std::string filename = (boost::format(mshfile+"-np%1%.msh") %N ).str();
+            if( !fs::exists( filename ) )
+            {
+                super_type::partitionMesh( mshfile_complete, filename , 2 , 1 );
+            }
+            mesh = loadGMSHMesh( _mesh=new mesh_type,
+                                 _filename=filename,
+                                 _rebuild_partitions=false,
+                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER );
         }
-        mesh = loadGMSHMesh( _mesh=new mesh_type,
-                             _filename=option("mshfile").as<std::string>(),
-                             _rebuild_partitions=false,
-                             _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER );
+        else
+        {
+            mesh = loadGMSHMesh( _mesh=new mesh_type,
+                                 _filename=option("mshfile").as<std::string>(),
+                                 _rebuild_partitions=false,
+                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER );
+        }
     }
 
 
