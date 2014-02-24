@@ -315,6 +315,7 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
             }//circle
         } //switch
 
+
     auto X = Px() - x0;
     auto Y = Py() - y0;
 
