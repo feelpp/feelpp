@@ -6758,7 +6758,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
                                                             bool verbose,
                                                             mpl::int_<MESH_FACES> )
 {
+    const size_type context = ExprType::context|vm::POINT;
     typedef ExprType expression_type;
+    typedef Element<Y,Cont> element_type;
     // mesh element
     typedef typename element_type::functionspace_type::mesh_type::element_type geoelement_type;
     typedef typename geoelement_type::face_type face_type;
