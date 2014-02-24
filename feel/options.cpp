@@ -225,6 +225,30 @@ po::options_description bdf_options( std::string const& prefix )
 }
 
 
+po::options_description ts_options( std::string const& prefix )
+{
+    po::options_description _options( "BDF (Backward Differences time discretization) options (" + prefix + ")" );
+    _options.add_options()
+    // solver options
+    ( prefixvm( prefix, "ts.time-initial" ).c_str(), Feel::po::value<double>()->default_value( 0.0 ), "initial time" )
+    ( prefixvm( prefix, "ts.time-final" ).c_str(), Feel::po::value<double>()->default_value( 1.0 ), "final time" )
+    ( prefixvm( prefix, "ts.time-step" ).c_str(), Feel::po::value<double>()->default_value( 1.0 ), "time step" )
+        //( prefixvm( prefix, "ts.order" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "order in time" )
+        //( prefixvm( prefix, "ts.strategy" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "strategy, 0=constant time steps, 1=adaptive time steps" )
+    ( prefixvm( prefix, "ts.steady" ).c_str(), Feel::po::value<bool>()->default_value( 0 ), "false: unsteady, true:steady" )
+    ( prefixvm( prefix, "ts.restart" ).c_str(), Feel::po::value<bool>()->default_value( false ), "do a restart " )
+    ( prefixvm( prefix, "ts.restart.path" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "path where we reload old data" )
+    ( prefixvm( prefix, "ts.restart.at-last-save" ).c_str(), Feel::po::value<bool>()->default_value( false ), "do a restart with ti the last save " )
+    ( prefixvm( prefix, "ts.restart.step-before-last-save" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "do a restart with ti the ieme step before last save " )
+    ( prefixvm( prefix, "newmark.iterations-between-order-change" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "iteration between time order change" )
+    ( prefixvm( prefix, "ts.save" ).c_str(), Feel::po::value<bool>()->default_value( true ), "save elements in file " )
+    ( prefixvm( prefix, "ts.save.freq" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "freq for save elements in file " )
+    ( prefixvm( prefix, "ts.rank-proc-in-files-name" ).c_str(), Feel::po::value<bool>()->default_value( false ), "the name of files generated has the rank of the processor automatically if true" )
+    ;
+    return _options;
+}
+
+
 Feel::po::options_description
 eimOptions( std::string const& prefix )
 {
@@ -466,6 +490,7 @@ feel_options( std::string const& prefix  )
         .add( nlsolver_options() )
 
         /* discr options */
+        .add( ts_options( prefix ) )
         .add( bdf_options( prefix ) )
 
         /* exporter options */
