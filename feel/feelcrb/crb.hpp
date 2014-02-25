@@ -1425,7 +1425,7 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
     auto vec_bdf_poly = M_backend_primal->newVector( M_model->functionSpace() );
 
     //assemble the initial guess for the given mu
-    if ( M_model->isSteady() )
+    if ( M_model->isSteady() && ! M_model->isLinear() )
     {
         elementptr = M_model->assembleInitialGuess( mu ) ;
         u = *elementptr ;
@@ -2349,7 +2349,9 @@ CRB<TruthModelType>::offline()
     std::vector< std::vector<sparse_matrix_ptrtype> > Jqm;
     std::vector< std::vector<std::vector<vector_ptrtype> > > Rqm;
 
-    InitialGuessV = M_model->computeInitialGuessVAffineDecomposition();
+    bool model_is_linear = M_model->isLinear();
+    if( ! model_is_linear )
+        InitialGuessV = M_model->computeInitialGuessVAffineDecomposition();
 
 
     if( M_use_newton )
@@ -2860,17 +2862,20 @@ CRB<TruthModelType>::offline()
         }//end if use_newton case
 
 
-        LOG(INFO) << "[CRB::offline] compute MFqm" << "\n";
-        int q_max = M_model->QInitialGuess();
-        for ( size_type q = 0; q < q_max; ++q )
+        if( ! model_is_linear )
         {
-            int m_max =M_model->mMaxInitialGuess(q);
-            for( size_type m = 0; m < m_max; ++m )
+            LOG(INFO) << "[CRB::offline] compute MFqm" << "\n";
+            int q_max = M_model->QInitialGuess();
+            for ( size_type q = 0; q < q_max; ++q )
             {
-                M_InitialGuessV_pr[q][m].conservativeResize( M_N );
-                for ( size_type j = 0; j < M_N; ++j )
-                    M_InitialGuessV_pr[q][m]( j ) = inner_product( *InitialGuessV[q][m] , M_model->rBFunctionSpace()->primalBasisElement(j) );
-                //M_InitialGuessV_pr[q][m]( j ) = inner_product( *InitialGuessV[q][m] , M_WN[j] );
+                int m_max =M_model->mMaxInitialGuess(q);
+                for( size_type m = 0; m < m_max; ++m )
+                {
+                    M_InitialGuessV_pr[q][m].conservativeResize( M_N );
+                    for ( size_type j = 0; j < M_N; ++j )
+                        M_InitialGuessV_pr[q][m]( j ) = inner_product( *InitialGuessV[q][m] , M_model->rBFunctionSpace()->primalBasisElement(j) );
+                    //M_InitialGuessV_pr[q][m]( j ) = inner_product( *InitialGuessV[q][m] , M_WN[j] );
+                }
             }
         }
 

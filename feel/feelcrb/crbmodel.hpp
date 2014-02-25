@@ -81,6 +81,7 @@ public:
 
     static const uint16_type ParameterSpaceDimension = ModelType::ParameterSpaceDimension;
     static const bool is_time_dependent = ModelType::is_time_dependent;
+    static const bool is_linear = ModelType::is_linear;
 
     //@}
 
@@ -1568,6 +1569,10 @@ public:
         return true;
     }
 
+    bool isLinear()
+    {
+        return is_linear ;
+    }
 
     void initializationField( element_ptrtype& initial_field,parameter_type const& mu )
     {
