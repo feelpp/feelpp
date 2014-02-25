@@ -5,16 +5,16 @@
 #  FEELPP_LIBRARY    = the library to link in
 
 # Check compiler
+message(STATUS "clang version :  ${CMAKE_CXX_COMPILER_VERSION}")
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-  # require at least gcc 4.6
-  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.6)
-    message(FATAL_ERROR "GCC version must be at least 4.6!")
+  # require at least gcc 4.7
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.7)
+    message(WARNING "GCC version must be at least 4.7!")
   endif()
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-  message(STATUS "clang version :  ${CMAKE_CXX_COMPILER_VERSION}")
   # require at least clang 3.3
   if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.3)
-    message(FATAL_ERROR "Clang version must be at least 3.3! we have clang ${CMAKE_CXX_COMPILER_VERSION}")
+    message(WARNING "Clang version must be at least 3.3! we have clang ${CMAKE_CXX_COMPILER_VERSION}")
   endif()
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
   message(STATUS "Intel version :  ${CMAKE_CXX_COMPILER_VERSION}")
