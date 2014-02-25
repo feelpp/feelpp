@@ -23,8 +23,6 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 #include <feel/feel.hpp>
-#include <feel/feelts/newmark.hpp>
-
 
 inline
 Feel::po::options_description
@@ -47,7 +45,7 @@ main( int argc, char** argv )
     using namespace Feel;
 	Environment env( _argc=argc, _argv=argv,
                      _desc=makeOptions(),
-                     _about=about(_name="stvenantkirchhoff",
+                     _about=about(_name="stvenant_kirchhoff2",
                                   _author="Vincent Chabannes",
                                   _email="vincent.chabannes@feelpp.org"));
 
@@ -78,13 +76,24 @@ main( int argc, char** argv )
 
     auto e = exporter( _mesh=mesh );
 
-    auto ts = newmark( _space=Vh, _name="structure" );
-
+    auto ts = newmark( _space=Vh, _name="structure",_rank_proc_in_files_name=true );
     static const uint16_type nDim=2;
     auto Id = eye<nDim,nDim>();
     auto gravityForce = -rho*gravityCst*oneY();
 
-    for ( ts->start(); !ts->isFinished(); ts->next(u) )
+    // start or restart
+    if ( !ts->isRestart() )
+    {
+      ts->start();
+    }
+    else
+    {
+        double ti = ts->restart();
+        u = ts->previousUnknown();
+        if ( e->doExport() ) e->restart(ti);
+    }
+
+    for ( ; !ts->isFinished(); ts->next(u) )
     {
         if ( Environment::worldComm().isMasterRank() )
         {
@@ -144,7 +153,10 @@ main( int argc, char** argv )
         backend()->nlSolver()->jacobian = Jacobian;
         backend()->nlSolve( _solution=u,_jacobian=Jac,_residual=Res );
 
-        e->step(ts->time())->add( "u", u );
+        ts->updateFromDisp(u);
+        e->step(ts->time())->add( "displacement", u );
+        e->step(ts->time())->add( "velocity", ts->currentVelocity() );
+        e->step(ts->time())->add( "acceleration", ts->currentAcceleration() );
         e->save();
     }
 
