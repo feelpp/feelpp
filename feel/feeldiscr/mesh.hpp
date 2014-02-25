@@ -2081,9 +2081,7 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, IteratorType it, IteratorType en, con
 
 } // Feel
 
+#include <feel/feeldiscr/meshimpl.hpp>
 
-//#if !defined(FEELPP_INSTANTIATION_MODE)
-# include <feel/feeldiscr/meshimpl.hpp>
-//#endif //
 
 #endif /* __mesh_H */
