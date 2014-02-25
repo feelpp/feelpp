@@ -96,6 +96,9 @@ public:
 
     typedef temp_functionspace_type space_type;
 
+    static const bool is_time_dependent = true;
+    static const bool is_linear = true;
+
 };
 
 template<int OrderU=2, int OrderP=OrderU-1, int OrderT=OrderP>
@@ -139,7 +142,6 @@ public:
 #endif
     static const uint16_type ParameterSpaceDimension = 5;
 
-    static const bool is_time_dependent = true;
     //@}
     /** @name Typedefs
      */

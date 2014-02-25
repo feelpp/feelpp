@@ -38,12 +38,9 @@
 #include <feel/feelalg/backend.hpp>
 
 #include <feel/feeldiscr/functionspace.hpp>
-#include <feel/feeldiscr/reducedbasisspace.hpp>
 #include <feel/feeldiscr/region.hpp>
 #include <feel/feelpoly/im.hpp>
 
-#include <feel/feelfilters/gmsh.hpp>
-#include <feel/feelfilters/exporter.hpp>
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelpoly/polynomialset.hpp>
 #include <feel/feelalg/solvereigen.hpp>
@@ -52,7 +49,7 @@
 #include <feel/feelcrb/parameterspace.hpp>
 
 #include <feel/feelcrb/modelcrbbase.hpp>
-
+#include <feel/feeldiscr/reducedbasisspace.hpp>
 
 namespace Feel
 {
@@ -67,7 +64,6 @@ makeHeat1DOptions()
     ( "mu2", po::value<double>()->default_value( 0.2 ), "mu2" )
     ( "mu3", po::value<double>()->default_value( -1 ), "mu3" )
     ( "mu4", po::value<double>()->default_value( 0.1 ), "mu4" )
-    ( "no-export", "don't export results" )
     ;
     return heat1doptions.add( Feel::feel_options() );
 }
@@ -125,6 +121,7 @@ public :
     static const uint16_type ParameterSpaceDimension = 4;
     typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
 };
+
 class FunctionSpaceDefinition
 {
 public :
@@ -140,6 +137,9 @@ public :
     typedef bases<Lagrange<Order, Scalar> > basis_type;
 
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
+
+    static const bool is_time_dependent = false;
+    static const bool is_linear = true;
 };
 
 /**
@@ -157,13 +157,21 @@ public:
     typedef ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition> super_type;
     typedef typename super_type::funs_type funs_type;
     typedef typename super_type::funsd_type funsd_type;
+    typedef typename super_type::beta_vector_type beta_vector_type;
+    typedef typename super_type::affine_decomposition_type affine_decomposition_type;
+    //operator free
+    typedef typename super_type::operator_type operator_type;
+    typedef typename super_type::operator_ptrtype operator_ptrtype;
+    typedef typename super_type::operatorcomposite_type operatorcomposite_type;
+    typedef typename super_type::operatorcomposite_ptrtype operatorcomposite_ptrtype;
+    typedef typename super_type::functionalcomposite_type functionalcomposite_type;
+    typedef typename super_type::functionalcomposite_ptrtype functionalcomposite_ptrtype;
+    typedef typename super_type::functional_type functional_type;
+    typedef typename super_type::functional_ptrtype functional_ptrtype;
 
     /** @name Constants
      */
     //@{
-    static const uint16_type Order = 5;
-    static const uint16_type ParameterSpaceDimension = 4;
-    static const bool is_time_dependent = false;
     //@}
 
     /** @name Typedefs
@@ -175,7 +183,7 @@ public:
     typedef typename FunctionSpaceDefinition::mesh_type mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
-    typedef typename FunctionSpaceDefinition::mesh_type basis_type;
+    typedef typename FunctionSpaceDefinition::basis_type basis_type;
 
     typedef Backend<value_type> backend_type;
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
@@ -190,53 +198,23 @@ public:
     typedef eigen_matrix_type ematrix_type;
     typedef boost::shared_ptr<eigen_matrix_type> eigen_matrix_ptrtype;
 
-    typedef FunctionSpace<mesh_type, bases<Lagrange<0, Scalar> >, Discontinuous> p0_space_type;
-    typedef p0_space_type::element_type p0_element_type;
-
     /*space*/
     typedef typename FunctionSpaceDefinition::space_type space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
-    typedef space_type functionspace_type;
-    typedef space_ptrtype functionspace_ptrtype;
     typedef space_type::element_type element_type;
     typedef boost::shared_ptr<element_type> element_ptrtype;
 
-    /*reduced basis space*/
-    typedef ReducedBasisSpace<super_type, mesh_type, basis_type, value_type> rbfunctionspace_type;
-    typedef boost::shared_ptr< rbfunctionspace_type > rbfunctionspace_ptrtype;
-
-    /* export */
-    typedef Exporter<mesh_type> export_type;
-    typedef boost::shared_ptr<export_type> export_ptrtype;
-
-
     /* parameter space */
-    typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
+    typedef ParameterDefinition::parameterspace_type parameterspace_type;
     typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
     typedef parameterspace_type::element_type parameter_type;
     typedef parameterspace_type::element_ptrtype parameter_ptrtype;
     typedef parameterspace_type::sampling_type sampling_type;
     typedef parameterspace_type::sampling_ptrtype sampling_ptrtype;
 
-    //typedef Eigen::VectorXd theta_vector_type;
-    typedef std::vector< std::vector< double > > beta_vector_type;
-
-    typedef boost::tuple<
-        std::vector< std::vector<sparse_matrix_ptrtype> >,
-        std::vector< std::vector<std::vector<vector_ptrtype> > >
-        > affine_decomposition_type;
-
-    typedef OperatorLinear< space_type , space_type > operator_type;
-    typedef boost::shared_ptr<operator_type> operator_ptrtype;
-
-    typedef OperatorLinearComposite< space_type , space_type > operatorcomposite_type;
-    typedef boost::shared_ptr<operatorcomposite_type> operatorcomposite_ptrtype;
-
-    typedef FsFunctionalLinearComposite< space_type > functionalcomposite_type;
-    typedef boost::shared_ptr<functionalcomposite_type> functionalcomposite_ptrtype;
-
-    typedef FsFunctionalLinear< space_type > functional_type;
-    typedef boost::shared_ptr<functional_type> functional_ptrtype;
+    /*reduced basis space*/
+    typedef ReducedBasisSpace<self_type, mesh_type, basis_type, value_type> rbfunctionspace_type;
+    typedef boost::shared_ptr< rbfunctionspace_type > rbfunctionspace_ptrtype;
 
     //@}
 
@@ -419,14 +397,6 @@ public:
      */
     //@{
 
-    /**
-     * set the mesh characteristic length to \p s
-     */
-    void setMeshSize( double s )
-    {
-        meshSize = s;
-    }
-
 
     //@}
 
@@ -457,8 +427,6 @@ public:
     affine_decomposition_type computeAffineDecomposition();
 
     void stockAffineDecomposition();
-
-    std::vector< std::vector< element_ptrtype > > computeInitialGuessAffineDecomposition();
 
     /**
      * \brief solve the model for parameter \p mu
@@ -552,7 +520,6 @@ private:
     double M_gammabc;
 
     bool M_do_export;
-    export_ptrtype exporter;
 
     mesh_ptrtype mesh;
     space_ptrtype Xh;
@@ -562,7 +529,6 @@ private:
     element_ptrtype pT;
 
     std::vector < std::vector<sparse_matrix_ptrtype> > M_Aqm;
-    std::vector < std::vector<sparse_matrix_ptrtype> > M_Mqm;
     std::vector < std::vector<std::vector<vector_ptrtype> > > M_Fqm;
 
     std::vector< std::vector<operator_ptrtype> > M_Aqm_free;
@@ -584,8 +550,6 @@ Heat1D::Heat1D()
     :
     backend( backend_type::build( BACKEND_PETSC ) ),
     meshSize( 0.01 ),
-    M_do_export( true ),
-    exporter( Exporter<mesh_type>::New( "ensight" ) ),
     M_Dmu( new parameterspace_type )
 {
 }
@@ -596,8 +560,6 @@ Heat1D::Heat1D( po::variables_map const& vm )
     M_vm( vm ),
     backend( backend_type::build( vm ) ),
     meshSize( vm["hsize"].as<double>() ),
-    M_do_export( !vm.count( "no-export" ) ),
-    exporter( Exporter<mesh_type>::New( vm, "heat1d" ) ),
     M_Dmu( new parameterspace_type )
 {
 }
@@ -730,17 +692,6 @@ Heat1D::computeAffineDecomposition()
     return boost::make_tuple( M_Aqm, M_Fqm );
 }
 
-std::vector< std::vector< Heat1D::element_ptrtype > >
-Heat1D::computeInitialGuessAffineDecomposition()
-{
-    std::vector< std::vector<element_ptrtype> > q;
-    q.resize(1);
-    q[0].resize(1);
-    element_ptrtype elt ( new element_type ( Xh ) );
-    q[0][0] = elt;
-    return q;
-}
-
 void
 Heat1D::solve( sparse_matrix_ptrtype& D,
                element_type& u,
@@ -751,22 +702,6 @@ Heat1D::solve( sparse_matrix_ptrtype& D,
     backend->solve( D, D, U, F );
     u = *U;
 } // Heat1d::solve
-
-
-void
-Heat1D::exportResults( element_type& U )
-{
-    if ( M_do_export )
-    {
-        LOG(INFO) << "exportResults starts\n";
-
-        exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
-
-        exporter->step( 0 )->add( "u", U );
-
-        exporter->save();
-    }
-} // Heat1d::export
 
 void
 Heat1D::stockAffineDecomposition()
@@ -866,7 +801,6 @@ Heat1D::solve( parameter_type const& mu )
     element_ptrtype T( new element_type( Xh ) );
     this->solve( mu, T );
     return *T;
-    //this->exportResults( *T );
 
 }
 

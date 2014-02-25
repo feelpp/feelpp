@@ -122,6 +122,10 @@ public :
 
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
+
+    static const bool is_time_dependent = true;
+    static const bool is_linear = true;
+
 };
 
 
@@ -149,7 +153,6 @@ public:
 
     //static const uint16_type Order = 1;
     static const uint16_type ParameterSpaceDimension = 2;
-    static const bool is_time_dependent = true;
 
     //@}
 
@@ -887,7 +890,7 @@ void HeatShield<Order>::initModel()
     {
 
         bool load_mesh_already_partitioned=option(_name="load-mesh-already-partitioned").template as<bool>();
-        if( load_mesh_already_partitioned )
+        if( ! load_mesh_already_partitioned )
         {
             int N = Environment::worldComm().globalSize();
             std::string mshfile = option("mshfile").as<std::string>();
