@@ -1184,7 +1184,11 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows, Vector<value_type> const
         //PetscErrorCode  MatZeroRowsColumns(Mat mat,PetscInt numRows,const PetscInt rows[],PetscScalar diag,Vec x,Vec b)
         VectorPetsc<T>* prhs = dynamic_cast<VectorPetsc<T>*> ( &rhs );
         const VectorPetsc<T>* pvalues = dynamic_cast<const VectorPetsc<T>*> ( &values );
+#if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR >= 2)
         MatZeroRowsColumns(M_mat, rows.size(), rows.data(), 1.0, pvalues->vec(), prhs->vec() );
+#else
+        MatZeroRows( M_mat, rows.size(), rows.data(), 1.0 );
+#endif
         PetscBool b;
         MatIsSymmetric( M_mat, 1e-13, &b );
         LOG(INFO) << "Mat is symmetric : " << b;

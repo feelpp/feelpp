@@ -344,15 +344,23 @@ public:
             LOG(INFO) << "Database " << this->lookForDB() << " available and loaded\n";
         //this will be in the offline step (it's only when we enrich or create the database that we want to have access to elements of the RB)
         M_elements_database.setMN( M_N );
-        if( M_elements_database.loadDB() )
+        bool load_elements_db= option(_name="crb.load-elements-database").template as<bool>();
+        if( load_elements_db )
         {
-            LOG(INFO) << "database for basis functions " << M_elements_database.lookForDB() << " available and loaded\n";
-            auto basis_functions = M_elements_database.wn();
-            M_model->rBFunctionSpace()->setBasis( basis_functions );
-        }
-        else
-        {
-            LOG( INFO ) <<"no database for basis functions loaded. Start from the begining";
+            if( M_elements_database.loadDB() )
+            {
+                if( Environment::worldComm().isMasterRank() )
+                    std::cout<<"database for basis functions " << M_elements_database.lookForDB() << " available and loaded"<<std::endl;
+                LOG(INFO) << "database for basis functions " << M_elements_database.lookForDB() << " available and loaded\n";
+                auto basis_functions = M_elements_database.wn();
+                M_model->rBFunctionSpace()->setBasis( basis_functions );
+            }
+            else
+            {
+               if( Environment::worldComm().isMasterRank() )
+                   std::cout<<"Warning ! No database for basis functions loaded. Start from the begining"<<std::endl;
+                LOG( INFO ) <<"no database for basis functions loaded. Start from the begining";
+            }
         }
 
         M_preconditioner_primal = preconditioner(_pc=(PreconditionerType) M_backend_primal->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
@@ -1272,8 +1280,8 @@ private:
     mutable matrixN_type M_primal_T;
     mutable matrixN_type M_dual_T;
 
-    std::vector<double> M_coeff_pr_ini_online;
-    std::vector<double> M_coeff_du_ini_online;
+    vectorN_type M_coeff_pr_ini_online;
+    vectorN_type M_coeff_du_ini_online;
 
 
     friend class boost::serialization::access;
@@ -1886,6 +1894,9 @@ CRB<TruthModelType>::offline()
         //scm_ptrtype M_scm = scm_ptrtype( new scm_type( M_vm ) );
         //M_scm->setTruthModel( M_model );
         //    std::vector<boost::tuple<double,double,double> > M_rbconv2 = M_scm->offline();
+
+        M_coeff_pr_ini_online.resize(0);
+        M_coeff_du_ini_online.resize(0);
 
         LOG(INFO) << "[CRB::offline] compute random sampling\n";
 
@@ -2927,6 +2938,7 @@ CRB<TruthModelType>::offline()
         M_model->initializationField( primal_initial_field, mu ); //fill initial_field
         if ( model_type::is_time_dependent || !M_model->isSteady() )
         {
+            M_coeff_pr_ini_online.conservativeResize( M_N );
             if ( orthonormalize_primal )
             {
                 for ( size_type elem=M_N-number_of_added_elements; elem<M_N; elem++ )
@@ -2934,7 +2946,7 @@ CRB<TruthModelType>::offline()
                     //primal
                     //double k =  M_model->scalarProduct( *primal_initial_field, M_WN[elem] );
                     double k =  M_model->scalarProduct( *primal_initial_field, M_model->rBFunctionSpace()->primalBasisElement(elem) );
-                    M_coeff_pr_ini_online.push_back( k );
+                    M_coeff_pr_ini_online(elem)= k ;
                 }
             }
 
@@ -2964,22 +2976,23 @@ CRB<TruthModelType>::offline()
 
                 for ( size_type i=M_N-number_of_added_elements; i<M_N; i++ )
                 {
-                    M_coeff_pr_ini_online.push_back( projectionN( i ) );
+                    M_coeff_pr_ini_online(i)= projectionN( i ) ;
                 }
             }
 
             if ( solve_dual_problem )
             {
+                M_coeff_du_ini_online.conservativeResize( M_N );
+
                 if ( orthonormalize_dual )
                 {
                     for ( size_type elem=M_N-number_of_added_elements; elem<M_N; elem++ )
                     {
                         //double k =  M_model->scalarProduct( *dual_initial_field, M_WNdu[elem] );
                         double k =  M_model->scalarProduct( *dual_initial_field, M_model->rBFunctionSpace()->dualBasisElement(elem) );
-                        M_coeff_du_ini_online.push_back( k );
+                        M_coeff_du_ini_online(elem)= k ;
                     }
                 }
-
                 else if ( !orthonormalize_dual )
                 {
                     matrixN_type MNdu ( ( int )M_N, ( int )M_N ) ;
@@ -3006,7 +3019,7 @@ CRB<TruthModelType>::offline()
 
                     for ( size_type i=M_N-number_of_added_elements; i<M_N; i++ )
                     {
-                        M_coeff_du_ini_online.push_back( projectionN( i ) );
+                        M_coeff_du_ini_online(i)= projectionN( i ) ;
                     }
                 }
             }
@@ -3451,7 +3464,7 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( int N, parameter_type
 
         vectorN_type dual_initial ( N );
         for(int i=0; i<N; i++)
-            dual_initial(i) = M_coeff_du_ini_online[i];
+            dual_initial(i) = M_coeff_du_ini_online(i);
         auto dual_initial_field = this->expansion( dual_initial , N , M_model->rBFunctionSpace()->dualRB() );
 
         *undu = dual_initial_field;
@@ -4053,7 +4066,12 @@ CRB<TruthModelType>::updateJacobian( const map_dense_vector_type& map_X, map_den
     //map_J.setZero( N , N );
     map_J.setZero( );
     beta_vector_type betaJqm;
-    boost::tie( boost::tuples::ignore, betaJqm, boost::tuples::ignore ) = M_model->computeBetaQm( this->expansion( map_X , N , M_model->rBFunctionSpace()->primalRB() ), mu , 0 );
+    bool load_elements_db=option(_name="crb.load-elements-database").template as<bool>();
+    if( load_elements_db )
+        boost::tie( boost::tuples::ignore, betaJqm, boost::tuples::ignore ) = M_model->computeBetaQm( this->expansion( map_X , N , M_model->rBFunctionSpace()->primalRB() ), mu , 0 );
+    else
+        boost::tie( boost::tuples::ignore, betaJqm, boost::tuples::ignore ) = M_model->computeBetaQm( mu , 0 );
+
     for ( size_type q = 0; q < M_model->Qa(); ++q )
     {
         for(int m=0; m<M_model->mMaxA(q); m++)
@@ -4067,7 +4085,12 @@ CRB<TruthModelType>::updateResidual( const map_dense_vector_type& map_X, map_den
 {
     map_R.setZero( );
     std::vector< beta_vector_type > betaRqm;
-    boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaRqm ) = M_model->computeBetaQm( this->expansion( map_X , N , M_model->rBFunctionSpace()->primalRB() ), mu , 0 );
+    bool load_elements_db=option(_name="crb.load-elements-database").template as<bool>();
+    if( load_elements_db )
+        boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaRqm ) = M_model->computeBetaQm( this->expansion( map_X , N , M_model->rBFunctionSpace()->primalRB() ), mu , 0 );
+    else
+        boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaRqm ) = M_model->computeBetaQm( mu , 0 );
+
     for ( size_type q = 0; q < M_model->Ql( 0 ); ++q )
     {
         for(int m=0; m<M_model->mMaxF(0,q); m++)
@@ -4108,7 +4131,12 @@ CRB<TruthModelType>::newton(  size_type N, parameter_type const& mu , vectorN_ty
 
     vectorN_type L ( ( int )N );
     std::vector<beta_vector_type> betaFqm;
-    boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaFqm ) = M_model->computeBetaQm( this->expansion( uN , N , M_model->rBFunctionSpace()->primalRB()  ), mu , 0 );
+    bool load_elements_db=option(_name="crb.load-elements-database").template as<bool>();
+    if( load_elements_db )
+        boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaFqm ) = M_model->computeBetaQm( this->expansion( uN , N , M_model->rBFunctionSpace()->primalRB()  ), mu , 0 );
+    else
+        boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaFqm ) = M_model->computeBetaQm( mu , 0 );
+
     L.setZero( N );
     for ( size_type q = 0; q < M_model->Ql( M_output_index ); ++q )
     {
@@ -4210,12 +4238,14 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
 
     double time = time_for_output;
 
+
     if ( ! M_model->isSteady() )
     {
         for ( size_type n=0; n<N; n++ )
-            uNduold[time_index]( n ) = M_coeff_du_ini_online[n];
+            uNduold[time_index]( n ) = M_coeff_du_ini_online(n);
     }
 
+     /**/
     int max_fixedpoint_iterations  = option(_name="crb.max-fixedpoint-iterations").template as<int>();
     double increment_fixedpoint_tol  = option(_name="crb.increment-fixedpoint-tol").template as<double>();
     double output_fixedpoint_tol  = option(_name="crb.output-fixedpoint-tol").template as<double>();
@@ -4383,7 +4413,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
     if ( !M_model->isSteady() )
     {
         for ( size_type n=0; n<N; n++ )
-            uNold[0]( n ) = M_coeff_pr_ini_online[n];
+            uNold[0]( n ) = M_coeff_pr_ini_online(n);
     }
 
 
@@ -4393,6 +4423,8 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
     bool fixedpoint_verbose  = option(_name="crb.fixedpoint-verbose").template as<bool>();
     double fixedpoint_critical_value  = option(_name="crb.fixedpoint-critical-value").template as<double>();
     double increment = increment_fixedpoint_tol;
+
+    bool load_elements_db=option(_name="crb.load-elements-database").template as<bool>();
 
     computeProjectionInitialGuess( mu , N , uN[0] );
     //for ( double time=time_step; time<time_for_output+time_step; time+=time_step )
@@ -4427,7 +4459,10 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
 
         do
         {
-            boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( this->expansion( uN[time_index] , N , M_model->rBFunctionSpace()->primalRB() ), mu ,time );
+            if( load_elements_db )
+                boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( this->expansion( uN[time_index] , N , M_model->rBFunctionSpace()->primalRB() ), mu ,time );
+            else
+                boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time );
 
             A.setZero( N,N );
             for ( size_type q = 0; q < M_model->Qa(); ++q )
@@ -6156,12 +6191,8 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
             {
                 for ( int __m1 = 0; __m1 < M_model->mMaxM(__q1); ++__m1 )
                 {
-                    if( option("crb.use-symmetric-matrix").template as<bool>() )
-                        Mtq1 = Mqm[__q1][__m1];
-                    else
-                        Mqm[__q1][__m1]->transpose( Mtq1 );
 
-                    Mtq1->multVector(  __X, __W );
+                    Mqm[__q1][__m1]->multVector(  __X, __W );
                     __W->close();
                     __W->scale( -1. );
                     M_model->l2solve( __Z1, __W );
@@ -6202,14 +6233,9 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
                 for ( int __m1 = 0; __m1 < M_model->mMaxM(__q1); ++__m1 )
                 {
 
-                    Mtq1->multVector(  __X, __W );
+                    Mqm[__q1][__m1]->multVector(  __X, __W );
                     __W->scale( -1. );
                     M_model->l2solve( __Z1, __W );
-
-                    if( option("crb.use-symmetric-matrix").template as<bool>() )
-                        Mtq1 = Mqm[__q1][__m1];
-                    else
-                        Mqm[__q1][__m1]->transpose( Mtq1 );
 
                     for ( int __l = 0; __l < ( int )__N; ++__l )
                     {
@@ -6248,7 +6274,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
                 for ( int __m1 = 0; __m1 < M_model->mMaxM(__q1); ++__m1 )
                 {
 
-                    Mtq1->multVector(  __X, __W );
+                    Mqm[__q1][__m1]->multVector(  __X, __W );
                     __W->scale( -1. );
                     M_model->l2solve( __Z1, __W );
 
@@ -6261,7 +6287,13 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
                             for ( int __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
                             {
 
-                                Atq2->multVector(  __X, __W );
+                                if( option("crb.use-symmetric-matrix").template as<bool>() )
+                                    Atq2 = Aqm[__q2][__m2];
+                                else
+                                    Aqm[__q2][__m2]->transpose( Atq2 );
+
+
+                                Atq2->multVector(  __Y, __W );
                                 __W->scale( -1. );
                                 M_model->l2solve( __Z2, __W );
 
@@ -6289,12 +6321,8 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
             {
                 for ( int __m1 = 0; __m1 < M_model->mMaxM(__q1); ++__m1 )
                 {
-                    if( option("crb.use-symmetric-matrix").template as<bool>() )
-                        Mtq1 = Mqm[__q1][__m1];
-                    else
-                        Mqm[__q1][__m1]->transpose( Mtq1 );
 
-                    Mtq1->multVector(  __X, __W );
+                    Mqm[__q1][__m1]->multVector(  __X, __W );
                     __W->scale( -1. );
                     M_model->l2solve( __Z1, __W );
 
@@ -6306,14 +6334,9 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
                         {
                             for ( int __m2 = 0; __m2 < M_model->mMaxM(__q2); ++__m2 )
                             {
-                                if( option("crb.use-symmetric-matrix").template as<bool>() )
-                                    Mtq2 = Mqm[__q2][__m2];
-                                else
-                                    Mqm[__q2][__m2]->transpose( Mtq2 );
-
                                 M_Cmm_du[__q1][__m1][__q2][__m2].conservativeResize( __N, __N );
 
-                                Mtq2->multVector(  __Y, __W );
+                                Mqm[__q2][__m2]->multVector(  __Y, __W );
                                 __W->scale( -1. );
                                 M_model->l2solve( __Z2, __W );
 
@@ -6333,7 +6356,8 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
             {
                 for ( int __m1 = 0; __m1 < M_model->mMaxM(__q1); ++__m1 )
                 {
-                    Mtq1->multVector(  __X, __W );
+
+                    Mqm[__q1][__m1]->multVector(  __X, __W );
                     __W->scale( -1. );
                     M_model->l2solve( __Z1, __W );
 
@@ -6345,8 +6369,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
                         {
                             for ( int __m2 = 0; __m2 < M_model->mMaxM(__q2); ++__m2 )
                             {
-
-                                Mtq2->multVector(  __X, __W );
+                                Mqm[__q2][__m2]->multVector(  __Y, __W );
                                 __W->scale( -1. );
                                 M_model->l2solve( __Z2, __W );
 
@@ -7490,8 +7513,13 @@ CRB<TruthModelType>::computeOnlinePrimalApeeVector( parameter_type const& mu , v
     beta_vector_type betaMqm;
     std::vector<beta_vector_type> betaFqm;
 
+    bool load_elements_db=option(_name="crb.load-elements-database").template as<bool>();
+
     //get beta coefficients
-    boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( this->expansion( uN , N , M_model->rBFunctionSpace()->primalRB() ), mu ,time );
+    if( load_elements_db )
+        boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( this->expansion( uN , N , M_model->rBFunctionSpace()->primalRB() ), mu ,time );
+    else
+        boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time );
 
     int idx=0;//start
 
@@ -7598,8 +7626,13 @@ CRB<TruthModelType>::computeOnlineDualApeeVector( parameter_type const& mu , vec
     beta_vector_type betaMqm;
     std::vector<beta_vector_type> betaFqm;
 
+    bool load_elements_db=option(_name="crb.load-elements-database").template as<bool>();
+
     //get beta coefficients
-    boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( this->expansion( uNdu , N , M_model->rBFunctionSpace()->dualRB() ), mu ,time );
+    if( load_elements_db )
+        boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( this->expansion( uNdu , N , M_model->rBFunctionSpace()->dualRB() ), mu ,time );
+    else
+        boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time );
 
     int idx=0;//start
 
