@@ -124,8 +124,8 @@ int main(int argc, char** argv )
     a += integrate( _range= markedelements(mesh,"soil.1"), _expr= k1*gradt(T)*trans(grad(v)) );
     a += integrate( _range= markedfaces(mesh, "ground"),
                     _expr=k0*(-gradt(T)*N()*id(v)-grad(T)*N()*idt(v)+gamma*idt(T)*id(v)/hFace() ) );
-    a += integrate( _range=markedelements(mesh, "soil.0"), _expr=rho0*c0*idt(T)*id(v)*ts->polyDerivCoefficient(0) )
-         + integrate( _range=markedelements(mesh, "soil.1"), _expr=rho1*c1*idt(T)*id(v)*ts->polyDerivCoefficient(0) );
+    a += integrate( _range=markedelements(mesh, "soil.0"), _expr=rho0*c0*idt(T)*id(v)*ts->polyDerivCoefficient( 0 ) )
+        + integrate( _range=markedelements(mesh, "soil.1"), _expr=rho1*c1*idt(T)*id(v)*ts->polyDerivCoefficient( 0 ) );
 
     T = project( _space=Xh, _expr=cst(TR) );
     auto T0=expr(option(_name="T0").as<std::string>());
@@ -137,7 +137,7 @@ int main(int argc, char** argv )
         if ( Environment::worldComm().isMasterRank() )
         {
             std::cout << "============================================================\n";
-            std::cout << "T =" << ts->time() << "s\n";
+            std::cout << "t =" << ts->time() << "s " << " = " << ts->time()/60/60 << "h\n";
         }
         T0.setParameterValues( {{"t",ts->time()}} );
         // update right hand side with time dependent terms
