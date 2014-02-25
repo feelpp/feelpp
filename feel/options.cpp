@@ -484,12 +484,12 @@ exporter_options( std::string const& prefix )
         ( prefixvm( prefix,"exporter.export" ).c_str(), Feel::po::value<bool>()->default_value( true ), "true if export, false otherwise" )
 
         // exporter type
-        ( prefixvm( prefix,"exporter.format" ).c_str(), Feel::po::value<std::string>()->default_value( "ensight" ), "type of exporter (ensight, gmsh, ensightgold or exodus)" )
+        ( prefixvm( prefix,"exporter.format" ).c_str(), Feel::po::value<std::string>()->default_value( "ensightgold" ), "type of exporter. Choices: ensight, ensightgold, gmsh" )
 
 
 
         //  geometry
-        ( prefixvm( prefix,"exporter.geometry" ).c_str(), Feel::po::value<int>()->default_value( (int)EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY ), "type of geometry" )
+        ( prefixvm( prefix,"exporter.geometry" ).c_str(), Feel::po::value<std::string>()->default_value( "change_coords_only" ), "Mesh change type, this option tells the exporter whether the mesh does not change(static), changes only the coordinates of the vertices (change_coords_only) or changes entirely (change). Choices: change_coords_only, change, static" )
 
         // prefix options
         ( prefixvm( prefix,"exporter.prefix" ).c_str(), Feel::po::value<std::string>()->default_value( prefix ), "prefix for exported files" )
@@ -501,7 +501,7 @@ exporter_options( std::string const& prefix )
         ( prefixvm( prefix,"exporter.freq" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "frequency at which results are exported" )
 
         // file type options
-        ( prefixvm( prefix,"exporter.file-type" ).c_str(), Feel::po::value<int>()->default_value( ASCII ), "file type in which the results are exported ('ascii' = 0 or 'binary' = 1)" )
+        ( prefixvm( prefix,"exporter.file-type" ).c_str(), Feel::po::value<std::string>()->default_value( "ascii" ), "file type in which the results are exported. Choices: ascii, binary" )
 
         // matlab options
         ( prefixvm( prefix,"exporter.matlab" ).c_str(), Feel::po::value<bool>()->default_value( 0 ), "export matrices and vectors to matlab files" )
