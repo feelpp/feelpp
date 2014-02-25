@@ -62,6 +62,7 @@
 #include <feel/feelcore/serialization.hpp>
 
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/subelements.hpp>
 #include <feel/feeldiscr/expansion.hpp>
 #include <feel/feelts/bdf.hpp>
 
