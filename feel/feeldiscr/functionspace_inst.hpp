@@ -24,6 +24,8 @@
 #ifndef FEELPP_FUNCTIONSPACE_INST_HPP
 #define FEELPP_FUNCTIONSPACE_INST_HPP 1
 
+#include <feel/feeldiscr/functionspace.hpp>
+
 namespace Feel {
 
 # define FEDIMS1 BOOST_PP_TUPLE_TO_LIST(1,(1))
@@ -35,16 +37,19 @@ namespace Feel {
 # define FEDIMS3 BOOST_PP_TUPLE_TO_LIST(1,(3))
 # define FEORDERS3 BOOST_PP_TUPLE_TO_LIST(2,(1,2))
 
-# define FACTORY_PCH(LDIM,LORDER) template class FunctionSpace<Mesh<Simplex<LDIM> >,bases<Lagrange<LORDER,Scalar> > >;
-# define FACTORY_QCH(LDIM,LORDER) template class FunctionSpace<Mesh<Hypercube<LDIM> >,bases<Lagrange<LORDER,Scalar> > >;
+# define FACTORY_PCH(LDIM,LORDER) template class FunctionSpace<Mesh<Simplex<LDIM> >,bases<Lagrange<LORDER,Scalar,Continuous,PointSetEquiSpaced> >, Periodicity<NoPeriodicity> >;
+# define FACTORY_QCH(LDIM,LORDER) template class FunctionSpace<Mesh<Hypercube<LDIM> >,bases<Lagrange<LORDER,Scalar,Continuous,PointSetEquiSpaced> >, Periodicity<NoPeriodicity> >;
 
 # define FACTORY_PCH_OP(_, GDO) FACTORY_PCH GDO
 # define FACTORY_QCH_OP(_, GDO) FACTORY_QCH GDO
 
-# define FACTORY_PCH_OP_E(_, GDO) extern FACTORY_PCH GDO
-# define FACTORY_QCH_OP_E(_, GDO) extern FACTORY_QCH_E GDO
+//# define FACTORY_PCH_E(LDIM,LORDER) extern template class FunctionSpace<Mesh<Simplex<LDIM> >,bases<Lagrange<LORDER,Scalar> > >;
+//# define FACTORY_QCH_E(LDIM,LORDER) extern template class FunctionSpace<Mesh<Hypercube<LDIM> >,bases<Lagrange<LORDER,Scalar> > >;
 
-#if !defined( FEELPP_MESH_IMPL_NOEXTERN )
+# define FACTORY_PCH_OP_E(_, GDO) extern FACTORY_PCH GDO
+# define FACTORY_QCH_OP_E(_, GDO) extern FACTORY_QCH GDO
+
+#if !defined( FEELPP_FUNCTIONSPACE_NOEXTERN )
 
 #if 0
 BOOST_PP_LIST_FOR_EACH_PRODUCT( FACTORY_SIMPLEX_OP_E, 3, ( DIMS1, ORDERS1, RDIMS1 ) )
@@ -57,20 +62,9 @@ BOOST_PP_LIST_FOR_EACH_PRODUCT( FACTORY_HYPERCUBE_OP_E, 3, ( DIMS2, ORDERS2, RDI
 BOOST_PP_LIST_FOR_EACH_PRODUCT( FACTORY_PCH_OP_E, 2, ( FEDIMS3, FEORDERS3 ) )
 BOOST_PP_LIST_FOR_EACH_PRODUCT( FACTORY_QCH_OP_E, 2, ( FEDIMS3, FEORDERS3 ) )
 
-#endif // FEELPP_MESH_IMPL_NOEXTERN
+#endif // FEELPP_FUNCTIONSPACE_NOEXTERN
 
-typedef bases<Lagrange<1, Scalar>> scalar_p1_basis_type;
-typedef bases<Lagrange<1, Vectorial>> vectorial_p1_basis_type;
 
-//2d
-typedef Mesh< Simplex<2> > triangle_p1_mesh_type;
-typedef FunctionSpace<triangle_p1_mesh_type, scalar_p1_basis_type, Periodicity <NoPeriodicity>> pch_2d_type;
-
-#if !defined(FEELPP_FUNCTIONSPACE_NOEXTERN)
-extern template class pch_2d_type;
-
-#endif /* FEELPP_FUNCTIONSPACE_NOEXTERN */
-
-}
+} // Feel
 
 #endif // FEELPP_FUNCTIONSPACE_INST_HPP
