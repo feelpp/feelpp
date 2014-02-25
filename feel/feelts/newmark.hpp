@@ -172,7 +172,7 @@ public:
     double next( typename space_type::template Element<value_type, container_type> const& u_curr );
 
     template<typename container_type>
-    void updateVelAcc( typename space_type::template Element<value_type, container_type> const& u_curr );
+    void updateFromDisp( typename space_type::template Element<value_type, container_type> const& u_curr );
 
     double polyDerivCoefficient() const
     {
@@ -184,8 +184,11 @@ public:
 
     //! Return the last unknown
     element_type const& previousUnknown() const;
-    element_type const& previousVel() const;
-    element_type const& previousAcc() const;
+    element_type const& previousVelocity() const;
+    element_type const& previousAcceleration() const;
+
+    element_type const& currentVelocity() const;
+    element_type const& currentAcceleration() const;
 
     void loadCurrent();
 
@@ -276,14 +279,12 @@ Newmark<SpaceType>::init()
          ostrUnknown << M_name << "-unknown-" << M_iteration;
          if( M_rankProcInNameOfFiles )
            ostrUnknown << procsufix;
-         std::cout << "[Newmark::init()] load file: " << ostrUnknown.str() << "\n";
          DVLOG(2) << "[Newmark::init()] load file: " << ostrUnknown.str() << "\n";
          fs::ifstream ifsUnknown;
          if ( this->restartPath().empty() )
            ifsUnknown.open( this->path()/ostrUnknown.str() );
          else
            ifsUnknown.open( this->restartPath()/this->path()/ostrUnknown.str() );
-         //fs::ifstream ifs (this->restartPath() / this->path() / ostr.str(), std::ios::binary);
          // load data from archive
          boost::archive::binary_iarchive iaUnknown( ifsUnknown );
          iaUnknown >> *M_previousUnknown;
@@ -379,17 +380,33 @@ Newmark<SpaceType>::previousUnknown() const
 
 template <typename SpaceType>
 typename Newmark<SpaceType>::element_type const&
-Newmark<SpaceType>::previousVel() const
+Newmark<SpaceType>::previousVelocity() const
 {
   return *M_previousVel;
 }
 
 template <typename SpaceType>
 typename Newmark<SpaceType>::element_type const&
-Newmark<SpaceType>::previousAcc() const
+Newmark<SpaceType>::previousAcceleration() const
 {
   return *M_previousAcc;
 }
+
+template <typename SpaceType>
+typename Newmark<SpaceType>::element_type const&
+Newmark<SpaceType>::currentVelocity() const
+{
+  return *M_currentVel;
+}
+
+template <typename SpaceType>
+typename Newmark<SpaceType>::element_type const&
+Newmark<SpaceType>::currentAcceleration() const
+{
+  return *M_currentAcc;
+}
+
+
 
 template <typename SpaceType>
 void
@@ -476,8 +493,8 @@ Newmark<SpaceType>::shiftRight( typename space_type::template Element<value_type
     DVLOG(2) << "shiftRight: inserting time " << this->time() << "s\n";
     super::shiftRight();
 
-    // update M_currentVel and M_currentAcc with new disp
-    this->updateVelAcc(__new_unk);
+    // update M_currentVelocity and M_currentAcceleration with new disp
+    this->updateFromDisp(__new_unk);
 
     // shift all previously stored  data
     *M_previousUnknown = __new_unk;
@@ -524,14 +541,14 @@ Newmark<SpaceType>::computePolyDeriv()
     double coef_acc  = 1.0/(2*M_beta) - 1.0;
     M_polyDeriv->zero();
     M_polyDeriv->add(coef_disp, this->previousUnknown());
-    M_polyDeriv->add(coef_vel, this->previousVel());
-    M_polyDeriv->add(coef_acc, this->previousAcc());
+    M_polyDeriv->add(coef_vel, this->previousVelocity());
+    M_polyDeriv->add(coef_acc, this->previousAcceleration());
 }
 
 template <typename SpaceType>
 template<typename container_type>
 void
-Newmark<SpaceType>::updateVelAcc( typename space_type::template Element<value_type, container_type> const& __new_unk )
+Newmark<SpaceType>::updateFromDisp( typename space_type::template Element<value_type, container_type> const& __new_unk )
 {
   double deltaT = this->timeStep();
 
@@ -545,14 +562,14 @@ Newmark<SpaceType>::updateVelAcc( typename space_type::template Element<value_ty
   M_currentVel->zero();
   M_currentVel->add(cst_vel_displ, __new_unk );
   M_currentVel->add(-cst_vel_displ, this->previousUnknown());
-  M_currentVel->add(-cst_vel_vel, this->previousVel());
-  M_currentVel->add(-cst_vel_acc, this->previousAcc());
+  M_currentVel->add(-cst_vel_vel, this->previousVelocity());
+  M_currentVel->add(-cst_vel_acc, this->previousAcceleration());
 
   M_currentAcc->zero();
   M_currentAcc->add(cst_acc_displ, __new_unk );
   M_currentAcc->add(-cst_acc_displ, this->previousUnknown());
-  M_currentAcc->add(-cst_acc_vel, this->previousVel());
-  M_currentAcc->add(-cst_acc_acc, this->previousAcc());
+  M_currentAcc->add(-cst_acc_vel, this->previousVelocity());
+  M_currentAcc->add(-cst_acc_acc, this->previousAcceleration());
 }
 
 
