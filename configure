@@ -37,7 +37,9 @@ if [ "X${BUILDROOT}" = "X" ]; then
   fi
 fi
 
+_WANT_VERBOSE=no
 _WANT_DEBUG=no
+_WANT_OG=no
 _WANT_CHECK=no
 _HAS_CONFIG=no
 _WANT_DEV_WARNINGS=
@@ -103,9 +105,15 @@ while [ -n "$1" ]; do
    --check)
        _WANT_CHECK=yes
        ;;
+   --verbose|-v)
+       _WANT_VERBOSE=yes
+       ;;
    --release|-r)
        _WANT_DEBUG=no
        ;;
+#   --og)
+#       _WANT_OG=no
+#       ;;
    --local-config)
       _WANT_LOCAL_CONFIG=yes
        LOCAL_CONFIG_DIR=CMake.local
@@ -189,8 +197,11 @@ echo "set(GMSH_INCLUDE_DIR           \"${GMSH_DIR}/include\" CACHE PATH \"root d
 echo "set(GMSH_LIBRARY_PATH          \"${GMSH_DIR}/lib\" CACHE PATH \"root directory\" FORCE)" >> cmake.configure
 fi
 if [ "X${_DISABLE_RESEARCH}" != "X" ]; then
-echo "option(FEELPP__ENANLE_RESEARCH OFF CACHE PATH \"enable research projects\" FORCE)" >> cmake.configure
+echo "option(FEELPP__ENABLE_RESEARCH OFF CACHE PATH \"enable research projects\" FORCE)" >> cmake.configure
 fi
+#if [ "X${_WANT_OG}" != "X" ]; then
+#echo "set( CMAKE_CXX_FLAGS_RELEASE \"-Og -DNDEBUG\" CACHE PATH \"CXX Release Flags \" FORCE)" >> cmake.configure
+#fi
 
 
 if [ "${_WANT_DEBUG}" = "yes" ]; then
@@ -204,4 +215,4 @@ if [ -f CMakeCache.txt ]; then
   /bin/rm CMakeCache.txt
 fi
 
-cmake -Ccmake.configure -DCMAKE_VERBOSE_MAKEFILE:BOOL=TRUE -DCMAKE_BUILD_TYPE:STRING=${BUILDTYPE} TRUE ${PROJECTSRCROOT}
+cmake -Ccmake.configure -DCMAKE_VERBOSE_MAKEFILE:BOOL=${_WANT_VERBOSE} -DCMAKE_BUILD_TYPE:STRING=${BUILDTYPE} TRUE ${PROJECTSRCROOT}

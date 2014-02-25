@@ -139,34 +139,15 @@ public:
         }
 
     GinacEx( GinacEx const & fun )
-    :
-    M_fun( fun.M_fun ),
-    M_syms( fun.M_syms),
-    M_params( fun.M_params ),
-    M_cfun( fun.M_cfun ),
-    M_filename( fun.M_filename )
+        :
+        M_fun( fun.M_fun ),
+        M_syms( fun.M_syms),
+        M_params( fun.M_params ),
+        M_cfun( fun.M_cfun ),
+        M_filename( fun.M_filename )
         {
-            if( !(M_fun==fun.M_fun && M_syms==fun.M_syms && M_filename==fun.M_filename) || M_filename.empty() )
-            {
-                DVLOG(2) << "Ginac copy constructor : compile object file \n";
-                GiNaC::lst exprs(M_fun);
-                GiNaC::lst syml;
-                std::for_each( M_syms.begin(),M_syms.end(), [&]( GiNaC::symbol const& s ) { syml.append(s); } );
-                GiNaC::compile_ex(exprs, syml, *M_cfun, M_filename);
-
-            }
-            else
-            {
-#if 0
-                DVLOG(2) << "Ginac copy constructor : link with existing object file \n";
-                boost::mpi::communicator world;
-                // std::string pid = boost::lexical_cast<std::string>(world.rank());
-                // std::string filenameWithSuffix = M_filename + pid + ".so";
-                std::string filenameWithSuffix = M_filename + ".so";
-                GiNaC::link_ex(filenameWithSuffix, *M_cfun);
-#endif
-            }
         }
+
 
     //@}
 

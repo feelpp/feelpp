@@ -25,5 +25,6 @@
 #define FEELPP_FEELTS_TS_HPP 1
 
 #include <feel/feelts/bdf.hpp>
+#include <feel/feelts/newmark.hpp>
 
 #endif // FEELPP_FEELTS_TS_HPP
