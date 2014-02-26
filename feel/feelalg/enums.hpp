@@ -115,6 +115,7 @@ enum PreconditionerType {IDENTITY_PRECOND =0,
                          FIELDSPLIT_PRECOND,
                          ML_PRECOND,
                          GAMG_PRECOND,
+                         NONE_PRECOND,
                          INVALID_PRECONDITIONER
                         };
 
@@ -196,6 +197,9 @@ enum SpectralTransformType {SHIFT=0,
                             FOLD,
                             CAYLEY
                            };
+
+extern std::map<std::string, size_type> EigenMap;
+
 /**
  * Defines an \p enum for various linear solver packages.  This
  * allows for run-time switching between solver packages

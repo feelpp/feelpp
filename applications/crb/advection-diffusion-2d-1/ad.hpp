@@ -105,6 +105,10 @@ public :
 
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
+
+    static const bool is_time_dependent = false;
+    static const bool is_linear = true;
+
 };
 /**
  * \class AdvectionDiffusion
@@ -158,7 +162,6 @@ public:
 
     static const uint16_type Order = 5;
     static const uint16_type ParameterSpaceDimension = 2;
-    static const bool is_time_dependent = false;
     //@}
 
     /** @name Typedefs

@@ -40,7 +40,13 @@ po::options_description
 file_options( std::string const& prefix );
 
 po::options_description
+generic_options();
+
+po::options_description
 feel_options( std::string const& prefix = "" );
+
+inline po::options_description
+feel_nooptions() { return po::options_description(); }
 
 //! add benchmark options to feel++ applications
 po::options_description benchmark_options( std::string const& prefix = "" );
@@ -88,6 +94,7 @@ po::options_description nlsolver_options();
 /**
  * command line options for BDF
  */
+po::options_description ts_options( std::string const& prefix = "" );
 po::options_description bdf_options( std::string const& prefix = "" );
 
 /**

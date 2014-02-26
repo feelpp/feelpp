@@ -140,6 +140,10 @@ public :
 
     //! the approximation function space type
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
+
+    static const bool is_time_dependent = false;
+    static const bool is_linear = true;
+
 };
 
 
@@ -166,7 +170,6 @@ public:
     typedef typename super_type::funsd_type funsd_type;
 
     static const uint16_type ParameterSpaceDimension = nx*ny;
-    static const bool is_time_dependent = false;
 
     //! Polynomial order \f$P_2\f$
     static const uint16_type Order = 1;
@@ -904,8 +907,11 @@ ThermalBlock::initModel()
     form2( Xh, Xh, D,_init=true )=integrate( elements( mmesh ),0*idt( v )*id( v ), _Q<0>() );
     form2( Xh, Xh, M,_init=true )=integrate( elements( mmesh ),0*idt( v )*id( v ), _Q<0>() );
 
-    LOG( INFO ) << "Number of local dof " << Xh->nLocalDof() << "\n";
-    LOG( INFO ) << "Number of dof " << Xh->nDof() << "\n";
+    if( Environment::worldComm().isMasterRank() )
+    {
+        std::cout << "Number of local dof " << Xh->nLocalDof() << std::endl;
+        std::cout << "Number of dof " << Xh->nDof() << std::endl;
+    }
 
     int index=0;//index for M_Fqm or M_Aqm
     int subdomain_index; //index for subdomains along a boundary

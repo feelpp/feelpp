@@ -55,6 +55,9 @@ public :
 
     /*space*/
     typedef FunctionSpace<mesh_type , basis_type > space_type ;
+
+    static const bool is_time_dependent=false;
+    static const bool is_linear=true;
 };
 
 template <typename ParameterDefinition, typename FunctionSpaceDefinition>
@@ -78,6 +81,8 @@ class ModelCrbBase : public ModelCrbBaseBase
 {
 
 public :
+
+    typedef ModelCrbBase self_type;
     typedef typename EimDefinition::fun_type fun_type;
     typedef typename EimDefinition::fund_type fund_type;
 
@@ -85,6 +90,8 @@ public :
     typedef typename parameterspace_type::element_type parameter_type;
 
     typedef typename FunctionSpaceDefinition::space_type space_type;
+    typedef space_type functionspace_type;
+    typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
 
     typedef typename space_type::element_type element_type;
     typedef boost::shared_ptr<element_type> element_ptrtype;
@@ -96,8 +103,6 @@ public :
     typedef std::vector<fund_ptrtype> funsd_type;
 
     typedef Eigen::VectorXd vectorN_type;
-
-    typedef std::vector< std::vector< double > > beta_vector_type;
 
     typedef OperatorLinear< space_type , space_type > operator_type;
     typedef boost::shared_ptr<operator_type> operator_ptrtype;
@@ -116,6 +121,30 @@ public :
 
     typedef backend_type::sparse_matrix_type sparse_matrix_type;
     typedef backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
+
+    static const uint16_type ParameterSpaceDimension = ParameterDefinition::ParameterSpaceDimension ;
+
+    typedef std::vector< std::vector< double > > beta_vector_type;
+
+    static const bool is_time_dependent = FunctionSpaceDefinition::is_time_dependent;
+    static const bool is_linear = FunctionSpaceDefinition::is_linear;
+
+    typedef double value_type;
+
+    typedef typename FunctionSpaceDefinition::mesh_type mesh_type;
+
+    typedef typename mpl::if_< mpl::bool_< is_time_dependent >,
+                               boost::tuple<
+                                   std::vector< std::vector<sparse_matrix_ptrtype> >,//Mq
+                                   std::vector< std::vector<sparse_matrix_ptrtype> >,//Aq
+                                   std::vector< std::vector<std::vector<vector_ptrtype> > >//Fq
+                                   >,
+                               boost::tuple<
+                                   std::vector< std::vector<sparse_matrix_ptrtype> >,//Aq
+                                   std::vector< std::vector<std::vector<vector_ptrtype> > >//Fq
+                                   >
+                               >::type affine_decomposition_type;
+
 
     ModelCrbBase()
         :
@@ -236,6 +265,26 @@ public :
         throw std::logic_error("Your model is time-dependant so you MUST implement innerProductForMassMatrix function");
         return M;
     }
+
+
+    /*
+     * If the model is nonlinear and then need to implement an initial guess
+     * it has to implement it !
+     * Here is just a code to compile if model is a linear model.
+     */
+    virtual std::vector< std::vector< element_ptrtype > >
+    computeInitialGuessAffineDecomposition()
+    {
+        std::vector< std::vector<element_ptrtype> > q;
+        q.resize(1);
+        q[0].resize(1);
+        auto mesh = mesh_type::New();
+        auto Xh=space_type::New( mesh );
+        element_ptrtype elt ( new element_type ( Xh ) );
+        q[0][0] = elt;
+        return q;
+    }
+
 
     void partitionMesh( std::string mshfile , std::string target , int dimension, int order )
     {

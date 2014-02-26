@@ -13,8 +13,12 @@ Line(3) = {2,3};
 Line(4) = {3,4};
 Line Loop(5) = {1,2,3,4};
 Plane Surface(6) = {5};
-Physical Line("inlet") = {1};
-Physical Line("wall1") = {2};
-Physical Line("outlet") = {3};
-Physical Line("wall2") = {4};
+tmp[] = Extrude {0,0.0,1} {
+  Surface{6};
+};
+Physical Volume(1) = tmp[1];
+
 Physical Surface(6) = {6};
+Physical Surface("wall2") = {27};
+Physical Surface("wall") = {15, 28, 6, 23, 19};
+

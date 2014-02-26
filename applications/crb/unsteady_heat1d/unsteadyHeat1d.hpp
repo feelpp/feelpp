@@ -147,6 +147,11 @@ public :
     typedef bases<Lagrange<Order, Scalar> > basis_type;
 
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
+
+
+    static const bool is_time_dependent = true;
+    static const bool is_linear = true;
+
 };
 
 
@@ -572,8 +577,6 @@ public:
      * the value of the corresponding FEM output
      */
     value_type output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve=false, bool export_output=false );
-
-    static const bool is_time_dependent = true;
 
     operatorcomposite_ptrtype operatorCompositeA()
     {
