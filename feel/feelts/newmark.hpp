@@ -102,6 +102,7 @@ public:
     typedef typename space_type::element_type element_type;
     typedef typename space_type::return_type return_type;
     typedef typename element_type::value_type value_type;
+    typedef boost::shared_ptr<element_type> element_ptrtype;
     typedef boost::shared_ptr<element_type> unknown_type;
     typedef typename node<value_type>::type node_type;
 
@@ -187,8 +188,14 @@ public:
     element_type const& previousVelocity() const;
     element_type const& previousAcceleration() const;
 
+    element_type & currentVelocity();
     element_type const& currentVelocity() const;
+    element_ptrtype & currentVelocityPtr();
+    element_ptrtype const& currentVelocityPtr() const;
+    element_type & currentAcceleration();
     element_type const& currentAcceleration() const;
+    element_ptrtype & currentAccelerationPtr();
+    element_ptrtype const& currentAccelerationPtr() const;
 
     void loadCurrent();
 
@@ -393,6 +400,13 @@ Newmark<SpaceType>::previousAcceleration() const
 }
 
 template <typename SpaceType>
+typename Newmark<SpaceType>::element_type &
+Newmark<SpaceType>::currentVelocity()
+{
+  return *M_currentVel;
+}
+
+template <typename SpaceType>
 typename Newmark<SpaceType>::element_type const&
 Newmark<SpaceType>::currentVelocity() const
 {
@@ -400,10 +414,45 @@ Newmark<SpaceType>::currentVelocity() const
 }
 
 template <typename SpaceType>
+typename Newmark<SpaceType>::element_ptrtype &
+Newmark<SpaceType>::currentVelocityPtr()
+{
+  return M_currentVel;
+}
+
+template <typename SpaceType>
+typename Newmark<SpaceType>::element_ptrtype const&
+Newmark<SpaceType>::currentVelocityPtr() const
+{
+  return M_currentVel;
+}
+
+template <typename SpaceType>
+typename Newmark<SpaceType>::element_type &
+Newmark<SpaceType>::currentAcceleration()
+{
+  return *M_currentAcc;
+}
+
+template <typename SpaceType>
 typename Newmark<SpaceType>::element_type const&
 Newmark<SpaceType>::currentAcceleration() const
 {
   return *M_currentAcc;
+}
+
+template <typename SpaceType>
+typename Newmark<SpaceType>::element_ptrtype &
+Newmark<SpaceType>::currentAccelerationPtr()
+{
+  return M_currentAcc;
+}
+
+template <typename SpaceType>
+typename Newmark<SpaceType>::element_ptrtype const&
+Newmark<SpaceType>::currentAccelerationPtr() const
+{
+  return M_currentAcc;
 }
 
 
