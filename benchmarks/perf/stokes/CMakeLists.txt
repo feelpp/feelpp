@@ -107,4 +107,5 @@ feelpp_add_application( perf_stokes_kovaznay_curved_bottom SRCS stokes_kovaznay.
 
 
 add_subdirectory(Poiseuille)
+add_subdirectory(brain)
 #add_subdirectory(Kovasnay_Curved_Bottom)
