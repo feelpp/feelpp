@@ -1,0 +1,38 @@
+git:
+  submodules: false
+language: cpp
+compiler:
+  - clang
+before_install:
+  - sudo add-apt-repository -y ppa:mapnik/boost-backports-1-54
+  - sudo add-apt-repository -y ppa:kalakris/eigen
+  - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+  - sudo apt-get -qq update
+  - sudo apt-get install -qq libboost1.54-all-dev mpi-default-dev mpi-default-bin libeigen3-dev libcln-dev petsc-dev libxml2-dev gmsh bison flex doxygen doxygen-latex transfig imagemagick libtbb-dev libann-dev libglpk-dev
+install:
+# Install gcc 4.8
+  - if [ "$CXX" = "g++" ]; then sudo apt-get install -qq g++-4.8; fi
+  - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
+# Install clang 3.3
+  - if [ "$CXX" = "clang++" ]; then sudo apt-get install -qq clang-3.3; fi
+  - if [ "$CXX" = "clang++" ]; then export CXX="/usr/bin/clang++" CC="/usr/bin/clang"; fi
+#  - if [ "$CXX" = "clang++" ]; then mkdir opt && cd opt && ../configure -r; fi
+  - mkdir opt && cd opt && ../configure -r
+script:
+  - make -j16 feelpp_ginac
+  - make -j2 feelpp
+  - make quickstart
+after_script: make check
+branches:
+  only:
+    - develop
+cache:
+ - apt
+notifications:
+  email:
+    recipients:
+      - feelpp-devel@feelpp.org
+    on_success: change
+matrix:
+  allow_failures:
+  - gcc

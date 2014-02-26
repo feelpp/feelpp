@@ -344,10 +344,28 @@ public:
             bool export_solution = option(_name=_o( this->about().appName(),"export-solution" )).template as<bool>();
             int proc_number =  Environment::worldComm().globalRank();
 
+            bool load_elements_db= option(_name="crb.load-elements-database").template as<bool>();
+            bool rebuild_db= option(_name="crb.rebuild-database").template as<bool>();
+
             if ( this->vm().count( "help" ) )
             {
                 std::cout << this->optionsDescription() << "\n";
                 return;
+            }
+
+            //check options (does it make sens ?)
+            bool option_checked=true;
+            if( !load_elements_db && rebuild_db )
+                option_checked=false;
+            CHECK( option_checked )<<"options crb.load-elements-database : "<<load_elements_db<<" and crb.rebuild-database : "<<rebuild_db<<". If you don't want to load elements database maybe you want to apply RB approximation on a laptop wherease the RB was built on a super-computer ? If it's the case put crb.rebuild-database=false !! Else, you have to choose if you want to rebuild a RB database or to reload an existing one but not the elements database.\n";
+
+            if( ! load_elements_db  )
+            {
+                M_mode = CRBModelMode::CRB_ONLINE;
+                if( Environment::worldComm().isMasterRank() )
+                {
+                    std::cout<<"[OpusApp Information] You have choosen to reload an existing RB database without loading elments database. If the RB was built on an other computer make sure that database have been moved on in the right repositories.\n";
+                }
             }
 
             this->loadDB();
@@ -365,6 +383,15 @@ public:
             bool use_predefined_sampling = option(_name="crb.use-predefined-test-sampling").template as<bool>();
             bool select_parameter_via_one_feel=option( _name="crb.select-parameter-via-one-feel").template as<bool>();
             bool sampling_is_already_generated=false;
+
+
+            if( ! load_elements_db )
+            {
+                compute_fem=false;
+                export_solution=false;
+                compute_stat=false;
+            }
+
             if( select_parameter_via_one_feel )
             {
                 run_sampling_size=1;
@@ -372,6 +399,8 @@ public:
                 //in this case we want to visualize RB solution with parameters from one feel interface
                 compute_fem=false;
                 compute_stat=false;
+
+                CHECK( load_elements_db )<<"[OpusApp] You have specified to not load elements database so it is impossible to visualize RB solution, use crb.load-elements-database=true !\n";
 
                 //parameters are given by a vector of double
                 std::string string_parameters = option(_name="crb.user-parameters").template as< std::string >();
@@ -808,12 +837,11 @@ public:
 
                                 int size = uN.size();
 
-                                //if( model->isSteady()) // Re-use uN given by lb in crb->run
-                                u_crb = crb->expansion( uN[size-1] , N , WN ); // Re-use uN given by lb in crb->run
+                                // Re-use uN given by lb in crb->run
+
+                                u_crb = crb->expansion( uN[size-1] , N , WN );
                                 if( solve_dual_problem )
                                     u_crb_dual = crb->expansion( uNdu[0] , N , WNdu );
-                                //else
-                                //    u_crb = crb->expansion( mu , N , WN );
 
                                 std::ostringstream u_crb_str;
                                 u_crb_str << "u_crb(" << mu_str.str() << ")";
@@ -946,7 +974,7 @@ public:
                                     //if( ! boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value )
                                     //    throw std::logic_error( "ERROR TYPE must be 2 when using CRBTrilinear (no error estimation)" );
                                     double ocrb = o.template get<0>();
-                                    std::vector<double> v = boost::assign::list_of( output_fem )( time_fem )( ocrb )( relative_estimated_error )( ti.elapsed() ) ( output_estimated_error )( condition_number )( l2_error )( h1_error ) ;
+                                    std::vector<double> v = boost::assign::list_of( output_fem )( time_fem )( ocrb )( output_estimated_error )( ti.elapsed() ) ( relative_estimated_error )( condition_number )( l2_error )( h1_error ) ;
                                     if( proc_number == Environment::worldComm().masterRank() )
                                     {
                                         std::cout << "output=" << ocrb << " with " << o.template get<1>() << " basis functions  (error estimation on this output : " << output_estimated_error<<") \n";

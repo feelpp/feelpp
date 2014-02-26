@@ -45,6 +45,10 @@ feelpp_add_application( doc_laplacian_parabolic SRCS laplacian_parabolic.cpp LAB
 
 feelpp_add_application( doc_laplacian_hypercube SRCS laplacian_hypercube.cpp LABEL doc CFG laplacian_hypercube.cfg )
 
+feelpp_add_application( doc_laplacian_submesh SRCS laplacian_submesh.cpp LABEL doc  )
+
 feelpp_add_application( doc_laplacian_dirac SRCS laplacian_dirac.cpp LABEL doc CFG laplacian_dirac.cfg )
 
 feelpp_add_application( doc_laplacian_lagrange_multiplier2 SRCS laplacian_lagrange_multiplier2.cpp LABEL doc CFG laplacian_lagrange_multiplier2.cfg)
+
+feelpp_add_application( partition SRCS partition.cpp LABEL doc CFG partition.cfg)
