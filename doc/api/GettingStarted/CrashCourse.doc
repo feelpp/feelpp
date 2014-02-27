@@ -7,9 +7,9 @@ namespace Feel{
 
 <hr>
 
-This chapter is designed for impatient people who wants to test \feel as soon as possible.
+This chapter is designed for impatient people who want to test \feel as soon as possible.
 \section Requirements Requirements
-Before installing \feel, you need to get this required packages:
+Before installing \feel, you need to get these required packages:
 \li g++ (4.7 or higher) OR Clang (3.3 or higher)
 \li MPI: openmpi (preferred) or mpich
 \li Boost (1.39 or higher)
@@ -17,12 +17,12 @@ Before installing \feel, you need to get this required packages:
 \li Cmake (2.6 or higher)
 \li Gmsh (2.8.3 or higher, can be found at <a href="http://www.geuz.org/gmsh">http://www.geuz.org/gmsh</a>)
 \li Libxml2
-It is assumed that all this packages are properly installed.
+It is assumed that all these packages are properly installed.
 
-\section Building Building \feel from source on *nix
+\section Building Building Feel++ from source on *nix
 \feel is distributed as a tarball once in a while. The tarballs are available
 at <br> 
-<center><a href="http://code.google.com/p/feelpp/downloads/list"></a>http://code.google.com/p/feelpp/downloads/list</center>
+<center>https://github.com/feelpp/feelpp/releases</center>
 
 Download the latest tarball. Then follow the steps and replace
  <tt>x, y, z </tt>with the corresponding numbers
@@ -39,25 +39,25 @@ We define then the current directory as the source one, ie:
 <a href="#" class="top">top</a>
 <hr>
 \section Compiling Compiling
-Please, notice that 4 Gbytes of RAM is a minimum to make \feel compiling (with <tt>GCC</tt>), with clang, the memory footprint is much lower.
+Please note that 4 GBytes of RAM is a minimum to compile \feel with <tt>GCC</tt>.  With Clang, the memory footprint is much lower.
 
 In order to compile \feel and a test application, we create a new directory:
 \verbatim
   mkdir build
   cd build
-  export buildDir=`pwd`
+  export FeelppBuildDir=`pwd`
 \endverbatim
 <br>
 and then, we are able to compile our first application:
 \verbatim
-  cd $buildDir
-  cmake $FeelppSrcDir
+  cd $FeelppBuildDir
+  $FeelppSrcDir/configure -r
   make -j4
 \endverbatim
 <br>
-This procedure will build the entire librarie (with DebWithRelInfo option) and a dummy program to presents the \feel's abilities.<br>
+This procedure will build the whole library (with Release configuration) and a dummy program to present the \feel's abilities.<br>
 
-There is a procedure to install as a system librarie \feel.
+There is a procedure to install as a system library \feel.
 \verbatim
   make install
 \endverbatim
@@ -96,7 +96,7 @@ with:
   \end{aligned}
 \f$</center><br>
 
-The aim of \feel is to provide the simplest way to write the $a$ and $f$ forms.
+The aim of \feel is to provide the simplest way to write the \f$a\f$ and \f$l\f$ forms.
 
 From a discrete point of view, we introduce \f$V_h\subset H^1\left( \Omega \right)\f$ such that:
 <br><center>\f$
@@ -158,33 +158,33 @@ return 0;
 
 <a href="#" class="top">top</a>
 <hr>
-\section First First execution & vizualisation
+\section First First execution & visualization
 
 To test that part of code, please go to:
 \verbatim
-  cd $FeelppSrcDir/quickstart
+  cd $FeelppBuildDir/quickstart
 \endverbatim
 and execute the code, by:
 \verbatim
   ./feelpp_qs_laplacian
 \endverbatim
-This will produce several files:
+This will produce several files in directory <tt>$HOME/feel/qs_laplacian/np_1/</tt>:
 \verbatim
+  feel.geo
+  feel.msh
   qs_laplacian-1_0.case
+  qs_laplacian-1_0.geo
   qs_laplacian-1.sos
+  qs_laplacian-paraview-1.sos
   qs_laplacian.timeset
   qs_laplacian.u-1_0.001
-  qs_laplacian-1_0.geo001
-  qs_laplacian.pid-1_0.001
-  square.geo
-  square.msh
 \endverbatim
-You can vizualise the results using any Ensight file reader, such as Paraview,
-opening \verb=qs_laplacian-1.sos=.
+You can visualize the results using any Ensight file reader, such as Paraview,
+opening <tt>qs_laplacian-paraview-1.sos</tt>.
 \verbatim
-  paraview qs_laplacian-1.sos
+  paraview qs_laplacian-paraview-1.sos
 \endverbatim
-You may have a look to the differents option provided by
+You may have a look to the numerous options provided by
 \verbatim
   ./feelpp_qs_laplacian --help
 \endverbatim

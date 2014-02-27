@@ -29,49 +29,52 @@ then you can go to the \feel top directory with
 \verbatim
   cd feel
 \endverbatim
-You should obtain furthers directories such as:
+You should obtain further directories such as:
 \verbatim
 applications/   # functional applications
 benchmarks/  # applications under test
 cmake/   # do not touch, used for compilation
 contrib/
+data/   # geometric data
 doc/   # tutorial and examples
 feel/   # Feel++ library
 ports/   # used for Mac OS X installation
+quickstart/   # basic examples
 research/   # research projects using Feel++
+scripts/ # various scripts
 testsuite/ # Feel++ unit tests testsuite
-CMakeListe.txt   # the file for cmake to build, do not modify
+CMakeLists.txt   # the file for cmake to build, do not modify
 ...
 \endverbatim
 
 <a href="#" class="top">top</a>
 <hr>
 \section Unis Unix: dependencies
-In order to install \feel on Unix systems (other than Mac OS X, in you have a Macintosh, please go to \ref Mac), you have to install many dependencies
+In order to install \feel on Unix systems (other than Mac OS X, if you have a Macintosh, please go to \ref Mac), you have to install many dependencies
 before. Those libraries and programs are necessary for the
-compilation and installation of the \feel librairies.<br>
-This is the list of all the librairies you must have installed on your
-computer, and the \lstinline|*-dev| packages for some of them. <br>
+compilation and installation of the \feel libraries.<br>
+This is the list of all the libraries you must have installed on your
+computer, and the <tt>*-dev</tt> packages for some of them. <br>
 Required packages:
 \li g++ (4.7, 4.8) OR Clang (3.3, 3.4)
 \li MPI: openmpi (preferred) or mpich
 \li Boost >= 1.49
 \li Petsc >= 3.2
-\li Cmake >= 2.8.7
+\li CMake >= 2.8.7
 \li Gmsh >= 2.8.3 (can be found at <a href="http://www.geuz.org/gmsh">http://www.geuz.org/gmsh</a>)
 \li Libxml2
 
 Optional packages:
 \li Superlu
 \li Suitesparse(umfpack)
-\li Metis: scoth with the metis interface (preferred), metis (non-free)
+\li Metis: scotch with the metis interface (preferred), metis (non-free)
 \li Google perftools
 \li Paraview, this is not stricly required to run \feel programs but it is somehow
-  necessary for visualisation. (can be found at <a href="http://www.paraview.org">http://www.paraview.org</a>)
+  necessary for visualization. (Can be found at <a href="http://www.paraview.org">http://www.paraview.org</a>)
 \li Python (2.5 or later) for the validation tools
 
-Note that all these packages are available under Debian/GNU/Linux and
-Ubuntu. They should be available. Once you have installed those dependencies, you can jump to \ref Compiling.
+Note that all these packages are available under Debian GNU/Linux and
+Ubuntu. Once you have installed those dependencies, you can jump to \ref Compiling.
 
 <a href="#" class="top">top</a>
 <hr>
@@ -83,17 +86,17 @@ Debian is the platform of choice for \feel, it was developed mainly on it. The c
   sudo apt-get install feel++-apps libfeel++-dev feel++-doc
 \endverbatim
 
-The interested user is encourage to follow the \feel PTS page
+The interested user is encouraged to follow the \feel PTS page
 \li Feel++ <a href="http://packages.qa.debian.org/f/feel%2B%2B.html">Debian Packages Tracking System</a>
 
 At the moment \feel compiles and is available on the following Debian
-plateforms:
+platforms:
 \li Feel++ <a href="https://buildd.debian.org/status/package.php?p=feel%2b%2b">Build results</a>
 
 \subsection Ubuntu Ubuntu
 \feel was uploaded in the distribution Ubuntu-Natty (11.04) for the first
 time. The commands to install \feel on Ubuntu are
-\bverbatim
+\verbatim
   sudo apt-get update
   sudo apt-get install feel++-apps libfeel-dev feel++-doc
 \endverbatim
@@ -119,7 +122,7 @@ It's the first step, you'll see later how to easily install the necessary tools 
 Currently, building \feel is only available through <a href="http://brew.sh">Homebrew</a>. <a href="http://www.macports.org/install.php">MacPorts</a> versions are also present in the source tree of \feel. You can find a version using gcc in &lt;path to top feel directory&gt;/ports/macosx/macports, and an experimental version using clang/libc++ in &lt;path to top feel directory&gt;/ports/macosx/macports-xc5.
 
 \subsection Homebrew Homebrew
-<b>Introduction</b>: Homebrew is a free/open source software introduced to simplify the installation of other free/open source softwares on the MacOS X ecosystem. It is distributed under the <a href="https://github.com/mxcl/homebrew/blob/master/Library/Homebrew/LICENSE">BSD 2 Clause (NetBSD) license</a>. For more information, visit their <a href="http://brew.sh">website</a>.
+<b>Introduction</b>: Homebrew is a free/open source software introduced to simplify the installation of other free/open source software on the MacOS X ecosystem. It is distributed under the <a href="https://github.com/mxcl/homebrew/blob/master/Library/Homebrew/LICENSE">BSD 2 Clause (NetBSD) license</a>. For more information, visit their <a href="http://brew.sh">website</a>.
 
 <b>Installation</b>: To install the latest version of Homebrew, simply visit their <a href="http://brew.sh">website</a> and follow the instructions. Each new package Homebrew installs is built into an intermediate place called the Cellar (usually /usr/local/Cellar) and then the packages are symlinked into /usr/local (default).
 
@@ -168,7 +171,7 @@ And you should be set to use \feel on MacOS X.
 <hr>
 
 \subsection MacPorts MacPorts
-<b>Introduction</b>: MacPorts is an open-source community projet which aims to design an easy-to-use system for compiling, installing and upgrading open-source softwares on Mac OS X operating system. It is distributed under <a href="http://opensource.org/licenses/bsd-license.php">BSD License</a> and facilitate the access to thousands of ports (softwares) without installing or compiling open-source softwares.  MacPorts provides a single software tree which includes the latest stable releases of approximately 17700 ports targeting the current Mac OS X release (10.9). If you want more information, please visit their <a href="http://www.macports.org/">website</a>.
+<b>Introduction</b>: MacPorts is an open-source community projet which aims to design an easy-to-use system for compiling, installing and upgrading open-source software on Mac OS X operating system. It is distributed under <a href="http://opensource.org/licenses/bsd-license.php">BSD License</a> and facilitate the access to thousands of ports (software) without installing or compiling open-source software.  MacPorts provides a single software tree which includes the latest stable releases of approximately 17700 ports targeting the current Mac OS X release (10.9). If you want more information, please visit their <a href="http://www.macports.org/">website</a>.
 
 <b>Installation</b>: To install the latest version of MacPorts, please go to
 <a href="http://www.macports.org/install.php">Installing MacPorts</a> page and follow the instructions. The simplest way is to install it with the Mac OS X Installer using the <tt>pkg</tt> file provided on their website. It is recommended that you install X11 (X Window System) which is normally used to display X11 applications.<br>
@@ -241,13 +244,13 @@ This requires MacPorts to be at least on version 2.2.1 for the flag to be recogn
 <hr>
 
 \section Compiling Compiling Feel++
-Feel build system uses <a href="http://www.cmake.org"><tt>cmake</tt></a> as its build system. Check that \cmake is using gcc4.7 (or a higher version) or clang++ as C++ compiler (you can use the option <tt>CMAKE_CXX_COMPILER=<path>/g++-4.7</tt> where the <tt>path</tt> depends on your OS, it's probably <tt>/usr/bin</tt> or
+\feel uses <a href="http://www.cmake.org"><tt>cmake</tt></a> as its build system. Check that \cmake is using gcc4.7 (or a higher version) or clang++ as C++ compiler (you can use the option <tt>CMAKE_CXX_COMPILER=<path>/g++-4.7</tt> where the <tt>path</tt> depends on your OS, it's probably <tt>/usr/bin</tt> or
 <tt>/opt/local/bin</tt> but you can also change it with the command <tt>ccmake</tt>
 and press <tt>t</tt> for advanced options).
 \feel, using <tt>cmake</tt>, can be built either in source and out of source and different
 build type:
 \li minsizerel: minimal size release
-\li release release
+\li release: release
 \li debug: debug
 \li none(default)
 
@@ -263,7 +266,7 @@ where <tt>feel</tt> is the top directory where the source have been downloaded. 
   # e.g cmake ../feel if feel.opt is at the same
   # directory level as feel
 \endverbatim
-you can customize the build type:
+You can customize the build type:
 \verbatim
   # Choose g++ release
   cmake -CMAKE_CXX_COMPILER=/usr/bin/g++
@@ -281,7 +284,7 @@ To do so, simply create a file named <tt>feelpp.machines.&lt;name&gt;.cmake</tt>
 The file will automatically be recognized and loaded, when you will be compiling \feel on this system.
 </p>
 
-Once Cmake has done its work, you are now able to compile the library with:
+Once CMake has done its work, you are now able to compile the library with:
 \verbatim
   make
 \endverbatim
