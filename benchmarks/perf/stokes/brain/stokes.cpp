@@ -37,10 +37,10 @@ int main(int argc, char**argv )
 
     auto mesh = loadMesh( _mesh=new Mesh<Simplex<3>>,
                           _filename="brainVeines20.msh",
-                          //_update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES,
-                          //_physical_are_elementary_regions=true,
-                          //_partitions=Environment::worldComm().localSize(),
-                          //_worldcomm=Environment::worldComm()
+                          _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES,
+                          _physical_are_elementary_regions=true,
+                          _partitions=Environment::worldComm().localSize(),
+                          _worldcomm=Environment::worldComm()
                          );
 
 
@@ -53,9 +53,14 @@ int main(int argc, char**argv )
     auto u = U.element<0>();
     auto p = U.element<1>();
 
-    int i;
+    auto hsize = mean(elements(mesh),h());
+    //auto hsize=meanhsize/integrate(elements(mesh),cst(1.)).evaluate()(0,0);
+
+    std::cout << "Mesh size = "<< hsize << "\n";
+    
     //+++++++++++++++++++++++++ Velocity at inlet +++++++++++++++++++++++++++
-    /*auto sumAreaIN = integrate(markedfaces(mesh,1),cst(1.)).evaluate()(0,0);
+    /*int i;
+    auto sumAreaIN = integrate(markedfaces(mesh,1),cst(1.)).evaluate()(0,0);
     std::cout << "Area of inlet 1 = "<< sumAreaIN << "\n";
     double Area;
     std::cout.precision(20);
