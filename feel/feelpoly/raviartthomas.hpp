@@ -92,6 +92,7 @@ struct times_x
     int M_c;
 };
 
+#if 0
 template< class T >
 struct extract_all_poly_indices
 {
@@ -106,6 +107,8 @@ struct extract_all_poly_indices
         return start++;
     }
 };
+#endif
+
 }// detail
 
 template<uint16_type N,

@@ -35,7 +35,7 @@ makeOptions()
     ( "rho", Feel::po::value<double>()->default_value( 1000 ), "density [kg/m^3]" )
     ( "gravity-cst", Feel::po::value<double>()->default_value( 2 ), "gravity-cst" )
     ;
-    return stvenantkirchhoffoptions.add( Feel::feel_options() );
+    return stvenantkirchhoffoptions;
 }
 
 int
@@ -162,4 +162,3 @@ main( int argc, char** argv )
 
 
 }
-

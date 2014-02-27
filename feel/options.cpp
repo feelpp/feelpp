@@ -473,6 +473,54 @@ error_options( std::string const& prefix )
     return _options;
 }
 
+/**
+ * \return the command lines options for the exporter
+ */
+po::options_description
+exporter_options( std::string const& prefix )
+{
+    po::options_description _options( "Exporter " + prefix + " options" );
+    _options.add_options()
+        // do export
+        ( prefixvm( prefix,"export" ).c_str(), Feel::po::value<bool>()->default_value( true ), "true if export, false otherwise" )
+        // do export
+        ( prefixvm( prefix,"exporter.export" ).c_str(), Feel::po::value<bool>()->default_value( true ), "true if export, false otherwise" )
+
+        // exporter type
+        ( prefixvm( prefix,"exporter.format" ).c_str(), Feel::po::value<std::string>()->default_value( "ensightgold" ), "type of exporter. Choices: ensight, ensightgold, gmsh" )
+
+
+
+        //  geometry
+        ( prefixvm( prefix,"exporter.geometry" ).c_str(), Feel::po::value<std::string>()->default_value( "change_coords_only" ), "Mesh change type, this option tells the exporter whether the mesh does not change(static), changes only the coordinates of the vertices (change_coords_only) or changes entirely (change). Choices: change_coords_only, change, static" )
+
+        // prefix options
+        ( prefixvm( prefix,"exporter.prefix" ).c_str(), Feel::po::value<std::string>()->default_value( prefix ), "prefix for exported files" )
+
+        // directory options
+        ( prefixvm( prefix,"exporter.directory" ).c_str(), Feel::po::value<std::string>()->default_value( "results" ), "directory for exported files" )
+
+        // frequency options
+        ( prefixvm( prefix,"exporter.freq" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "frequency at which results are exported" )
+
+        // file type options
+        ( prefixvm( prefix,"exporter.file-type" ).c_str(), Feel::po::value<std::string>()->default_value( "ascii" ), "file type in which the results are exported. Choices: ascii, binary" )
+
+        // matlab options
+        ( prefixvm( prefix,"exporter.matlab" ).c_str(), Feel::po::value<bool>()->default_value( 0 ), "export matrices and vectors to matlab files" )
+
+        //
+        // ensightgold
+        //
+        ( prefixvm( prefix,"exporter.ensightgold.use-sos" ).c_str(), Feel::po::value<bool>()->default_value( true ), "use sos  (true) or first case file (false) for multiple case files" )
+        ( prefixvm( prefix,"exporter.ensightgold.save-face" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Save nodal functions on the face" )
+        //  single
+        ( prefixvm( prefix,"exporter.fileset" ).c_str(), Feel::po::value<bool>()->default_value( false ), "use fileset for transient simulations" )
+
+        ;
+    return _options;
+}
+
 po::options_description
 feel_options( std::string const& prefix  )
 {
