@@ -106,20 +106,20 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<0>, mpl::bool_
 
                 for ( uint16_type i = 0; i < I; ++i )
                 {
-                        grad_real.noalias() = M_gradphi[i][0]*Bt.transpose();
-                        for ( uint16_type q = 0; q < Q; ++q )
-                        {
-                                M_grad[i][q] = grad_real;
-                                M_dx[i][q] = M_grad[i][q].col( 0 );
+                    grad_real.noalias() = M_gradphi[i][0]*Bt.transpose();
+                    for ( uint16_type q = 0; q < Q; ++q )
+                    {
+                        M_grad[i][q] = grad_real;
+                        M_dx[i][q] = M_grad[i][q].col( 0 );
 
-                                if ( NDim == 2 )
-                                        M_dy[i][q] = M_grad[i][q].col( 1 );
+                        if ( NDim == 2 )
+                            M_dy[i][q] = M_grad[i][q].col( 1 );
 
-                                if ( NDim == 3 )
-                                        M_dz[i][q] = M_grad[i][q].col( 2 );
+                        if ( NDim == 3 )
+                            M_dz[i][q] = M_grad[i][q].col( 2 );
 
 
-                        }
+                    }
                 }
 
                 // we need the normal derivative
@@ -377,9 +377,21 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<1>, mpl::bool_
                 typedef typename boost::multi_array<value_type,4>::index_range range;
 
                 matrix_eigen_ublas_type Bt ( thegmc->B( 0 ).data().begin(), gmc_type::NDim, gmc_type::PDim );
+                matrix_eigen_ublas_type K ( thegmc->K( 0 ).data().begin(), gmc_type::PDim, gmc_type::NDim );
                 matrix_eigen_grad_type grad_real = matrix_eigen_grad_type::Zero();
                 //matrix_eigen_PN_type B=Bt.transpose();
 
+                if ( is_hdiv_conforming )
+                {
+                    for ( uint16_type ii = 0; ii < I; ++ii )
+                    {
+                        for ( uint16_type q = 0; q < Q; ++q )
+                        {
+                            // covariant piola transform
+                            M_phi[ii][q] = K*(*M_pc)->phi(ii,q)/thegmc->J(q);
+                        }
+                    }
+                }
                 for ( uint16_type ii = 0; ii < I; ++ii )
                 {
                         int ncomp= ( reference_element_type::is_product?nComponents1:1 );
@@ -389,7 +401,12 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<1>, mpl::bool_
                                 //std::cout << "component " << c << "\n";
                                 uint16_type i = I*c + ii;
                                 //uint16_type c1 = c;
-                                grad_real.noalias() = M_gradphi[i][0]*Bt.transpose();
+                                if ( is_hdiv_conforming )
+                                {
+                                    grad_real.noalias() = K*(M_gradphi[i][0]*Bt.transpose())/thegmc->J(0);
+                                }
+                                else
+                                    grad_real.noalias() = M_gradphi[i][0]*Bt.transpose();
 
                                 for ( uint16_type q = 0; q < Q; ++q )
                                 {
@@ -405,7 +422,14 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<1>, mpl::bool_
                                         // update divergence if needed
                                         if ( vm::has_div<context>::value )
                                         {
+                                            if ( is_hdiv_conforming )
+                                            {
+                                                M_div[i][q]( 0,0 ) =  M_gradphi[i][0].trace()/thegmc->J(q);
+                                            }
+                                            else
+                                            {
                                                 M_div[i][q]( 0,0 ) =  M_grad[i][q].trace();
+                                            }
                                         }
 
                                         // update curl if needed
