@@ -248,58 +248,6 @@ public:
      */
     //@{
 
-    // \return the number of terms in affine decomposition of left hand
-    // side bilinear form
-    int Qa() const
-    {
-        return 3;
-    }
-
-    /**
-     * there is at least one output which is the right hand side of the
-     * primal problem
-     *
-     * \return number of outputs associated to the model
-     */
-    int Nl() const
-    {
-        return 2;
-    }
-
-    /**
-     * \param l the index of output
-     * \return number of terms  in affine decomposition of the \p q th output term
-     */
-    int Ql( int l ) const
-    {
-        if ( l == 0 ) return 2;
-
-        return 1;
-    }
-
-    int Qmf( ) const
-    {
-        return 0;
-    }
-    int Qm( ) const
-    {
-        return 0;
-    }
-
-    int mMaxA( int q )
-    {
-        return 1;
-    }
-    int mMaxF(int output_index, int q )
-    {
-        return 1;
-    }
-
-    int QInitialGuess() const
-    {
-        return 1;
-    }
-
 
     /**
      * \brief Returns the function space
@@ -337,17 +285,17 @@ public:
     boost::tuple<beta_vector_type, std::vector<beta_vector_type> >
     computeBetaQm( parameter_type const& mu, double time=0 )
     {
-        M_betaAqm.resize( Qa() );
-        M_betaAqm[0].resize( 1 );
-        M_betaAqm[1].resize( 1 );
-        M_betaAqm[2].resize( 1 );
+        M_betaAqm.resize( M_nb_terms_in_affine_decomposition_a );
+        for(int q=0; q<M_nb_terms_in_affine_decomposition_a; q++)
+            M_betaAqm[q].resize(1);
+
         M_betaAqm[0][0]= 1;
         M_betaAqm[1][0] = mu( 0 ); // k_1
         M_betaAqm[2][0] = mu( 1 ); // k_2
 
-        M_betaFqm.resize( Nl() );
-        M_betaFqm[0].resize( Ql(0) );
-        M_betaFqm[1].resize( Ql(1) );
+        M_betaFqm.resize( M_nb_outputs );
+        M_betaFqm[0].resize( M_nb_terms_in_affine_decomposition_rhs );
+        M_betaFqm[1].resize( M_nb_terms_in_affine_decomposition_output );
         M_betaFqm[0][0].resize( 1 );
         M_betaFqm[0][1].resize( 1 );
         M_betaFqm[1][0].resize( 1 );
@@ -426,7 +374,6 @@ public:
      */
     affine_decomposition_type computeAffineDecomposition();
 
-    void stockAffineDecomposition();
 
     /**
      * \brief solve the model for parameter \p mu
@@ -544,6 +491,11 @@ private:
 
     element_type u,v;
 
+    int M_nb_terms_in_affine_decomposition_a=3;
+    int M_nb_terms_in_affine_decomposition_rhs=2;
+    int M_nb_terms_in_affine_decomposition_output=1;
+    int M_nb_outputs=2;
+
 };
 
 Heat1D::Heat1D()
@@ -583,21 +535,18 @@ Heat1D::initModel()
 
     //  initialisation de A1 et A2
 
-    M_Aqm_free.resize( this->Qa() );
-    for(int q=0; q<Qa(); q++)
-    {
+    M_Aqm_free.resize( M_nb_terms_in_affine_decomposition_a );
+    for(int q=0; q<M_nb_terms_in_affine_decomposition_a; q++)
         M_Aqm_free[q].resize( 1 );
-    }
 
-    M_Fqm_free.resize( this->Nl() );
-    for(int l=0; l<Nl(); l++)
-    {
-        M_Fqm_free[l].resize( Ql(l) );
-        for(int q=0; q<Ql(l) ; q++)
-        {
-            M_Fqm_free[l][q].resize(1);
-        }
-    }
+    M_Fqm_free.resize( M_nb_outputs );
+    M_Fqm_free[0].resize( M_nb_terms_in_affine_decomposition_rhs );
+    for(int q=0; q<M_nb_terms_in_affine_decomposition_rhs ; q++)
+        M_Fqm_free[0][q].resize(1);
+
+    M_Fqm_free[1].resize( M_nb_terms_in_affine_decomposition_output );
+    for(int q=0; q<M_nb_terms_in_affine_decomposition_output ; q++)
+        M_Fqm_free[1][q].resize(1);
 
     D = backend->newMatrix( Xh, Xh );
     F = backend->newVector( Xh );
@@ -651,18 +600,14 @@ Heat1D::initModel()
     a2free->setName("A2");
     M_Aqm_free[2][0]=a2free;
 
-
     M_compositeA = opLinearComposite( _domainSpace=Xh , _imageSpace=Xh );
     M_compositeA->addList( M_Aqm_free );
-    M_compositeF.resize( this->Nl() );
-    for(int output=0; output<this->Nl(); output++)
+    M_compositeF.resize( M_nb_outputs );
+    for(int output=0; output<M_nb_outputs; output++)
     {
         M_compositeF[output]=functionalLinearComposite( _space=Xh );
         M_compositeF[output]->addList( M_Fqm_free[output] );
     }
-
-    if (option(_name="crb.stock-matrices"). as<bool>() )
-        stockAffineDecomposition();
 
 
     M = backend->newMatrix( Xh, Xh );
@@ -703,50 +648,6 @@ Heat1D::solve( sparse_matrix_ptrtype& D,
     u = *U;
 } // Heat1d::solve
 
-void
-Heat1D::stockAffineDecomposition()
-{
-    auto compositeA = operatorCompositeA();
-    int q_max = this->Qa();
-    M_Aqm.resize( q_max);
-    for(int q=0; q<q_max; q++)
-    {
-        int m_max = this->mMaxA(q);
-        M_Aqm[q].resize(m_max);
-        for(int m=0; m<m_max;m++)
-        {
-            auto operatorfree = compositeA->operatorlinear(q,m);
-            size_type pattern = operatorfree->pattern();
-            auto trial = operatorfree->domainSpace();
-            auto test=operatorfree->dualImageSpace();
-            M_Aqm[q][m]= backend->newMatrix( _test=test , _trial=trial , _pattern=pattern );
-            operatorfree->matPtr(M_Aqm[q][m]);//fill the matrix
-        }//m
-    }//q
-
-    auto vector_compositeF = functionalCompositeF();
-    int number_outputs = vector_compositeF.size();
-    M_Fqm.resize(number_outputs);
-    for(int output=0; output<number_outputs; output++)
-    {
-        auto composite_f = vector_compositeF[output];
-        int q_max = this->Ql(output);
-        M_Fqm[output].resize( q_max);
-        for(int q=0; q<q_max; q++)
-        {
-            int m_max = this->mMaxF(output,q);
-            M_Fqm[output][q].resize(m_max);
-            for(int m=0; m<m_max;m++)
-            {
-                auto operatorfree = composite_f->functionallinear(q,m);
-                auto space = operatorfree->space();
-                M_Fqm[output][q][m]= backend->newVector( space );
-                operatorfree->containerPtr(M_Fqm[output][q][m]);//fill the vector
-            }//m
-        }//q
-    }//output
-
-}
 
 void
 Heat1D::update( parameter_type const& mu, int output_index )
@@ -757,23 +658,22 @@ Heat1D::update( parameter_type const& mu, int output_index )
         D->close();
         D->zero();
 
-        for ( size_type q = 0; q < Qa(); ++q )
+        auto Aqm=backend->newMatrix( Xh , Xh);
+        auto Fqm=backend->newVector( Xh );
+
+        for ( size_type q = 0; q < M_nb_terms_in_affine_decomposition_a; ++q )
         {
-            for ( size_type m = 0; m < mMaxA(q); ++m )
-            {
-                D->addMatrix( M_betaAqm[q][m], M_Aqm[q][m] );
-            }
+            M_Aqm_free[q][0]->matPtr( Aqm );
+            D->addMatrix( M_betaAqm[q][0], Aqm );
         }
 
         F->close();
         F->zero();
 
-        for ( size_type q = 0; q < Ql(output_index); ++q )
+        for ( size_type q = 0; q < M_nb_terms_in_affine_decomposition_rhs; ++q )
         {
-            for ( size_type m = 0; m < mMaxF(output_index,q); ++m )
-            {
-                F->add( M_betaFqm[0][q][m], M_Fqm[0][q][m] );
-            }
+            M_Fqm_free[0][q][0]->containerPtr( Fqm );
+            F->add( M_betaFqm[0][q][0], Fqm );
         }
     }//stock matrices
     else
@@ -859,11 +759,6 @@ double
 Heat1D::output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve )
 {
 
-    LOG( INFO ) << "size of Rb : "<<RbXh->size();
-    for(int i=0;i<RbXh->size();i++)
-        LOG( INFO )<<"name of basis : "<<RbXh->primalBasisElement( i ).name();
-    for(int i=0;i<RbXh->size();i++)
-        LOG( INFO )<<"norm of basis : "<<RbXh->primalBasisElement( i ).l2Norm();
     using namespace vf;
     if( need_to_solve )
         this->solve( mu, pT );
@@ -876,20 +771,11 @@ Heat1D::output( int output_index, parameter_type const& mu , element_type& u, bo
     // right hand side (compliant)
     if ( output_index == 0 )
     {
-        //output = M_betaFqm[0][0][0]*dot( M_Fqm[0][0][0], U ) + M_betaFqm[0][1][0]*dot( M_Fqm[0][1][0], U );
-        for ( int q=0; q<Ql( output_index ); q++ )
+        for ( int q=0; q<M_nb_terms_in_affine_decomposition_rhs; q++ )
         {
-            for ( int m=0; m<mMaxF(output_index,q); m++ )
-            {
-                M_Fqm_free[output_index][q][m]->containerPtr( fqm );
-                output += M_betaFqm[output_index][q][m]*dot( *fqm, *pT );
-            }
+            M_Fqm_free[output_index][q][0]->containerPtr( fqm );
+            output += M_betaFqm[output_index][q][0]*dot( *fqm, *pT );
         }
-        //std::cout << "output0 c1 = " << s1 <<"\n";
-        //double s2 = ( M_thetaFq[0](0)*integrate( markedfaces(mesh,mesh->markerName( "left" )), idv(*pT) ).evaluate()(0,0) +
-        //M_thetaFq[0](1)*integrate( elements(mesh), idv(*pT) ).evaluate()(0,0) );
-        //std::cout << "output0 c2 = " << s2 <<"\n";
-        //return s1;
     }
 
     // output

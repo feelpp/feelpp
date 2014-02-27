@@ -191,7 +191,8 @@ public:
         M_mode( CRBModelMode::PFEM ),
         M_model( new model_type() ),
         M_backend( backend_type::build( BACKEND_PETSC ) ),
-        M_B()
+        M_B(),
+        M_alreadyCountAffineDecompositionTerms( false )
     {
         this->init();
     }
@@ -210,7 +211,8 @@ public:
         M_backend( backend_type::build( vm ) ),
         M_backend_primal( backend_type::build( vm , "backend-primal" ) ),
         M_backend_dual( backend_type::build( vm , "backend-dual" ) ),
-        M_B()
+        M_B(),
+        M_alreadyCountAffineDecompositionTerms( false )
     {
         this->init();
     }
@@ -232,7 +234,8 @@ public:
         M_backend( backend_type::build( model->vm ) ),
         M_backend_primal( backend_type::build( model->vm , "backend-primal" ) ),
         M_backend_dual( backend_type::build( model->vm , "backend-dual") ),
-        M_B()
+        M_B(),
+        M_alreadyCountAffineDecompositionTerms( false )
     {
         this->init();
     }
@@ -251,7 +254,8 @@ public:
         M_backend( backend_type::build( Environment::vm() ) ),
         M_backend_primal( backend_type::build( Environment::vm() , "backend-primal" ) ),
         M_backend_dual( backend_type::build( Environment::vm() , "backend-dual" ) ),
-        M_B()
+        M_B(),
+        M_alreadyCountAffineDecompositionTerms( false )
     {
         this->init();
     }
@@ -273,7 +277,9 @@ public:
         M_backend( o.M_backend ),
         M_backend_primal( o.M_backend_primal ),
         M_backend_dual( o.M_backend_dual ),
-        M_B( o.M_B )
+        M_B( o.M_B ),
+        M_alreadyCountAffineDecompositionTerms( o.M_alreadyCountAffineDecompositionTerms )
+
     {
         this->init();
     }
@@ -444,7 +450,7 @@ public:
     //! return the number of \f$\mu\f$ independent terms for the bilinear form
     size_type Qa() const
     {
-        return M_model->Qa();
+        return M_Qa;
     }
 
     //! return the number of \f$\mu\f$ independent terms for the bilinear form ( time dependent )
@@ -456,7 +462,7 @@ public:
     }
     size_type Qm( mpl::bool_<true> ) const
     {
-        return M_model->Qm();
+        return M_Qm;
     }
     size_type Qm( mpl::bool_<false> ) const
     {
@@ -468,12 +474,23 @@ public:
 
     int QInitialGuess() const
     {
+        return Qm( mpl::bool_<model_type::is_linear>() );
+    }
+    int QInitialGuess( mpl::bool_<true> ) const
+    {
+        return 0;
+    }
+    int QInitialGuess( mpl::bool_<false> ) const
+    {
         return M_model->QInitialGuess();
     }
 
+
     int mMaxA(int q )
     {
-        return M_model->mMaxA( q );
+        int size=M_mMaxA.size();
+        CHECK( q < size ) << "mMaxA called with the bad q index "<<q<<" and max is "<<size<<"\n";
+        return M_mMaxA[ q ];
     }
 
 
@@ -483,7 +500,9 @@ public:
     }
     int mMaxM( int q, mpl::bool_<true> )
     {
-        return M_model->mMaxM( q );
+        int size=M_mMaxM.size();
+        CHECK( q < size ) << "mMaxM called with the bad q index "<<q<<" and max is "<<size<<"\n";
+        return M_mMaxM[ q ];
     }
     int mMaxM( int q , mpl::bool_<false> )
     {
@@ -497,19 +516,31 @@ public:
 
     int mMaxF(int output_index, int q )
     {
-        return M_model->mMaxF( output_index, q );
+        bool goodidx=true;
+        int size=M_mMaxF.size();
+        if( output_index >= size )
+            goodidx=false;
+        else
+        {
+            size=M_mMaxF[output_index].size();
+            if( q >= size )
+                goodidx=false;
+        }
+        CHECK( goodidx )<<"mMaxF functions called with bad index ! output index : "<<output_index<<" and q : "<<q<<"\n";
+        return M_mMaxF[output_index][q];
     }
 
     //! return the number of outputs
     size_type Nl() const
     {
-        return M_model->Nl();
+        return M_Nl;
     }
 
     //! return the number of \f$\mu\f$ independent terms for the right hand side
     size_type Ql( int l ) const
     {
-        return M_model->Ql( l );
+        return M_Ql[l];
+        //return M_model->Ql( l );
     }
 
     //! return the parameter space
@@ -654,7 +685,6 @@ public:
     {
         auto all_beta = this->computeBetaQm( mu , time );
         offline_merge_type offline_merge;
-
         if( option(_name="crb.stock-matrices").template as<bool>() )
             offline_merge = offlineMerge( all_beta , mu );
         else
@@ -817,6 +847,71 @@ public:
 
 
     /**
+     * \brief count numer of terms in the affine decomposition
+     * either using vectors from affine decomposition if matrices are stored
+     * or using operators free
+     */
+    void countAffineDecompositionTerms()
+    {
+        if( M_alreadyCountAffineDecompositionTerms )
+            return;
+        else
+            M_alreadyCountAffineDecompositionTerms=true;
+
+        if ( M_Aqm.size() > 0 )
+        {
+            M_Qm=M_Mqm.size();
+            M_mMaxM.resize(M_Qm);
+            for(int q=0; q<M_Qm; q++)
+            {
+                M_mMaxM[q]=M_Mqm[q].size();
+            }
+
+            M_Qa=M_Aqm.size();
+            M_mMaxA.resize(M_Qa);
+            for(int q=0; q<M_Qa; q++)
+            {
+                M_mMaxA[q]=M_Aqm[q].size();
+            }
+
+            M_Nl=M_Fqm.size();
+            M_Ql.resize(M_Nl);
+            M_mMaxF.resize(M_Nl);
+            for(int output=0; output<M_Nl; output++)
+            {
+                M_Ql[output]=M_Fqm[output].size();
+                M_mMaxF[output].resize(M_Ql[output]);
+                for(int q=0; q<M_Ql[output]; q++)
+                {
+                    M_mMaxF[output][q]=M_Fqm[output][q].size();
+                }
+            }
+        }
+        else
+        {
+            //operators free
+            auto compositeM = operatorCompositeM();
+            M_mMaxM = compositeM->countAllContributions();
+            M_Qm=M_mMaxM.size();
+
+            auto compositeA = operatorCompositeA();
+            M_mMaxA = compositeA->countAllContributions();
+            M_Qa=M_mMaxA.size();
+            auto vector_compositeF = functionalCompositeF();
+            int number_outputs = vector_compositeF.size();
+            M_Nl=number_outputs;
+            M_mMaxF.resize(number_outputs);
+            M_Ql.resize(number_outputs);
+            for(int output=0; output<number_outputs; output++)
+            {
+                auto compositeF = vector_compositeF[output];
+                M_mMaxF[output] = compositeF->countAllContributions();
+                M_Ql[output] = M_mMaxF[output].size();
+            }
+        }
+    }
+
+    /**
      * \brief Compute the affine decomposition of the various forms
      *
      * This function assembles the parameter independant part of
@@ -832,6 +927,7 @@ public:
     affine_decomposition_type computeAffineDecomposition( mpl::bool_<true> )
     {
         boost::tie( M_Mqm, M_Aqm, M_Fqm ) = M_model->computeAffineDecomposition();
+        this->countAffineDecompositionTerms();
 
         if( M_Aqm.size() == 0 )
         {
@@ -900,6 +996,7 @@ public:
     {
         initial_guess_type initial_guess;
         boost::tie( M_Aqm, M_Fqm ) = M_model->computeAffineDecomposition();
+        this->countAffineDecompositionTerms();
 
         if ( M_Aqm.size() > 0 )
         {
@@ -944,7 +1041,7 @@ public:
             }//q
 
             auto vector_compositeF = functionalCompositeF();
-            int number_outputs = M_model->Nl();
+            int number_outputs = M_Nl;
             M_Fqm.resize(number_outputs);
             for(int output=0; output<number_outputs; output++)
             {
@@ -1655,6 +1752,16 @@ private:
     preconditioner_ptrtype M_preconditioner_primal;
     preconditioner_ptrtype M_preconditioner_dual;
 
+    //number of terms in affine decomposition
+    int M_Qa; //A
+    int M_Qm; //M
+    int M_Nl; //number of outputs
+    std::vector<int> M_Ql;//F associated to given output
+    std::vector<int> M_mMaxA;//number of sub-terms (using EIM)
+    std::vector<int> M_mMaxM;//number of sub-terms (using EIM)
+    std::vector< std::vector<int> > M_mMaxF;//number of sub-terms (using EIM)
+
+    bool M_alreadyCountAffineDecompositionTerms;
 };
 
 
@@ -2168,7 +2275,9 @@ CRBModel<TruthModelType>::offlineMerge( betaqm_type const& all_beta , parameter_
     for ( size_type q = 0; q < Qa(); ++q )
     {
         for(size_type m = 0; m < mMaxA(q); ++m )
+        {
             A->addMatrix( beta_A[q][m], M_Aqm[q][m] );
+        }
     }
 
     if( Qm() > 0 )
