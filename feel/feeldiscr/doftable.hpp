@@ -50,6 +50,8 @@
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelpoly/mapped.hpp>
 #include <feel/feelpoly/isp0continuous.hpp>
+#include <feel/feelpoly/hdivpolynomialset.hpp>
+#include <feel/feelpoly/hcurlpolynomialset.hpp>
 #include <feel/feelalg/datamap.hpp>
 #include <feel/feeldiscr/dof.hpp>
 
@@ -137,6 +139,9 @@ public:
     static const bool is_product = FEType::is_product;
 
     static const bool is_p0_continuous = ( ( nOrder == 0 ) && is_continuous );
+
+    static const bool is_hdiv_conforming = Feel::is_hdiv_conforming<fe_type>::value;
+    static const bool is_hcurl_conforming = Feel::is_hcurl_conforming<fe_type>::value;
 
     static const uint16_type nDofPerEdge = fe_type::nDofPerEdge;
     static const uint16_type nDofPerElement = mpl::if_<mpl::bool_<is_product>, mpl::int_<FEType::nLocalDof*nComponents1>, mpl::int_<FEType::nLocalDof> >::type::value;
@@ -1456,7 +1461,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::initDofMap( mesh_type& 
 
     VLOG(2) << "==============================\n";
     VLOG(2) << "[initDofMap]\n";
-    VLOG(2) << "nldof                   = "  << int( nldof ) << "\n";
+    VLOG(2) << "is_hdiv_conforming     = "  << is_hdiv_conforming << "\n";
+    VLOG(2) << "is_hcurl_conforming    = "  << is_hcurl_conforming << "\n";
+    VLOG(2) << "nldof                  = "  << int( nldof ) << "\n";
     VLOG(2) << "fe_type::nLocalDof     = "  << int( fe_type::nLocalDof ) << "\n";
     VLOG(2) << "fe_type::nDofPerVolume = "  << int( fe_type::nDofPerVolume ) << "\n";
     VLOG(2) << "fe_type::nDofPerFace   = "  << int( fe_type::nDofPerFace ) << "\n";
@@ -1478,9 +1485,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::initDofMap( mesh_type& 
     const size_type nV = M.numElements();
     int ntldof = is_product?nComponents*nldof:nldof;//this->getIndicesSize();
     M_locglob_indices.resize( nV, localglobal_indices_type::Zero( nDofPerElement ) );
-    M_locglob_signs.resize( nV, localglobal_indices_type::Zero( nDofPerElement )  );
+    M_locglob_signs.resize( nV, localglobal_indices_type::Ones( nDofPerElement )  );
     M_locglobOnCluster_indices.resize( nV, localglobal_indices_type::Zero( nDofPerElement )  );
-    M_locglobOnCluster_signs.resize( nV, localglobal_indices_type::Zero( nDofPerElement ) );
+    M_locglobOnCluster_signs.resize( nV, localglobal_indices_type::Ones( nDofPerElement ) );
 
     M_face_sign = ublas::scalar_vector<bool>( M.numFaces(), false );
 
@@ -2104,11 +2111,11 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
             size_type ne = std::distance( ldof.first, ldof.second );
             VLOG(1) << "resizing indices and signs for mortar:  " << ne;
             M_locglob_indices[elid].resize( ne );
-            M_locglob_signs[elid].resize( ne );
+            //M_locglob_signs[elid].resize( ne );
             for( auto const& dof: this->localDof( elid ) )
             {
                 M_locglob_indices[elid][dof.first.localDof()] = dof.second.index();
-                M_locglob_signs[elid][dof.first.localDof()] = dof.second.sign();
+                //M_locglob_signs[elid][dof.first.localDof()] = dof.second.sign();
             }
         }
         else
@@ -2121,7 +2128,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
                     int ind = FEType::nLocalDof*c1+i;
                     auto const& dof = localToGlobal( elid, i, c1 );
                     M_locglob_indices[elid][ind] = dof.index();
-                    M_locglob_signs[elid][ind] = dof.sign();
+                    //M_locglob_signs[elid][ind] = dof.sign();
                 }
             }
     }

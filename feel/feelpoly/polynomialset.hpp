@@ -49,7 +49,8 @@
 #include <feel/feelpoly/polynomial.hpp>
 #include <feel/feelpoly/expansiontypes.hpp>
 #include <feel/feelpoly/quadmapped.hpp>
-
+#include <feel/feelpoly/hdivpolynomialset.hpp>
+#include <feel/feelpoly/hcurlpolynomialset.hpp>
 
 namespace Feel
 {
@@ -872,10 +873,24 @@ public:
          */
         value_type phi( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            FEELPP_ASSERT( q < nComputedNodes() )( q )( nComputedNodes() ).error( "invalid node index" );
-            FEELPP_ASSERT( i < M_ref_ele->nbDof() )( i )( M_ref_ele->nbDof() ).error( "invalid dof index" );
+            CHECK( q < nComputedNodes() ) << "invalid node index q=" << q << " nComputedNodes="<< nComputedNodes();
+            CHECK( i < M_ref_ele->nbDof() ) << "invalid dof index i=" << i << " ndof =" << M_ref_ele->nbDof();
 
             return M_phi[i][q]( c1,c2 );
+        }
+        id_type const& phi( uint16_type i, uint16_type q ) const
+        {
+            CHECK( q < nComputedNodes() ) << "invalid node index q=" << q << " nComputedNodes="<< nComputedNodes();
+            CHECK( i < M_ref_ele->nbDof() ) << "invalid dof index i=" << i << " ndof =" << M_ref_ele->nbDof();
+
+            return M_phi[i][q];
+        }
+        id_type& phi( uint16_type i, uint16_type q )
+        {
+            CHECK( q < nComputedNodes() ) << "invalid node index q=" << q << " nComputedNodes="<< nComputedNodes();
+            CHECK( i < M_ref_ele->nbDof() ) << "invalid dof index i=" << i << " ndof =" << M_ref_ele->nbDof();
+
+            return M_phi[i][q];
         }
 
         grad_type const& grad() const
@@ -1069,6 +1084,9 @@ public:
         static const uint16_type nComponents = Basis_t::nComponents;
         static const uint16_type nComponents1 = Basis_t::nComponents1;
         static const uint16_type nComponents2 = Basis_t::nComponents2;
+
+        static const bool is_hdiv_conforming = Feel::is_hdiv_conforming<Basis_t>::value;
+        static const bool is_hcurl_conforming = Feel::is_hcurl_conforming<Basis_t>::value;
 
         typedef typename Basis_t::polyset_type polyset_type;
         static const uint16_type rank = polyset_type::rank;
