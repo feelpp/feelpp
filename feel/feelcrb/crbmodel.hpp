@@ -878,6 +878,9 @@ public:
             M_Qm=M_mMaxM.size();
 
             auto compositeA = operatorCompositeA();
+            //it is important to check that the user provides operators free
+            //else we don't have any affine decomposition
+            CHECK( compositeA )<<"Very important ERROR !!! You have not implemented computeAffineDecomposition or operatorCompositeA !\n";
             M_mMaxA = compositeA->countAllContributions();
             M_Qa=M_mMaxA.size();
             auto vector_compositeF = functionalCompositeF();
@@ -914,6 +917,7 @@ public:
 
         if( M_Aqm.size() == 0 )
         {
+            //in that case the model must provides operators free
             auto compositeM = operatorCompositeM();
             int q_max = this->Qm();
             M_Mqm.resize( q_max);
