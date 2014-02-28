@@ -60,7 +60,7 @@ There is a list of basic geometries you can automatically generate with \feel li
 
 
 <b>Examples:</b><br>
-From "doc/manual/tutorial/myfunctionspace.cpp":
+From \c "doc/manual/tutorial/myfunctionspace.cpp":
 \co auto mesh = unitSquare();\eco
 
 
@@ -94,7 +94,7 @@ Optional Parameters:
    -  Option: \c gmsh.depends
  - \c _refine (boolean): optionally refine with \p refine levels the mesh.
    - Default: \c 0.
-   - Option : \c gmsh.refine
+   - Option: \c gmsh.refine
  - \c _update (integer): update the mesh data structure (build internal faces and edges).
    - Default: \c true
  -  \c _physical_are_elementary_regions (boolean): to load specific meshes formats.
