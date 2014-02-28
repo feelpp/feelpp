@@ -357,19 +357,6 @@ public:
      */
 
     /**
-     * create a new matrix
-     * \return the newly created matrix
-     */
-    sparse_matrix_ptrtype newMatrix() const;
-
-    /**
-     * create a new vector
-     * \return the newly created vector
-     */
-     vector_ptrtype newVector() const;
-
-
-    /**
      * \brief Returns the affine decomposition
      */
     affine_decomposition_type computeAffineDecomposition();
@@ -619,17 +606,6 @@ Heat1D::initModel()
 
 } // Heat1d::run
 
-Heat1D::sparse_matrix_ptrtype
-Heat1D::newMatrix() const
-{
-    return backend->newMatrix( Xh, Xh );
-}
-
-Heat1D::vector_ptrtype
-Heat1D::newVector() const
-{
-    return backend->newVector( Xh );
-}
 
 Heat1D::affine_decomposition_type
 Heat1D::computeAffineDecomposition()
