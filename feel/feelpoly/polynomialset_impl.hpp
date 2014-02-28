@@ -366,32 +366,34 @@ void
 PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g>::
 update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<1>, mpl::bool_<true> )
 {
+    const uint16_type Q = M_npoints;//__gmc->nPoints();//M_grad.size2();
+    const uint16_type I = nDof; //M_ref_ele->nbDof();
+
         //precompute_type* __pc = M_pc.get().get();
         geometric_mapping_context_type* thegmc = __gmc.get();
 
+        matrix_eigen_ublas_type K ( thegmc->K( 0 ).data().begin(), gmc_type::NDim, gmc_type::PDim );
+        if ( is_hdiv_conforming )
+        {
+            for ( uint16_type ii = 0; ii < I; ++ii )
+            {
+                for ( uint16_type q = 0; q < Q; ++q )
+                {
+                    // covariant piola transform
+                    M_phi[ii][q] = K*(*M_pc)->phi(ii,q)/thegmc->J(q);
+                }
+            }
+        }
+
         if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value  )
         {
-                const uint16_type Q = M_npoints;//__gmc->nPoints();//M_grad.size2();
-                const uint16_type I = nDof; //M_ref_ele->nbDof();
 
                 typedef typename boost::multi_array<value_type,4>::index_range range;
 
                 matrix_eigen_ublas_type Bt ( thegmc->B( 0 ).data().begin(), gmc_type::NDim, gmc_type::PDim );
-                matrix_eigen_ublas_type K ( thegmc->K( 0 ).data().begin(), gmc_type::PDim, gmc_type::NDim );
+
                 matrix_eigen_grad_type grad_real = matrix_eigen_grad_type::Zero();
                 //matrix_eigen_PN_type B=Bt.transpose();
-
-                if ( is_hdiv_conforming )
-                {
-                    for ( uint16_type ii = 0; ii < I; ++ii )
-                    {
-                        for ( uint16_type q = 0; q < Q; ++q )
-                        {
-                            // covariant piola transform
-                            M_phi[ii][q] = K*(*M_pc)->phi(ii,q)/thegmc->J(q);
-                        }
-                    }
-                }
                 for ( uint16_type ii = 0; ii < I; ++ii )
                 {
                         int ncomp= ( reference_element_type::is_product?nComponents1:1 );
