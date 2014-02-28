@@ -29,7 +29,7 @@ then you can go to the \feel top directory with
 \verbatim
   cd feel
 \endverbatim
-You should obtain furthers directories such as :
+You should obtain furthers directories such as:
 \verbatim
 applications/   # functional applications
 benchmarks/  # applications under test
@@ -46,22 +46,22 @@ CMakeListe.txt   # the file for cmake to build, do not modify
 
 <a href="#" class="top">top</a>
 <hr>
-\section Unis Unix : dependencies
+\section Unis Unix: dependencies
 In order to install \feel on Unix systems (other than Mac OS X, in you have a Macintosh, please go to \ref Mac), you have to install many dependencies
 before. Those libraries and programs are necessary for the
 compilation and installation of the \feel librairies.<br>
 This is the list of all the librairies you must have installed on your
 computer, and the \lstinline|*-dev| packages for some of them. <br>
-Required packages :
+Required packages:
 \li g++ (4.7, 4.8) OR Clang (3.3, 3.4)
-\li MPI : openmpi (preferred) or mpich
+\li MPI: openmpi (preferred) or mpich
 \li Boost >= 1.49
 \li Petsc >= 3.2
 \li Cmake >= 2.8.7
 \li Gmsh >= 2.8.3 (can be found at <a href="http://www.geuz.org/gmsh">http://www.geuz.org/gmsh</a>)
 \li Libxml2
 
-Optional packages :
+Optional packages:
 \li Superlu
 \li Suitesparse(umfpack)
 \li Metis: scoth with the metis interface (preferred), metis (non-free)
@@ -119,17 +119,17 @@ It's the first step, you'll see later how to easily install the necessary tools 
 Currently, building \feel is only available through <a href="http://brew.sh">Homebrew</a>. <a href="http://www.macports.org/install.php">MacPorts</a> versions are also present in the source tree of \feel. You can find a version using gcc in &lt;path to top feel directory&gt;/ports/macosx/macports, and an experimental version using clang/libc++ in &lt;path to top feel directory&gt;/ports/macosx/macports-xc5.
 
 \subsection Homebrew Homebrew
-<b>Introduction</b> : Homebrew is a free/open source software introduced to simplify the installation of other free/open source softwares on the MacOS X ecosystem. It is distributed under the <a href="https://github.com/mxcl/homebrew/blob/master/Library/Homebrew/LICENSE">BSD 2 Clause (NetBSD) license</a>. For more information, visit their <a href="http://brew.sh">website</a>.
+<b>Introduction</b>: Homebrew is a free/open source software introduced to simplify the installation of other free/open source softwares on the MacOS X ecosystem. It is distributed under the <a href="https://github.com/mxcl/homebrew/blob/master/Library/Homebrew/LICENSE">BSD 2 Clause (NetBSD) license</a>. For more information, visit their <a href="http://brew.sh">website</a>.
 
-<b>Installation</b> : To install the latest version of Homebrew, simply visit their <a href="http://brew.sh">website</a> and follow the instructions. Each new package Homebrew installs is built into an intermediate place called the Cellar (usually /usr/local/Cellar) and then the packages are symlinked into /usr/local (default).
+<b>Installation</b>: To install the latest version of Homebrew, simply visit their <a href="http://brew.sh">website</a> and follow the instructions. Each new package Homebrew installs is built into an intermediate place called the Cellar (usually /usr/local/Cellar) and then the packages are symlinked into /usr/local (default).
 
-<b>Key commands</b> : Homebrew base command is <tt>brew</tt>. Here is a list of useful commands to use Homebrew:
+<b>Key commands</b>: Homebrew base command is <tt>brew</tt>. Here is a list of useful commands to use Homebrew:
 \li <tt>brew doctor</tt>: Check if the system has any problem with the current installation of brew,
 \li <tt>brew install mypackage</tt>: This action installs the package mypackage,
 \li <tt>brew install [--devel|--HEAD] mypackage</tt>: These action respectively installs either the development version or the HEAD version of the package mypackage, if such versions are specified in the Formula file,
 \li <tt>brew uninstall mypackage</tt>: This action uninstalls the package mypackage.
 
-<b>Formula</b> : A Formula is a <a href="https://www.ruby-lang.org">Ruby</a> script describing to Homebrew how to install a package. \feel uses specific Formulae that you can get in the \feel github repository: <a href="https://github.com/feelpp/homebrew-science">feelpp/homebrew-science</a>.
+<b>Formula</b>: A Formula is a <a href="https://www.ruby-lang.org">Ruby</a> script describing to Homebrew how to install a package. \feel uses specific Formulae that you can get in the \feel github repository: <a href="https://github.com/feelpp/homebrew-science">feelpp/homebrew-science</a>.
 
 \subsection HomebrewFeel Homebrew and Feel++
 In order to build \feel from Homebrew, you have to do the following steps:
@@ -168,13 +168,13 @@ And you should be set to use \feel on MacOS X.
 <hr>
 
 \subsection MacPorts MacPorts
-<b>Introduction</b> : MacPorts is an open-source community projet which aims to design an easy-to-use system for compiling, installing and upgrading open-source softwares on Mac OS X operating system. It is distributed under <a href="http://opensource.org/licenses/bsd-license.php">BSD License</a> and facilitate the access to thousands of ports (softwares) without installing or compiling open-source softwares.  MacPorts provides a single software tree which includes the latest stable releases of approximately 17700 ports targeting the current Mac OS X release (10.9). If you want more information, please visit their <a href="http://www.macports.org/">website</a>.
+<b>Introduction</b>: MacPorts is an open-source community projet which aims to design an easy-to-use system for compiling, installing and upgrading open-source softwares on Mac OS X operating system. It is distributed under <a href="http://opensource.org/licenses/bsd-license.php">BSD License</a> and facilitate the access to thousands of ports (softwares) without installing or compiling open-source softwares.  MacPorts provides a single software tree which includes the latest stable releases of approximately 17700 ports targeting the current Mac OS X release (10.9). If you want more information, please visit their <a href="http://www.macports.org/">website</a>.
 
-<b>Installation</b> : To install the latest version of MacPorts, please go to
+<b>Installation</b>: To install the latest version of MacPorts, please go to
 <a href="http://www.macports.org/install.php">Installing MacPorts</a> page and follow the instructions. The simplest way is to install it with the Mac OS X Installer using the <tt>pkg</tt> file provided on their website. It is recommended that you install X11 (X Window System) which is normally used to display X11 applications.<br>
 If you have installed with the package installer (<tt>MacPorts-2.x.x.pkg</tt>) that means MacPorts will be installed in <tt>/opt/local</tt>. From now on, we will suppose that macports has been installed in <tt>/opt/local</tt> which is the default MacPorts location. Note that from now on, all tools installed by MacPorts will be installed in <tt>/opt/local/bin</tt> or <tt>/opt/local/sbin</tt> for example (that's here you'll find gcc4.7 or later e.g <tt>/opt/local/bin/g++-mp-4.7</tt> once being installed).
 
-<b>Key commands</b> : In your command-line, the software MacPorts is called by the command <tt>port</tt>. Here is a list of key commands for using MacPorts, if you want more informations please go to <a href="http://guide.macports.org/#using.port">MacPorts Commands</a>.
+<b>Key commands</b>: In your command-line, the software MacPorts is called by the command <tt>port</tt>. Here is a list of key commands for using MacPorts, if you want more informations please go to <a href="http://guide.macports.org/#using.port">MacPorts Commands</a>.
 \li <tt>sudo port -v selfupdate</tt>: This action should be used regularly to update the local tree with the global MacPorts ports. The option <tt>-v</tt> enables verbose which generates verbose messages.
 \li <tt>port info mypackage</tt>: This action is used to get information about a port (description, license, maintainer, etc.)
 \li <tt>sudo port install mypackage</tt>: This action install the port mypackage
@@ -182,25 +182,25 @@ If you have installed with the package installer (<tt>MacPorts-2.x.x.pkg</tt>) t
 \li <tt>port installed</tt>: This action displays all ports installed and their versions, variants and activation status. You can also use the <tt>-v</tt> option to also display the platform and CPU architecture(s) for which the ports were built, and any variants which were explicitly negated.
 \li <tt>sudo port upgrade mypackage</tt>: This action updgrades installed ports and their dependencies when a <tt>Portfile</tt> in the repository has been updated. To avoid the upgrade of a port's dependencies, use the option <tt>-n</tt>.
 
-<b>Portfile</b> : A Portfile is a TCL script which usually contains simple keyword values and TCL expressions. Each package/port has a corresponding Portfile but it's only a part of a port description.  \feel provides some mandatory Portfiles for its compilation which are either not available in MacPorts or are buggy but \feel also provides some Portfiles which are already available in MacPorts such as
+<b>Portfile</b>: A Portfile is a TCL script which usually contains simple keyword values and TCL expressions. Each package/port has a corresponding Portfile but it's only a part of a port description.  \feel provides some mandatory Portfiles for its compilation which are either not available in MacPorts or are buggy but \feel also provides some Portfiles which are already available in MacPorts such as
 gmsh or petsc. They usually provide either some fixes to ensure \feel works
 properly or new version not yet available in MacPorts.  These Portfiles are
 installed in <tt>ports/macosx/macports</tt>.
 
 
 \subsection MacPortsFeel MacPorts and Feel++
-To be able to install \feel, add the following line in <tt>/opt/local/etc/macports/source.conf</tt> at the top of the file before any other sources :
+To be able to install \feel, add the following line in <tt>/opt/local/etc/macports/source.conf</tt> at the top of the file before any other sources:
 \verbatim
 file:///<path to feel top directory>/ports/macosx/macports
 \endverbatim
 
-Once it's done, type in a command-line :
+Once it's done, type in a command-line:
 \verbatim
   cd <your path to feel top directory>/ports/macosx/macports
   portindex -f
 \endverbatim
 
-You should have an output like this :
+You should have an output like this:
 \verbatim
 Reading port index in $<$your path to feel top directory$>$/ports/macosx/macports
 Adding port science/feel++
@@ -246,16 +246,16 @@ Feel build system uses <a href="http://www.cmake.org"><tt>cmake</tt></a> as its 
 and press <tt>t</tt> for advanced options).
 \feel, using <tt>cmake</tt>, can be built either in source and out of source and different
 build type:
-\li minsizerel : minimal size release
+\li minsizerel: minimal size release
 \li release release
-\li debug : debug
+\li debug: debug
 \li none(default)
 
-<b>CMake Out Source Build (preferred)</b> : The best way is to have a directory (<tt>FEEL</tt> for example) in which you have :
+<b>CMake Out Source Build (preferred)</b>: The best way is to have a directory (<tt>FEEL</tt> for example) in which you have:
 \code
 feel/
 \endcode
-where <tt>feel</tt> is the top directory where the source have been downloaded. Placed in <tt>FEEL</tt>, you can create the build directory <tt>feel.opt</tt> for example) and lauch cmake with :
+where <tt>feel</tt> is the top directory where the source have been downloaded. Placed in <tt>FEEL</tt>, you can create the build directory <tt>feel.opt</tt> for example) and lauch cmake with:
 \verbatim
   mkdir feel.opt
   cd feel.opt

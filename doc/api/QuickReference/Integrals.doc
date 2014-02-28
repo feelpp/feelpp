@@ -14,7 +14,7 @@ namespace Feel {
 \section Integrals_Introduction Introduction
 You should be able to create a mesh now. If it is not the case, get back to the section \ref Mesh.<br>
 
-To use the tools of this sections, you have to precise the domain range using the following keywords :
+To use the tools of this sections, you have to precise the domain range using the following keywords:
 <table class="manual">
 <tr><th>\feel Keyword</th><th>>Descriptionn</th></tr>
 <tr><td> \co elements(mesh) \eco</td><td>All the elements of a mesh</td></tr>
@@ -44,35 +44,35 @@ To make it clear, there are two required parameters and 2 optional and they of c
 provided you give the parameter name. If you don't provide the parameter name (that is to say \lstinline!_range=! or the others) they must be entered in the order they are described
 below.
 
-Required parameters :
+Required parameters:
 \li <tt>_range</tt>  = domain of integration
 \li <tt>_expr</tt>  = integrand expression
 
-Optional parameters :
+Optional parameters:
 \li <tt>_quad</tt>  = quadrature to use instead of the default one, wich means <tt>_Q<integer>()</tt> where the integer is the polynomal order to integrate exactely
-\li <tt>_geomap</tt>  = type of geometric mapping to use, that is to say :
+\li <tt>_geomap</tt>  = type of geometric mapping to use, that is to say:
 <table class="manual">
 <tr><th>Feel Parameter</th><th>Description</th></tr>
 <tr><td>\co GEOMAP_HO\eco</td><td>High order approximation (same of the mesh)</td></tr>
-<tr><td>\co GEOMAP_OPT\eco</td><td>Optimal approximation :<br> high order on boundary elements<br> order 1 in the interior</td></tr>
+<tr><td>\co GEOMAP_OPT\eco</td><td>Optimal approximation:<br> high order on boundary elements<br> order 1 in the interior</td></tr>
 <tr><td>\co GEOMAP_01\eco</td><td>Order 1 approximation (same of the mesh)</td></tr>
 </table>
 
 \Examples
-From <tt>doc/manual/tutorial/dar.cpp</tt> :
+From <tt>doc/manual/tutorial/dar.cpp</tt>:
 \co
   form1( ... ) = integrate( _range = elements( mesh ),
                             _expr = f*id( v ) );
 \eco
 
-From <tt>doc/manual/tutorial/myintegrals.cpp</tt> :
+From <tt>doc/manual/tutorial/myintegrals.cpp</tt>:
 \co
   // compute integral f on boundary
   double intf_3 = integrate( _range = boundaryfaces( mesh ),
                              _expr = f );
 \eco
 
-From <tt>doc/manual/advection/advection.cpp</tt> :
+From <tt>doc/manual/advection/advection.cpp</tt>:
 \co
   form2( _test = Xh, _trial = Xh, _matrix = D ) +=
     integrate( _range = internalfaces( mesh ),
@@ -82,7 +82,7 @@ From <tt>doc/manual/advection/advection.cpp</tt> :
                _geomap = geomap );
 \eco
 
-From <tt>doc/manual/laplacian/laplacian.cpp</tt> :
+From <tt>doc/manual/laplacian/laplacian.cpp</tt>:
 \co
  auto l = form1( _test=Xh, _vector=F );
  l = integrate( _range = elements( mesh ),
@@ -104,7 +104,7 @@ f(x,y,z) = x^2 + y^2 + z^2
 \f$</center><br>
 on the whole domain \f$\Omega\f$ and on part of the boundary \f$\Omega\f$.
 
-There is the appropriate code :
+There is the appropriate code:
 \co
 int
 main( int argc, char** argv )
@@ -151,16 +151,16 @@ It is also possible to make projections with the library.
   project( _range, _space, _expr, _geomap );
 \eco
 
-Required parameters :
-\li <tt>_space</tt> : the space in which lives the projected expression, it should be a nodal function space
-\li <tt>_expr</tt> : the expression to project
+Required parameters:
+\li <tt>_space</tt>: the space in which lives the projected expression, it should be a nodal function space
+\li <tt>_expr</tt>: the expression to project
 
-Optional parameters :
-\li <tt>_range</tt> : the domain for the projection. Default = all elements from <tt>space->mesh()</tt>
-\li <tt>_geomap</tt> : type of geometric mapping. Default = <tt>GEOMAP_OPT</tt>
+Optional parameters:
+\li <tt>_range</tt>: the domain for the projection. Default = all elements from <tt>space->mesh()</tt>
+\li <tt>_geomap</tt>: type of geometric mapping. Default = <tt>GEOMAP_OPT</tt>
 
 \Examples
-From <tt>doc/manual/laplacian/laplacian.cpp</tt> :
+From <tt>doc/manual/laplacian/laplacian.cpp</tt>:
 \co
   element_type e( Xh, "e" );
   e = project( _space = Xh,
@@ -168,7 +168,7 @@ From <tt>doc/manual/laplacian/laplacian.cpp</tt> :
                _expr = g );
 \eco
 
-From <tt>doc/manual/heatns/convection_run.cpp</tt> :
+From <tt>doc/manual/heatns/convection_run.cpp</tt>:
 \co
 tn = project( _space = Xh->functionSpace<2>(),
               _range = elements( mesh ),
@@ -178,7 +178,7 @@ tn = project( _space = Xh->functionSpace<2>(),
 
 
 \subsection Mean mean
-Let \f$f\f$ a bounded function on domain \f$\Omega\f$. You can evaluate the mean value :
+Let \f$f\f$ a bounded function on domain \f$\Omega\f$. You can evaluate the mean value:
 <br><center>\f$
   \begin{aligned}
  \bar{f}&=\frac{1}{|\Omega|}\int_\Omega f\\
@@ -191,22 +191,22 @@ Let \f$f\f$ a bounded function on domain \f$\Omega\f$. You can evaluate the mean
   mean( _range, _expr, _quad, _geomap );
 \eco
 
-Required parameters :
+Required parameters:
 \li <tt>_range</tt> = domain of integration
 \li <tt>_expr</tt> = mesurable function
 
-Optional parameters :
+Optional parameters:
 \li <tt>_quad</tt> = quadrature to use. Default = \lstinline!_Q<integer>()!
 \li <tt>_geomap</tt> = type of geometric mapping. Default = <tt>GEOMAP_OPT</tt>
 
 \Examples
-From <tt>doc/manual/stokes/stokes.cpp</tt> :
+From <tt>doc/manual/stokes/stokes.cpp</tt>:
 \co
   double mean_p = mean( _range=elements( u.mesh() ),
                         _expr=idv( p ) );
 \eco
 
-From <tt>doc/manual/laplacian/periodic.cpp</tt> :
+From <tt>doc/manual/laplacian/periodic.cpp</tt>:
 \co
   LOG(INFO) << "mean(u)  = " << mean( _range=elements( mesh ), _expr=idv( u ) ) << "\n";
 \eco
@@ -216,7 +216,7 @@ From <tt>doc/manual/laplacian/periodic.cpp</tt> :
 <hr>
 \section Norms Norms
 \subsection NormL2 normL2
-Let \f$f \in L^2(\Omega)\f$ you can evaluate the L2 norm :
+Let \f$f \in L^2(\Omega)\f$ you can evaluate the L2 norm:
 <br><center>\f$
   \begin{aligned}
 \parallel f\parallel_{L^2(\Omega)}=\sqrt{\int_\Omega |f|^2}
@@ -227,27 +227,27 @@ Let \f$f \in L^2(\Omega)\f$ you can evaluate the L2 norm :
 \co
   normL2( _range, _expr, _quad, _geomap );
 \eco
-or squared norm :
+or squared norm:
 \co
   normL2Squared( _range, _expr, _quad, _geomap );
 \eco
 
-Required parameters :
+Required parameters:
 \li <tt>_range</tt> = domain of integration
 \li <tt>_expr</tt>  = mesurable function
 
-Optional parameters :
+Optional parameters:
 \li <tt>_quad</tt>  = quadrature to use. Default = <tt>_Q<integer>()</tt>
 \li <tt>_geomap</tt>  = type of geometric mapping. Default = <tt>GEOMAP_OPT</tt>
 
 \Examples
-From <tt>doc/manual/laplacian/laplacian.cpp</tt> :
+From <tt>doc/manual/laplacian/laplacian.cpp</tt>:
 \co
   double L2error =normL2( _range=elements( mesh ),
                           _expr=( idv( u )-g ) );
 \eco
 
-From <tt>doc/manual/stokes/stokes.cpp</tt> :
+From <tt>doc/manual/stokes/stokes.cpp</tt>:
 \co
 double p_errorL2 = normL2( _range=elements( u.mesh() ),
                            _expr=( idv( p )-mean_p - p_exact ) );
@@ -255,7 +255,7 @@ double p_errorL2 = normL2( _range=elements( u.mesh() ),
 
 
 \subsection NormH1 normH1
-In the same idea, you can evaluate the H1 norm or semi norm, for any function \f$f \in H^1(\Omega)\f$ :
+In the same idea, you can evaluate the H1 norm or semi norm, for any function \f$f \in H^1(\Omega)\f$:
 <br><center>\f$
 \begin{aligned}
  \parallel f \parallel_{H^1(\Omega)}&=\sqrt{\int_\Omega |f|^2+|\nabla f|^2}\\
@@ -268,23 +268,23 @@ In the same idea, you can evaluate the H1 norm or semi norm, for any function \f
 \co
   normH1( _range, _expr, _grad_expr, _quad, _geomap );
 \eco
-or semi norm :
+or semi norm:
 \co
   normSemiH1( _range, _grad_expr, _quad, _geomap );
 \eco
 
-Required parameters :
+Required parameters:
 \li <tt>_range</tt> = domain of integration
 \li <tt>_expr</tt> = mesurable function
 \li <tt>_grad_expr</tt> = gradient of function (Row vector !)
 
-Optional parameters :
+Optional parameters:
 \li <tt>_quad</tt> = quadrature to use. Default = <tt>_Q<integer>()</tt>
 \li <tt>_geomap</tt> = type of geometric mapping. Default = <tt>GEOMAP_OPT</tt>
 
 
 \Examples
-With expression :
+With expression:
 \co
   auto g = sin(2*pi*Px())*cos(2*pi*Py());
   auto gradg = 2*pi*cos(2* pi*Px())*cos(2*pi*Py())*oneX() \
@@ -295,7 +295,7 @@ With expression :
   			                _expr=g,\
 			                _grad_expr=trans(gradg) );
 \eco
-With test or trial function \lstinline!u! :
+With test or trial function \lstinline!u!:
 \co
   double errorH1 = normH1( _range=elements(mesh),\
   			               _expr=(u-g),\
@@ -305,22 +305,22 @@ With test or trial function \lstinline!u! :
 
 
 \subsection normLinf normLinf
-Let \f$f\f$ a bounded function on domain \f$\Omega\f$. You can evaluate the infinity norm :
+Let \f$f\f$ a bounded function on domain \f$\Omega\f$. You can evaluate the infinity norm:
 <br><center>\f$
 \parallel f \parallel_\infty=\sup_\Omega(|f|)
 \f$</center><br>
 
-\Interface :
+\Interface:
 \co
   normLinf( _range, _expr, _pset, _geomap );
 \eco
 
-Required parameters :
+Required parameters:
 \li <tt>_range</tt> = domain of integration
 \li <tt>_expr</tt> = mesurable function
 \li <tt>_pset</tt> = set of points (e.g. quadrature points)
 
-Optional parameters :
+Optional parameters:
 \li <tt>_geomap</tt> = type of geometric mapping. Default = <tt>GEOMAP_OPT</tt>
 
 
