@@ -191,7 +191,7 @@ public:
         M_mode( CRBModelMode::PFEM ),
         M_model( new model_type() ),
         M_backend( backend_type::build( BACKEND_PETSC ) ),
-        M_B()
+        M_alreadyCountAffineDecompositionTerms( false )
     {
         this->init();
     }
@@ -210,7 +210,7 @@ public:
         M_backend( backend_type::build( vm ) ),
         M_backend_primal( backend_type::build( vm , "backend-primal" ) ),
         M_backend_dual( backend_type::build( vm , "backend-dual" ) ),
-        M_B()
+        M_alreadyCountAffineDecompositionTerms( false )
     {
         this->init();
     }
@@ -232,7 +232,7 @@ public:
         M_backend( backend_type::build( model->vm ) ),
         M_backend_primal( backend_type::build( model->vm , "backend-primal" ) ),
         M_backend_dual( backend_type::build( model->vm , "backend-dual") ),
-        M_B()
+        M_alreadyCountAffineDecompositionTerms( false )
     {
         this->init();
     }
@@ -251,7 +251,7 @@ public:
         M_backend( backend_type::build( Environment::vm() ) ),
         M_backend_primal( backend_type::build( Environment::vm() , "backend-primal" ) ),
         M_backend_dual( backend_type::build( Environment::vm() , "backend-dual" ) ),
-        M_B()
+        M_alreadyCountAffineDecompositionTerms( false )
     {
         this->init();
     }
@@ -273,7 +273,8 @@ public:
         M_backend( o.M_backend ),
         M_backend_primal( o.M_backend_primal ),
         M_backend_dual( o.M_backend_dual ),
-        M_B( o.M_B )
+        M_alreadyCountAffineDecompositionTerms( o.M_alreadyCountAffineDecompositionTerms )
+
     {
         this->init();
     }
@@ -310,8 +311,6 @@ public:
             M_model->setInitialized( true );
         }
 
-        initB();
-
         if ( M_mode != CRBModelMode::CRB_ONLINE &&
                 M_mode != CRBModelMode::SCM_ONLINE )
         {
@@ -344,7 +343,6 @@ public:
             M_backend = o.M_backend;
             M_backend_primal = o.M_backend_primal;
             M_backend_dual = o.M_backend_dual;
-            M_B = o.M_B;
         }
 
         return *this;
@@ -367,38 +365,43 @@ public:
      * create a new matrix
      * \return the newly created matrix
      */
-    virtual sparse_matrix_ptrtype newMatrix() const
+    sparse_matrix_ptrtype newMatrix() const
     {
-        return M_model->newMatrix();
+        auto Xh = M_model->functionSpace();
+        return M_backend->newMatrix( Xh, Xh );
     }
 
     /**
      * create a new vector
      * \return the newly created vector
      */
-    virtual vector_ptrtype newVector() const
+    vector_ptrtype newVector() const
     {
-        return M_model->newVector();
-    }
-
-    /**
-     * \brief Returns the matrix associated with the \f$H_1\f$ inner product
-     */
-    sparse_matrix_ptrtype const& innerProduct() const
-    {
-        return M_B;
-    }
-
-    /**
-     * \brief Returns the matrix associated with the \f$H_1\f$ inner product
-     */
-    sparse_matrix_ptrtype  innerProduct()
-    {
-        return M_B;
+        auto Xh = M_model->functionSpace();
+        return M_backend->newVector( Xh );
     }
 
     /**
      * \brief Returns the matrix associated with the inner product
+     * linked to energy norm
+     */
+    sparse_matrix_ptrtype const& innerProduct() const
+    {
+        return M_model->innerProduct();
+    }
+
+    /**
+     * \brief Returns the matrix associated with the inner product
+     * linked to energy norm
+     */
+    sparse_matrix_ptrtype  innerProduct()
+    {
+        return M_model->innerProduct();
+    }
+
+    /**
+     * \brief Returns the matrix associated with the inner product
+     * used to perform the POD (parabolic case)
      */
     sparse_matrix_ptrtype const& innerProductForMassMatrix() const
     {
@@ -407,27 +410,13 @@ public:
 
     /**
      * \brief Returns the matrix associated with the inner product
+     * used to perform the POD (parabolic case)
      */
     sparse_matrix_ptrtype  innerProductForMassMatrix()
     {
         return M_model->innerProductForMassMatrix();
     }
 
-
-
-
-    /**
-     * \brief Returns the matrix associated with the \f$H_1\f$ inner product
-     */
-    sparse_matrix_ptrtype const& h1() const
-    {
-        return M_B;
-    }
-
-    sparse_matrix_ptrtype h1()
-    {
-        return M_B;
-    }
 
     //!  Returns the function space
     functionspace_ptrtype  functionSpace() const
@@ -444,7 +433,7 @@ public:
     //! return the number of \f$\mu\f$ independent terms for the bilinear form
     size_type Qa() const
     {
-        return M_model->Qa();
+        return M_Qa;
     }
 
     //! return the number of \f$\mu\f$ independent terms for the bilinear form ( time dependent )
@@ -456,7 +445,7 @@ public:
     }
     size_type Qm( mpl::bool_<true> ) const
     {
-        return M_model->Qm();
+        return M_Qm;
     }
     size_type Qm( mpl::bool_<false> ) const
     {
@@ -468,12 +457,23 @@ public:
 
     int QInitialGuess() const
     {
+        return Qm( mpl::bool_<model_type::is_linear>() );
+    }
+    int QInitialGuess( mpl::bool_<true> ) const
+    {
+        return 0;
+    }
+    int QInitialGuess( mpl::bool_<false> ) const
+    {
         return M_model->QInitialGuess();
     }
 
+
     int mMaxA(int q )
     {
-        return M_model->mMaxA( q );
+        int size=M_mMaxA.size();
+        CHECK( q < size ) << "mMaxA called with the bad q index "<<q<<" and max is "<<size<<"\n";
+        return M_mMaxA[ q ];
     }
 
 
@@ -483,7 +483,9 @@ public:
     }
     int mMaxM( int q, mpl::bool_<true> )
     {
-        return M_model->mMaxM( q );
+        int size=M_mMaxM.size();
+        CHECK( q < size ) << "mMaxM called with the bad q index "<<q<<" and max is "<<size<<"\n";
+        return M_mMaxM[ q ];
     }
     int mMaxM( int q , mpl::bool_<false> )
     {
@@ -497,19 +499,31 @@ public:
 
     int mMaxF(int output_index, int q )
     {
-        return M_model->mMaxF( output_index, q );
+        bool goodidx=true;
+        int size=M_mMaxF.size();
+        if( output_index >= size )
+            goodidx=false;
+        else
+        {
+            size=M_mMaxF[output_index].size();
+            if( q >= size )
+                goodidx=false;
+        }
+        CHECK( goodidx )<<"mMaxF functions called with bad index ! output index : "<<output_index<<" and q : "<<q<<"\n";
+        return M_mMaxF[output_index][q];
     }
 
     //! return the number of outputs
     size_type Nl() const
     {
-        return M_model->Nl();
+        return M_Nl;
     }
 
     //! return the number of \f$\mu\f$ independent terms for the right hand side
     size_type Ql( int l ) const
     {
-        return M_model->Ql( l );
+        return M_Ql[l];
+        //return M_model->Ql( l );
     }
 
     //! return the parameter space
@@ -654,7 +668,6 @@ public:
     {
         auto all_beta = this->computeBetaQm( mu , time );
         offline_merge_type offline_merge;
-
         if( option(_name="crb.stock-matrices").template as<bool>() )
             offline_merge = offlineMerge( all_beta , mu );
         else
@@ -817,6 +830,71 @@ public:
 
 
     /**
+     * \brief count numer of terms in the affine decomposition
+     * either using vectors from affine decomposition if matrices are stored
+     * or using operators free
+     */
+    void countAffineDecompositionTerms()
+    {
+        if( M_alreadyCountAffineDecompositionTerms )
+            return;
+        else
+            M_alreadyCountAffineDecompositionTerms=true;
+
+        if ( M_Aqm.size() > 0 )
+        {
+            M_Qm=M_Mqm.size();
+            M_mMaxM.resize(M_Qm);
+            for(int q=0; q<M_Qm; q++)
+            {
+                M_mMaxM[q]=M_Mqm[q].size();
+            }
+
+            M_Qa=M_Aqm.size();
+            M_mMaxA.resize(M_Qa);
+            for(int q=0; q<M_Qa; q++)
+            {
+                M_mMaxA[q]=M_Aqm[q].size();
+            }
+
+            M_Nl=M_Fqm.size();
+            M_Ql.resize(M_Nl);
+            M_mMaxF.resize(M_Nl);
+            for(int output=0; output<M_Nl; output++)
+            {
+                M_Ql[output]=M_Fqm[output].size();
+                M_mMaxF[output].resize(M_Ql[output]);
+                for(int q=0; q<M_Ql[output]; q++)
+                {
+                    M_mMaxF[output][q]=M_Fqm[output][q].size();
+                }
+            }
+        }
+        else
+        {
+            //operators free
+            auto compositeM = operatorCompositeM();
+            M_mMaxM = compositeM->countAllContributions();
+            M_Qm=M_mMaxM.size();
+
+            auto compositeA = operatorCompositeA();
+            M_mMaxA = compositeA->countAllContributions();
+            M_Qa=M_mMaxA.size();
+            auto vector_compositeF = functionalCompositeF();
+            int number_outputs = vector_compositeF.size();
+            M_Nl=number_outputs;
+            M_mMaxF.resize(number_outputs);
+            M_Ql.resize(number_outputs);
+            for(int output=0; output<number_outputs; output++)
+            {
+                auto compositeF = vector_compositeF[output];
+                M_mMaxF[output] = compositeF->countAllContributions();
+                M_Ql[output] = M_mMaxF[output].size();
+            }
+        }
+    }
+
+    /**
      * \brief Compute the affine decomposition of the various forms
      *
      * This function assembles the parameter independant part of
@@ -832,6 +910,7 @@ public:
     affine_decomposition_type computeAffineDecomposition( mpl::bool_<true> )
     {
         boost::tie( M_Mqm, M_Aqm, M_Fqm ) = M_model->computeAffineDecomposition();
+        this->countAffineDecompositionTerms();
 
         if( M_Aqm.size() == 0 )
         {
@@ -900,6 +979,7 @@ public:
     {
         initial_guess_type initial_guess;
         boost::tie( M_Aqm, M_Fqm ) = M_model->computeAffineDecomposition();
+        this->countAffineDecompositionTerms();
 
         if ( M_Aqm.size() > 0 )
         {
@@ -944,7 +1024,7 @@ public:
             }//q
 
             auto vector_compositeF = functionalCompositeF();
-            int number_outputs = M_model->Nl();
+            int number_outputs = M_Nl;
             M_Fqm.resize(number_outputs);
             for(int output=0; output<number_outputs; output++)
             {
@@ -987,34 +1067,6 @@ public:
         }
         return M_InitialGuessV;
     }
-
-    /**
-     * \brief the inner product \f$h1(\xi_i, \xi_j) = \xi_j^T H_1 \xi_i\f$
-     *
-     * \param xi_i an element of the function space
-     * \param xi_j an element of the function space
-     * \param transpose transpose \c A_q
-     *
-     * \return the inner product \f$h1(\xi_i, \xi_j) = \xi_j^T H_1 \xi_i\f$
-     */
-    value_type h1( element_type const& xi_i, element_type const& xi_j  ) const
-    {
-        return M_B->energy( xi_j, xi_i );
-    }
-    /**
-     * \brief the inner product \f$h1(\xi_i, \xi_j) = \xi_j^T H_1 \xi_i\f$
-     *
-     * \param xi_i an element of the function space
-     * \param xi_j an element of the function space
-     * \param transpose transpose \c A_q
-     *
-     * \return the inner product \f$h1(\xi_i, \xi_j) = \xi_j^T H_1 \xi_i\f$
-     */
-    value_type h1( element_type const& xi_i  ) const
-    {
-        return M_B->energy( xi_i, xi_i );
-    }
-
 
 
     /**
@@ -1621,14 +1673,7 @@ private:
     backend_ptrtype M_backend_primal;
     backend_ptrtype M_backend_dual;
 
-    // ! matrix associated with inner product
-    sparse_matrix_ptrtype M_B;
-    sparse_matrix_ptrtype M_H1;
-
     beta_vector_type M_dummy_betaMqm;
-
-    //! initialize the matrix associated with the \f$H_1\f$ inner product
-    void initB();
 
     /**
      * \brief given \p mu merge the Aq and Fq into A and F respectively
@@ -1655,6 +1700,16 @@ private:
     preconditioner_ptrtype M_preconditioner_primal;
     preconditioner_ptrtype M_preconditioner_dual;
 
+    //number of terms in affine decomposition
+    int M_Qa; //A
+    int M_Qm; //M
+    int M_Nl; //number of outputs
+    std::vector<int> M_Ql;//F associated to given output
+    std::vector<int> M_mMaxA;//number of sub-terms (using EIM)
+    std::vector<int> M_mMaxM;//number of sub-terms (using EIM)
+    std::vector< std::vector<int> > M_mMaxF;//number of sub-terms (using EIM)
+
+    bool M_alreadyCountAffineDecompositionTerms;
 };
 
 
@@ -1845,66 +1900,6 @@ struct AssembleInitialGuessVInCompositeCase
 
 
 
-template<typename TruthModelType>
-void
-CRBModel<TruthModelType>::initB()
-{
-
-    //the matrix associated with H1 scalar product is now given by the model
-    M_B = M_model->innerProduct();
-#if 0
-    LOG(INFO) << "[CRBModel::initB] initialize scalar product\n";
-    M_B = M_backend->newMatrix( M_model->functionSpace(), M_model->functionSpace() );
-    using namespace Feel::vf;
-    typename functionspace_type::element_type u( M_model->functionSpace() );
-    form2( M_model->functionSpace(), M_model->functionSpace(), M_B, _init=true ) =
-        integrate( elements( M_model->functionSpace()->mesh() ),
-                   gradt( u )*trans( grad( u ) ) );
-
-    M_B->close();
-
-    auto M = M_backend->newMatrix( M_model->functionSpace(), M_model->functionSpace() );
-    form2( M_model->functionSpace(), M_model->functionSpace(), M, _init=true ) =
-        integrate( elements( M_model->functionSpace()->mesh() ),
-                   idt( u )*id( u ) );
-    M_B->printMatlab( "ipB.m" );
-    M->printMatlab( "ipM.m" );
-    M->close();
-    LOG(INFO) << "[CRBModel::initB] starting eigen solve\n";
-#if 0
-    SolverEigen<double>::eigenmodes_type modesmin=
-        eigs( _matrixA=M_B,
-              _matrixB=M,
-              _problem=( EigenProblemType )GHEP,
-              _solver=( EigenSolverType )M_vm["solvereigen.solver-type"].as<int>(),
-              //_spectrum=LARGEST_MAGNITUDE,
-              _spectrum=SMALLEST_MAGNITUDE,
-              //_transform=SINVERT,
-              _ncv=M_vm["solvereigen.ncv"].as<int>(),
-              _nev=M_vm["solvereigen.nev"].as<int>(),
-              _tolerance=M_vm["solvereigen.tol"].as<double>(),
-              _maxit=M_vm["solvereigen.maxiter"].as<int>()
-            );
-    double eigmin = 1;
-
-    if ( modesmin.empty() || modesmin.begin()->second.get<0>()<1e-6 )
-    {
-        LOG(INFO) << "coercivity constant not computed, taking 1\n";
-    }
-
-    else
-    {
-        eigmin = modesmin.begin()->second.get<0>();
-    }
-
-    LOG(INFO) << "[CRBModel::initB] coercivity constant (tau) = " << eigmin << "\n";
-#else
-    double eigmin = 1;
-#endif
-    M_B->addMatrix( eigmin, M );
-
-#endif
-}
 
 
 //create a vector of preassemble objects
@@ -2019,7 +2014,7 @@ CRBModel<TruthModelType>::assembleInitialGuessV( initial_guess_type & initial_gu
         for(int m = 0; m < m_max; m++ )
         {
             M_InitialGuessV[q][m] = Xh->elementPtr();
-            M_InitialGuessVector[q][m] = M_model->newVector();
+            M_InitialGuessVector[q][m] = this->newVector();
         }
     }
 
@@ -2055,7 +2050,7 @@ CRBModel<TruthModelType>::assembleInitialGuessV( initial_guess_type & initial_gu
         for(int m = 0; m < m_max; m++ )
         {
             M_InitialGuessV[q][m] = Xh->elementPtr();
-            M_InitialGuessVector[q][m] = M_model->newVector();
+            M_InitialGuessVector[q][m] = this->newVector();
             form1( _test=Xh, _vector=M_InitialGuessVector[q][m]) =
                 integrate( _range=elements( mesh ), _expr=idv( initial_guess[q][m] )*id( v )  );
             M_InitialGuessVector[q][m]->close();
@@ -2112,8 +2107,8 @@ CRBModel<TruthModelType>::offlineMergeOnFly(betaqm_type const& all_beta, paramet
     compositeM->setScalars( beta_M );
 
     //merge
-    auto A = M_model->newMatrix();
-    auto M = M_model->newMatrix();
+    auto A = this->newMatrix();
+    auto M = this->newMatrix();
     compositeA->sumAllMatrices( A );
     //auto A = compositeA->sumAllMatrices();
     //auto M = compositeM->sumAllMatrices();
@@ -2125,7 +2120,7 @@ CRBModel<TruthModelType>::offlineMergeOnFly(betaqm_type const& all_beta, paramet
     {
         auto compositeF = vector_compositeF[output];
         compositeF->setScalars( beta_F[output] );
-        F[output] = M_model->newVector();
+        F[output] = this->newVector();
         compositeF->sumAllVectors( F[output] );
     }
 
@@ -2168,7 +2163,9 @@ CRBModel<TruthModelType>::offlineMerge( betaqm_type const& all_beta , parameter_
     for ( size_type q = 0; q < Qa(); ++q )
     {
         for(size_type m = 0; m < mMaxA(q); ++m )
+        {
             A->addMatrix( beta_A[q][m], M_Aqm[q][m] );
+        }
     }
 
     if( Qm() > 0 )

@@ -1417,8 +1417,9 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
     double fixedpoint_critical_value  = option(_name="crb.fixedpoint-critical-value").template as<double>();
     int iteration=0;
     double increment_norm=1e3;
+    bool is_linear=M_model->isLinear();
 
-    if( option(_name="crb.use-linear-model").template as<bool>() )
+    if( is_linear )
         increment_norm = 0;
 
     double bdf_coeff;
@@ -1426,7 +1427,7 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
     auto vec_bdf_poly = M_backend_primal->newVector( M_model->functionSpace() );
 
     //assemble the initial guess for the given mu
-    if ( M_model->isSteady() && ! M_model->isLinear() )
+    if ( M_model->isSteady() && ! is_linear )
     {
         elementptr = M_model->assembleInitialGuess( mu ) ;
         u = *elementptr ;
@@ -1486,7 +1487,7 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
             }
 
             //on each subspace the norme of the increment is computed and then we perform the sum
-            if( option(_name="crb.use-linear-model").template as<bool>() )
+            if( is_linear )
                 increment_norm = 0;
             else
                 increment_norm = M_model->computeNormL2( u , uold );
@@ -1605,8 +1606,8 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
     double increment_norm=1e3;
 
     vector_ptrtype Rhs( M_backend_dual->newVector( M_model->functionSpace() ) );
-
-    if( option(_name="crb.use-linear-model").template as<bool>() )
+    bool is_linear = M_model->isLinear();
+    if( is_linear )
         increment_norm = 0;
 
     double bdf_coeff;
@@ -1699,7 +1700,7 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
             }
 
             //on each subspace the norme of the increment is computed and then we perform the sum
-            if( option(_name="crb.use-linear-model").template as<bool>() )
+            if( is_linear )
                 increment_norm = 0;
             else
                 increment_norm = M_model->computeNormL2( udu , uold );
@@ -1881,6 +1882,34 @@ CRB<TruthModelType>::offline()
     size_type index;
 
     int Nrestart = option(_name="crb.restart-from-N").template as<int>();
+    //we do affine decomposition here to then have access to Qa, mMax ect...
+    //and then resize data structure if necessary
+    std::vector< std::vector<sparse_matrix_ptrtype> > Jqm;
+    std::vector< std::vector<std::vector<vector_ptrtype> > > Rqm;
+    LOG(INFO) << "[CRB::offline] compute affine decomposition\n";
+    std::vector< std::vector<sparse_matrix_ptrtype> > Aqm;
+    std::vector< std::vector<sparse_matrix_ptrtype> > Mqm;
+    //to project the initial guess on the reduced basis we solve A u = F
+    //with A = \int_\Omega u v ( mass matrix )
+    //F = \int_\Omega initial_guess v
+    //so InitialGuessV is the mu-independant part of the vector F
+    std::vector< std::vector<element_ptrtype> > InitialGuessV;
+    std::vector< std::vector<std::vector<vector_ptrtype> > > Fqm,Lqm;
+
+    bool model_is_linear = M_model->isLinear();
+    if( ! model_is_linear )
+        InitialGuessV = M_model->computeInitialGuessVAffineDecomposition();
+
+    if( M_use_newton )
+    {
+        boost::tie( Mqm , Jqm, Rqm ) = M_model->computeAffineDecomposition();
+    }
+    else
+    {
+        if( option("crb.stock-matrices").template as<bool>() )
+            boost::tie( Mqm, Aqm, Fqm ) = M_model->computeAffineDecomposition();
+    }
+    M_model->countAffineDecompositionTerms();
 
     if( Nrestart == 0 )
         rebuild_database=true;
@@ -1941,6 +1970,7 @@ CRB<TruthModelType>::offline()
 
         if ( M_error_type == CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
         {
+
             int __QLhs = M_model->Qa();
             int __QRhs = M_model->Ql( 0 );
             int __QOutput = M_model->Ql( M_output_index );
@@ -2280,6 +2310,7 @@ CRB<TruthModelType>::offline()
             M_Lqm_pr[q].resize( M_model->mMaxF( M_output_index , q) );
             M_Lqm_du[q].resize( M_model->mMaxF( M_output_index , q) );
         }
+
     }//end of if( rebuild_database )
     else
     {
@@ -2325,20 +2356,6 @@ CRB<TruthModelType>::offline()
         }
     }//end of else associated to if ( rebuild_databse )
 
-    //sparse_matrix_ptrtype M,Adu,At;
-    //element_ptrtype InitialGuess;
-    //vector_ptrtype MF;
-    //std::vector<vector_ptrtype> L;
-
-    LOG(INFO) << "[CRB::offline] compute affine decomposition\n";
-    std::vector< std::vector<sparse_matrix_ptrtype> > Aqm;
-    std::vector< std::vector<sparse_matrix_ptrtype> > Mqm;
-    //to project the initial guess on the reduced basis we solve A u = F
-    //with A = \int_\Omega u v ( mass matrix )
-    //F = \int_\Omega initial_guess v
-    //so InitialGuessV is the mu-independant part of the vector F
-    std::vector< std::vector<element_ptrtype> > InitialGuessV;
-    std::vector< std::vector<std::vector<vector_ptrtype> > > Fqm,Lqm;
     sparse_matrix_ptrtype Aq_transpose = M_model->newMatrix();
 
     sparse_matrix_ptrtype A = M_model->newMatrix();
@@ -2346,22 +2363,6 @@ CRB<TruthModelType>::offline()
     std::vector< vector_ptrtype > F( nl );
     for(int l=0; l<nl; l++)
         F[l]=M_model->newVector();
-
-    std::vector< std::vector<sparse_matrix_ptrtype> > Jqm;
-    std::vector< std::vector<std::vector<vector_ptrtype> > > Rqm;
-
-    bool model_is_linear = M_model->isLinear();
-    if( ! model_is_linear )
-        InitialGuessV = M_model->computeInitialGuessVAffineDecomposition();
-
-
-    if( M_use_newton )
-        boost::tie( Mqm , Jqm, Rqm ) = M_model->computeAffineDecomposition();
-    else
-    {
-        if( option("crb.stock-matrices").template as<bool>() )
-            boost::tie( Mqm, Aqm, Fqm ) = M_model->computeAffineDecomposition();
-    }
 
     element_ptrtype dual_initial_field( new element_type( M_model->functionSpace() ) );
     element_ptrtype uproj( new element_type( M_model->functionSpace() ) );
@@ -2399,7 +2400,6 @@ CRB<TruthModelType>::offline()
         if( proc_number == this->worldComm().masterRank() )
             std::cout<<"[CRB::offline] read WNmu ( sampling size : "<<M_iter_max<<" )"<<std::endl;
     }
-
 
     LOG(INFO) << "[CRB::offline] strategy "<< M_error_type <<"\n";
     if( proc_number == this->worldComm().masterRank() ) std::cout << "[CRB::offline] strategy "<< M_error_type <<std::endl;
@@ -4431,8 +4431,13 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
     double increment = increment_fixedpoint_tol;
 
     bool load_elements_db=option(_name="crb.load-elements-database").template as<bool>();
+    bool is_linear = M_model->isLinear();
 
-    computeProjectionInitialGuess( mu , N , uN[0] );
+    if( ! is_linear )
+    {
+        computeProjectionInitialGuess( mu , N , uN[0] );
+    }
+
     //for ( double time=time_step; time<time_for_output+time_step; time+=time_step )
     for ( double time=time_step; math::abs(time - time_for_output - time_step) > 1e-9; time+=time_step )
     {
@@ -4492,12 +4497,12 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
                     F += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N )*uNold[time_index]/time_step;
                 }
             }
+
             // backup uN
             previous_uN = uN[time_index];
 
             // solve for new fix point iteration
             uN[time_index] = A.lu().solve( F );
-
 
             //vectorN_type full_lu; full_lu.resize(2);
             //full_lu=A.fullPivLu().solve( F );
@@ -4519,7 +4524,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
             old_output = output;
             output = L.dot( uN[time_index] );
 
-           if( option(_name="crb.use-linear-model").template as<bool>() )
+           if( is_linear )
                previous_uN=uN[time_index];
 
             increment = (uN[time_index]-previous_uN).norm();
@@ -4753,12 +4758,12 @@ CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::ve
         }
     }
 
-
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
     auto matrix_info = fixedPointPrimalCL( N, mu , uN , uNold, output_vector, K , print_rb_matrix) ;
 #else
     auto matrix_info = fixedPointPrimal( N, mu , uN , uNold, output_vector, K , print_rb_matrix) ;
 #endif
+
 
     int size=output_vector.size();
     double o =output_vector[size-1];
@@ -6934,7 +6939,7 @@ CRB<TruthModelType>::run( parameter_type const& mu, double eps , int N, bool pri
         compareResidualsForTransientProblems(Nwn, mu , Un, Unold, Undu, Unduold, primal_residual_coefficients, dual_residual_coefficients );
     }
 #endif
-
+    M_model->countAffineDecompositionTerms();
     std::vector<vectorN_type> uN;
     std::vector<vectorN_type> uNdu;
     std::vector<vectorN_type> uNold;
