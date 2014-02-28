@@ -16,7 +16,7 @@ You should be able to create a mesh now. If it is not the case, get back to the 
 
 To use the tools of this sections, you have to precise the domain range using the following keywords:
 <table class="manual">
-<tr><th>\feel Keyword</th><th>>Descriptionn</th></tr>
+<tr><th>\feel Keyword</th><th>Description</th></tr>
 <tr><td> \co elements(mesh) \eco</td><td>All the elements of a mesh</td></tr>
 <tr><td> \co markedelements(mesh, id) \eco</td><td>The precise element defined by the id.<br>It can be any element (line, surface, domain, and so on).</td></tr>
 <tr><td> \co faces(mesh) \eco</td><td>All the faces of the mesh.</td></tr>
@@ -41,7 +41,7 @@ Thank to its finite element embedded language, \feel has its owned <tt>integrate
 \eco
 please notice that the order of the parameter is not important, these are <tt>boost</tt> parameters, so you can enter them in the order you want. <br>
 To make it clear, there are two required parameters and 2 optional and they of course can be entered in any order
-provided you give the parameter name. If you don't provide the parameter name (that is to say \lstinline!_range=! or the others) they must be entered in the order they are described
+provided you give the parameter name. If you don't provide the parameter name (that is to say \c _range= or the others) they must be entered in the order they are described
 below.
 
 Required parameters:
@@ -49,7 +49,7 @@ Required parameters:
 \li <tt>_expr</tt>  = integrand expression
 
 Optional parameters:
-\li <tt>_quad</tt>  = quadrature to use instead of the default one, wich means <tt>_Q<integer>()</tt> where the integer is the polynomal order to integrate exactely
+\li <tt>_quad</tt>  = quadrature to use instead of the default one, wich means <tt>_Q<integer>()</tt> where the integer is the polynomial order to integrate exactely
 \li <tt>_geomap</tt>  = type of geometric mapping to use, that is to say:
 <table class="manual">
 <tr><th>Feel Parameter</th><th>Description</th></tr>
@@ -59,20 +59,20 @@ Optional parameters:
 </table>
 
 \Examples
-From <tt>doc/manual/tutorial/dar.cpp</tt>:
+From \c "doc/manual/tutorial/dar.cpp":
 \co
   form1( ... ) = integrate( _range = elements( mesh ),
                             _expr = f*id( v ) );
 \eco
 
-From <tt>doc/manual/tutorial/myintegrals.cpp</tt>:
+From \c "doc/manual/tutorial/myintegrals.cpp":
 \co
   // compute integral f on boundary
   double intf_3 = integrate( _range = boundaryfaces( mesh ),
                              _expr = f );
 \eco
 
-From <tt>doc/manual/advection/advection.cpp</tt>:
+From \c "doc/manual/advection/advection.cpp":
 \co
   form2( _test = Xh, _trial = Xh, _matrix = D ) +=
     integrate( _range = internalfaces( mesh ),
@@ -82,7 +82,7 @@ From <tt>doc/manual/advection/advection.cpp</tt>:
                _geomap = geomap );
 \eco
 
-From <tt>doc/manual/laplacian/laplacian.cpp</tt>:
+From \c "doc/manual/laplacian/laplacian.cpp":
 \co
  auto l = form1( _test=Xh, _vector=F );
  l = integrate( _range = elements( mesh ),
@@ -160,7 +160,7 @@ Optional parameters:
 \li <tt>_geomap</tt>: type of geometric mapping. Default = <tt>GEOMAP_OPT</tt>
 
 \Examples
-From <tt>doc/manual/laplacian/laplacian.cpp</tt>:
+From \c "doc/manual/laplacian/laplacian.cpp":
 \co
   element_type e( Xh, "e" );
   e = project( _space = Xh,
@@ -168,7 +168,7 @@ From <tt>doc/manual/laplacian/laplacian.cpp</tt>:
                _expr = g );
 \eco
 
-From <tt>doc/manual/heatns/convection_run.cpp</tt>:
+From \c "doc/manual/heatns/convection_run.cpp":
 \co
 tn = project( _space = Xh->functionSpace<2>(),
               _range = elements( mesh ),
@@ -200,13 +200,13 @@ Optional parameters:
 \li <tt>_geomap</tt> = type of geometric mapping. Default = <tt>GEOMAP_OPT</tt>
 
 \Examples
-From <tt>doc/manual/stokes/stokes.cpp</tt>:
+From \c "doc/manual/stokes/stokes.cpp":
 \co
   double mean_p = mean( _range=elements( u.mesh() ),
                         _expr=idv( p ) );
 \eco
 
-From <tt>doc/manual/laplacian/periodic.cpp</tt>:
+From \c "doc/manual/laplacian/periodic.cpp":
 \co
   LOG(INFO) << "mean(u)  = " << mean( _range=elements( mesh ), _expr=idv( u ) ) << "\n";
 \eco
@@ -241,13 +241,13 @@ Optional parameters:
 \li <tt>_geomap</tt>  = type of geometric mapping. Default = <tt>GEOMAP_OPT</tt>
 
 \Examples
-From <tt>doc/manual/laplacian/laplacian.cpp</tt>:
+From \c "doc/manual/laplacian/laplacian.cpp":
 \co
   double L2error =normL2( _range=elements( mesh ),
                           _expr=( idv( u )-g ) );
 \eco
 
-From <tt>doc/manual/stokes/stokes.cpp</tt>:
+From \c "doc/manual/stokes/stokes.cpp":
 \co
 double p_errorL2 = normL2( _range=elements( u.mesh() ),
                            _expr=( idv( p )-mean_p - p_exact ) );
@@ -276,7 +276,7 @@ or semi norm:
 Required parameters:
 \li <tt>_range</tt> = domain of integration
 \li <tt>_expr</tt> = mesurable function
-\li <tt>_grad_expr</tt> = gradient of function (Row vector !)
+\li <tt>_grad_expr</tt> = gradient of function (Row vector!)
 
 Optional parameters:
 \li <tt>_quad</tt> = quadrature to use. Default = <tt>_Q<integer>()</tt>
@@ -289,13 +289,13 @@ With expression:
   auto g = sin(2*pi*Px())*cos(2*pi*Py());
   auto gradg = 2*pi*cos(2* pi*Px())*cos(2*pi*Py())*oneX() \
 	           -2*pi*sin(2*pi*Px())*sin(2*pi*Py())*oneY();
-// There gradg is a column vector !
+// There gradg is a column vector!
 // Use trans() to get a row vector
   double normH1_g = normH1( _range=elements(mesh),\
   			                _expr=g,\
 			                _grad_expr=trans(gradg) );
 \eco
-With test or trial function \lstinline!u!:
+With test or trial function \c u:
 \co
   double errorH1 = normH1( _range=elements(mesh),\
   			               _expr=(u-g),\
