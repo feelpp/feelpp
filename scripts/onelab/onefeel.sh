@@ -50,4 +50,4 @@ if [[ $? -ne 0 ]]; then
 fi
 
 # Launch Gmsh with the OneLab files
-~/svn/gmsh/build/gmsh $1.ol
+gmsh $1.ol
