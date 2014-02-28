@@ -14,9 +14,9 @@ We suppose in this section that you know how to define your mesh (see \ref Mesh)
 
 There are \feel tools you need to create linear and bilinear forms in order to solve variatonnal formulation.
 
-Notations :
-\li \c u : element from your trial function space (unknown function)
-\li \c v : element from your test function space
+Notations:
+\li \c u: element from your trial function space (unknown function)
+\li \c v: element from your test function space
 
 \section Forms_Building Building Forms
 \subsection form1 form1
@@ -24,20 +24,20 @@ Notations :
 \co
 form1(_test, _init);
 \eco
-Required Parameters :
-\li \c _test : test function space.
+Required Parameters:
+\li \c _test: test function space.
 
-Optional Parameters :
-\li \c _init : Default = \c false.
+Optional Parameters:
+\li \c _init: Default = \c false.
 
-By default, a new linear form is :
+By default, a new linear form is:
 \f[
 l(v)=\int_\Omega v
 \f]
 Then you can customize it using integrations tools.
 
 \Examples
-From \c "doc/manual/tutorial/mylaplacian.cpp" :
+From \c "doc/manual/tutorial/mylaplacian.cpp":
 \co
 // right hand side
    auto l = form1( _test=Vh );
@@ -45,7 +45,7 @@ From \c "doc/manual/tutorial/mylaplacian.cpp" :
                  _expr=id(v));
 \eco
 
-From \c "doc/manual/tutorial/myadvection.cpp" :
+From \c "doc/manual/tutorial/myadvection.cpp":
 \co
 // right hand side
    auto l = form1( _test=Xh );
@@ -61,21 +61,21 @@ Notice that \c += operator is working with linear and bilinear forms.
 \co
 form2(_trial, _test, _init);
 \eco
-Required Parameters :
-\li \c _trial : test function space
-\li \c _test : trial function space
+Required Parameters:
+\li \c _trial: test function space
+\li \c _test: trial function space
 
-Optional Parameters :
-\li \c _init : Default = \c false.
+Optional Parameters:
+\li \c _init: Default = \c false.
 
-By default, a new bilinear form is :
+By default, a new bilinear form is:
 \f[
 a(u,v)=\int_\Omega uv
 \f]
 Then you can custom it using integrations tools
 
 \Example
-From \c "doc/manual/tutorial/mylaplacian.cpp" :
+From \c "doc/manual/tutorial/mylaplacian.cpp":
 \co
 // left hand side
    auto a = form2( _trial=Vh, _test=Vh );
@@ -83,7 +83,7 @@ From \c "doc/manual/tutorial/mylaplacian.cpp" :
                  _expr=gradt(u)*trans(grad(v)) );
 \eco
 
-From \c "doc/manual/tutorial/mystokes.cpp" :
+From \c "doc/manual/tutorial/mystokes.cpp":
 \co
 // left hand side
    auto a = form2( _trial=Vh, _test=Vh );
@@ -109,16 +109,16 @@ The \c solve() function presented there is a method from the class \c BilinearFo
 \co
 solve(_solution, _rhs, _rebuild, _name);
 \eco
-Required Parameters :
-\li \c _solution : the solution.
-\li \c _rhs : right hand side. The linear form.
+Required Parameters:
+\li \c _solution: the solution.
+\li \c _rhs: right hand side. The linear form.
 
-Optional Parameters :
-\li \c _rebuild : rebuild the solver matrix. Default = \c false.
-\li \c _name : Default = "".
+Optional Parameters:
+\li \c _rebuild: rebuild the solver matrix. Default = \c false.
+\li \c _name: Default = "".
 
 \Examples
-From \c "doc/manual/tutorial/laplacian.cpp" :
+From \c "doc/manual/tutorial/laplacian.cpp":
 \co
 a.solve(_rhs=l,_solution=u);
 \eco
@@ -130,25 +130,25 @@ The function \c on() allows you to add conditions to your bilinear form before u
 \co
 on(_range, _rhs, _element, _expr);
 \eco
-Required Parameters :
-\li \c _range : domain concerned by this condition (see \ref Integrals ).
-\li \c _rhs : right hand side. The linear form.
-\li \c _element : element concerned.
-\li \c _expr : the condition.
+Required Parameters:
+\li \c _range: domain concerned by this condition (see \ref Integrals ).
+\li \c _rhs: right hand side. The linear form.
+\li \c _element: element concerned.
+\li \c _expr: the condition.
 
 This function is used with += operator.
 
 \Examples
-From \c "doc/manual/tutorial/mylaplacian.cpp" :
+From \c "doc/manual/tutorial/mylaplacian.cpp":
 \co
 // apply the boundary condition
    a+=on(_range=boundaryfaces(mesh),
          _rhs=l, _element=u,
          _expr=constant(0.) );
 \eco
-There we add the condition :\f$ u  =  0  \text{ on }\;\partial\Omega \;\f$.
+There we add the condition:\f$ u  =  0  \text{ on }\;\partial\Omega \;\f$.
 
-From \c "doc/manual/tutorial/mystokes.cpp" :
+From \c "doc/manual/tutorial/mystokes.cpp":
 \co
 a+=on(_range=markedfaces(mesh,"inlet"),
       _rhs=l, _element=u,

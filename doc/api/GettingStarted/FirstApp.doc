@@ -10,7 +10,7 @@ namespace Feel {
 See section \ref Building for more information about \feel installation.
 
 \section Minimal Minimal Example
-Let's begin with our first program using the \feel framework (source : "doc/manual/tutorial/myapp.cpp").
+Let's begin with our first program using the \feel framework (source: "doc/manual/tutorial/myapp.cpp").
 Before all, you have to include the \feel headers.
 \co
   #include <feel/feel.hpp>
