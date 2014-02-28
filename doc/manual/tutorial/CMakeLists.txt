@@ -39,9 +39,14 @@ foreach(app myapp mymesh myintegrals myfunctionspace geotool loadmesh mylaplacia
   endif()
   install(TARGETS feelpp_doc_${app} DESTINATION bin/ COMPONENT Bin )
 
-  add_dependencies(tutorial feelpp_doc_${app})
+
 endforeach()
 
 feelpp_add_application( doc_mystokes SRCS mystokes.cpp LABEL doc CFG mystokes.cfg bercovierengelmann.cfg kovasnay.cfg GEO mystokes.geo)
 install(TARGETS feelpp_doc_mystokes DESTINATION bin/ COMPONENT Bin )
-add_dependencies(tutorial feelpp_doc_mystokes)
+
+add_dependencies(tutorial feelpp_doc_myapp)
+add_dependencies(tutorial feelpp_doc_mymesh)
+add_dependencies(tutorial feelpp_doc_myintegrals)
+add_dependencies(tutorial feelpp_doc_myfunctionspace)
+add_dependencies(tutorial feelpp_doc_myadvection)
