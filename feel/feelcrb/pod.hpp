@@ -320,6 +320,8 @@ void POD<TruthModelType>::fillPodMatrix( const wn_type& elements_set)
 {
     if( M_use_solutions )
     {
+        boost::mpi::timer timer;
+
         //M_bdf->setRestart( true );
         int K = M_bdf->timeValues().size()-1;
         M_pod_matrix.resize( K,K );
@@ -354,6 +356,11 @@ void POD<TruthModelType>::fillPodMatrix( const wn_type& elements_set)
             }
 
             M_pod_matrix( i,i ) = M_model->scalarProductForPod( bdfi->unknown( 0 ), bdfi->unknown( 0 ) );
+        }
+        double time=timer.elapsed();
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<"POD matrix filled in  "<<time<<" s"<<std::endl;
         }
     }//fill pod matrix with solutions
     else

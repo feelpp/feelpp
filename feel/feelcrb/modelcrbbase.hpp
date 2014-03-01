@@ -174,6 +174,17 @@ public :
 
     virtual void initModel() = 0;
 
+    /*
+     * the user has to provide the affine decomposition
+     * he has two choices : use vectors/matrices or operator free
+     * if he uses operators free he must implement :
+     * - operatorCompositeM (only if the model is time dependent)
+     * - operatorCompositeA
+     * - functionalCompositeF
+     * else, if he uses vectors/matrices (classical way) he must implement
+     * - computeAffineDecomposition
+     */
+
     virtual operatorcomposite_ptrtype operatorCompositeA()
     {
         return M_compositeA;
@@ -185,6 +196,24 @@ public :
     virtual std::vector< functionalcomposite_ptrtype > functionalCompositeF()
     {
         return M_compositeF;
+    }
+
+    virtual affine_decomposition_type computeAffineDecomposition()
+    {
+        return computeAffineDecomposition( mpl::bool_< is_time_dependent >() );
+    }
+    affine_decomposition_type computeAffineDecomposition( mpl::bool_<true> )
+    {
+        std::vector< std::vector<sparse_matrix_ptrtype> > M;
+        std::vector< std::vector<sparse_matrix_ptrtype> > A;
+        std::vector< std::vector<std::vector<vector_ptrtype> > > F;
+        return boost::make_tuple( M , A , F );
+    }
+    affine_decomposition_type computeAffineDecomposition( mpl::bool_<false> )
+    {
+        std::vector< std::vector<sparse_matrix_ptrtype> > A;
+        std::vector< std::vector<std::vector<vector_ptrtype> > > F;
+        return boost::make_tuple( A , F );
     }
 
 
