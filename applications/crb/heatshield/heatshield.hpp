@@ -571,40 +571,16 @@ public:
         return InnerMassMatrix;
     }
 
+    /**
+     * inner product for the POD
+     */
+    sparse_matrix_ptrtype innerProductForPod ( void )
+    {
+        return Mpod;
+    }
+
     void solve( sparse_matrix_ptrtype& ,element_type& ,vector_ptrtype&  );
 
-     /**
-     * returns the scalar product used fior mass matrix ( to solve eigen values problem )
-     * of the boost::shared_ptr vector x and boost::shared_ptr vector
-     */
-    double scalarProductForMassMatrix( vector_ptrtype const& X, vector_ptrtype const& Y );
-
-    /**
-     * returns the scalar product for mass matrix of the vector x and vector y
-     */
-    double scalarProductForMassMatrix( vector_type const& x, vector_type const& y );
-
-    /**
-     * returns the scalar product of the boost::shared_ptr vector x and
-     * boost::shared_ptr vector y
-     */
-    double scalarProduct( vector_ptrtype const& X, vector_ptrtype const& Y );
-
-    /**
-     * returns the scalar product of the vector x and vector y
-     */
-    double scalarProduct( vector_type const& x, vector_type const& y );
-
-    /**
-     * returns the scalar product used in POD of the boost::shared_ptr vector x and
-     * boost::shared_ptr vector y
-     */
-    double scalarProductForPod( vector_ptrtype const& X, vector_ptrtype const& Y );
-
-    /**
-     * returns the scalar product used in POD of the vector x and vector y
-     */
-    double scalarProductForPod( vector_type const& x, vector_type const& y );
 
     /**
      * specific interface for OpenTURNS
@@ -1360,41 +1336,6 @@ void HeatShield<Order>::l2solve( vector_ptrtype& u, vector_ptrtype const& f )
     //std::cout << "l2solve(u,f) done\n";
 }
 
-template<int Order>
-double HeatShield<Order>::scalarProduct( vector_ptrtype const& x, vector_ptrtype const& y )
-{
-    return M->energy( x, y );
-}
-
-template<int Order>
-double HeatShield<Order>::scalarProduct( vector_type const& x, vector_type const& y )
-{
-    return M->energy( x, y );
-}
-
-template<int Order>
-double HeatShield<Order>::scalarProductForMassMatrix( vector_ptrtype const& x, vector_ptrtype const& y )
-{
-    return InnerMassMatrix->energy( x, y );
-}
-
-template<int Order>
-double HeatShield<Order>::scalarProductForMassMatrix( vector_type const& x, vector_type const& y )
-{
-    return InnerMassMatrix->energy( x, y );
-}
-
-template<int Order>
-double HeatShield<Order>::scalarProductForPod( vector_ptrtype const& x, vector_ptrtype const& y )
-{
-    return Mpod->energy( x, y );
-}
-
-template<int Order>
-double HeatShield<Order>::scalarProductForPod( vector_type const& x, vector_type const& y )
-{
-    return Mpod->energy( x, y );
-}
 
 template<int Order>
 void HeatShield<Order>::run( const double * X, unsigned long N, double * Y, unsigned long P )
