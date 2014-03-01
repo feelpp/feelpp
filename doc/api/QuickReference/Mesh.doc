@@ -59,8 +59,8 @@ There is a list of basic geometries you can automatically generate with \feel li
 
 
 
-<b>Examples :</b><br>
-From "doc/manual/tutorial/myfunctionspace.cpp" :
+<b>Examples:</b><br>
+From \c "doc/manual/tutorial/myfunctionspace.cpp":
 \co auto mesh = unitSquare();\eco
 
 
@@ -68,57 +68,57 @@ From "doc/manual/tutorial/myfunctionspace.cpp" :
 <hr>
 \section Load Load Meshes
 \subsection LoadMesh loadMesh
-You can use this function to :
+You can use this function to:
 \li load a \c .msh file and use the mesh data structure
 \li load a \c .geo file and automatically generate a mesh data structure on this geometrical structure
 
-<b>Interface :</b><br>
+<b>Interface:</b><br>
 \co
 mesh_ptrtype loadMesh(_mesh, _filename, _refine, _update, physical_are_elementary_regions);
 \eco
-Required Parameters :
-\li \c _mesh : a mesh data structure.
+Required Parameters:
+\li \c _mesh: a mesh data structure.
 
-Optional Parameters :
- -  \c _hsize (double) : characteristic size of the mesh. This option will edit the \c .geo file and change the variable \c h if defined
-   - Default : \c 0.1
-   -  Option : \c gmsh.hsize
- -  \c _geo_variables_list (string) : Set a list of variable that may be defined in a \c .geo file
-   - Default : \c ""
-   -  Option : \c gmsh.geo-variables-list
- -  \c _filename (string) : filename with extension.
-   - Default : \c "feel.geo"
-   -  Option : \c gmsh.filename
- -  \c _depends (string) : list of files (separated by , or ;) on which \c gmsh.filename depends
-   - Default : \c ""
-   -  Option : \c gmsh.depends
- - \c _refine (boolean) : optionally refine with \p refine levels the mesh.
-   - Default : \c 0.
-   - Option  : \c gmsh.refine
- - \c _update (integer) : update the mesh data structure (build internal faces and edges).
-   - Default : \c true
+Optional Parameters:
+ -  \c _hsize (double): characteristic size of the mesh. This option will edit the \c .geo file and change the variable \c h if defined
+   - Default: \c 0.1
+   -  Option: \c gmsh.hsize
+ -  \c _geo_variables_list (string): Set a list of variable that may be defined in a \c .geo file
+   - Default: \c ""
+   -  Option: \c gmsh.geo-variables-list
+ -  \c _filename (string): filename with extension.
+   - Default: \c "feel.geo"
+   -  Option: \c gmsh.filename
+ -  \c _depends (string): list of files (separated by , or ;) on which \c gmsh.filename depends
+   - Default: \c ""
+   -  Option: \c gmsh.depends
+ - \c _refine (boolean): optionally refine with \p refine levels the mesh.
+   - Default: \c 0.
+   - Option: \c gmsh.refine
+ - \c _update (integer): update the mesh data structure (build internal faces and edges).
+   - Default: \c true
  -  \c _physical_are_elementary_regions (boolean): to load specific meshes formats.
-   - Default : \c false.
-   - Option : gmsh.physical_are_elementary_regions
+   - Default: \c false.
+   - Option: gmsh.physical_are_elementary_regions
  - \c _straighten (boolean): in case of curvilinear elements, straighten the elements
    which are not touching with a face the boundary of the domain
-   - Default : \c true
-   - Option : \c gmsh.straighten
- - \c _partitioner (integer) : define the mesh partitioner to use :
-   - Default : \c 1 (if Metis is available) \c 0 if not (CHACO)
-   - Option : gmsh.partitioner
+   - Default: \c true
+   - Option: \c gmsh.straighten
+ - \c _partitioner (integer): define the mesh partitioner to use:
+   - Default: \c 1 (if Metis is available) \c 0 if not (CHACO)
+   - Option: gmsh.partitioner
 
 
 <br>
 The file you want to load has to be in an appropriate repository.<br>
-\feel looks for \c .geo and \c .msh files in the following directories (in this order) :
+\feel looks for \c .geo and \c .msh files in the following directories (in this order):
 \li current path
 \li paths that went through changeRepository(), it means that we look for example into the path from which the executable was run
 \li localGeoRepository() which is usually \c "$HOME/feel/geo"  (cf: \ref Environment )
 \li systemGeoRepository() which is usually \c "$FEELPP_DIR/share/feel/geo" (cf: \ref Environment)
 
 
-<b>Examples :</b><br>
+<b>Examples:</b><br>
 Load a mesh data structure from the file \c "$HOME/feel/mymesh.msh".
 \co
 auto mesh = loadMesh(_mesh=new mesh_type,
@@ -139,30 +139,30 @@ auto mesh = loadMesh(_mesh=new Mesh<Simplex< 2 > > );
 \subsection LoadGMSh loadGMSHMesh
 In order to load only \c .msh file, you can also use the loadGMSHMesh.
 
-<b>Interface :</b><br>
+<b>Interface:</b><br>
 \co
 mesh_ptrtype loadGMSHMesh(_mesh, _filename, _refine, _update, _physical_are_elementary_regions);
 \eco
-Required Parameters :
-\li \c _mesh : a mesh data structure.
-\li \c _filename : filename with extension.
+Required Parameters:
+\li \c _mesh: a mesh data structure.
+\li \c _filename: filename with extension.
 
-Optional Parameters :
-\li \c _refine : optionally refine with \p refine levels the mesh. Default =\c 0.
-\li \c _update : update the mesh data structure (build internal faces and edges). Default =\c true.
-\li \c _physical_are_elementary_regions : to load specific meshes formats. Default = \c false.
+Optional Parameters:
+\li \c _refine: optionally refine with \p refine levels the mesh. Default =\c 0.
+\li \c _update: update the mesh data structure (build internal faces and edges). Default =\c true.
+\li \c _physical_are_elementary_regions: to load specific meshes formats. Default = \c false.
 
 The file you want to load has to be in an appropriate repository. See \ref LoadMesh.
 
-<b>Examples :</b><br>
-From \c "doc/manual/heatns.cpp" :
+<b>Examples:</b><br>
+From \c "doc/manual/heatns.cpp":
 \co
  mesh_ptrtype mesh = loadGMSHMesh( _mesh=new mesh_type,
                                    _filename="piece.msh",
                                    _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER );
 \eco
 
-From \c "applications/check/check.cpp" :
+From \c "applications/check/check.cpp":
 \co
 mesh = loadGMSHMesh( _mesh=new mesh_type,
                      _filename=this->vm()["filename"].template as<std::string>(),
@@ -173,22 +173,22 @@ mesh = loadGMSHMesh( _mesh=new mesh_type,
 
 \section Create Create Meshes
 \subsection CreateGMSHMesh createGMSHMesh
-<b>Interface :</b><br>
+<b>Interface:</b><br>
 \co
 mesh_ptrtype createGMSHMesh(_mesh, _desc, _h, _order, _parametricnodes, _refine, _update, _force_rebuild, _physical_are_elementary_regions);
 \eco
-Required Parameters :
-\li \c _mesh : mesh data structure.
-\li \c _desc : descprition. See further.
+Required Parameters:
+\li \c _mesh: mesh data structure.
+\li \c _desc: descprition. See further.
 
-Optional Parameters :
-\li \c _h : characteristic size. Default = \c 0.1.
-\li \c _order : order. Default = \c 1.
-\li \c _parametricnodes : Default = \c 0.
-\li \c _refine : optionally refine with \p refine levels the mesh. Default =\c 0.
-\li \c _update : update the mesh data structure (build internal faces and edges). Default =\c true.
-\li \c _force_rebuild : rebuild mesh if already exists. Default = \c false.
-\li \c _physical_are_elementary_regions : to load specific meshes formats. Default = \c false.
+Optional Parameters:
+\li \c _h: characteristic size. Default = \c 0.1.
+\li \c _order: order. Default = \c 1.
+\li \c _parametricnodes: Default = \c 0.
+\li \c _refine: optionally refine with \p refine levels the mesh. Default =\c 0.
+\li \c _update: update the mesh data structure (build internal faces and edges). Default =\c true.
+\li \c _force_rebuild: rebuild mesh if already exists. Default = \c false.
+\li \c _physical_are_elementary_regions: to load specific meshes formats. Default = \c false.
 
 To generate your mesh you need a description parameter. This one can be create by one the two following function.
 
@@ -200,19 +200,19 @@ Use this function to create a description from a \c .geo file.
 gmsh_ptrtype geo(_filename, _h, _dim, _order, _files_path);
 \eco
 
-Required Parameters :
-\li \c filename : file to load.
+Required Parameters:
+\li \c filename: file to load.
 
-Optional Parameters :
-\li \c _h : characteristic size of the mesh. Default = \c 0.1.
-\li \c _dim : dimension. Default = \c 3.
-\li \c _order : order. Default = \c 1.
-\li \c _files_path : path to the file. Default = \c localGeoRepository().
+Optional Parameters:
+\li \c _h: characteristic size of the mesh. Default = \c 0.1.
+\li \c _dim: dimension. Default = \c 3.
+\li \c _order: order. Default = \c 1.
+\li \c _files_path: path to the file. Default = \c localGeoRepository().
 
 The file you want to load has to be in an appropriate repository. See \ref LoadMesh.
 
 \Examples
-From \c "doc/manual/heat/ground.cpp" :
+From \c "doc/manual/heat/ground.cpp":
 \co
 mesh = createGMSHMesh( _mesh=new mesh_type,
                        _desc=geo( _filename="ground.geo",
@@ -221,7 +221,7 @@ mesh = createGMSHMesh( _mesh=new mesh_type,
                                   _h=meshSize ) );
 \eco
 
-From \c "doc/manual/fd/penalisation.cpp" :
+From \c "doc/manual/fd/penalisation.cpp":
 \co
 mesh = createGMSHMesh( _mesh=new mesh_type,
                        _desc=geo( _filename=File_Mesh,
@@ -240,26 +240,26 @@ gmsh_ptrtype domain(_name, _shape, _h, _dim, _order, _convex, \
                     _addmidpoint, _xmin, _xmax, _ymin, _ymax, _zmin, _zmax);
 \eco
 
-Required Parameters :
-\li \c _name : name of the file that will ge generated without extension.
-\li \c _shape : shape of the domain to be generated (simplex or hypercube).
+Required Parameters:
+\li \c _name: name of the file that will ge generated without extension.
+\li \c _shape: shape of the domain to be generated (simplex or hypercube).
 
-Optional Parameters :
-\li \c _h : characteristic size of the mesh. Default = \c 0.1.
-\li \c _dim : dimension of the domain. Default = \c 2.
-\li \c _order : order of the geometry. Default = \c 1.
-\li \c _convex : type of convex used to mesh the domain. Default = \c simplex.
+Optional Parameters:
+\li \c _h: characteristic size of the mesh. Default = \c 0.1.
+\li \c _dim: dimension of the domain. Default = \c 2.
+\li \c _order: order of the geometry. Default = \c 1.
+\li \c _convex: type of convex used to mesh the domain. Default = \c simplex.
 
-\li \c _addmidpoint : add middle point. Default = \c true.
-\li \c _xmin : minimum x coordinate. Default = \c 0.
-\li \c _xmax : maximum x coordinate. Default = \c 1.
-\li \c _ymin : minimum y coordinate. Default = \c 0.
-\li \c _ymax : maximum y coordinate. Default = \c 1.
-\li \c _zmin : minimum z coordinate. Default = \c 0.
-\li \c _zmax : maximum z coordinate. Default = \c 1.
+\li \c _addmidpoint: add middle point. Default = \c true.
+\li \c _xmin: minimum x coordinate. Default = \c 0.
+\li \c _xmax: maximum x coordinate. Default = \c 1.
+\li \c _ymin: minimum y coordinate. Default = \c 0.
+\li \c _ymax: maximum y coordinate. Default = \c 1.
+\li \c _zmin: minimum z coordinate. Default = \c 0.
+\li \c _zmax: maximum z coordinate. Default = \c 1.
 
 \Examples
-From \c "doc/manual/laplacian/laplacian.ccp" :
+From \c "doc/manual/laplacian/laplacian.ccp":
 \co
 mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                     _desc=domain( _name=( boost::format( "%1%-%2%" ) % shape % Dim ).str() ,
@@ -270,7 +270,7 @@ mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                                   _ymin=-1 ) );
 \eco
 
-From \c "doc/manual/stokes/stokes.cpp" :
+From \c "doc/manual/stokes/stokes.cpp":
 \co
 mesh = createGMSHMesh( _mesh=new mesh_type,
                        _desc=domain( _name=(boost::format("%1%-%2%-%3%")%"hypercube"%convex_type().dimension()%1).str() ,
@@ -279,7 +279,7 @@ mesh = createGMSHMesh( _mesh=new mesh_type,
                                      _h=meshSize ) );
 \eco
 
-From \c "doc/manual/solid/beam.cpp" :
+From \c "doc/manual/solid/beam.cpp":
 \co
 mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                     _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK,

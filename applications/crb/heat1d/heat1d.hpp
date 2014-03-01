@@ -357,12 +357,6 @@ public:
      */
 
     /**
-     * \brief Returns the affine decomposition
-     */
-    affine_decomposition_type computeAffineDecomposition();
-
-
-    /**
      * \brief solve the model for parameter \p mu
      * \param mu the model parameter
      * \param T the temperature field
@@ -437,7 +431,6 @@ public:
         return M_compositeF;
     }
 
-
     parameter_type refParameter()
     {
         return M_Dmu->min();
@@ -461,9 +454,6 @@ private:
     sparse_matrix_ptrtype D,M;
     vector_ptrtype F;
     element_ptrtype pT;
-
-    std::vector < std::vector<sparse_matrix_ptrtype> > M_Aqm;
-    std::vector < std::vector<std::vector<vector_ptrtype> > > M_Fqm;
 
     std::vector< std::vector<operator_ptrtype> > M_Aqm_free;
     std::vector< std::vector<std::vector<functional_ptrtype> > > M_Fqm_free;
@@ -605,13 +595,6 @@ Heat1D::initModel()
 
 
 } // Heat1d::run
-
-
-Heat1D::affine_decomposition_type
-Heat1D::computeAffineDecomposition()
-{
-    return boost::make_tuple( M_Aqm, M_Fqm );
-}
 
 void
 Heat1D::solve( sparse_matrix_ptrtype& D,
