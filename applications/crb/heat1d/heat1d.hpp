@@ -353,22 +353,6 @@ public:
     //@{
 
     /**
-     * run the convergence test
-     */
-
-    /**
-     * \brief solve the model for parameter \p mu
-     * \param mu the model parameter
-     * \param T the temperature field
-     */
-     void solve( parameter_type const& mu, element_ptrtype& T );
-
-    /**
-     * solve for a given parameter \p mu
-     */
-    element_type solve( parameter_type const& mu );
-
-    /**
      * solve \f$ M u = f \f$
      */
     void l2solve( vector_ptrtype& u, vector_ptrtype const& f );
@@ -381,40 +365,7 @@ public:
         return M;
     }
 
-
-    /**
-     * update the PDE system with respect to \param mu
-     */
-    void update( parameter_type const& mu , int output_index=0);
     //@}
-
-    /**
-     * export results to ensight format (enabled by  --export cmd line options)
-     */
-    void exportResults( element_type& u );
-
-    void solve( sparse_matrix_ptrtype& ,element_type& ,vector_ptrtype&  );
-
-    /**
-     * returns the scalar product of the boost::shared_ptr vector x and
-     * boost::shared_ptr vector y
-     */
-    double scalarProduct( vector_ptrtype const& X, vector_ptrtype const& Y );
-
-    /**
-     * returns the scalar product of the vector x and vector y
-     */
-    double scalarProduct( vector_type const& x, vector_type const& y );
-
-    /**
-     * specific interface for OpenTURNS
-     *
-     * \param X input vector of size N
-     * \param N size of input vector X
-     * \param Y input vector of size P
-     * \param P size of input vector Y
-     */
-    void run( const double * X, unsigned long N, double * Y, unsigned long P );
 
     /**
      * Given the output index \p output_index and the parameter \p mu, return
@@ -594,82 +545,9 @@ Heat1D::initModel()
     M->close();
 
 
-} // Heat1d::run
-
-void
-Heat1D::solve( sparse_matrix_ptrtype& D,
-               element_type& u,
-               vector_ptrtype& F )
-{
-
-    vector_ptrtype U( backend->newVector( u.functionSpace() ) );
-    backend->solve( D, D, U, F );
-    u = *U;
-} // Heat1d::solve
-
-
-void
-Heat1D::update( parameter_type const& mu, int output_index )
-{
-    if (option(_name="crb.stock-matrices"). as<bool>() )
-    {
-
-        D->close();
-        D->zero();
-
-        auto Aqm=backend->newMatrix( Xh , Xh);
-        auto Fqm=backend->newVector( Xh );
-
-        for ( size_type q = 0; q < M_nb_terms_in_affine_decomposition_a; ++q )
-        {
-            M_Aqm_free[q][0]->matPtr( Aqm );
-            D->addMatrix( M_betaAqm[q][0], Aqm );
-        }
-
-        F->close();
-        F->zero();
-
-        for ( size_type q = 0; q < M_nb_terms_in_affine_decomposition_rhs; ++q )
-        {
-            M_Fqm_free[0][q][0]->containerPtr( Fqm );
-            F->add( M_betaFqm[0][q][0], Fqm );
-        }
-    }//stock matrices
-    else
-    {
-        D->close();
-        D->zero();
-        F->close();
-        F->zero();
-
-        M_compositeA->setScalars( M_betaAqm );
-        M_compositeA->sumAllMatrices( D );
-
-        M_compositeF[output_index]->setScalars( M_betaFqm[output_index] );
-        M_compositeF[output_index]->sumAllVectors( F );
-
-    }//no stock matrices
 }
 
 
-typename Heat1D::element_type
-Heat1D::solve( parameter_type const& mu )
-{
-    //std::cout << "solve(mu) for parameter " << mu << "\n";
-
-    element_ptrtype T( new element_type( Xh ) );
-    this->solve( mu, T );
-    return *T;
-
-}
-
-void
-Heat1D::solve( parameter_type const& mu, element_ptrtype& T )
-{
-    this->computeBetaQm( mu );
-    this->update( mu );
-    backend->solve( _matrix=D,  _solution=T, _rhs=F);
-}
 
 void
 Heat1D::l2solve( vector_ptrtype& u, vector_ptrtype const& f )
@@ -680,48 +558,12 @@ Heat1D::l2solve( vector_ptrtype& u, vector_ptrtype const& f )
 }
 
 double
-Heat1D::scalarProduct( vector_ptrtype const& x, vector_ptrtype const& y )
-{
-    return M->energy( x, y );
-}
-double
-Heat1D::scalarProduct( vector_type const& x, vector_type const& y )
-{
-    return M->energy( x, y );
-}
-
-void
-Heat1D::run( const double * X, unsigned long N, double * Y, unsigned long P )
-{
-    using namespace vf;
-    Feel::ParameterSpace<4>::Element mu( M_Dmu );
-    mu << X[0], X[1], X[2], X[3];
-    static int do_init = true;
-
-    if ( do_init )
-    {
-        meshSize = X[4];
-        this->initModel();
-        do_init = false;
-    }
-
-    this->solve( mu, pT );
-
-    double mean = integrate( elements( mesh ),
-                             chi( ( Px() >= -0.1 ) && ( Px() <= 0.1 ) )*idv( *pT ) ).evaluate()( 0,0 )/0.2;
-    Y[0]=mean;
-}
-
-
-
-double
 Heat1D::output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve )
 {
 
+    CHECK( ! need_to_solve ) << "The model need to have the solution to compute the output\n";
+
     using namespace vf;
-    if( need_to_solve )
-        this->solve( mu, pT );
-    else
         *pT = u;
 
     double output=0;
