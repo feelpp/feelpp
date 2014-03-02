@@ -678,6 +678,7 @@ WARN_LOGFILE           =
 # with spaces.
 
 INPUT                  = \
+ "@FEELPP_HOME_DIR@/feel/" \
  "@FEELPP_HOME_DIR@/doc/manual/" \
  "@FEELPP_HOME_DIR@/doc/api" \
  "@FEELPP_HOME_DIR@/ChangeLog" \
