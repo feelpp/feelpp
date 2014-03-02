@@ -30,6 +30,8 @@
 #ifndef __FunctionSpace_H
 #define __FunctionSpace_H 1
 
+#include <type_traits>
+
 #include <boost/static_assert.hpp>
 
 #include <boost/mpl/at.hpp>
@@ -2936,8 +2938,6 @@ public:
         typename mpl::at_c<element_vector_type,i>::type
         element( std::string const& name ="u", bool updateOffViews=true )
         {
-            if ( this->worldComm().globalSize()>1 ) this->worldComm().globalComm().barrier();
-
             size_type nbdof_start =  fusion::accumulate( this->functionSpaces(),
                                      size_type( 0 ),
                                      Feel::detail::NLocalDof<mpl::bool_<true> >( this->worldsComm(), false, 0, i ) );
@@ -4025,6 +4025,20 @@ public:
     }
 
     /**
+     * \param e expression to initialize the element
+     * \param u name of the element
+     * \return an element initialized with expression \p e
+     */
+    template<typename ExprT>
+    element_type
+    element( ExprT e, std::string const& name = "u", typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type* = 0 )
+    {
+        element_type u( this->shared_from_this(), name );
+        u.on( _range=elements(M_mesh), _expr=e );
+        return u;
+    }
+
+    /**
      * \return an element of the function space
      */
     element_ptrtype
@@ -4032,6 +4046,20 @@ public:
     {
         element_ptrtype u( new element_type( this->shared_from_this(), name ) );
         u->zero();
+        return u;
+    }
+
+    /**
+     * \param e expression to initialize the element
+     * \param u name of the element
+     * \return a pointer to an element initialized with expression \p e
+     */
+    template<typename ExprT>
+    element_ptrtype
+    elementPtr( ExprT e, std::string const& name = "u", typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type* = 0 )
+    {
+        element_ptrtype u( new element_type( this->shared_from_this(), name ) );
+        u->on( _range=elements(M_mesh), _expr=e );
         return u;
     }
 

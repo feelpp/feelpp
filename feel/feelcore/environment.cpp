@@ -378,18 +378,24 @@ Environment::generateOLFiles( int argc, char** argv, std::string const& appName)
     //ol << "OL.setAttribute( /GeneralParameters/Feel++, )
 
     /* Application instructions */
-    //ol << "FeelApp.register(interfaced, mpirun -np " << worldComm().size() << " " + appPath.str() + ");" << std::endl;
-    ol << "FeelApp.register(interfaced, " + appPath.str() + ");" << std::endl;
+    if(worldComm().size() == 1)
+    {
+        ol << "FeelApp.register(interfaced, " + appPath.str() + ");" << std::endl;
+    }
+    else
+    {
+        ol << "FeelApp.register(interfaced, /usr/bin/mpirun -np " << worldComm().size() << " " + appPath.str() + ");" << std::endl;
+    }
     ol << "FeelApp.in(OL.get(Arguments/FileName).onelab.cfg.ol);" << std::endl;
     ol << "FeelApp.run( --config-file OL.get(Arguments/FileName).onelab.cfg --nochdir );" << std::endl;
-    ol << "FeelApp.out(" + appName + "-1_0.msh);" << std::endl;
 
     /* Take into account th fact that we use MPI */
     /* Generating multiple output files, so we merge them */
-    //for(int i = 0; i < worldComm().size(); i++)
-    //{
-    ol << "FeelApp.merge(" + appName + "-1_0.msh);" << std::endl;
-    //}
+    for(int i = 0; i < worldComm().size(); i++)
+    {
+        ol << "FeelApp.out(" + appName + "-" << worldComm().size() << "_" << i << ".msh);" << std::endl;
+        ol << "FeelApp.merge(" + appName + "-" << worldComm().size() << "_" << i << ".msh);" << std::endl;
+    }
 
     ol.close();
     cfgol.close();
