@@ -2427,7 +2427,7 @@ CRB<TruthModelType>::offline()
         if( write_memory_evolution )
             ps.log(pslogname);
 
-        boost::timer timer, timer2;
+        boost::mpi::timer timer, timer2, timer3;
         LOG(INFO) <<"========================================"<<"\n";
 
         if ( M_error_type == CRB_NO_RESIDUAL )
@@ -2443,14 +2443,22 @@ CRB<TruthModelType>::offline()
         mu.check();
 #endif
 
+        double tpr=0,tdu=0;
+
         if ( M_model->isSteady()  )
         {
 
             if( ! M_use_newton )
             {
+                timer2.restart();
                 u = offlineFixedPointPrimal( mu );//, A  );
+                tpr=timer2.elapsed();
                 if( solve_dual_problem )
+                {
+                    timer2.restart();
                     udu = offlineFixedPointDual( mu , dual_initial_field );//,  A , u );
+                    tdu=timer2.elapsed();
+                }
             }
             else
             {
@@ -2461,30 +2469,52 @@ CRB<TruthModelType>::offline()
                 //double normeu = u.l2Norm();
                 //std::cout<<"norm o : "<<normeo<<std::endl;
                 //std::cout<<"norm u : "<<normeu<<std::endl;
-                LOG(INFO) << "  -- primal problem solved in " << timer2.elapsed() << "s";
+                tpr=timer2.elapsed();
+                LOG(INFO) << "  -- primal problem solved in " << tpr << "s";
                 timer2.restart();
             }
         }//steady
 
         else
         {
+            timer2.restart();
             u = offlineFixedPointPrimal( mu  );
+            tpr=timer2.elapsed();
             if ( solve_dual_problem || M_error_type==CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
+            {
+                timer2.restart();
                 udu = offlineFixedPointDual( mu , dual_initial_field );
+                tdu=timer2.elapsed();
+            }
         }//transient
 
 
         if( ! use_predefined_WNmu )
             M_WNmu->push_back( mu, index );
 
+        timer2.restart();
         M_WNmu_complement = M_WNmu->complement();
+        double time=timer2.elapsed();
+
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<" -- primal problem solved in "<<tpr<<" s"<<std::endl;
+            std::cout<<" -- dual problem solved in "<<tdu<<" s"<<std::endl;
+            std::cout<<" -- complement of M_WNmu built in "<<time<<" s"<<std::endl;
+        }
 
         bool norm_zero = false;
 
+        timer2.restart();
+        timer3.restart();
         if ( M_model->isSteady() )
         {
             M_model->rBFunctionSpace()->addPrimalBasisElement( u );
+            tpr=timer2.elapsed();
+            timer2.restart();
             M_model->rBFunctionSpace()->addDualBasisElement( udu );
+            tdu=timer2.elapsed();
+            time=timer3.elapsed();
             //M_WN.push_back( u );
             //M_WNdu.push_back( udu );
         }//end of steady case
@@ -2588,7 +2618,9 @@ CRB<TruthModelType>::offline()
             POD->setTimeInitial( M_model->timeInitial() );
             mode_set_type ModeSet;
 
+            timer2.restart();
             size_type number_max_of_mode = POD->pod( ModeSet,true );
+            tpr=timer2.elapsed();
 
             if ( number_max_of_mode < M_Nm )
             {
@@ -2636,7 +2668,10 @@ CRB<TruthModelType>::offline()
                 POD->setBdf( M_bdf_dual );
                 POD->setTimeInitial( M_model->timeFinal()+M_model->timeStep() );
                 mode_set_type ModeSetdu;
+
+                timer2.restart();
                 POD->pod( ModeSetdu,false );
+                tdu=timer2.elapsed();
 
                 if ( !seek_mu_in_complement )
                 {
@@ -2679,8 +2714,25 @@ CRB<TruthModelType>::offline()
                 }
             }
 
+            time = timer3.elapsed();
 
         }//end of transient case
+
+        if( Environment::worldComm().isMasterRank() )
+        {
+            if ( M_model->isSteady() )
+            {
+                std::cout<<"-- time to add the primal basis : "<<tpr<<" s"<<std::endl;
+                std::cout<<"-- time to add the dual basis : "<<tdu<<" s"<<std::endl;
+                std::cout<<"-- time to add primal and dual basis : "<<time<<" s"<<std::endl;
+            }
+            else
+            {
+                std::cout<<"-- time to perform primal POD : "<<tpr<<" s"<<std::endl;
+                std::cout<<"-- time to perform dual POD : "<<tdu<<" s"<<std::endl;
+                std::cout<<"-- time to add primal and dual basis : "<<time<<" s"<<std::endl;
+            }
+        }
 
         //in the case of transient problem, we can add severals modes for a same mu
         //Moreover, if the case where the initial condition is not zero and we don't orthonormalize elements in the basis,
@@ -2717,6 +2769,7 @@ CRB<TruthModelType>::offline()
             int max_iter = option(_name="crb.orthonormality-max-iter").template as<int>();
             if ( orthonormalize_primal )
             {
+                timer2.restart();
                 double norm = norm_max+1;
                 int iter=0;
                 double old = 10;
@@ -2729,9 +2782,11 @@ CRB<TruthModelType>::offline()
                         norm=0;
                     old=norm;
                 }
+                tpr=timer2.elapsed();
             }
             if ( orthonormalize_dual && solve_dual_problem )
             {
+                timer2.restart();
                 double norm = norm_max+1;
                 int iter=0;
                 double old = 10;
@@ -2743,8 +2798,17 @@ CRB<TruthModelType>::offline()
                         norm=0;
                     old=norm;
                 }
+                tdu=timer2.elapsed();
             }
         }//orthonormalization
+
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<"-- primal orthonormalization : "<<tpr<<" s"<<std::endl;
+            std::cout<<"-- dual orthonormalization : "<<tdu<<" s"<<std::endl;
+        }
+
+        timer3.restart();
 
         if( ! M_use_newton )
         {
@@ -3031,7 +3095,11 @@ CRB<TruthModelType>::offline()
             }
         }
 
-        timer2.restart();
+        time=timer3.elapsed();
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<" -- projection on reduced basis space : "<<time<<" s"<<std::endl;
+        }
 
         if( option(_name="crb.use-accurate-apee").template as<bool>() )
         {
@@ -3108,14 +3176,14 @@ CRB<TruthModelType>::offline()
         }
         else
         {
+            timer2.restart();
             //boost::tie( M_maxerror, mu, index , delta_pr , delta_du ) = maxErrorBounds( M_N );
             boost::tie( M_maxerror, mu , delta_pr , delta_du ) = maxErrorBounds( M_N );
+            time=timer2.elapsed();
             M_current_mu = mu;
 
             if( proc_number == master_proc )
-                std::cout << "  -- max error bounds computed in " << timer2.elapsed() << "s\n";
-
-            timer2.restart();
+                std::cout << "  -- max error bounds computed in " << time << "s"<<std::endl;
         }
 
         M_rbconv.insert( convergence( M_N, boost::make_tuple(M_maxerror,delta_pr,delta_du) ) );
@@ -3126,18 +3194,23 @@ CRB<TruthModelType>::offline()
 
         if ( option(_name="crb.check.rb").template as<int>() == 1 )std::cout << "  -- check reduced basis done in " << timer2.elapsed() << "s\n";
 
-        timer2.restart();
-        if( Environment::worldComm().isMasterRank() )
-            std::cout << "time: " << timer.elapsed() << std::endl;
         if( proc_number == 0 ) std::cout << "============================================================\n";
         LOG(INFO) <<"========================================"<<"\n";
 
+        timer2.restart();
         //save DB after adding an element
         this->saveDB();
 
         // M_elements_database.setWn( boost::make_tuple( M_WN , M_WNdu ) );
         M_elements_database.setWn( boost::make_tuple( M_model->rBFunctionSpace()->primalRB() , M_model->rBFunctionSpace()->dualRB() ) );
         M_elements_database.saveDB();
+        tpr=timer2.elapsed();
+        time=timer.elapsed();
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<"saving in the database : "<<tpr<<" s"<<std::endl;
+            std::cout << "total time: " << time <<" s"<< std::endl;
+        }
     }
 
     if( proc_number == 0 )

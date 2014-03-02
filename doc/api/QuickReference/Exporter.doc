@@ -14,7 +14,7 @@ namespace Feel {
 
   \section Introduction Introduction
 
-  Once we have solved the PDE is solved we usually would like to
+  Once the PDE is solved we usually would like to
   visualize the solution and possibly other data or fields associated
   with the problem. Feel++ provides a very powerful framework for
   post-processing allowing to:

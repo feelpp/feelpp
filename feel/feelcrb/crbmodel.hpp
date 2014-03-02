@@ -105,8 +105,8 @@ public:
     typedef typename ModelType::space_type space_type;
 
     //! function space type
-    typedef typename model_type::functionspace_type functionspace_type;
-    typedef typename model_type::functionspace_ptrtype functionspace_ptrtype;
+    typedef typename model_type::space_type functionspace_type;
+    typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
 
     //! reduced basis function space type
     typedef typename model_type::rbfunctionspace_type rbfunctionspace_type;
@@ -114,23 +114,27 @@ public:
 
 
     //! element of the functionspace type
-    typedef typename model_type::element_type element_type;
-    typedef typename model_type::element_ptrtype element_ptrtype;
+    typedef typename model_type::space_type::element_type element_type;
+    typedef boost::shared_ptr<element_type> element_ptrtype;
 
     typedef typename model_type::backend_type backend_type;
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
-    typedef typename model_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
-    typedef typename model_type::vector_ptrtype vector_ptrtype;
-    typedef typename model_type::vector_type vector_type;
+    typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
+    typedef typename backend_type::vector_ptrtype vector_ptrtype;
+    typedef typename backend_type::vector_type vector_type;
 
-    typedef typename model_type::eigen_matrix_type eigen_matrix_type;
+    typedef Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> eigen_matrix_type;
+    typedef eigen_matrix_type ematrix_type;
+    typedef boost::shared_ptr<eigen_matrix_type> eigen_matrix_ptrtype;
 
     typedef typename model_type::parameterspace_type parameterspace_type;
-    typedef typename model_type::parameterspace_ptrtype parameterspace_ptrtype;
+    typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
     typedef typename model_type::parameter_type parameter_type;
-    typedef typename model_type::parameter_ptrtype parameter_ptrtype;
-    typedef typename model_type::sampling_type sampling_type;
-    typedef typename model_type::sampling_ptrtype sampling_ptrtype;
+    typedef boost::shared_ptr<parameter_type> parameter_ptrtype;
+
+
+    typedef typename model_type::parameterspace_type::sampling_type sampling_type;
+    typedef typename model_type::parameterspace_type::sampling_ptrtype sampling_ptrtype;
 
 
     typedef typename std::vector< std::vector < element_ptrtype > > initial_guess_type;
@@ -210,6 +214,7 @@ public:
         M_backend( backend_type::build( vm ) ),
         M_backend_primal( backend_type::build( vm , "backend-primal" ) ),
         M_backend_dual( backend_type::build( vm , "backend-dual" ) ),
+        M_backend_l2( backend_type::build( vm , "backend-l2" ) ),
         M_alreadyCountAffineDecompositionTerms( false )
     {
         this->init();
@@ -232,6 +237,7 @@ public:
         M_backend( backend_type::build( model->vm ) ),
         M_backend_primal( backend_type::build( model->vm , "backend-primal" ) ),
         M_backend_dual( backend_type::build( model->vm , "backend-dual") ),
+        M_backend_l2( backend_type::build( model->vm , "backend-l2") ),
         M_alreadyCountAffineDecompositionTerms( false )
     {
         this->init();
@@ -251,6 +257,7 @@ public:
         M_backend( backend_type::build( Environment::vm() ) ),
         M_backend_primal( backend_type::build( Environment::vm() , "backend-primal" ) ),
         M_backend_dual( backend_type::build( Environment::vm() , "backend-dual" ) ),
+        M_backend_l2( backend_type::build( Environment::vm() , "backend-l2" ) ),
         M_alreadyCountAffineDecompositionTerms( false )
     {
         this->init();
@@ -273,6 +280,7 @@ public:
         M_backend( o.M_backend ),
         M_backend_primal( o.M_backend_primal ),
         M_backend_dual( o.M_backend_dual ),
+        M_backend_l2( o.M_backend_l2 ),
         M_alreadyCountAffineDecompositionTerms( o.M_alreadyCountAffineDecompositionTerms )
 
     {
@@ -286,7 +294,6 @@ public:
     //! initialize the model (mesh, function space, operators, matrices, ...)
     FEELPP_DONT_INLINE void init()
     {
-
         if ( M_is_initialized )
             return;
 
@@ -302,6 +309,12 @@ public:
                                                _worldcomm=M_backend_dual->comm(),
                                                _prefix=M_backend_dual->prefix() ,
                                                _rebuild=true);
+        M_preconditioner_l2 = preconditioner(_pc=(PreconditionerType) M_backend_l2->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
+                                             _backend= M_backend_l2,
+                                             _pcfactormatsolverpackage=(MatSolverPackageType) M_backend_l2->matSolverPackageEnumType(),// mumps if is installed ( by defaut )
+                                             _worldcomm=M_backend_l2->comm(),
+                                             _prefix=M_backend_l2->prefix() ,
+                                             _rebuild=true);
         M_is_initialized=true;
 
         if( ! M_model->isInitialized() )
@@ -323,6 +336,9 @@ public:
         u = Xh->element();
         v = Xh->element();
 
+        M_inner_product_matrix = M_model->innerProduct();
+        M_preconditioner_l2->setMatrix( M_inner_product_matrix );
+
     }
 
     //@}
@@ -343,6 +359,7 @@ public:
             M_backend = o.M_backend;
             M_backend_primal = o.M_backend_primal;
             M_backend_dual = o.M_backend_dual;
+            M_backend_l2 = o.M_backend_l2;
         }
 
         return *this;
@@ -387,7 +404,8 @@ public:
      */
     sparse_matrix_ptrtype const& innerProduct() const
     {
-        return M_model->innerProduct();
+        //return M_model->innerProduct();
+        return M_inner_product_matrix;
     }
 
     /**
@@ -396,12 +414,12 @@ public:
      */
     sparse_matrix_ptrtype  innerProduct()
     {
-        return M_model->innerProduct();
+        //return M_model->innerProduct();
+        return M_inner_product_matrix;
     }
 
     /**
      * \brief Returns the matrix associated with the inner product
-     * used to perform the POD (parabolic case)
      */
     sparse_matrix_ptrtype const& innerProductForMassMatrix() const
     {
@@ -410,11 +428,28 @@ public:
 
     /**
      * \brief Returns the matrix associated with the inner product
-     * used to perform the POD (parabolic case)
      */
     sparse_matrix_ptrtype  innerProductForMassMatrix()
     {
         return M_model->innerProductForMassMatrix();
+    }
+
+    /**
+     * \brief Returns the matrix associated with the inner product
+     * used to perform the POD (parabolic case)
+     */
+    sparse_matrix_ptrtype const& innerProductForPod() const
+    {
+        return M_model->innerProductForPod();
+    }
+
+    /**
+     * \brief Returns the matrix associated with the inner product
+     * used to perform the POD (parabolic case)
+     */
+    sparse_matrix_ptrtype  innerProductForPod()
+    {
+        return M_model->innerProductForPod();
     }
 
 
@@ -457,7 +492,7 @@ public:
 
     int QInitialGuess() const
     {
-        return Qm( mpl::bool_<model_type::is_linear>() );
+        return QInitialGuess( mpl::bool_<model_type::is_linear>() );
     }
     int QInitialGuess( mpl::bool_<true> ) const
     {
@@ -878,6 +913,9 @@ public:
             M_Qm=M_mMaxM.size();
 
             auto compositeA = operatorCompositeA();
+            //it is important to check that the user provides operators free
+            //else we don't have any affine decomposition
+            CHECK( compositeA )<<"Very important ERROR !!! You have not implemented computeAffineDecomposition or operatorCompositeA !\n";
             M_mMaxA = compositeA->countAllContributions();
             M_Qa=M_mMaxA.size();
             auto vector_compositeF = functionalCompositeF();
@@ -914,6 +952,7 @@ public:
 
         if( M_Aqm.size() == 0 )
         {
+            //in that case the model must provides operators free
             auto compositeM = operatorCompositeM();
             int q_max = this->Qm();
             M_Mqm.resize( q_max);
@@ -1359,14 +1398,14 @@ public:
      */
     double scalarProduct( vector_type const& X, vector_type const& Y )
     {
-        return M_model->scalarProduct( X, Y );
+        return M_inner_product_matrix->energy( X, Y );
     }
     /**
      * returns the scalar product of the vector x and vector y
      */
     double scalarProduct( vector_ptrtype const& X, vector_ptrtype const& Y )
     {
-        return M_model->scalarProduct( X, Y );
+        return M_inner_product_matrix->energy( X, Y );
     }
 
 
@@ -1375,14 +1414,16 @@ public:
      */
     double scalarProductForMassMatrix( vector_type const& X, vector_type const& Y )
     {
-        return M_model->scalarProductForMassMatrix( X, Y );
+        auto M = M_model->innerProductForMassMatrix();
+        return M->energy( X, Y );
     }
     /**
      * returns the scalar product used for the mass matrix of the vector x and vector y
      */
     double scalarProductForMassMatrix( vector_ptrtype const& X, vector_ptrtype const& Y )
     {
-        return M_model->scalarProductForMassMatrix( X, Y );
+        auto M = M_model->innerProductForMassMatrix();
+        return M->energy( X, Y );
     }
 
 
@@ -1395,7 +1436,8 @@ public:
     }
     double scalarProductForPod( vector_type const& X, vector_type const& Y , mpl::bool_<true> )
     {
-        return M_model->scalarProductForPod( X, Y );
+        auto M = M_model->innerProductForPod();
+        return M->energy( X, Y );
     }
     double scalarProductForPod( vector_type const& X, vector_type const& Y , mpl::bool_<false> )
     {
@@ -1425,72 +1467,26 @@ public:
      */
     element_type solve( parameter_type const& mu )
     {
-        //return this->solveFemUsingAffineDecompositionFixedPoint( mu );
-        return M_model->solve( mu );
+        element_type solution;// = M_model->functionSpace()->element();
+        if( is_linear )
+            solution = this->solveFemUsingAffineDecompositionFixedPoint( mu );
+        else
+            solution = M_model->solve( mu );
+        return solution;
     }
 
 
     /**
-     * solve the model for a given parameter \p mu
-     */
-    void solve( parameter_type const& mu, element_ptrtype& u )
-    {
-        return M_model->solve( mu, u );
-    }
-
-    /**
-     * solve the model for a given parameter \p mu and \p L as right hand side
-     * \param transpose if true solve the transposed(dual) problem
-     */
-    void solve( parameter_type const& mu, element_ptrtype& u, vector_ptrtype const& L, bool transpose = false )
-    {
-        return M_model->solve( mu, u, L, transpose );
-    }
-
-    /**
-     * solve \f$M u = f\f$ where \f$ M \f$ is the matrix associated to the \f$ L_2 \f$
-     * norm
+     * solve \f$M u = f\f$ where \f$ M \f$ is the matrix associated to
+     * the energy norm
      */
     void l2solve( vector_ptrtype& u, vector_ptrtype const& f )
     {
-        return M_model->l2solve( u, f );
+        M_backend_l2->solve( _matrix=M_inner_product_matrix,  _solution=u, _rhs=f , _prec=M_preconditioner_l2 );
+        //return M_model->l2solve( u, f );
     }
 
 
-    /**
-     * \brief solve \f$A x = f\f$
-     *
-     * \note if \p tranpose is true then solve for \f$A^T x = f\f$.
-     *
-     * \param A matrix
-     * \param x solution vector
-     * \param f right hand side vector
-     * \param transpose if is true solve for \f$A^T x = f\f$, otherwise solve \f$A x = f\f$.
-     *
-     * \return a tuple with the number of iterations used and the residual
-     */
-    boost::tuple<int, value_type>
-    solve( sparse_matrix_ptrtype const& A,
-           vector_ptrtype & x,
-           vector_ptrtype const& f,
-           bool tranpose = false
-         )
-    {
-        //return M_model->solve( A, x, f );
-    }
-
-    /**
-     * \brief export a vector of elements
-     *
-     * \param v a vector of \c shared_ptr<> elements of the functions space
-     */
-#if 0
-    bool
-    exportResults( double time, std::vector<element_ptrtype> const& v )
-    {
-        //return model->export( time, v );
-    }
-#endif
     /**
      * run the model
      */
@@ -1672,6 +1668,7 @@ private:
     backend_ptrtype M_backend;
     backend_ptrtype M_backend_primal;
     backend_ptrtype M_backend_dual;
+    backend_ptrtype M_backend_l2;
 
     beta_vector_type M_dummy_betaMqm;
 
@@ -1699,6 +1696,7 @@ private:
 
     preconditioner_ptrtype M_preconditioner_primal;
     preconditioner_ptrtype M_preconditioner_dual;
+    preconditioner_ptrtype M_preconditioner_l2;
 
     //number of terms in affine decomposition
     int M_Qa; //A
@@ -1710,6 +1708,8 @@ private:
     std::vector< std::vector<int> > M_mMaxF;//number of sub-terms (using EIM)
 
     bool M_alreadyCountAffineDecompositionTerms;
+
+    sparse_matrix_ptrtype M_inner_product_matrix;
 };
 
 

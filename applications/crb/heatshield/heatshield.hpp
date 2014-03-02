@@ -171,9 +171,6 @@ public:
     typedef backend_type::vector_type vector_type;
     typedef backend_type::vector_ptrtype vector_ptrtype;
 
-    typedef Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> eigen_matrix_type;
-    typedef eigen_matrix_type ematrix_type;
-    typedef boost::shared_ptr<eigen_matrix_type> eigen_matrix_ptrtype;
 
     /*mesh*/
     typedef Simplex<2,1> entity_type; /*dim,order*/
@@ -212,8 +209,6 @@ public:
     typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
     typedef typename parameterspace_type::element_type parameter_type;
     typedef typename parameterspace_type::element_ptrtype parameter_ptrtype;
-    typedef typename parameterspace_type::sampling_type sampling_type;
-    typedef typename parameterspace_type::sampling_ptrtype sampling_ptrtype;
 
     /* time discretization */
     typedef Bdf<space_type>  bdf_type;
@@ -538,11 +533,6 @@ public:
      */
     element_type solve( parameter_type const& mu );
 
-    /**
-     * solve \f$ M u = f \f$
-     */
-    void l2solve( vector_ptrtype& u, vector_ptrtype const& f );
-
 
     /**
      * update the PDE system with respect to \param mu
@@ -571,40 +561,16 @@ public:
         return InnerMassMatrix;
     }
 
+    /**
+     * inner product for the POD
+     */
+    sparse_matrix_ptrtype innerProductForPod ( void )
+    {
+        return Mpod;
+    }
+
     void solve( sparse_matrix_ptrtype& ,element_type& ,vector_ptrtype&  );
 
-     /**
-     * returns the scalar product used fior mass matrix ( to solve eigen values problem )
-     * of the boost::shared_ptr vector x and boost::shared_ptr vector
-     */
-    double scalarProductForMassMatrix( vector_ptrtype const& X, vector_ptrtype const& Y );
-
-    /**
-     * returns the scalar product for mass matrix of the vector x and vector y
-     */
-    double scalarProductForMassMatrix( vector_type const& x, vector_type const& y );
-
-    /**
-     * returns the scalar product of the boost::shared_ptr vector x and
-     * boost::shared_ptr vector y
-     */
-    double scalarProduct( vector_ptrtype const& X, vector_ptrtype const& Y );
-
-    /**
-     * returns the scalar product of the vector x and vector y
-     */
-    double scalarProduct( vector_type const& x, vector_type const& y );
-
-    /**
-     * returns the scalar product used in POD of the boost::shared_ptr vector x and
-     * boost::shared_ptr vector y
-     */
-    double scalarProductForPod( vector_ptrtype const& X, vector_ptrtype const& Y );
-
-    /**
-     * returns the scalar product used in POD of the vector x and vector y
-     */
-    double scalarProductForPod( vector_type const& x, vector_type const& y );
 
     /**
      * specific interface for OpenTURNS
@@ -650,10 +616,7 @@ private:
     po::variables_map M_vm;
 
     backend_ptrtype backend;
-    backend_ptrtype M_backendl2;
     bool M_is_steady ;
-
-    preconditioner_ptrtype M_preconditionerl2;
 
     /* mesh parameters */
     double meshSize;
@@ -708,7 +671,6 @@ template<int Order>
 HeatShield<Order>::HeatShield()
     :
     backend( backend_type::build( BACKEND_PETSC ) ),
-    M_backendl2( backend_type::build( BACKEND_PETSC ) ),
     M_is_steady( false ),
     meshSize( 2e-1 ),
     export_number( 0 ),
@@ -721,18 +683,11 @@ HeatShield<Order>::HeatShield( po::variables_map const& vm )
     :
     M_vm( vm ),
     backend( backend_type::build( vm ) ),
-    M_backendl2( backend_type::build( vm , "backendl2" ) ),
     M_is_steady( option(_name="crb.is-model-executed-in-steady-mode").template as<bool>() ),
     meshSize( vm["hsize"].as<double>() ),
     export_number( 0 ),
     M_Dmu( new parameterspace_type )
 {
-        M_preconditionerl2 = preconditioner(_pc=(PreconditionerType) M_backendl2->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
-                                            _backend= M_backendl2,
-                                            _pcfactormatsolverpackage=(MatSolverPackageType) M_backendl2->matSolverPackageEnumType(),// mumps if is installed ( by defaut )
-                                            _worldcomm=M_backendl2->comm(),
-                                            _prefix=M_backendl2->prefix() ,
-                                            _rebuild=true);
 }
 
 template<int Order>
@@ -1068,8 +1023,6 @@ void HeatShield<Order>::assemble()
         integrate( _range= markedfaces( mesh, "gamma_holes" ), _expr= 0.001 * idt( u )*id( v ) )
         ;
 
-    M_preconditionerl2->setMatrix( M );
-
     //scalar product used for mass matrix
     InnerMassMatrix = backend->newMatrix( _test=Xh, _trial=Xh );
     form2( Xh, Xh, InnerMassMatrix ) =
@@ -1352,49 +1305,6 @@ HeatShield<Order>::computeNumberOfSnapshots()
     return M_bdf->timeFinal()/M_bdf->timeStep();
 }
 
-template<int Order>
-void HeatShield<Order>::l2solve( vector_ptrtype& u, vector_ptrtype const& f )
-{
-    //std::cout << "l2solve(u,f)\n";
-    M_backendl2->solve( _matrix=M,  _solution=u, _rhs=f , _prec=M_preconditionerl2 );
-    //std::cout << "l2solve(u,f) done\n";
-}
-
-template<int Order>
-double HeatShield<Order>::scalarProduct( vector_ptrtype const& x, vector_ptrtype const& y )
-{
-    return M->energy( x, y );
-}
-
-template<int Order>
-double HeatShield<Order>::scalarProduct( vector_type const& x, vector_type const& y )
-{
-    return M->energy( x, y );
-}
-
-template<int Order>
-double HeatShield<Order>::scalarProductForMassMatrix( vector_ptrtype const& x, vector_ptrtype const& y )
-{
-    return InnerMassMatrix->energy( x, y );
-}
-
-template<int Order>
-double HeatShield<Order>::scalarProductForMassMatrix( vector_type const& x, vector_type const& y )
-{
-    return InnerMassMatrix->energy( x, y );
-}
-
-template<int Order>
-double HeatShield<Order>::scalarProductForPod( vector_ptrtype const& x, vector_ptrtype const& y )
-{
-    return Mpod->energy( x, y );
-}
-
-template<int Order>
-double HeatShield<Order>::scalarProductForPod( vector_type const& x, vector_type const& y )
-{
-    return Mpod->energy( x, y );
-}
 
 template<int Order>
 void HeatShield<Order>::run( const double * X, unsigned long N, double * Y, unsigned long P )

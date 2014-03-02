@@ -473,7 +473,13 @@ EIM<ModelType>::offline(  )
 
     bool expression_expansion = option(_name="eim.compute-expansion-of-expression").template as<bool>() ;
 
-    LOG(INFO) << "[offline] starting offline stage ...\n";
+    if( Environment::worldComm().isMasterRank() )
+    {
+        std::cout<<" ******************offline EIM for expression "<<M_model->name()<<" start "<<std::endl;
+    }
+    boost::mpi::timer timer,timer2,timer3;
+
+    DVLOG(2) << "[offline] starting offline stage ...\n";
     M_M = 1;
     M_max_q=0;
     int max_z=0;
@@ -499,24 +505,30 @@ EIM<ModelType>::offline(  )
         }
     }
 
-    LOG(INFO) << "[offline] create mu_1...\n";
+    DVLOG(2) << "[offline] create mu_1...\n";
 
     // min element in Dmu to start with (in // each proc have the same element)
     auto mu = M_model->parameterSpace()->max();
 
-    LOG( INFO ) << "mu ( of size "<<mu.size()<<"): \n"<<mu;
+    DVLOG( 2 ) << "mu ( of size "<<mu.size()<<"): \n"<<mu;
 
     //store this value
     M_model->clearParameterSampling();
     M_model->addParameter( mu );
 
-    LOG( INFO ) <<" parameter added";
+    DVLOG( 2 ) <<" parameter added";
 
     // store the solution of the problem for a given mu
     auto solution = M_model->modelFunctionSpace()->element();
+    timer2.restart();
     solution = M_model->solve( mu );
-
-    LOG( INFO ) << "solution computed";
+    double time=timer2.elapsed();
+    double time_=0;
+    if( Environment::worldComm().isMasterRank() )
+    {
+        std::cout<<" -- model solution computed in "<<time<<"s"<<std::endl;
+    }
+    DVLOG( 2 ) << "solution computed";
 
     if( expression_expansion )
     {
@@ -530,29 +542,43 @@ EIM<ModelType>::offline(  )
     }
     LOG(INFO) << "compute finite element solution at mu_1 done";
 
-    LOG(INFO) << "compute T^" << 0 << "...\n";
+    DVLOG(2) << "compute T^" << 0 << "...\n";
     // Build T^0
 
+    timer2.restart();
     auto zmax = M_model->computeMaximumOfExpression( mu , solution );
     // store space coordinate where max absolute value occurs
     auto t = zmax.template get<1>();
+    time=timer2.elapsed();
+    if( Environment::worldComm().isMasterRank() )
+    {
+        std::cout<<" -- maximum of expression computed in "<<time<<"s"<<std::endl;
+    }
+
     M_model->addInterpolationPoint( t );
     DVLOG( 2 )<<"add the interpolation point : \n"<<t;
     DVLOG( 2 ) << "norm Linf = " << zmax.template get<0>() << " at " << zmax.template get<1>() << "\n";
 
     //if( ! expression_expansion ) // fill M_g and M_q
-    if( 1 )
+    //if( 1 )
     {
         LOG(INFO) << "compute and insert q_0...\n";
         // insert first element
+        timer2.restart();
         auto q = M_model->operator()( solution , mu );
+        time=timer2.elapsed();
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<" -- expression evaluated in mu in "<<time<<"s"<<std::endl;
+        }
         //q.scale( 1./zmax.template get<0>() );
         q.scale( 1./ q( t )( 0, 0, 0 ) );
         M_max_q++;
-        LOG( INFO ) << "max-q : "<<M_max_q;
+        DVLOG( 2 ) << "max-q : "<<M_max_q;
         M_model->addBasis( q );
-        LOG( INFO ) << "basis q added";
+        DVLOG( 2 ) << "basis q added";
     }
+#if 0
     else
     {
         bool do_projection=true;
@@ -562,19 +588,26 @@ EIM<ModelType>::offline(  )
         auto q_projected = boost::any_cast<element_type>( any_q );
         //M_q.push_back( q_projected );
     }
-
     auto zero = vf::project( _space=M_model->functionSpace() , _expr=cst(0) );
     if( expression_expansion )
     {
         M_model->addZ( zero );
         max_z++;
     }
+#endif
 
     M_model->setMax(M_M, M_max_q,  max_z, max_solution);
     ++M_M;
 
+    timer2.restart();
     M_model->fillInterpolationMatrixFirstTime( );
-
+    time=timer2.elapsed();
+    time_=timer3.elapsed();
+    if( Environment::worldComm().isMasterRank() )
+    {
+        std::cout<<" -- interpolation matrix filled in "<<time<<"s"<<std::endl;
+        std::cout<<" -- time for this basis : "<<time_<<"s"<<std::endl;
+    }
     /**
        \par build \f$W^g_M\f$
     */
@@ -584,25 +617,47 @@ EIM<ModelType>::offline(  )
     //for(  ; M_M < M_WN; ++M_M ) //err >= this->M_tol )
     for(  ; M_M < option(_name="eim.dimension-max").template as<int>(); ++M_M ) //err >= this->M_tol )
     {
-
+        timer3.restart();
         LOG(INFO) << "M=" << M_M << "...\n";
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<" ================================ "<<std::endl;
+        }
 
-        LOG(INFO) << "compute best fit error...\n";
+        DVLOG(2) << "compute best fit error...\n";
+        timer2.restart();
         // compute mu = arg max inf ||G(.;mu)-z||_infty
         auto bestfit = computeBestFit( M_trainset, this->M_M-1 );
-
+        time=timer2.elapsed();
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<" -- best fit computed in "<<time<<"s"<<std::endl;
+        }
         mu = bestfit.template get<1>();
         M_model->addParameter( mu );
 
+        timer2.restart();
         solution = M_model->solve( mu );
+        time=timer2.elapsed();
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<" -- model solution computed in "<<time<<"s"<<std::endl;
+        }
 
+#if 0
         if( expression_expansion )//store the solution only if we want to have EIM expansion of the expression
         {
             M_model->addSolution( solution );
             max_solution++;
         }
-
+#endif
+        timer2.restart();
         auto gmax = M_model->computeMaximumOfExpression( mu , solution  );
+        time=timer2.elapsed();
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<" -- maximum of expression computed in "<<time<<"s"<<std::endl;
+        }
 
         DVLOG(2) << "best fit max error = " << bestfit.template get<0>() << " relative error = " << bestfit.template get<0>()/gmax.template get<0>() << " at mu = "
                  << bestfit.template get<1>() << "  tolerance=" << M_vm["eim.error-max"].template as<double>() << "\n";
@@ -620,14 +675,21 @@ EIM<ModelType>::offline(  )
         //if( ! expression_expansion )
         {
             // update M_g(:,M-1)
+            timer2.restart();
             auto g_bestfit = M_model->operator()( bestfit.template get<1>() );
+            time=timer2.elapsed();
+            if( Environment::worldComm().isMasterRank() )
+            {
+                std::cout<<" -- expression evaluated in mu in "<<time<<"s"<<std::endl;
+            }
+
             //M_g.push_back( g_bestfit );
             M_model->addExpressionEvaluation( g_bestfit );
             //orthonormalize( M_g );
         }
 
         // build T^m such that T^m-1 \subset T^m
-        LOG(INFO) << "[offline] compute residual M="<< M_M << "..." <<"\n";
+        DVLOG(2) << "[offline] compute residual M="<< M_M << "..." <<"\n";
         //res = this->residual(M_M-1);
 
         //LOG(INFO) << "residual = " << res << "\n";
@@ -635,27 +697,36 @@ EIM<ModelType>::offline(  )
         //auto resmax = normLinf( _range=elements(M_model->mesh()), _pset=_Q<5>(), _expr=idv(res) );
         auto coeff = M_model->computeExpansionCoefficients( mu ,  solution , M_M-1 );
         auto z = expansion( M_model->q(), coeff , M_M-1 );
-
+#if 0
         if( expression_expansion )
         {
             M_model->addZ( z );
             max_z++;
         }
+#endif
+        timer2.restart();
         auto resmax = M_model->computeMaximumOfResidual( mu, solution , z );
+        time=timer2.elapsed();
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<" -- Maximum of residual computed in "<<time<<"s"<<std::endl;
+        }
+
         t = resmax.template get<1>();
         // store space coordinate where max absolute value occurs
         //M_model->addInterpolationPoint( t ); //(t has not to be added in M_ctx before projection of the residual)
-        LOG(INFO) << "[offline] store coordinates where max absolute value is attained : \n" << resmax.template get<1>();
+        DVLOG(2) << "[offline] store coordinates where max absolute value is attained : \n" << resmax.template get<1>();
 
         //if( ! expression_expansion )
-        if( 1 )
+        //if( 1 )
         {
             auto res = M_model->projectedResidual( M_M-1 );
-            LOG(INFO) << "[offline] scale new basis function by " << 1./resmax.template get<0>() << "..." <<"\n";
+            DVLOG(2) << "[offline] scale new basis function by " << 1./resmax.template get<0>() << "..." <<"\n";
             res.scale( 1./res( t )(0,0,0) );
-            LOG(INFO) << "store new basis function..." <<"\n";
+            DVLOG(2) << "store new basis function..." <<"\n";
             M_model->addBasis( res );
         }
+#if 0
         else
         {
             bool do_projection=true;
@@ -665,12 +736,21 @@ EIM<ModelType>::offline(  )
             auto q_projected = boost::any_cast<element_type>( any_q );
             //M_q.push_back( q_projected );
         }
+#endif
         // Store interpolation point
         M_model->addInterpolationPoint( t );
 
         M_max_q++;
         M_model->setMax(M_M, M_max_q,  max_z, max_solution);
+        timer2.restart();
         M_model->fillInterpolationMatrix( );
+        time=timer2.elapsed();
+        time_=timer3.elapsed();
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<" -- interpolation matrix filled in "<<time<<"s"<<std::endl;
+            std::cout<<" -- time for this basis : "<<time_<<"s"<<std::endl;
+        }
 
         VLOG(2) << "================================================================================\n";
         //if we want to impose the use of dimension-max functions, we don't want to stop here
@@ -679,9 +759,12 @@ EIM<ModelType>::offline(  )
             ++M_M;
             break;
         }
+
     }
 
-
+    time=timer.elapsed();
+    if( Environment::worldComm().isMasterRank() )
+        std::cout<<"Total time for offline step of EIM "<<M_model->name()<<" : "<<time<<"s\n"<<std::endl;
     LOG(INFO) << "[offline] M_max = " << M_M-1 << "...\n";
 
     this->M_offline_done = true;
