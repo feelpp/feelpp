@@ -55,6 +55,7 @@
 #include <feel/feelpoly/policy.hpp>
 #include <feel/feelpoly/context.hpp>
 
+#include <feel/feelvf/exprbase.hpp>
 #include <feel/feelvf/detail/gmc.hpp>
 #include <feel/feelvf/shape.hpp>
 
@@ -382,7 +383,6 @@ public:
 };
 
 
-class ExprBase {};
 
 /*!
   \class Expr

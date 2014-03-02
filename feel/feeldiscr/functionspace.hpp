@@ -91,7 +91,7 @@
 #include <feel/feeldiscr/mortar.hpp>
 
 #include <feel/feeldiscr/region.hpp>
-
+#include <feel/feelvf/exprbase.hpp>
 #include <feel/feelvf/detail/gmc.hpp>
 
 namespace Feel
