@@ -2938,8 +2938,6 @@ public:
         typename mpl::at_c<element_vector_type,i>::type
         element( std::string const& name ="u", bool updateOffViews=true )
         {
-            if ( this->worldComm().globalSize()>1 ) this->worldComm().globalComm().barrier();
-
             size_type nbdof_start =  fusion::accumulate( this->functionSpaces(),
                                      size_type( 0 ),
                                      Feel::detail::NLocalDof<mpl::bool_<true> >( this->worldsComm(), false, 0, i ) );
