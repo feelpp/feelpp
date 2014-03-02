@@ -210,6 +210,7 @@ public:
         M_backend( backend_type::build( vm ) ),
         M_backend_primal( backend_type::build( vm , "backend-primal" ) ),
         M_backend_dual( backend_type::build( vm , "backend-dual" ) ),
+        M_backend_l2( backend_type::build( vm , "backend-l2" ) ),
         M_alreadyCountAffineDecompositionTerms( false )
     {
         this->init();
@@ -232,6 +233,7 @@ public:
         M_backend( backend_type::build( model->vm ) ),
         M_backend_primal( backend_type::build( model->vm , "backend-primal" ) ),
         M_backend_dual( backend_type::build( model->vm , "backend-dual") ),
+        M_backend_l2( backend_type::build( model->vm , "backend-l2") ),
         M_alreadyCountAffineDecompositionTerms( false )
     {
         this->init();
@@ -251,6 +253,7 @@ public:
         M_backend( backend_type::build( Environment::vm() ) ),
         M_backend_primal( backend_type::build( Environment::vm() , "backend-primal" ) ),
         M_backend_dual( backend_type::build( Environment::vm() , "backend-dual" ) ),
+        M_backend_l2( backend_type::build( Environment::vm() , "backend-l2" ) ),
         M_alreadyCountAffineDecompositionTerms( false )
     {
         this->init();
@@ -273,6 +276,7 @@ public:
         M_backend( o.M_backend ),
         M_backend_primal( o.M_backend_primal ),
         M_backend_dual( o.M_backend_dual ),
+        M_backend_l2( o.M_backend_l2 ),
         M_alreadyCountAffineDecompositionTerms( o.M_alreadyCountAffineDecompositionTerms )
 
     {
@@ -286,7 +290,6 @@ public:
     //! initialize the model (mesh, function space, operators, matrices, ...)
     FEELPP_DONT_INLINE void init()
     {
-
         if ( M_is_initialized )
             return;
 
@@ -302,6 +305,12 @@ public:
                                                _worldcomm=M_backend_dual->comm(),
                                                _prefix=M_backend_dual->prefix() ,
                                                _rebuild=true);
+        M_preconditioner_l2 = preconditioner(_pc=(PreconditionerType) M_backend_l2->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
+                                             _backend= M_backend_l2,
+                                             _pcfactormatsolverpackage=(MatSolverPackageType) M_backend_l2->matSolverPackageEnumType(),// mumps if is installed ( by defaut )
+                                             _worldcomm=M_backend_l2->comm(),
+                                             _prefix=M_backend_l2->prefix() ,
+                                             _rebuild=true);
         M_is_initialized=true;
 
         if( ! M_model->isInitialized() )
@@ -323,6 +332,9 @@ public:
         u = Xh->element();
         v = Xh->element();
 
+        M_inner_product_matrix = M_model->innerProduct();
+        M_preconditioner_l2->setMatrix( M_inner_product_matrix );
+
     }
 
     //@}
@@ -343,6 +355,7 @@ public:
             M_backend = o.M_backend;
             M_backend_primal = o.M_backend_primal;
             M_backend_dual = o.M_backend_dual;
+            M_backend_l2 = o.M_backend_l2;
         }
 
         return *this;
@@ -387,7 +400,8 @@ public:
      */
     sparse_matrix_ptrtype const& innerProduct() const
     {
-        return M_model->innerProduct();
+        //return M_model->innerProduct();
+        return M_inner_product_matrix;
     }
 
     /**
@@ -396,7 +410,8 @@ public:
      */
     sparse_matrix_ptrtype  innerProduct()
     {
-        return M_model->innerProduct();
+        //return M_model->innerProduct();
+        return M_inner_product_matrix;
     }
 
     /**
@@ -1379,16 +1394,14 @@ public:
      */
     double scalarProduct( vector_type const& X, vector_type const& Y )
     {
-        auto M = M_model->innerProduct();
-        return M->energy( X, Y );
+        return M_inner_product_matrix->energy( X, Y );
     }
     /**
      * returns the scalar product of the vector x and vector y
      */
     double scalarProduct( vector_ptrtype const& X, vector_ptrtype const& Y )
     {
-        auto M = M_model->innerProduct();
-        return M->energy( X, Y );
+        return M_inner_product_matrix->energy( X, Y );
     }
 
 
@@ -1460,12 +1473,13 @@ public:
 
 
     /**
-     * solve \f$M u = f\f$ where \f$ M \f$ is the matrix associated to the \f$ L_2 \f$
-     * norm
+     * solve \f$M u = f\f$ where \f$ M \f$ is the matrix associated to
+     * the energy norm
      */
     void l2solve( vector_ptrtype& u, vector_ptrtype const& f )
     {
-        return M_model->l2solve( u, f );
+        M_backend_l2->solve( _matrix=M_inner_product_matrix,  _solution=u, _rhs=f , _prec=M_preconditioner_l2 );
+        //return M_model->l2solve( u, f );
     }
 
 
@@ -1650,6 +1664,7 @@ private:
     backend_ptrtype M_backend;
     backend_ptrtype M_backend_primal;
     backend_ptrtype M_backend_dual;
+    backend_ptrtype M_backend_l2;
 
     beta_vector_type M_dummy_betaMqm;
 
@@ -1677,6 +1692,7 @@ private:
 
     preconditioner_ptrtype M_preconditioner_primal;
     preconditioner_ptrtype M_preconditioner_dual;
+    preconditioner_ptrtype M_preconditioner_l2;
 
     //number of terms in affine decomposition
     int M_Qa; //A
@@ -1688,6 +1704,8 @@ private:
     std::vector< std::vector<int> > M_mMaxF;//number of sub-terms (using EIM)
 
     bool M_alreadyCountAffineDecompositionTerms;
+
+    sparse_matrix_ptrtype M_inner_product_matrix;
 };
 
 
