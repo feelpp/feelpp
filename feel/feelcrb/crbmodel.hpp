@@ -105,8 +105,8 @@ public:
     typedef typename ModelType::space_type space_type;
 
     //! function space type
-    typedef typename model_type::functionspace_type functionspace_type;
-    typedef typename model_type::functionspace_ptrtype functionspace_ptrtype;
+    typedef typename model_type::space_type functionspace_type;
+    typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
 
     //! reduced basis function space type
     typedef typename model_type::rbfunctionspace_type rbfunctionspace_type;
@@ -114,23 +114,27 @@ public:
 
 
     //! element of the functionspace type
-    typedef typename model_type::element_type element_type;
-    typedef typename model_type::element_ptrtype element_ptrtype;
+    typedef typename model_type::space_type::element_type element_type;
+    typedef boost::shared_ptr<element_type> element_ptrtype;
 
     typedef typename model_type::backend_type backend_type;
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
-    typedef typename model_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
-    typedef typename model_type::vector_ptrtype vector_ptrtype;
-    typedef typename model_type::vector_type vector_type;
+    typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
+    typedef typename backend_type::vector_ptrtype vector_ptrtype;
+    typedef typename backend_type::vector_type vector_type;
 
-    typedef typename model_type::eigen_matrix_type eigen_matrix_type;
+    typedef Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> eigen_matrix_type;
+    typedef eigen_matrix_type ematrix_type;
+    typedef boost::shared_ptr<eigen_matrix_type> eigen_matrix_ptrtype;
 
     typedef typename model_type::parameterspace_type parameterspace_type;
-    typedef typename model_type::parameterspace_ptrtype parameterspace_ptrtype;
+    typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
     typedef typename model_type::parameter_type parameter_type;
-    typedef typename model_type::parameter_ptrtype parameter_ptrtype;
-    typedef typename model_type::sampling_type sampling_type;
-    typedef typename model_type::sampling_ptrtype sampling_ptrtype;
+    typedef boost::shared_ptr<parameter_type> parameter_ptrtype;
+
+
+    typedef typename model_type::parameterspace_type::sampling_type sampling_type;
+    typedef typename model_type::parameterspace_type::sampling_ptrtype sampling_ptrtype;
 
 
     typedef typename std::vector< std::vector < element_ptrtype > > initial_guess_type;
