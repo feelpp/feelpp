@@ -189,28 +189,18 @@ public:
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
 
     /*matrix*/
-    typedef backend_type::sparse_matrix_type sparse_matrix_type;
     typedef backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
-    typedef backend_type::vector_type vector_type;
     typedef backend_type::vector_ptrtype vector_ptrtype;
-
-    typedef Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> eigen_matrix_type;
-    typedef eigen_matrix_type ematrix_type;
-    typedef boost::shared_ptr<eigen_matrix_type> eigen_matrix_ptrtype;
 
     /*space*/
     typedef typename FunctionSpaceDefinition::space_type space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef space_type::element_type element_type;
-    typedef boost::shared_ptr<element_type> element_ptrtype;
 
     /* parameter space */
     typedef ParameterDefinition::parameterspace_type parameterspace_type;
     typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
     typedef parameterspace_type::element_type parameter_type;
-    typedef parameterspace_type::element_ptrtype parameter_ptrtype;
-    typedef parameterspace_type::sampling_type sampling_type;
-    typedef parameterspace_type::sampling_ptrtype sampling_ptrtype;
 
     /*reduced basis space*/
     typedef ReducedBasisSpace<self_type, mesh_type, basis_type, value_type> rbfunctionspace_type;
@@ -360,14 +350,10 @@ private:
     bool M_use_weak_dirichlet;
     double M_gammabc;
 
-    bool M_do_export;
-
     mesh_ptrtype mesh;
     space_ptrtype Xh;
     rbfunctionspace_ptrtype RbXh;
-    sparse_matrix_ptrtype D,M;
-    vector_ptrtype F;
-    element_ptrtype pT;
+    sparse_matrix_ptrtype M;
 
     std::vector< std::vector<operator_ptrtype> > M_Aqm_free;
     std::vector< std::vector<std::vector<functional_ptrtype> > > M_Fqm_free;
@@ -421,8 +407,6 @@ Heat1D::initModel()
     Xh = space_type::New( mesh );
     RbXh = rbfunctionspace_type::New( _model=this->shared_from_this() , _mesh=mesh );
     LOG( INFO ) << "size of RB : "<<RbXh->size();
-    // allocate an element of Xh
-    pT = element_ptrtype( new element_type( Xh ) );
 
     //  initialisation de A1 et A2
 
@@ -438,9 +422,6 @@ Heat1D::initModel()
     M_Fqm_free[1].resize( M_nb_terms_in_affine_decomposition_output );
     for(int q=0; q<M_nb_terms_in_affine_decomposition_output ; q++)
         M_Fqm_free[1][q].resize(1);
-
-    D = backend->newMatrix( Xh, Xh );
-    F = backend->newVector( Xh );
 
     using namespace Feel::vf;
     //static const int N = 2;
@@ -518,7 +499,6 @@ Heat1D::output( int output_index, parameter_type const& mu , element_type& u, bo
     CHECK( ! need_to_solve ) << "The model need to have the solution to compute the output\n";
 
     using namespace vf;
-        *pT = u;
 
     double output=0;
 
@@ -529,7 +509,7 @@ Heat1D::output( int output_index, parameter_type const& mu , element_type& u, bo
         for ( int q=0; q<M_nb_terms_in_affine_decomposition_rhs; q++ )
         {
             M_Fqm_free[output_index][q][0]->containerPtr( fqm );
-            output += M_betaFqm[output_index][q][0]*dot( *fqm, *pT );
+            output += M_betaFqm[output_index][q][0]*dot( *fqm, u );
         }
     }
 
@@ -540,8 +520,8 @@ Heat1D::output( int output_index, parameter_type const& mu , element_type& u, bo
         //chi( (Px() >= -0.1) && (Px() <= 0.1) )*idv(*pT) ).evaluate()(0,0)/0.2;
         //std::cout<<"output1 c1 = "<<mean<<std::endl;
 
-        output = ( integrate( markedelements( mesh,"k1_2" ),idv( *pT ) ).evaluate()( 0,0 )+
-                   integrate( markedelements( mesh,"k2_1" ),idv( *pT ) ).evaluate()( 0,0 ) )/0.2;
+        output = ( integrate( markedelements( mesh,"k1_2" ),idv( u ) ).evaluate()( 0,0 )+
+                   integrate( markedelements( mesh,"k2_1" ),idv( u ) ).evaluate()( 0,0 ) )/0.2;
         //std::cout<<"output1 c2 = "<<meanT<<std::endl;
         //std::cout<<"output1 c3= "<< dot( M_Fq[1][0], U ) <<std::endl;
         //return meanT;
