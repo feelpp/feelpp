@@ -538,11 +538,6 @@ public:
      */
     element_type solve( parameter_type const& mu );
 
-    /**
-     * solve \f$ M u = f \f$
-     */
-    void l2solve( vector_ptrtype& u, vector_ptrtype const& f );
-
 
     /**
      * update the PDE system with respect to \param mu
@@ -626,10 +621,7 @@ private:
     po::variables_map M_vm;
 
     backend_ptrtype backend;
-    backend_ptrtype M_backendl2;
     bool M_is_steady ;
-
-    preconditioner_ptrtype M_preconditionerl2;
 
     /* mesh parameters */
     double meshSize;
@@ -684,7 +676,6 @@ template<int Order>
 HeatShield<Order>::HeatShield()
     :
     backend( backend_type::build( BACKEND_PETSC ) ),
-    M_backendl2( backend_type::build( BACKEND_PETSC ) ),
     M_is_steady( false ),
     meshSize( 2e-1 ),
     export_number( 0 ),
@@ -697,18 +688,11 @@ HeatShield<Order>::HeatShield( po::variables_map const& vm )
     :
     M_vm( vm ),
     backend( backend_type::build( vm ) ),
-    M_backendl2( backend_type::build( vm , "backendl2" ) ),
     M_is_steady( option(_name="crb.is-model-executed-in-steady-mode").template as<bool>() ),
     meshSize( vm["hsize"].as<double>() ),
     export_number( 0 ),
     M_Dmu( new parameterspace_type )
 {
-        M_preconditionerl2 = preconditioner(_pc=(PreconditionerType) M_backendl2->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
-                                            _backend= M_backendl2,
-                                            _pcfactormatsolverpackage=(MatSolverPackageType) M_backendl2->matSolverPackageEnumType(),// mumps if is installed ( by defaut )
-                                            _worldcomm=M_backendl2->comm(),
-                                            _prefix=M_backendl2->prefix() ,
-                                            _rebuild=true);
 }
 
 template<int Order>
@@ -1044,8 +1028,6 @@ void HeatShield<Order>::assemble()
         integrate( _range= markedfaces( mesh, "gamma_holes" ), _expr= 0.001 * idt( u )*id( v ) )
         ;
 
-    M_preconditionerl2->setMatrix( M );
-
     //scalar product used for mass matrix
     InnerMassMatrix = backend->newMatrix( _test=Xh, _trial=Xh );
     form2( Xh, Xh, InnerMassMatrix ) =
@@ -1326,14 +1308,6 @@ int
 HeatShield<Order>::computeNumberOfSnapshots()
 {
     return M_bdf->timeFinal()/M_bdf->timeStep();
-}
-
-template<int Order>
-void HeatShield<Order>::l2solve( vector_ptrtype& u, vector_ptrtype const& f )
-{
-    //std::cout << "l2solve(u,f)\n";
-    M_backendl2->solve( _matrix=M,  _solution=u, _rhs=f , _prec=M_preconditionerl2 );
-    //std::cout << "l2solve(u,f) done\n";
 }
 
 

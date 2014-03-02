@@ -306,38 +306,6 @@ public:
         return boost::make_tuple( M_betaAqm, M_betaFqm );
     }
 
-    /**
-     * \brief return the coefficient vector
-     */
-    beta_vector_type const& betaAqm() const
-    {
-        return M_betaAqm;
-    }
-
-    /**
-     * \brief return the coefficient vector
-     */
-    std::vector<beta_vector_type> const& betaFqm() const
-    {
-        return M_betaFqm;
-    }
-
-    /**
-     * \brief return the coefficient vector \p q component
-     *
-     */
-    value_type betaAqm( int q , int m ) const
-    {
-        return M_betaAqm[q][m];
-    }
-
-    /**
-     * \return the \p q -th term of the \p l -th output
-     */
-    value_type betaL( int l, int q, int m ) const
-    {
-        return M_betaFqm[l][q][m];
-    }
 
     //@}
 
@@ -351,11 +319,6 @@ public:
     /** @name  Methods
      */
     //@{
-
-    /**
-     * solve \f$ M u = f \f$
-     */
-    void l2solve( vector_ptrtype& u, vector_ptrtype const& f );
 
     /**
      * H1 scalar product
@@ -547,15 +510,6 @@ Heat1D::initModel()
 
 }
 
-
-
-void
-Heat1D::l2solve( vector_ptrtype& u, vector_ptrtype const& f )
-{
-    //std::cout << "l2solve(u,f)\n";
-    backend->solve( _matrix=M,  _solution=u, _rhs=f );
-    //std::cout << "l2solve(u,f) done\n";
-}
 
 double
 Heat1D::output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve )
