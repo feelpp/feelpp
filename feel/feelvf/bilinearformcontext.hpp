@@ -80,6 +80,8 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 
     M_integrator( im )
 {
+    this->initDynamicEigenMatrix();
+
     if ( UseMortar )
     {
 
@@ -127,6 +129,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     M_eval_expr11(),
     M_integrator( im )
 {
+    this->initDynamicEigenMatrix();
     // faces
     M_eval_expr00->init( im2 );
 }
@@ -166,6 +169,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     M_eval_expr11(),
     M_integrator( im )
 {
+    this->initDynamicEigenMatrix();
     // faces
     M_eval_expr00->init( im2 );
 }
@@ -210,6 +214,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     M_eval_expr11(),
     M_integrator( im )
 {
+    this->initDynamicEigenMatrix();
     // faces
     M_eval_expr00->init( im );
 }
@@ -257,6 +262,8 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     FEELPP_ASSERT( fusion::at_key<test_gmc1 >( M_test_fec1 ).get() != 0 ).error( "invalid test_fec" );
     FEELPP_ASSERT( fusion::at_key<gmc<0> >( M_trial_fec0 ).get() != 0 ).error( "invalid trial_fec" );
     FEELPP_ASSERT( fusion::at_key<trial_gmc1 >( M_trial_fec1 ).get() != 0 ).error( "invalid trial_fec" );
+
+    this->initDynamicEigenMatrix();
 
     M_eval_expr00->init( im2 );
     M_eval_expr01->init( im2 );
@@ -409,7 +416,10 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     if ( M_form.isPatternDefault() && boost::is_same<trial_dof_type,test_dof_type>::value &&
             trial_dof_type::is_product )
     {
-        M_rep = local_matrix_type::Zero();
+        //if ( useEigenDynamicAlloc )
+        M_rep = local_matrix_type::Zero(nDofPerElementTest, nDofPerElementTrial);
+        //else
+        //M_rep = local_matrix_type::Zero();
 
         if ( M_form.isPatternSymmetric() )
         {
