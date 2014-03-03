@@ -224,6 +224,7 @@ public:
     static const uint16_type nDim = super::nDim;
     static const uint16_type nOrder= super::nOrder;
 
+
     typedef typename super::primal_space_type primal_space_type;
     typedef typename primal_space_type::value_type value_type;
     typedef typename primal_space_type::points_type points_type;
@@ -239,10 +240,23 @@ public:
     typedef PointSetType<convex_type, nOrder, value_type> pointset_type;
 
     static const uint16_type nbPtsPerVertex = 0;
-    static const uint16_type nbPtsPerEdge = mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<2> >,mpl::int_<reference_convex_type::nbPtsPerEdge>,mpl::int_<0> >::type::value;
-    static const uint16_type nbPtsPerFace =mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<3> >,mpl::int_<reference_convex_type::nbPtsPerFace>,mpl::int_<0> >::type::value;
-    static const uint16_type nbPtsPerVolume = 0;
-    static const uint16_type numPoints = ( reference_convex_type::numGeometricFaces*nbPtsPerFace+reference_convex_type::numEdges*nbPtsPerEdge );
+    static const uint16_type nbPtsPerEdge = mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<2> >,
+                                                     mpl::int_<reference_convex_type::nbPtsPerEdge>,
+                                                     mpl::int_<0> >::type::value;
+    static const uint16_type DimPkm2_2d =(nOrder>=2)?(nOrder-2+1)*(nOrder-2+2)/2:0;
+    static const uint16_type DimPkm2_3d =(nOrder>=2)?(nOrder-2+1)*(nOrder-2+2)*(nOrder-2+3)/6:0;
+    static const uint16_type DimPkm2 = mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<2> >,
+                                                mpl::int_<DimPkm2_2d>,
+                                                mpl::int_<DimPkm2_3d> >::type::value;
+    static const uint16_type nbPtsPerFace =mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<3> >,
+                                                    mpl::int_<reference_convex_type::nbPtsPerFace>,
+                                                    typename mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<2> >,
+                                                                      mpl::int_<DimPkm2>,
+                                                                      mpl::int_<0> >::type >::type::value;
+    static const uint16_type nbPtsPerVolume = mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<3> >,
+                                                       mpl::int_<DimPkm2>,
+                                                       mpl::int_<0> >::type::value;;
+    //static const uint16_type numPoints = ( reference_convex_type::numGeometricFaces*nbPtsPerFace+reference_convex_type::numEdges*nbPtsPerEdge );
 
     /** Number of degrees of freedom per vertex */
     static const uint16_type nDofPerVertex = 0;
@@ -254,11 +268,11 @@ public:
     static const uint16_type nDofPerFace = nbPtsPerFace;
 
     /** Number of degrees  of freedom per volume */
-    static const uint16_type nDofPerVolume = 0;
+    static const uint16_type nDofPerVolume = nbPtsPerVolume;
 
     /** Total number of degrees of freedom (equal to refEle::nDof) */
-    static const uint16_type nLocalDof = numPoints;
-
+    static const uint16_type nLocalDof = (nDim==2)?(nOrder)*(nOrder+2):(nOrder)*(nOrder+1)*(nOrder+3)/2;
+    static const uint16_type numPoints = nLocalDof;
     RaviartThomasDual( primal_space_type const& primal )
         :
         super( primal ),
@@ -273,6 +287,7 @@ public:
         std::cout << " o- dim   = " << nDim << "\n";
         std::cout << " o- order = " << nOrder << "\n";
         std::cout << " o- numPoints      = " << numPoints << "\n";
+        std::cout << " o- DimPkm2        = " << DimPkm2 << "\n";
         std::cout << " o- nbPtsPerVertex = " << ( int )nbPtsPerVertex << "\n";
         std::cout << " o- nbPtsPerEdge   = " << ( int )nbPtsPerEdge << "\n";
         std::cout << " o- nbPtsPerFace   = " << ( int )nbPtsPerFace << "\n";
@@ -332,9 +347,11 @@ public:
                 dcpe_type __dcpe( primal, dir, M_pts_per_face[e] );
                 std::copy( __dcpe.begin(), __dcpe.end(), std::back_inserter( fset ) );
             }
-        }
+            std::cout << "fset : " << fset.size() << "\n";
 
-        //std::cout << "[RT Dual] done 2" << std::endl;
+        }
+        std::cout << "fset[0] : " << fset[0].coeff() << "\n";
+        std::cout << "[RT Dual] done 2" << std::endl;
         if ( nOrder-1 > 0 )
         {
             // we need more equations : add interior moment
@@ -347,20 +364,20 @@ public:
 
             vectorial_polynomialset_type Pkm1 ( Pkp1.polynomialsUpToDimension( dim_Pm1 ) );
 
-            //std::cout << "Pkm1 = " << Pkm1.coeff() << "\n";
-            //std::cout << "Primal = " << primal.coeff() << "\n";
+            std::cout << "Pkm1 = " << Pkm1.coeff() << "\n";
+            std::cout << "Primal = " << primal.coeff() << "\n";
             for ( int i = 0; i < Pkm1.polynomialDimension(); ++i )
             {
                 typedef functional::IntegralMoment<primal_space_type, vectorial_polynomialset_type> fim_type;
                 //typedef functional::IntegralMoment<Pkp1_v_type, vectorial_polynomialset_type> fim_type;
-                //std::cout << "P(" << i << ")=" << Pkm1.polynomial( i ).coeff() << "\n";
+                std::cout << "P(" << i << ")=" << Pkm1.polynomial( i ).coeff() << "\n";
                 fset.push_back( fim_type( primal, Pkm1.polynomial( i ) ) );
             }
         }
 
-        //std::cout << "[RT Dual] done 3, n fset = " << fset.size() << std::endl;
+        std::cout << "[RT Dual] done 3, n fset = " << fset.size() << std::endl;
         M_fset.setFunctionalSet( fset );
-        //        std::cout << "[RT DUAL matrix] mat = " << M_fset.rep() << "\n";
+        std::cout << "[RT DUAL matrix] mat = " << M_fset.rep() << "\n";
         //std::cout << "[RT Dual] done 4\n";
 
     }

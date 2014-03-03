@@ -72,7 +72,7 @@ int main(int argc, char**argv )
 
     auto mesh = loadMesh( _mesh=new Mesh<Simplex<2>> );
 #if 1
-    auto RTh = Dh<0>( mesh );
+    auto RTh = Dh<1>( mesh );
     auto u = RTh->element();
     auto v = RTh->element();
     auto a = form2( _trial=RTh, _test=RTh );

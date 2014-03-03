@@ -218,7 +218,9 @@ public:
             // update matrix associated with functionals applied to the
             // basis of the function space
             M_mat = ublas::zero_matrix<value_type>( space_type::nComponents*fset.size(), fset[0].coeff().size2() );
-
+            LOG(INFO) << "mat.size1=" << space_type::nComponents*fset.size() << " mat.size2=" << fset[0].coeff().size2();
+            LOG(INFO) << "fset.size()=" << fset.size();
+            LOG(INFO) << "fset[0].coeff().size1()=" << fset[0].coeff().size1();
             for ( uint16_type i = 0; i < fset.size(); ++i )
             {
                 ublas::project( M_mat,
