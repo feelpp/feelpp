@@ -570,9 +570,12 @@ public:
 
     parameter_type refParameter()
     {
+        bool user_specify_parameters = M_model->referenceParametersGivenByUser();
         auto Dmu = M_model->parameterSpace();
-        return Dmu->min();
-        //return M_model->refParameter();
+        auto muref = Dmu->min();
+        if( user_specify_parameters )
+            muref = M_model->refParameter();
+        return muref;
     }
 
     //@}
