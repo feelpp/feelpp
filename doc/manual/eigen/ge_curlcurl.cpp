@@ -69,8 +69,8 @@ EigenProblem<Dim, Order>::run()
 
     if ( Environment::worldComm().isMasterRank() )
     {
-        std::cout << "nev= " << nev <<std::endl;
-        std::cout << "ncv= " << ncv <<std::endl;
+        std::cout << "number of eigenvalues computed= " << option(_name="solvereigen.nev").template as<int>() <<std::endl;
+        std::cout << "number of eigenvalues for convergence= " << option(_name="solvereigen.ncv").template as<int>() <<std::endl;
     }
 
     auto modes= veigs( _formA=a, _formB=b );
