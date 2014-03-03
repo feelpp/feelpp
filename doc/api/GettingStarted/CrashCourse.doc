@@ -1,7 +1,6 @@
 /* -*- mode: c++; coding: utf-8 -*- */
 namespace Feel{
 /** \page CrashCourse Crash Course
-\author Vincent Huber
 
 \tableofcontents
 
@@ -21,7 +20,7 @@ It is assumed that all these packages are properly installed.
 
 \section Building Building Feel++ from source on *nix
 \feel is distributed as a tarball once in a while. The tarballs are available
-at <br> 
+at <br>
 <center>https://github.com/feelpp/feelpp/releases</center>
 
 Download the latest tarball. Then follow the steps and replace
@@ -39,7 +38,8 @@ We define then the current directory as the source one, ie:
 <a href="#" class="top">top</a>
 <hr>
 \section Compiling Compiling
-Please note that 4 GBytes of RAM is a minimum to compile \feel with <tt>GCC</tt>.  With Clang, the memory footprint is much lower.
+Please note that 4 GBytes of RAM is a minimum to compile \feel with <tt><a href="http://www.gnu.org">GCC</a></tt>.
+With <a href="http://www.llvm.org/clang">Clang</a>, the memory footprint is much lower.
 
 In order to compile \feel and a test application, we create a new directory:
 \verbatim
@@ -55,48 +55,40 @@ and then, we are able to compile our first application:
   make -j4
 \endverbatim
 <br>
-This procedure will build the whole library (with Release configuration) and a dummy program to present the \feel's abilities.<br>
+This procedure will build the whole library (with Release configuration) and
+programs to solve
+ \li laplacian problems \f$-\Delta u=1 \mbox{ in } \Omega,\ u=g \mbox{ on } \partial \Omega\f$
+ \li a Stokes problem \f$-\Delta \mathbf{u} + \nabla p = 0 \mbox{ in } \Omega,\ \mathbf{u}=\mathbf{0} \mbox{ on } \Gamma_\mathrm{wall}, \mathbf{u}=\mathbf{g} \mbox{ on } \Gamma_\mathrm{inlet}\f$ and free outflow \f$\left(-p \mathbb{I} + \nabla \mathbf{u}\right) \cdot \mathbf{n} = \mathbf{0} \mbox{ on } \Gamma_\mathrm{outlet}\f$
+on arbitrary geometries in 2D by default to present \feel's abilities.
 
+\remark
 There is a procedure to install as a system library \feel.
 \verbatim
   make install
 \endverbatim
-See chapter 2 for more details.
+See page \ref BuildingP for more details.
 
 <a href="#" class="top">top</a>
 <hr>
-\section Hello Feel++ Hello World
+\section QSLaplacian Laplacian with Dirichlet boundary conditions
 
 As an introduction to the aim and the way to do with \feel, we provide a sort of
 <tt>Hello World</tt> program to evaluate the library.
 
-\subsection Math About the math
-We want to solve the simplest problem:<br>
-<center>\f$
-  \begin{aligned}
-    - \Delta u &= 1,\\
-    u_{|\partial \Omega} &= 0,
-  \end{aligned}
-\f$</center><br>
+\subsection Math Problem setup
+
+We want to solve the following problem:<br>
+\f[ - \Delta u = 1,\quad u_{|\partial \Omega} = g \f]
 where \f$\Omega \in \mathbb{R}^n, n\in{1,2,3}\f$.<br>
 
-That problem written in variational form is:
-<br>looks for \f$v\in H^1\left( \Omega \right)\f$<br>
-<center>\f$
-  \begin{aligned}
-    a\left( u,v \right)&=l\left( v \right)\\
-\forall v &\in H^1\left( \Omega \right).
-  \end{aligned}
-\f$</center><br>
+The variational form reads: looks for \f$u \in H^1_g\left( \Omega \right) = \{ v \in H^1(\Omega) | v = g \mbox{ on } \partial \Omega \}\f$
+such that
+\f[a\left( u,v \right) = l\left( v \right)\quad \forall v \in H^1\left( \Omega \right).\f]
 with:
-<br><center>\f$
-  \begin{aligned}
-    a\left( u,v \right)&=\int_{\Omega} \nabla u \cdot \nabla v ,\\
-    l\left( v \right) &= \int_{\Omega} v .
-  \end{aligned}
-\f$</center><br>
+\f[a\left( u,v \right) = \int_{\Omega} \nabla u \cdot \nabla v ,\quad l\left( v \right) = \int_{\Omega} v \f]
 
-The aim of \feel is to provide the simplest way to write the \f$a\f$ and \f$l\f$ forms.
+The aim of \feel is to provide the simplest way to write the \f$a\f$ and \f$l\f$
+forms.
 
 From a discrete point of view, we introduce \f$V_h\subset H^1\left( \Omega \right)\f$ such that:
 <br><center>\f$
@@ -139,11 +131,11 @@ conditions and solve the discretized (linear) system.
 auto l = form1( _test=Vh );
 l = integrate(_range=elements(mesh),
               _expr=id(v));
-                                  
+
 auto a = form2( _trial=Vh, _test=Vh );
 a = integrate(_range=elements(mesh),
               _expr=gradt(u)*trans(grad(v)) );
-                                 
+
 a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u,
       _expr=constant(0.) );
 a.solve(_rhs=l,_solution=u);
