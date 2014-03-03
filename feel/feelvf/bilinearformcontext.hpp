@@ -83,7 +83,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     if ( UseMortar )
     {
 
-        LOG(INFO) << "mortar phi: ndof " << M_test_pc->fePtr()->nbDof();
+        //LOG(INFO) << "mortar phi: ndof " << M_test_pc->fePtr()->nbDof();
         M_test_pc->print();
         LOG(INFO) << "mortar Phi context ";
         fusion::at_key<gmc<0>>( M_test_fec0 ).get()->print();
@@ -552,7 +552,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
                 {
                     M_rep( i, mapLocDofTrial[j] ) += M_integrator( *M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
                 }
-        LOG(INFO) << "M_rep = " << M_rep*6/0.25;
+        //LOG(INFO) << "M_rep = " << M_rep*6/0.25;
     }
     else
     {
@@ -569,7 +569,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
                 {
                     M_mortar_rep( i, mapLocDofTrial[j] ) += M_integrator( *M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
                 }
-        LOG(INFO) << "M_mortar_rep = " << M_mortar_rep*6/0.25;
+        //LOG(INFO) << "M_mortar_rep = " << M_mortar_rep*6/0.25;
     }
 
 }
@@ -634,9 +634,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
             {
                 M_local_rowsigns = M_test_dof->localToGlobalSigns( elt_0 );
                 M_local_colsigns = M_trial_dof->localToGlobalSigns( trial_eid );
-                std::cout << "rep = " << M_rep;
                 M_rep.array() *= ( M_local_rowsigns*M_local_colsigns.transpose() ).array().template cast<value_type>();
-                std::cout << "rep after sign change = " << M_rep;
             }
 
             M_form.addMatrix( M_local_rows.data(), M_local_rows.size(),
@@ -654,9 +652,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
             {
                 M_local_rowsigns = M_test_dof->localToGlobalSigns( elt_0 );
                 M_local_colsigns = M_trial_dof->localToGlobalSigns( trial_eid );
-                std::cout << "rep2 = " << M_rep;
                 M_rep.array() *= ( M_local_rowsigns*M_local_colsigns.transpose() ).array().template cast<value_type>();
-                std::cout << "rep2 after sign change = " << M_rep;
             }
 
             M_form.addMatrix( M_mortar_local_rows.data(), M_mortar_local_rows.size(),
@@ -711,8 +707,8 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     {
         M_local_rows.array() = M_test_dof->localToGlobalIndices( eltTest ).array() + row_start;
         M_local_cols.array() = M_trial_dof->localToGlobalIndices( eltTrial ).array() + col_start;
-        LOG(INFO) << "M_local_rows: " << M_local_rows;
-        LOG(INFO) << "M_local_cols: " << M_local_cols;
+        //LOG(INFO) << "M_local_rows: " << M_local_rows;
+        //LOG(INFO) << "M_local_cols: " << M_local_cols;
 #if 0
         bool do_less = ( ( M_form.isPatternDefault() &&
                            ( M_test_dof->nComponents == M_trial_dof->nComponents ) ) &&
@@ -725,7 +721,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
             M_local_colsigns = M_trial_dof->localToGlobalSigns( eltTrial );
             M_rep.array() *= ( M_local_rowsigns*M_local_colsigns.transpose() ).array().template cast<value_type>();
         }
-        LOG(INFO) << "add rep : " << M_rep;
+        //LOG(INFO) << "add rep : " << M_rep;
         M_form.addMatrix( M_local_rows.data(), M_local_rows.size(),
                           M_local_cols.data(), M_local_cols.size(),
                           M_rep.data() );
@@ -736,8 +732,8 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
         M_mortar_local_rows.array() = M_test_dof->localToGlobalIndices( eltTest ).array() + row_start;
 
         M_local_cols.array() = M_trial_dof->localToGlobalIndices( eltTrial ).array() + col_start;
-        LOG(INFO) << "M_mortar_local_rows: " << M_mortar_local_rows;
-        LOG(INFO) << "M_local_cols: " << M_local_cols;
+        //LOG(INFO) << "M_mortar_local_rows: " << M_mortar_local_rows;
+        //LOG(INFO) << "M_local_cols: " << M_local_cols;
 #if 0
         bool do_less = ( ( M_form.isPatternDefault() &&
                            ( M_test_dof->nComponents == M_trial_dof->nComponents ) ) &&
@@ -750,7 +746,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
             M_local_colsigns = M_trial_dof->localToGlobalSigns( eltTrial );
             M_rep.array() *= ( M_local_rowsigns*M_local_colsigns.transpose() ).array().template cast<value_type>();
         }
-        LOG(INFO) << "add mortar rep : " << M_mortar_rep;
+        //LOG(INFO) << "add mortar rep : " << M_mortar_rep;
         M_form.addMatrix( M_mortar_local_rows.data(), M_mortar_local_rows.size(),
                           M_local_cols.data(), M_local_cols.size(),
                           M_mortar_rep.data() );
