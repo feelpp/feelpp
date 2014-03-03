@@ -145,6 +145,18 @@ public :
                                    >
                                >::type affine_decomposition_type;
 
+    typedef typename mpl::if_< mpl::bool_< is_time_dependent >,
+                               boost::tuple<
+                                   beta_vector_type,
+                                   beta_vector_type,
+                                   std::vector<beta_vector_type>
+                                   >,
+                               boost::tuple<
+                                   beta_vector_type,
+                                   std::vector<beta_vector_type>
+                                   >
+                               >::type betaqm_type;
+
 
     ModelCrbBase()
         :
@@ -215,6 +227,23 @@ public :
         std::vector< std::vector<std::vector<vector_ptrtype> > > F;
         return boost::make_tuple( A , F );
     }
+
+
+    //for linear models, beta coefficients don't depend on solution u
+    //so the user doesn't have to specify this function
+    virtual betaqm_type computeBetaQm( element_type const& u, parameter_type const& mu ,  double time=0 )
+    {
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<"****************************************************************"<<std::endl;
+            std::cout<<"** You are using the function computeBetaQm( u , mu ) whereas **"<<std::endl;
+            std::cout<<"** your model has only implemented computeBetaQm( mu )        **"<<std::endl;
+            std::cout<<"****************************************************************"<<std::endl;
+        }
+        betaqm_type dummy_beta_coeff;
+        return dummy_beta_coeff;
+    }
+
 
 
     //for linear steady models, mass matrix does not exist

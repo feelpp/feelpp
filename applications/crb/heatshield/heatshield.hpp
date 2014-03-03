@@ -146,6 +146,7 @@ public:
     typedef typename super_type::funs_type funs_type;
     typedef typename super_type::funsd_type funsd_type;
 
+    using super_type::computeBetaQm;
 
     /** @name Constants
      */
@@ -357,12 +358,6 @@ public:
      * \brief compute the theta coefficient for both bilinear and linear form
      * \param mu parameter to evaluate the coefficients
      */
-    boost::tuple<beta_vector_type, beta_vector_type, std::vector<beta_vector_type> >
-    computeBetaQm( element_type const& T,parameter_type const& mu , double time=1e30 )
-    {
-        return computeBetaQm( mu , time );
-    }
-
     boost::tuple<beta_vector_type, beta_vector_type, std::vector<beta_vector_type>  >
     computeBetaQm( parameter_type const& mu , double time=1e30 )
     {
