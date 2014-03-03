@@ -570,8 +570,11 @@ public:
 
     parameter_type refParameter()
     {
-        return M_model->refParameter();
+        auto Dmu = M_model->parameterSpace();
+        return Dmu->min();
+        //return M_model->refParameter();
     }
+
     //@}
 
     /** @name  Mutators

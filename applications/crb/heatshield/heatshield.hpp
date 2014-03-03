@@ -598,11 +598,6 @@ public:
         return M_compositeF;
     }
 
-    parameter_type refParameter()
-    {
-        return M_Dmu->min();
-    }
-
     void initDataStructureForBetaCoeff();
     void buildGinacExpressions();
 
