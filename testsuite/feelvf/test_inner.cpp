@@ -78,12 +78,11 @@ public :
         auto v = Xh->element();
 
         auto g=option(_name="functions.g").template as<std::string>();
-        auto vars = Symbols{"x","y"};
+        auto vars = symbols<Dim>();
         auto eg = parse(g,vars);
         u = project( _space=Xh, _expr=expr(eg,vars) );
 
         boost::mpi::timer ti;
-
         if ( Environment::rank() == 0 )
             BOOST_TEST_MESSAGE( "Check integral" );
 
@@ -112,8 +111,8 @@ BOOST_AUTO_TEST_CASE( test_0 )
     auto mesh = unitSquare();
     double a = integrate( _range= elements( mesh ), _expr= norm2(vec(cst(1.),cst(1.))) ).evaluate()( 0,0 );
     double b = integrate( _range= elements( mesh ), _expr= sqrt(inner(vec(cst(1.),cst(1.)),vec(cst(1.),cst(1.)) ) ) ).evaluate()( 0,0 );
-    BOOST_CHECK_CLOSE( a, sqrt(2.), 1e-13);
-    BOOST_CHECK_CLOSE( b, sqrt(2.), 1e-13);
+    BOOST_CHECK_CLOSE( a, sqrt(2.), 1e-12);
+    BOOST_CHECK_CLOSE( b, sqrt(2.), 1e-12);
     BOOST_CHECK_CLOSE( a, b, 1e-13 );
 
 }
