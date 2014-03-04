@@ -1452,8 +1452,10 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
 
         do
         {
-
-            boost::tie( M, Apr, F) = M_model->update( mu , u, M_bdf_primal->time() );
+            if( is_linear )
+                boost::tie( M, Apr, F) = M_model->update( mu , M_bdf_primal->time() );
+            else
+                boost::tie( M, Apr, F) = M_model->update( mu , u, M_bdf_primal->time() );
 
             if ( ! M_model->isSteady() )
             {
@@ -1657,7 +1659,10 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
 
         do
         {
-            boost::tie( M, Apr, F) = M_model->update( mu , udu, M_bdf_dual->time() );
+            if( is_linear )
+                boost::tie( M, Apr, F) = M_model->update( mu , M_bdf_dual->time() );
+            else
+                boost::tie( M, Apr, F) = M_model->update( mu , udu, M_bdf_dual->time() );
 
             if( ! M_model->isSteady() )
             {
@@ -4543,16 +4548,29 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
 
         do
         {
-            if( load_elements_db )
-                boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( this->expansion( uN[time_index] , N , M_model->rBFunctionSpace()->primalRB() ), mu ,time );
-            else
+            if( is_linear )
+            {
                 boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time );
+            }
+            else
+            {
+                //important note :
+                //when lambda expressions will be totally operational
+                //we will call computeBetaQm( uN, mu, tim )
+                //and the test if( load_elements_db ) will disappear
+                if( load_elements_db )
+                    boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( this->expansion( uN[time_index] , N , M_model->rBFunctionSpace()->primalRB() ), mu ,time );
+                else
+                    boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time );
+            }
 
             A.setZero( N,N );
             for ( size_type q = 0; q < M_model->Qa(); ++q )
             {
                 for(int m=0; m<M_model->mMaxA(q); m++)
+                {
                     A += betaAqm[q][m]*M_Aqm_pr[q][m].block( 0,0,N,N );
+                }
             }
 
             F.setZero( N );
@@ -4710,7 +4728,11 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
     beta_vector_type betaMqm;
     std::vector<beta_vector_type> betaFqm;
 
-    boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( this->expansion( uN[time_index] , N , M_model->rBFunctionSpace()->primalRB() ), mu ,time );
+    bool is_linear=M_model->isLinear();
+    if( is_linear )
+        boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time );
+    else
+        boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( this->expansion( uN[time_index] , N , M_model->rBFunctionSpace()->primalRB() ), mu ,time );
 
     /* create buffers on the GPU */
     cl::Buffer Aq(context, CL_MEM_READ_ONLY, N * N * M_model->Qa() * sizeof(double), NULL, &err);
@@ -6082,6 +6104,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
 
     //the model can be time-dependant and be executed in steady mode
     //so in that case, we don't need to compute this.
+    ti.restart();
     if( ! M_model_executed_in_steady_mode )
     {
 
@@ -7598,12 +7621,23 @@ CRB<TruthModelType>::computeOnlinePrimalApeeVector( parameter_type const& mu , v
     std::vector<beta_vector_type> betaFqm;
 
     bool load_elements_db=option(_name="crb.load-elements-database").template as<bool>();
-
+    bool is_linear=M_model->isLinear();
     //get beta coefficients
-    if( load_elements_db )
-        boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( this->expansion( uN , N , M_model->rBFunctionSpace()->primalRB() ), mu ,time );
-    else
+    if( is_linear )
+    {
         boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time );
+    }
+    else
+    {
+        //important note :
+        //when lambda expressions will be totally operational
+        //we will call computeBetaQm( uN, mu, tim )
+        //and the test if( load_elements_db ) will disappear
+        if( load_elements_db )
+            boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( this->expansion( uN , N , M_model->rBFunctionSpace()->primalRB() ), mu ,time );
+        else
+            boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time );
+    }
 
     int idx=0;//start
 
@@ -7711,12 +7745,23 @@ CRB<TruthModelType>::computeOnlineDualApeeVector( parameter_type const& mu , vec
     std::vector<beta_vector_type> betaFqm;
 
     bool load_elements_db=option(_name="crb.load-elements-database").template as<bool>();
-
+    bool is_linear=M_model->isLinear();
     //get beta coefficients
-    if( load_elements_db )
-        boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( this->expansion( uNdu , N , M_model->rBFunctionSpace()->dualRB() ), mu ,time );
-    else
+    if( is_linear )
+    {
         boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time );
+    }
+    else
+    {
+        //important note :
+        //when lambda expressions will be totally operational
+        //we will call computeBetaQm( uN, mu, tim )
+        //and the test if( load_elements_db ) will disappear
+        if( load_elements_db )
+          boost::tie( betaMqm, betaAqm, betaFqm ) =  M_model->computeBetaQm( this->expansion( uNdu , N , M_model->rBFunctionSpace()->primalRB() ), mu ,time );
+        else
+            boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time );
+    }
 
     int idx=0;//start
 

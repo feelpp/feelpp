@@ -570,8 +570,14 @@ public:
 
     parameter_type refParameter()
     {
-        return M_model->refParameter();
+        bool user_specify_parameters = M_model->referenceParametersGivenByUser();
+        auto Dmu = M_model->parameterSpace();
+        auto muref = Dmu->min();
+        if( user_specify_parameters )
+            muref = M_model->refParameter();
+        return muref;
     }
+
     //@}
 
     /** @name  Mutators
@@ -2260,7 +2266,6 @@ typename CRBModel<TruthModelType>::element_type
 CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_type const& mu )
 {
     auto Xh= this->functionSpace();
-
     bdf_ptrtype mybdf;
     mybdf = bdf( _space=Xh, _vm=this->vm() , _name="mybdf" );
     sparse_matrix_ptrtype A;
@@ -2312,7 +2317,10 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
         auto bdf_poly = mybdf->polyDeriv();
         *vec_bdf_poly = bdf_poly;
         do {
-            boost::tie(M, A, F) = this->update( mu , u , mybdf->time() );
+            if( is_linear )
+                boost::tie(M, A, F) = this->update( mu , mybdf->time() );
+            else
+                boost::tie(M, A, F) = this->update( mu , u , mybdf->time() );
             *Rhs = *F[0];
 
             if( !isSteady() )
@@ -2401,7 +2409,10 @@ CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parame
         auto bdf_poly = mybdf->polyDeriv();
         *vec_bdf_poly = bdf_poly;
         do {
-            boost::tie(M, A, F) = this->update( mu , udu , mybdf->time() );
+            if( is_linear )
+                boost::tie(M, A, F) = this->update( mu , mybdf->time() );
+            else
+                boost::tie(M, A, F) = this->update( mu , udu , mybdf->time() );
 
             if( ! isSteady() )
             {
