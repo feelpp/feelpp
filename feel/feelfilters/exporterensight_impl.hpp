@@ -676,16 +676,18 @@ void
 ExporterEnsight<MeshType,N>::visit( mesh_type* __mesh )
 {
     char buffer[ 80 ];
-    char buffer2[ 1024 ];
-    CHECK( M_filename.length() < 1024 ) << "the file name is too long : M_filename=" << M_filename << "\n";
     std::vector<int> idnode, idelem;
 
     std::fstream __out( M_filename.c_str(), std::ios::out | std::ios::binary );
 
+    // get only the filename (maybe with full path)
+    fs::path gp = M_filename;
+    std::string theFileName = gp.filename().string();
+    CHECK( theFileName.length() <= 80 ) << "the file name is too long : theFileName=" << theFileName << "\n";
 
     strcpy( buffer, "C Binary" );
     __out.write( ( char * ) & buffer, sizeof( buffer ) );
-    strcpy( buffer2, M_filename.c_str() );
+    strcpy( buffer, theFileName.c_str() );
     __out.write( ( char * ) & buffer, sizeof( buffer ) );
     strcpy( buffer, "elements" );
     __out.write( ( char * ) & buffer, sizeof( buffer ) );
