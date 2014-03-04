@@ -57,6 +57,7 @@
 #include <feel/feelpoly/functionals2.hpp>
 #include <feel/feelpoly/quadpoint.hpp>
 #include <feel/feelpoly/fe.hpp>
+#include <feel/feelpoly/hdivpolynomialset.hpp>
 
 #include <feel/feelvf/vf.hpp>
 
@@ -434,6 +435,7 @@ class RaviartThomas
 public FiniteElement<RaviartThomasPolynomialSet<N, O, T, Convex>,
     fem::detail::RaviartThomasDual,
     PointSetEquiSpaced >,
+public HDivPolynomialSet,
 public boost::enable_shared_from_this<RaviartThomas<N,O,T,Convex> >
 {
     typedef FiniteElement<RaviartThomasPolynomialSet<N, O, T, Convex>,

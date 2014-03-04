@@ -145,6 +145,18 @@ public :
                                    >
                                >::type affine_decomposition_type;
 
+    typedef typename mpl::if_< mpl::bool_< is_time_dependent >,
+                               boost::tuple<
+                                   beta_vector_type,
+                                   beta_vector_type,
+                                   std::vector<beta_vector_type>
+                                   >,
+                               boost::tuple<
+                                   beta_vector_type,
+                                   std::vector<beta_vector_type>
+                                   >
+                               >::type betaqm_type;
+
 
     ModelCrbBase()
         :
@@ -174,6 +186,17 @@ public :
 
     virtual void initModel() = 0;
 
+    /*
+     * the user has to provide the affine decomposition
+     * he has two choices : use vectors/matrices or operator free
+     * if he uses operators free he must implement :
+     * - operatorCompositeM (only if the model is time dependent)
+     * - operatorCompositeA
+     * - functionalCompositeF
+     * else, if he uses vectors/matrices (classical way) he must implement
+     * - computeAffineDecomposition
+     */
+
     virtual operatorcomposite_ptrtype operatorCompositeA()
     {
         return M_compositeA;
@@ -187,6 +210,65 @@ public :
         return M_compositeF;
     }
 
+    virtual affine_decomposition_type computeAffineDecomposition()
+    {
+        return computeAffineDecomposition( mpl::bool_< is_time_dependent >() );
+    }
+    affine_decomposition_type computeAffineDecomposition( mpl::bool_<true> )
+    {
+        std::vector< std::vector<sparse_matrix_ptrtype> > M;
+        std::vector< std::vector<sparse_matrix_ptrtype> > A;
+        std::vector< std::vector<std::vector<vector_ptrtype> > > F;
+        return boost::make_tuple( M , A , F );
+    }
+    affine_decomposition_type computeAffineDecomposition( mpl::bool_<false> )
+    {
+        std::vector< std::vector<sparse_matrix_ptrtype> > A;
+        std::vector< std::vector<std::vector<vector_ptrtype> > > F;
+        return boost::make_tuple( A , F );
+    }
+
+
+    //for linear models, beta coefficients don't depend on solution u
+    //so the user doesn't have to specify this function
+    virtual betaqm_type computeBetaQm( element_type const& u, parameter_type const& mu ,  double time=0 )
+    {
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<"****************************************************************"<<std::endl;
+            std::cout<<"** You are using the function computeBetaQm( u , mu ) whereas **"<<std::endl;
+            std::cout<<"** your model has only implemented computeBetaQm( mu )        **"<<std::endl;
+            std::cout<<"****************************************************************"<<std::endl;
+        }
+        betaqm_type dummy_beta_coeff;
+        return dummy_beta_coeff;
+    }
+
+
+
+    /**
+     * By default reference parameters are min parameters
+     * If the user needs to specify them
+     * then this function should returns true
+     */
+    virtual bool referenceParametersGivenByUser()
+    {
+        return false;
+    }
+    virtual parameter_type refParameter()
+    {
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<"**************************************************************************************************"<<std::endl;
+            std::cout<<"** You want to specify reference parameters because referenceParametersGivenByUser returns true **"<<std::endl;
+            std::cout<<"** your must impelement the function refParameter() !                                           **"<<std::endl;
+            std::cout<<"**************************************************************************************************"<<std::endl;
+        }
+        bool go=false;
+        CHECK( go );
+        parameter_type muref;
+        return muref;
+    }
 
     //for linear steady models, mass matrix does not exist
     //non-linear steady models need mass matrix for the initial guess
@@ -235,21 +317,18 @@ public :
 
 
 
-     /**
-     * returns the scalar product used fior mass matrix ( to solve eigen values problem )
-     * of the boost::shared_ptr vector x and boost::shared_ptr vector
-     * Transient models need to implement these functions.
+    /**
+     * solve the model for a given parameter \p mu
+     * linear models don't need to provide this fuction
+     * but non-linear : yes
+     * and also those using CRBTrilinear
      */
-    virtual double scalarProductForMassMatrix( vector_ptrtype const& X, vector_ptrtype const& Y )
+    virtual element_type solve( parameter_type const& mu )
     {
-        throw std::logic_error("Your model is time-dependant so you MUST implement scalarProductForMassMatrix function");
-        return 0;
+        element_type solution;
+        return solution;
     }
-    virtual double scalarProductForMassMatrix( vector_type const& x, vector_type const& y )
-    {
-        throw std::logic_error("Your model is time-dependant so you MUST implement scalarProductForMassMatrix function");
-        return 0;
-    }
+
 
     /**
      * inner product for mass matrix
@@ -263,6 +342,17 @@ public :
     virtual sparse_matrix_ptrtype innerProductForMassMatrix ()
     {
         throw std::logic_error("Your model is time-dependant so you MUST implement innerProductForMassMatrix function");
+        return M;
+    }
+
+    virtual sparse_matrix_ptrtype const& innerProductForPod () const
+    {
+        throw std::logic_error("Your model is time-dependant so you MUST implement innerProductForPod function");
+        return M;
+    }
+    virtual sparse_matrix_ptrtype innerProductForPod ()
+    {
+        throw std::logic_error("Your model is time-dependant so you MUST implement innerProductForPod function");
         return M;
     }
 
@@ -538,6 +628,26 @@ public :
 
         file_outputs_geo_gmsh<<conclude;
         file_outputs_geo_gmsh.close();
+    }
+
+
+    /**
+     * specific interface for OpenTURNS
+     *
+     * \param X input vector of size N
+     * \param N size of input vector X
+     * \param Y input vector of size P
+     * \param P size of input vector Y
+     */
+    virtual void run( const double * X, unsigned long N, double * Y, unsigned long P )
+    {
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<"**************************************************"<<std::endl;
+            std::cout<<"** You are using the function run whereas       **"<<std::endl;
+            std::cout<<"** your model has not implemented this function **"<<std::endl;
+            std::cout<<"**************************************************"<<std::endl;
+        }
     }
 
 protected :

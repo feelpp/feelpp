@@ -1,9 +1,9 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*-
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2014-03-01
+       Date: 2014-02-26
 
   Copyright (C) 2014 Feel++ Consortium
 
@@ -21,34 +21,25 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
+#ifndef FEELPP_HCURL_POLYNOMIALSET_HPP
+#define FEELPP_HCURL_POLYNOMIALSET_HPP 1
+#include <boost/type_traits/is_base_of.hpp>
+
+namespace Feel {
+
 /**
-   \file exprbase.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2010-04-21
+ * HCurl conforming polynomialset base class
  */
-#include <typeinfo>
-#include <feel/feelvf/exprbase.hpp>
+class HCurlPolynomialSet {};
 
-namespace Feel
+/**
+ * type traits for hcurl conforming polynomialset
+ * @return true_type if hcurl conforming polynomialset, false_type otherwise
+ */
+template<typename P>
+class is_hcurl_conforming : public boost::is_base_of<HCurlPolynomialSet,P>
 {
-ExprBase::ExprBase()
-{}
+};
 
-ExprBase::~ExprBase()
-{}
-
-std::string
-ExprBase::typeName() const
-{
-    return typeid( *this ).name();
 }
-
-std::string
-ExprBase::toString() const
-{
-    std::ostringstream oss;
-    this->toText( oss, false );
-    return oss.str();
-}
-
-} // Feel
+#endif
