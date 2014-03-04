@@ -329,7 +329,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
 {
     size_type row_start = M_lb.front().globalRowStart();
     M_local_rows = M_test_dof->localToGlobalIndices( elt_0 ).array() + row_start;
-    LOG(INFO) << "lf dof (elt=" << elt_0 << ") = " << M_local_rows << "\n";
+    DVLOG(2) << "lf dof (elt=" << elt_0 << ") = " << M_local_rows << "\n";
     if ( test_dof_type::is_modal || is_hdiv_conforming<test_fe_type>::value  )
     {
         M_local_rowsigns = M_test_dof->localToGlobalSigns( elt_0 );

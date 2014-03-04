@@ -168,7 +168,7 @@ public:
     typedef typename super_type::functionalcomposite_ptrtype functionalcomposite_ptrtype;
     typedef typename super_type::functional_type functional_type;
     typedef typename super_type::functional_ptrtype functional_ptrtype;
-
+    using super_type::computeBetaQm;
     /** @name Constants
      */
     //@{
@@ -267,12 +267,6 @@ public:
      * \param mu parameter to evaluate the coefficients
      */
     boost::tuple<beta_vector_type, std::vector<beta_vector_type> >
-    computeBetaQm( element_type const& T,parameter_type const& mu , double time=1e30 )
-    {
-        return computeBetaQm( mu , time );
-    }
-
-    boost::tuple<beta_vector_type, std::vector<beta_vector_type> >
     computeBetaQm( parameter_type const& mu, double time=0 )
     {
         M_betaAqm.resize( M_nb_terms_in_affine_decomposition_a );
@@ -326,6 +320,12 @@ public:
      */
     value_type output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve=false);
 
+    /**
+     * Important note
+     * This model uses operators free so no need
+     * to implement computeAffineDecomposition function
+     * Instead, need to implement operatorCompositeA and functionalCompositeF
+     */
     operatorcomposite_ptrtype operatorCompositeA()
     {
         return M_compositeA;
@@ -333,11 +333,6 @@ public:
     std::vector< functionalcomposite_ptrtype > functionalCompositeF()
     {
         return M_compositeF;
-    }
-
-    parameter_type refParameter()
-    {
-        return M_Dmu->min();
     }
 
 private:
@@ -406,7 +401,6 @@ Heat1D::initModel()
      */
     Xh = space_type::New( mesh );
     RbXh = rbfunctionspace_type::New( _model=this->shared_from_this() , _mesh=mesh );
-    LOG( INFO ) << "size of RB : "<<RbXh->size();
 
     //  initialisation de A1 et A2
 
