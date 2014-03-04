@@ -55,6 +55,7 @@
 #include <feel/feelpoly/policy.hpp>
 #include <feel/feelpoly/context.hpp>
 
+#include <feel/feelvf/exprbase.hpp>
 #include <feel/feelvf/detail/gmc.hpp>
 #include <feel/feelvf/shape.hpp>
 
@@ -391,7 +392,7 @@ public:
   @see
 */
 template<typename ExprT>
-class Expr//: public boost::enable_shared_from_this<Expr<ExprT> >
+class Expr : public ExprBase //: public boost::enable_shared_from_this<Expr<ExprT> >
 {
 public:
 
