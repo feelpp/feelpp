@@ -6104,6 +6104,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
 
     //the model can be time-dependant and be executed in steady mode
     //so in that case, we don't need to compute this.
+    ti.restart();
     if( ! M_model_executed_in_steady_mode )
     {
 
