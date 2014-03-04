@@ -246,6 +246,30 @@ public :
 
 
 
+    /**
+     * By default reference parameters are min parameters
+     * If the user needs to specify them
+     * then this function should returns true
+     */
+    virtual bool referenceParametersGivenByUser()
+    {
+        return false;
+    }
+    virtual parameter_type refParameter()
+    {
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<"**************************************************************************************************"<<std::endl;
+            std::cout<<"** You want to specify reference parameters because referenceParametersGivenByUser returns true **"<<std::endl;
+            std::cout<<"** your must impelement the function refParameter() !                                           **"<<std::endl;
+            std::cout<<"**************************************************************************************************"<<std::endl;
+        }
+        bool go=false;
+        CHECK( go );
+        parameter_type muref;
+        return muref;
+    }
+
     //for linear steady models, mass matrix does not exist
     //non-linear steady models need mass matrix for the initial guess
     //this class can provide the function operatorCompositeM() to ensure compilation

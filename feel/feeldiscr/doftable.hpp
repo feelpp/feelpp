@@ -1197,15 +1197,15 @@ private:
         if ( !bad_dof.empty() )
         {
             for ( uint16_type i = 0; i < bad_dof.size(); ++i )
-                Warning() << bad_dof[i] << "\n";
+                LOG(WARNING) << bad_dof[i] << "\n";
 
             if ( mpl::int_<N>() == 1 )
-                Warning() << "Edges: ";
+                LOG(WARNING) << "Edges: ";
 
             else
-                Warning() << "Faces: ";
+                LOG(WARNING) << "Faces: ";
 
-            Warning() << "Bad dof signs. \n";
+            LOG(WARNING) << "Bad dof signs. \n";
         }
 
 #endif
