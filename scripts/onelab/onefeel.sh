@@ -5,6 +5,8 @@
 
 PCONFIG=""
 
+echo "This script is deprecated and might not work. Please use onefeel.py instead"
+
 #	Argument check
 if [[ $# -lt 2 ]]
 then
@@ -42,7 +44,7 @@ if [[ $NPROCS -eq 1 ]]; then
     eval "$* --generate-ol ${PCONFIG}"
 else
     # Launch the feel++ application to generate the OneLab files
-    eval "mpirun -np ${NPROCS} $* --generate-ol ${PCONFIG}"
+    eval "mpirun -np ${NPROCS} $* --onelab.enable=1 ${PCONFIG}"
 fi
 
 if [[ $? -ne 0 ]]; then
