@@ -696,8 +696,11 @@ Environment::doOptions( int argc, char** argv,
         /* handle the generation of onelab files after having processed */
         /* the regular config file, so we have parsed user defined parameters */
         /* or restored a previous configuration */
-        std::cout << S_vm.count("onelab.enable") << std::endl; 
-        std::cout << S_vm["onelab.enable"].as<int>() << std::endl;
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout << S_vm.count("onelab.enable") << std::endl;
+            std::cout << S_vm["onelab.enable"].as<int>() << std::endl;
+        }
         if ( worldComm().isMasterRank() )
         {
             if ( S_vm.count("onelab.enable") && S_vm["onelab.enable"].as<int>() == 1 )
