@@ -28,8 +28,6 @@ Feel++ is Copyright (C) 2005-2006 by
 
  - Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 
-$-\Delta u$
-
 ## Current Developers and Contributors:
 
  - Alexandre Ancel <alexandre.ancel@cemosis.fr>
