@@ -80,6 +80,55 @@ public:
     }
 
 
+    std::vector<int> countAllContributions()
+    {
+        int size1 = M_functionals1.size();
+        int size2 = M_functionals2.size();
+        CHECK( size1 == 0 )<<"the function countAllContributions can only be called when using functionals with 2 index\n";
+
+        //first : count Q
+        int Q=1;
+        if( size2 == 0 )
+            Q=0;
+        //initialization
+        auto it_=M_functionals2.begin();
+        auto tuple_=it_->first;
+        int old_q = tuple_.template get<0>();
+        //loop over all operators
+        auto end = M_functionals2.end();
+        for(auto it=M_functionals2.begin(); it!=end; it++)
+        {
+            auto tuple = it->first;
+            int q = tuple.template get<0>();
+            if (q!=old_q)
+            {
+                Q++;
+                old_q=q;
+            }
+        }
+        std::vector<int> V(Q);
+        //now count sub-terms
+        int count=0;
+        old_q = tuple_.template get<0>();
+        for(auto it=M_functionals2.begin(); it!=end; it++)
+        {
+            auto tuple = it->first;
+            int q = tuple.template get<0>();
+            if (q!=old_q)
+            {
+                V[old_q]=count;
+                count=1;
+                old_q=q;
+            }
+            else
+            {
+                count++;
+            }
+        }
+        V[old_q]=count;
+        return V;
+    }
+
     //if we have a list of functionals
     //i.e. \sum_{q=0}^Q Fq(.)
     void addElement( super_ptrtype const& functional )

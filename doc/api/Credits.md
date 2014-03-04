@@ -28,30 +28,43 @@ Feel++ is Copyright (C) 2005-2006 by
 
  - Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 
+$-\Delta u$
+
 ## Current Developers and Contributors:
 
- - Vincent Chabannes <vincent.chabannes@imag.fr>
- - Christophe Prud'homme <christophe.prudhomme@feelpp.org>
- - Stéphane Veys <stephane.veys@imag.fr>
- - Abdoulaye Samake <samakeablo@gmail.com>
- - Cecile Daversin <Cecile.Daversin@lncmi.cnrs.fr>
- - Christophe Trophime <christophe.trophime@lncmi.cnrs.fr>
- - Goncalo Pena <goncalo.pena@epfl.ch>
- - Guillaume Dollé <dolleg@gmail.com>
- - Jean-Baptiste Wahl <wahl.jb@gmail.com>
- - Mourad Ismail <Mourad.Ismail@ujf-grenoble.fr>
- - Ranine Tarabay <ranine.tarbay@math.unistra.fr>
- - Vincent Doyeux <vincent.doyeux@ujf-grenoble.fr>
- - Vincent Huber <vincent.huber@cemosis.fr>
  - Alexandre Ancel <alexandre.ancel@cemosis.fr>
+ - Vincent Chabannes <vincent.chabannes@feelpp.org>
+ - Guillaume Dollé <dolleg@gmail.com>
+ - Vincent Doyeux <vincent.doyeux@ujf-grenoble.fr>
+ - Cecile Daversin <Cecile.Daversin@lncmi.cnrs.fr>
+ - Vincent Huber <vincent.huber@cemosis.fr>
+ - Mourad Ismail <Mourad.Ismail@ujf-grenoble.fr>
  - Pierre Jolivet <pierre.jolivet@ljll.math.upmc.fr>
+ - Goncalo Pena <goncalo.pena@epfl.ch>
+ - Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ - Abdoulaye Samake <samakeablo@gmail.com>
+ - Ranine Tarabay <ranine.tarbay@math.unistra.fr>
+ - Christophe Trophime <christophe.trophime@lncmi.cnrs.fr>
+ - Stéphane Veys <stephane.veys@imag.fr>
+ - Jean-Baptiste Wahl <wahl.jb@gmail.com>
 
-
-## Past Developers and Contributors:
+## Past Developers and Contributors
 
  - Benjamn Stamm <benjamin.stamm@epfl.ch>
  - Gilles Steiner <gilles.steiner@epfl.ch>
  - Christoph Winkelmann <christoph.winkelmann@epfl.ch>
+
+# Documentation Authors
+
+This documentation is a contribution from many people (in alphabetical order
+with respect to the name):
+
+ - Alexandre Ancel
+ - Denis Barbier
+ - Guillaume Dollé
+ - Vincent Huber
+ - Christophe Prud'homme
+ - Jean-Baptiste Wahl
 
 # Funding
 

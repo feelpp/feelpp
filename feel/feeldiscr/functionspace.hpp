@@ -30,6 +30,8 @@
 #ifndef __FunctionSpace_H
 #define __FunctionSpace_H 1
 
+#include <type_traits>
+
 #include <boost/static_assert.hpp>
 
 #include <boost/mpl/at.hpp>
@@ -89,7 +91,7 @@
 #include <feel/feeldiscr/mortar.hpp>
 
 #include <feel/feeldiscr/region.hpp>
-
+#include <feel/feelvf/exprbase.hpp>
 #include <feel/feelvf/detail/gmc.hpp>
 
 namespace Feel
@@ -2936,8 +2938,6 @@ public:
         typename mpl::at_c<element_vector_type,i>::type
         element( std::string const& name ="u", bool updateOffViews=true )
         {
-            if ( this->worldComm().globalSize()>1 ) this->worldComm().globalComm().barrier();
-
             size_type nbdof_start =  fusion::accumulate( this->functionSpaces(),
                                      size_type( 0 ),
                                      Feel::detail::NLocalDof<mpl::bool_<true> >( this->worldsComm(), false, 0, i ) );
@@ -4025,6 +4025,20 @@ public:
     }
 
     /**
+     * \param e expression to initialize the element
+     * \param u name of the element
+     * \return an element initialized with expression \p e
+     */
+    template<typename ExprT>
+    element_type
+    element( ExprT e, std::string const& name = "u", typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type* = 0 )
+    {
+        element_type u( this->shared_from_this(), name );
+        u.on( _range=elements(M_mesh), _expr=e );
+        return u;
+    }
+
+    /**
      * \return an element of the function space
      */
     element_ptrtype
@@ -4032,6 +4046,20 @@ public:
     {
         element_ptrtype u( new element_type( this->shared_from_this(), name ) );
         u->zero();
+        return u;
+    }
+
+    /**
+     * \param e expression to initialize the element
+     * \param u name of the element
+     * \return a pointer to an element initialized with expression \p e
+     */
+    template<typename ExprT>
+    element_ptrtype
+    elementPtr( ExprT e, std::string const& name = "u", typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type* = 0 )
+    {
+        element_ptrtype u( new element_type( this->shared_from_this(), name ) );
+        u->on( _range=elements(M_mesh), _expr=e );
         return u;
     }
 
@@ -4985,7 +5013,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & conte
     const uint16_type nq = context.xRefs().size2();
 
     //double vsum=0;
-
+    auto const& s = M_functionspace->dof()->localToGlobalSigns( elt_id );
     //array_type v( boost::extents[nComponents1][nComponents2][context.xRefs().size2()] );
     for ( int l = 0; l < basis_type::nDof; ++l )
     {
@@ -5014,7 +5042,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & conte
                 for ( typename array_type::index i = 0; i < nComponents1; ++i )
                     //for( typename array_type::index j = 0; j < nComponents2; ++j )
                 {
-                    v[q]( i,0 ) += v_*context.id( ldof, i, 0, q );
+                    v[q]( i,0 ) += s(ldof)*v_*context.id( ldof, i, 0, q );
                     //vsum +=v_*context.id( ldof, i, 0, q );
                     //v[q](i,0) += v_*context.gmc()->J(*)*context.pc()->phi( ldof, i, 0, q );
                 }

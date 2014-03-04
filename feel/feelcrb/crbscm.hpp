@@ -598,6 +598,7 @@ CRBSCM<TruthModelType>::offlineNoSCM()
     sparse_matrix_ptrtype inner_prod,sym,Matrix;
     M_mu_ref = M_model->refParameter();
     M_model->computeAffineDecomposition();
+    M_model->countAffineDecompositionTerms();
     if ( M_scm_for_mass_matrix )
     {
         inner_prod = M_model->innerProductForMassMatrix();
@@ -664,7 +665,7 @@ CRBSCM<TruthModelType>::offlineSCM()
     std::vector<boost::tuple<double,double,double> > ckconv;
     // do the affine decomposition
     M_model->computeAffineDecomposition();
-
+    M_model->countAffineDecompositionTerms();
     // random sampling
     bool all_procs_have_same_sampling=true;
     M_Xi->randomize( M_vm["crb.scm.sampling-size"].template as<int>() , all_procs_have_same_sampling );

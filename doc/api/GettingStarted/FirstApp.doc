@@ -1,20 +1,21 @@
 /* -*- mode: c++; coding: utf-8 -*- */
 namespace Feel {
 /*! \page FirstApp First Feel++ Application
-\author Christophe Prud'homme
+
 \tableofcontents
 
 <hr>
 
-
 See section \ref Building for more information about \feel installation.
 
 \section Minimal Minimal Example
-Let's begin with our first program using the \feel framework (source : "doc/manual/tutorial/myapp.cpp").
-Before all, you have to include the \feel headers.
+
+Let's begin with our first program using the \feel framework (source:
+<tt>doc/manual/tutorial/myapp.cpp</tt>).  Before all, you have to include the
+\feel headers.
+
 \co
-  #include <feel/feel.hpp>
-  using namespace Feel;
+  #include <feel/feelcore/environment.hpp>
 \eco
 
 We use the C++ <tt>namespace</tt> to avoid <tt>Feel::</tt> prefix before
@@ -22,32 +23,36 @@ We use the C++ <tt>namespace</tt> to avoid <tt>Feel::</tt> prefix before
 \co
 int main( int argc, char* argv[] )
 {
-  // create custom command option
-  po::options_description app_options( "MyApp options" );
-  app_options.add( feel_options() );
-  app_options.add_options()
+    using namespace Feel;
+
+    // create custom command option
+    po::options_description app_options( "MyApp options" );
+    app_options.add_options()
     ( "value",
-      po::value<double>() -> default_value(4.2),
-      "a ’double’ with default value" )
-  ;
-                                 
-  // initialize feel++ environment
-  Environment env( _argc=argc, _argv=argv,
-                   _desc=app_options,
-                   _about=about( _name="myapp",
-                                 _author="Feel++ Consortium",
-                                 _email="feelpp-devel@feelpp.org") );
-                                 
-  // create a log and write inside
-  LOG(INFO) << "value = " << option(_name="value").as<double>()
-            << std::endl;
-  LOG(INFO) << "proc " << Environment::worldComm().globalRank()
-            <<" of "<< Environment::numberOfProcessors()
-            << std::endl;
-} 
+          po::value<double>() -> default_value(4.2),
+          "a 'double' with default value" )
+    ;
+
+    // initialize feel++ environment
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=app_options,
+                     _about=about( _name="myapp",
+                                   _author="Feel++ Consortium",
+                                   _email="feelpp-devel@feelpp.org") );
+
+    // create a log and write inside
+    LOG(INFO) << "value = " << option(_name="value").as<double>()
+              << std::endl;
+
+    LOG(INFO) << "proc " << Environment::worldComm().globalRank()
+              <<" of "<< Environment::numberOfProcessors()
+              << std::endl;
+
+} // main
 \eco
 
 \li We pass command line options using the <a href="http://www.boost.org/doc/libs/1_53_0/doc/html/program_options.html">Boost Program Options</a>, library using the prefix <tt>po::</tt> which is a \feel alias for the Boost::program_options namespace. To add a new \feel option, we must create a new
+
 \feel <tt>options_description</tt>. You must add the default \feel options
 and the new one that we choose here as a double value. Note that the default
 value will be assigned if not specified by the user.
@@ -55,7 +60,7 @@ value will be assigned if not specified by the user.
 \li Then we initialize the environment variables through the \feel <tt>Environment</tt> class.
 
 \li We instantiate a new application. We specify the directory where to execute the
-program. That could be usefull for archiving your results.
+program. That could be useful for archiving your results.
 
 \li Finally, we save the results in a log file using the <a href="http://code.google.com/p/google-glog/">google-glog library</a>. As you can see, we save in this example our custom option value and the
 current processor number.
@@ -88,12 +93,16 @@ Note that there will be one log for each processor in that case.
 <a href="#" class="top">top</a>
 <hr>
 \section Config Config files
+
 A config file can be parsed to the program to profile your options. The default config paths are,
     \li current dir
     \li <tt>$HOME/feel/config/</tt>
     \li <tt>$INSTALL_PREFIX/share/feel/config/</tt>
 
-then you have to write inside one of these folders a file called <tt><app_name>.cfg</tt> or <tt>feelpp_<app_name>.cfg</tt>. For example, our <tt>myapp.cfg</tt> would looks like,
+then you have to write inside one of these folders a file called
+<tt><app_name>.cfg</tt> or <tt>feelpp_<app_name>.cfg</tt>. For example, our
+<tt>myapp.cfg</tt> would looks like,
+
 \verbatim
 value=0.53
 \endverbatim
@@ -103,7 +112,10 @@ Note that you can specify the config file through the option <tt>--config-file=<
 <a href="#" class="top">top</a>
 <hr>
 \section Initializing Initializing PETSc and Trilinos
-PETSc is a suite of data structures and routines for the scalable (parallel) solution of scientific applications modeled by partial differential equations. It employs the MPI standard for parallelism.
+
+PETSc is a suite of data structures and routines for the scalable (parallel)
+solution of scientific applications modeled by partial differential
+equations. It employs the MPI standard for parallelism.
 
 \feel supports the PETSc framework, the <tt>Environment</tt> takes care of initializing the associated PETSc environment.
 
