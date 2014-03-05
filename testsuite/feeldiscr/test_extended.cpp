@@ -32,11 +32,14 @@ int main(int argc, char**argv )
 
     auto mesh = loadMesh(_mesh=new mesh_type );
     // Function spaces creation with extended doftable
-    std::vector<bool> ext_doft( 3, true );
+    std::vector<bool> ext_doft( {true, false, false} );
     auto Xh_F = space_type_F::New( mesh,_extended_doftable=ext_doft );
 
     // Matrix creation with extended pattern
     backend_ptrtype backend( backend_type::build() );
-    size_type pattern = Pattern::COUPLED|Pattern::EXTENDED;
-    auto test_matrix = backend->newMatrix( _test=Xh_F, _trial=Xh_F, _pattern=pattern );
+    auto blockStruct = BlocksStencilPattern(3,3)
+        << size_type(Pattern::EXTENDED) << size_type(Pattern::COUPLED) << size_type(Pattern::ZERO) // velocity
+        << size_type(Pattern::COUPLED)  << size_type(Pattern::COUPLED) << size_type(Pattern::COUPLED) // pressure
+        << size_type(Pattern::ZERO)     << size_type(Pattern::COUPLED) << size_type(Pattern::COUPLED); // lag multiplier
+    auto test_matrix = backend->newMatrix( _test=Xh_F, _trial=Xh_F, _pattern_block=blockStruct );
 }
