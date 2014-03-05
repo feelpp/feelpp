@@ -46,7 +46,6 @@ int main( int argc, char** argv )
 
     //Initialize Feel++ Environment
     Environment env( _argc=argc, _argv=argv,
-                     _desc=feel_options(),
                      _about=about( _name="myfunctionspace",
                                    _author="Feel++ Consortium",
                                    _email="feelpp-devel@feelpp.org" )  );
