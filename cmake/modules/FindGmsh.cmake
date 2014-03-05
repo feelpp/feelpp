@@ -42,9 +42,9 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
 
   FIND_PATH(GMSH_INCLUDE_DIR
     Gmsh.h Context.h GModel.h
-    PATHS
-    $ENV{GMSH_DIR}/include/gmsh
-    ${CMAKE_BINARY_DIR}/contrib/gmsh/include/gmsh
+    HINTS
+    $ENV{GMSH_DIR}
+    ${CMAKE_BINARY_DIR}/contrib/gmsh
     PATH_SUFFIXES
     include include/gmsh
     DOC "Directory where GMSH header files are stored" )
