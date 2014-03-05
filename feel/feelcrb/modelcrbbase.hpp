@@ -402,6 +402,11 @@ public :
         Eigen::MatrixXf::Index index;
         Eigen::VectorXd square;
 
+        std::ofstream file;
+        std::string filename="OnlineStatistics-"+name;
+
+        file.open( filename , std::ios::app );
+
         if( vector.size() > 0 )
         {
             bool force = option("eim.use-dimension-max-functions").template as<bool>();
@@ -411,11 +416,6 @@ public :
 
             int N = vector.size();
 
-            if( force )
-                LOG( INFO ) <<" statistics  for "<<name<<" (  was called "<< N << " times with "<<Neim<<" basis functions )";
-            else
-                LOG( INFO ) <<" statistics  for "<<name<<" (  was called "<< N << " times )";
-
             min = vector.minCoeff(&index);
             max = vector.maxCoeff(&index);
             mean = vector.mean();
@@ -423,7 +423,22 @@ public :
             square  = vector.array().pow(2);
             mean2 = square.mean();
             standard_deviation = math::sqrt( mean2 - mean1 );
-            LOG(INFO)<<"min : "<<min<<" - max : "<<max<<" mean : "<<mean<<" standard deviation : "<<standard_deviation;
+
+            if( Environment::worldComm().isMasterRank() )
+            {
+                if( force )
+                {
+                    std::cout<<"statistics  for "<<name<<" (  was called "<< N << " times with "<<Neim<<" basis functions )"<<std::endl;
+                    file <<" statistics  for "<<name<<" (  was called "<< N << " times with "<<Neim<<" basis functions )\n";
+                }
+                else
+                {
+                    std::cout<<" statistics  for "<<name<<" (  was called "<< N << " times )"<<std::endl;
+                    file <<" statistics  for "<<name<<" (  was called "<< N << " times )\n";
+                }
+                std::cout<<"min : "<<min<<" - max : "<<max<<" mean : "<<mean<<" standard deviation : "<<standard_deviation<<"  (see "<<filename<<")"<<std::endl;
+                file<<"min : "<<min<<" - max : "<<max<<" mean : "<<mean<<" standard deviation : "<<standard_deviation<<"\n";
+            }
         }
         vectorN_type result(4);
         result(0)=min;
