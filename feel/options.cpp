@@ -69,7 +69,9 @@ generic_options()
         ( "feelinfo", "prints feel libraries information" )
         ( "nochdir", "Don't change repository directory even though it is called" )
         ( "directory", po::value<std::string>(), "change directory to specified one" )
-        ( "generate-ol", "Generate OneLab files for interaction with Gmsh" )
+        ( "onelab.enable", Feel::po::value<int>()->default_value(0), "Generate OneLab files for interaction with Gmsh" )
+        ( "onelab.remote", Feel::po::value<std::string>()->default_value(""), "Remote host for Onelab interface" )
+        ( "onelab.chroot", Feel::po::value<std::string>()->default_value(""), "Chroot to use on remote host" )
         ;
     return generic;
 }
