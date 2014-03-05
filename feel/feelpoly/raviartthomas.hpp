@@ -154,7 +154,7 @@ public:
         uint16_type dim_Pkp1 = convex_type::polyDims( nOrder );
         uint16_type dim_Pk = convex_type::polyDims( nOrder-1 );
         uint16_type dim_Pkm1 = ( nOrder==1 )?0:convex_type::polyDims( nOrder-2 );
-#if 0
+#if 1
         std::cout << "[RTPset] dim_Pkp1 = " << dim_Pkp1 << "\n";
         std::cout << "[RTPset] dim_Pk   = " << dim_Pk << "\n";
         std::cout << "[RTPset] dim_Pkm1 = " << dim_Pkm1 << "\n";
@@ -162,23 +162,23 @@ public:
         // (P_k)^d
         Pkp1_v_type Pkp1_v;
         vectorial_polynomialset_type Pk_v( Pkp1_v.polynomialsUpToDimension( dim_Pk ) );
-#if 0
+#if 1
         std::cout << "[RTPset] Pk_v =" << Pk_v.coeff() << "\n";
 #endif
         // P_k
         Pkp1_s_type Pkp1;
         scalar_polynomialset_type Pk ( Pkp1.polynomialsUpToDimension( dim_Pk ) );
-#if 0
+#if 1
         std::cout << "[RTPset] Pk =" << Pk.coeff() << "\n";
         std::cout << "[RTPset] Pk(0) =" << Pk.polynomial( 0 ).coefficients() << "\n";
 #endif
 
         // x P_k \ P_{k-1}
-        IMGeneral<convex_type::nDim, 2*nOrder,value_type> im;
-        //std::cout << "[RTPset] im.points() = " << im.points() << std::endl;
+        IMGeneral<convex_type::nDim, 2*nOrder+2,value_type> im;
+        std::cout << "[RTPset] im.points() = " << im.points() << std::endl;
         ublas::matrix<value_type> xPkc( nComponents*( dim_Pk-dim_Pkm1 ),Pk.coeff().size2() );
 
-        //std::cout << "[RTPset] before xPkc = " << xPkc << "\n";
+        std::cout << "[RTPset] before xPkc = " << xPkc << "\n";
         for ( int l = dim_Pkm1, i = 0; l < dim_Pk; ++l, ++i )
         {
             for ( int j = 0; j < convex_type::nDim; ++j )
@@ -192,11 +192,11 @@ public:
         }
 
 
-        //std::cout << "[RTPset] after xPkc = " << xPkc << "\n";
+        std::cout << "[RTPset] after xPkc = " << xPkc << "\n";
         vectorial_polynomialset_type xPk( typename super::basis_type(), xPkc, true );
         //std::cout << "[RTPset] here 1\n";
         // (P_k)^d + x P_k
-        //std::cout << "[RTPset] RT Poly coeff = " << unite( Pk_v, xPk ).coeff() << "\n";
+        std::cout << "[RTPset] RT Poly coeff = " << unite( Pk_v, xPk ).coeff() << "\n";
         this->setCoefficient( unite( Pk_v, xPk ).coeff(), true );
         //std::cout << "[RTPset] here 2\n";
     }
@@ -251,10 +251,10 @@ public:
     static const uint16_type nbPtsPerFace =mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<3> >,
                                                     mpl::int_<reference_convex_type::nbPtsPerFace>,
                                                     typename mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<2> >,
-                                                                      mpl::int_<DimPkm2>,
+                                                                      mpl::int_<2*DimPkm2>,
                                                                       mpl::int_<0> >::type >::type::value;
     static const uint16_type nbPtsPerVolume = mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<3> >,
-                                                       mpl::int_<DimPkm2>,
+                                                       mpl::int_<3*DimPkm2>,
                                                        mpl::int_<0> >::type::value;;
     //static const uint16_type numPoints = ( reference_convex_type::numGeometricFaces*nbPtsPerFace+reference_convex_type::numEdges*nbPtsPerEdge );
 
@@ -297,7 +297,8 @@ public:
 
         // loop on each entity forming the convex of topological
         // dimension nDim-1 ( the faces)
-        for ( int p = 0, e = M_convex_ref.entityRange( nDim-1 ).begin();
+        int p = 0;
+        for ( int e = M_convex_ref.entityRange( nDim-1 ).begin();
                 e < M_convex_ref.entityRange( nDim-1 ).end();
                 ++e )
         {
@@ -314,7 +315,25 @@ public:
                 p+=Gt.size2();
             }
         }
-
+        points_type pts_interior;
+        for ( int e = M_convex_ref.entityRange( nDim ).begin();
+              e < M_convex_ref.entityRange( nDim ).end();
+              ++e )
+        {
+            points_type Gt ( M_convex_ref.makePoints( nDim, 0, 1 ) );
+            pts_interior = Gt;
+            if ( Gt.size2() )
+            {
+                VLOG(1) << "Gt = " << Gt << "\n";
+                //VLOG(1) << "p = " << p << "\n";
+                ublas::subrange( M_pts, 0, nDim, p, p+Gt.size2() ) = Gt;
+                //for ( size_type j = 0; j < Gt.size2(); ++j )
+                //M_eid[d].push_back( p+j );
+                p+=Gt.size2();
+            }
+        }
+        std::cout <<  "pts:" << M_pts << "\n";
+        std::cout <<  "pts interior:" << pts_interior << "\n";
         //std::cout << "[RT Dual] done 1\n";
         // compute  \f$ \ell_e( U ) = (U * n[e]) (edge_pts(e)) \f$
         typedef Functional<primal_space_type> functional_type;
@@ -368,10 +387,13 @@ public:
             std::cout << "Primal = " << primal.coeff() << "\n";
             for ( int i = 0; i < Pkm1.polynomialDimension(); ++i )
             {
-                typedef functional::IntegralMoment<primal_space_type, vectorial_polynomialset_type> fim_type;
+                //typedef functional::IntegralMoment<primal_space_type, vectorial_polynomialset_type> fim_type;
                 //typedef functional::IntegralMoment<Pkp1_v_type, vectorial_polynomialset_type> fim_type;
+
+                functional::ComponentsPointEvaluation<primal_space_type> fun( primal,pts_interior );
                 std::cout << "P(" << i << ")=" << Pkm1.polynomial( i ).coeff() << "\n";
-                fset.push_back( fim_type( primal, Pkm1.polynomial( i ) ) );
+                //fset.push_back( fun( primal, Pkm1.polynomial( i ) ) );
+                fset.push_back( fun );
             }
         }
 
