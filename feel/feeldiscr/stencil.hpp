@@ -1444,9 +1444,10 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
                             if ( neighbor_id != invalid_size_type_value )
                             {
                                 if ( neighbor_process_id != proc_id )
-                                    CHECK( _M_X1->dof()->buildDofTableMPIExtended() &&
-                                           _M_X2->dof()->buildDofTableMPIExtended() )
-                                        << "DofTableMPIExtended is not build!";
+                                    CHECK( ( _M_X1->dof()->buildDofTableMPIExtended() &&
+                                             _M_X2->dof()->buildDofTableMPIExtended() ) ||
+                                           ( _M_X1->dof()->is_p0_continuous || _M_X1->dof()->is_p0_continuous ) )
+                                        << "Both spaces must have the extended dof table to build the matrix stencil";
 
                                 neighbor = boost::addressof( _M_X1->mesh()->element( neighbor_id,
                                                                                      neighbor_process_id ) );
@@ -1498,9 +1499,15 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
                 if ( !faceExtended_it->isConnectedTo0() || !faceExtended_it->isConnectedTo1() ) continue;
 
                 if ( faceExtended_it->isInterProcessDomain() )
+                    CHECK( ( _M_X1->dof()->buildDofTableMPIExtended() &&
+                             _M_X2->dof()->buildDofTableMPIExtended() ) ||
+                           ( _M_X1->dof()->is_p0_continuous || _M_X1->dof()->is_p0_continuous ) )
+                                        << "Both spaces must have the extended dof table to build the matrix stencil";
+#if 0
                     CHECK( _M_X1->dof()->buildDofTableMPIExtended() &&
                            _M_X2->dof()->buildDofTableMPIExtended() )
                         << "DofTableMPIExtended is not built!";
+#endif
 
                 auto const& elt0 = faceExtended_it->element0();
                 auto const& elt1 = faceExtended_it->element1();
