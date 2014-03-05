@@ -131,7 +131,7 @@ main( int argc, char** argv )
         ( "mu", po::value<double>()->default_value( 1 ), "reaction term coefficient" );
     // Initialize Feel++ Environment
     Environment env( _argc=argc, _argv=argv,
-                     _desc=opts.add( feel_options() ),
+                     _desc=opts,
                      _about=about(_name="myadvection",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org") );

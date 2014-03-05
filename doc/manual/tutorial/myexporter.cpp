@@ -36,7 +36,6 @@ int main(int argc, char**argv )
 {
 	using namespace Feel;
 	Environment env( _argc=argc, _argv=argv,
-                   _desc=feel_options(),
                    _about=about(_name="myexporter",
                                 _author="Christophe Prud'homme",
                                 _email="christophe.prudhomme@feelpp.org"));
