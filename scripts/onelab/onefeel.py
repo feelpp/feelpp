@@ -157,14 +157,14 @@ def main():
 
     # Checking for remote executable
     if(args.remote != ""):
-        print "Copying config file ..."
+        print "Copying remote config file ..."
         cmd = ["scp", args.remote + ":" + pargs[0] + ".ol", "."]
         if(args.debug > 0):
             print cmd
         retval = subprocess.call(cmd)
         if(retval != 0):
             exit(1)
-        cmd = ["scp", pargs[0] + ".onelab.cfg.ol", "."]
+        cmd = ["scp", args.remote + ":" + pargs[0] + ".onelab.cfg.ol", "."]
         if(args.debug > 0):
             print cmd
         retval = subprocess.call(cmd)
