@@ -4049,8 +4049,9 @@ CRB<TruthModelType>::correctionTerms(parameter_type const& mu, std::vector< vect
         double dt = M_model->timeStep();
         double Tf = M_model->timeFinal();
         int K = Tf/dt;
-        int time_index;
-
+        int primal_time_index;
+        int dual_time_index;
+        int kpd=0;//kp dual
         for( int kp=1; kp<=k; kp++)
         {
 
@@ -4058,12 +4059,14 @@ CRB<TruthModelType>::correctionTerms(parameter_type const& mu, std::vector< vect
             Mprdu.setZero( N , N );
             Fdu.setZero( N );
 
-            time_index = K-k+kp;
-            time = time_index*dt;
+            kpd=K-kp+1;
+            dual_time_index = kpd;
+            primal_time_index = kp;
+            time = primal_time_index*dt;
 
             boost::tie( betaMqm, betaAqm, betaFqm) = M_model->computeBetaQm( mu ,time);
 
-            time_index--;
+            //time_index--;
 
 
             for(size_type q = 0;q < M_model->Ql(0); ++q)
@@ -4086,10 +4089,10 @@ CRB<TruthModelType>::correctionTerms(parameter_type const& mu, std::vector< vect
                     Mprdu += betaMqm[q][m]*M_Mqm_pr_du[q][m].block(0,0,N,N);
             }
 
-
-            du = uNdu[K-1-time_index];
-            pr = uN[time_index];
-            oldpr = uNold[time_index];
+            //du = uNdu[K-dual_time_index];
+            du = uNdu[dual_time_index];
+            pr = uN[primal_time_index];
+            oldpr = uNold[primal_time_index];
             correction += dt*( Fdu.dot( du ) - du.dot( Aprdu*pr ) ) - du.dot(Mprdu*pr) + du.dot(Mprdu*oldpr) ;
         }
     }
@@ -4273,10 +4276,9 @@ template<typename TruthModelType>
 void
 CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std::vector< vectorN_type > & uNdu,  std::vector<vectorN_type> & uNduold, std::vector< double > & output_vector, int K) const
 {
-
     double time_for_output;
     double time_step;
-    double time_final;
+    double time_final=0;
     int number_of_time_step=1;
     size_type Qm;
 
@@ -4300,8 +4302,8 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
         }
         else
         {
-            number_of_time_step = time_final / time_step;
-            time_for_output = number_of_time_step * time_step;
+            number_of_time_step = (time_final / time_step)+1;
+            time_for_output = (number_of_time_step-1) * time_step;
         }
     }
 
@@ -4326,7 +4328,9 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
     if ( ! M_model->isSteady() )
     {
         for ( size_type n=0; n<N; n++ )
+        {
             uNduold[time_index]( n ) = M_coeff_du_ini_online(n);
+        }
     }
 
      /**/
@@ -4479,8 +4483,8 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
 
         else
         {
-            number_of_time_step = time_final / time_step;
-            time_for_output = number_of_time_step * time_step;
+            number_of_time_step = (time_final / time_step)+1;
+            time_for_output = (number_of_time_step-1) * time_step;
         }
     }
     beta_vector_type betaAqm;
@@ -4497,7 +4501,14 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
     if ( !M_model->isSteady() )
     {
         for ( size_type n=0; n<N; n++ )
-            uNold[0]( n ) = M_coeff_pr_ini_online(n);
+        {
+            uNold[1]( n ) = M_coeff_pr_ini_online(n);
+            uN[0]( n ) = M_coeff_pr_ini_online(n);
+        }
+
+        if ( time_index<number_of_time_step-1 )
+            time_index++;
+
     }
 
 
@@ -4645,6 +4656,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
 
         if ( time_index<number_of_time_step-1 )
             time_index++;
+
     }
 
     double condition_number = 0;
@@ -4848,8 +4860,8 @@ CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::ve
             time_for_output = K * time_step;
         else
         {
-            number_of_time_step = time_final / time_step;
-            time_for_output = number_of_time_step * time_step;
+            number_of_time_step = (time_final / time_step)+1;
+            time_for_output = (number_of_time_step-1) * time_step;
         }
     }
 
@@ -4872,9 +4884,9 @@ CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::ve
 
         int time_index=0;
 
-        for ( double time=time_step; time<=time_for_output; time+=time_step )
+        for ( double time=0; math::abs(time-time_for_output-time_step)>1e-9; time+=time_step )
         {
-            int k = time_index+1;
+            int k = time_index;
             output_vector[time_index]+=correctionTerms(mu, uN , uNdu, uNold, k );
             time_index++;
         }
@@ -4920,8 +4932,8 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
 
         else
         {
-            number_of_time_step = time_final / time_step;
-            time_for_output = number_of_time_step * time_step;
+            number_of_time_step = (time_final / time_step)+1;
+            time_for_output = (number_of_time_step-1) * time_step;
         }
     }
     if ( N > M_N ) N = M_N;
@@ -4993,7 +5005,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
     }
 
 
-    if ( save_output_behavior )
+    if ( save_output_behavior && Environment::worldComm().isMasterRank() )
     {
         time_index=0;
         std::ofstream file_output;
@@ -5004,10 +5016,10 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
             mu_str= mu_str + ( boost::format( "_%1%" ) %mu[i] ).str() ;
         }
 
-        std::string name = "output_evolution" + mu_str;
+        std::string name = "output-evolution" + mu_str;
         file_output.open( name.c_str(),std::ios::out );
-
-        for ( double time=time_step; time<=time_for_output; time+=time_step )
+        file_output<<"time \t outputRB\n";
+        for ( double time=0; math::abs(time-time_for_output-time_step)>1e-9; time+=time_step )
         {
             file_output<<time<<"\t"<<output_vector[time_index]<<"\n";
             time_index++;
@@ -5050,7 +5062,14 @@ CRB<TruthModelType>::delta( size_type N,
         //double Ti = M_model->timeInitial();
         double dt = M_model->timeStep();
 
-        int time_index=0;
+        int time_index=1;
+        int shift=1;
+        if( M_model->isSteady() )
+        {
+            time_index=0;
+            shift=0;
+        }
+
         double primal_sum=0;
         double dual_sum=0;
 
@@ -5075,8 +5094,8 @@ CRB<TruthModelType>::delta( size_type N,
             {
                 auto pr = transientPrimalResidual( N, mu, uN[time_index], uNold[time_index], dt, time );
                 primal_sum += pr.template get<0>();
-                primal_residual_coeffs[time_index].resize( pr.template get<1>().size() );
-                primal_residual_coeffs[time_index] = pr.template get<1>() ;
+                primal_residual_coeffs[time_index-shift].resize( pr.template get<1>().size() );
+                primal_residual_coeffs[time_index-shift] = pr.template get<1>() ;
                 time_index++;
             }//end of time loop for primal problem
         }
@@ -5104,8 +5123,8 @@ CRB<TruthModelType>::delta( size_type N,
                 {
                     auto du = transientDualResidual( N, mu, uNdu[time_index], uNduold[time_index], dt, time );
                     dual_sum += du.template get<0>();
-                    dual_residual_coeffs[time_index].resize( du.template get<1>().size() );
-                    dual_residual_coeffs[time_index] = du.template get<1>();
+                    dual_residual_coeffs[time_index-shift].resize( du.template get<1>().size() );
+                    dual_residual_coeffs[time_index-shift] = du.template get<1>();
                     time_index--;
                 }//end of time loop for dual problem
             }//not with accurate apee
@@ -5116,9 +5135,11 @@ CRB<TruthModelType>::delta( size_type N,
         if( ! M_offline_step && show_residual )
         {
             double sum=0;
+            time_index=1;
+            if( M_model->isSteady() )
+                time_index=0;
             bool seek_mu_in_complement = option(_name="crb.seek-mu-in-complement").template as<bool>() ;
             LOG( INFO ) <<" =========== Residual with "<<N<<" basis functions - seek mu in complement of WNmu : "<<seek_mu_in_complement<<"============ \n";
-            time_index=0;
             for ( double time=dt; time<=Tf; time+=dt )
             {
                 auto pr = transientPrimalResidual( N, mu, uN[time_index], uNold[time_index], dt, time );
