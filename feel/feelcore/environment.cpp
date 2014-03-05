@@ -247,8 +247,6 @@ Environment::generateOLFiles( int argc, char** argv, std::string const& appName)
             }
             funcName = strings[strings.size() - 1]; //Raw option name
 
-            //std::cout << ens << " " << funcName << std::endl;
-
             /* skip some options */
             if(optName == "onelab.enable" ||
                funcName == "config-file")
@@ -267,11 +265,15 @@ Environment::generateOLFiles( int argc, char** argv, std::string const& appName)
                 //std::cout << defVal;
 
                 //std::cout << "Entry for " << optName << ": ";
-                if(S_vm[optName].defaulted())
+                // if the option if defaulted and soesn't starts with onelab, 
+                // we put it in the end of Gmsh options
+                if(S_vm[optName].defaulted() && optName.find("onelab.") == std::string::npos )
                 {
                     //std::cout << "defaulted ";
                     optionPath << "GeneralParameters/" << o.first << "/" << ens;
                 }
+                // if we have a user defined option or a onelab option
+                // we want them to be on top of the list for easier access 
                 else
                 {
                     optionPath << "DefinedParameters/" << o.first << "/" << ens;
@@ -387,17 +389,19 @@ Environment::generateOLFiles( int argc, char** argv, std::string const& appName)
     }
 
     /* Application instructions */
-    if(worldComm().size() > 1)
-    {
-        ol << stringize(MPIEXEC) << " " << stringize(MPIEXEC_NUMPROC_FLAG) << " " << worldComm().size(); 
-    }
+    //if(worldComm().size() > 1)
+    //{
+        //ol << stringize(MPIEXEC) << " " << stringize(MPIEXEC_NUMPROC_FLAG) << " " << worldComm().size(); 
+        ol << stringize(MPIEXEC) << " " << stringize(MPIEXEC_NUMPROC_FLAG) << " OL.get(Parameters/onelab/np)"; 
+    //}
     
     ol << " " + appPath.str() + ");" << std::endl;
 
     /* setup remote execution */
     if(S_vm.count("onelab.remote") && S_vm["onelab.remote"].as<std::string>() != "")
     {
-        ol << "FeelApp.remote(" << S_vm["onelab.remote"].as<std::string>() << ", " << p.parent_path().string() << "/" << ");" << std::endl;
+        //ol << "FeelApp.remote(" << S_vm["onelab.remote"].as<std::string>() << ", " << p.parent_path().string() << "/" << ");" << std::endl;
+        ol << "FeelApp.remote(" << "OL.get(Parameters/onelab/remote)" << ", " << p.parent_path().string() << "/" << ");" << std::endl;
     }
 
     ol << "FeelApp.in(OL.get(Arguments/FileName).onelab.cfg.ol);" << std::endl;
@@ -696,16 +700,18 @@ Environment::doOptions( int argc, char** argv,
         /* handle the generation of onelab files after having processed */
         /* the regular config file, so we have parsed user defined parameters */
         /* or restored a previous configuration */
-        if( Environment::worldComm().isMasterRank() )
-        {
-            std::cout << S_vm.count("onelab.enable") << std::endl;
-            std::cout << S_vm["onelab.enable"].as<int>() << std::endl;
-        }
         if ( worldComm().isMasterRank() )
         {
-            if ( S_vm.count("onelab.enable") && S_vm["onelab.enable"].as<int>() == 1 )
+            if ( S_vm.count("onelab.enable") )
             {
-                Environment::generateOLFiles( argc, argv, appName );
+                if ( S_vm["onelab.enable"].as<int>() == 1 )
+                {
+                    Environment::generateOLFiles( argc, argv, appName );
+                }
+                else
+                {
+
+                }
             }
         }
         if ( S_vm.count("onelab.enable") && S_vm["onelab.enable"].as<int>() == 1 )
