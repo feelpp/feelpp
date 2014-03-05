@@ -1,0 +1,73 @@
+Index: contrib/onelab/OnelabClients.cpp
+===================================================================
+--- contrib/onelab/OnelabClients.cpp	(revision 17790)
++++ contrib/onelab/OnelabClients.cpp	(working copy)
+@@ -516,6 +516,7 @@
+ 
+       // resolve a possible linux link
+ #if !defined(WIN32)
++      /*
+       if(!success){
+ 	char cbuf [1024];
+ 	FILE *fp;
+@@ -532,6 +533,8 @@
+ 	}
+ 	PCLOSE(fp);
+       }
++      */
++      success=true;
+ #else
+       success=true;
+ #endif
+@@ -649,8 +652,12 @@
+   char cbuf [1024];
+   FILE *fp;
+ 
++  // Moved the quote around the check, it seems to cause a fail 
++  // with the redirection or error output,
++  // 'cmd 2> /dev/null' doesn't work
++  // 'cmd' 2> /dev/null works but redirects the outputs of all the command chain executed by ssh ...
+   cmd.assign("ssh " + _remoteHost +" 'cd " +_remoteDir + "; ");
+-  cmd.append(lsCmd + fileName + " 2>/dev/null'");
++  cmd.append(lsCmd + fileName + "' 2>/dev/null");
+   //std::cout << "check remote<" << cmd << ">" << std::endl;
+   fp = POPEN(cmd.c_str(), "r");
+   if(fgets(cbuf, 1024, fp) == NULL){
+@@ -725,7 +732,9 @@
+   OLMsg::Info("Sync output file <%s>", split[1].c_str());
+ 
+   if(checkIfPresentRemote(split[1])){
+-    if(split[0].size()){ // the file must be copied back on local host
++    // This is a local tag that always seems to be empty
++    // Avoiding data transfer (Shouldn't it be tested for emptiness ?)
++    //if(split[0].size()){ // the file must be copied back on local host
+       cmd.assign("rsync -e ssh -auv " + _remoteHost + ":");
+       if(_remoteDir.size())
+ 	cmd.append(_remoteDir);
+@@ -736,7 +745,7 @@
+ 	cmd.append(" .");
+       SleepInSeconds(OLMsg::GetOnelabNumber("RSYNCDELAY"));
+       return mySystem(cmd);
+-    }
++    //}
+   }
+   return false;
+ }
+@@ -887,7 +896,7 @@
+   if(buildRmCommand(rmcmd)) mySystem(cdcmd + rmcmd);
+ 
+   std::string cmd;
+-  cmd.assign(QuoteExecPath(getCommandLine()) + " " + getString("Arguments"));
++  cmd.assign(getCommandLine() + " " + getString("Arguments"));
+   mySystem(cdcmd + cmd);
+ 
+   if(getList("OutputFiles", choices)){
+@@ -1100,7 +1109,7 @@
+   cmd.assign("ssh " + getRemoteHost() + " '");
+   if(getRemoteDir().size())
+     cmd.append("cd " + getRemoteDir() + cmdSep);
+-  cmd.append(" " + QuoteExecPath(getCommandLine()));
++  cmd.append(" " + getCommandLine());
+   cmd.append(" " + getString("Arguments") + " '");
+   mySystem(cmd);
+ 
