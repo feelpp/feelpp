@@ -144,7 +144,7 @@ def main():
         print "Invalid number of MPI processes"
         exit(1)
     elif(args.np > 1):
-        maincommand = maincommand + "mpirun -np " + str(args.np) + " "
+        maincommand = maincommand + "mpiexec -np " + str(args.np) + " "
 
     maincommand = maincommand + feelcommand
 

@@ -389,7 +389,7 @@ Environment::generateOLFiles( int argc, char** argv, std::string const& appName)
     /* Application instructions */
     if(worldComm().size() > 1)
     {
-        ol << "/usr/bin/mpirun -np " << worldComm().size(); 
+        ol << stringize(MPIEXEC) << " " << stringize(MPIEXEC_NUMPROC_FLAG) << " " << worldComm().size(); 
     }
     
     ol << " " + appPath.str() + ");" << std::endl;
@@ -397,7 +397,7 @@ Environment::generateOLFiles( int argc, char** argv, std::string const& appName)
     /* setup remote execution */
     if(S_vm.count("onelab.remote") && S_vm["onelab.remote"].as<std::string>() != "")
     {
-        ol << "FeelApp.remote(" << S_vm["onelab.remote"].as<std::string>() << ", " << p.parent_path().string() << ");" << std::endl;
+        ol << "FeelApp.remote(" << S_vm["onelab.remote"].as<std::string>() << ", " << p.parent_path().string() << "/" << ");" << std::endl;
     }
 
     ol << "FeelApp.in(OL.get(Arguments/FileName).onelab.cfg.ol);" << std::endl;
