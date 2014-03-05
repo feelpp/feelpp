@@ -176,6 +176,7 @@ void
 Environment::generateOLFiles( int argc, char** argv, std::string const& appName)
 {
     //Application path
+    int i;
     bool isNum = false;
     fs::path p(argv[0]);
     std::ostringstream appPath;
@@ -249,7 +250,7 @@ Environment::generateOLFiles( int argc, char** argv, std::string const& appName)
             //std::cout << ens << " " << funcName << std::endl;
 
             /* skip some options */
-            if(funcName == "generate-ol" ||
+            if(optName == "onelab.enable" ||
                funcName == "config-file")
             {
                 continue;
@@ -375,27 +376,50 @@ Environment::generateOLFiles( int argc, char** argv, std::string const& appName)
     ol << "OL.if(OL.get(Parameters/gmsh/filename) == untitled.geo)" << std::endl;
     ol << "OL.msg(No geo file specified. Using a default one);" << std::endl;
     ol << "OL.endif" << std::endl;
-    //ol << "OL.setAttribute( /GeneralParameters/Feel++, )
+    //ol << "OL.setAttribute( /GeneralParameters/Feel++, )"
+
+    ol << "FeelApp.register(interfaced, ";
+
+    /* setup chroots */
+    if(S_vm.count("onelab.chroot") && S_vm["onelab.chroot"].as<std::string>() != "")
+    {
+        ol << "schroot -c " << S_vm["onelab.chroot"].as<std::string>() << " -- ";
+    }
 
     /* Application instructions */
-    if(worldComm().size() == 1)
+    if(worldComm().size() > 1)
     {
-        ol << "FeelApp.register(interfaced, " + appPath.str() + ");" << std::endl;
+        ol << stringize(MPIEXEC) << " " << stringize(MPIEXEC_NUMPROC_FLAG) << " " << worldComm().size(); 
     }
-    else
+    
+    ol << " " + appPath.str() + ");" << std::endl;
+
+    /* setup remote execution */
+    if(S_vm.count("onelab.remote") && S_vm["onelab.remote"].as<std::string>() != "")
     {
-        ol << "FeelApp.register(interfaced, /usr/bin/mpirun -np " << worldComm().size() << " " + appPath.str() + ");" << std::endl;
+        ol << "FeelApp.remote(" << S_vm["onelab.remote"].as<std::string>() << ", " << p.parent_path().string() << "/" << ");" << std::endl;
     }
+
     ol << "FeelApp.in(OL.get(Arguments/FileName).onelab.cfg.ol);" << std::endl;
     ol << "FeelApp.run( --config-file OL.get(Arguments/FileName).onelab.cfg --nochdir );" << std::endl;
 
     /* Take into account th fact that we use MPI */
     /* Generating multiple output files, so we merge them */
-    for(int i = 0; i < worldComm().size(); i++)
+    i = 0;
+    ol << "FeelApp.out(" + appName + "-" << worldComm().size() << "_" << i << ".msh";
+    for(i = 1; i < worldComm().size(); i++)
     {
-        ol << "FeelApp.out(" + appName + "-" << worldComm().size() << "_" << i << ".msh);" << std::endl;
-        ol << "FeelApp.merge(" + appName + "-" << worldComm().size() << "_" << i << ".msh);" << std::endl;
+        ol << ", " << appName + "-" << worldComm().size() << "_" << i << ".msh";
     }
+    ol << ");" << std::endl;
+
+    i = 0;
+    ol << "FeelApp.merge(" << appName << "-" << worldComm().size() << "_" << i << ".msh";
+    for(i = 1; i < worldComm().size(); i++)
+    {
+        ol << ", " << appName << "-" << worldComm().size() << "_" << i << ".msh";
+    }
+    ol << ");" << std::endl;
 
     ol.close();
     cfgol.close();
@@ -672,14 +696,19 @@ Environment::doOptions( int argc, char** argv,
         /* handle the generation of onelab files after having processed */
         /* the regular config file, so we have parsed user defined parameters */
         /* or restored a previous configuration */
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout << S_vm.count("onelab.enable") << std::endl;
+            std::cout << S_vm["onelab.enable"].as<int>() << std::endl;
+        }
         if ( worldComm().isMasterRank() )
         {
-            if ( S_vm.count( "generate-ol" ) )
+            if ( S_vm.count("onelab.enable") && S_vm["onelab.enable"].as<int>() == 1 )
             {
                 Environment::generateOLFiles( argc, argv, appName );
             }
         }
-        if ( S_vm.count( "generate-ol" ) )
+        if ( S_vm.count("onelab.enable") && S_vm["onelab.enable"].as<int>() == 1 )
         {
             if ( Environment::initialized() )
             {
