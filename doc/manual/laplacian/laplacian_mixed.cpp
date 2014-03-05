@@ -71,7 +71,12 @@ int main(int argc, char**argv )
                                   _email="feelpp-devel@feelpp.org"));
 
     auto mesh = loadMesh( _mesh=new Mesh<Simplex<2>> );
-#if 1
+    fem::RaviartThomas<2,0> RT0;
+    std::cout << "RT0:" << RT0.primal().coeff();
+
+    fem::RaviartThomas<2,1> RT1;
+    std::cout << "RT1:" << RT1.primal().coeff();
+#if 0
     auto RTh = Dh<1>( mesh );
     auto u = RTh->element();
     auto v = RTh->element();
@@ -132,13 +137,14 @@ int main(int argc, char**argv )
 #endif
     return 0;
 #else
+#if 0
     for( auto const& dof : RTh->dof()->localDof() )
     {
         LOG(INFO) << "local dof element " << dof.first.elementId() << " id:" << dof.first.localDof()
                   << " global dof : " << dof.second.index();
         LOG(INFO) << "dof point : " << RTh->dof()->dofPoint( dof.second.index() ).get<0>();
     }
-
+#endif
 #endif
 
 #endif // 0
