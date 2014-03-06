@@ -400,7 +400,7 @@ crbOptions( std::string const& prefix )
     ( "crb.compute-error-on-reduced-residual-jacobian",Feel::po::value<bool>()->default_value( false ), "only for crb_trilinear")
     ( "crb.enable-convection-terms",Feel::po::value<bool>()->default_value( true ), "only for crb_trilinear")
 
-    ( "crb.is-model-executed-in-steady-mode",Feel::po::value<bool>()->default_value( true ), "true if model is executed in steady mode, else turn it to false")
+    ( "crb.is-model-executed-in-steady-mode",Feel::po::value<bool>()->default_value( false ), "true if model is executed in steady mode, else turn it to false")
     ( "crb.use-ginac-for-beta-expressions",Feel::po::value<bool>()->default_value( false ), "use ginac to compute expression of beta coefficients if true")
     ( "crb.use-linear-model",Feel::po::value<bool>()->default_value( false ), "do not iterate in fixed point if true")
 
