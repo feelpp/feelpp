@@ -68,17 +68,17 @@ int main(int argc, char**argv )
     a +=integrate( _range=elements( mesh ), _expr=-div( v )*idt( p ) - divt( u )*id( q ) );
     auto e = exporter( _mesh=mesh );
 
-    for ( mybdf->start();  mybdf->isFinished() == false; mybdf->next(solution) )
+    for ( mybdf->start();  mybdf->isFinished() == false; mybdf->next(U) )
     {
-        auto bdf_poly = mybdf->polyDeriv();
+        auto bdf_poly = mybdf->polyDeriv().element<0>();
         ft = integrate( _range=elements(mesh), _expr=(trans(idv(bdf_poly))*id(u) ) );
 
 
         at = a;
-        at += integrate( _range=elements( mesh ), _expr= trans(gradt(u)*idv(mybdf->poly()))*id(v) );
-        at+=on(_range=markedfaces(mesh,"wall"), _rhs=l, _element=u,
+        at += integrate( _range=elements( mesh ), _expr= trans(gradt(u)*idv(mybdf->poly().element<0>()))*id(v) );
+        at+=on(_range=markedfaces(mesh,"wall"), _rhs=ft, _element=u,
               _expr=0*one() );
-        at+=on(_range=markedfaces(mesh,"inlet"), _rhs=l, _element=u,
+        at+=on(_range=markedfaces(mesh,"inlet"), _rhs=ft, _element=u,
               _expr=-expr( option(_name="functions.g").as<std::string>() )*N() );
 
         at.solve(_rhs=ft,_solution=U);
