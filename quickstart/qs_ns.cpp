@@ -70,12 +70,15 @@ int main(int argc, char**argv )
 
     for ( mybdf->start();  mybdf->isFinished() == false; mybdf->next(U) )
     {
-        auto bdf_poly = mybdf->polyDeriv().element<0>();
-        ft = integrate( _range=elements(mesh), _expr=(trans(idv(bdf_poly))*id(u) ) );
+        auto bdf_poly = mybdf->polyDeriv();
+        auto rhsu =  bdf_poly.element<0>();
+        auto extrap = mybdf->poly();
+        auto extrapu = extrap.element<0>();
+        ft = integrate( _range=elements(mesh), _expr=(trans(idv(rhsu))*id(u) ) );
 
 
         at = a;
-        at += integrate( _range=elements( mesh ), _expr= trans(gradt(u)*idv(mybdf->poly().element<0>()))*id(v) );
+        at += integrate( _range=elements( mesh ), _expr= trans(gradt(u)*idv(extrapu))*id(v) );
         at+=on(_range=markedfaces(mesh,"wall"), _rhs=ft, _element=u,
               _expr=0*one() );
         at+=on(_range=markedfaces(mesh,"inlet"), _rhs=ft, _element=u,
