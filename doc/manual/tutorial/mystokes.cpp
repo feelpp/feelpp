@@ -148,7 +148,6 @@ We call the solver to resolve the problem (\ref Solver).
 int main(int argc, char**argv )
 {
     Environment env( _argc=argc, _argv=argv,
-                     _desc=feel_options(),
                      _about=about(_name="mystokes",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));

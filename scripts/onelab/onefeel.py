@@ -27,6 +27,8 @@ def main():
 
     sargs=[]
     pargs=[]
+    # path to the script for synchronizing data
+    syncData = os.path.dirname(os.path.abspath(__file__)) + "/syncData.py"
 
     for i in range(0, len(sys.argv)):
         if(sys.argv[i] == "--"):
@@ -49,6 +51,14 @@ def main():
 
     sys.stdout.write("Checking for Gmsh ... ")
     if(checkExecutable([args.gmsh, "-"])):
+        sys.stdout.write("OK\n")
+    else:
+        sys.stdout.write("Not found\n")
+        return 1
+
+    sys.stdout.write("Checking for data synchronization script ... ")
+    cmd = ["ls", syncData]
+    if(checkExecutable(cmd)):
         sys.stdout.write("OK\n")
     else:
         sys.stdout.write("Not found\n")
@@ -80,7 +90,7 @@ def main():
     feelcommand=""
     for a in pargs:
         feelcommand = feelcommand + " " + a
-    feelcommand = feelcommand + " --onelab.enable=1 "
+    feelcommand = feelcommand + " --onelab.enable=1 --onelab.sync.script=" + syncData + " "
 
     # are we connecting on a remote computer ?
     if(args.remote != ""):
