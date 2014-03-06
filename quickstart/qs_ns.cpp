@@ -87,8 +87,8 @@ int main(int argc, char**argv )
         at.solve(_rhs=ft,_solution=U);
 
 
-        e->add( "u", u );
-        e->add( "p", p );
+        e->step(mybdf->time())->add( "u", u );
+        e->step(mybdf->time())->add( "p", p );
         e->save();
 
 
