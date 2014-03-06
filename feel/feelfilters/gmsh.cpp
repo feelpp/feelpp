@@ -733,15 +733,15 @@ ostr << "// partitioning data\n"
         //ostr << "Mesh.Optimize=1;\n"
         //<< "Mesh.CharacteristicLengthFromCurvature=1;\n"
 
-    if (this->structuredMesh() == 3)
-    {
-        ostr << "nx=" << M_nx << ";\n"
-             << "ny=" << M_ny << ";\n";
-    }
-    else
-    {
-        ostr << "h=" << M_h << ";\n";
-    }
+    // if (this->structuredMesh() == 3)
+    // {
+    //     ostr << "nx=" << M_nx << ";\n"
+    //          << "ny=" << M_ny << ";\n";
+    // }
+    // else
+    // {
+    ostr << "h=" << M_h << ";\n";
+    //}
 
     if ( M_recombine )
     {
