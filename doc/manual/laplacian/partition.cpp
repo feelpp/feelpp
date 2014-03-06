@@ -32,7 +32,10 @@ Environment env( _argc=argc, _argv=argv,
                                   _email="feelpp-devel@feelpp.org"));
 
  //auto mesh = unitSquare();
- auto mesh = loadMesh( _mesh=new Mesh<Hypercube<2>>, _h=option(_name="gmsh.hsize2").as<double>() );
+ auto mesh = loadMesh( _mesh=new Mesh<Hypercube<2>>,
+                       _h=option(_name="gmsh.hsize2").as<double>(),
+                       _partitioner=option(_name="gmsh.partitioner").as<int>() );
+
  auto e = exporter( _mesh=mesh );
  e->step(0)->setMesh( mesh );
  e->save();

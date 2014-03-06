@@ -79,6 +79,8 @@ BOOST_PARAMETER_FUNCTION(
       ( ymax,           *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.domain.ymax").template as<double>() )
       ( zmin,           *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.domain.zmin").template as<double>() )
       ( zmax,           *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.domain.zmax").template as<double>() )
+      ( nx,             *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.domain.nx").template as<double>() )
+      ( ny,             *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.domain.ny").template as<double>() )
       ( substructuring, *( boost::is_integral<mpl::_> ), option(_name="gmsh.domain.substructuring").template as<bool>() ) ) )
 {
     gmsh_ptrtype gmsh_ptr = Gmsh::New( shape, 3, 1, convex );
@@ -94,6 +96,8 @@ BOOST_PARAMETER_FUNCTION(
     gmsh_ptr->setX( std::make_pair( xmin, xmax ) );
     gmsh_ptr->setY( std::make_pair( ymin, ymax ) );
     gmsh_ptr->setZ( std::make_pair( zmin, zmax ) );
+    gmsh_ptr->setNx( nx );
+    gmsh_ptr->setNy( ny );
     gmsh_ptr->setSubStructuring( substructuring );
     return gmsh_ptr;
 }
