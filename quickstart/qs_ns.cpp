@@ -37,14 +37,7 @@ int main(int argc, char**argv )
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
 
-    double meshSize = option(_name="gmsh.hsize").as<double>();
-    GeoTool::Rectangle R( meshSize,"myRectangle",GeoTool::Node(0,0),GeoTool::Node(5,1));
-    R.setMarker(_type="line",_name="inlet",_marker4=true);
-    R.setMarker(_type="line",_name="outlet",_marker2=true);
-    R.setMarker(_type="line",_name="wall",_marker1=true,_marker3=true);
-    R.setMarker(_type="surface",_name="Omega",_markerAll=true);
-
-    auto mesh = R.createMesh(_mesh=new Mesh<Simplex<2>>,_name="qs_ns");
+    auto mesh = loadMesh( new Mesh<Simplex<2>> );
 
     auto Vh = THch<1>( mesh );
     auto U = Vh->element();
