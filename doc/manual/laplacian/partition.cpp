@@ -25,16 +25,19 @@
 
 int main(int argc, char**argv )
 {
-using namespace Feel;
-Environment env( _argc=argc, _argv=argv,
+    using namespace Feel;
+    Environment env( _argc=argc, _argv=argv,
                      _about=about(_name="partition",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
 
-//auto mesh = unitSquare();
-auto mesh = loadMesh( _mesh=new Mesh<Hypercube<2>> );
-auto e = exporter( _mesh=mesh );
-e->step(0)->setMesh( mesh );
+    //auto mesh = unitSquare();
+    auto mesh = loadMesh( _mesh=new Mesh<Hypercube<2>>,
+                          _h=option(_name="gmsh.hsize2").as<double>(),
+                          _partitioner=ioption(_name="gmsh.partitioner") );
+
+    auto e = exporter( _mesh=mesh );
+    e->step(0)->setMesh( mesh );
     e->save();
 
 }
