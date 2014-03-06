@@ -79,9 +79,10 @@ onelab_options( std::string const& prefix )
     po::options_description onelab( "Onelab options" );
     onelab.add_options()
         ( prefixvm( prefix, "onelab.enable" ).c_str(), Feel::po::value<int>()->default_value(0), "Generate OneLab files for interaction with Gmsh" )
-        ( prefixvm( prefix, "onelab.remote" ).c_str(), Feel::po::value<std::string>()->default_value(""), "Remote host for Onelab interface" )
+        ( prefixvm( prefix, "onelab.remote" ).c_str(), Feel::po::value<std::string>()->default_value("localhost"), "Remote host for Onelab interface" )
         ( prefixvm( prefix, "onelab.chroot" ).c_str(), Feel::po::value<std::string>()->default_value(""), "Chroot to use on remote host" )
         ( prefixvm( prefix, "onelab.np" ).c_str(), Feel::po::value<int>()->default_value(1), "Number of MPI processes to use" )
+        ( prefixvm( prefix, "onelab.sync.script" ).c_str(), Feel::po::value<std::string>()->default_value(""), "Script used for syncing data" )
         ;
     return onelab;
 }
@@ -400,7 +401,7 @@ crbOptions( std::string const& prefix )
     ( "crb.compute-error-on-reduced-residual-jacobian",Feel::po::value<bool>()->default_value( false ), "only for crb_trilinear")
     ( "crb.enable-convection-terms",Feel::po::value<bool>()->default_value( true ), "only for crb_trilinear")
 
-    ( "crb.is-model-executed-in-steady-mode",Feel::po::value<bool>()->default_value( true ), "true if model is executed in steady mode, else turn it to false")
+    ( "crb.is-model-executed-in-steady-mode",Feel::po::value<bool>()->default_value( false ), "true if model is executed in steady mode, else turn it to false")
     ( "crb.use-ginac-for-beta-expressions",Feel::po::value<bool>()->default_value( false ), "use ginac to compute expression of beta coefficients if true")
     ( "crb.use-linear-model",Feel::po::value<bool>()->default_value( false ), "do not iterate in fixed point if true")
 

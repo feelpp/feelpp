@@ -158,6 +158,9 @@ public :
                                >::type betaqm_type;
 
 
+    typedef Bdf<space_type>  bdf_type;
+    typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
+
     ModelCrbBase()
         :
         M_is_initialized( false )
@@ -226,6 +229,32 @@ public :
         std::vector< std::vector<sparse_matrix_ptrtype> > A;
         std::vector< std::vector<std::vector<vector_ptrtype> > > F;
         return boost::make_tuple( A , F );
+    }
+
+
+    //this function is not called bdf() to not interfere with bdf constructor
+    virtual bdf_ptrtype bdfModel()
+    {
+        if( is_time_dependent )
+        {
+            if( Environment::worldComm().isMasterRank() )
+            {
+                std::cout<<"*******************************************************************"<<std::endl;
+                std::cout<<"** Error ! You have implemented a transient problem but you      **"<<std::endl;
+                std::cout<<"** forgot to implement bdfModel() function that returns your bdf **"<<std::endl;
+                std::cout<<"*******************************************************************"<<std::endl;
+            }
+            bool go=false;
+            CHECK( go );
+        }
+        bdf_ptrtype dummy_bdf;
+        return dummy_bdf;
+    }
+
+    //initialize the field for transient problems
+    virtual void initializationField( element_ptrtype& initial_field,parameter_type const& mu )
+    {
+        initial_field->setZero();
     }
 
 
@@ -402,6 +431,11 @@ public :
         Eigen::MatrixXf::Index index;
         Eigen::VectorXd square;
 
+        std::ofstream file;
+        std::string filename="OnlineStatistics-"+name;
+
+        file.open( filename , std::ios::app );
+
         if( vector.size() > 0 )
         {
             bool force = option("eim.use-dimension-max-functions").template as<bool>();
@@ -411,11 +445,6 @@ public :
 
             int N = vector.size();
 
-            if( force )
-                LOG( INFO ) <<" statistics  for "<<name<<" (  was called "<< N << " times with "<<Neim<<" basis functions )";
-            else
-                LOG( INFO ) <<" statistics  for "<<name<<" (  was called "<< N << " times )";
-
             min = vector.minCoeff(&index);
             max = vector.maxCoeff(&index);
             mean = vector.mean();
@@ -423,7 +452,22 @@ public :
             square  = vector.array().pow(2);
             mean2 = square.mean();
             standard_deviation = math::sqrt( mean2 - mean1 );
-            LOG(INFO)<<"min : "<<min<<" - max : "<<max<<" mean : "<<mean<<" standard deviation : "<<standard_deviation;
+
+            if( Environment::worldComm().isMasterRank() )
+            {
+                if( force )
+                {
+                    std::cout<<"statistics  for "<<name<<" (  was called "<< N << " times with "<<Neim<<" basis functions )"<<std::endl;
+                    file <<" statistics  for "<<name<<" (  was called "<< N << " times with "<<Neim<<" basis functions )\n";
+                }
+                else
+                {
+                    std::cout<<" statistics  for "<<name<<" (  was called "<< N << " times )"<<std::endl;
+                    file <<" statistics  for "<<name<<" (  was called "<< N << " times )\n";
+                }
+                std::cout<<"min : "<<min<<" - max : "<<max<<" mean : "<<mean<<" standard deviation : "<<standard_deviation<<"  (see "<<filename<<")"<<std::endl;
+                file<<"min : "<<min<<" - max : "<<max<<" mean : "<<mean<<" standard deviation : "<<standard_deviation<<"\n";
+            }
         }
         vectorN_type result(4);
         result(0)=min;

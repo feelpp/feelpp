@@ -606,6 +606,7 @@ public:
      */
     void initializationField( element_ptrtype& initial_field,parameter_type const& mu ) ;
 
+    temp_bdf_ptrtype bdfModel(){ return M_temp_bdf;}
     //@}
 
 protected:
