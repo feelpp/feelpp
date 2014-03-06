@@ -339,6 +339,7 @@ public:
         M_inner_product_matrix = M_model->innerProduct();
         M_preconditioner_l2->setMatrix( M_inner_product_matrix );
 
+        M_bdf = M_model->bdfModel();
     }
 
     //@}
@@ -1553,10 +1554,10 @@ public:
     {
         double timestep;
 
-        if ( M_model->isSteady() ) timestep=1e30;
-
-        else timestep = M_model->timeStep();
-
+        bool is_steady = option(_name="crb.is-model-executed-in-steady-mode").template as<bool>();
+        if ( is_steady )
+            timestep=1e30;
+        else timestep = M_bdf->timeStep();
         return timestep;
     }
     double timeStep( mpl::bool_<false> )
@@ -1570,7 +1571,7 @@ public:
     }
     double timeInitial( mpl::bool_<true> )
     {
-        return M_model->timeInitial();
+        return M_bdf->timeInitial();
     }
     double timeInitial( mpl::bool_<false> )
     {
@@ -1585,10 +1586,11 @@ public:
     {
         double timefinal;
 
-        if ( M_model->isSteady() ) timefinal=1e30;
-
-        else timefinal = M_model->timeFinal();
-
+        bool is_steady = option(_name="crb.is-model-executed-in-steady-mode").template as<bool>();
+        if ( is_steady )
+            timefinal=1e30;
+        else
+            timefinal = M_bdf->timeFinal();
         return timefinal;
     }
     double timeFinal( mpl::bool_<false> )
@@ -1602,7 +1604,7 @@ public:
     }
     int timeOrder( mpl::bool_<true> )
     {
-        return M_model->timeOrder();
+        return M_bdf->timeOrder();
     }
     int timeOrder( mpl::bool_<false> )
     {
@@ -1616,7 +1618,8 @@ public:
     }
     bool isSteady( mpl::bool_<true> )
     {
-        return M_model->isSteady();
+        bool is_steady = option(_name="crb.is-model-executed-in-steady-mode").template as<bool>();
+        return is_steady;
     }
     bool isSteady( mpl::bool_<false> )
     {
@@ -1716,6 +1719,9 @@ private:
     bool M_alreadyCountAffineDecompositionTerms;
 
     sparse_matrix_ptrtype M_inner_product_matrix;
+
+    bdf_ptrtype M_bdf;
+
 };
 
 
