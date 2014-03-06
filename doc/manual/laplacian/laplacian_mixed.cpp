@@ -76,7 +76,7 @@ int main(int argc, char**argv )
 
     fem::RaviartThomas<2,1> RT1;
     std::cout << "RT1:" << RT1.primal().coeff();
-#if 0
+#if 1
     auto RTh = Dh<1>( mesh );
     auto u = RTh->element();
     auto v = RTh->element();

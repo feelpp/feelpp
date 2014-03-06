@@ -154,7 +154,7 @@ public:
         uint16_type dim_Pkp1 = convex_type::polyDims( nOrder );
         uint16_type dim_Pk = convex_type::polyDims( nOrder-1 );
         uint16_type dim_Pkm1 = ( nOrder==1 )?0:convex_type::polyDims( nOrder-2 );
-#if 1
+#if v1
         std::cout << "[RTPset] dim_Pkp1 = " << dim_Pkp1 << "\n";
         std::cout << "[RTPset] dim_Pk   = " << dim_Pk << "\n";
         std::cout << "[RTPset] dim_Pkm1 = " << dim_Pkm1 << "\n";
@@ -385,15 +385,19 @@ public:
 
             std::cout << "Pkm1 = " << Pkm1.coeff() << "\n";
             std::cout << "Primal = " << primal.coeff() << "\n";
-            for ( int i = 0; i < Pkm1.polynomialDimension(); ++i )
+            //for ( int i = 0; i < Pkm1.polynomialDimension(); ++i )
+            for ( int i = 0; i < pts_interior.size2(); ++i )
             {
                 //typedef functional::IntegralMoment<primal_space_type, vectorial_polynomialset_type> fim_type;
                 //typedef functional::IntegralMoment<Pkp1_v_type, vectorial_polynomialset_type> fim_type;
 
-                functional::ComponentsPointEvaluation<primal_space_type> fun( primal,pts_interior );
-                std::cout << "P(" << i << ")=" << Pkm1.polynomial( i ).coeff() << "\n";
-                //fset.push_back( fun( primal, Pkm1.polynomial( i ) ) );
-                fset.push_back( fun );
+                for( int d = 0; d < nDim; ++d )
+                {
+                    functional::ComponentPointEvaluation<primal_space_type> fun( primal,d,ublas::column(pts_interior,i) );
+                    std::cout << "P(" << i << ")=" << Pkm1.polynomial( i ).coeff() << "\n";
+                    //fset.push_back( fun( primal, Pkm1.polynomial( i ) ) );
+                    fset.push_back( fun );
+                }
             }
         }
 
