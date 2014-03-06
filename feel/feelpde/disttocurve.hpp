@@ -37,6 +37,9 @@ This class provides an algorithm to make a distance function from a curve repres
 #ifndef DISTTOCURVE_HPP
 #define DISTTOCURVE_HPP 1
 
+#include <boost/regex.hpp>
+#include <boost/lexical_cast.hpp>
+
 namespace Feel
 {
 
@@ -93,23 +96,6 @@ namespace Feel
             ids = M_spaceP0->element();
             for (auto const& it : elements(M_mesh) )
                 ids.assign( it.id(), 0, 0, it.id() );
-
-
-            // for each dof, store the elements id which contain it
-            auto it = M_mesh->beginElementWithProcessId();
-            auto en = M_mesh->endElementWithProcessId();
-            for (; it != en; it++)
-                for (uint16_type j = 0; j < ndofv; ++j )
-                    {
-                        const size_type index = M_spaceP1->dof()->localToGlobal( *it, j, 0).index();
-                        if ( eltsContainingDof.count( index ) )
-                            eltsContainingDof[ index ].insert( it->id() );
-                        else
-                            {
-                                std::set< size_type > newindex( {it->id()} );
-                                eltsContainingDof[index] = newindex;
-                            }
-                    }
 
         } //DistToCurve
 
@@ -171,8 +157,6 @@ namespace Feel
         /* 2d version only */
         element_ptrtype fromParametrizedCurveDisordered(std::tuple< std::function<double(double)>, std::function<double(double)>, double, double > paramFct,
                                                double dt,
-                                               bool broadenCurveForElementDetection = true,
-                                               double broadenessAmplitude = option("gmsh.hsize").as<double>() / 2.,
                                                bool exportPoints = false,
                                                std::string exportName=""
                                                )
@@ -183,14 +167,14 @@ namespace Feel
 
             generatePointsFromParametrization(get<0>(paramFct), get<1>(paramFct),
                                               get<2>(paramFct), get<3>(paramFct), dt,
-                                                exportPoints, exportName);
+                                              exportPoints, exportName);
 
             std::cout<<"generated points from parametrization\n";
 
             for (auto const& tnd : tNodeMap )
                 allPoints.push_back( tnd.second );
 
-            locateElementsCrossedByUnorderedPoints(broadenCurveForElementDetection, broadenessAmplitude );
+            locateElementsCrossedByUnorderedPoints();
 
             std::cout<<"located points\n";
 
@@ -231,6 +215,39 @@ namespace Feel
             return shape;
 
         }
+
+
+        // TFilename = boost::filesystem::path or std::string
+        template< class TFilename, class TList = std::vector<node_type> >
+        element_ptrtype fromCoordinateFile( TFilename filename, TList insidePoints = std::vector<node_type>() )
+        {
+            clear();
+
+            readPointsFromFile( filename );
+            locateElementsCrossedByUnorderedPoints();
+            auto shape = makeDistanceFunctionSequentialFromUnorderedPoints();
+
+            auto shape_unsigned = *shape;
+
+            //            setInnerRegion( shape, insidePoints, true );
+
+            clear();
+
+            if ( Environment::worldComm().size() > 1)
+                reduceDistanceFunction( shape );
+
+
+            auto mark2 = vf::project(M_spaceP0, marked2elements(M_mesh, 1), cst(1) );
+            auto exp = exporter(_mesh=M_mesh, _name="disttocurvehpp");
+            exp->step(0)->add("shape_unsigned", shape_unsigned);
+            exp->step(0)->add("shape_signed", *shape);
+            exp->step(0)->add("mark2hpp", mark2);
+            exp->save();
+
+            return shape;
+
+        } //fromCoordinateFile
+
 
 
 
@@ -316,246 +333,6 @@ namespace Feel
 
 
 
-        // listPoints could be a any container that can be iterated and its elements have operator [0] to [dim]
-        // ex vector< node_type > or vector< vector<double> > ...
-        template< class TListPoints >
-        void
-        setInnerRegion(element_ptrtype phi, TListPoints listPoints)
-        {
-            // need the information : for each global index of the marked dofs, the list of the marked elements in which it appears
-            std::map< size_type, std::set< size_type > > eltsAtGlobalIndex;
-            std::set< size_type > markedDof;
-
-            auto it_marked = M_mesh->elementsWithMarker2(1, M_mesh->worldComm().localRank()).first;
-            const auto en_marked = M_mesh->elementsWithMarker2(1, M_mesh->worldComm().localRank()).second;
-            auto checkmarked = backend()->newVector( M_spaceP1 );
-
-            for (; it_marked != en_marked; it_marked++)
-                for (uint16_type j = 0; j < ndofv; ++j )
-                    {
-                        const size_type index = M_spaceP1->dof()->localToGlobal( *it_marked, j, 0).index();
-                        markedDof.insert( index );
-                        checkmarked->add(index, 1);
-                        if ( eltsAtGlobalIndex.count( index ) )
-                            eltsAtGlobalIndex[ index ].insert( it_marked->id() );
-                        else
-                            {
-                                std::set< size_type > newindex( {it_marked->id()} );
-                                eltsAtGlobalIndex[index] = newindex;
-                            }
-                    }
-
-            checkmarked->close();
-            for ( size_type k=0; k<M_spaceP1->nLocalDof(); ++k )
-                if( (*checkmarked)(k) > 0 )
-                    markedDof.insert( k );
-
-
-            // for all the marked dofs, store the values of the dofs being on a inter-process boundary -> store it in: isOnInterProcessBoundary
-            std::set< size_type > isOnInterProcessBoundary;
-            if (Environment::worldComm().size()>1)
-                {
-                    auto checkGhost = backend()->newVector( M_spaceP1 );
-                    for ( size_type k=0; k<M_spaceP1->nLocalDof(); ++k )
-                        if ( M_spaceP1->dof()->dofGlobalProcessIsGhost( k ) )
-                            checkGhost->add( k, 1 );
-                    checkGhost->close();
-
-                    for ( size_type k : markedDof )
-                        if ( (*checkGhost)(k) > 0)
-                            isOnInterProcessBoundary.insert( k );
-                }
-
-
-
-            std::set< size_type > eltsTodo;
-            std::set< size_type > eltsDone;
-            std::map< size_type, int > globalClusterDofDone;
-
-            // first, localize the points which are DONE from the given ones
-            std::set< size_type > dofDONE;
-
-            // just used to know if the point is on this proc
-            auto ctx = M_spaceP0->context();
-            for(auto const& pt : listPoints)
-                ctx.add( pt );
-
-            for (int i=0; i<ctx.nPoints(); ++i)
-                {
-                    if (Environment::worldComm().localRank() != ctx.processorHavingPoint(i))
-                        continue;
-
-                    const node_type pt = listPoints[i];
-
-                    double minDist = bigdouble;
-                    size_type minDof = 0;
-
-                    for (size_type k : markedDof)
-                        {
-                            const node_type dofCoord = M_spaceP1->dof()->dofPoint( k ).get<0>();
-                            const double dist = squareDistToPoint(dofCoord, pt);
-                            if (dist < minDist)
-                                {
-                                    minDist = dist;
-                                    minDof = k;
-                                }
-                        }
-
-                    dofDONE.insert( minDof );
-                }
-
-            // make sure at least one proc having marked elements has a point setting inner region
-            bool okToInitialize = (markedDof.size() != 0 ) && (ctx.nPoints() != 0);
-            okToInitialize = mpi::all_reduce( Environment::worldComm(), okToInitialize, std::logical_or<bool>() );
-            CHECK( okToInitialize ) << "There is no partition which has at the same time marked elements (around the interface) and points setting the inner region. Consider adding some points.\n";
-
-            std::cout<<"localized elements, dofDONE.size = "<<dofDONE.size()<<std::endl;
-
-            auto doElement = [&](size_type eltId, size_type globIndex)
-                {
-                    /*
-                      find in the element eltId the side of the dof globIndex
-                      put all the dof of the element not done to the good side and make them DONE
-                      put the elements in which they appear to TODO if not already DONE
-                     */
-                    if ( eltsDone.count( eltId ) )
-                        {
-                            if (eltsTodo.count(eltId))
-                                eltsTodo.erase(eltId);
-                            return;
-                        }
-
-                    eltsDone.insert( eltId );
-
-                    side_type sideRef=noSide;
-                    // search the side of the element DONE
-                    size_type i=0;
-                    for (; i<ndofv; ++i)
-                        if (M_spaceP1->dof()->localToGlobal( eltId, i, 0).index() == globIndex )
-                            {
-                                sideRef = dofIsOnSide[ eltId ][i];
-                                break;
-                            }
-
-                    CHECK( sideRef != noSide ) << "proc " << Environment::worldComm().rank()
-                    << ", eltId : "<< eltId << ", has not been able to retrive the sides of the dofs inside.\n";
-
-                    const int signRef = (*phi)(globIndex) > 0 ? 1 : -1;
-
-                    for (int j=0; j<ndofv; ++j)
-                        {
-                            if (j == i)
-                                continue;
-
-                            const size_type indexTodo = M_spaceP1->dof()->localToGlobal( eltId, j, 0).index();
-
-                            if ( dofDONE.count( indexTodo ) )
-                                continue;
-
-                            else
-                                {
-                                    const side_type side = dofIsOnSide[ eltId ][j];
-                                    (*phi)(indexTodo) = std::abs((*phi)(indexTodo)) * ((side == sideRef) ? signRef : -signRef);
-                                    dofDONE.insert( indexTodo );
-                                    if (isOnInterProcessBoundary.count(indexTodo))
-                                        globalClusterDofDone[ processorToCluster( indexTodo ) ] = (*phi)(indexTodo) > 0 ? 1 : -1;
-
-                                    // insert the elements having this dof to the list of next element todo (if not already done)
-                                    for (const size_type& eltCandidate : eltsAtGlobalIndex[indexTodo] )
-                                        if (! eltsDone.count( eltCandidate ) )
-                                            eltsTodo.insert( eltCandidate );
-                                }
-                        }
-
-                    eltsTodo.erase(eltId);
-
-                }; //doElement
-
-
-            auto communicateDonePointsOnBoundary = [&]()
-                {
-                    std::vector< std::map< size_type, int > > all_globalClusterDofDone( Environment::worldComm().size() );
-                    mpi::all_gather(Environment::worldComm(), globalClusterDofDone, all_globalClusterDofDone);
-
-                    CHECK( all_globalClusterDofDone.size() == Environment::worldComm().size()) <<"some globlClusterDofDONE might be empty\n";
-
-                    for (int i=0; i<Environment::worldComm().size(); ++i)
-                        {
-                            if (i==Environment::worldComm().rank())
-                                continue;
-
-                            for (std::pair< size_type, int > const& eltSign : all_globalClusterDofDone[i])
-                                {
-                                    size_type index = invalid_size_type_value;
-                                    if (M_spaceP1->dof()->dofGlobalClusterIsOnProc( eltSign.first ))
-                                        index = clusterToProcessor( eltSign.first );
-
-                                    else if (M_spaceP1->dof()->dofGlobalProcessIsGhost(eltSign.first))
-                                        index = ghostClusterToProc[ eltSign.first ];
-
-                                    if ( index != invalid_size_type_value ) // if the dof is on the proc or ghost
-                                        if ( !dofDONE.count(index) )
-                                            {
-                                                (*phi)( index ) = eltSign.second * std::abs((*phi)(index));
-                                                dofDONE.insert( index );
-                                                for (size_type elts : eltsAtGlobalIndex[ index ])
-                                                    doElement( elts, index );
-                                            }
-                                }
-                        }
-
-                    globalClusterDofDone.clear();
-                }; //communicateDonePointsOnBoundary
-
-            // in the following loop, dofDONE is modified in doElement and the iterator range would be modified if iterated on it
-            auto dofDONEcopy = dofDONE;
-            // the set dofDONE contains the dof we are sure are negative. Use them to initialize the loop
-            for (size_type dd : dofDONEcopy)
-                {
-                    (*phi)(dd) *= -1;
-
-                    if (isOnInterProcessBoundary.count(dd))
-                        globalClusterDofDone[ processorToCluster( dd ) ] = -1;
-
-                    for (size_type elts : eltsAtGlobalIndex[ dd ])
-                        doElement( elts, dd );
-                }
-
-            std::cout<<"proc "<<Environment::worldComm().rank()
-                     <<" finished doing first dofDONE\n";
-
-            int nbEltTodoGlobal = mpi::all_reduce( Environment::worldComm(), eltsTodo.size(), std::plus<int>() );
-            while( nbEltTodoGlobal != 0)
-                {
-                    if (Environment::worldComm().size()>1)
-                        communicateDonePointsOnBoundary();
-
-                    if ( ! eltsTodo.empty() )
-                        {
-                            // in each element, find the dof DONE and do the other one thanks to it
-                            const size_type elt = *eltsTodo.begin();
-                            for (int j=0; j<ndofv; ++j)
-                                {
-                                    const size_type index = M_spaceP1->dof()->localToGlobal( elt, j, 0).index();
-
-                                    if ( dofDONE.count( index ) )
-                                        {
-                                            doElement( elt, index );
-                                            break;
-                                        }
-                                }
-                        }
-
-                    nbEltTodoGlobal = mpi::all_reduce( Environment::worldComm(), eltsTodo.size(), std::plus<int>() );
-                }
-
-            std::cout<<"finished, dofDONE.size = "<<dofDONE.size()<<std::endl;
-            std::cout<<"markedDof.size = "<<markedDof.size()<<std::endl;
-
-        }//setInnerRegion
-
-
-
     private :
 
         // ----------- private attributes ---------
@@ -574,7 +351,6 @@ namespace Feel
         typename FunctionSpaceP0Type::element_type ids;
 
         std::map< size_type, size_type > ghostClusterToProc;
-        std::map< size_type, std::set<size_type> > eltsContainingDof;
 
         // ------ for ordered list of points
         // contains parameter number of node, node
@@ -583,6 +359,7 @@ namespace Feel
         // ------ for unordered list of points
         // contains list of points
         std::vector< node_type > allPoints;
+        std::vector< node_type > refPoints;
 
         // contains as key the id of an element and value the numbers of the nodes (t) which are crossing it
         std::map<size_type, std::set<size_type> > pointsAtIndex;
@@ -611,7 +388,6 @@ namespace Feel
             return sdist;
         }
 
-        // todo : readPointsFromFile
 
 
         void clear()
@@ -620,6 +396,7 @@ namespace Feel
             pointsAtIndex.clear();
             allPoints.clear();
             dofIsOnSide.clear();
+            refPoints.clear();
         }
 
 
@@ -702,6 +479,72 @@ namespace Feel
         } // generatePointsFromParametrization
 
 
+        template <class TFilename>
+        void readPointsFromFile( TFilename filename )
+        {
+            // fill allPoints with the content of the file: filename
+            // for now, the format has to be x y separated by spaces (could be changed in the future to support more formats)
+            std::ifstream ifile ( filename.c_str(), std::ios_base::in );
+            CHECK( ifile.good() )<<"file "<<filename<<" not ok to be read\n";
+
+            // load all the file in a string
+            std::string file_str;
+            char c;
+            file_str.clear();
+            while( ifile.get(c) )
+                file_str.append(1,c);
+            ifile.close();
+
+            boost::regex reg( "^\\s*"
+                              "(\\d+\\.\\d+|\\d+\\.|\\d+)"
+                              "\\s+(\\d+\\.\\d+|\\d+\\.|\\d+)\\s*$" );
+
+            auto start = file_str.begin();
+            auto end = file_str.end();
+            boost::match_results< decltype( start ) > what;
+            //boost::match_results< boost::smatch > what;
+
+            while( boost::regex_search(start, end, what, reg) )
+                {
+                    double newX = boost::lexical_cast< double >( std::string(what[1].first, what[1].second) );
+                    double newY = boost::lexical_cast< double >( std::string(what[2].first, what[2].second) );
+                    start = what[0].second;
+
+                    node_type newNd(dim);
+                    newNd(0)=newX; newNd(1) = newY;
+                    allPoints.push_back( newNd );
+                }
+
+            LOG(INFO)<<"file "<<filename
+                     <<"read, "<<allPoints.size()
+                     <<" points added to describe the curve\n";
+
+
+            boost::regex regref( "^r"
+                              "(\\d+\\.\\d+|\\d+\\.|\\d+)"
+                              "\\s+(\\d+\\.\\d+|\\d+\\.|\\d+)\\s*$" );
+
+            start = file_str.begin();
+            end = file_str.end();
+            while( boost::regex_search(start, end, what, regref) )
+                {
+                    double newX = boost::lexical_cast< double >( std::string(what[1].first, what[1].second) );
+                    double newY = boost::lexical_cast< double >( std::string(what[2].first, what[2].second) );
+                    start = what[0].second;
+
+                    node_type newNd(dim);
+                    newNd(0)=newX; newNd(1) = newY;
+                    refPoints.push_back( newNd );
+                }
+
+            LOG(INFO)<<"file "<<filename
+                     <<"read, "<<refPoints.size()
+                     <<" reference points added to describe the sign of the curve\n";
+
+
+        } // readPointsFromFile
+
+
 
 
         void locateElementsCrossedByCurve(bool randomlyBroadenNodesPositions=false, double randomnessAmplitude = option("gmsh.hsize").as<double>() / 2.)
@@ -777,14 +620,12 @@ namespace Feel
 
 
 
-        void locateElementsCrossedByUnorderedPoints(bool randomlyBroadenNodesPositions=false,
-                                                    double randomnessAmplitude = option("gmsh.hsize").as<double>() / 2.)
+        void locateElementsCrossedByUnorderedPoints()
         {
             CHECK( ! allPoints.empty() )<<"No points present\n";
 
 
             // first create the map containing the number of the element containing each dof
-#if 0
             std::map< size_type, std::set<size_type> > eltsContainingDof;
             auto it = M_mesh->beginElementWithProcessId();
             auto en = M_mesh->endElementWithProcessId();
@@ -800,7 +641,6 @@ namespace Feel
                                 eltsContainingDof[index] = newindex;
                             }
                     }
-#endif
 
 
             // localize the points in a narrow band (only on the elements crossed by the points)
@@ -1056,19 +896,265 @@ namespace Feel
                 }
 
 
-            for (auto const& elt : dofIsOnSide)
-                std::cout<<"elt = "<<elt.first
-                         <<", sides : " << elt.second[0]
-                         << " " << elt.second[1]
-                         << " " << elt.second[2]
-                         << std::endl;
-
-
             return shape;
 
         } //makeDistanceFunctionSequentialFromUnorderedPoints
 
 
+
+
+        // listPoints could be a any container that can be iterated and its elements have operator [0] to [dim]
+        // ex vector< node_type > or vector< vector<double> > ...
+        template< class TListPoints >
+        void
+        setInnerRegion(element_ptrtype phi, TListPoints listPoints, bool exportInnerPoints)
+        {
+            // need the information : for each global index of the marked dofs, the list of the marked elements in which it appears
+            std::map< size_type, std::set< size_type > > eltsAtGlobalIndex;
+            std::set< size_type > markedDof;
+
+            auto it_marked = M_mesh->elementsWithMarker2(1, M_mesh->worldComm().localRank()).first;
+            const auto en_marked = M_mesh->elementsWithMarker2(1, M_mesh->worldComm().localRank()).second;
+            auto checkmarked = backend()->newVector( M_spaceP1 );
+
+            for (; it_marked != en_marked; it_marked++)
+                for (uint16_type j = 0; j < ndofv; ++j )
+                    {
+                        const size_type index = M_spaceP1->dof()->localToGlobal( *it_marked, j, 0).index();
+                        markedDof.insert( index );
+                        checkmarked->add(index, 1);
+                        if ( eltsAtGlobalIndex.count( index ) )
+                            eltsAtGlobalIndex[ index ].insert( it_marked->id() );
+                        else
+                            {
+                                std::set< size_type > newindex( {it_marked->id()} );
+                                eltsAtGlobalIndex[index] = newindex;
+                            }
+                    }
+
+            checkmarked->close();
+            for ( size_type k=0; k<M_spaceP1->nLocalDof(); ++k )
+                if( (*checkmarked)(k) > 0 )
+                    markedDof.insert( k );
+
+
+            // for all the marked dofs, store the values of the dofs being on a inter-process boundary -> store it in: isOnInterProcessBoundary
+            std::set< size_type > isOnInterProcessBoundary;
+            if (Environment::worldComm().size()>1)
+                {
+                    auto checkGhost = backend()->newVector( M_spaceP1 );
+                    for ( size_type k=0; k<M_spaceP1->nLocalDof(); ++k )
+                        if ( M_spaceP1->dof()->dofGlobalProcessIsGhost( k ) )
+                            checkGhost->add( k, 1 );
+                    checkGhost->close();
+
+                    for ( size_type k : markedDof )
+                        if ( (*checkGhost)(k) > 0)
+                            isOnInterProcessBoundary.insert( k );
+                }
+
+
+
+            std::set< size_type > eltsTodo;
+            std::set< size_type > eltsDone;
+            std::map< size_type, int > globalClusterDofDone;
+
+            // first, localize the points which are DONE from the given ones
+            std::set< size_type > dofDONE;
+
+            // add the points contained in the file is they exist
+            listPoints.insert( listPoints.end(), refPoints.begin(), refPoints.end() );
+
+            // just used to know if the point is on this proc
+            std::ofstream nodeFile;
+            if (exportInnerPoints && (Environment::worldComm().rank() == 0) )
+                nodeFile.open( "innerpoints.particles", std::ofstream::out);
+
+            auto ctx = M_spaceP0->context();
+            for(auto const& pt : listPoints)
+                {
+                    if (exportInnerPoints && (Environment::worldComm().rank() == 0) )
+                        nodeFile << pt[0] << "," << pt[1] << ","<< "0" <<std::endl;
+                    ctx.add( pt );
+                }
+
+            if (exportInnerPoints && (Environment::worldComm().rank() == 0) )
+                nodeFile.close();
+
+
+            for (int i=0; i<ctx.nPoints(); ++i)
+                {
+                    if (Environment::worldComm().localRank() != ctx.processorHavingPoint(i))
+                        continue;
+
+                    const node_type pt = listPoints[i];
+
+                    double minDist = bigdouble;
+                    size_type minDof = 0;
+
+                    for (size_type k : markedDof)
+                        {
+                            const node_type dofCoord = M_spaceP1->dof()->dofPoint( k ).get<0>();
+                            const double dist = squareDistToPoint(dofCoord, pt);
+                            if (dist < minDist)
+                                {
+                                    minDist = dist;
+                                    minDof = k;
+                                }
+                        }
+
+                    dofDONE.insert( minDof );
+                }
+
+            // make sure at least one proc having marked elements has a point setting inner region
+            bool okToInitialize = (markedDof.size() != 0 ) && (ctx.nPoints() != 0);
+            okToInitialize = mpi::all_reduce( Environment::worldComm(), okToInitialize, std::logical_or<bool>() );
+            CHECK( okToInitialize ) << "There is no partition which has at the same time marked elements (around the interface) and points setting the inner region. Consider adding some points.\n";
+
+            std::cout<<"localized elements, dofDONE.size = "<<dofDONE.size()<<std::endl;
+
+            auto doElement = [&](size_type eltId, size_type globIndex)
+                {
+                    /*
+                      find in the element eltId the side of the dof globIndex
+                      put all the dof of the element not done to the good side and make them DONE
+                      put the elements in which they appear to TODO if not already DONE
+                     */
+                    if ( eltsDone.count( eltId ) )
+                        {
+                            if (eltsTodo.count(eltId))
+                                eltsTodo.erase(eltId);
+                            return;
+                        }
+
+                    eltsDone.insert( eltId );
+
+                    side_type sideRef=noSide;
+                    // search the side of the element DONE
+                    size_type i=0;
+                    for (; i<ndofv; ++i)
+                        if (M_spaceP1->dof()->localToGlobal( eltId, i, 0).index() == globIndex )
+                            {
+                                sideRef = dofIsOnSide[ eltId ][i];
+                                break;
+                            }
+
+                    CHECK( sideRef != noSide ) << "proc " << Environment::worldComm().rank()
+                    << ", eltId : "<< eltId << ", has not been able to retrive the sides of the dofs inside.\n";
+
+                    const int signRef = (*phi)(globIndex) > 0 ? 1 : -1;
+
+                    for (int j=0; j<ndofv; ++j)
+                        {
+                            if (j == i)
+                                continue;
+
+                            const size_type indexTodo = M_spaceP1->dof()->localToGlobal( eltId, j, 0).index();
+
+                            if ( dofDONE.count( indexTodo ) )
+                                continue;
+
+                            else
+                                {
+                                    const side_type side = dofIsOnSide[ eltId ][j];
+                                    (*phi)(indexTodo) = std::abs((*phi)(indexTodo)) * ((side == sideRef) ? signRef : -signRef);
+                                    dofDONE.insert( indexTodo );
+                                    if (isOnInterProcessBoundary.count(indexTodo))
+                                        globalClusterDofDone[ processorToCluster( indexTodo ) ] = (*phi)(indexTodo) > 0 ? 1 : -1;
+
+                                    // insert the elements having this dof to the list of next element todo (if not already done)
+                                    for (const size_type& eltCandidate : eltsAtGlobalIndex[indexTodo] )
+                                        if (! eltsDone.count( eltCandidate ) )
+                                            eltsTodo.insert( eltCandidate );
+                                }
+                        }
+
+                    eltsTodo.erase(eltId);
+
+                }; //doElement
+
+
+            auto communicateDonePointsOnBoundary = [&]()
+                {
+                    std::vector< std::map< size_type, int > > all_globalClusterDofDone( Environment::worldComm().size() );
+                    mpi::all_gather(Environment::worldComm(), globalClusterDofDone, all_globalClusterDofDone);
+
+                    CHECK( all_globalClusterDofDone.size() == Environment::worldComm().size()) <<"some globlClusterDofDONE might be empty\n";
+
+                    for (int i=0; i<Environment::worldComm().size(); ++i)
+                        {
+                            if (i==Environment::worldComm().rank())
+                                continue;
+
+                            for (std::pair< size_type, int > const& eltSign : all_globalClusterDofDone[i])
+                                {
+                                    size_type index = invalid_size_type_value;
+                                    if (M_spaceP1->dof()->dofGlobalClusterIsOnProc( eltSign.first ))
+                                        index = clusterToProcessor( eltSign.first );
+
+                                    else if (M_spaceP1->dof()->dofGlobalProcessIsGhost(eltSign.first))
+                                        index = ghostClusterToProc[ eltSign.first ];
+
+                                    if ( index != invalid_size_type_value ) // if the dof is on the proc or ghost
+                                        if ( !dofDONE.count(index) )
+                                            {
+                                                (*phi)( index ) = eltSign.second * std::abs((*phi)(index));
+                                                dofDONE.insert( index );
+                                                for (size_type elts : eltsAtGlobalIndex[ index ])
+                                                    doElement( elts, index );
+                                            }
+                                }
+                        }
+
+                    globalClusterDofDone.clear();
+                }; //communicateDonePointsOnBoundary
+
+            // in the following loop, dofDONE is modified in doElement and the iterator range would be modified if iterated on it
+            auto dofDONEcopy = dofDONE;
+            // the set dofDONE contains the dof we are sure are negative. Use them to initialize the loop
+            for (size_type dd : dofDONEcopy)
+                {
+                    (*phi)(dd) *= -1;
+
+                    if (isOnInterProcessBoundary.count(dd))
+                        globalClusterDofDone[ processorToCluster( dd ) ] = -1;
+
+                    for (size_type elts : eltsAtGlobalIndex[ dd ])
+                        doElement( elts, dd );
+                }
+
+            std::cout<<"proc "<<Environment::worldComm().rank()
+                     <<" finished doing first dofDONE\n";
+
+            int nbEltTodoGlobal = mpi::all_reduce( Environment::worldComm(), eltsTodo.size(), std::plus<int>() );
+            while( nbEltTodoGlobal != 0)
+                {
+                    if (Environment::worldComm().size()>1)
+                        communicateDonePointsOnBoundary();
+
+                    if ( ! eltsTodo.empty() )
+                        {
+                            // in each element, find the dof DONE and do the other one thanks to it
+                            const size_type elt = *eltsTodo.begin();
+                            for (int j=0; j<ndofv; ++j)
+                                {
+                                    const size_type index = M_spaceP1->dof()->localToGlobal( elt, j, 0).index();
+
+                                    if ( dofDONE.count( index ) )
+                                        {
+                                            doElement( elt, index );
+                                            break;
+                                        }
+                                }
+                        }
+
+                    nbEltTodoGlobal = mpi::all_reduce( Environment::worldComm(), eltsTodo.size(), std::plus<int>() );
+                }
+
+            std::cout<<"finished, dofDONE.size = "<<dofDONE.size()<<std::endl;
+            std::cout<<"markedDof.size = "<<markedDof.size()<<std::endl;
+
+        }//setInnerRegion
 
 
 
