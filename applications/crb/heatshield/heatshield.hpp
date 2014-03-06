@@ -500,6 +500,7 @@ public:
 
     void assemble();
     int computeNumberOfSnapshots();
+    /*
     double timeFinal()
     {
         return M_bdf->timeFinal();
@@ -516,12 +517,12 @@ public:
     {
         return M_bdf->timeOrder();
     }
+    */
     void initializationField( element_ptrtype& initial_field, parameter_type const& mu );
     bool isSteady()
     {
         return M_is_steady;
     }
-
 
     /**
      * solve for a given parameter \p mu
@@ -597,6 +598,8 @@ public:
     {
         return M_compositeF;
     }
+
+    bdf_ptrtype bdfModel(){ return M_bdf; }
 
     void initDataStructureForBetaCoeff();
     void buildGinacExpressions();

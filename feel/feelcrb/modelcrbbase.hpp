@@ -158,6 +158,9 @@ public :
                                >::type betaqm_type;
 
 
+    typedef Bdf<space_type>  bdf_type;
+    typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
+
     ModelCrbBase()
         :
         M_is_initialized( false )
@@ -226,6 +229,32 @@ public :
         std::vector< std::vector<sparse_matrix_ptrtype> > A;
         std::vector< std::vector<std::vector<vector_ptrtype> > > F;
         return boost::make_tuple( A , F );
+    }
+
+
+    //this function is not called bdf() to not interfere with bdf constructor
+    virtual bdf_ptrtype bdfModel()
+    {
+        if( is_time_dependent )
+        {
+            if( Environment::worldComm().isMasterRank() )
+            {
+                std::cout<<"*******************************************************************"<<std::endl;
+                std::cout<<"** Error ! You have implemented a transient problem but you      **"<<std::endl;
+                std::cout<<"** forgot to implement bdfModel() function that returns your bdf **"<<std::endl;
+                std::cout<<"*******************************************************************"<<std::endl;
+            }
+            bool go=false;
+            CHECK( go );
+        }
+        bdf_ptrtype dummy_bdf;
+        return dummy_bdf;
+    }
+
+    //initialize the field for transient problems
+    virtual void initializationField( element_ptrtype& initial_field,parameter_type const& mu )
+    {
+        initial_field->setZero();
     }
 
 
