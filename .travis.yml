@@ -6,7 +6,8 @@ compiler:
 before_install:
 - sudo add-apt-repository -y ppa:mapnik/boost-backports-1-54
 - sudo add-apt-repository -y ppa:kalakris/eigen
-- sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+# comment out for now
+# - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
 - sudo apt-get -qq update
 - sudo apt-get install -qq libboost1.54-all-dev mpi-default-dev mpi-default-bin libeigen3-dev
   libcln-dev petsc-dev libxml2-dev gmsh bison flex doxygen doxygen-latex transfig
