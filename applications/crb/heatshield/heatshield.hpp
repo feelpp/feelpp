@@ -445,14 +445,6 @@ public:
      */
     //@{
 
-    /**
-     * set the mesh characteristic length to \p s
-     */
-    void setMeshSize( double s )
-    {
-        meshSize = s;
-    }
-
 
     //@}
 
@@ -464,81 +456,13 @@ public:
      * run the convergence test
      */
 
-    /**
-     * create a new matrix
-     * \return the newly created matrix
-     */
-    sparse_matrix_ptrtype newMatrix() const;
-
-    /**
-     * \return the newly created vector
-     */
-    vector_ptrtype newVector() const;
 
     /**
      * \brief Returns the affine decomposition
      */
     affine_decomposition_type computeAffineDecomposition();
 
-    void stockAffineDecomposition();
-
-    std::vector< std::vector< element_ptrtype > > computeInitialGuessAffineDecomposition()
-    {
-        std::vector< std::vector<element_ptrtype> > q;
-        q.resize(1);
-        q[0].resize(1);
-        element_ptrtype elt ( new element_type ( Xh ) );
-        q[0][0] = elt;
-        return q;
-    }
-    /**
-     * \brief solve the model for parameter \p mu
-     * \param mu the model parameter
-     * \param T the temperature field
-     */
-    void solve( parameter_type const& mu, element_ptrtype& T, int output_index=0 );
-
     void assemble();
-    int computeNumberOfSnapshots();
-    double timeFinal()
-    {
-        return M_bdf->timeFinal();
-    }
-    double timeStep()
-    {
-        return  M_bdf->timeStep();
-    }
-    double timeInitial()
-    {
-        return M_bdf->timeInitial();
-    }
-    int timeOrder()
-    {
-        return M_bdf->timeOrder();
-    }
-    void initializationField( element_ptrtype& initial_field, parameter_type const& mu );
-    bool isSteady()
-    {
-        return M_is_steady;
-    }
-
-
-    /**
-     * solve for a given parameter \p mu
-     */
-    element_type solve( parameter_type const& mu );
-
-
-    /**
-     * update the PDE system with respect to \param mu
-     */
-    void update( parameter_type const& mu,double bdf_coeff, element_type const& bdf_poly, int output_index=0 ) ;
-    //@}
-
-    /**
-     * export results to ensight format (enabled by  --export cmd line options)
-     */
-    void exportResults( double time, element_type& T , parameter_type const& mu );
 
     /**
      * inner product
@@ -564,19 +488,6 @@ public:
         return Mpod;
     }
 
-    void solve( sparse_matrix_ptrtype& ,element_type& ,vector_ptrtype&  );
-
-
-    /**
-     * specific interface for OpenTURNS
-     *
-     * \param X input vector of size N
-     * \param N size of input vector X
-     * \param Y input vector of size P
-     * \param P size of input vector Y
-     */
-    void run( const double * X, unsigned long N, double * Y, unsigned long P );
-
     /**
      * Given the output index \p output_index and the parameter \p mu, return
      * the value of the corresponding FEM output
@@ -598,6 +509,8 @@ public:
         return M_compositeF;
     }
 
+    bdf_ptrtype bdfModel(){ return M_bdf; }
+
     void initDataStructureForBetaCoeff();
     void buildGinacExpressions();
 
@@ -606,7 +519,6 @@ private:
     po::variables_map M_vm;
 
     backend_ptrtype backend;
-    bool M_is_steady ;
 
     /* mesh parameters */
     double meshSize;
@@ -625,10 +537,7 @@ private:
     continuous_p0_space_ptrtype continuous_p0;
     rbfunctionspace_ptrtype RbXh;
 
-    sparse_matrix_ptrtype D,M,Mpod,InnerMassMatrix;
-    vector_ptrtype F;
-
-    element_ptrtype pT;
+    sparse_matrix_ptrtype M,Mpod,InnerMassMatrix;
 
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Aqm;
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Mqm;
@@ -661,10 +570,7 @@ template<int Order>
 HeatShield<Order>::HeatShield()
     :
     backend( backend_type::build( BACKEND_PETSC ) ),
-    M_is_steady( false ),
     meshSize( 2e-1 ),
-    export_number( 0 ),
-    do_export( false ),
     M_Dmu( new parameterspace_type )
 { }
 
@@ -673,9 +579,7 @@ HeatShield<Order>::HeatShield( po::variables_map const& vm )
     :
     M_vm( vm ),
     backend( backend_type::build( vm ) ),
-    M_is_steady( option(_name="crb.is-model-executed-in-steady-mode").template as<bool>() ),
     meshSize( vm["hsize"].as<double>() ),
-    export_number( 0 ),
     M_Dmu( new parameterspace_type )
 {
 }
@@ -803,14 +707,6 @@ HeatShield<Order>::createGeo( double hsize )
     return gmshp;
 }
 
-
-
-template<int Order>
-void HeatShield<Order>::initializationField( element_ptrtype& initial_field , parameter_type const& mu )
-{
-    initial_field->setZero();
-}
-
 template<int Order>
 void HeatShield<Order>::initModel()
 {
@@ -876,9 +772,6 @@ void HeatShield<Order>::initModel()
 
     RbXh = rbfunctionspace_type::New( _model=this->shared_from_this() , _mesh=mesh );
 
-    // allocate an element of Xh
-    pT = element_ptrtype( new element_type( Xh ) );
-
     surface = integrate( _range=elements( mesh ), _expr=cst( 1. ) ).evaluate()( 0,0 );
     //std::cout<<"surface : "<<surface<<std::endl;
 
@@ -940,11 +833,6 @@ void HeatShield<Order>::initModel()
     LOG(INFO) << "Number of dof " << Xh->nLocalDof() << "\n";
 
     assemble();
-    //PsLogger ps("ps-Model");
-    //ps.log("after assemble");
-    if (option(_name="crb.stock-matrices").template as<bool>() && !dont_use_operators_free )
-        stockAffineDecomposition();
-    //ps.log("after stocking matrices");
 
 
 } // HeatShield::init
@@ -1026,9 +914,6 @@ void HeatShield<Order>::assemble()
         integrate( _range= markedfaces( mesh, "gamma_holes" ), _expr= 0.001 * idt( u )*id( v ) )
         ;
 
-    D = backend->newMatrix( Xh, Xh );
-    F = backend->newVector( Xh );
-
     if( ! option(_name="do-not-use-operators-free").template as<bool>() )
     {
         M_compositeA = opLinearComposite( _domainSpace=Xh , _imageSpace=Xh );
@@ -1044,21 +929,6 @@ void HeatShield<Order>::assemble()
     }
 
 }
-
-template<int Order>
-typename HeatShield<Order>::sparse_matrix_ptrtype
-HeatShield<Order>::newMatrix() const
-{
-    return backend->newMatrix( Xh, Xh );
-}
-
-template<int Order>
-typename HeatShield<Order>::vector_ptrtype
-HeatShield<Order>::newVector() const
-{
-    return backend->newVector( Xh );
-}
-
 template<int Order>
 typename HeatShield<Order>::affine_decomposition_type
 HeatShield<Order>::computeAffineDecomposition()
@@ -1067,270 +937,15 @@ HeatShield<Order>::computeAffineDecomposition()
 }
 
 
-template<int Order>
-void HeatShield<Order>::solve( sparse_matrix_ptrtype& D,
-                        element_type& u,
-                        vector_ptrtype& F )
-{
-
-    vector_ptrtype U( backend->newVector( u.functionSpace() ) );
-    backend->solve( D, D, U, F );
-    u = *U;
-}
-
-template<int Order>
-void HeatShield<Order>::exportResults( double time, element_type& T, parameter_type const& mu )
-{
-    LOG(INFO) << "exportResults starts\n";
-    std::string exp_name = "Model_T" + ( boost::format( "_%1%" ) %time ).str();
-    export_ptrtype exporter;
-    exporter = export_ptrtype( Exporter<mesh_type>::New( "ensight", exp_name  ) );
-    exporter->step( time )->setMesh( T.functionSpace()->mesh() );
-    std::string mu_str;
-
-    for ( int i=0; i<mu.size(); i++ )
-    {
-        mu_str= mu_str + ( boost::format( "_%1%" ) %mu[i] ).str() ;
-    }
-
-    std::string name = "T_with_parameters_"+mu_str;
-    exporter->step( time )->add( name, T );
-    exporter->save();
-}
-
-template<int Order>
-void
-HeatShield<Order>::stockAffineDecomposition()
-{
-    auto compositeM = operatorCompositeM();
-    int q_max = this->Qm();
-    M_Mqm.resize( q_max);
-    for(int q=0; q<q_max; q++)
-    {
-        int m_max = this->mMaxM(q);
-        M_Mqm[q].resize(m_max);
-        for(int m=0; m<m_max;m++)
-        {
-            auto operatorfree = compositeM->operatorlinear(q,m);
-            size_type pattern = operatorfree->pattern();
-            auto trial = operatorfree->domainSpace();
-            auto test=operatorfree->dualImageSpace();
-            M_Mqm[q][m]= backend->newMatrix( _test=test , _trial=trial , _pattern=pattern );
-            operatorfree->matPtr(M_Mqm[q][m]);//fill the matrix
-        }//m
-    }//q
-
-    auto compositeA = operatorCompositeA();
-    q_max = this->Qa();
-    M_Aqm.resize( q_max);
-    for(int q=0; q<q_max; q++)
-    {
-        int m_max = this->mMaxA(q);
-        M_Aqm[q].resize(m_max);
-        for(int m=0; m<m_max;m++)
-        {
-            auto operatorfree = compositeA->operatorlinear(q,m);
-            size_type pattern = operatorfree->pattern();
-            auto trial = operatorfree->domainSpace();
-            auto test=operatorfree->dualImageSpace();
-            M_Aqm[q][m]= backend->newMatrix( _test=test , _trial=trial , _pattern=pattern );
-            operatorfree->matPtr(M_Aqm[q][m]);//fill the matrix
-        }//m
-    }//q
-
-    auto vector_compositeF = functionalCompositeF();
-    int number_outputs = vector_compositeF.size();
-    M_Fqm.resize(number_outputs);
-    for(int output=0; output<number_outputs; output++)
-    {
-        auto composite_f = vector_compositeF[output];
-        int q_max = this->Ql(output);
-        M_Fqm[output].resize( q_max);
-        for(int q=0; q<q_max; q++)
-        {
-            int m_max = this->mMaxF(output,q);
-            M_Fqm[output][q].resize(m_max);
-            for(int m=0; m<m_max;m++)
-            {
-                auto operatorfree = composite_f->functionallinear(q,m);
-                auto space = operatorfree->space();
-                M_Fqm[output][q][m]= backend->newVector( space );
-                operatorfree->containerPtr(M_Fqm[output][q][m]);//fill the vector
-            }//m
-        }//q
-    }//output
-
-}
-
-template<int Order>
-void HeatShield<Order>::update( parameter_type const& mu,double bdf_coeff, element_type const& bdf_poly, int output_index )
-{
-
-    if (option(_name="crb.stock-matrices").template as<bool>() )
-    {
-        D->close();
-        D->zero();
-
-        for ( size_type q = 0; q < Qa(); ++q )
-        {
-            for ( size_type m = 0; m < mMaxA(q); ++m )
-                D->addMatrix( M_betaAqm[q][m] , M_Aqm[q][m] );
-        }
-
-        F->close();
-        F->zero();
-
-        for ( size_type q = 0; q < Ql(output_index); ++q )
-        {
-            for ( size_type m = 0; m < mMaxF(output_index,q); ++m )
-                F->add( M_betaFqm[output_index][q][m], M_Fqm[output_index][q][m] );
-        }
-
-        auto vec_bdf_poly = backend->newVector( Xh );
-
-        //add contribution from mass matrix
-        for ( size_type q = 0; q < Qm(); ++q )
-        {
-            for ( size_type m = 0; m < mMaxM(q); ++m )
-            {
-                //left hand side
-                D->addMatrix( M_betaMqm[q][m]*bdf_coeff, M_Mqm[q][m] );
-                //right hand side
-                *vec_bdf_poly = bdf_poly;
-                vec_bdf_poly->close();
-                vec_bdf_poly->scale( M_betaMqm[q][m] );
-                F->addVector( *vec_bdf_poly, *M_Mqm[q][m] );
-            }
-        }
-    }
-    else
-    {
-        D->close();
-        D->zero();
-        F->close();
-        F->zero();
-
-        M_compositeA->setScalars( M_betaAqm );
-        M_compositeA->sumAllMatrices( D );
-
-        M_compositeF[output_index]->setScalars( M_betaFqm[output_index] );
-        M_compositeF[output_index]->sumAllVectors( F );
-
-        auto vec_bdf_poly = backend->newVector( Xh );
-
-        for ( size_type q = 0; q < Qm(); ++q )
-        {
-            for ( size_type m = 0; m < mMaxM(q); ++m )
-            {
-                auto matrix = backend->newMatrix( _test=Xh , _trial=Xh );
-                M_compositeM->operatorlinear(q,m)->matPtr( matrix );
-                //left hand side
-                D->addMatrix( M_betaMqm[q][m]*bdf_coeff, matrix );
-                //right hand side
-                *vec_bdf_poly = bdf_poly;
-                vec_bdf_poly->close();
-                vec_bdf_poly->scale( M_betaMqm[q][m] );
-                F->addVector( *vec_bdf_poly, *matrix );
-            }
-        }
-
-    }
-
-
-}
-
 
 
 template<int Order>
-typename HeatShield<Order>::element_type
-HeatShield<Order>::solve( parameter_type const& mu )
-{
-    element_ptrtype T( new element_type( Xh ) );
-    this->solve( mu, T );
-    return *T;
-}
-
-template<int Order>
-void HeatShield<Order>::solve( parameter_type const& mu, element_ptrtype& T, int output_index )
-{
-
-    using namespace Feel::vf;
-
-    initializationField( T,mu );
-    initializationField( pT,mu );
-
-    //assemble();
-
-    if ( M_is_steady )
-        M_bdf->setSteady();
-
-
-    for ( M_bdf->start(*T); !M_bdf->isFinished() ; M_bdf->next() )
-    {
-        double bdf_coeff = M_bdf->polyDerivCoefficient( 0 );
-
-        this->computeBetaQm( mu, M_bdf->time() );
-
-        auto bdf_poly = M_bdf->polyDeriv();
-        this->update( mu , bdf_coeff, bdf_poly );
-
-        backend->solve( _matrix=D,  _solution=T, _rhs=F  );
-
-        if ( do_export )
-        {
-            exportResults( M_bdf->time(), *T , mu );
-            export_number++;
-        }
-
-        M_bdf->shiftRight( *T );
-
-    }
-
-}
-
-template<int Order>
-int
-HeatShield<Order>::computeNumberOfSnapshots()
-{
-    return M_bdf->timeFinal()/M_bdf->timeStep();
-}
-
-
-template<int Order>
-void HeatShield<Order>::run( const double * X, unsigned long N, double * Y, unsigned long P )
-{
-    using namespace vf;
-    typename Feel::ParameterSpace<ParameterSpaceDimension>::Element mu( M_Dmu );
-    mu << X[0], X[1], X[2];
-    static int do_init = true;
-
-    if ( do_init )
-    {
-        this->initModel();
-        do_init = false;
-    }
-
-    this->solve( mu, pT );
-
-    double mean = integrate( elements( mesh ),idv( *pT ) ).evaluate()( 0,0 );
-    Y[0]=mean;
-}
-
-
-template<int Order>
-double HeatShield<Order>::output( int output_index, parameter_type const& mu, element_type &T, bool need_to_solve , bool export_outputs )
+double HeatShield<Order>::output( int output_index, parameter_type const& mu, element_type &u, bool need_to_solve , bool export_outputs )
 {
     using namespace vf;
 
+    CHECK( ! need_to_solve ) << "The model need to have the solution to compute the output\n";
 
-    if ( need_to_solve )
-        this->solve( mu, pT );
-    else
-        *pT = T;
-
-    // vector_ptrtype U( backend->newVector( Xh ) );
-    //*U = *pT;
-    pT->close();
     double s=0;
 
     bool dont_use_operators_free = option(_name="do-not-use-operators-free").template as<bool>() ;
@@ -1343,13 +958,12 @@ double HeatShield<Order>::output( int output_index, parameter_type const& mu, el
             {
                 if( dont_use_operators_free )
                 {
-                    s += M_betaFqm[output_index][q][m]*dot( *M_Fqm[output_index][q][m] , *pT );
+                    s += M_betaFqm[output_index][q][m]*dot( *M_Fqm[output_index][q][m] , u );
                 }
                 else
                 {
                     M_Fqm_free[output_index][q][m]->containerPtr( fqm );
-                    s += M_betaFqm[output_index][q][m]*dot( *fqm , *pT );
-                    // s += M_betaFqm[output_index][q][m]*dot( *M_Fqm[output_index][q][m], *pT );
+                    s += M_betaFqm[output_index][q][m]*dot( *fqm , u );
                 }
             }
         }
