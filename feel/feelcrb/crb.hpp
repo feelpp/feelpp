@@ -6294,7 +6294,6 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
 
         if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
             std::cout << "     o M_Cmm_pr updated in " << ti.elapsed() << "s\n";
-        ti.restart();
 
 
         sparse_matrix_ptrtype Atq1 = M_model->newMatrix();
@@ -6305,6 +6304,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
         // Dual
         //
 
+        ti.restart();
 
         LOG(INFO) << "[offlineResidual] Cmf_du Cma_du Cmm_du\n";
         for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
@@ -6347,6 +6347,10 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
         } // elem
 
 
+        if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+            std::cout << "     o M_Cmf_du updated in " << ti.elapsed() << "s\n";
+
+        ti.restart();
 
         for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
         {
@@ -6546,6 +6550,10 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
     boost::tie( Mqm, Aqm, Fqm ) = M_model->computeAffineDecomposition();
     __X->zero();
     __X->add( 1.0 );
+
+    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+        std::cout << "     o initialize offlineResidual in " << ti.elapsed() << "s\n";
+
     //std::cout << "measure of domain= " << M_model->scalarProduct( __X, __X ) << "\n";
 #if 0
     ublas::vector<value_type> mu( P );
@@ -6561,6 +6569,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
     // no need to recompute this term each time
     if ( Ncur == M_Nm )
     {
+        ti.restart();
         LOG(INFO) << "[offlineResidual] Compute Primal residual data\n";
         LOG(INFO) << "[offlineResidual] C0_pr\n";
 
@@ -6588,11 +6597,12 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
                 //M_C0_pr[__q1][__q1] = M_model->scalarProduct( __X, __X );
             }//end of loop __m1
         }//end of loop __q1
+
+        if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+            std::cout << "     o M_C0_pr updated in " << ti.elapsed() << "s\n";
+
     }// Ncur==M_Nm
 
-    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
-        std::cout << "     o initialize offlineResidual in " << ti.elapsed() << "s\n";
-    ti.restart();
 
 #if 0
     parameter_type const& mu = M_WNmu->at( 0 );
@@ -6628,6 +6638,8 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
     M_model->l2solve( __X, F[0] );
     //std::cout << "c0 2 = " << M_model->scalarProduct( __X, __X ) << "\n";;
 #endif
+
+    ti.restart();
 
     //
     //  Primal
@@ -6733,9 +6745,9 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
 
     if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
         std::cout << "     o Gamma_pr updated in " << ti.elapsed() << "s\n";
-    ti.restart();
     sparse_matrix_ptrtype Atq1 = M_model->newMatrix();
     sparse_matrix_ptrtype Atq2 = M_model->newMatrix();
+    ti.restart();
 
     //
     // Dual
