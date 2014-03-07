@@ -146,51 +146,66 @@ public :
     {
         int size1 = M_operators1.size();
         int size2 = M_operators2.size();
-        CHECK( size1 == 0 )<<"the function countAllContributions can only be called when using operators with 2 index\n";
 
-        //first : count Q
-        int Q=1;
-        if( size2 == 0 )
-            Q=0;
-        //initialization
-        auto it_=M_operators2.begin();
-        auto tuple_=it_->first;
-        int old_q = tuple_.template get<0>();
-        //loop over all operators
-        auto end = M_operators2.end();
-        for(auto it=M_operators2.begin(); it!=end; it++)
+        if( size1 == 0 )
         {
-            auto tuple = it->first;
-            int q = tuple.template get<0>();
-            if (q!=old_q)
+            //first : count Q
+            int Q=1;
+            if( size2 == 0 )
+                Q=0;
+            //initialization
+            auto it_=M_operators2.begin();
+            auto tuple_=it_->first;
+            int old_q = tuple_.template get<0>();
+            //loop over all operators
+            auto end = M_operators2.end();
+            for(auto it=M_operators2.begin(); it!=end; it++)
             {
-                Q++;
-                old_q=q;
+                auto tuple = it->first;
+                int q = tuple.template get<0>();
+                if (q!=old_q)
+                {
+                    Q++;
+                    old_q=q;
+                }
             }
-        }
-        std::vector<int> V(Q);
-        //now count sub-terms
-        int count=0;
-        old_q = tuple_.template get<0>();
-        for(auto it=M_operators2.begin(); it!=end; it++)
+            std::vector<int> V(Q);
+            //now count sub-terms
+            int count=0;
+            old_q = tuple_.template get<0>();
+            for(auto it=M_operators2.begin(); it!=end; it++)
+            {
+                auto tuple = it->first;
+                int q = tuple.template get<0>();
+                if (q!=old_q)
+                {
+                    V[old_q]=count;
+                    count=1;
+                    old_q=q;
+                }
+                else
+                {
+                    count++;
+                }
+            }
+            V[old_q]=count;
+            return V;
+        }//end of case operator2
+        else
         {
-            auto tuple = it->first;
-            int q = tuple.template get<0>();
-            if (q!=old_q)
+            int Q = this->size();
+            std::vector<int> V(Q);
+            auto it_=M_operators1.begin();
+            auto tuple_=it_->first;
+            auto end = M_operators1.end();
+            for(auto it=M_operators1.begin(); it!=end; it++)
             {
-                V[old_q]=count;
-                count=1;
-                old_q=q;
+                int q = it->first;
+                V[q]=1;
             }
-            else
-            {
-                count++;
-            }
-        }
-        V[old_q]=count;
-        return V;
+            return V;
+        }//end of case operator1
     }
-
 
     //for a given index q, return the number
     //of operators that have q in the tuple
@@ -242,7 +257,23 @@ public :
 
     void setScalars( std::vector< std::vector< double > > scalars )
     {
-        M_scalars2 = scalars;
+        int size1 = M_operators1.size();
+        if( size1 == 0 )
+        {
+            M_scalars2 = scalars;
+        }
+        else
+        {
+            int qsize=scalars.size();
+            std::vector< double > new_scalars( qsize );
+            for(int q=0; q<qsize; q++)
+            {
+                int msize=scalars[q].size();
+                CHECK(msize==1)<<"Error ! You should use a vector of double to call setScalars(), or use a vector of vector of matrices.\n";
+                new_scalars[q]=scalars[q][0];
+            }
+            M_scalars1=new_scalars;
+        }
     }
 
     void sumAllMatrices(matrix_ptrtype & matrix, bool use_scalar_one=false ) const
@@ -286,6 +317,7 @@ public :
             it->second->matPtr(temp_matrix);
             matrix->addMatrix( scalar , temp_matrix );
         }
+
 
     }//sumAllMatrices
 
