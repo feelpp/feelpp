@@ -5247,11 +5247,7 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
         {
             parameter_type mu ( M_Dmu );
             size_type id;
-            if( proc == master_proc )
-                boost::tie ( mu, id ) = M_Xi->max( false );
-
-            //each proc must have the same mu
-            boost::mpi::broadcast( Environment::worldComm() , mu , master_proc );
+            boost::tie ( mu, id ) = M_Xi->max();
 
             return boost::make_tuple( 1e5, mu , delta_pr, delta_du);
 
