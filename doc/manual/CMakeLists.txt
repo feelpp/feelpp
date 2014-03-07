@@ -44,7 +44,7 @@ foreach(cppfile "tutorial/*.cpp" "nonlinear/*.cpp" "../../quickstart/laplacian.c
 endforeach()
 FILE(GLOB STYFILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "styles/*.sty")
 
-FILE(WRITE version.tex "\\newcommand{\\feelversion}{${FEELPP_VERSION_STRING}}")
+#FILE(WRITE version.tex "\\newcommand{\\feelversion}{${FEELPP_VERSION_STRING}}")
 
 MESSAGE("Current revision is ${FEELPP_WC_REVISION}")
 MESSAGE("Last changed date is ${FEELPP_WC_LAST_CHANGED_DATE}")
@@ -64,8 +64,8 @@ ${RESULT} ${${RESULT}})
     ENDIF (WIN32)
 ENDMACRO (TODAY)
 TODAY(THEDATE)
-FILE(APPEND version.tex "\\newcommand{\\feelbuildid}{${FEELPP_BUILDID}}")
-FILE(APPEND version.tex "\\newcommand{\\feeldate}{${THEDATE}}")
+#FILE(APPEND version.tex "\\newcommand{\\feelbuildid}{${FEELPP_BUILDID}}")
+#FILE(APPEND version.tex "\\newcommand{\\feeldate}{${THEDATE}}")
 
 FILE(GLOB TUTO_DOC_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} tutorial/*.tex)
 
