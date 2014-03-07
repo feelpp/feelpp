@@ -125,6 +125,7 @@ public :
     static const uint16_type ParameterSpaceDimension = ParameterDefinition::ParameterSpaceDimension ;
 
     typedef std::vector< std::vector< double > > beta_vector_type;
+    typedef std::vector< double > beta_vector_light_type;
 
     static const bool is_time_dependent = FunctionSpaceDefinition::is_time_dependent;
     static const bool is_linear = FunctionSpaceDefinition::is_linear;
@@ -147,6 +148,18 @@ public :
 
     typedef typename mpl::if_< mpl::bool_< is_time_dependent >,
                                boost::tuple<
+                                   std::vector< sparse_matrix_ptrtype >,//Mq
+                                   std::vector< sparse_matrix_ptrtype >,//Aq
+                                   std::vector< std::vector< vector_ptrtype > >//Fq
+                                   >,
+                               boost::tuple<
+                                   std::vector< sparse_matrix_ptrtype >,//Aq
+                                   std::vector< std::vector< vector_ptrtype > >//Fq
+                                   >
+                               >::type affine_decomposition_light_type;
+
+    typedef typename mpl::if_< mpl::bool_< is_time_dependent >,
+                               boost::tuple<
                                    beta_vector_type,
                                    beta_vector_type,
                                    std::vector<beta_vector_type>
@@ -156,6 +169,18 @@ public :
                                    std::vector<beta_vector_type>
                                    >
                                >::type betaqm_type;
+
+    typedef typename mpl::if_< mpl::bool_< is_time_dependent >,
+                               boost::tuple<
+                                   beta_vector_light_type,
+                                   beta_vector_light_type,
+                                   std::vector<beta_vector_light_type>
+                                   >,
+                               boost::tuple<
+                                   beta_vector_light_type,
+                                   std::vector<beta_vector_light_type>
+                                   >
+                               >::type betaq_type;
 
 
     typedef Bdf<space_type>  bdf_type;
@@ -213,6 +238,19 @@ public :
         return M_compositeF;
     }
 
+    virtual operatorcomposite_ptrtype operatorCompositeLightA()
+    {
+        return M_compositeA;
+    }
+    virtual operatorcomposite_ptrtype operatorCompositeLightM()
+    {
+        return M_compositeM;
+    }
+    virtual std::vector< functionalcomposite_ptrtype > functionalCompositeLightF()
+    {
+        return M_compositeF;
+    }
+
     virtual affine_decomposition_type computeAffineDecomposition()
     {
         return computeAffineDecomposition( mpl::bool_< is_time_dependent >() );
@@ -231,6 +269,35 @@ public :
         return boost::make_tuple( A , F );
     }
 
+    virtual affine_decomposition_light_type computeAffineDecompositionLight()
+    {
+        return computeAffineDecompositionLight( mpl::bool_< is_time_dependent >() );
+    }
+    affine_decomposition_light_type computeAffineDecompositionLight( mpl::bool_<true> )
+    {
+        std::vector< sparse_matrix_ptrtype > M;
+        std::vector< sparse_matrix_ptrtype > A;
+        std::vector< std::vector<vector_ptrtype> > F;
+        return boost::make_tuple( M , A , F );
+    }
+    affine_decomposition_light_type computeAffineDecompositionLight( mpl::bool_<false> )
+    {
+        std::vector< sparse_matrix_ptrtype> A;
+        std::vector< std::vector<vector_ptrtype> > F;
+        return boost::make_tuple( A , F );
+    }
+
+    virtual betaq_type computeBetaQ( parameter_type const& mu ,  double time=0 )
+    {
+        betaq_type dummy;
+        return dummy;
+    }
+
+    virtual betaqm_type computeBetaQm( parameter_type const& mu ,  double time=0 )
+    {
+        betaqm_type dummy;
+        return dummy;
+    }
 
     //this function is not called bdf() to not interfere with bdf constructor
     virtual bdf_ptrtype bdfModel()
