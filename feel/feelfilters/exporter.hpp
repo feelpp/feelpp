@@ -514,7 +514,7 @@ BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::compute_exporter_return<Args>
                             ( fileset, *, option(_name="exporter.fileset").template as<bool>() )
                             ( order, *, mpl::int_<1>() )
                             ( name,  *, Environment::about().appName() )
-                            ( geo,   *, option(_name="exporter.geometry").template as<int>() )
+                            ( geo,   *, option(_name="exporter.geometry").template as<std::string>() )
                             ( path, *( boost::is_convertible<mpl::_,std::string> ), std::string(".") )
                           ) )
 {
@@ -522,7 +522,12 @@ BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::compute_exporter_return<Args>
     auto e =  exporter_type::New( Environment::vm(),name,mesh->worldComm() );
     e->setPrefix( name );
     e->setUseSingleTransientFile( fileset );
-    e->setMesh( mesh, (ExporterGeometry) geo );
+    if ( geo == "change_coords_only" )
+        e->setMesh( mesh, EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY );
+    else if ( geo == "change" )
+        e->setMesh( mesh, EXPORTER_GEOMETRY_CHANGE );
+    else // default
+        e->setMesh( mesh, EXPORTER_GEOMETRY_STATIC );
     e->setPath( path );
     // addRegions not work with transient simulation!
     //e->addRegions();

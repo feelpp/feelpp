@@ -64,6 +64,7 @@
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/interpolate.hpp>
+#include <feel/feeldiscr/subelements.hpp>
 
 
 namespace Feel

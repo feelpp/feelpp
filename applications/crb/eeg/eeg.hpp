@@ -112,6 +112,9 @@ public:
     typedef FunctionSpace<mesh_type, prod_basis_type, value_type> space_type;
     typedef FunctionSpace<mesh_type, bases< basis_type >, value_type> space_type1;
 
+    static const bool is_time_dependent = false;
+    static const bool is_linear = true;
+
 };
 
 //for compilation
@@ -153,7 +156,6 @@ public:
     static const uint16_type Dim = 3;
     static const uint16_type ParameterSpaceDimension = 8;
     static const uint16_type nbtissue = 8;
-    static const bool is_time_dependent = false;
     //@}
 
     /** @name Typedefs

@@ -139,7 +139,12 @@ public:
             mu_max << 1;
             Dmu->setMax( mu_max );
             mu = Dmu->element();
+
+            //check pointer of mu.parameterSpace is Dmu
             BOOST_CHECK_EQUAL( mu.parameterSpace(), Dmu );
+
+            //check that we have the same element on all processors
+            mu.check();
 
             auto Pset = Dmu->sampling();
             int sampling_size = option(_name="eim.sampling-size").as<int>();
@@ -363,7 +368,12 @@ public:
             mu_max << /*alpha*/2, /*beta*/ 2, /*cx*/ 1, /*cy*/ 1;
             Dmu->setMax( mu_max );
             mu = Dmu->element();
+
+            //check pointer of mu.parameterSpace is Dmu
             BOOST_CHECK_EQUAL( mu.parameterSpace(), Dmu );
+
+            //check that we have the same element on all processors
+            mu.check();
 
             auto Pset = Dmu->sampling();
             int sampling_size = this->vm()["eim.sampling-size"].as<int>();
