@@ -3,9 +3,9 @@
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2010-04-21
+       Date: 2014-03-01
 
-  Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2014 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -26,8 +26,8 @@
   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
   \date 2010-04-21
 */
-#ifndef __ExprBase_H
-#define __ExprBase_H 1
+#ifndef FEELPP_EXPRBASE_HPP
+#define FEELPP_EXPRBASE_HPP 1
 
 #include <string>
 #include <sstream>
@@ -39,10 +39,7 @@ namespace Feel
  * \class ExprBase
  * \brief Base class for expression
  *
- *Defines the common interface for all expression terms
- *
- * @author Christophe Prud'homme
- * @see
+ * Defines the common interface for all expression terms
  */
 class ExprBase
 {
@@ -104,12 +101,12 @@ public:
      * Write a simple text description suitable
      * for output to a terminal
      */
-    virtual std::ostream& toText( std::ostream& os, bool paren ) const = 0 ;
+    virtual std::ostream& toText( std::ostream& os, bool paren ) const { return os; }
 
     /**
      * Write in a form suitable for LaTeX formatting
      */
-    virtual std::ostream& toLatex( std::ostream& os, bool paren ) const = 0 ;
+    virtual std::ostream& toLatex( std::ostream& os, bool paren ) const { return os; }
 
     /**
      * write the expression into a std::string
@@ -127,5 +124,4 @@ private:
 
 };
 }
-#endif /* __ExprBase_H */
-
+#endif /* FEELPP_EXPRBASE_HPP */
