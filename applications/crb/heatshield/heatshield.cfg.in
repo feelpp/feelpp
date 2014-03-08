@@ -1,9 +1,10 @@
 #mesh size
 hsize=1.5e-1
-
+load-mesh-already-partitioned=true
 
 #name of the .msh file
 #for example :
+#mshfile = ../mesh.msh
 #mshfile = /home/veys/feel/geofiles/heatshield/heatshield_h3e-1_np2.msh
 
 [heatshield]
@@ -57,6 +58,9 @@ cvg-study=true
 show-residual=false
 is-model-executed-in-steady-mode=true
 use-ginac-for-beta-expressions=false
+all-procs-have-same-sampling=false
+vary-only-parameter-components=1 100
+user-parameters=0.5 0.1
 [crb.check]
 gs=0
 rb=0

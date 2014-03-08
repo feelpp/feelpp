@@ -495,6 +495,8 @@ public:
                     run_sampling_size = 0;
                 }
                 std::string appname = this->about().appName();
+                //in the case we don't do the offline step, we need the affine decomposition
+                model->computeAffineDecomposition();
                 crb->computationalTimeStatistics( appname );
             }
 

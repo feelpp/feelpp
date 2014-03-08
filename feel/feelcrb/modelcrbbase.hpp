@@ -55,6 +55,9 @@ public :
 
     /*space*/
     typedef FunctionSpace<mesh_type , basis_type > space_type ;
+
+    static const bool is_time_dependent=false;
+    static const bool is_linear=true;
 };
 
 template <typename ParameterDefinition, typename FunctionSpaceDefinition>
@@ -78,6 +81,8 @@ class ModelCrbBase : public ModelCrbBaseBase
 {
 
 public :
+
+    typedef ModelCrbBase self_type;
     typedef typename EimDefinition::fun_type fun_type;
     typedef typename EimDefinition::fund_type fund_type;
 
@@ -85,6 +90,8 @@ public :
     typedef typename parameterspace_type::element_type parameter_type;
 
     typedef typename FunctionSpaceDefinition::space_type space_type;
+    typedef space_type functionspace_type;
+    typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
 
     typedef typename space_type::element_type element_type;
     typedef boost::shared_ptr<element_type> element_ptrtype;
@@ -96,8 +103,6 @@ public :
     typedef std::vector<fund_ptrtype> funsd_type;
 
     typedef Eigen::VectorXd vectorN_type;
-
-    typedef std::vector< std::vector< double > > beta_vector_type;
 
     typedef OperatorLinear< space_type , space_type > operator_type;
     typedef boost::shared_ptr<operator_type> operator_ptrtype;
@@ -116,6 +121,70 @@ public :
 
     typedef backend_type::sparse_matrix_type sparse_matrix_type;
     typedef backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
+
+    static const uint16_type ParameterSpaceDimension = ParameterDefinition::ParameterSpaceDimension ;
+
+    typedef std::vector< std::vector< double > > beta_vector_type;
+    typedef std::vector< double > beta_vector_light_type;
+
+    static const bool is_time_dependent = FunctionSpaceDefinition::is_time_dependent;
+    static const bool is_linear = FunctionSpaceDefinition::is_linear;
+
+    typedef double value_type;
+
+    typedef typename FunctionSpaceDefinition::mesh_type mesh_type;
+
+    typedef typename mpl::if_< mpl::bool_< is_time_dependent >,
+                               boost::tuple<
+                                   std::vector< std::vector<sparse_matrix_ptrtype> >,//Mq
+                                   std::vector< std::vector<sparse_matrix_ptrtype> >,//Aq
+                                   std::vector< std::vector<std::vector<vector_ptrtype> > >//Fq
+                                   >,
+                               boost::tuple<
+                                   std::vector< std::vector<sparse_matrix_ptrtype> >,//Aq
+                                   std::vector< std::vector<std::vector<vector_ptrtype> > >//Fq
+                                   >
+                               >::type affine_decomposition_type;
+
+    typedef typename mpl::if_< mpl::bool_< is_time_dependent >,
+                               boost::tuple<
+                                   std::vector< sparse_matrix_ptrtype >,//Mq
+                                   std::vector< sparse_matrix_ptrtype >,//Aq
+                                   std::vector< std::vector< vector_ptrtype > >//Fq
+                                   >,
+                               boost::tuple<
+                                   std::vector< sparse_matrix_ptrtype >,//Aq
+                                   std::vector< std::vector< vector_ptrtype > >//Fq
+                                   >
+                               >::type affine_decomposition_light_type;
+
+    typedef typename mpl::if_< mpl::bool_< is_time_dependent >,
+                               boost::tuple<
+                                   beta_vector_type,
+                                   beta_vector_type,
+                                   std::vector<beta_vector_type>
+                                   >,
+                               boost::tuple<
+                                   beta_vector_type,
+                                   std::vector<beta_vector_type>
+                                   >
+                               >::type betaqm_type;
+
+    typedef typename mpl::if_< mpl::bool_< is_time_dependent >,
+                               boost::tuple<
+                                   beta_vector_light_type,
+                                   beta_vector_light_type,
+                                   std::vector<beta_vector_light_type>
+                                   >,
+                               boost::tuple<
+                                   beta_vector_light_type,
+                                   std::vector<beta_vector_light_type>
+                                   >
+                               >::type betaq_type;
+
+
+    typedef Bdf<space_type>  bdf_type;
+    typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
 
     ModelCrbBase()
         :
@@ -145,6 +214,17 @@ public :
 
     virtual void initModel() = 0;
 
+    /*
+     * the user has to provide the affine decomposition
+     * he has two choices : use vectors/matrices or operator free
+     * if he uses operators free he must implement :
+     * - operatorCompositeM (only if the model is time dependent)
+     * - operatorCompositeA
+     * - functionalCompositeF
+     * else, if he uses vectors/matrices (classical way) he must implement
+     * - computeAffineDecomposition
+     */
+
     virtual operatorcomposite_ptrtype operatorCompositeA()
     {
         return M_compositeA;
@@ -158,6 +238,133 @@ public :
         return M_compositeF;
     }
 
+    virtual operatorcomposite_ptrtype operatorCompositeLightA()
+    {
+        return M_compositeA;
+    }
+    virtual operatorcomposite_ptrtype operatorCompositeLightM()
+    {
+        return M_compositeM;
+    }
+    virtual std::vector< functionalcomposite_ptrtype > functionalCompositeLightF()
+    {
+        return M_compositeF;
+    }
+
+    virtual affine_decomposition_type computeAffineDecomposition()
+    {
+        return computeAffineDecomposition( mpl::bool_< is_time_dependent >() );
+    }
+    affine_decomposition_type computeAffineDecomposition( mpl::bool_<true> )
+    {
+        std::vector< std::vector<sparse_matrix_ptrtype> > M;
+        std::vector< std::vector<sparse_matrix_ptrtype> > A;
+        std::vector< std::vector<std::vector<vector_ptrtype> > > F;
+        return boost::make_tuple( M , A , F );
+    }
+    affine_decomposition_type computeAffineDecomposition( mpl::bool_<false> )
+    {
+        std::vector< std::vector<sparse_matrix_ptrtype> > A;
+        std::vector< std::vector<std::vector<vector_ptrtype> > > F;
+        return boost::make_tuple( A , F );
+    }
+
+    virtual affine_decomposition_light_type computeAffineDecompositionLight()
+    {
+        return computeAffineDecompositionLight( mpl::bool_< is_time_dependent >() );
+    }
+    affine_decomposition_light_type computeAffineDecompositionLight( mpl::bool_<true> )
+    {
+        std::vector< sparse_matrix_ptrtype > M;
+        std::vector< sparse_matrix_ptrtype > A;
+        std::vector< std::vector<vector_ptrtype> > F;
+        return boost::make_tuple( M , A , F );
+    }
+    affine_decomposition_light_type computeAffineDecompositionLight( mpl::bool_<false> )
+    {
+        std::vector< sparse_matrix_ptrtype> A;
+        std::vector< std::vector<vector_ptrtype> > F;
+        return boost::make_tuple( A , F );
+    }
+
+    virtual betaq_type computeBetaQ( parameter_type const& mu ,  double time=0 )
+    {
+        betaq_type dummy;
+        return dummy;
+    }
+
+    virtual betaqm_type computeBetaQm( parameter_type const& mu ,  double time=0 )
+    {
+        betaqm_type dummy;
+        return dummy;
+    }
+
+    //this function is not called bdf() to not interfere with bdf constructor
+    virtual bdf_ptrtype bdfModel()
+    {
+        if( is_time_dependent )
+        {
+            if( Environment::worldComm().isMasterRank() )
+            {
+                std::cout<<"*******************************************************************"<<std::endl;
+                std::cout<<"** Error ! You have implemented a transient problem but you      **"<<std::endl;
+                std::cout<<"** forgot to implement bdfModel() function that returns your bdf **"<<std::endl;
+                std::cout<<"*******************************************************************"<<std::endl;
+            }
+            bool go=false;
+            CHECK( go );
+        }
+        bdf_ptrtype dummy_bdf;
+        return dummy_bdf;
+    }
+
+    //initialize the field for transient problems
+    virtual void initializationField( element_ptrtype& initial_field,parameter_type const& mu )
+    {
+        initial_field->setZero();
+    }
+
+
+    //for linear models, beta coefficients don't depend on solution u
+    //so the user doesn't have to specify this function
+    virtual betaqm_type computeBetaQm( element_type const& u, parameter_type const& mu ,  double time=0 )
+    {
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<"****************************************************************"<<std::endl;
+            std::cout<<"** You are using the function computeBetaQm( u , mu ) whereas **"<<std::endl;
+            std::cout<<"** your model has only implemented computeBetaQm( mu )        **"<<std::endl;
+            std::cout<<"****************************************************************"<<std::endl;
+        }
+        betaqm_type dummy_beta_coeff;
+        return dummy_beta_coeff;
+    }
+
+
+
+    /**
+     * By default reference parameters are min parameters
+     * If the user needs to specify them
+     * then this function should returns true
+     */
+    virtual bool referenceParametersGivenByUser()
+    {
+        return false;
+    }
+    virtual parameter_type refParameter()
+    {
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<"**************************************************************************************************"<<std::endl;
+            std::cout<<"** You want to specify reference parameters because referenceParametersGivenByUser returns true **"<<std::endl;
+            std::cout<<"** your must impelement the function refParameter() !                                           **"<<std::endl;
+            std::cout<<"**************************************************************************************************"<<std::endl;
+        }
+        bool go=false;
+        CHECK( go );
+        parameter_type muref;
+        return muref;
+    }
 
     //for linear steady models, mass matrix does not exist
     //non-linear steady models need mass matrix for the initial guess
@@ -206,21 +413,18 @@ public :
 
 
 
-     /**
-     * returns the scalar product used fior mass matrix ( to solve eigen values problem )
-     * of the boost::shared_ptr vector x and boost::shared_ptr vector
-     * Transient models need to implement these functions.
+    /**
+     * solve the model for a given parameter \p mu
+     * linear models don't need to provide this fuction
+     * but non-linear : yes
+     * and also those using CRBTrilinear
      */
-    virtual double scalarProductForMassMatrix( vector_ptrtype const& X, vector_ptrtype const& Y )
+    virtual element_type solve( parameter_type const& mu )
     {
-        throw std::logic_error("Your model is time-dependant so you MUST implement scalarProductForMassMatrix function");
-        return 0;
+        element_type solution;
+        return solution;
     }
-    virtual double scalarProductForMassMatrix( vector_type const& x, vector_type const& y )
-    {
-        throw std::logic_error("Your model is time-dependant so you MUST implement scalarProductForMassMatrix function");
-        return 0;
-    }
+
 
     /**
      * inner product for mass matrix
@@ -236,6 +440,37 @@ public :
         throw std::logic_error("Your model is time-dependant so you MUST implement innerProductForMassMatrix function");
         return M;
     }
+
+    virtual sparse_matrix_ptrtype const& innerProductForPod () const
+    {
+        throw std::logic_error("Your model is time-dependant so you MUST implement innerProductForPod function");
+        return M;
+    }
+    virtual sparse_matrix_ptrtype innerProductForPod ()
+    {
+        throw std::logic_error("Your model is time-dependant so you MUST implement innerProductForPod function");
+        return M;
+    }
+
+
+    /*
+     * If the model is nonlinear and then need to implement an initial guess
+     * it has to implement it !
+     * Here is just a code to compile if model is a linear model.
+     */
+    virtual std::vector< std::vector< element_ptrtype > >
+    computeInitialGuessAffineDecomposition()
+    {
+        std::vector< std::vector<element_ptrtype> > q;
+        q.resize(1);
+        q[0].resize(1);
+        auto mesh = mesh_type::New();
+        auto Xh=space_type::New( mesh );
+        element_ptrtype elt ( new element_type ( Xh ) );
+        q[0][0] = elt;
+        return q;
+    }
+
 
     void partitionMesh( std::string mshfile , std::string target , int dimension, int order )
     {
@@ -263,6 +498,11 @@ public :
         Eigen::MatrixXf::Index index;
         Eigen::VectorXd square;
 
+        std::ofstream file;
+        std::string filename="OnlineStatistics-"+name;
+
+        file.open( filename , std::ios::app );
+
         if( vector.size() > 0 )
         {
             bool force = option("eim.use-dimension-max-functions").template as<bool>();
@@ -272,11 +512,6 @@ public :
 
             int N = vector.size();
 
-            if( force )
-                LOG( INFO ) <<" statistics  for "<<name<<" (  was called "<< N << " times with "<<Neim<<" basis functions )";
-            else
-                LOG( INFO ) <<" statistics  for "<<name<<" (  was called "<< N << " times )";
-
             min = vector.minCoeff(&index);
             max = vector.maxCoeff(&index);
             mean = vector.mean();
@@ -284,7 +519,22 @@ public :
             square  = vector.array().pow(2);
             mean2 = square.mean();
             standard_deviation = math::sqrt( mean2 - mean1 );
-            LOG(INFO)<<"min : "<<min<<" - max : "<<max<<" mean : "<<mean<<" standard deviation : "<<standard_deviation;
+
+            if( Environment::worldComm().isMasterRank() )
+            {
+                if( force )
+                {
+                    std::cout<<"statistics  for "<<name<<" (  was called "<< N << " times with "<<Neim<<" basis functions )"<<std::endl;
+                    file <<" statistics  for "<<name<<" (  was called "<< N << " times with "<<Neim<<" basis functions )\n";
+                }
+                else
+                {
+                    std::cout<<" statistics  for "<<name<<" (  was called "<< N << " times )"<<std::endl;
+                    file <<" statistics  for "<<name<<" (  was called "<< N << " times )\n";
+                }
+                std::cout<<"min : "<<min<<" - max : "<<max<<" mean : "<<mean<<" standard deviation : "<<standard_deviation<<"  (see "<<filename<<")"<<std::endl;
+                file<<"min : "<<min<<" - max : "<<max<<" mean : "<<mean<<" standard deviation : "<<standard_deviation<<"\n";
+            }
         }
         vectorN_type result(4);
         result(0)=min;
@@ -489,6 +739,26 @@ public :
 
         file_outputs_geo_gmsh<<conclude;
         file_outputs_geo_gmsh.close();
+    }
+
+
+    /**
+     * specific interface for OpenTURNS
+     *
+     * \param X input vector of size N
+     * \param N size of input vector X
+     * \param Y input vector of size P
+     * \param P size of input vector Y
+     */
+    virtual void run( const double * X, unsigned long N, double * Y, unsigned long P )
+    {
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<"**************************************************"<<std::endl;
+            std::cout<<"** You are using the function run whereas       **"<<std::endl;
+            std::cout<<"** your model has not implemented this function **"<<std::endl;
+            std::cout<<"**************************************************"<<std::endl;
+        }
     }
 
 protected :

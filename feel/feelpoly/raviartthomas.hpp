@@ -57,6 +57,7 @@
 #include <feel/feelpoly/functionals2.hpp>
 #include <feel/feelpoly/quadpoint.hpp>
 #include <feel/feelpoly/fe.hpp>
+#include <feel/feelpoly/hdivpolynomialset.hpp>
 
 #include <feel/feelvf/vf.hpp>
 
@@ -92,6 +93,7 @@ struct times_x
     int M_c;
 };
 
+#if 0
 template< class T >
 struct extract_all_poly_indices
 {
@@ -106,6 +108,8 @@ struct extract_all_poly_indices
         return start++;
     }
 };
+#endif
+
 }// detail
 
 template<uint16_type N,
@@ -431,6 +435,7 @@ class RaviartThomas
 public FiniteElement<RaviartThomasPolynomialSet<N, O, T, Convex>,
     fem::detail::RaviartThomasDual,
     PointSetEquiSpaced >,
+public HDivPolynomialSet,
 public boost::enable_shared_from_this<RaviartThomas<N,O,T,Convex> >
 {
     typedef FiniteElement<RaviartThomasPolynomialSet<N, O, T, Convex>,
