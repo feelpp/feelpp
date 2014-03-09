@@ -24,7 +24,7 @@
 */
 
 #include <feel/feelalg/backend.hpp>
-#include <feel/feeldiscr/bdf.hpp>
+#include <feel/feelts/bdf.hpp>
 #include <feel/feeldiscr/pch.hpp>
 
 #include <feel/feelfilters/loadmesh.hpp>
@@ -34,7 +34,7 @@
 #include <feel/feelvf/integrate.hpp>
 #include <feel/feelvf/form.hpp>
 #include <feel/feelvf/operators.hpp>
-#include <feel/feelvf/ppoperators.hpp>
+#include <feel/feelvf/operations.hpp>
 #include <feel/feelvf/measure.hpp>
 #include <feel/feelvf/mean.hpp>
 
@@ -231,7 +231,7 @@ HeatSink<Dim,Order>::HeatSink()
     mesh = loadMesh( _mesh = new mesh_type );
 
     // build exporter
-    M_exporter = exporter( _mesh=mesh, _geo=EXPORTER_GEOMETRY_STATIC );
+    M_exporter = exporter( _mesh=mesh, _geo="static" );
 
     /// [marker2]
     /*
