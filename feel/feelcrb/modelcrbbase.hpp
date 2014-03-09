@@ -133,6 +133,7 @@ public :
     typedef double value_type;
 
     typedef typename FunctionSpaceDefinition::mesh_type mesh_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef typename mpl::if_< mpl::bool_< is_time_dependent >,
                                boost::tuple<
@@ -682,6 +683,55 @@ public :
 
         }//master proc
     }//end of function
+
+
+    /*
+     * \param comp0 and comp1: changing components
+     * \param min : minimum parameter
+     * \param min : maximum parameter
+     * \param nb : number of points in each direction
+     */
+    gmsh_ptrtype createStructuredGrid( int comp0, int comp1 ,parameter_type const& min, parameter_type const& max, int nb )
+    {
+        double min0 = min(comp0);
+        double min1 = min(comp1);
+        double max0 = max(comp0);
+        double max1 = max(comp1);
+
+        gmsh_ptrtype gmshp( new Gmsh );
+        std::ostringstream ostr;
+
+        //we want that each cell created here will be a cell of the mesh
+        //so we take a large hsize
+        int hsize=1;
+        int p=1;
+        ostr <<"min0 = "<<min0<<";\n"
+             <<"max0 = "<<max0<<";\n"
+             <<"min1 = "<<min1<<";\n"
+             <<"max1 = "<<max1<<";\n"
+             <<"Point (1) = { min0, min1, 0, hsize };\n"
+             <<"Point (2) = { max0, min1, 0, hsize };\n"
+             <<"Point (3) = { max0, max1, 0, hsize };\n"
+             <<"Point (4) = { min0, max1, 0, hsize };\n"
+             <<"Line (1) = { 1 , 2 };\n"
+             <<"Line (2) = { 2 , 3 };\n"
+             <<"Line (3) = { 3 , 4 };\n"
+             <<"Line (4) = { 4 , 1 };\n"
+             <<"Line Loop (1) = {1,2,3,4};\n"
+             <<"Plane Surface (100) = {1};\n"
+             <<"Transfinite Line{1,-3} = "<<nb<<";\n"
+             <<"Transfinite Line{2,-4} = "<<nb<<";\n"
+             <<"Transfinite Surface{100} = {1,2,3,4};\n"
+             <<"Physical Surface (\"Omega\") = {100};\n"
+            ;
+
+        std::ostringstream nameStr;
+        nameStr.precision( 3 );
+        nameStr << "StructuredGrid";
+        gmshp->setPrefix( nameStr.str() );
+        gmshp->setDescription( ostr.str() );
+        return gmshp;
+    }
 
     /*
      * \param filename : name of the file to be generated
