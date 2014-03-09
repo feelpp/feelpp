@@ -9,6 +9,8 @@
 
    \subsection changes0970 Changes
 
+   - Improve documentation, see <a
+     href="https://github.com/feelpp/feelpp/issues/300">#300</a>
    - Massive reorganisation of headers and files
    - Propose an alternative handling of header file: rather than having
      everything in one header file, include only the necessary header files
@@ -22,6 +24,7 @@
 
    \subsection features0970 Features
 
+   - Support Eigen3 to latest stable release 3.2.1
    - Support <a href="http://onelab.info/">OneLab</a> which enables a graphical
      interface through Gmsh, see <a href="https://github.com/feelpp/feelpp/issues/64">#64</a>
    - Support for discontinuous galerkin as well as internal face
