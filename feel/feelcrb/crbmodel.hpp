@@ -2020,6 +2020,11 @@ public:
         return M_model->generateGeoFileForOutputPlot( outputs, parameter, estimated_error );
     }
 
+    gmsh_ptrtype createStructuredGrid( int comp0, int comp1 ,parameter_type const& min, parameter_type const& max, int nb )
+    {
+        return M_model->createStructuredGrid( comp0, comp1, min , max , nb );
+    }
+
     void writeConvergenceStatistics( std::vector< vectorN_type > const& vector, std::string filename )
     {
         return M_model->writeConvergenceStatistics( vector, filename );
