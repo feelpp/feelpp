@@ -11,7 +11,7 @@ namespace Feel
    - \subpage BuildingP
    - \subpage DocCmakeLists
    - \subpage FirstApp
-   - \subpage md_FAQ
+   - \subpage FAQ
 */
 
 
@@ -23,6 +23,7 @@ namespace Feel
    - \subpage Integrals
    - \subpage Projection
    - \subpage Forms
+   - \subpage Solver
    - \subpage Exporter
 */
 
