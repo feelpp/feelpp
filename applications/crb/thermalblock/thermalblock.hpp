@@ -821,7 +821,7 @@ ThermalBlock::initModel()
     else
     {
 
-        bool load_mesh_already_partitioned=option(_name="load-mesh-already-partitioned").template as<bool>();
+        bool load_mesh_already_partitioned=option(_name="load-mesh-already-partitioned") as<bool>();
         if( ! load_mesh_already_partitioned )
         {
             int N = Environment::worldComm().globalSize();

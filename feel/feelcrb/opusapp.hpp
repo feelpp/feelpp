@@ -116,6 +116,7 @@ public:
     typedef CRBModel<ModelType> crbmodelbilinear_type;
 
     typedef typename ModelType::parameter_type parameter_type;
+    typedef typename ModelType::mesh_type mesh_type;
     typedef std::vector< parameter_type > vector_parameter_type;
 
     typedef typename crb_type::sampling_ptrtype sampling_ptrtype;
@@ -426,6 +427,7 @@ public:
             int number_str=str.size();
             CHECK( number_str < 4 )<<"Error when using option crb.vary-only-parameter-components, at maximum we can vary 2 components of the parameter";
             int vary_mu_comp0=-1,vary_mu_comp1=-1;
+            int vary_mu_size;
             if( number_str > 1 )
             {
                 Sampling->clear();
@@ -437,15 +439,17 @@ public:
                 if( number_str == 2 )
                 {
                     vary_mu_comp0 = boost::lexical_cast<int>( str[0] );
-                    size = boost::lexical_cast<int>( str[1] );
-                    run_sampling_size=size;
+                    vary_mu_size=size=boost::lexical_cast<int>( str[1] );
+                    run_sampling_size=vary_mu_size;
                 }
                 else
                 {
                     vary_mu_comp0 = boost::lexical_cast<int>( str[0] );
                     vary_mu_comp1 = boost::lexical_cast<int>( str[1] );
-                    size = boost::lexical_cast<int>( str[2] );
-                    run_sampling_size=size*size;
+                    std::cout<<"[debug OpusApp] vary_mu_comp0 : "<<vary_mu_comp0<<" et vary_mu_comp1 : "<<vary_mu_comp1<<std::endl;
+                    vary_mu_size=size=boost::lexical_cast<int>( str[2] );
+                    run_sampling_size=vary_mu_size*vary_mu_size;
+                    std::cout<<"[debug OpusApp] run sampling size : "<<run_sampling_size<<std::endl;
                 }
 
                 parameter_type user_mu ( model->parameterSpace() );
@@ -459,12 +463,19 @@ public:
                 std::vector< int > sampling_each_direction ( mu_size );
                 for(int i=0; i<mu_size; i++)
                 {
-                    if( i == vary_mu_comp0 || i == vary_mu_comp1 )
+                    //if( i == vary_mu_comp0 || i == vary_mu_comp1 )
+                    if( i == vary_mu_comp0  )
                         sampling_each_direction[i]=size;
                     else
                         sampling_each_direction[i]=0;
                 }
-                Sampling->logEquidistributeProduct( sampling_each_direction );
+                //The sampling is generated only if only one parameter vary
+                //else we build a grid to plot the surface
+                //so parameters values depend on the localization on the grid
+                if( vary_mu_comp1 == -1 )
+                {
+                    Sampling->logEquidistributeProduct( sampling_each_direction );
+                }
                 sampling_is_already_generated=true;
             }
 
@@ -881,6 +892,7 @@ public:
                                     mu0_storage(curpar-1)=mu0;
                                     estimated_error_outputs_storage(curpar-1)=output_estimated_error;
                                 }
+
 
                                 if ( compute_fem )
                                 {
@@ -1436,7 +1448,43 @@ public:
                 }
             }
 
-            model->generateGeoFileForOutputPlot( outputs_storage , mu0_storage, estimated_error_outputs_storage );
+            //generate geo file only if user make vary parameters
+            if( vary_mu_comp1 == -1 )
+            {
+                model->generateGeoFileForOutputPlot( outputs_storage , mu0_storage, estimated_error_outputs_storage );
+            }
+            if( vary_mu_comp0 > -1 && vary_mu_comp1 > -1 )
+            {
+                CHECK( Environment::worldComm().globalSize() == 1 )<<"implemented only in sequential (because of dof filling)\n";
+                typename crb_type::sampling_ptrtype S( new typename crb_type::sampling_type( model->parameterSpace() ) );
+                bool all_procs_have_same_sampling=true;
+                S->equidistribute( 2 , all_procs_have_same_sampling );
+                auto min = S->min().template get<0>();
+                auto max = S->max().template get<0>();
+                auto mesh = createGMSHMesh( _mesh=new mesh_type,
+                                            _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
+                                            _desc = model->createStructuredGrid( vary_mu_comp0, vary_mu_comp1, min, max, vary_mu_size ) );
+                auto Vh = Pch<1>( mesh );
+                auto px = project(_space=Vh, _expr=Px() );
+                auto py = project(_space=Vh, _expr=Py() );
+                int ndof=Vh->nDof();
+                auto u = Vh->element();
+                parameter_type mu ( model->parameterSpace() );
+                for(int i=0; i<ndof; i++)
+                {
+                    double mux=px(i);
+                    double muy=py(i);
+                    mu=min;//first, initialize all components at minimum
+                    mu( vary_mu_comp0 ) = mux;
+                    mu( vary_mu_comp1 ) = muy;
+                    auto run = crb->run( mu,  option(_name="crb.online-tolerance").template as<double>() );
+                    double output=run.template get<0>();
+                    u(i)=output;
+                }
+                auto exp = exporter( _mesh=mesh );
+                exp->add( "response surface", u );
+                exp->save();
+            }
 
             //model->computationalTimeEimStatistics();
             if( export_solution )
