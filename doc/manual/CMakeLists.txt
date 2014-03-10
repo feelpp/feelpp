@@ -69,15 +69,16 @@ TODAY(THEDATE)
 
 FILE(GLOB TUTO_DOC_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} tutorial/*.tex)
 
-add_latex_document(feelpp-manual.tex
+CONFIGURE_FILE(tex/version.tex.in  tex/version.tex  @ONLY)
+
+add_latex_document(tex/feelpp-manual.tex
   INPUTS
   ${TUTO_DOC_FILES}
   nonlinear/nonlinear.tex
   heatns/natural-convection-2d.tex
-  heat/heatsink.tex
   dd/dd.tex
   maxwell/maxwell.tex
-  randomnotes.tex gfdl.tex howto.tex version.tex ${CPPFILES} ${STYFILES}
+  tex/randomnotes.tex tex/gfdl.tex tex/howto.tex tex/version.tex ${CPPFILES} ${STYFILES}
   BIBFILES
   ../biblio/feelpp-manual.bib
   ../biblio/feelpp.bib
