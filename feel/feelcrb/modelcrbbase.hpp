@@ -686,41 +686,53 @@ public :
 
 
     /*
-     * \param comp0 and comp1: changing components
-     * \param min : minimum parameter
-     * \param min : maximum parameter
-     * \param nb : number of points in each direction
+     * \param components_vary : vector of indices for components vary
+     * \param extremums : vector containing min and max parameters valuers
+     * \param cuttings : vector containing the cutting in each direction + time initial and time final and time step used
+     * \param time_vary : (bool) the time vary if true
      */
-    gmsh_ptrtype createStructuredGrid( int comp0, int comp1 ,parameter_type const& min, parameter_type const& max, int nb )
+    gmsh_ptrtype createStructuredGrid( std::vector<int> components_vary, std::vector<parameter_type> extremums, std::vector<int> cuttings,
+                                       std::vector<double> time_cuttings, bool time_vary)
     {
-        double min0 = min(comp0);
-        double min1 = min(comp1);
-        double max0 = max(comp0);
-        double max1 = max(comp1);
-
+        auto min=extremums[0];
+        auto max=extremums[1];
+        double min0 = min(components_vary[0]);
+        double min1 = min(components_vary[1]);
+        double max0 = max(components_vary[0]);
+        double max1 = max(components_vary[1]);
+        double Ti=time_cuttings[0];
+        double Tf=time_cuttings[1];
+        double dt=time_cuttings[2];
+        int nb0=cuttings[0];
+        int nb1=cuttings[1];
+        if( time_vary )
+        {
+            nb0=(Tf-Ti)/dt;
+            min0=Ti;
+            max0=Tf;
+        }
         gmsh_ptrtype gmshp( new Gmsh );
         std::ostringstream ostr;
 
         //we want that each cell created here will be a cell of the mesh
         //so we take a large hsize
-        int hsize=1;
         int p=1;
         ostr <<"min0 = "<<min0<<";\n"
              <<"max0 = "<<max0<<";\n"
              <<"min1 = "<<min1<<";\n"
              <<"max1 = "<<max1<<";\n"
-             <<"Point (1) = { min0, min1, 0, hsize };\n"
-             <<"Point (2) = { max0, min1, 0, hsize };\n"
-             <<"Point (3) = { max0, max1, 0, hsize };\n"
-             <<"Point (4) = { min0, max1, 0, hsize };\n"
+             <<"Point (1) = { min0, min1, 1, hsize };\n"
+             <<"Point (2) = { max0, min1, 1, hsize };\n"
+             <<"Point (3) = { max0, max1, 1, hsize };\n"
+             <<"Point (4) = { min0, max1, 1, hsize };\n"
              <<"Line (1) = { 1 , 2 };\n"
              <<"Line (2) = { 2 , 3 };\n"
              <<"Line (3) = { 3 , 4 };\n"
              <<"Line (4) = { 4 , 1 };\n"
              <<"Line Loop (1) = {1,2,3,4};\n"
              <<"Plane Surface (100) = {1};\n"
-             <<"Transfinite Line{1,-3} = "<<nb<<";\n"
-             <<"Transfinite Line{2,-4} = "<<nb<<";\n"
+             <<"Transfinite Line{1,-3} = "<<nb0<<";\n"
+             <<"Transfinite Line{2,-4} = "<<nb1<<";\n"
              <<"Transfinite Surface{100} = {1,2,3,4};\n"
              <<"Physical Surface (\"Omega\") = {100};\n"
             ;
