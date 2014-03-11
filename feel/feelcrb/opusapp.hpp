@@ -428,6 +428,7 @@ public:
             CHECK( number_str < 4 )<<"Error when using option crb.vary-only-parameter-components, at maximum we can vary 2 components of the parameter";
             int vary_mu_comp0=-1,vary_mu_comp1=-1;
             int vary_mu_size;
+            bool vary_comp_time=false;
             if( number_str > 1 )
             {
                 Sampling->clear();
@@ -438,18 +439,21 @@ public:
                 //here only one component vary
                 if( number_str == 2 )
                 {
-                    vary_mu_comp0 = boost::lexical_cast<int>( str[0] );
-                    vary_mu_size=size=boost::lexical_cast<int>( str[1] );
-                    run_sampling_size=vary_mu_size;
+                    if( str[0] == "t" )
+                    {
+                        vary_comp_time=true;
+                    }
+                    else
+                    {
+                        vary_mu_comp0 = boost::lexical_cast<int>( str[0] );
+                    }
+                    vary_mu_size =boost::lexical_cast<int>( str[1] );
                 }
                 else
                 {
                     vary_mu_comp0 = boost::lexical_cast<int>( str[0] );
                     vary_mu_comp1 = boost::lexical_cast<int>( str[1] );
-                    std::cout<<"[debug OpusApp] vary_mu_comp0 : "<<vary_mu_comp0<<" et vary_mu_comp1 : "<<vary_mu_comp1<<std::endl;
-                    vary_mu_size=size=boost::lexical_cast<int>( str[2] );
-                    run_sampling_size=vary_mu_size*vary_mu_size;
-                    std::cout<<"[debug OpusApp] run sampling size : "<<run_sampling_size<<std::endl;
+                    vary_mu_size = boost::lexical_cast<int>( str[2] );
                 }
 
                 parameter_type user_mu ( model->parameterSpace() );
@@ -459,23 +463,7 @@ public:
                 {
                     CHECK( vary_mu_comp1 < mu_size )<<"[OpusApp] error using crb.vary-only-parameter-components, the component "<<vary_mu_comp1<<" can't vary because parameter have a total of only "<<mu_size<<" components\n";
                 }
-
-                std::vector< int > sampling_each_direction ( mu_size );
-                for(int i=0; i<mu_size; i++)
-                {
-                    //if( i == vary_mu_comp0 || i == vary_mu_comp1 )
-                    if( i == vary_mu_comp0  )
-                        sampling_each_direction[i]=size;
-                    else
-                        sampling_each_direction[i]=0;
-                }
-                //The sampling is generated only if only one parameter vary
-                //else we build a grid to plot the surface
-                //so parameters values depend on the localization on the grid
-                if( vary_mu_comp1 == -1 )
-                {
-                    Sampling->logEquidistributeProduct( sampling_each_direction );
-                }
+                //the sampling will b generated latter
                 sampling_is_already_generated=true;
             }
 
@@ -585,10 +573,6 @@ public:
             }
 
             std::ofstream file_summary_of_simulations( ( boost::format( "summary_of_simulations_%d" ) %dim ).str().c_str() ,std::ios::out | std::ios::app );
-
-            vectorN_type outputs_storage( run_sampling_size );
-            vectorN_type mu0_storage( run_sampling_size );
-            vectorN_type estimated_error_outputs_storage( run_sampling_size );
 
             int curpar = 0;
 
@@ -879,20 +863,16 @@ public:
                                 element_type u_dual_fem ;
 
                                 auto all_upper_bounds = o.template get<6>();
-                                double output_estimated_error = all_upper_bounds.template get<0>();
+                                auto vector_output_estimated_error = all_upper_bounds.template get<0>();
+                                int last_time = vector_output_estimated_error.size()-1;
+                                //output estimated error for last time
+                                double output_estimated_error = vector_output_estimated_error[ last_time ];
                                 double solution_estimated_error = all_upper_bounds.template get<1>();
                                 double dual_solution_estimated_error = all_upper_bounds.template get<2>();
 
-                                double ocrb = o.template get<0>();
-                                if( vary_mu_comp0 > -1 )
-                                {
-                                    double x = mu(vary_mu_comp0);
-                                    double mu0 = mu(vary_mu_comp0);
-                                    outputs_storage(curpar-1)=ocrb;
-                                    mu0_storage(curpar-1)=mu0;
-                                    estimated_error_outputs_storage(curpar-1)=output_estimated_error;
-                                }
-
+                                auto output_vector=o.template get<0>();
+                                double output_vector_size=output_vector.size();
+                                double ocrb = output_vector[output_vector_size-1];//output at last time
 
                                 if ( compute_fem )
                                 {
@@ -959,7 +939,9 @@ public:
 
                                 if ( crb->errorType()==2 )
                                 {
-                                    double ocrb = o.template get<0>();
+                                    auto output_vector=o.template get<0>();
+                                    double output_vector_size=output_vector.size();
+                                    double ocrb = output_vector[output_vector_size-1];//output at last time
                                     std::vector<double> v = boost::assign::list_of( output_fem )( time_fem )( ocrb )( relative_estimated_error )( time_crb )( relative_error )( condition_number )( l2_error )( h1_error );
                                     if( proc_number == Environment::worldComm().masterRank() )
                                     {
@@ -987,7 +969,10 @@ public:
                                 {
                                     //if( ! boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value )
                                     //    throw std::logic_error( "ERROR TYPE must be 2 when using CRBTrilinear (no error estimation)" );
-                                    double ocrb = o.template get<0>();
+
+                                    auto output_vector=o.template get<0>();
+                                    double output_vector_size=output_vector.size();
+                                    double ocrb = output_vector[output_vector_size-1];//output at last time
                                     std::vector<double> v = boost::assign::list_of( output_fem )( time_fem )( ocrb )( output_estimated_error )( ti.elapsed() ) ( relative_estimated_error )( condition_number )( l2_error )( h1_error ) ;
                                     if( proc_number == Environment::worldComm().masterRank() )
                                     {
@@ -1083,7 +1068,9 @@ public:
                                     for( int N = 1; N <= Nmax ; N++ )
                                     {
                                         auto o= crb->run( mu,  online_tol , N, print_rb_matrix);
-                                        auto ocrb = o.template get<0>();
+                                        auto output_vector=o.template get<0>();
+                                        double output_vector_size=output_vector.size();
+                                        double ocrb = output_vector[output_vector_size-1];//output at last time
                                         auto solutions=o.template get<2>();
                                         auto u_crb = solutions.template get<0>();
                                         auto u_crb_du = solutions.template get<1>();
@@ -1100,8 +1087,12 @@ public:
                                             u_dual_error = u_dual_fem - uNdu;
                                         }
 
+
                                         auto all_upper_bounds = o.template get<6>();
-                                        output_estimated_error = all_upper_bounds.template get<0>();
+                                        auto vector_output_estimated_error = all_upper_bounds.template get<0>();
+                                        int last_time = vector_output_estimated_error.size()-1;
+                                        //output estimated error for last time
+                                        output_estimated_error = vector_output_estimated_error[ last_time ];
                                         solution_estimated_error = all_upper_bounds.template get<1>();
                                         dual_solution_estimated_error = all_upper_bounds.template get<2>();
 
@@ -1371,21 +1362,30 @@ public:
                                 boost::mpi::timer ti;
                                 ti.restart();
                                 auto o = crb->run( mu,  option(_name="crb.online-tolerance").template as<double>() );
+                                auto output_vector=o.template get<0>();
+                                double output_vector_size=output_vector.size();
+                                double ocrb = output_vector[output_vector_size-1];//output at last time
 
                                 if ( crb->errorType()==2 )
                                     {
-                                        std::vector<double> v = boost::assign::list_of( o.template get<0>() )( ti.elapsed() );
-                                        std::cout << "output=" << o.template get<0>() << " with " << o.template get<1>() << " basis functions\n";
+                                        std::vector<double> v = boost::assign::list_of( ocrb )( ti.elapsed() );
+                                        std::cout << "output=" << ocrb << " with " << o.template get<1>() << " basis functions\n";
                                         printEntry( ostr, mu, v );
                                     }
 
                                 else
                                     {
                                         auto all_upper_bounds = o.template get<6>();
-                                        double output_estimated_error = all_upper_bounds.template get<0>();
+                                        auto vector_output_estimated_error = all_upper_bounds.template get<0>();
+                                        int last_time = vector_output_estimated_error.size()-1;
+                                        //output estimated error for last time
+                                        double output_estimated_error = vector_output_estimated_error[ last_time ];
                                         double relative_estimated_error = output_estimated_error / output_fem;
-                                        std::vector<double> v = boost::assign::list_of( o.template get<0>() )( output_estimated_error )( ti.elapsed() );
-                                        std::cout << "output=" << o.template get<0>() << " with " << o.template get<1>() <<
+                                        auto output_vector = o.template get<0>();
+                                        double output_vector_size = output_vector.size();
+                                        double output = output_vector[ output_vector_size ];
+                                        std::vector<double> v = boost::assign::list_of( output )( output_estimated_error )( ti.elapsed() );
+                                        std::cout << "output=" << ocrb << " with " << o.template get<1>() <<
                                             " basis functions  (relative error estimation on this output : " << relative_estimated_error<<") \n";
                                         printEntry( ostr, mu, v );
                                     }
@@ -1448,13 +1448,82 @@ public:
                 }
             }
 
-            //generate geo file only if user make vary parameters
-            if( vary_mu_comp1 == -1 )
+            //one parameter change : plot
+            if( vary_mu_comp0 > -1 || vary_comp_time )
             {
+                parameter_type user_mu ( model->parameterSpace() );
+                double mu_size = user_mu.size();
+                std::vector< int > sampling_each_direction ( mu_size );
+                for(int i=0; i<mu_size; i++)
+                {
+                    if( i == vary_mu_comp0  )
+                        sampling_each_direction[i]=vary_mu_size;
+                    else
+                        sampling_each_direction[i]=0;
+                }
+
+                int N =  option(_name="crb.dimension").template as<int>();
+                double online_tol = option(_name="crb.online-tolerance").template as<double>();
+
+                vectorN_type outputs_storage;
+                vectorN_type mu0_storage;
+                vectorN_type estimated_error_outputs_storage;
+                curpar=1;
+                if( ! vary_comp_time )
+                {
+                    outputs_storage.resize( vary_mu_size );
+                    mu0_storage.resize( vary_mu_size );
+                    estimated_error_outputs_storage.resize( vary_mu_size );
+                    Sampling->logEquidistributeProduct( sampling_each_direction );
+                    BOOST_FOREACH( auto mu, *Sampling )
+                    {
+                        double x = mu(vary_mu_comp0);
+                        double mu0 = mu(vary_mu_comp0);
+                        auto o = crb->run( mu,  online_tol , N);
+                        auto output_vector=o.template get<0>();
+                        double output_vector_size=output_vector.size();
+                        double ocrb = output_vector[output_vector_size-1];//output at last time
+                        auto all_upper_bounds = o.template get<6>();
+                        auto vector_output_estimated_error = all_upper_bounds.template get<0>();
+                        int last_time = vector_output_estimated_error.size()-1;
+                        //output estimated error for last time
+                        double output_estimated_error = vector_output_estimated_error[ last_time ];
+                        outputs_storage(curpar-1)=ocrb;
+                        mu0_storage(curpar-1)=mu0;
+                        estimated_error_outputs_storage(curpar-1)=output_estimated_error;
+                        curpar++;
+                    }
+                }
+                else
+                {
+                    //have min/max
+                    Sampling->equidistribute( 2 );
+                    auto mu=Sampling->min().template get<0>();
+                    auto o = crb->run( mu,  online_tol , N);
+                    auto output_vector=o.template get<0>();
+                    auto all_upper_bounds = o.template get<6>();
+                    auto vector_output_estimated_error = all_upper_bounds.template get<0>();
+                    int size=output_vector.size();
+                    outputs_storage.resize( size );
+                    mu0_storage.resize( size );
+                    estimated_error_outputs_storage.resize( size );
+                    double dt = model->timeStep();
+                    double time=0;
+                    for(int i=0; i<size; i++)
+                    {
+                        mu0_storage(i)=time;
+                        outputs_storage(i)=output_vector[i];
+                        estimated_error_outputs_storage(i)=vector_output_estimated_error[i];
+                        time+=dt;
+                    }
+                }
                 model->generateGeoFileForOutputPlot( outputs_storage , mu0_storage, estimated_error_outputs_storage );
             }
+            //two parameters change : response surface
             if( vary_mu_comp0 > -1 && vary_mu_comp1 > -1 )
             {
+                int N =  option(_name="crb.dimension").template as<int>();
+                double online_tol = option(_name="crb.online-tolerance").template as<double>();
                 CHECK( Environment::worldComm().globalSize() == 1 )<<"implemented only in sequential (because of dof filling)\n";
                 typename crb_type::sampling_ptrtype S( new typename crb_type::sampling_type( model->parameterSpace() ) );
                 bool all_procs_have_same_sampling=true;
@@ -1477,8 +1546,10 @@ public:
                     mu=min;//first, initialize all components at minimum
                     mu( vary_mu_comp0 ) = mux;
                     mu( vary_mu_comp1 ) = muy;
-                    auto run = crb->run( mu,  option(_name="crb.online-tolerance").template as<double>() );
-                    double output=run.template get<0>();
+                    auto run = crb->run( mu,  online_tol, N );
+                    auto output_vector=run.template get<0>();
+                    double output_vector_size=output_vector.size();
+                    double output = output_vector[output_vector_size-1];//output at last time
                     u(i)=output;
                 }
                 auto exp = exporter( _mesh=mesh );
