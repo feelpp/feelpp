@@ -30,6 +30,7 @@
 #define FEELPP_DofFromElement_H 1
 
 #include <feel/feelpoly/hdivpolynomialset.hpp>
+#include <feel/feelpoly/hcurlpolynomialset.hpp>
 #include <feel/feeldiscr/dof.hpp>
 
 namespace Feel
@@ -257,7 +258,7 @@ private:
                 if ( __elt.edgePermutation( i ).value()  == edge_permutation_type::IDENTITY )
                 {
                     gDof += l ; // both nodal and modal case
-                    if ( is_hdiv_conforming<fe_type>::value )
+                    if ( is_hdiv_conforming<fe_type>::value || is_hcurl_conforming<fe_type>::value )
                     {
                         M_doftable->M_locglob_signs[ie][lc] = 1;
                     }
@@ -274,7 +275,7 @@ private:
                     }
                     else
                         gDof += fe_type::nDofPerEdge - 1 - l ;
-                    if ( is_hdiv_conforming<fe_type>::value )
+                    if ( is_hdiv_conforming<fe_type>::value || is_hcurl_conforming<fe_type>::value )
                     {
                         M_doftable->M_locglob_signs[ie][lc] = -1;
                     }
@@ -320,6 +321,10 @@ private:
                 if ( __elt.edgePermutation( i ).value()  == edge_permutation_type::IDENTITY )
                 {
                     gDof += l ; // both nodal and modal case
+                    if ( is_hcurl_conforming<fe_type>::value )
+                    {
+                        M_doftable->M_locglob_signs[ie][lc] = 1;
+                    }
                 }
 
                 else if ( __elt.edgePermutation( i ).value()  == edge_permutation_type::REVERSE_PERMUTATION )
@@ -331,9 +336,12 @@ private:
                         sign = ( l%2 )?( -1 ):( 1 );
                         gDof += l;
                     }
-
                     else
                         gDof += fe_type::nDofPerEdge - 1 - l ;
+                    if( is_hcurl_conforming<fe_type>::value )
+                    {
+                        M_doftable->M_locglob_signs[ie][lc] = -1;
+                    }
                 }
 
                 else
@@ -436,7 +444,7 @@ private:
                     if ( permutation  == face_permutation_type( 1 ) || fe_type::nDofPerFace == 1 )
                     {
                         gDof += l;
-                        if ( is_hdiv_conforming<fe_type>::value )
+                        if ( is_hdiv_conforming<fe_type>::value || is_hcurl_conforming<fe_type>::value )
                         {
                             M_doftable->M_locglob_signs[ie][l] = 1;
                         }
@@ -444,7 +452,7 @@ private:
                     else
                     {
                         gDof += M_doftable->vector_permutation[permutation][l];
-                        if ( is_hdiv_conforming<fe_type>::value )
+                        if ( is_hdiv_conforming<fe_type>::value || is_hcurl_conforming<fe_type>::value )
                         {
                             M_doftable->M_locglob_signs[ie][l] = -1;
                         }
