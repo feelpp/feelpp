@@ -898,7 +898,7 @@ public:
         auto e = delta( N, mu, uN, uNdu );
         auto output_vector=o.template get<0>();
         double output_vector_size=output_vector.size();
-        double output = output_vector[output_vector_size];
+        double output = output_vector[output_vector_size-1];
         return output + e.template get<0>();
     }
 
@@ -3913,11 +3913,11 @@ CRB<TruthModelType>::check( size_type N ) const
         auto tuple = lb( N, mu, uN, uNdu, uNold, uNduold );
         auto output_vector=tuple.template get<0>();
         double output_vector_size=output_vector.size();
-        double s = output_vector[output_vector_size];
+        double s = output_vector[output_vector_size-1];
         auto error_estimation = delta( N, mu, uN, uNdu , uNold, uNduold );
         auto vector_err = error_estimation.template get<0>();
         int size=vector_err.size();
-        double err = vector_err[size];
+        double err = vector_err[size-1];
 
 
 #if 0
@@ -5021,10 +5021,12 @@ CRB<TruthModelType>::delta( size_type N,
 
         int time_index=1;
         int shift=1;
+        int restart_time_index=1;
         if( M_model->isSteady() )
         {
             time_index=0;
             shift=0;
+            restart_time_index=0;
         }
 
         double primal_sum=0;
@@ -5061,9 +5063,10 @@ CRB<TruthModelType>::delta( size_type N,
 
         int global_time_index=0;
         output_upper_bound.resize(K+1);
+
         for(double output_time=0; math::abs(output_time-Tf-dt)>1e-9; output_time+=dt)
         {
-            time_index=1;
+            time_index=restart_time_index;
             if( accurate_apee )
             {
                 //in this case, we use a different way to compute primal_sum (i.e. square of dual norm of primal residual)
@@ -5234,8 +5237,8 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
                 //double _err = delta( N, mu, uN, uNdu, uNold, uNduold, k);
                 auto error_estimation = delta( N, mu, uN, uNdu, uNold, uNduold, k );
                 auto vector_err = error_estimation.template get<0>();
-                double size=vector_err.size();
-                double _err = vector_err[size];
+                int size=vector_err.size();
+                double _err = vector_err[size-1];
                 vect_delta_pr( k ) = error_estimation.template get<3>();
                 vect_delta_du( k ) = error_estimation.template get<4>();
                 err( k ) = _err;
@@ -5251,15 +5254,14 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
         {
             err.resize( M_WNmu_complement->size() );
             check_err.resize( M_WNmu_complement->size() );
-
             for ( size_type k = 0; k < M_WNmu_complement->size(); ++k )
             {
                 parameter_type const& mu = M_WNmu_complement->at( k );
                 lb( N, mu, uN, uNdu , uNold ,uNduold );
                 auto error_estimation = delta( N, mu, uN, uNdu, uNold, uNduold, k );
                 auto vector_err = error_estimation.template get<0>();
-                double size=vector_err.size();
-                double _err = vector_err[size];
+                int size=vector_err.size();
+                double _err = vector_err[size-1];
                 vect_delta_pr( k ) = error_estimation.template get<3>();
                 vect_delta_du( k ) = error_estimation.template get<4>();
                 err( k ) = _err;
@@ -5281,8 +5283,8 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
                 //std::cout << "[maxErrorBounds] output=" << o << "\n";
                 auto error_estimation = delta( N, mu, uN, uNdu, uNold, uNduold, k );
                 auto vector_err = error_estimation.template get<0>();
-                double size=vector_err.size();
-                double _err = vector_err[size];
+                int size=vector_err.size();
+                double _err = vector_err[size-1];
                 vect_delta_pr( k ) = error_estimation.template get<3>();
                 vect_delta_du( k ) = error_estimation.template get<4>();
                 //std::cout << "[maxErrorBounds] error=" << _err << "\n";
@@ -7064,7 +7066,7 @@ CRB<TruthModelType>::run( parameter_type const& mu, double eps , int N, bool pri
     auto o = lb( Nwn, mu, uN, uNdu , uNold, uNduold , print_rb_matrix);
     auto output_vector=o.template get<0>();
     double output_vector_size=output_vector.size();
-    double output = output_vector[output_vector_size];
+    double output = output_vector[output_vector_size-1];
     auto error_estimation = delta( Nwn, mu, uN, uNdu , uNold, uNduold );
     auto vector_output_upper_bound = error_estimation.template get<0>();
     double output_upper_bound = vector_output_upper_bound[0];
@@ -7183,10 +7185,10 @@ CRB<TruthModelType>::run( const double * X, unsigned long N, double * Y, unsigne
     auto e = delta( Nwn, mu, uN, uNdu , uNold, uNduold );
     auto output_vector=o.template get<0>();
     double output_vector_size=output_vector.size();
-    double output = output_vector[output_vector_size];
+    double output = output_vector[output_vector_size-1];
     auto vector_err = e.template get<0>();
-    double size=vector_err.size();
-    double error = vector_err[size];
+    int size=vector_err.size();
+    double error = vector_err[size-1];
     Y[0]  = output;
     Y[1]  = error;
 }
@@ -7246,10 +7248,10 @@ CRB<TruthModelType>::run( const double * X, unsigned long N, double * Y, unsigne
     auto e = delta( Nwn, mu, uN, uNdu , uNold, uNduold );
     auto output_vector=o.template get<0>();
     double output_vector_size=output_vector.size();
-    double output = output_vector[output_vector_size];
+    double output = output_vector[output_vector_size-1];
     auto vector_err = e.template get<0>();
-    double size=vector_err.size();
-    double error = vector_err[size];
+    int size=vector_err.size();
+    double error = vector_err[size-1];
     Y[0]  = output;
     Y[1]  = error;
 }
