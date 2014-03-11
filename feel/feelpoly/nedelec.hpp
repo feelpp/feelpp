@@ -62,6 +62,8 @@
 
 #include <feel/feelvf/vf.hpp>
 
+#include <feel/feelpoly/hcurlpolynomialset.hpp>
+
 namespace Feel
 {
 /**
@@ -676,7 +678,9 @@ template<uint16_type N,
          uint16_type TheTAG = 0 >
 class Nedelec
     :
-    public NedelecBase<N,O,Kind,T,TheTAG>::type
+    public HCurlPolynomialSet,
+    public NedelecBase<N,O,Kind,T,TheTAG>::type,
+    public boost::enable_shared_from_this<Nedelec<N,O,Kind,T,TheTAG> >
 {
 
 public:
