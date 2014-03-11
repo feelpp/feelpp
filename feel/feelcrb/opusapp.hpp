@@ -1555,6 +1555,33 @@ public:
                 auto exp = exporter( _mesh=mesh );
                 exp->add( "response surface", u );
                 exp->save();
+
+                /* Export geo file */
+                if(option(_name="exporter.format").template as<std::string>() == "gmsh")
+                {
+                    std::cout << exp->prefix() << std::endl;
+                    std::ofstream of;
+                    std::ostringstream oss;
+                    oss.str("");
+                    // To get the correct filename, we use the timeset name (The prefix is not used for exporting the data file)
+                    // We might have to get the right one, if there are several ones
+                    oss << exp->defaultTimeSet()->name() << "-" <<  Environment::worldComm().size() << "_" << Environment::worldComm().rank() << ".geo";
+                    of.open(oss.str());
+
+                    if(of.is_open())
+                    {
+                        oss.str("");
+                        oss << exp->defaultTimeSet()->name() << "-" <<  Environment::worldComm().size() << "_" << Environment::worldComm().rank() << ".msh";
+
+                        of << "Merge \"" << oss.str() << "\";" << std::endl;
+                        of << "vid = PostProcessing.NbViews;" << std::endl;
+                        //of << "For i In {vid-N:vid-1}" << std::endl;
+                        of << "View[vid-1].Axes = 1;" << std::endl;
+                        //of << "EndFor" << std::endl;
+                    }
+
+                    of.close();
+                }
             }
 
             //model->computationalTimeEimStatistics();
