@@ -11,9 +11,9 @@
 #include <feel/feelalg/solvereigen.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelfilters/geotool.hpp>
+
 /** use Feel namespace */
 using namespace Feel;
-using namespace Feel::vf;
 
 
 template<int Dim, int Order>
@@ -24,18 +24,11 @@ public Simget
     typedef Simget super;
 public:
     typedef double value_type;
-    typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
-    typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
-    typedef typename backend_type::vector_type vector_type;
     typedef Simplex<Dim> convex_type;
     typedef Mesh<convex_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
     typedef bases<Lagrange<Order,Vectorial>> basis_type;
     typedef FunctionSpace<mesh_type, basis_type> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
-    typedef typename space_type::element_type element_type;
-    typedef Exporter<mesh_type> export_type;
 
     void run();
 private:
@@ -73,47 +66,14 @@ EigenProblem<Dim, Order>::run()
     auto b = form2( _test=Xh, _trial=Xh);
     b = integrate( elements(mesh), trans(idt( u ))*id( v ) );
 
-    int nev = option(_name="solvereigen.nev").template as<int>();
-    int ncv = option(_name="solvereigen.ncv").template as<int>();;
-
-    double eigen_real, eigen_imag;
-
-    SolverEigen<double>::eigenmodes_type modes;
 
     if ( Environment::worldComm().isMasterRank() )
     {
-        std::cout << "nev= " << nev <<std::endl;
-        std::cout << "ncv= " << ncv <<std::endl;
+        std::cout << "number of eigenvalues computed= " << option(_name="solvereigen.nev").template as<int>() <<std::endl;
+        std::cout << "number of eigenvalues for convergence= " << option(_name="solvereigen.ncv").template as<int>() <<std::endl;
     }
 
-    modes=
-    eigs( _matrixA=a.matrixPtr(),
-          _matrixB=b.matrixPtr(),
-          _nev=nev,
-          _ncv=ncv,
-          _transform=SINVERT,
-          _spectrum=SMALLEST_MAGNITUDE,
-          _verbose = true );
-
-    auto femodes = std::vector<decltype( Xh->element() )>( modes.size(), Xh->element() );
-
-    if ( !modes.empty() )
-    {
-        LOG(INFO) << "eigenvalue " << 0 << " = (" << modes.begin()->second.get<0>() << "," <<  modes.begin()->second.get<1>() << ")\n";
-
-        int i = 0;
-        for( auto const& mode : modes )
-        {
-            std::cout << " -- eigenvalue " << i << " = (" << mode.second.get<0>() << "," <<  mode.second.get<1>() << ")\n";
-            femodes[i] = *mode.second.get<2>();
-            double l2div = normL2(_range=elements(mesh),_expr=divv(femodes[i] ));
-            if ( Environment::worldComm().isMasterRank() )
-            {
-                std::cout << "  - div = " <<  l2div << "\n";
-            }
-            ++i;
-        }
-    }
+    auto modes= veigs( _formA=a, _formB=b );
 
     auto e =  exporter( _mesh=mesh );
 
@@ -121,9 +81,9 @@ EigenProblem<Dim, Order>::run()
     {
         LOG(INFO) << "exportResults starts\n";
         int i = 0;
-        for( auto const& mode: femodes )
+        for( auto const& mode: modes )
         {
-            e->add( ( boost::format( "mode-u-%1%" ) % i ).str(), mode );
+            e->add( ( boost::format( "mode-u-%1%" ) % i ).str(), mode.second );
         }
 
         e->save();
@@ -149,8 +109,3 @@ main( int argc, char** argv )
     app.add( new EigenProblem<3,1>() );
     app.run();
 }
-
-
-
-
-

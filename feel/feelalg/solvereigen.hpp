@@ -499,8 +499,8 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename SolverEigen<double>::eigenmodes_type
                                    ( matrixA,( d_sparse_matrix_ptrtype ) )
                                    ( matrixB,( d_sparse_matrix_ptrtype ) ) )
                                  ( optional
-                                   ( nev, ( int ), 1 )
-                                   ( ncv, ( int ), 3 )
+                                   ( nev, ( int ), option(_name="solvereigen.nev").template as<int>() )
+                                   ( ncv, ( int ), option(_name="solvereigen.ncv").template as<int>() )
                                    ( backend,( BackendType ), BACKEND_PETSC )
                                    ( solver,( EigenSolverType ), KRYLOVSCHUR )
                                    ( problem,( EigenProblemType ), GHEP )
@@ -552,6 +552,96 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename SolverEigen<double>::eigenmodes_type
 
     return eigen->eigenModes();
 }
+
+template<typename Args>
+struct compute_eigs_return_type
+{
+    typedef typename parameter::value_type<Args, tag::formA>::type A_type;
+    typedef typename parameter::value_type<Args, tag::formB>::type B_type;
+    typedef typename A_type::value_type value_type;
+
+    // return a vector trial space element
+    typedef std::vector<std::pair<value_type,typename A_type::element_2_type> > type;
+};
+
+BOOST_PARAMETER_MEMBER_FUNCTION( ( typename compute_eigs_return_type<Args>::type ),
+                                 veigs,
+                                 tag,
+                                 ( required
+                                   ( formA, *)//*(mpl::is_convertible<mpl::_,BilinearFormBase>) )
+                                   ( formB, *))//*(mpl::is_convertible<mpl::_,BilinearFormBase>) ) )
+                                 ( optional
+                                   ( nev, ( int ), option(_name="solvereigen.nev").template as<int>() )
+                                   ( ncv, ( int ), option(_name="solvereigen.ncv").template as<int>() )
+                                   ( solver,( std::string ), option(_name="solvereigen.solver").template as<std::string>() )
+                                   ( problem,( std::string ), option(_name="solvereigen.problem").template as<std::string>() )
+                                   ( transform,( std::string ), option(_name="solvereigen.transform").template as<std::string>() )
+                                   ( spectrum,( std::string ), option(_name="solvereigen.spectrum").template as<std::string>()  )
+                                   ( maxit,( size_type ), option(_name="solvereigen.maxiter").template as<int>() )
+                                   ( tolerance,( double ), option(_name="solvereigen.tolerance").template as<double>() )
+                                   ( verbose,( bool ), option(_name="solvereigen.verbose").template as<bool>() )
+                                 )
+                               )
+{
+    typedef boost::shared_ptr<Vector<double> > vector_ptrtype;
+    //boost::shared_ptr<SolverEigen<double> > eigen = SolverEigen<double>::build(  backend );
+    boost::shared_ptr<SolverEigen<double> > eigen = SolverEigen<double>::build();
+    eigen->setEigenSolverType( (EigenSolverType)EigenMap[solver] );
+    eigen->setEigenProblemType( (EigenProblemType)EigenMap[problem] );
+    eigen->setPositionOfSpectrum( (PositionOfSpectrum)EigenMap[spectrum] );
+    eigen->setNumberOfEigenValues( nev );
+    eigen->setNumberOfEigenValuesConverged( ncv );
+    eigen->setMaxIterations( maxit );
+    eigen->setSpectralTransform( (SpectralTransformType)EigenMap[transform] );
+    eigen->setTolerance( tolerance );
+    eigen->setMapRow( formA.matrixPtr()->mapRowPtr() );
+    eigen->setMapCol( formA.matrixPtr()->mapColPtr() );
+
+    LOG(INFO) << "number of eigen values = " << nev << "\n";
+    LOG(INFO) << "number of eigen values converged = " << ncv << "\n";
+    LOG(INFO) << "number of eigen value solver iterations = " << maxit << "\n";
+    LOG(INFO) << "eigenvalue tolerance = " << tolerance << "\n";
+
+    unsigned int nconv, nits;
+    std::vector<double> err( ncv );
+    boost::tie( nconv, nits, err )  = eigen->solve( _matrixA=formA.matrixPtr(),
+                                                    _matrixB=formB.matrixPtr(),
+                                                    _maxit=maxit,
+                                                    _tolerance=tolerance );
+
+    if ( verbose )
+    {
+        int i = 0;
+        for( auto e : err )
+        {
+            if ( Environment::worldComm().isMasterRank() )
+            {
+                std::cout << i++ << "-th mode error ||A x - lambda B x ||/||x|| = " << e << "\n";
+            }
+        }
+    }
+
+    auto modes = eigen->eigenModes();
+    auto Xh = formA.trialSpace();
+    auto femodes = std::vector<std::pair<double, decltype( Xh->element() )> >( modes.size(), std::make_pair(0.,Xh->element() ) );
+
+    if ( !modes.empty() )
+    {
+        LOG(INFO) << "eigenvalue " << 0 << " = (" << modes.begin()->second.get<0>() << "," <<  modes.begin()->second.get<1>() << ")\n";
+
+        int i = 0;
+        for( auto const& mode : modes )
+        {
+            std::cout << " -- eigenvalue " << i << " = (" << mode.second.get<0>() << "," <<  mode.second.get<1>() << ")\n";
+            femodes[i].first = mode.second.get<0>();
+            femodes[i].second = *mode.second.get<2>();
+            ++i;
+        }
+    }
+    return femodes;
+
+}
+
 
 } // Feel
 #endif /* __SolverEigen_H */

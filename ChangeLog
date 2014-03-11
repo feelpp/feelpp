@@ -9,27 +9,54 @@
 
    \subsection changes0970 Changes
 
+   - Improve documentation, see <a
+     href="https://github.com/feelpp/feelpp/issues/300">#300</a>
    - Massive reorganisation of headers and files
    - Propose an alternative handling of header file: rather than having
      everything in one header file, include only the necessary header files
      which reduce compilation times
+   - Feel++ now uses <a href="http://www.travis-ci.org">Travis-CI</a> for
+     Continuous Integration, see <a
+     href="http://www.travis-ci.org/feelpp/feelpp">here</a> the Feel++ status
+   - Feel++ is now on Youtube: our videos are uploaded <a href="http://www.youtube.com/channel/UCnLX6kyV8j644isqhMpUN4Q/">here</a>
+   - Feel++ is now on Twitter: it shows the github development activity as well
+     as the Feel++ YouTube channel updates. Check it <a href="http://www.twitter.com/feelpp/">here</a>
 
    \subsection features0970 Features
 
+   - Support Eigen3 to latest stable release 3.2.1
+   - Support <a href="http://onelab.info/">OneLab</a> which enables a graphical
+     interface through Gmsh, see <a href="https://github.com/feelpp/feelpp/issues/64">#64</a>
    - Support for discontinuous galerkin as well as internal face
      integration in parallel (1D, 2D and 3D)
    - Support discontinuous integration over a range of element (a subset of
-     faces), see https://github.com/feelpp/feelpp/issues/227
+     faces), see <a href="https://github.com/feelpp/feelpp/issues/227">#227</a>
    - Support ghost cells in ensightgold format for better visualisation (without
      artefacts between subdomain in 3D), see #243
    - Support mortar function spaces, see <a
-     href="https://github.com/feelpp/feelpp/issues/36>#36</a>
+     href="https://github.com/feelpp/feelpp/issues/36">#36</a>
+   - Support the empirical interpolation method, see <a
+     href="https://github.com/feelpp/feelpp/issues/26">#26</a>
+   - Support initialization of element of function space with an expression, see <a
+     href="https://github.com/feelpp/feelpp/issues/282">#282</a>
+   - Support keyword to compute the projector to the tangent hyperplan, see <a
+     href="https://github.com/feelpp/feelpp/issues/222">#222</a>
+   - Support keyword to compute the norm2, see <a
+     href="https://github.com/feelpp/feelpp/issues/223">#223</a>
+   - Support keyword on() in element of function spaces, see <a
+     href="https://github.com/feelpp/feelpp/issues/213">#213</a>
+   - Simplified help messages, see <a
+     href="https://github.com/feelpp/feelpp/issues/273">#273</a>
 
 
    \subsection issues0970 Noteworthy Issues
 
    - <a href="https://github.com/feelpp/feelpp/issues/198">#198</a> FEELPP_ENABLE_MPI_MODE=OFF code branches are unmaintained and are removed
+   - <a href="https://github.com/feelpp/feelpp/issues/219">#219</a> Create configure script to generate configuration for cmake
+   - <a href="https://github.com/feelpp/feelpp/issues/224">#224</a> Define an integer type for mpi rank processes
+   - <a href="https://github.com/feelpp/feelpp/issues/260">#260</a> Improved support for string Dirichlet condition handling
 
+<hr>
    \section feelpp0960 Feel++ Release 0.96.0
    release date 01-02-2014
 

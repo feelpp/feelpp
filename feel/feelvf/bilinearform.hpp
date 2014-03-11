@@ -197,6 +197,7 @@ make_bfassign3( BFType& lf,
     return BFAssign3<BFType,ExprType,TrialSpaceType>( lf, expr, trial_space, trial_index );
 }
 
+class BilinearFormBase {};
 
 /*!
   \class BilinearForm
@@ -208,7 +209,7 @@ make_bfassign3( BFType& lf,
 template<typename FE1,
          typename FE2,
          typename ElemContType = VectorUblas<typename FE1::value_type> >
-class BilinearForm
+class BilinearForm : public BilinearFormBase
 {
 public:
 
@@ -467,12 +468,59 @@ public:
         static const int local_mat_traits = mpl::if_<mpl::equal_to<mpl::int_<nDofPerElementTrial>,mpl::int_<1> >,
                          mpl::int_<Eigen::ColMajor>,
                          mpl::int_<Eigen::RowMajor> >::type::value;
+#if 0
+        // Eigen::Matrix allocation on stack
         typedef Eigen::Matrix<value_type, nDofPerElementTest, nDofPerElementTrial,local_mat_traits> local_matrix_type;
         typedef Eigen::Matrix<value_type, nDofPerElementTest-1, nDofPerElementTrial,local_mat_traits> mortar_local_matrix_type;
         typedef Eigen::Matrix<value_type, 2*nDofPerElementTest, 2*nDofPerElementTrial,Eigen::RowMajor> local2_matrix_type;
         typedef Eigen::Matrix<value_type, nDofPerComponentTest, nDofPerComponentTrial,local_mat_traits> c_local_matrix_type;
         typedef Eigen::Matrix<value_type, nDofPerComponentTest-1, nDofPerComponentTrial,local_mat_traits> c_mortar_local_matrix_type;
         typedef Eigen::Matrix<value_type, 2*nDofPerComponentTest, 2*nDofPerComponentTrial,Eigen::RowMajor> c_local2_matrix_type;
+#else
+        // Eigen::Matrix allocation on stack or dynamic
+        // local_matrix
+        static const bool useEigenDynamicAlloc = nDofPerElementTest*nDofPerElementTrial*sizeof(value_type) > 128*128*8;
+        static const int nRowEigenLocalMatrix = ( useEigenDynamicAlloc )? Eigen::Dynamic : nDofPerElementTest;
+        static const int nColEigenLocalMatrix = ( useEigenDynamicAlloc )? Eigen::Dynamic : nDofPerElementTrial;
+        typedef Eigen::Matrix<value_type, nRowEigenLocalMatrix, nColEigenLocalMatrix,local_mat_traits> local_matrix_type;
+        // mortar_local_matrix
+        static const bool useEigenDynamicAllocMortar = (nDofPerElementTest-1)*nDofPerElementTrial*sizeof(value_type) > 128*128*8;
+        static const int nRowEigenMortarLocalMatrix = ( useEigenDynamicAllocMortar )? Eigen::Dynamic : nDofPerElementTest-1;
+        static const int nColEigenMortarLocalMatrix = ( useEigenDynamicAllocMortar )? Eigen::Dynamic : nDofPerElementTrial;
+        typedef Eigen::Matrix<value_type, nRowEigenMortarLocalMatrix, nColEigenMortarLocalMatrix, local_mat_traits> mortar_local_matrix_type;
+        // local2_matrix
+        static const bool useEigenDynamicAlloc2 = 4*nDofPerElementTest*nDofPerElementTrial*sizeof(value_type) > 128*128*8;
+        static const int nRowEigenLocal2Matrix = ( useEigenDynamicAlloc2 )? Eigen::Dynamic : 2*nDofPerElementTest;
+        static const int nColEigenLocal2Matrix = ( useEigenDynamicAlloc2 )? Eigen::Dynamic : 2*nDofPerElementTrial;
+        typedef Eigen::Matrix<value_type, nRowEigenLocal2Matrix, nColEigenLocal2Matrix,Eigen::RowMajor> local2_matrix_type;
+        // c_local matrix
+        static const bool c_useEigenDynamicAlloc = nDofPerComponentTest*nDofPerComponentTrial*sizeof(value_type) > 128*128*8;
+        static const int nRowEigenCompLocalMatrix = ( c_useEigenDynamicAlloc )? Eigen::Dynamic : nDofPerComponentTest;
+        static const int nColEigenCompLocalMatrix = ( c_useEigenDynamicAlloc )? Eigen::Dynamic : nDofPerComponentTrial;
+        typedef Eigen::Matrix<value_type, nRowEigenCompLocalMatrix, nColEigenCompLocalMatrix,local_mat_traits> c_local_matrix_type;
+        // c_mortar_local
+        static const bool c_useEigenDynamicAllocMortar = (nDofPerComponentTest-1)*nDofPerComponentTrial*sizeof(value_type) > 128*128*8;
+        static const int nRowEigenCompMortarLocalMatrix = ( c_useEigenDynamicAllocMortar )? Eigen::Dynamic : nDofPerComponentTest-1;
+        static const int nColEigenCompMortarLocalMatrix = ( c_useEigenDynamicAllocMortar )? Eigen::Dynamic : nDofPerComponentTrial;
+        typedef Eigen::Matrix<value_type, nRowEigenCompMortarLocalMatrix, nColEigenCompMortarLocalMatrix,local_mat_traits> c_mortar_local_matrix_type;
+        // c_local2_matrix
+        static const bool c_useEigenDynamicAlloc2 = 4*nDofPerComponentTest*nDofPerComponentTrial*sizeof(value_type) > 128*128*8;
+        static const int nRowEigenCompLocal2Matrix = ( c_useEigenDynamicAlloc2 )? Eigen::Dynamic : 2*nDofPerComponentTest;
+        static const int nColEigenCompLocal2Matrix = ( c_useEigenDynamicAlloc2 )? Eigen::Dynamic : 2*nDofPerComponentTrial;
+        typedef Eigen::Matrix<value_type, nRowEigenCompLocal2Matrix, nColEigenCompLocal2Matrix,Eigen::RowMajor> c_local2_matrix_type;
+        // local_row_sign_type and local_col_sign_type
+        static const bool c_useEigenDynamicAllocSign = nDofPerElementTest*nDofPerElementTrial*sizeof(int) > 128*128*8;
+        static const int nRowEigenLocalRowSign = ( c_useEigenDynamicAllocSign )? Eigen::Dynamic : nDofPerElementTest;
+        static const int nRowEigenLocalColSign = ( c_useEigenDynamicAllocSign )? Eigen::Dynamic : nDofPerElementTrial;
+        typedef Eigen::Matrix<int, nRowEigenLocalRowSign, 1> local_row_sign_type;
+        typedef Eigen::Matrix<int, nRowEigenLocalColSign, 1> local_col_sign_type;
+        // local2_row_sign_type and local2_col_sign_type
+        static const bool c_useEigenDynamicAllocSign2 = 4*nDofPerElementTest*nDofPerElementTrial*sizeof(int) > 128*128*8;
+        static const int nRowEigenLocal2RowSign = ( c_useEigenDynamicAllocSign2 )? Eigen::Dynamic : 2*nDofPerElementTest;
+        static const int nRowEigenLocal2ColSign = ( c_useEigenDynamicAllocSign2 )? Eigen::Dynamic : 2*nDofPerElementTrial;
+        typedef Eigen::Matrix<int, nRowEigenLocal2RowSign, 1> local2_row_sign_type;
+        typedef Eigen::Matrix<int, nRowEigenLocal2ColSign, 1> local2_col_sign_type;
+#endif
         typedef Eigen::Matrix<int, nDofPerElementTest, 1> local_row_type;
         typedef Eigen::Matrix<int, nDofPerElementTest-1, 1> mortar_local_row_type;
         typedef Eigen::Matrix<int, 2*nDofPerElementTest, 1> local2_row_type;
@@ -562,6 +610,17 @@ public:
                  IM const& im,
                  IM2 const& im2,
                  mpl::int_<2> );
+
+
+        void initDynamicEigenMatrix()
+        {
+            if ( useEigenDynamicAlloc )
+                M_rep.resize( nDofPerElementTest, nDofPerElementTrial );
+            if ( useEigenDynamicAllocMortar )
+                M_mortar_rep.resize( nDofPerElementTest-1,nDofPerElementTrial );
+            if ( useEigenDynamicAlloc2 )
+                M_rep_2.resize( 2*nDofPerElementTest, 2*nDofPerElementTrial );
+        }
 
         size_type trialElementId( size_type trial_eid ) const
             {
@@ -925,10 +984,11 @@ public:
         local2_row_type M_local_rows_2;
         local_col_type M_local_cols;
         local2_col_type M_local_cols_2;
-        local_row_type M_local_rowsigns;
-        local2_row_type M_local_rowsigns_2;
-        local_col_type M_local_colsigns;
-        local2_col_type M_local_colsigns_2;
+
+        local_row_sign_type/*local_row_type*/ M_local_rowsigns;
+        local2_row_sign_type/*local2_row_type*/ M_local_rowsigns_2;
+        local_col_sign_type/*local_col_type*/ M_local_colsigns;
+        local2_col_sign_type/*local2_col_type*/ M_local_colsigns_2;
 
         c_local_matrix_type M_c_rep;
         c_mortar_local_matrix_type M_c_mortar_rep;

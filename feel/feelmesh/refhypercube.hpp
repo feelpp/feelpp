@@ -736,7 +736,7 @@ private:
             ublas::vector<node_type> h ( 1 );
             h( 0 ) = vertex( 1 ) - vertex( 0 );
 
-            points_type p( 1, n_line_points( interior ) );
+            points_type p( nRealDim, n_line_points( interior ) );
 
             for ( int i = interior, indp = 0; i < int( Order )+1-interior; ++i, ++indp )
             {
@@ -760,7 +760,7 @@ private:
             h( 1 ) = vertex( 3 ) - vertex( 0 );
             //DVLOG(2) << "h = " << h << "\n";
             //DVLOG(2) << "n quad pts = " << n_quad_points( interior ) << "\n";
-            points_type G( 2, n_quad_points( interior ) );
+            points_type G( nRealDim, n_quad_points( interior ) );
 
             for ( int i = interior, p = 0; i < int( Order )+1-interior; ++i )
             {

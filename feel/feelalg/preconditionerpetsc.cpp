@@ -223,7 +223,7 @@ configurePC( PC& pc, WorldComm const& worldComm, std::string sub = "", std::stri
         ierr = PCFactorSetFill( pc, Environment::vm(_name="pc-factor-fill",_prefix=prefix,_sub=sub,_worldcomm=worldComm).as<double>() );
         CHKERRABORT( worldComm.globalComm(),ierr );
     }
-    if ( std::string(pctype) == "ml" || std::string(pctype) == "mg")
+    if ( std::string(pctype) == "ml" /*|| std::string(pctype) == "gamg"*/ || std::string(pctype) == "mg")
     {
         int nLevels= option(_name="pc-mg-levels",_prefix=prefix,_sub=sub,_worldcomm=worldComm).as<int>();
         //std::vector<MPI_Comm> comms(levels,worldComm.globalComm());
@@ -236,11 +236,12 @@ configurePC( PC& pc, WorldComm const& worldComm, std::string sub = "", std::stri
         if ( mgType=="full" ) ierr = PCMGSetType( pc, PC_MG_FULL );
         if ( mgType=="kaskade" ) ierr = PCMGSetType( pc, PC_MG_KASKADE );
         CHKERRABORT( worldComm.globalComm(),ierr );
-
+#if 0
+        // warning, this function (seems) create 2 smoother up and down
         int smoothdown= option(_name="pc-mg-smoothdown",_prefix=prefix,_sub=sub,_worldcomm=worldComm).as<int>();
         ierr = PCMGSetNumberSmoothDown( pc, smoothdown );
         CHKERRABORT( worldComm.globalComm(),ierr );
-
+#endif
         if ( std::string(pctype) == "ml" )
         {
             std::string option_pc_ml_maxNlevels = ( boost::format("-pc_ml_maxNlevels %1%") %nLevels ).str();
@@ -474,15 +475,24 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
         CHKERRABORT( worldComm.globalComm(),ierr );
         break;
 
+#if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR >= 2)
     case GAMG_PRECOND:
         ierr = PCSetType( pc,( char* ) PCGAMG );
         CHKERRABORT( worldComm.globalComm(),ierr );
+#if 1
         // crash without this
         ierr = PCSetFromOptions( pc );
         CHKERRABORT( worldComm.globalComm(),ierr );
-
+#endif
         break;
+#else
+        LOG(WARNING) << "PETSc GAMG is available from PETSc version >= 3.2";
+#endif
 
+    case NONE_PRECOND:
+        ierr = PCSetType( pc,( char* ) PCNONE );
+        CHKERRABORT( worldComm.globalComm(),ierr );
+        break;
 
     default:
         std::cerr << "ERROR:  Unsupported PETSC Preconditioner: "
