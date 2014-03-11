@@ -373,6 +373,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<1>, mpl::bool_
         geometric_mapping_context_type* thegmc = __gmc.get();
 
         matrix_eigen_ublas_type K ( thegmc->K( 0 ).data().begin(), gmc_type::NDim, gmc_type::PDim );
+        matrix_eigen_ublas_type Bt ( thegmc->B( 0 ).data().begin(), gmc_type::NDim, gmc_type::PDim );
         if ( is_hdiv_conforming )
         {
             for ( uint16_type ii = 0; ii < I; ++ii )
@@ -384,13 +385,24 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<1>, mpl::bool_
                 }
             }
         }
+        else if ( is_hcurl_conforming )
+        {
+            for ( uint16_type ii = 0; ii < I; ++ii )
+            {
+                for ( uint16_type q = 0; q < Q; ++q )
+                {
+                    // piola transform
+                    M_phi[ii][q] = Bt*(*M_pc)->phi(ii,q);
+                }
+            }
+        }
 
         if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value  )
         {
 
                 typedef typename boost::multi_array<value_type,4>::index_range range;
 
-                matrix_eigen_ublas_type Bt ( thegmc->B( 0 ).data().begin(), gmc_type::NDim, gmc_type::PDim );
+                //matrix_eigen_ublas_type Bt ( thegmc->B( 0 ).data().begin(), gmc_type::NDim, gmc_type::PDim );
 
                 matrix_eigen_grad_type grad_real = matrix_eigen_grad_type::Zero();
                 //matrix_eigen_PN_type B=Bt.transpose();
@@ -406,6 +418,10 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<1>, mpl::bool_
                                 if ( is_hdiv_conforming )
                                 {
                                     grad_real.noalias() = K*(M_gradphi[i][0]*Bt.transpose())/thegmc->J(0);
+                                }
+                                else if ( is_hcurl_conforming )
+                                {
+                                    grad_real.noalias() = Bt*(M_gradphi[i][0]*Bt.transpose());
                                 }
                                 else
                                     grad_real.noalias() = M_gradphi[i][0]*Bt.transpose();
@@ -427,6 +443,10 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<1>, mpl::bool_
                                             if ( is_hdiv_conforming )
                                             {
                                                 M_div[i][q]( 0,0 ) =  M_gradphi[i][0].trace()/thegmc->J(q);
+                                            }
+                                            else if ( is_hcurl_conforming )
+                                            {
+                                                M_div[i][q]( 0,0 ) =  ( Bt*(M_gradphi[i][0]*Bt.transpose()) ).trace();
                                             }
                                             else
                                             {
