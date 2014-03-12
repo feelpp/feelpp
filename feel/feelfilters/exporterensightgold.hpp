@@ -229,6 +229,7 @@ private:
     mutable std::string M_filename;
     std::string M_element_type;
     std::string M_face_type;
+    mutable int time_index;
 };
 
 
