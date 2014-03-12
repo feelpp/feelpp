@@ -5441,8 +5441,6 @@ template<typename ContextType>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_( ContextType const & context, div_array_type& v ) const
 {
-#if 1
-
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();
 
@@ -5456,6 +5454,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_( ContextType const & co
 
     const size_type Q = context.xRefs().size2();
 
+    auto const& s = M_functionspace->dof()->localToGlobalSigns( elt_id );
     for ( int l = 0; l < basis_type::nDof; ++l )
     {
         const int ncdof = is_product?nComponents1:1;
@@ -5481,48 +5480,11 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_( ContextType const & co
                 std::cout << "context.div(" << ldof << "," << q << ")="
                           << context.div( ldof, 0, 0, q ) << "\n" ;
 #endif
-                v[q]( 0,0 ) += v_*context.div( ldof, 0, 0, q );
+                v[q]( 0,0 ) += s(ldof)*v_*context.div( ldof, 0, 0, q );
             }
         }
     }
 
-#else
-
-    if ( !this->areGlobalValuesUpdated() )
-        this->updateGlobalValues();
-
-    for ( int l = 0; l < basis_type::nDof; ++l )
-    {
-        const int ncdof = is_product?nComponents1:1;
-
-        for ( int c1 = 0; c1 < ncdof; ++c1 )
-        {
-            int ldof = c1*basis_type::nDof+l;
-            size_type gdof = boost::get<0>( M_functionspace->dof()->localToGlobal( context.eId(), l, c1 ) );
-            FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
-                           gdof < this->lastLocalIndex() )
-            ( context.eId() )
-            ( l )( c1 )( ldof )( gdof )
-            ( this->size() )( this->localSize() )
-            ( this->firstLocalIndex() )( this->lastLocalIndex() )
-            .error( "FunctionSpace::Element invalid access index" );
-            //value_type v_ = (*this)( gdof );
-            value_type v_ = this->globalValue( gdof );
-
-            for ( int k = 0; k < nComponents1; ++k )
-            {
-                for ( typename array_type::index i = 0; i < nDim; ++i )
-                {
-                    for ( size_type q = 0; q < context.xRefs().size2(); ++q )
-                    {
-                        v[q]( 0,0 ) += v_*context.gmContext()->B( q )( k, i )*context.pc()->grad( ldof, k, i, q );
-                    }
-                }
-            }
-        }
-    }
-
-#endif
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
