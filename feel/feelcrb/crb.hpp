@@ -5506,7 +5506,7 @@ CRB<TruthModelType>::empiricalErrorEstimation ( int Nwn, parameter_type const& m
 
     //double output_smaller_basis = lb(nb_element, mu, Un2, Undu2, Unold, Unduold);
     auto tuple = lb( nb_element, mu, Un2, Undu2, Unold, Unduold );
-    output_vector=o.template get<0>();
+    output_vector=tuple.template get<0>();
     output_vector_size=output_vector.size();
     double output_smaller_basis = output_vector[output_vector_size-1];
 
