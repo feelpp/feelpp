@@ -30,7 +30,8 @@
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/timeset.hpp>
-#include <feel/feelfilters/exporterensight.hpp>
+#include <feel/feelfilters/exporterensightgold.hpp>
+#include <feel/feelfilters/detail/fileindex.hpp>
 
 
 namespace Feel
@@ -283,18 +284,28 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
             }
             else
             {
-                __out << "constant per case: " << __ts->index() << " " << s_it->first << " ";
-                // loop over time
-                auto stepit = __ts->beginStep();
-                auto stepen = __ts->endStep();
-
-                for ( ; stepit != stepen; ++stepit )
+                if ( this->worldComm().isMasterRank() )
                 {
-                    auto step = *stepit;
-                    __out << step->scalar( s_it->first ) << " ";
 
-                }
+                __out << "constant per case file: " << __ts->index() << " " << s_it->first << " " << s_it->first << ".scl";
+                    // loop over time
+                    auto stepit = __ts->beginStep();
+                    auto stepen = __ts->endStep();
+
+                    std::ofstream ofs;
+                    int d = std::distance( stepit, stepen );
+                    LOG(INFO) << "distance = " << d;
+                    if ( d > 1 )
+                        ofs.open( s_it->first+".scl", std::ios::out | std::ios::app );
+                    else
+                        ofs.open( s_it->first+".scl", std::ios::out );
+
+                    auto step = *boost::prior(stepen);
+                    ofs << step->scalar( s_it->first ) << "\n";
+                    ofs.close();
                 __out << "\n";
+                }
+
             }
         }
 
@@ -482,8 +493,10 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
         typename timeset_type::step_const_iterator __end = __ts->endStep();
         __it = boost::prior( __end );
 
+
         if ( this->exporterGeometry() == EXPORTER_GEOMETRY_STATIC )
         {
+            time_index = 0 ;
             std::ostringstream __geofname;
             __geofname << this->path() << "/"
                        << __ts->name()
@@ -500,7 +513,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
         while ( __it != __end )
         {
             typename timeset_type::step_ptrtype __step = *__it;
-
+            time_index = __step->index();
 
             std::ostringstream __geofname;
 
@@ -587,18 +600,34 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
             __varfname << "." << std::setfill( '0' ) << std::setw( 3 ) << __step->index();
         DVLOG(2) << "[ExporterEnsightGold::saveNodal] saving " << __varfname.str() << "...\n";
         std::fstream __out;
-        if ( this->useSingleTransientFile() )
-            __out.open( __varfname.str().c_str(), std::ios::out | std::ios::app | std::ios::binary );
+        if ( this->useSingleTransientFile() && __step->index() > 0 )
+            __out.open( __varfname.str().c_str(), std::ios::in | std::ios::out | std::ios::app | std::ios::binary );
         else
-            __out.open( __varfname.str().c_str(), std::ios::out | std::ios::binary );
+            __out.open( __varfname.str().c_str(), std::ios::in | std::ios::out | std::ios::binary );
 
         char buffer[ 80 ];
 
+        Feel::detail::FileIndex index;
+
+
         if ( this->useSingleTransientFile() )
         {
+            // first read
+            index.read( __out );
+
+            if ( index.defined() && __step->index() > 0 )
+                __out.seekp( index.fileblock_n_steps, std::ios::beg );
+            else
+            {
+                // we position the cursor at the beginning of the file
+                __out.seekp( 0, std::ios::beg );
+            }
             strcpy(buffer,"BEGIN TIME STEP");
             __out.write((char*)&buffer,sizeof(buffer));
-            LOG(INFO) << "out: " << buffer;
+            LOG(INFO) << "saveNodal out: " << buffer;
+
+            index.add( __out.tellp() );
+
         }
 
         strcpy( buffer, __var->second.name().c_str() );
@@ -737,6 +766,9 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
             strcpy(buffer,"END TIME STEP");
             __out.write((char*)&buffer,sizeof(buffer));
             VLOG(1) << "out: " << buffer;
+
+            // write back the file index
+            index.write( __out );
         }
         DVLOG(2) << "[ExporterEnsightGold::saveNodal] saving " << __varfname.str() << "done\n";
         ++__var;
@@ -761,10 +793,23 @@ ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtyp
 
         char buffer[ 80 ];
 
+        Feel::detail::FileIndex index;
         if ( this->useSingleTransientFile() )
         {
+            // first read
+            index.read( __out );
+
+            if ( index.defined() && __step->index() > 0 )
+                __out.seekp( index.fileblock_n_steps, std::ios::beg );
+            else
+            {
+                // we position the cursor at the beginning of the file
+                __out.seekp( 0, std::ios::beg );
+            }
+
             strcpy(buffer,"BEGIN TIME STEP");
             __out.write((char*)&buffer,sizeof(buffer));
+            index.add( __out.tellp() );
         }
 
         strcpy( buffer, __evar->second.name().c_str() );
@@ -853,6 +898,8 @@ ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtyp
         {
             strcpy(buffer,"END TIME STEP");
             __out.write((char*)&buffer,sizeof(buffer));
+            // write back the file index
+            index.write( __out );
         }
 
 
@@ -868,22 +915,61 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
     char buffer[ 80 ];
     std::vector<int> idnode, idelem;
 
+    LOG(INFO) << "visit(mesh) for " << M_filename << " time_index=" << time_index;
     std::fstream __out;
-    if ( this->useSingleTransientFile() )
-        __out.open( M_filename.c_str(), std::ios::out |  std::ios::app | std::ios::binary );
-    else
-        __out.open( M_filename.c_str(), std::ios::out | std::ios::binary );
+    //if ( this->useSingleTransientFile()  )
+    fs::path p( M_filename );
+    if ( time_index == 1 && fs::exists( p ) )
+        fs::remove( p );
+    __out.open( M_filename.c_str(), std::ios::in |  std::ios::out |  std::ios::app | std::ios::binary );
+    //else
+    //__out.open( M_filename.c_str(), std::ios::in |  std::ios::out | std::ios::binary );
+    CHECK( __out.good() ) << "problem opening " << M_filename;
+    if ( time_index == 1 )
+    {
+        // we position the cursor at the beginning of the file
+        __out.seekp( 0, std::ios::beg );
+        LOG(INFO) << "visit(mesh) write C Binary header";
+        strcpy( buffer, "C Binary" );
+        __out.write( ( char * ) & buffer, sizeof( buffer ) );
+    }
 
-
-    strcpy( buffer, "C Binary" );
-    __out.write( ( char * ) & buffer, sizeof( buffer ) );
-
+    Feel::detail::FileIndex index;
     if ( this->useSingleTransientFile() )
     {
+        // first read
+        index.read( __out );
+
+        if ( index.defined() )
+        {
+            LOG(INFO) << "position cursor in stream at address : " << index.fileblock_n_steps;
+            __out.seekp( index.fileblock_n_steps, std::ios::beg );
+            __out.seekg( index.fileblock_n_steps-80*sizeof(char), std::ios::beg );
+            __out.read( (char*)&buffer, sizeof(buffer) );
+            CHECK( std::string(buffer) == std::string("END TIME STEP") ) << "Invalid position buffer: " << buffer;
+            __out.seekp( index.fileblock_n_steps, std::ios::beg );
+        }
+        else
+        {
+            // we position the cursor at the beginning of the file
+            __out.seekp( 0, std::ios::end );
+        }
+
+
         strcpy(buffer,"BEGIN TIME STEP");
         __out.write((char*)&buffer,sizeof(buffer));
-        VLOG(1) << "out : " << buffer;
-
+        VLOG(1) << "visit(mesh) out : " << buffer;
+        if ( index.defined() )
+        {
+            __out.seekg( index.fileblock_n_steps-80*sizeof(char), std::ios::beg );
+            __out.read( (char*)&buffer, sizeof(buffer) );
+            CHECK( std::string(buffer) == std::string("END TIME STEP") ) << "Invalid position buffer: " << buffer;
+            __out.seekg( index.fileblock_n_steps, std::ios::beg );
+            __out.read( (char*)&buffer, sizeof(buffer) );
+            CHECK( std::string(buffer) == std::string("BEGIN TIME STEP") ) << "Invalid position buffer: " << buffer;
+        }
+        // register in index the address of the new TIME_STEP
+        index.add( __out.tellp() );
     }
 
     // get only the filename (maybe with full path)
@@ -1105,6 +1191,9 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
         strcpy(buffer,"END TIME STEP");
         __out.write((char*)&buffer,sizeof(buffer));
         VLOG(1) << "out : " << buffer;
+
+        // rewrite FILE_INDEX in file
+        index.write( __out );
     }
 }
 
