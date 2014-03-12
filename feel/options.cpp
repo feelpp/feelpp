@@ -431,9 +431,8 @@ crbOptions( std::string const& prefix )
     ( "crb.use-accurate-apee",Feel::po::value<bool>()->default_value( false ), "use a posteriori error estimators from F.Casenave's paper if true, classic one else")
     ( "crb.optimize-offline-residual",Feel::po::value<bool>()->default_value( false ), "use optimize way for offline residual computation if true (temporary option)")
 
-    ( "crb.user-parameters",Feel::po::value<std::string>()->default_value( "1 2" ), "values of parameters (used for one feel)")
-    ( "crb.select-parameter-via-one-feel",Feel::po::value<bool>()->default_value( false ), "specify that we want to excute code with parameters defined by user via option user-parameters")
-    ( "crb.vary-only-parameter-components",Feel::po::value<std::string>()->default_value( "" ), "specify which parameter component vary (max : 2 components) and how many values we take in each direction. For example 2 6 10 means that component 2 and 6 of our parameter will vary on the log-equidistributed sampling of size 10x10")
+    ( "crb.user-parameters",Feel::po::value<std::string>()->default_value( "" ), "values of parameters (used for one feel)")
+    ( "crb.vary-only-parameter-components",Feel::po::value<std::string>()->default_value( "" ), "specify which parameter component vary (max : 2 components + time 't') and how many values we take in each direction. For example 0 10 1 20 means that component 0 will take 10 values and component 1 will take 20 values. We can write also t 1 10 and in this case the time will vary and also component 1")
     ( "crb.load-elements-database",Feel::po::value<bool>()->default_value( true ), "load database of elements if true, need to be true for visualization, need to be false to run CRB approximation on a different number of processors than this was used to build the reduced basis ")
     ;
 

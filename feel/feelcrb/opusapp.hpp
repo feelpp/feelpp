@@ -382,7 +382,7 @@ public:
             bool compute_stat =  option(_name="crb.compute-stat").template as<bool>();
 
             bool use_predefined_sampling = option(_name="crb.use-predefined-test-sampling").template as<bool>();
-            bool select_parameter_via_one_feel=option( _name="crb.select-parameter-via-one-feel").template as<bool>();
+            //bool select_parameter_via_one_feel=option( _name="crb.select-parameter-via-one-feel").template as<bool>();
             bool sampling_is_already_generated=false;
 
 
@@ -392,7 +392,17 @@ public:
                 export_solution=false;
                 compute_stat=false;
             }
-
+            bool select_parameter_via_one_feel=false;
+            parameter_type user_mu_onefeel ( model->parameterSpace() );
+            std::string string_parameters = option(_name="crb.user-parameters").template as< std::string >();
+            if( string_parameters == "" || string_parameters == " " )
+            {
+                select_parameter_via_one_feel=false;
+            }
+            else
+            {
+                select_parameter_via_one_feel=true;
+            }
             if( select_parameter_via_one_feel )
             {
                 run_sampling_size=1;
@@ -404,19 +414,17 @@ public:
                 CHECK( load_elements_db )<<"[OpusApp] You have specified to not load elements database so it is impossible to visualize RB solution, use crb.load-elements-database=true !\n";
 
                 //parameters are given by a vector of double
-                std::string string_parameters = option(_name="crb.user-parameters").template as< std::string >();
                 std::vector< std::string > str;
                 boost::split( str, string_parameters, boost::is_any_of(" "), boost::token_compress_on );
-                parameter_type user_mu ( model->parameterSpace() );
                 double user_parameter_size = str.size();
-                double mu_size = user_mu.size();
+                double mu_size = user_mu_onefeel.size();
                 CHECK( user_parameter_size == mu_size )<<"[OpusApp] Error : parameters must have "<<mu_size<<" components and "<<user_parameter_size<<" have been given by the user \n";
                 for(int i=0; i<mu_size; i++)
                 {
                     double mu = boost::lexical_cast<double>( str[i] );
-                    user_mu( i ) = mu;
+                    user_mu_onefeel( i ) = mu;
                 }
-                Sampling->addElement( user_mu );
+                Sampling->addElement( user_mu_onefeel );
                 sampling_is_already_generated=true;
             }
 
@@ -425,35 +433,84 @@ public:
             std::vector< std::string > str;
             boost::split( str, vary_only_parameter_components, boost::is_any_of(" "), boost::token_compress_on );
             int number_str=str.size();
-            CHECK( number_str < 4 )<<"Error when using option crb.vary-only-parameter-components, at maximum we can vary 2 components of the parameter";
+            CHECK( number_str < 5 )<<"Error when using option crb.vary-only-parameter-components, at maximum we can vary 2 components of the parameter";
             int vary_mu_comp0=-1,vary_mu_comp1=-1;
-            int vary_mu_size;
+            int cutting_direction0=0;
+            int cutting_direction1=0;
             bool vary_comp_time=false;
-            if( number_str > 1 )
+            if( vary_only_parameter_components!="" )
             {
                 Sampling->clear();
                 compute_fem=false;
                 compute_stat=false;
                 export_solution=false;
                 int size=-1;
+                if( number_str == 1 )
+                {
+                    //user want only to make time vary
+                    CHECK( str[0] == "t" )<<"Error ! option crb.vary-only-parameter-components = "<<str[0]<<" but should be only 't' in this format";
+                    vary_comp_time=true;
+                }
                 //here only one component vary
                 if( number_str == 2 )
                 {
                     if( str[0] == "t" )
                     {
+                        //note that in this case we accept
+                        //to have number of runs in this direction
+                        //but we ignore it
                         vary_comp_time=true;
                     }
                     else
                     {
                         vary_mu_comp0 = boost::lexical_cast<int>( str[0] );
                     }
-                    vary_mu_size =boost::lexical_cast<int>( str[1] );
+                    cutting_direction0 = boost::lexical_cast<int>( str[1] );
                 }
-                else
+                if( number_str == 3 )
                 {
-                    vary_mu_comp0 = boost::lexical_cast<int>( str[0] );
-                    vary_mu_comp1 = boost::lexical_cast<int>( str[1] );
-                    vary_mu_size = boost::lexical_cast<int>( str[2] );
+                    //in this configuration we have
+                    //a parameter component and associated number of runs
+                    //the time
+                    if( str[0] == "t" )
+                    {
+                        vary_comp_time=true;
+                        vary_mu_comp1 = boost::lexical_cast<int>( str[1] );
+                        cutting_direction1 = boost::lexical_cast<int>( str[2] );
+                    }
+                    if( str[2] == "t" )
+                    {
+                        vary_comp_time=true;
+                        vary_mu_comp1 = boost::lexical_cast<int>( str[0] );
+                        cutting_direction1 =boost::lexical_cast<int>( str[1] );
+                    }
+                    if( str[0] != "t" && str[2] != "t" )
+                    {
+                       bool go=false;
+                       CHECK( go )<<"A problem appears in the option crb.vary-only-parameter-components = "<<vary_only_parameter_components<<" No time 't' found !\n";
+                    }
+                }
+                if( number_str==4 )
+                {
+                    if( str[0] == "t" )
+                    {
+                        vary_comp_time=true;
+                        vary_mu_comp1 = boost::lexical_cast<int>( str[2] );
+                        cutting_direction1 = boost::lexical_cast<int>( str[3] );
+                    }
+                    if( str[2] == "t" )
+                    {
+                        vary_comp_time=true;
+                        vary_mu_comp1 = boost::lexical_cast<int>( str[0] );
+                        cutting_direction1 = boost::lexical_cast<int>( str[1] );
+                    }
+                    if( str[0] != "t" && str[2] != "t" )
+                    {
+                        vary_mu_comp0 = boost::lexical_cast<int>( str[0] );
+                        cutting_direction0 = boost::lexical_cast<int>( str[1] );
+                        vary_mu_comp1 = boost::lexical_cast<int>( str[2] );
+                        cutting_direction1 = boost::lexical_cast<int>( str[3] );
+                    }
                 }
 
                 parameter_type user_mu ( model->parameterSpace() );
@@ -1457,7 +1514,7 @@ public:
                 for(int i=0; i<mu_size; i++)
                 {
                     if( i == vary_mu_comp0  )
-                        sampling_each_direction[i]=vary_mu_size;
+                        sampling_each_direction[i]=cutting_direction0;
                     else
                         sampling_each_direction[i]=0;
                 }
@@ -1471,9 +1528,9 @@ public:
                 curpar=1;
                 if( ! vary_comp_time )
                 {
-                    outputs_storage.resize( vary_mu_size );
-                    mu0_storage.resize( vary_mu_size );
-                    estimated_error_outputs_storage.resize( vary_mu_size );
+                    outputs_storage.resize( cutting_direction0 );
+                    mu0_storage.resize( cutting_direction0 );
+                    estimated_error_outputs_storage.resize( cutting_direction0 );
                     Sampling->logEquidistributeProduct( sampling_each_direction );
                     BOOST_FOREACH( auto mu, *Sampling )
                     {
@@ -1499,6 +1556,10 @@ public:
                     //have min/max
                     Sampling->equidistribute( 2 );
                     auto mu=Sampling->min().template get<0>();
+                    if( select_parameter_via_one_feel )
+                    {
+                        mu = user_mu_onefeel;
+                    }
                     auto o = crb->run( mu,  online_tol , N);
                     auto output_vector=o.template get<0>();
                     auto all_upper_bounds = o.template get<6>();
@@ -1520,8 +1581,18 @@ public:
                 model->generateGeoFileForOutputPlot( outputs_storage , mu0_storage, estimated_error_outputs_storage );
             }
             //two parameters change : response surface
+            bool draw_surface=false;
             if( vary_mu_comp0 > -1 && vary_mu_comp1 > -1 )
+                draw_surface=true;
+            if( vary_mu_comp1 > -1 && vary_comp_time )
+                draw_surface=true;
+            if( draw_surface )
             {
+
+                double Ti=model->timeInitial();
+                double Tf=model->timeFinal();
+                double dt=model->timeStep();
+
                 int N =  option(_name="crb.dimension").template as<int>();
                 double online_tol = option(_name="crb.online-tolerance").template as<double>();
                 CHECK( Environment::worldComm().globalSize() == 1 )<<"implemented only in sequential (because of dof filling)\n";
@@ -1530,31 +1601,96 @@ public:
                 S->equidistribute( 2 , all_procs_have_same_sampling );
                 auto min = S->min().template get<0>();
                 auto max = S->max().template get<0>();
+                //vector of indices of components vary
+                std::vector<int> components_vary(2);
+                components_vary[0]=vary_mu_comp0;
+                components_vary[1]=vary_mu_comp1;
+                //vector containing parameters min and max
+                std::vector<parameter_type> extremums(2);
+                extremums[0]=min;
+                extremums[1]=max;
+                //cutting in each direction
+                std::vector<int> cutting(2);
+                cutting[0]=cutting_direction0;
+                cutting[1]=cutting_direction1;
+                std::vector<double> time_cutting(3);
+                time_cutting[0]=Ti;
+                time_cutting[1]=Tf;
+                time_cutting[2]=dt;
+
                 auto mesh = createGMSHMesh( _mesh=new mesh_type,
                                             _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                                            _desc = model->createStructuredGrid( vary_mu_comp0, vary_mu_comp1, min, max, vary_mu_size ) );
+                                            _desc = model->createStructuredGrid( components_vary, extremums , cutting, time_cutting, vary_comp_time ) );
+
                 auto Vh = Pch<1>( mesh );
                 auto px = project(_space=Vh, _expr=Px() );
                 auto py = project(_space=Vh, _expr=Py() );
                 int ndof=Vh->nDof();
                 auto u = Vh->element();
                 parameter_type mu ( model->parameterSpace() );
+                int time_index=0;
                 for(int i=0; i<ndof; i++)
                 {
                     double mux=px(i);
                     double muy=py(i);
                     mu=min;//first, initialize all components at minimum
                     mu( vary_mu_comp0 ) = mux;
-                    mu( vary_mu_comp1 ) = muy;
+
+                    if( vary_comp_time )
+                    {
+                        //time is always represented by the X-axis
+                        //look at which index mux is associated
+                        time_index=(mux-Ti)/dt;
+                    }
+                    else
+                    {
+                        mu( vary_mu_comp1 ) = muy;
+                    }
+
                     auto run = crb->run( mu,  online_tol, N );
                     auto output_vector=run.template get<0>();
-                    double output_vector_size=output_vector.size();
-                    double output = output_vector[output_vector_size-1];//output at last time
+                    double output=0;
+                    if( vary_comp_time )
+                    {
+                        output = output_vector[time_index];
+                    }
+                    else
+                    {
+                        int output_vector_size=output_vector.size();
+                        output = output_vector[output_vector_size-1];//output at last time
+                    }
                     u(i)=output;
                 }
                 auto exp = exporter( _mesh=mesh );
                 exp->add( "response surface", u );
                 exp->save();
+
+                /* Export geo file */
+                if(option(_name="exporter.format").template as<std::string>() == "gmsh")
+                {
+                    std::cout << exp->prefix() << std::endl;
+                    std::ofstream of;
+                    std::ostringstream oss;
+                    oss.str("");
+                    // To get the correct filename, we use the timeset name (The prefix is not used for exporting the data file)
+                    // We might have to get the right one, if there are several ones
+                    oss << exp->defaultTimeSet()->name() << "-" <<  Environment::worldComm().size() << "_" << Environment::worldComm().rank() << ".geo";
+                    of.open(oss.str());
+
+                    if(of.is_open())
+                    {
+                        oss.str("");
+                        oss << exp->defaultTimeSet()->name() << "-" <<  Environment::worldComm().size() << "_" << Environment::worldComm().rank() << ".msh";
+
+                        of << "Merge \"" << oss.str() << "\";" << std::endl;
+                        of << "vid = PostProcessing.NbViews;" << std::endl;
+                        //of << "For i In {vid-N:vid-1}" << std::endl;
+                        of << "View[vid-1].Axes = 1;" << std::endl;
+                        //of << "EndFor" << std::endl;
+                    }
+
+                    of.close();
+                }
             }
 
             //model->computationalTimeEimStatistics();
