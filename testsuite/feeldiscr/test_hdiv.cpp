@@ -51,16 +51,6 @@ oneelement_geometry_ref( double h = 2 )
 {
     std::ostringstream costr;
     costr <<"Mesh.MshFileVersion = 2.2;\n"
-          <<"Mesh.CharacteristicLengthExtendFromBoundary=1;\n"
-          <<"Mesh.CharacteristicLengthFromPoints=1;\n"
-          <<"Mesh.ElementOrder=1;\n"
-          <<"Mesh.SecondOrderIncomplete = 0;\n"
-          <<"Mesh.Algorithm = 6;\n"
-          <<"Mesh.OptimizeNetgen=1;\n"
-          <<"// partitioning data\n" //
-          <<"Mesh.Partitioner=1;\n"
-          <<"Mesh.NbPartitions=1;\n"
-          <<"Mesh.MshFilePartitioned=0;\n"
           <<"h=" << h << ";\n"
           <<"Point(1) = {-1,-1,0,h};\n"
           <<"Point(2) = {1,-1,0,h};\n"
@@ -100,16 +90,6 @@ oneelement_geometry_real_1( double h = 2 )
 {
     std::ostringstream costr;
     costr <<"Mesh.MshFileVersion = 2.2;\n"
-          <<"Mesh.CharacteristicLengthExtendFromBoundary=1;\n"
-          <<"Mesh.CharacteristicLengthFromPoints=1;\n"
-          <<"Mesh.ElementOrder=1;\n"
-          <<"Mesh.SecondOrderIncomplete = 0;\n"
-          <<"Mesh.Algorithm = 6;\n"
-          <<"Mesh.OptimizeNetgen=1;\n"
-          <<"// partitioning data\n"
-          <<"Mesh.Partitioner=1;\n"
-          <<"Mesh.NbPartitions=1;\n"
-          <<"Mesh.MshFilePartitioned=0;\n"
           <<"h=" << h << ";\n"
           <<"Point(1) = {-2,-2,0,h};\n"
           <<"Point(2) = {2,-2,0,h};\n"
@@ -143,22 +123,12 @@ oneelement_geometry_real_1( double h = 2 )
     return gmshp;
 }
 
-// Rotation of angle (pi/2)
+// Rotation of angle (-pi/2)
 gmsh_ptrtype
 oneelement_geometry_real_2( double h = 2 )
 {
     std::ostringstream costr;
     costr <<"Mesh.MshFileVersion = 2.2;\n"
-          <<"Mesh.CharacteristicLengthExtendFromBoundary=1;\n"
-          <<"Mesh.CharacteristicLengthFromPoints=1;\n"
-          <<"Mesh.ElementOrder=1;\n"
-          <<"Mesh.SecondOrderIncomplete = 0;\n"
-          <<"Mesh.Algorithm = 6;\n"
-          <<"Mesh.OptimizeNetgen=1;\n"
-          <<"// partitioning data\n"
-          <<"Mesh.Partitioner=1;\n"
-          <<"Mesh.NbPartitions=1;\n"
-          <<"Mesh.MshFilePartitioned=0;\n"
           <<"h=" << h << ";\n"
           <<"Point(1) = {1,-1,0,h};\n"
           <<"Point(2) = {1,1,0,h};\n"
@@ -174,9 +144,9 @@ oneelement_geometry_real_2( double h = 2 )
 
     costr <<"Line Loop(4) = {3,1,2};\n"
           <<"Plane Surface(5) = {4};\n"
-          <<"Physical Line(\"vert\") = {3};\n"
-          <<"Physical Line(\"hypo\") = {2};\n"
           <<"Physical Line(\"hor\") = {1};\n"
+          <<"Physical Line(\"hypo\") = {2};\n"
+          <<"Physical Line(\"vert\") = {3};\n"
           <<"Physical Surface(9) = {5};\n";
 
     std::ostringstream nameStr;
@@ -198,16 +168,6 @@ oneelement_geometry_real_3( double h = 2 )
 {
     std::ostringstream costr;
     costr <<"Mesh.MshFileVersion = 2.2;\n"
-          <<"Mesh.CharacteristicLengthExtendFromBoundary=1;\n"
-          <<"Mesh.CharacteristicLengthFromPoints=1;\n"
-          <<"Mesh.ElementOrder=1;\n"
-          <<"Mesh.SecondOrderIncomplete = 0;\n"
-          <<"Mesh.Algorithm = 6;\n"
-          <<"Mesh.OptimizeNetgen=1;\n"
-          <<"// partitioning data\n"
-          <<"Mesh.Partitioner=1;\n"
-          <<"Mesh.NbPartitions=1;\n"
-          <<"Mesh.MshFilePartitioned=0;\n"
           <<"h=" << h << ";\n"
           <<"Point(1) = {-1,1,0,h};\n"
           <<"Point(2) = {-1,-1,0,h};\n"
@@ -223,9 +183,9 @@ oneelement_geometry_real_3( double h = 2 )
 
     costr <<"Line Loop(4) = {3,1,2};\n"
           <<"Plane Surface(5) = {4};\n"
-          <<"Physical Line(\"vert\") = {3};\n"
-          <<"Physical Line(\"hypo\") = {2};\n"
           <<"Physical Line(\"hor\") = {1};\n"
+          <<"Physical Line(\"hypo\") = {2};\n"
+          <<"Physical Line(\"vert\") = {3};\n"
           <<"Physical Surface(9) = {5};\n";
 
     std::ostringstream nameStr;
@@ -398,6 +358,7 @@ public:
     /**
      * run the application
      */
+    inline double hSize(){return meshSize;}
     void shape_functions( gmsh_ptrtype ( *one_element_mesh )( double ));
     void testProjector(gmsh_ptrtype ( *one_element_mesh_desc_fun )( double ));
     void exampleProblem1();
@@ -414,8 +375,6 @@ private:
 
 }; //TestHDiv
 
-// Resolve problem curl(curl(u)) + u = f with cross_prod(u,n) = 0 on boundary
-
 void
 TestHDiv::exampleProblem1()
 {
@@ -428,9 +387,12 @@ TestHDiv::exampleProblem1()
                                                 _xmin=-1,_xmax=1,
                                                 _ymin=-1,_ymax=1 ) );
 
-    auto K = eye<2>(); // Hydraulic conductivity tensor
-    auto Lambda = eye<2>(); // Hydraulic resistivity tensor
+    //auto K = ones<2,2>(); // Hydraulic conductivity tensor
+    auto K = mat<2,2>(cst(2.),cst(1.),cst(1.),cst(2.));
+    //auto Lambda = ones<2,2>(); // Hydraulic resistivity tensor
+    auto Lambda = (1.0/3.0)*mat<2,2>(cst(2.),cst(-1.),cst(-1.),cst(2.)); // Lambda = inv(K)
     auto f = Px()+Py(); // int_omega f = 0
+    auto epsilon = 1e-7;
 
     // ****** Primal formulation - with Lagrange ******
     lagrange_space_s_ptrtype Xh = lagrange_space_s_type::New( mesh );
@@ -442,11 +404,16 @@ TestHDiv::exampleProblem1()
     auto F_l = M_backend->newVector( Xh );
     auto darcyL_rhs = form1( _test=Xh, _vector=F_l );
     // fq
-    darcyL_rhs = integrate( _range=elements(mesh), _expr=f*id(q_l) );
+    darcyL_rhs += integrate( _range=elements(mesh), _expr=f*id(q_l) );
+    F_l->close();
 
     auto M_l = M_backend->newMatrix( Xh, Xh );
     auto darcyL = form2( _test=Xh, _trial=Xh, _matrix=M_l);
-    darcyL = integrate( _range=elements(mesh), _expr=grad(q_l)*K*trans(gradt(p_l)) );
+    // K \grap p \grad q
+    darcyL += integrate( _range=elements(mesh), _expr=gradt(p_l)*K*trans(grad(q_l)) );
+    M_l->close();
+
+    darcyL += on( boundaryfaces(mesh), _element=p_l, _rhs=darcyL_rhs, _expr=cst(0.) );
 
     // Solve problem (p)
     M_backend->solve( _matrix=M_l, _solution=p_l, _rhs=F_l );
@@ -465,8 +432,6 @@ TestHDiv::exampleProblem1()
     auto p_rt = U_rt.element<1>( "p" );
     auto q_rt = V_rt.element<1>( "q" );
 
-    auto epsilon = 1e-7;
-
     auto F_rt = M_backend->newVector( Yh );
     auto darcyRT_rhs = form1( _test=Yh, _vector=F_rt );
     // fq
@@ -475,17 +440,11 @@ TestHDiv::exampleProblem1()
     auto M_rt = M_backend->newMatrix( Yh, Yh );
     auto darcyRT = form2( _test=Yh, _trial=Yh, _matrix=M_rt);
     // Lambda u v
-    darcyRT = integrate( _range=elements(mesh), _expr = -trans(idt(u_rt))*Lambda*id(v_rt) );
+    darcyRT += integrate( _range=elements(mesh), _expr = -trans(Lambda*idt(u_rt))*id(v_rt) );
     // p div(v)
     darcyRT += integrate( _range=elements(mesh), _expr = idt(p_rt)*div(v_rt) );
     // div(u) q
     darcyRT += integrate( _range=elements(mesh), _expr = divt(u_rt)*id(q_rt) );
-
-    //espilon pq
-    darcyRT += integrate( _range=elements(mesh), _expr=epsilon*idt(p_rt)*id(q_rt) );
-
-    //boundary condition
-    //darcyRT += on( _range=elements(mesh), _element=u_rt, _rhs=darcyRT_rhs,_expr=cst(0.) );
 
     // Solve problem
     backend(_rebuild=true)->solve( _matrix=M_rt, _solution=U_rt, _rhs=F_rt );
@@ -514,7 +473,6 @@ TestHDiv::exampleProblem1()
     exporter_pro1->save();
 }
 
-
 void
 TestHDiv::testProjector(gmsh_ptrtype ( *one_element_mesh_desc_fun )( double ))
 {
@@ -531,7 +489,8 @@ TestHDiv::testProjector(gmsh_ptrtype ( *one_element_mesh_desc_fun )( double ))
     // mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
     //                                     _desc = one_element_mesh_desc_fun( 2 ) );
 
-    space_ptrtype Xh = space_type::New( mesh );
+    //space_ptrtype Xh = space_type::New( mesh );
+    auto RTh = Dh<0>( mesh );
     lagrange_space_v_ptrtype Yh_v = lagrange_space_v_type::New( mesh ); //lagrange vectorial space
     lagrange_space_s_ptrtype Yh_s = lagrange_space_s_type::New( mesh ); //lagrange scalar space
 
@@ -552,10 +511,12 @@ TestHDiv::testProjector(gmsh_ptrtype ( *one_element_mesh_desc_fun )( double ))
     auto f_h1 = h1_s->project( _expr= f );
     auto error_h1 = h1_s->project( _expr=divv(E_h1) - idv(f_h1) );
 
-    auto hdiv = opProjection( _domainSpace=Xh, _imageSpace=Xh, _type=HDIV ); //hdiv proj (RT elts)
+    auto hdiv = opProjection( _domainSpace=RTh, _imageSpace=RTh, _type=HDIV ); //hdiv proj (RT elts)
     auto E_hdiv = hdiv->project( _expr= trans(E), _div_expr=cst(0.) );
-    // Piola transfo (ref elt -> real elt ) : div( (1/detJ)*J*u ) = (1/detJ)*div(Ju) = (1/detJ)*trace(J*grad(u))
-    auto l2norm_div = normL2( _range=elements(mesh), _expr=(1/detJ())*trace(J()*gradv(E_hdiv)) );
+
+    auto u=RTh->element();
+    auto l2norm_div = normL2( _range=elements(mesh), _expr=divv(E_hdiv) );
+    auto divE_l2 = l2_s->project( _expr=divv(E_hdiv)  );
 
     BOOST_TEST_MESSAGE("L2 projection : error[div(E)-f]");
     std::cout << "error L2: " << math::sqrt( l2_s->energy( error_l2, error_l2 ) ) << "\n";
@@ -565,7 +526,7 @@ TestHDiv::testProjector(gmsh_ptrtype ( *one_element_mesh_desc_fun )( double ))
     BOOST_CHECK_SMALL( math::sqrt( h1_s->energy( error_h1, error_h1 ) ), 1e-13 );
     BOOST_TEST_MESSAGE("HDIV projection : error[div(E)-f]");
     std::cout << "error div(f): " << l2norm_div << "\n";
-    BOOST_CHECK_SMALL( l2norm_div, 1e-13 );
+    BOOST_CHECK_SMALL( l2norm_div, meshSize );
 
     std::string proj_name = "projection";
     export_ptrtype exporter_proj( export_type::New( this->vm(),
@@ -578,6 +539,7 @@ TestHDiv::testProjector(gmsh_ptrtype ( *one_element_mesh_desc_fun )( double ))
     exporter_proj->step( 0 )->add( "proj_L2_E", E_l2 );
     exporter_proj->step( 0 )->add( "proj_H1_E", E_h1 );
     exporter_proj->step( 0 )->add( "proj_HDiv_E", E_hdiv );
+    exporter_proj->step( 0 )->add( "proj_L2_divE", divE_l2 );
     exporter_proj->save();
 }
 
@@ -648,14 +610,15 @@ TestHDiv::shape_functions( gmsh_ptrtype ( *one_element_mesh_desc_fun )( double )
         int faceid = 0;
         BOOST_FOREACH( std::string face, faces )
         {
-            auto int_u_n = integrate( markedfaces( oneelement_mesh, face ), trans(N())*(1/detJ())*J()*idv( u_vec[i] ) ).evaluate()( 0,0 );
+            auto int_u_n = integrate( markedfaces( oneelement_mesh, face ), trans(N())*idv( u_vec[i]) ).evaluate()( 0,0 );
+
             if ( faceid == i )
                 BOOST_CHECK_CLOSE( int_u_n, 1, 1e-13 );
             else
                 BOOST_CHECK_SMALL( int_u_n, 1e-13 );
             checkidv[3*i+faceid] = int_u_n;
 
-            form1( _test=Xh, _vector=F, _init=true ) = integrate( markedfaces( oneelement_mesh, face), trans( N() )*(1/detJ())*J()*id( V_ref ) );
+            form1( _test=Xh, _vector=F, _init=true ) = integrate( markedfaces( oneelement_mesh, face), trans( N() )*id( V_ref ) );
             auto form_v_n = inner_product( u_vec[i], *F );
 
             if ( faceid == i )
@@ -671,19 +634,17 @@ TestHDiv::shape_functions( gmsh_ptrtype ( *one_element_mesh_desc_fun )( double )
         // Test : \int_\Omega div(N_i) = \int_\delta\Omega (N_i.n) = 1 [RT : \int_\delta\Omega (N_i.n) = \sum \face (N_i.n) = 1]
         // Piola transformation : (ref elt -> real elt) : u -> ( J/detJ )u [div u -> (1/detJ)trace(J grad u)]
 
-        //BOOST_TEST_MESSAGE( "*** Stokes theorem - Integration ***");
-        auto int_divx = integrate( elements( oneelement_mesh ), (1/detJ())*trace(J()*gradv(u_vec[i]))  ).evaluate()( 0,0 );
-        auto int_xn = integrate(boundaryfaces(oneelement_mesh), trans(N())*(1/detJ())*J()*idv(u_vec[i])).evaluate()( 0,0 );
+        auto int_divx = integrate( elements( oneelement_mesh ), divv(u_vec[i])  ).evaluate()( 0,0 );
+        auto int_xn = integrate(boundaryfaces(oneelement_mesh), trans(N())*idv(u_vec[i]) ).evaluate()( 0,0 );
 
         BOOST_CHECK_CLOSE( int_divx, 1, 1e-13 );
         BOOST_CHECK_CLOSE( int_divx, int_xn, 1e-13 );
         checkStokesidv[i] = int_divx;
         checkStokesidv[i + Xh->nLocalDof()] = int_xn;
 
-        //BOOST_TEST_MESSAGE( "*** Stokes theorem - Linear form ***");
-        form1( _test=Xh, _vector=F, _init=true ) = integrate( elements( oneelement_mesh ), (1/detJ())*trace(J()*grad(V_ref)) );
+        form1( _test=Xh, _vector=F, _init=true ) = integrate( elements( oneelement_mesh ), div(V_ref) );
         auto form_divx = inner_product( u_vec[i], *F );
-        form1( _test=Xh, _vector=F, _init=true ) = integrate( boundaryfaces( oneelement_mesh ), trans(N())*(1/detJ())*J()*id(V_ref) );
+        form1( _test=Xh, _vector=F, _init=true ) = integrate( boundaryfaces( oneelement_mesh ), trans(N())*id(V_ref) );
         auto form_xn = inner_product( u_vec[i], *F );
 
         BOOST_CHECK_CLOSE( form_divx, 1, 1e-13 );
@@ -759,6 +720,7 @@ TestHDiv::shape_functions( gmsh_ptrtype ( *one_element_mesh_desc_fun )( double )
 FEELPP_ENVIRONMENT_WITH_OPTIONS( Feel::makeAbout(), Feel::makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( HDIV )
+
 BOOST_AUTO_TEST_CASE( test_hdiv_N0_ref )
 {
     BOOST_TEST_MESSAGE( "*** shape functions on reference element (1 elt) ***" );
@@ -789,7 +751,7 @@ BOOST_AUTO_TEST_CASE( test_hdiv_projection_ref )
 {
     BOOST_TEST_MESSAGE( "*** projection on reference element ***" );
     Feel::TestHDiv t;
-    Feel::Environment::changeRepository( boost::format( "/testsuite/feeldiscr/%1%/test_projection/%2%/" )
+    Feel::Environment::changeRepository( boost::format( "//%1%/test_projection/%2%/" )
                                          % Feel::Environment::about().appName()
                                          % "ref" );
     t.testProjector(&Feel::oneelement_geometry_ref);
@@ -798,7 +760,7 @@ BOOST_AUTO_TEST_CASE( test_hdiv_projection_real1 )
 {
     BOOST_TEST_MESSAGE( "*** projection on real element - homothetic transfo***" );
     Feel::TestHDiv t;
-    Feel::Environment::changeRepository( boost::format( "/testsuite/feeldiscr/%1%/test_projection/%2%/" )
+    Feel::Environment::changeRepository( boost::format( "/%1%/test_projection/%2%/" )
                                          % Feel::Environment::about().appName()
                                          % "real_1" );
     t.testProjector(&Feel::oneelement_geometry_real_1);
@@ -807,7 +769,7 @@ BOOST_AUTO_TEST_CASE( test_hdiv_projection_real2 )
 {
     BOOST_TEST_MESSAGE( "*** projection on real element - rotation pi/2 ***" );
     Feel::TestHDiv t;
-    Feel::Environment::changeRepository( boost::format( "/testsuite/feeldiscr/%1%/test_projection/%2%/" )
+    Feel::Environment::changeRepository( boost::format( "/%1%/test_projection/%2%/" )
                                          % Feel::Environment::about().appName()
                                          % "real_2" );
     t.testProjector(&Feel::oneelement_geometry_real_2);
@@ -816,16 +778,20 @@ BOOST_AUTO_TEST_CASE( test_hdiv_projection_real3 )
 {
     BOOST_TEST_MESSAGE( "*** projection on real element - rotation -pi/2 ***" );
     Feel::TestHDiv t;
-    Feel::Environment::changeRepository( boost::format( "/testsuite/feeldiscr/%1%/test_projection/%2%/" )
+    Feel::Environment::changeRepository( boost::format( "/%1%/test_projection/%2%/" )
                                          % Feel::Environment::about().appName()
-                                         % "real_2" );
+                                         % "real_3" );
     t.testProjector(&Feel::oneelement_geometry_real_3);
 }
-
 BOOST_AUTO_TEST_CASE( test_hdiv_example_1 )
 {
     BOOST_TEST_MESSAGE( "*** resolution of Darcy problem ***" );
     Feel::TestHDiv t;
+
+    Feel::Environment::changeRepository( boost::format( "/%1%/test_Darcy/h_%2%/" )
+                                         % Feel::Environment::about().appName()
+                                         % t.hSize() );
+
     t.exampleProblem1();
 }
 
