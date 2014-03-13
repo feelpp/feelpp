@@ -100,7 +100,7 @@ void runStokesDirichletLM()
     myblockGraph(0,0) = stencil( _test=Vh1,_trial=Vh1, _diag_is_nonzero=false, _close=false)->graph();
     myblockGraph(1,0) = stencil( _test=Vh2,_trial=Vh1, _diag_is_nonzero=false, _close=false)->graph();
     myblockGraph(0,1) = stencil( _test=Vh1,_trial=Vh2, _diag_is_nonzero=false, _close=false)->graph();
-    myblockGraph(1,1) = stencil( _test=Vh2,_trial=Vh2, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
+    //myblockGraph(1,1) = stencil( _test=Vh2,_trial=Vh2, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
     auto A = backend()->newBlockMatrix(_block=myblockGraph);
 
     BlocksBaseVector<double> myblockVec(2);
