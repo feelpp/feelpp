@@ -123,6 +123,8 @@ template<int NR, int NC, typename T> class MatrixBlock;
 template<typename T> class VectorBlockBase;
 template<int NR, typename T> class VectorBlock;
 
+template<typename T> class BlocksBaseSparseMatrix;
+
 /**
  * \class Backend
  * \brief base class for all linear algebra backends
@@ -363,21 +365,45 @@ public:
     /**
      * instantiate a new block matrix sparse
      */
-    sparse_matrix_ptrtype newBlockMatrixImpl( vf::BlocksBase<sparse_matrix_ptrtype> const & b,
-                                              bool copy_values=true,
-                                              bool diag_is_nonzero=true )
-    {
-        typedef MatrixBlockBase<typename sparse_matrix_ptrtype::element_type::value_type> matrix_block_type;
-        boost::shared_ptr<matrix_block_type> mb( new matrix_block_type( b, *this, copy_values, diag_is_nonzero ) );
-        return mb->getSparseMatrix();
-    }
-
-    sparse_matrix_ptrtype newBlockMatrixImpl( vf::BlocksBase<boost::shared_ptr<GraphCSR> > const & b,
+    sparse_matrix_ptrtype newBlockMatrixImpl( BlocksBaseSparseMatrix<value_type> const & b,
                                               bool copy_values=true,
                                               bool diag_is_nonzero=true )
     {
         typedef MatrixBlockBase<value_type> matrix_block_type;
-        boost::shared_ptr<matrix_block_type> mb( new matrix_block_type( b, *this, diag_is_nonzero ) );
+        typedef boost::shared_ptr<matrix_block_type> matrix_block_ptrtype;
+
+        matrix_block_ptrtype mb;
+        if ( b.isClosed() )
+        {
+            mb.reset( new matrix_block_type( b, *this, copy_values, diag_is_nonzero ) );
+        }
+        else
+        {
+            BlocksBaseSparseMatrix<value_type> copyBlock( b );
+            copyBlock.close();
+            mb.reset( new matrix_block_type( copyBlock, *this, copy_values, diag_is_nonzero ) );
+        }
+        return mb->getSparseMatrix();
+    }
+
+    sparse_matrix_ptrtype newBlockMatrixImpl( BlocksBaseGraphCSR const & b,
+                                              bool copy_values=true,
+                                              bool diag_is_nonzero=true )
+    {
+        typedef MatrixBlockBase<value_type> matrix_block_type;
+        typedef boost::shared_ptr<matrix_block_type> matrix_block_ptrtype;
+
+        matrix_block_ptrtype mb;
+        if ( b.isClosed() )
+        {
+            mb.reset( new matrix_block_type( b, *this, diag_is_nonzero ) );
+        }
+        else
+        {
+            BlocksBaseGraphCSR copyBlock( b );
+            copyBlock.close();
+            mb.reset( new matrix_block_type( copyBlock, *this, diag_is_nonzero ) );
+        }
         return mb->getSparseMatrix();
     }
 
