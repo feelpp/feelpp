@@ -921,9 +921,9 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
     fs::path p( M_filename );
     if ( time_index == 1 && fs::exists( p ) )
         fs::remove( p );
-    __out.open( M_filename.c_str(), std::ios::in |  std::ios::out |  std::ios::app | std::ios::binary );
+    //__out.open( M_filename.c_str(), std::ios::in |  std::ios::out |  std::ios::app | std::ios::binary );
     //else
-    //__out.open( M_filename.c_str(), std::ios::in |  std::ios::out | std::ios::binary );
+    __out.open( M_filename.c_str(), std::ios::in |  std::ios::out | std::ios::binary );
     CHECK( __out.good() ) << "problem opening " << M_filename;
     if ( time_index == 1 )
     {
@@ -965,6 +965,10 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
             __out.read( (char*)&buffer, sizeof(buffer) );
             CHECK( std::string(buffer) == std::string("END TIME STEP") ) << "Invalid position buffer: " << buffer;
             __out.seekg( index.fileblock_n_steps, std::ios::beg );
+            int64_type a = __out.tellg();
+
+            CHECK( a == index.fileblock_n_steps ) << "invalid fileblock_n_steps address: " << index.fileblock_n_steps << " != " << a;
+
             __out.read( (char*)&buffer, sizeof(buffer) );
             CHECK( std::string(buffer) == std::string("BEGIN TIME STEP") ) << "Invalid position buffer: " << buffer;
         }
