@@ -507,7 +507,7 @@ public:
     /**
      * H1 scalar product
      */
-    sparse_matrix_ptrtype innerProduct();
+    sparse_matrix_ptrtype energyMatrix();
 
     /**
      * update the PDE system with respect to \param mu

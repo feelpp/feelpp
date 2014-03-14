@@ -433,7 +433,7 @@ public:
     /**
      * inner product
      */
-    sparse_matrix_ptrtype innerProduct ( void )
+    sparse_matrix_ptrtype energyMatrix ( void )
     {
         return M;
     }
@@ -441,11 +441,12 @@ public:
     /**
      * inner product for mass matrix
      */
-    sparse_matrix_ptrtype innerProductForMassMatrix ( void )
+    sparse_matrix_ptrtype massMatrix ( void )
     {
         return InnerMassMatrix;
     }
 
+#if 0
     /**
      * inner product for the POD
      */
@@ -453,7 +454,7 @@ public:
     {
         return Mpod;
     }
-
+#endif
     /**
      * Given the output index \p output_index and the parameter \p mu, return
      * the value of the corresponding FEM output

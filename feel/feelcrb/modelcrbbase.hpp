@@ -630,17 +630,17 @@ public :
      * inner product for mass matrix
      * Transient models need to implement these functions.
      */
-    virtual sparse_matrix_ptrtype const& innerProductForMassMatrix () const
+    virtual sparse_matrix_ptrtype const& massMatrix () const
     {
-        throw std::logic_error("Your model is time-dependant so you MUST implement innerProductForMassMatrix function");
+        throw std::logic_error("Your model is time-dependant so you MUST implement MassMatrix function");
         return M;
     }
-    virtual sparse_matrix_ptrtype innerProductForMassMatrix ()
+    virtual sparse_matrix_ptrtype massMatrix ()
     {
-        throw std::logic_error("Your model is time-dependant so you MUST implement innerProductForMassMatrix function");
+        throw std::logic_error("Your model is time-dependant so you MUST implement MassMatrix function");
         return M;
     }
-
+#if 0
     virtual sparse_matrix_ptrtype const& innerProductForPod () const
     {
         throw std::logic_error("Your model is time-dependant so you MUST implement innerProductForPod function");
@@ -651,7 +651,7 @@ public :
         throw std::logic_error("Your model is time-dependant so you MUST implement innerProductForPod function");
         return M;
     }
-
+#endif
 
     /*
      * If the model is nonlinear and then need to implement an initial guess

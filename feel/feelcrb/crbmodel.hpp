@@ -354,7 +354,7 @@ public:
         u = Xh->element();
         v = Xh->element();
 
-        M_inner_product_matrix = M_model->innerProduct();
+        M_inner_product_matrix = M_model->energyMatrix();
         M_preconditioner_l2->setMatrix( M_inner_product_matrix );
 
         M_bdf = M_model->bdfModel();
@@ -421,7 +421,7 @@ public:
      * \brief Returns the matrix associated with the inner product
      * linked to energy norm
      */
-    sparse_matrix_ptrtype const& innerProduct() const
+    sparse_matrix_ptrtype const& energyMatrix() const
     {
         //return M_model->innerProduct();
         return M_inner_product_matrix;
@@ -431,7 +431,7 @@ public:
      * \brief Returns the matrix associated with the inner product
      * linked to energy norm
      */
-    sparse_matrix_ptrtype  innerProduct()
+    sparse_matrix_ptrtype  energyMatrix()
     {
         //return M_model->innerProduct();
         return M_inner_product_matrix;
@@ -440,17 +440,17 @@ public:
     /**
      * \brief Returns the matrix associated with the inner product
      */
-    sparse_matrix_ptrtype const& innerProductForMassMatrix() const
+    sparse_matrix_ptrtype const& massMatrix() const
     {
-        return M_model->innerProductForMassMatrix();
+        return M_model->massMatrix();
     }
 
     /**
      * \brief Returns the matrix associated with the inner product
      */
-    sparse_matrix_ptrtype  innerProductForMassMatrix()
+    sparse_matrix_ptrtype  massMatrix()
     {
-        return M_model->innerProductForMassMatrix();
+        return M_model->massMatrix();
     }
 
     /**
@@ -459,7 +459,8 @@ public:
      */
     sparse_matrix_ptrtype const& innerProductForPod() const
     {
-        return M_model->innerProductForPod();
+        //return M_model->innerProductForPod();
+        return M_inner_product_matrix;
     }
 
     /**
@@ -468,7 +469,8 @@ public:
      */
     sparse_matrix_ptrtype  innerProductForPod()
     {
-        return M_model->innerProductForPod();
+        return M_inner_product_matrix;
+        //return M_model->innerProductForPod();
     }
 
 
@@ -1907,7 +1909,7 @@ public:
      */
     double scalarProductForMassMatrix( vector_type const& X, vector_type const& Y )
     {
-        auto M = M_model->innerProductForMassMatrix();
+        auto M = M_model->massMatrix();
         return M->energy( X, Y );
     }
     /**
@@ -1915,7 +1917,7 @@ public:
      */
     double scalarProductForMassMatrix( vector_ptrtype const& X, vector_ptrtype const& Y )
     {
-        auto M = M_model->innerProductForMassMatrix();
+        auto M = M_model->massMatrix();
         return M->energy( X, Y );
     }
 
@@ -1929,8 +1931,9 @@ public:
     }
     double scalarProductForPod( vector_type const& X, vector_type const& Y , mpl::bool_<true> )
     {
-        auto M = M_model->innerProductForPod();
-        return M->energy( X, Y );
+        return M_inner_product_matrix->energy( X, Y );
+        //auto M = M_model->innerProductForPod();
+        //return M->energy( X, Y );
     }
     double scalarProductForPod( vector_type const& X, vector_type const& Y , mpl::bool_<false> )
     {
@@ -1947,7 +1950,8 @@ public:
     }
     double scalarProductForPod( vector_ptrtype const& X, vector_ptrtype const& Y , mpl::bool_<true> )
     {
-        return M_model->scalarProductForPod( X, Y );
+        return M_inner_product_matrix->energy( X, Y );
+        //return M_model->scalarProductForPod( X, Y );
     }
     double scalarProductForPod( vector_ptrtype const& X, vector_ptrtype const& Y , mpl::bool_<false> )
     {

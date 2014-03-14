@@ -276,7 +276,7 @@ public:
     /**
      * Matrix associated to scalar product used
      */
-    sparse_matrix_ptrtype innerProduct ( void )
+    sparse_matrix_ptrtype energyMatrix ( void )
     {
         return M;
     }
@@ -284,17 +284,9 @@ public:
     /**
      * inner product for mass matrix
      */
-    sparse_matrix_ptrtype innerProductForMassMatrix ( void )
+    sparse_matrix_ptrtype massMatrix ( void )
     {
         return InnerMassMatrix;
-    }
-
-    /**
-     * inner product for the POD
-     */
-    sparse_matrix_ptrtype innerProductForPod ( void )
-    {
-        return Mpod;
     }
 
     value_type output( int output_index, parameter_type const& mu, element_type &u, bool need_to_solve=false, bool export_outputs=false );
