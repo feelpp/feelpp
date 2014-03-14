@@ -38,7 +38,7 @@ template<int OrderU, int OrderP, int OrderT> class OpusModelRB;
 po::options_description
 makeEadsSCMOptions()
 {
-    return Feel::makeEadsOptions().add( Feel::crbSCMOptions() );
+    return Feel::makeEadsOptions();
 
 }
 

@@ -206,7 +206,29 @@ public:
 
     typedef Element element_type;
     typedef boost::shared_ptr<Element> element_ptrtype;
-    element_type element()  { return parameterspace_type::logRandom( this->shared_from_this(), true ); }
+    element_type element( bool broadcast = true )
+    {
+        //first, pick a random element, then
+        //look if there is negative elements and if not
+        //pick a log-random element
+        auto element = parameterspace_type::random( this->shared_from_this(), broadcast );
+        auto mu_min = parameterspace_type::min();
+        //auto mu_min = min_element.template get<0>();
+        int size = mu_min.size();
+        bool apply_log=true;
+        for(int i=0; i<size; i++)
+        {
+            if( mu_min(i) < 0 )
+                apply_log=false;
+        }
+
+        if( apply_log )
+        {
+            element = parameterspace_type::logRandom( this->shared_from_this(), broadcast );
+        }
+
+        return element;
+    }
     element_ptrtype elementPtr()  { element_ptrtype e( new element_type( this->shared_from_this() ) ); *e=element(); return e; }
     bool check() const
         {
@@ -246,6 +268,21 @@ public:
 #endif
             {}
 
+        /**
+         * \brief return number of elements in the sampling
+         */
+        int nbElements()
+        {
+            return super::size();
+        }
+
+        /**
+         * \brief return the last element in the sampling
+         */
+        element_type lastElement()
+        {
+            return super::back();
+        }
 
         /**
          * \brief create a sampling with elements given by the user
@@ -283,58 +320,244 @@ public:
             boost::mpi::broadcast( Environment::worldComm() , *this , Environment::worldComm().masterRank() );
         }
 
+        void distributeOnAllProcessors( int N , std::string file_name )
+        {
+
+            int total_proc = Environment::worldComm().globalSize();
+            int proc = Environment::worldComm().globalRank();
+            int master_proc = Environment::worldComm().masterRank();
+            int number_of_elements_per_proc =N/total_proc;
+            int extra_elements = N%total_proc;
+
+            LOG( INFO ) <<"total_proc : "<<total_proc;
+            LOG( INFO ) <<"proc : "<<proc;
+            LOG( INFO ) <<"total_number_of_elements : "<<N;
+            LOG( INFO ) <<"number_of_elements_per_proc : "<<number_of_elements_per_proc;
+            LOG( INFO ) <<"extra_elements : "<<extra_elements;
+
+            int total_number_of_elements_per_proc=0;
+            int proc_rcv_sampling=0;
+
+            int number_of_requests=2*(total_proc-1);
+            boost::mpi::request * reqs = new mpi::request[number_of_requests];
+            int count_reqs=0;
+
+            int tag=0;
+            int shift=0;
+
+
+            if( Environment::worldComm().isMasterRank() )
+            {
+                std::ifstream file ( file_name );
+                CHECK( file ) << "The file "<<file_name<<" was not found so we can't distribute the sampling on all processors\n";
+                this->readFromFile( file_name );
+
+                std::vector<Element> temporary_sampling;
+                for(int i=0; i<N; i++)
+                {
+                    temporary_sampling.push_back( super::at( i ) );
+                }
+                super::clear();
+
+
+                for(int proc_recv_sampling=0; proc_recv_sampling<total_proc; proc_recv_sampling++)
+                {
+                    if( proc_recv_sampling < extra_elements )
+                    {
+                        total_number_of_elements_per_proc=number_of_elements_per_proc+1;
+                        shift=proc_recv_sampling*total_number_of_elements_per_proc;
+                    }
+                    else
+                    {
+                        int e=number_of_elements_per_proc;
+                        total_number_of_elements_per_proc=e;
+                        shift=extra_elements*(e+1) + (proc_recv_sampling-extra_elements)*e;
+                    }
+
+                    if( proc_recv_sampling != master_proc )
+                    {
+                        for(int local_element=0; local_element<total_number_of_elements_per_proc;local_element++)
+                        {
+                            int idx=local_element+shift;
+                            super::push_back( temporary_sampling[idx] );
+                        }
+                    }
+
+                    if( total_proc > 1 )
+                    {
+                        if( proc_recv_sampling != master_proc )
+                        {
+                            reqs[count_reqs]=Environment::worldComm().isend( proc_recv_sampling , tag, *this);
+                            count_reqs++;
+                            super::clear();
+                        }
+                    }//total_proc > 1
+
+                }//proc_recv_sampling
+
+                //the master proc fill its sampling in last
+                //because sampling for others are deleted via super::clear
+                if( master_proc < extra_elements )
+                {
+                    total_number_of_elements_per_proc=number_of_elements_per_proc+1;
+                    shift=master_proc*total_number_of_elements_per_proc;
+                }
+                else
+                {
+                    int e=number_of_elements_per_proc;
+                    total_number_of_elements_per_proc=e;
+                    shift=extra_elements*(e+1) + (master_proc-extra_elements)*e;
+                }
+                for(int local_element=0; local_element<total_number_of_elements_per_proc;local_element++)
+                {
+                    int idx=local_element+shift;
+                    super::push_back( temporary_sampling[idx] );
+                }
+
+            }//master proc
+
+            if( proc != master_proc )
+            {
+                reqs[count_reqs]=Environment::worldComm().irecv( master_proc, tag, *this);
+                count_reqs++;
+            }//not master proc
+
+            boost::mpi::wait_all(reqs, reqs + number_of_requests);
+
+        }
+
         /**
          * \brief create a sampling with random elements
          * \param N the number of samples
+         * \param all_procs_have_same_sampling (boolean)
+         * \param file_name : file name where the sampling is written
          */
-        void randomize( int N )
+        void randomize( int N , bool all_procs_have_same_sampling=true, std::string file_name="" )
             {
                 CHECK( M_space ) << "Invalid(null pointer) parameter space for parameter generation\n";
 
-                // first empty the set
-                this->clear();
                 //std::srand(static_cast<unsigned>(std::time(0)));
 
-                // fill with log Random elements from the parameter space
-                //only with one proc and then broadcast
-                if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
-                {
-                    for ( int i = 0; i < N; ++i )
-                    {
-                        super::push_back( parameterspace_type::logRandom( M_space, false ) );
-                    }
+                this->clear();
 
+                bool generate_the_file=false;
+                std::ifstream file ( file_name );
+                if( !file || all_procs_have_same_sampling )
+                {
+                    generate_the_file=true;
                 }
 
-                boost::mpi::broadcast( Environment::worldComm() , *this , Environment::worldComm().masterRank() );
+                auto min = this->min();
+                auto mu_min = min.template get<0>();
+                int size = mu_min.size();
+                bool apply_log=true;
+                for(int i=0; i<size; i++)
+                {
+                    if( mu_min(i) < 0 )
+                        apply_log=false;
+                }
 
+                // fill with log Random elements from the parameter space
+                //only with one proc and then send a part of the sampling to each other proc
+                if( Environment::worldComm().isMasterRank() && generate_the_file )
+                {
+
+                    bool already_exist;
+                    // first element
+                    auto mu = parameterspace_type::random( M_space, false );
+                    if( apply_log )
+                    {
+                        mu = parameterspace_type::logRandom( M_space , false );
+                    }
+                    super::push_back( mu );
+
+                    for(int i=1; i<N; i++)
+                    {
+                        //while mu is already in temporary_sampling
+                        //we pick an other parameter
+                        do
+                        {
+                            already_exist=false;
+                            if( apply_log )
+                            {
+                                mu = parameterspace_type::logRandom( M_space, false );
+                            }
+                            else
+                            {
+                                mu = parameterspace_type::random( M_space, false );
+                            }
+
+                            BOOST_FOREACH( auto _mu, *this )
+                            {
+                                if( mu == _mu )
+                                    already_exist=true;
+                            }
+                        }
+                        while( already_exist );
+
+                        super::push_back( mu );
+
+                    }//loop over N
+
+                    this->writeOnFile( file_name );
+                }//master proc
+
+                if( all_procs_have_same_sampling )
+                {
+                    boost::mpi::broadcast( Environment::worldComm() , *this , Environment::worldComm().masterRank() );
+                }
+                else
+                {
+                    this->distributeOnAllProcessors( N , file_name );
+                }
             }
 
         /**
          * \brief create a sampling with log-equidistributed elements
          * \param N the number of samples
+         * \param all_procs_have_same_sampling (boolean)
+         * \param file_name : file name where the sampling is written
          */
-        void logEquidistribute( int N )
+        void logEquidistribute( int N , bool all_procs_have_same_sampling=true,  std::string file_name="" )
             {
-                // first empty the set
                 this->clear();
 
-                if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                bool generate_the_file=false;
+                std::ifstream file ( file_name );
+                if( ! file )
                 {
+                    generate_the_file=true;
+                }
+
+                if( Environment::worldComm().isMasterRank() && generate_the_file )
+                {
+                    std::vector<Element> temporary_sampling;
+
                     // fill with log Random elements from the parameter space
+                    // first we fill temporary_sampling and then we distribute a part of it to each proc
                     for ( int i = 0; i < N; ++i )
                     {
                         double factor = double( i )/( N-1 );
-                        super::push_back( parameterspace_type::logEquidistributed( factor,
-                                                                                   M_space ) );
+                        auto mu = parameterspace_type::logEquidistributed( factor,M_space ) ;
+                        super::push_back( mu );
                     }
+                    this->writeOnFile( file_name );
                 }
-                boost::mpi::broadcast( Environment::worldComm() , *this , Environment::worldComm().masterRank() );
+                if( all_procs_have_same_sampling )
+                {
+                    boost::mpi::broadcast( Environment::worldComm() , *this , Environment::worldComm().masterRank() );
+                }
+                else
+                {
+                    this->distributeOnAllProcessors( N , file_name );
+                }//if all procs don't have  same sampling
+
             }
 
         /**
          * \brief create a sampling with log-equidistributed elements
          * \param N : vector containing the number of samples on each direction
+         * if N[direction] < 1 then we take minimum value for this direction
          */
         void logEquidistributeProduct( std::vector<int> N )
         {
@@ -349,10 +572,21 @@ public:
                 std::vector< std::vector< double > > components;
                 components.resize( number_of_directions );
 
+                auto min=M_space->min();
+
                 for(int direction=0; direction<number_of_directions; direction++)
                 {
-                    std::vector<double> coeff_vector = parameterspace_type::logEquidistributeInDirection( M_space , direction , N[direction] );
-                    components[direction]= coeff_vector ;
+                    if( N[direction] > 0 )
+                    {
+                        std::vector<double> coeff_vector = parameterspace_type::logEquidistributeInDirection( M_space , direction , N[direction] );
+                        components[direction]= coeff_vector ;
+                    }
+                    else
+                    {
+                        std::vector<double> coeff_vector( 1 );
+                        coeff_vector[0]=min(direction);
+                        components[direction] = coeff_vector ;
+                    }
                 }
 
                 generateElementsProduct( components );
@@ -490,23 +724,23 @@ public:
          */
         void writeOnFile( std::string file_name = "list_of_parameters_taken" )
             {
-                if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                int proc = Environment::worldComm().globalRank();
+                int total_proc = Environment::worldComm().globalSize();
+                //std::string real_file_name = (boost::format(file_name+"-proc%1%on%2%") %proc %total_proc ).str();
+                std::ofstream file;
+                file.open( file_name,std::ios::out );
+                element_type mu( M_space );
+                int size = mu.size();
+                int number = 0;
+                BOOST_FOREACH( mu, *this )
                 {
-                    std::ofstream file;
-                    file.open( file_name,std::ios::out );
-                    element_type mu( M_space );
-                    int size = mu.size();
-                    int number = 0;
-                    BOOST_FOREACH( mu, *this )
-                    {
-                        file<<std::setprecision(15)<<" mu_"<<number<<"= [ ";
-                        for(int i=0; i<size-1; i++)
-                            file << mu[i]<<" , ";
-                        file<< mu[size-1] << " ] \n" ;
-                        number++;
-                    }
-                    file.close();
+                    file<<std::setprecision(15)<<" mu_"<<number<<"= [ ";
+                    for(int i=0; i<size-1; i++)
+                        file << mu[i]<<" , ";
+                    file<< mu[size-1] << " ] \n" ;
+                    number++;
                 }
+                file.close();
             }
 
         /**
@@ -588,23 +822,45 @@ public:
         /**
          * \brief create a sampling with equidistributed elements
          * \param N the number of samples
+         * \param all_procs_have_same_sampling (boolean)
+         * \param file_name : file name where the sampling is written
          */
-        void equidistribute( int N )
+        void equidistribute( int N , bool all_procs_have_same_sampling=true, std::string file_name="" )
             {
-                // first empty the set
                 this->clear();
 
-                if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                bool generate_the_file=false;
+                std::ifstream file ( file_name );
+                if( ! file )
+                {
+                    generate_the_file=true;
+                }
+
+                if( Environment::worldComm().isMasterRank() && generate_the_file )
                 {
                     // fill with log Random elements from the parameter space
+                    std::vector< Element > temporary_sampling;
                     for ( int i = 0; i < N; ++i )
                     {
                         double factor = double( i )/( N-1 );
-                        super::push_back( parameterspace_type::equidistributed( factor,
-                                                                                M_space ) );
+                        auto mu = parameterspace_type::equidistributed( factor, M_space );
+                        if( all_procs_have_same_sampling )
+                            super::push_back( mu );
+                        else
+                            temporary_sampling.push_back( mu );
                     }
+
+                    this->writeOnFile( file_name );
+
+                }//master proc
+                if( all_procs_have_same_sampling )
+                {
+                    boost::mpi::broadcast( Environment::worldComm() , *this , Environment::worldComm().masterRank() );
                 }
-                boost::mpi::broadcast( Environment::worldComm() , *this , Environment::worldComm().masterRank() );
+                else
+                {
+                    this->distributeOnAllProcessors( N , file_name );
+                }//if all procs don't have  same sampling
             }
 
         /**
@@ -641,7 +897,7 @@ public:
          * \brief Returns the minimum element in the sampling and its index
          */
         boost::tuple<element_type,size_type>
-        min() const
+        min( bool check=true ) const
             {
                 element_type mumin( M_space );
                 mumin = M_space->max();
@@ -649,17 +905,36 @@ public:
                 element_type mu( M_space );
                 int index = 0;
                 int i = 0;
+                double mumin_norm = mumin.norm();
                 BOOST_FOREACH( mu, *this )
                 {
-                    if ( mu.norm() < mumin.norm()  )
+                    if ( mu.norm() < mumin_norm  )
                     {
                         mumin = mu;
                         index = i;
+                        mumin_norm = mumin.norm();
                     }
 
                     ++i;
                 }
-                mumin.check();
+
+                //do communications to have global min
+                int world_size = Environment::worldComm().globalSize();
+                std::vector<double> max_world( world_size );
+                mpi::all_gather( Environment::worldComm().globalComm(),
+                                 mumin_norm,
+                                 max_world );
+                auto it_min = std::min_element( max_world.begin() , max_world.end() );
+                int proc_having_good_mu = it_min - max_world.begin();
+                auto tuple = boost::make_tuple( mumin , index );
+                boost::mpi::broadcast( Environment::worldComm() , tuple , proc_having_good_mu );
+
+                mumin = tuple.template get<0>();
+                index = tuple.template get<1>();
+
+                if( check )
+                    mumin.check();
+
                 return boost::make_tuple( mumin, index );
             }
 
@@ -667,7 +942,7 @@ public:
          * \brief Returns the maximum element in the sampling and its index
          */
         boost::tuple<element_type,size_type>
-        max() const
+        max( bool check=true ) const
             {
                 element_type mumax( M_space );
                 mumax = M_space->min();
@@ -675,17 +950,36 @@ public:
                 element_type mu( M_space );
                 int index = 0;
                 int i = 0;
+                double mumax_norm = mumax.norm();
                 BOOST_FOREACH( mu, *this )
                 {
-                    if ( mu.norm() > mumax.norm()  )
+                    if ( mu.norm() > mumax_norm  )
                     {
                         mumax = mu;
                         index = i;
+                        mumax_norm = mumax.norm();
                     }
 
                     ++i;
                 }
-                mumax.check();
+
+                //do communications to have global min
+                int world_size = Environment::worldComm().globalSize();
+                std::vector<double> max_world( world_size );
+                mpi::all_gather( Environment::worldComm().globalComm(),
+                                 mumax_norm,
+                                 max_world );
+                auto it_max = std::max_element( max_world.begin() , max_world.end() );
+                int proc_having_good_mu = it_max - max_world.begin();
+                auto tuple = boost::make_tuple( mumax , index );
+                boost::mpi::broadcast( Environment::worldComm() , tuple , proc_having_good_mu );
+
+                mumax = tuple.template get<0>();
+                index = tuple.template get<1>();
+
+                if( check )
+                    mumax.check();
+
                 return boost::make_tuple( mumax, index );
             }
         /**
@@ -958,7 +1252,7 @@ public:
      */
     static element_type random( parameterspace_ptrtype space, bool broadcast = true )
         {
-            std::srand( static_cast<unsigned>( std::time( 0 ) ) );
+            //std::srand( static_cast<unsigned>( std::time( 0 ) ) );
             element_type mur( space );
             if ( broadcast )
             {
@@ -975,7 +1269,7 @@ public:
             //mur.setRandom()/RAND_MAX;
             //std::cout << "mur= " << mur << "\n";
             element_type mu( space );
-            mu.array() = space->min()+mur.array()*( space->max()-space->min() );
+            mu.array() = space->min().array()+mur.array()*( space->max().array()-space->min().array() );
             if ( broadcast )
                 mu.check();
             return mu;
@@ -1105,7 +1399,33 @@ ParameterSpace<P>::Sampling::complement() const
 {
     //std::cout << "[ParameterSpace::Sampling::complement] start\n";
     sampling_ptrtype complement;
+    bool is_in_sampling;
+    int index=0;
 
+    if ( M_supersampling )
+    {
+        complement = sampling_ptrtype( new sampling_type( M_space, 1, M_supersampling ) );
+        complement->clear();
+        BOOST_FOREACH( auto mu_supersampling, *M_supersampling )
+        {
+            is_in_sampling=false;
+            BOOST_FOREACH( auto mu_sampling, *this )
+            {
+                if( mu_supersampling == mu_sampling )
+                {
+                    is_in_sampling=true;
+                }
+            }
+            if( ! is_in_sampling )
+                complement->push_back( mu_supersampling , index );
+
+            index++;
+        }
+        return complement;
+    }
+    return complement;
+#if 0
+    //this method works if all procs have the same super sampling
     if ( M_supersampling )
     {
         //  std::cout << "[ParameterSpace::Sampling::complement] super sampling available\n";
@@ -1134,8 +1454,8 @@ ParameterSpace<P>::Sampling::complement() const
 
         return complement;
     }
+#endif
 
-    return complement;
 }
 template<int P>
 boost::shared_ptr<typename ParameterSpace<P>::Sampling>

@@ -285,15 +285,17 @@ public:
     vector_type beta( parameter_type const& mu, size_type M  ) const { return M_model->beta( mu , M ); }
     vector_type beta( parameter_type const& mu, solution_type const& T, size_type M  ) const {return M_model->beta( mu , T , M ); }
 
-    std::vector<double> studyConvergence( parameter_type const & mu, solution_type & solution ) const;
+    void studyConvergence( parameter_type const & mu, solution_type & solution , std::vector< std::string > all_file_name ) const;
+    element_type elementErrorEstimation( parameter_type const & mu, solution_type const& solution , int M ) const ;
+    double errorEstimationLinf( parameter_type const & mu, solution_type const& solution , int M ) const ;
 
     void computationalTimeStatistics( std::string appname )  { return M_model->computationalTimeStatistics(); }
     element_type residual ( size_type M ) const;
 
     parameter_residual_type computeBestFit( sampling_ptrtype trainset, int __M );
 
-    element_type operator()( parameter_type const& mu , int N) const { return expansion( M_model->q(), M_model->beta( mu ) , N); }
-    element_type operator()( parameter_type const& mu, solution_type const& T , int N ) const { return expansion( M_model->q(), M_model->beta( mu, T ) , N ); }
+    element_type operator()( parameter_type const& mu , int N) const { return expansion( M_model->q(), M_model->beta( mu, N ) , N); }
+    element_type operator()( parameter_type const& mu, solution_type const& T , int N ) const { return expansion( M_model->q(), M_model->beta( mu, T, N ) , N ); }
 
     /**
        orthonormalize
@@ -370,6 +372,39 @@ public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
+template <typename ModelType>
+typename EIM<ModelType>::element_type
+EIM<ModelType>::elementErrorEstimation( parameter_type const & mu, solution_type const& solution , int M ) const
+{
+    double max = M_model->mMax();
+    CHECK( M < max-1 ) << "Invalid number M for errorEstimation: " << M << " Mmax : " << max << "\n";
+    auto t = M_model->interpolationPoint( M+1 );
+    auto projected_expression = M_model->operator()( solution , t,  mu );
+    //std::cout<<"expression evaluated at ponint ( "<<t(0)<<" , "<<t(1)<<" ) : \n"<< expression <<std::endl;
+    auto eim_approximation = this->operator()(mu, solution, M);
+    double eim = eim_approximation(t)(0,0,0);
+    //std::cout<<"eim : "<<eim<<std::endl;
+    double coeff = math::abs( projected_expression - eim );
+    auto result = M_model->q( M+1 );
+    result.scale( coeff );
+    return result;
+}
+
+template <typename ModelType>
+double
+EIM<ModelType>::errorEstimationLinf( parameter_type const & mu, solution_type const& solution , int M ) const
+{
+    double max = M_model->mMax();
+    CHECK( M < max-1 ) << "Invalid number M for errorEstimation: " << M << " Mmax : " << max << "\n";
+    auto t = M_model->interpolationPoint( M+1 );
+    auto projected_expression = M_model->operator()( solution , t,  mu );
+    //std::cout<<"expression evaluated at ponint ( "<<t(0)<<" , "<<t(1)<<" ) : \n"<< expression <<std::endl;
+    auto eim_approximation = this->operator()(mu, solution, M);
+    double eim = eim_approximation(t)(0,0,0);
+    //std::cout<<"eim : "<<eim<<std::endl;
+    double coeff = math::abs( projected_expression - eim );
+    return coeff;
+}
 
 template<typename ModelType>
 void
@@ -438,7 +473,13 @@ EIM<ModelType>::offline(  )
 
     bool expression_expansion = option(_name="eim.compute-expansion-of-expression").template as<bool>() ;
 
-    LOG(INFO) << "[offline] starting offline stage ...\n";
+    if( Environment::worldComm().isMasterRank() )
+    {
+        std::cout<<" ******************offline EIM for expression "<<M_model->name()<<" start "<<std::endl;
+    }
+    boost::mpi::timer timer,timer2,timer3;
+
+    DVLOG(2) << "[offline] starting offline stage ...\n";
     M_M = 1;
     M_max_q=0;
     int max_z=0;
@@ -451,9 +492,10 @@ EIM<ModelType>::offline(  )
         int sampling_size = M_vm["eim.sampling-size"].template as<int>();
         std::string file_name = ( boost::format("eim_trainset_%1%") % sampling_size ).str();
         std::ifstream file ( file_name );
+        bool all_procs_have_same_sampling=true;
         if( ! file )
         {
-            M_trainset->randomize( sampling_size  );
+            M_trainset->randomize( sampling_size , all_procs_have_same_sampling );
             M_trainset->writeOnFile(file_name);
         }
         else
@@ -463,24 +505,30 @@ EIM<ModelType>::offline(  )
         }
     }
 
-    LOG(INFO) << "[offline] create mu_1...\n";
+    DVLOG(2) << "[offline] create mu_1...\n";
 
     // min element in Dmu to start with (in // each proc have the same element)
-    auto mu = M_model->parameterSpace()->min();
+    auto mu = M_model->parameterSpace()->max();
 
-    LOG( INFO ) << "mu ( of size "<<mu.size()<<"): \n"<<mu;
+    DVLOG( 2 ) << "mu ( of size "<<mu.size()<<"): \n"<<mu;
 
     //store this value
     M_model->clearParameterSampling();
     M_model->addParameter( mu );
 
-    LOG( INFO ) <<" parameter added";
+    DVLOG( 2 ) <<" parameter added";
 
     // store the solution of the problem for a given mu
     auto solution = M_model->modelFunctionSpace()->element();
+    timer2.restart();
     solution = M_model->solve( mu );
-
-    LOG( INFO ) << "solution computed";
+    double time=timer2.elapsed();
+    double time_=0;
+    if( Environment::worldComm().isMasterRank() )
+    {
+        std::cout<<" -- model solution computed in "<<time<<"s"<<std::endl;
+    }
+    DVLOG( 2 ) << "solution computed";
 
     if( expression_expansion )
     {
@@ -494,29 +542,43 @@ EIM<ModelType>::offline(  )
     }
     LOG(INFO) << "compute finite element solution at mu_1 done";
 
-    LOG(INFO) << "compute T^" << 0 << "...\n";
+    DVLOG(2) << "compute T^" << 0 << "...\n";
     // Build T^0
 
+    timer2.restart();
     auto zmax = M_model->computeMaximumOfExpression( mu , solution );
     // store space coordinate where max absolute value occurs
     auto t = zmax.template get<1>();
+    time=timer2.elapsed();
+    if( Environment::worldComm().isMasterRank() )
+    {
+        std::cout<<" -- maximum of expression computed in "<<time<<"s"<<std::endl;
+    }
+
     M_model->addInterpolationPoint( t );
     DVLOG( 2 )<<"add the interpolation point : \n"<<t;
     DVLOG( 2 ) << "norm Linf = " << zmax.template get<0>() << " at " << zmax.template get<1>() << "\n";
 
     //if( ! expression_expansion ) // fill M_g and M_q
-    if( 1 )
+    //if( 1 )
     {
         LOG(INFO) << "compute and insert q_0...\n";
         // insert first element
+        timer2.restart();
         auto q = M_model->operator()( solution , mu );
+        time=timer2.elapsed();
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<" -- expression evaluated in mu in "<<time<<"s"<<std::endl;
+        }
         //q.scale( 1./zmax.template get<0>() );
         q.scale( 1./ q( t )( 0, 0, 0 ) );
         M_max_q++;
-        LOG( INFO ) << "max-q : "<<M_max_q;
+        DVLOG( 2 ) << "max-q : "<<M_max_q;
         M_model->addBasis( q );
-        LOG( INFO ) << "basis q added";
+        DVLOG( 2 ) << "basis q added";
     }
+#if 0
     else
     {
         bool do_projection=true;
@@ -526,19 +588,26 @@ EIM<ModelType>::offline(  )
         auto q_projected = boost::any_cast<element_type>( any_q );
         //M_q.push_back( q_projected );
     }
-
     auto zero = vf::project( _space=M_model->functionSpace() , _expr=cst(0) );
     if( expression_expansion )
     {
         M_model->addZ( zero );
         max_z++;
     }
+#endif
 
     M_model->setMax(M_M, M_max_q,  max_z, max_solution);
     ++M_M;
 
+    timer2.restart();
     M_model->fillInterpolationMatrixFirstTime( );
-
+    time=timer2.elapsed();
+    time_=timer3.elapsed();
+    if( Environment::worldComm().isMasterRank() )
+    {
+        std::cout<<" -- interpolation matrix filled in "<<time<<"s"<<std::endl;
+        std::cout<<" -- time for this basis : "<<time_<<"s"<<std::endl;
+    }
     /**
        \par build \f$W^g_M\f$
     */
@@ -548,25 +617,47 @@ EIM<ModelType>::offline(  )
     //for(  ; M_M < M_WN; ++M_M ) //err >= this->M_tol )
     for(  ; M_M < option(_name="eim.dimension-max").template as<int>(); ++M_M ) //err >= this->M_tol )
     {
-
+        timer3.restart();
         LOG(INFO) << "M=" << M_M << "...\n";
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<" ================================ "<<std::endl;
+        }
 
-        LOG(INFO) << "compute best fit error...\n";
+        DVLOG(2) << "compute best fit error...\n";
+        timer2.restart();
         // compute mu = arg max inf ||G(.;mu)-z||_infty
         auto bestfit = computeBestFit( M_trainset, this->M_M-1 );
-
+        time=timer2.elapsed();
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<" -- best fit computed in "<<time<<"s"<<std::endl;
+        }
         mu = bestfit.template get<1>();
         M_model->addParameter( mu );
 
+        timer2.restart();
         solution = M_model->solve( mu );
+        time=timer2.elapsed();
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<" -- model solution computed in "<<time<<"s"<<std::endl;
+        }
 
+#if 0
         if( expression_expansion )//store the solution only if we want to have EIM expansion of the expression
         {
             M_model->addSolution( solution );
             max_solution++;
         }
-
+#endif
+        timer2.restart();
         auto gmax = M_model->computeMaximumOfExpression( mu , solution  );
+        time=timer2.elapsed();
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<" -- maximum of expression computed in "<<time<<"s"<<std::endl;
+        }
 
         DVLOG(2) << "best fit max error = " << bestfit.template get<0>() << " relative error = " << bestfit.template get<0>()/gmax.template get<0>() << " at mu = "
                  << bestfit.template get<1>() << "  tolerance=" << M_vm["eim.error-max"].template as<double>() << "\n";
@@ -584,14 +675,21 @@ EIM<ModelType>::offline(  )
         //if( ! expression_expansion )
         {
             // update M_g(:,M-1)
+            timer2.restart();
             auto g_bestfit = M_model->operator()( bestfit.template get<1>() );
+            time=timer2.elapsed();
+            if( Environment::worldComm().isMasterRank() )
+            {
+                std::cout<<" -- expression evaluated in mu in "<<time<<"s"<<std::endl;
+            }
+
             //M_g.push_back( g_bestfit );
             M_model->addExpressionEvaluation( g_bestfit );
             //orthonormalize( M_g );
         }
 
         // build T^m such that T^m-1 \subset T^m
-        LOG(INFO) << "[offline] compute residual M="<< M_M << "..." <<"\n";
+        DVLOG(2) << "[offline] compute residual M="<< M_M << "..." <<"\n";
         //res = this->residual(M_M-1);
 
         //LOG(INFO) << "residual = " << res << "\n";
@@ -599,27 +697,36 @@ EIM<ModelType>::offline(  )
         //auto resmax = normLinf( _range=elements(M_model->mesh()), _pset=_Q<5>(), _expr=idv(res) );
         auto coeff = M_model->computeExpansionCoefficients( mu ,  solution , M_M-1 );
         auto z = expansion( M_model->q(), coeff , M_M-1 );
-
+#if 0
         if( expression_expansion )
         {
             M_model->addZ( z );
             max_z++;
         }
+#endif
+        timer2.restart();
         auto resmax = M_model->computeMaximumOfResidual( mu, solution , z );
+        time=timer2.elapsed();
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<" -- Maximum of residual computed in "<<time<<"s"<<std::endl;
+        }
+
         t = resmax.template get<1>();
         // store space coordinate where max absolute value occurs
         //M_model->addInterpolationPoint( t ); //(t has not to be added in M_ctx before projection of the residual)
-        LOG(INFO) << "[offline] store coordinates where max absolute value is attained : \n" << resmax.template get<1>();
+        DVLOG(2) << "[offline] store coordinates where max absolute value is attained : \n" << resmax.template get<1>();
 
         //if( ! expression_expansion )
-        if( 1 )
+        //if( 1 )
         {
             auto res = M_model->projectedResidual( M_M-1 );
-            LOG(INFO) << "[offline] scale new basis function by " << 1./resmax.template get<0>() << "..." <<"\n";
+            DVLOG(2) << "[offline] scale new basis function by " << 1./resmax.template get<0>() << "..." <<"\n";
             res.scale( 1./res( t )(0,0,0) );
-            LOG(INFO) << "store new basis function..." <<"\n";
+            DVLOG(2) << "store new basis function..." <<"\n";
             M_model->addBasis( res );
         }
+#if 0
         else
         {
             bool do_projection=true;
@@ -629,12 +736,21 @@ EIM<ModelType>::offline(  )
             auto q_projected = boost::any_cast<element_type>( any_q );
             //M_q.push_back( q_projected );
         }
+#endif
         // Store interpolation point
         M_model->addInterpolationPoint( t );
 
         M_max_q++;
         M_model->setMax(M_M, M_max_q,  max_z, max_solution);
+        timer2.restart();
         M_model->fillInterpolationMatrix( );
+        time=timer2.elapsed();
+        time_=timer3.elapsed();
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<" -- interpolation matrix filled in "<<time<<"s"<<std::endl;
+            std::cout<<" -- time for this basis : "<<time_<<"s"<<std::endl;
+        }
 
         VLOG(2) << "================================================================================\n";
         //if we want to impose the use of dimension-max functions, we don't want to stop here
@@ -643,44 +759,92 @@ EIM<ModelType>::offline(  )
             ++M_M;
             break;
         }
+
     }
 
-
+    time=timer.elapsed();
+    if( Environment::worldComm().isMasterRank() )
+        std::cout<<"Total time for offline step of EIM "<<M_model->name()<<" : "<<time<<"s\n"<<std::endl;
     LOG(INFO) << "[offline] M_max = " << M_M-1 << "...\n";
 
     this->M_offline_done = true;
 }
 
 template<typename ModelType>
-std::vector<double>
-EIM<ModelType>::studyConvergence( parameter_type const & mu , solution_type & solution) const
+void
+EIM<ModelType>::studyConvergence( parameter_type const & mu , solution_type & solution , std::vector<std::string> all_file_name ) const
 {
     LOG(INFO) << " Convergence study \n";
     int proc_number =  Environment::worldComm().globalRank();
 
     std::vector<double> l2ErrorVec(M_model->mMax(), 0.0);
 
-    std::string mu_str;
-    for ( int i=0; i<mu.size(); i++ )
-        mu_str= mu_str + ( boost::format( "_%1%" ) %mu(i) ).str() ;
+    //here are files containing l2error and others quantities for all runs performed
+    int number_of_files=all_file_name.size();
+    std::ofstream fileL2 ( all_file_name[0] ,std::ios::out | std::ios::app );
+    std::ofstream fileL2estimated (  all_file_name[1] , std::ofstream::out | std::ofstream::app );
+    std::ofstream fileL2ratio (  all_file_name[2] , std::ofstream::out | std::ofstream::app );
+    std::ofstream fileLINF (  all_file_name[3] , std::ofstream::out | std::ofstream::app );
+    std::ofstream fileLINFestimated (  all_file_name[4] , std::ofstream::out | std::ofstream::app );
+    std::ofstream fileLINFratio (  all_file_name[5] , std::ofstream::out | std::ofstream::app );
+    std::string head = "#Nbasis \t  L2_error \t L2_estimated \t ratio_l2 \t linf_error \t linf_estimated \t ratio_linf \n";
 
-    std::string file_name = "cvg-eim-"+M_model->name()+"-"+mu_str+".dat";
-    if( std::ifstream( file_name ) )
-        std::remove( file_name.c_str() );
-
-    std::ofstream conv;
-    if( proc_number == Environment::worldComm().masterRank() )
-        {
-            conv.open(file_name, std::ios::app);
-            conv << "#Nb_basis" << "\t" << "L2_error" << "\n";
-        }
-
-    bool use_expression = option(_name="eim.compute-error-with-truth-expression").template as<bool>();
     int max = M_model->mMax();
-    for(int N=1; N<=max; N++)
+    int Nmax=0;
+    if( Environment::worldComm().isMasterRank() )
     {
-
+        Nmax = max-2;
+        fileL2 << Nmax<< "\t";
+        fileL2estimated << Nmax <<"\t";
+        fileL2ratio << Nmax  <<"\t" ;
+        fileLINF << Nmax  <<"\t" ;
+        fileLINFestimated << Nmax  <<"\t" ;
+        fileLINFratio << Nmax  <<"\t" ;
+    }
+    for(int N=1; N<max-1; N++)
+    {
+        std::string str = "\t";
+        if( N == Nmax ) str = "\n";
         double exprl2norm = 0 , diffl2norm = 0 ;
+
+        exprl2norm =M_model->projExpressionL2Norm( solution , mu );
+        auto eim_approximation = this->operator()(mu , solution, N);
+        diffl2norm = M_model->projDiffL2Norm( solution , mu , eim_approximation );
+        double absolute_linf_error = M_model->projDiffLinfNorm( solution , mu , eim_approximation );
+
+        double relative_l2_error = diffl2norm / exprl2norm ;
+        double absolute_l2_error = diffl2norm ;
+        //interpolation error : || projection_g - g ||_L2
+        double interpolation_error = M_model->interpolationError( solution , mu );
+
+        double absolute_linf_error_estimated = this->errorEstimationLinf( mu , solution, N );
+        auto error_estimation_element = this->elementErrorEstimation( mu , solution, N );
+        double absolute_l2_error_estimated = error_estimation_element.l2Norm();
+        double relative_l2_error_estimated = absolute_l2_error_estimated/exprl2norm;
+        double relative_ratio_l2 = math::abs( relative_l2_error_estimated / relative_l2_error );
+        double absolute_ratio_linf = math::abs( absolute_linf_error_estimated / absolute_linf_error );
+        //l2ErrorVec[N-1] = relative_l2_error; // /!\ l2ErrorVec[i] represents error with i+1 bases
+        if( Environment::worldComm().isMasterRank() )
+        {
+            int nmax=max-2;
+            fileL2            << relative_l2_error            <<str;
+            fileL2estimated   << relative_l2_error_estimated  <<str;
+            fileL2ratio       << relative_ratio_l2            <<str;
+            fileLINF          << absolute_linf_error          <<str;
+            fileLINFestimated << absolute_linf_error_estimated<<str;
+            fileLINFratio     << absolute_ratio_linf          <<str;
+        }
+    }//loop over basis functions
+
+    fileL2.close();
+    fileL2estimated.close();
+    fileL2ratio.close();
+    fileLINF.close();
+    fileLINFestimated.close();
+    fileLINFratio.close();
+
+#if 0
+    bool use_expression = option(_name="eim.compute-error-with-truth-expression").template as<bool>();
 
         if( use_expression )
         {
@@ -688,17 +852,7 @@ EIM<ModelType>::studyConvergence( parameter_type const & mu , solution_type & so
             auto eim_approximation = this->operator()(mu , solution, N);
             diffl2norm = M_model->diffL2Norm( solution , mu , eim_approximation );
         }
-        else
-        {
-            exprl2norm =M_model->projExpressionL2Norm( solution , mu );
-            auto eim_approximation = this->operator()(mu , solution, N);
-            diffl2norm = M_model->projDiffL2Norm( solution , mu , eim_approximation );
-        }
 
-        double l2_error = diffl2norm / exprl2norm ;
-        //interpolation error : || projection_g - g ||_L2
-        double interpolation_error = M_model->interpolationError( solution , mu );
-#if 0
         int size = mu.size();
         LOG(INFO)<<" mu = [ ";
         for ( int i=0; i<size-1; i++ ) LOG(INFO)<< mu[i] <<" , ";
@@ -717,16 +871,24 @@ EIM<ModelType>::studyConvergence( parameter_type const & mu , solution_type & so
         LOG(INFO) << "norm_l2_approximation = " << norm_l2_approximation << "\n";
         auto l2_error = math::abs( norm_l2_expression - norm_l2_approximation ) / norm_l2_expression;
         LOG(INFO) << "norm l2 error = " << l2_error << "\n";
+
+    std::string mu_str;
+    for ( int i=0; i<mu.size(); i++ )
+        mu_str= mu_str + ( boost::format( "_%1%" ) %mu(i) ).str() ;
+
+    std::string file_name = "cvg-eim-"+M_model->name()+"-"+mu_str+".dat";
+    if( std::ifstream( file_name ) )
+        std::remove( file_name.c_str() );
+
+    std::ofstream conv;
+    if( proc_number == Environment::worldComm().masterRank() )
+        {
+            conv.open(file_name, std::ios::app);
+            conv << "#Nbasis" << "\t" << "L2_error \t L2_estimated \t ratio_l2 \t linf_error \t linf_estimated \t ratio_linf \t interpolation_error " <<"\n";
+        }
+
 #endif
-        l2ErrorVec[N-1] = l2_error; // /!\ l2ErrorVec[i] represents error with i+1 bases
 
-        if( proc_number == Environment::worldComm().masterRank() )
-            conv << N << "\t" << l2_error << "\t" << interpolation_error << "\n";
-
-    }//loop over basis functions
-
-    conv.close();
-    return l2ErrorVec;
 }
 
 template<typename SpaceType, typename ModelSpaceType, typename ParameterSpaceType>
@@ -836,8 +998,8 @@ public:
             return res;
         }
 
-    virtual vector_type operator()( context_type const& ctx, parameter_type const& mu ) = 0;
-    virtual vector_type operator()( solution_type const& T, context_type const& ctx, parameter_type const& mu ) = 0;
+    virtual vector_type operator()( context_type const& ctx, parameter_type const& mu , int M=-1) = 0;
+    virtual vector_type operator()( solution_type const& T, context_type const& ctx, parameter_type const& mu , int M=-1) = 0;
 
     virtual element_type const& q( int m )  const = 0;
     virtual std::vector<element_type> const& q() const = 0;
@@ -847,12 +1009,17 @@ public:
     virtual vector_type  beta( parameter_type const& mu, solution_type const& T , size_type M)  = 0;
     virtual size_type  mMax() const = 0;
 
-    virtual std::vector<double> studyConvergence( parameter_type const & mu , solution_type & solution ) const = 0;
+    virtual element_type elementErrorEstimation ( parameter_type const& mu, solution_type const& solution , int M) const = 0;
+    virtual double errorEstimationLinf( parameter_type const & mu, solution_type const& solution , int M ) const=0 ;
+    virtual node_type interpolationPoint( int position ) const = 0;
+
+    virtual void studyConvergence( parameter_type const & mu , solution_type & solution, std::vector< std::string > all_file_name ) const = 0;
     virtual void computationalTimeStatistics( std::string appname )  = 0;
     virtual double expressionL2Norm( solution_type const& T , parameter_type const& mu ) const = 0;
     virtual double diffL2Norm( solution_type const& T , parameter_type const& mu , element_type const& eim_expansion ) const = 0;
     virtual double projExpressionL2Norm( solution_type const& T , parameter_type const& mu ) const = 0;
     virtual double projDiffL2Norm( solution_type const& T , parameter_type const& mu , element_type const& eim_expansion ) const = 0;
+    virtual double projDiffLinfNorm( solution_type const& T , parameter_type const& mu , element_type const& eim_expansion ) const = 0;
     virtual double interpolationError( solution_type const& T , parameter_type const& mu ) const = 0;
     virtual solution_type solve( parameter_type const&  mu ) = 0;
     virtual element_type residual( element_type const& z, element_type const& g ) = 0;
@@ -1025,7 +1192,7 @@ public:
     beta( parameter_type const& mu, size_type __M )
     {
         vector_type __beta( __M );
-        __beta = this->operator()( M_ctx, mu );
+        __beta = this->operator()( M_ctx, mu , __M );
         //M_mu = mu;
         //__beta = evaluateFromContext( _context=M_ctx, _expr=M_expr );
         DCHECK( __beta.size() == __M ) << "Invalid size beta: " << __beta.size() << " M=" << __M  << " beta = " << __beta << "\n";
@@ -1040,14 +1207,13 @@ public:
     {
         // beta=B_M\g(Od(indx),mut(i))'
         vector_type __beta( __M );
-        __beta = this->operator()( T, M_ctx, mu );
+        __beta = this->operator()( T, M_ctx, mu , __M );
         //M_mu = mu;
         //M_u=T;
         //__beta = evaluateFromContext( _context=M_ctx, _expr=M_expr );
         DCHECK( __beta.size() == __M ) << "Invalid size beta: " << __beta.size() << " M=" << __M  << " beta = " << __beta << "\n";
 
         this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(__beta);
-
         return __beta;
     }
 
@@ -1073,7 +1239,7 @@ public:
         using namespace vf;
         auto z = expansion( M_q_vector, rhs, __M );
         LOG(INFO) << "return residual..." <<"\n";
-        return vf::project( _space=this->functionSpace(),
+        return vf::project (_space=this->functionSpace(),
                             _expr=idv(M_g_vector[__M])-idv( z ) );
     }
 
@@ -1085,6 +1251,13 @@ public:
         // add in precompute object the last magic point
         M_ctx.add( no );
         std::for_each( M_t.begin(), M_t.end(), []( node_type const& t ) { DVLOG(2) << "t=" << t << "\n"; } );
+    }
+
+    node_type interpolationPoint( int position ) const
+    {
+        int size = M_t.size();
+        DCHECK( position < size ) << "Invalid point position: " << position << " M_t.size() =" << M_t.size() << "\n";
+        return M_t[position];
     }
 
     void addBasis( element_type const &q )
@@ -1143,17 +1316,17 @@ public:
             return vf::project( _space=this->functionSpace(), _expr=M_expr );
         }
 
-    vector_type operator()( context_type const& ctx, parameter_type const& mu )
+    vector_type operator()( context_type const& ctx, parameter_type const& mu , int M)
         {
             M_mu=mu;
             M_u = M_model->solve( mu );
-            return evaluateFromContext( _context=ctx, _expr=M_expr );
+            return evaluateFromContext( _context=ctx, _expr=M_expr , _max_points_used=M);
         }
-    vector_type operator()( solution_type const& T, context_type const& ctx, parameter_type const& mu )
+    vector_type operator()( solution_type const& T, context_type const& ctx, parameter_type const& mu , int M)
         {
             M_mu = mu;
             M_u = T;
-            return evaluateFromContext( _context=ctx, _expr=M_expr );
+            return evaluateFromContext( _context=ctx, _expr=M_expr , _max_points_used=M);
         }
 
     vector_type computeExpansionCoefficients( parameter_type const& mu, solution_type const& solution,  int M)
@@ -1542,6 +1715,21 @@ public:
         return math::sqrt( integrate( _range=elements( mesh ), _expr=idv(diff)*idv(diff) ).evaluate()( 0,0 ) );
     }
 
+    //here is computed || \pi_g - geim ||_Linf
+    double projDiffLinfNorm( solution_type const& T , parameter_type const& mu , element_type const& eim_expansion ) const
+    {
+        M_mu = mu;
+#if !defined(NDEBUG)
+        M_mu.check();
+#endif
+        M_u = T;
+        auto mesh = this->functionSpace()->mesh();
+        auto pi_g = vf::project( _space=this->functionSpace(), _expr=M_expr );
+        auto diff = pi_g - eim_expansion;
+        auto linf = normLinf( _range=elements( mesh ), _pset=_Q<5>(), _expr=idv(diff) );
+        return linf.template get<0>();
+    }
+
     double interpolationError( solution_type const& T , parameter_type const& mu ) const
     {
         M_mu = mu;
@@ -1635,8 +1823,9 @@ public:
     vector_type  beta( parameter_type const& mu ) const { return M_eim->beta( mu ); }
     vector_type  beta( parameter_type const& mu, solution_type const& T ) const { return M_eim->beta( mu, T ); }
 
-    std::vector<double> studyConvergence( parameter_type const & mu , solution_type & solution ) const { return M_eim->studyConvergence( mu , solution ) ; };
-
+    void studyConvergence( parameter_type const & mu , solution_type & solution, std::vector< std::string > all_file_name ) const { return M_eim->studyConvergence( mu , solution , all_file_name ) ; }
+    element_type elementErrorEstimation( parameter_type const & mu , solution_type const& solution, int M ) const { return M_eim->elementErrorEstimation(mu , solution, M) ; }
+    double errorEstimationLinf( parameter_type const & mu, solution_type const& solution , int M ) const { return M_eim->errorEstimationLinf(mu, solution, M) ; }
     //size_type mMax() const { return M_eim->mMax(); }
     size_type mMax() const { return M_M_max; }
 

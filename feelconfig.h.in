@@ -36,6 +36,15 @@
 /* Define to 1 if you have the GLPK headers available. */
 #cmakedefine FEELPP_HAS_GLPK_H
 
+/* Define executable to launch MPI mode. */
+#cmakedefine MPIEXEC @MPIEXEC@
+
+/* Define the option used for setting the number of MPI processes. */
+#cmakedefine MPIEXEC_NUMPROC_FLAG @MPIEXEC_NUMPROC_FLAG@
+
+/* Define the path to Gmsh executable. */
+#cmakedefine GMSH_EXECUTABLE @GMSH_EXECUTABLE@
+
 /* Define to 1 if you have the Gmsh headers available. */
 #cmakedefine FEELPP_HAS_GMSH_H
 
@@ -116,6 +125,9 @@
 
 /* Define to 1 if you have the <tbb.h> header file. */
 #cmakedefine FEELPP_HAS_TBB_H
+
+/* Define to 1 if you have harts. */
+#cmakedefine FEELPP_HAS_HARTS
 
 /* Define to 1 if you have the <ufsparse/umfpack.h> header file. */
 #cmakedefine FEELPP_HAS_UFSPARSE_UMFPACK_H

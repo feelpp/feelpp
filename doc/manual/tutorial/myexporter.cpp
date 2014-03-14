@@ -22,13 +22,20 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#include <feel/feel.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feeldiscr/operatorlagrangep1.hpp>
+#include <feel/feelfilters/unitcircle.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelvf/projectors.hpp>
+#include <feel/feelvf/operations.hpp>
+#include <feel/feelvf/stdmathfunctors.hpp>
+#include <feel/feelvf/geometricdata.hpp>
 
 int main(int argc, char**argv )
 {
 	using namespace Feel;
 	Environment env( _argc=argc, _argv=argv,
-                   _desc=feel_options(),
                    _about=about(_name="myexporter",
                                 _author="Christophe Prud'homme",
                                 _email="christophe.prudhomme@feelpp.org"));

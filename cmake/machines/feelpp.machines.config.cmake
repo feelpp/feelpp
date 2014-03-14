@@ -38,3 +38,11 @@ if( FEELPP_NAME_LOGIN AND EXISTS /lrz )
     include( feelpp.machines.lrz )
   endif()
 endif()
+
+
+if( FEELPP_ENABLE_HOMEBREW AND EXISTS /usr/local/bin/brew )
+  if ( EXISTS ${FEELPP_SOURCE_DIR}/cmake/machines/feelpp.machines.homebrew.cmake )
+    message( STATUS "[Feel++] Configuration found for : Homebrew" )
+    include( feelpp.machines.homebrew )
+  endif()
+endif()

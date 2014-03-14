@@ -41,7 +41,7 @@
 #include <feel/options.hpp>
 #include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
-#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/unitsquare.hpp>
 #include <feel/feelcrb/eim.hpp>
 
 #define FEELAPP( argc, argv, about, options )                           \
@@ -139,7 +139,12 @@ public:
             mu_max << 1;
             Dmu->setMax( mu_max );
             mu = Dmu->element();
+
+            //check pointer of mu.parameterSpace is Dmu
             BOOST_CHECK_EQUAL( mu.parameterSpace(), Dmu );
+
+            //check that we have the same element on all processors
+            mu.check();
 
             auto Pset = Dmu->sampling();
             int sampling_size = option(_name="eim.sampling-size").as<int>();
@@ -265,7 +270,14 @@ public:
                     if( cvg_study )
                     {
                         *solution = solve(p);
-                        fun->studyConvergence( p , *solution );
+                        std::vector< std::string > all_file_name;
+                        all_file_name.push_back( "EimConvergenceL2.dat");
+                        all_file_name.push_back( "EimConvergenceL2estimated.dat");
+                        all_file_name.push_back( "EimConvergenceL2ratio.dat");
+                        all_file_name.push_back( "EimConvergenceLINF.dat");
+                        all_file_name.push_back( "EimConvergenceLINFestimated.dat");
+                        all_file_name.push_back( "EimConvergenceLINFratio.dat");
+                        fun->studyConvergence( p , *solution , all_file_name );
                     }
                     boost::mpi::timer timer;
                     auto w = fun->interpolant( p );
@@ -356,7 +368,12 @@ public:
             mu_max << /*alpha*/2, /*beta*/ 2, /*cx*/ 1, /*cy*/ 1;
             Dmu->setMax( mu_max );
             mu = Dmu->element();
+
+            //check pointer of mu.parameterSpace is Dmu
             BOOST_CHECK_EQUAL( mu.parameterSpace(), Dmu );
+
+            //check that we have the same element on all processors
+            mu.check();
 
             auto Pset = Dmu->sampling();
             int sampling_size = this->vm()["eim.sampling-size"].as<int>();

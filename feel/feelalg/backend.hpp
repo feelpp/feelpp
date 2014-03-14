@@ -90,7 +90,7 @@ boost::shared_ptr<DataMap> datamap( T const& t, mpl::false_ )
 template<typename T>
 boost::shared_ptr<DataMap> datamap( T const& t )
 {
-    return datamap( t, detail::is_shared_ptr<T>() );
+    return datamap( t, Feel::detail::is_shared_ptr<T>() );
 }
 
 template<typename T>
@@ -109,9 +109,9 @@ T& ref( T& t, mpl::false_ )
     return t;
 }
 template<typename T>
-auto ref( T& t ) -> decltype( ref( t, detail::is_shared_ptr<T>() ) )
+auto ref( T& t ) -> decltype( ref( t, Feel::detail::is_shared_ptr<T>() ) )
 {
-    return ref( t, detail::is_shared_ptr<T>() );
+    return ref( t, Feel::detail::is_shared_ptr<T>() );
 }
 
 
@@ -122,6 +122,8 @@ template<typename T> class MatrixBlockBase;
 template<int NR, int NC, typename T> class MatrixBlock;
 template<typename T> class VectorBlockBase;
 template<int NR, typename T> class VectorBlock;
+
+template<typename T> class BlocksBaseSparseMatrix;
 
 /**
  * \class Backend
@@ -363,21 +365,45 @@ public:
     /**
      * instantiate a new block matrix sparse
      */
-    sparse_matrix_ptrtype newBlockMatrixImpl( vf::BlocksBase<sparse_matrix_ptrtype> const & b,
-                                              bool copy_values=true,
-                                              bool diag_is_nonzero=true )
-    {
-        typedef MatrixBlockBase<typename sparse_matrix_ptrtype::element_type::value_type> matrix_block_type;
-        boost::shared_ptr<matrix_block_type> mb( new matrix_block_type( b, *this, copy_values, diag_is_nonzero ) );
-        return mb->getSparseMatrix();
-    }
-
-    sparse_matrix_ptrtype newBlockMatrixImpl( vf::BlocksBase<boost::shared_ptr<GraphCSR> > const & b,
+    sparse_matrix_ptrtype newBlockMatrixImpl( BlocksBaseSparseMatrix<value_type> const & b,
                                               bool copy_values=true,
                                               bool diag_is_nonzero=true )
     {
         typedef MatrixBlockBase<value_type> matrix_block_type;
-        boost::shared_ptr<matrix_block_type> mb( new matrix_block_type( b, *this, diag_is_nonzero ) );
+        typedef boost::shared_ptr<matrix_block_type> matrix_block_ptrtype;
+
+        matrix_block_ptrtype mb;
+        if ( b.isClosed() )
+        {
+            mb.reset( new matrix_block_type( b, *this, copy_values, diag_is_nonzero ) );
+        }
+        else
+        {
+            BlocksBaseSparseMatrix<value_type> copyBlock( b );
+            copyBlock.close();
+            mb.reset( new matrix_block_type( copyBlock, *this, copy_values, diag_is_nonzero ) );
+        }
+        return mb->getSparseMatrix();
+    }
+
+    sparse_matrix_ptrtype newBlockMatrixImpl( BlocksBaseGraphCSR const & b,
+                                              bool copy_values=true,
+                                              bool diag_is_nonzero=true )
+    {
+        typedef MatrixBlockBase<value_type> matrix_block_type;
+        typedef boost::shared_ptr<matrix_block_type> matrix_block_ptrtype;
+
+        matrix_block_ptrtype mb;
+        if ( b.isClosed() )
+        {
+            mb.reset( new matrix_block_type( b, *this, diag_is_nonzero ) );
+        }
+        else
+        {
+            BlocksBaseGraphCSR copyBlock( b );
+            copyBlock.close();
+            mb.reset( new matrix_block_type( copyBlock, *this, diag_is_nonzero ) );
+        }
         return mb->getSparseMatrix();
     }
 
@@ -500,6 +526,14 @@ public:
     }
 
     /**
+     * \return the type of non linear solver
+     */
+    std::string snesType() const
+    {
+        return M_snesType;
+    }
+
+    /**
      * \return the type of preconditioner
      */
     std::string pcType() const
@@ -532,6 +566,11 @@ public:
      * \return enum solver type from options
      **/
     SolverType kspEnumType() const;
+
+    /**
+     * \return enum snes solver type from string
+     */
+    SolverNonLinearType snesEnumType() const;
 
     /**
      * \return enum fieldsplit type from options
@@ -612,16 +651,33 @@ public:
      */
     size_type maxIterations() const
     {
-        return M_maxit;
+        return M_maxitKSP;
     }
-
-    /**
-     * \return the maximum number of SNES iterations
-     */
+    size_type maxIterationsKSP() const
+    {
+        return M_maxitKSP;
+    }
+    size_type maxIterationsKSPinSNES() const
+    {
+        return M_maxitKSPinSNES;
+    }
     size_type maxIterationsSNES() const
     {
-        return M_maxitSNES;
+        return M_maxitSNESReuse;
     }
+    size_type maxIterationsKSPReuse() const
+    {
+        return M_maxitKSPReuse;
+    }
+    size_type maxIterationsKSPinSNESReuse() const
+    {
+        return M_maxitKSPinSNESReuse;
+    }
+    size_type maxIterationsSNESReuse() const
+    {
+        return M_maxitSNESReuse;
+    }
+
 
     /**
      * \return the KSP relative tolerance in SNES
@@ -693,7 +749,7 @@ public:
         M_rtolerance = rtolerance;
         M_dtolerance = dtolerance;
         M_atolerance = atolerance;
-        M_maxit = maxit;
+        M_maxitKSP = maxit;
     }
 
     BOOST_PARAMETER_MEMBER_FUNCTION( ( void ),
@@ -834,7 +890,7 @@ public:
                                        //(prec,(sparse_matrix_ptrtype), matrix )
                                        ( prec,( preconditioner_ptrtype ), preconditioner( _prefix=this->prefix(),_matrix=matrix,_pc=this->pcEnumType()/*LU_PRECOND*/,
                                                                                           _pcfactormatsolverpackage=this->matSolverPackageEnumType(), _backend=this->shared_from_this() ) )
-                                       ( maxit,( size_type ), M_maxit/*1000*/ )
+                                       ( maxit,( size_type ), M_maxitKSP/*1000*/ )
                                        ( rtolerance,( double ), M_rtolerance/*1e-13*/ )
                                        ( atolerance,( double ), M_atolerance/*1e-50*/ )
                                        ( dtolerance,( double ), M_dtolerance/*1e5*/ )
@@ -888,7 +944,7 @@ public:
 
         //new
         _sol->close();
-        detail::ref( solution ) = *_sol;
+        Feel::detail::ref( solution ) = *_sol;
         if ( verbose )
         {
             Environment::logMemoryUsage( "backend::solve end" );
@@ -978,16 +1034,16 @@ public:
                                  _maxit=maxit );
         this->setSolverType( _pc=pc, _ksp=ksp,
                              _pcfactormatsolverpackage = pcfactormatsolverpackage );
-        vector_ptrtype _sol( this->newVector( detail::datamap( solution ) ) );
+        vector_ptrtype _sol( this->newVector( Feel::detail::datamap( solution ) ) );
         // initialize
-        *_sol = detail::ref( solution );
+        *_sol = Feel::detail::ref( solution );
         this->setTranspose( transpose );
         solve_return_type ret;
 
         // this is done with nonlinerarsolver
         if ( !residual )
         {
-            residual = this->newVector( ( detail::datamap( solution ) ) );
+            residual = this->newVector( ( Feel::detail::datamap( solution ) ) );
             //this->nlSolver()->residual( _sol, residual );
         }
 
@@ -1006,8 +1062,8 @@ public:
 
         //new
         _sol->close();
-        detail::ref( solution ) = *_sol;
-        detail::ref( solution ).close();
+        Feel::detail::ref( solution ) = *_sol;
+        Feel::detail::ref( solution ).close();
         if ( verbose )
         {
             Environment::logMemoryUsage( "backend::nlSolve end" );
@@ -1118,10 +1174,12 @@ private:
     bool   M_reuseFailed;
     boost::timer M_timer;
     bool   M_transpose;
-    size_type    M_maxit, M_maxitSNES;
+    size_type    M_maxitKSP, M_maxitKSPinSNES, M_maxitSNES;
+    size_type    M_maxitKSPReuse, M_maxitKSPinSNESReuse, M_maxitSNESReuse;
     size_type    M_iteration;
     std::string M_export;
     std::string M_ksp;
+    std::string M_snesType;
     std::string M_pc;
     std::string M_fieldSplit;
     std::string M_pcFactorMatSolverPackage;
@@ -1156,8 +1214,8 @@ struct BackendManagerDeleterImpl
 {
     void operator()() const
         {
-            VLOG(2) << "[BackendManagerDeleter] clear BackendManager Singleton: " << detail::BackendManager::instance().size() << "\n";
-            detail::BackendManager::instance().clear();
+            VLOG(2) << "[BackendManagerDeleter] clear BackendManager Singleton: " << Feel::detail::BackendManager::instance().size() << "\n";
+            Feel::detail::BackendManager::instance().clear();
             VLOG(2) << "[BackendManagerDeleter] clear BackendManager done\n";
         }
 };
@@ -1182,16 +1240,16 @@ BOOST_PARAMETER_FUNCTION(
     static bool observed=false;
     if ( !observed )
     {
-        Environment::addDeleteObserver( detail::BackendManagerDeleter::instance() );
+        Environment::addDeleteObserver( Feel::detail::BackendManagerDeleter::instance() );
         observed = true;
     }
 
 
     Feel::detail::ignore_unused_variable_warning( args );
 
-    auto git = detail::BackendManager::instance().find( boost::make_tuple( kind, name, worldcomm.globalSize() ) );
+    auto git = Feel::detail::BackendManager::instance().find( boost::make_tuple( kind, name, worldcomm.globalSize() ) );
 
-    if (  git != detail::BackendManager::instance().end() && ( rebuild == false ) )
+    if (  git != Feel::detail::BackendManager::instance().end() && ( rebuild == false ) )
     {
         VLOG(2) << "[backend] found backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << " worldcomm.globalSize()=" << worldcomm.globalSize() << "\n";
         return git->second;
@@ -1199,7 +1257,7 @@ BOOST_PARAMETER_FUNCTION(
 
     else
     {
-        if (  git != detail::BackendManager::instance().end() && ( rebuild == true ) )
+        if (  git != Feel::detail::BackendManager::instance().end() && ( rebuild == true ) )
             git->second->clear();
 
         VLOG(2) << "[backend] building backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << " worldcomm.globalSize()=" << worldcomm.globalSize() << "\n";
@@ -1212,7 +1270,7 @@ BOOST_PARAMETER_FUNCTION(
         else
             b = Feel::backend_type::build( vm, name, worldcomm );
         VLOG(2) << "storing backend in singleton" << "\n";
-        detail::BackendManager::instance().operator[]( boost::make_tuple( kind, name, worldcomm.globalSize() ) ) = b;
+        Feel::detail::BackendManager::instance().operator[]( boost::make_tuple( kind, name, worldcomm.globalSize() ) ) = b;
         return b;
     }
 

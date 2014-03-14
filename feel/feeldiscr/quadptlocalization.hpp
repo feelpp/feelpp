@@ -99,9 +99,9 @@ public :
     //--------------------------------------------------------------------------------------//
 
     typedef typename mpl::if_<mpl::bool_<geoelement_type::is_simplex>,
-            mpl::identity<typename Im::template apply<geoelement_type::nDim, value_type, Simplex>::type >,
-                mpl::identity<typename Im::template apply<geoelement_type::nDim, value_type, Hypercube>::type >
-    >::type::type im_type;
+                              mpl::identity<typename Im::template applyIMGeneral<geoelement_type::nDim, value_type, Simplex>::type >,
+                              mpl::identity<typename Im::template applyIMGeneral<geoelement_type::nDim, value_type, Hypercube>::type >
+                              >::type::type im_type;
 
     typedef typename im_type::face_quadrature_type im_face_type;
 

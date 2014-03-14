@@ -415,17 +415,26 @@ class BlocksBaseGraphCSR : public vf::BlocksBase<boost::shared_ptr<GraphCSR> >
 {
 public :
     typedef vf::BlocksBase<boost::shared_ptr<GraphCSR> > super_type;
+    typedef super_type::index_type index_type;
     typedef BlocksBaseGraphCSR self_type;
     typedef boost::shared_ptr<GraphCSR> graph_ptrtype;
 
-    BlocksBaseGraphCSR(uint16_type nr,uint16_type nc)
+    BlocksBaseGraphCSR( index_type nr,index_type nc )
         :
-        super_type(nr,nc)
+        super_type( nr,nc ),
+        M_isClosed( false )
     {}
 
-    BlocksBaseGraphCSR(super_type const & b)
+    BlocksBaseGraphCSR( self_type const & b )
         :
-        super_type(b)
+        super_type( b ),
+        M_isClosed( b.M_isClosed )
+    {}
+
+    BlocksBaseGraphCSR( super_type const & b )
+        :
+        super_type( b ),
+        M_isClosed( false )
     {}
 
     self_type
@@ -433,6 +442,14 @@ public :
     {
         return super_type::operator<<( g );
     }
+
+    void close();
+
+    bool isClosed() const { return M_isClosed; }
+
+private :
+    bool M_isClosed;
+
 
 };
 

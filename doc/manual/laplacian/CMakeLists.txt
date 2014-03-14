@@ -23,12 +23,17 @@ set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
 feelpp_add_application( doc_laplacian SRCS laplacian.cpp LABEL doc CFG laplacian.cfg SCRIPTS laplacian.py ADD_OT )#
 feelpp_add_application( doc_laplacian_full SRCS laplacian_full.cpp LABEL doc NO_MPI_TEST )
+feelpp_add_application( doc_laplacian_mixed SRCS laplacian_mixed.cpp LABEL doc CFG laplacian_mixed.cfg)
 feelpp_add_application( doc_laplacian_lagrange_multiplier SRCS laplacian_lagrange_multiplier.cpp LABEL doc)
 feelpp_add_application( doc_laplacian_periodic SRCS laplacian_periodic.cpp LABEL doc NO_MPI_TEST )
 feelpp_add_application( doc_laplacian_harmonic SRCS harmonic.cpp LABEL doc  )
-feelpp_add_application( doc_laplacian_dg SRCS laplacian_dg.cpp LABEL doc  )
+
 feelpp_add_application( doc_laplacian_quad SRCS laplacian_quad.cpp LABEL doc  CFG laplacian_polar.cfg)
 feelpp_add_application( doc_laplacian_with_holes SRCS laplacian_with_holes.cpp LABEL doc  )
+
+# DG examples
+feelpp_add_application( doc_laplacian_dg SRCS laplacian_dg.cpp CFG laplacian_dg.cfg LABEL doc  )
+feelpp_add_application( doc_laplacian_dg2 SRCS laplacian_dg2.cpp CFG laplacian_dg2.cfg LABEL doc  )
 
 feelpp_add_application( doc_laplacian_polar SRCS laplacian_polar.cpp LABEL doc GEO polar.geo  CFG laplacian_polar.cfg DEFS FEELPP_POLAR)
 feelpp_add_application( doc_laplacian_cartesian SRCS laplacian_polar.cpp LABEL doc GEO cartesian.geo CFG laplacian_cartesian.cfg )
@@ -38,6 +43,12 @@ feelpp_add_application( doc_laplacian_matlab SRCS laplacian_matlab.cpp GEO feel.
 feelpp_add_application( doc_laplacian_block SRCS laplacian_block.cpp LABEL doc CFG laplacian_block.cfg )
 feelpp_add_application( doc_laplacian_parabolic SRCS laplacian_parabolic.cpp LABEL doc CFG laplacian_parabolic.cfg GEO laplacian_parabolic.geo )
 
+feelpp_add_application( doc_laplacian_hypercube SRCS laplacian_hypercube.cpp LABEL doc CFG laplacian_hypercube.cfg )
+
+feelpp_add_application( doc_laplacian_submesh SRCS laplacian_submesh.cpp LABEL doc  )
+
 feelpp_add_application( doc_laplacian_dirac SRCS laplacian_dirac.cpp LABEL doc CFG laplacian_dirac.cfg )
 
 feelpp_add_application( doc_laplacian_lagrange_multiplier2 SRCS laplacian_lagrange_multiplier2.cpp LABEL doc CFG laplacian_lagrange_multiplier2.cfg)
+
+feelpp_add_application( partition SRCS partition.cpp LABEL doc CFG partition.cfg)

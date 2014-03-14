@@ -172,6 +172,8 @@ public:
                                                     WorldComm const& worldComm=Environment::worldComm(),
                                                     std::string const& prefix="" );
 
+protected:
+    void check( int err ) { CHKERRABORT( this->worldComm().globalComm(), err ); }
 private:
     /**
      * Some PETSc preconditioners (ILU, LU) don't work in parallel.  This function

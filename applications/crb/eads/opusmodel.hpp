@@ -31,10 +31,12 @@
 
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/reducedbasisspace.hpp>
 #include <feel/feeldiscr/region.hpp>
 #include <feel/feeldiscr/operatorlagrangep1.hpp>
 #include <feel/feelpoly/im.hpp>
-#include <feel/feeldiscr/bdf2.hpp>
+#include <feel/feeldiscr/bdf.hpp>
+#include <feel/feelfilters/exporter.hpp>
 
 
 #include <opusmodelbase.hpp>

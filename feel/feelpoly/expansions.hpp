@@ -35,8 +35,9 @@
 
 namespace Feel
 {
-enum Shape { LINE = 1, TRIANGLE = 2, TETRAHEDRON = 3 };
-template<Shape sh>
+enum TheShape { LINE = 1, TRIANGLE = 2, TETRAHEDRON = 3 };
+
+template<TheShape sh>
 struct DimFromShape
 {
     static const uint16_type value = mpl::if_<mpl::equal_to<mpl::int_<sh>, mpl::int_<LINE> >,
@@ -56,7 +57,7 @@ namespace details
 /**
  * collapsed coordinates
  */
-template<Shape sh,  typename T = double>
+template<TheShape sh,  typename T = double>
 struct xi
 {
 };
@@ -131,11 +132,11 @@ struct xi<TETRAHEDRON, T>
 /**
  * collapsed coordinates
  */
-template<Shape sh,  typename T = double>
+template<TheShape sh,  typename T = double>
 struct eta
 {
 };
-template<Shape sh,  typename T = double>
+template<TheShape sh,  typename T = double>
 struct etas
 {
 };

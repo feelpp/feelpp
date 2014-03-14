@@ -95,6 +95,8 @@ public:
         M_pattern( pattern )
     {}
 
+    virtual ~OperatorLinearFree() {}
+
 
     virtual void
     init( domain_space_ptrtype     domainSpace,

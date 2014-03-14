@@ -175,7 +175,7 @@ namespace Feel
         }
 
         //! set the convergence interations
-        void setnumberOfConvergenceSteps( int n) 
+        void setnumberOfConvergenceSteps( int n)
         {
             M_convergence_max=n;
         }
@@ -550,7 +550,7 @@ namespace Feel
         //! name of the rhs
         std::string M_rhs;
         bool M_rhs_computed;
- 
+
         // convergence study
         bool M_convergence;
         int M_convergence_max;

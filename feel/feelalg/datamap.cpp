@@ -74,47 +74,8 @@ DataMap::DataMap( size_type n, size_type n_local, WorldComm const& _worldComm )
 
     if ( this->worldComm().size() > 1 )
     {
-#if !defined(FEELPP_ENABLE_MPI_MODE)
-        local_sizes_send[this->worldComm().rank()] = n_local;
-#if 1
-        MPI_Allreduce ( &local_sizes_send[0],
-                        &local_sizes[0],
-                        local_sizes.size(),
-                        MPI_INT,
-                        MPI_SUM,
-                        this->worldComm() );
-#else
-        mpi::all_reduce( this->worldComm(), local_sizes_send, local_sizes, std::plus<std::vector<int> >() );
-#endif
-        std::vector<int> M_recvcounts( this->worldComm().size() );
-        std::vector<int> M_displs( this->worldComm().size() );
-
-        int _local_index = 0;
-
-        for ( int p=0; p<this->worldComm().size(); p++ )
-        {
-            // size of data per processor
-            M_recvcounts[p] = local_sizes[p];
-            DVLOG(2) << "VectorUblas::init M_recvcounts[" <<p<< "]=" << M_recvcounts[p] << "\n";
-
-            // first index on the p-th processor
-            M_displs[p] = _local_index;
-            DVLOG(2) << "VectorUblas::init M_displs[" <<p<< "]=" << M_displs[p] << "\n";
-
-            _local_index += local_sizes[p];
-
-            M_first_df[p] = _local_index;
-            M_last_df[p] = _local_index+n_local-1;
-        }
-
-#else // defined(FEELPP_ENABLE_MPI_MODE)
-
-        // Vincent TODO!
-
-#endif
-
+        LOG(WARNING) << "Not imlemented!";
     }
-
     else // sequential
     {
         local_sizes[this->worldComm().rank()] = n_local;
@@ -150,7 +111,7 @@ DataMap::DataMap( size_type n, size_type n_local, WorldComm const& _worldComm )
 
 #  endif
 
-#else
+#else // FEELPP_HAS_MPI
 
     // No other options without MPI!
     if ( n != n_local )
@@ -160,7 +121,7 @@ DataMap::DataMap( size_type n, size_type n_local, WorldComm const& _worldComm )
         //error();
     }
 
-#endif
+#endif // FEELPP_HAS_MPI
 
     /*
     DVLOG(2) << "        global size = " << this->size() << "\n";
@@ -184,6 +145,7 @@ DataMap::DataMap( DataMap const & dm )
     M_myglobalelements(),
     M_mapGlobalProcessToGlobalCluster( dm.M_mapGlobalProcessToGlobalCluster ),
     M_mapGlobalClusterToGlobalProcess( dm.M_mapGlobalClusterToGlobalProcess ),
+    M_neighbor_processors( dm.M_neighbor_processors ),
     M_worldComm( dm.M_worldComm )
 {}
 DataMap::~DataMap()
@@ -206,6 +168,7 @@ DataMap::operator=( DataMap const& dm )
         M_myglobalelements = dm.M_myglobalelements;
         M_mapGlobalProcessToGlobalCluster = dm.M_mapGlobalProcessToGlobalCluster;
         M_mapGlobalClusterToGlobalProcess = dm.M_mapGlobalClusterToGlobalProcess;
+        M_neighbor_processors = dm.M_neighbor_processors;
     }
 
     return *this;

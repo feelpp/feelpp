@@ -31,7 +31,9 @@
    \date 2013-02-11
    This program show how to create a mesh and export results.
  */
-#include <feel/feel.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelfilters/unitsquare.hpp>
+#include <feel/feelfilters/exporter.hpp>
 using namespace Feel;
 
 /**
@@ -43,7 +45,6 @@ int main( int argc, char** argv )
 {
     // initialize Feel++ Environment
     Environment env( _argc=argc, _argv=argv,
-                     _desc=feel_options(),
                      _about=about( _name="mymesh" ,
                                    _author="Feel++ Consortium",
                                    _email="feelpp-devel@feelpp.org" ) );

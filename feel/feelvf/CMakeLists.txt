@@ -27,11 +27,5 @@ SET( SRC
   ginac.cpp
   )
 
-file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
+file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp detail/*.hpp)
 feel_append_src(feelvf "${SRC};${HDR}")
-
-
-add_executable( test_fusion test_fusion.cpp )
-set_property(TARGET test_fusion PROPERTY LABELS feel++)
-add_test(NAME test_fusion COMMAND test_fusion)
-set_property(TEST test_fusion PROPERTY LABELS feel++)

@@ -1179,12 +1179,16 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows, Vector<value_type> const
     MatSetOption( M_mat,MAT_KEEP_ZEROED_ROWS );
 #endif
 
-    if ( on_context.test( ON_ELIMINATION_SYMMETRIC ) )
+    if ( on_context.test( OnContext::ELIMINATION_SYMMETRIC ) )
     {
         //PetscErrorCode  MatZeroRowsColumns(Mat mat,PetscInt numRows,const PetscInt rows[],PetscScalar diag,Vec x,Vec b)
         VectorPetsc<T>* prhs = dynamic_cast<VectorPetsc<T>*> ( &rhs );
         const VectorPetsc<T>* pvalues = dynamic_cast<const VectorPetsc<T>*> ( &values );
+#if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR >= 2)
         MatZeroRowsColumns(M_mat, rows.size(), rows.data(), 1.0, pvalues->vec(), prhs->vec() );
+#else
+        MatZeroRows( M_mat, rows.size(), rows.data(), 1.0 );
+#endif
         PetscBool b;
         MatIsSymmetric( M_mat, 1e-13, &b );
         LOG(INFO) << "Mat is symmetric : " << b;
@@ -1196,7 +1200,7 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows, Vector<value_type> const
     ierr = MatGetOwnershipRange( M_mat, &start, &stop );
     CHKERRABORT( this->comm(),ierr );
 
-    if ( on_context.test( ON_ELIMINATION_KEEP_DIAGONAL ) )
+    if ( on_context.test( OnContext::ELIMINATION_KEEP_DIAGONAL ) )
     {
         VectorPetsc<value_type> diag( this->size1(), stop-start );
         MatGetDiagonal( M_mat, diag.vec() );
@@ -2535,7 +2539,7 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
     else
         {
 #if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR >= 2)
-            if ( on_context.test( ON_ELIMINATION_SYMMETRIC ) )
+            if ( on_context.test( OnContext::ELIMINATION_SYMMETRIC ) )
             {
                 MatZeroRowsColumnsLocal(this->M_mat, rows.size(), rows.data(), 1.0, pvalues->vec(), prhs->vec() );
             }
@@ -2635,6 +2639,8 @@ MatrixPetscMPI<T>::energy( Vector<value_type> const& __v,
                            Vector<value_type> const& __u,
                            bool transpose ) const
 {
+    int ierr = 0;
+
     this->close();
 
     PetscScalar e;
@@ -2646,16 +2652,18 @@ MatrixPetscMPI<T>::energy( Vector<value_type> const& __v,
         VectorPetscMPI<value_type> z( this->mapRowPtr() );
 
         if ( !transpose )
-            MatMult( this->mat(), u.vec(), z.vec() );
+            ierr = MatMult( this->mat(), u.vec(), z.vec() );
         else
-            MatMultTranspose( this->mat(), u.vec(), z.vec() );
+            ierr = MatMultTranspose( this->mat(), u.vec(), z.vec() );
+        CHKERRABORT( this->comm(),ierr );
 
-        VecDot( v.vec(), z.vec(), &e );
+        ierr = VecDot( v.vec(), z.vec(), &e );
+        CHKERRABORT( this->comm(),ierr );
     }
 
     else
     {
-        VectorPetscMPI<value_type> u( this->mapRowPtr() );
+        VectorPetscMPI<value_type> u( this->mapColPtr() );
         {
             //size_type s = u.localSize();
             size_type s = u.map().nLocalDofWithGhost();
@@ -2680,12 +2688,13 @@ MatrixPetscMPI<T>::energy( Vector<value_type> const& __v,
         v.close();
 
         if ( !transpose )
-            MatMult( this->mat(), u.vec() , z.vec() );
-
+            ierr = MatMult( this->mat(), u.vec() , z.vec() );
         else
-            MatMultTranspose( this->mat(), u.vec(), z.vec() );
+            ierr = MatMultTranspose( this->mat(), u.vec(), z.vec() );
+        CHKERRABORT( this->comm(),ierr );
 
-        VecDot( v.vec(), z.vec(), &e );
+        ierr = VecDot( v.vec(), z.vec(), &e );
+        CHKERRABORT( this->comm(),ierr );
     }
 
     return e;

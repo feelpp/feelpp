@@ -27,8 +27,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-01-17
  */
-#ifndef __Expr_H
-#define __Expr_H 1
+#ifndef FEELPP_EXPR_HPP
+#define FEELPP_EXPR_HPP 1
 
 #undef max
 #include <boost/version.hpp>
@@ -45,6 +45,7 @@
 #include <boost/static_assert.hpp>
 #include <boost/foreach.hpp>
 #include <boost/fusion/sequence.hpp>
+#include <boost/fusion/container/map.hpp>
 #include <boost/fusion/support/pair.hpp>
 #include <boost/multi_array.hpp>
 
@@ -53,12 +54,16 @@
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelpoly/policy.hpp>
 #include <feel/feelpoly/context.hpp>
+
+#include <feel/feelvf/exprbase.hpp>
+#include <feel/feelvf/detail/gmc.hpp>
 #include <feel/feelvf/shape.hpp>
 
 namespace Feel
 {
 namespace vf
 {
+class GiNaCBase {};
 
 /// \cond detail
 typedef node<double>::type node_type;
@@ -387,7 +392,7 @@ public:
   @see
 */
 template<typename ExprT>
-class Expr//: public boost::enable_shared_from_this<Expr<ExprT> >
+class Expr : public ExprBase //: public boost::enable_shared_from_this<Expr<ExprT> >
 {
 public:
 
@@ -477,6 +482,17 @@ public:
     typename Lambda<TheExpr>::type
     operator()( TheExpr const& e  ) const { return expr(M_expr(e)); }
 
+    void setParameterValues( std::map<std::string,value_type> const& mp )
+        {
+            this->setParameterValues( mp, boost::is_base_of<Feel::vf::GiNaCBase,expression_type>() );
+        }
+    void setParameterValues( std::map<std::string,value_type> const& mp, mpl::bool_<true> )
+        {
+            M_expr.setParameterValues( mp );
+        }
+    void setParameterValues( std::map<std::string,value_type> const& mp, mpl::bool_<false> )
+        {
+        }
 
     template<typename Geo_t, typename Basis_i_t = fusion::map<fusion::pair<vf::detail::gmc<0>,boost::shared_ptr<vf::detail::gmc<0> > >,fusion::pair<vf::detail::gmc<1>,boost::shared_ptr<vf::detail::gmc<1> > > >, typename Basis_j_t = Basis_i_t>
     struct tensor
@@ -624,6 +640,11 @@ public:
         return M_expr;
     }
 
+    expression_type& expression()
+    {
+        return M_expr;
+    }
+
     //@}
 
     /** @name  Mutators
@@ -664,6 +685,11 @@ public:
     //__typeof__( M_expr.evaluate() )
     //ublas::matrix<typename expression_type::value_type>
 
+    typename expression_type::value_type
+    evaluate( std::map<std::string,value_type> const& mp  )
+    {
+        return M_expr.evaluate( mp );
+    }
     typename expression_type::value_type
     evaluate( bool parallel = true, WorldComm const& worldcomm = Environment::worldComm() ) const
     {
@@ -740,7 +766,7 @@ struct ExpressionOrder
 #else
     // this is a very rough approximation
     static const int value = ( ExprT::imorder )?( ExprT::imorder*nOrderGeo ):( nOrderGeo );
-    static const int value_1 = ExprT::imorder;
+    static const int value_1 = ExprT::imorder+(the_element_type::is_hypercube?nOrderGeo:0);
 #endif
 
 
@@ -870,6 +896,7 @@ public:
         {
             value_type res= M_tensor_expr.evalijq( i, j, c1, c2, q );
             std::cout << "[print] " << M_tag << " shape(" << shape::M << "," << shape::N << ") evalijq( " << i << "," << j << "," << c1 << "," << c2 << "," << q << ")=" << res << "\n";
+            LOG(INFO) << "[print] " << M_tag << " shape(" << shape::M << "," << shape::N << ") evalijq( " << i << "," << j << "," << c1 << "," << c2 << "," << q << ")=" << res << "\n";
             return res;
         }
         template<int PatternContext>
@@ -879,6 +906,7 @@ public:
         {
             value_type res= M_tensor_expr.evalijq( i, j, c1, c2, q, mpl::int_<PatternContext>() );
             std::cout << "[print] " << M_tag << " shape(" << shape::M << "," << shape::N << ") evalijq( " << i << "," << j << "," << c1 << "," << c2 << "," << q << ")=" << res << "\n";
+            LOG(INFO) << "[print] " << M_tag << " shape(" << shape::M << "," << shape::N << ") evalijq( " << i << "," << j << "," << c1 << "," << c2 << "," << q << ")=" << res << "\n";
             return res;
         }
 
@@ -889,6 +917,7 @@ public:
         {
             value_type res= M_tensor_expr.evaliq( i, c1, c2, q );
             std::cout << "[print] " << M_tag << " shape(" << shape::M << "," << shape::N << ")  evaliq( " << i  << "," << c1 << "," << c2 << "," << q << ")=" << res << "\n";
+            LOG(INFO) << "[print] " << M_tag << " shape(" << shape::M << "," << shape::N << ")  evaliq( " << i  << "," << c1 << "," << c2 << "," << q << ")=" << res << "\n";
             return res;
         }
 
@@ -897,6 +926,7 @@ public:
         {
             value_type res= M_tensor_expr.evalq( c1, c2, q );
             std::cout << "[print] " << M_tag << " shape(" << shape::M << "," << shape::N << ")  evalq( " << c1 << "," << c2 << "," << q << ")=" << res << "\n";
+            LOG(INFO) << "[print] " << M_tag << " shape(" << shape::M << "," << shape::N << ")  evalq( " << c1 << "," << c2 << "," << q << ")=" << res << "\n";
             return res;
         }
 
@@ -2983,5 +3013,9 @@ basis( std::map<size_type,std::vector<boost::shared_ptr<Elem> > > const& v )
 
 /// \endcond
 } // vf
+
+
+using namespace vf;
+
 } // feel
-#endif /* __Expr_H */
+#endif /* FEELPP_EXPR_HPP */

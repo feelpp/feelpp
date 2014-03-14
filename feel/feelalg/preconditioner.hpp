@@ -313,8 +313,8 @@ struct PreconditionerManagerDeleterImpl
 {
     void operator()() const
         {
-            VLOG(2) << "[PreconditionerManagerDeleter] clear PreconditionerManager Singleton: " << detail::PreconditionerManager::instance().size() << "\n";
-            detail::PreconditionerManager::instance().clear();
+            VLOG(2) << "[PreconditionerManagerDeleter] clear PreconditionerManager Singleton: " << Feel::detail::PreconditionerManager::instance().size() << "\n";
+            Feel::detail::PreconditionerManager::instance().clear();
             VLOG(2) << "[PreconditionerManagerDeleter] clear PreconditionerManager done\n";
         }
 };
@@ -342,16 +342,16 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
     static bool observed=false;
     if ( !observed )
     {
-        Environment::addDeleteObserver( detail::PreconditionerManagerDeleter::instance() );
+        Environment::addDeleteObserver( Feel::detail::PreconditionerManagerDeleter::instance() );
         observed = true;
     }
 
 
     Feel::detail::ignore_unused_variable_warning( args );
 
-    auto git = detail::PreconditionerManager::instance().find( std::make_pair( backend, prefix ) );
+    auto git = Feel::detail::PreconditionerManager::instance().find( std::make_pair( backend, prefix ) );
 
-    if (  git != detail::PreconditionerManager::instance().end() && ( rebuild == false ) )
+    if (  git != Feel::detail::PreconditionerManager::instance().end() && ( rebuild == false ) )
     {
         VLOG(2) << "[preconditioner] found preconditioner name=" << prefix << " rebuild=" << rebuild << "\n";
         return git->second;
@@ -369,7 +369,7 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
             p->setMatrix( matrix );
         }
         VLOG(2) << "storing preconditionerin singleton" << "\n";
-        detail::PreconditionerManager::instance().operator[]( std::make_pair( backend, prefix ) ) = p;
+        Feel::detail::PreconditionerManager::instance().operator[]( std::make_pair( backend, prefix ) ) = p;
         backend->addDeleteObserver( p );
         return p;
     }

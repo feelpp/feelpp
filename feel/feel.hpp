@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2012-09-18
 
-  Copyright (C) 2012 Feel++ Consortium
+  Copyright (C) 2012-2014 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -40,20 +40,14 @@
 
 #include <feel/feelalg/backend.hpp>
 
-#include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelpoly/lagrange.hpp>
 #include <feel/feelpoly/crouzeixraviart.hpp>
 
 #include <feel/feelvf/vf.hpp>
 
-#include <feel/feeldiscr/operatorlinear.hpp>
 
-#include <feel/feeldiscr/bdf2.hpp>
-
-#include <feel/feeldiscr/projector.hpp>
-
-#include <feel/feeldiscr/operatorinterpolation.hpp>
-#include <feel/feeldiscr/operatorlagrangep1.hpp>
+#include <feel/feelts/ts.hpp>
+#include <feel/feeldiscr/discr.hpp>
 
 #include <ginac/ginac.h>
 namespace Feel
@@ -62,9 +56,6 @@ using GiNaC::symbol;
 using GiNaC::ex;
 }
 
-#include <feel/feelfilters/gmsh.hpp>
-
-#include <feel/feelfilters/exporter.hpp>
-#include <feel/feelfilters/geotool.hpp>
+#include <feel/feelfilters/filters.hpp>
 
 #endif /* FEELPP_FEEL_HPP */

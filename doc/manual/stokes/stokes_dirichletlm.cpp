@@ -56,17 +56,16 @@ createMeshStokesDirichletLM( mpl::int_<3> /**/ )
     return mesh;
 }
 
-decltype( -(Py()-1)*(Py()+1)*oneX() )
+decltype( (Py()-1)*(Py()+1)*N() )
 inletVelocityExpr( mpl::int_<2> /**/ )
 {
-    return -(Py()-1)*(Py()+1)*oneX();
+    return (Py()-1)*(Py()+1)*N();
 }
 
-
-decltype( -1.5*2*(4./0.1681)*( pow(Py()-0 ,2) + pow(Pz()-0.205 ,2) - cst(0.205*0.205) )*oneX() )
+decltype( 1.5*2*(4./0.1681)*( pow(Py()-0 ,2) + pow(Pz()-0.205 ,2) - cst(0.205*0.205) )*N() )
 inletVelocityExpr( mpl::int_<3> /**/ )
 {
-    return -1.5*2*(4./0.1681)*( pow(Py()-0 ,2) + pow(Pz()-0.205 ,2) - cst(0.205*0.205) )*oneX();
+    return 1.5*2*(4./0.1681)*( pow(Py()-0 ,2) + pow(Pz()-0.205 ,2) - cst(0.205*0.205) )*N();
 }
 
 
@@ -78,7 +77,7 @@ void runStokesDirichletLM()
     std::string configstr = (boost::format("%1%dGeo%2%")%Dim %OrderGeo).str();
 
     auto mesh = createMeshStokesDirichletLM<OrderGeo>( mpl::int_<Dim>() );
-    std::list<std::string> listMarker;listMarker.push_back("inlet");listMarker.push_back("wall");
+    std::list<std::string> listMarker{"inlet","wall"};
     auto submesh = createSubmesh(mesh,markedfaces(mesh,listMarker));
 
     auto Vh1 = THch<OrderGeo>(mesh);
@@ -93,15 +92,15 @@ void runStokesDirichletLM()
     }
 
     auto U = Vh1->elementPtr();
-    auto u = U->element<0>();
-    auto p = U->element<1>();
+    auto u = U->template element<0>();
+    auto p = U->template element<1>();
     auto lambda = Vh2->elementPtr();
     BlocksBaseGraphCSR myblockGraph(2,2);
 
     myblockGraph(0,0) = stencil( _test=Vh1,_trial=Vh1, _diag_is_nonzero=false, _close=false)->graph();
     myblockGraph(1,0) = stencil( _test=Vh2,_trial=Vh1, _diag_is_nonzero=false, _close=false)->graph();
     myblockGraph(0,1) = stencil( _test=Vh1,_trial=Vh2, _diag_is_nonzero=false, _close=false)->graph();
-    myblockGraph(1,1) = stencil( _test=Vh2,_trial=Vh2, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
+    //myblockGraph(1,1) = stencil( _test=Vh2,_trial=Vh2, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
     auto A = backend()->newBlockMatrix(_block=myblockGraph);
 
     BlocksBaseVector<double> myblockVec(2);
@@ -128,18 +127,21 @@ void runStokesDirichletLM()
 
     form2( _trial=Vh2, _test=Vh1 ,_matrix=A,
            _rowstart=0, _colstart=Vh1->nLocalDofWithGhost() )
-        += integrate( _range=elements(submesh),
-                      _expr=inner(idt(lambda),id(u)) );
+        += integrate( //_range=elements(submesh),
+                     _range=markedfaces(mesh,listMarker),
+                     _expr=inner(idt(lambda),id(u)) );
 
     form2( _trial=Vh1, _test=Vh2 ,_matrix=A,
            _rowstart=Vh1->nLocalDofWithGhost(), _colstart=0 )
         += integrate( _range=elements(submesh),
+                      //_range=markedfaces(mesh,listMarker),
                       _expr=inner(idt(u),id(lambda)) );
 
     form1( _test=Vh2, _vector=F,
            _rowstart=Vh1->nLocalDofWithGhost() )
-        += integrate(_range=markedelements(submesh,"inlet"),
-                     _expr=trans(u_in)*id(lambda));
+        += integrate(//_range=markedelements(submesh,"inlet"),
+                     _range=markedfaces(mesh,"inlet"),
+                     _expr=inner(u_in,id(lambda) ) );
 
     backend(_rebuild=true)->solve( _matrix=A, _rhs=F, _solution=UVec );
 

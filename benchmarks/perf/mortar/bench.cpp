@@ -74,12 +74,12 @@ makeAbout()
 
 namespace Feel
 {
-extern template class Mortar<2,2,2>;
+extern template class MortarBench<2,2,2>;
 #if 0
-extern template class Mortar<2,2,3>;
-extern template class Mortar<2,3,2>;
-extern template class Mortar<3,2,2>;
-extern template class Mortar<3,3,3>;
+extern template class MortarBench<2,2,3>;
+extern template class MortarBench<2,3,2>;
+extern template class MortarBench<3,2,2>;
+extern template class MortarBench<3,3,3>;
 #endif
 }
 
@@ -87,9 +87,15 @@ int main( int argc, char** argv )
 {
     using namespace Feel;
 
-    //Environment env( argc, argv );
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=makeAbout() );
 
-    Application benchmark( argc, argv, makeAbout(), makeOptions() );
+    Environment::changeRepository( boost::format( "%1%" )
+                                   % makeAbout().appName() );
+
+
+    Application benchmark;
 
     if ( benchmark.vm().count( "help" ) )
     {
@@ -97,14 +103,14 @@ int main( int argc, char** argv )
         return 0;
     }
 
-    // app.add( new Mortar<2,2,2>( app.vm(), app.about() ) );
-    benchmark.add( new Mortar<2,2,2>( "2D-P2-P2", benchmark.vm(), benchmark.about() ) );
+    // app.add( new MortarBench<2,2,2>( app.vm(), app.about() ) );
+    benchmark.add( new MortarBench<2,2,2>( "2D-P2-P2", benchmark.vm(), benchmark.about() ) );
 #if  0
-    benchmark.add( new Mortar<2,2,3>( "2D-P2-P3", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Mortar<2,3,2>( "2D-P3-P2", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Mortar<3,2,2>( "3D-P2-P2", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Mortar<3,3,3>( "3D-P3-P3", benchmark.vm(), benchmark.about() ) );
+    benchmark.add( new MortarBench<2,2,3>( "2D-P2-P3", benchmark.vm(), benchmark.about() ) );
+    benchmark.add( new MortarBench<2,3,2>( "2D-P3-P2", benchmark.vm(), benchmark.about() ) );
+    benchmark.add( new MortarBench<3,2,2>( "3D-P2-P2", benchmark.vm(), benchmark.about() ) );
+    benchmark.add( new MortarBench<3,3,3>( "3D-P3-P3", benchmark.vm(), benchmark.about() ) );
 #endif
     benchmark.run();
-    benchmark.printStats( std::cout, boost::assign::list_of( "e.l2" )( "e.h1" )( "t.init" )( "t.assembly" )( "t.solver" ) );
+    benchmark.printStats( std::cout, boost::assign::list_of( "e.l2" )( "e.h1" )( "t.init" )( "t.assembly" )( "t.solver" ), Application::ALL );
 }

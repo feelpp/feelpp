@@ -70,6 +70,8 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( buildGraphWithTranspose )
     BOOST_PARAMETER_NAME( matrixA )
     BOOST_PARAMETER_NAME( matrixB )
+    BOOST_PARAMETER_NAME( formA )
+    BOOST_PARAMETER_NAME( formB )
     BOOST_PARAMETER_NAME( rhs )
     BOOST_PARAMETER_NAME( solution )
     BOOST_PARAMETER_NAME( prec )
@@ -156,6 +158,7 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( geoentity )
     BOOST_PARAMETER_NAME( pointset )
     BOOST_PARAMETER_NAME( desc )
+    BOOST_PARAMETER_NAME( desc_lib )
     BOOST_PARAMETER_NAME( shape )
     BOOST_PARAMETER_NAME( convex )
 // project and integrate
@@ -165,12 +168,17 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( straighten )
     BOOST_PARAMETER_NAME( expr )
     BOOST_PARAMETER_NAME( grad_expr)
+    BOOST_PARAMETER_NAME( div_expr)
+    BOOST_PARAMETER_NAME( curl_expr)
     BOOST_PARAMETER_NAME( pset )
     BOOST_PARAMETER_NAME( quad )
     BOOST_PARAMETER_NAME( quad1 )
     BOOST_PARAMETER_NAME( arg )
 
     BOOST_PARAMETER_NAME( quadptloc )
+
+    BOOST_PARAMETER_NAME( extended_doftable )
+
 
 
 // orders
@@ -208,10 +216,12 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( domainSpace )
     BOOST_PARAMETER_NAME( imageSpace )
     BOOST_PARAMETER_NAME( range )
+    BOOST_PARAMETER_NAME( range_extended )
     BOOST_PARAMETER_NAME( element )
     BOOST_PARAMETER_NAME( parameter )
     BOOST_PARAMETER_NAME( sampling )
     BOOST_PARAMETER_NAME( context )
+    BOOST_PARAMETER_NAME( mpi_communications )
 
     BOOST_PARAMETER_NAME( components )
     BOOST_PARAMETER_NAME( periodicity )
@@ -239,6 +249,7 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( forceRelaxation )
 
     BOOST_PARAMETER_NAME( use_tbb )
+    BOOST_PARAMETER_NAME( use_harts )
     BOOST_PARAMETER_NAME( grainsize )
     BOOST_PARAMETER_NAME( partitioner )
 
@@ -256,6 +267,8 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( home )
     BOOST_PARAMETER_NAME( bugs )
     BOOST_PARAMETER_NAME( version )
+
+    BOOST_PARAMETER_NAME( max_points_used )
 } // Feel
 
 

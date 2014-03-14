@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2010-04-21
 
-  Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2010 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -151,6 +151,11 @@ Exporter<MeshType, N>::New( po::variables_map const& vm, std::string prefix, Wor
     std::string estr = vm["exporter.format"].template as<std::string>();
     Exporter<MeshType, N>* exporter =  0;//Factory::type::instance().createObject( estr  );
 
+    LOG(INFO) << "[Exporter] format :  " << estr << "\n";
+    LOG(INFO) << "[Exporter] N      :  " << N << "\n";
+    if( N > 1 && estr != "gmsh" )
+        LOG(WARNING) << "[Exporter] format " << estr << " is not available for mesh order > 1 - using gmsh exporter instead\n";
+
     if ( N == 1 && ( estr == "ensight"   ) )
         exporter = new ExporterEnsight<MeshType, N>( worldComm );
     else if ( N == 1 && ( estr == "ensightgold"   ) )
@@ -185,7 +190,11 @@ Exporter<MeshType, N>::setOptions( std::string const& exp_prefix )
         M_prefix = Environment::vm(_name="exporter.prefix",_prefix=exp_prefix).template as<std::string>();
 
     M_freq = Environment::vm(_name="exporter.freq",_prefix=exp_prefix).template as<int>();
-    M_ft = file_type( Environment::vm(_name="exporter.file-type",_prefix=exp_prefix).template as<int>() );
+    std::string ftstr = option(_name="exporter.file-type",_prefix=exp_prefix).template as<std::string>();
+    if ( ftstr == "binary" )
+        M_ft = BINARY;
+    else
+        M_ft = ASCII;
 
     VLOG(1) << "[Exporter] type:  " << M_type << "\n";
     VLOG(1) << "[Exporter] prefix:  " << M_prefix << "\n";

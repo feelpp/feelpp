@@ -139,7 +139,7 @@ WorldComm::init( int color, bool colormap )
     if ( !colormap )
     {
         auto dataSendToGather = boost::make_tuple( this->globalRank(),this->godRank() );
-        std::vector<boost::tuple<int,int> > dataRecvToGather( this->globalSize() );
+        std::vector<boost::tuple<rank_type,rank_type> > dataRecvToGather( this->globalSize() );
         mpi::all_gather( this->globalComm(),
                          dataSendToGather,
                          dataRecvToGather);
@@ -152,7 +152,7 @@ WorldComm::init( int color, bool colormap )
     else
     {
         auto dataSendToGather = boost::make_tuple( this->globalRank(),this->godRank(), color );
-        std::vector<boost::tuple<int,int,int> > dataRecvToGather( this->globalSize() );
+        std::vector<boost::tuple<rank_type,rank_type,int> > dataRecvToGather( this->globalSize() );
 
         mpi::all_gather( this->globalComm(),
                          dataSendToGather,
@@ -319,7 +319,7 @@ WorldComm::WorldComm( communicator_type const& _globalComm,
                      M_mapLocalRankToGlobalRank );
 
     auto dataSendToGather = boost::make_tuple( _color,this->godRank() );
-    std::vector<boost::tuple<int,int> > dataRecvToGather( this->globalSize() );
+    std::vector<boost::tuple<int,rank_type> > dataRecvToGather( this->globalSize() );
     mpi::all_gather( this->globalComm(),
                      dataSendToGather,
                      dataRecvToGather);
@@ -565,7 +565,7 @@ WorldComm::operator+( WorldComm const & _worldComm ) const
 
 //-------------------------------------------------------------------------------
 
-int
+rank_type
 WorldComm::localColorToGlobalRank( int _color,int _localRank ) const
 {
     int res=0,cptLoc=0;

@@ -577,7 +577,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionOnePermutation()
 
         if ( permutation.value() != face_permutation_type::IDENTITY )
             this->elements().modify( this->elementIterator( elt_it->ad_second(), elt_it->proc_second() ),
-                                     detail::UpdateFacePermutation<face_permutation_type>( elt_it->pos_second(),
+                                     Feel::detail::UpdateFacePermutation<face_permutation_type>( elt_it->pos_second(),
                                              permutation ) );
     }
 
@@ -648,7 +648,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
     {
         // We want that the first edges be those on the boundary, in order to obey the paradigm for
         // a Mesh3D
-        const location_faces& location_index=this->faces().template get<detail::by_location>();
+        const location_faces& location_index=this->faces().template get<Feel::detail::by_location>();
         location_face_iterator ifa;
         location_face_iterator efa;
         boost::tie( ifa, efa ) = location_index.equal_range( boost::make_tuple( true ) );
@@ -759,7 +759,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
             if (!elt_it->isGhostCell()) this->edges().modify( this->edgeIterator( _edgeit->second ), Feel::detail::UpdateProcessId(elt_it->processId()) );
 
             this->elements().modify( elt_it,
-                                     detail::UpdateEdge<edge_type>( j, boost::cref( this->edge( _edgeit->second ) ) ) );
+                                     Feel::detail::UpdateEdge<edge_type>( j, boost::cref( this->edge( _edgeit->second ) ) ) );
 #if !defined(NDEBUG)
             this->elements().modify( elt_it,
                                      [j]( element_type const& e ) { FEELPP_ASSERT( e.edgePtr( j ) )( e.id() )( j ).error( "invalid edge in element" ); } );
@@ -817,7 +817,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
                 {
                     permutation = edge_permutation_type::REVERSE_PERMUTATION;
                     this->elements().modify( elt_it,
-                                             detail::UpdateEdgePermutation<edge_permutation_type>( j,
+                                             Feel::detail::UpdateEdgePermutation<edge_permutation_type>( j,
                                                      permutation ) );
                 }
             }

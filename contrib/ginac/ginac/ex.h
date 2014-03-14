@@ -958,7 +958,7 @@ inline const T &ex_to(const ex &e)
 
 } // namespace GiNaC
 
-
+#if !__INTEL_COMPILER >= 1400
 // Specializations of Standard Library algorithms
 namespace std {
 
@@ -984,5 +984,5 @@ inline void iter_swap(list<GiNaC::ex>::iterator i1, list<GiNaC::ex>::iterator i2
 }
 
 } // namespace std
-
+#endif
 #endif // ndef GINAC_EX_H

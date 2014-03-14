@@ -461,7 +461,7 @@ public:
      */
     PointType & reversepoint( uint16_type const i )
     {
-        return *( static_cast<POINTTYPE *>( M_points[ detail::ReversePoint<GEOSHAPE>::operate( i ) ] ) );
+        return *( static_cast<POINTTYPE *>( M_points[ Feel::detail::ReversePoint<GEOSHAPE>::operate( i ) ] ) );
     }
 
 
@@ -475,7 +475,7 @@ public:
      */
     PointType const & reversepoint ( uint16_type const i ) const
     {
-        return *( static_cast<POINTTYPE *>( M_points[ detail::ReversePoint<GEOSHAPE>::operate( i ) ] ) );
+        return *( static_cast<POINTTYPE *>( M_points[ Feel::detail::ReversePoint<GEOSHAPE>::operate( i ) ] ) );
     }
 
 
@@ -744,7 +744,8 @@ public:
 
             if ( tags[2] > 1 )
             {
-                std::vector<int> p( tags[2]-1 );
+                // ghosts
+                std::vector<rank_type> p( tags[2]-1 );
 
                 for ( size_type i = 0; i < p.size(); ++i )
                 {

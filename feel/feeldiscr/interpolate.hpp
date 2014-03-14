@@ -102,13 +102,20 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
     gm_ptrtype __gm = space->gm();
     typedef typename gm_type::precompute_ptrtype geopc_ptrtype;
     typedef typename gm_type::precompute_type geopc_type;
+    typedef typename domain_gm_type::precompute_ptrtype domain_geopc_ptrtype;
+    typedef typename domain_gm_type::precompute_type domain_geopc_type;
+
     geopc_ptrtype __geopc( new geopc_type( __gm, __basis->dual().points() ) );
 
 
     f.updateGlobalValues();
 
-    auto it = f.functionSpace()->mesh()->beginElementWithProcessId( space->mesh()->comm().rank() );
-    auto en = f.functionSpace()->mesh()->endElementWithProcessId( space->mesh()->comm().rank() );
+    //auto it = f.functionSpace()->mesh()->beginElementWithProcessId();
+    //auto en = f.functionSpace()->mesh()->endElementWithProcessId();
+    bool upExtendedElt = ( space->mesh()->worldComm().localSize()>1 && f.functionSpace()->dof()->buildDofTableMPIExtended() && space->dof()->buildDofTableMPIExtended() );
+    auto rangeElt = elements( f.functionSpace()->mesh(), upExtendedElt );
+    auto it = rangeElt.template get<1>();
+    auto en = rangeElt.template get<2>();
     if ( it==en ) return;
 
     //gmc_ptrtype __c( new gmc_type( __gm, *it, __geopc ) );
@@ -139,7 +146,8 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
 
         for ( ; it != en; ++ it )
         {
-            __c->update( *it );
+            domain_geoelement_type const& curElt = boost::unwrap_ref(*it);
+            __c->update( curElt );
             fectx->update( __c, pc );
             std::fill( fvalues.data(), fvalues.data()+fvalues.num_elements(), f_fectx_type::id_type::Zero() );
             f.id( *fectx, fvalues );
@@ -152,12 +160,12 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
 
                 for ( uint16_type comp = 0; comp < ncdof; ++comp )
                 {
-                    size_type globaldof =  boost::get<0>( __dof->localToGlobal( it->id(),
+                    size_type globaldof =  boost::get<0>( __dof->localToGlobal( curElt.id(),
                                                           l, comp ) );
 
 #if 0
-                    size_type globaldof_f =  boost::get<0>( f.functionSpace()->dof()->localToGlobal( it->id(),l, 0 ) );
-                    std::cout << "elt : " << it->id() << "\n"
+                    size_type globaldof_f =  boost::get<0>( f.functionSpace()->dof()->localToGlobal( curElt.id(),l, 0 ) );
+                    std::cout << "elt : " << curElt.id() << "\n"
                               << "  l : " << l << "\n"
                               << " comp: " << comp << "\n"
                               << " dof: " << globaldof_f << "\n"
@@ -177,6 +185,51 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
             }
         }
 
+
+#if 0
+        if ( space->mesh()->worldComm().localSize()>1 )
+        {
+            if ( f.functionSpace()->dof()->buildDofTableMPIExtended() && space->dof()->buildDofTableMPIExtended() )
+            {
+                std::set<size_type> eltGhostDone;
+                auto face_it = f.functionSpace()->mesh()->interProcessFaces().first;
+                auto const face_en = f.functionSpace()->mesh()->interProcessFaces().second;
+                for ( ; face_it!=face_en ; ++face_it )
+                {
+                    auto const& elt0 = face_it->element0();
+                    auto const& elt1 = face_it->element1();
+                    const bool elt0isGhost = elt0.isGhostCell();
+                    auto const& eltOffProc = (elt0isGhost)?elt0:elt1;
+
+                    if ( eltGhostDone.find( eltOffProc.id() ) != eltGhostDone.end() ) continue;
+
+                    __c->update( eltOffProc );
+                    fectx->update( __c, pc );
+                    std::fill( fvalues.data(), fvalues.data()+fvalues.num_elements(), f_fectx_type::id_type::Zero() );
+                    f.id( *fectx, fvalues );
+
+                    for ( uint16_type l = 0; l < basis_type::nLocalDof; ++l )
+                    {
+                        const int ncdof = basis_type::is_product?basis_type::nComponents:1;
+
+                        for ( uint16_type comp = 0; comp < ncdof; ++comp )
+                        {
+                            size_type globaldof =  boost::get<0>( __dof->localToGlobal( eltOffProc.id(),l, comp ) );
+
+                            // update only values on the processor
+                            if ( globaldof >= interp.firstLocalIndex() &&
+                                 globaldof < interp.lastLocalIndex() )
+                            {
+                                interp( globaldof ) = fvalues[l]( comp,0 );
+                            }
+                        }
+                    }
+                }
+            }
+        }
+#endif
+
+
         DVLOG(2) << "[interpolate] Same mesh but not same space done\n";
     } // same mesh
 
@@ -184,8 +237,6 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
     {
         DVLOG(2) << "[interpolate] different meshes\n";
         domain_gm_ptrtype __dgm = f.functionSpace()->gm();
-        typedef typename domain_gm_type::precompute_ptrtype domain_geopc_ptrtype;
-        typedef typename domain_gm_type::precompute_type domain_geopc_type;
         // get only one point
         typename matrix_node<value_type>::type pts( mesh_type::nDim, 1 );
         ublas::column( pts, 0 ) = ublas::column( __basis->dual().points(), 0 );
@@ -225,8 +276,9 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
 
         for ( ; it != en; ++ it )
         {
-            __c->update( *it );
-            meshinv.pointsInConvex( it->id(), itab );
+            domain_geoelement_type const& curElt = boost::unwrap_ref(*it);
+            __c->update( curElt );
+            meshinv.pointsInConvex( curElt.id(), itab );
 
             if ( itab.size() == 0 )
                 continue;
@@ -238,7 +290,7 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
                 uint16_type comp;
                 boost::tie( dof, comp ) = itab[i];
 #if !defined( NDEBUG )
-                DVLOG(2) << "[interpolate] element : " << it->id() << " npts: " << itab.size() << " ptid: " << i
+                DVLOG(2) << "[interpolate] element : " << curElt.id() << " npts: " << itab.size() << " ptid: " << i
                               << " gdof: " << dof << " comp = " << comp << "\n";
 #endif
 

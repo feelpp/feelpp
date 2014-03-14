@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #set -x
 soname=`basename $1 .cpp`.so
 if [[ "$OSTYPE" == "darwin"* ]]; then

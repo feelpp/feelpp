@@ -45,6 +45,7 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feeldiscr/projector.hpp>
+#include <feel/feeldiscr/elementdiv.hpp>
 
 #include <boost/assert.hpp>
 #include <boost/regex.hpp>
@@ -900,7 +901,7 @@ namespace Feel
         for (int i=0; i<Dim; i++)
             {
                 dvard1P0[i] = vf::project(P0h, elements(mesh), gradv(varP1)(0,i) );
-                dvard1P1[i] = element_div( sum(P1h, idv(dvard1P0[i])*meas()), sum(P1h, meas() ) ); //L2 proj -> P1
+                dvard1P1[i] = div( sum(P1h, idv(dvard1P0[i])*meas()), sum(P1h, meas() ) ); //L2 proj -> P1
             }
 
         // Second derivatives of proj_P1(U) are P0
@@ -912,7 +913,7 @@ namespace Feel
                     {
                         // Hessian components are entered column by column
                         hessP0[i+j*Dim] = vf::project(P0h, elements(mesh), gradv( dvard1P1[j] )(0,i) );
-                        hessP1[i+j*Dim] = element_div( sum(P1h, idv(hessP0[i+j*Dim])*meas()), sum(P1h, meas() ) ); //L2 proj -> P1
+                        hessP1[i+j*Dim] = div( sum(P1h, idv(hessP0[i+j*Dim])*meas()), sum(P1h, meas() ) ); //L2 proj -> P1
                     }
             }
         // ******************************************************************************************* //

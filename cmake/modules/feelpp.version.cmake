@@ -26,7 +26,7 @@
 # set the version of feel++
 ################################################################################
 
-OPTION(FEELPP_ENABLE_GIT "enable Feel++ looking up for git information" ON)
+OPTION(FEELPP_ENABLE_GIT "enable Feel++ looking up for git information" OFF)
 SET(FEELPP_SCM "git")
 FIND_PACKAGE(Git)
 if(GIT_FOUND AND  EXISTS ${PROJECT_SOURCE_DIR}/.git )
@@ -58,7 +58,7 @@ endif()
 
 
 set(FEELPP_VERSION_MAJOR "0")
-set(FEELPP_VERSION_MINOR "96")
+set(FEELPP_VERSION_MINOR "97")
 set(FEELPP_VERSION_MICRO "0")
 set(FEELPP_REVISION "0" )
 set(FEELPP_BUILDID "0" )

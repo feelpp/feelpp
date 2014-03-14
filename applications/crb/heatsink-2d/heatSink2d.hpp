@@ -49,7 +49,7 @@
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelcrb/parameterspace.hpp>
 
-#include <feel/feeldiscr/bdf2.hpp>
+#include <feel/feeldiscr/bdf.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/LU>
@@ -125,6 +125,10 @@ public :
 
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
+
+    static const bool is_time_dependent = true;
+    static const bool is_linear = true;
+
 };
 
 /**
@@ -151,7 +155,6 @@ public:
     static const uint16_type Order = 1;
     static const uint16_type ParameterSpaceDimension = 3;
     //static const bool is_time_dependent = false;
-    static const bool is_time_dependent = true;
 
     //@}
 

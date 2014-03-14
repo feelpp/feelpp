@@ -1,4 +1,3 @@
-
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
@@ -6,7 +5,8 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-04-14
 
-  Copyright (C) 2008-2012 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008-2012 UniversitÃ© Joseph Fourier (Grenoble I)
+  Copyright (C) 2012-2014 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -22,11 +22,6 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-/**
-   \file stvenant_kirchhoff.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2008-04-14
- */
 #include <feel/feel.hpp>
 
 inline
@@ -35,8 +30,6 @@ makeOptions()
 {
     Feel::po::options_description stvenant_kirchhoffoptions( "StVenant Kirchhoff solid model options" );
     stvenant_kirchhoffoptions.add_options()
-    ( "dt", Feel::po::value<double>()->default_value( 1 ), "time step value" )
-    ( "ft", Feel::po::value<double>()->default_value( 1 ), "final time value" )
     ( "omega", Feel::po::value<double>()->default_value( 2 ), "frequency" )
     ( "lambda", Feel::po::value<double>()->default_value( 1 ), "exp() coefficient value for the Stvenant_Kirchhoff problem" )
 
@@ -44,7 +37,6 @@ makeOptions()
     ( "diff", Feel::po::value<double>()->default_value( 1 ), "diffusion parameter" )
     ( "penal", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter" )
     ( "penalbc", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary conditions" )
-    ( "hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence" )
     ( "bctype", Feel::po::value<int>()->default_value( 1 ), "0 = strong Dirichlet, 1 = weak Dirichlet" )
     ;
     return stvenant_kirchhoffoptions.add( Feel::feel_options() );
@@ -117,26 +109,23 @@ public:
     StVenantKirchhoff()
         :
         super(),
-        M_backend( backend_type::build( this->vm() ) ),
-        meshSize( this->vm()["hsize"].template as<double>() ),
-        M_lambda( this->vm()["lambda"].template as<double>() ),
+        M_lambda( option(_name="lambda").template as<double>() ),
         M_Xh(),
-        exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) ),
-        dt( this->vm()["dt"].template as<double>() ),
-        ft( this->vm()["ft"].template as<double>() ),
-        omega( this->vm()["omega"].template as<double>() )
+        dt( option(_name="dt").template as<double>() ),
+        ft( option(_name="ft").template as<double>() ),
+        omega( option(_name="omega").template as<double>() )
         {
             this->changeRepository( boost::format( "doc/manual/solid/%1%/%2%/P%3%/h_%4%/" )
                                     % this->about().appName()
                                     % entity_type::name()
                                     % Order
-                                    % this->vm()["hsize"].template as<double>()
+                                    % option(_name="hsize").template as<double>()
                 );
 
             /**
              * Physical data
              */
-            M_time_order = this->vm()["order"].template as<int>();
+            M_time_order = option(_name="order").template as<int>();
             E = 21*1e5;
             sigma = 0.28;
             mu = E/( 2*( 1+sigma ) );
@@ -181,8 +170,6 @@ private:
 
 private:
 
-    backend_ptrtype M_backend;
-
     double meshSize;
     double M_lambda;
 
@@ -218,7 +205,7 @@ StVenantKirchhoff<Dim, Order>::updateResidual( const vector_ptrtype& X, vector_p
 {
     boost::timer ti;
     LOG(INFO) << "[updateResidual] start\n";
-    value_type penalisation_bc = this->vm()["penalbc"].template as<value_type>();
+    value_type penalisation_bc = option(_name="penalbc").template as<value_type>();
 
     mesh_ptrtype mesh = M_Xh->mesh();
     element_type u( M_Xh, "U" );
@@ -261,13 +248,13 @@ StVenantKirchhoff<Dim, Order>::updateJacobian( const vector_ptrtype& X, sparse_m
     boost::timer ti;
     LOG(INFO) << "[updateJacobian] start\n";
     static bool is_init = false;
-    value_type penalisation_bc = this->vm()["penalbc"].template as<value_type>();
+    value_type penalisation_bc = option(_name="penalbc").template as<value_type>();
     mesh_ptrtype mesh = M_Xh->mesh();
     element_type u( M_Xh, "U" );
     element_type v( M_Xh, "V" );
     u = *X;
 
-    if ( !J ) J=M_backend->newMatrix( M_Xh, M_Xh );
+    if ( !J ) J= backend()->newMatrix( M_Xh, M_Xh );
 
     form2( _test=M_Xh, _trial=M_Xh, _matrix=J ) =
         integrate( elements( mesh ),
@@ -293,20 +280,20 @@ StVenantKirchhoff<Dim, Order>::run()
     element_type v( M_Xh, "V" );
 
 
-    M_bdf = bdf( _space=M_Xh, _vm=this->vm() );
+    M_bdf = bdf( _space=M_Xh );
 
 
-    value_type penalisation = this->vm()["penal"].template as<value_type>();
-    value_type penalisation_bc = this->vm()["penalbc"].template as<value_type>();
-    int bctype = this->vm()["bctype"].template as<int>();
-    value_type order = this->vm()["order"].template as<int>();
+    value_type penalisation = option(_name="penal").template as<value_type>();
+    value_type penalisation_bc = option(_name="penalbc").template as<value_type>();
+    int bctype = option(_name="bctype").template as<int>();
+    value_type order = option(_name="order").template as<int>();
 
 
     LOG(INFO) << "lambda = " << lambda << "\n"
               << "mu     = " << mu << "\n"
               << "gravity= " << gravity << "\n";
 
-    M_oplin = opLinear( _domainSpace=M_Xh, _imageSpace=M_Xh, _backend=M_backend );
+    M_oplin = opLinear( _domainSpace=M_Xh, _imageSpace=M_Xh );
     auto deft = sym( gradt( u ) );
     auto def = sym( grad( v ) );
     auto Id = eye<Dim>();
@@ -330,8 +317,8 @@ StVenantKirchhoff<Dim, Order>::run()
                    - trans( ( 2*mu*def+lambda*trace( def )*Id )*N() )*idt( u )
                    + penalisation_bc*trans( idt( u ) )*id( v )/hFace() );
 
-    M_backend->nlSolver()->residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2 );
-    M_backend->nlSolver()->jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2 );
+    backend()->nlSolver()->residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2 );
+    backend()->nlSolver()->jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2 );
 
     U.zero();
 
@@ -350,7 +337,7 @@ StVenantKirchhoff<Dim, Order>::run()
         LOG(INFO) << "============================================================\n";
         LOG(INFO) << "time: " << time << "s, iteration: " << iterations << "\n";
 
-        M_backend->nlSolve( _solution=U );
+        backend()->nlSolve( _solution=U );
 
         exportResults( time, U );
 
@@ -378,15 +365,8 @@ StVenantKirchhoff<Dim, Order>::exportResults( double time, element_type& U )
     LOG(INFO) << "exportResults starts\n";
 
     exporter->step( time )->setMesh( U.functionSpace()->mesh() );
-    exporter->step( time )->add( "pid",
-                                 regionProcess( boost::shared_ptr<p0_space_type>( new p0_space_type( U.functionSpace()->mesh() ) ) ) );
 
-#if MIXED
-    exporter->step( time )->add( "displ", U.template element<0>() );
-    exporter->step( time )->add( "veloc", U.template element<1>() );
-#else
     exporter->step( time )->add( "displ", U );
-#endif
 
     exporter->save();
 } // StVenantKirchhoff::export

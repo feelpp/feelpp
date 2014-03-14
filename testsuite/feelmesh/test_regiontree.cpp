@@ -6,6 +6,7 @@
        Date: 2005-02-01
 
   Copyright (C) 2005,2006 EPFL
+  Copyright (C) 2010-2014 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -38,7 +39,8 @@
 
 #include <feel/feeldiscr/mesh.hpp>
 
-#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/creategmshmesh.hpp>
+#include <feel/feelfilters/domain.hpp>
 
 
 
@@ -70,9 +72,9 @@ int main( int argc,  char** argv )
 
     BoundingBox<> bb( true );
 
-    for ( size_type __i = 0; __i < aMesh->numElements(); ++__i )
+    for ( auto const& elt : elements(aMesh) )
     {
-        bb.make( aMesh->element( __i ).G() );
+        bb.make( elt.G() );
 
         for ( unsigned k=0; k < min.size(); ++k )
         {
@@ -80,7 +82,7 @@ int main( int argc,  char** argv )
             bb.max[k]+=EPS;
         }
 
-        __rt.addBox( bb.min, bb.max, __i );
+        __rt.addBox( bb.min, bb.max, elt.id() );
     }
 
     __rt.dump();

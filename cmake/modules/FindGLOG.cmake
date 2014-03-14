@@ -29,26 +29,30 @@ FIND_PACKAGE(GFLAGS)
 
 option(FEELPP_FINDINSYSTEM_GLOG "start by search glog in system" OFF)
 
+# Look for glog in the system
 if (FEELPP_FINDINSYSTEM_GLOG)
-# try installed version
-FIND_PATH(GLOG_INCLUDE_DIR glog/logging.h
-  /usr/include/feel
-  /usr/local/include/feel
-  /opt/local/include/feel
-  NO_DEFAULT_PATH
-  )
+  # try installed version
+  FIND_PATH(GLOG_INCLUDE_DIR glog/logging.h
+    /usr/include/feel
+    /usr/local/include/feel
+    /opt/local/include/feel
+    NO_DEFAULT_PATH
+    )
 
-# try to find glog headers, if not found then install glog from contrib into
-# build directory and set GLOG_INCLUDE_DIR and GLOG_LIBRARIES
-FIND_PATH(GLOG_INCLUDE_DIR glog/logging.h
-  ${CMAKE_BINARY_DIR}/contrib/glog/include
-  $ENV{FEELPP_DIR}/include
-  $ENV{FEELPP_DIR}/include/feel
-  NO_DEFAULT_PATH
-  )
-
-message(STATUS "Glog first pass: ${GLOG_INCLUDE_DIR}")
+  message(STATUS "Glog first pass: ${GLOG_INCLUDE_DIR}")
 endif(FEELPP_FINDINSYSTEM_GLOG)
+
+# If we didn't find glog in the system, we check in contrib
+if (NOT GLOG_INCLUDE_DIR )
+  # try to find glog headers, if not found then install glog from contrib into
+  # build directory and set GLOG_INCLUDE_DIR and GLOG_LIBRARIES
+  FIND_PATH(GLOG_INCLUDE_DIR glog/logging.h
+    ${CMAKE_BINARY_DIR}/contrib/glog/include
+    $ENV{FEELPP_DIR}/include
+    $ENV{FEELPP_DIR}/include/feel
+    NO_DEFAULT_PATH
+    )
+endif()
 
 
 if (NOT GLOG_INCLUDE_DIR )
@@ -92,14 +96,18 @@ if (FEELPP_FINDINSYSTEM_GLOG)
   FIND_LIBRARY(GLOG_LIBRARY  NAMES feelpp_glog   )
 endif(FEELPP_FINDINSYSTEM_GLOG)
 
-FIND_LIBRARY(GLOG_LIBRARY
-  NAMES feelpp_glog
-  PATHS
-  ${CMAKE_BINARY_DIR}/contrib/glog/lib64/
-  ${CMAKE_BINARY_DIR}/contrib/glog/lib/
-  $ENV{FEELPP_DIR}/lib
-  NO_DEFAULT_PATH
-  )
+# If we didn't find the Glog library in the system
+# we look for it in contrib
+if( NOT GLOG_LIBRARY )
+  FIND_LIBRARY(GLOG_LIBRARY
+    NAMES feelpp_glog
+    PATHS
+    ${CMAKE_BINARY_DIR}/contrib/glog/lib64/
+    ${CMAKE_BINARY_DIR}/contrib/glog/lib/
+    $ENV{FEELPP_DIR}/lib
+    NO_DEFAULT_PATH
+    )
+endif()
 
 set(GLOG_LIBRARIES ${GLOG_LIBRARY})
 message(STATUS "GLog includes: ${GLOG_INCLUDE_DIR} Libraries: ${GLOG_LIBRARIES}" )

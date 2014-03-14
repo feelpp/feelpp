@@ -3,10 +3,10 @@
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-             StÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ©phane Veys <stephane.veys@gmail.com>
+             Stephane Veys <stephane.veys@gmail.com>
        Date: 2010-08-05
 
-  Copyright (C) 2010 UniversitÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ© Joseph Fourier (Grenoble I)
+  Copyright (C) 2010 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -24,16 +24,12 @@
 */
 /**
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \author StÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ©phane Veys <stephane.veys@gmail.com>
+   \author Stephane Veys <stephane.veys@gmail.com>
    \date 2010-08-05
  */
 #include <feel/feel.hpp>
-
-#if defined (FEELPP_HAS_MADLIB_H)
-#include <MAdLib.h>
-#endif // FEELPP_HAS_MADLIB_H
-
-
+#include <feel/feeldiscr/elementdiv.hpp>
+#include <feel/feelfilters/creategmshmesh.hpp>
 
 using namespace Feel;
 using namespace boost::numeric::ublas;
@@ -199,84 +195,6 @@ public:
           ( collapseOnBoundaryTolerance, *( boost::is_arithmetic<mpl::_> ), 1e-6 ) ) // 5. optional
     )
     {
-#if defined (FEELPP_HAS_MADLIB_H)
-        saveGMSHMesh( _filename="inputmesh.msh",
-                      _parametricnodes=!model.empty(),
-                      _mesh=h.mesh() );
-        MAd::pGModel themodel = 0;
-        GM_create( &themodel,"theModel" );
-
-        if ( !model.empty() )
-            GM_read( themodel, model );
-
-        else
-            GM_read( themodel, "inputmesh.msh" );
-
-        MAd::pMesh amesh = MAd::M_new( themodel );
-        MAd::M_load( amesh, "inputmesh.msh" );
-
-        MAd::PWLSField * sizeField = new MAd::PWLSField( amesh );
-        sizeField->setCurrentSize();
-        auto _elit = h.mesh()->beginElement();
-        auto _elen = h.mesh()->endElement();
-
-        for ( ; _elit != _elen; ++_elit )
-        {
-            for ( int l = 0; l < _elit->numPoints; ++l )
-            {
-                int dof = h.functionSpace()->dof()->localToGlobal( _elit->id(), l, 0 ).get<0>();
-                int pid = _elit->point( l ).id()+1;
-                sizeField->setSize( pid , h( dof ) );
-            }
-        }
-
-        MAd::MeshAdapter* ma = new MAd::MeshAdapter( amesh,sizeField );
-
-        ma->setMaxIterationsNumber( maxit );
-        ma->setEdgeLenSqBounds( 1.0/3.0, 3.0 );
-        ma->setNoSwapQuality( 0.1 );
-        ma->setSliverQuality( 0.02 );
-        ma->setSliverPermissionInESplit( true, 10. );
-        ma->setSliverPermissionInECollapse( true, 0.1 );
-        ma->snapVertices();
-        //ma->setEdgeLenSqBounds( hmin*hmin, hmax*hmax );
-#if 1
-        ma->setGeoTracking( !model.empty() );
-#if 0
-        true,
-        0,
-        1.,
-        false,
-        false );
-#endif
-#endif
-
-        if ( statistics )
-    {
-        std::cout << "Statistics before optimization: \n";
-        ma->printStatistics( std::cout );
-            ma->writePos( "meanRatioBefore.pos",MAd::OD_MEANRATIO );
-        }
-
-        // Optimize
-        // ---------
-        ma->run();
-
-        if ( statistics )
-    {
-        // Outputs final mesh
-        // -------------------
-        std::cout << "Statistics after optimization: \n";
-        ma->printStatistics( std::cout );
-            ma->writePos( "meanRatioAfter.pos",MAd::OD_MEANRATIO );
-        }
-        MAd::M_writeMsh ( amesh, "result.msh", 2, NULL );
-
-        return loadGMSHMesh( _mesh=new mesh_type,
-        _filename="result.msh",
-        _update=update );
-
-#endif // FEELPP_HAS_MADLIB_H
 
     }
 
@@ -415,7 +333,7 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
 
     /**
      * The function space and some associated elements(functions) are then defined
-     * \snippet residualestimator.hpp toto1 
+     * \snippet residualestimator.hpp toto1
      */
     // [toto1]
     P0h = p0_space_type::New( mesh );
@@ -430,7 +348,7 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     /** define \f$g\f$ the expression of the exact solution and
      * \f$f\f$ the expression of the right hand side such that \f$g\f$
      * is the exact solution
-     * \snippet residualestimator.hpp toto2 
+     * \snippet residualestimator.hpp toto2
      */
     // [toto2]
     //# marker1 #
@@ -468,7 +386,7 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
      * Construction of the right hand side. F is the vector that holds
      * the algebraic representation of the right habd side of the
      * problem
-     * \snippet residualestimator.hpp toto3 
+     * \snippet residualestimator.hpp toto3
      */
     // [toto3]
     //# marker2 #
@@ -494,7 +412,7 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     /**
      * create the matrix that will hold the algebraic representation
      * of the left hand side
-     * \snippet residualestimator.hpp toto4 
+     * \snippet residualestimator.hpp toto4
      */
     //# marker3 #
     // [toto4]
@@ -504,7 +422,7 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     /**
       * assemble \f$\int_\Omega \nu \nabla u \cdot \nabla v\f$
      * \snippet residualestimator.hpp toto5
-    */ 
+    */
     // [toto5]
     form2( Xh, Xh, D, _init=true ) =
         integrate( elements( mesh ), gradt( u )*trans( grad( v ) ) );
@@ -606,12 +524,12 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
 
     if ( error_type==2 )
     {
-        H1errorP1 = element_div( vf::sum( P1h, idv( H1RealErrorP0 )*meas() ), vf::sum( P1h, meas() ) );
+        H1errorP1 = div( vf::sum( P1h, idv( H1RealErrorP0 )*meas() ), vf::sum( P1h, meas() ) );
     }
 
     else if ( error_type==1 )
     {
-        H1errorP1 = element_div( vf::sum( P1h, idv( H1estimator )*meas() ), vf::sum( P1h, meas() ) );
+        H1errorP1 = div( vf::sum( P1h, idv( H1estimator )*meas() ), vf::sum( P1h, meas() ) );
     }
 
     else

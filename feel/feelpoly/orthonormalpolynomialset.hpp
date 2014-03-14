@@ -30,7 +30,7 @@
 #define __OrthonormalPolynomialSet_H 1
 namespace Feel
 {
-/// \cond DETAIL 
+/// \cond DETAIL
 namespace detail
 {
 /**
@@ -114,6 +114,20 @@ public:
     static const uint16_type nDofGrad = super::nDim*nDof;
     static const uint16_type nDofHess = super::nDim*super::nDim*nDof;
     typedef typename matrix_node<value_type>::type points_type;
+
+    struct SSpace
+    {
+        static constexpr uint16_type TheOrder = (Order > 1)?Order-1:0;
+        typedef typename mpl::if_<mpl::less_equal<mpl::int_<Order>, mpl::int_<1> >,
+                                  mpl::identity<OrthonormalPolynomialSet<Dim, 0, RealDim, PolySetType, T, TheTAG,Simplex> >,
+                                  mpl::identity<OrthonormalPolynomialSet<Dim, TheOrder, RealDim, PolySetType, T, TheTAG,Simplex> > >::type::type type;
+
+    };
+    template<int OtherOrder>
+    struct ChangeOrder
+    {
+        typedef OrthonormalPolynomialSet<Dim, OtherOrder, RealDim, PolySetType, T, TheTAG,Simplex> type;
+    };
 
     OrthonormalPolynomialSet()
         :
@@ -274,7 +288,7 @@ template<uint16_type Dim,
          uint16_type TheTAG>
 const uint16_type OrthonormalPolynomialSet<Dim, Order, RealDim, PolySetType,T, TheTAG, Hypercube>::nLocalDof;
 } // detail
-/// \encond  
+/// \encond
 
 template<uint16_type Order,
          template<uint16_type Dim> class PolySetType = Scalar,
@@ -289,8 +303,8 @@ public:
     struct apply
     {
         typedef typename mpl::if_<mpl::bool_<Convex::is_simplex>,
-                                  mpl::identity<detail::OrthonormalPolynomialSet<N,Order,RealDim,PolySetType,T,TheTAG,Simplex> >,
-                                  mpl::identity<detail::OrthonormalPolynomialSet<N,Order,RealDim,PolySetType,T,TheTAG,Hypercube> > >::type::type result_type;
+                                  mpl::identity<Feel::detail::OrthonormalPolynomialSet<N,Order,RealDim,PolySetType,T,TheTAG,Simplex> >,
+                                  mpl::identity<Feel::detail::OrthonormalPolynomialSet<N,Order,RealDim,PolySetType,T,TheTAG,Hypercube> > >::type::type result_type;
     typedef result_type type;
     };
 

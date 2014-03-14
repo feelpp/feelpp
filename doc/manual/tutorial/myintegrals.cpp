@@ -39,16 +39,15 @@ main( int argc, char** argv )
 {
     // Initialize Feel++ Environment
     Environment env( _argc=argc, _argv=argv,
-                     _desc=feel_options(),
                      _about=about( _name="myintegrals" ,
                                    _author="Feel++ Consortium",
                                    _email="feelpp-devel@feelpp.org" ) );
 
     // create the mesh (specify the dimension of geometric entity)
-    auto mesh = unitHypercube<3>();
-    
+    auto mesh = loadMesh( _mesh=new Mesh<Simplex<2>> );
+
     // our function to integrate
-    auto f = Px()*Px() + Py()*Py() + Pz()*Pz();
+    auto f = expr( option(_name="functions.g").as<std::string>(), Symbols{"x","y"});
 
     // compute integral of f (global contribution)
     double intf_1 = integrate( _range = elements( mesh ),
@@ -57,16 +56,14 @@ main( int argc, char** argv )
     // compute integral of f (local contribution)
     double intf_2 = integrate( _range = elements( mesh ),
                                _expr = f ).evaluate(false)( 0,0 );
- 
+
     // compute integral f on boundary
     double intf_3 = integrate( _range = boundaryfaces( mesh ),
                                _expr = f ).evaluate()( 0,0 );
 
-    std::cout << "int global ; local ; boundary" << std::endl
-              << intf_1 << ";" << intf_2 << ";" << intf_3 << std::endl;
+    if ( Environment::rank() == 0 )
+        std::cout << "int global ; local ; boundary" << std::endl
+                  << intf_1 << ";" << intf_2 << ";" << intf_3 << std::endl;
 }
 //# endmarker_main #
 //\endcode
-
-
-

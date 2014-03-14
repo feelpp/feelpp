@@ -335,7 +335,7 @@ Laplacian_parabolic<Dim,Order>::run()
    * BDF implementation
    */
   // set geometry exporting static
-  auto exp = exporter(_mesh = mesh, _geo = EXPORTER_GEOMETRY_STATIC);
+  auto exp = exporter(_mesh = mesh, _geo = "static");
 
   /** \code */
   /// [marker1]

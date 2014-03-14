@@ -47,10 +47,13 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feeldiscr/operatorlagrangep1.hpp>
+#include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/interpolate.hpp>
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feelpoly/im.hpp>
-#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/creategmshmesh.hpp>
+#include <feel/feelfilters/domain.hpp>
+
 #include <feel/feelfilters/exporterquick.hpp>
 #include <feel/feelvf/vf.hpp>
 
@@ -103,12 +106,10 @@ struct test_interpolation
             BOOST_MESSAGE( "= geometric order = " << GeoOrder );
             const value_type eps = (GeoOrder == 1 ? meshSize*meshSize : 1000*Feel::type_traits<value_type>::epsilon() );
 
-            typedef fusion::vector<Lagrange<Order, Scalar> > basis_type;
-            typedef FunctionSpace<mesh_type, basis_type> space_type;
-            boost::shared_ptr<space_type> Xh( new space_type( mesh ) );
-            typename space_type::element_type u( Xh );
+            auto Xh = Pch<Order>(mesh);
+            auto u = Xh->element();
 
-            u = vf::project( Xh, elements( *mesh ), constant( 1.0 ) );
+            u = vf::project( _space=Xh, _range=elements( mesh ), _expr=constant( 1.0 ) );
 
             node_type pt( Dim );
             pt[0] = 0.11;
@@ -126,7 +127,7 @@ struct test_interpolation
             FEELPP_ASSERT( math::abs( v0-1.0 ) < eps )( v0 )( math::abs( v0-1.0 ) )( eps ).warn ( "v0 != 1" );
 #endif /* USE_BOOST_TEST */
 
-            u = vf::project( Xh, elements( *mesh ), constant( 2.0 ) - Px()*Px()-Py()*Py()-Pz()*Pz() );
+            u = vf::project( _space=Xh, _range=elements( mesh ), _expr=constant( 2.0 ) - Px()*Px()-Py()*Py()-Pz()*Pz() );
             pt[0] = 0.5;
 
             if ( Dim >= 2 )

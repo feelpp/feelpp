@@ -210,6 +210,9 @@ public:
         void update( Geo_t const& )
         {
         }
+        void update( Geo_t const& /*geom*/, uint16_type /*face*/ )
+        {
+        }
 
 
         value_type

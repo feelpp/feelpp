@@ -220,6 +220,7 @@ struct line_permutations: public boost::detail::identifier<uint16_type, line_per
     typedef super::value_type value_type;
     line_permutations()                           : super( IDENTITY ) {}
     explicit line_permutations( value_type v )    : super( v ) {}
+    operator value_type() const { return this->value(); }
     line_permutations& operator=( value_type v )
     {
         this->assign( v );

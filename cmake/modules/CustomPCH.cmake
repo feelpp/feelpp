@@ -110,6 +110,7 @@ if((CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 		        COMMAND cd ${headpath} && ${compiler} ${compiler_flags} ${pchGenerator}
 						DEPENDS "${headpath}/${pchHeader}"
 						COMMENT "Building precompiled header ${headpath}/${pchBinary}"
+                        IMPLICIT_DEPENDS CXX ${headpath}/${pchHeader}
 				    )
 		    add_custom_target( ${target}_${head}_pch
 				        DEPENDS "${headpath}/${pchHeader}" "${headpath}/${pchBinary}"

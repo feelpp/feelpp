@@ -28,4 +28,4 @@
  */
 (>>>POINT<<<)
 >>>TEMPLATE-DEFINITION-SECTION<<<
-("ORG" "Your Organization: " "" "" "Université de Strasbourg")
+("ORG" "Your Organization: " "" "" "Feel++ Consortium")
