@@ -686,6 +686,11 @@ public:
     //ublas::matrix<typename expression_type::value_type>
 
     typename expression_type::value_type
+    evaluate( std::map<std::string,value_type> const& mp  )
+    {
+        return M_expr.evaluate( mp );
+    }
+    typename expression_type::value_type
     evaluate( bool parallel = true, WorldComm const& worldcomm = Environment::worldComm() ) const
     {
         return M_expr.evaluate( parallel,worldcomm );

@@ -270,8 +270,6 @@ public:
                                                 mpl::identity<Shape<gmc_type::nDim, Vectorial, false, false> >,
                                                 mpl::identity<Shape<gmc_type::nDim, Tensor2, false, false> > >::type >::type::type shape;
 
-    typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> vec_type;
-
     struct is_zero
     {
         static const bool value = false;
@@ -395,21 +393,22 @@ public:
 };
 
     value_type
-    evaluate( bool parallel = true, WorldComm const& worldcomm = Environment::worldComm() ) const
+    evaluate( std::map<std::string,value_type> const& mp  )
     {
-        if(GiNaC::is_a<GiNaC::numeric>(M_fun))
-            return GiNaC::ex_to<GiNaC::numeric>(M_fun).to_double();
-        else
-            CHECK(GiNaC::is_a<GiNaC::numeric>(M_fun)) << "GiNaC expression is not a value type. Can't evaluate !";
-            return 0;
+        this->setParameterValues( mp );
+        int no = 1;
+        int ni = M_syms.size();//gmc_type::nDim;
+        value_type res;
+        (*M_cfun)(&ni,M_params.data(),&no,&res);
+        return res;
     }
 
 private:
-mutable expression_type  M_fun;
-std::vector<GiNaC::symbol> M_syms;
-vec_type M_params;
-boost::shared_ptr<GiNaC::FUNCP_CUBA> M_cfun;
-std::string M_filename;
+    mutable expression_type  M_fun;
+    std::vector<GiNaC::symbol> M_syms;
+    vec_type M_params;
+    boost::shared_ptr<GiNaC::FUNCP_CUBA> M_cfun;
+    std::string M_filename;
 };
 
 } // vf
