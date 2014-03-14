@@ -258,25 +258,25 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
     auto mesh = createGMSHMesh( _mesh=new Mesh<Hypercube<2,1,2> >,
                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                                 _desc=domain( _name="mesh", _addmidpoint=false, _usenames=false, _shape="hypercube",
-                                              _dim=2, _h=option(_name="gmsh.hsize2").template as<double>(),
-                                              _convex="Hypercube",_structured=1,
+                                              _dim=2, _h=option(_name="gmsh.hsize").template as<double>(),
+                                              _convex="Hypercube",_structured=1,_substructuring=1,
                                               _xmin=0., _xmax=1., _ymin=0., _ymax=1.
-                                              )
-                                );
+                                    )
+        );
 
     auto mesh2 = createGMSHMesh( _mesh=new Mesh<Hypercube<2,1,2> >,
                                  _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                                  _desc=domain( _name="mesh2", _addmidpoint=false, _usenames=false, _shape="hypercube",
                                                _dim=2, _h=option(_name="gmsh.hsize2").template as<double>(),
-                                               _convex="Hypercube",_structured=1,
+                                               _convex="Hypercube",_structured=1,_substructuring=1,
                                                _xmin=0., _xmax=1., _ymin=1., _ymax=2.
-                                               )
-                                 );
+                                     )
+        );
 #endif
 
 
-    auto testmesh = createSubmesh(mesh, markedfaces(mesh,(boost::any)4),Environment::worldComm() );
-    auto trialmesh = createSubmesh(mesh2, markedfaces(mesh2,(boost::any)2),Environment::worldComm() );
+    auto testmesh = createSubmesh(mesh, markedfaces(mesh,"NORTH"),Environment::worldComm() );
+    auto trialmesh = createSubmesh(mesh2, markedfaces(mesh2,"SOUTH"),Environment::worldComm() );
     auto Xh = Pch<T::value>(testmesh);
     auto Vh = Pch<T::value>(trialmesh);
     auto Mh = Moch<T::value>(testmesh);
@@ -305,6 +305,21 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
         LOG(INFO) << "trial master local dof element " << dof.first.elementId() << " id:" << dof.first.localDof()
                   << " global dof : " << dof.second.index() << " pts: " << Vh->dof()->dofPoint( dof.second.index() ).template get<0>();
     }
+    auto r = Xh->dof()->markerToDof(std::string("CrossPoints"));
+    //for( auto const& dofid : Xh->dof()->markerToDof("CrossPoints") )
+    for( auto it = r.first, en = r.second; it != en; ++ it )
+    {
+        auto dofid = *it;
+        LOG(INFO) << "dof " << dofid.second << " is at a crosspoint pts: " << Xh->dof()->dofPoint( dofid.second ).template get<0>();
+    }
+
+    auto r1 = Vh->dof()->markerToDof(std::string("CrossPoints"));
+    //for( auto const& dofid :  )
+    for( auto it = r1.first, en = r1.second; it != en; ++ it )
+    {
+        auto dofid = *it;
+        LOG(INFO) << "dof " << dofid.second << " is at a crosspoint pts: " << Vh->dof()->dofPoint( dofid.second ).template get<0>();
+    }
 
     BOOST_TEST_MESSAGE( "build Xh element" );
     auto u = Xh->element(),u1=Xh->element(),u2=Xh->element();
@@ -322,46 +337,44 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
     auto l = Mh->element();
     //l = vf::project(_space=Mh,_range=elements(testmesh),_expr=cst(1.0));
     l.setOnes();
-    BOOST_TEST_MESSAGE( "build bilinear form c_s(Mh,Xh)" );
-    auto c_s = form2(_test=Mh, _trial=Xh), cs1= form2(_test=Mh, _trial=Xh);
-    BOOST_TEST_MESSAGE( "integrate" );
-    c_s = integrate(_range=internalelements(testmesh),_expr=idt(u)*id(l));
-    c_s += integrate(_range=boundaryelements(testmesh),_expr=idt(u)*id(l));
+    for ( testfunc : { "1:x:y", "x:x:y", "x+y:x:y" } )
+    {
+        BOOST_TEST_MESSAGE( "build bilinear form c_s(Mh,Xh)" );
+        auto c_s = form2(_test=Mh, _trial=Xh);
+        BOOST_TEST_MESSAGE( "integrate" );
+        c_s = integrate(_range=internalelements(testmesh),_expr=idt(u)*id(l));
+        c_s += integrate(_range=boundaryelements(testmesh),_expr=idt(u)*id(l));
 
-    cs1 = integrate(_range=internalelements(testmesh),_expr=idt(u)*id(l));
-    cs1 += integrate(_range=boundaryelements(testmesh),_expr=idt(u));
-    BOOST_TEST_MESSAGE( "printMatlab" );
-    c_s.matrixPtr()->printMatlab( "C_s.m" );
-    cs1.matrixPtr()->printMatlab( "C_s1.m" );
+        BOOST_TEST_MESSAGE( "printMatlab" );
+        c_s.matrixPtr()->printMatlab( "C_s.m" );
 
-    BOOST_CHECK_CLOSE( c_s( l, u ), 1, 1e-12 );
-    if ( T::value == 1 )
-        BOOST_CHECK_CLOSE( cs1( l, u ), 1, 1e-12 );
-    BOOST_CHECK_CLOSE( c_s( l, u1 ), 0.5, 1e-12 );
-    BOOST_CHECK_CLOSE( c_s( l, u2 ), 1./3., (T::value>=2)?1e-12:10 );
+        BOOST_CHECK_CLOSE( c_s( l, u ), 1, 1e-12 );
+        BOOST_CHECK_CLOSE( c_s( l, u1 ), 0.5, 1e-12 );
+        BOOST_CHECK_CLOSE( c_s( l, u2 ), 1./3., (T::value>=2)?1e-12:10 );
 
-    BOOST_TEST_MESSAGE( "build bilinear form c_m(Mh,Vh)" );
-    auto c_m = form2(_test=Mh, _trial=Vh);
-    BOOST_TEST_MESSAGE( "integrate" );
-    c_m = integrate(_range=elements(testmesh),_expr=idt(v)*id(l));
-    c_m.matrixPtr()->printMatlab( "C_m.m" );
-    BOOST_CHECK_CLOSE( c_m( l, v ), 1, 1e-12 );
-    BOOST_CHECK_CLOSE( c_m( l, w ), 0.5, 1e-12 );
-    BOOST_CHECK_CLOSE( c_m( l, z ), 1./3., (T::value>=2)?1e-12:10 );
+        BOOST_TEST_MESSAGE( "build bilinear form c_m(Mh,Vh)" );
+        auto c_m = form2(_test=Mh, _trial=Vh);
+        BOOST_TEST_MESSAGE( "integrate" );
+        c_m = integrate(_range=elements(testmesh),_expr=idt(v)*id(l));
+        c_m.matrixPtr()->printMatlab( "C_m.m" );
+        BOOST_CHECK_CLOSE( c_m( l, v ), 1, 1e-12 );
+        BOOST_CHECK_CLOSE( c_m( l, w ), 0.5, 1e-12 );
+        BOOST_CHECK_CLOSE( c_m( l, z ), 1./3., (T::value>=2)?1e-12:10 );
 
 
-    // build matrix C_m without mortar space
-    BOOST_TEST_MESSAGE( "build bilinear form c_m(Xh,Vh)" );
-    auto c_m1 = form2(_test=Xh, _trial=Vh);
-    BOOST_TEST_MESSAGE( "integrate" );
-    c_m1 = integrate(_range=elements(testmesh),_expr=idt(v)*id(u));
-    c_m1.matrixPtr()->printMatlab( "C_m1.m" );
+        // build matrix C_m without mortar space
+        BOOST_TEST_MESSAGE( "build bilinear form c_m(Xh,Vh)" );
+        auto c_m1 = form2(_test=Xh, _trial=Vh);
+        BOOST_TEST_MESSAGE( "integrate" );
+        c_m1 = integrate(_range=elements(testmesh),_expr=idt(v)*id(u));
+        c_m1.matrixPtr()->printMatlab( "C_m1.m" );
 
-    BOOST_TEST_MESSAGE( "build bilinear form c_s2(Xh,Xh)" );
-    auto c_s2 = form2(_test=Xh, _trial=Xh);
-    BOOST_TEST_MESSAGE( "integrate" );
-    c_s2 = integrate(_range=elements(testmesh),_expr=idt(u)*id(u));
-    c_s2.matrixPtr()->printMatlab( "C_s2.m" );
+        BOOST_TEST_MESSAGE( "build bilinear form c_s2(Xh,Xh)" );
+        auto c_s2 = form2(_test=Xh, _trial=Xh);
+        BOOST_TEST_MESSAGE( "integrate" );
+        c_s2 = integrate(_range=elements(testmesh),_expr=idt(u)*id(u));
+        c_s2.matrixPtr()->printMatlab( "C_s2.m" );
+    }
 
 }
 
