@@ -340,6 +340,8 @@ public:
             M_model->setInitialized( true );
         }
 
+        M_model->buildGinacBetaExpressions( M_model->parameterSpace()->min() );
+
         if ( M_mode != CRBModelMode::CRB_ONLINE &&
                 M_mode != CRBModelMode::SCM_ONLINE )
         {
