@@ -265,6 +265,14 @@ public:
     static rank_type rank() { return S_worldcomm->globalRank(); }
 
     /**
+     * rank 0 process is considered the master process
+     *
+     * the master process can then for example print information in the console
+     * or in some files
+     */
+    static bool isMasterRank() { return rank() == 0; }
+
+    /**
      * return variables_map
      */
     static po::variables_map const& vm() { return S_vm; }
