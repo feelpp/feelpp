@@ -22,7 +22,10 @@
 #
 #
 cmake_minimum_required (VERSION 2.8.7)
-
+if ( ${CMAKE_VERSION} VERSION_GREATER 2.8.12 )
+  message(STATUS "use new policy CMP0022" )
+  cmake_policy(SET CMP0022 NEW)
+endif()
 #
 # Bug in cmake that delete destroy library path if LIBRARY_PATH is not empty
 # Ugly hack that disable the environement variable
@@ -103,6 +106,11 @@ include(feelpp.version)
 # Use of standard headers for GiNaC compiler (for supermuc this option should be OFF)
 option(USE_STANDARD_HEADERS_IN_GINAC_EXCOMPILER "Enable use of standard include headers in ginac-excompiler" ON)
 
+OPTION(FEELPP_ENABLE_HOMEBREW "Enable Feel++/Homebrew support" OFF)
+if (APPLE)
+  set(FEELPP_ENABLE_HOMEBREW ON)
+endif()
+
 # possibly set the Feel++ configuration
 include(feelpp.machines.config)
 
@@ -135,6 +143,9 @@ IF(NOT CMAKE_NPROCS)
   math (EXPR NProcs2 '${NProcs}/2')
   if(NProcs2 EQUAL 0)
     set(NProcs2 1)
+  endif()
+  if(NProcs2 GREATER 6)
+    set(NProcs2 6)
   endif()
 else()
   set(NProcs2 "${CMAKE_NPROCS}")
@@ -290,7 +301,6 @@ endif()
 ADD_SUBDIRECTORY ( feel )
 
 IF( FEELPP_MINIMAL_CONFIGURATION )
-  set( BUILD_TESTING OFF )
   set( FEELPP_ENABLE_BENCHMARKS OFF )
   set( FEELPP_ENABLE_TESTS OFF )
   set( FEELPP_ENABLE_RESEARCH OFF )
@@ -314,9 +324,12 @@ endif()
 #
 INCLUDE(CTest)
 ENABLE_TESTING()
-add_custom_target(check COMMAND "ctest")
-add_dependencies(check testsuite)
-add_dependencies(check doc)
+add_custom_target(check COMMAND "ctest" ARGS "-R" "qs")
+add_dependencies(check quickstart)
+
+add_custom_target(check-full COMMAND "ctest")
+add_dependencies(check-full testsuite)
+add_dependencies(check-full doc)
 #add_dependencies(check benchmarks)
 #add_dependencies(check examples)
 IF(FEELPP_ENABLE_TESTS )

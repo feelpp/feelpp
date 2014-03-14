@@ -59,6 +59,7 @@ crbSCMOptions( std::string const& prefix )
     ( "crb.scm.use-equidistributed-C",Feel::po::value<int>()->default_value( 0 ), "parameters are equidistributed for the offline step (the value indicates the number of parameters)")
     ( "crb.scm.use-predefined-C",Feel::po::value<bool>()->default_value( false ), "use a predefined sampling C ( parameters written on the file SamplingC")
     ( "crb.scm.use-scm",Feel::po::value<bool>()->default_value( true ), "use scm if true")
+    ( "crb.scm.check-eigenvector",Feel::po::value<bool>()->default_value( true ), "check that eigenvector and eigenvalue are solution of the generalized eiganvalue problem if true")
     ;
 
     crbscmoptions

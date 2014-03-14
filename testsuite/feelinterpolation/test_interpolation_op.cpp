@@ -50,7 +50,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #include <feel/feeldiscr/interpolate.hpp>
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feelpoly/im.hpp>
-#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/creategmshmesh.hpp>
+#include <feel/feelfilters/domain.hpp>
 #include <feel/feelfilters/exporterquick.hpp>
 #include <feel/feelvf/vf.hpp>
 

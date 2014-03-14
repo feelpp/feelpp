@@ -200,7 +200,7 @@ GmshOrdering<ConvexType>::GmshOrdering()
     {
         if ( ConvexType::nDim == 1 )
         {
-            M_type = detail::line_type[ConvexType::nOrder];
+            M_type = Feel::detail::line_type[ConvexType::nOrder];
 
             for ( int i = 0; i < ConvexType::numPoints; ++i )
                 M_id.insert( id_type::value_type( i, i ) );
@@ -208,7 +208,7 @@ GmshOrdering<ConvexType>::GmshOrdering()
 
         if ( ConvexType::nDim == 2 )
         {
-            M_type = detail::triangle_type[ConvexType::nOrder];
+            M_type = Feel::detail::triangle_type[ConvexType::nOrder];
 
             if ( ConvexType::nOrder == 1 )
                 M_id = list_of<relation>( 0,0 )( 1,1 )( 2,2 );
@@ -234,7 +234,7 @@ GmshOrdering<ConvexType>::GmshOrdering()
 
         if ( ConvexType::nDim == 3 )
         {
-            M_type = detail::tetrahedron_type[ConvexType::nOrder];
+            M_type = Feel::detail::tetrahedron_type[ConvexType::nOrder];
 
             if ( ConvexType::nOrder == 1 )
                 M_id = list_of<relation>
@@ -297,7 +297,7 @@ GmshOrdering<ConvexType>::GmshOrdering()
 
         if ( ConvexType::nDim == 1 )
         {
-            M_type = detail::line_type[ConvexType::nOrder];
+            M_type = Feel::detail::line_type[ConvexType::nOrder];
 
             for ( int i = 0; i < ConvexType::numPoints; ++i )
                 M_id.insert( id_type::value_type( i, i ) );
@@ -305,7 +305,7 @@ GmshOrdering<ConvexType>::GmshOrdering()
 
         if ( ConvexType::nDim == 2 )
         {
-            M_type = detail::quad_type[ConvexType::nOrder];
+            M_type = Feel::detail::quad_type[ConvexType::nOrder];
 
             if ( ConvexType::nOrder == 1 )
                 M_id = list_of<relation>( 0,0 )( 1,1 )( 2,2 )( 3,3 );
@@ -323,7 +323,7 @@ GmshOrdering<ConvexType>::GmshOrdering()
 
         if ( ConvexType::nDim == 3 )
         {
-            M_type = detail::hexa_type[ConvexType::nOrder];
+            M_type = Feel::detail::hexa_type[ConvexType::nOrder];
 
             if ( ConvexType::nOrder == 1 )
                 M_id = list_of<relation>( 0,0 )( 1,1 )( 2,2 )( 3,3 )( 4,4 )( 5,5 )( 6,6 )( 7,7 );

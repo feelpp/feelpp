@@ -217,6 +217,28 @@ Mesh<Shape, T, Tag>::updateForUse()
             VLOG(2) << "[Mesh::updateForUse] update edges : " << ti.elapsed() << "\n";
         }
 
+        if ( this->worldComm().localSize()>1 )
+        {
+            if ( this->components().test( MESH_UPDATE_FACES ) )
+            {
+                // warning : this function change the isOnBoundary for ghost faces
+                // so need call before updateOnBoundary()
+                if ( false )
+                    this->updateEntitiesCoDimensionOneGhostCellByUsingBlockingComm();
+                else
+                    this->updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm();
+
+                auto ipfRange = this->interProcessFaces();
+                for ( auto itf = ipfRange.first, enf = ipfRange.second ; itf!=enf ; ++itf )
+                    this->addFaceNeighborSubdomain( itf->partition2() );
+            }
+
+            auto iv = this->beginGhostElement();
+            auto const en = this->endGhostElement();
+            for ( ; iv != en; ++iv )
+                this->addNeighborSubdomain( iv->processId() );
+        }
+
         if ( this->components().test( MESH_UPDATE_FACES ) ||
              this->components().test( MESH_UPDATE_EDGES )
             )
@@ -233,7 +255,12 @@ Mesh<Shape, T, Tag>::updateForUse()
             boost::tie( iv, en ) = this->elementsRange();
             for ( ; iv != en; ++iv )
             {
-                this->elements().modify( iv, typename super_elements::ElementConnectPointToElement() );
+                this->elements().modify( iv,
+                                         []( element_type& e )
+                                         {
+                                             for ( int i = 0; i < e.numPoints; ++i )
+                                                 e.point( i ).addElement( e.id() );
+                                         });
             }
         }
 
@@ -300,19 +327,6 @@ Mesh<Shape, T, Tag>::updateForUse()
         }
     }
 
-#if defined(FEELPP_ENABLE_MPI_MODE)
-    if ( this->components().test( MESH_UPDATE_FACES ) && this->worldComm().localSize()>1 )
-    {
-        if ( false )
-            this->updateEntitiesCoDimensionOneGhostCellByUsingBlockingComm();
-        else
-            this->updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm();
-
-        auto ipfRange = this->interProcessFaces();
-        for ( auto itf = ipfRange.first, enf = ipfRange.second ; itf!=enf ; ++itf )
-            this->addFaceNeighborSubdomain( itf->partition2() );
-    }
-#endif
 
     this->updateNumGlobalElements();
 
@@ -932,7 +946,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                 ( iv->id() )
                 ( __fit->id() )
                 ( face.id() ).error( "invalid face iterator" );
-                this->elements().modify( iv, detail::UpdateFace<face_type>( boost::cref( *__fit ) ) );
+                this->elements().modify( iv, Feel::detail::UpdateFace<face_type>( boost::cref( *__fit ) ) );
 
 
                 DVLOG(2) << "Adding [new] face info : \n";
@@ -975,7 +989,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                     face.setConnection0( connect0 );
 
                     // need to reconstruct the neighbors
-                    this->elements().modify( iv, detail::UpdateFace<face_type>( boost::cref( *__fit ) ) );
+                    this->elements().modify( iv, Feel::detail::UpdateFace<face_type>( boost::cref( *__fit ) ) );
 
                 }
                 if ( __fit->isConnectedTo1() && __fit->connection1().template get<0>() == 0 && ( __element.id() == __fit->ad_second() ) )
@@ -989,15 +1003,15 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
 
                     // need to reconstruct the neighbors
                     element_iterator elt1 = this->elementIterator( __fit->ad_first(), __fit->proc_first() );
-                    this->elements().modify( elt1, detail::UpdateFace<face_type>( boost::cref( *__fit ) ) );
-                    this->elements().modify( iv, detail::UpdateFace<face_type>( boost::cref( *__fit ) ) );
+                    this->elements().modify( elt1, Feel::detail::UpdateFace<face_type>( boost::cref( *__fit ) ) );
+                    this->elements().modify( iv, Feel::detail::UpdateFace<face_type>( boost::cref( *__fit ) ) );
 
                 }
                 if ( __fit->isConnectedTo0() && __fit->isConnectedTo1() )
                 {
                     DVLOG(2) << "internal face, fixing process id if necessary\n";
                     if ( !iv->facePtr( j ) )
-                        this->elements().modify( iv, detail::UpdateFace<face_type>( boost::cref( *__fit ) ) );
+                        this->elements().modify( iv, Feel::detail::UpdateFace<face_type>( boost::cref( *__fit ) ) );
                     FEELPP_ASSERT( iv->facePtr( j ) )( j )( iv->id() ).warn( "invalid element face error" );
                     FEELPP_ASSERT( face.isConnectedTo0() && face.isConnectedTo1() )
                         ( face.isConnectedTo0() )( face.isConnectedTo1() ).error ("inconsistent data structure" );
@@ -1024,11 +1038,11 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                     face.setProcessId( __element.processId() );
                     face.setOnBoundary( true, face_type::nDim );
                     //this->faces().modify( __fit,
-                    //detail::UpdateFaceConnection0<typename face_type::element_connectivity_type>( boost::make_tuple( boost::addressof( __element ), __element_id, j, __element.processId() ) ) );
+                    //Feel::detail::UpdateFaceConnection0<typename face_type::element_connectivity_type>( boost::make_tuple( boost::addressof( __element ), __element_id, j, __element.processId() ) ) );
 
                     this->faces().replace( __fit, face );
 
-                    this->elements().modify( iv, detail::UpdateFace<face_type>( boost::cref( *__fit ) ) );
+                    this->elements().modify( iv, Feel::detail::UpdateFace<face_type>( boost::cref( *__fit ) ) );
 
                     DVLOG(2) << "adding [!isConnectedTo0] face info : \n";
                     DVLOG(2) << "id: " << __fit->id() << "\n";
@@ -1051,13 +1065,13 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
 
 #if 0
                     this->faces().modify( __fit,
-                                          detail::UpdateFaceConnection1<typename face_type::element_connectivity_type>( boost::make_tuple( boost::addressof( __element ), __element_id, j, __element.processId() ) ) );
+                                          Feel::detail::UpdateFaceConnection1<typename face_type::element_connectivity_type>( boost::make_tuple( boost::addressof( __element ), __element_id, j, __element.processId() ) ) );
 
 
                     FEELPP_ASSERT( __fit->isConnectedTo0() && __fit->isConnectedTo1() )
                     ( __fit->isConnectedTo0() )( __fit->isConnectedTo1() ).error( "invalid face connection" );
 #endif
-                    detail::UpdateFaceConnection1<typename face_type::element_connectivity_type> update1( boost::make_tuple( boost::addressof( __element ), __element_id, j, __element.processId() ) );
+                    Feel::detail::UpdateFaceConnection1<typename face_type::element_connectivity_type> update1( boost::make_tuple( boost::addressof( __element ), __element_id, j, __element.processId() ) );
                     update1( face );
                     face.setOnBoundary( false );
 
@@ -1080,8 +1094,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                     // be careful: this step is crucial to set proper neighbor
                     // connectivity
                     element_iterator elt1 = this->elementIterator( __fit->ad_first(), __fit->proc_first() );
-                    this->elements().modify( elt1, detail::UpdateFace<face_type>( boost::cref( *__fit ) ) );
-                    this->elements().modify( iv, detail::UpdateFace<face_type>( boost::cref( *__fit ) ) );
+                    this->elements().modify( elt1, Feel::detail::UpdateFace<face_type>( boost::cref( *__fit ) ) );
+                    this->elements().modify( iv, Feel::detail::UpdateFace<face_type>( boost::cref( *__fit ) ) );
 
 
                     DVLOG(2) << "adding face info : \n";
@@ -1194,6 +1208,7 @@ Mesh<Shape, T, Tag>::updateOnBoundary()
     // first go through all the faces and set the points of the boundary
     // faces to be on the boundary
     LOG(INFO) << "update boundary points...";
+    LOG(INFO) << "Initially we have " << nelements(boundarypoints(this)) <<  " boundary points";
     for( auto it = this->beginFace(), en = this->endFace(); it != en; ++ it )
     {
         if ( it->isOnBoundary() == true )
@@ -1213,7 +1228,7 @@ Mesh<Shape, T, Tag>::updateOnBoundary()
             }
         }
     }
-    LOG(INFO) << "We have " << nelements(boundarypoints(this)) <<  " boundary points";
+    LOG(INFO) << "We have now " << nelements(boundarypoints(this)) <<  " boundary points";
     LOG(INFO) << "update boundary elements...";
     // loop through faces to set the elements having a face on the boundary
     for ( auto iv = this->beginElement(), en = this->endElement();
@@ -1293,7 +1308,6 @@ Mesh<Shape, T, Tag>::removeFacesFromBoundary( std::initializer_list<uint16_type>
                    } );
 }
 
-#if defined(FEELPP_ENABLE_MPI_MODE)
 template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingBlockingComm()
@@ -1507,7 +1521,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingBlockingComm()
                 // get the good face
                 auto face_it = this->faceIterator( theelt.face( jBis ).id() );
                 //update the face
-                this->faces().modify( face_it, detail::updateIdInOthersPartitions( proc, idFaceRecv ) );
+                this->faces().modify( face_it, Feel::detail::updateIdInOthersPartitions( proc, idFaceRecv ) );
 
             } // for ( size_type j = 0; j < this->numLocalFaces(); j++ )
 
@@ -1535,7 +1549,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingBlockingComm()
                 // get the good face
                 auto point_it = this->pointIterator( theelt.point( jBis ).id() );
                 //update the face
-                this->points().modify( point_it, detail::updateIdInOthersPartitions( proc, idPointRecv ) );
+                this->points().modify( point_it, Feel::detail::updateIdInOthersPartitions( proc, idPointRecv ) );
             } // for ( size_type j = 0; j < element_type::numLocalVertices; j++ )
 
             /*for ( size_type j = 0; j < element_type::numLocalEdges; j++ )
@@ -1555,7 +1569,8 @@ template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm()
 {
-    typedef std::vector< boost::tuple<size_type, std::vector<double> > > resultghost_type;
+    typedef std::vector< boost::tuple<size_type, std::vector<double> > > resultghost_point_type;
+    typedef std::vector< boost::tuple<size_type, bool, std::vector<double> > > resultghost_face_type;
 
     DVLOG(1) << "updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm : start on rank " << this->worldComm().localRank() << "\n";
 
@@ -1663,7 +1678,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
     mpi::wait_all(reqs, reqs + nbRequest);
     //------------------------------------------------------------------------------------------------//
     // build the container to ReSend
-    std::map<int, std::vector< std::vector<resultghost_type>  > > dataToReSend;
+    std::map<int, std::vector< boost::tuple<resultghost_point_type,resultghost_face_type>  > > dataToReSend;
     auto itDataRecv = dataToRecv.begin();
     auto const enDataRecv = dataToRecv.end();
     for ( ; itDataRecv!=enDataRecv ; ++itDataRecv )
@@ -1676,11 +1691,13 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
             auto const& theelt = this->element( itDataRecv->second[k] );
             //---------------------------//
             // get faces id and bary
-            resultghost_type idFacesWithBary(this->numLocalFaces(),boost::make_tuple(0, std::vector<double>(nRealDim) ));
+            resultghost_face_type idFacesWithBary(this->numLocalFaces(),boost::make_tuple(0, false, std::vector<double>(nRealDim) ));
             for ( size_type j = 0; j < this->numLocalFaces(); j++ )
             {
                 auto const& theface = theelt.face( j );
                 idFacesWithBary[j].template get<0>() = theface.id();
+                idFacesWithBary[j].template get<1>() = theface.isOnBoundary();
+
                 auto const& theGj = theface.vertices();//theface.G();
 #if 1
                 //compute face barycenter
@@ -1699,12 +1716,12 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
                 // save facebarycenter by components
                 for ( uint16_type comp = 0; comp<nRealDim; ++comp )
                 {
-                    idFacesWithBary[j].template get<1>()[comp]=baryFace[comp];
+                    idFacesWithBary[j].template get<2>()[comp]=baryFace[comp];
                 }
             }
             //---------------------------//
             // get points id and nodes
-            resultghost_type idPointsWithNode(element_type::numLocalVertices,boost::make_tuple(0, std::vector<double>(nRealDim) ));
+            resultghost_point_type idPointsWithNode(element_type::numLocalVertices,boost::make_tuple(0, std::vector<double>(nRealDim) ));
             for ( size_type j = 0; j < element_type::numLocalVertices; j++ )
             {
                 auto const& thepoint = theelt.point( j );
@@ -1716,10 +1733,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
             }
             //---------------------------//
             // update container to ReSend
-            std::vector<resultghost_type> theresponse(2);
-            theresponse[0] = idPointsWithNode;
-            theresponse[1] = idFacesWithBary;
-            dataToReSend[idProc][k] = theresponse;
+            dataToReSend[idProc][k] = boost::make_tuple(idPointsWithNode,idFacesWithBary);
+
         } // for ( int k=0; k<nDataRecv; ++k )
     }
     //------------------------------------------------------------------------------------------------//
@@ -1734,7 +1749,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
     }
     //------------------------------------------------------------------------------------------------//
     // recv the initial request
-    std::map<int, std::vector< std::vector<resultghost_type>  > > finalDataToRecv;
+    std::map<int, std::vector< boost::tuple<resultghost_point_type,resultghost_face_type>  > > finalDataToRecv;
+
     itDataToSend = dataToSend.begin();
     for ( ; itDataToSend!=enDataToSend ; ++itDataToSend )
     {
@@ -1757,15 +1773,16 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
         const int nDataRecv = itFinalDataToRecv->second.size();
         for ( int k=0; k<nDataRecv; ++k )
         {
-            auto const& idPointsWithNodeRecv = itFinalDataToRecv->second[k][0];
-            auto const& idFacesWithBaryRecv = itFinalDataToRecv->second[k][1];
+            auto const& idPointsWithNodeRecv = itFinalDataToRecv->second[k].template get<0>();
+            auto const& idFacesWithBaryRecv = itFinalDataToRecv->second[k].template get<1>();
             auto const& theelt = this->element( memoryMsgToSend[idProc][k], idProc );
 
             //update faces data
             for ( size_type j = 0; j < this->numLocalFaces(); j++ )
             {
                 auto const& idFaceRecv = idFacesWithBaryRecv[j].template get<0>();
-                auto const& baryFaceRecv = idFacesWithBaryRecv[j].template get<1>();
+                const bool faceOnBoundaryRecv = idFacesWithBaryRecv[j].template get<1>();
+                auto const& baryFaceRecv = idFacesWithBaryRecv[j].template get<2>();
 
                 //objective : find  face_it (hence jBis in theelt ) (permutations would be necessary)
                 uint16_type jBis = invalid_uint16_type_value;
@@ -1804,8 +1821,11 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
 
                 // get the good face
                 auto face_it = this->faceIterator( theelt.face( jBis ).id() );
-                //update the face
-                this->faces().modify( face_it, detail::updateIdInOthersPartitions( idProc, idFaceRecv ) );
+                // update id face in other partition
+                this->faces().modify( face_it, Feel::detail::updateIdInOthersPartitions( idProc, idFaceRecv ) );
+                // maybe the face is not really on boundary
+                if ( face_it->isOnBoundary() && !faceOnBoundaryRecv )
+                    this->faces().modify( face_it, Feel::detail::UpdateFaceOnBoundary( false ) );
 
             } // for ( size_type j = 0; j < this->numLocalFaces(); j++ )
 
@@ -1833,7 +1853,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
                 // get the good face
                 auto point_it = this->pointIterator( theelt.point( jBis ).id() );
                 //update the face
-                this->points().modify( point_it, detail::updateIdInOthersPartitions( idProc, idPointRecv ) );
+                this->points().modify( point_it, Feel::detail::updateIdInOthersPartitions( idProc, idPointRecv ) );
 
             } // for ( size_type j = 0; j < element_type::numLocalVertices; j++ )
         } // for ( int k=0; k<nDataRecv; ++k )
@@ -1844,8 +1864,6 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
 
 }
 
-
-#endif // defined(FEELPP_ENABLE_MPI_MODE)
 
 
 template<typename Shape, typename T, int Tag>
@@ -1929,6 +1947,8 @@ Mesh<Shape, T, Tag>::check() const
     }
 #endif
 }
+
+#if 0
 template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::findNeighboringProcessors()
@@ -1988,6 +2008,7 @@ Mesh<Shape, T, Tag>::findNeighboringProcessors()
 
 #endif
 }
+#endif
 
 template<typename Shape, typename T, int Tag>
 void
@@ -2317,7 +2338,7 @@ Mesh<Shape, T, Tag>::decode()
 #if 0
         __idGmshToFeel=pv.id();
         auto theelt = mesh->elementIterator( pv.id(), pv.partitionId() );
-        mesh->elements().modify( theelt, detail::updateIdInOthersPartitions( this->worldComm().localRank(), pv.id() ) );
+        mesh->elements().modify( theelt, Feel::detail::updateIdInOthersPartitions( this->worldComm().localRank(), pv.id() ) );
 #endif
     }
     LOG(INFO) << "distance  elts: "<< std::distance( this->beginElement(), this->endElement() ) << "\n";
@@ -3257,9 +3278,9 @@ Mesh<Shape, T, Tag>::Localization::computeBarycentersWorld()
 {
     LOG(INFO) << "computeBarycentersWorld : run mpi::all_gather\n";
     auto mesh = M_mesh.lock();
-    M_barycentersWorld = std::vector<node_type>( mesh->worldComm().localSize() );
+    M_barycentersWorld = std::vector<boost::tuple<bool,node_type> >( mesh->worldComm().localSize() );
     mpi::all_gather( mesh->worldComm().localComm(),
-                     this->barycenter(),
+                     boost::make_tuple( this->kdtree()->nPoints() > 0 , this->barycenter() ),
                      *M_barycentersWorld );
 }
 

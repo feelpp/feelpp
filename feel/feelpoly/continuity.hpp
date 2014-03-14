@@ -5,7 +5,8 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-01-20
 
-  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2009 Universite Joseph Fourier (Grenoble I)
+  Copyright (C) 2013 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -48,7 +49,7 @@ struct continuity_base {};
  * @author Christophe Prud'homme
  * @see
  */
-class Continuous : public detail::continuity_base
+class Continuous : public Feel::detail::continuity_base
 {
 public:
 

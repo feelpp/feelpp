@@ -12,7 +12,7 @@
 #include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/operatorinterpolation.hpp>
-#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelvf/vf.hpp>

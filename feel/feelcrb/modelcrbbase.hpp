@@ -55,6 +55,9 @@ public :
 
     /*space*/
     typedef FunctionSpace<mesh_type , basis_type > space_type ;
+
+    static const bool is_time_dependent=false;
+    static const bool is_linear=true;
 };
 
 template <typename ParameterDefinition, typename FunctionSpaceDefinition>
@@ -78,6 +81,8 @@ class ModelCrbBase : public ModelCrbBaseBase
 {
 
 public :
+
+    typedef ModelCrbBase self_type;
     typedef typename EimDefinition::fun_type fun_type;
     typedef typename EimDefinition::fund_type fund_type;
 
@@ -85,6 +90,8 @@ public :
     typedef typename parameterspace_type::element_type parameter_type;
 
     typedef typename FunctionSpaceDefinition::space_type space_type;
+    typedef space_type functionspace_type;
+    typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
 
     typedef typename space_type::element_type element_type;
     typedef boost::shared_ptr<element_type> element_ptrtype;
@@ -96,8 +103,6 @@ public :
     typedef std::vector<fund_ptrtype> funsd_type;
 
     typedef Eigen::VectorXd vectorN_type;
-
-    typedef std::vector< std::vector< double > > beta_vector_type;
 
     typedef OperatorLinear< space_type , space_type > operator_type;
     typedef boost::shared_ptr<operator_type> operator_ptrtype;
@@ -116,6 +121,71 @@ public :
 
     typedef backend_type::sparse_matrix_type sparse_matrix_type;
     typedef backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
+
+    static const uint16_type ParameterSpaceDimension = ParameterDefinition::ParameterSpaceDimension ;
+
+    typedef std::vector< std::vector< double > > beta_vector_type;
+    typedef std::vector< double > beta_vector_light_type;
+
+    static const bool is_time_dependent = FunctionSpaceDefinition::is_time_dependent;
+    static const bool is_linear = FunctionSpaceDefinition::is_linear;
+
+    typedef double value_type;
+
+    typedef typename FunctionSpaceDefinition::mesh_type mesh_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+
+    typedef typename mpl::if_< mpl::bool_< is_time_dependent >,
+                               boost::tuple<
+                                   std::vector< std::vector<sparse_matrix_ptrtype> >,//Mq
+                                   std::vector< std::vector<sparse_matrix_ptrtype> >,//Aq
+                                   std::vector< std::vector<std::vector<vector_ptrtype> > >//Fq
+                                   >,
+                               boost::tuple<
+                                   std::vector< std::vector<sparse_matrix_ptrtype> >,//Aq
+                                   std::vector< std::vector<std::vector<vector_ptrtype> > >//Fq
+                                   >
+                               >::type affine_decomposition_type;
+
+    typedef typename mpl::if_< mpl::bool_< is_time_dependent >,
+                               boost::tuple<
+                                   std::vector< sparse_matrix_ptrtype >,//Mq
+                                   std::vector< sparse_matrix_ptrtype >,//Aq
+                                   std::vector< std::vector< vector_ptrtype > >//Fq
+                                   >,
+                               boost::tuple<
+                                   std::vector< sparse_matrix_ptrtype >,//Aq
+                                   std::vector< std::vector< vector_ptrtype > >//Fq
+                                   >
+                               >::type affine_decomposition_light_type;
+
+    typedef typename mpl::if_< mpl::bool_< is_time_dependent >,
+                               boost::tuple<
+                                   beta_vector_type,
+                                   beta_vector_type,
+                                   std::vector<beta_vector_type>
+                                   >,
+                               boost::tuple<
+                                   beta_vector_type,
+                                   std::vector<beta_vector_type>
+                                   >
+                               >::type betaqm_type;
+
+    typedef typename mpl::if_< mpl::bool_< is_time_dependent >,
+                               boost::tuple<
+                                   beta_vector_light_type,
+                                   beta_vector_light_type,
+                                   std::vector<beta_vector_light_type>
+                                   >,
+                               boost::tuple<
+                                   beta_vector_light_type,
+                                   std::vector<beta_vector_light_type>
+                                   >
+                               >::type betaq_type;
+
+
+    typedef Bdf<space_type>  bdf_type;
+    typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
 
     ModelCrbBase()
         :
@@ -145,6 +215,17 @@ public :
 
     virtual void initModel() = 0;
 
+    /*
+     * the user has to provide the affine decomposition
+     * he has two choices : use vectors/matrices or operator free
+     * if he uses operators free he must implement :
+     * - operatorCompositeM (only if the model is time dependent)
+     * - operatorCompositeA
+     * - functionalCompositeF
+     * else, if he uses vectors/matrices (classical way) he must implement
+     * - computeAffineDecomposition
+     */
+
     virtual operatorcomposite_ptrtype operatorCompositeA()
     {
         return M_compositeA;
@@ -158,6 +239,133 @@ public :
         return M_compositeF;
     }
 
+    virtual operatorcomposite_ptrtype operatorCompositeLightA()
+    {
+        return M_compositeA;
+    }
+    virtual operatorcomposite_ptrtype operatorCompositeLightM()
+    {
+        return M_compositeM;
+    }
+    virtual std::vector< functionalcomposite_ptrtype > functionalCompositeLightF()
+    {
+        return M_compositeF;
+    }
+
+    virtual affine_decomposition_type computeAffineDecomposition()
+    {
+        return computeAffineDecomposition( mpl::bool_< is_time_dependent >() );
+    }
+    affine_decomposition_type computeAffineDecomposition( mpl::bool_<true> )
+    {
+        std::vector< std::vector<sparse_matrix_ptrtype> > M;
+        std::vector< std::vector<sparse_matrix_ptrtype> > A;
+        std::vector< std::vector<std::vector<vector_ptrtype> > > F;
+        return boost::make_tuple( M , A , F );
+    }
+    affine_decomposition_type computeAffineDecomposition( mpl::bool_<false> )
+    {
+        std::vector< std::vector<sparse_matrix_ptrtype> > A;
+        std::vector< std::vector<std::vector<vector_ptrtype> > > F;
+        return boost::make_tuple( A , F );
+    }
+
+    virtual affine_decomposition_light_type computeAffineDecompositionLight()
+    {
+        return computeAffineDecompositionLight( mpl::bool_< is_time_dependent >() );
+    }
+    affine_decomposition_light_type computeAffineDecompositionLight( mpl::bool_<true> )
+    {
+        std::vector< sparse_matrix_ptrtype > M;
+        std::vector< sparse_matrix_ptrtype > A;
+        std::vector< std::vector<vector_ptrtype> > F;
+        return boost::make_tuple( M , A , F );
+    }
+    affine_decomposition_light_type computeAffineDecompositionLight( mpl::bool_<false> )
+    {
+        std::vector< sparse_matrix_ptrtype> A;
+        std::vector< std::vector<vector_ptrtype> > F;
+        return boost::make_tuple( A , F );
+    }
+
+    virtual betaq_type computeBetaQ( parameter_type const& mu ,  double time=0 )
+    {
+        betaq_type dummy;
+        return dummy;
+    }
+
+    virtual betaqm_type computeBetaQm( parameter_type const& mu ,  double time=0 )
+    {
+        betaqm_type dummy;
+        return dummy;
+    }
+
+    //this function is not called bdf() to not interfere with bdf constructor
+    virtual bdf_ptrtype bdfModel()
+    {
+        if( is_time_dependent )
+        {
+            if( Environment::worldComm().isMasterRank() )
+            {
+                std::cout<<"*******************************************************************"<<std::endl;
+                std::cout<<"** Error ! You have implemented a transient problem but you      **"<<std::endl;
+                std::cout<<"** forgot to implement bdfModel() function that returns your bdf **"<<std::endl;
+                std::cout<<"*******************************************************************"<<std::endl;
+            }
+            bool go=false;
+            CHECK( go );
+        }
+        bdf_ptrtype dummy_bdf;
+        return dummy_bdf;
+    }
+
+    //initialize the field for transient problems
+    virtual void initializationField( element_ptrtype& initial_field,parameter_type const& mu )
+    {
+        initial_field->setZero();
+    }
+
+
+    //for linear models, beta coefficients don't depend on solution u
+    //so the user doesn't have to specify this function
+    virtual betaqm_type computeBetaQm( element_type const& u, parameter_type const& mu ,  double time=0 )
+    {
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<"****************************************************************"<<std::endl;
+            std::cout<<"** You are using the function computeBetaQm( u , mu ) whereas **"<<std::endl;
+            std::cout<<"** your model has only implemented computeBetaQm( mu )        **"<<std::endl;
+            std::cout<<"****************************************************************"<<std::endl;
+        }
+        betaqm_type dummy_beta_coeff;
+        return dummy_beta_coeff;
+    }
+
+
+
+    /**
+     * By default reference parameters are min parameters
+     * If the user needs to specify them
+     * then this function should returns true
+     */
+    virtual bool referenceParametersGivenByUser()
+    {
+        return false;
+    }
+    virtual parameter_type refParameter()
+    {
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<"**************************************************************************************************"<<std::endl;
+            std::cout<<"** You want to specify reference parameters because referenceParametersGivenByUser returns true **"<<std::endl;
+            std::cout<<"** your must impelement the function refParameter() !                                           **"<<std::endl;
+            std::cout<<"**************************************************************************************************"<<std::endl;
+        }
+        bool go=false;
+        CHECK( go );
+        parameter_type muref;
+        return muref;
+    }
 
     //for linear steady models, mass matrix does not exist
     //non-linear steady models need mass matrix for the initial guess
@@ -206,21 +414,18 @@ public :
 
 
 
-     /**
-     * returns the scalar product used fior mass matrix ( to solve eigen values problem )
-     * of the boost::shared_ptr vector x and boost::shared_ptr vector
-     * Transient models need to implement these functions.
+    /**
+     * solve the model for a given parameter \p mu
+     * linear models don't need to provide this fuction
+     * but non-linear : yes
+     * and also those using CRBTrilinear
      */
-    virtual double scalarProductForMassMatrix( vector_ptrtype const& X, vector_ptrtype const& Y )
+    virtual element_type solve( parameter_type const& mu )
     {
-        throw std::logic_error("Your model is time-dependant so you MUST implement scalarProductForMassMatrix function");
-        return 0;
+        element_type solution;
+        return solution;
     }
-    virtual double scalarProductForMassMatrix( vector_type const& x, vector_type const& y )
-    {
-        throw std::logic_error("Your model is time-dependant so you MUST implement scalarProductForMassMatrix function");
-        return 0;
-    }
+
 
     /**
      * inner product for mass matrix
@@ -237,6 +442,52 @@ public :
         return M;
     }
 
+    virtual sparse_matrix_ptrtype const& innerProductForPod () const
+    {
+        throw std::logic_error("Your model is time-dependant so you MUST implement innerProductForPod function");
+        return M;
+    }
+    virtual sparse_matrix_ptrtype innerProductForPod ()
+    {
+        throw std::logic_error("Your model is time-dependant so you MUST implement innerProductForPod function");
+        return M;
+    }
+
+
+    /*
+     * If the model is nonlinear and then need to implement an initial guess
+     * it has to implement it !
+     * Here is just a code to compile if model is a linear model.
+     */
+    virtual std::vector< std::vector< element_ptrtype > >
+    computeInitialGuessAffineDecomposition()
+    {
+        std::vector< std::vector<element_ptrtype> > q;
+        q.resize(1);
+        q[0].resize(1);
+        auto mesh = mesh_type::New();
+        auto Xh=space_type::New( mesh );
+        element_ptrtype elt ( new element_type ( Xh ) );
+        q[0][0] = elt;
+        return q;
+    }
+
+
+    void partitionMesh( std::string mshfile , std::string target , int dimension, int order )
+    {
+        int N = Environment::worldComm().globalSize();
+
+        if( Environment::worldComm().isMasterRank() )
+            std::cout<<"[ModelCrbBase] generate target file : "<<target<<" from "<<mshfile<<std::endl;
+
+            Gmsh gmsh( dimension,
+                       order,
+                       Environment::worldComm() );
+           gmsh.setNumberOfPartitions( N );
+           gmsh.rebuildPartitionMsh( mshfile /*mesh with 1 partition*/, target /*mesh with N partitions*/ );
+    }
+
+
     /**
      * compute statistics on vectors
      * arguments : vectors of double and associated names
@@ -248,6 +499,11 @@ public :
         Eigen::MatrixXf::Index index;
         Eigen::VectorXd square;
 
+        std::ofstream file;
+        std::string filename="OnlineStatistics-"+name;
+
+        file.open( filename , std::ios::app );
+
         if( vector.size() > 0 )
         {
             bool force = option("eim.use-dimension-max-functions").template as<bool>();
@@ -257,11 +513,6 @@ public :
 
             int N = vector.size();
 
-            if( force )
-                LOG( INFO ) <<" statistics  for "<<name<<" (  was called "<< N << " times with "<<Neim<<" basis functions )";
-            else
-                LOG( INFO ) <<" statistics  for "<<name<<" (  was called "<< N << " times )";
-
             min = vector.minCoeff(&index);
             max = vector.maxCoeff(&index);
             mean = vector.mean();
@@ -269,7 +520,22 @@ public :
             square  = vector.array().pow(2);
             mean2 = square.mean();
             standard_deviation = math::sqrt( mean2 - mean1 );
-            LOG(INFO)<<"min : "<<min<<" - max : "<<max<<" mean : "<<mean<<" standard deviation : "<<standard_deviation;
+
+            if( Environment::worldComm().isMasterRank() )
+            {
+                if( force )
+                {
+                    std::cout<<"statistics  for "<<name<<" (  was called "<< N << " times with "<<Neim<<" basis functions )"<<std::endl;
+                    file <<" statistics  for "<<name<<" (  was called "<< N << " times with "<<Neim<<" basis functions )\n";
+                }
+                else
+                {
+                    std::cout<<" statistics  for "<<name<<" (  was called "<< N << " times )"<<std::endl;
+                    file <<" statistics  for "<<name<<" (  was called "<< N << " times )\n";
+                }
+                std::cout<<"min : "<<min<<" - max : "<<max<<" mean : "<<mean<<" standard deviation : "<<standard_deviation<<"  (see "<<filename<<")"<<std::endl;
+                file<<"min : "<<min<<" - max : "<<max<<" mean : "<<mean<<" standard deviation : "<<standard_deviation<<"\n";
+            }
         }
         vectorN_type result(4);
         result(0)=min;
@@ -279,6 +545,283 @@ public :
         return result;
     }
 
+
+    void writeConvergenceStatistics( std::vector< vectorN_type > const& vector, std::string filename )
+    {
+        if( Environment::worldComm().isMasterRank() )
+        {
+            Eigen::MatrixXf::Index index_max;
+            Eigen::MatrixXf::Index index_min;
+
+            std::ofstream file;
+            file.open( filename );
+            file << "NbBasis" << "\t" << "Min" << "\t" << "Max" << "\t" << "Mean" << "\t" << "Variance" << "\n";
+            int Nmax = vector.size();
+            std::vector<double> nbruns( Nmax );
+            for(int n=0; n<Nmax; n++)
+            {
+                double variance=0;
+                int sampling_size = vector[n].size();
+                double mean=vector[n].mean();
+                double max = vector[n].maxCoeff(&index_max);
+                double min = vector[n].minCoeff(&index_min);
+                for(int i=0; i<sampling_size; i++)
+                    variance += (vector[n](i) - mean)*(vector[n](i) - mean)/sampling_size;
+                file <<n+1<<"\t"<<min<<"\t"<<max<<"\t"<<mean<<"\t"<<variance<<"\n";
+                nbruns[n]=vector[n].size();
+            }
+
+            //write information about number of runs
+            for(int n=0; n<Nmax; n++)
+            {
+                file <<"#N = "<<n<<" -- number of runs : "<<nbruns[n]<<"\n";
+            }
+
+        }
+    }
+
+    /**
+    * \param : vector1
+    * \param : vector2
+    * look for the index minIdx for which we have min( vector1 )
+    * then compute vector2( minIdx) / vector1( minIdx )
+    * and same thing with max : i.e. vector2( maxIdx ) / vector1( maxIdx )
+    * usefull to compute error estimation efficiency associated to
+    * min/max errors
+    **/
+    void writeVectorsExtremumsRatio( std::vector< vectorN_type > const& error, std::vector< vectorN_type > const& estimated, std::string filename )
+    {
+        if( Environment::worldComm().isMasterRank() )
+        {
+
+            Eigen::MatrixXf::Index index_max;
+            Eigen::MatrixXf::Index index_min;
+
+            std::ofstream file;
+            file.open( filename );
+            file << "NbBasis" << "\t" << "Min" << "\t" << "Max" << "\n";
+            int Nmax = error.size();
+            int estimatedsize = estimated.size();
+            CHECK( Nmax == estimatedsize ) << "vectors have not the same size ! v1.size() : "<<error.size()<<" and v2.size() : "<<estimated.size()<<"\n";
+            for(int n=0; n<Nmax; n++)
+            {
+                double min_error = error[n].maxCoeff(&index_min);
+                double max_error = error[n].minCoeff(&index_max);
+                double min_estimated = estimated[n](index_min);
+                double max_estimated = estimated[n](index_max);
+                double min_ratio = min_estimated / min_error;
+                double max_ratio = max_estimated / max_error;
+                file << n+1 <<"\t"<< min_ratio <<" \t" << max_ratio<< "\n";
+            }
+        }
+    }
+
+    void readConvergenceDataFromFile( std::vector< vectorN_type > & vector, std::string filename )
+    {
+        if( Environment::worldComm().isMasterRank() )
+        {
+
+            std::vector< std::vector< double > > tmpvector;
+            std::ifstream file ( filename );
+            std::string str;
+            int N;
+            int Nmax=0;
+            double value;
+            if( file )
+            {
+                //first, determine max elements of the RB
+                //because we could have performed several runs
+                //and the size of the RB can vary between two runs
+                while( ! file.eof() )
+                {
+                    file >> N;
+                    if( N > Nmax )
+                        Nmax = N;
+                    for(int n=0; n<N; n++)
+                    {
+                        file >> value;
+                    }
+                }
+
+                vector.resize( Nmax );
+                tmpvector.resize( Nmax );
+                //go to the begining of the file
+                file.clear();
+                file.seekg(0,std::ios::beg);
+
+
+                file >> N;
+                while( ! file.eof() )
+                {
+                    for(int n=0; n<N; n++)
+                    {
+                        file >> value;
+                        tmpvector[n].push_back( value );
+                    }
+                    file >> N;
+                }
+
+            }
+            else
+            {
+                std::cout<<"The file "<<filename<<" was not found "<<std::endl;
+                throw std::logic_error( "[ModelCrbBase::fillVectorFromFile] ERROR loading the file " );
+            }
+
+            file.close();
+
+            //now copy std::vector into eigen vector
+            for(int n=0; n<Nmax; n++)
+            {
+                int nbvalues = tmpvector[n].size();
+                vector[n].resize(nbvalues);
+                for(int i=0; i<nbvalues; i++)
+                {
+                    vector[n](i) = tmpvector[n][i];
+                }
+            }
+
+        }//master proc
+    }//end of function
+
+
+    /*
+     * \param components_vary : vector of indices for components vary
+     * \param extremums : vector containing min and max parameters valuers
+     * \param cuttings : vector containing the cutting in each direction + time initial and time final and time step used
+     * \param time_vary : (bool) the time vary if true
+     */
+    gmsh_ptrtype createStructuredGrid( std::vector<int> components_vary, std::vector<parameter_type> extremums, std::vector<int> cuttings,
+                                       std::vector<double> time_cuttings, bool time_vary)
+    {
+        auto min=extremums[0];
+        auto max=extremums[1];
+        double min0 = min(components_vary[0]);
+        double min1 = min(components_vary[1]);
+        double max0 = max(components_vary[0]);
+        double max1 = max(components_vary[1]);
+        double Ti=time_cuttings[0];
+        double Tf=time_cuttings[1];
+        double dt=time_cuttings[2];
+        int nb0=cuttings[0];
+        int nb1=cuttings[1];
+        if( time_vary )
+        {
+            nb0=(Tf-Ti)/dt;
+            min0=Ti;
+            max0=Tf;
+        }
+        gmsh_ptrtype gmshp( new Gmsh );
+        std::ostringstream ostr;
+
+        //we want that each cell created here will be a cell of the mesh
+        //so we take a large hsize
+        int p=1;
+        ostr <<"min0 = "<<min0<<";\n"
+             <<"max0 = "<<max0<<";\n"
+             <<"min1 = "<<min1<<";\n"
+             <<"max1 = "<<max1<<";\n"
+             <<"Point (1) = { min0, min1, 1, hsize };\n"
+             <<"Point (2) = { max0, min1, 1, hsize };\n"
+             <<"Point (3) = { max0, max1, 1, hsize };\n"
+             <<"Point (4) = { min0, max1, 1, hsize };\n"
+             <<"Line (1) = { 1 , 2 };\n"
+             <<"Line (2) = { 2 , 3 };\n"
+             <<"Line (3) = { 3 , 4 };\n"
+             <<"Line (4) = { 4 , 1 };\n"
+             <<"Line Loop (1) = {1,2,3,4};\n"
+             <<"Plane Surface (100) = {1};\n"
+             <<"Transfinite Line{1,-3} = "<<nb0<<";\n"
+             <<"Transfinite Line{2,-4} = "<<nb1<<";\n"
+             <<"Transfinite Surface{100} = {1,2,3,4};\n"
+             <<"Physical Surface (\"Omega\") = {100};\n"
+            ;
+
+        std::ostringstream nameStr;
+        nameStr.precision( 3 );
+        nameStr << "StructuredGrid";
+        gmshp->setPrefix( nameStr.str() );
+        gmshp->setDescription( ostr.str() );
+        return gmshp;
+    }
+
+    /*
+     * \param filename : name of the file to be generated
+     * \param outputs : vector containing outputs
+     * \param parameter : vector containing parameter values
+     * \param estimated_error : vector containing estimated error on outputs
+     *
+     */
+    void generateGeoFileForOutputPlot(  vectorN_type outputs, vectorN_type parameter, vectorN_type estimated_error )
+    {
+        bool use_estimated_error=true;
+        if( estimated_error(0) < 0 )
+            use_estimated_error=false;
+
+        Eigen::MatrixXf::Index index;
+        double min_output = outputs.minCoeff(&index);
+        double min_scale=std::floor(min_output);
+        double x=0;
+        double output=0;
+        double estimated_down=0;
+        double estimated_up=0;
+        double delta=0;
+
+        std::ofstream file_outputs_geo_gmsh ( "GMSH-outputs.geo", std::ios::out );
+        file_outputs_geo_gmsh << "View \" outputs \" {\n";
+        for(int i=0; i<outputs.size(); i++)
+        {
+            if( use_estimated_error )
+            {
+                delta=estimated_error(i);
+                x=parameter(i);
+                estimated_down=outputs(i);
+                output=outputs(i)+delta/2.0;
+                estimated_up=estimated_down+delta;
+                file_outputs_geo_gmsh <<std::setprecision(14)<< "SP("<<x<<",0,0){"<<output<<", "<<min_scale<<"};\n";
+                file_outputs_geo_gmsh <<std::setprecision(14)<< "SP("<<x<<",0,0){"<<estimated_down<<", "<<min_scale<<"};\n";
+                file_outputs_geo_gmsh <<std::setprecision(14)<< "SP("<<x<<",0,0){"<<estimated_up<<", "<<min_scale<<"};\n";
+                file_outputs_geo_gmsh <<std::setprecision(14)<< "SP("<<x<<",0,0){"<<output<<", "<<min_scale<<"};\n";
+            }
+            else
+            {
+                x=parameter(i);
+                output=outputs(i);
+                file_outputs_geo_gmsh << "SP("<<x<<",0,0){"<<output<<", "<<min_scale<<"};\n";
+            }
+        }
+
+        std::string conclude=" }; \n ";
+        conclude += "vid = PostProcessing.NbViews-1;\n";
+        conclude += "View[vid].Axes = 1;\n";
+        conclude += "View[vid].Type = 2;\n\n";
+        conclude += "For i In {0:vid-1}\n";
+        conclude += "  View[i].Visible=0;\n";
+        conclude += "EndFor\n";
+
+        file_outputs_geo_gmsh<<conclude;
+        file_outputs_geo_gmsh.close();
+    }
+
+
+    /**
+     * specific interface for OpenTURNS
+     *
+     * \param X input vector of size N
+     * \param N size of input vector X
+     * \param Y input vector of size P
+     * \param P size of input vector Y
+     */
+    virtual void run( const double * X, unsigned long N, double * Y, unsigned long P )
+    {
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<"**************************************************"<<std::endl;
+            std::cout<<"** You are using the function run whereas       **"<<std::endl;
+            std::cout<<"** your model has not implemented this function **"<<std::endl;
+            std::cout<<"**************************************************"<<std::endl;
+        }
+    }
 
 protected :
 

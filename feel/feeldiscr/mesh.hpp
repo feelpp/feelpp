@@ -306,14 +306,12 @@ public:
 
         if ( this->worldComm().localSize() >1 )
         {
-#if defined(FEELPP_ENABLE_MPI_MODE)
             int gne = 0;
             mpi::all_reduce( this->worldComm(), ne, gne, [] ( int x, int y )
                              {
                                  return x + y;
                              } );
             M_numGlobalElements = gne;
-#endif
         }
         else
         {
@@ -862,7 +860,7 @@ public:
      * well.  This method computes bounding boxes for the
      * elements on each processor and checks for overlaps.
      */
-    void findNeighboringProcessors();
+    //void findNeighboringProcessors();
 
     /**
      * This function checks if the local numbering of the mesh elements
@@ -1181,7 +1179,7 @@ public:
 
         bool hasComputedBarycentersWorld() { return M_barycentersWorld; }
 
-        std::vector<node_type> const& barycentersWorld() const
+        std::vector<boost::tuple<bool,node_type> > const& barycentersWorld() const
         {
             CHECK( M_barycentersWorld ) << " you must call computeBarycentersWorld() before barycentersWorld() \n";
             return M_barycentersWorld.get();
@@ -1317,7 +1315,7 @@ public:
         ref_convex1_type M_refelem1;
 
         node_type M_barycenter;
-        boost::optional<std::vector<node_type> > M_barycentersWorld;
+        boost::optional<std::vector<boost::tuple<bool,node_type> > > M_barycentersWorld;
 
     };
 
@@ -1340,11 +1338,15 @@ public:
 
     void removeFacesFromBoundary( std::initializer_list<uint16_type> markers );
 
+    typename std::set<rank_type>::const_iterator beginNeighborSubdomains() const { return M_neighbor_processors.begin(); }
+    typename std::set<rank_type>::const_iterator endNeighborSubdomains() const { return M_neighbor_processors.end(); }
+    std::set<rank_type> const& neighborSubdomains() const { return M_neighbor_processors; }
+    void addNeighborSubdomain( rank_type p ) { M_neighbor_processors.insert( p ); }
 
-    typename std::set<size_type>::const_iterator beginFaceNeighborSubdomains() const { return M_face_neighbor_processors.begin(); }
-    typename std::set<size_type>::const_iterator endFaceNeighborSubdomains() const { return M_face_neighbor_processors.end(); }
-    std::set<size_type> const& faceNeighborSubdomains() const { return M_face_neighbor_processors; }
-    void addFaceNeighborSubdomain( size_type p ) { M_face_neighbor_processors.insert( p ); }
+    typename std::set<rank_type>::const_iterator beginFaceNeighborSubdomains() const { return M_face_neighbor_processors.begin(); }
+    typename std::set<rank_type>::const_iterator endFaceNeighborSubdomains() const { return M_face_neighbor_processors.end(); }
+    std::set<rank_type> const& faceNeighborSubdomains() const { return M_face_neighbor_processors; }
+    void addFaceNeighborSubdomain( rank_type p ) { M_face_neighbor_processors.insert( p ); }
 
     //@}
 
@@ -1423,8 +1425,9 @@ private:
      * The processors who neighbor the current
      * processor
      */
-    std::vector<uint16_type> M_neighboring_processors;
-    std::set<size_type> M_face_neighbor_processors;
+    //std::vector<uint16_type> M_neighboring_processors;
+    std::set<rank_type> M_neighbor_processors;
+    std::set<rank_type> M_face_neighbor_processors;
 
     //partitioner_ptrtype M_part;
 
@@ -1813,7 +1816,8 @@ Mesh<Shape, T, Tag>::createP1mesh() const
                 // update P1 points info
                 for ( uint16_type p = 0; p < face_type::numVertices; ++p )
                 {
-                    new_face.setPoint( p, new_mesh->point( new_node_numbers[old_elem.point( old_elem.fToP( s,p ) ).id()] ) );
+                    //new_face.setPoint( p, new_mesh->point( new_node_numbers[old_elem.point( old_elem.fToP( s,p ) ).id()] ) );
+                    new_face.setPoint( p, new_mesh->point( new_node_numbers[ old_face.point(p).id()] ) );
                 }
                 // add it to the list of faces
                 new_mesh->addFace( new_face );
@@ -1899,7 +1903,7 @@ Mesh<Shape, T, Tag>::createP1mesh() const
             for ( int k=0;k<nbDataToTreat;++k )
             {
                 auto eltToUpdate = new_mesh->elementIterator( memoryMpiMsg[procToRecv][k]/*e.id()*/,  procToRecv );
-                new_mesh->elements().modify( eltToUpdate, detail::updateIdInOthersPartitions( procToRecv, dataToRecv[k]/*idEltAsked*/ ) );
+                new_mesh->elements().modify( eltToUpdate, Feel::detail::updateIdInOthersPartitions( procToRecv, dataToRecv[k]/*idEltAsked*/ ) );
             }
         }
 
@@ -1972,7 +1976,7 @@ Mesh<Shape, T, Tag>::createP1mesh() const
                 new_mesh->worldComm().localComm().recv(procToRecv, k, idEltAsked);
 
                 auto eltToUpdate = new_mesh->elementIterator( memoryMpiMsg[procToRecv][k]/*e.id()*/,  procToRecv );
-                new_mesh->elements().modify( eltToUpdate, detail::updateIdInOthersPartitions( procToRecv, idEltAsked ) );
+                new_mesh->elements().modify( eltToUpdate, Feel::detail::updateIdInOthersPartitions( procToRecv, idEltAsked ) );
             }
         }
 
@@ -2018,9 +2022,10 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, IteratorType it, IteratorType en, con
     size_type p = 0;
     for( ; it != en; ++it )
     {
-        for ( size_type j = 0; j < it->numLocalVertices; j++ )
+        auto const& elt = boost::unwrap_ref( *it );
+        for ( size_type j = 0; j < elt.numLocalVertices; j++ )
         {
-            int pid = it->point( j ).id();
+            int pid = elt.point( j ).id();
             auto ins = nodeset.insert( pid );
             if ( ins.second )
             {

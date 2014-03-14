@@ -215,10 +215,7 @@ void SolverLinearPetsc<T>::init ()
 
         // Set user-specified  solver and preconditioner types
         this->setPetscSolverType();
-        this->setPetscPreconditionerType();
         this->setPetscConstantNullSpace();
-        // sets the software that is used to perform the factorization
-        PetscPCFactorSetMatSolverPackage( M_pc,this->matSolverPackageType() );
 
 
         // Set the options from user-input
@@ -251,9 +248,9 @@ void SolverLinearPetsc<T>::init ()
         ierr = KSPGetType ( M_ksp, &ksp_type );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
 
-        if ( strcmp( ksp_type, "preonly" ) )
+        if ( std::string((char*)ksp_type) == std::string( ( char* )KSPPREONLY ) )
         {
-            ierr = KSPSetInitialGuessNonzero ( M_ksp, PETSC_TRUE );
+            ierr = KSPSetInitialGuessNonzero ( M_ksp, PETSC_FALSE );
             CHKERRABORT( this->worldComm().globalComm(),ierr );
         }
 
@@ -294,12 +291,17 @@ void SolverLinearPetsc<T>::init ()
 
             VLOG(2) << "preconditioner set as "  << pc_type << "\n";
         }
+        else
+        {
+            this->setPetscPreconditionerType();
+            // sets the software that is used to perform the factorization
+            PetscPCFactorSetMatSolverPackage( M_pc,this->matSolverPackageType() );
+        }
 
         if ( Environment::vm(_name="ksp-monitor",_prefix=this->prefix()).template as<bool>() )
         {
             KSPMonitorSet( M_ksp,KSPMonitorDefault,PETSC_NULL,PETSC_NULL );
         }
-
 
     }
 }
@@ -509,6 +511,9 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
     KSPConvergedReason reason;
     KSPGetConvergedReason( M_ksp,&reason );
 
+    if ( option( _prefix=this->prefix(), _name="ksp-view" ).template as<bool>() )
+        check( KSPView( M_ksp, PETSC_VIEWER_STDOUT_WORLD ) );
+
     if ( reason==KSP_DIVERGED_INDEFINITE_PC )
     {
         LOG(INFO) << "[solverlinearpetsc] Divergence because of indefinite preconditioner;\n";
@@ -707,6 +712,11 @@ SolverLinearPetsc<T>::setPetscSolverType()
 #else
         ierr = KSPSetType ( M_ksp, ( char* ) KSPCHEBYSHEV );
 #endif
+        CHKERRABORT( this->worldComm().globalComm(),ierr );
+        return;
+
+    case PREONLY :
+        ierr = KSPSetType ( M_ksp, ( char* ) KSPPREONLY );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
         return;
 

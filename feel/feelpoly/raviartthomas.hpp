@@ -57,6 +57,7 @@
 #include <feel/feelpoly/functionals2.hpp>
 #include <feel/feelpoly/quadpoint.hpp>
 #include <feel/feelpoly/fe.hpp>
+#include <feel/feelpoly/hdivpolynomialset.hpp>
 
 #include <feel/feelvf/vf.hpp>
 
@@ -92,6 +93,7 @@ struct times_x
     int M_c;
 };
 
+#if 0
 template< class T >
 struct extract_all_poly_indices
 {
@@ -106,25 +108,28 @@ struct extract_all_poly_indices
         return start++;
     }
 };
+#endif
+
 }// detail
 
 template<uint16_type N,
          uint16_type O,
          typename T = double,
-         template<uint16_type, uint16_type, uint16_type> class Convex = Simplex>
+         template<uint16_type, uint16_type, uint16_type> class Convex = Simplex,
+         uint16_type TheTAG = 0>
 class RaviartThomasPolynomialSet
     :
-    public Feel::detail::OrthonormalPolynomialSet<N, N, O+1, Vectorial, T, Convex>
+    public Feel::detail::OrthonormalPolynomialSet<N, O+1, N, Vectorial, T, TheTAG, Convex>
 {
-    typedef Feel::detail::OrthonormalPolynomialSet<N, N, O+1, Vectorial, T, Convex> super;
+    typedef Feel::detail::OrthonormalPolynomialSet<N, O+1, N, Vectorial, T, TheTAG, Convex> super;
 
 public:
     static const uint16_type Om1 = (O==0)?0:O-1;
-    typedef Feel::detail::OrthonormalPolynomialSet<N, N, O, Vectorial, T, Convex> Pk_v_type;
-    typedef Feel::detail::OrthonormalPolynomialSet<N, N, O+1, Vectorial, T, Convex> Pkp1_v_type;
-    typedef Feel::detail::OrthonormalPolynomialSet<N, N, Om1, Vectorial, T, Convex> Pkm1_v_type;
-    typedef Feel::detail::OrthonormalPolynomialSet<N, N, O, Scalar, T, Convex> Pk_s_type;
-    typedef Feel::detail::OrthonormalPolynomialSet<N, N, O+1, Scalar, T, Convex> Pkp1_s_type;
+    typedef Feel::detail::OrthonormalPolynomialSet<N, O, N, Vectorial, T, TheTAG, Convex> Pk_v_type;
+    typedef Feel::detail::OrthonormalPolynomialSet<N, O+1, N, Vectorial, T, TheTAG, Convex> Pkp1_v_type;
+    typedef Feel::detail::OrthonormalPolynomialSet<N, Om1, N, Vectorial, T, TheTAG, Convex> Pkm1_v_type;
+    typedef Feel::detail::OrthonormalPolynomialSet<N, O, N, Scalar, T, TheTAG, Convex> Pk_s_type;
+    typedef Feel::detail::OrthonormalPolynomialSet<N, O+1, N, Scalar, T, TheTAG, Convex> Pkp1_s_type;
 
     typedef PolynomialSet<typename super::basis_type,Vectorial> vectorial_polynomialset_type;
     typedef typename vectorial_polynomialset_type::polynomial_type vectorial_polynomial_type;
@@ -430,6 +435,7 @@ class RaviartThomas
 public FiniteElement<RaviartThomasPolynomialSet<N, O, T, Convex>,
     fem::detail::RaviartThomasDual,
     PointSetEquiSpaced >,
+public HDivPolynomialSet,
 public boost::enable_shared_from_this<RaviartThomas<N,O,T,Convex> >
 {
     typedef FiniteElement<RaviartThomasPolynomialSet<N, O, T, Convex>,
@@ -509,6 +515,25 @@ public:
         std::cout << "[RT] is_product : " << is_product << "\n";
 #endif
     }
+
+    template<int subN>
+    struct SubSpace
+    {
+        typedef RaviartThomas<N-1, O, T, Convex, TheTAG> type;
+    };
+
+    struct SSpace
+    {
+        typedef  RaviartThomas<N, O, T, Convex, TheTAG> type;
+
+    };
+
+    template<uint16_type NewDim>
+    struct ChangeDim
+    {
+        typedef  RaviartThomas<NewDim, O, T, Convex,  TheTAG> type;
+    };
+
     RaviartThomas( RaviartThomas const & cr )
         :
         super( cr ),
