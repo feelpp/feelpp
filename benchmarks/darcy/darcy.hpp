@@ -163,13 +163,17 @@ Darcy<Dim, OrderU, OrderP>::convergence(int nb_refine)
     auto d1 = cst(1.0/2.0);
     auto d2 = cst(1.0/2.0);
 
-    std::ofstream cvg_p("convergence_p", ios::out | ios::trunc);
-    std::ofstream cvg_u("convergence_u", ios::out | ios::trunc);
-    std::ofstream cvg_divu("convergence_divu", ios::out | ios::trunc);
+    std::ofstream cvg_p("convergence_p.dat", ios::out | ios::trunc);
+    std::ofstream cvg_u("convergence_u.dat", ios::out | ios::trunc);
+    std::ofstream cvg_divu("convergence_divu.dat", ios::out | ios::trunc);
+    std::ofstream cvg_projL2("convergence_projL2.dat", ios::out | ios::trunc);
+    std::ofstream cvg_projHDIV("convergence_projHDIV.dat", ios::out | ios::trunc);
 
     cvg_u << "hsize" << "\t" << "nDof" << "\t" << "l2err" << "\t" << "h1err" << "\n";
     cvg_p << "hsize" << "\t" << "nDof" << "\t" << "l2err" << "\t" << "h1err" << "\n";
     cvg_divu << "hsize" << "\t" << "nDof" << "\t" << "l2err" << "\t" << "h1err" << "\n";
+    cvg_projL2 << "hsize" << "\t" << "nDof" << "\t" << "l2err" << "\n";
+    cvg_projHDIV << "hsize" << "\t" << "nDof" << "\t" << "l2err" << "\n";
 
     double current_hsize = meshSize;
     for(int i=0; i<nb_refine; i++)
@@ -271,6 +275,22 @@ Darcy<Dim, OrderU, OrderP>::convergence(int nb_refine)
             cvg_p << current_hsize << "\t" << nDofp << "\t" << l2err_p << "\t" << h1err_p << "\n";
             cvg_divu << current_hsize << "\t" << nDofu << "\t" << l2err_divu << "\t" << h1err_divu << "\n";
 
+            // ****** Projection Operators (L2 - HDIV) : check proj( div u ) = proj( f ) ******
+            auto RTh = Dh<0>( mesh );
+
+            // L2 projection
+            auto l2_v = opProjection( _domainSpace=Xhvec, _imageSpace=Xhvec, _type=L2 ); //l2 vectorial proj
+            auto l2_s = opProjection( _domainSpace=Xh, _imageSpace=Xh, _type=L2 ); //l2 scalar proj
+            auto E_l2 = l2_v->project( _expr= trans(u_exact) );
+            auto l2error_L2 = normL2( _range=elements(mesh), _expr=divv(E_l2) - f );
+
+            auto hdiv = opProjection( _domainSpace=RTh, _imageSpace=RTh, _type=HDIV ); //hdiv proj (RT elts)
+            auto E_hdiv = hdiv->project( _expr= trans(u_exact), _div_expr=f );
+            auto l2error_HDIV = normL2( _range=elements(mesh), _expr=divv(E_hdiv) - f );
+
+            cvg_projL2 << current_hsize << "\t" << Xhvec->nDof() << "\t" << l2error_L2 << "\n";
+            cvg_projHDIV << current_hsize << "\t" << RTh->nDof() << "\t" << l2error_HDIV << "\n";
+
             // ****** Export results ******
             auto u_ex_proj = vf::project(Xhvec, elements(mesh), u_exact );
             auto p_ex_proj = vf::project(p_rt.functionSpace(), elements(mesh), p_exact );
@@ -293,4 +313,6 @@ Darcy<Dim, OrderU, OrderP>::convergence(int nb_refine)
     cvg_u.close();
     cvg_p.close();
     cvg_divu.close();
+    cvg_projL2.close();
+    cvg_projHDIV.close();
 }
