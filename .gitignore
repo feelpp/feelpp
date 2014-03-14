@@ -36,7 +36,6 @@
 /auto
 /autom4te.cache
 /cmake_install.cmake
-/configure
 /ctest.make
 /feel-ctest-continuous.cmake
 /feel.kdev4
@@ -49,6 +48,3 @@
 /subdirs
 /tools
 /usb_modeswitch.conf
-/research/pmp
-/research/rb4areo
-/research/dot

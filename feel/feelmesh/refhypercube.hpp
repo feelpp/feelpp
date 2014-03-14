@@ -194,25 +194,48 @@ public:
             throw std::invalid_argument( str.str() );
         }
 
-        for ( int i = 0; i < numVertices; ++i )
-        {
-            if ( real_dimension == 3 )
-                ublas::column( M_vertices, i ) = e.vertex( element_type::f2p( __f, i ) );
 
-            else
-                ublas::column( M_vertices, i ) = e.vertex( element_type::e2p( __f, i ) );
+        CHECK( nDim <3 ) << "nDim must be less than 3 here\n";
+        if ( nDim == 2 )
+        {
+            std::map<uint16_type, std::vector<uint16_type> > permQuadrangles = {
+                {quadrangular_faces::IDENTITY, {0,1,2,3}},
+                {quadrangular_faces::ROTATION_ANTICLOCK, {3,0,1,2}},
+                {quadrangular_faces::ROTATION_CLOCKWISE, {1,2,3,0}},
+                {quadrangular_faces::REVERSE_BASE,{1,0,3,2}},
+                {quadrangular_faces::REVERSE_HEIGHT,{3,2,1,0}},
+                {quadrangular_faces::PRINCIPAL_DIAGONAL,{2,1,0,3}},
+                {quadrangular_faces::SECOND_DIAGONAL,{0,3,2,1}},
+                {quadrangular_faces::ROTATION_TWICE_CLOCKWISE,{2,3,0,1}}
+            };
+            DCHECK( permQuadrangles.find( __p )!=permQuadrangles.end() ) << "invalid permutation :" << __p << "\n";
+
+            for ( int i = 0; i < numVertices; ++i )
+            {
+                const int iperm = permQuadrangles.find( __p )->second[ i ];
+                ublas::column( M_vertices, iperm ) = e.vertex( element_type::f2p( __f, i ) );
+            }
+
+            M_points = make_quad_points();
+        }
+        else if ( nDim == 1 )
+        {
+            std::map<uint16_type, std::vector<uint16_type> > permLines{
+                {line_permutations::IDENTITY, {0,1} },
+                {line_permutations::REVERSE_PERMUTATION, {1,0} } };
+
+            DCHECK( permLines.find( __p )!=permLines.end() ) << "invalid permutation :" << __p << "\n";
+
+            for ( int i = 0; i < numVertices; ++i )
+            {
+                const int iperm = permLines.find( __p )->second[ i ];
+                ublas::column( M_vertices, iperm ) = e.vertex( element_type::e2p( __f, i ) );
+            }
+
+            M_points = make_line_points();
         }
 
-        for ( int i = 0; i < numPoints; ++i )
-        {
-            if ( real_dimension == 3 )
-                ublas::column( M_points, i ) = e.point( element_type::f2p( __f, i ) );
 
-            else
-                ublas::column( M_points, i ) = e.point( element_type::e2p( __f, i ) );
-        }
-
-        M_points = M_vertices;
         make_normals();
         computeMeasure();
     }
@@ -712,7 +735,7 @@ private:
             ublas::vector<node_type> h ( 1 );
             h( 0 ) = vertex( 1 ) - vertex( 0 );
 
-            points_type p( 1, n_line_points( interior ) );
+            points_type p( nRealDim, n_line_points( interior ) );
 
             for ( int i = interior, indp = 0; i < int( Order )+1-interior; ++i, ++indp )
             {
@@ -736,7 +759,7 @@ private:
             h( 1 ) = vertex( 3 ) - vertex( 0 );
             //DVLOG(2) << "h = " << h << "\n";
             //DVLOG(2) << "n quad pts = " << n_quad_points( interior ) << "\n";
-            points_type G( 2, n_quad_points( interior ) );
+            points_type G( nRealDim, n_quad_points( interior ) );
 
             for ( int i = interior, p = 0; i < int( Order )+1-interior; ++i )
             {

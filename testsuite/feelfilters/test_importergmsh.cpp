@@ -44,7 +44,12 @@ using boost::unit_test::test_suite;
 
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feeldiscr/mesh.hpp>
-#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/creategmshmesh.hpp>
+#include <feel/feelfilters/savegmshmesh.hpp>
+#include <feel/feelfilters/domain.hpp>
+#include <feel/feelfilters/geo.hpp>
+#include <feel/feelfilters/loadgmshmesh.hpp>
+#include <feel/feelfilters/convert2msh.hpp>
 #include <feel/feelvf/vf.hpp>
 
 
@@ -254,8 +259,10 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( gmshimportexport, T, dim_types )
                       std::distance( meshimp->beginFaceOnBoundary(), meshimp->endFaceOnBoundary() ) );
     BOOST_CHECK_EQUAL( std::distance( mesh->beginElement(), mesh->endElement() ),
                        std::distance( meshimp->beginElement(), meshimp->endElement() ) );
-    BOOST_CHECK_EQUAL( integrate( boundaryfaces( mesh ), cst( 1. ) ).evaluate() ,
-                       integrate( boundaryfaces( meshimp ), cst( 1. ) ).evaluate() );
+
+    double r1 = integrate( _range=boundaryfaces( mesh ), _expr=cst( 1. ) ).evaluate()(0,0);
+    double r2 = integrate( _range=boundaryfaces( meshimp ), _expr=cst( 1. ) ).evaluate()(0,0);
+    BOOST_CHECK_SMALL( std::abs(r1-r2),1e-12 );
 
     BOOST_TEST_MESSAGE( "[gmshimportexport] for dimension " << T::value << " done.\n" );
 }
@@ -278,7 +285,7 @@ BOOST_AUTO_TEST_CASE( meditimport )
 
     mesh_ptrtype mesh,meshimp;
     mesh = createGMSHMesh( _mesh=new mesh_type,
-                           _desc=mshconvert( "Cylref.mesh" ),
+                           _desc=convert2msh( "Cylref.mesh" ),
                            _physical_are_elementary_regions=true,
                            _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
     mesh->addMarkerName("inlet",1,2);

@@ -46,7 +46,8 @@
 #include <feel/feeldiscr/region.hpp>
 
 #include <feel/feelpoly/im.hpp>
-#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/creategmshmesh.hpp>
+#include <feel/feelfilters/domain.hpp>
 #include <feel/feelpoly/polynomialset.hpp>
 #include <feel/feelvf/vf.hpp>
 
@@ -302,7 +303,7 @@ TestMixed<Dim,Order>::run()
         //D->printMatlab( "Db.m" );
         D->multVector( U, Q );
         res = inner_product( Q, P );
-        BOOST_CHECK_CLOSE( res, Dim*meas, 5e-13 );
+        BOOST_CHECK_CLOSE( res, Dim*meas, 1e-12 );
         BOOST_TEST_MESSAGE( "[Db(p,u)] res = " << res << " (must be equal to " << Dim*meas << ")\n" );
 
         vector_ptrtype F( M_backend->newVector( Yh ) );
@@ -378,10 +379,10 @@ BOOST_AUTO_TEST_SUITE( mixed )
 
 BOOST_AUTO_TEST_CASE( test_mixed1_21 )
 {
-    BOOST_TEST_MESSAGE( "test_mixed1 (2D,Order 1,)" );
+    BOOST_TEST_MESSAGE( "test_mixed1 (2D,Order 2,)" );
     Feel::TestMixed<2,2> t;
     t.run();
-    BOOST_TEST_MESSAGE( "test_mixed1 (2D,Order 1,) done" );
+    BOOST_TEST_MESSAGE( "test_mixed1 (2D,Order 2,) done" );
 }
 #if 1
 BOOST_AUTO_TEST_CASE( test_mixed1_23 )
@@ -394,10 +395,10 @@ BOOST_AUTO_TEST_CASE( test_mixed1_23 )
 
 BOOST_AUTO_TEST_CASE( test_mixed2_31 )
 {
-    BOOST_TEST_MESSAGE( "test_mixed2 (3D,Order 1,)" );
-    Feel::TestMixed<3,1> t;
+    BOOST_TEST_MESSAGE( "test_mixed2 (3D,Order 2,)" );
+    Feel::TestMixed<3,2> t;
     t.run();
-    BOOST_TEST_MESSAGE( "test_mixed2 (3D,Order 1,) done" );
+    BOOST_TEST_MESSAGE( "test_mixed2 (3D,Order 2,) done" );
 }
 
 BOOST_AUTO_TEST_CASE( test_mixed2_33 )
@@ -434,7 +435,7 @@ main( int argc, char** argv )
      * intantiate a TestMixed<Dim> class with Dim=2 (e.g. geometric dimension is 2)
      */
     /** \code */
-    Feel::TestMixed<2,1> testMixed( argc, argv, Feel::makeAbout(), Feel::makeOptions() );
+    Feel::TestMixed<2,2> testMixed( argc, argv, Feel::makeAbout(), Feel::makeOptions() );
     /** \encode */
 
     /**

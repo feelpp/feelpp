@@ -37,6 +37,7 @@
 #include <algorithm>
 
 #include <feel/feelcore/worldcomm.hpp>
+#include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelfilters/importer.hpp>
 #include <feel/feelfilters/gmshenums.hpp>
 #include <boost/algorithm/string/trim.hpp>
@@ -44,6 +45,7 @@
 // Gmsh
 #include <GModel.h>
 #include <MElement.h>
+#undef sign
 
 // from Gmsh
 void SwapBytes(char *array, int size, int n);
@@ -111,7 +113,7 @@ struct GMSHElement
                  int e,
                  int _numPartitions,
                  int _partition,
-                 std::vector<int> const& _ghosts,
+                 std::vector<rank_type> const& _ghosts,
                  int _parent,
                  int _dom1, int _dom2,
                  int _numVertices,
@@ -133,9 +135,14 @@ struct GMSHElement
         numVertices( _numVertices ),
         indices( _indices )
         {
+            setPartition(worldcommrank,worldcommsize);
+        }
+    void setPartition(int worldcommrank, int worldcommsize)
+        {
             // maybe proc id not start to 0
             for ( auto _itghost=ghosts.begin(),_enghost=ghosts.end() ; _itghost!=_enghost ; ++_itghost )
                 *_itghost = ( (*_itghost) % worldcommsize);
+
 
             if ( worldcommsize == 1 )
             {
@@ -186,6 +193,13 @@ struct GMSHElement
     template<typename IteratorBegin,typename IteratorEnd>
     bool isIgnored(IteratorBegin it, IteratorEnd en ) const { return std::find( it, en, physical ) != en; }
 
+    void updatePartition( std::map<int,int> const& p2e, int worldcommrank, int worldcommsize )
+        {
+            partition = num;
+            for( auto& g : ghosts )
+                g = p2e.at(g)-1;
+            setPartition( worldcommrank, worldcommsize );
+        }
     int num;
     int type;
     int physical;
@@ -194,7 +208,7 @@ struct GMSHElement
     //! partitioning info
     int numPartitions;
     int partition;
-    std::vector<int> ghosts;
+    std::vector<rank_type> ghosts;
     bool is_on_processor;
     bool is_ghost;
     int ghost_partition_id;
@@ -698,7 +712,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
         {
           int num, type, physical = 0, elementary = 0, parent = 0;
           int dom1 = 0, dom2 = 0, numVertices;
-          std::vector<int> ghosts;
+          std::vector<rank_type> ghosts;
           int numTags;
           // some faces may not be associated to a partition in the mesh file,
           // hence will be read given the partition id 0 and will be discarded
@@ -726,6 +740,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
                   __is >> dom2;
               }
           }
+
           CHECK(type != MSH_POLYG_ && type != MSH_POLYH_ && type != MSH_POLYG_B)
               << "GMSH Element type " << type << " not supported by Feel++\n";
           numVertices = MElement::getInfoMSH(type);
@@ -751,10 +766,11 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
                                              numVertices, indices,
                                              this->worldComm().localRank(),this->worldComm().localSize() );
 
-          if ( gmshElt.isOnProcessor() == false ||
-               gmshElt.isIgnored(M_ignorePhysicalGroup.begin(), M_ignorePhysicalGroup.end()) )
+          // WARNING: we had another condition if the number of processors and
+          // elements is the same, in that case we store everything for now
+          if ( (( gmshElt.isOnProcessor() == false) ||
+                gmshElt.isIgnored(M_ignorePhysicalGroup.begin(), M_ignorePhysicalGroup.end()) ) )
               continue;
-
           __et.push_back( gmshElt );
 
           if ( __gt.find( type ) != __gt.end() )
@@ -786,7 +802,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
             unsigned int n = 1 + numTags + numVertices;
             std::vector<int> data(n);
             std::vector<int> indices( numVertices );
-            std::vector<int> ghosts;
+            std::vector<rank_type> ghosts;
 
             for(int i = 0; i < numElems; i++)
             {
@@ -830,10 +846,9 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
                                                    numVertices, indices,
                                                    this->worldComm().localRank(),this->worldComm().localSize() );
 
-                if ( gmshElt.isOnProcessor() == false ||
-                     gmshElt.isIgnored(M_ignorePhysicalGroup.begin(), M_ignorePhysicalGroup.end()) )
+                if ( ( gmshElt.isOnProcessor() == false ||
+                       gmshElt.isIgnored(M_ignorePhysicalGroup.begin(), M_ignorePhysicalGroup.end()) ) )
                     continue;
-
                 __et.push_back( gmshElt );
 
                 if ( __gt.find( type ) != __gt.end() )
@@ -903,70 +918,11 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     }
     // we are done reading the MSH file
 
-#if 0
-    //
-    // FILL Mesh Data Structure
-    //
-    for ( uint __i = 0; __i < numElements; ++__i )
-    {
-        // if the element is not associated to the processor (in partition or ghost) or
-        // if the physical entity is ignored
-        if ( __et[__i].isOnProcessor() == false ||
-             __et[__i].isIgnored(M_ignorePhysicalGroup.begin(), M_ignorePhysicalGroup.end()) )
-            continue;
 
-        switch ( __et[__i].type )
-        {
-        case GMSH_POINT:
-            if ( mesh_type::nDim == 1 )
-            {
-                gmshpts[ __et[__i].indices[0] ].onbdy = true;
-            }
-
-            break;
-
-        case GMSH_LINE:
-        case GMSH_LINE_2:
-        case GMSH_LINE_3:
-        case GMSH_LINE_4:
-        case GMSH_LINE_5:
-            if ( mesh_type::nDim == 2 )
-            {
-                for ( uint16_type jj = 0; jj < npoints_per_edge; ++jj )
-                {
-                    gmshpts[ __et[__i].indices[jj] ].onbdy = true;
-                }
-            }
-
-            break;
-
-        case GMSH_QUADRANGLE:
-        case GMSH_QUADRANGLE_2:
-        case GMSH_TRIANGLE:
-        case GMSH_TRIANGLE_2:
-        case GMSH_TRIANGLE_3:
-        case GMSH_TRIANGLE_4:
-        case GMSH_TRIANGLE_5:
-            if ( mesh_type::nDim == 3 )
-            {
-                for ( uint16_type jj = 0; jj < npoints_per_face; ++jj )
-                {
-                    gmshpts[ __et[__i].indices[jj] ].onbdy = true;
-                }
-            }
-
-            break;
-
-        default:
-            break;
-        }
-    }
-#endif
     std::map<int,boost::tuple<int,int> > mapGhostElt;
     std::vector<int> nbMsgToRecv( this->worldComm().localSize(),0 );
 
     node_type coords( mesh_type::nRealDim );
-
     //M_n_b_vertices.resize( __n );
     //M_n_b_vertices.assign( __n, 0 );
     auto it_gmshElt = __et.begin();

@@ -44,7 +44,7 @@
 #include <opusdefs.hpp>
 #include <eads.hpp>
 #include <feel/feelcrb/parameterspace.hpp>
-#include <feel/feeldiscr/bdf2.hpp>
+#include <feel/feeldiscr/bdf.hpp>
 #include <feel/feelcrb/modelcrbbase.hpp>
 #include <feel/feeldiscr/reducedbasisspace.hpp>
 
@@ -96,6 +96,9 @@ public:
 
     typedef temp_functionspace_type space_type;
 
+    static const bool is_time_dependent = true;
+    static const bool is_linear = true;
+
 };
 
 template<int OrderU=2, int OrderP=OrderU-1, int OrderT=OrderP>
@@ -139,7 +142,6 @@ public:
 #endif
     static const uint16_type ParameterSpaceDimension = 5;
 
-    static const bool is_time_dependent = true;
     //@}
     /** @name Typedefs
      */
@@ -604,6 +606,7 @@ public:
      */
     void initializationField( element_ptrtype& initial_field,parameter_type const& mu ) ;
 
+    temp_bdf_ptrtype bdfModel(){ return M_temp_bdf;}
     //@}
 
 protected:

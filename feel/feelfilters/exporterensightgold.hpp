@@ -235,7 +235,7 @@ private:
 } // Feel
 
 //#if !defined( FEELPP_INSTANTIATION_MODE )
-# include <feel/feelfilters/exporterensightgold.cpp>
+# include <feel/feelfilters/exporterensightgold_impl.hpp>
 //#endif // FEELPP_INSTANTIATION_MODE
 
 #endif /* __ExporterEnsightGold_H */

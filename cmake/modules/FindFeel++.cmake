@@ -4,14 +4,41 @@
 #  FEELPP_INCLUDE_DIR = where feel/feelcore/feel.hpp can be found
 #  FEELPP_LIBRARY    = the library to link in
 
+# Check compiler
+message(STATUS "clang version :  ${CMAKE_CXX_COMPILER_VERSION}")
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+  # require at least gcc 4.7
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.7)
+    message(WARNING "GCC version must be at least 4.7!")
+  endif()
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+  # require at least clang 3.3
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.3)
+    message(WARNING "Clang version must be at least 3.3! we have clang ${CMAKE_CXX_COMPILER_VERSION}")
+  endif()
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+  message(STATUS "Intel version :  ${CMAKE_CXX_COMPILER_VERSION}")
+else()
+  message(WARNING "You are using an unsupported compiler! Compilation has only been tested with Clang and GCC.")
+  message(WARNING "CMAKE_CXX_COMPILER_ID=" ${CMAKE_CXX_COMPILER_ID})
+endif()
+
 #should check the version of gcc for -std=c++0x ou -std=c++11
 set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x" )
 IF("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-IF(APPLE)
-  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -std=c++11 -stdlib=libc++ -ftemplate-depth=1024" )
-ELSE()
-  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -std=c++11 -stdlib=libstdc++" )
+  IF(APPLE)
+    set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -std=c++11 -stdlib=libc++ -ftemplate-depth=1024" )
+  ELSE()
+    set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -std=c++11 -stdlib=libstdc++" )
+  ENDIF()
 ENDIF()
+
+IF("${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel")
+  IF(APPLE)
+    set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -std=c++11 -stdlib=libc++" )
+  #ELSE()
+    #set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -std=c++11 -stdlib=libstdc++" )
+  ENDIF()
 ENDIF()
 
 LIST(REMOVE_DUPLICATES CMAKE_CXX_FLAGS)
@@ -46,6 +73,7 @@ else()
   OPTION(FEELPP_ENABLE_OPENTURNS "enable feel++ OpenTURNS support" ON)
 endif()
 OPTION(FEELPP_ENABLE_OCTAVE "Enable Feel++/Octave interface" OFF)
+
 
 OPTION(FEELPP_ENABLE_OPENGL "enable feel++ OpenGL support" ON)
 OPTION(FEELPP_DISABLE_EIGEN_ALIGNMENT "disable alignement (hence vectorization) in Eigen" OFF)
@@ -161,7 +189,8 @@ ELSEIF ( HDF5_LIBRARY AND NOT HDF5_IS_PARALLEL )
   MESSAGE(STATUS "HDF5 is found but is not parallel, HDF5 is not enabled in Feel++")
 endif()
 # Boost
-FIND_PACKAGE(Boost COMPONENTS date_time filesystem system program_options unit_test_framework signals  ${FEELPP_BOOST_MPI} regex  serialization)
+SET(BOOST_MIN_VERSION "1.49.0")
+FIND_PACKAGE(Boost ${BOOST_MIN_VERSION} COMPONENTS date_time filesystem system program_options unit_test_framework signals  ${FEELPP_BOOST_MPI} regex  serialization)
 if(Boost_FOUND)
   IF(Boost_MAJOR_VERSION EQUAL "1" AND Boost_MINOR_VERSION GREATER "51")
     add_definitions(-DBOOST_RESULT_OF_USE_TR1)
@@ -177,6 +206,8 @@ if(Boost_FOUND)
       message(STATUS "added -DBOOST_NO_VARIADIC_TEMPLATES" )
     ENDIF()
   ENDIF()
+else()
+  message(STATUS "Please check your boost version - Should be at least ${BOOST_MIN_VERSION}")
 endif()
 
 OPTION(BOOST_ENABLE_TEST_DYN_LINK "enable boost test with dynamic lib" ON)
@@ -198,10 +229,10 @@ endif (BOOST_ENABLE_TEST_DYN_LINK)
 # generate different c++ codes and undefined references at link time.
 # in a short future, this should not be necessary anymore
 IF(NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" OR NOT APPLE)
-    ADD_DEFINITIONS(-DBOOST_NO_SCOPED_ENUMS)
-    IF(Boost_MAJOR_VERSION EQUAL "1" AND Boost_MINOR_VERSION GREATER "51")
-      ADD_DEFINITIONS(-DBOOST_NO_CXX11_SCOPED_ENUMS)
-    endif()
+  ADD_DEFINITIONS(-DBOOST_NO_SCOPED_ENUMS)
+  IF(Boost_MAJOR_VERSION EQUAL "1" AND Boost_MINOR_VERSION GREATER "51")
+    ADD_DEFINITIONS(-DBOOST_NO_CXX11_SCOPED_ENUMS)
+  endif()
 endif()
 
 INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIR}   ${BOOST_INCLUDE_PATH})
@@ -230,6 +261,23 @@ if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_D
   add_subdirectory(contrib/ginac)
 endif()
 
+#
+# HARTS
+#
+OPTION( FEELPP_ENABLE_HARTS "Enable Harts (Runtime parallelization system)" OFF )
+if ( FEELPP_ENABLE_HARTS )
+  FIND_PACKAGE( HARTS )
+  if( HARTS_FOUND )
+    SET(CMAKE_REQUIRED_INCLUDES "${HARTS_INCLUDES};${CMAKE_REQUIRED_INCLUDES}")
+    INCLUDE_DIRECTORIES( ${HARTS_INCLUDES} )
+    ADD_DEFINITIONS(${HARTS_DEFINITIONS})
+    SET(FEELPP_LIBRARIES ${HARTS_LIBRARIES} ${FEELPP_LIBRARIES})
+    SET(FEELPP_HAS_HARTS 1)
+    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} HARTS" )
+  endif()
+endif()
+
+
 if ( FEELPP_ENABLE_EXODUS )
   include_directories(${FEELPP_SOURCE_DIR}/contrib/exodus-5.24/exodus/cbind/include/)
   add_subdirectory(contrib/exodus-5.24/exodus)
@@ -242,7 +290,7 @@ endif()
 # Eigen
 #
 if ( FEELPP_ENABLE_SYSTEM_EIGEN3 )
-FIND_PACKAGE(Eigen3)
+  FIND_PACKAGE(Eigen3)
 endif()
 if (NOT EIGEN3_FOUND AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/contrib )
   option(EIGEN_BUILD_PKGCONFIG "Build pkg-config .pc file for Eigen" OFF)
@@ -262,11 +310,6 @@ message(STATUS "Eigen3: ${EIGEN3_INCLUDE_DIR}" )
 #INCLUDE_DIRECTORIES( ${FEELPP_SOURCE_DIR}/contrib/eigen )
 #add_definitions( -DEIGEN_NO_STATIC_ASSERT )
 
-#
-# Scotch
-#
-#CheckIncludeFileCXX( ptscotch.h FEELPP_HAS_PTSCOTCH_H )
-#CheckIncludeFileCXX( scotch.h FEELPP_HAS_SCOTCH_H )
 #
 # Metis
 #
@@ -365,10 +408,10 @@ endif()
 FIND_PACKAGE(PythonInterp REQUIRED)
 if(PYTHONINTERP_FOUND)
   execute_process(COMMAND
-	${PYTHON_EXECUTABLE}
-	-c "import sys; print sys.version[0:3]"
-	OUTPUT_VARIABLE PYTHON_VERSION
-	OUTPUT_STRIP_TRAILING_WHITESPACE)
+    ${PYTHON_EXECUTABLE}
+    -c "import sys; print sys.version[0:3]"
+    OUTPUT_VARIABLE PYTHON_VERSION
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
 
   message(STATUS "Found python version ${PYTHON_VERSION}")
 endif()
@@ -401,65 +444,11 @@ IF( PARMETIS_LIBRARY )
   SET(FEELPP_LIBRARIES ${PARMETIS_LIBRARY} ${FEELPP_LIBRARIES})
 ENDIF()
 
-FIND_LIBRARY(PTSCOTCHERREXIT_LIBRARY
-  NAMES
-  ptscotcherrexit
-  PATHS
-  $ENV{PETSC_DIR}/lib
-  $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
-  /opt/local/lib/petsc/lib
-  $ENV{PTSCOTCH_DIR}/lib
-  )
-message(STATUS "PTScotcherrexit: ${PTSCOTCHERREXIT_LIBRARY}" )
-IF( PTSCOTCHERREXIT_LIBRARY )
-  #message(STATUS "PTScotch: ${PTSCOTCH_LIBRARY}" )
-  SET(FEELPP_LIBRARIES ${PTSCOTCHERREXIT_LIBRARY} ${FEELPP_LIBRARIES})
+FIND_PACKAGE(Scotch)
+IF( SCOTCH_FOUND )
+  message(STATUS "SCOTCH: ${SCOTCH_LIBRARIES}" )
+  SET(FEELPP_LIBRARIES ${SCOTCH_LIBRARIES} ${FEELPP_LIBRARIES})
 ENDIF()
-
-FIND_LIBRARY(PTSCOTCHERR_LIBRARY
-  NAMES
-  ptscotcherr
-  PATHS
-  $ENV{PETSC_DIR}/lib
-  $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
-  /opt/local/lib/petsc/lib
-  $ENV{PTSCOTCH_DIR}/lib
-  )
-message(STATUS "PTScotcherr: ${PTSCOTCHERR_LIBRARY}" )
-IF( PTSCOTCHERR_LIBRARY )
-  #message(STATUS "PTScotch: ${PTSCOTCH_LIBRARY}" )
-  SET(FEELPP_LIBRARIES ${PTSCOTCHERR_LIBRARY} ${FEELPP_LIBRARIES})
-ENDIF()
-
-FIND_LIBRARY(PTSCOTCH_LIBRARY
-  NAMES
-  ptscotch
-  PATHS
-  $ENV{PETSC_DIR}/lib
-  $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
-  /opt/local/lib/petsc/lib
-  $ENV{PTSCOTCH_DIR}/lib
-  )
-message(STATUS "PTScotch: ${PTSCOTCH_LIBRARY}" )
-
-IF( PTSCOTCH_LIBRARY )
-  SET(FEELPP_LIBRARIES ${PTSCOTCH_LIBRARY} ${FEELPP_LIBRARIES})
-ENDIF()
-
-FIND_LIBRARY(PTESMUMPS_LIBRARY
-  NAMES
-  ptesmumps
-  PATHS
-  $ENV{PETSC_DIR}/lib
-  $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
-  /opt/local/lib/petsc/lib
-  )
-message(STATUS "PTESMUMPS: ${PTESMUMPS_LIBRARY}" )
-IF( PTESMUMPS_LIBRARY )
-  set( FEELPP_HAS_MUMPS 1 )
-  SET(FEELPP_LIBRARIES ${PTESMUMPS_LIBRARY} ${FEELPP_LIBRARIES})
-ENDIF()
-
 
 FIND_LIBRARY(ML_LIBRARY
   NAMES
@@ -657,8 +646,8 @@ endif()
 FIND_PACKAGE(VTK)
 if ( VTK_FOUND )
   set(FEELPP_HAS_VTK 1)
-   if ( NOT FEELPP_ENABLE_OPENGL )
-     SET(VTK_LIBRARIES "-lvtkRendering -lvtkGraphics -lvtkImaging  -lvtkFiltering -lvtkCommon -lvtksys" )
+  if ( NOT FEELPP_ENABLE_OPENGL )
+    SET(VTK_LIBRARIES "-lvtkRendering -lvtkGraphics -lvtkImaging  -lvtkFiltering -lvtkCommon -lvtksys" )
   endif()
   MESSAGE(STATUS "Use VTK_LIBRARIES ${VTK_LIBRARIES}")
   INCLUDE_DIRECTORIES(${VTK_INCLUDE_DIRS})
@@ -708,7 +697,19 @@ endif( FEELPP_ENABLE_OCTAVE)
 #
 # Gmsh
 #
+FIND_PACKAGE(Gmsh)
+if(NOT GMSH_INCLUDE_DIR)#Download and Instal it
+  message(STATUS "GMSH NOT FOUND - Downloading and Installing it" )
+  execute_process(COMMAND mkdir -p ${CMAKE_BINARY_DIR}/contrib/gmsh-compile)
+  message(STATUS "Building gmsh in ${CMAKE_BINARY_DIR}/contrib/gmsh-compile...")
+  execute_process(
+    COMMAND ${FEELPP_HOME_DIR}/contrib/gmsh/gmsh.sh ${CMAKE_BINARY_DIR}/contrib/gmsh ${NProcs2}
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/gmsh-compile
+    #      OUTPUT_QUIET
+    OUTPUT_FILE "gmsh-configure"
+    )
 FIND_PACKAGE(Gmsh REQUIRED)
+endif()
 if ( GMSH_FOUND )
   ADD_DEFINITIONS( -DFEELPP_HAS_GMSH=1 -D_FEELPP_HAS_GMSH_ -DGMSH_EXECUTABLE=${GMSH_EXECUTABLE} )
   if ( GL2PS_LIBRARY )

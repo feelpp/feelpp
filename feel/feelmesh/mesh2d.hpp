@@ -339,7 +339,8 @@ protected:
 
     void updateEntitiesCoDimensionOnePermutation()
         {
-            updateEntitiesCoDimensionOnePermutation( mpl::bool_<Shape::nDim==Shape::nRealDim>() );
+            //updateEntitiesCoDimensionOnePermutation( mpl::bool_<Shape::nDim==Shape::nRealDim>() );
+            updateEntitiesCoDimensionOnePermutation( mpl::bool_<true>() );
         }
 
     void
@@ -357,7 +358,7 @@ protected:
                          elt->face( j ).ad_second() == elt->id() )
                     {
                         this->elements().modify( elt,
-                                                 detail::UpdateEdgePermutation<edge_permutation_type>( elt->face( j ).pos_second(),
+                                                 Feel::detail::UpdateEdgePermutation<edge_permutation_type>( elt->face( j ).pos_second(),
                                                                                                        edge_permutation_type( edge_permutation_type::REVERSE_PERMUTATION ) ) );
                     }
                 }

@@ -1,5 +1,5 @@
-#ifndef PENALISATION
-#define PENALISATION
+#ifndef PENALISATION_IMPL
+#define PENALISATION_IMPL
 
 #include "penalisation.hpp"
 
@@ -374,4 +374,4 @@ void Penalisation<Dim>::run()
 
 
 
-#endif
+#endif // PENALISATION_IMPL

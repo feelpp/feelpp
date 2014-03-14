@@ -21,4 +21,13 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 feelpp_add_application(dist2walls SRCS dist2walls.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES})
+
+feelpp_add_application(dist2wallsoptimized SRCS dist2wallsoptimized.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES})
+
+feelpp_add_application(dist2curve SRCS dist2curve.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES})
+feelpp_add_application(dist2curveperf SRCS dist2curveperf.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES})
+feelpp_add_application(dist2curveho SRCS dist2curveho.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES})
+feelpp_add_application(dist2paramcurve SRCS dist2paramcurve.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES})
+feelpp_add_application(dist2paramsurface SRCS dist2paramsurface.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES})

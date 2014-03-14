@@ -27,7 +27,8 @@
 #include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/projector.hpp>
-#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/creategmshmesh.hpp>
+#include <feel/feelfilters/domain.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelvf/vf.hpp>
 
@@ -76,9 +77,9 @@ public:
 
     DAR( po::variables_map const& vm, AboutData const& ad )
         :
-        super( vm, ad ),
-        bcCoeff( this->vm()["bccoeff"].template as<double>() ),
-        geomap( ( GeomapStrategyType )this->vm()["geomap"].template as<int>() )
+        super(),
+        bcCoeff( option(_name="bccoeff").template as<double>() ),
+        geomap( ( GeomapStrategyType )option(_name="geomap").template as<int>() )
     {
     }
 
@@ -117,21 +118,21 @@ DAR<Dim, Order, Cont, Entity>::run()
     using namespace Feel::vf;
 
     this->changeRepository( boost::format( "%1%/%2%/P%3%/h_%4%/" )
-                            % this->about().appName()
+                            % Environment::about().appName()
                             % entity_type::name()
                             % Order
-                            % meshSize()
+                            % meshSizeInit()
                           );
-    value_type penalisation = this->vm()["penal"].template as<value_type>();
-    int bctype = this->vm()["bctype"].template as<int>();
+    value_type penalisation = option(_name="penal").template as<value_type>();
+    int bctype = option(_name="bctype").template as<int>();
 
-    double beta_x = this->vm()["bx"].template as<value_type>();
-    double beta_y = this->vm()["by"].template as<value_type>();
-    value_type mu = this->vm()["mu"].template as<value_type>();
-    value_type stiff = this->vm()["stiff"].template as<value_type>();
-    bool ring = this->vm()["ring"].template as<bool>();
+    double beta_x = option(_name="bx").template as<value_type>();
+    double beta_y = option(_name="by").template as<value_type>();
+    value_type mu = option(_name="mu").template as<value_type>();
+    value_type stiff = option(_name="stiff").template as<value_type>();
+    bool ring = option(_name="ring").template as<bool>();
 
-    std::cout << "[DAR] hsize = " << meshSize() << "\n";
+    std::cout << "[DAR] hsize = " << meshSizeInit() << "\n";
     std::cout << "[DAR] bx = " << beta_x << "\n";
     std::cout << "[DAR] by = " << beta_y << "\n";
     std::cout << "[DAR] mu = " << mu << "\n";
@@ -152,7 +153,7 @@ DAR<Dim, Order, Cont, Entity>::run()
     if ( ring )
         mesh = createGMSHMesh( _mesh=new mesh_type,
                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                               _desc=createRing( Dim,Order,meshSize(),entity_type::name() ) );
+                               _desc=createRing( Dim,Order,meshSizeInit(),entity_type::name() ) );
 
     else
         mesh = createGMSHMesh( _mesh=new mesh_type,
@@ -191,7 +192,7 @@ DAR<Dim, Order, Cont, Entity>::run()
     auto g = ( ( !ring*exp( -mu*Px() )*atan( ( Py()-	0.5 )/stiff ) + ring*exp( -mu*r*acos( Py()/r ) )*atan( ( r-0.5 )/stiff ) ) );
     auto f = ( constant( 0.0 ) );
 
-    auto F = backend( _vm=this->vm() )->newVector( Xh );
+    auto F = backend()->newVector( Xh );
     M_stats.put( "t.init.vector",t.elapsed() );
     LOG(INFO) << "  -- time for vector init done in "<<t.elapsed()<<" seconds \n";
     t.restart() ;
@@ -209,7 +210,7 @@ DAR<Dim, Order, Cont, Entity>::run()
     t.restart() ;
 
 
-    auto D = backend( _vm=this->vm() )->newMatrix( _test=Xh, _trial=Xh, _pattern=Pattern::COUPLED|Pattern::EXTENDED );
+    auto D = backend()->newMatrix( _test=Xh, _trial=Xh, _pattern=Pattern::COUPLED|Pattern::EXTENDED );
     M_stats.put( "t.init.matrix",t.elapsed() );
     LOG(INFO) << "  -- time for matrix init done in "<<t.elapsed()<<" seconds \n";
     t.restart() ;
@@ -264,7 +265,7 @@ DAR<Dim, Order, Cont, Entity>::run()
         D->printMatlab( "D.m" );
     }
 
-    backend( _vm=this->vm(),_rebuild=true )->solve( _matrix=D, _solution=u, _rhs=F );
+    backend(_rebuild=true )->solve( _matrix=D, _solution=u, _rhs=F );
     M_stats.put( "t.solver.total",t.elapsed() );
     LOG(INFO) << " -- time for solver : "<<t.elapsed()<<" seconds \n";
     t.restart();
