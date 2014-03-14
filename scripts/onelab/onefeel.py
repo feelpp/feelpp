@@ -133,7 +133,8 @@ def main():
         retval = subprocess.call(cmd)
         if(retval != 0):
             exit(1)
-    else:
+    # we copy the config file for the local config only if we are not already in the same path
+    elif(os.path.dirname(pargs[0]) != os.getcwd()):
         print "Copying config file ..."
         cmd = ["cp", pargs[0] + ".ol", "."]
         if(args.debug > 0):
