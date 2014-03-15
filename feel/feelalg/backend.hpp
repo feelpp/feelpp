@@ -663,7 +663,7 @@ public:
     }
     size_type maxIterationsSNES() const
     {
-        return M_maxitSNESReuse;
+        return M_maxitSNES;
     }
     size_type maxIterationsKSPReuse() const
     {
