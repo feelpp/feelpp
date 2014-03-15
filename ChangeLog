@@ -5,7 +5,7 @@
    \tableofcontents
 
    \section feelpp0970 Feel++ Release 0.97.0
-   release date mm-dd-yyyy
+   release date 03-14-2014
 
    \subsection changes0970 Changes
 
@@ -50,7 +50,9 @@
 
 
    \subsection issues0970 Noteworthy Issues
-
+   - <a href="https://github.com/feelpp/feelpp/issues/309">#309</a> Add support for isMasterRank() in Environment
+   - <a href="https://github.com/feelpp/feelpp/issues/308">#308</a> Support Ginac expression evaluation
+   - <a href="https://github.com/feelpp/feelpp/issues/271">#271</a>  Assertion failure in local/global assembly using eigen fixed matrices in 3D p >= 4
    - <a href="https://github.com/feelpp/feelpp/issues/198">#198</a> FEELPP_ENABLE_MPI_MODE=OFF code branches are unmaintained and are removed
    - <a href="https://github.com/feelpp/feelpp/issues/219">#219</a> Create configure script to generate configuration for cmake
    - <a href="https://github.com/feelpp/feelpp/issues/224">#224</a> Define an integer type for mpi rank processes
