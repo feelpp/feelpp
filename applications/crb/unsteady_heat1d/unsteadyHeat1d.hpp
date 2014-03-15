@@ -35,8 +35,6 @@
 #include <feel/options.hpp>
 #include <feel/feelcore/feel.hpp>
 
-#include <feel/feelalg/backend.hpp>
-
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/region.hpp>
 #include <feel/feelpoly/im.hpp>
@@ -273,31 +271,11 @@ public:
 
     void assemble();
 
-    /**
-     * Matrix associated to scalar product used
-     */
-    sparse_matrix_ptrtype energyMatrix ( void )
-    {
-        return M;
-    }
-
-    /**
-     * inner product for mass matrix
-     */
-    sparse_matrix_ptrtype massMatrix ( void )
-    {
-        return InnerMassMatrix;
-    }
-
     value_type output( int output_index, parameter_type const& mu, element_type &u, bool need_to_solve=false, bool export_outputs=false );
 
     bdf_ptrtype bdfModel(){ return M_bdf; }
 
 private:
-
-    po::variables_map M_vm;
-
-    backend_ptrtype backend;
 
     double alpha;
 
@@ -308,21 +286,13 @@ private:
     mesh_ptrtype mesh;
     space_ptrtype Xh;
     rbfunctionspace_ptrtype RbXh;
-    sparse_matrix_ptrtype M,Mpod,InnerMassMatrix;
 
     bdf_ptrtype M_bdf;
-
-    int M_nb_terms_in_affine_decomposition_a=3;
-    int M_nb_terms_in_affine_decomposition_m=1;
-    int M_nb_terms_in_affine_decomposition_rhs=2;
-    int M_nb_terms_in_affine_decomposition_output=1;
-    int M_nb_outputs=2;
 
 };
 
 UnsteadyHeat1D::UnsteadyHeat1D()
     :
-    backend( backend_type::build( BACKEND_PETSC ) ),
     alpha( 1 ),
     meshSize( 0.01 ),
     M_Dmu( new parameterspace_type )
@@ -332,10 +302,8 @@ UnsteadyHeat1D::UnsteadyHeat1D()
 
 UnsteadyHeat1D::UnsteadyHeat1D( po::variables_map const& vm )
     :
-    M_vm( vm ),
-    backend( backend_type::build( vm ) ),
-    alpha( vm["alpha"].as<double>() ),
-    meshSize( vm["hsize"].as<double>() ),
+    alpha( option(_name="alpha").as<double>() ),
+    meshSize( option(_name="hsize").as<double>() ),
     M_Dmu( new parameterspace_type )
 {
 }
@@ -365,7 +333,7 @@ UnsteadyHeat1D::initModel()
     }
 
 
-    M_bdf = bdf( _space=Xh, _vm=M_vm, _name="unsteadyHeat1d" , _prefix="unsteadyHeat1d" );
+    M_bdf = bdf( _space=Xh, _name="unsteadyHeat1d" , _prefix="unsteadyHeat1d" );
 
     Feel::ParameterSpace<4>::Element mu_min( M_Dmu );
     mu_min << 0.2, 0.2, 0.01, 0.1;
@@ -373,12 +341,6 @@ UnsteadyHeat1D::initModel()
     Feel::ParameterSpace<4>::Element mu_max( M_Dmu );
     mu_max << 50, 50, 5, 5;
     M_Dmu->setMax( mu_max );
-
-    Mpod = backend->newMatrix( Xh, Xh );
-
-    InnerMassMatrix = backend->newMatrix( Xh,Xh );
-
-    M = backend->newMatrix( Xh, Xh );
 
     LOG(INFO) << "Number of dof " << Xh->nLocalDof() << "\n";
 
@@ -422,27 +384,21 @@ UnsteadyHeat1D::assemble()
     this->addRhs( boost::make_tuple( f1.vectorPtr() , "mu3" ) );
 
     //output
-    auto o = form1( _test=Xh );
-    o = integrate( markedelements( mesh,"k1_2" ), id( v )/0.2 ) +
-        integrate( markedelements( mesh,"k2_1" ), id( v )/0.2 );
-    this->addOutput( boost::make_tuple( o.vectorPtr() , "1" ) );
+    auto out = form1( _test=Xh );
+    out = integrate( markedelements( mesh,"k1_2" ), id( v )/0.2 ) +
+          integrate( markedelements( mesh,"k2_1" ), id( v )/0.2 );
+    this->addOutput( boost::make_tuple( out.vectorPtr() , "1" ) );
 
+    auto energy = form2( _trial=Xh, _test=Xh);
+    energy = integrate( elements( mesh ), 0.1*( gradt( u )*trans( grad( v ) ) ) ) +
+             integrate( markedfaces( mesh,"right" ), idt( u )*id( v ) ) +
+             integrate( markedelements( mesh,"k1_1" ),  0.2 * gradt( u )*trans( grad( v ) ) )  +
+             integrate( markedelements( mesh,"k2_1" ),  0.2 * gradt( u )*trans( grad( v ) ) )  ;
+    this->addEnergyMatrix( energy.matrixPtr() );
 
-    form2( Xh, Xh, Mpod ) =
-        integrate( elements( mesh ), 0.1*( gradt( u )*trans( grad( v ) ) ) ) +
-        integrate( markedfaces( mesh,"right" ), idt( u )*id( v ) ) +
-        integrate( markedelements( mesh,"k1_1" ),  0.2 * gradt( u )*trans( grad( v ) ) )  +
-        integrate( markedelements( mesh,"k2_1" ),  0.2 * gradt( u )*trans( grad( v ) ) )  ;
-
-    form2( Xh, Xh, M ) =
-        integrate( elements( mesh ), 0.1*( gradt( u )*trans( grad( v ) ) ) ) +
-        integrate( markedfaces( mesh,"right" ), idt( u )*id( v ) ) +
-        integrate( markedelements( mesh,"k1_1" ),  0.2 * gradt( u )*trans( grad( v ) ) )  +
-        integrate( markedelements( mesh,"k2_1" ),  0.2 * gradt( u )*trans( grad( v ) ) )  ;
-
-    form2( Xh, Xh, InnerMassMatrix ) =
-        integrate( _range=elements( mesh ), _expr=idt( u ) * id( v ) ) ;
-
+    auto mass = form2( _trial=Xh, _test=Xh);
+    mass = integrate( _range=elements( mesh ), _expr=idt( u ) * id( v ) ) ;
+    this->addMassMatrix( mass.matrixPtr() );
 }
 
 
