@@ -251,6 +251,58 @@ expr( std::string const& s, std::string filename="" )
     return Expr< GinacEx<Order> >(  GinacEx<Order>( g.first, g.second, filename) );
 }
 
+
+/**
+* @brief Create an Feel++ expression from a GiNaC expression as a string
+*
+* @param s          String containing the ginac expression and symbols
+* @param mp         Map containing cst symbol and their values to apply
+* @param filename   Shared file
+*
+* @return Feel++ Expression
+*/
+inline
+Expr< GinacEx<2> > expr( std::string const& s, std::map<std::string,double> const& mp, std::string filename="" )
+{
+    auto ginacEx = expr(s,filename);
+    ginacEx.setParameterValues( mp );
+    return ginacEx;
+}
+#if 0
+inline
+Expr< GinacEx<2> > expr( std::string const& s, std::pair<std::string,double> const& mp, std::string filename="" )
+{
+    return expr( s, { { mp.first, mp.second } }, filename );
+}
+#endif
+
+/**
+ * @brief Create an Feel++ expression from a GiNaC expression as a string
+ *
+ * @tparam Order     Expression order
+ * @param s          String containing the ginac expression and symbols
+ * @param mp         Map containing cst symbol and their values to apply
+ * @param filename   Shared file
+ *
+ * @return Feel++ Expression
+ */
+template<int Order>
+inline
+Expr< GinacEx<Order> >
+expr( std::string const& s, std::map<std::string,double> const& mp, std::string filename="" )
+{
+    auto ginacEx = expr<Order>(s,filename);
+    ginacEx.setParameterValues( mp );
+    return ginacEx;
+}
+template<int Order>
+inline
+Expr< GinacEx<Order> >
+expr( std::string const& s, std::pair<std::string,double> const& mp, std::string filename="" )
+{
+    return expr<Order>( s, { { mp.first, mp.second } }, filename );
+}
+
 // ------------------------------------------------------------
 // Ginac expression  with feel++ expression
 // ------------------------------------------------------------

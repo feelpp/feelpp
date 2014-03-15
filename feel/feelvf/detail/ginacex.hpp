@@ -136,6 +136,25 @@ public:
                 }
             }
             this->setParameterFromOption();
+
+            // detect if symbol x,y,z are present and get index access in M_params
+            auto itSymX = std::find_if( M_syms.begin(), M_syms.end(),
+                                    []( GiNaC::symbol const& s ) { return s.get_name() == "x"; } );
+            if ( itSymX != M_syms.end() )
+                M_indexSymbolXYZ.insert( std::make_pair( 0,std::distance(M_syms.begin(),itSymX) ) );
+
+            auto itSymY = std::find_if( M_syms.begin(), M_syms.end(),
+                                    []( GiNaC::symbol const& s ) { return s.get_name() == "y"; } );
+            if ( itSymY != M_syms.end() )
+                M_indexSymbolXYZ.insert( std::make_pair( 1,std::distance(M_syms.begin(),itSymY) ) );
+
+            auto itSymZ = std::find_if( M_syms.begin(), M_syms.end(),
+                                    []( GiNaC::symbol const& s ) { return s.get_name() == "z"; } );
+            if ( itSymZ != M_syms.end() )
+                M_indexSymbolXYZ.insert( std::make_pair( 1,std::distance(M_syms.begin(),itSymZ) ) );
+
+            for ( auto const& is : M_indexSymbolXYZ )
+                LOG(INFO) << "index symbol relation  " << is.first << " and " << is.second << "\n";
         }
 
     GinacEx( GinacEx const & fun )
@@ -144,7 +163,8 @@ public:
         M_syms( fun.M_syms),
         M_params( fun.M_params ),
         M_cfun( fun.M_cfun ),
-        M_filename( fun.M_filename )
+        M_filename( fun.M_filename ),
+        M_indexSymbolXYZ( fun.M_indexSymbolXYZ )
         {
         }
 
@@ -227,7 +247,7 @@ public:
                 {
                     M_params[it-M_syms.begin()] = p.second;
                     LOG(INFO) << "setting parameter : " << p.first << " with value: " << p.second;
-                    LOG(INFO) << "parameter: " << M_params;
+                    LOG(INFO) << "parameter: \n" << M_params;
                 }
                 else
                 {
@@ -248,6 +268,9 @@ public:
         }
 
     std::vector<GiNaC::symbol> const& syms() const { return M_syms; }
+
+
+    std::set<std::pair<uint16_type,uint16_type> > const& indexSymbolXYZ() const { return M_indexSymbolXYZ; }
 
     //@}
 
@@ -278,6 +301,7 @@ public:
     tensor( this_type const& expr,
             Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
         :
+        M_expr( expr ),
         M_fun( expr.fun() ),
         M_gmc( fusion::at_key<key_type>( geom ).get() ),
         M_nsyms( expr.syms().size() ),
@@ -289,6 +313,7 @@ public:
     tensor( this_type const& expr,
             Geo_t const& geom, Basis_i_t const& /*fev*/ )
         :
+        M_expr( expr ),
         M_fun( expr.fun() ),
         M_gmc( fusion::at_key<key_type>( geom ).get() ),
         M_nsyms( expr.syms().size() ),
@@ -299,14 +324,15 @@ public:
 
     tensor( this_type const& expr, Geo_t const& geom )
         :
+        M_expr( expr ),
         M_fun( expr.fun() ),
         M_gmc( fusion::at_key<key_type>( geom ).get() ),
         M_nsyms( expr.syms().size() ),
         M_y( vec_type::Zero(M_gmc->nPoints()) ),
         M_x( expr.parameterValue() )
-
         {
         }
+
     template<typename IM>
     void init( IM const& im )
         {
@@ -329,8 +355,8 @@ public:
 
             for(int q = 0; q < M_gmc->nPoints();++q )
             {
-                for(int k = 0;k < gmc_type::nDim;++k )
-                    M_x[k]=M_gmc->xReal( q )[k];
+                for ( auto const& comp : M_expr.indexSymbolXYZ() )
+                    M_x[comp.second] = M_gmc->xReal( q )[comp.first];
                 M_fun(&ni,M_x.data(),&no,&M_y[q]);
             }
 
@@ -344,8 +370,8 @@ public:
             int ni = M_nsyms;//gmc_type::nDim;
             for(int q = 0; q < M_gmc->nPoints();++q )
             {
-                for(int k = 0;k < gmc_type::nDim;++k )
-                    M_x[k]=M_gmc->xReal( q )[k];
+                for ( auto const& comp : M_expr.indexSymbolXYZ() )
+                    M_x[comp.second] = M_gmc->xReal( q )[comp.first];
                 M_fun(&ni,M_x.data(),&no,&M_y[q]);
             }
         }
@@ -383,6 +409,7 @@ public:
             return M_y[q];
         }
 
+    this_type const& M_expr;
     GiNaC::FUNCP_CUBA M_fun;
     gmc_ptrtype M_gmc;
 
@@ -403,12 +430,24 @@ public:
         return res;
     }
 
+    value_type
+    evaluate( bool parallel = true, WorldComm const& worldcomm = Environment::worldComm() ) const
+    {
+        int no = 1;
+        int ni = M_syms.size();
+        value_type res;
+        (*M_cfun)(&ni,M_params.data(),&no,&res);
+        return res;
+    }
+
+
 private:
     mutable expression_type  M_fun;
     std::vector<GiNaC::symbol> M_syms;
     vec_type M_params;
     boost::shared_ptr<GiNaC::FUNCP_CUBA> M_cfun;
     std::string M_filename;
+    std::set<std::pair<uint16_type,uint16_type> > M_indexSymbolXYZ;
 };
 
 } // vf
