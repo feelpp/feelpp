@@ -256,6 +256,16 @@ public :
         M_betaFqString[1].push_back( tuple.template get<1>() );
     }
 
+    void addEnergyMatrix( sparse_matrix_ptrtype const & matrix )
+    {
+        M_energy_matrix = matrix ;
+    }
+
+    void addMassMatrix( sparse_matrix_ptrtype const & matrix )
+    {
+        M_mass_matrix = matrix ;
+    }
+
     void setInitialized( const bool & b )
     {
         M_is_initialized = b ;
@@ -627,18 +637,37 @@ public :
 
 
     /**
+     * inner product
+     */
+    virtual sparse_matrix_ptrtype energyMatrix ()
+    {
+        double norm = M_energy_matrix->l1Norm();
+        CHECK( norm > 0 )<<"The energy matrix has not be filled !\n";
+        return M_energy_matrix;
+    }
+
+    virtual sparse_matrix_ptrtype energyMatrix () const
+    {
+        double norm = M_energy_matrix->l1Norm();
+        CHECK( norm > 0 )<<"The energy matrix has not be filled !\n";
+        return M_energy_matrix;
+    }
+
+    /**
      * inner product for mass matrix
      * Transient models need to implement these functions.
      */
     virtual sparse_matrix_ptrtype const& massMatrix () const
     {
-        throw std::logic_error("Your model is time-dependant so you MUST implement MassMatrix function");
-        return M;
+        double norm = M_mass_matrix->l1Norm();
+        CHECK( norm > 0 )<<"The mass matrix has not be filled !\n";
+        return M_mass_matrix;
     }
     virtual sparse_matrix_ptrtype massMatrix ()
     {
-        throw std::logic_error("Your model is time-dependant so you MUST implement MassMatrix function");
-        return M;
+        double norm = M_mass_matrix->l1Norm();
+        CHECK( norm > 0 )<<"The mass matrix has not be filled !\n";
+        return M_mass_matrix;
     }
 #if 0
     virtual sparse_matrix_ptrtype const& innerProductForPod () const
@@ -1029,6 +1058,8 @@ protected :
     bool M_is_initialized;
 
     sparse_matrix_ptrtype M;
+    sparse_matrix_ptrtype M_energy_matrix;
+    sparse_matrix_ptrtype M_mass_matrix;
 
     operatorcomposite_ptrtype M_compositeA;
     operatorcomposite_ptrtype M_compositeM;
