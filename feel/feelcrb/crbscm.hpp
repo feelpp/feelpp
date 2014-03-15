@@ -601,12 +601,12 @@ CRBSCM<TruthModelType>::offlineNoSCM()
     M_model->countAffineDecompositionTerms();
     if ( M_scm_for_mass_matrix )
     {
-        inner_prod = M_model->innerProductForMassMatrix();
+        inner_prod = M_model->massMatrix();
         boost::tie( Matrix, boost::tuples::ignore, boost::tuples::ignore ) = M_model->update( M_mu_ref );
     }
     else
     {
-        inner_prod = M_model->innerProduct();
+        inner_prod = M_model->energyMatrix();
         boost::tie( boost::tuples::ignore, Matrix, boost::tuples::ignore ) = M_model->update( M_mu_ref );
     }
     sym = M_model->newMatrix();sym->close();
@@ -777,12 +777,12 @@ CRBSCM<TruthModelType>::offlineSCM()
         // for a given parameter \p mu assemble the left and right hand side
         if ( M_scm_for_mass_matrix )
         {
-            B = M_model->innerProductForMassMatrix();
+            B = M_model->massMatrix();
             boost::tie( Matrix, boost::tuples::ignore, F ) = M_model->update( mu );
         }
         else
         {
-            B = M_model->innerProduct();
+            B = M_model->energyMatrix();
             boost::tie( boost::tuples::ignore, Matrix, F ) = M_model->update( mu );
         }
 
@@ -1035,12 +1035,12 @@ boost::tuple<typename CRBSCM<TruthModelType>::value_type,
 
     if ( M_scm_for_mass_matrix )
     {
-        M = M_model->innerProductForMassMatrix();
+        M = M_model->massMatrix();
         boost::tie( Matrix, boost::tuples::ignore, F ) = M_model->update( mu );
     }
     else
     {
-        M = M_model->innerProduct();
+        M = M_model->energyMatrix();
         boost::tie( boost::tuples::ignore, Matrix, F ) = M_model->update( mu );
     }
 
@@ -1549,9 +1549,9 @@ CRBSCM<TruthModelType>::computeYBounds()
 
 
     if ( M_scm_for_mass_matrix )
-        B=M_model->innerProductForMassMatrix();
+        B=M_model->massMatrix();
     else
-        B=M_model->innerProduct();
+        B=M_model->energyMatrix();
 
     B->close();
 

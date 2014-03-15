@@ -127,6 +127,7 @@ public :
     typedef std::vector< std::vector< double > > beta_vector_type;
     typedef std::vector< double > beta_vector_light_type;
 
+
     static const bool is_time_dependent = FunctionSpaceDefinition::is_time_dependent;
     static const bool is_linear = FunctionSpaceDefinition::is_linear;
 
@@ -134,6 +135,7 @@ public :
 
     typedef typename FunctionSpaceDefinition::mesh_type mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+
 
     typedef typename mpl::if_< mpl::bool_< is_time_dependent >,
                                boost::tuple<
@@ -183,6 +185,12 @@ public :
                                    >
                                >::type betaq_type;
 
+    typedef std::vector< boost::tuple< sparse_matrix_ptrtype , std::string > > lhs_light_type;
+    typedef boost::shared_ptr<lhs_light_type> lhs_light_ptrtype;
+    typedef std::vector< boost::tuple<  vector_ptrtype , std::string > > rhs_light_type;
+    typedef boost::shared_ptr<rhs_light_type> rhs_light_ptrtype ;
+    typedef std::vector< boost::tuple<  std::vector< vector_ptrtype > , std::string > > outputs_light_type;
+    typedef boost::shared_ptr<outputs_light_type> outputs_light_ptrtype ;
 
     typedef Bdf<space_type>  bdf_type;
     typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
@@ -191,6 +199,71 @@ public :
         :
         M_is_initialized( false )
     {
+    }
+
+
+
+
+    /*
+     * return the left hand side terms from the affine decomposition
+     * that is to say bilinear forms Aq and beta coefficients associated
+     */
+    void addLhs( boost::tuple< sparse_matrix_ptrtype , std::string > const & tuple )
+    {
+        M_Aq.push_back( tuple.template get<0>() );
+        M_betaAqString.push_back( tuple.template get<1>() );
+    }
+
+    /*
+     * return the terms from the affine decomposition linked to the mass matrix
+     * that is to say bilinear forms Mq and beta coefficients associated
+     */
+    void addMass( boost::tuple< sparse_matrix_ptrtype , std::string > const & tuple )
+    {
+        M_Mq.push_back( tuple.template get<0>() );
+        M_betaMqString.push_back( tuple.template get<1>() );
+    }
+
+    /*
+     * return the right hand side terms from the affine decomposition
+     * that is to say linear forms Fq[0] and beta coefficients associated
+     */
+    void addRhs( boost::tuple<  vector_ptrtype , std::string > const & tuple )
+    {
+        if( M_Fq.size() == 0 )
+        {
+            M_Fq.resize(2);
+            M_betaFqString.resize(2);
+        }
+        M_Fq[0].push_back( tuple.template get<0>() );
+        M_betaFqString[0].push_back( tuple.template get<1>() );
+    }
+
+    /*
+     * return the terms from the affine decomposition linked to output
+     * that is to say linear forms and beta coefficients associated
+     */
+    void addOutput( boost::tuple<  vector_ptrtype , std::string > const & tuple )
+    {
+        int size = M_Fq.size();
+        if( size == 0 )
+        {
+            //there is no rhs or output yet
+            M_Fq.resize(2);
+            M_betaFqString.resize(2);
+        }
+        M_Fq[1].push_back( tuple.template get<0>() );
+        M_betaFqString[1].push_back( tuple.template get<1>() );
+    }
+
+    void addEnergyMatrix( sparse_matrix_ptrtype const & matrix )
+    {
+        M_energy_matrix = matrix ;
+    }
+
+    void addMassMatrix( sparse_matrix_ptrtype const & matrix )
+    {
+        M_mass_matrix = matrix ;
     }
 
     void setInitialized( const bool & b )
@@ -258,16 +331,11 @@ public :
     }
     affine_decomposition_type computeAffineDecomposition( mpl::bool_<true> )
     {
-        std::vector< std::vector<sparse_matrix_ptrtype> > M;
-        std::vector< std::vector<sparse_matrix_ptrtype> > A;
-        std::vector< std::vector<std::vector<vector_ptrtype> > > F;
-        return boost::make_tuple( M , A , F );
+        return boost::make_tuple( M_Mqm , M_Aqm , M_Fqm );
     }
     affine_decomposition_type computeAffineDecomposition( mpl::bool_<false> )
     {
-        std::vector< std::vector<sparse_matrix_ptrtype> > A;
-        std::vector< std::vector<std::vector<vector_ptrtype> > > F;
-        return boost::make_tuple( A , F );
+        return boost::make_tuple( M_Aqm , M_Fqm );
     }
 
     virtual affine_decomposition_light_type computeAffineDecompositionLight()
@@ -276,29 +344,170 @@ public :
     }
     affine_decomposition_light_type computeAffineDecompositionLight( mpl::bool_<true> )
     {
-        std::vector< sparse_matrix_ptrtype > M;
-        std::vector< sparse_matrix_ptrtype > A;
-        std::vector< std::vector<vector_ptrtype> > F;
-        return boost::make_tuple( M , A , F );
+        return boost::make_tuple( M_Mq , M_Aq , M_Fq );
     }
     affine_decomposition_light_type computeAffineDecompositionLight( mpl::bool_<false> )
     {
-        std::vector< sparse_matrix_ptrtype> A;
-        std::vector< std::vector<vector_ptrtype> > F;
-        return boost::make_tuple( A , F );
+        return boost::make_tuple( M_Aq , M_Fq );
     }
 
     virtual betaq_type computeBetaQ( parameter_type const& mu ,  double time=0 )
     {
-        betaq_type dummy;
-        return dummy;
+        return computeBetaQ( mu, mpl::bool_< is_time_dependent >(), time );
+    }
+    betaq_type computeBetaQ( parameter_type const& mu , mpl::bool_<true>, double time=0 )
+    {
+        int sizeA=M_ginacAq.size();
+        if( sizeA > 0 )
+        {
+            //if the user doesn't implement computeBetaQ function
+            //and so gives affne decomposition terms using addLhs ect...
+            //then we consider we have 2 outputs
+            int nboutputs=2;
+            int sizeM=M_ginacMq.size();
+            int sizeF0=M_ginacFq[0].size();
+            int sizeF1=M_ginacFq[1].size();
+            int musize=mu.size();
+            std::string symbol;
+
+            std::map<std::string,double> map_symbols;
+            for(int i=0; i<musize; i++)
+            {
+                symbol = ( boost::format("mu%1%") %i ).str();
+                map_symbols.insert( std::pair< std::string, double > (symbol,mu(i)) );
+            }
+
+            M_betaAq.resize( sizeA );
+            for(int q=0; q<sizeA; q++)
+            {
+                double coeff = M_ginacAq[q].evaluate(map_symbols);
+                M_betaAq[q]=coeff;
+            }
+            M_betaMq.resize( sizeM );
+            for(int q=0; q<sizeM; q++)
+            {
+                double coeff = M_ginacMq[q].evaluate( map_symbols );
+                M_betaMq[q]=coeff;
+            }
+            M_betaFq.resize( nboutputs );
+            for(int output=0; output<nboutputs;output++)
+            {
+                int size=M_betaFqString[output].size();
+                M_betaFq[output].resize( size );
+                for(int q=0; q<size; q++)
+                {
+                    double coeff = M_ginacFq[output][q].evaluate( map_symbols );
+                    M_betaFq[output][q]=coeff;
+                }
+            }
+        }
+
+        return boost::make_tuple( M_betaMq, M_betaAq, M_betaFq );
+    }
+    betaq_type computeBetaQ( parameter_type const& mu , mpl::bool_<false>, double time=0 )
+    {
+        int sizeA=M_ginacAq.size();
+
+        if( sizeA > 0 )
+        {
+            //if the user doesn't implement computeBetaQ function
+            //and so gives affne decomposition terms using addLhs ect...
+            //then we consider we have 2 outputs
+            int nboutputs=2;
+            int sizeM=M_ginacMq.size();
+            int sizeF0=M_ginacFq[0].size();
+            int sizeF1=M_ginacFq[1].size();
+            int musize=mu.size();
+            std::string symbol;
+
+            std::map<std::string,double> map_symbols;
+            for(int i=0; i<musize; i++)
+            {
+                symbol = ( boost::format("mu%1%") %i ).str();
+                map_symbols.insert( std::pair< std::string, double > (symbol,mu(i)) );
+            }
+
+            M_betaAq.resize( sizeA );
+            for(int q=0; q<sizeA; q++)
+            {
+                double coeff = M_ginacAq[q].evaluate(map_symbols);
+                M_betaAq[q]=coeff;
+            }
+            M_betaFq.resize( nboutputs );
+            for(int output=0; output<nboutputs;output++)
+            {
+                int size=M_betaFqString[output].size();
+                M_betaFq[output].resize( size );
+                for(int q=0; q<size; q++)
+                {
+                    double coeff = M_ginacFq[output][q].evaluate( map_symbols );
+                    M_betaFq[output][q]=coeff;
+                }
+            }
+        }
+
+        return boost::make_tuple( M_betaAq, M_betaFq );
     }
 
     virtual betaqm_type computeBetaQm( parameter_type const& mu ,  double time=0 )
     {
-        betaqm_type dummy;
-        return dummy;
+        return computeBetaQm( mu, mpl::bool_< is_time_dependent >(), time );
     }
+    betaqm_type computeBetaQm( parameter_type const& mu , mpl::bool_<true>, double time=0 )
+    {
+        return boost::make_tuple( M_betaMqm, M_betaAqm, M_betaFqm );
+    }
+    betaqm_type computeBetaQm( parameter_type const& mu , mpl::bool_<false>, double time=0 )
+    {
+        return boost::make_tuple( M_betaAqm, M_betaFqm );
+    }
+
+
+    void buildGinacBetaExpressions( parameter_type const& mu )
+    {
+        //not that the parameter mu is here to indicates
+        //the dimension of the parameter space
+        //and to construct symbols
+        int musize = mu.size();
+        for(int i=0; i<musize; i++)
+        {
+            std::string symbol = ( boost::format("mu%1%") %i ).str();
+            M_symbols_vec.push_back( symbol );
+        }
+        if( M_betaAqString.size() > 0 )
+        {
+            int size = M_betaAqString.size();
+            for(int q=0; q<size; q++)
+            {
+                std::string filename = ( boost::format("GinacA%1%") %q ).str();
+                M_ginacAq.push_back( expr( M_betaAqString[q], Symbols( M_symbols_vec ) , filename ) );
+            }
+        }
+        if( M_betaMqString.size() > 0 )
+        {
+            int size = M_betaMqString.size();
+            for(int q=0; q<size; q++)
+            {
+                std::string filename = ( boost::format("GinacM%1%") %q ).str();
+                M_ginacMq.push_back( expr( M_betaMqString[q], Symbols( M_symbols_vec ) , filename ) );
+            }
+        }
+        if( M_betaFqString.size() > 0 )
+        {
+            int nboutputs = M_betaFqString.size();
+            M_ginacFq.resize( nboutputs );
+            for(int output=0; output<nboutputs; output++)
+            {
+                int size = M_betaFqString[output].size();
+                for(int q=0; q<size; q++)
+                {
+                    std::string filename = ( boost::format("GinacF%1%.%2%") %output %q ).str();
+                    M_ginacFq[output].push_back( expr( M_betaFqString[output][q], Symbols( M_symbols_vec ) , filename ) );
+                }
+            }
+        }
+    }
+
 
     //this function is not called bdf() to not interfere with bdf constructor
     virtual bdf_ptrtype bdfModel()
@@ -428,20 +637,39 @@ public :
 
 
     /**
+     * inner product
+     */
+    virtual sparse_matrix_ptrtype energyMatrix ()
+    {
+        double norm = M_energy_matrix->l1Norm();
+        CHECK( norm > 0 )<<"The energy matrix has not be filled !\n";
+        return M_energy_matrix;
+    }
+
+    virtual sparse_matrix_ptrtype energyMatrix () const
+    {
+        double norm = M_energy_matrix->l1Norm();
+        CHECK( norm > 0 )<<"The energy matrix has not be filled !\n";
+        return M_energy_matrix;
+    }
+
+    /**
      * inner product for mass matrix
      * Transient models need to implement these functions.
      */
-    virtual sparse_matrix_ptrtype const& innerProductForMassMatrix () const
+    virtual sparse_matrix_ptrtype const& massMatrix () const
     {
-        throw std::logic_error("Your model is time-dependant so you MUST implement innerProductForMassMatrix function");
-        return M;
+        double norm = M_mass_matrix->l1Norm();
+        CHECK( norm > 0 )<<"The mass matrix has not be filled !\n";
+        return M_mass_matrix;
     }
-    virtual sparse_matrix_ptrtype innerProductForMassMatrix ()
+    virtual sparse_matrix_ptrtype massMatrix ()
     {
-        throw std::logic_error("Your model is time-dependant so you MUST implement innerProductForMassMatrix function");
-        return M;
+        double norm = M_mass_matrix->l1Norm();
+        CHECK( norm > 0 )<<"The mass matrix has not be filled !\n";
+        return M_mass_matrix;
     }
-
+#if 0
     virtual sparse_matrix_ptrtype const& innerProductForPod () const
     {
         throw std::logic_error("Your model is time-dependant so you MUST implement innerProductForPod function");
@@ -452,7 +680,7 @@ public :
         throw std::logic_error("Your model is time-dependant so you MUST implement innerProductForPod function");
         return M;
     }
-
+#endif
 
     /*
      * If the model is nonlinear and then need to implement an initial guess
@@ -830,11 +1058,41 @@ protected :
     bool M_is_initialized;
 
     sparse_matrix_ptrtype M;
+    sparse_matrix_ptrtype M_energy_matrix;
+    sparse_matrix_ptrtype M_mass_matrix;
 
     operatorcomposite_ptrtype M_compositeA;
     operatorcomposite_ptrtype M_compositeM;
     std::vector< functionalcomposite_ptrtype > M_compositeF;
 
+    std::vector<sparse_matrix_ptrtype> M_Aq;
+    std::vector<sparse_matrix_ptrtype> M_Mq;
+    std::vector<std::vector<vector_ptrtype> > M_Fq;
+
+    std::vector< std::vector<sparse_matrix_ptrtype> > M_Aqm;
+    std::vector< std::vector<sparse_matrix_ptrtype> > M_Mqm;
+    std::vector< std::vector<std::vector<vector_ptrtype> > > M_Fqm;
+
+    beta_vector_light_type M_betaAq;
+    beta_vector_light_type M_betaMq;
+    std::vector<beta_vector_light_type> M_betaFq;
+
+    std::vector< std::string > M_betaAqString;
+    std::vector< std::string > M_betaMqString;
+    std::vector< std::vector< std::string > > M_betaFqString;
+    std::vector< Expr<GinacEx<2> > > M_ginacAq;
+    std::vector< Expr<GinacEx<2> > > M_ginacMq;
+    std::vector< std::vector< Expr<GinacEx<2> > > > M_ginacFq;
+    std::vector< std::string > M_symbols_vec;
+
+    beta_vector_type M_betaAqm;
+    beta_vector_type M_betaMqm;
+    std::vector<beta_vector_type> M_betaFqm;
+
+    lhs_light_type M_lhs;
+    lhs_light_type M_mass;
+    rhs_light_type M_rhs;
+    rhs_light_type M_output;
 };
 
 }//Feel
