@@ -84,7 +84,7 @@ public:
 
     explicit GinacExVF( ginac_expression_type const & fun,
                         std::vector<GiNaC::symbol> const& syms,
-                        std::pair<GiNaC::symbol, expression_type> const& expr,
+                        std::vector< std::pair<GiNaC::symbol, expression_type> >const& expr,
                         std::string filename="",
                         WorldComm const& world=Environment::worldComm() )
         :
@@ -269,20 +269,37 @@ public:
         {
             return *M_cfun;
         }
-    expression_type const& expression() const
+    expression_type const& expression(int i=0) const
         {
-            return M_expr.second;
+            return M_expr[i].second;
         }
-    const int index() const
-        {
-            auto it = std::find_if( M_syms.begin(), M_syms.end(),
-                                    [=]( GiNaC::symbol const& s ) { return s.get_name() == M_expr.first.get_name(); } );
-            if ( it != M_syms.end() )
+    std::vector<expression_type> const expressions() const
+    {
+        std::vector<expression_type> exprs_vec;
+        typename std::vector< std::pair<GiNaC::symbol, expression_type> >::const_iterator it = M_expr.begin();
+        for(it; it!=M_expr.end(); it++)
+            exprs_vec.push_back( it->second );
+        return exprs_vec;
+    }
+
+    const int index(int i=0) const
+    {
+        auto it = std::find_if( M_syms.begin(), M_syms.end(),
+                                [=]( GiNaC::symbol const& s ) { return s.get_name() == M_expr[i].first.get_name(); } );
+        if ( it != M_syms.end() )
             {
                 return it-M_syms.begin();
             }
-            return -1;
-        }
+        return -1;
+    }
+    const std::vector<int> indices() const
+    {
+        std::vector<int> indices_vec;
+        for(int i=0; i<M_expr.size(); i++)
+            indices_vec.push_back( this->index( i ) );
+        return indices_vec;
+    }
+
     const bool hasPoints() const
         {
 #if 0
@@ -329,8 +346,8 @@ public:
                 Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
             :
             M_fun( expr.fun() ),
-            M_t_expr( expr.expression(), geom, fev, feu  ),
-            M_t_expr_index( expr.index() ),
+            M_t_expr(std::vector<tensor_expr_type>() ),
+            M_t_expr_index( std::vector<int>(expr.indices()) ),
             M_has_p( expr.hasPoints() ),
             M_is_zero( expr.isZero() ),
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
@@ -338,14 +355,20 @@ public:
             M_y( vec_type::Zero(M_gmc->nPoints()) ),
             M_x( expr.parameterValue() )
             {
+                auto exprs = expr.expressions();
+                for(auto it=exprs.begin(); it!=exprs.end(); it++)
+                    {
+                        tensor_expr_type mytensor( *it, geom, fev, feu);
+                        M_t_expr.push_back( mytensor );
+                    }
             }
 
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev )
             :
             M_fun( expr.fun() ),
-            M_t_expr( expr.expression(), geom, fev  ),
-            M_t_expr_index( expr.index() ),
+            M_t_expr(std::vector<tensor_expr_type>() ),
+            M_t_expr_index( std::vector<int>(expr.indices()) ),
             M_has_p( expr.hasPoints() ),
             M_is_zero( expr.isZero() ),
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
@@ -353,27 +376,39 @@ public:
             M_y( vec_type::Zero(M_gmc->nPoints()) ),
             M_x(  expr.parameterValue() )
             {
+                auto exprs = expr.expressions();
+                for(auto it=exprs.begin(); it!=exprs.end(); it++)
+                    {
+                        tensor_expr_type mytensor( *it, geom, fev);
+                        M_t_expr.push_back( mytensor );
+                    }
             }
 
         tensor( this_type const& expr, Geo_t const& geom )
             :
             M_fun( expr.fun() ),
-            M_t_expr( expr.expression(), geom  ),
-            M_t_expr_index( expr.index() ),
+            M_t_expr( std::vector<tensor_expr_type>() ),
+            M_t_expr_index( std::vector<int>(expr.indices()) ),
             M_has_p( expr.hasPoints() ),
             M_is_zero( expr.isZero() ),
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
             M_nsyms( expr.syms().size() ),
             M_y( vec_type::Zero(M_gmc->nPoints()) ),
             M_x( expr.parameterValue() )
-
             {
+                auto exprs = expr.expressions();
+                for(auto it=exprs.begin(); it!=exprs.end(); it++)
+                    {
+                        tensor_expr_type mytensor( *it, geom );
+                        M_t_expr.push_back( mytensor );
+                    }
             }
         template<typename IM>
         void init( IM const& im )
-            {
-                M_t_expr.init( im );
-            }
+        {
+            for(int i=0; i<M_t_expr.size(); i++)
+                M_t_expr[i].init( im );
+        }
         FEELPP_DONT_INLINE void updateFun(Geo_t const& geom )
             {
                 M_gmc =  fusion::at_key<key_type>( geom ).get();
@@ -385,20 +420,27 @@ public:
                 {
 
                     for(int q = 0; q < M_gmc->nPoints();++q )
-                    {
-                        for(int k = 0;k < gmc_type::nDim;++k )
-                            M_x[k]=M_gmc->xReal( q )[k];
-                        if ( M_t_expr_index != -1 )
-                            M_x[M_t_expr_index] = M_t_expr.evalq( 0, 0, q );
-                        M_fun(&ni,M_x.data(),&no,&M_y[q]);
+                        {
+                            for(int k = 0;k < gmc_type::nDim;++k )
+                                M_x[k]=M_gmc->xReal( q )[k];
+
+                            for(int i=0; i<M_t_expr_index.size(); i++)
+                                {
+                                    if ( M_t_expr_index[i] != -1 )
+                                        M_x[M_t_expr_index[i]] = M_t_expr[i].evalq( 0, 0, q );
+                                }
+                            M_fun(&ni,M_x.data(),&no,&M_y[q]);
                     }
                 }
                 else
                 {
                     for(int q = 0; q < M_gmc->nPoints();++q )
                     {
-                        if ( M_t_expr_index != -1 )
-                            M_x[M_t_expr_index] = M_t_expr.evalq( 0, 0, q );
+                        for(int i=0; i<M_t_expr_index.size(); i++)
+                            {
+                                if ( M_t_expr_index[i] != -1 )
+                                    M_x[M_t_expr_index[i]] = M_t_expr[i].evalq( 0, 0, q );
+                            }
                         M_fun(&ni,M_x.data(),&no,&M_y[q]);
                     }
                 }
@@ -408,7 +450,8 @@ public:
         {
             if ( M_is_zero ) return;
 
-            M_t_expr.update( geom, fev, feu );
+            for(int i=0; i<M_t_expr.size(); i++)
+                M_t_expr[i].update( geom, fev, feu );
             updateFun( geom );
 
         }
@@ -416,14 +459,16 @@ public:
             {
                 if ( M_is_zero ) return;
 
-                M_t_expr.update( geom, fev );
+                for(int i=0; i<M_t_expr.size(); i++)
+                    M_t_expr[i].update( geom, fev );
                 updateFun( geom );
             }
         void update( Geo_t const& geom )
             {
                 if ( M_is_zero ) return;
 
-                M_t_expr.update( geom );
+                for(int i=0; i<M_t_expr.size(); i++)
+                    M_t_expr[i].update( geom );
                 updateFun( geom );
             }
 
@@ -431,7 +476,8 @@ public:
             {
                 if ( M_is_zero ) return;
 
-                M_t_expr.update( geom, face );
+                for(int i=0; i<M_t_expr.size(); i++)
+                    M_t_expr[i].update( geom, face );
                 updateFun( geom );
             }
 
@@ -470,8 +516,8 @@ public:
             }
 
         GiNaC::FUNCP_CUBA M_fun;
-        tensor_expr_type M_t_expr;
-        const int M_t_expr_index;
+        std::vector<tensor_expr_type> M_t_expr;
+        const std::vector<int> M_t_expr_index;
         const bool M_has_p;
         const bool M_is_zero;
         gmc_ptrtype M_gmc;
@@ -483,19 +529,20 @@ public:
     };
 
     value_type
-    evaluate( bool parallel = true, WorldComm const& worldcomm = Environment::worldComm() ) const
-        {
-            if(GiNaC::is_a<GiNaC::numeric>(M_fun))
-                return GiNaC::ex_to<GiNaC::numeric>(M_fun).to_double();
-            else
-                CHECK(GiNaC::is_a<GiNaC::numeric>(M_fun)) << "GiNaC expression is not a value type. Can't evaluate !";
-            return 0;
-        }
+    evaluate( std::map<std::string,value_type> const& mp  )
+    {
+        this->setParameterValues( mp );
+        int no = 1;
+        int ni = M_syms.size();//gmc_type::nDim;
+        value_type res;
+        (*M_cfun)(&ni,M_params.data(),&no,&res);
+        return res;
+    }
 
 private:
     mutable ginac_expression_type  M_fun;
     std::vector<GiNaC::symbol> M_syms;
-    std::pair<GiNaC::symbol,expression_type> M_expr;
+    std::vector< std::pair<GiNaC::symbol,expression_type> > M_expr;
     vec_type M_params;
     boost::shared_ptr<GiNaC::FUNCP_CUBA> M_cfun;
     std::string M_filename;
