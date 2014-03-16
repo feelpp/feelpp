@@ -34,13 +34,11 @@ INCLUDE(InstallRequiredSystemLibraries)
 
 
 foreach(includedir feelcore feelalg feelmesh feelpoly feelfilters feeldiscr feelvf feelmaterial feelsystem feelts )
-  FILE(GLOB files "feel/${includedir}/*.hpp")
-  FILE(GLOB cppfiles "feel/${includedir}/*.cpp")
+  FILE(GLOB files "feel/${includedir}/*.hpp" )
+  FILE(GLOB cppfiles "feel/${includedir}/*.cpp" )
   INSTALL(FILES ${files} ${cppfiles} DESTINATION include/feel/${includedir} COMPONENT Devel)
-  if ( EXISTS "feel/${includedir}/detail/*.hpp")
-    FILE(GLOB details "feel/${includedir}/detail/*.hpp")
-    INSTALL(FILES ${details} DESTINATION include/feel/${includedir}/detail COMPONENT Devel)
-  endif()
+  FILE(GLOB details "feel/${includedir}/detail/*.hpp")
+  INSTALL(FILES ${details} DESTINATION include/feel/${includedir}/detail COMPONENT Devel)
 endforeach()
 FILE(GLOB files "feel/*.hpp")
 INSTALL(FILES ${files} DESTINATION include/feel COMPONENT Devel)
@@ -88,8 +86,8 @@ IF( EXISTS "${CMAKE_CURRENT_BINARY_DIR}/doc/api/html" )
     PATTERN ".svn" EXCLUDE PATTERN ".git" EXCLUDE )
 ENDIF()
 
-
-INSTALL(FILES quickstart/qs_laplacian.cpp DESTINATION share/doc/feel/examples/quickstart/ COMPONENT Doc)
+FILE(GLOB files "quickstart/qs_*")
+INSTALL(FILES ${files} DESTINATION share/doc/feel/examples/ COMPONENT Doc)
 
 FILE(WRITE CMakeLists.txt.doc  "cmake_minimum_required(VERSION 2.8)
 set(CMAKE_MODULE_PATH \"${CMAKE_INSTALL_PREFIX}/share/feel/cmake/modules/\")
@@ -97,17 +95,25 @@ Find_Package(Feel++)
 
 add_custom_target(tutorial)
 
-feelpp_add_application( qs_laplacian SRCS quickstart/qs_laplacian.cpp INCLUDE_IN_ALL)")
+feelpp_add_application( qs_laplacian SRCS qs_laplacian.cpp INCLUDE_IN_ALL)
+feelpp_add_application( qs_stokes SRCS qs_stokes.cpp INCLUDE_IN_ALL)
+feelpp_add_application( qs_ns SRCS qs_ns.cpp INCLUDE_IN_ALL)
+")
 
-FILE(GLOB examples "${CMAKE_CURRENT_SOURCE_DIR}/doc/manual/tutorial/*.*pp")
+FILE(GLOB examples
+  "${CMAKE_CURRENT_SOURCE_DIR}/doc/manual/tutorial/*.*pp")
+FILE(GLOB examplescfg
+  "${CMAKE_CURRENT_SOURCE_DIR}/doc/manual/tutorial/*.cfg"
+  "${CMAKE_CURRENT_SOURCE_DIR}/doc/manual/tutorial/*.geo" )
 
-INSTALL(FILES ${examples} DESTINATION share/doc/feel/examples/tutorial COMPONENT Doc)
+INSTALL(FILES ${examples} DESTINATION share/doc/feel/examples/ COMPONENT Doc)
+INSTALL(FILES ${examplescfg} DESTINATION share/doc/feel/examples/ COMPONENT Doc)
 foreach(example ${examples} )
   get_filename_component( EXAMPLE_TARGET_NAME ${example} NAME_WE )
   get_filename_component( EXAMPLE_SRCS_NAME ${example} NAME )
   FILE(APPEND CMakeLists.txt.doc "
 # target feelpp_doc_${EXAMPLE_TARGET_NAME}
-feelpp_add_application( doc_${EXAMPLE_TARGET_NAME} SRCS tutorial/${EXAMPLE_SRCS_NAME} INCLUDE_IN_ALL)
+feelpp_add_application( doc_${EXAMPLE_TARGET_NAME} SRCS ${EXAMPLE_SRCS_NAME} INCLUDE_IN_ALL)
 " )
 endforeach()
 foreach( example myapp mymesh myintegrals myfunctionspace mylaplacian mystokes)
