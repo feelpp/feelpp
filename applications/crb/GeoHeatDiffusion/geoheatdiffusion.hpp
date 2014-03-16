@@ -92,7 +92,7 @@ makeGeoHeatDiffusionAbout( std::string const& str = "GeoHeatDiffusion" )
 class ParameterDefinition
 {
 public :
-    static const uint16_type ParameterSpaceDimension = 2;
+    static const uint16_type ParameterSpaceDimension = 3;
     typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
 };
 
@@ -229,7 +229,7 @@ public:
     parameter_type refParameter()
     {
         auto muref = M_Dmu->element();
-        muref(0)=1; muref(1)=1;
+        muref(0)=1; muref(1)=1; muref(2)=1;
         return muref;
     }
 
@@ -240,6 +240,26 @@ public:
     value_type output( int output_index, parameter_type const& mu, element_type &T, bool need_to_solve=false, bool export_outputs=false );
 
     bdf_ptrtype bdfModel(){ return M_bdf; }
+
+#if 0
+    mesh_ptrtype adaptedMesh( parameter_type const& mu, bool & use_mesh )
+    {
+        GeoTool::Node x1( 0,0 );
+        GeoTool::Node x2( mu(0),1 );
+        //factor is defined as mu(0)/muref(0)
+        //double factor=mu(0);
+        GeoTool::Rectangle R( hsize,"Omega",x1,x2 );
+        R.setMarker( _type="line",_name="heat",_marker4=true );
+        R.setMarker( _type="line",_name="iso",_marker1=true );
+        R.setMarker( _type="line",_name="iso",_marker3=true );
+        R.setMarker( _type="line",_name="cool",_marker2=true );
+        R.setMarker( _type="surface",_name="Omega",_markerAll=true );
+        auto adapted_mesh = R.createMesh( _mesh=new mesh_type, _name="Omega" );
+
+        use_mesh=true;
+        return adapted_mesh;
+    }
+#endif
 
 private:
 
@@ -276,10 +296,10 @@ void GeoHeatDiffusion::initModel()
     GeoTool::Node x1( 0,0 );
     GeoTool::Node x2( 1,1 );
     GeoTool::Rectangle R( hsize,"Omega",x1,x2 );
-    R.setMarker( _type="line",_name="ext",_marker4=true );
+    R.setMarker( _type="line",_name="heat",_marker4=true );
     R.setMarker( _type="line",_name="iso",_marker1=true );
     R.setMarker( _type="line",_name="iso",_marker3=true );
-    R.setMarker( _type="line",_name="iso",_marker2=true );
+    R.setMarker( _type="line",_name="cool",_marker2=true );
     R.setMarker( _type="surface",_name="Omega",_markerAll=true );
     mesh = R.createMesh( _mesh=new mesh_type, _name="Omega" );
 
@@ -295,10 +315,10 @@ void GeoHeatDiffusion::initModel()
     }
 
     typename Feel::ParameterSpace<ParameterSpaceDimension>::Element mu_min( M_Dmu );
-    mu_min <<  /*length*/0.01, /*heat transfer coefficient*/ 0.01 ;
+    mu_min <<  /*length*/0.1, /*heat transfer coefficient*/ 0.1 , 0.1;
     M_Dmu->setMin( mu_min );
     typename Feel::ParameterSpace<ParameterSpaceDimension>::Element mu_max( M_Dmu );
-    mu_max << 10, 10 ;
+    mu_max << 5, 5 , 5;
     M_Dmu->setMax( mu_max );
 
     M_bdf = bdf( _space=Xh, _name="geoheatdiffusion" , _prefix="geoheatdiffusion" );
@@ -315,9 +335,8 @@ void GeoHeatDiffusion::assemble()
     auto v = Xh->element();
 
     double uair=1;
+    double ucool=0;
     double k=1;
-
-    //lhs
     auto a0 = form2( _trial=Xh, _test=Xh);
     a0 = integrate( elements( mesh ),k* dxt(u)*dx(v) ) ;
     this->addLhs( boost::make_tuple( a0.matrixPtr() , "1.0/mu0" ) );
@@ -327,9 +346,12 @@ void GeoHeatDiffusion::assemble()
     this->addLhs( boost::make_tuple( a1.matrixPtr() , "mu0" ) );
 
     auto a2 = form2( _trial=Xh, _test=Xh);
-    a2 = integrate( markedfaces( mesh,"ext" ), idt( u )*id( v ) ) ;
+    a2 = integrate( markedfaces( mesh,"heat" ), idt( u )*id( v ) ) ;
     this->addLhs( boost::make_tuple( a2.matrixPtr() , "mu0*mu1" ) );
 
+    auto a3 = form2( _trial=Xh, _test=Xh);
+    a3 = integrate( markedfaces( mesh,"cool" ), idt( u )*id( v ) ) ;
+    this->addLhs( boost::make_tuple( a3.matrixPtr() , "mu0*mu2" ) );
 
     auto m = form2( _trial=Xh, _test=Xh);
     m = integrate ( elements( mesh ), idt( u )*id( v ) );
@@ -337,8 +359,11 @@ void GeoHeatDiffusion::assemble()
 
     //rhs
     auto f0 = form1( _test=Xh );
-    f0 = integrate( markedfaces( mesh,"ext" ), uair*id( v ) );
+    f0 = integrate( markedfaces( mesh,"heat" ), uair*id( v ) );
     this->addRhs( boost::make_tuple( f0.vectorPtr() , "mu0*mu1" ) );
+    auto f1 = form1( _test=Xh );
+    f1 = integrate( markedfaces( mesh,"cool" ), ucool*id( v ) );
+    this->addRhs( boost::make_tuple( f1.vectorPtr() , "mu0*mu2" ) );
 
     //output
     auto out = form1( _test=Xh );
@@ -351,12 +376,15 @@ void GeoHeatDiffusion::assemble()
     energy=
         integrate( elements( mesh ), 1 * dxt(u)*dx(v) ) +
         integrate( elements( mesh ), 1 * dyt(u)*dy(v) ) +
-        integrate( markedfaces( mesh,"ext" ), 1 * idt( u )*id( v ) );
+        integrate( markedfaces( mesh,"heat" ), 1 * idt( u )*id( v ) )+
+        integrate( markedfaces( mesh,"cool" ), 1 * idt( u )*id( v ) );
     this->addEnergyMatrix(  energy.matrixPtr() );
 
     auto mass = form2( _trial=Xh, _test=Xh);
     mass = integrate( _range=elements( mesh ), _expr=idt( u ) * id( v ) ) ;
     this->addMassMatrix( mass.matrixPtr() );
+
+
 
 }
 
