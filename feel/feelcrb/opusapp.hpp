@@ -903,6 +903,10 @@ public:
                                 LOG(INFO) << "export u_crb \n";
                                 if( export_solution )
                                 {
+                                    if( select_parameter_via_one_feel )
+                                    {
+                                        model->adaptMesh( mu );
+                                    }
                                     e->add( u_crb.name(), u_crb );
                                 }
 
