@@ -588,6 +588,10 @@ public:
         return M_model->parameterSpace();
     }
 
+    void adaptMesh( parameter_type const& mu )
+    {
+        return M_model->adaptMesh( mu );
+    }
 
     parameter_type refParameter()
     {
