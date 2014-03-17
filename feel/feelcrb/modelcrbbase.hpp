@@ -914,6 +914,12 @@ public :
 
 
     /*
+     * if the model has geometric parameters then the mesh can be adapted to
+     * the current parameter to visualize solution field
+     */
+    void adaptMesh( parameter_type const& mu ){ /*by default nothing to be done*/ ; }
+
+    /*
      * \param components_vary : vector of indices for components vary
      * \param extremums : vector containing min and max parameters valuers
      * \param cuttings : vector containing the cutting in each direction + time initial and time final and time step used
