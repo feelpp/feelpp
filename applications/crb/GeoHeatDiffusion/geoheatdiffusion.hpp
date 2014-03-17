@@ -241,25 +241,13 @@ public:
 
     bdf_ptrtype bdfModel(){ return M_bdf; }
 
-#if 0
-    mesh_ptrtype adaptedMesh( parameter_type const& mu, bool & use_mesh )
+    void adaptMesh( parameter_type const& mu )
     {
-        GeoTool::Node x1( 0,0 );
-        GeoTool::Node x2( mu(0),1 );
-        //factor is defined as mu(0)/muref(0)
-        //double factor=mu(0);
-        GeoTool::Rectangle R( hsize,"Omega",x1,x2 );
-        R.setMarker( _type="line",_name="heat",_marker4=true );
-        R.setMarker( _type="line",_name="iso",_marker1=true );
-        R.setMarker( _type="line",_name="iso",_marker3=true );
-        R.setMarker( _type="line",_name="cool",_marker2=true );
-        R.setMarker( _type="surface",_name="Omega",_markerAll=true );
-        auto adapted_mesh = R.createMesh( _mesh=new mesh_type, _name="Omega" );
-
-        use_mesh=true;
-        return adapted_mesh;
+        //create a vectorial function space to project geometric transformation
+        auto Xhv = Pchv<1>( mesh );
+        auto transformation_field = vf::project( _space=Xhv, _expr=oneX()*( Px()*mu(0) - Px() ) );
+        meshMove( mesh , transformation_field );
     }
-#endif
 
 private:
 
