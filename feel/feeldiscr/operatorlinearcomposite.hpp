@@ -130,6 +130,105 @@ public :
         return size1+size2;
     }
 
+
+
+
+    //return number of terms
+    //Q-terms (i.e. without using EIM in a CRB context)
+    //and M-terms (i.e. using EIM in a CRB context)
+    //Q-terms is an int
+    //and then for each term (from 0 to Q-terms) we count number of sub-terms
+    //finally we fill a vector to store them
+    //vector V of size Q-terms
+    //V[1] = number of sub-terms associated to q=1
+    //if V[3]=2 that means there is 2 sub-terms associated to q=3
+    std::vector<int> countAllContributions()
+    {
+        int size1 = M_operators1.size();
+        int size2 = M_operators2.size();
+
+        if( size1 == 0 )
+        {
+            //first : count Q
+            int Q=1;
+            if( size2 == 0 )
+                Q=0;
+            //initialization
+            auto it_=M_operators2.begin();
+            auto tuple_=it_->first;
+            int old_q = tuple_.template get<0>();
+            //loop over all operators
+            auto end = M_operators2.end();
+            for(auto it=M_operators2.begin(); it!=end; it++)
+            {
+                auto tuple = it->first;
+                int q = tuple.template get<0>();
+                if (q!=old_q)
+                {
+                    Q++;
+                    old_q=q;
+                }
+            }
+            std::vector<int> V(Q);
+            //now count sub-terms
+            int count=0;
+            old_q = tuple_.template get<0>();
+            for(auto it=M_operators2.begin(); it!=end; it++)
+            {
+                auto tuple = it->first;
+                int q = tuple.template get<0>();
+                if (q!=old_q)
+                {
+                    V[old_q]=count;
+                    count=1;
+                    old_q=q;
+                }
+                else
+                {
+                    count++;
+                }
+            }
+            V[old_q]=count;
+            return V;
+        }//end of case operator2
+        else
+        {
+            int Q = this->size();
+            std::vector<int> V(Q);
+            auto it_=M_operators1.begin();
+            auto tuple_=it_->first;
+            auto end = M_operators1.end();
+            for(auto it=M_operators1.begin(); it!=end; it++)
+            {
+                int q = it->first;
+                V[q]=1;
+            }
+            return V;
+        }//end of case operator1
+    }
+
+    //for a given index q, return the number
+    //of operators that have q in the tuple
+    //Warning : it works only with M_operator2 !
+    int subSize(int q)
+    {
+        int size1 = M_operators1.size();
+        int size2 = M_operators2.size();
+        CHECK( size1 == 0 )<<"the function subSize can only be called when using operators with 2 index\n";
+
+        int count=0;
+        auto end = M_operators2.end();
+        for(auto it=M_operators2.begin(); it!=end; it++)
+        {
+            auto tuple = it->first;
+            int q_ = tuple.template get<0>();
+            int m_ = tuple.template get<1>();
+            if (q_==q)
+                count++;
+        }
+        return count;
+    }
+
     //if we have a list of list of operators
     //i.e. \sum_{q=0}^Q \sum_{m=0}^M A_{qm}(.,.)
     void addElement(  boost::tuple<int,int> const& qm , super_ptrtype const& op )
@@ -158,7 +257,23 @@ public :
 
     void setScalars( std::vector< std::vector< double > > scalars )
     {
-        M_scalars2 = scalars;
+        int size1 = M_operators1.size();
+        if( size1 == 0 )
+        {
+            M_scalars2 = scalars;
+        }
+        else
+        {
+            int qsize=scalars.size();
+            std::vector< double > new_scalars( qsize );
+            for(int q=0; q<qsize; q++)
+            {
+                int msize=scalars[q].size();
+                CHECK(msize==1)<<"Error ! You should use a vector of double to call setScalars(), or use a vector of vector of matrices.\n";
+                new_scalars[q]=scalars[q][0];
+            }
+            M_scalars1=new_scalars;
+        }
     }
 
     void sumAllMatrices(matrix_ptrtype & matrix, bool use_scalar_one=false ) const
@@ -202,6 +317,7 @@ public :
             it->second->matPtr(temp_matrix);
             matrix->addMatrix( scalar , temp_matrix );
         }
+
 
     }//sumAllMatrices
 

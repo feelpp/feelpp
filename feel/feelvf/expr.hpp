@@ -55,6 +55,7 @@
 #include <feel/feelpoly/policy.hpp>
 #include <feel/feelpoly/context.hpp>
 
+#include <feel/feelvf/exprbase.hpp>
 #include <feel/feelvf/detail/gmc.hpp>
 #include <feel/feelvf/shape.hpp>
 
@@ -391,7 +392,7 @@ public:
   @see
 */
 template<typename ExprT>
-class Expr//: public boost::enable_shared_from_this<Expr<ExprT> >
+class Expr : public ExprBase //: public boost::enable_shared_from_this<Expr<ExprT> >
 {
 public:
 
@@ -481,6 +482,10 @@ public:
     typename Lambda<TheExpr>::type
     operator()( TheExpr const& e  ) const { return expr(M_expr(e)); }
 
+    void setParameterValues( std::pair<std::string,value_type> const& mp )
+        {
+            this->setParameterValues( { { mp.first, mp.second } } );
+        }
     void setParameterValues( std::map<std::string,value_type> const& mp )
         {
             this->setParameterValues( mp, boost::is_base_of<Feel::vf::GiNaCBase,expression_type>() );
@@ -684,6 +689,16 @@ public:
     //__typeof__( M_expr.evaluate() )
     //ublas::matrix<typename expression_type::value_type>
 
+    typename expression_type::value_type
+    evaluate( std::pair<std::string,value_type> const& mp  )
+    {
+        return M_expr.evaluate( { { mp.first, mp.second } } );
+    }
+    typename expression_type::value_type
+    evaluate( std::map<std::string,value_type> const& mp  )
+    {
+        return M_expr.evaluate( mp );
+    }
     typename expression_type::value_type
     evaluate( bool parallel = true, WorldComm const& worldcomm = Environment::worldComm() ) const
     {

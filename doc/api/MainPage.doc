@@ -2,14 +2,16 @@
 
 namespace Feel
 {
-/*! \mainpage Introduction
+/*! \mainpage FEEL++ : Finite Element Embedded Library in C++
 
+\tableofcontents
 
 \feel is a unified C++ implementation of Galerkin methods (finite and
 spectral element methods) in 1D, 2D And 3D to solve partial
 differential equations.
 
-<hr>
+\section Objectives Objectives
+
 The objectives of this framework is quite ambitious; ambitions which
 could be express in various ways such as :
 
@@ -34,20 +36,23 @@ could be express in various ways such as :
  as python would not be satisfying though in many simpler cases that
  would simplify and accelerate the development.)
 
-Feel++ was initially developed at École Polytechnique Fédérale de
-Lausanne(Suisse) and is now a joint effort between Université de
-Strasbourg, Université Joseph Fourier (Grenoble), University of
-Coimbra (Portugal) and CNRS.
+\section Credits Credits
 
 See the \ref md_Credits page for proper credits attribution.
 
-<hr>
+
+\section Consortium FEEL++ Consortium
+
+Feel++ was initially developed at École Polytechnique Fédérale de
+Lausanne(Suisse) and is now a joint effort between Université de
+Strasbourg, Université Joseph Fourier (Grenoble), University of
+Coimbra (Portugal), CNRS and CeMoSiS.
 \htmlonly
 <center>
-<b>FEEL++ Consortium</b>
 <table border=0px">
 <tr>
   <td><a href="http://www.unistra.fr/"><img alt="UDS" src="logo_uds.png" width="100"/></a></td>
+  <td><a href="http://www.cemosis.fr/"><img alt="CeMoSiS" src="logo_cemosis.png" width="100"/></a></td>
   <td><a href="http://www.ujf-grenoble.fr/"><img alt="UJF" src="logo_ujf.jpg" width="100"/></a></td>
   <td><a href="http://www.uc.pt/"><img alt="UC" src="logo_uc.png" width="100"/></a></td>
   <td><a href="http://www.cnrs.fr/"><img alt="CNRS" src="logo_cnrs.png" width="100"/></a></td>
@@ -58,10 +63,9 @@ See the \ref md_Credits page for proper credits attribution.
 \endhtmlonly
 
 
-<hr>
+\section Sponsors Sponsors
 \htmlonly
 <center>
-<b>Sponsors</b>
 <table border=0px">
 <tr>
   <td><a href="http://www.agence-nationale-recherche.fr/ "><img alt="ANR" src="logo_anr.png" width="100"/></a></td>
@@ -73,7 +77,6 @@ See the \ref md_Credits page for proper credits attribution.
 \endhtmlonly
 
 
-<hr>
 \htmlonly
 <center>
 <a href="http://creativecommons.org/licenses/LGPL/2.1/"><img alt="CC-GNU LGPL" border="0" src="http://creativecommons.org/images/public/cc-LGPL-a.png" /></a>
