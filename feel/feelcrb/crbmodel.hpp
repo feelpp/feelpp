@@ -2036,9 +2036,9 @@ public:
         return M_model->createStructuredGrid( components_vary, extremums, cuttings, time_cuttings, time_vary );
     }
 
-    void writeConvergenceStatistics( std::vector< vectorN_type > const& vector, std::string filename )
+    void writeConvergenceStatistics( std::vector< vectorN_type > const& vector, std::string filename , std::string extra="")
     {
-        return M_model->writeConvergenceStatistics( vector, filename );
+        return M_model->writeConvergenceStatistics( vector, filename , extra );
     }
 
     void writeVectorsExtremumsRatio(std::vector< vectorN_type > const& vector1, std::vector< vectorN_type > const& vector2, std::string filename )
