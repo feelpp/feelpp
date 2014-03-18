@@ -33,9 +33,8 @@ Optionally retrieve data from the serveur (e.g. irma-atlas):
 \verbatim
 mkdir feel
 cd feel
-# to retreive the data from account atlas_mspreng associated to application
-# mymesh
-rsync -avz atlas_mpreng@irma-atlas.u-strasbg.fr:/home/atlas_home/atlas_mspreng/feel/mymesh ./
+# To retrieve the data associated to application mymesh
+rsync -avz <login>@irma-atlas.u-strasbg.fr:/home/atlas_home/<login>/feel/mymesh ./
 \endverbatim
 
 <a href="#" class="top">top</a>
@@ -47,9 +46,14 @@ If you want to create your own application and compile it to use \feel, you must
 
 \verbatim
 cmake_minimum_required(VERSION 2.8)
-set(CMAKE_MODULE_PATH "/usr/share/feel/cmake/modules/")
-Find_Package(Feel++)
-feelpp_add_application( loadmesh SRCS loadmesh.cpp INCLUDE_IN_ALL)
+find_path(FEELPP_CMAKE_MODULES FindFeel++.cmake PATHS /usr/share/feel/cmake/modules/ /usr/local/share/feel/cmake/modules/ )
+if(FEELPP_CMAKE_MODULES)
+    set(CMAKE_MODULE_PATH ${FEELPP_CMAKE_MODULES})
+else()
+    message(FATAL_ERROR "Feel++ does not seem to have been installed on this platform")
+endif()
+find_package(Feel++)
+feelpp_add_application(loadmesh SRCS loadmesh.cpp INCLUDE_IN_ALL)
 \endverbatim
 
 Here is presented an application named loadmesh, built from the source file loadmesh.cpp.
