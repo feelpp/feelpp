@@ -411,7 +411,7 @@ public:
                 compute_fem=false;
                 compute_stat=false;
 
-                CHECK( load_elements_db )<<"[OpusApp] You have specified to not load elements database so it is impossible to visualize RB solution, use crb.load-elements-database=true !\n";
+                //CHECK( load_elements_db )<<"[OpusApp] You have specified to not load elements database so it is impossible to visualize RB solution, use crb.load-elements-database=true !\n";
 
                 //parameters are given by a vector of double
                 std::vector< std::string > str;
@@ -1540,13 +1540,22 @@ public:
                 vectorN_type outputs_storage;
                 vectorN_type mu0_storage;
                 vectorN_type estimated_error_outputs_storage;
+
+                //have min/max
+                Sampling->equidistribute( 2 );
+
                 curpar=1;
                 if( ! vary_comp_time )
                 {
                     outputs_storage.resize( cutting_direction0 );
                     mu0_storage.resize( cutting_direction0 );
+                    auto mu_=Sampling->min().template get<0>();
+                    if( select_parameter_via_one_feel )
+                    {
+                        mu_ = user_mu_onefeel;
+                    }
                     estimated_error_outputs_storage.resize( cutting_direction0 );
-                    Sampling->logEquidistributeProduct( sampling_each_direction );
+                    Sampling->logEquidistributeProduct( sampling_each_direction , mu_ );
                     BOOST_FOREACH( auto mu, *Sampling )
                     {
                         double x = mu(vary_mu_comp0);
@@ -1568,8 +1577,6 @@ public:
                 }
                 else
                 {
-                    //have min/max
-                    Sampling->equidistribute( 2 );
                     auto mu=Sampling->min().template get<0>();
                     if( select_parameter_via_one_feel )
                     {
