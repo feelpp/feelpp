@@ -38,7 +38,7 @@ template<> struct is_arithmetic<__m128d> { enum { value = true }; };
 
 #define vec2d_swizzle1(v,p,q) \
   (_mm_castsi128_pd(_mm_shuffle_epi32( _mm_castpd_si128(v), ((q*2+1)<<6|(q*2)<<4|(p*2+1)<<2|(p*2)))))
-
+  
 #define vec4f_swizzle2(a,b,p,q,r,s) \
   (_mm_shuffle_ps( (a), (b), ((s)<<6|(r)<<4|(q)<<2|(p))))
 
@@ -83,7 +83,8 @@ template<> struct packet_traits<double> : default_packet_traits
     size=2,
 
     HasDiv  = 1,
-    HasExp  = 1
+    HasExp  = 1,
+    HasSqrt = 1
   };
 };
 template<> struct packet_traits<int>    : default_packet_traits

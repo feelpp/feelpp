@@ -58,7 +58,7 @@ int main(int argc, char**argv )
   using namespace Feel;
 
   Environment env( _argc=argc, _argv=argv,
-      _desc=opts.add( feel_options() ),
+      _desc=opts,
       _about=about(_name="myexpression",
         _author="Feel++ Consortium",
         _email="feelpp-devel@feelpp.org"));

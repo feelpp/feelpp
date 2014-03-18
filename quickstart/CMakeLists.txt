@@ -30,7 +30,10 @@ feelpp_add_application( ls_laplacian SRCS ls_laplacian.cpp INCLUDE_IN_ALL GEO fe
 install(TARGETS feelpp_ls_laplacian DESTINATION bin/ COMPONENT Bin )
 
 feelpp_add_application( qs_stokes SRCS qs_stokes.cpp INCLUDE_IN_ALL CFG qs_stokes.cfg )
+install(TARGETS feelpp_qs_stokes DESTINATION bin/ COMPONENT Bin )
+
+feelpp_add_application( qs_ns SRCS qs_ns.cpp INCLUDE_IN_ALL CFG qs_ns.cfg GEO feel2d-ns.geo )
+install(TARGETS feelpp_qs_ns DESTINATION bin/ COMPONENT Bin )
 
 add_dependencies(quickstart feelpp_qs_laplacian)
-add_dependencies(quickstart feelpp_ls_laplacian)
 add_dependencies(quickstart feelpp_qs_stokes)

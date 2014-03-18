@@ -82,7 +82,7 @@ namespace fs = boost::filesystem;
  *
  * \f{eqnarray}{
  * \ddot{\boldsymbol{\eta}}^{n+1} &=& \frac{1}{\beta \Delta t^2} \left( \boldsymbol{\eta}^{n+1}-\boldsymbol{\eta}^{n} \right)
- * - \frac{1}{\beta \Delta t} \dot{\boldsymbol{\eta}}^{n} - \left( \frac{1}{2 \beta} -1  \right) \ddot{\boldsymbol{\eta}}^{n} \ \
+ * - \frac{1}{\beta \Delta t} \dot{\boldsymbol{\eta}}^{n} - \left( \frac{1}{2 \beta} -1  \right) \ddot{\boldsymbol{\eta}}^{n} \\
  * \dot{\boldsymbol{\eta}}^{n+1} &=& \frac{\gamma}{\beta \Delta t} \left(  \boldsymbol{\eta}^{n+1}-\boldsymbol{\eta}^{n} \right)
  * - \left( \frac{\gamma}{\beta} -1 \right) \dot{\boldsymbol{\eta}}^{n}
  * - \Delta t \left( \frac{\gamma}{2\beta}-1 \right) \ddot{\boldsymbol{\eta}}^{n}
@@ -135,7 +135,8 @@ public:
         M_previousAcc( b.M_previousAcc ),
         M_currentVel( b.M_currentVel ),
         M_currentAcc( b.M_currentAcc ),
-        M_polyDeriv( b.M_polyDeriv ),
+        M_polyFirstDeriv( b.M_polyFirstDeriv ),
+        M_polySecondDeriv( b.M_polySecondDeriv ),
         M_gamma( b.M_gamma ),
         M_beta( b.M_beta )
     {}
@@ -175,13 +176,26 @@ public:
     template<typename container_type>
     void updateFromDisp( typename space_type::template Element<value_type, container_type> const& u_curr );
 
-    double polyDerivCoefficient() const
+
+    //! Coefficients \f$ \gamma \f$ and \f$ \beta \f$  of the time newmark discretization
+    double gamma() const { return M_gamma; }
+    double beta() const { return M_beta; }
+
+
+    double polyDerivCoefficient() const { return this->polySecondDerivCoefficient(); }
+    double polyFirstDerivCoefficient() const
     {
-      return 1.0/(M_beta*std::pow(this->timeStep(),2));
+        return this->gamma()/(this->beta()*this->timeStep());
+    }
+    double polySecondDerivCoefficient() const
+    {
+        return 1.0/(this->beta()*std::pow(this->timeStep(),2));
     }
 
     //! Returns the right hand side \f$ \bar{p} \f$ of the time derivative formula
     element_type const& polyDeriv() const;
+    element_type const& polyFirstDeriv() const;
+    element_type const& polySecondDeriv() const;
 
     //! Return the last unknown
     element_type const& previousUnknown() const;
@@ -212,8 +226,10 @@ private:
         ar & boost::serialization::base_object<TSBase>( *this );
     }
 
+    //! compute first derivative poly of rhs
+    void computePolyFirstDeriv();
     //! compute second derivative poly of rhs
-    void computePolyDeriv();
+    void computePolySecondDeriv();
 
 private:
 
@@ -224,7 +240,7 @@ private:
     unknown_type M_previousUnknown;
     unknown_type M_previousVel, M_previousAcc;
     unknown_type M_currentVel, M_currentAcc;
-    unknown_type M_polyDeriv;
+    unknown_type M_polyFirstDeriv,M_polySecondDeriv;
 
     //! Coefficients \f$ \gamma \f$ and \f$ \beta \f$  of the time newmark discretization
     double M_gamma, M_beta;
@@ -244,7 +260,8 @@ Newmark<SpaceType>::Newmark( po::variables_map const& vm,
     M_previousAcc( unknown_type( new element_type( M_space ) ) ),
     M_currentVel( unknown_type( new element_type( M_space ) ) ),
     M_currentAcc( unknown_type( new element_type( M_space ) ) ),
-    M_polyDeriv( unknown_type( new element_type( M_space ) ) ),
+    M_polyFirstDeriv( unknown_type( new element_type( M_space ) ) ),
+    M_polySecondDeriv( unknown_type( new element_type( M_space ) ) ),
     M_gamma( 0.5 ),
     M_beta( 0.25 )
 {}
@@ -260,7 +277,8 @@ Newmark<SpaceType>::Newmark( space_ptrtype const& __space,
     M_previousAcc( unknown_type( new element_type( M_space ) ) ),
     M_currentVel( unknown_type( new element_type( M_space ) ) ),
     M_currentAcc( unknown_type( new element_type( M_space ) ) ),
-    M_polyDeriv( unknown_type( new element_type( M_space ) ) ),
+    M_polyFirstDeriv( unknown_type( new element_type( M_space ) ) ),
+    M_polySecondDeriv( unknown_type( new element_type( M_space ) ) ),
     M_gamma( 0.5 ),
     M_beta( 0.25 )
 {}
@@ -326,8 +344,10 @@ Newmark<SpaceType>::init()
 
 
          DVLOG(2) << "[Newmark::init()] compute polyDeriv\n";
+         // compute first derivative poly of rhs
+         this->computePolyFirstDeriv();
          // compute second derivative poly of rhs
-         this->computePolyDeriv();
+         this->computePolySecondDeriv();
     }
 }
 
@@ -463,9 +483,11 @@ Newmark<SpaceType>::saveCurrent()
 {
     if (!this->saveInFile()) return;
 
-    int iterTranslate = M_iteration + 1;
-    bool doSave= iterTranslate % this->saveFreq()==0;
-    if (!doSave) return;
+    //int iterTranslate = M_iteration;// + 1;
+    //bool doSave= iterTranslate % this->saveFreq()==0;
+    //if ( !doSaveIteration(i) ) return;
+    if ( this->iteration() % this->saveFreq()>0 ) return;
+    //if (!doSave) return;
 
     TSBaseMetadata tssaver( *this );
     tssaver.save();
@@ -553,8 +575,10 @@ Newmark<SpaceType>::shiftRight( typename space_type::template Element<value_type
     // save newly stored data
     this->saveCurrent();
 
+    // compute first derivative poly of rhs
+    this->computePolyFirstDeriv();
     // compute second derivative poly of rhs
-    this->computePolyDeriv();
+    this->computePolySecondDeriv();
 }
 
 
@@ -578,20 +602,49 @@ template <typename SpaceType>
 typename Newmark<SpaceType>::element_type const&
 Newmark<SpaceType>::polyDeriv() const
 {
-    return *M_polyDeriv;
+    return *M_polySecondDeriv;
+}
+
+template <typename SpaceType>
+typename Newmark<SpaceType>::element_type const&
+Newmark<SpaceType>::polyFirstDeriv() const
+{
+    return *M_polyFirstDeriv;
+}
+
+template <typename SpaceType>
+typename Newmark<SpaceType>::element_type const&
+Newmark<SpaceType>::polySecondDeriv() const
+{
+    return *M_polySecondDeriv;
 }
 
 template <typename SpaceType>
 void
-Newmark<SpaceType>::computePolyDeriv()
+Newmark<SpaceType>::computePolyFirstDeriv()
+{
+    double deltaT = this->timeStep();
+    double cst_vel_displ = M_gamma/(M_beta*deltaT);
+    double cst_vel_vel = (M_gamma/M_beta)-1;
+    double cst_vel_acc = deltaT*((M_gamma/(2*M_beta))-1 );
+
+    M_polyFirstDeriv->zero();
+    M_polySecondDeriv->add(cst_vel_displ, this->previousUnknown());
+    M_polySecondDeriv->add(cst_vel_vel, this->previousVelocity());
+    M_polySecondDeriv->add(cst_vel_acc, this->previousAcceleration());
+}
+
+template <typename SpaceType>
+void
+Newmark<SpaceType>::computePolySecondDeriv()
 {
     double coef_disp = 1.0/(M_beta*std::pow(this->timeStep(),2));
     double coef_vel  = 1.0/(M_beta*this->timeStep());
     double coef_acc  = 1.0/(2*M_beta) - 1.0;
-    M_polyDeriv->zero();
-    M_polyDeriv->add(coef_disp, this->previousUnknown());
-    M_polyDeriv->add(coef_vel, this->previousVelocity());
-    M_polyDeriv->add(coef_acc, this->previousAcceleration());
+    M_polySecondDeriv->zero();
+    M_polySecondDeriv->add(coef_disp, this->previousUnknown());
+    M_polySecondDeriv->add(coef_vel, this->previousVelocity());
+    M_polySecondDeriv->add(coef_acc, this->previousAcceleration());
 }
 
 template <typename SpaceType>

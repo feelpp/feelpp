@@ -320,6 +320,8 @@ void POD<TruthModelType>::fillPodMatrix( const wn_type& elements_set)
 {
     if( M_use_solutions )
     {
+        boost::mpi::timer timer;
+
         //M_bdf->setRestart( true );
         int K = M_bdf->timeValues().size()-1;
         M_pod_matrix.resize( K,K );
@@ -354,6 +356,11 @@ void POD<TruthModelType>::fillPodMatrix( const wn_type& elements_set)
             }
 
             M_pod_matrix( i,i ) = M_model->scalarProductForPod( bdfi->unknown( 0 ), bdfi->unknown( 0 ) );
+        }
+        double time=timer.elapsed();
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<"POD matrix filled in  "<<time<<" s"<<std::endl;
         }
     }//fill pod matrix with solutions
     else
@@ -542,7 +549,8 @@ int POD<TruthModelType>::pod( mode_set_type& ModeSet, bool is_primal, const wn_t
         double Awnorm = Aw.norm();
         double lambdawnorm = lambdaw.norm();
         double eigenvectornorm = eigenvector.norm();
-        CHECK( math::abs(Awnorm - lambdawnorm) < 1e-12 )<<" A w : "<<Awnorm<<" and lambda w : "<<lambdawnorm<<" so math::abs(A w - lambda w) : "<<math::abs(Awnorm - lambdawnorm)<<" -- eigenvalue : "<<eigenvalue<<"\n";
+        double check_tol = option(_name="pod.check-tol").template as<double>();
+        CHECK( math::abs(Awnorm - lambdawnorm) < check_tol )<<" A w : "<<Awnorm<<" and lambda w : "<<lambdawnorm<<" so math::abs(A w - lambda w) : "<<math::abs(Awnorm - lambdawnorm)<<" and pod.check-tol : "<<check_tol<<" -- eigenvalue : "<<eigenvalue<<"\n";
 
         if( (i+1) < max_idx.size() )
             position_of_largest_eigenvalue=max_idx[i+1];
