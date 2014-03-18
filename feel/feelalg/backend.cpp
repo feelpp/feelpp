@@ -423,9 +423,10 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
     }
 
     auto ret = M_nlsolver->solve( A, x, b, tol, its );
+    bool hasConverged = ret.template get<0>();
 
     //std::cout << "[nlSolve] ret.first " << ret.first <<std::endl;
-    if ( ret.first < 0 && ( reusePC || reuseJac ) )
+    if ( !hasConverged && ( reusePC || reuseJac ) )
     {
         if (this->comm().globalRank() == this->comm().masterRank() )
             std::cout << "Backend "  << M_prefix << " reuse failed, rebuilding preconditioner...\n";
@@ -449,20 +450,20 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
 
         // call solver which must execute with success
         auto ret2 = M_nlsolver->solve( A, x, b, tol, its );
-
-        if ( ret2.first < 0 )
+        bool hasConverged2 = ret2.template get<0>();
+        if ( !hasConverged2 )
         {
             LOG(INFO) << "\n[backend] non-linear solver fail";
             //exit( 0 );
             std::cerr<< "Backend " << M_prefix << " : non-linear solver failed to converge" << std::endl;
         }
 
-        return boost::make_tuple( ret2.first, its, tol );
+        return ret2;
     }
 
     this->setPrecMatrixStructure( matStructInitial );
 
-    return boost::make_tuple( ret.first, its, tol );
+    return ret;
 }
 template <typename T>
 typename Backend<T>::nl_solve_return_type
@@ -494,14 +495,14 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
     M_nlsolver->setReuse( 1, 1 );
 
     auto ret = M_nlsolver->solve( A, x, b, tol, its );
-
-    if ( ret.first < 0 )
+    bool hasConverged = ret.template get<0>();
+    if ( !hasConverged )
     {
         LOG(ERROR) << "\n[backend] non-linear solver fail";
         LOG(ERROR) << "Backend " << M_prefix << " : non-linear solver failed to converge" << std::endl;
     }
 
-    return boost::make_tuple( true, its, tol );
+    return ret;
 }
 template <typename T>
 typename Backend<T>::real_type
