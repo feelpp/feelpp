@@ -1012,7 +1012,8 @@ public :
 
         Eigen::MatrixXf::Index index;
         double min_output = outputs.minCoeff(&index);
-        double min_scale=std::floor(min_output);
+        //double min_scale=std::floor(min_output);
+        double min_scale=min_output;
         double x=0;
         double output=0;
         double estimated_down=0;
