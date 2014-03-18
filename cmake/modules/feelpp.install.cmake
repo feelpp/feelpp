@@ -33,9 +33,9 @@ CONFIGURE_FILE(feelinfo.h.in feel/feelinfo.h  @ONLY)
 # Packaging
 #
 INCLUDE(InstallRequiredSystemLibraries)
+feelpp_list_subdirs(feeldirs ${CMAKE_CURRENT_SOURCE_DIR}/feel)
 
-
-foreach(includedir feelcore feelalg feelmesh feelpoly feelfilters feeldiscr feelvf feelmaterial feelsystem feelts feelcrb )
+foreach(includedir ${feeldirs})
   FILE(GLOB files "feel/${includedir}/*.hpp" )
   FILE(GLOB cppfiles "feel/${includedir}/*.cpp" )
   INSTALL(FILES ${files} ${cppfiles} DESTINATION include/feel/${includedir} COMPONENT Devel)
