@@ -46,6 +46,7 @@
 #include <feel/feelalg/vectorblock.hpp>
 #include <feel/feelalg/datamap.hpp>
 
+#include <feel/feelalg/solverlinear.hpp>
 #include <feel/feelalg/solvernonlinear.hpp>
 #include <feel/feelalg/preconditioner.hpp>
 #include <feel/feeldiscr/functionspacebase.hpp>
@@ -162,8 +163,8 @@ public:
     typedef SolverNonLinear<value_type> solvernonlinear_type;
     typedef boost::shared_ptr<solvernonlinear_type> solvernonlinear_ptrtype;
 
-    typedef boost::tuple<bool, size_type, value_type> solve_return_type;
-    typedef boost::tuple<bool, size_type, value_type> nl_solve_return_type;
+    typedef typename SolverLinear<value_type>::solve_return_type solve_return_type;
+    typedef typename solvernonlinear_type::solve_return_type nl_solve_return_type;
 
     typedef DataMap datamap_type;
     typedef boost::shared_ptr<datamap_type> datamap_ptrtype;
