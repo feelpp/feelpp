@@ -55,6 +55,9 @@ public:
 
     typedef boost::shared_ptr<Preconditioner<T> > preconditioner_ptrtype;
 
+    // return type of solve()
+    typedef boost::tuple<bool, size_type, value_type> solve_return_type;
+
     /**
      *  Constructor. Initializes Solver data structures
      */
@@ -297,8 +300,8 @@ public:
      * \param maxit maximum Number of Iterations
      * \param transpose true to solve the transpose system, false otherwise
      */
-    virtual /*std::pair<unsigned int, real_type>*/
-    boost::tuple<bool,unsigned int, real_type>
+    virtual
+    solve_return_type
     solve ( MatrixSparse<T> const& mat,
             Vector<T>& x,
             Vector<T> const& b,
@@ -324,7 +327,7 @@ public:
      * \param transpose true to solve the transpose system, false otherwise
      */
     virtual
-    /*std::pair<unsigned int, real_type>*/boost::tuple<bool,unsigned int, real_type>
+    solve_return_type
     solve ( MatrixSparse<T> const& mat,
             MatrixSparse<T> const& prec,
             Vector<T>& x,
