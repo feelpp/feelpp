@@ -346,7 +346,7 @@ crbSCMOptions( std::string const& prefix = "")
     ( "crb.scm.use-logEquidistributed-C",Feel::po::value<int>()->default_value( 0 ), "parameters are log-equidistributed for the offline step (the value indicates the number of parameters)")
     ( "crb.scm.use-equidistributed-C",Feel::po::value<int>()->default_value( 0 ), "parameters are equidistributed for the offline step (the value indicates the number of parameters)")
     ( "crb.scm.use-predefined-C",Feel::po::value<bool>()->default_value( false ), "use a predefined sampling C ( parameters written on the file SamplingC")
-    ( "crb.scm.use-scm",Feel::po::value<bool>()->default_value( true ), "use scm if true")
+    ( "crb.scm.use-scm",Feel::po::value<bool>()->default_value( false ), "use scm if true")
     ( "crb.scm.check-eigenvector",Feel::po::value<bool>()->default_value( true ), "check that eigenvector and eigenvalue are solution of the generalized eiganvalue problem if true")
     ;
 
@@ -369,7 +369,7 @@ crbOptions( std::string const& prefix )
     ( "crb.online-tolerance"   , Feel::po::value<double>()->default_value( 1e-2 ),       "Online  tolerance" )
     ( "crb.dimension-max"   , Feel::po::value<int>()->default_value( 50 ),       "Offline  max WN size" )
     ( "crb.dimension"   , Feel::po::value<int>()->default_value( -1 ),       "Online  WN size" )
-    ( "crb.error-type"   , Feel::po::value<int>()->default_value( ( int )CRB_RESIDUAL ),       "CRB error type to be computed" )
+    ( "crb.error-type"   , Feel::po::value<int>()->default_value( ( int )CRB_RESIDUAL_SCM ),       "CRB error type to be computed" )
     ( "crb.factor"   , Feel::po::value<int>()->default_value( -1 ),  "factor useful to estimate error by empirical method" )
     ( "crb.Nm"   , Feel::po::value<int>()->default_value( 1 ),       "Offline  number of modes per mu (for the POD) " )
     ( "crb.apply-POD-to-WN"   , Feel::po::value<bool>()->default_value( false ), "apply a POD on approximation functions spaces (primal and dual) if true and if deal with a transient problem " )
@@ -436,7 +436,7 @@ crbOptions( std::string const& prefix )
 
     ( "crb.user-parameters",Feel::po::value<std::string>()->default_value( "" ), "values of parameters (used for one feel)")
     ( "crb.vary-only-parameter-components",Feel::po::value<std::string>()->default_value( "" ), "specify which parameter component vary (max : 2 components + time 't') and how many values we take in each direction. For example 0 10 1 20 means that component 0 will take 10 values and component 1 will take 20 values. We can write also t 1 10 and in this case the time will vary and also component 1")
-    ( "crb.load-elements-database",Feel::po::value<bool>()->default_value( true ), "load database of elements if true, need to be true for visualization, need to be false to run CRB approximation on a different number of processors than this was used to build the reduced basis ")
+    ( "crb.load-elements-database",Feel::po::value<bool>()->default_value( false ), "load database of elements if true, need to be true for visualization, need to be false to run CRB approximation on a different number of processors than this was used to build the reduced basis ")
     ;
 
     crboptions
