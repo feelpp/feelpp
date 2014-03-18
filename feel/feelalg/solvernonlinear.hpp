@@ -112,6 +112,8 @@ public:
                                    map_dense_vector_type& R,
                                    map_dense_matrix_type& J )> map_dense_matvec_function_type;
 
+    // return type of solve()
+    typedef boost::tuple<bool, size_type, value_type> solve_return_type;
 
     //@}
 
@@ -439,7 +441,7 @@ public:
     /**
      * Solves a sparse nonlinear system.
      */
-    virtual std::pair<int, real_type> solve ( sparse_matrix_ptrtype&,  // System Jacobian Matrix
+    virtual solve_return_type solve ( sparse_matrix_ptrtype&,  // System Jacobian Matrix
             vector_ptrtype&, // Solution vector
             vector_ptrtype&, // Residual vector
             const double,      // Stopping tolerance
