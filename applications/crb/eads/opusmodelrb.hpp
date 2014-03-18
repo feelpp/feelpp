@@ -507,7 +507,7 @@ public:
     /**
      * H1 scalar product
      */
-    sparse_matrix_ptrtype innerProduct();
+    sparse_matrix_ptrtype energyMatrix();
 
     /**
      * update the PDE system with respect to \param mu
@@ -606,6 +606,7 @@ public:
      */
     void initializationField( element_ptrtype& initial_field,parameter_type const& mu ) ;
 
+    temp_bdf_ptrtype bdfModel(){ return M_temp_bdf;}
     //@}
 
 protected:
