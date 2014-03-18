@@ -4,6 +4,39 @@
 
    \tableofcontents
 
+   \section feelpp0973 Feel++ Release 0.97.3
+   release date 03-17-2014
+
+   \subsection changes0973 Changes since 0.97.2
+
+   - Fix Feel++ programming environment and cmake script, see <a
+     href="https://github.com/feelpp/feelpp/issues/314">#314</a>
+   - Install CRB framework properly, see <a
+     href="https://github.com/feelpp/feelpp/issues/315">#315</a>
+
+   \section feelpp0972 Feel++ Release 0.97.2
+   release date 03-16-2014
+
+   \subsection changes0972 Changes since 0.97.1
+
+   - Fix Feel++ programming environment and cmake script, see <a
+     href="https://github.com/feelpp/feelpp/issues/314">#314</a>
+   - Install simple c++ examples (laplacian, stokes, ...) with their associated
+     data (config file, mesh, geometry, ...) , see <a
+     href="https://github.com/feelpp/feelpp/issues/311">#311</a>
+
+   \section feelpp0971 Feel++ Release 0.97.1
+   release date 03-16-2014
+
+   \subsection changes0971 Changes since 0.97.0
+
+   - Fix support for PETSc 3.4.4, see <a
+     href="https://github.com/feelpp/feelpp/issues/311">#311</a>
+   - Fix installation of missing headers in 0.97.0, see <a
+     href="https://github.com/feelpp/feelpp/issues/312">#312</a>
+   - Master branch is now supported in our continuous integration process, see
+     <a href="https://github.com/feelpp/feelpp/issues/274">#274</a>
+
    \section feelpp0970 Feel++ Release 0.97.0
    release date 03-14-2014
 
