@@ -1,0 +1,93 @@
+/* -*- mode: c++; coding: utf-8 -*- */
+namespace Feel {
+/** \page UsingInstalledFeelpp Using an already installed version of Feel++
+
+\tableofcontents
+
+<hr>
+
+This section discusses how to compile an application, when \feel is already installed on your system, through the packaging system notably.
+
+\section BuildTutoWithInstalledFeelpp Building the examples from the tutorial
+
+If you want to build the examples from \feel tutorial:
+
+\verbatim
+# make a directory for the executables
+mkdir feelpp-tutorial
+cd feelpp-tutorial
+# build the tutorial
+cmake -DCMAKE_CXX_COMPILER=/usr/bin/clang++ -DCMAKE_BUILD_TYPE=Release /usr/share/doc/feel++-doc/examples/
+# Adapt the number of processors you want to use
+make -j 10
+\endverbatim
+
+You can then launch the applications:
+
+\verbatim
+./feelpp_doc_myintegrals
+\endverbatim
+
+Optionally retrieve data from the serveur (e.g. irma-atlas):
+
+\verbatim
+mkdir feel
+cd feel
+# to retreive the data from account atlas_mspreng associated to application
+# mymesh
+rsync -avz atlas_mpreng@irma-atlas.u-strasbg.fr:/home/atlas_home/atlas_mspreng/feel/mymesh ./
+\endverbatim
+
+<a href="#" class="top">top</a>
+<hr>
+
+\section BuildOwnAppUsingInstalledFeelpp Building your own application myapp
+
+If you want to create your own application and compile it to use \feel, you must first create a CMakeLists.txt file with the following content:
+
+\verbatim
+cmake_minimum_required(VERSION 2.8)
+set(CMAKE_MODULE_PATH "/usr/share/feel/cmake/modules/")
+Find_Package(Feel++)
+feelpp_add_application( loadmesh SRCS loadmesh.cpp INCLUDE_IN_ALL)
+\endverbatim
+
+Here is presented an application named loadmesh, built from the source file loadmesh.cpp.
+The file loadmesh.cpp is a sample C++ file that will allow to load a mesh:
+
+\verbatim
+#include <feel/feel.hpp>                                                                                                                                                          
+
+int main( int argc, char** argv )                                                                                                                                                 
+{                                                                                                                                                                                 
+    using namespace Feel;                                                                                                                                                         
+    Environment env( _argc=argc, _argv=argv,                                                                                                                                      
+                     _desc=feel_options(),                                                                                                                                        
+                     _about=about(_name="loadmesh",                                                                                                                               
+                                  _author="Christophe Prud'homme",                                                                                                                
+                                  _email="christophe.prudhomme@feelpp.org") );                                                                                                    
+
+    auto mesh = loadMesh( _mesh = new Mesh<Simplex<2>> );                                                                                                                         
+
+    std::cout << "measure =" << std::endl                                                                                                                                         
+              << integrate( elements( mesh ), cst( 1. ) ).evaluate() << "\n";                                                                                                     
+    std::cout << "surface =" << std::endl                                                                                                                                         
+              << integrate( boundaryfaces( mesh ), cst( 1. ) ).evaluate() << "\n";                                                                                                
+
+}                                                                                                                                                                                 
+\endverbatim
+
+Then configure your Feel++ application using this command and compile your application according to the resources available:
+
+\verbatim
+cmake .
+make -j 4
+\endverbatim
+
+Note that . indicates that the CMakeLists.txt is in the current directory.
+
+<a href="#" class="top">top</a>
+<hr>
+
+*/
+}
