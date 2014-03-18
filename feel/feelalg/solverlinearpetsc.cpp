@@ -314,8 +314,7 @@ void SolverLinearPetsc<T>::init ()
 
 
 template <typename T>
-//std::pair<unsigned int, typename SolverLinearPetsc<T>::real_type>
-boost::tuple<bool,unsigned int, typename SolverLinearPetsc<T>::real_type>
+typename SolverLinearPetsc<T>::solve_return_type
 SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
                               MatrixSparse<T> const&  precond_in,
                               Vector<T> & solution_in,
@@ -547,7 +546,7 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
 }
 
 template <typename T>
-boost::tuple<bool,unsigned int, typename SolverLinearPetsc<T>::real_type>
+typename SolverLinearPetsc<T>::solve_return_type
 SolverLinearPetsc<T>::solve ( MatrixShell<T>  const &mat,
                               Vector<T> & x,
                               Vector<T> const& b,
