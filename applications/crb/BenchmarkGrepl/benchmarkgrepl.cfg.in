@@ -43,6 +43,7 @@ solve-dual-problem=true
 print-error-during-rb-construction=false
 cvg-study=false
 show-residual=false
+load-elements-database=true
 [crb.check]
 gs=0
 rb=0

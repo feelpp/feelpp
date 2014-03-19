@@ -70,7 +70,7 @@ makeHeatShieldOptions()
     po::options_description heatshieldoptions( "HeatShield options" );
     heatshieldoptions.add_options()
     // mesh parameters
-    ( "hsize", Feel::po::value<double>()->default_value( 1e-1 ), "first h value to start convergence" )
+    ( "hsize", Feel::po::value<double>()->default_value( 1 ), "first h value to start convergence" )
     ( "mshfile", Feel::po::value<std::string>()->default_value( "" ), "name of the gmsh file input")
     ( "do-not-use-operators-free", Feel::po::value<bool>()->default_value( true ), "never use operators free if true" )
     ( "load-mesh-already-partitioned", Feel::po::value<bool>()->default_value( "true" ), "load a mesh from mshfile that is already partitioned if true, else the mesh loaded need to be partitioned")
