@@ -72,7 +72,7 @@ makeBenchmarkGreplOptions()
         ( "mshfile", Feel::po::value<std::string>()->default_value( "" ), "name of the gmsh file input")
         ( "do-export", Feel::po::value<bool>()->default_value( false ), "export results if true" )
     ;
-    return bgoptions.add( Feel::feel_options() ).add( backend_options("backendl2") );
+    return bgoptions.add( backend_options("backendl2") );
 }
 AboutData
 makeBenchmarkGreplAbout( std::string const& str = "benchmarkGrepl" )
