@@ -746,11 +746,14 @@ if ( NOT EXISTS ${CMAKE_SOURCE_DIR}/feel OR NOT EXISTS ${CMAKE_SOURCE_DIR}/contr
     FEELPP_INCLUDE_DIR  FEELPP_LIBRARY
     )
 
+  FIND_PATH( FEELPP_DATADIR cmake/modules/FindFeel++.cmake
+    PATH $ENV{FEELPP_DIR}/share/feel /usr/share/feel /usr/local/share/feel )
 
 
   if ( FEELPP_FOUND )
     message(STATUS "Feel++ includes: ${FEELPP_INCLUDE_DIR}")
     message(STATUS "Feel++ library: ${FEELPP_LIBRARY}")
+    message(STATUS "Feel++ data: ${FEELPP_DATADIR}")
   endif()
 
   MARK_AS_ADVANCED(
