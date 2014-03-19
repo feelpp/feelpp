@@ -392,8 +392,6 @@ Environment::generateOLFiles( int argc, char** argv, std::string const& appName)
     ol << "OL.msg(No geo file specified. Using a default one);" << std::endl;
     ol << "OL.endif" << std::endl;
 
-    std::cout << S_vm.count("onelab.remote") << " " << S_vm["onelab.remote"].as<std::string>() << std::endl; 
-
     if(S_vm.count("onelab.remote") 
     && S_vm["onelab.remote"].as<std::string>() != ""
     && S_vm["onelab.remote"].as<std::string>() != "localhost")
@@ -756,10 +754,16 @@ Environment::doOptions( int argc, char** argv,
         /* handle the generation of onelab files after having processed */
         /* the regular config file, so we have parsed user defined parameters */
         /* or restored a previous configuration */
+
+        /* We store the application path for further use */
+        fs::path p(argv[0]);
+        Environment::olAppPath = fs::absolute(p).string();
+        
         if ( worldComm().isMasterRank() )
         {
             if ( S_vm.count("onelab.enable") )
             {
+
                 if ( S_vm["onelab.enable"].as<int>() == 1 )
                 {
                     Environment::generateOLFiles( argc, argv, appName );
@@ -770,52 +774,6 @@ Environment::doOptions( int argc, char** argv,
                         MPI_Finalize();
                     }
                     exit(0);
-                }
-                else if ( S_vm["onelab.enable"].as<int>() == 2 )
-                {
-                    fs::path p(argv[0]);
-                    std::ostringstream appPath;
-
-                    appPath.str("");
-                    appPath << fs::absolute(p).string();
-
-                    /* Generate a file containing the name of the outputs for the current dataset */
-                    std::ofstream ool;
-                    ool.open(appPath.str() + ".onelab.out", std::ofstream::out | std::ofstream::trunc); 
-
-                    /* Take into account th fact that we use MPI */
-                    /* Generating multiple output files, so we merge them */
-                    int i = 0;
-                    #if 0
-                    ool << "FeelApp.out(" + appName + "-" << worldComm().size() << "_" << i << ".msh";
-                    for(i = 1; i < worldComm().size(); i++)
-                    {
-                        ool << ", " << appName + "-" << worldComm().size() << "_" << i << ".msh";
-                    }
-                    ool << ");" << std::endl;
-                    #endif
-
-                    ool << "#";
-                    for(i = 0; i < worldComm().size(); i++)
-                    {
-                        ool << " ";
-                        if(S_vm.count("onelab.remote") && S_vm["onelab.remote"].as<std::string>() != "")
-                        {
-                            ool << S_vm["onelab.remote"].as<std::string>() << ":";
-                        }
-                        ool << p.parent_path().string() << "/" << appName << "-" << worldComm().size() << "_" << i << ".msh";
-                    }
-                    ool << std::endl;
-
-                    i = 0;
-                    ool << "FeelApp.merge(" << appName << "-" << worldComm().size() << "_" << i << ".msh";
-                    for(i = 1; i < worldComm().size(); i++)
-                    {
-                        ool << ", " << appName << "-" << worldComm().size() << "_" << i << ".msh";
-                    }
-                    ool << ");" << std::endl;
-                
-                    ool.close();
                 }
             }
         }
@@ -1101,6 +1059,69 @@ Environment::clearSomeMemory()
 }
 Environment::~Environment()
 {
+    /* if we were using onelab */
+    /* we write the file containing the filename marked for automatic loading in Gmsh */
+    /* we serialize the writing of the size by the different MPI processes */
+    if ( S_vm["onelab.enable"].as<int>() == 2 )
+    {
+        for(int i = 0; i < worldComm().size(); i++)
+        {
+            /* only one process at a time */
+            if(i == worldComm().globalRank())
+            {
+                std::cout << Environment::olAppPath << std::endl;
+                int i;
+                std::ofstream ool;
+                /* Generate a file containing the name of the outputs for the current dataset */
+                /* eother truncate the file if we are process 0 or complete it if we are an other process */
+                if(worldComm().globalRank() == 0)
+                {
+                    ool.open(Environment::olAppPath + ".onelab.out", std::ofstream::out | std::ofstream::trunc); 
+                }
+                else
+                {
+                    ool.open(Environment::olAppPath + ".onelab.out", std::ofstream::out | std::ofstream::app); 
+                }
+                fs::path p(Environment::olAppPath);
+
+                /* If we have dataset to load */
+                /* we add each of them to the file containing the files to load */
+                if(Environment::olAutoloadFiles.size() > 0)
+                {
+                    // Files marked for autoloading
+                    ool << "#";
+                    for(i = 0; i < Environment::olAutoloadFiles.size(); i++)
+                    {
+                        ool << " ";
+                        if(S_vm.count("onelab.remote") && S_vm["onelab.remote"].as<std::string>() != "")
+                        {
+                            ool << S_vm["onelab.remote"].as<std::string>() << ":";
+                        }
+                        ool << p.parent_path().string() << "/" << Environment::olAutoloadFiles[i];
+                    }
+                    ool << std::endl;
+
+                    i = 0;
+                    ool << "FeelApp.merge(" << Environment::olAutoloadFiles[i];
+                    for(i = 1; i < Environment::olAutoloadFiles.size(); i++)
+                    {
+                        ool << ", " << Environment::olAutoloadFiles[i];
+                    }
+                    ool << ");" << std::endl;
+                }
+                else
+                {
+                    std::cout << worldComm().globalRank() << " No files to load" << std::endl;
+                }
+
+                ool.close();
+            }
+
+            /* wait for the current process to finish */
+            Environment::worldComm().barrier();
+        }
+    }
+
     VLOG(2) << "[~Environment] sending delete to all deleters" << "\n";
 
     Environment::clearSomeMemory();
@@ -1450,6 +1471,9 @@ std::vector<fs::path> Environment::S_paths = { fs::current_path(),
                                                Environment::systemConfigRepository().get<0>(),
                                                Environment::systemGeoRepository().get<0>() };
 fs::path Environment::S_scratchdir;
+
+std::string Environment::olAppPath;
+std::vector<std::string> Environment::olAutoloadFiles;
 
 } // detail
 
