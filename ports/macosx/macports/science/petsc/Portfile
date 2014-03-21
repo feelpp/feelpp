@@ -5,7 +5,7 @@ PortGroup   conflicts_build 1.0
 PortGroup   active_variants 1.1
 
 name		petsc
-version     3.4.3
+version     3.4.4
 categories  math science
 maintainers	mmoll
 description	Portable, Extensible Toolkit for Scientific Computation
@@ -26,8 +26,8 @@ distname	${name}-lite-${version}
 worksrcdir	${name}-${version}
 universal_variant   no
 
-checksums           rmd160  4bb25b775a6a79d5435a5dfe2194492935c6d895 \
-                    sha256  77ff8771413e62003665ccc431b780f2be7305ead91a77c0ad59d08f78fa6e2d
+checksums           rmd160  1b3f69a2daa285abc315e4d3b267eb44fc26f689 \
+                    sha256  3ba6d953030a3ce56b72095adef50afbf7ada1a995b46d552cf1ca069b79ad6c
 
 depends_build-append  port:cmake
 depends_lib-append  port:hdf5-18 \
@@ -41,18 +41,16 @@ use_parallel_build  no
 
 configure.args      --prefix=${prefix}/lib/petsc \
                     --with-mpi=1 \
-   		--with-c-support=1 --with-c++-support=1 --with-pic=fPIC \
-		--with-shared-libraries=0 --PETSC_ARCH=darwin \
-        --with-cholmod=1 --with-cholmod-include=${prefix}/include/ \
-        --with-cholmod-lib=\[${prefix}/lib/libcholmod.a,${prefix}/lib/libcolamd.a\] \
-        --with-umfpack=1 --with-umfpack-include=${prefix}/include/ \
-        --with-umfpack-lib=\[${prefix}/lib/libumfpack.a,${prefix}/lib/libcholmod.a,${prefix}/lib/libcolamd.a,${prefix}/lib/libamd.a,${prefix}/lib/libsuitesparseconfig.a\] \
-                    --download-metis \
-                    --download-parmetis \
+                    --with-c-support=1 --with-c++-support=1 \
+                    --with-shared-libraries=1 --PETSC_ARCH=darwin \
+                    --with-cholmod=1 --with-cholmod-include=${prefix}/include/ \
+                    --with-cholmod-lib=\[${prefix}/lib/libcholmod.a,${prefix}/lib/libcolamd.a\] \
+                    --with-umfpack=1 --with-umfpack-include=${prefix}/include/ \
+                    --with-umfpack-lib=\[${prefix}/lib/libumfpack.a,${prefix}/lib/libcholmod.a,${prefix}/lib/libcolamd.a,${prefix}/lib/libamd.a,${prefix}/lib/libsuitesparseconfig.a\] \
                     --download-blacs \
                     --download-scalapack \
                     --download-mumps \
-                    --download-ptscotch \
+                    --with-ptscotch-dir=${prefix} \
                     --with-hdf5-dir=${prefix} \
                     --with-yaml-dir=${prefix}
 
@@ -97,8 +95,7 @@ variant accelerate description {Use Accelerate framework for LAPACK} conflicts a
 
 variant atlas description {Use Atlas for LAPACK} conflicts accelerate {
     configure.args-append \
-        --with-blas-lapack-lib=/usr/lib/libtatlas.dylib
-#        --with-blas-lapack-lib=${prefix}/lib/libtatlas.dylib
+        --with-blas-lapack-lib=${prefix}/lib/libtatlas.dylib
     depends_lib-append port:atlas
 }
 
@@ -107,7 +104,12 @@ variant ml description {Install with ML package} conflicts accelerate {
         --download-ml
 }
 
-default_variants +atlas +ml
+variant pastix description {Install with  external package PaStiX} {
+    configure.args-append \
+        --download-pastix
+}
+
+default_variants +atlas +ml +pastix
 
 if {![variant_isset mpich2]} {
     default_variants +openmpi
