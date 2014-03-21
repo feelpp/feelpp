@@ -8,12 +8,12 @@ fetch.type          svn
 fetch.user          gmsh
 fetch.password      gmsh
 svn.url             https://geuz.org/svn/gmsh/trunk
-svn.revision        16477
+svn.revision        17945
 svn.method          export
 svn.post_args       --username ${fetch.user} --password ${fetch.password}
 
 name                gmsh-devel
-version             2.8.3-svn-${svn.revision}
+version             2.8.5-svn-${svn.revision}
 categories          science
 platforms           darwin
 maintainers         feelpp.org:christophe.prudhomme
@@ -72,18 +72,28 @@ depends_lib  \
     port:zlib \
     port:texinfo
 
+variant atlas description {Use Atlas for BLAS-LAPACK} {
+    depends_lib-append port:atlas
+    configure.args-append \
+        -DBLAS_LAPACK_LIBRARIES=${prefix}/lib/libtatlas.dylib
+}
+
+
 variant slepc description {compile with PETSC/SLEPC support} {
     depends_lib-append      port:petsc
     depends_lib-append      port:slepc
     configure.args-append \
+        -DCMAKE_PREFIX_PATH=/opt/local/lib/openmpi/bin \
         -DENABLE_MPI=ON \
         -DENABLE_PETSC=ON \
         -DPETSC_INC=${prefix}/lib/petsc/include \
-        -DPETSC_LIBS=${prefix}/lib/petsc/lib/libpetsc.a \
+        -DPETSC_LIBS=${prefix}/lib/petsc/lib/libpetsc.dylib \
         -DENABLE_SLEPC=ON \
         -DSLEPC_INC=${prefix}/lib/petsc/include \
         -DSLEPC_LIB=${prefix}/lib/petsc/lib/libslepc.a
 }
+
+default_variants +atlas
 
 if {![variant_isset slepc] } {
     configure.args-append \
