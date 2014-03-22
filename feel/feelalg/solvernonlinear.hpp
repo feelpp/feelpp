@@ -128,9 +128,9 @@ public:
             :
             super_type( i )
         {}
-        bool isConverged() const { return this->get<0>(); }
-        size_type nIterations() const { return this->get<1>(); }
-        value_type residual() const { return this->get<2>(); }
+        bool isConverged() const { return this->template get<0>(); }
+        size_type nIterations() const { return this->template get<1>(); }
+        value_type residual() const { return this->template get<2>(); }
     };
 
     // return type of solve()
