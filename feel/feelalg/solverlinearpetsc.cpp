@@ -540,7 +540,7 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
 #endif
     // return the # of its. and the final residual norm.
     //return std::make_pair(its, final_resid);
-    return boost::make_tuple( hasConverged, its, final_resid );
+    return solve_return_type( boost::make_tuple( hasConverged, its, final_resid ) );
 
 
 }
@@ -555,7 +555,7 @@ SolverLinearPetsc<T>::solve ( MatrixShell<T>  const &mat,
                               bool transpose )
 {
     LOG(ERROR) << "invalid call to solve() using matshell\n";
-    return boost::make_tuple( false, 0, 0 );
+    return solve_return_type( boost::make_tuple( false, 0, 0 ) );
 }
 
 template <typename T>
