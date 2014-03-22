@@ -29,6 +29,8 @@ homepage            http://www.geuz.org/gmsh/
 worksrcdir          trunk
 conflicts           gmsh
 
+patchfiles     gmsh-devel.patch
+patch.dir      ${worksrcpath}
 # https://trac.macports.org/ticket/33925
 compiler.blacklist  clang
 configure.compiler macports-gcc-4.8
@@ -55,7 +57,8 @@ configure.args-append \
     -DENABLE_FLTK:BOOL=ON\
     -DENABLE_GRAPHICS:BOOL=ON\
     -DENABLE_METIS=ON \
-    -DENABLE_TAUCS=OFF
+    -DENABLE_TAUCS=OFF \
+    -DSEARCH_ANN_IN_SYSTEM=OFF
 
 build.target all shared
 
@@ -71,6 +74,9 @@ depends_lib  \
     port:jpeg \
     port:zlib \
     port:texinfo
+
+
+default_variants +atlas +slepc
 
 variant atlas description {Use Atlas for BLAS-LAPACK} {
     depends_lib-append port:atlas
@@ -93,7 +99,6 @@ variant slepc description {compile with PETSC/SLEPC support} {
         -DSLEPC_LIB=${prefix}/lib/petsc/lib/libslepc.a
 }
 
-default_variants +atlas
 
 if {![variant_isset slepc] } {
     configure.args-append \
