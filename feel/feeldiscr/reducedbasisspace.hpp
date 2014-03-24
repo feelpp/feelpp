@@ -395,7 +395,7 @@ public :
     /*
      * Get the FEM functionspace
      */
-    super_ptrtype functionSpace()
+    super_ptrtype functionSpace() const
         {
             return M_model->functionSpace();
         }
@@ -497,7 +497,8 @@ public :
                 // coeffs to be (d,N) and M_phi (d,vN) where d is the number of
                 // components and N the number of basis functions
                 // TODO: check with vectorial functions
-                return (coeffs*M_phi.transpose()).diagonal();
+                //return (coeffs*M_phi.transpose()).diagonal();
+                return M_phi * coeffs;
             }
         //evaluation at only one node
         eigen_vector_type id( eigen_vector_type const& coeffs ) const
@@ -674,6 +675,11 @@ public :
         M_ctx_fespace( functionspace )
             {
                 update();
+            }
+
+        functionspace_ptrtype functionSpace() const
+            {
+                return M_rbspace->functionSpace();
             }
 
         void update ( )
