@@ -120,7 +120,7 @@ public:
     /**
      * @return the number of degrees of freedom on this processor without ghosts.
      */
-    size_type nLocalDofWithoutGhost( const int proc ) const
+    size_type nLocalDofWithoutGhost( const rank_type proc ) const
     {
         return M_n_localWithoutGhost_df[proc];
     }
@@ -136,7 +136,7 @@ public:
     /**
      * @return the number of degrees of freedom on this processor with ghosts.
      */
-    size_type nLocalDofWithGhost( const int proc ) const
+    size_type nLocalDofWithGhost( const rank_type proc ) const
     {
         return M_n_localWithGhost_df[proc];
     }
@@ -152,7 +152,7 @@ public:
     /**
      * @return the number of degrees of freedom on subdomain \p proc.
      */
-    size_type nDofOnProcessor( const size_type proc ) const
+    size_type nDofOnProcessor( const rank_type proc ) const
     {
         DCHECK( proc < M_first_df.size() ) << "invalid proc id or dof table , proc: "
                                            <<  proc << ", first dof : " <<  M_first_df.size();
@@ -160,9 +160,9 @@ public:
         //return ( M_last_df[proc] - M_first_df[proc]+1);
     }
 
-    size_type nProcessors() const
+    rank_type nProcessors() const
     {
-        return ( M_worldComm.size() );
+        return M_worldComm.size();
     }
 
     /**
@@ -170,15 +170,12 @@ public:
      */
     size_type firstDof() const
     {
-        size_type proc = M_worldComm.rank();
-        DCHECK( proc < M_first_df.size() ) << "invalid proc id or dof table , proc: "
-                                           <<  proc << ", first dof : " <<  M_first_df.size();
-        return M_first_df[proc];
+        return this->firstDof( M_worldComm.rank() );
     }
     /**
      * @return the first dof index that is local to subdomain \p proc.
      */
-    size_type firstDof( const size_type proc ) const
+    size_type firstDof( const rank_type proc ) const
     {
         DCHECK( proc < M_first_df.size() ) << "invalid proc id or dof table , proc: "
                                            <<  proc << ", first dof : " <<  M_first_df.size();
@@ -187,13 +184,10 @@ public:
 
     size_type firstDofGlobalCluster() const
     {
-        size_type proc = M_worldComm.rank();
-        DCHECK( proc < M_first_df_globalcluster.size() ) << "invalid proc id or dof table , proc: "
-                                                         <<  proc << ", first dof global cluster : " <<  M_first_df_globalcluster.size();
-        return M_first_df_globalcluster[proc];
+        return this->firstDofGlobalCluster( M_worldComm.rank() );
     }
 
-    size_type firstDofGlobalCluster( uint16_type proc ) const
+    size_type firstDofGlobalCluster( rank_type proc ) const
     {
         DCHECK( proc < M_first_df_globalcluster.size() ) << "invalid proc id or dof table , proc: "
                                                          <<  proc << ", first dof global cluster : " <<  M_first_df_globalcluster.size();
@@ -210,15 +204,12 @@ public:
      */
     size_type lastDof() const
     {
-        size_type proc = M_worldComm.rank();
-        DCHECK( proc < M_last_df.size() ) << "invalid proc id or dof table , proc: "
-                                          <<  proc << ", last dof : " <<  M_last_df.size();
-        return M_last_df[proc];
+        return this->lastDof( M_worldComm.rank() );
     }
     /**
      * Returns the last dof index that is local to subdomain \p proc.
      */
-    size_type lastDof( const unsigned int proc ) const
+    size_type lastDof( const rank_type proc ) const
     {
         DCHECK( proc < M_last_df.size() ) << "invalid proc id or dof table , proc: "
                                           <<  proc << ", last dof : " <<  M_last_df.size();
@@ -230,13 +221,10 @@ public:
      */
     size_type lastDofGlobalCluster() const
     {
-        size_type proc = M_worldComm.rank();
-        DCHECK( proc < M_last_df_globalcluster.size() ) << "invalid proc id or dof table , proc: "
-                                                         <<  proc << ", last dof global cluster : " <<  M_last_df_globalcluster.size();
-        return M_last_df_globalcluster[proc];
+        return this->lastDofGlobalCluster( M_worldComm.rank() );
     }
 
-    size_type lastDofGlobalCluster( uint16_type proc ) const
+    size_type lastDofGlobalCluster( rank_type proc ) const
     {
         DCHECK( proc < M_last_df_globalcluster.size() ) << "invalid proc id or dof table , proc: "
                                                          <<  proc << ", last dof global cluster : " <<  M_last_df_globalcluster.size();
@@ -248,7 +236,7 @@ public:
         return M_last_df_globalcluster;
     }
 
-    uint16_type procOnGlobalCluster( size_type globDof ) const;
+    rank_type procOnGlobalCluster( size_type globDof ) const;
 
     bool dofGlobalClusterIsOnProc( size_type globDof ) const
     {
@@ -265,8 +253,8 @@ public:
         return !this->dofGlobalClusterIsOnProc(this->mapGlobalProcessToGlobalCluster( dof ));
     }
 
+    //! return global process id from global cluster id if available
     boost::tuple<bool,size_type> searchGlobalProcessDof( size_type gpdof ) const;
-
 
     //! Returns local ID of global ID, return invalid_size_type_value if not found on this processor.
     size_type  lid( size_type GID ) const
@@ -374,12 +362,12 @@ public:
 
     void setNDof( size_type ndof );
 
-    void setNLocalDofWithoutGhost( const size_type proc, const size_type n, bool inWorld=true );
-    void setNLocalDofWithGhost( const size_type proc, const size_type n, bool inWorld=true );
-    void setFirstDof( const size_type proc, const size_type df, bool inWorld=true );
-    void setLastDof( const size_type proc, const size_type df, bool inWorld=true );
-    void setFirstDofGlobalCluster( const size_type proc, const size_type df, bool inWorld=true );
-    void setLastDofGlobalCluster( const size_type proc, const size_type df, bool inWorld=true );
+    void setNLocalDofWithoutGhost( const rank_type proc, const size_type n, bool inWorld=true );
+    void setNLocalDofWithGhost( const rank_type proc, const size_type n, bool inWorld=true );
+    void setFirstDof( const rank_type proc, const size_type df, bool inWorld=true );
+    void setLastDof( const rank_type proc, const size_type df, bool inWorld=true );
+    void setFirstDofGlobalCluster( const rank_type proc, const size_type df, bool inWorld=true );
+    void setLastDofGlobalCluster( const rank_type proc, const size_type df, bool inWorld=true );
 
     void setMapGlobalProcessToGlobalCluster( std::vector<size_type> const& map );
     void setMapGlobalClusterToGlobalProcess( std::vector<size_type> const& map );

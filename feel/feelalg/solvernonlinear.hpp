@@ -48,6 +48,7 @@ namespace Feel
 template<typename T> class Vector;
 template<typename T> class MatrixSparse;
 
+
 /**
  * \class SolverNonLinear
  * \brief Non linear solver base interface
@@ -112,8 +113,28 @@ public:
                                    map_dense_vector_type& R,
                                    map_dense_matrix_type& J )> map_dense_matvec_function_type;
 
+    class NLSolveData : public boost::tuple<bool,size_type,value_type>
+    {
+        typedef boost::tuple<bool,size_type,value_type> super_type;
+    public:
+        NLSolveData() {}
+        // rvalue: move constructor (fast)
+        NLSolveData( super_type && i )
+            :
+            super_type( i )
+        {}
+        // copie
+        NLSolveData( super_type const& i )
+            :
+            super_type( i )
+        {}
+        bool isConverged() const { return this->template get<0>(); }
+        size_type nIterations() const { return this->template get<1>(); }
+        value_type residual() const { return this->template get<2>(); }
+    };
+
     // return type of solve()
-    typedef boost::tuple<bool, size_type, value_type> solve_return_type;
+    typedef NLSolveData solve_return_type;
 
     //@}
 
@@ -615,7 +636,6 @@ protected:
 
 
 };
-
 
 } // Feel
 #endif /* __SolverNonLinear_H */
