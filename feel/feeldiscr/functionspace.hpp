@@ -2369,10 +2369,10 @@ public:
             int npoints = context.nPoints();
 
             //rank of the current processor
-            int proc_number = Environment::worldComm().globalRank();
+            int proc_number = this->worldComm().globalRank();
 
             //total number of processors
-            int nprocs = Environment::worldComm().globalSize();
+            int nprocs = this->worldComm().globalSize();
 
             auto it = context.begin();
             auto en = context.end();
@@ -2398,7 +2398,7 @@ public:
             }
 
             if( do_communications )
-                mpi::all_reduce( Environment::worldComm() , __localr, __globalr, std::plus< eigen_type >() );
+                mpi::all_reduce( this->worldComm() , __localr, __globalr, std::plus< eigen_type >() );
             else
                 __globalr = __localr;
 
