@@ -280,6 +280,11 @@ public:
     static AboutData const& about() { return S_about; }
 
     /**
+     * Adds a file to automatically load in Gmsh with Onelab 
+     */
+    static void olLoadInGmsh(std::string filename) { olAutoloadFiles.push_back(filename); }
+
+    /**
      * return options description data structure
      */
     static po::options_description const& optionsDescription() { return *S_desc; }
@@ -453,6 +458,16 @@ private:
     static boost::shared_ptr<po::options_description> S_desc_app;
     static boost::shared_ptr<po::options_description> S_desc_lib;
     static std::vector<std::string> S_to_pass_further;
+
+    /**
+     * Stores the absolute path and executable name
+     */
+    static std::string olAppPath;
+
+    /**
+     * Stores names of output files for automatic loading in Gmsh with Onelab
+     */
+    static std::vector<std::string> olAutoloadFiles;
 
     static boost::signals2::signal<void()> S_deleteObservers;
 

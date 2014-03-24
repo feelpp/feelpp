@@ -159,7 +159,7 @@ public:
     /**
      * Returns the number of partitions.
      */
-    uint16_type numberOfPartitions() const
+    rank_type numberOfPartitions() const
     {
         return M_n_parts;
     }
@@ -211,7 +211,7 @@ public:
     /**
      * set the number of partitions
      */
-    void setNumberOfPartitions( uint16_type n )
+    void setNumberOfPartitions( rank_type n )
     {
         M_n_parts = n;
     }
@@ -269,7 +269,7 @@ public:
     /**
      * Call the default partitioner (currently \p metis_partition()).
      */
-    virtual void partition ( const uint16_type n_parts ) = 0;
+    virtual void partition ( const rank_type n_parts ) = 0;
 
     /**
      * \return the world comm
@@ -573,7 +573,7 @@ private:
      * where you simply want to partition a mesh on one
      * processor and view the result in GMV.
      */
-    uint16_type M_n_parts;
+    rank_type M_n_parts;
 
     WorldComm M_worldComm;
 

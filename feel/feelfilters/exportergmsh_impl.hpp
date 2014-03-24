@@ -109,6 +109,12 @@ ExporterGmsh<MeshType,N>::gmshSaveAscii() const
                 << "-" << this->worldComm().size() << "_" << this->worldComm().rank()
                 << ".msh";
 
+        /* If onelab is enabled, we register this filename to be loaded */
+        if(option(_name="onelab.enable" ).template as<int>() == 2)
+        {
+            Environment::olLoadInGmsh(__fname.str());
+        }
+
         /*std::string filename =  this->prefix()
           + __ts->name()
           + "-" + this->worldComm().size() + "_" + this->worldComm().rank()

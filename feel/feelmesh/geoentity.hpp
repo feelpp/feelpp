@@ -713,7 +713,7 @@ public:
     /**
      * add a new ghost element to which the point belongs
      */
-    self_type& addElementGhost( int proc, size_type e  )
+    self_type& addElementGhost( rank_type proc, size_type e  )
     {
         M_elistGhost[proc].insert(e);
         return *this;
@@ -722,7 +722,7 @@ public:
     /**
      * \return the number of ghost elements whom the point belongs to
      */
-    size_type numberOfProcGhost() const
+    rank_type numberOfProcGhost() const
     {
         return M_elistGhost.size();
     }
@@ -730,7 +730,7 @@ public:
     /**
      * \return the set of ids of ghost elements whom the point belongs to
      */
-    std::map<int,std::set<size_type> > const& elementsGhost() const
+    std::map<rank_type,std::set<size_type> > const& elementsGhost() const
     {
         return M_elistGhost;
     }
@@ -797,7 +797,7 @@ private:
     //! element list to which the point belongs
     std::set<size_type> M_elist;
     //! ghost elements which share the entity
-    std::map<int,std::set<size_type > > M_elistGhost;
+    std::map<rank_type,std::set<size_type > > M_elistGhost;
 
 };
 

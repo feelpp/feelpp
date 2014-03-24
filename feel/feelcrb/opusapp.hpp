@@ -600,6 +600,37 @@ public:
                     crb->printErrorsDuringRbConstruction();
                 if ( crb->showMuSelection() && Environment::worldComm().globalRank()==Environment::worldComm().masterRank() )
                     crb->printMuSelection();
+
+                bool eim_mu_selection = option(_name="eim.show-mu-selection").template as<bool>();
+                bool eim_t_selection = option(_name="eim.show-t-selection").template as<bool>();
+                bool eim_offline_error = option(_name="eim.show-offline-error").template as<bool>();
+                if( eim_mu_selection || eim_t_selection || eim_offline_error )
+                {
+                    auto eim_sc_vector = model->scalarContinuousEim();
+                    auto eim_sd_vector = model->scalarDiscontinuousEim();
+
+                    for(int i=0; i<eim_sc_vector.size(); i++)
+                    {
+                        auto eim = eim_sc_vector[i];
+                        if( eim_mu_selection )
+                            eim->printMuSelection();
+                        if( eim_t_selection )
+                            eim->printInterpolationPointsSelection();
+                        if( eim_offline_error )
+                            eim->printOfflineError();
+                    }
+
+                    for(int i=0; i<eim_sd_vector.size(); i++)
+                    {
+                        auto eim = eim_sd_vector[i];
+                        if( eim_mu_selection )
+                            eim->printMuSelection();
+                        if( eim_t_selection )
+                            eim->printInterpolationPointsSelection();
+                        if( eim_offline_error )
+                            eim->printOfflineError();
+                    }
+                }
             }
 
             auto e = exporter( _mesh= model->functionSpace()->mesh()  );
@@ -935,6 +966,7 @@ public:
                                 double output_vector_size=output_vector.size();
                                 double ocrb = output_vector[output_vector_size-1];//output at last time
                                 double time_fem_solve=-1;
+
                                 if ( compute_fem )
                                 {
 									bool use_newton = option(_name="crb.use-newton").template as<bool>();
