@@ -1020,8 +1020,9 @@ public :
         double estimated_up=0;
         double delta=0;
 
-        std::ofstream file_outputs_geo_gmsh ( "GMSH-outputs.geo", std::ios::out );
-        file_outputs_geo_gmsh << "View \" outputs \" {\n";
+        std::string plotFile = "GMSH-outputs.geo";
+        std::ofstream file_outputs_geo_gmsh ( plotFile, std::ios::out );
+        file_outputs_geo_gmsh << "View \"outputs\" {\n";
         for(int i=0; i<outputs.size(); i++)
         {
             if( use_estimated_error )
@@ -1054,6 +1055,11 @@ public :
 
         file_outputs_geo_gmsh<<conclude;
         file_outputs_geo_gmsh.close();
+
+        /* Adds the generated file for automatic loading in Gmsh */
+        Environment::olLoadInGmsh(plotFile);
+
+
     }
 
 

@@ -155,7 +155,7 @@ public:
         M_measurefaces( numTopologicalFaces ),
         M_normals( nRealDim, numTopologicalFaces ),
         M_has_points( false ),
-        M_neighbors( numNeighbors, std::make_pair( invalid_size_type_value, 0 ) ),
+        M_neighbors( numNeighbors, std::make_pair( invalid_size_type_value, invalid_rank_type_value ) ),
         M_meas_pneighbors( 0 ),
         M_marker1(),
         M_marker2(),
@@ -186,7 +186,7 @@ public:
         M_measurefaces( numTopologicalFaces ),
         M_normals( nRealDim, numTopologicalFaces ),
         M_has_points( false ),
-        M_neighbors( numNeighbors, std::make_pair( invalid_size_type_value, 0 ) ),
+        M_neighbors( numNeighbors, std::make_pair( invalid_size_type_value, invalid_rank_type_value ) ),
         M_meas_pneighbors( 0 ),
         M_marker1(),
         M_marker2(),
@@ -211,7 +211,7 @@ public:
         M_measurefaces( numTopologicalFaces  ),
         M_normals( e.M_normals ),
         M_has_points( false ),
-        M_neighbors( numNeighbors, std::make_pair( invalid_size_type_value, 0 ) ),
+        M_neighbors( numNeighbors, std::make_pair( invalid_size_type_value, invalid_rank_type_value ) ),
         M_meas_pneighbors( e.M_meas_pneighbors ),
         M_marker1( e.M_marker1 ),
         M_marker2( e.M_marker2 ),
@@ -353,7 +353,7 @@ public:
      *
      * \return the pair neighbor \p n index and process \p id it belongs to
      */
-    std::pair<size_type,size_type> const& neighbor( uint16_type n ) const
+    std::pair<size_type,rank_type> const& neighbor( uint16_type n ) const
     {
         return M_neighbors[n];
     }
@@ -361,7 +361,7 @@ public:
     /**
      * set the \p n -th neighbor with \p neigh
      */
-    void setNeighbor( uint16_type n, size_type neigh_id, size_type proc_id )
+    void setNeighbor( uint16_type n, size_type neigh_id, rank_type proc_id )
     {
         M_neighbors[n] = std::make_pair( neigh_id, proc_id );
     }
@@ -876,7 +876,7 @@ private:
     /**
      * store neighbor element id
      */
-    std::vector<std::pair<size_type,size_type> > M_neighbors;
+    std::vector<std::pair<size_type,rank_type> > M_neighbors;
     //! point element neighbors
     std::set<size_type> M_pneighbors;
     //! measure of the set of point element neighbors

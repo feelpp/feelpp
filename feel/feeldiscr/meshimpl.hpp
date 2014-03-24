@@ -1574,16 +1574,16 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
 
     DVLOG(1) << "updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm : start on rank " << this->worldComm().localRank() << "\n";
 
-    const int nProc = this->worldComm().localSize();
+    const rank_type nProc = this->worldComm().localSize();
 
     //------------------------------------------------------------------------------------------------//
     // compute size of container to send and update Point and Edge info for parallelism
-    std::map< int, int > nDataInVecToSend;
+    std::map< rank_type, int > nDataInVecToSend;
     auto iv = this->beginGhostElement();
     auto const en = this->endGhostElement();
     for ( ; iv != en; ++iv )
     {
-        const int IdProcessOfGhost = iv->processId();
+        const rank_type IdProcessOfGhost = iv->processId();
         // update info for parallelism
         this->elements().modify( this->elementIterator(iv->id(),IdProcessOfGhost) , typename super_elements::ElementGhostConnectPointToElement() );
         if ( nDim==3 )
@@ -1597,24 +1597,24 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
     }
     //------------------------------------------------------------------------------------------------//
     // init and resize the container to send
-    std::map< int, std::vector<size_type> > dataToSend;
+    std::map< rank_type, std::vector<size_type> > dataToSend;
     auto itNDataInVecToSend = nDataInVecToSend.begin();
     auto const enNDataInVecToSend = nDataInVecToSend.end();
     for ( ; itNDataInVecToSend!=enNDataInVecToSend ; ++itNDataInVecToSend )
     {
-        const int idProc = itNDataInVecToSend->first;
+        const rank_type idProc = itNDataInVecToSend->first;
         const int nData = itNDataInVecToSend->second;
         dataToSend[idProc].resize( nData );
     }
     //------------------------------------------------------------------------------------------------//
     // prepare container to send
-    std::map< int, std::map<int,size_type> > memoryMsgToSend;
-    std::map< int, int > nDataInVecToSendBis;
+    std::map< rank_type, std::map<int,size_type> > memoryMsgToSend;
+    std::map< rank_type, int > nDataInVecToSendBis;
     iv = this->beginGhostElement();
     for ( ; iv != en; ++iv )
     {
         element_type const& __element = *iv;
-        const int idProc = __element.processId();
+        const rank_type idProc = __element.processId();
         const size_type idEltInOtherPartition = __element.idInOthersPartitions( idProc );
         // be sure that the counter start to 0
         if ( nDataInVecToSendBis.find(idProc) == nDataInVecToSendBis.end() )
@@ -1628,7 +1628,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
     }
     //------------------------------------------------------------------------------------------------//
     // compute nbMsgToRecv
-    std::set<int> procToRecv;
+    std::set<rank_type> procToRecv;
     auto itEltActif = this->beginElementWithProcessId( this->worldComm().localRank() );
     auto const enEltActif = this->endElementWithProcessId( this->worldComm().localRank() );
     for ( ; itEltActif!=enEltActif ; ++itEltActif )
@@ -1642,7 +1642,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
     //------------------------------------------------------------------------------------------------//
     // counter of request
     int nbRequest=0;
-    for ( int proc=0; proc<nProc; ++proc )
+    for ( rank_type proc=0; proc<nProc; ++proc )
     {
         if ( dataToSend.find(proc) != dataToSend.end() )
             ++nbRequest;
@@ -1664,12 +1664,12 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
     }
     //------------------------------------------------------------------------------------------------//
     // first recv
-    std::map<int,std::vector<size_type> > dataToRecv;
+    std::map<rank_type,std::vector<size_type> > dataToRecv;
     auto itProcToRecv = procToRecv.begin();
-    auto enProcToRecv = procToRecv.end();
+    auto const enProcToRecv = procToRecv.end();
     for ( ; itProcToRecv != enProcToRecv ; ++itProcToRecv )
     {
-        const int idProc = *itProcToRecv;
+        const rank_type idProc = *itProcToRecv;
         reqs[cptRequest] = this->worldComm().localComm().irecv( idProc , 0, dataToRecv[idProc] );
         ++cptRequest;
     }
@@ -1678,12 +1678,12 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
     mpi::wait_all(reqs, reqs + nbRequest);
     //------------------------------------------------------------------------------------------------//
     // build the container to ReSend
-    std::map<int, std::vector< boost::tuple<resultghost_point_type,resultghost_face_type>  > > dataToReSend;
+    std::map<rank_type, std::vector< boost::tuple<resultghost_point_type,resultghost_face_type>  > > dataToReSend;
     auto itDataRecv = dataToRecv.begin();
     auto const enDataRecv = dataToRecv.end();
     for ( ; itDataRecv!=enDataRecv ; ++itDataRecv )
     {
-        const int idProc = itDataRecv->first;
+        const rank_type idProc = itDataRecv->first;
         const int nDataRecv = itDataRecv->second.size();
         dataToReSend[idProc].resize( nDataRecv );
         for ( int k=0; k<nDataRecv; ++k )
@@ -1749,12 +1749,12 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
     }
     //------------------------------------------------------------------------------------------------//
     // recv the initial request
-    std::map<int, std::vector< boost::tuple<resultghost_point_type,resultghost_face_type>  > > finalDataToRecv;
+    std::map<rank_type, std::vector< boost::tuple<resultghost_point_type,resultghost_face_type>  > > finalDataToRecv;
 
     itDataToSend = dataToSend.begin();
     for ( ; itDataToSend!=enDataToSend ; ++itDataToSend )
     {
-        const int idProc = itDataToSend->first;
+        const rank_type idProc = itDataToSend->first;
         reqs[cptRequest] = this->worldComm().localComm().irecv( idProc, 0, finalDataToRecv[idProc] );
         ++cptRequest;
     }
@@ -1769,7 +1769,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
     auto const enFinalDataToRecv = finalDataToRecv.end();
     for ( ; itFinalDataToRecv!=enFinalDataToRecv ; ++itFinalDataToRecv)
     {
-        const int idProc = itFinalDataToRecv->first;
+        const rank_type idProc = itFinalDataToRecv->first;
         const int nDataRecv = itFinalDataToRecv->second.size();
         for ( int k=0; k<nDataRecv; ++k )
         {
