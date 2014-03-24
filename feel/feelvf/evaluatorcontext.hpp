@@ -225,6 +225,7 @@ EvaluatorContext<CTX, ExprT>::operator()() const
             if( global_p < max_size )
             {
 
+#if 0
                 if( M_projection )
                 {
                     auto const& e = ctx.second->gmContext()->element();
@@ -241,6 +242,7 @@ EvaluatorContext<CTX, ExprT>::operator()() const
                     __localv( global_p ) = val( 0 );
                 }//if projection
                 else
+#endif
                 {
                     tensor_expr.updateContext( Xh->contextBasis( ctx, M_ctx ) );
 
