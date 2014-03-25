@@ -1326,13 +1326,16 @@ public FunctionSpaceBase,
 public boost::enable_shared_from_this<FunctionSpace<A0,A1,A2,A3,A4> >
 {
 public:
+    template<typename FA0,typename FA1,typename FA2,typename FA3,typename FA4>
+    friend class FunctionSpace;
+
     typedef typename functionspace_signature::bind<A0,A1,A2,A3,A4>::type args;
 
     typedef typename parameter::binding<args, tag::mesh_type>::type meshes_list;
     typedef typename parameter::binding<args, tag::value_type, double>::type value_type;
     typedef typename parameter::binding<args, tag::mortar_type, mortars<NoMortar> >::type mortar_list;
     typedef typename parameter::binding<args, tag::periodicity_type, Periodicity<NoPeriodicity> >::type periodicity_type;
-    typedef typename parameter::binding<args, tag::bases_list, Feel::detail::bases<Lagrange<1,Scalar> > >::type bases_list;
+    typedef typename parameter::binding<args, tag::bases_list, Feel::bases<Lagrange<1,Scalar> > >::type bases_list;
 
     BOOST_MPL_ASSERT_NOT( ( boost::is_same<mpl::at<bases_list,mpl::int_<0> >, mpl::void_> ) );
 
@@ -1372,7 +1375,7 @@ public:
         typedef typename fusion::result_of::at_c<meshes_list_noref, pos::value >::type _mesh_type;
 
         typedef FunctionSpace<typename boost::remove_reference<_mesh_type>::type,
-                              Feel::detail::bases<BasisType>,value_type,
+                              Feel::bases<BasisType>,value_type,
                               Periodicity<typename GetPeriodicity<periodicity_type,pos::value>::type >,
                               mortar_list> _type;
         typedef boost::shared_ptr<_type> type;
@@ -1388,7 +1391,7 @@ public:
                                                      typename fusion::result_of::find<bases_list_noref,BasisType>::type>::type pos;
 
         typedef typename mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
-                                  mpl::identity<mpl::identity<boost::shared_ptr<FunctionSpace<meshes_list,Feel::detail::bases<BasisType>,value_type, Periodicity<typename GetPeriodicity<periodicity_type,pos::value>::type>, mortars<typename GetMortar<mortar_list,pos::value>::type > > > > >,
+                                  mpl::identity<mpl::identity<boost::shared_ptr<FunctionSpace<meshes_list,Feel::bases<BasisType>,value_type, Periodicity<typename GetPeriodicity<periodicity_type,pos::value>::type>, mortars<typename GetMortar<mortar_list,pos::value>::type > > > > >,
                                   mpl::identity<ChangeMesh<BasisType> > >::type::type::type type;
 
 //mpl::identity<typename mpl::transform<meshes_list, ChangeMesh<mpl::_1,BasisType>, mpl::back_inserter<fusion::vector<> > >::type > >::type::type type;
@@ -1401,7 +1404,7 @@ public:
         typedef typename BasisType::component_basis_type component_basis_type;
         //typedef typename mpl::if_<mpl::and_<boost::is_base_of<MeshBase, meshes_list >, boost::is_base_of<Feel::detail::periodic_base, periodicity_type > >,
         typedef typename mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
-                                  mpl::identity<mpl::identity<boost::shared_ptr<FunctionSpace<meshes_list,Feel::detail::bases<component_basis_type>,value_type, periodicity_type, mortar_list> > > >,
+                                  mpl::identity<mpl::identity<boost::shared_ptr<FunctionSpace<meshes_list,Feel::bases<component_basis_type>,value_type, periodicity_type, mortar_list> > > >,
                                   mpl::identity<ChangeMesh<component_basis_type> > >::type::type::type type;
     };
 
@@ -3491,6 +3494,15 @@ public:
         this->init( mesh, 0, dofindices, periodicity );
     }
 
+    FunctionSpace() {}
+    // template<typename... FSpaceList>
+    // FunctionSpace( FSpaceList... space_list )
+    //     :
+    //     M_functionspaces( fusion::make_vector( space_list... ) )
+    // {
+    //     this->initList( space_list... );
+    // }
+
     /**
      * helper static function to create a boost::shared_ptr<> out of
      * the \c FunctionSpace
@@ -3532,6 +3544,18 @@ public:
 
         return pointer_type( new functionspace_type( __m, mesh_components, periodicity, worldsComm, extendedDofTable ) );
     }
+
+    template<typename ...FSpaceList>
+    static pointer_type
+    NewFromList( FSpaceList... fspacelist )
+        {
+            auto X = pointer_type( new functionspace_type );
+            X->M_functionspaces = fusion::make_vector(fspacelist...);
+            X->initList( fspacelist... );
+            return X;
+        }
+
+
     /**
      * initialize the function space
      */
@@ -4204,6 +4228,13 @@ private:
                periodicity_type const& periodicity,
                std::vector<Dof > const& dofindices,
                mpl::bool_<true> );
+    template<typename FSpaceHead, typename... FSpaceTail>
+    void initList( FSpaceHead& fspacehead, FSpaceTail... fspacetail );
+
+    void initList();
+
+    template<typename FSpaceHead>
+    void initHead( FSpaceHead& fspacehead );
 
     size_type nDof( mpl::bool_<false> ) const;
     size_type nDof( mpl::bool_<true> ) const;
@@ -4298,7 +4329,7 @@ protected:
 private:
 
     //! disable default constructor
-    FunctionSpace();
+    //FunctionSpace();
 
     functionspace_vector_type M_functionspaces;
 
@@ -4419,6 +4450,16 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
                                                                                     this->worldsComm(),
                                                                                     this->extendedDofTableComposite() ) );
 
+    this->initList();
+}
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+void
+FunctionSpace<A0, A1, A2, A3, A4>::initList()
+{
+    if ( !M_worldComm )
+        M_worldComm = boost::shared_ptr<WorldComm>( new WorldComm( M_worldsComm[0] ));
+
     if ( this->worldComm().globalSize()>1 )
     {
         if ( this->hasEntriesForAllSpaces() )
@@ -4496,6 +4537,27 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
         M_dofOnOff = dofInitTool.dataMapOnOff();
         M_dofOnOff->setNDof( this->nDof() );
     }
+
+}
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename FSpaceHead>
+void
+FunctionSpace<A0, A1, A2, A3, A4>::initHead( FSpaceHead& head )
+{
+    DVLOG(2) << "calling initHead(<composite>) begin\n";
+    M_mesh = head->mesh();
+    M_worldsComm.push_back( head->worldComm() );
+    M_extendedDofTableComposite.push_back( head->M_extendedDofTable );
+    M_extendedDofTable = head->M_extendedDofTable;
+}
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename FSpaceHead, typename... FSpaceTail>
+void
+FunctionSpace<A0, A1, A2, A3, A4>::initList( FSpaceHead& head, FSpaceTail... tail )
+{
+    initHead( head );
+    initList( tail... );
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
