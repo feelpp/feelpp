@@ -1364,8 +1364,8 @@ public:
         else
         {
             auto proj_g = vf::project( _space=this->functionSpace(), _expr=M_expr );
-            rhs = evaluateFromContext( _context=M_ctx, _expr=M_expr , _max_points_used=M );
-            //rhs = evaluateFromContext( _context=M_ctx, _expr=M_expr , _max_points_used=M, _projection=true );
+            //rhs = proj_g.evaluate( M_ctx );
+            rhs = evaluateFromContext( _context=M_ctx, _expr=M_expr , _max_points_used=M, _projection=true );
         }
 
         M_B.block(0,0,M,M).template triangularView<Eigen::UnitLower>().solveInPlace(rhs);
@@ -2037,10 +2037,10 @@ private:
     std::vector< element_type > M_z_vector ; // we need to store this to be able to compute expression of eim basis functions and the user can use them in integrals
     std::vector< solution_type > M_solution_vector ;
     std::vector< double > M_evaluation_vector; // we need to store this to be able to compute expression of eim basis functions and the user can use them in integrals
-    double M_M_max;
-    double M_max_q;
-    double M_max_z;
-    double M_max_solution;
+    int M_M_max;
+    int M_max_q;
+    int M_max_z;
+    int M_max_solution;
     std::vector<node_type> M_t;
     typename functionspace_type::Context M_ctx;
     matrix_type M_B;
