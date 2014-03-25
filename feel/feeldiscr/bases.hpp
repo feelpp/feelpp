@@ -142,7 +142,7 @@ struct Periodicity
 	static const int s = sizeof...(Args);
     Periodicity() : super() {}
     Periodicity( super const& m) : super( m ) {}
-    Periodicity( Args... args ) : super( fusion::make_vector(args...) ) {}
+    //Periodicity( Args... args ) : super( fusion::make_vector(args...) ) {}
 
     uint16_type tag1() const { return fusion::at_c<0>(*this).tag1(); }
     uint16_type tag2() const { return fusion::at_c<0>(*this).tag2(); }
