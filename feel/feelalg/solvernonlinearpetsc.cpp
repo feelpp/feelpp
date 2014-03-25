@@ -800,7 +800,7 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     // return the # of its. and the final residual norm.  Note that
     // n_iterations may be zero for PETSc versions 2.2.x and greater.
     //return std::make_pair( reason, 0. );
-    return boost::make_tuple( hasConverged, n_iterations, valfnorm/*history[std::min(n_iterations,49)]*/ );
+    return solve_return_type( boost::make_tuple( hasConverged, n_iterations, valfnorm/*history[std::min(n_iterations,49)]*/ ) );
 }
 
 
