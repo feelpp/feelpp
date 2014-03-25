@@ -1337,17 +1337,17 @@ public:
         {
             M_mu=mu;
             M_u = M_model->solve( mu );
-            auto projected_expr = vf::project( _space=this->functionSpace(), _expr=M_expr );
-            return evaluateFromContext( _context=ctx, _expr=idv(projected_expr) , _max_points_used=M );
-            //return evaluateFromContext( _context=ctx, _expr=M_expr , _max_points_used=M, _projection=true );
+            //auto projected_expr = vf::project( _space=this->functionSpace(), _expr=M_expr );
+            //return evaluateFromContext( _context=ctx, _expr=idv(projected_expr) , _max_points_used=M );
+            return evaluateFromContext( _context=ctx, _expr=M_expr , _max_points_used=M, _projection=true );
         }
     vector_type operator()( solution_type const& T, context_type const& ctx, parameter_type const& mu , int M)
         {
             M_mu = mu;
             M_u = T;
-            auto projected_expr = vf::project( _space=this->functionSpace(), _expr=M_expr );
-            return evaluateFromContext( _context=ctx, _expr=idv(projected_expr) , _max_points_used=M );
-            //return evaluateFromContext( _context=ctx, _expr=M_expr , _max_points_used=M, _projection=true );
+            //auto projected_expr = vf::project( _space=this->functionSpace(), _expr=M_expr );
+            //return evaluateFromContext( _context=ctx, _expr=idv(projected_expr) , _max_points_used=M );
+            return evaluateFromContext( _context=ctx, _expr=M_expr , _max_points_used=M, _projection=true );
         }
 
     vector_type computeExpansionCoefficients( parameter_type const& mu, solution_type const& solution,  int M)
