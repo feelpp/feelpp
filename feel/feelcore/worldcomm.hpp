@@ -85,6 +85,9 @@ public:
                int _localColor,// int localRank,
                std::vector<int> const& isActive );
 
+    //! copy a worldcomm
+    WorldComm& operator=( WorldComm const& wc );
+
     static self_ptrtype New() { return self_ptrtype(new self_type); }
     static self_ptrtype New( super const& s ) { return self_ptrtype(new self_type( s )); }
     void init( int color = 0, bool colormap = false );
