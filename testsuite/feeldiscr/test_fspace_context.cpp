@@ -333,6 +333,11 @@ testFspaceContext()
     BOOST_CHECK_SMALL( (evaluateR-evaluateProjR).norm(), 1e-7 );
     BOOST_CHECK_SMALL( (evaluateSin2PiX-evaluateProjSin2PiX).norm(), 5e-6 );
 
+
+    auto evaluateProjSin2PiX_ = evaluateFromContext( _context=ctx, _expr=exprSin2PiX , _projection=true);
+    BOOST_CHECK_SMALL( (evaluateProjSin2PiX_-evaluateProjSin2PiX).norm(), 1e-13 );
+
+
 } // TestFspaceContext ::run
 
 
