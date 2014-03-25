@@ -325,7 +325,6 @@ struct update_context
     template <typename ExprT>
     void operator()( ExprT& expr ) const
     {
-        std::cout<<"debug] matvec operator()"<<std::endl;
         expr.updateContext( M_ctx );
     }
 
