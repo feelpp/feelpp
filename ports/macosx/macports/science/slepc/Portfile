@@ -32,10 +32,28 @@ checksums           md5     8fa3ebd196b89cd63dd5d08a321f6d23 \
 
 depends_lib-append  port:petsc
 
-configure.args        --prefix=${prefix}/lib/petsc
-build.env-append      PETSC_DIR=${prefix}/lib/petsc PETSC_ARCH=arch-installed-petsc SLEPC_DIR=${worksrcpath}
-destroot.env-append   PETSC_DIR=${prefix}/lib/petsc PETSC_ARCH=arch-installed-petsc SLEPC_DIR=${worksrcpath}
-destroot.cmd-append   SLEPC_DESTDIR=${destroot}${prefix}/lib/petsc
+patchfiles     slepc.patch
+patch.dir      ${worksrcpath}
+
+
+#configure.args        --prefix=${prefix}/lib/petsc
+configure.pre_args     --prefix=${prefix}/lib/petsc
+
+#build.env-append      PETSC_DIR=${prefix}/lib/petsc PETSC_ARCH=arch-installed-petsc SLEPC_DIR=${worksrcpath}
+build.pre_args         SLEPC_DIR=${worksrcpath} PETSC_DIR=${prefix}/lib/petsc PETSC_ARCH=arch-installed-petsc
+build.target           build
+
+
+#destroot.cmd      make SLEPC_DIR=${worksrcpath} PETSC_DIR=${prefix}/lib/petsc PETSC_ARCH=arch-installed-petsc
+destroot.env-append   SLEPC_DIR=${worksrcpath} PETSC_DIR=${prefix}/lib/petsc PETSC_ARCH=arch-installed-petsc
+#destroot.cmd-append   SLEPC_DESTDIR=${destroot}${prefix}/lib/petsc
+destroot.destdir SLEPC_DESTDIR=${destroot}${prefix}/lib/petsc
+
+# we remove the dynamic lib because there is a strange bug with this one.
+# with otool -L libslepc.dylib, we see that the temporary workdir of macoport is present
+#post-destroot {
+#system "rm -rf ${destroot}${prefix}/lib/petsc/lib/libslepc.dylib*"
+#}
 
 conflicts_build     slepc
 

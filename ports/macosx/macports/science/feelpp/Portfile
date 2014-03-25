@@ -10,11 +10,18 @@ PortSystem  1.0
 
 name                 feel++
 
-fetch.type           git
-git.url              https://github.com/feelpp/feelpp.git
-git.branch           master
+#fetch.type           git
+#git.url              https://github.com/feelpp/feelpp.git
+#git.branch           master
+#version              master
 
-version              master
+version              0.97.4
+master_sites         https://github.com/feelpp/feelpp/releases/download/v${version}
+distname             feelpp-${version}-final
+checksums            rmd160  e102a1c5744764b92058d93941ceda095d17aad5 \
+                     sha256  be3da5bef1ed2e07d8c8bbf364472b217f4a4b034d4857760c67ebaa4e69805e
+
+
 categories           science
 platforms            macosx darwin freebsd
 maintainers          feelpp.org:christophe.prudhomme
@@ -63,9 +70,10 @@ configure	{
 
 build {
     if {${build.jobs} ne {} } {
-        system "cd ${worksrcpath}/build && ${build.cmd} ${build.target} -j ${build.jobs} "
+        # only the libfeelpp use // compilation
+        system "cd ${worksrcpath}/build && ${build.cmd} feelpp -j ${build.jobs} && ${build.cmd} ${build.target}"
     } else {
-        system "cd ${worksrcpath}/build && ${build.cmd} ${build.target}"
+        system "cd ${worksrcpath}/build && ${build.cmd} feelpp && ${build.cmd} ${build.target}"
     }
 }
 
@@ -86,9 +94,6 @@ configure.args      -DCMAKE_INSTALL_PREFIX=${prefix}\
                     -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
                     -DCMAKE_INSTALL_NAME_DIR=${prefix}/lib \
                     -DCMAKE_MODULE_PATH=${cmake_share_module_dir} \
-                    -DCMAKE_CXX_COMPILER=${prefix}/bin/g++-mp-4.7 \
-                    -DCMAKE_C_COMPILER=${prefix}/bin/gcc-mp-4.7 \
-                    -DCMAKE_Fortran_COMPILER=${prefix}/bin/gfortran-mp-4.7 \
                     -DMPI_Fortran_COMPILER=${prefix}/bin/openmpif90 \
                     -DFEELPP_ENABLE_DOCUMENTATION=OFF \
                     -DFEELPP_ENABLE_APPLICATIONS=OFF \
@@ -98,19 +103,26 @@ configure.args      -DCMAKE_INSTALL_PREFIX=${prefix}\
                     -Wno-dev
 
 
+default_variants    +gcc48 +openmpi
+
+variant gcc47 conflicts gcc48 description {Build with gcc 4.7} {
+    depends_lib-append  port:gcc47
+    configure.compiler  macports-gcc-4.7
+    configure.args-append \
+        -DCMAKE_CXX_COMPILER=${prefix}/bin/g++-mp-4.7 \
+        -DCMAKE_C_COMPILER=${prefix}/bin/gcc-mp-4.7 \
+        -DCMAKE_Fortran_COMPILER=${prefix}/bin/gfortran-mp-4.7
+}
+variant gcc48 conflicts gcc47 description {Build with gcc 4.8} {
+    depends_lib-append  port:gcc48
+    configure.compiler  macports-gcc-4.8
+    configure.args-append \
+        -DCMAKE_CXX_COMPILER=${prefix}/bin/g++-mp-4.8 \
+        -DCMAKE_C_COMPILER=${prefix}/bin/gcc-mp-4.8 \
+        -DCMAKE_Fortran_COMPILER=${prefix}/bin/gfortran-mp-4.8
+}
 
 
-variant gcc45 conflicts gcc44 gcc46 gcc47 description {Build with gcc 4.5} {}
-variant gcc46 conflicts gcc44 gcc45 gcc47 description {Build with gcc 4.6} {}
-variant gcc47 conflicts gcc44 gcc45 gcc46 description {Build with gcc 4.7} {}
-
-
-default_variants    +gcc47
-depends_lib-append  port:gcc47
-configure.compiler  macports-gcc-4.7
-
-configure.args-append \
-    -DMPI_COMPILER=/opt/local/lib/openmpi/bin/mpic++\
 
 
 #destroot.destdir DESTDIR=${destroot}${prefix}/lib/feel++
@@ -124,6 +136,7 @@ post-destroot {
 }
 
 
+
 #post-build {
 #   system "cd ${worksrcpath}/doc/api/ && make -k doxygen"
 #}
@@ -132,32 +145,27 @@ depends_lib    \
     port:openmpi\
     port:boost \
     port:petsc\
+    port:slepc\
     port:gmsh-devel\
     port:glpk \
-    port:slepc\
+    port:libANN \
+    port:libxml2 \
+    port:vtk5 \
+    port:cln
 
 
-#    port:libANN \
-
-variant octave description {Add octave bindings} {
-  depends_lib_append \
-    port:octave
-  configure.args-append \
-    -DCMAKE_DISABLE_FIND_PACKAGE_Octave=FALSE
-}
-
-variant tbb description {Add tbb support} {
-  depends_lib_append \
-    port:tbb
+variant openmpi description {Use OpenMPI} {
+    configure.args-append \
+        -DMPI_COMPILER=/opt/local/lib/openmpi/bin/mpic++\
 }
 
 variant doc description {Add doc support} {
   depends_lib_append \
     port:doxygen \
     port:latex2html \
-    port:imagemagick \
-  configure.args-append \
-    -DFEEL_ENABLE_DOCUMENTATION=ON
+    port:imagemagick
+  configure.args-delete -DFEEL_ENABLE_DOCUMENTATION=OFF
+  configure.args-append -DFEEL_ENABLE_DOCUMENTATION=ON
 }
 
 variant scipy description {Add python bindings} {
@@ -166,3 +174,19 @@ variant scipy description {Add python bindings} {
     port:py27-numpy
 }
 
+variant applications description {Add applications support} {
+  configure.args-delete -DFEELPP_ENABLE_APPLICATIONS=OFF
+  configure.args-append -DFEELPP_ENABLE_APPLICATIONS=ON
+}
+
+variant octave description {Add octave bindings} {
+  depends_lib_append \
+    port:octave
+  configure.args-append \
+    -DCMAKE_DISABLE_FIND_PACKAGE_Octave=FALSE
+}
+
+#variant tbb description {Add tbb support} {
+#  depends_lib_append \
+#    port:tbb
+#}

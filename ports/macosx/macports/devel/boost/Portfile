@@ -216,7 +216,7 @@ if {![variant_isset debug]} {
 }
 
 #default_variants +no_single +no_static
-default_variants +no_single +no_static +openmpi +gcc47
+default_variants +no_single +no_static +openmpi +gcc48
 
 variant debug description {Builds debug versions of the libraries as well} {
     build.args-delete   variant=release
@@ -238,6 +238,13 @@ variant gcc47 description {Build with gcc47} {
     build.args-append   pch=off
     build.args-delete   architecture=x86
     configure.cxx /opt/local/bin/g++-mp-4.7
+}
+
+variant gcc48 description {Build with gcc48} {
+    depends_lib-append      port:gcc48
+    build.args-append   pch=off
+    build.args-delete   architecture=x86
+    configure.cxx /opt/local/bin/g++-mp-4.8
 }
 
 

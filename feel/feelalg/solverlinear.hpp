@@ -55,8 +55,28 @@ public:
 
     typedef boost::shared_ptr<Preconditioner<T> > preconditioner_ptrtype;
 
+    class SolveData : public boost::tuple<bool,size_type,value_type>
+    {
+        typedef boost::tuple<bool,size_type,value_type> super_type;
+    public:
+        SolveData() {}
+        // rvalue: move constructor (fast)
+        SolveData( super_type && i )
+            :
+            super_type( i )
+        {}
+        // copie
+        SolveData( super_type const& i )
+            :
+            super_type( i )
+        {}
+        bool isConverged() const { return this->template get<0>(); }
+        size_type nIterations() const { return this->template get<1>(); }
+        value_type residual() const { return this->template get<2>(); }
+    };
+
     // return type of solve()
-    typedef boost::tuple<bool, size_type, value_type> solve_return_type;
+    typedef SolveData solve_return_type;
 
     /**
      *  Constructor. Initializes Solver data structures

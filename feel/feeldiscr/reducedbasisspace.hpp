@@ -395,7 +395,7 @@ public :
     /*
      * Get the FEM functionspace
      */
-    super_ptrtype functionSpace()
+    super_ptrtype functionSpace() const
         {
             return M_model->functionSpace();
         }
@@ -497,7 +497,8 @@ public :
                 // coeffs to be (d,N) and M_phi (d,vN) where d is the number of
                 // components and N the number of basis functions
                 // TODO: check with vectorial functions
-                return (coeffs*M_phi.transpose()).diagonal();
+                //return (coeffs*M_phi.transpose()).diagonal();
+                return M_phi * coeffs;
             }
         //evaluation at only one node
         eigen_vector_type id( eigen_vector_type const& coeffs ) const
@@ -594,6 +595,8 @@ public :
             {
                 return super::d( ldof, c1, c2, q );
             }
+
+
     private :
         int M_index;
         reducedbasisspace_ptrtype M_rbspace;
@@ -674,6 +677,11 @@ public :
         M_ctx_fespace( functionspace )
             {
                 update();
+            }
+
+        functionspace_ptrtype functionSpace() const
+            {
+                return M_rbspace->functionSpace();
             }
 
         void update ( )
@@ -1013,7 +1021,7 @@ public :
         /*
          * evaluate the element to nodes in contextRBSet
          */
-        eigen_vector_type evaluate(  ctxrbset_type const& context_rb )
+        eigen_vector_type evaluate(  ctxrbset_type const& context_rb, bool do_communications=true )
             {
                 int npts = context_rb.nPoints();
                 //from now we manipulate local datas
@@ -1032,7 +1040,11 @@ public :
                     auto ctx=it->second;
                     local_result.segment( nComponents*global_position, nComponents )  = this->evaluate( *ctx );
                 }
-                mpi::all_reduce( Environment::worldComm() , local_result, global_result, std::plus< eigen_vector_type >() );
+
+                if( do_communications )
+                    mpi::all_reduce( Environment::worldComm() , local_result, global_result, std::plus< eigen_vector_type >() );
+                else
+                    global_result = local_result;
 
                 return global_result;
 
@@ -1165,6 +1177,35 @@ public :
 
         void
         idInterpolate( matrix_node_type __ptsReal, id_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const;
+
+        /**
+         * these functione are here for the compilation.
+         * evaluateFromContext has the kywork _projection=true
+         * and in that case we project the expression on
+         * the function space associated to the context
+         * and it may happens that user wants to do
+         * evaluateFromContext( _context=ctx, _expr=dxv(...) , _projection=false )
+         * and so even we don't project dxv(...), in order to compile
+         * we need to have these functions
+         */
+        void
+        dxInterpolate( matrix_node_type __ptsReal, id_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
+        {
+            bool go = false;
+            CHECK( go ) << "The function dxInterpolate is not yet implemented \n";
+        }
+        void
+        dyInterpolate( matrix_node_type __ptsReal, id_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
+        {
+            bool go = false;
+            CHECK( go ) << "The function dyInterpolate is not yet implemented \n";
+        }
+        void
+        dzInterpolate( matrix_node_type __ptsReal, id_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
+        {
+            bool go = false;
+            CHECK( go ) << "The function dzInterpolate is not yet implemented \n";
+        }
 
 
         /*
@@ -1527,6 +1568,8 @@ template<typename Y,  typename Cont>
 void
 ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::idInterpolate( matrix_node_type __ptsReal, id_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
 {
+    bool go = false;
+    CHECK( go ) << "The function idInterpolate is not yet implemented \n";
     LOG( INFO ) << "not yet implemented";
 }
 

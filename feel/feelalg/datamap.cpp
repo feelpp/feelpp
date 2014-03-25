@@ -203,35 +203,35 @@ DataMap::setNDof( size_type ndof )
 }
 
 void
-DataMap::setNLocalDofWithoutGhost( const size_type proc, const size_type n, bool inWorld )
+DataMap::setNLocalDofWithoutGhost( const rank_type proc, const size_type n, bool inWorld )
 {
     M_n_localWithoutGhost_df[proc]=n;
 }
 void
-DataMap::setNLocalDofWithGhost( const size_type proc, const size_type n, bool inWorld )
+DataMap::setNLocalDofWithGhost( const rank_type proc, const size_type n, bool inWorld )
 {
     M_n_localWithGhost_df[proc]=n;
 }
 void
-DataMap::setFirstDof( const size_type proc, const size_type df, bool inWorld )
+DataMap::setFirstDof( const rank_type proc, const size_type df, bool inWorld )
 {
     FEELPP_ASSERT( proc < M_first_df.size() )( proc )( M_first_df.size() ).error( "invalid proc id or dof table" );
     M_first_df[proc]=df;
 }
 void
-DataMap::setLastDof( const size_type proc, const size_type df, bool inWorld )
+DataMap::setLastDof( const rank_type proc, const size_type df, bool inWorld )
 {
     FEELPP_ASSERT( proc < M_first_df.size() )( proc )( M_first_df.size() ).error( "invalid proc id or dof table" );
     M_last_df[proc]=df;
 }
 void
-DataMap::setFirstDofGlobalCluster( const size_type proc, const size_type df, bool inWorld )
+DataMap::setFirstDofGlobalCluster( const rank_type proc, const size_type df, bool inWorld )
 {
     FEELPP_ASSERT( proc < M_first_df_globalcluster.size() )( proc )( M_first_df_globalcluster.size() ).error( "invalid proc id or dof table" );
     M_first_df_globalcluster[proc]=df;
 }
 void
-DataMap::setLastDofGlobalCluster( const size_type proc, const size_type df, bool inWorld )
+DataMap::setLastDofGlobalCluster( const rank_type proc, const size_type df, bool inWorld )
 {
     FEELPP_ASSERT( proc < M_first_df_globalcluster.size() )( proc )( M_first_df_globalcluster.size() ).error( "invalid proc id or dof table" );
     M_last_df_globalcluster[proc]=df;
@@ -296,10 +296,10 @@ DataMap::updateDataInWorld()
 }
 
 
-uint16_type
+rank_type
 DataMap::procOnGlobalCluster( size_type globDof ) const
 {
-    uint16_type proc=0,res=0;
+    rank_type proc=0,res=invalid_rank_type_value;
     bool find=false;
 
     while ( ( !find ) && ( proc<this->nProcessors() ) )
@@ -338,7 +338,7 @@ DataMap::showMeMapGlobalProcessToGlobalCluster( bool showAll, std::ostream& __ou
     //__out << std::endl;
     this->comm().globalComm().barrier();
 
-    for ( int proc = 0; proc<this->comm().globalSize(); ++proc )
+    for ( rank_type proc = 0; proc<this->comm().globalSize(); ++proc )
     {
         this->comm().globalComm().barrier();
         if ( proc==this->worldComm().globalRank() )//this->worldComm().masterRank() )
@@ -384,7 +384,7 @@ DataMap::showMeMapGlobalProcessToGlobalCluster( bool showAll, std::ostream& __ou
 #if 1
             __out << " M_first_df : ";
 
-            for ( int i=0; i<this->worldComm().globalSize(); ++i )
+            for ( rank_type i=0; i<this->worldComm().globalSize(); ++i )
             {
                 __out << this-> M_first_df[i] << " ";
             }
@@ -392,7 +392,7 @@ DataMap::showMeMapGlobalProcessToGlobalCluster( bool showAll, std::ostream& __ou
             __out << "\n";
             __out << " M_last_df : ";
 
-            for ( int i=0; i<this->worldComm().globalSize(); ++i )
+            for ( rank_type i=0; i<this->worldComm().globalSize(); ++i )
             {
                 __out << this-> M_last_df[i] << " ";
             }
@@ -400,7 +400,7 @@ DataMap::showMeMapGlobalProcessToGlobalCluster( bool showAll, std::ostream& __ou
             __out << "\n";
             __out << " M_first_df_globalcluster : ";
 
-            for ( int i=0; i<this->worldComm().globalSize(); ++i )
+            for ( rank_type i=0; i<this->worldComm().globalSize(); ++i )
             {
                 __out << this-> M_first_df_globalcluster[i] << " ";
             }
@@ -408,7 +408,7 @@ DataMap::showMeMapGlobalProcessToGlobalCluster( bool showAll, std::ostream& __ou
             __out << "\n";
             __out << " M_last_df_globalcluster : ";
 
-            for ( int i=0; i<this->worldComm().globalSize(); ++i )
+            for ( rank_type i=0; i<this->worldComm().globalSize(); ++i )
             {
                 __out << this-> M_last_df_globalcluster[i] << " ";
             }
@@ -416,7 +416,7 @@ DataMap::showMeMapGlobalProcessToGlobalCluster( bool showAll, std::ostream& __ou
             __out << "\n";
             __out << " M_n_localWithGhost_df : ";
 
-            for ( int i=0; i<this->worldComm().globalSize(); ++i )
+            for ( rank_type i=0; i<this->worldComm().globalSize(); ++i )
             {
                 __out << this->M_n_localWithGhost_df[i] << " ";
             }
@@ -424,7 +424,7 @@ DataMap::showMeMapGlobalProcessToGlobalCluster( bool showAll, std::ostream& __ou
             __out << "\n";
             __out << " M_n_localWithoutGhost_df : ";
 
-            for ( int i=0; i<this->worldComm().globalSize(); ++i )
+            for ( rank_type i=0; i<this->worldComm().globalSize(); ++i )
             {
                 __out << this->M_n_localWithoutGhost_df[i] << " ";
             }
