@@ -124,6 +124,9 @@ public:
     typedef typename GetGm<1>::type gm1_type;
     typedef typename GetGm<1>::ptrtype gm1_ptrtype;
 
+    typedef typename gm_type::super::reference_convex_type reference_convex_type;
+    typedef typename gm1_type::super::reference_convex_type reference_convex1_type;
+
     typedef typename super::vertex_permutation_type vertex_permutation_type;
     typedef typename super::edge_permutation_type edge_permutation_type;
     typedef typename super::face_permutation_type face_permutation_type;
@@ -153,6 +156,7 @@ public:
         M_normals( nRealDim, numTopologicalFaces ),
         M_has_points( false ),
         M_neighbors( numNeighbors, std::make_pair( invalid_size_type_value, 0 ) ),
+        M_meas_pneighbors( 0 ),
         M_marker1(),
         M_marker2(),
         M_marker3(),
@@ -183,6 +187,7 @@ public:
         M_normals( nRealDim, numTopologicalFaces ),
         M_has_points( false ),
         M_neighbors( numNeighbors, std::make_pair( invalid_size_type_value, 0 ) ),
+        M_meas_pneighbors( 0 ),
         M_marker1(),
         M_marker2(),
         M_marker3(),
@@ -207,6 +212,7 @@ public:
         M_normals( e.M_normals ),
         M_has_points( false ),
         M_neighbors( numNeighbors, std::make_pair( invalid_size_type_value, 0 ) ),
+        M_meas_pneighbors( e.M_meas_pneighbors ),
         M_marker1( e.M_marker1 ),
         M_marker2( e.M_marker2 ),
         M_marker3( e.M_marker3 ),
@@ -224,7 +230,6 @@ public:
      */
     ~GeoND()
     {
-
     }
 
 #if 0
@@ -456,7 +461,7 @@ public:
      */
     PointType & reversepoint( uint16_type const i )
     {
-        return *( static_cast<POINTTYPE *>( M_points[ detail::ReversePoint<GEOSHAPE>::operate( i ) ] ) );
+        return *( static_cast<POINTTYPE *>( M_points[ Feel::detail::ReversePoint<GEOSHAPE>::operate( i ) ] ) );
     }
 
 
@@ -470,7 +475,7 @@ public:
      */
     PointType const & reversepoint ( uint16_type const i ) const
     {
-        return *( static_cast<POINTTYPE *>( M_points[ detail::ReversePoint<GEOSHAPE>::operate( i ) ] ) );
+        return *( static_cast<POINTTYPE *>( M_points[ Feel::detail::ReversePoint<GEOSHAPE>::operate( i ) ] ) );
     }
 
 
@@ -739,7 +744,8 @@ public:
 
             if ( tags[2] > 1 )
             {
-                std::vector<int> p( tags[2]-1 );
+                // ghosts
+                std::vector<rank_type> p( tags[2]-1 );
 
                 for ( size_type i = 0; i < p.size(); ++i )
                 {
@@ -919,7 +925,7 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::showMe( bool verbose, std::ostream & out ) co
     for ( int i = 0; i < numVertices; i++ )
     {
         out << "POINT id = " << i << std::endl;
-        out << point( i ).showMe( verbose, out );
+        point( i ).showMe( verbose, out );
     }
 
     out << "----- END OF GeoND data ---" << std::endl << std::endl;

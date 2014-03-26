@@ -62,7 +62,7 @@ public:
     /**
      *  Dummy-Constructor. Dimension=0
      */
-    Vector ();
+    Vector ( WorldComm const& _worldComm = Environment::worldComm() );
 
     Vector ( datamap_ptrtype const& n );
 
@@ -643,7 +643,19 @@ dot( Vector<T> const& v1,
 }
 
 
+namespace detail
+{
+template <class VectorType>
+struct is_vector_ptr : mpl::false_ {};
 
+template <class VectorType>
+struct is_vector_ptr<boost::shared_ptr<VectorType> >
+        :
+        boost::is_base_of<Vector<typename VectorType::value_type>,
+        VectorType>
+{};
+
+}
 
 } // Feel
 

@@ -173,7 +173,11 @@ public:
 /**
  * destructor
  */
-    ~Mesh2D() {}
+    ~Mesh2D()
+        {
+            VLOG(1) << "Mesh2D destructor";
+            this->clear();
+        }
 
 //@}
 
@@ -303,10 +307,12 @@ public:
  */
     virtual void clear()
         {
+            VLOG(1) << "Deleting Mesh2D...\n";
+
             this->elements().clear();
             this->points().clear();
             this->faces().clear();
-            FEELPP_ASSERT( isEmpty() ).error( "all mesh containers should be empty after a clear." );
+            CHECK( isEmpty() ) << "all mesh containers should be empty after a clear.";
         }
 
 
@@ -333,7 +339,8 @@ protected:
 
     void updateEntitiesCoDimensionOnePermutation()
         {
-            updateEntitiesCoDimensionOnePermutation( mpl::bool_<Shape::nDim==Shape::nRealDim>() );
+            //updateEntitiesCoDimensionOnePermutation( mpl::bool_<Shape::nDim==Shape::nRealDim>() );
+            updateEntitiesCoDimensionOnePermutation( mpl::bool_<true>() );
         }
 
     void
@@ -351,7 +358,7 @@ protected:
                          elt->face( j ).ad_second() == elt->id() )
                     {
                         this->elements().modify( elt,
-                                                 detail::UpdateEdgePermutation<edge_permutation_type>( elt->face( j ).pos_second(),
+                                                 Feel::detail::UpdateEdgePermutation<edge_permutation_type>( elt->face( j ).pos_second(),
                                                                                                        edge_permutation_type( edge_permutation_type::REVERSE_PERMUTATION ) ) );
                     }
                 }

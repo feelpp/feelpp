@@ -46,6 +46,7 @@
 #include <vector>
 
 #include <feel/feelcrb/modelcrbbase.hpp>
+#include <feel/feeldiscr/reducedbasisspace.hpp>
 
 namespace Feel
 {
@@ -69,8 +70,20 @@ makeThermalBlockOptions()
     ( "geofile", Feel::po::value<std::string>()->default_value( "" ), "name of the geofile input (used to store DB)")
     ( "mshfile", Feel::po::value<std::string>()->default_value( "" ), "name of the gmsh file input")
     ( "gamma_dir", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary Dirichlet formulation" )
+    ( "load-mesh-already-partitioned", Feel::po::value<bool>()->default_value( "true" ), "load a mesh from mshfile that is already partitioned if true, else the mesh loaded need to be partitioned")
+    ( "beta.A0", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for A0" )
+    ( "beta.A1", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for A1" )
+    ( "beta.A2", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for A2" )
+    ( "beta.A3", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for A3" )
+    ( "beta.A4", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for A4" )
+    ( "beta.A5", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for A5" )
+    ( "beta.A6", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for A6" )
+    ( "beta.A7", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for A7" )
+    ( "beta.A8", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for A8" )
+    ( "beta.Alast", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for last A" )
+    ( "beta.F0.0", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for F0" )
     ;
-    return thermalblockoptions.add( Feel::feel_options() );
+    return thermalblockoptions.add( Feel::feel_options() ).add( backend_options("backendl2") );
 }
 
 /**
@@ -105,8 +118,8 @@ using namespace vf;
 class ParameterDefinition
 {
 public :
-    static const uint16_type nx = 2;
-    static const uint16_type ny = 2;
+    static const uint16_type nx = 3;
+    static const uint16_type ny = 3;
     static const uint16_type ParameterSpaceDimension = nx*ny;
     typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
 };
@@ -128,6 +141,10 @@ public :
 
     //! the approximation function space type
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
+
+    static const bool is_time_dependent = false;
+    static const bool is_linear = true;
+
 };
 
 
@@ -139,13 +156,12 @@ public :
  *
  * \tparam Dim the geometric dimension of the problem (e.g. Dim=1, 2 or 3)
  */
-
-
-class ThermalBlock : public ModelCrbBase< ParameterDefinition , FunctionSpaceDefinition >
+class ThermalBlock : public ModelCrbBase< ParameterDefinition , FunctionSpaceDefinition >,
+                     public boost::enable_shared_from_this< ThermalBlock >
 {
 
-    static const uint16_type nx = 2;
-    static const uint16_type ny = 2;
+    static const uint16_type nx = 3;
+    static const uint16_type ny = 3;
 
 
 public:
@@ -155,7 +171,6 @@ public:
     typedef typename super_type::funsd_type funsd_type;
 
     static const uint16_type ParameterSpaceDimension = nx*ny;
-    static const bool is_time_dependent = false;
 
     //! Polynomial order \f$P_2\f$
     static const uint16_type Order = 1;
@@ -198,6 +213,10 @@ public:
     typedef FunctionSpace<mesh_type, basis_type, value_type> functionspace_type;
     typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
 
+    /*reduced basis space*/
+    typedef ReducedBasisSpace<super_type, mesh_type, basis_type, value_type> rbfunctionspace_type;
+    typedef boost::shared_ptr< rbfunctionspace_type > rbfunctionspace_ptrtype;
+
 
     //! an element type of the approximation function space
     typedef typename functionspace_type::element_type element_type;
@@ -208,6 +227,10 @@ public:
     typedef boost::shared_ptr<export_type> export_ptrtype;
 
     typedef  boost::numeric::ublas::vector<element_type> Vector_type ;
+
+    typedef FunctionSpace<mesh_type, bases<Lagrange<0, Scalar, Continuous > > > continuous_p0_space_type;
+    typedef boost::shared_ptr<continuous_p0_space_type> continuous_p0_space_ptrtype;
+    typedef typename continuous_p0_space_type::element_type continuous_p0_element_type;
 
 
     /* parameter space */
@@ -233,6 +256,8 @@ public:
         std::vector< std::vector<std::vector<vector_ptrtype> > >
         > affine_decomposition_type;
 
+    typedef Preconditioner<double> preconditioner_type;
+    typedef boost::shared_ptr<preconditioner_type> preconditioner_ptrtype;
 
     /**
      * Constructor
@@ -243,11 +268,20 @@ public:
         :
         M_vm ( vm ),
         M_backend( backend_type::build( vm ) ),
+        M_backendl2( backend_type::build( vm , "backendl2" ) ),
         meshSize( vm["hsize"].as<double>() ),
         gamma_dir( vm["gamma_dir"].as<double>() ),
         M_Dmu( new parameterspace_type ),
         timers()
-    {}
+    {
+        M_preconditionerl2 = preconditioner(_pc=(PreconditionerType) M_backendl2->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
+                                            _backend= M_backendl2,
+                                            _pcfactormatsolverpackage=(MatSolverPackageType) M_backendl2->matSolverPackageEnumType(),// mumps if is installed ( by defaut )
+                                            _worldcomm=M_backendl2->comm(),
+                                            _prefix=M_backendl2->prefix() ,
+                                            _rebuild=true);
+
+    }
 
     //! initialisation of the model and definition of parameters values
     void initModel();
@@ -337,6 +371,13 @@ public:
     {
         return Xh;
     }
+    /**
+     * \brief Returns the reduced basis function space
+     */
+    rbfunctionspace_ptrtype rBFunctionSpace()
+    {
+        return RbXh;
+    }
 
     /**
      * there is at least one output which is the right hand side of the
@@ -365,40 +406,100 @@ public:
     boost::tuple<beta_vector_type, std::vector<beta_vector_type> >
     computeBetaQm( parameter_type const& mu , double time=0 )
     {
-        M_betaAqm.resize( Qa() );
-        for(int j=0; j<this->Qa(); j++)
-            M_betaAqm[j].resize(1);
 
-        //mu_i inside the domain (all subdomains index)
-        for ( int i=0; i<nx*ny; i++ )
+        bool use_ginac = option(_name="crb.use-ginac-for-beta-expressions").as<bool>();
+        if( M_use_ginac )
         {
-            M_betaAqm[i][0] = mu( i );
-            //std::cout<<"[computeBetaAqm] M_betaAqm("<<i<<") = mu ("<<i<<")"<<std::endl;
-        }
+            int qa = Qa();
+            int nl = Nl();
 
-        //IMPORTANT REMARK, subdomain indices begin at 1 and not 0
-        int index_beta=nx*ny;
+            // prepare map of symbols
+            std::map<std::string,double> map_symbols;
+            for ( int i=0; i<nx*ny; i++ )
+            {
+                std::string symbol = ( boost::format("k%1%") %i ).str();
+                map_symbols.insert( std::pair< std::string, double > (symbol,mu(i)) );
+            }
 
-        for ( int i=0; i<north_subdomain_index.size(); i++ )
+            //update ginac expressions
+            for ( int i=0; i<nx*ny; i++ )
+            {
+                ginac_expressionA[i].expression().setParameterValues( map_symbols );
+                auto projection=project(_space=continuous_p0, _expr=ginac_expressionA[i]);
+                M_betaAqm[i][0] = projection(0);
+            }
+            int index_beta=nx*ny;
+            for ( int i=0; i<north_subdomain_index.size(); i++ )
+            {
+                int j = north_subdomain_index[i]-1;
+                ginac_expressionA[j].expression().setParameterValues( map_symbols );
+                auto projection=project(_space=continuous_p0, _expr=ginac_expressionA[j]);
+                M_betaAqm[index_beta][0] = projection(0);
+                index_beta++;
+            }
+            int idx = nx*ny;
+            ginac_expressionA[idx].expression().setParameterValues( map_symbols );
+            auto projection=project(_space=continuous_p0, _expr=ginac_expressionA[idx]);
+            M_betaAqm[index_beta][0] = projection(0);
+
+            idx=0;
+            for(int i=0; i<nl; i++)
+            {
+                int ql=Ql(i);
+                for(int j=0; j<ql; j++)
+                {
+                    ginac_expressionF[idx].expression().setParameterValues( map_symbols );
+                    auto projection=project(_space=continuous_p0, _expr=ginac_expressionF[idx]);
+                    M_betaFqm[i][j][0] = projection(0);
+                    idx++;
+                }
+            }
+#if 0
+            /* check ................*/
+            for ( int i=0; i<nx*ny; i++ )
+            {
+                LOG( INFO )<< "M_betaAqm["<<i<<"][0] = "<<M_betaAqm[i][0]<<" -- should be "<<mu(i);
+            }
+            index_beta=nx*ny;
+            for ( int i=0; i<north_subdomain_index.size(); i++ )
+           {
+               LOG( INFO ) << " M_betaAqm["<<index_beta<<"][0] = "<<M_betaAqm[index_beta][0]<<" -- should be "<<  mu ( north_subdomain_index[i]-1 );
+               index_beta++;
+           }
+            LOG( INFO ) << " M_betaAqm["<<index_beta<<"][0] = "<<M_betaAqm[index_beta][0]<<" -- should be 1";
+            LOG( INFO ) << "M_betaFqm[0][0][0] : "<<M_betaFqm[0][0][0]<<" -- should be 1";
+            /* end check ........... */
+#endif
+
+        }//ginac
+        else
         {
-            M_betaAqm[index_beta][0] = mu ( north_subdomain_index[i]-1 );
-            //std::cout<<"M_betaAqm("<<index_beta<<") = mu ("<<north_subdomain_index[i]-1<< ")"<<std::endl;
-            index_beta++;
-        }
 
-        M_betaAqm[index_beta][0] = 1;
+            //mu_i inside the domain (all subdomains index)
+            for ( int i=0; i<nx*ny; i++ )
+            {
+                M_betaAqm[i][0] = mu( i );
+                //std::cout<<"[computeBetaAqm] M_betaAqm("<<i<<") = mu ("<<i<<")"<<std::endl;
+            }
 
-        M_betaFqm.resize( Nl() );
-        for(int i=0; i<Nl(); i++)
-        {
-            M_betaFqm[i].resize( Ql(i) );
-            for(int j=0;j<Ql(i);j++)
-                M_betaFqm[i][j].resize(1);
-        }
-        //compliant output
-        for ( int i=0; i<Ql( 0 ); i++ ) M_betaFqm[0][i][0] = 1;
+            //IMPORTANT REMARK, subdomain indices begin at 1 and not 0
+            int index_beta=nx*ny;
 
+            for ( int i=0; i<north_subdomain_index.size(); i++ )
+            {
+                M_betaAqm[index_beta][0] = mu ( north_subdomain_index[i]-1 );
+                //std::cout<<"M_betaAqm("<<index_beta<<") = mu ("<<north_subdomain_index[i]-1<< ")"<<std::endl;
+                index_beta++;
+            }
+
+            M_betaAqm[index_beta][0] = 1;
+
+            //compliant output
+            for ( int i=0; i<Ql( 0 ); i++ ) M_betaFqm[0][i][0] = 1;
+
+        }//don't use ginac
         return boost::make_tuple( M_betaAqm, M_betaFqm);
+
     }
 
 
@@ -487,21 +588,30 @@ public:
         return M_Dmu->min();
     }
 
+    void initDataStructureForBetaCoeff();
+    void buildGinacExpressions();
+
 private:
 
     po::variables_map M_vm;
 
     //! linear algebra backend
     backend_ptrtype M_backend;
+    backend_ptrtype M_backendl2;
 
     //! mesh characteristic size
     double meshSize;
+
+    preconditioner_ptrtype M_preconditionerl2;
 
     value_type gamma_dir;
 
     parameterspace_ptrtype M_Dmu;
 
     functionspace_ptrtype Xh;
+    continuous_p0_space_ptrtype continuous_p0;
+
+    rbfunctionspace_ptrtype RbXh;
     element_ptrtype pT;
 
     mesh_ptrtype mmesh;
@@ -532,8 +642,86 @@ private:
     beta_vector_type M_betaAqm;
     std::vector< beta_vector_type > M_betaFqm;
 
+    bool M_use_ginac ;
+
+    std::vector< Expr<GinacEx<2> > > ginac_expressionA;
+    std::vector< Expr<GinacEx<2> > > ginac_expressionF;
+
 }; // ThermalBlock
 
+
+
+void
+ThermalBlock::initDataStructureForBetaCoeff()
+{
+    int qa = Qa();
+    M_betaAqm.resize( qa );
+    for(int i=0; i<qa; i++)
+        M_betaAqm[i].resize( 1 );
+
+   int nl = Nl();
+    M_betaFqm.resize( nl );
+    for(int i=0; i<nl; i++)
+    {
+        int ql=Ql(i);
+        M_betaFqm[i].resize( ql );
+        for(int j=0; j<ql; j++)
+            M_betaFqm[i][j].resize( 1 );
+    }
+}
+
+void
+ThermalBlock::buildGinacExpressions()
+{
+
+    int qa = this->Qa();
+    int nl = this->Nl();
+
+
+    //create list of symbols
+    std::vector< std::string > symbols_vec;
+    symbols_vec.push_back( "x" );
+    symbols_vec.push_back( "y" );
+    for ( int i=0; i<nx*ny; i++ )
+    {
+        std::string symbol = ( boost::format("k%1%") %i ).str();
+        symbols_vec.push_back( symbol );
+    }
+
+    //build ginac expressions
+    int index_beta=nx*ny;
+    for ( int i=0; i<nx*ny; i++ )
+    {
+        std::string name = ( boost::format("beta.A%1%") %i ).str();
+        std::string filename = ( boost::format("GinacA%1%") %i ).str();
+        ginac_expressionA.push_back( expr( option(_name=name).as<std::string>(), Symbols( symbols_vec ) , filename ) );
+    }
+    index_beta=nx*ny;
+    for ( int i=0; i<north_subdomain_index.size(); i++ )
+    {
+        int j = north_subdomain_index[i]-1;
+        std::string name = ( boost::format("beta.A%1%") %j ).str();
+        std::string filename = ( boost::format("GinacA%1%") %index_beta ).str();
+        ginac_expressionA.push_back( expr( option(_name=name).as<std::string>(), Symbols( symbols_vec ) , filename ) );
+        index_beta++;
+    }
+    int idx = nx*ny;
+    std::string name = ( boost::format("beta.Alast") ).str();
+    std::string filename = ( boost::format("GinacAlast") ).str();
+    ginac_expressionA.push_back( expr( option(_name=name).as<std::string>(), Symbols( symbols_vec ) , filename ) );
+
+    for(int i=0; i<nl; i++)
+    {
+        int ql=Ql(i);
+        for(int j=0; j<ql; j++)
+        {
+            std::string name = ( boost::format("beta.F%1%.%2%") %i %j ).str();
+            std::string filename = ( boost::format("GinacF%1%.%2%") %i %j ).str();
+            ginac_expressionF.push_back( expr( option(_name=name).as<std::string>(), Symbols( symbols_vec ) , filename ) );
+        }
+    }
+
+}
 
 gmsh_ptrtype
 thermalBlockGeometry( int nx, int ny, double hsize )
@@ -619,6 +807,8 @@ void
 ThermalBlock::initModel()
 {
 
+    M_use_ginac = option(_name="crb.use-ginac-for-beta-expressions").as<bool>();
+
     //std::string mshfile_name = M_vm["mshfile"].as<std::string>();
     std::string mshfile_name = option(_name="mshfile").as<std::string>();
 
@@ -630,9 +820,32 @@ ThermalBlock::initModel()
     }
     else
     {
-        mmesh = loadGMSHMesh( _mesh=new mesh_type,
-                              _filename=option(_name="mshfile").as<std::string>(),
-                              _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
+
+        bool load_mesh_already_partitioned=option(_name="load-mesh-already-partitioned").as<bool>();
+        if( ! load_mesh_already_partitioned )
+        {
+            int N = Environment::worldComm().globalSize();
+            std::string mshfile = option("mshfile").as<std::string>();
+            std::string mshfile_complete = option("mshfile").as<std::string>();
+            auto pos = mshfile.find(".msh");
+            mshfile.erase( pos , 4);
+            std::string filename = (boost::format(mshfile+"-np%1%.msh") %N ).str();
+            if( !fs::exists( filename ) )
+            {
+                super_type::partitionMesh( mshfile_complete, filename , 2 , 1 );
+            }
+            mmesh = loadGMSHMesh( _mesh=new mesh_type,
+                                 _filename=filename,
+                                 _rebuild_partitions=false,
+                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER );
+        }
+        else
+        {
+            mmesh = loadGMSHMesh( _mesh=new mesh_type,
+                                 _filename=option("mshfile").as<std::string>(),
+                                 _rebuild_partitions=false,
+                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER );
+        }
     }
 
     auto names = mmesh->markerNames();
@@ -667,6 +880,9 @@ ThermalBlock::initModel()
      * The function space and some associate elements are then defined
      */
     Xh = functionspace_type::New( mmesh );
+    continuous_p0 = continuous_p0_space_type::New( mmesh );
+    RbXh = rbfunctionspace_type::New( _model=this->shared_from_this() , _mesh=mmesh );
+
     // allocate an element of Xh
     pT = element_ptrtype( new element_type( Xh ) );
 
@@ -710,14 +926,21 @@ ThermalBlock::initModel()
     element_type u( Xh, "u" );
     element_type v( Xh, "v" );
 
-    form2( Xh, Xh, D,_init=true )=integrate( elements( mmesh ),0*idt( v )*id( v ), _Q<0>() );
-    D->close();
+    M = M_backend->newMatrix( Xh, Xh );
 
-    LOG(INFO) << "Number of dof " << Xh->nLocalDof() << "\n";
+    form2( Xh, Xh, D,_init=true )=integrate( elements( mmesh ),0*idt( v )*id( v ), _Q<0>() );
+    form2( Xh, Xh, M,_init=true )=integrate( elements( mmesh ),0*idt( v )*id( v ), _Q<0>() );
+
+    if( Environment::worldComm().isMasterRank() )
+    {
+        std::cout << "Number of local dof " << Xh->nLocalDof() << std::endl;
+        std::cout << "Number of dof " << Xh->nDof() << std::endl;
+    }
 
     int index=0;//index for M_Fqm or M_Aqm
     int subdomain_index; //index for subdomains along a boundary
 
+    double mu_min_coeff=0.1;
     // right hand side
     form1( Xh, M_Fqm[0][0][0], _init=true ) ;
     BOOST_FOREACH( auto marker, southMarkers )
@@ -735,6 +958,8 @@ ThermalBlock::initModel()
         LOG(INFO) <<"[ThermalBlock::init] domain " << domain << "\n";
         form2( Xh, Xh, M_Aqm[index][0],_init=true ) =
             integrate( markedelements( mmesh, domain ), gradt( u )*trans( grad( v ) ) );
+        form2( Xh, Xh, M ) +=
+            integrate( markedelements( mmesh, domain ), gradt( u )*trans( grad( v ) ) * mu_min_coeff );
         M_Aqm[index][0]->close();
         LOG(INFO) <<"[ThermalBlock::init] done with Aqm[" << index << "]\n";
         index++;
@@ -747,13 +972,18 @@ ThermalBlock::initModel()
     {
         std::string sid = subdomainFromBoundary( marker );
         form2( Xh, Xh, M_Aqm[index][0], _init=true ) =  integrate( markedfaces( mmesh, marker ),
-                -gradt( u )*vf::N()*id( v )
-                -grad( u )*vf::N()*idt( v )
-                                                             );
+                                                                   -gradt( u )*vf::N()*id( v )
+                                                                   -grad( u )*vf::N()*idt( v )
+                                                                   );
+        form2( Xh, Xh, M ) +=  integrate( markedfaces( mmesh, marker ),
+                                          -gradt( u )*vf::N()*id( v ) * mu_min_coeff
+                                          -grad( u )*vf::N()*idt( v ) * mu_min_coeff
+                                          );
         M_Aqm[index][0]->close();
         index++;
 
         form2( Xh, Xh, M_Aqm[last_index_Aqm][0] ) += integrate( markedfaces( mmesh, marker ),gamma_dir*idt( u )*id( v )/h() );
+        form2( Xh, Xh, M ) += integrate( markedfaces( mmesh, marker ),gamma_dir*idt( u )*id( v )/h() );
 
         subdomain_index = subdomainId( marker );
         north_subdomain_index.push_back( subdomain_index );
@@ -761,11 +991,14 @@ ThermalBlock::initModel()
     M_Aqm[last_index_Aqm][0]->close();
     LOG(INFO) <<"[ThermalBlock::init] done with boundaryMarkers\n";
 
-    M = M_backend->newMatrix( Xh, Xh );
-    form2( Xh, Xh, M, _init=true ) =
-        integrate( elements( mmesh ), id( u )*idt( v ) + grad( u )*trans( gradt( u ) ) );
-    M->close();
+    //form2( Xh, Xh, M, _init=true ) =
+    //    integrate( elements( mmesh ), id( u )*idt( v ) + grad( u )*trans( gradt( u ) ) );
 
+    M_preconditionerl2->setMatrix( M );
+
+    initDataStructureForBetaCoeff();
+    if( M_use_ginac )
+        buildGinacExpressions();
 
 }//initModel()
 
@@ -834,7 +1067,7 @@ void
 ThermalBlock::l2solve( vector_ptrtype& u, vector_ptrtype const& f )
 {
     //std::cout << "l2solve(u,f)\n";
-    M_backend->solve( _matrix=M,  _solution=u, _rhs=f );
+    M_backendl2->solve( _matrix=M,  _solution=u, _rhs=f , _prec=M_preconditionerl2 );
     //std::cout << "l2solve(u,f) done\n";
 }
 

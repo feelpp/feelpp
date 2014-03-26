@@ -34,7 +34,7 @@ if ( TRILINOS_LIBRARIES )
 endif()
 
 set( SRC
-  dummy.cpp datamap.cpp
+  dummy.cpp enums.cpp datamap.cpp
   vector.cpp vectorublas.cpp
   preconditioner.cpp
   backend.cpp  matrixshellsparse.cpp backendpetsc.cpp
@@ -49,4 +49,3 @@ set( SRC
 
 file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
 feel_append_src(feelalg "${SRC};${HDR}")
-

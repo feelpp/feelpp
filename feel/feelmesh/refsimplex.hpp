@@ -50,6 +50,7 @@ public:
     static const uint16_type topological_dimension = super::topological_dimension;
     static const uint16_type real_dimension = super::real_dimension;
 
+    typedef super GeoShape;
     static const size_type Shape = super::Shape;
     static const size_type Geometry = super::Geometry;
 
@@ -157,7 +158,7 @@ public:
         computeMeasure();
     }
 
-    Reference( element_type const& e, uint16_type __f )
+    Reference( element_type const& e, uint16_type __f, uint16_type __p = permutation_type::IDENTITY )
         :
         super(),
         M_id( __f ),
@@ -177,22 +178,46 @@ public:
             throw std::invalid_argument( str.str() );
         }
 
-        for ( int i = 0; i < numVertices; ++i )
-        {
-            if ( real_dimension == 3 )
-                ublas::column( M_vertices, i ) = e.vertex( element_type::f2p( __f, i ) );
 
-            else
-                ublas::column( M_vertices, i ) = e.vertex( element_type::e2p( __f, i ) );
+
+        CHECK( nDim <3 ) << "nDim must be less than 3 here\n";
+        if ( nDim == 2 )
+        {
+
+            std::map<uint16_type, std::vector<uint16_type> > permTriangles = {
+                {triangular_faces_type::IDENTITY, {0,1,2}},
+                {triangular_faces_type::ROTATION_ANTICLOCK, {1,2,0}},
+                {triangular_faces_type::ROTATION_CLOCKWISE, {2,0,1}},
+                {triangular_faces_type::REVERSE_BASE,{0,2,1}},
+                {triangular_faces_type::REVERSE_HYPOTENUSE,{1,0,2}},
+                {triangular_faces_type::REVERSE_HEIGHT,{2,1,0}}
+            };
+
+            DCHECK( permTriangles.find( __p )!=permTriangles.end() ) << "invalid permutation :" << __p << "\n";
+
+            for ( int i = 0; i < numVertices; ++i )
+            {
+                const int iperm = permTriangles.find( __p )->second[ i ];
+                ublas::column( M_vertices, iperm ) = e.vertex( element_type::f2p( __f, i ) );
+            }
+
+            M_points = make_triangle_points();
         }
-
-        for ( int i = 0; i < numPoints; ++i )
+        else if ( nDim == 1 )
         {
-            if ( real_dimension == 3 )
-                ublas::column( M_points, i ) = e.point( element_type::f2p( __f, i ) );
+            std::map<uint16_type, std::vector<uint16_type> > permLines{
+                {line_permutations::IDENTITY, {0,1} },
+                {line_permutations::REVERSE_PERMUTATION, {1,0} } };
 
-            else
-                ublas::column( M_points, i ) = e.point( element_type::e2p( __f, i ) );
+            DCHECK( permLines.find( __p )!=permLines.end() ) << "invalid permutation :" << __p << "\n";
+
+            for ( int i = 0; i < numVertices; ++i )
+            {
+                const int iperm = permLines.find( __p )->second[ i ];
+                ublas::column( M_vertices, iperm ) = e.vertex( element_type::e2p( __f, i ) );
+            }
+
+            M_points = make_line_points();
         }
 
         make_normals();
@@ -412,9 +437,9 @@ public:
         return M_normals.end();
     }
 
-    topological_face_type topologicalFace( uint16_type __f ) const
+    topological_face_type topologicalFace( uint16_type __f, uint16_type __p = permutation_type::IDENTITY ) const
     {
-        topological_face_type ref( *this, __f );
+        topological_face_type ref( *this, __f, __p );
         return ref;
     }
 

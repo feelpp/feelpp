@@ -30,7 +30,10 @@
 #endif
 
 #include <boost/mpi.hpp>
+#include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/foreach.hpp>
+
 
 #include "ex.h"
 #include "lst.h"
@@ -71,6 +74,7 @@ class excompiler
 		void* module;
 		std::string name; /**< filename with .so suffix */
 		bool clean_up; /**< if true, source and so-file will be deleted */
+		filedesc() : module(0), name(), clean_up(true) {}
 	};
 	std::vector<filedesc> filelist; /**< List of all opened modules */
 public:
@@ -79,9 +83,7 @@ public:
 	 */
 	~excompiler()
 	{
-		for (std::vector<filedesc>::const_iterator it = filelist.begin(); it != filelist.end(); ++it) {
-			clean_up(it);
-		}
+		clean_up();
 	}
 	/**
 	 * Adds a new module to the list.
@@ -94,83 +96,158 @@ public:
 		fd.clean_up = clean_up;
 		filelist.push_back(fd);
 	}
+	void clean_up(bool verbose = false )
+	{
+		for (std::vector<filedesc>::iterator it = filelist.begin(); it != filelist.end(); ++it)
+		{
+			if ( verbose && it->clean_up)
+				std::cout << "removing " << it->name << " module" << it->module << "...\n";
+                     clean_up(it);
+                }
+		filelist.clear();
+
+	}
 	/**
 	 * Closes a module and deletes the so-file if the associated clean-up flag is true.
 	 */
-	void clean_up(const std::vector<filedesc>::const_iterator it)
+	void clean_up(std::vector<filedesc>::iterator it)
 	{
 		dlclose(it->module);
-		if (it->clean_up) {
-			remove(it->name.c_str());
+		char* err = dlerror();
+		if ( err )
+		{
+			std::cerr << "error in dlclosing module : " << it->module << " : " << err << "\n";
 		}
+		if (it->clean_up) {
+			boost::mpi::communicator world;
+			if( world.rank() == 0 )
+			{
+				namespace fs = boost::filesystem;
+				if ( fs::exists( fs::path( it->name ) ) )
+				{
+					int ok = remove(it->name.c_str());
+					if ( ok == -1 )
+						std::cerr << "removing " << it->name << " failed\n";
+				}
+			}
+		}
+
 	}
 	/**
 	 * Creates a new C source file and adds a standard header. If filename is
 	 * empty, a unique random name is produced and used.
 	 */
 	void create_src_file(std::string& filename, std::ofstream& ofs)
-	{
-		if (filename.empty()) {
-			// fill filename with unique random word
-			const char* filename_pattern = "./GiNaCXXXXXX";
-			char* new_filename = new char[strlen(filename_pattern)+1];
-			strcpy(new_filename, filename_pattern);
-			if (!mktemp(new_filename)) {
+		{
+			if (filename.empty()) {
+				// fill filename with unique random word
+				const char* filename_pattern = "./GiNaCXXXXXX";
+				char* new_filename = new char[strlen(filename_pattern)+1];
+				strcpy(new_filename, filename_pattern);
+				if (!mktemp(new_filename)) {
+					delete[] new_filename;
+					throw std::runtime_error("mktemp failed");
+				}
+
+				filename = std::string(new_filename);
+				ofs.open(filename.c_str(), std::ios::out);
 				delete[] new_filename;
-				throw std::runtime_error("mktemp failed");
+			} else {
+				//filename = filename + pid;
+				// use parameter as filename
+				ofs.open(filename.c_str(), std::ios::out);
 			}
 
-            filename = std::string(new_filename);
-			ofs.open(filename.c_str(), std::ios::out);
-			delete[] new_filename;
-		} else {
-            //filename = filename + pid;
-			// use parameter as filename
-			ofs.open(filename.c_str(), std::ios::out);
-		}
+			if (!ofs) {
+				throw std::runtime_error("could not create source code file for compilation");
+			}
 
-		if (!ofs) {
-			throw std::runtime_error("could not create source code file for compilation");
+			/*****
+			      ofs << "#include <stddef.h> " << std::endl;
+			      ofs << "#include <stdlib.h> " << std::endl;
+			      ofs << "#include <math.h> " << std::endl;
+			      ofs << "#define Pi M_PI" << std::endl;
+			      ofs << "#define pi M_PI" << std::endl;
+			*****/
+			ofs << "#include <ginac-extern-math.h> " << std::endl;
+			ofs << "#if !defined( pi )\n"
+			    << "#define pi " << M_PI << std::endl
+			    << "#endif // pi\n";
+			ofs << "#if !defined( Pi )\n"
+			    << "#define Pi " << M_PI << std::endl
+			    << "#endif // Pi\n";
+			//ofs << "#include <ginac/constant.h> " << std::endl;
+			ofs << std::endl;
 		}
-
-		/*****
-        ofs << "#include <stddef.h> " << std::endl;
-		ofs << "#include <stdlib.h> " << std::endl;
-		ofs << "#include <math.h> " << std::endl;
-        ofs << "#define Pi M_PI" << std::endl;
-        ofs << "#define pi M_PI" << std::endl;
-		*****/
-        ofs << "#include <ginac-extern-math.h> " << std::endl;
-        //ofs << "#include <ginac/constant.h> " << std::endl;
-		ofs << std::endl;
-	}
+	void remove_src_file( std::string filename, bool clean_up )
+		{
+			boost::mpi::communicator world;
+			if (clean_up)
+			{
+				if( world.rank() == 0 )
+				{
+					int e = remove(filename.c_str());
+					if ( e == -1 )
+						std::cerr << "Error removing file : " << filename << std::endl;
+				}
+			}
+		}
 	/**
 	 * Calls the shell script 'ginac-excompiler' to compile the produced C
 	 * source file into an linkable so-file.  On demand the C source file is
 	 * deleted.
 	 */
 	void compile_src_file(const std::string filename, bool clean_up)
-	{
-		//std::string strcompile = "ginac-excompiler " + filename + " > /dev/null 2>&1";
-		//int status = system(strcompile.c_str());
-        //if (status )
-		//{
-        //std::cout << "ginac::compile_src_file fails (" << WEXITSTATUS(status) << ")\n";
-            // try the compiler in Feel++ source
-        std::string strcompile = "@FEELPP_BUILD_DIR@/contrib/ginac/tools/ginac-excompiler " + filename;
-        int status = system(strcompile.c_str());
-        if (status)
-			{
-                std::ostringstream ostr;
-                ostr << "contrib/ginac::compile_src_file " << filename << " fails (" << WEXITSTATUS(status) << ")\n";
-                throw std::runtime_error(ostr.str());
-			}
-		//}
+		{
 
-		if (clean_up) {
-			//remove(filename.c_str());
+			//std::string strcompile = "ginac-excompiler " + filename + " > /dev/null 2>&1";
+			//int status = system(strcompile.c_str());
+			//if (status )
+			//{
+			//std::cout << "ginac::compile_src_file fails (" << WEXITSTATUS(status) << ")\n";
+			// try the compiler in Feel++ source
+			namespace fs = boost::filesystem;
+			if ( fs::exists( fs::path( "@FEELPP_BUILD_DIR@/contrib/ginac/tools/ginac-excompiler" ) ) )
+			{
+				std::string strcompile = "@FEELPP_BUILD_DIR@/contrib/ginac/tools/ginac-excompiler " + filename;
+
+				int status = system(strcompile.c_str());
+				if (status)
+				{
+					std::ostringstream ostr;
+					ostr << "contrib/ginac::compile_src_file " << filename << " fails (" << WEXITSTATUS(status) << ")\n";
+					throw std::runtime_error(ostr.str());
+				}
+				remove_src_file( filename, clean_up );
+			}
+			else
+			{
+
+			std::vector<std::string> paths = { "/usr/bin/", "/usr/local/bin", "/opt/local/bin" };
+			std::vector<std::string> names = { "feelpp_excompiler", "ginac-excompiler" };
+			BOOST_FOREACH( std::string p, paths )
+			{
+				BOOST_FOREACH( std::string n, names )
+				{
+					fs::path exc = fs::path(p) / fs::path(n);
+					if ( fs::exists( exc ) )
+					{
+						std::string strcompile = exc.string() + " " + filename;
+						int status = system(strcompile.c_str());
+						if (status)
+						{
+							std::ostringstream ostr;
+							ostr << "ginac::compile_src_file " << filename << " fails (" << WEXITSTATUS(status) << ")\n";
+							throw std::runtime_error(ostr.str());
+						}
+						remove_src_file( filename, clean_up );
+						return;
+					}
+				}
+			}
+			}
+			//}
 		}
-	}
 	/**
 	 * Links a so-file whose filename is given.
 	 */
@@ -285,6 +362,7 @@ void compile_ex(const ex& expr, const symbol& sym1, const symbol& sym2, FUNCP_2P
 
 void compile_ex(const lst& exprs, const lst& syms, FUNCP_CUBA& fp, const std::string filename)
 {
+
 	lst replacements;
 	for (std::size_t count=0; count<syms.nops(); ++count) {
 		std::ostringstream s;
@@ -300,9 +378,14 @@ void compile_ex(const lst& exprs, const lst& syms, FUNCP_CUBA& fp, const std::st
 	std::ofstream ofs;
 	std::string unique_filename = filename;
 
-    boost::mpi::communicator world;
+    bool doCompile=true;
+    if ( filename.empty() )
+    {
+        boost::mpi::communicator world;
+        if( world.rank() != 0 ) doCompile=false;
+    }
 
-    if( world.rank() == 0 )
+    if ( doCompile )
     {
         global_excompiler.create_src_file(unique_filename, ofs);
 
@@ -319,8 +402,13 @@ void compile_ex(const lst& exprs, const lst& syms, FUNCP_CUBA& fp, const std::st
 
         global_excompiler.compile_src_file(unique_filename, filename.empty());
     }
-    world.barrier(); // Waiting for proc 0 to ensure the compilation step is OK
-    boost::mpi::broadcast( world, unique_filename, 0);
+
+    if ( filename.empty() )
+    {
+        boost::mpi::communicator world;
+        world.barrier(); // Waiting for proc 0 to ensure the compilation step is OK
+        boost::mpi::broadcast( world, unique_filename, 0);
+    }
 
 	// This is not standard compliant! ... no conversion between
 	// pointer-to-functions and pointer-to-objects ...
@@ -351,6 +439,11 @@ void link_ex(const std::string filename, FUNCP_CUBA& fp)
 void unlink_ex(const std::string filename)
 {
 	global_excompiler.unlink(filename);
+}
+
+void cleanup_ex( bool verbose = false )
+{
+	global_excompiler.clean_up(verbose);
 }
 
 #else // def HAVE_LIBDL
@@ -395,6 +488,10 @@ void unlink_ex(const std::string filename)
 	throw std::runtime_error("unlink_ex has been disabled because of missing libdl!");
 }
 
+void cleanup_ex( bool verbose = false )
+{
+	throw std::runtime_error("unlink_ex has been disabled because of missing libdl!");
+}
 #endif // def HAVE_LIBDL
 
 } // namespace GiNaC

@@ -44,8 +44,9 @@
 #include <opusdefs.hpp>
 #include <eads.hpp>
 #include <feel/feelcrb/parameterspace.hpp>
-#include <feel/feeldiscr/bdf2.hpp>
+#include <feel/feeldiscr/bdf.hpp>
 #include <feel/feelcrb/modelcrbbase.hpp>
+#include <feel/feeldiscr/reducedbasisspace.hpp>
 
 /**/
 namespace Feel
@@ -95,10 +96,14 @@ public:
 
     typedef temp_functionspace_type space_type;
 
+    static const bool is_time_dependent = true;
+    static const bool is_linear = true;
+
 };
 
 template<int OrderU=2, int OrderP=OrderU-1, int OrderT=OrderP>
-class OpusModelRB : public OpusModelBase, public ModelCrbBase< ParameterDefinition, FunctionSpaceDefinition<OrderU,OrderP,OrderT> >
+class OpusModelRB : public OpusModelBase, public ModelCrbBase< ParameterDefinition, FunctionSpaceDefinition<OrderU,OrderP,OrderT> >,
+                    public boost::enable_shared_from_this< OpusModelRB<OrderU,OrderP,OrderT> >
 {
     typedef OpusModelBase super;
 public:
@@ -106,6 +111,9 @@ public:
     typedef ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition<OrderU,OrderP,OrderT> > super_type;
     typedef typename super_type::funs_type funs_type;
     typedef typename super_type::funsd_type funsd_type;
+
+
+    typedef OpusModelRB< OrderU, OrderP, OrderT > model_type;
 
     /** @name Typedefs
      */
@@ -134,7 +142,6 @@ public:
 #endif
     static const uint16_type ParameterSpaceDimension = 5;
 
-    static const bool is_time_dependent = true;
     //@}
     /** @name Typedefs
      */
@@ -179,16 +186,20 @@ public:
 
 #if defined( OPUS_WITH_THERMAL_DISCONTINUITY )
     typedef FunctionSpace<mesh_type, temp_basis_type, discontinuity_type,  Periodicity<Periodic<> > > temp_functionspace_type;
+    typedef ReducedBasisSpace< model_type, mesh_type, temp_basis_type, discontinuity_type,  Periodicity<Periodic<> > > temp_rbfunctionspace_type;
 #else
     typedef FunctionSpace<mesh_type, temp_basis_type, Periodicity<Periodic<> > > temp_functionspace_type;
-
+    typedef ReducedBasisSpace< model_type, mesh_type, temp_basis_type, Periodicity<Periodic<> > > temp_rbfunctionspace_type;
 #endif
     typedef boost::shared_ptr<temp_functionspace_type> temp_functionspace_ptrtype;
+    typedef boost::shared_ptr<temp_rbfunctionspace_type> temp_rbfunctionspace_ptrtype;
     typedef typename temp_functionspace_type::element_type temp_element_type;
     typedef boost::shared_ptr<temp_element_type> temp_element_ptrtype;
 
     typedef temp_functionspace_type functionspace_type;
     typedef temp_functionspace_ptrtype functionspace_ptrtype;
+    typedef temp_rbfunctionspace_type rbfunctionspace_type;
+    typedef temp_rbfunctionspace_ptrtype rbfunctionspace_ptrtype;
     typedef temp_element_ptrtype element_ptrtype;
     typedef temp_element_type element_type;
     typedef temp_functionspace_type space_type;
@@ -328,6 +339,14 @@ public:
     functionspace_ptrtype functionSpace()
     {
         return M_Th;
+    }
+
+    /**
+     * \brief Returns the function space
+     */
+    rbfunctionspace_ptrtype rBFunctionSpace()
+    {
+        return M_RbTh;
     }
 
     //! return the parameter space
@@ -587,6 +606,7 @@ public:
      */
     void initializationField( element_ptrtype& initial_field,parameter_type const& mu ) ;
 
+    temp_bdf_ptrtype bdfModel(){ return M_temp_bdf;}
     //@}
 
 protected:
@@ -628,6 +648,7 @@ private:
     p0_element_ptrtype Q;
     p1_functionspace_ptrtype M_P1h;
     temp_functionspace_ptrtype M_Th;
+    temp_rbfunctionspace_ptrtype M_RbTh;
     grad_temp_functionspace_ptrtype M_grad_Th;
     //thermal_operator_ptrtype M_thermal;
     element_ptrtype pT,pV;

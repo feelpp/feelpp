@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- Mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -27,8 +27,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-01-17
  */
-#ifndef __Expr_H
-#define __Expr_H 1
+#ifndef FEELPP_EXPR_HPP
+#define FEELPP_EXPR_HPP 1
 
 #undef max
 #include <boost/version.hpp>
@@ -45,6 +45,7 @@
 #include <boost/static_assert.hpp>
 #include <boost/foreach.hpp>
 #include <boost/fusion/sequence.hpp>
+#include <boost/fusion/container/map.hpp>
 #include <boost/fusion/support/pair.hpp>
 #include <boost/multi_array.hpp>
 
@@ -53,12 +54,16 @@
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelpoly/policy.hpp>
 #include <feel/feelpoly/context.hpp>
+
+#include <feel/feelvf/exprbase.hpp>
+#include <feel/feelvf/detail/gmc.hpp>
 #include <feel/feelvf/shape.hpp>
 
 namespace Feel
 {
 namespace vf
 {
+class GiNaCBase {};
 
 /// \cond detail
 typedef node<double>::type node_type;
@@ -337,6 +342,11 @@ public:
         void update( Geo_t const&, uint16_type )
         {
         }
+        template<typename CTX>
+        void updateContext( CTX const& ctx )
+        {
+        }
+
 
         value_type
         evalij( uint16_type /*i*/, uint16_type /*j*/ ) const
@@ -382,7 +392,7 @@ public:
   @see
 */
 template<typename ExprT>
-class Expr//: public boost::enable_shared_from_this<Expr<ExprT> >
+class Expr : public ExprBase //: public boost::enable_shared_from_this<Expr<ExprT> >
 {
 public:
 
@@ -472,6 +482,17 @@ public:
     typename Lambda<TheExpr>::type
     operator()( TheExpr const& e  ) const { return expr(M_expr(e)); }
 
+    void setParameterValues( std::map<std::string,value_type> const& mp )
+        {
+            this->setParameterValues( mp, boost::is_base_of<Feel::vf::GiNaCBase,expression_type>() );
+        }
+    void setParameterValues( std::map<std::string,value_type> const& mp, mpl::bool_<true> )
+        {
+            M_expr.setParameterValues( mp );
+        }
+    void setParameterValues( std::map<std::string,value_type> const& mp, mpl::bool_<false> )
+        {
+        }
 
     template<typename Geo_t, typename Basis_i_t = fusion::map<fusion::pair<vf::detail::gmc<0>,boost::shared_ptr<vf::detail::gmc<0> > >,fusion::pair<vf::detail::gmc<1>,boost::shared_ptr<vf::detail::gmc<1> > > >, typename Basis_j_t = Basis_i_t>
     struct tensor
@@ -530,6 +551,11 @@ public:
         void update( Geo_t const& geom, uint16_type face )
         {
             M_tensor_expr.update( geom, face );
+        }
+        template<typename CTX>
+        void updateContext( CTX const& ctx )
+        {
+            M_tensor_expr.updateContext( ctx );
         }
 
 
@@ -610,6 +636,11 @@ public:
     //this_ptrtype ptr() { return boost::shared_from_this(); }
 
     expression_type const& expression() const
+    {
+        return M_expr;
+    }
+
+    expression_type& expression()
     {
         return M_expr;
     }
@@ -730,7 +761,7 @@ struct ExpressionOrder
 #else
     // this is a very rough approximation
     static const int value = ( ExprT::imorder )?( ExprT::imorder*nOrderGeo ):( nOrderGeo );
-    static const int value_1 = ExprT::imorder;
+    static const int value_1 = ExprT::imorder+(the_element_type::is_hypercube?nOrderGeo:0);
 #endif
 
 
@@ -860,6 +891,7 @@ public:
         {
             value_type res= M_tensor_expr.evalijq( i, j, c1, c2, q );
             std::cout << "[print] " << M_tag << " shape(" << shape::M << "," << shape::N << ") evalijq( " << i << "," << j << "," << c1 << "," << c2 << "," << q << ")=" << res << "\n";
+            LOG(INFO) << "[print] " << M_tag << " shape(" << shape::M << "," << shape::N << ") evalijq( " << i << "," << j << "," << c1 << "," << c2 << "," << q << ")=" << res << "\n";
             return res;
         }
         template<int PatternContext>
@@ -869,6 +901,7 @@ public:
         {
             value_type res= M_tensor_expr.evalijq( i, j, c1, c2, q, mpl::int_<PatternContext>() );
             std::cout << "[print] " << M_tag << " shape(" << shape::M << "," << shape::N << ") evalijq( " << i << "," << j << "," << c1 << "," << c2 << "," << q << ")=" << res << "\n";
+            LOG(INFO) << "[print] " << M_tag << " shape(" << shape::M << "," << shape::N << ") evalijq( " << i << "," << j << "," << c1 << "," << c2 << "," << q << ")=" << res << "\n";
             return res;
         }
 
@@ -879,6 +912,7 @@ public:
         {
             value_type res= M_tensor_expr.evaliq( i, c1, c2, q );
             std::cout << "[print] " << M_tag << " shape(" << shape::M << "," << shape::N << ")  evaliq( " << i  << "," << c1 << "," << c2 << "," << q << ")=" << res << "\n";
+            LOG(INFO) << "[print] " << M_tag << " shape(" << shape::M << "," << shape::N << ")  evaliq( " << i  << "," << c1 << "," << c2 << "," << q << ")=" << res << "\n";
             return res;
         }
 
@@ -887,6 +921,7 @@ public:
         {
             value_type res= M_tensor_expr.evalq( c1, c2, q );
             std::cout << "[print] " << M_tag << " shape(" << shape::M << "," << shape::N << ")  evalq( " << c1 << "," << c2 << "," << q << ")=" << res << "\n";
+            LOG(INFO) << "[print] " << M_tag << " shape(" << shape::M << "," << shape::N << ")  evalq( " << c1 << "," << c2 << "," << q << ")=" << res << "\n";
             return res;
         }
 
@@ -1116,6 +1151,11 @@ public:
         {
             M_tensor_expr.update( geom, face );
         }
+        template<typename CTX>
+        void updateContext( CTX const& ctx )
+        {
+            M_tensor_expr.updateContext( ctx );
+        }
 
 
         value_type
@@ -1260,7 +1300,13 @@ public:
     {
         return M_constant;
     }
+
     constexpr value_type evaluate( bool ) const
+    {
+        return M_constant;
+    }
+
+    constexpr value_type evaluate( bool, WorldComm const& ) const
     {
         return M_constant;
     }
@@ -1328,6 +1374,10 @@ public:
         {
         }
         void update( Geo_t const&, uint16_type )
+        {
+        }
+        template<typename CTX>
+        void updateContext( CTX const& ctx )
         {
         }
 
@@ -1699,6 +1749,11 @@ public:
         {
             M_t_expr.update( geom, face );
         }
+        template<typename CTX>
+        void updateContext( CTX const& ctx )
+        {
+            M_t_expr.updateContext( ctx );
+        }
 
         value_type
         evalij( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2 ) const
@@ -1859,6 +1914,12 @@ public:
         void update( Geo_t const& geom, uint16_type face )
         {
             M_t_expr.update( geom, face );
+        }
+
+        template<typename CTX>
+        void updateContext( CTX const& ctx )
+        {
+            M_t_expr.updateContext( ctx );
         }
 
         value_type
@@ -2947,5 +3008,9 @@ basis( std::map<size_type,std::vector<boost::shared_ptr<Elem> > > const& v )
 
 /// \endcond
 } // vf
+
+
+using namespace vf;
+
 } // feel
-#endif /* __Expr_H */
+#endif /* FEELPP_EXPR_HPP */

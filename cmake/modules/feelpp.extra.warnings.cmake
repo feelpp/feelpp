@@ -70,10 +70,19 @@ if(FEELPP_EXTRA_WARNINGS)
   endif()
 endif()
 
-CHECK_CXX_COMPILER_FLAG( -Wno-deprecated-register HAS_NO_DEPRECATED_REGISTER )
+
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+   if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.7)
+      CHECK_CXX_COMPILER_FLAG( "-Wno-deprecated-register" HAS_NO_DEPRECATED_REGISTER )
+   endif()
+else()
+   CHECK_CXX_COMPILER_FLAG( "-Wno-deprecated-register" HAS_NO_DEPRECATED_REGISTER )
+endif()
+
 if (  HAS_NO_DEPRECATED_REGISTER )
   set( FEELPP_FLAGS "${FEELPP_FLAGS} -Wno-deprecated-register")
 endif()
+
 ################################################################################
 # Check for MSVC style
 ################################################################################

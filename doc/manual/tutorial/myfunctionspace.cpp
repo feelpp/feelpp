@@ -4,7 +4,7 @@
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
              Guillaume Dollé <guillaume.dolle@math.unistra.fr>
-  
+
   Date: 2013-02-11
 
   Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
@@ -46,15 +46,16 @@ int main( int argc, char** argv )
 
     //Initialize Feel++ Environment
     Environment env( _argc=argc, _argv=argv,
-                     _desc=feel_options(),
                      _about=about( _name="myfunctionspace",
                                    _author="Feel++ Consortium",
                                    _email="feelpp-devel@feelpp.org" )  );
 
-    auto g = sin( 2*pi*Px() )*cos( 2*pi*Py() )*cos( 2*pi*Pz() );
+    auto vars = Symbols{"x","y"};
+    auto g = expr( option(_name="functions.g").as<std::string>(), vars);
+    auto gradg = expr<1,2,2>( GiNaC::grad(option(_name="functions.g").as<std::string>(), vars ), vars);
 
     // create the mesh
-    auto mesh = unitSquare();
+    auto mesh = loadMesh(_mesh=new Mesh<Hypercube<2>>);
 
     // function space $ X_h $ using order 2 Lagrange basis functions
     auto Xh = Pch<2>( mesh );
@@ -64,13 +65,15 @@ int main( int argc, char** argv )
     auto w = Xh->element( "w" );
 
     // build the interpolant
-    u = vf::project( _space=Xh, _range=elements( mesh ), _expr=g );
-    w = vf::project( _space=Xh, _range=elements( mesh ), _expr=idv( u )-g );
+    u.on( _range=elements( mesh ), _expr=g );
+    w.on( _range=elements( mesh ), _expr=idv( u )-g );
 
     // compute L2 norms
     double L2g = normL2( elements( mesh ), g );
     double L2uerror = normL2( elements( mesh ), ( idv( u )-g ) );
+    double semiH1uerror = normL2( elements( mesh ), ( gradv( u )-gradg ) );
     std::cout << "||u-g||_0 = " << L2uerror/L2g << std::endl;
+    std::cout << "||u-g||_1 = " << semiH1uerror << std::endl;
 
     // export for post-processing
     auto e = exporter( mesh );

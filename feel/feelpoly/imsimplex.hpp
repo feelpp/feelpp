@@ -8877,12 +8877,13 @@ public:
     /** @name Typedefs
      */
     //@{
+    typedef Simplex<Dim,1> convex_type;
     typedef T value_type;
     typedef ublas::matrix<value_type,ublas::column_major> matrix_type;
     typedef ublas::vector<value_type> vector_type;
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<Dim>,mpl::int_<2> >,
-            mpl::identity<detail::IMTriangle<Order,T> >,
-            mpl::identity<detail::IMTetrahedra<Order,T> > >::type::type quad_type;
+            mpl::identity<Feel::detail::IMTriangle<Order,T> >,
+            mpl::identity<Feel::detail::IMTetrahedra<Order,T> > >::type::type quad_type;
 
 #if 1
 #if 0
@@ -8899,6 +8900,7 @@ public:
     typedef IMSimplex<Dim,Order,T> parent_quadrature_type;
     static const uint16_type nDim = Dim;
     static const uint16_type nOrder = Order;
+    static const uint16_type nQuadPoints = quad_type::nPoints;
 
     //@}
 

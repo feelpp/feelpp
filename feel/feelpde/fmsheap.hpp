@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
   This file is part of the Feel library
 
@@ -45,6 +45,9 @@ public:
     //         pair < phi_value,  index >
     typedef std::pair<value_type, uint16_type> heap_entry_type;
 
+    /* constructor */
+    FmsHeap() : maxValue( std::numeric_limits<value_type>::max() ) {}
+
     void push( heap_entry_type in )
     {
         M_heap.push_back( in );
@@ -53,7 +56,7 @@ public:
 
     void change( heap_entry_type in )
     {
-        for ( heapvect_iter it=M_heap.begin(); it != M_heap.end(); ++it )
+        for ( auto it=M_heap.begin(); it != M_heap.end(); ++it )
             {
                 // if the entry at index exists,
                 // this phi_entry take the min value between |phi_entry| and |phi_min|
@@ -83,27 +86,41 @@ public:
     }
 
 
+    /* returns the front element, which is the one having the smallest phi
+       if the heap is empty, return an element having a huge value of phi, so that, compared to other heap entries it will never be accepted */
+    heap_entry_type front()
+    {
+        if ( M_heap.empty() )
+            return std::make_pair(maxValue, 0 );
+        return M_heap.front();
+    }
+
     bool checkExistingEntry(uint16_type index)
     {
-        for (heapvect_iter it = M_heap.begin(); it != M_heap.end(); ++it )
+        for (auto it = M_heap.begin(); it != M_heap.end(); ++it )
                 if (it->second == index)
                     return true;
         return false;
     }
 
+    /* remove from the heap the entry having the specific value index*/
     bool removeFromHeap(uint16_type index)
     {
         bool removed = false;
-
-        for (heapvect_iter it = M_heap.begin(); it != M_heap.end(); ++it )
-                if (it->second == index)
-                    {
-                        M_heap.erase(it);
-                        removed = true;
-                        break;
-                    }
-
+        for (auto it = M_heap.begin(); it != M_heap.end(); ++it )
+            if (it->second == index)
+                {
+                    M_heap.erase(it);
+                    removed = true;
+                    break;
+                }
         return removed;
+    }
+
+
+    static heap_entry_type min(heap_entry_type a, heap_entry_type b)
+    {
+        return std::abs(a.first < b.first) ? a : b;
     }
 
 
@@ -112,11 +129,27 @@ public:
         return M_heap.size();
     }
 
+
+    value_type valueAtIndex( uint16_type index )
+    {
+        for (auto const& heapEntry : M_heap)
+            if (heapEntry.second == index )
+                return heapEntry.first;
+
+        CHECK( false ) << "index: "<<index<<" does not exists in the heap\n";
+    }
+
+
+    typename std::vector<heap_entry_type>::iterator begin()
+    { return M_heap.begin(); }
+
+    typename std::vector<heap_entry_type>::iterator end()
+    { return M_heap.end(); }
+
 private:
 
     typedef std::vector<heap_entry_type> heapvect_type;
-    typedef typename heapvect_type::iterator heapvect_iter;
-    typedef typename heapvect_type::const_iterator heapvect_constiter;
+    const value_type maxValue;
 
     static bool farther( heap_entry_type a, heap_entry_type b )
     {
@@ -136,3 +169,4 @@ private:
 } // namespace Feel
 
 #endif /* __FMS_Heap_H */
+

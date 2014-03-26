@@ -166,9 +166,6 @@ GmshHypercubeDomain::getDescription2D() const
          << "ymin=" << this->M_I[1].first << ";\n"
          << "ymax=" << this->M_I[1].second << ";\n";
 
-    if ( this->structuredMesh() == 3 )
-        ostr << "h = (xmax-xmin)/nx;\n";
-
     ostr << "Point(1) = {xmin,ymin,0.0,h};\n"
          << "Point(2) = {xmax,ymin+"<<this->shear()<<",0.0,h};\n"
          << "Point(3) = {xmax+" << this->shear() << ",ymax,0.0,h};\n"
@@ -179,6 +176,17 @@ GmshHypercubeDomain::getDescription2D() const
          << "Line(4) = {3,4};\n"
          << "Line Loop(5) = {1,2,3,4};\n"
          << "Plane Surface(6) = {5};\n";
+
+    if ( !this->periodic().empty() )
+    {
+        std::for_each( this->periodic().begin(),
+                      this->periodic().end(),
+                       [&ostr]( std::pair<int,std::pair<int,int> > const& p )
+                       {
+                           CHECK( p.first == 1 ) << "Invalid periodic entity dimension : " << p.first << ",  should be 1";
+                           ostr << "Periodic Line ( " << p.second.first << " ) = { " << p.second.second << " };\n";
+                      } );
+    }
 
     if ( this->subStructuring() == true )
     {
@@ -214,6 +222,10 @@ GmshHypercubeDomain::getDescription2D() const
         else if ( this->structuredMesh() == 2 )
             ostr << "nx = 1/h;\n"
                  << "ny = 1/h;\n";
+        else if ( this->structuredMesh() == 3 )
+            ostr << "nx=" << M_nx << ";\n"
+                 << "ny=" << M_ny << ";\n";
+
 
         ostr << "\n"
              << "Transfinite Line {1,3} = ny + 1 Using Progression 1.0;\n"

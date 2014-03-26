@@ -115,9 +115,9 @@ public:
      * the matrix before usage with
      * \p init(...).
      */
-    MatrixSparse ();
+    MatrixSparse( WorldComm const& worldComm=Environment::worldComm() );
 
-    MatrixSparse( WorldComm const& worldComm );
+    //MatrixSparse( WorldComm const& worldComm );
 
     MatrixSparse( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm=Environment::worldComm() );
 
@@ -337,6 +337,18 @@ public:
     {
         return M_mprop.test( DENSE );
     }
+
+    /**
+     * \return true if matrix is symmetric, false otherwise
+     */
+    virtual bool isSymmetric() const;
+
+    /**
+     * \return true if \p this is the transpose of Trans, false otherwise
+     */
+    virtual bool isTransposeOf ( MatrixSparse<value_type> &Trans ) const;
+
+
     void checkProperties() const
     {
         if ( !haveConsistentProperties() )
@@ -801,18 +813,12 @@ typedef boost::shared_ptr<d_sparse_matrix_type> sparse_matrix_ptrtype;
 // MatrixSparse inline members
 template <typename T>
 inline
-MatrixSparse<T>::MatrixSparse () :
-    M_is_initialized( false ),
-    M_mprop( NON_HERMITIAN )
-{}
-
-template <typename T>
-inline
-MatrixSparse<T>::MatrixSparse ( WorldComm const& worldComm ) :
+MatrixSparse<T>::MatrixSparse( WorldComm const& worldComm ) :
     M_worldComm( worldComm ),
     M_is_initialized( false ),
     M_mprop( NON_HERMITIAN )
 {}
+
 
 template <typename T>
 inline
@@ -931,6 +937,38 @@ void MatrixSparse<T>::matInverse ( MatrixSparse<value_type> &Inv )
     FEELPP_ASSERT( 0 ).error( "invalid call" );
 }
 
+template <typename T>
+bool MatrixSparse<T>::isSymmetric () const
+{
+    std::cerr << "Error! This function is not yet implemented in the base class!"
+              << std::endl;
+    FEELPP_ASSERT( 0 ).error( "invalid call" );
+
+    return 0;
+}
+
+template <typename T>
+bool MatrixSparse<T>::isTransposeOf ( MatrixSparse<value_type> &Trans ) const
+{
+    std::cerr << "Error! This function is not yet implemented in the base class!"
+              << std::endl;
+    FEELPP_ASSERT( 0 ).error( "invalid call" );
+
+    return 0;
+}
+
+namespace detail
+{
+template <class MatrixType>
+struct is_matrix_ptr : mpl::false_ {};
+
+template <class MatrixType>
+struct is_matrix_ptr<boost::shared_ptr<MatrixType> >
+        :
+        boost::is_base_of<MatrixSparse<typename MatrixType::value_type>,
+        MatrixType>
+{};
+}
 
 } // Feel
 

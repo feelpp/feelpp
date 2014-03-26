@@ -53,6 +53,12 @@
 #include <feel/feelcore/feelpetsc.hpp>
 #include <feel/options.hpp>
 
+#define stringize2(x) #x
+#define stringize(x) stringize2(x)
+
+namespace GiNaC {
+extern void cleanup_ex( bool verbose );
+}
 namespace detail
 {
 class Env{
@@ -165,6 +171,251 @@ dupargv (char** argv)
   copy[argc] = NULL;
   return copy;
 }
+
+void
+Environment::generateOLFiles( int argc, char** argv, std::string const& appName)
+{
+    //Application path
+    int i;
+    bool isNum = false;
+    fs::path p(argv[0]);
+    std::ostringstream appPath;
+
+    /* get app name */
+    appPath.str("");
+    appPath << fs::absolute(p).string();
+
+    std::ostringstream optionPath;
+
+    std::ofstream ol;
+    ol.open(appPath.str() + ".ol", std::ofstream::out | std::ofstream::trunc); //.ol file
+    std::ofstream cfgol;
+    cfgol.open(appPath.str() + ".onelab.cfg.ol", std::ofstream::out | std::ofstream::trunc); //.cfg.ol file
+
+    /* map from feel option name to onelab option path */
+    std::map<std::string, std::string> mOptToOptPath;
+
+    std::map<std::string, std::vector<boost::shared_ptr<po::option_description> >> moptions{
+        {"Feelpp", Environment::optionsDescriptionLibrary().options() },
+        {S_about.appName(), Environment::optionsDescriptionApplication().options() },
+    };
+
+    for( auto o : moptions )
+    {
+        for(boost::shared_ptr<po::option_description> option : o.second )
+        {
+            //Informations about the option
+            std::string optName = option->format_name().erase(0,2);//Putting the option name in a variable for easier manipulations
+            std::string defVal = ""; //option->format_parameter(); //Putting the option default value in a variable for easier manipulations
+            std::string desc=option->description(); // Option description
+
+            // reset option path
+            optionPath.str("");
+            // reset type
+            isNum = false;
+
+            //std::cout << optName << ";" << defVal << ";" << desc << std::endl;
+
+            std::string ens,funcName;
+
+            std::vector<std::string> strings; //Vector of the split name
+            boost::split(strings,optName,boost::is_any_of(".")); //Spliting option name
+            ens = "";
+            if(strings.size() > 1)
+            {
+                ens = strings[0] + "/"; //Getting the first split element for the option set in the .cfg.ol file
+                for(size_t i = 1; i < strings.size() - 1; i++) //Getting the option set
+                {
+                    ens += strings[i] + "/";
+                }
+            }
+            funcName = strings[strings.size() - 1]; //Raw option name
+
+            /* skip some options */
+            /* they won't be displayed in Gmsh */
+            if(funcName == "config-file")
+            {
+                continue;
+            }
+
+            /* if an option has been set either through command line */
+            /* or through the initial config file */
+            /* we use its configuration */
+            //if(S_vm.count(optName) && !(S_vm[optName].defaulted()))
+            if(S_vm.count(optName))
+            {
+                std::ostringstream oss;
+                oss.str("");
+                //std::cout << defVal;
+
+                //std::cout << "Entry for " << optName << ": ";
+                // if the option if defaulted and soesn't starts with onelab, 
+                // we put it in the end of Gmsh options
+                if(S_vm[optName].defaulted() && optName.find("onelab.") == std::string::npos )
+                {
+                    //std::cout << "defaulted ";
+                    optionPath << "GeneralParameters/" << o.first << "/" << ens;
+                }
+                // if we have a user defined option or a onelab option
+                // we want them to be on top of the list for easier access 
+                else
+                {
+                    optionPath << "DefinedParameters/" << o.first << "/" << ens;
+                }
+
+                //optionPath << "Parameters/" << ens;
+
+                if(optName == "licence")
+                {
+                    const std::type_info & ti = S_vm[optName].value().type();
+                    std::cout << ti.name() << " " << std::endl;
+                }
+
+                if(S_vm[optName].empty())
+                {
+                    //std::cout << "empty ";
+                }
+                else
+                {
+                    const std::type_info & ti = S_vm[optName].value().type();
+                    //std::cout << ti.name() << " ";
+                    if(ti == typeid(bool))
+                    {
+                        oss.str("");
+                        oss << (S_vm[optName].as<bool>() ? "1" : "0");
+                        isNum = false;
+                    }
+                    else if(ti == typeid(int))
+                    {
+                        oss.str("");
+                        oss << S_vm[optName].as<int>();
+                        isNum = true;
+                    }
+                    else if(ti == typeid(size_type))
+                    {
+                        oss.str("");
+                        oss << S_vm[optName].as<size_type>();
+                        isNum = true;
+                    }
+                    else if(ti == typeid(float))
+                    {
+                        oss.str("");
+                        oss << S_vm[optName].as<float>();
+                        isNum = true;
+                    }
+                    else if(ti == typeid(double))
+                    {
+                        oss.str("");
+                        oss << S_vm[optName].as<double>();
+                        isNum = true;
+                    }
+                    else if(ti == typeid(std::string))
+                    {
+                        oss.str("");
+                        oss <<  S_vm[optName].as<std::string>();
+                        isNum = false;
+                    }
+                    else
+                    {
+                        std::cout << "Unknown type for parameter " << optName << "(" << typeid(void).name() << ")" << std::endl;
+                        isNum = false;
+                    }
+                }
+                //std::cout << oss.str() << std::endl;
+                defVal = oss.str();
+
+                /* Force Gmsh as a the default exporter */
+                /* as we are using OneLab */
+                if(ens == "exporter/" && funcName == "format")
+                {
+                    defVal = "gmsh";
+                }
+                
+                if(optName == "onelab.enable")
+                {
+                    defVal = "2";
+                }
+
+                /*
+                  if(defVal.size() != 0) //Excluding options without a default value
+                  {
+                */
+                if(isNum)
+                {
+                    ol << funcName << ".number(" << defVal << ", " << optionPath.str() << ");" << " # "<< desc << std::endl;
+                    cfgol << optName << "=OL.get(" << optionPath.str() << funcName << ")" << std::endl;
+                }
+                else
+                {
+                    ol << funcName << ".string(" << defVal << ", " << optionPath.str() << ");" << " # "<< desc << std::endl;
+                    cfgol << optName << "=OL.get(" << optionPath.str() << funcName << ")" << std::endl;
+                }
+                //}
+
+                /* Hide some options from users */
+                if(optName == "onelab.enable"
+                || optName == "onelab.sync.script")
+                {
+                    ol << funcName << ".setVisible(0);" << std::endl;
+                }
+
+                ol << funcName << ".setReadOnly(0);" << std::endl; 
+
+                /* store some option paths for building ol script */
+                if(optName == "onelab.chroot"
+                || optName == "onelab.remote"
+                || optName == "onelab.np"
+                || optName == "onelab.sync.script")
+                {
+                    mOptToOptPath[optName] = optionPath.str() + funcName;
+                }
+
+            }
+
+        }
+    }
+
+    ol << "" << std::endl;
+
+    /* Mesher instructions */
+    ol << "Mesher.register(native," << stringize(GMSH_EXECUTABLE) << ");" << std::endl;
+    ol << "OL.if(OL.get(Parameters/gmsh/filename) == untitled.geo)" << std::endl;
+    ol << "OL.msg(No geo file specified. Using a default one);" << std::endl;
+    ol << "OL.endif" << std::endl;
+
+
+    /* test for chroots */
+    ol << "OL.if(OL.get(" << mOptToOptPath["onelab.chroot"] << "))" << std::endl;
+    /* setup chroot */
+    ol << "FeelApp.register(interfaced, schroot -c OL.get(" << mOptToOptPath["onelab.chroot"] << ") -- ";
+    /* setup MPI */
+    ol << stringize(MPIEXEC) << " " << stringize(MPIEXEC_NUMPROC_FLAG) << " OL.get(" << mOptToOptPath["onelab.np"] << ") " + appPath.str() + ");" << std::endl;
+
+    /* if we don't use schroot */
+    ol << "OL.else" << std::endl;
+
+    /* setup MPI */
+    ol << "FeelApp.register(interfaced, " << stringize(MPIEXEC) << " " << stringize(MPIEXEC_NUMPROC_FLAG) << " OL.get(" << mOptToOptPath["onelab.np"] << ") " + appPath.str() + ");" << std::endl;
+
+    ol << "OL.endif" << std::endl;
+
+    ol << "FeelApp.remote(" << "OL.get(" + mOptToOptPath["onelab.remote"] << "), " << p.parent_path().string() << "/" << ");" << std::endl;
+
+    ol << "FeelApp.in(OL.get(Arguments/FileName).onelab.cfg.ol);" << std::endl;
+    ol << "FeelApp.run( --config-file OL.get(Arguments/FileName).onelab.cfg --nochdir );" << std::endl;
+
+    ol << "FeelApp.out(OL.get(Arguments/FileName).onelab.out);" << std::endl;
+
+    ol << "SyncData.register(interfaced, OL.get(" << mOptToOptPath["onelab.sync.script"] << "));" << std::endl;
+    ol << "SyncData.in(OL.get(Arguments/FileName).onelab.out);" << std::endl;
+    ol << "SyncData.run(OL.get(Arguments/FileName).onelab.out);" << std::endl;
+
+    ol << "OL.include(OL.get(Arguments/FileName).onelab.out);" << std::endl;
+
+    ol.close();
+    cfgol.close();
+}
+
 void
 Environment::processGenericOptions()
 {
@@ -200,7 +451,7 @@ Environment::processGenericOptions()
 //         parseAndStoreOptions( po::command_line_parser( args ) );
 //     }
 
-    //if ( worldComm().rank() == 0 )
+    if ( worldComm().isMasterRank() )
     {
 
         if ( S_vm.count( "feelinfo" ) )
@@ -215,6 +466,7 @@ Environment::processGenericOptions()
 
         if ( S_vm.count( "verbose" ) ||
              S_vm.count( "help" ) ||
+             S_vm.count( "help-lib" ) ||
              S_vm.count( "version" ) ||
              S_vm.count( "copyright" ) ||
              S_vm.count( "license" ) ||
@@ -267,13 +519,20 @@ Environment::processGenericOptions()
 
         if ( S_vm.count( "help" ) )
         {
-            std::cout << optionsDescription() << "\n";
+            std::cout << optionsDescriptionApplication() << "\n";
+            std::cout << file_options(S_about.appName()) << "\n";
+            std::cout << generic_options() << "\n";
         }
-
-
+        if ( S_vm.count( "help-lib" ) )
+        {
+            std::cout << optionsDescriptionLibrary() << "\n";
+            std::cout << file_options(S_about.appName()) << "\n";
+            std::cout << generic_options() << "\n";
+        }
     }
     if ( S_vm.count( "verbose" ) ||
          S_vm.count( "help" ) ||
+         S_vm.count( "help-lib" ) ||
          S_vm.count( "version" ) ||
          S_vm.count( "copyright" ) ||
          S_vm.count( "license" ) ||
@@ -342,7 +601,10 @@ Environment::parseAndStoreOptions( po::command_line_parser parser, bool extra_pa
 
 
 void
-Environment::doOptions( int argc, char** argv, po::options_description const& desc, std::string const& appName )
+Environment::doOptions( int argc, char** argv,
+                        po::options_description const& desc,
+                        po::options_description const& desc_lib,
+                        std::string const& appName )
 {
     //std::locale::global(std::locale(""));
     try
@@ -359,64 +621,138 @@ Environment::doOptions( int argc, char** argv, po::options_description const& de
 
             if ( fs::exists(  S_vm["config-file"].as<std::string>() ) )
             {
-                VLOG(2) << " parsing " << S_vm["config-file"].as<std::string>() << "...";
+                LOG(INFO) << "Reading " << S_vm["config-file"].as<std::string>() << "...";
 
                 std::ifstream ifs( S_vm["config-file"].as<std::string>().c_str() );
-                po::store( parse_config_file( ifs, desc, true ), S_vm );
+                po::store( parse_config_file( ifs, *S_desc, true ), S_vm );
                 po::notify( S_vm );
             }
         }
-        using namespace boost::assign;
-        std::vector<fs::path> prefixes = S_paths;
+        else
+        {
+            using namespace boost::assign;
+            std::vector<fs::path> prefixes = S_paths;
 #if 0
-        prefixes += boost::assign::list_of( fs::current_path() )
-            ( fs::path ( Environment::localConfigRepository() ) )
-            ( fs::path ( Environment::systemConfigRepository().get<0>() ) )
-            ( fs::path ( "/usr/share/feel/config" ) )
-            ( fs::path ( "/usr/local/share/feel/config" ) )
-            ( fs::path ( "/opt/local/share/feel/config" ) );
+            prefixes += boost::assign::list_of( fs::current_path() )
+                ( fs::path ( Environment::localConfigRepository() ) )
+                ( fs::path ( Environment::systemConfigRepository().get<0>() ) )
+                ( fs::path ( "/usr/share/feel/config" ) )
+                ( fs::path ( "/usr/local/share/feel/config" ) )
+                ( fs::path ( "/opt/local/share/feel/config" ) );
 #endif
-        char* env;
-        env = getenv("FEELPP_DIR");
-        if (env != NULL && env[0] != '\0')
-        {
-            prefixes.push_back( fs::path( env ) );
-        }
-
-        VLOG(2) << "try processing cfg files...\n";
-        BOOST_FOREACH( auto prefix, prefixes )
-        {
-            std::string config_name = ( boost::format( "%1%/%2%.cfg" ) % prefix.string() % appName ).str();
-            VLOG(2) << " Looking for " << config_name << "\n";
-
-            if ( fs::exists( config_name ) )
+            char* env;
+            env = getenv("FEELPP_DIR");
+            if (env != NULL && env[0] != '\0')
             {
-                VLOG(2)<< " parsing " << config_name << "\n";
-                std::ifstream ifs( config_name.c_str() );
-                store( parse_config_file( ifs, desc, true ), S_vm );
-                break;
+                prefixes.push_back( fs::path( env ) );
             }
 
-            else
+            VLOG(2) << "try processing cfg files...\n";
+            std::string config_name;
+            bool found = false;
+            BOOST_FOREACH( auto prefix, prefixes )
             {
-                // try with a prefix feel_
-                std::string config_name = ( boost::format( "%1%/feelpp_%2%.cfg" ) % prefix.string() % appName ).str();
+                config_name = ( boost::format( "%1%/%2%.cfg" ) % prefix.string() % appName ).str();
                 VLOG(2) << " Looking for " << config_name << "\n";
 
                 if ( fs::exists( config_name ) )
                 {
-                    VLOG(2)<< " loading configuration file " << config_name << "...\n";
-                    std::ifstream ifs( config_name.c_str() );
-                    store( parse_config_file( ifs, desc, true ), S_vm );
+                    found = true;
                     break;
+                }
+                else
+                {
+                    // try with a prefix feel_
+                    config_name = ( boost::format( "%1%/feelpp_%2%.cfg" ) % prefix.string() % appName ).str();
+                    VLOG(2) << " Looking for " << config_name << "\n";
+                    if ( fs::exists( config_name ) )
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+            }
+            if ( found )
+            {
+                LOG(INFO) << "Reading  " << config_name << "...\n";
+                std::ifstream ifs( config_name.c_str() );
+                store( parse_config_file( ifs, *S_desc, true ), S_vm );
+                LOG(INFO) << "Reading  " << config_name << " done.\n";
+                //po::store(po::parse_command_line(argc, argv, desc), S_vm);
+                po::notify( S_vm );
+            }
+        }
+
+
+        /* handle the generation of onelab files after having processed */
+        /* the regular config file, so we have parsed user defined parameters */
+        /* or restored a previous configuration */
+        if ( worldComm().isMasterRank() )
+        {
+            if ( S_vm.count("onelab.enable") )
+            {
+                if ( S_vm["onelab.enable"].as<int>() == 1 )
+                {
+                    Environment::generateOLFiles( argc, argv, appName );
+                }
+                else if ( S_vm["onelab.enable"].as<int>() == 2 )
+                {
+                    fs::path p(argv[0]);
+                    std::ostringstream appPath;
+
+                    appPath.str("");
+                    appPath << fs::absolute(p).string();
+
+                    std::ofstream ool;
+                    ool.open(appPath.str() + ".onelab.out", std::ofstream::out | std::ofstream::trunc); 
+
+                    /* Take into account th fact that we use MPI */
+                    /* Generating multiple output files, so we merge them */
+                    int i = 0;
+                    #if 0
+                    ool << "FeelApp.out(" + appName + "-" << worldComm().size() << "_" << i << ".msh";
+                    for(i = 1; i < worldComm().size(); i++)
+                    {
+                        ool << ", " << appName + "-" << worldComm().size() << "_" << i << ".msh";
+                    }
+                    ool << ");" << std::endl;
+                    #endif
+
+                    ool << "#";
+                    for(i = 0; i < worldComm().size(); i++)
+                    {
+                        ool << " ";
+                        if(S_vm.count("onelab.remote") && S_vm["onelab.remote"].as<std::string>() != "")
+                        {
+                            ool << S_vm["onelab.remote"].as<std::string>() << ":";
+                        }
+                        ool << p.parent_path().string() << "/" << appName << "-" << worldComm().size() << "_" << i << ".msh";
+                    }
+                    ool << std::endl;
+
+                    i = 0;
+                    ool << "FeelApp.merge(" << appName << "-" << worldComm().size() << "_" << i << ".msh";
+                    for(i = 1; i < worldComm().size(); i++)
+                    {
+                        ool << ", " << appName << "-" << worldComm().size() << "_" << i << ".msh";
+                    }
+                    ool << ");" << std::endl;
+                
+                    ool.close();
                 }
             }
         }
-        //po::store(po::parse_command_line(argc, argv, desc), S_vm);
-        po::notify( S_vm );
+        if ( S_vm.count("onelab.enable") && S_vm["onelab.enable"].as<int>() == 1 )
+        {
+            if ( Environment::initialized() )
+            {
+                worldComm().barrier();
+                MPI_Finalize();
+            }
+            exit(0);
+        }
 
     }
-
     // catches program_options exceptions
     catch ( boost::program_options::multiple_occurrences const& e )
     {
@@ -467,7 +803,10 @@ Environment::Environment()
 
     //tbb::task_scheduler_init init(1);
 
-    mpi::communicator world;
+    S_worldcomm = worldcomm_type::New();
+    CHECK( S_worldcomm ) << "Environment : creating worldcomm failed\n";
+    S_worldcommSeq.reset( new WorldComm(S_worldcomm->subWorldCommSeq()) );
+
 #if defined ( FEELPP_HAS_PETSC_H )
     PetscTruth is_petsc_initialized;
     PetscInitialized( &is_petsc_initialized );
@@ -478,7 +817,7 @@ Environment::Environment()
         int ierr = PetscInitializeNoArguments();
 
         boost::ignore_unused_variable_warning( ierr );
-        CHKERRABORT( world,ierr );
+        CHKERRABORT( *S_worldcomm,ierr );
     }
 
     // make sure that petsc do not catch signals and hence do not print long
@@ -486,8 +825,7 @@ Environment::Environment()
     PetscPopSignalHandler();
 #endif // FEELPP_HAS_PETSC_H
 
-    S_worldcomm = worldcomm_type::New( world );
-    CHECK( S_worldcomm ) << "Environment : creating worldcomm failed\n";
+
 }
 
 fs::path scratchdir()
@@ -505,9 +843,18 @@ fs::path scratchdir()
         }
         else
         {
-            std::string value = (boost::format("/tmp/%1%/feelpp/") % ::detail::Env::getUserName()).str();
-            setenv("FEELPP_SCRATCHDIR", value.c_str(),0);
-         }
+            env = getenv("SCRATCH");
+            if (env != NULL && env[0] != '\0')
+            {
+                std::string value = (boost::format("%1%/%2%/feelpp/") % env % ::detail::Env::getUserName()).str();
+                setenv("FEELPP_SCRATCHDIR", (boost::format("%1%/%2%/feelpp/") % env % ::detail::Env::getUserName() ).str().c_str(),0);
+            }
+            else
+            {
+                std::string value = (boost::format("/tmp/%1%/feelpp/") % ::detail::Env::getUserName()).str();
+                setenv("FEELPP_SCRATCHDIR", value.c_str(),0);
+            }
+        }
     }
     env = getenv("FEELPP_SCRATCHDIR");
     if (env != NULL && env[0] != '\0')
@@ -547,7 +894,10 @@ Environment::Environment( int& argc, char**& argv )
     //tbb::task_scheduler_init init(2);
 #endif
 
-    mpi::communicator world;
+    S_worldcomm = worldcomm_type::New();
+    CHECK( S_worldcomm ) << "Feel++ Environment: creang worldcomm failed!";
+    S_worldcommSeq.reset( new WorldComm(S_worldcomm->subWorldCommSeq()) );
+
 #if defined ( FEELPP_HAS_PETSC_H )
     PetscTruth is_petsc_initialized;
     PetscInitialized( &is_petsc_initialized );
@@ -561,7 +911,7 @@ Environment::Environment( int& argc, char**& argv )
         int ierr = PetscInitialize( &argc, &argv, PETSC_NULL, PETSC_NULL );
 #endif
         boost::ignore_unused_variable_warning( ierr );
-        CHKERRABORT( world,ierr );
+        CHKERRABORT( *S_worldcomm,ierr );
     }
 
     // make sure that petsc do not catch signals and hence do not print long
@@ -569,19 +919,36 @@ Environment::Environment( int& argc, char**& argv )
     PetscPopSignalHandler();
 #endif // FEELPP_HAS_PETSC_H
 
-    S_worldcomm = worldcomm_type::New( world );
-    CHECK( S_worldcomm ) << "Feel++ Environment: creang worldcomm failed!";
 }
 
 void
-Environment::init( int argc, char** argv, po::options_description const& desc, AboutData const& about )
+Environment::init( int argc, char** argv,
+                   po::options_description const& desc,
+                   po::options_description const& desc_lib,
+                   AboutData const& about )
 {
-    mpi::communicator world;
+    S_worldcomm = worldcomm_type::New();
+    CHECK( S_worldcomm ) << "Feel++ Environment: creang worldcomm failed!";
+    S_worldcommSeq.reset( new WorldComm(S_worldcomm->subWorldCommSeq()) );
+
     S_scratchdir = scratchdir();
     fs::path a0 = std::string(argv[0]);
-    S_scratchdir/= a0.filename();
-    if ( !fs::exists( S_scratchdir ) )
-        fs::create_directories( S_scratchdir );
+    const int Nproc = 200;
+    if ( S_worldcomm->size() > Nproc )
+    {
+        std::string smin = boost::lexical_cast<std::string>( Nproc*std::floor(S_worldcomm->rank()/Nproc) );
+        std::string smax = boost::lexical_cast<std::string>( Nproc*std::ceil(double(S_worldcomm->rank()+1)/Nproc)-1 );
+        std::string replog = smin + "-" + smax;
+        S_scratchdir/= a0.filename()/replog;
+    }
+    else
+        S_scratchdir/= a0.filename();
+    // only one processor every Nproc creates the corresponding log directory
+    if ( S_worldcomm->rank() % Nproc == 0 )
+    {
+        if ( !fs::exists( S_scratchdir ) )
+            fs::create_directories( S_scratchdir );
+    }
     FLAGS_log_dir=S_scratchdir.string();
 
     // duplicate argv before passing to gflags because gflags is going to
@@ -603,7 +970,7 @@ Environment::init( int argc, char** argv, po::options_description const& desc, A
     {
         if ( FLAGS_no_log )
         {
-            if ( world.rank() == 0 && FLAGS_no_log == 1 )
+            if ( S_worldcomm->rank() == 0 && FLAGS_no_log == 1 )
                 FLAGS_no_log = 0;
             google::InitGoogleLogging(argv[0]);
         }
@@ -633,7 +1000,7 @@ Environment::init( int argc, char** argv, po::options_description const& desc, A
         int ierr = PetscInitialize( &argc, &envargv, PETSC_NULL, PETSC_NULL );
 #endif
         boost::ignore_unused_variable_warning( ierr );
-        CHKERRABORT( world,ierr );
+        CHKERRABORT( *S_worldcomm,ierr );
     }
 
     // make sure that petsc do not catch signals and hence do not print long
@@ -641,11 +1008,9 @@ Environment::init( int argc, char** argv, po::options_description const& desc, A
     PetscPopSignalHandler();
 #endif // FEELPP_HAS_PETSC_H
 
-    S_worldcomm = worldcomm_type::New( world );
-    CHECK( S_worldcomm ) << "Feel++ Environment: creang worldcomm failed!";
 
     S_about = about;
-    doOptions( argc, envargv, *S_desc, about.appName() );
+    doOptions( argc, envargv, desc, desc_lib, about.appName() );
 
     // make sure that we pass the proper verbosity level to glog
     if ( S_vm.count("v") )
@@ -657,11 +1022,14 @@ Environment::init( int argc, char** argv, po::options_description const& desc, A
 void
 Environment::clearSomeMemory()
 {
+    Environment::logMemoryUsage( "Environment::clearSomeMemory before:" );
+
     // send signal to all deleters
     S_deleteObservers();
     google::FlushLogFiles(google::GLOG_INFO);
     VLOG(2) << "clearSomeMemory: delete signal sent" << "\n";
 
+    Environment::logMemoryUsage( "Environment::clearSomeMemory after:" );
 }
 Environment::~Environment()
 {
@@ -673,6 +1041,10 @@ Environment::~Environment()
     {
         VLOG(2) << "clearing known paths\n";
         S_paths.clear();
+
+        VLOG(2) << "[~Environment] cleaning up global excompiler\n";
+
+        GiNaC::cleanup_ex( false );
 
         VLOG(2) << "[~Environment] finalizing slepc,petsc and mpi\n";
 #if defined ( FEELPP_HAS_PETSC_H )
@@ -848,7 +1220,7 @@ Environment::systemGeoRepository()
 {
     fs::path rep_path;
 
-    rep_path = BOOST_PP_STRINGIZE( INSTALL_PREFIX );
+    rep_path = Info::prefix();
     rep_path /= "share/feel/geo";
     return boost::make_tuple( rep_path.string(), fs::exists( rep_path ) );
 }
@@ -871,7 +1243,7 @@ Environment::systemConfigRepository()
 {
     fs::path rep_path;
 
-    rep_path = BOOST_PP_STRINGIZE( INSTALL_PREFIX );
+    rep_path = Info::prefix();
     rep_path /= "share/feel/config";
     return boost::make_tuple( rep_path.string(), fs::exists( rep_path ) );
 }
@@ -896,7 +1268,10 @@ Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfile
         rep_path = Environment::rootRepository();
 
     if ( !fs::exists( rep_path ) )
+    {
+        LOG(INFO) << "Creating directory " << rep_path << "...";
         fs::create_directory( rep_path );
+    }
 
 
     BOOST_FOREACH( std::string const& dir, dirs )
@@ -941,14 +1316,15 @@ Environment::setLogs( std::string const& prefix )
 std::vector<WorldComm> const&
 Environment::worldsComm( int n )
 {
-    if ( !S_worldcomm )
-    {
-        mpi::communicator world;
-        S_worldcomm = worldcomm_type::New( world );
-        CHECK( S_worldcomm ) << "Environment: worldcomm not allocated\n";
-    }
-
+    CHECK( S_worldcomm ) << "Environment: worldcomm not allocated\n";
     return S_worldcomm->subWorlds(n);
+}
+
+std::vector<WorldComm> const&
+Environment::worldsCommSeq( int n )
+{
+    CHECK( S_worldcommSeq ) << "Environment: worldcomm not allocated\n";
+    return S_worldcommSeq->subWorlds(n);
 }
 
 std::vector<WorldComm> const&
@@ -993,13 +1369,18 @@ Environment::logMemoryUsage( std::string const& message )
 AboutData Environment::S_about;
 po::variables_map Environment::S_vm;
 boost::shared_ptr<po::options_description> Environment::S_desc;
+boost::shared_ptr<po::options_description> Environment::S_desc_app;
+boost::shared_ptr<po::options_description> Environment::S_desc_lib;
 std::vector<std::string> Environment::S_to_pass_further;
 
 boost::signals2::signal<void()> Environment::S_deleteObservers;
 
 boost::shared_ptr<WorldComm> Environment::S_worldcomm;
+boost::shared_ptr<WorldComm> Environment::S_worldcommSeq;
 
-std::vector<fs::path> Environment::S_paths;
+std::vector<fs::path> Environment::S_paths = { fs::current_path(),
+                                               Environment::systemConfigRepository().get<0>(),
+                                               Environment::systemGeoRepository().get<0>() };
 fs::path Environment::S_scratchdir;
 
 } // detail

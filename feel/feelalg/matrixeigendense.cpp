@@ -348,7 +348,7 @@ MatrixEigenDense<T>::zeroRows( std::vector<int> const& rows,
     {
         value_type value = 1.0;
 
-        if ( on_context.test( ON_ELIMINATION_KEEP_DIAGONAL ) )
+        if ( on_context.test( OnContext::ELIMINATION_KEEP_DIAGONAL ) )
             value = M_mat( rows[i], rows[i] );
         M_mat.row( rows[i] ).setZero();
 

@@ -42,6 +42,24 @@ include(CheckIncludeFile)
 check_include_file("stdint.h" HAVE_STDINT_H)
 check_include_file("unistd.h" HAVE_UNISTD_H)
 
+# Check Python version
+# If python is version 3, we need to patch the scripts/yaptu.py file
+# (exec is a statement in Python 2 and a function in Python 3)
+FIND_PACKAGE(PythonInterp)
+
+if(PYTHONINTERP_FOUND)
+    if(PYTHON_VERSION_MAJOR MATCHES "3")
+        message(STATUS "Python 3 detected: patching files")
+        get_filename_component(PYTHONINTERP_PATH ${PYTHON_EXECUTABLE} PATH)
+        execute_process(COMMAND ${PYTHONINTERP_PATH}/2to3 -w --no-diffs ${CMAKE_SOURCE_DIR}/contrib/ginac/)
+        message(WARNING "Ginac files have been patched for Python 3 compatibility")
+    elseif(PYTHON_VERSION_MAJOR MATCHES "2")
+        message(STATUS "Python 2 detected: No need to patch")
+    else()
+        message(FATAL_ERROR "Unknown Python version: ${PYTHON_VERSION_STRING}")
+    endif()
+endif()
+
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR}/ginac)
 
 # This macro implements some very special logic how to deal with the cache.
@@ -177,10 +195,12 @@ add_definitions(-DHAVE_CONFIG_H)
 
 add_subdirectory(ginac)
 add_subdirectory(tools)
-add_subdirectory(check)
+# feel++ edit
+#add_subdirectory(check)
 if (BISON_FOUND AND FLEX_FOUND)
 	add_subdirectory(ginsh)
 endif()
+# feel++ edit
 #if (MAKEINFO)
 #	add_subdirectory(doc)
 #endif()

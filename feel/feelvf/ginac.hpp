@@ -26,702 +26,336 @@
    \author Christophe Prud'homme <prudhomme@unistra.fr>
    \date 2012-10-15
 */
-#ifndef __Ginac_H
-#define __Ginac_H 1
+#ifndef FEELPP_GINAC_HPP
+#define FEELPP_GINAC_HPP 1
 
 #include <ginac/ginac.h>
 #include <boost/parameter/preprocessor.hpp>
 
+#include <boost/foreach.hpp>
+#include <boost/range/algorithm/for_each.hpp>
+
 namespace GiNaC
 {
+matrix grad( ex const& f, std::vector<symbol> const& l );
+ex laplacian( ex const& f, std::vector<symbol> const& l );
+matrix grad( std::string const& s, std::vector<symbol> const& l );
+ex laplacian( std::string const& s, std::vector<symbol> const& l );
 
-    matrix grad( ex const& f, std::vector<symbol> const& l );
-    ex laplacian( ex const& f, std::vector<symbol> const& l );
-    matrix grad( std::string const& s, std::vector<symbol> const& l );
-    ex laplacian( std::string const& s, std::vector<symbol> const& l );
+matrix grad( matrix const& f, std::vector<symbol> const& l );
+matrix div( matrix const& f, std::vector<symbol> const& l );
+matrix laplacian( matrix const& f, std::vector<symbol> const& l );
 
-    matrix grad( matrix const& f, std::vector<symbol> const& l );
-    matrix div( matrix const& f, std::vector<symbol> const& l );
-    matrix laplacian( matrix const& f, std::vector<symbol> const& l );
+ex diff(ex const& f, symbol const& l, const int n);
+matrix diff(matrix const& f, symbol const& l, const int n);
 
-    ex diff(ex const& f, symbol const& l, const int n);
-    matrix diff(matrix const& f, symbol const& l, const int n);
+ex substitute(ex const& f, symbol const& l, const double val );
+ex substitute(ex const& f, symbol const& l, ex const & g );
 
-    ex substitute(ex const& f, symbol const& l, const double val );
-    ex substitute(ex const& f, symbol const& l, ex const & g );
+matrix substitute(matrix const& f, symbol const& l, const double val );
+matrix substitute(matrix const& f, symbol const& l, ex const & g );
 
-    matrix substitute(matrix const& f, symbol const& l, const double val );
-    matrix substitute(matrix const& f, symbol const& l, ex const & g );
-
-    //ex parse( std::string const& str, std::vector<symbol> const& syms );
-    ex parse( std::string const& str, std::vector<symbol> const& syms, std::vector<symbol> const& params = std::vector<symbol>());
+//ex parse( std::string const& str, std::vector<symbol> const& syms );
+ex parse( std::string const& str, std::vector<symbol> const& syms, std::vector<symbol> const& params = std::vector<symbol>());
 
 } // GiNaC
 
 namespace Feel
 {
-    using  GiNaC::matrix;
-    using  GiNaC::symbol;
-    using  GiNaC::lst;
-    using  GiNaC::ex;
-    using  GiNaC::parser;
+using GiNaC::matrix;
+using GiNaC::symbol;
+using GiNaC::lst;
+using GiNaC::ex;
+using GiNaC::parser;
+using GiNaC::diff;
+using GiNaC::laplacian;
+using GiNaC::grad;
+using GiNaC::div;
+using GiNaC::parse;
 
-    template<int Dim> inline std::vector<symbol> symbols() { return {symbol("x")}; }
-    template<> inline std::vector<symbol> symbols<1>() { return {symbol("x")}; }
-    template<> inline std::vector<symbol> symbols<2>() { return {symbol("x"),symbol("y") };}
-    template<> inline std::vector<symbol> symbols<3>() { return {symbol("x"),symbol("y"),symbol("z") };}
+template<int Dim> inline std::vector<symbol> symbols() { return {symbol("x")}; }
+template<> inline std::vector<symbol> symbols<1>() { return {symbol("x")}; }
+template<> inline std::vector<symbol> symbols<2>() { return {symbol("x"),symbol("y") };}
+template<> inline std::vector<symbol> symbols<3>() { return {symbol("x"),symbol("y"),symbol("z") };}
 
-    inline
-    std::vector<symbol>
-    symbols( std::initializer_list<std::string> l )
-    {
-        std::vector<symbol> s;
-        std::for_each( l.begin(), l.end(), [&s] ( std::string const& sym ) { s.push_back( symbol(sym) ); } );
-        return s;
-    }
-    inline
-    std::vector<symbol>
-    symbols( std::vector<std::string> l )
-    {
-        std::vector<symbol> s;
-        std::for_each( l.begin(), l.end(), [&s] ( std::string const& sym ) { s.push_back( symbol(sym) ); } );
-        return s;
-    }
+inline
+std::vector<symbol>
+symbols( std::initializer_list<std::string> l )
+{
+    std::vector<symbol> s;
+    std::for_each( l.begin(), l.end(), [&s] ( std::string const& sym ) { s.push_back( symbol(sym) ); } );
+    return s;
+}
 
-    namespace vf
-    {
+inline
+std::vector<symbol>
+symbols( std::vector<std::string> l )
+{
+    std::vector<symbol> s;
+    std::for_each( l.begin(), l.end(), [&s] ( std::string const& sym ) { s.push_back( symbol(sym) ); } );
+    return s;
+}
 
-        /// \cond detail
-        /**
-         * \class Ginac
-         * \brief allow runtime ginac in expression
-         *
-         * @author Christophe Prud'homme
-         * @see
-         */
-        template<int Order = 2>
-        class GinacEx
+class Symbols : public std::vector<symbol>
+{
+public:
+    Symbols():std::vector<symbol>(symbols({"x","y","z", "t"})) {}
+    Symbols(std::initializer_list<std::string> s ):std::vector<symbol>(symbols(s)) {}
+    Symbols(std::vector<std::string> const& s ):std::vector<symbol>(symbols(s)) {}
+};
+#if 0
+template<typename... Args>
+class Fields
+    :
+    public boost::fusion::vector<Args...>
+{
+public:
+    typedef boost::fusion::vector<Args...> super;
+    typedef Fields<Args...> this_type;
+	static const int s = sizeof...(Args);
+    Fields( super const& m) : super( m ) {}
+
+};
+#endif
+class GinacExprManagerImpl :
+        public std::map<std::string, boost::shared_ptr<GiNaC::FUNCP_CUBA> > ,
+        public boost::noncopyable
+{
+public:
+    typedef boost::shared_ptr<GiNaC::FUNCP_CUBA> value_type;
+    typedef std::string key_type;
+    typedef std::map<key_type,value_type> ginac_expr_manager_type;
+};
+
+typedef Feel::Singleton<GinacExprManagerImpl> GinacExprManager;
+
+struct GinacExprManagerDeleterImpl
+{
+    void operator()() const
         {
-        public:
-
-
-            /** @name Typedefs
-             */
-            //@{
-
-
-            static const size_type context = vm::POINT;
-            static const bool is_terminal = false;
-            static const uint16_type imorder = Order;
-            static const bool imIsPoly = false;
-
-            template<typename Funct>
-            struct HasTestFunction
-            {
-                static const bool result = false;
-            };
-            template<typename Funct>
-            struct HasTrialFunction
-            {
-                static const bool result = false;
-            };
-
-            typedef GiNaC::ex expression_type;
-            typedef GinacEx<Order> this_type;
-            typedef double value_type;
-
-            template<typename TheExpr>
-            struct Lambda
-            {
-                typedef this_type type;
-            };
-            template<typename TheExpr>
-            typename Lambda<TheExpr>::type
-            operator()( TheExpr const& e  ) { return *this; }
-
-            //@}
-
-            /** @name Constructors, destructor
-             */
-            //@{
-
-            explicit GinacEx( expression_type const & fun, std::vector<GiNaC::symbol> const& syms, std::string filename="")
-                :
-                M_fun( fun ),
-                M_syms( syms),
-                M_cfun(),
-                M_filename(filename.empty()?filename:(fs::current_path()/filename).string())
-            {
-                DVLOG(2) << "Ginac constructor with expression_type \n";
-                GiNaC::lst exprs(fun);
-                GiNaC::lst syml;
-                std::for_each( M_syms.begin(),M_syms.end(), [&]( GiNaC::symbol const& s ) { syml.append(s); } );
-
-                // If the so file already exists, no need to re-compile but only link it
-                std::string filenameWithSuffix = M_filename + ".so";
-                if( !filename.empty() && fs::exists( filenameWithSuffix ) )
-                    GiNaC::link_ex(filenameWithSuffix, M_cfun);
-                else
-                    GiNaC::compile_ex(exprs, syml, M_cfun, M_filename);
-            }
-
-            GinacEx( GinacEx const & fun )
-            :
-            M_fun( fun.M_fun ),
-            M_syms( fun.M_syms),
-            M_cfun(),
-            M_filename( fun.M_filename )
-            {
-                if( !(M_fun==fun.M_fun && M_syms==fun.M_syms && M_filename==fun.M_filename) || M_filename.empty() )
-                {
-                    DVLOG(2) << "Ginac copy constructor : compile object file \n";
-                    GiNaC::lst exprs(M_fun);
-                    GiNaC::lst syml;
-                    std::for_each( M_syms.begin(),M_syms.end(), [&]( GiNaC::symbol const& s ) { syml.append(s); } );
-                    GiNaC::compile_ex(exprs, syml, M_cfun, M_filename);
-                }
-                else
-                {
-                    DVLOG(2) << "Ginac copy constructor : link with existing object file \n";
-                    boost::mpi::communicator world;
-                    // std::string pid = boost::lexical_cast<std::string>(world.rank());
-                    // std::string filenameWithSuffix = M_filename + pid + ".so";
-                    std::string filenameWithSuffix = M_filename + ".so";
-                    GiNaC::link_ex(filenameWithSuffix, M_cfun);
-                }
-            }
-
-            //@}
-
-            /** @name Operator overloads
-             */
-            //@{
-
-
-            //@}
-
-            /** @name Accessors
-             */
-            //@{
-
-
-            //@}
-
-            /** @name  Mutators
-             */
-            //@{
-
-
-            //@}
-
-            /** @name  Methods
-             */
-            //@{
-
-            const GiNaC::FUNCP_CUBA& fun() const
-            {
-                return M_cfun;
-            }
-
-            std::vector<GiNaC::symbol> const& syms() const { return M_syms; }
-
-            //@}
-
-
-            template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
-            struct tensor
-            {
-                //typedef typename expression_type::value_type value_type;
-                typedef double value_type;
-
-                typedef typename mpl::if_<fusion::result_of::has_key<Geo_t,vf::detail::gmc<0> >,
-                                          mpl::identity<vf::detail::gmc<0> >,
-                                          mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
-                typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
-                typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
-                // change 0 into rank
-                typedef typename mpl::if_<mpl::equal_to<mpl::int_<0>,mpl::int_<0> >,
-                                          mpl::identity<Shape<gmc_type::nDim, Scalar, false, false> >,
-                                          typename mpl::if_<mpl::equal_to<mpl::int_<0>,mpl::int_<1> >,
-                                                            mpl::identity<Shape<gmc_type::nDim, Vectorial, false, false> >,
-                                                            mpl::identity<Shape<gmc_type::nDim, Tensor2, false, false> > >::type >::type::type shape;
-
-                typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> vec_type;
-
-                struct is_zero
-                {
-                    static const bool value = false;
-                };
-
-                tensor( this_type const& expr,
-                        Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
-                    :
-                    M_fun( expr.fun() ),
-                    M_gmc( fusion::at_key<key_type>( geom ).get() ),
-                    M_nsyms( expr.syms().size() ),
-                    M_y( vec_type::Zero(M_gmc->nPoints()) ),
-                    M_x( vec_type::Zero( M_nsyms ) )
-                {}
-
-                tensor( this_type const& expr,
-                        Geo_t const& geom, Basis_i_t const& /*fev*/ )
-                    :
-                    M_fun( expr.fun() ),
-                    M_gmc( fusion::at_key<key_type>( geom ).get() ),
-                    M_nsyms( expr.syms().size() ),
-                    M_y( vec_type::Zero(M_gmc->nPoints()) ),
-                    M_x( vec_type::Zero( M_nsyms ) )
-                {}
-
-                tensor( this_type const& expr, Geo_t const& geom )
-                    :
-                    M_fun( expr.fun() ),
-                    M_gmc( fusion::at_key<key_type>( geom ).get() ),
-                    M_nsyms( expr.syms().size() ),
-                    M_y( vec_type::Zero(M_gmc->nPoints()) ),
-                    M_x( vec_type::Zero( M_nsyms ) )
-
-                {
-                }
-
-                template<typename IM>
-                void init( IM const& im )
-                {
-
-                }
-                void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
-                {
-                    update( geom );
-                }
-                void update( Geo_t const& geom, Basis_i_t const& /*fev*/ )
-                {
-                    update( geom );
-                }
-                void update( Geo_t const& geom )
-                {
-                    M_gmc =  fusion::at_key<key_type>( geom ).get();
-
-                    int no = 1;
-                    int ni = M_nsyms;///gmc_type::nDim;
-
-                    for(int q = 0; q < M_gmc->nPoints();++q )
-                        {
-                            for(int k = 0;k < gmc_type::nDim;++k )
-                                M_x[k]=M_gmc->xReal( q )[k];
-                            for( int k = gmc_type::nDim; k < M_x.size(); ++k )
-                                M_x[k] = 0;
-                            M_fun(&ni,M_x.data(),&no,&M_y[q]);
-                        }
-
-                }
-
-                void update( Geo_t const& geom, uint16_type /*face*/ )
-                {
-                    M_gmc =  fusion::at_key<key_type>( geom ).get();
-
-                    int no = 1;
-                    int ni = M_nsyms;//gmc_type::nDim;
-                    for(int q = 0; q < M_gmc->nPoints();++q )
-                        {
-                            for(int k = 0;k < gmc_type::nDim;++k )
-                                M_x[k]=M_gmc->xReal( q )[k];
-                            for( int k = gmc_type::nDim; k < M_x.size(); ++k )
-                                M_x[k] = 0;
-                            M_fun(&ni,M_x.data(),&no,&M_y[q]);
-                        }
-                }
-
-
-                value_type
-                evalij( uint16_type i, uint16_type j ) const
-                {
-                    return 0;
-                }
-
-
-                value_type
-                evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type c1, uint16_type c2, uint16_type q ) const
-                {
-                    return M_y[q];
-                }
-
-
-
-                value_type
-                evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
-                {
-                    return M_y[q];
-                }
-
-                value_type
-                evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
-                {
-                    return M_y[q];
-                }
-
-                GiNaC::FUNCP_CUBA M_fun;
-                gmc_ptrtype M_gmc;
-
-                int M_nsyms;
-                vec_type M_y;
-                vec_type M_x;
-
-            };
-
-        private:
-            mutable expression_type  M_fun;
-            std::vector<GiNaC::symbol> M_syms;
-            GiNaC::FUNCP_CUBA M_cfun;
-            std::string M_filename;
-        };
-
-        inline
-        Expr< GinacEx<2> >
-        expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym, std::string filename="" )
-        {
-            return Expr< GinacEx<2> >(  GinacEx<2>( f, lsym, filename ) );
+            VLOG(2) << "[GinacManagerDeleter] clear GinacExprManager Singleton: " << GinacExprManager::instance().size() << "\n";
+            GinacExprManager::instance().clear();
+            VLOG(2) << "[GinacManagerDeleter] clear GinacExprManager done\n";
         }
-
-        inline
-        Expr< GinacEx<2> >
-        expr( std::string const& s, std::vector<GiNaC::symbol> const& lsym, std::string filename="" )
-        {
-            return Expr< GinacEx<2> >(  GinacEx<2>( parse(s,lsym), lsym, filename) );
-        }
-
-        /**
-         * \brief functor enabling ginac
-         *
-         */
-        template<int Order>
-        inline
-        Expr< GinacEx<Order> >
-        expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym, std::string filename="" )
-        {
-            return Expr< GinacEx<Order> >(  GinacEx<Order>( f, lsym, filename ));
-        }
-
-        template<int Order>
-        inline
-        Expr< GinacEx<Order> >
-        expr( std::string const& s, std::vector<GiNaC::symbol> const& lsym, std::string filename="" )
-        {
-            return Expr< GinacEx<Order> >(  GinacEx<Order>( parse(s,lsym), lsym, filename) );
-        }
-
-        template<int M=1, int N=1, int Order = 2>
-        class GinacMatrix
-        {
-        public:
+};
+typedef Feel::Singleton<GinacExprManagerDeleterImpl> GinacExprManagerDeleter;
+} // Feel namespace
 
 
-            /** @name Typedefs
-             */
-            //@{
+
+// Feel::vf
+namespace Feel
+{
+using GiNaC::matrix;
+using GiNaC::symbol;
+using GiNaC::lst;
+using GiNaC::ex;
+using GiNaC::parser;
+}
+
+namespace GiNaC
+{
+/**
+ * \brief Parse a string expression
+ *
+ * \param str the string to parse
+ * \param seps symbols separator
+ * \param params parameters
+ *
+ * ### Format
+ * The string format is: "GiNaC::ex,GiNaC::symbol,GiNaC::symbol,..."
+ *
+ * ### example :
+ * ```auto a = parse("sqrt(x*y):x:y")```
+ *
+ * \return a pair containing the GiNaC expression, and a vector of GiNaC symbols.
+ */
+std::pair< ex, std::vector<symbol> >
+parse( std::string const& str, std::string const& seps=":", std::vector<symbol> const& params = std::vector<symbol>());
+
+} // GiNaC namespace
+
+#include <feel/feelvf/detail/ginacex.hpp>
+#include <feel/feelvf/detail/ginacexvf.hpp>
+#include <feel/feelvf/detail/ginacmatrix.hpp>
+
+namespace Feel
+{
+namespace vf
+{
+inline
+Expr< GinacEx<2> >
+expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym, std::string filename="" )
+{
+    return Expr< GinacEx<2> >(  GinacEx<2>( f, lsym, filename ) );
+}
+
+inline
+Expr< GinacEx<2> >
+expr( std::string const& s, std::vector<GiNaC::symbol> const& lsym, std::string filename="" )
+{
+    return Expr< GinacEx<2> >(  GinacEx<2>( parse(s,lsym), lsym, filename) );
+}
 
 
-            static const size_type context = vm::POINT;
-            static const bool is_terminal = false;
-            static const uint16_type imorder = Order;
-            static const bool imIsPoly = false;
+/**
+ * \brief functor enabling ginac
+ *
+ */
+template<int Order>
+inline
+Expr< GinacEx<Order> >
+expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym, std::string filename="" )
+{
+    return Expr< GinacEx<Order> >(  GinacEx<Order>( f, lsym, filename ));
+}
 
-            template<typename Funct>
-            struct HasTestFunction
-            {
-                static const bool result = false;
-            };
-            template<typename Funct>
-            struct HasTrialFunction
-            {
-                static const bool result = false;
-            };
+template<int Order>
+inline
+Expr< GinacEx<Order> >
+expr( std::string const& s, std::vector<GiNaC::symbol> const& lsym, std::string filename="" )
+{
+    return Expr< GinacEx<Order> >(  GinacEx<Order>( parse(s,lsym), lsym, filename) );
+}
 
-            typedef GiNaC::ex expression_type;
-            typedef GinacMatrix<M,N,Order> this_type;
-            typedef double value_type;
+/**
+* @brief Create an Feel++ expression from a GiNaC expression as a string
+*
+* @param s          String containing the ginac expression and symbols
+* @param filename   Shared file
+*
+* @return Feel++ Expression
+*/
+inline
+Expr< GinacEx<2> > expr( std::string const& s, std::string filename="" )
+{
+    std::pair< ex, std::vector<GiNaC::symbol> > g = GiNaC::parse(s);
+    return Expr< GinacEx<2> >(  GinacEx<2>( g.first, g.second, filename) );
+}
 
-            template<typename TheExpr>
-            struct Lambda
-            {
-                typedef this_type type;
-            };
-            template<typename TheExpr>
-            typename Lambda<TheExpr>::type
-            operator()( TheExpr const& e  ) { return *this; }
+/**
+ * @brief Create an Feel++ expression from a GiNaC expression as a string
+ *
+ * @tparam Order     Expression order
+ * @param s          String containing the ginac expression and symbols
+ * @param filename   Shared file
+ *
+ * @return Feel++ Expression
+ */
+template<int Order>
+inline
+Expr< GinacEx<Order> >
+expr( std::string const& s, std::string filename="" )
+{
+    std::pair< ex, std::vector<GiNaC::symbol> > g = GiNaC::parse(s);
+    return Expr< GinacEx<Order> >(  GinacEx<Order>( g.first, g.second, filename) );
+}
 
-            //@}
-
-            /** @name Constructors, destructor
-             */
-            //@{
-
-            explicit GinacMatrix( GiNaC::matrix const & fun, std::vector<GiNaC::symbol> const& syms, std::string filename="" )
-                :
-                M_fun( fun.evalm() ),
-                M_syms( syms),
-                M_cfun(),
-                M_filename(filename.empty()?filename:(fs::current_path()/filename).string())
-            {
-                GiNaC::lst exprs;
-                for( int i = 0; i < M_fun.nops(); ++i ) exprs.append( M_fun.op(i) );
-
-                GiNaC::lst syml;
-                std::for_each( M_syms.begin(),M_syms.end(), [&]( GiNaC::symbol const& s ) { syml.append(s); } );
-                GiNaC::compile_ex(exprs, syml, M_cfun, M_filename);
-            }
-            explicit GinacMatrix( GiNaC::ex const & fun, std::vector<GiNaC::symbol> const& syms, std::string filename=""  )
-                :
-                M_fun(fun.evalm()),
-                M_syms( syms),
-                M_cfun(),
-                M_filename(filename.empty()?filename:(fs::current_path()/filename).string())
-            {
-                GiNaC::lst exprs;
-                for( int i = 0; i < M_fun.nops(); ++i ) exprs.append( M_fun.op(i) );
-
-                GiNaC::lst syml;
-                std::for_each( M_syms.begin(),M_syms.end(), [&]( GiNaC::symbol const& s ) { syml.append(s); } );
-                GiNaC::compile_ex(exprs, syml, M_cfun, M_filename);
-            }
-
-            GinacMatrix( GinacMatrix const & fun )
-            :
-            M_fun( fun.M_fun ),
-            M_syms( fun.M_syms),
-            M_cfun(),
-            M_filename( fun.M_filename )
-            {
-                if( !(M_fun==fun.M_fun && M_syms==fun.M_syms && M_filename==fun.M_filename) || M_filename.empty() )
-                {
-                    DVLOG(2) << "Ginac copy constructor : compile object file \n";
-                    GiNaC::lst exprs;
-                    for( int i = 0; i < fun.M_fun.nops(); ++i ) exprs.append( fun.M_fun.op(i) );
-
-                    GiNaC::lst syml;
-                    std::for_each( M_syms.begin(),M_syms.end(), [&]( GiNaC::symbol const& s ) { syml.append(s); } );
-                    GiNaC::compile_ex(exprs, syml, M_cfun, M_filename);
-                }
-                else
-                {
-                    DVLOG(2) << "Ginac copy constructor : link with existing object file \n";
-                    boost::mpi::communicator world;
-                    //std::string pid = boost::lexical_cast<std::string>(world.rank());
-                    std::string filenameWithSuffix = M_filename + ".so";
-                    GiNaC::link_ex(filenameWithSuffix, M_cfun);
-                }
-            }
+// ------------------------------------------------------------
+// Ginac expression  with feel++ expression
+// ------------------------------------------------------------
 
 
-            //@}
-
-            /** @name Operator overloads
-             */
-            //@{
-
-
-            //@}
-
-            /** @name Accessors
-             */
-            //@{
+template<typename ExprT, int Order=2>
+inline
+Expr< GinacExVF<ExprT,Order> >
+expr( ex const& myexpr, std::vector<GiNaC::symbol> const & syms , GiNaC::symbol const& s, ExprT const& e, std::string filename="" )
+{
+    return Expr< GinacExVF<ExprT,Order> >(  GinacExVF<ExprT,Order>( myexpr, syms, std::make_pair(s,e), filename ) );
+}
 
 
-            //@}
-
-            /** @name  Mutators
-             */
-            //@{
-
-
-            //@}
-
-            /** @name  Methods
-             */
-            //@{
-
-            const GiNaC::FUNCP_CUBA& fun() const
-            {
-                return M_cfun;
-            }
-
-            std::vector<GiNaC::symbol> const& syms() const { return M_syms; }
-            //@}
+template<typename ExprT, int Order=2>
+inline
+Expr< GinacExVF<ExprT,Order> >
+expr( std::string const& s, std::vector<GiNaC::symbol> const& lsym, std::pair<GiNaC::symbol,ExprT> const& e, std::string filename="" )
+{
+    return Expr< GinacExVF<ExprT,Order> >(  GinacExVF<ExprT,Order>( parse(s,lsym), lsym, e, filename ) );
+}
 
 
-            template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
-            struct tensor
-            {
-                //typedef typename expression_type::value_type value_type;
-                typedef double value_type;
+/**
+ * @brief Create an Feel++ expression from a GiNaC expression as a string
+ *
+ * @tparam Order     Expression order
+ * @param s          String containing the ginac expression and symbols
+ * @param se         String containing the ginac symbol associated to a Feel++ expression (e.g. a finite element field)
+ * @param filename   Shared file
+ *
+ * @return Feel++ Expression
+ */
+template<typename ExprT,int Order=2>
+inline
+Expr< GinacExVF<ExprT,Order> >
+expr( std::string const& s, std::string const& se, ExprT const& e, std::string filename="" )
+{
+    std::pair< ex, std::vector<GiNaC::symbol> > g = GiNaC::parse(s);
+    auto it = std::find_if( g.second.begin(), g.second.end(),
+                            [&se]( GiNaC::symbol const& s ) { return s.get_name() == se; } );
+    LOG_IF( WARNING, (it == g.second.end() ) ) << "invalid symbol " << se << " in expression " << s;
+    return Expr< GinacExVF<ExprT,Order> >(  GinacExVF<ExprT,Order>( g.first, g.second, std::make_pair(*it, e), filename) );
+}
 
-                typedef typename mpl::if_<fusion::result_of::has_key<Geo_t,vf::detail::gmc<0> >,
-                                          mpl::identity<vf::detail::gmc<0> >,
-                                          mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
-                typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
-                typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
+/**
+ * @brief Create an Feel++ expression from a GiNaC expression as a string
+ *
+ * @tparam Order     Expression order
+ * @param s          String containing the ginac expression and symbols
+ * @param ds         String containing the ginac symbol with respect to which \p s is differentiated
+ * @param se         String containing the ginac symbol associated to a Feel++ expression (e.g. a finite element field)
+ * @param filename   Shared file
+ *
+ * @return Feel++ Expression
+ */
+template<typename ExprT,int Order=2>
+inline
+Expr< GinacExVF<ExprT,Order> >
+diff( std::string const& s, std::string const& ds, std::string const& se, ExprT const& e, std::string filename="" )
+{
+    std::pair< ex, std::vector<GiNaC::symbol> > g = GiNaC::parse(s);
+    auto it = std::find_if( g.second.begin(), g.second.end(),
+                            [&se]( GiNaC::symbol const& s ) { return s.get_name() == se; } );
+    auto diff_it = std::find_if(g.second.begin(), g.second.end(),
+                                [&ds]( GiNaC::symbol const& s ) { return s.get_name() == ds; } );
+    LOG_IF( WARNING, (it == g.second.end() ) ) << "invalid symbol " << se << " in expression " << s;
+    LOG_IF( WARNING, (diff_it == g.second.end() ) ) << "invalid symbol " << ds << " in expression " << s << " for differentiation";
+    auto diffe = diff(g.first,*diff_it);
+    LOG(INFO) << "diff(" << s << "," << ds << ")=" << diffe;
+    return Expr< GinacExVF<ExprT,Order> >(  GinacExVF<ExprT,Order>( diffe, g.second, std::make_pair(*it, e), filename) );
+}
 
-                typedef typename mn_to_shape<gmc_type::nDim,M,N>::type shape;
-                // be careful that the matrix passed to ginac must be Row Major,
-                // however if the number of columns is 1 then eigen3 fails with
-                // an assertion, so we have a special when N=1 and have the
-                // matrix column major which is ok in this case
-                typedef typename mpl::if_<mpl::equal_to<mpl::int_<shape::N>, mpl::int_<1>>,
-                                          mpl::identity<Eigen::Matrix<value_type,shape::M,1>>,
-                                          mpl::identity<Eigen::Matrix<value_type,shape::M,shape::N,Eigen::RowMajor>>>::type::type mat_type;
-                typedef std::vector<mat_type> loc_type;
-                typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> vec_type;
-                struct is_zero
-                {
-                    static const bool value = false;
-                };
+// ------------------------------------------------------------
+// Matrix expression
+// ------------------------------------------------------------
 
-                tensor( this_type const& expr,
-                        Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
-                    :
-                    M_fun( expr.fun() ),
-                    M_gmc( fusion::at_key<key_type>( geom ).get() ),
-                    M_nsyms( expr.syms().size() ),
-                    M_y( M_gmc->nPoints(), mat_type::Zero() ),
-                    M_x( vec_type::Zero(M_nsyms) )
-                {}
+inline
+Expr< GinacMatrix<1,1,2> >
+expr( GiNaC::matrix const& f, std::vector<GiNaC::symbol> const& lsym, std::string filename="")
+{
+    return Expr< GinacMatrix<1,1,2> >(  GinacMatrix<1,1,2>( f, lsym, filename ) );
+}
 
-                tensor( this_type const& expr,
-                        Geo_t const& geom, Basis_i_t const& /*fev*/ )
-                    :
-                    M_fun( expr.fun() ),
-                    M_gmc( fusion::at_key<key_type>( geom ).get() ),
-                    M_nsyms( expr.syms().size() ),
-                    M_y( M_gmc->nPoints(), mat_type::Zero() ),
-                    M_x( vec_type::Zero(M_nsyms) )
+/**
+ * \brief functor enabling ginac
+ *
+ */
+template<int M, int N, int Order>
+inline
+Expr< GinacMatrix<M,N,Order> >
+expr( GiNaC::matrix const& f, std::vector<GiNaC::symbol> const& lsym, std::string filename="" )
+{
+    return Expr< GinacMatrix<M,N,Order> >(  GinacMatrix<M,N,Order>( f, lsym, filename) );
+}
 
-                {}
+template<int M, int N, int Order>
+inline
+Expr< GinacMatrix<M,N,Order> >
+expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym, std::string filename="" )
+{
+    return Expr< GinacMatrix<M,N,Order> >(  GinacMatrix<M,N,Order>( f, lsym, filename ) );
+}
 
-                tensor( this_type const& expr, Geo_t const& geom )
-                    :
-                    M_fun( expr.fun() ),
-                    M_gmc( fusion::at_key<key_type>( geom ).get() ),
-                    M_nsyms( expr.syms().size() ),
-                    M_y( M_gmc->nPoints(), mat_type::Zero() ),
-                    M_x( vec_type::Zero(M_nsyms) )
-                {
-                }
-
-                template<typename IM>
-                void init( IM const& im )
-                {
-
-                }
-                void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
-                {
-                    update( geom );
-                }
-                void update( Geo_t const& geom, Basis_i_t const& /*fev*/ )
-                {
-                    update( geom );
-                }
-                void update( Geo_t const& geom )
-                {
-                    M_gmc =  fusion::at_key<key_type>( geom ).get();
-
-                    int no = M*N;
-                    int ni = M_nsyms;//gmc_type::nDim;
-                    for(int q = 0; q < M_gmc->nPoints();++q )
-                        {
-                            for(int k = 0;k < gmc_type::nDim;++k )
-                                M_x[k]=M_gmc->xReal( q )[k];
-                            for( int k = gmc_type::nDim; k < M_x.size(); ++k )
-                                M_x[k] = 0;
-                            M_fun(&ni,M_x.data(),&no,M_y[q].data());
-;
-                        }
-
-                }
-
-                void update( Geo_t const& geom, uint16_type /*face*/ )
-                {
-                    M_gmc =  fusion::at_key<key_type>( geom ).get();
-
-                    int no = M*N;
-                    int ni = M_nsyms;//gmc_type::nDim;
-                    for(int q = 0; q < M_gmc->nPoints();++q )
-                        {
-                            for(int k = 0;k < gmc_type::nDim;++k )
-                                M_x[k]=M_gmc->xReal( q )[k];
-                            for( int k = gmc_type::nDim; k < M_x.size(); ++k )
-                                M_x[k] = 0;
-                            M_fun(&ni,M_x.data(),&no,M_y[q].data());
-                        }
-                }
-
-
-                value_type
-                evalij( uint16_type i, uint16_type j ) const
-                {
-                    return 0;
-                }
-
-
-                value_type
-                evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type c1, uint16_type c2, uint16_type q ) const
-                {
-                    return M_y[q](c1,c2);
-                }
-
-                value_type
-                evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
-                {
-                    return M_y[q](c1,c2);
-                }
-
-                value_type
-                evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
-                {
-                    return M_y[q](c1,c2);
-                }
-
-                GiNaC::FUNCP_CUBA M_fun;
-                gmc_ptrtype M_gmc;
-                int M_nsyms;
-                loc_type M_y;
-                vec_type M_x;
-            };
-
-        private:
-            mutable expression_type  M_fun;
-            std::vector<GiNaC::symbol> M_syms;
-            GiNaC::FUNCP_CUBA M_cfun;
-            std::string M_filename;
-        }; // GinacMatrix
-        /// \endcond
-
-        inline
-        Expr< GinacMatrix<1,1,2> >
-        expr( GiNaC::matrix const& f, std::vector<GiNaC::symbol> const& lsym, std::string filename="")
-        {
-            return Expr< GinacMatrix<1,1,2> >(  GinacMatrix<1,1,2>( f, lsym, filename ) );
-        }
-
-        /**
-         * \brief functor enabling ginac
-         *
-         */
-        template<int M, int N, int Order>
-        inline
-        Expr< GinacMatrix<M,N,Order> >
-        expr( GiNaC::matrix const& f, std::vector<GiNaC::symbol> const& lsym, std::string filename="" )
-        {
-            return Expr< GinacMatrix<M,N,Order> >(  GinacMatrix<M,N,Order>( f, lsym, filename) );
-        }
-
-        template<int M, int N, int Order>
-        inline
-        Expr< GinacMatrix<M,N,Order> >
-        expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym, std::string filename="" )
-        {
-            return Expr< GinacMatrix<M,N,Order> >(  GinacMatrix<M,N,Order>( f, lsym, filename ) );
-        }
-
-
-    } // vf
+} // vf
 } // Feel
-#endif /* __Ginac_H */
+
+#endif /* FEELPP_GINAC_HPP */

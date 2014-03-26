@@ -98,7 +98,8 @@ Gmsh::Gmsh( int nDim, int nOrder, WorldComm const& worldComm )
     //M_structured( false ),
     M_structured( 2 ),
     M_refine_levels( 0 ),
-    M_substructuring( false )
+    M_substructuring( false ),
+    M_periodic()
 {
     this->setReferenceDomain();
     setX( std::make_pair( 0., 1.) );
@@ -126,7 +127,8 @@ Gmsh::Gmsh( Gmsh const & __g )
     M_recombine( __g.M_recombine ),
     M_structured( __g.M_structured ),
     M_refine_levels( __g.M_refine_levels ),
-    M_substructuring( __g.M_substructuring )
+    M_substructuring( __g.M_substructuring ),
+    M_periodic( __g.M_periodic )
 {}
 Gmsh::~Gmsh()
 {}
@@ -145,6 +147,7 @@ Gmsh::operator=( Gmsh const& __g )
         M_usePhysicalNames = __g.M_usePhysicalNames;
         M_shear = __g.M_shear;
         M_refine_levels = __g.M_refine_levels;
+        M_periodic = __g.M_periodic;
     }
 
     return *this;
@@ -728,15 +731,15 @@ ostr << "// partitioning data\n"
         //ostr << "Mesh.Optimize=1;\n"
         //<< "Mesh.CharacteristicLengthFromCurvature=1;\n"
 
-    if (this->structuredMesh() == 3)
-    {
-        ostr << "nx=" << M_nx << ";\n"
-             << "ny=" << M_ny << ";\n";
-    }
-    else
-    {
-        ostr << "h=" << M_h << ";\n";
-    }
+    // if (this->structuredMesh() == 3)
+    // {
+    //     ostr << "nx=" << M_nx << ";\n"
+    //          << "ny=" << M_ny << ";\n";
+    // }
+    // else
+    // {
+    ostr << "h=" << M_h << ";\n";
+    //}
 
     if ( M_recombine )
     {
@@ -848,34 +851,7 @@ const bool meshs112ts = Gmsh::Factory::type::instance().registerProduct( "hyperc
 
 
 
-boost::shared_ptr<Mesh<Simplex<1> > >
-unitSegment( double h )
-{
-    return createGMSHMesh(_mesh=new Mesh<Simplex<1> >,
-                          _desc=domain( _name="segment",
-                                        _shape="hypercube",
-                                        _dim=1,
-                                        _h=h ) );
-}
 
-boost::shared_ptr<Mesh<Simplex<2> > >
-unitSquare( double h )
-{
-    return createGMSHMesh(_mesh=new Mesh<Simplex<2> >,
-                          _desc=domain( _name="square",
-                                        _shape="hypercube",
-                                        _dim=2,
-                                        _h=h) );
-}
 
-boost::shared_ptr<Mesh<Simplex<3> > >
-unitCube( double h )
-{
-    return createGMSHMesh(_mesh=new Mesh<Simplex<3> >,
-                          _desc=domain( _name="cube",
-                                        _shape="hypercube",
-                                        _dim=3,
-                                        _h= h ) );
-}
 
 } // Feel

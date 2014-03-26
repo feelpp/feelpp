@@ -63,24 +63,24 @@ public:
     point_type,
     multi_index::indexed_by<
     // sort by employee::operator<
-    multi_index::ordered_unique<multi_index::identity<point_type> >,
-    // sort by less<int> on marker
-    multi_index::ordered_non_unique<multi_index::tag<detail::by_marker>,
-    multi_index::const_mem_fun<point_type,
-    Marker1 const&,
-    &point_type::marker> >,
+        multi_index::ordered_unique<multi_index::identity<point_type> >,
+        // sort by less<int> on marker
+        multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_marker>,
+                                        multi_index::const_mem_fun<point_type,
+                                                                   Marker1 const&,
+                                                                   &point_type::marker> >,
 
-    // sort by less<int> on processId
-    multi_index::ordered_non_unique<multi_index::tag<detail::by_pid>,
-    multi_index::const_mem_fun<point_type,
-    uint16_type,
-    &point_type::processId> >,
+        // sort by less<int> on processId
+        multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_pid>,
+                                        multi_index::const_mem_fun<point_type,
+                                                                   uint16_type,
+                                                                   &point_type::processId> >,
 
-    // sort by less<int> on boundary
-    multi_index::ordered_non_unique<multi_index::tag<detail::by_location>,
-    multi_index::const_mem_fun<point_type,
-    bool,
-    &point_type::isOnBoundary> >
+        // sort by less<int> on boundary
+        multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_location>,
+                                        multi_index::const_mem_fun<point_type,
+                                                                   bool,
+                                                                   &point_type::isOnBoundary> >
     >
     > points_type;
 
@@ -88,15 +88,15 @@ public:
     typedef typename points_type::iterator point_iterator;
     typedef typename points_type::const_iterator point_const_iterator;
 
-    typedef typename points_type::template index<detail::by_marker>::type marker_points;
+    typedef typename points_type::template index<Feel::detail::by_marker>::type marker_points;
     typedef typename marker_points::iterator marker_point_iterator;
     typedef typename marker_points::const_iterator marker_point_const_iterator;
 
-    typedef typename points_type::template index<detail::by_pid>::type pid_points;
+    typedef typename points_type::template index<Feel::detail::by_pid>::type pid_points;
     typedef typename pid_points::iterator pid_point_iterator;
     typedef typename pid_points::const_iterator pid_point_const_iterator;
 
-    typedef typename points_type::template index<detail::by_location>::type location_points;
+    typedef typename points_type::template index<Feel::detail::by_location>::type location_points;
     typedef typename location_points::iterator location_point_iterator;
     typedef typename location_points::const_iterator location_point_const_iterator;
 
@@ -121,7 +121,14 @@ public:
     {}
 
     virtual ~Points()
-    {}
+        {
+            this->clear();
+        }
+    void clear()
+    {
+        VLOG(1) << "deleting points...\n";
+        M_points.clear();
+    }
 
     //@}
 
@@ -202,19 +209,19 @@ public:
 
     marker_point_iterator beginPointWithMarker( size_type m )
     {
-        return M_points.template get<detail::by_marker>().lower_bound( Marker1(m) );
+        return M_points.template get<Feel::detail::by_marker>().lower_bound( Marker1(m) );
     }
     marker_point_const_iterator beginPointWithMarker( size_type m ) const
     {
-        return M_points.template get<detail::by_marker>().lower_bound( Marker1(m) );
+        return M_points.template get<Feel::detail::by_marker>().lower_bound( Marker1(m) );
     }
     marker_point_iterator endPointWithMarker( size_type m )
     {
-        return M_points.template get<detail::by_marker>().upper_bound( Marker1(m) );
+        return M_points.template get<Feel::detail::by_marker>().upper_bound( Marker1(m) );
     }
     marker_point_const_iterator endPointWithMarker( size_type m ) const
     {
-        return M_points.template get<detail::by_marker>().upper_bound( Marker1(m) );
+        return M_points.template get<Feel::detail::by_marker>().upper_bound( Marker1(m) );
     }
 
     point_iterator pointIterator( size_type i ) const
@@ -259,7 +266,7 @@ public:
     marker_points &
     pointsByMarker()
     {
-        return M_points.template get<detail::by_marker>();
+        return M_points.template get<Feel::detail::by_marker>();
     }
 
     /**
@@ -271,7 +278,7 @@ public:
     marker_points const&
     pointsByMarker() const
     {
-        return M_points.template get<detail::by_marker>();
+        return M_points.template get<Feel::detail::by_marker>();
     }
     /**
      * get the points container using the location view
@@ -282,7 +289,7 @@ public:
     location_points &
     pointsByLocation()
     {
-        return M_points.template get<detail::by_location>();
+        return M_points.template get<Feel::detail::by_location>();
     }
 
     /**
@@ -294,7 +301,7 @@ public:
     location_points const&
     pointsByLocation() const
     {
-        return M_points.template get<detail::by_location>();
+        return M_points.template get<Feel::detail::by_location>();
     }
 
     /**
@@ -304,7 +311,7 @@ public:
      */
     location_point_iterator beginInternalPoint()
     {
-        return M_points.template get<detail::by_location>().lower_bound( INTERNAL );
+        return M_points.template get<Feel::detail::by_location>().lower_bound( INTERNAL );
     }
     /**
      * get the end() iterator on all the internal points
@@ -313,7 +320,7 @@ public:
      */
     location_point_iterator endInternalPoint()
     {
-        return M_points.template get<detail::by_location>().upper_bound( INTERNAL );
+        return M_points.template get<Feel::detail::by_location>().upper_bound( INTERNAL );
     }
 
     /**
@@ -323,7 +330,7 @@ public:
      */
     location_point_const_iterator beginInternalPoint() const
     {
-        return M_points.template get<detail::by_location>().lower_bound( INTERNAL );
+        return M_points.template get<Feel::detail::by_location>().lower_bound( INTERNAL );
     }
 
     /**
@@ -333,7 +340,7 @@ public:
      */
     location_point_const_iterator endInternalPoint() const
     {
-        return M_points.template get<detail::by_location>().upper_bound( INTERNAL );
+        return M_points.template get<Feel::detail::by_location>().upper_bound( INTERNAL );
     }
 
     /**
@@ -343,7 +350,7 @@ public:
      */
     location_point_iterator beginPointOnBoundary()
     {
-        return M_points.template get<detail::by_location>().lower_bound( ON_BOUNDARY );
+        return M_points.template get<Feel::detail::by_location>().lower_bound( ON_BOUNDARY );
     }
     /**
      * get the end() iterator on all the boundary points
@@ -352,7 +359,7 @@ public:
      */
     location_point_iterator endPointOnBoundary()
     {
-        return M_points.template get<detail::by_location>().upper_bound( ON_BOUNDARY );
+        return M_points.template get<Feel::detail::by_location>().upper_bound( ON_BOUNDARY );
     }
 
     /**
@@ -362,7 +369,7 @@ public:
      */
     location_point_const_iterator beginPointOnBoundary() const
     {
-        return M_points.template get<detail::by_location>().lower_bound( ON_BOUNDARY );
+        return M_points.template get<Feel::detail::by_location>().lower_bound( ON_BOUNDARY );
     }
 
     /**
@@ -372,14 +379,36 @@ public:
      */
     location_point_const_iterator endPointOnBoundary() const
     {
-        return M_points.template get<detail::by_location>().upper_bound( ON_BOUNDARY );
+        return M_points.template get<Feel::detail::by_location>().upper_bound( ON_BOUNDARY );
+    }
+
+
+    pid_point_iterator beginPointWithProcessId( uint16_type p = invalid_uint16_type_value )
+    {
+        const uint16_type part = (p==invalid_uint16_type_value)? this->worldCommPoints().localRank() : p;
+        return M_points.template get<Feel::detail::by_pid>().lower_bound( /*boost::make_tuple( part )*/ part );
+    }
+    pid_point_const_iterator beginPointWithProcessId( uint16_type p = invalid_uint16_type_value ) const
+    {
+        const uint16_type part = (p==invalid_uint16_type_value)? this->worldCommPoints().localRank() : p;
+        return M_points.template get<Feel::detail::by_pid>().lower_bound( /*boost::make_tuple( part )*/ part );
+    }
+    pid_point_iterator endPointWithProcessId( uint16_type p = invalid_uint16_type_value )
+    {
+        const uint16_type part = (p==invalid_uint16_type_value)? this->worldCommPoints().localRank() : p;
+        return M_points.template get<Feel::detail::by_pid>().upper_bound( /*boost::make_tuple( part )*/ part );
+    }
+    pid_point_const_iterator endPointWithProcessId( uint16_type p = invalid_uint16_type_value ) const
+    {
+        const uint16_type part = (p==invalid_uint16_type_value)? this->worldCommPoints().localRank() : p;
+        return M_points.template get<Feel::detail::by_pid>().upper_bound( /*boost::make_tuple( part )*/ part );
     }
 
 
     std::pair<pid_point_iterator, pid_point_iterator>
     pointsWithProcessId( size_type p ) const
     {
-        return M_points.template get<detail::by_pid>().equal_range( p );
+        return M_points.template get<Feel::detail::by_pid>().equal_range( p );
     }
 
     //@}

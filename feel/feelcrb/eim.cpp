@@ -53,6 +53,7 @@ eimOptions( std::string const& prefix )
         ( "eim.compute-error-with-truth-expression" , Feel::po::value<bool>()->default_value( true ), "compute the error with the truth expression ( not its projection ) if true" )
         ( "eim.use-dimension-max-functions" , Feel::po::value<bool>()->default_value( 0 ), "force to use dimension-max basis functions" )
         ( "eim.computational-time-neval",Feel::po::value<int>()->default_value( 0 )," number of evaluation to perform to have the computational time of eim online step" )
+        ( "eim.compute-expansion-of-expression",Feel::po::value<bool>()->default_value( false )," use true expression if true, else use the projection of the expression" )
         ;
 
     return eimoptions;

@@ -4,7 +4,7 @@ PortSystem      1.0
 PortGroup       conflicts_build 1.0
 
 name            slepc
-version         3.4.1
+version         3.4.3
 license         LGPL
 categories      math science
 maintainers     mmoll
@@ -26,9 +26,9 @@ master_sites    http://www.grycap.upv.es/slepc/download/distrib
 distname        ${name}-${version}
 universal_variant   no
 
-checksums           md5     d89bc464984bd0d8429c0c56eb3287fc \
-                    sha1    e4419f7d336cb2ad96b12936e6c78bf502e3ba7a \
-                    rmd160  5746e285365a83d254d252c65cf7d01fba0e6eb9
+checksums           md5     8fa3ebd196b89cd63dd5d08a321f6d23 \
+                    sha1    60ed95114f9b16e1214f583921ee0afb2943e1c3 \
+                    rmd160  c5a1a4b21530cbfe9f5773cd44c6049219817b05
 
 depends_lib-append  port:petsc
 

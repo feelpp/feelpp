@@ -111,11 +111,11 @@ void Convection ::initLinearOperator2( sparse_matrix_ptrtype& L )
     if ( weakdir == 1 )
     {
         // weak Dirichlet on temperature (T=0|left wall)
-        bf  += integrate ( markedfaces( mesh,mesh->markerName( "Tfixed" ) ),
+        bf  += integrate ( markedfaces( mesh, "Tfixed"  ),
                            - gradt( t )*N()*id( s )*cst_ref( sqgrpr ) );
-        bf  += integrate ( markedfaces( mesh,mesh->markerName( "Tfixed" ) ),
+        bf  += integrate ( markedfaces( mesh, "Tfixed"  ),
                            - grad( s )*N()*idt( t )*cst_ref( sqgrpr ) );
-        bf  += integrate ( markedfaces( mesh,mesh->markerName( "Tfixed" ) ),
+        bf  += integrate ( markedfaces( mesh, "Tfixed"  ),
                            gamma*idt( t )*id( s )/hFace() );
     }
 

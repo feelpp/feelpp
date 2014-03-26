@@ -64,7 +64,6 @@ depends_lib  \
     port:cmake \
     port:libpng \
     port:python27 \
-    port:petsc \
     path:lib/libpoppler.dylib:poppler \
     port:swig \
     port:swig-python \
@@ -74,6 +73,7 @@ depends_lib  \
     port:texinfo
 
 variant slepc description {compile with PETSC/SLEPC support} {
+    depends_lib-append      port:petsc
     depends_lib-append      port:slepc
     configure.args-append \
         -DENABLE_MPI=ON \
@@ -84,3 +84,11 @@ variant slepc description {compile with PETSC/SLEPC support} {
         -DSLEPC_INC=${prefix}/lib/petsc/include \
         -DSLEPC_LIB=${prefix}/lib/petsc/lib/libslepc.a
 }
+
+if {![variant_isset slepc] } {
+    configure.args-append \
+        -DENABLE_MPI=OFF \
+        -DENABLE_PETSC=OFF \
+        -DENABLE_SLEPC=OFF
+}
+

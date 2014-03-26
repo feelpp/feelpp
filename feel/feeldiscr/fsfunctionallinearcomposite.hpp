@@ -70,11 +70,79 @@ public:
         M_backend( backend )
     {}
 
+    virtual ~FsFunctionalLinearComposite() {}
+
     int size()
     {
         int size1 = M_functionals1.size();
         int size2 = M_functionals2.size();
         return size1+size2;
+    }
+
+
+    std::vector<int> countAllContributions()
+    {
+        int size1 = M_functionals1.size();
+        int size2 = M_functionals2.size();
+
+        if( size1==0 )
+        {
+            //first : count Q
+            int Q=1;
+            if( size2 == 0 )
+                Q=0;
+            //initialization
+            auto it_=M_functionals2.begin();
+            auto tuple_=it_->first;
+            int old_q = tuple_.template get<0>();
+            //loop over all operators
+            auto end = M_functionals2.end();
+            for(auto it=M_functionals2.begin(); it!=end; it++)
+            {
+                auto tuple = it->first;
+                int q = tuple.template get<0>();
+                if (q!=old_q)
+                {
+                    Q++;
+                    old_q=q;
+                }
+            }
+            std::vector<int> V(Q);
+            //now count sub-terms
+            int count=0;
+            old_q = tuple_.template get<0>();
+            for(auto it=M_functionals2.begin(); it!=end; it++)
+            {
+                auto tuple = it->first;
+                int q = tuple.template get<0>();
+                if (q!=old_q)
+                {
+                    V[old_q]=count;
+                    count=1;
+                    old_q=q;
+                }
+                else
+                {
+                    count++;
+                }
+            }
+            V[old_q]=count;
+            return V;
+        }//end of case functional2
+        else
+        {
+            int Q = this->size();
+            std::vector<int> V(Q);
+            auto it_=M_functionals1.begin();
+            auto tuple_=it_->first;
+            auto end = M_functionals1.end();
+            for(auto it=M_functionals1.begin(); it!=end; it++)
+            {
+                int q = it->first;
+                V[q]=1;
+            }
+            return V;
+        }//end of case functional1
     }
 
 
@@ -128,7 +196,24 @@ public:
 
     void setScalars( std::vector< std::vector< double > > scalars )
     {
-        M_scalars2 = scalars;
+        int size1 = M_functionals1.size();
+        if( size1 == 0 )
+        {
+            M_scalars2 = scalars;
+        }
+        else
+        {
+            int qsize=scalars.size();
+            std::vector< double > new_scalars( qsize );
+            for(int q=0; q<qsize; q++)
+            {
+                int msize=scalars[q].size();
+                CHECK(msize==1)<<"Error ! You should use a vector of double to call setScalars() in your case.\n";
+                new_scalars[q]=scalars[q][0];
+            }
+            M_scalars1=new_scalars;
+        }
+
     }
 
     this_type& operator=( this_type const& m )

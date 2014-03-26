@@ -1,4 +1,4 @@
-###  feelpp.directive.cmake; coding: utf-8 --- 
+###  feelpp.directive.cmake; coding: utf-8 ---
 
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2013-02-04
@@ -36,11 +36,14 @@ endif()
 ################################################################################
 
 MESSAGE(STATUS "================================================================================")
-MESSAGE(STATUS "FEELPP_VERSION_MAJOR : ${FEELPP_VERSION_MAJOR}")
-MESSAGE(STATUS "FEELPP_VERSION_MINOR : ${FEELPP_VERSION_MINOR}")
-MESSAGE(STATUS "FEELPP_VERSION_MICRO : ${FEELPP_VERSION_MICRO}")
-MESSAGE(STATUS "FEELPP_REVISON : ${FEELPP_REVISION}")
-MESSAGE(STATUS "FEELPP_BUILDID : ${FEELPP_BUILDID}")
+MESSAGE(STATUS "     FEELPP_VERSION_MAJOR : ${FEELPP_VERSION_MAJOR}")
+MESSAGE(STATUS "     FEELPP_VERSION_MINOR : ${FEELPP_VERSION_MINOR}")
+MESSAGE(STATUS "     FEELPP_VERSION_MICRO : ${FEELPP_VERSION_MICRO}")
+MESSAGE(STATUS "FEELPP_VERSION_PRERELEASE : ${FEELPP_VERSION_PRERELEASE}")
+MESSAGE(STATUS "  FEELPP_VERSION_METADATA : ${FEELPP_VERSION_METADATA}")
+MESSAGE(STATUS "    FEELPP_VERSION_STRING : ${FEELPP_VERSION_STRING}")
+MESSAGE(STATUS "           FEELPP_REVISON : ${FEELPP_REVISION}")
+MESSAGE(STATUS "           FEELPP_BUILDID : ${FEELPP_BUILDID}")
 MESSAGE(STATUS "")
 MESSAGE(STATUS "Feel++ Modules :")
 MESSAGE(STATUS "  Documentation: ${FEELPP_ENABLE_DOCUMENTATION}")
@@ -73,16 +76,12 @@ if(cmake_generator_tolower MATCHES "makefile")
   MESSAGE(STATUS "================================================================================")
   message(STATUS "Command        |   Description")
   MESSAGE(STATUS "===============|================================================================")
-  message(STATUS "make           | Compile the Feel++ library and a quickstart example ")
-  message(STATUS "make doc       | Compile the examples in the doc directory and ")
-  message(STATUS "               | Generate the manual applications, manual and the API ")
-  message(STATUS "               | documentation, requires Doxygen & LaTeX")
+  message(STATUS "make           | Compile the Feel++ library and quickstart examples ")
   message(STATUS "make install   | Install to ${CMAKE_INSTALL_PREFIX}. To change that:")
   message(STATUS "               |     cmake ${FEELPP_SOURCE_DIR} -DCMAKE_INSTALL_PREFIX=yourpath")
   message(STATUS "               |   Feel++ headers will then be installed to:")
   message(STATUS "               |     ${INCLUDE_INSTALL_DIR}")
-  message(STATUS "make benchmarks| Generate the benchmarks(Warning: takes a long time!) ")
-  message(STATUS "make check     | Build and run the unit-tests.")
+  message(STATUS "make check     | Build and run quickstart checks.")
   MESSAGE(STATUS "================================================================================")
 endif()
 

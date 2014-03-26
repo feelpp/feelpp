@@ -29,6 +29,8 @@
 #include <boost/none_t.hpp>
 #endif /* BOOST_VERSION >= 103400 */
 
+#include <Eigen/Core>
+
 #include <boost/mpl/vector.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/optional.hpp>
@@ -99,12 +101,14 @@ template<uint16_type Dim,
          template<class, uint16_type, class> class Pts, uint16_type > class PP = Lagrange>
 class GeoMap
     :
-    public PP<Order,Scalar, Continuous,PointSetEquiSpaced, 0>::template apply<Dim,RealDim/*Dim*/, T, Entity<Dim,Order,/*RealDim*/Dim> >::result_type,
-       public boost::enable_shared_from_this<GeoMap<Dim, Order, RealDim, T, Entity, PP > >
+    public PP<Order,Scalar, Continuous,PointSetEquiSpaced, 0>::template apply<Dim,RealDim/*Dim*/, T, Entity<Dim,Order,/*RealDim*/Dim> >::result_type//,
+//public boost::enable_shared_from_this<GeoMap<Dim, Order, RealDim, T, Entity, PP > >
        //public PP<Order,Scalar, PointSetFekete>::template apply<Dim, T, Entity<Dim,Order,Dim> >::result_type
        {
            //typedef typename PP<Order, Scalar, PointSetFekete>::template apply<Dim, T, Entity<Dim,Order,Dim> >::result_type super;
            typedef typename PP<Order, Scalar, Continuous, PointSetEquiSpaced, 0>::template apply<Dim, RealDim/*Dim*/, T, Entity<Dim,Order,/*RealDim*/Dim> >::result_type super;
+
+           //typedef boost::enable_shared_from_this<GeoMap<Dim, Order, RealDim, T, Entity, PP > > super_enable_this;
 
            static const uint16_type nRealDimCheck2d = mpl::if_< mpl::less_equal<mpl::int_<2>,mpl::int_<RealDim> >,
            mpl::int_<RealDim>,
@@ -689,6 +693,7 @@ class Context
         M_CS( PDim, PDim ),
         M_CSi( PDim, PDim ),
         M_B( NDim, PDim ),
+        M_Ptangent( NDim, NDim ),
         M_B3( boost::extents[NDim][NDim][PDim][PDim] ),
         M_id( __e.id() ),
         M_e_marker( __e.marker() ),
@@ -754,6 +759,7 @@ Context( gm_ptrtype __gm,
     M_CS( PDim, PDim ),
     M_CSi( PDim, PDim ),
     M_B( NDim, PDim ),
+    M_Ptangent( NDim, NDim ),
     M_B3( boost::extents[NDim][NDim][PDim][PDim] ),
     M_id( __e.id() ),
     M_e_marker( __e.marker() ),
@@ -813,6 +819,7 @@ Context( gmc_ptrtype& p )
     M_CS( p->M_CS ),
     M_CSi( p->M_CSi ),
     M_B( p->M_B ),
+    M_Ptangent( p->M_Ptangent ),
     M_B3( p->M_B3 ),
     M_id( p->M_id ),
     M_e_marker( p->M_e_marker ),
@@ -914,6 +921,57 @@ void update( element_type const& __e, uint16_type __f )
     }
 
 }
+
+void update( element_type const& __e, uint16_type __f, permutation_type __perm, bool __updateJacobianCtx=true )
+{
+    //M_element_c = boost::shared_ptr<element_type const>(&__e);
+    M_element = boost::addressof( __e );
+    M_face_id = __f;
+
+    M_perm = __perm;
+
+    M_h_face = __e.hFace( M_face_id );
+    //M_h_edge = __e.hEdge( M_face_id );
+
+    M_pc = M_pc_faces[__f][M_perm];
+    //M_G = __e.G();
+    M_G = ( gm_type::nNodes == element_type::numVertices ) ?__e.vertices() : __e.G();
+    M_id = __e.id();
+    M_e_marker = __e.marker();
+    M_e_marker2 = __e.marker2();
+    M_e_marker3 = __e.marker3();
+    M_h = __e.h();
+    M_meas = __e.measure();
+    M_measface = __e.faceMeasure( __f );
+    M_xrefq = M_pc->nodes();
+
+    FEELPP_ASSERT( M_G.size2() == M_gm->nbPoints() )( M_G.size2() )( M_gm->nbPoints() ).error( "invalid dimensions" );
+    FEELPP_ASSERT( M_pc ).error( "invalid precompute data structure" );
+
+    if ( vm::has_point<context>::value )
+    {
+
+        //ublas::axpy_prod( M_G, pc->phi(), M_xrealq, true );
+        std::fill( M_xrealq.data().begin(), M_xrealq.data().end(), value_type( 0 ) );
+        const uint16_type size1 = M_G.size1();
+        const uint16_type size3 = M_G.size2();
+        const uint16_type size2 = M_pc->nPoints();
+
+        for ( uint16_type i = 0; i < size1; ++i )
+            for ( uint16_type j = 0; j < size2; ++j )
+            {
+                for ( uint16_type k = 0; k < size3; ++k )
+                    M_xrealq( i, j ) += M_G( i, k ) * M_pc->phi()[k][j]( 0,0 );
+            }
+    }
+
+    if ( vm::has_jacobian<context>::value && __updateJacobianCtx )
+    {
+        updateJKBN( mpl::bool_<is_linear>() );
+    }
+
+}
+
 void update( element_type const& __e,
              precompute_ptrtype const& __pc )
 {
@@ -1155,6 +1213,15 @@ value_type B( int c1, int c2, int q ) const
 {
     //BOOST_STATIC_ASSERT( vm::has_kb<context>::value );
     return B( q, mpl::bool_<is_linear>() )( c1, c2 );
+}
+
+matrix_type const& projectorTangent( int i ) const
+{
+    return M_Ptangent;
+}
+value_type projectorTangent( int c1, int c2, int q ) const
+{
+    return M_Ptangent(c1,c2);
 }
 
 matrix_type const& K( int i ) const
@@ -1547,6 +1614,11 @@ void setPc( precompute_ptrtype const& __pc )
     M_pc = __pc;
 }
 
+void setPcFaces( std::vector<std::map<permutation_type, precompute_ptrtype> > const& __pcfaces )
+{
+    M_pc_faces = __pcfaces;
+}
+
 //@}
 private:
 
@@ -1710,14 +1782,23 @@ void updateJKBN( mpl::bool_<true>  )
 
     if ( vm::has_tangent<context>::value && ( M_face_id != invalid_uint16_type_value ) )
     {
-        // t = |\hat{e}|*o_K*(K*t_ref)/|e| where o_K is the sign(e*x_K(\hat{e}))
-        ublas::axpy_prod( M_K,
-                          M_gm->referenceConvex().tangent( M_face_id ),
-                          M_t_real,
-                          true );
-        double ratio = M_gm->referenceConvex().h( M_face_id )/M_h_face;
+        if ( NDim == 2 )
+        {
+            // t = |\hat{e}|*o_K*(K*t_ref)/|e| where o_K is the sign(e*x_K(\hat{e}))
+            ublas::axpy_prod( M_K,
+                              M_gm->referenceConvex().tangent( M_face_id ),
+                              M_t_real,
+                              true );
+            double ratio = M_gm->referenceConvex().h( M_face_id )/M_h_face;
 
-        M_t_real *= ratio;
+            M_t_real *= ratio;
+        }
+
+        // compute projector on tangent plane
+        Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> > P(M_Ptangent.data().begin(), NDim, NDim);
+        P.setIdentity(NDim, NDim);
+        Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> > N(M_u_n_real.data().begin(), NDim,1);
+        P.noalias() -= N*N.transpose();
     }
 
 }
@@ -1727,6 +1808,9 @@ void updateJKBN( mpl::bool_<true>  )
  */
 void updateJKBN( mpl::bool_<false>  )
 {
+
+     const bool doComputeNormal = ( ( NDim != PDim ) || ( vm::has_normal<context>::value ) ) && ( M_face_id != invalid_uint16_type_value );
+
     //std::cout << "nPoints() =" << nPoints() << "\n";
     //VLOG(1) << "[geomap] G = "<< M_G << "\n";
     //double res = 0;
@@ -1788,7 +1872,7 @@ void updateJKBN( mpl::bool_<false>  )
 
         M_Jt[q] = M_J;
 
-        if ( vm::has_kb<context>::value )
+        if ( vm::has_kb<context>::value || doComputeNormal )
         {
             //VLOG(1) << "[geomap] B[" << q << "]= "<< M_B << "\n";
             M_Bt[q].resize( M_B.size1(), M_B.size2() );
@@ -1798,8 +1882,9 @@ void updateJKBN( mpl::bool_<false>  )
 
     }
 
+
     //VLOG(1) << "[geomap] res(sum J) = " << res << "\n";
-    if ( ( ( NDim != PDim ) || ( vm::has_normal<context>::value ) ) && ( M_face_id != invalid_uint16_type_value ) )
+    if ( doComputeNormal )
     {
         //std::cout << "has normal\n";
         for ( int q = 0; q < nPoints(); ++q )
@@ -1889,6 +1974,8 @@ matrix_type M_K;
 matrix_type M_CS;
 matrix_type M_CSi;
 matrix_type M_B;
+matrix_type M_Ptangent;
+
 boost::multi_array<value_type,4> M_B3;
 
 size_type M_id;
@@ -1914,6 +2001,8 @@ permutation_type M_perm;
 }; // Context
 
 
+
+
 template<size_type context_v, typename ElementType>
 boost::shared_ptr<Context<context_v,ElementType> >
 context( geometric_mapping_ptrtype gm, ElementType const& e, precompute_ptrtype const& pc )
@@ -1929,9 +2018,12 @@ boost::shared_ptr<Context<context_v,ElementType> >
 context( ElementType const& e, precompute_ptrtype const& pc )
 {
     return boost::shared_ptr<Context<context_v,ElementType> >(
-               new Context<context_v, ElementType>( this->shared_from_this(),
-                       e,
-                       pc ) );
+                new Context<context_v, ElementType>
+                (
+                 //super_enable_this::shared_from_this(),
+                 boost::dynamic_pointer_cast<GeoMap<Dim, Order, RealDim, T, Entity, PP > >(this->shared_from_this()),
+                e,
+                pc ) );
 }
 
 template<size_type context_v, typename ElementType>
@@ -1954,10 +2046,13 @@ context( ElementType const& e,
          uint16_type f )
 {
     return boost::shared_ptr<Context<context_v,ElementType> >(
-               new Context<context_v, ElementType>( this->shared_from_this(),
-                       e,
-                       pc,
-                       f ) );
+               new Context<context_v, ElementType>
+               (
+                //super_enable_this::shared_from_this(),
+                boost::dynamic_pointer_cast<GeoMap<Dim, Order, RealDim, T, Entity, PP > >(this->shared_from_this()),
+               e,
+               pc,
+               f ) );
 }
 
 

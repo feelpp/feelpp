@@ -2231,7 +2231,7 @@ runPeanut( data_geo_ptrtype dg )
 }
 
 void
-runHexaedre( data_geo_ptrtype dg )
+runHexahedron( data_geo_ptrtype dg )
 {
 
     node_type Pt1 = param<0>( dg );
@@ -2267,21 +2267,59 @@ runHexaedre( data_geo_ptrtype dg )
 
     writeLineLoop( 1, dg, Loop()>>1>>2>>3>>4 );
     writePlaneSurface( 1, dg, 1 );
-    writeLineLoop( 2, dg, Loop()>>5>>6>>7>>8 );
+    writeLineLoop( 2, dg, Loop()>>-5>>-8>>-7>>-6 );
     writePlaneSurface( 2, dg, 2 );
-    writeLineLoop( 3, dg, Loop()>>1>>10>>-5>>-9 );
+    writeLineLoop( 3, dg, Loop()>>-1>>9>>5>>-10 );
     writePlaneSurface( 3, dg, 3 );
     writeLineLoop( 4, dg, Loop()>>10>>6>>-11>>-2 );
     writePlaneSurface( 4, dg, 4 );
     writeLineLoop( 5, dg, Loop()>>11>>7>>-12>>-3 );
     writePlaneSurface( 5, dg, 5 );
-    writeLineLoop( 6, dg, Loop()>>9>>-8>>-12>>4 );
+    writeLineLoop( 6, dg, Loop()>>8>>-9>>-4>>12 );
     writePlaneSurface( 6, dg, 6 );
 
     writeSurfaceLoop( 1, dg, Loop()>>1>>2>>3>>4>>5>>6 );
+    writeVolume( 1, dg, 1 );
+}
+
+void
+runTetrahedron( data_geo_ptrtype dg )
+{
+    node_type Pt1 = param<0>( dg );
+    node_type Pt2 = param<1>( dg );
+    node_type Pt3 = param<2>( dg );
+    node_type Pt4 = param<3>( dg );
+
+    writePoint( 1, dg , Pt1( 0 ), Pt1( 1 ), Pt1( 2 ) );
+    writePoint( 2, dg , Pt2( 0 ), Pt2( 1 ), Pt2( 2 ) );
+    writePoint( 3, dg , Pt3( 0 ), Pt3( 1 ), Pt3( 2 ) );
+    writePoint( 4, dg , Pt4( 0 ), Pt4( 1 ), Pt4( 2 ) );
+
+    writeLine( 1, dg , 1 , 2 );
+    writeLine( 2, dg , 2 , 3 );
+    writeLine( 3, dg , 3 , 1 );
+    writeLine( 4, dg , 1 , 4 );
+    writeLine( 5, dg , 2 , 4 );
+    writeLine( 6, dg , 3 , 4 );
+
+    writeLineLoop( 1, dg, Loop()>>1>>2>>3 );
+    writePlaneSurface( 1, dg, 1 );
+
+    //writeLineLoop( 2, dg, Loop()>>5>>-4>>1 );
+    writeLineLoop( 2, dg, Loop()>>-1>>4>>-5 );
+    writePlaneSurface( 2, dg, 2 );
+    //writeLineLoop( 3, dg, Loop()>>2>>6>>-5 );
+    writeLineLoop( 3, dg, Loop()>>5>>-6>>-2 );
+    writePlaneSurface( 3, dg, 3 );
+    //writeLineLoop( 4, dg, Loop()>>3>>4>>-6 );
+    writeLineLoop( 4, dg, Loop()>>6>>-4>>-3 );
+    writePlaneSurface( 4, dg, 4 );
+
+    writeSurfaceLoop( 1, dg, Loop()>>1>>2>>3>>4 );
 
     writeVolume( 1, dg, 1 );
 }
+
 
 void
 runCube( data_geo_ptrtype dg )
@@ -2333,15 +2371,15 @@ runCube( data_geo_ptrtype dg )
 
     writeLineLoop( 1, dg, Loop()>>1>>2>>3>>4 );
     writePlaneSurface( 1, dg, 1 );
-    writeLineLoop( 2, dg, Loop()>>5>>6>>7>>8 );
+    writeLineLoop( 2, dg, Loop()>>-5>>-8>>-7>>-6 );
     writePlaneSurface( 2, dg, 2 );
-    writeLineLoop( 3, dg, Loop()>>1>>10>>-5>>-9 );
+    writeLineLoop( 3, dg, Loop()>>-1>>9>>5>>-10 );
     writePlaneSurface( 3, dg, 3 );
     writeLineLoop( 4, dg, Loop()>>10>>6>>-11>>-2 );
     writePlaneSurface( 4, dg, 4 );
     writeLineLoop( 5, dg, Loop()>>11>>7>>-12>>-3 );
     writePlaneSurface( 5, dg, 5 );
-    writeLineLoop( 6, dg, Loop()>>9>>-8>>-12>>4 );
+    writeLineLoop( 6, dg, Loop()>>8>>-9>>-4>>12 );
     writePlaneSurface( 6, dg, 6 );
 
     writeSurfaceLoop( 1, dg, Loop()>>1>>2>>3>>4>>5>>6 );
@@ -2450,12 +2488,13 @@ runCylindre( data_geo_ptrtype dg )
     writeCircle( 7, dg,9,6,10 );
     writeCircle( 8 ,dg,10,6,7 );
 
-    writeLineLoop( 2, dg,Loop()>>5>>6>>7>>8 );
+    writeLineLoop( 2, dg, Loop()>>-5>>-8>>-7>>-6 );
+
     writeLine( 9, dg, 4, 9 );
     writeLine( 10, dg, 5, 10 );
     writeLine( 11, dg, 2, 7 );
     writeLine( 12, dg, 8, 3 );
-    writeLineLoop( 13, dg, Loop()>>9>>-6>>12>>2 );
+    writeLineLoop( 13, dg, Loop()>>-9>>-2>>-12>>6 );
     writeLineLoop( 15, dg, Loop()>>9>>7>>-10>>-3 );
     writeLineLoop( 17, dg, Loop()>>10>>8>>-11>>-4 );
     writeLineLoop( 19, dg, Loop()>>11>>5>>12>>-1 );
@@ -2528,17 +2567,17 @@ runSphere( data_geo_ptrtype dg )
 #else
     writeLineLoop( 1, dg, Loop()>>1>>4>>-3 );
     writeRuledSurface( 1, dg,1 );
-    writeLineLoop( 2, dg, Loop()>>7>>-6>>3 );
+    writeLineLoop( 2, dg, Loop()>>7>>-6>>3 );//
     writeRuledSurface( 2, dg,2 );
-    writeLineLoop( 3, dg, Loop()>>6>>10>>-9 );
+    writeLineLoop( 3, dg, Loop()>>6>>10>>-9 );//
     writeRuledSurface( 3,dg,3 );
-    writeLineLoop( 4, dg, Loop()>>13>>-1>>9 );
+    writeLineLoop( 4, dg, Loop()>>13>>-1>>9 );//
     writeRuledSurface( 4, dg, 4 );
-    writeLineLoop( 5, dg, Loop()>>-4>>2>>-15 );
+    writeLineLoop( 5, dg, Loop()>>-4>>2>>-15 );//
     writeRuledSurface( 5, dg, 5 );
-    writeLineLoop( 6, dg, Loop()>>-18>>-7>>15 );
+    writeLineLoop( 6, dg, Loop()>>-18>>-7>>15 );//
     writeRuledSurface( 6, dg, 6 );
-    writeLineLoop( 7, dg, Loop()>>-10>>18>>-21 );
+    writeLineLoop( 7, dg, Loop()>>-10>>18>>-21 );//
     writeRuledSurface( 7,dg,7 );
     writeLineLoop( 8, dg, Loop()>>-2>>-13>>21 );
     writeRuledSurface( 8, dg,8 );
@@ -2828,10 +2867,9 @@ runSpecial3D_1( data_geo_ptrtype dg )
     // line on cylinder
     writeLine(17,dg, 12, 10);
 
-
     writeLineLoop(1,dg, Loop()>>1>>2>>3>>4);
-    writeLineLoop(2,dg, Loop()>>5>>6>>7>>8);
-    writeLineLoop(3,dg, Loop()>>1>>10>>-5>>-9);
+    writeLineLoop(2,dg, Loop()>>-8>>-7>>-6>>-5);
+    writeLineLoop(3,dg, Loop()>>9>>5>>-10>>-1);
     writeLineLoop(4,dg, Loop()>>10>>6>>-11>>-2);
     writeLineLoop(5,dg, Loop()>>11>>7>>-12>>-3);
     //writeLineLoop(6,dg, Loop()>>9>>-8>>-12>>4);
@@ -2842,10 +2880,9 @@ runSpecial3D_1( data_geo_ptrtype dg )
     writePlaneSurface(5,dg,5);
     //writePlaneSurface(6,dg,6);
 
-
-    writeLineLoop(6,dg,  Loop()>>16>>-12>>-14>>-17);
-    writeLineLoop(7,dg,  Loop()>>17>>-13>>9>>15);
-    writeLineLoop(8,dg,  Loop()>>14>>4>>13);
+    writeLineLoop(6,dg,  Loop()>>17>>14>>12>>-16 );
+    writeLineLoop(7,dg,  Loop()>>-15>>-9>>13>>-17);
+    writeLineLoop(8,dg,  Loop()>>-13>>-4>>-14);
     writeLineLoop(9,dg, Loop()>>15>>16>>8);
     writeRuledSurface(6,dg,6);
     writeRuledSurface(7,dg,7);

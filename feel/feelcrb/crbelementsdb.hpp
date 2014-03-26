@@ -162,7 +162,7 @@ CRBElementsDB<ModelType>::saveDB()
 
     if ( ofs )
     {
-        boost::archive::text_oarchive oa( ofs );
+        boost::archive::binary_oarchive oa( ofs );
         // write class instance to archive
         oa << *this;
         // archive and stream closed when destructors are called
@@ -173,7 +173,10 @@ template<typename ModelType>
 bool
 CRBElementsDB<ModelType>::loadDB()
 {
-    if( option(_name="crb.rebuild-database").template as<bool>() )
+
+    bool rebuild_db = option(_name="crb.rebuild-database").template as<bool>();
+    int Nrestart = option(_name="crb.restart-from-N").template as<int>();
+    if ( rebuild_db && Nrestart < 1 )
         return false;
 
     if( this->isDBLoaded() )
@@ -192,7 +195,7 @@ CRBElementsDB<ModelType>::loadDB()
 
     if ( ifs )
     {
-        boost::archive::text_iarchive ia( ifs );
+        boost::archive::binary_iarchive ia( ifs );
         // write class instance to archive
         ia >> *this;
         //std::cout << "Loading " << db << " done...\n";
@@ -210,6 +213,7 @@ template<class Archive>
 void
 CRBElementsDB<ModelType>::save( Archive & ar, const unsigned int version ) const
 {
+#if 0
     auto mesh = mesh_type::New();
     auto is_mesh_loaded = mesh->load( _name="mymesh",_path=this->dbLocalPath(),_type="binary" );
 
@@ -219,6 +223,7 @@ CRBElementsDB<ModelType>::save( Archive & ar, const unsigned int version ) const
         mesh = first_element.functionSpace()->mesh() ;
         mesh->save( _name="mymesh",_path=this->dbLocalPath(),_type="binary" );
     }
+#endif
 
     int size = M_WN.size();
 

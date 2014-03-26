@@ -34,10 +34,15 @@ endforeach()
 find_path (SLEPC_DIR include/slepc.h
   HINTS ENV SLEPC_DIR
   PATHS
+  /usr/lib/slepc
+  /usr/lib/slepcdir/3.4.2 # Debian
   /usr/lib/slepcdir/3.2 # Debian
   /usr/lib/slepcdir/3.1 # Debian
   /usr/lib/slepcdir/3.0.0 # Debian
   /opt/local/lib/petsc # macports
+  # Homebrew
+  /opt/local/lib/slepcdir/3.4.3/darwin-cxx-debug
+  /opt/local/lib/slepcdir/3.4.3/darwin-cxx-opt
   $ENV{HOME}/slepc
   DOC "SLEPc Directory")
 

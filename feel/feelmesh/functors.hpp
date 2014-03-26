@@ -274,6 +274,23 @@ private:
     int M_pid;
 };
 
+struct UpdateNeighborPartition
+{
+    UpdateNeighborPartition( int pid )
+        :
+        M_pid( pid )
+    {}
+    template<typename ElementType>
+    void operator()( ElementType& element )
+    {
+        element.addNeighborPartitionId( M_pid );
+    }
+private:
+    int M_pid;
+};
+
+
+
 struct UpdateMarker
 {
     UpdateMarker( flag_type v )

@@ -85,12 +85,15 @@ public:
 
     typedef SpaceType space_type;
     typedef boost::shared_ptr<SpaceType> space_ptrtype;
+    typedef space_type test_space_type;
+    typedef space_type trial_space_type;
 
     typedef typename space_type::value_type value_type;
     typedef typename space_type::real_type real_type;
     typedef VectorType vector_type;
     typedef boost::shared_ptr<VectorType> vector_ptrtype;
-    typedef typename space_type::template Element<value_type, ElemContType> element_type;
+    //typedef typename space_type::template Element<value_type, ElemContType> element_type;
+    typedef typename space_type::template Element<value_type> element_type;
 
 #if 0
     typedef typename space_type::component_fespace_type component_fespace_type;
@@ -268,6 +271,14 @@ public:
                  IM const& im,
                  IM2 const& im2 );
 
+        template<typename IMExpr, typename IMTest>
+        Context( form_type& __form,
+                 map_test_geometric_mapping_context_type const& _gmcTest,
+                 map_geometric_mapping_expr_context_type const& _gmcExpr,
+                 ExprT const& expr,
+                 IM const& im,
+                 IMExpr const& imExpr, IMTest const& imTest );
+
         template<typename IM2>
         Context( form_type& __form,
                  map_test_geometric_mapping_context_type const& _gmcTest,
@@ -413,9 +424,9 @@ public:
         std::map<uint16_type, std::map<permutation_type,test_precompute_ptrtype> >
         precomputeTestBasisAtPoints( PtsSet const& pts, mpl::bool_<true> )
         {
-            QuadMapped<PtsSet> qm;
+            //QuadMapped<PtsSet> qm;
             typedef typename QuadMapped<PtsSet>::permutation_type permutation_type;
-            typename QuadMapped<PtsSet>::permutation_points_type ppts( qm( pts ) );
+            //typename QuadMapped<PtsSet>::permutation_points_type ppts( qm( pts ) );
 
             std::map<uint16_type, std::map<permutation_type,test_precompute_ptrtype> > testpc;
 
@@ -424,7 +435,8 @@ public:
                 for ( permutation_type __p( permutation_type::IDENTITY );
                         __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
                 {
-                    testpc[__f][__p] = test_precompute_ptrtype( new test_precompute_type( M_form.testSpace()->fe(), ppts[__f].find( __p )->second ) );
+                    //testpc[__f][__p] = test_precompute_ptrtype( new test_precompute_type( M_form.testSpace()->fe(), ppts[__f].find( __p )->second ) );
+                    testpc[__f][__p] = test_precompute_ptrtype( new test_precompute_type( M_form.testSpace()->fe(), pts.fpoints( __f,__p.value() ) ) );
                 }
             }
 
@@ -558,6 +570,7 @@ public:
         return M_F( i );
     }
 
+#if 0
     /**
      * Computes the application of the form on an element of the function space
      *
@@ -568,7 +581,7 @@ public:
     {
         return M_F->dot( __v );
     }
-
+#endif
     /**
      * Computes the application of the form on an element of the function space
      *
@@ -645,6 +658,16 @@ public:
     vector_ptrtype vectorPtr()
     {
         return M_F;
+    }
+
+    vector_type& vector()
+    {
+        return *M_F;
+    }
+
+    vector_type const& vector() const
+    {
+        return *M_F;
     }
 
     list_block_type const& blockList() const
@@ -840,6 +863,8 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( space_ptrtype const
     M_threshold( threshold )
 {
 
+    if ( !this->M_X->worldComm().isActive() ) return;
+
     for ( uint16_type __i = 0; __i < M_X->qDim(); ++__i )
     {
         M_lb.push_back( Block( __i, 0,
@@ -869,6 +894,8 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( space_ptrtype const
     M_do_threshold( do_threshold ),
     M_threshold( threshold )
 {
+    if ( !this->M_X->worldComm().isActive() ) return;
+
     if ( init )
         M_F->zero();
 }

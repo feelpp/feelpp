@@ -34,215 +34,315 @@
 
 namespace GiNaC
 {
-    ex parse( std::string const& str, std::vector<symbol>  const& syms, std::vector<symbol> const& params = std::vector<symbol>() )
+ex parse( std::string const& str, std::vector<symbol> const& syms, std::vector<symbol> const& params = std::vector<symbol>() )
+{
+    using namespace Feel;
+    LOG(INFO) << "Parsing " << str << " using GiNaC";
+
+    LOG(INFO) << "Number of symbols " << syms.size() << "\n";
+
+    for(int i =0; i < syms.size();++i)
+        LOG(INFO) <<" - symbol : "  << syms[i].get_name();
+
+    LOG(INFO) << "Number of params " << params.size() << "\n";
+
+    for(int i =0; i < params.size();++i)
+        LOG(INFO) <<" - param : "  << params[i].get_name();
+
+    using GiNaC::symbol;
+    using GiNaC::symtab;
+    using GiNaC::parser;
+    using GiNaC::parse_error;
+    symtab table;
+    LOG(INFO) <<"Inserting symbols in symbol table";
+
+    table["x"]=syms[0];
+    if ( syms.size() == 2 )
     {
-        using namespace Feel;
-        LOG(INFO) << "Parsing " << str << " using GiNaC";
+        table["y"]=syms[1];
+    }
+    if ( syms.size() == 3 )
+    {
+        table["y"]=syms[1];
+        table["z"]=syms[2];
+    }
+    std::vector<symbol> total_syms;
+    boost::for_each( syms, [&table, &total_syms]( symbol const& param )
+                     {
+                         total_syms.push_back(symbol(param));
+                         LOG(INFO) << "adding param: " << param << std::endl;
+                         table[param.get_name()] = param;
+                     } );
 
-        LOG(INFO) << "Number of symbols " << syms.size() << "\n";
+    LOG(INFO) <<"Inserting params and in symbol table";
 
-        for(int i =0; i < syms.size();++i)
-            LOG(INFO) <<" - symbol : "  << syms[i].get_name();
+    boost::for_each( params, [&table, &total_syms]( symbol const& param )
+                     {
+                         total_syms.push_back(symbol(param));
+                         LOG(INFO) << "adding param: " << param << std::endl;
+                         table[param.get_name()] = param;
+                     } );
 
-        LOG(INFO) << "Number of params " << params.size() << "\n";
+    LOG(INFO) <<"Defining parser";
+    parser reader(table ,option(_name="ginac.strict-parser").as<bool>()); // true to ensure that no more symbols are added
 
-        for(int i =0; i < params.size();++i)
-            LOG(INFO) <<" - param : "  << params[i].get_name();
-
-        using GiNaC::symbol;
-        using GiNaC::symtab;
-        using GiNaC::parser;
-        using GiNaC::parse_error;
-        symtab table;
-        LOG(INFO) <<"Inserting symbols in symbol table";
-
-        table["x"]=syms[0];
-        if ( syms.size() == 2 )
-            {
-                table["y"]=syms[1];
-            }
-        if ( syms.size() == 3 )
-            {
-                table["y"]=syms[1];
-                table["z"]=syms[2];
-            }
-
-        LOG(INFO) <<"Inserting params and in symbol table";
-        std::vector<symbol> total_syms = syms;
-        boost::for_each( params, [&table, &total_syms]( symbol const& param )
-                         {
-                             total_syms.push_back(symbol(param));
-                             LOG(INFO) << "adding param: " << param << std::endl;
-                             table[param.get_name()] = param;
-                         } );
-
-        LOG(INFO) <<"Defining parser";
-        parser reader(table ,option(_name="ginac.strict-parser").as<bool>()); // true to ensure that no more symbols are added
-
-        LOG(INFO) <<"parse expression\n";
-        ex e; // = reader(str);
-        try
-            {
-                e = reader(str);
+    LOG(INFO) <<"parse expression\n";
+    ex e; // = reader(str);
+    try
+    {
+        e = reader(str);
 #if 0
-                if (!reader.strict)
-                    {
-                        symtab table_symbols = reader.get_syms();
-                        boost::for_each( table_symbols, [](std::pair<std::string, ex> const& s )
-                                         {
-                                             LOG(INFO) << "Symbol " << s.first << " added\n";
-                                         }
-                                         );
-                    }
+        if (!reader.strict)
+        {
+            symtab table_symbols = reader.get_syms();
+            boost::for_each( table_symbols, [](std::pair<std::string, ex> const& s )
+                             {
+                                 LOG(INFO) << "Symbol " << s.first << " added\n";
+                             }
+                );
+        }
 #endif
-            }
-        catch (std::invalid_argument& err)
-            {
-                reader.strict = false;
-                e =reader(str);
+    }
+    catch (std::invalid_argument& err)
+    {
+        reader.strict = false;
+        e =reader(str);
 
-                std::cerr << "GiNaC error parsing " << e << " : " << err.what() << std::endl;
-                exit(1);
-            }
-        catch ( ... )
-            {
-                std::cerr << "Exception of unknown type!\n";
-            }
-
-        LOG(INFO) << "e=" << e << "\n";
-        return e;
+        std::cerr << "GiNaC error parsing " << e << " : " << err.what() << std::endl;
+        exit(1);
+    }
+    catch ( ... )
+    {
+        std::cerr << "Exception of unknown type!\n";
     }
 
-    matrix
-    grad( ex const& f, std::vector<symbol> const& l )
+    LOG(INFO) << "parsed expression :" << e << "\n";
+    return e;
+}
+
+std::pair< ex, std::vector<symbol> >
+parse( std::string const& str, std::string const& seps, std::vector<symbol> const& params )
+{
+    using namespace Feel;
+    using GiNaC::symbol;
+    using GiNaC::lst;
+    using GiNaC::ex;
+    using GiNaC::parser;
+    using GiNaC::symtab;
+    using GiNaC::parse_error;
+
+    LOG(INFO) << "Parsing " << str << " using GiNaC";
+    std::vector<std::string> fields;
+    boost::split( fields, str, boost::is_any_of(seps), boost::token_compress_on );
+    int fsize = fields.size();
+    CHECK( fsize  > 0 ) << "bad expression format";
+    std::string strexpr( fields[0] );
+    std::vector<std::string> strsyms;
+    if(fsize==1)
+        strsyms.push_back("0"); // no symbols means constant expression
+    else
+        for( auto it=fields.begin()+1; it!=fields.end(); ++it )
+            strsyms.push_back( *it );
+    std::vector<symbol> syms;
+    std::for_each( strsyms.begin(), strsyms.end(),
+                   [&syms] ( std::string const& sym ) { syms.push_back( symbol(sym) ); } );
+
+
+    LOG(INFO) << "Number of symbols " << syms.size() << "\n";
+    for(int i =0; i < syms.size();++i)
+        LOG(INFO) <<" - symbol : "  << syms[i].get_name();
+
+    LOG(INFO) << "Number of params " << params.size() << "\n";
+    for(int i =0; i < params.size();++i)
+        LOG(INFO) <<" - param : "  << params[i].get_name();
+
+    symtab table;
+    LOG(INFO) <<"Inserting symbols in symbol table";
+
+    table["x"]=syms[0];
+    if ( syms.size() == 2 )
     {
-        //std::cout << "Dim=" << Dim << "\n";
-        lst g;
-        std::for_each( l.begin(), l.end(), [&] ( symbol const& x ) { g.append( f.diff( x ) ); } );
-        return matrix( 1, l.size(), g );
+        table["y"]=syms[1];
     }
-    matrix
-    grad( std::string const& s, std::vector<symbol> const& l )
+    if ( syms.size() == 3 )
     {
-        return grad( parse( s, l ),  l );
+        table["y"]=syms[1];
+        table["z"]=syms[2];
+    }
+    std::vector<symbol> total_syms;
+    boost::for_each( syms, [&table, &total_syms]( symbol const& param )
+                     {
+                         total_syms.push_back(symbol(param));
+                         LOG(INFO) << "adding param: " << param << std::endl;
+                         table[param.get_name()] = param;
+                     } );
+
+    LOG(INFO) <<"Inserting params and in symbol table";
+
+    boost::for_each( params, [&table, &total_syms]( symbol const& param )
+                     {
+                         total_syms.push_back(symbol(param));
+                         LOG(INFO) << "adding param: " << param << std::endl;
+                         table[param.get_name()] = param;
+                     } );
+
+    LOG(INFO) <<"Defining parser";
+    parser reader(table ,option(_name="ginac.strict-parser").as<bool>()); // true to ensure that no more symbols are added
+
+    LOG(INFO) <<"parse expression\n";
+    ex e; // = reader(str);
+    try
+    {
+        e = reader(strexpr);
+    }
+    catch (std::invalid_argument& err)
+    {
+        reader.strict = false;
+        e =reader(strexpr);
+
+        std::cerr << "GiNaC error parsing " << e << " : " << err.what() << std::endl;
+        exit(1);
+    }
+    catch ( ... )
+    {
+        std::cerr << "Exception of unknown type!\n";
     }
 
-    matrix
-    grad( matrix const& f, std::vector<symbol> const& l )
-    {
-        matrix ff = f;
-        if ( f.rows() == 1 )
-            ff = f.transpose();
+    LOG(INFO) << "e=" << e << "\n";
+    return std::make_pair(e,syms);
+}
 
-        matrix g( ff.rows(), l.size() );
-        for( int i = 0; i < ff.rows(); ++i )
-            {
-                for( int j = 0; j < l.size(); ++j )
-                    {
-                        g.set( i, j, ff(i,0).diff( l[j] ) );
-                    }
-            }
-        return g;
+matrix
+grad( ex const& f, std::vector<symbol> const& l )
+{
+    //std::cout << "Dim=" << Dim << "\n";
+    lst g;
+    std::for_each( l.begin(), l.end(), [&] ( symbol const& x ) { g.append( f.diff( x ) ); } );
+    return matrix( 1, l.size(), g );
+}
+matrix
+grad( std::string const& s, std::vector<symbol> const& l )
+{
+    return grad( parse( s, l ),  l );
+}
+
+matrix
+grad( matrix const& f, std::vector<symbol> const& l )
+{
+    matrix ff = f;
+    if ( f.rows() == 1 )
+        ff = f.transpose();
+
+    matrix g( ff.rows(), l.size() );
+    for( int i = 0; i < ff.rows(); ++i )
+    {
+        for( int j = 0; j < l.size(); ++j )
+        {
+            g.set( i, j, ff(i,0).diff( l[j] ) );
+        }
     }
+    return g;
+}
 
-    matrix
-    div( matrix const& f, std::vector<symbol> const& l )
+matrix
+div( matrix const& f, std::vector<symbol> const& l )
+{
+    matrix ff = f;
+    if ( f.cols() == 1 )
+        ff = f.transpose();
+
+    matrix g(ff.rows(), 1 );
+    for( int i = 0; i < ff.rows(); i++ )
     {
-        matrix ff = f;
-        if ( f.cols() == 1 )
-            ff = f.transpose();
-
-        matrix g(ff.rows(), 1 );
-        for( int i = 0; i < ff.rows(); i++ )
-            {
-                ex e;
-                for( int j = 0; j < ff.cols(); j++ )
-                    e += ff(i,j).diff( l[j] );
-                g(i,0) = e;
-            }
-        return g;
+        ex e;
+        for( int j = 0; j < ff.cols(); j++ )
+            e += ff(i,j).diff( l[j] );
+        g(i,0) = e;
     }
+    return g;
+}
 
-    ex
-    laplacian( ex const& f, std::vector<symbol> const& l )
+ex
+laplacian( ex const& f, std::vector<symbol> const& l )
+{
+    ex g;
+    std::for_each( l.begin(), l.end(),
+                   [&] ( symbol const& x )
+                   {
+                       g += f.diff( x,2 );
+                   } );
+    return g;
+}
+ex
+laplacian( std::string const& s, std::vector<symbol> const& l )
+{
+    return laplacian( parse( s, l ), l );
+}
+matrix
+laplacian( matrix const& f, std::vector<symbol> const& l )
+{
+    matrix g(f.rows(),1);
+    for(int i = 0; i < f.rows(); ++i )
     {
-        ex g;
+        ex lap;
         std::for_each( l.begin(), l.end(),
                        [&] ( symbol const& x )
                        {
-                           g += f.diff( x,2 );
+                           lap += f(i,0).diff( x,2 );
                        } );
-        return g;
+        g(i,0) = lap;
     }
-    ex
-    laplacian( std::string const& s, std::vector<symbol> const& l )
-    {
-        return laplacian( parse( s, l ), l );
-    }
-    matrix
-    laplacian( matrix const& f, std::vector<symbol> const& l )
-    {
-        matrix g(f.rows(),1);
-        for(int i = 0; i < f.rows(); ++i )
-            {
-                ex lap;
-                std::for_each( l.begin(), l.end(),
-                               [&] ( symbol const& x )
-                               {
-                                   lap += f(i,0).diff( x,2 );
-                               } );
-                g(i,0) = lap;
-            }
-        return g;
-    }
+    return g;
+}
 
-    ex diff(ex const& f, symbol const& l, const int n)
+ex diff(ex const& f, symbol const& l, const int n)
+{
+    return f.diff( l,n );
+}
+
+
+matrix diff(matrix const& f, symbol const& l, const int n)
+{
+    matrix g(f.rows(),1);
+    for(int i = 0; i < f.rows(); ++i )
     {
-        return f.diff( l,n );
+        g(i,0) = f(i,0).diff( symbol(l),n );
     }
+    return g;
+}
 
-    matrix diff(matrix const& f, symbol const& l, const int n)
+ex substitute(ex const &f, symbol const& s, const double val )
+{
+    return f.subs(GiNaC::lst(s), GiNaC::lst(GiNaC::numeric(val)));
+}
+
+ex substitute(ex const &f, symbol const& s, ex const& g )
+{
+    return f.subs(GiNaC::lst(s), GiNaC::lst(GiNaC::ex(g)));
+}
+
+matrix substitute(matrix const &f, symbol const& s, const double val )
+{
+    matrix ff(f.rows(), f.cols());
+
+    for(int i=0; i<f.rows(); ++i)
     {
-        matrix g(f.rows(),1);
-        for(int i = 0; i < f.rows(); ++i )
-            {
-                g(i,0) = f(i,0).diff( symbol(l),n );
-            }
-        return g;
+        for(int j=0; j<f.cols(); ++j)
+            ff.set(i, j, f(i,j).subs(GiNaC::lst(s), GiNaC::lst(GiNaC::numeric(val))) );
     }
+    return ff;
+}
 
-    ex substitute(ex const &f, symbol const& s, const double val )
+matrix substitute(matrix const &f, symbol const& s, ex const& g )
+{
+    matrix ff(f.rows(), f.cols());
+
+    for(int i=0; i<f.rows(); ++i)
     {
-        return f.subs(GiNaC::lst(s), GiNaC::lst(GiNaC::numeric(val)));
+        for(int j=0; j<f.cols(); ++j)
+            ff.set(i, j, f(i,j).subs(GiNaC::lst(s), GiNaC::lst(GiNaC::ex(g))) );
     }
-
-    ex substitute(ex const &f, symbol const& s, ex const& g )
-    {
-        return f.subs(GiNaC::lst(s), GiNaC::lst(GiNaC::ex(g)));
-    }
-
-    matrix substitute(matrix const &f, symbol const& s, const double val )
-    {
-        matrix ff(f.rows(), f.cols());
-
-        for(int i=0; i<f.rows(); ++i)
-            {
-                for(int j=0; j<f.cols(); ++j)
-                    ff.set(i, j, f(i,j).subs(GiNaC::lst(s), GiNaC::lst(GiNaC::numeric(val))) );
-            }
-        return ff;
-    }
-
-    matrix substitute(matrix const &f, symbol const& s, ex const& g )
-    {
-        matrix ff(f.rows(), f.cols());
-
-        for(int i=0; i<f.rows(); ++i)
-            {
-                for(int j=0; j<f.cols(); ++j)
-                    ff.set(i, j, f(i,j).subs(GiNaC::lst(s), GiNaC::lst(GiNaC::ex(g))) );
-            }
-        return ff;
-    }
+    return ff;
+}
 
 }

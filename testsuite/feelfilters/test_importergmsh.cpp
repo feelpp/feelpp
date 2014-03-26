@@ -44,7 +44,12 @@ using boost::unit_test::test_suite;
 
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feeldiscr/mesh.hpp>
-#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/creategmshmesh.hpp>
+#include <feel/feelfilters/savegmshmesh.hpp>
+#include <feel/feelfilters/domain.hpp>
+#include <feel/feelfilters/geo.hpp>
+#include <feel/feelfilters/loadgmshmesh.hpp>
+#include <feel/feelfilters/convert2msh.hpp>
 #include <feel/feelvf/vf.hpp>
 
 
@@ -68,11 +73,11 @@ checkCreateGmshMesh( std::string const& shape, std::string const& convex = "Simp
                                          _shape=shape,
                                          _h=0.5 ) );
     BOOST_TEST_MESSAGE("Checking meshes for shape : " << shape << " using convex " << convex << " in " << Dim << "D..." );
-    BOOST_CHECK_NE( nelements(markedfaces(mesh, "Neumann")), 0 );
-    BOOST_CHECK_NE( nelements(markedfaces(mesh, "Dirichlet" )), 0 );
-    BOOST_CHECK_EQUAL( nelements(markedfaces(mesh, "Dirichlet"))+nelements(markedfaces(mesh, "Neumann")) ,
-                       std::distance( mesh->beginFaceOnBoundary(), mesh->endFaceOnBoundary() ) );
 
+    BOOST_CHECK_NE( nelements(markedfaces(mesh, "Neumann"),true), 0 );
+    BOOST_CHECK_NE( nelements(markedfaces(mesh, "Dirichlet" ),true), 0 );
+    BOOST_CHECK_EQUAL( nelements(markedfaces(mesh, "Dirichlet"),false)+nelements(markedfaces(mesh, "Neumann"),false),
+                       nelements(boundaryfaces(mesh),false) );
 }
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
@@ -81,6 +86,7 @@ BOOST_AUTO_TEST_SUITE( gmshsuite )
 
 
 typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
+//typedef boost::mpl::list<boost::mpl::int_<2> > dim_types;
 
 BOOST_AUTO_TEST_CASE_TEMPLATE( gmshsimplex, T, dim_types )
 {
@@ -112,13 +118,13 @@ BOOST_AUTO_TEST_CASE( gmshgeo )
                                       _order=1,
                                       _h=0.2 ) );
 
-    BOOST_CHECK_NE(nelements(markedfaces( mesh, "letters" )), 0 );
-    BOOST_CHECK_NE(nelements(markedfaces( mesh, "wall" )), 0 );
-    BOOST_CHECK_NE(nelements(markedfaces( mesh, "inlet" )), 0 );
-    BOOST_CHECK_NE(nelements(markedfaces( mesh, "outlet" )), 0 );
-    BOOST_CHECK_NE(nelements(markedelements( mesh, "feel" )), 0 );
-    BOOST_CHECK_EQUAL( std::distance( mesh->beginElement(), mesh->endElement() ),
-                       nelements(markedelements( mesh, "feel" )) );
+    BOOST_CHECK_NE(nelements(markedfaces( mesh, "letters" ),true), 0 );
+    BOOST_CHECK_NE(nelements(markedfaces( mesh, "wall" ),true), 0 );
+    BOOST_CHECK_NE(nelements(markedfaces( mesh, "inlet" ),true), 0 );
+    BOOST_CHECK_NE(nelements(markedfaces( mesh, "outlet" ),true), 0 );
+    BOOST_CHECK_NE(nelements(markedelements( mesh, "feel" ),true), 0 );
+    BOOST_CHECK_EQUAL( std::distance( mesh->beginElementWithProcessId(), mesh->endElementWithProcessId() ),
+                       nelements(markedelements( mesh, "feel" ),false) );
 }
 
 BOOST_AUTO_TEST_CASE( gmshpartgeo )
@@ -135,6 +141,7 @@ BOOST_AUTO_TEST_CASE( gmshpartgeo )
                                       _h=0.2 ),
                            _partitions=2 );
 }
+
 
 #if defined( FEELPP_HAS_TBB )
 template<typename elt_iterator>
@@ -207,6 +214,8 @@ BOOST_AUTO_TEST_CASE( gmshgeo_tbb )
 
 BOOST_AUTO_TEST_CASE_TEMPLATE( gmshimportexport, T, dim_types )
 {
+    if ( T::value==1 && Environment::worldComm().size()>1) return;
+
     BOOST_TEST_MESSAGE( "[gmshimportexport] for dimension " << T::value << "\n" );
     typedef Mesh<Simplex<T::value,1> > mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
@@ -221,6 +230,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( gmshimportexport, T, dim_types )
                                          _dim=T::value,
                                          _h=0.5 ) );
 
+#if 0
     std::ostringstream estr;
     estr << "gmshexp-" << T::value;
     typedef Exporter<mesh_type> export_type;
@@ -230,6 +240,13 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( gmshimportexport, T, dim_types )
     exporter->save();
     std::ostringstream fstr;
     fstr << "gmshexp-" << T::value << "-1_0.msh";
+#else
+    std::ostringstream fstr;
+    fstr << "gmshexp-" << T::value << ".msh";
+    saveGMSHMesh(_mesh=mesh,_filename=fstr.str() );
+#endif
+
+
     meshimp = loadGMSHMesh( _mesh=new mesh_type,
                             _filename=fstr.str(),
                             _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
@@ -242,6 +259,11 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( gmshimportexport, T, dim_types )
                       std::distance( meshimp->beginFaceOnBoundary(), meshimp->endFaceOnBoundary() ) );
     BOOST_CHECK_EQUAL( std::distance( mesh->beginElement(), mesh->endElement() ),
                        std::distance( meshimp->beginElement(), meshimp->endElement() ) );
+
+    double r1 = integrate( _range=boundaryfaces( mesh ), _expr=cst( 1. ) ).evaluate()(0,0);
+    double r2 = integrate( _range=boundaryfaces( meshimp ), _expr=cst( 1. ) ).evaluate()(0,0);
+    BOOST_CHECK_SMALL( std::abs(r1-r2),1e-12 );
+
     BOOST_TEST_MESSAGE( "[gmshimportexport] for dimension " << T::value << " done.\n" );
 }
 
@@ -255,8 +277,7 @@ main( int argc, char* argv[] )
     return ret;
 }
 */
-
-BOOST_AUTO_TEST_CASE_TEMPLATE( meditimport, T, dim_types )
+BOOST_AUTO_TEST_CASE( meditimport )
 {
     using namespace Feel::vf;
     typedef Mesh<Simplex<3> > mesh_type;
@@ -264,10 +285,14 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( meditimport, T, dim_types )
 
     mesh_ptrtype mesh,meshimp;
     mesh = createGMSHMesh( _mesh=new mesh_type,
-                           _desc=mshconvert( "Cylref.mesh" ),
+                           _desc=convert2msh( "Cylref.mesh" ),
                            _physical_are_elementary_regions=true,
                            _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
+    mesh->addMarkerName("inlet",1,2);
+    mesh->addMarkerName("outlet",2,2);
+    mesh->addMarkerName("wall",3,2);
 
+#if 0
     std::ostringstream estr;
     estr << "gmshexp-" << T::value;
     typedef Exporter<mesh_type> export_type;
@@ -277,14 +302,20 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( meditimport, T, dim_types )
     exporter->save();
     std::ostringstream fstr;
     fstr << "gmshexp-" << T::value << "-1_0.msh";
+#else
+    std::ostringstream fstr;
+    fstr << "gmshexp-" << 3 << ".msh";
+    saveGMSHMesh(_mesh=mesh,_filename=fstr.str() );
+#endif
+
     meshimp = loadGMSHMesh( _mesh=new mesh_type,
                             _filename=fstr.str(),
-                            _physical_are_elementary_regions=true,
                             _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
 
     BOOST_CHECK_EQUAL( nelements( elements(mesh) ),nelements( elements(meshimp) ) );
-    BOOST_CHECK_EQUAL( nelements( markedfaces(mesh,"Neumann") ),nelements( markedfaces(meshimp,mesh->markerName("Neumann") ) ) );
-    BOOST_CHECK_EQUAL( nelements( markedfaces(mesh,"Dirichlet") ),nelements( markedfaces(meshimp,mesh->markerName("Dirichlet") ) ) );
+    BOOST_CHECK_EQUAL( nelements( markedfaces(mesh,"inlet") ),nelements( markedfaces(meshimp,"inlet") ) );
+    BOOST_CHECK_EQUAL( nelements( markedfaces(mesh,"outlet") ),nelements( markedfaces(meshimp,"outlet") ) );
+    BOOST_CHECK_EQUAL( nelements( markedfaces(mesh,"wall") ),nelements( markedfaces(meshimp,"wall") ) );
 
     BOOST_CHECK_EQUAL( std::distance( mesh->beginFaceOnBoundary(), mesh->endFaceOnBoundary() ),
                        std::distance( meshimp->beginFaceOnBoundary(), meshimp->endFaceOnBoundary() ) );

@@ -45,6 +45,7 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feeldiscr/projector.hpp>
+#include <feel/feeldiscr/elementdiv.hpp>
 
 #include <boost/assert.hpp>
 #include <boost/regex.hpp>
@@ -559,19 +560,18 @@ namespace Feel
         else
             __newBgm << "Background Field = " << i-1 << ";\n";
 
-        std::string newAlgo = __newAlgo.str().c_str();
-        std::string newList = __newList.str().c_str();
-        std::string newBgm = __newBgm.str().c_str();
+        std::string newAlgo = __newAlgo.str();
+        std::string newList = __newList.str();
+        std::string newBgm = __newBgm.str();
 
         std::list<std::string> newEndExpr;
         if (posfiles.size() > 1)
             {
                 newEndExpr.push_back(newAlgo);
                 newEndExpr.push_back(newList);
-                newEndExpr.push_back(newBgm);
             }
-        else
-            newEndExpr.push_back(newBgm);
+
+        newEndExpr.push_back(newBgm);
 
         std::list<std::string>::iterator itNew = newEndExpr.begin();
 
@@ -584,6 +584,7 @@ namespace Feel
                 bool exprIsFound = boost::regex_search(geofileString.begin(), geofileString.end(), itPlace, *itExpr);
                 if (exprIsFound)
                     geofileString = boost::regex_replace(geofileString, *itExpr, *itNew);
+
                 else
                     {
                         std::list<boost::regex>::iterator itNextExpr = itExpr;
@@ -602,6 +603,8 @@ namespace Feel
                             geofileString.insert(geofileString.end(), (*itNew).begin(), (*itNew).end() );
                     }
                 itNew++;
+                if( itNew == newEndExpr.end() )
+                    break;
             }
 
         ///// Geofile_s is complete => transform it into new file
@@ -649,6 +652,7 @@ namespace Feel
                 /// *********** GMSH call to build new mesh ********** ///
 #if FEELPP_HAS_GMSH
 #if defined(FEELPP_HAS_GMSH_H)
+                //#if 0
 
                 std::string geofileNameWE = (boost::format( "%1%.geo" ) % geofileName).str();
                 std::string exeName = "";
@@ -680,15 +684,14 @@ namespace Feel
                         argvGmsh[j] = argPos;
                     }
 
-                //// Initializing
+                // Initializing
                 GmshInitialize(argcGmsh, argvGmsh);
-
 
                 GmshSetOption("Mesh", "Algorithm", 5.);
                 ::GModel *newGmshModel = new GModel();
 
-                //CTX::instance()->mesh.secondOrderIncomplete = 0;
-                //CTX::instance()->mesh.secondOrderLinear = 1; // has to 1 to work
+                // Read the input geometry file
+                newGmshModel->readGEO(geofileNameWE);
 
                 // Retreive list of files
                 for (unsigned int i = 0; i < CTX::instance()->files.size(); i++)
@@ -757,8 +760,9 @@ namespace Feel
                 LOG(INFO) << "[MeshAdaptation] elements : " << newGmshModel->getNumMeshElements() << "\n";
 
                 //// Delete list of loaded files
-                CTX::instance()->files.erase(CTX::instance()->files.begin(), CTX::instance()->files.end());
-                //// Delete PView list
+                //CTX::instance()->files.erase(CTX::instance()->files.begin(), CTX::instance()->files.end());
+
+                //// Clear PView list to update with new posfile
                 ::PView::list.erase(::PView::list.begin(), ::PView::list.end() );
 
                 // Cleanup memory
@@ -897,7 +901,7 @@ namespace Feel
         for (int i=0; i<Dim; i++)
             {
                 dvard1P0[i] = vf::project(P0h, elements(mesh), gradv(varP1)(0,i) );
-                dvard1P1[i] = element_div( sum(P1h, idv(dvard1P0[i])*meas()), sum(P1h, meas() ) ); //L2 proj -> P1
+                dvard1P1[i] = div( sum(P1h, idv(dvard1P0[i])*meas()), sum(P1h, meas() ) ); //L2 proj -> P1
             }
 
         // Second derivatives of proj_P1(U) are P0
@@ -909,7 +913,7 @@ namespace Feel
                     {
                         // Hessian components are entered column by column
                         hessP0[i+j*Dim] = vf::project(P0h, elements(mesh), gradv( dvard1P1[j] )(0,i) );
-                        hessP1[i+j*Dim] = element_div( sum(P1h, idv(hessP0[i+j*Dim])*meas()), sum(P1h, meas() ) ); //L2 proj -> P1
+                        hessP1[i+j*Dim] = div( sum(P1h, idv(hessP0[i+j*Dim])*meas()), sum(P1h, meas() ) ); //L2 proj -> P1
                     }
             }
         // ******************************************************************************************* //
@@ -1006,8 +1010,6 @@ namespace Feel
                                              std::string name, std::string geofile, double tol, bool aniso,
                                              mpl::bool_<false>)
     {
-        using namespace Feel::vf;
-
         p1_space_ptrtype P1h = p1_space_type::New( mesh ); //P1 space
         p1vec_space_ptrtype P1hvec = p1vec_space_type::New( mesh ); //P1 (vectorial) space
 
