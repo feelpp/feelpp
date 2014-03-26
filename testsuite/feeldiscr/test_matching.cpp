@@ -54,12 +54,12 @@ void run( Application_ptrtype & theApp )
 
     auto backend = backend_type::build( theApp->vm() );
     auto M = backend->newMatrix( _test=Xh, _trial=Yh );
-    form2( _trial=Xh, _test=Yh, _matrix=M ) = integrate( _range=elements(mesh_1), _expr=idt(u)*id(v) );
+    form2( _trial=Xh, _test=Yh, _matrix=M ) = integrate( _range=elements(mesh_2), _expr=idt(u)*id(v) );
 
     auto g = Px()+Py();
     auto gproj = vf::project( _space=Xh, _range=elements( mesh_1 ),_expr=g );
-    auto F = backend->newVector( _test=Xh );
-    form1( _test=Yh, _vector=F ) = integrate( _range=elements(mesh_1), _expr=g*id(v) );
+    auto F = backend->newVector( _test=Yh );
+    form1( _test=Yh, _vector=F ) = integrate( _range=elements(mesh_2), _expr=g*id(v) );
 
     backend->solve(_matrix=M, _solution=u, _rhs=F,_pcfactormatsolverpackage="mumps");
 
