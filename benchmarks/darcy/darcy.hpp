@@ -40,11 +40,13 @@ makeOptions()
 {
     po::options_description testhdivoptions( "test h_div options" );
     testhdivoptions.add_options()
-    ( "hsize", po::value<double>()->default_value( 0.1 ), "mesh size" )
-    ( "xmin", po::value<double>()->default_value( -1 ), "xmin of the reference element" )
-    ( "ymin", po::value<double>()->default_value( -1 ), "ymin of the reference element" )
-    ( "zmin", po::value<double>()->default_value( -1 ), "zmin of the reference element" )
-    ;
+        ( "hsize", po::value<double>()->default_value( 0.1 ), "mesh size" )
+        ( "xmin", po::value<double>()->default_value( -1 ), "xmin of the reference element" )
+        ( "ymin", po::value<double>()->default_value( -1 ), "ymin of the reference element" )
+        ( "zmin", po::value<double>()->default_value( -1 ), "zmin of the reference element" )
+        ( "k1", po::value<double>()->default_value( 0.0 ), "k1 : k1=0 corresponds to homogeneous case" )
+        ( "k2", po::value<double>()->default_value( 1.0 ), "k2" )
+        ;
     return testhdivoptions.add( Feel::feel_options() );
 }
 
@@ -92,7 +94,7 @@ public:
     typedef bases<Lagrange<OrderP,Vectorial> > lagrange_basis_v_type; //Lagrange vectorial space
     typedef bases<Lagrange<OrderP,Scalar> > lagrange_basis_s_type; //Lagrange scalar space
     typedef bases<Lagrange<0,Scalar> > lagrange_multiplier_basis_type; //P0 scalar space
-    typedef bases< RaviartThomas<0>, Lagrange<1,Scalar> > basis_type; //For Darcy : (u,p) (\in H_div x L2)
+    typedef bases< RaviartThomas<OrderU>, Lagrange<OrderP,Scalar> > basis_type; //For Darcy : (u,p) (\in H_div x L2)
 
     //! the approximation function space type
     typedef FunctionSpace<mesh_type, basis_type> space_type;
@@ -121,12 +123,16 @@ public:
         super(),
         M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
-        exporter( Exporter<mesh_type>::New( this->vm() ) )
+        exporter( Exporter<mesh_type>::New( this->vm() ) ),
+        M_k1( this->vm()["k1"].template as<double>() ),
+        M_k2( this->vm()["k2"].template as<double>() )
     {
         std::cout << "[TestHDiv]\n";
-        this->changeRepository( boost::format( "/benchmark_darcy/%1%/h_%2%/" )
+        this->changeRepository( boost::format( "/benchmark_darcy/%1%/h_%2%/%3%-%4%/" )
                                 % this->about().appName()
                                 % this->vm()["hsize"].template as<double>()
+                                % M_k1
+                                % M_k2
                                 );
     }
 
@@ -143,6 +149,8 @@ private:
     //! exporter factory
     export_ptrtype exporter;
 
+    double M_k1, M_k2;
+
 }; //Darcy
 
 
@@ -150,30 +158,40 @@ template<int Dim, int OrderU, int OrderP>
 void
 Darcy<Dim, OrderU, OrderP>::convergence(int nb_refine)
 {
+    int proc_rank = Environment::worldComm().globalRank();
     auto Pi = M_PI;
 
-    auto alpha = cst(1.); //temporarly
-    auto k = alpha;
+    auto k1 = cst(M_k1);
+    auto k2 = cst(M_k2);
+
+    auto k = k1*(Px()-2)*Px()*(Py()-2)*Py() + k2;
     auto K = k*eye<2>();
-    auto lambda = cst(1.)/alpha;
+    auto lambda = cst(1.)/k;
     auto Lambda = lambda*eye<2>();
-    auto f = sin( Pi*Px() )*sin( Pi*Py() );
+    auto f = k*sin( Pi*Px() )*sin( Pi*Py() )
+        -(k1/Pi)*( (Px()-1)*(Py()-2)*Py()*cos( Pi*Px() )*sin( Pi*Py() ) + (Px()-2)*Px()*(Py()-1)*sin( Pi*Px() )*cos( Pi*Py() ) );
 
     // Coeff for stabilization terms
     auto d1 = cst(1.0/2.0);
     auto d2 = cst(1.0/2.0);
 
-    std::ofstream cvg_p("convergence_p.dat", ios::out | ios::trunc);
-    std::ofstream cvg_u("convergence_u.dat", ios::out | ios::trunc);
-    std::ofstream cvg_divu("convergence_divu.dat", ios::out | ios::trunc);
-    std::ofstream cvg_projL2("convergence_projL2.dat", ios::out | ios::trunc);
-    std::ofstream cvg_projHDIV("convergence_projHDIV.dat", ios::out | ios::trunc);
+    std::ofstream cvg_p, cvg_u, cvg_divu, cvg_projL2, cvg_projHDIV;
+    if( proc_rank == 0 )
+        {
+            // Open
+            cvg_p.open( "convergence_p.dat", ios::out | ios::trunc);
+            cvg_u.open( "convergence_u.dat", ios::out | ios::trunc);
+            cvg_divu.open( "convergence_divu.dat", ios::out | ios::trunc);
+            cvg_projL2.open( "convergence_projL2.dat", ios::out | ios::trunc);
+            cvg_projHDIV.open( "convergence_projHDIV.dat", ios::out | ios::trunc);
 
-    cvg_u << "hsize" << "\t" << "nDof" << "\t" << "l2err" << "\t" << "h1err" << "\n";
-    cvg_p << "hsize" << "\t" << "nDof" << "\t" << "l2err" << "\t" << "h1err" << "\n";
-    cvg_divu << "hsize" << "\t" << "nDof" << "\t" << "l2err" << "\t" << "h1err" << "\n";
-    cvg_projL2 << "hsize" << "\t" << "nDof" << "\t" << "l2err" << "\n";
-    cvg_projHDIV << "hsize" << "\t" << "nDof" << "\t" << "l2err" << "\n";
+            // Head
+            cvg_u << "hsize" << "\t" << "nDof" << "\t" << "l2err" << "\t" << "h1err" << "\n";
+            cvg_p << "hsize" << "\t" << "nDof" << "\t" << "l2err" << "\t" << "h1err" << "\n";
+            cvg_divu << "hsize" << "\t" << "nDof" << "\t" << "l2err" << "\t" << "h1err" << "\n";
+            cvg_projL2 << "hsize" << "\t" << "nDof" << "\t" << "l2err" << "\n";
+            cvg_projHDIV << "hsize" << "\t" << "nDof" << "\t" << "l2err" << "\n";
+        }
 
     double current_hsize = meshSize;
     for(int i=0; i<nb_refine; i++)
@@ -205,6 +223,7 @@ Darcy<Dim, OrderU, OrderP>::convergence(int nb_refine)
 
             // ****** Dual-mixed formulation - Hdiv ******
             space_ptrtype Yh = space_type::New( mesh );
+            RT_space_ptrtype RTh = RT_space_type::New( mesh ); //Dh<OrderU>( mesh );
             lagrange_space_s_ptrtype Xh = lagrange_space_s_type::New( mesh );
             lagrange_space_v_ptrtype Xhvec = lagrange_space_v_type::New( mesh );
 
@@ -245,13 +264,27 @@ Darcy<Dim, OrderU, OrderP>::convergence(int nb_refine)
             std::cout << "[Darcy] RT solve done" << std::endl;
 
             // ****** Compute error ******
-            auto u_exact = -(1/(2*Pi))*vec(cos( Pi*Px() )*sin( Pi*Py() ), sin( Pi*Px() )*cos( Pi*Py() ));
+            auto dkdx = 2*k1*(Px()-1)*Py()*(Py()-2);
+            auto dkdy = 2*k1*(Py()-1)*Px()*(Px()-2);
+            auto coeff_uex = -k/(2*Pi); //c
+            auto dcdx = -k1*(Px()-1)*(Py()-2)*Py()/Pi;
+            auto dcdy = -k1*(Py()-1)*(Px()-2)*Px()/Pi;
+
+            auto u_exact = coeff_uex*vec(cos( Pi*Px() )*sin( Pi*Py() ), sin( Pi*Px() )*cos( Pi*Py() ));
             auto p_exact = (1/(2*Pi*Pi))*sin( Pi*Px() )*sin( Pi*Py() );
             auto divu_exact = f;
 
-            auto gradu_exact = (1/2)*mat<2,2>(sin(Pi*Px())*sin(Pi*Py()),-cos(Pi*Px())*cos(Pi*Py()),-cos(Pi*Px())*cos(Pi*Py()),sin(Pi*Px())*sin(Pi*Py()));
-            auto gradp_exact = -1*u_exact;
-            auto graddivu_exact = Pi*vec( cos(Pi*Px())*sin(Pi*Py()), sin(Pi*Px())*cos(Pi*Py()) );
+            auto gradu_exact = mat<2,2>( dcdx*cos(Pi*Px())*sin(Pi*Py()) + (k/2)*sin(Pi*Px())*sin(Pi*Py()),
+                                         dcdy*cos(Pi*Px())*sin(Pi*Py()) - (k/2)*cos(Pi*Px())*cos(Pi*Py()),
+                                         dcdx*sin(Pi*Px())*cos(Pi*Py()) - (k/2)*cos(Pi*Px())*cos(Pi*Py()),
+                                         dcdy*sin(Pi*Px())*cos(Pi*Py()) + (k/2)*sin(Pi*Px())*sin(Pi*Py()) );
+            auto gradp_exact = -lambda*u_exact;
+            auto graddivu_exact = vec( dkdx*sin(Pi*Px())*sin(Pi*Py()) + k*Pi*cos(Pi*Px())*sin(Pi*Py())
+                                       -(k1/Pi)*( Py()*(Py()-2)*sin(Pi*Py())*( cos(Pi*Px())-Pi*(Px()-1)*sin(Pi*Px()) )
+                                                  + (Py()-1)*cos(Pi*Py())*( 2*(Px()-1)*sin(Pi*Px()) + Pi*Px()*(Px()-2)*cos(Pi*Px()) )),
+                                       dkdy*sin(Pi*Px())*sin(Pi*Py()) + k*Pi*sin(Pi*Px())*cos(Pi*Py())
+                                       -(k1/Pi)*( (Px()-1)*cos(Pi*Px())*( 2*(Py()-1)*sin(Pi*Py()) + Pi*Py()*(Py()-2)*cos(Pi*Py()) )
+                                                  + Px()*(Px()-2)*sin(Pi*Px())*( cos(Pi*Py()) - Pi*(Py()-1)*sin(Pi*Py()) )) );
 
             auto l2err_u = normL2( _range=elements(mesh), _expr=u_exact - idv(u_rt) );
             auto l2err_p = normL2( _range=elements(mesh), _expr=p_exact - idv(p_rt) );
@@ -262,22 +295,7 @@ Darcy<Dim, OrderU, OrderP>::convergence(int nb_refine)
             auto divu_rt = vf::project(Xh, elements(mesh), divv(u_rt) ); //TODO : Raviart-Thomas interpolant !
             auto h1err_divu = normH1( _range=elements(mesh), _expr=divu_exact - divv(u_rt), _grad_expr=graddivu_exact - trans(gradv(divu_rt)) );
 
-            std::cout << "[" << i << "]||u_exact - u||_L2 = " << l2err_u << std::endl;
-            std::cout << "[" << i << "]||p_exact - p||_L2 = " << l2err_p << std::endl;
-            std::cout << "[" << i << "]||divu_exact - divu||_L2 = " << l2err_divu << std::endl;
-
-            std::cout << "[" << i << "]||u_exact - u||_H1 = " << h1err_u << std::endl;
-            std::cout << "[" << i << "]||p_exact - p||_H1 = " << h1err_p << std::endl;
-            std::cout << "[" << i << "]||divu_exact - divu||_H1 = " << h1err_divu << std::endl;
-
-            // double current_hsize = (i!=0)?meshSize/(2*i):meshSize;
-            cvg_u << current_hsize << "\t" << nDofu << "\t" << l2err_u << "\t" << h1err_u << "\n";
-            cvg_p << current_hsize << "\t" << nDofp << "\t" << l2err_p << "\t" << h1err_p << "\n";
-            cvg_divu << current_hsize << "\t" << nDofu << "\t" << l2err_divu << "\t" << h1err_divu << "\n";
-
             // ****** Projection Operators (L2 - HDIV) : check proj( div u ) = proj( f ) ******
-            auto RTh = Dh<0>( mesh );
-
             // L2 projection
             auto l2_v = opProjection( _domainSpace=Xhvec, _imageSpace=Xhvec, _type=L2 ); //l2 vectorial proj
             auto l2_s = opProjection( _domainSpace=Xh, _imageSpace=Xh, _type=L2 ); //l2 scalar proj
@@ -288,31 +306,52 @@ Darcy<Dim, OrderU, OrderP>::convergence(int nb_refine)
             auto E_hdiv = hdiv->project( _expr= trans(u_exact), _div_expr=f );
             auto l2error_HDIV = normL2( _range=elements(mesh), _expr=divv(E_hdiv) - f );
 
-            cvg_projL2 << current_hsize << "\t" << Xhvec->nDof() << "\t" << l2error_L2 << "\n";
-            cvg_projHDIV << current_hsize << "\t" << RTh->nDof() << "\t" << l2error_HDIV << "\n";
+            if( proc_rank == 0 )
+                {
+                    std::cout << "[" << i << "]||u_exact - u||_L2 = " << l2err_u << std::endl;
+                    std::cout << "[" << i << "]||p_exact - p||_L2 = " << l2err_p << std::endl;
+                    std::cout << "[" << i << "]||divu_exact - divu||_L2 = " << l2err_divu << std::endl;
+
+                    std::cout << "[" << i << "]||u_exact - u||_H1 = " << h1err_u << std::endl;
+                    std::cout << "[" << i << "]||p_exact - p||_H1 = " << h1err_p << std::endl;
+                    std::cout << "[" << i << "]||divu_exact - divu||_H1 = " << h1err_divu << std::endl;
+
+                    // double current_hsize = (i!=0)?meshSize/(2*i):meshSize;
+                    cvg_u << current_hsize << "\t" << nDofu << "\t" << l2err_u << "\t" << h1err_u << "\n";
+                    cvg_p << current_hsize << "\t" << nDofp << "\t" << l2err_p << "\t" << h1err_p << "\n";
+                    cvg_divu << current_hsize << "\t" << nDofu << "\t" << l2err_divu << "\t" << h1err_divu << "\n";
+                    cvg_projL2 << current_hsize << "\t" << Xhvec->nDof() << "\t" << l2error_L2 << "\n";
+                    cvg_projHDIV << current_hsize << "\t" << RTh->nDof() << "\t" << l2error_HDIV << "\n";
+                }
 
             // ****** Export results ******
+            std::string exportName =  ( boost::format( "%1%-refine-%2%" ) % this->about().appName() % i ).str();
+            std::string uName = ( boost::format( "velocity-refine-%1%" ) % i ).str();
+            std::string u_exName = ( boost::format( "velocity-ex-refine-%1%" ) % i ).str();
+            std::string pName = ( boost::format( "potential-refine-%1%" ) % i ).str();
+            std::string p_exName = ( boost::format( "potential-ex-refine-%1%" ) % i ).str();
+
             auto u_ex_proj = vf::project(Xhvec, elements(mesh), u_exact );
             auto p_ex_proj = vf::project(p_rt.functionSpace(), elements(mesh), p_exact );
 
-            export_ptrtype exporter_cvg( export_type::New( this->vm(),
-                                                           ( boost::format( "%1%-refine-%2%" )
-                                                             % this->about().appName()
-                                                             % i ).str() ) );
+            export_ptrtype exporter_cvg( export_type::New( this->vm(), exportName ) );
 
             exporter_cvg->step( 0 )->setMesh( mesh );
-            exporter_cvg->step( 0 )->add( "velocity", u_rt );
-            exporter_cvg->step( 0 )->add( "potential", p_rt );
-            exporter_cvg->step( 0 )->add( "velocity_ex", u_ex_proj );
-            exporter_cvg->step( 0 )->add( "potential_ex", p_ex_proj );
+            exporter_cvg->step( 0 )->add( uName, u_rt );
+            exporter_cvg->step( 0 )->add( pName, p_rt );
+            exporter_cvg->step( 0 )->add( u_exName, u_ex_proj );
+            exporter_cvg->step( 0 )->add( p_exName, p_ex_proj );
             exporter_cvg->save();
 
             current_hsize /= 2.0;
         }
 
-    cvg_u.close();
-    cvg_p.close();
-    cvg_divu.close();
-    cvg_projL2.close();
-    cvg_projHDIV.close();
+    if( proc_rank == 0 )
+        {
+            cvg_u.close();
+            cvg_p.close();
+            cvg_divu.close();
+            cvg_projL2.close();
+            cvg_projHDIV.close();
+        }
 }

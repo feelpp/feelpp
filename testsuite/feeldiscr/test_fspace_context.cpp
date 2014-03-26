@@ -337,6 +337,18 @@ testFspaceContext()
     auto evaluateProjSin2PiX_ = evaluateFromContext( _context=ctx, _expr=exprSin2PiX , _projection=true);
     BOOST_CHECK_SMALL( (evaluateProjSin2PiX_-evaluateProjSin2PiX).norm(), 1e-13 );
 
+    //now vector field
+
+    auto Xhv = Pchv<Order>( mesh );
+    auto ctxv=Xhv->context();
+    ctxv.add( t1 );
+    ctxv.add( t2 );
+    ctxv.add( t3 );
+
+    auto vector1 = vf::project( Xhv , elements(mesh), vec( sin(Px()) , cos(Py()) ) );
+    auto EvaluateProjVector1 = evaluateFromContext( _context=ctxv, _expr=idv(vector1) );
+    auto EvaluateVector1 = evaluateFromContext( _context=ctxv, _expr=vec( sin(Px()) , cos(Py()) ) , _projection=true);
+    BOOST_CHECK_SMALL( (EvaluateProjVector1-EvaluateVector1).norm() , 1e-13 );
 
 } // TestFspaceContext ::run
 

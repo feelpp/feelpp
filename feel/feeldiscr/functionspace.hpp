@@ -2366,7 +2366,10 @@ public:
         Eigen::Matrix<value_type, Eigen::Dynamic, 1>
         evaluate( functionspace_type::Context const & context , bool do_communications=true) const
         {
-            int npoints = context.nPoints();
+            const int npoints = context.nPoints();
+
+            //number of component
+            const int ncdof  = is_product?nComponents:1;
 
             //rank of the current processor
             int proc_number = this->worldComm().globalRank();
@@ -2377,13 +2380,14 @@ public:
             auto it = context.begin();
             auto en = context.end();
 
-            eigen_type __globalr( npoints );
+            eigen_type __globalr( npoints*ncdof );
             __globalr.setZero();
-            eigen_type __localr( npoints );
+            eigen_type __localr( npoints*ncdof );
             __localr.setZero();
 
             boost::array<typename array_type::index, 1> shape;
             shape[0] = 1;
+
             id_array_type v( shape );
             if( context.size() > 0 )
             {
@@ -2393,7 +2397,10 @@ public:
                     auto basis = it->second;
                     id( *basis, v );
                     int global_index = it->first;
-                    __localr( global_index ) = v[0]( 0, 0 );
+                    for(int comp=0; comp<ncdof; comp++)
+                    {
+                        __localr( global_index*ncdof+comp ) = v[0]( comp, 0 );
+                    }
                 }
             }
 
