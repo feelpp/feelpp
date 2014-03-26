@@ -42,6 +42,9 @@
 extern "C"
 {
 #include <petscmat.h>
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3, 4, 2 )
+#include <petsc-private/vecimpl.h>
+#endif
 }
 
 
