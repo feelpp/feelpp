@@ -61,7 +61,7 @@ void run( Application_ptrtype & theApp )
     auto F = backend->newVector( _test=Yh );
     form1( _test=Yh, _vector=F ) = integrate( _range=elements(mesh_2), _expr=g*id(v) );
 
-    backend->solve(_matrix=M, _solution=u, _rhs=F,_pcfactormatsolverpackage="mumps");
+    backend->solve(_matrix=M, _solution=u, _rhs=F,_pcfactormatsolverpackage="umfpack");
 
     auto expo = exporter(_mesh=mesh_1, _name="Exporter");
     expo->add( "g", gproj );
