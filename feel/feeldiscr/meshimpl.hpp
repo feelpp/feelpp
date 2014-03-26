@@ -2711,14 +2711,14 @@ Mesh<Shape, T, Tag>::Localization::searchElement( const node_type & p )
     auto mesh = M_mesh.lock();
     bool isin=false;double dmin=0;
     node_type x_ref;
-    size_type idEltFound = mesh->beginElementWithId(mesh->worldComm().localRank())->id();
+    size_type idEltFound = 0;//mesh->beginElementWithId(mesh->worldComm().localRank())->id();
 
     std::list< std::pair<size_type, uint> > ListTri;
     this->searchInKdTree(p,ListTri);
 
     //research the element which contains the point p
     auto itLT=ListTri.begin();
-    auto itLT_end=ListTri.end();
+    auto const itLT_end=ListTri.end();
 
     DCHECK( std::distance( itLT,itLT_end )>0 ) << "problem in localization : listTri is empty\n";
 
@@ -2735,24 +2735,19 @@ Mesh<Shape, T, Tag>::Localization::searchElement( const node_type & p )
     }
 
 
-    if (!isin)
+    if( !isin && this->doExtrapolation() )
         {
-            if( this->doExtrapolation() )
-                {
-                    //std::cout << "WARNING EXTRAPOLATION for the point" << p << std::endl;
-                    //std::cout << "W";
-                    auto const& eltUsedForExtrapolation = mesh->element(ListTri.begin()->first);
-                    gmc_inverse_type gic( mesh->gm(), eltUsedForExtrapolation, mesh->worldComm().subWorldCommSeq() );
-                    //apply the inverse geometric transformation for the point p
-                    gic.setXReal( p);
-                    boost::tie(isin,idEltFound,x_ref) = boost::make_tuple(true,eltUsedForExtrapolation.id(),gic.xRef());
-                }
-            else
-                {
-                    idEltFound = mesh->beginElementWithId(mesh->worldComm().localRank())->id();
-                    isin = false;
-                    //x_ref=?
-                }
+            // first elt
+            idEltFound = ListTri.begin()->first;
+            auto const& eltUsedForExtrapolation = mesh->element(idEltFound);
+            DVLOG(1) << "localisation tool use extrapolation for the point" << p
+                     << " with elt.id() " << eltUsedForExtrapolation.id()
+                     << " and elt.G() " << eltUsedForExtrapolation.G()
+                     << "\n";
+            gmc_inverse_type gic( mesh->gm(), eltUsedForExtrapolation, mesh->worldComm().subWorldCommSeq() );
+            //apply the inverse geometric transformation for the point p
+            gic.setXReal( p);
+            boost::tie(isin,idEltFound,x_ref) = boost::make_tuple(true,eltUsedForExtrapolation.id(),gic.xRef());
         }
 
     return boost::make_tuple( isin, idEltFound, x_ref);
@@ -2797,6 +2792,10 @@ Mesh<Shape, T, Tag>::Localization::run_analysis( const matrix_node_type & m,
                     cv_id = currentEltHypothetical;
                     M_resultAnalysis[cv_id].push_back( boost::make_tuple(i,x_ref) );
                     hasFindPts[i]=true;
+                    DVLOG(1) << "localisation tool (hypthetical elt) : has found pt " << ublas::column( m, i )
+                             << "in elt id " << cv_id
+                             << "with G() " << M_mesh.lock()->element(cv_id).G()
+                             << "\n";
                 }
             else // search kdtree
                 {
@@ -2808,6 +2807,11 @@ Mesh<Shape, T, Tag>::Localization::run_analysis( const matrix_node_type & m,
                             M_resultAnalysis[cv_id].push_back( boost::make_tuple(i,x_ref) );
                             currentEltHypothetical = cv_id;
                             hasFindPts[i]=true;
+                            DVLOG(1)  << "localisation tool (first pass) : has found pt " << ublas::column( m, i )
+                                      << " in elt id " << cv_id
+                                      << " with G() " << M_mesh.lock()->element(cv_id).G()
+                                      << " and ref point " << x_ref
+                                      << "\n";
                         }
                     else// if (false) // try an other method (no efficient but maybe a solution)
                         {
@@ -2823,28 +2827,30 @@ Mesh<Shape, T, Tag>::Localization::run_analysis( const matrix_node_type & m,
                                     M_resultAnalysis[cv_id].push_back( boost::make_tuple(i,x_ref) );
                                     currentEltHypothetical = cv_id;
                                     hasFindPts[i]=true;
+                                    DVLOG(1)  << "localisation tool (second pass) : has found pt " << ublas::column( m, i )
+                                              << " in elt id " << cv_id
+                                              << " with G() " << M_mesh.lock()->element(cv_id).G()
+                                              << " and ref point " << x_ref
+                                              << "\n";
                                 }
-                            else if (doExtrapolationAtStart)// && this->mesh()->worldComm().localSize()==1)
+                            else if (doExtrapolationAtStart)
                                 {
                                     this->setExtrapolation(true);
 
                                     boost::tie( find_x, cv_id, x_ref ) = this->searchElement(ublas::column( m, i ));
-                                    // normaly is find
-                                    if (find_x)
-                                        {
-                                            M_resultAnalysis[cv_id].push_back( boost::make_tuple(i,x_ref) );
-                                            currentEltHypothetical = cv_id;
-                                            hasFindPts[i]=true;
-                                        }
+
+                                    CHECK( find_x ) << "localisation tool : invalid extrapolation \n";
+
+                                    M_resultAnalysis[cv_id].push_back( boost::make_tuple(i,x_ref) );
+                                    currentEltHypothetical = cv_id;
+                                    hasFindPts[i]=true;
 
                                     this->setExtrapolation(false);
                                 }
-                            else
-                                {
-                                    //std::cout<<"\n Il y a un GROS Probleme de Localization\n";
-                                }
                         }
                 } // search kdtree
+
+            DLOG_IF(WARNING, !hasFindPts[i]) << "the localisation tool fails to find the point " << ublas::column( m, i ) << "\n";
 
         } // for (size_type i=0;i< m.size2();++i)
 
