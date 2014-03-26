@@ -36,6 +36,7 @@ feelpp_add_test( stencil )
 feelpp_add_test( submesh )
 feelpp_add_test( trace )
 feelpp_add_test( vect_comp )
+feelpp_add_test( matching )
 
 # feelpp_add_test( hypercubeinterpolation )
 #feelpp_add_test( mortar )
