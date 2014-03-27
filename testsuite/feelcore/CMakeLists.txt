@@ -14,4 +14,8 @@ target_link_libraries(test_boostmpi ${FEELPP_LIBRARIES} ${Boost_UNIT_TEST_FRAMEW
 add_dependencies(testsuite test_boostmpi)
 add_test(NAME test_boostmpi COMMAND mpirun -np 2 test_boostmpi --log_level=message  )
 
+feelpp_add_test(gatherscatter_feelpp SRCS test_gatherscatter.cpp DEFS FEELPP_BUG=1)
+feelpp_add_test(gatherscatter )
+
+
 feelpp_add_test( fusion )

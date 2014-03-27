@@ -251,28 +251,117 @@ expr( std::string const& s, std::string filename="" )
     return Expr< GinacEx<Order> >(  GinacEx<Order>( g.first, g.second, filename) );
 }
 
+
+/**
+* @brief Create an Feel++ expression from a GiNaC expression as a string
+*
+* @param s          String containing the ginac expression and symbols
+* @param mp         Map containing cst symbol and their values to apply
+* @param filename   Shared file
+*
+* @return Feel++ Expression
+*/
+inline
+Expr< GinacEx<2> > expr( std::string const& s, std::map<std::string,double> const& mp, std::string filename="" )
+{
+    auto ginacEx = expr(s,filename);
+    ginacEx.setParameterValues( mp );
+    return ginacEx;
+}
+#if 0
+inline
+Expr< GinacEx<2> > expr( std::string const& s, std::pair<std::string,double> const& mp, std::string filename="" )
+{
+    return expr( s, { { mp.first, mp.second } }, filename );
+}
+#endif
+
+/**
+ * @brief Create an Feel++ expression from a GiNaC expression as a string
+ *
+ * @tparam Order     Expression order
+ * @param s          String containing the ginac expression and symbols
+ * @param mp         Map containing cst symbol and their values to apply
+ * @param filename   Shared file
+ *
+ * @return Feel++ Expression
+ */
+template<int Order>
+inline
+Expr< GinacEx<Order> >
+expr( std::string const& s, std::map<std::string,double> const& mp, std::string filename="" )
+{
+    auto ginacEx = expr<Order>(s,filename);
+    ginacEx.setParameterValues( mp );
+    return ginacEx;
+}
+template<int Order>
+inline
+Expr< GinacEx<Order> >
+expr( std::string const& s, std::pair<std::string,double> const& mp, std::string filename="" )
+{
+    return expr<Order>( s, { { mp.first, mp.second } }, filename );
+}
+
 // ------------------------------------------------------------
 // Ginac expression  with feel++ expression
 // ------------------------------------------------------------
-
 
 template<typename ExprT, int Order=2>
 inline
 Expr< GinacExVF<ExprT,Order> >
 expr( ex const& myexpr, std::vector<GiNaC::symbol> const & syms , GiNaC::symbol const& s, ExprT const& e, std::string filename="" )
 {
-    return Expr< GinacExVF<ExprT,Order> >(  GinacExVF<ExprT,Order>( myexpr, syms, std::make_pair(s,e), filename ) );
+    std::vector< std::pair<GiNaC::symbol,ExprT> > VFmap;
+    VFmap.push_back( std::make_pair(s,e) );
+    return Expr< GinacExVF<ExprT,Order> >(  GinacExVF<ExprT,Order>( myexpr, syms, VFmap, filename ) );
 }
-
 
 template<typename ExprT, int Order=2>
 inline
 Expr< GinacExVF<ExprT,Order> >
 expr( std::string const& s, std::vector<GiNaC::symbol> const& lsym, std::pair<GiNaC::symbol,ExprT> const& e, std::string filename="" )
 {
-    return Expr< GinacExVF<ExprT,Order> >(  GinacExVF<ExprT,Order>( parse(s,lsym), lsym, e, filename ) );
+    std::vector< std::pair<GiNaC::symbol,ExprT> > VFmap;
+    VFmap.push_back( e );
+    return Expr< GinacExVF<ExprT,Order> >(  GinacExVF<ExprT,Order>( parse(s,lsym), lsym, VFmap, filename ) );
 }
 
+template<typename ExprT, int Order=2>
+inline
+Expr< GinacExVF<ExprT,Order> >
+expr( ex const& myexpr, std::vector<GiNaC::symbol> const & syms , std::initializer_list<GiNaC::symbol> const& s, std::initializer_list<ExprT> const& e, std::string filename="" )
+{
+    std::vector< std::pair<GiNaC::symbol,ExprT> > VFmap;
+    CHECK( s.size() == e.size() ) << "List of expressions and associated symbols have not the same size \n";
+
+    typename std::initializer_list<GiNaC::symbol>::iterator it1 = s.begin();
+    typename std::initializer_list<ExprT>::iterator it2 = e.begin();
+    for(it1; it1!=s.end(); it1++)
+        {
+            VFmap.push_back( std::make_pair(*it1,*it2) );
+            it2++;
+        }
+    return Expr< GinacExVF<ExprT,Order> >(  GinacExVF<ExprT,Order>( myexpr, syms, VFmap, filename ) );
+}
+
+template<typename ExprT, int Order=2>
+inline
+Expr< GinacExVF<ExprT,Order> >
+expr( ex const& myexpr, std::vector<GiNaC::symbol> const & syms , std::vector<GiNaC::symbol> const& s, std::vector<ExprT> const& e, std::string filename="" )
+{
+    std::vector< std::pair<GiNaC::symbol,ExprT> > VFmap;
+    CHECK( s.size() == e.size() ) << "List of expressions and associated symbols have not the same size \n";
+
+    typename std::vector<GiNaC::symbol>::const_iterator it1 = s.begin();
+    typename std::vector<ExprT>::const_iterator it2 = e.begin();
+    for(it1; it1!=s.end(); it1++)
+        {
+            VFmap.push_back( std::make_pair(*it1, *it2) );
+            it2++;
+        }
+    return Expr< GinacExVF<ExprT,Order> >(  GinacExVF<ExprT,Order>( myexpr, syms, VFmap, filename ) );
+}
 
 /**
  * @brief Create an Feel++ expression from a GiNaC expression as a string
@@ -284,6 +373,7 @@ expr( std::string const& s, std::vector<GiNaC::symbol> const& lsym, std::pair<Gi
  *
  * @return Feel++ Expression
  */
+
 template<typename ExprT,int Order=2>
 inline
 Expr< GinacExVF<ExprT,Order> >
@@ -293,7 +383,54 @@ expr( std::string const& s, std::string const& se, ExprT const& e, std::string f
     auto it = std::find_if( g.second.begin(), g.second.end(),
                             [&se]( GiNaC::symbol const& s ) { return s.get_name() == se; } );
     LOG_IF( WARNING, (it == g.second.end() ) ) << "invalid symbol " << se << " in expression " << s;
-    return Expr< GinacExVF<ExprT,Order> >(  GinacExVF<ExprT,Order>( g.first, g.second, std::make_pair(*it, e), filename) );
+
+    std::vector< std::pair<GiNaC::symbol,ExprT> > VFmap;
+    VFmap.push_back(std::make_pair(*it, e));
+    return Expr< GinacExVF<ExprT,Order> >(  GinacExVF<ExprT,Order>( g.first, g.second, VFmap, filename) );
+}
+
+template<typename ExprT,int Order=2>
+inline
+Expr< GinacExVF<ExprT,Order> >
+expr( std::string const& s, std::initializer_list<std::string> const& se, std::initializer_list<ExprT> const& e, std::string filename="" )
+{
+    std::pair< ex, std::vector<GiNaC::symbol> > g = GiNaC::parse(s);
+    std::vector< std::pair<GiNaC::symbol,ExprT> > VFmap;
+    CHECK( se.size() == e.size() ) << "List of expressions and associated symbols have not the same size \n";
+
+    typename std::initializer_list<std::string>::iterator it1 = se.begin();
+    typename std::initializer_list<ExprT>::iterator it2 = e.begin();
+    for(it1; it1!=se.end(); it1++)
+        {
+            auto it = std::find_if( g.second.begin(), g.second.end(),
+                                    [&it1]( GiNaC::symbol const& s ) { return s.get_name() == *it1; } );
+            LOG_IF( WARNING, (it == g.second.end() ) ) << "invalid symbol " << *it1 << " in expression " << s;
+            VFmap.push_back(std::make_pair(*it, *it2));
+            it2++;
+        }
+    return Expr< GinacExVF<ExprT,Order> >(  GinacExVF<ExprT,Order>( g.first, g.second, VFmap, filename) );
+}
+
+template<typename ExprT,int Order=2>
+inline
+Expr< GinacExVF<ExprT,Order> >
+expr( std::string const& s, std::vector<std::string> const& se, std::vector<ExprT> const& e, std::string filename="" )
+{
+    std::pair< ex, std::vector<GiNaC::symbol> > g = GiNaC::parse(s);
+    std::vector< std::pair<GiNaC::symbol,ExprT> > VFmap;
+    CHECK( se.size() == e.size() ) << "List of expressions and associated symbols have not the same size \n";
+
+    typename std::vector<std::string>::const_iterator it1 = se.begin();
+    typename std::vector<ExprT>::const_iterator it2 = e.begin();
+    for(it1; it1!=se.end(); it1++)
+        {
+            auto it = std::find_if( g.second.begin(), g.second.end(),
+                                    [&it1]( GiNaC::symbol const& s ) { return s.get_name() == *it1; } );
+            LOG_IF( WARNING, (it == g.second.end() ) ) << "invalid symbol " << *it1 << " in expression " << s;
+            VFmap.push_back(std::make_pair(*it, *it2));
+            it2++;
+        }
+    return Expr< GinacExVF<ExprT,Order> >(  GinacExVF<ExprT,Order>( g.first, g.second, VFmap, filename) );
 }
 
 /**
@@ -321,7 +458,10 @@ diff( std::string const& s, std::string const& ds, std::string const& se, ExprT 
     LOG_IF( WARNING, (diff_it == g.second.end() ) ) << "invalid symbol " << ds << " in expression " << s << " for differentiation";
     auto diffe = diff(g.first,*diff_it);
     LOG(INFO) << "diff(" << s << "," << ds << ")=" << diffe;
-    return Expr< GinacExVF<ExprT,Order> >(  GinacExVF<ExprT,Order>( diffe, g.second, std::make_pair(*it, e), filename) );
+
+    std::vector< std::pair<GiNaC::symbol,ExprT> > VFmap;
+    VFmap.push_back(std::make_pair(*it, e));
+    return Expr< GinacExVF<ExprT,Order> >(  GinacExVF<ExprT,Order>( diffe, g.second, VFmap, filename) );
 }
 
 // ------------------------------------------------------------

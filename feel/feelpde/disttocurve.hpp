@@ -115,6 +115,8 @@ namespace Feel
             for (auto const& it : elements(M_mesh) )
                 ids.assign( it.id(), 0, 0, it.id() );
 
+            eltHavingPoints = M_spaceP0->element();
+
         } //DistToCurve
 
 
@@ -330,6 +332,9 @@ namespace Feel
 
         typename FunctionSpaceP0Type::element_type ids;
 
+        // store a marker on the last elements having been localized
+        typename FunctionSpaceP0Type::element_type eltHavingPoints;
+
         std::map< size_type, size_type > ghostClusterToProc;
 
         // ------ for ordered list of points
@@ -368,6 +373,9 @@ namespace Feel
             return sdist;
         }
 
+
+        typename FunctionSpaceP0Type::element_type getCrossedElements()
+        {return eltHavingPoints;}
 
 
         void clear()
@@ -488,7 +496,7 @@ namespace Feel
             auto allIndexes = ids.evaluate( ctx );
 
             const int nbPtContext = ctx.nPoints();
-            auto eltHavingPoints = M_spaceP0->element();
+            eltHavingPoints.zero();
 
             auto tnodeit = tNodeMap.begin();
             for (int i=0; i < nbPtContext; ++i )

@@ -23,7 +23,7 @@ set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
 feelpp_add_application( doc_laplacian SRCS laplacian.cpp LABEL doc CFG laplacian.cfg SCRIPTS laplacian.py ADD_OT )#
 feelpp_add_application( doc_laplacian_full SRCS laplacian_full.cpp LABEL doc NO_MPI_TEST )
-feelpp_add_application( doc_laplacian_mixed SRCS laplacian_mixed.cpp LABEL doc )
+feelpp_add_application( doc_laplacian_mixed SRCS laplacian_mixed.cpp LABEL doc CFG laplacian_mixed.cfg)
 feelpp_add_application( doc_laplacian_lagrange_multiplier SRCS laplacian_lagrange_multiplier.cpp LABEL doc)
 feelpp_add_application( doc_laplacian_periodic SRCS laplacian_periodic.cpp LABEL doc NO_MPI_TEST )
 feelpp_add_application( doc_laplacian_harmonic SRCS harmonic.cpp LABEL doc  )
@@ -44,6 +44,8 @@ feelpp_add_application( doc_laplacian_block SRCS laplacian_block.cpp LABEL doc C
 feelpp_add_application( doc_laplacian_parabolic SRCS laplacian_parabolic.cpp LABEL doc CFG laplacian_parabolic.cfg GEO laplacian_parabolic.geo )
 
 feelpp_add_application( doc_laplacian_hypercube SRCS laplacian_hypercube.cpp LABEL doc CFG laplacian_hypercube.cfg )
+
+feelpp_add_application( doc_laplacian_submesh SRCS laplacian_submesh.cpp LABEL doc  )
 
 feelpp_add_application( doc_laplacian_dirac SRCS laplacian_dirac.cpp LABEL doc CFG laplacian_dirac.cfg )
 

@@ -78,8 +78,6 @@ public:
 
     TSBase()
         :
-        M_order( 1 ),
-        M_order_cur( 1 ),
         M_name( "bdf" ),
         M_time( 0.0 ),
         M_iteration( 0 ),
@@ -100,12 +98,9 @@ public:
 
     TSBase( po::variables_map const& vm, std::string name, std::string const& prefix, WorldComm const& worldComm )
         :
-        M_order( vm[prefixvm( prefix, "bdf.order" )].as<int>() ),
-        M_order_cur( M_order ),
         M_name( name ),
         M_time( vm[prefixvm( prefix, "bdf.time-initial" )].as<double>() ),
         M_iteration( 0 ),
-        M_iterations_between_order_change( vm[prefixvm( prefix, "bdf.iterations-between-order-change" )].as<int>() ),
         M_Ti( vm[prefixvm( prefix, "bdf.time-initial" )].as<double>() ),
         M_Tf( vm[prefixvm( prefix, "bdf.time-final" )].as<double>() ),
         M_dt( vm[prefixvm( prefix, "bdf.time-step" )].as<double>() ),
@@ -123,12 +118,9 @@ public:
     }
     TSBase( std::string name, WorldComm const& worldComm )
         :
-        M_order( 1 ),
-        M_order_cur( 1 ),
         M_name( name ),
         M_time( 0. ),
         M_iteration( 0 ),
-        M_iterations_between_order_change( 1 ),
         M_Ti( 0. ),
         M_Tf( 1.0 ),
         M_dt( 1.0 ),
@@ -146,12 +138,9 @@ public:
 
     TSBase( TSBase const& b )
         :
-        M_order( b.M_order ),
-        M_order_cur( b.M_order_cur ),
         M_name( b.M_name ),
         M_time( b.M_time ),
         M_iteration( b.M_iteration ),
-        M_iterations_between_order_change( b.M_iterations_between_order_change ),
         M_Ti( b.M_Ti ),
         M_Tf( b.M_Tf ),
         M_dt( b.M_dt ),
@@ -174,15 +163,12 @@ public:
     {
         if ( this != &b )
         {
-            M_order = b.M_order;
-            M_order_cur = b.M_order_cur;
             M_name = b.M_name;
             M_time = b.M_time;
             M_iteration = b.M_iteration;
             M_Ti = b.M_Ti;
             M_Tf = b.M_Tf;
             M_dt = b.M_dt;
-            M_iterations_between_order_change = b.M_iterations_between_order_change;
             M_n_restart = b.M_n_restart;
             M_state = b.M_state;
             M_restart = b.M_restart;
@@ -217,7 +203,7 @@ public:
         //ar & M_time_orders;
         ar & boost::serialization::make_nvp( "time_values", M_time_values_map );
 
-        DVLOG(2) << "[BDF::serialize] time orders size: " << M_time_orders.size() << "\n";
+        //DVLOG(2) << "[BDF::serialize] time orders size: " << M_time_orders.size() << "\n";
         DVLOG(2) << "[BDF::serialize] time values size: " << M_time_values_map.size() << "\n";
 
         for ( auto it = M_time_values_map.begin(), en = M_time_values_map.end(); it!=en; ++it )
@@ -237,12 +223,6 @@ public:
         this->init();
     }
 
-    //! return the order in time
-    int timeOrder() const
-    {
-        return M_order_cur;
-    }
-
     //! return the initial time
     double timeInitial() const
     {
@@ -259,18 +239,6 @@ public:
     double timeStep() const
     {
         return M_dt;
-    }
-
-    //! return the number of iterations between order change
-    int numberOfIterationsBetweenOrderChange() const
-    {
-        return M_iterations_between_order_change;
-    }
-
-    //! return the number of iterations since last order change
-    int numberOfIterationsSinceOrderChange() const
-    {
-        return M_iteration-M_last_iteration_since_order_change;
     }
 
     //! return the number of restarts
@@ -328,12 +296,9 @@ public:
     {
         M_state = TS_RUNNING;
         M_timer.restart();
-        M_iteration = 1;
+        // if initiliaze has been called M_iteration start to 1 else 0
+        M_iteration = M_time_values_map.size();//1;
         M_time = M_Ti+this->timeStep();
-        // warning: this needs to be fixed wrt restart
-        M_last_iteration_since_order_change = 1;
-        //M_order_cur = 1;
-        M_order_cur = M_order;
         return M_Ti;
     }
 
@@ -343,20 +308,7 @@ public:
         M_state = TS_RUNNING;
         M_timer.restart();
         M_time = M_Ti+this->timeStep();
-        M_last_iteration_since_order_change = 1;
-        M_order_cur = 1;
         ++M_iteration;
-
-        for ( int i = 2; i<=M_iteration; ++i )
-        {
-            if ( ( ( i - M_last_iteration_since_order_change ) == M_iterations_between_order_change )&&
-                    M_order_cur < M_order )
-            {
-                M_last_iteration_since_order_change = i;
-                ++M_order_cur;
-            }
-        }
-
         return M_Ti;
     }
 
@@ -400,30 +352,11 @@ public:
         M_timer.restart();
         M_time += M_dt;
         ++M_iteration;
-
-        if ( ( ( M_iteration - M_last_iteration_since_order_change ) == M_iterations_between_order_change )&&
-                M_order_cur < M_order )
-        {
-            M_last_iteration_since_order_change = M_iteration;
-            ++M_order_cur;
-        }
-
         return M_time;
     }
 
     virtual void shiftRight()
     {
-        // create and open a character archive for output
-        std::ostringstream ostr;
-
-        if( M_rankProcInNameOfFiles )
-            ostr << M_name << "-" << M_iteration<<"-proc"<< this->worldComm().globalRank()<<"on"<<this->worldComm().globalSize();
-        else
-            ostr << M_name << "-" << M_iteration;
-
-        DVLOG(2) << "[TSBase::shiftRight] solution name " << ostr.str() << "\n";
-
-        //M_time_values_map.insert( std::make_pair( M_iteration, this->time() ) );
         M_time_values_map.push_back( this->time() );
         //update();
     }
@@ -479,9 +412,10 @@ public:
         return TSStragegy::TS_STRATEGY_DT_CONSTANT;
     }
 
-    void setOrder( int order )
+
+    void setPathSave( std::string s )
     {
-        M_order = order;
+        M_path_save = s;
     }
     void setTimeInitial( double ti )
     {
@@ -528,28 +462,24 @@ public:
         M_rankProcInNameOfFiles = b;
     }
 
-    void print() const
+    virtual void print() const
     {
         LOG(INFO) << "============================================================\n";
-        LOG(INFO) << "BDF Information\n";
+        LOG(INFO) << "TS Information\n";
         LOG(INFO) << "   time step : " << this->timeStep() << "\n";
         LOG(INFO) << "time initial : " << this->timeInitial() << "\n";
         LOG(INFO) << "  time final : " << this->timeFinal() << "\n";
-        LOG(INFO) << "  time order : " << this->timeOrder() << "\n";
     }
 protected:
-    //! time order
-    int M_order;
-    mutable int M_order_cur;
 
     //! name of the file holding the bdf data
     std::string M_name;
 
     //! time
     mutable double M_time;
+
+    //! iteration
     mutable int M_iteration;
-    mutable int M_last_iteration_since_order_change;
-    int M_iterations_between_order_change;
 
     //! initial time to start
     double M_Ti;
@@ -585,7 +515,7 @@ protected:
     mutable double M_real_time_per_iteration;
 
     //! vector that holds the time order at each bdf step
-    std::vector<int> M_time_orders;
+    //std::vector<int> M_time_orders;
 
     //! vector that holds the time value at each bdf step
     time_values_map_type M_time_values_map;
@@ -608,11 +538,12 @@ protected:
 protected:
     void init()
     {
+#if 0
         std::ostringstream ostr;
         ostr << "bdf_o_" << M_order << "_dt_" << M_dt;
         //ostr << "bdf/" << M_name << "/o_" << M_order << "/dt_" << M_dt;
         M_path_save = ostr.str();
-
+#endif
         // if directory does not exist, create it
         if ( !fs::exists( M_path_save ) && this->saveInFile() && this->worldComm().isMasterRank() )
             fs::create_directories( M_path_save );

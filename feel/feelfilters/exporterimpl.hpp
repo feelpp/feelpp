@@ -150,7 +150,7 @@ Exporter<MeshType, N>::New( po::variables_map const& vm, std::string prefix, Wor
 {
     std::string estr = vm["exporter.format"].template as<std::string>();
     Exporter<MeshType, N>* exporter =  0;//Factory::type::instance().createObject( estr  );
-    
+
     LOG(INFO) << "[Exporter] format :  " << estr << "\n";
     LOG(INFO) << "[Exporter] N      :  " << N << "\n";
     if( N > 1 && estr != "gmsh" )
@@ -190,7 +190,11 @@ Exporter<MeshType, N>::setOptions( std::string const& exp_prefix )
         M_prefix = Environment::vm(_name="exporter.prefix",_prefix=exp_prefix).template as<std::string>();
 
     M_freq = Environment::vm(_name="exporter.freq",_prefix=exp_prefix).template as<int>();
-    M_ft = file_type( Environment::vm(_name="exporter.file-type",_prefix=exp_prefix).template as<int>() );
+    std::string ftstr = option(_name="exporter.file-type",_prefix=exp_prefix).template as<std::string>();
+    if ( ftstr == "binary" )
+        M_ft = BINARY;
+    else
+        M_ft = ASCII;
 
     VLOG(1) << "[Exporter] type:  " << M_type << "\n";
     VLOG(1) << "[Exporter] prefix:  " << M_prefix << "\n";

@@ -886,10 +886,12 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
 
     }
 
+    // get only the filename (maybe with full path)
+    fs::path gp = M_filename;
+    std::string theFileName = gp.filename().string();
+    CHECK( theFileName.length() <= 80 ) << "the file name is too long : theFileName=" << theFileName << "\n";
 
-
-
-    strcpy( buffer, M_filename.c_str() );
+    strcpy( buffer, theFileName.c_str() );
     __out.write( ( char * ) & buffer, sizeof( buffer ) );
     strcpy( buffer, "elements" );
     __out.write( ( char * ) & buffer, sizeof( buffer ) );
