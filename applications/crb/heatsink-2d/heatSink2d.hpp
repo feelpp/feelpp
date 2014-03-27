@@ -125,6 +125,10 @@ public :
 
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
+
+    static const bool is_time_dependent = true;
+    static const bool is_linear = true;
+
 };
 
 /**
@@ -151,7 +155,6 @@ public:
     static const uint16_type Order = 1;
     static const uint16_type ParameterSpaceDimension = 3;
     //static const bool is_time_dependent = false;
-    static const bool is_time_dependent = true;
 
     //@}
 
@@ -483,7 +486,7 @@ public:
     /**
      * H1 scalar product
      */
-    sparse_matrix_ptrtype innerProduct ( void )
+    sparse_matrix_ptrtype energyMatrix ( void )
     {
         return M;
     }
@@ -548,6 +551,9 @@ public:
     {
         return M_Dmu->min();
     }
+
+    bdf_ptrtype bdfModel(){ return M_bdf; }
+
 
 private:
 

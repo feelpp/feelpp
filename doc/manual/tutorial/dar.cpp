@@ -57,7 +57,7 @@ makeOptions()
     ( "stabcoeff", Feel::po::value<double>()->default_value( 2.5e-2 ),
       "stabilisation coefficient" )
     ;
-    return DARoptions.add( Feel::feel_options() );
+    return DARoptions;
 }
 
 /**

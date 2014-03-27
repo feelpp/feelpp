@@ -475,6 +475,7 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
         CHKERRABORT( worldComm.globalComm(),ierr );
         break;
 
+#if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR >= 2)
     case GAMG_PRECOND:
         ierr = PCSetType( pc,( char* ) PCGAMG );
         CHKERRABORT( worldComm.globalComm(),ierr );
@@ -484,7 +485,14 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
         CHKERRABORT( worldComm.globalComm(),ierr );
 #endif
         break;
+#else
+        LOG(WARNING) << "PETSc GAMG is available from PETSc version >= 3.2";
+#endif
 
+    case NONE_PRECOND:
+        ierr = PCSetType( pc,( char* ) PCNONE );
+        CHKERRABORT( worldComm.globalComm(),ierr );
+        break;
 
     default:
         std::cerr << "ERROR:  Unsupported PETSC Preconditioner: "
@@ -800,13 +808,8 @@ PreconditionerPetsc<T>::setPetscMGLevelsPreconditionerType( PC& pc,
         ierr = KSPSetNormType( levelksp, KSP_NORM_PRECONDITIONED );
         CHKERRABORT( worldComm.globalComm(),ierr );
         void *cctx;
-#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,4,4)
-        ierr = KSPConvergedDefaultCreate(&cctx);
-        ierr = KSPSetConvergenceTest( levelksp, KSPConvergedDefault, cctx, PETSC_NULL );
-#else
         ierr = KSPDefaultConvergedCreate(&cctx);
         ierr = KSPSetConvergenceTest( levelksp, KSPDefaultConverged, cctx, PETSC_NULL );
-#endif
         CHKERRABORT( worldComm.globalComm(),ierr );
 
         // set ksp tolerance

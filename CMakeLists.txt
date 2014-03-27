@@ -324,7 +324,7 @@ endif()
 #
 INCLUDE(CTest)
 ENABLE_TESTING()
-add_custom_target(check COMMAND "ctest" ARGS "-R" "feelpp_qs_laplacian" "-R" "feelpp_ls_laplacian")
+add_custom_target(check COMMAND "ctest" ARGS "-R" "qs")
 add_dependencies(check quickstart)
 
 add_custom_target(check-full COMMAND "ctest")

@@ -40,6 +40,8 @@
 #include <boost/assign/list_of.hpp>
 #include <boost/assign/std/vector.hpp>
 
+#include <boost/type_traits.hpp>
+
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/traits.hpp>
 #include <feel/feelalg/lu.hpp>
@@ -59,6 +61,8 @@
 #include <feel/feelpoly/fe.hpp>
 
 #include <feel/feelvf/vf.hpp>
+
+#include <feel/feelpoly/hcurlpolynomialset.hpp>
 
 namespace Feel
 {
@@ -104,6 +108,7 @@ struct times_rotx
     int M_c;
 };
 
+#if 0
 template< class T >
 struct extract_all_poly_indices
 {
@@ -118,6 +123,8 @@ struct extract_all_poly_indices
         return start++;
     }
 };
+#endif
+
 }// detail
 
 template<uint16_type N,
@@ -182,7 +189,7 @@ public:
         VLOG(1) << "[Nedelec1stKindset] Pk(0) =" << Pk.polynomial( 0 ).coefficients() << "\n";
 #endif
 
-        // x P_k \ P_{k-1}
+        // curl(x) P_k \ P_{k-1}
         IMGeneral<convex_type::nDim, 2*nOrder,value_type> im;
         //VLOG(1) << "[Nedelec1stKindPset] im.points() = " << im.points() << std::endl;
         ublas::matrix<value_type> xPkc( nComponents*( dim_Pk-dim_Pkm1 ),Pk.coeff().size2() );
@@ -637,6 +644,19 @@ private:
 
 }// detail
 
+template<uint16_type N,
+         uint16_type O,
+         NedelecKind Kind = NedelecKind::NED2,
+         typename T = double,
+         uint16_type TheTAG = 0 >
+struct NedelecBase
+{
+    typedef typename mpl::if_<mpl::bool_<(Kind == NedelecKind::NED2)>,
+                              FiniteElement<Feel::detail::OrthonormalPolynomialSet<N, O, N, Vectorial, T, TheTAG, Simplex>,
+                                            fem::detail::NedelecDualSecondKind, PointSetEquiSpaced >,
+                              FiniteElement<NedelecPolynomialSet<N, O, T>,
+                                            fem::detail::NedelecDualFirstKind, PointSetEquiSpaced > >::type type;
+};
 
 /**
  * \class Nedelec
@@ -658,25 +678,14 @@ template<uint16_type N,
          uint16_type TheTAG = 0 >
 class Nedelec
     :
-#if 0
-        public FiniteElement<typename mpl::if_<(Kind==NedelecKind::NED2),
-                                               mpl::identity<OrthonormalPolynomialSet<N, O, N, T, Simplex>, fem::detail::NedelecDualSecondKind, PointSetEquiSpaced >,
-                                               mpl::identity<NedelecPolynomialSet<N, O, T>, fem::detail::NedelecDualFirstKind, PointSetEquiSpaced > >::type>,
-#else
-        public FiniteElement<Feel::detail::OrthonormalPolynomialSet<N, O, N, Vectorial, T, TheTAG, Simplex>, fem::detail::NedelecDualSecondKind, PointSetEquiSpaced >,
-#endif
-        public boost::enable_shared_from_this<Nedelec<N,O,Kind,T,TheTAG> >
+    public HCurlPolynomialSet,
+    public NedelecBase<N,O,Kind,T,TheTAG>::type,
+    public boost::enable_shared_from_this<Nedelec<N,O,Kind,T,TheTAG> >
 {
 
 public:
+    typedef typename NedelecBase<N,O,Kind,T,TheTAG>::type super;
 
-#if 0
-    typedef FiniteElement<typename mpl::if_<(Kind==NedelecKind::NED2),
-                                            mpl::identity<OrthonormalPolynomialSet<N, O, N, T, Simplex>, fem::detail::NedelecDualSecondKind, PointSetEquiSpaced >,
-                                            mpl::identity<NedelecPolynomialSet<N, O, T>, fem::detail::NedelecDualFirstKind, PointSetEquiSpaced > >::type> super;
-#else
-    typedef FiniteElement<Feel::detail::OrthonormalPolynomialSet<N, O, N, Vectorial, T, TheTAG, Simplex>, fem::detail::NedelecDualSecondKind, PointSetEquiSpaced > super;
-#endif
     BOOST_STATIC_ASSERT( N > 1 );
 
     /** @name Typedefs
