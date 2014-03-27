@@ -314,8 +314,7 @@ void SolverLinearPetsc<T>::init ()
 
 
 template <typename T>
-//std::pair<unsigned int, typename SolverLinearPetsc<T>::real_type>
-boost::tuple<bool,unsigned int, typename SolverLinearPetsc<T>::real_type>
+typename SolverLinearPetsc<T>::solve_return_type
 SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
                               MatrixSparse<T> const&  precond_in,
                               Vector<T> & solution_in,
@@ -541,13 +540,13 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
 #endif
     // return the # of its. and the final residual norm.
     //return std::make_pair(its, final_resid);
-    return boost::make_tuple( hasConverged, its, final_resid );
+    return solve_return_type( boost::make_tuple( hasConverged, its, final_resid ) );
 
 
 }
 
 template <typename T>
-boost::tuple<bool,unsigned int, typename SolverLinearPetsc<T>::real_type>
+typename SolverLinearPetsc<T>::solve_return_type
 SolverLinearPetsc<T>::solve ( MatrixShell<T>  const &mat,
                               Vector<T> & x,
                               Vector<T> const& b,
@@ -556,7 +555,7 @@ SolverLinearPetsc<T>::solve ( MatrixShell<T>  const &mat,
                               bool transpose )
 {
     LOG(ERROR) << "invalid call to solve() using matshell\n";
-    return boost::make_tuple( false, 0, 0 );
+    return solve_return_type( boost::make_tuple( false, 0, 0 ) );
 }
 
 template <typename T>

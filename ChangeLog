@@ -4,6 +4,39 @@
 
    \tableofcontents
 
+   \section feelpp0980 Feel++ Release 0.98.0
+   release date mm-dd-yyyy
+
+   \subsection changes0980 Changes
+
+   - Improve documentation, see <a
+     href="https://github.com/feelpp/feelpp/issues/300">#300</a>
+
+   \subsection features0980 Features
+
+   \subsection issues0980 Noteworthy Issues
+
+
+<hr>
+
+   \section feelpp0974 Feel++ Release 0.97.4
+   release date 03-18-2014
+
+   \subsection changes0974 Changes since 0.97.3
+
+   - Make sure that all headers are installed properly, see <a
+     href="https://github.com/feelpp/feelpp/issues/318">#318</a>
+
+   \section feelpp0973 Feel++ Release 0.97.3
+   release date 03-17-2014
+
+   \subsection changes0973 Changes since 0.97.2
+
+   - Fix Feel++ programming environment and cmake script, see <a
+     href="https://github.com/feelpp/feelpp/issues/314">#314</a>
+   - Install CRB framework properly, see <a
+     href="https://github.com/feelpp/feelpp/issues/315">#315</a>
+
    \section feelpp0972 Feel++ Release 0.97.2
    release date 03-16-2014
 
