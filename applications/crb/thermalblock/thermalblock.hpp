@@ -70,6 +70,7 @@ makeThermalBlockOptions()
     ( "geofile", Feel::po::value<std::string>()->default_value( "" ), "name of the geofile input (used to store DB)")
     ( "mshfile", Feel::po::value<std::string>()->default_value( "" ), "name of the gmsh file input")
     ( "gamma_dir", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary Dirichlet formulation" )
+    ( "load-mesh-already-partitioned", Feel::po::value<bool>()->default_value( "true" ), "load a mesh from mshfile that is already partitioned if true, else the mesh loaded need to be partitioned")
     ( "beta.A0", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for A0" )
     ( "beta.A1", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for A1" )
     ( "beta.A2", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for A2" )
@@ -140,6 +141,10 @@ public :
 
     //! the approximation function space type
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
+
+    static const bool is_time_dependent = false;
+    static const bool is_linear = true;
+
 };
 
 
@@ -166,7 +171,6 @@ public:
     typedef typename super_type::funsd_type funsd_type;
 
     static const uint16_type ParameterSpaceDimension = nx*ny;
-    static const bool is_time_dependent = false;
 
     //! Polynomial order \f$P_2\f$
     static const uint16_type Order = 1;
@@ -544,7 +548,7 @@ public:
     /**
      * H1 scalar product
      */
-    sparse_matrix_ptrtype innerProduct ( void )
+    sparse_matrix_ptrtype energyMatrix ( void )
     {
         return M;
     }
@@ -816,9 +820,32 @@ ThermalBlock::initModel()
     }
     else
     {
-        mmesh = loadGMSHMesh( _mesh=new mesh_type,
-                              _filename=option(_name="mshfile").as<std::string>(),
-                              _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
+
+        bool load_mesh_already_partitioned=option(_name="load-mesh-already-partitioned").as<bool>();
+        if( ! load_mesh_already_partitioned )
+        {
+            int N = Environment::worldComm().globalSize();
+            std::string mshfile = option("mshfile").as<std::string>();
+            std::string mshfile_complete = option("mshfile").as<std::string>();
+            auto pos = mshfile.find(".msh");
+            mshfile.erase( pos , 4);
+            std::string filename = (boost::format(mshfile+"-np%1%.msh") %N ).str();
+            if( !fs::exists( filename ) )
+            {
+                super_type::partitionMesh( mshfile_complete, filename , 2 , 1 );
+            }
+            mmesh = loadGMSHMesh( _mesh=new mesh_type,
+                                 _filename=filename,
+                                 _rebuild_partitions=false,
+                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER );
+        }
+        else
+        {
+            mmesh = loadGMSHMesh( _mesh=new mesh_type,
+                                 _filename=option("mshfile").as<std::string>(),
+                                 _rebuild_partitions=false,
+                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER );
+        }
     }
 
     auto names = mmesh->markerNames();
@@ -904,8 +931,11 @@ ThermalBlock::initModel()
     form2( Xh, Xh, D,_init=true )=integrate( elements( mmesh ),0*idt( v )*id( v ), _Q<0>() );
     form2( Xh, Xh, M,_init=true )=integrate( elements( mmesh ),0*idt( v )*id( v ), _Q<0>() );
 
-    LOG( INFO ) << "Number of local dof " << Xh->nLocalDof() << "\n";
-    LOG( INFO ) << "Number of dof " << Xh->nDof() << "\n";
+    if( Environment::worldComm().isMasterRank() )
+    {
+        std::cout << "Number of local dof " << Xh->nLocalDof() << std::endl;
+        std::cout << "Number of dof " << Xh->nDof() << std::endl;
+    }
 
     int index=0;//index for M_Fqm or M_Aqm
     int subdomain_index; //index for subdomains along a boundary

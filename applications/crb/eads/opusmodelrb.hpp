@@ -96,6 +96,9 @@ public:
 
     typedef temp_functionspace_type space_type;
 
+    static const bool is_time_dependent = true;
+    static const bool is_linear = true;
+
 };
 
 template<int OrderU=2, int OrderP=OrderU-1, int OrderT=OrderP>
@@ -139,7 +142,6 @@ public:
 #endif
     static const uint16_type ParameterSpaceDimension = 5;
 
-    static const bool is_time_dependent = true;
     //@}
     /** @name Typedefs
      */
@@ -505,7 +507,7 @@ public:
     /**
      * H1 scalar product
      */
-    sparse_matrix_ptrtype innerProduct();
+    sparse_matrix_ptrtype energyMatrix();
 
     /**
      * update the PDE system with respect to \param mu
@@ -604,6 +606,7 @@ public:
      */
     void initializationField( element_ptrtype& initial_field,parameter_type const& mu ) ;
 
+    temp_bdf_ptrtype bdfModel(){ return M_temp_bdf;}
     //@}
 
 protected:

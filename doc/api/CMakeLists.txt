@@ -28,7 +28,7 @@ find_program(DOXYGEN doxygen)
 if ( DOXYGEN AND FEELPP_ENABLE_DOXYGEN)
   ## We extract the cmake option for the documentation
   execute_process(
-    COMMAND 
+    COMMAND
     ${CMAKE_CURRENT_SOURCE_DIR}/extract_command.sh ${CMAKE_SOURCE_DIR}
     OUTPUT_VARIABLE FEELPP_ENABLE_LISTE
     )
@@ -49,7 +49,7 @@ if ( DOXYGEN AND FEELPP_ENABLE_DOXYGEN)
    foreach(project ${projects_list})
      #get shortname
      GET_FILENAME_COMPONENT(dirname ${project} NAME)
-     
+
      #define option to control doc generation
      string(TOUPPER ${dirname} PROJECT)
      if (FEELPP_ENABLE_${PROJECT}_DOCUMENTATION )
@@ -66,7 +66,7 @@ if ( DOXYGEN AND FEELPP_ENABLE_DOXYGEN)
    FILE(APPEND ${CMAKE_CURRENT_SOURCE_DIR}/pages.doc "\n\n}\n")
 
 
-   #  
+   #
    configure_file(
      ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in
      ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
