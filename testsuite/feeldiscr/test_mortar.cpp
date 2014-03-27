@@ -238,10 +238,11 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh, T, order_types )
 
 }
 #endif
-typedef boost::mpl::list<boost::mpl::int_<1>, boost::mpl::int_<2>  > order_types;
+typedef boost::mpl::list<boost::mpl::int_<1>, boost::mpl::int_<2>, boost::mpl::int_<3>  > order_types;
 
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
 {
+    LOG(INFO) << "test_mortar_integrate_submesh2: P" << T::value << " test case";
     using namespace Feel;
     Feel::Environment::changeRepository( boost::format( "/testsuite/feeldiscr/%1%/test_mortar_integrate_submesh2/h_%2%/P%3%/" )
                                          % Feel::Environment::about().appName()
@@ -290,8 +291,19 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
 
     for( auto const& dof : Mh->dof()->localDof() )
     {
-        LOG(INFO) << "local dof element " << dof.first.elementId() << " id:" << dof.first.localDof()
-                  << " global dof : " << dof.second.index();
+        LOG(INFO) << "test local dof element " << dof.first.elementId() << " id:" << dof.first.localDof()
+                  << " global dof : " << dof.second.index() << " pts: " << Mh->dof()->dofPoint( dof.second.index() ).template get<0>();
+    }
+
+    for( auto const& dof : Xh->dof()->localDof() )
+    {
+        LOG(INFO) << "trial slave local dof element " << dof.first.elementId() << " id:" << dof.first.localDof()
+                  << " global dof : " << dof.second.index() << " pts: " << Xh->dof()->dofPoint( dof.second.index() ).template get<0>();
+    }
+    for( auto const& dof : Vh->dof()->localDof() )
+    {
+        LOG(INFO) << "trial master local dof element " << dof.first.elementId() << " id:" << dof.first.localDof()
+                  << " global dof : " << dof.second.index() << " pts: " << Vh->dof()->dofPoint( dof.second.index() ).template get<0>();
     }
 
     BOOST_TEST_MESSAGE( "build Xh element" );
@@ -313,28 +325,29 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
     BOOST_TEST_MESSAGE( "build bilinear form c_s(Mh,Xh)" );
     auto c_s = form2(_test=Mh, _trial=Xh), cs1= form2(_test=Mh, _trial=Xh);
     BOOST_TEST_MESSAGE( "integrate" );
-    c_s = integrate(_range=internalelements(testmesh),_expr=idt(u)*print(id(l),"test func internal"));
-    c_s += integrate(_range=boundaryelements(testmesh),_expr=idt(u)*print(id(l),"test func boundary"));
+    c_s = integrate(_range=internalelements(testmesh),_expr=idt(u)*id(l));
+    c_s += integrate(_range=boundaryelements(testmesh),_expr=idt(u)*id(l));
+
     cs1 = integrate(_range=internalelements(testmesh),_expr=idt(u)*id(l));
     cs1 += integrate(_range=boundaryelements(testmesh),_expr=idt(u));
     BOOST_TEST_MESSAGE( "printMatlab" );
     c_s.matrixPtr()->printMatlab( "C_s.m" );
     cs1.matrixPtr()->printMatlab( "C_s1.m" );
 
-    BOOST_CHECK_CLOSE( c_s( l, u ), 1, 1e-13 );
+    BOOST_CHECK_CLOSE( c_s( l, u ), 1, 1e-12 );
     if ( T::value == 1 )
-        BOOST_CHECK_CLOSE( cs1( l, u ), 1, 1e-13 );
-    BOOST_CHECK_CLOSE( c_s( l, u1 ), 0.5, 1e-13 );
-    BOOST_CHECK_CLOSE( c_s( l, u2 ), 1./3., (T::value>=2)?1e-13:10 );
+        BOOST_CHECK_CLOSE( cs1( l, u ), 1, 1e-12 );
+    BOOST_CHECK_CLOSE( c_s( l, u1 ), 0.5, 1e-12 );
+    BOOST_CHECK_CLOSE( c_s( l, u2 ), 1./3., (T::value>=2)?1e-12:10 );
 
     BOOST_TEST_MESSAGE( "build bilinear form c_m(Mh,Vh)" );
     auto c_m = form2(_test=Mh, _trial=Vh);
     BOOST_TEST_MESSAGE( "integrate" );
     c_m = integrate(_range=elements(testmesh),_expr=idt(v)*id(l));
     c_m.matrixPtr()->printMatlab( "C_m.m" );
-    BOOST_CHECK_CLOSE( c_m( l, v ), 1, 1e-13 );
-    BOOST_CHECK_CLOSE( c_m( l, w ), 0.5, 1e-13 );
-    BOOST_CHECK_CLOSE( c_m( l, z ), 1./3., (T::value>=2)?1e-13:10 );
+    BOOST_CHECK_CLOSE( c_m( l, v ), 1, 1e-12 );
+    BOOST_CHECK_CLOSE( c_m( l, w ), 0.5, 1e-12 );
+    BOOST_CHECK_CLOSE( c_m( l, z ), 1./3., (T::value>=2)?1e-12:10 );
 
 
     // build matrix C_m without mortar space

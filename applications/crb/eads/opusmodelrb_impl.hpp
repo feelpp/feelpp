@@ -1216,7 +1216,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::l2solve( vector_ptrtype& u, vector_ptrtype co
  */
 template<int OrderU, int OrderP, int OrderT>
 typename OpusModelRB<OrderU,OrderP,OrderT>::sparse_matrix_ptrtype
-OpusModelRB<OrderU,OrderP,OrderT>::innerProduct ( void )
+OpusModelRB<OrderU,OrderP,OrderT>::energyMatrix ( void )
 {
     return M;
 }

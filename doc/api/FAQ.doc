@@ -1,0 +1,49 @@
+/* -*- mode: c++; coding: utf-8 -*- */
+
+namespace Feel
+{
+/**
+
+\page FAQ Frequently Asked Questions
+
+\tableofcontents
+
+\section FAQExecution Execution
+
+\subsection FAQExecutionParallelComputing Parallel computing
+
+\subsubsection FAQExecutionParallelComputing_bind How to bind Feel++ mpi processes to cores
+
+For performance reasons, it can be very efficient to bind mpi processes to cores.
+You should read the mpirun manual and the binding section.
+
+Here is the command line to bind the processes:
+\verbatim
+mpirun -np 4 -bind-to-core feelpp_qs_laplacian
+\endverbatim
+
+\subsection FAQErrorException Error or Exception messages
+
+\subsubsection FAQErrorException_locale locale::facet::_S_create_c_locale name not valid
+
+ On Ubuntu systems and possibly others, locale (language, money, ...) information
+might be set and we don't handle that very well at the moment. You might get the
+following message at the execution of any Feel++ applications
+\verbatim
+terminate called after throwing an instance of 'std::runtime_error'
+  what():  locale::facet::_S_create_c_locale name not valid
+\endverbatim
+
+To fix this, we suggest that you `unset` all environment variables related to
+locale information. It includes `LANG`,  `LC_CTYPE` and `LC_ALL`.
+
+Just type
+
+\verbatim
+unset LANG LC_CTYPE LC_ALL
+\endverbatim
+
+then the Feel++ application should execute without problems.
+
+*/
+}

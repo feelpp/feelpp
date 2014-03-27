@@ -2366,24 +2366,28 @@ public:
         Eigen::Matrix<value_type, Eigen::Dynamic, 1>
         evaluate( functionspace_type::Context const & context , bool do_communications=true) const
         {
-            int npoints = context.nPoints();
+            const int npoints = context.nPoints();
+
+            //number of component
+            const int ncdof  = is_product?nComponents:1;
 
             //rank of the current processor
-            int proc_number = Environment::worldComm().globalRank();
+            int proc_number = this->worldComm().globalRank();
 
             //total number of processors
-            int nprocs = Environment::worldComm().globalSize();
+            int nprocs = this->worldComm().globalSize();
 
             auto it = context.begin();
             auto en = context.end();
 
-            eigen_type __globalr( npoints );
+            eigen_type __globalr( npoints*ncdof );
             __globalr.setZero();
-            eigen_type __localr( npoints );
+            eigen_type __localr( npoints*ncdof );
             __localr.setZero();
 
             boost::array<typename array_type::index, 1> shape;
             shape[0] = 1;
+
             id_array_type v( shape );
             if( context.size() > 0 )
             {
@@ -2393,12 +2397,15 @@ public:
                     auto basis = it->second;
                     id( *basis, v );
                     int global_index = it->first;
-                    __localr( global_index ) = v[0]( 0, 0 );
+                    for(int comp=0; comp<ncdof; comp++)
+                    {
+                        __localr( global_index*ncdof+comp ) = v[0]( comp, 0 );
+                    }
                 }
             }
 
             if( do_communications )
-                mpi::all_reduce( Environment::worldComm() , __localr, __globalr, std::plus< eigen_type >() );
+                mpi::all_reduce( this->worldComm() , __localr, __globalr, std::plus< eigen_type >() );
             else
                 __globalr = __localr;
 
@@ -5441,8 +5448,6 @@ template<typename ContextType>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_( ContextType const & context, div_array_type& v ) const
 {
-#if 1
-
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();
 
@@ -5456,6 +5461,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_( ContextType const & co
 
     const size_type Q = context.xRefs().size2();
 
+    auto const& s = M_functionspace->dof()->localToGlobalSigns( elt_id );
     for ( int l = 0; l < basis_type::nDof; ++l )
     {
         const int ncdof = is_product?nComponents1:1;
@@ -5481,48 +5487,11 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_( ContextType const & co
                 std::cout << "context.div(" << ldof << "," << q << ")="
                           << context.div( ldof, 0, 0, q ) << "\n" ;
 #endif
-                v[q]( 0,0 ) += v_*context.div( ldof, 0, 0, q );
+                v[q]( 0,0 ) += s(ldof)*v_*context.div( ldof, 0, 0, q );
             }
         }
     }
 
-#else
-
-    if ( !this->areGlobalValuesUpdated() )
-        this->updateGlobalValues();
-
-    for ( int l = 0; l < basis_type::nDof; ++l )
-    {
-        const int ncdof = is_product?nComponents1:1;
-
-        for ( int c1 = 0; c1 < ncdof; ++c1 )
-        {
-            int ldof = c1*basis_type::nDof+l;
-            size_type gdof = boost::get<0>( M_functionspace->dof()->localToGlobal( context.eId(), l, c1 ) );
-            FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
-                           gdof < this->lastLocalIndex() )
-            ( context.eId() )
-            ( l )( c1 )( ldof )( gdof )
-            ( this->size() )( this->localSize() )
-            ( this->firstLocalIndex() )( this->lastLocalIndex() )
-            .error( "FunctionSpace::Element invalid access index" );
-            //value_type v_ = (*this)( gdof );
-            value_type v_ = this->globalValue( gdof );
-
-            for ( int k = 0; k < nComponents1; ++k )
-            {
-                for ( typename array_type::index i = 0; i < nDim; ++i )
-                {
-                    for ( size_type q = 0; q < context.xRefs().size2(); ++q )
-                    {
-                        v[q]( 0,0 ) += v_*context.gmContext()->B( q )( k, i )*context.pc()->grad( ldof, k, i, q );
-                    }
-                }
-            }
-        }
-    }
-
-#endif
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
