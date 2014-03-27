@@ -84,6 +84,8 @@ namespace Feel
                 for (int k=0; k<M_spaceP1->nLocalDof(); ++k)
                     if ( M_spaceP1->dof()->dofGlobalProcessIsGhost( k ) )
                         ghostClusterToProc[ processorToCluster( k ) ] = k;
+
+            eltHavingPoints = M_spaceP0->element();
         }
 
 
@@ -211,6 +213,9 @@ namespace Feel
         spaceP1_ptrtype M_spaceP1;
         typename FunctionSpaceP1Type::mesh_ptrtype M_mesh;
 
+        // store a marker on the last elements having been localized
+        typename FunctionSpaceP0Type::element_type eltHavingPoints;
+
         std::map< size_type, size_type > ghostClusterToProc;
 
         // contains parameter t, node
@@ -230,6 +235,9 @@ namespace Feel
         {return M_spaceP1->dof()->mapGlobalProcessToGlobalCluster( dof ); }
 
         // todo : readPointsFromFile
+
+        typename FunctionSpaceP0Type::element_type getCrossedElements()
+        {return eltHavingPoints;}
 
 
         void clear()
@@ -358,7 +366,7 @@ namespace Feel
 
             auto allIndexes = ids.evaluate( ctx );
             const int nbPtContext = ctx.nPoints();
-            auto eltHavingPoints = M_spaceP0->element();
+            eltHavingPoints.zero();
 
             auto tnodeit = tNodeMap.begin();
             for (int i=0; i < nbPtContext; ++i )
