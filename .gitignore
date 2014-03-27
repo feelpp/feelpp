@@ -48,3 +48,6 @@
 /subdirs
 /tools
 /usb_modeswitch.conf
+/testsuite/feeldiscr/#test_mortar.cpp#
+/testsuite/feeldiscr/.#test_mortar.cpp
+/contrib/eigen-eigen*

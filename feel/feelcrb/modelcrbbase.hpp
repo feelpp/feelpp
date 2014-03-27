@@ -774,29 +774,47 @@ public :
     }
 
 
-    void writeConvergenceStatistics( std::vector< vectorN_type > const& vector, std::string filename )
+    void writeConvergenceStatistics( std::vector< vectorN_type > const& vector, std::string filename , std::string extra="")
     {
         if( Environment::worldComm().isMasterRank() )
         {
             Eigen::MatrixXf::Index index_max;
             Eigen::MatrixXf::Index index_min;
 
+            double totaltime=0;
+            double globaltotaltime=0;
             std::ofstream file;
             file.open( filename );
-            file << "NbBasis" << "\t" << "Min" << "\t" << "Max" << "\t" << "Mean" << "\t" << "Variance" << "\n";
+            if( extra == "totaltime" )
+                file << "NbBasis" << "\t" << "Min" << "\t" << "Max" << "\t" << "Mean" << "\t" << "Variance" << "\t"<< "Total time" << "\n";
+            else
+                file << "NbBasis" << "\t" << "Min" << "\t" << "Max" << "\t" << "Mean" << "\t" << "Variance" << "\n";
             int Nmax = vector.size();
             std::vector<double> nbruns( Nmax );
             for(int n=0; n<Nmax; n++)
             {
+                totaltime=0;
                 double variance=0;
                 int sampling_size = vector[n].size();
                 double mean=vector[n].mean();
                 double max = vector[n].maxCoeff(&index_max);
                 double min = vector[n].minCoeff(&index_min);
                 for(int i=0; i<sampling_size; i++)
+                {
                     variance += (vector[n](i) - mean)*(vector[n](i) - mean)/sampling_size;
-                file <<n+1<<"\t"<<min<<"\t"<<max<<"\t"<<mean<<"\t"<<variance<<"\n";
+                    totaltime+= vector[n](i);
+                }
+                globaltotaltime += totaltime;
+                if( extra == "totaltime" )
+                    file <<n+1<<"\t"<<min<<"\t"<<max<<"\t"<<mean<<"\t"<<variance<<"\t"<<totaltime<<"\n";
+                else
+                    file <<n+1<<"\t"<<min<<"\t"<<max<<"\t"<<mean<<"\t"<<variance<<"\n";
                 nbruns[n]=vector[n].size();
+            }
+
+            if( extra == "totaltime" )
+            {
+                file << "#global total time : "<<globaltotaltime<<"\n";
             }
 
             //write information about number of runs
@@ -994,15 +1012,17 @@ public :
 
         Eigen::MatrixXf::Index index;
         double min_output = outputs.minCoeff(&index);
-        double min_scale=std::floor(min_output);
+        //double min_scale=std::floor(min_output);
+        double min_scale=min_output;
         double x=0;
         double output=0;
         double estimated_down=0;
         double estimated_up=0;
         double delta=0;
 
-        std::ofstream file_outputs_geo_gmsh ( "GMSH-outputs.geo", std::ios::out );
-        file_outputs_geo_gmsh << "View \" outputs \" {\n";
+        std::string plotFile = "GMSH-outputs.geo";
+        std::ofstream file_outputs_geo_gmsh ( plotFile, std::ios::out );
+        file_outputs_geo_gmsh << "View \"outputs\" {\n";
         for(int i=0; i<outputs.size(); i++)
         {
             if( use_estimated_error )
@@ -1035,6 +1055,11 @@ public :
 
         file_outputs_geo_gmsh<<conclude;
         file_outputs_geo_gmsh.close();
+
+        /* Adds the generated file for automatic loading in Gmsh */
+        Environment::olLoadInGmsh(plotFile);
+
+
     }
 
 

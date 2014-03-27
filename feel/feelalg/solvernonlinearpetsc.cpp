@@ -484,6 +484,7 @@ void SolverNonLinearPetsc<T>::init ()
         switch ( this->getType() )
         {
             //LS, TR Newton-type with line search and trust region
+        default:
         case LINE_SEARCH :
         {
 #if PETSC_VERSION_LESS_THAN(3,4,0)
@@ -650,7 +651,7 @@ void SolverNonLinearPetsc<T>::init ()
 
 
 template <typename T>
-std::pair< int, typename SolverNonLinearPetsc<T>::real_type>
+typename SolverNonLinearPetsc<T>::solve_return_type
 SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jacobian Matrix
                                  vector_ptrtype& x_in,    // Solution vector
                                  vector_ptrtype& r_in,    // Residual vector
@@ -696,6 +697,7 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     assert( r->vec()   != NULL );
 
     int n_iterations =0;
+    PetscReal valfnorm = 0;
 
     ierr = SNESSetFunction ( M_snes, r->vec(), __feel_petsc_snes_residual, this );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
@@ -765,7 +767,10 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     CHKERRABORT( this->worldComm().globalComm(),ierr );
     LOG(INFO) << "[SolverNonLinearPetsc] number of nonlinear iterations = " << n_iterations << "\n";
 
-    for ( int i=0; i<n_iterations+1; i++ )
+    ierr = SNESGetFunctionNorm( M_snes,&valfnorm );
+    CHKERRABORT( this->worldComm().globalComm(),ierr );
+
+    for ( int i=0; i<50/*n_iterations+1*/; i++ )
     {
         LOG(INFO) << "iteration " << i << ": Linear iterations : " << hist_its[i] << " Function norm = " << history[i] << "\n";
     }
@@ -776,8 +781,8 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
 
     if ( option( _prefix=this->prefix(), _name="snes-view" ).template as<bool>() )
         check( SNESView( M_snes, PETSC_VIEWER_STDOUT_WORLD ) );
-
-    if ( reason<0 )
+    bool hasConverged = reason>0;
+    if ( !hasConverged )
     {
         LOG(ERROR) << "Nonlinear solve did not converge due to " << PetscConvertSNESReasonToString(reason)
                    << " iterations " << n_iterations << std::endl;
@@ -792,13 +797,10 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
                       << " iterations " << n_iterations << std::endl;
     }
 
-
-#if 0
-    this->clear();
-#endif
     // return the # of its. and the final residual norm.  Note that
     // n_iterations may be zero for PETSc versions 2.2.x and greater.
-    return std::make_pair( reason, 0. );
+    //return std::make_pair( reason, 0. );
+    return solve_return_type( boost::make_tuple( hasConverged, n_iterations, valfnorm/*history[std::min(n_iterations,49)]*/ ) );
 }
 
 

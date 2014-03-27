@@ -109,6 +109,12 @@ ExporterGmsh<MeshType,N>::gmshSaveAscii() const
                 << "-" << this->worldComm().size() << "_" << this->worldComm().rank()
                 << ".msh";
 
+        /* If onelab is enabled, we register this filename to be loaded */
+        if(option(_name="onelab.enable" ).template as<int>() == 2)
+        {
+            Environment::olLoadInGmsh(__fname.str());
+        }
+
         /*std::string filename =  this->prefix()
           + __ts->name()
           + "-" + this->worldComm().size() + "_" + this->worldComm().rank()
@@ -345,8 +351,6 @@ ExporterGmsh<MeshType,N>::gmshSaveNodesStart( std::ostream& out, mesh_ptrtype me
 
     else
         out << "$Nodes\n";
-
-    out << nGlobPt << "\n";//number points
 }
 
 template<typename MeshType, int N>
@@ -367,14 +371,19 @@ ExporterGmsh<MeshType,N>::gmshSaveNodes( std::ostream& out, mesh_ptrtype mesh, b
     auto pt_it = mesh->beginPointWithProcessId();
     auto const pt_en = mesh->endPointWithProcessId();
 
+    // Save number of Nodes
+    out << std::distance(pt_it, pt_en) << "\n";//number points
+
     for ( ; pt_it!=pt_en ; ++pt_it )
     {
+        /*
         if ( pt_it->isLinkedToOtherPartitions() )
         {
             // add if the processId() is the min rank
             if ( pt_it->processId() > *std::min_element( pt_it->neighborPartitionIds().begin(),pt_it->neighborPartitionIds().end() ) )
                 continue;
         }
+        */
 
         // warning add 1 to the id in order to be sure that all gmsh id >0
         out << pt_it->id()+1
@@ -446,17 +455,15 @@ template<typename MeshType, int N>
 void
 ExporterGmsh<MeshType,N>::gmshSaveElementsStart( std::ostream& out, size_type nGlobElt ) const
 {
-    out << "$Elements\n"
-        << nGlobElt << "\n";//number element
+    out << "$Elements\n";
 }
 
 template<typename MeshType, int N>
 void
 ExporterGmsh<MeshType,N>::gmshSaveElementsEnd( std::ostream& out ) const
 {
-    out << "$EndElements\n";}
-
-
+    out << "$EndElements\n";
+}
 
 template<typename MeshType, int N>
 void
@@ -483,10 +490,17 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
     GmshOrdering<face_type> ordering_face;
     // save the faces
 
+    // count the number of faces
+    int number_markedfaces = std::distance(allmarkedfaces.template get<1>(), allmarkedfaces.template get<2>());
+
+    // write the count of elements
+    out << number_markedfaces+std::distance(elt_it, elt_en) << "\n";
+
     for ( ; face_it != face_end; ++face_it )
     {
         // elm-number elm-type number-of-tags < tag > ... node-number-list
-        out<< elem_number++ <<" ";
+        //out<< elem_number++ <<" ";
+        out<< face_it->id()+1 <<" ";
         out << ordering_face.type();
         // number-of-tags < tag >
 
@@ -539,7 +553,8 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
 
     for ( ; elt_it != elt_en; ++elt_it, ++pid )
     {
-        out << elem_number++ <<" ";
+        //out << elem_number++ <<" ";
+        out << number_markedfaces + elt_it->id()+1 <<" ";
         out << ordering.type();
 
         if ( FEELPP_GMSH_FORMAT_VERSION==std::string( "2.1" ) )
@@ -700,11 +715,13 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
         out << "3\n";//number of integer tags:
         out << __step->index()-1 << "\n";//"0\n";//the time step (0; time steps always start at 0)
         out << "1\n";//n-component (1 is scalar) field
-        out << mesh->numElements() << "\n";//number associated nodal values
+        //out << mesh->numElements() << "\n";//number associated nodal values
 
         element_mesh_const_iterator elt_it;
         element_mesh_const_iterator elt_en;
         boost::tie( boost::tuples::ignore, elt_it, elt_en ) = elements( mesh );
+
+        out << std::distance(elt_it, elt_en) << "\n";
 
         if ( !__u.areGlobalValuesUpdated() )
             __u.updateGlobalValues();

@@ -223,6 +223,9 @@ else (BOOST_ENABLE_TEST_DYN_LINK)
   add_definitions( -DBOOST_PARAMETER_MAX_ARITY=${BOOST_PARAMETER_MAX_ARITY} -DBOOST_FILESYSTEM_VERSION=${BOOST_FILESYSTEM_VERSION})
 endif (BOOST_ENABLE_TEST_DYN_LINK)
 
+# undefined BOOST_UBLAS_TYPE_CHECK
+add_definitions(-UBOOST_UBLAS_TYPE_CHECK )
+
 # this fix an issue with boost filesystem: boost is usually no compiled with
 # std=c++0x and we compile with it, this causes problems with the macro
 # BOOST_SCOPED_ENUM macros whose behavior differs in both case and would
@@ -746,11 +749,14 @@ if ( NOT EXISTS ${CMAKE_SOURCE_DIR}/feel OR NOT EXISTS ${CMAKE_SOURCE_DIR}/contr
     FEELPP_INCLUDE_DIR  FEELPP_LIBRARY
     )
 
+  FIND_PATH( FEELPP_DATADIR cmake/modules/FindFeel++.cmake
+    PATH $ENV{FEELPP_DIR}/share/feel /usr/share/feel /usr/local/share/feel )
 
 
   if ( FEELPP_FOUND )
     message(STATUS "Feel++ includes: ${FEELPP_INCLUDE_DIR}")
     message(STATUS "Feel++ library: ${FEELPP_LIBRARY}")
+    message(STATUS "Feel++ data: ${FEELPP_DATADIR}")
   endif()
 
   MARK_AS_ADVANCED(

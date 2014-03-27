@@ -559,7 +559,7 @@ public:
          * \param N : vector containing the number of samples on each direction
          * if N[direction] < 1 then we take minimum value for this direction
          */
-        void logEquidistributeProduct( std::vector<int> N )
+        void logEquidistributeProduct( std::vector<int> N , element_type const &mu)
         {
             // first empty the set
             this->clear();
@@ -572,7 +572,7 @@ public:
                 std::vector< std::vector< double > > components;
                 components.resize( number_of_directions );
 
-                auto min=M_space->min();
+                //auto min=M_space->min();
 
                 for(int direction=0; direction<number_of_directions; direction++)
                 {
@@ -584,7 +584,7 @@ public:
                     else
                     {
                         std::vector<double> coeff_vector( 1 );
-                        coeff_vector[0]=min(direction);
+                        coeff_vector[0]=mu(direction);
                         components[direction] = coeff_vector ;
                     }
                 }

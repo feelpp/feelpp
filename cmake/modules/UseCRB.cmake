@@ -193,12 +193,12 @@ int main( int argc, char** argv )
   ENDIF()
 
   if ( CRB_MODEL_TEST )
-    crb_add_executable(${CRB_MODEL_SHORT_NAME}app 
+    crb_add_executable(${CRB_MODEL_SHORT_NAME}app
       ${CRB_MODEL_SHORT_NAME}app.cpp ${CRB_MODEL_SRCS}
       LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES}
       CFG ${CRB_MODEL_CFG} TEST )
   else()
-    crb_add_executable(${CRB_MODEL_SHORT_NAME}app 
+    crb_add_executable(${CRB_MODEL_SHORT_NAME}app
       ${CRB_MODEL_SHORT_NAME}app.cpp ${CRB_MODEL_SRCS}
       LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES}
       CFG ${CRB_MODEL_CFG} )
@@ -214,11 +214,17 @@ int main( int argc, char** argv )
     set(CRB_MODEL_WRAPPER_NAME "crb${CRB_MODEL_SHORT_NAME}${wrapper}")
     set(CRB_MODEL_WRAPPER_TYPE "\"${wrapper}\"")
     #configure_file(${FEELPP_SOURCE_DIR}/applications/crb/templates/python_wrapper.cpp ${pycpp})
-    configure_file(${FEELPP_SOURCE_DIR}/applications/crb/templates/ot_python_command_wrapper.cpp ${pycpp})
-    configure_file(${FEELPP_SOURCE_DIR}/applications/crb/templates/octave_wrapper.cpp ${octcpp})
+    if ( EXISTS ${CMAKE_SOURCE_DIR}/applications/crb/templates/ )
+      configure_file(${CMAKE_SOURCE_DIR}/applications/crb/templates/ot_python_command_wrapper.cpp ${pycpp})
+      configure_file(${CMAKE_SOURCE_DIR}/applications/crb/templates/octave_wrapper.cpp ${octcpp})
+    elseif( EXISTS ${FEELPP_DATADIR}/crb/templates )
+      configure_file(${FEELPP_DATADIR}/crb/templates/ot_python_command_wrapper.cpp ${pycpp})
+      configure_file(${FEELPP_DATADIR}/crb/templates/octave_wrapper.cpp ${octcpp})
+    endif()
+
     configure_file(${CRB_MODEL_SHORT_NAME}.xml.in ${xml})
 
-    
+
     if ( CRB_MODEL_DEFS )
       set_property(TARGET ${execname} PROPERTY COMPILE_DEFINITIONS ${CRB_MODEL_DEFS})
     endif()
