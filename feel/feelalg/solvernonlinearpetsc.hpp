@@ -99,6 +99,8 @@ public:
     typedef DataMap datamap_type;
     typedef boost::shared_ptr<datamap_type> datamap_ptrtype;
 
+    typedef typename super::solve_return_type solve_return_type;
+
     //@}
 
     /** @name Constructors, destructor
@@ -155,7 +157,7 @@ public:
      * Call the Petsc solver.  It calls the method below, using the
      * same matrix for the system and preconditioner matrices.
      */
-    virtual std::pair<int, real_type> solve ( sparse_matrix_ptrtype&,    // System Jacobian Matrix
+    virtual solve_return_type solve ( sparse_matrix_ptrtype&,    // System Jacobian Matrix
             vector_ptrtype&,          // Solution vector
             vector_ptrtype&,          // Residual vector
             const double,        // Stopping tolerance

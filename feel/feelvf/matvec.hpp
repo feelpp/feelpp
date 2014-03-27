@@ -314,6 +314,22 @@ struct initialize_expression_g
     const Geo_t& M_geom;
 };
 
+template<typename CTX>
+struct update_context
+{
+    update_context( CTX const& ctx )
+        :
+        M_ctx( ctx )
+    {}
+
+    template <typename ExprT>
+    void operator()( ExprT& expr ) const
+    {
+        expr.updateContext( M_ctx );
+    }
+
+    const CTX & M_ctx;
+};
 
 template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
 struct update_expression_gij
@@ -754,6 +770,11 @@ public:
         {
             fusion::for_each( M_expr,vf::detail::update_expression_face_g<Geo_t>( geom, face ) );
         }
+        template<typename CTX>
+        void updateContext( CTX const& ctx )
+        {
+            fusion::for_each( M_expr,vf::detail::update_context<CTX>( ctx ) );
+        }
 
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type /*c2*/, uint16_type q ) const
@@ -1018,6 +1039,11 @@ public:
         void update( Geo_t const& geom, uint16_type face )
         {
             fusion::for_each( M_expr,vf::detail::update_expression_face_g<Geo_t>( geom, face ) );
+        }
+        template<typename CTX>
+        void updateContext( CTX const& ctx )
+        {
+            fusion::for_each( M_expr,vf::detail::update_context<CTX>( ctx ) );
         }
 
         value_type

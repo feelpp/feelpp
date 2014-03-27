@@ -23,7 +23,9 @@
 #
 set(INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
 set(FEELPP_PREFIX ${CMAKE_INSTALL_PREFIX})
-set(FEELPP_DATADIR ${CMAKE_INSTALL_PREFIX}/share/feel )
+if (NOT FEELPP_DATADIR )
+  set(FEELPP_DATADIR ${CMAKE_INSTALL_PREFIX}/share/feel )
+endif()
 CONFIGURE_FILE(feelconfig.h.in feel/feelconfig.h  @ONLY)
 CONFIGURE_FILE(feelinfo.h.in feel/feelinfo.h  @ONLY)
 
@@ -31,9 +33,9 @@ CONFIGURE_FILE(feelinfo.h.in feel/feelinfo.h  @ONLY)
 # Packaging
 #
 INCLUDE(InstallRequiredSystemLibraries)
+feelpp_list_subdirs(feeldirs ${CMAKE_CURRENT_SOURCE_DIR}/feel)
 
-
-foreach(includedir feelcore feelalg feelmesh feelpoly feelfilters feeldiscr feelvf feelmaterial feelsystem feelts )
+foreach(includedir ${feeldirs})
   FILE(GLOB files "feel/${includedir}/*.hpp" )
   FILE(GLOB cppfiles "feel/${includedir}/*.cpp" )
   INSTALL(FILES ${files} ${cppfiles} DESTINATION include/feel/${includedir} COMPONENT Devel)
@@ -67,6 +69,7 @@ INSTALL(FILES ${files} DESTINATION include/feel/matheval COMPONENT Devel)
 FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/contrib/libmatheval/lib/lib*" "${CMAKE_CURRENT_BINARY_DIR}/contrib/libmatheval/lib64/lib*")
 INSTALL(FILES ${files} DESTINATION lib/ COMPONENT Devel)
 
+
 # # gmm
 # IF ( NOT GMM_FOUND )
 #   FILE(GLOB files "contrib/gmm/include/*.h")
@@ -77,6 +80,9 @@ INSTALL(FILES ${files} DESTINATION lib/ COMPONENT Devel)
 FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/feel/*.h")
 INSTALL(FILES ${files} DESTINATION include/feel COMPONENT Devel)
 
+
+FILE(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/applications/crb/templates/*")
+INSTALL(FILES ${files} DESTINATION share/feel/crb/templates COMPONENT Devel)
 
 # documentation and examples
 #  install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/doc/manual/feel_get_tutorial.sh DESTINATION bin COMPONENT Doc)

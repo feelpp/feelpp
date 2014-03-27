@@ -411,7 +411,7 @@ public:
                 compute_fem=false;
                 compute_stat=false;
 
-                CHECK( load_elements_db )<<"[OpusApp] You have specified to not load elements database so it is impossible to visualize RB solution, use crb.load-elements-database=true !\n";
+                //CHECK( load_elements_db )<<"[OpusApp] You have specified to not load elements database so it is impossible to visualize RB solution, use crb.load-elements-database=true !\n";
 
                 //parameters are given by a vector of double
                 std::vector< std::string > str;
@@ -600,6 +600,37 @@ public:
                     crb->printErrorsDuringRbConstruction();
                 if ( crb->showMuSelection() && Environment::worldComm().globalRank()==Environment::worldComm().masterRank() )
                     crb->printMuSelection();
+
+                bool eim_mu_selection = option(_name="eim.show-mu-selection").template as<bool>();
+                bool eim_t_selection = option(_name="eim.show-t-selection").template as<bool>();
+                bool eim_offline_error = option(_name="eim.show-offline-error").template as<bool>();
+                if( eim_mu_selection || eim_t_selection || eim_offline_error )
+                {
+                    auto eim_sc_vector = model->scalarContinuousEim();
+                    auto eim_sd_vector = model->scalarDiscontinuousEim();
+
+                    for(int i=0; i<eim_sc_vector.size(); i++)
+                    {
+                        auto eim = eim_sc_vector[i];
+                        if( eim_mu_selection )
+                            eim->printMuSelection();
+                        if( eim_t_selection )
+                            eim->printInterpolationPointsSelection();
+                        if( eim_offline_error )
+                            eim->printOfflineError();
+                    }
+
+                    for(int i=0; i<eim_sd_vector.size(); i++)
+                    {
+                        auto eim = eim_sd_vector[i];
+                        if( eim_mu_selection )
+                            eim->printMuSelection();
+                        if( eim_t_selection )
+                            eim->printInterpolationPointsSelection();
+                        if( eim_offline_error )
+                            eim->printOfflineError();
+                    }
+                }
             }
 
             auto e = exporter( _mesh= model->functionSpace()->mesh()  );
@@ -870,7 +901,6 @@ public:
 
                                 boost::mpi::timer ti;
 
-                                ti.restart();
                                 LOG(INFO) << "solve crb\n";
                                 //google::FlushLogFiles(google::GLOG_INFO);
 
@@ -879,6 +909,7 @@ public:
 
                                 bool print_rb_matrix = option(_name="crb.print-rb-matrix").template as<bool>();
                                 double online_tol = option(_name="crb.online-tolerance").template as<double>();
+                                ti.restart();
                                 auto o = crb->run( mu, online_tol , N, print_rb_matrix);
                                 double time_crb = ti.elapsed();
 
@@ -934,13 +965,14 @@ public:
                                 auto output_vector=o.template get<0>();
                                 double output_vector_size=output_vector.size();
                                 double ocrb = output_vector[output_vector_size-1];//output at last time
+                                double time_fem_solve=-1;
 
                                 if ( compute_fem )
                                 {
 									bool use_newton = option(_name="crb.use-newton").template as<bool>();
 
-                                    ti.restart();
                                     LOG(INFO) << "solve u_fem\n";
+                                    ti.restart();
 
                                     //auto u_fem = model->solveRB( mu );
                                     //auto u_fem = model->solveFemUsingOfflineEim( mu );
@@ -951,6 +983,8 @@ public:
                                     else
                                         u_fem = model->solve( mu );
 
+                                    time_fem_solve=ti.elapsed();
+
                                     std::ostringstream u_fem_str;
                                     u_fem_str << "u_fem(" << mu_str.str() << ")";
                                     u_fem.setName( u_fem_str.str()  );
@@ -960,6 +994,8 @@ public:
                                         LOG(INFO) << "export u_fem \n";
                                         e->add( u_fem.name(), u_fem );
                                     }
+
+                                    ti.restart();
                                     std::vector<double> ofem = boost::assign::list_of( model->output( output_index,mu, u_fem ) )( ti.elapsed() );
 
                                     relative_error = std::abs( ofem[0]- ocrb) /ofem[0];
@@ -981,8 +1017,7 @@ public:
                                     h1_error = h1Norm( u_error )/h1Norm( u_fem );
 
                                     output_fem = ofem[0];
-                                    time_fem = ofem[1];
-
+                                    time_fem = ofem[1]+time_fem_solve;
                                     if( boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value && ! use_newton )
                                     {
                                         if( solve_dual_problem )
@@ -1105,7 +1140,8 @@ public:
                                     std::ofstream fileSolutionDualErrorEstimated ("CrbConvergenceDualSolutionErrorEstimated.dat" ,std::ios::out | std::ios::app );
                                     std::ofstream filePrimalResidualNorm ("CrbConvergencePrimalResidualNorm.dat" ,std::ios::out | std::ios::app );
                                     std::ofstream fileDualResidualNorm ( "CrbConvergenceDualResidualNorm.dat" ,std::ios::out | std::ios::app );
-
+                                    std::ofstream fileCrbTime ( "CrbConvergenceCrbTime.dat" ,std::ios::out | std::ios::app );
+                                    std::ofstream fileFemTime ( "CrbConvergenceFemTime.dat" ,std::ios::out | std::ios::app );
 
                                     int Nmax = option("crb.dimension-max").template as<int>();
                                     if( Environment::worldComm().isMasterRank() )
@@ -1123,12 +1159,17 @@ public:
                                             fileSolutionDualErrorEstimated << Nmax << "\t";
                                             filePrimalResidualNorm << Nmax << "\t";
                                             fileDualResidualNorm << Nmax << "\t";
-
+                                            fileCrbTime << Nmax << "\t";
+                                            fileFemTime << Nmax << "\t" ;
                                     }
                                     std::string str = "\t";
+                                    double crb_time=0;
                                     for( int N = 1; N <= Nmax ; N++ )
                                     {
+                                        ti.restart();
                                         auto o= crb->run( mu,  online_tol , N, print_rb_matrix);
+                                        crb_time= ti.elapsed();
+
                                         auto output_vector=o.template get<0>();
                                         double output_vector_size=output_vector.size();
                                         double ocrb = output_vector[output_vector_size-1];//output at last time
@@ -1305,7 +1346,7 @@ public:
                                         //LOG(INFO) << "N=" << N << " " << rel_err << " " << l2_error << " " << h1_error << " " <<condition_number<<"\n";
                                         if ( proc_number == Environment::worldComm().masterRank() )
                                         {
-                                            std::cout << "N=" << N << "Output =  "<< output_fem <<" OutputError = "<<rel_err <<" OutputErrorEstimated = "<<relative_estimated_error
+                                            std::cout << "N=" << N << " Output =  "<< output_fem <<" OutputError = "<<rel_err <<" OutputErrorEstimated = "<<relative_estimated_error
                                                       <<"  L2Error = "<< l2_error << "  H1Error = " << h1_error <<std::endl;
 
                                             if( N == Nmax )
@@ -1323,6 +1364,8 @@ public:
                                             fileSolutionDualErrorEstimated <<  relative_dual_solution_estimated_error << str;
                                             filePrimalResidualNorm << primal_residual_norm << str;
                                             fileDualResidualNorm <<  dual_residual_norm << str;
+                                            fileCrbTime<< crb_time << str;
+                                            fileFemTime<< time_fem << str;
                                         }
                                         if( option(_name="crb.compute-matrix-information").template as<bool>() )
                                         {
@@ -1529,13 +1572,22 @@ public:
                 vectorN_type outputs_storage;
                 vectorN_type mu0_storage;
                 vectorN_type estimated_error_outputs_storage;
+
+                //have min/max
+                Sampling->equidistribute( 2 );
+
                 curpar=1;
                 if( ! vary_comp_time )
                 {
                     outputs_storage.resize( cutting_direction0 );
                     mu0_storage.resize( cutting_direction0 );
+                    auto mu_=Sampling->min().template get<0>();
+                    if( select_parameter_via_one_feel )
+                    {
+                        mu_ = user_mu_onefeel;
+                    }
                     estimated_error_outputs_storage.resize( cutting_direction0 );
-                    Sampling->logEquidistributeProduct( sampling_each_direction );
+                    Sampling->logEquidistributeProduct( sampling_each_direction , mu_ );
                     BOOST_FOREACH( auto mu, *Sampling )
                     {
                         double x = mu(vary_mu_comp0);
@@ -1557,8 +1609,6 @@ public:
                 }
                 else
                 {
-                    //have min/max
-                    Sampling->equidistribute( 2 );
                     auto mu=Sampling->min().template get<0>();
                     if( select_parameter_via_one_feel )
                     {
@@ -2085,6 +2135,7 @@ private:
         std::vector< vectorN_type > L2, H1, OutputError, OutputErrorEstimated, OutputErrorBoundEfficiency;
         std::vector< vectorN_type > PrimalSolutionError, PrimalSolutionErrorEstimated, PrimalSolutionErrorBoundEfficiency;
         std::vector< vectorN_type > DualSolutionError, DualSolutionErrorEstimated, DualSolutionErrorBoundEfficiency;
+        std::vector< vectorN_type > CrbTime, FemTime;
 
         //load information contained in files
         std::string filename = "CrbConvergenceL2.dat";
@@ -2109,6 +2160,10 @@ private:
         model->readConvergenceDataFromFile( DualSolutionErrorEstimated , filename );
         filename = "CrbConvergenceDualSolutionErrorBoundEfficiency.dat";
         model->readConvergenceDataFromFile( DualSolutionErrorBoundEfficiency , filename );
+        filename = "CrbConvergenceCrbTime.dat";
+        model->readConvergenceDataFromFile( CrbTime , filename );
+        filename = "CrbConvergenceFemTime.dat";
+        model->readConvergenceDataFromFile( FemTime , filename );
 
         //write files containing statistics
         filename = "cvg-crb-L2.dat";
@@ -2133,6 +2188,10 @@ private:
         model->writeConvergenceStatistics( DualSolutionErrorEstimated , filename);
         filename = "cvg-crb-DualSolutionErrorBoundEfficiency.dat";
         model->writeConvergenceStatistics( DualSolutionErrorBoundEfficiency , filename);
+        filename = "cvg-crb-CrbTime.dat";
+        model->writeConvergenceStatistics( CrbTime , filename, "totaltime");
+        filename = "cvg-crb-FemTime.dat";
+        model->writeConvergenceStatistics( FemTime , filename , "totaltime" );
 
         //now we have error and estimated error statistics for all parameters (min max ect ... )
         //but it is interesting to have also the efficiency associated to parameter that generated the max/min

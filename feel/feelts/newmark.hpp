@@ -177,14 +177,19 @@ public:
     void updateFromDisp( typename space_type::template Element<value_type, container_type> const& u_curr );
 
 
+    //! Coefficients \f$ \gamma \f$ and \f$ \beta \f$  of the time newmark discretization
+    double gamma() const { return M_gamma; }
+    double beta() const { return M_beta; }
+
+
     double polyDerivCoefficient() const { return this->polySecondDerivCoefficient(); }
     double polyFirstDerivCoefficient() const
     {
-        return M_gamma/(M_beta*this->timeStep());
+        return this->gamma()/(this->beta()*this->timeStep());
     }
     double polySecondDerivCoefficient() const
     {
-      return 1.0/(M_beta*std::pow(this->timeStep(),2));
+        return 1.0/(this->beta()*std::pow(this->timeStep(),2));
     }
 
     //! Returns the right hand side \f$ \bar{p} \f$ of the time derivative formula
@@ -478,9 +483,11 @@ Newmark<SpaceType>::saveCurrent()
 {
     if (!this->saveInFile()) return;
 
-    int iterTranslate = M_iteration + 1;
-    bool doSave= iterTranslate % this->saveFreq()==0;
-    if (!doSave) return;
+    //int iterTranslate = M_iteration;// + 1;
+    //bool doSave= iterTranslate % this->saveFreq()==0;
+    //if ( !doSaveIteration(i) ) return;
+    if ( this->iteration() % this->saveFreq()>0 ) return;
+    //if (!doSave) return;
 
     TSBaseMetadata tssaver( *this );
     tssaver.save();
