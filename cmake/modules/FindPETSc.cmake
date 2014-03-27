@@ -70,7 +70,7 @@ endforeach()
 IF ( "${CMAKE_BUILD_TYPE}" STREQUAL "Debug" )
   set( DARWIN_FLAVORS darwin-cxx-debug darwin-cxx-opt  arch-darwin-cxx-debug arch-darwin-cxx-opt ${DARWIN_FLAVORS})
 ELSE()
-  set( DARWIN_FLAVORS darwin-cxx-opt darwin-cxx-debug ${DARWIN_FLAVORS})
+  set( DARWIN_FLAVORS darwin-cxx-debug darwin-cxx-opt  arch-darwin-cxx-debug arch-darwin-cxx-opt ${DARWIN_FLAVORS})
 ENDIF()
 
 message(STATUS "Darwin flavors: ${DARWIN_FLAVORS}")
