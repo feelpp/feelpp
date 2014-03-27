@@ -2,8 +2,8 @@
 
   This file is part of the Feel library
 
-  Author(s): Vincent Doyeux <vincent.doyeux@ujf-grenoble.fr>
-       Date: 2014-02-02
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+       Date: 2008-02-07
 
   Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
 
@@ -21,6 +21,7 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
+
 /**
    \file disttocurve.hpp
    \author Vincent Doyeux <vincent.doyeux@ujf-grenoble.fr>
@@ -39,6 +40,23 @@ This class provides an algorithm to make a distance function from a curve repres
 
 #include <boost/regex.hpp>
 #include <boost/lexical_cast.hpp>
+
+
+//#define DISTANCE_FROM_UNORDERED_POINTS 1
+/*
+  The distance to a set of unordered points is still experimental for now.
+  The absolute distance value is always computed correctly.
+  The sign assignment is not always working properly:
+   - It works for shapes where the lines are not too thick.
+   - It fails when there is some line thickness.
+  Depending of future applications, the way to track the side of the curve
+  might be changed.
+
+  For now, since no application is using this feature and since it is a
+  big piece of code, I disable its compilation via the DISTANCE_FROM_UNORDERED_POINTS macro.
+*/
+
+
 
 namespace Feel
 {
@@ -126,33 +144,25 @@ namespace Feel
         {
             clear();
 
-            boost::timer chrono;
-
-            chrono.restart();
             generatePointsFromParametrization(xexpr, yexpr, zexpr,
                                                 t1Start, t1End, dt1,
                                                 t2Start, t2End, dt2,
                                                 exportPoints, exportName);
-            std::cout<< "generated points from parametrized curve in "<<chrono.elapsed()<<std::endl;
 
-            chrono.restart();
             locateElementsCrossedByCurve(broadenCurveForElementDetection, broadenessAmplitude );
-            std::cout<< "located elements crossed by curve in "<<chrono.elapsed()<<std::endl;
 
-            chrono.restart();
             auto shape = makeDistanceFunctionSequential();
-            std::cout<< "made sequential distance function in "<<chrono.elapsed()<<std::endl;
 
             clear(); // no need for the maps used to create the distance function
 
-            chrono.restart();
             if ( Environment::worldComm().size() > 1)
                 reduceDistanceFunction( shape );
-            std::cout<< "reduced sequential distance function in "<<chrono.elapsed()<<std::endl;
 
             return shape;
         }
 
+
+#if defined( DISTANCE_FROM_UNORDERED_POINTS )
 
         /* 2d version only */
         element_ptrtype fromParametrizedCurveDisordered(std::tuple< std::function<double(double)>, std::function<double(double)>, double, double > paramFct,
@@ -163,24 +173,16 @@ namespace Feel
         {
             clear();
 
-            std::cout<<"starting\n";
-
             generatePointsFromParametrization(get<0>(paramFct), get<1>(paramFct),
                                               get<2>(paramFct), get<3>(paramFct), dt,
                                               exportPoints, exportName);
-
-            std::cout<<"generated points from parametrization\n";
 
             for (auto const& tnd : tNodeMap )
                 allPoints.push_back( tnd.second );
 
             locateElementsCrossedByUnorderedPoints();
 
-            std::cout<<"located points\n";
-
             auto shape = makeDistanceFunctionSequentialFromUnorderedPoints();
-
-            std::cout<<"sequential distance function\n";
 
             auto shape_unsigned = *shape;
 
@@ -192,8 +194,6 @@ namespace Feel
 
             setInnerRegion( shape, lstPoints );
 
-            std::cout<<"inner region set\n";
-
             clear();
 
             auto shape_unreduced = *shape;
@@ -201,19 +201,7 @@ namespace Feel
             if ( Environment::worldComm().size() > 1)
                 reduceDistanceFunction( shape );
 
-
-            auto mark2 = vf::project(M_spaceP0, marked2elements(M_mesh, 1), cst(1) );
-            auto exp = exporter(_mesh=M_mesh, _name="disttocurvehpp");
-            exp->step(0)->add("shape_unsigned", shape_unsigned);
-            exp->step(0)->add("shape", *shape);
-            exp->step(0)->add("shape_unreduced", shape_unreduced);
-            exp->step(0)->add("mark2hpp", mark2);
-            exp->save();
-
-            std::cout<<"reduced\n";
-
             return shape;
-
         }
 
 
@@ -248,7 +236,7 @@ namespace Feel
 
         } //fromCoordinateFile
 
-
+#endif
 
 
         /* 2d version only */
@@ -278,15 +266,7 @@ namespace Feel
             if ( Environment::worldComm().size() > 1)
                 reduceDistanceFunction( shape );
 
-            auto mark2 = vf::project(M_spaceP0, marked2elements(M_mesh, 1), cst(1) );
-            auto exp = exporter(_mesh=M_mesh, _name="disttocurvehpp");
-            //            exp->step(0)->add("shape_unsigned", shapeunsigned);
-            exp->step(0)->add("shape", *shape);
-            exp->step(0)->add("mark2hpp", mark2);
-            exp->save();
-
             return shape;
-
         }
 
 
@@ -479,6 +459,242 @@ namespace Feel
         } // generatePointsFromParametrization
 
 
+
+        void locateElementsCrossedByCurve(bool randomlyBroadenNodesPositions=false, double randomnessAmplitude = option("gmsh.hsize").as<double>() / 2.)
+        {
+            // locate the elements crossed by the curve
+            // store their ids in a map with the "t" of the nodes being in the element
+            // update the marker2 with the elements being crossed
+            CHECK( ! tNodeMap.empty() )<<"\n No nodes defining the curve have been loaded.\n";
+
+            auto ctx = M_spaceP0->context();
+
+            std::default_random_engine re( (unsigned int)time(0) );
+            std::uniform_real_distribution<double> smallRd( -randomnessAmplitude, randomnessAmplitude );
+
+            for (auto const& tnode : tNodeMap)
+                {
+                    node_type nodeToAdd = tnode.second;
+
+                    if (randomlyBroadenNodesPositions)
+                        for (int i=0; i<dim; ++i)
+                            nodeToAdd[i] += smallRd(re);
+
+                    // the following line takes 99% of the total time of the whole disttocurve algorithm !!!
+                    // (locates all the points in the mesh)
+                    ctx.add( nodeToAdd );
+                }
+
+            auto allIndexes = ids.evaluate( ctx );
+
+            const int nbPtContext = ctx.nPoints();
+            auto eltHavingPoints = M_spaceP0->element();
+
+            auto tnodeit = tNodeMap.begin();
+            for (int i=0; i < nbPtContext; ++i )
+                {
+
+                if (Environment::worldComm().localRank() == ctx.processorHavingPoint( i ) )
+                    {
+                        const size_type tOfNode = (*tnodeit).first;
+                        const size_type index = allIndexes(i);
+
+                        if ( pointsAtIndex.count( index ) )
+                            pointsAtIndex[ index ].insert( tOfNode );
+                        else
+                            {
+                                std::set< size_type > newset( {tOfNode} );
+                                pointsAtIndex[ index ] = newset;
+                            }
+
+                        eltHavingPoints.assign( index, 0, 0, 1);
+                    }
+
+                tnodeit++;
+
+                }
+
+            M_mesh->updateMarker2( eltHavingPoints );
+
+        } // locateElementsCrossedByCurve
+
+
+
+
+        // make distance function sequential when the points are ordered
+        element_ptrtype makeDistanceFunctionSequential()
+        {
+            auto shape = M_spaceP1->elementPtr();
+            *shape = vf::project(M_spaceP1, elements(M_mesh), cst(bigdouble) );
+
+
+            // squared distance between a point where only its "t" is given, and a node nd2
+            auto distToPt = [this] (double t, node_type nd2) -> double
+                {
+                    node_type nd1 = this->tNodeMap[ t ];
+                    node_type diff = nd1 - nd2;
+                    double sdist=0;
+                    for (int i=0; i<diff.size(); ++i)
+                        sdist += diff[i] * diff[i];
+                    return sdist;
+                };
+
+
+            auto it_elt = M_mesh->elementsWithMarker2(1, M_mesh->worldComm().localRank()).first;
+            auto en_elt = M_mesh->elementsWithMarker2(1, M_mesh->worldComm().localRank()).second;
+
+            for(; it_elt!=en_elt; it_elt++)
+                for (int j=0; j<ndofv; ++j)
+                    {
+                        double closestDist = bigdouble;
+                        double closestPoint = bigdouble;
+
+                        const size_type indexGlobDof = M_spaceP1->dof()->localToGlobal(it_elt->id(), j, 0).index();
+
+                        // coords of the dof
+                        const node_type dofCoord = M_spaceP1->dof()->dofPoint( indexGlobDof ).get<0>();
+
+                        // find the point in the element having the closest distance with the dof. This distance will be the value of shape at this dof (if a smaller distance on the same dof is not found in an other element).
+                        //This method assumes that the distance between the points of the curve is very small compared to the size of the mesh
+                        for (auto const& pt : pointsAtIndex[ it_elt->id() ] )
+                            {
+                                const double dtp = distToPt( pt, dofCoord );
+                                if( dtp < closestDist )
+                                    {
+                                        closestDist = dtp;
+                                        closestPoint = pt;
+                                    }
+                            }
+
+
+                        if ( closestDist < (*shape)(indexGlobDof) * (*shape)(indexGlobDof) )
+                            {
+                                const node_type closestPointCoord = tNodeMap[ closestPoint ];
+                                // (tx, ty) = vector tangent to the parametrized curve at the closest point on param curve
+                                node_type t1, t2;
+                                // try to get the point next to the closest point (in the particular case where closest point is the last point, get the previous one)
+
+                                try
+                                    { t1 = tNodeMap.at(closestPoint + 1.) - closestPointCoord; }
+                                catch (const std::out_of_range& oor)
+                                    { t1 = closestPointCoord - tNodeMap.at(closestPoint - 1.); }
+
+                                if (dim==3)
+                                    {
+                                        try
+                                            { t2 = tNodeMap.at(closestPoint + periodT2) - closestPointCoord; }
+                                        catch (const std::out_of_range& oor)
+                                            { t2 = closestPointCoord - tNodeMap.at(closestPoint - periodT2); }
+                                    }
+
+                                // v = vector pointing from the closest point on curve to the concerned dof
+                                const node_type v = dofCoord - closestPointCoord;
+
+                                // the sign of the distance function is ruled by the vectorial product of the tangent vector and the vector v : sign(v x t)
+                                // in 3D, it should be somthing like :  sign( (v x t) . n ) where n is the normal of the param surface pointing outward
+                                double signProdVec;
+
+                                if (dim==2)
+                                    signProdVec = v[0] * t1[1] - v[1] * t1[0] > 0 ? 1 : -1;
+                                else
+                                    {
+                                        const double nx = t1[1]*t2[2]-t1[2]*t2[1];
+                                        const double ny = t1[2]*t2[0]-t1[0]*t2[2];
+                                        const double nz = t1[0]*t2[1]-t1[1]*t2[0];
+                                        signProdVec = v[0] * nx + v[1] * ny + v[2] * nz > 0 ? 1 : -1;
+                                    }
+
+                                (*shape)( indexGlobDof ) = std::sqrt(closestDist) * signProdVec;
+
+                            }
+                    }
+
+            return shape;
+
+        } // makeDistanceFunctionSequential
+
+
+        void reduceDistanceFunction( element_ptrtype shape )
+        {
+            // given a distance function made by makeDistanceFunctionSequential which has different values on nodes being at the interface between several subdomain, make a nice, homogeneous distance function (requires several communications though all the proc !)
+
+            auto eltHavingPointP1 = vf::project(M_spaceP1, marked2elements(M_mesh, 1), cst(1) );
+
+
+            // search for all the dof being marked on at least one proc and being ghost on at least one proc (not necessarily the same proc)
+            auto checkMarked = backend()->newVector( M_spaceP1 );
+            auto checkGhost = backend()->newVector( M_spaceP1 );
+            for (size_type k = 0 ; k < M_spaceP1->nLocalDof() ; ++k )
+                {
+                    checkMarked->add(k,  eltHavingPointP1(k) == 1 ? 1 : 0 );
+                    checkGhost->add( k, M_spaceP1->dof()->dofGlobalProcessIsGhost( k ) ? 1 : 0 );
+                }
+            checkMarked->close();
+            checkGhost->close();
+
+
+            // store the value of all the dof being marked and ghost
+            std::vector< std::pair< size_type, value_type > > idOnClusterAndValue;
+            for (size_type k = 0 ; k < M_spaceP1->nLocalDof() ; ++k )
+                if ( (*checkGhost)(k) && (*checkMarked)(k) )
+                    idOnClusterAndValue.push_back( { processorToCluster(k), (*shape)(k) } );
+
+
+
+            // gather all these values to one single proc
+            std::vector< std::vector< std::pair< size_type, value_type > > > allIdOnClusterAndValue;
+            mpi::gather( Environment::worldComm().globalComm(),
+                         idOnClusterAndValue,
+                         allIdOnClusterAndValue, 0 );
+
+
+            // this proc makes all the work :
+            // extract all the values in a map having (key = GlobalIdOnCluster, value = min value of shape )
+            std::map< size_type, value_type > idOnClusterAndMinValue;
+            if (Environment::worldComm().localRank() == 0)
+                for(auto const& v1 : allIdOnClusterAndValue)
+                    for (auto const& idValue : v1)
+                        {
+                            if (idOnClusterAndMinValue.count( idValue.first ) )
+                                idOnClusterAndMinValue[ idValue.first ] =
+                                    std::abs( idValue.second ) < std::abs( idOnClusterAndMinValue[ idValue.first ] )
+                                                                 ? idValue.second : idOnClusterAndMinValue[ idValue.first ];
+
+                            else
+                                idOnClusterAndMinValue.insert( idValue );
+                        }
+
+            allIdOnClusterAndValue.clear(); // the info is treated, this vector is not needed anymore
+            idOnClusterAndValue.clear();
+
+
+            // all proc get a copy of the id and the good min value
+            mpi::broadcast( Environment::worldComm().globalComm(),
+                            idOnClusterAndMinValue, 0);
+
+
+
+            // all the elements which are on the proc (ghost or not) have to be set to the min value
+            for (auto const& idValue : idOnClusterAndMinValue)
+                {
+                    size_type locId=invalid_size_type_value;
+
+                    if ( (M_spaceP1->dof()->dofGlobalClusterIsOnProc( idValue.first )) )
+                        locId = clusterToProcessor(idValue.first);
+
+                    else if ( ghostClusterToProc.count(idValue.first) )
+                        locId = ghostClusterToProc[ idValue.first ];
+
+                    if ( locId != invalid_size_type_value )
+                        (*shape)(locId) = idValue.second;
+                }
+
+        } // reduceDistanceFunction
+
+
+
+#if defined( DISTANCE_FROM_UNORDERED_POINTS )
+
         template <class TFilename>
         void readPointsFromFile( TFilename filename )
         {
@@ -543,82 +759,6 @@ namespace Feel
 
 
         } // readPointsFromFile
-
-
-
-
-        void locateElementsCrossedByCurve(bool randomlyBroadenNodesPositions=false, double randomnessAmplitude = option("gmsh.hsize").as<double>() / 2.)
-        {
-            // locate the elements crossed by the curve
-            // store their ids in a map with the "t" of the nodes being in the element
-            // update the marker2 with the elements being crossed
-            CHECK( ! tNodeMap.empty() )<<"\n No nodes defining the curve have been loaded.\n";
-
-            boost::timer chrono;
-            chrono.restart();
-            auto ctx = M_spaceP0->context();
-            std::cout<< "create context in " << chrono.elapsed()<<std::endl;
-
-            chrono.restart();
-            std::default_random_engine re( (unsigned int)time(0) );
-            std::uniform_real_distribution<double> smallRd( -randomnessAmplitude, randomnessAmplitude );
-
-            for (auto const& tnode : tNodeMap)
-                {
-                    node_type nodeToAdd = tnode.second;
-
-                    if (randomlyBroadenNodesPositions)
-                        for (int i=0; i<dim; ++i)
-                            nodeToAdd[i] += smallRd(re);
-
-                    // the following line takes 99% of the total time of the whole disttocurve algorithm !!!
-                    // (locates all the points in the mesh)
-                    ctx.add( nodeToAdd );
-                }
-
-            std::cout<<"finish added randomness in points in "<<chrono.elapsed()<<std::endl;
-            chrono.restart();
-            auto allIndexes = ids.evaluate( ctx );
-            std::cout<<"locate the ids in context in "<<chrono.elapsed()<<std::endl;
-
-            chrono.restart();
-
-            const int nbPtContext = ctx.nPoints();
-            auto eltHavingPoints = M_spaceP0->element();
-
-            auto tnodeit = tNodeMap.begin();
-            for (int i=0; i < nbPtContext; ++i )
-                {
-
-                if (Environment::worldComm().localRank() == ctx.processorHavingPoint( i ) )
-                    {
-                        const size_type tOfNode = (*tnodeit).first;
-                        const size_type index = allIndexes(i);
-
-                        if ( pointsAtIndex.count( index ) )
-                            pointsAtIndex[ index ].insert( tOfNode );
-                        else
-                            {
-                                std::set< size_type > newset( {tOfNode} );
-                                pointsAtIndex[ index ] = newset;
-                            }
-
-                        eltHavingPoints.assign( index, 0, 0, 1);
-                    }
-
-                tnodeit++;
-
-                }
-
-            M_mesh->updateMarker2( eltHavingPoints );
-
-            std::cout<<"finished the location in "<<chrono.elapsed()<<std::endl;
-
-        } // locateElementsCrossedByCurve
-
-
-
-
 
         void locateElementsCrossedByUnorderedPoints()
         {
@@ -733,107 +873,6 @@ namespace Feel
                                            <<" associated points\n";
 
         } // locateElementsCrossedByUnorderedPoints
-
-
-
-
-
-
-        // make distance function sequential when the points are ordered
-        element_ptrtype makeDistanceFunctionSequential()
-        {
-            auto shape = M_spaceP1->elementPtr();
-            *shape = vf::project(M_spaceP1, elements(M_mesh), cst(bigdouble) );
-
-
-            // squared distance between a point where only its "t" is given, and a node nd2
-            auto distToPt = [this] (double t, node_type nd2) -> double
-                {
-                    node_type nd1 = this->tNodeMap[ t ];
-                    node_type diff = nd1 - nd2;
-                    double sdist=0;
-                    for (int i=0; i<diff.size(); ++i)
-                        sdist += diff[i] * diff[i];
-                    return sdist;
-                };
-
-
-            auto it_elt = M_mesh->elementsWithMarker2(1, M_mesh->worldComm().localRank()).first;
-            auto en_elt = M_mesh->elementsWithMarker2(1, M_mesh->worldComm().localRank()).second;
-
-            for(; it_elt!=en_elt; it_elt++)
-                for (int j=0; j<ndofv; ++j)
-                    {
-                        double closestDist = bigdouble;
-                        double closestPoint = bigdouble;
-
-                        const size_type indexGlobDof = M_spaceP1->dof()->localToGlobal(it_elt->id(), j, 0).index();
-
-                        // coords of the dof
-                        const node_type dofCoord = M_spaceP1->dof()->dofPoint( indexGlobDof ).get<0>();
-
-                        // find the point in the element having the closest distance with the dof. This distance will be the value of shape at this dof (if a smaller distance on the same dof is not found in an other element).
-                        //This method assumes that the distance between the points of the curve is very small compared to the size of the mesh
-                        for (auto const& pt : pointsAtIndex[ it_elt->id() ] )
-                            {
-                                const double dtp = distToPt( pt, dofCoord );
-                                if( dtp < closestDist )
-                                    {
-                                        closestDist = dtp;
-                                        closestPoint = pt;
-                                    }
-                            }
-
-
-                        if ( closestDist < (*shape)(indexGlobDof) * (*shape)(indexGlobDof) )
-                            {
-                                const node_type closestPointCoord = tNodeMap[ closestPoint ];
-                                // (tx, ty) = vector tangent to the parametrized curve at the closest point on param curve
-                                node_type t1, t2;
-                                // try to get the point next to the closest point (in the particular case where closest point is the last point, get the previous one)
-
-                                try
-                                    { t1 = tNodeMap.at(closestPoint + 1.) - closestPointCoord; }
-                                catch (const std::out_of_range& oor)
-                                    { t1 = closestPointCoord - tNodeMap.at(closestPoint - 1.); }
-
-                                if (dim==3)
-                                    {
-                                        try
-                                            { t2 = tNodeMap.at(closestPoint + periodT2) - closestPointCoord; }
-                                        catch (const std::out_of_range& oor)
-                                            { t2 = closestPointCoord - tNodeMap.at(closestPoint - periodT2); }
-                                    }
-
-                                // v = vector pointing from the closest point on curve to the concerned dof
-                                const node_type v = dofCoord - closestPointCoord;
-
-                                // the sign of the distance function is ruled by the vectorial product of the tangent vector and the vector v : sign(v x t)
-                                // in 3D, it should be somthing like :  sign( (v x t) . n ) where n is the normal of the param surface pointing outward
-                                double signProdVec;
-
-                                if (dim==2)
-                                    signProdVec = v[0] * t1[1] - v[1] * t1[0] > 0 ? 1 : -1;
-                                else
-                                    {
-                                        const double nx = t1[1]*t2[2]-t1[2]*t2[1];
-                                        const double ny = t1[2]*t2[0]-t1[0]*t2[2];
-                                        const double nz = t1[0]*t2[1]-t1[1]*t2[0];
-                                        signProdVec = v[0] * nx + v[1] * ny + v[2] * nz > 0 ? 1 : -1;
-                                    }
-
-                                (*shape)( indexGlobDof ) = std::sqrt(closestDist) * signProdVec;
-
-                            }
-                    }
-
-            return shape;
-
-        } // makeDistanceFunctionSequential
-
-
-
-
 
 
         // Make an unsigned distance function from a set of unordered points.
@@ -1156,85 +1195,9 @@ namespace Feel
 
         }//setInnerRegion
 
+#endif
 
 
-
-        void reduceDistanceFunction( element_ptrtype shape )
-        {
-            // given a distance function made by makeDistanceFunctionSequential which has different values on nodes being at the interface between several subdomain, make a nice, homogeneous distance function (requires several communications though all the proc !)
-
-            auto eltHavingPointP1 = vf::project(M_spaceP1, marked2elements(M_mesh, 1), cst(1) );
-
-
-            // search for all the dof being marked on at least one proc and being ghost on at least one proc (not necessarily the same proc)
-            auto checkMarked = backend()->newVector( M_spaceP1 );
-            auto checkGhost = backend()->newVector( M_spaceP1 );
-            for (size_type k = 0 ; k < M_spaceP1->nLocalDof() ; ++k )
-                {
-                    checkMarked->add(k,  eltHavingPointP1(k) == 1 ? 1 : 0 );
-                    checkGhost->add( k, M_spaceP1->dof()->dofGlobalProcessIsGhost( k ) ? 1 : 0 );
-                }
-            checkMarked->close();
-            checkGhost->close();
-
-
-            // store the value of all the dof being marked and ghost
-            std::vector< std::pair< size_type, value_type > > idOnClusterAndValue;
-            for (size_type k = 0 ; k < M_spaceP1->nLocalDof() ; ++k )
-                if ( (*checkGhost)(k) && (*checkMarked)(k) )
-                    idOnClusterAndValue.push_back( { processorToCluster(k), (*shape)(k) } );
-
-
-
-            // gather all these values to one single proc
-            std::vector< std::vector< std::pair< size_type, value_type > > > allIdOnClusterAndValue;
-            mpi::gather( Environment::worldComm().globalComm(),
-                         idOnClusterAndValue,
-                         allIdOnClusterAndValue, 0 );
-
-
-            // this proc makes all the work :
-            // extract all the values in a map having (key = GlobalIdOnCluster, value = min value of shape )
-            std::map< size_type, value_type > idOnClusterAndMinValue;
-            if (Environment::worldComm().localRank() == 0)
-                for(auto const& v1 : allIdOnClusterAndValue)
-                    for (auto const& idValue : v1)
-                        {
-                            if (idOnClusterAndMinValue.count( idValue.first ) )
-                                idOnClusterAndMinValue[ idValue.first ] =
-                                    std::abs( idValue.second ) < std::abs( idOnClusterAndMinValue[ idValue.first ] )
-                                                                 ? idValue.second : idOnClusterAndMinValue[ idValue.first ];
-
-                            else
-                                idOnClusterAndMinValue.insert( idValue );
-                        }
-
-            allIdOnClusterAndValue.clear(); // the info is treated, this vector is not needed anymore
-            idOnClusterAndValue.clear();
-
-
-            // all proc get a copy of the id and the good min value
-            mpi::broadcast( Environment::worldComm().globalComm(),
-                            idOnClusterAndMinValue, 0);
-
-
-
-            // all the elements which are on the proc (ghost or not) have to be set to the min value
-            for (auto const& idValue : idOnClusterAndMinValue)
-                {
-                    size_type locId=invalid_size_type_value;
-
-                    if ( (M_spaceP1->dof()->dofGlobalClusterIsOnProc( idValue.first )) )
-                        locId = clusterToProcessor(idValue.first);
-
-                    else if ( ghostClusterToProc.count(idValue.first) )
-                        locId = ghostClusterToProc[ idValue.first ];
-
-                    if ( locId != invalid_size_type_value )
-                        (*shape)(locId) = idValue.second;
-                }
-
-        } // reduceDistanceFunction
 
 
     }; //DistToCurve
