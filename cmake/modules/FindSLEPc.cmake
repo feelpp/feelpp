@@ -35,6 +35,8 @@ find_path (SLEPC_DIR include/slepc.h
   HINTS ENV SLEPC_DIR
   PATHS
   /usr/lib/slepc
+  /usr/lib/slepcdir/3.4.4 # Debian
+  /usr/lib/slepcdir/3.4.3 # Debian
   /usr/lib/slepcdir/3.4.2 # Debian
   /usr/lib/slepcdir/3.2 # Debian
   /usr/lib/slepcdir/3.1 # Debian
