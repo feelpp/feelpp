@@ -25,6 +25,7 @@
 
 int main(int argc, char**argv )
 {
+    boost::timer ti;
     //# marker1 #
     using namespace Feel;
 	//po::options_description qsnsoptions( "Navier-Stokes Oseen options" );
@@ -35,9 +36,17 @@ int main(int argc, char**argv )
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
 
-
+    if ( Environment::isMasterRank() )
+    {
+        std::cout << "Environment ok time:  " << ti.elapsed() << "s\n";
+    }
+    ti.restart();
     auto mesh = loadMesh(_mesh=new Mesh<Simplex<3>>);
-
+    if ( Environment::isMasterRank() )
+    {
+        std::cout << "mesh loaded time:  " << ti.elapsed() << "s\n";
+    }
+    ti.restart();
     auto Vh = THch<1>( mesh );
     auto U = Vh->element();
     auto V = Vh->element();
@@ -45,14 +54,25 @@ int main(int argc, char**argv )
     auto v = V.element<0>();
     auto p = U.element<1>();
     auto q = V.element<1>();
+    if ( Environment::isMasterRank() )
+    {
+        std::cout << "Total number of dof : " << Vh->nDof() << "\n";
+        std::cout << "Total number of dof(local) : " << Vh->nLocalDof() << "\n";
+        std::cout << "VElocity number of dof : " << Vh->functionSpace<0>()->nDof() << "\n";
+        std::cout << "VElocity number of dof(local) : " << Vh->functionSpace<0>()->nLocalDof() << "\n";
+        std::cout << "Pressure number of dof : " << Vh->functionSpace<1>()->nDof() << "\n";
+        std::cout << "Pressure number of dof(local) : " << Vh->functionSpace<1>()->nLocalDof() << "\n";
 
+        std::cout << "function space time:  " << ti.elapsed() << "s\n";
+    }
+    ti.restart();
     auto deft = sym(gradt( u ));
     auto def = sym(grad( v ));
     double mu = 0.0035;
     double rho = 1056;
     //double nu = option(_name="nu").as<double>();
 
-    mpi::timer ti;
+
     auto g = expr( option(_name="functions.g").as<std::string>(), "g" );
 
     auto intUz = integrate(_range=markedfaces(mesh,"inlet"), _expr=g ).evaluate()(0,0) ;
