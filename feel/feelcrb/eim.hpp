@@ -376,16 +376,18 @@ template <typename ModelType>
 typename EIM<ModelType>::element_type
 EIM<ModelType>::elementErrorEstimation( parameter_type const & mu, solution_type const& solution , int M ) const
 {
-    double max = M_model->mMax();
-    CHECK( M < max-1 ) << "Invalid number M for errorEstimation: " << M << " Mmax : " << max << "\n";
-    auto t = M_model->interpolationPoint( M+1 );
+    double max = M_model->mMax()-1;
+    CHECK( M <= max ) << "Invalid number M for errorEstimation: " << M << " Mmax : " << max << "\n";
+    //interpolation point associated to (M+1) basis function is index by M
+    //remember that interpolationPoint(0) is the first interpolation point
+    auto t = M_model->interpolationPoint( M );
     auto projected_expression = M_model->operator()( solution , t,  mu );
     //std::cout<<"expression evaluated at ponint ( "<<t(0)<<" , "<<t(1)<<" ) : \n"<< expression <<std::endl;
     auto eim_approximation = this->operator()(mu, solution, M);
     double eim = eim_approximation(t)(0,0,0);
     //std::cout<<"eim : "<<eim<<std::endl;
     double coeff = math::abs( projected_expression - eim );
-    auto result = M_model->q( M+1 );
+    auto result = M_model->q( M );
     result.scale( coeff );
     return result;
 }
@@ -394,9 +396,9 @@ template <typename ModelType>
 double
 EIM<ModelType>::errorEstimationLinf( parameter_type const & mu, solution_type const& solution , int M ) const
 {
-    double max = M_model->mMax();
-    CHECK( M < max-1 ) << "Invalid number M for errorEstimation: " << M << " Mmax : " << max << "\n";
-    auto t = M_model->interpolationPoint( M+1 );
+    double max = M_model->mMax()-1;
+    CHECK( M <= max ) << "Invalid number M for errorEstimation: " << M << " Mmax : " << max << "\n";
+    auto t = M_model->interpolationPoint( M );
     auto projected_expression = M_model->operator()( solution , t,  mu );
     //std::cout<<"expression evaluated at ponint ( "<<t(0)<<" , "<<t(1)<<" ) : \n"<< expression <<std::endl;
     auto eim_approximation = this->operator()(mu, solution, M);
@@ -617,10 +619,10 @@ EIM<ModelType>::offline(  )
 
     LOG(INFO) << "start greedy algorithm...\n";
     //for(  ; M_M < M_WN; ++M_M ) //err >= this->M_tol )
-    for(  ; M_M < option(_name="eim.dimension-max").template as<int>(); ++M_M ) //err >= this->M_tol )
+    for( ; M_M <= option(_name="eim.dimension-max").template as<int>(); ++M_M ) //err >= this->M_tol )
     {
         timer3.restart();
-        LOG(INFO) << "M=" << M_M << "...\n";
+        //LOG(INFO) << "M=" << M_M << "...\n";
         if( Environment::worldComm().isMasterRank() )
         {
             std::cout<<" ================================ "<<std::endl;
@@ -638,7 +640,6 @@ EIM<ModelType>::offline(  )
         }
         M_model->addOfflineError(error);
         mu = bestfit.template get<1>();
-        M_model->addParameter( mu );
 
         timer2.restart();
         solution = M_model->solve( mu );
@@ -668,7 +669,10 @@ EIM<ModelType>::offline(  )
 
         //if we want to impose the use of dimension-max functions, we don't want to stop here
         if ( (bestfit.template get<0>()/gmax.template get<0>()) < option(_name="eim.error-max").template as<double>() &&  ! option(_name="eim.use-dimension-max-functions").template as<bool>() )
+        {
+            M_M--;
             break;
+        }
 
         /**
          * we have a new \f$\mu^g_M\f$, insert it in \f$S^g_M\f$ and the
@@ -723,13 +727,12 @@ EIM<ModelType>::offline(  )
 
         //if( ! expression_expansion )
         //if( 1 )
-        {
-            auto res = M_model->projectedResidual( M_M-1 );
-            DVLOG(2) << "[offline] scale new basis function by " << 1./resmax.template get<0>() << "..." <<"\n";
-            res.scale( 1./res( t )(0,0,0) );
-            DVLOG(2) << "store new basis function..." <<"\n";
-            M_model->addBasis( res );
-        }
+        //{
+        auto res = M_model->projectedResidual( M_M-1 );
+        DVLOG(2) << "[offline] scale new basis function by " << 1./resmax.template get<0>() << "..." <<"\n";
+        res.scale( 1./res( t )(0,0,0) );
+        DVLOG(2) << "store new basis function..." <<"\n";
+        //}
 #if 0
         else
         {
@@ -741,6 +744,17 @@ EIM<ModelType>::offline(  )
             //M_q.push_back( q_projected );
         }
 #endif
+
+        //if we want to impose the use of dimension-max functions, we don't want to stop here
+        if ( resmax.template get<0>() < option(_name="eim.error-max").template as<double>() &&  ! option(_name="eim.use-dimension-max-functions").template as<bool>() )
+        {
+            M_M--;
+            break;
+        }
+
+        M_model->addParameter( mu );
+        M_model->addBasis( res );
+
         // Store interpolation point
         M_model->addInterpolationPoint( t );
 
@@ -754,22 +768,17 @@ EIM<ModelType>::offline(  )
         {
             std::cout<<" -- interpolation matrix filled in "<<time<<"s"<<std::endl;
             std::cout<<" -- time for this basis : "<<time_<<"s"<<std::endl;
+            std::cout<<" M_M : "<<M_M<<std::endl;
         }
 
         VLOG(2) << "================================================================================\n";
-        //if we want to impose the use of dimension-max functions, we don't want to stop here
-        if ( resmax.template get<0>() < M_vm["eim.error-max"].template as<double>() &&  ! M_vm["eim.use-dimension-max-functions"].template as<bool>() )
-        {
-            ++M_M;
-            break;
-        }
 
     }
 
     time=timer.elapsed();
     if( Environment::worldComm().isMasterRank() )
         std::cout<<"Total time for offline step of EIM "<<M_model->name()<<" : "<<time<<"s\n"<<std::endl;
-    DVLOG(2) << "[offline] M_max = " << M_M-1 << "...\n";
+    DVLOG(2) << "[offline] M_max = " << M_M << "...\n";
 
     this->M_offline_done = true;
 }
@@ -797,7 +806,7 @@ EIM<ModelType>::studyConvergence( parameter_type const & mu , solution_type & so
     int Nmax=0;
     if( Environment::worldComm().isMasterRank() )
     {
-        Nmax = max-2;
+        Nmax = max-1;
         fileL2 << Nmax<< "\t";
         fileL2estimated << Nmax <<"\t";
         fileL2ratio << Nmax  <<"\t" ;
@@ -805,7 +814,7 @@ EIM<ModelType>::studyConvergence( parameter_type const & mu , solution_type & so
         fileLINFestimated << Nmax  <<"\t" ;
         fileLINFratio << Nmax  <<"\t" ;
     }
-    for(int N=1; N<max-1; N++)
+    for(int N=1; N<max; N++)
     {
         std::string str = "\t";
         if( N == Nmax ) str = "\n";
@@ -815,12 +824,10 @@ EIM<ModelType>::studyConvergence( parameter_type const & mu , solution_type & so
         auto eim_approximation = this->operator()(mu , solution, N);
         diffl2norm = M_model->projDiffL2Norm( solution , mu , eim_approximation );
         double absolute_linf_error = M_model->projDiffLinfNorm( solution , mu , eim_approximation );
-
         double relative_l2_error = diffl2norm / exprl2norm ;
         double absolute_l2_error = diffl2norm ;
         //interpolation error : || projection_g - g ||_L2
         double interpolation_error = M_model->interpolationError( solution , mu );
-
         double absolute_linf_error_estimated = this->errorEstimationLinf( mu , solution, N );
         auto error_estimation_element = this->elementErrorEstimation( mu , solution, N );
         double absolute_l2_error_estimated = error_estimation_element.l2Norm();
@@ -830,7 +837,6 @@ EIM<ModelType>::studyConvergence( parameter_type const & mu , solution_type & so
         //l2ErrorVec[N-1] = relative_l2_error; // /!\ l2ErrorVec[i] represents error with i+1 bases
         if( Environment::worldComm().isMasterRank() )
         {
-            int nmax=max-2;
             fileL2            << relative_l2_error            <<str;
             fileL2estimated   << relative_l2_error_estimated  <<str;
             fileL2ratio       << relative_ratio_l2            <<str;
@@ -1363,7 +1369,7 @@ public:
         }
         else
         {
-            auto proj_g = vf::project( _space=this->functionSpace(), _expr=M_expr );
+            //auto proj_g = vf::project( _space=this->functionSpace(), _expr=M_expr );
             //rhs = proj_g.evaluate( M_ctx );
             rhs = evaluateFromContext( _context=M_ctx, _expr=M_expr , _max_points_used=M, _projection=true );
         }
