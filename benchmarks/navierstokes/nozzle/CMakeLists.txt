@@ -22,4 +22,4 @@
 #
 #
 
-feelpp_add_application( ns_oseen SRCS ns_oseen.cpp INCLUDE_IN_ALL GEO FDA.geo CFG ns_oseen.cfg  )
+feelpp_add_application( ns_oseen SRCS ns_oseen.cpp INCLUDE_IN_ALL GEO FDA2.geo CFG ns_oseen.cfg  )
