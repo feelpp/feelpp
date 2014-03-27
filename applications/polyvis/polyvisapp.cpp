@@ -5,7 +5,8 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-04-17
 
-  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2009 Universite Joseph Fourier (Grenoble I)
+  Copyright (C) 2010-2014 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -60,40 +61,17 @@ makeOptions()
     ( "ymin", po::value<double>()->default_value( -1 ), "ymin of the reference element" )
     ( "zmin", po::value<double>()->default_value( -1 ), "zmin of the reference element" )
     ;
-    return polyvisoptions.add( Feel::feel_options() );
-}
-
-/**
- * This routine defines some information about the application like
- * authors, version, or name of the application. The data returned is
- * typically used as an argument of a Feel::Application subclass.
- *
- * \return some data about the application.
- */
-inline
-AboutData
-makeAbout()
-{
-    AboutData about( "polyvis" ,
-                     "polyvis" ,
-                     "0.2",
-                     "nD(n=1,2,3) Polynomial on simplices or simplex products",
-                     Feel::AboutData::License_GPL,
-                     "Copyright (c) 2009 Universite Joseph Fourier" );
-
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
-    return about;
-
+    return polyvisoptions;
 }
 
 
 /**
- * \class Polyvis
+ * @brief Generates data to plot polynomial sets over a simplex or hypercube
  *
  */
 class PolyvisApp
     :
-public Application
+    public Application
 {
     typedef Application super;
 
@@ -101,23 +79,13 @@ public:
 
     typedef PolyvisBase polyvisbase_type;
     typedef boost::shared_ptr<PolyvisBase> polyvisbase_ptrtype;
-
-    /**
-     * Constructor
-     */
-    PolyvisApp( int argc, char** argv,
-                AboutData const& ad,
-                po::options_description const& od )
+    PolyvisApp()
         :
-        super( argc, argv, ad, od ),
-        polyvis( PolyvisBase::New( this->vm() ) )
-    {
-        std::cout << "[PolyvisApp] init\n";
-    }
-
-    /**
-     * run the application
-     */
+        super(),
+        polyvis( PolyvisBase::New( Environment::vm() ) )
+        {
+            std::cout << "[PolyvisApp] init\n";
+        }
     void run();
 
 private:
@@ -130,19 +98,6 @@ private:
 void
 PolyvisApp::run()
 {
-    /**
-     * print help if --help is passed to the command line
-     */
-    /** \code */
-    if ( this->vm().count( "help" ) )
-    {
-        std::cout << "[PolyvisApp::run] help\n";
-        std::cout << this->optionsDescription() << "\n";
-        return;
-    }
-
-    /** \endcode */
-
     std::cout << "[PolyvisApp::run] changeRepo\n";
     /**
      * we change to the directory where the results and logs will be
@@ -152,7 +107,7 @@ PolyvisApp::run()
     this->changeRepository( boost::format( "%1%/%2%/h_%3%/" )
                             % this->about().appName()
                             % polyvis->name()
-                            % this->vm()["hsize"].as<double>()
+                            % Environment::vm()["hsize"].as<double>()
                           );
     std::cout << "[PolyvisApp::run] run\n";
     polyvis->run();
@@ -166,38 +121,11 @@ PolyvisApp::run()
 int
 main( int argc, char** argv )
 {
-    //try {
-    /**
-     * intantiate a Polyvis<Dim> class with Dim=2 (e.g. geometric dimension is 2)
-     */
-    /** \code */
-    PolyvisApp polyvis( argc, argv, makeAbout(), makeOptions() );
-    /** \encode */
-
-    /**
-     * run the application
-     */
-    /** \code */
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=about( _name="polyvis",
+                                   _author="Feel++ Consortium",
+                                   _email="feelpp-devel@feelpp.org") );
+    PolyvisApp polyvis;
     polyvis.run();
-    /** \endcode */
-#if 0
 }
-
-catch ( std::exception const& e )
-{
-    std::cout << "Caught exception " << e.what() << std::endl;
-}
-
-catch ( ... )
-{
-    std::cout << "Caught an unknown exception " << std::endl;
-}
-
-#endif
-}
-
-
-
-
-
-

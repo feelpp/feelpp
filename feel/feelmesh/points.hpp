@@ -73,7 +73,7 @@ public:
         // sort by less<int> on processId
         multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_pid>,
                                         multi_index::const_mem_fun<point_type,
-                                                                   uint16_type,
+                                                                   rank_type,
                                                                    &point_type::processId> >,
 
         // sort by less<int> on boundary
@@ -383,24 +383,24 @@ public:
     }
 
 
-    pid_point_iterator beginPointWithProcessId( uint16_type p = invalid_uint16_type_value )
+    pid_point_iterator beginPointWithProcessId( rank_type p = invalid_rank_type_value )
     {
-        const uint16_type part = (p==invalid_uint16_type_value)? this->worldCommPoints().localRank() : p;
+        const rank_type part = (p==invalid_rank_type_value)? this->worldCommPoints().localRank() : p;
         return M_points.template get<Feel::detail::by_pid>().lower_bound( /*boost::make_tuple( part )*/ part );
     }
-    pid_point_const_iterator beginPointWithProcessId( uint16_type p = invalid_uint16_type_value ) const
+    pid_point_const_iterator beginPointWithProcessId( rank_type p = invalid_rank_type_value ) const
     {
-        const uint16_type part = (p==invalid_uint16_type_value)? this->worldCommPoints().localRank() : p;
+        const rank_type part = (p==invalid_rank_type_value)? this->worldCommPoints().localRank() : p;
         return M_points.template get<Feel::detail::by_pid>().lower_bound( /*boost::make_tuple( part )*/ part );
     }
-    pid_point_iterator endPointWithProcessId( uint16_type p = invalid_uint16_type_value )
+    pid_point_iterator endPointWithProcessId( rank_type p = invalid_rank_type_value )
     {
-        const uint16_type part = (p==invalid_uint16_type_value)? this->worldCommPoints().localRank() : p;
+        const rank_type part = (p==invalid_rank_type_value)? this->worldCommPoints().localRank() : p;
         return M_points.template get<Feel::detail::by_pid>().upper_bound( /*boost::make_tuple( part )*/ part );
     }
-    pid_point_const_iterator endPointWithProcessId( uint16_type p = invalid_uint16_type_value ) const
+    pid_point_const_iterator endPointWithProcessId( rank_type p = invalid_rank_type_value ) const
     {
-        const uint16_type part = (p==invalid_uint16_type_value)? this->worldCommPoints().localRank() : p;
+        const rank_type part = (p==invalid_rank_type_value)? this->worldCommPoints().localRank() : p;
         return M_points.template get<Feel::detail::by_pid>().upper_bound( /*boost::make_tuple( part )*/ part );
     }
 

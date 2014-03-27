@@ -37,6 +37,17 @@ namespace Feel
         }
 
 
+
+        static std::tuple< std::function<double(double)>, std::function<double(double)>, double, double >
+        tiltedEllipse( double a_ell, double b_ell, double teta, double x0, double y0 )
+        {
+          auto x_ell = [=](double t) -> double {return x0 + (a_ell * std::cos(t)) * std::cos(teta) - (b_ell * std::sin(t)) * std::sin(teta); };
+          auto y_ell = [=](double t) -> double {return y0 + (b_ell * std::sin(t)) * std::cos(teta) + (a_ell * std::cos(t)) * std::sin(teta); };
+          return std::make_tuple( x_ell, y_ell, 0, 2*M_PI );
+        }
+
+
+
         /* don't known the tStart, tEnd .. should be added in the future */
         static std::tuple< std::function<double(double)>, std::function<double(double)> >
         epitrochoid( double a_epi, double b_epi, double scaleFactor, double x0, double y0 )

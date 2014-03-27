@@ -201,6 +201,11 @@ ALIASES                = "feel=<a href="http://www.feelpp.org">Feel++</a>"\
                        " Interface=<b>Interface :</b><br>"\
                        " Examples=<b>Examples :</b><br>"
 
+ALIASES += Bold{1}="<b>\1</b>"
+ALIASES += Emph{1}="<em>\1</em>"
+ALIASES += eg="<em>e.g.</em>"
+ALIASES += ie="<em>i.e.</em>"
+ALIASES += cf="<em>c.f.</em>"
 
 # This tag can be used to specify a number of word-keyword mappings (TCL only).
 # A mapping has the form "name=value". For example adding
@@ -255,7 +260,7 @@ EXTENSION_MAPPING      =
 # can mix doxygen, HTML, and XML commands with Markdown formatting.
 # Disable only in case of backward compatibilities issues.
 
-MARKDOWN_SUPPORT       = YES
+MARKDOWN_SUPPORT       = NO
 
 # When enabled doxygen tries to link words that correspond to documented classes,
 # or namespaces to their corresponding documentation. Such a link can be
@@ -271,7 +276,7 @@ AUTOLINK_SUPPORT       = YES
 # func(std::string) {}). This also makes the inheritance and collaboration
 # diagrams that involve STL classes more complete and accurate.
 
-BUILTIN_STL_SUPPORT    = NO
+BUILTIN_STL_SUPPORT    = YES
 
 # If you use Microsoft's C++/CLI language, you should set this option to YES to
 # enable parsing support.
@@ -678,13 +683,14 @@ WARN_LOGFILE           =
 # with spaces.
 
 INPUT                  = \
- "@FEELPP_HOME_DIR@/feel/" \
+"@FEELPP_HOME_DIR@/quickstart" \
  "@FEELPP_HOME_DIR@/doc/manual/" \
  "@FEELPP_HOME_DIR@/doc/api" \
  "@FEELPP_HOME_DIR@/ChangeLog" \
  "@FEELPP_HOME_DIR@/COPYING.md" \
  "@FEELPP_HOME_DIR@/doc/biblio/" \
  "@FEELPP_PROJECTS_DIR@"
+# "@FEELPP_HOME_DIR@/feel/"
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding, which is

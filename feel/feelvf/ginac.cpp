@@ -158,7 +158,7 @@ parse( std::string const& str, std::string const& seps, std::vector<symbol> cons
 
     symtab table;
     LOG(INFO) <<"Inserting symbols in symbol table";
-
+#if 0
     table["x"]=syms[0];
     if ( syms.size() == 2 )
     {
@@ -169,6 +169,7 @@ parse( std::string const& str, std::string const& seps, std::vector<symbol> cons
         table["y"]=syms[1];
         table["z"]=syms[2];
     }
+#endif
     std::vector<symbol> total_syms;
     boost::for_each( syms, [&table, &total_syms]( symbol const& param )
                      {
@@ -185,6 +186,10 @@ parse( std::string const& str, std::string const& seps, std::vector<symbol> cons
                          LOG(INFO) << "adding param: " << param << std::endl;
                          table[param.get_name()] = param;
                      } );
+
+    for ( auto it=table.begin(),en=table.end() ; it!=en ; ++it )
+        LOG(INFO) <<" - table : "  << it->first << it->second;
+
 
     LOG(INFO) <<"Defining parser";
     parser reader(table ,option(_name="ginac.strict-parser").as<bool>()); // true to ensure that no more symbols are added

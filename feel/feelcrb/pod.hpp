@@ -549,7 +549,8 @@ int POD<TruthModelType>::pod( mode_set_type& ModeSet, bool is_primal, const wn_t
         double Awnorm = Aw.norm();
         double lambdawnorm = lambdaw.norm();
         double eigenvectornorm = eigenvector.norm();
-        CHECK( math::abs(Awnorm - lambdawnorm) < 1e-12 )<<" A w : "<<Awnorm<<" and lambda w : "<<lambdawnorm<<" so math::abs(A w - lambda w) : "<<math::abs(Awnorm - lambdawnorm)<<" -- eigenvalue : "<<eigenvalue<<"\n";
+        double check_tol = option(_name="pod.check-tol").template as<double>();
+        CHECK( math::abs(Awnorm - lambdawnorm) < check_tol )<<" A w : "<<Awnorm<<" and lambda w : "<<lambdawnorm<<" so math::abs(A w - lambda w) : "<<math::abs(Awnorm - lambdawnorm)<<" and pod.check-tol : "<<check_tol<<" -- eigenvalue : "<<eigenvalue<<"\n";
 
         if( (i+1) < max_idx.size() )
             position_of_largest_eigenvalue=max_idx[i+1];

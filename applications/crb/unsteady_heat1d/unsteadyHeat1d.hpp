@@ -35,8 +35,6 @@
 #include <feel/options.hpp>
 #include <feel/feelcore/feel.hpp>
 
-#include <feel/feelalg/backend.hpp>
-
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/region.hpp>
 #include <feel/feelpoly/im.hpp>
@@ -73,7 +71,7 @@ makeUnsteadyHeat1DOptions()
     ( "mu4", po::value<double>()->default_value( 0.1 ), "mu4" )
     ( "alpha" , po::value<double>()->default_value( 1 ), "temporal coefficient" )
     ;
-    return unsteadyheat1doptions.add( Feel::feel_options() ).add( bdf_options( "unsteadyHeat1d" ) );
+    return unsteadyheat1doptions.add( bdf_options( "unsteadyHeat1d" ) );
 }
 AboutData
 makeUnsteadyHeat1DAbout( std::string const& str = "unsteadyHeat1d" )
@@ -168,8 +166,8 @@ public:
     typedef ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition> super_type;
     typedef typename super_type::funs_type funs_type;
     typedef typename super_type::funsd_type funsd_type;
-    typedef typename super_type::beta_vector_type beta_vector_type;
-    typedef typename super_type::affine_decomposition_type affine_decomposition_type;
+    typedef typename super_type::beta_vector_light_type beta_vector_light_type;
+    typedef typename super_type::affine_decomposition_light_type affine_decomposition_light_type;
     using super_type::computeBetaQm;
 
     /** @name Typedefs
@@ -262,39 +260,6 @@ public:
         return M_Dmu;
     }
 
-    /**
-     * \brief compute the beta coefficient for both bilinear and linear form
-     * \param mu parameter to evaluate the coefficients
-     */
-    boost::tuple<beta_vector_type, beta_vector_type, std::vector<beta_vector_type> >
-    computeBetaQm( parameter_type const& mu , double time=0 )
-    {
-        M_betaAqm.resize( M_nb_terms_in_affine_decomposition_a );
-        M_betaAqm[0].resize(1);
-        M_betaAqm[1].resize(1);
-        M_betaAqm[2].resize(1);
-        M_betaAqm[0][0] = 1;
-        M_betaAqm[1][0] = mu( 0 ); // k_1
-        M_betaAqm[2][0] = mu( 1 ); // k_2
-
-        M_betaFqm.resize( M_nb_outputs );
-        M_betaFqm[0].resize( M_nb_terms_in_affine_decomposition_rhs );
-        M_betaFqm[0][0].resize(1);
-        M_betaFqm[0][1].resize(1);
-        M_betaFqm[0][0][0] = mu( 2 ); // delta
-        M_betaFqm[0][1][0] = mu( 3 ); // phi
-
-        M_betaFqm[1].resize( M_nb_terms_in_affine_decomposition_output );
-        M_betaFqm[1][0].resize(1);
-        M_betaFqm[1][0][0]= 1;
-
-        M_betaMqm.resize( M_nb_terms_in_affine_decomposition_m );
-        M_betaMqm[0].resize(1);
-        M_betaMqm[0][0] = 1;
-
-        return boost::make_tuple( M_betaMqm, M_betaAqm, M_betaFqm );
-    }
-
 
     //@}
 
@@ -303,46 +268,14 @@ public:
      */
     //@{
 
-    /**
-     * \brief Returns the affine decomposition
-     */
-    affine_decomposition_type computeAffineDecomposition();
 
     void assemble();
-
-    /**
-     * Matrix associated to scalar product used
-     */
-    sparse_matrix_ptrtype innerProduct ( void )
-    {
-        return M;
-    }
-
-    /**
-     * inner product for mass matrix
-     */
-    sparse_matrix_ptrtype innerProductForMassMatrix ( void )
-    {
-        return InnerMassMatrix;
-    }
-
-    /**
-     * inner product for the POD
-     */
-    sparse_matrix_ptrtype innerProductForPod ( void )
-    {
-        return Mpod;
-    }
 
     value_type output( int output_index, parameter_type const& mu, element_type &u, bool need_to_solve=false, bool export_outputs=false );
 
     bdf_ptrtype bdfModel(){ return M_bdf; }
 
 private:
-
-    po::variables_map M_vm;
-
-    backend_ptrtype backend;
 
     double alpha;
 
@@ -353,29 +286,13 @@ private:
     mesh_ptrtype mesh;
     space_ptrtype Xh;
     rbfunctionspace_ptrtype RbXh;
-    sparse_matrix_ptrtype M,Mpod,InnerMassMatrix;
-
-    std::vector< std::vector<sparse_matrix_ptrtype> > M_Aqm;
-    std::vector< std::vector<sparse_matrix_ptrtype> > M_Mqm;
-    std::vector< std::vector<std::vector<vector_ptrtype> > > M_Fqm;
-
-    beta_vector_type M_betaAqm;
-    beta_vector_type M_betaMqm;
-    std::vector<beta_vector_type> M_betaFqm;
 
     bdf_ptrtype M_bdf;
-
-    int M_nb_terms_in_affine_decomposition_a=3;
-    int M_nb_terms_in_affine_decomposition_m=1;
-    int M_nb_terms_in_affine_decomposition_rhs=2;
-    int M_nb_terms_in_affine_decomposition_output=1;
-    int M_nb_outputs=2;
 
 };
 
 UnsteadyHeat1D::UnsteadyHeat1D()
     :
-    backend( backend_type::build( BACKEND_PETSC ) ),
     alpha( 1 ),
     meshSize( 0.01 ),
     M_Dmu( new parameterspace_type )
@@ -385,10 +302,8 @@ UnsteadyHeat1D::UnsteadyHeat1D()
 
 UnsteadyHeat1D::UnsteadyHeat1D( po::variables_map const& vm )
     :
-    M_vm( vm ),
-    backend( backend_type::build( vm ) ),
-    alpha( vm["alpha"].as<double>() ),
-    meshSize( vm["hsize"].as<double>() ),
+    alpha( option(_name="alpha").as<double>() ),
+    meshSize( option(_name="hsize").as<double>() ),
     M_Dmu( new parameterspace_type )
 {
 }
@@ -418,36 +333,7 @@ UnsteadyHeat1D::initModel()
     }
 
 
-    M_bdf = bdf( _space=Xh, _vm=M_vm, _name="unsteadyHeat1d" , _prefix="unsteadyHeat1d" );
-
-    M_Aqm.resize( M_nb_terms_in_affine_decomposition_a );
-    for(int i=0; i<M_nb_terms_in_affine_decomposition_a; i++)
-    {
-        M_Aqm[i].resize(1);
-        M_Aqm[i][0]=backend->newMatrix( Xh, Xh );
-    }
-
-    M_Fqm.resize( M_nb_terms_in_affine_decomposition_rhs );
-    M_Fqm[0].resize( 2 ); M_Fqm[1].resize( 1 );
-    for(int i=0; i<M_Fqm[0].size(); i++)
-    {
-        M_Fqm[0][i].resize(1);
-        M_Fqm[0][i][0]=backend->newVector( Xh );
-    }
-    for(int i=0; i<M_Fqm[1].size(); i++)
-    {
-        M_Fqm[1][i].resize(1);
-        M_Fqm[1][i][0]=backend->newVector( Xh );
-    }
-
-    M_Mqm.resize( M_nb_terms_in_affine_decomposition_m );
-    for(int i=0; i<M_Mqm.size(); i++)
-    {
-        M_Mqm[i].resize(1);
-        M_Mqm[i][0]=backend->newMatrix( Xh , Xh );
-    }
-
-    using namespace Feel::vf;
+    M_bdf = bdf( _space=Xh, _name="unsteadyHeat1d" , _prefix="unsteadyHeat1d" );
 
     Feel::ParameterSpace<4>::Element mu_min( M_Dmu );
     mu_min << 0.2, 0.2, 0.01, 0.1;
@@ -456,18 +342,10 @@ UnsteadyHeat1D::initModel()
     mu_max << 50, 50, 5, 5;
     M_Dmu->setMax( mu_max );
 
-    auto u = Xh->element();
-    auto v = Xh->element();
-
-    Mpod = backend->newMatrix( Xh, Xh );
-
-    InnerMassMatrix = backend->newMatrix( Xh,Xh );
-
-    M = backend->newMatrix( Xh, Xh );
-
     LOG(INFO) << "Number of dof " << Xh->nLocalDof() << "\n";
 
     assemble();
+
 
 } // UnsteadyHeat1d::initModel
 
@@ -475,59 +353,53 @@ UnsteadyHeat1D::initModel()
 void
 UnsteadyHeat1D::assemble()
 {
-
-    using namespace Feel::vf;
-
     auto u = Xh->element();
     auto v = Xh->element();
 
-    //mass matrix
-    form2( Xh, Xh, M_Mqm[0][0])=integrate ( elements( mesh ), alpha*idt( u )*id( v ) );
-
-    // right hand side
-    form1( Xh, M_Fqm[0][0][0] ) = integrate( markedfaces( mesh,"left" ), id( v ) );
-    form1( Xh, M_Fqm[0][1][0] ) = integrate( elements( mesh ), id( v ) );
-    // output
-    form1( Xh, M_Fqm[1][0][0] ) =
-        integrate( markedelements( mesh,"k1_2" ), id( v )/0.2 ) +
-        integrate( markedelements( mesh,"k2_1" ), id( v )/0.2 );
-
     //lhs
-    form2( Xh, Xh, M_Aqm[0][0])=
-        integrate( elements( mesh ), 0.1*( gradt( u )*trans( grad( v ) ) ) ) +
-        integrate( markedfaces( mesh,"right" ), idt( u )*id( v ) );
-    form2( Xh, Xh, M_Aqm[1][0])= integrate( markedelements( mesh,"k1_1" ),  gradt( u )*trans( grad( v ) )  );
-    form2( Xh, Xh, M_Aqm[2][0])= integrate( markedelements( mesh,"k2_1" ),  gradt( u )*trans( grad( v ) )  );
+    auto a0 = form2( _trial=Xh, _test=Xh);
+    a0 = integrate( elements( mesh ), 0.1*( gradt( u )*trans( grad( v ) ) ) ) +
+         integrate( markedfaces( mesh,"right" ), idt( u )*id( v ) );
+    this->addLhs( boost::make_tuple( a0.matrixPtr() , "1" ) );
 
-    //matrices used to scalar products
-    form2( Xh, Xh, Mpod ) =
-        integrate( elements( mesh ), 0.1*( gradt( u )*trans( grad( v ) ) ) ) +
-        integrate( markedfaces( mesh,"right" ), idt( u )*id( v ) ) +
-        integrate( markedelements( mesh,"k1_1" ),  0.2 * gradt( u )*trans( grad( v ) ) )  +
-        integrate( markedelements( mesh,"k2_1" ),  0.2 * gradt( u )*trans( grad( v ) ) )  ;
+    auto a1 = form2( _trial=Xh, _test=Xh);
+    a1 = integrate( markedelements( mesh,"k1_1" ),  gradt( u )*trans( grad( v ) )  );
+    this->addLhs( boost::make_tuple( a1.matrixPtr() , "mu0" ) );
 
-    form2( Xh, Xh, M, _init=true ) =
-        integrate( elements( mesh ), 0.1*( gradt( u )*trans( grad( v ) ) ) ) +
-        integrate( markedfaces( mesh,"right" ), idt( u )*id( v ) ) +
-        integrate( markedelements( mesh,"k1_1" ),  0.2 * gradt( u )*trans( grad( v ) ) )  +
-        integrate( markedelements( mesh,"k2_1" ),  0.2 * gradt( u )*trans( grad( v ) ) )  ;
+    auto a2 = form2( _trial=Xh, _test=Xh);
+    a2 = integrate( markedelements( mesh,"k2_1" ),  gradt( u )*trans( grad( v ) )  );
+    this->addLhs( boost::make_tuple( a2.matrixPtr() , "mu1" ) );
 
-    form2( Xh, Xh, InnerMassMatrix ) =
-        integrate( _range=elements( mesh ), _expr=idt( u ) * id( v ) ) ;
+    //mass matrix
+    auto m = form2( _trial=Xh, _test=Xh);
+    m = integrate ( elements( mesh ), alpha*idt( u )*id( v ) );
+    this->addMass( boost::make_tuple( m.matrixPtr() , "1" ) );
 
+    //rhs
+    auto f0 = form1( _test=Xh );
+    auto f1 = form1( _test=Xh );
+    f0 = integrate( markedfaces( mesh,"left" ), id( v ) );
+    this->addRhs( boost::make_tuple( f0.vectorPtr() , "mu2" ) );
+    f1 =  integrate( elements( mesh ), id( v ) );
+    this->addRhs( boost::make_tuple( f1.vectorPtr() , "mu3" ) );
 
+    //output
+    auto out = form1( _test=Xh );
+    out = integrate( markedelements( mesh,"k1_2" ), id( v )/0.2 ) +
+          integrate( markedelements( mesh,"k2_1" ), id( v )/0.2 );
+    this->addOutput( boost::make_tuple( out.vectorPtr() , "1" ) );
+
+    auto energy = form2( _trial=Xh, _test=Xh);
+    energy = integrate( elements( mesh ), 0.1*( gradt( u )*trans( grad( v ) ) ) ) +
+             integrate( markedfaces( mesh,"right" ), idt( u )*id( v ) ) +
+             integrate( markedelements( mesh,"k1_1" ),  0.2 * gradt( u )*trans( grad( v ) ) )  +
+             integrate( markedelements( mesh,"k2_1" ),  0.2 * gradt( u )*trans( grad( v ) ) )  ;
+    this->addEnergyMatrix( energy.matrixPtr() );
+
+    auto mass = form2( _trial=Xh, _test=Xh);
+    mass = integrate( _range=elements( mesh ), _expr=idt( u ) * id( v ) ) ;
+    this->addMassMatrix( mass.matrixPtr() );
 }
-
-
-
-
-
-UnsteadyHeat1D::affine_decomposition_type
-UnsteadyHeat1D::computeAffineDecomposition()
-{
-    return boost::make_tuple( M_Mqm, M_Aqm, M_Fqm );
-}
-
 
 
 double
@@ -536,19 +408,14 @@ UnsteadyHeat1D::output( int output_index, parameter_type const& mu, element_type
 
     CHECK( ! need_to_solve ) << "The model need to have the solution to compute the output\n";
 
-    using namespace vf;
+    auto v = Xh->element();
 
     double output=0;
     // right hand side (compliant)
     if ( output_index == 0 )
     {
-        for ( int q=0; q<M_nb_terms_in_affine_decomposition_rhs; q++ )
-        {
-            //element_ptrtype eltF( new element_type( Xh ) );
-            //*eltF = *M_Fqm[output_index][q][m];
-            output += M_betaFqm[output_index][q][0]*dot( *M_Fqm[output_index][q][0], u );
-        }
-
+        output  = integrate( markedfaces( mesh,"left" ), mu(2)*idv( u ) ).evaluate()( 0,0 );
+        output += integrate( elements( mesh ), mu(3)*idv( u ) ).evaluate()( 0,0 );
     }
     // output
     else if ( output_index == 1 )

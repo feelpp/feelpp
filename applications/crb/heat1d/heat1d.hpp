@@ -65,7 +65,7 @@ makeHeat1DOptions()
     ( "mu3", po::value<double>()->default_value( -1 ), "mu3" )
     ( "mu4", po::value<double>()->default_value( 0.1 ), "mu4" )
     ;
-    return heat1doptions.add( Feel::feel_options() );
+    return heat1doptions;
 }
 AboutData
 makeHeat1DAbout( std::string const& str = "heat1d" )
@@ -307,7 +307,7 @@ public:
     /**
      * H1 scalar product
      */
-    sparse_matrix_ptrtype innerProduct ( void )
+    sparse_matrix_ptrtype energyMatrix ( void )
     {
         return M;
     }

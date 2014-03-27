@@ -83,7 +83,7 @@ makeThermalBlockOptions()
     ( "beta.Alast", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for last A" )
     ( "beta.F0.0", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for F0" )
     ;
-    return thermalblockoptions.add( Feel::feel_options() ).add( backend_options("backendl2") );
+    return thermalblockoptions.add( backend_options("backendl2") );
 }
 
 /**
@@ -548,7 +548,7 @@ public:
     /**
      * H1 scalar product
      */
-    sparse_matrix_ptrtype innerProduct ( void )
+    sparse_matrix_ptrtype energyMatrix ( void )
     {
         return M;
     }
@@ -821,7 +821,7 @@ ThermalBlock::initModel()
     else
     {
 
-        bool load_mesh_already_partitioned=option(_name="load-mesh-already-partitioned").template as<bool>();
+        bool load_mesh_already_partitioned=option(_name="load-mesh-already-partitioned").as<bool>();
         if( ! load_mesh_already_partitioned )
         {
             int N = Environment::worldComm().globalSize();

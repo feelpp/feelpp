@@ -223,6 +223,9 @@ else (BOOST_ENABLE_TEST_DYN_LINK)
   add_definitions( -DBOOST_PARAMETER_MAX_ARITY=${BOOST_PARAMETER_MAX_ARITY} -DBOOST_FILESYSTEM_VERSION=${BOOST_FILESYSTEM_VERSION})
 endif (BOOST_ENABLE_TEST_DYN_LINK)
 
+# undefined BOOST_UBLAS_TYPE_CHECK
+add_definitions(-UBOOST_UBLAS_TYPE_CHECK )
+
 # this fix an issue with boost filesystem: boost is usually no compiled with
 # std=c++0x and we compile with it, this causes problems with the macro
 # BOOST_SCOPED_ENUM macros whose behavior differs in both case and would
@@ -731,24 +734,29 @@ endif()
 #
 if ( NOT EXISTS ${CMAKE_SOURCE_DIR}/feel OR NOT EXISTS ${CMAKE_SOURCE_DIR}/contrib )
   include(feelpp.macros)
-  FIND_PATH(FEELPP_INCLUDE_DIR feel/feelconfig.h  PATHS $ENV{FEELPP_DIR}/include/ /usr/include /opt/local/include PATH_SUFFIXES feel )
+  FIND_PATH(FEELPP_INCLUDE_DIR feel/feelconfig.h  PATHS $ENV{FEELPP_DIR}/include/ PATH_SUFFIXES feel NO_DEFAULT_PATH )
+  FIND_PATH(FEELPP_INCLUDE_DIR feel/feelconfig.h  PATHS /usr/include /opt/local/include PATH_SUFFIXES feel )
 
   #  FIND_LIBRARY(FEELPP_GFLAGS_LIBRARY feelpp_gflags PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
   #  FIND_LIBRARY(FEELPP_GLOG_LIBRARY feelpp_glog PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
   #  FIND_LIBRARY(FEELPP_CLN_LIBRARY feelpp_cln PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
   FIND_LIBRARY(FEELPP_GINAC_LIBRARY feelpp_ginac PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
-  FIND_LIBRARY(FEELPP_LIBRARY feelpp PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
+  FIND_LIBRARY(FEELPP_LIBRARY feelpp PATHS $ENV{FEELPP_DIR}/lib NO_DEFAULT_PATH)
+  FIND_LIBRARY(FEELPP_LIBRARY feelpp )
 
   INCLUDE_DIRECTORIES ( ${FEELPP_INCLUDE_DIR} ${FEELPP_INCLUDE_DIR}/feel )
   FIND_PACKAGE_HANDLE_STANDARD_ARGS (Feel DEFAULT_MSG
     FEELPP_INCLUDE_DIR  FEELPP_LIBRARY
     )
 
+  FIND_PATH( FEELPP_DATADIR cmake/modules/FindFeel++.cmake
+    PATH $ENV{FEELPP_DIR}/share/feel /usr/share/feel /usr/local/share/feel )
 
 
   if ( FEELPP_FOUND )
     message(STATUS "Feel++ includes: ${FEELPP_INCLUDE_DIR}")
     message(STATUS "Feel++ library: ${FEELPP_LIBRARY}")
+    message(STATUS "Feel++ data: ${FEELPP_DATADIR}")
   endif()
 
   MARK_AS_ADVANCED(
