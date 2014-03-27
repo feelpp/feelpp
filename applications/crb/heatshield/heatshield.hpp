@@ -70,7 +70,7 @@ makeHeatShieldOptions()
     po::options_description heatshieldoptions( "HeatShield options" );
     heatshieldoptions.add_options()
     // mesh parameters
-    ( "hsize", Feel::po::value<double>()->default_value( 1e-1 ), "first h value to start convergence" )
+    ( "hsize", Feel::po::value<double>()->default_value( 1 ), "first h value to start convergence" )
     ( "mshfile", Feel::po::value<std::string>()->default_value( "" ), "name of the gmsh file input")
     ( "do-not-use-operators-free", Feel::po::value<bool>()->default_value( true ), "never use operators free if true" )
     ( "load-mesh-already-partitioned", Feel::po::value<bool>()->default_value( "true" ), "load a mesh from mshfile that is already partitioned if true, else the mesh loaded need to be partitioned")
@@ -81,7 +81,7 @@ makeHeatShieldOptions()
     ( "beta.F1.0", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for F1" )
     ( "beta.M0", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for M0" )
     ;
-    return heatshieldoptions.add( Feel::feel_options() ).add( bdf_options( "heatshield" ) ).add( backend_options("backendl2") );
+    return heatshieldoptions.add( bdf_options( "heatshield" ) ).add( backend_options("backendl2") );
 }
 AboutData
 makeHeatShieldAbout( std::string const& str = "heatShield" )
@@ -142,12 +142,22 @@ class HeatShield : public ModelCrbBase< ParameterDefinition, FunctionSpaceDefini
 {
 public:
 
-    typedef ModelCrbBase<ParameterDefinition, FunctionSpaceDefinition<Order> > super_type;
+
+    typedef ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition<Order> > super_type;
     typedef typename super_type::funs_type funs_type;
     typedef typename super_type::funsd_type funsd_type;
-
+    typedef typename super_type::beta_vector_light_type beta_vector_light_type;
+    typedef typename super_type::affine_decomposition_light_type affine_decomposition_light_type;
+    //operator free
+    typedef typename super_type::operator_type operator_type;
+    typedef typename super_type::operator_ptrtype operator_ptrtype;
+    typedef typename super_type::operatorcomposite_type operatorcomposite_type;
+    typedef typename super_type::operatorcomposite_ptrtype operatorcomposite_ptrtype;
+    typedef typename super_type::functionalcomposite_type functionalcomposite_type;
+    typedef typename super_type::functionalcomposite_ptrtype functionalcomposite_ptrtype;
+    typedef typename super_type::functional_type functional_type;
+    typedef typename super_type::functional_ptrtype functional_ptrtype;
     using super_type::computeBetaQm;
-
     /** @name Constants
      */
     //@{
@@ -163,81 +173,43 @@ public:
 
     typedef double value_type;
 
+    typedef typename FunctionSpaceDefinition<Order>::mesh_type mesh_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+
+    typedef typename FunctionSpaceDefinition<Order>::basis_type basis_type;
+
     typedef Backend<value_type> backend_type;
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
 
     /*matrix*/
-    typedef backend_type::sparse_matrix_type sparse_matrix_type;
     typedef backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
-    typedef backend_type::vector_type vector_type;
     typedef backend_type::vector_ptrtype vector_ptrtype;
 
-
-    /*mesh*/
-    typedef Simplex<2,1> entity_type; /*dim,order*/
-    typedef Mesh<entity_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-
-    typedef FunctionSpace<mesh_type, bases<Lagrange<0, Scalar> >, Discontinuous> p0_space_type;
-    typedef typename p0_space_type::element_type p0_element_type;
-
-    typedef FunctionSpace<mesh_type, bases<Lagrange<0, Scalar, Continuous > > > continuous_p0_space_type;
-    typedef boost::shared_ptr<continuous_p0_space_type> continuous_p0_space_ptrtype;
-    typedef typename continuous_p0_space_type::element_type continuous_p0_element_type;
-
-    /*basis*/
-    typedef bases<Lagrange<Order, Scalar> > basis_type;
-
     /*space*/
-    typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
+    typedef typename FunctionSpaceDefinition<Order>::space_type space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
-    typedef space_type functionspace_type;
-    typedef space_ptrtype functionspace_ptrtype;
     typedef typename space_type::element_type element_type;
-    typedef boost::shared_ptr<element_type> element_ptrtype;
 
     /*reduced basis space*/
     typedef ReducedBasisSpace<super_type, mesh_type, basis_type, value_type> rbfunctionspace_type;
     typedef boost::shared_ptr< rbfunctionspace_type > rbfunctionspace_ptrtype;
 
-    /* export */
-    typedef Exporter<mesh_type> export_type;
-    typedef boost::shared_ptr<export_type> export_ptrtype;
-
-
     /* parameter space */
-    typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
+    typedef ParameterDefinition::parameterspace_type parameterspace_type;
     typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
-    typedef typename parameterspace_type::element_type parameter_type;
-    typedef typename parameterspace_type::element_ptrtype parameter_ptrtype;
+    typedef parameterspace_type::element_type parameter_type;
 
     /* time discretization */
     typedef Bdf<space_type>  bdf_type;
     typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
 
-    typedef std::vector< std::vector< double > > beta_vector_type;
+    typedef FunctionSpace<mesh_type, bases<Lagrange<0, Scalar, Continuous > > > continuous_p0_space_type;
+    typedef boost::shared_ptr<continuous_p0_space_type> continuous_p0_space_ptrtype;
+    typedef typename continuous_p0_space_type::element_type continuous_p0_element_type;
 
-    typedef boost::tuple<
-        std::vector< std::vector<sparse_matrix_ptrtype> >,
-        std::vector< std::vector<sparse_matrix_ptrtype> >,
-        std::vector< std::vector<std::vector<vector_ptrtype> > >
-        > affine_decomposition_type;
+    typedef FunctionSpace<mesh_type, bases<Lagrange<0, Scalar> >, Discontinuous> p0_space_type;
+    typedef typename p0_space_type::element_type p0_element_type;
 
-
-    typedef OperatorLinear< space_type , space_type > operator_type;
-    typedef boost::shared_ptr<operator_type> operator_ptrtype;
-
-    typedef OperatorLinearComposite< space_type , space_type > operatorcomposite_type;
-    typedef boost::shared_ptr<operatorcomposite_type> operatorcomposite_ptrtype;
-
-    typedef FsFunctionalLinearComposite< space_type > functionalcomposite_type;
-    typedef boost::shared_ptr<functionalcomposite_type> functionalcomposite_ptrtype;
-
-    typedef FsFunctionalLinear< space_type > functional_type;
-    typedef boost::shared_ptr<functional_type> functional_ptrtype;
-
-    typedef Preconditioner<double> preconditioner_type;
-    typedef boost::shared_ptr<preconditioner_type> preconditioner_ptrtype;
 
     //@}
 
@@ -358,31 +330,31 @@ public:
      * \brief compute the theta coefficient for both bilinear and linear form
      * \param mu parameter to evaluate the coefficients
      */
-    boost::tuple<beta_vector_type, beta_vector_type, std::vector<beta_vector_type>  >
-    computeBetaQm( parameter_type const& mu , double time=1e30 )
+    boost::tuple<beta_vector_light_type, beta_vector_light_type, std::vector<beta_vector_light_type>  >
+    computeBetaQ( parameter_type const& mu , double time=1e30 )
     {
 
         if( M_use_ginac )
         {
             ginac_expressionA[0].expression().setParameterValues( { { "BiotOut", mu(0) } , { "BiotIn", mu(1) } } );
             auto projection=project(_space=continuous_p0, _expr=ginac_expressionA[0]);
-            M_betaAqm[0][0] = projection(0);
+            M_betaAq[0] = projection(0);
             ginac_expressionA[1].expression().setParameterValues( { { "BiotOut", mu(0) } , { "BiotIn", mu(1) } } );
             projection=project(_space=continuous_p0, _expr=ginac_expressionA[1]);
-            M_betaAqm[1][0] = projection(0);
+            M_betaAq[1] = projection(0);
             ginac_expressionA[2].expression().setParameterValues( { { "BiotOut", mu(0) } , { "BiotIn", mu(1) } } );
             projection=project(_space=continuous_p0, _expr=ginac_expressionA[2]);
-            M_betaAqm[2][0] = projection(0);
+            M_betaAq[2] = projection(0);
 
             projection=project(_space=continuous_p0, _expr=ginac_expressionM[0]);
-            M_betaMqm[0][0] = projection(0);
+            M_betaMq[0] = projection(0);
 
             ginac_expressionF[0].expression().setParameterValues( { { "BiotOut", mu(0) } , { "BiotIn", mu(1) } , { "surface", surface } } );
             projection=project(_space=continuous_p0, _expr=ginac_expressionF[0]);
-            M_betaFqm[0][0][0] = projection(0);
+            M_betaFq[0][0] = projection(0);
             ginac_expressionF[1].expression().setParameterValues( { { "BiotOut", mu(0) } , { "BiotIn", mu(1) } , { "surface", surface } } );
             projection=project(_space=continuous_p0, _expr=ginac_expressionF[1]);
-            M_betaFqm[1][0][0] = projection(0);
+            M_betaFq[1][0] = projection(0);
 
 #if 0
             int idx=0;
@@ -394,48 +366,42 @@ public:
                 {
                     ginac_expressionF[idx].expression().setParameterValues( { { "BiotOut", mu(0) } , { "BiotIn", mu(1) } , { "surface", surface } } );
                     auto projection=project(_space=continuous_p0, _expr=ginac_expressionF[idx]);
-                    M_betaFqm[i][j][0] = projection(0);
+                    M_betaFq[i][j] = projection(0);
                     idx++;
                 }
             }
 #endif
 #if 0
             LOG( INFO ) << "mu = "<<mu(0)<<" -- "<<mu(1);
-            LOG( INFO ) <<"A0 : "<<M_betaAqm[0][0]<<" -- should be 1";
-            LOG( INFO ) <<"A1 : "<<M_betaAqm[1][0]<<" -- should be "<<mu(0);
-            LOG( INFO ) <<"A2 : "<<M_betaAqm[2][0]<<" -- should be "<<mu(1);
-            LOG( INFO ) <<"F0 : "<<M_betaFqm[0][0][0]<<" -- should be "<<mu(0);
-            LOG( INFO ) <<"F1 : "<<M_betaFqm[1][0][0]<<" -- should be "<<1./surface;
-            LOG( INFO ) <<"M0 : "<<M_betaMqm[0][0]<<" -- should be 1";
+            LOG( INFO ) <<"A0 : "<<M_betaAq[0]<<" -- should be 1";
+            LOG( INFO ) <<"A1 : "<<M_betaAq[1]<<" -- should be "<<mu(0);
+            LOG( INFO ) <<"A2 : "<<M_betaAq[2]<<" -- should be "<<mu(1);
+            LOG( INFO ) <<"F0 : "<<M_betaFq[0][0]<<" -- should be "<<mu(0);
+            LOG( INFO ) <<"F1 : "<<M_betaFq[1][0]<<" -- should be "<<1./surface;
+            LOG( INFO ) <<"M0 : "<<M_betaMq[0]<<" -- should be 1";
 #endif
         }//use ginac
         else
         {
             double biot_out   = mu( 0 );
             double biot_in    = mu( 1 );
-            M_betaAqm.resize( Qa() );
-            M_betaAqm[0].resize( 1 );
-            M_betaAqm[1].resize( 1 );
-            M_betaAqm[2].resize( 1 );
-            M_betaAqm[0][0] = 1 ;
-            M_betaAqm[1][0] = biot_out ;
-            M_betaAqm[2][0] = biot_in  ;
+            M_betaAq.resize( Qa() );
+            M_betaAq[0] = 1 ;
+            M_betaAq[1] = biot_out ;
+            M_betaAq[2] = biot_in  ;
 
-            M_betaMqm.resize( Qm() );
-            M_betaMqm[0].resize( 1 );
-            M_betaMqm[0][0] = 1;
+            M_betaMq.resize( Qm() );
+            M_betaMq[0] = 1;
 
-            M_betaFqm.resize( Nl() );
-            M_betaFqm[0].resize( Ql(0) );
-            M_betaFqm[0][0].resize( 1 );
-            M_betaFqm[0][0][0] = biot_out;
+            M_betaFq.resize( Nl() );
+            M_betaFq[0].resize( Ql(0) );
+            M_betaFq[0][0] = biot_out;
 
-            M_betaFqm[1].resize( Ql(1) );
-            M_betaFqm[1][0].resize( 1 );
-            M_betaFqm[1][0][0] = 1./surface;
+            M_betaFq[1].resize( Ql(1) );
+            M_betaFq[1][0] = 1./surface;
         }
 
-        return boost::make_tuple( M_betaMqm, M_betaAqm, M_betaFqm );
+        return boost::make_tuple( M_betaMq, M_betaAq, M_betaFq );
     }
 
 
@@ -460,14 +426,14 @@ public:
     /**
      * \brief Returns the affine decomposition
      */
-    affine_decomposition_type computeAffineDecomposition();
+    affine_decomposition_light_type computeAffineDecompositionLight(){ return boost::make_tuple( M_Mq, M_Aq, M_Fq ); }
 
     void assemble();
 
     /**
      * inner product
      */
-    sparse_matrix_ptrtype innerProduct ( void )
+    sparse_matrix_ptrtype energyMatrix ( void )
     {
         return M;
     }
@@ -475,11 +441,12 @@ public:
     /**
      * inner product for mass matrix
      */
-    sparse_matrix_ptrtype innerProductForMassMatrix ( void )
+    sparse_matrix_ptrtype massMatrix ( void )
     {
         return InnerMassMatrix;
     }
 
+#if 0
     /**
      * inner product for the POD
      */
@@ -487,7 +454,7 @@ public:
     {
         return Mpod;
     }
-
+#endif
     /**
      * Given the output index \p output_index and the parameter \p mu, return
      * the value of the corresponding FEM output
@@ -496,17 +463,17 @@ public:
 
     gmsh_ptrtype createGeo( double hsize );
 
-    virtual operatorcomposite_ptrtype operatorCompositeA()
+    virtual operatorcomposite_ptrtype operatorCompositeLightA()
     {
-        return M_compositeA;
+        return M_compositeLightA;
     }
-    virtual operatorcomposite_ptrtype operatorCompositeM()
+    virtual operatorcomposite_ptrtype operatorCompositeLightM()
     {
-        return M_compositeM;
+        return M_compositeLightM;
     }
-    virtual std::vector< functionalcomposite_ptrtype > functionalCompositeF()
+    virtual std::vector< functionalcomposite_ptrtype > functionalCompositeLightF()
     {
-        return M_compositeF;
+        return M_compositeLightF;
     }
 
     bdf_ptrtype bdfModel(){ return M_bdf; }
@@ -539,21 +506,21 @@ private:
 
     sparse_matrix_ptrtype M,Mpod,InnerMassMatrix;
 
-    std::vector< std::vector<sparse_matrix_ptrtype> > M_Aqm;
-    std::vector< std::vector<sparse_matrix_ptrtype> > M_Mqm;
-    std::vector< std::vector<std::vector<vector_ptrtype> > > M_Fqm;
+    std::vector<sparse_matrix_ptrtype> M_Aq;
+    std::vector<sparse_matrix_ptrtype> M_Mq;
+    std::vector<std::vector<vector_ptrtype> > M_Fq;
 
-    std::vector< std::vector<operator_ptrtype> > M_Aqm_free;
-    std::vector< std::vector<operator_ptrtype> > M_Mqm_free;
-    std::vector< std::vector<std::vector<functional_ptrtype> > > M_Fqm_free;
+    std::vector<operator_ptrtype> M_Aq_free;
+    std::vector<operator_ptrtype> M_Mq_free;
+    std::vector<std::vector<functional_ptrtype> > M_Fq_free;
 
-    operatorcomposite_ptrtype M_compositeA;
-    operatorcomposite_ptrtype M_compositeM;
-    std::vector< functionalcomposite_ptrtype > M_compositeF;
+    operatorcomposite_ptrtype M_compositeLightA;
+    operatorcomposite_ptrtype M_compositeLightM;
+    std::vector< functionalcomposite_ptrtype > M_compositeLightF;
 
-    beta_vector_type M_betaAqm;
-    beta_vector_type M_betaMqm;
-    std::vector<beta_vector_type> M_betaFqm;
+    beta_vector_light_type M_betaAq;
+    beta_vector_light_type M_betaMq;
+    std::vector<beta_vector_light_type> M_betaFq;
 
     bdf_ptrtype M_bdf;
 
@@ -589,23 +556,15 @@ void
 HeatShield<Order>::initDataStructureForBetaCoeff()
 {
     int qa = Qa();
-    M_betaAqm.resize( qa );
-    for(int i=0; i<qa; i++)
-        M_betaAqm[i].resize( 1 );
-
+    M_betaAq.resize( qa );
     int qm=Qm();
-    M_betaMqm.resize(qm );
-    for(int i=0; i<qm; i++)
-        M_betaMqm[i].resize( 1 );
-
+    M_betaMq.resize( qm );
     int nl = Nl();
-    M_betaFqm.resize( nl );
+    M_betaFq.resize( nl );
     for(int i=0; i<nl; i++)
     {
         int ql=Ql(i);
-        M_betaFqm[i].resize( ql );
-        for(int j=0; j<ql; j++)
-            M_betaFqm[i][j].resize( 1 );
+        M_betaFq[i].resize( ql );
     }
 
 }
@@ -616,11 +575,15 @@ HeatShield<Order>::buildGinacExpressions()
 {
 
     int qa = Qa();
+    std::vector< std::string > symbols_vec;
+    symbols_vec.push_back("BiotOut");
+    symbols_vec.push_back("BiotIn");
+    symbols_vec.push_back("surface");
     for(int i=0; i<qa; i++)
     {
         std::string name = ( boost::format("beta.A%1%") %i ).str();
         std::string filename = ( boost::format("GinacA%1%") %i ).str();
-        ginac_expressionA.push_back( expr( option(_name=name).template as<std::string>(), {symbol("x"),symbol("y"),symbol("BiotOut") , symbol("BiotIn")} , filename ) );
+        ginac_expressionA.push_back( expr( option(_name=name).template as<std::string>(), Symbols( symbols_vec ) , filename ) );
     }
 
 
@@ -629,7 +592,7 @@ HeatShield<Order>::buildGinacExpressions()
     {
         std::string name = ( boost::format("beta.M%1%") %i ).str();
         std::string filename = ( boost::format("GinacM%1%") %i ).str();
-        ginac_expressionM.push_back( expr( option(_name=name).template as<std::string>(), {symbol("x"),symbol("y")} , filename ) );
+        ginac_expressionM.push_back( expr( option(_name=name).template as<std::string>(),  Symbols( symbols_vec ) , filename ) );
     }
 
     int nl = Nl();
@@ -640,7 +603,7 @@ HeatShield<Order>::buildGinacExpressions()
         {
             std::string name = ( boost::format("beta.F%1%.%2%") %i %j ).str();
             std::string filename = ( boost::format("GinacF%1%.%2%") %i %j ).str();
-            ginac_expressionF.push_back( expr( option(_name=name).template as<std::string>(), {symbol("x"),symbol("y"),symbol("BiotOut") , symbol("BiotIn"), symbol("surface")} , filename ) );
+            ginac_expressionF.push_back( expr( option(_name=name).template as<std::string>(), Symbols( symbols_vec ) , filename ) );
         }
     }
 
@@ -780,42 +743,22 @@ void HeatShield<Order>::initModel()
     bool dont_use_operators_free = option(_name="do-not-use-operators-free").template as<bool>() ;
     if( dont_use_operators_free )
     {
-        M_Aqm.resize( this->Qa() );
-        for(int q=0; q<Qa(); q++)
-            M_Aqm[q].resize( 1 );
-
-        M_Mqm.resize( this->Qm() );
-        for(int q=0; q<Qm(); q++)
-            M_Mqm[q].resize( 1 );
-
-        M_Fqm.resize( this->Nl() );
+        M_Aq.resize( this->Qa() );
+        M_Mq.resize( this->Qm() );
+        M_Fq.resize( this->Nl() );
         for(int l=0; l<Nl(); l++)
         {
-            M_Fqm[l].resize( Ql(l) );
-            for(int q=0; q<Ql(l) ; q++)
-            {
-                M_Fqm[l][q].resize(1);
-            }
+            M_Fq[l].resize( Ql(l) );
         }
     }
     else
     {
-        M_Aqm_free.resize( this->Qa() );
-        for(int q=0; q<Qa(); q++)
-            M_Aqm_free[q].resize( 1 );
-
-        M_Mqm_free.resize( this->Qm() );
-        for(int q=0; q<Qm(); q++)
-            M_Mqm_free[q].resize( 1 );
-
-        M_Fqm_free.resize( this->Nl() );
+        M_Aq_free.resize( this->Qa() );
+        M_Mq_free.resize( this->Qm() );
+        M_Fq_free.resize( this->Nl() );
         for(int l=0; l<Nl(); l++)
         {
-            M_Fqm_free[l].resize( Ql(l) );
-            for(int q=0; q<Ql(l) ; q++)
-            {
-                M_Fqm_free[l][q].resize(1);
-            }
+            M_Fq_free[l].resize( Ql(l) );
         }
     }
 
@@ -849,48 +792,48 @@ void HeatShield<Order>::assemble()
 
     if( option(_name="do-not-use-operators-free").template as<bool>() )
     {
-        M_Aqm[0][0] = backend->newMatrix( Xh, Xh );
-        M_Aqm[1][0] = backend->newMatrix( Xh, Xh );
-        M_Aqm[2][0] = backend->newMatrix( Xh, Xh );
-        M_Mqm[0][0] = backend->newMatrix( Xh, Xh );
-        M_Fqm[0][0][0] = backend->newVector( Xh );
-        M_Fqm[1][0][0] = backend->newVector( Xh );
-        form2(Xh, Xh, M_Aqm[0][0]) = integrate( _range= elements( mesh ), _expr= gradt( u )*trans( grad( v ) ) );
-        form2(Xh, Xh, M_Aqm[1][0]) = integrate( _range= markedfaces( mesh, "left" ), _expr= idt( u )*id( v ) );
-        form2(Xh, Xh, M_Aqm[2][0]) = integrate( _range= markedfaces( mesh, "gamma_holes" ), _expr= idt( u )*id( v ) );
-        form2(Xh, Xh, M_Mqm[0][0]) = integrate ( _range=elements( mesh ), _expr=idt( u )*id( v ) );
-        form1(Xh, M_Fqm[0][0][0]) = integrate( _range=markedfaces( mesh,"left" ), _expr= id( v ) ) ;
-        form1(Xh, M_Fqm[1][0][0]) = integrate( _range=elements( mesh ), _expr= id( v ) ) ;
+        M_Aq[0] = backend->newMatrix( Xh, Xh );
+        M_Aq[1] = backend->newMatrix( Xh, Xh );
+        M_Aq[2] = backend->newMatrix( Xh, Xh );
+        M_Mq[0] = backend->newMatrix( Xh, Xh );
+        M_Fq[0][0] = backend->newVector( Xh );
+        M_Fq[1][0] = backend->newVector( Xh );
+        form2(Xh, Xh, M_Aq[0]) = integrate( _range= elements( mesh ), _expr= gradt( u )*trans( grad( v ) ) );
+        form2(Xh, Xh, M_Aq[1]) = integrate( _range= markedfaces( mesh, "left" ), _expr= idt( u )*id( v ) );
+        form2(Xh, Xh, M_Aq[2]) = integrate( _range= markedfaces( mesh, "gamma_holes" ), _expr= idt( u )*id( v ) );
+        form2(Xh, Xh, M_Mq[0]) = integrate ( _range=elements( mesh ), _expr=idt( u )*id( v ) );
+        form1(Xh, M_Fq[0][0]) = integrate( _range=markedfaces( mesh,"left" ), _expr= id( v ) ) ;
+        form1(Xh, M_Fq[1][0]) = integrate( _range=elements( mesh ), _expr= id( v ) ) ;
     }
     else
     {
-        auto expr_a00 = integrate( _range= elements( mesh ), _expr= gradt( u )*trans( grad( v ) ) );
-        auto operatorfree00=opLinearFree( _domainSpace=Xh , _imageSpace=Xh , _expr=expr_a00 , _backend=backend );
-        operatorfree00->setName("A0");
-        M_Aqm_free[0][0]=operatorfree00;
+        auto expr_a0 = integrate( _range= elements( mesh ), _expr= gradt( u )*trans( grad( v ) ) );
+        auto operatorfree0=opLinearFree( _domainSpace=Xh , _imageSpace=Xh , _expr=expr_a0 , _backend=backend );
+        operatorfree0->setName("A0");
+        M_Aq_free[0]=operatorfree0;
 
-        auto expr_a10  = integrate( _range= markedfaces( mesh, "left" ), _expr= idt( u )*id( v ) );
-        auto operatorfree10=opLinearFree( _domainSpace=Xh , _imageSpace=Xh , _expr=expr_a10 , _backend=backend );
-        operatorfree10->setName("A1");
-        M_Aqm_free[1][0]=operatorfree10;
+        auto expr_a1 = integrate( _range= markedfaces( mesh, "left" ), _expr= idt( u )*id( v ) );
+        auto operatorfree1=opLinearFree( _domainSpace=Xh , _imageSpace=Xh , _expr=expr_a1 , _backend=backend );
+        operatorfree1->setName("A1");
+        M_Aq_free[1]=operatorfree1;
 
-        auto expr_a20  = integrate( _range= markedfaces( mesh, "gamma_holes" ), _expr= idt( u )*id( v ) );
-        auto operatorfree20=opLinearFree( _domainSpace=Xh , _imageSpace=Xh , _expr=expr_a20 , _backend=backend );
-        operatorfree20->setName("A2");
-        M_Aqm_free[2][0]=operatorfree20;
+        auto expr_a2 = integrate( _range= markedfaces( mesh, "gamma_holes" ), _expr= idt( u )*id( v ) );
+        auto operatorfree2=opLinearFree( _domainSpace=Xh , _imageSpace=Xh , _expr=expr_a2 , _backend=backend );
+        operatorfree2->setName("A2");
+        M_Aq_free[2]=operatorfree2;
 
-        auto expr_f000 = integrate( _range=markedfaces( mesh,"left" ), _expr= id( v ) ) ;
-        auto functionalfree000 = functionalLinearFree( _space=Xh , _expr=expr_f000 , _backend=backend );
-        auto expr_f100 = integrate( _range=elements( mesh ), _expr= id( v ) ) ;
-        auto functionalfree100 = functionalLinearFree( _space=Xh , _expr=expr_f100 , _backend=backend );
-        M_Fqm_free[0][0][0]=functionalfree000;
-        M_Fqm_free[1][0][0]=functionalfree100;
+        auto expr_f00 = integrate( _range=markedfaces( mesh,"left" ), _expr= id( v ) ) ;
+        auto functionalfree00 = functionalLinearFree( _space=Xh , _expr=expr_f00 , _backend=backend );
+        auto expr_f10 = integrate( _range=elements( mesh ), _expr= id( v ) ) ;
+        auto functionalfree10 = functionalLinearFree( _space=Xh , _expr=expr_f10 , _backend=backend );
+        M_Fq_free[0][0]=functionalfree00;
+        M_Fq_free[1][0]=functionalfree10;
 
         //mass matrix
-        auto expr_m00 = integrate ( _range=elements( mesh ), _expr=idt( u )*id( v ) );
-        auto operatorfreeM10=opLinearFree( _domainSpace=Xh , _imageSpace=Xh , _expr=expr_m00 , _backend=backend );
-        operatorfreeM10->setName("mass");
-        M_Mqm_free[0][0]=operatorfreeM10;
+        auto expr_m0 = integrate ( _range=elements( mesh ), _expr=idt( u )*id( v ) );
+        auto operatorfreeM0=opLinearFree( _domainSpace=Xh , _imageSpace=Xh , _expr=expr_m0 , _backend=backend );
+        operatorfreeM0->setName("mass");
+        M_Mq_free[0]=operatorfreeM0;
     }
 
     //for scalarProduct
@@ -916,27 +859,19 @@ void HeatShield<Order>::assemble()
 
     if( ! option(_name="do-not-use-operators-free").template as<bool>() )
     {
-        M_compositeA = opLinearComposite( _domainSpace=Xh , _imageSpace=Xh );
-        M_compositeA->addList( M_Aqm_free );
-        M_compositeM = opLinearComposite( _domainSpace=Xh , _imageSpace=Xh );
-        M_compositeM->addList( M_Mqm_free );
-        M_compositeF.resize( this->Nl() );
+        M_compositeLightA = opLinearComposite( _domainSpace=Xh , _imageSpace=Xh );
+        M_compositeLightA->addList( M_Aq_free );
+        M_compositeLightM = opLinearComposite( _domainSpace=Xh , _imageSpace=Xh );
+        M_compositeLightM->addList( M_Mq_free );
+        M_compositeLightF.resize( this->Nl() );
         for(int output=0; output<this->Nl(); output++)
         {
-            M_compositeF[output]=functionalLinearComposite( _space=Xh );
-            M_compositeF[output]->addList( M_Fqm_free[output] );
+            M_compositeLightF[output]=functionalLinearComposite( _space=Xh );
+            M_compositeLightF[output]->addList( M_Fq_free[output] );
         }
     }
 
 }
-template<int Order>
-typename HeatShield<Order>::affine_decomposition_type
-HeatShield<Order>::computeAffineDecomposition()
-{
-    return boost::make_tuple( M_Mqm, M_Aqm, M_Fqm );
-}
-
-
 
 
 template<int Order>
@@ -954,17 +889,14 @@ double HeatShield<Order>::output( int output_index, parameter_type const& mu, el
     {
         for ( int q=0; q<Ql( output_index ); q++ )
         {
-            for ( int m=0; m<mMaxF(output_index,q); m++ )
+            if( dont_use_operators_free )
             {
-                if( dont_use_operators_free )
-                {
-                    s += M_betaFqm[output_index][q][m]*dot( *M_Fqm[output_index][q][m] , u );
-                }
-                else
-                {
-                    M_Fqm_free[output_index][q][m]->containerPtr( fqm );
-                    s += M_betaFqm[output_index][q][m]*dot( *fqm , u );
-                }
+                s += M_betaFq[output_index][q]*dot( *M_Fq[output_index][q] , u );
+            }
+            else
+            {
+                M_Fq_free[output_index][q]->containerPtr( fqm );
+                s += M_betaFq[output_index][q]*dot( *fqm , u );
             }
         }
     }

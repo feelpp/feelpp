@@ -116,6 +116,7 @@ public:
     typedef CRBModel<ModelType> crbmodelbilinear_type;
 
     typedef typename ModelType::parameter_type parameter_type;
+    typedef typename ModelType::mesh_type mesh_type;
     typedef std::vector< parameter_type > vector_parameter_type;
 
     typedef typename crb_type::sampling_ptrtype sampling_ptrtype;
@@ -381,7 +382,7 @@ public:
             bool compute_stat =  option(_name="crb.compute-stat").template as<bool>();
 
             bool use_predefined_sampling = option(_name="crb.use-predefined-test-sampling").template as<bool>();
-            bool select_parameter_via_one_feel=option( _name="crb.select-parameter-via-one-feel").template as<bool>();
+            //bool select_parameter_via_one_feel=option( _name="crb.select-parameter-via-one-feel").template as<bool>();
             bool sampling_is_already_generated=false;
 
 
@@ -391,7 +392,17 @@ public:
                 export_solution=false;
                 compute_stat=false;
             }
-
+            bool select_parameter_via_one_feel=false;
+            parameter_type user_mu_onefeel ( model->parameterSpace() );
+            std::string string_parameters = option(_name="crb.user-parameters").template as< std::string >();
+            if( string_parameters == "" || string_parameters == " " )
+            {
+                select_parameter_via_one_feel=false;
+            }
+            else
+            {
+                select_parameter_via_one_feel=true;
+            }
             if( select_parameter_via_one_feel )
             {
                 run_sampling_size=1;
@@ -400,22 +411,20 @@ public:
                 compute_fem=false;
                 compute_stat=false;
 
-                CHECK( load_elements_db )<<"[OpusApp] You have specified to not load elements database so it is impossible to visualize RB solution, use crb.load-elements-database=true !\n";
+                //CHECK( load_elements_db )<<"[OpusApp] You have specified to not load elements database so it is impossible to visualize RB solution, use crb.load-elements-database=true !\n";
 
                 //parameters are given by a vector of double
-                std::string string_parameters = option(_name="crb.user-parameters").template as< std::string >();
                 std::vector< std::string > str;
                 boost::split( str, string_parameters, boost::is_any_of(" "), boost::token_compress_on );
-                parameter_type user_mu ( model->parameterSpace() );
                 double user_parameter_size = str.size();
-                double mu_size = user_mu.size();
+                double mu_size = user_mu_onefeel.size();
                 CHECK( user_parameter_size == mu_size )<<"[OpusApp] Error : parameters must have "<<mu_size<<" components and "<<user_parameter_size<<" have been given by the user \n";
                 for(int i=0; i<mu_size; i++)
                 {
                     double mu = boost::lexical_cast<double>( str[i] );
-                    user_mu( i ) = mu;
+                    user_mu_onefeel( i ) = mu;
                 }
-                Sampling->addElement( user_mu );
+                Sampling->addElement( user_mu_onefeel );
                 sampling_is_already_generated=true;
             }
 
@@ -424,28 +433,84 @@ public:
             std::vector< std::string > str;
             boost::split( str, vary_only_parameter_components, boost::is_any_of(" "), boost::token_compress_on );
             int number_str=str.size();
-            CHECK( number_str < 4 )<<"Error when using option crb.vary-only-parameter-components, at maximum we can vary 2 components of the parameter";
+            CHECK( number_str < 5 )<<"Error when using option crb.vary-only-parameter-components, at maximum we can vary 2 components of the parameter";
             int vary_mu_comp0=-1,vary_mu_comp1=-1;
-            if( number_str > 1 )
+            int cutting_direction0=0;
+            int cutting_direction1=0;
+            bool vary_comp_time=false;
+            if( vary_only_parameter_components!="" )
             {
                 Sampling->clear();
                 compute_fem=false;
                 compute_stat=false;
                 export_solution=false;
                 int size=-1;
+                if( number_str == 1 )
+                {
+                    //user want only to make time vary
+                    CHECK( str[0] == "t" )<<"Error ! option crb.vary-only-parameter-components = "<<str[0]<<" but should be only 't' in this format";
+                    vary_comp_time=true;
+                }
                 //here only one component vary
                 if( number_str == 2 )
                 {
-                    vary_mu_comp0 = boost::lexical_cast<int>( str[0] );
-                    size = boost::lexical_cast<int>( str[1] );
-                    run_sampling_size=size;
+                    if( str[0] == "t" )
+                    {
+                        //note that in this case we accept
+                        //to have number of runs in this direction
+                        //but we ignore it
+                        vary_comp_time=true;
+                    }
+                    else
+                    {
+                        vary_mu_comp0 = boost::lexical_cast<int>( str[0] );
+                    }
+                    cutting_direction0 = boost::lexical_cast<int>( str[1] );
                 }
-                else
+                if( number_str == 3 )
                 {
-                    vary_mu_comp0 = boost::lexical_cast<int>( str[0] );
-                    vary_mu_comp1 = boost::lexical_cast<int>( str[1] );
-                    size = boost::lexical_cast<int>( str[2] );
-                    run_sampling_size=size*size;
+                    //in this configuration we have
+                    //a parameter component and associated number of runs
+                    //the time
+                    if( str[0] == "t" )
+                    {
+                        vary_comp_time=true;
+                        vary_mu_comp1 = boost::lexical_cast<int>( str[1] );
+                        cutting_direction1 = boost::lexical_cast<int>( str[2] );
+                    }
+                    if( str[2] == "t" )
+                    {
+                        vary_comp_time=true;
+                        vary_mu_comp1 = boost::lexical_cast<int>( str[0] );
+                        cutting_direction1 =boost::lexical_cast<int>( str[1] );
+                    }
+                    if( str[0] != "t" && str[2] != "t" )
+                    {
+                       bool go=false;
+                       CHECK( go )<<"A problem appears in the option crb.vary-only-parameter-components = "<<vary_only_parameter_components<<" No time 't' found !\n";
+                    }
+                }
+                if( number_str==4 )
+                {
+                    if( str[0] == "t" )
+                    {
+                        vary_comp_time=true;
+                        vary_mu_comp1 = boost::lexical_cast<int>( str[2] );
+                        cutting_direction1 = boost::lexical_cast<int>( str[3] );
+                    }
+                    if( str[2] == "t" )
+                    {
+                        vary_comp_time=true;
+                        vary_mu_comp1 = boost::lexical_cast<int>( str[0] );
+                        cutting_direction1 = boost::lexical_cast<int>( str[1] );
+                    }
+                    if( str[0] != "t" && str[2] != "t" )
+                    {
+                        vary_mu_comp0 = boost::lexical_cast<int>( str[0] );
+                        cutting_direction0 = boost::lexical_cast<int>( str[1] );
+                        vary_mu_comp1 = boost::lexical_cast<int>( str[2] );
+                        cutting_direction1 = boost::lexical_cast<int>( str[3] );
+                    }
                 }
 
                 parameter_type user_mu ( model->parameterSpace() );
@@ -455,16 +520,7 @@ public:
                 {
                     CHECK( vary_mu_comp1 < mu_size )<<"[OpusApp] error using crb.vary-only-parameter-components, the component "<<vary_mu_comp1<<" can't vary because parameter have a total of only "<<mu_size<<" components\n";
                 }
-
-                std::vector< int > sampling_each_direction ( mu_size );
-                for(int i=0; i<mu_size; i++)
-                {
-                    if( i == vary_mu_comp0 || i == vary_mu_comp1 )
-                        sampling_each_direction[i]=size;
-                    else
-                        sampling_each_direction[i]=0;
-                }
-                Sampling->logEquidistributeProduct( sampling_each_direction );
+                //the sampling will b generated latter
                 sampling_is_already_generated=true;
             }
 
@@ -544,6 +600,37 @@ public:
                     crb->printErrorsDuringRbConstruction();
                 if ( crb->showMuSelection() && Environment::worldComm().globalRank()==Environment::worldComm().masterRank() )
                     crb->printMuSelection();
+
+                bool eim_mu_selection = option(_name="eim.show-mu-selection").template as<bool>();
+                bool eim_t_selection = option(_name="eim.show-t-selection").template as<bool>();
+                bool eim_offline_error = option(_name="eim.show-offline-error").template as<bool>();
+                if( eim_mu_selection || eim_t_selection || eim_offline_error )
+                {
+                    auto eim_sc_vector = model->scalarContinuousEim();
+                    auto eim_sd_vector = model->scalarDiscontinuousEim();
+
+                    for(int i=0; i<eim_sc_vector.size(); i++)
+                    {
+                        auto eim = eim_sc_vector[i];
+                        if( eim_mu_selection )
+                            eim->printMuSelection();
+                        if( eim_t_selection )
+                            eim->printInterpolationPointsSelection();
+                        if( eim_offline_error )
+                            eim->printOfflineError();
+                    }
+
+                    for(int i=0; i<eim_sd_vector.size(); i++)
+                    {
+                        auto eim = eim_sd_vector[i];
+                        if( eim_mu_selection )
+                            eim->printMuSelection();
+                        if( eim_t_selection )
+                            eim->printInterpolationPointsSelection();
+                        if( eim_offline_error )
+                            eim->printOfflineError();
+                    }
+                }
             }
 
             auto e = exporter( _mesh= model->functionSpace()->mesh()  );
@@ -574,10 +661,6 @@ public:
             }
 
             std::ofstream file_summary_of_simulations( ( boost::format( "summary_of_simulations_%d" ) %dim ).str().c_str() ,std::ios::out | std::ios::app );
-
-            vectorN_type outputs_storage( run_sampling_size );
-            vectorN_type mu0_storage( run_sampling_size );
-            vectorN_type estimated_error_outputs_storage( run_sampling_size );
 
             int curpar = 0;
 
@@ -818,7 +901,6 @@ public:
 
                                 boost::mpi::timer ti;
 
-                                ti.restart();
                                 LOG(INFO) << "solve crb\n";
                                 //google::FlushLogFiles(google::GLOG_INFO);
 
@@ -827,6 +909,7 @@ public:
 
                                 bool print_rb_matrix = option(_name="crb.print-rb-matrix").template as<bool>();
                                 double online_tol = option(_name="crb.online-tolerance").template as<double>();
+                                ti.restart();
                                 auto o = crb->run( mu, online_tol , N, print_rb_matrix);
                                 double time_crb = ti.elapsed();
 
@@ -851,6 +934,10 @@ public:
                                 LOG(INFO) << "export u_crb \n";
                                 if( export_solution )
                                 {
+                                    if( select_parameter_via_one_feel )
+                                    {
+                                        model->adaptMesh( mu );
+                                    }
                                     e->add( u_crb.name(), u_crb );
                                 }
 
@@ -868,26 +955,24 @@ public:
                                 element_type u_dual_fem ;
 
                                 auto all_upper_bounds = o.template get<6>();
-                                double output_estimated_error = all_upper_bounds.template get<0>();
+                                auto vector_output_estimated_error = all_upper_bounds.template get<0>();
+                                int last_time = vector_output_estimated_error.size()-1;
+                                //output estimated error for last time
+                                double output_estimated_error = vector_output_estimated_error[ last_time ];
                                 double solution_estimated_error = all_upper_bounds.template get<1>();
                                 double dual_solution_estimated_error = all_upper_bounds.template get<2>();
 
-                                double ocrb = o.template get<0>();
-                                if( vary_mu_comp0 > -1 )
-                                {
-                                    double x = mu(vary_mu_comp0);
-                                    double mu0 = mu(vary_mu_comp0);
-                                    outputs_storage(curpar-1)=ocrb;
-                                    mu0_storage(curpar-1)=mu0;
-                                    estimated_error_outputs_storage(curpar-1)=output_estimated_error;
-                                }
+                                auto output_vector=o.template get<0>();
+                                double output_vector_size=output_vector.size();
+                                double ocrb = output_vector[output_vector_size-1];//output at last time
+                                double time_fem_solve=-1;
 
                                 if ( compute_fem )
                                 {
 									bool use_newton = option(_name="crb.use-newton").template as<bool>();
 
-                                    ti.restart();
                                     LOG(INFO) << "solve u_fem\n";
+                                    ti.restart();
 
                                     //auto u_fem = model->solveRB( mu );
                                     //auto u_fem = model->solveFemUsingOfflineEim( mu );
@@ -898,6 +983,8 @@ public:
                                     else
                                         u_fem = model->solve( mu );
 
+                                    time_fem_solve=ti.elapsed();
+
                                     std::ostringstream u_fem_str;
                                     u_fem_str << "u_fem(" << mu_str.str() << ")";
                                     u_fem.setName( u_fem_str.str()  );
@@ -907,6 +994,8 @@ public:
                                         LOG(INFO) << "export u_fem \n";
                                         e->add( u_fem.name(), u_fem );
                                     }
+
+                                    ti.restart();
                                     std::vector<double> ofem = boost::assign::list_of( model->output( output_index,mu, u_fem ) )( ti.elapsed() );
 
                                     relative_error = std::abs( ofem[0]- ocrb) /ofem[0];
@@ -928,8 +1017,7 @@ public:
                                     h1_error = h1Norm( u_error )/h1Norm( u_fem );
 
                                     output_fem = ofem[0];
-                                    time_fem = ofem[1];
-
+                                    time_fem = ofem[1]+time_fem_solve;
                                     if( boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value && ! use_newton )
                                     {
                                         if( solve_dual_problem )
@@ -947,7 +1035,9 @@ public:
 
                                 if ( crb->errorType()==2 )
                                 {
-                                    double ocrb = o.template get<0>();
+                                    auto output_vector=o.template get<0>();
+                                    double output_vector_size=output_vector.size();
+                                    double ocrb = output_vector[output_vector_size-1];//output at last time
                                     std::vector<double> v = boost::assign::list_of( output_fem )( time_fem )( ocrb )( relative_estimated_error )( time_crb )( relative_error )( condition_number )( l2_error )( h1_error );
                                     if( proc_number == Environment::worldComm().masterRank() )
                                     {
@@ -975,7 +1065,10 @@ public:
                                 {
                                     //if( ! boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value )
                                     //    throw std::logic_error( "ERROR TYPE must be 2 when using CRBTrilinear (no error estimation)" );
-                                    double ocrb = o.template get<0>();
+
+                                    auto output_vector=o.template get<0>();
+                                    double output_vector_size=output_vector.size();
+                                    double ocrb = output_vector[output_vector_size-1];//output at last time
                                     std::vector<double> v = boost::assign::list_of( output_fem )( time_fem )( ocrb )( output_estimated_error )( ti.elapsed() ) ( relative_estimated_error )( condition_number )( l2_error )( h1_error ) ;
                                     if( proc_number == Environment::worldComm().masterRank() )
                                     {
@@ -1047,7 +1140,8 @@ public:
                                     std::ofstream fileSolutionDualErrorEstimated ("CrbConvergenceDualSolutionErrorEstimated.dat" ,std::ios::out | std::ios::app );
                                     std::ofstream filePrimalResidualNorm ("CrbConvergencePrimalResidualNorm.dat" ,std::ios::out | std::ios::app );
                                     std::ofstream fileDualResidualNorm ( "CrbConvergenceDualResidualNorm.dat" ,std::ios::out | std::ios::app );
-
+                                    std::ofstream fileCrbTime ( "CrbConvergenceCrbTime.dat" ,std::ios::out | std::ios::app );
+                                    std::ofstream fileFemTime ( "CrbConvergenceFemTime.dat" ,std::ios::out | std::ios::app );
 
                                     int Nmax = option("crb.dimension-max").template as<int>();
                                     if( Environment::worldComm().isMasterRank() )
@@ -1065,13 +1159,20 @@ public:
                                             fileSolutionDualErrorEstimated << Nmax << "\t";
                                             filePrimalResidualNorm << Nmax << "\t";
                                             fileDualResidualNorm << Nmax << "\t";
-
+                                            fileCrbTime << Nmax << "\t";
+                                            fileFemTime << Nmax << "\t" ;
                                     }
                                     std::string str = "\t";
+                                    double crb_time=0;
                                     for( int N = 1; N <= Nmax ; N++ )
                                     {
+                                        ti.restart();
                                         auto o= crb->run( mu,  online_tol , N, print_rb_matrix);
-                                        auto ocrb = o.template get<0>();
+                                        crb_time= ti.elapsed();
+
+                                        auto output_vector=o.template get<0>();
+                                        double output_vector_size=output_vector.size();
+                                        double ocrb = output_vector[output_vector_size-1];//output at last time
                                         auto solutions=o.template get<2>();
                                         auto u_crb = solutions.template get<0>();
                                         auto u_crb_du = solutions.template get<1>();
@@ -1088,8 +1189,12 @@ public:
                                             u_dual_error = u_dual_fem - uNdu;
                                         }
 
+
                                         auto all_upper_bounds = o.template get<6>();
-                                        output_estimated_error = all_upper_bounds.template get<0>();
+                                        auto vector_output_estimated_error = all_upper_bounds.template get<0>();
+                                        int last_time = vector_output_estimated_error.size()-1;
+                                        //output estimated error for last time
+                                        output_estimated_error = vector_output_estimated_error[ last_time ];
                                         solution_estimated_error = all_upper_bounds.template get<1>();
                                         dual_solution_estimated_error = all_upper_bounds.template get<2>();
 
@@ -1241,7 +1346,7 @@ public:
                                         //LOG(INFO) << "N=" << N << " " << rel_err << " " << l2_error << " " << h1_error << " " <<condition_number<<"\n";
                                         if ( proc_number == Environment::worldComm().masterRank() )
                                         {
-                                            std::cout << "N=" << N << "Output =  "<< output_fem <<" OutputError = "<<rel_err <<" OutputErrorEstimated = "<<relative_estimated_error
+                                            std::cout << "N=" << N << " Output =  "<< output_fem <<" OutputError = "<<rel_err <<" OutputErrorEstimated = "<<relative_estimated_error
                                                       <<"  L2Error = "<< l2_error << "  H1Error = " << h1_error <<std::endl;
 
                                             if( N == Nmax )
@@ -1259,6 +1364,8 @@ public:
                                             fileSolutionDualErrorEstimated <<  relative_dual_solution_estimated_error << str;
                                             filePrimalResidualNorm << primal_residual_norm << str;
                                             fileDualResidualNorm <<  dual_residual_norm << str;
+                                            fileCrbTime<< crb_time << str;
+                                            fileFemTime<< time_fem << str;
                                         }
                                         if( option(_name="crb.compute-matrix-information").template as<bool>() )
                                         {
@@ -1359,21 +1466,30 @@ public:
                                 boost::mpi::timer ti;
                                 ti.restart();
                                 auto o = crb->run( mu,  option(_name="crb.online-tolerance").template as<double>() );
+                                auto output_vector=o.template get<0>();
+                                double output_vector_size=output_vector.size();
+                                double ocrb = output_vector[output_vector_size-1];//output at last time
 
                                 if ( crb->errorType()==2 )
                                     {
-                                        std::vector<double> v = boost::assign::list_of( o.template get<0>() )( ti.elapsed() );
-                                        std::cout << "output=" << o.template get<0>() << " with " << o.template get<1>() << " basis functions\n";
+                                        std::vector<double> v = boost::assign::list_of( ocrb )( ti.elapsed() );
+                                        std::cout << "output=" << ocrb << " with " << o.template get<1>() << " basis functions\n";
                                         printEntry( ostr, mu, v );
                                     }
 
                                 else
                                     {
                                         auto all_upper_bounds = o.template get<6>();
-                                        double output_estimated_error = all_upper_bounds.template get<0>();
+                                        auto vector_output_estimated_error = all_upper_bounds.template get<0>();
+                                        int last_time = vector_output_estimated_error.size()-1;
+                                        //output estimated error for last time
+                                        double output_estimated_error = vector_output_estimated_error[ last_time ];
                                         double relative_estimated_error = output_estimated_error / output_fem;
-                                        std::vector<double> v = boost::assign::list_of( o.template get<0>() )( output_estimated_error )( ti.elapsed() );
-                                        std::cout << "output=" << o.template get<0>() << " with " << o.template get<1>() <<
+                                        auto output_vector = o.template get<0>();
+                                        double output_vector_size = output_vector.size();
+                                        double output = output_vector[ output_vector_size ];
+                                        std::vector<double> v = boost::assign::list_of( output )( output_estimated_error )( ti.elapsed() );
+                                        std::cout << "output=" << ocrb << " with " << o.template get<1>() <<
                                             " basis functions  (relative error estimation on this output : " << relative_estimated_error<<") \n";
                                         printEntry( ostr, mu, v );
                                     }
@@ -1436,7 +1552,200 @@ public:
                 }
             }
 
-            model->generateGeoFileForOutputPlot( outputs_storage , mu0_storage, estimated_error_outputs_storage );
+            //one parameter change : plot
+            if( vary_mu_comp0 > -1 || vary_comp_time )
+            {
+                parameter_type user_mu ( model->parameterSpace() );
+                double mu_size = user_mu.size();
+                std::vector< int > sampling_each_direction ( mu_size );
+                for(int i=0; i<mu_size; i++)
+                {
+                    if( i == vary_mu_comp0  )
+                        sampling_each_direction[i]=cutting_direction0;
+                    else
+                        sampling_each_direction[i]=0;
+                }
+
+                int N =  option(_name="crb.dimension").template as<int>();
+                double online_tol = option(_name="crb.online-tolerance").template as<double>();
+
+                vectorN_type outputs_storage;
+                vectorN_type mu0_storage;
+                vectorN_type estimated_error_outputs_storage;
+
+                //have min/max
+                Sampling->equidistribute( 2 );
+
+                curpar=1;
+                if( ! vary_comp_time )
+                {
+                    outputs_storage.resize( cutting_direction0 );
+                    mu0_storage.resize( cutting_direction0 );
+                    auto mu_=Sampling->min().template get<0>();
+                    if( select_parameter_via_one_feel )
+                    {
+                        mu_ = user_mu_onefeel;
+                    }
+                    estimated_error_outputs_storage.resize( cutting_direction0 );
+                    Sampling->logEquidistributeProduct( sampling_each_direction , mu_ );
+                    BOOST_FOREACH( auto mu, *Sampling )
+                    {
+                        double x = mu(vary_mu_comp0);
+                        double mu0 = mu(vary_mu_comp0);
+                        auto o = crb->run( mu,  online_tol , N);
+                        auto output_vector=o.template get<0>();
+                        double output_vector_size=output_vector.size();
+                        double ocrb = output_vector[output_vector_size-1];//output at last time
+                        auto all_upper_bounds = o.template get<6>();
+                        auto vector_output_estimated_error = all_upper_bounds.template get<0>();
+                        int last_time = vector_output_estimated_error.size()-1;
+                        //output estimated error for last time
+                        double output_estimated_error = vector_output_estimated_error[ last_time ];
+                        outputs_storage(curpar-1)=ocrb;
+                        mu0_storage(curpar-1)=mu0;
+                        estimated_error_outputs_storage(curpar-1)=output_estimated_error;
+                        curpar++;
+                    }
+                }
+                else
+                {
+                    auto mu=Sampling->min().template get<0>();
+                    if( select_parameter_via_one_feel )
+                    {
+                        mu = user_mu_onefeel;
+                    }
+                    auto o = crb->run( mu,  online_tol , N);
+                    auto output_vector=o.template get<0>();
+                    auto all_upper_bounds = o.template get<6>();
+                    auto vector_output_estimated_error = all_upper_bounds.template get<0>();
+                    int size=output_vector.size();
+                    outputs_storage.resize( size );
+                    mu0_storage.resize( size );
+                    estimated_error_outputs_storage.resize( size );
+                    double dt = model->timeStep();
+                    double time=0;
+                    for(int i=0; i<size; i++)
+                    {
+                        mu0_storage(i)=time;
+                        outputs_storage(i)=output_vector[i];
+                        estimated_error_outputs_storage(i)=vector_output_estimated_error[i];
+                        time+=dt;
+                    }
+                }
+                model->generateGeoFileForOutputPlot( outputs_storage , mu0_storage, estimated_error_outputs_storage );
+            }
+            //two parameters change : response surface
+            bool draw_surface=false;
+            if( vary_mu_comp0 > -1 && vary_mu_comp1 > -1 )
+                draw_surface=true;
+            if( vary_mu_comp1 > -1 && vary_comp_time )
+                draw_surface=true;
+            if( draw_surface )
+            {
+
+                double Ti=model->timeInitial();
+                double Tf=model->timeFinal();
+                double dt=model->timeStep();
+
+                int N =  option(_name="crb.dimension").template as<int>();
+                double online_tol = option(_name="crb.online-tolerance").template as<double>();
+                CHECK( Environment::worldComm().globalSize() == 1 )<<"implemented only in sequential (because of dof filling)\n";
+                typename crb_type::sampling_ptrtype S( new typename crb_type::sampling_type( model->parameterSpace() ) );
+                bool all_procs_have_same_sampling=true;
+                S->equidistribute( 2 , all_procs_have_same_sampling );
+                auto min = S->min().template get<0>();
+                auto max = S->max().template get<0>();
+                //vector of indices of components vary
+                std::vector<int> components_vary(2);
+                components_vary[0]=vary_mu_comp0;
+                components_vary[1]=vary_mu_comp1;
+                //vector containing parameters min and max
+                std::vector<parameter_type> extremums(2);
+                extremums[0]=min;
+                extremums[1]=max;
+                //cutting in each direction
+                std::vector<int> cutting(2);
+                cutting[0]=cutting_direction0;
+                cutting[1]=cutting_direction1;
+                std::vector<double> time_cutting(3);
+                time_cutting[0]=Ti;
+                time_cutting[1]=Tf;
+                time_cutting[2]=dt;
+
+                auto mesh = createGMSHMesh( _mesh=new mesh_type,
+                                            _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
+                                            _desc = model->createStructuredGrid( components_vary, extremums , cutting, time_cutting, vary_comp_time ) );
+
+                auto Vh = Pch<1>( mesh );
+                auto px = project(_space=Vh, _expr=Px() );
+                auto py = project(_space=Vh, _expr=Py() );
+                int ndof=Vh->nDof();
+                auto u = Vh->element();
+                parameter_type mu ( model->parameterSpace() );
+                int time_index=0;
+                for(int i=0; i<ndof; i++)
+                {
+                    double mux=px(i);
+                    double muy=py(i);
+                    mu=min;//first, initialize all components at minimum
+                    mu( vary_mu_comp0 ) = mux;
+
+                    if( vary_comp_time )
+                    {
+                        //time is always represented by the X-axis
+                        //look at which index mux is associated
+                        time_index=(mux-Ti)/dt;
+                    }
+                    else
+                    {
+                        mu( vary_mu_comp1 ) = muy;
+                    }
+
+                    auto run = crb->run( mu,  online_tol, N );
+                    auto output_vector=run.template get<0>();
+                    double output=0;
+                    if( vary_comp_time )
+                    {
+                        output = output_vector[time_index];
+                    }
+                    else
+                    {
+                        int output_vector_size=output_vector.size();
+                        output = output_vector[output_vector_size-1];//output at last time
+                    }
+                    u(i)=output;
+                }
+                auto exp = exporter( _mesh=mesh );
+                exp->add( "response surface", u );
+                exp->save();
+
+                /* Export geo file */
+                if(option(_name="exporter.format").template as<std::string>() == "gmsh")
+                {
+                    std::cout << exp->prefix() << std::endl;
+                    std::ofstream of;
+                    std::ostringstream oss;
+                    oss.str("");
+                    // To get the correct filename, we use the timeset name (The prefix is not used for exporting the data file)
+                    // We might have to get the right one, if there are several ones
+                    oss << exp->defaultTimeSet()->name() << "-" <<  Environment::worldComm().size() << "_" << Environment::worldComm().rank() << ".geo";
+                    of.open(oss.str());
+
+                    if(of.is_open())
+                    {
+                        oss.str("");
+                        oss << exp->defaultTimeSet()->name() << "-" <<  Environment::worldComm().size() << "_" << Environment::worldComm().rank() << ".msh";
+
+                        of << "Merge \"" << oss.str() << "\";" << std::endl;
+                        of << "vid = PostProcessing.NbViews;" << std::endl;
+                        //of << "For i In {vid-N:vid-1}" << std::endl;
+                        of << "View[vid-1].Axes = 1;" << std::endl;
+                        //of << "EndFor" << std::endl;
+                    }
+
+                    of.close();
+                }
+            }
 
             //model->computationalTimeEimStatistics();
             if( export_solution )
@@ -1826,6 +2135,7 @@ private:
         std::vector< vectorN_type > L2, H1, OutputError, OutputErrorEstimated, OutputErrorBoundEfficiency;
         std::vector< vectorN_type > PrimalSolutionError, PrimalSolutionErrorEstimated, PrimalSolutionErrorBoundEfficiency;
         std::vector< vectorN_type > DualSolutionError, DualSolutionErrorEstimated, DualSolutionErrorBoundEfficiency;
+        std::vector< vectorN_type > CrbTime, FemTime;
 
         //load information contained in files
         std::string filename = "CrbConvergenceL2.dat";
@@ -1850,6 +2160,10 @@ private:
         model->readConvergenceDataFromFile( DualSolutionErrorEstimated , filename );
         filename = "CrbConvergenceDualSolutionErrorBoundEfficiency.dat";
         model->readConvergenceDataFromFile( DualSolutionErrorBoundEfficiency , filename );
+        filename = "CrbConvergenceCrbTime.dat";
+        model->readConvergenceDataFromFile( CrbTime , filename );
+        filename = "CrbConvergenceFemTime.dat";
+        model->readConvergenceDataFromFile( FemTime , filename );
 
         //write files containing statistics
         filename = "cvg-crb-L2.dat";
@@ -1874,6 +2188,10 @@ private:
         model->writeConvergenceStatistics( DualSolutionErrorEstimated , filename);
         filename = "cvg-crb-DualSolutionErrorBoundEfficiency.dat";
         model->writeConvergenceStatistics( DualSolutionErrorBoundEfficiency , filename);
+        filename = "cvg-crb-CrbTime.dat";
+        model->writeConvergenceStatistics( CrbTime , filename, "totaltime");
+        filename = "cvg-crb-FemTime.dat";
+        model->writeConvergenceStatistics( FemTime , filename , "totaltime" );
 
         //now we have error and estimated error statistics for all parameters (min max ect ... )
         //but it is interesting to have also the efficiency associated to parameter that generated the max/min

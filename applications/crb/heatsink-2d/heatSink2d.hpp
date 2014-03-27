@@ -85,7 +85,7 @@ makeHeatSink2DOptions()
     ( "k_fin", Feel::po::value<double>()->default_value( 386 ),
       "thermal conductivity of the fin in SI unit W.m^{-1}.K^{-1}" )
     ;
-    return heatsink2doptions.add( Feel::feel_options() ).add( bdf_options( "heatSink2d" ) );
+    return heatsink2doptions.add( bdf_options( "heatSink2d" ) );
 }
 AboutData
 makeHeatSink2DAbout( std::string const& str = "heatSink" )
@@ -486,7 +486,7 @@ public:
     /**
      * H1 scalar product
      */
-    sparse_matrix_ptrtype innerProduct ( void )
+    sparse_matrix_ptrtype energyMatrix ( void )
     {
         return M;
     }
@@ -551,6 +551,9 @@ public:
     {
         return M_Dmu->min();
     }
+
+    bdf_ptrtype bdfModel(){ return M_bdf; }
+
 
 private:
 

@@ -5,7 +5,8 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-07-02
 
-  Copyright (C) 2009-2011 Universite Joseph Fourier (Grenoble I)
+  Copyright (C) 2009 Universite Joseph Fourier (Grenoble I)
+  Copyright (C) 2010-2014 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -35,6 +36,3 @@ namespace detail
 BOOST_PP_LIST_FOR_EACH_PRODUCT( CROUZEIXRAVIART_FACTORY_OP, 3, ( DIM2, ORDER1, CONVEX ) )
 }
 }
-
-
-

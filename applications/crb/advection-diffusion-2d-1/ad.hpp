@@ -66,7 +66,7 @@ makeAdvectionDiffusionOptions()
     ( "mu2", po::value<double>()->default_value( 0.1 ), "Peclet number in [0.1;100]" )
     ( "no-export", "don't export results" )
     ;
-    return AdvectionDiffusionoptions.add( Feel::feel_options() );
+    return AdvectionDiffusionoptions;
 }
 AboutData
 makeAdvectionDiffusionAbout( std::string const& str = "AdvectionDiffusion" )
@@ -423,7 +423,7 @@ public:
     /**
      * H1 scalar product
      */
-    sparse_matrix_ptrtype innerProduct ( void )
+    sparse_matrix_ptrtype energyMatrix ( void )
     {
         return M;
     }

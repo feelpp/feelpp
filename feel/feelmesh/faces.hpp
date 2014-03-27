@@ -85,7 +85,7 @@ public:
         multi_index::ordered_unique<
             multi_index::composite_key<face_type,
                                        multi_index::const_mem_fun<face_type,
-                                                                  uint16_type,
+                                                                  rank_type,
                                                                   &face_type::processId>,
                                        multi_index::const_mem_fun<face_type,
                                                                   size_type,
@@ -100,7 +100,7 @@ public:
                                                                        Marker1 const&,
                                                                        &face_type::marker>,
                                             multi_index::const_mem_fun<face_type,
-                                                                       uint16_type,
+                                                                       rank_type,
                                                                        &face_type::processId>
                                             > >,
         multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_marker2>,
@@ -110,7 +110,7 @@ public:
                                                                        Marker2 const&,
                                                                        &face_type::marker2>,
                                             multi_index::const_mem_fun<face_type,
-                                                                       uint16_type,
+                                                                       rank_type,
                                                                        &face_type::processId>
                                             > >,
         multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_marker3>,
@@ -120,13 +120,13 @@ public:
                                                                        Marker3 const&,
                                                                        &face_type::marker3>,
                                             multi_index::const_mem_fun<face_type,
-                                                                       uint16_type,
+                                                                       rank_type,
                                                                        &face_type::processId>
                                             > >,
         // sort by less<int> on processId
         multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_pid>,
                                         multi_index::const_mem_fun<face_type,
-                                                                   uint16_type,
+                                                                   rank_type,
                                                                    &face_type::processId> >,
 
 
@@ -138,10 +138,10 @@ public:
                                                                        bool,
                                                                        &face_type::isInterProcessDomain>,
                                             multi_index::const_mem_fun<face_type,
-                                                                       size_type,
+                                                                       rank_type,
                                                                        &face_type::partition1>,
                                             multi_index::const_mem_fun<face_type,
-                                                                       size_type,
+                                                                       rank_type,
                                                                        &face_type::partition2>
                                             >
                                         >,
@@ -153,7 +153,7 @@ public:
                                                                        bool,
                                                                        &face_type::isOnBoundary>,
                                             multi_index::const_mem_fun<face_type,
-                                                                       uint16_type,
+                                                                       rank_type,
                                                                        &face_type::processId>
                                             >
                                         > >
@@ -465,21 +465,24 @@ public:
      * with marker \p m on processor \p p
      */
     std::pair<marker_face_iterator, marker_face_iterator>
-    facesWithMarker( size_type m, size_type p ) const
+    facesWithMarker( size_type m, rank_type p = invalid_rank_type_value ) const
     {
-        return M_faces.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), p ) );
+        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+        return M_faces.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) );
     }
 
     std::pair<marker2_face_iterator, marker2_face_iterator>
-    facesWithMarker2( size_type m, size_type p ) const
+    facesWithMarker2( size_type m, rank_type p = invalid_rank_type_value ) const
     {
-        return M_faces.template get<Feel::detail::by_marker2>().equal_range( boost::make_tuple( Marker2( m ), p ) );
+        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+        return M_faces.template get<Feel::detail::by_marker2>().equal_range( boost::make_tuple( Marker2( m ), part ) );
     }
 
     std::pair<marker3_face_iterator, marker3_face_iterator>
-    facesWithMarker3( size_type m, size_type p ) const
+    facesWithMarker3( size_type m, rank_type p = invalid_rank_type_value ) const
     {
-        return M_faces.template get<Feel::detail::by_marker3>().equal_range( boost::make_tuple( Marker3( m ), p ) );
+        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+        return M_faces.template get<Feel::detail::by_marker3>().equal_range( boost::make_tuple( Marker3( m ), part ) );
     }
 
 
@@ -498,7 +501,7 @@ public:
      *  faces on processor \p p
      */
     std::pair<location_face_iterator, location_face_iterator>
-    facesOnBoundary( size_type p  ) const
+    facesOnBoundary( rank_type p  ) const
     {
         return M_faces.template get<Feel::detail::by_location>().equal_range( boost::make_tuple( ON_BOUNDARY, p ) );
     }
@@ -508,9 +511,10 @@ public:
      * on processor \p p
      */
     std::pair<location_face_iterator, location_face_iterator>
-    internalFaces() const
+    internalFaces( rank_type p = invalid_rank_type_value ) const
     {
-        return M_faces.template get<Feel::detail::by_location>().equal_range( boost::make_tuple( INTERNAL, this->worldCommFaces().localRank() ) );
+        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+        return M_faces.template get<Feel::detail::by_location>().equal_range( boost::make_tuple( INTERNAL, part ) );
     }
 
     /**
@@ -518,9 +522,10 @@ public:
      * on processor \p p
      */
     std::pair<interprocess_face_iterator, interprocess_face_iterator>
-    interProcessFaces() const
+    interProcessFaces( rank_type p = invalid_rank_type_value ) const
     {
-        return M_faces.template get<Feel::detail::by_interprocessdomain>().equal_range( boost::make_tuple( true, this->worldCommFaces().localRank() ) );
+        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+        return M_faces.template get<Feel::detail::by_interprocessdomain>().equal_range( boost::make_tuple( true, part ) );
     }
 
 
@@ -529,9 +534,10 @@ public:
      * on processor \p p
      */
     std::pair<interprocess_face_iterator, interprocess_face_iterator>
-    interProcessFaces(uint16_type j) const
+    interProcessFaces( rank_type j, rank_type p = invalid_rank_type_value ) const
     {
-        return M_faces.template get<Feel::detail::by_interprocessdomain>().equal_range( boost::make_tuple( true, this->worldCommFaces().localRank(), j ) );
+        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+        return M_faces.template get<Feel::detail::by_interprocessdomain>().equal_range( boost::make_tuple( true, part, j ) );
     }
 
 
@@ -541,9 +547,10 @@ public:
      * on processor \p p
      */
     std::pair<interprocess_face_iterator, interprocess_face_iterator>
-    intraProcessFaces() const
+    intraProcessFaces( rank_type p = invalid_rank_type_value ) const
     {
-        return M_faces.template get<Feel::detail::by_interprocessdomain>().equal_range( boost::make_tuple( false, this->worldCommFaces().localRank() ) );
+        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+        return M_faces.template get<Feel::detail::by_interprocessdomain>().equal_range( boost::make_tuple( false, part ) );
     }
 #endif
 
@@ -552,13 +559,11 @@ public:
      * on processor \p p
      */
     std::pair<pid_face_iterator, pid_face_iterator>
-    //std::pair<face_iterator, face_iterator>
-    facesWithProcessId( size_type p ) const
+    facesWithProcessId( rank_type p = invalid_rank_type_value ) const
     {
-        return M_faces.template get<Feel::detail::by_pid>().equal_range( p );
+        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+        return M_faces.template get<Feel::detail::by_pid>().equal_range( part );
     }
-    //{ return M_faces.template get<Feel::detail::by_pid>().equal_range( boost::make_tuple(/*this->worldCommFaces().localRank()*/p) ); }
-    //{ return M_faces.template get<0>().equal_range( boost::make_tuple(/*this->worldCommFaces().localRank()*/p) ); }
 
     /**
      * get the faces container by id
@@ -686,18 +691,20 @@ public:
      *
      * @return the begin() iterator on all the internal faces
      */
-    location_face_iterator beginInternalFace()
+    location_face_iterator beginInternalFace( rank_type p = invalid_rank_type_value )
     {
-        return M_faces.template get<Feel::detail::by_location>().lower_bound( boost::make_tuple( INTERNAL, this->worldCommFaces().localRank() ) );
+        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+        return M_faces.template get<Feel::detail::by_location>().lower_bound( boost::make_tuple( INTERNAL, part ) );
     }
     /**
      * get the end() iterator on all the internal faces
      *
      * @return the end() iterator on all the internal faces
      */
-    location_face_iterator endInternalFace()
+    location_face_iterator endInternalFace( rank_type p = invalid_rank_type_value )
     {
-        return M_faces.template get<Feel::detail::by_location>().upper_bound( boost::make_tuple( INTERNAL, this->worldCommFaces().localRank() ) );
+        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+        return M_faces.template get<Feel::detail::by_location>().upper_bound( boost::make_tuple( INTERNAL, part ) );
     }
 
     /**
@@ -705,9 +712,10 @@ public:
      *
      * @return the begin() iterator on all the internal faces
      */
-    location_face_const_iterator beginInternalFace() const
+    location_face_const_iterator beginInternalFace( rank_type p = invalid_rank_type_value ) const
     {
-        return M_faces.template get<Feel::detail::by_location>().lower_bound( boost::make_tuple( INTERNAL, this->worldCommFaces().localRank() ) );
+        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+        return M_faces.template get<Feel::detail::by_location>().lower_bound( boost::make_tuple( INTERNAL, part ) );
     }
 
     /**
@@ -715,9 +723,10 @@ public:
      *
      * @return the end() iterator on all the internal faces
      */
-    location_face_const_iterator endInternalFace() const
+    location_face_const_iterator endInternalFace( rank_type p = invalid_rank_type_value ) const
     {
-        return M_faces.template get<Feel::detail::by_location>().upper_bound( boost::make_tuple( INTERNAL, this->worldCommFaces().localRank() ) );
+        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+        return M_faces.template get<Feel::detail::by_location>().upper_bound( boost::make_tuple( INTERNAL, part ) );
     }
 
     /**
@@ -725,18 +734,20 @@ public:
      *
      * @return the begin() iterator on all the boundary faces
      */
-    location_face_iterator beginFaceOnBoundary()
+    location_face_iterator beginFaceOnBoundary( rank_type p = invalid_rank_type_value )
     {
-        return M_faces.template get<Feel::detail::by_location>().lower_bound( boost::make_tuple( ON_BOUNDARY, this->worldCommFaces().localRank() ) );
+        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+        return M_faces.template get<Feel::detail::by_location>().lower_bound( boost::make_tuple( ON_BOUNDARY, part ) );
     }
     /**
      * get the end() iterator on all the boundary faces
      *
      * @return the end() iterator on all the boundary faces
      */
-    location_face_iterator endFaceOnBoundary()
+    location_face_iterator endFaceOnBoundary( rank_type p = invalid_rank_type_value )
     {
-        return M_faces.template get<Feel::detail::by_location>().upper_bound( boost::make_tuple( ON_BOUNDARY, this->worldCommFaces().localRank() ) );
+        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+        return M_faces.template get<Feel::detail::by_location>().upper_bound( boost::make_tuple( ON_BOUNDARY, part ) );
     }
 
     /**
@@ -744,9 +755,10 @@ public:
      *
      * @return the begin() iterator on all the boundary faces
      */
-    location_face_const_iterator beginFaceOnBoundary() const
+    location_face_const_iterator beginFaceOnBoundary( rank_type p = invalid_rank_type_value ) const
     {
-        return M_faces.template get<Feel::detail::by_location>().lower_bound( boost::make_tuple( ON_BOUNDARY, this->worldCommFaces().localRank() ) );
+        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+        return M_faces.template get<Feel::detail::by_location>().lower_bound( boost::make_tuple( ON_BOUNDARY, part ) );
     }
 
     /**
@@ -754,9 +766,10 @@ public:
      *
      * @return the end() iterator on all the boundary faces
      */
-    location_face_const_iterator endFaceOnBoundary() const
+    location_face_const_iterator endFaceOnBoundary( rank_type p = invalid_rank_type_value ) const
     {
-        return M_faces.template get<Feel::detail::by_location>().upper_bound( boost::make_tuple( ON_BOUNDARY, this->worldCommFaces().localRank() ) );
+        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+        return M_faces.template get<Feel::detail::by_location>().upper_bound( boost::make_tuple( ON_BOUNDARY, part ) );
     }
 
     //@}

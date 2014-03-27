@@ -71,7 +71,7 @@ makeEEGOptions()
         ("scalp", po::value<double>()->default_value( 0.33 ), "scalp")
         ("no-export", "don't export results")*/
     ;
-    return eegoptions.add( Feel::feel_options() );
+    return eegoptions;
 }
 AboutData
 makeEEGAbout( std::string const& str = "eeg" )

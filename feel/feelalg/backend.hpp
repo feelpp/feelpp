@@ -46,6 +46,7 @@
 #include <feel/feelalg/vectorblock.hpp>
 #include <feel/feelalg/datamap.hpp>
 
+#include <feel/feelalg/solverlinear.hpp>
 #include <feel/feelalg/solvernonlinear.hpp>
 #include <feel/feelalg/preconditioner.hpp>
 #include <feel/feeldiscr/functionspacebase.hpp>
@@ -123,6 +124,8 @@ template<int NR, int NC, typename T> class MatrixBlock;
 template<typename T> class VectorBlockBase;
 template<int NR, typename T> class VectorBlock;
 
+template<typename T> class BlocksBaseSparseMatrix;
+
 /**
  * \class Backend
  * \brief base class for all linear algebra backends
@@ -160,8 +163,8 @@ public:
     typedef SolverNonLinear<value_type> solvernonlinear_type;
     typedef boost::shared_ptr<solvernonlinear_type> solvernonlinear_ptrtype;
 
-    typedef boost::tuple<bool, size_type, value_type> solve_return_type;
-    typedef boost::tuple<bool, size_type, value_type> nl_solve_return_type;
+    typedef typename SolverLinear<value_type>::solve_return_type solve_return_type;
+    typedef typename solvernonlinear_type::solve_return_type nl_solve_return_type;
 
     typedef DataMap datamap_type;
     typedef boost::shared_ptr<datamap_type> datamap_ptrtype;
@@ -363,21 +366,45 @@ public:
     /**
      * instantiate a new block matrix sparse
      */
-    sparse_matrix_ptrtype newBlockMatrixImpl( vf::BlocksBase<sparse_matrix_ptrtype> const & b,
-                                              bool copy_values=true,
-                                              bool diag_is_nonzero=true )
-    {
-        typedef MatrixBlockBase<typename sparse_matrix_ptrtype::element_type::value_type> matrix_block_type;
-        boost::shared_ptr<matrix_block_type> mb( new matrix_block_type( b, *this, copy_values, diag_is_nonzero ) );
-        return mb->getSparseMatrix();
-    }
-
-    sparse_matrix_ptrtype newBlockMatrixImpl( vf::BlocksBase<boost::shared_ptr<GraphCSR> > const & b,
+    sparse_matrix_ptrtype newBlockMatrixImpl( BlocksBaseSparseMatrix<value_type> const & b,
                                               bool copy_values=true,
                                               bool diag_is_nonzero=true )
     {
         typedef MatrixBlockBase<value_type> matrix_block_type;
-        boost::shared_ptr<matrix_block_type> mb( new matrix_block_type( b, *this, diag_is_nonzero ) );
+        typedef boost::shared_ptr<matrix_block_type> matrix_block_ptrtype;
+
+        matrix_block_ptrtype mb;
+        if ( b.isClosed() )
+        {
+            mb.reset( new matrix_block_type( b, *this, copy_values, diag_is_nonzero ) );
+        }
+        else
+        {
+            BlocksBaseSparseMatrix<value_type> copyBlock( b );
+            copyBlock.close();
+            mb.reset( new matrix_block_type( copyBlock, *this, copy_values, diag_is_nonzero ) );
+        }
+        return mb->getSparseMatrix();
+    }
+
+    sparse_matrix_ptrtype newBlockMatrixImpl( BlocksBaseGraphCSR const & b,
+                                              bool copy_values=true,
+                                              bool diag_is_nonzero=true )
+    {
+        typedef MatrixBlockBase<value_type> matrix_block_type;
+        typedef boost::shared_ptr<matrix_block_type> matrix_block_ptrtype;
+
+        matrix_block_ptrtype mb;
+        if ( b.isClosed() )
+        {
+            mb.reset( new matrix_block_type( b, *this, diag_is_nonzero ) );
+        }
+        else
+        {
+            BlocksBaseGraphCSR copyBlock( b );
+            copyBlock.close();
+            mb.reset( new matrix_block_type( copyBlock, *this, diag_is_nonzero ) );
+        }
         return mb->getSparseMatrix();
     }
 
@@ -637,7 +664,7 @@ public:
     }
     size_type maxIterationsSNES() const
     {
-        return M_maxitSNESReuse;
+        return M_maxitSNES;
     }
     size_type maxIterationsKSPReuse() const
     {

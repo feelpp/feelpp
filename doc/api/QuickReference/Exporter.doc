@@ -18,10 +18,10 @@ namespace Feel {
   visualize the solution and possibly other data or fields associated
   with the problem. Feel++ provides a very powerful framework for
   post-processing allowing to:
-  - visualize time-based data,
-  - visualize high order functions,
-  - visualize traces,
-  - use standard visualization tools such as Paraview, Ensight and even Gmsh.
+  \li visualize time-based data,
+  \li visualize high order functions,
+  \li visualize traces,
+  \li use standard visualization tools such as Paraview, Ensight and Gmsh.
 
   To achieve this, Feel++ defines a so-called \c Exporter object.
 
@@ -70,9 +70,9 @@ namespace Feel {
   <center>
   <table border=0px>
   <tr>
-  <td style="width:30%">\image html circle_p1p1.png "P1" width="100%"</td>
-  <td style="width:30%">\image html circle_p2p2.png</td>
-  <td style="width:30%">\image html circle_p2p2_p1interpolator.png</td>
+  <td width="15%">\image html circle_p1p1.png "P1" width="15%"</td>
+  <td width="15%">\image html circle_p2p2.png</td>
+  <td width="15%">\image html circle_p2p2_p1interpolator.png</td>
   </tr>
   <tr>
   <td><center>\f$u\f$: \f$P_1\f$, \f$P_2/P_2\f$ and  \f$P_2/P_2\f$ with \f$P_1\f$ interpolation </center></td>
@@ -99,10 +99,10 @@ namespace Feel {
   <center>
   <table border=0px>
   <tr>
-  <td width="25%">\image html sphere_p1.png</td>
-  <td width="25%">\image html sphere_p2.png</td>
-  <td width="25%">\image html sphere_p3.png</td>
-  <td width="25%">\image html sphere_p4.png</td>
+  <td width="15%">\image html sphere_p1.png</td>
+  <td width="15%">\image html sphere_p2.png</td>
+  <td width="15%">\image html sphere_p3.png</td>
+  <td width="15%">\image html sphere_p4.png</td>
   </tr>
   <tr>
   <td><center>Low to high order visualization of \f$u\f$</center></td>
@@ -119,13 +119,55 @@ namespace Feel {
   To define \f$\Omega\f$ and \f$u\f$, the code reads
   \snippet myexporter.cpp Def_Omega_u
 
-  We start with an \c Exporter object that allows to visualize the \f$P_1\f$ interpolant of \f$u\f$ over.
+  We start with an \c Exporter object that allows to visualize the \f$P_1\f$ interpolant of \f$u\f$ over \f$\Omega\f$.
 
 
   <a href="#" class="top">top</a>
   <hr>
 
+  \section ExporterReference Reference
 
+  \subsection ExporterReferenceOptions Options
+
+  \par \c exporter.format
+  \li Type: multiple choice \c string
+  \li Values: \c gmsh, \c ensight, \c ensightgold
+  \li Default value: ensightgold
+  \li Action: \c exporter.format defines the format to save Feel++ data into.
+
+  \par \c exporter.geometry
+  \li Type: multiple choice \c string
+  \li Values: \c change_coords_only, \c change, \c  static
+  \li Default value: change_coords_only
+  \li Action: \c exporter.geometry tells to the exporter if the mesh changes over time steps : no
+  changes(\c static) coordinates only (\c change_coords_only) or remeshed (\c changes)
+
+  \par \c exporter.fileset
+  \li Type: \c bool
+  \li Values: 0, 1
+  \li Default value: 0
+  \li Action: \c exporter.fileset=0 save one file per timestep per subdomain,  whereas \c exporter.fileset=1 use one file per subdomain to store all time
+  steps. \note This option, \c exporter.fileset=1, reduces tremendously the number of files generated for transient simulations.
+
+  \par \c exporter.prefix
+  \li Type: \c string
+  \li Default Value: <empty string>
+  \li Action: \c exporter.prefix defines the prefix to be user by the exporter. It is especially useful when using multiple exporters and avoid name collision.
+
+  \par \c exporter.directory
+  \li Type: string
+  \li Default Value: results
+  \li Action: \c exporter.directory tells where to export the results to
+
+  \subsubsection ExporterReferenceOptionsEnsightGold Ensight Gold specific options
+
+  \par \c exporter.ensightgold.use-sos
+  \li Type: \c bool
+  \li Action: if \c exporter.ensightgold.use-sos=0 multiple case files are handle in first case file else the sos file is used to handle multiple case files
+
+  \par \c exporter.ensightgold.save-face
+  \li Type: \c bool
+  \li Action: if \c exporter.ensightgold.save-face=1, the exporter saves mesh and fields on marked faces
 
 */
 }
