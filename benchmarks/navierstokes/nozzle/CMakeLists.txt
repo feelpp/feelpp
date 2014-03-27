@@ -1,9 +1,9 @@
 ###  TEMPLATE.txt.tpl; coding: utf-8 ---
 
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-#       Date: 2011-04-02
+#  Author(s): Christophe Prud'homme <prudhomme@unistra.fr>
+#       Date: 2012-12-16
 #
-#  Copyright (C) 2011 Universit� Joseph Fourier (Grenoble I)
+#  Copyright (C) 2012 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -21,6 +21,5 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-foreach( DIR poiseuille kovasznay2 turek stokes nozzle)
-  add_subdirectory( ${DIR} )
-endforeach()
+
+feelpp_add_application( ns_oseen SRCS ns_oseen.cpp INCLUDE_IN_ALL GEO FDA.geo CFG ns_oseen.cfg  )
