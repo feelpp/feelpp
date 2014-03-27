@@ -51,3 +51,5 @@
 /testsuite/feeldiscr/#test_mortar.cpp#
 /testsuite/feeldiscr/.#test_mortar.cpp
 /contrib/eigen-eigen*
+\#*
+\.\#*
