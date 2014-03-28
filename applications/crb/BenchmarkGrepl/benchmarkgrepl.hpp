@@ -392,6 +392,11 @@ public:
 
     void assemble();
 
+    /**
+     * solve for a given parameter \p mu
+     */
+    element_type solve( parameter_type const& mu );
+
 
     //@}
 
@@ -594,6 +599,29 @@ void BenchmarkGrepl<Order>::initModel()
 
 
 template<int Order>
+typename BenchmarkGrepl<Order>::element_type
+BenchmarkGrepl<Order>::solve( parameter_type const& mu )
+{
+    auto u=Xh->element();
+    auto v=Xh->element();
+    double gamma_dir = option(_name="gamma").template as<double>();
+
+    auto solution = Xh->element();
+    auto exprg = 1./sqrt( (Px()-mu(0))*(Px()-mu(0)) + (Py()-mu(1))*(Py()-mu(1)) );
+    auto g = vf::project( _space=Xh, _expr=exprg );
+    auto A = M_backend->newMatrix( Xh, Xh );
+    auto F = M_backend->newVector( Xh );
+    form2( Xh, Xh, A ) = integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ) + idt( u )*id( v )*idv(g) ) +
+        integrate( markedfaces( mesh, "boundaries" ), gamma_dir*idt( u )*id( v )/h()
+                   -gradt( u )*vf::N()*id( v )
+                   -grad( v )*vf::N()*idt( u )
+                   );;
+    form1( Xh, F ) = integrate( _range=elements(mesh) , _expr=id( v ) * idv(g) );
+    M_backend->solve( _matrix=A, _solution=solution, _rhs=F );
+    return solution;
+}
+
+template<int Order>
 void BenchmarkGrepl<Order>::assemble()
 {
     auto u = Xh->element();
@@ -669,8 +697,11 @@ double BenchmarkGrepl<Order>::output( int output_index, parameter_type const& mu
 
     CHECK( ! need_to_solve ) << "The model need to have the solution to compute the output\n";
 
+    //solve the problem without affine decomposition
+    solution=this->solve(mu);
+
     double s=0;
-    if ( output_index==1 )
+    if ( output_index==0 )
     {
         for ( int q=0; q<1; q++ )
         {
@@ -680,7 +711,7 @@ double BenchmarkGrepl<Order>::output( int output_index, parameter_type const& mu
             }
         }
     }
-    if( output_index==2 )
+    if( output_index==1 )
     {
         s = integrate( elements( mesh ), idv( solution ) ).evaluate()( 0,0 );
     }
