@@ -1012,15 +1012,17 @@ public :
 
         Eigen::MatrixXf::Index index;
         double min_output = outputs.minCoeff(&index);
-        double min_scale=std::floor(min_output);
+        //double min_scale=std::floor(min_output);
+        double min_scale=min_output;
         double x=0;
         double output=0;
         double estimated_down=0;
         double estimated_up=0;
         double delta=0;
 
-        std::ofstream file_outputs_geo_gmsh ( "GMSH-outputs.geo", std::ios::out );
-        file_outputs_geo_gmsh << "View \" outputs \" {\n";
+        std::string plotFile = "GMSH-outputs.geo";
+        std::ofstream file_outputs_geo_gmsh ( plotFile, std::ios::out );
+        file_outputs_geo_gmsh << "View \"outputs\" {\n";
         for(int i=0; i<outputs.size(); i++)
         {
             if( use_estimated_error )
@@ -1053,6 +1055,11 @@ public :
 
         file_outputs_geo_gmsh<<conclude;
         file_outputs_geo_gmsh.close();
+
+        /* Adds the generated file for automatic loading in Gmsh */
+        Environment::olLoadInGmsh(plotFile);
+
+
     }
 
 

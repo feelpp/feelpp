@@ -109,15 +109,15 @@ public:
         return this->subWorldCommSeq();
     }
 
-    int globalSize() const
+    rank_type globalSize() const
     {
         return this->globalComm().size();
     }
-    int localSize() const
+    rank_type localSize() const
     {
         return this->localComm().size();
     }
-    int godSize() const
+    rank_type godSize() const
     {
         return this->godComm().size();
     }

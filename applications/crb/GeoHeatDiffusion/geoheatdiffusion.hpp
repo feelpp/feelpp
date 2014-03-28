@@ -71,7 +71,7 @@ makeGeoHeatDiffusionOptions()
     options.add_options()
     ( "hsize", po::value<double>()->default_value( 0.01 ), "mesh size" )
     ;
-    return options.add(Feel::feel_options() ).add( bdf_options( "geoheatdiffusion" ) );
+    return options.add( bdf_options( "geoheatdiffusion" ) );
 }
 AboutData
 makeGeoHeatDiffusionAbout( std::string const& str = "GeoHeatDiffusion" )

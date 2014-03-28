@@ -45,10 +45,13 @@ find_path (PETSC_DIR include/petsc.h
   HINTS ENV PETSC_DIR
   PATHS
   /usr/lib/petsc
-  /usr/lib/petscdir/3.4.2 /usr/lib/petscdir/3.3 /usr/lib/petscdir/3.2 /usr/lib/petscdir/3.1 /usr/lib/petscdir/3.0.0 /usr/lib/petscdir/2.3.3 /usr/lib/petscdir/2.3.2 # Debian
+  /usr/lib/petscdir/3.4.4 /usr/lib/petscdir/3.4.3 /usr/lib/petscdir/3.4.2
+  /usr/lib/petscdir/3.3 /usr/lib/petscdir/3.2 /usr/lib/petscdir/3.1 /usr/lib/petscdir/3.0.0 /usr/lib/petscdir/2.3.3 /usr/lib/petscdir/2.3.2 # Debian
   /opt/local/lib/petsc # macports
   /usr/local/Cellar/petsc/3.4.4/arch-darwin-cxx-debug # homebrew...
   /usr/local/Cellar/petsc/3.4.4/arch-darwin-cxx-opt # homebrew...
+  /usr/local/Cellar/petsc/3.4.3/arch-darwin-cxx-debug # homebrew...
+  /usr/local/Cellar/petsc/3.4.3/arch-darwin-cxx-opt # homebrew...
   /usr/local/lib/petscdir/3.4.3/darwin-cxx-debug # homebrew...
   /usr/local/lib/petscdir/3.4.3/darwin-cxx-opt # homebrew...
   $ENV{HOME}/petsc
@@ -66,9 +69,9 @@ foreach( debian_arches linux kfreebsd )
 endforeach()
 
 IF ( "${CMAKE_BUILD_TYPE}" STREQUAL "Debug" )
-  set( DARWIN_FLAVORS darwin-cxx-debug darwin-cxx-opt ${DARWIN_FLAVORS})
+  set( DARWIN_FLAVORS darwin-cxx-debug darwin-cxx-opt  arch-darwin-cxx-debug arch-darwin-cxx-opt ${DARWIN_FLAVORS})
 ELSE()
-  set( DARWIN_FLAVORS darwin-cxx-opt darwin-cxx-debug ${DARWIN_FLAVORS})
+  set( DARWIN_FLAVORS darwin-cxx-debug darwin-cxx-opt  arch-darwin-cxx-debug arch-darwin-cxx-opt ${DARWIN_FLAVORS})
 ENDIF()
 
 message(STATUS "Darwin flavors: ${DARWIN_FLAVORS}")

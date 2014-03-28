@@ -876,13 +876,13 @@ public:
     void buildGlobalProcessToGlobalClusterDofMapContinuous( mesh_type& mesh );
     void buildGlobalProcessToGlobalClusterDofMapContinuousActifDof( mesh_type& mesh,
                                                                     std::vector< std::map<size_type,std::set<std::vector<size_type> > > > & listToSend,
-                                                                    std::set<int> & procRecvData );
+                                                                    std::set<rank_type> & procRecvData );
     void buildGlobalProcessToGlobalClusterDofMapContinuousGhostDofBlockingComm( mesh_type& mesh,
                                                                                 std::vector< std::map<size_type,std::set<std::vector<size_type> > > > const& listToSend,
-                                                                                std::set<int> const& procRecvData );
+                                                                                std::set<rank_type> const& procRecvData );
     void buildGlobalProcessToGlobalClusterDofMapContinuousGhostDofNonBlockingComm( mesh_type& mesh,
                                                                                    std::vector< std::map<size_type,std::set<std::vector<size_type> > > > const& listToSend,
-                                                                                   std::set<int> const& procRecvData );
+                                                                                   std::set<rank_type> const& procRecvData );
     void buildGlobalProcessToGlobalClusterDofMapDiscontinuous();
 
     void buildGhostDofMapExtended( mesh_type& mesh );
@@ -972,7 +972,7 @@ public:
                     uint16_type l_dof,
                     uint16_type lc,
                     dof_type gDof,
-                    uint16_type processor,
+                    rank_type processor,
                     size_type& pDof,
                     int32_type sign = 1,
                     bool is_dof_periodic = false,
@@ -1597,9 +1597,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
                     if ( proc!=this->worldComm().rank() && this->nLocalDofWithGhost(proc) > 0 )
                         this->addNeighborSubdomain( proc );
 
-            int themasterRank = 0;
+            rank_type themasterRank = 0;
             bool findMasterProc=false;
-            for ( int proc=0; proc<this->worldComm().localSize(); ++proc )
+            for ( rank_type proc=0; proc<this->worldComm().localSize(); ++proc )
             {
                 if (!findMasterProc && this->nLocalDofWithGhost(proc) > 0)
                 {
@@ -2065,7 +2065,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
                          dataSendToGather,
                          dataRecvFromGather );
 
-        for (int p=0;p<this->worldComm().localSize();++p)
+        for (rank_type p=0;p<this->worldComm().localSize();++p)
         {
             bool procHasNoElt = dataRecvFromGather[p].template get<0>();
             this->M_first_df[p] = dataRecvFromGather[p].template get<1>();

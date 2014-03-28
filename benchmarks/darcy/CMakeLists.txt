@@ -42,6 +42,7 @@ foreach( dim 2 3)
     \n" )
 
     add_executable(${targetname} ${BENCH}.cpp )
+    set_property(TARGET ${targetname} PROPERTY COMPILE_DEFINITIONS FEELPP_${dim}D)
     target_link_libraries(${targetname} ${FEELPP_LIBRARIES} )
   endforeach() # order
 endforeach() # dim
