@@ -170,7 +170,6 @@ public:
         M_is_written( false ),
         M_name( "default" ),
         M_M( 1 ),
-        M_WN(),
         M_offline_done( false ),
         M_tol( 1e-8 ),
         M_index_max(),
@@ -185,15 +184,15 @@ public:
         M_name( model->name() ),
         M_trainset( sampling ),
         M_M( 1 ),
-        M_WN( M_vm["eim.dimension-max"].template as<int>() ),
         M_offline_done( offline_done ),
         M_tol( __tol ),
         M_index_max(),
         M_model( model )
         {
-            if ( !M_offline_done || M_vm["eim.rebuild-database"].template as<bool>() )
+            if ( !M_offline_done || option(_name="eim.rebuild-database").template as<bool>() )
             {
                 LOG(INFO) << "construct EIM approximation...\n";
+                M_model->initializeDataStructures();
                 offline();
             }
         }
@@ -205,7 +204,6 @@ public:
         M_is_written( __bbf.M_is_written ),
         M_name( __bbf.M_name ),
         M_M( __bbf.M_M ),
-        M_WN(__bbf.M_WN ),
         M_offline_done( __bbf.M_offline_done ),
         M_tol( __bbf.M_tol ),
         M_index_max( __bbf.M_index_max ),
@@ -315,8 +313,6 @@ protected:
     size_type M_M;
 
     size_type M_max_q;//size of vector M_q ( to save/load )
-
-    size_type M_WN;
 
     mutable bool M_offline_done;
 
@@ -470,9 +466,6 @@ EIM<ModelType>::offline(  )
 {
     using namespace vf;
 
-    if ( this->isOfflineDone() )
-        return;
-
     bool expression_expansion = option(_name="eim.compute-expansion-of-expression").template as<bool>() ;
 
     if( Environment::worldComm().isMasterRank() )
@@ -618,7 +611,6 @@ EIM<ModelType>::offline(  )
     double err = 1;
 
     LOG(INFO) << "start greedy algorithm...\n";
-    //for(  ; M_M < M_WN; ++M_M ) //err >= this->M_tol )
     for( ; M_M <= option(_name="eim.dimension-max").template as<int>(); ++M_M ) //err >= this->M_tol )
     {
         timer3.restart();
@@ -1059,6 +1051,8 @@ public:
     virtual void printOfflineError() const=0;
     virtual void addOfflineError(double error) =0;
     virtual void clearOfflineError() =0;
+
+    virtual void initializeDataStructures() = 0;
     po::variables_map M_vm;
     functionspace_ptrtype M_fspace;
     parameterspace_ptrtype M_pspace;
@@ -1202,6 +1196,18 @@ public:
         return false;
     }
 
+    void initializeDataStructures()
+    {
+        M_mu_sampling->clear();
+        M_ctx.removeCtx();
+        M_t.clear();
+        M_M_max=0;
+        M_B.resize(0,0);
+        M_q_vector.clear();
+        M_g_vector.clear();
+        M_z_vector.clear();
+        M_solution_vector.clear();
+    }
 
     vector_type
     beta( parameter_type const& mu, size_type __M )
