@@ -198,7 +198,7 @@ file:///<path to feel top directory>/ports/macosx/macports
 Once it's done, type in a command-line:
 \verbatim
   cd <your path to feel top directory>/ports/macosx/macports
-  portindex -f
+  sudo portindex -f
 \endverbatim
 
 You should have an output like this:
