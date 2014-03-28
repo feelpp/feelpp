@@ -145,6 +145,7 @@ brew tap feelpp/science
 brew install feelpp
 \endverbatim
 
+<!--
 or in a more detailed way:
 \verbatim
 # Install Homebrew:
@@ -162,8 +163,42 @@ brew install ann && brew install petsc && brew install gmsh && brew install hdf5
 # Install Feel++:
 brew install feelpp
 \endverbatim
+-->
 
 And you should be set to use \feel on MacOS X.
+
+\subsection HomebrewFeelDependencies Homebrew and Feel++ dependencies
+
+You can browse \feel dependencies using the following command:
+\verbatim
+brew deps feelpp
+\endverbatim
+
+If you want to customize the compilation process for a dependency (Set debug mode, Remove checking steps, Remove the link with certain libraries, etc.), 
+you can access to the building options with the <tt>info</tt> flag. For exemple, with open-mpi:
+\verbatim
+user@server: brew info open-mpi
+
+open-mpi: stable 1.7.5
+http://www.open-mpi.org/
+Conflicts with: lcdf-typetools, mpich2
+/usr/local/Cellar/open-mpi/1.7.5 (761 files, 23M) *
+  Built from source
+From: https://github.com/Homebrew/homebrew/commits/master/Library/Formula/open-mpi.rb
+==> Dependencies
+Required: libevent
+==> Options
+--c++11
+    Build using C++11 mode
+--disable-fortran
+    Do not build the Fortran bindings
+--enable-mpi-thread-multiple
+    Enable MPI_THREAD_MULTIPLE
+\endverbatim
+
+You then just have to pass the needed flags, when installing the dependency.<br />
+When you install feelpp with <tt>brew install feelpp</tt>, the default flags for each dependency will be used. 
+If you require specific flags, first install the dependency with the correct flags before installing \feel.
 
 <a href="#" class="top">top</a>
 <hr>
