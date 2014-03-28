@@ -1,14 +1,15 @@
 #mesh size
-hsize=1e-1
-do-export=false
+hsize=3e-2
+trainset-eim-size=40
 
 #name of the .msh file
 #for example :
 #mshfile = ....msh
 
-[benchmarkgrepl.run]
-mode=2
-sampling.size=10
+[benchmarkgrepl1]
+run.mode=2
+run.sampling.size=10
+export-solution=false
 
 [backend-primal]
 ksp-rtol=1e-15
@@ -24,11 +25,18 @@ reuse-prec=true #resolution with the same matrix, only rhs change
 
 [eim]
 cvg-study=true
+rebuild-database=true
+enrich-database=true
+error-max=1e-14
+dimension-max=15
+show-t-selection=true
+show-mu-selection=true
+show-offline-error=true
 
 [crb]
 #use-predefined-WNmu=true
 #use-predefined-test-sampling=true
-dimension-max=20
+dimension-max=5
 Nm=1
 output-index=1
 error-max=1e-14
