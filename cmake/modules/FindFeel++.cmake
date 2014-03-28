@@ -223,6 +223,9 @@ else (BOOST_ENABLE_TEST_DYN_LINK)
   add_definitions( -DBOOST_PARAMETER_MAX_ARITY=${BOOST_PARAMETER_MAX_ARITY} -DBOOST_FILESYSTEM_VERSION=${BOOST_FILESYSTEM_VERSION})
 endif (BOOST_ENABLE_TEST_DYN_LINK)
 
+# undefined BOOST_UBLAS_TYPE_CHECK
+add_definitions(-UBOOST_UBLAS_TYPE_CHECK )
+
 # this fix an issue with boost filesystem: boost is usually no compiled with
 # std=c++0x and we compile with it, this causes problems with the macro
 # BOOST_SCOPED_ENUM macros whose behavior differs in both case and would

@@ -411,7 +411,7 @@ public:
                 compute_fem=false;
                 compute_stat=false;
 
-                CHECK( load_elements_db )<<"[OpusApp] You have specified to not load elements database so it is impossible to visualize RB solution, use crb.load-elements-database=true !\n";
+                //CHECK( load_elements_db )<<"[OpusApp] You have specified to not load elements database so it is impossible to visualize RB solution, use crb.load-elements-database=true !\n";
 
                 //parameters are given by a vector of double
                 std::vector< std::string > str;
@@ -600,6 +600,37 @@ public:
                     crb->printErrorsDuringRbConstruction();
                 if ( crb->showMuSelection() && Environment::worldComm().globalRank()==Environment::worldComm().masterRank() )
                     crb->printMuSelection();
+
+                bool eim_mu_selection = option(_name="eim.show-mu-selection").template as<bool>();
+                bool eim_t_selection = option(_name="eim.show-t-selection").template as<bool>();
+                bool eim_offline_error = option(_name="eim.show-offline-error").template as<bool>();
+                if( eim_mu_selection || eim_t_selection || eim_offline_error )
+                {
+                    auto eim_sc_vector = model->scalarContinuousEim();
+                    auto eim_sd_vector = model->scalarDiscontinuousEim();
+
+                    for(int i=0; i<eim_sc_vector.size(); i++)
+                    {
+                        auto eim = eim_sc_vector[i];
+                        if( eim_mu_selection )
+                            eim->printMuSelection();
+                        if( eim_t_selection )
+                            eim->printInterpolationPointsSelection();
+                        if( eim_offline_error )
+                            eim->printOfflineError();
+                    }
+
+                    for(int i=0; i<eim_sd_vector.size(); i++)
+                    {
+                        auto eim = eim_sd_vector[i];
+                        if( eim_mu_selection )
+                            eim->printMuSelection();
+                        if( eim_t_selection )
+                            eim->printInterpolationPointsSelection();
+                        if( eim_offline_error )
+                            eim->printOfflineError();
+                    }
+                }
             }
 
             auto e = exporter( _mesh= model->functionSpace()->mesh()  );
@@ -935,6 +966,7 @@ public:
                                 double output_vector_size=output_vector.size();
                                 double ocrb = output_vector[output_vector_size-1];//output at last time
                                 double time_fem_solve=-1;
+
                                 if ( compute_fem )
                                 {
 									bool use_newton = option(_name="crb.use-newton").template as<bool>();
@@ -1540,13 +1572,22 @@ public:
                 vectorN_type outputs_storage;
                 vectorN_type mu0_storage;
                 vectorN_type estimated_error_outputs_storage;
+
+                //have min/max
+                Sampling->equidistribute( 2 );
+
                 curpar=1;
                 if( ! vary_comp_time )
                 {
                     outputs_storage.resize( cutting_direction0 );
                     mu0_storage.resize( cutting_direction0 );
+                    auto mu_=Sampling->min().template get<0>();
+                    if( select_parameter_via_one_feel )
+                    {
+                        mu_ = user_mu_onefeel;
+                    }
                     estimated_error_outputs_storage.resize( cutting_direction0 );
-                    Sampling->logEquidistributeProduct( sampling_each_direction );
+                    Sampling->logEquidistributeProduct( sampling_each_direction , mu_ );
                     BOOST_FOREACH( auto mu, *Sampling )
                     {
                         double x = mu(vary_mu_comp0);
@@ -1568,8 +1609,6 @@ public:
                 }
                 else
                 {
-                    //have min/max
-                    Sampling->equidistribute( 2 );
                     auto mu=Sampling->min().template get<0>();
                     if( select_parameter_via_one_feel )
                     {

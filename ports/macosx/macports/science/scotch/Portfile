@@ -38,16 +38,19 @@ checksums        md5     e13b49be804755470b159d7052764dc0 \
 
 use_configure       no
 
-variant gcc44 conflicts gcc45 description {Build with gcc 4.4} {}
-variant gcc45 conflicts gcc44 description {Build with gcc 4.5} {}
+default_variants    +gcc48
 
-if {[variant_isset gcc44]} {
+variant gcc44 conflicts gcc45 gcc48 description {Build with gcc 4.4} {
     depends_lib-append  port:gcc44
     configure.compiler  macports-gcc-4.4
-} else {
-    default_variants    +gcc45
+}
+variant gcc45 conflicts gcc44 gcc48 description {Build with gcc 4.5} {
     depends_lib-append  port:gcc45
     configure.compiler  macports-gcc-4.5
+}
+variant gcc48 conflicts gcc44 gcc45 description {Build with gcc 4.8} {
+    depends_lib-append  port:gcc48
+    configure.compiler  macports-gcc-4.8
 }
 
 variant universal {
