@@ -559,7 +559,7 @@ public:
          * \param N : vector containing the number of samples on each direction
          * if N[direction] < 1 then we take minimum value for this direction
          */
-        void logEquidistributeProduct( std::vector<int> N )
+        void logEquidistributeProduct( std::vector<int> N , element_type const &mu)
         {
             // first empty the set
             this->clear();
@@ -572,7 +572,7 @@ public:
                 std::vector< std::vector< double > > components;
                 components.resize( number_of_directions );
 
-                auto min=M_space->min();
+                //auto min=M_space->min();
 
                 for(int direction=0; direction<number_of_directions; direction++)
                 {
@@ -584,7 +584,7 @@ public:
                     else
                     {
                         std::vector<double> coeff_vector( 1 );
-                        coeff_vector[0]=min(direction);
+                        coeff_vector[0]=mu(direction);
                         components[direction] = coeff_vector ;
                     }
                 }
@@ -867,14 +867,27 @@ public:
          * \brief create a sampling with equidistributed elements
          * \param N : vector containing the number of samples on each direction
          */
-        void equidistributeProduct( std::vector<int> N )
+        void equidistributeProduct( std::vector<int> N, bool all_procs_have_same_sampling=true, std::string file_name="" )
         {
             // first empty the set
             this->clear();
 
+            bool generate_the_file=false;
+            std::ifstream file ( file_name );
+            if( !file || all_procs_have_same_sampling )
+            {
+                generate_the_file=true;
+            }
+
+            int number_of_directions = N.size();
+            int total_number=1;
+            for(int d=0; d<number_of_directions; d++)
+            {
+                total_number*=N[d];
+            }
+
             if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
             {
-                int number_of_directions = N.size();
 
                 //contains values of parameters on each direction
                 std::vector< std::vector< double > > components;
@@ -888,8 +901,18 @@ public:
 
                 generateElementsProduct( components );
 
+                this->writeOnFile( file_name );
+
             }//end of master proc
-            boost::mpi::broadcast( Environment::worldComm() , *this , Environment::worldComm().masterRank() );
+
+            if( all_procs_have_same_sampling )
+            {
+                boost::mpi::broadcast( Environment::worldComm() , *this , Environment::worldComm().masterRank() );
+            }
+            else
+            {
+                this->distributeOnAllProcessors( total_number , file_name );
+            }
         }
 
 

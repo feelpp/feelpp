@@ -18,22 +18,24 @@ def main():
     if(os.path.exists(sys.argv[1])):
         # read first line of file with files to sync
         f = open(sys.argv[1], 'r')
-        line = f.readline()
 
-        print line
+        # read all the lines
+        lines = f.readlines()
+        for line in lines:
+            # if the line is a comment, we load the corresponding files
+            if line.startswith("#"):
+                # delete comment character and remove blanks before and after
+                line = line.translate(None, '#').lstrip().rstrip()
 
-        # delete comment character and remove blanks before and after
-        line = line.translate(None, '#').lstrip().rstrip()
+                # get filenames
+                files = line.split()
 
-        # get filenames
-        files = line.split()
-
-        print "External call: Syncing data ..."
-        for f in files:
-            cmd = ["scp", f, "."]
-            retval = subprocess.call(cmd)
-            if(retval != 0):
-                exit(1)
+                print "External call: Syncing data ..."
+                for f in files:
+                    cmd = ["scp", f, "."]
+                    retval = subprocess.call(cmd)
+                    if(retval != 0):
+                        exit(1)
     else:
         print "The file named " + sys.argv[1] + " does not exist"
 

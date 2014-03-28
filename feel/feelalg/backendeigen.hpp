@@ -280,7 +280,7 @@ BackendEigen<T,_Options>::solve( sparse_matrix_type const& _A,
     eigen_vector_type const& b( dynamic_cast<eigen_vector_type const&>( _b ) );
     x.vec() = A.mat().lu().solve(b.vec());
 
-    return boost::make_tuple(true,1,1e-10);
+    return solve_return_type( boost::make_tuple(true,1,1e-10) );
 } // BackendEigen::solve
 
 template<typename T, int _Options>
@@ -305,7 +305,7 @@ BackendEigen<T,_Options>::solve( sparse_matrix_type const& _A,
     //     // solving failed
     //     return boost::make_tuple(false,1,1e-10);;
     // }
-    return boost::make_tuple(true,1,1e-10);;
+    return solve_return_type( boost::make_tuple(true,1,1e-10) );
 } // BackendEigen::solve
 
 
