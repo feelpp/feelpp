@@ -396,9 +396,9 @@ Environment::generateOLFiles( int argc, char** argv, std::string const& appName)
     && S_vm["onelab.remote"].as<std::string>() != ""
     && S_vm["onelab.remote"].as<std::string>() != "localhost")
     {
-        ol << "FeelApp.register(interfaced, ./OL.get(Arguments/FileName).onelab.py);" << std::endl;
-
         ol << "FeelApp.remote(" << "OL.get(" + mOptToOptPath["onelab.remote"] << "), " << p.parent_path().string() << "/" << ");" << std::endl;
+
+        ol << "FeelApp.register(interfaced, ./OL.get(Arguments/FileName).onelab.py);" << std::endl;
 
         ol << "FeelApp.in(OL.get(Arguments/FileName).onelab.cfg.ol);" << std::endl;
 
