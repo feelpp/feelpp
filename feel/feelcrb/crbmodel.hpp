@@ -152,6 +152,11 @@ public:
                                   std::vector< std::vector< std::vector<vector_ptrtype> > >
                                   > affine_decomposition_type;
 
+    typedef typename boost::tuple< sparse_matrix_ptrtype,
+                                   sparse_matrix_ptrtype,
+                                   std::vector<vector_ptrtype>
+                                   > monolithic_type;
+
 
     typedef typename model_type::affine_decomposition_light_type affine_decomposition_light_type;
     typedef typename model_type::betaq_type betaq_type;
@@ -793,6 +798,7 @@ public:
 
     }
 
+    element_type solveFemMonolithicFormulation( parameter_type const& mu );
     element_type solveFemUsingAffineDecompositionFixedPoint( parameter_type const& mu );
     element_type solveFemDualUsingAffineDecompositionFixedPoint( parameter_type const& mu );
     element_type solveFemUsingOfflineEim( parameter_type const& mu );
@@ -1192,6 +1198,27 @@ public:
                 M_Fqm[output][q][0]=Fq[output][q];
             }
         }
+    }
+
+
+
+    /**
+     * \brief compute the monolithic formulation
+     * that is to say with no affine decomposition
+     */
+    monolithic_type computeMonolithicFormulation( parameter_type const& mu )
+    {
+        return computeMonolithicFormulation( mu, mpl::bool_<model_type::is_time_dependent>() );
+    }
+    monolithic_type computeMonolithicFormulation( parameter_type const& mu , mpl::bool_<true> )
+    {
+        boost::tie( M_monoM, M_monoA, M_monoF ) = M_model->computeMonolithicFormulation( mu );
+        return boost::make_tuple( M_monoM, M_monoA, M_monoF );
+    }
+    monolithic_type computeMonolithicFormulation( parameter_type const& mu , mpl::bool_<false> )
+    {
+        boost::tie( M_monoA, M_monoF ) = M_model->computeMonolithicFormulation( mu );
+        return boost::make_tuple( M_monoM, M_monoA, M_monoF );
     }
 
     /**
@@ -2159,7 +2186,11 @@ protected:
     mutable std::vector< std::vector<sparse_matrix_ptrtype> > M_Mqm;
 
     //! affine decomposition terms for the right hand side
-    std::vector< std::vector<std::vector<vector_ptrtype> > > M_Fqm;
+    std::vector< std::vector <std::vector<vector_ptrtype>> > M_Fqm;
+
+    sparse_matrix_ptrtype M_monoA;
+    sparse_matrix_ptrtype M_monoM;
+    std::vector<vector_ptrtype> M_monoF;
 
 private:
 
@@ -2720,6 +2751,8 @@ CRBModel<TruthModelType>::offlineMerge( betaqm_type const& all_beta , parameter_
 }
 
 
+
+
 template<typename TruthModelType>
 typename CRBModel<TruthModelType>::element_type
 CRBModel<TruthModelType>::solveFemUsingOfflineEim( parameter_type const& mu )
@@ -2774,6 +2807,75 @@ CRBModel<TruthModelType>::solveFemUsingOfflineEim( parameter_type const& mu )
         }
         M_preconditioner_primal->setMatrix( A );
         M_backend_primal->solve( _matrix=A , _solution=u, _rhs=Rhs , _prec=M_preconditioner_primal);
+        mybdf->shiftRight(u);
+    }
+
+    return u;
+
+}
+
+template<typename TruthModelType>
+typename CRBModel<TruthModelType>::element_type
+CRBModel<TruthModelType>::solveFemMonolithicFormulation( parameter_type const& mu )
+{
+    auto Xh= this->functionSpace();
+
+    bdf_ptrtype mybdf;
+    mybdf = bdf( _space=Xh, _vm=this->vm() , _name="mybdf" );
+    sparse_matrix_ptrtype A;
+    sparse_matrix_ptrtype M;
+    std::vector<vector_ptrtype> F;
+    element_ptrtype InitialGuess = Xh->elementPtr();
+
+    auto u = Xh->element();
+
+    double time_initial;
+    double time_step;
+    double time_final;
+
+    if ( this->isSteady() )
+    {
+        time_initial=0;
+        time_step = 1e30;
+        time_final = 1e30;
+        // !!
+        //some stuff needs to be done here
+        //to deal with non linear problems
+        //and have an initial guess
+        // !!
+    }
+    else
+    {
+        time_initial=this->timeInitial();
+        time_step=this->timeStep();
+        time_final=this->timeFinal();
+        this->initializationField( InitialGuess, mu );
+    }
+
+    mybdf->setTimeInitial( time_initial );
+    mybdf->setTimeStep( time_step );
+    mybdf->setTimeFinal( time_final );
+
+    double bdf_coeff ;
+    auto vec_bdf_poly = M_backend->newVector( Xh );
+
+    for( mybdf->start(*InitialGuess); !mybdf->isFinished(); mybdf->next() )
+    {
+        bdf_coeff = mybdf->polyDerivCoefficient( 0 );
+        auto bdf_poly = mybdf->polyDeriv();
+        *vec_bdf_poly = bdf_poly;
+
+        boost::tie(M, A, F) = this->computeMonolithicFormulation( mu );
+
+        if( !isSteady() )
+        {
+            A->addMatrix( bdf_coeff, M );
+            F[0]->addVector( *vec_bdf_poly, *M );
+        }
+        M_preconditioner_primal->setMatrix( A );
+
+        M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0] , _prec=M_preconditioner_primal);
+
         mybdf->shiftRight(u);
     }
 
