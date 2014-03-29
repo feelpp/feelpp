@@ -230,6 +230,8 @@ public:
         std::vector< std::vector<std::vector<vector_ptrtype> > >
         > affine_decomposition_type;
 
+    typedef boost::tuple< sparse_matrix_ptrtype, std::vector<vector_ptrtype> > monolithic_type;
+
     typedef Preconditioner<double> preconditioner_type;
     typedef boost::shared_ptr<preconditioner_type> preconditioner_ptrtype;
 
@@ -389,6 +391,7 @@ public:
      */
     affine_decomposition_type computeAffineDecomposition();
 
+    monolithic_type computeMonolithicFormulation( parameter_type const& mu );
 
     void assemble();
 
@@ -440,6 +443,9 @@ private:
 
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Aqm;
     std::vector< std::vector<std::vector<vector_ptrtype> > > M_Fqm;
+
+    sparse_matrix_ptrtype M_monoA;
+    std::vector<vector_ptrtype> M_monoF;
 
     beta_vector_type M_betaAqm;
     std::vector<beta_vector_type> M_betaFqm;
@@ -599,6 +605,32 @@ void BenchmarkGrepl<Order>::initModel()
 
 
 template<int Order>
+typename BenchmarkGrepl<Order>::monolithic_type
+BenchmarkGrepl<Order>::computeMonolithicFormulation( parameter_type const& mu )
+{
+    auto u=Xh->element();
+    auto v=Xh->element();
+    double gamma_dir = option(_name="gamma").template as<double>();
+
+    auto exprg = 1./sqrt( (Px()-mu(0))*(Px()-mu(0)) + (Py()-mu(1))*(Py()-mu(1)) );
+    auto g = vf::project( _space=Xh, _expr=exprg );
+    M_monoA = M_backend->newMatrix( Xh, Xh );
+    M_monoF.resize(2);
+    M_monoF[0] = M_backend->newVector( Xh );
+    M_monoF[1] = M_backend->newVector( Xh );
+    form2( Xh, Xh, M_monoA ) = integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ) + idt( u )*id( v )*idv(g) ) +
+        integrate( markedfaces( mesh, "boundaries" ), gamma_dir*idt( u )*id( v )/h()
+                   -gradt( u )*vf::N()*id( v )
+                   -grad( v )*vf::N()*idt( u )
+                   );
+    form1( Xh, M_monoF[0] ) = integrate( _range=elements(mesh) , _expr=id( v ) * idv(g) );
+    form1( Xh, M_monoF[1] ) = integrate( _range=elements(mesh) , _expr=id( v ) );
+
+    return boost::make_tuple( M_monoA, M_monoF );
+
+}
+
+template<int Order>
 typename BenchmarkGrepl<Order>::element_type
 BenchmarkGrepl<Order>::solve( parameter_type const& mu )
 {
@@ -670,8 +702,9 @@ void BenchmarkGrepl<Order>::assemble()
     vectorN_type beta_g = eim_g->beta( mu );
 
     M = M_backend->newMatrix( _test=Xh, _trial=Xh );
-    form2( Xh, Xh, M ) = integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ) )+
-        integrate( markedfaces( mesh, "boundaries" ), gamma_dir*idt( u )*id( v )/h() -
+    form2( Xh, Xh, M ) =
+        integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ) )+
+        integrate( markedfaces( mesh, "boundaries" ), gamma_dir*idt( u )*id( v )/h()
                    -gradt( u )*vf::N()*id( v )
                    -grad( v )*vf::N()*idt( u ) );
     for(int m=0; m<M_g; m++)
@@ -698,7 +731,7 @@ double BenchmarkGrepl<Order>::output( int output_index, parameter_type const& mu
     CHECK( ! need_to_solve ) << "The model need to have the solution to compute the output\n";
 
     //solve the problem without affine decomposition
-    solution=this->solve(mu);
+    //solution=this->solve(mu);
 
     double s=0;
     if ( output_index==0 )

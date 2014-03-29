@@ -24,7 +24,7 @@ ksp-rtol=1e-15
 reuse-prec=true #resolution with the same matrix, only rhs change
 
 [eim]
-cvg-study=true
+cvg-study=false
 rebuild-database=true
 enrich-database=true
 error-max=1e-14
@@ -37,7 +37,7 @@ show-offline-error=true
 #use-predefined-WNmu=true
 #use-predefined-test-sampling=true
 dimension-max=5
-Nm=1
+solve-fem-monolithic=true
 output-index=1
 error-max=1e-14
 error-type=2
