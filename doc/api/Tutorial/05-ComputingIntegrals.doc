@@ -1,0 +1,19 @@
+/* -*- mode: c++; coding: utf-8 -*- */
+namespace Feel {
+/*! \page TutorialIntegrals Computing integrals over mesh
+
+
+The next step is to compute integrals over the mesh. The source code is available in \c myintegrals.cpp.
+\snippet myintegrals.cpp all
+
+@par Loading a Mesh in 2D
+\snippet myintegrals.cpp load
+
+@par Defining expressions
+\snippet myintegrals.cpp expressions
+
+@par Computing integrals
+\snippet myintegrals.cpp integrals
+
+*/
+}
