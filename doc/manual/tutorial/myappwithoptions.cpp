@@ -30,7 +30,16 @@ int main( int argc, char* argv[] )
 {
     using namespace Feel;
 
+    //! [marker1]
+    po::options_description app_options( "MyApp options" );
+    app_options.add_options()
+        ( "value",
+          po::value<double>() -> default_value(4.2),
+          "a 'double' with default value" );
+    //! [marker1]
+
     Environment env( _argc=argc, _argv=argv,
+                     _desc=app_options,
                      _about=about( _name="myapp",
                                    _author="Feel++ Consortium",
                                    _email="feelpp-devel@feelpp.org") );
