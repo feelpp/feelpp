@@ -6,8 +6,8 @@ namespace Feel {
 
 
 The next step is to load a mesh. The source code is available in \c mymesh.cpp.
-\snippet mymesh.cpp all
 
+\section TutorialMeshSteps Step by step explanations
 @par Loading a Mesh in 2D
 
 \snippet mymesh.cpp load
@@ -15,6 +15,11 @@ The next step is to load a mesh. The source code is available in \c mymesh.cpp.
 @par Loading2DMeshExport Exporting the Mesh for visualisation
 
 \snippet mymesh.cpp export
+
+\section TutorialMeshResults Some results
+
+\section TutorialMeshCode Complete code
+\snippet mymesh.cpp all
 
 */
 }
