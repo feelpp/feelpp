@@ -740,6 +740,16 @@ exprPtr( ExprT const& exprt )
     return boost::shared_ptr<Expr<ExprT> >( new Expr<ExprT>( exprt ) );
 }
 
+template <typename ExprT>
+std::ostream&
+operator<<( std::ostream& os, Expr<ExprT> const& exprt )
+{
+    os << exprt.expression();
+    return os;
+}
+
+
+
 extern Expr<LambdaExpr1> _e1;
 
 /**

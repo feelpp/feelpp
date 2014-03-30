@@ -262,6 +262,10 @@ public:
      */
     //@{
 
+    const GiNaC::ex& expression() const
+        {
+            return M_fun;
+        }
     const GiNaC::FUNCP_CUBA& fun() const
         {
             return *M_cfun;
@@ -450,6 +454,13 @@ private:
     std::set<std::pair<uint16_type,uint16_type> > M_indexSymbolXYZ;
 };
 
+template<int Order>
+std::ostream&
+operator<<( std::ostream& os, GinacEx<Order> const& e )
+{
+    os << e.expression();
+    return os;
+}
 } // vf
 } // feel
 
