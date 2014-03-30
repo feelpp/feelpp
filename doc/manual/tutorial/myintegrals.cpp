@@ -23,7 +23,9 @@
 //! [all]
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelvf/integrate.hpp>
+#include <feel/feelvf/ginac.hpp>
 #include <feel/feelfilters/exporter.hpp>
+
 
 
 using namespace Feel;
@@ -44,21 +46,22 @@ main( int argc, char** argv )
 
     //! [expression]
     // our function to integrate
-    auto f = expr( option(_name="functions.g").as<std::string>(), Symbols{"x","y"});
+    auto g = expr( soption(_name="functions.g") );
     //! [expression]
 
     //! [integrals]
     // compute integral of f (global contribution)
     auto intf_1 = integrate( _range = elements( mesh ),
-                                 _expr = f ).evaluate();
+                                 _expr = g ).evaluate();
 
     // compute integral f on boundary
-    double intf_3 = integrate( _range = boundaryfaces( mesh ),
-                               _expr = f ).evaluate();
+    auto intf_2 = integrate( _range = boundaryfaces( mesh ),
+                             _expr = g ).evaluate();
 
-    if ( Environment::isMasterRank() == 0 )
-        std::cout << "int global ; local ; boundary" << std::endl
-                  << intf_1 << ";" << intf_2 << ";" << intf_3 << std::endl;
+    // only the process with rank 0 prints to the screen to avoid clutter
+    if ( Environment::isMasterRank() )
+        std::cout << "int_Omega " << g << " = " << intf_1  << std::endl
+                  << "int_{boundary of Omega} " << g << " = " << intf_2 << std::endl;
     //! [integrals]
 }
 //! [all]

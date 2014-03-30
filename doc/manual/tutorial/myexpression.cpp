@@ -36,9 +36,10 @@ int main(int argc, char**argv )
     auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
     //! [mesh]
 
-    //Define symbols, ie "x", "y"...
+    //! [expr]
     auto g = soption(_name="functions.g");
     auto f = soption(_name="functions.f");
+    //! [expr]
 
     //! [export]
     auto e = exporter(_mesh=mesh);
