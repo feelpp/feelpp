@@ -26,7 +26,7 @@ DOXYFILE_ENCODING      = UTF-8
 # identify the project. Note that if you do not use Doxywizard you need
 # to put quotes around the project name if it contains spaces.
 
-PROJECT_NAME           = "Feel++"
+PROJECT_NAME           = "Feel++: Finite Element Embedded Library in C++"
 
 # The PROJECT_NUMBER tag can be used to enter a project or revision number.
 # This could be handy for archiving the generated documentation or
@@ -687,9 +687,9 @@ INPUT                  = \
  "@FEELPP_HOME_DIR@/doc/manual/" \
  "@FEELPP_HOME_DIR@/doc/api" \
  "@FEELPP_HOME_DIR@/ChangeLog" \
- "@FEELPP_HOME_DIR@/COPYING.md" \
  "@FEELPP_HOME_DIR@/doc/biblio/" \
  "@FEELPP_PROJECTS_DIR@"
+
 # "@FEELPP_HOME_DIR@/feel/"
 
 # This tag can be used to specify the character encoding of the source files
