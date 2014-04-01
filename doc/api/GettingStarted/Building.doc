@@ -207,7 +207,7 @@ If you require specific flags, first install the dependency with the correct fla
 <b>Important:</b> Needed dependencies for \feel: <br />
 <ul>
 <li><tt>boost</tt> needs to be installed with the following flags: <tt>--without-python --without-single --without-static --with-mpi --c++11</tt></li>
-<li><tt>mumps</tt> needs to be installed with the following flag: <tt>--without-scotch5</tt></li>
+<li><tt>mumps</tt> needs to be installed with the following flag: <tt>--with-scotch5</tt></li>
 </ul>
 
 <b>Tips:</b> Reducing the compilation time: <br />
