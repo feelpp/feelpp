@@ -132,7 +132,9 @@ Currently, building \feel is only available through <a href="http://brew.sh">Hom
 
 <b>Formula</b>: A Formula is a <a href="https://www.ruby-lang.org">Ruby</a> script describing to Homebrew how to install a package. \feel uses specific Formulae that you can get in the \feel github repository: <a href="https://github.com/feelpp/homebrew-science">feelpp/homebrew-science</a>.
 
-\subsection HomebrewFeel Homebrew and Feel++
+\subsection HomebrewFeel First time installation: Homebrew and Feel++
+<p>
+This section is aimed at users that do not have Homebrew already installed. If it is not your case, keep in mind the repository to tap and see the next section so you do not miss any important dependency. </p>
 In order to build \feel from Homebrew, you have to do the following steps:
 \verbatim
 # Install Homebrew:
@@ -167,7 +169,9 @@ brew install feelpp
 
 And you should be set to use \feel on MacOS X.
 
-\subsection HomebrewFeelDependencies Homebrew and Feel++ dependencies
+\subsection HomebrewFeelDependencies Advanced usage: Homebrew and Feel++ dependencies
+
+If Homebrew is already installed on your system, you might want to customize your installation for the correct dependencies to be met for \feel.
 
 You can browse \feel dependencies using the following command:
 \verbatim
@@ -199,6 +203,17 @@ Required: libevent
 You then just have to pass the needed flags, when installing the dependency.<br />
 When you install feelpp with <tt>brew install feelpp</tt>, the default flags for each dependency will be used. 
 If you require specific flags, first install the dependency with the correct flags before installing \feel.
+
+<b>Important:</b> Needed dependencies for \feel: <br />
+<ul>
+<li><tt>boost</tt> needs to be installed with the following flags: <tt>--without-python --without-single --without-static --with-mpi --c++11</tt></li>
+<li><tt>mumps</tt> needs to be installed with the following flag: <tt>--without-scotch5</tt></li>
+</ul>
+
+<b>Tips:</b> Reducing the compilation time: <br />
+<ul>
+<li><tt>scalapack</tt> can be installed with the following flag: <tt>--without-check</tt></li>
+</ul>
 
 <a href="#" class="top">top</a>
 <hr>
