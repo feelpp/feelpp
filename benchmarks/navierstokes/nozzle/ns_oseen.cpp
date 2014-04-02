@@ -26,12 +26,16 @@
 int main(int argc, char**argv )
 {
     boost::timer ti;
-    //# marker1 #
     using namespace Feel;
-	//po::options_description qsnsoptions( "Navier-Stokes Oseen options" );
-	//qsnsoptions.add_options()( "mu", po::value<double>()->default_value( 1.0 ), "coeff" );
+    //# marker1 #
+    /* po::options_description nsoseenoptions( "Navier-Stokes Oseen options" );
+    nsoseenoptions.add_options()
+        ( "mu", Feel::po::value<double>()->default_value( 1. ), "Dynamic viscosity" )
+        ( "rho", Feel::po::value<double>()->default_value( 1000. ), "Fluid density" );
+        //return nsoseenoptions.add(Feel::feel_options()).add(Feel::backend_options( "oseen" ) );*/
+
 	Environment env( _argc=argc, _argv=argv,
-                     //_desc=qsnsoptions,
+                     //_desc=nsoseenoptions,
                      _about=about(_name="ns_oseen",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
@@ -54,12 +58,18 @@ int main(int argc, char**argv )
     auto v = V.element<0>();
     auto p = U.element<1>();
     auto q = V.element<1>();
+
+    double mu = 0.0035;
+    double rho = 1056;
+    //auto mu = option(_name="parameters.mu").as<double>();
+    //auto rho = option(_name="parameters.rho").as<double>();
+
     if ( Environment::isMasterRank() )
     {
         std::cout << "Total number of dof : " << Vh->nDof() << "\n";
         std::cout << "Total number of dof(local) : " << Vh->nLocalDof() << "\n";
-        std::cout << "VElocity number of dof : " << Vh->functionSpace<0>()->nDof() << "\n";
-        std::cout << "VElocity number of dof(local) : " << Vh->functionSpace<0>()->nLocalDof() << "\n";
+        std::cout << "Velocity number of dof : " << Vh->functionSpace<0>()->nDof() << "\n";
+        std::cout << "Velocity number of dof(local) : " << Vh->functionSpace<0>()->nLocalDof() << "\n";
         std::cout << "Pressure number of dof : " << Vh->functionSpace<1>()->nDof() << "\n";
         std::cout << "Pressure number of dof(local) : " << Vh->functionSpace<1>()->nLocalDof() << "\n";
 
@@ -68,10 +78,6 @@ int main(int argc, char**argv )
     ti.restart();
     auto deft = sym(gradt( u ));
     auto def = sym(grad( v ));
-    double mu = 0.0035;
-    double rho = 1056;
-    //double nu = option(_name="nu").as<double>();
-
 
     auto g = expr( option(_name="functions.g").as<std::string>(), "g" );
 
@@ -79,7 +85,7 @@ int main(int argc, char**argv )
     auto aireIn = integrate(_range=markedfaces(mesh,"inlet"),_expr=cst(1.)).evaluate()(0,0);
     auto meanU = intUz/aireIn;
     auto flow = integrate(_range=markedfaces(mesh,"inlet"), _expr=inner(g*N(),N())).evaluate()(0,0) ;
-    auto reynolds = meanU*0.012/(0.0035/1056);
+    auto reynolds = meanU*0.012/(mu/rho);
     if ( Environment::isMasterRank() )
     {
         std::cout<<"  Integrale U = "<< intUz << "\n";
@@ -104,7 +110,7 @@ int main(int argc, char**argv )
     }
     auto e = exporter( _mesh=mesh );
     if (Environment::worldComm().isMasterRank())
-        std::cout<<"Nb elexments in throat surface" <<nelements(markedfaces(mesh,"throat"))<<"\n";
+        std::cout<<"Nb of elements in throat surface " <<nelements(markedfaces(mesh,"throat"))<<" \n";
 
     for ( mybdf->start();  mybdf->isFinished() == false; mybdf->next(U) )
     {
@@ -149,19 +155,36 @@ int main(int argc, char**argv )
         ti.restart();
         auto intUzt= integrate(_range=markedfaces(mesh,"throat"),_expr=idv(u)).evaluate()(0,0);
         auto aireInThroat= integrate(_range = markedfaces(mesh,"throat"),_expr=cst(1.)).evaluate()(0,0);
-        auto meanUThroat=intUzt/aireInThroat;
-        auto reynoldsThroat = meanUThroat*0.004/(mu*rho);
+        auto meanUThroat = mean(_range=markedfaces(mesh,"throat"), _expr=idv(u));
+        auto reynoldsThroat = meanUThroat*0.004/(mu/rho);
         auto flowT = integrate(_range=markedfaces(mesh,"throat"), _expr=inner(idv(u),N())).evaluate()(0,0) ;
 
         if (Environment::worldComm().isMasterRank())
         {
-            std::cout<<"Integrale U throat = "<< intUzt;
-            std::cout<<"   Airea of the throat's inlet = "<< aireInThroat;
-            std::cout<<"   Mean U at throat's inlet  = "<< meanUThroat;
-            std::cout<<"   Reynolds at the throat inlet = "<<reynoldsThroat;
+            std::cout<<"Integrale U throat = "<< intUzt << "\n";
+            std::cout<<"   Airea of the throat's inlet = "<< aireInThroat << "\n";
+            std::cout<<"   Mean U at throat's inlet  = "<< meanUThroat(2,0) <<"\n";
             std::cout<<"   Flow at the throat's inlet= "<< flowT<<"\n";
+            std::cout<<"   Reynolds at the throat inlet = "<<reynoldsThroat(2,0)<< "\n";
+            std::cout << "        ==========================  \n";
+        }
+
+        auto intUzOut= integrate(_range=markedfaces(mesh,"outlet"),_expr=idv(u)).evaluate()(0,0);
+        auto aireOut= integrate(_range = markedfaces(mesh,"outlet"),_expr=cst(1.)).evaluate()(0,0);
+        auto meanUOut= mean(_range=markedfaces(mesh,"outlet"), _expr=idv(u));
+        auto reynoldsOut = meanUOut*0.012/(mu/rho);
+        auto flowOut = integrate(_range=markedfaces(mesh,"outlet"), _expr=inner(idv(u),N())).evaluate()(0,0) ;
+
+        if (Environment::worldComm().isMasterRank())
+        {
+            std::cout<<"Integrale U outlet = "<< intUzOut;
+            std::cout<<"   Airea of the outlet = "<< aireOut;
+            std::cout<<"   Mean U at the outlet  = "<< meanUOut(2,0);
+            std::cout<<"   Flow at the outlet = "<< flowOut<<"\n";
+            std::cout<<"   Reynolds at the outlet = "<<reynoldsOut(2,0);
             std::cout << "postproc time:  " << ti.elapsed() << "s\n";
         }
+        ti.restart();
         e->step(mybdf->time())->add( "u", u );
         e->step(mybdf->time())->add( "p", p );
         e->save();
