@@ -163,6 +163,16 @@ public :
 
     typedef typename mpl::if_< mpl::bool_< is_time_dependent >,
                                boost::tuple<
+                                   sparse_matrix_ptrtype, sparse_matrix_ptrtype, std::vector<vector_ptrtype>
+                                   >,
+                               boost::tuple<
+                                   sparse_matrix_ptrtype, std::vector<vector_ptrtype>
+                                   >
+                               >::type monolithic_type;
+
+
+    typedef typename mpl::if_< mpl::bool_< is_time_dependent >,
+                               boost::tuple<
                                    beta_vector_type,
                                    beta_vector_type,
                                    std::vector<beta_vector_type>
@@ -350,6 +360,20 @@ public :
     {
         return boost::make_tuple( M_Aq , M_Fq );
     }
+
+    virtual monolithic_type computeMonolithicFormulation( parameter_type const& mu )
+    {
+        return computeMonolithicFormulation( mu , mpl::bool_< is_time_dependent >() );
+    }
+    monolithic_type computeMonolithicFormulation( parameter_type const& mu, mpl::bool_<true> )
+    {
+        return boost::make_tuple( M_monoM , M_monoA , M_monoF );
+    }
+    monolithic_type computeMonolithicFormulation( parameter_type const& mu, mpl::bool_<false> )
+    {
+        return boost::make_tuple( M_monoA , M_monoF );
+    }
+
 
     virtual betaq_type computeBetaQ( parameter_type const& mu ,  double time=0 )
     {
@@ -1103,6 +1127,10 @@ protected :
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Aqm;
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Mqm;
     std::vector< std::vector<std::vector<vector_ptrtype> > > M_Fqm;
+
+    sparse_matrix_ptrtype M_monoA;
+    sparse_matrix_ptrtype M_monoM;
+    std::vector<vector_ptrtype> M_monoF;
 
     beta_vector_light_type M_betaAq;
     beta_vector_light_type M_betaMq;
