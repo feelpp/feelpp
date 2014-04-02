@@ -497,36 +497,57 @@ TestHDiv::testProjector(gmsh_ptrtype ( *one_element_mesh_desc_fun )( double ))
     auto E = Py()*unitX() + Px()*unitY();
     auto f = cst(0.); //div(E) = f
 
-    // L2 projection
-    auto l2_v = opProjection( _domainSpace=Yh_v, _imageSpace=Yh_v, _type=L2 ); //l2 vectorial proj
-    auto l2_s = opProjection( _domainSpace=Yh_s, _imageSpace=Yh_s, _type=L2 ); //l2 scalar proj
-    auto E_l2 = l2_v->project( _expr= trans(E) );
-    auto f_l2 = l2_s->project( _expr= f );
-    auto error_l2 = l2_s->project( _expr=divv(E_l2) - idv(f_l2) );
+    // L2 projection (Lagrange)
+    auto l2_lagV = opProjection( _domainSpace=Yh_v, _imageSpace=Yh_v, _type=L2 ); //l2 vectorial proj
+    auto l2_lagS = opProjection( _domainSpace=Yh_s, _imageSpace=Yh_s, _type=L2 ); //l2 scalar proj
+    auto E_pL2_lag = l2_lagV->project( _expr= trans(E) );
+    auto error_pL2_lag = l2_lagS->project( _expr=divv(E_pL2_lag) - f );
 
-    // H1 projection
-    auto h1_v = opProjection( _domainSpace=Yh_v, _imageSpace=Yh_v, _type=H1 ); //h1 vectorial proj
-    auto h1_s = opProjection( _domainSpace=Yh_s, _imageSpace=Yh_s, _type=H1 ); //h1 scalar proj
-    auto E_h1 = h1_v->project( _expr= trans(E), _grad_expr=mat<2,2>(cst(0.),cst(1.),cst(1.),cst(0.)) );
-    auto f_h1 = h1_s->project( _expr= f );
-    auto error_h1 = h1_s->project( _expr=divv(E_h1) - idv(f_h1) );
+    // L2 projection (RT)
+    auto l2_rt = opProjection( _domainSpace=RTh, _imageSpace=RTh, _type=L2 );
+    auto E_pL2_rt = l2_rt->project( _expr= trans(E) );
+    auto error_pL2_rt = l2_lagS->project( _expr=divv(E_pL2_lag) - f );
 
+    // H1 projection (Lagrange)
+    auto h1_lagV = opProjection( _domainSpace=Yh_v, _imageSpace=Yh_v, _type=H1 ); //h1 vectorial proj
+    auto h1_lagS = opProjection( _domainSpace=Yh_s, _imageSpace=Yh_s, _type=H1 ); //h1 scalar proj
+    auto E_pH1_lag = h1_lagV->project( _expr= trans(E), _grad_expr=mat<2,2>(cst(0.),cst(1.),cst(1.),cst(0.)) );
+    auto error_pH1_lag = l2_lagS->project( _expr=divv(E_pH1_lag) - f );
+
+    // H1 projection (RT)
+    auto h1_rt = opProjection( _domainSpace=RTh, _imageSpace=RTh, _type=H1 ); //h1 vectorial proj
+    auto E_pH1_rt = h1_rt->project( _expr= trans(E), _grad_expr=mat<2,2>(cst(0.),cst(1.),cst(1.),cst(0.)) );
+    auto error_pH1_rt = l2_lagS->project( _expr=divv(E_pH1_rt) - f );
+
+    // HDIV projection (Lagrange)
+    auto hdiv_lagV = opProjection( _domainSpace=Yh_v, _imageSpace=Yh_v, _type=HDIV );
+    auto hdiv_lagS = opProjection( _domainSpace=Yh_s, _imageSpace=Yh_s, _type=HDIV );
+    auto E_pHDIV_lag = hdiv_lagV->project( _expr= trans(E), _div_expr=cst(0.) );
+    auto error_pHDIV_lag = l2_lagS->project( _expr=divv(E_pHDIV_lag) - f );
+
+    // HDIV projection (RT)
     auto hdiv = opProjection( _domainSpace=RTh, _imageSpace=RTh, _type=HDIV ); //hdiv proj (RT elts)
-    auto E_hdiv = hdiv->project( _expr= trans(E), _div_expr=cst(0.) );
+    auto E_pHDIV_rt = hdiv->project( _expr= trans(E), _div_expr=cst(0.) );
+    auto error_pHDIV_rt = l2_lagS->project( _expr=divv(E_pHDIV_rt) - f );
 
-    auto u=RTh->element();
-    auto l2norm_div = normL2( _range=elements(mesh), _expr=divv(E_hdiv) );
-    auto divE_l2 = l2_s->project( _expr=divv(E_hdiv)  );
-
-    BOOST_TEST_MESSAGE("L2 projection : error[div(E)-f]");
-    std::cout << "error L2: " << math::sqrt( l2_s->energy( error_l2, error_l2 ) ) << "\n";
-    BOOST_CHECK_SMALL( math::sqrt( l2_s->energy( error_l2, error_l2 ) ), 1e-13 );
-    BOOST_TEST_MESSAGE("H1 projection : error[div(E)-f]");
-    std::cout << "error H1: " << math::sqrt( h1_s->energy( error_h1, error_h1 ) ) << "\n";
-    BOOST_CHECK_SMALL( math::sqrt( h1_s->energy( error_h1, error_h1 ) ), 1e-13 );
-    BOOST_TEST_MESSAGE("HDIV projection : error[div(E)-f]");
-    std::cout << "error div(f): " << l2norm_div << "\n";
-    BOOST_CHECK_SMALL( l2norm_div, meshSize );
+    BOOST_TEST_MESSAGE("L2 projection [Lagrange]: error[div(E)-f]");
+    std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pL2_lag, error_pL2_lag ) ) << "\n";
+    BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pL2_lag, error_pL2_lag ) ), 1e-13 );
+    BOOST_TEST_MESSAGE("L2 projection [RT]: error[div(E)-f]");
+    std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pL2_rt, error_pL2_rt ) ) << "\n";
+    BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pL2_rt, error_pL2_rt ) ), 1e-13 );
+    BOOST_TEST_MESSAGE("H1 projection [Lagrange]: error[div(E)-f]");
+    std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pH1_lag, error_pH1_lag ) ) << "\n";
+    BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pH1_lag, error_pH1_lag ) ), 1e-13 );
+    BOOST_TEST_MESSAGE("H1 projection [RT]: error[div(E)-f]");
+    std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pH1_rt, error_pH1_rt ) ) << "\n";
+    BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pH1_rt, error_pH1_rt ) ), 1e-13 );
+    BOOST_TEST_MESSAGE("HDIV projection [Lagrange]: error[div(E)-f]");
+    std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pHDIV_lag, error_pHDIV_lag ) ) << "\n";
+    BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pHDIV_lag, error_pHDIV_lag ) ), 1e-13 );
+    BOOST_TEST_MESSAGE("HDIV projection [RT]: error[div(E)-f]");
+    std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pHDIV_rt, error_pHDIV_rt ) ) << "\n";
+    BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pHDIV_rt, error_pHDIV_rt ) ), 1e-13 );
 
     std::string proj_name = "projection";
     export_ptrtype exporter_proj( export_type::New( this->vm(),
@@ -536,10 +557,12 @@ TestHDiv::testProjector(gmsh_ptrtype ( *one_element_mesh_desc_fun )( double ))
                                     % proj_name ).str() ) );
 
     exporter_proj->step( 0 )->setMesh( mesh );
-    exporter_proj->step( 0 )->add( "proj_L2_E", E_l2 );
-    exporter_proj->step( 0 )->add( "proj_H1_E", E_h1 );
-    exporter_proj->step( 0 )->add( "proj_HDiv_E", E_hdiv );
-    exporter_proj->step( 0 )->add( "proj_L2_divE", divE_l2 );
+    exporter_proj->step( 0 )->add( "proj_L2_E[Lagrange]", E_pL2_lag );
+    exporter_proj->step( 0 )->add( "proj_L2_E[RT]", E_pL2_rt );
+    exporter_proj->step( 0 )->add( "proj_H1_E[Lagrange]", E_pH1_lag );
+    exporter_proj->step( 0 )->add( "proj_H1_E[RT]", E_pH1_rt );
+    exporter_proj->step( 0 )->add( "proj_HDiv_E[Lagrange]", E_pHDIV_lag );
+    exporter_proj->step( 0 )->add( "proj_HDiv_E[RT]", E_pHDIV_rt );
     exporter_proj->save();
 }
 
@@ -749,40 +772,13 @@ BOOST_AUTO_TEST_CASE( test_hdiv_N0_real3 )
 
 BOOST_AUTO_TEST_CASE( test_hdiv_projection_ref )
 {
-    BOOST_TEST_MESSAGE( "*** projection on reference element ***" );
+    BOOST_TEST_MESSAGE( "*** projection on square ***" );
     Feel::TestHDiv t;
-    Feel::Environment::changeRepository( boost::format( "//%1%/test_projection/%2%/" )
-                                         % Feel::Environment::about().appName()
-                                         % "ref" );
+    Feel::Environment::changeRepository( boost::format( "/%1%/test_projection/" )
+                                         % Feel::Environment::about().appName() );
     t.testProjector(&Feel::oneelement_geometry_ref);
 }
-BOOST_AUTO_TEST_CASE( test_hdiv_projection_real1 )
-{
-    BOOST_TEST_MESSAGE( "*** projection on real element - homothetic transfo***" );
-    Feel::TestHDiv t;
-    Feel::Environment::changeRepository( boost::format( "/%1%/test_projection/%2%/" )
-                                         % Feel::Environment::about().appName()
-                                         % "real_1" );
-    t.testProjector(&Feel::oneelement_geometry_real_1);
-}
-BOOST_AUTO_TEST_CASE( test_hdiv_projection_real2 )
-{
-    BOOST_TEST_MESSAGE( "*** projection on real element - rotation pi/2 ***" );
-    Feel::TestHDiv t;
-    Feel::Environment::changeRepository( boost::format( "/%1%/test_projection/%2%/" )
-                                         % Feel::Environment::about().appName()
-                                         % "real_2" );
-    t.testProjector(&Feel::oneelement_geometry_real_2);
-}
-BOOST_AUTO_TEST_CASE( test_hdiv_projection_real3 )
-{
-    BOOST_TEST_MESSAGE( "*** projection on real element - rotation -pi/2 ***" );
-    Feel::TestHDiv t;
-    Feel::Environment::changeRepository( boost::format( "/%1%/test_projection/%2%/" )
-                                         % Feel::Environment::about().appName()
-                                         % "real_3" );
-    t.testProjector(&Feel::oneelement_geometry_real_3);
-}
+
 BOOST_AUTO_TEST_CASE( test_hdiv_example_1 )
 {
     BOOST_TEST_MESSAGE( "*** resolution of Darcy problem ***" );
