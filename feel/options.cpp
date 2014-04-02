@@ -282,6 +282,7 @@ eimOptions( std::string const& prefix )
         ( "eim.check.residual"   , Feel::po::value<int>()->default_value( 0 ),  "check residual" )
         ( "eim.reuse-prec"   , Feel::po::value<bool>()->default_value( 0 ),       "reuse or not the preconditioner" )
         ( "eim.rebuild-database" , Feel::po::value<bool>()->default_value( false ), "rebuild database (if it already exists)" )
+        ( "eim.enrich-database" , Feel::po::value<bool>()->default_value( true ), "enrich the database (if it already exists)" )
         ( "eim.cvg-study" , Feel::po::value<bool>()->default_value( 0 ), "for convergence study" )
         ( "eim.compute-error-with-truth-expression" , Feel::po::value<bool>()->default_value( false ), "compute the error with the truth expression ( not its projection ) if true" )
         ( "eim.use-dimension-max-functions" , Feel::po::value<bool>()->default_value( 0 ), "force to use dimension-max basis functions" )
@@ -440,6 +441,8 @@ crbOptions( std::string const& prefix )
     ( "crb.user-parameters",Feel::po::value<std::string>()->default_value( "" ), "values of parameters (used for one feel)")
     ( "crb.vary-only-parameter-components",Feel::po::value<std::string>()->default_value( "" ), "specify which parameter component vary (max : 2 components + time 't') and how many values we take in each direction. For example 0 10 1 20 means that component 0 will take 10 values and component 1 will take 20 values. We can write also t 1 10 and in this case the time will vary and also component 1")
     ( "crb.load-elements-database",Feel::po::value<bool>()->default_value( false ), "load database of elements if true, need to be true for visualization, need to be false to run CRB approximation on a different number of processors than this was used to build the reduced basis ")
+
+    ( "crb.solve-fem-monolithic",Feel::po::value<bool>()->default_value( false ), "solve FEM problem without using EIM and without affine decomposition ")
     ;
 
     crboptions
