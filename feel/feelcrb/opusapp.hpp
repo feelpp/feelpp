@@ -978,8 +978,17 @@ public:
                                     //auto u_fem = model->solveFemUsingOfflineEim( mu );
 
                                     if( boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value && ! use_newton )
-                                        //use affine decomposition
-                                        u_fem = model->solveFemUsingAffineDecompositionFixedPoint( mu );
+                                        {
+                                        if( option(_name="crb.solve-fem-monolithic").template as<bool>() )
+                                        {
+                                            u_fem = model->solveFemMonolithicFormulation( mu );
+                                        }
+                                        else
+                                        {
+                                            //use affine decomposition
+                                            u_fem = model->solveFemUsingAffineDecompositionFixedPoint( mu );
+                                        }
+                                    }
                                     else
                                         u_fem = model->solve( mu );
 
