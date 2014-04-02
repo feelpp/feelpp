@@ -4,6 +4,21 @@
 
    \tableofcontents
 
+   \section feelpp0980 Feel++ Release 0.98.0
+   release date mm-dd-yyyy
+
+   \subsection changes0980 Changes
+
+   - Improve documentation, see <a
+     href="https://github.com/feelpp/feelpp/issues/300">#300</a>
+
+   \subsection features0980 Features
+
+   \subsection issues0980 Noteworthy Issues
+
+
+<hr>
+
    \section feelpp0974 Feel++ Release 0.97.4
    release date 03-18-2014
 

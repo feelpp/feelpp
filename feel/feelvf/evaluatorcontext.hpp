@@ -116,7 +116,19 @@ public:
 
     element_type operator()() const;
 
-
+    /**
+     * instead of evaluate an expression, evaluate the projection
+     * of the expression of the function space.
+     * But warning, here the projection is made only on elements
+     * that contains nodes given by the context and not on all
+     * elements of the mesh.
+     * As we project the expression on the function space linked
+     * the the context, we can't project gradient of more
+     * generally shape::N > 1
+     */
+    element_type evaluateProjection( ) const;
+    element_type evaluateProjection( mpl::bool_< true > ) const;
+    element_type evaluateProjection( mpl::bool_< false > ) const;
     //@}
 
     /** @name Accessors
@@ -162,6 +174,9 @@ template<typename CTX, typename ExprT>
 typename EvaluatorContext<CTX, ExprT>::element_type
 EvaluatorContext<CTX, ExprT>::operator()() const
 {
+
+    if( M_projection )
+        return evaluateProjection();
 
     //rank of the current processor
     int proc_number = Environment::worldComm().globalRank();
@@ -224,39 +239,19 @@ EvaluatorContext<CTX, ExprT>::operator()() const
 
             if( global_p < max_size )
             {
+                tensor_expr.updateContext( Xh->contextBasis( ctx, M_ctx ) );
 
-                if( M_projection )
+                //LOG( INFO ) << "Xh->contextBasis returns a context of type \n"<< typeid( decltype( Xh->contextBasis( ctx, M_ctx ) )  ).name();
+
+                for ( uint16_type c2 = 0; c2 < shape::N; ++c2 )
                 {
-                    auto const& e = ctx.second->gmContext()->element();
-                    //Xh is a pointer, not a shared ptr
-                    //functionspace is a shared ptr
-                    auto functionspace = M_ctx.functionSpace();
-                    //auto basis_x = project( _space=Xh , _expr=Px() );
-                    auto projected_expression = vf::project( _space=functionspace, _expr=M_expr , _range=idedelements( Xh->mesh(), e.id() ) );
-                    auto myctx=functionspace->context();
-                    myctx.addCtx(  it->second , proc_number );
-                    bool do_communications=false;//we don't want that each proc have the result now ( but latter )
-                    auto val = projected_expression.evaluate( myctx , do_communications );
-                    //for now work only with scalar field !
-                    __localv( global_p ) = val( 0 );
-                }//if projection
-                else
-                {
-                    tensor_expr.updateContext( Xh->contextBasis( ctx, M_ctx ) );
-
-                    //LOG( INFO ) << "Xh->contextBasis returns a context of type \n"<< typeid( decltype( Xh->contextBasis( ctx, M_ctx ) )  ).name();
-
-                    for ( uint16_type c2 = 0; c2 < shape::N; ++c2 )
+                    for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
                     {
-                        for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
-                        {
-                            //__localv(shape::M*p+c1) = tensor_expr.evalq( c1, 0, 0 );
-                            __localv(global_p*shape::M*shape::N+c1+c2*shape::M) = tensor_expr.evalq( c1, c2, 0 );
-                            //LOG( INFO ) << "__localv("<<shape::M*p+c1<<") = "<<tensor_expr.evalq( c1, 0, 0 )<<" and global p = "<<global_p;
-                        }
+                        //__localv(shape::M*p+c1) = tensor_expr.evalq( c1, 0, 0 );
+                        __localv(global_p*shape::M*shape::N+c1+c2*shape::M) = tensor_expr.evalq( c1, c2, 0 );
+                        //LOG( INFO ) << "__localv("<<shape::M*p+c1<<") = "<<tensor_expr.evalq( c1, 0, 0 )<<" and global p = "<<global_p;
                     }
-                }//else linked to if projection
-
+                }
             }//only if globalp < max_size
 
         }//loop over local points
@@ -273,6 +268,114 @@ EvaluatorContext<CTX, ExprT>::operator()() const
     //bring back each proc contribution in __globalv
     mpi::all_reduce( Environment::worldComm() , __localv, __globalv, std::plus< element_type >() );
     //LOG( INFO ) << "__globalv : "<<__globalv;
+    return __globalv;
+}
+
+template<typename CTX, typename ExprT>
+typename EvaluatorContext<CTX, ExprT>::element_type
+EvaluatorContext<CTX, ExprT>::evaluateProjection(  ) const
+{
+    typedef typename CTX::mapped_type::element_type::geometric_mapping_context_ptrtype gm_context_ptrtype;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gm_context_ptrtype> > map_gmc_type;
+    typedef expression_type the_expression_type;
+    typedef typename boost::remove_reference<typename boost::remove_const<the_expression_type>::type >::type iso_expression_type;
+    typedef typename iso_expression_type::template tensor<map_gmc_type> t_expr_type;
+    typedef typename t_expr_type::value_type value_type;
+    typedef typename t_expr_type::shape shape;
+    static const bool shapeN = (shape::N==1);
+    return evaluateProjection( mpl::bool_<shapeN>() );
+}
+template<typename CTX, typename ExprT>
+typename EvaluatorContext<CTX, ExprT>::element_type
+EvaluatorContext<CTX, ExprT>::evaluateProjection( mpl::bool_<true> ) const
+{
+    int proc_number = Environment::worldComm().globalRank();
+    int nprocs = Environment::worldComm().globalSize();
+
+    auto it = M_ctx.begin();
+    auto en = M_ctx.end();
+
+    typedef typename CTX::mapped_type::element_type::geometric_mapping_context_ptrtype gm_context_ptrtype;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gm_context_ptrtype> > map_gmc_type;
+    typedef expression_type the_expression_type;
+    typedef typename boost::remove_reference<typename boost::remove_const<the_expression_type>::type >::type iso_expression_type;
+    typedef typename iso_expression_type::template tensor<map_gmc_type> t_expr_type;
+    typedef typename t_expr_type::value_type value_type;
+    typedef typename t_expr_type::shape shape;
+
+    int max_size = 0;
+    int npoints = M_ctx.nPoints();
+    if( M_max_points_used > 0 )
+        max_size = M_max_points_used;
+    else
+        max_size = npoints;
+
+    element_type __globalv( max_size*shape::M );
+    __globalv.setZero();
+
+    //local version of __v on each proc
+    element_type __localv( max_size*shape::M );
+    __localv.setZero();
+
+    if ( !M_ctx.empty() )
+    {
+        /**
+         * be careful there is no guarantee that the set of contexts will
+         * have the reference points. We should probably have a flag set by
+         * the programmer so that we don't have to re-create the expression
+         * context if the reference points are the same
+         */
+        map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >(it->second->gmContext() ) );
+
+        t_expr_type tensor_expr( M_expr, mapgmc );
+
+        auto Xh = M_ctx.ptrFunctionSpace();
+        //loop on local points
+        for ( int p = 0; it!=en ; ++it, ++p )
+        {
+            auto const& ctx = *it;
+
+            int global_p = it->first;
+
+            if( global_p < max_size )
+            {
+                auto const& e = ctx.second->gmContext()->element();
+                //Xh is a pointer, not a shared ptr
+                //functionspace is a shared ptr
+                auto functionspace = M_ctx.functionSpace();
+                auto projected_expression = vf::project( _space=functionspace, _expr=M_expr , _range=idedelements( Xh->mesh(), e.id() ) );
+                auto myctx=functionspace->context();
+                myctx.addCtx(  it->second , proc_number );
+                bool do_communications=false;//we don't want that each proc have the result now ( but latter )
+                auto val = projected_expression.evaluate( myctx , do_communications );
+                //loop over components
+                for(int comp=0; comp<shape::M; comp++)
+                {
+                    __localv( global_p*shape::M+comp ) = val( comp );
+                }
+            }//only if globalp < max_size
+
+        }//loop over local points
+    }
+
+
+    if( ! M_mpi_communications )
+    {
+        return __localv;
+    }
+    mpi::all_reduce( Environment::worldComm() , __localv, __globalv, std::plus< element_type >() );
+    return __globalv;
+
+}
+template<typename CTX, typename ExprT>
+typename EvaluatorContext<CTX, ExprT>::element_type
+EvaluatorContext<CTX, ExprT>::evaluateProjection( mpl::bool_<false> ) const
+{
+    //here, the expression is a gradient
+    //so wa can't project it on the function space
+    bool go = false;
+    CHECK( go ) << "evaluateFromContext( _expr=..., _projection=true ) can't be used if _expr is a gradient ! Or more generally if shape::N > 1 ! \n";
+    element_type __globalv;
     return __globalv;
 }
 

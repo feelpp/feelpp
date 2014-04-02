@@ -440,22 +440,25 @@ private:
 
                 if ( !fe_type::is_modal )
                 {
-                    // no need of permutation is identity or only one dof on face
-                    if ( permutation  == face_permutation_type( 1 ) || fe_type::nDofPerFace == 1 )
+                    if( is_hdiv_conforming<fe_type>::value || is_hcurl_conforming<fe_type>::value )
                     {
-                        gDof += l;
-                        if ( is_hdiv_conforming<fe_type>::value || is_hcurl_conforming<fe_type>::value )
-                        {
+                        if( fe_type::nDofPerFace == 1 )
+                            gDof += l;
+                        else
+                            gDof += M_doftable->vector_permutation[permutation][l];
+
+                        if (permutation  == face_permutation_type( 1 ))
                             M_doftable->M_locglob_signs[ie][l] = 1;
-                        }
+                        else
+                            M_doftable->M_locglob_signs[ie][l] = -1;
                     }
                     else
                     {
-                        gDof += M_doftable->vector_permutation[permutation][l];
-                        if ( is_hdiv_conforming<fe_type>::value || is_hcurl_conforming<fe_type>::value )
-                        {
-                            M_doftable->M_locglob_signs[ie][l] = -1;
-                        }
+                        // no need of permutation is identity or only one dof on face
+                        if ( permutation  == face_permutation_type( 1 ) || fe_type::nDofPerFace == 1 )
+                            gDof += l;
+                        else
+                            gDof += M_doftable->vector_permutation[permutation][l];
                     }
 
                 }
