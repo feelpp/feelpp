@@ -13,7 +13,7 @@ def checkExecutable(executable):
     ret = 0
     try:
         with open(os.devnull, "w") as fnull:
-            ret = subprocess.call(executable, stdout = fnull, stderr = fnull)
+            ret = subprocess.call(executable, stdout = fnull)
     except OSError as e:
         return False
 

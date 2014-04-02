@@ -425,7 +425,7 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
     auto ret = M_nlsolver->solve( A, x, b, tol, its );
 
     //std::cout << "[nlSolve] ret.first " << ret.first <<std::endl;
-    if ( ret.isConverged() && ( reusePC || reuseJac ) )
+    if ( !ret.isConverged() && ( reusePC || reuseJac ) )
     {
         if (this->comm().globalRank() == this->comm().masterRank() )
             std::cout << "Backend "  << M_prefix << " reuse failed, rebuilding preconditioner...\n";
@@ -458,6 +458,12 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
         }
 
         return ret2;
+    }
+    else if ( !ret.isConverged() )
+    {
+        LOG(INFO) << "\n[backend] non-linear solver fail";
+        //exit( 0 );
+        std::cerr<< "Backend " << M_prefix << " : non-linear solver failed to converge" << std::endl;
     }
 
     this->setPrecMatrixStructure( matStructInitial );
