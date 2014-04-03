@@ -147,6 +147,9 @@ public:
     typedef typename super::graph_type graph_type;
     typedef typename super::graph_ptrtype graph_ptrtype;
 
+    typedef typename super::indexsplit_type indexsplit_type;
+    typedef typename super::indexsplit_ptrtype indexsplit_ptrtype;
+
     //@}
 
     /** @name Constructors, destructor
