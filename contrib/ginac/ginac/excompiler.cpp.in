@@ -246,12 +246,10 @@ public:
 					}
 				}
 			}
-							std::ostringstream ostr;
-							ostr << "ginac::compile_src_file " << filename << " WAS NOT COMPILED\n";
-							throw std::runtime_error(ostr.str());
-
+			std::ostringstream ostr;
+			ostr << "ginac::compile_src_file " << filename << " WAS NOT COMPILED\n";
+			throw std::runtime_error(ostr.str());
 			}
-			//}
 		}
 	/**
 	 * Links a so-file whose filename is given.
