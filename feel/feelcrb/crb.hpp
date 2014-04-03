@@ -92,6 +92,8 @@
        std::cerr << "OpenCL error (" << err << ") in file '" << __FILE__ << " in line " << __LINE__ << ": " << name << std::endl;    \
        exit(EXIT_FAILURE);                                                                                          \
    } } while (0)
+
+#include "feel/feelcrb/crb.cl.hpp"
 #endif
 #endif
 
@@ -4632,6 +4634,11 @@ typename CRB<TruthModelType>::matrix_info_tuple
 CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN,  std::vector<vectorN_type> & uNold,
                                         std::vector< double > & output_vector , int K, bool print_rb_matrix) const
 {
+    int i;
+    int devID;
+    size_t devPWSM;
+    size_t devLMS;
+    cl_device_fp_config fpConfig;
     cl_int err;
     cl_double dzero = 0.0;
     std::vector< cl::Platform > platformList;
@@ -4649,35 +4656,51 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
     /* Gather available GPUs on the current node */
     for(size_t k = 0; k < platformList.size(); k++)
     {
-        std::string platformVendor;
+        std::string platformVendor, platformName;
         platformList[k].getInfo((cl_platform_info)CL_PLATFORM_VENDOR, &platformVendor);
-        std::cout << "Platform " << k << " is by: " << platformVendor << "\n";
+        platformList[k].getInfo((cl_platform_info)CL_PLATFORM_NAME, &platformName);
+        std::cout << "Platform " << k << " (" << platformName << ") is by: " << platformVendor << "\n";
 
         platformList[k].getDevices(CL_DEVICE_TYPE_GPU, &deviceList);
         gpuList.insert(gpuList.end(), deviceList.begin(), deviceList.end());
         deviceList.clear();
     }
 
+    /* Check for device availability */
+    cl_bool devAvail = false; 
+    std::string dname;
+    for(devID = 0; devID < gpuList.size(); devID++)
+    {
+        gpuList[devID].getInfo(CL_DEVICE_AVAILABLE, &devAvail);
+        if(devAvail)
+        {
+            break;
+        }
+    }
+
     /* revert back to classical implementation */
     /* if no GPU is available */
-    if(gpuList.size() == 0)
+    if(gpuList.size() == 0 || !devAvail)
     {
         LOG( INFO ) << "[CRB::fixedPointPrimalCL] Reverting to classic implementation\n";
         fixedPointPrimal(N, mu, uN, uNold, output_vector, K, print_rb_matrix);
     }
 
+    gpuList[devID].getInfo(CL_DEVICE_NAME, &dname);
+    std::cout << "Using device 0: " << dname << std::endl;
+
     // TODO
     // Check if there are several MPI processes on the same node
     // if so, check that there are enough GPUs or split them
 
-    cl::Context context(gpuList[0],
+    cl::Context context(gpuList[devID],
                         NULL,
                         NULL,
                         NULL,
                         &err);
     OPENCL_CHECK_ERR(err, "Could not create OpenCL Context");
 
-    cl::CommandQueue queue(context, gpuList[0], 0, &err);
+    cl::CommandQueue queue(context, gpuList[devID], 0, &err);
     OPENCL_CHECK_ERR(err, "Could not create main queue");
 
     // TODO Typechecking of matrices
@@ -4697,8 +4720,22 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
     else
         boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( this->expansion( uN[time_index] , N , M_model->rBFunctionSpace()->primalRB() ), mu ,time );
 
+    cl::Event event;
+
+    std::cout << "N= " << N << std::endl;
+    std::cout << "M_model->Qa(): " << M_model->Qa() << std::endl;
+    std::cout << "M_model->Ql(0): " << M_model->Ql(0) << std::endl;
+
+    gpuList[devID].getInfo(CL_DEVICE_LOCAL_MEM_SIZE, &devLMS);
+    std::cout << "Local Mem Size: " << devLMS << std::endl;
+
+    gpuList[devID].getInfo(CL_DEVICE_DOUBLE_FP_CONFIG, &fpConfig);
+    std::cout << "Double support: "
+              << (fpConfig >= (CL_FP_FMA | CL_FP_ROUND_TO_NEAREST | CL_FP_ROUND_TO_ZERO | CL_FP_ROUND_TO_INF | CL_FP_INF_NAN | CL_FP_DENORM) ? "OK" : "KO") << std::endl;
+
     /* create buffers on the GPU */
-    cl::Buffer Aq(context, CL_MEM_READ_ONLY, N * N * M_model->Qa() * sizeof(double), NULL, &err);
+    /* we add one more matrix to store results */
+    cl::Buffer Aq(context, CL_MEM_READ_ONLY, N * N * (M_model->Qa() + 1) * sizeof(double), NULL, &err);
     OPENCL_CHECK_ERR(err, "Could not allocate buffer");
     for( size_type q = 0; q < M_model->Qa(); ++q )
     {
@@ -4709,7 +4746,8 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
                                 NULL, NULL);
     }
 
-    cl::Buffer Fq(context, CL_MEM_READ_ONLY, N * M_model->Ql( 0 ) * sizeof(double), NULL, &err);
+    /* we add one more vector to store results */
+    cl::Buffer Fq(context, CL_MEM_READ_ONLY, N * (M_model->Ql( 0 ) + 1) * sizeof(double), NULL, &err);
     OPENCL_CHECK_ERR(err, "Could not allocate buffer");
     for ( size_type q = 0; q < M_model->Ql( 0 ); ++q )
     {
@@ -4741,32 +4779,66 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
     OPENCL_CHECK_ERR(err, "Could not allocate buffer");
     queue.enqueueFillBuffer<double>(F, dzero, 0, N * sizeof(double), NULL, NULL);
 
-    std::ifstream file("crb.cl");
+#if 0
+    cl::Program::Sources source(1, std::make_pair(crb_kernels, strlen(crb_kernels)+1));
+#else
+    std::ifstream file("/ssd/home/ancel/git/feelpp/feel/feelcrb/crb.cl");
     err = file.is_open() ? CL_SUCCESS : -1;
     OPENCL_CHECK_ERR(err, "Could not open .cl file");
 
     std::string prog(std::istreambuf_iterator<char>(file), (std::istreambuf_iterator<char>()));
-    cl::Program::Sources source(1, std::make_pair(prog.c_str(), prog.length()+1));
+    cl::Program::Sources source(1, std::make_pair(prog.c_str(), prog.length()));
+#endif
     cl::Program program(context, source, &err);
     OPENCL_CHECK_ERR(err, "Could not init program");
     err = program.build();
+    if(err != CL_SUCCESS)
+    {
+        cl_build_status status;
+        program.getBuildInfo(gpuList[devID], CL_PROGRAM_BUILD_STATUS, &status);
+
+        std::string log;
+        program.getBuildInfo(gpuList[devID], CL_PROGRAM_BUILD_LOG, &log);
+        std::cout << log  << std::endl;
+    }
     OPENCL_CHECK_ERR(err, "Could not build kernel");
 
-    cl::Kernel kernel(program, "VMProd");
-    /*
-    err = kernel.setArg(0, cl_v);
-    OPENCL_CHECK_ERR(err, "Could not add argument: cl.v");
-    err = kernel.setArg(1, cl_a);
-    OPENCL_CHECK_ERR(err, "Could not add argument: cl_a");
-    err = kernel.setArg(2, cl_b);
-    OPENCL_CHECK_ERR(err, "Could not add argument: cl_b");
-    err = kernel.setArg(3, sizeof(int), (void *)(&nrows));
-    OPENCL_CHECK_ERR(err, "Could not add argument: nrows");
-    */
+    cl::Kernel smk(program, "SVProd");
 
-    cl::Event event;
+    smk.getWorkGroupInfo(gpuList[devID], CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, &devPWSM);
+    std::cout << "Preferred work group size: " << devPWSM << std::endl;
+
+    err = smk.setArg(0, betaAq);
+    OPENCL_CHECK_ERR(err, "Could not add argument: betaFq");
+    err = smk.setArg(1, Aq);
+    OPENCL_CHECK_ERR(err, "Could not add argument: Fq");
+    err = smk.setArg(1, sizeof(int), (void *)(&N));
+    OPENCL_CHECK_ERR(err, "Could not add argument: N");
+
     err = queue.enqueueNDRangeKernel(
-            kernel,
+            smk,
+            cl::NullRange,
+            cl::NDRange(N),
+            cl::NDRange(devPWSM),
+            NULL,
+            &event);
+    OPENCL_CHECK_ERR(err, "Could not launch kernel");
+    event.wait();
+
+    cl::Kernel svk(program, "SVProd");
+
+    smk.getWorkGroupInfo(gpuList[devID], CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, &devPWSM);
+    std::cout << "Preferred work group size: " << devPWSM << std::endl;
+ 
+    err = svk.setArg(0, betaFq);
+    OPENCL_CHECK_ERR(err, "Could not add argument: betaFq");
+    err = svk.setArg(1, Fq);
+    OPENCL_CHECK_ERR(err, "Could not add argument: Fq");
+    err = svk.setArg(1, sizeof(int), (void *)(&N));
+    OPENCL_CHECK_ERR(err, "Could not add argument: N");
+
+    err = queue.enqueueNDRangeKernel(
+            svk,
             cl::NullRange,
             cl::NDRange(N),
             cl::NDRange(1, 1),
