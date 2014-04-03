@@ -176,6 +176,10 @@ public:
                                                       WorldComm const& worldComm=Environment::worldComm(),
                                                       std::string const& prefix="" );
 
+    static void setPetscLSCPreconditionerType( PC& pc,
+                                               WorldComm const& worldComm=Environment::worldComm(),
+                                               std::string const& prefix="" );
+
     static void setPetscMGCoarsePreconditionerType( PC& pc,
                                                     WorldComm const& worldComm=Environment::worldComm(),
                                                     std::string const& prefix="" );
