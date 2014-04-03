@@ -831,6 +831,9 @@ void updateBackendMGPreconditionerOptions( po::options_description & _options, s
 
     std::string prefixMGCoarse = ( boost::format( "%1%mg-coarse" ) %prefixvm( prefix,"" ) ).str();
     updateBackendPreconditionerOptions( _options, prefixMGCoarse );
+    _options.add_options()
+        ( prefixvm( prefixMGCoarse,"ksp-type" ).c_str(), Feel::po::value<std::string>()->default_value( "gmres" ), "cg, bicgstab, gmres" );
+
 
     for ( uint16_type i=1; i<6; ++i )
     {
