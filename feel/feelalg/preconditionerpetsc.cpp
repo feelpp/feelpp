@@ -32,60 +32,29 @@
 #include <feel/feelalg/vectorpetsc.hpp>
 
 
-#if 0
-
 extern "C" {
 
-    #include <petsc-private/pcimpl.h>
-    #include <petsc-private/kspimpl.h>
+#include <petsc-private/pcimpl.h>
+#include <petsc-private/kspimpl.h>
 
-    typedef struct {
-        PetscBool allocated;
-        PetscBool scalediag;
-        KSP       kspL;
-        Vec       scale;
-        Vec       x0,y0,x1;
-        Mat L;             /* keep a copy to reuse when obtained with L = A10*A01 */
-    } MYPC_LSC;
+typedef struct {
+    PetscBool allocated;
+    PetscBool scalediag;
+    KSP       kspL;
+    Vec       scale;
+    Vec       x0,y0,x1;
+    Mat L;             /* keep a copy to reuse when obtained with L = A10*A01 */
+} MYPC_LSC;
 
-    static void myKSPView_PetscImpl( PC pc )
-    {
-        /*if (pc->ops->setfromoptions) {
-            (*pc->ops->setfromoptions)(pc);
-            }*/
-        MYPC_LSC         *mylsc = (MYPC_LSC*)pc->data;
-        //KSPView(mylsc->kspL, PETSC_VIEWER_STDOUT_SELF);
-        KSPView(mylsc->kspL, PETSC_VIEWER_STDOUT_WORLD);
 
-        //MYPC_LSC         *mylsc = (MYPC_LSC*)pc;
-        //return (0);
-    }
-    static void configurePCLSC_PetscImpl( PC pc, std::string prefix, MPI_Comm comm )
-    {
-        int ierr = 0;
-
-        ierr = PCSetFromOptions( pc );
-        CHKERRABORT( comm,ierr );
-
-        ierr = PCSetUp( pc );
-        CHKERRABORT( comm,ierr );
-
-        MYPC_LSC *mylsc = (MYPC_LSC*)pc->data;
-        //PC mypcgam = mylsc->kspL->pc;
-
-        std::string subksptype = Feel::option(Feel::_name="ksp-type",Feel::_prefix=prefix).as<std::string>();
-        ierr = KSPSetType ( mylsc->kspL, subksptype.c_str() );
-        CHKERRABORT( comm,ierr );
-
-        ierr = KSPSetFromOptions( mylsc->kspL );
-        CHKERRABORT( comm,ierr );
-
-        ierr = KSPSetUp( mylsc->kspL );
-        CHKERRABORT( comm,ierr );
-    }
+static void PCLSCGetKSP( PC pc, KSP& ksp )
+{
+    MYPC_LSC *mylsc = (MYPC_LSC*)pc->data;
+    ksp = mylsc->kspL;
 }
 
-#endif
+} // extern C
+
 
 namespace Feel
 {
@@ -811,7 +780,10 @@ PreconditionerPetsc<T>::setPetscFieldSplitPreconditionerType( PC& pc, indexsplit
         std::string subpctype = option(_name="pc-type",_prefix=prefixSplit).template as<std::string>();
         ierr = PCSetType( subpc, subpctype.c_str() );
         CHKERRABORT( worldComm.globalComm(),ierr );
-        //std::cout << "configure split " << i << " (" << prefixSplit << ")" << subpctype <<  "\n";
+
+        // init pc from specific default option
+        ierr = PCSetFromOptions( subpc );
+        CHKERRABORT( worldComm.globalComm(),ierr );
 
         //LOG(INFO) << "configure split " << i << " (" << prefixSplit << ")" << subpctype <<  "\n";
         //google::FlushLogFiles(google::INFO);
@@ -861,22 +833,21 @@ PreconditionerPetsc<T>::setPetscFieldSplitPreconditionerType( PC& pc, indexsplit
         else if ( std::string(thesubpctype) == "lsc" )
         {
             CHECK( i==1 ) << "lsc must be use with only field 1, not " << i << "\n";
+
+#if 0
             std::string prefixFeelBase = prefixvm(prefixSplit,"lsc");
             std::string prefixPetscBase = "fieldsplit_1_lsc";
             //std::cout << "USE LSC with " << prefixFeelBase << " et " << prefixPetscBase << "\n";
             configurePCWithPetscCommandLineOption( prefixFeelBase,prefixPetscBase );
-#if 0
-            configurePCLSC_PetscImpl( subpc, prefixFeelBase, worldComm.globalComm() );
-            myKSPView_PetscImpl(subpc);
 #endif
 
-            ierr = PCSetFromOptions( subpc );
-            CHKERRABORT( worldComm.globalComm(),ierr );
+            setPetscLSCPreconditionerType( subpc, worldComm, prefixSplit );
+
         }
         else if ( std::string(thesubpctype) == "gamg" )
         {
-            ierr = PCSetFromOptions( subpc );
-            CHKERRABORT( worldComm.globalComm(),ierr );
+            //ierr = PCSetFromOptions( subpc );
+            //CHKERRABORT( worldComm.globalComm(),ierr );
         }
         else if ( std::string(thesubpctype) == "fieldsplit" )
         {
@@ -887,7 +858,7 @@ PreconditionerPetsc<T>::setPetscFieldSplitPreconditionerType( PC& pc, indexsplit
         ierr = PCSetUp( subpc );
         CHKERRABORT( worldComm.globalComm(),ierr );
 
-        if ( Environment::vm(_name="pc-view",_prefix=prefixSplit).template as<bool>() )
+        if ( option(_name="pc-view",_prefix=prefixSplit).template as<bool>() )
         {
             ierr = PCView( subpc, PETSC_VIEWER_STDOUT_WORLD );
             CHKERRABORT( worldComm.globalComm(),ierr );
@@ -896,6 +867,58 @@ PreconditionerPetsc<T>::setPetscFieldSplitPreconditionerType( PC& pc, indexsplit
     }
 
 }
+
+
+template <typename T>
+void
+PreconditionerPetsc<T>::setPetscLSCPreconditionerType( PC& pc,
+                                                       WorldComm const& worldComm,
+                                                       std::string const& prefix )
+{
+    std::string prefixLSC = prefixvm(prefix,"lsc");
+    int ierr = 0;
+    //-----------------------------------------------------------//
+    // setup sub-pc
+    ierr = PCSetUp( pc );
+    CHKERRABORT( worldComm.globalComm(),ierr );
+    //-----------------------------------------------------------//
+    // get sub-ksp
+    KSP subksp;
+    PCLSCGetKSP( pc, subksp );
+    // configure sub-ksp
+    ierr = KSPSetFromOptions( subksp );
+    CHKERRABORT( worldComm.globalComm(),ierr );
+    std::string subksptype = option(_name="ksp-type",_prefix=prefixLSC).template as<std::string>();
+    ierr = KSPSetType( subksp, subksptype.c_str() );
+    CHKERRABORT( worldComm.globalComm(),ierr );
+    // setup sub-ksp
+    ierr = KSPSetUp( subksp );
+    CHKERRABORT( worldComm.globalComm(),ierr );
+    //-----------------------------------------------------------//
+    // get sub-pc
+    PC subpc;
+    ierr = KSPGetPC( subksp, &subpc );
+    CHKERRABORT( worldComm.globalComm(),ierr );
+    // configure sub-pc
+    ierr = PCSetFromOptions( subpc );
+    CHKERRABORT( worldComm.globalComm(),ierr );
+    std::string subPCtype =  option(_name="pc-type",_prefix=prefixLSC).template as<std::string>();
+    ierr = PCSetType( subpc, subPCtype.c_str() );
+    CHKERRABORT( worldComm.globalComm(),ierr );
+    configurePC( subpc, worldComm, "", prefixLSC );
+    // setup sub-pc
+    ierr = PCSetUp( subpc );
+    CHKERRABORT( worldComm.globalComm(),ierr );
+    //-----------------------------------------------------------//
+
+    if ( option(_name="pc-view",_prefix=prefixLSC).template as<bool>() )
+    {
+        ierr = PCView( subpc, PETSC_VIEWER_STDOUT_WORLD );
+        CHKERRABORT( worldComm.globalComm(),ierr );
+    }
+
+}
+
 
 
 template <typename T>
