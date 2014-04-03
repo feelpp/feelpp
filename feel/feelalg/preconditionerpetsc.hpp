@@ -47,6 +47,9 @@ class PreconditionerPetsc
 {
 public:
 
+    typedef typename MatrixSparse<T>::indexsplit_type indexsplit_type;
+    typedef typename MatrixSparse<T>::indexsplit_ptrtype indexsplit_ptrtype;
+
 
     /** @name Constants
      */
@@ -132,6 +135,13 @@ public:
                                              WorldComm const& worldComm=Environment::worldComm(),
                                              std::string const& prefix="");
 
+    static void setPetscPreconditionerType ( const PreconditionerType & preconditioner_type,
+                                             const MatSolverPackageType & matSolverPackage_type,
+                                             PC & pc,
+                                             indexsplit_ptrtype const& is,
+                                             WorldComm const& worldComm=Environment::worldComm(),
+                                             std::string const& prefix="");
+
 
     //@}
 
@@ -162,6 +172,7 @@ public:
     static void setPetscSubpreconditionerType( PC& pc, WorldComm const& worldComm=Environment::worldComm(), std::string const& prefix="" );
 
     static void setPetscFieldSplitPreconditionerType( PC& pc,
+                                                      indexsplit_ptrtype const& is,
                                                       WorldComm const& worldComm=Environment::worldComm(),
                                                       std::string const& prefix="" );
 
@@ -170,7 +181,8 @@ public:
                                                     std::string const& prefix="" );
     static void setPetscMGLevelsPreconditionerType( PC& pc,
                                                     WorldComm const& worldComm=Environment::worldComm(),
-                                                    std::string const& prefix="" );
+                                                    std::string const& prefix="",
+                                                    std::string const& prefixPetsc="" );
 
 protected:
     void check( int err ) { CHKERRABORT( this->worldComm().globalComm(), err ); }
