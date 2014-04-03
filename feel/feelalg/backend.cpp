@@ -850,7 +850,9 @@ void updateBackendMGPreconditionerOptions( po::options_description & _options, s
 void updateBackendFieldSplitPreconditionerOptions( po::options_description & _options, std::string const& prefix )
 {
     _options.add_options()
-        ( prefixvm( prefix,"fieldsplit-type" ).c_str(), Feel::po::value<std::string>()->default_value( "additive" ), "type of fieldsplit (additive, multiplicative, schur)" )
+        ( prefixvm( prefix,"fieldsplit-type" ).c_str(), Feel::po::value<std::string>()->default_value( "additive" ), "type of fieldsplit (additive, multiplicative, symmetric-multiplicative, schur)" )
+        ( prefixvm( prefix,"fieldsplit-fields" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "fields definition (ex: --fieldsplit-fields=0->(0,2),1->(1)" )
+
         ( prefixvm( prefix,"fieldsplit-schur-fact-type" ).c_str(), Feel::po::value<std::string>()->default_value( "full" ), "type of schur factorization (diag, lower, upper, full)" )
         ( prefixvm( prefix,"fieldsplit-schur-precondition" ).c_str(), Feel::po::value<std::string>()->default_value( "a11" ), "self,user,a11" )
         ;
@@ -870,6 +872,9 @@ void updateBackendFieldSplitPreconditionerOptions( po::options_description & _op
 
     std::string prefixfieldsplitLSC = prefixvm( prefixvm( prefix,"fieldsplit-1" ), "lsc" );
     updateBackendPreconditionerOptions( _options, prefixfieldsplitLSC );
+    _options.add_options()
+        ( prefixvm( prefixfieldsplitLSC,"ksp-type" ).c_str(), Feel::po::value<std::string>()->default_value( "preonly" ), "preonly, gmres, cg,..." );
+
 }
 
 /**
@@ -915,6 +920,7 @@ po::options_description backend_options( std::string const& prefix )
     updateBackendMGPreconditionerOptions( _options, prefix );
 
     updateBackendFieldSplitPreconditionerOptions( _options, prefix );
+    updateBackendFieldSplitPreconditionerOptions( _options, prefixvm( prefix,"fieldsplit-0" ) );
 
 
     return _options;
