@@ -190,12 +190,12 @@ public:
         M_model( model )
         {
             int user_max =option(_name="eim.dimension-max").template as<int>();
-            int max_built = M_model->mMax();
+            int max_built = M_model->maxQ();
             bool enrich_database=option(_name="eim.enrich-database").template as<bool>();
             bool do_offline=false;
             M_restart=false;
 
-            if( user_max > max_built && M_offline_done )
+            if( (user_max+1) > max_built && M_offline_done )
             {
                 if( enrich_database )
                 {
@@ -411,7 +411,7 @@ template <typename ModelType>
 typename EIM<ModelType>::element_type
 EIM<ModelType>::elementErrorEstimation( parameter_type const & mu, solution_type const& solution , int M ) const
 {
-    double max = M_model->mMax()-1;
+    double max = M_model->mMax();
     CHECK( M <= max ) << "Invalid number M for errorEstimation: " << M << " Mmax : " << max << "\n";
     //interpolation point associated to (M+1) basis function is index by M
     //remember that interpolationPoint(0) is the first interpolation point
@@ -431,7 +431,7 @@ template <typename ModelType>
 double
 EIM<ModelType>::errorEstimationLinf( parameter_type const & mu, solution_type const& solution , int M ) const
 {
-    double max = M_model->mMax()-1;
+    double max = M_model->mMax();
     CHECK( M <= max ) << "Invalid number M for errorEstimation: " << M << " Mmax : " << max << "\n";
     auto t = M_model->interpolationPoint( M );
     auto projected_expression = M_model->operator()( solution , t,  mu );
@@ -652,15 +652,17 @@ EIM<ModelType>::offline(  )
     else
     {
         M_M = M_model->mMax()+1;
-        M_max_q = M_model->mMaxQ();
-        max_z = M_model->mMaxZ();
-        max_solution = M_model->mMaxSolution();
+        M_max_q = M_model->maxQ();
+        max_z = M_model->maxZ();
+        max_solution = M_model->maxSolution();
     }//if ! M_restart
     /**
        \par build \f$W^g_M\f$
     */
     double err = 1;
     int Mmax=option(_name="eim.dimension-max").template as<int>();
+    //to deal with error estimation we need to build an "extra" basis function
+    Mmax++;
     LOG(INFO) << "start greedy algorithm...\n";
     for( ; M_M <=Mmax ; ++M_M ) //err >= this->M_tol )
     {
@@ -668,7 +670,10 @@ EIM<ModelType>::offline(  )
         //LOG(INFO) << "M=" << M_M << "...\n";
         if( Environment::worldComm().isMasterRank() )
         {
-            std::cout<<" ================================ "<<std::endl;
+            if( M_M == Mmax )
+                std::cout<<"================================ last basis function needed for error estimation"<<std::endl;
+            else
+                std::cout<<" ================================ "<<std::endl;
         }
 
         DVLOG(2) << "compute best fit error...\n";
@@ -856,7 +861,7 @@ EIM<ModelType>::studyConvergence( parameter_type const & mu , solution_type & so
     //because we need to access to the max^th basis function
     if( Environment::worldComm().isMasterRank() )
     {
-        Nmax = max-1;
+        Nmax = max;
         fileL2 << Nmax<< "\t";
         fileL2estimated << Nmax <<"\t";
         fileL2ratio << Nmax  <<"\t" ;
@@ -864,7 +869,7 @@ EIM<ModelType>::studyConvergence( parameter_type const & mu , solution_type & so
         fileLINFestimated << Nmax  <<"\t" ;
         fileLINFratio << Nmax  <<"\t" ;
     }
-    for(int N=1; N<max; N++)
+    for(int N=1; N<=max; N++)
     {
         std::string str = "\t";
         if( N == Nmax ) str = "\n";
@@ -1094,9 +1099,9 @@ public:
     virtual void addInterpolationPoint( node_type t ) = 0;
 
     virtual void setMax(int m, int max_q, int max_z, int max_solution) = 0;
-    virtual int mMaxQ() = 0;
-    virtual int mMaxZ() = 0;
-    virtual int mMaxSolution() = 0;
+    virtual int maxQ() = 0;
+    virtual int maxZ() = 0;
+    virtual int maxSolution() = 0;
 
     virtual void addBasis( element_type const &q ) = 0;
     virtual void addExpressionEvaluation( element_type const &g ) = 0;
@@ -1993,7 +1998,20 @@ public:
     element_type elementErrorEstimation( parameter_type const & mu , solution_type const& solution, int M ) const { return M_eim->elementErrorEstimation(mu , solution, M) ; }
     double errorEstimationLinf( parameter_type const & mu, solution_type const& solution , int M ) const { return M_eim->errorEstimationLinf(mu, solution, M) ; }
     //size_type mMax() const { return M_eim->mMax(); }
-    size_type mMax() const { return M_M_max; }
+    size_type mMax() const
+    {
+        int max=0;
+        int user_max = option(_name="eim.dimension-max").template as<int>();
+        int built = M_max_q;
+        //if the user wants to enrich the database we return M_M_max
+        //but if there is already enough basis functions then we return M_M_max-1
+        //to deal with error estimation
+        if( (user_max+1) > M_max_q )
+            max = M_M_max;
+        else
+            max = M_M_max-1;
+        return max;
+    }
 
     void setMax(int m, int max_q, int max_z, int max_solution )
     {
@@ -2003,15 +2021,15 @@ public:
         M_max_solution = max_solution;
     }
 
-    int mMaxQ()
+    int maxQ()
     {
         return M_max_q;
     }
-    int mMaxZ()
+    int maxZ()
     {
         return M_max_z;
     }
-    int mMaxSolution()
+    int maxSolution()
     {
         return M_max_solution;
     }
