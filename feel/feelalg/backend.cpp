@@ -425,7 +425,7 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
     auto ret = M_nlsolver->solve( A, x, b, tol, its );
 
     //std::cout << "[nlSolve] ret.first " << ret.first <<std::endl;
-    if ( ret.first < 0 && ( reusePC || reuseJac ) )
+    if ( !ret.isConverged() && ( reusePC || reuseJac ) )
     {
         if (this->comm().globalRank() == this->comm().masterRank() )
             std::cout << "Backend "  << M_prefix << " reuse failed, rebuilding preconditioner...\n";
@@ -450,19 +450,25 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
         // call solver which must execute with success
         auto ret2 = M_nlsolver->solve( A, x, b, tol, its );
 
-        if ( ret2.first < 0 )
+        if ( !ret2.isConverged() )
         {
             LOG(INFO) << "\n[backend] non-linear solver fail";
             //exit( 0 );
             std::cerr<< "Backend " << M_prefix << " : non-linear solver failed to converge" << std::endl;
         }
 
-        return boost::make_tuple( ret2.first, its, tol );
+        return ret2;
+    }
+    else if ( !ret.isConverged() )
+    {
+        LOG(INFO) << "\n[backend] non-linear solver fail";
+        //exit( 0 );
+        std::cerr<< "Backend " << M_prefix << " : non-linear solver failed to converge" << std::endl;
     }
 
     this->setPrecMatrixStructure( matStructInitial );
 
-    return boost::make_tuple( ret.first, its, tol );
+    return ret;
 }
 template <typename T>
 typename Backend<T>::nl_solve_return_type
@@ -495,13 +501,13 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
 
     auto ret = M_nlsolver->solve( A, x, b, tol, its );
 
-    if ( ret.first < 0 )
+    if ( !ret.isConverged() )
     {
         LOG(ERROR) << "\n[backend] non-linear solver fail";
         LOG(ERROR) << "Backend " << M_prefix << " : non-linear solver failed to converge" << std::endl;
     }
 
-    return boost::make_tuple( true, its, tol );
+    return ret;
 }
 template <typename T>
 typename Backend<T>::real_type
@@ -825,6 +831,9 @@ void updateBackendMGPreconditionerOptions( po::options_description & _options, s
 
     std::string prefixMGCoarse = ( boost::format( "%1%mg-coarse" ) %prefixvm( prefix,"" ) ).str();
     updateBackendPreconditionerOptions( _options, prefixMGCoarse );
+    _options.add_options()
+        ( prefixvm( prefixMGCoarse,"ksp-type" ).c_str(), Feel::po::value<std::string>()->default_value( "gmres" ), "cg, bicgstab, gmres" );
+
 
     for ( uint16_type i=1; i<6; ++i )
     {
@@ -844,7 +853,9 @@ void updateBackendMGPreconditionerOptions( po::options_description & _options, s
 void updateBackendFieldSplitPreconditionerOptions( po::options_description & _options, std::string const& prefix )
 {
     _options.add_options()
-        ( prefixvm( prefix,"fieldsplit-type" ).c_str(), Feel::po::value<std::string>()->default_value( "additive" ), "type of fieldsplit (additive, multiplicative, schur)" )
+        ( prefixvm( prefix,"fieldsplit-type" ).c_str(), Feel::po::value<std::string>()->default_value( "additive" ), "type of fieldsplit (additive, multiplicative, symmetric-multiplicative, schur)" )
+        ( prefixvm( prefix,"fieldsplit-fields" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "fields definition (ex: --fieldsplit-fields=0->(0,2),1->(1)" )
+
         ( prefixvm( prefix,"fieldsplit-schur-fact-type" ).c_str(), Feel::po::value<std::string>()->default_value( "full" ), "type of schur factorization (diag, lower, upper, full)" )
         ( prefixvm( prefix,"fieldsplit-schur-precondition" ).c_str(), Feel::po::value<std::string>()->default_value( "a11" ), "self,user,a11" )
         ;
@@ -864,6 +875,9 @@ void updateBackendFieldSplitPreconditionerOptions( po::options_description & _op
 
     std::string prefixfieldsplitLSC = prefixvm( prefixvm( prefix,"fieldsplit-1" ), "lsc" );
     updateBackendPreconditionerOptions( _options, prefixfieldsplitLSC );
+    _options.add_options()
+        ( prefixvm( prefixfieldsplitLSC,"ksp-type" ).c_str(), Feel::po::value<std::string>()->default_value( "preonly" ), "preonly, gmres, cg,..." );
+
 }
 
 /**
@@ -909,6 +923,7 @@ po::options_description backend_options( std::string const& prefix )
     updateBackendMGPreconditionerOptions( _options, prefix );
 
     updateBackendFieldSplitPreconditionerOptions( _options, prefix );
+    updateBackendFieldSplitPreconditionerOptions( _options, prefixvm( prefix,"fieldsplit-0" ) );
 
 
     return _options;

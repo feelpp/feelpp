@@ -31,6 +31,7 @@
 #include <feel/feelcore/feelpetsc.hpp>
 #include <feel/feelalg/vectorpetsc.hpp>
 #include <feel/feelalg/matrixpetsc.hpp>
+#include <feel/feelalg/functionspetsc.hpp>
 
 #if defined( FEELPP_HAS_PETSC_H )
 
@@ -438,61 +439,20 @@ void MatrixPetsc<T>::init ( const size_type m,
 
 
 template <typename T>
-void MatrixPetsc<T>::setIndexSplit( std::vector< std::vector<size_type> > const &indexSplit )
+void MatrixPetsc<T>::setIndexSplit( indexsplit_ptrtype const& indexSplit )
 {
-    this->M_IndexSplit=indexSplit;
+    //this->M_IndexSplit=indexSplit;
+    super::setIndexSplit( indexSplit );
 
-    M_petscIS.resize( indexSplit.size() );
+    PetscConvertIndexSplit( M_petscIS, *indexSplit, this->comm() );
+    DVLOG(1) << "setIndexSplit done\n";
+}
 
-    int ierr=0;
-
-    for ( uint i = 0 ; i < indexSplit.size(); ++i )
-    {
-        PetscInt nDofForThisField = indexSplit[i].size();
-        //std::cout << "\n setIndexSplit " << i << " ndof:" << nDofForThisField << "\n";
-
-        PetscInt * petscSplit = new PetscInt[nDofForThisField];
-        std::copy( this->M_IndexSplit[i].begin(),
-                   this->M_IndexSplit[i].end(),
-                   petscSplit );
-
-
-
-#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-        ierr = ISCreateGeneral( this->comm(),nDofForThisField,petscSplit/*this->M_IndexSplit[i].data()*/,PETSC_COPY_VALUES,&M_petscIS[i] );
-#else
-        ierr = ISCreateGeneral( this->comm(),nDofForThisField,petscSplit/*this->M_IndexSplit[i].data()*/,&M_petscIS[i] );
-#endif
-        CHKERRABORT( this->comm(),ierr );
-
-        delete[] petscSplit;
-
-#if 0
-        ISView( M_petscIS[i],PETSC_VIEWER_STDOUT_WORLD ); // PETSC_VIEWER_STDOUT_SELF
-
-        PetscInt n;
-        /*
-          Get the number of indices in the set
-        */
-        ISGetLocalSize( M_petscIS[i],&n );
-        std::cout << "Local size: " << n << "\n";
-        const PetscInt *nindices;
-
-        /*
-          Get the indices in the index set
-        */
-        ISGetIndices( M_petscIS[i],&nindices );
-
-        for ( int j = 0; j < n; ++j )
-        {
-            std::cout << nindices[j] << " ";
-        }
-
-        std::cout << "\n";
-#endif
-    }
-
-    //std::cout << "\n setIndexSplit done\n";
+template <typename T>
+void MatrixPetsc<T>::updatePCFieldSplit( PC & pc, indexsplit_ptrtype const& is )
+{
+    PetscConvertIndexSplit( M_petscIS, *is, this->comm() );
+    updatePCFieldSplit( pc );
 }
 
 template <typename T>
@@ -519,6 +479,8 @@ void MatrixPetsc<T>::updatePCFieldSplit( PC & pc )
 
         if ( std::string( PCFIELDSPLIT ) == std::string( pcName ) )
         {
+
+
             //std::cout << "\n updatePCFieldSplit " << M_petscIS.size() << "\n";
             M_mapPC[&pc]=true;
 
@@ -538,7 +500,19 @@ void MatrixPetsc<T>::updatePCFieldSplit( PC & pc )
 
                 CHKERRABORT( this->comm(),ierr );
             }
+#if 0
+            std::cout << " matrix petsc\n";
+            ierr = PCFieldSplitSetBlockSize(pc,3);
+            //CHKERRABORT( this->comm(),ierr );
+            const PetscInt ufields[] = {0,2},pfields[] = {1};
+            ierr = PCFieldSplitSetFields( pc ,"u", 2, ufields,ufields);
+            CHKERRABORT( this->comm(),ierr );
+            ierr = PCFieldSplitSetFields( pc , "p", 1, pfields,pfields);
+            CHKERRABORT( this->comm(),ierr );
+#endif
+
         }
+
     }
 
 #else
@@ -560,6 +534,9 @@ void MatrixPetsc<T>::updatePCFieldSplit( PC & pc )
 #endif
             CHKERRABORT( this->comm(),ierr );
         }
+
+
+
     }
 
 #endif

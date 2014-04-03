@@ -152,6 +152,11 @@ public:
                                   std::vector< std::vector< std::vector<vector_ptrtype> > >
                                   > affine_decomposition_type;
 
+    typedef typename boost::tuple< sparse_matrix_ptrtype,
+                                   sparse_matrix_ptrtype,
+                                   std::vector<vector_ptrtype>
+                                   > monolithic_type;
+
 
     typedef typename model_type::affine_decomposition_light_type affine_decomposition_light_type;
     typedef typename model_type::betaq_type betaq_type;
@@ -340,6 +345,8 @@ public:
             M_model->setInitialized( true );
         }
 
+        M_model->buildGinacBetaExpressions( M_model->parameterSpace()->min() );
+
         if ( M_mode != CRBModelMode::CRB_ONLINE &&
                 M_mode != CRBModelMode::SCM_ONLINE )
         {
@@ -352,7 +359,7 @@ public:
         u = Xh->element();
         v = Xh->element();
 
-        M_inner_product_matrix = M_model->innerProduct();
+        M_inner_product_matrix = M_model->energyMatrix();
         M_preconditioner_l2->setMatrix( M_inner_product_matrix );
 
         M_bdf = M_model->bdfModel();
@@ -419,7 +426,7 @@ public:
      * \brief Returns the matrix associated with the inner product
      * linked to energy norm
      */
-    sparse_matrix_ptrtype const& innerProduct() const
+    sparse_matrix_ptrtype const& energyMatrix() const
     {
         //return M_model->innerProduct();
         return M_inner_product_matrix;
@@ -429,7 +436,7 @@ public:
      * \brief Returns the matrix associated with the inner product
      * linked to energy norm
      */
-    sparse_matrix_ptrtype  innerProduct()
+    sparse_matrix_ptrtype  energyMatrix()
     {
         //return M_model->innerProduct();
         return M_inner_product_matrix;
@@ -438,17 +445,17 @@ public:
     /**
      * \brief Returns the matrix associated with the inner product
      */
-    sparse_matrix_ptrtype const& innerProductForMassMatrix() const
+    sparse_matrix_ptrtype const& massMatrix() const
     {
-        return M_model->innerProductForMassMatrix();
+        return M_model->massMatrix();
     }
 
     /**
      * \brief Returns the matrix associated with the inner product
      */
-    sparse_matrix_ptrtype  innerProductForMassMatrix()
+    sparse_matrix_ptrtype  massMatrix()
     {
-        return M_model->innerProductForMassMatrix();
+        return M_model->massMatrix();
     }
 
     /**
@@ -457,7 +464,8 @@ public:
      */
     sparse_matrix_ptrtype const& innerProductForPod() const
     {
-        return M_model->innerProductForPod();
+        //return M_model->innerProductForPod();
+        return M_inner_product_matrix;
     }
 
     /**
@@ -466,7 +474,8 @@ public:
      */
     sparse_matrix_ptrtype  innerProductForPod()
     {
-        return M_model->innerProductForPod();
+        return M_inner_product_matrix;
+        //return M_model->innerProductForPod();
     }
 
 
@@ -584,6 +593,10 @@ public:
         return M_model->parameterSpace();
     }
 
+    void adaptMesh( parameter_type const& mu )
+    {
+        return M_model->adaptMesh( mu );
+    }
 
     parameter_type refParameter()
     {
@@ -785,6 +798,7 @@ public:
 
     }
 
+    element_type solveFemMonolithicFormulation( parameter_type const& mu );
     element_type solveFemUsingAffineDecompositionFixedPoint( parameter_type const& mu );
     element_type solveFemDualUsingAffineDecompositionFixedPoint( parameter_type const& mu );
     element_type solveFemUsingOfflineEim( parameter_type const& mu );
@@ -1184,6 +1198,27 @@ public:
                 M_Fqm[output][q][0]=Fq[output][q];
             }
         }
+    }
+
+
+
+    /**
+     * \brief compute the monolithic formulation
+     * that is to say with no affine decomposition
+     */
+    monolithic_type computeMonolithicFormulation( parameter_type const& mu )
+    {
+        return computeMonolithicFormulation( mu, mpl::bool_<model_type::is_time_dependent>() );
+    }
+    monolithic_type computeMonolithicFormulation( parameter_type const& mu , mpl::bool_<true> )
+    {
+        boost::tie( M_monoM, M_monoA, M_monoF ) = M_model->computeMonolithicFormulation( mu );
+        return boost::make_tuple( M_monoM, M_monoA, M_monoF );
+    }
+    monolithic_type computeMonolithicFormulation( parameter_type const& mu , mpl::bool_<false> )
+    {
+        boost::tie( M_monoA, M_monoF ) = M_model->computeMonolithicFormulation( mu );
+        return boost::make_tuple( M_monoM, M_monoA, M_monoF );
     }
 
     /**
@@ -1905,7 +1940,7 @@ public:
      */
     double scalarProductForMassMatrix( vector_type const& X, vector_type const& Y )
     {
-        auto M = M_model->innerProductForMassMatrix();
+        auto M = M_model->massMatrix();
         return M->energy( X, Y );
     }
     /**
@@ -1913,7 +1948,7 @@ public:
      */
     double scalarProductForMassMatrix( vector_ptrtype const& X, vector_ptrtype const& Y )
     {
-        auto M = M_model->innerProductForMassMatrix();
+        auto M = M_model->massMatrix();
         return M->energy( X, Y );
     }
 
@@ -1927,8 +1962,9 @@ public:
     }
     double scalarProductForPod( vector_type const& X, vector_type const& Y , mpl::bool_<true> )
     {
-        auto M = M_model->innerProductForPod();
-        return M->energy( X, Y );
+        return M_inner_product_matrix->energy( X, Y );
+        //auto M = M_model->innerProductForPod();
+        //return M->energy( X, Y );
     }
     double scalarProductForPod( vector_type const& X, vector_type const& Y , mpl::bool_<false> )
     {
@@ -1945,7 +1981,8 @@ public:
     }
     double scalarProductForPod( vector_ptrtype const& X, vector_ptrtype const& Y , mpl::bool_<true> )
     {
-        return M_model->scalarProductForPod( X, Y );
+        return M_inner_product_matrix->energy( X, Y );
+        //return M_model->scalarProductForPod( X, Y );
     }
     double scalarProductForPod( vector_ptrtype const& X, vector_ptrtype const& Y , mpl::bool_<false> )
     {
@@ -2020,14 +2057,15 @@ public:
         return M_model->generateGeoFileForOutputPlot( outputs, parameter, estimated_error );
     }
 
-    gmsh_ptrtype createStructuredGrid( int comp0, int comp1 ,parameter_type const& min, parameter_type const& max, int nb )
+    gmsh_ptrtype createStructuredGrid( std::vector<int> components_vary, std::vector<parameter_type> extremums,
+                                       std::vector<int> cuttings, std::vector<double> time_cuttings, bool time_vary )
     {
-        return M_model->createStructuredGrid( comp0, comp1, min , max , nb );
+        return M_model->createStructuredGrid( components_vary, extremums, cuttings, time_cuttings, time_vary );
     }
 
-    void writeConvergenceStatistics( std::vector< vectorN_type > const& vector, std::string filename )
+    void writeConvergenceStatistics( std::vector< vectorN_type > const& vector, std::string filename , std::string extra="")
     {
-        return M_model->writeConvergenceStatistics( vector, filename );
+        return M_model->writeConvergenceStatistics( vector, filename , extra );
     }
 
     void writeVectorsExtremumsRatio(std::vector< vectorN_type > const& vector1, std::vector< vectorN_type > const& vector2, std::string filename )
@@ -2148,7 +2186,11 @@ protected:
     mutable std::vector< std::vector<sparse_matrix_ptrtype> > M_Mqm;
 
     //! affine decomposition terms for the right hand side
-    std::vector< std::vector<std::vector<vector_ptrtype> > > M_Fqm;
+    std::vector< std::vector <std::vector<vector_ptrtype>> > M_Fqm;
+
+    sparse_matrix_ptrtype M_monoA;
+    sparse_matrix_ptrtype M_monoM;
+    std::vector<vector_ptrtype> M_monoF;
 
 private:
 
@@ -2709,6 +2751,8 @@ CRBModel<TruthModelType>::offlineMerge( betaqm_type const& all_beta , parameter_
 }
 
 
+
+
 template<typename TruthModelType>
 typename CRBModel<TruthModelType>::element_type
 CRBModel<TruthModelType>::solveFemUsingOfflineEim( parameter_type const& mu )
@@ -2763,6 +2807,75 @@ CRBModel<TruthModelType>::solveFemUsingOfflineEim( parameter_type const& mu )
         }
         M_preconditioner_primal->setMatrix( A );
         M_backend_primal->solve( _matrix=A , _solution=u, _rhs=Rhs , _prec=M_preconditioner_primal);
+        mybdf->shiftRight(u);
+    }
+
+    return u;
+
+}
+
+template<typename TruthModelType>
+typename CRBModel<TruthModelType>::element_type
+CRBModel<TruthModelType>::solveFemMonolithicFormulation( parameter_type const& mu )
+{
+    auto Xh= this->functionSpace();
+
+    bdf_ptrtype mybdf;
+    mybdf = bdf( _space=Xh, _vm=this->vm() , _name="mybdf" );
+    sparse_matrix_ptrtype A;
+    sparse_matrix_ptrtype M;
+    std::vector<vector_ptrtype> F;
+    element_ptrtype InitialGuess = Xh->elementPtr();
+
+    auto u = Xh->element();
+
+    double time_initial;
+    double time_step;
+    double time_final;
+
+    if ( this->isSteady() )
+    {
+        time_initial=0;
+        time_step = 1e30;
+        time_final = 1e30;
+        // !!
+        //some stuff needs to be done here
+        //to deal with non linear problems
+        //and have an initial guess
+        // !!
+    }
+    else
+    {
+        time_initial=this->timeInitial();
+        time_step=this->timeStep();
+        time_final=this->timeFinal();
+        this->initializationField( InitialGuess, mu );
+    }
+
+    mybdf->setTimeInitial( time_initial );
+    mybdf->setTimeStep( time_step );
+    mybdf->setTimeFinal( time_final );
+
+    double bdf_coeff ;
+    auto vec_bdf_poly = M_backend->newVector( Xh );
+
+    for( mybdf->start(*InitialGuess); !mybdf->isFinished(); mybdf->next() )
+    {
+        bdf_coeff = mybdf->polyDerivCoefficient( 0 );
+        auto bdf_poly = mybdf->polyDeriv();
+        *vec_bdf_poly = bdf_poly;
+
+        boost::tie(M, A, F) = this->computeMonolithicFormulation( mu );
+
+        if( !isSteady() )
+        {
+            A->addMatrix( bdf_coeff, M );
+            F[0]->addVector( *vec_bdf_poly, *M );
+        }
+        M_preconditioner_primal->setMatrix( A );
+
+        M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0] , _prec=M_preconditioner_primal);
+
         mybdf->shiftRight(u);
     }
 

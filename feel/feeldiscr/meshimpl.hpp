@@ -1575,16 +1575,16 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
 
     DVLOG(1) << "updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm : start on rank " << this->worldComm().localRank() << "\n";
 
-    const int nProc = this->worldComm().localSize();
+    const rank_type nProc = this->worldComm().localSize();
 
     //------------------------------------------------------------------------------------------------//
     // compute size of container to send and update Point and Edge info for parallelism
-    std::map< int, int > nDataInVecToSend;
+    std::map< rank_type, int > nDataInVecToSend;
     auto iv = this->beginGhostElement();
     auto const en = this->endGhostElement();
     for ( ; iv != en; ++iv )
     {
-        const int IdProcessOfGhost = iv->processId();
+        const rank_type IdProcessOfGhost = iv->processId();
         // update info for parallelism
         this->elements().modify( this->elementIterator(iv->id(),IdProcessOfGhost) , typename super_elements::ElementGhostConnectPointToElement() );
         if ( nDim==3 )
@@ -1598,24 +1598,24 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
     }
     //------------------------------------------------------------------------------------------------//
     // init and resize the container to send
-    std::map< int, std::vector<size_type> > dataToSend;
+    std::map< rank_type, std::vector<size_type> > dataToSend;
     auto itNDataInVecToSend = nDataInVecToSend.begin();
     auto const enNDataInVecToSend = nDataInVecToSend.end();
     for ( ; itNDataInVecToSend!=enNDataInVecToSend ; ++itNDataInVecToSend )
     {
-        const int idProc = itNDataInVecToSend->first;
+        const rank_type idProc = itNDataInVecToSend->first;
         const int nData = itNDataInVecToSend->second;
         dataToSend[idProc].resize( nData );
     }
     //------------------------------------------------------------------------------------------------//
     // prepare container to send
-    std::map< int, std::map<int,size_type> > memoryMsgToSend;
-    std::map< int, int > nDataInVecToSendBis;
+    std::map< rank_type, std::map<int,size_type> > memoryMsgToSend;
+    std::map< rank_type, int > nDataInVecToSendBis;
     iv = this->beginGhostElement();
     for ( ; iv != en; ++iv )
     {
         element_type const& __element = *iv;
-        const int idProc = __element.processId();
+        const rank_type idProc = __element.processId();
         const size_type idEltInOtherPartition = __element.idInOthersPartitions( idProc );
         // be sure that the counter start to 0
         if ( nDataInVecToSendBis.find(idProc) == nDataInVecToSendBis.end() )
@@ -1629,7 +1629,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
     }
     //------------------------------------------------------------------------------------------------//
     // compute nbMsgToRecv
-    std::set<int> procToRecv;
+    std::set<rank_type> procToRecv;
     auto itEltActif = this->beginElementWithProcessId( this->worldComm().localRank() );
     auto const enEltActif = this->endElementWithProcessId( this->worldComm().localRank() );
     for ( ; itEltActif!=enEltActif ; ++itEltActif )
@@ -1643,7 +1643,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
     //------------------------------------------------------------------------------------------------//
     // counter of request
     int nbRequest=0;
-    for ( int proc=0; proc<nProc; ++proc )
+    for ( rank_type proc=0; proc<nProc; ++proc )
     {
         if ( dataToSend.find(proc) != dataToSend.end() )
             ++nbRequest;
@@ -1665,12 +1665,12 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
     }
     //------------------------------------------------------------------------------------------------//
     // first recv
-    std::map<int,std::vector<size_type> > dataToRecv;
+    std::map<rank_type,std::vector<size_type> > dataToRecv;
     auto itProcToRecv = procToRecv.begin();
-    auto enProcToRecv = procToRecv.end();
+    auto const enProcToRecv = procToRecv.end();
     for ( ; itProcToRecv != enProcToRecv ; ++itProcToRecv )
     {
-        const int idProc = *itProcToRecv;
+        const rank_type idProc = *itProcToRecv;
         reqs[cptRequest] = this->worldComm().localComm().irecv( idProc , 0, dataToRecv[idProc] );
         ++cptRequest;
     }
@@ -1679,12 +1679,12 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
     mpi::wait_all(reqs, reqs + nbRequest);
     //------------------------------------------------------------------------------------------------//
     // build the container to ReSend
-    std::map<int, std::vector< boost::tuple<resultghost_point_type,resultghost_face_type>  > > dataToReSend;
+    std::map<rank_type, std::vector< boost::tuple<resultghost_point_type,resultghost_face_type>  > > dataToReSend;
     auto itDataRecv = dataToRecv.begin();
     auto const enDataRecv = dataToRecv.end();
     for ( ; itDataRecv!=enDataRecv ; ++itDataRecv )
     {
-        const int idProc = itDataRecv->first;
+        const rank_type idProc = itDataRecv->first;
         const int nDataRecv = itDataRecv->second.size();
         dataToReSend[idProc].resize( nDataRecv );
         for ( int k=0; k<nDataRecv; ++k )
@@ -1750,12 +1750,12 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
     }
     //------------------------------------------------------------------------------------------------//
     // recv the initial request
-    std::map<int, std::vector< boost::tuple<resultghost_point_type,resultghost_face_type>  > > finalDataToRecv;
+    std::map<rank_type, std::vector< boost::tuple<resultghost_point_type,resultghost_face_type>  > > finalDataToRecv;
 
     itDataToSend = dataToSend.begin();
     for ( ; itDataToSend!=enDataToSend ; ++itDataToSend )
     {
-        const int idProc = itDataToSend->first;
+        const rank_type idProc = itDataToSend->first;
         reqs[cptRequest] = this->worldComm().localComm().irecv( idProc, 0, finalDataToRecv[idProc] );
         ++cptRequest;
     }
@@ -1770,7 +1770,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
     auto const enFinalDataToRecv = finalDataToRecv.end();
     for ( ; itFinalDataToRecv!=enFinalDataToRecv ; ++itFinalDataToRecv)
     {
-        const int idProc = itFinalDataToRecv->first;
+        const rank_type idProc = itFinalDataToRecv->first;
         const int nDataRecv = itFinalDataToRecv->second.size();
         for ( int k=0; k<nDataRecv; ++k )
         {
@@ -2713,14 +2713,14 @@ Mesh<Shape, T, Tag>::Localization::searchElement( const node_type & p )
     auto mesh = M_mesh.lock();
     bool isin=false;double dmin=0;
     node_type x_ref;
-    size_type idEltFound = mesh->beginElementWithId(mesh->worldComm().localRank())->id();
+    size_type idEltFound = 0;//mesh->beginElementWithId(mesh->worldComm().localRank())->id();
 
     std::list< std::pair<size_type, uint> > ListTri;
     this->searchInKdTree(p,ListTri);
 
     //research the element which contains the point p
     auto itLT=ListTri.begin();
-    auto itLT_end=ListTri.end();
+    auto const itLT_end=ListTri.end();
 
     DCHECK( std::distance( itLT,itLT_end )>0 ) << "problem in localization : listTri is empty\n";
 
@@ -2737,24 +2737,19 @@ Mesh<Shape, T, Tag>::Localization::searchElement( const node_type & p )
     }
 
 
-    if (!isin)
+    if( !isin && this->doExtrapolation() )
         {
-            if( this->doExtrapolation() )
-                {
-                    //std::cout << "WARNING EXTRAPOLATION for the point" << p << std::endl;
-                    //std::cout << "W";
-                    auto const& eltUsedForExtrapolation = mesh->element(ListTri.begin()->first);
-                    gmc_inverse_type gic( mesh->gm(), eltUsedForExtrapolation, mesh->worldComm().subWorldCommSeq() );
-                    //apply the inverse geometric transformation for the point p
-                    gic.setXReal( p);
-                    boost::tie(isin,idEltFound,x_ref) = boost::make_tuple(true,eltUsedForExtrapolation.id(),gic.xRef());
-                }
-            else
-                {
-                    idEltFound = mesh->beginElementWithId(mesh->worldComm().localRank())->id();
-                    isin = false;
-                    //x_ref=?
-                }
+            // first elt
+            idEltFound = ListTri.begin()->first;
+            auto const& eltUsedForExtrapolation = mesh->element(idEltFound);
+            DVLOG(1) << "localisation tool use extrapolation for the point" << p
+                     << " with elt.id() " << eltUsedForExtrapolation.id()
+                     << " and elt.G() " << eltUsedForExtrapolation.G()
+                     << "\n";
+            gmc_inverse_type gic( mesh->gm(), eltUsedForExtrapolation, mesh->worldComm().subWorldCommSeq() );
+            //apply the inverse geometric transformation for the point p
+            gic.setXReal( p);
+            boost::tie(isin,idEltFound,x_ref) = boost::make_tuple(true,eltUsedForExtrapolation.id(),gic.xRef());
         }
 
     return boost::make_tuple( isin, idEltFound, x_ref);
@@ -2799,6 +2794,10 @@ Mesh<Shape, T, Tag>::Localization::run_analysis( const matrix_node_type & m,
                     cv_id = currentEltHypothetical;
                     M_resultAnalysis[cv_id].push_back( boost::make_tuple(i,x_ref) );
                     hasFindPts[i]=true;
+                    DVLOG(1) << "localisation tool (hypthetical elt) : has found pt " << ublas::column( m, i )
+                             << "in elt id " << cv_id
+                             << "with G() " << M_mesh.lock()->element(cv_id).G()
+                             << "\n";
                 }
             else // search kdtree
                 {
@@ -2810,6 +2809,11 @@ Mesh<Shape, T, Tag>::Localization::run_analysis( const matrix_node_type & m,
                             M_resultAnalysis[cv_id].push_back( boost::make_tuple(i,x_ref) );
                             currentEltHypothetical = cv_id;
                             hasFindPts[i]=true;
+                            DVLOG(1)  << "localisation tool (first pass) : has found pt " << ublas::column( m, i )
+                                      << " in elt id " << cv_id
+                                      << " with G() " << M_mesh.lock()->element(cv_id).G()
+                                      << " and ref point " << x_ref
+                                      << "\n";
                         }
                     else// if (false) // try an other method (no efficient but maybe a solution)
                         {
@@ -2825,28 +2829,30 @@ Mesh<Shape, T, Tag>::Localization::run_analysis( const matrix_node_type & m,
                                     M_resultAnalysis[cv_id].push_back( boost::make_tuple(i,x_ref) );
                                     currentEltHypothetical = cv_id;
                                     hasFindPts[i]=true;
+                                    DVLOG(1)  << "localisation tool (second pass) : has found pt " << ublas::column( m, i )
+                                              << " in elt id " << cv_id
+                                              << " with G() " << M_mesh.lock()->element(cv_id).G()
+                                              << " and ref point " << x_ref
+                                              << "\n";
                                 }
-                            else if (doExtrapolationAtStart)// && this->mesh()->worldComm().localSize()==1)
+                            else if (doExtrapolationAtStart)
                                 {
                                     this->setExtrapolation(true);
 
                                     boost::tie( find_x, cv_id, x_ref ) = this->searchElement(ublas::column( m, i ));
-                                    // normaly is find
-                                    if (find_x)
-                                        {
-                                            M_resultAnalysis[cv_id].push_back( boost::make_tuple(i,x_ref) );
-                                            currentEltHypothetical = cv_id;
-                                            hasFindPts[i]=true;
-                                        }
+
+                                    CHECK( find_x ) << "localisation tool : invalid extrapolation \n";
+
+                                    M_resultAnalysis[cv_id].push_back( boost::make_tuple(i,x_ref) );
+                                    currentEltHypothetical = cv_id;
+                                    hasFindPts[i]=true;
 
                                     this->setExtrapolation(false);
                                 }
-                            else
-                                {
-                                    //std::cout<<"\n Il y a un GROS Probleme de Localization\n";
-                                }
                         }
                 } // search kdtree
+
+            DLOG_IF(WARNING, !hasFindPts[i]) << "the localisation tool fails to find the point " << ublas::column( m, i ) << "\n";
 
         } // for (size_type i=0;i< m.size2();++i)
 

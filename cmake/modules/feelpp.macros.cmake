@@ -3,6 +3,19 @@
 INCLUDE(CustomPCH)
 INCLUDE(ParseArguments)
 
+# list the subdicrectories of directory 'curdir'
+macro(feelpp_list_subdirs result curdir)
+  FILE(GLOB children RELATIVE ${curdir} ${curdir}/*)
+  SET(dirlist "")
+  FOREACH(child ${children})
+    IF(IS_DIRECTORY ${curdir}/${child})
+      LIST(APPEND dirlist ${child})
+    ENDIF()
+  ENDFOREACH()
+  SET(${result} ${dirlist})
+endmacro(feelpp_list_subdirs)
+
+# add a new application
 macro(feelpp_add_application)
 
   PARSE_ARGUMENTS(FEELPP_APP

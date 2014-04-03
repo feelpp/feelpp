@@ -126,7 +126,9 @@ public:
     Gmsh& operator=( Gmsh const& __g );
 
     static boost::shared_ptr<Gmsh> New( po::variables_map const& vm );
-    static boost::shared_ptr<Gmsh> New( std::string const& shape, uint16_type d = 2, uint16_type o = 1, std::string const& ct = "simplex" );
+    static boost::shared_ptr<Gmsh> New( std::string const& shape, uint16_type d = 2,
+                                        uint16_type o = 1, std::string const& ct = "simplex",
+                                        WorldComm const& worldComm = Environment::worldComm() );
 
     //@}
 

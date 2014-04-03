@@ -148,6 +148,7 @@ Gmsh::operator=( Gmsh const& __g )
         M_shear = __g.M_shear;
         M_refine_levels = __g.M_refine_levels;
         M_periodic = __g.M_periodic;
+        M_worldComm = __g.M_worldComm;
     }
 
     return *this;
@@ -163,7 +164,7 @@ Gmsh::New( po::variables_map const& vm )
 }
 
 boost::shared_ptr<Gmsh>
-Gmsh::New( std::string const& shape, uint16_type d, uint16_type o, std::string const& ct )
+Gmsh::New( std::string const& shape, uint16_type d, uint16_type o, std::string const& ct, WorldComm const& wc )
 {
     std::ostringstream ostr;
 
@@ -174,6 +175,7 @@ Gmsh::New( std::string const& shape, uint16_type d, uint16_type o, std::string c
         ostr << shape << "(" << d << "," << o << "," << boost::to_lower_copy( ct ) << ")";
 
     boost::shared_ptr<Gmsh> gmsh_ptr( Gmsh::Factory::type::instance().createObject( ostr.str() ) );
+    gmsh_ptr->setWorldComm( wc );
     return gmsh_ptr;
 }
 

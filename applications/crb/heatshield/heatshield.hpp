@@ -70,7 +70,7 @@ makeHeatShieldOptions()
     po::options_description heatshieldoptions( "HeatShield options" );
     heatshieldoptions.add_options()
     // mesh parameters
-    ( "hsize", Feel::po::value<double>()->default_value( 1e-1 ), "first h value to start convergence" )
+    ( "hsize", Feel::po::value<double>()->default_value( 1 ), "first h value to start convergence" )
     ( "mshfile", Feel::po::value<std::string>()->default_value( "" ), "name of the gmsh file input")
     ( "do-not-use-operators-free", Feel::po::value<bool>()->default_value( true ), "never use operators free if true" )
     ( "load-mesh-already-partitioned", Feel::po::value<bool>()->default_value( "true" ), "load a mesh from mshfile that is already partitioned if true, else the mesh loaded need to be partitioned")
@@ -81,7 +81,7 @@ makeHeatShieldOptions()
     ( "beta.F1.0", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for F1" )
     ( "beta.M0", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for M0" )
     ;
-    return heatshieldoptions.add( Feel::feel_options() ).add( bdf_options( "heatshield" ) ).add( backend_options("backendl2") );
+    return heatshieldoptions.add( bdf_options( "heatshield" ) ).add( backend_options("backendl2") );
 }
 AboutData
 makeHeatShieldAbout( std::string const& str = "heatShield" )
@@ -433,7 +433,7 @@ public:
     /**
      * inner product
      */
-    sparse_matrix_ptrtype innerProduct ( void )
+    sparse_matrix_ptrtype energyMatrix ( void )
     {
         return M;
     }
@@ -441,11 +441,12 @@ public:
     /**
      * inner product for mass matrix
      */
-    sparse_matrix_ptrtype innerProductForMassMatrix ( void )
+    sparse_matrix_ptrtype massMatrix ( void )
     {
         return InnerMassMatrix;
     }
 
+#if 0
     /**
      * inner product for the POD
      */
@@ -453,7 +454,7 @@ public:
     {
         return Mpod;
     }
-
+#endif
     /**
      * Given the output index \p output_index and the parameter \p mu, return
      * the value of the corresponding FEM output
@@ -574,11 +575,15 @@ HeatShield<Order>::buildGinacExpressions()
 {
 
     int qa = Qa();
+    std::vector< std::string > symbols_vec;
+    symbols_vec.push_back("BiotOut");
+    symbols_vec.push_back("BiotIn");
+    symbols_vec.push_back("surface");
     for(int i=0; i<qa; i++)
     {
         std::string name = ( boost::format("beta.A%1%") %i ).str();
         std::string filename = ( boost::format("GinacA%1%") %i ).str();
-        ginac_expressionA.push_back( expr( option(_name=name).template as<std::string>(), {symbol("x"),symbol("y"),symbol("BiotOut") , symbol("BiotIn")} , filename ) );
+        ginac_expressionA.push_back( expr( option(_name=name).template as<std::string>(), Symbols( symbols_vec ) , filename ) );
     }
 
 
@@ -587,7 +592,7 @@ HeatShield<Order>::buildGinacExpressions()
     {
         std::string name = ( boost::format("beta.M%1%") %i ).str();
         std::string filename = ( boost::format("GinacM%1%") %i ).str();
-        ginac_expressionM.push_back( expr( option(_name=name).template as<std::string>(), {symbol("x"),symbol("y")} , filename ) );
+        ginac_expressionM.push_back( expr( option(_name=name).template as<std::string>(),  Symbols( symbols_vec ) , filename ) );
     }
 
     int nl = Nl();
@@ -598,7 +603,7 @@ HeatShield<Order>::buildGinacExpressions()
         {
             std::string name = ( boost::format("beta.F%1%.%2%") %i %j ).str();
             std::string filename = ( boost::format("GinacF%1%.%2%") %i %j ).str();
-            ginac_expressionF.push_back( expr( option(_name=name).template as<std::string>(), {symbol("x"),symbol("y"),symbol("BiotOut") , symbol("BiotIn"), symbol("surface")} , filename ) );
+            ginac_expressionF.push_back( expr( option(_name=name).template as<std::string>(), Symbols( symbols_vec ) , filename ) );
         }
     }
 

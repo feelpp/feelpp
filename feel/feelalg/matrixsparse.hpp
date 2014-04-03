@@ -103,6 +103,9 @@ public:
     typedef DataMap datamap_type;
     typedef boost::shared_ptr<datamap_type> datamap_ptrtype;
 
+    typedef typename datamap_type::indexsplit_type indexsplit_type;
+    typedef typename datamap_type::indexsplit_ptrtype indexsplit_ptrtype;
+
     /**
      * Constructor; initializes the matrix to be empty, without any
      * structure, i.e.  the matrix is not usable at all. This
@@ -207,47 +210,20 @@ public:
                         const size_type n_l,
                         graph_ptrtype const& graph ) = 0;
 
-#if 0
     /**
-     *
+     * set the indexSplit associated to the sparse matrix
      */
-    template<typename DomainSpace, typename ImageSpace>
-    void initIndexSplit( DomainSpace const& dm, ImageSpace const& im )
+    virtual void setIndexSplit( indexsplit_ptrtype const& is )
     {
-        auto nSpace = DomainSpace::element_type::nSpaces;
-
-        if ( nSpace>1 )
-        {
-            //std::cout << "\n Debug : nSpace " << nSpace << "\n";
-            std::vector < std::vector<int> > is( nSpace );
-            uint cptSpaces=0;
-            uint start=0;
-            auto result = boost::make_tuple( cptSpaces,start );
-
-            std::vector < std::vector<int> > indexSplit( nSpace );
-            //detail::computeNDofForEachSpace cndof(nSpace);
-            //detail::computeNDofForEachSpace cndof(indexSplit);
-            boost::fusion::fold( dm->functionSpaces(), result,  cndof );
-
-            this->setIndexSplit( indexSplit );
-        }
-
-    }
-#endif
-    /**
-     *
-     */
-    virtual void setIndexSplit( std::vector< std::vector<size_type> > const &_indexSplit )
-    {
-        M_IndexSplit=_indexSplit;
+        M_indexSplit = is;
     }
 
     /**
-     *
+     * \return the indexSplit associated to the sparse matrix
      */
-    std::vector< std::vector<size_type> > indexSplit() const
+    indexsplit_ptrtype const& indexSplit() const
     {
-        return M_IndexSplit;
+        return M_indexSplit;
     }
 
     /**
@@ -793,7 +769,7 @@ protected:
 
     Context M_mprop;
 
-    std::vector < std::vector<size_type> > M_IndexSplit;
+    indexsplit_ptrtype M_indexSplit;
 
     /**
      * data distribution map of the vector over the processors

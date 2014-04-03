@@ -1185,11 +1185,15 @@ struct computeNDofForEachSpace
 
     computeNDofForEachSpace(size_type startSplit)
     :
+        M_indexSplit( new IndexSplit() ),
         M_startSplit(startSplit)
     {}
 
-    typedef boost::tuple< uint16_type, size_type, std::vector<std::vector<size_type> > > result_type;
+    boost::shared_ptr<IndexSplit> const& indexSplit() const { return M_indexSplit; }
 
+    typedef boost::tuple< uint16_type, size_type, IndexSplit > result_type;
+
+#if 0
     template<typename T>
     result_type operator()( result_type const & previousRes, T const& t )
     {
@@ -1200,21 +1204,26 @@ struct computeNDofForEachSpace
         const size_type start = previousRes.get<1>();
         auto is = previousRes.get<2>();
 
-        //std::cout << "compo " << cptSpaces << " start " << start <<" split nDofWithout " << nDof << " with ghost "<< nDofWithGhost<< " M_startSplit " << M_startSplit <<std::endl;
-
-        //is.push_back( std::vector<size_type>( nDofWithoutGhost ) );
         is[cptSpaces].resize(nDofWithoutGhost);
 
         for ( size_type i=0; i<nDofWithGhost; ++i )
         {
             if ( t->dof()->dofGlobalProcessIsGhost(i) ) continue;
             const size_type globalDof = t->dof()->mapGlobalProcessToGlobalCluster(i);
-            is[cptSpaces][globalDof - firstDof ] = M_startSplit + start + (globalDof - firstDof);
+            M_is[cptSpaces][globalDof - firstDof ] = M_startSplit + start + (globalDof - firstDof);
         }
 
         return boost::make_tuple( ++cptSpaces, ( start+nDofWithoutGhost ), is );
     }
+#else
+    template<typename T>
+    void operator()( T const& t ) const
+    {
+        M_indexSplit->addSplit( M_startSplit, t->map().indexSplit() );
+    }
+#endif
 
+    mutable boost::shared_ptr<IndexSplit> M_indexSplit;
     size_type M_startSplit;
 };
 
@@ -2366,24 +2375,28 @@ public:
         Eigen::Matrix<value_type, Eigen::Dynamic, 1>
         evaluate( functionspace_type::Context const & context , bool do_communications=true) const
         {
-            int npoints = context.nPoints();
+            const int npoints = context.nPoints();
+
+            //number of component
+            const int ncdof  = is_product?nComponents:1;
 
             //rank of the current processor
-            int proc_number = Environment::worldComm().globalRank();
+            int proc_number = this->worldComm().globalRank();
 
             //total number of processors
-            int nprocs = Environment::worldComm().globalSize();
+            int nprocs = this->worldComm().globalSize();
 
             auto it = context.begin();
             auto en = context.end();
 
-            eigen_type __globalr( npoints );
+            eigen_type __globalr( npoints*ncdof );
             __globalr.setZero();
-            eigen_type __localr( npoints );
+            eigen_type __localr( npoints*ncdof );
             __localr.setZero();
 
             boost::array<typename array_type::index, 1> shape;
             shape[0] = 1;
+
             id_array_type v( shape );
             if( context.size() > 0 )
             {
@@ -2393,12 +2406,15 @@ public:
                     auto basis = it->second;
                     id( *basis, v );
                     int global_index = it->first;
-                    __localr( global_index ) = v[0]( 0, 0 );
+                    for(int comp=0; comp<ncdof; comp++)
+                    {
+                        __localr( global_index*ncdof+comp ) = v[0]( comp, 0 );
+                    }
                 }
             }
 
             if( do_communications )
-                mpi::all_reduce( Environment::worldComm() , __localr, __globalr, std::plus< eigen_type >() );
+                mpi::all_reduce( this->worldComm() , __localr, __globalr, std::plus< eigen_type >() );
             else
                 __globalr = __localr;
 
@@ -3962,64 +3978,24 @@ public:
         return M_functionspaces;
     }
 
-    std::vector<std::vector<size_type> > dofIndexSplit()
+
+    boost::shared_ptr<IndexSplit>
+    buildDofIndexSplit()
     {
-        if ( nSpaces > 1 )
-        {
-            uint16_type cptSpaces=0;
-            size_type start=0;
-            std::vector<std::vector<size_type> > is(nSpaces);
-            auto initial = boost::make_tuple( cptSpaces,start,is );
-
-            // get start for each proc ->( proc0 : 0 ), (proc1 : sumdofproc0 ), (proc2 : sumdofproc0+sumdofproc1 ) ....
-            auto startSplit = boost::fusion::fold( functionSpaces(), boost::make_tuple(0,0), Feel::detail::computeStartOfFieldSplit() ).template get<1>();
-            // compute split
-            auto result = boost::fusion::fold( functionSpaces(), initial,  Feel::detail::computeNDofForEachSpace(startSplit) );
-            is = result.template get<2>();
-
-
-#if 0
-            for ( int proc = 0; proc<this->worldComm().globalSize(); ++proc )
-            {
-                this->worldComm().globalComm().barrier();
-                if ( proc==this->worldComm().globalRank() )
-                {
-                    std::cout << "proc " << proc << "\n";
-                    std::cout << "split size=" << result.template get<2>().size() << " nspace=" << nSpaces << "\n";
-                    std::cout << "split:\n";
-
-                    //std::cout << "\n\n";
-
-
-                    for ( int s= 0; s < nSpaces; ++s )
-                    {
-                        std::cout << "space: " << is[s].size() << "\n";
-
-                        for ( int i = 0; i < is[s].size(); ++i )
-                        {
-                            std::cout << is[s][i] << " ";
-                        }
-
-                        std::cout << "\n\n";
-                    }
-                }
-            }
-
-#endif
-            return is;
-        }
-
-        std::vector<std::vector<size_type> > is;
-        is.push_back( std::vector<size_type>( nLocalDof() ) );
-        int index = 0;
-        //for( int& i : is[0] ) { i = index++; }
-        BOOST_FOREACH( auto& i, is[0] )
-        {
-            i = index++;
-        }
-        return is;
+        auto startSplit = boost::fusion::fold( functionSpaces(), boost::make_tuple(0,0), Feel::detail::computeStartOfFieldSplit() ).template get<1>();
+        auto computeSplit = Feel::detail::computeNDofForEachSpace(startSplit);
+        boost::fusion::for_each( functionSpaces(), computeSplit );
+        return computeSplit.indexSplit();
 
     }
+
+    boost::shared_ptr<IndexSplit> const&
+    dofIndexSplit() const
+    {
+        return this->dof()->indexSplit();
+    }
+
+
     /**
      * \return an element of the function space
      */
@@ -4503,6 +4479,10 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
         M_dofOnOff = dofInitTool.dataMapOnOff();
         M_dofOnOff->setNDof( this->nDof() );
     }
+
+    M_dof->setIndexSplit( this->buildDofIndexSplit() );
+    //M_dof->indexSplit().showMe();
+
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
@@ -5448,8 +5428,6 @@ template<typename ContextType>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_( ContextType const & context, div_array_type& v ) const
 {
-#if 1
-
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();
 
@@ -5463,6 +5441,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_( ContextType const & co
 
     const size_type Q = context.xRefs().size2();
 
+    auto const& s = M_functionspace->dof()->localToGlobalSigns( elt_id );
     for ( int l = 0; l < basis_type::nDof; ++l )
     {
         const int ncdof = is_product?nComponents1:1;
@@ -5488,48 +5467,11 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_( ContextType const & co
                 std::cout << "context.div(" << ldof << "," << q << ")="
                           << context.div( ldof, 0, 0, q ) << "\n" ;
 #endif
-                v[q]( 0,0 ) += v_*context.div( ldof, 0, 0, q );
+                v[q]( 0,0 ) += s(ldof)*v_*context.div( ldof, 0, 0, q );
             }
         }
     }
 
-#else
-
-    if ( !this->areGlobalValuesUpdated() )
-        this->updateGlobalValues();
-
-    for ( int l = 0; l < basis_type::nDof; ++l )
-    {
-        const int ncdof = is_product?nComponents1:1;
-
-        for ( int c1 = 0; c1 < ncdof; ++c1 )
-        {
-            int ldof = c1*basis_type::nDof+l;
-            size_type gdof = boost::get<0>( M_functionspace->dof()->localToGlobal( context.eId(), l, c1 ) );
-            FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
-                           gdof < this->lastLocalIndex() )
-            ( context.eId() )
-            ( l )( c1 )( ldof )( gdof )
-            ( this->size() )( this->localSize() )
-            ( this->firstLocalIndex() )( this->lastLocalIndex() )
-            .error( "FunctionSpace::Element invalid access index" );
-            //value_type v_ = (*this)( gdof );
-            value_type v_ = this->globalValue( gdof );
-
-            for ( int k = 0; k < nComponents1; ++k )
-            {
-                for ( typename array_type::index i = 0; i < nDim; ++i )
-                {
-                    for ( size_type q = 0; q < context.xRefs().size2(); ++q )
-                    {
-                        v[q]( 0,0 ) += v_*context.gmContext()->B( q )( k, i )*context.pc()->grad( ldof, k, i, q );
-                    }
-                }
-            }
-        }
-    }
-
-#endif
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
