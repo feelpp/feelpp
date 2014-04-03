@@ -34,8 +34,13 @@
 
 extern "C" {
 
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 )
 #include <petsc-private/pcimpl.h>
 #include <petsc-private/kspimpl.h>
+#else
+#include <private/pcimpl.h>
+#include <private/kspimpl.h>
+#endif
 
 typedef struct {
     PetscBool allocated;
