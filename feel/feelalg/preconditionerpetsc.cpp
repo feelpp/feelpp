@@ -31,6 +31,62 @@
 #include <feel/feelalg/matrixpetsc.hpp>
 #include <feel/feelalg/vectorpetsc.hpp>
 
+
+#if 0
+
+extern "C" {
+
+    #include <petsc-private/pcimpl.h>
+    #include <petsc-private/kspimpl.h>
+
+    typedef struct {
+        PetscBool allocated;
+        PetscBool scalediag;
+        KSP       kspL;
+        Vec       scale;
+        Vec       x0,y0,x1;
+        Mat L;             /* keep a copy to reuse when obtained with L = A10*A01 */
+    } MYPC_LSC;
+
+    static void myKSPView_PetscImpl( PC pc )
+    {
+        /*if (pc->ops->setfromoptions) {
+            (*pc->ops->setfromoptions)(pc);
+            }*/
+        MYPC_LSC         *mylsc = (MYPC_LSC*)pc->data;
+        //KSPView(mylsc->kspL, PETSC_VIEWER_STDOUT_SELF);
+        KSPView(mylsc->kspL, PETSC_VIEWER_STDOUT_WORLD);
+
+        //MYPC_LSC         *mylsc = (MYPC_LSC*)pc;
+        //return (0);
+    }
+    static void configurePCLSC_PetscImpl( PC pc, std::string prefix, MPI_Comm comm )
+    {
+        int ierr = 0;
+
+        ierr = PCSetFromOptions( pc );
+        CHKERRABORT( comm,ierr );
+
+        ierr = PCSetUp( pc );
+        CHKERRABORT( comm,ierr );
+
+        MYPC_LSC *mylsc = (MYPC_LSC*)pc->data;
+        //PC mypcgam = mylsc->kspL->pc;
+
+        std::string subksptype = Feel::option(Feel::_name="ksp-type",Feel::_prefix=prefix).as<std::string>();
+        ierr = KSPSetType ( mylsc->kspL, subksptype.c_str() );
+        CHKERRABORT( comm,ierr );
+
+        ierr = KSPSetFromOptions( mylsc->kspL );
+        CHKERRABORT( comm,ierr );
+
+        ierr = KSPSetUp( mylsc->kspL );
+        CHKERRABORT( comm,ierr );
+    }
+}
+
+#endif
+
 namespace Feel
 {
 template <typename T>
@@ -78,7 +134,7 @@ void PreconditionerPetsc<T>::init ()
 {
     CHECK( this->M_matrix ) << "ERROR: No matrix set for PreconditionerPetsc, but init() called" << "\n";
     this->M_matrix->close();
-
+    indexsplit_ptrtype is;
     // Clear the preconditioner in case it has been created in the past
     if ( !this->M_is_initialized )
     {
@@ -105,7 +161,23 @@ void PreconditionerPetsc<T>::init ()
         {
             ierr = PCSetType( M_pc,( char* ) PCFIELDSPLIT );
             CHKERRABORT( this->worldComm(),ierr );
-            pmatrix->updatePCFieldSplit( M_pc );
+
+            is = pmatrix->indexSplit();
+            //is.showMe();
+
+            std::string fieldsDefStr = option( _prefix=this->name(), _name="fieldsplit-fields" ).template as<std::string>();
+            auto fieldsDef = IndexSplit::parseFieldsDef( fieldsDefStr );
+            if ( fieldsDef.size() == 0 )
+            {
+                pmatrix->updatePCFieldSplit( M_pc );
+            }
+            else
+            {
+                //fieldsDef.showMe();
+                auto isUsed = pmatrix->indexSplit()->applyFieldsDef( fieldsDef  );
+                //isUsed.showMe();
+                pmatrix->updatePCFieldSplit( M_pc,isUsed );
+            }
         }
 
     }
@@ -118,6 +190,7 @@ void PreconditionerPetsc<T>::init ()
             int ierr = PCSetType( M_pc,( char* ) PCFIELDSPLIT );
             CHKERRABORT( this->worldComm(),ierr );
             pmatrix->updatePCFieldSplit( M_pc );
+            is=pmatrix->indexSplit();
         }
         this->M_mat_has_changed = false;
     }
@@ -135,7 +208,7 @@ void PreconditionerPetsc<T>::init ()
     // 2.) It should be safe to call set_petsc_preconditioner_type()
     // multiple times.
     VLOG(2) << "prec : "  << this->M_preconditioner_type << "\n";
-    setPetscPreconditionerType( this->M_preconditioner_type,this->M_matSolverPackage_type,M_pc,this->worldComm(),this->name() );
+    setPetscPreconditionerType( this->M_preconditioner_type,this->M_matSolverPackage_type,M_pc,is,this->worldComm(),this->name() );
     VLOG(2) << "mat solver package : "  << this->M_matSolverPackage_type << "("  << Environment::vm()["pc-factor-mat-solver-package-type"].template as<std::string>() << ")\n";
     std::string type =  Environment::vm()["pc-factor-mat-solver-package-type"].template as<std::string>();
     this->setMatSolverPackageType( matSolverPackageEnumType( type ) );
@@ -169,7 +242,7 @@ void PreconditionerPetsc<T>::clear ()
 
 
 void
-configurePC( PC& pc, WorldComm const& worldComm, std::string sub = "", std::string prefix = "" )
+configurePC( PC& pc, WorldComm const& worldComm, std::string sub = "", std::string prefix = "", std::string const& prefixPetsc ="" )
 {
     VLOG(2) << "configuring PC... (sub: " << sub << ")";
     google::FlushLogFiles(google::INFO);
@@ -226,6 +299,7 @@ configurePC( PC& pc, WorldComm const& worldComm, std::string sub = "", std::stri
     if ( std::string(pctype) == "ml" /*|| std::string(pctype) == "gamg"*/ || std::string(pctype) == "mg")
     {
         int nLevels= option(_name="pc-mg-levels",_prefix=prefix,_sub=sub,_worldcomm=worldComm).as<int>();
+        VLOG(2) << " configurePC ml with nLevels "<< nLevels << "\n";
         //std::vector<MPI_Comm> comms(levels,worldComm.globalComm());
         ierr = PCMGSetLevels( pc, nLevels, /*comms.data()*/ PETSC_NULL);
         CHKERRABORT( worldComm.globalComm(),ierr );
@@ -244,29 +318,30 @@ configurePC( PC& pc, WorldComm const& worldComm, std::string sub = "", std::stri
 #endif
         if ( std::string(pctype) == "ml" )
         {
-            std::string option_pc_ml_maxNlevels = ( boost::format("-pc_ml_maxNlevels %1%") %nLevels ).str();
-            ierr = PetscOptionsClearValue( "-pc_ml_maxNlevels" );
-            ierr = PetscOptionsInsertString( (option_pc_ml_maxNlevels).c_str() );
+            std::string option_pc_ml_maxNlevels = ( boost::format("-%1%pc_ml_maxNlevels")%prefixPetsc ).str();
+            std::string optionval_pc_ml_maxNlevels = ( boost::format("%1% %2%")%option_pc_ml_maxNlevels %nLevels ).str();
+            ierr = PetscOptionsClearValue( option_pc_ml_maxNlevels.c_str() );
+            ierr = PetscOptionsInsertString( optionval_pc_ml_maxNlevels.c_str() );
 
-            std::string option_pc_ml_reuse_interpolation = "-pc_ml_reuse_interpolation";
+            std::string option_pc_ml_reuse_interpolation = ( boost::format("-%1%pc_ml_reuse_interpolation")%prefixPetsc ).str() ;
             bool mlReuseInterp = option(_name="pc-ml-reuse-interpolation",_prefix=prefix,_sub=sub,_worldcomm=worldComm).as<bool>();
             std::string mlReuseInterpStr = (mlReuseInterp)?"true":"false";
             ierr = PetscOptionsClearValue( option_pc_ml_reuse_interpolation.c_str() );
             ierr = PetscOptionsInsertString( (option_pc_ml_reuse_interpolation+" "+mlReuseInterpStr).c_str() );
 
-            std::string option_pc_ml_KeepAggInfo = "-pc_ml_KeepAggInfo";
+            std::string option_pc_ml_KeepAggInfo = ( boost::format("-%1%pc_ml_KeepAggInfo")%prefixPetsc ).str();
             bool mlKeepAggInfo = option(_name="pc-ml-keep-agg-info",_prefix=prefix,_sub=sub,_worldcomm=worldComm).as<bool>();
             std::string mlKeepAggInfoStr = (mlKeepAggInfo)?"true":"false";
             ierr = PetscOptionsClearValue( option_pc_ml_KeepAggInfo.c_str() );
             ierr = PetscOptionsInsertString( (option_pc_ml_KeepAggInfo+" "+mlKeepAggInfoStr).c_str() );
 
-            std::string option_pc_ml_Reusable = "-pc_ml_Reusable";
+            std::string option_pc_ml_Reusable = ( boost::format("-%1%pc_ml_Reusable")%prefixPetsc ).str();
             bool mlReusable = option(_name="pc-ml-reusable",_prefix=prefix,_sub=sub,_worldcomm=worldComm).as<bool>();
             std::string mlReusableStr = (mlReusable)?"true":"false";
             ierr = PetscOptionsClearValue( option_pc_ml_Reusable.c_str() );
             ierr = PetscOptionsInsertString( (option_pc_ml_Reusable+" "+mlReusableStr).c_str() );
 
-            std::string option_pc_ml_OldHierarchy = "-pc_ml_OldHierarchy";
+            std::string option_pc_ml_OldHierarchy = ( boost::format("-%1%pc_ml_OldHierarchy")%prefixPetsc ).str();
             bool mlOldHierarchy = option(_name="pc-ml-old-hierarchy",_prefix=prefix,_sub=sub,_worldcomm=worldComm).as<bool>();
             std::string mlOldHierarchyStr = (mlOldHierarchy)?"true":"false";
             ierr = PetscOptionsClearValue( option_pc_ml_OldHierarchy.c_str() );
@@ -274,8 +349,9 @@ configurePC( PC& pc, WorldComm const& worldComm, std::string sub = "", std::stri
         }
 
         std::string name = (!sub.empty())?sub+"-"+prefix:prefix;
+        //std::cout << "ml with name="<<name<<"\n";
         PreconditionerPetsc<double>::setPetscMGCoarsePreconditionerType( pc, worldComm, name );
-        PreconditionerPetsc<double>::setPetscMGLevelsPreconditionerType( pc, worldComm, name );
+        PreconditionerPetsc<double>::setPetscMGLevelsPreconditionerType( pc, worldComm, name, prefixPetsc );
 
         ierr = PCSetFromOptions( pc );
         CHKERRABORT( worldComm.globalComm(),ierr );
@@ -283,6 +359,13 @@ configurePC( PC& pc, WorldComm const& worldComm, std::string sub = "", std::stri
     }
     if ( std::string(pctype) == "fieldsplit" )
     {
+        //std::cout << " precondi petsc\n";
+        /*const PetscInt ufields[] = {0,2},pfields[] = {1};
+        ierr = PCFieldSplitSetFields( pc , NULL, 2, ufields,ufields);
+        CHKERRABORT( worldComm.globalComm(),ierr );
+        ierr = PCFieldSplitSetFields( pc , NULL, 1, pfields,pfields);
+        CHKERRABORT( worldComm.globalComm(),ierr );*/
+
         PCCompositeType theFieldSplitType = PC_COMPOSITE_SCHUR;
         std::string t = Environment::vm(_name="fieldsplit-type",_prefix=prefix,_sub=sub,_worldcomm=worldComm).as<std::string>();
         if ( t == "schur" ) theFieldSplitType = PC_COMPOSITE_SCHUR;
@@ -325,10 +408,23 @@ configurePC( PC& pc, WorldComm const& worldComm, std::string sub = "", std::stri
     google::FlushLogFiles(google::INFO);
 }
 
+
 template <typename T>
 void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerType & preconditioner_type,
                                                           const MatSolverPackageType & matSolverPackage_type,
                                                           PC & pc,
+                                                          WorldComm const& worldComm,
+                                                          std::string const& name )
+{
+    indexsplit_ptrtype is;
+    setPetscPreconditionerType(preconditioner_type,matSolverPackage_type,pc,is,worldComm,name);
+}
+
+template <typename T>
+void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerType & preconditioner_type,
+                                                          const MatSolverPackageType & matSolverPackage_type,
+                                                          PC & pc,
+                                                          indexsplit_ptrtype const& is,
                                                           WorldComm const& worldComm,
                                                           std::string const& name )
 
@@ -468,6 +564,9 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
     case FIELDSPLIT_PRECOND:
         ierr = PCSetType( pc,( char* ) PCFIELDSPLIT );
         CHKERRABORT( worldComm.globalComm(),ierr );
+        ierr = PCSetFromOptions( pc );
+        CHKERRABORT( worldComm.globalComm(),ierr );
+
         break;
 
     case ML_PRECOND:
@@ -521,7 +620,7 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
          preconditioner_type == BLOCK_JACOBI_PRECOND )
         setPetscSubpreconditionerType( pc, worldComm, name );
     else if ( preconditioner_type == FIELDSPLIT_PRECOND )
-        setPetscFieldSplitPreconditionerType( pc, worldComm, name );
+        setPetscFieldSplitPreconditionerType( pc, is, worldComm, name );
 
     // prepare PC to use
     ierr = PCSetUp( pc );
@@ -626,7 +725,7 @@ configurePCWithPetscCommandLineOption( std::string prefixFeelBase, std::string p
     std::string option_pc_type = "-"+prefixPetscBase+"_pc_type";
     ierr = PetscOptionsClearValue( option_pc_type.c_str() );
     ierr = PetscOptionsInsertString( (option_pc_type+" "+pctype).c_str() );
-
+    VLOG(2) << " configurePCWithPetscCommandLineOption with "<< option_pc_type << " "<< pctype << "\n";
     if ( pctype=="lu" )
     {
         std::string PCFMSPtype =  option(_name="pc-factor-mat-solver-package-type",_prefix=prefixFeelBase).as<std::string>();
@@ -634,7 +733,7 @@ configurePCWithPetscCommandLineOption( std::string prefixFeelBase, std::string p
         ierr = PetscOptionsClearValue( option_pc_factor_mat_solver_package.c_str() );
         ierr = PetscOptionsInsertString( (option_pc_factor_mat_solver_package+" "+PCFMSPtype).c_str() );
     }
-    if ( pctype=="gasm" )
+    else if ( pctype=="gasm" )
     {
         int gasmoverlap = option(_name="pc-gasm-overlap",_prefix=prefixFeelBase).as<int>();
 
@@ -661,7 +760,7 @@ configurePCWithPetscCommandLineOption( std::string prefixFeelBase, std::string p
 
 template <typename T>
 void
-PreconditionerPetsc<T>::setPetscFieldSplitPreconditionerType( PC& pc,
+PreconditionerPetsc<T>::setPetscFieldSplitPreconditionerType( PC& pc, indexsplit_ptrtype const& is,
                                                               WorldComm const& worldComm,
                                                               std::string const& prefix )
 {
@@ -682,10 +781,14 @@ PreconditionerPetsc<T>::setPetscFieldSplitPreconditionerType( PC& pc,
     // Loop over sub-ksp objects, set ILU preconditioner
     for ( int i=0; i<n_local; ++i )
     {
-        std::string prefixSplit = prefixvm(prefix , (boost::format( "fieldsplit-%1%" )  %i ).str() );
 
-        std::string subksptype =  Environment::vm(_name="ksp-type",_prefix=prefixSplit).template as<std::string>();
-        //std::cout<< " subksptype " << subksptype << std::endl;
+        std::string prefixSplit = prefixvm(prefix , (boost::format( "fieldsplit-%1%" )  %i ).str() );
+        VLOG(2) << "configure split " << i << " with prefix "<< prefixSplit << "\n";
+        google::FlushLogFiles(google::INFO);
+
+        std::string subksptype = option(_name="ksp-type",_prefix=prefixSplit).template as<std::string>();
+        VLOG(2) << " subksptype " << subksptype << "\n";
+
         ierr = KSPSetType ( subksps[i], subksptype.c_str() );
         CHKERRABORT( worldComm.globalComm(),ierr );
 #if 0
@@ -698,8 +801,6 @@ PreconditionerPetsc<T>::setPetscFieldSplitPreconditionerType( PC& pc,
         CHKERRABORT( worldComm.globalComm(),ierr ); }
 #endif
 
-        VLOG(2) << "configure split " << i << "\n";
-        google::FlushLogFiles(google::INFO);
 
         // Get pointer to sub KSP object's PC
         PC subpc;
@@ -707,15 +808,46 @@ PreconditionerPetsc<T>::setPetscFieldSplitPreconditionerType( PC& pc,
         CHKERRABORT( worldComm.globalComm(),ierr );
 
         // Set requested type on the sub PC
-        std::string subpctype =  Environment::vm(_name="pc-type",_prefix=prefixSplit).template as<std::string>();
+        std::string subpctype = option(_name="pc-type",_prefix=prefixSplit).template as<std::string>();
         ierr = PCSetType( subpc, subpctype.c_str() );
         CHKERRABORT( worldComm.globalComm(),ierr );
+        //std::cout << "configure split " << i << " (" << prefixSplit << ")" << subpctype <<  "\n";
 
         //LOG(INFO) << "configure split " << i << " (" << prefixSplit << ")" << subpctype <<  "\n";
         //google::FlushLogFiles(google::INFO);
 
+        if ( subpctype == "fieldsplit" )
+        {
+            CHECK( is ) << "index split is not initialized\n";
+
+            std::string fieldsDefStr = option(_name="fieldsplit-fields",_prefix=prefixSplit).template as<std::string>();
+            auto fieldsDef = IndexSplit::parseFieldsDef( fieldsDefStr );
+            //std::cout << "fieldsplit fieldsDefStr " << fieldsDefStr << "\n";
+            //auto isUsed = is.applyFieldsDef( IndexSplit::FieldsDef(  {  { 0 , { 0 } }, { 1 , { 2 } } } ) );
+            //is->showMe();
+            auto isUsed = is->applyFieldsDef( IndexSplit::FieldsDef( fieldsDef ) );
+            //isUsed->showMe();
+
+            std::vector<IS> isPetsc;
+            PetscConvertIndexSplit( isPetsc ,*isUsed,worldComm);
+            for ( int i = 0 ; i < isPetsc.size(); ++i )
+            {
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
+                std::ostringstream os; os << i;
+                ierr=PCFieldSplitSetIS( subpc,os.str().c_str(),isPetsc[i] );
+#else
+                ierr=PCFieldSplitSetIS( subpc,isPetsc[i] );
+#endif
+                CHKERRABORT( worldComm,ierr );
+            }
+
+            //TODO : maybe delete or store  isPetsc
+
+        }
+
         // configure sub PC
-        configurePC( subpc, worldComm, "", prefixSplit );
+        std::string prefixPetsc=(boost::format("fieldsplit_%1%_")%i ).str();
+        configurePC( subpc, worldComm, "", prefixSplit, prefixPetsc );
 
         // configure maybe sub sub PC
         const char* thesubpctype;
@@ -729,15 +861,29 @@ PreconditionerPetsc<T>::setPetscFieldSplitPreconditionerType( PC& pc,
         else if ( std::string(thesubpctype) == "lsc" )
         {
             CHECK( i==1 ) << "lsc must be use with only field 1, not " << i << "\n";
-
             std::string prefixFeelBase = prefixvm(prefixSplit,"lsc");
             std::string prefixPetscBase = "fieldsplit_1_lsc";
+            //std::cout << "USE LSC with " << prefixFeelBase << " et " << prefixPetscBase << "\n";
             configurePCWithPetscCommandLineOption( prefixFeelBase,prefixPetscBase );
+#if 0
+            configurePCLSC_PetscImpl( subpc, prefixFeelBase, worldComm.globalComm() );
+            myKSPView_PetscImpl(subpc);
+#endif
 
             ierr = PCSetFromOptions( subpc );
             CHKERRABORT( worldComm.globalComm(),ierr );
         }
+        else if ( std::string(thesubpctype) == "gamg" )
+        {
+            ierr = PCSetFromOptions( subpc );
+            CHKERRABORT( worldComm.globalComm(),ierr );
+        }
+        else if ( std::string(thesubpctype) == "fieldsplit" )
+        {
+            setPetscFieldSplitPreconditionerType( subpc, is, worldComm, prefixvm( prefix, prefixSplit ) );
+        }
 
+        // setup sub-pc
         ierr = PCSetUp( subpc );
         CHKERRABORT( worldComm.globalComm(),ierr );
 
@@ -774,6 +920,7 @@ PreconditionerPetsc<T>::setPetscMGCoarsePreconditionerType( PC& pc,
 
     std::string prefixMGCoarse = ( boost::format( "%1%mg-coarse" ) %prefixvm( prefix,"" ) ).str();
     std::string mgCoarsePCtype =  Environment::vm(_name="pc-type",_prefix=prefixMGCoarse).template as<std::string>();
+    //std::cout << "mg coarse with " << prefixMGCoarse << "  mgCoarsePCtype  " << mgCoarsePCtype << "\n";
     ierr = PCSetType( coarsepc, mgCoarsePCtype.c_str() );
     CHKERRABORT( worldComm.globalComm(),ierr );
 
@@ -785,7 +932,8 @@ template <typename T>
 void
 PreconditionerPetsc<T>::setPetscMGLevelsPreconditionerType( PC& pc,
                                                             WorldComm const& worldComm,
-                                                            std::string const& prefix )
+                                                            std::string const& prefix,
+                                                            std::string const& prefixPetsc )
 {
     // For catching PETSc error return codes
     int ierr = 0;
@@ -846,11 +994,11 @@ PreconditionerPetsc<T>::setPetscMGLevelsPreconditionerType( PC& pc,
 #else
 
         std::string mgLevelsKSPtype =  Environment::vm(_name="ksp-type",_prefix=prefixMGLevels).template as<std::string>();
-        std::string option_ksp_type = ( boost::format( "-mg_levels_%1%_ksp_type") %k ).str();
+        std::string option_ksp_type = ( boost::format( "-%1%mg_levels_%2%_ksp_type")%prefixPetsc %k ).str();
         ierr = PetscOptionsClearValue( option_ksp_type.c_str() );
         ierr = PetscOptionsInsertString( (option_ksp_type+" "+mgLevelsKSPtype).c_str() );
 
-        std::string prefixPetscBase =  ( boost::format( "mg_levels_%1%") %k ).str();
+        std::string prefixPetscBase =  ( boost::format( "%1%mg_levels_%2%")%prefixPetsc %k ).str();
         configurePCWithPetscCommandLineOption( prefixMGLevels,prefixPetscBase );
 
 #endif

@@ -169,6 +169,9 @@ public:
     typedef DataMap datamap_type;
     typedef boost::shared_ptr<datamap_type> datamap_ptrtype;
 
+    typedef typename datamap_type::indexsplit_type indexsplit_type;
+    typedef typename datamap_type::indexsplit_ptrtype indexsplit_ptrtype;
+
     //@}
 
     /** @name Constructors, destructor
@@ -228,7 +231,7 @@ public:
                                      const size_type m_l,
                                      const size_type n_l,
                                      graph_ptrtype const & graph,
-                                     std::vector < std::vector<size_type> > indexSplit,
+                                     indexsplit_ptrtype const& indexSplit,
                                      size_type matrix_properties = NON_HERMITIAN )
     {
         auto mat = this->newMatrix( m,n,m_l,n_l,graph,matrix_properties );
