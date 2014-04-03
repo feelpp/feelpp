@@ -1648,6 +1648,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
         for ( size_type i=0; i<s ; ++i ) this->M_mapGlobalClusterToGlobalProcess[i]=i;
     }
 
+    this->buildIndexSplit();
+
+
     VLOG(2) << "[Dof::build] done building the map\n";
 }
 
