@@ -308,4 +308,55 @@ PetscGetMatStructureEnum( Feel::MatrixStructure matStruc )
     }
 }
 
+void
+PetscConvertIndexSplit( std::vector<IS> & isPetsc ,IndexSplit const& is, WorldComm const& worldcomm )
+{
+    isPetsc.resize( is.size() );
+
+    int ierr=0;
+
+    for ( int i = 0 ; i < is.size(); ++i )
+    {
+        PetscInt nDofForThisField = is[i].size();
+        //std::cout << "\n setIndexSplit " << i << " ndof:" << nDofForThisField << "\n";
+
+        PetscInt * petscSplit = new PetscInt[nDofForThisField];
+        std::copy( is[i].begin(),is[i].end(), petscSplit );
+
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
+        ierr = ISCreateGeneral( worldcomm,nDofForThisField,petscSplit/*this->M_IndexSplit[i].data()*/,PETSC_COPY_VALUES,&isPetsc[i] );
+#else
+        ierr = ISCreateGeneral( worldcomm,nDofForThisField,petscSplit/*this->M_IndexSplit[i].data()*/,&isPetsc[i] );
+#endif
+        CHKERRABORT( worldcomm,ierr );
+
+        delete[] petscSplit;
+
+#if 0
+        ISView( isPetsc[i],PETSC_VIEWER_STDOUT_WORLD ); // PETSC_VIEWER_STDOUT_SELF
+
+        PetscInt n;
+        /*
+          Get the number of indices in the set
+        */
+        ISGetLocalSize( isPetsc[i],&n );
+        std::cout << "Local size: " << n << "\n";
+        const PetscInt *nindices;
+
+        /*
+          Get the indices in the index set
+        */
+        ISGetIndices( isPetsc[i],&nindices );
+
+        for ( int j = 0; j < n; ++j )
+        {
+            std::cout << nindices[j] << " ";
+        }
+        std::cout << "\n";
+#endif
+    }
+
+
+}
+
 } // namespace Feel

@@ -164,6 +164,7 @@ MatrixBlockBase<T>::MatrixBlockBase( vf::BlocksBase<graph_ptrtype> const & block
     bool computeIndexSplit = true;
     if ( computeIndexSplit )
     {
+#if 0
         const uint16_type nRow = blockgraph.nRow();
         const uint16_type nCol = blockgraph.nCol();
         // index container for field split preconditioner
@@ -188,6 +189,17 @@ MatrixBlockBase<T>::MatrixBlockBase( vf::BlocksBase<graph_ptrtype> const & block
 
             startIS += nLocDofWithoutGhostBlock;
         }
+#else
+        const uint16_type nRow = blockgraph.nRow();
+        indexsplit_ptrtype indexSplit( new IndexSplit() );
+        const size_type firstDofGC = graph->mapRow().firstDofGlobalCluster();
+        for ( uint16_type i=0; i<nRow; ++i )
+        {
+            indexSplit->addSplit( firstDofGC, blockgraph(i,0)->mapRow().indexSplit() );
+        }
+        //indexSplit.showMe();
+        graph->mapRowPtr()->setIndexSplit( indexSplit );
+#endif
 
         // update
         M_mat->setIndexSplit( indexSplit );
