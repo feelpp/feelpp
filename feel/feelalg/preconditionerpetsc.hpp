@@ -180,13 +180,17 @@ public:
                                                WorldComm const& worldComm=Environment::worldComm(),
                                                std::string const& prefix="" );
 
+    static void setPetscMultiGridPreconditionerType( PC& pc, std::string mgPackageType,
+                                                     WorldComm const& worldComm=Environment::worldComm(),
+                                                     std::string const& prefix="" );
+
+private:
     static void setPetscMGCoarsePreconditionerType( PC& pc,
                                                     WorldComm const& worldComm=Environment::worldComm(),
                                                     std::string const& prefix="" );
     static void setPetscMGLevelsPreconditionerType( PC& pc,
                                                     WorldComm const& worldComm=Environment::worldComm(),
-                                                    std::string const& prefix="",
-                                                    std::string const& prefixPetsc="" );
+                                                    std::string const& prefix="" );
 
 protected:
     void check( int err ) { CHKERRABORT( this->worldComm().globalComm(), err ); }
