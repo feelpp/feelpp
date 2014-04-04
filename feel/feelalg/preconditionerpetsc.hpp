@@ -169,7 +169,10 @@ public:
      */
     Mat M_mat;
 
-    static void setPetscSubpreconditionerType( PC& pc, WorldComm const& worldComm=Environment::worldComm(), std::string const& prefix="" );
+    static void setPetscSubpreconditionerType( PC& pc,
+                                               indexsplit_ptrtype const& is,
+                                               WorldComm const& worldComm=Environment::worldComm(),
+                                               std::string const& prefix="" );
 
     static void setPetscFieldSplitPreconditionerType( PC& pc,
                                                       indexsplit_ptrtype const& is,
@@ -177,20 +180,10 @@ public:
                                                       std::string const& prefix="" );
 
     static void setPetscLSCPreconditionerType( PC& pc,
+                                               indexsplit_ptrtype const& is,
                                                WorldComm const& worldComm=Environment::worldComm(),
                                                std::string const& prefix="" );
 
-    static void setPetscMultiGridPreconditionerType( PC& pc, std::string mgPackageType,
-                                                     WorldComm const& worldComm=Environment::worldComm(),
-                                                     std::string const& prefix="" );
-
-private:
-    static void setPetscMGCoarsePreconditionerType( PC& pc,
-                                                    WorldComm const& worldComm=Environment::worldComm(),
-                                                    std::string const& prefix="" );
-    static void setPetscMGLevelsPreconditionerType( PC& pc,
-                                                    WorldComm const& worldComm=Environment::worldComm(),
-                                                    std::string const& prefix="" );
 
 protected:
     void check( int err ) { CHKERRABORT( this->worldComm().globalComm(), err ); }
@@ -211,6 +204,133 @@ private:
     //#endif
 };
 
+
+/**
+ * ConfigurePCBase
+ */
+struct ConfigurePCBase
+{
+public :
+    ConfigurePCBase( WorldComm const& worldComm, std::string const& sub, std::string const& prefix )
+        :
+        M_worldComm( worldComm ),
+        M_sub( sub ),
+        M_prefix( prefix )
+    {}
+
+    WorldComm const& worldComm() const { return M_worldComm; }
+    std::string const& prefix() const { return M_prefix; }
+    std::string const& sub() const { return M_sub; }
+
+    void check( int err ) { CHKERRABORT( this->worldComm().globalComm(), err ); }
+
+private :
+
+    WorldComm const& M_worldComm;
+    std::string M_sub, M_prefix;
+};
+
+
+struct ConfigureKSP : public ConfigurePCBase
+{
+public :
+    ConfigureKSP( KSP& ksp,WorldComm const& worldComm, std::string const& sub, std::string const& prefix );
+
+    bool kspView() const { return M_kspView; }
+
+private :
+
+    std::string M_type;
+    double M_rtol;
+    size_type M_maxit;
+    bool M_showMonitor,M_kspView;
+
+private :
+    void runConfigureKSP( KSP& ksp );
+};
+
+
+/**
+ * ConfigurePCML
+ */
+class ConfigurePCML : public ConfigurePCBase
+{
+public :
+    ConfigurePCML( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+                   WorldComm const& worldComm, std::string const& sub, std::string const& prefix );
+
+private :
+    void runConfigurePCML( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is );
+    void configurePCMLCoarse( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is );
+
+private :
+    std::string M_mgType;
+    int M_nLevels;
+    bool M_mlReuseInterp, M_mlKeepAggInfo, M_mlReusable, M_mlOldHierarchy;
+
+    std::string M_prefixMGCoarse;
+    std::string M_coarsePCtype;//, M_coarseKSPtype;
+    bool M_coarsePCview;
+};
+
+/**
+ * ConfigurePCGAMG
+ */
+class ConfigurePCGAMG : public ConfigurePCBase
+{
+public :
+    ConfigurePCGAMG( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+                     WorldComm const& worldComm, std::string const& sub, std::string const& prefix );
+
+private :
+    void runConfigurePCGAMG( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is );
+    void configurePCGAMGCoarse( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is );
+
+private :
+    std::string M_mgType;
+    std::string M_gamgType;
+    int M_nLevels;
+    int M_procEqLim, M_coarseEqLim;
+    double M_threshold;
+
+    std::string M_prefixMGCoarse;
+    std::string M_coarsePCtype;//, M_coarseKSPtype;
+    bool M_coarsePCview;
+};
+
+/**
+ * ConfigurePCMGLevels
+ */
+class ConfigurePCMGLevels : public ConfigurePCBase
+{
+public :
+    ConfigurePCMGLevels( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+                         WorldComm const& worldComm, std::string const& sub, std::string const& prefix );
+
+private :
+    void runConfigurePCMGLevels( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is, int level );
+
+private :
+    std::vector<std::string> M_prefixMGLevels;
+
+    // get number of levels (including coarse)
+    int M_nLevels;
+    // ksp parameters on each levels (not including coarse)
+    //std::vector<double> M_levelksprtol;
+    //std::vector<size_type> M_levelkspmaxit;
+    //std::vector<bool> M_levelksponitor;
+    //std::vector<std::string> M_mgLevelsKSPtype;
+    std::vector<bool> M_mgLevelsKSPview;
+    std::vector<std::string> M_mgLevelsPCtype;
+    std::vector<bool> M_mgLevelsPCview;
+
+};
+
+
+
+void
+configurePC( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+             WorldComm const& worldComm, std::string const& sub = "", std::string const& prefix = "" );
 
 
 

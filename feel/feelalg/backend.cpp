@@ -816,36 +816,49 @@ void updateBackendKSPOptions( po::options_description & _options, std::string co
 }
 
 
-void updateBackendMGPreconditionerOptions( po::options_description & _options, std::string const& prefix )
+void updateBackendMGPreconditionerOptions( po::options_description & _options, std::string const& prefix, bool useSub = false )
 {
-    // mg or ml preconditioner
+    std::string pcctx = (useSub)? "sub-pc-" : "pc-";
+    // mg or ml or gamg preconditioner
     _options.add_options()
-        ( prefixvm( prefix,"pc-mg-levels" ).c_str(), Feel::po::value<int>()->default_value( 3 ), "number of levels including finest" )
-        ( prefixvm( prefix,"pc-mg-type" ).c_str(), Feel::po::value<std::string>()->default_value( "kaskade" ), "Determines the form of multigrid to use: multiplicative, additive, full, kaskade " )
-        ( prefixvm( prefix,"pc-mg-smoothdown" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "number of smoothing steps before applying restriction operator" )
-        ( prefixvm( prefix,"pc-ml-reuse-interpolation" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Reuse the interpolation operators when possible (cheaper, weaker when matrix entries change a lot)" )
-        ( prefixvm( prefix,"pc-ml-keep-agg-info" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Allows the preconditioner to be reused, or auxilliary matrices to be generated" )
-        ( prefixvm( prefix,"pc-ml-reusable" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Store intermedaiate data structures so that the multilevel hierarchy is reusable" )
-        ( prefixvm( prefix,"pc-ml-old-hierarchy" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Use old routine to generate hierarchy" )
+        ( prefixvm( prefix,pcctx+"mg-levels" ).c_str(), Feel::po::value<int>()->default_value( 2 ), "number of levels including finest" )
+        ( prefixvm( prefix,pcctx+"mg-type" ).c_str(), Feel::po::value<std::string>()->default_value( "kaskade" ), "Determines the form of multigrid to use: multiplicative, additive, full, kaskade " )
+        ( prefixvm( prefix,pcctx+"mg-smoothdown" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "number of smoothing steps before applying restriction operator" )
+        ( prefixvm( prefix,pcctx+"ml-reuse-interpolation" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Reuse the interpolation operators when possible (cheaper, weaker when matrix entries change a lot)" )
+        ( prefixvm( prefix,pcctx+"ml-keep-agg-info" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Allows the preconditioner to be reused, or auxilliary matrices to be generated" )
+        ( prefixvm( prefix,pcctx+"ml-reusable" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Store intermedaiate data structures so that the multilevel hierarchy is reusable" )
+        ( prefixvm( prefix,pcctx+"ml-old-hierarchy" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Use old routine to generate hierarchy" )
         ;
 
-    std::string prefixMGCoarse = ( boost::format( "%1%mg-coarse" ) %prefixvm( prefix,"" ) ).str();
-    updateBackendPreconditionerOptions( _options, prefixMGCoarse );
     _options.add_options()
-        ( prefixvm( prefixMGCoarse,"ksp-type" ).c_str(), Feel::po::value<std::string>()->default_value( "gmres" ), "cg, bicgstab, gmres" );
+        ( prefixvm( prefix,pcctx+"gamg-type" ).c_str(), Feel::po::value<std::string>()->default_value( "agg" ), "type of generalized algebraic multigrid : agg, geo " )
+        ( prefixvm( prefix,pcctx+"gamg-proc-eq-lim" ).c_str(), Feel::po::value<int>()->default_value( 50 ), "number of equations to aim for on coarse grids via processor reduction" )
+        ( prefixvm( prefix,pcctx+"gamg-coarse-eq-lim" ).c_str(), Feel::po::value<int>()->default_value( 800 ), "max number of equations on coarse grids" )
+        ( prefixvm( prefix,pcctx+"gamg-threshold" ).c_str(), Feel::po::value<double>()->default_value( 0. ), "relative threshold to use for dropping edges in aggregation graph" )
+        ;
+
+    std::string mgctx = (useSub)? "sub-mg-" : "mg-";
+    std::string prefixMGCoarse = ( boost::format( "%1%%2%coarse" ) %prefixvm(prefix,"") %mgctx ).str();
+    updateBackendPreconditionerOptions( _options, prefixMGCoarse, "lu" );
+    _options.add_options()
+        ( prefixvm( prefixMGCoarse,"ksp-type" ).c_str(), Feel::po::value<std::string>()->default_value( "preonly" /*gmres*/ ), "cg, bicgstab, gmres" )
+        ( prefixvm( prefixMGCoarse,"ksp-monitor" ).c_str(), Feel::po::value<bool>()->default_value( false ) , "monitor ksp" )
+        ( prefixvm( prefixMGCoarse,"ksp-rtol" ).c_str(), Feel::po::value<double>()->default_value( 1e-5 ), "relative tolerance" )
+        ( prefixvm( prefixMGCoarse,"ksp-maxit" ).c_str(), Feel::po::value<size_type>()->default_value( 50 ), "maximum number of iterations" )
+        ( prefixvm( prefixMGCoarse,"ksp-view" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Prints the KSP data structure" )
+        ;
 
 
     for ( uint16_type i=1; i<6; ++i )
     {
-        std::string prefixMGLevels = ( boost::format( "%1%mg-levels%2%" ) %prefixvm( prefix,"" ) %i ).str();
-
+        std::string prefixMGLevels = ( boost::format( "%1%%2%levels%3%" ) %prefixvm(prefix,"") %mgctx %i ).str();
         updateBackendPreconditionerOptions( _options, prefixMGLevels );
-
         _options.add_options()
             ( prefixvm( prefixMGLevels,"ksp-type" ).c_str(), Feel::po::value<std::string>()->default_value( "gmres" ), "cg, bicgstab, gmres" )
             ( prefixvm( prefixMGLevels,"ksp-monitor" ).c_str(), Feel::po::value<bool>()->default_value( false ) , "monitor ksp" )
             ( prefixvm( prefixMGLevels,"ksp-rtol" ).c_str(), Feel::po::value<double>()->default_value( 1e-3 ), "relative tolerance" )
             ( prefixvm( prefixMGLevels,"ksp-maxit" ).c_str(), Feel::po::value<size_type>()->default_value( 50 ), "maximum number of iterations" )
+            ( prefixvm( prefixMGLevels,"ksp-view" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Prints the KSP data structure" )
             ;
     }
 }
@@ -920,10 +933,11 @@ po::options_description backend_options( std::string const& prefix )
 
     updateBackendPreconditionerOptions( _options, prefix );
 
-    updateBackendMGPreconditionerOptions( _options, prefix );
+    updateBackendMGPreconditionerOptions( _options, prefix, false ); // multigrid
+    updateBackendMGPreconditionerOptions( _options, prefix, true ); // (gasm/jacobi)+multigrid
 
-    updateBackendFieldSplitPreconditionerOptions( _options, prefix );
-    updateBackendFieldSplitPreconditionerOptions( _options, prefixvm( prefix,"fieldsplit-0" ) );
+    updateBackendFieldSplitPreconditionerOptions( _options, prefix ); // fieldsplit
+    updateBackendFieldSplitPreconditionerOptions( _options, prefixvm( prefix,"fieldsplit-0" ) ); // fieldsplit + (fieldsplit in subsplit0)
 
 
     return _options;
