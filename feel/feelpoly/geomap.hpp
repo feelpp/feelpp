@@ -404,13 +404,11 @@ void transform( matrix_node_t_type const& G,
                 precompute_type const* pc,
                 matrix_type & x ) const
 {
-#if 0
-    blas::gemm( traits::NO_TRANSPOSE, traits::NO_TRANSPOSE,
-                1.0, G, pc->phi(),
-                0.0, x );
-#else
-    ublas::axpy_prod( G, pc->phi(), x, true );
-#endif
+        Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::ColMajor>> P( G.data(), G.rows(), G.cols() );
+        Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::ColMajor>> Phi( pc->phi().data(), pc->phi().rows(), pc->phi().cols() );
+        Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::ColMajor>> X( x.data(), x.size() );
+        X  = P*Phi;
+    //ublas::axpy_prod( G, pc->phi(), x, true );
 }
 
 
@@ -1651,61 +1649,32 @@ void updateJKBN( mpl::bool_<true>  )
     if ( !M_gm->isCached() ||
             ( M_gm->isCached() && M_gm->cached( M_id ) == false ) )
     {
-#if 0
-
-        if ( boost::is_arithmetic<value_type>::value )
-            atlas::gemm( traits::NO_TRANSPOSE, traits::NO_TRANSPOSE,
-                         1.0, M_G, M_g_linear,
-                         0.0, M_K );
-
-        else
-#endif
-            ublas::axpy_prod( M_G, M_g_linear, M_K, true );
+        Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::ColMajor>> P( M_G.data().begin(), M_G.size1(), M_G.size2() );
+        Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>> GradPhi( M_g_linear.data().begin(), M_g_linear.size1(), M_g_linear.size2() );
+        Eigen::Map<Eigen::Matrix<value_type,NDim,PDim,((PDim==1)?Eigen::ColMajor:Eigen::RowMajor)>> MK( M_K.data().begin(), M_K.size1(), M_K.size2() );
+        Eigen::Map<Eigen::Matrix<value_type,PDim,PDim,((NDim==1)?Eigen::ColMajor:Eigen::RowMajor)>> MCS( M_CS.data().begin(), M_CS.size1(), M_CS.size2() );
+        Eigen::Map<Eigen::Matrix<value_type,PDim,PDim,((PDim==1)?Eigen::ColMajor:Eigen::RowMajor)>> MCSi( M_CSi.data().begin(), M_CSi.size1(), M_CSi.size2() );
+        Eigen::Map<Eigen::Matrix<value_type,NDim,PDim,((PDim==1)?Eigen::ColMajor:Eigen::RowMajor)>> MB( M_B.data().begin(), M_B.size1(), M_B.size2() );
+        MK.noalias() =  P*GradPhi;
+        //ublas::axpy_prod( M_G, M_g_linear, M_K, true );
 
         if ( NDim == PDim )
         {
-            M_J = math::abs( det<NDim>( M_K ) );
-            //if ( vm::has_kb<context>::value )
-            {
-#if 0
-                inverse<NDim>( M_K, M_CS, M_J );
-                ublas::noalias( M_B ) = ublas::trans( M_CS );
-#else
-                inverse<NDim>( M_K, M_CS );
-                ublas::noalias( M_B ) = ublas::trans( M_CS );
-#endif
-            }
+             M_J = math::abs( MK.determinant() );
+             MCS = MK.inverse();
+             MB.noalias() = MCS.transpose();
         }
 
         else // N != P
         {
             // CS = K^T K
-#if 0
-            if ( boost::is_arithmetic<value_type>::value )
-                atlas::gemm( traits::TRANSPOSE, traits::NO_TRANSPOSE,
-                             1.0, M_K, M_K,
-                             0.0, M_CS );
-
-            else
-#endif
-
-                ublas::noalias( M_CS ) = ublas::prod( ublas::trans( M_K ), M_K );
-
-            M_J = math::sqrt( math::abs( det<PDim>( M_CS ) ) );
+            MCSi.noalias() = MK.transpose()*MK;
+            M_J = math::sqrt( math::abs( MCSi.determinant() ) );
             //if ( vm::has_kb<context>::value )
             {
-                inverse<PDim>( M_CS, M_CSi );
+                MCS=MCSi.inverse();
                 // B = K CS
-#if 0
-
-                if ( boost::is_arithmetic<value_type>::value )
-                    atlas::gemm( traits::NO_TRANSPOSE, traits::NO_TRANSPOSE,
-                                 1.0, M_K, M_CSi,
-                                 0.0, M_B );
-
-                else
-#endif
-                    ublas::axpy_prod( M_K, M_CSi, M_B, true );
+                MB.noalias() = MK*MCS;
             }
 
         }
@@ -1765,16 +1734,10 @@ void updateJKBN( mpl::bool_<true>  )
 
     if ( ( ( NDim != PDim ) || ( vm::has_normal<context>::value ) ) && ( M_face_id != invalid_uint16_type_value ) )
     {
-#if 0
-        blas::gemv( traits::NO_TRANSPOSE,
-                    1.0, M_Bt[ q ], M_n[M_face_id],
-                    0.0, M_n_real );
-#else
         ublas::axpy_prod( M_B,
                           M_gm->referenceConvex().normal( M_face_id ),
                           M_n_real,
                           true );
-#endif
         M_n_norm = ublas::norm_2( M_n_real );
         M_u_n_real = M_n_real/M_n_norm;
 
