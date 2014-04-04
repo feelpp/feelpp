@@ -525,21 +525,11 @@ public:
     interProcessFaces( rank_type p = invalid_rank_type_value ) const
     {
         const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
-        return M_faces.template get<Feel::detail::by_interprocessdomain>().equal_range( boost::make_tuple( true, part ) );
+        if ( p != invalid_rank_type_value )
+            return M_faces.template get<Feel::detail::by_interprocessdomain>().equal_range( boost::make_tuple( true, part, p ) );
+        else
+            return M_faces.template get<Feel::detail::by_interprocessdomain>().equal_range( boost::make_tuple( true, part ) );
     }
-
-
-    /**
-     * \return the range of iterator \c (begin,end) over the inter-process domain faces
-     * on processor \p p
-     */
-    std::pair<interprocess_face_iterator, interprocess_face_iterator>
-    interProcessFaces( rank_type j, rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
-        return M_faces.template get<Feel::detail::by_interprocessdomain>().equal_range( boost::make_tuple( true, part, j ) );
-    }
-
 
 #if 0
     /**
