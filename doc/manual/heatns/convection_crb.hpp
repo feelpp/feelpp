@@ -92,6 +92,9 @@ public :
 class FunctionSpaceDefinition
 {
 public :
+    static const bool is_time_dependent = false;
+    static const bool is_linear = false;
+
     static const uint16_type Order = 1;
 
     static const int Order_s = CONVECTION_ORDER_U;
@@ -429,7 +432,7 @@ public:
 
 
 
-    sparse_matrix_ptrtype innerProduct()
+    sparse_matrix_ptrtype energyMatrix()
     {
         return M;
     }

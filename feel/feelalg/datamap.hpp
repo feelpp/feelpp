@@ -36,6 +36,81 @@
 
 namespace Feel
 {
+
+class DataMap;
+
+
+
+/**
+ *
+ */
+class IndexSplit : public std::vector<std::vector<size_type> >
+{
+    typedef IndexSplit self_type;
+    typedef boost::shared_ptr<self_type> self_ptrtype;
+    typedef std::vector<std::vector<size_type> > super_type;
+    typedef super_type container_type;
+    typedef std::vector<size_type> subcontainer_type;
+
+    public:
+
+    IndexSplit()
+        :
+        super_type(),
+        M_firstIndex(0),
+        M_lastIndex(0),
+        M_nIndex(0)
+    {}
+
+    IndexSplit( int s )
+        :
+        super_type( s ),
+        M_firstIndex( s, invalid_size_type_value ),
+        M_lastIndex( s, invalid_size_type_value ),
+        M_nIndex( s, invalid_size_type_value )
+    {}
+
+    IndexSplit( IndexSplit const& is )
+        :
+        super_type( is ),
+        M_firstIndex( is.M_firstIndex ),
+        M_lastIndex( is.M_lastIndex ),
+        M_nIndex( is.M_nIndex )
+    {}
+
+    subcontainer_type const& split( int k ) const { return this->operator[](k); }
+
+    void resize( int s );
+    void addSplit( size_type startSplit, self_ptrtype const& addedIndexSplit /*DataMap const& dm*/ );
+
+    void showMe() const;
+
+    size_type firstIndex( int i ) const { return M_firstIndex[i]; }
+    void setFirstIndex( int i,size_type s ) { M_firstIndex[i] = s; }
+    size_type lastIndex( int i ) const { return M_lastIndex[i]; }
+    void setLastIndex( int i,size_type s ) { M_lastIndex[i] = s; }
+    size_type nIndex( int i ) const { return M_nIndex[i]; }
+    void setNIndex( int i,size_type s ) { M_nIndex[i] = s; }
+
+    struct FieldsDef : public std::map<int,std::set<int> >
+    {
+        typedef std::map<int,std::set<int> > super_type;
+        FieldsDef() : super_type() {}
+        FieldsDef( super_type const& s ) : super_type( s ) {}
+        void showMe() const;
+    };
+
+    static FieldsDef parseFieldsDef( std::string s );
+
+    self_ptrtype applyFieldsDef( FieldsDef const& fieldsDef ) const;
+
+
+private :
+
+    std::vector<size_type> M_firstIndex, M_lastIndex, M_nIndex;
+
+};
+
 /**
  * \class DataMap
  *  \brief data layout in a multi-processor environnement
@@ -47,7 +122,8 @@ class DataMap
 {
 
 public:
-
+    typedef IndexSplit indexsplit_type;
+    typedef boost::shared_ptr<indexsplit_type> indexsplit_ptrtype;
 
     /** @name Typedefs
      */
@@ -413,6 +489,12 @@ public:
         return M_worldComm;
     }
 
+
+
+    indexsplit_ptrtype const& indexSplit() const { return M_indexSplit; }
+    void setIndexSplit( indexsplit_ptrtype const& is ) { M_indexSplit = is; }
+
+    void buildIndexSplit();
     //@}
 
 
@@ -497,6 +579,12 @@ protected:
      * Communicator
      */
     WorldComm M_worldComm;
+
+    /**
+     * Index split ( differentiate multiphysic )
+     */
+    indexsplit_ptrtype M_indexSplit;
+
 
 private:
 
