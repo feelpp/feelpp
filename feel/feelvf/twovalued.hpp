@@ -74,6 +74,7 @@ public:
 
     typedef ExprT expression_type;
     typedef typename expression_type::value_type value_type;
+    typedef value_type evaluate_type;
     typedef SumvExpr<ExprT> this_type;
 
     //@}
@@ -360,6 +361,7 @@ public:
 
     typedef ExprT expression_type;
     typedef typename expression_type::value_type value_type;
+    typedef value_type evaluate_type;
     typedef SumExpr<ExprT,Side> this_type;
 
     //@}
@@ -598,6 +600,7 @@ public:
 
     typedef ExprT expression_type;
     typedef typename expression_type::value_type value_type;
+    typedef value_type evaluate_type;
     typedef SumTExpr<ExprT,Side> this_type;
 
     //@}
@@ -835,6 +838,7 @@ public:
 
     typedef ExprT expression_type;
     typedef typename expression_type::value_type value_type;
+    typedef value_type evaluate_type;
     typedef FaceExprV<ExprT, func> this_type;
 
     //@}

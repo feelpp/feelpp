@@ -38,12 +38,15 @@
 namespace GiNaC
 {
 matrix grad( ex const& f, std::vector<symbol> const& l );
-ex laplacian( ex const& f, std::vector<symbol> const& l );
+matrix laplacian( ex const& f, std::vector<symbol> const& l );
 matrix grad( std::string const& s, std::vector<symbol> const& l );
-ex laplacian( std::string const& s, std::vector<symbol> const& l );
+matrix laplacian( std::string const& s, std::vector<symbol> const& l );
 
 matrix grad( matrix const& f, std::vector<symbol> const& l );
+matrix div( ex const& f, std::vector<symbol> const& l );
 matrix div( matrix const& f, std::vector<symbol> const& l );
+matrix curl( ex const& f, std::vector<symbol> const& l );
+matrix curl( matrix const& f, std::vector<symbol> const& l );
 matrix laplacian( matrix const& f, std::vector<symbol> const& l );
 
 ex diff(ex const& f, symbol const& l, const int n);
@@ -175,6 +178,7 @@ parse( std::string const& str, std::string const& seps=":", std::vector<symbol> 
 
 } // GiNaC namespace
 
+#include <feel/feelvf/ginacbase.hpp>
 #include <feel/feelvf/detail/ginacex.hpp>
 #include <feel/feelvf/detail/ginacexvf.hpp>
 #include <feel/feelvf/detail/ginacmatrix.hpp>
@@ -467,6 +471,24 @@ diff( std::string const& s, std::string const& ds, std::string const& se, ExprT 
 // ------------------------------------------------------------
 // Matrix expression
 // ------------------------------------------------------------
+/**
+ * @brief Create an Feel++ expression from a GiNaC expression as a string
+ *
+ * @tparam Order     Expression order
+ * @param s          String containing the ginac expression and symbols
+ * @param filename   Shared file
+ *
+ * @return Feel++ Expression
+ */
+template<int M, int N, int Order=2>
+inline
+Expr< GinacMatrix<M,N,Order> >
+expr( std::string const& s, std::string filename="" )
+{
+    std::pair< ex, std::vector<GiNaC::symbol> > g = GiNaC::parse(s);
+    return Expr< GinacMatrix<M,N,Order> >(  GinacMatrix<M,N,Order>( g.first, g.second, filename) );
+}
+
 
 inline
 Expr< GinacMatrix<1,1,2> >
@@ -493,6 +515,98 @@ Expr< GinacMatrix<M,N,Order> >
 expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym, std::string filename="" )
 {
     return Expr< GinacMatrix<M,N,Order> >(  GinacMatrix<M,N,Order>( f, lsym, filename ) );
+}
+
+template<int M,int Order=2>
+inline
+Expr<GinacMatrix<1,M,Order> >
+grad( Expr<GinacEx<Order>> const& s, std::string filename="" )
+{
+    return expr<1,M,Order>( GiNaC::grad(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), filename );
+}
+
+template<int M,int Order=2>
+inline
+Expr<GinacMatrix<M,M,Order> >
+grad( Expr<GinacMatrix<M,1,Order>> const& s, std::string filename="" )
+{
+    return expr<M,M,Order>( GiNaC::grad(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), filename );
+}
+// Divergence
+template<int M=1,int Order=2>
+inline
+Expr<GinacMatrix<M,1,Order> >
+div( Expr<GinacEx<Order>> const& s, std::string filename="" )
+{
+    return expr<M,1,Order>( GiNaC::div(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), filename );
+}
+template<int M,int Order=2>
+inline
+Expr<GinacMatrix<1,1,Order> >
+div( Expr<GinacMatrix<M,1,Order>> const& s, std::string filename="" )
+{
+    return expr<1,1,Order>( GiNaC::div(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), filename );
+}
+template<int M,int Order=2>
+inline
+Expr<GinacMatrix<1,1,Order> >
+div( Expr<GinacMatrix<1,M,Order>> const& s, std::string filename="" )
+{
+    return expr<1,1,Order>( GiNaC::div(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), filename );
+}
+template<int M,int N,int Order=2>
+inline
+Expr<GinacMatrix<M,1,Order> >
+div( Expr<GinacMatrix<M,1,Order>> const& s, std::string filename="" )
+{
+    return expr<M,1,Order>( GiNaC::div(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), filename );
+}
+// Curl
+template<int M=1,int Order=2>
+inline
+Expr<GinacMatrix<M,1,Order> >
+curl( Expr<GinacEx<Order>> const& s, std::string filename="" )
+{
+    return expr<M,1,Order>( GiNaC::curl(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), filename );
+}
+template<int M,int Order=2>
+inline
+Expr<GinacMatrix<((M==2)?1:3),1,Order> >
+curl( Expr<GinacMatrix<M,1,Order>> const& s, std::string filename="" )
+{
+    return expr<((M==2)?1:3),1,Order>( GiNaC::curl(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), filename );
+}
+template<int Order=2>
+inline
+Expr<GinacMatrix<2,1,Order> >
+curl( Expr<GinacMatrix<1,1,Order>> const& s, std::string filename="" )
+{
+    return expr<2,1,Order>( GiNaC::curl(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), filename );
+}
+
+template<int M,int Order=2>
+inline
+Expr<GinacMatrix<1,M,Order> >
+curl( Expr<GinacMatrix<1,M,Order>> const& s, std::string filename="" )
+{
+    return expr<1,M,Order>( GiNaC::curl(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), filename );
+}
+
+// Laplacian
+template<int Order=2>
+inline
+Expr<GinacMatrix<1,1,Order> >
+laplacian( Expr<GinacEx<Order>> const& s, std::string filename="" )
+{
+    return expr<1,1,Order>( GiNaC::laplacian(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), filename );
+}
+
+template<int M,int N=1, int Order=2>
+inline
+Expr<GinacMatrix<M,N,Order> >
+laplacian( Expr<GinacMatrix<M,N,Order>> const& s, std::string filename="" )
+{
+    return expr<M,N,Order>( GiNaC::laplacian(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), filename );
 }
 
 } // vf
