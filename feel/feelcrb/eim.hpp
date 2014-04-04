@@ -857,48 +857,70 @@ EIM<ModelType>::studyConvergence( parameter_type const & mu , solution_type & so
     int max = M_model->mMax();
     int Nmax=0;
 
+    double relative_l2_error;
+    double absolute_l2_error;
+    double interpolation_error;
+    double absolute_linf_error_estimated ;
+    double absolute_l2_error_estimated;
+    double relative_l2_error_estimated;
+    double relative_ratio_l2;
+    double absolute_ratio_linf;
+
     //As we print error estimation, we stop at max-1
     //because we need to access to the max^th basis function
     if( Environment::worldComm().isMasterRank() )
     {
         Nmax = max;
         fileL2 << Nmax<< "\t";
-        fileL2estimated << Nmax <<"\t";
-        fileL2ratio << Nmax  <<"\t" ;
+        fileL2estimated << Nmax-1 <<"\t";
+        fileL2ratio << Nmax-1  <<"\t" ;
         fileLINF << Nmax  <<"\t" ;
-        fileLINFestimated << Nmax  <<"\t" ;
-        fileLINFratio << Nmax  <<"\t" ;
+        fileLINFestimated << Nmax-1  <<"\t" ;
+        fileLINFratio << Nmax-1  <<"\t" ;
     }
     for(int N=1; N<=max; N++)
     {
-        std::string str = "\t";
-        if( N == Nmax ) str = "\n";
         double exprl2norm = 0 , diffl2norm = 0 ;
-
         exprl2norm =M_model->projExpressionL2Norm( solution , mu );
         auto eim_approximation = this->operator()(mu , solution, N);
         diffl2norm = M_model->projDiffL2Norm( solution , mu , eim_approximation );
         double absolute_linf_error = M_model->projDiffLinfNorm( solution , mu , eim_approximation );
-        double relative_l2_error = diffl2norm / exprl2norm ;
-        double absolute_l2_error = diffl2norm ;
-        //interpolation error : || projection_g - g ||_L2
-        double interpolation_error = M_model->interpolationError( solution , mu );
-        double absolute_linf_error_estimated = this->errorEstimationLinf( mu , solution, N );
-        auto error_estimation_element = this->elementErrorEstimation( mu , solution, N );
-        double absolute_l2_error_estimated = error_estimation_element.l2Norm();
-        double relative_l2_error_estimated = absolute_l2_error_estimated/exprl2norm;
-        double relative_ratio_l2 = math::abs( relative_l2_error_estimated / relative_l2_error );
-        double absolute_ratio_linf = math::abs( absolute_linf_error_estimated / absolute_linf_error );
-        //l2ErrorVec[N-1] = relative_l2_error; // /!\ l2ErrorVec[i] represents error with i+1 bases
+
+        if( N < max )
+        {
+            relative_l2_error = diffl2norm / exprl2norm ;
+            absolute_l2_error = diffl2norm ;
+            //interpolation error : || projection_g - g ||_L2
+            interpolation_error = M_model->interpolationError( solution , mu );
+            absolute_linf_error_estimated = this->errorEstimationLinf( mu , solution, N );
+            auto error_estimation_element = this->elementErrorEstimation( mu , solution, N );
+            absolute_l2_error_estimated = error_estimation_element.l2Norm();
+            relative_l2_error_estimated = absolute_l2_error_estimated/exprl2norm;
+            relative_ratio_l2 = math::abs( relative_l2_error_estimated / relative_l2_error );
+            absolute_ratio_linf = math::abs( absolute_linf_error_estimated / absolute_linf_error );
+        }
+
+        std::string str = "\t";
+        if( N == Nmax ) str = "\n";
+
         if( Environment::worldComm().isMasterRank() )
         {
             fileL2            << relative_l2_error            <<str;
-            fileL2estimated   << relative_l2_error_estimated  <<str;
-            fileL2ratio       << relative_ratio_l2            <<str;
             fileLINF          << absolute_linf_error          <<str;
-            fileLINFestimated << absolute_linf_error_estimated<<str;
-            fileLINFratio     << absolute_ratio_linf          <<str;
+
+            if( N == Nmax-1 )
+                str = "\n";
+            else
+                str= "\t";
+            if( N < max )
+            {
+                fileL2estimated   << relative_l2_error_estimated  <<str;
+                fileL2ratio       << relative_ratio_l2            <<str;
+                fileLINFestimated << absolute_linf_error_estimated<<str;
+                fileLINFratio     << absolute_ratio_linf          <<str;
+            }
         }
+
     }//loop over basis functions
 
     fileL2.close();
