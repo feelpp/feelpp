@@ -22,7 +22,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
    */
 //! [all]
-#include <feel/feel.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelvf/ginac.hpp>
 using namespace Feel;
 
 int main(int argc, char**argv )
@@ -37,15 +39,54 @@ int main(int argc, char**argv )
     //! [mesh]
 
     //! [expr]
-    auto g = soption(_name="functions.g");
-    auto f = soption(_name="functions.f");
+    auto g = expr(soption(_name="functions.g"),"g");
+    std::cout << "g=" << g << std::endl;
+
+
+    auto f = expr<2,1>(soption(_name="functions.f"),"f");
+    std::cout << "f=" << f << std::endl;
     //! [expr]
 
-    //! [export]
-    auto e = exporter(_mesh=mesh);
-    e->add( "g", g );
-    e->add( "f", f );
-    e->save();
-    //! [export]
+    //! [grad]
+    auto grad_g=grad<2>(g,"grad_g");
+    auto grad_f=grad<2,2>(f,"grad_f");
+    std::cout << "grad(g)=" << grad_g << std::endl;
+    std::cout << "grad(f)=" << grad_f << std::endl;
+    //! [grad]
+
+    //! [laplacian]
+    auto laplacian_g=laplacian(g,"laplacian_g");
+    std::cout << "laplacian(g)=" << laplacian_g << std::endl;
+
+    auto laplacian_f=laplacian(f,"laplacian_f");
+    std::cout << "laplacian(f)=" << laplacian_f << std::endl;
+
+    //! [laplacian]
+
+    //! [div]
+    auto div_f=div<2>(f,"div_f");
+    std::cout << "div(f)=" << div_f << std::endl;
+    //! [div]
+
+    //! [curl]
+    auto curl_f=curl<2>(f,"curl_f");
+    std::cout << "curl(f)=" << curl_f << std::endl;
+    //! [curl]
+
+    //! [eval]
+    std::cout << "Evaluation  at  (" << doption("x") << "," << doption("y") << "):" << std::endl;
+    std::cout << "           g(x,y)=" << g.evaluate() << std::endl;
+    std::cout << "           f(x,y)=" << f.evaluate() << std::endl;
+    std::cout << "Gradient:\n";
+    std::cout << "     grad(g)(x,y)=" << grad_g.evaluate() << std::endl;
+    std::cout << "     grad(f)(x,y)=" << grad_f.evaluate() << std::endl;
+    std::cout << "Divergence:\n";
+    std::cout << "      div(f)(x,y)=" << div_f.evaluate() << std::endl;
+    std::cout << "Curl:\n";
+    std::cout << "     curl(f)(x,y)=" << curl_f.evaluate() << std::endl;
+    std::cout << "Laplacian:\n";
+    std::cout << "laplacian(g)(x,y)=" << laplacian_g.evaluate() << std::endl;
+    std::cout << "laplacian(f)(x,y)=" << laplacian_f.evaluate() << std::endl;
+    //! [eval]
 }
 //! [all]

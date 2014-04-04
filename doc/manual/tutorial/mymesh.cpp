@@ -38,12 +38,13 @@ int main( int argc, char** argv )
                                    _email="feelpp-devel@feelpp.org" ) );
     //! [load]
     // create a mesh with GMSH using Feel++ geometry tool
-    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
+    auto mesh = loadMesh(_mesh=new  Mesh<Simplex<2>>);
     //! [load]
 
     //! [export]
     // export results for post processing
     auto e = exporter( _mesh=mesh );
+    e->addRegions();
     e->save();
     //! [export]
 

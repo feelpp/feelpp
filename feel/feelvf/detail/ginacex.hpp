@@ -44,7 +44,7 @@ public:
     /** @name Typedefs
      */
     //@{
-
+    typedef Feel::vf::GiNaCBase super;
 
     static const size_type context = vm::POINT;
     static const bool is_terminal = false;
@@ -65,6 +65,7 @@ public:
     typedef GiNaC::ex expression_type;
     typedef GinacEx<Order> this_type;
     typedef double value_type;
+    typedef value_type evaluate_type;
 
     typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> vec_type;
 
@@ -86,9 +87,8 @@ public:
     explicit GinacEx( expression_type const & fun, std::vector<GiNaC::symbol> const& syms, std::string filename="",
                       WorldComm const& world=Environment::worldComm() )
         :
+        super( syms ),
         M_fun( fun ),
-        M_syms( syms),
-        M_params( vec_type::Zero( M_syms.size() ) ),
         M_cfun( new GiNaC::FUNCP_CUBA() ),
         M_filename(filename.empty()?filename:(fs::current_path()/filename).string())
         {
@@ -135,36 +135,14 @@ public:
                         GinacExprManager::instance().operator[]( filename ) = M_cfun;
                 }
             }
-            this->setParameterFromOption();
-
-            // detect if symbol x,y,z are present and get index access in M_params
-            auto itSymX = std::find_if( M_syms.begin(), M_syms.end(),
-                                    []( GiNaC::symbol const& s ) { return s.get_name() == "x"; } );
-            if ( itSymX != M_syms.end() )
-                M_indexSymbolXYZ.insert( std::make_pair( 0,std::distance(M_syms.begin(),itSymX) ) );
-
-            auto itSymY = std::find_if( M_syms.begin(), M_syms.end(),
-                                    []( GiNaC::symbol const& s ) { return s.get_name() == "y"; } );
-            if ( itSymY != M_syms.end() )
-                M_indexSymbolXYZ.insert( std::make_pair( 1,std::distance(M_syms.begin(),itSymY) ) );
-
-            auto itSymZ = std::find_if( M_syms.begin(), M_syms.end(),
-                                    []( GiNaC::symbol const& s ) { return s.get_name() == "z"; } );
-            if ( itSymZ != M_syms.end() )
-                M_indexSymbolXYZ.insert( std::make_pair( 1,std::distance(M_syms.begin(),itSymZ) ) );
-
-            for ( auto const& is : M_indexSymbolXYZ )
-                LOG(INFO) << "index symbol relation  " << is.first << " and " << is.second << "\n";
         }
 
     GinacEx( GinacEx const & fun )
         :
+        super(fun),
         M_fun( fun.M_fun ),
-        M_syms( fun.M_syms),
-        M_params( fun.M_params ),
         M_cfun( fun.M_cfun ),
-        M_filename( fun.M_filename ),
-        M_indexSymbolXYZ( fun.M_indexSymbolXYZ )
+        M_filename( fun.M_filename )
         {
         }
 
@@ -182,8 +160,6 @@ public:
      */
     //@{
 
-    vec_type const& parameterValue() const { return M_params; }
-    value_type parameterValue( int p ) const { return M_params[p]; }
 
     //@}
 
@@ -191,70 +167,6 @@ public:
      */
     //@{
 
-    void setParameterFromOption()
-        {
-            using namespace GiNaC;
-            std::map<std::string,value_type> m;
-            for( auto const& s : M_syms )
-            {
-                if ( Environment::vm().count( s.get_name() ) )
-                {
-                    // use try/catch in order to catch casting exception for
-                    // option that do not return double. Indeed we are only
-                    // collecting symbols in option database which can be cast
-                    // to numerical types
-                    try
-                    {
-                        value_type v = option( _name=s.get_name() ).template as<double>();
-                        m.insert( std::make_pair( s.get_name(), v ) );
-                        LOG(INFO) << "symbol " << s.get_name() << " found in option with value " << v;
-                    }
-                    catch(...)
-                    {}
-
-//                    try
-//                    {
-//                        expression_type e( option( _name=s.get_name() ).template as<std::string>(), 0 );
-//                        if( is_a<numeric>(e) )
-//                        {
-//                            LOG(INFO) << "symbol " << s.get_name() << " found in option with value " << v;
-//                        }
-//                        else
-//                        {
-//                            ;
-//                        }
-//                    }
-//                    catch(...)
-//                    {}
-                }
-            }
-            this->setParameterValues( m );
-        }
-
-    void setParameterValues( vec_type const& p )
-        {
-            CHECK( M_params.size() == M_syms.size() ) << "Invalid number of parameters " << M_params.size() << " >= symbol size : " << M_syms.size();
-            M_params = p;
-        }
-    void setParameterValues( std::map<std::string,value_type> const& mp )
-        {
-            CHECK( M_params.size() == M_syms.size() ) << "Invalid number of parameters " << M_params.size() << " >= symbol size : " << M_syms.size();
-            for( auto p : mp )
-            {
-                auto it = std::find_if( M_syms.begin(), M_syms.end(),
-                                        [&p]( GiNaC::symbol const& s ) { return s.get_name() == p.first; } );
-                if ( it != M_syms.end() )
-                {
-                    M_params[it-M_syms.begin()] = p.second;
-                    LOG(INFO) << "setting parameter : " << p.first << " with value: " << p.second;
-                    LOG(INFO) << "parameter: \n" << M_params;
-                }
-                else
-                {
-                    LOG(INFO) << "Invalid parameters : " << p.first << " with value: " << p.second;
-                }
-            }
-        }
 
     //@}
 
@@ -274,7 +186,6 @@ public:
     std::vector<GiNaC::symbol> const& syms() const { return M_syms; }
 
 
-    std::set<std::pair<uint16_type,uint16_type> > const& indexSymbolXYZ() const { return M_indexSymbolXYZ; }
 
     //@}
 
@@ -447,13 +358,9 @@ public:
 
 private:
     mutable expression_type  M_fun;
-    std::vector<GiNaC::symbol> M_syms;
-    vec_type M_params;
     boost::shared_ptr<GiNaC::FUNCP_CUBA> M_cfun;
     std::string M_filename;
-    std::set<std::pair<uint16_type,uint16_type> > M_indexSymbolXYZ;
 };
-
 template<int Order>
 std::ostream&
 operator<<( std::ostream& os, GinacEx<Order> const& e )
