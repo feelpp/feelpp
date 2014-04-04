@@ -487,7 +487,9 @@ ConfigurePCGAMG::ConfigurePCGAMG( PC& pc, PreconditionerPetsc<double>::indexspli
 void
 ConfigurePCGAMG::runConfigurePCGAMG( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is )
 {
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 )
     this->check( PCGAMGSetType( pc, M_gamgType.c_str() ) );
+#endif
     // PCSetFromOptions is called here because PCGAMGSetType destroy all unless the type_name
     this->check( PCSetFromOptions( pc ) );
 
