@@ -58,24 +58,27 @@ int main( int argc, char** argv )
 
     //! [expression]
     auto g = expr( soption(_name="functions.g"));
-    auto gradg = expr<1,2,2>( grad(soption(_name="functions.g") ));
+    auto gradg = grad<2>(g);
     //! [expression]
 
     //! [interpolant]
     // elements of \f$ u,w \in X_h \f$
     auto u = Xh->element( "u" );
     auto w = Xh->element( "w" );
-    // build the interpolant
+    // build the interpolant of u
     u.on( _range=elements( mesh ), _expr=g );
+    // build the interpolant of the interpolation error
     w.on( _range=elements( mesh ), _expr=idv( u )-g );
 
     // compute L2 norms
     double L2g = normL2( elements( mesh ), g );
+    double H1g = normL2( elements( mesh ), _expr=g,_grad_expr=gradg );
     double L2uerror = normL2( elements( mesh ), ( idv( u )-g ) );
-    double semiH1uerror = normL2( elements( mesh ), ( gradv( u )-gradg ) );
+    double H1uerror = normH1( elements( mesh ), _expr=( idv( u )-g ),
+                              _grad_expr=( gradv( u )-gradg ) );
     std::cout << "||u-g||_0 = " << L2uerror/L2g << std::endl;
-    std::cout << "||u-g||_1 = " << semiH1uerror << std::endl;
-    //! [interpolant]
+    std::cout << "||u-g||_1 = " << H1uerror/H1g << std::endl;
+     //! [interpolant]
 
     //! [export]
     // export for post-processing

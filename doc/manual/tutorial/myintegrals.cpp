@@ -58,10 +58,17 @@ main( int argc, char** argv )
     auto intf_2 = integrate( _range = boundaryfaces( mesh ),
                              _expr = g ).evaluate();
 
+    // compute integral of grad f (global contribution)
+    auto intgrad_f = integrate( _range = elements( mesh ),
+                                _expr = grad<2>(g) ).evaluate();
+
     // only the process with rank 0 prints to the screen to avoid clutter
     if ( Environment::isMasterRank() )
         std::cout << "int_Omega " << g << " = " << intf_1  << std::endl
-                  << "int_{boundary of Omega} " << g << " = " << intf_2 << std::endl;
+                  << "int_{boundary of Omega} " << g << " = " << intf_2 << std::endl
+                  << "int_Omega grad " << g << " = "
+                  << "int_Omega  " << grad<2>(g) << " = "
+                  << intgrad_f  << std::endl;
     //! [integrals]
 }
 //! [all]
