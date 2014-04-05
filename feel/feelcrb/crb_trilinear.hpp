@@ -187,13 +187,13 @@ public:
          truth_model_ptrtype const & model )
         :
         super_crb( name, vm , model ),
-        M_crbdb( ( boost::format( "%1%" ) % vm["crb.error-type"].template as<int>() ).str(),
+        M_crbdb( ( boost::format( "%1%" ) % option(_name="crb.error-type").template as<int>() ).str(),
                  name,
-                 ( boost::format( "%1%-%2%-%3%" ) % name % vm["crb.output-index"].template as<int>() % vm["crb.error-type"].template as<int>() ).str(),
+                 ( boost::format( "%1%-%2%-%3%-trilinear" ) % name % option(_name="crb.output-index").template as<int>() % option(_name="crb.error-type").template as<int>() ).str(),
                  vm )
     {
         this->setTruthModel( model );
-        if ( this->loadDB() )
+        if ( M_crbdb.loadDB() )
             LOG(INFO) << "Database " << M_crbdb.lookForDB() << " available and loaded\n";
 
         //this will be in the offline step (it's only when we enrich or create the database that we want to have access to elements of the RB)
@@ -302,7 +302,8 @@ private:
     std::vector < std::vector < matrixN_type> >  M_Aqm_tril_pr;
     mutable matrixN_type M_bilinear_terms;
     mutable vectorN_type M_linear_terms;
-    boost::shared_ptr<SolverNonLinear<double> > M_nlsolver;
+    //boost::shared_ptr<SolverNonLinear<double> > M_nlsolver;
+
 
     friend class boost::serialization::access;
     // When the class Archive corresponds to an output archive, the
@@ -424,8 +425,8 @@ CRBTrilinear<TruthModelType>::offline()
         }
 
         M_Aqm_tril_pr.resize( this->M_model->QaTri() );
-        for(int q=0; q<this->M_model->QaTri(); q++)
 
+        //for(int q=0; q<this->M_model->QaTri(); q++)
         this->M_Fqm_pr.resize( this->M_model->Ql( 0 ) );
 
         for(int q=0; q<this->M_model->Ql( 0 ); q++)
@@ -691,7 +692,7 @@ CRBTrilinear<TruthModelType>::offline()
         LOG(INFO) <<"========================================"<<"\n";
 
         //save DB after adding an element
-        this->saveDB();
+        saveDB();
         this->M_elements_database.setWn( boost::make_tuple( this->M_model->rBFunctionSpace()->primalRB() , this->M_model->rBFunctionSpace()->dualRB() ) );
         this->M_elements_database.saveDB();
     }
@@ -736,14 +737,14 @@ typename boost::tuple<std::vector<double>,typename CRBTrilinear<TruthModelType>:
 CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vectorN_type >& uN, std::vector< vectorN_type >& uNdu ,
                                   std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold, bool print_rb_matrix, int K ) const
 {
-
+    uN.resize(1);
     if ( N > this->M_N ) N =this->M_N;
     beta_vector_type betaAqm;
     std::vector<beta_vector_type> betaFqm, betaLqm;
 
     //-- end of initialization step
 
-    std::vector<double>output_vector;
+    std::vector<double>output_vector(1);
 
     boost::tie( boost::tuples::ignore,  betaAqm, betaFqm  ) = this->M_model->computeBetaQm( mu );
 
@@ -814,11 +815,11 @@ CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu, std::ve
 
         this->updateLinearTerms( current_mu , N );
 
-        //M_nlsolver->setRelativeResidualTol( 1e-12 );
-        M_nlsolver->map_dense_jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2  , current_mu , N );
-        M_nlsolver->map_dense_residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2  , current_mu , N );
-        M_nlsolver->setType( TRUST_REGION );
-        M_nlsolver->solve( map_J , map_uN , map_R, 1e-12, 100);
+        //this->M_nlsolver->setRelativeResidualTol( 1e-12 );
+        this->M_nlsolver->map_dense_jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2  , current_mu , N );
+        this->M_nlsolver->map_dense_residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2  , current_mu , N );
+        this->M_nlsolver->setType( TRUST_REGION );
+        this->M_nlsolver->solve( map_J , map_uN , map_R, 1e-12, 100);
     }
 
     LOG(INFO) << "[CRBTrilinear::lb] solve with Newton done";
@@ -829,9 +830,12 @@ CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu, std::ve
     vectorN_type L ( ( int )N );
     L.setZero( N );
 
-    for ( size_type q = 0; q < this->M_model->Ql( this->M_output_index ); ++q )
+    int output_index=this->M_output_index;
+    int qoutput = this->M_model->Ql( output_index );
+
+    for ( size_type q = 0; q < qoutput; ++q )
     {
-        L += betaFqm[this->M_output_index][q][0]*this->M_Lqm_pr[q][0].head( N );
+        L += betaFqm[output_index][q][0] * this->M_Lqm_pr[q][0].head( N );
     }
     output_vector[0] = L.dot( uN[0] );
     LOG(INFO) << "[CRBTrilinear::lb] computation of the output done";
@@ -933,7 +937,8 @@ CRBTrilinear<TruthModelType>::updateResidual( const map_dense_vector_type& map_X
     bool enable = this->vm()["crb.enable-convection-terms"].template as<bool>();
     if( enable )
     {
-        for ( size_type q = 0; q < this->M_model->QaTri(); ++q )
+        int qatri = this->M_model->QaTri();
+        for ( size_type q = 0; q < qatri; ++q )
         {
             for (int k = 0 ; k < N; ++k)
             {
@@ -1024,7 +1029,6 @@ CRBTrilinear<TruthModelType>::save( Archive & ar, const unsigned int version ) c
 
     LOG(INFO) <<"[CRBTrilinear::save] version : "<<version<<std::endl;
 
-    //ar & boost::serialization::base_object<CRBDB>( M_crbdb );
     ar & BOOST_SERIALIZATION_NVP( this->M_output_index );
     ar & BOOST_SERIALIZATION_NVP( this->M_N );
     ar & BOOST_SERIALIZATION_NVP( this->M_rbconv );
@@ -1053,7 +1057,6 @@ CRBTrilinear<TruthModelType>::load( Archive & ar, const unsigned int version )
 
     LOG(INFO) <<"[CRBTrilinear::load] version"<< version <<std::endl;
 
-    //ar & boost::serialization::base_object<CRBDB>( M_crbdb );
     ar & BOOST_SERIALIZATION_NVP( this->M_output_index );
     ar & BOOST_SERIALIZATION_NVP( this->M_N );
 
@@ -1072,8 +1075,6 @@ CRBTrilinear<TruthModelType>::load( Archive & ar, const unsigned int version )
     ar & BOOST_SERIALIZATION_NVP( this->M_no_residual_index );
 
     ar & BOOST_SERIALIZATION_NVP( this->M_maxerror );
-
-    LOG(INFO) << "[CRBTrilinear::load] end of load function" << std::endl;
 }
 
 
@@ -1081,13 +1082,15 @@ template<typename TruthModelType>
 void
 CRBTrilinear<TruthModelType>::saveDB()
 {
+    super_crb::saveDB();
+
     fs::ofstream ofs( M_crbdb.dbLocalPath() / M_crbdb.dbFilename() );
 
     if ( ofs )
     {
         boost::archive::text_oarchive oa( ofs );
         // write class instance to archive
-        oa << M_crbdb;
+        oa << *this;
         // archive and stream closed when destructors are called
     }
 }
@@ -1096,8 +1099,11 @@ template<typename TruthModelType>
 bool
 CRBTrilinear<TruthModelType>::loadDB()
 {
+
     if ( this->rebuildDB() )
         return false;
+
+    super_crb::loadDB();
 
     fs::path db = M_crbdb.lookForDB();
 
@@ -1114,9 +1120,8 @@ CRBTrilinear<TruthModelType>::loadDB()
     {
         boost::archive::text_iarchive ia( ifs );
         // write class instance to archive
-        ia >> M_crbdb;
+        ia >> *this;
         //std::cout << "Loading " << db << " done...\n";
-        //M_crbdb.setIsLoaded( true );
         // archive and stream closed when destructors are called
         return true;
     }
@@ -1126,5 +1131,22 @@ CRBTrilinear<TruthModelType>::loadDB()
 
 
 } // Feel
+namespace boost
+{
+namespace serialization
+{
+template< typename T>
+struct version< Feel::CRBTrilinear<T> >
+{
+    // at the moment the version of the CRBTrilinear DB is 0. if any changes is done
+    // to the format it is mandatory to increase the version number below
+    // and use the new version number of identify the new entries in the DB
+    typedef mpl::int_<0> type;
+    typedef mpl::integral_c_tag tag;
+    static const unsigned int value = version::type::value;
+};
+template<typename T> const unsigned int version<Feel::CRBTrilinear<T> >::value;
+}
+}
 
 #endif /* __CRBTrilinear_H */
