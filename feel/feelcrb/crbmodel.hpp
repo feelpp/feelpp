@@ -581,7 +581,7 @@ public:
     }
 
     //! return the number of \f$\mu\f$ independent terms for the right hand side
-    size_type Ql( int l ) const
+    virtual size_type Ql( int l ) const
     {
         return M_Ql[l];
         //return M_model->Ql( l );
