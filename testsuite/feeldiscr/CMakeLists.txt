@@ -14,8 +14,9 @@ feelpp_add_test( functionallinearfree )
 feelpp_add_test( fspace_context )
 feelpp_add_test( geomap )
 
-feelpp_add_test( hdiv)
-feelpp_add_test( hcurl)
+feelpp_add_test( hdiv )
+feelpp_add_test( hdiv3D )
+feelpp_add_test( hcurl )
 feelpp_add_test( functionals )
 
 feelpp_add_test( lambda )

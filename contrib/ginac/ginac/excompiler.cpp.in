@@ -219,6 +219,7 @@ public:
 					throw std::runtime_error(ostr.str());
 				}
 				remove_src_file( filename, clean_up );
+				return;
 			}
 			else
 			{
@@ -245,8 +246,10 @@ public:
 					}
 				}
 			}
+			std::ostringstream ostr;
+			ostr << "ginac::compile_src_file " << filename << " WAS NOT COMPILED\n";
+			throw std::runtime_error(ostr.str());
 			}
-			//}
 		}
 	/**
 	 * Links a so-file whose filename is given.
