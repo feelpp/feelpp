@@ -77,7 +77,6 @@ extern "C"
         return 0;
     }
 
-
     PetscErrorCode __feel_petsc_preconditioner_apply( void *ctx, Vec x, Vec y )
     {
         Preconditioner<double> * preconditioner = static_cast<Preconditioner<double>*>( ctx );
@@ -89,6 +88,13 @@ extern "C"
 
         return 0;
     }
+    PetscErrorCode __feel_petsc_preconditioner_view( void *ctx, PetscViewer viewer)
+    {
+        Preconditioner<double> * preconditioner = static_cast<Preconditioner<double>*>( ctx );
+        preconditioner->view();
+        return 0;
+    }
+
 #else
     PetscErrorCode __feel_petsc_preconditioner_setup ( PC pc )
     {
@@ -112,6 +118,15 @@ extern "C"
 
         preconditioner->apply( x_vec,y_vec );
 
+        return 0;
+    }
+    PetscErrorCode __feel_petsc_preconditioner_view( PC pc, PetscViewer viewer)
+    {
+        void *ctx;
+        PetscErrorCode ierr = PCShellGetContext( pc,&ctx );
+        CHKERRQ( ierr );
+        Preconditioner<double> * preconditioner = static_cast<Preconditioner<double>*>( ctx );
+        preconditioner->view();
         return 0;
     }
 #endif
@@ -281,6 +296,7 @@ void SolverLinearPetsc<T>::init ()
             PCShellSetContext( M_pc,( void* )this->M_preconditioner.get() );
             PCShellSetSetUp( M_pc,__feel_petsc_preconditioner_setup );
             PCShellSetApply( M_pc,__feel_petsc_preconditioner_apply );
+            PCShellSetView( M_pc,__feel_petsc_preconditioner_view );
 #if PETSC_VERSION_LESS_THAN(3,4,0)
             const PCType pc_type;
 #else
