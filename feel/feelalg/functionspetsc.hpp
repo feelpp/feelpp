@@ -47,6 +47,7 @@ extern "C" {
 #endif
 
 #include <feel/feelalg/enums.hpp>
+#include <feel/feelalg/datamap.hpp>
 
 namespace Feel
 {
@@ -59,6 +60,7 @@ std::string PetscConvertSNESReasonToString( SNESConvergedReason reason );
 
 MatStructure PetscGetMatStructureEnum( Feel::MatrixStructure matStruc );
 
+void PetscConvertIndexSplit( std::vector<IS> & isPetsc ,IndexSplit const& is,WorldComm const& worldcomm );
 } // namespace Feel
 
 #endif
