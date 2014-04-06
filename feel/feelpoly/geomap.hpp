@@ -1640,15 +1640,22 @@ permutation_type permutation( mpl::bool_<true> ) const
     return M_perm;
 }
 
-/**
- * update Jacobian data : linear case
- */
-void updateJKBN( mpl::bool_<true>  )
+void updateJKBN( mpl::bool_<true>, mpl::true_  )
 {
+        Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::ColMajor>> P( M_G.data().begin(), M_G.size1(), M_G.size2() );
+        Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>> GradPhi( M_g_linear.data().begin(), M_g_linear.size1(), M_g_linear.size2() );
+        Eigen::Map<Eigen::Matrix<value_type,NDim,PDim,((PDim==1)?Eigen::ColMajor:Eigen::RowMajor)>> MK( M_K.data().begin(), M_K.size1(), M_K.size2() );
+        Eigen::Map<Eigen::Matrix<value_type,PDim,PDim,((NDim==1)?Eigen::ColMajor:Eigen::RowMajor)>> MCS( M_CS.data().begin(), M_CS.size1(), M_CS.size2() );
+        Eigen::Map<Eigen::Matrix<value_type,PDim,PDim,((PDim==1)?Eigen::ColMajor:Eigen::RowMajor)>> MCSi( M_CSi.data().begin(), M_CSi.size1(), M_CSi.size2() );
+        Eigen::Map<Eigen::Matrix<value_type,NDim,PDim,((PDim==1)?Eigen::ColMajor:Eigen::RowMajor)>> MB( M_B.data().begin(), M_B.size1(), M_B.size2() );
+        MK.noalias() =  P*GradPhi;
+        M_J = math::abs( MK.determinant() );
+        MCS = MK.inverse();
+        MB.noalias() = MCS.transpose();
 
-    if ( !M_gm->isCached() ||
-            ( M_gm->isCached() && M_gm->cached( M_id ) == false ) )
-    {
+}
+void updateJKBN( mpl::bool_<true>, mpl::false_  )
+{
         Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::ColMajor>> P( M_G.data().begin(), M_G.size1(), M_G.size2() );
         Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>> GradPhi( M_g_linear.data().begin(), M_g_linear.size1(), M_g_linear.size2() );
         Eigen::Map<Eigen::Matrix<value_type,NDim,PDim,((PDim==1)?Eigen::ColMajor:Eigen::RowMajor)>> MK( M_K.data().begin(), M_K.size1(), M_K.size2() );
@@ -1658,27 +1665,26 @@ void updateJKBN( mpl::bool_<true>  )
         MK.noalias() =  P*GradPhi;
         //ublas::axpy_prod( M_G, M_g_linear, M_K, true );
 
-        if ( NDim == PDim )
+        // CS = K^T K
+        MCSi.noalias() = MK.transpose()*MK;
+        M_J = math::sqrt( math::abs( MCSi.determinant() ) );
+        //if ( vm::has_kb<context>::value )
         {
-             M_J = math::abs( MK.determinant() );
-             MCS = MK.inverse();
-             MB.noalias() = MCS.transpose();
-        }
-
-        else // N != P
-        {
-            // CS = K^T K
-            MCSi.noalias() = MK.transpose()*MK;
-            M_J = math::sqrt( math::abs( MCSi.determinant() ) );
-            //if ( vm::has_kb<context>::value )
-            {
                 MCS=MCSi.inverse();
                 // B = K CS
                 MB.noalias() = MK*MCS;
-            }
-
         }
 
+}
+/**
+ * update Jacobian data : linear case
+ */
+void updateJKBN( mpl::bool_<true>  )
+{
+    if ( !M_gm->isCached() ||
+            ( M_gm->isCached() && M_gm->cached( M_id ) == false ) )
+    {
+        updateJKBN( mpl::true_(), mpl::bool_<NDim==PDim>() );
         if ( M_gm->isCached() )
         {
             // cache J, K and B
@@ -1763,6 +1769,7 @@ void updateJKBN( mpl::bool_<true>  )
         Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> > N(M_u_n_real.data().begin(), NDim,1);
         P.noalias() -= N*N.transpose();
     }
+
 
 }
 
