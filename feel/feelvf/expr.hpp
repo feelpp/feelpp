@@ -822,6 +822,7 @@ public:
 
     typedef PrintExprT expression_type;
     typedef typename expression_type::value_type value_type;
+    typedef value_type evaluate_type;
     typedef PrintExpr<PrintExprT> this_type;
 
     //@}
@@ -1709,6 +1710,7 @@ public:
 
     typedef ExprT expression_type;
     typedef typename ExprT::value_type value_type;
+    typedef value_type evaluate_type;
     typedef UnaryPlus<ExprT> this_type;
 
     UnaryPlus( const ExprT& expr )
@@ -1858,6 +1860,7 @@ public:
 
     typedef ExprT expression_type;
     typedef typename ExprT::value_type value_type;
+    typedef value_type evaluate_type;
     typedef UnaryMinus<ExprT> this_type;
 
     UnaryMinus( const ExprT& expr )
