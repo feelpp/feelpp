@@ -80,10 +80,7 @@ namespace Feel
 /** \page MultiPhysics MultiPhysics
    - \subpage NaturalConvection
 */
-
-/** \page Miscellaneous Miscellaneous
-   - \subpage Macros
-   - \subpage Types
-   - \subpage Layout
-   - \subpage
-*/
+/** \page FAQ Frequently Asked Questions
+   - \subpage FAQExecution
+   - \subpage FAQDocumentation
+ */
