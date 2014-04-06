@@ -1185,11 +1185,15 @@ struct computeNDofForEachSpace
 
     computeNDofForEachSpace(size_type startSplit)
     :
+        M_indexSplit( new IndexSplit() ),
         M_startSplit(startSplit)
     {}
 
-    typedef boost::tuple< uint16_type, size_type, std::vector<std::vector<size_type> > > result_type;
+    boost::shared_ptr<IndexSplit> const& indexSplit() const { return M_indexSplit; }
 
+    typedef boost::tuple< uint16_type, size_type, IndexSplit > result_type;
+
+#if 0
     template<typename T>
     result_type operator()( result_type const & previousRes, T const& t )
     {
@@ -1200,21 +1204,26 @@ struct computeNDofForEachSpace
         const size_type start = previousRes.get<1>();
         auto is = previousRes.get<2>();
 
-        //std::cout << "compo " << cptSpaces << " start " << start <<" split nDofWithout " << nDof << " with ghost "<< nDofWithGhost<< " M_startSplit " << M_startSplit <<std::endl;
-
-        //is.push_back( std::vector<size_type>( nDofWithoutGhost ) );
         is[cptSpaces].resize(nDofWithoutGhost);
 
         for ( size_type i=0; i<nDofWithGhost; ++i )
         {
             if ( t->dof()->dofGlobalProcessIsGhost(i) ) continue;
             const size_type globalDof = t->dof()->mapGlobalProcessToGlobalCluster(i);
-            is[cptSpaces][globalDof - firstDof ] = M_startSplit + start + (globalDof - firstDof);
+            M_is[cptSpaces][globalDof - firstDof ] = M_startSplit + start + (globalDof - firstDof);
         }
 
         return boost::make_tuple( ++cptSpaces, ( start+nDofWithoutGhost ), is );
     }
+#else
+    template<typename T>
+    void operator()( T const& t ) const
+    {
+        M_indexSplit->addSplit( M_startSplit, t->map().indexSplit() );
+    }
+#endif
 
+    mutable boost::shared_ptr<IndexSplit> M_indexSplit;
     size_type M_startSplit;
 };
 
@@ -3986,64 +3995,24 @@ public:
         return M_functionspaces;
     }
 
-    std::vector<std::vector<size_type> > dofIndexSplit()
+
+    boost::shared_ptr<IndexSplit>
+    buildDofIndexSplit()
     {
-        if ( nSpaces > 1 )
-        {
-            uint16_type cptSpaces=0;
-            size_type start=0;
-            std::vector<std::vector<size_type> > is(nSpaces);
-            auto initial = boost::make_tuple( cptSpaces,start,is );
-
-            // get start for each proc ->( proc0 : 0 ), (proc1 : sumdofproc0 ), (proc2 : sumdofproc0+sumdofproc1 ) ....
-            auto startSplit = boost::fusion::fold( functionSpaces(), boost::make_tuple(0,0), Feel::detail::computeStartOfFieldSplit() ).template get<1>();
-            // compute split
-            auto result = boost::fusion::fold( functionSpaces(), initial,  Feel::detail::computeNDofForEachSpace(startSplit) );
-            is = result.template get<2>();
-
-
-#if 0
-            for ( int proc = 0; proc<this->worldComm().globalSize(); ++proc )
-            {
-                this->worldComm().globalComm().barrier();
-                if ( proc==this->worldComm().globalRank() )
-                {
-                    std::cout << "proc " << proc << "\n";
-                    std::cout << "split size=" << result.template get<2>().size() << " nspace=" << nSpaces << "\n";
-                    std::cout << "split:\n";
-
-                    //std::cout << "\n\n";
-
-
-                    for ( int s= 0; s < nSpaces; ++s )
-                    {
-                        std::cout << "space: " << is[s].size() << "\n";
-
-                        for ( int i = 0; i < is[s].size(); ++i )
-                        {
-                            std::cout << is[s][i] << " ";
-                        }
-
-                        std::cout << "\n\n";
-                    }
-                }
-            }
-
-#endif
-            return is;
-        }
-
-        std::vector<std::vector<size_type> > is;
-        is.push_back( std::vector<size_type>( nLocalDof() ) );
-        int index = 0;
-        //for( int& i : is[0] ) { i = index++; }
-        BOOST_FOREACH( auto& i, is[0] )
-        {
-            i = index++;
-        }
-        return is;
+        auto startSplit = boost::fusion::fold( functionSpaces(), boost::make_tuple(0,0), Feel::detail::computeStartOfFieldSplit() ).template get<1>();
+        auto computeSplit = Feel::detail::computeNDofForEachSpace(startSplit);
+        boost::fusion::for_each( functionSpaces(), computeSplit );
+        return computeSplit.indexSplit();
 
     }
+
+    boost::shared_ptr<IndexSplit> const&
+    dofIndexSplit() const
+    {
+        return this->dof()->indexSplit();
+    }
+
+
     /**
      * \return an element of the function space
      */
@@ -4544,6 +4513,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::initList()
         M_dofOnOff = dofInitTool.dataMapOnOff();
         M_dofOnOff->setNDof( this->nDof() );
     }
+    M_dof->setIndexSplit( this->buildDofIndexSplit() );
+    //M_dof->indexSplit().showMe();
 
 }
 

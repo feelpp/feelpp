@@ -309,10 +309,10 @@ Darcy<Dim, OrderU, OrderP>::convergence(int nb_refine)
             auto U_rt = Yh->element( "(u,p)" ); //trial
             auto V_rt = Yh->element( "(v,q)" ); //test
 
-            auto u_rt = U_rt.element<0>( "u" ); //velocity field
-            auto v_rt = V_rt.element<0>( "v" ); // potential field
-            auto p_rt = U_rt.element<1>( "p" );
-            auto q_rt = V_rt.element<1>( "q" );
+            auto u_rt = U_rt.template element<0>( "u" ); //velocity field
+            auto v_rt = V_rt.template element<0>( "v" ); // potential field
+            auto p_rt = U_rt.template element<1>( "p" );
+            auto q_rt = V_rt.template element<1>( "q" );
 
             // Number of dofs associated with each space U and P
             auto nDofu = u_rt.functionSpace()->nDof();

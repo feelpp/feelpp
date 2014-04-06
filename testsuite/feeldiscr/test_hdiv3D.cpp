@@ -24,7 +24,7 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file test_hdiv.cpp
+   \file test_hdiv3D.cpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \author Cecile Daversin <cecile.daversin@lncmi.cnrs.fr>
    \date 2014-01-29
@@ -46,209 +46,205 @@
 namespace Feel
 {
 /// Geometry for one-element meshes
-gmsh_ptrtype
-oneelement_geometry_ref( double h = 2 )
+std::string
+oneelement_geometry_ref()
 {
-    std::ostringstream costr;
-    costr <<"Mesh.MshFileVersion = 2.2;\n"
-          <<"h=" << h << ";\n"
-          <<"Point(1) = {-1,-1,0,h};\n"
-          <<"Point(2) = {1,-1,0,h};\n"
-          <<"Point(3) = {-1,1,0,h};\n"
-          <<"Line(1) = {1,2};\n"
-          <<"Line(2) = {2,3};\n"
-          <<"Line(3) = {3,1};\n";
+    std::string name = "one-elt-ref";
 
-    if ( std::abs( h - 2 ) < 1e-10 )
-        costr <<"Transfinite Line{1} = 1;\n"
-              <<"Transfinite Line{2} = 1;\n"
-              <<"Transfinite Line{3} = 1;\n";
+    if(!fs::exists( name+".msh" ))
+        {
+            std::ofstream costr(name+".msh");
+            costr << "$MeshFormat\n"
+                  << "2.2 0 8\n"
+                  << "$EndMeshFormat\n"
+                  << "$PhysicalNames\n"
+                  << "5\n"
+                  << "2 1 \"xyFace\"\n"
+                  << "2 2 \"yzFace\"\n"
+                  << "2 3 \"xzFace\"\n"
+                  << "2 4 \"xyzFace\"\n"
+                  << "3 5 \"volume\"\n"
+                  << "$EndPhysicalNames\n"
+                  << "$Nodes\n"
+                  << "4\n"
+                  << "1 -1 -1 -1\n"
+                  << "2 1 -1 -1\n"
+                  << "3 -1 1 -1\n"
+                  << "4 -1 -1 1\n"
+                  << "$EndNodes\n"
+                  << "$Elements\n"
+                  << "5\n"
+                  << "1 2 2 1 11 1 2 3\n"
+                  << "2 2 2 2 12 1 4 3\n"
+                  << "3 2 2 3 13 1 2 4\n"
+                  << "4 2 2 4 14 2 3 4\n"
+                  << "5 4 2 5 20 3 4 1 2\n"
+                  << "$EndElements\n";
+            costr.close();
+        }
 
-    costr <<"Line Loop(4) = {3,1,2};\n"
-          <<"Plane Surface(5) = {4};\n"
-          <<"Physical Line(\"hor\") = {1};\n"
-          <<"Physical Line(\"hypo\") = {2};\n"
-          <<"Physical Line(\"vert\") = {3};\n"
-          <<"Physical Surface(9) = {5};\n";
-
-    std::ostringstream nameStr;
-
-    if ( std::abs( h - 2 ) < 1e-10 )
-        nameStr << "one-elt-ref";
-    else
-        nameStr << "one-elt-mesh-ref";
-
-    gmsh_ptrtype gmshp( new Gmsh );
-    gmshp->setPrefix( nameStr.str() );
-    gmshp->setDescription( costr.str() );
-    return gmshp;
+        return name;
 }
 
 // homothetic transformation of reference element (center 0, rate 2)
-gmsh_ptrtype
-oneelement_geometry_real_1( double h = 2 )
+std::string
+oneelement_geometry_real_1()
 {
-    std::ostringstream costr;
-    costr <<"Mesh.MshFileVersion = 2.2;\n"
-          <<"h=" << h << ";\n"
-          <<"Point(1) = {-2,-2,0,h};\n"
-          <<"Point(2) = {2,-2,0,h};\n"
-          <<"Point(3) = {-2,2,0,h};\n"
-          <<"Line(1) = {1,2};\n"
-          <<"Line(2) = {2,3};\n"
-          <<"Line(3) = {3,1};\n";
+    std::string name = "one-elt-real-homo";
 
-    if ( std::abs( h - 2 ) < 1e-10 )
-        costr <<"Transfinite Line{1} = 1;\n"
-              <<"Transfinite Line{2} = 1;\n"
-              <<"Transfinite Line{3} = 1;\n";
+    if(!fs::exists( name+".msh" ))
+        {
+            std::ofstream costr(name+".msh");
+            costr << "$MeshFormat\n"
+                  << "2.2 0 8\n"
+                  << "$EndMeshFormat\n"
+                  << "$PhysicalNames\n"
+                  << "5\n"
+                  << "2 1 \"xyFace\"\n"
+                  << "2 2 \"yzFace\"\n"
+                  << "2 3 \"xzFace\"\n"
+                  << "2 4 \"xyzFace\"\n"
+                  << "3 5 \"volume\"\n"
+                  << "$EndPhysicalNames\n"
+                  << "$Nodes\n"
+                  << "4\n"
+                  << "1 -2 -2 -2\n"
+                  << "2 2 -2 -2\n"
+                  << "3 -2 2 -2\n"
+                  << "4 -2 -2 2\n"
+                  << "$EndNodes\n"
+                  << "$Elements\n"
+                  << "5\n"
+                  << "1 2 2 1 11 1 2 3\n"
+                  << "2 2 2 2 12 1 4 3\n"
+                  << "3 2 2 3 13 1 2 4\n"
+                  << "4 2 2 4 14 2 3 4\n"
+                  << "5 4 2 5 20 3 4 1 2\n"
+                  << "$EndElements\n";
+            costr.close();
+        }
 
-    costr <<"Line Loop(4) = {3,1,2};\n"
-          <<"Plane Surface(5) = {4};\n"
-          <<"Physical Line(\"hor\") = {1};\n"
-          <<"Physical Line(\"hypo\") = {2};\n"
-          <<"Physical Line(\"vert\") = {3};\n"
-          <<"Physical Surface(9) = {5};\n";
-
-    std::ostringstream nameStr;
-
-    if ( std::abs( h - 2 ) < 1e-10 )
-        nameStr << "one-elt-real-homo";
-    else
-        nameStr << "one-elt-mesh-homo";
-
-    gmsh_ptrtype gmshp( new Gmsh );
-    gmshp->setPrefix( nameStr.str() );
-    gmshp->setDescription( costr.str() );
-    return gmshp;
+    return name;
 }
 
-// Rotation of angle (-pi/2)
-gmsh_ptrtype
-oneelement_geometry_real_2( double h = 2 )
+// Rotation of angle (pi/2) around x axis
+std::string
+oneelement_geometry_real_2()
 {
-    std::ostringstream costr;
-    costr <<"Mesh.MshFileVersion = 2.2;\n"
-          <<"h=" << h << ";\n"
-          <<"Point(1) = {1,-1,0,h};\n"
-          <<"Point(2) = {1,1,0,h};\n"
-          <<"Point(3) = {-1,-1,0,h};\n"
-          <<"Line(1) = {1,2};\n"
-          <<"Line(2) = {2,3};\n"
-          <<"Line(3) = {3,1};\n";
+    std::string name = "one-elt-real-rotx";
+    std::ofstream costr(name+".msh");
 
-    if ( std::abs( h - 2 ) < 1e-10 )
-        costr <<"Transfinite Line{1} = 1;\n"
-              <<"Transfinite Line{2} = 1;\n"
-              <<"Transfinite Line{3} = 1;\n";
+    costr << "$MeshFormat\n"
+          << "2.2 0 8\n"
+          << "$EndMeshFormat\n"
+          << "$PhysicalNames\n"
+          << "5\n"
+          << "2 1 \"xyFace\"\n"
+          << "2 2 \"yzFace\"\n"
+          << "2 3 \"xzFace\"\n"
+          << "2 4 \"xyzFace\"\n"
+          << "3 5 \"volume\"\n"
+          << "$EndPhysicalNames\n"
+          << "$Nodes\n"
+          << "4\n"
+          << "1 -1 1 -1\n"
+          << "2 1 1 -1\n"
+          << "3 -1 1 1\n"
+          << "4 -1 -1 -1\n"
+          << "$EndNodes\n"
+          << "$Elements\n"
+          << "5\n"
+          << "1 2 2 1 11 1 2 3\n"
+          << "2 2 2 2 12 1 4 3\n"
+          << "3 2 2 3 13 1 2 4\n"
+          << "4 2 2 4 14 2 3 4\n"
+          << "5 4 2 5 20 3 4 1 2\n"
+          << "$EndElements\n";
 
-    costr <<"Line Loop(4) = {3,1,2};\n"
-          <<"Plane Surface(5) = {4};\n"
-          <<"Physical Line(\"hor\") = {1};\n"
-          <<"Physical Line(\"hypo\") = {2};\n"
-          <<"Physical Line(\"vert\") = {3};\n"
-          <<"Physical Surface(9) = {5};\n";
-
-    std::ostringstream nameStr;
-
-    if ( std::abs( h - 2 ) < 1e-10 )
-        nameStr << "one-elt-real-rot";
-    else
-        nameStr << "one-elt-mesh-rot";
-
-    gmsh_ptrtype gmshp( new Gmsh );
-    gmshp->setPrefix( nameStr.str() );
-    gmshp->setDescription( costr.str() );
-    return gmshp;
+    costr.close();
+    return name;
 }
 
-// Rotation of angle (-pi/2)
-gmsh_ptrtype
-oneelement_geometry_real_3( double h = 2 )
+// Rotation of angle (pi/2) around y axis
+std::string
+oneelement_geometry_real_3()
 {
-    std::ostringstream costr;
-    costr <<"Mesh.MshFileVersion = 2.2;\n"
-          <<"h=" << h << ";\n"
-          <<"Point(1) = {-1,1,0,h};\n"
-          <<"Point(2) = {-1,-1,0,h};\n"
-          <<"Point(3) = {1,1,0,h};\n"
-          <<"Line(1) = {1,2};\n"
-          <<"Line(2) = {2,3};\n"
-          <<"Line(3) = {3,1};\n";
+    std::string name = "one-elt-real-roty";
 
-    if ( std::abs( h - 2 ) < 1e-10 )
-        costr <<"Transfinite Line{1} = 1;\n"
-              <<"Transfinite Line{2} = 1;\n"
-              <<"Transfinite Line{3} = 1;\n";
+    if(!fs::exists( name+".msh" ))
+        {
+            std::ofstream costr(name+".msh");
+            costr << "$MeshFormat\n"
+                  << "2.2 0 8\n"
+                  << "$EndMeshFormat\n"
+                  << "$PhysicalNames\n"
+                  << "5\n"
+                  << "2 1 \"xyFace\"\n"
+                  << "2 2 \"yzFace\"\n"
+                  << "2 3 \"xzFace\"\n"
+                  << "2 4 \"xyzFace\"\n"
+                  << "3 5 \"volume\"\n"
+                  << "$EndPhysicalNames\n"
+                  << "$Nodes\n"
+                  << "4\n"
+                  << "1 -1 -1 1\n"
+                  << "2 -1 -1 -1\n"
+                  << "3 -1 1 1\n"
+                  << "4 1 -1 -1\n"
+                  << "$EndNodes\n"
+                  << "$Elements\n"
+                  << "5\n"
+                  << "1 2 2 1 11 1 2 3\n"
+                  << "2 2 2 2 12 1 4 3\n"
+                  << "3 2 2 3 13 1 2 4\n"
+                  << "4 2 2 4 14 2 3 4\n"
+                  << "5 4 2 5 20 3 4 1 2\n"
+                  << "$EndElements\n";
+            costr.close();
+        }
 
-    costr <<"Line Loop(4) = {3,1,2};\n"
-          <<"Plane Surface(5) = {4};\n"
-          <<"Physical Line(\"hor\") = {1};\n"
-          <<"Physical Line(\"hypo\") = {2};\n"
-          <<"Physical Line(\"vert\") = {3};\n"
-          <<"Physical Surface(9) = {5};\n";
-
-    std::ostringstream nameStr;
-
-    if ( std::abs( h - 2 ) < 1e-10 )
-        nameStr << "one-elt-real-rot2";
-    else
-        nameStr << "one-elt-mesh-rot2";
-
-    gmsh_ptrtype gmshp( new Gmsh );
-    gmshp->setPrefix( nameStr.str() );
-    gmshp->setDescription( costr.str() );
-    return gmshp;
+    return name;
 }
 
-gmsh_ptrtype
-twoelement_geometry_( double h = 2 )
+// Rotation of angle (pi/2) around z axis
+std::string
+oneelement_geometry_real_4()
 {
-    std::ostringstream costr;
-    costr <<"Mesh.MshFileVersion = 2.2;\n"
-          <<"Mesh.CharacteristicLengthExtendFromBoundary=1;\n"
-          <<"Mesh.CharacteristicLengthFromPoints=1;\n"
-          <<"Mesh.ElementOrder=1;\n"
-          <<"Mesh.SecondOrderIncomplete = 0;\n"
-          <<"Mesh.Algorithm = 6;\n"
-          <<"Mesh.OptimizeNetgen=1;\n"
-          <<"// partitioning data\n"
-          <<"Mesh.Partitioner=1;\n"
-          <<"Mesh.NbPartitions=1;\n"
-          <<"Mesh.MshFilePartitioned=0;\n"
-          << "    h=" << h << ";\n"
-          << "Point(1) = {0, 0, 0, h};\n"
-          << "Point(2) = {1, 0, 0, h};\n"
-          << "Point(3) = {1, 1, 0, h};\n"
-          << "Point(4) = {2, 0.5, 0, 1.0};\n"
-          << "Line(1) = {1, 2};\n"
-          << "Line(2) = {2, 3};\n"
-          << "Line(3) = {3, 1};\n"
-          << "Line(4) = {2, 4};\n"
-          << "Line(5) = {4, 3};\n"
-          << "Line Loop(6) = {3, 1, 2};\n"
-          << "Line Loop(8) = {5, -2, 4};\n";
+    std::string name = "one-elt-real-rotz";
 
-    if ( std::abs( h - 2 ) < 1e-10 )
-        costr << "Transfinite Line(1) = 1;\n"
-              << "Transfinite Line(2) = 1;\n"
-              << "Transfinite Line(3) = 1;\n"
-              << "Transfinite Line(4) = 1;\n"
-              << "Transfinite Line(5) = 1;\n";
+    if(!fs::exists( name+".msh" ))
+        {
+            std::ofstream costr(name+".msh");
+            costr << "$MeshFormat\n"
+                  << "2.2 0 8\n"
+                  << "$EndMeshFormat\n"
+                  << "$PhysicalNames\n"
+                  << "5\n"
+                  << "2 1 \"xyFace\"\n"
+                  << "2 2 \"yzFace\"\n"
+                  << "2 3 \"xzFace\"\n"
+                  << "2 4 \"xyzFace\"\n"
+                  << "3 5 \"volume\"\n"
+                  << "$EndPhysicalNames\n"
+                  << "$Nodes\n"
+                  << "4\n"
+                  << "1 1 -1 -1\n"
+                  << "2 1 1 -1\n"
+                  << "3 -1 -1 -1\n"
+                  << "4 1 -1 1\n"
+                  << "$EndNodes\n"
+                  << "$Elements\n"
+                  << "5\n"
+                  << "1 2 2 1 11 1 2 3\n"
+                  << "2 2 2 2 12 1 4 3\n"
+                  << "3 2 2 3 13 1 2 4\n"
+                  << "4 2 2 4 14 2 3 4\n"
+                  << "5 4 2 5 20 3 4 1 2\n"
+                  << "$EndElements\n";
+            costr.close();
+        }
 
-    costr << "Plane Surface(11) = {6};\n"
-          << "Plane Surface(12) = {8};\n";
-    std::ostringstream nameStr;
-
-    if ( std::abs( h - 2 ) < 1e-10 )
-        nameStr << "two-elt-mesh";
-    else
-        nameStr << "two-elt-mesh-fine";
-
-    gmsh_ptrtype gmshp( new Gmsh );
-    gmshp->setPrefix( nameStr.str() );
-    gmshp->setDescription( costr.str() );
-    return gmshp;
+    return name;
 }
 
 /**
@@ -262,22 +258,22 @@ inline
 po::options_description
 makeOptions()
 {
-    po::options_description testhdivoptions( "test h_div options" );
-    testhdivoptions.add_options()
+    po::options_description testhdiv3Doptions( "test hdiv3D options" );
+    testhdiv3Doptions.add_options()
     ( "hsize", po::value<double>()->default_value( 0.1 ), "mesh size" )
     ( "xmin", po::value<double>()->default_value( -1 ), "xmin of the reference element" )
     ( "ymin", po::value<double>()->default_value( -1 ), "ymin of the reference element" )
     ( "zmin", po::value<double>()->default_value( -1 ), "zmin of the reference element" )
     ;
-    return testhdivoptions.add( Feel::feel_options() );
+    return testhdiv3Doptions.add( Feel::feel_options() );
 }
 
 inline
 AboutData
 makeAbout()
 {
-    AboutData about( "test_hdiv" ,
-                     "test_hdiv" ,
+    AboutData about( "test_hdiv3D" ,
+                     "test_hdiv3D" ,
                      "0.1",
                      "Test for h_div space",
                      AboutData::License_GPL,
@@ -290,7 +286,7 @@ makeAbout()
 
 using namespace Feel;
 
-class TestHDiv
+class TestHDiv3D
     :
 public Application
 {
@@ -307,7 +303,7 @@ public:
     typedef typename boost::shared_ptr<backend_type> backend_ptrtype ;
 
     //! geometry entities type composing the mesh, here Simplex in Dimension Dim of Order G_order
-    typedef Simplex<2,1> convex_type;
+    typedef Simplex<3,1> convex_type;
     //! mesh type
     typedef Mesh<convex_type> mesh_type;
     //! mesh shared_ptr<> type
@@ -340,14 +336,14 @@ public:
     /**
      * Constructor
      */
-    TestHDiv()
+    TestHDiv3D()
         :
         super(),
         M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].as<double>() ),
         exporter( Exporter<mesh_type>::New( this->vm() ) )
     {
-        std::cout << "[TestHDiv]\n";
+        std::cout << "[TestHDiv3D]\n";
 
         this->changeRepository( boost::format( "%1%/h_%2%/" )
                                 % this->about().appName()
@@ -359,8 +355,9 @@ public:
      * run the application
      */
     inline double hSize(){return meshSize;}
-    void shape_functions( gmsh_ptrtype ( *one_element_mesh )( double ));
-    void testProjector(gmsh_ptrtype ( *one_element_mesh_desc_fun )( double ));
+    void shape_functions( std::string ( *one_element_mesh )() );
+
+    void testProjector(std::string ( *one_element_mesh_desc_fun )() );
     void exampleProblem1();
 
 private:
@@ -376,22 +373,27 @@ private:
 }; //TestHDiv
 
 void
-TestHDiv::exampleProblem1()
+TestHDiv3D::exampleProblem1()
 {
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _desc=domain( _name= ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1 ).str() ,
-                                                _shape="hypercube",
-                                                _usenames=true,
-                                                _dim=2,
-                                                _h=meshSize,
-                                                _xmin=-1,_xmax=1,
-                                                _ymin=-1,_ymax=1 ) );
+                                                      _shape="hypercube",
+                                                      _usenames=true,
+                                                      _dim=3,
+                                                      _h=meshSize,
+                                                      _xmin=-1,_xmax=1,
+                                                      _ymin=-1,_ymax=1,
+                                                      _zmin=-1,_zmax=1) );
 
     //auto K = ones<2,2>(); // Hydraulic conductivity tensor
-    auto K = mat<2,2>(cst(2.),cst(1.),cst(1.),cst(2.));
+    auto K = mat<3,3>(cst(2.),cst(1.),cst(1.),
+                      cst(1.),cst(2.),cst(1.),
+                      cst(1.),cst(1.),cst(2.));
     //auto Lambda = ones<2,2>(); // Hydraulic resistivity tensor
-    auto Lambda = (1.0/3.0)*mat<2,2>(cst(2.),cst(-1.),cst(-1.),cst(2.)); // Lambda = inv(K)
-    auto f = Px()+Py(); // int_omega f = 0
+    auto Lambda = (1.0/4.0)*mat<3,3>(cst(3.),cst(-1.),cst(-1.),
+                                     cst(-1.),cst(3.),cst(-1.),
+                                     cst(-1.),cst(-1.),cst(3.)); // Lambda = inv(K)
+    auto f = Px()+Py()+Pz(); // int_omega f = 0
     auto epsilon = 1e-7;
 
     // ****** Primal formulation - with Lagrange ******
@@ -474,28 +476,28 @@ TestHDiv::exampleProblem1()
 }
 
 void
-TestHDiv::testProjector(gmsh_ptrtype ( *one_element_mesh_desc_fun )( double ))
+TestHDiv3D::testProjector(std::string ( *one_element_mesh_desc_fun )())
 {
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _desc=domain( _name= ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1 ).str() ,
-                                                _shape="hypercube",
-                                                _usenames=true,
-                                                _dim=2,
-                                                _h=meshSize,
-                                                _xmin=-1,_xmax=1,
-                                                _ymin=-1,_ymax=1 ) );
+                                                      _shape="hypercube",
+                                                      _usenames=true,
+                                                      _dim=3,
+                                                      _h=meshSize,
+                                                      _xmin=-1,_xmax=1,
+                                                      _ymin=-1,_ymax=1,
+                                                      _zmin=-1,_zmax=1 ) );
 
     // Only one element in the mesh - TEMPORARLY
-    // mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-    //                                     _desc = one_element_mesh_desc_fun( 2 ) );
+    // mesh_ptrtype mesh = loadGMSHMesh( _mesh=new mesh_type,
+    //                                   _filename=one_element_mesh_desc_fun() );
 
-    //space_ptrtype Xh = space_type::New( mesh );
     auto RTh = Dh<0>( mesh );
     lagrange_space_v_ptrtype Yh_v = lagrange_space_v_type::New( mesh ); //lagrange vectorial space
     lagrange_space_s_ptrtype Yh_s = lagrange_space_s_type::New( mesh ); //lagrange scalar space
 
-    auto E = Py()*unitX() + Px()*unitY();
-    auto f = cst(0.); //div(E) = f
+    auto E = Px()*unitX() + Py()*unitY() + Pz()*unitZ(); //(x,y,z)
+    auto f = cst(3.); //div(E) = f
 
     // L2 projection (Lagrange)
     auto l2_lagV = opProjection( _domainSpace=Yh_v, _imageSpace=Yh_v, _type=L2 ); //l2 vectorial proj
@@ -511,12 +513,12 @@ TestHDiv::testProjector(gmsh_ptrtype ( *one_element_mesh_desc_fun )( double ))
     // H1 projection (Lagrange)
     auto h1_lagV = opProjection( _domainSpace=Yh_v, _imageSpace=Yh_v, _type=H1 ); //h1 vectorial proj
     auto h1_lagS = opProjection( _domainSpace=Yh_s, _imageSpace=Yh_s, _type=H1 ); //h1 scalar proj
-    auto E_pH1_lag = h1_lagV->project( _expr= trans(E), _grad_expr=mat<2,2>(cst(0.),cst(1.),cst(1.),cst(0.)) );
+    auto E_pH1_lag = h1_lagV->project( _expr= trans(E), _grad_expr=eye<3>() );
     auto error_pH1_lag = l2_lagS->project( _expr=divv(E_pH1_lag) - f );
 
     // H1 projection (RT)
     auto h1_rt = opProjection( _domainSpace=RTh, _imageSpace=RTh, _type=H1 ); //h1 vectorial proj
-    auto E_pH1_rt = h1_rt->project( _expr= trans(E), _grad_expr=mat<2,2>(cst(0.),cst(1.),cst(1.),cst(0.)) );
+    auto E_pH1_rt = h1_rt->project( _expr= trans(E), _grad_expr=eye<3>() );
     auto error_pH1_rt = l2_lagS->project( _expr=divv(E_pH1_rt) - f );
 
     // HDIV projection (Lagrange)
@@ -544,7 +546,7 @@ TestHDiv::testProjector(gmsh_ptrtype ( *one_element_mesh_desc_fun )( double ))
     BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pH1_rt, error_pH1_rt ) ), 1e-13 );
     BOOST_TEST_MESSAGE("HDIV projection [Lagrange]: error[div(E)-f]");
     std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pHDIV_lag, error_pHDIV_lag ) ) << "\n";
-    BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pHDIV_lag, error_pHDIV_lag ) ), 1e-13 );
+    BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pHDIV_lag, error_pHDIV_rt ) ), 1e-13 );
     BOOST_TEST_MESSAGE("HDIV projection [RT]: error[div(E)-f]");
     std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pHDIV_rt, error_pHDIV_rt ) ) << "\n";
     BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pHDIV_rt, error_pHDIV_rt ) ), 1e-13 );
@@ -566,17 +568,21 @@ TestHDiv::testProjector(gmsh_ptrtype ( *one_element_mesh_desc_fun )( double ))
     exporter_proj->save();
 }
 
+
 void
-TestHDiv::shape_functions( gmsh_ptrtype ( *one_element_mesh_desc_fun )( double ) )
+//TestHDiv3D::shape_functions( gmsh_ptrtype ( *one_element_mesh_desc_fun )(double) )
+TestHDiv3D::shape_functions( std::string ( *one_element_mesh_desc_fun )() )
 {
-    //    using namespace Feel::vf;
 
-    mesh_ptrtype oneelement_mesh = createGMSHMesh( _mesh=new mesh_type,
-                                   _desc = one_element_mesh_desc_fun( 2 ) );
+    auto mesh_name = one_element_mesh_desc_fun()+".msh"; //create the mesh and load it
+    mesh_ptrtype oneelement_mesh = loadGMSHMesh( _mesh=new mesh_type,
+                                                 _filename=mesh_name );
 
-    // then a fine mesh which we use to export the basis function to  visualize them
-    mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-                                        _desc=one_element_mesh_desc_fun( meshSize ) );
+    auto refine_level = std::floor(1 - math::log( meshSize )); //Deduce refine level from meshSize (option)
+    mesh_ptrtype mesh = loadGMSHMesh( _mesh=new mesh_type,
+                                      _filename=mesh_name ,
+                                      _refine=( int )refine_level );
+
 
     space_ptrtype Xh = space_type::New( oneelement_mesh );
     std::cout << "Family = " << Xh->basis()->familyName() << "\n"
@@ -595,7 +601,7 @@ TestHDiv::shape_functions( gmsh_ptrtype ( *one_element_mesh_desc_fun )( double )
     export_ptrtype exporter_shape( export_type::New( this->vm(),
                                    ( boost::format( "%1%-%2%-%3%" )
                                      % this->about().appName()
-                                     % one_element_mesh_desc_fun( 2 )->prefix()
+                                     % one_element_mesh_desc_fun()//->prefix()
                                      % shape_name ).str() ) );
 
     exporter_shape->step( 0 )->setMesh( mesh );
@@ -609,7 +615,7 @@ TestHDiv::shape_functions( gmsh_ptrtype ( *one_element_mesh_desc_fun )( double )
         u_vec[i] = U_ref;
 
         std::ostringstream ostr;
-        ostr <<  one_element_mesh_desc_fun( 2 )->prefix()<< "-" << Xh->basis()->familyName() << "-" << i;
+        ostr <<  one_element_mesh_desc_fun() << "-" << Xh->basis()->familyName() << "-" << i;
         exporter_shape->step( 0 )->add( ostr.str(), U_ref );
     }
 
@@ -617,10 +623,14 @@ TestHDiv::shape_functions( gmsh_ptrtype ( *one_element_mesh_desc_fun )( double )
 
     auto F = M_backend->newVector( Xh );
 
+    std::cout << "Xh->nLocalDof() = " << Xh->nLocalDof() << std::endl;
+    std::cout << "Xh->dof()... = " << Xh->dof()->nLocalDofWithGhost() << std::endl;
+
     int check_size = Xh->nLocalDof()*Xh->nLocalDof();
     std::vector<double> checkidv( check_size );
     std::vector<double> checkform1( check_size );
-    std::vector<std::string> faces = boost::assign::list_of( "hypo" )( "vert" )( "hor" );
+    // Faces have to be in the correct order
+    std::vector<std::string> faces = boost::assign::list_of( "xzFace" )( "xyFace" )( "xyzFace" )( "yzFace" );
 
     std::vector<double> checkStokesidv( 2*Xh->nLocalDof() );
     std::vector<double> checkStokesform1( 2*Xh->nLocalDof() );
@@ -688,7 +698,7 @@ TestHDiv::shape_functions( gmsh_ptrtype ( *one_element_mesh_desc_fun )( double )
         int faceid = 0;
         BOOST_FOREACH( std::string face, faces )
         {
-            BOOST_TEST_MESSAGE( " *** dof N_"<< i << " (associated with " << face << " face) *** \n"
+            BOOST_TEST_MESSAGE( " *** dof N_"<< i << " (associated with " << faces[i] << " face) *** \n"
                                 << "alpha_"<< faceid << "(N_"<<i<<") = " << checkidv[3*i+faceid] );
             ++faceid;
         }
@@ -705,7 +715,7 @@ TestHDiv::shape_functions( gmsh_ptrtype ( *one_element_mesh_desc_fun )( double )
         int faceid = 0;
         BOOST_FOREACH( std::string face, faces )
         {
-            BOOST_TEST_MESSAGE( " *** dof N_"<< i << " (associated with " << face << " edge) *** \n"
+            BOOST_TEST_MESSAGE( " *** dof N_"<< i << " (associated with " << faces[i] << " edge) *** \n"
                                 << "alpha_"<< faceid << "(N_"<<i<<") = " << checkform1[3*i+faceid] );
             ++faceid;
         }
@@ -742,38 +752,43 @@ TestHDiv::shape_functions( gmsh_ptrtype ( *one_element_mesh_desc_fun )( double )
 
 FEELPP_ENVIRONMENT_WITH_OPTIONS( Feel::makeAbout(), Feel::makeOptions() )
 
-BOOST_AUTO_TEST_SUITE( HDIV )
+BOOST_AUTO_TEST_SUITE( HDIV3D )
 
-BOOST_AUTO_TEST_CASE( test_hdiv_N0_ref )
+BOOST_AUTO_TEST_CASE( test_hdiv3D_N0_ref )
 {
     BOOST_TEST_MESSAGE( "*** shape functions on reference element (1 elt) ***" );
-    Feel::TestHDiv t;
+    Feel::TestHDiv3D t;
     t.shape_functions( &Feel::oneelement_geometry_ref );
 }
 BOOST_AUTO_TEST_CASE( test_hdiv_N0_real1 )
 {
     BOOST_TEST_MESSAGE( "*** shape functions on real element - homothetic transfo (1 elt) ***" );
-    Feel::TestHDiv t;
+    Feel::TestHDiv3D t;
     t.shape_functions( &Feel::oneelement_geometry_real_1 );
 }
 BOOST_AUTO_TEST_CASE( test_hdiv_N0_real2 )
 {
-    BOOST_TEST_MESSAGE( "*** shape functions on real element - rotation pi/2 (1 elt) ***" );
-    Feel::TestHDiv t;
+    BOOST_TEST_MESSAGE( "*** shape functions on real element - rotation pi/2 - x axis (1 elt) ***" );
+    Feel::TestHDiv3D t;
     t.shape_functions( &Feel::oneelement_geometry_real_2 );
 }
-
 BOOST_AUTO_TEST_CASE( test_hdiv_N0_real3 )
 {
-    BOOST_TEST_MESSAGE( "*** shape functions on real element - rotation -pi/2 (1 elt) ***" );
-    Feel::TestHDiv t;
+    BOOST_TEST_MESSAGE( "*** shape functions on real element - rotation pi/2 - y axis (1 elt) ***" );
+    Feel::TestHDiv3D t;
     t.shape_functions( &Feel::oneelement_geometry_real_3 );
+}
+BOOST_AUTO_TEST_CASE( test_hdiv_N0_real4 )
+{
+    BOOST_TEST_MESSAGE( "*** shape functions on real element - rotation pi/2 - z axis (1 elt) ***" );
+    Feel::TestHDiv3D t;
+    t.shape_functions( &Feel::oneelement_geometry_real_4 );
 }
 
 BOOST_AUTO_TEST_CASE( test_hdiv_projection_ref )
 {
-    BOOST_TEST_MESSAGE( "*** projection on square ***" );
-    Feel::TestHDiv t;
+    BOOST_TEST_MESSAGE( "*** projection on cube ***" );
+    Feel::TestHDiv3D t;
     Feel::Environment::changeRepository( boost::format( "/%1%/test_projection/" )
                                          % Feel::Environment::about().appName() );
     t.testProjector(&Feel::oneelement_geometry_ref);
@@ -782,7 +797,7 @@ BOOST_AUTO_TEST_CASE( test_hdiv_projection_ref )
 BOOST_AUTO_TEST_CASE( test_hdiv_example_1 )
 {
     BOOST_TEST_MESSAGE( "*** resolution of Darcy problem ***" );
-    Feel::TestHDiv t;
+    Feel::TestHDiv3D t;
 
     Feel::Environment::changeRepository( boost::format( "/%1%/test_Darcy/h_%2%/" )
                                          % Feel::Environment::about().appName()
@@ -799,8 +814,8 @@ main( int argc, char* argv[] )
 {
     Feel::Environment env( argc,argv,
                            makeAbout(), makeOptions() );
-    Feel::TestHDiv app_hdiv;
-    //app_hdiv.shape_functions();
+    Feel::TestHDiv3D app_hdiv;
+    app_hdiv.shape_functions();
     //app_hdiv.exampleProblem1();
 }
 

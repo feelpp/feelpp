@@ -973,7 +973,8 @@ HTML_EXTRA_STYLESHEET  =
 # files. In the HTML_STYLESHEET file, use the file name only. Also note that
 # the files will be copied as-is; there are no commands or markers available.
 
-HTML_EXTRA_FILES       =
+HTML_EXTRA_FILES       = "@CMAKE_CURRENT_SOURCE_DIR@/eigen_navtree_hacks.js"
+#HTML_EXTRA_FILES       = 
 
 # The HTML_COLORSTYLE_HUE tag controls the color of the HTML output.
 # Doxygen will adjust the colors in the style sheet and background images
@@ -1254,12 +1255,12 @@ MATHJAX_FORMAT         = HTML-CSS
 # However, it is strongly recommended to install a local
 # copy of MathJax from http://www.mathjax.org before deployment.
 
-MATHJAX_RELPATH        = http://cdn.mathjax.org/mathjax/latest
+MATHJAX_RELPATH        = http://vivabrain.u-strasbg.fr/mathjax/latest
 
 # The MATHJAX_EXTENSIONS tag can be used to specify one or MathJax extension
 # names that should be enabled during MathJax rendering.
 
-MATHJAX_EXTENSIONS     = AMSmath AMSsymbols AMSfonts AMSsymb autobold bbold
+MATHJAX_EXTENSIONS     = TeX/AMSmath TeX/AMSsymbols TeX/autobold TeX/feelppmacros
 
 # When the SEARCHENGINE tag is enabled doxygen will generate a search box
 # for the HTML output. The underlying search engine uses javascript
