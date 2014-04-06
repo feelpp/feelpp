@@ -39,37 +39,37 @@ int main(int argc, char**argv )
     //! [mesh]
 
     //! [expr]
-    auto g = expr(soption(_name="functions.g"),"g");
+    auto g = expr(soption(_name="functions.g"));
     std::cout << "g=" << g << std::endl;
 
 
-    auto f = expr<2,1>(soption(_name="functions.f"),"f");
+    auto f = expr<2,1>(soption(_name="functions.f"));
     std::cout << "f=" << f << std::endl;
     //! [expr]
 
     //! [grad]
-    auto grad_g=grad<2>(g,"grad_g");
-    auto grad_f=grad<2,2>(f,"grad_f");
+    auto grad_g=grad<2>(g);
+    auto grad_f=grad<2,2>(f);
     std::cout << "grad(g)=" << grad_g << std::endl;
     std::cout << "grad(f)=" << grad_f << std::endl;
     //! [grad]
 
     //! [laplacian]
-    auto laplacian_g=laplacian(g,"laplacian_g");
+    auto laplacian_g=laplacian(g);
     std::cout << "laplacian(g)=" << laplacian_g << std::endl;
 
-    auto laplacian_f=laplacian(f,"laplacian_f");
+    auto laplacian_f=laplacian(f);
     std::cout << "laplacian(f)=" << laplacian_f << std::endl;
 
     //! [laplacian]
 
     //! [div]
-    auto div_f=div<2>(f,"div_f");
+    auto div_f=div<2>(f);
     std::cout << "div(f)=" << div_f << std::endl;
     //! [div]
 
     //! [curl]
-    auto curl_f=curl<2>(f,"curl_f");
+    auto curl_f=curl<2>(f);
     std::cout << "curl(f)=" << curl_f << std::endl;
     //! [curl]
 

@@ -98,8 +98,10 @@ time. The commands to install \feel on Ubuntu are
   sudo apt-get update
   sudo apt-get install feel++-apps libfeel-dev feel++-doc
 \endverbatim
-The interested user might want to follow the Ubuntu Launchpad \feel page in
-order to know what is going on with \feel on Ubuntu
+
+The interested user might want to look at the following Ubuntu Launchpad \feel pages
+
+\li Feel++ <a href="https://launchpad.net/~feelpp/+archive/ppa">feelpp ppa for Trusty, Saucy and Precise</a>
 \li Feel++ <a href="https://launchpad.net/ubuntu/+source/feel++">Ubuntu Source
   Page for all Ubuntu versions</a>
 
@@ -174,7 +176,7 @@ You can browse \feel dependencies using the following command:
 brew deps feelpp
 \endverbatim
 
-If you want to customize the compilation process for a dependency (Set debug mode, Remove checking steps, Remove the link with certain libraries, etc.), 
+If you want to customize the compilation process for a dependency (Set debug mode, Remove checking steps, Remove the link with certain libraries, etc.),
 you can access to the building options with the <tt>info</tt> flag. For exemple, with open-mpi:
 \verbatim
 user@server: brew info open-mpi
@@ -197,7 +199,7 @@ Required: libevent
 \endverbatim
 
 You then just have to pass the needed flags, when installing the dependency.<br />
-When you install feelpp with <tt>brew install feelpp</tt>, the default flags for each dependency will be used. 
+When you install feelpp with <tt>brew install feelpp</tt>, the default flags for each dependency will be used.
 If you require specific flags, first install the dependency with the correct flags before installing \feel.
 
 <a href="#" class="top">top</a>
