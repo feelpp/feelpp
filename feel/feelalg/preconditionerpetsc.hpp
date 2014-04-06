@@ -86,6 +86,11 @@ public:
      */
     virtual void init ();
 
+    /**
+     * View preconditioner context
+     */
+    virtual void view() const;
+
     //@}
 
     /** @name Operator overloads
@@ -169,24 +174,9 @@ public:
      */
     Mat M_mat;
 
-    static void setPetscSubpreconditionerType( PC& pc,
-                                               indexsplit_ptrtype const& is,
-                                               WorldComm const& worldComm=Environment::worldComm(),
-                                               std::string const& prefix="" );
-
-    static void setPetscFieldSplitPreconditionerType( PC& pc,
-                                                      indexsplit_ptrtype const& is,
-                                                      WorldComm const& worldComm=Environment::worldComm(),
-                                                      std::string const& prefix="" );
-
-    static void setPetscLSCPreconditionerType( PC& pc,
-                                               indexsplit_ptrtype const& is,
-                                               WorldComm const& worldComm=Environment::worldComm(),
-                                               std::string const& prefix="" );
-
 
 protected:
-    void check( int err ) { CHKERRABORT( this->worldComm().globalComm(), err ); }
+    void check( int err ) const { CHKERRABORT( this->worldComm().globalComm(), err ); }
 private:
     /**
      * Some PETSc preconditioners (ILU, LU) don't work in parallel.  This function
@@ -222,7 +212,7 @@ public :
     std::string const& prefix() const { return M_prefix; }
     std::string const& sub() const { return M_sub; }
 
-    void check( int err ) { CHKERRABORT( this->worldComm().globalComm(), err ); }
+    void check( int err ) const { CHKERRABORT( this->worldComm().globalComm(), err ); }
 
 private :
 
@@ -231,6 +221,9 @@ private :
 };
 
 
+/**
+ * ConfigureKSP
+ */
 struct ConfigureKSP : public ConfigurePCBase
 {
 public :
@@ -251,6 +244,92 @@ private :
 
 
 /**
+ * ConfigurePC
+ */
+class ConfigurePC : public ConfigurePCBase
+{
+public :
+    ConfigurePC( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+                 WorldComm const& worldComm, std::string const& sub = "", std::string const& prefix = "" );
+};
+
+/**
+ * ConfigurePCLU
+ */
+class ConfigurePCLU : public ConfigurePCBase
+{
+public :
+    ConfigurePCLU( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+                   WorldComm const& worldComm, std::string const& sub, std::string const& prefix );
+private :
+    std::string M_matSolverPackage;
+private :
+    void runConfigurePCLU( PC& pc );
+};
+
+/**
+ * ConfigurePCILU
+ */
+class ConfigurePCILU : public ConfigurePCBase
+{
+public :
+    ConfigurePCILU( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+                    WorldComm const& worldComm, std::string const& sub, std::string const& prefix );
+private :
+    int M_levels;
+    double M_fill;
+private :
+    void runConfigurePCILU( PC& pc );
+};
+
+/**
+ * ConfigureGASM
+ */
+class ConfigurePCGASM : public ConfigurePCBase
+{
+public :
+    ConfigurePCGASM( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+                     WorldComm const& worldComm, std::string const& prefix );
+private :
+    std::string M_type;
+    int M_overlap;
+private :
+    void runConfigurePCGASM( PC& pc,PreconditionerPetsc<double>::indexsplit_ptrtype const& is );
+};
+
+/**
+ * ConfigureASM
+ */
+class ConfigurePCASM : public ConfigurePCBase
+{
+public :
+    ConfigurePCASM( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+                     WorldComm const& worldComm, std::string const& prefix );
+private :
+    std::string M_type;
+    int M_overlap;
+private :
+    void runConfigurePCASM( PC& pc,PreconditionerPetsc<double>::indexsplit_ptrtype const& is );
+};
+
+/**
+ * ConfigureSubPC
+ */
+class ConfigureSubPC : public ConfigurePCBase
+{
+public :
+    ConfigureSubPC( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+                    WorldComm const& worldComm, std::string const& prefix );
+private :
+    std::string M_subPCtype;
+    bool M_subPCview;
+    std::string M_subPCfromPCtype;
+    int M_nBlock;
+private :
+    void runConfigureSubPC( KSP& ksp,PreconditionerPetsc<double>::indexsplit_ptrtype const& is );
+};
+
+/**
  * ConfigurePCML
  */
 class ConfigurePCML : public ConfigurePCBase
@@ -269,7 +348,7 @@ private :
     bool M_mlReuseInterp, M_mlKeepAggInfo, M_mlReusable, M_mlOldHierarchy;
 
     std::string M_prefixMGCoarse;
-    std::string M_coarsePCtype;//, M_coarseKSPtype;
+    std::string M_coarsePCtype;
     bool M_coarsePCview;
 };
 
@@ -294,7 +373,7 @@ private :
     double M_threshold;
 
     std::string M_prefixMGCoarse;
-    std::string M_coarsePCtype;//, M_coarseKSPtype;
+    std::string M_coarsePCtype;
     bool M_coarsePCview;
 };
 
@@ -315,22 +394,65 @@ private :
 
     // get number of levels (including coarse)
     int M_nLevels;
-    // ksp parameters on each levels (not including coarse)
-    //std::vector<double> M_levelksprtol;
-    //std::vector<size_type> M_levelkspmaxit;
-    //std::vector<bool> M_levelksponitor;
-    //std::vector<std::string> M_mgLevelsKSPtype;
+    // ksp/pc parameters on each levels (not including coarse)
     std::vector<bool> M_mgLevelsKSPview;
     std::vector<std::string> M_mgLevelsPCtype;
     std::vector<bool> M_mgLevelsPCview;
 
 };
 
+/**
+ * ConfigurePCFieldSplit
+ */
+class ConfigurePCFieldSplit : public ConfigurePCBase
+{
+public :
+    ConfigurePCFieldSplit( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+                           WorldComm const& worldComm, std::string const& sub, std::string const& prefix );
+
+private :
+    void runConfigurePCFieldSplit( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is );
 
 
-void
-configurePC( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
-             WorldComm const& worldComm, std::string const& sub = "", std::string const& prefix = "" );
+    class ConfigureSubKSP : public ConfigurePCBase
+    {
+    public :
+        ConfigureSubKSP( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+                         WorldComm const& worldComm, std::string const& sub, std::string const& prefix );
+    private :
+        void runConfigureSubKSP(KSP& ksp, PreconditionerPetsc<double>::indexsplit_ptrtype const& is, int splitId );
+    private :
+        int M_nSplit;
+        std::vector<std::string> M_prefixSplit;
+        std::vector<bool> M_subPCview;
+        std::vector<std::string> M_subPCtype;
+    };
+
+private :
+    std::string M_type;
+    std::string M_schurFactType, M_schurPrecond;
+};
+
+/**
+ * ConfigurePCLSC
+ */
+class ConfigurePCLSC : public ConfigurePCBase
+{
+public :
+    ConfigurePCLSC( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+                    WorldComm const& worldComm, std::string const& sub, std::string const& prefix );
+
+private :
+    void runConfigurePCLSC( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is );
+
+private :
+    std::string M_prefixLSC;
+    std::string M_subPCtype;
+    bool M_subPCview;
+
+};
+
+
 
 
 
