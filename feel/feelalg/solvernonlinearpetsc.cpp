@@ -580,6 +580,7 @@ void SolverNonLinearPetsc<T>::init ()
             //Re-Use the shell functions from petsc_linear_solver
             PCShellSetSetUp( M_pc,__feel_petsc_preconditioner_setup );
             PCShellSetApply( M_pc,__feel_petsc_preconditioner_apply );
+            PCShellSetView( M_pc,__feel_petsc_preconditioner_view );
         }
         else
         {
