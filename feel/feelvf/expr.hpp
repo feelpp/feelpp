@@ -445,7 +445,7 @@ public:
         :
         M_expr( __expr )
     {}
-    ~Expr()
+    virtual ~Expr()
     {}
 
     //@}

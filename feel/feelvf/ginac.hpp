@@ -557,7 +557,7 @@ div( Expr<GinacMatrix<1,M,Order>> const& s, std::string filename="" )
 template<int M,int N,int Order=2>
 inline
 Expr<GinacMatrix<M,1,Order> >
-div( Expr<GinacMatrix<M,1,Order>> const& s, std::string filename="" )
+div( Expr<GinacMatrix<M,M,Order>> const& s, std::string filename="" )
 {
     return expr<M,1,Order>( GiNaC::div(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), filename );
 }
