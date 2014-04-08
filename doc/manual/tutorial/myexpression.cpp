@@ -49,7 +49,7 @@ int main(int argc, char**argv )
 
     //! [grad]
     auto grad_g=grad<2>(g);
-    auto grad_f=grad<2,2>(f);
+    auto grad_f=grad(f);
     std::cout << "grad(g)=" << grad_g << std::endl;
     std::cout << "grad(f)=" << grad_f << std::endl;
     //! [grad]
@@ -64,12 +64,12 @@ int main(int argc, char**argv )
     //! [laplacian]
 
     //! [div]
-    auto div_f=div<2>(f);
+    auto div_f=div(f);
     std::cout << "div(f)=" << div_f << std::endl;
     //! [div]
 
     //! [curl]
-    auto curl_f=curl<2>(f);
+    auto curl_f=curl(f);
     std::cout << "curl(f)=" << curl_f << std::endl;
     //! [curl]
 
