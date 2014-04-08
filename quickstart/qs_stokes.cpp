@@ -69,7 +69,7 @@ int main(int argc, char**argv )
           _expr=zero<2>() ) ;
     a+=on(_range=markedfaces(mesh,"inlet"), _rhs=l, _element=u,
           _expr=g );
-    a.matrixPtr()->printMatlab("A.m");
+
     a.solve(_rhs=l,_solution=U);
 
     auto e = exporter( _mesh=mesh );
