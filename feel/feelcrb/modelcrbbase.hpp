@@ -922,11 +922,14 @@ public :
                     _v.resize(N);
                     for(; it!=j; ++it)
                     {
-                        std::string s = it->str();
-                        auto value = std::atof(s.c_str());
-                        if(value != std::numeric_limits<double>::min())
+                        if( (*it)[0].matched )
                         {
-                            _v[i]=value;
+                            std::string s = it->str();
+                            auto value = std::atof(s.c_str());
+                            if(value != std::numeric_limits<double>::min())
+                            {
+                                _v[i]=value;
+                            }
                         }
                         else
                             throw std::logic_error( "[ModelCrbBase::fillVectorFromFile] ERROR : Cannot read value" );
