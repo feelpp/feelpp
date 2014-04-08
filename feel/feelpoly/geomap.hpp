@@ -404,9 +404,9 @@ void transform( matrix_node_t_type const& G,
                 precompute_type const* pc,
                 matrix_type & x ) const
 {
-        Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::ColMajor>> P( G.data(), G.rows(), G.cols() );
-        Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::ColMajor>> Phi( pc->phi().data(), pc->phi().rows(), pc->phi().cols() );
-        Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::ColMajor>> X( x.data(), x.size() );
+        Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>> P( G.data(), G.rows(), G.cols() );
+        Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>> Phi( pc->phi().data(), pc->phi().rows(), pc->phi().cols() );
+        Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>> X( x.data(), x.size() );
         X  = P*Phi;
     //ublas::axpy_prod( G, pc->phi(), x, true );
 }
@@ -1642,7 +1642,7 @@ permutation_type permutation( mpl::bool_<true> ) const
 
 void updateJKBN( mpl::bool_<true>, mpl::true_  )
 {
-        Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::ColMajor>> P( M_G.data().begin(), M_G.size1(), M_G.size2() );
+        Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>> P( M_G.data().begin(), M_G.size1(), M_G.size2() );
         Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>> GradPhi( M_g_linear.data().begin(), M_g_linear.size1(), M_g_linear.size2() );
         Eigen::Map<Eigen::Matrix<value_type,NDim,PDim,((PDim==1)?Eigen::ColMajor:Eigen::RowMajor)>> MK( M_K.data().begin(), M_K.size1(), M_K.size2() );
         Eigen::Map<Eigen::Matrix<value_type,PDim,PDim,((NDim==1)?Eigen::ColMajor:Eigen::RowMajor)>> MCS( M_CS.data().begin(), M_CS.size1(), M_CS.size2() );
