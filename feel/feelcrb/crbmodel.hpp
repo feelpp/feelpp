@@ -157,6 +157,12 @@ public:
                                    std::vector<vector_ptrtype>
                                    > monolithic_type;
 
+    typedef typename boost::tuple< std::map<int,double>,
+                                   std::map<int,double>,
+                                   std::vector< std::map<int,double> >
+                                   > eim_interpolation_error_type ;
+
+
 
     typedef typename model_type::affine_decomposition_light_type affine_decomposition_light_type;
     typedef typename model_type::betaq_type betaq_type;
@@ -1221,6 +1227,52 @@ public:
         return boost::make_tuple( M_monoM, M_monoA, M_monoF );
     }
 
+
+    /*
+     * return true if the model use EIM and need to comute associated error
+     * usefull to the CRB error estimation
+     */
+    bool hasEimError()
+    {
+        auto all_errors = eimInterpolationErrorEstimation();
+        auto errorsM = all_errors.template get<0>();
+        auto errorsA = all_errors.template get<1>();
+        auto errorsF = all_errors.template get<2>();
+        int sizeM = errorsM.size();
+        int sizeA = errorsA.size();
+        int sizeF = errorsF.size();
+        bool b=false;
+        if( sizeM > 0 || sizeA > 0 || sizeF > 0 )
+        {
+            b=true;
+        }
+        return b;
+    }
+
+
+    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu )
+    {
+        return eimInterpolationErrorEstimation( mu, mpl::bool_<model_type::is_time_dependent>() );
+    }
+    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , mpl::bool_<true> )
+    {
+        return M_model->eimInterpolationErrorEstimation( mu );
+    }
+    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , mpl::bool_<false> )
+    {
+        std::map< int, double > errorsM;
+        std::map< int, double > errorsA;
+        std::vector< std::map< int, double > > errorsF;
+        boost::tie(  errorsA , errorsF ) = M_model->eimInterpolationErrorEstimation( mu );
+        return boost::make_tuple( errorsM, errorsA, errorsF );
+    }
+    eim_interpolation_error_type eimInterpolationErrorEstimation()
+    {
+        auto Dmu = M_model->parameterSpace();
+        auto muref = Dmu->min();
+        return eimInterpolationErrorEstimation( muref );
+    }
+
     /**
      * \brief Compute the affine decomposition of the various forms
      *
@@ -2253,7 +2305,6 @@ private:
     sparse_matrix_ptrtype M_inner_product_matrix;
 
     bdf_ptrtype M_bdf;
-
 };
 
 
