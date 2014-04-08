@@ -27,12 +27,12 @@ int main(int argc, char**argv )
 {
     //# marker1 #
     using namespace Feel;
-	po::options_description laplacianoptions( "Laplacian options" );
-	laplacianoptions.add_options()
+	po::options_description stokesoptions( "Stokes options" );
+	stokesoptions.add_options()
 		( "mu", po::value<double>()->default_value( 1.0 ), "coeff" )
 		;
 	Environment env( _argc=argc, _argv=argv,
-                     _desc=laplacianoptions.add(feel_options()),
+                     _desc=stokesoptions,
                      _about=about(_name="qs_stokes",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
@@ -46,17 +46,18 @@ int main(int argc, char**argv )
 
     auto mesh = R.createMesh(_mesh=new Mesh<Simplex<2>>,_name="qs_stokes");
 
+    auto g = expr<2,1>( soption(_name="functions.g") );
     auto Vh = THch<1>( mesh );
     auto U = Vh->element();
     auto V = Vh->element();
     auto u = U.element<0>();
-    auto v = V.element<0>();
+    auto v = V.element<0>(g,"poiseuille");
     auto p = U.element<1>();
     auto q = V.element<1>();
 
     auto deft = gradt( u );
     auto def = grad( v );
-    double mu = option(_name="mu").as<double>();
+    double mu = doption(_name="mu");
 
     auto l = form1( _test=Vh );
 
@@ -65,14 +66,15 @@ int main(int argc, char**argv )
     a +=integrate( _range=elements( mesh ), _expr=-div( v )*idt( p ) + divt( u )*id( q ) );
 
     a+=on(_range=markedfaces(mesh,"wall"), _rhs=l, _element=u,
-          _expr=0*one() );
+          _expr=zero<2>() ) ;
     a+=on(_range=markedfaces(mesh,"inlet"), _rhs=l, _element=u,
-          _expr=-expr( option(_name="functions.g").as<std::string>() )*N() );
-
+          _expr=g );
+    a.matrixPtr()->printMatlab("A.m");
     a.solve(_rhs=l,_solution=U);
 
     auto e = exporter( _mesh=mesh );
     e->add( "u", u );
+    e->add( "v", v );
     e->add( "p", p );
     e->save();
 
