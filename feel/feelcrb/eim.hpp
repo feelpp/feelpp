@@ -321,7 +321,7 @@ public:
     vector_type beta( parameter_type const& mu, solution_type const& T, size_type M  ) const {return M_model->beta( mu , T , M ); }
 
     void studyConvergence( parameter_type const & mu, solution_type & solution , std::vector< std::string > all_file_name ) const;
-    element_type elementErrorEstimation( parameter_type const & mu, solution_type const& solution , int M ) const ;
+    boost::tuple<double,element_type> interpolationErrorEstimation( parameter_type const & mu, solution_type const& solution , int M ) const ;
     double errorEstimationLinf( parameter_type const & mu, solution_type const& solution , int M ) const ;
 
     void computationalTimeStatistics( std::string appname )  { return M_model->computationalTimeStatistics(); }
@@ -408,8 +408,8 @@ public:
 };
 
 template <typename ModelType>
-typename EIM<ModelType>::element_type
-EIM<ModelType>::elementErrorEstimation( parameter_type const & mu, solution_type const& solution , int M ) const
+typename boost::tuple< double, typename EIM<ModelType>::element_type >
+EIM<ModelType>::interpolationErrorEstimation( parameter_type const & mu, solution_type const& solution , int M ) const
 {
     double max = M_model->mMax();
     CHECK( M <= max ) << "Invalid number M for errorEstimation: " << M << " Mmax : " << max << "\n";
@@ -424,8 +424,9 @@ EIM<ModelType>::elementErrorEstimation( parameter_type const & mu, solution_type
     double coeff = math::abs( projected_expression - eim );
     auto result = M_model->q( M );
     result.scale( coeff );
-    return result;
+    return boost::make_tuple(coeff,result);
 }
+
 
 template <typename ModelType>
 double
@@ -893,7 +894,8 @@ EIM<ModelType>::studyConvergence( parameter_type const & mu , solution_type & so
             //interpolation error : || projection_g - g ||_L2
             interpolation_error = M_model->interpolationError( solution , mu );
             absolute_linf_error_estimated = this->errorEstimationLinf( mu , solution, N );
-            auto error_estimation_element = this->elementErrorEstimation( mu , solution, N );
+            auto tuple = this->interpolationErrorEstimation( mu , solution, N );
+            auto error_estimation_element = tuple.template get<1>();
             absolute_l2_error_estimated = error_estimation_element.l2Norm();
             relative_l2_error_estimated = absolute_l2_error_estimated/exprl2norm;
             relative_ratio_l2 = math::abs( relative_l2_error_estimated / relative_l2_error );
@@ -1094,9 +1096,10 @@ public:
     virtual vector_type  beta( parameter_type const& mu, solution_type const& T ) const = 0;
     virtual vector_type  beta( parameter_type const& mu , size_type M )  = 0;
     virtual vector_type  beta( parameter_type const& mu, solution_type const& T , size_type M)  = 0;
+    virtual size_type  mMax(bool & error) const = 0;
     virtual size_type  mMax() const = 0;
 
-    virtual element_type elementErrorEstimation ( parameter_type const& mu, solution_type const& solution , int M) const = 0;
+    virtual boost::tuple<double,element_type> interpolationErrorEstimation ( parameter_type const& mu, solution_type const& solution , int M) const = 0;
     virtual double errorEstimationLinf( parameter_type const & mu, solution_type const& solution , int M ) const=0 ;
     virtual node_type interpolationPoint( int position ) const = 0;
 
@@ -2017,21 +2020,49 @@ public:
     vector_type  beta( parameter_type const& mu, solution_type const& T ) const { return M_eim->beta( mu, T ); }
 
     void studyConvergence( parameter_type const & mu , solution_type & solution, std::vector< std::string > all_file_name ) const { return M_eim->studyConvergence( mu , solution , all_file_name ) ; }
-    element_type elementErrorEstimation( parameter_type const & mu , solution_type const& solution, int M ) const { return M_eim->elementErrorEstimation(mu , solution, M) ; }
+    boost::tuple<double,element_type> interpolationErrorEstimation( parameter_type const & mu , solution_type const& solution, int M ) const { return M_eim->interpolationErrorEstimation(mu , solution, M) ; }
     double errorEstimationLinf( parameter_type const & mu, solution_type const& solution , int M ) const { return M_eim->errorEstimationLinf(mu, solution, M) ; }
     //size_type mMax() const { return M_eim->mMax(); }
+    size_type mMax( bool & error) const
+    {
+        int max=0;
+        int user_max = option(_name="eim.dimension-max").template as<int>();
+        int built = M_max_q;
+        //if the user wants to enrich the database we return M_M_max or
+        //if the eim expansion contains less terms that expected by the user then there is no error.
+        //But if there is already enough basis functions then we return M_M_max-1
+        //to deal with error estimation
+        if( (user_max+1) > M_max_q )
+        {
+            max = M_M_max;
+            //in that case if the eim expansion is finished there is no error associated
+            //or if the user wants to enrich the DB it is to soon to known if it will be error
+            error=false;
+        }
+        else
+        {
+            max = M_M_max-1;
+            error=true;
+        }
+        return max;
+    }
     size_type mMax() const
     {
         int max=0;
         int user_max = option(_name="eim.dimension-max").template as<int>();
         int built = M_max_q;
-        //if the user wants to enrich the database we return M_M_max
-        //but if there is already enough basis functions then we return M_M_max-1
+        //if the user wants to enrich the database we return M_M_max or
+        //if the eim expansion contains less terms that expected by the user then there is no error.
+        //But if there is already enough basis functions then we return M_M_max-1
         //to deal with error estimation
         if( (user_max+1) > M_max_q )
+        {
             max = M_M_max;
+        }
         else
+        {
             max = M_M_max-1;
+        }
         return max;
     }
 

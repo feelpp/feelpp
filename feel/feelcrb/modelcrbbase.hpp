@@ -175,6 +175,15 @@ public :
 
     typedef typename mpl::if_< mpl::bool_< is_time_dependent >,
                                boost::tuple<
+                                   std::map<int,double>, std::map<int,double>, std::vector< std::map<int,double> >
+                                   >,
+                               boost::tuple<
+                                   std::map<int,double>, std::vector< std::map<int,double> >
+                                   >
+                               >::type eim_interpolation_error_type;
+
+    typedef typename mpl::if_< mpl::bool_< is_time_dependent >,
+                               boost::tuple<
                                    beta_vector_type,
                                    beta_vector_type,
                                    std::vector<beta_vector_type>
@@ -299,6 +308,19 @@ public :
     }
 
     virtual void initModel() = 0;
+
+    virtual eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu )
+    {
+        return eimInterpolationErrorEstimation( mu, mpl::bool_<is_time_dependent>() );
+    }
+    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , mpl::bool_<true> )
+    {
+        return boost::make_tuple( M_eim_error_mq , M_eim_error_aq, M_eim_error_fq);
+    }
+    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , mpl::bool_<false> )
+    {
+        return boost::make_tuple( M_eim_error_aq, M_eim_error_fq);
+    }
 
     /*
      * the user has to provide the affine decomposition
@@ -1159,6 +1181,10 @@ protected :
     lhs_light_type M_mass;
     rhs_light_type M_rhs;
     rhs_light_type M_output;
+
+    std::map<int,double> M_eim_error_mq;
+    std::map<int,double> M_eim_error_aq;
+    std::vector< std::map<int,double> > M_eim_error_fq;
 };
 
 }//Feel
