@@ -957,8 +957,8 @@ MatrixPetsc<T>::createSubmatrix( MatrixSparse<T>& submatrix,
                                  const std::vector<size_type>& rows,
                                  const std::vector<size_type>& cols ) const
 {
-    //auto sub_graph = GraphCSR(rows.size()*cols.size(),0,rows.size()-1,0,cols.size()-1,this->comm());
-    auto sub_graph = graph_ptrtype(new graph_type(rows.size()*cols.size(),0,rows.size(),0,cols.size(),this->comm()));
+
+    auto sub_graph = graph_ptrtype(new graph_type(0,0,rows.size(),0,cols.size(),this->comm()));
 
     MatrixPetsc<T>* A = dynamic_cast<MatrixPetsc<T>*> ( &submatrix );
     A->setGraph( sub_graph );

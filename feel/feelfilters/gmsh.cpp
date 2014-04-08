@@ -727,7 +727,7 @@ Gmsh::preamble() const
         {
 ostr << "// partitioning data\n"
          << "Mesh.Partitioner=" << M_partitioner << ";\n"
-         << "Mesh.NbPartitions=" << M_partitions << ";\n"
+         << "Mesh.NbPartitions=" << this->worldComm().globalSize() << ";\n"
          << "Mesh.MshFilePartitioned=" << M_partition_file << ";\n";
         }
         //ostr << "Mesh.Optimize=1;\n"
