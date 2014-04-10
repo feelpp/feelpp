@@ -179,7 +179,7 @@ static void PCMLSetOldHierarchy( PC pc, PetscBool OldHierarchy )
 
 #endif // PETSC_HAVE_ML
 
-#if defined(PETSC_HAVE_HYPRE)
+#if defined(PETSC_HAVE_HYPRE) && (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 3)
 
 #include <HYPRE_struct_mv.h>
 #include <HYPRE_struct_ls.h>
@@ -462,7 +462,7 @@ SetPCType( PC& pc, const PreconditionerType & preconditioner_type, const MatSolv
             ierr = PCSetType ( pc, ( char* ) PCILU );
             CHKERRABORT( worldComm.globalComm(),ierr );
         }
-#if defined(PETSC_HAVE_HYPRE) //#ifdef FEELPP_HAS_PETSC_HYPRE
+#if defined(PETSC_HAVE_HYPRE)  && (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 3) //#ifdef FEELPP_HAS_PETSC_HYPRE
         else if ( matSolverPackage_type == MATSOLVER_EUCLID )
         {
             ierr = PCSetType( pc,( char* ) PCHYPRE );
@@ -480,7 +480,7 @@ SetPCType( PC& pc, const PreconditionerType & preconditioner_type, const MatSolv
 #endif
         else
         {
-#if defined(PETSC_HAVE_HYPRE) //#ifdef FEELPP_HAS_PETSC_HYPRE
+#if defined(PETSC_HAVE_HYPRE)  && (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 3) //#ifdef FEELPP_HAS_PETSC_HYPRE
             ierr = PCSetType( pc,( char* ) PCHYPRE );
             CHKERRABORT( worldComm.globalComm(),ierr );
             ierr = PCHYPRESetType( pc, "euclid" );
@@ -602,7 +602,7 @@ SetPCType( PC& pc, const PreconditionerType & preconditioner_type, const MatSolv
         break;
 
     case BOOMERAMG_PRECOND:
-#if defined(PETSC_HAVE_HYPRE) // #ifdef FEELPP_HAS_PETSC_HYPRE
+#if defined(PETSC_HAVE_HYPRE) && (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 3) // #ifdef FEELPP_HAS_PETSC_HYPRE
         ierr = PCSetType( pc,( char* ) PCHYPRE );
         CHKERRABORT( worldComm.globalComm(),ierr );
         ierr = PCHYPRESetType( pc, "boomeramg" );
@@ -732,7 +732,7 @@ ConfigurePC::run( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const&
     }
     else if ( std::string(pctype) == "hypre" )
     {
-#if defined(PETSC_HAVE_HYPRE)
+#if defined(PETSC_HAVE_HYPRE)  && (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 3)
         const char* hypretype;
         this->check( PCHYPREGetType( pc, &hypretype ) );
         if ( std::string( hypretype ) == "euclid" )
@@ -884,7 +884,7 @@ ConfigurePCHYPRE_EUCLID::ConfigurePCHYPRE_EUCLID( PC& pc,
 void
 ConfigurePCHYPRE_EUCLID::runConfigurePCHYPRE_EUCLID( PC& pc )
 {
-#if defined(PETSC_HAVE_HYPRE)
+#if defined(PETSC_HAVE_HYPRE) && (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 3)
     PCHYPRE_EUCLIDSetLevels( pc, M_levels );
 #endif
 }
