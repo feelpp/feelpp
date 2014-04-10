@@ -712,6 +712,11 @@ SolverLinearPetsc<T>::setPetscSolverType()
         CHKERRABORT( this->worldComm().globalComm(),ierr );
         return;
 
+    case FGMRES:
+        ierr = KSPSetType ( M_ksp, ( char* ) KSPFGMRES );
+        CHKERRABORT( this->worldComm().globalComm(),ierr );
+        return;
+
     case RICHARDSON:
         ierr = KSPSetType ( M_ksp, ( char* ) KSPRICHARDSON );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
