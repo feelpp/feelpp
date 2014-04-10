@@ -884,7 +884,9 @@ ConfigurePCHYPRE_EUCLID::ConfigurePCHYPRE_EUCLID( PC& pc,
 void
 ConfigurePCHYPRE_EUCLID::runConfigurePCHYPRE_EUCLID( PC& pc )
 {
+#if defined(PETSC_HAVE_HYPRE)
     PCHYPRE_EUCLIDSetLevels( pc, M_levels );
+#endif
 }
 
 
