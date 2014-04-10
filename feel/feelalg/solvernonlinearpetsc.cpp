@@ -1104,6 +1104,11 @@ SolverNonLinearPetsc<T>::setPetscKspSolverType()
         CHKERRABORT( this->comm(),ierr );
         return;
 
+    case FGMRES:
+        ierr = KSPSetType ( M_ksp, ( char* ) KSPFGMRES );
+        CHKERRABORT( this->worldComm().globalComm(),ierr );
+        return;
+
     case RICHARDSON:
         ierr = KSPSetType ( M_ksp, ( char* ) KSPRICHARDSON );
         CHKERRABORT( this->comm(),ierr );
