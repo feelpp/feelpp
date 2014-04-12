@@ -190,12 +190,12 @@ public:
         M_model( model )
         {
             int user_max =option(_name="eim.dimension-max").template as<int>();
-            int max_built = M_model->mMax();
+            int max_built = M_model->maxQ();
             bool enrich_database=option(_name="eim.enrich-database").template as<bool>();
             bool do_offline=false;
             M_restart=false;
 
-            if( user_max > max_built && M_offline_done )
+            if( (user_max+1) > max_built && M_offline_done )
             {
                 if( enrich_database )
                 {
@@ -321,7 +321,7 @@ public:
     vector_type beta( parameter_type const& mu, solution_type const& T, size_type M  ) const {return M_model->beta( mu , T , M ); }
 
     void studyConvergence( parameter_type const & mu, solution_type & solution , std::vector< std::string > all_file_name ) const;
-    element_type elementErrorEstimation( parameter_type const & mu, solution_type const& solution , int M ) const ;
+    boost::tuple<double,element_type> interpolationErrorEstimation( parameter_type const & mu, solution_type const& solution , int M ) const ;
     double errorEstimationLinf( parameter_type const & mu, solution_type const& solution , int M ) const ;
 
     void computationalTimeStatistics( std::string appname )  { return M_model->computationalTimeStatistics(); }
@@ -408,10 +408,10 @@ public:
 };
 
 template <typename ModelType>
-typename EIM<ModelType>::element_type
-EIM<ModelType>::elementErrorEstimation( parameter_type const & mu, solution_type const& solution , int M ) const
+typename boost::tuple< double, typename EIM<ModelType>::element_type >
+EIM<ModelType>::interpolationErrorEstimation( parameter_type const & mu, solution_type const& solution , int M ) const
 {
-    double max = M_model->mMax()-1;
+    double max = M_model->mMax();
     CHECK( M <= max ) << "Invalid number M for errorEstimation: " << M << " Mmax : " << max << "\n";
     //interpolation point associated to (M+1) basis function is index by M
     //remember that interpolationPoint(0) is the first interpolation point
@@ -424,14 +424,15 @@ EIM<ModelType>::elementErrorEstimation( parameter_type const & mu, solution_type
     double coeff = math::abs( projected_expression - eim );
     auto result = M_model->q( M );
     result.scale( coeff );
-    return result;
+    return boost::make_tuple(coeff,result);
 }
+
 
 template <typename ModelType>
 double
 EIM<ModelType>::errorEstimationLinf( parameter_type const & mu, solution_type const& solution , int M ) const
 {
-    double max = M_model->mMax()-1;
+    double max = M_model->mMax();
     CHECK( M <= max ) << "Invalid number M for errorEstimation: " << M << " Mmax : " << max << "\n";
     auto t = M_model->interpolationPoint( M );
     auto projected_expression = M_model->operator()( solution , t,  mu );
@@ -652,15 +653,17 @@ EIM<ModelType>::offline(  )
     else
     {
         M_M = M_model->mMax()+1;
-        M_max_q = M_model->mMaxQ();
-        max_z = M_model->mMaxZ();
-        max_solution = M_model->mMaxSolution();
+        M_max_q = M_model->maxQ();
+        max_z = M_model->maxZ();
+        max_solution = M_model->maxSolution();
     }//if ! M_restart
     /**
        \par build \f$W^g_M\f$
     */
     double err = 1;
     int Mmax=option(_name="eim.dimension-max").template as<int>();
+    //to deal with error estimation we need to build an "extra" basis function
+    Mmax++;
     LOG(INFO) << "start greedy algorithm...\n";
     for( ; M_M <=Mmax ; ++M_M ) //err >= this->M_tol )
     {
@@ -668,7 +671,10 @@ EIM<ModelType>::offline(  )
         //LOG(INFO) << "M=" << M_M << "...\n";
         if( Environment::worldComm().isMasterRank() )
         {
-            std::cout<<" ================================ "<<std::endl;
+            if( M_M == Mmax )
+                std::cout<<"================================ last basis function needed for error estimation"<<std::endl;
+            else
+                std::cout<<" ================================ "<<std::endl;
         }
 
         DVLOG(2) << "compute best fit error...\n";
@@ -852,48 +858,71 @@ EIM<ModelType>::studyConvergence( parameter_type const & mu , solution_type & so
     int max = M_model->mMax();
     int Nmax=0;
 
+    double relative_l2_error;
+    double absolute_l2_error;
+    double interpolation_error;
+    double absolute_linf_error_estimated ;
+    double absolute_l2_error_estimated;
+    double relative_l2_error_estimated;
+    double relative_ratio_l2;
+    double absolute_ratio_linf;
+
     //As we print error estimation, we stop at max-1
     //because we need to access to the max^th basis function
     if( Environment::worldComm().isMasterRank() )
     {
-        Nmax = max-1;
+        Nmax = max;
         fileL2 << Nmax<< "\t";
-        fileL2estimated << Nmax <<"\t";
-        fileL2ratio << Nmax  <<"\t" ;
+        fileL2estimated << Nmax-1 <<"\t";
+        fileL2ratio << Nmax-1  <<"\t" ;
         fileLINF << Nmax  <<"\t" ;
-        fileLINFestimated << Nmax  <<"\t" ;
-        fileLINFratio << Nmax  <<"\t" ;
+        fileLINFestimated << Nmax-1  <<"\t" ;
+        fileLINFratio << Nmax-1  <<"\t" ;
     }
-    for(int N=1; N<max; N++)
+    for(int N=1; N<=max; N++)
     {
-        std::string str = "\t";
-        if( N == Nmax ) str = "\n";
         double exprl2norm = 0 , diffl2norm = 0 ;
-
         exprl2norm =M_model->projExpressionL2Norm( solution , mu );
         auto eim_approximation = this->operator()(mu , solution, N);
         diffl2norm = M_model->projDiffL2Norm( solution , mu , eim_approximation );
         double absolute_linf_error = M_model->projDiffLinfNorm( solution , mu , eim_approximation );
-        double relative_l2_error = diffl2norm / exprl2norm ;
-        double absolute_l2_error = diffl2norm ;
-        //interpolation error : || projection_g - g ||_L2
-        double interpolation_error = M_model->interpolationError( solution , mu );
-        double absolute_linf_error_estimated = this->errorEstimationLinf( mu , solution, N );
-        auto error_estimation_element = this->elementErrorEstimation( mu , solution, N );
-        double absolute_l2_error_estimated = error_estimation_element.l2Norm();
-        double relative_l2_error_estimated = absolute_l2_error_estimated/exprl2norm;
-        double relative_ratio_l2 = math::abs( relative_l2_error_estimated / relative_l2_error );
-        double absolute_ratio_linf = math::abs( absolute_linf_error_estimated / absolute_linf_error );
-        //l2ErrorVec[N-1] = relative_l2_error; // /!\ l2ErrorVec[i] represents error with i+1 bases
+
+        if( N < max )
+        {
+            relative_l2_error = diffl2norm / exprl2norm ;
+            absolute_l2_error = diffl2norm ;
+            //interpolation error : || projection_g - g ||_L2
+            interpolation_error = M_model->interpolationError( solution , mu );
+            absolute_linf_error_estimated = this->errorEstimationLinf( mu , solution, N );
+            auto tuple = this->interpolationErrorEstimation( mu , solution, N );
+            auto error_estimation_element = tuple.template get<1>();
+            absolute_l2_error_estimated = error_estimation_element.l2Norm();
+            relative_l2_error_estimated = absolute_l2_error_estimated/exprl2norm;
+            relative_ratio_l2 = math::abs( relative_l2_error_estimated / relative_l2_error );
+            absolute_ratio_linf = math::abs( absolute_linf_error_estimated / absolute_linf_error );
+        }
+
+        std::string str = "\t";
+        if( N == Nmax ) str = "\n";
+
         if( Environment::worldComm().isMasterRank() )
         {
             fileL2            << relative_l2_error            <<str;
-            fileL2estimated   << relative_l2_error_estimated  <<str;
-            fileL2ratio       << relative_ratio_l2            <<str;
             fileLINF          << absolute_linf_error          <<str;
-            fileLINFestimated << absolute_linf_error_estimated<<str;
-            fileLINFratio     << absolute_ratio_linf          <<str;
+
+            if( N == Nmax-1 )
+                str = "\n";
+            else
+                str= "\t";
+            if( N < max )
+            {
+                fileL2estimated   << relative_l2_error_estimated  <<str;
+                fileL2ratio       << relative_ratio_l2            <<str;
+                fileLINFestimated << absolute_linf_error_estimated<<str;
+                fileLINFratio     << absolute_ratio_linf          <<str;
+            }
         }
+
     }//loop over basis functions
 
     fileL2.close();
@@ -1067,9 +1096,10 @@ public:
     virtual vector_type  beta( parameter_type const& mu, solution_type const& T ) const = 0;
     virtual vector_type  beta( parameter_type const& mu , size_type M )  = 0;
     virtual vector_type  beta( parameter_type const& mu, solution_type const& T , size_type M)  = 0;
+    virtual size_type  mMax(bool & error) const = 0;
     virtual size_type  mMax() const = 0;
 
-    virtual element_type elementErrorEstimation ( parameter_type const& mu, solution_type const& solution , int M) const = 0;
+    virtual boost::tuple<double,element_type> interpolationErrorEstimation ( parameter_type const& mu, solution_type const& solution , int M) const = 0;
     virtual double errorEstimationLinf( parameter_type const & mu, solution_type const& solution , int M ) const=0 ;
     virtual node_type interpolationPoint( int position ) const = 0;
 
@@ -1094,9 +1124,9 @@ public:
     virtual void addInterpolationPoint( node_type t ) = 0;
 
     virtual void setMax(int m, int max_q, int max_z, int max_solution) = 0;
-    virtual int mMaxQ() = 0;
-    virtual int mMaxZ() = 0;
-    virtual int mMaxSolution() = 0;
+    virtual int maxQ() = 0;
+    virtual int maxZ() = 0;
+    virtual int maxSolution() = 0;
 
     virtual void addBasis( element_type const &q ) = 0;
     virtual void addExpressionEvaluation( element_type const &g ) = 0;
@@ -1990,10 +2020,51 @@ public:
     vector_type  beta( parameter_type const& mu, solution_type const& T ) const { return M_eim->beta( mu, T ); }
 
     void studyConvergence( parameter_type const & mu , solution_type & solution, std::vector< std::string > all_file_name ) const { return M_eim->studyConvergence( mu , solution , all_file_name ) ; }
-    element_type elementErrorEstimation( parameter_type const & mu , solution_type const& solution, int M ) const { return M_eim->elementErrorEstimation(mu , solution, M) ; }
+    boost::tuple<double,element_type> interpolationErrorEstimation( parameter_type const & mu , solution_type const& solution, int M ) const { return M_eim->interpolationErrorEstimation(mu , solution, M) ; }
     double errorEstimationLinf( parameter_type const & mu, solution_type const& solution , int M ) const { return M_eim->errorEstimationLinf(mu, solution, M) ; }
     //size_type mMax() const { return M_eim->mMax(); }
-    size_type mMax() const { return M_M_max; }
+    size_type mMax( bool & error) const
+    {
+        int max=0;
+        int user_max = option(_name="eim.dimension-max").template as<int>();
+        int built = M_max_q;
+        //if the user wants to enrich the database we return M_M_max or
+        //if the eim expansion contains less terms that expected by the user then there is no error.
+        //But if there is already enough basis functions then we return M_M_max-1
+        //to deal with error estimation
+        if( (user_max+1) > M_max_q )
+        {
+            max = M_M_max;
+            //in that case if the eim expansion is finished there is no error associated
+            //or if the user wants to enrich the DB it is to soon to known if it will be error
+            error=false;
+        }
+        else
+        {
+            max = M_M_max-1;
+            error=true;
+        }
+        return max;
+    }
+    size_type mMax() const
+    {
+        int max=0;
+        int user_max = option(_name="eim.dimension-max").template as<int>();
+        int built = M_max_q;
+        //if the user wants to enrich the database we return M_M_max or
+        //if the eim expansion contains less terms that expected by the user then there is no error.
+        //But if there is already enough basis functions then we return M_M_max-1
+        //to deal with error estimation
+        if( (user_max+1) > M_max_q )
+        {
+            max = M_M_max;
+        }
+        else
+        {
+            max = M_M_max-1;
+        }
+        return max;
+    }
 
     void setMax(int m, int max_q, int max_z, int max_solution )
     {
@@ -2003,15 +2074,15 @@ public:
         M_max_solution = max_solution;
     }
 
-    int mMaxQ()
+    int maxQ()
     {
         return M_max_q;
     }
-    int mMaxZ()
+    int maxZ()
     {
         return M_max_z;
     }
-    int mMaxSolution()
+    int maxSolution()
     {
         return M_max_solution;
     }
