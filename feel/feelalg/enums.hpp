@@ -118,6 +118,7 @@ enum PreconditionerType {IDENTITY_PRECOND =0,
                          ML_PRECOND,
                          GAMG_PRECOND,
                          BOOMERAMG_PRECOND,
+                         REDUNDANT_PRECOND,
                          NONE_PRECOND,
                          INVALID_PRECONDITIONER
                         };
