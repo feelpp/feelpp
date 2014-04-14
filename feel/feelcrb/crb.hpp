@@ -3188,6 +3188,9 @@ CRB<TruthModelType>::offline()
             LOG(INFO)<<"[CRB::offline] end of call offlineResidual and M_N = "<< M_N <<"\n";
             if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
                 std::cout << "  -- offlineResidual updated in " << timer2.elapsed() << "s\n";
+            bool model_has_eim_error = M_model->hasEimError();
+            if( model_has_eim_error )
+                offlineResidualEim( M_N, number_of_added_elements );
             timer2.restart();
         }
 
@@ -5942,7 +5945,7 @@ CRB<TruthModelType>::steadyPrimalResidualEim( int Ncur,parameter_type const& mu,
     int __QRhs = M_model->Ql( 0 );
     int __N = Ncur;
 
-    auto all_eim_interpolation_errors = M_model->eimInterpolationErrorEstimation( mu );
+    auto all_eim_interpolation_errors = M_model->eimInterpolationErrorEstimation( mu , Un );
     auto eim_interpolation_errors_A = all_eim_interpolation_errors.template get<1>() ;
     auto eim_interpolation_errors_F = all_eim_interpolation_errors.template get<2>() ;
 
@@ -5994,6 +5997,7 @@ CRB<TruthModelType>::steadyPrimalResidualEim( int Ncur,parameter_type const& mu,
                 interpolation_error_q2 = 0;
 
             __lambda_pr_eim += interpolation_error_q1*interpolation_error_q2 * M_Lambda_pr_eim[__q1][__q2].head( __N ).dot( Un );
+
         }//q2
         for ( int __q2 = 0; __q2 < __QLhs; ++__q2 )
         {
@@ -6005,6 +6009,7 @@ CRB<TruthModelType>::steadyPrimalResidualEim( int Ncur,parameter_type const& mu,
 
             auto m = M_Gamma_pr_eim[__q1][__q2].block( 0,0,__N,__N )*Un;
             __gamma_pr_eim += interpolation_error_q1*interpolation_error_q2 * Un.dot( m );
+
         }//q2
     }//q1
 
@@ -6254,7 +6259,7 @@ CRB<TruthModelType>::steadyDualResidualEim( int Ncur,parameter_type const& mu, v
     int __QOutput = M_model->Ql( M_output_index );
     int __N = Ncur;
 
-    auto all_eim_interpolation_errors = M_model->eimInterpolationErrorEstimation( mu );
+    auto all_eim_interpolation_errors = M_model->eimInterpolationErrorEstimation( mu , Un );
     auto eim_interpolation_errors_A = all_eim_interpolation_errors.template get<1>() ;
     auto eim_interpolation_errors_F = all_eim_interpolation_errors.template get<2>() ;
 
@@ -7319,7 +7324,9 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
     std::vector< std::vector<sparse_matrix_ptrtype> > Aqm,Mqm;
     std::vector< std::vector<vector_ptrtype> > MFqm;
     std::vector< std::vector<std::vector<vector_ptrtype> > > Fqm,Lqm;
+
     boost::tie( Mqm, Aqm, Fqm ) = M_model->computeAffineDecomposition();
+
     __X->zero();
     __X->add( 1.0 );
 
@@ -7327,7 +7334,6 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
     auto eim_interpolation_errors_A = all_eim_interpolation_errors.template get<1>() ;
     auto eim_interpolation_errors_F = all_eim_interpolation_errors.template get<2>() ;
 
-    std::map<int,double>::iterator it;
     auto endA = eim_interpolation_errors_A.end();
     auto endF = eim_interpolation_errors_F[0].end();
 
@@ -7341,11 +7347,13 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
             auto itq1 = eim_interpolation_errors_F[0].find(__q1);
             if( itq1 != endF )
             {
-                int Mmaxq1 = M_model->mMaxF(0,__q1)+1;
+                //remember that in C++ index begins at 0
+                //so to have max+1, we call [max]
+                int Mmaxq1 = M_model->mMaxF(0,__q1);
                 M_model->l2solve( __Z1, Fqm[0][__q1][Mmaxq1] );
                 for ( int __q2 = 0; __q2 < __QRhs; ++__q2 )
                 {
-                    int Mmaxq2 = M_model->mMaxF(0,__q2)+1;
+                    int Mmaxq2 = M_model->mMaxF(0,__q2);
                     auto itq2 = eim_interpolation_errors_F[0].find(__q2);
                     if( itq2 != endF )
                     {
@@ -7389,23 +7397,22 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
             auto itq1 = eim_interpolation_errors_A.find(__q1);
             if( itq1 != endA )
             {
-                int Mmaxq1 = M_model->mMaxA(__q1)+1;
+                int Mmaxq1 = M_model->mMaxA(__q1);
                 Aqm[__q1][Mmaxq1]->multVector(  __X, __W );
                 __W->scale( -1. );
                 M_model->l2solve( __Z1, __W );
                 for ( int __q2 = 0; __q2 < __QRhs; ++__q2 )
                 {
-                    int Mmaxq2 = M_model->mMaxF(0,__q2)+1;
+                    int Mmaxq2 = M_model->mMaxF(0,__q2);
                     auto itq2 = eim_interpolation_errors_F[0].find(__q2);
+                    M_Lambda_pr_eim[__q1][__q2].conservativeResize( __N );
                     if( itq2 != endF )
                     {
-                        M_Lambda_pr_eim[__q1][__q2].conservativeResize( __N );
                         M_model->l2solve( __Z2, Fqm[0][__q2][Mmaxq2] );
                         M_Lambda_pr_eim[ __q1][ __q2]( elem ) = 2.0*M_model->scalarProduct( __Z1, __Z2 );
                     }
                     else
                     {
-                        M_Lambda_pr_eim[__q1][__q2].conservativeResize( __N );
                         M_Lambda_pr_eim[ __q1][ __q2]( elem ) = 0;
                     }
                 }
@@ -7422,7 +7429,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
     }//elem
 
     if( Environment::worldComm().isMasterRank() )
-        std::cout << "     o Lambda_pr updated in " << ti.elapsed() << "s\n";
+        std::cout << "     o Lambda_pr_eim updated in " << ti.elapsed() << "s\n";
 
     ti.restart();
 
@@ -7434,7 +7441,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
             auto itq1 = eim_interpolation_errors_A.find(__q1);
             if( itq1 != endA )
             {
-                int Mmaxq1 = M_model->mMaxF(0,__q1)+1;
+                int Mmaxq1 = M_model->mMaxA(__q1);
                 Aqm[__q1][Mmaxq1]->multVector(  __X, __W );
                 __W->scale( -1. );
                 M_model->l2solve( __Z1, __W );
@@ -7446,12 +7453,12 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
                         auto itq2 = eim_interpolation_errors_A.find(__q2);
                         if( itq2 != endA )
                         {
-                            int Mmaxq2 = M_model->mMaxA(__q2)+1;
+                            int Mmaxq2 = M_model->mMaxA(__q2);
                             Aqm[__q2][Mmaxq2]->multVector(  __Y, __W );
                             M_Gamma_pr_eim[__q1][__q2].conservativeResize( __N, __N );
                             __W->scale( -1. );
                             M_model->l2solve( __Z2, __W );
-                            M_Gamma_pr[ __q1][ __q2]( elem,__l ) = M_model->scalarProduct( __Z1, __Z2 );
+                            M_Gamma_pr_eim[ __q1][ __q2]( elem,__l ) = M_model->scalarProduct( __Z1, __Z2 );
                         }
                         else
                         {
@@ -7483,7 +7490,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
             auto itq1 = eim_interpolation_errors_A.find(__q1);
             if( itq1 != endA )
             {
-                int Mmaxq1 = M_model->mMaxF(0,__q1)+1;
+                int Mmaxq1 = M_model->mMaxA(__q1);
                 Aqm[__q1][Mmaxq1]->multVector(  __X, __W );
                 __W->scale( -1. );
                 M_model->l2solve( __Z1, __W );
@@ -7499,7 +7506,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
                         auto itq2 = eim_interpolation_errors_A.find(__q2);
                         if( itq2 != endA )
                         {
-                            int Mmaxq2 = M_model->mMaxA(__q2)+1;
+                            int Mmaxq2 = M_model->mMaxA(__q2);
                             Aqm[__q2][Mmaxq2]->multVector(  __Y, __W );
                             __W->scale( -1. );
                             M_model->l2solve( __Z2, __W );
@@ -7526,7 +7533,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
     }// end of loop __j
 
     if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
-        std::cout << "     o Gamma_pr updated in " << ti.elapsed() << "s\n";
+        std::cout << "     o Gamma_pr_eim updated in " << ti.elapsed() << "s\n";
     sparse_matrix_ptrtype Atq1 = M_model->newMatrix();
     sparse_matrix_ptrtype Atq2 = M_model->newMatrix();
     ti.restart();
@@ -7549,7 +7556,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
                 auto itq1 = eim_interpolation_errors_F[M_output_index].find(__q1);
                 if( itq1 != endFo )
                 {
-                    int Mmaxq1 = M_model->mMaxF(M_output_index,__q1)+1;
+                    int Mmaxq1 = M_model->mMaxF(M_output_index,__q1);
                     *__Fdu = *Fqm[M_output_index][__q1][Mmaxq1];
                     __Fdu->close();
                     __Fdu->scale( -1.0 );
@@ -7559,7 +7566,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
                         auto itq2 = eim_interpolation_errors_F[M_output_index].find(__q2);
                         if( itq2 != endFo )
                         {
-                            int Mmaxq2 = M_model->mMaxF(M_output_index,__q2)+1;
+                            int Mmaxq2 = M_model->mMaxF(M_output_index,__q2);
                             *__Fdu = *Fqm[M_output_index][__q2][Mmaxq2];
                             __Fdu->close();
                             __Fdu->scale( -1.0 );
@@ -7597,7 +7604,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
                 auto itq1 = eim_interpolation_errors_A.find(__q1);
                 if( itq1 != endA )
                 {
-                    int Mmaxq1 = M_model->mMaxA(__q1)+1;
+                    int Mmaxq1 = M_model->mMaxA(__q1);
                     if( option("crb.use-symmetric-matrix").template as<bool>() )
                         Atq1 = Aqm[__q1][Mmaxq1];
                     else
@@ -7612,7 +7619,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
                         auto itq2 = eim_interpolation_errors_F[M_output_index].find(__q2);
                         if( itq2 != endFo )
                         {
-                            int Mmaxq2 = M_model->mMaxF(M_output_index,__q2)+1;
+                            int Mmaxq2 = M_model->mMaxF(M_output_index,__q2);
                             *__Fdu = *Fqm[M_output_index][__q2][Mmaxq2];
                             __Fdu->scale( -1.0 );
                             M_model->l2solve( __Z2, __Fdu );
@@ -7628,7 +7635,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
                 {
                     for ( int __q2 = 0; __q2 < __QOutput; ++__q2 )
                     {
-                        M_Lambda_du[__q1][__q2].conservativeResize( __N );
+                        M_Lambda_du_eim[__q1][__q2].conservativeResize( __N );
                         M_Lambda_du_eim[__q1][__q2]( elem ) = 0;
                     }
                 }
@@ -7636,7 +7643,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
         }//elem
 
         if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
-            std::cout << "     o Lambda_du updated in " << ti.elapsed() << "s\n";
+            std::cout << "     o Lambda_du_eim updated in " << ti.elapsed() << "s\n";
         ti.restart();
 
         for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
@@ -7649,7 +7656,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
                 auto itq1 = eim_interpolation_errors_A.find(__q1);
                 if( itq1 != endA )
                 {
-                    int Mmaxq1 = M_model->mMaxA(__q1)+1;
+                    int Mmaxq1 = M_model->mMaxA(__q1);
 
                     if( option("crb.use-symmetric-matrix").template as<bool>() )
                         Atq1=Aqm[__q1][Mmaxq1];
@@ -7670,7 +7677,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
                             auto itq2 = eim_interpolation_errors_A.find(__q2);
                             if( itq2 != endA )
                             {
-                                int Mmaxq2 = M_model->mMaxA(__q2)+1;
+                                int Mmaxq2 = M_model->mMaxA(__q2);
                                 if( option("crb.use-symmetric-matrix").template as<bool>() )
                                     Atq2 = Aqm[__q2][Mmaxq2];
                                 else
@@ -7713,7 +7720,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
                 auto itq1 = eim_interpolation_errors_A.find(__q1);
                 if( itq1 != endA )
                 {
-                    int Mmaxq1 = M_model->mMaxA(__q1)+1;
+                    int Mmaxq1 = M_model->mMaxA(__q1);
 
                     if( option("crb.use-symmetric-matrix").template as<bool>() )
                         Atq1=Aqm[__q1][Mmaxq1];
@@ -7733,7 +7740,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
                             auto itq2 = eim_interpolation_errors_A.find(__q2);
                             if( itq2 != endA )
                             {
-                                int Mmaxq2 = M_model->mMaxA(__q2)+1;
+                                int Mmaxq2 = M_model->mMaxA(__q2);
 
                                 if( option("crb.use-symmetric-matrix").template as<bool>() )
                                     Atq2 = Aqm[__q2][Mmaxq2];
