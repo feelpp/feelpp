@@ -982,70 +982,103 @@ public:
 
         if ( M_Aqm.size() > 0 )
         {
-            //when using EIM we need to be careful
-            //if we want to estimate the error then there
-            //is an "extra" basis fuction.
-            auto all_errors = eimInterpolationErrorEstimation();
-            auto errorsM = all_errors.template get<0>();
-            auto errorsA = all_errors.template get<1>();
-            auto errorsF = all_errors.template get<2>();
-            std::map<int,double>::iterator it;
-            auto endA = errorsA.end();
-            auto endM = errorsM.end();
-
-            M_Qm=M_Mqm.size();
-            M_mMaxM.resize(M_Qm);
-            for(int q=0; q<M_Qm; q++)
+            if ( this->hasEimError() )
             {
-                auto itq = errorsM.find(q);
-                if( itq != endM) //found
+                //when using EIM we need to be careful
+                //if we want to estimate the error then there
+                //is an "extra" basis fuction.
+                auto all_errors = eimInterpolationErrorEstimation();
+                auto errorsM = all_errors.template get<0>();
+                auto errorsA = all_errors.template get<1>();
+                auto errorsF = all_errors.template get<2>();
+                std::map<int,double>::iterator it;
+                auto endA = errorsA.end();
+                auto endM = errorsM.end();
+
+                M_Qm=M_Mqm.size();
+                M_mMaxM.resize(M_Qm);
+                for(int q=0; q<M_Qm; q++)
                 {
-                    //we have an eim error estimation
-                    M_mMaxM[q]=M_Mqm[q].size()-1;
+                    auto itq = errorsM.find(q);
+                    if( itq != endM) //found
+                    {
+                        //we have an eim error estimation
+                        M_mMaxM[q]=M_Mqm[q].size()-1;
+                    }
+                    else //not found
+                    {
+                        M_mMaxM[q]=M_Mqm[q].size();
+                    }
                 }
-                else //not found
+
+                M_Qa=M_Aqm.size();
+                M_mMaxA.resize(M_Qa);
+                for(int q=0; q<M_Qa; q++)
+                {
+                    auto itq = errorsA.find(q);
+                    if( itq != endA ) //found
+                    {
+                        //we have an eim error estimation
+                        M_mMaxA[q]=M_Aqm[q].size()-1;
+                    }
+                    else //not found
+                    {
+                        M_mMaxA[q]=M_Aqm[q].size();
+                    }
+                }
+
+                M_Nl=M_Fqm.size();
+                M_Ql.resize(M_Nl);
+                M_mMaxF.resize(M_Nl);
+                for(int output=0; output<M_Nl; output++)
+                {
+                    M_Ql[output]=M_Fqm[output].size();
+                    M_mMaxF[output].resize(M_Ql[output]);
+                    auto endF = errorsF[output].end();
+                    for(int q=0; q<M_Ql[output]; q++)
+                    {
+                        auto itq = errorsF[output].find(q);
+                        if( itq != endF ) //found
+                        {
+                            //we have an eim error estimation
+                            M_mMaxF[output][q]=M_Fqm[output][q].size()-1;
+                        }
+                        else //not found
+                        {
+                            M_mMaxF[output][q]=M_Fqm[output][q].size();
+                        }
+                    }
+                }
+            }//EIM error
+            else
+            {
+                M_Qm=M_Mqm.size();
+                M_mMaxM.resize(M_Qm);
+                for(int q=0; q<M_Qm; q++)
                 {
                     M_mMaxM[q]=M_Mqm[q].size();
                 }
-            }
 
-            M_Qa=M_Aqm.size();
-            M_mMaxA.resize(M_Qa);
-            for(int q=0; q<M_Qa; q++)
-            {
-                auto itq = errorsA.find(q);
-                if( itq != endA ) //found
-                {
-                    //we have an eim error estimation
-                    M_mMaxA[q]=M_Aqm[q].size()-1;
-                }
-                else //not found
+                M_Qa=M_Aqm.size();
+                M_mMaxA.resize(M_Qa);
+                for(int q=0; q<M_Qa; q++)
                 {
                     M_mMaxA[q]=M_Aqm[q].size();
                 }
-            }
 
-            M_Nl=M_Fqm.size();
-            M_Ql.resize(M_Nl);
-            M_mMaxF.resize(M_Nl);
-            for(int output=0; output<M_Nl; output++)
-            {
-                M_Ql[output]=M_Fqm[output].size();
-                M_mMaxF[output].resize(M_Ql[output]);
-                auto endF = errorsF[output].end();
-                for(int q=0; q<M_Ql[output]; q++)
+                M_Nl=M_Fqm.size();
+                M_Ql.resize(M_Nl);
+                M_mMaxF.resize(M_Nl);
+                for(int output=0; output<M_Nl; output++)
                 {
-                    auto itq = errorsF[output].find(q);
-                    if( itq != endF ) //found
-                    {
-                        //we have an eim error estimation
-                        M_mMaxF[output][q]=M_Fqm[output][q].size()-1;
-                    }
-                    else //not found
+                    M_Ql[output]=M_Fqm[output].size();
+                    M_mMaxF[output].resize(M_Ql[output]);
+                    for(int q=0; q<M_Ql[output]; q++)
                     {
                         M_mMaxF[output][q]=M_Fqm[output][q].size();
                     }
                 }
+
             }
         }
         else
@@ -1354,6 +1387,7 @@ public:
             auto tuple=boost::make_tuple(Mq,Aq,Fq);
             this->extendAffineDecomposition( tuple );
         }
+
         this->countAffineDecompositionTerms();
 
         if( M_Aqm.size() == 0 )
