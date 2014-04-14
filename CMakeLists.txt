@@ -75,7 +75,7 @@ set(FEELPP_DEFAULT ON CACHE INTERNAL "Default value for enabled-by-default optio
 OPTION(FEELPP_ENABLE_VERBOSE_CMAKE "enable Feel++ verbose cmake" OFF)
 OPTION(FEELPP_ENABLE_BUILD_STATIC "Enable Feel++ library statically built" OFF )
 OPTION(FEELPP_BENCHMARK_FLAGS "enable benchmarks flags" OFF)
-OPTION(FEELPP_ENABLE_DOCUMENTATION "enable Feel++ documentation" ${FEELPP_DEFAULT})
+OPTION(FEELPP_ENABLE_DOCUMENTATION "enable Feel++ documentation (aka examples)" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_BENCHMARKS "enable Feel++ benchmarks" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_APPLICATIONS "enable Feel++ applications" ${FEELPP_DEFAULT})
 # enable PCH only for GCC as for now
@@ -336,6 +336,10 @@ IF(FEELPP_ENABLE_TESTS )
   add_subdirectory( testsuite )
 endif()
 
+
+if ( FEELPP_ENABLE_DOXYGEN )
+  ADD_SUBDIRECTORY ( doc/api )
+endif ( FEELPP_ENABLE_DOXYGEN )
 
 if ( FEELPP_ENABLE_DOCUMENTATION )
   set(FEELPP_DOC_ENABLE_CAVITY_CRB off)
