@@ -38,19 +38,19 @@ int main(int argc, char**argv )
     auto u = Vh->element();
     auto v = Vh->element();
 
-    auto syms = symbols<3>();
-    auto g = option(_name="functions.g").as<std::string>();
-    auto laplacian_g = laplacian( g, syms  );
+    auto g = expr( soption(_name="functions.g") );
+    auto laplacian_g = laplacian( g );
 
     auto l = form1( _test=Vh );
     l = integrate(_range=elements(mesh),
-                  _expr=-expr( laplacian_g, syms )*id(v));
+                  _expr=-laplacian_g*id(v));
 
     auto a = form2( _trial=Vh, _test=Vh);
     a = integrate(_range=elements(mesh),
                   _expr=gradt(u)*trans(grad(v)) );
-    a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u, _expr=expr( g, syms ) );
+    a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u, _expr=g );
     a.solve(_rhs=l,_solution=u);
 
-    LOG(INFO) << "L2 error norm : " << normL2( _range=elements(mesh), _expr=idv(u)-expr( g, syms ) );
+    LOG(INFO) << "L2 error norm : " << normL2( _range=elements(mesh), _expr=idv(u)-g );
+    LOG(INFO) << "H1 error norm : " << normH1( _range=elements(mesh), _expr=idv(u)-g, _grad_expr=gradv(u)-grad<3>(g) );
 }
