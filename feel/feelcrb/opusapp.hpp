@@ -978,7 +978,7 @@ public:
                                     //auto u_fem = model->solveFemUsingOfflineEim( mu );
 
                                     if( boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value && ! use_newton )
-                                        {
+                                    {
                                         if( option(_name="crb.solve-fem-monolithic").template as<bool>() )
                                         {
                                             u_fem = model->solveFemMonolithicFormulation( mu );
@@ -1078,7 +1078,7 @@ public:
                                     auto output_vector=o.template get<0>();
                                     double output_vector_size=output_vector.size();
                                     double ocrb = output_vector[output_vector_size-1];//output at last time
-                                    std::vector<double> v = boost::assign::list_of( output_fem )( time_fem )( ocrb )( output_estimated_error )( ti.elapsed() ) ( relative_estimated_error )( condition_number )( l2_error )( h1_error ) ;
+                                    std::vector<double> v = boost::assign::list_of( output_fem )( time_fem )( ocrb )( relative_estimated_error )( time_crb )( relative_error )( condition_number )( l2_error )( h1_error );
                                     if( proc_number == Environment::worldComm().masterRank() )
                                     {
                                         std::cout << "output=" << ocrb << " with " << o.template get<1>() << " basis functions  (error estimation on this output : " << output_estimated_error<<") \n";
