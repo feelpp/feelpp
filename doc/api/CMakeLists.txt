@@ -69,13 +69,14 @@ if ( DOXYGEN AND FEELPP_ENABLE_DOXYGEN)
      #define option to control doc generation
      string(TOUPPER ${dirname} PROJECT)
      if (FEELPP_ENABLE_${PROJECT}_DOCUMENTATION )
-       set(FEELPP_PROJECTS_DIR ${FEELPP_PROJECTS_DIR} "${project}\n")
+       set(FEELPP_PROJECTS_DIR ${FEELPP_PROJECTS_DIR} "\"${project}\" \\ \n")
        FILE(APPEND ${CMAKE_CURRENT_SOURCE_DIR}/pages.doc "   - \\subpage ${dirname}\n")
        MESSAGE(STATUS "Doxygen Documention for ${project} will be generated")
      endif()
    endforeach()
    FILE(APPEND ${CMAKE_CURRENT_SOURCE_DIR}/pages.doc "*/\n")
 
+       set(FEELPP_PROJECTS_DIR ${FEELPP_PROJECTS_DIR} "\"\" \n") #force empty directory
    STRING(REPLACE ";" " " _TMP_STR "${FEELPP_PROJECTS_DIR}")
    SET(FEELPP_PROJECTS_DIR "${_TMP_STR}")
 
