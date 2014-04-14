@@ -978,7 +978,7 @@ public:
                                     //auto u_fem = model->solveFemUsingOfflineEim( mu );
 
                                     if( boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value && ! use_newton )
-                                        {
+                                    {
                                         if( option(_name="crb.solve-fem-monolithic").template as<bool>() )
                                         {
                                             u_fem = model->solveFemMonolithicFormulation( mu );
@@ -1078,7 +1078,7 @@ public:
                                     auto output_vector=o.template get<0>();
                                     double output_vector_size=output_vector.size();
                                     double ocrb = output_vector[output_vector_size-1];//output at last time
-                                    std::vector<double> v = boost::assign::list_of( output_fem )( time_fem )( ocrb )( output_estimated_error )( ti.elapsed() ) ( relative_estimated_error )( condition_number )( l2_error )( h1_error ) ;
+                                    std::vector<double> v = boost::assign::list_of( output_fem )( time_fem )( ocrb )( relative_estimated_error )( time_crb )( relative_error )( condition_number )( l2_error )( h1_error );
                                     if( proc_number == Environment::worldComm().masterRank() )
                                     {
                                         std::cout << "output=" << ocrb << " with " << o.template get<1>() << " basis functions  (error estimation on this output : " << output_estimated_error<<") \n";
@@ -2071,69 +2071,78 @@ private:
         {
             auto eim = eim_sc_vector[i];
 
-            //load information contained in files
-            std::vector< vectorN_type > L2, L2estimated, L2ratio, LINF, LINFestimated, LINFratio;
-            std::string filename = eim->name()+"-EimConvergenceL2.dat";
-            model->readConvergenceDataFromFile( L2, filename );
-            filename = eim->name()+"-EimConvergenceL2estimated.dat";
-            model->readConvergenceDataFromFile( L2estimated, filename );
-            filename = eim->name()+"-EimConvergenceL2ratio.dat";
-            model->readConvergenceDataFromFile( L2ratio, filename );
-            filename = eim->name()+"-EimConvergenceLINF.dat";
-            model->readConvergenceDataFromFile( LINF, filename );
-            filename = eim->name()+"-EimConvergenceLINFestimated.dat";
-            model->readConvergenceDataFromFile( LINFestimated, filename );
-            filename = eim->name()+"-EimConvergenceLINFratio.dat";
-            model->readConvergenceDataFromFile( LINFratio, filename );
+            int max=eim->mMax();
 
-            //write files containing statistics
-            filename = "cvg-eim-"+eim->name()+"-L2.dat";
-            model->writeConvergenceStatistics( L2 , filename);
-            filename = "cvg-eim-"+eim->name()+"-L2estimated.dat";
-            model->writeConvergenceStatistics( L2estimated , filename);
-            filename = "cvg-eim-"+eim->name()+"-L2ratio.dat";
-            model->writeConvergenceStatistics( L2ratio , filename);
-            filename = "cvg-eim-"+eim->name()+"-LINF.dat";
-            model->writeConvergenceStatistics( LINF , filename);
-            filename = "cvg-eim-"+eim->name()+"-LINFestimated.dat";
-            model->writeConvergenceStatistics( LINFestimated , filename);
-            filename = "cvg-eim-"+eim->name()+"-LINFratio.dat";
-            model->writeConvergenceStatistics( LINFratio , filename);
+            if( max > 1 )
+            {
+                //load information contained in files
+                std::vector< vectorN_type > L2, L2estimated, L2ratio, LINF, LINFestimated, LINFratio;
+                std::string filename = eim->name()+"-EimConvergenceL2.dat";
+                model->readConvergenceDataFromFile( L2, filename );
+                filename = eim->name()+"-EimConvergenceL2estimated.dat";
+                model->readConvergenceDataFromFile( L2estimated, filename );
+                filename = eim->name()+"-EimConvergenceL2ratio.dat";
+                model->readConvergenceDataFromFile( L2ratio, filename );
+                filename = eim->name()+"-EimConvergenceLINF.dat";
+                model->readConvergenceDataFromFile( LINF, filename );
+                filename = eim->name()+"-EimConvergenceLINFestimated.dat";
+                model->readConvergenceDataFromFile( LINFestimated, filename );
+                filename = eim->name()+"-EimConvergenceLINFratio.dat";
+                model->readConvergenceDataFromFile( LINFratio, filename );
+
+                //write files containing statistics
+                filename = "cvg-eim-"+eim->name()+"-L2.dat";
+                model->writeConvergenceStatistics( L2 , filename);
+                filename = "cvg-eim-"+eim->name()+"-L2estimated.dat";
+                model->writeConvergenceStatistics( L2estimated , filename);
+                filename = "cvg-eim-"+eim->name()+"-L2ratio.dat";
+                model->writeConvergenceStatistics( L2ratio , filename);
+                filename = "cvg-eim-"+eim->name()+"-LINF.dat";
+                model->writeConvergenceStatistics( LINF , filename);
+                filename = "cvg-eim-"+eim->name()+"-LINFestimated.dat";
+                model->writeConvergenceStatistics( LINFestimated , filename);
+                filename = "cvg-eim-"+eim->name()+"-LINFratio.dat";
+                model->writeConvergenceStatistics( LINFratio , filename);
+            }
         }
 
         for(int i=0; i<eim_sd_vector.size(); i++)
         {
             auto eim = eim_sd_vector[i];
 
-            //load information contained in files
-            std::vector< vectorN_type > L2, L2estimated, L2ratio, LINF, LINFestimated, LINFratio;
-            std::string filename = eim->name()+"-EimConvergenceL2.dat";
-            model->readConvergenceDataFromFile( L2, filename );
-            filename = eim->name()+"-EimConvergenceL2estimated.dat";
-            model->readConvergenceDataFromFile( L2estimated, filename );
-            filename = eim->name()+"-EimConvergenceL2ratio.dat";
-            model->readConvergenceDataFromFile( L2ratio, filename );
-            filename = eim->name()+"-EimConvergenceLINF.dat";
-            model->readConvergenceDataFromFile( LINF, filename );
-            filename = eim->name()+"-EimConvergenceLINFestimated.dat";
-            model->readConvergenceDataFromFile( LINFestimated, filename );
-            filename = eim->name()+"-EimConvergenceLINFratio.dat";
-            model->readConvergenceDataFromFile( LINFratio, filename );
+            int max=eim->mMax();
 
-            //write files containing statistics
-            filename = "cvg-eim-"+eim->name()+"-L2.dat";
-            model->writeConvergenceStatistics( L2 , filename);
-            filename = "cvg-eim-"+eim->name()+"-L2estimated.dat";
-            model->writeConvergenceStatistics( L2estimated , filename);
-            filename = "cvg-eim-"+eim->name()+"-L2ratio.dat";
-            model->writeConvergenceStatistics( L2ratio , filename);
-            filename = "cvg-eim-"+eim->name()+"-LINF.dat";
-            model->writeConvergenceStatistics( LINF , filename);
-            filename = "cvg-eim-"+eim->name()+"-LINFestimated.dat";
-            model->writeConvergenceStatistics( LINFestimated , filename);
-            filename = "cvg-eim-"+eim->name()+"-LINFratio.dat";
-            model->writeConvergenceStatistics( LINFratio , filename);
+            if( max > 1 )
+            {
+                //load information contained in files
+                std::vector< vectorN_type > L2, L2estimated, L2ratio, LINF, LINFestimated, LINFratio;
+                std::string filename = eim->name()+"-EimConvergenceL2.dat";
+                model->readConvergenceDataFromFile( L2, filename );
+                filename = eim->name()+"-EimConvergenceL2estimated.dat";
+                model->readConvergenceDataFromFile( L2estimated, filename );
+                filename = eim->name()+"-EimConvergenceL2ratio.dat";
+                model->readConvergenceDataFromFile( L2ratio, filename );
+                filename = eim->name()+"-EimConvergenceLINF.dat";
+                model->readConvergenceDataFromFile( LINF, filename );
+                filename = eim->name()+"-EimConvergenceLINFestimated.dat";
+                model->readConvergenceDataFromFile( LINFestimated, filename );
+                filename = eim->name()+"-EimConvergenceLINFratio.dat";
+                model->readConvergenceDataFromFile( LINFratio, filename );
 
+                //write files containing statistics
+                filename = "cvg-eim-"+eim->name()+"-L2.dat";
+                model->writeConvergenceStatistics( L2 , filename);
+                filename = "cvg-eim-"+eim->name()+"-L2estimated.dat";
+                model->writeConvergenceStatistics( L2estimated , filename);
+                filename = "cvg-eim-"+eim->name()+"-L2ratio.dat";
+                model->writeConvergenceStatistics( L2ratio , filename);
+                filename = "cvg-eim-"+eim->name()+"-LINF.dat";
+                model->writeConvergenceStatistics( LINF , filename);
+                filename = "cvg-eim-"+eim->name()+"-LINFestimated.dat";
+                model->writeConvergenceStatistics( LINFestimated , filename);
+                filename = "cvg-eim-"+eim->name()+"-LINFratio.dat";
+                model->writeConvergenceStatistics( LINFratio , filename);
+            }
         }
     }
 

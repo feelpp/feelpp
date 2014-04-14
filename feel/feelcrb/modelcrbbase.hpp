@@ -32,6 +32,8 @@
 #include <feel/feel.hpp>
 #include <feel/feelcrb/eim.hpp>
 
+//#include<boost/tokenizer.hpp>
+#include<boost/regex.hpp>
 namespace Feel
 {
 
@@ -173,6 +175,15 @@ public :
 
     typedef typename mpl::if_< mpl::bool_< is_time_dependent >,
                                boost::tuple<
+                                   std::map<int,double>, std::map<int,double>, std::vector< std::map<int,double> >
+                                   >,
+                               boost::tuple<
+                                   std::map<int,double>, std::vector< std::map<int,double> >
+                                   >
+                               >::type eim_interpolation_error_type;
+
+    typedef typename mpl::if_< mpl::bool_< is_time_dependent >,
+                               boost::tuple<
                                    beta_vector_type,
                                    beta_vector_type,
                                    std::vector<beta_vector_type>
@@ -297,6 +308,32 @@ public :
     }
 
     virtual void initModel() = 0;
+
+    virtual eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , vectorN_type const& uN )
+    {
+        return eimInterpolationErrorEstimation( mu, uN,  mpl::bool_<is_time_dependent>() );
+    }
+    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , vectorN_type const& uN , mpl::bool_<true> )
+    {
+        return boost::make_tuple( M_eim_error_mq , M_eim_error_aq, M_eim_error_fq);
+    }
+    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , vectorN_type const& uN , mpl::bool_<false> )
+    {
+        return boost::make_tuple( M_eim_error_aq, M_eim_error_fq);
+    }
+
+    virtual eim_interpolation_error_type eimInterpolationErrorEstimation( )
+    {
+        return eimInterpolationErrorEstimation( mpl::bool_<is_time_dependent>() );
+    }
+    eim_interpolation_error_type eimInterpolationErrorEstimation( mpl::bool_<true> )
+    {
+        return boost::make_tuple( M_eim_error_mq , M_eim_error_aq, M_eim_error_fq);
+    }
+    eim_interpolation_error_type eimInterpolationErrorEstimation( mpl::bool_<false> )
+    {
+        return boost::make_tuple( M_eim_error_aq, M_eim_error_fq);
+    }
 
     /*
      * the user has to provide the affine decomposition
@@ -890,64 +927,69 @@ public :
     {
         if( Environment::worldComm().isMasterRank() )
         {
-
             std::vector< std::vector< double > > tmpvector;
             std::ifstream file ( filename );
+            //std::stringstream file ( filename );
             std::string str;
-            int N;
+            int N,i;
             int Nmax=0;
             double value;
+            boost::regex re("[+-]?([[:digit:]]*\\.)?[[:digit:]]+([eE][+-]?[[:digit:]]+)?");
             if( file )
             {
                 //first, determine max elements of the RB
                 //because we could have performed several runs
                 //and the size of the RB can vary between two runs
-                while( ! file.eof() )
+                std::string _s;
+                while( std::getline(file, _s) )
                 {
-                    file >> N;
+                    std::vector< double > _v;
+                    boost::sregex_iterator it(_s.begin(),_s.end(),re); //parse the list of numbers
+
+                    std::string first=it->str();
+                    N=std::atoi(first.c_str());
+                    it++;
                     if( N > Nmax )
                         Nmax = N;
-                    for(int n=0; n<N; n++)
-                    {
-                        file >> value;
-                    }
-                }
 
+                    boost::sregex_iterator j;
+                    i=0;
+                    _v.resize(N);
+                    for(; it!=j; ++it)
+                    {
+                        if( (*it)[0].matched )
+                        {
+                            std::string s = it->str();
+                            auto value = std::atof(s.c_str());
+                            if(value != std::numeric_limits<double>::min())
+                            {
+                                _v[i]=value;
+                            }
+                        }
+                        else
+                            throw std::logic_error( "[ModelCrbBase::fillVectorFromFile] ERROR : Cannot read value" );
+                        i++;
+                    }
+                    //CHECK(i == N);
+                    tmpvector.push_back(_v);
+                }
                 vector.resize( Nmax );
-                tmpvector.resize( Nmax );
-                //go to the begining of the file
-                file.clear();
-                file.seekg(0,std::ios::beg);
-
-
-                file >> N;
-                while( ! file.eof() )
-                {
-                    for(int n=0; n<N; n++)
-                    {
-                        file >> value;
-                        tmpvector[n].push_back( value );
-                    }
-                    file >> N;
-                }
-
             }
             else
             {
                 std::cout<<"The file "<<filename<<" was not found "<<std::endl;
                 throw std::logic_error( "[ModelCrbBase::fillVectorFromFile] ERROR loading the file " );
             }
-
             file.close();
 
             //now copy std::vector into eigen vector
+            int nbvalues = tmpvector.size();
             for(int n=0; n<Nmax; n++)
             {
-                int nbvalues = tmpvector[n].size();
                 vector[n].resize(nbvalues);
                 for(int i=0; i<nbvalues; i++)
                 {
-                    vector[n](i) = tmpvector[n][i];
+                    vector[n](i) = tmpvector[i][n];
                 }
             }
 
@@ -1152,6 +1194,10 @@ protected :
     lhs_light_type M_mass;
     rhs_light_type M_rhs;
     rhs_light_type M_output;
+
+    std::map<int,double> M_eim_error_mq;
+    std::map<int,double> M_eim_error_aq;
+    std::vector< std::map<int,double> > M_eim_error_fq;
 };
 
 }//Feel

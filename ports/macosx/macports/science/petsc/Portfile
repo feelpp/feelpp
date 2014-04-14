@@ -70,7 +70,7 @@ pre-configure {
 
 conflicts_build     petsc
 
-default_variants +atlas +ml +pastix
+default_variants +atlas +ml +pastix +superlu +hypre
 
 
 variant openmpi description {Build using the OpenMPI compiler} conflicts mpich2 {
@@ -107,9 +107,17 @@ variant ml description {Install with ML package} conflicts accelerate {
     configure.args-append \
         --download-ml
 }
-variant pastix description {Install with  external package PaStiX} {
+variant pastix description {Install with external package PaStiX} {
     configure.args-append \
         --download-pastix
+}
+variant superlu description {Install with package superlu} {
+    configure.args-append \
+        --download-superlu
+}
+variant hypre description {Install with package hypre } {
+    configure.args-append \
+        --download-hypre
 }
 
 variant static description {Install static lib} {

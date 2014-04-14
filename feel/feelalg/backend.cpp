@@ -595,166 +595,36 @@ template<typename T>
 SolverType
 Backend<T>::kspEnumType() const
 {
-    if ( this->kspType()=="cg" )              return CG;
-
-    else if ( this->kspType()=="cr" )         return CR;
-
-    else if ( this->kspType()=="cgs" )        return CGS;
-
-    else if ( this->kspType()=="bicg" )       return BICG;
-
-    else if ( this->kspType()=="tcqmr" )      return TCQMR;
-
-    else if ( this->kspType()=="tfqmr" )      return TFQMR;
-
-    else if ( this->kspType()=="lsqr" )       return LSQR;
-
-    else if ( this->kspType()=="bicgstab" )   return BICGSTAB;
-
-    else if ( this->kspType()=="minres" )     return MINRES;
-
-    else if ( this->kspType()=="gmres" )      return GMRES;
-
-    else if ( this->kspType()=="richardson" ) return RICHARDSON;
-
-    else if ( this->kspType()=="chebyshev" )  return CHEBYSHEV;
-
-    else if ( this->kspType()=="preonly" )  return PREONLY;
-
-    else return GMRES;
-
-} // Backend::kspEnumType
+    return kspTypeConvertStrToEnum( this->kspType() );
+}
 
 template<typename T>
 SolverNonLinearType
 Backend<T>::snesEnumType() const
 {
-    if ( this->snesType() == "ls" || this->snesType() == "newtonls" )
-        return SolverNonLinearType::LINE_SEARCH;
-    else if ( this->snesType() == "tr" || this->snesType() == "newtontr" )
-        return SolverNonLinearType::TRUST_REGION;
-    else if ( this->snesType() == "nrichardson" )
-        return SolverNonLinearType::NRICHARDSON;
-    else if ( this->snesType() == "ksponly" )
-        return SolverNonLinearType::NKSPONLY;
-    else if ( this->snesType() == "vinewtonrsls" )
-        return SolverNonLinearType::VINEWTONRSLS;
-    else if ( this->snesType() == "vinewtonssls" )
-        return SolverNonLinearType::VINEWTONRSTR;
-    else if ( this->snesType() == "ngmres" )
-        return SolverNonLinearType::NGMRES;
-    else if ( this->snesType() == "qn" )
-        return SolverNonLinearType::QN;
-    else if ( this->snesType() == "shell" )
-        return SolverNonLinearType::NSHELL;
-    else if ( this->snesType() == "gs" )
-        return SolverNonLinearType::GS;
-    else if ( this->snesType() == "ncg" )
-        return SolverNonLinearType::NCG;
-    else if ( this->snesType() == "fas" )
-        return SolverNonLinearType::FAS;
-    else if ( this->snesType() == "ms" )
-        return SolverNonLinearType::MS;
-    else if ( this->snesType() == "nasm" )
-        return SolverNonLinearType::NASM;
-    else if ( this->snesType() == "anderson" )
-        return SolverNonLinearType::ANDERSON;
-    else if ( this->snesType() == "aspin" )
-        return SolverNonLinearType::ASPIN;
-    else
-        return SolverNonLinearType::LINE_SEARCH;
+    return snesTypeConvertStrToEnum( this->snesType() );
 }
-
 
 template<typename T>
 PreconditionerType
 Backend<T>::pcEnumType() const
 {
-
-    if ( this->pcType()=="lu" )                return LU_PRECOND;
-
-    else if ( this->pcType()=="ilu" )          return ILU_PRECOND;
-
-    else if ( this->pcType()=="id" )           return IDENTITY_PRECOND;
-
-    else if ( this->pcType()=="cholesky" )     return CHOLESKY_PRECOND;
-
-    else if ( this->pcType()=="icc" )          return ICC_PRECOND;
-
-    else if ( this->pcType()=="asm" )          return ASM_PRECOND;
-
-    else if ( this->pcType()=="gasm" )          return GASM_PRECOND;
-
-    else if ( this->pcType()=="jacobi" )       return JACOBI_PRECOND;
-
-    else if ( this->pcType()=="block_jacobi" ) return BLOCK_JACOBI_PRECOND;
-
-    else if ( this->pcType()=="bjacobi" )      return BLOCK_JACOBI_PRECOND;
-
-    else if ( this->pcType()=="sor" )          return SOR_PRECOND;
-
-    else if ( this->pcType()=="eisenstat" )    return EISENSTAT_PRECOND;
-
-    else if ( this->pcType()=="shell" )        return SHELL_PRECOND;
-
-    else if ( this->pcType()=="fieldsplit" )   return FIELDSPLIT_PRECOND;
-
-    else if ( this->pcType()=="ml" )   return ML_PRECOND;
-
-    else if ( this->pcType()=="gamg" )   return GAMG_PRECOND;
-
-    else if ( this->pcType()=="none" )   return NONE_PRECOND;
-
-    else return LU_PRECOND;
-
-} // Backend::pcEnumType
+    return pcTypeConvertStrToEnum( this->pcType() );
+}
 
 template<typename T>
 FieldSplitType
 Backend<T>::fieldSplitEnumType() const
 {
-    if ( this->fieldsplitType()=="additive" )  return ADDITIVE;
-
-    else if ( this->fieldsplitType()=="multiplicative" )  return MULTIPLICATIVE;
-
-    else if ( this->fieldsplitType()=="schur" )  return SCHUR;
-
-    else return ADDITIVE;
-
-} //Backend fieldSplitEnumType
+    return fieldsplitTypeConvertStrToEnum( this->fieldsplitType() );
+}
 
 template<typename T>
 MatSolverPackageType
 Backend<T>::matSolverPackageEnumType() const
 {
-    if ( this->pcFactorMatSolverPackageType()=="spooles" )           return MATSOLVER_SPOOLES;
-
-    else if ( this->pcFactorMatSolverPackageType()=="superlu" )      return MATSOLVER_SUPERLU;
-
-    else if ( this->pcFactorMatSolverPackageType()=="superlu-dist" ) return MATSOLVER_SUPERLU_DIST;
-
-    else if ( this->pcFactorMatSolverPackageType()=="umfpack" )      return MATSOLVER_UMFPACK;
-
-    else if ( this->pcFactorMatSolverPackageType()=="essl" )         return MATSOLVER_ESSL;
-
-    else if ( this->pcFactorMatSolverPackageType()=="lusol" )        return MATSOLVER_LUSOL;
-
-    else if ( this->pcFactorMatSolverPackageType()=="mumps" )        return MATSOLVER_MUMPS;
-
-    else if ( this->pcFactorMatSolverPackageType()=="pastix" )       return MATSOLVER_PASTIX;
-
-    else if ( this->pcFactorMatSolverPackageType()=="dscpack" )      return MATSOLVER_DSCPACK;
-
-    else if ( this->pcFactorMatSolverPackageType()=="matlab" )       return MATSOLVER_MATLAB;
-
-    else if ( this->pcFactorMatSolverPackageType()=="petsc" )        return MATSOLVER_PETSC;
-
-    else if ( this->pcFactorMatSolverPackageType()=="plapack" )      return MATSOLVER_PLAPACK;
-
-    else if ( this->pcFactorMatSolverPackageType()=="bas" )          return MATSOLVER_BAS;
-
-    else return MATSOLVER_PETSC;
-} // Backend matSolverPackageEnumType
+    return matSolverPackageConvertStrToEnum( this->pcFactorMatSolverPackageType() );
+}
 
 
 /*
@@ -762,121 +632,198 @@ Backend<T>::matSolverPackageEnumType() const
  */
 template class Backend<double>;
 
-
-void updateBackendPreconditionerOptions( po::options_description & _options, std::string const& prefix, std::string defaultpc = "lu" )
+void updateBackendPreconditionerOptions( po::options_description & _options, std::string const& prefix, std::string const& sub = "",
+                                         std::string pcType = "lu", bool useDefaultValue=true )
 {
+    std::string pcctx = (sub.empty())? "" : sub+"-";
     _options.add_options()
-        ( prefixvm( prefix,"pc-type" ).c_str(), Feel::po::value<std::string>()->default_value( defaultpc/*"lu"*/ ), "type of preconditioners (lu, ilut, ilutp, diag, id,...)" )
-        ( prefixvm( prefix,"sub-pc-type" ).c_str(), Feel::po::value<std::string>()->default_value( "lu" ), "type of sub-preconditioners (lu, ilut, ilutp, diag, id,...)" )
-        ( prefixvm( prefix,"pc-view" ).c_str(), Feel::po::value<bool>()->default_value( false ), "display preconditioner information" )
-        ( prefixvm( prefix,"sub-pc-view" ).c_str(), Feel::po::value<bool>()->default_value( false ), "display sub-preconditioner information" )
-        ( prefixvm( prefix,"constant-null-space" ).c_str(), Feel::po::value<bool>()->default_value( 0 ), "set the null space to be the constant values" )
-
-        ( prefixvm( prefix,"pc-gasm-type" ).c_str(), Feel::po::value<std::string>()->default_value( "restrict" ), "type of gasm (basic, restrict, interpolate, none)" )
-        ( prefixvm( prefix,"pc-gasm-overlap" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "number of overlap levels" )
-        ( prefixvm( prefix,"pc-asm-type" ).c_str(), Feel::po::value<std::string>()->default_value( "restrict" ), "type of asm (basic, restrict, interpolate, none)" )
-        ( prefixvm( prefix,"pc-asm-overlap" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "number of overlap levels" )
+        ( prefixvm( prefix,pcctx+"pc-type" ).c_str(),
+          (useDefaultValue)?Feel::po::value<std::string>()->default_value( pcType ):Feel::po::value<std::string>(),
+          "type of preconditioners (lu, ilut, ilutp, diag, id,...)" )
+        ( prefixvm( prefix,pcctx+"pc-view" ).c_str(),
+          (useDefaultValue)?Feel::po::value<bool>()->default_value( false ):Feel::po::value<bool>(),
+          "display preconditioner information" )
+        ( prefixvm( prefix,pcctx+"pc-use-config-default-petsc" ).c_str(),
+          (useDefaultValue)?Feel::po::value<bool>()->default_value( false ):Feel::po::value<bool>(),
+          "configure pc with defult petsc options" )
 #if defined(FEELPP_HAS_MUMPS) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
-        ( prefixvm( prefix,"pc-factor-mat-solver-package-type" ).c_str(), Feel::po::value<std::string>()->default_value( "mumps" ),
+        ( prefixvm( prefix,pcctx+"pc-factor-mat-solver-package-type" ).c_str(),
+          (useDefaultValue)?Feel::po::value<std::string>()->default_value( "mumps" ):Feel::po::value<std::string>(),
           "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
-        ( prefixvm( prefix,"sub-pc-factor-mat-solver-package-type" ).c_str(), Feel::po::value<std::string>()->default_value( "mumps" ),
-          "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
-
 #else
-        ( prefixvm( prefix,"pc-factor-mat-solver-package-type" ).c_str(), Feel::po::value<std::string>()->default_value( "petsc" ),
-          "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
-        ( prefixvm( prefix,"sub-pc-factor-mat-solver-package-type" ).c_str(), Feel::po::value<std::string>()->default_value( "petsc" ),
+        ( prefixvm( prefix,pcctx+"pc-factor-mat-solver-package-type" ).c_str(),
+          (useDefaultValue)?Feel::po::value<std::string>()->default_value( "petsc" ):Feel::po::value<std::string>(),
           "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
 #endif
+        ( prefixvm( prefix,pcctx+"ilu-threshold" ).c_str(),
+          (useDefaultValue)?Feel::po::value<double>()->default_value( 1e-3 ):Feel::po::value<double>(),
+          "threshold value for preconditioners" )
+        ( prefixvm( prefix,pcctx+"ilu-fillin" ).c_str(),
+          (useDefaultValue)?Feel::po::value<int>()->default_value( 2 ):Feel::po::value<int>(),
+          "fill-in level value for preconditioners" )
+        ( prefixvm( prefix,pcctx+"pc-factor-levels" ).c_str(),
+        (useDefaultValue)?Feel::po::value<int>()->default_value( 3 ):Feel::po::value<int>(),
+        "Sets the number of levels of fill to use for ilu" )
+        ( prefixvm( prefix,pcctx+"pc-factor-fill" ).c_str(),
+          (useDefaultValue)?Feel::po::value<double>()->default_value( 6 ):Feel::po::value<double>(),
+          "Indicate the amount of fill you expect in the factored matrix, fill = number nonzeros in factor/number nonzeros in original matrix." )
 
-        ( prefixvm( prefix,"ilu-threshold" ).c_str(), Feel::po::value<double>()->default_value( 1e-3 ), "threshold value for preconditioners" )
-        ( prefixvm( prefix,"ilu-fillin" ).c_str(), Feel::po::value<int>()->default_value( 2 ), "fill-in level value for preconditioners" )
-        ( prefixvm( prefix,"pc-factor-levels" ).c_str(), Feel::po::value<int>()->default_value( 3 ), "Sets the number of levels of fill to use for ilu" )
-        ( prefixvm( prefix,"sub-pc-factor-levels" ).c_str(), Feel::po::value<int>()->default_value( 3 ), "Sets the number of levels of fill to use for ilu as a sub-preconditioner" )
-        ( prefixvm( prefix,"pc-factor-fill" ).c_str(), Feel::po::value<double>()->default_value( 6 ), "Indicate the amount of fill you expect in the factored matrix, fill = number nonzeros in factor/number nonzeros in original matrix." )
-        ( prefixvm( prefix,"sub-pc-factor-fill" ).c_str(), Feel::po::value<double>()->default_value( 6 ), "Indicate the amount of fill you expect in the factored matrix, fill = number nonzeros in factor/number nonzeros in original matrix." )
+        ( prefixvm( prefix,pcctx+"pc-sor-omega" ).c_str(),
+          (useDefaultValue)?Feel::po::value<double>()->default_value( 1. ):Feel::po::value<double>(),
+          "Sets the SOR relaxation coefficient, omega" )
+        ( prefixvm( prefix,pcctx+"pc-sor-lits" ).c_str(),
+          (useDefaultValue)?Feel::po::value<int>()->default_value( 1 ):Feel::po::value<int>(),
+          "number of local iterations, smoothings over just variables on processor" )
+        ( prefixvm( prefix,pcctx+"pc-sor-its" ).c_str(),
+          (useDefaultValue)?Feel::po::value<int>()->default_value( 1 ):Feel::po::value<int>(),
+          "number of parallel iterations to use; each parallel iteration has lits local iterations" )
+        ( prefixvm( prefix,pcctx+"pc-sor-type" ).c_str(),
+          (useDefaultValue)?Feel::po::value<std::string>()->default_value( "local_symmetric" ):Feel::po::value<std::string>(),
+          "(symmetric,forward,backward,local_symmetric,local_forward,local_backward) Sets the SOR preconditioner to use symmetric (SSOR), backward, or forward relaxation. The local variants perform SOR on each processor" )
+        ;
+
+    // add gasm and asm (can not used as sub preconditioner)
+    if ( sub.empty() )
+        _options.add_options()
+            ( prefixvm( prefix,"pc-gasm-type" ).c_str(), (useDefaultValue)?Feel::po::value<std::string>()->default_value( "restrict" ):Feel::po::value<std::string>(),
+              "type of gasm (basic, restrict, interpolate, none)" )
+            ( prefixvm( prefix,"pc-gasm-overlap" ).c_str(), (useDefaultValue)?Feel::po::value<int>()->default_value( 1 ):Feel::po::value<int>(),
+              "number of overlap levels" )
+            ( prefixvm( prefix,"pc-asm-type" ).c_str(), (useDefaultValue)?Feel::po::value<std::string>()->default_value( "restrict" ):Feel::po::value<std::string>(),
+              "type of asm (basic, restrict, interpolate, none)" )
+            ( prefixvm( prefix,"pc-asm-overlap" ).c_str(), (useDefaultValue)?Feel::po::value<int>()->default_value( 1 ):Feel::po::value<int>(),
+              "number of overlap levels" )
+            ;
+}
+
+void updateBackendKSPOptions( po::options_description & _options, std::string const& prefix, std::string const& sub = "",
+                              std::string const& kspType = "gmres",double rtol = 1e-13, size_type maxit=1000, bool useDefaultValue=true  )
+{
+    std::string kspctx = (sub.empty())? "" : sub+"-";
+    _options.add_options()
+        ( prefixvm( prefix,kspctx+"ksp-type" ).c_str(),
+          (useDefaultValue)?Feel::po::value<std::string>()->default_value( kspType ):Feel::po::value<std::string>(),
+          "cg, bicgstab, gmres,preonly,..." )
+        ( prefixvm( prefix,kspctx+"ksp-view" ).c_str(),
+          (useDefaultValue)?Feel::po::value<bool>()->default_value( false ):Feel::po::value<bool>(),
+          "Prints the KSP data structure" )
+        ( prefixvm( prefix,kspctx+"ksp-monitor" ).c_str(),
+          (useDefaultValue)?Feel::po::value<bool>()->default_value( false ):Feel::po::value<bool>(),
+          "monitor ksp" )
+        ( prefixvm( prefix,kspctx+"ksp-converged-reason" ).c_str() , "converged reason ksp" )
+        ( prefixvm( prefix,kspctx+"ksp-verbose" ).c_str(),
+          (useDefaultValue)?Feel::po::value<int>()->default_value( 0 ):Feel::po::value<int>(),
+          "(=0,1,2) print solver iterations" )
+        ( prefixvm( prefix,kspctx+"ksp-rtol" ).c_str(),
+          (useDefaultValue)?Feel::po::value<double>()->default_value( rtol ):Feel::po::value<double>(),
+          "relative tolerance" )
+        ( prefixvm( prefix,kspctx+"ksp-atol" ).c_str(),
+          (useDefaultValue)?Feel::po::value<double>()->default_value( 1e-50 ):Feel::po::value<double>(),
+          "absolute tolerance" )
+        ( prefixvm( prefix,kspctx+"ksp-dtol" ).c_str(),
+          (useDefaultValue)?Feel::po::value<double>()->default_value( 1e5 ):Feel::po::value<double>(),
+          "divergence tolerance" )
+        ( prefixvm( prefix,kspctx+"ksp-maxit" ).c_str(),
+          (useDefaultValue)?Feel::po::value<size_type>()->default_value( maxit ):Feel::po::value<size_type>(),
+          "maximum number of iterations" )
+        ( prefixvm( prefix,kspctx+"ksp-maxit-reuse" ).c_str(),
+          (useDefaultValue)?Feel::po::value<size_type>():Feel::po::value<size_type>(),
+          "maximum number of iterations when reuse prec/jac" )
+        ( prefixvm( prefix,kspctx+"constant-null-space" ).c_str(),
+          (useDefaultValue)?Feel::po::value<bool>()->default_value( 0 ):Feel::po::value<bool>(),
+          "set the null space to be the constant values" )
+        ( prefixvm( prefix,kspctx+"ksp-use-config-default-petsc" ).c_str(),
+          (useDefaultValue)?Feel::po::value<bool>()->default_value( false ):Feel::po::value<bool>(),
+          "configure ksp with default petsc options" )
+        ( prefixvm( prefix,kspctx+"gmres-restart" ).c_str(),
+          (useDefaultValue)?Feel::po::value<int>()->default_value( 30 ):Feel::po::value<int>(),
+          "number of iterations before solver restarts (gmres)" )
         ;
 }
 
-void updateBackendKSPOptions( po::options_description & _options, std::string const& prefix )
+void updateBackendMGPreconditionerOptions( po::options_description & _options, std::string const& prefix, std::string const& sub = "" )
 {
+    std::string pcctx = (sub.empty())? "pc-" : sub+"-pc-";
+    // multigrid options
     _options.add_options()
-        ( prefixvm( prefix,"ksp-type" ).c_str(), Feel::po::value<std::string>()->default_value( "gmres" ), "cg, bicgstab, gmres" )
-        ( prefixvm( prefix,"ksp-view" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Prints the KSP data structure" )
-        ( prefixvm( prefix,"ksp-monitor" ).c_str(), Feel::po::value<bool>()->default_value( false ) , "monitor ksp" )
-        ( prefixvm( prefix,"ksp-converged-reason" ).c_str() , "converged reason ksp" )
-        ( prefixvm( prefix,"ksp-verbose" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "(=0,1,2) print solver iterations" )
-        ( prefixvm( prefix,"ksp-rtol" ).c_str(), Feel::po::value<double>()->default_value( 1e-13 ), "relative tolerance" )
-        ( prefixvm( prefix,"ksp-atol" ).c_str(), Feel::po::value<double>()->default_value( 1e-50 ), "absolute tolerance" )
-        ( prefixvm( prefix,"ksp-dtol" ).c_str(), Feel::po::value<double>()->default_value( 1e5 ), "divergence tolerance" )
-        ( prefixvm( prefix,"ksp-maxit" ).c_str(), Feel::po::value<size_type>()->default_value( 1000 ), "maximum number of iterations" )
-        ( prefixvm( prefix,"ksp-maxit-reuse" ).c_str(), Feel::po::value<size_type>(), "maximum number of iterations when reuse prec/jac" )
-        ( prefixvm( prefix,"gmres-restart" ).c_str(), Feel::po::value<int>()->default_value( 30 ), "number of iterations before solver restarts (gmres)" )
+        ( prefixvm( prefix,pcctx+"mg-levels" ).c_str(), Feel::po::value<int>()->default_value( 10/*2*/ ), "number of levels including finest" )
+        ( prefixvm( prefix,pcctx+"mg-type" ).c_str(), Feel::po::value<std::string>()->default_value( "multiplicative" ), "Determines the form of multigrid to use: multiplicative, additive, full, kaskade " )
+        ( prefixvm( prefix,pcctx+"mg-smoothdown" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "number of smoothing steps before applying restriction operator" )
         ;
-}
-
-
-void updateBackendMGPreconditionerOptions( po::options_description & _options, std::string const& prefix )
-{
-    // mg or ml preconditioner
+    // ml options
     _options.add_options()
-        ( prefixvm( prefix,"pc-mg-levels" ).c_str(), Feel::po::value<int>()->default_value( 3 ), "number of levels including finest" )
-        ( prefixvm( prefix,"pc-mg-type" ).c_str(), Feel::po::value<std::string>()->default_value( "kaskade" ), "Determines the form of multigrid to use: multiplicative, additive, full, kaskade " )
-        ( prefixvm( prefix,"pc-mg-smoothdown" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "number of smoothing steps before applying restriction operator" )
-        ( prefixvm( prefix,"pc-ml-reuse-interpolation" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Reuse the interpolation operators when possible (cheaper, weaker when matrix entries change a lot)" )
-        ( prefixvm( prefix,"pc-ml-keep-agg-info" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Allows the preconditioner to be reused, or auxilliary matrices to be generated" )
-        ( prefixvm( prefix,"pc-ml-reusable" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Store intermedaiate data structures so that the multilevel hierarchy is reusable" )
-        ( prefixvm( prefix,"pc-ml-old-hierarchy" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Use old routine to generate hierarchy" )
+        ( prefixvm( prefix,pcctx+"ml-reuse-interpolation" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Reuse the interpolation operators when possible (cheaper, weaker when matrix entries change a lot)" )
+        ( prefixvm( prefix,pcctx+"ml-keep-agg-info" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Allows the preconditioner to be reused, or auxilliary matrices to be generated" )
+        ( prefixvm( prefix,pcctx+"ml-reusable" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Store intermedaiate data structures so that the multilevel hierarchy is reusable" )
+        ( prefixvm( prefix,pcctx+"ml-old-hierarchy" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Use old routine to generate hierarchy" )
         ;
-
-    std::string prefixMGCoarse = ( boost::format( "%1%mg-coarse" ) %prefixvm( prefix,"" ) ).str();
-    updateBackendPreconditionerOptions( _options, prefixMGCoarse );
+    // gamg options
     _options.add_options()
-        ( prefixvm( prefixMGCoarse,"ksp-type" ).c_str(), Feel::po::value<std::string>()->default_value( "gmres" ), "cg, bicgstab, gmres" );
-
-
+        ( prefixvm( prefix,pcctx+"gamg-type" ).c_str(), Feel::po::value<std::string>()->default_value( "agg" ), "type of generalized algebraic multigrid : agg, geo " )
+        ( prefixvm( prefix,pcctx+"gamg-proc-eq-lim" ).c_str(), Feel::po::value<int>()->default_value( 50 ), "number of equations to aim for on coarse grids via processor reduction" )
+        ( prefixvm( prefix,pcctx+"gamg-coarse-eq-lim" ).c_str(), Feel::po::value<int>()->default_value( 800 ), "max number of equations on coarse grids" )
+        ( prefixvm( prefix,pcctx+"gamg-threshold" ).c_str(), Feel::po::value<double>()->default_value( 0. ), "relative threshold to use for dropping edges in aggregation graph" )
+        ;
+    // coarse ksp/pc
+    std::string mgctx = (sub.empty())? "mg-" : sub+"-mg-";
+    std::string prefixMGCoarse = ( boost::format( "%1%%2%coarse" ) %prefixvm(prefix,"") %mgctx ).str();
+    updateBackendPreconditionerOptions( _options, prefixMGCoarse, "", "redundant"/*:"lu"*/ );
+    updateBackendPreconditionerOptions( _options, prefixMGCoarse, "sub", "lu" );
+    updateBackendKSPOptions( _options,prefixMGCoarse,"", "preonly",1e-5,50);
+    updateBackendKSPOptions( _options,prefixMGCoarse,"sub", "preonly",1e-5,50);
+    // all levels ksp/pc (not including coarse level) with default values
+    std::string prefixMGLevelsGeneric = prefixvm( prefix, mgctx+"levels" );
+    updateBackendPreconditionerOptions( _options, prefixMGLevelsGeneric,    "", "sor" );
+    updateBackendPreconditionerOptions( _options, prefixMGLevelsGeneric, "sub", "lu"  ); // gasm/asm
+    updateBackendKSPOptions( _options,prefixMGLevelsGeneric,   "", "richardson", 1e-5, 2  );
+    updateBackendKSPOptions( _options,prefixMGLevelsGeneric,"sub",    "preonly", 1e-5, 50 ); // gasm/asm
+    // fine level
+    std::string prefixMGFineLevel = prefixvm( prefix, mgctx+"fine-level" );
+    updateBackendPreconditionerOptions( _options, prefixMGFineLevel,    "", "sor", false );
+    updateBackendPreconditionerOptions( _options, prefixMGFineLevel, "sub", "lu", false  ); // gasm/asm
+    updateBackendKSPOptions( _options, prefixMGFineLevel,    "", "richardson", 1e-5, 2, false  );
+    updateBackendKSPOptions( _options, prefixMGFineLevel, "sub",    "preonly", 1e-5, 50, false ); // gasm/asm
+    // each levels 1 to 5 can be control separately
     for ( uint16_type i=1; i<6; ++i )
     {
-        std::string prefixMGLevels = ( boost::format( "%1%mg-levels%2%" ) %prefixvm( prefix,"" ) %i ).str();
-
-        updateBackendPreconditionerOptions( _options, prefixMGLevels );
-
-        _options.add_options()
-            ( prefixvm( prefixMGLevels,"ksp-type" ).c_str(), Feel::po::value<std::string>()->default_value( "gmres" ), "cg, bicgstab, gmres" )
-            ( prefixvm( prefixMGLevels,"ksp-monitor" ).c_str(), Feel::po::value<bool>()->default_value( false ) , "monitor ksp" )
-            ( prefixvm( prefixMGLevels,"ksp-rtol" ).c_str(), Feel::po::value<double>()->default_value( 1e-3 ), "relative tolerance" )
-            ( prefixvm( prefixMGLevels,"ksp-maxit" ).c_str(), Feel::po::value<size_type>()->default_value( 50 ), "maximum number of iterations" )
-            ;
+        std::string prefixMGLevels = ( boost::format( "%1%%2%levels%3%" ) %prefixvm(prefix,"") %mgctx %i ).str();
+        updateBackendPreconditionerOptions( _options, prefixMGLevels,    "", "sor", false );
+        updateBackendPreconditionerOptions( _options, prefixMGLevels, "sub",  "lu", false ); // gasm/asm
+        updateBackendKSPOptions( _options,prefixMGLevels,   "", "richardson", 1e-5,  2, false  );
+        updateBackendKSPOptions( _options,prefixMGLevels,"sub",    "preonly", 1e-5, 50, false ); // gasm/asm
     }
 }
 
-void updateBackendFieldSplitPreconditionerOptions( po::options_description & _options, std::string const& prefix )
+void updateBackendFieldSplitPreconditionerOptions( po::options_description & _options, std::string const& prefix, std::string const& sub = "" )
 {
+    std::string pcctx = (sub.empty())? "" : sub+"-";
+    // field split options
     _options.add_options()
-        ( prefixvm( prefix,"fieldsplit-type" ).c_str(), Feel::po::value<std::string>()->default_value( "additive" ), "type of fieldsplit (additive, multiplicative, symmetric-multiplicative, schur)" )
-        ( prefixvm( prefix,"fieldsplit-fields" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "fields definition (ex: --fieldsplit-fields=0->(0,2),1->(1)" )
-
-        ( prefixvm( prefix,"fieldsplit-schur-fact-type" ).c_str(), Feel::po::value<std::string>()->default_value( "full" ), "type of schur factorization (diag, lower, upper, full)" )
-        ( prefixvm( prefix,"fieldsplit-schur-precondition" ).c_str(), Feel::po::value<std::string>()->default_value( "a11" ), "self,user,a11" )
+        ( prefixvm( prefix,pcctx+"fieldsplit-type" ).c_str(), Feel::po::value<std::string>()->default_value( "additive" ), "type of fieldsplit (additive, multiplicative, symmetric-multiplicative, schur)" )
+        ( prefixvm( prefix,pcctx+"fieldsplit-fields" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "fields definition (ex: --fieldsplit-fields=0->(0,2),1->(1)" )
         ;
-
+    // schur complement options
+    _options.add_options()
+        ( prefixvm( prefix,pcctx+"fieldsplit-schur-fact-type" ).c_str(), Feel::po::value<std::string>()->default_value( "full" ), "type of schur factorization (diag, lower, upper, full)" )
+        ( prefixvm( prefix,pcctx+"fieldsplit-schur-precondition" ).c_str(), Feel::po::value<std::string>()->default_value( "a11" ), "self,user,a11" )
+        ;
+    // ksp/pc options for each split
     for ( uint16_type i=0; i<5; ++i )
     {
-        std::string prefixfieldsplit = ( boost::format( "%1%fieldsplit-%2%" ) %prefixvm( prefix,"" ) %i ).str();
-
-        _options.add_options()
-            ( prefixvm( prefixfieldsplit,"ksp-type").c_str(), Feel::po::value<std::string>()->default_value( /*"gmres"*/"preonly" ), "type of fieldsplit solver" )
-            ;
-
-        updateBackendPreconditionerOptions( _options, prefixfieldsplit, (i==0)?"lu":"none" );
-
-        updateBackendMGPreconditionerOptions( _options, prefixfieldsplit );
+        std::string prefixfieldsplit = ( boost::format( "%1%%2%fieldsplit-%3%" ) %prefixvm( prefix,"" ) %pcctx %i ).str();
+        updateBackendKSPOptions( _options, prefixfieldsplit, "", "preonly", 1e-5, 50 );
+        updateBackendKSPOptions( _options, prefixfieldsplit, "sub", "preonly", 1e-5, 50 ); // ksp with gasm
+        updateBackendPreconditionerOptions( _options, prefixfieldsplit, "", (i==0)?"lu":"none" ); // lu/ilu
+        updateBackendPreconditionerOptions( _options, prefixfieldsplit, "sub", "lu" ); // gasm
+        updateBackendMGPreconditionerOptions( _options, prefixfieldsplit ,"" ); // multigrid
     }
-
-    std::string prefixfieldsplitLSC = prefixvm( prefixvm( prefix,"fieldsplit-1" ), "lsc" );
-    updateBackendPreconditionerOptions( _options, prefixfieldsplitLSC );
-    _options.add_options()
-        ( prefixvm( prefixfieldsplitLSC,"ksp-type" ).c_str(), Feel::po::value<std::string>()->default_value( "preonly" ), "preonly, gmres, cg,..." );
+    // specific case : lsc preconditioner ( only with split 1 )
+    std::string prefixfieldsplitLSC = prefixvm( prefixvm( prefix,pcctx+"fieldsplit-1" ), "lsc" );
+    updateBackendPreconditionerOptions( _options, prefixfieldsplitLSC ,"" );
+    updateBackendPreconditionerOptions( _options, prefixfieldsplitLSC ,"sub" );
+    updateBackendMGPreconditionerOptions( _options, prefixfieldsplitLSC ,"" ); // multigrid
+    updateBackendKSPOptions( _options, prefixfieldsplitLSC, "", "preonly", 1e-5, 50 ); // lsc+(lu/ilu)
+    updateBackendKSPOptions( _options, prefixfieldsplitLSC, "sub", "preonly", 1e-5, 50 ); // lsc+gasm
 
 }
 
@@ -916,14 +863,18 @@ po::options_description backend_options( std::string const& prefix )
         ( prefixvm( prefix,"snes-converged-reason" ).c_str() , "converged reason snes" )
         ;
 
-    updateBackendKSPOptions( _options, prefix );
+    updateBackendKSPOptions( _options, prefix, "", "gmres" );// ksp options
+    updateBackendPreconditionerOptions( _options, prefix, "", "lu" ); // pc options
 
-    updateBackendPreconditionerOptions( _options, prefix );
+    updateBackendKSPOptions( _options, prefix, "sub", "preonly" );// gasm/bjacobi + ksp
+    updateBackendPreconditionerOptions( _options, prefix, "sub", "lu" ); // gasm/asm
 
-    updateBackendMGPreconditionerOptions( _options, prefix );
+    updateBackendMGPreconditionerOptions( _options, prefix ); // multigrid
+    updateBackendMGPreconditionerOptions( _options, prefix, "sub" ); // (gasm/bjacobi)+multigrid
 
-    updateBackendFieldSplitPreconditionerOptions( _options, prefix );
-    updateBackendFieldSplitPreconditionerOptions( _options, prefixvm( prefix,"fieldsplit-0" ) );
+    updateBackendFieldSplitPreconditionerOptions( _options, prefix ); // fieldsplit
+    updateBackendFieldSplitPreconditionerOptions( _options, prefix, "sub" ); // (gasm/bjacobi) + fieldsplit
+    updateBackendFieldSplitPreconditionerOptions( _options, prefixvm( prefix,"fieldsplit-0" ) ); // fieldsplit + (fieldsplit in subsplit0)
 
 
     return _options;
