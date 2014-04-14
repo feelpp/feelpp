@@ -982,18 +982,47 @@ public:
 
         if ( M_Aqm.size() > 0 )
         {
+            //when using EIM we need to be careful
+            //if we want to estimate the error then there
+            //is an "extra" basis fuction.
+            auto all_errors = eimInterpolationErrorEstimation();
+            auto errorsM = all_errors.template get<0>();
+            auto errorsA = all_errors.template get<1>();
+            auto errorsF = all_errors.template get<2>();
+            std::map<int,double>::iterator it;
+            auto endA = errorsA.end();
+            auto endM = errorsM.end();
+
             M_Qm=M_Mqm.size();
             M_mMaxM.resize(M_Qm);
             for(int q=0; q<M_Qm; q++)
             {
-                M_mMaxM[q]=M_Mqm[q].size();
+                auto itq = errorsM.find(q);
+                if( itq != endM) //found
+                {
+                    //we have an eim error estimation
+                    M_mMaxM[q]=M_Mqm[q].size()-1;
+                }
+                else //not found
+                {
+                    M_mMaxM[q]=M_Mqm[q].size();
+                }
             }
 
             M_Qa=M_Aqm.size();
             M_mMaxA.resize(M_Qa);
             for(int q=0; q<M_Qa; q++)
             {
-                M_mMaxA[q]=M_Aqm[q].size();
+                auto itq = errorsA.find(q);
+                if( itq != endA ) //found
+                {
+                    //we have an eim error estimation
+                    M_mMaxA[q]=M_Aqm[q].size()-1;
+                }
+                else //not found
+                {
+                    M_mMaxA[q]=M_Aqm[q].size();
+                }
             }
 
             M_Nl=M_Fqm.size();
@@ -1003,9 +1032,19 @@ public:
             {
                 M_Ql[output]=M_Fqm[output].size();
                 M_mMaxF[output].resize(M_Ql[output]);
+                auto endF = errorsF[output].end();
                 for(int q=0; q<M_Ql[output]; q++)
                 {
-                    M_mMaxF[output][q]=M_Fqm[output][q].size();
+                    auto itq = errorsF[output].find(q);
+                    if( itq != endF ) //found
+                    {
+                        //we have an eim error estimation
+                        M_mMaxF[output][q]=M_Fqm[output][q].size()-1;
+                    }
+                    else //not found
+                    {
+                        M_mMaxF[output][q]=M_Fqm[output][q].size();
+                    }
                 }
             }
         }
@@ -1250,27 +1289,38 @@ public:
     }
 
 
-    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu )
+    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , vectorN_type const& uN )
     {
-        return eimInterpolationErrorEstimation( mu, mpl::bool_<model_type::is_time_dependent>() );
+        return eimInterpolationErrorEstimation( mu, uN, mpl::bool_<model_type::is_time_dependent>() );
     }
-    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , mpl::bool_<true> )
+    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , vectorN_type const& uN, mpl::bool_<true> )
     {
-        return M_model->eimInterpolationErrorEstimation( mu );
+        return M_model->eimInterpolationErrorEstimation( mu , uN );
     }
-    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , mpl::bool_<false> )
+    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , vectorN_type const& uN, mpl::bool_<false> )
     {
         std::map< int, double > errorsM;
         std::map< int, double > errorsA;
         std::vector< std::map< int, double > > errorsF;
-        boost::tie(  errorsA , errorsF ) = M_model->eimInterpolationErrorEstimation( mu );
+        boost::tie(  errorsA , errorsF ) = M_model->eimInterpolationErrorEstimation( mu ,uN );
         return boost::make_tuple( errorsM, errorsA, errorsF );
     }
-    eim_interpolation_error_type eimInterpolationErrorEstimation()
+
+    eim_interpolation_error_type eimInterpolationErrorEstimation( )
     {
-        auto Dmu = M_model->parameterSpace();
-        auto muref = Dmu->min();
-        return eimInterpolationErrorEstimation( muref );
+        return eimInterpolationErrorEstimation( mpl::bool_<model_type::is_time_dependent>() );
+    }
+    eim_interpolation_error_type eimInterpolationErrorEstimation( mpl::bool_<true> )
+    {
+        return M_model->eimInterpolationErrorEstimation( );
+    }
+    eim_interpolation_error_type eimInterpolationErrorEstimation( mpl::bool_<false> )
+    {
+        std::map< int, double > errorsM;
+        std::map< int, double > errorsA;
+        std::vector< std::map< int, double > > errorsF;
+        boost::tie(  errorsA , errorsF ) = M_model->eimInterpolationErrorEstimation( );
+        return boost::make_tuple( errorsM, errorsA, errorsF );
     }
 
     /**
