@@ -31,38 +31,6 @@
 
 namespace Feel
 {
-MatSolverPackageType
-matSolverPackageEnumType(std::string const& type )
-{
-    if ( type =="spooles" )          return MATSOLVER_SPOOLES;
-
-    else if ( type=="superlu" )      return MATSOLVER_SUPERLU;
-
-    else if ( type=="superlu-dist" ) return MATSOLVER_SUPERLU_DIST;
-
-    else if ( type=="umfpack" )      return MATSOLVER_UMFPACK;
-
-    else if ( type=="essl" )         return MATSOLVER_ESSL;
-
-    else if ( type=="lusol" )        return MATSOLVER_LUSOL;
-
-    else if ( type=="mumps" )        return MATSOLVER_MUMPS;
-
-    else if ( type=="pastix" )       return MATSOLVER_PASTIX;
-
-    else if ( type=="dscpack" )      return MATSOLVER_DSCPACK;
-
-    else if ( type=="matlab" )       return MATSOLVER_MATLAB;
-
-    else if ( type=="petsc" )        return MATSOLVER_PETSC;
-
-    else if ( type=="plapack" )      return MATSOLVER_PLAPACK;
-
-    else if ( type=="bas" )          return MATSOLVER_BAS;
-
-    else return MATSOLVER_PETSC;
-} // matSolverPackageEnumType
-
 void
 PetscPCFactorSetMatSolverPackage( PC & pc, MatSolverPackageType mspackt )
 {

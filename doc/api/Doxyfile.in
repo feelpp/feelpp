@@ -260,7 +260,7 @@ EXTENSION_MAPPING      =
 # can mix doxygen, HTML, and XML commands with Markdown formatting.
 # Disable only in case of backward compatibilities issues.
 
-MARKDOWN_SUPPORT       = NO
+MARKDOWN_SUPPORT       = YES
 
 # When enabled doxygen tries to link words that correspond to documented classes,
 # or namespaces to their corresponding documentation. Such a link can be
@@ -743,7 +743,7 @@ EXCLUDE_SYMLINKS       = YES
 #EXCLUDE_PATTERNS       = */.svn/* */.git/* */research/* */.tex/*
 # research may now be include
 # shall we consider to explicitly har research subdirectory to be excluded??
-EXCLUDE_PATTERNS       = */.svn/* */.git/* */.tex/*
+EXCLUDE_PATTERNS       = */.svn/* */.git/* */.tex/* *.md/*
 
 # The EXCLUDE_SYMBOLS tag can be used to specify one or more symbol names
 # (namespaces, classes, functions, etc.) that should be excluded from the
@@ -826,7 +826,7 @@ FILTER_SOURCE_PATTERNS =
 # This can be useful if you have a project on for instance GitHub and want reuse
 # the introduction page also for the doxygen output.
 
-USE_MDFILE_AS_MAINPAGE =
+USE_MDFILE_AS_MAINPAGE = NO
 
 #---------------------------------------------------------------------------
 # configuration options related to source browsing
