@@ -405,7 +405,7 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild )
     // memory nodes
     std::vector<size_type> new_node_numbers( this->domainSpace()->nLocalDof(),invalid_size_type_value );
     // the number of nodes on the new mesh, will be incremented
-    size_type n_new_nodes = 0, n_new_elem  = 0, n_new_faces = 0;
+    size_type nNewNodes = 0, nNewElem  = 0, nNewFaces = 0;
     // memory for parallelism
     const int nProc = M_mesh->worldComm().localSize();
     std::map<size_type,size_type> mapGhostDofIdClusterToProcess;
@@ -418,7 +418,6 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild )
     gmc_ptrtype gmc;
     if ( it!=en )
         gmc = gmc_ptrtype( new gmc_type( this->domainSpace()->mesh()->gm(), *it, M_gmpc ) );
-    //gmc_ptrtype gmc( new gmc_type( this->domainSpace()->mesh()->gm(), *it, M_gmpc ) );
 
     for ( size_type elid = 0, pt_image_id = 0; it != en; ++it )
     {
@@ -432,7 +431,7 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild )
         auto itl = M_p2m.mesh()->beginElement();
         auto const enl = M_p2m.mesh()->endElement();
 
-        //if (doParallelBuild && it->numberOfPartitions() >1)
+        // init parallel data
         if ( doParallelBuild && it->numberOfNeighborPartitions() > 0 )
         {
             // memory elt wich is send
@@ -444,6 +443,20 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild )
                 nbMsgToRecv[*itneighbor]++;
         }
 
+        // get dofs in each faces of this ref element
+        std::vector< std::set<size_type> > dofsInFace( it->numTopologicalFaces );
+        for ( uint16_type f = 0; f < it->numTopologicalFaces ; f++ )
+        {
+            auto const& theFaceBase = it->face( f );
+            for ( size_type localFaceDof = 0 ; localFaceDof < this->domainSpace()->dof()->nLocalDofOnFace() ; ++localFaceDof )
+            {
+                const size_type globFaceDof = this->domainSpace()->dof()->localToGlobal( theFaceBase,localFaceDof,0 ).template get<0>();
+                if ( globFaceDof != invalid_size_type_value )
+                    dofsInFace[f].insert( globFaceDof );
+            }
+        }
+
+        // iterate on each new element (from ref elt)
         for ( int cptEltp2m=0 ; itl != enl; ++itl, ++elid,++cptEltp2m )
         {
             DVLOG(2) << "************************************\n";
@@ -482,22 +495,12 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild )
                 if (doParallelBuild && !this->domainSpace()->dof()->dofGlobalClusterIsOnProc(this->domainSpace()->dof()->mapGlobalProcessToGlobalCluster(ptid)))
                     mapGhostDofIdClusterToProcess[this->domainSpace()->dof()->mapGlobalProcessToGlobalCluster(ptid)] = ptid;
 
-
-#if 0
-                //if ( pts_done[ptid] == false )
-                {
-                    dofindices[pt_image_id] = boost::make_tuple( elid, p, ptid );
-                    pt_image_id++;
-                    //pts_done[ptid] = pt_image_id;
-                }
-#endif
-
                 // add new node if not inserted before
                 if ( new_node_numbers[ptid] == invalid_size_type_value )
                     {
-                        new_node_numbers[ptid] = n_new_nodes;
+                        new_node_numbers[ptid] = nNewNodes;
 
-                        point_type __pt( n_new_nodes, boost::get<0>( this->domainSpace()->dof()->dofPoint( ptid ) )  );
+                        point_type __pt( nNewNodes, boost::get<0>( this->domainSpace()->dof()->dofPoint( ptid ) )  );
                         __pt.setProcessId( it->processId() );
                         __pt.setProcessIdInPartition( it->pidInPartition() );
 
@@ -525,7 +528,7 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild )
 
                         M_mesh->addPoint( __pt );
 
-                        n_new_nodes++;
+                        nNewNodes++;
                     }
                 //--------------------------------------------------------------------//
 
@@ -572,48 +575,80 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild )
             //FEELPP_ASSERT( ublas::norm_inf( elt.G()- itl->G() ) < 1e-10 )( itl->G() )( elt.G() ).warn( "local: not same element" );
 #endif
 
-            // set id of element
-            elt.setId ( n_new_elem );
-            // increment the new element counter
-            n_new_elem++;
+            // set id of element and increment the element counter
+            elt.setId ( nNewElem++ );
             // add element in mesh
             auto const& theNewElt = M_mesh->addElement ( elt );
 
-            //if (doParallelBuild && it->numberOfPartitions() >1)  mapActiveEltWhichAreGhostInOtherPartition[it->id()][cptEltp2m] = theNewElt.id();
-            if (doParallelBuild && it->numberOfNeighborPartitions() > 0)  mapActiveEltWhichAreGhostInOtherPartition[it->id()][cptEltp2m] = theNewElt.id();
+            // save data if elt is connected to another partition
+            if (doParallelBuild && it->numberOfNeighborPartitions() > 0)
+                mapActiveEltWhichAreGhostInOtherPartition[it->id()][cptEltp2m] = theNewElt.id();
 
-#if 0
+#if 1
             // Maybe add faces for this element
             for ( uint16_type s=0; s<itl->numTopologicalFaces; s++ )
             {
-                //continue;
                 if ( !itl->facePtr( s ) ) continue;
 
                 auto const& theFaceBase = itl->face( s );
-                //size_type global_face_id = theFaceBase.id();
 
-                face_type new_face;// = theFaceBase;
-                new_face.disconnect();
-                new_face.setOnBoundary( true );
-                new_face.setProcessId( it->processId() );
-                new_face.setNumberOfPartitions( 1/*it->numberOfPartitions()*/ );
-                //new_face.setMarker( theFaceBase.marker().value() );
-                //new_face.setMarker2( theFaceBase.marker2().value() );
-                //new_face.setMarker3( theFaceBase.marker3().value() );
+                face_type newFace;
+                newFace.setOnBoundary( true );
+                newFace.setProcessId( it->processId() );
+                newFace.setProcessIdInPartition( it->pidInPartition() );
+                newFace.setProcessId(it->processId());
+                if ( doParallelBuild )
+                {
+                    newFace.setNumberOfPartitions( it->numberOfPartitions() );
+                    newFace.setNeighborPartitionIds( it->neighborPartitionIds() );
+                }
+                else
+                {
+                    newFace.setNumberOfPartitions( 1 );
+                }
 
+                // set points in face and up counter for connecting with ref faces
+                std::vector<uint16_type> nPtInRefFace(it->numTopologicalFaces,0);
                 for ( uint16_type p = 0; p < theFaceBase.nPoints(); ++p )
+                {
+                    uint16_type localptidFace = theFaceBase.point( p ).id();
+                    uint16_type localptidFace_dof = localDof( it, localptidFace );
+                    const size_type theglobdof = this->domainSpace()->dof()->localToGlobal( it->id(),localptidFace_dof,0 ).template get<0>();
+                    newFace.setPoint( p, M_mesh->point( new_node_numbers[theglobdof] ) );
+                    // update face point connection with reference faces
+                    for ( uint16_type fId = 0; fId <  dofsInFace.size() ; ++fId )
                     {
-                        uint16_type localptidFace = theFaceBase.point( p ).id();
-                        uint16_type localptidFace_dof = localDof( it, localptidFace );
-                        const size_type theglobdof = this->domainSpace()->dof()->localToGlobal( it->id(),localptidFace_dof,0 ).template get<0>();
-                        new_face.setPoint( p, M_mesh->point( new_node_numbers[theglobdof] ) );
+                        if ( dofsInFace[fId].find( theglobdof ) != dofsInFace[fId].end() )
+                            nPtInRefFace[fId]++;
                     }
+                }
+
+                // update faces from reference faces
+                for ( uint16_type fId = 0; fId < nPtInRefFace.size() ; ++fId )
+                {
+                    // find connection if all points are in reference faces
+                    if ( nPtInRefFace[fId] == theFaceBase.nPoints() )
+                    {
+                        // update marker from ref
+                        newFace.setMarker( it->face( fId ).marker().value() );
+                        newFace.setMarker2( it->face( fId ).marker2().value() );
+                        newFace.setMarker3( it->face( fId ).marker3().value() );
+                    }
+                }
+
+                // set id of element and increment the face counter
+                newFace.setId( nNewFaces++ );
                 // add it to the list of faces
-                auto addFaceRes = M_mesh->addFace( new_face );
+                auto addFaceRes = M_mesh->addFace( newFace );
             }
 #endif
 
         } //  for ( int cptEltp2m=0 ; itl != enl; ++itl, ++elid,++cptEltp2m )
+
+
+
+
+
 
     } // for ( size_type elid = 0, pt_image_id = 0; it != en; ++it )
 
@@ -807,14 +842,14 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild )
                             if (new_ghost_node_numbers.find(globclusterdofRecv) == new_ghost_node_numbers.end() )
                             {
                                 // add a new ghost point
-                                new_ghost_node_numbers[globclusterdofRecv] = n_new_nodes;
-                                thenewptid = n_new_nodes;
+                                new_ghost_node_numbers[globclusterdofRecv] = nNewNodes;
+                                thenewptid = nNewNodes;
                                 CHECK( thenewptid!=invalid_size_type_value ) << "--3---invalid point id\n";
-                                point_type __pt( n_new_nodes, mapLocalToGlobalPointId[(int)*itpt].template get<1>() );
+                                point_type __pt( nNewNodes, mapLocalToGlobalPointId[(int)*itpt].template get<1>() );
                                 __pt.setProcessId( invalid_uint16_type_value );
                                 __pt.setProcessIdInPartition( myGhostEltBase.pidInPartition() );
                                 M_mesh->addPoint( __pt );
-                                n_new_nodes++;
+                                nNewNodes++;
                             }
                             else
                             {
@@ -831,10 +866,10 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild )
                     } // for ( int p = 0 ; itpt!=enpt ; ++itpt,++p )
 
                     // set id of element
-                    elt.setId ( n_new_elem );
+                    elt.setId ( nNewElem++ );
 
                     // increment the new element counter
-                    n_new_elem++;
+                    nNewElem++;
 
                     auto const& theNewElt = M_mesh->addElement ( elt );
                     M_mesh->elements().modify( M_mesh->elementIterator( theNewElt.id(),  proc ),
