@@ -31,8 +31,9 @@ int main(int argc, char**argv )
 	laplacianoptions.add_options()
 		( "mu", po::value<double>()->default_value( 1.0 ), "coeff" )
 		;
+
 	Environment env( _argc=argc, _argv=argv,
-                     _desc=laplacianoptions.add(feel_options()),
+                     _desc=laplacianoptions,
                      _about=about(_name="qs_laplacian",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
@@ -42,18 +43,20 @@ int main(int argc, char**argv )
     auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
     auto Vh = Pch<2>( mesh );
     auto u = Vh->element("u");
-    auto g = expr( option(_name="functions.g").as<std::string>() );
+    auto mu = doption(_name="mu");
+    auto f = expr<1,1,2>( soption(_name="functions.f") );
+    auto g = expr<1,1,2>( soption(_name="functions.g") );
     auto v = Vh->element( g, "g" );
     //# endmarker2 #
 
     //# marker3 #
     auto l = form1( _test=Vh );
     l = integrate(_range=elements(mesh),
-                  _expr=id(v));
+                  _expr=f*id(v));
 
     auto a = form2( _trial=Vh, _test=Vh);
     a = integrate(_range=elements(mesh),
-                  _expr=gradt(u)*trans(grad(v)) );
+                  _expr=mu*gradt(u)*trans(grad(v)) );
     a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u, _expr=g );
     a.solve(_rhs=l,_solution=u);
     //# endmarker3 #

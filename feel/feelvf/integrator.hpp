@@ -204,6 +204,7 @@ public:
                 mpl::identity<Eigen::Matrix<expression_value_type, shape::M, shape::N> > >::type::type value_type;
 #else
         typedef Eigen::Matrix<expression_value_type, shape::M, shape::N> value_type;
+        typedef Eigen::Matrix<expression_value_type, shape::M, shape::N> evaluate_type;
 #endif
         typedef Eigen::Matrix<expression_value_type, shape::M, shape::N> matrix_type;
         static value_type zero( mpl::bool_<false> )
@@ -228,6 +229,7 @@ public:
     //typedef typename eval::value_type value_type;
     typedef typename eval::matrix_type matrix_type;
     typedef typename eval::matrix_type value_type;
+    typedef typename eval::matrix_type evaluate_type;
     //@}
 
     /** @name Constructors, destructor
