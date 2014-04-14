@@ -379,7 +379,7 @@ public :
     ConfigureSubPC( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
                     WorldComm const& worldComm, std::string const& prefix, std::vector<std::string> const& prefixOverwrite );
 private :
-    std::string M_subPCtype;
+    std::string M_subPCtype, M_subMatSolverPackage;
     bool M_subPCview;
     std::string M_subPCfromPCtype;
     int M_nBlock;
@@ -406,7 +406,7 @@ private :
     bool M_mlReuseInterp, M_mlKeepAggInfo, M_mlReusable, M_mlOldHierarchy;
 
     std::string M_prefixMGCoarse;
-    std::string M_coarsePCtype;
+    std::string M_coarsePCtype, M_coarsePCMatSolverPackage;
     bool M_coarsePCview;
 };
 
@@ -431,7 +431,7 @@ private :
     double M_threshold;
 
     std::string M_prefixMGCoarse;
-    std::string M_coarsePCtype;
+    std::string M_coarsePCtype, M_coarsePCMatSolverPackage;
     bool M_coarsePCview;
 };
 
