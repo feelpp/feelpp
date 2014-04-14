@@ -84,6 +84,7 @@ pcTypeConvertStrToEnum( std::string const& type )
     else if ( type=="ml" )           return PreconditionerType::ML_PRECOND;
     else if ( type=="gamg" )         return PreconditionerType::GAMG_PRECOND;
     else if ( type=="boomeramg" )    return PreconditionerType::BOOMERAMG_PRECOND;
+    else if ( type=="redundant" )    return PreconditionerType::REDUNDANT_PRECOND;
     else if ( type=="none" )         return PreconditionerType::NONE_PRECOND;
     else                             return PreconditionerType::LU_PRECOND;
 }

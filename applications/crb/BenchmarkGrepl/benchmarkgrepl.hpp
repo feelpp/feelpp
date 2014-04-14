@@ -230,6 +230,11 @@ public:
         std::vector< std::vector<std::vector<vector_ptrtype> > >
         > affine_decomposition_type;
 
+    typedef boost::tuple<
+        std::map<int,double>,
+        std::vector< std::map<int,double> >
+        > eim_interpolation_error_type;
+
     typedef boost::tuple< sparse_matrix_ptrtype, std::vector<vector_ptrtype> > monolithic_type;
 
     typedef Preconditioner<double> preconditioner_type;
@@ -398,7 +403,7 @@ public:
     /**
      * solve for a given parameter \p mu
      */
-    element_type solve( parameter_type const& mu );
+    //element_type solve( parameter_type const& mu );
 
 
     //@}
@@ -424,6 +429,47 @@ public:
     }
 
     gmsh_ptrtype createGeo( double hsize );
+
+    void checkEimExpansion();
+
+    eim_interpolation_error_type eimInterpolationErrorEstimation()
+    {
+        std::map<int,double> eim_error_aq;
+        std::vector< std::map<int,double> > eim_error_fq;
+
+        //in that case we make an error on the eim approximation
+        //M_Aqm[1] contains the eim approximation
+        eim_error_aq.insert( std::pair<int,double>(1 , 0 ) );
+        eim_error_fq.resize(2);
+        //M_Fqm[0][0] contains the eim approximation
+        eim_error_fq[0].insert( std::pair<int,double>(0 , 0 ) );
+        return boost::make_tuple( eim_error_aq, eim_error_fq );
+    }
+
+    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , vectorN_type const& uN )
+    {
+
+        std::map<int,double> eim_error_aq;
+        std::vector< std::map<int,double> > eim_error_fq;
+
+        auto eim_g = M_funs[0];
+        bool error;
+        int max = eim_g->mMax(error);
+        if( error )
+        {
+            //in that case we make an error on the eim approximation
+            int size=uN.size();
+            auto solution = Feel::expansion( RbXh->primalRB(), uN , size);
+            double eim_error = eim_g->interpolationErrorEstimation(mu,solution,max).template get<0>();
+            //M_Aqm[1] contains the eim approximation
+            eim_error_aq.insert( std::pair<int,double>(1 , eim_error) );
+            eim_error_fq.resize(2);
+            //M_Fqm[0][0] contains the eim approximation
+            eim_error_fq[0].insert( std::pair<int,double>(0 , eim_error) );
+        }
+        return boost::make_tuple( eim_error_aq, eim_error_fq );
+    }
+
 
 private:
 
@@ -453,7 +499,6 @@ private:
     parameter_type M_mu;
 
     funs_type M_funs;
-
 };
 
 template<int Order>
@@ -594,15 +639,104 @@ void BenchmarkGrepl<Order>::initModel()
 
     if( Environment::worldComm().isMasterRank() )
     {
-        std::cout<<" eim mMax : "<<eim_g->mMax()<<std::endl;
+        bool error;
+        std::cout<<" eim g mMax : "<<eim_g->mMax(error)<<" error : "<<error<<std::endl;
     }
 
     M_funs.push_back( eim_g );
+
+    //checkEimExpansion();
 
     assemble();
 
 } // BenchmarkGrepl::init
 
+
+template<int Order>
+void BenchmarkGrepl<Order>::checkEimExpansion()
+{
+    auto Pset = M_Dmu->sampling();
+    std::vector<int> N(2);
+    int Ne = option(_name="trainset-eim-size").template as<int>();
+    N[0]=Ne; N[1]=Ne;
+    bool all_proc_same_sampling=true;
+    std::string supersamplingname =(boost::format("PsetCheckEimExpansion-Ne%1%-generated-by-master-proc") %Ne ).str();
+    std::ifstream file ( supersamplingname );
+    if( ! file )
+    {
+        Pset->equidistributeProduct( N , all_proc_same_sampling , supersamplingname );
+        Pset->writeOnFile( supersamplingname );
+    }
+    else
+    {
+        Pset->clear();
+        Pset->readFromFile(supersamplingname);
+    }
+
+    auto eim_g = M_funs[0];
+
+    //check that eim expansion of g is positiv on each vertice
+    int max = eim_g->mMax();
+    auto e = exporter( _mesh=mesh );
+    BOOST_FOREACH( auto mu, *Pset )
+    {
+
+        if( Environment::worldComm().isMasterRank() )
+            std::cout<<"check gM for mu = ["<< mu(0)<<" , "<<mu(1)<<"]"<<std::endl;
+
+        auto exprg = 1./sqrt( (Px()-mu(0))*(Px()-mu(0)) + (Py()-mu(1))*(Py()-mu(1)) );
+        auto g = vf::project( _space=Xh, _expr=exprg );
+
+        for(int m=1; m<max; m++)
+        {
+            vectorN_type beta_g = eim_g->beta( mu , m );
+
+            auto gM = expansion( eim_g->q(), beta_g , m);
+            auto px=vf::project(_space=Xh, _expr=Px() );
+            auto py=vf::project(_space=Xh, _expr=Py() );
+
+            int size=Xh->nLocalDof();
+            for(int v=0; v<size; v++)
+            {
+                double x = px(v);
+                double y = py(v);
+                if( gM(v) < -1e-13 )
+                    std::cout<<"gM("<<x<<","<<y<<") = "<<gM(v)<<" ! - proc  "<<Environment::worldComm().globalRank()<<" but g("<<x<<","<<y<<") =  "<<g(v)<<" === m : "<<m<<std::endl;
+                if( g(v) < -1e-13  )
+                    std::cout<<"g("<<x<<","<<y<<") = "<<g(v)<<" donc la projection de g est negative"<<std::endl;
+            }
+#if 0
+
+            for(int i=0; i<beta_g.size(); i++)
+            {
+                if( beta_g(i) < - 1e-14 && Environment::worldComm().isMasterRank() )
+                {
+                    std::cout<<"beta("<<i<<") is negative : "<<beta_g(i)<<"  === m : "<<m<<std::endl;
+                }
+            }
+            //std::string name =( boost::format("GM%1%") %m ).str();
+            //e->add( name , gM );
+            //if( m == max-1 )
+            //e->add( "exact" , g );
+
+                //auto basis = eim_g->q(i);
+                //double basisnorm = basis.l2Norm();
+                //if( basisnorm < 1e-14 && Environment::worldComm().isMasterRank() )
+                    //{
+                    //std::cout<<"basis "<<i<<" norm negative : "<<basisnorm<<std::endl;
+                    //exit(0);
+                    //}
+                //for(int v=0; v<size; v++)
+                //{
+                //    if( basis(i) < 1e-14 )
+                //        std::cout<<"basis("<<v<<") = "<<basis(v)<<" ! - proc  "<<Environment::worldComm().globalRank()<<std::endl;
+                //}
+            }
+#endif
+        }//loop over m
+        //e->save();
+    }
+}
 
 template<int Order>
 typename BenchmarkGrepl<Order>::monolithic_type
@@ -630,6 +764,7 @@ BenchmarkGrepl<Order>::computeMonolithicFormulation( parameter_type const& mu )
 
 }
 
+#if 0
 template<int Order>
 typename BenchmarkGrepl<Order>::element_type
 BenchmarkGrepl<Order>::solve( parameter_type const& mu )
@@ -652,6 +787,7 @@ BenchmarkGrepl<Order>::solve( parameter_type const& mu )
     M_backend->solve( _matrix=A, _solution=solution, _rhs=F );
     return solution;
 }
+#endif
 
 template<int Order>
 void BenchmarkGrepl<Order>::assemble()
@@ -672,7 +808,9 @@ void BenchmarkGrepl<Order>::assemble()
                    -grad( v )*vf::N()*idt( u )
                    );
 
-    int M_g = eim_g->mMax();
+    bool error;
+    int M_g = eim_g->mMax(error);
+    if( error ) M_g++;
     M_Aqm[1].resize( M_g );
     for(int m=0; m<M_g; m++)
     {
