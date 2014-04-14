@@ -426,7 +426,7 @@ HIDE_UNDOC_MEMBERS     = NO
 # If set to NO (the default) these classes will be included in the various
 # overviews. This option has no effect if EXTRACT_ALL is enabled.
 
-HIDE_UNDOC_CLASSES     = YES
+HIDE_UNDOC_CLASSES     = NO
 
 # If the HIDE_FRIEND_COMPOUNDS tag is set to YES, Doxygen will hide all
 # friend (class|struct|union) declarations.
@@ -689,7 +689,7 @@ INPUT                  = \
  "@FEELPP_HOME_DIR@/ChangeLog" \
  "@FEELPP_HOME_DIR@/COPYING.md" \
  "@FEELPP_HOME_DIR@/doc/biblio/" \
- "@FEELPP_PROJECTS_DIR@"
+ @FEELPP_PROJECTS_DIR@
 # "@FEELPP_HOME_DIR@/feel/"
 
 # This tag can be used to specify the character encoding of the source files
@@ -759,7 +759,8 @@ EXCLUDE_SYMBOLS        = "BOOST_P*"
 
 EXAMPLE_PATH           = "@FEELPP_HOME_DIR@/doc/manual/tutorial" \
                          "@FEELPP_HOME_DIR@/doc/" \
-                         "@CMAKE_CURRENT_BINARY_DIR@/../"
+                         "@CMAKE_CURRENT_BINARY_DIR@/../" \
+												  @FEELPP_PROJECTS_DIR@
 
 # If the value of the EXAMPLE_PATH tag contains directories, you can use the
 # EXAMPLE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp
