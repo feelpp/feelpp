@@ -63,7 +63,7 @@ namespace Feel
 {
 namespace vf
 {
-class GiNaCBase {};
+class GiNaCBase;
 
 /// \cond detail
 typedef node<double>::type node_type;
@@ -275,6 +275,7 @@ public:
     };
 
     typedef double value_type;
+    typedef value_type evaluate_type;
 
     template<typename TheExpr>
     struct Lambda
@@ -426,6 +427,7 @@ public:
 
     typedef ExprT expression_type;
     typedef typename expression_type::value_type value_type;
+    typedef typename expression_type::evaluate_type evaluate_type;
     typedef Expr<ExprT> this_type;
     typedef boost::shared_ptr<this_type> this_ptrtype;
     //@}
@@ -443,7 +445,7 @@ public:
         :
         M_expr( __expr )
     {}
-    ~Expr()
+    virtual ~Expr()
     {}
 
     //@}
@@ -689,17 +691,17 @@ public:
     //__typeof__( M_expr.evaluate() )
     //ublas::matrix<typename expression_type::value_type>
 
-    typename expression_type::value_type
+    evaluate_type
     evaluate( std::pair<std::string,value_type> const& mp  )
     {
         return M_expr.evaluate( { { mp.first, mp.second } } );
     }
-    typename expression_type::value_type
+    evaluate_type
     evaluate( std::map<std::string,value_type> const& mp  )
     {
         return M_expr.evaluate( mp );
     }
-    typename expression_type::value_type
+    evaluate_type
     evaluate( bool parallel = true, WorldComm const& worldcomm = Environment::worldComm() ) const
     {
         return M_expr.evaluate( parallel,worldcomm );
@@ -739,6 +741,16 @@ exprPtr( ExprT const& exprt )
 {
     return boost::shared_ptr<Expr<ExprT> >( new Expr<ExprT>( exprt ) );
 }
+
+template <typename ExprT>
+std::ostream&
+operator<<( std::ostream& os, Expr<ExprT> const& exprt )
+{
+    os << exprt.expression();
+    return os;
+}
+
+
 
 extern Expr<LambdaExpr1> _e1;
 
@@ -810,6 +822,7 @@ public:
 
     typedef PrintExprT expression_type;
     typedef typename expression_type::value_type value_type;
+    typedef value_type evaluate_type;
     typedef PrintExpr<PrintExprT> this_type;
 
     //@}
@@ -1079,6 +1092,7 @@ public:
 
     typedef ExprT expression_type;
     typedef typename expression_type::value_type value_type;
+    typedef typename expression_type::evaluate_type evaluate_type;
     typedef Trans<ExprT> this_type;
 
     //@}
@@ -1282,6 +1296,7 @@ public:
     typedef typename mpl::if_<boost::is_reference_wrapper<T>,
             mpl::identity<T>,
             mpl::identity<mpl::identity<T> > >::type::type::type value_type;
+    typedef value_type evaluate_type;
 
     typedef Cst<T> expression_type;
 
@@ -1498,6 +1513,7 @@ public:
     typedef One<CType> this_type;
 
     typedef double value_type;
+    typedef value_type evaluate_type;
 
     One() {}
     One( One const& /*__vff*/ ) {}
@@ -1694,6 +1710,7 @@ public:
 
     typedef ExprT expression_type;
     typedef typename ExprT::value_type value_type;
+    typedef value_type evaluate_type;
     typedef UnaryPlus<ExprT> this_type;
 
     UnaryPlus( const ExprT& expr )
@@ -1843,6 +1860,7 @@ public:
 
     typedef ExprT expression_type;
     typedef typename ExprT::value_type value_type;
+    typedef value_type evaluate_type;
     typedef UnaryMinus<ExprT> this_type;
 
     UnaryMinus( const ExprT& expr )

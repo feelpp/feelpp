@@ -214,6 +214,8 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
             typedef typename functionspace_type::geoelement_type geoelement_type; \
             typedef typename functionspace_type::gm_type gm_type; \
             typedef typename functionspace_type::value_type value_type; \
+            typedef value_type evaluate_type;                           \
+                                                                        \
             static const uint16_type rank = fe_type::rank;              \
             static const uint16_type nComponents1 = fe_type::nComponents1; \
             static const uint16_type nComponents2 = fe_type::nComponents2; \

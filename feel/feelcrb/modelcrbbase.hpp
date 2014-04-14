@@ -309,15 +309,28 @@ public :
 
     virtual void initModel() = 0;
 
-    virtual eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu )
+    virtual eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , vectorN_type const& uN )
     {
-        return eimInterpolationErrorEstimation( mu, mpl::bool_<is_time_dependent>() );
+        return eimInterpolationErrorEstimation( mu, uN,  mpl::bool_<is_time_dependent>() );
     }
-    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , mpl::bool_<true> )
+    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , vectorN_type const& uN , mpl::bool_<true> )
     {
         return boost::make_tuple( M_eim_error_mq , M_eim_error_aq, M_eim_error_fq);
     }
-    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , mpl::bool_<false> )
+    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , vectorN_type const& uN , mpl::bool_<false> )
+    {
+        return boost::make_tuple( M_eim_error_aq, M_eim_error_fq);
+    }
+
+    virtual eim_interpolation_error_type eimInterpolationErrorEstimation( )
+    {
+        return eimInterpolationErrorEstimation( mpl::bool_<is_time_dependent>() );
+    }
+    eim_interpolation_error_type eimInterpolationErrorEstimation( mpl::bool_<true> )
+    {
+        return boost::make_tuple( M_eim_error_mq , M_eim_error_aq, M_eim_error_fq);
+    }
+    eim_interpolation_error_type eimInterpolationErrorEstimation( mpl::bool_<false> )
     {
         return boost::make_tuple( M_eim_error_aq, M_eim_error_fq);
     }

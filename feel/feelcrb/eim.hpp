@@ -434,14 +434,12 @@ EIM<ModelType>::errorEstimationLinf( parameter_type const & mu, solution_type co
 {
     double max = M_model->mMax();
     CHECK( M <= max ) << "Invalid number M for errorEstimation: " << M << " Mmax : " << max << "\n";
-    auto t = M_model->interpolationPoint( M );
-    auto projected_expression = M_model->operator()( solution , t,  mu );
-    //std::cout<<"expression evaluated at ponint ( "<<t(0)<<" , "<<t(1)<<" ) : \n"<< expression <<std::endl;
+    auto projected_expression = M_model->operator()( solution  , mu );
     auto eim_approximation = this->operator()(mu, solution, M);
-    double eim = eim_approximation(t)(0,0,0);
-    //std::cout<<"eim : "<<eim<<std::endl;
-    double coeff = math::abs( projected_expression - eim );
-    return coeff;
+    auto diff = idv( projected_expression ) - idv( eim_approximation );
+    auto norm = normLinf( _range=elements( M_model->mesh()), _pset=_Q<0>(), _expr= diff );
+    double error = norm.template get<0>();
+    return error;
 }
 
 template<typename ModelType>

@@ -343,6 +343,24 @@ WorldComm::WorldComm( communicator_type const& _globalComm,
 
 }
 
+WorldComm&
+WorldComm::operator=( WorldComm const& wc )
+{
+    if ( this != &wc )
+    {
+        super::operator=( wc );
+        M_localComm = wc.M_localComm;
+        M_godComm = wc.M_godComm;
+        M_subWorldCommSeq = wc.M_subWorldCommSeq;
+        M_mapColorWorld = wc.M_mapColorWorld;
+        M_mapLocalRankToGlobalRank = wc.M_mapLocalRankToGlobalRank;
+        M_mapGlobalRankToGodRank = wc.M_mapGlobalRankToGodRank;
+        M_subworlds = wc.M_subworlds;
+        M_masterRank = wc.M_masterRank;
+        M_isActive = wc.M_isActive;
+    }
+    return *this;
+}
 
 //-------------------------------------------------------------------------------
 
