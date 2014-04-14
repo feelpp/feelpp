@@ -24,23 +24,11 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-/**
-   \file mymesh.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>,
-                 Guillaume Dollé <guillaume.dolle@math.unistra.fr>
-   \date 2013-02-11
-   This program show how to create a mesh and export results.
- */
-#include <feel/feelcore/environment.hpp>
-#include <feel/feelfilters/unitsquare.hpp>
+//! [all]
+#include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
 using namespace Feel;
 
-/**
- * Entry point
- */
-//\code
-//# marker_main #
 int main( int argc, char** argv )
 {
     // initialize Feel++ Environment
@@ -48,15 +36,17 @@ int main( int argc, char** argv )
                      _about=about( _name="mymesh" ,
                                    _author="Feel++ Consortium",
                                    _email="feelpp-devel@feelpp.org" ) );
-
+    //! [load]
     // create a mesh with GMSH using Feel++ geometry tool
-    auto mesh = unitSquare();
+    auto mesh = loadMesh(_mesh=new  Mesh<Simplex<2>>);
+    //! [load]
 
+    //! [export]
     // export results for post processing
     auto e = exporter( _mesh=mesh );
     e->addRegions();
     e->save();
+    //! [export]
 
 }   // main
-//# endmarker_main #
-//\endcode
+//! [all]
