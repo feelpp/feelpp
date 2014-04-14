@@ -26,6 +26,7 @@ set(DOXYFILE_LATEX 1)
 
 find_program(DOXYGEN doxygen)
 if ( DOXYGEN AND FEELPP_ENABLE_DOXYGEN)
+
   ## We extract the cmake option for the documentation
   execute_process(
     COMMAND
@@ -45,6 +46,7 @@ if ( DOXYGEN AND FEELPP_ENABLE_DOXYGEN)
      )
 
    set(FEELPP_PROJECTS_DIR,"")
+	 set(FEELPP_DOXYGEN_PROJECT "OFF")
    # if projects have been detected
    foreach(project ${projects_list})
      #get shortname
@@ -53,8 +55,22 @@ if ( DOXYGEN AND FEELPP_ENABLE_DOXYGEN)
      #define option to control doc generation
      string(TOUPPER ${dirname} PROJECT)
      if (FEELPP_ENABLE_${PROJECT}_DOCUMENTATION )
-       set(FEELPP_PROJECTS_DIR ${FEELPP_PROJECTS_DIR} "${project}")
-       FILE(APPEND ${CMAKE_CURRENT_SOURCE_DIR}/pages.doc "   - \\subpage ${dirname} ${PROJECT}\n")
+			 set(FEELPP_DOXYGEN_PROJECT "ON")
+		 endif()
+	 endforeach()
+	 if(${FEELPP_DOXYGEN_PROJECT})
+       FILE(APPEND ${CMAKE_CURRENT_SOURCE_DIR}/pages.doc "/** \\page Project Project\n")
+		 endif()
+   
+	 foreach(project ${projects_list})
+     #get shortname
+     GET_FILENAME_COMPONENT(dirname ${project} NAME)
+
+     #define option to control doc generation
+     string(TOUPPER ${dirname} PROJECT)
+     if (FEELPP_ENABLE_${PROJECT}_DOCUMENTATION )
+       set(FEELPP_PROJECTS_DIR ${FEELPP_PROJECTS_DIR} "${project}\n")
+       FILE(APPEND ${CMAKE_CURRENT_SOURCE_DIR}/pages.doc "   - \\subpage ${dirname}\n")
        MESSAGE(STATUS "Doxygen Documention for ${project} will be generated")
      endif()
    endforeach()
