@@ -43,6 +43,7 @@ public:
     /** @name Typedefs
      */
     //@{
+    typedef Feel::vf::GiNaCBase super;
     typedef ExprT expression_type;
 
     static const size_type context = vm::POINT|expression_type::context;
@@ -88,10 +89,9 @@ public:
                         std::string filename="",
                         WorldComm const& world=Environment::worldComm() )
         :
+        super( syms ),
         M_fun( fun ),
-        M_syms( syms),
         M_expr( expr ),
-        M_params( vec_type::Zero( M_syms.size() ) ),
         M_cfun( new GiNaC::FUNCP_CUBA() ),
         M_filename(filename.empty()?filename:(fs::current_path()/filename).string())
         {
@@ -138,17 +138,15 @@ public:
                         GinacExprManager::instance().operator[]( filename ) = M_cfun;
                 }
             }
-            this->setParameterFromOption();
         }
 
     GinacExVF( GinacExVF const & fun )
     :
-    M_fun( fun.M_fun ),
-    M_syms( fun.M_syms),
-    M_expr( fun.M_expr ),
-    M_params( fun.M_params ),
-    M_cfun( fun.M_cfun ),
-    M_filename( fun.M_filename )
+        super( fun ),
+        M_fun( fun.M_fun ),
+        M_expr( fun.M_expr ),
+        M_cfun( fun.M_cfun ),
+        M_filename( fun.M_filename )
         {
             if( !(M_fun==fun.M_fun && M_syms==fun.M_syms && M_filename==fun.M_filename) || M_filename.empty() )
             {
@@ -185,79 +183,12 @@ public:
      */
     //@{
 
-    vec_type const& parameterValue() const { return M_params; }
-    value_type parameterValue( int p ) const { return M_params[p]; }
-
     //@}
 
     /** @name  Mutators
      */
     //@{
 
-    void setParameterFromOption()
-        {
-            using namespace GiNaC;
-            std::map<std::string,value_type> m;
-            for( auto const& s : M_syms )
-            {
-                if ( Environment::vm().count( s.get_name() ) )
-                {
-                    // use try/catch in order to catch casting exception for
-                    // option that do not return double. Indeed we are only
-                    // collecting symbols in option database which can be cast
-                    // to numerical types
-                    try
-                    {
-                        value_type v = option( _name=s.get_name() ).template as<double>();
-                        m.insert( std::make_pair( s.get_name(), v ) );
-                        LOG(INFO) << "symbol " << s.get_name() << " found in option with value " << v;
-                    }
-                    catch(...)
-                    {}
-
-//                    try
-//                    {
-//                        expression_type e( option( _name=s.get_name() ).template as<std::string>(), 0 );
-//                        if( is_a<numeric>(e) )
-//                        {
-//                            LOG(INFO) << "symbol " << s.get_name() << " found in option with value " << v;
-//                        }
-//                        else
-//                        {
-//                            ;
-//                        }
-//                    }
-//                    catch(...)
-//                    {}
-                }
-            }
-            this->setParameterValues( m );
-        }
-
-    void setParameterValues( vec_type const& p )
-        {
-            CHECK( M_params.size() == M_syms.size() ) << "Invalid number of parameters " << M_params.size() << " >= symbol size : " << M_syms.size();
-            M_params = p;
-        }
-    void setParameterValues( std::map<std::string,value_type> const& mp )
-        {
-            CHECK( M_params.size() == M_syms.size() ) << "Invalid number of parameters " << M_params.size() << " >= symbol size : " << M_syms.size();
-            for( auto p : mp )
-            {
-                auto it = std::find_if( M_syms.begin(), M_syms.end(),
-                                        [&p]( GiNaC::symbol const& s ) { return s.get_name() == p.first; } );
-                if ( it != M_syms.end() )
-                {
-                    M_params[it-M_syms.begin()] = p.second;
-                    LOG(INFO) << "setting parameter : " << p.first << " with value: " << p.second;
-                    LOG(INFO) << "parameter: " << M_params;
-                }
-                else
-                {
-                    LOG(INFO) << "Invalid parameters : " << p.first << " with value: " << p.second;
-                }
-            }
-        }
 
     //@}
 
@@ -300,17 +231,6 @@ public:
         return indices_vec;
     }
 
-    const bool hasPoints() const
-        {
-#if 0
-            ex ex1 = x;
-            ex ex1 = y;
-            ex ex1 = z;
-            return M_fun.has( "x" ) || M_fun.has( "y" ) || M_fun.has( "z" ) ;
-#else
-            return true;
-#endif
-        }
     const bool isZero() const { return M_fun.is_zero(); }
     std::vector<GiNaC::symbol> const& syms() const { return M_syms; }
 
@@ -345,10 +265,10 @@ public:
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
             :
+            M_expr( expr ),
             M_fun( expr.fun() ),
             M_t_expr(std::vector<tensor_expr_type>() ),
             M_t_expr_index( std::vector<int>(expr.indices()) ),
-            M_has_p( expr.hasPoints() ),
             M_is_zero( expr.isZero() ),
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
             M_nsyms( expr.syms().size() ),
@@ -366,10 +286,10 @@ public:
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev )
             :
+            M_expr( expr ),
             M_fun( expr.fun() ),
             M_t_expr(std::vector<tensor_expr_type>() ),
             M_t_expr_index( std::vector<int>(expr.indices()) ),
-            M_has_p( expr.hasPoints() ),
             M_is_zero( expr.isZero() ),
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
             M_nsyms( expr.syms().size() ),
@@ -386,10 +306,10 @@ public:
 
         tensor( this_type const& expr, Geo_t const& geom )
             :
+            M_expr( expr ),
             M_fun( expr.fun() ),
             M_t_expr( std::vector<tensor_expr_type>() ),
             M_t_expr_index( std::vector<int>(expr.indices()) ),
-            M_has_p( expr.hasPoints() ),
             M_is_zero( expr.isZero() ),
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
             M_nsyms( expr.syms().size() ),
@@ -416,35 +336,17 @@ public:
                 int no = 1;
                 int ni = M_nsyms;///gmc_type::nDim;
 
-                if ( M_has_p )
+                for(int q = 0; q < M_gmc->nPoints();++q )
                 {
-
-                    for(int q = 0; q < M_gmc->nPoints();++q )
-                        {
-                            for(int k = 0;k < gmc_type::nDim;++k )
-                                M_x[k]=M_gmc->xReal( q )[k];
-
-                            for(int i=0; i<M_t_expr_index.size(); i++)
-                                {
-                                    if ( M_t_expr_index[i] != -1 )
-                                        M_x[M_t_expr_index[i]] = M_t_expr[i].evalq( 0, 0, q );
-                                }
-                            M_fun(&ni,M_x.data(),&no,&M_y[q]);
-                    }
-                }
-                else
-                {
-                    for(int q = 0; q < M_gmc->nPoints();++q )
+                    for ( auto const& comp : M_expr.indexSymbolXYZ() )
+                        M_x[comp.second] = M_gmc->xReal( q )[comp.first];
+                    for(int i=0; i<M_t_expr_index.size(); i++)
                     {
-                        for(int i=0; i<M_t_expr_index.size(); i++)
-                            {
-                                if ( M_t_expr_index[i] != -1 )
-                                    M_x[M_t_expr_index[i]] = M_t_expr[i].evalq( 0, 0, q );
-                            }
-                        M_fun(&ni,M_x.data(),&no,&M_y[q]);
+                        if ( M_t_expr_index[i] != -1 )
+                            M_x[M_t_expr_index[i]] = M_t_expr[i].evalq( 0, 0, q );
                     }
+                    M_fun(&ni,M_x.data(),&no,&M_y[q]);
                 }
-
             }
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
@@ -515,10 +417,10 @@ public:
                 return M_y[q];
             }
 
+        this_type const& M_expr;
         GiNaC::FUNCP_CUBA M_fun;
         std::vector<tensor_expr_type> M_t_expr;
         const std::vector<int> M_t_expr_index;
-        const bool M_has_p;
         const bool M_is_zero;
         gmc_ptrtype M_gmc;
 
@@ -541,9 +443,7 @@ public:
 
 private:
     mutable ginac_expression_type  M_fun;
-    std::vector<GiNaC::symbol> M_syms;
     std::vector< std::pair<GiNaC::symbol,expression_type> > M_expr;
-    vec_type M_params;
     boost::shared_ptr<GiNaC::FUNCP_CUBA> M_cfun;
     std::string M_filename;
 };
