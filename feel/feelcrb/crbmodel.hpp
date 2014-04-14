@@ -157,6 +157,12 @@ public:
                                    std::vector<vector_ptrtype>
                                    > monolithic_type;
 
+    typedef typename boost::tuple< std::map<int,double>,
+                                   std::map<int,double>,
+                                   std::vector< std::map<int,double> >
+                                   > eim_interpolation_error_type ;
+
+
 
     typedef typename model_type::affine_decomposition_light_type affine_decomposition_light_type;
     typedef typename model_type::betaq_type betaq_type;
@@ -581,7 +587,7 @@ public:
     }
 
     //! return the number of \f$\mu\f$ independent terms for the right hand side
-    size_type Ql( int l ) const
+    virtual size_type Ql( int l ) const
     {
         return M_Ql[l];
         //return M_model->Ql( l );
@@ -976,18 +982,47 @@ public:
 
         if ( M_Aqm.size() > 0 )
         {
+            //when using EIM we need to be careful
+            //if we want to estimate the error then there
+            //is an "extra" basis fuction.
+            auto all_errors = eimInterpolationErrorEstimation();
+            auto errorsM = all_errors.template get<0>();
+            auto errorsA = all_errors.template get<1>();
+            auto errorsF = all_errors.template get<2>();
+            std::map<int,double>::iterator it;
+            auto endA = errorsA.end();
+            auto endM = errorsM.end();
+
             M_Qm=M_Mqm.size();
             M_mMaxM.resize(M_Qm);
             for(int q=0; q<M_Qm; q++)
             {
-                M_mMaxM[q]=M_Mqm[q].size();
+                auto itq = errorsM.find(q);
+                if( itq != endM) //found
+                {
+                    //we have an eim error estimation
+                    M_mMaxM[q]=M_Mqm[q].size()-1;
+                }
+                else //not found
+                {
+                    M_mMaxM[q]=M_Mqm[q].size();
+                }
             }
 
             M_Qa=M_Aqm.size();
             M_mMaxA.resize(M_Qa);
             for(int q=0; q<M_Qa; q++)
             {
-                M_mMaxA[q]=M_Aqm[q].size();
+                auto itq = errorsA.find(q);
+                if( itq != endA ) //found
+                {
+                    //we have an eim error estimation
+                    M_mMaxA[q]=M_Aqm[q].size()-1;
+                }
+                else //not found
+                {
+                    M_mMaxA[q]=M_Aqm[q].size();
+                }
             }
 
             M_Nl=M_Fqm.size();
@@ -997,9 +1032,19 @@ public:
             {
                 M_Ql[output]=M_Fqm[output].size();
                 M_mMaxF[output].resize(M_Ql[output]);
+                auto endF = errorsF[output].end();
                 for(int q=0; q<M_Ql[output]; q++)
                 {
-                    M_mMaxF[output][q]=M_Fqm[output][q].size();
+                    auto itq = errorsF[output].find(q);
+                    if( itq != endF ) //found
+                    {
+                        //we have an eim error estimation
+                        M_mMaxF[output][q]=M_Fqm[output][q].size()-1;
+                    }
+                    else //not found
+                    {
+                        M_mMaxF[output][q]=M_Fqm[output][q].size();
+                    }
                 }
             }
         }
@@ -1219,6 +1264,63 @@ public:
     {
         boost::tie( M_monoA, M_monoF ) = M_model->computeMonolithicFormulation( mu );
         return boost::make_tuple( M_monoM, M_monoA, M_monoF );
+    }
+
+
+    /*
+     * return true if the model use EIM and need to comute associated error
+     * usefull to the CRB error estimation
+     */
+    bool hasEimError()
+    {
+        auto all_errors = eimInterpolationErrorEstimation();
+        auto errorsM = all_errors.template get<0>();
+        auto errorsA = all_errors.template get<1>();
+        auto errorsF = all_errors.template get<2>();
+        int sizeM = errorsM.size();
+        int sizeA = errorsA.size();
+        int sizeF = errorsF.size();
+        bool b=false;
+        if( sizeM > 0 || sizeA > 0 || sizeF > 0 )
+        {
+            b=true;
+        }
+        return b;
+    }
+
+
+    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , vectorN_type const& uN )
+    {
+        return eimInterpolationErrorEstimation( mu, uN, mpl::bool_<model_type::is_time_dependent>() );
+    }
+    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , vectorN_type const& uN, mpl::bool_<true> )
+    {
+        return M_model->eimInterpolationErrorEstimation( mu , uN );
+    }
+    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , vectorN_type const& uN, mpl::bool_<false> )
+    {
+        std::map< int, double > errorsM;
+        std::map< int, double > errorsA;
+        std::vector< std::map< int, double > > errorsF;
+        boost::tie(  errorsA , errorsF ) = M_model->eimInterpolationErrorEstimation( mu ,uN );
+        return boost::make_tuple( errorsM, errorsA, errorsF );
+    }
+
+    eim_interpolation_error_type eimInterpolationErrorEstimation( )
+    {
+        return eimInterpolationErrorEstimation( mpl::bool_<model_type::is_time_dependent>() );
+    }
+    eim_interpolation_error_type eimInterpolationErrorEstimation( mpl::bool_<true> )
+    {
+        return M_model->eimInterpolationErrorEstimation( );
+    }
+    eim_interpolation_error_type eimInterpolationErrorEstimation( mpl::bool_<false> )
+    {
+        std::map< int, double > errorsM;
+        std::map< int, double > errorsA;
+        std::vector< std::map< int, double > > errorsF;
+        boost::tie(  errorsA , errorsF ) = M_model->eimInterpolationErrorEstimation( );
+        return boost::make_tuple( errorsM, errorsA, errorsF );
     }
 
     /**
@@ -2253,7 +2355,6 @@ private:
     sparse_matrix_ptrtype M_inner_product_matrix;
 
     bdf_ptrtype M_bdf;
-
 };
 
 
