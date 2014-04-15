@@ -2025,6 +2025,7 @@ public:
     typedef ExprT2 expression_2_type;
     typedef typename strongest_numeric_type<typename expression_1_type::value_type,
             typename expression_2_type::value_type>::type value_type;
+    typedef value_type evaluate_type;
     explicit OpMax( expression_1_type const& __expr1, expression_2_type const& __expr2  )
         :
         M_expr_1( __expr1 ),
@@ -2219,7 +2220,7 @@ public:
     typedef ExprT2 expression_2_type;
     typedef typename strongest_numeric_type<typename expression_1_type::value_type,
             typename expression_2_type::value_type>::type value_type;
-
+    typedef value_type evaluate_type;
     explicit OpMin( expression_1_type const& __expr1, expression_2_type const& __expr2  )
         :
         M_expr_1( __expr1 ),
