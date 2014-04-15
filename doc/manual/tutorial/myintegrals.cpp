@@ -20,7 +20,7 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-//! [all]
+/// [all]
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelvf/integrate.hpp>
 #include <feel/feelvf/ginac.hpp>
@@ -39,17 +39,17 @@ main( int argc, char** argv )
                                    _author="Feel++ Consortium",
                                    _email="feelpp-devel@feelpp.org" ) );
 
-    //! [mesh]
+    /// [mesh]
     // create the mesh (specify the dimension of geometric entity)
     auto mesh = loadMesh( _mesh=new Mesh<Simplex<2>> );
-    //! [mesh]
+    /// [mesh]
 
-    //! [expression]
+    /// [expression]
     // our function to integrate
     auto g = expr( soption(_name="functions.g") );
-    //! [expression]
+    /// [expression]
 
-    //! [integrals]
+    /// [integrals]
     // compute integral of f (global contribution)
     auto intf_1 = integrate( _range = elements( mesh ),
                                  _expr = g ).evaluate();
@@ -69,6 +69,6 @@ main( int argc, char** argv )
                   << "int_Omega grad " << g << " = "
                   << "int_Omega  " << grad<2>(g) << " = "
                   << intgrad_f  << std::endl;
-    //! [integrals]
+    /// [integrals]
 }
-//! [all]
+/// [all]
