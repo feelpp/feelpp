@@ -26,7 +26,7 @@ DOXYFILE_ENCODING      = UTF-8
 # identify the project. Note that if you do not use Doxywizard you need
 # to put quotes around the project name if it contains spaces.
 
-PROJECT_NAME           = "Feel++"
+PROJECT_NAME           = "Feel++: Finite Element Embedded Library in C++"
 
 # The PROJECT_NUMBER tag can be used to enter a project or revision number.
 # This could be handy for archiving the generated documentation or
@@ -687,7 +687,6 @@ INPUT                  = \
  "@FEELPP_HOME_DIR@/doc/manual/" \
  "@FEELPP_HOME_DIR@/doc/api" \
  "@FEELPP_HOME_DIR@/ChangeLog" \
- "@FEELPP_HOME_DIR@/COPYING.md" \
  "@FEELPP_HOME_DIR@/doc/biblio/" \
  @FEELPP_PROJECTS_DIR@
 # "@FEELPP_HOME_DIR@/feel/"
@@ -975,7 +974,7 @@ HTML_EXTRA_STYLESHEET  =
 # the files will be copied as-is; there are no commands or markers available.
 
 HTML_EXTRA_FILES       = "@CMAKE_CURRENT_SOURCE_DIR@/eigen_navtree_hacks.js"
-#HTML_EXTRA_FILES       = 
+#HTML_EXTRA_FILES       =
 
 # The HTML_COLORSTYLE_HUE tag controls the color of the HTML output.
 # Doxygen will adjust the colors in the style sheet and background images
