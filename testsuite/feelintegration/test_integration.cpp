@@ -63,6 +63,7 @@ struct f_Px
 {
     static const size_type context = vm::JACOBIAN|vm::POINT;
     typedef double value_type;
+    typedef value_type evaluate_type;
     typedef Feel::uint16_type uint16_type;
     static const uint16_type rank = 0;
     static const uint16_type imorder = 1;
@@ -76,6 +77,7 @@ struct f_Nx
 {
     static const size_type context = vm::JACOBIAN|vm::POINT|vm::NORMAL;
     typedef double value_type;
+    typedef value_type evaluate_type;
     typedef Feel::uint16_type uint16_type;
     static const uint16_type rank = 0;
     static const uint16_type imorder = 1;
@@ -89,6 +91,7 @@ struct f_Ny
 {
     static const size_type context = vm::JACOBIAN|vm::POINT|vm::NORMAL;
     typedef double value_type;
+    typedef value_type evaluate_type;
     typedef Feel::uint16_type uint16_type;
     static const uint16_type rank = 0;
     static const uint16_type imorder = 1;
@@ -102,6 +105,7 @@ struct f_sinPx
 {
     static const size_type context = vm::JACOBIAN|vm::POINT;
     typedef double value_type;
+    typedef value_type evaluate_type;
     typedef Feel::uint16_type uint16_type;
     static const uint16_type rank = 0;
     static const uint16_type imorder = 2;

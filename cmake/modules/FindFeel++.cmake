@@ -5,7 +5,7 @@
 #  FEELPP_LIBRARY    = the library to link in
 
 # Check compiler
-message(STATUS "clang version :  ${CMAKE_CXX_COMPILER_VERSION}")
+message(STATUS "Compiler version : ${CMAKE_CXX_COMPILER_ID}  ${CMAKE_CXX_COMPILER_VERSION}")
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   # require at least gcc 4.7
   if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.7)

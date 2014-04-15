@@ -2,7 +2,7 @@
 
 namespace Feel
 {
-/*! \mainpage FEEL++ : Finite Element Embedded Library in C++
+/*! \mainpage Introduction
 
 \tableofcontents
 
@@ -35,6 +35,22 @@ could be express in various ways such as :
  are computing intensive and the use of an interpreted language such
  as python would not be satisfying though in many simpler cases that
  would simplify and accelerate the development.)
+
+\section Organisation Organisation of this manual
+
+This manual is organized as follows:
+
+  @li \ref GettingStarted where we provide various standard PDE solvers to start
+  with
+
+  @li \ref Tutorial where we dive step by step into Feel++
+
+  @li \ref ProgEnv which includes instructions for installation from sources or
+  from Debian/Ubuntu and MacOSX
+
+  @li \ref QuickRef which describes the various components of Feel++ applications
+
+
 
 \section Credits Credits
 
@@ -83,5 +99,7 @@ Coimbra (Portugal), CNRS and CeMoSiS.
 </center>
 \endhtmlonly
 
+ - \subpage ChangeLog
+ - \subpage md_Credits
 */
 }

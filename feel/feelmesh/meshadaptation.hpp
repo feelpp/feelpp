@@ -38,6 +38,9 @@
 
 /** include gmsh mesh importer */
 #include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/loadgmshmesh.hpp>
+
+#include <feel/feelfilters/exporter.hpp>
 
 /** include  the header for the variational formulation language (vf) aka FEEL++ */
 #include <feel/feelvf/vf.hpp>
