@@ -5,8 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2005-02-10
 
-  Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2007 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2010-2014 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -24,7 +23,7 @@
 */
 
 /**
-\page Layout Layout Example
+\page FAQDocumentationDoxygenHowto How to generate Doxygen documentation pages
 \author Feel++ Consortium
 \date 2013-05-06
 
