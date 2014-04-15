@@ -22,4 +22,4 @@
 #
 #
 set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
-feelpp_add_application(diode SRCS diode.cpp diodegeo.cpp CFG diode.cfg LABEL doc)
+feelpp_add_application(diode SRCS diode.cpp diodegeo.cpp CFG diode.cfg LABELS doc)
