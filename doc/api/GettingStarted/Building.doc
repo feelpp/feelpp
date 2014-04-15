@@ -95,8 +95,12 @@ platforms:
 \feel was uploaded in the distribution Ubuntu-Natty (11.04) for the first
 time. The commands to install \feel on Ubuntu are
 \verbatim
-  sudo apt-get update
-  sudo apt-get install feel++-apps libfeel-dev feel++-doc
+	sudo add-apt-repository ppa:feelpp/ppa
+	sudo add-apt-repository -y ppa:mapnik/boost-backports-1-54
+	sudo add-apt-repository -y ppa:kalakris/eigen
+	sudo apt-get -qq update
+	sudo apt-get install -qq libboost1.54-all-dev mpi-default-dev mpi-default-bin libeigen3-dev  libcln-dev petsc-dev libxml2-dev gmsh bison flex doxygen doxygen-latex transfig imagemagick libtbb-dev libann-dev libglpk-dev
+	sudo apt-get install feel++-apps libfeel++-dev
 \endverbatim
 The interested user might want to follow the Ubuntu Launchpad \feel page in
 order to know what is going on with \feel on Ubuntu
