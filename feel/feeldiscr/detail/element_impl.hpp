@@ -34,7 +34,7 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<int i>
 typename mpl::at_c<typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::element_vector_type,i>::type
-FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::element( std::string const& name,
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::element( std::string const& name,
                                                                       bool updateOffViews )
 {
     size_type nbdof_start =  fusion::accumulate( this->functionSpaces(),
@@ -97,7 +97,7 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<int i,typename ExprT>
 typename mpl::at_c<typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::element_vector_type,i>::type
-FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::element( ExprT e, std::string const& name,
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::element( ExprT e, std::string const& name,
                                                              bool updateOffViews,
                                                              typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type*  )
 {
@@ -110,7 +110,7 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<int i>
 typename mpl::at_c<typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::element_vector_type,i>::type
-FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::element( std::string const& name, bool updateOffViews ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::element( std::string const& name, bool updateOffViews ) const
 {
     size_type nbdof_start =  fusion::accumulate( M_functionspace->functionSpaces(),
                                                  size_type( 0 ),
