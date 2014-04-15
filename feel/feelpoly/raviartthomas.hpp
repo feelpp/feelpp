@@ -583,12 +583,12 @@ public:
 
     template<typename ExprType>
     static auto
-    isomorphism( ExprType expr ) -> decltype( Feel::vf::detJ()*( trans( Feel::vf::JinvT() )*expr )*Feel::vf::Nref() )
-    //isomorphism( ExprType& expr ) -> decltype( expr )
+    //isomorphism( ExprType expr ) -> decltype( Feel::vf::detJ()*( trans( Feel::vf::JinvT() )*expr )*Feel::vf::Nref() )
+    isomorphism( ExprType& expr ) -> decltype( expr )
     {
         using namespace Feel::vf;
-        return detJ()*( trans( JinvT() )*expr )*Nref();
-        //return expr;
+        //return detJ()*( trans( JinvT() )*expr )*Nref();
+        return expr;
     }
 #if 0
     /**
