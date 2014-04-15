@@ -24,37 +24,37 @@
 
 feelpp_add_application( heatns_natural_convection_cavity_2d SRCS
   convection_main.cpp convection_crb_specifics.cpp ${lib_convection} CFG
-  convection.cfg LABEL doc DEFS FEELPP_USE_LM CONVECTION_DIM=2 NO_TEST )
+  convection.cfg LABELS doc DEFS FEELPP_USE_LM CONVECTION_DIM=2 NO_TEST )
 
 feelpp_add_application( heatns_natural_convection_cavity_2d_crb SRCS
   convection_main.cpp convection_crb_specifics.cpp ${lib_convection} CFG
-  convection.cfg LABEL doc DEFS FEELPP_USE_LM CONVECTION_DIM=2 CRB_SOLVER=1
+  convection.cfg LABELS doc DEFS FEELPP_USE_LM CONVECTION_DIM=2 CRB_SOLVER=1
   NO_TEST)
 
 feelpp_add_application(  heatns_natural_convection_cavity_3d SRCS convection_main.cpp
   convection_crb_specifics.cpp ${lib_convection} CFG convection.cfg
-  LABEL doc DEFS FEELPP_USE_LM CONVECTION_DIM=3 CRB_SOLVER=0
+  LABELS doc DEFS FEELPP_USE_LM CONVECTION_DIM=3 CRB_SOLVER=0
   NO_TEST )
 
 feelpp_add_application( heatns_natural_convection_cavity_3d_crb SRCS
   convection_main.cpp convection_crb_specifics.cpp ${lib_convection} CFG
-  convection.cfg LABEL doc DEFS FEELPP_USE_LM CONVECTION_DIM=3  CRB_SOLVER=1
+  convection.cfg LABELS doc DEFS FEELPP_USE_LM CONVECTION_DIM=3  CRB_SOLVER=1
   NO_TEST )
 
 feelpp_add_application( P3P2P3_heatns_natural_convection_cavity_2d_crb
   SRCS convection_main.cpp convection_crb_specifics.cpp
-  ${lib_convection} CFG convection.cfg LABEL doc DEFS FEELPP_USE_LM
+  ${lib_convection} CFG convection.cfg LABELS doc DEFS FEELPP_USE_LM
   CONVECTION_DIM=2 CRB_SOLVER=1 CONVECTION_ORDER_U=3  CONVECTION_ORDER_P=2 CONVECTION_ORDER_T=3
   NO_TEST )
 
 feelpp_add_application( P3P2P3_heatns_natural_convection_cavity_3d
   SRCS convection_main.cpp convection_crb_specifics.cpp
-  ${lib_convection} CFG convection.cfg LABEL doc DEFS FEELPP_USE_LM
+  ${lib_convection} CFG convection.cfg LABELS doc DEFS FEELPP_USE_LM
   CONVECTION_DIM=3 CRB_SOLVER=0 CONVECTION_ORDER_U=3   CONVECTION_ORDER_P=2 CONVECTION_ORDER_T=3
   NO_TEST )
 
 feelpp_add_application( P3P2P3_heatns_natural_convection_cavity_3d_crb
   SRCS convection_main.cpp convection_crb_specifics.cpp
-  ${lib_convection} CFG convection.cfg LABEL doc DEFS FEELPP_USE_LM
+  ${lib_convection} CFG convection.cfg LABELS doc DEFS FEELPP_USE_LM
   CONVECTION_DIM=3 CRB_SOLVER=1 CONVECTION_ORDER_U=3  CONVECTION_ORDER_P=2 CONVECTION_ORDER_T=3
   NO_TEST )
