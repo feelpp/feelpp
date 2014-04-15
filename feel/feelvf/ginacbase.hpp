@@ -100,7 +100,7 @@ public:
                     // to numerical types
                     try
                     {
-                        value_type v = option( _name=s.get_name() ).template as<double>();
+                        value_type v = option( _name=s.get_name() ).as<double>();
                         m.insert( std::make_pair( s.get_name(), v ) );
                         LOG(INFO) << "symbol " << s.get_name() << " found in option with value " << v;
                     }
