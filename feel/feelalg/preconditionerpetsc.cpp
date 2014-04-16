@@ -52,11 +52,25 @@ typedef struct {
     Mat L;             /* keep a copy to reuse when obtained with L = A10*A01 */
 } PC_LSC;
 
-static void PCLSCGetKSP( PC pc, KSP& ksp )
+namespace PetscImpl
+{
+
+static PetscErrorCode PCLSCGetKSP( PC pc, KSP& ksp )
 {
     PC_LSC *mylsc = (PC_LSC*)pc->data;
     ksp = mylsc->kspL;
+    PetscFunctionReturn(0);
 }
+
+static PetscErrorCode PCLSCSetScaleDiag( PC pc, PetscBool scalediag )
+{
+    PC_LSC *mylsc = (PC_LSC*)pc->data;
+    mylsc->scalediag = scalediag;
+    PetscFunctionReturn(0);
+}
+
+} // namespace PetscImpl
+
 //------------------------------------------------------------------------------//
 
 typedef struct {
@@ -146,40 +160,51 @@ typedef struct {
   PetscReal         *coords; /* ML has a grid object for each level: the finest grid will point into coords */
 } PC_ML;
 
-static void PCMLSetMaxNlevels( PC pc, PetscInt maxNLevel  )
+namespace PetscImpl
+{
+
+static PetscErrorCode PCMLSetMaxNlevels( PC pc, PetscInt maxNLevel  )
 {
     PC_MG *mg    = (PC_MG*)pc->data;
     PC_ML *pcml  = (PC_ML*)mg->innerctx;
     pcml->MaxNlevels = maxNLevel;
+    PetscFunctionReturn(0);
 }
-static void PCMLSetReuseInterpolation( PC pc, PetscBool reuse_interpolation )
+static PetscErrorCode PCMLSetReuseInterpolation( PC pc, PetscBool reuse_interpolation )
 {
     PC_MG *mg    = (PC_MG*)pc->data;
     PC_ML *pcml  = (PC_ML*)mg->innerctx;
     pcml->reuse_interpolation = reuse_interpolation;
+    PetscFunctionReturn(0);
 }
-static void PCMLSetKeepAggInfo( PC pc, PetscBool KeepAggInfo )
+static PetscErrorCode PCMLSetKeepAggInfo( PC pc, PetscBool KeepAggInfo )
 {
     PC_MG *mg    = (PC_MG*)pc->data;
     PC_ML *pcml  = (PC_ML*)mg->innerctx;
     pcml->KeepAggInfo = KeepAggInfo;
+    PetscFunctionReturn(0);
 }
-static void PCMLSetReusable( PC pc, PetscBool Reusable )
+static PetscErrorCode PCMLSetReusable( PC pc, PetscBool Reusable )
 {
     PC_MG *mg    = (PC_MG*)pc->data;
     PC_ML *pcml  = (PC_ML*)mg->innerctx;
     pcml->Reusable = Reusable;
+    PetscFunctionReturn(0);
 }
-static void PCMLSetOldHierarchy( PC pc, PetscBool OldHierarchy )
+static PetscErrorCode PCMLSetOldHierarchy( PC pc, PetscBool OldHierarchy )
 {
     PC_MG *mg    = (PC_MG*)pc->data;
     PC_ML *pcml  = (PC_ML*)mg->innerctx;
     pcml->OldHierarchy = OldHierarchy;
+    PetscFunctionReturn(0);
 }
+
+} // namespace PetscImpl
+
 
 #endif // PETSC_HAVE_ML
 
-#if defined(PETSC_HAVE_HYPRE) && (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 3)
+#if defined(PETSC_HAVE_HYPRE) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 )
 
 #include <HYPRE_struct_mv.h>
 #include <HYPRE_struct_ls.h>
@@ -250,21 +275,141 @@ typedef struct {
   PetscInt  nodal_relax_levels;
 } PC_HYPRE;
 
-static void PCHYPRE_EUCLIDSetLevels( PC pc, PetscInt levels  )
+namespace PetscImpl
+{
+static PetscErrorCode PCHYPRE_EUCLIDSetLevels( PC pc, PetscInt levels  )
 {
     PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
+    PetscErrorCode ierr;
+
     jac->levels = levels;
 
-    int ierr = HYPRE_EuclidSetLevel( jac->hsolver,levels );
+    ierr = HYPRE_EuclidSetLevel( jac->hsolver,levels );
     //ierr = HYPRE_EuclidSetSparseA( jac->hsolver,2.22045e-14 );
     //ierr = HYPRE_EuclidSetILUT( jac->hsolver,2.22045e-14 );
     //ierr = HYPRE_EuclidSetStats( jac->hsolver,1);
     //ierr = HYPRE_EuclidSetMem( jac->hsolver,1);
     //ierr = HYPRE_EuclidDestroy( jac->hsolver );
+    PetscFunctionReturn(0);
 }
+
+} // namespace PetscImpl
 
 #endif // PETSC_HAVE_HYPRE
 
+
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,4,0 )
+
+typedef struct _PC_FieldSplitLink *PC_FieldSplitLink;
+struct _PC_FieldSplitLink {
+  KSP               ksp;
+  Vec               x,y,z;
+  char              *splitname;
+  PetscInt          nfields;
+  PetscInt          *fields,*fields_col;
+  VecScatter        sctx;
+  IS                is,is_col;
+  PC_FieldSplitLink next,previous;
+};
+
+typedef struct {
+  PCCompositeType type;
+  PetscBool       defaultsplit;                    /* Flag for a system with a set of 'k' scalar fields with the same layout (and bs = k) */
+  PetscBool       splitdefined;                    /* Flag is set after the splits have been defined, to prevent more splits from being added */
+  PetscInt        bs;                              /* Block size for IS and Mat structures */
+  PetscInt        nsplits;                         /* Number of field divisions defined */
+  Vec             *x,*y,w1,w2;
+  Mat             *mat;                            /* The diagonal block for each split */
+  Mat             *pmat;                           /* The preconditioning diagonal block for each split */
+  Mat             *Afield;                         /* The rows of the matrix associated with each split */
+  PetscBool       issetup;
+
+  /* Only used when Schur complement preconditioning is used */
+  Mat                       B;                     /* The (0,1) block */
+  Mat                       C;                     /* The (1,0) block */
+  Mat                       schur;                 /* The Schur complement S = A11 - A10 A00^{-1} A01, the KSP here, kspinner, is H_1 in [El08] */
+  Mat                       schur_user;            /* User-provided preconditioning matrix for the Schur complement */
+  PCFieldSplitSchurPreType  schurpre;              /* Determines which preconditioning matrix is used for the Schur complement */
+  PCFieldSplitSchurFactType schurfactorization;
+  KSP                       kspschur;              /* The solver for S */
+  KSP                       kspupper;              /* The solver for A in the upper diagonal part of the factorization (H_2 in [El08]) */
+  PC_FieldSplitLink         head;
+  PetscBool                 reset;                  /* indicates PCReset() has been last called on this object, hack */
+  PetscBool                 suboptionsset;          /* Indicates that the KSPSetFromOptions() has been called on the sub-KSPs */
+  PetscBool                 dm_splits;              /* Whether to use DMCreateFieldDecomposition() whenever possible */
+} PC_FieldSplit;
+
+
+namespace PetscImpl
+{
+static PetscErrorCode PCFieldSplit_GetKSPInnerSchur( PC pc, KSP &ksp )
+{
+    PC_FieldSplit     *jac = (PC_FieldSplit*)pc->data;
+    PetscErrorCode    ierr;
+
+    KSP kspA = jac->head->ksp, kspInner = NULL;
+    ierr  = MatSchurComplementGetKSP(jac->schur, &kspInner);CHKERRQ(ierr);
+    if ( kspInner == NULL || kspInner==kspA )
+    {
+        ierr = KSPCreate(PetscObjectComm((PetscObject)pc), &ksp);CHKERRQ(ierr);
+        ierr = KSPSetOperators(ksp,jac->mat[0],jac->pmat[0],pc->flag);CHKERRQ(ierr);
+        ierr = MatSchurComplementSetKSP(jac->schur,ksp);CHKERRQ(ierr);CHKERRQ(ierr);
+    }
+    else
+    {
+        ksp = kspInner;
+    }
+    PetscFunctionReturn(0);
+}
+
+static PetscErrorCode PCFieldSplit_GetKSPUpperSchur( PC pc, KSP &ksp )
+{
+    PC_FieldSplit     *jac = (PC_FieldSplit*)pc->data;
+    PetscErrorCode    ierr;
+
+    KSP kspA = jac->head->ksp;
+    if ( jac->kspupper == NULL || jac->kspupper == kspA )
+    {
+        ierr = KSPCreate(PetscObjectComm((PetscObject)pc), &ksp);CHKERRQ(ierr);
+        ierr = KSPSetOperators(ksp,jac->mat[0],jac->pmat[0],pc->flag);CHKERRQ(ierr);
+        // need in PCApply_FieldSplit_Schur
+        ierr = VecDuplicate(jac->head->x, &jac->head->z);CHKERRQ(ierr);
+
+        jac->kspupper = ksp;
+    }
+    else
+    {
+        ksp = jac->kspupper;
+    }
+
+    PetscFunctionReturn(0);
+}
+
+
+static PetscErrorCode PCFieldSplit_GetMatSchurComplement( PC pc, Mat &schur )
+{
+    PC_FieldSplit     *jac = (PC_FieldSplit*)pc->data;
+    PetscErrorCode    ierr;
+    if ( !jac->schur )
+        SETERRQ(((PetscObject) pc)->comm,PETSC_ERR_PLIB,"jac->schur is not initialized");
+
+    schur = jac->schur;
+    PetscFunctionReturn(0);
+}
+
+static PetscErrorCode PCFieldSplit_UpdateMatPrecondSchurComplement( PC pc, Mat schurMatPrecond )
+{
+    PC_FieldSplit     *jac = (PC_FieldSplit*)pc->data;
+    PetscErrorCode    ierr;
+
+    ierr = KSPSetOperators(jac->kspschur,jac->schur,schurMatPrecond,DIFFERENT_NONZERO_PATTERN);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}
+
+} // namespace PetscImpl
+
+#endif
 
 
 } // extern C
@@ -469,7 +614,7 @@ SetPCType( PC& pc, const PreconditionerType & preconditioner_type, const MatSolv
             ierr = PCSetType ( pc, ( char* ) PCILU );
             CHKERRABORT( worldComm.globalComm(),ierr );
         }
-#if defined(PETSC_HAVE_HYPRE)  && (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 3) //#ifdef FEELPP_HAS_PETSC_HYPRE
+#if defined(PETSC_HAVE_HYPRE) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 ) //#ifdef FEELPP_HAS_PETSC_HYPRE
         else if ( matSolverPackage_type == MATSOLVER_EUCLID )
         {
             ierr = PCSetType( pc,( char* ) PCHYPRE );
@@ -492,7 +637,7 @@ SetPCType( PC& pc, const PreconditionerType & preconditioner_type, const MatSolv
         }
         else
         {
-#if defined(PETSC_HAVE_HYPRE)  && (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 3) //#ifdef FEELPP_HAS_PETSC_HYPRE
+#if defined(PETSC_HAVE_HYPRE) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 ) //#ifdef FEELPP_HAS_PETSC_HYPRE
             ierr = PCSetType( pc,( char* ) PCHYPRE );
             CHKERRABORT( worldComm.globalComm(),ierr );
             ierr = PCHYPRESetType( pc, "euclid" );
@@ -614,7 +759,7 @@ SetPCType( PC& pc, const PreconditionerType & preconditioner_type, const MatSolv
         break;
 
     case BOOMERAMG_PRECOND:
-#if defined(PETSC_HAVE_HYPRE) && (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 3) // #ifdef FEELPP_HAS_PETSC_HYPRE
+#if defined(PETSC_HAVE_HYPRE) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 ) // #ifdef FEELPP_HAS_PETSC_HYPRE
         ierr = PCSetType( pc,( char* ) PCHYPRE );
         CHKERRABORT( worldComm.globalComm(),ierr );
         ierr = PCHYPRESetType( pc, "boomeramg" );
@@ -753,7 +898,7 @@ ConfigurePC::run( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const&
     }
     else if ( std::string(pctype) == "hypre" )
     {
-#if defined(PETSC_HAVE_HYPRE)  && (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 3)
+#if defined(PETSC_HAVE_HYPRE) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 )
         const char* hypretype;
         this->check( PCHYPREGetType( pc, &hypretype ) );
         if ( std::string( hypretype ) == "euclid" )
@@ -813,6 +958,10 @@ ConfigureKSP::runConfigureKSP( KSP& ksp )
 {
     // set ksp type : gmres,cg,preonly,...
     this->check( KSPSetType( ksp, M_type.c_str() ) );
+
+    // init with petsc option if given and not interfaced
+    if ( true )
+        this->check( KSPSetFromOptions( ksp ) );
 
     if ( M_useConfigDefaultPetsc )
         return;
@@ -905,8 +1054,8 @@ ConfigurePCHYPRE_EUCLID::ConfigurePCHYPRE_EUCLID( PC& pc,
 void
 ConfigurePCHYPRE_EUCLID::runConfigurePCHYPRE_EUCLID( PC& pc )
 {
-#if defined(PETSC_HAVE_HYPRE) && (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 3)
-    PCHYPRE_EUCLIDSetLevels( pc, M_levels );
+#if defined(PETSC_HAVE_HYPRE) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 )
+    this->check( PetscImpl::PCHYPRE_EUCLIDSetLevels( pc, M_levels ) );
 #endif
 }
 
@@ -957,8 +1106,6 @@ ConfigurePCGASM::ConfigurePCGASM( PC& pc, PreconditionerPetsc<double>::indexspli
                                   WorldComm const& worldComm, std::string const& prefix, std::vector<std::string> const& prefixOverwrite )
     :
     ConfigurePCBase( worldComm,"",prefix,prefixOverwrite ),
-    //M_type( option(_name="pc-gasm-type",_prefix=prefix,_worldcomm=worldComm).as<std::string>() ),
-    //M_overlap( option(_name="pc-gasm-overlap",_prefix=prefix,_worldcomm=worldComm).as<int>() )
     M_type( getOption<std::string>("pc-gasm-type",prefix,"",prefixOverwrite) ),
     M_overlap( getOption<int>("pc-gasm-overlap",prefix,"",prefixOverwrite) )
 {
@@ -973,12 +1120,11 @@ void
 ConfigurePCGASM::runConfigurePCGASM( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is )
 {
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-    if ( M_type == "restrict" ) this->check( PCGASMSetType( pc, PC_GASM_RESTRICT ) );
-    else if ( M_type == "basic" ) this->check( PCGASMSetType( pc, PC_GASM_BASIC ) );
+    /**/ if ( M_type == "restrict" )    this->check( PCGASMSetType( pc, PC_GASM_RESTRICT ) );
+    else if ( M_type == "basic" )       this->check( PCGASMSetType( pc, PC_GASM_BASIC ) );
     else if ( M_type == "interpolate" ) this->check( PCGASMSetType( pc, PC_GASM_INTERPOLATE ) );
-    else if ( M_type == "none" ) this->check( PCGASMSetType( pc, PC_GASM_NONE ) );
-    else CHECK( false ) << "invalid gasm type : " << M_type << "\n";
-
+    else if ( M_type == "none" )        this->check( PCGASMSetType( pc, PC_GASM_NONE ) );
+    else                                CHECK( false ) << "invalid gasm type : " << M_type << "\n";
     this->check( PCGASMSetOverlap( pc, M_overlap ) );
 #endif
     ConfigureSubPC( pc,is,this->worldComm().subWorldCommSeq(),this->prefix(),this->prefixOverwrite() );
@@ -991,8 +1137,6 @@ ConfigurePCASM::ConfigurePCASM( PC& pc, PreconditionerPetsc<double>::indexsplit_
                                 WorldComm const& worldComm, std::string const& prefix, std::vector<std::string> const& prefixOverwrite )
     :
     ConfigurePCBase( worldComm,"",prefix,prefixOverwrite ),
-    //M_type( option(_name="pc-asm-type",_prefix=prefix,_worldcomm=worldComm).as<std::string>() ),
-    //M_overlap( option(_name="pc-asm-overlap",_prefix=prefix,_worldcomm=worldComm).as<int>() )
     M_type( getOption<std::string>("pc-asm-type",prefix,"",prefixOverwrite) ),
     M_overlap( getOption<int>("pc-asm-overlap",prefix,"",prefixOverwrite) )
 {
@@ -1006,12 +1150,11 @@ ConfigurePCASM::ConfigurePCASM( PC& pc, PreconditionerPetsc<double>::indexsplit_
 void
 ConfigurePCASM::runConfigurePCASM( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is )
 {
-    if ( M_type == "restrict" ) this->check( PCASMSetType( pc, PC_ASM_RESTRICT ) );
-    else if ( M_type == "basic" ) this->check( PCASMSetType( pc, PC_ASM_BASIC ) );
+    /**/ if ( M_type == "restrict" )    this->check( PCASMSetType( pc, PC_ASM_RESTRICT ) );
+    else if ( M_type == "basic" )       this->check( PCASMSetType( pc, PC_ASM_BASIC ) );
     else if ( M_type == "interpolate" ) this->check( PCASMSetType( pc, PC_ASM_INTERPOLATE ) );
-    else if ( M_type == "none" ) this->check( PCASMSetType( pc, PC_ASM_NONE ) );
-    else CHECK( false ) << "invalid asm type : " << M_type << "\n";
-
+    else if ( M_type == "none" )        this->check( PCASMSetType( pc, PC_ASM_NONE ) );
+    else                                CHECK( false ) << "invalid asm type : " << M_type << "\n";
     this->check( PCASMSetOverlap( pc, M_overlap ) );
 
     ConfigureSubPC( pc,is,this->worldComm().subWorldCommSeq(),this->prefix(),this->prefixOverwrite() );
@@ -1065,7 +1208,6 @@ void
 ConfigureSubPC::runConfigureSubPC( KSP& ksp, PreconditionerPetsc<double>::indexsplit_ptrtype const& is )
 {
     // configure coarse ksp
-    //this->check( KSPSetFromOptions( ksp ) );
     ConfigureKSP kspConf( ksp, this->worldComm(), "sub", this->prefix(), this->prefixOverwrite() );
     this->check( KSPSetUp( ksp ) );
 
@@ -1077,9 +1219,7 @@ ConfigureSubPC::runConfigureSubPC( KSP& ksp, PreconditionerPetsc<double>::indexs
     SetPCType( subpc, pcTypeConvertStrToEnum( M_subPCtype ),
                matSolverPackageConvertStrToEnum( M_subMatSolverPackage ),
                this->worldComm() );
-    //this->check( PCSetType( subpc, M_subPCtype.c_str() ) );
     ConfigurePC( subpc, is, this->worldComm(), "sub", this->prefix(), this->prefixOverwrite() );
-
     this->check( PCSetUp( subpc ) );
 
     if ( kspConf.kspView() )
@@ -1133,11 +1273,11 @@ ConfigurePCML::runConfigurePCML( PC& pc, PreconditionerPetsc<double>::indexsplit
 #endif
 
 #if defined(PETSC_HAVE_ML)
-    PCMLSetMaxNlevels( pc, M_nLevels );
-    PCMLSetReuseInterpolation( pc, static_cast<PetscBool>( M_mlReuseInterp ) );
-    PCMLSetKeepAggInfo( pc, static_cast<PetscBool>( M_mlKeepAggInfo ) );
-    PCMLSetReusable( pc, static_cast<PetscBool>( M_mlReusable ) );
-    PCMLSetOldHierarchy( pc, static_cast<PetscBool>( M_mlOldHierarchy ) );
+    this->check( PetscImpl::PCMLSetMaxNlevels( pc, M_nLevels ) );
+    this->check( PetscImpl::PCMLSetReuseInterpolation( pc, static_cast<PetscBool>( M_mlReuseInterp ) ) );
+    this->check( PetscImpl::PCMLSetKeepAggInfo( pc, static_cast<PetscBool>( M_mlKeepAggInfo ) ) );
+    this->check( PetscImpl::PCMLSetReusable( pc, static_cast<PetscBool>( M_mlReusable ) ) );
+    this->check( PetscImpl::PCMLSetOldHierarchy( pc, static_cast<PetscBool>( M_mlOldHierarchy ) ) );
 #endif
 
     // configure coarse solver
@@ -1162,18 +1302,15 @@ ConfigurePCML::configurePCMLCoarse( PC& pc, PreconditionerPetsc<double>::indexsp
     this->check( PCMGGetCoarseSolve( pc, &coarseksp) );
 
     // configure coarse ksp
-    this->check( KSPSetFromOptions( coarseksp ) );
     ConfigureKSP kspConf( coarseksp, this->worldComm(), "", M_prefixMGCoarse );
     this->check( KSPSetUp( coarseksp ) );
     // get coarse pc
     PC coarsepc;
     this->check( KSPGetPC( coarseksp, &coarsepc ) );
     // configure coarse pc
-    //this->check( PCSetType( coarsepc, M_coarsePCtype.c_str() ) );
     SetPCType( coarsepc, pcTypeConvertStrToEnum( M_coarsePCtype ),
                matSolverPackageConvertStrToEnum( M_coarsePCMatSolverPackage ),
                this->worldComm() );
-    //this->check( PCSetFromOptions( coarsepc ) );
     ConfigurePC( coarsepc, is, this->worldComm(), "", M_prefixMGCoarse );
     // setup pc (all do here because the setup of ml has not the same effect that classic setup)
     //this->check( PCSetUp( pc ) );
@@ -1277,7 +1414,6 @@ ConfigurePCGAMG::configurePCGAMGCoarse( PC& pc, PreconditionerPetsc<double>::ind
     KSP coarseksp;
     this->check( PCMGGetCoarseSolve( pc, &coarseksp) );
     // configure coarse ksp
-    this->check( KSPSetFromOptions( coarseksp ) );
     ConfigureKSP kspConf( coarseksp, this->worldComm(), "", M_prefixMGCoarse );
     // setup coarse ksp
     this->check( KSPSetUp( coarseksp ) );
@@ -1286,11 +1422,9 @@ ConfigurePCGAMG::configurePCGAMGCoarse( PC& pc, PreconditionerPetsc<double>::ind
     PC coarsepc;
     this->check( KSPGetPC( coarseksp, &coarsepc ) );
     // configure coarse pc
-    //this->check( PCSetType( coarsepc, M_coarsePCtype.c_str() ) );
     SetPCType( coarsepc, pcTypeConvertStrToEnum( M_coarsePCtype ),
                matSolverPackageConvertStrToEnum( M_coarsePCMatSolverPackage ),
                this->worldComm() );
-    //this->check( PCSetFromOptions( coarsepc ) );
     ConfigurePC( coarsepc, is, this->worldComm(), "", M_prefixMGCoarse );
     // setup coarse pc
     this->check( PCSetUp( coarsepc ) );
@@ -1384,11 +1518,8 @@ ConfigurePCMGLevels::runConfigurePCMGLevels( PC& pc, PreconditionerPetsc<double>
     KSP levelksp;
     // get ksp
     this->check( PCMGGetSmoother( pc, level, &levelksp ) );
-    // init ksp from option
-    this->check( KSPSetFromOptions( levelksp ) );
-
+    // configure ksp
     ConfigureKSP kspConf( levelksp,this->worldComm(), "", prefixAllLevel, prefixLevelOverwrite );
-
 #if 0
     // warning : use KSP_NORM_PRECONDITIONED and force convergence
     this->check( KSPSetNormType( levelksp, KSP_NORM_PRECONDITIONED ) );
@@ -1398,17 +1529,14 @@ ConfigurePCMGLevels::runConfigurePCMGLevels( PC& pc, PreconditionerPetsc<double>
 #endif
     // setup coarse ksp
     this->check( KSPSetUp( levelksp ) );
-
     //-------------------------------------------------------------------//
     // get level pc
     PC levelpc;
     this->check( KSPGetPC( levelksp, &levelpc ) );
     // configure level pc
-    //this->check( PCSetType( levelpc, M_mgLevelsPCtype[level-1].c_str() ) );
     SetPCType( levelpc, pcTypeConvertStrToEnum( M_mgLevelsPCtype[level-1] ),
                matSolverPackageConvertStrToEnum( M_mgLevelsMatSolverPackage[level-1] ),
                this->worldComm() );
-    //this->check( PCSetFromOptions( levelpc ) );
     ConfigurePC( levelpc, is, this->worldComm(), "", prefixAllLevel , prefixLevelOverwrite );
     // setup level pc
     this->check( PCSetUp( levelpc ) );
@@ -1469,30 +1597,150 @@ ConfigurePCFieldSplit::runConfigurePCFieldSplit( PC& pc, PreconditionerPetsc<dou
 #else
         else if ( M_schurPrecond == "a11")  theSchurPrecond = PC_FIELDSPLIT_SCHUR_PRE_DIAG;
 #endif
-        this->check( PCFieldSplitSchurPrecondition( pc, theSchurPrecond, NULL ) );
+
+        Mat schurMatPrecond = NULL;
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,4,0 )
+        if ( M_schurPrecond == "user" )
+        {
+            this->check( PCSetUp( pc ) );
+
+            Mat schur=NULL,A,B,C;
+            this->check( PetscImpl::PCFieldSplit_GetMatSchurComplement( pc, schur ) );
+
+            this->check( MatSchurComplementGetSubmatrices(schur,&A,NULL,&B,&C,NULL) );
+
+            Mat Bcopy;
+            MatDuplicate(B,MAT_COPY_VALUES,&Bcopy);
+
+            Vec scaleDiag;
+            MatGetVecs(A,&scaleDiag,NULL);
+            MatGetDiagonal(A,scaleDiag); /* Should be the mass matrix, but we don't have plumbing for that yet */
+            VecReciprocal(scaleDiag);
+            MatDiagonalScale( Bcopy, scaleDiag ,NULL);
+
+            //MatMatMultSymbolic(C,B,PETSC_DEFAULT,SchurMat);
+
+            MatMatMult(C,Bcopy,MAT_INITIAL_MATRIX,PETSC_DEFAULT,&schurMatPrecond);
+            //MatView(schurMatPrecond,PETSC_VIEWER_STDOUT_WORLD);
+
+            this->check( PetscImpl::PCFieldSplit_UpdateMatPrecondSchurComplement( pc, schurMatPrecond ) );
+            //ierr = KSPSetOperators(jac->kspschur,jac->schur,FieldSplitSchurPre(jac),DIFFERENT_NONZERO_PATTERN);CHKERRQ(ierr);
+#if 0
+            if (!lsc->L) {
+                ierr = MatMatMult(C,B,MAT_INITIAL_MATRIX,PETSC_DEFAULT,&lsc->L);CHKERRQ(ierr);
+            } else {
+                ierr = MatMatMult(C,B,MAT_REUSE_MATRIX,PETSC_DEFAULT,&lsc->L);CHKERRQ(ierr);
+            }
+#endif
+        }
+#endif
+        this->check( PCFieldSplitSchurPrecondition( pc, theSchurPrecond, schurMatPrecond/*NULL*/ ) );
     }
 #endif
 
-    // config sub ksp/pc
-    ConfigurePCFieldSplit::ConfigureSubKSP( pc,is,this->worldComm(),this->sub(),this->prefix() );
+    // call necessary before next seting
+    this->check( PCSetUp( pc ) );
+
+    // To store array of local KSP contexts on this processor
+    KSP* subksps;
+    int nSplit;
+    this->check( PCFieldSplitGetSubKSP(pc,&nSplit,&subksps ) );
+
+    if ( M_type == "schur" )
+    {
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,4,0 )
+        std::string pcctx = (this->sub().empty())? "" : this->sub()+"-";
+        std::string prefixSchurInnerSolver = prefixvm( this->prefix(),pcctx+"fieldsplit-schur-inner-solver" );
+        bool noBuildInnerSolver = option(_name="use-outer-solver",_prefix=prefixSchurInnerSolver).as<bool>();
+        if ( !noBuildInnerSolver )
+        {
+            KSP kspInner;
+            this->check( PetscImpl::PCFieldSplit_GetKSPInnerSchur( pc, kspInner ) );
+            ConfigureKSP kspConf( kspInner, this->worldComm(), "", prefixSchurInnerSolver );
+            // setup sub-ksp
+            this->check( KSPSetUp( kspInner ) );
+            //-----------------------------------------------------------//
+            // get sub-pc
+            PC pcInner;
+            this->check( KSPGetPC( kspInner, &pcInner ) );
+            // configure sub-pc
+            std::string M_innerSchurPCType = option(_name="pc-type",_prefix=prefixSchurInnerSolver).as<std::string>();
+            std::string M_innerSchurPCFactMatSolverPackage = option(_name="pc-factor-mat-solver-package-type",_prefix=prefixSchurInnerSolver).as<std::string>();
+            SetPCType( pcInner, pcTypeConvertStrToEnum( M_innerSchurPCType ),
+                       matSolverPackageConvertStrToEnum( M_innerSchurPCFactMatSolverPackage ),
+                       this->worldComm() );
+            ConfigurePC( pcInner, is, this->worldComm(), "", prefixSchurInnerSolver );
+            // setup sub-pc
+            this->check( PCSetUp( pcInner ) );
+            //-----------------------------------------------------------//
+#if 0
+            // ksp and pc view
+            if ( kspConf.kspView() )
+                this->check( KSPView( kspInner, PETSC_VIEWER_STDOUT_WORLD ) );
+            else if ( M_subPCview )
+                this->check( PCView( pcInner, PETSC_VIEWER_STDOUT_WORLD ) );
+#endif
+        }
+
+        if ( M_schurFactType == "full" )
+        {
+            //std::string pcctx = (this->sub().empty())? "" : this->sub()+"-";
+            std::string prefixSchurUpperSolver = prefixvm( this->prefix(),pcctx+"fieldsplit-schur-upper-solver" );
+            bool noBuildUpperSolver = option(_name="use-outer-solver",_prefix=prefixSchurUpperSolver).as<bool>();
+            if ( !noBuildUpperSolver )
+            {
+                KSP kspUpper;
+                this->check( PetscImpl::PCFieldSplit_GetKSPUpperSchur( pc, kspUpper ) );
+                ConfigureKSP kspConf( kspUpper, this->worldComm(), "", prefixSchurUpperSolver );
+                // setup sub-ksp
+                this->check( KSPSetUp( kspUpper ) );
+                //-----------------------------------------------------------//
+                // get sub-pc
+                PC pcUpper;
+                this->check( KSPGetPC( kspUpper, &pcUpper ) );
+                // configure sub-pc
+                std::string M_upperSchurPCType = option(_name="pc-type",_prefix=prefixSchurUpperSolver).as<std::string>();
+                std::string M_upperSchurPCFactMatSolverPackage = option(_name="pc-factor-mat-solver-package-type",_prefix=prefixSchurUpperSolver).as<std::string>();
+                SetPCType( pcUpper, pcTypeConvertStrToEnum( M_upperSchurPCType ),
+                           matSolverPackageConvertStrToEnum( M_upperSchurPCFactMatSolverPackage ),
+                           this->worldComm() );
+                ConfigurePC( pcUpper, is, this->worldComm(), "", prefixSchurUpperSolver );
+                // setup sub-pc
+                this->check( PCSetUp( pcUpper ) );
+                //-----------------------------------------------------------//
+#if 0
+                // ksp and pc view
+                if ( kspConf.kspView() )
+                    this->check( KSPView( kspUpper, PETSC_VIEWER_STDOUT_WORLD ) );
+                else if ( M_subPCview )
+                    this->check( PCView( pcUpper, PETSC_VIEWER_STDOUT_WORLD ) );
+#endif
+            }
+        }
+#endif // PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,4,0 )
+    }
+
+    // config sub ksp/pc for each split
+    ConfigurePCFieldSplit::ConfigureSubKSP( &subksps/*pc*/,nSplit,is,this->worldComm(),this->sub(),this->prefix() );
 }
 
 /**
  * ConfigurePCFieldSplitSubKSP
  */
-ConfigurePCFieldSplit::ConfigureSubKSP::ConfigureSubKSP( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+ConfigurePCFieldSplit::ConfigureSubKSP::ConfigureSubKSP( KSP ** subksps/*PC& pc*/, int nSplit,PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
                                                          WorldComm const& worldComm, std::string const& sub, std::string const& prefix )
     :
     ConfigurePCBase( worldComm,sub,prefix ),
-    M_nSplit(0)
+    M_nSplit( nSplit )
 {
+#if 0
     // call necessary before PCFieldSplitGetSubKSP
     this->check( PCSetUp( pc ) );
 
     // To store array of local KSP contexts on this processor
     KSP* subksps;
     this->check( PCFieldSplitGetSubKSP(pc,&M_nSplit,&subksps ) );
-
+#endif
     M_prefixSplit.resize(M_nSplit);
     M_subPCview.resize(M_nSplit);
     M_subPCtype.resize(M_nSplit);
@@ -1506,14 +1754,19 @@ ConfigurePCFieldSplit::ConfigureSubKSP::ConfigureSubKSP( PC& pc, PreconditionerP
         M_subMatSolverPackage[i] = option(_name="pc-factor-mat-solver-package-type",_prefix=prefixSplit).as<std::string>();
     }
 
+
     // Loop over sub-ksp objects
     for ( int splitId=0; splitId<M_nSplit; ++splitId )
     {
         VLOG(2) << "configure split " << splitId << " with prefix "<< M_prefixSplit[splitId] << "\n";
         google::FlushLogFiles(google::INFO);
 
-        runConfigureSubKSP( subksps[splitId], is, splitId );
+        runConfigureSubKSP( (*subksps)[splitId], is, splitId );
     }
+
+
+
+
 }
 
 void
@@ -1540,15 +1793,10 @@ ConfigurePCFieldSplit::ConfigureSubKSP::runConfigureSubKSP(KSP& ksp, Preconditio
     PC subpc;
     // get sub-pc
     this->check( KSPGetPC( ksp, &subpc ) );
-
     // configure sub PC
-    //this->check( PCSetType( subpc, M_subPCtype[splitId].c_str() ) );
     SetPCType( subpc, pcTypeConvertStrToEnum( M_subPCtype[splitId] ),
                matSolverPackageConvertStrToEnum( M_subMatSolverPackage[splitId] ),
                this->worldComm() );
-
-    // init pc from specific default option
-    //this->check( PCSetFromOptions( subpc ) );
 
     // in case of fieldsplit in fieldsplit, need to pass the is corresponding
     if ( M_subPCtype[splitId] == "fieldsplit" )
@@ -1604,10 +1852,13 @@ ConfigurePCLSC::ConfigurePCLSC( PC& pc, PreconditionerPetsc<double>::indexsplit_
     :
     ConfigurePCBase( worldComm,sub,prefix ),
     M_prefixLSC( prefixvm(this->prefix(),"lsc") ),
+    M_scaleDiag( option(_name="scale-diag",_prefix=M_prefixLSC).as<bool>() ),
     M_subPCtype( option(_name="pc-type",_prefix=M_prefixLSC).as<std::string>() ),
     M_subMatSolverPackage( option(_name="pc-factor-mat-solver-package-type",_prefix=M_prefixLSC).as<std::string>() ),
     M_subPCview( option(_name="pc-view",_prefix=M_prefixLSC).as<bool>() )
 {
+    this->check( PetscImpl::PCLSCSetScaleDiag( pc, static_cast<PetscBool>( M_scaleDiag ) ) );
+
     VLOG(2) << "ConfigurePC : LSC\n"
             << "  |->prefix    : " << this->prefix() << std::string((this->sub().empty())? "" : " -sub="+this->sub()) << "\n"
             << "  |->prefixLSC : " << M_prefixLSC  << "\n"
@@ -1623,9 +1874,8 @@ ConfigurePCLSC::runConfigurePCLSC( PC& pc, PreconditionerPetsc<double>::indexspl
     //-----------------------------------------------------------//
     // get sub-ksp
     KSP subksp;
-    PCLSCGetKSP( pc, subksp );
+    this->check( PetscImpl::PCLSCGetKSP( pc, subksp ) );
     // configure sub-ksp
-    this->check( KSPSetFromOptions( subksp ) );
     ConfigureKSP kspConf( subksp, this->worldComm(), "", M_prefixLSC );
     // setup sub-ksp
     this->check( KSPSetUp( subksp ) );
@@ -1634,7 +1884,6 @@ ConfigurePCLSC::runConfigurePCLSC( PC& pc, PreconditionerPetsc<double>::indexspl
     PC subpc;
     this->check( KSPGetPC( subksp, &subpc ) );
     // configure sub-pc
-    //this->check( PCSetType( subpc, M_subPCtype.c_str() ) );
     SetPCType( subpc, pcTypeConvertStrToEnum( M_subPCtype ),
                matSolverPackageConvertStrToEnum( M_subMatSolverPackage ),
                this->worldComm() );
