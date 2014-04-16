@@ -59,7 +59,7 @@ public:
             auto itSymZ = std::find_if( M_syms.begin(), M_syms.end(),
                                         []( GiNaC::symbol const& s ) { return s.get_name() == "z"; } );
             if ( itSymZ != M_syms.end() )
-                M_indexSymbolXYZ.insert( std::make_pair( 1,std::distance(M_syms.begin(),itSymZ) ) );
+                M_indexSymbolXYZ.insert( std::make_pair( 2,std::distance(M_syms.begin(),itSymZ) ) );
 
             for ( auto const& is : M_indexSymbolXYZ )
                 LOG(INFO) << "index symbol relation  " << is.first << " and " << is.second << "\n";
