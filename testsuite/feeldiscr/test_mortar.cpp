@@ -255,20 +255,20 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
     //auto mesh2 = loadMesh( _mesh=new Mesh<Simplex<2,1,2> >, _h=option(_name="gmsh.hsize2").template as<double>() );
 
 #if 1
-    auto mesh = createGMSHMesh( _mesh=new Mesh<Hypercube<2,1,2> >,
+    auto mesh = createGMSHMesh( _mesh=new Mesh<Simplex<2,1,2> >,
                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                                 _desc=domain( _name="mesh", _addmidpoint=false, _usenames=false, _shape="hypercube",
                                               _dim=2, _h=option(_name="gmsh.hsize2").template as<double>(),
-                                              _convex="Hypercube",_structured=1,
+                                              _convex="Simplex",_structured=1,
                                               _xmin=0., _xmax=1., _ymin=0., _ymax=1.
                                               )
                                 );
 
-    auto mesh2 = createGMSHMesh( _mesh=new Mesh<Hypercube<2,1,2> >,
+    auto mesh2 = createGMSHMesh( _mesh=new Mesh<Simplex<2,1,2> >,
                                  _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                                  _desc=domain( _name="mesh2", _addmidpoint=false, _usenames=false, _shape="hypercube",
                                                _dim=2, _h=option(_name="gmsh.hsize2").template as<double>(),
-                                               _convex="Hypercube",_structured=1,
+                                               _convex="Simplex",_structured=1,
                                                _xmin=0., _xmax=1., _ymin=1., _ymax=2.
                                                )
                                  );
@@ -279,7 +279,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
     auto trialmesh = createSubmesh(mesh2, markedfaces(mesh2,(boost::any)2),Environment::worldComm() );
     auto Xh = Pch<T::value>(testmesh);
     auto Vh = Pch<T::value>(trialmesh);
-    auto Mh = Moch<T::value>(testmesh);
+    //auto Mh = Moch<T::value>(testmesh);
+    auto Mh = Xh;//Pch<T::value>(testmesh);
 
     BOOST_CHECK_MESSAGE(Mh->is_mortar == true, "Space should be mortar" ) ;
     BOOST_CHECK_MESSAGE(Mh->isMortar() == true, "Space should be mortar" ) ;
@@ -326,15 +327,18 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
     auto c_s = form2(_test=Mh, _trial=Xh), cs1= form2(_test=Mh, _trial=Xh);
     BOOST_TEST_MESSAGE( "integrate" );
     c_s = integrate(_range=internalelements(testmesh),_expr=idt(u)*id(l));
-    c_s += integrate(_range=boundaryelements(testmesh),_expr=idt(u)*id(l));
+    //c_s = integrate(_range=boundaryelements(testmesh),_expr=idt(u)*id(l));
 
     cs1 = integrate(_range=internalelements(testmesh),_expr=idt(u)*id(l));
-    cs1 += integrate(_range=boundaryelements(testmesh),_expr=idt(u));
+    //cs1 = integrate(_range=boundaryelements(testmesh),_expr=idt(u));
     BOOST_TEST_MESSAGE( "printMatlab" );
     c_s.matrixPtr()->printMatlab( "C_s.m" );
     cs1.matrixPtr()->printMatlab( "C_s1.m" );
-
-    BOOST_CHECK_CLOSE( c_s( l, u ), 1, 1e-12 );
+    double i1 = integrate(_range=internalelements(testmesh), _expr=cst(1.)).evaluate()(0,0);
+    BOOST_TEST_MESSAGE("integrate(1)=" << i1 );
+    double i2 = integrate(_range=markedfaces(mesh,(boost::any)4), _expr=cst(1.)).evaluate()(0,0);
+    BOOST_TEST_MESSAGE("integrate_2(1)=" << i2 );
+    BOOST_CHECK_CLOSE( c_s( l, u ), i1, 1e-12 );
     if ( T::value == 1 )
         BOOST_CHECK_CLOSE( cs1( l, u ), 1, 1e-12 );
     BOOST_CHECK_CLOSE( c_s( l, u1 ), 0.5, 1e-12 );
