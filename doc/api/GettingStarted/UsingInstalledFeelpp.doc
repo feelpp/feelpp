@@ -84,11 +84,13 @@ int main( int argc, char** argv )
 Then configure your Feel++ application using this command and compile your application according to the resources available:
 
 \verbatim
-cmake .
+mkdir build;
+cd build
+cmake ..
 make -j 4
 \endverbatim
 
-Note that . indicates that the CMakeLists.txt is in the current directory.
+Note that .. indicates that the CMakeLists.txt is in the top directory.
 
 <a href="#" class="top">top</a>
 <hr>

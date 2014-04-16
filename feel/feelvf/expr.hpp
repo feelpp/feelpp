@@ -108,6 +108,7 @@ public:
 
     typedef ExprT expression_type;
     typedef typename expression_type::value_type value_type;
+    typedef value_type evaluate_type;
     typedef ComponentsExpr<ExprT> this_type;
 
     //@}
@@ -2025,6 +2026,7 @@ public:
     typedef ExprT2 expression_2_type;
     typedef typename strongest_numeric_type<typename expression_1_type::value_type,
             typename expression_2_type::value_type>::type value_type;
+    typedef value_type evaluate_type;
     explicit OpMax( expression_1_type const& __expr1, expression_2_type const& __expr2  )
         :
         M_expr_1( __expr1 ),
@@ -2219,7 +2221,7 @@ public:
     typedef ExprT2 expression_2_type;
     typedef typename strongest_numeric_type<typename expression_1_type::value_type,
             typename expression_2_type::value_type>::type value_type;
-
+    typedef value_type evaluate_type;
     explicit OpMin( expression_1_type const& __expr1, expression_2_type const& __expr2  )
         :
         M_expr_1( __expr1 ),
@@ -2417,6 +2419,7 @@ public:
     typedef typename expression_1_type::value_type value_1_type;
     typedef typename expression_2_type::value_type value_2_type;
     typedef value_1_type value_type;
+    typedef value_type evaluate_type;
 
     // verify that all returning types are integral or floating types
     BOOST_STATIC_ASSERT( ::boost::is_arithmetic<value_1_type>::value  &&
