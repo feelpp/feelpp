@@ -157,6 +157,12 @@ public:
                                    std::vector<vector_ptrtype>
                                    > monolithic_type;
 
+    typedef typename boost::tuple< std::map<int,double>,
+                                   std::map<int,double>,
+                                   std::vector< std::map<int,double> >
+                                   > eim_interpolation_error_type ;
+
+
 
     typedef typename model_type::affine_decomposition_light_type affine_decomposition_light_type;
     typedef typename model_type::betaq_type betaq_type;
@@ -212,8 +218,8 @@ public:
         M_Aqm(),
         M_Mqm(),
         M_Fqm(),
-        M_is_initialized( false ),
         M_mode( CRBModelMode::PFEM ),
+        M_is_initialized( false ),
         M_model( new model_type() ),
         M_backend( backend_type::build( BACKEND_PETSC ) ),
         M_alreadyCountAffineDecompositionTerms( false )
@@ -228,10 +234,10 @@ public:
         M_InitialGuessVector(),
         M_Mqm(),
         M_Fqm(),
+        M_model( new model_type( vm ) ),
         M_is_initialized( false ),
         M_vm( vm ),
         M_mode( mode ),
-        M_model( new model_type( vm ) ),
         M_backend( backend_type::build( vm ) ),
         M_backend_primal( backend_type::build( vm , "backend-primal" ) ),
         M_backend_dual( backend_type::build( vm , "backend-dual" ) ),
@@ -251,10 +257,10 @@ public:
         M_InitialGuessVector(),
         M_Mqm(),
         M_Fqm(),
+        M_model( model ),
         M_is_initialized( false ),
         M_vm(),
         M_mode( CRBModelMode::PFEM ),
-        M_model( model ),
         M_backend( backend_type::build( model->vm ) ),
         M_backend_primal( backend_type::build( model->vm , "backend-primal" ) ),
         M_backend_dual( backend_type::build( model->vm , "backend-dual") ),
@@ -271,10 +277,10 @@ public:
         M_InitialGuessVector(),
         M_Mqm(),
         M_Fqm(),
+        M_model( model ),
         M_is_initialized( false ),
         M_vm(),
         M_mode( mode ),
-        M_model( model ),
         M_backend( backend_type::build( Environment::vm() ) ),
         M_backend_primal( backend_type::build( Environment::vm() , "backend-primal" ) ),
         M_backend_dual( backend_type::build( Environment::vm() , "backend-dual" ) ),
@@ -294,10 +300,10 @@ public:
         M_InitialGuessVector( o.M_InitialGuessVector ),
         M_Mqm( o.M_Mqm ),
         M_Fqm( o.M_Fqm ),
+        M_model(  o.M_model ),
         M_is_initialized( o.M_is_initialized ),
         M_vm( o.M_vm ),
         M_mode( o.M_mode ),
-        M_model(  o.M_model ),
         M_backend( o.M_backend ),
         M_backend_primal( o.M_backend_primal ),
         M_backend_dual( o.M_backend_dual ),
@@ -492,7 +498,7 @@ public:
     }
 
     //! return the number of \f$\mu\f$ independent terms for the bilinear form
-    size_type Qa() const
+    virtual size_type Qa() const
     {
         return M_Qa;
     }
@@ -581,7 +587,7 @@ public:
     }
 
     //! return the number of \f$\mu\f$ independent terms for the right hand side
-    size_type Ql( int l ) const
+    virtual size_type Ql( int l ) const
     {
         return M_Ql[l];
         //return M_model->Ql( l );
@@ -976,31 +982,103 @@ public:
 
         if ( M_Aqm.size() > 0 )
         {
-            M_Qm=M_Mqm.size();
-            M_mMaxM.resize(M_Qm);
-            for(int q=0; q<M_Qm; q++)
+            if ( this->hasEimError() )
             {
-                M_mMaxM[q]=M_Mqm[q].size();
-            }
+                //when using EIM we need to be careful
+                //if we want to estimate the error then there
+                //is an "extra" basis fuction.
+                auto all_errors = eimInterpolationErrorEstimation();
+                auto errorsM = all_errors.template get<0>();
+                auto errorsA = all_errors.template get<1>();
+                auto errorsF = all_errors.template get<2>();
+                std::map<int,double>::iterator it;
+                auto endA = errorsA.end();
+                auto endM = errorsM.end();
 
-            M_Qa=M_Aqm.size();
-            M_mMaxA.resize(M_Qa);
-            for(int q=0; q<M_Qa; q++)
-            {
-                M_mMaxA[q]=M_Aqm[q].size();
-            }
-
-            M_Nl=M_Fqm.size();
-            M_Ql.resize(M_Nl);
-            M_mMaxF.resize(M_Nl);
-            for(int output=0; output<M_Nl; output++)
-            {
-                M_Ql[output]=M_Fqm[output].size();
-                M_mMaxF[output].resize(M_Ql[output]);
-                for(int q=0; q<M_Ql[output]; q++)
+                M_Qm=M_Mqm.size();
+                M_mMaxM.resize(M_Qm);
+                for(int q=0; q<M_Qm; q++)
                 {
-                    M_mMaxF[output][q]=M_Fqm[output][q].size();
+                    auto itq = errorsM.find(q);
+                    if( itq != endM) //found
+                    {
+                        //we have an eim error estimation
+                        M_mMaxM[q]=M_Mqm[q].size()-1;
+                    }
+                    else //not found
+                    {
+                        M_mMaxM[q]=M_Mqm[q].size();
+                    }
                 }
+
+                M_Qa=M_Aqm.size();
+                M_mMaxA.resize(M_Qa);
+                for(int q=0; q<M_Qa; q++)
+                {
+                    auto itq = errorsA.find(q);
+                    if( itq != endA ) //found
+                    {
+                        //we have an eim error estimation
+                        M_mMaxA[q]=M_Aqm[q].size()-1;
+                    }
+                    else //not found
+                    {
+                        M_mMaxA[q]=M_Aqm[q].size();
+                    }
+                }
+
+                M_Nl=M_Fqm.size();
+                M_Ql.resize(M_Nl);
+                M_mMaxF.resize(M_Nl);
+                for(int output=0; output<M_Nl; output++)
+                {
+                    M_Ql[output]=M_Fqm[output].size();
+                    M_mMaxF[output].resize(M_Ql[output]);
+                    auto endF = errorsF[output].end();
+                    for(int q=0; q<M_Ql[output]; q++)
+                    {
+                        auto itq = errorsF[output].find(q);
+                        if( itq != endF ) //found
+                        {
+                            //we have an eim error estimation
+                            M_mMaxF[output][q]=M_Fqm[output][q].size()-1;
+                        }
+                        else //not found
+                        {
+                            M_mMaxF[output][q]=M_Fqm[output][q].size();
+                        }
+                    }
+                }
+            }//EIM error
+            else
+            {
+                M_Qm=M_Mqm.size();
+                M_mMaxM.resize(M_Qm);
+                for(int q=0; q<M_Qm; q++)
+                {
+                    M_mMaxM[q]=M_Mqm[q].size();
+                }
+
+                M_Qa=M_Aqm.size();
+                M_mMaxA.resize(M_Qa);
+                for(int q=0; q<M_Qa; q++)
+                {
+                    M_mMaxA[q]=M_Aqm[q].size();
+                }
+
+                M_Nl=M_Fqm.size();
+                M_Ql.resize(M_Nl);
+                M_mMaxF.resize(M_Nl);
+                for(int output=0; output<M_Nl; output++)
+                {
+                    M_Ql[output]=M_Fqm[output].size();
+                    M_mMaxF[output].resize(M_Ql[output]);
+                    for(int q=0; q<M_Ql[output]; q++)
+                    {
+                        M_mMaxF[output][q]=M_Fqm[output][q].size();
+                    }
+                }
+
             }
         }
         else
@@ -1221,6 +1299,63 @@ public:
         return boost::make_tuple( M_monoM, M_monoA, M_monoF );
     }
 
+
+    /*
+     * return true if the model use EIM and need to comute associated error
+     * usefull to the CRB error estimation
+     */
+    bool hasEimError()
+    {
+        auto all_errors = eimInterpolationErrorEstimation();
+        auto errorsM = all_errors.template get<0>();
+        auto errorsA = all_errors.template get<1>();
+        auto errorsF = all_errors.template get<2>();
+        int sizeM = errorsM.size();
+        int sizeA = errorsA.size();
+        int sizeF = errorsF.size();
+        bool b=false;
+        if( sizeM > 0 || sizeA > 0 || sizeF > 0 )
+        {
+            b=true;
+        }
+        return b;
+    }
+
+
+    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , vectorN_type const& uN )
+    {
+        return eimInterpolationErrorEstimation( mu, uN, mpl::bool_<model_type::is_time_dependent>() );
+    }
+    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , vectorN_type const& uN, mpl::bool_<true> )
+    {
+        return M_model->eimInterpolationErrorEstimation( mu , uN );
+    }
+    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , vectorN_type const& uN, mpl::bool_<false> )
+    {
+        std::map< int, double > errorsM;
+        std::map< int, double > errorsA;
+        std::vector< std::map< int, double > > errorsF;
+        boost::tie(  errorsA , errorsF ) = M_model->eimInterpolationErrorEstimation( mu ,uN );
+        return boost::make_tuple( errorsM, errorsA, errorsF );
+    }
+
+    eim_interpolation_error_type eimInterpolationErrorEstimation( )
+    {
+        return eimInterpolationErrorEstimation( mpl::bool_<model_type::is_time_dependent>() );
+    }
+    eim_interpolation_error_type eimInterpolationErrorEstimation( mpl::bool_<true> )
+    {
+        return M_model->eimInterpolationErrorEstimation( );
+    }
+    eim_interpolation_error_type eimInterpolationErrorEstimation( mpl::bool_<false> )
+    {
+        std::map< int, double > errorsM;
+        std::map< int, double > errorsA;
+        std::vector< std::map< int, double > > errorsF;
+        boost::tie(  errorsA , errorsF ) = M_model->eimInterpolationErrorEstimation( );
+        return boost::make_tuple( errorsM, errorsA, errorsF );
+    }
+
     /**
      * \brief Compute the affine decomposition of the various forms
      *
@@ -1252,6 +1387,7 @@ public:
             auto tuple=boost::make_tuple(Mq,Aq,Fq);
             this->extendAffineDecomposition( tuple );
         }
+
         this->countAffineDecompositionTerms();
 
         if( M_Aqm.size() == 0 )
@@ -1993,7 +2129,7 @@ public:
     /**
      * solve the model for a given parameter \p mu
      */
-    element_type solve( parameter_type const& mu )
+    virtual element_type solve( parameter_type const& mu )
     {
         element_type solution;// = M_model->functionSpace()->element();
         if( is_linear )
@@ -2192,6 +2328,9 @@ protected:
     sparse_matrix_ptrtype M_monoM;
     std::vector<vector_ptrtype> M_monoF;
 
+    //! model
+    model_ptrtype M_model;
+
 private:
 
     bool M_is_initialized;
@@ -2202,8 +2341,6 @@ private:
     //! mode for CRBModel
     CRBModelMode M_mode;
 
-    //! model
-    model_ptrtype M_model;
 
     backend_ptrtype M_backend;
     backend_ptrtype M_backend_primal;
@@ -2252,7 +2389,6 @@ private:
     sparse_matrix_ptrtype M_inner_product_matrix;
 
     bdf_ptrtype M_bdf;
-
 };
 
 
