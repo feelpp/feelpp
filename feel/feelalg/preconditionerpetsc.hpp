@@ -475,7 +475,7 @@ private :
     class ConfigureSubKSP : public ConfigurePCBase
     {
     public :
-        ConfigureSubKSP( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+        ConfigureSubKSP( KSP ** subksps/*PC& pc*/, int nSplit, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
                          WorldComm const& worldComm, std::string const& sub, std::string const& prefix );
     private :
         void runConfigureSubKSP(KSP& ksp, PreconditionerPetsc<double>::indexsplit_ptrtype const& is, int splitId );
@@ -505,6 +505,7 @@ private :
 
 private :
     std::string M_prefixLSC;
+    bool M_scaleDiag;
     std::string M_subPCtype, M_subMatSolverPackage;
     bool M_subPCview;
 

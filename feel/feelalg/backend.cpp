@@ -807,6 +807,23 @@ void updateBackendFieldSplitPreconditionerOptions( po::options_description & _op
         ( prefixvm( prefix,pcctx+"fieldsplit-schur-fact-type" ).c_str(), Feel::po::value<std::string>()->default_value( "full" ), "type of schur factorization (diag, lower, upper, full)" )
         ( prefixvm( prefix,pcctx+"fieldsplit-schur-precondition" ).c_str(), Feel::po::value<std::string>()->default_value( "a11" ), "self,user,a11" )
         ;
+
+    // inner solver (A^{-1}) of schur complement : S = C-B A^{-1} B^T
+    std::string prefixSchurInnerSolver = prefixvm( prefix,pcctx+"fieldsplit-schur-inner-solver" );
+    _options.add_options()
+        ( prefixvm( prefixSchurInnerSolver,"use-outer-solver" ).c_str(), Feel::po::value<bool>()->default_value( true ), "use-outer-solver" )
+        ;
+    updateBackendPreconditionerOptions( _options, prefixSchurInnerSolver ,"", "jacobi" );
+    updateBackendKSPOptions( _options, prefixSchurInnerSolver,   "", "preonly", 1e-5,  10, true  ); // preonly or gmres??
+
+    // solver (A^{-1}) used in upper schur preconditioning
+    std::string prefixSchurUpperSolver = prefixvm( prefix,pcctx+"fieldsplit-schur-upper-solver" );
+    _options.add_options()
+        ( prefixvm( prefixSchurUpperSolver,"use-outer-solver" ).c_str(), Feel::po::value<bool>()->default_value( true ), "use-outer-solver" )
+        ;
+    updateBackendPreconditionerOptions( _options, prefixSchurUpperSolver ,"", "jacobi" );
+    updateBackendKSPOptions( _options, prefixSchurUpperSolver,   "", "preonly", 1e-5,  10, true  ); // preonly or gmres??
+
     // ksp/pc options for each split
     for ( uint16_type i=0; i<5; ++i )
     {
@@ -817,8 +834,12 @@ void updateBackendFieldSplitPreconditionerOptions( po::options_description & _op
         updateBackendPreconditionerOptions( _options, prefixfieldsplit, "sub", "lu" ); // gasm
         updateBackendMGPreconditionerOptions( _options, prefixfieldsplit ,"" ); // multigrid
     }
+
     // specific case : lsc preconditioner ( only with split 1 )
     std::string prefixfieldsplitLSC = prefixvm( prefixvm( prefix,pcctx+"fieldsplit-1" ), "lsc" );
+    _options.add_options()
+        ( prefixvm( prefixfieldsplitLSC,"scale-diag" ).c_str(), Feel::po::value<bool>()->default_value( false ), "scale diag" )
+        ;
     updateBackendPreconditionerOptions( _options, prefixfieldsplitLSC ,"" );
     updateBackendPreconditionerOptions( _options, prefixfieldsplitLSC ,"sub" );
     updateBackendMGPreconditionerOptions( _options, prefixfieldsplitLSC ,"" ); // multigrid
