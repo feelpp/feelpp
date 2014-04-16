@@ -95,6 +95,18 @@ platforms:
 \feel was uploaded in the distribution Ubuntu-Natty (11.04) for the first
 time. The commands to install \feel on Ubuntu are
 \verbatim
+    sudo apt-get install feel++-apps libfeel++-dev
+\endverbatim
+
+The interested user might want to look at the following Ubuntu Launchpad \feel page <a href="https://launchpad.net/ubuntu/+source/feel++">Ubuntu Source
+  Page for all Ubuntu versions</a>
+
+
+\feel has its own PPA, checkout <a href="https://launchpad.net/~feelpp/+archive/ppa">feelpp ppa for Trusty, Saucy and Precise</a>.
+It allows you to have a recent version of \feel on these three distributions. It
+allows us also to provide a recent version to compile the \feel projects on
+Travis-ci. The installation procedure is currently as follows
+\verbatim
 	sudo add-apt-repository ppa:feelpp/ppa
 	sudo add-apt-repository -y ppa:mapnik/boost-backports-1-54
 	sudo add-apt-repository -y ppa:kalakris/eigen
@@ -103,11 +115,6 @@ time. The commands to install \feel on Ubuntu are
 	sudo apt-get install feel++-apps libfeel++-dev
 \endverbatim
 
-The interested user might want to look at the following Ubuntu Launchpad \feel pages
-
-\li Feel++ <a href="https://launchpad.net/~feelpp/+archive/ppa">feelpp ppa for Trusty, Saucy and Precise</a>
-\li Feel++ <a href="https://launchpad.net/ubuntu/+source/feel++">Ubuntu Source
-  Page for all Ubuntu versions</a>
 
 <a href="#" class="top">top</a>
 <hr>
