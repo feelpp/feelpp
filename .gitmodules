@@ -34,10 +34,6 @@
 	path = projects/gazomat
 	url = https://github.com/feelpp/gazomat
     fetchRecurseSubmodules = on-demand
-[submodule "po"]
-	path = projects/po
-	url = https://github.com/feelpp/po
-    fetchRecurseSubmodules = on-demand
 [submodule "chorus"]
 	path = projects/chorus
 	url = https://github.com/feelpp/chorus
