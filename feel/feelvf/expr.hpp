@@ -2419,6 +2419,7 @@ public:
     typedef typename expression_1_type::value_type value_1_type;
     typedef typename expression_2_type::value_type value_2_type;
     typedef value_1_type value_type;
+    typedef value_type evaluate_type;
 
     // verify that all returning types are integral or floating types
     BOOST_STATIC_ASSERT( ::boost::is_arithmetic<value_1_type>::value  &&
