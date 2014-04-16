@@ -6,7 +6,7 @@
 /* size is the total number of elements of the vector or the matrix (NxN) */
 /* Size limit if we want to copy NxN matrix into local memory (32Ko on Tahiti => 64x64 matrix) */
 /* Constraints: Block count limit (Tahiti: 256) */
-__kernel void SVProd(__constant double * S, __global double * V, const int Vsz)
+__kernel void SVProd(__global double * S, __global double * V, const int Vsz)
 {
     /* get beta value */
     __private double beta = S[get_group_id(0)];
@@ -43,7 +43,7 @@ __kernel void SVProd(__constant double * S, __global double * V, const int Vsz)
 /* V: storage for vector/matrix */
 /* Vsz: Nb elements in vector/matrix */
 /* nV: Number of vectors/matrices */
-__kernel void Vsum(__global double * V, const int Vsz, const int nV) 
+__kernel void VSum(__global double * out, __global double * V, const int Vsz, const int nV) 
 {
     // forced to alloc statically
     __local double lV[2048];
@@ -96,7 +96,7 @@ __kernel void Vsum(__global double * V, const int Vsz, const int nV)
         /* check if we are still inside valid memory */
         if(lidx < Vsz)
         {
-            V[nV * Vsz + lidx] = lV[lidx];
+            out[lidx] = lV[lidx];
         }
     }
 }
