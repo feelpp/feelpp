@@ -19,7 +19,7 @@ endmacro(feelpp_list_subdirs)
 macro(feelpp_add_application)
 
   PARSE_ARGUMENTS(FEELPP_APP
-    "SRCS;LINK_LIBRARIES;CFG;GEO;MESH;LABEL;DEFS;DEPS;SCRIPTS;TEST"
+    "SRCS;LINK_LIBRARIES;CFG;GEO;MESH;LABELS;DEFS;DEPS;SCRIPTS;TEST"
     "NO_TEST;NO_MPI_TEST;EXCLUDE_FROM_ALL;INCLUDE_IN_ALL;ADD_OT"
     ${ARGN}
     )
@@ -70,17 +70,19 @@ macro(feelpp_add_application)
   endif()
   #add_dependencies(crb ${execname})
   # Add label if provided
-  if ( FEELPP_APP_LABEL )
-    set_property(TARGET ${execname} PROPERTY LABELS ${FEELPP_APP_LABEL})
+  if ( FEELPP_APP_LABELS )
+    set_property(TARGET ${execname} PROPERTY LABELS ${FEELPP_APP_LABELS})
     if ( NOT FEELPP_APP_NO_TEST )
       IF(NOT FEELPP_APP_NO_MPI_TEST AND NProcs2 GREATER 1)
-        set_property(TEST ${execname}-np-${NProcs2} PROPERTY LABELS ${FEELPP_APP_LABEL})
+        set_property(TEST ${execname}-np-${NProcs2} PROPERTY LABELS ${FEELPP_APP_LABELS})
       ENDIF()
-      set_property(TEST ${execname}-np-1 PROPERTY LABELS ${FEELPP_APP_LABEL})
+      set_property(TEST ${execname}-np-1 PROPERTY LABELS ${FEELPP_APP_LABELS})
     endif()
-    if ( TARGET ${FEELPP_APP_LABEL} )
-      add_dependencies( ${FEELPP_APP_LABEL} ${execname} )
-    endif()
+    foreach(l ${FEELPP_APP_LABELS}) 
+      if ( TARGET ${l} )
+        add_dependencies( ${l} ${execname} )
+      endif()
+    endforeach(l) 
   endif()
 
   # include schedulers

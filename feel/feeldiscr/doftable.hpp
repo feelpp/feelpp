@@ -1682,7 +1682,6 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildPeriodicDofMap( me
 
         it_elt = M.beginElementWithProcessId( processor );
 
-        it_elt = M.beginElementWithProcessId( processor );
         VLOG(2) << "[buildDofMap] starting with elt " << it_elt->id() << "\n";
 
         for ( ; it_elt!=en_elt; ++it_elt )

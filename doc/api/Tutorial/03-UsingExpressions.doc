@@ -11,7 +11,7 @@ available in \c myexpression.cpp.
 We start by loading a Mesh in 2D
 \snippet myintegrals.cpp mesh
 
-then we define some expression through the command line or config file: \c g is a scalar field and \c is a vector field
+then we define some expression through the command line or config file: \c g is a scalar field and \c f is a vector field
 \snippet myexpression.cpp expr
 
 here is an example how to enter them, more are available below

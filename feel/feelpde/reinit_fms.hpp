@@ -114,11 +114,11 @@ private:
     inline size_type processorToCluster( size_type dof )
     { return M_functionspace->dof()->mapGlobalProcessToGlobalCluster( dof ); }
 
+    void createPeriodicCorrespondanceTable();
+
     void reduceDonePoints(element_type const& __v, element_type& status, std::set<size_type>& done );
 
     void reduceClosePoints(heap_type& theHeap, element_type& status );
-
-    void updatePeriodicPoint(heap_entry_type const& newAccepted, element_type& __v, element_type& status, heap_type& theHeap) const;
 
     void fmsHeapUpdate( size_type idDone,
                         element_type const& __v,
@@ -145,9 +145,11 @@ private:
     periodicity_type M_periodicity;
     neighbors_type M_neighbors;
     std::map< size_type, size_type> M_ghostClusterToProc;
+    boost::bimap< size_type, size_type > M_idTag1_idTag2;
     std::vector<point_type> M_coords;
     vf::node_type M_translation;
     const size_type firstDof;
+    int M_nbDofTag1;
     int nbTotalDone;
 };
 
