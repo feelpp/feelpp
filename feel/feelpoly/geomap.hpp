@@ -1656,6 +1656,7 @@ void updateJKBN( mpl::bool_<true>, mpl::true_  )
 }
 void updateJKBN( mpl::bool_<true>, mpl::false_  )
 {
+#if 0
         Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::ColMajor>> P( M_G.data().begin(), M_G.size1(), M_G.size2() );
         Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>> GradPhi( M_g_linear.data().begin(), M_g_linear.size1(), M_g_linear.size2() );
         Eigen::Map<Eigen::Matrix<value_type,NDim,PDim,((PDim==1)?Eigen::ColMajor:Eigen::RowMajor)>> MK( M_K.data().begin(), M_K.size1(), M_K.size2() );
@@ -1674,6 +1675,14 @@ void updateJKBN( mpl::bool_<true>, mpl::false_  )
                 // B = K CS
                 MB.noalias() = MK*MCS;
         }
+#else
+        ublas::axpy_prod( M_G, M_g_linear, M_K, true );
+        ublas::noalias( M_CS ) = ublas::prod( ublas::trans( M_K ), M_K );
+        M_J = math::sqrt( math::abs( det<PDim>( M_CS ) ) );
+        inverse<PDim>( M_CS, M_CSi );
+        ublas::axpy_prod( M_K, M_CSi, M_B, true );
+
+#endif
 
 }
 /**
