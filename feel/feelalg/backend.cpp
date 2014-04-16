@@ -806,7 +806,6 @@ void updateBackendFieldSplitPreconditionerOptions( po::options_description & _op
     _options.add_options()
         ( prefixvm( prefix,pcctx+"fieldsplit-schur-fact-type" ).c_str(), Feel::po::value<std::string>()->default_value( "full" ), "type of schur factorization (diag, lower, upper, full)" )
         ( prefixvm( prefix,pcctx+"fieldsplit-schur-precondition" ).c_str(), Feel::po::value<std::string>()->default_value( "a11" ), "self,user,a11" )
-        ( prefixvm( prefix,pcctx+"fieldsplit-schur-complement" ).c_str(), Feel::po::value<std::string>()->default_value( "a11" ), "self,user,a11" )
         ;
 
     // inner solver (A^{-1}) of schur complement : S = C-B A^{-1} B^T
