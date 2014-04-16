@@ -48,7 +48,7 @@ int main( int argc, char** argv )
 
     //! [mesh]
     // create the mesh
-    auto mesh = loadMesh(_mesh=new Mesh<Hypercube<2>>);
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
     //! [mesh]
 
     //! [space]
