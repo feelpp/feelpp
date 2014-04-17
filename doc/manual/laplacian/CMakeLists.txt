@@ -43,10 +43,10 @@ feelpp_add_application( doc_laplacian_matlab SRCS laplacian_matlab.cpp GEO feel.
 feelpp_add_application( doc_laplacian_block SRCS laplacian_block.cpp LABELS doc CFG laplacian_block.cfg )
 feelpp_add_application( doc_laplacian_parabolic SRCS laplacian_parabolic.cpp LABELS doc CFG laplacian_parabolic.cfg GEO laplacian_parabolic.geo )
 
-feelpp_add_application( doc_laplacian_substructured SRCS laplacian_substructured.cpp LABEL doc  )
-feelpp_add_application( doc_laplacian_hypercube SRCS laplacian_hypercube.cpp LABEL doc CFG laplacian_hypercube.cfg )
+#feelpp_add_application( doc_laplacian_substructured SRCS laplacian_substructured.cpp LABEL doc  )
+#feelpp_add_application( doc_laplacian_hypercube SRCS laplacian_hypercube.cpp LABEL doc CFG laplacian_hypercube.cfg )
 
-feelpp_add_application( doc_laplacian_submesh SRCS laplacian_submesh.cpp LABELS doc  )
+#feelpp_add_application( doc_laplacian_submesh SRCS laplacian_submesh.cpp LABELS doc  )
 
 feelpp_add_application( doc_laplacian_dirac SRCS laplacian_dirac.cpp LABELS doc CFG laplacian_dirac.cfg )
 
