@@ -77,7 +77,7 @@ int main(int argc, char**argv )
         p = mode.second.element<1>();
         e->add( ( boost::format( "mode-u-%1%" ) % i ).str(), u );
         e->add( ( boost::format( "mode-p-%1%" ) % i ).str(), p );
-        auto normL2Div = integrate( _range=elements(mesh), _expr=divv(u) ).evaluate();
+        auto normL2Div = normL2( _range=elements(mesh), _expr=divv(u) );
         if ( Environment::isMasterRank() )
         {
             std::cout << "Lambda_" << i << " = " <<  mode.first << " Divergence = " << normL2Div << "\n";
