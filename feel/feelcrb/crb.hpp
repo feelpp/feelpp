@@ -4971,8 +4971,18 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
     viennacl::vector<double> vclF(F(), N);
     viennacl::matrix<double> vclA(A(), N, N);
     viennacl::vector<double> vcl_result;
+    std::vector<double> cpures;
 
     vcl_result = viennacl::linalg::solve(vclA, vclF, viennacl::linalg::cg_tag());
+
+    cpures.reserve(vcl_result.size());
+    viennacl::copy(vcl_result, cpures);
+
+    // uN is a vector of vectorN_type, aka eigen's VectorXd
+    for(int i = 0; i < vcl_result.size(); i++)
+    {
+        uN[time_index][i] = vcl_result[i];
+    }
 
     // backup uN
     //previous_uN = uN[time_index];
@@ -5385,9 +5395,15 @@ CRB<TruthModelType>::delta( size_type N,
             {
                 if( model_has_eim_error )
                 {
-                    delta_pr = math::sqrt( primal_sum + primal_sum_eim ) /  alphaA ;
+                    double r = math::sqrt( primal_sum );
+                    double reim = math::sqrt( primal_sum_eim );
+                    delta_pr =  ( r + reim ) /  alphaA ;
                     if( solve_dual_problem )
-                        delta_du = math::sqrt( dual_sum + dual_sum_eim ) / alphaA;
+                    {
+                        double rdu = math::sqrt( dual_sum );
+                        double rdueim = math::sqrt( dual_sum_eim );
+                        delta_du =  ( rdu + rdueim ) / alphaA;
+                    }
                     else
                         delta_du = 1;
                     output_upper_bound[global_time_index] = alphaA * delta_pr * delta_du;
