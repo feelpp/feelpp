@@ -25,14 +25,9 @@
 
 #include <feel/feelcore/environment.hpp>
 #include <feel/feeldiscr/pch.hpp>
-#include <feel/feelfilters/unitsquare.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
-#include <feel/feelvf/form.hpp>
-#include <feel/feelvf/integrate.hpp>
-#include <feel/feelvf/operators.hpp>
-#include <feel/feelvf/operations.hpp>
-#include <feel/feelvf/matvec.hpp>
-#include <feel/feelvf/on.hpp>
+#include <feel/feelvf/vf.hpp>
 
 
 using namespace Feel;
@@ -125,10 +120,12 @@ main( int argc, char** argv )
 {
     po::options_description opts ( "Advection diffusion reaction options ");
     opts.add_options()
-        ( "epsilon", po::value<double>()->default_value( 1 ), "diffusion term coefficient" )
-        ( "betax", po::value<double>()->default_value( 1 ), "convection term coefficient in x-direction" )
-        ( "betay", po::value<double>()->default_value( 1 ), "convection term coefficient in y-direction" )
-        ( "mu", po::value<double>()->default_value( 1 ), "reaction term coefficient" );
+        ( "stab", po::value<bool>()->default_value( 0 ), "Add CIP stabilisation (0=false, 1=true)" )
+        ( "stabcoeff", po::value<double>()->default_value( 2.5e-2 ), "CIP stabilisation coefficient" )
+        ( "epsilon", po::value<std::string>()->default_value( "1" ), "diffusion term coefficient" )
+        ( "beta", po::value<std::string>()->default_value( "{1,1}" ), "convection term vector coefficient " )
+        ( "mu", po::value<std::string>()->default_value( "1" ), "reaction term coefficient" );
+
     // Initialize Feel++ Environment
     Environment env( _argc=argc, _argv=argv,
                      _desc=opts,
@@ -136,35 +133,41 @@ main( int argc, char** argv )
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org") );
     // create mesh
-    auto mesh = unitSquare();
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
 
     // function space
-    auto Xh = Pch<1>( mesh );
+    auto Xh = Pch<1>( mesh, true );
     auto u = Xh->element( "u" );
     auto v = Xh->element( "v" );
 
     // diffusion coeff.
-    double epsilon = option(_name="epsilon").as<double>();
+    auto epsilon = expr( soption(_name="epsilon") );
     // reaction coeff.
-    double mu = option(_name="mu").as<double>();
-    auto beta = vec( cst(option(_name="betax").as<double>()),
-                     cst(option(_name="betay").as<double>()) );
-    auto f = cst(1.);
+    auto mu = expr( soption(_name="mu") );
+    auto beta = expr<2,1>( soption(_name="beta") );
+    auto f = expr( soption(_name="functions.f") );;
+    auto g = expr( soption(_name="functions.g") );;
 
     // left hand side
-    auto a = form2( _test=Xh, _trial=Xh );
+    auto a = form2( _test=Xh, _trial=Xh, _pattern=size_type(boption( "stab" )?Pattern::EXTENDED:Pattern::COUPLED) );
     a += integrate( _range=elements( mesh ),
                     _expr=( epsilon*gradt( u )*trans( grad( v ) )
                          + ( gradt( u )*beta )*id(v)
                          + mu*idt( u )*id( v ) ) );
-
+    if ( boption( "stab" ) )
+    {
+        // define the stabilisation coefficient expression
+        auto stab_coeff = ( doption("stabcoeff")*abs( trans(beta)*N() )* vf::pow( hFace(),2.0 ) );
+        a += integrate( _range=internalfaces( mesh ),
+                        _expr=stab_coeff*( trans( jumpt( gradt( u ) ) )*jump( grad( v ) ) ) );
+    }
     // right hand side
     auto l = form1( _test=Xh );
     l+= integrate( _range=elements( mesh ), _expr=f*id( v ) );
 
     // boundary condition
     a += on( _range=boundaryfaces( mesh ), _rhs=l, _element=u,
-             _expr=cst(0.) );
+             _expr=g );
 
     // solve the system
     a.solve( _rhs=l, _solution=u );
@@ -175,9 +178,3 @@ main( int argc, char** argv )
     e->save();
 } // end main
 /// [marker_main]
-
-
-
-
-
-
