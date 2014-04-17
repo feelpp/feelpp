@@ -240,6 +240,7 @@ public:
     typedef Preconditioner<double> preconditioner_type;
     typedef boost::shared_ptr<preconditioner_type> preconditioner_ptrtype;
 
+    typedef std::vector< std::vector<sparse_matrix_ptrtype> > vector_sparse_matrix;
     //@}
 
     /** @name Constructors, destructor
@@ -349,32 +350,41 @@ public:
     {
         double mu0   = mu( 0 );
         double mu1    = mu( 1 );
-        M_betaAqm.resize( 2 );
-        M_betaAqm[0].resize( 1 );
-        M_betaAqm[0][0]=1;
+        this->M_betaAqm.resize( 2 );
+        this->M_betaAqm[0].resize( 1 );
+        this->M_betaAqm[0][0]=1;
 
         auto eim_g = M_funs[0];
         int M_g = eim_g->mMax();
         vectorN_type beta_g = eim_g->beta( mu );
-        M_betaAqm[1].resize( M_g );
+        this->M_betaAqm[1].resize( M_g );
         for(int m=0; m<M_g; m++)
         {
-            M_betaAqm[1][m] = beta_g(m);
+            this->M_betaAqm[1][m] = beta_g(m);
         }
 
-        M_betaFqm.resize( 2 );
-        M_betaFqm[0].resize( 1 );
-        M_betaFqm[0][0].resize( M_g );
+        this->M_betaFqm.resize( 2 );
+        this->M_betaFqm[0].resize( 1 );
+        this->M_betaFqm[0][0].resize( M_g );
         for(int m=0; m<M_g; m++)
         {
-            M_betaFqm[0][0][m] = beta_g(m);
+            this->M_betaFqm[0][0][m] = beta_g(m);
         }
 
-        M_betaFqm[1].resize( 1 );
-        M_betaFqm[1][0].resize( 1 );
-        M_betaFqm[1][0][0] = 1;
+        this->M_betaFqm[1].resize( 1 );
+        this->M_betaFqm[1][0].resize( 1 );
+        this->M_betaFqm[1][0][0] = 1;
 
-        return boost::make_tuple(  M_betaAqm, M_betaFqm );
+        return boost::make_tuple( this->M_betaAqm, this->M_betaFqm );
+    }
+
+    beta_vector_type computeBetaLinearDecompositionA( parameter_type const& mu , double time=1e30 )
+    {
+        beta_vector_type beta;
+        beta.resize(1);
+        beta[0].resize(1);
+        beta[0][0]=1;
+        return beta;
     }
 
 
@@ -395,15 +405,10 @@ public:
      * \brief Returns the affine decomposition
      */
     affine_decomposition_type computeAffineDecomposition();
-
+    std::vector< std::vector<sparse_matrix_ptrtype> > computeLinearDecompositionA();
     monolithic_type computeMonolithicFormulation( parameter_type const& mu );
 
     void assemble();
-
-    /**
-     * solve for a given parameter \p mu
-     */
-    //element_type solve( parameter_type const& mu );
 
 
     //@}
@@ -487,14 +492,8 @@ private:
 
     element_ptrtype pT;
 
-    std::vector< std::vector<sparse_matrix_ptrtype> > M_Aqm;
-    std::vector< std::vector<std::vector<vector_ptrtype> > > M_Fqm;
-
     sparse_matrix_ptrtype M_monoA;
     std::vector<vector_ptrtype> M_monoF;
-
-    beta_vector_type M_betaAqm;
-    std::vector<beta_vector_type> M_betaFqm;
 
     parameter_type M_mu;
 
@@ -637,11 +636,13 @@ void BenchmarkGrepl<Order>::initModel()
                       _sampling=Pset,
                       _name="eim_g" );
 
+#if 0
     if( Environment::worldComm().isMasterRank() )
     {
         bool error;
         std::cout<<" eim g mMax : "<<eim_g->mMax(error)<<" error : "<<error<<std::endl;
     }
+#endif
 
     M_funs.push_back( eim_g );
 
@@ -675,7 +676,7 @@ void BenchmarkGrepl<Order>::checkEimExpansion()
 
     auto eim_g = M_funs[0];
 
-    //check that eim expansion of g is positiv on each vertice
+    //check that eim expansion of g is positive on each vertice
     int max = eim_g->mMax();
     auto e = exporter( _mesh=mesh );
     BOOST_FOREACH( auto mu, *Pset )
@@ -764,30 +765,6 @@ BenchmarkGrepl<Order>::computeMonolithicFormulation( parameter_type const& mu )
 
 }
 
-#if 0
-template<int Order>
-typename BenchmarkGrepl<Order>::element_type
-BenchmarkGrepl<Order>::solve( parameter_type const& mu )
-{
-    auto u=Xh->element();
-    auto v=Xh->element();
-    double gamma_dir = option(_name="gamma").template as<double>();
-
-    auto solution = Xh->element();
-    auto exprg = 1./sqrt( (Px()-mu(0))*(Px()-mu(0)) + (Py()-mu(1))*(Py()-mu(1)) );
-    auto g = vf::project( _space=Xh, _expr=exprg );
-    auto A = M_backend->newMatrix( Xh, Xh );
-    auto F = M_backend->newVector( Xh );
-    form2( Xh, Xh, A ) = integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ) + idt( u )*id( v )*idv(g) ) +
-        integrate( markedfaces( mesh, "boundaries" ), gamma_dir*idt( u )*id( v )/h()
-                   -gradt( u )*vf::N()*id( v )
-                   -grad( v )*vf::N()*idt( u )
-                   );;
-    form1( Xh, F ) = integrate( _range=elements(mesh) , _expr=id( v ) * idv(g) );
-    M_backend->solve( _matrix=A, _solution=solution, _rhs=F );
-    return solution;
-}
-#endif
 
 template<int Order>
 void BenchmarkGrepl<Order>::assemble()
@@ -798,10 +775,10 @@ void BenchmarkGrepl<Order>::assemble()
     double gamma_dir = option(_name="gamma").template as<double>();
     auto eim_g = M_funs[0];
 
-    M_Aqm.resize( 2 );
-    M_Aqm[0].resize( 1 );
-    M_Aqm[0][0] = M_backend->newMatrix( Xh, Xh );
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[0][0] ) =
+    this->M_Aqm.resize( 2 );
+    this->M_Aqm[0].resize( 1 );
+    this->M_Aqm[0][0] = M_backend->newMatrix( Xh, Xh );
+    form2( _test=Xh, _trial=Xh, _matrix=this->M_Aqm[0][0] ) =
         integrate( elements( mesh ), gradt( u )*trans( grad( v ) ) ) +
         integrate( markedfaces( mesh, "boundaries" ), gamma_dir*idt( u )*id( v )/h()
                    -gradt( u )*vf::N()*id( v )
@@ -811,33 +788,32 @@ void BenchmarkGrepl<Order>::assemble()
     bool error;
     int M_g = eim_g->mMax(error);
     if( error ) M_g++;
-    M_Aqm[1].resize( M_g );
+    this->M_Aqm[1].resize( M_g );
     for(int m=0; m<M_g; m++)
     {
-        M_Aqm[1][m] = M_backend->newMatrix( Xh, Xh );
-        form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[1][m] ) =
+        this->M_Aqm[1][m] = M_backend->newMatrix( Xh, Xh );
+        form2( _test=Xh, _trial=Xh, _matrix=this->M_Aqm[1][m] ) =
             integrate( elements( mesh ), idt( u )* id( v ) * idv( eim_g->q(m) ) );
     }
 
-    M_Fqm.resize( 2 );
-    M_Fqm[0].resize( 1 );
-    M_Fqm[1].resize( 1 );
+    this->M_Fqm.resize( 2 );
+    this->M_Fqm[0].resize( 1 );
+    this->M_Fqm[1].resize( 1 );
 
-    M_Fqm[0][0].resize(M_g);
+    this->M_Fqm[0][0].resize(M_g);
     for(int m=0; m<M_g; m++)
     {
-        M_Fqm[0][0][m] = M_backend->newVector( Xh );
-        form1( Xh, M_Fqm[0][0][m] ) = integrate( elements( mesh ), id( v ) * idv( eim_g->q(m) ) );
+        this->M_Fqm[0][0][m] = M_backend->newVector( Xh );
+        form1( Xh, this->M_Fqm[0][0][m] ) = integrate( elements( mesh ), id( v ) * idv( eim_g->q(m) ) );
     }
-    M_Fqm[1][0].resize(1);
-    M_Fqm[1][0][0] = M_backend->newVector( Xh );
-    form1( Xh, M_Fqm[1][0][0] ) = integrate( elements( mesh ), id( v ) );
+    this->M_Fqm[1][0].resize(1);
+    this->M_Fqm[1][0][0] = M_backend->newVector( Xh );
+    form1( Xh, this->M_Fqm[1][0][0] ) = integrate( elements( mesh ), id( v ) );
 
 
 
     //for scalarProduct
     auto mu = refParameter();
-    vectorN_type beta_g = eim_g->beta( mu );
 
     M = M_backend->newMatrix( _test=Xh, _trial=Xh );
     form2( Xh, Xh, M ) =
@@ -845,12 +821,41 @@ void BenchmarkGrepl<Order>::assemble()
         integrate( markedfaces( mesh, "boundaries" ), gamma_dir*idt( u )*id( v )/h()
                    -gradt( u )*vf::N()*id( v )
                    -grad( v )*vf::N()*idt( u ) );
+
+#if 0
+    vectorN_type beta_g = eim_g->beta( mu );
     for(int m=0; m<M_g; m++)
     {
         auto q = eim_g->q(m);
         q.scale( beta_g(m) );
         form2( Xh, Xh, M ) +=  integrate( _range=elements( mesh ), _expr= idt( u )*id( v ) * idv( q ) );
     }
+#endif
+
+}
+
+
+template<int Order>
+typename BenchmarkGrepl<Order>::vector_sparse_matrix
+BenchmarkGrepl<Order>::computeLinearDecompositionA()
+{
+    auto muref = refParameter();
+    auto u=Xh->element();
+    auto v=Xh->element();
+    double gamma_dir = option(_name="gamma").template as<double>();
+
+    auto exprg = 1./sqrt( (Px()-muref(0))*(Px()-muref(0)) + (Py()-muref(1))* (Py()-muref(1)) );
+    auto g = vf::project( _space=Xh, _expr=exprg );
+    vector_sparse_matrix A;
+    A.resize(1);
+    A[0].resize(1);
+    A[0][0] = M_backend->newMatrix( Xh, Xh );
+    form2( Xh, Xh, A[0][0] ) = integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ) + idt( u )*id( v )*idv(g) ) +
+        integrate( markedfaces( mesh, "boundaries" ), gamma_dir*idt( u )*id( v )/h()
+                   -gradt( u )*vf::N()*id( v )
+                   -grad( v )*vf::N()*idt( u )
+                   );
+    return A;
 
 }
 
@@ -858,7 +863,7 @@ template<int Order>
 typename BenchmarkGrepl<Order>::affine_decomposition_type
 BenchmarkGrepl<Order>::computeAffineDecomposition()
 {
-    return boost::make_tuple( M_Aqm, M_Fqm );
+    return boost::make_tuple( this->M_Aqm, this->M_Fqm );
 }
 
 
@@ -878,7 +883,7 @@ double BenchmarkGrepl<Order>::output( int output_index, parameter_type const& mu
         {
             for ( int m=0; m<mMaxF(output_index,q); m++ )
             {
-                s += M_betaFqm[output_index][q][m]*dot( *M_Fqm[output_index][q][m] , solution );
+                s += this->M_betaFqm[output_index][q][m]*dot( *this->M_Fqm[output_index][q][m] , solution );
             }
         }
     }
