@@ -136,7 +136,7 @@ main( int argc, char** argv )
     auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
 
     // function space
-    auto Xh = Pch<1>( mesh, true );
+    auto Xh = Pch<1>( mesh, boption( "stab" ) );
     auto u = Xh->element( "u" );
     auto v = Xh->element( "v" );
 
