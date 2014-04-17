@@ -4971,8 +4971,18 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
     viennacl::vector<double> vclF(F(), N);
     viennacl::matrix<double> vclA(A(), N, N);
     viennacl::vector<double> vcl_result;
+    std::vector<double> cpures;
 
     vcl_result = viennacl::linalg::solve(vclA, vclF, viennacl::linalg::cg_tag());
+
+    cpures.reserve(vcl_result.size());
+    viennacl::copy(vcl_result, cpures);
+
+    // uN is a vector of vectorN_type, aka eigen's VectorXd
+    for(int i = 0; i < vcl_result.size(); i++)
+    {
+        uN[time_index][i] = vcl_result[i];
+    }
 
     // backup uN
     //previous_uN = uN[time_index];
