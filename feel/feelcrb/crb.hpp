@@ -5395,9 +5395,15 @@ CRB<TruthModelType>::delta( size_type N,
             {
                 if( model_has_eim_error )
                 {
-                    delta_pr = math::sqrt( primal_sum + primal_sum_eim ) /  alphaA ;
+                    double r = math::sqrt( primal_sum );
+                    double reim = math::sqrt( primal_sum_eim );
+                    delta_pr =  ( r + reim ) /  alphaA ;
                     if( solve_dual_problem )
-                        delta_du = math::sqrt( dual_sum + dual_sum_eim ) / alphaA;
+                    {
+                        double rdu = math::sqrt( dual_sum );
+                        double rdueim = math::sqrt( dual_sum_eim );
+                        delta_du =  ( rdu + rdueim ) / alphaA;
+                    }
                     else
                         delta_du = 1;
                     output_upper_bound[global_time_index] = alphaA * delta_pr * delta_du;
