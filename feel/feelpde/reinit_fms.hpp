@@ -51,6 +51,7 @@ class ReinitializerFMS
 public:
 
     static_assert( FunctionSpaceType::fe_type::nOrder == 1, "FunctionSpaceType needs to be a finite element space of order 1");
+    static_assert( FunctionSpaceType::mesh_type::nOrder == 1, "The mesh should be of order 1");
     static_assert( ! FunctionSpaceType::is_periodic , "Space for fast marching must be non periodic, but periodicity can be given as second template argument");
 
     /** @name Typedefs
@@ -158,11 +159,11 @@ typedef Feel::bases<Feel::Lagrange<1, Feel::Scalar> > basisP1LS_type;
 
 //2d
 typedef Feel::Mesh< Feel::Simplex<2> > mesh_typeLS;
-typedef Feel::FunctionSpace<mesh_typeLS, basisP1LS_type, Feel::Periodicity <Feel::NoPeriodicity> > spaceP1LS_type;
+typedef Feel::FunctionSpace<mesh_typeLS, basisP1LS_type, double, Feel::Periodicity <Feel::NoPeriodicity>, Feel::mortars<Feel::NoMortar> > spaceP1LS_type;
 
 // 3d
 typedef Feel::Mesh< Feel::Simplex<3> > mesh_3d_typeLS;
-typedef Feel::FunctionSpace<mesh_3d_typeLS, basisP1LS_type, Feel::Periodicity <Feel::NoPeriodicity> > spaceP1LS_3d_type;
+typedef Feel::FunctionSpace<mesh_3d_typeLS, basisP1LS_type, double, Feel::Periodicity <Feel::NoPeriodicity>, Feel::mortars<Feel::NoMortar> > spaceP1LS_3d_type;
 
 #if !defined( FEELPP_INSTANTIATE_FMS )
 extern template class Feel::ReinitializerFMS< spaceP1LS_type, Feel::Periodic<> > ;
