@@ -57,7 +57,7 @@ int main(int argc, char**argv )
 
     auto a = form2( _trial=Vh, _test=Vh);
     a = integrate( _range=elements( mesh ), _expr=mu*curlxt(u)*curlx(v)+divt(u)*div(v) );
-    a +=integrate( _range=elements( mesh ), _expr=gradt( p )*id(v) - grad( q )*idt(u) );
+    a +=integrate( _range=elements( mesh ), _expr=gradt( p )*id(v) + id( q )*divt(u) );
     a += integrate( _range=elements( mesh ), _expr=1e-6*idt(p)*id(q) );
     a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u, _expr=zero<2>() ) ;
 
