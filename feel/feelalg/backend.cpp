@@ -814,7 +814,9 @@ void updateBackendFieldSplitPreconditionerOptions( po::options_description & _op
         ( prefixvm( prefixSchurInnerSolver,"use-outer-solver" ).c_str(), Feel::po::value<bool>()->default_value( true ), "use-outer-solver" )
         ;
     updateBackendPreconditionerOptions( _options, prefixSchurInnerSolver ,"", "jacobi" );
+    updateBackendPreconditionerOptions( _options, prefixSchurInnerSolver, "sub", "lu" ); // gasm
     updateBackendKSPOptions( _options, prefixSchurInnerSolver,   "", "preonly", 1e-5,  10, true  ); // preonly or gmres??
+    updateBackendKSPOptions( _options, prefixSchurInnerSolver, "sub", "preonly", 1e-5, 50 ); // ksp with gasm
 
     // solver (A^{-1}) used in upper schur preconditioning
     std::string prefixSchurUpperSolver = prefixvm( prefix,pcctx+"fieldsplit-schur-upper-solver" );
