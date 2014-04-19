@@ -1600,7 +1600,7 @@ public:
                                         double relative_estimated_error = output_estimated_error / output_fem;
                                         auto output_vector = o.template get<0>();
                                         double output_vector_size = output_vector.size();
-                                        double output = output_vector[ output_vector_size ];
+                                        double output = output_vector[ output_vector_size-1 ];
                                         std::vector<double> v = boost::assign::list_of( output )( output_estimated_error )( ti.elapsed() );
                                         std::cout << "output=" << ocrb << " with " << o.template get<1>() <<
                                             " basis functions  (relative error estimation on this output : " << relative_estimated_error<<") \n";
