@@ -73,6 +73,7 @@ public:
     typedef ExprL left_expression_type;
     typedef ExprR right_expression_type;
     typedef typename left_expression_type::value_type value_type;
+    typedef value_type evaluate_type;
     typedef CrossProduct<ExprL,ExprR> this_type;
 
 
