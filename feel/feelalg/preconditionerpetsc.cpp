@@ -1679,11 +1679,14 @@ ConfigurePCFieldSplit::runConfigurePCFieldSplit( PC& pc, PreconditionerPetsc<dou
     // To store array of local KSP contexts on this processor
     KSP* subksps;
     int nSplit;
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,4,0 )
     if ( M_type == "schur" )
         this->check( PetscImpl::PCFieldSplitGetSubKSP_FieldSplit_Schur(pc,&nSplit,&subksps) );
     else
         this->check( PCFieldSplitGetSubKSP(pc,&nSplit,&subksps ) );
-
+#else
+        this->check( PCFieldSplitGetSubKSP(pc,&nSplit,&subksps ) );
+#endif
 
 
     if ( M_type == "schur" )
