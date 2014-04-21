@@ -577,6 +577,7 @@ public:
                     Sampling->logEquidistribute( run_sampling_size , all_proc_have_same_sampling );
                     break;
                 }
+
             }// ! select_parameter_via_one_feel
 
 
@@ -791,10 +792,13 @@ public:
             double tf = model->timeFinal();
             int K = ( tf - ti )/dt;
             std::vector< std::vector< std::vector< double > > > ref_betaAqm;
+            std::vector< std::vector< std::vector< double > > > ref_betaLinearDecompositionAqm;
             for(int time_index=0; time_index<K; time_index++)
             {
                 double time = time_index*dt;
                 ref_betaAqm.push_back( model->computeBetaQm( ref_mu , time ).template get<1>() );
+
+                ref_betaLinearDecompositionAqm.push_back( model->computeBetaLinearDecompositionA( ref_mu , time ) );
             }
             auto ref_betaMqm = model->computeBetaQm( ref_mu , tf ).template get<0>() ;
 
@@ -1221,85 +1225,157 @@ public:
                                         double square_dual_solution_error=0;
                                         double ref_primal=0;
                                         double ref_dual=0;
-                                        if( model->isSteady() )
-                                        {
-                                            //let ufem-ucrb = e
-                                            //||| e |||_mu = sqrt( a( e , e ; mu ) ) = solution_error
-                                            for(int q=0; q<model->Qa();q++)
-                                            {
-                                                for(int m=0; m<model->mMaxA(q); m++)
-                                                {
-                                                    solution_error +=  ref_betaAqm[0][q][m]*model->Aqm(q,m,u_error,u_error) ;
-                                                    ref_primal +=  ref_betaAqm[0][q][m]*model->Aqm(q,m,u_fem,u_fem);
-                                                }
-                                            }
 
-                                            if( solve_dual_problem )
+                                        if( model->hasEim() )
+                                        {
+
+                                            if( model->isSteady() )
                                             {
-                                                for(int q=0; q<model->Qa();q++)
+                                                //all loops are not really necessary in the elliptic case
+                                                //we could also use directly sqrt( model->scalarProduct( u_error , u_error ) ) ;
+                                                //but we need to be sure that the matrix associated to scalar product
+                                                //was assembled using reference parameter (or at least, to known what parameter was used).
+                                                //Moreover when we deal with transient problems we need to build a( u_error^k , u_error^k ; muref )
+                                                //where u_error^k means u_error at time index k
+                                                //so it is not possible to do that only using model->scalarProduct()
+                                                for(int q=0; q<model->QLinearDecompositionA();q++)
                                                 {
-                                                    for(int m=0; m<model->mMaxA(q); m++)
+                                                    for(int m=0; m<model->mMaxLinearDecompositionA(q); m++)
                                                     {
-                                                        dual_solution_error += ref_betaAqm[0][q][m]*model->Aqm(q,m,u_dual_error,u_dual_error);
-                                                        ref_dual += ref_betaAqm[0][q][m]*model->Aqm(q,m,u_dual_fem,u_dual_fem);
+                                                        solution_error +=  ref_betaLinearDecompositionAqm[0][q][m]*model->linearDecompositionAqm(q,m,u_error,u_error) ;
+                                                        ref_primal +=  ref_betaLinearDecompositionAqm[0][q][m]*model->linearDecompositionAqm(q,m,u_fem,u_fem);
                                                     }
                                                 }
-                                                square_dual_solution_error = dual_solution_error;
-                                                dual_solution_error = math::sqrt( dual_solution_error );
-                                                ref_dual = math::sqrt( ref_dual );
-                                            }
-                                            square_solution_error = solution_error;
-                                            solution_error = math::sqrt( solution_error );
-                                            ref_primal = math::sqrt( ref_primal );
-                                            //dual_solution_error = math::sqrt( model->scalarProduct( u_dual_error, u_dual_error ) );
-
-                                        }
-                                        else
-                                        {
-                                            double dt = model->timeStep();
-                                            double ti = model->timeInitial();
-                                            double tf = model->timeFinal();
-                                            int K = ( tf - ti )/dt;
-
-                                            for(int q=0; q<model->Qm();q++)
-                                            {
-                                                for(int m=0; m<model->mMaxM(q); m++)
+                                                if( solve_dual_problem )
                                                 {
-                                                    solution_error +=  ref_betaMqm[q][m]*model->Mqm(q,m,u_error,u_error);
-                                                    ref_primal +=  ref_betaMqm[q][m]*model->Mqm(q,m,u_fem,u_fem);
-                                                }
-                                            }
-                                            for(int time_index=0; time_index<K; time_index++)
-                                            {
-                                                double t=time_index*dt;
-                                                for(int q=0; q<model->Qa();q++)
-                                                {
-                                                    for(int m=0; m<model->mMaxA(q); m++)
+                                                    for(int q=0; q<model->QLinearDecompositionA();q++)
                                                     {
-                                                        solution_error +=  ref_betaAqm[time_index][q][m]*model->Aqm(q,m,u_error,u_error) * dt;
-                                                        ref_primal +=  ref_betaAqm[time_index][q][m]*model->Aqm(q,m,u_fem,u_fem) * dt;
+                                                        for(int m=0; m<model->mMaxLinearDecompositionA(q); m++)
+                                                        {
+                                                            dual_solution_error += ref_betaLinearDecompositionAqm[0][q][m]*model->linearDecompositionAqm(q,m,u_dual_error,u_dual_error);
+                                                            ref_dual += ref_betaLinearDecompositionAqm[0][q][m]*model->linearDecompositionAqm(q,m,u_dual_fem,u_dual_fem);
+                                                        }
                                                     }
+                                                    square_dual_solution_error = dual_solution_error;
+                                                    dual_solution_error = math::sqrt( dual_solution_error );
+                                                    ref_dual = math::sqrt( ref_dual );
                                                 }
-                                            }
-                                            square_solution_error = solution_error;
-                                            solution_error = math::sqrt( solution_error );
-                                            ref_primal = math::sqrt( ref_primal );
-
-                                            if( solve_dual_problem )
+                                                square_solution_error = solution_error;
+                                                solution_error = math::sqrt( solution_error );
+                                                ref_primal = math::sqrt( ref_primal );
+                                            }//steady
+                                            else
                                             {
-                                                ti = model->timeFinal()+dt;
-                                                tf = model->timeInitial()+dt;
-                                                dt -= dt;
+                                                double dt = model->timeStep();
+                                                double ti = model->timeInitial();
+                                                double tf = model->timeFinal();
+                                                int K = ( tf - ti )/dt;
 
                                                 for(int q=0; q<model->Qm();q++)
                                                 {
                                                     for(int m=0; m<model->mMaxM(q); m++)
                                                     {
-                                                        dual_solution_error +=  ref_betaMqm[q][m]*model->Mqm(q,m,u_dual_error,u_dual_error);
-                                                        ref_dual +=  ref_betaMqm[q][m]*model->Mqm(q,m,u_dual_fem,u_dual_fem);
+                                                        solution_error +=  ref_betaMqm[q][m]*model->Mqm(q,m,u_error,u_error);
+                                                        ref_primal +=  ref_betaMqm[q][m]*model->Mqm(q,m,u_fem,u_fem);
                                                     }
                                                 }
+                                                for(int time_index=0; time_index<K; time_index++)
+                                                {
+                                                    double t=time_index*dt;
+                                                    for(int q=0; q<model->QLinearDecompositionA();q++)
+                                                    {
+                                                        for(int m=0; m<model->mMaxLinearDecompositionA(q); m++)
+                                                        {
+                                                            solution_error +=  ref_betaLinearDecompositionAqm[time_index][q][m]*model->linearDecompositionAqm(q,m,u_error,u_error) * dt;
+                                                            ref_primal +=  ref_betaLinearDecompositionAqm[time_index][q][m]*model->linearDecompositionAqm(q,m,u_fem,u_fem) * dt;
+                                                        }
+                                                    }
+                                                }
+                                                square_solution_error = solution_error;
+                                                solution_error = math::sqrt( solution_error );
+                                                ref_primal = math::sqrt( ref_primal );
 
+                                                if( solve_dual_problem )
+                                                {
+                                                    ti = model->timeFinal()+dt;
+                                                    tf = model->timeInitial()+dt;
+                                                    dt -= dt;
+                                                    for(int q=0; q<model->Qm();q++)
+                                                    {
+                                                        for(int m=0; m<model->mMaxM(q); m++)
+                                                        {
+                                                            dual_solution_error +=  ref_betaMqm[q][m]*model->Mqm(q,m,u_dual_error,u_dual_error);
+                                                            ref_dual +=  ref_betaMqm[q][m]*model->Mqm(q,m,u_dual_fem,u_dual_fem);
+                                                        }
+                                                    }
+                                                    for(int time_index=0; time_index<K; time_index++)
+                                                    {
+                                                        double t=time_index*dt;
+                                                        for(int q=0; q<model->QLinearDecompositionA();q++)
+                                                        {
+                                                            for(int m=0; m<model->mMaxLinearDecompositionA(q); m++)
+                                                            {
+                                                                dual_solution_error +=  ref_betaLinearDecompositionAqm[time_index][q][m]*model->linearDecompositionAqm(q,m,u_dual_error,u_dual_error) * dt;
+                                                                ref_dual +=  ref_betaLinearDecompositionAqm[time_index][q][m]*model->linearDecompositionAqm(q,m,u_dual_fem,u_dual_fem) * dt;
+                                                            }
+                                                        }
+                                                    }
+                                                    square_dual_solution_error = dual_solution_error;
+                                                    dual_solution_error = math::sqrt( dual_solution_error );
+                                                    ref_dual = math::sqrt( ref_dual );
+                                                }//if solve-dual
+
+                                            }//transient
+
+                                        }//use EIM
+                                        else
+                                        {
+                                            if( model->isSteady() )
+                                            {
+                                                //let ufem-ucrb = e
+                                                //||| e |||_mu = sqrt( a( e , e ; mu ) ) = solution_error
+                                                for(int q=0; q<model->Qa();q++)
+                                                {
+                                                    for(int m=0; m<model->mMaxA(q); m++)
+                                                    {
+                                                        solution_error +=  ref_betaAqm[0][q][m]*model->Aqm(q,m,u_error,u_error) ;
+                                                        ref_primal +=  ref_betaAqm[0][q][m]*model->Aqm(q,m,u_fem,u_fem);
+                                                    }
+                                                }
+                                                if( solve_dual_problem )
+                                                {
+                                                    for(int q=0; q<model->Qa();q++)
+                                                    {
+                                                        for(int m=0; m<model->mMaxA(q); m++)
+                                                        {
+                                                            dual_solution_error += ref_betaAqm[0][q][m]*model->Aqm(q,m,u_dual_error,u_dual_error);
+                                                            ref_dual += ref_betaAqm[0][q][m]*model->Aqm(q,m,u_dual_fem,u_dual_fem);
+                                                        }
+                                                    }
+                                                    square_dual_solution_error = dual_solution_error;
+                                                    dual_solution_error = math::sqrt( dual_solution_error );
+                                                    ref_dual = math::sqrt( ref_dual );
+                                                }
+                                                square_solution_error = solution_error;
+                                                solution_error = math::sqrt( solution_error );
+                                                ref_primal = math::sqrt( ref_primal );
+                                                //dual_solution_error = math::sqrt( model->scalarProduct( u_dual_error, u_dual_error ) );
+                                            }
+                                            else
+                                            {
+                                                double dt = model->timeStep();
+                                                double ti = model->timeInitial();
+                                                double tf = model->timeFinal();
+                                                int K = ( tf - ti )/dt;
+
+                                                for(int q=0; q<model->Qm();q++)
+                                                {
+                                                    for(int m=0; m<model->mMaxM(q); m++)
+                                                    {
+                                                        solution_error +=  ref_betaMqm[q][m]*model->Mqm(q,m,u_error,u_error);
+                                                        ref_primal +=  ref_betaMqm[q][m]*model->Mqm(q,m,u_fem,u_fem);
+                                                    }
+                                                }
                                                 for(int time_index=0; time_index<K; time_index++)
                                                 {
                                                     double t=time_index*dt;
@@ -1307,18 +1383,46 @@ public:
                                                     {
                                                         for(int m=0; m<model->mMaxA(q); m++)
                                                         {
-                                                            dual_solution_error +=  ref_betaAqm[time_index][q][m]*model->Aqm(q,m,u_dual_error,u_dual_error) * dt;
-                                                            ref_dual +=  ref_betaAqm[time_index][q][m]*model->Aqm(q,m,u_dual_fem,u_dual_fem) * dt;
+                                                            solution_error +=  ref_betaAqm[time_index][q][m]*model->Aqm(q,m,u_error,u_error) * dt;
+                                                            ref_primal +=  ref_betaAqm[time_index][q][m]*model->Aqm(q,m,u_fem,u_fem) * dt;
                                                         }
                                                     }
                                                 }
-                                                square_dual_solution_error = dual_solution_error;
-                                                dual_solution_error = math::sqrt( dual_solution_error );
-                                                ref_dual = math::sqrt( ref_dual );
+                                                square_solution_error = solution_error;
+                                                solution_error = math::sqrt( solution_error );
+                                                ref_primal = math::sqrt( ref_primal );
 
-                                            }//if solve-dual
-
-                                        }//transient case
+                                                if( solve_dual_problem )
+                                                {
+                                                    ti = model->timeFinal()+dt;
+                                                    tf = model->timeInitial()+dt;
+                                                    dt -= dt;
+                                                    for(int q=0; q<model->Qm();q++)
+                                                    {
+                                                        for(int m=0; m<model->mMaxM(q); m++)
+                                                        {
+                                                            dual_solution_error +=  ref_betaMqm[q][m]*model->Mqm(q,m,u_dual_error,u_dual_error);
+                                                            ref_dual +=  ref_betaMqm[q][m]*model->Mqm(q,m,u_dual_fem,u_dual_fem);
+                                                        }
+                                                    }
+                                                    for(int time_index=0; time_index<K; time_index++)
+                                                    {
+                                                        double t=time_index*dt;
+                                                        for(int q=0; q<model->Qa();q++)
+                                                        {
+                                                            for(int m=0; m<model->mMaxA(q); m++)
+                                                            {
+                                                                dual_solution_error +=  ref_betaAqm[time_index][q][m]*model->Aqm(q,m,u_dual_error,u_dual_error) * dt;
+                                                                ref_dual +=  ref_betaAqm[time_index][q][m]*model->Aqm(q,m,u_dual_fem,u_dual_fem) * dt;
+                                                            }
+                                                        }
+                                                    }
+                                                    square_dual_solution_error = dual_solution_error;
+                                                    dual_solution_error = math::sqrt( dual_solution_error );
+                                                    ref_dual = math::sqrt( ref_dual );
+                                                }//if solve-dual
+                                            }//transient case
+                                        }//no use EIM
 
                                         double l2_error = l2Norm( u_error )/l2Norm( u_fem );
                                         double h1_error = h1Norm( u_error )/h1Norm( u_fem );
@@ -1496,7 +1600,7 @@ public:
                                         double relative_estimated_error = output_estimated_error / output_fem;
                                         auto output_vector = o.template get<0>();
                                         double output_vector_size = output_vector.size();
-                                        double output = output_vector[ output_vector_size ];
+                                        double output = output_vector[ output_vector_size-1 ];
                                         std::vector<double> v = boost::assign::list_of( output )( output_estimated_error )( ti.elapsed() );
                                         std::cout << "output=" << ocrb << " with " << o.template get<1>() <<
                                             " basis functions  (relative error estimation on this output : " << relative_estimated_error<<") \n";
@@ -2103,6 +2207,7 @@ private:
                 model->writeConvergenceStatistics( LINFestimated , filename);
                 filename = "cvg-eim-"+eim->name()+"-LINFratio.dat";
                 model->writeConvergenceStatistics( LINFratio , filename);
+
             }
         }
 
@@ -2222,6 +2327,7 @@ private:
         filename = "cvg-crb-DualSolutionErrorBoundEfficiency2.dat";
         model->writeVectorsExtremumsRatio( DualSolutionError, DualSolutionErrorEstimated, filename );
 
+#if 0
         int Nmax = vector_sampling_for_primal_efficiency_under_1.size();
         for(int N=0; N<Nmax; N++)
         {
@@ -2236,7 +2342,7 @@ private:
             if( vector_sampling_for_dual_efficiency_under_1[N]->size() > 1 )
                 vector_sampling_for_dual_efficiency_under_1[N]->writeOnFile(file_name_dual);
         }
-
+#endif
     }
 
     void doTheScmConvergenceStat( int sampling_size )

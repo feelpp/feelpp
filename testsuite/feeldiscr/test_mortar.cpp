@@ -240,6 +240,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh, T, order_types )
 }
 #endif
 typedef boost::mpl::list<boost::mpl::int_<1>, boost::mpl::int_<2>, boost::mpl::int_<3>, boost::mpl::int_<4>, boost::mpl::int_<5>  > order_types;
+//typedef boost::mpl::list<boost::mpl::int_<2>> order_types;
 
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
 {
@@ -252,24 +253,25 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
 
 
     BOOST_TEST_MESSAGE( "test_mortar_integrate_submesh2 for order : " << T::value );
+    LOG(INFO) << "[test_mortar_integrate_submesh2] for order : " << T::value;
     //auto mesh = loadMesh( _mesh=new Mesh<Simplex<2,1,2> >, _h=option(_name="gmsh.hsize2").template as<double>() );
     //auto mesh2 = loadMesh( _mesh=new Mesh<Simplex<2,1,2> >, _h=option(_name="gmsh.hsize2").template as<double>() );
 
 #if 1
-    auto mesh = createGMSHMesh( _mesh=new Mesh<Simplex<2,1,2> >,
+    auto mesh = createGMSHMesh( _mesh=new Mesh<Hypercube<2,1,2> >,
                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                                 _desc=domain( _name="mesh", _addmidpoint=false, _usenames=false, _shape="hypercube",
-                                              _dim=2, _h=option(_name="gmsh.hsize2").template as<double>(),
-                                              _convex="Simplex",_structured=1,
+                                              _dim=2, _h=option(_name="gmsh.hsize").template as<double>(),
+                                              _convex="Hypercube",_structured=1,
                                               _xmin=0., _xmax=1., _ymin=0., _ymax=1.
                                               )
                                 );
 
-    auto mesh2 = createGMSHMesh( _mesh=new Mesh<Simplex<2,1,2> >,
+    auto mesh2 = createGMSHMesh( _mesh=new Mesh<Hypercube<2,1,2> >,
                                  _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                                  _desc=domain( _name="mesh2", _addmidpoint=false, _usenames=false, _shape="hypercube",
                                                _dim=2, _h=option(_name="gmsh.hsize2").template as<double>(),
-                                               _convex="Simplex",_structured=1,
+                                               _convex="Hypercube",_structured=1,
                                                _xmin=0., _xmax=1., _ymin=1., _ymax=2.
                                                )
                                  );
@@ -307,19 +309,25 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
         LOG(INFO) << "trial master local dof element " << dof.first.elementId() << " id:" << dof.first.localDof()
                   << " global dof : " << dof.second.index() << " pts: " << Vh->dof()->dofPoint( dof.second.index() ).template get<0>();
     }
+    LOG_IF(WARNING, Xh->dof()->nDof() != Mh->dof()->nDof()+2 )
+        << "Invalid Mortar space dimention, trial slave side: "
+        << Xh->dof()->nDof()
+        << " test side : " << Mh->dof()->nDof()
+        << "  (+2 : " << Mh->dof()->nDof()+2;
+    BOOST_CHECK( Xh->dof()->nDof() == Mh->dof()->nDof()+2 );
 
     BOOST_TEST_MESSAGE( "build Xh element" );
     auto u = Xh->element(),u1=Xh->element(),u2=Xh->element(),u3=Xh->element();
     u = vf::project(_space=Xh,_range=elements(testmesh),_expr=cst(1.0));
     u1 = vf::project(_space=Xh,_range=elements(testmesh),_expr=Px());
     u2 = vf::project(_space=Xh,_range=elements(testmesh),_expr=Px()*Px());
-    u3 = vf::project(_space=Xh,_range=elements(testmesh),_expr=cos(pi*Px()) );
+    u3 = vf::project(_space=Xh,_range=elements(testmesh),_expr=sin(pi*Px()) );
 
     auto v = Vh->element(), w=Vh->element(),z=Vh->element(),zz=Vh->element();
     v = vf::project(_space=Vh,_range=elements(trialmesh),_expr=cst(1.0));
     w = vf::project(_space=Vh,_range=elements(trialmesh),_expr=Px());
     z = vf::project(_space=Vh,_range=elements(trialmesh),_expr=Px()*Px());
-    zz = vf::project(_space=Vh,_range=elements(trialmesh),_expr=cos(pi*Px()));
+    zz = vf::project(_space=Vh,_range=elements(trialmesh),_expr=sin(pi*Px()));
 
 
     BOOST_TEST_MESSAGE( "build Mh element" );
@@ -330,7 +338,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
     auto c_s = form2(_test=Mh, _trial=Xh), cs1= form2(_test=Mh, _trial=Xh);
     BOOST_TEST_MESSAGE( "integrate" );
     c_s = integrate(_range=internalelements(testmesh),_expr=idt(u)*id(l));
-    c_s += integrate(_range=boundaryelements(testmesh),_expr=idt(u)*id(l));
+    c_s += integrate(_range=boundaryelements(testmesh),_expr=idt(u)*id(l),_quad1=_Q<4>());
 
     cs1 = integrate(_range=internalelements(testmesh),_expr=idt(u)*id(l));
     cs1 += integrate(_range=boundaryelements(testmesh),_expr=idt(u));
@@ -346,17 +354,17 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
         BOOST_CHECK_CLOSE( cs1( l, u ), 1, 1e-12 );
     BOOST_CHECK_CLOSE( c_s( l, u1 ), 0.5, 1e-12 );
     BOOST_CHECK_CLOSE( c_s( l, u2 ), 1./3., (T::value>=2)?1e-12:10 );
-    BOOST_CHECK_CLOSE( c_s( l, u3 ), 0., 1e-5 );
+    BOOST_CHECK_CLOSE( c_s( l, u3 ), 2./pi, 1e-5 );
 
     BOOST_TEST_MESSAGE( "build bilinear form c_m(Mh,Vh)" );
     auto c_m = form2(_test=Mh, _trial=Vh);
     BOOST_TEST_MESSAGE( "integrate" );
-    c_m = integrate(_range=elements(testmesh),_expr=idt(v)*id(l));
+    c_m = integrate(_range=elements(testmesh),_expr=idt(v)*id(l),_quad1=_Q<20>(),_quad=_Q<20>());
     c_m.matrixPtr()->printMatlab( "C_m.m" );
     BOOST_CHECK_CLOSE( c_m( l, v ), 1, 1e-12 );
     BOOST_CHECK_CLOSE( c_m( l, w ), 0.5, 1e-12 );
     BOOST_CHECK_CLOSE( c_m( l, z ), 1./3., (T::value>=2)?1e-12:10 );
-    BOOST_CHECK_CLOSE( c_s( l, zz ), 0., 1e-5 );
+    BOOST_CHECK_CLOSE( c_m( l, zz ), 2./pi, 1e-5 );
 
     // build matrix C_m without mortar space
     BOOST_TEST_MESSAGE( "build bilinear form c_m(Xh,Vh)" );
