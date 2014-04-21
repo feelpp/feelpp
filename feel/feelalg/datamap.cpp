@@ -479,6 +479,12 @@ DataMap::buildIndexSplit()
         const size_type globalDof = this->mapGlobalProcessToGlobalCluster(index);
         M_indexSplit->operator[](0)[globalDof - firstDof] = globalDof;
     }
+
+    size_type nDofForSmallerRankId=0;
+    for ( rank_type proc=0;proc<this->worldComm().globalRank();++proc )
+        nDofForSmallerRankId+=this->nLocalDofWithoutGhost( proc );
+    M_indexSplit->setNIndexForSmallerRankId( 0, nDofForSmallerRankId );
+
     DVLOG(1) << "buildIndexSplit() done\n";
 }
 
@@ -577,6 +583,7 @@ IndexSplit::resize( int size )
     M_firstIndex.resize( size );
     M_lastIndex.resize( size );
     M_nIndex.resize( size );
+    M_nIndexForSmallerRankId.resize( size );
 }
 
 
@@ -603,6 +610,7 @@ IndexSplit::addSplit( size_type startSplit, self_ptrtype const& addedIndexSplit 
             const size_type firstIndexAdded = addedIndexSplit->firstIndex(k-sizeIS1);
             for ( int l=0 ; l<sizeSplitAdded ; ++l )
                 this->operator[](k)[l] = startIS + addedIndexSplit->split(k-sizeIS1)[l] - firstIndexAdded;
+            this->setNIndexForSmallerRankId( k, addedIndexSplit->nIndexForSmallerRankId( k-sizeIS1 ) );
         }
 
         startIS += this->operator[](k).size();
@@ -655,11 +663,11 @@ IndexSplit::applyFieldsDef( IndexSplit::FieldsDef const& fieldsDef ) const
 
     //std::cout << "splitSetInDef.size() " << splitSetInDef.size() << "\n";
 
+    // init start index
     std::vector<int> startSplit( this->size() );
     for ( int i = 0 ; i < this->size(); ++i )
         startSplit[i] = this->firstIndex( i );
-
-
+    // fix start index if not all field are present in def
     for ( int splitId = 0 ; splitId < this->size(); ++splitId )
     {
         auto itFindSplit = std::find_if( splitSetInDef.begin(), splitSetInDef.end(),
@@ -667,12 +675,15 @@ IndexSplit::applyFieldsDef( IndexSplit::FieldsDef const& fieldsDef ) const
         if ( itFindSplit == splitSetInDef.end() )
         {
             for ( int splitId2 : splitSetInDef )
+            {
                 if ( splitId2 > splitId )
                     startSplit[splitId2] -= this->nIndex(splitId);
+                startSplit[splitId2] -= this->nIndexForSmallerRankId( splitId );
+            }
         }
     }
 
-
+    // update new index split
     for ( it = fieldsDef.begin() ; it != en ; ++it)
     {
         int fieldId = it->first;
@@ -683,7 +694,7 @@ IndexSplit::applyFieldsDef( IndexSplit::FieldsDef const& fieldsDef ) const
         newIS->operator[](fieldId).resize( sizeNewSplit );
 
         bool hasInitFirstIndex = false;
-        int startIndexSplit=0;
+        size_type startIndexSplit=0, nIndexForSmallerRank=0;
         for ( int splitId : it->second )
         {
             if ( !hasInitFirstIndex )
@@ -692,17 +703,18 @@ IndexSplit::applyFieldsDef( IndexSplit::FieldsDef const& fieldsDef ) const
                 hasInitFirstIndex=true;
             }
 
-
             int sizeSplit = this->operator[]( splitId ).size();
             for ( int i = 0 ; i < sizeSplit; ++i )
                 newIS->operator[](fieldId)[startIndexSplit+i] = startSplit[splitId] + this->operator[]( splitId )[i] - this->firstIndex( splitId );
             //newIS[fieldId][startIndexSplit+i] =  this->operator[]( splitId )[i];
             startIndexSplit += sizeSplit;
+
+            nIndexForSmallerRank += this->nIndexForSmallerRankId( splitId );
         }
 
         newIS->setLastIndex( fieldId, (sizeNewSplit>0)? newIS->firstIndex(fieldId)+sizeNewSplit-1 : newIS->firstIndex(fieldId) );
         newIS->setNIndex( fieldId, sizeNewSplit );
-
+        newIS->setNIndexForSmallerRankId( fieldId, nIndexForSmallerRank );
     }
 
     return newIS;
@@ -726,7 +738,8 @@ IndexSplit::showMe() const
         ostr << "-split : " << k << "\n"
              << "-firstIndex : " << this->firstIndex(k) << "\n"
              << "-lastIndex : " << this->lastIndex(k) << "\n"
-             << "-nIndex : " << this->nIndex(k) << "\n";
+             << "-nIndex : " << this->nIndex(k) << "\n"
+             << "-nIndexForSmallerRankId : " << this->nIndexForSmallerRankId(k) << "\n";
         if ( true )
         {
             for ( int i=0;i<nDofInSplit;++i)
