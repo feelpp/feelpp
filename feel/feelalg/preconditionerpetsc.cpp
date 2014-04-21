@@ -342,10 +342,32 @@ typedef struct {
 
 namespace PetscImpl
 {
+
+/*
+ * Warning : need to rewrite a petsc function for schur complement (in fieldsplit.c)
+ * Allow to fix use of inner solver different of outer solver A^{-1}
+ */
+static PetscErrorCode  PCFieldSplitGetSubKSP_FieldSplit_Schur(PC pc,PetscInt *n,KSP **subksp)
+{
+  PC_FieldSplit  *jac = (PC_FieldSplit*)pc->data;
+  PetscErrorCode ierr;
+
+  //PetscFunctionBegin;
+  ierr = PetscMalloc(jac->nsplits*sizeof(KSP),subksp);CHKERRQ(ierr);
+  //ierr = MatSchurComplementGetKSP(jac->schur,*subksp);CHKERRQ(ierr);
+
+  (*subksp)[0] = jac->head->ksp;
+  (*subksp)[1] = jac->kspschur;
+  if (n) *n = jac->nsplits;
+  PetscFunctionReturn(0);
+}
+
 static PetscErrorCode PCFieldSplit_GetKSPInnerSchur( PC pc, KSP &ksp )
 {
     PC_FieldSplit     *jac = (PC_FieldSplit*)pc->data;
     PetscErrorCode    ierr;
+
+    CHECK( jac->schur ) << "mat schur complement is not initialized\n";
 
     KSP kspA = jac->head->ksp, kspInner = NULL;
     ierr  = MatSchurComplementGetKSP(jac->schur, &kspInner);CHKERRQ(ierr);
@@ -358,7 +380,9 @@ static PetscErrorCode PCFieldSplit_GetKSPInnerSchur( PC pc, KSP &ksp )
     else
     {
         ksp = kspInner;
+        //ierr = KSPSetOperators(ksp,jac->mat[0],jac->pmat[0],pc->flag);CHKERRQ(ierr);
     }
+    //KSPView( ksp, PETSC_VIEWER_STDOUT_WORLD );
     PetscFunctionReturn(0);
 }
 
@@ -402,6 +426,7 @@ static PetscErrorCode PCFieldSplit_UpdateMatPrecondSchurComplement( PC pc, Mat s
     PC_FieldSplit     *jac = (PC_FieldSplit*)pc->data;
     PetscErrorCode    ierr;
 
+    //jac->schur_user = schurMatPrecond;
     ierr = KSPSetOperators(jac->kspschur,jac->schur,schurMatPrecond,DIFFERENT_NONZERO_PATTERN);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
@@ -797,9 +822,6 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
 {
     int ierr = 0;
     SetPCType( pc, preconditioner_type, matSolverPackage_type, worldComm );
-    // init with petsc option if given and not interfaced
-    //ierr = PCSetFromOptions( pc );
-    //CHKERRABORT( worldComm.globalComm(),ierr );
 
     // configure main preconditioner
     ConfigurePC( pc, is, worldComm, "", name );
@@ -813,10 +835,7 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
         ierr = PCView( pc, PETSC_VIEWER_STDOUT_WORLD );
         CHKERRABORT( worldComm.globalComm(),ierr );
     }
-
 }
-
-
 
 /**
  * ConfigurePC
@@ -1572,7 +1591,7 @@ ConfigurePCFieldSplit::runConfigurePCFieldSplit( PC& pc, PreconditionerPetsc<dou
       this->check( PCFieldSplitSetFields( pc , NULL, 1, pfields,pfields) );*/
 
     PCCompositeType theFieldSplitType = PC_COMPOSITE_SCHUR;
-    if ( M_type == "schur" ) theFieldSplitType = PC_COMPOSITE_SCHUR;
+    /**/ if ( M_type == "schur" ) theFieldSplitType = PC_COMPOSITE_SCHUR;
     else if ( M_type == "additive" ) theFieldSplitType = PC_COMPOSITE_ADDITIVE;
     else if ( M_type == "multiplicative" ) theFieldSplitType = PC_COMPOSITE_MULTIPLICATIVE;
     else if ( M_type == "symmetric-multiplicative" ) theFieldSplitType = PC_COMPOSITE_SYMMETRIC_MULTIPLICATIVE;
@@ -1583,14 +1602,14 @@ ConfigurePCFieldSplit::runConfigurePCFieldSplit( PC& pc, PreconditionerPetsc<dou
     if ( M_type == "schur" )
     {
         PCFieldSplitSchurFactType theSchurFactType = PC_FIELDSPLIT_SCHUR_FACT_FULL;
-        if ( M_schurFactType == "diag")  theSchurFactType = PC_FIELDSPLIT_SCHUR_FACT_DIAG;
+        /**/ if ( M_schurFactType == "diag")  theSchurFactType = PC_FIELDSPLIT_SCHUR_FACT_DIAG;
         else if ( M_schurFactType == "lower")  theSchurFactType = PC_FIELDSPLIT_SCHUR_FACT_LOWER;
         else if ( M_schurFactType == "upper")  theSchurFactType = PC_FIELDSPLIT_SCHUR_FACT_UPPER;
         else if ( M_schurFactType == "full")  theSchurFactType = PC_FIELDSPLIT_SCHUR_FACT_FULL;
         this->check( PCFieldSplitSetSchurFactType( pc,theSchurFactType ) );
 
         PCFieldSplitSchurPreType theSchurPrecond = PC_FIELDSPLIT_SCHUR_PRE_SELF;
-        if ( M_schurPrecond == "self")  theSchurPrecond = PC_FIELDSPLIT_SCHUR_PRE_SELF;
+        /**/ if ( M_schurPrecond == "self")  theSchurPrecond = PC_FIELDSPLIT_SCHUR_PRE_SELF;
         else if ( M_schurPrecond == "user")  theSchurPrecond = PC_FIELDSPLIT_SCHUR_PRE_USER;
 #if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,4,0 )
         else if ( M_schurPrecond == "a11")  theSchurPrecond = PC_FIELDSPLIT_SCHUR_PRE_A11;
@@ -1604,26 +1623,38 @@ ConfigurePCFieldSplit::runConfigurePCFieldSplit( PC& pc, PreconditionerPetsc<dou
         {
             this->check( PCSetUp( pc ) );
 
-            Mat schur=NULL,A,B,C;
+            Mat schur = NULL, A, B, C, D;
             this->check( PetscImpl::PCFieldSplit_GetMatSchurComplement( pc, schur ) );
-
-            this->check( MatSchurComplementGetSubmatrices(schur,&A,NULL,&B,&C,NULL) );
+            this->check( MatSchurComplementGetSubmatrices( schur,&A,NULL,&B,&C,&D ) );
 
             Mat Bcopy;
-            MatDuplicate(B,MAT_COPY_VALUES,&Bcopy);
+            this->check( MatDuplicate(B,MAT_COPY_VALUES,&Bcopy) );
 
             Vec scaleDiag;
-            MatGetVecs(A,&scaleDiag,NULL);
-            MatGetDiagonal(A,scaleDiag); /* Should be the mass matrix, but we don't have plumbing for that yet */
-            VecReciprocal(scaleDiag);
-            MatDiagonalScale( Bcopy, scaleDiag ,NULL);
+            this->check( MatGetVecs(A,&scaleDiag,NULL) );
+            this->check( MatGetDiagonal(A,scaleDiag) ); /* Should be the mass matrix, but we don't have plumbing for that yet */
+            this->check( VecReciprocal(scaleDiag) );
+            this->check( MatDiagonalScale( Bcopy, scaleDiag ,NULL) );
+
+            //std::cout << "rebuild schur prec\n";
 
             //MatMatMultSymbolic(C,B,PETSC_DEFAULT,SchurMat);
 
-            MatMatMult(C,Bcopy,MAT_INITIAL_MATRIX,PETSC_DEFAULT,&schurMatPrecond);
+            this->check( MatMatMult(C,Bcopy,MAT_INITIAL_MATRIX,PETSC_DEFAULT,&schurMatPrecond) );
             //MatView(schurMatPrecond,PETSC_VIEWER_STDOUT_WORLD);
 
+            if ( D != NULL )
+                this->check( MatAYPX( schurMatPrecond,-1,D,MatStructure::DIFFERENT_NONZERO_PATTERN ) );
+            else
+                this->check( MatScale( schurMatPrecond, -1 ) );
+
+            // this function do this
+            //jac->schur_user = schurMatPrecond;ierr = KSPSetOperators(jac->kspschur,jac->schur,schurMatPrecond,DIFFERENT_NONZERO_PATTERN);CHKERRQ(ierr);
             this->check( PetscImpl::PCFieldSplit_UpdateMatPrecondSchurComplement( pc, schurMatPrecond ) );
+            // clean temporary mat and vec
+            this->check( MatDestroy( &Bcopy ) );
+            this->check( VecDestroy( &scaleDiag ) );
+
             //ierr = KSPSetOperators(jac->kspschur,jac->schur,FieldSplitSchurPre(jac),DIFFERENT_NONZERO_PATTERN);CHKERRQ(ierr);
 #if 0
             if (!lsc->L) {
@@ -1635,16 +1666,28 @@ ConfigurePCFieldSplit::runConfigurePCFieldSplit( PC& pc, PreconditionerPetsc<dou
         }
 #endif
         this->check( PCFieldSplitSchurPrecondition( pc, theSchurPrecond, schurMatPrecond/*NULL*/ ) );
+        // need to call MatDestroy because PCFieldSplitSchurPrecondition call PetscObjectReference ( which increase the object counter)
+        // if we not call this  MatDestroy, we have a memory leak
+        this->check( MatDestroy( &schurMatPrecond ) );
+
     }
 #endif
-
     // call necessary before next seting
     this->check( PCSetUp( pc ) );
+
 
     // To store array of local KSP contexts on this processor
     KSP* subksps;
     int nSplit;
-    this->check( PCFieldSplitGetSubKSP(pc,&nSplit,&subksps ) );
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,4,0 )
+    if ( M_type == "schur" )
+        this->check( PetscImpl::PCFieldSplitGetSubKSP_FieldSplit_Schur(pc,&nSplit,&subksps) );
+    else
+        this->check( PCFieldSplitGetSubKSP(pc,&nSplit,&subksps ) );
+#else
+        this->check( PCFieldSplitGetSubKSP(pc,&nSplit,&subksps ) );
+#endif
+
 
     if ( M_type == "schur" )
     {
@@ -1754,7 +1797,6 @@ ConfigurePCFieldSplit::ConfigureSubKSP::ConfigureSubKSP( KSP ** subksps/*PC& pc*
         M_subMatSolverPackage[i] = option(_name="pc-factor-mat-solver-package-type",_prefix=prefixSplit).as<std::string>();
     }
 
-
     // Loop over sub-ksp objects
     for ( int splitId=0; splitId<M_nSplit; ++splitId )
     {
@@ -1763,17 +1805,12 @@ ConfigurePCFieldSplit::ConfigureSubKSP::ConfigureSubKSP( KSP ** subksps/*PC& pc*
 
         runConfigureSubKSP( (*subksps)[splitId], is, splitId );
     }
-
-
-
-
 }
 
 void
 ConfigurePCFieldSplit::ConfigureSubKSP::runConfigureSubKSP(KSP& ksp, PreconditionerPetsc<double>::indexsplit_ptrtype const& is, int splitId )
 {
     std::string prefixSplit = M_prefixSplit[splitId];
-
 #if 0
     Mat A00;Mat A01;Mat A10; Mat A11;
     this->check( PCFieldSplitGetSchurBlocks(pc,&A00,&A01,&A10, &A11) );
@@ -1781,12 +1818,10 @@ ConfigurePCFieldSplit::ConfigureSubKSP::runConfigureSubKSP(KSP& ksp, Preconditio
         this->check( KSPSetOperators( ksp, A00, A00,
                                       PetscGetMatStructureEnum(MatrixStructure::SAME_PRECONDITIONER)) );
 #endif
-
     ConfigureKSP kspConf( ksp, this->worldComm(), "", prefixSplit );
     /*int ierr = KSPSetInitialGuessNonzero ( ksp, PETSC_TRUE );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
     this->check( KSPSetNormType( ksp, KSP_NORM_NONE ) );*/
-
     // setup ksp
     this->check( KSPSetUp( ksp ) );
 
@@ -1801,33 +1836,37 @@ ConfigurePCFieldSplit::ConfigureSubKSP::runConfigureSubKSP(KSP& ksp, Preconditio
     // in case of fieldsplit in fieldsplit, need to pass the is corresponding
     if ( M_subPCtype[splitId] == "fieldsplit" )
     {
-        CHECK( is ) << "index split is not initialized\n";
-
-        std::string fieldsDefStr = option(_name="fieldsplit-fields",_prefix=prefixSplit).as<std::string>();
-        auto fieldsDef = IndexSplit::parseFieldsDef( fieldsDefStr );
-        //std::cout << "fieldsplit fieldsDefStr " << fieldsDefStr << "\n";
-        //auto isUsed = is.applyFieldsDef( IndexSplit::FieldsDef(  {  { 0 , { 0 } }, { 1 , { 2 } } } ) );
-        //is->showMe();
-        auto isUsed = is->applyFieldsDef( IndexSplit::FieldsDef( fieldsDef ) );
-        //isUsed->showMe();
-
-        std::vector<IS> isPetsc;
-        PetscConvertIndexSplit( isPetsc ,*isUsed,this->worldComm());
-        for ( int i = 0 ; i < isPetsc.size(); ++i )
-        {
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-            std::ostringstream os; os << i;
-            this->check( PCFieldSplitSetIS( subpc,os.str().c_str(),isPetsc[i] ) );
-#else
-            this->check( PCFieldSplitSetIS( subpc,isPetsc[i] ) );
-#endif
+        IS isTest;
+        this->check( PCFieldSplitGetIS( subpc,"0",&isTest ) );
+        if ( isTest == NULL || is )
+        {
+            CHECK( is ) << "index split is not initialized\n";
+
+            std::string fieldsDefStr = option(_name="fieldsplit-fields",_prefix=prefixSplit).as<std::string>();
+            auto fieldsDef = IndexSplit::parseFieldsDef( fieldsDefStr );
+            //std::cout << "fieldsplit fieldsDefStr " << fieldsDefStr << "\n";
+            //auto isUsed = is.applyFieldsDef( IndexSplit::FieldsDef(  {  { 0 , { 0 } }, { 1 , { 2 } } } ) );
+            //is->showMe();
+            auto isUsed = is->applyFieldsDef( IndexSplit::FieldsDef( fieldsDef ) );
+            //isUsed->showMe();
+
+            std::vector<IS> isPetsc;
+            PetscConvertIndexSplit( isPetsc ,*isUsed,this->worldComm());
+            for ( int i = 0 ; i < isPetsc.size(); ++i )
+            {
+                std::ostringstream os; os << i;
+                this->check( PCFieldSplitSetIS( subpc,os.str().c_str(),isPetsc[i] ) );
+                this->check( ISDestroy(&isPetsc[i]) );
+            }
         }
-        //TODO : maybe delete or store  isPetsc
+#else
+        CHECK(false) << "use fieldsplit requiert a petsc version greater or equal to 3.2\n";
+#endif
     }
 
     if ( M_subPCtype[splitId] == "lsc" )
         CHECK( splitId==1 ) << "lsc must be use with only field 1, not " << splitId << "\n";
-
 
     // configure sub-pc
     ConfigurePC( subpc, is, this->worldComm(), "", prefixSplit );
