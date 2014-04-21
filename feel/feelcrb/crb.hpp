@@ -442,6 +442,13 @@ public:
         M_Cma_du( o.M_Cma_du ),
         M_Cmm_pr( o.M_Cmm_pr ),
         M_Cmm_du( o.M_Cmm_du ),
+        M_Cmf_pr_eim( o.M_Cmf_pr ),
+        M_Cmf_du_eim( o.M_Cmf_du ),
+        M_Cmf_du_ini_eim( o.M_Cmf_du_ini ),
+        M_Cma_pr_eim( o.M_Cma_pr ),
+        M_Cma_du_eim( o.M_Cma_du ),
+        M_Cmm_pr_eim( o.M_Cmm_pr ),
+        M_Cmm_du_eim( o.M_Cmm_du ),
         M_coeff_pr_ini_online( o.M_coeff_pr_ini_online ),
         M_coeff_du_ini_online( o.M_coeff_du_ini_online )
     {}
@@ -1307,6 +1314,13 @@ protected:
     std::vector< std::vector< std::vector< std::vector< matrixN_type > > > > M_Cma_du;
     std::vector< std::vector< std::vector< std::vector< matrixN_type > > > > M_Cmm_pr;
     std::vector< std::vector< std::vector< std::vector< matrixN_type > > > > M_Cmm_du;
+    std::vector< std::vector< vectorN_type > > M_Cmf_pr_eim;
+    std::vector< std::vector< vectorN_type > > M_Cmf_du_eim;
+    std::vector< std::vector< vectorN_type > > M_Cmf_du_ini_eim;
+    std::vector< std::vector< matrixN_type > > M_Cma_pr_eim;
+    std::vector< std::vector< matrixN_type > > M_Cma_du_eim;
+    std::vector< std::vector< matrixN_type > > M_Cmm_pr_eim;
+    std::vector< std::vector< matrixN_type > > M_Cmm_du_eim;
 
     //X( \mu_r ) in F.casnave's paper
     mutable std::vector< vectorN_type > M_primal_apee_basis;
@@ -6062,12 +6076,12 @@ template<typename TruthModelType>
 typename CRB<TruthModelType>::residual_error_type
 CRB<TruthModelType>::steadyPrimalResidualEim( int Ncur,parameter_type const& mu, vectorN_type const& Un, double time) const
 {
-
     int __QLhs = M_model->Qa();
     int __QRhs = M_model->Ql( 0 );
     int __N = Ncur;
 
     auto all_eim_interpolation_errors = M_model->eimInterpolationErrorEstimation( mu , Un );
+
     auto eim_interpolation_errors_A = all_eim_interpolation_errors.template get<1>() ;
     auto eim_interpolation_errors_F = all_eim_interpolation_errors.template get<2>() ;
 
@@ -9046,6 +9060,27 @@ CRB<TruthModelType>::save( Archive & ar, const unsigned int version ) const
 
     ar & BOOST_SERIALIZATION_NVP( M_model_executed_in_steady_mode );
 
+    if( version > 0 )
+    {
+        ar & BOOST_SERIALIZATION_NVP( M_C0_pr_eim );
+        ar & BOOST_SERIALIZATION_NVP( M_C0_du_eim );
+        ar & BOOST_SERIALIZATION_NVP( M_Lambda_pr_eim );
+        ar & BOOST_SERIALIZATION_NVP( M_Lambda_du_eim );
+        ar & BOOST_SERIALIZATION_NVP( M_Gamma_pr_eim );
+        ar & BOOST_SERIALIZATION_NVP( M_Gamma_du_eim );
+
+        if ( model_type::is_time_dependent )
+        {
+            ar & BOOST_SERIALIZATION_NVP( M_Cmf_pr_eim );
+            ar & BOOST_SERIALIZATION_NVP( M_Cma_pr_eim );
+            ar & BOOST_SERIALIZATION_NVP( M_Cmm_pr_eim );
+            ar & BOOST_SERIALIZATION_NVP( M_Cmf_du_eim );
+            ar & BOOST_SERIALIZATION_NVP( M_Cmf_du_ini_eim );
+            ar & BOOST_SERIALIZATION_NVP( M_Cma_du_eim );
+            ar & BOOST_SERIALIZATION_NVP( M_Cmm_du_eim );
+        }
+
+    }
 
 #if 0
         for(int i=0; i<M_N; i++)
@@ -9188,6 +9223,30 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
             std::cout<<"[CRB::loadDB] WARNING in the database used, the model was executed in steady mode but now you want to execute it in transient mode. make sure that --crb.rebuild-database=true"<<std::endl;
         LOG( INFO ) <<"[CRB::loadDB] WARNING in the database used, the model was executed in steady mode but now you want to execute it in transient mode. make sure that --crb.rebuild-database=true";
     }
+
+    //For version == 0 there was no error estimation on EIM
+    if( version > 0 )
+    {
+        ar & BOOST_SERIALIZATION_NVP( M_C0_pr_eim );
+        ar & BOOST_SERIALIZATION_NVP( M_C0_du_eim );
+        ar & BOOST_SERIALIZATION_NVP( M_Lambda_pr_eim );
+        ar & BOOST_SERIALIZATION_NVP( M_Lambda_du_eim );
+        ar & BOOST_SERIALIZATION_NVP( M_Gamma_pr_eim );
+        ar & BOOST_SERIALIZATION_NVP( M_Gamma_du_eim );
+
+        if ( model_type::is_time_dependent )
+        {
+            ar & BOOST_SERIALIZATION_NVP( M_Cmf_pr_eim );
+            ar & BOOST_SERIALIZATION_NVP( M_Cma_pr_eim );
+            ar & BOOST_SERIALIZATION_NVP( M_Cmm_pr_eim );
+            ar & BOOST_SERIALIZATION_NVP( M_Cmf_du_eim );
+            ar & BOOST_SERIALIZATION_NVP( M_Cmf_du_ini_eim );
+            ar & BOOST_SERIALIZATION_NVP( M_Cma_du_eim );
+            ar & BOOST_SERIALIZATION_NVP( M_Cmm_du_eim );
+        }
+
+    }// version > 0 => EIM error estimation
+
 #if 0
     std::cout << "[loadDB] output index : " << M_output_index << "\n"
               << "[loadDB] N : " << M_N << "\n"
@@ -9316,10 +9375,10 @@ namespace serialization
 template< typename T>
 struct version< Feel::CRB<T> >
 {
-    // at the moment the version of the CRB DB is 0. if any changes is done
+    // at the moment the version of the CRB DB is 1. if any changes is done
     // to the format it is mandatory to increase the version number below
     // and use the new version number of identify the new entries in the DB
-    typedef mpl::int_<0> type;
+    typedef mpl::int_<1> type;
     typedef mpl::integral_c_tag tag;
     static const unsigned int value = version::type::value;
 };
