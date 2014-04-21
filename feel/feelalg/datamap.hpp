@@ -78,7 +78,7 @@ class IndexSplit : public std::vector<std::vector<size_type> >
         M_firstIndex( is.M_firstIndex ),
         M_lastIndex( is.M_lastIndex ),
         M_nIndex( is.M_nIndex ),
-        M_nIndexForSmallerRankId( M_nIndexForSmallerRankId )
+        M_nIndexForSmallerRankId( is.M_nIndexForSmallerRankId )
     {}
 
     subcontainer_type const& split( int k ) const { return this->operator[](k); }
