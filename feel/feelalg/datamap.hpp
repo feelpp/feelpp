@@ -59,7 +59,8 @@ class IndexSplit : public std::vector<std::vector<size_type> >
         super_type(),
         M_firstIndex(0),
         M_lastIndex(0),
-        M_nIndex(0)
+        M_nIndex(0),
+        M_nIndexForSmallerRankId(0)
     {}
 
     IndexSplit( int s )
@@ -67,7 +68,8 @@ class IndexSplit : public std::vector<std::vector<size_type> >
         super_type( s ),
         M_firstIndex( s, invalid_size_type_value ),
         M_lastIndex( s, invalid_size_type_value ),
-        M_nIndex( s, invalid_size_type_value )
+        M_nIndex( s, invalid_size_type_value ),
+        M_nIndexForSmallerRankId( s, invalid_size_type_value )
     {}
 
     IndexSplit( IndexSplit const& is )
@@ -75,7 +77,8 @@ class IndexSplit : public std::vector<std::vector<size_type> >
         super_type( is ),
         M_firstIndex( is.M_firstIndex ),
         M_lastIndex( is.M_lastIndex ),
-        M_nIndex( is.M_nIndex )
+        M_nIndex( is.M_nIndex ),
+        M_nIndexForSmallerRankId( M_nIndexForSmallerRankId )
     {}
 
     subcontainer_type const& split( int k ) const { return this->operator[](k); }
@@ -91,6 +94,8 @@ class IndexSplit : public std::vector<std::vector<size_type> >
     void setLastIndex( int i,size_type s ) { M_lastIndex[i] = s; }
     size_type nIndex( int i ) const { return M_nIndex[i]; }
     void setNIndex( int i,size_type s ) { M_nIndex[i] = s; }
+    size_type nIndexForSmallerRankId( int i ) const { return M_nIndexForSmallerRankId[i]; }
+    void setNIndexForSmallerRankId( int i,size_type s ) { M_nIndexForSmallerRankId[i] = s; }
 
     struct FieldsDef : public std::map<int,std::set<int> >
     {
@@ -108,6 +113,7 @@ class IndexSplit : public std::vector<std::vector<size_type> >
 private :
 
     std::vector<size_type> M_firstIndex, M_lastIndex, M_nIndex;
+    std::vector<size_type> M_nIndexForSmallerRankId;
 
 };
 
