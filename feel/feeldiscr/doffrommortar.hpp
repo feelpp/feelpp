@@ -233,7 +233,8 @@ private:
             DVLOG(2) << "adding mortar dof on edge " << mortar_fe_type::nDofPerEdge << " nOrder = " << nOrder;
             for ( uint16_type l = 0; l < mortar_fe_type::nDofPerEdge; ++l, ++lc )
             {
-                size_type gDof = ie * mortar_fe_type::nDofPerEdge + l;
+                //size_type gDof = ie * mortar_fe_type::nDofPerEdge + l;
+                size_type gDof = ie * fe_type::nDofPerEdge + l;
                 if ( nOrder == 0 )//is_p0_continuous )
                 {
                     auto n = elt.neighbor( 0 );
