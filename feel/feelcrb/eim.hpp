@@ -415,13 +415,18 @@ EIM<ModelType>::interpolationErrorEstimation( parameter_type const & mu, solutio
     CHECK( M <= max ) << "Invalid number M for errorEstimation: " << M << " Mmax : " << max << "\n";
     //interpolation point associated to (M+1) basis function is index by M
     //remember that interpolationPoint(0) is the first interpolation point
-    auto t = M_model->interpolationPoint( M );
-    auto projected_expression = M_model->operator()( solution , t,  mu );
-    //std::cout<<"expression evaluated at ponint ( "<<t(0)<<" , "<<t(1)<<" ) : \n"<< expression <<std::endl;
+    //auto t = M_model->interpolationPoint( M );
+    //auto projected_expression = M_model->operator()( solution , t,  mu );
+
+    auto projected_expression_at_points = M_model->evaluateExpressionAtInterpolationPoints( solution ,  mu , M+1);
+    double projected_expression = projected_expression_at_points(M);
     auto eim_approximation = this->operator()(mu, solution, M);
-    double eim = eim_approximation(t)(0,0,0);
-    //std::cout<<"eim : "<<eim<<std::endl;
+    //double eim = eim_approximation(t)(0,0,0);
+    auto eim_approximation_at_points = M_model->evaluateElementAtInterpolationPoints( eim_approximation , M+1 );
+    double eim = eim_approximation_at_points(M);
+
     double coeff = math::abs( projected_expression - eim );
+
     auto result = M_model->q( M );
     result.scale( coeff );
     return boost::make_tuple(coeff,result);
@@ -917,7 +922,10 @@ EIM<ModelType>::studyConvergence( parameter_type const & mu , solution_type & so
                 fileL2estimated   << relative_l2_error_estimated  <<str;
                 fileL2ratio       << relative_ratio_l2            <<str;
                 fileLINFestimated << absolute_linf_error_estimated<<str;
-                fileLINFratio     << absolute_ratio_linf          <<str;
+                if( absolute_linf_error < 1e-14 )
+                    fileLINFratio     << 0          <<str;
+                else
+                    fileLINFratio     << absolute_ratio_linf          <<str;
             }
         }
 
@@ -1142,6 +1150,9 @@ public:
     virtual void clearOfflineError() =0;
 
     virtual void initializeDataStructures() = 0;
+
+    virtual vector_type evaluateExpressionAtInterpolationPoints(solution_type const &solution, parameter_type const& mu, int M)=0;
+    virtual vector_type evaluateElementAtInterpolationPoints(element_type const & element, int M)=0;
     po::variables_map M_vm;
     functionspace_ptrtype M_fspace;
     parameterspace_ptrtype M_pspace;
@@ -1474,6 +1485,18 @@ public:
         DVLOG(2) << "solve B sol = rhs with rhs = \n" << rhs <<"\n";
 
         return rhs;
+    }
+
+
+    vector_type evaluateExpressionAtInterpolationPoints(solution_type const &solution, parameter_type const& mu, int M)
+    {
+        M_mu = mu;
+        M_u = solution;
+        return evaluateFromContext( _context=M_ctx, _expr=M_expr , _max_points_used=M, _projection=true );
+    }
+    vector_type evaluateElementAtInterpolationPoints(element_type const & element, int M)
+    {
+        return evaluateFromContext( _context=M_ctx, _expr=idv(element) , _max_points_used=M, _projection=true );
     }
 
     // compute the maximum of the residual using either real expression
