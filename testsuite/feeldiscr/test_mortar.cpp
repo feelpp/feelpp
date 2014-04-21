@@ -252,6 +252,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
 
 
     BOOST_TEST_MESSAGE( "test_mortar_integrate_submesh2 for order : " << T::value );
+    LOG(INFO) << "[test_mortar_integrate_submesh2] for order : " << T::value;
     //auto mesh = loadMesh( _mesh=new Mesh<Simplex<2,1,2> >, _h=option(_name="gmsh.hsize2").template as<double>() );
     //auto mesh2 = loadMesh( _mesh=new Mesh<Simplex<2,1,2> >, _h=option(_name="gmsh.hsize2").template as<double>() );
 
@@ -307,6 +308,12 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
         LOG(INFO) << "trial master local dof element " << dof.first.elementId() << " id:" << dof.first.localDof()
                   << " global dof : " << dof.second.index() << " pts: " << Vh->dof()->dofPoint( dof.second.index() ).template get<0>();
     }
+    LOG_IF(WARNING, Xh->dof()->nDof() != Mh->dof()->nDof()+2 )
+        << "Invalid Mortar space dimention, trial slave side: "
+        << Xh->dof()->nDof()
+        << " test side : " << Mh->dof()->nDof()
+        << "  (+2 : " << Mh->dof()->nDof()+2;
+    BOOST_CHECK( Xh->dof()->nDof() == Mh->dof()->nDof()+2 );
 
     BOOST_TEST_MESSAGE( "build Xh element" );
     auto u = Xh->element(),u1=Xh->element(),u2=Xh->element(),u3=Xh->element();
