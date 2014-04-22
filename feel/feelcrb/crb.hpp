@@ -1488,6 +1488,7 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
     }
 
     auto uold = M_model->functionSpace()->element();
+    auto bdf_poly = M_model->functionSpace()->element();
 
     element_ptrtype uproj( new element_type( M_model->functionSpace() ) );
 
@@ -1500,9 +1501,11 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
           M_bdf_primal->next() , M_bdf_primal_save->next() )
     {
 
-        bdf_coeff = M_bdf_primal->polyDerivCoefficient( 0 );
-
-        auto bdf_poly = M_bdf_primal->polyDeriv();
+        if ( ! M_model->isSteady() )
+        {
+            bdf_coeff = M_bdf_primal->polyDerivCoefficient( 0 );
+            bdf_poly = M_bdf_primal->polyDeriv();
+        }
 
         do
         {
@@ -1698,6 +1701,7 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
     }
 
     auto uold = M_model->functionSpace()->element();
+    auto bdf_poly = M_model->functionSpace()->element();
 
     element_ptrtype uproj( new element_type( M_model->functionSpace() ) );
 
@@ -1707,9 +1711,11 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
           M_bdf_dual->next() , M_bdf_dual_save->next() )
     {
 
-        bdf_coeff = M_bdf_dual->polyDerivCoefficient( 0 );
-
-        auto bdf_poly = M_bdf_dual->polyDeriv();
+        if ( ! M_model->isSteady() )
+        {
+            bdf_coeff = M_bdf_dual->polyDerivCoefficient( 0 );
+            bdf_poly = M_bdf_dual->polyDeriv();
+        }
 
         do
         {
