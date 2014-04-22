@@ -444,6 +444,8 @@ crbOptions( std::string const& prefix )
 
     ( "crb.solve-fem-monolithic",Feel::po::value<bool>()->default_value( false ), "solve FEM problem without using EIM and without affine decomposition ")
     ;
+    ( "crb.export-name-max-size",Feel::po::value<int>()->default_value( 10 ), "maximum size for variable names in export (truncature)")
+    ;
 
     crboptions
         .add( crbSCMOptions() );
