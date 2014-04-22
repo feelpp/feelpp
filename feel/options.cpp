@@ -447,6 +447,7 @@ crbOptions( std::string const& prefix )
     ( "crb.load-elements-database",Feel::po::value<bool>()->default_value( false ), "load database of elements if true, need to be true for visualization, need to be false to run CRB approximation on a different number of processors than this was used to build the reduced basis ")
 
     ( "crb.solve-fem-monolithic",Feel::po::value<bool>()->default_value( false ), "solve FEM problem without using EIM and without affine decomposition ")
+    ( "crb.export-name-max-size",Feel::po::value<int>()->default_value( 10 ), "maximum size for variable names in export (truncature)")
     ;
 
     crboptions

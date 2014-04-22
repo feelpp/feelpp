@@ -131,7 +131,7 @@ public:
 
     OpusApp( AboutData const& ad, po::options_description const& od )
         :
-        super( ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add( feel_options() ).add( eimOptions() ).add( podOptions() ) ),
+        super( ad, opusapp_options(ad.appName()).add( od ).add( crbOptions() ).add(file_options(ad.appName())).add( eimOptions() ).add( podOptions() ) ),
         M_mode( ( CRBModelMode )option(_name=_o( this->about().appName(),"run.mode" )).template as<int>() )
         {
             this->init();
@@ -139,7 +139,7 @@ public:
 
     OpusApp( AboutData const& ad, po::options_description const& od, CRBModelMode mode )
         :
-        super( ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add( feel_options() ).add( eimOptions() ).add( podOptions() ) ),
+        super( ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add(file_options(ad.appName())).add( eimOptions() ).add( podOptions() ) ),
         M_mode( mode )
         {
             this->init();
@@ -147,14 +147,14 @@ public:
 
     OpusApp( int argc, char** argv, AboutData const& ad, po::options_description const& od )
         :
-        super( ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add( feel_options() ).add( eimOptions() ).add( podOptions() )  ),
+        super( ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add(file_options(ad.appName())).add( eimOptions() ).add( podOptions() ) ),
         M_mode( ( CRBModelMode )option(_name=_o( this->about().appName(),"run.mode" )).template as<int>() )
         {
             this->init();
         }
     OpusApp( int argc, char** argv, AboutData const& ad, po::options_description const& od, CRBModelMode mode )
         :
-        super( ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add( feel_options() ).add( eimOptions() ).add( podOptions() ) ),
+        super( ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add(file_options(ad.appName())).add( eimOptions() ).add( podOptions() ) ),
         M_mode( mode )
         {
             this->init();
@@ -347,6 +347,8 @@ public:
 
             bool load_elements_db= option(_name="crb.load-elements-database").template as<bool>();
             bool rebuild_db= option(_name="crb.rebuild-database").template as<bool>();
+
+            int exportNameSize = option(_name="crb.export-name-max-size").template as<int>(); //paraview reads max 49 characters
 
             if ( this->vm().count( "help" ) )
             {
@@ -861,8 +863,10 @@ public:
                     this->run( X.data(), X.size(), Y.data(), Y.size() );
                     //std::cout << "output = " << Y[0] << std::endl;
 
-                    std::ofstream res(option(_name="result-file").template as<std::string>() );
+                    std::string resultFileName = option(_name="result-file").template as<std::string>();
+                    std::ofstream res(resultFileName);
                     res << "output="<< Y[0] << "\n";
+                    res.close();
                 }
                 else
                 {
@@ -883,8 +887,10 @@ public:
 
                                 LOG(INFO) << "compute output\n";
                                 if( export_solution )
-                                    e->add( u_fem.name(), u_fem );
-                                //e->step(0)->add( u_fem.name(), u_fem );
+                                    {
+                                        std::string exportName = u_fem.name().substr(0,exportNameSize) + "-" + std::to_string(curpar);
+                                        e->add( exportName, u_fem );
+                                    }
                                 //model->solve( mu );
                                 std::vector<double> o = boost::assign::list_of( model->output( output_index,mu , u_fem, true) )( ti.elapsed() );
                                 if(proc_number == Environment::worldComm().masterRank() ) std::cout << "output=" << o[0] << "\n";
@@ -942,7 +948,8 @@ public:
                                     {
                                         model->adaptMesh( mu );
                                     }
-                                    e->add( u_crb.name(), u_crb );
+                                    std::string exportName = u_crb.name().substr(0,exportNameSize) + "-" + std::to_string(curpar);
+                                    e->add( exportName, u_crb );
                                 }
 
                                 double relative_error = -1;
@@ -1005,7 +1012,9 @@ public:
                                     if( export_solution )
                                     {
                                         LOG(INFO) << "export u_fem \n";
-                                        e->add( u_fem.name(), u_fem );
+                                        std::string exportName = u_fem.name().substr(0,exportNameSize) + "-" + std::to_string(curpar);
+                                        e->add( exportName, u_fem );
+
                                     }
 
                                     ti.restart();
@@ -1023,7 +1032,10 @@ public:
                                     u_error_str << "u_error(" << mu_str.str() << ")";
                                     u_error.setName( u_error_str.str()  );
                                     if( export_solution )
-                                        e->add( u_error.name(), u_error );
+                                        {
+                                            std::string exportName = u_error.name().substr(0,exportNameSize) + "-" + std::to_string(curpar);
+                                            e->add( exportName, u_error );
+                                        }
                                     LOG(INFO) << "L2(fem)=" << l2Norm( u_fem )    << "\n";
                                     LOG(INFO) << "H1(fem)=" << h1Norm( u_fem )    << "\n";
                                     l2_error = l2Norm( u_error )/l2Norm( u_fem );

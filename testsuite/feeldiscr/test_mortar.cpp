@@ -239,7 +239,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh, T, order_types )
 
 }
 #endif
-typedef boost::mpl::list<boost::mpl::int_<1>, boost::mpl::int_<2>, boost::mpl::int_<3>, boost::mpl::int_<4>, boost::mpl::int_<5>  > order_types;
+typedef boost::mpl::list<boost::mpl::int_<1>, boost::mpl::int_<2>, boost::mpl::int_<3>,
+                         boost::mpl::int_<4>, boost::mpl::int_<5>, boost::mpl::int_<10>  > order_types;
 //typedef boost::mpl::list<boost::mpl::int_<2>> order_types;
 
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
@@ -280,9 +281,9 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
 
     auto testmesh = createSubmesh(mesh, markedfaces(mesh,(boost::any)4),Environment::worldComm() );
     auto trialmesh = createSubmesh(mesh2, markedfaces(mesh2,(boost::any)2),Environment::worldComm() );
-    auto Xh = Pch<T::value>(testmesh);
-    auto Vh = Pch<T::value>(trialmesh);
-    auto Mh = Moch<T::value>(testmesh);
+    auto Xh = Pch<T::value,0,PointSetGaussLobatto>(testmesh);
+    auto Vh = Pch<T::value,0,PointSetGaussLobatto>(trialmesh);
+    auto Mh = Moch<T::value,PointSetGaussLobatto>(testmesh);
     //auto Mh = Xh;//Pch<T::value>(testmesh);
 
     BOOST_CHECK_MESSAGE(Mh->is_mortar == true, "Space should be mortar" ) ;
