@@ -23,4 +23,4 @@
 #
 set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
-feelpp_add_application(doc_drivencavity SRCS drivencavity_main.cpp drivencavity_2d.cpp drivencavity_3d.cpp LABEL doc GEO drivencavity_2d.geo drivencavity_3d.geo CFG drivencavity.cfg)
+feelpp_add_application(doc_drivencavity SRCS drivencavity_main.cpp drivencavity_2d.cpp drivencavity_3d.cpp LABELS doc GEO drivencavity_2d.geo drivencavity_3d.geo CFG drivencavity.cfg)

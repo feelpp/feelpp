@@ -78,9 +78,13 @@
 #include <feel/feelcore/pslogger.hpp>
 
 #if defined(FEELPP_HAS_HARTS)
+
 #include "hartsconfig.h"
 #include "HARTS.h"
 #if defined(HARTS_HAS_OPENCL)
+
+#define __CL_ENABLE_EXCEPTIONS
+
 #ifdef __APPLE__
 #include "OpenCL/cl.hpp"
 #else
@@ -88,12 +92,32 @@
 #endif
 
 #define OPENCL_CHECK_ERR( err, name ) do {                                                                          \
-   if( err != CL_SUCCESS ) {                                                                                        \
-       std::cerr << "OpenCL error (" << err << ") in file '" << __FILE__ << " in line " << __LINE__ << ": " << name << std::endl;    \
+   cl_int rerr = err;                                                                                                      \
+   if( rerr != CL_SUCCESS ) {                                                                                        \
+       std::cerr << "OpenCL error (" << std::hex << rerr << ") in file '" << __FILE__ << " in line " << __LINE__ << ": " << name << std::endl;    \
        exit(EXIT_FAILURE);                                                                                          \
    } } while (0)
 
 #include "feel/feelcrb/crb.cl.hpp"
+
+// declare that we want to use a custom context
+#define VIENNACL_WITH_OPENCL
+
+// ViennaCL includes
+//
+#include "viennacl/scalar.hpp"
+#include "viennacl/vector.hpp"
+#include "viennacl/compressed_matrix.hpp"
+#include "viennacl/coordinate_matrix.hpp"
+#include "viennacl/linalg/prod.hpp"
+#include "viennacl/linalg/ilu.hpp"
+#include "viennacl/linalg/jacobi_precond.hpp"
+#include "viennacl/linalg/cg.hpp"
+#include "viennacl/linalg/bicgstab.hpp"
+#include "viennacl/linalg/gmres.hpp"
+#include "viennacl/io/matrix_market.hpp"
+#include "viennacl/ocl/backend.hpp"
+
 #endif
 #endif
 
@@ -418,6 +442,13 @@ public:
         M_Cma_du( o.M_Cma_du ),
         M_Cmm_pr( o.M_Cmm_pr ),
         M_Cmm_du( o.M_Cmm_du ),
+        M_Cmf_pr_eim( o.M_Cmf_pr ),
+        M_Cmf_du_eim( o.M_Cmf_du ),
+        M_Cmf_du_ini_eim( o.M_Cmf_du_ini ),
+        M_Cma_pr_eim( o.M_Cma_pr ),
+        M_Cma_du_eim( o.M_Cma_du ),
+        M_Cmm_pr_eim( o.M_Cmm_pr ),
+        M_Cmm_du_eim( o.M_Cmm_du ),
         M_coeff_pr_ini_online( o.M_coeff_pr_ini_online ),
         M_coeff_du_ini_online( o.M_coeff_du_ini_online )
     {}
@@ -1283,6 +1314,13 @@ protected:
     std::vector< std::vector< std::vector< std::vector< matrixN_type > > > > M_Cma_du;
     std::vector< std::vector< std::vector< std::vector< matrixN_type > > > > M_Cmm_pr;
     std::vector< std::vector< std::vector< std::vector< matrixN_type > > > > M_Cmm_du;
+    std::vector< std::vector< vectorN_type > > M_Cmf_pr_eim;
+    std::vector< std::vector< vectorN_type > > M_Cmf_du_eim;
+    std::vector< std::vector< vectorN_type > > M_Cmf_du_ini_eim;
+    std::vector< std::vector< matrixN_type > > M_Cma_pr_eim;
+    std::vector< std::vector< matrixN_type > > M_Cma_du_eim;
+    std::vector< std::vector< matrixN_type > > M_Cmm_pr_eim;
+    std::vector< std::vector< matrixN_type > > M_Cmm_du_eim;
 
     //X( \mu_r ) in F.casnave's paper
     mutable std::vector< vectorN_type > M_primal_apee_basis;
@@ -3188,6 +3226,9 @@ CRB<TruthModelType>::offline()
             LOG(INFO)<<"[CRB::offline] end of call offlineResidual and M_N = "<< M_N <<"\n";
             if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
                 std::cout << "  -- offlineResidual updated in " << timer2.elapsed() << "s\n";
+            bool model_has_eim_error = M_model->hasEimError();
+            if( model_has_eim_error )
+                offlineResidualEim( M_N, number_of_added_elements );
             timer2.restart();
         }
 
@@ -4750,7 +4791,7 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
     // Check if there are several MPI processes on the same node
     // if so, check that there are enough GPUs or split them
 
-    cl::Context context(gpuList[devID],
+    cl::Context context(gpuList,
                         NULL,
                         NULL,
                         NULL,
@@ -4779,7 +4820,8 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
 
     cl::Event event;
 
-    std::cout << "N= " << N << std::endl;
+    std::cout << "Params: N=" << N << "; mu=" << mu << "; uN.size()=" << uN.size() << "; uNold.size()=" << uNold.size()
+              << "; output_vector.size()=" << output_vector.size() << "; K=" << K << "; print_rb_matrix=" << print_rb_matrix << std::endl;
     std::cout << "M_model->Qa(): " << M_model->Qa() << std::endl;
     std::cout << "M_model->Ql(0): " << M_model->Ql(0) << std::endl;
 
@@ -4831,10 +4873,10 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
 
     cl::Buffer A(context, CL_MEM_READ_WRITE, N * N * sizeof(double), NULL, &err);
     OPENCL_CHECK_ERR(err, "Could not allocate buffer");
-    queue.enqueueFillBuffer<double>(A, dzero, 0, N * N * sizeof(double), NULL, NULL);
+    //queue.enqueueFillBuffer<double>(A, dzero, 0, N * N * sizeof(double), NULL, NULL);
     cl::Buffer F(context, CL_MEM_READ_WRITE, N * sizeof(double), NULL, &err);
     OPENCL_CHECK_ERR(err, "Could not allocate buffer");
-    queue.enqueueFillBuffer<double>(F, dzero, 0, N * sizeof(double), NULL, NULL);
+    //queue.enqueueFillBuffer<double>(F, dzero, 0, N * sizeof(double), NULL, NULL);
 
 #if 0
     cl::Program::Sources source(1, std::make_pair(crb_kernels, strlen(crb_kernels)+1));
@@ -4848,7 +4890,7 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
 #endif
     cl::Program program(context, source, &err);
     OPENCL_CHECK_ERR(err, "Could not init program");
-    err = program.build();
+    err = program.build(gpuList);
     if(err != CL_SUCCESS)
     {
         cl_build_status status;
@@ -4860,49 +4902,140 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
     }
     OPENCL_CHECK_ERR(err, "Could not build kernel");
 
+    /* Scalar * Matrices */
+    int nM = M_model->Qa();
+    int nV = M_model->Ql(0);
+    int NN = N * N;
     cl::Kernel smk(program, "SVProd");
 
     smk.getWorkGroupInfo(gpuList[devID], CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, &devPWSM);
     std::cout << "Preferred work group size: " << devPWSM << std::endl;
 
-    err = smk.setArg(0, betaAq);
-    OPENCL_CHECK_ERR(err, "Could not add argument: betaFq");
-    err = smk.setArg(1, Aq);
-    OPENCL_CHECK_ERR(err, "Could not add argument: Fq");
-    err = smk.setArg(1, sizeof(int), (void *)(&N));
-    OPENCL_CHECK_ERR(err, "Could not add argument: N");
+    OPENCL_CHECK_ERR(smk.setArg(0, betaAq), "Could not add argument: betaAq");
+    OPENCL_CHECK_ERR(smk.setArg(1, Aq), "Could not add argument: Aq");
+    OPENCL_CHECK_ERR(smk.setArg(2, sizeof(int), (void *)(&NN)), "Could not add argument: NN");
 
     err = queue.enqueueNDRangeKernel(
             smk,
             cl::NullRange,
-            cl::NDRange(N),
+            cl::NDRange(nM),
             cl::NDRange(devPWSM),
             NULL,
             &event);
     OPENCL_CHECK_ERR(err, "Could not launch kernel");
     event.wait();
 
-    cl::Kernel svk(program, "SVProd");
+    /* Matrix sum */
+    cl::Kernel msum(program, "VSum");
 
-    smk.getWorkGroupInfo(gpuList[devID], CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, &devPWSM);
-    std::cout << "Preferred work group size: " << devPWSM << std::endl;
- 
-    err = svk.setArg(0, betaFq);
-    OPENCL_CHECK_ERR(err, "Could not add argument: betaFq");
-    err = svk.setArg(1, Fq);
-    OPENCL_CHECK_ERR(err, "Could not add argument: Fq");
-    err = svk.setArg(1, sizeof(int), (void *)(&N));
-    OPENCL_CHECK_ERR(err, "Could not add argument: N");
+    OPENCL_CHECK_ERR(msum.setArg(0, A), "Could not add argument: A");
+    OPENCL_CHECK_ERR(msum.setArg(1, Aq), "Could not add argument: Aq");
+    OPENCL_CHECK_ERR(msum.setArg(2, sizeof(int), (void *)(&NN)), "Could not add argument: NN");
+    OPENCL_CHECK_ERR(msum.setArg(3, sizeof(int), (void *)(&nM)), "Could not add argument: nM");
 
     err = queue.enqueueNDRangeKernel(
-            svk,
+            msum,
             cl::NullRange,
-            cl::NDRange(N),
-            cl::NDRange(1, 1),
+            cl::NDRange(1),
+            cl::NDRange(devPWSM),
             NULL,
             &event);
     OPENCL_CHECK_ERR(err, "Could not launch kernel");
     event.wait();
+
+    /* Scalar * Vector */
+    cl::Kernel svk(program, "SVProd");
+
+    OPENCL_CHECK_ERR(svk.setArg(0, betaFq), "Could not add argument: betaFq");
+    OPENCL_CHECK_ERR(svk.setArg(1, Fq), "Could not add argument: Fq");
+    OPENCL_CHECK_ERR(svk.setArg(2, sizeof(int), (void *)(&N)), "Could not add argument: N");
+
+    err = queue.enqueueNDRangeKernel(
+            svk,
+            cl::NullRange,
+            cl::NDRange(nV),
+            cl::NDRange(devPWSM),
+            NULL,
+            &event);
+    OPENCL_CHECK_ERR(err, "Could not launch kernel");
+    event.wait();
+
+    /* Vector Sum */
+    cl::Kernel vsum(program, "VSum");
+
+    OPENCL_CHECK_ERR(vsum.setArg(0, F), "Could not add argument: F");
+    OPENCL_CHECK_ERR(vsum.setArg(1, Fq), "Could not add argument: Fq");
+    OPENCL_CHECK_ERR(vsum.setArg(2, sizeof(int), (void *)(&N)), "Could not add argument: N");
+    OPENCL_CHECK_ERR(vsum.setArg(3, sizeof(int), (void *)(&nV)), "Could not add argument: nV");
+
+    err = queue.enqueueNDRangeKernel(
+            vsum,
+            cl::NullRange,
+            cl::NDRange(1),
+            cl::NDRange(devPWSM),
+            NULL,
+            &event);
+    OPENCL_CHECK_ERR(err, "Could not launch kernel");
+    event.wait();
+
+    /* setup ViennaCL with current context */
+    viennacl::ocl::setup_context(0, context(), gpuList[devID](), queue());
+
+    /* wrap existing data */
+    viennacl::vector<double> vclF(F(), N);
+    viennacl::matrix<double> vclA(A(), N, N);
+    viennacl::vector<double> vcl_result;
+    std::vector<double> cpures;
+
+    vcl_result = viennacl::linalg::solve(vclA, vclF, viennacl::linalg::cg_tag());
+
+    cpures.reserve(vcl_result.size());
+    viennacl::copy(vcl_result, cpures);
+
+    // uN is a vector of vectorN_type, aka eigen's VectorXd
+    for(int i = 0; i < vcl_result.size(); i++)
+    {
+        uN[time_index][i] = vcl_result[i];
+    }
+
+    // backup uN
+    //previous_uN = uN[time_index];
+
+    // fixedpointprimal code to merge
+#if 0
+    // solve for new fix point iteration
+    uN[time_index] = A.lu().solve( F );
+
+    if ( time_index<number_of_time_step-1 )
+        uNold[time_index+1] = uN[time_index];
+
+    L.setZero( N );
+    for ( size_type q = 0; q < M_model->Ql( M_output_index ); ++q )
+    {
+        for(int m=0; m < M_model->mMaxF(M_output_index,q); m++)
+        {
+            L += betaFqm[M_output_index][q][m]*M_Lqm_pr[q][m].head( N );
+        }
+    }
+    old_output = output;
+    output = L.dot( uN[time_index] );
+
+   if( is_linear )
+       previous_uN=uN[time_index];
+
+    increment = (uN[time_index]-previous_uN).norm();
+
+    //output_vector.push_back( output );
+    output_vector[time_index] = output;
+    DVLOG(2) << "iteration " << fi << " increment error: " << increment << "\n";
+    fi++;
+
+    if( fixedpoint_verbose  && this->worldComm().globalRank()==this->worldComm().masterRank() )
+        VLOG(2)<<"[CRB::fixedPointPrimal] fixedpoint iteration " << fi << " increment : " << increment <<std::endl;
+
+    double residual_norm = (A * uN[time_index] - F).norm() ;
+    VLOG(2) << " residual_norm :  "<<residual_norm;
+#endif
 
     double condition_number = 0;
     double determinant = 0;
@@ -5276,9 +5409,15 @@ CRB<TruthModelType>::delta( size_type N,
             {
                 if( model_has_eim_error )
                 {
-                    delta_pr = math::sqrt( primal_sum + primal_sum_eim ) /  alphaA ;
+                    double r = math::sqrt( primal_sum );
+                    double reim = math::sqrt( primal_sum_eim );
+                    delta_pr =  ( r + reim ) /  alphaA ;
                     if( solve_dual_problem )
-                        delta_du = math::sqrt( dual_sum + dual_sum_eim ) / alphaA;
+                    {
+                        double rdu = math::sqrt( dual_sum );
+                        double rdueim = math::sqrt( dual_sum_eim );
+                        delta_du =  ( rdu + rdueim ) / alphaA;
+                    }
                     else
                         delta_du = 1;
                     output_upper_bound[global_time_index] = alphaA * delta_pr * delta_du;
@@ -5937,12 +6076,12 @@ template<typename TruthModelType>
 typename CRB<TruthModelType>::residual_error_type
 CRB<TruthModelType>::steadyPrimalResidualEim( int Ncur,parameter_type const& mu, vectorN_type const& Un, double time) const
 {
-
     int __QLhs = M_model->Qa();
     int __QRhs = M_model->Ql( 0 );
     int __N = Ncur;
 
-    auto all_eim_interpolation_errors = M_model->eimInterpolationErrorEstimation( mu );
+    auto all_eim_interpolation_errors = M_model->eimInterpolationErrorEstimation( mu , Un );
+
     auto eim_interpolation_errors_A = all_eim_interpolation_errors.template get<1>() ;
     auto eim_interpolation_errors_F = all_eim_interpolation_errors.template get<2>() ;
 
@@ -5994,6 +6133,7 @@ CRB<TruthModelType>::steadyPrimalResidualEim( int Ncur,parameter_type const& mu,
                 interpolation_error_q2 = 0;
 
             __lambda_pr_eim += interpolation_error_q1*interpolation_error_q2 * M_Lambda_pr_eim[__q1][__q2].head( __N ).dot( Un );
+
         }//q2
         for ( int __q2 = 0; __q2 < __QLhs; ++__q2 )
         {
@@ -6005,6 +6145,7 @@ CRB<TruthModelType>::steadyPrimalResidualEim( int Ncur,parameter_type const& mu,
 
             auto m = M_Gamma_pr_eim[__q1][__q2].block( 0,0,__N,__N )*Un;
             __gamma_pr_eim += interpolation_error_q1*interpolation_error_q2 * Un.dot( m );
+
         }//q2
     }//q1
 
@@ -6254,7 +6395,7 @@ CRB<TruthModelType>::steadyDualResidualEim( int Ncur,parameter_type const& mu, v
     int __QOutput = M_model->Ql( M_output_index );
     int __N = Ncur;
 
-    auto all_eim_interpolation_errors = M_model->eimInterpolationErrorEstimation( mu );
+    auto all_eim_interpolation_errors = M_model->eimInterpolationErrorEstimation( mu , Un );
     auto eim_interpolation_errors_A = all_eim_interpolation_errors.template get<1>() ;
     auto eim_interpolation_errors_F = all_eim_interpolation_errors.template get<2>() ;
 
@@ -7319,7 +7460,9 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
     std::vector< std::vector<sparse_matrix_ptrtype> > Aqm,Mqm;
     std::vector< std::vector<vector_ptrtype> > MFqm;
     std::vector< std::vector<std::vector<vector_ptrtype> > > Fqm,Lqm;
+
     boost::tie( Mqm, Aqm, Fqm ) = M_model->computeAffineDecomposition();
+
     __X->zero();
     __X->add( 1.0 );
 
@@ -7327,7 +7470,6 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
     auto eim_interpolation_errors_A = all_eim_interpolation_errors.template get<1>() ;
     auto eim_interpolation_errors_F = all_eim_interpolation_errors.template get<2>() ;
 
-    std::map<int,double>::iterator it;
     auto endA = eim_interpolation_errors_A.end();
     auto endF = eim_interpolation_errors_F[0].end();
 
@@ -7341,11 +7483,13 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
             auto itq1 = eim_interpolation_errors_F[0].find(__q1);
             if( itq1 != endF )
             {
-                int Mmaxq1 = M_model->mMaxF(0,__q1)+1;
+                //remember that in C++ index begins at 0
+                //so to have max+1, we call [max]
+                int Mmaxq1 = M_model->mMaxF(0,__q1);
                 M_model->l2solve( __Z1, Fqm[0][__q1][Mmaxq1] );
                 for ( int __q2 = 0; __q2 < __QRhs; ++__q2 )
                 {
-                    int Mmaxq2 = M_model->mMaxF(0,__q2)+1;
+                    int Mmaxq2 = M_model->mMaxF(0,__q2);
                     auto itq2 = eim_interpolation_errors_F[0].find(__q2);
                     if( itq2 != endF )
                     {
@@ -7389,23 +7533,22 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
             auto itq1 = eim_interpolation_errors_A.find(__q1);
             if( itq1 != endA )
             {
-                int Mmaxq1 = M_model->mMaxA(__q1)+1;
+                int Mmaxq1 = M_model->mMaxA(__q1);
                 Aqm[__q1][Mmaxq1]->multVector(  __X, __W );
                 __W->scale( -1. );
                 M_model->l2solve( __Z1, __W );
                 for ( int __q2 = 0; __q2 < __QRhs; ++__q2 )
                 {
-                    int Mmaxq2 = M_model->mMaxF(0,__q2)+1;
+                    int Mmaxq2 = M_model->mMaxF(0,__q2);
                     auto itq2 = eim_interpolation_errors_F[0].find(__q2);
+                    M_Lambda_pr_eim[__q1][__q2].conservativeResize( __N );
                     if( itq2 != endF )
                     {
-                        M_Lambda_pr_eim[__q1][__q2].conservativeResize( __N );
                         M_model->l2solve( __Z2, Fqm[0][__q2][Mmaxq2] );
                         M_Lambda_pr_eim[ __q1][ __q2]( elem ) = 2.0*M_model->scalarProduct( __Z1, __Z2 );
                     }
                     else
                     {
-                        M_Lambda_pr_eim[__q1][__q2].conservativeResize( __N );
                         M_Lambda_pr_eim[ __q1][ __q2]( elem ) = 0;
                     }
                 }
@@ -7422,7 +7565,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
     }//elem
 
     if( Environment::worldComm().isMasterRank() )
-        std::cout << "     o Lambda_pr updated in " << ti.elapsed() << "s\n";
+        std::cout << "     o Lambda_pr_eim updated in " << ti.elapsed() << "s\n";
 
     ti.restart();
 
@@ -7434,7 +7577,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
             auto itq1 = eim_interpolation_errors_A.find(__q1);
             if( itq1 != endA )
             {
-                int Mmaxq1 = M_model->mMaxF(0,__q1)+1;
+                int Mmaxq1 = M_model->mMaxA(__q1);
                 Aqm[__q1][Mmaxq1]->multVector(  __X, __W );
                 __W->scale( -1. );
                 M_model->l2solve( __Z1, __W );
@@ -7446,12 +7589,12 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
                         auto itq2 = eim_interpolation_errors_A.find(__q2);
                         if( itq2 != endA )
                         {
-                            int Mmaxq2 = M_model->mMaxA(__q2)+1;
+                            int Mmaxq2 = M_model->mMaxA(__q2);
                             Aqm[__q2][Mmaxq2]->multVector(  __Y, __W );
                             M_Gamma_pr_eim[__q1][__q2].conservativeResize( __N, __N );
                             __W->scale( -1. );
                             M_model->l2solve( __Z2, __W );
-                            M_Gamma_pr[ __q1][ __q2]( elem,__l ) = M_model->scalarProduct( __Z1, __Z2 );
+                            M_Gamma_pr_eim[ __q1][ __q2]( elem,__l ) = M_model->scalarProduct( __Z1, __Z2 );
                         }
                         else
                         {
@@ -7483,7 +7626,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
             auto itq1 = eim_interpolation_errors_A.find(__q1);
             if( itq1 != endA )
             {
-                int Mmaxq1 = M_model->mMaxF(0,__q1)+1;
+                int Mmaxq1 = M_model->mMaxA(__q1);
                 Aqm[__q1][Mmaxq1]->multVector(  __X, __W );
                 __W->scale( -1. );
                 M_model->l2solve( __Z1, __W );
@@ -7499,7 +7642,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
                         auto itq2 = eim_interpolation_errors_A.find(__q2);
                         if( itq2 != endA )
                         {
-                            int Mmaxq2 = M_model->mMaxA(__q2)+1;
+                            int Mmaxq2 = M_model->mMaxA(__q2);
                             Aqm[__q2][Mmaxq2]->multVector(  __Y, __W );
                             __W->scale( -1. );
                             M_model->l2solve( __Z2, __W );
@@ -7526,7 +7669,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
     }// end of loop __j
 
     if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
-        std::cout << "     o Gamma_pr updated in " << ti.elapsed() << "s\n";
+        std::cout << "     o Gamma_pr_eim updated in " << ti.elapsed() << "s\n";
     sparse_matrix_ptrtype Atq1 = M_model->newMatrix();
     sparse_matrix_ptrtype Atq2 = M_model->newMatrix();
     ti.restart();
@@ -7549,7 +7692,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
                 auto itq1 = eim_interpolation_errors_F[M_output_index].find(__q1);
                 if( itq1 != endFo )
                 {
-                    int Mmaxq1 = M_model->mMaxF(M_output_index,__q1)+1;
+                    int Mmaxq1 = M_model->mMaxF(M_output_index,__q1);
                     *__Fdu = *Fqm[M_output_index][__q1][Mmaxq1];
                     __Fdu->close();
                     __Fdu->scale( -1.0 );
@@ -7559,7 +7702,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
                         auto itq2 = eim_interpolation_errors_F[M_output_index].find(__q2);
                         if( itq2 != endFo )
                         {
-                            int Mmaxq2 = M_model->mMaxF(M_output_index,__q2)+1;
+                            int Mmaxq2 = M_model->mMaxF(M_output_index,__q2);
                             *__Fdu = *Fqm[M_output_index][__q2][Mmaxq2];
                             __Fdu->close();
                             __Fdu->scale( -1.0 );
@@ -7597,7 +7740,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
                 auto itq1 = eim_interpolation_errors_A.find(__q1);
                 if( itq1 != endA )
                 {
-                    int Mmaxq1 = M_model->mMaxA(__q1)+1;
+                    int Mmaxq1 = M_model->mMaxA(__q1);
                     if( option("crb.use-symmetric-matrix").template as<bool>() )
                         Atq1 = Aqm[__q1][Mmaxq1];
                     else
@@ -7612,7 +7755,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
                         auto itq2 = eim_interpolation_errors_F[M_output_index].find(__q2);
                         if( itq2 != endFo )
                         {
-                            int Mmaxq2 = M_model->mMaxF(M_output_index,__q2)+1;
+                            int Mmaxq2 = M_model->mMaxF(M_output_index,__q2);
                             *__Fdu = *Fqm[M_output_index][__q2][Mmaxq2];
                             __Fdu->scale( -1.0 );
                             M_model->l2solve( __Z2, __Fdu );
@@ -7628,7 +7771,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
                 {
                     for ( int __q2 = 0; __q2 < __QOutput; ++__q2 )
                     {
-                        M_Lambda_du[__q1][__q2].conservativeResize( __N );
+                        M_Lambda_du_eim[__q1][__q2].conservativeResize( __N );
                         M_Lambda_du_eim[__q1][__q2]( elem ) = 0;
                     }
                 }
@@ -7636,7 +7779,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
         }//elem
 
         if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
-            std::cout << "     o Lambda_du updated in " << ti.elapsed() << "s\n";
+            std::cout << "     o Lambda_du_eim updated in " << ti.elapsed() << "s\n";
         ti.restart();
 
         for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
@@ -7649,7 +7792,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
                 auto itq1 = eim_interpolation_errors_A.find(__q1);
                 if( itq1 != endA )
                 {
-                    int Mmaxq1 = M_model->mMaxA(__q1)+1;
+                    int Mmaxq1 = M_model->mMaxA(__q1);
 
                     if( option("crb.use-symmetric-matrix").template as<bool>() )
                         Atq1=Aqm[__q1][Mmaxq1];
@@ -7670,7 +7813,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
                             auto itq2 = eim_interpolation_errors_A.find(__q2);
                             if( itq2 != endA )
                             {
-                                int Mmaxq2 = M_model->mMaxA(__q2)+1;
+                                int Mmaxq2 = M_model->mMaxA(__q2);
                                 if( option("crb.use-symmetric-matrix").template as<bool>() )
                                     Atq2 = Aqm[__q2][Mmaxq2];
                                 else
@@ -7713,7 +7856,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
                 auto itq1 = eim_interpolation_errors_A.find(__q1);
                 if( itq1 != endA )
                 {
-                    int Mmaxq1 = M_model->mMaxA(__q1)+1;
+                    int Mmaxq1 = M_model->mMaxA(__q1);
 
                     if( option("crb.use-symmetric-matrix").template as<bool>() )
                         Atq1=Aqm[__q1][Mmaxq1];
@@ -7733,7 +7876,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
                             auto itq2 = eim_interpolation_errors_A.find(__q2);
                             if( itq2 != endA )
                             {
-                                int Mmaxq2 = M_model->mMaxA(__q2)+1;
+                                int Mmaxq2 = M_model->mMaxA(__q2);
 
                                 if( option("crb.use-symmetric-matrix").template as<bool>() )
                                     Atq2 = Aqm[__q2][Mmaxq2];
@@ -8917,6 +9060,27 @@ CRB<TruthModelType>::save( Archive & ar, const unsigned int version ) const
 
     ar & BOOST_SERIALIZATION_NVP( M_model_executed_in_steady_mode );
 
+    if( version > 0 )
+    {
+        ar & BOOST_SERIALIZATION_NVP( M_C0_pr_eim );
+        ar & BOOST_SERIALIZATION_NVP( M_C0_du_eim );
+        ar & BOOST_SERIALIZATION_NVP( M_Lambda_pr_eim );
+        ar & BOOST_SERIALIZATION_NVP( M_Lambda_du_eim );
+        ar & BOOST_SERIALIZATION_NVP( M_Gamma_pr_eim );
+        ar & BOOST_SERIALIZATION_NVP( M_Gamma_du_eim );
+
+        if ( model_type::is_time_dependent )
+        {
+            ar & BOOST_SERIALIZATION_NVP( M_Cmf_pr_eim );
+            ar & BOOST_SERIALIZATION_NVP( M_Cma_pr_eim );
+            ar & BOOST_SERIALIZATION_NVP( M_Cmm_pr_eim );
+            ar & BOOST_SERIALIZATION_NVP( M_Cmf_du_eim );
+            ar & BOOST_SERIALIZATION_NVP( M_Cmf_du_ini_eim );
+            ar & BOOST_SERIALIZATION_NVP( M_Cma_du_eim );
+            ar & BOOST_SERIALIZATION_NVP( M_Cmm_du_eim );
+        }
+
+    }
 
 #if 0
         for(int i=0; i<M_N; i++)
@@ -9059,6 +9223,30 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
             std::cout<<"[CRB::loadDB] WARNING in the database used, the model was executed in steady mode but now you want to execute it in transient mode. make sure that --crb.rebuild-database=true"<<std::endl;
         LOG( INFO ) <<"[CRB::loadDB] WARNING in the database used, the model was executed in steady mode but now you want to execute it in transient mode. make sure that --crb.rebuild-database=true";
     }
+
+    //For version == 0 there was no error estimation on EIM
+    if( version > 0 )
+    {
+        ar & BOOST_SERIALIZATION_NVP( M_C0_pr_eim );
+        ar & BOOST_SERIALIZATION_NVP( M_C0_du_eim );
+        ar & BOOST_SERIALIZATION_NVP( M_Lambda_pr_eim );
+        ar & BOOST_SERIALIZATION_NVP( M_Lambda_du_eim );
+        ar & BOOST_SERIALIZATION_NVP( M_Gamma_pr_eim );
+        ar & BOOST_SERIALIZATION_NVP( M_Gamma_du_eim );
+
+        if ( model_type::is_time_dependent )
+        {
+            ar & BOOST_SERIALIZATION_NVP( M_Cmf_pr_eim );
+            ar & BOOST_SERIALIZATION_NVP( M_Cma_pr_eim );
+            ar & BOOST_SERIALIZATION_NVP( M_Cmm_pr_eim );
+            ar & BOOST_SERIALIZATION_NVP( M_Cmf_du_eim );
+            ar & BOOST_SERIALIZATION_NVP( M_Cmf_du_ini_eim );
+            ar & BOOST_SERIALIZATION_NVP( M_Cma_du_eim );
+            ar & BOOST_SERIALIZATION_NVP( M_Cmm_du_eim );
+        }
+
+    }// version > 0 => EIM error estimation
+
 #if 0
     std::cout << "[loadDB] output index : " << M_output_index << "\n"
               << "[loadDB] N : " << M_N << "\n"
@@ -9187,10 +9375,10 @@ namespace serialization
 template< typename T>
 struct version< Feel::CRB<T> >
 {
-    // at the moment the version of the CRB DB is 0. if any changes is done
+    // at the moment the version of the CRB DB is 1. if any changes is done
     // to the format it is mandatory to increase the version number below
     // and use the new version number of identify the new entries in the DB
-    typedef mpl::int_<0> type;
+    typedef mpl::int_<1> type;
     typedef mpl::integral_c_tag tag;
     static const unsigned int value = version::type::value;
 };

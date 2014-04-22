@@ -324,6 +324,8 @@ public:
         if ( M_is_initialized )
             return;
 
+        M_has_eim=false;
+
         M_preconditioner_primal = preconditioner(_pc=(PreconditionerType) M_backend_primal->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
                                                  _backend= M_backend_primal,
                                                  _pcfactormatsolverpackage=(MatSolverPackageType) M_backend_primal->matSolverPackageEnumType(),// mumps if is installed ( by defaut )
@@ -503,6 +505,11 @@ public:
         return M_Qa;
     }
 
+    int QLinearDecompositionA() const
+    {
+        return M_QLinearDecompositionA;
+    }
+
     //! return the number of \f$\mu\f$ independent terms for the bilinear form ( time dependent )
     //int Qm() const { return 1; }//return M_model->Qm(); }
 
@@ -557,6 +564,11 @@ public:
     int mMaxM( int q , mpl::bool_<false> )
     {
         return 1;
+    }
+
+    int mMaxLinearDecompositionA( int q ) const
+    {
+        return M_mMaxLinearDecompositionA[q];
     }
 
     int mMaxInitialGuess( int q ) const
@@ -982,31 +994,119 @@ public:
 
         if ( M_Aqm.size() > 0 )
         {
-            M_Qm=M_Mqm.size();
-            M_mMaxM.resize(M_Qm);
-            for(int q=0; q<M_Qm; q++)
+            if ( this->hasEimError() )
             {
-                M_mMaxM[q]=M_Mqm[q].size();
-            }
+                
+                M_has_eim=true;
+                //when using EIM we need to be careful
+                //if we want to estimate the error then there
+                //is an "extra" basis fuction.
+                auto all_errors = eimInterpolationErrorEstimation();
+                auto errorsM = all_errors.template get<0>();
+                auto errorsA = all_errors.template get<1>();
+                auto errorsF = all_errors.template get<2>();
+                std::map<int,double>::iterator it;
+                auto endA = errorsA.end();
+                auto endM = errorsM.end();
 
-            M_Qa=M_Aqm.size();
-            M_mMaxA.resize(M_Qa);
-            for(int q=0; q<M_Qa; q++)
-            {
-                M_mMaxA[q]=M_Aqm[q].size();
-            }
-
-            M_Nl=M_Fqm.size();
-            M_Ql.resize(M_Nl);
-            M_mMaxF.resize(M_Nl);
-            for(int output=0; output<M_Nl; output++)
-            {
-                M_Ql[output]=M_Fqm[output].size();
-                M_mMaxF[output].resize(M_Ql[output]);
-                for(int q=0; q<M_Ql[output]; q++)
+                M_Qm=M_Mqm.size();
+                M_mMaxM.resize(M_Qm);
+                for(int q=0; q<M_Qm; q++)
                 {
-                    M_mMaxF[output][q]=M_Fqm[output][q].size();
+                    auto itq = errorsM.find(q);
+                    if( itq != endM) //found
+                    {
+                        //we have an eim error estimation
+                        M_mMaxM[q]=M_Mqm[q].size()-1;
+                    }
+                    else //not found
+                    {
+                        M_mMaxM[q]=M_Mqm[q].size();
+                    }
                 }
+
+                M_Qa=M_Aqm.size();
+                M_mMaxA.resize(M_Qa);
+                for(int q=0; q<M_Qa; q++)
+                {
+                    auto itq = errorsA.find(q);
+                    if( itq != endA ) //found
+                    {
+                        //we have an eim error estimation
+                        M_mMaxA[q]=M_Aqm[q].size()-1;
+                    }
+                    else //not found
+                    {
+                        M_mMaxA[q]=M_Aqm[q].size();
+                    }
+                }
+
+                M_Nl=M_Fqm.size();
+                M_Ql.resize(M_Nl);
+                M_mMaxF.resize(M_Nl);
+                for(int output=0; output<M_Nl; output++)
+                {
+                    M_Ql[output]=M_Fqm[output].size();
+                    M_mMaxF[output].resize(M_Ql[output]);
+                    auto endF = errorsF[output].end();
+                    for(int q=0; q<M_Ql[output]; q++)
+                    {
+                        auto itq = errorsF[output].find(q);
+                        if( itq != endF ) //found
+                        {
+                            //we have an eim error estimation
+                            M_mMaxF[output][q]=M_Fqm[output][q].size()-1;
+                        }
+                        else //not found
+                        {
+                            M_mMaxF[output][q]=M_Fqm[output][q].size();
+                        }
+                    }
+
+                    M_linearAqm = M_model->computeLinearDecompositionA();
+                    M_QLinearDecompositionA = M_linearAqm.size();
+                    M_mMaxLinearDecompositionA.resize( M_QLinearDecompositionA );
+                    for(int q=0; q<M_QLinearDecompositionA; q++)
+                    {
+                        M_mMaxLinearDecompositionA[q] = M_linearAqm[q].size();
+                    }
+                }
+            }//EIM error
+            else
+            {
+                M_Qm=M_Mqm.size();
+                M_mMaxM.resize(M_Qm);
+                for(int q=0; q<M_Qm; q++)
+                {
+                    M_mMaxM[q]=M_Mqm[q].size();
+                    if( M_mMaxM[q] > 1 )
+                        M_has_eim=true;
+                }
+
+                M_Qa=M_Aqm.size();
+                M_mMaxA.resize(M_Qa);
+                for(int q=0; q<M_Qa; q++)
+                {
+                    M_mMaxA[q]=M_Aqm[q].size();
+                    if( M_mMaxA[q] > 1 )
+                        M_has_eim=true;
+                }
+
+                M_Nl=M_Fqm.size();
+                M_Ql.resize(M_Nl);
+                M_mMaxF.resize(M_Nl);
+                for(int output=0; output<M_Nl; output++)
+                {
+                    M_Ql[output]=M_Fqm[output].size();
+                    M_mMaxF[output].resize(M_Ql[output]);
+                    for(int q=0; q<M_Ql[output]; q++)
+                    {
+                        M_mMaxF[output][q]=M_Fqm[output][q].size();
+                        if( M_mMaxF[output][q] > 1 )
+                            M_has_eim=true;
+                    }
+                }
+
             }
         }
         else
@@ -1034,6 +1134,7 @@ public:
             }//light version
             else
             {
+                M_has_eim=true;
                 auto compositeM = operatorCompositeM();
                 M_mMaxM = compositeM->countAllContributions();
                 M_Qm=M_mMaxM.size();
@@ -1249,28 +1350,66 @@ public:
         return b;
     }
 
+    /*
+     * return true if the model use EIM
+     */
+    bool hasEim()
+    {
+        return M_has_eim;
+    }
 
-    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu )
+    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , vectorN_type const& uN )
     {
-        return eimInterpolationErrorEstimation( mu, mpl::bool_<model_type::is_time_dependent>() );
+        return eimInterpolationErrorEstimation( mu, uN, mpl::bool_<model_type::is_time_dependent>() );
     }
-    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , mpl::bool_<true> )
+    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , vectorN_type const& uN, mpl::bool_<true> )
     {
-        return M_model->eimInterpolationErrorEstimation( mu );
+        return M_model->eimInterpolationErrorEstimation( mu , uN );
     }
-    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , mpl::bool_<false> )
+    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , vectorN_type const& uN, mpl::bool_<false> )
     {
         std::map< int, double > errorsM;
         std::map< int, double > errorsA;
         std::vector< std::map< int, double > > errorsF;
-        boost::tie(  errorsA , errorsF ) = M_model->eimInterpolationErrorEstimation( mu );
+        boost::tie(  errorsA , errorsF ) = M_model->eimInterpolationErrorEstimation( mu ,uN );
         return boost::make_tuple( errorsM, errorsA, errorsF );
     }
-    eim_interpolation_error_type eimInterpolationErrorEstimation()
+
+    eim_interpolation_error_type eimInterpolationErrorEstimation( )
     {
-        auto Dmu = M_model->parameterSpace();
-        auto muref = Dmu->min();
-        return eimInterpolationErrorEstimation( muref );
+        return eimInterpolationErrorEstimation( mpl::bool_<model_type::is_time_dependent>() );
+    }
+    eim_interpolation_error_type eimInterpolationErrorEstimation( mpl::bool_<true> )
+    {
+        return M_model->eimInterpolationErrorEstimation( );
+    }
+    eim_interpolation_error_type eimInterpolationErrorEstimation( mpl::bool_<false> )
+    {
+        std::map< int, double > errorsM;
+        std::map< int, double > errorsA;
+        std::vector< std::map< int, double > > errorsF;
+        boost::tie(  errorsA , errorsF ) = M_model->eimInterpolationErrorEstimation( );
+        return boost::make_tuple( errorsM, errorsA, errorsF );
+    }
+
+
+
+    /**
+     * \brief compute the linear part of the affine decomposition of a()
+     * it is needed to compute the norm of the error for nonlinear models using EIM
+     */
+    std::vector< std::vector<sparse_matrix_ptrtype> > computeLinearDecompositionA()
+    {
+        return M_model->computeLinearDecompositionA();
+    }
+
+    /**
+     * \brief compute beta coefficients associetd to the linear part of the affine decomposition of a()
+     * it is needed to compute the norm of the error for nonlinear models using EIM
+     */
+    beta_vector_type computeBetaLinearDecompositionA ( parameter_type const& mu ,  double time=0 )
+    {
+        return M_model->computeBetaLinearDecompositionA( mu , time );
     }
 
     /**
@@ -1304,6 +1443,7 @@ public:
             auto tuple=boost::make_tuple(Mq,Aq,Fq);
             this->extendAffineDecomposition( tuple );
         }
+
         this->countAffineDecompositionTerms();
 
         if( M_Aqm.size() == 0 )
@@ -1729,6 +1869,31 @@ public:
         return M_InitialGuessVector[q][m];
     }
 
+
+
+    /**
+     * \brief the inner product \f$linear a_{qm}(\xi_i, \xi_j) = \xi_j^T LinearA_{qm} \xi_i\f$
+     *
+     * \param q and m index of the component in the affine decomposition
+     * \param xi_i an element of the function space
+     * \param xi_j an element of the function space
+     * \param transpose transpose \c LinearA_{qm}
+     *
+     * \return the inner product \f$linear a_qm(\xi_i, \xi_j) = \xi_j^T LinearA_{qm} \xi_i\f$
+     */
+    value_type linearDecompositionAqm( uint16_type q, uint16_type m, element_type const& xi_i, element_type const& xi_j, bool transpose = false ) const
+    {
+        bool stock = option(_name="crb.stock-matrices").template as<bool>();
+        if( stock )
+        {
+            //in this case matrices have already been stocked
+            return M_linearAqm[q][m]->energy( xi_j, xi_i, transpose );
+        }
+        CHECK( stock )<<" This check is here because nothing is done to deal with linear decomposition of a (model using EIM) when using "
+                      <<" operators free and option crb.stock-matrices=false.\nFor now we suppose that crb.stock-matrices=true.\n "
+                      <<" So make sure that all developments have been done to deal with crb.stock-matrices=false before delete this CHECK.\n";
+        return 0;
+    }
 
     /**
      * \brief the inner product \f$a_{qm}(\xi_i, \xi_j) = \xi_j^T A_{qm} \xi_i\f$
@@ -2231,6 +2396,8 @@ protected:
     //! affine decomposition terms for the left hand side
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Aqm;
 
+    std::vector< std::vector<sparse_matrix_ptrtype> > M_linearAqm;
+
     mutable std::vector< std::vector<element_ptrtype> > M_InitialGuessV;
     mutable std::vector< std::vector<vector_ptrtype> > M_InitialGuessVector;
 
@@ -2248,7 +2415,6 @@ protected:
     model_ptrtype M_model;
 
 private:
-
     bool M_is_initialized;
 
     //! variables_map
@@ -2295,9 +2461,11 @@ private:
     int M_Qa; //A
     int M_Qm; //M
     int M_Nl; //number of outputs
+    int M_QLinearDecompositionA;
     std::vector<int> M_Ql;//F associated to given output
     std::vector<int> M_mMaxA;//number of sub-terms (using EIM)
     std::vector<int> M_mMaxM;//number of sub-terms (using EIM)
+    std::vector<int> M_mMaxLinearDecompositionA;
     std::vector< std::vector<int> > M_mMaxF;//number of sub-terms (using EIM)
 
     bool M_alreadyCountAffineDecompositionTerms;
@@ -2305,6 +2473,9 @@ private:
     sparse_matrix_ptrtype M_inner_product_matrix;
 
     bdf_ptrtype M_bdf;
+
+    bool M_has_eim;
+
 };
 
 

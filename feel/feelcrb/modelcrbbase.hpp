@@ -309,17 +309,45 @@ public :
 
     virtual void initModel() = 0;
 
-    virtual eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu )
+    virtual eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , vectorN_type const& uN )
     {
-        return eimInterpolationErrorEstimation( mu, mpl::bool_<is_time_dependent>() );
+        return eimInterpolationErrorEstimation( mu, uN,  mpl::bool_<is_time_dependent>() );
     }
-    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , mpl::bool_<true> )
+    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , vectorN_type const& uN , mpl::bool_<true> )
     {
         return boost::make_tuple( M_eim_error_mq , M_eim_error_aq, M_eim_error_fq);
     }
-    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , mpl::bool_<false> )
+    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , vectorN_type const& uN , mpl::bool_<false> )
     {
         return boost::make_tuple( M_eim_error_aq, M_eim_error_fq);
+    }
+
+    virtual eim_interpolation_error_type eimInterpolationErrorEstimation( )
+    {
+        return eimInterpolationErrorEstimation( mpl::bool_<is_time_dependent>() );
+    }
+    eim_interpolation_error_type eimInterpolationErrorEstimation( mpl::bool_<true> )
+    {
+        return boost::make_tuple( M_eim_error_mq , M_eim_error_aq, M_eim_error_fq);
+    }
+    eim_interpolation_error_type eimInterpolationErrorEstimation( mpl::bool_<false> )
+    {
+        return boost::make_tuple( M_eim_error_aq, M_eim_error_fq);
+    }
+
+
+    virtual std::vector< std::vector<sparse_matrix_ptrtype> > computeLinearDecompositionA()
+    {
+        if( M_Aqm.size() == 0 && Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<"************************************************************************"<<std::endl;
+            std::cout<<"** It seems that you are using operators free and you don't have      **"<<std::endl;
+            std::cout<<"** implemented computeLinearDecompositionA() to have a linear         **"<<std::endl;
+            std::cout<<"** decomposition of the bilinear form.                                **"<<std::endl;
+            std::cout<<"** It will be used to compute norm of the error during CRB convergence**"<<std::endl;
+            std::cout<<"************************************************************************"<<std::endl;
+        }
+        return M_Aqm;
     }
 
     /*
@@ -398,6 +426,20 @@ public :
         return boost::make_tuple( M_monoA , M_monoF );
     }
 
+    virtual beta_vector_type computeBetaLinearDecompositionA( parameter_type const& mu ,  double time=0 )
+    {
+        return computeBetaLinearDecompositionA( mu, mpl::bool_< is_time_dependent >(), time );
+    }
+    beta_vector_type computeBetaLinearDecompositionA( parameter_type const& mu, mpl::bool_<true>, double time=0 )
+    {
+        auto tuple = computeBetaQm( mu , time );
+        return tuple.template get<1>();
+    }
+    beta_vector_type computeBetaLinearDecompositionA( parameter_type const& mu, mpl::bool_<false>, double time=0 )
+    {
+        auto tuple = computeBetaQm( mu , time );
+        return tuple.template get<0>();
+    }
 
     virtual betaq_type computeBetaQ( parameter_type const& mu ,  double time=0 )
     {
