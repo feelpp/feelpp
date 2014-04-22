@@ -86,9 +86,12 @@
 #define __CL_ENABLE_EXCEPTIONS
 
 #ifdef __APPLE__
-#include "OpenCL/cl.hpp"
+// cl.hpp is not included on OS X, have to rely on a custom cl.hpp file
+// provided by viennacl
+//#include <OpenCL/cl.hpp>
+#include "cl.hpp"
 #else
-#include "CL/cl.hpp"
+#include <CL/cl.hpp>
 #endif
 
 #define OPENCL_CHECK_ERR( err, name ) do {                                                                          \
