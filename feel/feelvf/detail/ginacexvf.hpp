@@ -65,6 +65,7 @@ public:
     typedef GiNaC::ex ginac_expression_type;
     typedef GinacExVF<ExprT> this_type;
     typedef double value_type;
+    typedef value_type evaluate_type;
 
     typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> vec_type;
 
