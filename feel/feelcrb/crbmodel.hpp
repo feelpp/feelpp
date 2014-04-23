@@ -817,6 +817,7 @@ public:
     }
 
     element_type solveFemMonolithicFormulation( parameter_type const& mu );
+    element_type solveFemDualMonolithicFormulation( parameter_type const& mu );
     element_type solveFemUsingAffineDecompositionFixedPoint( parameter_type const& mu );
     element_type solveFemDualUsingAffineDecompositionFixedPoint( parameter_type const& mu );
     element_type solveFemUsingOfflineEim( parameter_type const& mu );
@@ -3185,6 +3186,103 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
         mybdf->shiftRight(u);
     }
     return u;
+}
+
+template<typename TruthModelType>
+typename CRBModel<TruthModelType>::element_type
+CRBModel<TruthModelType>::solveFemDualMonolithicFormulation( parameter_type const& mu )
+{
+    int output_index = option(_name="crb.output-index").template as<int>();
+
+    auto Xh= this->functionSpace();
+
+    bdf_ptrtype mybdf;
+    mybdf = bdf( _space=Xh, _vm=this->vm() , _name="mybdf" );
+    sparse_matrix_ptrtype A,Adu;
+    sparse_matrix_ptrtype M;
+    std::vector<vector_ptrtype> F;
+    vector_ptrtype Rhs( M_backend->newVector( Xh ) );
+    element_ptrtype InitialGuess = Xh->elementPtr();
+    auto dual_initial_field = Xh->elementPtr();
+
+    auto udu = Xh->element();
+
+    double time_initial;
+    double time_step;
+    double time_final;
+
+    if ( this->isSteady() )
+    {
+        time_initial=0;
+        time_step = 1e30;
+        time_final = 1e30;
+        // !!
+        //some stuff needs to be done here
+        //to deal with non linear problems
+        //and have an initial guess
+        // !!
+    }
+    else
+    {
+        time_initial=this->timeFinal()+this->timeStep();
+        time_step=-this->timeStep();
+        time_final=this->timeInitial()+this->timeStep();
+    }
+
+    mybdf->setTimeInitial( time_initial );
+    mybdf->setTimeStep( time_step );
+    mybdf->setTimeFinal( time_final );
+
+    double bdf_coeff ;
+    auto vec_bdf_poly = M_backend->newVector( Xh );
+
+    if ( this->isSteady() )
+        udu.zero() ;
+    else
+    {
+        boost::tie(M, A, F) = this->computeMonolithicFormulation( mu );
+        *Rhs=*F[output_index];
+        M_preconditioner_dual->setMatrix( M );
+        M_backend_dual->solve( _matrix=M, _solution=dual_initial_field, _rhs=Rhs, _prec=M_preconditioner_dual );
+        udu=*dual_initial_field;
+    }
+
+    for( mybdf->start(*InitialGuess); !mybdf->isFinished(); mybdf->next() )
+    {
+        bdf_coeff = mybdf->polyDerivCoefficient( 0 );
+        auto bdf_poly = mybdf->polyDeriv();
+        *vec_bdf_poly = bdf_poly;
+
+        boost::tie(M, A, F) = this->computeMonolithicFormulation( mu );
+
+        if( ! isSteady() )
+        {
+            A->addMatrix( bdf_coeff, M );
+            Rhs->zero();
+            *vec_bdf_poly = bdf_poly;
+            Rhs->addVector( *vec_bdf_poly, *M );
+        }
+        else
+        {
+            *Rhs = *F[output_index];
+            Rhs->close();
+            Rhs->scale( -1 );
+        }
+
+        if( option("crb.use-symmetric-matrix").template as<bool>() )
+            Adu = A;
+        else
+            A->transpose( Adu );
+
+        M_preconditioner_dual->setMatrix( Adu );
+
+        M_backend_dual->solve( _matrix=Adu , _solution=udu, _rhs=Rhs , _prec=M_preconditioner_dual);
+
+        mybdf->shiftRight(udu);
+    }
+
+    return udu;
+
 }
 
 template<typename TruthModelType>
