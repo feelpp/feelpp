@@ -101,7 +101,7 @@
        exit(EXIT_FAILURE);                                                                                          \
    } } while (0)
 
-#include "feel/feelcrb/crb.cl.hpp"
+//#include "feel/feelcrb/crb.cl.hpp"
 
 // declare that we want to use a custom context
 #define VIENNACL_WITH_OPENCL
