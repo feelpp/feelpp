@@ -209,13 +209,6 @@ GraphCSR::GraphCSR( vf::BlocksBase<self_ptrtype> const & blockSet,
         start_i += blockSet(i,0)->mapRow().nLocalDofWithoutGhost( myrank );
     }
 
-
-    /*this->worldComm().barrier();
-    M_mapRow.showMeMapGlobalProcessToGlobalCluster();
-    M_mapCol.showMeMapGlobalProcessToGlobalCluster();
-    this->worldComm().barrier();*/
-
-
     //M_mapCol=M_mapRow;
     //M_mapCol.setMapGlobalClusterToGlobalProcess(M_mapRow.mapGlobalClusterToGlobalProcess());
     //M_mapCol.setMapGlobalProcessToGlobalCluster(M_mapRow.mapGlobalProcessToGlobalCluster());
@@ -425,6 +418,23 @@ GraphCSR::updateDataMap( vf::BlocksBase<self_ptrtype> const & blockSet )
         nLocalDofStartCol += mapColOnBlock.nLocalDofWithGhost( myrank );
         start_jj += mapColOnBlock.nLocalDofWithoutGhost( myrank );
     }
+
+    // index split ( only do for row )
+    bool computeIndexSplit = true;
+    if ( computeIndexSplit )
+    {
+        //const uint16_type nRow = blockgraph.nRow();
+        boost::shared_ptr<IndexSplit> indexSplit( new IndexSplit() );
+        const size_type firstDofGC = this->mapRow().firstDofGlobalCluster();
+        for ( uint16_type i=0; i<nRow; ++i )
+        {
+            indexSplit->addSplit( firstDofGC, blockSet(i,0)->mapRow().indexSplit() );
+        }
+        //indexSplit->showMe();
+        this->mapRowPtr()->setIndexSplit( indexSplit );
+    }
+
+
 
 }
 
