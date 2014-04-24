@@ -4797,7 +4797,7 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
     }
 
     gpuList[devID].getInfo(CL_DEVICE_NAME, &dname);
-    std::cout << "Using device 0: " << dname << std::endl;
+    //std::cout << "Using device 0: " << dname << std::endl;
 
     // TODO
     // Check if there are several MPI processes on the same node
@@ -4832,17 +4832,21 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
 
     cl::Event event;
 
+    /*
     std::cout << "Params: N=" << N << "; mu=" << mu << "; uN.size()=" << uN.size() << "; uNold.size()=" << uNold.size()
               << "; output_vector.size()=" << output_vector.size() << "; K=" << K << "; print_rb_matrix=" << print_rb_matrix << std::endl;
     std::cout << "M_model->Qa(): " << M_model->Qa() << std::endl;
     std::cout << "M_model->Ql(0): " << M_model->Ql(0) << std::endl;
+    */
 
     gpuList[devID].getInfo(CL_DEVICE_LOCAL_MEM_SIZE, &devLMS);
-    std::cout << "Local Mem Size: " << devLMS << std::endl;
+    //std::cout << "Local Mem Size: " << devLMS << std::endl;
 
     gpuList[devID].getInfo(CL_DEVICE_DOUBLE_FP_CONFIG, &fpConfig);
+    /*
     std::cout << "Double support: "
               << (fpConfig >= (CL_FP_FMA | CL_FP_ROUND_TO_NEAREST | CL_FP_ROUND_TO_ZERO | CL_FP_ROUND_TO_INF | CL_FP_INF_NAN | CL_FP_DENORM) ? "OK" : "KO") << std::endl;
+    */
 
     /* create buffers on the GPU */
     /* we add one more matrix to store results */
@@ -4921,7 +4925,7 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
     cl::Kernel smk(program, "SVProd");
 
     smk.getWorkGroupInfo(gpuList[devID], CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, &devPWSM);
-    std::cout << "Preferred work group size: " << devPWSM << std::endl;
+    //std::cout << "Preferred work group size: " << devPWSM << std::endl;
 
     OPENCL_CHECK_ERR(smk.setArg(0, betaAq), "Could not add argument: betaAq");
     OPENCL_CHECK_ERR(smk.setArg(1, Aq), "Could not add argument: Aq");
@@ -5090,10 +5094,57 @@ CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::ve
         }
     }
 
+    matrix_info_tuple matrix_info;
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
-    auto matrix_info = fixedPointPrimalCL( N, mu , uN , uNold, output_vector, K , print_rb_matrix) ;
-#else
-    auto matrix_info = fixedPointPrimal( N, mu , uN , uNold, output_vector, K , print_rb_matrix) ;
+    if(option(_name="parallel.gpu.enable").template as<bool>())
+    {
+        matrix_info = fixedPointPrimalCL( N, mu , uN , uNold, output_vector, K , print_rb_matrix) ;
+
+        if(option(_name="parallel.debug").template as<int>())
+        {
+            std::ofstream ofs("./out.gpu.dump", std::ofstream::out | std::ofstream::app);
+
+            if(uN[0].size())
+            {
+                ofs << uN[0][0];
+                for(int i = 1; i < uN[0].size(); i++)
+                {
+                    ofs << ";" << uN[0][i];
+                }
+            }
+            else
+            {
+                std::cout << ";;";
+            }
+            ofs << std::endl;
+            ofs.close();
+        }
+    }
+    else
+    {
+#endif
+    matrix_info = fixedPointPrimal( N, mu , uN , uNold, output_vector, K , print_rb_matrix) ;
+#if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
+        if(option(_name="parallel.debug").template as<int>())
+        {
+            std::ofstream ofs("./out.cpu.dump", std::ofstream::out | std::ofstream::app);
+
+            if(uN[0].size())
+            {
+                ofs << uN[0][0];
+                for(int i = 1; i < uN[0].size(); i++)
+                {
+                    ofs << ";" << uN[0][i];
+                }
+            }
+            else
+            {
+                std::cout << ";;";
+            }
+            ofs << std::endl;
+            ofs.close();
+        }
+    }
 #endif
 
 

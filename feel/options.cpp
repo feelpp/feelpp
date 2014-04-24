@@ -214,6 +214,7 @@ parallel_options( std::string const& prefix )
         ( prefixvm( prefix,"parallel.cpu.impl" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "Specify the implementation for multithreading" )
         ( prefixvm( prefix,"parallel.cpu.restrict" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "Restrict the multithreading to N additional cores per MPI process (0: guess the maximum number of usable cores)" )
         ( prefixvm( prefix,"parallel.gpu.enable" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Enable the use of GPU for parallelization" )
+        ( prefixvm( prefix,"parallel.debug" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "Enable debugging for parallelization" )
         ;
     return _options;
 }
