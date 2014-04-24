@@ -4753,6 +4753,8 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
     cl_double dzero = 0.0;
     std::vector< cl::Platform > platformList;
     std::vector< cl::Device > deviceList;
+    std::vector< cl::Device > allList;
+    std::vector< cl::Device > cpuList;
     std::vector< cl::Device > gpuList;
 
     LOG( INFO ) << "[CRB::fixedPointPrimalCL] Checking for OpenCL support\n";
@@ -4769,19 +4771,40 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
         std::string platformVendor, platformName;
         platformList[k].getInfo((cl_platform_info)CL_PLATFORM_VENDOR, &platformVendor);
         platformList[k].getInfo((cl_platform_info)CL_PLATFORM_NAME, &platformName);
-        std::cout << "Platform " << k << " (" << platformName << ") is by: " << platformVendor << "\n";
+        //std::cout << "Platform " << k << " (" << platformName << ") is by: " << platformVendor << "\n";
 
-        platformList[k].getDevices(CL_DEVICE_TYPE_GPU, &deviceList);
-        gpuList.insert(gpuList.end(), deviceList.begin(), deviceList.end());
-        deviceList.clear();
+        try {
+            platformList[k].getDevices(CL_DEVICE_TYPE_ALL, &deviceList);
+            allList.insert(allList.end(), deviceList.begin(), deviceList.end());
+            deviceList.clear();
+
+            platformList[k].getDevices(CL_DEVICE_TYPE_CPU, &deviceList);
+            cpuList.insert(cpuList.end(), deviceList.begin(), deviceList.end());
+            deviceList.clear();
+
+            platformList[k].getDevices(CL_DEVICE_TYPE_GPU, &deviceList);
+            gpuList.insert(gpuList.end(), deviceList.begin(), deviceList.end());
+            deviceList.clear();
+        }
+        catch(cl::Error error) {
+            std::cout << error.what() << "(" << error.err() << ")" << std::endl;
+        }
     }
+    
+    std::cout << "All=" << allList.size() << " CPU=" << cpuList.size() << " GPU=" << gpuList.size() << std::endl;
 
     /* Check for device availability */
     cl_bool devAvail = false; 
     std::string dname;
     for(devID = 0; devID < gpuList.size(); devID++)
     {
-        gpuList[devID].getInfo(CL_DEVICE_AVAILABLE, &devAvail);
+        try {
+            gpuList[devID].getInfo(CL_DEVICE_AVAILABLE, &devAvail);
+        }
+        catch(cl::Error error) {
+            std::cout << error.what() << "(" << error.err() << ")" << std::endl;
+        }
+
         if(devAvail)
         {
             break;
@@ -4793,7 +4816,7 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
     if(gpuList.size() == 0 || !devAvail)
     {
         LOG( INFO ) << "[CRB::fixedPointPrimalCL] Reverting to classic implementation\n";
-        fixedPointPrimal(N, mu, uN, uNold, output_vector, K, print_rb_matrix);
+        return fixedPointPrimal(N, mu, uN, uNold, output_vector, K, print_rb_matrix);
     }
 
     gpuList[devID].getInfo(CL_DEVICE_NAME, &dname);
