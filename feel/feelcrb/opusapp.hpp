@@ -24,6 +24,8 @@
 /**
    \file opusapp.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+   \author Cecile Daversin <daversin@math.unistra.fr>
+   \author Stephane Veys
    \date 2011-06-18
  */
 #ifndef __OpusApp_H

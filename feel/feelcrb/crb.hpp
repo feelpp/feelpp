@@ -24,6 +24,9 @@
 /**
    \file crb.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+   \author Alexandre Ancel <alexandre.ancel@cemosis.fr>
+   \author Cecile Daversin <daversin@math.unistra.fr>
+   \author Stephane Veys
    \date 2009-11-24
  */
 #ifndef __CRB_H
