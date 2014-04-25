@@ -24,6 +24,8 @@
 /**
    \file eim.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+   \author Cecile Daversin <daversin@math.unistra.fr>
+   \author Stephane Veys
    \date 2012-05-02
  */
 #ifndef _FEELPP_EIM_HPP

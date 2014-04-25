@@ -1058,7 +1058,7 @@ public:
         {
             DVLOG(2) << "[Mesh::Localization] create Localization tool\n";
             int optNbNeighbor = option( _name=(boost::format("mesh%1%d.localisation.nelt-in-leaf-kdtree") % nDim).str() ).template as<int>();
-            int usedNbNeighbor = ( optNbNeighbor < 0 )? self_type::element_type::numPoints : optNbNeighbor;
+            int usedNbNeighbor = ( optNbNeighbor < 0 )? 2*self_type::element_type::numPoints : optNbNeighbor;
             M_kd_tree->nbNearNeighbor( usedNbNeighbor );
 
             M_resultAnalysis.clear();
@@ -1077,7 +1077,7 @@ public:
                 this->init();
 
             int optNbNeighbor = option( _name=(boost::format("mesh%1%d.localisation.nelt-in-leaf-kdtree") % nDim).str() ).template as<int>();
-            int usedNbNeighbor = ( optNbNeighbor < 0 )? self_type::element_type::numPoints : optNbNeighbor;
+            int usedNbNeighbor = ( optNbNeighbor < 0 )? 2*self_type::element_type::numPoints : optNbNeighbor;
             M_kd_tree->nbNearNeighbor( usedNbNeighbor );
 
             M_resultAnalysis.clear();

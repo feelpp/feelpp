@@ -161,6 +161,9 @@ MatrixBlockBase<T>::MatrixBlockBase( vf::BlocksBase<graph_ptrtype> const & block
 
     M_mat->zero();
 
+    M_mat->setIndexSplit( graph->mapRow().indexSplit() );
+
+#if 0
     bool computeIndexSplit = true;
     if ( computeIndexSplit )
     {
@@ -204,6 +207,7 @@ MatrixBlockBase<T>::MatrixBlockBase( vf::BlocksBase<graph_ptrtype> const & block
         // update
         M_mat->setIndexSplit( indexSplit );
     }
+#endif
 
 }
 
