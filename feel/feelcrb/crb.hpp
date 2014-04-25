@@ -24,6 +24,9 @@
 /**
    \file crb.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+   \author Alexandre Ancel <alexandre.ancel@cemosis.fr>
+   \author Cecile Daversin <daversin@math.unistra.fr>
+   \author Stephane Veys
    \date 2009-11-24
  */
 #ifndef __CRB_H
@@ -86,9 +89,12 @@
 #define __CL_ENABLE_EXCEPTIONS
 
 #ifdef __APPLE__
-#include "OpenCL/cl.hpp"
+// cl.hpp is not included on OS X, have to rely on a custom cl.hpp file
+// provided by viennacl
+//#include <OpenCL/cl.hpp>
+#include "cl.hpp"
 #else
-#include "CL/cl.hpp"
+#include <CL/cl.hpp>
 #endif
 
 #define OPENCL_CHECK_ERR( err, name ) do {                                                                          \
@@ -98,7 +104,7 @@
        exit(EXIT_FAILURE);                                                                                          \
    } } while (0)
 
-#include "feel/feelcrb/crb.cl.hpp"
+//#include "feel/feelcrb/crb.cl.hpp"
 
 // declare that we want to use a custom context
 #define VIENNACL_WITH_OPENCL
@@ -1485,6 +1491,7 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
     }
 
     auto uold = M_model->functionSpace()->element();
+    auto bdf_poly = M_model->functionSpace()->element();
 
     element_ptrtype uproj( new element_type( M_model->functionSpace() ) );
 
@@ -1497,9 +1504,11 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
           M_bdf_primal->next() , M_bdf_primal_save->next() )
     {
 
-        bdf_coeff = M_bdf_primal->polyDerivCoefficient( 0 );
-
-        auto bdf_poly = M_bdf_primal->polyDeriv();
+        if ( ! M_model->isSteady() )
+        {
+            bdf_coeff = M_bdf_primal->polyDerivCoefficient( 0 );
+            bdf_poly = M_bdf_primal->polyDeriv();
+        }
 
         do
         {
@@ -1695,6 +1704,7 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
     }
 
     auto uold = M_model->functionSpace()->element();
+    auto bdf_poly = M_model->functionSpace()->element();
 
     element_ptrtype uproj( new element_type( M_model->functionSpace() ) );
 
@@ -1704,9 +1714,11 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
           M_bdf_dual->next() , M_bdf_dual_save->next() )
     {
 
-        bdf_coeff = M_bdf_dual->polyDerivCoefficient( 0 );
-
-        auto bdf_poly = M_bdf_dual->polyDeriv();
+        if ( ! M_model->isSteady() )
+        {
+            bdf_coeff = M_bdf_dual->polyDerivCoefficient( 0 );
+            bdf_poly = M_bdf_dual->polyDeriv();
+        }
 
         do
         {
@@ -4741,6 +4753,8 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
     cl_double dzero = 0.0;
     std::vector< cl::Platform > platformList;
     std::vector< cl::Device > deviceList;
+    std::vector< cl::Device > allList;
+    std::vector< cl::Device > cpuList;
     std::vector< cl::Device > gpuList;
 
     LOG( INFO ) << "[CRB::fixedPointPrimalCL] Checking for OpenCL support\n";
@@ -4757,19 +4771,40 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
         std::string platformVendor, platformName;
         platformList[k].getInfo((cl_platform_info)CL_PLATFORM_VENDOR, &platformVendor);
         platformList[k].getInfo((cl_platform_info)CL_PLATFORM_NAME, &platformName);
-        std::cout << "Platform " << k << " (" << platformName << ") is by: " << platformVendor << "\n";
+        //std::cout << "Platform " << k << " (" << platformName << ") is by: " << platformVendor << "\n";
 
-        platformList[k].getDevices(CL_DEVICE_TYPE_GPU, &deviceList);
-        gpuList.insert(gpuList.end(), deviceList.begin(), deviceList.end());
-        deviceList.clear();
+        try {
+            platformList[k].getDevices(CL_DEVICE_TYPE_ALL, &deviceList);
+            allList.insert(allList.end(), deviceList.begin(), deviceList.end());
+            deviceList.clear();
+
+            platformList[k].getDevices(CL_DEVICE_TYPE_CPU, &deviceList);
+            cpuList.insert(cpuList.end(), deviceList.begin(), deviceList.end());
+            deviceList.clear();
+
+            platformList[k].getDevices(CL_DEVICE_TYPE_GPU, &deviceList);
+            gpuList.insert(gpuList.end(), deviceList.begin(), deviceList.end());
+            deviceList.clear();
+        }
+        catch(cl::Error error) {
+            std::cout << error.what() << "(" << error.err() << ")" << std::endl;
+        }
     }
+    
+    std::cout << "All=" << allList.size() << " CPU=" << cpuList.size() << " GPU=" << gpuList.size() << std::endl;
 
     /* Check for device availability */
     cl_bool devAvail = false; 
     std::string dname;
     for(devID = 0; devID < gpuList.size(); devID++)
     {
-        gpuList[devID].getInfo(CL_DEVICE_AVAILABLE, &devAvail);
+        try {
+            gpuList[devID].getInfo(CL_DEVICE_AVAILABLE, &devAvail);
+        }
+        catch(cl::Error error) {
+            std::cout << error.what() << "(" << error.err() << ")" << std::endl;
+        }
+
         if(devAvail)
         {
             break;
@@ -4781,11 +4816,11 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
     if(gpuList.size() == 0 || !devAvail)
     {
         LOG( INFO ) << "[CRB::fixedPointPrimalCL] Reverting to classic implementation\n";
-        fixedPointPrimal(N, mu, uN, uNold, output_vector, K, print_rb_matrix);
+        return fixedPointPrimal(N, mu, uN, uNold, output_vector, K, print_rb_matrix);
     }
 
     gpuList[devID].getInfo(CL_DEVICE_NAME, &dname);
-    std::cout << "Using device 0: " << dname << std::endl;
+    //std::cout << "Using device 0: " << dname << std::endl;
 
     // TODO
     // Check if there are several MPI processes on the same node
@@ -4820,17 +4855,21 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
 
     cl::Event event;
 
+    /*
     std::cout << "Params: N=" << N << "; mu=" << mu << "; uN.size()=" << uN.size() << "; uNold.size()=" << uNold.size()
               << "; output_vector.size()=" << output_vector.size() << "; K=" << K << "; print_rb_matrix=" << print_rb_matrix << std::endl;
     std::cout << "M_model->Qa(): " << M_model->Qa() << std::endl;
     std::cout << "M_model->Ql(0): " << M_model->Ql(0) << std::endl;
+    */
 
     gpuList[devID].getInfo(CL_DEVICE_LOCAL_MEM_SIZE, &devLMS);
-    std::cout << "Local Mem Size: " << devLMS << std::endl;
+    //std::cout << "Local Mem Size: " << devLMS << std::endl;
 
     gpuList[devID].getInfo(CL_DEVICE_DOUBLE_FP_CONFIG, &fpConfig);
+    /*
     std::cout << "Double support: "
               << (fpConfig >= (CL_FP_FMA | CL_FP_ROUND_TO_NEAREST | CL_FP_ROUND_TO_ZERO | CL_FP_ROUND_TO_INF | CL_FP_INF_NAN | CL_FP_DENORM) ? "OK" : "KO") << std::endl;
+    */
 
     /* create buffers on the GPU */
     /* we add one more matrix to store results */
@@ -4909,7 +4948,7 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
     cl::Kernel smk(program, "SVProd");
 
     smk.getWorkGroupInfo(gpuList[devID], CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, &devPWSM);
-    std::cout << "Preferred work group size: " << devPWSM << std::endl;
+    //std::cout << "Preferred work group size: " << devPWSM << std::endl;
 
     OPENCL_CHECK_ERR(smk.setArg(0, betaAq), "Could not add argument: betaAq");
     OPENCL_CHECK_ERR(smk.setArg(1, Aq), "Could not add argument: Aq");
@@ -5078,10 +5117,57 @@ CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::ve
         }
     }
 
+    matrix_info_tuple matrix_info;
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
-    auto matrix_info = fixedPointPrimalCL( N, mu , uN , uNold, output_vector, K , print_rb_matrix) ;
-#else
-    auto matrix_info = fixedPointPrimal( N, mu , uN , uNold, output_vector, K , print_rb_matrix) ;
+    if(option(_name="parallel.gpu.enable").template as<bool>())
+    {
+        matrix_info = fixedPointPrimalCL( N, mu , uN , uNold, output_vector, K , print_rb_matrix) ;
+
+        if(option(_name="parallel.debug").template as<int>())
+        {
+            std::ofstream ofs("./out.gpu.dump", std::ofstream::out | std::ofstream::app);
+
+            if(uN[0].size())
+            {
+                ofs << uN[0][0];
+                for(int i = 1; i < uN[0].size(); i++)
+                {
+                    ofs << ";" << uN[0][i];
+                }
+            }
+            else
+            {
+                std::cout << ";;";
+            }
+            ofs << std::endl;
+            ofs.close();
+        }
+    }
+    else
+    {
+#endif
+    matrix_info = fixedPointPrimal( N, mu , uN , uNold, output_vector, K , print_rb_matrix) ;
+#if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
+        if(option(_name="parallel.debug").template as<int>())
+        {
+            std::ofstream ofs("./out.cpu.dump", std::ofstream::out | std::ofstream::app);
+
+            if(uN[0].size())
+            {
+                ofs << uN[0][0];
+                for(int i = 1; i < uN[0].size(); i++)
+                {
+                    ofs << ";" << uN[0][i];
+                }
+            }
+            else
+            {
+                std::cout << ";;";
+            }
+            ofs << std::endl;
+            ofs.close();
+        }
+    }
 #endif
 
 
