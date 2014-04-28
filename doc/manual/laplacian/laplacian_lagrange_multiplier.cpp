@@ -45,8 +45,8 @@ int main(int argc, char**argv )
     typedef FunctionSpace<Mesh<Simplex<2> >, bases<Lagrange<1, Scalar>, Lagrange<0, Scalar> > > space_type;
     auto X1 = Pch<1>(mesh);
     auto X2 = Pch<0,1>(mesh);
-    //auto Vh = space_type::NewFromList( X1, X2 );
-    auto Vh = product( X1, X2 );
+    auto Vh = space_type::NewFromList( X1, X2 );
+    //auto Vh = product( X1, X2 );
     //BOOST_MPL_ASSERT_MSG( (boost::is_same<space_type, decltype(*Vh)>::value),
     //INVALID_SPACE,
     //(space_type, decltype(*Vh)));
