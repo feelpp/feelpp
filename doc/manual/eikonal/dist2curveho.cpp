@@ -47,11 +47,14 @@ int main( int argc, char** argv )
   // mesh and high order space
   auto mesh = unitHypercube<dim>();
   auto Xh = Pch<order>(mesh);
-  
+
   // operator lagrange P1 and associated space
   auto opLagP1 = lagrangeP1( Xh );
   auto XhP1 = Pch<1>( opLagP1->mesh() );
 
+	std::cout << "nDof for Xh   = " << Xh->nDof() << std::endl;
+	std::cout << "nDof for XhP1 = " << XhP1->nDof() << std::endl;
+  
   // interpolation operator
   auto opIntHoToP1 = opInterpolation(_domainSpace = Xh, _imageSpace = XhP1, _type=InterpolationNonConforme(false) );
   auto opIntP1ToHo = opInterpolation(_domainSpace = XhP1, _imageSpace = Xh, _type=InterpolationNonConforme(false) );
