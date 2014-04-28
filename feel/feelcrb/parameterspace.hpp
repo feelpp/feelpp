@@ -66,7 +66,7 @@ public:
 
     //! dimension of the parameter space
     static const uint16_type Dimension = P;
-
+    static const uint16_type ParameterSpaceDimension = P;
     //@}
 
     /** @name Typedefs

@@ -30,5 +30,9 @@ crb_add_executable(heat1dscm heat1dscm.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CF
 #add_subdirectory(python)
 #add_subdirectory(octave)
 
-crb_add_model(heat1d Heat1D HDRS heat1d.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG heat1d.cfg XML heat1d.xml SCRIPTS heat1d.m)
+crb_add_model(heat1d Heat1D HDRS heat1d.hpp
+  LINK_LIBRARIES ${FEELPP_LIBRARIES}
+  CFG heat1d.cfg XML heat1d.xml
+  GEO heat1d.geo
+  SCRIPTS heat1d.m)
 #crb_add_python_module( heat1dcrb opusheat1dcrb_wrapper.cpp LINK_LIBRARIES feel++_crb_models SCRIPTS heat1d.py )

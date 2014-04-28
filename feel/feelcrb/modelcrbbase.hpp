@@ -31,12 +31,29 @@
 
 #include <feel/feel.hpp>
 #include <feel/feelcrb/eim.hpp>
-
+#include <feel/feelcrb/parameterspace.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/reducedbasisspace.hpp>
+#include <feel/feelvf/vf.hpp>
 //#include<boost/tokenizer.hpp>
 #include<boost/regex.hpp>
 namespace Feel
 {
 
+enum {
+    /** TimeIndependent */
+    TimeIndependent=0,
+    /** TimeDependent */
+    TimeDependent = 0x1,
+    /**  */
+    Linear = 0,
+    /**  */
+    NonLinear = 0x2,
+    /** Coercive PDE */
+    Coercive = 0,
+    /** Inf-Sup PDE */
+    InfSup = 0x4
+};
 
 
 class ParameterDefinitionBase
@@ -68,7 +85,10 @@ class EimDefinitionBase
 
 public :
     typedef typename ParameterDefinition::parameterspace_type parameterspace_type;
-    typedef typename FunctionSpaceDefinition::space_type space_type;
+    typedef typename mpl::if_<is_shared_ptr<FunctionSpaceDefinition>,
+                              mpl::identity<typename FunctionSpaceDefinition::element_type>,
+                              mpl::identity<FunctionSpaceDefinition>>::type::type::space_type space_type;
+    //typedef typename FunctionSpaceDefinition::space_type space_type;
 
     /* EIM */
     typedef EIMFunctionBase<space_type , space_type  , parameterspace_type > fun_type ;
@@ -78,8 +98,13 @@ public :
 
 
 
-template <typename ParameterDefinition=ParameterDefinitionBase, typename FunctionSpaceDefinition=FunctionSpaceDefinitionBase, typename EimDefinition = EimDefinitionBase<ParameterDefinition,FunctionSpaceDefinition> >
-class ModelCrbBase : public ModelCrbBaseBase
+template <typename ParameterDefinition=ParameterDefinitionBase,
+          typename FunctionSpaceDefinition=FunctionSpaceDefinitionBase,
+          typename EimDefinition = EimDefinitionBase<ParameterDefinition,FunctionSpaceDefinition>,
+          int _Options = 0>
+class ModelCrbBase :
+        public ModelCrbBaseBase,
+        public boost::enable_shared_from_this< ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition,EimDefinition,_Options> >
 {
 
 public :
@@ -89,14 +114,32 @@ public :
     typedef typename EimDefinition::fund_type fund_type;
 
     typedef typename ParameterDefinition::parameterspace_type parameterspace_type;
+    typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
     typedef typename parameterspace_type::element_type parameter_type;
 
-    typedef typename FunctionSpaceDefinition::space_type space_type;
+    typedef typename mpl::if_<is_shared_ptr<FunctionSpaceDefinition>,
+                              mpl::identity<typename FunctionSpaceDefinition::element_type>,
+                              mpl::identity<FunctionSpaceDefinition>>::type::type::space_type space_type;
     typedef space_type functionspace_type;
     typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
+    typedef functionspace_ptrtype space_ptrtype;
+
+    typedef typename functionspace_type::mesh_type mesh_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef typename functionspace_type::basis_type basis_type;
+    typedef typename functionspace_type::value_type value_type;
 
     typedef typename space_type::element_type element_type;
     typedef boost::shared_ptr<element_type> element_ptrtype;
+
+    /*reduced basis space*/
+    typedef ReducedBasisSpace<self_type, mesh_type, basis_type, value_type> rbfunctionspace_type;
+    typedef boost::shared_ptr< rbfunctionspace_type > rbfunctionspace_ptrtype;
+
+    /*backend*/
+    typedef Backend<value_type> backend_type;
+    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+
 
     typedef boost::shared_ptr<fun_type> fun_ptrtype;
     typedef std::vector<fun_ptrtype> funs_type;
@@ -118,25 +161,32 @@ public :
     typedef FsFunctionalLinear< space_type > functional_type;
     typedef boost::shared_ptr<functional_type> functional_ptrtype;
 
-    typedef backend_type::vector_type vector_type;
-    typedef backend_type::vector_ptrtype vector_ptrtype;
 
-    typedef backend_type::sparse_matrix_type sparse_matrix_type;
-    typedef backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
+    typedef typename backend_type::vector_type vector_type;
+    typedef typename backend_type::vector_ptrtype vector_ptrtype;
+
+    typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
+    typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
 
     static const uint16_type ParameterSpaceDimension = ParameterDefinition::ParameterSpaceDimension ;
 
     typedef std::vector< std::vector< double > > beta_vector_type;
     typedef std::vector< double > beta_vector_light_type;
 
+    typedef vf::detail::BilinearForm<functionspace_type, functionspace_type,VectorUblas<value_type>> form2_type;
+    typedef vf::detail::LinearForm<functionspace_type,vector_type,vector_type> form1_type;
 
+#if 0
     static const bool is_time_dependent = FunctionSpaceDefinition::is_time_dependent;
     static const bool is_linear = FunctionSpaceDefinition::is_linear;
+#else
+    static const bool is_time_dependent = ((_Options&TimeDependent)==TimeDependent);
+    static const bool is_linear = ((_Options&Linear)==Linear);
+#endif
+    static const int Options = _Options;
 
-    typedef double value_type;
 
-    typedef typename FunctionSpaceDefinition::mesh_type mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+
 
 
     typedef typename mpl::if_< mpl::bool_< is_time_dependent >,
@@ -218,13 +268,18 @@ public :
 
     ModelCrbBase()
         :
+        Dmu( new parameterspace_type ),
         M_is_initialized( false )
     {
     }
 
 
 
-
+    void addLhs( boost::tuple< form2_type, std::string > const & tuple )
+        {
+            M_Aq.push_back( tuple.template get<0>().matrixPtr() );
+            M_betaAqString.push_back( tuple.template get<1>() );
+        }
     /*
      * return the left hand side terms from the affine decomposition
      * that is to say bilinear forms Aq and beta coefficients associated
@@ -239,10 +294,35 @@ public :
      * return the terms from the affine decomposition linked to the mass matrix
      * that is to say bilinear forms Mq and beta coefficients associated
      */
+    void addMass( boost::tuple< form2_type , std::string > const & tuple )
+    {
+        M_Mq.push_back( tuple.template get<0>().matrixPtr() );
+        M_betaMqString.push_back( tuple.template get<1>() );
+    }
+
+    /*
+     * return the terms from the affine decomposition linked to the mass matrix
+     * that is to say bilinear forms Mq and beta coefficients associated
+     */
     void addMass( boost::tuple< sparse_matrix_ptrtype , std::string > const & tuple )
     {
         M_Mq.push_back( tuple.template get<0>() );
         M_betaMqString.push_back( tuple.template get<1>() );
+    }
+
+    /*
+     * return the right hand side terms from the affine decomposition
+     * that is to say linear forms Fq[0] and beta coefficients associated
+     */
+    void addRhs( boost::tuple<  form1_type , std::string > const & tuple )
+    {
+        if( M_Fq.size() == 0 )
+        {
+            M_Fq.resize(2);
+            M_betaFqString.resize(2);
+        }
+        M_Fq[0].push_back( tuple.template get<0>().vectorPtr() );
+        M_betaFqString[0].push_back( tuple.template get<1>() );
     }
 
     /*
@@ -264,6 +344,22 @@ public :
      * return the terms from the affine decomposition linked to output
      * that is to say linear forms and beta coefficients associated
      */
+    void addOutput( boost::tuple<  form1_type , std::string > const & tuple )
+    {
+        int size = M_Fq.size();
+        if( size == 0 )
+        {
+            //there is no rhs or output yet
+            M_Fq.resize(2);
+            M_betaFqString.resize(2);
+        }
+        M_Fq[1].push_back( tuple.template get<0>().vectorPtr() );
+        M_betaFqString[1].push_back( tuple.template get<1>() );
+    }
+    /*
+     * return the terms from the affine decomposition linked to output
+     * that is to say linear forms and beta coefficients associated
+     */
     void addOutput( boost::tuple<  vector_ptrtype , std::string > const & tuple )
     {
         int size = M_Fq.size();
@@ -277,11 +373,19 @@ public :
         M_betaFqString[1].push_back( tuple.template get<1>() );
     }
 
+    void addEnergyMatrix( form2_type const & f )
+    {
+        M_energy_matrix = f.matrixPtr() ;
+    }
     void addEnergyMatrix( sparse_matrix_ptrtype const & matrix )
     {
         M_energy_matrix = matrix ;
     }
 
+    void addMassMatrix( form2_type const & f )
+    {
+        M_mass_matrix = f.matrixPtr() ;
+    }
     void addMassMatrix( sparse_matrix_ptrtype const & matrix )
     {
         M_mass_matrix = matrix ;
@@ -1177,7 +1281,50 @@ public :
         }
     }
 
+public:
+
+    /**
+     * Set the finite element space to \p Vh and then build the reduced basis
+     * space from the finite element space.
+     */
+    void setFunctionSpaces( functionspace_ptrtype Vh );
+
+    /**
+     * \brief Returns the function space
+     */
+    mesh_ptrtype mesh()
+    {
+        return Xh->mesh();
+    }
+    /**
+     * \brief Returns the function space
+     */
+    space_ptrtype functionSpace()
+    {
+        return Xh;
+    }
+
+    /**
+     * \brief Returns the reduced basis function space
+     */
+    rbfunctionspace_ptrtype rBFunctionSpace()
+    {
+        return XN;
+    }
+
+
+    //! return the parameter space
+    parameterspace_ptrtype parameterSpace() const
+    {
+        return Dmu;
+    }
+
+    parameterspace_ptrtype Dmu;
+    functionspace_ptrtype Xh;
+    rbfunctionspace_ptrtype XN;
+
 protected :
+
 
     funs_type M_funs;
     funsd_type M_funs_d;
@@ -1228,6 +1375,19 @@ protected :
     std::map<int,double> M_eim_error_aq;
     std::vector< std::map<int,double> > M_eim_error_fq;
 };
+template <typename ParameterDefinition,
+          typename FunctionSpaceDefinition,
+          typename EimDefinition,
+          int _Options>
+void
+ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition,EimDefinition,_Options>::setFunctionSpaces( functionspace_ptrtype Vh )
+{
+    Xh = Vh;
+    XN = rbfunctionspace_type::New( _model=this->shared_from_this() , _mesh=Xh->mesh() );
+}
+
+
+
 
 }//Feel
 #endif /* __Model_H */

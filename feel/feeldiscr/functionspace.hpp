@@ -1528,6 +1528,7 @@ public:
 
 
     typedef FunctionSpace<A0,A1,A2,A3,A4> functionspace_type;
+    typedef functionspace_type space_type;
     typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
     typedef boost::shared_ptr<functionspace_type> pointer_type;
 

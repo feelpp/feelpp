@@ -234,7 +234,7 @@ public:
         M_InitialGuessVector(),
         M_Mqm(),
         M_Fqm(),
-        M_model( new model_type( vm ) ),
+        M_model( new model_type ),
         M_is_initialized( false ),
         M_vm( vm ),
         M_mode( mode ),
@@ -3177,7 +3177,7 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
             uold = u;
             M_preconditioner_primal->setMatrix( A );
             M_backend_primal->solve( _matrix=A , _solution=u, _rhs=Rhs , _prec=M_preconditioner_primal);
-            if( option(_name="crb.use-linear-model").template as<bool>() )
+            if( is_linear )
                 norm = 0;
             else
                 norm = this->computeNormL2( uold , u );
