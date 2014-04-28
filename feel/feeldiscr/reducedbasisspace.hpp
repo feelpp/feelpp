@@ -48,7 +48,7 @@ namespace Feel
 
 
 typedef parameter::parameters<
-    parameter::required<tag::model_type, boost::is_base_and_derived<ModelCrbBase<>,_> >
+    parameter::required<tag::model_type, boost::is_base_and_derived<ModelCrbBaseBase,_> >
     , parameter::required<tag::mesh_type, boost::is_base_and_derived<MeshBase,_> >
     , parameter::optional<parameter::deduced<tag::bases_list>, boost::is_base_and_derived<Feel::detail::bases_base,_> >
     , parameter::optional<parameter::deduced<tag::value_type>, boost::is_floating_point<_> >
