@@ -52,8 +52,8 @@ int main( int argc, char** argv )
   auto opLagP1 = lagrangeP1( Xh );
   auto XhP1 = Pch<1>( opLagP1->mesh() );
 
-	std::cout << "nDof for Xh   = " << Xh->nDof() << std::endl;
-	std::cout << "nDof for XhP1 = " << XhP1->nDof() << std::endl;
+	LOG(INFO) << "nDof for Xh   = " << Xh->nDof()   << "\n";
+	LOG(INFO) << "nDof for XhP1 = " << XhP1->nDof() << "\n";
   
   // interpolation operator
   auto opIntHoToP1 = opInterpolation(_domainSpace = Xh, _imageSpace = XhP1, _type=InterpolationNonConforme(false) );
