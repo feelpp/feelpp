@@ -1443,8 +1443,8 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
     //M_backend_primal = backend_type::build( BACKEND_PETSC );
     bool reuse_prec = option(_name="crb.reuse-prec").template as<bool>() ;
 
-    M_bdf_primal = bdf( _space=M_model->functionSpace(), _vm=this->vm() , _name="bdf_primal" );
-    M_bdf_primal_save = bdf( _space=M_model->functionSpace(), _vm=this->vm() , _name="bdf_primal_save" );
+    M_bdf_primal = bdf( _space=M_model->functionSpace(), _vm=Environment::vm() , _name="bdf_primal" );
+    M_bdf_primal_save = bdf( _space=M_model->functionSpace(), _vm=Environment::vm() , _name="bdf_primal_save" );
 
     //set parameters for time discretization
     M_bdf_primal->setTimeInitial( M_model->timeInitial() );
@@ -1519,6 +1519,9 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
 
             if ( ! M_model->isSteady() )
             {
+        bdf_coeff = M_bdf_primal->polyDerivCoefficient( 0 );
+
+        auto bdf_poly = M_bdf_primal->polyDeriv();
                 Apr->addMatrix( bdf_coeff, M );
                 *Rhs = *F[0];
                 *vec_bdf_poly = bdf_poly;
@@ -4790,11 +4793,11 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
             std::cout << error.what() << "(" << error.err() << ")" << std::endl;
         }
     }
-    
+
     std::cout << "All=" << allList.size() << " CPU=" << cpuList.size() << " GPU=" << gpuList.size() << std::endl;
 
     /* Check for device availability */
-    cl_bool devAvail = false; 
+    cl_bool devAvail = false;
     std::string dname;
     for(devID = 0; devID < gpuList.size(); devID++)
     {
