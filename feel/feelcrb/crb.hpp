@@ -862,6 +862,15 @@ public:
     matrix_info_tuple fixedPointPrimal( size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN,  std::vector<vectorN_type> & uNold,
                                         std::vector< double > & output_vector, int K=0, bool print_rb_matrix=false) const;
 
+    /*
+     * Dump data array into a file
+     * \param out : Name of the output file
+     * \param prefix : Prefix used for current data
+     * \param array : Array to dump
+     * \param nbelem : Number of elements to dump
+     */
+    void dumpData(std::string out, std::string prefix, double * array, int nbelem) const ;
+
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
     /*
      * fixed point ( primal problem ) - ONLINE step with OpenCL
@@ -4741,6 +4750,28 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
     return matrix_info;
 }
 
+template<typename TruthModelType>
+void CRB<TruthModelType>::dumpData(std::string out, std::string prefix, double * array, int nbelem) const
+{
+    std::ofstream ofs(out, std::ofstream::out | std::ofstream::app);
+
+    if(nbelem)
+    {
+        ofs << prefix << array[0];
+        for(int i = 1; i < nbelem; i++)
+        {
+            ofs << ";" << array[i];
+        }
+    }
+    else
+    {
+        std::cout << ";;";
+    }
+    ofs << std::endl;
+
+    ofs.close();
+}
+
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
 template<typename TruthModelType>
 typename CRB<TruthModelType>::matrix_info_tuple
@@ -4751,6 +4782,9 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
     int devID;
     size_t devPWSM;
     size_t devLMS;
+
+    double * dbuf;
+
     cl_device_fp_config fpConfig;
     cl_int err;
     cl_double dzero = 0.0;
@@ -4876,7 +4910,7 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
 
     /* create buffers on the GPU */
     /* we add one more matrix to store results */
-    cl::Buffer Aq(context, CL_MEM_READ_ONLY, N * N * (M_model->Qa() + 1) * sizeof(double), NULL, &err);
+    cl::Buffer Aq(context, CL_MEM_READ_ONLY, N * N * (M_model->Qa()) * sizeof(double), NULL, &err);
     OPENCL_CHECK_ERR(err, "Could not allocate buffer");
     for( size_type q = 0; q < M_model->Qa(); ++q )
     {
@@ -4888,7 +4922,7 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
     }
 
     /* we add one more vector to store results */
-    cl::Buffer Fq(context, CL_MEM_READ_ONLY, N * (M_model->Ql( 0 ) + 1) * sizeof(double), NULL, &err);
+    cl::Buffer Fq(context, CL_MEM_READ_ONLY, N * (M_model->Ql( 0 )) * sizeof(double), NULL, &err);
     OPENCL_CHECK_ERR(err, "Could not allocate buffer");
     for ( size_type q = 0; q < M_model->Ql( 0 ); ++q )
     {
@@ -4906,6 +4940,13 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
                             betaAqm[0].data(),
                             NULL, NULL);
 
+#if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
+    if(option(_name="parallel.debug").template as<int>())
+    {
+        this->dumpData("./out.gpu.dump", "[CPU] betaAq: ", betaAqm[0].data(), M_model->Qa());
+    }
+#endif
+
     cl::Buffer betaFq(context, CL_MEM_READ_WRITE, M_model->Ql( 0 ) * sizeof(double), NULL, &err);
     OPENCL_CHECK_ERR(err, "Could not allocate buffer");
     queue.enqueueWriteBuffer(betaFq, CL_FALSE,
@@ -4913,12 +4954,33 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
                             betaFqm[0][0].data(),
                             NULL, NULL);
 
+#if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
+    if(option(_name="parallel.debug").template as<int>())
+    {
+        this->dumpData("./out.gpu.dump", "[CPU] betaFq: ", betaFqm[0][0].data(), M_model->Ql(0));
+    }
+#endif
+
+    dbuf = new double[N * N];
+    for(int i = 0; i < N * N; i++)
+    { dbuf[i] = 0.0; }
+
     cl::Buffer A(context, CL_MEM_READ_WRITE, N * N * sizeof(double), NULL, &err);
     OPENCL_CHECK_ERR(err, "Could not allocate buffer");
     //queue.enqueueFillBuffer<double>(A, dzero, 0, N * N * sizeof(double), NULL, NULL);
+    queue.enqueueWriteBuffer(A, CL_TRUE,
+                            0, N * N * sizeof(double),
+                            dbuf,
+                            NULL, NULL);
+
     cl::Buffer F(context, CL_MEM_READ_WRITE, N * sizeof(double), NULL, &err);
     OPENCL_CHECK_ERR(err, "Could not allocate buffer");
     //queue.enqueueFillBuffer<double>(F, dzero, 0, N * sizeof(double), NULL, NULL);
+    queue.enqueueWriteBuffer(F, CL_TRUE,
+                            0, N * sizeof(double),
+                            dbuf,
+                            NULL, NULL);
+    delete[] dbuf;
 
 #if 0
     cl::Program::Sources source(1, std::make_pair(crb_kernels, strlen(crb_kernels)+1));
@@ -4945,6 +5007,19 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
     OPENCL_CHECK_ERR(err, "Could not build kernel");
 
     /* Scalar * Matrices */
+#if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
+    if(option(_name="parallel.debug").template as<int>())
+    {
+        int nbelem = N * N * M_model->Qa();
+        double * array = new double[nbelem];
+        err = queue.enqueueReadBuffer(Aq, CL_TRUE, 0, nbelem, array, NULL, NULL);
+
+        this->dumpData("./out.gpu.dump", "[GPU] Aq: ", array, nbelem);
+
+        delete[] array;
+    }
+#endif
+
     int nM = M_model->Qa();
     int nV = M_model->Ql(0);
     int NN = N * N;
@@ -4967,6 +5042,19 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
     OPENCL_CHECK_ERR(err, "Could not launch kernel");
     event.wait();
 
+#if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
+    if(option(_name="parallel.debug").template as<int>())
+    {
+        int nbelem = N * N * M_model->Qa();
+        double * array = new double[nbelem];
+        err = queue.enqueueReadBuffer(Aq, CL_TRUE, 0, nbelem, array, NULL, NULL);
+
+        this->dumpData("./out.gpu.dump", "[GPU] Aq: ", array, nbelem);
+
+        delete[] array;
+    }
+#endif
+
     /* Matrix sum */
     cl::Kernel msum(program, "VSum");
 
@@ -4985,7 +5073,32 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
     OPENCL_CHECK_ERR(err, "Could not launch kernel");
     event.wait();
 
+#if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
+    if(option(_name="parallel.debug").template as<int>())
+    {
+        int nbelem = N * N;
+        double * array = new double[nbelem];
+        err = queue.enqueueReadBuffer(A, CL_TRUE, 0, nbelem, array, NULL, NULL);
+
+        this->dumpData("./out.gpu.dump", "[GPU] A: ", array, nbelem);
+
+        delete[] array;
+    }
+#endif
+
     /* Scalar * Vector */
+#if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
+    if(option(_name="parallel.debug").template as<int>())
+    {
+        int nbelem = N * M_model->Ql( 0 );
+        double * array = new double[nbelem];
+        err = queue.enqueueReadBuffer(Fq, CL_TRUE, 0, nbelem, array, NULL, NULL);
+
+        this->dumpData("./out.gpu.dump", "[GPU] Fq: ", array, nbelem);
+
+        delete[] array;
+    }
+#endif
     cl::Kernel svk(program, "SVProd");
 
     OPENCL_CHECK_ERR(svk.setArg(0, betaFq), "Could not add argument: betaFq");
@@ -5001,6 +5114,19 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
             &event);
     OPENCL_CHECK_ERR(err, "Could not launch kernel");
     event.wait();
+
+#if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
+    if(option(_name="parallel.debug").template as<int>())
+    {
+        int nbelem = N * M_model->Ql( 0 );
+        double * array = new double[nbelem];
+        err = queue.enqueueReadBuffer(Fq, CL_TRUE, 0, nbelem, array, NULL, NULL);
+
+        this->dumpData("./out.gpu.dump", "[GPU] Fq: ", array, nbelem);
+
+        delete[] array;
+    }
+#endif
 
     /* Vector Sum */
     cl::Kernel vsum(program, "VSum");
@@ -5019,6 +5145,19 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
             &event);
     OPENCL_CHECK_ERR(err, "Could not launch kernel");
     event.wait();
+
+#if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
+    if(option(_name="parallel.debug").template as<int>())
+    {
+        int nbelem = N;
+        double * array = new double[nbelem];
+        err = queue.enqueueReadBuffer(F, CL_TRUE, 0, nbelem, array, NULL, NULL);
+
+        this->dumpData("./out.gpu.dump", "[GPU] F: ", array, nbelem);
+
+        delete[] array;
+    }
+#endif
 
     /* setup ViennaCL with current context */
     viennacl::ocl::setup_context(0, context(), gpuList[devID](), queue());
@@ -5128,22 +5267,7 @@ CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::ve
 
         if(option(_name="parallel.debug").template as<int>())
         {
-            std::ofstream ofs("./out.gpu.dump", std::ofstream::out | std::ofstream::app);
-
-            if(uN[0].size())
-            {
-                ofs << uN[0][0];
-                for(int i = 1; i < uN[0].size(); i++)
-                {
-                    ofs << ";" << uN[0][i];
-                }
-            }
-            else
-            {
-                std::cout << ";;";
-            }
-            ofs << std::endl;
-            ofs.close();
+            this->dumpData("./out.gpu.dump", "[CPU] uN: ", uN[0].data(), N);
         }
     }
     else
@@ -5153,22 +5277,7 @@ CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::ve
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
         if(option(_name="parallel.debug").template as<int>())
         {
-            std::ofstream ofs("./out.cpu.dump", std::ofstream::out | std::ofstream::app);
-
-            if(uN[0].size())
-            {
-                ofs << uN[0][0];
-                for(int i = 1; i < uN[0].size(); i++)
-                {
-                    ofs << ";" << uN[0][i];
-                }
-            }
-            else
-            {
-                std::cout << ";;";
-            }
-            ofs << std::endl;
-            ofs.close();
+            this->dumpData("./out.gpu.dump", "[CPU] uN: ", uN[0].data(), N);
         }
     }
 #endif
