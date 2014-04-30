@@ -133,7 +133,7 @@ public :
     typedef boost::shared_ptr<element_type> element_ptrtype;
 
     /*reduced basis space*/
-    typedef ReducedBasisSpace<self_type, mesh_type, basis_type, value_type> rbfunctionspace_type;
+    typedef ReducedBasisSpace<self_type> rbfunctionspace_type;
     typedef boost::shared_ptr< rbfunctionspace_type > rbfunctionspace_ptrtype;
 
     /*backend*/
@@ -1383,7 +1383,7 @@ void
 ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition,EimDefinition,_Options>::setFunctionSpaces( functionspace_ptrtype Vh )
 {
     Xh = Vh;
-    XN = rbfunctionspace_type::New( _model=this->shared_from_this() , _mesh=Xh->mesh() );
+    XN = rbfunctionspace_type::New( _model=this->shared_from_this() );
 }
 
 

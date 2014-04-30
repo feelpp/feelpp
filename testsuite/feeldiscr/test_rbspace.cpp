@@ -6,6 +6,7 @@
        Date: 2013-04-07
 
   Copyright (C) 2008-2010 Universite Joseph Fourier (Grenoble I)
+  Copyright (C) 2010-2014 Feel++ Consortium
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -85,9 +86,9 @@ public :
 
     typedef Mesh<Simplex<Dim> > mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-    typedef FunctionSpace<mesh_type,bases<Lagrange<Order> >, Periodicity <NoPeriodicity> > space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
-    typedef typename space_type::element_type element_type;
+    typedef typename meta::Pch<mesh_type,Order>::type functionspace_type;
+    typedef typename meta::Pch<mesh_type,Order>::ptrtype functionspace_ptrtype;
+    typedef typename functionspace_type::element_type element_type;
     typedef boost::shared_ptr<element_type> element_ptrtype;
 
     typedef Eigen::VectorXd vectorN_type;
@@ -101,10 +102,11 @@ public :
 
     void run()
     {
+        BOOST_TEST_MESSAGE( "Test RBSpace" );
         auto mesh=unitHypercube<Dim>();
         Xh = Pch<Order>( mesh );
 
-        auto RbSpace = RbSpacePch<Order>( this->shared_from_this() , mesh );
+        auto RbSpace = RbSpacePch( this->shared_from_this()  );
 
         auto basis_x = vf::project( Xh , elements(mesh), Px() );
         auto basis_y = vf::project( Xh , elements(mesh), Py() );
@@ -365,13 +367,13 @@ public :
         BOOST_CHECK_SMALL( math::abs(value_lambda_integrate_rb-true_integrate), 1e-14 );
 #endif
         LOG( INFO ) << " rb grad from contextrb :\n"<<rb_grad_from_contextrb;
-
+        BOOST_TEST_MESSAGE( "Test RBSpace done." );
     }
 
-    space_ptrtype functionSpace() { return Xh; }
+    functionspace_ptrtype functionSpace() { return Xh; }
 
 private :
-    space_ptrtype Xh;
+    functionspace_ptrtype Xh;
 
 
 };
