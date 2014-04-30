@@ -273,6 +273,8 @@ public :
     {
     }
 
+    virtual std::string modelName() { return "generic-model-name"; }
+
 
 
     void addLhs( boost::tuple< form2_type, std::string > const & tuple )
