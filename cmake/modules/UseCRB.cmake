@@ -84,9 +84,11 @@ macro(crb_add_executable)
 #      endif()
     endforeach()
   endif()
+  # geo and mesh
   if ( CRB_EXEC_GEO )
     foreach(  geo ${CRB_EXEC_GEO} )
-        configure_file( ${geo} ${geo} )
+      get_filename_component( GEO_NAME ${geo} NAME )
+      configure_file( ${geo} ${GEO_NAME} )
     endforeach()
   endif()
 
@@ -204,11 +206,13 @@ int main( int argc, char** argv )
   if ( CRB_MODEL_TEST )
     crb_add_executable(${CRB_MODEL_SHORT_NAME}app
       ${CRB_MODEL_SHORT_NAME}app.cpp ${CRB_MODEL_SRCS}
-      LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES} GEO ${CRB_MODEL_GEO}
+      GEO ${CRB_MODEL_GEO} 
+      LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES} 
       CFG ${CRB_MODEL_CFG} TEST )
   else()
     crb_add_executable(${CRB_MODEL_SHORT_NAME}app
-      ${CRB_MODEL_SHORT_NAME}app.cpp ${CRB_MODEL_SRCS}
+      ${CRB_MODEL_SHORT_NAME}app.cpp ${CRB_MODEL_SRCS} 
+      GEO ${CRB_MODEL_GEO} 
       LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES}
       CFG ${CRB_MODEL_CFG} )
   endif()
