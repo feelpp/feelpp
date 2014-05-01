@@ -346,14 +346,9 @@ public:
      * \brief compute the beta coefficient for both bilinear and linear form
      * \param mu parameter to evaluate the coefficients
      */
-    boost::tuple<beta_vector_type, beta_vector_type, std::vector<beta_vector_type> >
-    computeBetaQm( element_type const& T,parameter_type const& mu , double time=1e30 )
-    {
-        return computeBetaQm( mu , time );
-    }
 
     boost::tuple<beta_vector_type, beta_vector_type, std::vector<beta_vector_type>  >
-    computeBetaQm( parameter_type const& mu , double time=1e30 )
+    computeBetaQm( parameter_type const& mu , double time , bool only_terms_time_dependent=false )
     {
         double biot      = mu( 0 );
         double L         = mu( 1 );
