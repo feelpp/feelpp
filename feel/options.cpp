@@ -357,6 +357,7 @@ crbSCMOptions( std::string const& prefix = "")
     ( "crb.scm.use-predefined-C",Feel::po::value<bool>()->default_value( false ), "use a predefined sampling C ( parameters written on the file SamplingC")
     ( "crb.scm.use-scm",Feel::po::value<bool>()->default_value( false ), "use scm if true")
     ( "crb.scm.check-eigenvector",Feel::po::value<bool>()->default_value( true ), "check that eigenvector and eigenvalue are solution of the generalized eiganvalue problem if true")
+    ( "crb.scm.check-eigenvector-tol",Feel::po::value<double>()->default_value( 1e-11 ), "tolerance of check-eigenvector")
     ;
 
     crbscmoptions

@@ -24,5 +24,5 @@
 foreach(O 1 2 3)
     configure_file(heatshield.xml.in ${CMAKE_CURRENT_SOURCE_DIR}/heatshield${O}.xml.in COPYONLY)
     configure_file(heatshield.cfg.in ${CMAKE_CURRENT_SOURCE_DIR}/heatshield${O}.cfg )
-    crb_add_model(heatshield${O} HeatShield CLASS HeatShield<${O}> HDRS heatshield.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG heatshield${O}.cfg XML heatshield${O}.xml )
+    crb_add_model(heatshield${O} HeatShield CLASS HeatShield<${O}> HDRS heatshield.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG heatshield${O}.cfg  XML heatshield${O}.xml )
 endforeach()
