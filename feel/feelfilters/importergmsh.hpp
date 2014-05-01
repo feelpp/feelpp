@@ -118,14 +118,16 @@ struct GMSHElement
                  int _dom1, int _dom2,
                  int _numVertices,
                  std::vector<int> const& _indices,
-                 rank_type worldcommrank,rank_type worldcommsize)
+                 rank_type worldcommrank,
+                 rank_type worldcommsize,
+                 bool use_partitioning = false )
     :
         num( n ),
         type( t ),
         physical( p ),
         elementary( e ),
         numPartitions( _numPartitions ),
-        partition( _partition % worldcommsize ),
+        partition( use_partitioning?_partition:(_partition % worldcommsize) ),
         ghosts( _ghosts ),
         is_on_processor( false ),
         is_ghost( false ),
@@ -764,7 +766,9 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
                                              numPartitions, partition, ghosts,
                                              parent, dom1, dom2,
                                              numVertices, indices,
-                                             this->worldComm().localRank(),this->worldComm().localSize() );
+                                             this->worldComm().localRank(),
+                                             this->worldComm().localSize(),
+                                             boption( "gmsh.respect_partition") );
 
           // WARNING: we had another condition if the number of processors and
           // elements is the same, in that case we store everything for now
@@ -844,7 +848,9 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
                                                    numPartitions, partition, ghosts,
                                                    parent, dom1, dom2,
                                                    numVertices, indices,
-                                                   this->worldComm().localRank(),this->worldComm().localSize() );
+                                                   this->worldComm().localRank(),
+                                                   this->worldComm().localSize(),
+                                                   boption( "gmsh.respect_partition") );
 
                 if ( ( gmshElt.isOnProcessor() == false ||
                        gmshElt.isIgnored(M_ignorePhysicalGroup.begin(), M_ignorePhysicalGroup.end()) ) )
