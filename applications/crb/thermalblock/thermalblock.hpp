@@ -398,13 +398,7 @@ public:
     }
 
     boost::tuple<beta_vector_type, std::vector<beta_vector_type> >
-    computeBetaQm( element_type const& T,parameter_type const& mu , double time=1e30 )
-    {
-        return computeBetaQm( mu , time );
-    }
-
-    boost::tuple<beta_vector_type, std::vector<beta_vector_type> >
-    computeBetaQm( parameter_type const& mu , double time=0 )
+    computeBetaQm( parameter_type const& mu )
     {
 
         bool use_ginac = option(_name="crb.use-ginac-for-beta-expressions").as<bool>();
