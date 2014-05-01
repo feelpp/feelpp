@@ -39,45 +39,50 @@ int main(int argc, char** argv )
                                    _author="Feel++ Consortium",
                                    _email="feelpp-devel@feelpp.org" ) );
 
-    // get number of partitions
-    int nparts = ioption( "gmsh.npartitions" );
-
-    //! [load]
-    std::cout << "Loading mesh and partition it into " << nparts << " partitions\n";
-    // create a mesh with GMSH using Feel++ geometry tool
-    auto mesh = loadMesh(_mesh=new  Mesh<Hypercube<2>>,
-                         _partitions=nparts);
-    //! [load]
-    std::cout << "looking for first element(masters) in each partition\n";
-    std::vector<int> masters( nparts, -1 );
-    for( auto elt : allelements( mesh ) )
+    if ( env.isMasterRank() )
     {
-        int part  = elt.processId();
-        int eid  = elt.id();
-        //std::cout << "element " << eid << " in partition " << part << "\n";
-        if ( masters[part] == -1 )
+        // get number of partitions
+        int nparts = ioption( "gmsh.npartitions" );
+
+        //! [load]
+        std::cout << "Loading mesh and partition it into " << nparts << " partitions\n";
+        // create a mesh with GMSH using Feel++ geometry tool
+        auto mesh = loadMesh(_mesh=new  Mesh<Hypercube<2>>,
+                             _partitions=nparts,
+                             _respect_partition=true,
+                             _worldcomm=Environment::worldCommSeq() );
+        //! [load]
+        std::cout << "looking for first element(masters) in each partition\n";
+        std::vector<int> masters( nparts, -1 );
+        for( auto elt : allelements( mesh ) )
         {
-            std::cout << " - in partition " << part << ", master is " << eid << "\n";
-            masters[part] = eid;
+            int part  = elt.processId();
+            int eid  = elt.id();
+            //std::cout << "element " << eid << " in partition " << part << "\n";
+            if ( masters[part] == -1 )
+            {
+                std::cout << " - in partition " << part << ", master is " << eid << "\n";
+                masters[part] = eid;
+            }
+            bool ok = true;
+            for( int p : masters )
+            {
+                ok = ok && (p != -1);
+            }
+            if ( ok )
+                break;
         }
-        bool ok = true;
-        for( int p : masters )
-        {
-            ok = ok && (p != -1);
-        }
-        if ( ok )
-            break;
+
+        std::cout << "Masters(first elements in each partition): { ";
+        for( int m : masters ) std::cout << m << " ";
+        std::cout << "}";
+
+        //! [export]
+        // export results for post processing
+        auto e = exporter( _mesh=mesh );
+        e->addRegions();
+        e->save();
+
+        //! [export]
     }
-
-    std::cout << "Masters(first elements in each partition): { ";
-    for( int m : masters ) std::cout << m << " ";
-    std::cout << "}";
-
-    //! [export]
-    // export results for post processing
-    auto e = exporter( _mesh=mesh );
-    e->addRegions();
-    e->save();
-    //! [export]
-
 }   // main
