@@ -12,11 +12,13 @@ Some basic installation procedure are available in the INSTALL.org file.
 
 Feel++ uses Travis-CI for continuous integration. 
 Travis-CI Build Status :
-[![Build Status](https://travis-ci.org/feelpp/feelpp.png?branch=develop)](https://travis-ci.org/feelpp/feelpp)
+ - develop branch : [![Build Status](https://travis-ci.org/feelpp/feelpp.png?branch=develop)](https://travis-ci.org/feelpp/feelpp)
+ - master branch : [![Build Status](https://travis-ci.org/feelpp/feelpp.png?branch=master)](https://travis-ci.org/feelpp/feelpp)
 
 ## Documentation
 
- - [Feel++ Online Reference Manual](http://feelpp.github.io/feelpp/)
+ - develop branch : [Feel++ Online Reference Manual](http://feelpp.github.io/feelpp/develop)
+ - master branch (latest release) : [Feel++ Online Reference Manual](http://feelpp.github.io/feelpp/master)
 
 ## Features
  - 1D 2D and 3D (including high order) geometries and also lower topological dimension 1D(curve) in 2D and 3D or 2D(surface) in 3D
