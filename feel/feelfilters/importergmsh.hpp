@@ -300,7 +300,8 @@ public:
         :
         super( GMSH, _worldcomm ),
         M_version( FEELPP_GMSH_FORMAT_VERSION ),
-        M_use_elementary_region_as_physical_region( false )
+        M_use_elementary_region_as_physical_region( false ),
+        M_respect_partition( false )
     {
         this->setIgnorePhysicalName( "FEELPP_GMSH_PHYSICALNAME_IGNORED" );
         //showMe();
@@ -311,7 +312,8 @@ public:
         :
         super( _fname, GMSH, _worldcomm ),
         M_version( _version ),
-        M_use_elementary_region_as_physical_region( false )
+        M_use_elementary_region_as_physical_region( false ),
+        M_respect_partition( false )
     {
         this->setIgnorePhysicalName( "FEELPP_GMSH_PHYSICALNAME_IGNORED" );
         //showMe();
@@ -322,7 +324,8 @@ public:
         M_version( i.M_version ),
         M_use_elementary_region_as_physical_region( false ),
         M_ignorePhysicalGroup( i.M_ignorePhysicalGroup ),
-        M_ignorePhysicalName( i.M_ignorePhysicalName )
+        M_ignorePhysicalName( i.M_ignorePhysicalName ),
+        M_respect_partition( i.M_respect_partition )
     {
         this->setIgnorePhysicalName( "FEELPP_GMSH_PHYSICALNAME_IGNORED" );
         //showMe();
@@ -376,6 +379,11 @@ public:
     {
         M_ignorePhysicalName.insert( s );
     }
+
+    void setRespectPartition( bool r )
+        {
+            M_respect_partition = r;
+        }
 
     //@}
 
@@ -431,7 +439,7 @@ private:
     std::set<int> M_ignorePhysicalGroup;
     std::set<std::string> M_ignorePhysicalName;
     bool M_use_elementary_region_as_physical_region;
-
+    bool M_respect_partition;
     //std::map<int,int> itoii;
     //std::vector<int> ptseen;
 
@@ -768,7 +776,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
                                              numVertices, indices,
                                              this->worldComm().localRank(),
                                              this->worldComm().localSize(),
-                                             boption( "gmsh.respect_partition") );
+                                             M_respect_partition );
 
           // WARNING: we had another condition if the number of processors and
           // elements is the same, in that case we store everything for now
@@ -850,7 +858,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
                                                    numVertices, indices,
                                                    this->worldComm().localRank(),
                                                    this->worldComm().localSize(),
-                                                   boption( "gmsh.respect_partition") );
+                                                   M_respect_partition );
 
                 if ( ( gmshElt.isOnProcessor() == false ||
                        gmshElt.isIgnored(M_ignorePhysicalGroup.begin(), M_ignorePhysicalGroup.end()) ) )
