@@ -473,14 +473,16 @@ public:
             if ( !M_ts->M_scalar_p0 )
             {
                 VLOG(1) << "[timeset] creating space...\n";
-                if ( Environment::worldComm().numberOfSubWorlds() > 1 )
+                //if ( Environment::worldComm().numberOfSubWorlds() > 1 )
+                if ( M_mesh.get()->worldComm().numberOfSubWorlds() > 1 )
                 {
-                    auto wc = std::vector<WorldComm>( 1, Environment::worldComm().subWorld(Environment::worldComm().numberOfSubWorlds()) );
+                    //auto wc = std::vector<WorldComm>( 1, Environment::worldComm().subWorld(Environment::worldComm().numberOfSubWorlds()) );
+                    auto wc = std::vector<WorldComm>( 1, M_mesh.get()->worldComm().subWorld(M_mesh.get()->worldComm().numberOfSubWorlds()) );
                     M_ts->M_scalar_p0 = scalar_p0_space_type::New ( _mesh=M_mesh.get(), _worldscomm=wc );
                 }
                 else
                 {
-                    auto wc = std::vector<WorldComm>( 1, Environment::worldComm() );
+                    auto wc = std::vector<WorldComm>( 1, M_mesh.get()->worldComm() );
                     M_ts->M_scalar_p0 = scalar_p0_space_type::New ( _mesh=M_mesh.get(), _worldscomm=wc );
                 }
                 M_scalar_p0 = M_ts->M_scalar_p0;
