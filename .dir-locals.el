@@ -11,7 +11,6 @@
       ))
   (c++-mode .
     (
-      (subdirs . nil)
       (indent-tabs-mode . nil)
       (tab-width . 4)
       (show-trailing-whitespace . t)
@@ -22,7 +21,6 @@
       ))
   (c-mode .
     (
-      (subdirs . nil)
       (indent-tabs-mode . nil)
       (tab-width . 4)
       (show-trailing-whitespace . t)
