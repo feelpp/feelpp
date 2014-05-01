@@ -214,13 +214,13 @@ public:
      * \param mu parameter to evaluate the coefficients
      */
     boost::tuple<beta_vector_type,  std::vector<beta_vector_type> >
-    computeBetaQm( element_type const& T,parameter_type const& mu , double time=1e30 )
+    computeBetaQm( element_type const& T,parameter_type const& mu )
     {
-        return computeBetaQm( mu , time );
+        return computeBetaQm( mu );
     }
 
     boost::tuple<beta_vector_type,  std::vector<beta_vector_type>  >
-    computeBetaQm( parameter_type const& mu , double time=1e30 )
+    computeBetaQm( parameter_type const& mu )
     {
         double mu0   = mu( 0 );
         double mu1    = mu( 1 );

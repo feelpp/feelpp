@@ -1513,6 +1513,8 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
           M_bdf_primal->next() , M_bdf_primal_save->next() )
     {
 
+        int bdf_iter = M_bdf_primal->iteration();
+
         if ( ! M_model->isSteady() )
         {
             bdf_coeff = M_bdf_primal->polyDerivCoefficient( 0 );
@@ -1522,16 +1524,45 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
         do
         {
             if( is_linear )
-                boost::tie( M, Apr, F) = M_model->update( mu , M_bdf_primal->time() );
+            {
+                boost::mpi::timer test;
+                bool compute_only_terms_time_dependent=false;
+                if ( bdf_iter == 1 )
+                {
+                    boost::tie( M, Apr, F) = M_model->update( mu , M_bdf_primal->time() , compute_only_terms_time_dependent );
+                }
+                else
+                {
+                    compute_only_terms_time_dependent=true;
+                    boost::tie( boost::tuples::ignore , boost::tuples::ignore , F) = M_model->update( mu , M_bdf_primal->time() , compute_only_terms_time_dependent );
+                }
+                double tt=test.elapsed();
+            }
             else
-                boost::tie( M, Apr, F) = M_model->update( mu , u, M_bdf_primal->time() );
+            {
+                bool compute_only_terms_time_dependent=false;
+                if ( bdf_iter == 1 )
+                {
+                    boost::tie( M, Apr, F) = M_model->update( mu , u, M_bdf_primal->time() , compute_only_terms_time_dependent );
+                }
+                else
+                {
+                    compute_only_terms_time_dependent=true;
+                    boost::tie( boost::tuples::ignore, boost::tuples::ignore, F) = M_model->update( mu , u, M_bdf_primal->time() , compute_only_terms_time_dependent );
+                }
+            }
 
             if ( ! M_model->isSteady() )
             {
-        bdf_coeff = M_bdf_primal->polyDerivCoefficient( 0 );
 
-        auto bdf_poly = M_bdf_primal->polyDeriv();
-                Apr->addMatrix( bdf_coeff, M );
+                bdf_coeff = M_bdf_primal->polyDerivCoefficient( 0 );
+
+                if ( bdf_iter == 1 )
+                {
+                    Apr->addMatrix( bdf_coeff, M );
+                }
+
+                auto bdf_poly = M_bdf_primal->polyDeriv();
                 *Rhs = *F[0];
                 *vec_bdf_poly = bdf_poly;
                 Rhs->addVector( *vec_bdf_poly, *M );
@@ -1540,25 +1571,15 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
             {
                 *Rhs = *F[0];
             }
-            //Apr->close();
 
             //backup for non linear problems
             uold = u;
 
             //solve
             M_preconditioner_primal->setMatrix( Apr );
-            if ( reuse_prec )
-            {
-                auto ret = M_backend_primal->solve( _matrix=Apr, _solution=u, _rhs=Rhs,  _prec=M_preconditioner_primal, _reuse_prec=( M_bdf_primal->iteration() >=2 ) );
-                if  ( !ret.template get<0>() )
-                    LOG(INFO)<<"[CRB] WARNING : at time "<<M_bdf_primal->time()<<" we have not converged ( nb_it : "<<ret.template get<1>()<<" and residual : "<<ret.template get<2>() <<" ) \n";
-            }
-            else
-            {
-                auto ret = M_backend_primal->solve( _matrix=Apr, _solution=u, _rhs=Rhs ,  _prec=M_preconditioner_primal );
-                if ( !ret.template get<0>() )
-                    LOG(INFO)<<"[CRB] WARNING : at time "<<M_bdf_primal->time()<<" we have not converged ( nb_it : "<<ret.template get<1>()<<" and residual : "<<ret.template get<2>() <<" ) \n";
-            }
+            auto ret = M_backend_primal->solve( _matrix=Apr, _solution=u, _rhs=Rhs,  _prec=M_preconditioner_primal, _reuse_prec=( bdf_iter >= 2 ) );
+            if  ( !ret.template get<0>() )
+                LOG(INFO)<<"[CRB] WARNING : at time "<<M_bdf_primal->time()<<" we have not converged ( nb_it : "<<ret.template get<1>()<<" and residual : "<<ret.template get<2>() <<" ) \n";
 
             //on each subspace the norme of the increment is computed and then we perform the sum
             if( is_linear )
@@ -1726,6 +1747,8 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
           M_bdf_dual->next() , M_bdf_dual_save->next() )
     {
 
+        int bdf_iter = M_bdf_dual->iteration();
+
         if ( ! M_model->isSteady() )
         {
             bdf_coeff = M_bdf_dual->polyDerivCoefficient( 0 );
@@ -1735,13 +1758,38 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
         do
         {
             if( is_linear )
-                boost::tie( M, Apr, F) = M_model->update( mu , M_bdf_dual->time() );
+            {
+                bool compute_only_terms_time_dependent=false;
+                if ( bdf_iter == 1 )
+                {
+                    boost::tie( M, Apr, F) = M_model->update( mu , M_bdf_dual->time() , compute_only_terms_time_dependent );
+                }
+                else
+                {
+                    compute_only_terms_time_dependent=true;
+                    boost::tie( boost::tuples::ignore, boost::tuples::ignore, F) = M_model->update( mu , M_bdf_dual->time() , compute_only_terms_time_dependent );
+                }
+            }
             else
-                boost::tie( M, Apr, F) = M_model->update( mu , udu, M_bdf_dual->time() );
+            {
+                bool compute_only_terms_time_dependent=false;
+                if ( bdf_iter == 1 )
+                {
+                    boost::tie( M, Apr, F) = M_model->update( mu , udu, M_bdf_dual->time() , compute_only_terms_time_dependent );
+                }
+                else
+                {
+                    compute_only_terms_time_dependent=true;
+                    boost::tie( boost::tuples::ignore, boost::tuples::ignore, F) = M_model->update( mu , udu, M_bdf_dual->time() , compute_only_terms_time_dependent );
+                }
+            }
 
             if( ! M_model->isSteady() )
             {
-                Apr->addMatrix( bdf_coeff, M );
+                if ( bdf_iter == 1 )
+                {
+                    Apr->addMatrix( bdf_coeff, M );
+                }
                 Rhs->zero();
                 *vec_bdf_poly = bdf_poly;
                 Rhs->addVector( *vec_bdf_poly, *M );
@@ -1766,18 +1814,9 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
 
             //solve
             M_preconditioner_dual->setMatrix( Adu );
-            if ( reuse_prec )
-            {
-                auto ret = M_backend_dual->solve( _matrix=Adu, _solution=udu, _rhs=Rhs,  _prec=M_preconditioner_dual, _reuse_prec=( M_bdf_dual->iteration() >=2 ) );
-                if  ( !ret.template get<0>() )
-                    LOG(INFO)<<"[CRB] WARNING : at time "<<M_bdf_dual->time()<<" we have not converged ( nb_it : "<<ret.template get<1>()<<" and residual : "<<ret.template get<2>() <<" ) \n";
-            }
-            else
-            {
-                auto ret = M_backend_dual->solve( _matrix=Adu, _solution=udu, _rhs=Rhs ,  _prec=M_preconditioner_dual );
-                if ( !ret.template get<0>() )
-                    LOG(INFO)<<"[CRB] WARNING : at time "<<M_bdf_dual->time()<<" we have not converged ( nb_it : "<<ret.template get<1>()<<" and residual : "<<ret.template get<2>() <<" ) \n";
-            }
+            auto ret = M_backend_dual->solve( _matrix=Adu, _solution=udu, _rhs=Rhs,  _prec=M_preconditioner_dual, _reuse_prec=( bdf_iter >=2 ) );
+            if  ( !ret.template get<0>() )
+                LOG(INFO)<<"[CRB] WARNING : at time "<<M_bdf_dual->time()<<" we have not converged ( nb_it : "<<ret.template get<1>()<<" and residual : "<<ret.template get<2>() <<" ) \n";
 
             //on each subspace the norme of the increment is computed and then we perform the sum
             if( is_linear )
