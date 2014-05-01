@@ -555,6 +555,29 @@ BOOST_PARAMETER_FUNCTION(
     return opt;
 }
 
+BOOST_PARAMETER_FUNCTION(
+    (int),
+    ioption, tag,
+    (required
+     (name,(std::string)))
+    (optional
+     (worldcomm, ( WorldComm ), Environment::worldComm() )
+     (sub,( std::string ),"")
+     (prefix,( std::string ),"")
+        ))
+{
+    int opt;
+    try
+    {
+        opt = Environment::vm(_name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix).template as<int>();
+    }
+    catch (boost::bad_any_cast bac)
+    {
+        CHECK( false ) <<"Option "<< name << "  either does not exist or is not an integer" <<std::endl;
+    }
+    return opt;
+}
+
 
 BOOST_PARAMETER_FUNCTION(
     (std::string),
