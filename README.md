@@ -10,10 +10,10 @@ Some basic installation procedure are available in the INSTALL.org file.
 
 ## Build Status
 
-Feel++ uses Travis-CI for continuous integration. 
+Feel++ uses Travis-CI for continuous integration.
 Travis-CI Build Status :
- - develop branch : [![Build Status](https://travis-ci.org/feelpp/feelpp.png?branch=develop)](https://travis-ci.org/feelpp/feelpp)
- - master branch : [![Build Status](https://travis-ci.org/feelpp/feelpp.png?branch=master)](https://travis-ci.org/feelpp/feelpp)
+ - develop branch : [![Build Status](https://travis-ci.org/feelpp/feelpp.svg?branch=develop)](https://travis-ci.org/feelpp/feelpp)
+ - master branch : [![Build Status](https://travis-ci.org/feelpp/feelpp.svg?branch=master)](https://travis-ci.org/feelpp/feelpp)
 
 ## Documentation
 
@@ -88,11 +88,11 @@ makeOptions()
 {
     Feel::po::options_description bratuoptions( "Bratu problem options" );
     bratuoptions.add_options()
-    ( "lambda", Feel::po::value<double>()->default_value( 1 ), 
+    ( "lambda", Feel::po::value<double>()->default_value( 1 ),
                 "exp() coefficient value for the Bratu problem" )
-    ( "penalbc", Feel::po::value<double>()->default_value( 30 ), 
+    ( "penalbc", Feel::po::value<double>()->default_value( 30 ),
                  "penalisation parameter for the weak boundary conditions" )
-    ( "hsize", Feel::po::value<double>()->default_value( 0.1 ), 
+    ( "hsize", Feel::po::value<double>()->default_value( 0.1 ),
                "first h value to start convergence" )
     ( "export-matlab", "export matrix and vectors in matlab" )
     ;
@@ -126,7 +126,7 @@ main( int argc, char** argv )
             auto a = form2( _test=Vh, _trial=Vh, _matrix=J );
             a = integrate( elements( mesh ), gradt( u )*trans( grad( v ) ) );
             a += integrate( elements( mesh ), lambda*( exp( idv( u ) ) )*idt( u )*id( v ) );
-            a += integrate( boundaryfaces( mesh ), 
+            a += integrate( boundaryfaces( mesh ),
                ( - trans( id( v ) )*( gradt( u )*N() ) - trans( idt( u ) )*( grad( v )*N()  + penalbc*trans( idt( u ) )*id( v )/hFace() ) );
         };
     auto Residual = [=](const vector_ptrtype& X, vector_ptrtype& R)
