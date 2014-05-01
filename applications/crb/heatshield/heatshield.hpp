@@ -173,7 +173,7 @@ public:
      * \param mu parameter to evaluate the coefficients
      */
     boost::tuple<beta_vector_light_type, beta_vector_light_type, std::vector<beta_vector_light_type>  >
-    computeBetaQ( parameter_type const& mu , double time=1e30 )
+    computeBetaQ( parameter_type const& mu , double time , bool only_terms_time_dependent=false )
     {
         if( M_use_ginac )
         {
@@ -221,19 +221,14 @@ public:
         {
             double biot_out   = mu( 0 );
             double biot_in    = mu( 1 );
-            this->M_betaAq.resize( M_Qa );
-            this->M_betaAq[0] = 1 ;
-            this->M_betaAq[1] = biot_out ;
-            this->M_betaAq[2] = biot_in  ;
-
-            this->M_betaMq.resize( M_Qm );
-            this->M_betaMq[0] = 1;
-
-            this->M_betaFq.resize( M_Nl );
-            this->M_betaFq[0].resize( M_Ql[0] );
+            if( ! only_terms_time_dependent )
+            {
+                this->M_betaAq[0] = 1 ;
+                this->M_betaAq[1] = biot_out ;
+                this->M_betaAq[2] = biot_in  ;
+                this->M_betaMq[0] = 1;
+            }
             this->M_betaFq[0][0] = biot_out;
-
-            this->M_betaFq[1].resize( M_Ql[1] );
             this->M_betaFq[1][0] = 1./surface;
         }
 
@@ -429,6 +424,12 @@ void HeatShield<Order>::initModel()
     M_Ql.resize( 2 );
     M_Ql[0]=1;
     M_Ql[1]=1;
+
+    this->M_betaAq.resize( M_Qa );
+    this->M_betaMq.resize( M_Qm );
+    this->M_betaFq.resize( M_Nl );
+    this->M_betaFq[0].resize( M_Ql[0] );
+    this->M_betaFq[1].resize( M_Ql[1] );
 
     M_use_ginac = option(_name="crb.use-ginac-for-beta-expressions").template as<bool>();
 
