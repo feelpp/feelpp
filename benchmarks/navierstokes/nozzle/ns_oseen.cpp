@@ -23,29 +23,24 @@
 */
 #include <feel/feel.hpp>
 
-int main(int argc, char**argv )
+using namespace Feel;
+
+class Oseen  : public Simget
+{
+public:
+    Oseen( Application* a ) : app( a ) {}
+    void run();
+    void setOutputs( std::vector<std::string> const& o ) { M_outputs = o; }
+    Application* app;
+    std::vector<std::string> M_outputs;
+};
+
+void Oseen::run()
 {
     boost::timer ti;
-    using namespace Feel;
-    //# marker1 #
-    /* po::options_description nsoseenoptions( "Navier-Stokes Oseen options" );
-    nsoseenoptions.add_options()
-        ( "mu", Feel::po::value<double>()->default_value( 1. ), "Dynamic viscosity" )
-        ( "rho", Feel::po::value<double>()->default_value( 1000. ), "Fluid density" );
-        //return nsoseenoptions.add(Feel::feel_options()).add(Feel::backend_options( "oseen" ) );*/
-
-	Environment env( _argc=argc, _argv=argv,
-                     //_desc=nsoseenoptions,
-                     _about=about(_name="ns_oseen",
-                                  _author="Feel++ Consortium",
-                                  _email="feelpp-devel@feelpp.org"));
-
-    if ( Environment::isMasterRank() )
-    {
-        std::cout << "Environment ok time:  " << ti.elapsed() << "s\n";
-    }
     ti.restart();
-    auto mesh = loadMesh(_mesh=new Mesh<Simplex<3>>);
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<FEELPP_DIM>>);
+
     if ( Environment::isMasterRank() )
     {
         std::cout << "mesh loaded time:  " << ti.elapsed() << "s\n";
@@ -59,8 +54,8 @@ int main(int argc, char**argv )
     auto p = U.element<1>();
     auto q = V.element<1>();
 
-    double mu = 0.0035;
-    double rho = 1056;
+    double mu = doption( "mu" );
+    double rho = doption( "rho" );
     //auto mu = option(_name="parameters.mu").as<double>();
     //auto rho = option(_name="parameters.rho").as<double>();
 
@@ -79,17 +74,17 @@ int main(int argc, char**argv )
     auto deft = sym(gradt( u ));
     auto def = sym(grad( v ));
 
-    auto g = expr( option(_name="functions.g").as<std::string>(), "g" );
+    auto g = expr<FEELPP_DIM,1>( soption(_name="functions.g"), "g" );
 
     auto intUz = integrate(_range=markedfaces(mesh,"inlet"), _expr=g ).evaluate()(0,0) ;
     auto aireIn = integrate(_range=markedfaces(mesh,"inlet"),_expr=cst(1.)).evaluate()(0,0);
     auto meanU = intUz/aireIn;
-    auto flow = integrate(_range=markedfaces(mesh,"inlet"), _expr=inner(g*N(),N())).evaluate()(0,0) ;
-    auto reynolds = meanU*0.012/(mu/rho);
+    auto reynolds = mean(_range=markedfaces(mesh,"inlet"), _expr=rho*trans(g)*N()*h()/mu).norm();
+    auto flow = integrate(_range=markedfaces(mesh,"inlet"), _expr=inner(g,N())).evaluate()(0,0) ;
     if ( Environment::isMasterRank() )
     {
         std::cout<<"  Integrale U = "<< intUz << "\n";
-        std::cout<<"   Aire Inlet = "<< aireIn << "\n";
+        std::cout<<"   Area Inlet = "<< aireIn << "\n";
         std::cout<<"       Mean U = "<< meanU << "\n";
         std::cout<<"         Flow = "<< flow << "\n";
         std::cout<<"     Reynolds = "<< reynolds <<"\n";
@@ -104,6 +99,7 @@ int main(int argc, char**argv )
     auto a = form2( _trial=Vh, _test=Vh), at = form2( _trial=Vh, _test=Vh);
     a = integrate( _range=elements( mesh ), _expr=2*mu*inner( deft,def ) + mybdf->polyDerivCoefficient(0)*trans(rho*idt(u))*id(u) );
     a +=integrate( _range=elements( mesh ), _expr=-div( v )*idt( p ) - divt( u )*id( q ) );
+
     if ( Environment::isMasterRank() )
     {
         std::cout << "assembly a time:  " << ti.elapsed() << "s\n";
@@ -114,85 +110,123 @@ int main(int argc, char**argv )
 
     for ( mybdf->start();  mybdf->isFinished() == false; mybdf->next(U) )
     {
+        this->setMeshSize( mybdf->time() );
         ti.restart();
-        if (Environment::worldComm().isMasterRank())
-        {
-            std::cout << "============================================================\n";
-            std::cout << "Time : " << mybdf->time() << "s\n";
-        }
+
         auto bdf_poly = mybdf->polyDeriv();
         auto rhsu =  bdf_poly.element<0>();
         auto extrap = mybdf->poly();
         auto extrapu = extrap.element<0>();
         ft = integrate( _range=elements(mesh), _expr=(rho*trans(idv(rhsu))*id(u) ) );
-        if (Environment::worldComm().isMasterRank())
-        {
-            std::cout << "assembly rhs time:  " << ti.elapsed() << "s\n";
-        }
+
+        M_stats.put( "t.assembly.rhs", ti.elapsed() );
+
         ti.restart();
 
         at = a;
         at += integrate( _range=elements( mesh ), _expr= trans(rho*gradt(u)*idv(extrapu))*id(v) );
-        if (Environment::worldComm().isMasterRank())
-        {
-            std::cout << "assembly convect time:  " << ti.elapsed() << "s\n";
-        }
+
+        M_stats.put( "t.assembly.lhs", ti.elapsed() );
+
         ti.restart();
         at+=on(_range=markedfaces(mesh,"wall"), _rhs=ft, _element=u,
-               _expr=0*one() );
+               _expr=zero<FEELPP_DIM>() );
         at+=on(_range=markedfaces(mesh,"inlet"), _rhs=ft, _element=u,
-               _expr=-g*N() );
-        if (Environment::worldComm().isMasterRank())
-        {
-            std::cout << "assembly on time:  " << ti.elapsed() << "s\n";
-        }
+               _expr=g );
+
+        M_stats.put( "t.assembly.on", ti.elapsed() );
+
         ti.restart();
-        at.solve(_rhs=ft,_solution=U);
-        if (Environment::worldComm().isMasterRank())
-        {
-            std::cout << "solve time:  " << ti.elapsed() << "s\n";
-        }
+
+        auto r = at.solve(_rhs=ft,_solution=U);
+
+        M_stats.put( "t.solve.total", ti.elapsed() );
+        M_stats.put( "d.solve.bool.converged",r.isConverged() );
+        M_stats.put( "d.solve.int.nit",r.nIterations() );
+        M_stats.put( "d.solve.double.residual",r.residual() );
+
         ti.restart();
-        auto intUzt= integrate(_range=markedfaces(mesh,"throat"),_expr=idv(u)).evaluate()(0,0);
-        auto aireInThroat= integrate(_range = markedfaces(mesh,"throat"),_expr=cst(1.)).evaluate()(0,0);
-        auto meanUThroat = mean(_range=markedfaces(mesh,"throat"), _expr=idv(u));
-        auto reynoldsThroat = meanUThroat*0.004/(mu/rho);
-        auto flowT = integrate(_range=markedfaces(mesh,"throat"), _expr=inner(idv(u),N())).evaluate()(0,0) ;
 
-        if (Environment::worldComm().isMasterRank())
+        for( auto marker : M_outputs )
         {
-            std::cout<<"Integrale U throat = "<< intUzt << "\n";
-            std::cout<<"   Airea of the throat's inlet = "<< aireInThroat << "\n";
-            std::cout<<"   Mean U at throat's inlet  = "<< meanUThroat(2,0) <<"\n";
-            std::cout<<"   Flow at the throat's inlet= "<< flowT<<"\n";
-            std::cout<<"   Reynolds at the throat inlet = "<<reynoldsThroat(2,0)<< "\n";
-            std::cout << "        ==========================  \n";
+            ti.restart();
+
+            auto intUz= integrate(_range=markedfaces(mesh,marker),_expr=idv(u)).evaluate()(0,0);
+            auto area= integrate(_range = markedfaces(mesh,marker),_expr=cst(1.)).evaluate()(0,0);
+            auto meanU = mean(_range=markedfaces(mesh,marker), _expr=idv(u)).norm();
+            auto reynolds = mean(_range=markedfaces(mesh,marker), _expr=rho*idv(u)*h()/mu).norm();
+            auto flowrate = integrate(_range=markedfaces(mesh,marker), _expr=inner(idv(u),N())).evaluate()(0,0) ;
+
+            std::string key = (boost::format("d.%1%")%marker).str();
+            std::string key2 = (boost::format("t.integrate.%1%")%marker).str();
+            M_stats.put( key2, ti.elapsed() );
+            M_stats.put( key+".double.area", area );
+            M_stats.put( key+".double.intUz", intUz );
+            M_stats.put( key+".double.meanU", meanU );
+            M_stats.put( key+".double.reynolds", reynolds );
+            M_stats.put( key+".double.flowrate", flowrate );
         }
 
-        auto intUzOut= integrate(_range=markedfaces(mesh,"outlet"),_expr=idv(u)).evaluate()(0,0);
-        auto aireOut= integrate(_range = markedfaces(mesh,"outlet"),_expr=cst(1.)).evaluate()(0,0);
-        auto meanUOut= mean(_range=markedfaces(mesh,"outlet"), _expr=idv(u));
-        auto reynoldsOut = meanUOut*0.012/(mu/rho);
-        auto flowOut = integrate(_range=markedfaces(mesh,"outlet"), _expr=inner(idv(u),N())).evaluate()(0,0) ;
-
-        if (Environment::worldComm().isMasterRank())
-        {
-            std::cout<<"Integrale U outlet = "<< intUzOut;
-            std::cout<<"   Airea of the outlet = "<< aireOut;
-            std::cout<<"   Mean U at the outlet  = "<< meanUOut(2,0);
-            std::cout<<"   Flow at the outlet = "<< flowOut<<"\n";
-            std::cout<<"   Reynolds at the outlet = "<<reynoldsOut(2,0);
-            std::cout << "postproc time:  " << ti.elapsed() << "s\n";
-        }
         ti.restart();
         e->step(mybdf->time())->add( "u", u );
         e->step(mybdf->time())->add( "p", p );
         e->save();
-        if (Environment::worldComm().isMasterRank())
-        {
-            std::cout << "export time:  " << ti.elapsed() << "s\n";
-        }
+        M_stats.put( "t.export.total", ti.elapsed() );
 
+        M_stats.put( "h", mybdf->time() );
+        M_stats.put( "level", mybdf->iteration() );
+        app->storeStats( this->name(), M_stats );
+        if ( Environment::isMasterRank() )
+            app->printStats( std::cout, Application::ALL );
+        M_stats.clear();
     }
-    return 0;
+}
+
+int main( int argc, char** argv )
+{
+    po::options_description nsoseenoptions( "Navier-Stokes Oseen options" );
+    nsoseenoptions.add_options()
+        ( "mu", Feel::po::value<double>()->default_value( 1. ), "Dynamic viscosity" )
+        ( "rho", Feel::po::value<double>()->default_value( 1000. ), "Fluid density" )
+        ( "outputs", Feel::po::value<std::string>(), "list of face markers (space separated) on which some statistics are computed" )
+        ;
+
+    boost::mpi::timer ti;
+	Environment env( _argc=argc, _argv=argv,
+                     _desc=nsoseenoptions,
+                     _about=about(_name="ns_oseen",
+                                  _author="Feel++ Consortium",
+                                  _email="feelpp-devel@feelpp.org"));
+
+    if ( Environment::isMasterRank() )
+    {
+        std::cout << "Environment ok time:  " << ti.elapsed() << "s\n";
+    }
+    std::ofstream out;
+    if ( env.isMasterRank() )
+        out.open( (boost::format("res-%1%.dat") % env.numberOfProcessors() ).str().c_str() );
+
+    Application benchmark;
+    auto oseen = new Oseen(  &benchmark );
+    benchmark.add( oseen );
+    std::vector<std::string> keys = { "t.assembly",
+                                      "t.assembly",
+                                      "t.solve",
+                                      "d.solve",
+                                      "t.export"};
+    std::vector<std::string> SplitVec;
+    std::string outputs = soption( "outputs" );
+    algorithm::split( SplitVec, outputs, algorithm::is_any_of(" ") );
+    oseen->setOutputs( SplitVec );
+    if ( SplitVec.size() )
+        keys.push_back( "t.integrate" );
+    for( auto marker :  SplitVec)
+    {
+        keys.push_back(  (boost::format("d.%1%")%marker).str() );
+    }
+    benchmark.setStats( keys );
+    benchmark.run();
+    benchmark.printStats( std::cout );
+    benchmark.printStats( out );
+
 }
