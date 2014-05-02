@@ -654,13 +654,16 @@ public:
     }
 
     /**
-     * \brief compute the betaqm given \p mu
+     * \brief compute the beta coefficients
+     * mu : parameter
+     * time : the time
+     * only_time_dependent_terms : return evaluation time-dependent terms only if true, else return evaluation of all terms
      */
-    betaqm_type computeBetaQm( parameter_type const& mu , double time=0 )
+    betaqm_type computeBetaQm( parameter_type const& mu , double time=0 , bool only_time_dependent_terms=false )
     {
-        return computeBetaQm( mu , mpl::bool_<model_type::is_time_dependent>(), time  );
+        return computeBetaQm( mu , mpl::bool_<model_type::is_time_dependent>(), time , only_time_dependent_terms );
     }
-    betaqm_type computeBetaQm( parameter_type const& mu , mpl::bool_<true>, double time=0 )
+    betaqm_type computeBetaQm( parameter_type const& mu , mpl::bool_<true>, double time=0 , bool only_time_dependent_terms=false )
     {
         beta_vector_type betaAqm;
         beta_vector_type betaMqm;
@@ -672,11 +675,11 @@ public:
             beta_coefficients;
 
         //check if a light version is available
-        auto beta_light = M_model->computeBetaQ( mu, time );
+        auto beta_light = M_model->computeBetaQ( mu, time , only_time_dependent_terms );
         auto betaAlight = beta_light.template get<0>();
         if( betaAlight.size() == 0 )
         {
-            beta_coefficients = M_model->computeBetaQm( mu , time );
+            beta_coefficients = M_model->computeBetaQm( mu , time , only_time_dependent_terms );
         }
         else
         {
@@ -685,7 +688,7 @@ public:
 
         return beta_coefficients;
     }
-    betaqm_type computeBetaQm( parameter_type const& mu , mpl::bool_<false>, double time=0 )
+    betaqm_type computeBetaQm( parameter_type const& mu , mpl::bool_<false>, double time=0 , bool only_time_dependent_terms=false )
     {
 
         beta_vector_type betaAqm;
@@ -698,11 +701,11 @@ public:
 
 
         //check if a light version is available
-        auto beta_light = M_model->computeBetaQ( mu, time );
+        auto beta_light = M_model->computeBetaQ( mu );
         auto betaAlight = beta_light.template get<0>();
         if( betaAlight.size() == 0 )
         {
-            steady_beta = M_model->computeBetaQm( mu , time );
+            steady_beta = M_model->computeBetaQm( mu );
         }
         else
         {
@@ -733,21 +736,21 @@ public:
         return boost::make_tuple( betaMqm, betaAqm, betaFqm );
     }
 
-    betaqm_type computeBetaQm( vector_ptrtype const& T, parameter_type const& mu , double time=0 )
+    betaqm_type computeBetaQm( vector_ptrtype const& T, parameter_type const& mu , double time=0 , bool only_time_dependent_terms=false )
     {
         auto solution = M_model->functionSpace()->element();
         solution = *T;
-        return computeBetaQm( solution , mu , time );
+        return computeBetaQm( solution , mu , time , only_time_dependent_terms );
     }
-    betaqm_type computeBetaQm( element_type const& T, parameter_type const& mu , double time=0 )
+    betaqm_type computeBetaQm( element_type const& T, parameter_type const& mu , double time=0 , bool only_time_dependent_terms=false )
     {
-        return computeBetaQm( T , mu , mpl::bool_<model_type::is_time_dependent>(), time );
+        return computeBetaQm( T , mu , mpl::bool_<model_type::is_time_dependent>(), time , only_time_dependent_terms );
     }
-    betaqm_type computeBetaQm( element_type const& T, parameter_type const& mu , mpl::bool_<true>, double time=0 )
+    betaqm_type computeBetaQm( element_type const& T, parameter_type const& mu , mpl::bool_<true>, double time=0 , bool only_time_dependent_terms=false )
     {
-        return M_model->computeBetaQm( T, mu, time );
+        return M_model->computeBetaQm( T, mu, time , only_time_dependent_terms );
     }
-    betaqm_type computeBetaQm( element_type const& T, parameter_type const& mu , mpl::bool_<false>, double time=0 )
+    betaqm_type computeBetaQm( element_type const& T, parameter_type const& mu , mpl::bool_<false>, double time=0 , bool only_time_dependent_terms=false )
     {
         beta_vector_type betaAqm, betaMqm ;
         std::vector<beta_vector_type>  betaFqm;
@@ -756,7 +759,7 @@ public:
             std::vector<beta_vector_type> >
             steady_beta;
 
-        steady_beta = M_model->computeBetaQm(T, mu , time );
+        steady_beta = M_model->computeBetaQm(T, mu );
         betaAqm = steady_beta.template get<0>();
         betaFqm = steady_beta.template get<1>();
 
@@ -787,30 +790,31 @@ public:
     /**
      * \brief update the model wrt \p mu
      */
-    offline_merge_type update( parameter_type const& mu,  double time=0 )
+    offline_merge_type update( parameter_type const& mu,  double time=0 , bool only_time_dependent_terms=false )
     {
-        auto all_beta = this->computeBetaQm( mu , time );
+        auto all_beta = this->computeBetaQm( mu , time , only_time_dependent_terms );
         offline_merge_type offline_merge;
         if( option(_name="crb.stock-matrices").template as<bool>() )
-            offline_merge = offlineMerge( all_beta , mu );
+            offline_merge = offlineMerge( all_beta , only_time_dependent_terms );
         else
-            offline_merge = offlineMergeOnFly( all_beta, mu );
+            offline_merge = offlineMergeOnFly( all_beta, only_time_dependent_terms );
 
         return offline_merge;
     }
-    offline_merge_type update( parameter_type const& mu, element_type const& T, double time=0 )
+
+    offline_merge_type update( parameter_type const& mu, element_type const& T, double time=0 , bool only_time_dependent_terms=false )
     {
 #if !defined(NDEBUG)
         mu.check();
 #endif
-        auto all_beta = this->computeBetaQm(  T , mu , time );
+        auto all_beta = this->computeBetaQm(  T , mu , time , only_time_dependent_terms );
 
         offline_merge_type offline_merge;
 
         if( option(_name="crb.stock-matrices").template as<bool>() )
-            offline_merge = offlineMerge( all_beta , mu );
+            offline_merge = offlineMerge( all_beta , only_time_dependent_terms );
         else
-            offline_merge = offlineMergeOnFly( all_beta, mu );
+            offline_merge = offlineMergeOnFly( all_beta, only_time_dependent_terms );
 
         return offline_merge;
 
@@ -2438,8 +2442,8 @@ private:
      * \param mu the parameter at which the matrix A and vector F are assembled
      *
      */
-    offline_merge_type offlineMerge( betaqm_type const& all_beta, parameter_type const& mu );
-    offline_merge_type offlineMergeOnFly( betaqm_type const& all_beta , parameter_type const& mu  );
+    offline_merge_type offlineMerge( betaqm_type const& all_beta,  bool only_time_dependent_terms=false );
+    offline_merge_type offlineMergeOnFly( betaqm_type const& all_beta , bool only_time_dependent_terms=false );
 
     void assembleMassMatrix( );
     void assembleMassMatrix( mpl::bool_<true> );
@@ -2855,7 +2859,7 @@ CRBModel<TruthModelType>::assembleInitialGuess( parameter_type const& mu )
 
 template<typename TruthModelType>
 typename CRBModel<TruthModelType>::offline_merge_type
-CRBModel<TruthModelType>::offlineMergeOnFly(betaqm_type const& all_beta, parameter_type const& mu  )
+CRBModel<TruthModelType>::offlineMergeOnFly(betaqm_type const& all_beta, bool only_time_dependent_terms )
 {
 
     //recovery from the model of free operators Aqm in A = \sum_q \sum_m \beta_qm( u ; mu ) A_qm( u, v )
@@ -2865,37 +2869,43 @@ CRBModel<TruthModelType>::offlineMergeOnFly(betaqm_type const& all_beta, paramet
     operatorcomposite_ptrtype compositeA;
     std::vector< functionalcomposite_ptrtype > vector_compositeF;
 
-    auto compositeAlight=this->operatorCompositeLightA();
-    if( compositeAlight )
+    if( ! only_time_dependent_terms )
     {
-        compositeA=compositeAlight;
-        compositeM = this->operatorCompositeLightM();
-        vector_compositeF = this->functionalCompositeLightF();
-    }
-    else
-    {
-        compositeA = this->operatorCompositeA();
-        compositeM = this->operatorCompositeM();
-        vector_compositeF = this->functionalCompositeF();
-    }
-    //acces to beta coefficients
-    auto beta_M = all_beta.template get<0>();
-    auto beta_A = all_beta.template get<1>();
-    //warning : beta_F is a vector of beta_coefficients
-    auto beta_F = all_beta.template get<2>();
 
-    //associate beta coefficients to operators
-    compositeA->setScalars( beta_A );
-    compositeM->setScalars( beta_M );
+        auto compositeAlight=this->operatorCompositeLightA();
+        if( compositeAlight )
+        {
+            compositeA=compositeAlight;
+            compositeM = this->operatorCompositeLightM();
+            vector_compositeF = this->functionalCompositeLightF();
+        }
+        else
+        {
+            compositeA = this->operatorCompositeA();
+            compositeM = this->operatorCompositeM();
+            vector_compositeF = this->functionalCompositeF();
+        }
+        //acces to beta coefficients
+        auto beta_M = all_beta.template get<0>();
+        auto beta_A = all_beta.template get<1>();
+
+        //associate beta coefficients to operators
+        compositeA->setScalars( beta_A );
+        compositeM->setScalars( beta_M );
+    }
 
     //merge
     auto A = this->newMatrix();
     auto M = this->newMatrix();
-    compositeA->sumAllMatrices( A );
-    compositeM->sumAllMatrices( M );
+    if( ! only_time_dependent_terms )
+    {
+        compositeA->sumAllMatrices( A );
+        compositeM->sumAllMatrices( M );
+    }
 
+    //warning : beta_F is a vector of beta_coefficients
+    auto beta_F = all_beta.template get<2>();
     std::vector<vector_ptrtype> F( Nl() );
-
     for(int output=0; output<Nl(); output++)
     {
         auto compositeF = vector_compositeF[output];
@@ -2911,7 +2921,7 @@ CRBModel<TruthModelType>::offlineMergeOnFly(betaqm_type const& all_beta, paramet
 
 template<typename TruthModelType>
 typename CRBModel<TruthModelType>::offline_merge_type
-CRBModel<TruthModelType>::offlineMerge( betaqm_type const& all_beta , parameter_type const& mu )
+CRBModel<TruthModelType>::offlineMerge( betaqm_type const& all_beta , bool only_time_dependent_terms )
 {
 
 #if 0
@@ -2932,31 +2942,37 @@ CRBModel<TruthModelType>::offlineMerge( betaqm_type const& all_beta , parameter_
     //size_type pattern = operatorCompositeA()->operatorlinear(0,0)->pattern();
 
 #endif
+
+    if( ! only_time_dependent_terms )
+    {
+
+        //acces to beta coefficients
+        auto beta_M = all_beta.template get<0>();
+        auto beta_A = all_beta.template get<1>();
+
+        A->zero();
+        for ( size_type q = 0; q < Qa(); ++q )
+        {
+            for(size_type m = 0; m < mMaxA(q); ++m )
+            {
+                A->addMatrix( beta_A[q][m], M_Aqm[q][m] );
+            }
+        }
+
+        if( Qm() > 0 )
+        {
+            for ( size_type q = 0; q < Qm(); ++q )
+            {
+                for(size_type m = 0; m < mMaxM(q) ; ++m )
+                    M->addMatrix( beta_M[q][m] , M_Mqm[q][m] );
+            }
+        }
+    }
+
     std::vector<vector_ptrtype> F( Nl() );
 
-    //acces to beta coefficients
-    auto beta_M = all_beta.template get<0>();
-    auto beta_A = all_beta.template get<1>();
     //warning : beta_F is a vector of beta_coefficients
     auto beta_F = all_beta.template get<2>();
-
-    A->zero();
-    for ( size_type q = 0; q < Qa(); ++q )
-    {
-        for(size_type m = 0; m < mMaxA(q); ++m )
-        {
-            A->addMatrix( beta_A[q][m], M_Aqm[q][m] );
-        }
-    }
-
-    if( Qm() > 0 )
-    {
-        for ( size_type q = 0; q < Qm(); ++q )
-        {
-            for(size_type m = 0; m < mMaxM(q) ; ++m )
-                M->addMatrix( beta_M[q][m] , M_Mqm[q][m] );
-        }
-    }
 
     for ( size_type l = 0; l < Nl(); ++l )
     {

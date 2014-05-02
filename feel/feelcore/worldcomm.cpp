@@ -693,7 +693,7 @@ WorldComm::applyActivityOnlyOn(int _localColor) const
 //-------------------------------------------------------------------------------
 
 WorldComm const&
-WorldComm::subWorld( int n )
+WorldComm::subWorld( int n ) const
 {
     if ( this->globalSize() == 1 )
         return *this;
@@ -702,7 +702,7 @@ WorldComm::subWorld( int n )
     return M_subworlds.find(n)->second.second[subWorldId(n)];
 }
 int
-WorldComm::subWorldId( int n )
+WorldComm::subWorldId( int n ) const
 {
     if ( this->globalSize() == 1 )
         return 0;
@@ -712,13 +712,13 @@ WorldComm::subWorldId( int n )
     return M_subworlds.find(n)->second.first.M_mapColorWorld[this->globalRank()];
 }
 bool
-WorldComm::hasSubWorlds( int n )
+WorldComm::hasSubWorlds( int n ) const
 {
     return M_subworlds.find( n ) != M_subworlds.end();
 }
 
 std::vector<WorldComm> const&
-WorldComm::subWorlds( int n )
+WorldComm::subWorlds( int n ) const
 {
     if ( !hasSubWorlds( n ) )
         registerSubWorlds( n );
@@ -750,7 +750,7 @@ WorldComm::masterWorld( int n )
 }
 
 void
-WorldComm::registerSubWorlds( int n )
+WorldComm::registerSubWorlds( int n ) const
 {
     std::vector<WorldComm> subworlds( n, *this );
     M_subworlds.insert( std::make_pair( n, std::make_pair( *this, subworlds ) ) );

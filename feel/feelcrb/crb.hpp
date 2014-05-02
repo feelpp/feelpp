@@ -1513,6 +1513,8 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
           M_bdf_primal->next() , M_bdf_primal_save->next() )
     {
 
+        int bdf_iter = M_bdf_primal->iteration();
+
         if ( ! M_model->isSteady() )
         {
             bdf_coeff = M_bdf_primal->polyDerivCoefficient( 0 );
@@ -1522,16 +1524,43 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
         do
         {
             if( is_linear )
-                boost::tie( M, Apr, F) = M_model->update( mu , M_bdf_primal->time() );
+            {
+                bool compute_only_terms_time_dependent=false;
+                if ( bdf_iter == 1 )
+                {
+                    boost::tie( M, Apr, F) = M_model->update( mu , M_bdf_primal->time() , compute_only_terms_time_dependent );
+                }
+                else
+                {
+                    compute_only_terms_time_dependent=true;
+                    boost::tie( boost::tuples::ignore , boost::tuples::ignore , F) = M_model->update( mu , M_bdf_primal->time() , compute_only_terms_time_dependent );
+                }
+            }
             else
-                boost::tie( M, Apr, F) = M_model->update( mu , u, M_bdf_primal->time() );
+            {
+                bool compute_only_terms_time_dependent=false;
+                if ( bdf_iter == 1 )
+                {
+                    boost::tie( M, Apr, F) = M_model->update( mu , u, M_bdf_primal->time() , compute_only_terms_time_dependent );
+                }
+                else
+                {
+                    compute_only_terms_time_dependent=true;
+                    boost::tie( boost::tuples::ignore, boost::tuples::ignore, F) = M_model->update( mu , u, M_bdf_primal->time() , compute_only_terms_time_dependent );
+                }
+            }
 
             if ( ! M_model->isSteady() )
             {
-        bdf_coeff = M_bdf_primal->polyDerivCoefficient( 0 );
 
-        auto bdf_poly = M_bdf_primal->polyDeriv();
-                Apr->addMatrix( bdf_coeff, M );
+                bdf_coeff = M_bdf_primal->polyDerivCoefficient( 0 );
+
+                if ( bdf_iter == 1 )
+                {
+                    Apr->addMatrix( bdf_coeff, M );
+                }
+
+                auto bdf_poly = M_bdf_primal->polyDeriv();
                 *Rhs = *F[0];
                 *vec_bdf_poly = bdf_poly;
                 Rhs->addVector( *vec_bdf_poly, *M );
@@ -1540,25 +1569,15 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
             {
                 *Rhs = *F[0];
             }
-            //Apr->close();
 
             //backup for non linear problems
             uold = u;
 
             //solve
             M_preconditioner_primal->setMatrix( Apr );
-            if ( reuse_prec )
-            {
-                auto ret = M_backend_primal->solve( _matrix=Apr, _solution=u, _rhs=Rhs,  _prec=M_preconditioner_primal, _reuse_prec=( M_bdf_primal->iteration() >=2 ) );
-                if  ( !ret.template get<0>() )
-                    LOG(INFO)<<"[CRB] WARNING : at time "<<M_bdf_primal->time()<<" we have not converged ( nb_it : "<<ret.template get<1>()<<" and residual : "<<ret.template get<2>() <<" ) \n";
-            }
-            else
-            {
-                auto ret = M_backend_primal->solve( _matrix=Apr, _solution=u, _rhs=Rhs ,  _prec=M_preconditioner_primal );
-                if ( !ret.template get<0>() )
-                    LOG(INFO)<<"[CRB] WARNING : at time "<<M_bdf_primal->time()<<" we have not converged ( nb_it : "<<ret.template get<1>()<<" and residual : "<<ret.template get<2>() <<" ) \n";
-            }
+            auto ret = M_backend_primal->solve( _matrix=Apr, _solution=u, _rhs=Rhs,  _prec=M_preconditioner_primal, _reuse_prec=( bdf_iter >= 2 ) );
+            if  ( !ret.template get<0>() )
+                LOG(INFO)<<"[CRB] WARNING : at time "<<M_bdf_primal->time()<<" we have not converged ( nb_it : "<<ret.template get<1>()<<" and residual : "<<ret.template get<2>() <<" ) \n";
 
             //on each subspace the norme of the increment is computed and then we perform the sum
             if( is_linear )
@@ -1726,6 +1745,8 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
           M_bdf_dual->next() , M_bdf_dual_save->next() )
     {
 
+        int bdf_iter = M_bdf_dual->iteration();
+
         if ( ! M_model->isSteady() )
         {
             bdf_coeff = M_bdf_dual->polyDerivCoefficient( 0 );
@@ -1735,13 +1756,38 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
         do
         {
             if( is_linear )
-                boost::tie( M, Apr, F) = M_model->update( mu , M_bdf_dual->time() );
+            {
+                bool compute_only_terms_time_dependent=false;
+                if ( bdf_iter == 1 )
+                {
+                    boost::tie( M, Apr, F) = M_model->update( mu , M_bdf_dual->time() , compute_only_terms_time_dependent );
+                }
+                else
+                {
+                    compute_only_terms_time_dependent=true;
+                    boost::tie( boost::tuples::ignore, boost::tuples::ignore, F) = M_model->update( mu , M_bdf_dual->time() , compute_only_terms_time_dependent );
+                }
+            }
             else
-                boost::tie( M, Apr, F) = M_model->update( mu , udu, M_bdf_dual->time() );
+            {
+                bool compute_only_terms_time_dependent=false;
+                if ( bdf_iter == 1 )
+                {
+                    boost::tie( M, Apr, F) = M_model->update( mu , udu, M_bdf_dual->time() , compute_only_terms_time_dependent );
+                }
+                else
+                {
+                    compute_only_terms_time_dependent=true;
+                    boost::tie( boost::tuples::ignore, boost::tuples::ignore, F) = M_model->update( mu , udu, M_bdf_dual->time() , compute_only_terms_time_dependent );
+                }
+            }
 
             if( ! M_model->isSteady() )
             {
-                Apr->addMatrix( bdf_coeff, M );
+                if ( bdf_iter == 1 )
+                {
+                    Apr->addMatrix( bdf_coeff, M );
+                }
                 Rhs->zero();
                 *vec_bdf_poly = bdf_poly;
                 Rhs->addVector( *vec_bdf_poly, *M );
@@ -1766,18 +1812,9 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
 
             //solve
             M_preconditioner_dual->setMatrix( Adu );
-            if ( reuse_prec )
-            {
-                auto ret = M_backend_dual->solve( _matrix=Adu, _solution=udu, _rhs=Rhs,  _prec=M_preconditioner_dual, _reuse_prec=( M_bdf_dual->iteration() >=2 ) );
-                if  ( !ret.template get<0>() )
-                    LOG(INFO)<<"[CRB] WARNING : at time "<<M_bdf_dual->time()<<" we have not converged ( nb_it : "<<ret.template get<1>()<<" and residual : "<<ret.template get<2>() <<" ) \n";
-            }
-            else
-            {
-                auto ret = M_backend_dual->solve( _matrix=Adu, _solution=udu, _rhs=Rhs ,  _prec=M_preconditioner_dual );
-                if ( !ret.template get<0>() )
-                    LOG(INFO)<<"[CRB] WARNING : at time "<<M_bdf_dual->time()<<" we have not converged ( nb_it : "<<ret.template get<1>()<<" and residual : "<<ret.template get<2>() <<" ) \n";
-            }
+            auto ret = M_backend_dual->solve( _matrix=Adu, _solution=udu, _rhs=Rhs,  _prec=M_preconditioner_dual, _reuse_prec=( bdf_iter >=2 ) );
+            if  ( !ret.template get<0>() )
+                LOG(INFO)<<"[CRB] WARNING : at time "<<M_bdf_dual->time()<<" we have not converged ( nb_it : "<<ret.template get<1>()<<" and residual : "<<ret.template get<2>() <<" ) \n";
 
             //on each subspace the norme of the increment is computed and then we perform the sum
             if( is_linear )
@@ -4357,6 +4394,8 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
     int number_of_time_step=1;
     size_type Qm;
 
+    int Qa=M_model->Qa();
+    int Ql=M_model->Ql(M_output_index);
     if ( M_model->isSteady() )
     {
         time_step = 1e30;
@@ -4399,6 +4438,22 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
 
     double time = time_for_output;
 
+    std::vector<int> mMaxA(Qa);
+    std::vector<int> mMaxM(Qm);
+    std::vector<int> mMaxF( Ql );
+    for ( size_type q = 0; q < Qa; ++q )
+    {
+        mMaxA[q]=M_model->mMaxA(q);
+    }
+    for ( size_type q = 0; q < Qm; ++q )
+    {
+        mMaxM[q]=M_model->mMaxM(q);
+    }
+    for ( size_type q = 0; q < Ql; ++q )
+    {
+        mMaxF[q]=M_model->mMaxF(M_output_index,q);
+    }
+
 
     if ( ! M_model->isSteady() )
     {
@@ -4416,27 +4471,48 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
     double fixedpoint_critical_value  = option(_name="crb.fixedpoint-critical-value").template as<double>();
     double increment = increment_fixedpoint_tol;
     //uNdu[0] = Adu.lu().solve( -Ldu );
+    Adu.setZero( N,N );
 
+    bool is_linear = M_model->isLinear();
+
+    int time_iter=0;
     double tini = M_model->timeInitial();
     for ( time=time_for_output; math::abs(time - tini) > 1e-9; time-=time_step )
     {
+        time_iter++;
         int fi=0;
         vectorN_type next_uNdu( M_N );
 
         do
         {
-            boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time );
-            Adu.setZero( N,N );
-            Ldu.setZero( N );
+            if( time_iter == 1 )
+            {
+                bool only_terms_time_dependent=false;
+                boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time , only_terms_time_dependent );
 
-            for ( size_type q = 0; q < M_model->Qa(); ++q )
-            {
-                for(int m=0; m < M_model->mMaxA(q); m++)
-                    Adu += betaAqm[q][m]*M_Aqm_du[q][m].block( 0,0,N,N );
+                for ( size_type q = 0; q < Qa; ++q )
+                {
+                    for(int m=0; m < mMaxA[q]; m++)
+                        Adu += betaAqm[q][m]*M_Aqm_du[q][m].block( 0,0,N,N );
+                }
+                for ( size_type q = 0; q < Qm; ++q )
+                {
+                    for(int m=0; m < mMaxM[q]; m++)
+                    {
+                        Adu += betaMqm[q][m]*M_Mqm_du[q][m].block( 0,0,N,N )/time_step;
+                    }
+                }
             }
-            for ( size_type q = 0; q < M_model->Ql( M_output_index ); ++q )
+            else
             {
-                for(int m=0; m < M_model->mMaxF(M_output_index,q); m++)
+                bool only_terms_time_dependent=true;
+                boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaFqm ) = M_model->computeBetaQm( mu ,time , only_terms_time_dependent );
+            }
+
+            Ldu.setZero( N );
+            for ( size_type q = 0; q < Ql ; ++q )
+            {
+                for(int m=0; m < mMaxF[q]; m++)
                     Ldu += betaFqm[M_output_index][q][m]*M_Lqm_du[q][m].head( N );
             }
 
@@ -4445,9 +4521,8 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
 
             for ( size_type q = 0; q < Qm; ++q )
             {
-                for(int m=0; m < M_model->mMaxM(q); m++)
+                for(int m=0; m < mMaxM[q]; m++)
                 {
-                    Adu += betaMqm[q][m]*M_Mqm_du[q][m].block( 0,0,N,N )/time_step;
                     Fdu += betaMqm[q][m]*M_Mqm_du[q][m].block( 0,0,N,N )*uNduold[time_index]/time_step;
                 }
             }
@@ -4461,7 +4536,7 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
 
             fi++;
 
-           if( option(_name="crb.use-linear-model").template as<bool>() )
+           if( is_linear )
                next_uNdu=uNdu[time_index];
 
             increment = (uNdu[time_index]-next_uNdu).norm();
@@ -4482,12 +4557,10 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
         if( time_index > 0 )
             uNduold[time_index-1] = uNdu[time_index];
 
-
         time_index--;
 
 
     }//end of non steady case
-
 
 #if 0
         double initial_dual_time = time_for_output+time_step;
@@ -4569,6 +4642,30 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
 
     std::vector<beta_vector_type> betaFqm, betaLqm;
 
+    int Qa=M_model->Qa();
+    int Ql=M_model->Ql(M_output_index);
+    int Qf=M_model->Ql(0);
+    std::vector<int> mMaxA(Qa);
+    std::vector<int> mMaxM(Qm);
+    std::vector<int> mMaxL( Ql );
+    std::vector<int> mMaxF( Qf );
+    for ( size_type q = 0; q < Qa; ++q )
+    {
+        mMaxA[q]=M_model->mMaxA(q);
+    }
+    for ( size_type q = 0; q < Qm; ++q )
+    {
+        mMaxM[q]=M_model->mMaxM(q);
+    }
+    for ( size_type q = 0; q < Qf; ++q )
+    {
+        mMaxF[q]=M_model->mMaxF(0,q);
+    }
+    for ( size_type q = 0; q < Ql; ++q )
+    {
+        mMaxL[q]=M_model->mMaxF(M_output_index,q);
+    }
+
     matrixN_type A ( ( int )N, ( int )N ) ;
     vectorN_type F ( ( int )N );
     vectorN_type L ( ( int )N );
@@ -4596,6 +4693,8 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
 
     bool load_elements_db=option(_name="crb.load-elements-database").template as<bool>();
     bool is_linear = M_model->isLinear();
+    int time_iter=0;
+    A.setZero( N,N );
 
     if( ! is_linear )
     {
@@ -4605,6 +4704,8 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
     //for ( double time=time_step; time<time_for_output+time_step; time+=time_step )
     for ( double time=time_step; math::abs(time - time_for_output - time_step) > 1e-9; time+=time_step )
     {
+
+        time_iter++;
         //computeProjectionInitialGuess( mu , N , uN[time_index] );
 
         //vectorN_type error;
@@ -4636,7 +4737,30 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
         {
             if( is_linear )
             {
-                boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time );
+                if( time_iter==1 )
+                {
+                    bool only_terms_time_dependent=false;
+                    boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time , only_terms_time_dependent );
+                    for ( size_type q = 0; q < Qa; ++q )
+                    {
+                        for(int m=0; m<mMaxA[q]; m++)
+                        {
+                            A += betaAqm[q][m]*M_Aqm_pr[q][m].block( 0,0,N,N );
+                        }
+                    }
+                    for ( size_type q = 0; q < Qm; ++q )
+                    {
+                        for(int m=0; m<mMaxM[q]; m++)
+                        {
+                            A += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N )/time_step;
+                        }
+                    }
+                }
+                else
+                {
+                    bool only_terms_time_dependent=true;
+                    boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaFqm ) = M_model->computeBetaQm( mu ,time , only_terms_time_dependent );
+                }
             }
             else
             {
@@ -4645,32 +4769,68 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
                 //we will call computeBetaQm( uN, mu, tim )
                 //and the test if( load_elements_db ) will disappear
                 if( load_elements_db )
-                    boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( this->expansion( uN[time_index] , N , M_model->rBFunctionSpace()->primalRB() ), mu ,time );
-                else
-                    boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time );
-            }
-
-            A.setZero( N,N );
-            for ( size_type q = 0; q < M_model->Qa(); ++q )
-            {
-                for(int m=0; m<M_model->mMaxA(q); m++)
                 {
-                    A += betaAqm[q][m]*M_Aqm_pr[q][m].block( 0,0,N,N );
+                    if( time_iter==1 )
+                    {
+                        bool only_terms_time_dependent=false;
+                        boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( this->expansion( uN[time_index], N , M_model->rBFunctionSpace()->primalRB() ),
+                                                                                          mu , time, only_terms_time_dependent );
+                        for ( size_type q = 0; q < Qa; ++q )
+                        {
+                            for(int m=0; m<mMaxA[q]; m++)
+                            {
+                                A += betaAqm[q][m]*M_Aqm_pr[q][m].block( 0,0,N,N );
+                            }
+                        }
+                        for ( size_type q = 0; q < Qm; ++q )
+                        {
+                            for(int m=0; m<mMaxM[q]; m++)
+                            {
+                                A += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N )/time_step;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        bool only_terms_time_dependent=true;
+                        boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaFqm ) =
+                            M_model->computeBetaQm( this->expansion( uN[time_index] , N , M_model->rBFunctionSpace()->primalRB() ),
+                                                    mu ,time , only_terms_time_dependent );
+                    }
+                }
+                else
+                {
+                    bool only_terms_time_dependent=false;
+                    boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time , only_terms_time_dependent );
+
+                    for ( size_type q = 0; q < Qa; ++q )
+                    {
+                        for(int m=0; m< mMaxA[q]; m++)
+                        {
+                            A += betaAqm[q][m]*M_Aqm_pr[q][m].block( 0,0,N,N );
+                        }
+                    }
+                    for ( size_type q = 0; q < Qm; ++q )
+                    {
+                        for(int m=0; m< mMaxM[q]; m++)
+                        {
+                            A += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N )/time_step;
+                        }
+                    }
                 }
             }
 
             F.setZero( N );
-            for ( size_type q = 0; q < M_model->Ql( 0 ); ++q )
+            for ( size_type q = 0; q < Qf; ++q )
             {
-                for(int m=0; m<M_model->mMaxF(0,q); m++)
+                for(int m=0; m<mMaxF[q]; m++)
                     F += betaFqm[0][q][m]*M_Fqm_pr[q][m].head( N );
             }
 
             for ( size_type q = 0; q < Qm; ++q )
             {
-                for(int m=0; m<M_model->mMaxM(q); m++)
+                for(int m=0; m<mMaxM[q]; m++)
                 {
-                    A += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N )/time_step;
                     F += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N )*uNold[time_index]/time_step;
                 }
             }
@@ -4691,9 +4851,9 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
                 uNold[time_index+1] = uN[time_index];
 
             L.setZero( N );
-            for ( size_type q = 0; q < M_model->Ql( M_output_index ); ++q )
+            for ( size_type q = 0; q < Ql; ++q )
             {
-                for(int m=0; m < M_model->mMaxF(M_output_index,q); m++)
+                for(int m=0; m < mMaxL[q]; m++)
                 {
                     L += betaFqm[M_output_index][q][m]*M_Lqm_pr[q][m].head( N );
                 }
