@@ -257,7 +257,7 @@ Environment::generateOLFiles( int argc, char** argv, std::string const& appName)
                 //std::cout << defVal;
 
                 //std::cout << "Entry for " << optName << ": ";
-                // if the option if defaulted and soesn't starts with onelab, 
+                // if the option if defaulted and soesn't starts with onelab,
                 // we put it in the end of Gmsh options
                 if(S_vm[optName].defaulted() && optName.find("onelab.") == std::string::npos )
                 {
@@ -265,7 +265,7 @@ Environment::generateOLFiles( int argc, char** argv, std::string const& appName)
                     optionPath << "GeneralParameters/" << o.first << "/" << ens;
                 }
                 // if we have a user defined option or a onelab option
-                // we want them to be on top of the list for easier access 
+                // we want them to be on top of the list for easier access
                 else
                 {
                     optionPath << "DefinedParameters/" << o.first << "/" << ens;
@@ -338,7 +338,7 @@ Environment::generateOLFiles( int argc, char** argv, std::string const& appName)
                 {
                     defVal = "gmsh";
                 }
-                
+
                 if(optName == "onelab.enable")
                 {
                     defVal = "2";
@@ -368,7 +368,7 @@ Environment::generateOLFiles( int argc, char** argv, std::string const& appName)
                     ol << funcName << ".setVisible(0);" << std::endl;
                 }
 
-                ol << funcName << ".setReadOnly(0);" << std::endl; 
+                ol << funcName << ".setReadOnly(0);" << std::endl;
 
                 /* store some option paths for building ol script */
                 if(optName == "onelab.chroot"
@@ -392,7 +392,7 @@ Environment::generateOLFiles( int argc, char** argv, std::string const& appName)
     ol << "OL.msg(No geo file specified. Using a default one);" << std::endl;
     ol << "OL.endif" << std::endl;
 
-    if(S_vm.count("onelab.remote") 
+    if(S_vm.count("onelab.remote")
     && S_vm["onelab.remote"].as<std::string>() != ""
     && S_vm["onelab.remote"].as<std::string>() != "localhost")
     {
@@ -426,7 +426,7 @@ Environment::generateOLFiles( int argc, char** argv, std::string const& appName)
         ol << "FeelApp.register(interfaced, " << appPath.str() << ".onelab.py);" << std::endl;
 
         std::string cpath = "";
-        if(S_vm.count("onelab.remote") 
+        if(S_vm.count("onelab.remote")
         && (S_vm["onelab.remote"].as<std::string>() == ""
         || S_vm["onelab.remote"].as<std::string>() == "localhost"))
         {
@@ -435,8 +435,8 @@ Environment::generateOLFiles( int argc, char** argv, std::string const& appName)
             cpath = "";
             for(int i = 0; i < n; i++)
             {
-                cpath = cpath + "../";  
-            } 
+                cpath = cpath + "../";
+            }
         }
 
         ol << "FeelApp.in(" << cpath << appPath.str() << ".onelab.cfg.ol);" << std::endl;
@@ -452,7 +452,7 @@ Environment::generateOLFiles( int argc, char** argv, std::string const& appName)
         ol << "OL.endif" << std::endl;
 
         ol << "FeelApp.out( " << cpath << appPath.str() << ".onelab.out);" << std::endl;
-        
+
         ol << "OL.include(" << cpath << appPath.str() << ".onelab.out);" << std::endl;
     }
 
@@ -463,7 +463,7 @@ Environment::generateOLFiles( int argc, char** argv, std::string const& appName)
     /* to avoid patching Gmsh */
     std::string pyscript = appPath.str() + ".onelab.py";
     std::ofstream shs;
-    shs.open(pyscript, std::ofstream::out | std::ofstream::trunc); 
+    shs.open(pyscript, std::ofstream::out | std::ofstream::trunc);
 
     shs << "#!/usr/bin/python" << std::endl;
     shs << "import sys, subprocess" << std::endl << std::endl;
@@ -758,7 +758,7 @@ Environment::doOptions( int argc, char** argv,
         /* We store the application path for further use */
         fs::path p(argv[0]);
         Environment::olAppPath = fs::absolute(p).string();
-        
+
         if ( worldComm().isMasterRank() )
         {
             if ( S_vm.count("onelab.enable") )
@@ -1075,11 +1075,11 @@ Environment::~Environment()
                 /* eother truncate the file if we are process 0 or complete it if we are an other process */
                 if(worldComm().globalRank() == 0)
                 {
-                    ool.open(Environment::olAppPath + ".onelab.out", std::ofstream::out | std::ofstream::trunc); 
+                    ool.open(Environment::olAppPath + ".onelab.out", std::ofstream::out | std::ofstream::trunc);
                 }
                 else
                 {
-                    ool.open(Environment::olAppPath + ".onelab.out", std::ofstream::out | std::ofstream::app); 
+                    ool.open(Environment::olAppPath + ".onelab.out", std::ofstream::out | std::ofstream::app);
                 }
                 fs::path p(Environment::olAppPath);
 

@@ -24,6 +24,8 @@
 /**
    \file eim.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+   \author Cecile Daversin <daversin@math.unistra.fr>
+   \author Stephane Veys
    \date 2012-05-02
  */
 #ifndef _FEELPP_EIM_HPP
@@ -862,13 +864,16 @@ EIM<ModelType>::studyConvergence( parameter_type const & mu , solution_type & so
     int Nmax=0;
 
     double relative_l2_error;
+    double relative_linf_error;
     double absolute_l2_error;
     double interpolation_error;
     double absolute_linf_error_estimated ;
     double absolute_l2_error_estimated;
     double relative_l2_error_estimated;
+    double relative_linf_error_estimated;
     double relative_ratio_l2;
-    double absolute_ratio_linf;
+    double relative_ratio_linf;
+    //double absolute_ratio_linf;
 
     //As we print error estimation, we stop at max-1
     //because we need to access to the max^th basis function
@@ -889,20 +894,24 @@ EIM<ModelType>::studyConvergence( parameter_type const & mu , solution_type & so
         auto eim_approximation = this->operator()(mu , solution, N);
         diffl2norm = M_model->projDiffL2Norm( solution , mu , eim_approximation );
         double absolute_linf_error = M_model->projDiffLinfNorm( solution , mu , eim_approximation );
+        double exprlinfnorm = M_model->projExprLinfNorm( solution , mu );
 
         if( N < max )
         {
             relative_l2_error = diffl2norm / exprl2norm ;
+            relative_linf_error = absolute_linf_error / exprlinfnorm ;
             absolute_l2_error = diffl2norm ;
             //interpolation error : || projection_g - g ||_L2
             interpolation_error = M_model->interpolationError( solution , mu );
             absolute_linf_error_estimated = this->errorEstimationLinf( mu , solution, N );
+            relative_linf_error_estimated = absolute_linf_error_estimated/exprlinfnorm;
             auto tuple = this->interpolationErrorEstimation( mu , solution, N );
             auto error_estimation_element = tuple.template get<1>();
             absolute_l2_error_estimated = error_estimation_element.l2Norm();
             relative_l2_error_estimated = absolute_l2_error_estimated/exprl2norm;
             relative_ratio_l2 = math::abs( relative_l2_error_estimated / relative_l2_error );
-            absolute_ratio_linf = math::abs( absolute_linf_error_estimated / absolute_linf_error );
+            //absolute_ratio_linf = math::abs( absolute_linf_error_estimated / absolute_linf_error );
+            relative_ratio_linf = math::abs( relative_linf_error_estimated / relative_linf_error );
         }
 
         std::string str = "\t";
@@ -911,7 +920,7 @@ EIM<ModelType>::studyConvergence( parameter_type const & mu , solution_type & so
         if( Environment::worldComm().isMasterRank() )
         {
             fileL2            << relative_l2_error            <<str;
-            fileLINF          << absolute_linf_error          <<str;
+            fileLINF          << relative_linf_error          <<str;
 
             if( N == Nmax-1 )
                 str = "\n";
@@ -921,11 +930,11 @@ EIM<ModelType>::studyConvergence( parameter_type const & mu , solution_type & so
             {
                 fileL2estimated   << relative_l2_error_estimated  <<str;
                 fileL2ratio       << relative_ratio_l2            <<str;
-                fileLINFestimated << absolute_linf_error_estimated<<str;
-                if( absolute_linf_error < 1e-14 )
+                fileLINFestimated << relative_linf_error_estimated<<str;
+                if( relative_linf_error < 1e-14 )
                     fileLINFratio     << 0          <<str;
                 else
-                    fileLINFratio     << absolute_ratio_linf          <<str;
+                    fileLINFratio     << relative_ratio_linf          <<str;
             }
         }
 
@@ -1116,6 +1125,7 @@ public:
     virtual double projExpressionL2Norm( solution_type const& T , parameter_type const& mu ) const = 0;
     virtual double projDiffL2Norm( solution_type const& T , parameter_type const& mu , element_type const& eim_expansion ) const = 0;
     virtual double projDiffLinfNorm( solution_type const& T , parameter_type const& mu , element_type const& eim_expansion ) const = 0;
+    virtual double projExprLinfNorm( solution_type const& T , parameter_type const& mu ) const = 0;
     virtual double interpolationError( solution_type const& T , parameter_type const& mu ) const = 0;
     virtual solution_type solve( parameter_type const&  mu ) = 0;
     virtual element_type residual( element_type const& z, element_type const& g ) = 0;
@@ -1873,6 +1883,20 @@ public:
         auto pi_g = vf::project( _space=this->functionSpace(), _expr=M_expr );
         auto diff = pi_g - eim_expansion;
         auto linf = normLinf( _range=elements( mesh ), _pset=_Q<5>(), _expr=idv(diff) );
+        return linf.template get<0>();
+    }
+
+    //here is computed || \pi_g  ||_Linf
+    double projExprLinfNorm( solution_type const& T , parameter_type const& mu ) const
+    {
+        M_mu = mu;
+#if !defined(NDEBUG)
+        M_mu.check();
+#endif
+        M_u = T;
+        auto mesh = this->functionSpace()->mesh();
+        auto pi_g = vf::project( _space=this->functionSpace(), _expr=M_expr );
+        auto linf = normLinf( _range=elements( mesh ), _pset=_Q<5>(), _expr=idv(pi_g) );
         return linf.template get<0>();
     }
 

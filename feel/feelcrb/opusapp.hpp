@@ -24,6 +24,8 @@
 /**
    \file opusapp.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+   \author Cecile Daversin <daversin@math.unistra.fr>
+   \author Stephane Veys
    \date 2011-06-18
  */
 #ifndef __OpusApp_H
@@ -1047,7 +1049,15 @@ public:
                                     {
                                         if( solve_dual_problem )
                                         {
-                                            u_dual_fem =  model->solveFemDualUsingAffineDecompositionFixedPoint( mu );
+                                            if( option(_name="crb.solve-fem-monolithic").template as<bool>() )
+                                            {
+                                                u_dual_fem = model->solveFemDualMonolithicFormulation( mu );
+                                            }
+                                            else
+                                            {
+                                                //use affine decomposition
+                                                u_dual_fem =  model->solveFemDualUsingAffineDecompositionFixedPoint( mu );
+                                            }
 
                                             u_dual_error = model->functionSpace()->element();
                                             u_dual_error = (( u_dual_fem - u_crb_dual ).pow(2)).sqrt() ;
