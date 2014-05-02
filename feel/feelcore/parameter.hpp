@@ -231,6 +231,7 @@ BOOST_PARAMETER_NAME( options )
 
     BOOST_PARAMETER_NAME( partitions )
     BOOST_PARAMETER_NAME( partition_file )
+    BOOST_PARAMETER_NAME( respect_partition )
     BOOST_PARAMETER_NAME( rebuild_partitions )
     BOOST_PARAMETER_NAME( rebuild_partitions_filename )
     BOOST_PARAMETER_NAME( worldcomm )

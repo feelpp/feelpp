@@ -9,13 +9,14 @@ usage()
   cat <<EOT
 $0 [options...]
 Options:
--d, --debug                         debug mode
--r, --release                       release mode
-    --prefix=PATH                   define install path
--v, --verbose                       enable verbose output
--h, --help                          help page
-    --<package>-dir=PACKAGE_PATH    define <package> install directory
-    --disable-<package>             disable <package>
+ -d, --debug                         debug mode
+-rd, --relwithdebinfo                relwithdebinfo mode
+ -r, --release                       release mode
+     --prefix=PATH                   define install path
+ -v, --verbose                       enable verbose output
+ -h, --help                          help page
+     --<package>-dir=PACKAGE_PATH    define <package> install directory
+     --disable-<package>             disable <package>
 EOT
 }
 
@@ -39,6 +40,7 @@ fi
 
 _WANT_VERBOSE=no
 _WANT_DEBUG=no
+_WANT_RELWITHDEBINFO=no
 _WANT_OG=no
 _WANT_CHECK=no
 _HAS_CONFIG=no
@@ -101,6 +103,9 @@ while [ -n "$1" ]; do
    --debug|-d)
        _WANT_DEBUG=yes
        _WANT_CHECK=yes
+       ;;
+   --relwithdebinfo|-rd)
+       _WANT_RELWITHDEBINFO=yes
        ;;
    --check)
        _WANT_CHECK=yes
@@ -207,6 +212,8 @@ fi
 if [ "${_WANT_DEBUG}" = "yes" ]; then
   echo 'Configuration en mode debug'
   BUILDTYPE=Debug
+elif [ "${_WANT_RELWITHDEBINFO}" = "yes" ]; then
+    BUILDTYPE=RelWithDebInfo
 else
   BUILDTYPE=Release
 fi

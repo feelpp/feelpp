@@ -338,14 +338,9 @@ public:
      * \brief compute the theta coefficient for both bilinear and linear form
      * \param mu parameter to evaluate the coefficients
      */
-    boost::tuple<beta_vector_type, std::vector<beta_vector_type> >
-    computeBetaQm( element_type const& T,parameter_type const& mu , double time=1e30 )
-    {
-        return computeBetaQm( mu , time );
-    }
 
     boost::tuple<beta_vector_type, std::vector<beta_vector_type> >
-    computeBetaQm( parameter_type const& mu , double time=0 )
+    computeBetaQm( parameter_type const& mu )
     {
         std::cout << "compute thetaq for mu " << mu << "\n" ;
         M_betaAqm.resize( Qa() );
