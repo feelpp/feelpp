@@ -71,20 +71,20 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( evaluate1, T, dim_types )
     space_ptrtype P1h = space_type::New( mesh );
     using namespace vf;
     auto e1 = normLinf( _range=elements(mesh), _pset=_Q<5>(), _expr=sin(2*constants::pi<double>()*Px()) );
-    BOOST_CHECK_CLOSE( e1.template get<0>(), 1., 1e-1 );
-    BOOST_TEST_MESSAGE( "maximum absolute value atteined at " << e1.template get<1>() );
+    BOOST_CHECK_CLOSE( e1.value(), 1., 1e-1 );
+    BOOST_TEST_MESSAGE( "maximum absolute value atteined at " << e1.arg() );
 
     BOOST_TEST_MESSAGE("Checking on faces...");
     auto e2 = normLinf( _range=boundaryfaces(mesh), _pset=_Q<5>(), _expr=sin(2*constants::pi<double>()*Px()) );
-    BOOST_CHECK_CLOSE( e2.template get<0>(), 1., 1e-1 );
+    BOOST_CHECK_CLOSE( e2.value(), 1., 1e-1 );
     BOOST_TEST_MESSAGE( "maximum over boundary absolute value atteined at " << e2.template get<1>() );
 
     BOOST_TEST_MESSAGE("Checking on faces...");
     auto e3 = minmax( _range=boundaryfaces(mesh), _pset=_Q<5>(), _expr=sin(2*constants::pi<double>()*Px()) );
-    BOOST_CHECK_CLOSE( e3.template get<0>(), -1., 1e-1 );
-    BOOST_CHECK_CLOSE( e3.template get<1>(), 1., 1e-1 );
-    BOOST_TEST_MESSAGE( "minimum over boundary absolute value atteined at " << e3.template get<2>().col(0) );
-    BOOST_TEST_MESSAGE( "maximum over boundary absolute value atteined at " << e3.template get<2>().col(1) );
+    BOOST_CHECK_CLOSE( e3.min(), -1., 1e-1 );
+    BOOST_CHECK_CLOSE( e3.max(), 1., 1e-1 );
+    BOOST_TEST_MESSAGE( "minimum over boundary absolute value atteined at " << e3.argmin() );
+    BOOST_TEST_MESSAGE( "maximum over boundary absolute value atteined at " << e3.argmax() );
 
 }
 

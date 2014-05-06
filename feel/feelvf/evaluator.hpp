@@ -577,6 +577,31 @@ BOOST_PARAMETER_FUNCTION(
 }
 
 /**
+ * \brief data returned by normLinf
+ */
+template<int Dim>
+struct normLinfData : public boost::tuple<double, Eigen::Matrix<double, Dim,1> >
+{
+    typedef boost::tuple<double, Eigen::Matrix<double, Dim,1> > super;
+    normLinfData( double v, Eigen::Matrix<double, Dim,1> const& x  ) : super( v, x ) {}
+
+    /**
+     * \return the maximum absolute value
+     */
+    double value() const { return this->template get<0>(); }
+
+    /**
+     * \return the maximum absolute value
+     */
+    double operator()() const { return this->template get<0>(); }
+
+    /**
+     * \return the point at which the expression is maximal
+     */
+    Eigen::Matrix<double, Dim,1> const& arg() const { return this->template get<1>(); }
+
+};
+/**
  *
  * \brief evaluate an expression over a range of element at a set of points defined in the reference element
  *
@@ -586,7 +611,7 @@ BOOST_PARAMETER_FUNCTION(
  * \arg geomap the type of geomap to use (make sense only using high order meshes)
  */
 BOOST_PARAMETER_FUNCTION(
-    ( boost::tuple<double, Eigen::Matrix<double, vf::detail::evaluate<Args>::nRealDim,1> > ), // return type
+    ( normLinfData<vf::detail::evaluate<Args>::nRealDim> ), // return type
     normLinf,    // 2. function name
 
     tag,           // 3. namespace of tag types
@@ -646,9 +671,42 @@ BOOST_PARAMETER_FUNCTION(
         LOG_ASSERT( index2 == index ) << " index2 = " << index2 <<  " and index  = " << index << "\n";
     }
     LOG(INFO) << "evaluate expression done." << std::endl;
-
-    return boost::make_tuple( *it_max, n_world[position] );
+    Eigen::Matrix<double, vf::detail::evaluate<Args>::nRealDim,1> x = n_world[position];
+    return normLinfData<vf::detail::evaluate<Args>::nRealDim> (*it_max, x);
 }
+
+
+/**
+ * \brief data returned by minmax
+ */
+template<int Dim>
+struct minmaxData : public boost::tuple<double,double, Eigen::Matrix<double, Dim,2> >
+{
+    typedef boost::tuple<double,double, Eigen::Matrix<double, Dim,2> > super;
+    minmaxData( super const& s ) : super( s ) {}
+    /**
+     * \return the minimum absolute value
+     */
+    double min() const { return this->template get<0>(); }
+
+    /**
+     * \return the maximum absolute value
+     */
+    double max() const { return this->template get<1>(); }
+
+
+    /**
+     * \return the point at which the expression is maximal
+     */
+    Eigen::Matrix<double, Dim,1> argmin() const { return this->template get<2>().col(0); }
+
+    /**
+     * \return the point at which the expression is maximal
+     */
+    Eigen::Matrix<double, Dim,1> argmax() const { return this->template get<2>().col(1); }
+
+};
+
 
 /**
  *
@@ -660,7 +718,7 @@ BOOST_PARAMETER_FUNCTION(
  * \arg geomap the type of geomap to use (make sense only using high order meshes)
  */
 BOOST_PARAMETER_FUNCTION(
-    ( boost::tuple<double, double, Eigen::Matrix<double, vf::detail::evaluate<Args>::nRealDim,2> > ), // return type
+    ( minmaxData<vf::detail::evaluate<Args>::nRealDim> ), // return type
     minmax,    // 2. function name
 
     tag,           // 3. namespace of tag types
@@ -716,7 +774,7 @@ BOOST_PARAMETER_FUNCTION(
 
     LOG(INFO) << "evaluate minmax(expression) done." << std::endl;
 
-    return boost::make_tuple( *it_min, *it_max, coords );
+    return minmaxData<vf::detail::evaluate<Args>::nRealDim> (boost::make_tuple( *it_min, *it_max, coords ));
 }
 
 } // vf
