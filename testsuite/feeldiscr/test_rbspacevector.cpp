@@ -83,6 +83,7 @@ public :
     typedef Mesh<Simplex<Dim> > mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
     typedef FunctionSpace<mesh_type,bases<Lagrange<Order, Vectorial> > > space_type;
+    typedef space_type functionspace_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
     typedef boost::shared_ptr<element_type> element_ptrtype;
