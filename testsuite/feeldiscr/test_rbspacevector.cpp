@@ -98,7 +98,7 @@ public :
         auto mesh=unitHypercube<Dim>();
         Xh = Pchv<Order>( mesh );
 
-        auto RbSpace = RbSpacePchv<Order>( this->shared_from_this() , mesh );
+        auto RbSpace = RbSpacePch( this->shared_from_this() );
         auto basis_x = vf::project( Xh , elements(mesh), vec( Px() , Px()*Px() ) );
         auto basis_y = vf::project( Xh , elements(mesh), vec( Py() , Py()*Px() ) );
         RbSpace->addPrimalBasisElement( basis_x );
@@ -277,4 +277,3 @@ BOOST_AUTO_TEST_CASE( test_1 )
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-
