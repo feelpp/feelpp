@@ -1050,6 +1050,12 @@ template<uint16_type Dim,
          typename T>
 const uint16_type GeoElement1D<Dim,GEOSHAPE,SubFace,T>::nDim;
 
+template<uint16_type Dim,
+         typename GEOSHAPE,
+         typename SubFace,
+         typename T>
+const uint16_type GeoElement1D<Dim,GEOSHAPE,SubFace,T>::nRealDim;
+
 /**
  * \class GeoElement2D
  * \brief  Class for 2D elements.
@@ -1406,6 +1412,8 @@ template <uint16_type Dim, typename GEOSHAPE, typename SFO, typename T>
 const uint16_type GeoElement2D<Dim, GEOSHAPE, SFO, T>::numLocalEdges;
 template <uint16_type Dim, typename GEOSHAPE, typename SFO, typename T>
 const uint16_type GeoElement2D<Dim, GEOSHAPE, SFO, T>::nDim;
+template <uint16_type Dim, typename GEOSHAPE, typename SFO, typename T>
+const uint16_type GeoElement2D<Dim, GEOSHAPE, SFO, T>::nRealDim;
 
 
 /**
