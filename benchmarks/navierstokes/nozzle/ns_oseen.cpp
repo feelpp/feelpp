@@ -55,7 +55,7 @@ void Oseen::run()
     auto q = V.element<1>();
 
     auto P0dh = Pdh<0>( mesh );
-    auto Re = P0dh->element();
+    auto Pe = P0dh->element();
     auto viscous_length_scale = P0dh->element();
 
     double mu = doption( "mu" );
@@ -80,6 +80,7 @@ void Oseen::run()
 
     auto g = expr<FEELPP_DIM,1>( soption(_name="functions.g"), "g" );
     auto flowDirection = expr<FEELPP_DIM,1>( soption(_name="N"), "N" );
+    auto Q = doption(_name="Q");
     auto D = doption(_name="D");
     auto Di = doption(_name="Di");
     auto Uc = expr( soption(_name="U"), "U" );
@@ -163,28 +164,37 @@ void Oseen::run()
         {
             ti.restart();
 
-            auto intUz= integrate(_range=markedfaces(mesh,marker),_expr=idv(u)).evaluate()(0,0);
+            auto Uz= minmax(_range=markedfaces(mesh,marker),_pset=_Q<2>(),_expr=idv(u.comp(X)));
+            auto Uzminnorm= Uz.get<0>()*(pi*Di*Di/4)/Q;
+            auto Uzmaxnorm= Uz.get<1>()*(pi*Di*Di/4)/Q;
             auto meanU = mean(_range=markedfaces(mesh,marker), _expr=idv(u)).norm();
-            // compute Reynolds: we should compute the max value of the quantity intead of the mean value
-            auto reynolds = mean(_range=markedfaces(mesh,marker), _expr=rho*idv(u)*h()/mu).norm();
+            auto peclet = mean(_range=markedfaces(mesh,marker), _expr=rho*idv(u)*h()/mu).norm();
             auto flowrate = integrate(_range=markedfaces(mesh,marker), _expr=trans(idv(u))*unitX()).evaluate()(0,0) ;
+
+            auto Rei= rho*Uz.get<1>()*Di/mu;
+            auto Ret= rho*Uz.get<1>()*D/mu;
 
             std::string key = (boost::format("d.%1%")%marker).str();
             std::string key2 = (boost::format("t.integrate.%1%")%marker).str();
             M_stats.put( key2, ti.elapsed() );
-            M_stats.put( key+".double.intUz", intUz );
+            M_stats.put( key+".double.Uzmin", Uz.get<0>() );
+            M_stats.put( key+".double.Uzminnorm", Uzminnorm );
+            M_stats.put( key+".double.Uzmax", Uz.get<1>() );
+            M_stats.put( key+".double.Uzmaxnorm", Uzmaxnorm );
             M_stats.put( key+".double.meanU", meanU );
-            M_stats.put( key+".double.reynolds", reynolds );
+            M_stats.put( key+".double.Peclet", peclet );
+            M_stats.put( key+".double.Rei", Rei );
+            M_stats.put( key+".double.Ret", Ret );
             M_stats.put( key+".double.flowrate", flowrate );
         }
 
         ti.restart();
         e->step(mybdf->time())->add( "u", u );
         e->step(mybdf->time())->add( "p", p );
-	Re.on(_range=elements(mesh), _expr=rho*norm2(idv(u))*h()/mu);
-        e->step(mybdf->time())->add( "Re", Re );
-	viscous_length_scale.on(_range=elements(mesh), _expr=rho*sqrt(sqrt(inner( sym(gradv(u)),sym(gradv(u)) ))*mu/rho)*h()/mu);
-	e->step(mybdf->time())->add( "vls", viscous_length_scale );
+        Pe.on(_range=elements(mesh), _expr=rho*norm2(idv(u))*h()/mu);
+        e->step(mybdf->time())->add( "Pe", Pe );
+        viscous_length_scale.on(_range=elements(mesh), _expr=rho*sqrt(sqrt(inner( sym(gradv(u)),sym(gradv(u)) ))*mu/rho)*h()/mu);
+        e->step(mybdf->time())->add( "vls", viscous_length_scale );
 
         e->save();
         M_stats.put( "t.export.total", ti.elapsed() );
