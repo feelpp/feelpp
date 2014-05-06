@@ -23,7 +23,7 @@
 #
 set_directory_properties(PROPERTIES LABEL testinterpolation )
 
-feelpp_add_test( form_interpolation NO_MPI_TEST )
+feelpp_add_test( form_interpolation NO_MPI_TEST TIMEOUT 40)
 feelpp_add_test( interpolation NO_MPI_TEST   )
 feelpp_add_test( interpolation_op NO_MPI_TEST )
 feelpp_add_test( interp_twomesh NO_MPI_TEST )
