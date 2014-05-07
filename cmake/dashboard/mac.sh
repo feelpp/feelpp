@@ -9,6 +9,6 @@ if [ -x /usr/bin/clang ]; then
     $COMMON,FEELPP_CXXNAME=clang++-3.4,FEELPP_CXX=/usr/bin/clang++,FEELPP_EXPLICIT_VECTORIZATION=SSE2
 fi
 
-if [ -x /usr/local/bin/g++-4.8 ]; then
-    $COMMON,FEELPP_CXXNAME=g++-4.8,FEELPP_CXX=/usr/local/bin/g++-4.8,FEELPP_EXPLICIT_VECTORIZATION=SSE2
-fi
+#if [ -x /usr/local/bin/g++-4.8 ]; then
+#    $COMMON,FEELPP_CXXNAME=g++-4.8,FEELPP_CXX=/usr/local/bin/g++-4.8,FEELPP_EXPLICIT_VECTORIZATION=SSE2
+#fi
