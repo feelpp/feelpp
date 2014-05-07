@@ -15,6 +15,7 @@ feelpp_add_test( fspace_context )
 feelpp_add_test( geomap )
 
 feelpp_add_test( hdiv )
+feelpp_add_test( hdiv_oneelt NO_MPI_TEST )
 feelpp_add_test( hdiv3D )
 feelpp_add_test( hcurl )
 feelpp_add_test( functionals )
