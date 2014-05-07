@@ -40,7 +40,7 @@ option(FEELPP_ENABLE_GMSH_LIBRARY "Enables Gmsh library in Feel++" ON )
 if ( FEELPP_ENABLE_GMSH_LIBRARY )
   INCLUDE(CheckIncludeFileCXX)
 
-  FIND_PATH(GMSH_INCLUDE_DIR
+  FIND_PATH(GMSH_INCLUDE_PATH
     Gmsh.h Context.h GModel.h
     HINTS
     $ENV{GMSH_DIR}
@@ -49,12 +49,11 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
     include include/gmsh
     DOC "Directory where GMSH header files are stored" )
 
-  include_directories(${GMSH_INCLUDE_DIR})
-  if ( GMSH_INCLUDE_DIR )
+  if ( GMSH_INCLUDE_PATH )
     set( FEELPP_HAS_GMSH_H 1 )
     FIND_PATH(GMSH_ADAPTMESH_INCLUDE_DIR
       Openfile.h Field.h
-      PATHS ${GMSH_INCLUDE_DIR}
+      PATHS ${GMSH_INCLUDE_PATH}
       DOC "Directory where GMSH header files are stored" )
     if ( GMSH_ADAPTMESH_INCLUDE_DIR )
       set( FEELPP_HAS_GMSH_H 1 )
@@ -62,16 +61,7 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
       message(STATUS "Gmsh headers: some headers needed for meshadaptation are missing")
       message(STATUS "Check wiki pages for mesh adaptation to install properly gmsh")
     endif( GMSH_ADAPTMESH_INCLUDE_DIR )
-  endif(GMSH_INCLUDE_DIR)
-  #include(CheckIncludeFiles)
-  #set(CMAKE_REQUIRED_INCLUDES "${GMSH_INCLUDE_DIR};${CMAKE_REQUIRED_INCLUDES}")
-  #check_include_file(Gmsh.h FEELPP_HAS_GMSH_GMSH_H )
-  ##check_include_file(Context.h FEELPP_HAS_GMSH_CONTEXT_H )
-  #check_include_file(GModel.h FEELPP_HAS_GMSH_GMODEL_H )
-  #if ( FEELPP_HAS_GMSH_GMODEL_H AND FEELPP_HAS_GMSH_CONTEXT_H and FEELPP_HAS_GMSH_GMSH_H )
-  #  set( FEELPP_HAS_GMSH_H 1 )
-  #endif()
-  #message(STATUS "Gmsh headers : ${FEELPP_HAS_GMSH_H}, ${CMAKE_REQUIRED_INCLUDES}" )
+  endif(GMSH_INCLUDE_PATH)
 
   FIND_LIBRARY(GMSH_LIBRARY NAMES Gmsh gmsh-2.5.1 gmsh1 gmsh
     PATHS
@@ -93,7 +83,11 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
       ${CMAKE_BINARY_DIR}/contrib/gmsh/lib
       NO_DEFAULT_PATH)
 
-    set(GMSH_LIBRARY "${GMSH_LIBRARY_PATH}/${GMSHLIB}" )
+    if(GMSH_LIBRARY_PATH)
+        set(GMSH_LIBRARY "${GMSH_LIBRARY_PATH}/${GMSHLIB}" )
+    else(GMSH_LIBRARY_PATH)
+        set(GMSH_LIBRARY "GMSH_LIBRARY-NOTFOUND" )
+    endif(GMSH_LIBRARY_PATH)
   endif(NOT GMSH_LIBRARY)
 
   FIND_LIBRARY(GL2PS_LIBRARY NAMES gl2ps
@@ -113,8 +107,17 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
       lib  )
   ENDIF()
 
+  if(GMSH_INCLUDE_PATH)
+      set(GMSH_INCLUDE_DIR ${GMSH_INCLUDE_PATH})
+  endif(GMSH_INCLUDE_PATH)
+
+  set(GMSH_LIBRARIES "")
+  if(GMSH_LIBRARY)
+    set(GMSH_LIBRARIES ${GMSH_LIBRARIES} ${GMSH_LIBRARY})
+endif()
+
   FIND_PACKAGE_HANDLE_STANDARD_ARGS (GMSH DEFAULT_MSG
-    GMSH_INCLUDE_DIR GMSH_LIBRARY GMSH_EXECUTABLE
+      GMSH_INCLUDE_DIR GMSH_LIBRARIES GMSH_EXECUTABLE
     )
 
   if ( GMSH_FOUND )
