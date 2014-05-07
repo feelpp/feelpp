@@ -833,14 +833,14 @@ OpusModelRB<OrderU,OrderP,OrderT>::mMaxF( int output_index, int q)
 
 template<int OrderU, int OrderP, int OrderT>
 typename OpusModelRB<OrderU,OrderP,OrderT>::beta_vectors_type
-OpusModelRB<OrderU,OrderP,OrderT>::computeBetaQm( element_type const&  T, parameter_type const& mu, double time )
+OpusModelRB<OrderU,OrderP,OrderT>::computeBetaQm( element_type const&  T, parameter_type const& mu, double time , bool only_terms_time_dependent=false )
 {
-    return computeBetaQm( mu , time );
+    return computeBetaQm( mu , time , only_terms_time_dependent );
 }
 
 template<int OrderU, int OrderP, int OrderT>
 typename OpusModelRB<OrderU,OrderP,OrderT>::beta_vectors_type
-OpusModelRB<OrderU,OrderP,OrderT>::computeBetaQm( parameter_type const& mu, double time )
+OpusModelRB<OrderU,OrderP,OrderT>::computeBetaQm( parameter_type const& mu, double time , bool only_terms_time_dependent=false )
 {
     //LOG(INFO) << "[OpusModelRB::computeBetaQm] mu = " << mu << "\n";
     double kIC = mu( 0 );

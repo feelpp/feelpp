@@ -164,6 +164,9 @@ message(STATUS "using ${NProcs2} cores out of ${NProcs} cores" )
 #  set(CTEST_BUILD_FLAGS -j${N2})
 #  set(ctest_test_args ${ctest_test_args} PARALLEL_LEVEL ${N2})
 
+# set test timeout to 300s
+set(CTEST_TIMEOUT "20")
+
 #else()
 #  OPTION(FEELPP_ENABLE_MPI_MODE "Instantiation mode" OFF )
 #endif()
@@ -350,7 +353,7 @@ endif()
 if ( FEELPP_ENABLE_DOCUMENTATION OR FEELPP_ENABLE_DOXYGEN )
   set(FEELPP_DOC_ENABLE_CAVITY_CRB off)
   ADD_SUBDIRECTORY ( doc )
-endif () 
+endif ()
 
 if ( FEELPP_ENABLE_BENCHMARKS AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/benchmarks )
   ADD_SUBDIRECTORY ( benchmarks )
