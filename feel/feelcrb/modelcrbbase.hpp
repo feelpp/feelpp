@@ -133,7 +133,7 @@ public :
     typedef boost::shared_ptr<element_type> element_ptrtype;
 
     /*reduced basis space*/
-    typedef ReducedBasisSpace<self_type, mesh_type, basis_type, value_type> rbfunctionspace_type;
+    typedef ReducedBasisSpace<self_type> rbfunctionspace_type;
     typedef boost::shared_ptr< rbfunctionspace_type > rbfunctionspace_ptrtype;
 
     /*backend*/
@@ -272,6 +272,8 @@ public :
         M_is_initialized( false )
     {
     }
+
+    virtual std::string modelName() { return "generic-model-name"; }
 
 
 
@@ -534,22 +536,22 @@ public :
     {
         return computeBetaLinearDecompositionA( mu, mpl::bool_< is_time_dependent >(), time );
     }
-    beta_vector_type computeBetaLinearDecompositionA( parameter_type const& mu, mpl::bool_<true>, double time=0 )
+    beta_vector_type computeBetaLinearDecompositionA( parameter_type const& mu, mpl::bool_<true>, double time )
     {
         auto tuple = computeBetaQm( mu , time );
         return tuple.template get<1>();
     }
-    beta_vector_type computeBetaLinearDecompositionA( parameter_type const& mu, mpl::bool_<false>, double time=0 )
+    beta_vector_type computeBetaLinearDecompositionA( parameter_type const& mu, mpl::bool_<false>, double time )
     {
         auto tuple = computeBetaQm( mu , time );
         return tuple.template get<0>();
     }
 
-    virtual betaq_type computeBetaQ( parameter_type const& mu ,  double time=0 )
+    virtual betaq_type computeBetaQ( parameter_type const& mu ,  double time , bool only_terms_time_dependent=false )
     {
         return computeBetaQ( mu, mpl::bool_< is_time_dependent >(), time );
     }
-    betaq_type computeBetaQ( parameter_type const& mu , mpl::bool_<true>, double time=0 )
+    betaq_type computeBetaQ( parameter_type const& mu , mpl::bool_<true>, double time , bool only_terms_time_dependent=false )
     {
         int sizeA=M_ginacAq.size();
         if( sizeA > 0 )
@@ -598,7 +600,61 @@ public :
 
         return boost::make_tuple( M_betaMq, M_betaAq, M_betaFq );
     }
-    betaq_type computeBetaQ( parameter_type const& mu , mpl::bool_<false>, double time=0 )
+    betaq_type computeBetaQ( parameter_type const& mu , mpl::bool_<false>, double time , bool only_terms_time_dependent=false)
+    {
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<"*******************************************************************"<<std::endl;
+            std::cout<<"** Error ! You want to access to computeBetaQ ( mu , time) but   **"<<std::endl;
+            std::cout<<"** your model is not time-dependent !                            **"<<std::endl;
+            std::cout<<"*******************************************************************"<<std::endl;
+        }
+        bool go=false;
+        CHECK( go );
+        return boost::make_tuple( M_betaAq, M_betaFq );
+    }
+
+    //for steady models, only mu is needed to compute beta coefficients
+    virtual betaqm_type computeBetaQm( parameter_type const& mu )
+    {
+        return computeBetaQm( mu, mpl::bool_< is_time_dependent >() );
+    }
+    betaqm_type computeBetaQm( parameter_type const& mu , mpl::bool_<true>  )
+    {
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<"*******************************************************************"<<std::endl;
+            std::cout<<"** Error ! You want to access to computeBetaQm( mu ) wherease    **"<<std::endl;
+            std::cout<<"** your model is time-dependent !                                **"<<std::endl;
+            std::cout<<"*******************************************************************"<<std::endl;
+        }
+        bool go=false;
+        CHECK( go );
+        return boost::make_tuple( M_betaMqm, M_betaAqm, M_betaFqm );
+    }
+    betaqm_type computeBetaQm( parameter_type const& mu , mpl::bool_<false> )
+    {
+        return boost::make_tuple( M_betaAqm, M_betaFqm );
+    }
+    virtual betaq_type computeBetaQ( parameter_type const& mu )
+    {
+        return computeBetaQ( mu, mpl::bool_< is_time_dependent >() );
+    }
+
+    betaq_type computeBetaQ( parameter_type const& mu , mpl::bool_<true>  )
+    {
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<"*******************************************************************"<<std::endl;
+            std::cout<<"** Error ! You want to access to computeBetaQ ( mu ) wherease    **"<<std::endl;
+            std::cout<<"** your model is time-dependent !                                **"<<std::endl;
+            std::cout<<"*******************************************************************"<<std::endl;
+        }
+        bool go=false;
+        CHECK( go );
+        return boost::make_tuple( M_betaMq, M_betaAq, M_betaFq );
+    }
+    betaq_type computeBetaQ( parameter_type const& mu , mpl::bool_<false> )
     {
         int sizeA=M_ginacAq.size();
 
@@ -639,19 +695,19 @@ public :
                 }
             }
         }
-
         return boost::make_tuple( M_betaAq, M_betaFq );
     }
 
-    virtual betaqm_type computeBetaQm( parameter_type const& mu ,  double time=0 )
+
+    virtual betaqm_type computeBetaQm( parameter_type const& mu ,  double time , bool only_terms_time_dependent=false)
     {
-        return computeBetaQm( mu, mpl::bool_< is_time_dependent >(), time );
+        return computeBetaQm( mu, mpl::bool_< is_time_dependent >(), time , only_terms_time_dependent );
     }
-    betaqm_type computeBetaQm( parameter_type const& mu , mpl::bool_<true>, double time=0 )
+    betaqm_type computeBetaQm( parameter_type const& mu , mpl::bool_<true>, double time , bool only_terms_time_dependent=false )
     {
         return boost::make_tuple( M_betaMqm, M_betaAqm, M_betaFqm );
     }
-    betaqm_type computeBetaQm( parameter_type const& mu , mpl::bool_<false>, double time=0 )
+    betaqm_type computeBetaQm( parameter_type const& mu , mpl::bool_<false>, double time , bool only_terms_time_dependent=false )
     {
         return boost::make_tuple( M_betaAqm, M_betaFqm );
     }
@@ -731,12 +787,24 @@ public :
 
     //for linear models, beta coefficients don't depend on solution u
     //so the user doesn't have to specify this function
-    virtual betaqm_type computeBetaQm( element_type const& u, parameter_type const& mu ,  double time=0 )
+    virtual betaqm_type computeBetaQm( element_type const& u, parameter_type const& mu ,  double time , bool only_time_dependent_terms=false )
+    {
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<"*******************************************************************"<<std::endl;
+            std::cout<<"** You are using the function computeBetaQm( u , mu , time ) but **"<<std::endl;
+            std::cout<<"** your model has only implemented computeBetaQm( mu , time )    **"<<std::endl;
+            std::cout<<"*******************************************************************"<<std::endl;
+        }
+        betaqm_type dummy_beta_coeff;
+        return dummy_beta_coeff;
+    }
+    virtual betaqm_type computeBetaQm( element_type const& u , parameter_type const& mu )
     {
         if( Environment::worldComm().isMasterRank() )
         {
             std::cout<<"****************************************************************"<<std::endl;
-            std::cout<<"** You are using the function computeBetaQm( u , mu ) whereas **"<<std::endl;
+            std::cout<<"** You are using the function computeBetaQm( u , mu ) but     **"<<std::endl;
             std::cout<<"** your model has only implemented computeBetaQm( mu )        **"<<std::endl;
             std::cout<<"****************************************************************"<<std::endl;
         }
@@ -1383,7 +1451,7 @@ void
 ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition,EimDefinition,_Options>::setFunctionSpaces( functionspace_ptrtype Vh )
 {
     Xh = Vh;
-    XN = rbfunctionspace_type::New( _model=this->shared_from_this() , _mesh=Xh->mesh() );
+    XN = rbfunctionspace_type::New( _model=this->shared_from_this() );
 }
 
 

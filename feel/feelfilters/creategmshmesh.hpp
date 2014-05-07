@@ -72,6 +72,7 @@ BOOST_PARAMETER_FUNCTION(
       ( force_rebuild,   *( boost::is_integral<mpl::_> ), 0 )
       ( physical_are_elementary_regions,           *,false )
       ( periodic,        *, PeriodicEntities() )
+      ( respect_partition,	(bool), option(_name="gmsh.respect_partition").template as<bool>() )
       ( rebuild_partitions,	(bool), option(_name="gmsh.partition").template as<bool>() )
       ( rebuild_partitions_filename, *( boost::is_convertible<mpl::_,std::string> )	, desc->prefix()+".msh" )
       ( worldcomm,      *, Environment::worldComm() )
@@ -125,6 +126,7 @@ BOOST_PARAMETER_FUNCTION(
         {
             import.setElementRegionAsPhysicalRegion( physical_are_elementary_regions );
         }
+        import.setRespectPartition( respect_partition );
 
         _mesh->accept( import );
 

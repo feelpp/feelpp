@@ -416,6 +416,11 @@ public:
     void setStats( std::vector<std::string> const& keys );
 
     /**
+     * store statistics \p s in statistics map entry with key \p n
+     */
+    void storeStats( std::string const&  n, ptree::ptree const& s );
+
+    /**
      * print statistics from applications
      */
     void printStats( std::ostream& out, size_type stats = ALL ) const;

@@ -83,6 +83,7 @@ public:
     //! initialisation of the model
     void initModel();
 
+    beta_vector_light_type beta;
     /**
      * Given the output index \p output_index and the parameter \p mu, return
      * the value of the corresponding FEM output
@@ -94,6 +95,7 @@ public:
 void
 Heat1D::initModel()
 {
+
     CHECK( is_linear && !is_time_dependent ) << "Invalid model is_linear:" << is_linear << " is_time_dependent:" << is_time_dependent << "\n";
     LOG_IF( WARNING, ((Options&NonLinear) == NonLinear) ) << "Invalid model is_linear:" << is_linear << " is_time_dependent:" << is_time_dependent << "\n";
     LOG_IF( WARNING, ((Options&TimeDependent) == TimeDependent) ) << "Invalid model is_linear:" << is_linear << " is_time_dependent:" << is_time_dependent << "\n";
