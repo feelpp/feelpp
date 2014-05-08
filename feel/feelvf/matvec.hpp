@@ -637,6 +637,7 @@ public:
     typedef Vec<expression_vector_type> this_type;
 
     typedef double value_type;
+    typedef value_type evaluate_type;
 
     static const uint16_type vector_size =  fusion::result_of::size<expression_vector_type>::type::value;
 
@@ -892,6 +893,7 @@ public:
     typedef Mat<M, N, expression_matrix_type> this_type;
 
     typedef double value_type;
+    typedef value_type evaluate_type;
 
     static const uint16_type matrix_size1 = M;
     static const uint16_type matrix_size2 = N;

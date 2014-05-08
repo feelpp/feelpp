@@ -117,6 +117,7 @@ public:
     typedef Val<ExprT1> this_type;
     typedef typename expression_1_type::value_type value_1_type;
     typedef value_1_type value_type;
+    typedef value_type evaluate_type;
 
     VF_CHECK_ARITHMETIC_TYPE()
 
