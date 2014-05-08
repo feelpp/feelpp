@@ -41,12 +41,13 @@ int main( int argc, char** argv )
     auto mesh = loadMesh(_mesh=new  Mesh<Simplex<2>>);
     //! [load]
 
+#if 0
     //! [export]
     // export results for post processing
     auto e = exporter( _mesh=mesh );
     e->addRegions();
     e->save();
     //! [export]
-
+#endif
 }   // main
 //! [all]
