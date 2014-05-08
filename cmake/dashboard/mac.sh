@@ -14,5 +14,8 @@ if [ -x /usr/bin/clang++ ]; then
 fi
 
 if [ -x /usr/local/bin/g++-4.8 ]; then
+    export FEELPP_WORKDIR=/tmp/feel-clang
+    rm -rf $FEELPP_WORKDIR 
     $COMMON,FEELPP_CXXNAME=gcc-4.8,FEELPP_CXX=/usr/local/bin/g++-4.8
+    rm -rf $FEELPP_WORKDIR 
 fi
