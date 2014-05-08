@@ -41,8 +41,9 @@
 #include <feel/options.hpp>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feeldiscr/mesh.hpp>
-#include <feel/feelfilters/creategmshmesh.hpp>
-#include <feel/feelfilters/loadgmshmesh.hpp>
+// #include <feel/feelfilters/creategmshmesh.hpp>
+// #include <feel/feelfilters/loadgmshmesh.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/geo.hpp>
 #include <feel/feelfilters/domain.hpp>
 #include <feel/feelalg/backend.hpp>
@@ -157,22 +158,12 @@ public:
         h(this->vm()["h_ech"].template as<double>()),
         Tw(this->vm()["Tw"].template as<double>())
     {
-        std::cout << "[TestNLSolvePkPk]\n";
-
         this->changeRepository( boost::format( "%1%/h_%2%/" )
                                 % this->about().appName()
                                 % this->vm()["hsize"].template as<double>()
                                 );
 
-        mesh = createGMSHMesh( _mesh=new mesh_type,
-                               _desc=domain( _name= ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1 ).str() ,
-                                             _shape="hypercube",
-                                             _usenames=true,
-                                             _dim=Dim,
-                                             _h=meshSize,
-                                             _xmin=-1,_xmax=1,
-                                             _ymin=-1,_ymax=1,
-                                             _zmin=-1,_zmax=1) );
+        mesh = loadMesh(_mesh = new mesh_type);
 
         M_backend->nlSolver()->jacobian = boost::bind( &self_type::updateJacobian,
                                                        boost::ref( *this ), _1, _2 );
@@ -411,6 +402,17 @@ TestNLSolveComposite<Dim, OrderV, OrderT>::run()
 
     newtonSolve(VT);
 
+    V = VT.template element<0>();
+    T = VT.template element<1>();
+
+    auto T_mean = integrate( elements(mesh), idv(T) ).evaluate()(0,0);
+    auto area = integrate( elements(mesh), cst(1.) ).evaluate()(0,0);
+    T_mean /= area;
+    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+        std::cout << "[P" << OrderV << "-P" << OrderT << "] Tmean = " << T_mean << std::endl;
+
+    BOOST_CHECK_CLOSE( T_mean, 344, 2e-1 );
+
     TestNLSolveComposite::export_ptrtype exporter( TestNLSolveComposite::export_type::New( this->vm(),
                                                                                            (boost::format( "%1%" )
                                                                                             % this->about().appName() ).str() ) );
@@ -429,11 +431,35 @@ TestNLSolveComposite<Dim, OrderV, OrderT>::run()
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 BOOST_AUTO_TEST_SUITE( NLSOLVE_COMPOSITE )
 
+BOOST_AUTO_TEST_CASE( nlSolve_2D_P1P2)
+{
+    BOOST_TEST_MESSAGE( "*** electro-thermal non linear model - 2D - P1P2 ***" );
+
+    TestNLSolveComposite<2,1,2> app_testNLSolve;
+    app_testNLSolve.run();
+}
+
+BOOST_AUTO_TEST_CASE( nlSolve_2D_P2P1)
+{
+    BOOST_TEST_MESSAGE( "*** electro-thermal non linear model - 2D - P2P1 ***" );
+
+    TestNLSolveComposite<2,2,1> app_testNLSolve;
+    app_testNLSolve.run();
+}
+
 BOOST_AUTO_TEST_CASE( nlSolve_2D_P1P1)
 {
     BOOST_TEST_MESSAGE( "*** electro-thermal non linear model - 2D - P1P1 ***" );
 
     TestNLSolveComposite<2,1,1> app_testNLSolve;
+    app_testNLSolve.run();
+}
+
+BOOST_AUTO_TEST_CASE( nlSolve_2D_P2P2)
+{
+    BOOST_TEST_MESSAGE( "*** electro-thermal non linear model - 2D - P2P2 ***" );
+
+    TestNLSolveComposite<2,2,2> app_testNLSolve;
     app_testNLSolve.run();
 }
 

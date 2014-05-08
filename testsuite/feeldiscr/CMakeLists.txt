@@ -46,4 +46,5 @@ feelpp_add_test( mortar NO_MPI_TEST)
 feelpp_add_test( exporter SRCS exporter.cpp  CFG exporter.cfg GEO bubble_inside.geo NO_MPI_TEST)
 feelpp_add_test( extended )
 
-feelpp_add_test( nlSolveComposite )
+feelpp_add_test( nlSolveComposite CFG nlSolveComposite.cfg)
+
