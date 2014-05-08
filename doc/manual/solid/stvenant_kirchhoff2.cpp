@@ -95,7 +95,7 @@ main( int argc, char** argv )
 
     for ( ; !ts->isFinished(); ts->next(u) )
     {
-        if ( Environment::worldComm().isMasterRank() )
+        if ( Environment::isMasterRank() )
         {
             std::cout << "============================================================\n";
             std::cout << "time : " << ts->time() << "s\n";

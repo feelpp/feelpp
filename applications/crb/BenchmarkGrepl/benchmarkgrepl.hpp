@@ -29,35 +29,18 @@
 
    date 2014-01-19
  */
-#ifndef __BenchmarkGrepl_H
-#define __BenchmarkGrepl_H 1
+#ifndef FEELPP_BENCHMARKGREPL_HPP
+#define FEELPP_BENCHMARKGREPL_HPP 1
 
 #include <boost/timer.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include <feel/options.hpp>
-#include <feel/feelcore/feel.hpp>
-
 #include <feel/feelalg/backend.hpp>
 
-#include <feel/feeldiscr/functionspace.hpp>
-#include <feel/feeldiscr/region.hpp>
-#include <feel/feelpoly/im.hpp>
-
 #include <feel/feelfilters/gmsh.hpp>
-#include <feel/feelpoly/polynomialset.hpp>
-#include <feel/feelalg/solvereigen.hpp>
 
-#include <feel/feelvf/vf.hpp>
-#include <feel/feelcrb/parameterspace.hpp>
 #include <feel/feelcrb/modelcrbbase.hpp>
-
-#include <Eigen/Core>
-#include <Eigen/LU>
-#include <Eigen/Dense>
-
-#include <feel/feeldiscr/reducedbasisspace.hpp>
-
 
 
 namespace Feel
@@ -115,8 +98,7 @@ public :
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
 
-    static const bool is_time_dependent = false;
-    static const bool is_linear = true;
+    typedef typename space_type::element_type element_type;
 
 };
 
@@ -154,104 +136,34 @@ public :
  * @see
  */
 template<int Order>
-class BenchmarkGrepl : public ModelCrbBase< ParameterDefinition, FunctionSpaceDefinition<Order> , EimDefinition<ParameterDefinition, FunctionSpaceDefinition<Order> > >,
-                       public boost::enable_shared_from_this< BenchmarkGrepl<Order> >
+class BenchmarkGrepl : public ModelCrbBase< ParameterDefinition, FunctionSpaceDefinition<Order> , EimDefinition<ParameterDefinition, FunctionSpaceDefinition<Order> > , TimeIndependent>
 {
 public:
 
-    typedef ModelCrbBase<ParameterDefinition, FunctionSpaceDefinition<Order>, EimDefinition<ParameterDefinition,FunctionSpaceDefinition<Order> > > super_type;
+    typedef ModelCrbBase<ParameterDefinition, FunctionSpaceDefinition<Order>, EimDefinition<ParameterDefinition,FunctionSpaceDefinition<Order> > , TimeIndependent > super_type;
     typedef typename super_type::funs_type funs_type;
     typedef typename super_type::funsd_type funsd_type;
 
-
-    /** @name Constants
-     */
-    //@{
-
-    //static const uint16_type Order = 1;
-    static const uint16_type ParameterSpaceDimension = 2;
-
-    //@}
-
-    /** @name Typedefs
-     */
-    //@{
-
     typedef double value_type;
 
-    typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef typename super_type::element_ptrtype element_ptrtype;
+    typedef typename super_type::element_type element_type;
+    typedef typename super_type::parameter_type parameter_type;
+    typedef typename super_type::mesh_type mesh_type;
+    typedef typename super_type::mesh_ptrtype mesh_ptrtype;
 
-    /*matrix*/
-    typedef backend_type::sparse_matrix_type sparse_matrix_type;
-    typedef backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
-    typedef backend_type::vector_type vector_type;
-    typedef backend_type::vector_ptrtype vector_ptrtype;
+    typedef typename FunctionSpaceDefinition<Order>::space_type space_type;
 
-    typedef Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> eigen_matrix_type;
-    typedef eigen_matrix_type ematrix_type;
-    typedef boost::shared_ptr<eigen_matrix_type> eigen_matrix_ptrtype;
+    typedef typename super_type::beta_vector_type beta_vector_type;
+    typedef typename super_type::affine_decomposition_type affine_decomposition_type;
+    typedef typename super_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
+    typedef typename super_type::vectorN_type vectorN_type;
+    typedef typename super_type::monolithic_type monolithic_type;
+    typedef typename super_type::eim_interpolation_error_type eim_interpolation_error_type;
 
-    /*mesh*/
-    typedef Simplex<2,1> entity_type; /*dim,order*/
-    typedef Mesh<entity_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef std::vector< std::vector<sparse_matrix_ptrtype> > vector_sparse_matrix;
 
-    /*basis*/
-    typedef bases<Lagrange<Order, Scalar> > basis_type;
-
-    /*space*/
-    typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
-    typedef space_type functionspace_type;
-    typedef space_ptrtype functionspace_ptrtype;
-    typedef typename space_type::element_type element_type;
-    typedef boost::shared_ptr<element_type> element_ptrtype;
-
-    /*reduced basis space*/
-    typedef ReducedBasisSpace<super_type, mesh_type, basis_type, value_type> rbfunctionspace_type;
-    typedef boost::shared_ptr< rbfunctionspace_type > rbfunctionspace_ptrtype;
-
-
-    /* parameter space */
-    typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
-    typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
-    typedef typename parameterspace_type::element_type parameter_type;
-    typedef typename parameterspace_type::element_ptrtype parameter_ptrtype;
-    typedef typename parameterspace_type::sampling_type sampling_type;
-    typedef typename parameterspace_type::sampling_ptrtype sampling_ptrtype;
-
-
-    typedef Eigen::VectorXd vectorN_type;
-    typedef std::vector< std::vector< double > > beta_vector_type;
-
-    typedef boost::tuple<
-        std::vector< std::vector<sparse_matrix_ptrtype> >,
-        std::vector< std::vector<std::vector<vector_ptrtype> > >
-        > affine_decomposition_type;
-
-    typedef boost::tuple< sparse_matrix_ptrtype, std::vector<vector_ptrtype> > monolithic_type;
-
-    typedef Preconditioner<double> preconditioner_type;
-    typedef boost::shared_ptr<preconditioner_type> preconditioner_ptrtype;
-
-    //@}
-
-    /** @name Constructors, destructor
-     */
-    //@{
-
-    //! default constructor
-    BenchmarkGrepl();
-
-    //! constructor from command line
-    BenchmarkGrepl( po::variables_map const& vm );
-
-
-    //! copy constructor
-    BenchmarkGrepl( BenchmarkGrepl const & );
-    //! destructor
-    ~BenchmarkGrepl() {}
+    using super_type::computeBetaQm;
 
     //! initialization of the model
     void initModel();
@@ -263,16 +175,6 @@ public:
         ostr << "BenchMarkGrepl" <<  Order;
         return ostr.str();
     }
-
-    /** @name Operator overloads
-     */
-    //@{
-
-    //@}
-
-    /** @name Accessors
-     */
-    //@{
 
     //\return the list of EIM objects
     virtual funs_type scalarContinuousEim() const
@@ -308,108 +210,70 @@ public:
 
 
     /**
-     * \brief Returns the function space
-     */
-    space_ptrtype functionSpace()
-    {
-        return Xh;
-    }
-
-    /**
-     * \brief Returns the reduced basis function space
-     */
-    rbfunctionspace_ptrtype rBFunctionSpace()
-    {
-        return RbXh;
-    }
-
-    //! return the parameter space
-    parameterspace_ptrtype parameterSpace() const
-    {
-        return M_Dmu;
-    }
-
-    /**
      * \brief compute the theta coefficient for both bilinear and linear form
      * \param mu parameter to evaluate the coefficients
      */
     boost::tuple<beta_vector_type,  std::vector<beta_vector_type> >
-    computeBetaQm( element_type const& T,parameter_type const& mu , double time=1e30 )
+    computeBetaQm( element_type const& T,parameter_type const& mu )
     {
-        return computeBetaQm( mu , time );
+        return computeBetaQm( mu );
     }
 
     boost::tuple<beta_vector_type,  std::vector<beta_vector_type>  >
-    computeBetaQm( parameter_type const& mu , double time=1e30 )
+    computeBetaQm( parameter_type const& mu )
     {
         double mu0   = mu( 0 );
         double mu1    = mu( 1 );
-        M_betaAqm.resize( 2 );
-        M_betaAqm[0].resize( 1 );
-        M_betaAqm[0][0]=1;
+        this->M_betaAqm.resize( 2 );
+        this->M_betaAqm[0].resize( 1 );
+        this->M_betaAqm[0][0]=1;
 
         auto eim_g = M_funs[0];
         int M_g = eim_g->mMax();
         vectorN_type beta_g = eim_g->beta( mu );
-        M_betaAqm[1].resize( M_g );
+        this->M_betaAqm[1].resize( M_g );
         for(int m=0; m<M_g; m++)
         {
-            M_betaAqm[1][m] = beta_g(m);
+            this->M_betaAqm[1][m] = beta_g(m);
         }
 
-        M_betaFqm.resize( 2 );
-        M_betaFqm[0].resize( 1 );
-        M_betaFqm[0][0].resize( M_g );
+        this->M_betaFqm.resize( 2 );
+        this->M_betaFqm[0].resize( 1 );
+        this->M_betaFqm[0][0].resize( M_g );
         for(int m=0; m<M_g; m++)
         {
-            M_betaFqm[0][0][m] = beta_g(m);
+            this->M_betaFqm[0][0][m] = beta_g(m);
         }
 
-        M_betaFqm[1].resize( 1 );
-        M_betaFqm[1][0].resize( 1 );
-        M_betaFqm[1][0][0] = 1;
+        this->M_betaFqm[1].resize( 1 );
+        this->M_betaFqm[1][0].resize( 1 );
+        this->M_betaFqm[1][0][0] = 1;
 
-        return boost::make_tuple(  M_betaAqm, M_betaFqm );
+        return boost::make_tuple( this->M_betaAqm, this->M_betaFqm );
     }
 
+    beta_vector_type computeBetaLinearDecompositionA( parameter_type const& mu , double time=1e30 )
+    {
+        beta_vector_type beta;
+        beta.resize(1);
+        beta[0].resize(1);
+        beta[0][0]=1;
+        return beta;
+    }
 
-    //@}
-
-    /** @name  Mutators
-     */
-    //@{
-
-
-    //@}
-
-    /** @name  Methods
-     */
-    //@{
 
     /**
      * \brief Returns the affine decomposition
      */
     affine_decomposition_type computeAffineDecomposition();
-
+    std::vector< std::vector<sparse_matrix_ptrtype> > computeLinearDecompositionA();
     monolithic_type computeMonolithicFormulation( parameter_type const& mu );
 
     void assemble();
 
-    /**
-     * solve for a given parameter \p mu
-     */
-    element_type solve( parameter_type const& mu );
-
 
     //@}
 
-    /**
-     * inner product
-     */
-    sparse_matrix_ptrtype energyMatrix ( void )
-    {
-        return M;
-    }
 
     /**
      * Given the output index \p output_index and the parameter \p mu, return
@@ -420,58 +284,70 @@ public:
     bool referenceParametersGivenByUser() { return true; }
     parameter_type refParameter()
     {
-        return M_Dmu->min();
+        return this->Dmu->min();
     }
 
     gmsh_ptrtype createGeo( double hsize );
 
+    void checkEimExpansion();
+
+    eim_interpolation_error_type eimInterpolationErrorEstimation()
+    {
+        std::map<int,double> eim_error_aq;
+        std::vector< std::map<int,double> > eim_error_fq;
+
+        //in that case we make an error on the eim approximation
+        //M_Aqm[1] contains the eim approximation
+        eim_error_aq.insert( std::pair<int,double>(1 , 0 ) );
+        eim_error_fq.resize(2);
+        //M_Fqm[0][0] contains the eim approximation
+        eim_error_fq[0].insert( std::pair<int,double>(0 , 0 ) );
+        return boost::make_tuple( eim_error_aq, eim_error_fq );
+    }
+
+    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , vectorN_type const& uN )
+    {
+
+        std::map<int,double> eim_error_aq;
+        std::vector< std::map<int,double> > eim_error_fq;
+
+        auto eim_g = M_funs[0];
+        bool error;
+        int max = eim_g->mMax(error);
+        if( error )
+        {
+            //in that case we make an error on the eim approximation
+            int size=uN.size();
+            auto solution = Feel::expansion( this->XN->primalRB(), uN , size);
+            double eim_error = eim_g->interpolationErrorEstimation(mu,solution,max).template get<0>();
+            //M_Aqm[1] contains the eim approximation
+            eim_error_aq.insert( std::pair<int,double>(1 , eim_error) );
+            eim_error_fq.resize(2);
+            //M_Fqm[0][0] contains the eim approximation
+            eim_error_fq[0].insert( std::pair<int,double>(0 , eim_error) );
+        }
+        return boost::make_tuple( eim_error_aq, eim_error_fq );
+    }
+
+
 private:
-
-    backend_ptrtype M_backend;
-
-    parameterspace_ptrtype M_Dmu;
 
     /* mesh, pointers and spaces */
     mesh_ptrtype mesh;
-    space_ptrtype Xh;
-    rbfunctionspace_ptrtype RbXh;
 
     sparse_matrix_ptrtype D,M;
     vector_ptrtype F;
 
     element_ptrtype pT;
 
-    std::vector< std::vector<sparse_matrix_ptrtype> > M_Aqm;
-    std::vector< std::vector<std::vector<vector_ptrtype> > > M_Fqm;
-
     sparse_matrix_ptrtype M_monoA;
     std::vector<vector_ptrtype> M_monoF;
-
-    beta_vector_type M_betaAqm;
-    std::vector<beta_vector_type> M_betaFqm;
 
     parameter_type M_mu;
 
     funs_type M_funs;
-
 };
 
-template<int Order>
-BenchmarkGrepl<Order>::BenchmarkGrepl()
-    :
-    M_backend( backend_type::build( BACKEND_PETSC ) ),
-    M_Dmu( new parameterspace_type ),
-    M_mu( M_Dmu->element() )
-{ }
-
-template<int Order>
-BenchmarkGrepl<Order>::BenchmarkGrepl( po::variables_map const& vm )
-    :
-    M_backend( backend_type::build( vm ) ),
-    M_Dmu( new parameterspace_type ),
-    M_mu( M_Dmu->element() )
-{
-}
 
 
 template<int Order>
@@ -505,9 +381,6 @@ BenchmarkGrepl<Order>::createGeo( double hsize )
 template<int Order>
 void BenchmarkGrepl<Order>::initModel()
 {
-
-    using namespace Feel::vf;
-
     std::string mshfile_name = option("mshfile").as<std::string>();
 
     /*
@@ -534,8 +407,9 @@ void BenchmarkGrepl<Order>::initModel()
     /*
      * The function space and some associate elements are then defined
      */
-    Xh = space_type::New( mesh );
-    RbXh = rbfunctionspace_type::New( _model=this->shared_from_this() , _mesh=mesh );
+    auto Xh = space_type::New( mesh );
+    this->setFunctionSpaces( Xh );
+
     if( Environment::worldComm().isMasterRank() )
     {
         std::cout << "Number of dof " << Xh->nDof() << std::endl;
@@ -545,16 +419,16 @@ void BenchmarkGrepl<Order>::initModel()
     // allocate an element of Xh
     pT = element_ptrtype( new element_type( Xh ) );
 
-    typename Feel::ParameterSpace<ParameterSpaceDimension>::Element mu_min( M_Dmu );
+    auto mu_min = this->Dmu->element();
     mu_min <<  -1, -1;
-    M_Dmu->setMin( mu_min );
-    typename Feel::ParameterSpace<ParameterSpaceDimension>::Element mu_max( M_Dmu );
+    this->Dmu->setMin( mu_min );
+    auto mu_max = this->Dmu->element();
     mu_max << -0.01, -0.01;
-    M_Dmu->setMax( mu_max );
+    this->Dmu->setMax( mu_max );
 
-    M_mu = M_Dmu->element();
+    M_mu = this->Dmu->element();
 
-    auto Pset = M_Dmu->sampling();
+    auto Pset = this->Dmu->sampling();
     //specify how many elements we take in each direction
     std::vector<int> N(2);
     int Ne = option(_name="trainset-eim-size").template as<int>();
@@ -584,7 +458,7 @@ void BenchmarkGrepl<Order>::initModel()
         Pset->readFromFile(supersamplingname);
     }
 
-    auto eim_g = eim( _model=eim_no_solve(this->shared_from_this()),
+    auto eim_g = eim( _model=eim_no_solve(super_type::shared_from_this()),
                       _element=*pT,
                       _space=Xh,
                       _parameter=M_mu,
@@ -592,12 +466,17 @@ void BenchmarkGrepl<Order>::initModel()
                       _sampling=Pset,
                       _name="eim_g" );
 
+#if 0
     if( Environment::worldComm().isMasterRank() )
     {
-        std::cout<<" eim mMax : "<<eim_g->mMax()<<std::endl;
+        bool error;
+        std::cout<<" eim g mMax : "<<eim_g->mMax(error)<<" error : "<<error<<std::endl;
     }
+#endif
 
     M_funs.push_back( eim_g );
+
+    //checkEimExpansion();
 
     assemble();
 
@@ -605,19 +484,107 @@ void BenchmarkGrepl<Order>::initModel()
 
 
 template<int Order>
+void BenchmarkGrepl<Order>::checkEimExpansion()
+{
+    auto Xh=this->Xh;
+    auto Pset = this->Dmu->sampling();
+    std::vector<int> N(2);
+    int Ne = option(_name="trainset-eim-size").template as<int>();
+    N[0]=Ne; N[1]=Ne;
+    bool all_proc_same_sampling=true;
+    std::string supersamplingname =(boost::format("PsetCheckEimExpansion-Ne%1%-generated-by-master-proc") %Ne ).str();
+    std::ifstream file ( supersamplingname );
+    if( ! file )
+    {
+        Pset->equidistributeProduct( N , all_proc_same_sampling , supersamplingname );
+        Pset->writeOnFile( supersamplingname );
+    }
+    else
+    {
+        Pset->clear();
+        Pset->readFromFile(supersamplingname);
+    }
+
+    auto eim_g = M_funs[0];
+
+    //check that eim expansion of g is positive on each vertice
+    int max = eim_g->mMax();
+    auto e = exporter( _mesh=mesh );
+    BOOST_FOREACH( auto mu, *Pset )
+    {
+
+        if( Environment::worldComm().isMasterRank() )
+            std::cout<<"check gM for mu = ["<< mu(0)<<" , "<<mu(1)<<"]"<<std::endl;
+
+        auto exprg = 1./sqrt( (Px()-mu(0))*(Px()-mu(0)) + (Py()-mu(1))*(Py()-mu(1)) );
+        auto g = vf::project( _space=Xh, _expr=exprg );
+
+        for(int m=1; m<max; m++)
+        {
+            vectorN_type beta_g = eim_g->beta( mu , m );
+
+            auto gM = expansion( eim_g->q(), beta_g , m);
+            auto px=vf::project(_space=Xh, _expr=Px() );
+            auto py=vf::project(_space=Xh, _expr=Py() );
+
+            int size=Xh->nLocalDof();
+            for(int v=0; v<size; v++)
+            {
+                double x = px(v);
+                double y = py(v);
+                if( gM(v) < -1e-13 )
+                    std::cout<<"gM("<<x<<","<<y<<") = "<<gM(v)<<" ! - proc  "<<Environment::worldComm().globalRank()<<" but g("<<x<<","<<y<<") =  "<<g(v)<<" === m : "<<m<<std::endl;
+                if( g(v) < -1e-13  )
+                    std::cout<<"g("<<x<<","<<y<<") = "<<g(v)<<" donc la projection de g est negative"<<std::endl;
+            }
+#if 0
+
+            for(int i=0; i<beta_g.size(); i++)
+            {
+                if( beta_g(i) < - 1e-14 && Environment::worldComm().isMasterRank() )
+                {
+                    std::cout<<"beta("<<i<<") is negative : "<<beta_g(i)<<"  === m : "<<m<<std::endl;
+                }
+            }
+            //std::string name =( boost::format("GM%1%") %m ).str();
+            //e->add( name , gM );
+            //if( m == max-1 )
+            //e->add( "exact" , g );
+
+                //auto basis = eim_g->q(i);
+                //double basisnorm = basis.l2Norm();
+                //if( basisnorm < 1e-14 && Environment::worldComm().isMasterRank() )
+                    //{
+                    //std::cout<<"basis "<<i<<" norm negative : "<<basisnorm<<std::endl;
+                    //exit(0);
+                    //}
+                //for(int v=0; v<size; v++)
+                //{
+                //    if( basis(i) < 1e-14 )
+                //        std::cout<<"basis("<<v<<") = "<<basis(v)<<" ! - proc  "<<Environment::worldComm().globalRank()<<std::endl;
+                //}
+            }
+#endif
+        }//loop over m
+        //e->save();
+    }
+}
+
+template<int Order>
 typename BenchmarkGrepl<Order>::monolithic_type
 BenchmarkGrepl<Order>::computeMonolithicFormulation( parameter_type const& mu )
 {
+    auto Xh = this->Xh;
     auto u=Xh->element();
     auto v=Xh->element();
     double gamma_dir = option(_name="gamma").template as<double>();
 
     auto exprg = 1./sqrt( (Px()-mu(0))*(Px()-mu(0)) + (Py()-mu(1))*(Py()-mu(1)) );
     auto g = vf::project( _space=Xh, _expr=exprg );
-    M_monoA = M_backend->newMatrix( Xh, Xh );
+    M_monoA = backend()->newMatrix( Xh, Xh );
     M_monoF.resize(2);
-    M_monoF[0] = M_backend->newVector( Xh );
-    M_monoF[1] = M_backend->newVector( Xh );
+    M_monoF[0] = backend()->newVector( Xh );
+    M_monoF[1] = backend()->newVector( Xh );
     form2( Xh, Xh, M_monoA ) = integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ) + idt( u )*id( v )*idv(g) ) +
         integrate( markedfaces( mesh, "boundaries" ), gamma_dir*idt( u )*id( v )/h()
                    -gradt( u )*vf::N()*id( v )
@@ -630,89 +597,100 @@ BenchmarkGrepl<Order>::computeMonolithicFormulation( parameter_type const& mu )
 
 }
 
-template<int Order>
-typename BenchmarkGrepl<Order>::element_type
-BenchmarkGrepl<Order>::solve( parameter_type const& mu )
-{
-    auto u=Xh->element();
-    auto v=Xh->element();
-    double gamma_dir = option(_name="gamma").template as<double>();
-
-    auto solution = Xh->element();
-    auto exprg = 1./sqrt( (Px()-mu(0))*(Px()-mu(0)) + (Py()-mu(1))*(Py()-mu(1)) );
-    auto g = vf::project( _space=Xh, _expr=exprg );
-    auto A = M_backend->newMatrix( Xh, Xh );
-    auto F = M_backend->newVector( Xh );
-    form2( Xh, Xh, A ) = integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ) + idt( u )*id( v )*idv(g) ) +
-        integrate( markedfaces( mesh, "boundaries" ), gamma_dir*idt( u )*id( v )/h()
-                   -gradt( u )*vf::N()*id( v )
-                   -grad( v )*vf::N()*idt( u )
-                   );;
-    form1( Xh, F ) = integrate( _range=elements(mesh) , _expr=id( v ) * idv(g) );
-    M_backend->solve( _matrix=A, _solution=solution, _rhs=F );
-    return solution;
-}
 
 template<int Order>
 void BenchmarkGrepl<Order>::assemble()
 {
+    auto Xh=this->Xh;
     auto u = Xh->element();
     auto v = Xh->element();
 
     double gamma_dir = option(_name="gamma").template as<double>();
     auto eim_g = M_funs[0];
 
-    M_Aqm.resize( 2 );
-    M_Aqm[0].resize( 1 );
-    M_Aqm[0][0] = M_backend->newMatrix( Xh, Xh );
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[0][0] ) =
+    this->M_Aqm.resize( 2 );
+    this->M_Aqm[0].resize( 1 );
+    this->M_Aqm[0][0] = backend()->newMatrix( Xh, Xh );
+    form2( _test=Xh, _trial=Xh, _matrix=this->M_Aqm[0][0] ) =
         integrate( elements( mesh ), gradt( u )*trans( grad( v ) ) ) +
         integrate( markedfaces( mesh, "boundaries" ), gamma_dir*idt( u )*id( v )/h()
                    -gradt( u )*vf::N()*id( v )
                    -grad( v )*vf::N()*idt( u )
                    );
 
-    int M_g = eim_g->mMax();
-    M_Aqm[1].resize( M_g );
+    bool error;
+    int M_g = eim_g->mMax(error);
+    if( error ) M_g++;
+    this->M_Aqm[1].resize( M_g );
     for(int m=0; m<M_g; m++)
     {
-        M_Aqm[1][m] = M_backend->newMatrix( Xh, Xh );
-        form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[1][m] ) =
+        this->M_Aqm[1][m] = backend()->newMatrix( Xh, Xh );
+        form2( _test=Xh, _trial=Xh, _matrix=this->M_Aqm[1][m] ) =
             integrate( elements( mesh ), idt( u )* id( v ) * idv( eim_g->q(m) ) );
     }
 
-    M_Fqm.resize( 2 );
-    M_Fqm[0].resize( 1 );
-    M_Fqm[1].resize( 1 );
+    this->M_Fqm.resize( 2 );
+    this->M_Fqm[0].resize( 1 );
+    this->M_Fqm[1].resize( 1 );
 
-    M_Fqm[0][0].resize(M_g);
+    this->M_Fqm[0][0].resize(M_g);
     for(int m=0; m<M_g; m++)
     {
-        M_Fqm[0][0][m] = M_backend->newVector( Xh );
-        form1( Xh, M_Fqm[0][0][m] ) = integrate( elements( mesh ), id( v ) * idv( eim_g->q(m) ) );
+        this->M_Fqm[0][0][m] = backend()->newVector( Xh );
+        form1( Xh, this->M_Fqm[0][0][m] ) = integrate( elements( mesh ), id( v ) * idv( eim_g->q(m) ) );
     }
-    M_Fqm[1][0].resize(1);
-    M_Fqm[1][0][0] = M_backend->newVector( Xh );
-    form1( Xh, M_Fqm[1][0][0] ) = integrate( elements( mesh ), id( v ) );
+    this->M_Fqm[1][0].resize(1);
+    this->M_Fqm[1][0][0] = backend()->newVector( Xh );
+    form1( Xh, this->M_Fqm[1][0][0] ) = integrate( elements( mesh ), id( v ) );
 
 
 
     //for scalarProduct
     auto mu = refParameter();
-    vectorN_type beta_g = eim_g->beta( mu );
 
-    M = M_backend->newMatrix( _test=Xh, _trial=Xh );
+    M = backend()->newMatrix( _test=Xh, _trial=Xh );
     form2( Xh, Xh, M ) =
         integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ) )+
         integrate( markedfaces( mesh, "boundaries" ), gamma_dir*idt( u )*id( v )/h()
                    -gradt( u )*vf::N()*id( v )
                    -grad( v )*vf::N()*idt( u ) );
+    this->addEnergyMatrix( M );
+
+#if 0
+    vectorN_type beta_g = eim_g->beta( mu );
     for(int m=0; m<M_g; m++)
     {
         auto q = eim_g->q(m);
         q.scale( beta_g(m) );
         form2( Xh, Xh, M ) +=  integrate( _range=elements( mesh ), _expr= idt( u )*id( v ) * idv( q ) );
     }
+#endif
+
+}
+
+
+template<int Order>
+typename BenchmarkGrepl<Order>::vector_sparse_matrix
+BenchmarkGrepl<Order>::computeLinearDecompositionA()
+{
+    auto Xh=this->Xh;
+    auto muref = refParameter();
+    auto u=Xh->element();
+    auto v=Xh->element();
+    double gamma_dir = option(_name="gamma").template as<double>();
+
+    auto exprg = 1./sqrt( (Px()-muref(0))*(Px()-muref(0)) + (Py()-muref(1))* (Py()-muref(1)) );
+    auto g = vf::project( _space=Xh, _expr=exprg );
+    vector_sparse_matrix A;
+    A.resize(1);
+    A[0].resize(1);
+    A[0][0] = backend()->newMatrix( Xh, Xh );
+    form2( Xh, Xh, A[0][0] ) = integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ) + idt( u )*id( v )*idv(g) ) +
+        integrate( markedfaces( mesh, "boundaries" ), gamma_dir*idt( u )*id( v )/h()
+                   -gradt( u )*vf::N()*id( v )
+                   -grad( v )*vf::N()*idt( u )
+                   );
+    return A;
 
 }
 
@@ -720,7 +698,7 @@ template<int Order>
 typename BenchmarkGrepl<Order>::affine_decomposition_type
 BenchmarkGrepl<Order>::computeAffineDecomposition()
 {
-    return boost::make_tuple( M_Aqm, M_Fqm );
+    return boost::make_tuple( this->M_Aqm, this->M_Fqm );
 }
 
 
@@ -740,7 +718,7 @@ double BenchmarkGrepl<Order>::output( int output_index, parameter_type const& mu
         {
             for ( int m=0; m<mMaxF(output_index,q); m++ )
             {
-                s += M_betaFqm[output_index][q][m]*dot( *M_Fqm[output_index][q][m] , solution );
+                s += this->M_betaFqm[output_index][q][m]*dot( *this->M_Fqm[output_index][q][m] , solution );
             }
         }
     }

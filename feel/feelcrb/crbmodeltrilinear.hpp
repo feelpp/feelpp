@@ -223,6 +223,12 @@ public:
         return this->M_model->QaTri();
     }
 
+    size_type Ql( int l ) const
+    {
+        return this->M_model->Ql( l );
+    }
+
+
     sparse_matrix_ptrtype computeTrilinearForm( element_type const& xi )
     {
         return this->M_model->computeTrilinearForm( xi );

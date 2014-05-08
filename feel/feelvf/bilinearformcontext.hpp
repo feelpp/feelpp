@@ -650,7 +650,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
                 M_local_colsigns = M_trial_dof->localToGlobalSigns( trial_eid );
                 std::cout << "rep = " << M_rep;
                 M_rep.array() *= ( M_local_rowsigns*M_local_colsigns.transpose() ).array().template cast<value_type>();
-                std::cout << "rep after sign change = " << M_rep;
+                LOG(INFO) << "rep after sign change = " << M_rep;
             }
 
             M_form.addMatrix( M_local_rows.data(), M_local_rows.size(),
