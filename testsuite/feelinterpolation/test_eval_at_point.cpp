@@ -79,21 +79,21 @@ namespace test_eval_at_point
 	template <uint16_type OrderPoly = 1, uint16_type OrderGeo = 2>
 		void run()
 		{
-			auto mesh = loadMesh(_mesh = new Mesh<Simplex<OrderGeo>>); 
+			auto mesh = loadMesh(_mesh = new Mesh<Simplex<OrderGeo>>);
 			auto Vh = Pchv<OrderPoly>( mesh );
 			auto u = Vh->element();
 			u = vf::project(Vh,
 					elements(mesh),
-					vec( 
-						Px()*Px()*Py(), 
+					vec(
+						Px()*Px()*Py(),
 						Px()*Py()*Py() ));
-			node_type pt(2); 
-			pt[0] = option(_name="x").as<double>(); 
-			pt[1] = option(_name="y").as<double>();
+			node_type pt(2);
+			pt[0] = option(_name="x").template as<double>();
+			pt[1] = option(_name="y").template as<double>();
 			auto eval = u(pt);
-			auto val1 = eval(0,0,0); auto sol1 = pt[0]*pt[0]*pt[1];  
+			auto val1 = eval(0,0,0); auto sol1 = pt[0]*pt[0]*pt[1];
 			auto val2 = eval(1,0,0); auto sol2 = pt[0]*pt[1]*pt[1];
-			double min = option(_name="gmsh.hsize").as<double>();
+			double min = option(_name="gmsh.hsize").template as<double>();
 
 #if USE_BOOST_TEST
 			BOOST_CHECK_SMALL( (val1-sol1)/sol1, min );
