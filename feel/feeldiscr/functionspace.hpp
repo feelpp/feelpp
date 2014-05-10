@@ -152,6 +152,8 @@ struct ID
         :
         M_id( elem.idExtents( context ) )
     {
+        for(int k = 0;k < M_id.shape()[0]; k++ )
+            M_id[k].setZero();
         elem.id_( context, M_id );
     }
 
@@ -166,6 +168,10 @@ struct ID
 
         return *this;
 
+    }
+    m_type const& operator[]( uint16_type q  ) const
+    {
+        return M_id[q];
     }
     value_type operator()( uint16_type c1, uint16_type c2, uint16_type q  ) const
     {
@@ -238,9 +244,15 @@ struct DD
         :
         M_grad( elem.gradExtents( context ) )
     {
+        for(int k = 0;k < M_grad.shape()[0]; k++ )
+            M_grad[k].setZero();
         elem.grad_( context, M_grad );
     }
 
+    m_type const& operator[]( uint16_type q  ) const
+    {
+        return M_grad[q];
+    }
     value_type operator()( uint16_type c1, uint16_type c2, uint16_type q  ) const
     {
         return M_grad[q]( c1,c2 );
@@ -306,9 +318,15 @@ struct D
         :
         M_grad( elem.dExtents( context ) )
     {
+        for(int k = 0;k < M_grad.shape()[0]; k++ )
+            M_grad[k].setZero();
         elem.d_( N, context, M_grad );
     }
 
+    m_type const& operator[]( uint16_type q  ) const
+    {
+        return M_grad[q];
+    }
     value_type operator()( uint16_type c1, uint16_type /*c2*/, uint16_type q  ) const
     {
         return M_grad[q]( c1,0 );
@@ -339,25 +357,15 @@ struct Div
         :
         M_div( elem.divExtents( context ) )
     {
+        for(int k = 0;k < M_div.shape()[0]; k++ )
+            M_div[k].setZero();
         elem.div_( context, M_div );
-#if 0
-        uint16_type nComponents1 = elem.nComponents1;
-        std::fill( M_div.data(), M_div.data()+M_div.num_elements(), value_type( 0 ) );
-
-        M_grad( elem.div_( context, pc, M_div ) ),
-
-
-                 const uint16_type nq = context.xRefs().size2();
-
-        for ( int c1 = 0; c1 < nComponents1; ++c1 )
-            for ( uint16_type q = 0; q < nq ; ++q )
-            {
-                M_div[q]( 0,0 ) += M_grad[q]( c1,c1 );
-            }
-
-#endif
     }
 
+    m_type const& operator[]( uint16_type q  ) const
+    {
+        return M_div[q];
+    }
     value_type operator()( uint16_type c1, uint16_type c2, uint16_type q  ) const
     {
         return M_div[q]( c1,c2 );
@@ -387,6 +395,8 @@ struct Curl
         :
         M_curl( elem.curlExtents( context ) )
     {
+        for(int k = 0;k < M_curl.shape()[0]; k++ )
+            M_curl[k].setZero();
         init( elem, context, boost::is_same<mpl::int_<N>, mpl::int_<-1> >() );
     }
     template<typename Elem, typename ContextType>
@@ -402,6 +412,10 @@ struct Curl
         elem.curl_( context, M_curl, N );
     }
 
+    m_type const& operator[]( uint16_type q  ) const
+    {
+        return M_curl[q];
+    }
     value_type operator()( uint16_type c1, uint16_type c2, uint16_type q  ) const
     {
         return this->operator()( c1, c2, q, mpl::int_<N>() );
@@ -450,9 +464,14 @@ struct H
         :
         M_hess( elem.hessExtents( context ) )
     {
+        for(int k = 0;k < M_hess.shape()[0]; k++ )
+            M_hess[k].setZero();
         elem.hess_( context, M_hess );
     }
-
+    m_type const& operator[]( uint16_type q  ) const
+    {
+        return M_hess[q];
+    }
     value_type operator()( uint16_type c1, uint16_type c2, uint16_type q  ) const
     {
         return M_hess[q]( c1,c2 );
@@ -4689,18 +4708,9 @@ operator<<( std::ostream& os, Feel::detail::ID<T,M,N> const& id )
 
     for ( size_type i = 0; i < shape[0]; ++i )
     {
-        for ( size_type j = 0; j < shape[1]; ++j )
-        {
-            for ( size_type k = 0; k < shape[2]; ++k )
-            {
-                os << id( i, j, k ) << ' ';
-            }
-
-            os << std::endl;
-        }
-
-        os << std::endl;
+        os << id[i] << std::endl;
     }
+    os << std::endl;
 
     return os;
 }
