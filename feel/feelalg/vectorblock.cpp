@@ -36,6 +36,73 @@ namespace Feel
 
 
 template <typename T>
+void
+BlocksBaseVector<T>::localize( vector_ptrtype const& vb, size_type _start_i )
+{
+    vb->close();
+
+    size_type _start_iloc=0;
+    for ( uint16_type i=0; i<this->nRow(); ++i )
+    {
+        size_type nBlockRow = this->operator()( i,0 )->localSize();
+
+        if ( !this->vector() )
+        {
+            for ( size_type k=0; k<nBlockRow; ++k )
+            {
+                this->operator()( i,0 )->set( k, vb->operator()( _start_i+k ) );
+            }
+        }
+        else
+        {
+            for ( size_type k=0; k<nBlockRow; ++k )
+            {
+                const T val = vb->operator()( _start_i+k );
+                this->operator()( i,0 )->set( k, val );
+                this->vector()->set( _start_iloc+k, val );
+            }
+        }
+
+        this->operator()( i,0 )->close();
+        _start_i += nBlockRow;
+        _start_iloc += nBlockRow;
+    }
+}
+
+template <typename T>
+void
+BlocksBaseVector<T>::localize()
+{
+    if ( !this->vector() ) return;
+
+    this->vector()->close();
+
+    size_type _start_i=0;
+    for ( uint16_type i=0; i<this->nRow(); ++i )
+    {
+        size_type nBlockRow = this->operator()( i,0 )->localSize();
+
+            for ( size_type k=0; k<nBlockRow; ++k )
+            {
+                this->operator()( i,0 )->set( k, this->vector()->operator()( _start_i+k ) );
+            }
+
+        this->operator()( i,0 )->close();
+        _start_i += nBlockRow;
+    }
+}
+
+template <typename T>
+void
+BlocksBaseVector<T>::buildVector( backend_ptrtype backend )
+{
+    M_vector = backend->newBlockVector( _block=*this );
+}
+
+template class BlocksBaseVector<double>;
+
+
+template <typename T>
 VectorBlockBase<T>::VectorBlockBase( vf::BlocksBase<vector_ptrtype> const & blockVec,
                                      backend_type &backend,
                                      bool copy_values )
@@ -140,7 +207,6 @@ VectorBlockBase<T>::updateBlockVec( vector_ptrtype const& m, size_type start_i )
     for ( size_type i=0; i<size; ++i )
         M_vec->set( start_i+i,m->operator()( i ) );
 }
-
 
 template class VectorBlockBase<double>;
 
