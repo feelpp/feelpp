@@ -725,23 +725,15 @@ Gmsh::preamble() const
 
     if ( this->worldComm().globalSize() != 1 )
         {
-ostr << "// partitioning data\n"
-         << "Mesh.Partitioner=" << M_partitioner << ";\n"
-         << "Mesh.NbPartitions=" << this->worldComm().globalSize() << ";\n"
-         << "Mesh.MshFilePartitioned=" << M_partition_file << ";\n";
+            ostr << "// partitioning data\n"
+                 << "Mesh.Partitioner=" << M_partitioner << ";\n"
+                 << "Mesh.NbPartitions=" << this->worldComm().globalSize() << ";\n"
+                 << "Mesh.MshFilePartitioned=" << M_partition_file << ";\n";
         }
         //ostr << "Mesh.Optimize=1;\n"
         //<< "Mesh.CharacteristicLengthFromCurvature=1;\n"
 
-    // if (this->structuredMesh() == 3)
-    // {
-    //     ostr << "nx=" << M_nx << ";\n"
-    //          << "ny=" << M_ny << ";\n";
-    // }
-    // else
-    // {
     ostr << "h=" << M_h << ";\n";
-    //}
 
     if ( M_recombine )
     {
