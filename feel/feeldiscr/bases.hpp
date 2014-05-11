@@ -53,6 +53,17 @@ struct periodic_base {};
  * @author Christophe Prud'homme
  * @see
  */
+#if FEELPP_CLANG_AT_LEAST(3,1) || FEELPP_GNUC_AT_LEAST(4,7)
+
+template<typename... Args>
+struct bases
+    :
+        public Feel::detail::bases_base,
+        public boost::fusion::vector<Args...>
+{};
+
+#else
+
 template <class A0=mpl::void_, class A1=mpl::void_, class A2=mpl::void_, class A3=mpl::void_, class A4=mpl::void_>
 struct bases
         :
@@ -68,6 +79,8 @@ struct bases
                                                                               boost::fusion::vector<A0,A1,A2,A3,A4> >::type>::type>::type>::type
 {
 };
+
+#endif
 
 template <class BasisFusionVectorType>
 struct bases2
