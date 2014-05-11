@@ -100,11 +100,12 @@ public :
 
 template <typename ParameterDefinition=ParameterDefinitionBase,
           typename FunctionSpaceDefinition=FunctionSpaceDefinitionBase,
-          typename EimDefinition = EimDefinitionBase<ParameterDefinition,FunctionSpaceDefinition>,
-          int _Options = 0>
+          int _Options = 0,
+          typename EimDefinition = EimDefinitionBase<ParameterDefinition,FunctionSpaceDefinition>
+          >
 class ModelCrbBase :
         public ModelCrbBaseBase,
-        public boost::enable_shared_from_this< ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition,EimDefinition,_Options> >
+        public boost::enable_shared_from_this< ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition,_Options,EimDefinition> >
 {
 
 public :
@@ -1450,10 +1451,11 @@ protected :
 };
 template <typename ParameterDefinition,
           typename FunctionSpaceDefinition,
-          typename EimDefinition,
-          int _Options>
+          int _Options,
+          typename EimDefinition
+          >
 void
-ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition,EimDefinition,_Options>::setFunctionSpaces( functionspace_ptrtype Vh )
+ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition,_Options,EimDefinition>::setFunctionSpaces( functionspace_ptrtype Vh )
 {
     Xh = Vh;
     XN = rbfunctionspace_type::New( _model=this->shared_from_this() );
