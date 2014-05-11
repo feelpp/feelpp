@@ -453,7 +453,11 @@ public :
             std::cout<<"** It will be used to compute norm of the error during CRB convergence**"<<std::endl;
             std::cout<<"************************************************************************"<<std::endl;
         }
-        return M_Aqm;
+        if( M_linearAqm.size() == 0 )
+        {
+            CHECK( false )<<"The linear part of a() for models using EIM must be filled ! You have to implement computeLinearDecompositionA() \n";
+        }
+        return M_linearAqm;
     }
 
     /*
@@ -1411,6 +1415,7 @@ protected :
     std::vector<std::vector<vector_ptrtype> > M_Fq;
 
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Aqm;
+    std::vector< std::vector<sparse_matrix_ptrtype> > M_linearAqm;
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Mqm;
     std::vector< std::vector<std::vector<vector_ptrtype> > > M_Fqm;
 
