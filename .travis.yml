@@ -6,18 +6,11 @@ compiler:
 before_install:
 - sudo add-apt-repository -y ppa:mapnik/boost-backports-1-54
 - sudo add-apt-repository -y ppa:kalakris/eigen
-# comment out for now
-# - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
 - sudo apt-get -qq update
 - sudo apt-get install -qq libboost1.54-all-dev mpi-default-dev mpi-default-bin libeigen3-dev
   libcln-dev petsc-dev libxml2-dev gmsh bison flex doxygen doxygen-latex transfig
   imagemagick libtbb-dev libann-dev libglpk-dev
 install:
-- if [ "$CXX" = "g++" ]; then sudo apt-get install -qq g++-4.8; fi
-- if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
-- if [ "$CXX" = "clang++" ]; then sudo apt-get install -qq clang-3.3; fi
-- if [ "$CXX" = "clang++" ]; then export CXX="/usr/bin/clang++" CC="/usr/bin/clang";
-  fi
 - mkdir opt && cd opt && ../configure -r
 script:
 - make -j16 feelpp_ginac
@@ -36,8 +29,6 @@ notifications:
     recipients:
     - feelpp-devel@feelpp.org
     on_success: change
-  sqwiggle:
-    secure: g7/kDsNASHzR27Sxrk1lSmQXWA4N8J3b2YPN9EJ6/9yQKHPBoQgzDqUH/REojAJUnNQgzqZk/pEVgglemqs5EdvDDQCCXsX6RUYINoDLddr6tUKddN+Aqiq443a6afR45L9paF6tCd1W8Re2cF2vUtGuVWdyDXH1GU3Tlo9uD8A=
 matrix:
   allow_failures:
   - gcc
