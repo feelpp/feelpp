@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:set fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -44,7 +44,8 @@ DataMap::DataMap( WorldComm const& _worldComm )
     M_myglobalelements(),
     M_mapGlobalProcessToGlobalCluster(),
     M_mapGlobalClusterToGlobalProcess(),
-    M_worldComm( _worldComm )
+    M_worldComm( _worldComm ),
+    M_indexSplit()
 {}
 
 DataMap::DataMap( size_type n, size_type n_local, WorldComm const& _worldComm )
@@ -60,7 +61,8 @@ DataMap::DataMap( size_type n, size_type n_local, WorldComm const& _worldComm )
     M_myglobalelements(),
     M_mapGlobalProcessToGlobalCluster(),
     M_mapGlobalClusterToGlobalProcess(),
-    M_worldComm( _worldComm )
+    M_worldComm( _worldComm ),
+    M_indexSplit()
 {
 
     FEELPP_ASSERT ( n_local <= n )
@@ -146,7 +148,8 @@ DataMap::DataMap( DataMap const & dm )
     M_mapGlobalProcessToGlobalCluster( dm.M_mapGlobalProcessToGlobalCluster ),
     M_mapGlobalClusterToGlobalProcess( dm.M_mapGlobalClusterToGlobalProcess ),
     M_neighbor_processors( dm.M_neighbor_processors ),
-    M_worldComm( dm.M_worldComm )
+    M_worldComm( dm.M_worldComm ),
+    M_indexSplit()
 {}
 DataMap::~DataMap()
 {}
@@ -169,6 +172,7 @@ DataMap::operator=( DataMap const& dm )
         M_mapGlobalProcessToGlobalCluster = dm.M_mapGlobalProcessToGlobalCluster;
         M_mapGlobalClusterToGlobalProcess = dm.M_mapGlobalClusterToGlobalProcess;
         M_neighbor_processors = dm.M_neighbor_processors;
+        M_indexSplit = dm.M_indexSplit;
     }
 
     return *this;
@@ -203,35 +207,35 @@ DataMap::setNDof( size_type ndof )
 }
 
 void
-DataMap::setNLocalDofWithoutGhost( const size_type proc, const size_type n, bool inWorld )
+DataMap::setNLocalDofWithoutGhost( const rank_type proc, const size_type n, bool inWorld )
 {
     M_n_localWithoutGhost_df[proc]=n;
 }
 void
-DataMap::setNLocalDofWithGhost( const size_type proc, const size_type n, bool inWorld )
+DataMap::setNLocalDofWithGhost( const rank_type proc, const size_type n, bool inWorld )
 {
     M_n_localWithGhost_df[proc]=n;
 }
 void
-DataMap::setFirstDof( const size_type proc, const size_type df, bool inWorld )
+DataMap::setFirstDof( const rank_type proc, const size_type df, bool inWorld )
 {
     FEELPP_ASSERT( proc < M_first_df.size() )( proc )( M_first_df.size() ).error( "invalid proc id or dof table" );
     M_first_df[proc]=df;
 }
 void
-DataMap::setLastDof( const size_type proc, const size_type df, bool inWorld )
+DataMap::setLastDof( const rank_type proc, const size_type df, bool inWorld )
 {
     FEELPP_ASSERT( proc < M_first_df.size() )( proc )( M_first_df.size() ).error( "invalid proc id or dof table" );
     M_last_df[proc]=df;
 }
 void
-DataMap::setFirstDofGlobalCluster( const size_type proc, const size_type df, bool inWorld )
+DataMap::setFirstDofGlobalCluster( const rank_type proc, const size_type df, bool inWorld )
 {
     FEELPP_ASSERT( proc < M_first_df_globalcluster.size() )( proc )( M_first_df_globalcluster.size() ).error( "invalid proc id or dof table" );
     M_first_df_globalcluster[proc]=df;
 }
 void
-DataMap::setLastDofGlobalCluster( const size_type proc, const size_type df, bool inWorld )
+DataMap::setLastDofGlobalCluster( const rank_type proc, const size_type df, bool inWorld )
 {
     FEELPP_ASSERT( proc < M_first_df_globalcluster.size() )( proc )( M_first_df_globalcluster.size() ).error( "invalid proc id or dof table" );
     M_last_df_globalcluster[proc]=df;
@@ -296,10 +300,10 @@ DataMap::updateDataInWorld()
 }
 
 
-uint16_type
+rank_type
 DataMap::procOnGlobalCluster( size_type globDof ) const
 {
-    uint16_type proc=0,res=0;
+    rank_type proc=0,res=invalid_rank_type_value;
     bool find=false;
 
     while ( ( !find ) && ( proc<this->nProcessors() ) )
@@ -338,7 +342,7 @@ DataMap::showMeMapGlobalProcessToGlobalCluster( bool showAll, std::ostream& __ou
     //__out << std::endl;
     this->comm().globalComm().barrier();
 
-    for ( int proc = 0; proc<this->comm().globalSize(); ++proc )
+    for ( rank_type proc = 0; proc<this->comm().globalSize(); ++proc )
     {
         this->comm().globalComm().barrier();
         if ( proc==this->worldComm().globalRank() )//this->worldComm().masterRank() )
@@ -384,7 +388,7 @@ DataMap::showMeMapGlobalProcessToGlobalCluster( bool showAll, std::ostream& __ou
 #if 1
             __out << " M_first_df : ";
 
-            for ( int i=0; i<this->worldComm().globalSize(); ++i )
+            for ( rank_type i=0; i<this->worldComm().globalSize(); ++i )
             {
                 __out << this-> M_first_df[i] << " ";
             }
@@ -392,7 +396,7 @@ DataMap::showMeMapGlobalProcessToGlobalCluster( bool showAll, std::ostream& __ou
             __out << "\n";
             __out << " M_last_df : ";
 
-            for ( int i=0; i<this->worldComm().globalSize(); ++i )
+            for ( rank_type i=0; i<this->worldComm().globalSize(); ++i )
             {
                 __out << this-> M_last_df[i] << " ";
             }
@@ -400,7 +404,7 @@ DataMap::showMeMapGlobalProcessToGlobalCluster( bool showAll, std::ostream& __ou
             __out << "\n";
             __out << " M_first_df_globalcluster : ";
 
-            for ( int i=0; i<this->worldComm().globalSize(); ++i )
+            for ( rank_type i=0; i<this->worldComm().globalSize(); ++i )
             {
                 __out << this-> M_first_df_globalcluster[i] << " ";
             }
@@ -408,7 +412,7 @@ DataMap::showMeMapGlobalProcessToGlobalCluster( bool showAll, std::ostream& __ou
             __out << "\n";
             __out << " M_last_df_globalcluster : ";
 
-            for ( int i=0; i<this->worldComm().globalSize(); ++i )
+            for ( rank_type i=0; i<this->worldComm().globalSize(); ++i )
             {
                 __out << this-> M_last_df_globalcluster[i] << " ";
             }
@@ -416,7 +420,7 @@ DataMap::showMeMapGlobalProcessToGlobalCluster( bool showAll, std::ostream& __ou
             __out << "\n";
             __out << " M_n_localWithGhost_df : ";
 
-            for ( int i=0; i<this->worldComm().globalSize(); ++i )
+            for ( rank_type i=0; i<this->worldComm().globalSize(); ++i )
             {
                 __out << this->M_n_localWithGhost_df[i] << " ";
             }
@@ -424,7 +428,7 @@ DataMap::showMeMapGlobalProcessToGlobalCluster( bool showAll, std::ostream& __ou
             __out << "\n";
             __out << " M_n_localWithoutGhost_df : ";
 
-            for ( int i=0; i<this->worldComm().globalSize(); ++i )
+            for ( rank_type i=0; i<this->worldComm().globalSize(); ++i )
             {
                 __out << this->M_n_localWithoutGhost_df[i] << " ";
             }
@@ -454,5 +458,309 @@ DataMap::showMeMapGlobalProcessToGlobalCluster( bool showAll, std::ostream& __ou
     //sleep(1);
 
 }
+
+
+void
+DataMap::buildIndexSplit()
+{
+    DVLOG(1) << "buildIndexSplit() start\n";
+    M_indexSplit.reset( new indexsplit_type( 1 ) );
+    M_indexSplit->operator[](0).resize( this->nLocalDofWithoutGhost() );
+
+    M_indexSplit->setFirstIndex( 0, this->firstDofGlobalCluster() );
+    M_indexSplit->setLastIndex( 0, this->lastDofGlobalCluster() );
+    M_indexSplit->setNIndex( 0, this->nLocalDofWithGhost() );
+
+    const size_type firstDof = this->firstDofGlobalCluster();
+
+    for ( size_type index = 0; index < this->nLocalDofWithGhost() ; ++index )
+    {
+        if ( this->dofGlobalProcessIsGhost(index) ) continue;
+        const size_type globalDof = this->mapGlobalProcessToGlobalCluster(index);
+        M_indexSplit->operator[](0)[globalDof - firstDof] = globalDof;
+    }
+
+    size_type nDofForSmallerRankId=0;
+    for ( rank_type proc=0;proc<this->worldComm().globalRank();++proc )
+        nDofForSmallerRankId+=this->nLocalDofWithoutGhost( proc );
+    M_indexSplit->setNIndexForSmallerRankId( 0, nDofForSmallerRankId );
+
+    DVLOG(1) << "buildIndexSplit() done\n";
+}
+
+void
+IndexSplit::FieldsDef::showMe() const
+{
+    std::cout << "FieldsDef showMe\n ";
+    for (auto it=this->begin(),en=this->end();it!=en;++it)
+    {
+        std::cout << "field " << it->first << " -> ";
+        for ( int val : it->second )
+            std::cout << " " << val;
+        std::cout << "\n";
+    }
+}
+
+
+IndexSplit::FieldsDef
+IndexSplit::parseFieldsDef( std::string s )
+{
+    // TODO : remove white space before
+
+    IndexSplit::FieldsDef res;
+
+    int index=0;
+    while ( index < s.size() )
+    {
+        bool findArrow=false;
+        int indexLenght=0;
+        int fieldId=0;
+
+        while (!findArrow && index < s.size())
+        {
+            if ( s.substr(index,2) == "->" )
+            {
+                fieldId=boost::lexical_cast<int>( s.substr(index-indexLenght,indexLenght).c_str() );
+                findArrow=true;
+                index+=2;
+            }
+            else
+            {
+                ++indexLenght;
+                ++index;
+            }
+        }
+
+        CHECK( findArrow ) << "fields def expression has not symbol -> : " << s << "\n";
+
+        if ( s.substr(index,1) == "(" )
+        {
+            ++index;
+            bool find=false;
+            std::vector<int> allIndexLenght;
+            /*int*/ indexLenght=0;
+            int nSplit=0;
+            while (!find && index < s.size() )
+            {
+                if ( s.substr(index,1) == ")" )
+                {
+                    ++nSplit;
+                    int splitId = boost::lexical_cast<int>( s.substr(index-indexLenght,indexLenght).c_str() );
+                    res[fieldId].insert( splitId );
+                    find=true;
+                    index+=indexLenght+1;
+                }
+                else
+                {
+                    if ( s.substr(index,1) == "," )
+                    {
+                        ++nSplit;
+                        int splitId = boost::lexical_cast<int>( s.substr(index-indexLenght,indexLenght).c_str() );
+                        res[fieldId].insert( splitId );
+                        indexLenght=0;
+                    }
+                    else
+                    {
+                        ++indexLenght;
+                    }
+                    ++index;
+                }
+            }
+            CHECK( find ) << "fields def expression has an invalid format " << s << "\n";
+        } // (
+
+    }
+
+    //res.showMe();
+    return res;
+}
+
+
+void
+IndexSplit::resize( int size )
+{
+    super_type::resize( size );
+    M_firstIndex.resize( size );
+    M_lastIndex.resize( size );
+    M_nIndex.resize( size );
+    M_nIndexForSmallerRankId.resize( size );
+}
+
+
+void
+IndexSplit::addSplit( size_type startSplit, self_ptrtype const& addedIndexSplit )
+{
+    const int sizeIS1 = this->size();
+    const int sizeIS2 = addedIndexSplit->size();
+    const int newSize = sizeIS1+sizeIS2;
+    this->resize( newSize );
+
+    size_type startIS = startSplit;
+    for ( int k = 0 ; k < newSize ; ++k )
+    {
+        if ( k >= sizeIS1 )
+        {
+            int sizeSplitAdded = addedIndexSplit->split(k-sizeIS1).size();
+
+            this->setFirstIndex( k, startIS );
+            this->setLastIndex( k, (sizeSplitAdded>0)? startIS+sizeSplitAdded-1 : startIS  );
+            this->setNIndex( k, sizeSplitAdded );
+
+            this->operator[](k).resize( sizeSplitAdded );
+            const size_type firstIndexAdded = addedIndexSplit->firstIndex(k-sizeIS1);
+            for ( int l=0 ; l<sizeSplitAdded ; ++l )
+                this->operator[](k)[l] = startIS + addedIndexSplit->split(k-sizeIS1)[l] - firstIndexAdded;
+            this->setNIndexForSmallerRankId( k, addedIndexSplit->nIndexForSmallerRankId( k-sizeIS1 ) );
+        }
+
+        startIS += this->operator[](k).size();
+    }
+
+}
+
+
+IndexSplit::self_ptrtype
+IndexSplit::applyFieldsDef( IndexSplit::FieldsDef const& fieldsDef ) const
+{
+#if 0
+    int nField = fieldsDef.size();
+    self_ptrtype newIS( new self_type( nField ) );
+    auto it = fieldsDef.begin();
+    auto const en = fieldsDef.end();
+    for ( ; it!=en ; ++it)
+    {
+        int k = it->first;
+        int sizeNewField = 0;
+        for ( int field : it->second )
+        {
+            sizeNewField += this->operator[]( field ).size();
+        }
+        newIS->operator[](k).resize( sizeNewField );
+
+        int startField=0;
+        for ( int field : it->second )
+        {
+            int sizeField = this->operator[]( field ).size();
+            for ( int i = 0 ; i < sizeField; ++i )
+                newISoperator[](k)[startField+i] = this->operator[]( field )[i];
+            startField += sizeField;
+        }
+    }
+
+    return newIS;
+#else
+    int nField = fieldsDef.size();
+
+    self_ptrtype newIS( new self_type( nField ) );
+
+    // get split id present in def
+    std::set<int> splitSetInDef;
+    auto it = fieldsDef.begin();
+    auto const en = fieldsDef.end();
+    for ( ; it != en ; ++it)
+        for ( int fieldId : it->second )
+            splitSetInDef.insert( fieldId );
+
+    //std::cout << "splitSetInDef.size() " << splitSetInDef.size() << "\n";
+
+    // init start index
+    std::vector<int> startSplit( this->size() );
+    for ( int i = 0 ; i < this->size(); ++i )
+        startSplit[i] = this->firstIndex( i );
+    // fix start index if not all field are present in def
+    for ( int splitId = 0 ; splitId < this->size(); ++splitId )
+    {
+        auto itFindSplit = std::find_if( splitSetInDef.begin(), splitSetInDef.end(),
+                                         [&splitId]( int s ) { return s == splitId; } );
+        if ( itFindSplit == splitSetInDef.end() )
+        {
+            for ( int splitId2 : splitSetInDef )
+            {
+                if ( splitId2 > splitId )
+                    startSplit[splitId2] -= this->nIndex(splitId);
+                startSplit[splitId2] -= this->nIndexForSmallerRankId( splitId );
+            }
+        }
+    }
+
+    // update new index split
+    for ( it = fieldsDef.begin() ; it != en ; ++it)
+    {
+        int fieldId = it->first;
+        int sizeNewSplit = 0;
+        for ( int splitId : it->second )
+            sizeNewSplit += this->operator[]( splitId ).size();
+
+        newIS->operator[](fieldId).resize( sizeNewSplit );
+
+        bool hasInitFirstIndex = false;
+        size_type startIndexSplit=0, nIndexForSmallerRank=0;
+        for ( int splitId : it->second )
+        {
+            if ( !hasInitFirstIndex )
+            {
+                newIS->setFirstIndex( fieldId, startSplit[splitId] );
+                hasInitFirstIndex=true;
+            }
+
+            int sizeSplit = this->operator[]( splitId ).size();
+            for ( int i = 0 ; i < sizeSplit; ++i )
+                newIS->operator[](fieldId)[startIndexSplit+i] = startSplit[splitId] + this->operator[]( splitId )[i] - this->firstIndex( splitId );
+            //newIS[fieldId][startIndexSplit+i] =  this->operator[]( splitId )[i];
+            startIndexSplit += sizeSplit;
+
+            nIndexForSmallerRank += this->nIndexForSmallerRankId( splitId );
+        }
+
+        newIS->setLastIndex( fieldId, (sizeNewSplit>0)? newIS->firstIndex(fieldId)+sizeNewSplit-1 : newIS->firstIndex(fieldId) );
+        newIS->setNIndex( fieldId, sizeNewSplit );
+        newIS->setNIndexForSmallerRankId( fieldId, nIndexForSmallerRank );
+    }
+
+    return newIS;
+#endif
+
+}
+
+
+
+void
+IndexSplit::showMe() const
+{
+    int nSplit = this->size();
+    std::ostringstream ostr;
+    ostr << "------------------IndexSplit::showMe()----------------\n";
+    ostr << "-proc " << Environment::worldComm().globalRank() << "\n"
+         << "-number of split : " << nSplit << "\n";
+    for (size_type k=0;k<nSplit;++k)
+    {
+        size_type nDofInSplit = this->operator[](k).size();
+        ostr << "-split : " << k << "\n"
+             << "-firstIndex : " << this->firstIndex(k) << "\n"
+             << "-lastIndex : " << this->lastIndex(k) << "\n"
+             << "-nIndex : " << this->nIndex(k) << "\n"
+             << "-nIndexForSmallerRankId : " << this->nIndexForSmallerRankId(k) << "\n";
+        if ( true )
+        {
+            for ( int i=0;i<nDofInSplit;++i)
+            {
+                ostr << this->operator[](k)[i] << " ";
+            }
+            ostr << "\n";
+        }
+        ostr << "------------------------------------------------------\n";
+    }
+
+    Environment::worldComm().barrier();
+    for ( rank_type proc = 0; proc<Environment::worldComm().globalSize(); ++proc )
+    {
+        Environment::worldComm().barrier();
+        if ( proc==Environment::worldComm().globalRank() )
+            std::cout<< ostr.str();
+    }
+    Environment::worldComm().barrier();
+
+}
+
 
 } // namespace Feel

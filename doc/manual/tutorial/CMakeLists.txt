@@ -33,16 +33,16 @@ add_custom_target(tutorial)
 foreach(app myapp mymesh myintegrals myfunctionspace geotool loadmesh mylaplacian myadvection myexporter myexpression )
 
   if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${app}.cfg )
-    feelpp_add_application( doc_${app} SRCS ${app}.cpp LABEL doc CFG ${app}.cfg)
+    feelpp_add_application( doc_${app} SRCS ${app}.cpp LABELS doc CFG ${app}.cfg)
   else()
-    feelpp_add_application( doc_${app} SRCS ${app}.cpp LABEL doc)
+    feelpp_add_application( doc_${app} SRCS ${app}.cpp LABELS doc)
   endif()
   install(TARGETS feelpp_doc_${app} DESTINATION bin/ COMPONENT Bin )
 
 
 endforeach()
 
-feelpp_add_application( doc_mystokes SRCS mystokes.cpp LABEL doc CFG mystokes.cfg bercovierengelmann.cfg kovasnay.cfg GEO mystokes.geo)
+feelpp_add_application( doc_mystokes SRCS mystokes.cpp LABELS doc CFG mystokes.cfg bercovierengelmann.cfg kovasnay.cfg GEO mystokes.geo)
 install(TARGETS feelpp_doc_mystokes DESTINATION bin/ COMPONENT Bin )
 
 add_dependencies(tutorial feelpp_doc_myapp)

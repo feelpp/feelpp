@@ -111,21 +111,23 @@ struct GMSHElement
                  int t,
                  int p,
                  int e,
-                 int _numPartitions,
-                 int _partition,
+                 rank_type _numPartitions,
+                 rank_type _partition,
                  std::vector<rank_type> const& _ghosts,
                  int _parent,
                  int _dom1, int _dom2,
                  int _numVertices,
                  std::vector<int> const& _indices,
-                 int worldcommrank,int worldcommsize)
+                 rank_type worldcommrank,
+                 rank_type worldcommsize,
+                 bool use_partitioning = false )
     :
         num( n ),
         type( t ),
         physical( p ),
         elementary( e ),
         numPartitions( _numPartitions ),
-        partition( _partition % worldcommsize ),
+        partition( use_partitioning?_partition:(_partition % worldcommsize) ),
         ghosts( _ghosts ),
         is_on_processor( false ),
         is_ghost( false ),
@@ -137,7 +139,7 @@ struct GMSHElement
         {
             setPartition(worldcommrank,worldcommsize);
         }
-    void setPartition(int worldcommrank, int worldcommsize)
+    void setPartition(rank_type worldcommrank, rank_type worldcommsize)
         {
             // maybe proc id not start to 0
             for ( auto _itghost=ghosts.begin(),_enghost=ghosts.end() ; _itghost!=_enghost ; ++_itghost )
@@ -188,12 +190,12 @@ struct GMSHElement
 
     bool isOnProcessor() const { return is_on_processor; }
     bool isGhost() const { return is_ghost; }
-    int ghostPartitionId() const { return ghost_partition_id; }
+    rank_type ghostPartitionId() const { return ghost_partition_id; }
 
     template<typename IteratorBegin,typename IteratorEnd>
     bool isIgnored(IteratorBegin it, IteratorEnd en ) const { return std::find( it, en, physical ) != en; }
 
-    void updatePartition( std::map<int,int> const& p2e, int worldcommrank, int worldcommsize )
+    void updatePartition( std::map<rank_type,rank_type> const& p2e, rank_type worldcommrank, rank_type worldcommsize )
         {
             partition = num;
             for( auto& g : ghosts )
@@ -206,12 +208,12 @@ struct GMSHElement
     int elementary;
 
     //! partitioning info
-    int numPartitions;
-    int partition;
+    rank_type numPartitions;
+    rank_type partition;
     std::vector<rank_type> ghosts;
     bool is_on_processor;
     bool is_ghost;
-    int ghost_partition_id;
+    rank_type ghost_partition_id;
 
     int parent;
     int dom1, dom2;
@@ -298,7 +300,8 @@ public:
         :
         super( GMSH, _worldcomm ),
         M_version( FEELPP_GMSH_FORMAT_VERSION ),
-        M_use_elementary_region_as_physical_region( false )
+        M_use_elementary_region_as_physical_region( false ),
+        M_respect_partition( false )
     {
         this->setIgnorePhysicalName( "FEELPP_GMSH_PHYSICALNAME_IGNORED" );
         //showMe();
@@ -309,7 +312,8 @@ public:
         :
         super( _fname, GMSH, _worldcomm ),
         M_version( _version ),
-        M_use_elementary_region_as_physical_region( false )
+        M_use_elementary_region_as_physical_region( false ),
+        M_respect_partition( false )
     {
         this->setIgnorePhysicalName( "FEELPP_GMSH_PHYSICALNAME_IGNORED" );
         //showMe();
@@ -320,7 +324,8 @@ public:
         M_version( i.M_version ),
         M_use_elementary_region_as_physical_region( false ),
         M_ignorePhysicalGroup( i.M_ignorePhysicalGroup ),
-        M_ignorePhysicalName( i.M_ignorePhysicalName )
+        M_ignorePhysicalName( i.M_ignorePhysicalName ),
+        M_respect_partition( i.M_respect_partition )
     {
         this->setIgnorePhysicalName( "FEELPP_GMSH_PHYSICALNAME_IGNORED" );
         //showMe();
@@ -375,6 +380,11 @@ public:
         M_ignorePhysicalName.insert( s );
     }
 
+    void setRespectPartition( bool r )
+        {
+            M_respect_partition = r;
+        }
+
     //@}
 
     /** @name  Methods
@@ -413,10 +423,10 @@ private:
     void addVolume( mesh_type* /*mesh*/, Feel::detail::GMSHElement const& /*__e*/, int & /*__idGmshToFeel*/ , mpl::int_<2> );
     void addVolume( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & /*__idGmshToFeel*/, mpl::int_<3> );
 
-    void updateGhostCellInfoByUsingBlockingComm( mesh_type* mesh, std::map<int,int> const& __idGmshToFeel, std::map<int,boost::tuple<int,int> > const& __mapGhostElt,
+    void updateGhostCellInfoByUsingBlockingComm( mesh_type* mesh, std::map<int,int> const& __idGmshToFeel, std::map<int,boost::tuple<int,rank_type> > const& __mapGhostElt,
                                                  std::vector<int> const& nbMsgToRecv );
 
-    void updateGhostCellInfoByUsingNonBlockingComm( mesh_type* mesh, std::map<int,int> const& __idGmshToFeel, std::map<int,boost::tuple<int,int> > const& __mapGhostElt,
+    void updateGhostCellInfoByUsingNonBlockingComm( mesh_type* mesh, std::map<int,int> const& __idGmshToFeel, std::map<int,boost::tuple<int,rank_type> > const& __mapGhostElt,
                                                     std::vector<int> const& nbMsgToRecv );
 
 
@@ -429,7 +439,7 @@ private:
     std::set<int> M_ignorePhysicalGroup;
     std::set<std::string> M_ignorePhysicalName;
     bool M_use_elementary_region_as_physical_region;
-
+    bool M_respect_partition;
     //std::map<int,int> itoii;
     //std::vector<int> ptseen;
 
@@ -716,12 +726,12 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
           int numTags;
           // some faces may not be associated to a partition in the mesh file,
           // hence will be read given the partition id 0 and will be discarded
-          int partition = (this->worldComm().globalSize()>1)?this->worldComm().localRank():0;
+          rank_type partition = (this->worldComm().globalSize()>1)?this->worldComm().localRank():0;
           __is >> num  // elm-number
                >> type // elm-type
                >> numTags; // number-of-tags
 
-          int numPartitions = 1;
+          rank_type numPartitions = 1;
 
           for(int j = 0; j < numTags; j++)
           {
@@ -764,7 +774,9 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
                                              numPartitions, partition, ghosts,
                                              parent, dom1, dom2,
                                              numVertices, indices,
-                                             this->worldComm().localRank(),this->worldComm().localSize() );
+                                             this->worldComm().localRank(),
+                                             this->worldComm().localSize(),
+                                             M_respect_partition );
 
           // WARNING: we had another condition if the number of processors and
           // elements is the same, in that case we store everything for now
@@ -814,8 +826,8 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
                 int num = data[0];
                 int physical = (numTags > 0) ? data[1] : 0;
                 int elementary = (numTags > 1) ? data[2] : 0;
-                int numPartitions = (version >= 2.2 && numTags > 3) ? data[3] : 1;
-                int partition = (version < 2.2 && numTags > 2) ? data[3]-1 :
+                rank_type numPartitions = (version >= 2.2 && numTags > 3) ? data[3] : 1;
+                rank_type partition = (version < 2.2 && numTags > 2) ? data[3]-1 :
                     (version >= 2.2 && numTags > 3) ? data[4]-1 : 0;
                 if(numPartitions > 1)
                     for(int j = 0; j < numPartitions - 1; j++)
@@ -844,7 +856,9 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
                                                    numPartitions, partition, ghosts,
                                                    parent, dom1, dom2,
                                                    numVertices, indices,
-                                                   this->worldComm().localRank(),this->worldComm().localSize() );
+                                                   this->worldComm().localRank(),
+                                                   this->worldComm().localSize(),
+                                                   M_respect_partition );
 
                 if ( ( gmshElt.isOnProcessor() == false ||
                        gmshElt.isIgnored(M_ignorePhysicalGroup.begin(), M_ignorePhysicalGroup.end()) ) )
@@ -919,7 +933,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     // we are done reading the MSH file
 
 
-    std::map<int,boost::tuple<int,int> > mapGhostElt;
+    std::map<int,boost::tuple<int,rank_type> > mapGhostElt;
     std::vector<int> nbMsgToRecv( this->worldComm().localSize(),0 );
 
     node_type coords( mesh_type::nRealDim );
@@ -1533,7 +1547,7 @@ ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, Feel::detail::GMSHElement co
 
 template<typename MeshType>
 void
-ImporterGmsh<MeshType>::updateGhostCellInfoByUsingBlockingComm( mesh_type* mesh, std::map<int,int> const& __idGmshToFeel, std::map<int,boost::tuple<int,int> > const& __mapGhostElt,
+ImporterGmsh<MeshType>::updateGhostCellInfoByUsingBlockingComm( mesh_type* mesh, std::map<int,int> const& __idGmshToFeel, std::map<int,boost::tuple<int,rank_type> > const& __mapGhostElt,
                                                                 std::vector<int> const& nbMsgToRecv )
 {
     // counter of msg sent for each process
@@ -1630,7 +1644,7 @@ ImporterGmsh<MeshType>::updateGhostCellInfoByUsingBlockingComm( mesh_type* mesh,
 
 template<typename MeshType>
 void
-ImporterGmsh<MeshType>::updateGhostCellInfoByUsingNonBlockingComm( mesh_type* mesh, std::map<int,int> const& __idGmshToFeel, std::map<int,boost::tuple<int,int> > const& __mapGhostElt,
+ImporterGmsh<MeshType>::updateGhostCellInfoByUsingNonBlockingComm( mesh_type* mesh, std::map<int,int> const& __idGmshToFeel, std::map<int,boost::tuple<int,rank_type> > const& __mapGhostElt,
                                                                    std::vector<int> const& nbMsgToRecv )
 {
 
@@ -1640,37 +1654,37 @@ ImporterGmsh<MeshType>::updateGhostCellInfoByUsingNonBlockingComm( mesh_type* me
 
     //-----------------------------------------------------------//
     // compute size of container to send
-    std::map< int, int > nDataInVecToSend;
+    std::map< rank_type, int > nDataInVecToSend;
     auto it_map = __mapGhostElt.begin();
     auto const en_map = __mapGhostElt.end();
     for ( ; it_map!=en_map ; ++it_map )
     {
-        const int idProc = it_map->second.template get<1>();
+        const rank_type idProc = it_map->second.template get<1>();
         if ( nDataInVecToSend.find(idProc) == nDataInVecToSend.end() )
             nDataInVecToSend[idProc]=0;
         nDataInVecToSend[idProc]++;
     }
     //-----------------------------------------------------------//
     // init and resize the container to send
-    std::map< int, std::vector<int> > dataToSend;
+    std::map< rank_type, std::vector<int> > dataToSend;
     auto itNDataInVecToSend = nDataInVecToSend.begin();
     auto const enNDataInVecToSend = nDataInVecToSend.end();
     for ( ; itNDataInVecToSend!=enNDataInVecToSend ; ++itNDataInVecToSend )
     {
-        const int idProc = itNDataInVecToSend->first;
+        const rank_type idProc = itNDataInVecToSend->first;
         const int nData = itNDataInVecToSend->second;
         dataToSend[idProc].resize( nData );
     }
     //-----------------------------------------------------------//
     // prepare container to send
-    std::map< int, std::map<int,int> > memoryMsgToSend;
-    std::map< int, int > nDataInVecToSendBis;
+    std::map< rank_type, std::map<int,int> > memoryMsgToSend;
+    std::map< rank_type, int > nDataInVecToSendBis;
     it_map = __mapGhostElt.begin();
     for ( ; it_map!=en_map ; ++it_map )
     {
         const int idGmsh = it_map->first;
         const int idFeel = it_map->second.template get<0>();
-        const int idProc = it_map->second.template get<1>();
+        const rank_type idProc = it_map->second.template get<1>();
 
         if ( nDataInVecToSendBis.find(idProc) == nDataInVecToSendBis.end() )
             nDataInVecToSendBis[idProc]=0;
@@ -1684,7 +1698,7 @@ ImporterGmsh<MeshType>::updateGhostCellInfoByUsingNonBlockingComm( mesh_type* me
     //-----------------------------------------------------------//
     // counter of request
     int nbRequest=0;
-    for ( int proc=0; proc<nProc; ++proc )
+    for ( rank_type proc=0; proc<nProc; ++proc )
     {
         if ( dataToSend.find(proc) != dataToSend.end() )
             ++nbRequest;
@@ -1706,8 +1720,8 @@ ImporterGmsh<MeshType>::updateGhostCellInfoByUsingNonBlockingComm( mesh_type* me
     }
     //-----------------------------------------------------------//
     // first recv
-    std::map<int,std::vector<int> > dataToRecv;
-    for ( int proc=0; proc<nProc; ++proc )
+    std::map<rank_type,std::vector<int> > dataToRecv;
+    for ( rank_type proc=0; proc<nProc; ++proc )
     {
         if ( nbMsgToRecv[proc] > 0 )
         {
@@ -1720,12 +1734,12 @@ ImporterGmsh<MeshType>::updateGhostCellInfoByUsingNonBlockingComm( mesh_type* me
     mpi::wait_all(reqs, reqs + nbRequest);
     //-----------------------------------------------------------//
     // build the container to ReSend
-    std::map<int, std::vector<int> > dataToReSend;
+    std::map<rank_type, std::vector<int> > dataToReSend;
     auto itDataRecv = dataToRecv.begin();
     auto const enDataRecv = dataToRecv.end();
     for ( ; itDataRecv!=enDataRecv ; ++itDataRecv )
     {
-        const int idProc = itDataRecv->first;
+        const rank_type idProc = itDataRecv->first;
         const int nDataRecv = itDataRecv->second.size();
         dataToReSend[idProc].resize( nDataRecv );
         //store the idFeel corresponding
@@ -1744,11 +1758,11 @@ ImporterGmsh<MeshType>::updateGhostCellInfoByUsingNonBlockingComm( mesh_type* me
     }
     //-----------------------------------------------------------//
     // recv the initial request
-    std::map<int, std::vector<int> > finalDataToRecv;
+    std::map<rank_type, std::vector<int> > finalDataToRecv;
     itDataToSend = dataToSend.begin();
     for ( ; itDataToSend!=enDataToSend ; ++itDataToSend )
     {
-        const int idProc = itDataToSend->first;
+        const rank_type idProc = itDataToSend->first;
         reqs[cptRequest] = this->worldComm().localComm().irecv( idProc, 0, finalDataToRecv[idProc] );
         ++cptRequest;
     }
@@ -1763,7 +1777,7 @@ ImporterGmsh<MeshType>::updateGhostCellInfoByUsingNonBlockingComm( mesh_type* me
     auto const enFinalDataToRecv = finalDataToRecv.end();
     for ( ; itFinalDataToRecv!=enFinalDataToRecv ; ++itFinalDataToRecv)
     {
-        const int idProc = itFinalDataToRecv->first;
+        const rank_type idProc = itFinalDataToRecv->first;
         const int nDataRecv = itFinalDataToRecv->second.size();
         for ( int k=0; k<nDataRecv; ++k )
         {

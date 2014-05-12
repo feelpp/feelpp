@@ -28,6 +28,7 @@ after_script: make check
 branches:
   only:
   - develop
+  - master
 cache:
 - apt
 notifications:
@@ -35,8 +36,6 @@ notifications:
     recipients:
     - feelpp-devel@feelpp.org
     on_success: change
-  sqwiggle:
-    secure: g7/kDsNASHzR27Sxrk1lSmQXWA4N8J3b2YPN9EJ6/9yQKHPBoQgzDqUH/REojAJUnNQgzqZk/pEVgglemqs5EdvDDQCCXsX6RUYINoDLddr6tUKddN+Aqiq443a6afR45L9paF6tCd1W8Re2cF2vUtGuVWdyDXH1GU3Tlo9uD8A=
 matrix:
   allow_failures:
   - gcc
