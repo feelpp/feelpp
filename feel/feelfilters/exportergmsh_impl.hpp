@@ -341,8 +341,8 @@ ExporterGmsh<MeshType,N>::gmshSaveAscii() const
                                     }
 
                                     // if we have min-max values
-                                    // we correct the range for the transfer function
-                                    if(!minMaxValues.empty())
+                                    // we correct the range for the transfer function (for scalar values)
+                                    if(it->second.size() == 2)
                                     {   
                                         geoout << "View[nv-" << ((this->worldComm().size() - 1 - i) * minMaxValues.size() + (minMaxValues.size() - 1 - j)) 
                                             << "].RangeType=2;" << std::endl;
@@ -963,6 +963,104 @@ ExporterGmsh<MeshType,N>::computeMinMax(step_ptrtype __step, std::map<std::strin
             }
         }
     }
+
+    nodal_vectorial_const_iterator __varVec = __step->beginNodalVector();
+    nodal_vectorial_const_iterator __varVec_end = __step->endNodalVector();
+
+    for ( ; __varVec!=__varVec_end ; ++__varVec )
+    {
+        nodal_vectorial_type const& __uVec = __varVec->second;
+
+        uint16_type nComponents = __uVec.nComponents;
+
+        element_mesh_const_iterator elt_it;
+        element_mesh_const_iterator elt_en;
+        boost::tie( boost::tuples::ignore, elt_it, elt_en ) = elements( mesh );
+        
+        // record min-max value for function
+        // check if record already exists
+        if(minMaxValues.empty() || minMaxValues.find(__varVec->first) == minMaxValues.end())
+        {
+            nLocalDof = nodal_vectorial_type::functionspace_type::basis_type::nLocalDof;
+
+            for(int i = 0; i < nLocalDof * 3; i++)
+            {
+                minMaxValues[__varVec->first].push_back(0.0);
+                minMaxValues[__varVec->first].push_back(0.0);
+            }
+        }
+        
+        /* need to update min/max for vectorial data */
+        /*
+        for (; elt_it!=elt_en ; ++elt_it )
+        {
+            nLocalDof = nodal_vectorial_type::functionspace_type::basis_type::nLocalDof;
+
+            for ( uint16_type l = 0; l < nLocalDof; ++l )
+            {
+                uint16_type gmsh_l = ordering.fromGmshId( l );
+
+                for ( uint16_type c = 0; c < 3; ++c )
+                {
+                    if ( c < nComponents )
+                    {
+                        globaldof = boost::get<0>( __uVec.functionSpace()->dof()->localToGlobal( elt_it->id(),
+                                                   gmsh_l,
+                                                   c ) );
+                        //out << __uVec( globaldof);
+                        out << __uVec.container()( globaldof );
+                    }
+
+                    else out << "0.0";
+                }
+            }
+
+            out << "\n";
+        }
+        */
+    }
+
+    auto __ElmScal = __step->beginElementScalar();
+    auto __ElmScal_end = __step->endElementScalar();
+
+    for ( ; __ElmScal!=__ElmScal_end ; ++__ElmScal )
+    {
+        element_scalar_type const& __u = __ElmScal->second;
+
+        element_mesh_const_iterator elt_it = mesh->beginElement();
+        element_mesh_const_iterator elt_en = mesh->endElement();
+
+        if ( !__u.areGlobalValuesUpdated() )
+            __u.updateGlobalValues();
+        
+        // record min-max value for function
+        // check if record already exists
+        if(minMaxValues.empty() || minMaxValues.find(__ElmScal->first) == minMaxValues.end())
+        {
+            minMaxValues[__ElmScal->first].push_back(0.0);
+            minMaxValues[__ElmScal->first].push_back(0.0);
+        }
+        
+#if 0
+        for ( ; elt_it!=elt_en ; ++elt_it )
+        {
+            globaldof = boost::get<0>( __u.functionSpace()->dof()->localToGlobal( elt_it->id(), 0, 0 ) ); //l,c
+
+            // either use the relinearized version for one file dataset or classic for one file per process
+            /*
+            if(option(_name="exporter.fileset").template as<bool>() == true)
+            {
+            */
+                out << elt_pids[elt_it->id()] << " " << /*__u( globaldof)*/__u.container()( globaldof ) << "\n";
+            //}
+            //else
+            //{
+                //out << indexEltStart + number_markedfaces+elt_it->id()+1 << " " << [>__u( globaldof)<]__u.container()( globaldof ) << "\n";
+            //}
+        }
+#endif
+    }
+
 }
 
 
@@ -1108,11 +1206,13 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
         out << "3\n";//number of integer tags:
         out << __step->index() << "\n";//"0\n";//the time step (0; time steps always start at 0)
         out << "3\n";//n-component (3 is vectorial) field
-        out << mesh->numElements() << "\n";//number associated nodal values
+        //out << mesh->numElements() << "\n";//number associated nodal values
 
         element_mesh_const_iterator elt_it;
         element_mesh_const_iterator elt_en;
         boost::tie( boost::tuples::ignore, elt_it, elt_en ) = elements( mesh );
+        
+        out << std::distance(elt_it, elt_en) << "\n";//number associated nodal values
 
         for (; elt_it!=elt_en ; ++elt_it )
         {

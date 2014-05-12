@@ -20,12 +20,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-/**
-	\file test_form_interpolation.cpp
-	\author Vincent Chabannes <vincent.chabannes@imag.fr>
-	\date 2011-06-19
-	*/
-
 #define USE_BOOST_TEST 1
 
 #define BOOST_TEST_MODULE eval_at_point testsuite
@@ -50,70 +44,79 @@ typedef boost::shared_ptr<Application_type> Application_ptrtype;
 
 namespace test_eval_at_point
 {
-	inline
-		po::options_description
-		makeOptions()
-		{
-			po::options_description desc_options( "test form interpolation options" );
-			desc_options.add_options()
-				( "x", po::value<double>()->default_value( 0.23 ), " x coord" )
-				( "y", po::value<double>()->default_value( 0.52 ), " y coord" );
-			;
-			return desc_options.add( Feel::feel_options() );//.add( backend_options( "pressure" ) );
-		}
-	inline
-		AboutData
-		makeAbout()
-		{
-			AboutData about( "Test_eval_at_point" ,
-					"Test_eval_at_point" ,
-					"0.1",
-					"test evaluation at point",
-					Feel::AboutData::License_GPL,
-					"Copyright (c) 2011 Universite Joseph Fourier" );
+template <uint16_type OrderPoly = 1, uint16_type DimGeo = 2>
+void run()
+{
+    BOOST_TEST_MESSAGE( "test_eval_at_point D=" << DimGeo << " P=" << OrderPoly << "..." );
+    Environment::changeRepository( boost::format( "D%1%/P%2%" ) % DimGeo % OrderPoly );
+    auto mesh = loadMesh(_mesh = new Mesh<Simplex<DimGeo>>);
+    auto Vh = Pchv<OrderPoly>( mesh );
+    auto u = Vh->element();
+    std::string e_str;
+    if ( DimGeo == 2 )
+        e_str = "{x*x*y,x*y*y}:x:y";
+    else if ( DimGeo == 3 )
+        e_str = "{x*x*y*z,x*y*y*z,x*y*z*z}:x:y:z";
 
-			about.addAuthor( "Vincent HUBER", "developer", "vincent.huber@cemosis.fr", "" );
-			return about;
-		}
+    auto e = expr<DimGeo,1>( e_str );
+    u = vf::project(Vh,elements(mesh), e );
 
-	template <uint16_type OrderPoly = 1, uint16_type OrderGeo = 2>
-		void run()
-		{
-			auto mesh = loadMesh(_mesh = new Mesh<Simplex<OrderGeo>>);
-			auto Vh = Pchv<OrderPoly>( mesh );
-			auto u = Vh->element();
-			u = vf::project(Vh,
-					elements(mesh),
-					vec(
-						Px()*Px()*Py(),
-						Px()*Py()*Py() ));
-			node_type pt(2);
-			pt[0] = option(_name="x").template as<double>();
-			pt[1] = option(_name="y").template as<double>();
-			auto eval = u(pt);
-			auto val1 = eval(0,0,0); auto sol1 = pt[0]*pt[0]*pt[1];
-			auto val2 = eval(1,0,0); auto sol2 = pt[0]*pt[1]*pt[1];
-			double min = option(_name="gmsh.hsize").template as<double>();
+    node_type pt(DimGeo);
+    pt[0] = 0.5;
+    if ( DimGeo >= 2 )
+        pt[1] = 0.5;
+    if ( DimGeo >= 3 )
+        pt[2] = 0.5;
+    auto eval = u(pt)[0];
+
+    auto e_eval = e.evaluate();
+    if ( DimGeo >= 2 )
+    {
+        e.setParameterValues( { { "x", 0.5 },{ "y", 0.5 } } );
+        if ( DimGeo >= 3 )
+            e.setParameterValues( { { "x", 0.5 },{ "y", 0.5 }, { "z", 0.5 } } );
+        auto sol = e.evaluate();
+
+        double min = doption(_name="gmsh.hsize");
 
 #if USE_BOOST_TEST
-			BOOST_CHECK_SMALL( (val1-sol1)/sol1, min );
-			BOOST_CHECK_SMALL( (val2-sol2)/sol2, min );
+        if ( OrderPoly < 4 )
+            BOOST_CHECK_SMALL( (eval-sol).cwiseQuotient(sol).norm(), min );
+        else
+            BOOST_CHECK_SMALL( (eval-sol).cwiseQuotient(sol).norm(), 1e-13 );
 #else
-			assert((val1-sol1)/sol1<min);
-			assert((val2-sol2)/sol2<min);
+        CHECK( (eval-sol).norm() < min ) << "Error in evaluation at point " << pt
+                                         << " value = [ " << eval << " ] expected = [ " << sol << " ] ";
 #endif
-		}
+        BOOST_TEST_MESSAGE( "test_eval_at_point D=" << DimGeo << " P=" << OrderPoly << "done" );
+    }
+}
 }
 
 #if USE_BOOST_TEST
-FEELPP_ENVIRONMENT_WITH_OPTIONS( test_eval_at_point::makeAbout(),
-		test_eval_at_point::makeOptions() )
+FEELPP_ENVIRONMENT_NO_OPTIONS
 
 BOOST_AUTO_TEST_SUITE( form_eval_at_point )
 
-BOOST_AUTO_TEST_CASE( form_eval_at_point )
+BOOST_AUTO_TEST_CASE( form_eval_at_point_P1_D2 )
 {
-	test_eval_at_point::run();
+    for(int i = 0; i < 10; ++i )
+        test_eval_at_point::run<1,2>();
+}
+BOOST_AUTO_TEST_CASE( form_eval_at_point_P1_D3 )
+{
+    for(int i = 0; i < 5; ++i )
+        test_eval_at_point::run<1,3>();
+}
+BOOST_AUTO_TEST_CASE( form_eval_at_point_P4_D2 )
+{
+    for(int i = 0; i < 10; ++i )
+        test_eval_at_point::run<4,2>();
+}
+BOOST_AUTO_TEST_CASE( form_eval_at_point_P4_D3 )
+{
+    for(int i = 0; i < 5; ++i )
+        test_eval_at_point::run<4,3>();
 }
 BOOST_AUTO_TEST_SUITE_END()
 
