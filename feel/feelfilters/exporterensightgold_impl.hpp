@@ -715,7 +715,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
                 VLOG(1) << "nComponents field(is_vectorial): " << nComponents;
             }
 
-            auto r = elements(__mesh,true);
+            auto r = markedelements(__mesh,(boost::any)p_it->first,EntityProcessType::ALL);
             auto elt_it = r.template get<1>();
             auto elt_en = r.template get<2>();
 
