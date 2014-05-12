@@ -382,6 +382,7 @@
             mpl::sizeof_<VF_VALUE_TYPE(R)> >,                           \
                                   mpl::identity<VF_VALUE_TYPE(L)>,      \
                                   mpl::identity<VF_VALUE_TYPE(R)> >::type::type value_type; \
+        typedef value_type evaluate_type;                               \
                                                                         \
         VF_OP_NAME( O )( L_type const& left, R_type const& right )      \
             :                                                           \

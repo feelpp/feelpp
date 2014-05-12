@@ -71,6 +71,7 @@ public:
 
     typedef ExprT expression_type;
     typedef typename expression_type::value_type value_type;
+    typedef value_type evaluate_type;
     typedef Trace<ExprT> this_type;
 
 

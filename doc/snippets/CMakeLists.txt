@@ -22,7 +22,8 @@
 #
 #
 set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
-feelpp_add_application( dofpoints SRCS dofpoints.cpp LABEL doc)
-feelpp_add_application( meshho SRCS meshho.cpp LABEL doc)
-feelpp_add_application( bdfpod SRCS bdfpod.cpp LABEL doc)
-feelpp_add_application( perf_int SRCS perf.cpp LABEL doc )
+feelpp_add_application( dofpoints SRCS dofpoints.cpp LABELS doc)
+feelpp_add_application( meshho SRCS meshho.cpp LABELS doc)
+feelpp_add_application( bdfpod SRCS bdfpod.cpp LABELS doc)
+feelpp_add_application( perf_int SRCS perf.cpp LABELS doc )
+feelpp_add_application( pmesh SRCS pmesh.cpp CFG pmesh.cfg LABELS doc)

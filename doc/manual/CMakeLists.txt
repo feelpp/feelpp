@@ -69,25 +69,26 @@ TODAY(THEDATE)
 
 FILE(GLOB TUTO_DOC_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} tutorial/*.tex)
 
-add_latex_document(feelpp-manual.tex
-  INPUTS
-  ${TUTO_DOC_FILES}
-  nonlinear/nonlinear.tex
-  heatns/natural-convection-2d.tex
-  heat/heatsink.tex
-  dd/dd.tex
-  maxwell/maxwell.tex
-  randomnotes.tex gfdl.tex howto.tex version.tex ${CPPFILES} ${STYFILES}
-  BIBFILES
-  ../biblio/feelpp-manual.bib
-  ../biblio/feelpp.bib
-  ../biblio/feelpp-thesis.bib
-  IMAGE_DIRS pngs pdfs pngs/mymesh pngs/heatsink pngs/Laplacian pngs/myadvection
-  USE_INDEX
-  DEFAULT_PDF
-  MANGLE_TARGET_NAMES
-  )
-SET_TARGET_PROPERTIES(feelpp-manual_pdf PROPERTIES EXCLUDE_FROM_ALL true)
+#CONFIGURE_FILE(tex/version.tex.in  tex/version.tex  @ONLY)
+
+#add_latex_document(tex/feelpp-manual.tex
+#  INPUTS
+#  ${TUTO_DOC_FILES}
+#  nonlinear/nonlinear.tex
+#  heatns/natural-convection-2d.tex
+#  dd/dd.tex
+#  maxwell/maxwell.tex
+#  tex/randomnotes.tex tex/gfdl.tex tex/howto.tex tex/version.tex ${CPPFILES} ${STYFILES}
+#  BIBFILES
+#  ../biblio/feelpp-manual.bib
+#  ../biblio/feelpp.bib
+#  ../biblio/feelpp-thesis.bib
+#  IMAGE_DIRS pngs pdfs pngs/mymesh pngs/heatsink pngs/Laplacian pngs/myadvection
+#  USE_INDEX
+#  DEFAULT_PDF
+#  MANGLE_TARGET_NAMES
+#  )
+#SET_TARGET_PROPERTIES(feelpp-manual_pdf PROPERTIES EXCLUDE_FROM_ALL true)
 endif()
 
 # this target allows to create all the required figures for the tutorial

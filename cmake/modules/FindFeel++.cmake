@@ -5,7 +5,7 @@
 #  FEELPP_LIBRARY    = the library to link in
 
 # Check compiler
-message(STATUS "clang version :  ${CMAKE_CXX_COMPILER_VERSION}")
+message(STATUS "Compiler version : ${CMAKE_CXX_COMPILER_ID}  ${CMAKE_CXX_COMPILER_VERSION}")
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   # require at least gcc 4.7
   if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.7)
@@ -214,7 +214,7 @@ OPTION(BOOST_ENABLE_TEST_DYN_LINK "enable boost test with dynamic lib" ON)
 MARK_AS_ADVANCED(BOOST_ENABLE_TEST_DYN_LINK)
 
 set(Boost_ADDITIONAL_VERSIONS "1.39" "1.40" "1.41" "1.42" "1.43" "1.44" "1.45" "1.46" "1.47" "1.48" "1.49" "1.50" "1.51" "1.52" "1.53")
-set( BOOST_PARAMETER_MAX_ARITY 20 )
+set( BOOST_PARAMETER_MAX_ARITY 24 )
 #set( BOOST_FILESYSTEM_VERSION 2)
 set( BOOST_FILESYSTEM_VERSION 3)
 if (BOOST_ENABLE_TEST_DYN_LINK)
@@ -222,6 +222,9 @@ if (BOOST_ENABLE_TEST_DYN_LINK)
 else (BOOST_ENABLE_TEST_DYN_LINK)
   add_definitions( -DBOOST_PARAMETER_MAX_ARITY=${BOOST_PARAMETER_MAX_ARITY} -DBOOST_FILESYSTEM_VERSION=${BOOST_FILESYSTEM_VERSION})
 endif (BOOST_ENABLE_TEST_DYN_LINK)
+
+# undefined BOOST_UBLAS_TYPE_CHECK
+add_definitions(-UBOOST_UBLAS_TYPE_CHECK )
 
 # this fix an issue with boost filesystem: boost is usually no compiled with
 # std=c++0x and we compile with it, this causes problems with the macro
@@ -268,7 +271,7 @@ OPTION( FEELPP_ENABLE_HARTS "Enable Harts (Runtime parallelization system)" OFF 
 if ( FEELPP_ENABLE_HARTS )
   FIND_PACKAGE( HARTS )
   if( HARTS_FOUND )
-    SET(CMAKE_REQUIRED_INCLUDES "${HARTS_INCLUDES};${CMAKE_REQUIRED_INCLUDES}")
+    SET(CMAKE_REQUIRED_INCLUDES ${HARTS_INCLUDES} ${CMAKE_REQUIRED_INCLUDES})
     INCLUDE_DIRECTORIES( ${HARTS_INCLUDES} )
     ADD_DEFINITIONS(${HARTS_DEFINITIONS})
     SET(FEELPP_LIBRARIES ${HARTS_LIBRARIES} ${FEELPP_LIBRARIES})
@@ -698,7 +701,7 @@ endif( FEELPP_ENABLE_OCTAVE)
 # Gmsh
 #
 FIND_PACKAGE(Gmsh)
-if(NOT GMSH_INCLUDE_DIR)#Download and Instal it
+if(NOT GMSH_FOUND)#Download and Instal it
   message(STATUS "GMSH NOT FOUND - Downloading and Installing it" )
   execute_process(COMMAND mkdir -p ${CMAKE_BINARY_DIR}/contrib/gmsh-compile)
   message(STATUS "Building gmsh in ${CMAKE_BINARY_DIR}/contrib/gmsh-compile...")
@@ -708,18 +711,19 @@ if(NOT GMSH_INCLUDE_DIR)#Download and Instal it
     #      OUTPUT_QUIET
     OUTPUT_FILE "gmsh-configure"
     )
-FIND_PACKAGE(Gmsh REQUIRED)
+
+  FIND_PACKAGE(Gmsh REQUIRED)
 endif()
 if ( GMSH_FOUND )
   ADD_DEFINITIONS( -DFEELPP_HAS_GMSH=1 -D_FEELPP_HAS_GMSH_ -DGMSH_EXECUTABLE=${GMSH_EXECUTABLE} )
   if ( GL2PS_LIBRARY )
     if ( GL_LIBRARY AND FEELPP_ENABLE_OPENGL )
-      SET(FEELPP_LIBRARIES ${GMSH_LIBRARY} ${GL2PS_LIBRARY} ${GL_LIBRARY} ${FEELPP_LIBRARIES})
+      SET(FEELPP_LIBRARIES ${GMSH_LIBRARIES} ${GL2PS_LIBRARY} ${GL_LIBRARY} ${FEELPP_LIBRARIES})
     else()
-      SET(FEELPP_LIBRARIES ${GMSH_LIBRARY} ${GL2PS_LIBRARY} ${FEELPP_LIBRARIES})
+      SET(FEELPP_LIBRARIES ${GMSH_LIBRARIES} ${GL2PS_LIBRARY} ${FEELPP_LIBRARIES})
     endif()
   else()
-    SET(FEELPP_LIBRARIES ${GMSH_LIBRARY} ${FEELPP_LIBRARIES})
+    SET(FEELPP_LIBRARIES ${GMSH_LIBRARIES} ${FEELPP_LIBRARIES})
   endif()
   include_directories(${GMSH_INCLUDE_DIR})
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Gmsh" )
@@ -731,24 +735,29 @@ endif()
 #
 if ( NOT EXISTS ${CMAKE_SOURCE_DIR}/feel OR NOT EXISTS ${CMAKE_SOURCE_DIR}/contrib )
   include(feelpp.macros)
-  FIND_PATH(FEELPP_INCLUDE_DIR feel/feelconfig.h  PATHS $ENV{FEELPP_DIR}/include/ /usr/include /opt/local/include PATH_SUFFIXES feel )
+  FIND_PATH(FEELPP_INCLUDE_DIR feel/feelconfig.h  PATHS $ENV{FEELPP_DIR}/include/ PATH_SUFFIXES feel NO_DEFAULT_PATH )
+  FIND_PATH(FEELPP_INCLUDE_DIR feel/feelconfig.h  PATHS /usr/include /opt/local/include PATH_SUFFIXES feel )
 
   #  FIND_LIBRARY(FEELPP_GFLAGS_LIBRARY feelpp_gflags PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
   #  FIND_LIBRARY(FEELPP_GLOG_LIBRARY feelpp_glog PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
   #  FIND_LIBRARY(FEELPP_CLN_LIBRARY feelpp_cln PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
   FIND_LIBRARY(FEELPP_GINAC_LIBRARY feelpp_ginac PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
-  FIND_LIBRARY(FEELPP_LIBRARY feelpp PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
+  FIND_LIBRARY(FEELPP_LIBRARY feelpp PATHS $ENV{FEELPP_DIR}/lib NO_DEFAULT_PATH)
+  FIND_LIBRARY(FEELPP_LIBRARY feelpp )
 
   INCLUDE_DIRECTORIES ( ${FEELPP_INCLUDE_DIR} ${FEELPP_INCLUDE_DIR}/feel )
   FIND_PACKAGE_HANDLE_STANDARD_ARGS (Feel DEFAULT_MSG
     FEELPP_INCLUDE_DIR  FEELPP_LIBRARY
     )
 
+  FIND_PATH( FEELPP_DATADIR cmake/modules/FindFeel++.cmake
+    PATH $ENV{FEELPP_DIR}/share/feel /usr/share/feel /usr/local/share/feel )
 
 
   if ( FEELPP_FOUND )
     message(STATUS "Feel++ includes: ${FEELPP_INCLUDE_DIR}")
     message(STATUS "Feel++ library: ${FEELPP_LIBRARY}")
+    message(STATUS "Feel++ data: ${FEELPP_DATADIR}")
   endif()
 
   MARK_AS_ADVANCED(

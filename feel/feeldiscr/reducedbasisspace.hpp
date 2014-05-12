@@ -35,7 +35,7 @@
 
 #include <feel/feel.hpp>
 #include <feel/feelcrb/crb.hpp>
-#include <feel/feelcrb/modelcrbbase.hpp>
+//#include <feel/feelcrb/modelcrbbase.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/LU>
@@ -46,9 +46,10 @@
 namespace Feel
 {
 
+class ModelCrbBaseBase;
 
 typedef parameter::parameters<
-    parameter::required<tag::model_type, boost::is_base_and_derived<ModelCrbBase<>,_> >
+    parameter::required<tag::model_type, boost::is_base_and_derived<ModelCrbBaseBase,_> >
     , parameter::required<tag::mesh_type, boost::is_base_and_derived<MeshBase,_> >
     , parameter::optional<parameter::deduced<tag::bases_list>, boost::is_base_and_derived<Feel::detail::bases_base,_> >
     , parameter::optional<parameter::deduced<tag::value_type>, boost::is_floating_point<_> >
@@ -63,18 +64,11 @@ typedef parameter::parameters<
  * @see
  */
 
-template<typename ModelType,
-         typename MeshType,
-         typename A1 = parameter::void_,
-         typename A2 = parameter::void_,
-         typename A3 = parameter::void_,
-         typename A4 = parameter::void_>
-class ReducedBasisSpace : public FunctionSpace<MeshType,A1,A2,A3,A4>
+template<typename ModelType>
+class ReducedBasisSpace : public ModelType::functionspace_type
 {
 
-    typedef typename reducedbasisspace_signature::bind<ModelType,MeshType,A1,A2,A3,A4>::type args;
-
-    typedef FunctionSpace<MeshType,A1,A2,A3,A4> super;
+    typedef typename ModelType::functionspace_type super;
     typedef boost::shared_ptr<super> super_ptrtype;
 
 public :
@@ -84,11 +78,13 @@ public :
     typedef ModelType model_type;
     typedef boost::shared_ptr<model_type> model_ptrtype;
 
-    typedef MeshType mesh_type;
+    typedef typename ModelType::mesh_type mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef super fespace_type;
     typedef super_ptrtype fespace_ptrtype;
+    typedef super functionspace_type;
+    typedef super_ptrtype functionspace_ptrtype;
 
     //typedef typename super::element_type space_element_type;
     typedef typename model_type::element_type space_element_type;
@@ -97,15 +93,14 @@ public :
     typedef std::vector< space_element_type > rb_basis_type;
     typedef boost::shared_ptr<rb_basis_type> rb_basis_ptrtype;
 
-    typedef ReducedBasisSpace<ModelType, MeshType, A1, A2, A3, A4> this_type;
+    typedef ReducedBasisSpace<ModelType> this_type;
     typedef boost::shared_ptr<this_type> this_ptrtype;
 
     typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> eigen_vector_type;
     typedef Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic> eigen_matrix_type;
 
-
-    typedef typename parameter::binding<args, tag::bases_list, Feel::detail::bases<Lagrange<1,Scalar> > >::type bases_list; // FEM basis
-    typedef typename parameter::binding<args, tag::mesh_type>::type meshes_list;
+    typedef typename functionspace_type::bases_list bases_list;
+    typedef typename functionspace_type::meshes_list meshes_list;
 
 
     //static const bool is_composite = ( mpl::size<bases_list>::type::value > 1 );
@@ -140,7 +135,7 @@ public :
 
     static const uint16_type nComponents = super::nComponents;
 
-
+#if 0
     template<typename MeshListType,int N>
     struct GetMesh
     {
@@ -165,45 +160,24 @@ public :
 
     typedef typename super::periodicity_type periodicity_type;
     typedef boost::shared_ptr<periodicity_type> periodicity_ptrtype;
+#else
+    typedef typename super::basis_0_type basis_0_type;
+    typedef typename super::basis_type basis_type;
+#endif
 
-
-    ReducedBasisSpace( model_ptrtype const& model,
-                       mesh_ptrtype const& mesh,
-                       size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
-                       periodicity_type  periodicity = periodicity_type(),
-                       std::vector<WorldComm> const& _worldsComm = Environment::worldsComm(nSpaces) )
+    ReducedBasisSpace( model_ptrtype const& model )
         :
-        super( mesh, mesh_components, periodicity, _worldsComm ),
-        M_mesh( mesh ),
+        super( *(model->functionSpace()) ),
+        M_mesh( model->functionSpace()->mesh() ),
         M_model( model )
         {
-            this->init();
-        }
-    ReducedBasisSpace( boost::shared_ptr<ModelType> model , boost::shared_ptr<MeshType> mesh )
-        :
-        super ( mesh ),
-        M_mesh( mesh ),
-        M_model( model )
-        {
-            LOG( INFO ) <<" ReducedBasisSpace constructor " ;
-            this->init();
-        }
-
-
-    ReducedBasisSpace( boost::shared_ptr<ModelType> model , boost::shared_ptr<MeshType> mesh,  periodicity_ptrtype & periodicity )
-        :
-        super ( mesh , MESH_RENUMBER | MESH_CHECK , periodicity ),
-        M_mesh( mesh ),
-        M_model( model )
-        {
-            LOG( INFO ) <<" ReducedBasisSpace constructor ( with periodicity )" ;
             this->init();
         }
 
     //copy constructor
     ReducedBasisSpace( ReducedBasisSpace const& rb )
     :
-    super ( rb.M_mesh ),
+    super ( rb ),
     M_primal_rb_basis( rb.M_primal_rb_basis ),
     M_dual_rb_basis( rb.M_dual_rb_basis ),
     M_mesh( rb.M_mesh )
@@ -211,7 +185,7 @@ public :
 
     ReducedBasisSpace( this_ptrtype const& rb )
     :
-    super ( rb->M_mesh ),
+    super ( *rb ),
     M_primal_rb_basis( rb->M_primal_rb_basis ),
     M_dual_rb_basis( rb->M_dual_rb_basis ),
     M_mesh( rb->M_mesh )
@@ -362,28 +336,16 @@ public :
                                      static New,
                                      tag,
                                      ( required
-                                       ( model, *)
-                                       ( mesh,* )
-                                         )
-                                     ( optional
-                                       ( worldscomm, *, Environment::worldsComm(nSpaces) )
-                                       ( components, ( size_type ), MESH_RENUMBER | MESH_CHECK )
-                                       ( periodicity,*,periodicity_type() )
-                                         )
-        )
+                                       ( model, *) ) )
         {
             //LOG( INFO ) << "ReducedBasis NEW (new impl)";
-            return NewImpl( model, mesh, worldscomm, components, periodicity );
+            return NewImpl( model );
         }
 
-    static this_ptrtype NewImpl( model_ptrtype const& model,
-                                 mesh_ptrtype const& __m,
-                                 std::vector<WorldComm> const& worldsComm = Environment::worldsComm(nSpaces),
-                                 size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
-                                 periodicity_type periodicity = periodicity_type() )
+    static this_ptrtype NewImpl( model_ptrtype const& model )
         {
 
-            return this_ptrtype( new this_type( model, __m, mesh_components, periodicity, worldsComm ) );
+            return this_ptrtype( new this_type( model ) );
         }
 
 
@@ -395,7 +357,7 @@ public :
     /*
      * Get the FEM functionspace
      */
-    super_ptrtype functionSpace()
+    super_ptrtype functionSpace() const
         {
             return M_model->functionSpace();
         }
@@ -497,7 +459,8 @@ public :
                 // coeffs to be (d,N) and M_phi (d,vN) where d is the number of
                 // components and N the number of basis functions
                 // TODO: check with vectorial functions
-                return (coeffs*M_phi.transpose()).diagonal();
+                //return (coeffs*M_phi.transpose()).diagonal();
+                return M_phi * coeffs;
             }
         //evaluation at only one node
         eigen_vector_type id( eigen_vector_type const& coeffs ) const
@@ -594,6 +557,8 @@ public :
             {
                 return super::d( ldof, c1, c2, q );
             }
+
+
     private :
         int M_index;
         reducedbasisspace_ptrtype M_rbspace;
@@ -619,7 +584,7 @@ public :
         static const bool is_rb_context = true;
 
 
-        typedef ReducedBasisSpace<ModelType,MeshType,A1,A2,A3,A4> rbspace_type;
+        typedef ReducedBasisSpace<ModelType> rbspace_type;
         typedef boost::shared_ptr<rbspace_type> rbspace_ptrtype;
 
         typedef typename rbspace_type::super_ptrtype functionspace_ptrtype;
@@ -674,6 +639,11 @@ public :
         M_ctx_fespace( functionspace )
             {
                 update();
+            }
+
+        functionspace_ptrtype functionSpace() const
+            {
+                return M_rbspace->functionSpace();
             }
 
         void update ( )
@@ -733,7 +703,7 @@ public :
     /**
      * \return function space context
      */
-    ContextRBSet context() { return ContextRBSet( boost::dynamic_pointer_cast< ReducedBasisSpace<ModelType,MeshType,A1,A2,A3,A4> >( this->shared_from_this() ) ); }
+    ContextRBSet context() { return ContextRBSet( boost::dynamic_pointer_cast< ReducedBasisSpace<ModelType> >( this->shared_from_this() ) ); }
 
     ctxrb_ptrtype
     contextBasis( std::pair<int,boost::shared_ptr<ContextRB>> const& p, ContextRBSet const& c )
@@ -819,7 +789,7 @@ public :
         public Cont,boost::addable<Element<T,Cont> >, boost::subtractable<Element<T,Cont> >
     {
     public:
-        typedef ReducedBasisSpace<ModelType,MeshType,A1,A2,A3,A4> rbspace_type;
+        typedef ReducedBasisSpace<ModelType> rbspace_type;
         typedef boost::shared_ptr<rbspace_type> rbspace_ptrtype;
 
         typedef rbspace_type::super functionspace_type;
@@ -879,7 +849,7 @@ public :
 
         typedef typename matrix_node<value_type>::type matrix_node_type;
 
-        friend class ReducedBasisSpace<ModelType,MeshType,A1,A2,A3,A4>;
+        friend class ReducedBasisSpace<ModelType>;
 
         Element()
             {}
@@ -1013,7 +983,7 @@ public :
         /*
          * evaluate the element to nodes in contextRBSet
          */
-        eigen_vector_type evaluate(  ctxrbset_type const& context_rb )
+        eigen_vector_type evaluate(  ctxrbset_type const& context_rb, bool do_communications=true )
             {
                 int npts = context_rb.nPoints();
                 //from now we manipulate local datas
@@ -1032,7 +1002,11 @@ public :
                     auto ctx=it->second;
                     local_result.segment( nComponents*global_position, nComponents )  = this->evaluate( *ctx );
                 }
-                mpi::all_reduce( Environment::worldComm() , local_result, global_result, std::plus< eigen_vector_type >() );
+
+                if( do_communications )
+                    mpi::all_reduce( Environment::worldComm() , local_result, global_result, std::plus< eigen_vector_type >() );
+                else
+                    global_result = local_result;
 
                 return global_result;
 
@@ -1166,6 +1140,35 @@ public :
         void
         idInterpolate( matrix_node_type __ptsReal, id_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const;
 
+        /**
+         * these functione are here for the compilation.
+         * evaluateFromContext has the kywork _projection=true
+         * and in that case we project the expression on
+         * the function space associated to the context
+         * and it may happens that user wants to do
+         * evaluateFromContext( _context=ctx, _expr=dxv(...) , _projection=false )
+         * and so even we don't project dxv(...), in order to compile
+         * we need to have these functions
+         */
+        void
+        dxInterpolate( matrix_node_type __ptsReal, id_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
+        {
+            bool go = false;
+            CHECK( go ) << "The function dxInterpolate is not yet implemented \n";
+        }
+        void
+        dyInterpolate( matrix_node_type __ptsReal, id_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
+        {
+            bool go = false;
+            CHECK( go ) << "The function dyInterpolate is not yet implemented \n";
+        }
+        void
+        dzInterpolate( matrix_node_type __ptsReal, id_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
+        {
+            bool go = false;
+            CHECK( go ) << "The function dzInterpolate is not yet implemented \n";
+        }
+
 
         /*
          * Get the reals points matrix in a context
@@ -1231,14 +1234,14 @@ public :
     //Access to an element of the reduced basis space
     element_type element( std::string const& name="u" )
         {
-            element_type u(boost::dynamic_pointer_cast<ReducedBasisSpace<ModelType,MeshType,A1,A2,A3,A4> >(this->shared_from_this() ), name );
+            element_type u(boost::dynamic_pointer_cast<ReducedBasisSpace<ModelType>>(this->shared_from_this() ), name );
             u.setZero();
             return u;
         }
 
     element_ptrtype elementPtr( std::string const& name="u" )
         {
-            element_ptrtype u( new element_type( boost::dynamic_pointer_cast<ReducedBasisSpace<ModelType,MeshType,A1,A2,A3,A4> >(this->shared_from_this() ) , name ) );
+            element_ptrtype u( new element_type( boost::dynamic_pointer_cast<ReducedBasisSpace<ModelType>>(this->shared_from_this() ) , name ) );
             u->setZero();
             return u;
         }
@@ -1264,38 +1267,38 @@ private :
 };//ReducedBasisSpace
 
 
-template<typename ModelType, typename A0, typename A1, typename A2, typename A3, typename A4>
-const uint16_type ReducedBasisSpace<ModelType,A0,A1,A2,A3,A4>::nComponents;
+template<typename ModelType>
+const uint16_type ReducedBasisSpace<ModelType>::nComponents;
 
-template<typename ModelType, typename A0, typename A1, typename A2, typename A3, typename A4>
-const uint16_type ReducedBasisSpace<ModelType,A0,A1,A2,A3,A4>::ContextRB::nComponents;
+template<typename ModelType>
+const uint16_type ReducedBasisSpace<ModelType>::ContextRB::nComponents;
 
 
 
-template<typename ModelType, typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename ModelType>
 template<typename Y,  typename Cont>
 template<typename Context_t>
 void
-ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & context, id_array_type& v ) const
+ReducedBasisSpace<ModelType>::Element<Y,Cont>::id_( Context_t const & context, id_array_type& v ) const
 {
     return id_( context, v, boost::is_same<Context_t,ContextRB>() );
 }
 
 
-template<typename ModelType, typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename ModelType>
 template<typename Y,  typename Cont>
 template<typename Context_t>
 void
-ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( Context_t const & context, grad_array_type& v ) const
+ReducedBasisSpace<ModelType>::Element<Y,Cont>::grad_( Context_t const & context, grad_array_type& v ) const
 {
     return grad_( context, v, boost::is_same<Context_t,ContextRB>() );
 }
 
-template<typename ModelType, typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename ModelType>
 template<typename Y,  typename Cont>
 template<typename Context_t>
 void
-ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::d_( int N, Context_t const & context, id_array_type& v ) const
+ReducedBasisSpace<ModelType>::Element<Y,Cont>::d_( int N, Context_t const & context, id_array_type& v ) const
 {
     return d_( N, context, v, boost::is_same<Context_t,ContextRB>() );
 }
@@ -1306,20 +1309,20 @@ ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::d_( int N, Con
 //use u.evaluate( rb_context ) should go faster
 //because here we do the same thing ( context.id(*this) )
 //but we add a loop over points
-template<typename ModelType, typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename ModelType>
 template<typename Y,  typename Cont>
 template<typename Context_t>
 void
-ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & context, id_array_type& v , mpl::bool_<true> ) const
+ReducedBasisSpace<ModelType>::Element<Y,Cont>::id_( Context_t const & context, id_array_type& v , mpl::bool_<true> ) const
 {
     v[0] = context.id( *this );
 }
 
-template<typename ModelType, typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename ModelType>
 template<typename Y,  typename Cont>
 template<typename Context_t>
 void
-ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( Context_t const & context, grad_array_type& v , mpl::bool_<true> ) const
+ReducedBasisSpace<ModelType>::Element<Y,Cont>::grad_( Context_t const & context, grad_array_type& v , mpl::bool_<true> ) const
 {
     ctxrb_type const& rb_context = dynamic_cast< ctxrb_type const& >( context );
     //LOG( INFO ) << " grad_ with a RB context";
@@ -1336,11 +1339,11 @@ ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( Context
     }
 }
 
-template<typename ModelType, typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename ModelType>
 template<typename Y,  typename Cont>
 template<typename Context_t>
 void
-ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::d_( int N, Context_t const & context, id_array_type& v , mpl::bool_<true> ) const
+ReducedBasisSpace<ModelType>::Element<Y,Cont>::d_( int N, Context_t const & context, id_array_type& v , mpl::bool_<true> ) const
 {
     ctxrb_type const& rb_context = dynamic_cast< ctxrb_type const& >( context );
     //LOG( INFO ) << " d_ with a RB context";
@@ -1354,11 +1357,11 @@ ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::d_( int N, Con
 
 }
 
-template<typename ModelType, typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename ModelType>
 template<typename Y,  typename Cont>
 template<typename Context_t>
 void
-ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & context, id_array_type& v , mpl::bool_<false> ) const
+ReducedBasisSpace<ModelType>::Element<Y,Cont>::id_( Context_t const & context, id_array_type& v , mpl::bool_<false> ) const
 {
     //LOG( INFO ) << "id_ with a FEM context";
     if ( !this->areGlobalValuesUpdated() )
@@ -1416,11 +1419,11 @@ ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t
 }
 
 
-template<typename ModelType, typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename ModelType>
 template<typename Y,  typename Cont>
 template<typename Context_t>
 void
-ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( Context_t const & context, grad_array_type& v , mpl::bool_<false> ) const
+ReducedBasisSpace<ModelType>::Element<Y,Cont>::grad_( Context_t const & context, grad_array_type& v , mpl::bool_<false> ) const
 {
 
     //LOG( INFO ) << "grad_ with a FEM context";
@@ -1477,11 +1480,11 @@ ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( Context
 }
 
 
-template<typename ModelType, typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename ModelType>
 template<typename Y,  typename Cont>
 template<typename Context_t>
 void
-ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::d_( int N, Context_t const & context, id_array_type& v , mpl::bool_<false> ) const
+ReducedBasisSpace<ModelType>::Element<Y,Cont>::d_( int N, Context_t const & context, id_array_type& v , mpl::bool_<false> ) const
 {
 
     int rb_size = this->size();
@@ -1522,28 +1525,30 @@ ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::d_( int N, Con
 
 
 
-template<typename ModelType, typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename ModelType>
 template<typename Y,  typename Cont>
 void
-ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::idInterpolate( matrix_node_type __ptsReal, id_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
+ReducedBasisSpace<ModelType>::Element<Y,Cont>::idInterpolate( matrix_node_type __ptsReal, id_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
 {
+    bool go = false;
+    CHECK( go ) << "The function idInterpolate is not yet implemented \n";
     LOG( INFO ) << "not yet implemented";
 }
 
-template<int Order, typename ModelType , typename MeshType>
+template<typename ModelType>
 inline
-boost::shared_ptr<ReducedBasisSpace<ModelType,MeshType,bases<Lagrange<Order,Scalar,Continuous>>, Periodicity <NoPeriodicity> >>
-                   RbSpacePch(  boost::shared_ptr<ModelType> const& model , boost::shared_ptr<MeshType> const& mesh  )
+boost::shared_ptr<ReducedBasisSpace<ModelType> >
+RbSpacePch(  boost::shared_ptr<ModelType> const& model )
 {
-    return ReducedBasisSpace<ModelType,MeshType,bases<Lagrange<Order,Scalar,Continuous>>, Periodicity <NoPeriodicity> >::New( model , mesh );
+    return ReducedBasisSpace<ModelType>::New( model );
 }
 
-template<int Order, typename ModelType , typename MeshType>
+template<int Order, typename ModelType>
 inline
-boost::shared_ptr<ReducedBasisSpace<ModelType,MeshType,bases<Lagrange<Order,Vectorial,Continuous>>>>
-                   RbSpacePchv(  boost::shared_ptr<ModelType> const& model , boost::shared_ptr<MeshType> const& mesh  )
+boost::shared_ptr<ReducedBasisSpace<ModelType>>
+RbSpacePchv(  boost::shared_ptr<ModelType> const& model)
 {
-    return ReducedBasisSpace<ModelType,MeshType,bases<Lagrange<Order,Vectorial,Continuous>>>::New( model , mesh );
+    return ReducedBasisSpace<ModelType>::New( model );
 }
 
 

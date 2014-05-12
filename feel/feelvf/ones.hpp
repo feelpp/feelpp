@@ -82,6 +82,8 @@ public:
 
     typedef Ones<M,N> this_type;
     typedef double value_type;
+    typedef value_type evaluate_type;
+
     //@}
 
     /** @name Constructors, destructor

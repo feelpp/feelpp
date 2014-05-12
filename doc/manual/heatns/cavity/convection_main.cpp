@@ -169,9 +169,14 @@ main( int argc, char** argv )
 
         Feel::Environment env( _argc=argc, _argv=argv,
                                _desc=opusapp_options("Convection")
-                               .add(makeOptions())
                                .add(crbOptions())
-                               .add(eimOptions()),
+                               .add(makeOptions())
+                               .add(podOptions())
+                               .add(backend_options("backend-primal"))
+                               .add(backend_options("backend-dual"))
+                               .add(backend_options("backend-l2"))
+                               .add(eimOptions())
+                               .add(bdf_options("Convection")),
                                _about=makeAbout() );
 
     if ( Environment::worldComm().rank() == 0 )

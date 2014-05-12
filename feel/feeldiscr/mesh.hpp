@@ -506,6 +506,35 @@ public:
     //@{
 
     /**
+     * \return true if \p marker exists, false otherwise
+     */
+    bool
+    hasMarker( std::string marker ) const
+        {
+            return markerName( marker ) != invalid_size_type_value;
+        }
+
+    /**
+     * \return true if \p marker exists and topological dimension of the entity
+     * associated is Dim-1, false otherwise
+     */
+    bool
+    hasFaceMarker( std::string marker ) const
+        {
+            return ( markerName( marker ) != invalid_size_type_value ) && ( markerDim( marker ) != nDim-1 );
+        }
+
+    /**
+     * \return true if \p marker exists and topological dimension of the entity
+     * associated is Dim-2, false otherwise
+     */
+    bool
+    hasEdgeMarker( std::string marker ) const
+        {
+            return ( markerName( marker ) != invalid_size_type_value ) && ( markerDim( marker ) != nDim-2 );
+        }
+
+    /**
      * add a new marker name
      */
     void addMarkerName( std::pair<std::string, std::vector<size_type> > const& marker )
@@ -1052,12 +1081,15 @@ public:
             M_kd_tree( new kdtree_type() ),
             M_isInit( false ),
             M_isInitBoundaryFaces( false ),
-            M_doExtrapolation( true ),
+            M_doExtrapolation( option( _name=(boost::format("mesh%1%d.localisation.use-extrapolation") % nDim).str() ).template as<bool>() ),
             M_barycenter(),
             M_barycentersWorld()
         {
             DVLOG(2) << "[Mesh::Localization] create Localization tool\n";
-            M_kd_tree->nbNearNeighbor( 15 );
+            int optNbNeighbor = option( _name=(boost::format("mesh%1%d.localisation.nelt-in-leaf-kdtree") % nDim).str() ).template as<int>();
+            int usedNbNeighbor = ( optNbNeighbor < 0 )? 2*self_type::element_type::numPoints : optNbNeighbor;
+            M_kd_tree->nbNearNeighbor( usedNbNeighbor );
+
             M_resultAnalysis.clear();
             DVLOG(2) << "[Mesh::Localization] create Localization tool done\n";
         }
@@ -1066,14 +1098,17 @@ public:
             M_mesh ( m ),
             M_isInit( init_b ),
             M_isInitBoundaryFaces( false ),
-            M_doExtrapolation( true ),
+            M_doExtrapolation( option( _name=(boost::format("mesh%1%d.localisation.use-extrapolation") % nDim).str() ).template as<bool>() ),
             M_barycenter(),
             M_barycentersWorld()
         {
             if ( this->isInit() )
                 this->init();
 
-            M_kd_tree->nbNearNeighbor( 15 );
+            int optNbNeighbor = option( _name=(boost::format("mesh%1%d.localisation.nelt-in-leaf-kdtree") % nDim).str() ).template as<int>();
+            int usedNbNeighbor = ( optNbNeighbor < 0 )? 2*self_type::element_type::numPoints : optNbNeighbor;
+            M_kd_tree->nbNearNeighbor( usedNbNeighbor );
+
             M_resultAnalysis.clear();
         }
 

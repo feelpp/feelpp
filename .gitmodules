@@ -22,10 +22,6 @@
 	path = projects/rb
 	url = https://github.com/feelpp/rb
     fetchRecurseSubmodules = on-demand
-[submodule "rb4aero"]
-	path = projects/rb4aero
-	url = https://github.com/feelpp/rb4aero
-    fetchRecurseSubmodules = on-demand
 [submodule "cemosis"]
 	path = projects/cemosis
 	url = https://github.com/feelpp/cemosis
@@ -42,3 +38,8 @@
 	path = projects/po
 	url = https://github.com/feelpp/po
     fetchRecurseSubmodules = on-demand
+[submodule "chorus"]
+	path = projects/chorus
+	url = https://github.com/feelpp/chorus
+    fetchRecurseSubmodules = on-demand
+    branch = master

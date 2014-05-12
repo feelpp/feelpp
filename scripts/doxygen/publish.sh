@@ -7,6 +7,23 @@ function builddox
   feelpp_source=$2
   gh_pages=$3
 
+  cpt=0
+  STR=""
+  if [ "$#" -ge 3 ]
+  then
+    for i in "$@"
+    do
+      if [ $cpt -ge 3 ]
+      then
+        project=$(echo $i | awk '{print toupper($0)}')
+        STR="$STR -DFEELPP_ENABLE_"$project"_DOCUMENTATION=ON"
+        cd $feelpp_source/research/$i
+        git pull
+      fi
+      cpt=$(($cpt+1))
+    done
+  fi
+
   cd $feelpp_source
   git checkout $1
 
@@ -16,9 +33,8 @@ function builddox
   fi
   echo $doxygen_dir 
   cd $doxygen_dir
-  pwd
 
-  cmake $feelpp_source -DFEELPP_ENABLE_DOXYGEN=ON
+  cmake $feelpp_source -DFEELPP_ENABLE_DOXYGEN=ON $STR
   make doxygen #generate the doc associated to the branch $1 in ${doxygen_dir}/doc/api/html
 
   # now work in feelpp.docs to push the newly created doxygen files
@@ -69,7 +85,7 @@ then
 fi
 
 #Create in ${gh_pages}/feelpp the associated doc of the ${branch}
-builddox develop $feelpp_source $gh_pages
+builddox develop $feelpp_source $gh_pages # cemosis bubble
 #builddox release/version-0.92 $feelpp_source $gh_pages
 #builddox release/v0.95.0 $feelpp_source $gh_pages
 #builddox release/v0.96.0 $feelpp_source $gh_pages

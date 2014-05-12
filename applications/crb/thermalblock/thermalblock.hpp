@@ -83,7 +83,7 @@ makeThermalBlockOptions()
     ( "beta.Alast", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for last A" )
     ( "beta.F0.0", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for F0" )
     ;
-    return thermalblockoptions.add( Feel::feel_options() ).add( backend_options("backendl2") );
+    return thermalblockoptions.add( backend_options("backendl2") );
 }
 
 /**
@@ -398,13 +398,7 @@ public:
     }
 
     boost::tuple<beta_vector_type, std::vector<beta_vector_type> >
-    computeBetaQm( element_type const& T,parameter_type const& mu , double time=1e30 )
-    {
-        return computeBetaQm( mu , time );
-    }
-
-    boost::tuple<beta_vector_type, std::vector<beta_vector_type> >
-    computeBetaQm( parameter_type const& mu , double time=0 )
+    computeBetaQm( parameter_type const& mu )
     {
 
         bool use_ginac = option(_name="crb.use-ginac-for-beta-expressions").as<bool>();
@@ -548,7 +542,7 @@ public:
     /**
      * H1 scalar product
      */
-    sparse_matrix_ptrtype innerProduct ( void )
+    sparse_matrix_ptrtype energyMatrix ( void )
     {
         return M;
     }

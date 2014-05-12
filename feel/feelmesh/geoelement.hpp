@@ -67,17 +67,17 @@ public:
     {
     }
     bool
-    isGhostFace( size_type p ) const
+    isGhostFace( rank_type /*p*/ ) const
     {
         return false;
     }
     bool
-    isInterProcessDomain( size_type /*p*/ ) const
+    isInterProcessDomain( rank_type /*p*/ ) const
     {
         return false;
     }
-    size_type partition1( size_type /*p*/ ) const { return invalid_size_type_value; }
-    size_type partition2( size_type /*p*/ ) const { return invalid_size_type_value; }
+    rank_type partition1( rank_type /*p*/ ) const { return invalid_rank_type_value; }
+    rank_type partition2( rank_type /*p*/ ) const { return invalid_rank_type_value; }
 private:
     friend class boost::serialization::access;
     template<class Archive>
@@ -97,18 +97,18 @@ public:
         typedef ElementType type;
     };
     typedef ElementType entity_type;
-    typedef boost::tuple<ElementType const*, size_type, uint16_type, size_type> element_connectivity_type;
+    typedef boost::tuple<ElementType const*, size_type, uint16_type, rank_type> element_connectivity_type;
 
     SubFaceOf()
         :
-        M_element0( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_size_type_value ),
-        M_element1( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_size_type_value )
+        M_element0( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_rank_type_value ),
+        M_element1( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_rank_type_value )
     {}
 
     SubFaceOf( element_connectivity_type const& connect0 )
         :
         M_element0( connect0 ),
-        M_element1( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_uint16_type_value )
+        M_element1( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_rank_type_value )
     {}
     SubFaceOf( element_connectivity_type const& connect0,
                element_connectivity_type const& connect1 )
@@ -125,8 +125,8 @@ public:
     }
     SubFaceOf( SubFaceOfNone const& /*sf*/ )
         :
-        M_element0( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_size_type_value ),
-        M_element1( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_size_type_value )
+        M_element0( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_rank_type_value ),
+        M_element1( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_rank_type_value )
     {
     }
     virtual ~SubFaceOf() {}
@@ -172,11 +172,11 @@ public:
     {
         return boost::get<2>( M_element0 );
     }
-    size_type proc_first() const
+    rank_type proc_first() const
     {
         return boost::get<3>( M_element0 );
     }
-    size_type partition1( size_type p ) const
+    rank_type partition1( rank_type p ) const
     {
         return p;
     }
@@ -189,13 +189,13 @@ public:
     {
         return boost::get<2>( M_element1 );
     }
-    size_type proc_second() const
+    rank_type proc_second() const
     {
         return boost::get<3>( M_element1 );
     }
-    size_type partition2( size_type p ) const
+    rank_type partition2( size_type p ) const
     {
-        return ( p==boost::get<3>( M_element0 ) )? boost::get<3>( M_element1 ) : boost::get<3>( M_element0 );
+        return ( p == this->proc_first() )? this->proc_second() : this->proc_first();
     }
 
     element_connectivity_type const& connection0() const
@@ -232,32 +232,32 @@ public:
     {
         return ( boost::get<1>( M_element0 ) != invalid_size_type_value &&
                  boost::get<2>( M_element0 ) != invalid_uint16_type_value &&
-                 boost::get<3>( M_element0 ) != invalid_size_type_value );
+                 boost::get<3>( M_element0 ) != invalid_rank_type_value );
     }
     bool isConnectedTo1() const
     {
         return ( boost::get<1>( M_element1 ) != invalid_size_type_value &&
                  boost::get<2>( M_element1 ) != invalid_uint16_type_value &&
-                 boost::get<3>( M_element1 ) != invalid_size_type_value );
+                 boost::get<3>( M_element1 ) != invalid_rank_type_value );
     }
 
     bool
-    isGhostFace( size_type p ) const
+    isGhostFace( rank_type p ) const
     {
-        return ( ( boost::get<3>( M_element1 ) != invalid_size_type_value ) &&
+        return ( ( boost::get<3>( M_element1 ) != invalid_rank_type_value ) &&
                  ( ( ( boost::get<3>( M_element0 ) == p ) && ( boost::get<3>( M_element1 ) < p ) ) ||
                    ( ( boost::get<3>( M_element0 ) < p ) && ( boost::get<3>( M_element1 ) == p ) ) ) );
     }
 
     bool
-    isInterProcessDomain( size_type p ) const
+    isInterProcessDomain( rank_type p ) const
     {
-        return ( ( boost::get<3>( M_element1 ) != invalid_size_type_value ) &&
+        return ( ( boost::get<3>( M_element1 ) != invalid_rank_type_value ) &&
                  ( ( boost::get<3>( M_element0 ) == p ) || ( boost::get<3>( M_element1 ) == p ) ) &&
                  ( boost::get<3>( M_element0 ) != boost::get<3>( M_element1 ) ) );
     }
     bool
-    isIntraProcessDomain( size_type p ) const
+    isIntraProcessDomain( rank_type p ) const
     {
         return ( ( boost::get<3>( M_element0 ) == p ) &&
                  ( boost::get<3>( M_element1 ) == p ) );
@@ -268,7 +268,7 @@ public:
         M_element0 = boost::make_tuple( ( ElementType const* )0,
                                         invalid_size_type_value,
                                         invalid_uint16_type_value,
-                                        invalid_size_type_value );
+                                        invalid_rank_type_value );
     }
 
     void disconnect1()
@@ -276,7 +276,7 @@ public:
         M_element1 = boost::make_tuple( ( ElementType const* )0,
                                         invalid_size_type_value,
                                         invalid_uint16_type_value,
-                                        invalid_size_type_value );
+                                        invalid_rank_type_value );
     }
 
     void disconnect()
@@ -585,7 +585,7 @@ public:
     /**
      * \return process id
      */
-    uint16_type processId() const
+    rank_type processId() const
     {
         return super::processId();
     }
@@ -593,7 +593,7 @@ public:
     /**
      * \return process id
      */
-    size_type partition1() const
+    rank_type partition1() const
     {
         return super2::partition1( super::processId() );
     }
@@ -601,7 +601,7 @@ public:
     /**
      * \return process id
      */
-    size_type partition2() const
+    rank_type partition2() const
     {
         return super2::partition2( super::processId() );
     }
@@ -907,7 +907,7 @@ public:
     /**
      * \return process id
      */
-    uint16_type processId() const
+    rank_type processId() const
     {
         return super::processId();
     }
@@ -915,7 +915,7 @@ public:
     /**
      * \return process id
      */
-    size_type partition1() const
+    rank_type partition1() const
     {
         return super2::partition1( super::processId() );
     }
@@ -923,7 +923,7 @@ public:
     /**
      * \return process id
      */
-    size_type partition2() const
+    rank_type partition2() const
     {
         return super2::partition2( super::processId() );
     }
@@ -1049,6 +1049,12 @@ template<uint16_type Dim,
          typename SubFace,
          typename T>
 const uint16_type GeoElement1D<Dim,GEOSHAPE,SubFace,T>::nDim;
+
+template<uint16_type Dim,
+         typename GEOSHAPE,
+         typename SubFace,
+         typename T>
+const uint16_type GeoElement1D<Dim,GEOSHAPE,SubFace,T>::nRealDim;
 
 /**
  * \class GeoElement2D
@@ -1224,7 +1230,7 @@ public:
     /**
      * \return process id
      */
-    uint16_type processId() const
+    rank_type processId() const
     {
         return super::processId();
     }
@@ -1232,7 +1238,7 @@ public:
     /**
      * \return process id
      */
-    size_type partition1() const
+    rank_type partition1() const
     {
         return super2::partition1( super::processId() );
     }
@@ -1240,7 +1246,7 @@ public:
     /**
      * \return process id
      */
-    size_type partition2() const
+    rank_type partition2() const
     {
         return super2::partition2( super::processId() );
     }
@@ -1406,6 +1412,8 @@ template <uint16_type Dim, typename GEOSHAPE, typename SFO, typename T>
 const uint16_type GeoElement2D<Dim, GEOSHAPE, SFO, T>::numLocalEdges;
 template <uint16_type Dim, typename GEOSHAPE, typename SFO, typename T>
 const uint16_type GeoElement2D<Dim, GEOSHAPE, SFO, T>::nDim;
+template <uint16_type Dim, typename GEOSHAPE, typename SFO, typename T>
+const uint16_type GeoElement2D<Dim, GEOSHAPE, SFO, T>::nRealDim;
 
 
 /**
@@ -1578,7 +1586,7 @@ public:
     /**
      * \return process id
      */
-    uint16_type processId() const
+    rank_type processId() const
     {
         return super::processId();
     }
@@ -1586,7 +1594,7 @@ public:
     /**
      * \return process id
      */
-    size_type partition1() const
+    rank_type partition1() const
     {
         return super2::partition1( super::processId() );
     }
@@ -1594,7 +1602,7 @@ public:
     /**
      * \return process id
      */
-    size_type partition2() const
+    rank_type partition2() const
     {
         return super2::partition2( super::processId() );
     }
