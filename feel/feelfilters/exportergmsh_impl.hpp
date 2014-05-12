@@ -105,14 +105,18 @@ ExporterGmsh<MeshType,N>::gmshSaveAscii() const
 
         std::ostringstream __fname;
 
-        __fname << __ts->name()  //<< this->prefix() //this->path()
-                << "-" << this->worldComm().size() << "_" << this->worldComm().rank()
-                << ".msh";
-
-        /* If onelab is enabled, we register this filename to be loaded */
-        if(option(_name="onelab.enable" ).template as<int>() == 2)
+        /* If we want only one file, specify the same filename for each process */
+        if(option(_name="exporter.fileset").template as<bool>() == true)
         {
-            Environment::olLoadInGmsh(__fname.str());
+            __fname << __ts->name()  //<< this->prefix() //this->path()
+                    << "-" << this->worldComm().size()
+                    << ".msh";
+        }
+        else
+        {
+            __fname << __ts->name()  //<< this->prefix() //this->path()
+                    << "-" << this->worldComm().size() << "_" << this->worldComm().rank()
+                    << ".msh";
         }
 
         /*std::string filename =  this->prefix()
@@ -129,59 +133,254 @@ ExporterGmsh<MeshType,N>::gmshSaveAscii() const
         {
             step_ptrtype __step = *__stepIt;
 
+            std::map<std::string, std::vector<double> > minMaxValues;
+
             if ( __step->isInMemory() )
             {
+                auto nEltAndIndex = numberOfGlobalEltAndIndex( __step->mesh() );
+                auto nGlobElement = nEltAndIndex.template get<0>();
+                auto indexElementStart = nEltAndIndex.template get<1>();
+                this->worldComm().barrier();
 
-                if ( __step->index()==1 )
+                /* Saving multiple files */
+                if(option(_name="exporter.fileset").template as<bool>() == false)
                 {
-                    out.open( __fname.str().c_str(), std::ios::out );
-                }
+                    if ( __step->index()==1 )
+                    {
+                        out.open( __fname.str().c_str(), std::ios::out );
+                    }
 
+                    else
+                    {
+                        out.open( __fname.str().c_str(), std::ios::out | std::ios::app );
+                    }
+
+                    if ( out.fail() )
+                    {
+                        DVLOG(2) << "cannot open " << __fname.str().c_str() << "\n";
+                        exit( 0 );
+                    }
+
+                    DVLOG(2) << "[ExporterGmsh] saving model "
+                                  << __ts->name() << " at time step "
+                                  << __ts->index() << " in "
+                                  << __fname.str() << "\n";
+
+                    // save mesh only at first iteration
+                    if ( __stepIt == __ts->beginStep() )
+                    {
+                        gmshSaveFormat( out );
+
+                        gmshSavePhysicalNames( out, __step->mesh() );
+
+                        auto pt_it = __step->mesh()->beginPointWithProcessId();
+                        auto const pt_en = __step->mesh()->endPointWithProcessId();
+
+                        gmshSaveNodesStart( out, __step->mesh(), std::distance(pt_it, pt_en) );
+                        gmshSaveNodes( out,__step->mesh() );
+                        gmshSaveNodesEnd( out, __step->mesh() );
+
+                        auto eltOnProccess = elements( __step->mesh() );
+                        auto elt_it = eltOnProccess.template get<1>();
+                        auto elt_en = eltOnProccess.template get<2>();
+
+                        auto allmarkedfaces = boundaryfaces( __step->mesh() );
+                        auto face_it = allmarkedfaces.template get<1>();
+                        auto face_end = allmarkedfaces.template get<2>();
+
+                        gmshSaveElementsStart( out, std::distance(elt_it, elt_en) + std::distance(face_it, face_end) );
+                        gmshSaveElements( out, __step->mesh(), indexElementStart );
+                        gmshSaveElementsEnd( out );
+                    }
+
+                    //gmshSaveNodeData( out, __step);
+                    gmshSaveElementNodeData( out, __step, indexElementStart);
+                }
+                /* saving data to one file */
                 else
                 {
-                    out.open( __fname.str().c_str(), std::ios::out | std::ios::app );
+                    DVLOG(2) << "[ExporterGmsh] saving model "
+                                  << __ts->name() << " at time step "
+                                  << __ts->index() << " in "
+                                  << __fname.str() << "\n";
+
+                    // save mesh only at first iteration
+                    if ( __stepIt == __ts->beginStep() )
+                    {
+                        this->worldComm().barrier();
+                        if(this->worldComm().isMasterRank())
+                        {
+                            out.open( __fname.str().c_str(), std::ios::out );
+                            gmshSaveFormat( out );
+                            gmshSavePhysicalNames( out, __step->mesh() );
+                        }
+                        
+                        this->worldComm().barrier();
+                        size_type nGlobPoint = numberOfGlobalPtAndIndex( __step->mesh() );
+                        this->worldComm().barrier();
+
+                        if(this->worldComm().isMasterRank())
+                        {
+                            gmshSaveNodesStart( out, __step->mesh(), nGlobPoint );
+                            out.close();
+                        }
+
+                        for(int i = 0; i < this->worldComm().size(); i++)
+                        {
+                            if(i == this->worldComm().rank())
+                            {
+                                out.open( __fname.str().c_str(), std::ios::out | std::ios::app );
+                                gmshSaveNodes( out,__step->mesh() );
+                                out.close();
+                            }
+                            this->worldComm().barrier();
+                        }
+
+                        if(this->worldComm().isMasterRank())
+                        {
+                            out.open( __fname.str().c_str(), std::ios::out | std::ios::app );
+                            gmshSaveNodesEnd( out, __step->mesh() );
+                            gmshSaveElementsStart( out, nGlobElement );
+                            out.close();
+                        }
+                        this->worldComm().barrier();
+
+                        for(int i = 0; i < this->worldComm().size(); i++)
+                        {
+                            if(i == this->worldComm().rank())
+                            {
+                                out.open( __fname.str().c_str(), std::ios::out | std::ios::app );
+                                gmshSaveElements( out, __step->mesh(), indexElementStart );
+                                out.close();
+                            }
+                            this->worldComm().barrier();
+                        }
+
+                        if(this->worldComm().isMasterRank())
+                        {
+                            out.open( __fname.str().c_str(), std::ios::out | std::ios::app );
+                            gmshSaveElementsEnd( out );
+                            out.close();
+                        }
+                        this->worldComm().barrier();
+                    }
+
+                    for(int i = 0; i < this->worldComm().size(); i++)
+                    {
+                        if(i == this->worldComm().rank())
+                        {
+                            out.open( __fname.str().c_str(), std::ios::out | std::ios::app );
+                            //gmshSaveNodeData( out, __step);
+                            gmshSaveElementNodeData( out, __step, indexElementStart);
+                            out.close();
+                        }
+                        this->worldComm().barrier();
+                    }
                 }
 
-                if ( out.fail() )
+                // Correction of transfer function for scalar values through a geo script
+                // only if we have more than 1 process
+                if(this->worldComm().size() > 1)
                 {
-                    DVLOG(2) << "cannot open " << __fname.str().c_str() << "\n";
-                    exit( 0 );
+                    // The computation of the min/max, for readjusting the transfer function in Gmsh, 
+                    // needs to be done with all processes available as it requires some communication
+                    this->computeMinMax( __step, minMaxValues );
+
+                    // the master rank then writes the corresponding geo file
+                    if(this->worldComm().rank() == 0)
+                    {
+                        // open a geo file for output and correcting transfer function scale
+                        std::ostringstream __geofname;
+                        std::ostringstream __mshfname;
+
+                        __geofname << __ts->name()  //<< this->prefix() //this->path()
+                            << "-" << this->worldComm().size()
+                            << ".geo";
+
+                        std::ofstream geoout;
+                        geoout.open(__geofname.str().c_str(), std::ios::out);
+
+                        // merge the msh files, depending on the fact that we have 1 or several data files
+                        if(option(_name="exporter.fileset").template as<bool>() == true)
+                        {
+                            __mshfname << __ts->name()  //<< this->prefix() //this->path()
+                                << "-" << this->worldComm().size()
+                                << ".msh";
+                            geoout << "Merge \"" << __fname.str() << "\";" << std::endl; 
+                        }
+                        else
+                        {
+                            for(int i = 0; i < this->worldComm().size(); i++)
+                            {
+                                __mshfname.str("");
+                                __mshfname << __ts->name()  //<< this->prefix() //this->path()
+                                    << "-" << this->worldComm().size() << "_" << i
+                                    << ".msh";
+                                geoout << "Merge \"" << __mshfname.str() << "\";" << std::endl; 
+                            }
+                        }
+
+                        /* if we have min/max values, we correct the scale of the view in Gmsh */
+                        if(!minMaxValues.empty())
+                        {
+                            geoout << "nv = PostProcessing.NbViews-1;" << std::endl;
+                            for(int i = 0; i < this->worldComm().size(); i++)
+                            {
+                                int j = 0;
+                                for(std::map<std::string, std::vector<double> >::iterator it = minMaxValues.begin(); it!=minMaxValues.end() ; it++, j++)
+                                {
+                                    // make visible only first function values, declutter the interface
+                                    geoout << "View[nv-" << ((this->worldComm().size() - 1 - i) * minMaxValues.size() + (minMaxValues.size() - 1 - j)) << "].";
+                                    if(j == 0)
+                                    {
+                                        geoout << "Visible=1;" << std::endl;
+                                    }
+                                    else
+                                    {
+                                        geoout << "Visible=0;" << std::endl;
+                                    }
+
+                                    // if we have min-max values
+                                    // we correct the range for the transfer function (for scalar values)
+                                    if(it->second.size() == 2)
+                                    {   
+                                        geoout << "View[nv-" << ((this->worldComm().size() - 1 - i) * minMaxValues.size() + (minMaxValues.size() - 1 - j)) 
+                                            << "].RangeType=2;" << std::endl;
+                                        geoout << "View[nv-" << ((this->worldComm().size() - 1 - i) * minMaxValues.size() + (minMaxValues.size() - 1 - j))
+                                            << "].CustomMin=" << it->second[0] << ";" << std::endl;
+                                        geoout << "View[nv-" << ((this->worldComm().size() - 1 - i) * minMaxValues.size() + (minMaxValues.size() - 1 - j)) 
+                                            << "].CustomMax=" << it->second[1] << ";" << std::endl;
+                                    }
+                                }
+                            }
+                        }
+
+                        geoout.close();
+
+                        /* If onelab is enabled, we register this filename to be loaded */
+                        if(option(_name="onelab.enable" ).template as<int>() == 2)
+                        {
+                            Environment::olLoadInGmsh(__geofname.str());
+                        }
+                    }
                 }
-
-                DVLOG(2) << "[ExporterGmsh] saving model "
-                              << __ts->name() << " at time step "
-                              << __ts->index() << " in "
-                              << __fname.str() << "\n";
-
-                // save mesh only at first iteration
-                if ( __stepIt == __ts->beginStep() )
+                /* if we have only one process, we register only the msh file for Onelab */
+                else
                 {
-                    gmshSaveFormat( out );
-
-                    gmshSavePhysicalNames( out, __step->mesh() );
-
-                    size_type nGlobPoint = numberOfGlobalPtAndIndex( __step->mesh() );
-                    gmshSaveNodesStart( out, __step->mesh(), nGlobPoint );
-                    gmshSaveNodes( out,__step->mesh() );
-                    gmshSaveNodesEnd( out, __step->mesh() );
-
-                    auto nEltAndIndex = numberOfGlobalEltAndIndex( __step->mesh() );
-                    auto nGlobElement = nEltAndIndex.template get<0>();
-                    auto indexElementStart = nEltAndIndex.template get<1>();
-                    gmshSaveElementsStart( out, nGlobElement );
-                    gmshSaveElements( out, __step->mesh(), indexElementStart );
-                    gmshSaveElementsEnd( out );
+                    /* If onelab is enabled, we register the msh file to be loaded */
+                    if(option(_name="onelab.enable" ).template as<int>() == 2)
+                    {
+                        Environment::olLoadInGmsh(__fname.str());
+                    }
                 }
 
-                //gmshSaveNodeData( out, __step);
-                gmshSaveElementNodeData( out, __step );
             }
         }
 
         ++__ts_it;
+
     }
 }
-
 
 template<typename MeshType, int N>
 void
@@ -305,15 +504,31 @@ ExporterGmsh<MeshType,N>::numberOfGlobalPtAndIndex( mesh_ptrtype mesh ) const
 
     auto itPt = mesh->beginPointWithProcessId();
     auto const enPt = mesh->endPointWithProcessId();
-    for ( ; itPt!=enPt ; ++itPt )
+
+    
+    /* If we want only one file, specify the same filename for each process */
+    if(option(_name="exporter.fileset").template as<bool>() == true)
     {
-        if ( itPt->isLinkedToOtherPartitions() )
+        for ( ; itPt!=enPt ; ++itPt )
         {
-            // add if the processId() is the min rank
-            if (itPt->processId() < *std::min_element( itPt->neighborPartitionIds().begin(),itPt->neighborPartitionIds().end() ) )
-                ++nPointToWriteOnProcess;
+            if ( itPt->isLinkedToOtherPartitions() )
+            {
+                // add if the processId() is the min rank
+                if (itPt->processId() < *std::min_element( itPt->neighborPartitionIds().begin(),itPt->neighborPartitionIds().end() ) )
+                    ++nPointToWriteOnProcess;
+            }
+            else ++nPointToWriteOnProcess;
         }
-        else ++nPointToWriteOnProcess;
+    }
+    // If we want several files, we need to copy the point that are shared with other partitions
+    // even if the process id is not the minimal (otherwise we would be missing points)
+    else
+    {
+        //nPointToWriteOnProcess = std::distance(itPt, enPt);
+        for ( ; itPt!=enPt ; ++itPt )
+        {
+            ++nPointToWriteOnProcess;
+        }
     }
 
     //size_type local_numberPoints = mesh->numPoints();
@@ -351,6 +566,9 @@ ExporterGmsh<MeshType,N>::gmshSaveNodesStart( std::ostream& out, mesh_ptrtype me
 
     else
         out << "$Nodes\n";
+
+    // Save number of Nodes
+    out << nGlobPt << "\n";//number points
 }
 
 template<typename MeshType, int N>
@@ -371,19 +589,19 @@ ExporterGmsh<MeshType,N>::gmshSaveNodes( std::ostream& out, mesh_ptrtype mesh, b
     auto pt_it = mesh->beginPointWithProcessId();
     auto const pt_en = mesh->endPointWithProcessId();
 
-    // Save number of Nodes
-    out << std::distance(pt_it, pt_en) << "\n";//number points
-
     for ( ; pt_it!=pt_en ; ++pt_it )
     {
-        /*
-        if ( pt_it->isLinkedToOtherPartitions() )
+        // if we want only one file, we discard nodes shared by different processes
+        if(option(_name="exporter.fileset").template as<bool>() == true)
         {
-            // add if the processId() is the min rank
-            if ( pt_it->processId() > *std::min_element( pt_it->neighborPartitionIds().begin(),pt_it->neighborPartitionIds().end() ) )
-                continue;
+            if ( pt_it->isLinkedToOtherPartitions() )
+            {
+                // add if the processId() is the min rank
+                if ( pt_it->processId() > *std::min_element( pt_it->neighborPartitionIds().begin(),pt_it->neighborPartitionIds().end() ) )
+                    continue;
+            }
         }
-        */
+        // otherwise we put all the nodes in each file (to have a complete nodeset)
 
         // warning add 1 to the id in order to be sure that all gmsh id >0
         out << pt_it->id()+1
@@ -427,7 +645,7 @@ ExporterGmsh<MeshType,N>::numberOfGlobalEltAndIndex( mesh_ptrtype mesh ) const
     size_type number_markedfaces= std::distance( allmarkedfaces.template get<1>(),allmarkedfaces.template get<2>() );
 
     auto eltOnProccess = elements( mesh );
-    size_type number_elements= std::distance( eltOnProccess.template get<1>(),eltOnProccess.template get<2>() );
+    size_type number_elements= std::distance( eltOnProccess.template get<1>(), eltOnProccess.template get<2>() );
 
     auto local_numberElements = number_markedfaces+number_elements;
     auto global_numberElements=local_numberElements;
@@ -456,6 +674,9 @@ void
 ExporterGmsh<MeshType,N>::gmshSaveElementsStart( std::ostream& out, size_type nGlobElt ) const
 {
     out << "$Elements\n";
+
+    // write the count of elements
+    out << nGlobElt << "\n";
 }
 
 template<typename MeshType, int N>
@@ -493,14 +714,21 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
     // count the number of faces
     int number_markedfaces = std::distance(allmarkedfaces.template get<1>(), allmarkedfaces.template get<2>());
 
-    // write the count of elements
-    out << number_markedfaces+std::distance(elt_it, elt_en) << "\n";
-
     for ( ; face_it != face_end; ++face_it )
     {
         // elm-number elm-type number-of-tags < tag > ... node-number-list
-        //out<< elem_number++ <<" ";
-        out<< face_it->id()+1 <<" ";
+        /*
+        if(option(_name="exporter.fileset").template as<bool>() == true)
+        {
+        */
+            out<< elem_number++ <<" ";
+            /*
+        }
+        else
+        {
+            out<< indexEltStart + face_it->id()+1 <<" ";
+        }
+        */
         out << ordering_face.type();
         // number-of-tags < tag >
 
@@ -553,8 +781,18 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
 
     for ( ; elt_it != elt_en; ++elt_it, ++pid )
     {
-        //out << elem_number++ <<" ";
-        out << number_markedfaces + elt_it->id()+1 <<" ";
+        /*
+        if(option(_name="exporter.fileset").template as<bool>() == true)
+        {
+        */
+            out << elem_number++ <<" ";
+            /*
+        }
+        else
+        {
+            out << indexEltStart + number_markedfaces + elt_it->id()+1 <<" ";
+        }
+    */
         out << ordering.type();
 
         if ( FEELPP_GMSH_FORMAT_VERSION==std::string( "2.1" ) )
@@ -668,13 +906,10 @@ ExporterGmsh<MeshType,N>::gmshSaveNodeData( std::ostream& out, step_ptrtype __st
 #endif
 }
 
-
 template<typename MeshType, int N>
 void
-ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
-        step_ptrtype __step ) const
+ExporterGmsh<MeshType,N>::computeMinMax(step_ptrtype __step, std::map<std::string, std::vector<double> > & minMaxValues) const
 {
-
     typedef typename mesh_type::element_const_iterator element_mesh_const_iterator;
 
     typedef typename step_type::nodal_scalar_type nodal_scalar_type;
@@ -687,13 +922,191 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
 
     mesh_ptrtype mesh = __step->mesh();
 
+    uint16_type nLocalDof;
+    size_type globaldof;
+    typedef typename MeshType::element_type element_type;
+    GmshOrdering<element_type> ordering;
+
+    /* relinearize elemnent ids in the case when we want to output all the data in one file */
     auto allmarkedfaces = boundaryfaces( mesh );
-    int number_markedfaces= std::distance( allmarkedfaces.template get<1>(),allmarkedfaces.template get<2>() );
+    auto face_it = allmarkedfaces.template get<1>();
+    auto face_en = allmarkedfaces.template get<2>();
+    int number_markedfaces= std::distance( face_it, face_en );
+
+    auto elts = elements( mesh );
+    auto elt_it = elts.template get<1>();
+    auto elt_en = elts.template get<2>();
+
+    nodal_scalar_const_iterator __varScal = __step->beginNodalScalar();
+    nodal_scalar_const_iterator __varScal_end = __step->endNodalScalar();
+
+    for ( ; __varScal!=__varScal_end ; ++__varScal )
+    {
+        nodal_scalar_type const& __u = __varScal->second;
+
+        // record min-max value for function
+        // check if record already exists
+        if(minMaxValues.empty() || minMaxValues.find(__varScal->first) == minMaxValues.end())
+        {
+            minMaxValues[__varScal->first].push_back(__u.min());
+            minMaxValues[__varScal->first].push_back(__u.max());
+        }
+        else
+        {
+            if(minMaxValues[__varScal->first][0] > __u.min())
+            {
+                minMaxValues[__varScal->first][0] = __u.min();
+            }
+            if(minMaxValues[__varScal->first][1] < __u.max())
+            {
+                minMaxValues[__varScal->first][1] = __u.max();
+            }
+        }
+    }
+
+    nodal_vectorial_const_iterator __varVec = __step->beginNodalVector();
+    nodal_vectorial_const_iterator __varVec_end = __step->endNodalVector();
+
+    for ( ; __varVec!=__varVec_end ; ++__varVec )
+    {
+        nodal_vectorial_type const& __uVec = __varVec->second;
+
+        uint16_type nComponents = __uVec.nComponents;
+
+        element_mesh_const_iterator elt_it;
+        element_mesh_const_iterator elt_en;
+        boost::tie( boost::tuples::ignore, elt_it, elt_en ) = elements( mesh );
+        
+        // record min-max value for function
+        // check if record already exists
+        if(minMaxValues.empty() || minMaxValues.find(__varVec->first) == minMaxValues.end())
+        {
+            nLocalDof = nodal_vectorial_type::functionspace_type::basis_type::nLocalDof;
+
+            for(int i = 0; i < nLocalDof * 3; i++)
+            {
+                minMaxValues[__varVec->first].push_back(0.0);
+                minMaxValues[__varVec->first].push_back(0.0);
+            }
+        }
+        
+        /* need to update min/max for vectorial data */
+        /*
+        for (; elt_it!=elt_en ; ++elt_it )
+        {
+            nLocalDof = nodal_vectorial_type::functionspace_type::basis_type::nLocalDof;
+
+            for ( uint16_type l = 0; l < nLocalDof; ++l )
+            {
+                uint16_type gmsh_l = ordering.fromGmshId( l );
+
+                for ( uint16_type c = 0; c < 3; ++c )
+                {
+                    if ( c < nComponents )
+                    {
+                        globaldof = boost::get<0>( __uVec.functionSpace()->dof()->localToGlobal( elt_it->id(),
+                                                   gmsh_l,
+                                                   c ) );
+                        //out << __uVec( globaldof);
+                        out << __uVec.container()( globaldof );
+                    }
+
+                    else out << "0.0";
+                }
+            }
+
+            out << "\n";
+        }
+        */
+    }
+
+    auto __ElmScal = __step->beginElementScalar();
+    auto __ElmScal_end = __step->endElementScalar();
+
+    for ( ; __ElmScal!=__ElmScal_end ; ++__ElmScal )
+    {
+        element_scalar_type const& __u = __ElmScal->second;
+
+        element_mesh_const_iterator elt_it = mesh->beginElement();
+        element_mesh_const_iterator elt_en = mesh->endElement();
+
+        if ( !__u.areGlobalValuesUpdated() )
+            __u.updateGlobalValues();
+        
+        // record min-max value for function
+        // check if record already exists
+        if(minMaxValues.empty() || minMaxValues.find(__ElmScal->first) == minMaxValues.end())
+        {
+            minMaxValues[__ElmScal->first].push_back(0.0);
+            minMaxValues[__ElmScal->first].push_back(0.0);
+        }
+        
+#if 0
+        for ( ; elt_it!=elt_en ; ++elt_it )
+        {
+            globaldof = boost::get<0>( __u.functionSpace()->dof()->localToGlobal( elt_it->id(), 0, 0 ) ); //l,c
+
+            // either use the relinearized version for one file dataset or classic for one file per process
+            /*
+            if(option(_name="exporter.fileset").template as<bool>() == true)
+            {
+            */
+                out << elt_pids[elt_it->id()] << " " << /*__u( globaldof)*/__u.container()( globaldof ) << "\n";
+            //}
+            //else
+            //{
+                //out << indexEltStart + number_markedfaces+elt_it->id()+1 << " " << [>__u( globaldof)<]__u.container()( globaldof ) << "\n";
+            //}
+        }
+#endif
+    }
+
+}
+
+
+template<typename MeshType, int N>
+void
+ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
+        step_ptrtype __step, size_type indexEltStart) const
+{
+    typedef typename mesh_type::element_const_iterator element_mesh_const_iterator;
+
+    typedef typename step_type::nodal_scalar_type nodal_scalar_type;
+    typedef typename step_type::nodal_scalar_const_iterator nodal_scalar_const_iterator;
+
+    typedef typename step_type::nodal_vector_type nodal_vectorial_type;
+    typedef typename step_type::nodal_vector_const_iterator nodal_vectorial_const_iterator;
+
+    typedef typename step_type::element_scalar_type element_scalar_type;
+
+    mesh_ptrtype mesh = __step->mesh();
 
     uint16_type nLocalDof;
     size_type globaldof;
     typedef typename MeshType::element_type element_type;
     GmshOrdering<element_type> ordering;
+
+    /* relinearize elemnent ids in the case when we want to output all the data in one file */
+    auto allmarkedfaces = boundaryfaces( mesh );
+    auto face_it = allmarkedfaces.template get<1>();
+    auto face_en = allmarkedfaces.template get<2>();
+    int number_markedfaces= std::distance( face_it, face_en );
+    std::map<int,int> face_pids;
+    int pid = indexEltStart + 1;
+    //if(option(_name="exporter.fileset").template as<bool>() == true)
+    //{
+        std::for_each( face_it, face_en, [&pid, &face_pids]( typename MeshType::face_type const& e ){ face_pids[e.id()]=pid++; });
+    //}
+
+    auto elts = elements( mesh );
+    auto elt_it = elts.template get<1>();
+    auto elt_en = elts.template get<2>();
+    std::map<int,int> elt_pids;
+    //if(option(_name="exporter.fileset").template as<bool>() == true)
+    //{
+        std::for_each( elt_it, elt_en, [&pid,&elt_pids]( typename MeshType::element_type const& e ){ elt_pids[e.id()]=pid++; });
+    //}
+
     nodal_scalar_const_iterator __varScal = __step->beginNodalScalar();
     nodal_scalar_const_iterator __varScal_end = __step->endNodalScalar();
 
@@ -709,7 +1122,7 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
         //else if (nodal_scalar_type::functionspace_type::is_tensor2)   { __nbCompFieldGMSH=9; }
 
         out << "1\n";//number of string tag
-        out << "\"" << __varScal->first <<"\"\n";//a scalar node\n";
+        out << "\"" << this->worldComm().size() << "_" << this->worldComm().rank() << "-" << __varScal->first <<"\"\n";//a scalar node\n";
         out << "1\n";//number of real tag
         out << __step->time() << "\n";//"0.0\n";//the time value (0.0)
         out << "3\n";//number of integer tags:
@@ -728,7 +1141,19 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
 
         for ( ; elt_it!=elt_en ; ++elt_it )
         {
-            out << number_markedfaces + elt_it->id()+1;
+            // either use the relinearized version for one file dataset or classic for one file per process
+            /*
+            if(option(_name="exporter.fileset").template as<bool>() == true)
+            {
+            */
+                out << elt_pids[elt_it->id()];
+                /*
+            }
+            else
+            {
+                out << indexEltStart + number_markedfaces + elt_it->id()+1;
+            }
+            */
             //nLocGeoPt = elt_it->nPoints();
             //nLocalDof = mesh->numLocalVertices();
             nLocalDof = nodal_scalar_type::functionspace_type::basis_type::nLocalDof;
@@ -775,21 +1200,35 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
         uint16_type nComponents = __uVec.nComponents;
 
         out << "1\n";//number of string tag
-        out << "\"" << __varVec->first <<"\"\n";//"a vectorial field\n";
+        out << "\"" << this->worldComm().size() << "_" << this->worldComm().rank() << "-" << __varVec->first <<"\"\n";//"a vectorial field\n";
         out << "1\n";//number of real tag
         out << __step->time() << "\n";//"0.0\n";//the time value (0.0)
         out << "3\n";//number of integer tags:
         out << __step->index() << "\n";//"0\n";//the time step (0; time steps always start at 0)
         out << "3\n";//n-component (3 is vectorial) field
-        out << mesh->numElements() << "\n";//number associated nodal values
+        //out << mesh->numElements() << "\n";//number associated nodal values
 
         element_mesh_const_iterator elt_it;
         element_mesh_const_iterator elt_en;
         boost::tie( boost::tuples::ignore, elt_it, elt_en ) = elements( mesh );
+        
+        out << std::distance(elt_it, elt_en) << "\n";//number associated nodal values
 
-        for ( ; elt_it!=elt_en ; ++elt_it )
+        for (; elt_it!=elt_en ; ++elt_it )
         {
-            out << number_markedfaces + elt_it->id()+1;
+            // either use the relinearized version for one file dataset or classic for one file per process
+            /*
+            if(option(_name="exporter.fileset").template as<bool>() == true)
+            {
+            */
+                out << elt_pids[elt_it->id()];
+                /*
+            }
+            else
+            {
+                out << indexEltStart + number_markedfaces + elt_it->id()+1;
+            }
+            */
             //nLocalDof = mesh->numLocalVertices();
             nLocalDof = nodal_vectorial_type::functionspace_type::basis_type::nLocalDof;
             out << " " << nLocalDof;
@@ -836,7 +1275,7 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
         //else if (nodal_scalar_type::functionspace_type::is_tensor2)   { __nbCompFieldGMSH=9; }
 
         out << "1\n";//number of string tag
-        out << "\"" << __ElmScal->first <<"\"\n";//a scalar node\n";
+        out << "\"" << this->worldComm().size() << "_" << this->worldComm().rank() << "-" << __ElmScal->first <<"\"\n";//a scalar node\n";
         out << "1\n";//number of real tag
         out << __step->time() << "\n";//"0.0\n";//the time value (0.0)
         out << "3\n";//number of integer tags:
@@ -854,7 +1293,17 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
         {
             globaldof = boost::get<0>( __u.functionSpace()->dof()->localToGlobal( elt_it->id(), 0, 0 ) ); //l,c
 
-            out << number_markedfaces+elt_it->id()+1 << " " << /*__u( globaldof)*/__u.container()( globaldof ) << "\n";
+            // either use the relinearized version for one file dataset or classic for one file per process
+            /*
+            if(option(_name="exporter.fileset").template as<bool>() == true)
+            {
+            */
+                out << elt_pids[elt_it->id()] << " " << /*__u( globaldof)*/__u.container()( globaldof ) << "\n";
+            //}
+            //else
+            //{
+                //out << indexEltStart + number_markedfaces+elt_it->id()+1 << " " << [>__u( globaldof)<]__u.container()( globaldof ) << "\n";
+            //}
         }
 
         out << "$EndElementData\n";
