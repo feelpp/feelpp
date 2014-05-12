@@ -13,8 +13,9 @@ Circle(3) = {4,1,5};
 Circle(4) = {5,1,2};
 Line Loop(5) = {1, 2, 3, 4};
 Plane Surface(6) = {5};
-Physical Surface("entree") = {6};
 Extrude {0,0,0.5} {Surface{6}; Layers{40};}
-Physical Surface("sortie") = {28};
-Physical Surface("tour") = {15,19,23,27};
+
+Physical Surface("inlet") = {6};
+Physical Surface("outlet") = {28};
+Physical Surface("wall") = {15,19,23,27};
 Physical Volume(29) = {1};
