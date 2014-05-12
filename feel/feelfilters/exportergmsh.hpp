@@ -162,8 +162,8 @@ public:
 
     void gmshSaveNodeData( std::ostream& out, step_ptrtype __step ) const;
 
-    void gmshSaveElementNodeData( std::ostream& out, step_ptrtype __step ) const;
-
+    void computeMinMax(step_ptrtype __step, std::map<std::string, std::vector<double> > & minMaxValues) const;
+    void gmshSaveElementNodeData( std::ostream& out, step_ptrtype __step, size_type indexEltStart) const;
 
     template<typename ConvexType=typename mesh_type::shape_type>
     void gmshSaveOneElementAsMesh( std::string const& filename,
