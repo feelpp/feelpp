@@ -108,21 +108,6 @@ public :
     typedef typename space_type::element_type element_type;
 };
 
-template <typename ParameterDefinition, typename FunctionSpaceDefinition >
-class EimDefinition
-{
-public :
-    typedef typename ParameterDefinition::parameterspace_type parameterspace_type;
-    typedef typename FunctionSpaceDefinition::space_type space_type;
-
-
-    /* EIM */
-    // Scalar continuous //
-    typedef EIMFunctionBase<space_type, space_type , parameterspace_type> fun_type;
-    // Scalar Discontinuous //
-    typedef EIMFunctionBase<space_type, space_type , parameterspace_type> fund_type;
-
-};
 
 /**
  * \class HeatShield
@@ -132,11 +117,11 @@ public :
  * @see
  */
 template<int Order>
-class HeatShield : public ModelCrbBase< ParameterDefinition, FunctionSpaceDefinition<Order>, EimDefinition<ParameterDefinition, FunctionSpaceDefinition<Order> > , TimeDependent >
+class HeatShield : public ModelCrbBase< ParameterDefinition, FunctionSpaceDefinition<Order>, TimeDependent >
 {
 public:
 
-    typedef ModelCrbBase<ParameterDefinition, FunctionSpaceDefinition<Order> , EimDefinition<ParameterDefinition, FunctionSpaceDefinition<Order> > , TimeDependent > super_type;
+    typedef ModelCrbBase<ParameterDefinition, FunctionSpaceDefinition<Order> , TimeDependent > super_type;
 
     typedef typename super_type::beta_vector_light_type beta_vector_light_type;
     typedef typename super_type::affine_decomposition_light_type affine_decomposition_light_type;
