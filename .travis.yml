@@ -11,10 +11,6 @@ before_install:
   libcln-dev petsc-dev libxml2-dev gmsh bison flex doxygen doxygen-latex transfig
   imagemagick libtbb-dev libann-dev libglpk-dev
 install:
-- if [ "$CXX" = "g++" ]; then sudo apt-get install -qq g++-4.8; fi
-- if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
-- if [ "$CXX" = "clang++" ]; then export CXX="/usr/bin/clang++" CC="/usr/bin/clang";
-  fi
 - mkdir opt && cd opt && ../configure -r
 script:
 - make -j16 feelpp_ginac
