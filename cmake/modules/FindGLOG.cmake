@@ -48,7 +48,7 @@ if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/glog )
       message(STATUS "   - using gflags ${GFLAGS_DIR}...")
       execute_process(COMMAND mkdir -p ${CMAKE_BINARY_DIR}/contrib/glog-compile)
       execute_process(
-        COMMAND ${FEELPP_HOME_DIR}/contrib/glog/configure --prefix=${CMAKE_BINARY_DIR}/contrib/glog --with-gflags=${GFLAGS_DIR}
+        COMMAND ${FEELPP_HOME_DIR}/contrib/glog/configure --prefix=${CMAKE_BINARY_DIR}/contrib/glog --with-gflags=${GFLAGS_DIR} --disable-shared --enable-static
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/glog-compile
         #      OUTPUT_QUIET
         OUTPUT_FILE "glog-configure"

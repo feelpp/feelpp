@@ -44,7 +44,7 @@ if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/gflags )
     if(${CMAKE_SOURCE_DIR}/contrib/gflags/configure.ac IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/gflags-compile/configure)
       message(STATUS "Building gflags in ${CMAKE_BINARY_DIR}/contrib/gflags-compile...")
       execute_process(
-        COMMAND ${FEELPP_HOME_DIR}/contrib/gflags/configure --prefix=${CMAKE_BINARY_DIR}/contrib/gflags
+        COMMAND ${FEELPP_HOME_DIR}/contrib/gflags/configure --prefix=${CMAKE_BINARY_DIR}/contrib/gflags --disable-shared --enable-static
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/gflags-compile
         #      OUTPUT_QUIET
         OUTPUT_FILE "gflags-configure"
