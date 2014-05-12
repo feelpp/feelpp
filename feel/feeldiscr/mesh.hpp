@@ -27,8 +27,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-07-05
  */
-#ifndef __mesh_H
-#define __mesh_H 1
+#ifndef FEELPP_MESH_HPP
+#define FEELPP_MESH_HPP 1
 
 #include <boost/unordered_map.hpp>
 
@@ -41,6 +41,7 @@
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
+#include <boost/mpi/operations.hpp>
 
 #include <feel/feelcore/context.hpp>
 //#include <feel/feelcore/worldcomm.hpp>
@@ -2043,11 +2044,19 @@ struct MeshPoints
     template<typename MeshType, typename IteratorType>
     MeshPoints( MeshType*, IteratorType it, IteratorType en, const bool outer = false, const bool renumber = false );
 
+    int globalNumberOfPoints() const { return global_npts; }
+    int globalNumberOfElements() const { return global_nelts; }
+    int global_nelts{0}, global_npts{0};
     std::vector<int> ids;
     std::map<int,int> new2old;
     std::map<int,int> old2new;
     std::map<int,int> nodemap;
     std::vector<T> coords;
+    std::vector<int> elemids;
+    std::vector<int> elem;
+    size_type offsets_pts, global_offsets_pts;
+    size_type offsets_elts, global_offsets_elts;
+
 };
 template<typename T>
 template<typename MeshType, typename IteratorType>
@@ -2055,6 +2064,7 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, IteratorType it, IteratorType en, con
 {
     std::set<int> nodeset;
     size_type p = 0;
+    auto elt_it = it;
     for( ; it != en; ++it )
     {
         auto const& elt = boost::unwrap_ref( *it );
@@ -2111,6 +2121,89 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, IteratorType it, IteratorType en, con
                 coords[3*i+2] = T( p.node()[2] );
         }
     }
+    size_type n_pts = ids.size();
+    //std::cout << "n_pts : " << n_pts << std::endl;
+    std::vector<size_type> p_s;
+    mpi::all_gather( mesh->worldComm().comm(), n_pts, p_s );
+    int shift_p = 0;
+#if defined(USE_MPIIO)
+
+    for( size_type i = 0; i < p_s.size(); i++ )
+    {
+        if ( i < mesh->worldComm().localRank() )
+        {
+            shift_p += p_s[i];
+        }
+    }
+
+    // shift all local ids
+    for( auto& i : ids )
+        i += shift_p;
+#endif
+    int __ne = std::distance( elt_it, en );
+    std::vector<int> s{nv,__ne}, global_s;
+    //mpi::all_reduce( mesh->worldComm().comm(), s, global_s, std::sum<int>() );
+    mpi::all_reduce( mesh->worldComm().comm(), nv, global_npts, std::plus<int>() );
+    mpi::all_reduce( mesh->worldComm().comm(), __ne, global_nelts, std::plus<int>()  );
+    //std::cout <<  "global_nelts=" << global_nelts << std::endl;
+    //std::cout <<  "global_npts=" << global_npts << std::endl;
+    elem.resize( __ne*mesh->numLocalVertices() );
+    elemids.resize( __ne );
+    size_type e=0;
+    for (  ; elt_it != en; ++elt_it, ++e )
+    {
+        auto const& elt = boost::unwrap_ref( *elt_it );
+        elemids[e] = elt.id()+1;
+        for ( size_type j = 0; j < mesh->numLocalVertices(); j++ )
+        {
+            // ensight id start at 1
+            elem[e*mesh->numLocalVertices()+j] = shift_p+old2new[elt.point( j ).id()];
+#if 0
+            DCHECK( (elem[e*mesh->numLocalVertices()+j] > 0) && (elem[e*mesh->numLocalVertices()+j] <= nv ) )
+                << "Invalid entry : " << elem[e*mesh->numLocalVertices()+j]
+                << " at index : " << e*mesh->numLocalVertices()+j
+                << " element :  " << e
+                << " vertex :  " << j;
+#endif
+        }
+    }
+#if 0
+    CHECK( e==__ne) << "Invalid number of elements, e= " << e << "  should be " << __ne;
+    std::for_each( elem.begin(), elem.end(), [=]( int e )
+                   { CHECK( ( e > 0) && e <= __nv ) << "invalid entry e = " << e << " nv = " << nv; } );
+#endif
+    //std::cout << "done with elem and elemids" << std::endl;
+
+
+    //size_type offset_pts = ids.size()*sizeof(int)+ coords.size()*sizeof(float);
+    //size_type offset_elts = elemids.size()*sizeof(int)+ elem.size()*sizeof(int);
+    size_type offset_pts = coords.size()*sizeof(float);
+    size_type offset_elts = elem.size()*sizeof(int);
+    //std::cout << "offset pts : " << offset_pts << std::endl;
+    //std::cout << "offset elts : " << offset_elts << std::endl;
+    std::vector<size_type> osp, ose;
+    // do communication to retrieve the offsets to access the parallel io file
+    mpi::all_gather( mesh->worldComm().comm(), offset_pts, osp );
+    mpi::all_gather( mesh->worldComm().comm(), offset_elts, ose );
+    offsets_pts = 0;
+    global_offsets_pts = 0;
+    offsets_elts = 0;
+    global_offsets_elts = 0;
+    for( size_type i = 0; i < osp.size(); i++ )
+    {
+        if ( i < mesh->worldComm().localRank() )
+        {
+            offsets_pts += osp[i];
+            offsets_elts  += ose[i];
+        }
+        global_offsets_pts += osp[i];
+        global_offsets_elts  += ose[i];
+    }
+    //std::cout << "local offset pts : " << offsets_pts << std::endl;
+    //std::cout << "local offset elts : " << offsets_elts << std::endl;
+    //std::cout << "global offset pts : " << global_offsets_pts << std::endl;
+//    std::cout << "global offset elts : " << global_offsets_elts << std::endl;
+    //std::cout << "done with offsets" << std::endl;
 }
 }
 
@@ -2121,4 +2214,4 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, IteratorType it, IteratorType en, con
 # include <feel/feeldiscr/meshimpl.hpp>
 //#endif //
 
-#endif /* __mesh_H */
+#endif /* FEELPP_MESH_HPP */
