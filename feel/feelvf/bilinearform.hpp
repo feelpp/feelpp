@@ -121,7 +121,8 @@ struct BFAssign1
         M_bf( lfa.M_bf ),
         M_test( lfa.M_test ),
         M_expr( lfa.M_expr ),
-        M_trial_index( lfa.M_trial_index )
+        M_trial_index( lfa.M_trial_index ),
+        M_test_index( lfa.M_test_index )
     {}
     BFAssign1( BFType& lf,
                ExprType const& expr,
@@ -164,6 +165,7 @@ struct BFAssign3
         M_bf( lfa.M_bf ),
         M_trial( lfa.M_trial ),
         M_expr( lfa.M_expr ),
+        M_trial_index( lfa.M_trial_index ),
         M_test_index( lfa.M_test_index )
     {}
     BFAssign3( BFType& lf,

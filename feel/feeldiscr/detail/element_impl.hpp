@@ -318,9 +318,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator()( node_type const&
 
     if ( functionSpace()->findPoint( __x, __cv_id, __x_ref ) || extrapolate )
     {
-#if !defined( NDEBUG )
         DVLOG(2) << "Point " << __x << " is in element " << __cv_id << " pt_ref=" << __x_ref << "\n";
-#endif
+
         gm_ptrtype __gm = functionSpace()->gm();
         typedef typename gm_type::precompute_ptrtype geopc_ptrtype;
         typedef typename gm_type::precompute_type geopc_type;
@@ -334,6 +333,10 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator()( node_type const&
         gmc_ptrtype __c( new gmc_type( __gm,
                                        functionSpace()->mesh()->element( __cv_id ),
                                        __geopc ) );
+
+        DCHECK( ublas::norm_2( __x-__c->xReal(0) ) < 1e-6 ) << "Point " << __x <<  " was not properly found, got " << __c->xReal(0);
+        DVLOG(2) << "Point x=" << __x << " and c->xreal = " << __c->xReal(0);
+
         pc_ptrtype pc( new pc_type( this->functionSpace()->fe(), pts ) );
 
         typedef typename mesh_type::element_type geoelement_type;
@@ -358,8 +361,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator()( node_type const&
 #endif /* FEELPP_HAS_MPI */
 
         id_type __id( this->id( *fectx ) );
-
-        //DVLOG(2) << "[interpolation]  id = " << __id << "\n";
+        DVLOG(2) << "[interpolation]  id = " << __id << "\n";
 #if defined(FEELPP_HAS_MPI)
         DVLOG(2) << "sending interpolation context to all processors from " << functionSpace()->mesh()->comm().rank() << "\n";
 
@@ -368,7 +370,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator()( node_type const&
             mpi::broadcast( functionSpace()->mesh()->comm(), __id, functionSpace()->mesh()->comm().rank() );
         }
 
-        //DVLOG(2) << "[interpolation] after broadcast id = " << __id << "\n";
+        DVLOG(2) << "[interpolation] after broadcast id = " << __id << "\n";
 #endif /* FEELPP_HAS_MPI */
         return __id;
     }
@@ -451,12 +453,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & conte
             //std::cout << "ldof = " << ldof << "\n";
             //std::cout << "gdof = " << gdof << "\n";
 
-            FEELPP_ASSERT( gdof < this->size() )
-            ( context.eId() )
-            ( l )( c1 )( ldof )( gdof )
-            ( this->size() )( this->localSize() )
-            ( this->firstLocalIndex() )( this->lastLocalIndex() )
-            .warn( "FunctionSpace::Element invalid access index" );
+            DLOG_IF(WARNING, !( gdof < this->size() ) ) << "FunctionSpace::Element invalid access index "
+                                                        << context.eId()
+                                                        << "    l=" << l
+                                                        << "   c1=" << c1
+                                                        << " ldof=" << ldof
+                                                        << " gdof=" << gdof
+                                                        << " size=" << this->size()
+                                                        << " localSize=" << this->localSize();
 
             value_type v_ = this->globalValue( gdof );
 

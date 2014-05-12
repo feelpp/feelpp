@@ -367,7 +367,38 @@ public:
         u = Xh->element();
         v = Xh->element();
 
-        M_inner_product_matrix = M_model->energyMatrix();
+        this->computeAffineDecomposition();
+        this->countAffineDecompositionTerms();
+        bool symmetric = option(_name="crb.use-symmetric-matrix").template as<bool>();
+        M_inner_product_matrix=this->newMatrix();
+        if( this->hasEim() || (!symmetric) )
+        {
+            //in this case, we use linear part of bilinear form a
+            //as the inner product
+            auto muref = this->refParameter();
+            auto betaqm = computeBetaLinearDecompositionA( muref );
+            M_inner_product_matrix->zero();
+            for ( size_type q = 0; q < M_QLinearDecompositionA; ++q )
+            {
+                for(size_type m = 0; m < mMaxLinearDecompositionA(q); ++m )
+                {
+                    M_inner_product_matrix->addMatrix( betaqm[q][m], M_linearAqm[q][m] );
+                }
+            }
+            //check that the matrix is filled, else we take energy matrix
+            double norm=M_inner_product_matrix->l1Norm();
+            if( norm == 0 && symmetric )
+            {
+                M_inner_product_matrix = M_model->energyMatrix();
+            }
+        }
+        else
+        {
+            //in this case, we use bilinear form a
+            //as the inner product
+            M_inner_product_matrix = M_model->energyMatrix();
+            CHECK( symmetric )<< "You use energy matrix as inner product but you specified that bilinear form a() is not symmetric !\n";
+        }
         M_preconditioner_l2->setMatrix( M_inner_product_matrix );
 
         M_bdf = M_model->bdfModel();
@@ -1001,7 +1032,7 @@ public:
         {
             if ( this->hasEimError() )
             {
-                
+
                 M_has_eim=true;
                 //when using EIM we need to be careful
                 //if we want to estimate the error then there
