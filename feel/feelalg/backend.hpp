@@ -43,7 +43,7 @@
 #include <feel/feelalg/vector.hpp>
 #include <feel/feelalg/matrixsparse.hpp>
 #include <feel/feelalg/matrixblock.hpp>
-#include <feel/feelalg/vectorblock.hpp>
+//#include <feel/feelalg/vectorblock.hpp>
 #include <feel/feelalg/datamap.hpp>
 
 #include <feel/feelalg/solverlinear.hpp>
