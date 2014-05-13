@@ -234,21 +234,18 @@ public:
             // prepare map of symbols
             // The parameter associated to the first block is fixed
             std::map<std::string,double> map_symbols;
-            for ( int i=1; i<nx*ny-1; i++ )
+            for ( int i=1; i<nx*ny; i++ )
             {
                 std::string symbol = ( boost::format("k%1%") %i ).str();
-                map_symbols.insert( std::pair< std::string, double > (symbol,mu(i)) );
+                map_symbols.insert( std::pair< std::string, double > (symbol,mu(i-1)) );
             }
 
             //update ginac expressions
-            for ( int i=0; i<nx*ny; i++ )
+            for ( int i=0; i<=nx*ny; i++ )
             {
                 ginac_expressionA[i].expression().setParameterValues( map_symbols );
                 M_betaAq[i] = ginac_expressionA[i].evaluate();
             }
-            int index=nx*ny;
-            //penalization term
-            M_betaAq[index]=1;
 
             ginac_expressionF[0].expression().setParameterValues( map_symbols );
             M_betaFq[0][0] = ginac_expressionF[0].evaluate();
@@ -349,30 +346,19 @@ ThermalBlock::buildGinacExpressions()
     std::vector< std::string > symbols_vec;
     symbols_vec.push_back( "x" );
     symbols_vec.push_back( "y" );
-    for ( int i=0; i<nx*ny; i++ )
+    for ( int i=1; i<nx*ny; i++ )
     {
         std::string symbol = ( boost::format("k%1%") %i ).str();
         symbols_vec.push_back( symbol );
     }
 
     //build ginac expressions
-    int index_beta=nx*ny;
     for ( int i=0; i<nx*ny; i++ )
     {
         std::string name = ( boost::format("beta.A%1%") %i ).str();
         std::string filename = ( boost::format("GinacA%1%") %i ).str();
         ginac_expressionA.push_back( expr( option(_name=name).as<std::string>(), Symbols( symbols_vec ) , filename ) );
     }
-    index_beta=nx*ny;
-    for ( int i=0; i<north_subdomain_index.size(); i++ )
-    {
-        int j = north_subdomain_index[i]-1;
-        std::string name = ( boost::format("beta.A%1%") %j ).str();
-        std::string filename = ( boost::format("GinacA%1%") %index_beta ).str();
-        ginac_expressionA.push_back( expr( option(_name=name).as<std::string>(), Symbols( symbols_vec ) , filename ) );
-        index_beta++;
-    }
-    int idx = nx*ny;
     std::string name = ( boost::format("beta.Alast") ).str();
     std::string filename = ( boost::format("GinacAlast") ).str();
     ginac_expressionA.push_back( expr( option(_name=name).as<std::string>(), Symbols( symbols_vec ) , filename ) );
