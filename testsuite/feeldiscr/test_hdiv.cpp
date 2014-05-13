@@ -173,14 +173,7 @@ private:
 void
 TestHDiv::exampleProblem1()
 {
-    mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-                                        _desc=domain( _name= ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1 ).str() ,
-                                                _shape="hypercube",
-                                                _usenames=true,
-                                                _dim=2,
-                                                _h=meshSize,
-                                                _xmin=-1,_xmax=1,
-                                                _ymin=-1,_ymax=1 ) );
+    mesh_ptrtype mesh = loadMesh(_mesh = new mesh_type);
 
     //auto K = ones<2,2>(); // Hydraulic conductivity tensor
     auto K = mat<2,2>(cst(2.),cst(1.),cst(1.),cst(2.));
@@ -256,8 +249,8 @@ TestHDiv::exampleProblem1()
             std::cout << "||p(primal) - p(dual-mixed)|| = " << l2err_p << std::endl;
         }
 
-    BOOST_CHECK_SMALL(l2err_u, meshSize );
-    BOOST_CHECK_SMALL(l2err_p, meshSize*meshSize );
+    BOOST_CHECK_SMALL(l2err_u, 1.0 );
+    BOOST_CHECK_SMALL(l2err_p, 1.0 );
 
     // ****** Export results ******
     export_ptrtype exporter_pro1( export_type::New( this->vm(),
@@ -277,16 +270,8 @@ TestHDiv::exampleProblem1()
 void
 TestHDiv::testProjector()
 {
-    mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-                                        _desc=domain( _name= ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1 ).str() ,
-                                                _shape="hypercube",
-                                                _usenames=true,
-                                                _dim=2,
-                                                _h=meshSize,
-                                                _xmin=-1,_xmax=1,
-                                                _ymin=-1,_ymax=1 ) );
+    mesh_ptrtype mesh = loadMesh(_mesh = new mesh_type);
 
-    //space_ptrtype Xh = space_type::New( mesh );
     auto RTh = Dh<0>( mesh );
     lagrange_space_v_ptrtype Yh_v = lagrange_space_v_type::New( mesh ); //lagrange vectorial space
     lagrange_space_s_ptrtype Yh_s = lagrange_space_s_type::New( mesh ); //lagrange scalar space
