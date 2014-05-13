@@ -29,10 +29,12 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelvf/expr.hpp>
 
+
 namespace Feel
 {
 namespace vf
 {
 Expr<LambdaExpr1> _e1;
+Expr<LambdaExpr2> _ee;
 }
 }

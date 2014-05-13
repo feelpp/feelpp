@@ -44,6 +44,7 @@
 #include <feel/feelpoly/quadmapped.hpp>
 
 #include <feel/feelvf/expr.hpp>
+#include <feel/feelvf/cst.hpp>
 #include <feel/feelvf/detail/clean.hpp>
 #include <feel/feelvf/block.hpp>
 
