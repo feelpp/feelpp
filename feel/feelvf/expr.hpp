@@ -320,19 +320,6 @@ public:
     /** @name Operator overloads
      */
     //@{
-    Expr<ComponentsExpr<Expr<ExprT> > >
-    operator()( int c1 = 0, int c2 = 0 )
-    {
-        auto ex = ComponentsExpr<Expr<ExprT> >( Expr<ExprT>( M_expr ), c1, c2 );
-        return Expr<ComponentsExpr<Expr<ExprT> > >( ex );
-    }
-
-    Expr<ComponentsExpr<Expr<ExprT> > >
-    operator()( int c1 = 0, int c2 = 0 ) const
-    {
-        auto ex = ComponentsExpr<Expr<ExprT> >( Expr<ExprT>( M_expr ), c1, c2 );
-        return Expr<ComponentsExpr<Expr<ExprT> > >( ex );
-    }
 
     template<typename... TheExprs>
     struct Lambda
@@ -343,21 +330,74 @@ public:
     };
 
 
-
-
+#if 0
     template<typename... TheExpr>
     typename Lambda<TheExpr...>::type
     operator()( TheExpr...  e  )
         {
-            //typename Lambda<TheExpr...>::expr_type e1( M_expr(e...) );
-            //typename Lambda<TheExpr...>::type r( Expr(e1 ) );
-            //return r;
             return expr( M_expr( e... ) );
         }
+#else
+    template<typename TheExpr1>
+    typename Lambda<TheExpr1>::type
+    operator()( TheExpr1 const&  e   )
+        {
+            return expr( M_expr( e ) );
+        }
+    template<typename TheExpr1,typename TheExpr2>
+    typename Lambda<Expr<TheExpr1>,Expr<TheExpr2>>::type
+    operator()( Expr<TheExpr1> const&  e1, Expr<TheExpr2> const& e2 )
+        {
+            return expr( M_expr( e1, e2 ) );
+        }
 
+    template<typename TheExpr1,typename TheExpr2,typename TheExpr3>
+    typename Lambda<TheExpr1,TheExpr2,TheExpr3>::type
+    operator()( TheExpr1 const&  e1, TheExpr2 const& e2, TheExpr3 const& e3  )
+        {
+            return expr( M_expr( e1, e2, e3 ) );
+        }
+#endif
+
+#if 0
     template<typename... TheExpr>
     typename Lambda<TheExpr...>::type
     operator()( TheExpr... e  ) const { return expr(M_expr(e...)); }
+#else
+    template<typename TheExpr1>
+    typename Lambda<TheExpr1>::type
+    operator()( TheExpr1 const&  e   ) const
+        {
+            return expr( M_expr( e ) );
+        }
+    template<typename TheExpr1,typename TheExpr2>
+    typename Lambda<Expr<TheExpr1>,Expr<TheExpr2>>::type
+        operator()( Expr<TheExpr1> const&  e1, Expr<TheExpr2> const& e2 ) const
+        {
+            return expr( M_expr( e1, e2 ) );
+        }
+    template<typename TheExpr1,typename TheExpr2,typename TheExpr3>
+    typename Lambda<TheExpr1,TheExpr2,TheExpr3>::type
+    operator()( TheExpr1 const&  e1, TheExpr2 const& e2, TheExpr3 const& e3  ) const
+        {
+            return expr( M_expr( e1, e2, e3 ) );
+        }
+
+#endif
+
+    Expr<ComponentsExpr<Expr<ExprT> > >
+    operator()( int c1, int c2 )
+    {
+        auto ex = ComponentsExpr<Expr<ExprT> >( Expr<ExprT>( M_expr ), c1, c2 );
+        return Expr<ComponentsExpr<Expr<ExprT> > >( ex );
+    }
+
+    Expr<ComponentsExpr<Expr<ExprT> > >
+    operator()( int c1, int c2 ) const
+    {
+        auto ex = ComponentsExpr<Expr<ExprT> >( Expr<ExprT>( M_expr ), c1, c2 );
+        return Expr<ComponentsExpr<Expr<ExprT> > >( ex );
+    }
 
     void setParameterValues( std::pair<std::string,value_type> const& mp )
         {
