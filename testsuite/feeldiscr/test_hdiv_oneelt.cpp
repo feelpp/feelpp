@@ -48,38 +48,34 @@ namespace Feel
 {
     /// Geometry for one-element meshes
     std::string
-    oneelement_geometry_ref( double h = 2 )
+    oneelement_geometry_ref()
     {
-        std::string name;
-        if ( std::abs( h - 2 ) < 1e-10 )
-            name = "one-elt-ref.geo";
-        else
-            name = "one-elt-mesh-ref.geo";
-
-        if(!fs::exists( name ))
+        std::string name = "one-elt-ref";
+        if(!fs::exists( name+".msh" ))
             {
-                std::ofstream costr(name);
-                costr <<"Mesh.MshFileVersion = 2.2;\n"
-                      <<"h=" << h << ";\n"
-                      <<"Point(1) = {-1,-1,0,h};\n"
-                      <<"Point(2) = {1,-1,0,h};\n"
-                      <<"Point(3) = {-1,1,0,h};\n"
-                      <<"Line(1) = {1,2};\n"
-                      <<"Line(2) = {2,3};\n"
-                      <<"Line(3) = {3,1};\n";
-
-                if ( std::abs( h - 2 ) < 1e-10 )
-                    costr <<"Transfinite Line{1} = 1;\n"
-                          <<"Transfinite Line{2} = 1;\n"
-                          <<"Transfinite Line{3} = 1;\n";
-
-                costr <<"Line Loop(4) = {3,1,2};\n"
-                      <<"Plane Surface(5) = {4};\n"
-                      <<"Physical Line(\"hor\") = {1};\n"
-                      <<"Physical Line(\"hypo\") = {2};\n"
-                      <<"Physical Line(\"vert\") = {3};\n"
-                      <<"Physical Surface(9) = {5};\n";
-
+                std::ofstream costr(name+".msh");
+                costr << "$MeshFormat\n"
+                      << "2.2 0 8\n"
+                      << "$EndMeshFormat\n"
+                      << "$PhysicalNames\n"
+                      << "3\n"
+                      << "1 1 \"hor\"\n"
+                      << "1 2 \"hypo\"\n"
+                      << "1 3 \"vert\"\n"
+                      << "$EndPhysicalNames\n"
+                      << "$Nodes\n"
+                      << "3\n"
+                      << "1 -1 -1 0\n"
+                      << "2 1 -1 0\n"
+                      << "3 -1 1 0\n"
+                      << "$EndNodes\n"
+                      << "$Elements\n"
+                      << "4\n"
+                      << "1 1 4 1 1 1 2 1 2\n"
+                      << "2 1 4 2 2 1 2 2 3\n"
+                      << "3 1 4 3 3 1 2 3 1\n"
+                      << "4 2 4 9 5 1 2 1 2 3\n"
+                      << "$EndElements\n";
                 costr.close();
             }
 
@@ -88,37 +84,70 @@ namespace Feel
 
     // homothetic transformation of reference element (center 0, rate 2)
     std::string
-    oneelement_geometry_real_1( double h = 2 )
+    oneelement_geometry_real_1()
     {
-        std::string name;
-        if ( std::abs( h - 2 ) < 1e-10 )
-            name = "one-elt-real-homo.geo";
-        else
-            name = "one-elt-mesh-homo.geo";
-
-        if(!fs::exists( name ))
+        std::string name = "one-elt-real-homo";
+        if(!fs::exists( name+".msh" ))
             {
-                std::ofstream costr(name);
-                costr <<"Mesh.MshFileVersion = 2.2;\n"
-                      <<"h=" << h << ";\n"
-                      <<"Point(1) = {-2,-2,0,h};\n"
-                      <<"Point(2) = {2,-2,0,h};\n"
-                      <<"Point(3) = {-2,2,0,h};\n"
-                      <<"Line(1) = {1,2};\n"
-                      <<"Line(2) = {2,3};\n"
-                      <<"Line(3) = {3,1};\n";
+                std::ofstream costr(name+".msh");
+                costr << "$MeshFormat\n"
+                      << "2.2 0 8\n"
+                      << "$EndMeshFormat\n"
+                      << "$PhysicalNames\n"
+                      << "3\n"
+                      << "1 1 \"hor\"\n"
+                      << "1 2 \"hypo\"\n"
+                      << "1 3 \"vert\"\n"
+                      << "$EndPhysicalNames\n"
+                      << "$Nodes\n"
+                      << "3\n"
+                      << "1 -2 -2 0\n"
+                      << "2 2 -2 0\n"
+                      << "3 -2 2 0\n"
+                      << "$EndNodes\n"
+                      << "$Elements\n"
+                      << "4\n"
+                      << "1 1 4 1 1 1 2 1 2\n"
+                      << "2 1 4 2 2 1 2 2 3\n"
+                      << "3 1 4 3 3 1 2 3 1\n"
+                      << "4 2 4 9 5 1 2 1 2 3\n"
+                      << "$EndElements\n";
+                costr.close();
+            }
 
-                if ( std::abs( h - 2 ) < 1e-10 )
-                    costr <<"Transfinite Line{1} = 1;\n"
-                          <<"Transfinite Line{2} = 1;\n"
-                          <<"Transfinite Line{3} = 1;\n";
+        return name;
+    }
 
-                costr <<"Line Loop(4) = {3,1,2};\n"
-                      <<"Plane Surface(5) = {4};\n"
-                      <<"Physical Line(\"hor\") = {1};\n"
-                      <<"Physical Line(\"hypo\") = {2};\n"
-                      <<"Physical Line(\"vert\") = {3};\n"
-                      <<"Physical Surface(9) = {5};\n";
+    // Rotation of angle (-pi/2)
+    std::string
+    oneelement_geometry_real_2()
+    {
+        std::string name = "one-elt-real-rot1";
+        if(!fs::exists( name+".msh" ))
+            {
+                std::ofstream costr(name+".msh");
+                costr << "$MeshFormat\n"
+                      << "2.2 0 8\n"
+                      << "$EndMeshFormat\n"
+                      << "$PhysicalNames\n"
+                      << "3\n"
+                      << "1 1 \"hor\"\n"
+                      << "1 2 \"hypo\"\n"
+                      << "1 3 \"vert\"\n"
+                      << "$EndPhysicalNames\n"
+                      << "$Nodes\n"
+                      << "3\n"
+                      << "1 1 -1 0\n"
+                      << "2 -1 -1 0\n"
+                      << "3 1 1 0\n"
+                      << "$EndNodes\n"
+                      << "$Elements\n"
+                      << "4\n"
+                      << "1 1 4 1 1 1 2 1 2\n"
+                      << "2 1 4 2 2 1 2 2 3\n"
+                      << "3 1 4 3 3 1 2 3 1\n"
+                      << "4 2 4 9 5 1 2 1 2 3\n"
+                      << "$EndElements\n";
                 costr.close();
             }
         return name;
@@ -126,75 +155,34 @@ namespace Feel
 
     // Rotation of angle (-pi/2)
     std::string
-    oneelement_geometry_real_2( double h = 2 )
+    oneelement_geometry_real_3()
     {
-        std::string name;
-        if ( std::abs( h - 2 ) < 1e-10 )
-            name = "one-elt-real-rot.geo";
-        else
-            name = "one-elt-mesh-rot.geo";
-
-        if(!fs::exists( name ))
+        std::string name = "one-elt-real-rot2";
+        if(!fs::exists( name+".msh" ))
             {
-                std::ofstream costr(name);
-                costr <<"Mesh.MshFileVersion = 2.2;\n"
-                      <<"h=" << h << ";\n"
-                      <<"Point(1) = {1,-1,0,h};\n"
-                      <<"Point(2) = {1,1,0,h};\n"
-                      <<"Point(3) = {-1,-1,0,h};\n"
-                      <<"Line(1) = {1,2};\n"
-                      <<"Line(2) = {2,3};\n"
-                      <<"Line(3) = {3,1};\n";
-
-                if ( std::abs( h - 2 ) < 1e-10 )
-                    costr <<"Transfinite Line{1} = 1;\n"
-          <<"Transfinite Line{2} = 1;\n"
-          <<"Transfinite Line{3} = 1;\n";
-
-                costr <<"Line Loop(4) = {3,1,2};\n"
-                      <<"Plane Surface(5) = {4};\n"
-                      <<"Physical Line(\"hor\") = {1};\n"
-                      <<"Physical Line(\"hypo\") = {2};\n"
-                      <<"Physical Line(\"vert\") = {3};\n"
-                      <<"Physical Surface(9) = {5};\n";
-                costr.close();
-            }
-        return name;
-    }
-
-    // Rotation of angle (-pi/2)
-    std::string
-    oneelement_geometry_real_3( double h = 2 )
-    {
-        std::string name;
-        if ( std::abs( h - 2 ) < 1e-10 )
-            name = "one-elt-real-rot.geo";
-        else
-            name = "one-elt-mesh-rot.geo";
-
-        if(!fs::exists( name ))
-            {
-                std::ofstream costr(name);
-                costr <<"Mesh.MshFileVersion = 2.2;\n"
-                      <<"h=" << h << ";\n"
-                      <<"Point(1) = {-1,1,0,h};\n"
-                      <<"Point(2) = {-1,-1,0,h};\n"
-                      <<"Point(3) = {1,1,0,h};\n"
-                      <<"Line(1) = {1,2};\n"
-                      <<"Line(2) = {2,3};\n"
-                      <<"Line(3) = {3,1};\n";
-
-                if ( std::abs( h - 2 ) < 1e-10 )
-                    costr <<"Transfinite Line{1} = 1;\n"
-                          <<"Transfinite Line{2} = 1;\n"
-                          <<"Transfinite Line{3} = 1;\n";
-
-                costr <<"Line Loop(4) = {3,1,2};\n"
-                      <<"Plane Surface(5) = {4};\n"
-                      <<"Physical Line(\"hor\") = {1};\n"
-                      <<"Physical Line(\"hypo\") = {2};\n"
-                      <<"Physical Line(\"vert\") = {3};\n"
-                      <<"Physical Surface(9) = {5};\n";
+                std::ofstream costr(name+".msh");
+                costr << "$MeshFormat\n"
+                      << "2.2 0 8\n"
+                      << "$EndMeshFormat\n"
+                      << "$PhysicalNames\n"
+                      << "3\n"
+                      << "1 1 \"hor\"\n"
+                      << "1 2 \"hypo\"\n"
+                      << "1 3 \"vert\"\n"
+                      << "$EndPhysicalNames\n"
+                      << "$Nodes\n"
+                      << "3\n"
+                      << "1 -1 1 0\n"
+                      << "2 -1 -1 0\n"
+                      << "3 1 1 0\n"
+                      << "$EndNodes\n"
+                      << "$Elements\n"
+                      << "4\n"
+                      << "1 1 4 1 1 1 2 1 2\n"
+                      << "2 1 4 2 2 1 2 2 3\n"
+                      << "3 1 4 3 3 1 2 3 1\n"
+                      << "4 2 4 9 5 1 2 1 2 3\n"
+                      << "$EndElements\n";
                 costr.close();
             }
         return name;
@@ -294,10 +282,8 @@ public:
     /**
      * run the application
      */
-    // void shape_functions( gmsh_ptrtype ( *one_element_mesh )( double ));
-    // void testProjector(gmsh_ptrtype ( *one_element_mesh_desc_fun )( double ));
-    void shape_functions( std::string ( *one_element_mesh )( double ));
-    void testProjector( std::string ( *one_element_mesh_desc_fun )( double ));
+    void shape_functions( std::string ( *one_element_mesh )());
+    void testProjector( std::string ( *one_element_mesh_desc_fun )());
 
 private:
     //! linear algebra backend
@@ -309,12 +295,10 @@ private:
 }; //TestHDivOneElt
 
 void
-TestHDivOneElt::testProjector(std::string ( *one_element_mesh_desc_fun )( double ))
+TestHDivOneElt::testProjector(std::string ( *one_element_mesh_desc_fun )())
 {
-    // mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-    //                                     _desc = one_element_mesh_desc_fun( 2 ) );
     mesh_ptrtype mesh = loadMesh( _mesh=new mesh_type,
-                                  _filename=one_element_mesh_desc_fun( 2 ) );
+                                  _filename=one_element_mesh_desc_fun() );
 
     auto RTh = Dh<0>( mesh );
     lagrange_space_v_ptrtype Yh_v = lagrange_space_v_type::New( mesh ); //lagrange vectorial space
@@ -393,18 +377,16 @@ TestHDivOneElt::testProjector(std::string ( *one_element_mesh_desc_fun )( double
 }
 
 void
-    TestHDivOneElt::shape_functions( std::string ( *one_element_mesh_desc_fun )( double ) )
+    TestHDivOneElt::shape_functions( std::string ( *one_element_mesh_desc_fun )() )
 {
-    // mesh_ptrtype oneelement_mesh = createGMSHMesh( _mesh=new mesh_type,
-    //                                _desc = one_element_mesh_desc_fun( 2 ) );
+    auto mesh_name = one_element_mesh_desc_fun()+".msh"; //create the mesh and load it
     mesh_ptrtype oneelement_mesh = loadMesh( _mesh=new mesh_type,
-                                  _filename = one_element_mesh_desc_fun( 2 ) );
+                                             _filename=mesh_name);
 
-    // then a fine mesh which we use to export the basis function to  visualize them
-    // mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-    //                                     _desc=one_element_mesh_desc_fun( 0.2 ) );
+    auto refine_level = std::floor(1 - math::log( 0.5 )); //Deduce refine level from meshSize (option)
     mesh_ptrtype mesh = loadMesh( _mesh=new mesh_type,
-                                  _filename = one_element_mesh_desc_fun( 0.2 ) );
+                                      _filename=mesh_name,
+                                      _refine=( int )refine_level);
 
     space_ptrtype Xh = space_type::New( oneelement_mesh );
     std::cout << "Family = " << Xh->basis()->familyName() << "\n"
@@ -423,7 +405,7 @@ void
     export_ptrtype exporter_shape( export_type::New( this->vm(),
                                    ( boost::format( "%1%-%2%-%3%" )
                                      % this->about().appName()
-                                     % one_element_mesh_desc_fun( 2 )
+                                     % one_element_mesh_desc_fun()
                                      % shape_name ).str() ) );
 
     exporter_shape->step( 0 )->setMesh( mesh );
@@ -437,7 +419,7 @@ void
         u_vec[i] = U_ref;
 
         std::ostringstream ostr;
-        ostr <<  one_element_mesh_desc_fun( 2 )<< "-" << Xh->basis()->familyName() << "-" << i;
+        ostr <<  one_element_mesh_desc_fun()<< "-" << Xh->basis()->familyName() << "-" << i;
         exporter_shape->step( 0 )->add( ostr.str(), U_ref );
     }
 
@@ -617,7 +599,7 @@ main( int argc, char* argv[] )
                            makeAbout(), makeOptions() );
     Feel::TestHDivOneElt app_hdiv;
     app_hdiv.shape_functions();
-    app_hdiv.exampleProblem1();
+    app_hdiv.testProjector();
 }
 
 #endif
