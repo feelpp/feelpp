@@ -44,6 +44,7 @@
 #include <feel/feelvf/operators.hpp>
 #include <feel/feelvf/operations.hpp>
 #include <feel/feelvf/on.hpp>
+#include <feel/feelvf/print.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feeldiscr/dh.hpp>
 #include <feel/feeldiscr/odh.hpp>
