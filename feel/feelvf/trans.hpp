@@ -91,14 +91,14 @@ public:
     /** @name Operator overloads
      */
     //@{
-    template<typename TheExpr>
+    template<typename... TheExpr>
     struct Lambda
     {
-        typedef Trans<typename expression_type::template Lambda<TheExpr>::type> type;
+        typedef Trans<typename expression_type::template Lambda<TheExpr...>::type> type;
     };
-    template<typename TheExpr>
-    typename Lambda<TheExpr>::type
-    operator()( TheExpr const& e  ) { return trans(M_expr(e)); }
+    template<typename... TheExpr>
+    typename Lambda<TheExpr...>::type
+    operator()( TheExpr... e  ) { return trans(M_expr(e...)); }
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
     struct tensor

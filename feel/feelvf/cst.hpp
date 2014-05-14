@@ -106,14 +106,14 @@ public:
         return M_constant;
     }
 
-    template<typename TheExpr>
+    template<typename... TheExpr>
     struct Lambda
     {
         typedef expression_type type;
     };
-    template<typename TheExpr>
-    typename Lambda<TheExpr>::type
-    operator()( TheExpr const& e  ) { return typename Lambda<TheExpr>::type(M_constant); }
+    template<typename... TheExpr>
+    typename Lambda<TheExpr...>::type
+    operator()( TheExpr... e  ) { return typename Lambda<TheExpr...>::type(M_constant); }
 
     template<typename Geo_t, typename Basis_i_t=mpl::void_, typename Basis_j_t = Basis_i_t>
     struct tensor

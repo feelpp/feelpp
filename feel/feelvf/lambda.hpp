@@ -68,21 +68,89 @@ public:
     typedef double value_type;
     typedef value_type evaluate_type;
 
-    template<typename TheExpr>
+    template<typename TheExpr1, typename TheExpr2 = boost::none_t, typename TheExpr3 = boost::none_t>
     struct Lambda
     {
-        typedef typename TheExpr::expression_type type;
+        typedef typename mpl::if_<mpl::equal_to<mpl::int_<kind>,mpl::int_<FIRST>>,
+                                  mpl::identity<TheExpr1>,
+                                  typename mpl::if_<mpl::equal_to<mpl::int_<kind>,mpl::int_<SECOND>>,
+                                                    mpl::identity<TheExpr2>,
+                                                    mpl::identity<TheExpr3>>::type>::type::type _type;
+        typedef typename _type::expression_type type;
     };
 
     template<typename ExprT>
     typename Lambda<ExprT>::type
-    operator()( ExprT const& e ) {
-        return e.expression();
-    }
+    operator()( ExprT const& e )
+        {
+            return e.expression();
+        }
+    template<typename ExprT1, typename ExprT2>
+    typename Lambda<ExprT1,ExprT2>::type
+    LambdaImpl( ExprT1 const& e1, ExprT2 const& e2, mpl::int_<FIRST>)
+        {
+            return e1.expression();
+        }
+    template<typename ExprT1, typename ExprT2>
+    typename Lambda<ExprT1,ExprT2>::type
+    LambdaImpl( ExprT1 const& e1, ExprT2 const& e2, mpl::int_<SECOND>)
+        {
+            return e2.expression();
+        }
+
+    template<typename ExprT1, typename ExprT2,typename ExprT3>
+    typename Lambda<ExprT1,ExprT2,ExprT3>::type
+    LambdaImpl( ExprT1 const& e1, ExprT2 const& e2, ExprT3 const& e3, mpl::int_<FIRST>)
+        {
+            return e1.expression();
+        }
+    template<typename ExprT1, typename ExprT2,typename ExprT3>
+    typename Lambda<ExprT1,ExprT2,ExprT3>::type
+    LambdaImpl( ExprT1 const& e1, ExprT2 const& e2, ExprT3 const& e3, mpl::int_<SECOND>)
+        {
+            return e2.expression();
+        }
+    template<typename ExprT1, typename ExprT2,typename ExprT3>
+    typename Lambda<ExprT1,ExprT2,ExprT3>::type
+    LambdaImpl( ExprT1 const& e1, ExprT2 const& e2, ExprT3 const& e3, mpl::int_<THIRD>)
+        {
+            return e3.expression();
+        }
+
+    template<typename ExprT1, typename ExprT2>
+    typename Lambda<ExprT1,ExprT2>::type
+    operator()( ExprT1 const& e1, ExprT2 const& e2)
+        {
+            return LambdaImpl( e1, e2, mpl::int_<kind>() );
+        }
+    template<typename ExprT1, typename ExprT2, typename ExprT3>
+    typename Lambda<ExprT1,ExprT2,ExprT3>::type
+    operator()( ExprT1 const& e1, ExprT2 const& e2, ExprT3 const& e3 )
+        {
+            return LambdaImpl(e1,e2,e3,mpl::int_<kind>());
+        }
 
     template<typename ExprT>
     typename Lambda<ExprT>::type
-    operator()( ExprT const& e ) const { return e.expression(); }
+    operator()( ExprT const& e ) const
+        {
+            return e.expression();
+        }
+
+    template<typename ExprT1, typename ExprT2>
+    typename Lambda<ExprT1,ExprT2>::type
+    operator()( ExprT1 const& e1, ExprT2 const& e2 ) const
+        {
+            return LambdaImpl(e1,e2,mpl::int_<kind>());
+        }
+
+    template<typename ExprT1, typename ExprT2, typename ExprT3>
+    typename Lambda<ExprT1,ExprT2,ExprT3>::type
+    operator()( ExprT1 const& e1, ExprT2 const& e2, ExprT3 const& e3 ) const
+        {
+            return LambdaImpl(e1,e2,e3,mpl::int_<kind>());
+        }
+
 
     template<typename Geo_t, typename Basis_i_t = fusion::map<fusion::pair<vf::detail::gmc<0>,boost::shared_ptr<vf::detail::gmc<0> > >,fusion::pair<vf::detail::gmc<1>,boost::shared_ptr<vf::detail::gmc<1> > > >, typename Basis_j_t = Basis_i_t>
     struct tensor

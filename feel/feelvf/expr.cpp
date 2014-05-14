@@ -35,6 +35,7 @@ namespace Feel
 namespace vf
 {
 Expr<LambdaExpr1> _e1;
-Expr<LambdaExpr2> _ee;
+Expr<LambdaExpr2> _e2;
+Expr<LambdaExpr3> _e3;
 }
 }

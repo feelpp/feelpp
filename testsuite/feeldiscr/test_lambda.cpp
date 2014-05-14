@@ -80,6 +80,15 @@ BOOST_AUTO_TEST_CASE( test_lambda_cst2 )
     BOOST_CHECK_CLOSE( a.expression().value(), b.expression().value(), 1e-13 );
     BOOST_TEST_MESSAGE( "test_lambda_cst2 done" );
 }
+BOOST_AUTO_TEST_CASE( test_lambda_cst3 )
+{
+    using namespace Feel;
+    auto I = _e1*_e2;
+    typedef decltype(I( cst(1.), cst(.5) )) t1;
+    typedef decltype(cst(1.)*cst(.5)) t2;
+    BOOST_MPL_ASSERT_MSG( (boost::is_same<t1,t2>::value), INVALID_TYPE,(decltype(I( cst(1.),cst(.5) )),decltype(cst(1.)*cst(.5))));
+}
+
 BOOST_AUTO_TEST_CASE( test_lambda_cos )
 {
     BOOST_TEST_MESSAGE( "test_lambda_cos" );
@@ -120,6 +129,30 @@ BOOST_AUTO_TEST_CASE( test_lambda_int_cst )
     BOOST_CHECK_CLOSE( I( idv(u) ).evaluate()( 0, 0 ), 1, 1e-10 );
 
     BOOST_TEST_MESSAGE( "test_lambda_int_cst done" );
+}
+BOOST_AUTO_TEST_CASE( test_lambda_int_cst2 )
+{
+    BOOST_TEST_MESSAGE( "test_lambda_int_cst2" );
+    using namespace Feel;
+    auto mesh = unitSquare();
+    BOOST_TEST_MESSAGE( "test_lambda_int_cst2 mesh generated" );
+    auto I = integrate( elements(mesh), _expr=_e1*_e2, _verbose=true );
+    auto I3 = integrate( elements(mesh), _expr=_e1*_e2*_e3, _verbose=true );
+    BOOST_TEST_MESSAGE( "test_lambda_int_cst2 integral defined" );
+
+    auto I1 = integrate( elements(mesh), cst(1.) );
+    auto Xh = Pch<1>( mesh );
+    auto u = project( _space=Xh, _range=elements(mesh), _expr=cst(.5) );
+    auto w = project( _space=Xh, _range=elements(mesh), _expr=cst(1) );
+    auto v = project( _space=Xh, _range=elements(mesh), _expr=cst(2.)*Px() );
+
+    BOOST_CHECK_CLOSE( I1.evaluate()( 0, 0 ), 1, 1e-10 );
+    BOOST_CHECK_CLOSE( I( cst(.5), cst(2.) ).evaluate()( 0, 0 ), 1, 1e-10 );
+    BOOST_CHECK_CLOSE( I( idv(u), gradv(v)(0,0)).evaluate()( 0, 0 ), 1, 1e-10 );
+    BOOST_CHECK_CLOSE( I3( cst(.5), cst(2.), cst(1.0) ).evaluate()( 0, 0 ), 1, 1e-10 );
+    BOOST_CHECK_CLOSE( I3( idv(u), gradv(v)(0,0), idv(w) ).evaluate()( 0, 0 ), 1, 1e-10 );
+
+    BOOST_TEST_MESSAGE( "test_lambda_int_cst2 done" );
 }
 
 BOOST_AUTO_TEST_CASE( test_lambda_int )

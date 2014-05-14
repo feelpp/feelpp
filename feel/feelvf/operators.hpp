@@ -255,14 +255,14 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
             {                                                           \
                 DVLOG(2) << "[" BOOST_PP_STRINGIZE(VF_OPERATOR_NAME( O )) "] copy constructor\n"; \
             }                                                           \
-            template<typename TheExpr>                                  \
+            template<typename... TheExpr>                               \
             struct Lambda                                               \
             {                                                           \
                 typedef this_type type;                                 \
             };                                                          \
-            template<typename TheExpr>                                  \
-                typename Lambda<TheExpr>::type                          \
-                operator()( TheExpr const& e  ) { return *this; }       \
+            template<typename... TheExpr>                               \
+                typename Lambda<TheExpr...>::type                       \
+                operator()( TheExpr... e) { return *this; }             \
                                                                         \
             element_type const& e() const { return M_v; }              \
             bool useInterpWithConfLoc() const { return M_useInterpWithConfLoc; } \

@@ -64,14 +64,14 @@ public:
     One() {}
     One( One const& /*__vff*/ ) {}
 
-    template<typename TheExpr>
+    template<typename... TheExpr>
     struct Lambda
     {
         typedef this_type type;
     };
-    template<typename TheExpr>
-    typename Lambda<TheExpr>::type
-    operator()( TheExpr const& e  ) { return this_type(); }
+    template<typename... TheExpr>
+    typename Lambda<TheExpr...>::type
+    operator()( TheExpr... e  ) { return this_type(); }
 
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
