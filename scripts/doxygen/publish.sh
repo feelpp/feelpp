@@ -59,11 +59,11 @@ function builddox
   # git commit -m "update Feel++ online documentation of branch $branch"
 }
 
-base_dir=${1:-$HOME}
+base_dir=$1
 #Where the sources are stored
-feelpp_source=$base_dir/${2:-feelpp.git}
+feelpp_source=$2
 #Where the gh-pages copy is
-gh_pages=$base_dir/${3:-gh-pages}
+gh_pages=$3
 
 #Create and/or update the ${gh-pages}/feelpp clone's repo
 if [ ! -d $gh_pages ]; 
@@ -72,7 +72,7 @@ then
   #cd $gh_pages
   #git clone -b gh-pages --single-branch https://github.com/feelpp/feelpp.git $gh_pages
 fi
-  cd $gh_pages
+cd $gh_pages
 
 #Create and/or update the feelpp's copy
 if [ ! -d ${feelpp_source} ]; 
@@ -93,11 +93,19 @@ then
   cd 
 fi
 
-#Create in ${gh_pages}/feelpp the associated doc of the ${branch}
-builddox develop $feelpp_source $gh_pages # cemosis bubble
-builddox release/version-0.92 $feelpp_source $gh_pages
-builddox release/v0.95.0 $feelpp_source $gh_pages
-builddox release/v0.96.0 $feelpp_source $gh_pages
+#Create in ${gh_pages}/feelpp the associated doc for ${branch}
+cpt=0
+if [ "$#" -ge 3 ]
+then
+  for i in "$@"
+  do
+    if [ $cpt -ge 3 ]
+    then
+      builddox $i $feelpp_source $gh_pages # cemosis bubble
+    fi
+      cpt=$(($cpt+1))
+  done
+fi
 
 #cd $feelpp_source
 #git checkout develop
