@@ -222,15 +222,9 @@ public:
         return Dmu->min();
     }
 
-    affine_decomposition_light_type computeAffineDecompositionLight(){ return boost::make_tuple( M_Aq, M_Fq ); }
-
     virtual operatorcomposite_ptrtype operatorCompositeLightA()
     {
         return M_compositeLightA;
-    }
-    virtual operatorcomposite_ptrtype operatorCompositeLightM()
-    {
-        return M_compositeLightM;
     }
     virtual std::vector< functionalcomposite_ptrtype > functionalCompositeLightF()
     {
@@ -259,11 +253,9 @@ private:
     std::vector<int> north_subdomain_index;
 
     std::vector<operator_ptrtype> M_Aq_free;
-    std::vector<operator_ptrtype> M_Mq_free;
     std::vector<std::vector<functional_ptrtype> > M_Fq_free;
 
     operatorcomposite_ptrtype M_compositeLightA;
-    operatorcomposite_ptrtype M_compositeLightM;
     std::vector< functionalcomposite_ptrtype > M_compositeLightF;
 
     element_type u,v;
@@ -575,6 +567,7 @@ ThermalBlockFree::initModel()
     form2( Xh, Xh, M ) += integrate( markedelements( mmesh, "domain-6" ), gradt( u )*trans( grad( v ) ) * mu_min_coeff );
     form2( Xh, Xh, M ) += integrate( markedelements( mmesh, "domain-7" ), gradt( u )*trans( grad( v ) ) * mu_min_coeff );
     form2( Xh, Xh, M ) += integrate( markedelements( mmesh, "domain-8" ), gradt( u )*trans( grad( v ) ) * mu_min_coeff );
+    form2( Xh, Xh, M ) += integrate( markedelements( mmesh, "domain-9" ), gradt( u )*trans( grad( v ) ) * mu_min_coeff );
 
     form2( Xh, Xh, M ) +=  integrate( markedfaces( mmesh, "north_domain-7" ),
                                       -gradt( u )*vf::N()*id( v ) * mu_min_coeff
@@ -605,7 +598,7 @@ ThermalBlockFree::initModel()
     M_compositeLightA->addList( M_Aq_free );
     M_compositeLightF.resize( 1 );
     int output=0;
-    M_compositeLightF[output]=functionalLinearComposite( _space=this->Xh );
+    M_compositeLightF[output]=functionalLinearComposite( _space=Xh );
     M_compositeLightF[output]->addList( M_Fq_free[output] );
 
 }//initModel()
