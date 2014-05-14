@@ -327,10 +327,10 @@ public:
         return Expr<ComponentsExpr<Expr<ExprT> > >( ex );
     }
 
-    template<typename TheExpr1, typename TheExpr2 = boost::none_t>
+    template<typename... TheExprs>
     struct Lambda
     {
-        typedef typename ExprT::template Lambda<TheExpr1,TheExpr2>::type expr_type;
+        typedef typename ExprT::template Lambda<TheExprs...>::type expr_type;
         typedef Expr<expr_type> type;
         //typedef expr_type type;
     };
@@ -338,19 +338,19 @@ public:
 
 
 
-    template<typename TheExpr>
-    typename Lambda<TheExpr>::type
-    operator()( TheExpr const& e  )
+    template<typename... TheExpr>
+    typename Lambda<TheExpr...>::type
+    operator()( TheExpr...  e  )
         {
-            //typename Lambda<TheExpr>::expr_type e1( M_expr(e) );
-            //typename Lambda<TheExpr>::type r( Expr(e1 ) );
+            //typename Lambda<TheExpr...>::expr_type e1( M_expr(e...) );
+            //typename Lambda<TheExpr...>::type r( Expr(e1 ) );
             //return r;
-            return expr( M_expr( e ) );
+            return expr( M_expr( e... ) );
         }
 
-    template<typename TheExpr>
-    typename Lambda<TheExpr>::type
-    operator()( TheExpr const& e  ) const { return expr(M_expr(e)); }
+    template<typename... TheExpr>
+    typename Lambda<TheExpr...>::type
+    operator()( TheExpr... e  ) const { return expr(M_expr(e...)); }
 
     void setParameterValues( std::pair<std::string,value_type> const& mp )
         {
