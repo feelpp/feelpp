@@ -61,16 +61,12 @@ EigenProblem<Dim, Order>::run()
     auto mesh = loadMesh(_mesh = new mesh_type );
 
     auto Xh = space_type::New( mesh );
-    auto U = Xh->element();
-    auto u = U.template element<0>();
-    auto p = U.template element<1>();
-    auto V = Xh->element();
-    auto v = U.template element<0>();
-    auto q = U.template element<1>();
+    auto u = Xh->element();
+    auto v = Xh->element();
 
     auto l = form1( _test=Xh );
     auto a = form2( _test=Xh, _trial=Xh);
-    a = integrate( elements( mesh ), dxt(u)*dx(v)+dyt(u)*dy(v));
+    a = integrate( elements( mesh ), dxt(u)*dx(v)+dyt(u)*dy(v)+dzt(u)*dz(v));
     a+= on( boundaryfaces(mesh), _element=u, _rhs=l, _expr=cst(0.));
 
     auto b = form2( _test=Xh, _trial=Xh);
@@ -83,7 +79,7 @@ EigenProblem<Dim, Order>::run()
         int i = 0;
         for( auto const& mode : modes )
         {
-            //std::cout << " -- eigenvalue " << i << " = (" << mode.second.get<0>() << "," <<  mode.second.get<1>() << ")\n";
+            std::cout << " -- eigenvalue " << i << " = " << mode.first << "\n";
             double l2div = normL2(_range=elements(mesh),_expr=dzv(mode.second) );
             if ( Environment::worldComm().isMasterRank() )
             {
@@ -117,7 +113,7 @@ main( int argc, char** argv )
 
     Environment env( _argc=argc, _argv=argv,
                      _desc=feel_options(),
-                     _about=about(_name="ge_laplacianv",
+                     _about=about(_name="ge_laplacian",
                                   _author="Christophe Prud'homme",
                                   _email="christophe.prudhomme@feelpp.org") );
 
