@@ -31,3 +31,4 @@
 #crb_add_executable(thermalblockcrb  thermalblock.cpp thermalblockcrb.cpp  thermalblockgeo.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG thermalblockcrb.cfg )
 
 crb_add_model(thermalblock ThermalBlock HDRS thermalblock.hpp  LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG thermalblock.cfg XML thermalblock.xml SCRIPTS thermalblock.m)
+crb_add_model(thermalblockfree ThermalBlockFree HDRS thermalblock-operatorsfree.hpp  LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG thermalblockfree.cfg XML thermalblockfree.xml SCRIPTS thermalblockfree.m )
