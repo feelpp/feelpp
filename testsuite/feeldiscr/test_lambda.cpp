@@ -143,14 +143,14 @@ BOOST_AUTO_TEST_CASE( test_lambda_int_cst2 )
     auto I1 = integrate( elements(mesh), cst(1.) );
     auto Xh = Pch<1>( mesh );
     auto u = project( _space=Xh, _range=elements(mesh), _expr=cst(.5) );
-    auto w = project( _space=Xh, _range=elements(mesh), _expr=cst(1) );
-    auto v = project( _space=Xh, _range=elements(mesh), _expr=cst(2.)*Px() );
+    auto w = project( _space=Xh, _range=elements(mesh), _expr=Px()+1 );
+    auto v = project( _space=Xh, _range=elements(mesh), _expr=Px()+Py() );
 
     BOOST_CHECK_CLOSE( I1.evaluate()( 0, 0 ), 1, 1e-10 );
     BOOST_CHECK_CLOSE( I( cst(.5), cst(2.) ).evaluate()( 0, 0 ), 1, 1e-10 );
-    BOOST_CHECK_CLOSE( I( idv(u), gradv(v)(0,0)).evaluate()( 0, 0 ), 1, 1e-10 );
+    BOOST_CHECK_CLOSE( I( idv(u), gradv(v)(0,0)*2.).evaluate()( 0, 0 ), 1, 1e-10 );
     BOOST_CHECK_CLOSE( I3( cst(.5), cst(2.), cst(1.0) ).evaluate()( 0, 0 ), 1, 1e-10 );
-    BOOST_CHECK_CLOSE( I3( idv(u), gradv(v)(0,0), idv(w) ).evaluate()( 0, 0 ), 1, 1e-10 );
+    BOOST_CHECK_CLOSE( I3( cst(2.)*idv(u), gradv(v)*trans(gradv(v)), idv(w)/(cst(2.0)*(Px()+1)) ).evaluate()( 0, 0 ), 1, 1e-10 );
 
     BOOST_TEST_MESSAGE( "test_lambda_int_cst2 done" );
 }
