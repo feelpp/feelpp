@@ -25,7 +25,6 @@
 #ifndef FEELPP_EXPORTERENSIGHTGOLD_CPP
 #define FEELPP_EXPORTERENSIGHTGOLD_CPP 1
 
-//#define USE_MPIIO
 #include <feel/feelcore/feel.hpp>
 
 #include <feel/feeldiscr/mesh.hpp>
@@ -1470,9 +1469,10 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
         strcpy(buffer,"END TIME STEP");
         __out.write((char*)&buffer,sizeof(buffer));
         VLOG(1) << "out : " << buffer;
-
+#if 0
         // rewrite FILE_INDEX in file
         index.write( __out );
+#endif
     }
 #endif // 0
 #if defined(USE_MPIIO)
