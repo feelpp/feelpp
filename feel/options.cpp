@@ -92,9 +92,9 @@ functions_options( std::string const& prefix )
 {
     po::options_description _options( "Functions " + prefix + " options" );
     _options.add_options()
-        //( prefixvm( prefix,"x" ).c_str(), Feel::po::value<double>()->default_value( 0 ), "x coordinate value " )
-        //( prefixvm( prefix,"y" ).c_str(), Feel::po::value<double>()->default_value( 0 ), "y coordinate value " )
-        //( prefixvm( prefix,"z" ).c_str(), Feel::po::value<double>()->default_value( 0 ), "z coordinate value " )
+        ( prefixvm( prefix,"x" ).c_str(), Feel::po::value<double>()->default_value( 0 ), "x coordinate value " )
+        ( prefixvm( prefix,"y" ).c_str(), Feel::po::value<double>()->default_value( 0 ), "y coordinate value " )
+        ( prefixvm( prefix,"z" ).c_str(), Feel::po::value<double>()->default_value( 0 ), "z coordinate value " )
         ( prefixvm( prefix,"functions.f" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "f" )
         ( prefixvm( prefix,"functions.p" ).c_str(), Feel::po::value<std::string>()->default_value( "0" ), "p" )
         ( prefixvm( prefix,"functions.q" ).c_str(), Feel::po::value<std::string>()->default_value( "0" ), "q" )

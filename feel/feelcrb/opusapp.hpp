@@ -1247,8 +1247,9 @@ public:
                                         double square_dual_solution_error=0;
                                         double ref_primal=0;
                                         double ref_dual=0;
-
-                                        if( model->hasEim() )
+                                        int qlinear=model->QLinearDecompositionA();
+                                        bool symmetric = option(_name="crb.use-symmetric-matrix").template as<bool>();
+                                        if( model->hasEim() && (qlinear > 0) )
                                         {
 
                                             if( model->isSteady() )
@@ -1260,7 +1261,7 @@ public:
                                                 //Moreover when we deal with transient problems we need to build a( u_error^k , u_error^k ; muref )
                                                 //where u_error^k means u_error at time index k
                                                 //so it is not possible to do that only using model->scalarProduct()
-                                                for(int q=0; q<model->QLinearDecompositionA();q++)
+                                                for(int q=0; q<qlinear;q++)
                                                 {
                                                     for(int m=0; m<model->mMaxLinearDecompositionA(q); m++)
                                                     {
@@ -1349,9 +1350,10 @@ public:
 
                                             }//transient
 
-                                        }//use EIM
+                                        }//use EIM && qlinear > 0
                                         else
                                         {
+                                            CHECK( symmetric ) << "Your model doesn' use a symmetric bilinear form a() so you have to implement computeLinearDecompositionA() function\n";
                                             if( model->isSteady() )
                                             {
                                                 //let ufem-ucrb = e

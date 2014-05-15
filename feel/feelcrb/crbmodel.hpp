@@ -367,7 +367,38 @@ public:
         u = Xh->element();
         v = Xh->element();
 
-        M_inner_product_matrix = M_model->energyMatrix();
+        this->computeAffineDecomposition();
+        this->countAffineDecompositionTerms();
+        bool symmetric = option(_name="crb.use-symmetric-matrix").template as<bool>();
+        M_inner_product_matrix=this->newMatrix();
+        if( this->hasEim() || (!symmetric) )
+        {
+            //in this case, we use linear part of bilinear form a
+            //as the inner product
+            auto muref = this->refParameter();
+            auto betaqm = computeBetaLinearDecompositionA( muref );
+            M_inner_product_matrix->zero();
+            for ( size_type q = 0; q < M_QLinearDecompositionA; ++q )
+            {
+                for(size_type m = 0; m < mMaxLinearDecompositionA(q); ++m )
+                {
+                    M_inner_product_matrix->addMatrix( betaqm[q][m], M_linearAqm[q][m] );
+                }
+            }
+            //check that the matrix is filled, else we take energy matrix
+            double norm=M_inner_product_matrix->l1Norm();
+            if( norm == 0 && symmetric )
+            {
+                M_inner_product_matrix = M_model->energyMatrix();
+            }
+        }
+        else
+        {
+            //in this case, we use bilinear form a
+            //as the inner product
+            M_inner_product_matrix = M_model->energyMatrix();
+            CHECK( symmetric )<< "You use energy matrix as inner product but you specified that bilinear form a() is not symmetric !\n";
+        }
         M_preconditioner_l2->setMatrix( M_inner_product_matrix );
 
         M_bdf = M_model->bdfModel();
@@ -978,10 +1009,11 @@ public:
     operatorcomposite_ptrtype operatorCompositeLightM( mpl::bool_<false> ) const
     {
         bool constructed_by_model = M_model->constructOperatorCompositeM();
+        bool light_version=true;
         if( constructed_by_model )
             return M_model->operatorCompositeLightM();
         else
-            return preAssembleMassMatrix();
+            return preAssembleMassMatrix( light_version );
     }
 
 
@@ -1001,7 +1033,7 @@ public:
         {
             if ( this->hasEimError() )
             {
-                
+
                 M_has_eim=true;
                 //when using EIM we need to be careful
                 //if we want to estimate the error then there
@@ -2449,9 +2481,9 @@ private:
     void assembleMassMatrix( mpl::bool_<true> );
     void assembleMassMatrix( mpl::bool_<false> );
 
-    operatorcomposite_ptrtype preAssembleMassMatrix( ) const ;
-    operatorcomposite_ptrtype preAssembleMassMatrix( mpl::bool_<true> ) const ;
-    operatorcomposite_ptrtype preAssembleMassMatrix( mpl::bool_<false> ) const ;
+    operatorcomposite_ptrtype preAssembleMassMatrix( bool light_version=false ) const ;
+    operatorcomposite_ptrtype preAssembleMassMatrix( mpl::bool_<true> , bool light_version ) const ;
+    operatorcomposite_ptrtype preAssembleMassMatrix( mpl::bool_<false>, bool light_version ) const ;
 
     void assembleInitialGuessV( initial_guess_type & initial_guess );
     void assembleInitialGuessV( initial_guess_type & initial_guess, mpl::bool_<true> );
@@ -2678,15 +2710,15 @@ struct AssembleInitialGuessVInCompositeCase
 
 template<typename TruthModelType>
 typename CRBModel<TruthModelType>::operatorcomposite_ptrtype
-CRBModel<TruthModelType>::preAssembleMassMatrix() const
+CRBModel<TruthModelType>::preAssembleMassMatrix( bool light_version ) const
 {
     static const bool is_composite = functionspace_type::is_composite;
-    return preAssembleMassMatrix( mpl::bool_< is_composite >() );
+    return preAssembleMassMatrix( mpl::bool_< is_composite >() , light_version );
 }
 
 template<typename TruthModelType>
 typename CRBModel<TruthModelType>::operatorcomposite_ptrtype
-CRBModel<TruthModelType>::preAssembleMassMatrix( mpl::bool_<false> ) const
+CRBModel<TruthModelType>::preAssembleMassMatrix( mpl::bool_<false> , bool light_version ) const
 {
 
     auto Xh = M_model->functionSpace();
@@ -2697,13 +2729,25 @@ CRBModel<TruthModelType>::preAssembleMassMatrix( mpl::bool_<false> ) const
     auto opfree = opLinearFree( _domainSpace=Xh , _imageSpace=Xh , _expr=expr );
     opfree->setName("mass operator (automatically created)");
     //in this case, the affine decompositon has only one element
-    op_mass->addElement( boost::make_tuple(0,0) , opfree );
+    if( light_version )
+    {
+        //note that only time independent problems need to
+        //inform if we use light version or not of the affine decomposition
+        //i.e. if we use EIM expansion or not
+        //because transient models provide already a decomposition of the mass matrix
+        //so it is not automatically created
+        op_mass->addElement( 0 , opfree );
+    }
+    else
+    {
+        op_mass->addElement( boost::make_tuple(0,0) , opfree );
+    }
     return op_mass;
 }
 
 template<typename TruthModelType>
 typename CRBModel<TruthModelType>::operatorcomposite_ptrtype
-CRBModel<TruthModelType>::preAssembleMassMatrix( mpl::bool_<true> ) const
+CRBModel<TruthModelType>::preAssembleMassMatrix( mpl::bool_<true> , bool light_version ) const
 {
     auto Xh = M_model->functionSpace();
 

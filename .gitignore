@@ -53,3 +53,13 @@
 /contrib/eigen-eigen*
 \#*
 \.\#*
+/applications/crb/GeoHeatDiffusion/geoheatdiffusionapp.cpp
+/applications/crb/heatshield/heatshieldminimalversion1.cfg
+/applications/crb/heatshield/heatshieldminimalversion1.xml.in
+/applications/crb/heatshield/heatshieldminimalversion1app.cpp
+/applications/crb/heatshield/heatshieldminimalversion2.cfg
+/applications/crb/heatshield/heatshieldminimalversion2.xml.in
+/applications/crb/heatshield/heatshieldminimalversion2app.cpp
+/applications/crb/heatshield/heatshieldminimalversion3.cfg
+/applications/crb/heatshield/heatshieldminimalversion3.xml.in
+/applications/crb/heatshield/heatshieldminimalversion3app.cpp
