@@ -136,11 +136,11 @@ public :
  * @see
  */
 template<int Order>
-class BenchmarkGrepl : public ModelCrbBase< ParameterDefinition, FunctionSpaceDefinition<Order> , EimDefinition<ParameterDefinition, FunctionSpaceDefinition<Order> > , TimeIndependent>
+class BenchmarkGrepl : public ModelCrbBase< ParameterDefinition, FunctionSpaceDefinition<Order> ,TimeIndependent, EimDefinition<ParameterDefinition, FunctionSpaceDefinition<Order> > >
 {
 public:
 
-    typedef ModelCrbBase<ParameterDefinition, FunctionSpaceDefinition<Order>, EimDefinition<ParameterDefinition,FunctionSpaceDefinition<Order> > , TimeIndependent > super_type;
+    typedef ModelCrbBase<ParameterDefinition, FunctionSpaceDefinition<Order>, TimeIndependent, EimDefinition<ParameterDefinition,FunctionSpaceDefinition<Order> > > super_type;
     typedef typename super_type::funs_type funs_type;
     typedef typename super_type::funsd_type funsd_type;
 
@@ -644,8 +644,9 @@ void BenchmarkGrepl<Order>::assemble()
     form1( Xh, this->M_Fqm[1][0][0] ) = integrate( elements( mesh ), id( v ) );
 
 
-
-    //for scalarProduct
+    //use computeLinearDecompositionA to provide innter product matrix
+    //because this model use EIM
+#if 0
     auto mu = refParameter();
 
     M = backend()->newMatrix( _test=Xh, _trial=Xh );
@@ -656,7 +657,6 @@ void BenchmarkGrepl<Order>::assemble()
                    -grad( v )*vf::N()*idt( u ) );
     this->addEnergyMatrix( M );
 
-#if 0
     vectorN_type beta_g = eim_g->beta( mu );
     for(int m=0; m<M_g; m++)
     {
@@ -681,16 +681,15 @@ BenchmarkGrepl<Order>::computeLinearDecompositionA()
 
     auto exprg = 1./sqrt( (Px()-muref(0))*(Px()-muref(0)) + (Py()-muref(1))* (Py()-muref(1)) );
     auto g = vf::project( _space=Xh, _expr=exprg );
-    vector_sparse_matrix A;
-    A.resize(1);
-    A[0].resize(1);
-    A[0][0] = backend()->newMatrix( Xh, Xh );
-    form2( Xh, Xh, A[0][0] ) = integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ) + idt( u )*id( v )*idv(g) ) +
+    this->M_linearAqm.resize(1);
+    this->M_linearAqm[0].resize(1);
+    this->M_linearAqm[0][0] = backend()->newMatrix( Xh, Xh );
+    form2( Xh, Xh, this->M_linearAqm[0][0] ) = integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ) + idt( u )*id( v )*idv(g) ) +
         integrate( markedfaces( mesh, "boundaries" ), gamma_dir*idt( u )*id( v )/h()
                    -gradt( u )*vf::N()*id( v )
                    -grad( v )*vf::N()*idt( u )
                    );
-    return A;
+    return this->M_linearAqm;
 
 }
 
