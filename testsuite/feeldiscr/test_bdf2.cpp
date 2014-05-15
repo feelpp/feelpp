@@ -38,6 +38,8 @@
 #include <feel/feelvf/operations.hpp>
 #include <feel/feelvf/ginac.hpp>
 #include <feel/feelvf/on.hpp>
+#include <feel/feelvf/trans.hpp>
+
 
 /** use Feel namespace */
 using namespace Feel;
@@ -182,8 +184,3 @@ int main(int argc, char** argv )
     test.run();
 }
 #endif
-
-
-
-
-
