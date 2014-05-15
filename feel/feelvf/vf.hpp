@@ -49,6 +49,13 @@
 
 #include <feel/feelvf/detail/gmc.hpp>
 #include <feel/feelvf/expr.hpp>
+#include <feel/feelvf/cst.hpp>
+#include <feel/feelvf/trans.hpp>
+#include <feel/feelvf/unary.hpp>
+#include <feel/feelvf/one.hpp>
+#include <feel/feelvf/pow.hpp>
+#include <feel/feelvf/minmax.hpp>
+
 
 #include <feel/feelvf/operations.hpp>
 

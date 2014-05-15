@@ -136,11 +136,11 @@ public :
  * @see
  */
 template<int Order>
-class BenchmarkGrepl : public ModelCrbBase< ParameterDefinition, FunctionSpaceDefinition<Order> , EimDefinition<ParameterDefinition, FunctionSpaceDefinition<Order> > , TimeIndependent>
+class BenchmarkGrepl : public ModelCrbBase< ParameterDefinition, FunctionSpaceDefinition<Order> ,TimeIndependent, EimDefinition<ParameterDefinition, FunctionSpaceDefinition<Order> > >
 {
 public:
 
-    typedef ModelCrbBase<ParameterDefinition, FunctionSpaceDefinition<Order>, EimDefinition<ParameterDefinition,FunctionSpaceDefinition<Order> > , TimeIndependent > super_type;
+    typedef ModelCrbBase<ParameterDefinition, FunctionSpaceDefinition<Order>, TimeIndependent, EimDefinition<ParameterDefinition,FunctionSpaceDefinition<Order> > > super_type;
     typedef typename super_type::funs_type funs_type;
     typedef typename super_type::funsd_type funsd_type;
 
