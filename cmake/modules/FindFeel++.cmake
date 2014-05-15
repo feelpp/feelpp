@@ -140,7 +140,7 @@ IF ( MPI_FOUND )
   OPTION(FEELPP_USE_MPIIO "Enable support for MPI-IO (default auto detect)" ON)
   IF (FEELPP_USE_MPIIO)
     TRY_COMPILE(MPIIO_SUCCESS ${CMAKE_CURRENT_BINARY_DIR}/tryCompileMPIIO
-      SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/codes/try-mpiio.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/cmake/codes/try-mpiio.cpp
       LINK_LIBRARIES ${FEELPP_LIBRARIES} )
     IF (MPIIO_SUCCESS)
       MESSAGE(STATUS "MPIIO detected and enabled.")
