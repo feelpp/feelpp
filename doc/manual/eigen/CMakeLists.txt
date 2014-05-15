@@ -23,6 +23,7 @@
 #
 set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 feelpp_add_application( doc_ge_sm SRCS ge_sm.cpp CFG ge_sm.cfg  )
+feelpp_add_application( doc_ge_laplacian SRCS ge_laplacian.cpp CFG ge_laplacian.cfg  )
 feelpp_add_application( doc_ge_laplacianv SRCS ge_laplacianv.cpp CFG ge_laplacianv.cfg  DEFS USE_LM)
 feelpp_add_application( doc_ge_curlcurl SRCS ge_curlcurl.cpp CFG ge_curlcurl.cfg)
 feelpp_add_application( doc_ge_stokes SRCS ge_stokes.cpp CFG ge_stokes.cfg)

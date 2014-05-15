@@ -3,6 +3,7 @@
 # e.g. $HOME/Devel/FEEL/feelpp.git
 # $2 provide the ctest mode: e.g. Nightly or Experimental
 
+export PATH=/usr/local/bin:$PATH
 COMMON="/usr/local/bin/ctest -VV -S $1/cmake/dashboard/testsuite.cmake,FEELPP_CTEST_CONFIG=$1/cmake/dashboard/feelpp.site.`hostname -s`.cmake,FEELPP_MODE=$2"
 
 if [ -x /usr/bin/clang++ ]; then
