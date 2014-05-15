@@ -263,18 +263,20 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                                 _desc=domain( _name="mesh", _addmidpoint=false, _usenames=false, _shape="hypercube",
                                               _dim=2, _h=option(_name="gmsh.hsize").template as<double>(),
-                                              _convex="Hypercube",_structured=1,
+                                              _convex="Hypercube",
                                               _xmin=0., _xmax=1., _ymin=0., _ymax=1.
-                                              )
+                                              ),
+                                _structured=2
                                 );
 
     auto mesh2 = createGMSHMesh( _mesh=new Mesh<Hypercube<2,1,2> >,
                                  _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                                  _desc=domain( _name="mesh2", _addmidpoint=false, _usenames=false, _shape="hypercube",
                                                _dim=2, _h=option(_name="gmsh.hsize2").template as<double>(),
-                                               _convex="Hypercube",_structured=1,
+                                               _convex="Hypercube",
                                                _xmin=0., _xmax=1., _ymin=1., _ymax=2.
-                                               )
+                                               ),
+                                 _structured=2
                                  );
 #endif
 
@@ -383,10 +385,10 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
 }
 
 
-BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
+BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh3, T, order_types )
 {
     using namespace Feel;
-    Feel::Environment::changeRepository( boost::format( "/testsuite/feeldiscr/%1%/test_mortar_integrate_submesh2/h_%2%/P%3%/" )
+    Feel::Environment::changeRepository( boost::format( "/testsuite/feeldiscr/%1%/test_mortar_integrate_submesh3/h_%2%/P%3%/" )
                                          % Feel::Environment::about().appName()
                                          % option(_name="gmsh.hsize2").template as<double>()
                                          % T::value );
@@ -402,7 +404,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
                                               _dim=2, _h=option(_name="gmsh.hsize2").template as<double>(),
                                               _convex="Hypercube",
                                               _xmin=0., _xmax=1., _ymin=0., _ymax=1.
-                                              )
+                                              ),
+                                _structured=2
                                 );
 
     auto mesh2 = createGMSHMesh( _mesh=new Mesh<Hypercube<2,1,2> >,
@@ -411,7 +414,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
                                                _dim=2, _h=option(_name="gmsh.hsize2").template as<double>(),
                                                _convex="Hypercube",
                                                _xmin=0., _xmax=1., _ymin=1., _ymax=2.
-                                               )
+                                               ),
+                                 _structured=2
                                  );
 
 
@@ -456,6 +460,77 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
     c_m = integrate(_range=internalelements(testmesh),_expr=idt(v)*id(l));
     c_m += integrate(_range=boundaryelements(testmesh),_expr=idt(v));
     c_m.matrixPtr()->printMatlab( "C_m.m" );
+
+}
+
+
+BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_nonconforming, T, order_types )
+{
+    using namespace Feel;
+    Feel::Environment::changeRepository( boost::format( "/testsuite/feeldiscr/%1%/test_mortar_integrate_nonconforming/h_%2%/P%3%/" )
+                                         % Feel::Environment::about().appName()
+                                         % option(_name="gmsh.hsize2").template as<double>()
+                                         % T::value );
+
+
+    BOOST_TEST_MESSAGE( "test_mortar_integrate_submesh for order : " << T::value );
+
+    auto mesh = createGMSHMesh( _mesh=new Mesh<Hypercube<2,1,2> >,
+                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
+                                _desc=domain( _name="mesh", _addmidpoint=false, _usenames=false, _shape="hypercube",
+                                              _dim=2, _h=0.5/*option(_name="gmsh.hsize2").template as<double>()*/,
+                                              _convex="Hypercube",
+                                              _xmin=0., _xmax=1., _ymin=0., _ymax=1.
+                                              ),
+                                _structured=2
+                                );
+
+    auto mesh2 = createGMSHMesh( _mesh=new Mesh<Hypercube<2,1,2> >,
+                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
+                                 _desc=domain( _name="mesh2", _addmidpoint=false, _usenames=false, _shape="hypercube",
+                                               _dim=2, _h=0.25/*option(_name="gmsh.hsize2").template as<double>()*/,
+                                               _convex="Hypercube",
+                                               _xmin=0., _xmax=1., _ymin=1., _ymax=2.
+                                               ),
+                                 _structured=2
+                                 );
+
+    auto trialmesh = createSubmesh(mesh, markedfaces(mesh,4),Environment::worldComm() );
+    auto testmesh = createSubmesh(mesh2, markedfaces(mesh2,2),Environment::worldComm() );
+
+    auto Xh = Pch<T::value>(testmesh);
+    auto Vh = Pch<T::value>(trialmesh);
+    auto Mh = Moch<T::value>(testmesh);
+
+    BOOST_CHECK_MESSAGE(Mh->is_mortar == true, "Space should be mortar" ) ;
+    BOOST_CHECK_MESSAGE(Mh->isMortar() == true, "Space should be mortar" ) ;
+
+    BOOST_TEST_MESSAGE( "n elements : " << nelements( elements(testmesh) ) );
+    BOOST_TEST_MESSAGE( "n boundary elements : " << nelements( boundaryelements(testmesh) ) );
+    BOOST_TEST_MESSAGE( "n internal elements : " << nelements( internalelements(testmesh) ) );
+
+    for( auto const& dof : Mh->dof()->localDof() )
+    {
+        LOG(INFO) << "local dof element " << dof.first.elementId() << " id:" << dof.first.localDof()
+                  << " global dof : " << dof.second.index();
+    }
+
+    BOOST_TEST_MESSAGE( "build Xh element" );
+    auto u = Xh->element();
+    auto v = Vh->element();
+    BOOST_TEST_MESSAGE( "build Mh element" );
+    auto l = Mh->element();
+    BOOST_TEST_MESSAGE( "build bilinear form c_s(Mh,Xh)" );
+    auto c_s = form2(_test=Mh, _trial=Xh);
+    BOOST_TEST_MESSAGE( "integrate" );
+    c_s = integrate(_range=elements(testmesh),_expr=idt(u)*print(id(l),"test func internal"));
+    BOOST_TEST_MESSAGE( "printMatlab" );
+    c_s.matrixPtr()->printMatlab( "Cs.m" );
+    BOOST_TEST_MESSAGE( "build bilinear form c_m(Mh,Vh)" );
+    auto c_m = form2(_test=Mh, _trial=Vh);
+    BOOST_TEST_MESSAGE( "integrate" );
+    c_m = integrate(_range=elements(testmesh),_expr=idt(v)*id(l));
+    c_m.matrixPtr()->printMatlab( "Cm.m" );
 
 }
 
