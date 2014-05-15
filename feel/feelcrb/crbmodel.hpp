@@ -367,12 +367,19 @@ public:
         u = Xh->element();
         v = Xh->element();
 
-        this->computeAffineDecomposition();
-        this->countAffineDecompositionTerms();
         bool symmetric = option(_name="crb.use-symmetric-matrix").template as<bool>();
+        bool stock = option(_name="crb.stock-matrices").template as<bool>();
+
+        if( stock )
+            this->computeAffineDecomposition();
+
+        this->countAffineDecompositionTerms();
+
         M_inner_product_matrix=this->newMatrix();
         if( this->hasEim() || (!symmetric) )
         {
+            CHECK( stock )<<"There is some work to do before using operators free when using EIM, for now we compute (and stock matrices) affine decomposition to assemble the inner product \n";
+
             //in this case, we use linear part of bilinear form a
             //as the inner product
             auto muref = this->refParameter();
@@ -1009,10 +1016,11 @@ public:
     operatorcomposite_ptrtype operatorCompositeLightM( mpl::bool_<false> ) const
     {
         bool constructed_by_model = M_model->constructOperatorCompositeM();
+        bool light_version=true;
         if( constructed_by_model )
             return M_model->operatorCompositeLightM();
         else
-            return preAssembleMassMatrix();
+            return preAssembleMassMatrix( light_version );
     }
 
 
@@ -2480,9 +2488,9 @@ private:
     void assembleMassMatrix( mpl::bool_<true> );
     void assembleMassMatrix( mpl::bool_<false> );
 
-    operatorcomposite_ptrtype preAssembleMassMatrix( ) const ;
-    operatorcomposite_ptrtype preAssembleMassMatrix( mpl::bool_<true> ) const ;
-    operatorcomposite_ptrtype preAssembleMassMatrix( mpl::bool_<false> ) const ;
+    operatorcomposite_ptrtype preAssembleMassMatrix( bool light_version=false ) const ;
+    operatorcomposite_ptrtype preAssembleMassMatrix( mpl::bool_<true> , bool light_version ) const ;
+    operatorcomposite_ptrtype preAssembleMassMatrix( mpl::bool_<false>, bool light_version ) const ;
 
     void assembleInitialGuessV( initial_guess_type & initial_guess );
     void assembleInitialGuessV( initial_guess_type & initial_guess, mpl::bool_<true> );
@@ -2709,15 +2717,15 @@ struct AssembleInitialGuessVInCompositeCase
 
 template<typename TruthModelType>
 typename CRBModel<TruthModelType>::operatorcomposite_ptrtype
-CRBModel<TruthModelType>::preAssembleMassMatrix() const
+CRBModel<TruthModelType>::preAssembleMassMatrix( bool light_version ) const
 {
     static const bool is_composite = functionspace_type::is_composite;
-    return preAssembleMassMatrix( mpl::bool_< is_composite >() );
+    return preAssembleMassMatrix( mpl::bool_< is_composite >() , light_version );
 }
 
 template<typename TruthModelType>
 typename CRBModel<TruthModelType>::operatorcomposite_ptrtype
-CRBModel<TruthModelType>::preAssembleMassMatrix( mpl::bool_<false> ) const
+CRBModel<TruthModelType>::preAssembleMassMatrix( mpl::bool_<false> , bool light_version ) const
 {
 
     auto Xh = M_model->functionSpace();
@@ -2728,13 +2736,25 @@ CRBModel<TruthModelType>::preAssembleMassMatrix( mpl::bool_<false> ) const
     auto opfree = opLinearFree( _domainSpace=Xh , _imageSpace=Xh , _expr=expr );
     opfree->setName("mass operator (automatically created)");
     //in this case, the affine decompositon has only one element
-    op_mass->addElement( boost::make_tuple(0,0) , opfree );
+    if( light_version )
+    {
+        //note that only time independent problems need to
+        //inform if we use light version or not of the affine decomposition
+        //i.e. if we use EIM expansion or not
+        //because transient models provide already a decomposition of the mass matrix
+        //so it is not automatically created
+        op_mass->addElement( 0 , opfree );
+    }
+    else
+    {
+        op_mass->addElement( boost::make_tuple(0,0) , opfree );
+    }
     return op_mass;
 }
 
 template<typename TruthModelType>
 typename CRBModel<TruthModelType>::operatorcomposite_ptrtype
-CRBModel<TruthModelType>::preAssembleMassMatrix( mpl::bool_<true> ) const
+CRBModel<TruthModelType>::preAssembleMassMatrix( mpl::bool_<true> , bool light_version ) const
 {
     auto Xh = M_model->functionSpace();
 
