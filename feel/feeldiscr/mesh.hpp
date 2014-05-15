@@ -519,6 +519,35 @@ public:
     //@{
 
     /**
+     * \return true if \p marker exists, false otherwise
+     */
+    bool
+    hasMarker( std::string marker ) const
+        {
+            return markerName( marker ) != invalid_size_type_value;
+        }
+
+    /**
+     * \return true if \p marker exists and topological dimension of the entity
+     * associated is Dim-1, false otherwise
+     */
+    bool
+    hasFaceMarker( std::string marker ) const
+        {
+            return ( markerName( marker ) != invalid_size_type_value ) && ( markerDim( marker ) != nDim-1 );
+        }
+
+    /**
+     * \return true if \p marker exists and topological dimension of the entity
+     * associated is Dim-2, false otherwise
+     */
+    bool
+    hasEdgeMarker( std::string marker ) const
+        {
+            return ( markerName( marker ) != invalid_size_type_value ) && ( markerDim( marker ) != nDim-2 );
+        }
+
+    /**
      * add a new marker name
      */
     void addMarkerName( std::pair<std::string, std::vector<size_type> > const& marker )

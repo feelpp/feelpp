@@ -2236,7 +2236,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
     //
     typename gm_type::precompute_ptrtype __geopc( new typename gm_type::precompute_type( gm, fe.points() ) );
     typename gm_type::precompute_ptrtype __mgeopc( new typename gm_type::precompute_type( gm, mfe.points() ) );
-
+    DVLOG(2) << "fe pts : " << fe.points();
+    DVLOG(2) << "mortar fe pts : " << mfe.points();
 
     //const uint16_type ndofv = fe_type::nDof;
 
@@ -2281,11 +2282,21 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
                     {
                         //M_dof_points[dof_id] = boost::make_tuple( thedof, __c->xReal( l ) );
                         if ( it_elt->isOnBoundary() )
-                            M_dof_points[thedof] = boost::make_tuple( __mc->xReal( dof.first.localDofPerComponent() ), firstDof()+thedof, dof.first.component(FEType::nLocalDof) );
+                        {
+                            if ( mfe.nOrder > 0 )
+                            {
+                                M_dof_points[thedof] = boost::make_tuple( __mc->xReal( dof.first.localDofPerComponent() ), firstDof()+thedof, dof.first.component(FEType::nLocalDof) );
+                                dof_done[thedof] = true;
+                                ++dof_id;
+                            }
+
+                        }
                         else
+                        {
                             M_dof_points[thedof] = boost::make_tuple( __c->xReal( dof.first.localDofPerComponent() ), firstDof()+thedof, dof.first.component(FEType::nLocalDof) );
-                        dof_done[thedof] = true;
-                        ++dof_id;
+                            dof_done[thedof] = true;
+                            ++dof_id;
+                        }
                     }
                 }
         }
@@ -2333,11 +2344,11 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
             <<  dof_id << ", " <<  firstDof() << ", " <<  lastDof() << ", " <<  nLocalDofWithGhost()
             << ", " << boost::get<1>( M_dof_points[dof_id] )
             << ", " <<  boost::get<0>( M_dof_points[dof_id] ) ;
-        if ( !buildDofTableMPIExtended() )
-            CHECK( dof_done[dof_id] == true )
-                << "invalid dof point"
-                << dof_id << ", " <<  nLocalDofWithGhost() << ", " <<  firstDof() << ", "
-                <<  lastDof() << ", " <<  fe_type::nDim << ", " <<  fe_type::nLocalDof;
+        // if ( !buildDofTableMPIExtended() )
+        //     CHECK( dof_done[dof_id] == true )
+        //         << "invalid dof point"
+        //         << dof_id << ", " <<  nLocalDofWithGhost() << ", " <<  firstDof() << ", "
+        //         <<  lastDof() << ", " <<  fe_type::nDim << ", " <<  fe_type::nLocalDof;
     }
 
     DVLOG(2) << "[Dof::generateDofPoints] mortar case, generating dof coordinates done\n";
