@@ -43,10 +43,10 @@ void Oseen::run()
 
     if ( Environment::isMasterRank() )
     {
-        std::cout << "mesh loaded time:  " << ti.elapsed() << "s\n";
+        std::cout << "mesh loading time:  " << ti.elapsed() << "s\n";
     }
     ti.restart();
-    auto Vh = THch<1>( mesh );
+    auto Vh = THch<2>( mesh );
     auto U = Vh->element();
     auto V = Vh->element();
     auto u = U.element<0>();
@@ -80,27 +80,33 @@ void Oseen::run()
 
     auto g = expr<FEELPP_DIM,1>( soption(_name="functions.g"), "g" );
     auto flowDirection = expr<FEELPP_DIM,1>( soption(_name="N"), "N" );
-    auto Q = doption(_name="Q");
+
+    auto Q= doption(_name="Q");
+
     auto D = doption(_name="D");
     auto Di = doption(_name="Di");
     auto Uc = expr( soption(_name="U"), "U" );
     auto Ui = expr( soption(_name="Ui"), "Ui" );
 
-    auto intUz = integrate(_range=markedfaces(mesh,"inlet"), _expr=g ).evaluate()(0,0) ;
+    //auto intUz = integrate(_range=markedfaces(mesh,"inlet"), _expr=ones<1,FEELPP_DIM>()*g ).evaluate()(0,0) ;
     auto aireIn = integrate(_range=markedfaces(mesh,"inlet"),_expr=cst(1.)).evaluate()(0,0);
-    auto meanU = intUz/aireIn;
+    //auto meanU = Ui.evaluate()/aireIn;
     auto Rei = rho*Ui.evaluate()*Di/mu;
     auto Reynolds = rho*Uc.evaluate()*D/mu;
-    auto flow = integrate(_range=markedfaces(mesh,"inlet"), _expr=inner(g,N())).evaluate()(0,0) ;
+    //auto flow = integrate(_range=markedfaces(mesh,"inlet"), _expr=Ui.evaluate()*N()).evaluate()(0,0) ;
+    
+    auto nbElem=nelements(markedfaces(mesh,"inletThroat"));
+    
     if ( Environment::isMasterRank() )
     {
-        std::cout<<"    Integrale U = "<< intUz << "\n";
-        std::cout<<"     Area Inlet = "<< aireIn << "\n";
-        std::cout<<"         Mean U = "<< meanU << "\n";
-        std::cout<<"           Flow = "<< flow << "\n";
+        //std::cout<<"    Integrale U = "<< Ui.evaluate() << "\n";
+        std::cout<<"     Inlet area = "<< aireIn << "\n";
+        std::cout<<"         Mean U = "<< Ui.evaluate() << "\n";
+        std::cout<<"           Flow = "<< Q << "\n";
         std::cout<<"Reynolds(inlet) = "<< Rei <<"\n";
         std::cout<<"       Reynolds = "<< Reynolds <<"\n";
         std::cout << "         time : "<< ti.elapsed() << "s\n";
+        std::cout<<"Nb of elements on the throat's inlet surface " <<nbElem<<" \n";
     }
     ti.restart();
 
@@ -117,8 +123,6 @@ void Oseen::run()
         std::cout << "assembly a time:  " << ti.elapsed() << "s\n";
     }
     auto e = exporter( _mesh=mesh );
-    if (Environment::worldComm().isMasterRank())
-        std::cout<<"Nb of elements in throat surface " <<nelements(markedfaces(mesh,"throat"))<<" \n";
 
     for ( mybdf->start();  mybdf->isFinished() == false; mybdf->next(U) )
     {
@@ -168,7 +172,9 @@ void Oseen::run()
             auto Uzminnorm= Uz.get<0>()*(pi*Di*Di/4)/Q;
             auto Uzmaxnorm= Uz.get<1>()*(pi*Di*Di/4)/Q;
             auto meanU = mean(_range=markedfaces(mesh,marker), _expr=idv(u)).norm();
+
             auto peclet = mean(_range=markedfaces(mesh,marker), _expr=rho*idv(u)*h()/mu).norm();
+
             auto flowrate = integrate(_range=markedfaces(mesh,marker), _expr=trans(idv(u))*unitX()).evaluate()(0,0) ;
 
             auto Rei= rho*Uz.get<1>()*Di/mu;
@@ -187,7 +193,7 @@ void Oseen::run()
             M_stats.put( key+".double.Ret", Ret );
             M_stats.put( key+".double.flowrate", flowrate );
         }
-
+         
         ti.restart();
         e->step(mybdf->time())->add( "u", u );
         e->step(mybdf->time())->add( "p", p );
