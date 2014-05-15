@@ -666,12 +666,11 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
         if ( this->useSingleTransientFile() && __step->index() > 0 )
             __out.open( __varfname.str().c_str(), std::ios::in | std::ios::out | std::ios::app | std::ios::binary );
         else
-            __out.open( __varfname.str().c_str(), std::ios::in | std::ios::out | std::ios::binary );
+            __out.open( __varfname.str().c_str(), std::ios::in | std::ios::out | std::ios::trunc | std::ios::binary );
 
         char buffer[ 80 ];
 
         Feel::detail::FileIndex index;
-
 
         if ( this->useSingleTransientFile() )
         {
@@ -685,16 +684,19 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
                 // we position the cursor at the beginning of the file
                 __out.seekp( 0, std::ios::beg );
             }
+
+            memset(buffer, '\0', sizeof(buffer));
             strcpy(buffer,"BEGIN TIME STEP");
-            __out.write((char*)&buffer,sizeof(buffer));
+            __out.write(buffer,sizeof(buffer));
             LOG(INFO) << "saveNodal out: " << buffer;
 
             index.add( __out.tellp() );
 
         }
 
+        memset(buffer, '\0', sizeof(buffer));
         strcpy( buffer, __var->second.name().c_str() );
-        __out.write( ( char * ) & buffer, sizeof( buffer ) );
+        __out.write( buffer, sizeof( buffer ) );
 
         auto __mesh = __step->mesh();
 
@@ -714,13 +716,15 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
                 int nverts = fit->numLocalVertices;
                 DVLOG(2) << "Faces : " << __ne << "\n";
 
+                memset(buffer, '\0', sizeof(buffer));
                 strcpy( buffer, "part" );
-                __out.write( ( char * ) & buffer, sizeof( buffer ) );
+                __out.write( buffer, sizeof( buffer ) );
                 int partid = m.second[0];
-                __out.write( ( char * ) & partid, sizeof(int) );
+                __out.write( (char *) &partid, sizeof(int) );
 
+                memset(buffer, '\0', sizeof(buffer));
                 strcpy( buffer, "coordinates" );
-                __out.write( ( char * ) & buffer, sizeof( buffer ) );
+                __out.write( buffer, sizeof( buffer ) );
 
                 // write values
                 fit = pairit.first;
@@ -760,15 +764,17 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
 
         for ( ; p_it != p_en; ++p_it )
         {
+            memset(buffer, '\0', sizeof(buffer));
             strcpy( buffer, "part" );
-            __out.write( ( char * ) & buffer, sizeof( buffer ) );
+            __out.write( buffer, sizeof( buffer ) );
 
             int partid = p_it->first;
-            __out.write( ( char * ) & partid, sizeof(int) );
+            __out.write( (char *) &partid, sizeof(int) );
             VLOG(1) << "part " << buffer << "\n";
 
+            memset(buffer, '\0', sizeof(buffer));
             strcpy( buffer, "coordinates" );
-            __out.write( ( char * ) & buffer, sizeof( buffer ) );
+            __out.write( buffer, sizeof( buffer ) );
             uint16_type nComponents = __var->second.nComponents;
 
             VLOG(1) << "nComponents field: " << nComponents;
@@ -826,14 +832,18 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
 
         if ( this->useSingleTransientFile() )
         {
+            memset(buffer, '\0', sizeof(buffer));
             strcpy(buffer,"END TIME STEP");
-            __out.write((char*)&buffer,sizeof(buffer));
+            __out.write(buffer,sizeof(buffer));
             VLOG(1) << "out: " << buffer;
 
             // write back the file index
             index.write( __out );
         }
         DVLOG(2) << "[ExporterEnsightGold::saveNodal] saving " << __varfname.str() << "done\n";
+    
+        __out.close();
+
         ++__var;
     }
 }
@@ -870,28 +880,33 @@ ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtyp
                 __out.seekp( 0, std::ios::beg );
             }
 
+            memset(buffer, '\0', sizeof(buffer));
             strcpy(buffer,"BEGIN TIME STEP");
-            __out.write((char*)&buffer,sizeof(buffer));
+            __out.write(buffer,sizeof(buffer));
             index.add( __out.tellp() );
         }
 
+        memset(buffer, '\0', sizeof(buffer));
         strcpy( buffer, __evar->second.name().c_str() );
-        __out.write( ( char * ) & buffer, sizeof( buffer ) );
+        __out.write( buffer, sizeof( buffer ) );
 
         typename mesh_type::parts_const_iterator_type p_it = __step->mesh()->beginParts();
         typename mesh_type::parts_const_iterator_type p_en = __step->mesh()->endParts();
 
         for ( ; p_it != p_en; ++p_it )
         {
+            memset(buffer, '\0', sizeof(buffer));
             strcpy( buffer, "part" );
-            __out.write( ( char * ) & buffer, sizeof( buffer ) );
+            __out.write( buffer, sizeof( buffer ) );
             //sprintf( buffer, "%d",p_it->first );
             int partid = p_it->first;
             __out.write( ( char * ) & partid, sizeof(int) );
             DVLOG(2) << "part " << buffer << "\n";
+
+            memset(buffer, '\0', sizeof(buffer));
             strcpy( buffer, this->elementType().c_str() );
             //strcpy( buffer, "coordinates" );
-            __out.write( ( char * ) & buffer, sizeof( buffer ) );
+            __out.write( buffer, sizeof( buffer ) );
             DVLOG(2) << "element type " << buffer << "\n";
 
             uint16_type nComponents = __evar->second.nComponents;
@@ -959,8 +974,9 @@ ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtyp
         }
         if ( this->useSingleTransientFile() )
         {
+            memset(buffer, '\0', sizeof(buffer));
             strcpy(buffer,"END TIME STEP");
-            __out.write((char*)&buffer,sizeof(buffer));
+            __out.write(buffer,sizeof(buffer));
             // write back the file index
             index.write( __out );
         }
@@ -988,15 +1004,16 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
     LOG(INFO) << "visit(mesh) for " << p.string() << " time_index=" << time_index;
     //__out.open( M_filename.c_str(), std::ios::in |  std::ios::out |  std::ios::app | std::ios::binary );
     //else
-    __out.open( M_filename.c_str(), std::ios::in |  std::ios::out | std::ios::binary );
+    __out.open( M_filename.c_str(), std::ios::in |  std::ios::out | std::ios::trunc | std::ios::binary );
     CHECK( __out.good() ) << "problem opening " << M_filename;
     if ( time_index == 1 )
     {
         // we position the cursor at the beginning of the file
         __out.seekp( 0, std::ios::beg );
         LOG(INFO) << "visit(mesh) write C Binary header";
+        memset(buffer, '\0', sizeof(buffer));
         strcpy( buffer, "C Binary" );
-        __out.write( ( char * ) & buffer, sizeof( buffer ) );
+        __out.write( buffer, sizeof( buffer ) );
     }
 #endif
 
@@ -1010,7 +1027,7 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
             LOG(INFO) << "position cursor in stream at address : " << index.fileblock_n_steps;
             __out.seekp( index.fileblock_n_steps, std::ios::beg );
             __out.seekg( index.fileblock_n_steps-80*sizeof(char), std::ios::beg );
-            __out.read( (char*)&buffer, sizeof(buffer) );
+            __out.read( buffer, sizeof(buffer) );
             CHECK( std::string(buffer) == std::string("END TIME STEP") ) << "Invalid position buffer: " << buffer;
             __out.seekp( index.fileblock_n_steps, std::ios::beg );
         }
@@ -1044,6 +1061,7 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
         __out.open( M_filename.c_str(), std::ios::out | std::ios::binary );
 #endif
 
+    memset(buffer, '\0', sizeof(buffer));
     strcpy( buffer, "C Binary" );
 #if defined(USE_MPIIO)
     MPI_File_write(fh, buffer, sizeof(buffer), MPI_CHAR, &status );
@@ -1052,23 +1070,24 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
         std::cout << "wrote " << buffer << std::endl;
     }
 #else
-    __out.write( ( char * ) & buffer, sizeof( buffer ) );
+    __out.write( buffer, sizeof( buffer ) );
 
 #if 0
+        memset(buffer, '\0', sizeof(buffer));
         strcpy(buffer,"BEGIN TIME STEP");
-        __out.write((char*)&buffer,sizeof(buffer));
+        __out.write(buffer,sizeof(buffer));
         VLOG(1) << "visit(mesh) out : " << buffer;
         if ( index.defined() )
         {
             __out.seekg( index.fileblock_n_steps-80*sizeof(char), std::ios::beg );
-            __out.read( (char*)&buffer, sizeof(buffer) );
+            __out.read( buffer, sizeof(buffer) );
             CHECK( std::string(buffer) == std::string("END TIME STEP") ) << "Invalid position buffer: " << buffer;
             __out.seekg( index.fileblock_n_steps, std::ios::beg );
             int64_type a = __out.tellg();
 
             CHECK( a == index.fileblock_n_steps ) << "invalid fileblock_n_steps address: " << index.fileblock_n_steps << " != " << a;
 
-            __out.read( (char*)&buffer, sizeof(buffer) );
+            __out.read( buffer, sizeof(buffer) );
             CHECK( std::string(buffer) == std::string("BEGIN TIME STEP") ) << "Invalid position buffer: " << buffer;
         }
         // register in index the address of the new TIME_STEP
@@ -1081,30 +1100,34 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
     std::string theFileName = gp.filename().string();
     CHECK( theFileName.length() <= 80 ) << "the file name is too long : theFileName=" << theFileName << "\n";
 
+    memset(buffer, '\0', sizeof(buffer));
     strcpy( buffer, theFileName.c_str() );
 #if defined(USE_MPIIO)
     MPI_File_write(fh, buffer, sizeof(buffer), MPI_CHAR, &status );
     std::cout << "wrote " << buffer << std::endl;
 #else
-    __out.write( ( char * ) & buffer, sizeof( buffer ) );
+    __out.write( buffer, sizeof( buffer ) );
 #endif
+    memset(buffer, '\0', sizeof(buffer));
     strcpy( buffer, "elements" );
 #if defined(USE_MPIIO)
     MPI_File_write(fh, buffer, sizeof(buffer), MPI_CHAR, &status );
 #else
-    __out.write( ( char * ) & buffer, sizeof( buffer ) );
+    __out.write( buffer, sizeof( buffer ) );
 #endif
+    memset(buffer, '\0', sizeof(buffer));
     strcpy( buffer, "node id given" );
 #if defined(USE_MPIIO)
     MPI_File_write(fh, buffer, sizeof(buffer), MPI_CHAR, &status );
 #else
-    __out.write( ( char * ) & buffer, sizeof( buffer ) );
+    __out.write( buffer, sizeof( buffer ) );
 #endif
+    memset(buffer, '\0', sizeof(buffer));
     strcpy( buffer, "element id given" );
 #if defined(USE_MPIIO)
     MPI_File_write(fh, buffer, sizeof(buffer), MPI_CHAR, &status );
 #else
-    __out.write( ( char * ) & buffer, sizeof( buffer ) );
+    __out.write( buffer, sizeof( buffer ) );
 #endif
 
 #if defined( USE_MPIIO )
@@ -1127,16 +1150,19 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
             int nverts = fit->numLocalVertices;
             DVLOG(2) << "Faces : " << __ne << "\n";
 
+            memset(buffer, '\0', sizeof(buffer));
             strcpy( buffer, "part" );
-            __out.write( ( char * ) & buffer, sizeof( buffer ) );
+            __out.write( buffer, sizeof( buffer ) );
             int partid = m.second[0];
             __out.write( ( char * ) & partid, sizeof(int) );
 
+            memset(buffer, '\0', sizeof(buffer));
             sprintf( buffer, "%s", m.first.c_str() );
-            __out.write( ( char * ) & buffer, sizeof( buffer ) );
+            __out.write( buffer, sizeof( buffer ) );
 
+            memset(buffer, '\0', sizeof(buffer));
             strcpy( buffer, "coordinates" );
-            __out.write( ( char * ) & buffer, sizeof( buffer ) );
+            __out.write( buffer, sizeof( buffer ) );
 
             // write points coordinates
             fit = pairit.first;
@@ -1151,8 +1177,9 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
             fit = pairit.first;
             fen = pairit.second;
 
+            memset(buffer, '\0', sizeof(buffer));
             strcpy( buffer, M_face_type.c_str() );
-            __out.write( ( char * ) & buffer, sizeof( buffer ) );
+            __out.write( buffer, sizeof( buffer ) );
             VLOG(1) << "face type " << buffer;
 
             __out.write( ( char * ) &__ne, sizeof( int ) );
@@ -1245,6 +1272,7 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
         VLOG(1) << "mesh pts size : " << mp.ids.size();
 
         // part
+        memset(buffer, '\0', sizeof(buffer));
         strcpy( buffer, "part" );
 #if defined(USE_MPIIO)
         MPI_File_write(fh, buffer, sizeof(buffer), MPI_CHAR, &status );
@@ -1252,7 +1280,7 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
         MPI_File_read(fh, buffer, sizeof(buffer), MPI_CHAR, &status );
         std::cout << " --> read back part->buffer = " << buffer << std::endl;
 #else
-        __out.write( ( char * ) & buffer, sizeof( buffer ) );
+        __out.write( buffer, sizeof( buffer ) );
 #endif
 
         // part id
@@ -1266,13 +1294,15 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
 #endif
 
         // material
-        sprintf( buffer, "Material %d",p_it->first );
+        memset(buffer, '\0', sizeof(buffer));
+        sprintf( buffer, "Material %d", p_it->first );
 #if defined(USE_MPIIO)
         MPI_File_write(fh, buffer, sizeof(buffer), MPI_CHAR, &status );
 #else
-        __out.write( ( char * ) & buffer, sizeof( buffer ) );
+        __out.write( buffer, sizeof( buffer ) );
 #endif
 
+        memset(buffer, '\0', sizeof(buffer));
         strcpy( buffer, "coordinates" );
 #if defined(USE_MPIIO)
         MPI_File_write(fh, buffer, sizeof(buffer), MPI_CHAR, &status );
@@ -1284,7 +1314,7 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
         std::cout << " --> read back material->buffer = " << buffer << std::endl;
 
 #else
-        __out.write( ( char * ) & buffer, sizeof( buffer ) );
+        __out.write( buffer, sizeof( buffer ) );
 #endif
 
         //offset += 3*sizeof(buffer)+sizeof(int);
@@ -1342,6 +1372,7 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
         MPI_File_read_at( fh, offset2-mp.global_offsets_pts-sizeof(int)-80, buffer, 80, MPI_CHAR, &status );
         std::cout << "read back coordinates->buffer = " << buffer << std::endl;
         // local elements
+        memset(buffer, '\0', sizeof(buffer));
         strcpy( buffer, this->elementType().c_str() );
         MPI_File_write(fh, buffer, sizeof(buffer), MPI_CHAR, &status );
         offset += sizeof(buffer);
@@ -1379,8 +1410,9 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
         __out.write( ( char * ) & mp.ids.front(), mp.ids.size() * sizeof( int ) );
         __out.write( ( char * ) mp.coords.data(), mp.coords.size() * sizeof( float ) );
         // local elements
+        memset(buffer, '\0', sizeof(buffer));
         strcpy( buffer, this->elementType().c_str() );
-        __out.write( ( char * ) & buffer, sizeof( buffer ) );
+        __out.write( buffer, sizeof( buffer ) );
         int __ne = mp.elemids.size();
         __out.write( ( char * ) &__ne, sizeof( int ) );
         __out.write( ( char * ) &mp.elemids.front(), mp.elemids.size() * sizeof( int ) );
@@ -1422,8 +1454,9 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
         {
             std::string ghost_t = "g_" + this->elementType();
             // ghosts elements
+            memset(buffer, '\0', sizeof(buffer));
             strcpy( buffer, ghost_t.c_str() );
-            __out.write( ( char * ) & buffer, sizeof( buffer ) );
+            __out.write( buffer, sizeof( buffer ) );
 
             int __ne = std::distance( elt_it1, elt_en1 );
             VLOG(1) << "material : " << p_it->first << " ghost nb element: " << __ne;
@@ -1466,8 +1499,9 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
     }
     if ( this->useSingleTransientFile() )
     {
+        memset(buffer, '\0', sizeof(buffer));
         strcpy(buffer,"END TIME STEP");
-        __out.write((char*)&buffer,sizeof(buffer));
+        __out.write(buffer,sizeof(buffer));
         VLOG(1) << "out : " << buffer;
 #if 0
         // rewrite FILE_INDEX in file
