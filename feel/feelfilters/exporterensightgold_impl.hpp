@@ -986,6 +986,7 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
     fs::path p( M_filename );
     if ( time_index == 1 && fs::exists( p ) )
         fs::remove( p );
+    LOG(INFO) << "visit(mesh) for " << p.string() << " time_index=" << time_index;
     //__out.open( M_filename.c_str(), std::ios::in |  std::ios::out |  std::ios::app | std::ios::binary );
     //else
     __out.open( M_filename.c_str(), std::ios::in |  std::ios::out | std::ios::binary );
@@ -998,6 +999,7 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
         strcpy( buffer, "C Binary" );
         __out.write( ( char * ) & buffer, sizeof( buffer ) );
     }
+#endif
 
     Feel::detail::FileIndex index;
     if ( this->useSingleTransientFile() )
@@ -1020,8 +1022,6 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
         }
 
     }
-
-#endif
 
 #if defined(USE_MPIIO)
     if ( Environment::isMasterRank() )
