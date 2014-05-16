@@ -56,11 +56,11 @@ namespace Feel
    \f]
 
    where \f$n\f$ denotes a unit outward normal vector to the boundary.  We can
-   rewrite the problem as find \f$u\in H_0^1(\Omega)\f$ such that for all \f$v\in
+   rewrite the problem as to find \f$u\in H_0^1(\Omega)\f$ such that for all \f$v\in
    H_0^1(\Omega)\f$,
 
    \f[
-   a(u,v)&=l(v) \;,
+   a(u,v)=l(v) \;,
    \f]
 
    where \f$a\f$ is a bilinear form, continuous, coercive and \f$l\f$ a linear form.
