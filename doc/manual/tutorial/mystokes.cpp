@@ -47,7 +47,7 @@ We have the following system of equations,
                 \nabla\cdot\bf u & =  0 & \text{on}\; \Omega \;, \\
                 \bf u  & =  g & \text{on}\; \Gamma \;, \\
 \end{aligned}
-\right
+\right.
 \f$</center><br>
 where \f$u\in [H_g^1(\Omega)]^d\f$ denotes the flow speed, \f$p\in [L_0^2(\Omega)]\f$ the fluid pressure, \f$\mu\f$ the fluid viscosity.<br>
 The last boundary condition expresses a null pressure fixed on the outlet.<br>
@@ -71,7 +71,6 @@ We multiply the first equation by a test function \f$v\in H^1(\Omega)\f$ and we 
 +\int_\Omega ( \nabla\cdot(p \mathbf v) - \mathbf p \nabla\cdot v )
 =\int_\Omega \mathbf f \cdot \mathbf v \;.
 \end{aligned}
-\right)
 \f$</center><br>
 where \f$n\f$ denotes a normal vector on the boundary.<br>
 The divergence theorem (or Gauss's theorem) gives,
@@ -79,7 +78,6 @@ The divergence theorem (or Gauss's theorem) gives,
 \begin{aligned}
 \int_\Omega \nabla\cdot(p \mathbf v) = \int_{\partial\Omega} p \mathbf v\cdot \mathbf n \;.
 \end{aligned}
-\right)
 \f$</center><br>
 We have to add a consistency terms to the equation to guaranty the symmetry of the bilinear form.<br>
 This term is provided by the second equation. We multiply this equation by a test function \f$q\in L_2(\Omega)\f$ and we integrate on the domain \f$\Omega\f$,
@@ -87,7 +85,6 @@ This term is provided by the second equation. We multiply this equation by a tes
 \begin{aligned}
 \int_{\Omega} \nabla\cdot\mathbf u q = 0 \;,
 \end{aligned}
-\right)
 \f$</center><br>
 Finally, we deduce from the equations and after rearranging the integrals the variationnal formulation,
 <br><center>\f$
@@ -100,7 +97,6 @@ Finally, we deduce from the equations and after rearranging the integrals the va
      \cdot \mathbf v
 =\int_\Omega \mathbf f \cdot \mathbf v
 \end{aligned}
-\right)
 \f$</center><br>
 Let us assume now that \f$(\mathbf v,q) \in [H_0^1(\Omega)]^d \times L_0^2(\Omega)\f$, the variationnal formulation leads to:
 Find \f$(\mathbf u,p)\in [H_g^1(\Omega)]^d\times L_0^2(\Omega) \f$ such that for all \f$(\mathbf v,q) \in [H_0^1(\Omega)]^d \times L_0^2(\Omega)\f$
@@ -110,14 +106,12 @@ Find \f$(\mathbf u,p)\in [H_g^1(\Omega)]^d\times L_0^2(\Omega) \f$ such that for
 +\int_\Omega \left( \nabla\cdot\mathbf u q - p \nabla\cdot\mathbf v \right)
 =\int_\Omega \mathbf f \cdot \mathbf v
 \end{aligned}
-\right)
 \f$</center><br>
 Or equivalently:
 <br><center>\f$
 \begin{aligned}
   a((\mathbf u,p),(\mathbf v,q)) = l((\mathbf v,q))
 \end{aligned}
-\right)
 \f$</center><br>
 where \f$a\f$ is a bilinear form, continuous, coercive and where \f$l\f$ is a linear form.
 
