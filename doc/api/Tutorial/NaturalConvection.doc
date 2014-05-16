@@ -470,7 +470,7 @@ Here is a simple algorithm fix point strategy in pseudo-code:
       \frac{\partial F_3}{\partial \theta_i} = \sum_j u_j e(\phi_j,\rho_i,\rho_m) + f(\rho_i,\rho_m)
     \f}
   \f{equation*}
-    \label{notes:eq:35}
+    \label{notes:eq:36}
     J_F =
     \begin{pmatrix}
       \frac{\partial F_1}{\partial u_i} & \frac{\partial F_1}{\partial p_i} & \frac{\partial F_1}{\partial \theta_i} \\
