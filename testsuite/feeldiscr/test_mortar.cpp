@@ -72,8 +72,8 @@ BOOST_AUTO_TEST_CASE( test_no_mortar_2 )
     BOOST_TEST_MESSAGE( "test_no_mortar_2 done" );
 }
 
-//typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3>,boost::mpl::int_<4>  > order_types;
-typedef boost::mpl::list<boost::mpl::int_<1>  > order_types;
+typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3>,boost::mpl::int_<4>  > order_types;
+//typedef boost::mpl::list<boost::mpl::int_<1>  > order_types;
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_1, T, order_types )
 {
     using namespace Feel;

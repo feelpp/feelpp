@@ -64,11 +64,11 @@ using namespace Feel;
             \mu  \mathrm{curl}( \nabla \times  \bvec{u}) - \nabla (div  \bvec{u}) + \nabla p & =  \bvec{f} & \text{on}\; \Omega \;, \    \
             \nabla\cdot  \bvec{u} & =  0 & \text{on}\; \Omega \;
    \end{aligned}
-   \right
+   \right.
    \f$</center><br>
    Then we recall the same method used to obtain the strong formulation for the laplacian problem (see section \ref Laplacian ): we multiply the first equation by a test function \f$v\in H^1(\Omega)\f$ and we integrate on the domain \f$\Omega\f$
    <br><center> \f[
-            \mu \int_\Omega \mathrm{curl}( \nabla \times  \bvec{u}) \cdot \bf  \bvec{v} - \mu \int_\Omega \nabla (div  \bvec{u}) \cdot  \bvec{v} + \nabla p \cdot  \bvec{v} & =  \int_\Omega  \bvec{f}\cdot  \bvec{v}
+            \mu \int_\Omega \mathrm{curl}( \nabla \times  \bvec{u}) \cdot \bf  \bvec{v} - \mu \int_\Omega \nabla (div  \bvec{u}) \cdot  \bvec{v} + \nabla p \cdot  \bvec{v} =  \int_\Omega  \bvec{f}\cdot  \bvec{v}
    \f]</center><br>
    Then we apply the above partial integration formulae on the first term, and the green formulae on the rest of the terms, we obtain:
    <br><center> \f[
