@@ -1863,6 +1863,7 @@ template<typename TruthModelType>
 typename CRB<TruthModelType>::element_type
 CRB<TruthModelType>::offlineNewtonPrimal( parameter_type const& mu )
 {
+    std::cout<<"[debug CRB] offlineNewtonPrimal "<<std::endl;
     sparse_matrix_ptrtype J = M_model->newMatrix();
     vector_ptrtype R = M_model->newVector();
 
@@ -1877,6 +1878,7 @@ CRB<TruthModelType>::offlineNewtonPrimal( parameter_type const& mu )
     solution = *initialguess;
     M_backend_primal->nlSolve(_jacobian=J, _solution=solution, _residual=R);
 
+    std::cout<<"[debug CRB] norme de la solution "<<solution.l2Norm()<<std::endl;
     return solution;
 
 }
@@ -1885,6 +1887,7 @@ template<typename TruthModelType>
 void
 CRB<TruthModelType>::offlineUpdateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype & J , const parameter_type & mu)
 {
+    std::cout<<"[debug CRB] offlineUpdateJacobian "<<std::endl;
     J->zero();
     auto U = M_model->functionSpace()->element();
     U=*X;
@@ -1899,6 +1902,7 @@ CRB<TruthModelType>::offlineUpdateJacobian( const vector_ptrtype& X, sparse_matr
             J->addMatrix( betaJqm[q][m], Jqm[q][m] );
         }
     }
+    std::cout<<"[debug CRB] norme de J : "<<J->l1Norm()<<std::endl;
     //std::cout<<"norme de J : "<<J->l1Norm()<<std::endl;
 }
 
@@ -1906,6 +1910,7 @@ template<typename TruthModelType>
 void
 CRB<TruthModelType>::offlineUpdateResidual( const vector_ptrtype& X, vector_ptrtype& R , const parameter_type & mu )
 {
+    std::cout<<"[debug CRB] offlineUpdateResidual "<<std::endl;
     R->zero();
     auto U = M_model->functionSpace()->element();
     U=*X;
@@ -1918,6 +1923,7 @@ CRB<TruthModelType>::offlineUpdateResidual( const vector_ptrtype& X, vector_ptrt
         for(int m=0; m<M_model->mMaxF(0,q); m++)
             R->add( betaRqm[0][q][m] , *Rqm[0][q][m] );
     }
+    std::cout<<"[debug CRB] norme de R : "<<R->l2Norm()<<std::endl;
     //std::cout<<"norme de R : "<<R->l2Norm()<<std::endl;
 }
 
@@ -7504,6 +7510,8 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
 
     ti.restart();
 
+    bool optimize = option(_name="crb.optimize-offline-residual").template as<bool>() ;
+
     //
     //  Primal
     //
@@ -7557,18 +7565,48 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
                 for ( int __l = 0; __l < ( int )__N; ++__l )
                 {
                     *__Y=M_model->rBFunctionSpace()->primalBasisElement(__l);
-                    for ( int __q2 = 0; __q2 < __QLhs; ++__q2 )
-                    {
-                        for ( int __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
-                        {
-                            M_Gamma_pr[__q1][__m1][__q2][__m2].conservativeResize( __N, __N );
 
-                            Aqm[__q2][__m2]->multVector(  __Y, __W );
-                            __W->scale( -1. );
-                            M_model->l2solve( __Z2, __W );
-                            M_Gamma_pr[ __q1][ __m1][ __q2][ __m2]( elem,__l ) = M_model->scalarProduct( __Z1, __Z2 );
-                        } // m2
-                    } // q2
+                    if( optimize )
+                    {
+                        //case we don't use EIM
+                        for ( int __q2 = 0; __q2 < __q1; ++__q2 )
+                        {
+                            for ( int __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
+                            {
+                                M_Gamma_pr[__q1][__m1][__q2][__m2].conservativeResize( __N, __N );
+                                M_Gamma_pr[__q2][__m2][__q1][__m1].conservativeResize( __N, __N );
+
+                                Aqm[__q2][__m2]->multVector(  __Y, __W );
+                                __W->scale( -1. );
+                                M_model->l2solve( __Z2, __W );
+                                double prod = M_model->scalarProduct( __Z1, __Z2 );
+                                M_Gamma_pr[ __q1][ __m1][ __q2][ __m2]( elem,__l ) = prod;
+                                M_Gamma_pr[ __q2][ __m2][ __q1][ __m1]( __l,elem ) = prod;
+                            } // m2
+                        } // q2
+                        //diagonal elements
+                        Aqm[__q1][__m1]->multVector(  __Y, __W );
+                        __W->scale( -1. );
+                        M_model->l2solve( __Z2, __W );
+                        M_Gamma_pr[__q1][__m1][__q1][__m1].conservativeResize( __N, __N );
+                        double prod = M_model->scalarProduct( __Z1, __Z2 );
+                        M_Gamma_pr[ __q1][ __m1][ __q1][ __m1]( elem,__l ) = prod;
+                    }//optimize
+                    else
+                    {
+                        for ( int __q2 = 0; __q2 < __QLhs; ++__q2 )
+                        {
+                            for ( int __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
+                            {
+                                M_Gamma_pr[__q1][__m1][__q2][__m2].conservativeResize( __N, __N );
+
+                                Aqm[__q2][__m2]->multVector(  __Y, __W );
+                                __W->scale( -1. );
+                                M_model->l2solve( __Z2, __W );
+                                M_Gamma_pr[ __q1][ __m1][ __q2][ __m2]( elem,__l ) = M_model->scalarProduct( __Z1, __Z2 );
+                            } // m2
+                        } // q2
+                    }//no optimize
                 }//end of loop over l
             } // m1
         } // q1
@@ -7591,16 +7629,45 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
                 {
                     *__Y=M_model->rBFunctionSpace()->primalBasisElement(elem);
 
-                    for ( int __q2 = 0; __q2 < __QLhs; ++__q2 )
+                    if( optimize )
                     {
-                        for ( int __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
+                        //case we don't use EIM
+                        for ( int __q2 = 0; __q2 < __q1; ++__q2 )
                         {
-                            Aqm[__q2][__m2]->multVector(  __Y, __W );
-                            __W->scale( -1. );
-                            M_model->l2solve( __Z2, __W );
-                            M_Gamma_pr[ __q1][ __m1][ __q2][ __m2]( __j,elem ) = M_model->scalarProduct( __Z1, __Z2 );
-                        } // m2
-                    } // q2
+                            for ( int __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
+                            {
+                                M_Gamma_pr[__q1][__m1][__q2][__m2].conservativeResize( __N, __N );
+                                M_Gamma_pr[__q2][__m2][__q1][__m1].conservativeResize( __N, __N );
+
+                                Aqm[__q2][__m2]->multVector(  __Y, __W );
+                                __W->scale( -1. );
+                                M_model->l2solve( __Z2, __W );
+                                double prod = M_model->scalarProduct( __Z1, __Z2 );
+                                M_Gamma_pr[ __q1][ __m1][ __q2][ __m2]( __j,elem ) = prod;
+                                M_Gamma_pr[ __q2][ __m2][ __q1][ __m1]( elem,__j ) = prod;
+                            } // m2
+                        } // q2
+                        //diagonal elements
+                        Aqm[__q1][__m1]->multVector(  __Y, __W );
+                        __W->scale( -1. );
+                        M_model->l2solve( __Z2, __W );
+                        M_Gamma_pr[__q1][__m1][__q1][__m1].conservativeResize( __N, __N );
+                        double prod = M_model->scalarProduct( __Z1, __Z2 );
+                        M_Gamma_pr[ __q1][ __m1][ __q1][ __m1]( __j,elem ) = prod;
+                    }//optimize
+                    else
+                    {
+                        for ( int __q2 = 0; __q2 < __QLhs; ++__q2 )
+                        {
+                            for ( int __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
+                            {
+                                Aqm[__q2][__m2]->multVector(  __Y, __W );
+                                __W->scale( -1. );
+                                M_model->l2solve( __Z2, __W );
+                                M_Gamma_pr[ __q1][ __m1][ __q2][ __m2]( __j,elem ) = M_model->scalarProduct( __Z1, __Z2 );
+                            } // m2
+                        } // q2
+                    }//no optimize
                 }// end of loop elem
             }// m1
         }// q1
