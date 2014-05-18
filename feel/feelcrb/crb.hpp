@@ -1863,7 +1863,6 @@ template<typename TruthModelType>
 typename CRB<TruthModelType>::element_type
 CRB<TruthModelType>::offlineNewtonPrimal( parameter_type const& mu )
 {
-    std::cout<<"[debug CRB] offlineNewtonPrimal "<<std::endl;
     sparse_matrix_ptrtype J = M_model->newMatrix();
     vector_ptrtype R = M_model->newVector();
 
@@ -1878,7 +1877,6 @@ CRB<TruthModelType>::offlineNewtonPrimal( parameter_type const& mu )
     solution = *initialguess;
     M_backend_primal->nlSolve(_jacobian=J, _solution=solution, _residual=R);
 
-    std::cout<<"[debug CRB] norme de la solution "<<solution.l2Norm()<<std::endl;
     return solution;
 
 }
@@ -1887,7 +1885,6 @@ template<typename TruthModelType>
 void
 CRB<TruthModelType>::offlineUpdateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype & J , const parameter_type & mu)
 {
-    std::cout<<"[debug CRB] offlineUpdateJacobian "<<std::endl;
     J->zero();
     auto U = M_model->functionSpace()->element();
     U=*X;
@@ -1902,7 +1899,6 @@ CRB<TruthModelType>::offlineUpdateJacobian( const vector_ptrtype& X, sparse_matr
             J->addMatrix( betaJqm[q][m], Jqm[q][m] );
         }
     }
-    std::cout<<"[debug CRB] norme de J : "<<J->l1Norm()<<std::endl;
     //std::cout<<"norme de J : "<<J->l1Norm()<<std::endl;
 }
 
@@ -1910,7 +1906,6 @@ template<typename TruthModelType>
 void
 CRB<TruthModelType>::offlineUpdateResidual( const vector_ptrtype& X, vector_ptrtype& R , const parameter_type & mu )
 {
-    std::cout<<"[debug CRB] offlineUpdateResidual "<<std::endl;
     R->zero();
     auto U = M_model->functionSpace()->element();
     U=*X;
@@ -1923,7 +1918,6 @@ CRB<TruthModelType>::offlineUpdateResidual( const vector_ptrtype& X, vector_ptrt
         for(int m=0; m<M_model->mMaxF(0,q); m++)
             R->add( betaRqm[0][q][m] , *Rqm[0][q][m] );
     }
-    std::cout<<"[debug CRB] norme de R : "<<R->l2Norm()<<std::endl;
     //std::cout<<"norme de R : "<<R->l2Norm()<<std::endl;
 }
 
