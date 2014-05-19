@@ -8,7 +8,7 @@ feelpp_source=$base_dir/${2:-feelpp.git}
 gh_pages=$base_dir/${3:-gh-pages}
 
 # First: generate the doc extracted from feelpp/feelpp
-# ./publish.sh $base_dir $feelpp_source $gh_pages master develop release/version-0.92 release/v0.95.0 release/v0.96.0
+./publish.sh $base_dir $feelpp_source $gh_pages master develop 
 
 cd $base_dir
 
