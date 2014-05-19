@@ -434,17 +434,17 @@ Here is a simple algorithm fix point strategy in pseudo-code:
   Consider the first equation
   \li Deriving the first equation with respect to \f$u_i\f$ we get
     \f{equation*}
-      \label{notes:eq:30}
+      \label{notes:eq:301}
       \frac{\partial F_1}{\partial u_i} = \sum_j u_j a(\phi_i,\phi_k,\phi_j) + \sum_i u_i a(\phi_i,\phi_k,\phi_j) + d(\phi_i,\phi_k)
     \f}
   \li Deriving the first equation with respect to \f$p_i\f$ we get
     \f{equation*}
-      \label{notes:eq:30}
+      \label{notes:eq:302}
       \frac{\partial F_1}{\partial p_i} =  -b(\phi_k,\psi_l)
     \f}
   \li Deriving the first equation with respect to \f$\theta_i\f$ we get
     \f{equation*}
-      \label{notes:eq:30}
+      \label{notes:eq:303}
       \frac{\partial F_1}{\partial \theta_i} = c(\rho_i,\rho_k)
     \f}
 
@@ -470,7 +470,7 @@ Here is a simple algorithm fix point strategy in pseudo-code:
       \frac{\partial F_3}{\partial \theta_i} = \sum_j u_j e(\phi_j,\rho_i,\rho_m) + f(\rho_i,\rho_m)
     \f}
   \f{equation*}
-    \label{notes:eq:35}
+    \label{notes:eq:36}
     J_F =
     \begin{pmatrix}
       \frac{\partial F_1}{\partial u_i} & \frac{\partial F_1}{\partial p_i} & \frac{\partial F_1}{\partial \theta_i} \\

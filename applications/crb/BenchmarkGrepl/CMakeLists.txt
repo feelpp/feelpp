@@ -22,7 +22,14 @@
 #
 #
 foreach(O 1 2 3)
-    configure_file(benchmarkgrepl.xml.in ${CMAKE_CURRENT_SOURCE_DIR}/benchmarkgrepl${O}.xml.in COPYONLY)
-    configure_file(benchmarkgrepl.cfg.in ${CMAKE_CURRENT_SOURCE_DIR}/benchmarkgrepl${O}.cfg )
-    crb_add_model(benchmarkgrepl${O} BenchmarkGrepl CLASS BenchmarkGrepl<${O}> HDRS benchmarkgrepl.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG benchmarkgrepl${O}.cfg XML benchmarkgrepl${O}.xml )
+    configure_file( benchmarkgrepl-linear-elliptic.xml.in ${CMAKE_CURRENT_SOURCE_DIR}/benchmarkgrepl-linear-elliptic${O}.xml.in COPYONLY )
+    configure_file( benchmarkgrepl-nonlinear-elliptic.xml.in ${CMAKE_CURRENT_SOURCE_DIR}/benchmarkgrepl-nonlinear-elliptic${O}.xml.in COPYONLY )
+    configure_file( benchmarkgrepl-linear-elliptic.cfg.in ${CMAKE_CURRENT_SOURCE_DIR}/benchmarkgrepl-linear-elliptic${O}.cfg )
+    configure_file( benchmarkgrepl-nonlinear-elliptic.cfg.in ${CMAKE_CURRENT_SOURCE_DIR}/benchmarkgrepl-nonlinear-elliptic${O}.cfg )
+    crb_add_model(
+      benchmarkgrepl-linear-elliptic${O} BenchmarkGreplLinearElliptic CLASS BenchmarkGreplLinearElliptic<${O}> 
+      HDRS benchmarkgrepl-linear-elliptic.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG benchmarkgrepl-linear-elliptic${O}.cfg XML benchmarkgrepl-linear-elliptic${O}.xml )
+    crb_add_model(
+      benchmarkgrepl-nonlinear-elliptic${O} BenchmarkGreplNonlinearElliptic CLASS BenchmarkGreplNonlinearElliptic<${O}> 
+      HDRS benchmarkgrepl-nonlinear-elliptic.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG benchmarkgrepl-nonlinear-elliptic${O}.cfg XML benchmarkgrepl-nonlinear-elliptic${O}.xml )
 endforeach()

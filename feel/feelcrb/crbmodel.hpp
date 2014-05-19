@@ -367,12 +367,19 @@ public:
         u = Xh->element();
         v = Xh->element();
 
-        this->computeAffineDecomposition();
-        this->countAffineDecompositionTerms();
         bool symmetric = option(_name="crb.use-symmetric-matrix").template as<bool>();
+        bool stock = option(_name="crb.stock-matrices").template as<bool>();
+
+        if( stock )
+            this->computeAffineDecomposition();
+
+        this->countAffineDecompositionTerms();
+
         M_inner_product_matrix=this->newMatrix();
         if( this->hasEim() || (!symmetric) )
         {
+            CHECK( stock )<<"There is some work to do before using operators free when using EIM, for now we compute (and stock matrices) affine decomposition to assemble the inner product \n";
+
             //in this case, we use linear part of bilinear form a
             //as the inner product
             auto muref = this->refParameter();

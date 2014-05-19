@@ -156,14 +156,14 @@ namespace Feel
     <center>
     <table border=0px>
     <tr>
-    <td style="width:30%">\image html bift_001 "t=0.01" width="100%"</td>
-    <td style="width:30%">\image html bift_120 "t=1.20" width="100%"</td>
-    <td style="width:30%">\image html bift_260 "t=2.60" width="100%"</td>
+    <td style="width:30%">\image html bift_001.png "t=0.01"</td>
+    <td style="width:30%">\image html bift_120.png "t=1.20"</td>
+    <td style="width:30%">\image html bift_260.png "t=2.60"</td>
     </tr>
     <tr>
     <td><center>2D simulation of a particle entering in the low flow rate channel.</center></td>
     </tr>
-    <table>
+    </table>
 
     <center>
     <table border=0px>

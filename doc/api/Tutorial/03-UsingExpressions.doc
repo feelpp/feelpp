@@ -79,11 +79,11 @@ The symbolic calculus system worked as expected.
 
 The complete code reads as follows
 
-\snippet myfunctionspace.cpp all
+\snippet myexpression.cpp all
 
 to compile just type
 \verbatim
-make feelpp_doc_myfunctionspace
+make feelpp_doc_myexpression
 \endverbatim
 
 
