@@ -77,7 +77,7 @@ void Oseen::run()
     ti.restart();
     auto deft = sym(gradt( u ));
     auto def = sym(grad( v ));
-
+#if 0
     auto g = expr<FEELPP_DIM,1>( soption(_name="functions.g"), "g" );
     auto flowDirection = expr<FEELPP_DIM,1>( soption(_name="N"), "N" );
 
@@ -96,7 +96,26 @@ void Oseen::run()
     //auto flow = integrate(_range=markedfaces(mesh,"inlet"), _expr=Ui.evaluate()*N()).evaluate()(0,0) ;
     
     auto nbElem=nelements(markedfaces(mesh,"inletThroat"));
+#endif
     
+#if 1
+    auto g = expr( option(_name="functions.g").as<std::string>(), "g" );
+    
+    auto intUz = integrate(_range=markedfaces(mesh,"inlet"), _expr=g ).evaluate()(0,0) ;
+    auto aireIn = integrate(_range=markedfaces(mesh,"inlet"),_expr=cst(1.)).evaluate()(0,0);
+    auto meanU = intUz/aireIn;
+    auto flow = integrate(_range=markedfaces(mesh,"inlet"), _expr=inner(g*N(),N())).evaluate()(0,0) ;
+    auto reynolds = meanU*0.004/(mu/rho);
+    if ( Environment::isMasterRank() )
+    {
+        std::cout<<"  Integrale U = "<< intUz << "\n";
+        std::cout<<"   Aire Inlet = "<< aireIn << "\n";
+        std::cout<<"       Mean U = "<< meanU << "\n";
+        std::cout<<"         Flow = "<< flow << "\n";
+        std::cout<<"     Reynolds = "<< reynolds <<"\n";
+    }
+#endif
+#if 0
     if ( Environment::isMasterRank() )
     {
         //std::cout<<"    Integrale U = "<< Ui.evaluate() << "\n";
@@ -108,6 +127,8 @@ void Oseen::run()
         std::cout << "         time : "<< ti.elapsed() << "s\n";
         std::cout<<"Nb of elements on the throat's inlet surface " <<nbElem<<" \n";
     }
+#endif
+    
     ti.restart();
 
     auto mybdf = bdf( _space=Vh, _name="mybdf" );
@@ -116,7 +137,7 @@ void Oseen::run()
 
     auto a = form2( _trial=Vh, _test=Vh), at = form2( _trial=Vh, _test=Vh);
     a = integrate( _range=elements( mesh ), _expr=2*mu*inner( deft,def ) + mybdf->polyDerivCoefficient(0)*trans(rho*idt(u))*id(u) );
-    a +=integrate( _range=elements( mesh ), _expr=-div( v )*idt( p ) - divt( u )*id( q ) );
+    a +=integrate( _range=elements( mesh ), _expr=-div( v )*idt( p ) + divt( u )*id( q ) );
 
     if ( Environment::isMasterRank() )
     {
@@ -128,28 +149,32 @@ void Oseen::run()
     {
         this->setMeshSize( mybdf->time() );
         ti.restart();
-        g.setParameterValues( {{"t", mybdf->time()}} );
+        
+        //g.setParameterValues( {{"t", mybdf->time()}} );
 
         auto bdf_poly = mybdf->polyDeriv();
         auto rhsu =  bdf_poly.element<0>();
         auto extrap = mybdf->poly();
         auto extrapu = extrap.element<0>();
+        //ft.zero();
+
         ft = integrate( _range=elements(mesh), _expr=(rho*trans(idv(rhsu))*id(u) ) );
 
         M_stats.put( "t.assembly.rhs", ti.elapsed() );
 
         ti.restart();
-
+        //at->zero();
         at = a;
         at += integrate( _range=elements( mesh ), _expr= trans(rho*gradt(u)*idv(extrapu))*id(v) );
 
         M_stats.put( "t.assembly.lhs", ti.elapsed() );
 
         ti.restart();
+        
         at+=on(_range=markedfaces(mesh,"wall"), _rhs=ft, _element=u,
                _expr=zero<FEELPP_DIM>() );
-        at+=on(_range=markedfaces(mesh,"inlet"), _rhs=ft, _element=u,
-               _expr=g );
+        //at+=on(_range=markedfaces(mesh,"inlet"), _rhs=ft, _element=u, _expr=g );
+        at+=on(_range=markedfaces(mesh,"inlet"), _rhs=ft, _element=u, _expr=-g*N() );
 
         M_stats.put( "t.assembly.on", ti.elapsed() );
 
@@ -163,7 +188,7 @@ void Oseen::run()
         M_stats.put( "d.solve.double.residual",r.residual() );
 
         ti.restart();
-
+#if 0
         for( auto marker : M_outputs )
         {
             ti.restart();
@@ -193,14 +218,14 @@ void Oseen::run()
             M_stats.put( key+".double.Ret", Ret );
             M_stats.put( key+".double.flowrate", flowrate );
         }
-         
+#endif
         ti.restart();
         e->step(mybdf->time())->add( "u", u );
         e->step(mybdf->time())->add( "p", p );
-        Pe.on(_range=elements(mesh), _expr=rho*norm2(idv(u))*h()/mu);
-        e->step(mybdf->time())->add( "Pe", Pe );
-        viscous_length_scale.on(_range=elements(mesh), _expr=rho*sqrt(sqrt(inner( sym(gradv(u)),sym(gradv(u)) ))*mu/rho)*h()/mu);
-        e->step(mybdf->time())->add( "vls", viscous_length_scale );
+        //Pe.on(_range=elements(mesh), _expr=rho*norm2(idv(u))*h()/mu);
+        //e->step(mybdf->time())->add( "Pe", Pe );
+        //viscous_length_scale.on(_range=elements(mesh), _expr=rho*sqrt(sqrt(inner( sym(gradv(u)),sym(gradv(u)) ))*mu/rho)*h()/mu);
+        //e->step(mybdf->time())->add( "vls", viscous_length_scale );
 
         e->save();
         M_stats.put( "t.export.total", ti.elapsed() );
@@ -247,7 +272,7 @@ int main( int argc, char** argv )
     Application benchmark;
     auto oseen = new Oseen(  &benchmark );
     benchmark.add( oseen );
-    std::vector<std::string> keys = { "t.assembly",
+    /*std::vector<std::string> keys = { "t.assembly",
                                       "t.assembly",
                                       "t.solve",
                                       "d.solve",
@@ -261,10 +286,10 @@ int main( int argc, char** argv )
     for( auto marker :  SplitVec)
     {
         keys.push_back(  (boost::format("d.%1%")%marker).str() );
-    }
-    benchmark.setStats( keys );
+    }*/
+    //benchmark.setStats( keys );
     benchmark.run();
-    benchmark.printStats( std::cout );
-    benchmark.printStats( out );
+    //benchmark.printStats( std::cout );
+    //benchmark.printStats( out );
 
 }

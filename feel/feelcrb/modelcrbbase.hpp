@@ -1416,9 +1416,11 @@ protected :
     std::vector<std::vector<vector_ptrtype> > M_Fq;
 
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Aqm;
+    std::vector< std::vector<sparse_matrix_ptrtype> > M_Jqm;
     std::vector< std::vector<sparse_matrix_ptrtype> > M_linearAqm;
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Mqm;
     std::vector< std::vector<std::vector<vector_ptrtype> > > M_Fqm;
+    std::vector< std::vector<std::vector<vector_ptrtype> > > M_Rqm;
 
     sparse_matrix_ptrtype M_monoA;
     sparse_matrix_ptrtype M_monoM;
@@ -1439,6 +1441,11 @@ protected :
     beta_vector_type M_betaAqm;
     beta_vector_type M_betaMqm;
     std::vector<beta_vector_type> M_betaFqm;
+
+    beta_vector_type M_betaJqm;
+    std::vector<beta_vector_type> M_betaRqm;
+
+    beta_vector_type M_betaInitialGuess;
 
     lhs_light_type M_lhs;
     lhs_light_type M_mass;
