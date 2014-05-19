@@ -82,6 +82,7 @@ then
   git clone https://github.com/feelpp/feelpp.git $feelpp_source
 else
   cd $feelpp_source
+  git checkout .
   git pull
 fi
 
