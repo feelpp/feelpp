@@ -35,11 +35,8 @@
 #include <boost/mpl/list.hpp>
 
 #include <feel/feeldiscr/mesh.hpp>
-#include <feel/feeldiscr/pch.hpp>
-#include <feel/feeldiscr/dh.hpp>
 #include <feel/feeldiscr/ned1h.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
-#include <feel/feelfilters/domain.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelvf/ginac.hpp>
@@ -54,48 +51,7 @@ BOOST_AUTO_TEST_SUITE( continuitysuite )
 typedef boost::mpl::list<boost::mpl::int_<2> > dim_types;
 //typedef boost::mpl::list<boost::mpl::int_<2>,boost::mpl::int_<3>,boost::mpl::int_<1> > dim_types;
 
-BOOST_AUTO_TEST_CASE_TEMPLATE( LagrangeCG, T, dim_types )
-{
-    BOOST_TEST_MESSAGE( "check continuity for LagrangeCG in  " << T::value << "D\n" );
-    typedef Mesh<Simplex<T::value,1> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
-    mesh_ptrtype mesh = loadMesh( _mesh=new mesh_type );
-
-    auto Xh = Pch<1>( mesh );
-    auto u = Xh->element();
-    auto a1 = form1( _test=Xh );
-    a1  = integrate( internalfaces( mesh ), (leftface(id(u))+rightface(-id(u)) ) );
-    a1.vector().printMatlab("LagrangeCG.m");
-    u.on( _range=elements(mesh), _expr=expr("x*y:x:y") );
-    u.printMatlab("uCG.m");
-    BOOST_CHECK_SMALL( a1( u ), 1e-10 );
-
-    BOOST_TEST_MESSAGE( "LagrangeCG, a1(u)=" << a1(u)  );
-    BOOST_TEST_MESSAGE( "check continuity for LagrangeCG in  " << T::value << "D\n" );
-}
-
-BOOST_AUTO_TEST_CASE_TEMPLATE( HDivRT0, T, dim_types )
-{
-    BOOST_TEST_MESSAGE( "check continuity for HDivRT in  " << T::value << "D\n" );
-    typedef Mesh<Simplex<T::value,1> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-
-    mesh_ptrtype mesh = loadMesh( _mesh=new mesh_type );
-
-    auto Xh = Dh<0>( mesh );
-    auto u = Xh->element();
-    auto a1 = form1( _test=Xh );
-    a1  = integrate( internalfaces( mesh ), (leftface(trans(id(u))*N())+rightface(-trans(id(u))*N())) );
-    u.on(  _range=elements(mesh), _expr=expr<T::value,1>(std::string("{x*y,x+y}:x:y")) );
-    a1.vector().printMatlab("HDivRT0.m");
-    BOOST_CHECK_SMALL( a1( u ), 1e-10 );
-    u.printMatlab("uRT0.m");
-
-    BOOST_TEST_MESSAGE( "HDivRT0, a1(u)=" << a1(u)  );
-    BOOST_TEST_MESSAGE( "check continuity for HDivRT in  " << T::value << "D done\n" );
-}
-#if 1
 BOOST_AUTO_TEST_CASE_TEMPLATE( HCurlNed1, T, dim_types )
 {
     BOOST_TEST_MESSAGE( "check continuity for HCurlNED1 in  " << T::value << "D\n" );
@@ -107,7 +63,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( HCurlNed1, T, dim_types )
     auto Xh = Ned1h<0>( mesh );
     auto u = Xh->element();
     auto a1 = form1( _test=Xh );
-a1  = integrate( internalfaces( mesh ), (leftface(trans(id(u))*vec(Tx(),Ty()))+rightface(-trans(id(u))*vec(Tx(),Ty()))));
+    a1  = integrate( internalfaces( mesh ), (leftface(trans(id(u))*vec(Tx(),Ty()))+rightface(-trans(id(u))*vec(Tx(),Ty()))));
     u.on(  _range=elements(mesh), _expr=expr<T::value,1>(std::string("{x*y,x+y}:x:y")) );
     a1.vector().printMatlab("HcurlNed1.m");
     u.printMatlab("uNED1.m");
@@ -116,7 +72,7 @@ a1  = integrate( internalfaces( mesh ), (leftface(trans(id(u))*vec(Tx(),Ty()))+r
     BOOST_TEST_MESSAGE( "HCurlNED1, a1(u)=" << a1(u)  );
     BOOST_TEST_MESSAGE( "check continuity for HCurlNED1 in  " << T::value << "D done\n" );
 }
-#endif
+
 BOOST_AUTO_TEST_SUITE_END()
 
 #if 0
