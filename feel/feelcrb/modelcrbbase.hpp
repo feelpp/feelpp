@@ -182,7 +182,8 @@ public :
     static const bool is_linear = FunctionSpaceDefinition::is_linear;
 #else
     static const bool is_time_dependent = ((_Options&TimeDependent)==TimeDependent);
-    static const bool is_linear = ((_Options&Linear)==Linear);
+    //static const bool is_linear = ((_Options&Linear)==Linear);
+    static const bool is_linear = !((_Options&NonLinear)==NonLinear);
 #endif
     static const int Options = _Options;
 
