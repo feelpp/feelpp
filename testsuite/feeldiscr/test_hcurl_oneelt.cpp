@@ -402,7 +402,7 @@ TestHCurlOneElt::shape_functions( std::string ( *one_element_mesh_desc_fun )() )
     mesh_ptrtype oneelement_mesh = loadMesh( _mesh=new mesh_type,
                                              _filename=mesh_name);
 
-    auto refine_level = std::floor(1 - math::log( 0.5 ));
+    auto refine_level = std::floor(1 - math::log( 0.1 ));
     mesh_ptrtype mesh = loadMesh( _mesh=new mesh_type,
                                       _filename=mesh_name,
                                       _refine=( int )refine_level);

@@ -138,8 +138,8 @@ namespace Feel
                       << "$Nodes\n"
                       << "3\n"
                       << "1 1 -1 0\n"
-                      << "2 -1 -1 0\n"
-                      << "3 1 1 0\n"
+                      << "2 1 1 0\n"
+                      << "3 -1 -1 0\n"
                       << "$EndNodes\n"
                       << "$Elements\n"
                       << "4\n"
@@ -383,12 +383,13 @@ void
     mesh_ptrtype oneelement_mesh = loadMesh( _mesh=new mesh_type,
                                              _filename=mesh_name);
 
-    auto refine_level = std::floor(1 - math::log( 0.5 )); //Deduce refine level from meshSize (option)
+    auto refine_level = std::floor(1 - math::log( 0.1 )); //Deduce refine level from meshSize (option)
     mesh_ptrtype mesh = loadMesh( _mesh=new mesh_type,
                                       _filename=mesh_name,
                                       _refine=( int )refine_level);
 
     space_ptrtype Xh = space_type::New( oneelement_mesh );
+
     std::cout << "Family = " << Xh->basis()->familyName() << "\n"
               << "Dim    = " << Xh->basis()->nDim << "\n"
               << "Order  = " << Xh->basis()->nOrder << "\n"

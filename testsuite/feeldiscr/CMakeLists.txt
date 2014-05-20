@@ -19,6 +19,8 @@ feelpp_add_test( hdiv_oneelt NO_MPI_TEST )
 feelpp_add_test( hdiv3D CFG hdiv3D.cfg)
 feelpp_add_test( hdiv3D_oneelt NO_MPI_TEST )
 feelpp_add_test( hcurl_oneelt NO_MPI_TEST )
+feelpp_add_test( hcurl CFG hcurl.cfg)
+feelpp_add_test( hcurl3D_oneelt NO_MPI_TEST )
 
 feelpp_add_test( functionals )
 
