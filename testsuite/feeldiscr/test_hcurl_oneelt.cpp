@@ -150,8 +150,8 @@ namespace Feel
                       << "$Nodes\n"
                       << "3\n"
                       << "1 1 -1 0\n"
-                      << "2 -1 -1 0\n"
-                      << "3 1 1 0\n"
+                      << "2 1 1 0\n"
+                      << "3 -1 -1 0\n"
                       << "$EndNodes\n"
                       << "$Elements\n"
                       << "4\n"
@@ -350,30 +350,30 @@ TestHCurlOneElt::testProjector(std::string ( *one_element_mesh_desc_fun )())
     // HCURL projection (Lagrange)
     auto hcurl_lagV = opProjection( _domainSpace=Yh_v, _imageSpace=Yh_v, _type=HCURL );
     auto hcurl_lagS = opProjection( _domainSpace=Yh_s, _imageSpace=Yh_s, _type=HCURL );
-    auto E_pHCURL_lag = hcurl_lagV->project( _expr= trans(E), _div_expr=cst(0.) );
+    auto E_pHCURL_lag = hcurl_lagV->project( _expr= trans(E) /*, _curl_expr=cst(0.)*/ );
     auto error_pHCURL_lag = l2_lagS->project( _expr=curlxv(E_pHCURL_lag) - f );
 
     // HCURL projection (Nedelec)
     auto hcurl = opProjection( _domainSpace=Nh, _imageSpace=Nh, _type=HCURL ); //hdiv proj (RT elts)
-    auto E_pHCURL_ned = hcurl->project( _expr= trans(E), _div_expr=cst(0.) );
+    auto E_pHCURL_ned = hcurl->project( _expr= trans(E) /*, _curl_expr=cst(0.)*/ );
     auto error_pHCURL_ned = l2_lagS->project( _expr=curlxv(E_pHCURL_ned) - f );
 
     BOOST_TEST_MESSAGE("L2 projection [Lagrange]: error[div(E)-f]");
     std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pL2_lag, error_pL2_lag ) ) << "\n";
     BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pL2_lag, error_pL2_lag ) ), 1e-13 );
-    BOOST_TEST_MESSAGE("L2 projection [RT]: error[div(E)-f]");
+    BOOST_TEST_MESSAGE("L2 projection [NED]: error[div(E)-f]");
     std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pL2_ned, error_pL2_ned ) ) << "\n";
     BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pL2_ned, error_pL2_ned ) ), 1e-13 );
     BOOST_TEST_MESSAGE("H1 projection [Lagrange]: error[div(E)-f]");
     std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pH1_lag, error_pH1_lag ) ) << "\n";
     BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pH1_lag, error_pH1_lag ) ), 1e-13 );
-    BOOST_TEST_MESSAGE("H1 projection [RT]: error[div(E)-f]");
+    BOOST_TEST_MESSAGE("H1 projection [NED]: error[div(E)-f]");
     std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pH1_ned, error_pH1_ned ) ) << "\n";
     BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pH1_ned, error_pH1_ned ) ), 1e-13 );
-    BOOST_TEST_MESSAGE("HDIV projection [Lagrange]: error[div(E)-f]");
+    BOOST_TEST_MESSAGE("HCURL projection [Lagrange]: error[div(E)-f]");
     std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pHCURL_lag, error_pHCURL_lag ) ) << "\n";
     BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pHCURL_lag, error_pHCURL_lag ) ), 1e-13 );
-    BOOST_TEST_MESSAGE("HDIV projection [RT]: error[div(E)-f]");
+    BOOST_TEST_MESSAGE("HCURL projection [NED]: error[div(E)-f]");
     std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pHCURL_ned, error_pHCURL_ned ) ) << "\n";
     BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pHCURL_ned, error_pHCURL_ned ) ), 1e-13 );
 
@@ -386,11 +386,11 @@ TestHCurlOneElt::testProjector(std::string ( *one_element_mesh_desc_fun )())
 
     exporter_proj->step( 0 )->setMesh( mesh );
     exporter_proj->step( 0 )->add( "proj_L2_E[Lagrange]", E_pL2_lag );
-    exporter_proj->step( 0 )->add( "proj_L2_E[RT]", E_pL2_ned );
+    exporter_proj->step( 0 )->add( "proj_L2_E[NED]", E_pL2_ned );
     exporter_proj->step( 0 )->add( "proj_H1_E[Lagrange]", E_pH1_lag );
-    exporter_proj->step( 0 )->add( "proj_H1_E[RT]", E_pH1_ned );
+    exporter_proj->step( 0 )->add( "proj_H1_E[NED]", E_pH1_ned );
     exporter_proj->step( 0 )->add( "proj_HDiv_E[Lagrange]", E_pHCURL_lag );
-    exporter_proj->step( 0 )->add( "proj_HDiv_E[RT]", E_pHCURL_ned );
+    exporter_proj->step( 0 )->add( "proj_HDiv_E[NED]", E_pHCURL_ned );
     exporter_proj->save();
 
 
@@ -402,7 +402,7 @@ TestHCurlOneElt::shape_functions( std::string ( *one_element_mesh_desc_fun )() )
     mesh_ptrtype oneelement_mesh = loadMesh( _mesh=new mesh_type,
                                              _filename=mesh_name);
 
-    auto refine_level = std::floor(1 - math::log( 0.5 ));
+    auto refine_level = std::floor(1 - math::log( 0.1 ));
     mesh_ptrtype mesh = loadMesh( _mesh=new mesh_type,
                                       _filename=mesh_name,
                                       _refine=( int )refine_level);

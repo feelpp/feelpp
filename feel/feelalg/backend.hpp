@@ -949,6 +949,7 @@ public:
         //new
         _sol->close();
         Feel::detail::ref( solution ) = *_sol;
+        Feel::detail::ref( solution ).close();
         if ( verbose )
         {
             Environment::logMemoryUsage( "backend::solve end" );

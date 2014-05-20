@@ -24,7 +24,8 @@ here, we generate a second order function space,
 We create now three exporter:
 - once generated on the P1 mesh
 - once generated on the P2 mesh
-- once generated on a P1 mesh extracted from P2 mesh 
+- once generated on a P1 mesh extracted from P2 mesh
+
 \snippet myexporter.cpp exporter
 
 @par Adding function to save
