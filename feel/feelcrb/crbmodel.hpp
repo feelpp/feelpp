@@ -1151,6 +1151,17 @@ public:
                     }
                 }
 
+                if( M_has_eim )
+                {
+                    M_linearAqm = M_model->computeLinearDecompositionA();
+                    M_QLinearDecompositionA = M_linearAqm.size();
+                    M_mMaxLinearDecompositionA.resize( M_QLinearDecompositionA );
+                    for(int q=0; q<M_QLinearDecompositionA; q++)
+                    {
+                        M_mMaxLinearDecompositionA[q] = M_linearAqm[q].size();
+                    }
+                }
+
             }
         }
         else
