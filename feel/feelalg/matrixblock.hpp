@@ -54,7 +54,7 @@ public :
     typedef BlocksBaseSparseMatrix<T> self_type;
     typedef boost::shared_ptr<MatrixSparse<T> > matrix_sparse_ptrtype;
 
-    BlocksBaseSparseMatrix( index_type nr,index_type nc )
+    BlocksBaseSparseMatrix( index_type nr=0,index_type nc=0 )
         :
         super_type( nr,nc ),
         M_isClosed( false )
