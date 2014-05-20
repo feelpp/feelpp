@@ -19,6 +19,10 @@ feelpp_add_test( hdiv_oneelt NO_MPI_TEST )
 feelpp_add_test( hdiv3D CFG hdiv3D.cfg)
 feelpp_add_test( hdiv3D_oneelt NO_MPI_TEST )
 feelpp_add_test( hcurl_oneelt NO_MPI_TEST )
+feelpp_add_test( hcurl CFG hcurl.cfg)
+feelpp_add_test( hcurl3D_oneelt NO_MPI_TEST )
+
+feelpp_add_test( continuity NO_MPI_TEST )
 
 feelpp_add_test( functionals )
 
@@ -49,4 +53,3 @@ feelpp_add_test( exporter SRCS exporter.cpp  CFG exporter.cfg GEO bubble_inside.
 feelpp_add_test( extended )
 
 feelpp_add_test( nlSolveComposite CFG nlSolveComposite.cfg)
-
