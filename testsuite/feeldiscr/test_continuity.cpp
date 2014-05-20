@@ -107,7 +107,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( HCurlNed1, T, dim_types )
     auto Xh = Ned1h<0>( mesh );
     auto u = Xh->element();
     auto a1 = form1( _test=Xh );
-    a1  = integrate( internalfaces( mesh ), (leftface(trans(id(u))*T())+rightface(trans(id(u))*T())) );
+a1  = integrate( internalfaces( mesh ), (leftface(trans(id(u))*vec(Tx(),Ty()))+rightface(-trans(id(u))*vec(Tx(),Ty()))));
     u.on(  _range=elements(mesh), _expr=expr<T::value,1>(std::string("{x*y,x+y}:x:y")) );
     a1.vector().printMatlab("HcurlNed1.m");
     u.printMatlab("uNED1.m");
