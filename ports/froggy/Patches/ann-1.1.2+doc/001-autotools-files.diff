@@ -1,0 +1,133 @@
+diff -N -u -r ann-1.1.2+doc.orig//ann2fig/Makefile.am ann-1.1.2+doc//ann2fig/Makefile.am
+--- ann-1.1.2+doc.orig//ann2fig/Makefile.am	1970-01-01 01:00:00.000000000 +0100
++++ ann-1.1.2+doc//ann2fig/Makefile.am	2011-10-26 00:15:00.884970420 +0200
+@@ -0,0 +1,4 @@
++bin_PROGRAMS=ann2fig
++ann2fig_SOURCES=ann2fig.cpp
++AM_CPPFLAGS=-I$(top_builddir)/include
++LDADD=../src/libann.la
+diff -N -u -r ann-1.1.2+doc.orig//configure.ac ann-1.1.2+doc//configure.ac
+--- ann-1.1.2+doc.orig//configure.ac	1970-01-01 01:00:00.000000000 +0100
++++ ann-1.1.2+doc//configure.ac	2011-10-26 00:15:00.884970420 +0200
+@@ -0,0 +1,54 @@
++# Process this file with autoconf to produce a configure script.
++AC_INIT([ann], [1.0], [bornik@icg.tu-graz.aca.t])
++
++AC_CONFIG_AUX_DIR(cfg)
++
++AM_INIT_AUTOMAKE
++AC_CONFIG_HEADERS(config.h)
++AM_MAINTAINER_MODE
++
++ANN_VERSION="1.0"
++AC_SUBST([ANN_VERSION])
++
++# Checks for programs.
++AC_PROG_CC
++AC_PROG_CPP
++AC_PROG_CXX
++AC_PROG_CXXCPP
++AC_PROG_LN_S
++AC_PROG_MAKE_SET
++AC_LANG(C++)
++
++# AM_DISABLE_SHARED
++# AM_DISABLE_STATIC
++AC_DISABLE_FAST_INSTALL
++AC_PROG_LIBTOOL
++
++# Checks for header files.
++AC_HEADER_STDC
++
++# Checks for typedefs, structures, and compiler characteristics.
++AC_C_CONST
++AC_C_INLINE
++AC_HEADER_TIME
++AC_STRUCT_TM
++AC_CXX_HAVE_STD
++AC_CXX_HAVE_STL
++AC_CXX_TYPENAME
++
++# Checks for library functions.
++AC_PROG_GCC_TRADITIONAL
++
++AC_SUBST([LIBS])
++AC_SUBST([CXXFLAGS])
++AC_SUBST([CPPFLAGS])
++AC_SUBST([LDFLAGS])
++
++AC_CONFIG_FILES([Makefile
++                 src/Makefile
++                 include/Makefile
++                 ann2fig/Makefile
++                 sample/Makefile
++                 test/Makefile])
++
++AC_OUTPUT
+diff -N -u -r ann-1.1.2+doc.orig//include/Makefile.am ann-1.1.2+doc//include/Makefile.am
+--- ann-1.1.2+doc.orig//include/Makefile.am	1970-01-01 01:00:00.000000000 +0100
++++ ann-1.1.2+doc//include/Makefile.am	2011-10-26 00:15:00.884970420 +0200
+@@ -0,0 +1,6 @@
++annincdir = $(includedir)/ANN
++
++anninc_HEADERS =	\
++	ANN/ANN.h	\
++	ANN/ANNx.h	\
++	ANN/ANNperf.h
+diff -N -u -r ann-1.1.2+doc.orig//Makefile.am ann-1.1.2+doc//Makefile.am
+--- ann-1.1.2+doc.orig//Makefile.am	1970-01-01 01:00:00.000000000 +0100
++++ ann-1.1.2+doc//Makefile.am	2011-10-26 00:15:00.884970420 +0200
+@@ -0,0 +1 @@
++SUBDIRS = src include ann2fig sample test
+diff -N -u -r ann-1.1.2+doc.orig//sample/Makefile.am ann-1.1.2+doc//sample/Makefile.am
+--- ann-1.1.2+doc.orig//sample/Makefile.am	1970-01-01 01:00:00.000000000 +0100
++++ ann-1.1.2+doc//sample/Makefile.am	2011-10-26 00:15:00.884970420 +0200
+@@ -0,0 +1,4 @@
++bin_PROGRAMS=ann_sample
++ann_sample_SOURCES=ann_sample.cpp
++AM_CPPFLAGS=-I$(top_builddir)/include
++LDADD=../src/libann.la
+diff -N -u -r ann-1.1.2+doc.orig//src/Makefile.am ann-1.1.2+doc//src/Makefile.am
+--- ann-1.1.2+doc.orig//src/Makefile.am	1970-01-01 01:00:00.000000000 +0100
++++ ann-1.1.2+doc//src/Makefile.am	2011-10-26 00:15:00.884970420 +0200
+@@ -0,0 +1,32 @@
++AM_CPPFLAGS = -I$(top_srcdir)/include
++
++lib_LTLIBRARIES = libann.la
++
++libann_la_SOURCES =		\
++	ANN.h			\
++	ANN.cpp			\
++	ANNx.h			\
++	ANNperf.h		\
++	bd_fix_rad_search.cpp	\
++	bd_pr_search.cpp	\
++	bd_search.cpp		\
++	bd_tree.cpp		\
++	bd_tree.h		\
++	brute.cpp		\
++	kd_dump.cpp		\
++	kd_fix_rad_search.cpp	\
++	kd_pr_search.cpp	\
++	kd_pr_search.h		\
++	kd_search.cpp		\
++	kd_search.h		\
++	kd_split.cpp		\
++	kd_split.h		\
++	kd_tree.cpp		\
++	kd_tree.h		\
++	kd_util.cpp		\
++	kd_util.h		\
++	perf.cpp		\
++	pr_queue.h		\
++	pr_queue_k.h
++
++libann_la_LDFLAGS = -no-undefined -version-info 0:0:0
+diff -N -u -r ann-1.1.2+doc.orig//test/Makefile.am ann-1.1.2+doc//test/Makefile.am
+--- ann-1.1.2+doc.orig//test/Makefile.am	1970-01-01 01:00:00.000000000 +0100
++++ ann-1.1.2+doc//test/Makefile.am	2011-10-26 00:15:00.884970420 +0200
+@@ -0,0 +1,4 @@
++bin_PROGRAMS=ann_test
++ann_test_SOURCES=ann_test.cpp rand.cpp
++AM_CPPFLAGS=-I$(top_builddir)/include
++LDADD=../src/libann.la
