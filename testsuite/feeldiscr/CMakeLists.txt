@@ -22,7 +22,9 @@ feelpp_add_test( hcurl_oneelt NO_MPI_TEST )
 feelpp_add_test( hcurl CFG hcurl.cfg)
 feelpp_add_test( hcurl3D_oneelt NO_MPI_TEST )
 
-feelpp_add_test( continuity NO_MPI_TEST )
+feelpp_add_test( continuity_h1 NO_MPI_TEST )
+feelpp_add_test( continuity_hdiv NO_MPI_TEST )
+feelpp_add_test( continuity_hcurl NO_MPI_TEST )
 
 feelpp_add_test( functionals )
 
