@@ -71,7 +71,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( HDivRT0, T, dim_types )
     auto u = Xh->element();
     auto a1 = form1( _test=Xh );
     a1  = integrate( internalfaces( mesh ), (leftface(trans(id(u))*N())+rightface(-trans(id(u))*N())) );
-    u.on(  _range=elements(mesh), _expr=expr<T::first::value,1>(std::string("{x*y,x+y}:x:y")) );
+    u.on(  _range=elements(mesh), _expr=expr<T::first::value,1>("{x*y,x+y}:x:y") );
     a1.vector().printMatlab("HDivRT.m");
     BOOST_CHECK_SMALL( a1( u ), 1e-10 );
     u.printMatlab("uRT0.m");
