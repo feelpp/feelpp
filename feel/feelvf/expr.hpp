@@ -53,7 +53,7 @@
 #include <feel/feelvf/exprbase.hpp>
 #include <feel/feelvf/detail/gmc.hpp>
 #include <feel/feelvf/shape.hpp>
-#include <feel/feelvf/lambda.hpp>
+#include <feel/feelvf/placeholder.hpp>
 
 namespace Feel
 {
@@ -312,7 +312,7 @@ public:
         :
         M_expr( __expr )
     {}
-    virtual ~Expr()
+    ~Expr()
     {}
 
     //@}
@@ -666,9 +666,48 @@ operator<<( std::ostream& os, Expr<ExprT> const& exprt )
 }
 
 
-extern Expr<LambdaExpr1> _e1;
-extern Expr<LambdaExpr2> _e2;
-extern Expr<LambdaExpr3> _e3;
+extern Expr<PlaceHolder1> _e1;
+extern Expr<PlaceHolder2> _e2;
+extern Expr<PlaceHolder3> _e3;
+
+template< class T >
+struct isPlaceHolder
+{
+    static constexpr int result = 0;
+};
+template<>
+struct isPlaceHolder<Expr<PlaceHolder1>>
+{
+    static constexpr int result = 1;
+};
+template<>
+struct isPlaceHolder<Expr<PlaceHolder2>>
+{
+    static constexpr int result = 2;
+};
+
+template<>
+struct isPlaceHolder<Expr<PlaceHolder3>>
+{
+    static constexpr int result = 3;
+};
+
+template<>
+struct isPlaceHolder<PlaceHolder1>
+{
+    static constexpr int result = 1;
+};
+template<>
+struct isPlaceHolder<PlaceHolder2>
+{
+    static constexpr int result = 2;
+};
+
+template<>
+struct isPlaceHolder<PlaceHolder3>
+{
+    static constexpr int result = 3;
+};
 
 /**
  * \class ExpressionOrder

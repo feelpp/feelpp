@@ -60,7 +60,7 @@ BOOST_PARAMETER_FUNCTION(
 {
 
     auto ret =  integrate_impl( range, quad, expr, geomap, quad1, use_tbb, use_harts, grainsize, partitioner, quadptloc );
-
+#if 0
     if ( verbose )
     {
         std::cout << " -- integrate: size(range) = " << std::distance( ret.expression().beginElement(),
@@ -69,7 +69,7 @@ BOOST_PARAMETER_FUNCTION(
         std::cout << " -- integrate: quad1 = " << ret.expression().im2().nPoints() << "\n";
         //std::cout << " -- integrate: geomap = " << geomap << "\n";
     }
-
+#endif
     return ret;
 }
 

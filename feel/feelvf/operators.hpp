@@ -52,6 +52,56 @@ namespace Feel
 {
 namespace vf
 {
+template<int I,typename Elt>
+struct GetElementType {};
+
+template<typename Elt> struct GetElementType<0,Elt> { typedef typename boost::unwrap_reference<Elt>::type type; };
+
+
+template<typename Elt>
+struct GetElementType<1,Elt>
+{
+    typedef typename Elt::expression_type type;
+};
+
+template<typename Elt>
+struct GetElementType<2,Elt>
+{
+    typedef typename Elt::expression_type type;
+};
+
+template<typename Elt>
+struct GetElementType<3,Elt>
+{
+    typedef typename Elt::expression_type type;
+};
+
+template<int I, typename Elt, typename... TheExpr>
+struct SetElementType {};
+template<typename Elt,typename... TheExpr>
+struct SetElementType<0,Elt,TheExpr...>
+{
+    typedef Elt type;
+};
+
+template<typename Elt,typename... TheExpr>
+struct SetElementType<1,Elt,TheExpr...>
+{
+    typedef typename PlaceHolder<1>::template Lambda<TheExpr...>::type type;
+};
+
+template<typename Elt,typename... TheExpr>
+struct SetElementType<2,Elt,TheExpr...>
+{
+    typedef typename PlaceHolder<2>::template Lambda<TheExpr...>::type type;
+};
+
+template<typename Elt,typename... TheExpr>
+struct SetElementType<3,Elt,TheExpr...>
+{
+    typedef typename PlaceHolder<3>::template Lambda<TheExpr...>::type type;
+};
+
 /// \cond detail
 # /* Accessors for the operator datatype. */
 # define VF_OPERATOR_NAME(O)           BOOST_PP_TUPLE_ELEM(11, 0, O)
@@ -202,9 +252,16 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                                                                         \
             static const size_type context = VF_OPERATOR_CONTEXT( O );  \
                                                                         \
-            typedef Element element_type;                               \
+                                                                        \
+            typedef typename GetElementType<isPlaceHolder<Element>::result,Element>::type element_type; \
             typedef boost::shared_ptr<element_type> element_ptrtype;    \
+            typedef element_type the_element_type;                      \
             typedef VF_OPERATOR_NAME( O )<element_type, VF_OP_TYPE_OBJECT(T)> this_type; \
+            template<typename TheT>                                     \
+                struct thisT_type                                       \
+            {                                                           \
+                typedef VF_OPERATOR_NAME( O )<TheT, VF_OP_TYPE_OBJECT(T)> type; \
+            };                                                          \
             typedef this_type self_type;                                \
                                                                         \
             typedef typename element_type::functionspace_type functionspace_type; \
@@ -241,13 +298,20 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                                                                         \
                                                                         \
             VF_OPERATOR_NAME( O ) ( element_type const& v, bool useInterpWithConfLoc=false ) \
-              : M_v ( boost::cref(v) ),                                 \
+                : M_v ( v ),                                            \
               M_useInterpWithConfLoc( useInterpWithConfLoc )            \
             {                                                           \
                 if ( VF_OP_TYPE_IS_VALUE( T ) )                         \
                     v.updateGlobalValues();                             \
                 DVLOG(2) << "[" BOOST_PP_STRINGIZE(VF_OPERATOR_NAME( O )) "] default constructor\n"; \
             }                                                           \
+            template<int I>                                             \
+                VF_OPERATOR_NAME( O ) ( Expr<PlaceHolder<I> > const& v, bool useInterpWithConfLoc=false ) \
+                : M_v ( boost::cref(v.expression()) ),                  \
+                M_useInterpWithConfLoc( useInterpWithConfLoc )          \
+                {                                                       \
+                    DVLOG(2) << "[" BOOST_PP_STRINGIZE(VF_OPERATOR_NAME( O )) "] default constructor\n"; \
+                }                                                       \
             VF_OPERATOR_NAME( O )( VF_OPERATOR_NAME( O ) const& op )    \
               : M_v ( op.M_v ),                                         \
               M_useInterpWithConfLoc( op.M_useInterpWithConfLoc )       \
@@ -258,13 +322,30 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
             template<typename... TheExpr>                               \
             struct Lambda                                               \
             {                                                           \
-                typedef this_type type;                                 \
+                typedef typename SetElementType<isPlaceHolder<Element>::result,this_type,TheExpr...>::type _type; \
+                typedef typename thisT_type<_type>::type type;          \
             };                                                          \
             template<typename... TheExpr>                               \
                 typename Lambda<TheExpr...>::type                       \
-                operator()( TheExpr... e) { return *this; }             \
+            impl( mpl::false_, TheExpr... e)                            \
+            {                                                           \
+                return *this;                                           \
+            }                                                           \
+            template<typename... TheExpr>                               \
+            typename Lambda<TheExpr...>::type                           \
+            impl( mpl::true_, TheExpr... e)                             \
+            {                                                           \
+                typedef typename Lambda<TheExpr...>::type ret_t;        \
+                return ret_t( boost::unwrap_ref(M_v)( e...), M_useInterpWithConfLoc ) ; \
+            }                                                           \
+            template<typename... TheExpr>                               \
+                typename Lambda<TheExpr...>::type                       \
+                operator()( TheExpr... e)                               \
+            {                                                           \
+                return impl( mpl::bool_<isPlaceHolder<Element>::result>(), e... ); \
+            }                                                           \
                                                                         \
-            element_type const& e() const { return M_v; }              \
+            element_type const& e() const { return M_v; }               \
             bool useInterpWithConfLoc() const { return M_useInterpWithConfLoc; } \
             template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t> \
                 struct tensor                                           \
@@ -731,8 +812,8 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                                                                         \
         protected:                                                      \
             VF_OPERATOR_NAME( O ) () {}                                 \
-            boost::reference_wrapper<const element_type>  M_v;         \
-            bool M_useInterpWithConfLoc;                                     \
+            the_element_type M_v;                                       \
+            bool M_useInterpWithConfLoc;                                \
         };                                                              \
     template <class ELEM                                                \
               BOOST_PP_IF( VF_OP_TYPE_IS_GENERIC( T ),  BOOST_PP_COMMA, BOOST_PP_EMPTY )() \

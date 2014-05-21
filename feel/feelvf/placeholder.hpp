@@ -22,12 +22,12 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file lambda.hpp
+   \file placeholder.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2014-05-13
  */
-#ifndef FEELPP_VF_LAMBDA_HPP
-#define FEELPP_VF_LAMBDA_HPP 1
+#ifndef FEELPP_VF_PLACEHOLDER_HPP
+#define FEELPP_VF_PLACEHOLDER_HPP 1
 
 namespace Feel
 {
@@ -40,10 +40,16 @@ enum { NONE             = 0x00, // Notice we are using bits as flags here.
        EXCEPTION        = 0x08,
        RETHROW          = 0x10};
 
-class LambdaExprBase {};
+template<bool B, typename Elt> struct GetElementType2 {};
+template<typename Elt> struct GetElementType2<true,Elt> { typedef typename Elt::expression_type type; };
+template<typename Elt> struct GetElementType2<false,Elt> { typedef Elt type; };
+
+
+
+class PlaceHolderBase {};
 
 template<int I = FIRST>
-class LambdaExpr : public LambdaExprBase
+class PlaceHolder : public PlaceHolderBase
 {
 public:
     static const int kind = I;
@@ -53,6 +59,29 @@ public:
 
     static const uint16_type imorder = 0;
     static const bool imIsPoly = false;
+
+    typedef PlaceHolder<I> this_type;
+    typedef this_type functionspace_type;
+    typedef this_type reference_element_type;
+    typedef this_type* fe_ptrtype;
+    typedef this_type fe_type;
+    typedef this_type basis_type;
+    typedef this_type mortar_fe_type;
+    typedef this_type geoelement_type;
+    typedef this_type gm_type;
+    typedef this_type polyset_type;
+
+    static const uint16_type nDim = 0;
+    static const uint16_type nOrder = 0;
+    static const uint16_type rank = 0;
+    static const uint16_type nComponents = 0;
+    static const uint16_type nComponents1 = 0;
+    static const uint16_type nComponents2 = 0;
+
+    struct PreCompute {};
+    template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g = context_v>
+    struct Context {};
+    static const bool is_mortar = false;
 
     template<typename Func>
     struct HasTestFunction
@@ -76,86 +105,151 @@ public:
                                   typename mpl::if_<mpl::equal_to<mpl::int_<kind>,mpl::int_<SECOND>>,
                                                     mpl::identity<TheExpr2>,
                                                     mpl::identity<TheExpr3>>::type>::type::type _type;
-        typedef typename _type::expression_type type;
+        static const bool is_expression = boost::is_base_of<ExprBase,_type>::value;
+        typedef boost::is_base_of<ExprBase,_type> is_expression_type;
+        typedef typename GetElementType2<is_expression,_type>::type type;
+
+        template<typename ExprT>
+        static type impl( mpl::bool_<true>, ExprT const& e  )
+            {
+                std::cout << "return expression\n";
+                return e.expression();
+            }
+        template<typename ExprT>
+        static type impl( mpl::bool_<false>, ExprT const& e  )
+            {
+                std::cout << "return element\n";
+                return e;
+            }
+
+        template<typename ExprT>
+        static type expr( ExprT const& e  )
+            {
+                return impl( is_expression_type(), e );
+            }
+
+        /**
+         * two args
+         */
+        template<typename ExprT1, typename ExprT2>
+        static type impl( mpl::bool_<true>, mpl::int_<FIRST>, ExprT1 const& e1, ExprT2 const& e2  )
+            {
+                return e1.expression();
+            }
+        template<typename ExprT1, typename ExprT2>
+        static type impl( mpl::bool_<true>, mpl::int_<SECOND>, ExprT1 const& e1, ExprT2 const& e2  )
+            {
+                return e2.expression();
+            }
+
+        template<typename ExprT1, typename ExprT2>
+        static type impl( mpl::bool_<false>, mpl::int_<FIRST>, ExprT1 const& e1, ExprT2 const& e2  )
+            {
+                return e1;
+            }
+        template<typename ExprT1, typename ExprT2>
+        static type impl( mpl::bool_<false>, mpl::int_<SECOND>, ExprT1 const& e1, ExprT2 const& e2  )
+            {
+                return e2;
+            }
+
+        template<typename ExprT1, typename ExprT2>
+        static type expr( ExprT1 const& e1, ExprT2 const& e2  )
+            {
+                return impl( is_expression_type(), mpl::int_<kind>(), e1, e2 );
+            }
+        /**
+         * three args
+         */
+        template<typename ExprT1, typename ExprT2, typename ExprT3>
+        static type impl( mpl::bool_<true>, mpl::int_<FIRST>, ExprT1 const& e1, ExprT2 const& e2, ExprT3 const& e3  )
+            {
+                return e1.expression();
+            }
+        template<typename ExprT1, typename ExprT2, typename ExprT3>
+        static type impl( mpl::bool_<true>, mpl::int_<SECOND>, ExprT1 const& e1, ExprT2 const& e2, ExprT3 const& e3  )
+            {
+                return e2.expression();
+            }
+        template<typename ExprT1, typename ExprT2, typename ExprT3>
+        static type impl( mpl::bool_<true>, mpl::int_<THIRD>, ExprT1 const& e1, ExprT2 const& e2, ExprT3 const& e3  )
+            {
+                return e3.expression();
+            }
+
+        template<typename ExprT1, typename ExprT2, typename ExprT3>
+        static type impl( mpl::bool_<false>, mpl::int_<FIRST>, ExprT1 const& e1, ExprT2 const& e2, ExprT3 const& e3  )
+            {
+                return e1;
+            }
+        template<typename ExprT1, typename ExprT2, typename ExprT3>
+        static type impl( mpl::bool_<false>, mpl::int_<SECOND>, ExprT1 const& e1, ExprT2 const& e2, ExprT3 const& e3  )
+            {
+                return e2;
+            }
+        template<typename ExprT1, typename ExprT2, typename ExprT3>
+        static type impl( mpl::bool_<false>, mpl::int_<THIRD>, ExprT1 const& e1, ExprT2 const& e2, ExprT3 const& e3  )
+            {
+                return e3;
+            }
+
+        template<typename ExprT1, typename ExprT2, typename ExprT3>
+        static type expr( ExprT1 const& e1, ExprT2 const& e2, ExprT3 const& e3  )
+            {
+                return impl( is_expression_type(), mpl::int_<kind>(), e1, e2, e3 );
+            }
     };
 
     template<typename ExprT>
     typename Lambda<ExprT>::type
     operator()( ExprT const& e )
         {
-            return e.expression();
-        }
-    template<typename ExprT1, typename ExprT2>
-    typename Lambda<ExprT1,ExprT2>::type
-    LambdaImpl( ExprT1 const& e1, ExprT2 const& e2, mpl::int_<FIRST>)
-        {
-            return e1.expression();
-        }
-    template<typename ExprT1, typename ExprT2>
-    typename Lambda<ExprT1,ExprT2>::type
-    LambdaImpl( ExprT1 const& e1, ExprT2 const& e2, mpl::int_<SECOND>)
-        {
-            return e2.expression();
-        }
-
-    template<typename ExprT1, typename ExprT2,typename ExprT3>
-    typename Lambda<ExprT1,ExprT2,ExprT3>::type
-    LambdaImpl( ExprT1 const& e1, ExprT2 const& e2, ExprT3 const& e3, mpl::int_<FIRST>)
-        {
-            return e1.expression();
-        }
-    template<typename ExprT1, typename ExprT2,typename ExprT3>
-    typename Lambda<ExprT1,ExprT2,ExprT3>::type
-    LambdaImpl( ExprT1 const& e1, ExprT2 const& e2, ExprT3 const& e3, mpl::int_<SECOND>)
-        {
-            return e2.expression();
-        }
-    template<typename ExprT1, typename ExprT2,typename ExprT3>
-    typename Lambda<ExprT1,ExprT2,ExprT3>::type
-    LambdaImpl( ExprT1 const& e1, ExprT2 const& e2, ExprT3 const& e3, mpl::int_<THIRD>)
-        {
-            return e3.expression();
+            return  Lambda<ExprT>::expr( e );
         }
 
     template<typename ExprT1, typename ExprT2>
     typename Lambda<ExprT1,ExprT2>::type
     operator()( ExprT1 const& e1, ExprT2 const& e2)
         {
-            return LambdaImpl( e1, e2, mpl::int_<kind>() );
+            return  Lambda<ExprT1, ExprT2>::expr( e1, e2 );
         }
     template<typename ExprT1, typename ExprT2, typename ExprT3>
     typename Lambda<ExprT1,ExprT2,ExprT3>::type
     operator()( ExprT1 const& e1, ExprT2 const& e2, ExprT3 const& e3 )
         {
-            return LambdaImpl(e1,e2,e3,mpl::int_<kind>());
+            return Lambda<ExprT1, ExprT2, ExprT3>::expr( e1, e2, e3 );
+            //return LambdaImpl(e1,e2,e3,mpl::int_<kind>());
         }
 
     template<typename ExprT>
     typename Lambda<ExprT>::type
     operator()( ExprT const& e ) const
         {
-            return e.expression();
+            return  Lambda<ExprT>::expr( e );
+            //return typename Lambda<ExprT>::type ( e );
         }
 
     template<typename ExprT1, typename ExprT2>
     typename Lambda<ExprT1,ExprT2>::type
     operator()( ExprT1 const& e1, ExprT2 const& e2 ) const
         {
-            return LambdaImpl(e1,e2,mpl::int_<kind>());
+            return  Lambda<ExprT1, ExprT2>::expr( e1, e2 );
+            //return LambdaImpl(e1,e2,mpl::int_<kind>());
         }
 
     template<typename ExprT1, typename ExprT2, typename ExprT3>
     typename Lambda<ExprT1,ExprT2,ExprT3>::type
     operator()( ExprT1 const& e1, ExprT2 const& e2, ExprT3 const& e3 ) const
         {
-            return LambdaImpl(e1,e2,e3,mpl::int_<kind>());
+            return  Lambda<ExprT1, ExprT2, ExprT3>::expr( e1, e2, e3 );
+            //return LambdaImpl(e1,e2,e3,mpl::int_<kind>());
         }
 
 
     template<typename Geo_t, typename Basis_i_t = fusion::map<fusion::pair<vf::detail::gmc<0>,boost::shared_ptr<vf::detail::gmc<0> > >,fusion::pair<vf::detail::gmc<1>,boost::shared_ptr<vf::detail::gmc<1> > > >, typename Basis_j_t = Basis_i_t>
     struct tensor
     {
-        typedef LambdaExpr<I> expression_type;
+        typedef PlaceHolder<I> expression_type;
         typedef typename expression_type::value_type value_type;
 
         typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >, mpl::identity<vf::detail::gmc<0> >, mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
@@ -242,10 +336,11 @@ public:
 
 };
 
-using LambdaExpr1 = LambdaExpr<FIRST>;
-using LambdaExpr2 = LambdaExpr<SECOND>;
-using LambdaExpr3 = LambdaExpr<THIRD>;
+using PlaceHolder1 = PlaceHolder<FIRST>;
+using PlaceHolder2 = PlaceHolder<SECOND>;
+using PlaceHolder3 = PlaceHolder<THIRD>;
+
 
 } // vf
 } // Feel
-#endif /* FEELPP_VF_LAMBDA_HPP */
+#endif /* FEELPP_VF_PLACEHOLDER_HPP */
