@@ -2065,6 +2065,9 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, IteratorType it, IteratorType en, con
     std::set<int> nodeset;
     size_type p = 0;
     auto elt_it = it;
+
+    /* Gather all the vertices of which the elements are made up with into a std::set */
+    /* build up correspondance arrays between index in nodeset and previous id */
     for( ; it != en; ++it )
     {
         auto const& elt = boost::unwrap_ref( *it );
@@ -2093,6 +2096,10 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, IteratorType it, IteratorType en, con
     auto pit = ids.begin();
     auto pen = ids.end();
     //for( auto i = 0; i < nv; ++i )
+
+    /* put coords of each point into the coords array */
+    /* if outer is true, the coords are placed like: x1 x2 ... xn y1 y2 ... yn z1 z2 ... zn */
+    /* otherwise, the coords are placed like: x1 y1 z1 x2 y2 z2 ... xn yn zn */
     for( int i = 0; pit != pen; ++pit, ++i )
     {
         CHECK( *pit > 0 ) << "invalid id " << *pit;
@@ -2121,6 +2128,9 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, IteratorType it, IteratorType en, con
                 coords[3*i+2] = T( p.node()[2] );
         }
     }
+
+    /* dispatch the knowledge of how many points there are */
+    /* on each process to each process */
     size_type n_pts = ids.size();
     //std::cout << "n_pts : " << n_pts << std::endl;
     std::vector<size_type> p_s;
@@ -2143,6 +2153,8 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, IteratorType it, IteratorType en, con
     int __ne = std::distance( elt_it, en );
     std::vector<int> s{nv,__ne}, global_s;
     //mpi::all_reduce( mesh->worldComm().comm(), s, global_s, std::sum<int>() );
+    
+    /* compute the number of global points and elements */
     mpi::all_reduce( mesh->worldComm().comm(), nv, global_npts, std::plus<int>() );
     mpi::all_reduce( mesh->worldComm().comm(), __ne, global_nelts, std::plus<int>()  );
     //std::cout <<  "global_nelts=" << global_nelts << std::endl;
