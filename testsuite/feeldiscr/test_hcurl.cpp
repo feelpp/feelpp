@@ -51,6 +51,7 @@
 #include <feel/feelpoly/nedelec.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feeldiscr/projector.hpp>
+#include <feel/feeldiscr/ned1h.hpp>
 
 #include <feel/feelfilters/loadmesh.hpp>
 
@@ -185,7 +186,7 @@ TestHCurl::exampleProblem1()
     mesh_ptrtype mesh = loadMesh(_mesh = new mesh_type);
 
     // Xh : space build with Nedelec elements
-    space_ptrtype Xh = space_type::New( mesh );
+    auto Xh = Ned1h<0>( mesh );
     auto u = Xh->element();
     auto phi = Xh->element();
 
@@ -224,7 +225,7 @@ TestHCurl::exampleProblem1()
                                     % pro1_name ).str() ) );
 
     exporter_pro1->step( 0 )->setMesh( mesh );
-    exporter_pro1->step( 0 )->add( "solution u", u );
+    exporter_pro1->step( 0 )->add( "u", u );
     exporter_pro1->step( 0 )->add( "error", error_hcurl );
     exporter_pro1->save();
 
@@ -234,7 +235,7 @@ void
 TestHCurl::testProjector()
 {
     mesh_ptrtype mesh = loadMesh(_mesh = new mesh_type);
-    space_ptrtype Nh = space_type::New( mesh );
+    auto Nh = Ned1h<0>( mesh );
     lagrange_space_v_ptrtype Yh_v = lagrange_space_v_type::New( mesh ); //lagrange vectorial space
     lagrange_space_s_ptrtype Yh_s = lagrange_space_s_type::New( mesh ); //lagrange scalar space
 
