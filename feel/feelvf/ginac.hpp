@@ -238,6 +238,22 @@ Expr< GinacEx<2> > expr( std::string const& s, std::string filename="" )
 }
 
 /**
+* @brief Create an Feel++ expression from a GiNaC expression as a string
+*
+* @param s          String containing the ginac expression and symbols
+* @param filename   Shared file
+*
+* @return Feel++ Expression
+*/
+inline
+Expr< GinacEx<2> > expr( const char* s_, std::string filename="" )
+{
+    std::string s = s_;
+    std::pair< ex, std::vector<GiNaC::symbol> > g = GiNaC::parse(s);
+    return Expr< GinacEx<2> >(  GinacEx<2>( g.first, g.second, filename) );
+}
+
+/**
  * @brief Create an Feel++ expression from a GiNaC expression as a string
  *
  * @tparam Order     Expression order
