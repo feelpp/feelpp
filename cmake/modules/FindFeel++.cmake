@@ -29,7 +29,7 @@ IF("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
   IF(APPLE)
     set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -std=c++11 -stdlib=libc++ -ftemplate-depth=1024" )
   ELSE()
-    set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -std=c++11 -stdlib=libstdc++" )
+    set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -std=c++11 -stdlib=libstdc++ -ftemplate-depth=1024" )
   ENDIF()
 ENDIF()
 
