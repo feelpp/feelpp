@@ -1080,7 +1080,8 @@ public:
 
     virtual element_type operator()( parameter_type const& ) = 0;
     virtual element_type operator()( solution_type const& T, parameter_type const& ) = 0;
-    virtual element_type interpolant( parameter_type const& ) = 0;
+    virtual element_type interpolant( parameter_type const& , element_type const & , int ) = 0;
+
     value_type operator()( node_type const& x, parameter_type const& mu )
         {
             VLOG(2) << "calling EIMFunctionBase::operator()( x=" << x << ", mu=" << mu << ")\n";
@@ -1351,7 +1352,6 @@ public:
 
     model_functionspace_ptrtype modelFunctionSpace() const { return M_model->functionSpace();}
     model_functionspace_ptrtype modelFunctionSpace() { return M_model->functionSpace();}
-
 
     element_type
     projectedResidual( size_type __M ) const
@@ -1978,6 +1978,11 @@ public:
         auto beta = this->beta( mu );
         return expansion( M_q_vector, this->beta( mu ) , M_M_max);
     }
+    element_type interpolant( parameter_type const& mu , element_type const & solution , int M)
+    {
+        return expansion( M_q_vector, this->beta( mu , solution , M) , M );
+    }
+
     //return M_eim->operator()( mu , M_eim->mMax() ); }
 
     //element_type const& q( int m ) const { return M_eim->q( m ); }
