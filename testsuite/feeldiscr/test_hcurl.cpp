@@ -207,8 +207,11 @@ TestHCurl::exampleProblem1()
     auto a = form2( _test=Xh, _trial=Xh );
     a = integrate(elements(mesh), trans(idt(u))*id(phi) );
     a.solve( _solution=u, _rhs=l );
+    auto b = form2( _test=Xh, _trial=Xh );
+    b = integrate(elements(mesh), curlxt(u)*curlx(phi) );
     l.vector().printMatlab( "rhs.m" );
     a.matrix().printMatlab( "mass.m" );
+    b.matrix().printMatlab( "curlcurl.m" );
     u.printMatlab( "u.m" );
 
     std::cout << "norm L2 = " << normL2( elements(mesh), idv(u)-u_exact, _quad=_Q<2>() );
