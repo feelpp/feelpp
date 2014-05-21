@@ -49,6 +49,7 @@ BOOST_AUTO_TEST_SUITE( continuitysuite )
 //typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
     typedef boost::mpl::list<boost::mpl::pair<boost::mpl::int_<2>,boost::mpl::int_<0> >,
                              boost::mpl::pair<boost::mpl::int_<2>,boost::mpl::int_<1> >,
+                             boost::mpl::pair<boost::mpl::int_<2>,boost::mpl::int_<2> >,
                              boost::mpl::pair<boost::mpl::int_<3>,boost::mpl::int_<0> >
                              > dim_types;
 //typedef boost::mpl::list<boost::mpl::int_<2>,boost::mpl::int_<3>,boost::mpl::int_<1> > dim_types;
