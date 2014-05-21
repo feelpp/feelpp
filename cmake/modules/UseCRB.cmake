@@ -48,7 +48,7 @@ endmacro(crb_add_octave_module)
 macro(crb_add_executable)
 
   PARSE_ARGUMENTS(CRB_EXEC
-    "SOURCES;LINK_LIBRARIES;CFG"
+    "SOURCES;LINK_LIBRARIES;CFG;GEO"
     "TEST"
     ${ARGN}
     )
@@ -61,6 +61,7 @@ macro(crb_add_executable)
     MESSAGE("    Link libraries: ${CRB_EXEC_LINK_LIBRARIES}")
     MESSAGE("    Scripts: ${CRB_EXEC_SCRIPTS}")
     MESSAGE("    Cfg file: ${CRB_EXEC_CFG}")
+    MESSAGE("    Geo file: ${CRB_EXEC_GEO}")
   endif()
 
   set(execname crb_${CRB_EXEC_NAME})
@@ -83,6 +84,14 @@ macro(crb_add_executable)
 #      endif()
     endforeach()
   endif()
+  # geo and mesh
+  if ( CRB_EXEC_GEO )
+    foreach(  geo ${CRB_EXEC_GEO} )
+      get_filename_component( GEO_NAME ${geo} NAME )
+      configure_file( ${geo} ${GEO_NAME} )
+    endforeach()
+  endif()
+
 endmacro(crb_add_executable)
 
 #
@@ -136,7 +145,7 @@ endmacro(crb_add_python_module)
 macro(crb_add_model)
 
   PARSE_ARGUMENTS(CRB_MODEL
-    "HDRS;SRCS;LINK_LIBRARIES;CFG;XML;SCRIPTS;CLASS;DEFS;"
+    "HDRS;SRCS;LINK_LIBRARIES;CFG;XML;SCRIPTS;CLASS;DEFS;GEO;MSH"
     "TEST;ADD_OT"
     ${ARGN}
     )
@@ -151,6 +160,8 @@ macro(crb_add_model)
     #MESSAGE("    Link libraries: ${CRB_MODEL_LINK_LIBRARIES}")
     MESSAGE("    Cfg file: ${CRB_MODEL_CFG}")
     MESSAGE("    Xml file: ${CRB_MODEL_XML}")
+    MESSAGE("    Geo file: ${CRB_MODEL_GEO}")
+    MESSAGE("    Msh file: ${CRB_MODEL_MSH}")
     MESSAGE("Scripts file: ${CRB_MODEL_SCRIPTS}")
   endif()
 
@@ -193,13 +204,15 @@ int main( int argc, char** argv )
   ENDIF()
 
   if ( CRB_MODEL_TEST )
-    crb_add_executable(${CRB_MODEL_SHORT_NAME}app 
+    crb_add_executable(${CRB_MODEL_SHORT_NAME}app
       ${CRB_MODEL_SHORT_NAME}app.cpp ${CRB_MODEL_SRCS}
-      LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES}
+      GEO ${CRB_MODEL_GEO} 
+      LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES} 
       CFG ${CRB_MODEL_CFG} TEST )
   else()
-    crb_add_executable(${CRB_MODEL_SHORT_NAME}app 
-      ${CRB_MODEL_SHORT_NAME}app.cpp ${CRB_MODEL_SRCS}
+    crb_add_executable(${CRB_MODEL_SHORT_NAME}app
+      ${CRB_MODEL_SHORT_NAME}app.cpp ${CRB_MODEL_SRCS} 
+      GEO ${CRB_MODEL_GEO} 
       LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES}
       CFG ${CRB_MODEL_CFG} )
   endif()
@@ -214,11 +227,17 @@ int main( int argc, char** argv )
     set(CRB_MODEL_WRAPPER_NAME "crb${CRB_MODEL_SHORT_NAME}${wrapper}")
     set(CRB_MODEL_WRAPPER_TYPE "\"${wrapper}\"")
     #configure_file(${FEELPP_SOURCE_DIR}/applications/crb/templates/python_wrapper.cpp ${pycpp})
-    configure_file(${FEELPP_SOURCE_DIR}/applications/crb/templates/ot_python_command_wrapper.cpp ${pycpp})
-    configure_file(${FEELPP_SOURCE_DIR}/applications/crb/templates/octave_wrapper.cpp ${octcpp})
+    if ( EXISTS ${CMAKE_SOURCE_DIR}/applications/crb/templates/ )
+      configure_file(${CMAKE_SOURCE_DIR}/applications/crb/templates/ot_python_command_wrapper.cpp ${pycpp})
+      configure_file(${CMAKE_SOURCE_DIR}/applications/crb/templates/octave_wrapper.cpp ${octcpp})
+    elseif( EXISTS ${FEELPP_DATADIR}/crb/templates )
+      configure_file(${FEELPP_DATADIR}/crb/templates/ot_python_command_wrapper.cpp ${pycpp})
+      configure_file(${FEELPP_DATADIR}/crb/templates/octave_wrapper.cpp ${octcpp})
+    endif()
+
     configure_file(${CRB_MODEL_SHORT_NAME}.xml.in ${xml})
 
-    
+
     if ( CRB_MODEL_DEFS )
       set_property(TARGET ${execname} PROPERTY COMPILE_DEFINITIONS ${CRB_MODEL_DEFS})
     endif()

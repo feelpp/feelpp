@@ -240,23 +240,15 @@ public:
     typedef PointSetType<convex_type, nOrder, value_type> pointset_type;
 
     static const uint16_type nbPtsPerVertex = 0;
-    static const uint16_type nbPtsPerEdge = mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<2> >,
-                                                     mpl::int_<reference_convex_type::nbPtsPerEdge>,
-                                                     mpl::int_<0> >::type::value;
-    static const uint16_type DimPkm2_2d =(nOrder>=2)?(nOrder-2+1)*(nOrder-2+2)/2:0;
-    static const uint16_type DimPkm2_3d =(nOrder>=2)?(nOrder-2+1)*(nOrder-2+2)*(nOrder-2+3)/6:0;
-    static const uint16_type DimPkm2 = mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<2> >,
-                                                mpl::int_<DimPkm2_2d>,
-                                                mpl::int_<DimPkm2_3d> >::type::value;
-    static const uint16_type nbPtsPerFace =mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<3> >,
-                                                    mpl::int_<reference_convex_type::nbPtsPerFace>,
-                                                    typename mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<2> >,
-                                                                      mpl::int_<2*DimPkm2>,
-                                                                      mpl::int_<0> >::type >::type::value;
-    static const uint16_type nbPtsPerVolume = mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<3> >,
-                                                       mpl::int_<3*DimPkm2>,
-                                                       mpl::int_<0> >::type::value;;
-    //static const uint16_type numPoints = ( reference_convex_type::numGeometricFaces*nbPtsPerFace+reference_convex_type::numEdges*nbPtsPerEdge );
+    static constexpr uint16_type nbPtsPerEdge = (nDim==2)?reference_convex_type::nbPtsPerEdge:0;
+    static constexpr uint16_type nbPtsPerFace2d = (nOrder)*(nOrder+2)-reference_convex_type::numEdges*nbPtsPerEdge;
+    static constexpr uint16_type nbPtsPerFace3d = reference_convex_type::nbPtsPerFace;
+    static constexpr uint16_type nbPtsPerFace =(nDim==3)?nbPtsPerFace3d:nbPtsPerFace2d;
+    static constexpr uint16_type nbInteriorMoments3d = (nOrder)*(nOrder+1)*(nOrder+3)/2-reference_convex_type::numTopologicalFaces*nbPtsPerFace3d;
+    static constexpr uint16_type nbPtsPerVolume = (nDim==3)?nbInteriorMoments3d:0;
+    static constexpr uint16_type numPoints2d = (nOrder)*(nOrder+2);
+    static constexpr uint16_type numPoints3d = (nOrder)*(nOrder+1)*(nOrder+3)/2;
+    static constexpr uint16_type numPoints = (nDim==2)?numPoints2d:numPoints3d;
 
     /** Number of degrees of freedom per vertex */
     static const uint16_type nDofPerVertex = 0;
@@ -383,10 +375,14 @@ public:
 
             vectorial_polynomialset_type Pkm1 ( Pkp1.polynomialsUpToDimension( dim_Pm1 ) );
 
-            std::cout << "Pkm1 = " << Pkm1.coeff() << "\n";
-            std::cout << "Primal = " << primal.coeff() << "\n";
-            //for ( int i = 0; i < Pkm1.polynomialDimension(); ++i )
-            for ( int i = 0; i < pts_interior.size2(); ++i )
+            //std::cout << "Pkm1 = " << Pkm1.coeff() << "\n";
+            //std::cout << "Primal = " << primal.coeff() << "\n";
+            if ( nDim == 2 )
+                CHECK( Pkm1.polynomialDimension() == nbPtsPerFace )
+                    << "Invalid number of interior moments in 2D "
+                    << " Pkm1.dim = " << Pkm1.polynomialDimension()
+                    << " nbPtsPerFace = " << nbPtsPerFace;
+            for ( int i = 0; i < Pkm1.polynomialDimension(); ++i )
             {
                 //typedef functional::IntegralMoment<primal_space_type, vectorial_polynomialset_type> fim_type;
                 //typedef functional::IntegralMoment<Pkp1_v_type, vectorial_polynomialset_type> fim_type;
@@ -523,15 +519,10 @@ public:
 
     static const uint16_type nOrder =  dual_space_type::nOrder;
     static const uint16_type nbPtsPerVertex = 0;
-    static const uint16_type nbPtsPerEdge = mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<2> >,
-                             mpl::int_<reference_convex_type::nbPtsPerEdge>,
-                             mpl::int_<0> >::type::value;
-    static const uint16_type nbPtsPerFace = mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<3> >,
-                             mpl::int_<reference_convex_type::nbPtsPerFace>,
-                             mpl::int_<0> >::type::value;
-    static const uint16_type nbPtsPerVolume = 0;
-    static const uint16_type numPoints = ( reference_convex_type::numGeometricFaces*nbPtsPerFace+
-                                           reference_convex_type::numEdges*nbPtsPerEdge );
+    static const uint16_type nbPtsPerEdge = dual_space_type::nbPtsPerEdge;
+    static const uint16_type nbPtsPerFace = dual_space_type::nbPtsPerFace;
+    static const uint16_type nbPtsPerVolume = dual_space_type::nbPtsPerVolume;
+    static const uint16_type numPoints = dual_space_type::numPoints;
 
     static const uint16_type nLocalDof = dual_space_type::nLocalDof;
     //@}
@@ -626,12 +617,12 @@ public:
 
     template<typename ExprType>
     static auto
-    isomorphism( ExprType expr ) -> decltype( Feel::vf::detJ()*( trans( Feel::vf::JinvT() )*expr )*Feel::vf::Nref() )
-    //isomorphism( ExprType& expr ) -> decltype( expr )
+    //isomorphism( ExprType expr ) -> decltype( Feel::vf::detJ()*( trans( Feel::vf::JinvT() )*expr )*Feel::vf::Nref() )
+    isomorphism( ExprType& expr ) -> decltype( expr )
     {
         using namespace Feel::vf;
-        return detJ()*( trans( JinvT() )*expr )*Nref();
-        //return expr;
+        //return detJ()*( trans( JinvT() )*expr )*Nref();
+        return expr;
     }
 #if 0
     /**
@@ -647,7 +638,7 @@ public:
         typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
 
         std::vector<value_type> v( nLocalDof );
-
+        auto I = integrate( face, _expr=_e1*N() );
         // First deal with the face dof
         for ( int face = 0; face < numTopologicalFaces; ++face )
         {

@@ -50,17 +50,26 @@ class BlocksBaseSparseMatrix : public vf::BlocksBase<boost::shared_ptr<MatrixSpa
 {
 public :
     typedef vf::BlocksBase<boost::shared_ptr<MatrixSparse<T> > > super_type;
+    typedef typename super_type::index_type index_type;
     typedef BlocksBaseSparseMatrix<T> self_type;
     typedef boost::shared_ptr<MatrixSparse<T> > matrix_sparse_ptrtype;
 
-    BlocksBaseSparseMatrix(uint16_type nr,uint16_type nc)
+    BlocksBaseSparseMatrix( index_type nr=0,index_type nc=0 )
         :
-        super_type(nr,nc)
+        super_type( nr,nc ),
+        M_isClosed( false )
     {}
 
-    BlocksBaseSparseMatrix(super_type const & b)
+    BlocksBaseSparseMatrix( self_type const & b )
         :
-        super_type(b)
+        super_type( b ),
+        M_isClosed( b.M_isClosed )
+    {}
+
+    BlocksBaseSparseMatrix( super_type const & b )
+        :
+        super_type( b ),
+        M_isClosed( false )
     {}
 
     self_type
@@ -69,14 +78,22 @@ public :
         return super_type::operator<<( m );
     }
 
+    void close();
+
+    bool isClosed() const { return M_isClosed; }
+
+private :
+    bool M_isClosed;
+
 };
 
 template <int NR, int NC, typename T=double>
 class BlocksSparseMatrix : public BlocksBaseSparseMatrix<T>
 {
 public :
-    static const uint16_type NBLOCKROWS = NR;
-    static const uint16_type NBLOCKCOLS = NC;
+    typedef typename BlocksBaseSparseMatrix<T>::index_type index_type;
+    static const index_type NBLOCKROWS = NR;
+    static const index_type NBLOCKCOLS = NC;
 
     typedef BlocksBaseSparseMatrix<T> super_type;
 
@@ -129,6 +146,9 @@ public:
 
     typedef typename super::graph_type graph_type;
     typedef typename super::graph_ptrtype graph_ptrtype;
+
+    typedef typename super::indexsplit_type indexsplit_type;
+    typedef typename super::indexsplit_ptrtype indexsplit_ptrtype;
 
     //@}
 

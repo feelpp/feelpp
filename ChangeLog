@@ -4,11 +4,90 @@
 
    \tableofcontents
 
-   \section feelpp0970 Feel++ Release 0.97.0
+   \section feelpp0980 Feel++ Release 0.98.0
    release date mm-dd-yyyy
+
+   \subsection changes0980 Changes
+
+   - Improve documentation, see <a
+     href="https://github.com/feelpp/feelpp/issues/300">#300</a>
+   - Refactoring of the linear and nonlinears solver and preconditioner framework
+   - Simplified CRB model interface
+
+   \subsection features0980 Features
+
+   - Support evaluating expressions over faces (not only elements) and compute
+     min, max (`minmax`) and L infinity norm (`normLinf`) of these expressions
+   - Support PETSc and SLEPc 3.4.4
+   - Support GCC from 4.7 to 4.9 (g++ versions that support the c++11 standard)
+   - Port on Blue Gene Q system (Fermi @ Cineca)
+   - Improve support for eim in CRB by including eim approximation error into crb
+
+   \subsection issues0980 Noteworthy Issues
+
+   - #350 Set timeout for tests and application when used in ctest
+   - #348 Support evaluate of expression over faces
+   - #335 Petsc Error in nlsolve
+   - #346 Support reading partitioned mesh on one processor
+   - #343 Port to gcc 4.9
+   - #341 Petsc error with solvereigen
+   - #340 Error with cross product
+   - #339 Error norm for CRB models using EIM
+   - #338 Unable to compile (at least with gcc >= 4.7)
+   - #336 For install feel++ on Ubuntu 12.04
+   - #337 Scotch5 and HomeBrew
+   - #334 marker are not preserved by operatorLagrangeP1
+
+<hr>
+
+   \section feelpp0974 Feel++ Release 0.97.4
+   release date 03-18-2014
+
+   \subsection changes0974 Changes since 0.97.3
+
+   - Make sure that all headers are installed properly, see <a
+     href="https://github.com/feelpp/feelpp/issues/318">#318</a>
+
+   \section feelpp0973 Feel++ Release 0.97.3
+   release date 03-17-2014
+
+   \subsection changes0973 Changes since 0.97.2
+
+   - Fix Feel++ programming environment and cmake script, see <a
+     href="https://github.com/feelpp/feelpp/issues/314">#314</a>
+   - Install CRB framework properly, see <a
+     href="https://github.com/feelpp/feelpp/issues/315">#315</a>
+
+   \section feelpp0972 Feel++ Release 0.97.2
+   release date 03-16-2014
+
+   \subsection changes0972 Changes since 0.97.1
+
+   - Fix Feel++ programming environment and cmake script, see <a
+     href="https://github.com/feelpp/feelpp/issues/314">#314</a>
+   - Install simple c++ examples (laplacian, stokes, ...) with their associated
+     data (config file, mesh, geometry, ...) , see <a
+     href="https://github.com/feelpp/feelpp/issues/311">#311</a>
+
+   \section feelpp0971 Feel++ Release 0.97.1
+   release date 03-16-2014
+
+   \subsection changes0971 Changes since 0.97.0
+
+   - Fix support for PETSc 3.4.4, see <a
+     href="https://github.com/feelpp/feelpp/issues/311">#311</a>
+   - Fix installation of missing headers in 0.97.0, see <a
+     href="https://github.com/feelpp/feelpp/issues/312">#312</a>
+   - Master branch is now supported in our continuous integration process, see
+     <a href="https://github.com/feelpp/feelpp/issues/274">#274</a>
+
+   \section feelpp0970 Feel++ Release 0.97.0
+   release date 03-14-2014
 
    \subsection changes0970 Changes
 
+   - Improve documentation, see <a
+     href="https://github.com/feelpp/feelpp/issues/300">#300</a>
    - Massive reorganisation of headers and files
    - Propose an alternative handling of header file: rather than having
      everything in one header file, include only the necessary header files
@@ -22,6 +101,7 @@
 
    \subsection features0970 Features
 
+   - Support Eigen3 to latest stable release 3.2.1
    - Support <a href="http://onelab.info/">OneLab</a> which enables a graphical
      interface through Gmsh, see <a href="https://github.com/feelpp/feelpp/issues/64">#64</a>
    - Support for discontinuous galerkin as well as internal face
@@ -47,7 +127,9 @@
 
 
    \subsection issues0970 Noteworthy Issues
-
+   - <a href="https://github.com/feelpp/feelpp/issues/309">#309</a> Add support for isMasterRank() in Environment
+   - <a href="https://github.com/feelpp/feelpp/issues/308">#308</a> Support Ginac expression evaluation
+   - <a href="https://github.com/feelpp/feelpp/issues/271">#271</a>  Assertion failure in local/global assembly using eigen fixed matrices in 3D p >= 4
    - <a href="https://github.com/feelpp/feelpp/issues/198">#198</a> FEELPP_ENABLE_MPI_MODE=OFF code branches are unmaintained and are removed
    - <a href="https://github.com/feelpp/feelpp/issues/219">#219</a> Create configure script to generate configuration for cmake
    - <a href="https://github.com/feelpp/feelpp/issues/224">#224</a> Define an integer type for mpi rank processes

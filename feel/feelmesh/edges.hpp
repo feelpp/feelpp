@@ -78,7 +78,7 @@ public:
             // sort by less<int> on processId
             multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_pid>,
                                             multi_index::const_mem_fun<edge_type,
-                                                                       uint16_type,
+                                                                       rank_type,
                                                                        &edge_type::processId> >,
 
             // sort by less<int> on boundary

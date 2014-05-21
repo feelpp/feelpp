@@ -329,9 +329,26 @@ testFspaceContext()
     BOOST_CHECK_SMALL( (evaluateX2Y2-evaluateProjX2Y2).norm(), 1e-13 );
     BOOST_CHECK_SMALL( (evaluateXY3-evaluateProjXY3).norm(), 1e-13 );
 
-    BOOST_CHECK_SMALL( (evaluateTheta-evaluateProjTheta).norm(), 1e-7 );
+    BOOST_CHECK_SMALL( (evaluateTheta-evaluateProjTheta).norm(), 1e-5 );
     BOOST_CHECK_SMALL( (evaluateR-evaluateProjR).norm(), 1e-7 );
     BOOST_CHECK_SMALL( (evaluateSin2PiX-evaluateProjSin2PiX).norm(), 5e-6 );
+
+
+    auto evaluateProjSin2PiX_ = evaluateFromContext( _context=ctx, _expr=exprSin2PiX , _projection=true);
+    BOOST_CHECK_SMALL( (evaluateProjSin2PiX_-evaluateProjSin2PiX).norm(), 1e-13 );
+
+    //now vector field
+
+    auto Xhv = Pchv<Order>( mesh );
+    auto ctxv=Xhv->context();
+    ctxv.add( t1 );
+    ctxv.add( t2 );
+    ctxv.add( t3 );
+
+    auto vector1 = vf::project( Xhv , elements(mesh), vec( sin(Px()) , cos(Py()) ) );
+    auto EvaluateProjVector1 = evaluateFromContext( _context=ctxv, _expr=idv(vector1) );
+    auto EvaluateVector1 = evaluateFromContext( _context=ctxv, _expr=vec( sin(Px()) , cos(Py()) ) , _projection=true);
+    BOOST_CHECK_SMALL( (EvaluateProjVector1-EvaluateVector1).norm() , 1e-13 );
 
 } // TestFspaceContext ::run
 
@@ -346,7 +363,7 @@ BOOST_AUTO_TEST_SUITE( fspace_context )
 
 BOOST_AUTO_TEST_CASE( test_1 )
 {
-    testFspaceContext<2,4>();
+    testFspaceContext<2,5>();
 }
 
 BOOST_AUTO_TEST_SUITE_END()

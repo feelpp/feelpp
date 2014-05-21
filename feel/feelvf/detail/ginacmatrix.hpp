@@ -40,7 +40,7 @@ public:
     /** @name Typedefs
      */
     //@{
-
+    typedef Feel::vf::GiNaCBase super;
 
     static const size_type context = vm::POINT;
     static const bool is_terminal = false;
@@ -62,16 +62,19 @@ public:
     typedef GinacMatrix<M,N,Order> this_type;
     typedef double value_type;
 
-    typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> vec_type;
+    typedef Eigen::MatrixXd evaluate_type;
 
-    template<typename TheExpr>
+
+    typedef Eigen::Matrix<double,Eigen::Dynamic,1> vec_type;
+
+    template<typename... TheExpr>
     struct Lambda
     {
         typedef this_type type;
     };
-    template<typename TheExpr>
-    typename Lambda<TheExpr>::type
-    operator()( TheExpr const& e  ) { return *this; }
+    template<typename... TheExpr>
+    typename Lambda<TheExpr...>::type
+    operator()( TheExpr... e  ) { return *this; }
 
     //@}
 
@@ -82,13 +85,12 @@ public:
     explicit GinacMatrix( GiNaC::matrix const & fun, std::vector<GiNaC::symbol> const& syms, std::string filename="",
                           WorldComm const& world=Environment::worldComm() )
         :
+        super( syms ),
         M_fun( fun.evalm() ),
-        M_syms( syms),
-        M_params( vec_type::Zero( M_syms.size() ) ),
         M_cfun( new GiNaC::FUNCP_CUBA() ),
         M_filename(filename.empty()?filename:(fs::current_path()/filename).string())
         {
-            DVLOG(2) << "Ginac matrix constructor with expression_type \n";
+            DVLOG(2) << "Ginac matrix matrix constructor with expression_type \n";
             GiNaC::lst exprs;
             for( int i = 0; i < M_fun.nops(); ++i ) exprs.append( M_fun.op(i) );
 
@@ -137,12 +139,12 @@ public:
     explicit GinacMatrix( GiNaC::ex const & fun, std::vector<GiNaC::symbol> const& syms, std::string filename="",
                           WorldComm const& world=Environment::worldComm() )
         :
+        super(syms),
         M_fun(fun.evalm()),
-        M_syms( syms),
-        M_params( vec_type::Zero( M_syms.size() ) ),
         M_cfun( new GiNaC::FUNCP_CUBA() ),
         M_filename(filename.empty()?filename:(fs::current_path()/filename).string())
         {
+            DVLOG(2) << "Ginac matrix ex constructor with expression_type \n";
             GiNaC::lst exprs;
             for( int i = 0; i < M_fun.nops(); ++i ) exprs.append( M_fun.op(i) );
 
@@ -191,11 +193,10 @@ public:
 
     GinacMatrix( GinacMatrix const & fun )
     :
-    M_fun( fun.M_fun ),
-    M_syms( fun.M_syms),
-    M_params( fun.M_params ),
-    M_cfun( fun.M_cfun ),
-    M_filename( fun.M_filename )
+        super(fun),
+        M_fun( fun.M_fun ),
+        M_cfun( fun.M_cfun ),
+        M_filename( fun.M_filename )
         {
             if( !(M_fun==fun.M_fun && M_syms==fun.M_syms && M_filename==fun.M_filename) || M_filename.empty() )
             {
@@ -233,39 +234,12 @@ public:
      */
     //@{
 
-    vec_type const& parameterValue() const { return M_params; }
-    value_type parameterValue( int p ) const { return M_params[p]; }
-
     //@}
 
     /** @name  Mutators
      */
     //@{
 
-    void setParameterValues( vec_type const& p )
-        {
-            CHECK( M_params.size() == M_syms.size() ) << "Invalid number of parameters " << M_params.size() << " >= symbol size : " << M_syms.size();
-            M_params = p;
-        }
-    void setParameterValues( std::map<std::string,value_type> const& mp )
-        {
-            CHECK( M_params.size() == M_syms.size() ) << "Invalid number of parameters " << M_params.size() << " >= symbol size : " << M_syms.size();
-            for( auto p : mp )
-            {
-                auto it = std::find_if( M_syms.begin(), M_syms.end(),
-                                        [&p]( GiNaC::symbol const& s ) { return s.get_name() == p.first; } );
-                if ( it != M_syms.end() )
-                {
-                    M_params[it-M_syms.begin()] = p.second;
-                    LOG(INFO) << "setting parameter : " << p.first << " with value: " << p.second;
-                    LOG(INFO) << "parameter: " << M_params;
-                }
-                else
-                {
-                    LOG(INFO) << "Invalid parameters : " << p.first << " with value: " << p.second;
-                }
-            }
-        }
 
     //@}
 
@@ -275,6 +249,10 @@ public:
 
 
     //@}
+    const expression_type& expression() const
+        {
+            return M_fun;
+        }
 
     const GiNaC::FUNCP_CUBA& fun() const
         {
@@ -282,6 +260,29 @@ public:
         }
 
     std::vector<GiNaC::symbol> const& syms() const { return M_syms; }
+
+
+    Eigen::MatrixXd
+    evaluate( std::map<std::string,value_type> const& mp  )
+    {
+        this->setParameterValues( mp );
+        int no = 1;
+        int ni = M_syms.size();//gmc_type::nDim;
+        Eigen::MatrixXd res(M,N);
+        (*M_cfun)(&ni,M_params.data(),&no,res.data());
+        return res;
+    }
+
+    Eigen::MatrixXd
+    evaluate( bool parallel = true, WorldComm const& worldcomm = Environment::worldComm() ) const
+    {
+        int no = M*N;
+        int ni = M_syms.size();
+        Eigen::MatrixXd res(M,N);
+        (*M_cfun)(&ni,M_params.data(),&no,res.data());
+        return res;
+    }
+
     //@}
 
 
@@ -315,6 +316,7 @@ public:
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
             :
+            M_expr( expr ),
             M_fun( expr.fun() ),
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
             M_nsyms( expr.syms().size() ),
@@ -325,6 +327,7 @@ public:
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& /*fev*/ )
             :
+            M_expr( expr ),
             M_fun( expr.fun() ),
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
             M_nsyms( expr.syms().size() ),
@@ -335,6 +338,7 @@ public:
 
         tensor( this_type const& expr, Geo_t const& geom )
             :
+            M_expr( expr ),
             M_fun( expr.fun() ),
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
             M_nsyms( expr.syms().size() ),
@@ -364,10 +368,8 @@ public:
                 int ni = M_nsyms;//gmc_type::nDim;
                 for(int q = 0; q < M_gmc->nPoints();++q )
                 {
-                    for(int k = 0;k < gmc_type::nDim;++k )
-                        M_x[k]=M_gmc->xReal( q )[k];
-                    for( int k = gmc_type::nDim; k < M_x.size(); ++k )
-                        M_x[k] = 0;
+                    for ( auto const& comp : M_expr.indexSymbolXYZ() )
+                        M_x[comp.second] = M_gmc->xReal( q )[comp.first];
                     M_fun(&ni,M_x.data(),&no,M_y[q].data());
                     ;
                 }
@@ -382,14 +384,17 @@ public:
                 int ni = M_nsyms;//gmc_type::nDim;
                 for(int q = 0; q < M_gmc->nPoints();++q )
                 {
-                    for(int k = 0;k < gmc_type::nDim;++k )
-                        M_x[k]=M_gmc->xReal( q )[k];
-                    for( int k = gmc_type::nDim; k < M_x.size(); ++k )
-                        M_x[k] = 0;
+                    for ( auto const& comp : M_expr.indexSymbolXYZ() )
+                        M_x[comp.second] = M_gmc->xReal( q )[comp.first];
                     M_fun(&ni,M_x.data(),&no,M_y[q].data());
                 }
             }
 
+        template<typename CTX>
+        void updateContext( CTX const& ctx )
+            {
+                update( ctx->gmContext() );
+            }
 
         value_type
         evalij( uint16_type i, uint16_type j ) const
@@ -416,6 +421,7 @@ public:
                 return M_y[q](c1,c2);
             }
 
+        this_type const& M_expr;
         GiNaC::FUNCP_CUBA M_fun;
         gmc_ptrtype M_gmc;
         int M_nsyms;
@@ -425,11 +431,18 @@ public:
 
 private:
     mutable expression_type  M_fun;
-    std::vector<GiNaC::symbol> M_syms;
-    vec_type M_params;
     boost::shared_ptr<GiNaC::FUNCP_CUBA> M_cfun;
     std::string M_filename;
 }; // GinacMatrix
+
+template<int M,int N,int Order>
+std::ostream&
+operator<<( std::ostream& os, GinacMatrix<M,N,Order> const& e )
+{
+    os << e.expression();
+    return os;
+}
+
 /// \endcond
 /// \endcond
 }} // Feel

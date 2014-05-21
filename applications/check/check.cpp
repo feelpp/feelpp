@@ -57,7 +57,7 @@ makeOptions()
         ( "Neumann", po::value<std::string>()->default_value( ""  ), "Neumann boundaries list" )
         ( "Dirichlet", po::value<std::string>()->default_value( ""  ), "Dirichlet boundaries list" )
     ;
-    return laplacianoptions.add( Feel::feel_options() );
+    return laplacianoptions;
 }
 
 

@@ -14,8 +14,18 @@ feelpp_add_test( functionallinearfree )
 feelpp_add_test( fspace_context )
 feelpp_add_test( geomap )
 
-feelpp_add_test( hdiv)
-feelpp_add_test( hcurl)
+feelpp_add_test( hdiv CFG hdiv.cfg)
+feelpp_add_test( hdiv_oneelt NO_MPI_TEST )
+feelpp_add_test( hdiv3D CFG hdiv3D.cfg)
+feelpp_add_test( hdiv3D_oneelt NO_MPI_TEST )
+feelpp_add_test( hcurl_oneelt NO_MPI_TEST )
+feelpp_add_test( hcurl CFG hcurl.cfg)
+feelpp_add_test( hcurl3D_oneelt NO_MPI_TEST )
+
+feelpp_add_test( continuity_h1 NO_MPI_TEST )
+feelpp_add_test( continuity_hdiv NO_MPI_TEST )
+feelpp_add_test( continuity_hcurl NO_MPI_TEST )
+
 feelpp_add_test( functionals )
 
 feelpp_add_test( lambda )
@@ -36,8 +46,12 @@ feelpp_add_test( stencil )
 feelpp_add_test( submesh )
 feelpp_add_test( trace )
 feelpp_add_test( vect_comp )
+feelpp_add_test( matching NO_MPI_TEST )
 
 feelpp_add_test( wire_basket NO_MPI_TEST )
 feelpp_add_test( mortar NO_MPI_TEST)
 
 feelpp_add_test( exporter SRCS exporter.cpp  CFG exporter.cfg GEO bubble_inside.geo NO_MPI_TEST)
+feelpp_add_test( extended )
+
+feelpp_add_test( nlSolveComposite CFG nlSolveComposite.cfg)

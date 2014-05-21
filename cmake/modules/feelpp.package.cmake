@@ -67,6 +67,7 @@ set(CPACK_SOURCE_IGNORE_FILES
   "${PROJECT_SOURCE_DIR}/contrib/gmsh"
   "${PROJECT_SOURCE_DIR}/contrib/exodus-5.24"
   "${PROJECT_SOURCE_DIR}/ports"
+  "${PROJECT_SOURCE_DIR}/projects"
   "${PROJECT_SOURCE_DIR}/data/medit"
   "${PROJECT_SOURCE_DIR}/data/gmsh/aneurism"
   "${PROJECT_SOURCE_DIR}/data/gmsh/aorta"

@@ -28,6 +28,14 @@
  */
 #include <cstdlib>
 #include <pwd.h>
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+#include <sys/stat.h>
+#ifdef __cplusplus
+}
+#endif
 
 #include <boost/program_options.hpp>
 #include <boost/preprocessor/stringize.hpp>
@@ -176,22 +184,14 @@ void
 Environment::generateOLFiles( int argc, char** argv, std::string const& appName)
 {
     //Application path
+    int i;
     bool isNum = false;
     fs::path p(argv[0]);
     std::ostringstream appPath;
 
-    appPath.str("");
-
-    /*
-      std::cout << fs::current_path() << std::endl;
-      std::cout << appName << std::endl;
-      std::cout << appPath.str() << std::endl;
-    */
-
     /* get app name */
     appPath.str("");
     appPath << fs::absolute(p).string();
-    //std::cout << appPath.str() << std::endl;
 
     std::ostringstream optionPath;
 
@@ -199,6 +199,10 @@ Environment::generateOLFiles( int argc, char** argv, std::string const& appName)
     ol.open(appPath.str() + ".ol", std::ofstream::out | std::ofstream::trunc); //.ol file
     std::ofstream cfgol;
     cfgol.open(appPath.str() + ".onelab.cfg.ol", std::ofstream::out | std::ofstream::trunc); //.cfg.ol file
+
+    /* map from feel option name to onelab option path */
+    std::map<std::string, std::string> mOptToOptPath;
+
     std::map<std::string, std::vector<boost::shared_ptr<po::option_description> >> moptions{
         {"Feelpp", Environment::optionsDescriptionLibrary().options() },
         {S_about.appName(), Environment::optionsDescriptionApplication().options() },
@@ -220,18 +224,7 @@ Environment::generateOLFiles( int argc, char** argv, std::string const& appName)
 
             //std::cout << optName << ";" << defVal << ";" << desc << std::endl;
 
-            std::string ens,funcName,test;
-            /*
-              if(defVal.size() > 3) // We want defVal.size() > 3 to exclude options without a default value
-              {
-              defVal.erase(0,6); // Removing "arg" and a space and the first parenthesis
-              defVal.erase(defVal.size()-1,1); // Removing closing parenthesis
-              }
-              else
-              {
-              defVal = "";
-              }
-            */
+            std::string ens,funcName;
 
             std::vector<std::string> strings; //Vector of the split name
             boost::split(strings,optName,boost::is_any_of(".")); //Spliting option name
@@ -246,11 +239,9 @@ Environment::generateOLFiles( int argc, char** argv, std::string const& appName)
             }
             funcName = strings[strings.size() - 1]; //Raw option name
 
-            //std::cout << ens << " " << funcName << std::endl;
-
             /* skip some options */
-            if(funcName == "generate-ol" ||
-               funcName == "config-file")
+            /* they won't be displayed in Gmsh */
+            if(funcName == "config-file")
             {
                 continue;
             }
@@ -266,11 +257,15 @@ Environment::generateOLFiles( int argc, char** argv, std::string const& appName)
                 //std::cout << defVal;
 
                 //std::cout << "Entry for " << optName << ": ";
-                if(S_vm[optName].defaulted())
+                // if the option if defaulted and soesn't starts with onelab,
+                // we put it in the end of Gmsh options
+                if(S_vm[optName].defaulted() && optName.find("onelab.") == std::string::npos )
                 {
                     //std::cout << "defaulted ";
                     optionPath << "GeneralParameters/" << o.first << "/" << ens;
                 }
+                // if we have a user defined option or a onelab option
+                // we want them to be on top of the list for easier access
                 else
                 {
                     optionPath << "DefinedParameters/" << o.first << "/" << ens;
@@ -344,6 +339,11 @@ Environment::generateOLFiles( int argc, char** argv, std::string const& appName)
                     defVal = "gmsh";
                 }
 
+                if(optName == "onelab.enable")
+                {
+                    defVal = "2";
+                }
+
                 /*
                   if(defVal.size() != 0) //Excluding options without a default value
                   {
@@ -359,6 +359,26 @@ Environment::generateOLFiles( int argc, char** argv, std::string const& appName)
                     cfgol << optName << "=OL.get(" << optionPath.str() << funcName << ")" << std::endl;
                 }
                 //}
+
+                /* Hide some options from users */
+                if(optName == "onelab.enable"
+                || optName == "onelab.remote"
+                || optName == "onelab.sync.script")
+                {
+                    ol << funcName << ".setVisible(0);" << std::endl;
+                }
+
+                ol << funcName << ".setReadOnly(0);" << std::endl;
+
+                /* store some option paths for building ol script */
+                if(optName == "onelab.chroot"
+                || optName == "onelab.remote"
+                || optName == "onelab.np"
+                || optName == "onelab.sync.script")
+                {
+                    mOptToOptPath[optName] = optionPath.str() + funcName;
+                }
+
             }
 
         }
@@ -368,37 +388,99 @@ Environment::generateOLFiles( int argc, char** argv, std::string const& appName)
 
     /* Mesher instructions */
     ol << "Mesher.register(native," << stringize(GMSH_EXECUTABLE) << ");" << std::endl;
-    /*
-      ol << "Mesher.in(feel.geo);" << std::endl;
-      ol << "Mesher.out(feel.msh);" << std::endl;
-    */
     ol << "OL.if(OL.get(Parameters/gmsh/filename) == untitled.geo)" << std::endl;
     ol << "OL.msg(No geo file specified. Using a default one);" << std::endl;
     ol << "OL.endif" << std::endl;
-    //ol << "OL.setAttribute( /GeneralParameters/Feel++, )
 
-    /* Application instructions */
-    if(worldComm().size() == 1)
+    if(S_vm.count("onelab.remote")
+    && S_vm["onelab.remote"].as<std::string>() != ""
+    && S_vm["onelab.remote"].as<std::string>() != "localhost")
     {
-        ol << "FeelApp.register(interfaced, " + appPath.str() + ");" << std::endl;
+        ol << "FeelApp.remote(" << "OL.get(" + mOptToOptPath["onelab.remote"] << "), " << p.parent_path().string() << "/" << ");" << std::endl;
+
+        ol << "FeelApp.register(interfaced, ./OL.get(Arguments/FileName).onelab.py);" << std::endl;
+
+        ol << "FeelApp.in(OL.get(Arguments/FileName).onelab.cfg.ol);" << std::endl;
+
+        /* test for chroots */
+        ol << "OL.if(OL.get(" << mOptToOptPath["onelab.chroot"] << "))" << std::endl;
+        ol << "FeelApp.run( schroot -c OL.get(" << mOptToOptPath["onelab.chroot"] << ") -- ";
+        ol << stringize(MPIEXEC) << " " << stringize(MPIEXEC_NUMPROC_FLAG) << " OL.get(" << mOptToOptPath["onelab.np"] << ") " << appPath.str();
+        ol << " --config-file OL.get(Arguments/FileName).onelab.cfg --nochdir );" << std::endl;
+        ol << "OL.else" << std::endl;
+        ol << "FeelApp.run(" << stringize(MPIEXEC) << " " << stringize(MPIEXEC_NUMPROC_FLAG) << " OL.get(" << mOptToOptPath["onelab.np"] << ") " << appPath.str();
+        ol << " --config-file OL.get(Arguments/FileName).onelab.cfg --nochdir );" << std::endl;
+        ol << "OL.endif" << std::endl;
+
+        ol << "FeelApp.out(OL.get(Arguments/FileName).onelab.out);" << std::endl;
+
+        ol << "SyncData.register(interfaced, OL.get(" << mOptToOptPath["onelab.sync.script"] << "));" << std::endl;
+        ol << "SyncData.in(OL.get(Arguments/FileName).onelab.out);" << std::endl;
+        ol << "SyncData.run(OL.get(Arguments/FileName).onelab.out);" << std::endl;
+
+        ol << "OL.include(OL.get(Arguments/FileName).onelab.out);" << std::endl;
     }
     else
     {
-        ol << "FeelApp.register(interfaced, /usr/bin/mpirun -np " << worldComm().size() << " " + appPath.str() + ");" << std::endl;
-    }
-    ol << "FeelApp.in(OL.get(Arguments/FileName).onelab.cfg.ol);" << std::endl;
-    ol << "FeelApp.run( --config-file OL.get(Arguments/FileName).onelab.cfg --nochdir );" << std::endl;
+        /* setup chroot */
+        ol << "FeelApp.register(interfaced, " << appPath.str() << ".onelab.py);" << std::endl;
 
-    /* Take into account th fact that we use MPI */
-    /* Generating multiple output files, so we merge them */
-    for(int i = 0; i < worldComm().size(); i++)
-    {
-        ol << "FeelApp.out(" + appName + "-" << worldComm().size() << "_" << i << ".msh);" << std::endl;
-        ol << "FeelApp.merge(" + appName + "-" << worldComm().size() << "_" << i << ".msh);" << std::endl;
+        std::string cpath = "";
+        if(S_vm.count("onelab.remote")
+        && (S_vm["onelab.remote"].as<std::string>() == ""
+        || S_vm["onelab.remote"].as<std::string>() == "localhost"))
+        {
+            cpath = fs::current_path().string();
+            size_t n = std::count(cpath.begin(), cpath.end(), '/');
+            cpath = "";
+            for(int i = 0; i < n; i++)
+            {
+                cpath = cpath + "../";
+            }
+        }
+
+        ol << "FeelApp.in(" << cpath << appPath.str() << ".onelab.cfg.ol);" << std::endl;
+
+        /* test for chroots */
+        ol << "OL.if(OL.get(" << mOptToOptPath["onelab.chroot"] << "))" << std::endl;
+        ol << "FeelApp.run( schroot -c OL.get(" << mOptToOptPath["onelab.chroot"] << ") -- ";
+        ol << stringize(MPIEXEC) << " " << stringize(MPIEXEC_NUMPROC_FLAG) << " OL.get(" << mOptToOptPath["onelab.np"] << ") " << appPath.str();
+        ol << " --config-file " << appPath.str() << ".onelab.cfg --nochdir );" << std::endl;
+        ol << "OL.else" << std::endl;
+        ol << "FeelApp.run(" << stringize(MPIEXEC) << " " << stringize(MPIEXEC_NUMPROC_FLAG) << " OL.get(" << mOptToOptPath["onelab.np"] << ") " << appPath.str();
+        ol << " --config-file " << appPath.str() << ".onelab.cfg --nochdir );" << std::endl;
+        ol << "OL.endif" << std::endl;
+
+        ol << "FeelApp.out( " << cpath << appPath.str() << ".onelab.out);" << std::endl;
+
+        ol << "OL.include(" << cpath << appPath.str() << ".onelab.out);" << std::endl;
     }
 
     ol.close();
     cfgol.close();
+
+    /* generate a script for executing the application */
+    /* to avoid patching Gmsh */
+    std::string pyscript = appPath.str() + ".onelab.py";
+    std::ofstream shs;
+    shs.open(pyscript, std::ofstream::out | std::ofstream::trunc);
+
+    shs << "#!/usr/bin/python" << std::endl;
+    shs << "import sys, subprocess" << std::endl << std::endl;
+
+    shs << "def main():" << std::endl;
+
+    shs << "  cmd = sys.argv[1:]" << std::endl;
+    shs << "  print cmd" << std::endl;
+    shs << "  retval = subprocess.call(cmd)" << std::endl;
+    shs << "  return retval" << std::endl;
+
+    shs << "main()" << std::endl;
+
+    shs.close();
+
+    chmod(pyscript.c_str(), S_IRWXU|S_IRGRP|S_IROTH);
+
 }
 
 void
@@ -672,23 +754,29 @@ Environment::doOptions( int argc, char** argv,
         /* handle the generation of onelab files after having processed */
         /* the regular config file, so we have parsed user defined parameters */
         /* or restored a previous configuration */
+
+        /* We store the application path for further use */
+        fs::path p(argv[0]);
+        Environment::olAppPath = fs::absolute(p).string();
+
         if ( worldComm().isMasterRank() )
         {
-            if ( S_vm.count( "generate-ol" ) )
+            if ( S_vm.count("onelab.enable") )
             {
-                Environment::generateOLFiles( argc, argv, appName );
-            }
-        }
-        if ( S_vm.count( "generate-ol" ) )
-        {
-            if ( Environment::initialized() )
-            {
-                worldComm().barrier();
-                MPI_Finalize();
-            }
-            exit(0);
-        }
 
+                if ( S_vm["onelab.enable"].as<int>() == 1 )
+                {
+                    Environment::generateOLFiles( argc, argv, appName );
+
+                    if ( Environment::initialized() )
+                    {
+                        worldComm().barrier();
+                        MPI_Finalize();
+                    }
+                    exit(0);
+                }
+            }
+        }
     }
     // catches program_options exceptions
     catch ( boost::program_options::multiple_occurrences const& e )
@@ -971,6 +1059,69 @@ Environment::clearSomeMemory()
 }
 Environment::~Environment()
 {
+    /* if we were using onelab */
+    /* we write the file containing the filename marked for automatic loading in Gmsh */
+    /* we serialize the writing of the size by the different MPI processes */
+    if ( S_vm["onelab.enable"].as<int>() == 2 )
+    {
+        for(int i = 0; i < worldComm().size(); i++)
+        {
+            /* only one process at a time */
+            if(i == worldComm().globalRank())
+            {
+                std::cout << Environment::olAppPath << std::endl;
+                int i;
+                std::ofstream ool;
+                /* Generate a file containing the name of the outputs for the current dataset */
+                /* eother truncate the file if we are process 0 or complete it if we are an other process */
+                if(worldComm().globalRank() == 0)
+                {
+                    ool.open(Environment::olAppPath + ".onelab.out", std::ofstream::out | std::ofstream::trunc);
+                }
+                else
+                {
+                    ool.open(Environment::olAppPath + ".onelab.out", std::ofstream::out | std::ofstream::app);
+                }
+                fs::path p(Environment::olAppPath);
+
+                /* If we have dataset to load */
+                /* we add each of them to the file containing the files to load */
+                if(Environment::olAutoloadFiles.size() > 0)
+                {
+                    // Files marked for autoloading
+                    ool << "#";
+                    for(i = 0; i < Environment::olAutoloadFiles.size(); i++)
+                    {
+                        ool << " ";
+                        if(S_vm.count("onelab.remote") && S_vm["onelab.remote"].as<std::string>() != "")
+                        {
+                            ool << S_vm["onelab.remote"].as<std::string>() << ":";
+                        }
+                        ool << p.parent_path().string() << "/" << Environment::olAutoloadFiles[i];
+                    }
+                    ool << std::endl;
+
+                    i = 0;
+                    ool << "FeelApp.merge(" << Environment::olAutoloadFiles[i];
+                    for(i = 1; i < Environment::olAutoloadFiles.size(); i++)
+                    {
+                        ool << ", " << Environment::olAutoloadFiles[i];
+                    }
+                    ool << ");" << std::endl;
+                }
+                else
+                {
+                    std::cout << worldComm().globalRank() << " No files to load" << std::endl;
+                }
+
+                ool.close();
+            }
+
+            /* wait for the current process to finish */
+            Environment::worldComm().barrier();
+        }
+    }
+
     VLOG(2) << "[~Environment] sending delete to all deleters" << "\n";
 
     Environment::clearSomeMemory();
@@ -1320,6 +1471,9 @@ std::vector<fs::path> Environment::S_paths = { fs::current_path(),
                                                Environment::systemConfigRepository().get<0>(),
                                                Environment::systemGeoRepository().get<0>() };
 fs::path Environment::S_scratchdir;
+
+std::string Environment::olAppPath;
+std::vector<std::string> Environment::olAutoloadFiles;
 
 } // detail
 

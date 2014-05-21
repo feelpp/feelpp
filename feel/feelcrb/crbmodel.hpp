@@ -140,7 +140,6 @@ public:
     typedef typename std::vector< std::vector < element_ptrtype > > initial_guess_type;
     //typedef Eigen::VectorXd theta_vector_type;
     typedef Eigen::VectorXd vectorN_type;
-    typedef std::vector< std::vector< double > > beta_vector_type;
 
     typedef typename boost::tuple<sparse_matrix_ptrtype,
                                   sparse_matrix_ptrtype,
@@ -153,11 +152,39 @@ public:
                                   std::vector< std::vector< std::vector<vector_ptrtype> > >
                                   > affine_decomposition_type;
 
+    typedef typename boost::tuple< sparse_matrix_ptrtype,
+                                   sparse_matrix_ptrtype,
+                                   std::vector<vector_ptrtype>
+                                   > monolithic_type;
+
+    typedef typename boost::tuple< std::map<int,double>,
+                                   std::map<int,double>,
+                                   std::vector< std::map<int,double> >
+                                   > eim_interpolation_error_type ;
+
+
+
+    typedef typename model_type::affine_decomposition_light_type affine_decomposition_light_type;
+    typedef typename model_type::betaq_type betaq_type;
+    typedef typename model_type::beta_vector_type beta_vector_type;
+    typedef typename model_type::beta_vector_light_type beta_vector_light_type;
 
     typedef typename boost::tuple< beta_vector_type,
                                    beta_vector_type,
                                    std::vector<beta_vector_type>
                                    > betaqm_type;
+
+    typedef typename mpl::if_< mpl::bool_< is_time_dependent >,
+                               boost::tuple<
+                                   beta_vector_type,
+                                   beta_vector_type,
+                                   std::vector<beta_vector_type>
+                                   >,
+                               boost::tuple<
+                                   beta_vector_type,
+                                   std::vector<beta_vector_type>
+                                   >
+                               >::type incomplete_betaqm_type;
 
     //! time discretization
     typedef Bdf<space_type>  bdf_type;
@@ -191,8 +218,8 @@ public:
         M_Aqm(),
         M_Mqm(),
         M_Fqm(),
-        M_is_initialized( false ),
         M_mode( CRBModelMode::PFEM ),
+        M_is_initialized( false ),
         M_model( new model_type() ),
         M_backend( backend_type::build( BACKEND_PETSC ) ),
         M_alreadyCountAffineDecompositionTerms( false )
@@ -207,10 +234,10 @@ public:
         M_InitialGuessVector(),
         M_Mqm(),
         M_Fqm(),
+        M_model( new model_type ),
         M_is_initialized( false ),
         M_vm( vm ),
         M_mode( mode ),
-        M_model( new model_type( vm ) ),
         M_backend( backend_type::build( vm ) ),
         M_backend_primal( backend_type::build( vm , "backend-primal" ) ),
         M_backend_dual( backend_type::build( vm , "backend-dual" ) ),
@@ -230,10 +257,10 @@ public:
         M_InitialGuessVector(),
         M_Mqm(),
         M_Fqm(),
+        M_model( model ),
         M_is_initialized( false ),
         M_vm(),
         M_mode( CRBModelMode::PFEM ),
-        M_model( model ),
         M_backend( backend_type::build( model->vm ) ),
         M_backend_primal( backend_type::build( model->vm , "backend-primal" ) ),
         M_backend_dual( backend_type::build( model->vm , "backend-dual") ),
@@ -250,10 +277,10 @@ public:
         M_InitialGuessVector(),
         M_Mqm(),
         M_Fqm(),
+        M_model( model ),
         M_is_initialized( false ),
         M_vm(),
         M_mode( mode ),
-        M_model( model ),
         M_backend( backend_type::build( Environment::vm() ) ),
         M_backend_primal( backend_type::build( Environment::vm() , "backend-primal" ) ),
         M_backend_dual( backend_type::build( Environment::vm() , "backend-dual" ) ),
@@ -273,10 +300,10 @@ public:
         M_InitialGuessVector( o.M_InitialGuessVector ),
         M_Mqm( o.M_Mqm ),
         M_Fqm( o.M_Fqm ),
+        M_model(  o.M_model ),
         M_is_initialized( o.M_is_initialized ),
         M_vm( o.M_vm ),
         M_mode( o.M_mode ),
-        M_model(  o.M_model ),
         M_backend( o.M_backend ),
         M_backend_primal( o.M_backend_primal ),
         M_backend_dual( o.M_backend_dual ),
@@ -296,6 +323,8 @@ public:
     {
         if ( M_is_initialized )
             return;
+
+        M_has_eim=false;
 
         M_preconditioner_primal = preconditioner(_pc=(PreconditionerType) M_backend_primal->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
                                                  _backend= M_backend_primal,
@@ -324,6 +353,8 @@ public:
             M_model->setInitialized( true );
         }
 
+        M_model->buildGinacBetaExpressions( M_model->parameterSpace()->min() );
+
         if ( M_mode != CRBModelMode::CRB_ONLINE &&
                 M_mode != CRBModelMode::SCM_ONLINE )
         {
@@ -336,9 +367,48 @@ public:
         u = Xh->element();
         v = Xh->element();
 
-        M_inner_product_matrix = M_model->innerProduct();
+        bool symmetric = option(_name="crb.use-symmetric-matrix").template as<bool>();
+        bool stock = option(_name="crb.stock-matrices").template as<bool>();
+
+        if( stock )
+            this->computeAffineDecomposition();
+
+        this->countAffineDecompositionTerms();
+
+        M_inner_product_matrix=this->newMatrix();
+        if( this->hasEim() || (!symmetric) )
+        {
+            CHECK( stock )<<"There is some work to do before using operators free when using EIM, for now we compute (and stock matrices) affine decomposition to assemble the inner product \n";
+
+            //in this case, we use linear part of bilinear form a
+            //as the inner product
+            auto muref = this->refParameter();
+            auto betaqm = computeBetaLinearDecompositionA( muref );
+            M_inner_product_matrix->zero();
+            for ( size_type q = 0; q < M_QLinearDecompositionA; ++q )
+            {
+                for(size_type m = 0; m < mMaxLinearDecompositionA(q); ++m )
+                {
+                    M_inner_product_matrix->addMatrix( betaqm[q][m], M_linearAqm[q][m] );
+                }
+            }
+            //check that the matrix is filled, else we take energy matrix
+            double norm=M_inner_product_matrix->l1Norm();
+            if( norm == 0 && symmetric )
+            {
+                M_inner_product_matrix = M_model->energyMatrix();
+            }
+        }
+        else
+        {
+            //in this case, we use bilinear form a
+            //as the inner product
+            M_inner_product_matrix = M_model->energyMatrix();
+            CHECK( symmetric )<< "You use energy matrix as inner product but you specified that bilinear form a() is not symmetric !\n";
+        }
         M_preconditioner_l2->setMatrix( M_inner_product_matrix );
 
+        M_bdf = M_model->bdfModel();
     }
 
     //@}
@@ -402,7 +472,7 @@ public:
      * \brief Returns the matrix associated with the inner product
      * linked to energy norm
      */
-    sparse_matrix_ptrtype const& innerProduct() const
+    sparse_matrix_ptrtype const& energyMatrix() const
     {
         //return M_model->innerProduct();
         return M_inner_product_matrix;
@@ -412,7 +482,7 @@ public:
      * \brief Returns the matrix associated with the inner product
      * linked to energy norm
      */
-    sparse_matrix_ptrtype  innerProduct()
+    sparse_matrix_ptrtype  energyMatrix()
     {
         //return M_model->innerProduct();
         return M_inner_product_matrix;
@@ -421,17 +491,17 @@ public:
     /**
      * \brief Returns the matrix associated with the inner product
      */
-    sparse_matrix_ptrtype const& innerProductForMassMatrix() const
+    sparse_matrix_ptrtype const& massMatrix() const
     {
-        return M_model->innerProductForMassMatrix();
+        return M_model->massMatrix();
     }
 
     /**
      * \brief Returns the matrix associated with the inner product
      */
-    sparse_matrix_ptrtype  innerProductForMassMatrix()
+    sparse_matrix_ptrtype  massMatrix()
     {
-        return M_model->innerProductForMassMatrix();
+        return M_model->massMatrix();
     }
 
     /**
@@ -440,7 +510,8 @@ public:
      */
     sparse_matrix_ptrtype const& innerProductForPod() const
     {
-        return M_model->innerProductForPod();
+        //return M_model->innerProductForPod();
+        return M_inner_product_matrix;
     }
 
     /**
@@ -449,7 +520,8 @@ public:
      */
     sparse_matrix_ptrtype  innerProductForPod()
     {
-        return M_model->innerProductForPod();
+        return M_inner_product_matrix;
+        //return M_model->innerProductForPod();
     }
 
 
@@ -466,9 +538,14 @@ public:
     }
 
     //! return the number of \f$\mu\f$ independent terms for the bilinear form
-    size_type Qa() const
+    virtual size_type Qa() const
     {
         return M_Qa;
+    }
+
+    int QLinearDecompositionA() const
+    {
+        return M_QLinearDecompositionA;
     }
 
     //! return the number of \f$\mu\f$ independent terms for the bilinear form ( time dependent )
@@ -527,6 +604,11 @@ public:
         return 1;
     }
 
+    int mMaxLinearDecompositionA( int q ) const
+    {
+        return M_mMaxLinearDecompositionA[q];
+    }
+
     int mMaxInitialGuess( int q ) const
     {
         return M_model->mMaxInitialGuess( q );
@@ -555,7 +637,7 @@ public:
     }
 
     //! return the number of \f$\mu\f$ independent terms for the right hand side
-    size_type Ql( int l ) const
+    virtual size_type Ql( int l ) const
     {
         return M_Ql[l];
         //return M_model->Ql( l );
@@ -567,11 +649,21 @@ public:
         return M_model->parameterSpace();
     }
 
+    void adaptMesh( parameter_type const& mu )
+    {
+        return M_model->adaptMesh( mu );
+    }
 
     parameter_type refParameter()
     {
-        return M_model->refParameter();
+        bool user_specify_parameters = M_model->referenceParametersGivenByUser();
+        auto Dmu = M_model->parameterSpace();
+        auto muref = Dmu->min();
+        if( user_specify_parameters )
+            muref = M_model->refParameter();
+        return muref;
     }
+
     //@}
 
     /** @name  Mutators
@@ -600,18 +692,43 @@ public:
     }
 
     /**
-     * \brief compute the betaqm given \p mu
+     * \brief compute the beta coefficients
+     * mu : parameter
+     * time : the time
+     * only_time_dependent_terms : return evaluation time-dependent terms only if true, else return evaluation of all terms
      */
-    betaqm_type computeBetaQm( parameter_type const& mu , double time=0 )
+    betaqm_type computeBetaQm( parameter_type const& mu , double time=0 , bool only_time_dependent_terms=false )
     {
-        return computeBetaQm( mu , mpl::bool_<model_type::is_time_dependent>(), time  );
+        return computeBetaQm( mu , mpl::bool_<model_type::is_time_dependent>(), time , only_time_dependent_terms );
     }
-    betaqm_type computeBetaQm( parameter_type const& mu , mpl::bool_<true>, double time=0 )
+    betaqm_type computeBetaQm( parameter_type const& mu , mpl::bool_<true>, double time=0 , bool only_time_dependent_terms=false )
     {
-        return M_model->computeBetaQm( mu , time );
+        beta_vector_type betaAqm;
+        beta_vector_type betaMqm;
+        std::vector<beta_vector_type>  betaFqm;
+        boost::tuple<
+            beta_vector_type,
+            beta_vector_type,
+            std::vector<beta_vector_type> >
+            beta_coefficients;
+
+        //check if a light version is available
+        auto beta_light = M_model->computeBetaQ( mu, time , only_time_dependent_terms );
+        auto betaAlight = beta_light.template get<0>();
+        if( betaAlight.size() == 0 )
+        {
+            beta_coefficients = M_model->computeBetaQm( mu , time , only_time_dependent_terms );
+        }
+        else
+        {
+            beta_coefficients = extendBetaCoefficients( beta_light );
+        }
+
+        return beta_coefficients;
     }
-    betaqm_type computeBetaQm( parameter_type const& mu , mpl::bool_<false>, double time=0 )
+    betaqm_type computeBetaQm( parameter_type const& mu , mpl::bool_<false>, double time=0 , bool only_time_dependent_terms=false )
     {
+
         beta_vector_type betaAqm;
         beta_vector_type betaMqm;
         std::vector<beta_vector_type>  betaFqm;
@@ -620,9 +737,21 @@ public:
             std::vector<beta_vector_type> >
             steady_beta;
 
-        steady_beta = M_model->computeBetaQm( mu , time );
-        betaAqm = steady_beta.get<0>();
-        betaFqm = steady_beta.get<1>();
+
+        //check if a light version is available
+        auto beta_light = M_model->computeBetaQ( mu );
+        auto betaAlight = beta_light.template get<0>();
+        if( betaAlight.size() == 0 )
+        {
+            steady_beta = M_model->computeBetaQm( mu );
+        }
+        else
+        {
+            steady_beta = extendBetaCoefficients( beta_light );
+        }
+
+        betaAqm = steady_beta.template get<0>();
+        betaFqm = steady_beta.template get<1>();
 
         int nspace = functionspace_type::nSpaces;
         //if model provides implementation of operator composite M
@@ -645,21 +774,21 @@ public:
         return boost::make_tuple( betaMqm, betaAqm, betaFqm );
     }
 
-    betaqm_type computeBetaQm( vector_ptrtype const& T, parameter_type const& mu , double time=0 )
+    betaqm_type computeBetaQm( vector_ptrtype const& T, parameter_type const& mu , double time=0 , bool only_time_dependent_terms=false )
     {
         auto solution = M_model->functionSpace()->element();
         solution = *T;
-        return computeBetaQm( solution , mu , time );
+        return computeBetaQm( solution , mu , time , only_time_dependent_terms );
     }
-    betaqm_type computeBetaQm( element_type const& T, parameter_type const& mu , double time=0 )
+    betaqm_type computeBetaQm( element_type const& T, parameter_type const& mu , double time=0 , bool only_time_dependent_terms=false )
     {
-        return computeBetaQm( T , mu , mpl::bool_<model_type::is_time_dependent>(), time );
+        return computeBetaQm( T , mu , mpl::bool_<model_type::is_time_dependent>(), time , only_time_dependent_terms );
     }
-    betaqm_type computeBetaQm( element_type const& T, parameter_type const& mu , mpl::bool_<true>, double time=0 )
+    betaqm_type computeBetaQm( element_type const& T, parameter_type const& mu , mpl::bool_<true>, double time=0 , bool only_time_dependent_terms=false )
     {
-        return M_model->computeBetaQm( T, mu, time );
+        return M_model->computeBetaQm( T, mu, time , only_time_dependent_terms );
     }
-    betaqm_type computeBetaQm( element_type const& T, parameter_type const& mu , mpl::bool_<false>, double time=0 )
+    betaqm_type computeBetaQm( element_type const& T, parameter_type const& mu , mpl::bool_<false>, double time=0 , bool only_time_dependent_terms=false )
     {
         beta_vector_type betaAqm, betaMqm ;
         std::vector<beta_vector_type>  betaFqm;
@@ -668,9 +797,9 @@ public:
             std::vector<beta_vector_type> >
             steady_beta;
 
-        steady_beta = M_model->computeBetaQm(T, mu , time );
-        betaAqm = steady_beta.get<0>();
-        betaFqm = steady_beta.get<1>();
+        steady_beta = M_model->computeBetaQm(T, mu );
+        betaAqm = steady_beta.template get<0>();
+        betaFqm = steady_beta.template get<1>();
 
         int nspace = functionspace_type::nSpaces;
         if ( M_model->constructOperatorCompositeM() )
@@ -699,35 +828,38 @@ public:
     /**
      * \brief update the model wrt \p mu
      */
-    offline_merge_type update( parameter_type const& mu,  double time=0 )
+    offline_merge_type update( parameter_type const& mu,  double time=0 , bool only_time_dependent_terms=false )
     {
-        auto all_beta = this->computeBetaQm( mu , time );
+        auto all_beta = this->computeBetaQm( mu , time , only_time_dependent_terms );
         offline_merge_type offline_merge;
         if( option(_name="crb.stock-matrices").template as<bool>() )
-            offline_merge = offlineMerge( all_beta , mu );
+            offline_merge = offlineMerge( all_beta , only_time_dependent_terms );
         else
-            offline_merge = offlineMergeOnFly( all_beta, mu );
+            offline_merge = offlineMergeOnFly( all_beta, only_time_dependent_terms );
 
         return offline_merge;
     }
-    offline_merge_type update( parameter_type const& mu, element_type const& T, double time=0 )
+
+    offline_merge_type update( parameter_type const& mu, element_type const& T, double time=0 , bool only_time_dependent_terms=false )
     {
 #if !defined(NDEBUG)
         mu.check();
 #endif
-        auto all_beta = this->computeBetaQm(  T , mu , time );
+        auto all_beta = this->computeBetaQm(  T , mu , time , only_time_dependent_terms );
 
         offline_merge_type offline_merge;
 
         if( option(_name="crb.stock-matrices").template as<bool>() )
-            offline_merge = offlineMerge( all_beta , mu );
+            offline_merge = offlineMerge( all_beta , only_time_dependent_terms );
         else
-            offline_merge = offlineMergeOnFly( all_beta, mu );
+            offline_merge = offlineMergeOnFly( all_beta, only_time_dependent_terms );
 
         return offline_merge;
 
     }
 
+    element_type solveFemMonolithicFormulation( parameter_type const& mu );
+    element_type solveFemDualMonolithicFormulation( parameter_type const& mu );
     element_type solveFemUsingAffineDecompositionFixedPoint( parameter_type const& mu );
     element_type solveFemDualUsingAffineDecompositionFixedPoint( parameter_type const& mu );
     element_type solveFemUsingOfflineEim( parameter_type const& mu );
@@ -863,6 +995,34 @@ public:
             return preAssembleMassMatrix();
     }
 
+    operatorcomposite_ptrtype operatorCompositeLightA() const
+    {
+        return M_model->operatorCompositeLightA();
+    }
+    //linear form
+    std::vector< functionalcomposite_ptrtype > functionalCompositeLightF() const
+    {
+        return M_model->functionalCompositeLightF();
+    }
+    //mass matrix
+    operatorcomposite_ptrtype operatorCompositeLightM() const
+    {
+        return operatorCompositeLightM( mpl::bool_<model_type::is_time_dependent>() );
+    }
+    operatorcomposite_ptrtype operatorCompositeLightM( mpl::bool_<true> ) const
+    {
+        return M_model->operatorCompositeLightM();
+    }
+    operatorcomposite_ptrtype operatorCompositeLightM( mpl::bool_<false> ) const
+    {
+        bool constructed_by_model = M_model->constructOperatorCompositeM();
+        bool light_version=true;
+        if( constructed_by_model )
+            return M_model->operatorCompositeLightM();
+        else
+            return preAssembleMassMatrix( light_version );
+    }
+
 
     /**
      * \brief count numer of terms in the affine decomposition
@@ -878,58 +1038,433 @@ public:
 
         if ( M_Aqm.size() > 0 )
         {
-            M_Qm=M_Mqm.size();
-            M_mMaxM.resize(M_Qm);
-            for(int q=0; q<M_Qm; q++)
+            if ( this->hasEimError() )
             {
-                M_mMaxM[q]=M_Mqm[q].size();
-            }
 
-            M_Qa=M_Aqm.size();
-            M_mMaxA.resize(M_Qa);
-            for(int q=0; q<M_Qa; q++)
-            {
-                M_mMaxA[q]=M_Aqm[q].size();
-            }
+                M_has_eim=true;
+                //when using EIM we need to be careful
+                //if we want to estimate the error then there
+                //is an "extra" basis fuction.
+                auto all_errors = eimInterpolationErrorEstimation();
+                auto errorsM = all_errors.template get<0>();
+                auto errorsA = all_errors.template get<1>();
+                auto errorsF = all_errors.template get<2>();
+                std::map<int,double>::iterator it;
+                auto endA = errorsA.end();
+                auto endM = errorsM.end();
 
-            M_Nl=M_Fqm.size();
-            M_Ql.resize(M_Nl);
-            M_mMaxF.resize(M_Nl);
-            for(int output=0; output<M_Nl; output++)
-            {
-                M_Ql[output]=M_Fqm[output].size();
-                M_mMaxF[output].resize(M_Ql[output]);
-                for(int q=0; q<M_Ql[output]; q++)
+                M_Qm=M_Mqm.size();
+                M_mMaxM.resize(M_Qm);
+                for(int q=0; q<M_Qm; q++)
                 {
-                    M_mMaxF[output][q]=M_Fqm[output][q].size();
+                    auto itq = errorsM.find(q);
+                    if( itq != endM) //found
+                    {
+                        //we have an eim error estimation
+                        M_mMaxM[q]=M_Mqm[q].size()-1;
+                    }
+                    else //not found
+                    {
+                        M_mMaxM[q]=M_Mqm[q].size();
+                    }
                 }
+
+                M_Qa=M_Aqm.size();
+                M_mMaxA.resize(M_Qa);
+                for(int q=0; q<M_Qa; q++)
+                {
+                    auto itq = errorsA.find(q);
+                    if( itq != endA ) //found
+                    {
+                        //we have an eim error estimation
+                        M_mMaxA[q]=M_Aqm[q].size()-1;
+                    }
+                    else //not found
+                    {
+                        M_mMaxA[q]=M_Aqm[q].size();
+                    }
+                }
+
+                M_Nl=M_Fqm.size();
+                M_Ql.resize(M_Nl);
+                M_mMaxF.resize(M_Nl);
+                for(int output=0; output<M_Nl; output++)
+                {
+                    M_Ql[output]=M_Fqm[output].size();
+                    M_mMaxF[output].resize(M_Ql[output]);
+                    auto endF = errorsF[output].end();
+                    for(int q=0; q<M_Ql[output]; q++)
+                    {
+                        auto itq = errorsF[output].find(q);
+                        if( itq != endF ) //found
+                        {
+                            //we have an eim error estimation
+                            M_mMaxF[output][q]=M_Fqm[output][q].size()-1;
+                        }
+                        else //not found
+                        {
+                            M_mMaxF[output][q]=M_Fqm[output][q].size();
+                        }
+                    }
+
+                    M_linearAqm = M_model->computeLinearDecompositionA();
+                    M_QLinearDecompositionA = M_linearAqm.size();
+                    M_mMaxLinearDecompositionA.resize( M_QLinearDecompositionA );
+                    for(int q=0; q<M_QLinearDecompositionA; q++)
+                    {
+                        M_mMaxLinearDecompositionA[q] = M_linearAqm[q].size();
+                    }
+                }
+            }//EIM error
+            else
+            {
+                M_Qm=M_Mqm.size();
+                M_mMaxM.resize(M_Qm);
+                for(int q=0; q<M_Qm; q++)
+                {
+                    M_mMaxM[q]=M_Mqm[q].size();
+                    if( M_mMaxM[q] > 1 )
+                        M_has_eim=true;
+                }
+
+                M_Qa=M_Aqm.size();
+                M_mMaxA.resize(M_Qa);
+                for(int q=0; q<M_Qa; q++)
+                {
+                    M_mMaxA[q]=M_Aqm[q].size();
+                    if( M_mMaxA[q] > 1 )
+                        M_has_eim=true;
+                }
+
+                M_Nl=M_Fqm.size();
+                M_Ql.resize(M_Nl);
+                M_mMaxF.resize(M_Nl);
+                for(int output=0; output<M_Nl; output++)
+                {
+                    M_Ql[output]=M_Fqm[output].size();
+                    M_mMaxF[output].resize(M_Ql[output]);
+                    for(int q=0; q<M_Ql[output]; q++)
+                    {
+                        M_mMaxF[output][q]=M_Fqm[output][q].size();
+                        if( M_mMaxF[output][q] > 1 )
+                            M_has_eim=true;
+                    }
+                }
+
+                if( M_has_eim )
+                {
+                    M_linearAqm = M_model->computeLinearDecompositionA();
+                    M_QLinearDecompositionA = M_linearAqm.size();
+                    M_mMaxLinearDecompositionA.resize( M_QLinearDecompositionA );
+                    for(int q=0; q<M_QLinearDecompositionA; q++)
+                    {
+                        M_mMaxLinearDecompositionA[q] = M_linearAqm[q].size();
+                    }
+                }
+
             }
         }
         else
         {
             //operators free
-            auto compositeM = operatorCompositeM();
-            M_mMaxM = compositeM->countAllContributions();
-            M_Qm=M_mMaxM.size();
-
-            auto compositeA = operatorCompositeA();
-            //it is important to check that the user provides operators free
-            //else we don't have any affine decomposition
-            CHECK( compositeA )<<"Very important ERROR !!! You have not implemented computeAffineDecomposition or operatorCompositeA !\n";
-            M_mMaxA = compositeA->countAllContributions();
-            M_Qa=M_mMaxA.size();
-            auto vector_compositeF = functionalCompositeF();
-            int number_outputs = vector_compositeF.size();
-            M_Nl=number_outputs;
-            M_mMaxF.resize(number_outputs);
-            M_Ql.resize(number_outputs);
-            for(int output=0; output<number_outputs; output++)
+            auto compositeAlight = operatorCompositeLightA();
+            if( compositeAlight )
             {
-                auto compositeF = vector_compositeF[output];
-                M_mMaxF[output] = compositeF->countAllContributions();
-                M_Ql[output] = M_mMaxF[output].size();
+                auto compositeMlight = operatorCompositeLightM();
+                M_mMaxM = compositeMlight->countAllContributions();
+                M_Qm=M_mMaxM.size();
+                M_mMaxA = compositeAlight->countAllContributions();
+                M_Qa=M_mMaxA.size();
+                auto vector_compositeFlight = functionalCompositeLightF();
+                int number_outputs = vector_compositeFlight.size();
+                M_Nl=number_outputs;
+                M_mMaxF.resize(number_outputs);
+                M_Ql.resize(number_outputs);
+                for(int output=0; output<number_outputs; output++)
+                {
+                    auto compositeF = vector_compositeFlight[output];
+                    M_mMaxF[output] = compositeF->countAllContributions();
+                    M_Ql[output] = M_mMaxF[output].size();
+                }
+            }//light version
+            else
+            {
+                M_has_eim=true;
+                auto compositeM = operatorCompositeM();
+                M_mMaxM = compositeM->countAllContributions();
+                M_Qm=M_mMaxM.size();
+
+                auto compositeA = operatorCompositeA();
+                //it is important to check that the user provides operators free
+                //else we don't have any affine decomposition
+                CHECK( compositeA )<<"Very important ERROR !!! You have not implemented computeAffineDecomposition or operatorCompositeA !\n";
+                M_mMaxA = compositeA->countAllContributions();
+                M_Qa=M_mMaxA.size();
+                auto vector_compositeF = functionalCompositeF();
+                int number_outputs = vector_compositeF.size();
+                M_Nl=number_outputs;
+                M_mMaxF.resize(number_outputs);
+                M_Ql.resize(number_outputs);
+                for(int output=0; output<number_outputs; output++)
+                {
+                    auto compositeF = vector_compositeF[output];
+                    M_mMaxF[output] = compositeF->countAllContributions();
+                    M_Ql[output] = M_mMaxF[output].size();
+                }
+            }
+        }//classic version
+    }
+
+    incomplete_betaqm_type extendBetaCoefficients( betaq_type beta_light )
+    {
+        return extendBetaCoefficients( beta_light , mpl::bool_< is_time_dependent >() );
+    }
+    incomplete_betaqm_type extendBetaCoefficients( betaq_type beta_light , mpl::bool_<true> )
+    {
+        beta_vector_type betaAqm;
+        beta_vector_type betaMqm;
+        std::vector<beta_vector_type>  betaFqm;
+
+        auto betaMq = beta_light.template get<0>();
+        auto betaAq = beta_light.template get<1>();
+        auto betaFq = beta_light.template get<2>();
+        int qsize=betaMq.size();
+        betaMqm.resize( qsize );
+        for(int q=0; q<qsize; q++)
+        {
+            betaMqm[q].resize(1);
+            betaMqm[q][0]=betaMq[q];
+        }
+        qsize=betaAq.size();
+        betaAqm.resize( qsize );
+        for(int q=0; q<qsize; q++)
+        {
+            betaAqm[q].resize(1);
+            betaAqm[q][0]=betaAq[q];
+        }
+        int nboutputs=betaFq.size();
+        betaFqm.resize(nboutputs);
+        for(int output=0; output<nboutputs;output++)
+        {
+            qsize=betaFq[output].size();
+            betaFqm[output].resize(qsize);
+
+            for(int q=0; q<qsize; q++)
+            {
+                betaFqm[output][q].resize(1);
+                betaFqm[output][q][0]=betaFq[output][q];
             }
         }
+
+        return boost::make_tuple( betaMqm, betaAqm , betaFqm );
+
+    }
+    incomplete_betaqm_type extendBetaCoefficients( betaq_type beta_light , mpl::bool_<false> )
+    {
+        beta_vector_type betaAqm;
+        std::vector<beta_vector_type>  betaFqm;
+
+        auto betaAq = beta_light.template get<0>();
+        auto betaFq = beta_light.template get<1>();
+        int qsize=betaAq.size();
+        betaAqm.resize( qsize );
+        for(int q=0; q<qsize; q++)
+        {
+            betaAqm[q].resize(1);
+            betaAqm[q][0]=betaAq[q];
+        }
+        int nboutputs=betaFq.size();
+        betaFqm.resize(nboutputs);
+        for(int output=0; output<nboutputs;output++)
+        {
+            qsize=betaFq[output].size();
+            betaFqm[output].resize(qsize);
+
+            for(int q=0; q<qsize; q++)
+            {
+                betaFqm[output][q].resize(1);
+                betaFqm[output][q][0]=betaFq[output][q];
+            }
+        }
+
+        return boost::make_tuple( betaAqm , betaFqm );
+
+    }
+
+
+    void extendAffineDecomposition( affine_decomposition_light_type tuple )
+    {
+        return extendAffineDecomposition(  tuple , mpl::bool_< is_time_dependent >() );
+    }
+    void extendAffineDecomposition( affine_decomposition_light_type tuple , mpl::bool_<true> )
+    {
+        auto Xh=M_model->functionSpace();
+        auto Mq=tuple.template get<0>();
+        auto Aq=tuple.template get<1>();
+        auto Fq=tuple.template get<2>();
+
+        int qsize=Mq.size();
+        M_Mqm.resize( qsize );
+        for(int q=0; q<qsize; q++)
+        {
+            M_Mqm[q].resize(1);
+            M_Mqm[q][0]=M_backend->newMatrix( Xh, Xh );
+            M_Mqm[q][0]=Mq[q];
+        }
+        qsize=Aq.size();
+        M_Aqm.resize( qsize );
+        for(int q=0; q<qsize; q++)
+        {
+            M_Aqm[q].resize(1);
+            M_Aqm[q][0]=M_backend->newMatrix( Xh, Xh );
+            M_Aqm[q][0]=Aq[q];
+        }
+        int nb_output=Fq.size();
+        M_Fqm.resize(nb_output);
+        for(int output=0; output<nb_output; output++)
+        {
+            qsize=Fq[output].size();
+            M_Fqm[output].resize( qsize );
+            for(int q=0; q<qsize; q++)
+            {
+                M_Fqm[output][q].resize(1);
+                M_Fqm[output][q][0]=M_backend->newVector( Xh );
+                M_Fqm[output][q][0]=Fq[output][q];
+            }
+        }
+    }
+    void extendAffineDecomposition( affine_decomposition_light_type tuple , mpl::bool_<false> )
+    {
+        auto Xh=M_model->functionSpace();
+        auto Aq=tuple.template get<0>();
+        auto Fq=tuple.template get<1>();
+
+        int qsize=Aq.size();
+        M_Aqm.resize( qsize );
+        for(int q=0; q<qsize; q++)
+        {
+            M_Aqm[q].resize(1);
+            M_Aqm[q][0]=M_backend->newMatrix( Xh, Xh );
+            M_Aqm[q][0]=Aq[q];
+        }
+        int nb_output=Fq.size();
+        M_Fqm.resize(nb_output);
+        for(int output=0; output<nb_output; output++)
+        {
+            qsize=Fq[output].size();
+            M_Fqm[output].resize( qsize );
+            for(int q=0; q<qsize; q++)
+            {
+                M_Fqm[output][q].resize(1);
+                M_Fqm[output][q][0]=M_backend->newVector( Xh );
+                M_Fqm[output][q][0]=Fq[output][q];
+            }
+        }
+    }
+
+
+
+    /**
+     * \brief compute the monolithic formulation
+     * that is to say with no affine decomposition
+     */
+    monolithic_type computeMonolithicFormulation( parameter_type const& mu )
+    {
+        return computeMonolithicFormulation( mu, mpl::bool_<model_type::is_time_dependent>() );
+    }
+    monolithic_type computeMonolithicFormulation( parameter_type const& mu , mpl::bool_<true> )
+    {
+        boost::tie( M_monoM, M_monoA, M_monoF ) = M_model->computeMonolithicFormulation( mu );
+        return boost::make_tuple( M_monoM, M_monoA, M_monoF );
+    }
+    monolithic_type computeMonolithicFormulation( parameter_type const& mu , mpl::bool_<false> )
+    {
+        boost::tie( M_monoA, M_monoF ) = M_model->computeMonolithicFormulation( mu );
+        return boost::make_tuple( M_monoM, M_monoA, M_monoF );
+    }
+
+
+    /*
+     * return true if the model use EIM and need to comute associated error
+     * usefull to the CRB error estimation
+     */
+    bool hasEimError()
+    {
+        auto all_errors = eimInterpolationErrorEstimation();
+        auto errorsM = all_errors.template get<0>();
+        auto errorsA = all_errors.template get<1>();
+        auto errorsF = all_errors.template get<2>();
+        int sizeM = errorsM.size();
+        int sizeA = errorsA.size();
+        int sizeF = errorsF.size();
+        bool b=false;
+        if( sizeM > 0 || sizeA > 0 || sizeF > 0 )
+        {
+            b=true;
+        }
+        return b;
+    }
+
+    /*
+     * return true if the model use EIM
+     */
+    bool hasEim()
+    {
+        return M_has_eim;
+    }
+
+    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , vectorN_type const& uN )
+    {
+        return eimInterpolationErrorEstimation( mu, uN, mpl::bool_<model_type::is_time_dependent>() );
+    }
+    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , vectorN_type const& uN, mpl::bool_<true> )
+    {
+        return M_model->eimInterpolationErrorEstimation( mu , uN );
+    }
+    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , vectorN_type const& uN, mpl::bool_<false> )
+    {
+        std::map< int, double > errorsM;
+        std::map< int, double > errorsA;
+        std::vector< std::map< int, double > > errorsF;
+        boost::tie(  errorsA , errorsF ) = M_model->eimInterpolationErrorEstimation( mu ,uN );
+        return boost::make_tuple( errorsM, errorsA, errorsF );
+    }
+
+    eim_interpolation_error_type eimInterpolationErrorEstimation( )
+    {
+        return eimInterpolationErrorEstimation( mpl::bool_<model_type::is_time_dependent>() );
+    }
+    eim_interpolation_error_type eimInterpolationErrorEstimation( mpl::bool_<true> )
+    {
+        return M_model->eimInterpolationErrorEstimation( );
+    }
+    eim_interpolation_error_type eimInterpolationErrorEstimation( mpl::bool_<false> )
+    {
+        std::map< int, double > errorsM;
+        std::map< int, double > errorsA;
+        std::vector< std::map< int, double > > errorsF;
+        boost::tie(  errorsA , errorsF ) = M_model->eimInterpolationErrorEstimation( );
+        return boost::make_tuple( errorsM, errorsA, errorsF );
+    }
+
+
+
+    /**
+     * \brief compute the linear part of the affine decomposition of a()
+     * it is needed to compute the norm of the error for nonlinear models using EIM
+     */
+    std::vector< std::vector<sparse_matrix_ptrtype> > computeLinearDecompositionA()
+    {
+        return M_model->computeLinearDecompositionA();
+    }
+
+    /**
+     * \brief compute beta coefficients associetd to the linear part of the affine decomposition of a()
+     * it is needed to compute the norm of the error for nonlinear models using EIM
+     */
+    beta_vector_type computeBetaLinearDecompositionA ( parameter_type const& mu ,  double time=0 )
+    {
+        return M_model->computeBetaLinearDecompositionA( mu , time );
     }
 
     /**
@@ -947,69 +1482,138 @@ public:
     }
     affine_decomposition_type computeAffineDecomposition( mpl::bool_<true> )
     {
-        boost::tie( M_Mqm, M_Aqm, M_Fqm ) = M_model->computeAffineDecomposition();
+        std::vector< sparse_matrix_ptrtype > Aq;
+        std::vector< sparse_matrix_ptrtype > Mq;
+        std::vector< std::vector< vector_ptrtype > > Fq;
+
+        //first check is model provides a small affine decomposition or not
+        boost::tie( Mq, Aq, Fq ) = M_model->computeAffineDecompositionLight();
+
+        if( Aq.size() == 0 )
+        {
+            boost::tie( M_Mqm, M_Aqm, M_Fqm ) = M_model->computeAffineDecomposition();
+        }
+        else
+        {
+            auto tuple=boost::make_tuple(Mq,Aq,Fq);
+            this->extendAffineDecomposition( tuple );
+        }
+
         this->countAffineDecompositionTerms();
 
         if( M_Aqm.size() == 0 )
         {
             //in that case the model must provides operators free
-            auto compositeM = operatorCompositeM();
-            int q_max = this->Qm();
-            M_Mqm.resize( q_max);
-            for(int q=0; q<q_max; q++)
-            {
-                int m_max = this->mMaxM(q);
-                M_Mqm[q].resize(m_max);
-                for(int m=0; m<m_max;m++)
-                {
-                    auto operatorfree = compositeM->operatorlinear(q,m);
-                    size_type pattern = operatorfree->pattern();
-                    auto trial = operatorfree->domainSpace();
-                    auto test=operatorfree->dualImageSpace();
-                    M_Mqm[q][m]= M_backend->newMatrix( _test=test , _trial=trial , _pattern=pattern );
-                    operatorfree->matPtr(M_Mqm[q][m]);//fill the matrix
-                }//m
-            }//q
 
-            auto compositeA = operatorCompositeA();
-            q_max = this->Qa();
-            M_Aqm.resize( q_max);
-            for(int q=0; q<q_max; q++)
+            auto compositeAlight = operatorCompositeLightA();
+            if( compositeAlight )
             {
-                int m_max = this->mMaxA(q);
-                M_Aqm[q].resize(m_max);
-                for(int m=0; m<m_max;m++)
-                {
-                    auto operatorfree = compositeA->operatorlinear(q,m);
-                    size_type pattern = operatorfree->pattern();
-                    auto trial = operatorfree->domainSpace();
-                    auto test=operatorfree->dualImageSpace();
-                    M_Aqm[q][m]= M_backend->newMatrix( _test=test , _trial=trial , _pattern=pattern );
-                    operatorfree->matPtr(M_Aqm[q][m]);//fill the matrix
-                }//m
-            }//q
 
-            auto vector_compositeF = functionalCompositeF();
-            int number_outputs = vector_compositeF.size();
-            M_Fqm.resize(number_outputs);
-            for(int output=0; output<number_outputs; output++)
-            {
-                auto composite_f = vector_compositeF[output];
-                int q_max = this->Ql(output);
-                M_Fqm[output].resize( q_max);
+                auto compositeMlight = operatorCompositeLightM();
+                int q_max = this->Qm();
+                M_Mqm.resize( q_max);
                 for(int q=0; q<q_max; q++)
                 {
-                    int m_max = this->mMaxF(output,q);
-                    M_Fqm[output][q].resize(m_max);
+                    M_Mqm[q].resize(1);
+                    auto operatorfree = compositeMlight->operatorlinear(q);
+                    size_type pattern = operatorfree->pattern();
+                    auto trial = operatorfree->domainSpace();
+                    auto test=operatorfree->dualImageSpace();
+                    M_Mqm[q][0]= M_backend->newMatrix( _test=test , _trial=trial , _pattern=pattern );
+                    operatorfree->matPtr(M_Mqm[q][0]);//fill the matrix
+                }//q
+
+                q_max = this->Qa();
+                M_Aqm.resize( q_max);
+                for(int q=0; q<q_max; q++)
+                {
+                    M_Aqm[q].resize(1);
+                    auto operatorfree = compositeAlight->operatorlinear(q);
+                    size_type pattern = operatorfree->pattern();
+                    auto trial = operatorfree->domainSpace();
+                    auto test=operatorfree->dualImageSpace();
+                    M_Aqm[q][0]= M_backend->newMatrix( _test=test , _trial=trial , _pattern=pattern );
+                    operatorfree->matPtr(M_Aqm[q][0]);//fill the matrix
+                }//q
+
+                auto vector_compositeFlight = functionalCompositeLightF();
+                int number_outputs = vector_compositeFlight.size();
+                M_Fqm.resize(number_outputs);
+                for(int output=0; output<number_outputs; output++)
+                {
+                    auto composite_f = vector_compositeFlight[output];
+                    int q_max = this->Ql(output);
+                    M_Fqm[output].resize( q_max);
+                    for(int q=0; q<q_max; q++)
+                    {
+                        M_Fqm[output][q].resize(1);
+                        auto operatorfree = composite_f->functionallinear(q);
+                        auto space = operatorfree->space();
+                        M_Fqm[output][q][0]= M_backend->newVector( space );
+                        operatorfree->containerPtr(M_Fqm[output][q][0]);//fill the vector
+                    }//q
+                }//output
+            }//end of light version
+            else
+            {
+                auto compositeM = operatorCompositeM();
+                int q_max = this->Qm();
+                M_Mqm.resize( q_max);
+                for(int q=0; q<q_max; q++)
+                {
+                    int m_max = this->mMaxM(q);
+                    M_Mqm[q].resize(m_max);
                     for(int m=0; m<m_max;m++)
                     {
-                        auto operatorfree = composite_f->functionallinear(q,m);
-                        auto space = operatorfree->space();
-                        M_Fqm[output][q][m]= M_backend->newVector( space );
-                        operatorfree->containerPtr(M_Fqm[output][q][m]);//fill the vector
+                        auto operatorfree = compositeM->operatorlinear(q,m);
+                        size_type pattern = operatorfree->pattern();
+                        auto trial = operatorfree->domainSpace();
+                        auto test=operatorfree->dualImageSpace();
+                        M_Mqm[q][m]= M_backend->newMatrix( _test=test , _trial=trial , _pattern=pattern );
+                        operatorfree->matPtr(M_Mqm[q][m]);//fill the matrix
                     }//m
                 }//q
-            }//output
+
+                auto compositeA = operatorCompositeA();
+                q_max = this->Qa();
+                M_Aqm.resize( q_max);
+                for(int q=0; q<q_max; q++)
+                {
+                    int m_max = this->mMaxA(q);
+                    M_Aqm[q].resize(m_max);
+                    for(int m=0; m<m_max;m++)
+                    {
+                        auto operatorfree = compositeA->operatorlinear(q,m);
+                        size_type pattern = operatorfree->pattern();
+                        auto trial = operatorfree->domainSpace();
+                        auto test=operatorfree->dualImageSpace();
+                        M_Aqm[q][m]= M_backend->newMatrix( _test=test , _trial=trial , _pattern=pattern );
+                        operatorfree->matPtr(M_Aqm[q][m]);//fill the matrix
+                    }//m
+                }//q
+
+                auto vector_compositeF = functionalCompositeF();
+                int number_outputs = vector_compositeF.size();
+                M_Fqm.resize(number_outputs);
+                for(int output=0; output<number_outputs; output++)
+                {
+                    auto composite_f = vector_compositeF[output];
+                    int q_max = this->Ql(output);
+                    M_Fqm[output].resize( q_max);
+                    for(int q=0; q<q_max; q++)
+                    {
+                        int m_max = this->mMaxF(output,q);
+                        M_Fqm[output][q].resize(m_max);
+                        for(int m=0; m<m_max;m++)
+                        {
+                            auto operatorfree = composite_f->functionallinear(q,m);
+                            auto space = operatorfree->space();
+                            M_Fqm[output][q][m]= M_backend->newVector( space );
+                            operatorfree->containerPtr(M_Fqm[output][q][m]);//fill the vector
+                        }//m
+                    }//q
+                }//output
+            }//end of classic version
         }
 
         return boost::make_tuple( M_Mqm, M_Aqm, M_Fqm );
@@ -1017,7 +1621,21 @@ public:
     affine_decomposition_type computeAffineDecomposition( mpl::bool_<false> )
     {
         initial_guess_type initial_guess;
-        boost::tie( M_Aqm, M_Fqm ) = M_model->computeAffineDecomposition();
+        std::vector< sparse_matrix_ptrtype > Aq;
+        std::vector< std::vector< vector_ptrtype > > Fq;
+
+        //first check is model provides a small affine decomposition or not
+        boost::tie( Aq, Fq ) = M_model->computeAffineDecompositionLight();
+
+        if( Aq.size() == 0 )
+        {
+            boost::tie( M_Aqm, M_Fqm ) = M_model->computeAffineDecomposition();
+        }
+        else
+        {
+            auto tuple=boost::make_tuple(Aq,Fq);
+            this->extendAffineDecomposition( tuple );
+        }
         this->countAffineDecompositionTerms();
 
         if ( M_Aqm.size() > 0 )
@@ -1044,45 +1662,82 @@ public:
                 }//m
             }//q
 
-            auto compositeA = operatorCompositeA();
-            q_max = this->Qa();
-            M_Aqm.resize( q_max);
-            for(int q=0; q<q_max; q++)
+            auto compositeAlight = operatorCompositeLightA();
+            if( compositeAlight )
             {
-                int m_max = this->mMaxA(q);
-                M_Aqm[q].resize(m_max);
-                for(int m=0; m<m_max;m++)
+                int q_max = this->Qa();
+                M_Aqm.resize( q_max);
+                for(int q=0; q<q_max; q++)
                 {
-                    auto operatorfree = compositeA->operatorlinear(q,m);
+                    M_Aqm[q].resize(1);
+                    auto operatorfree = compositeAlight->operatorlinear(q);
                     size_type pattern = operatorfree->pattern();
                     auto trial = operatorfree->domainSpace();
                     auto test=operatorfree->dualImageSpace();
-                    M_Aqm[q][m]= M_backend->newMatrix( _test=test , _trial=trial , _pattern=pattern );
-                    operatorfree->matPtr(M_Aqm[q][m]);//fill the matrix
-                }//m
-            }//q
+                    M_Aqm[q][0]= M_backend->newMatrix( _test=test , _trial=trial , _pattern=pattern );
+                    operatorfree->matPtr(M_Aqm[q][0]);//fill the matrix
+                }//q
 
-            auto vector_compositeF = functionalCompositeF();
-            int number_outputs = M_Nl;
-            M_Fqm.resize(number_outputs);
-            for(int output=0; output<number_outputs; output++)
+                auto vector_compositeFlight = functionalCompositeLightF();
+                int number_outputs = vector_compositeFlight.size();
+                M_Fqm.resize(number_outputs);
+                for(int output=0; output<number_outputs; output++)
+                {
+                    auto composite_f = vector_compositeFlight[output];
+                    int q_max = this->Ql(output);
+                    M_Fqm[output].resize( q_max);
+                    for(int q=0; q<q_max; q++)
+                    {
+                        M_Fqm[output][q].resize(1);
+                        auto operatorfree = composite_f->functionallinear(q);
+                        auto space = operatorfree->space();
+                        M_Fqm[output][q][0]= M_backend->newVector( space );
+                        operatorfree->containerPtr(M_Fqm[output][q][0]);//fill the vector
+                    }//q
+                }//output
+            }// light version
+            else
             {
-                auto composite_f = vector_compositeF[output];
-                int q_max = this->Ql(output);
-                M_Fqm[output].resize(q_max);
+                auto compositeA = operatorCompositeA();
+                q_max = this->Qa();
+                M_Aqm.resize( q_max);
                 for(int q=0; q<q_max; q++)
                 {
-                    int m_max = this->mMaxF(output,q);
-                    M_Fqm[output][q].resize(m_max);
+                    int m_max = this->mMaxA(q);
+                    M_Aqm[q].resize(m_max);
                     for(int m=0; m<m_max;m++)
                     {
-                        auto functionalfree = composite_f->functionallinear(q,m);
-                        auto space = functionalfree->space();
-                        M_Fqm[output][q][m]= M_backend->newVector( space );
-                        functionalfree->containerPtr(M_Fqm[output][q][m]);//fill the vector
+                        auto operatorfree = compositeA->operatorlinear(q,m);
+                        size_type pattern = operatorfree->pattern();
+                        auto trial = operatorfree->domainSpace();
+                        auto test=operatorfree->dualImageSpace();
+                        M_Aqm[q][m]= M_backend->newMatrix( _test=test , _trial=trial , _pattern=pattern );
+                        operatorfree->matPtr(M_Aqm[q][m]);//fill the matrix
                     }//m
                 }//q
-            }//output
+
+                auto vector_compositeF = functionalCompositeF();
+                int number_outputs = M_Nl;
+                M_Fqm.resize(number_outputs);
+                for(int output=0; output<number_outputs; output++)
+                {
+                    auto composite_f = vector_compositeF[output];
+                    int q_max = this->Ql(output);
+                    M_Fqm[output].resize(q_max);
+                    for(int q=0; q<q_max; q++)
+                    {
+                        int m_max = this->mMaxF(output,q);
+                        M_Fqm[output][q].resize(m_max);
+                        for(int m=0; m<m_max;m++)
+                        {
+                            auto functionalfree = composite_f->functionallinear(q,m);
+                            auto space = functionalfree->space();
+                            M_Fqm[output][q][m]= M_backend->newVector( space );
+                            functionalfree->containerPtr(M_Fqm[output][q][m]);//fill the vector
+                        }//m
+                    }//q
+                }//output
+            }//classic version
         }
 
         return boost::make_tuple( M_Mqm, M_Aqm, M_Fqm );
@@ -1128,18 +1783,33 @@ public:
         }
         else
         {
-            auto composite = operatorCompositeA();
-            auto opfree = composite->operatorlinear(q,m);
-            size_type pattern = opfree->pattern();
-            auto trial = opfree->domainSpace();
-            auto test = opfree->dualImageSpace();
-            auto matrix = M_backend->newMatrix( _trial=trial , _test=test , _pattern=pattern );
-            opfree->matPtr( matrix ); //assemble the matrix
-
-            if ( transpose )
-                return matrix->transpose();
-
-            return matrix;
+            auto compositeLight=operatorCompositeLightA();
+            if( compositeLight )
+            {
+                CHECK( m == 0 )<<"Error, try to use light version of operators free with EIM \n";
+                auto opfree = compositeLight->operatorlinear(q);
+                size_type pattern = opfree->pattern();
+                auto trial = opfree->domainSpace();
+                auto test = opfree->dualImageSpace();
+                auto matrix = M_backend->newMatrix( _trial=trial , _test=test , _pattern=pattern );
+                opfree->matPtr( matrix ); //assemble the matrix
+                if ( transpose )
+                    return matrix->transpose();
+                return matrix;
+            }
+            else
+            {
+                auto composite = operatorCompositeA();
+                auto opfree = composite->operatorlinear(q,m);
+                size_type pattern = opfree->pattern();
+                auto trial = opfree->domainSpace();
+                auto test = opfree->dualImageSpace();
+                auto matrix = M_backend->newMatrix( _trial=trial , _test=test , _pattern=pattern );
+                opfree->matPtr( matrix ); //assemble the matrix
+                if ( transpose )
+                    return matrix->transpose();
+                return matrix;
+            }
         }
     }
 
@@ -1164,18 +1834,33 @@ public:
         }
         else
         {
-            auto composite = operatorCompositeM();
-            auto opfree = composite->operatorlinear(q,m);
-            size_type pattern = opfree->pattern();
-            auto trial = opfree->domainSpace();
-            auto test = opfree->dualImageSpace();
-            auto matrix = M_backend->newMatrix( _trial=trial , _test=test , _pattern=pattern );
-            opfree->matPtr( matrix ); //assemble the matrix
-
-            if ( transpose )
-                return matrix->transpose();
-
-            return matrix;
+            auto compositeLight=operatorCompositeLightM();
+            if( compositeLight )
+            {
+                CHECK( m == 0 )<<"Error, try to use light version of operators free with EIM \n";
+                auto opfree = compositeLight->operatorlinear(q);
+                size_type pattern = opfree->pattern();
+                auto trial = opfree->domainSpace();
+                auto test = opfree->dualImageSpace();
+                auto matrix = M_backend->newMatrix( _trial=trial , _test=test , _pattern=pattern );
+                opfree->matPtr( matrix ); //assemble the matrix
+                if ( transpose )
+                    return matrix->transpose();
+                return matrix;
+            }
+            else
+            {
+                auto composite = operatorCompositeM();
+                auto opfree = composite->operatorlinear(q,m);
+                size_type pattern = opfree->pattern();
+                auto trial = opfree->domainSpace();
+                auto test = opfree->dualImageSpace();
+                auto matrix = M_backend->newMatrix( _trial=trial , _test=test , _pattern=pattern );
+                opfree->matPtr( matrix ); //assemble the matrix
+                if ( transpose )
+                    return matrix->transpose();
+                return matrix;
+            }
         }
     }
 
@@ -1199,18 +1884,33 @@ public:
         }
         else
         {
-            auto composite = operatorCompositeM();
-            auto opfree = composite->operatorlinear(q,m);
-            size_type pattern = opfree->pattern();
-            auto trial = opfree->domainSpace();
-            auto test = opfree->dualImageSpace();
-            auto matrix = M_backend->newMatrix( _trial=trial , _test=test , _pattern=pattern );
-            opfree->matPtr( matrix ); //assemble the matrix
-
-            if ( transpose )
-                return matrix->transpose();
-
-            return matrix;
+            auto compositeLight=operatorCompositeLightM();
+            if( compositeLight )
+            {
+                CHECK( m == 0 )<<"Error, try to use light version of operators free with EIM \n";
+                auto opfree = compositeLight->operatorlinear(q);
+                size_type pattern = opfree->pattern();
+                auto trial = opfree->domainSpace();
+                auto test = opfree->dualImageSpace();
+                auto matrix = M_backend->newMatrix( _trial=trial , _test=test , _pattern=pattern );
+                opfree->matPtr( matrix ); //assemble the matrix
+                if ( transpose )
+                    return matrix->transpose();
+                return matrix;
+            }
+            else
+            {
+                auto composite = operatorCompositeM();
+                auto opfree = composite->operatorlinear(q,m);
+                size_type pattern = opfree->pattern();
+                auto trial = opfree->domainSpace();
+                auto test = opfree->dualImageSpace();
+                auto matrix = M_backend->newMatrix( _trial=trial , _test=test , _pattern=pattern );
+                opfree->matPtr( matrix ); //assemble the matrix
+                if ( transpose )
+                    return matrix->transpose();
+                return matrix;
+            }
         }
     }
 
@@ -1224,6 +1924,31 @@ public:
         return M_InitialGuessVector[q][m];
     }
 
+
+
+    /**
+     * \brief the inner product \f$linear a_{qm}(\xi_i, \xi_j) = \xi_j^T LinearA_{qm} \xi_i\f$
+     *
+     * \param q and m index of the component in the affine decomposition
+     * \param xi_i an element of the function space
+     * \param xi_j an element of the function space
+     * \param transpose transpose \c LinearA_{qm}
+     *
+     * \return the inner product \f$linear a_qm(\xi_i, \xi_j) = \xi_j^T LinearA_{qm} \xi_i\f$
+     */
+    value_type linearDecompositionAqm( uint16_type q, uint16_type m, element_type const& xi_i, element_type const& xi_j, bool transpose = false ) const
+    {
+        bool stock = option(_name="crb.stock-matrices").template as<bool>();
+        if( stock )
+        {
+            //in this case matrices have already been stocked
+            return M_linearAqm[q][m]->energy( xi_j, xi_i, transpose );
+        }
+        CHECK( stock )<<" This check is here because nothing is done to deal with linear decomposition of a (model using EIM) when using "
+                      <<" operators free and option crb.stock-matrices=false.\nFor now we suppose that crb.stock-matrices=true.\n "
+                      <<" So make sure that all developments have been done to deal with crb.stock-matrices=false before delete this CHECK.\n";
+        return 0;
+    }
 
     /**
      * \brief the inner product \f$a_{qm}(\xi_i, \xi_j) = \xi_j^T A_{qm} \xi_i\f$
@@ -1244,15 +1969,31 @@ public:
         }
         else
         {
-            auto composite = operatorCompositeA();
-            auto opfree = composite->operatorlinear(q,m);
-            size_type pattern = opfree->pattern();
-            auto trial = opfree->domainSpace();
-            auto test = opfree->dualImageSpace();
-            auto matrix = M_backend->newMatrix( _trial=trial , _test=test , _pattern=pattern );
-            opfree->matPtr( matrix ); //assemble the matrix
+            auto compositeLight=operatorCompositeLightA();
+            if( compositeLight )
+            {
+                CHECK( m == 0 )<<"Error, try to use light version of operators free with EIM \n";
+                auto opfree = compositeLight->operatorlinear(q);
+                size_type pattern = opfree->pattern();
+                auto trial = opfree->domainSpace();
+                auto test = opfree->dualImageSpace();
+                auto matrix = M_backend->newMatrix( _trial=trial , _test=test , _pattern=pattern );
+                opfree->matPtr( matrix ); //assemble the matrix
 
-            return matrix->energy( xi_j, xi_i, transpose );
+                return matrix->energy( xi_j, xi_i, transpose );
+            }
+            else
+            {
+                auto composite = operatorCompositeA();
+                auto opfree = composite->operatorlinear(q,m);
+                size_type pattern = opfree->pattern();
+                auto trial = opfree->domainSpace();
+                auto test = opfree->dualImageSpace();
+                auto matrix = M_backend->newMatrix( _trial=trial , _test=test , _pattern=pattern );
+                opfree->matPtr( matrix ); //assemble the matrix
+
+                return matrix->energy( xi_j, xi_i, transpose );
+            }
         }
     }
 
@@ -1275,15 +2016,29 @@ public:
         }
         else
         {
-            auto composite = operatorCompositeM();
-            auto opfree = composite->operatorlinear(q,m);
-            size_type pattern = opfree->pattern();
-            auto trial = opfree->domainSpace();
-            auto test = opfree->dualImageSpace();
-            auto matrix = M_backend->newMatrix( _trial=trial , _test=test , _pattern=pattern );
-            opfree->matPtr( matrix ); //assemble the matrix
-
-            return matrix->energy( xi_j, xi_i, transpose );
+            auto compositeLight=operatorCompositeLightM();
+            if( compositeLight )
+            {
+                CHECK( m == 0 )<<"Error, try to use light version of operators free with EIM \n";
+                auto opfree = compositeLight->operatorlinear(q);
+                size_type pattern = opfree->pattern();
+                auto trial = opfree->domainSpace();
+                auto test = opfree->dualImageSpace();
+                auto matrix = M_backend->newMatrix( _trial=trial , _test=test , _pattern=pattern );
+                opfree->matPtr( matrix ); //assemble the matrix
+                return matrix->energy( xi_j, xi_i, transpose );
+            }
+            else
+            {
+                auto composite = operatorCompositeM();
+                auto opfree = composite->operatorlinear(q,m);
+                size_type pattern = opfree->pattern();
+                auto trial = opfree->domainSpace();
+                auto test = opfree->dualImageSpace();
+                auto matrix = M_backend->newMatrix( _trial=trial , _test=test , _pattern=pattern );
+                opfree->matPtr( matrix ); //assemble the matrix
+                return matrix->energy( xi_j, xi_i, transpose );
+            }
         }
     }
 
@@ -1309,13 +2064,28 @@ public:
         }
         else
         {
-            auto vector_composite = functionalCompositeF();
-            auto composite = vector_composite[l];
-            auto functional = composite->functionallinear(q,m);
-            auto space = functional->space();
-            auto vector = M_backend->newVector( space );
-            functional->containerPtr( vector );
-            return vector;
+            auto compositeLight=operatorCompositeLightA();
+            if( compositeLight )
+            {
+                auto vector_compositeLight=functionalCompositeLightF();
+                CHECK( m == 0 )<<"Error, try to use light version of operators free with EIM \n";
+                auto composite = vector_compositeLight[l];
+                auto functional = composite->functionallinear(q);
+                auto space = functional->space();
+                auto vector = M_backend->newVector( space );
+                functional->containerPtr( vector );
+                return vector;
+            }
+            else
+            {
+                auto vector_composite = functionalCompositeF();
+                auto composite = vector_composite[l];
+                auto functional = composite->functionallinear(q,m);
+                auto space = functional->space();
+                auto vector = M_backend->newVector( space );
+                functional->containerPtr( vector );
+                return vector;
+            }
         }
     }
 
@@ -1346,13 +2116,27 @@ public:
         }
         else
         {
-            auto vector_composite = functionalCompositeF();
-            auto composite = vector_composite[l];
-            auto functional = composite->functionallinear(q,m);
-            auto space = functional->space();
-            auto vector = M_backend->newVector( space );
-            functional->containerPtr( vector );
-            result = inner_product( *vector, xi ) ;
+            auto compositeLight=operatorCompositeLightA();
+            if( compositeLight )
+            {
+                auto vector_compositeLight=functionalCompositeLightF();
+                auto composite = vector_compositeLight[l];
+                auto functional = composite->functionallinear(q);
+                auto space = functional->space();
+                auto vector = M_backend->newVector( space );
+                functional->containerPtr( vector );
+                result = inner_product( *vector, xi ) ;
+            }
+            else
+            {
+                auto vector_composite = functionalCompositeF();
+                auto composite = vector_composite[l];
+                auto functional = composite->functionallinear(q,m);
+                auto space = functional->space();
+                auto vector = M_backend->newVector( space );
+                functional->containerPtr( vector );
+                result = inner_product( *vector, xi ) ;
+            }
         }
 
         return result;
@@ -1380,13 +2164,27 @@ public:
         }
         else
         {
-            auto vector_composite = functionalCompositeF();
-            auto composite = vector_composite[l];
-            auto functional = composite->functionallinear(q,m);
-            auto space = functional->space();
-            auto vector = M_backend->newVector( space );
-            functional->containerPtr( vector );
-            result = inner_product( *vector, xi ) ;
+            auto compositeLight=operatorCompositeLightA();
+            if( compositeLight )
+            {
+                auto vector_compositeLight=functionalCompositeLightF();
+                auto composite = vector_compositeLight[l];
+                auto functional = composite->functionallinear(q);
+                auto space = functional->space();
+                auto vector = M_backend->newVector( space );
+                functional->containerPtr( vector );
+                result = inner_product( *vector, xi ) ;
+            }
+            else
+            {
+                auto vector_composite = functionalCompositeF();
+                auto composite = vector_composite[l];
+                auto functional = composite->functionallinear(q,m);
+                auto space = functional->space();
+                auto vector = M_backend->newVector( space );
+                functional->containerPtr( vector );
+                result = inner_product( *vector, xi ) ;
+            }
         }
 
         return result;
@@ -1414,7 +2212,7 @@ public:
      */
     double scalarProductForMassMatrix( vector_type const& X, vector_type const& Y )
     {
-        auto M = M_model->innerProductForMassMatrix();
+        auto M = M_model->massMatrix();
         return M->energy( X, Y );
     }
     /**
@@ -1422,7 +2220,7 @@ public:
      */
     double scalarProductForMassMatrix( vector_ptrtype const& X, vector_ptrtype const& Y )
     {
-        auto M = M_model->innerProductForMassMatrix();
+        auto M = M_model->massMatrix();
         return M->energy( X, Y );
     }
 
@@ -1436,8 +2234,9 @@ public:
     }
     double scalarProductForPod( vector_type const& X, vector_type const& Y , mpl::bool_<true> )
     {
-        auto M = M_model->innerProductForPod();
-        return M->energy( X, Y );
+        return M_inner_product_matrix->energy( X, Y );
+        //auto M = M_model->innerProductForPod();
+        //return M->energy( X, Y );
     }
     double scalarProductForPod( vector_type const& X, vector_type const& Y , mpl::bool_<false> )
     {
@@ -1454,7 +2253,8 @@ public:
     }
     double scalarProductForPod( vector_ptrtype const& X, vector_ptrtype const& Y , mpl::bool_<true> )
     {
-        return M_model->scalarProductForPod( X, Y );
+        return M_inner_product_matrix->energy( X, Y );
+        //return M_model->scalarProductForPod( X, Y );
     }
     double scalarProductForPod( vector_ptrtype const& X, vector_ptrtype const& Y , mpl::bool_<false> )
     {
@@ -1465,7 +2265,7 @@ public:
     /**
      * solve the model for a given parameter \p mu
      */
-    element_type solve( parameter_type const& mu )
+    virtual element_type solve( parameter_type const& mu )
     {
         element_type solution;// = M_model->functionSpace()->element();
         if( is_linear )
@@ -1529,9 +2329,15 @@ public:
         return M_model->generateGeoFileForOutputPlot( outputs, parameter, estimated_error );
     }
 
-    void writeConvergenceStatistics( std::vector< vectorN_type > const& vector, std::string filename )
+    gmsh_ptrtype createStructuredGrid( std::vector<int> components_vary, std::vector<parameter_type> extremums,
+                                       std::vector<int> cuttings, std::vector<double> time_cuttings, bool time_vary )
     {
-        return M_model->writeConvergenceStatistics( vector, filename );
+        return M_model->createStructuredGrid( components_vary, extremums, cuttings, time_cuttings, time_vary );
+    }
+
+    void writeConvergenceStatistics( std::vector< vectorN_type > const& vector, std::string filename , std::string extra="")
+    {
+        return M_model->writeConvergenceStatistics( vector, filename , extra );
     }
 
     void writeVectorsExtremumsRatio(std::vector< vectorN_type > const& vector1, std::vector< vectorN_type > const& vector2, std::string filename )
@@ -1547,10 +2353,10 @@ public:
     {
         double timestep;
 
-        if ( M_model->isSteady() ) timestep=1e30;
-
-        else timestep = M_model->timeStep();
-
+        bool is_steady = option(_name="crb.is-model-executed-in-steady-mode").template as<bool>();
+        if ( is_steady )
+            timestep=1e30;
+        else timestep = M_bdf->timeStep();
         return timestep;
     }
     double timeStep( mpl::bool_<false> )
@@ -1564,7 +2370,7 @@ public:
     }
     double timeInitial( mpl::bool_<true> )
     {
-        return M_model->timeInitial();
+        return M_bdf->timeInitial();
     }
     double timeInitial( mpl::bool_<false> )
     {
@@ -1579,10 +2385,11 @@ public:
     {
         double timefinal;
 
-        if ( M_model->isSteady() ) timefinal=1e30;
-
-        else timefinal = M_model->timeFinal();
-
+        bool is_steady = option(_name="crb.is-model-executed-in-steady-mode").template as<bool>();
+        if ( is_steady )
+            timefinal=1e30;
+        else
+            timefinal = M_bdf->timeFinal();
         return timefinal;
     }
     double timeFinal( mpl::bool_<false> )
@@ -1596,7 +2403,7 @@ public:
     }
     int timeOrder( mpl::bool_<true> )
     {
-        return M_model->timeOrder();
+        return M_bdf->timeOrder();
     }
     int timeOrder( mpl::bool_<false> )
     {
@@ -1610,7 +2417,8 @@ public:
     }
     bool isSteady( mpl::bool_<true> )
     {
-        return M_model->isSteady();
+        bool is_steady = option(_name="crb.is-model-executed-in-steady-mode").template as<bool>();
+        return is_steady;
     }
     bool isSteady( mpl::bool_<false> )
     {
@@ -1643,6 +2451,8 @@ protected:
     //! affine decomposition terms for the left hand side
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Aqm;
 
+    std::vector< std::vector<sparse_matrix_ptrtype> > M_linearAqm;
+
     mutable std::vector< std::vector<element_ptrtype> > M_InitialGuessV;
     mutable std::vector< std::vector<vector_ptrtype> > M_InitialGuessVector;
 
@@ -1650,10 +2460,16 @@ protected:
     mutable std::vector< std::vector<sparse_matrix_ptrtype> > M_Mqm;
 
     //! affine decomposition terms for the right hand side
-    std::vector< std::vector<std::vector<vector_ptrtype> > > M_Fqm;
+    std::vector< std::vector <std::vector<vector_ptrtype>> > M_Fqm;
+
+    sparse_matrix_ptrtype M_monoA;
+    sparse_matrix_ptrtype M_monoM;
+    std::vector<vector_ptrtype> M_monoF;
+
+    //! model
+    model_ptrtype M_model;
 
 private:
-
     bool M_is_initialized;
 
     //! variables_map
@@ -1662,8 +2478,6 @@ private:
     //! mode for CRBModel
     CRBModelMode M_mode;
 
-    //! model
-    model_ptrtype M_model;
 
     backend_ptrtype M_backend;
     backend_ptrtype M_backend_primal;
@@ -1678,16 +2492,16 @@ private:
      * \param mu the parameter at which the matrix A and vector F are assembled
      *
      */
-    offline_merge_type offlineMerge( betaqm_type const& all_beta, parameter_type const& mu );
-    offline_merge_type offlineMergeOnFly( betaqm_type const& all_beta , parameter_type const& mu  );
+    offline_merge_type offlineMerge( betaqm_type const& all_beta,  bool only_time_dependent_terms=false );
+    offline_merge_type offlineMergeOnFly( betaqm_type const& all_beta , bool only_time_dependent_terms=false );
 
     void assembleMassMatrix( );
     void assembleMassMatrix( mpl::bool_<true> );
     void assembleMassMatrix( mpl::bool_<false> );
 
-    operatorcomposite_ptrtype preAssembleMassMatrix( ) const ;
-    operatorcomposite_ptrtype preAssembleMassMatrix( mpl::bool_<true> ) const ;
-    operatorcomposite_ptrtype preAssembleMassMatrix( mpl::bool_<false> ) const ;
+    operatorcomposite_ptrtype preAssembleMassMatrix( bool light_version=false ) const ;
+    operatorcomposite_ptrtype preAssembleMassMatrix( mpl::bool_<true> , bool light_version ) const ;
+    operatorcomposite_ptrtype preAssembleMassMatrix( mpl::bool_<false>, bool light_version ) const ;
 
     void assembleInitialGuessV( initial_guess_type & initial_guess );
     void assembleInitialGuessV( initial_guess_type & initial_guess, mpl::bool_<true> );
@@ -1702,14 +2516,21 @@ private:
     int M_Qa; //A
     int M_Qm; //M
     int M_Nl; //number of outputs
+    int M_QLinearDecompositionA;
     std::vector<int> M_Ql;//F associated to given output
     std::vector<int> M_mMaxA;//number of sub-terms (using EIM)
     std::vector<int> M_mMaxM;//number of sub-terms (using EIM)
+    std::vector<int> M_mMaxLinearDecompositionA;
     std::vector< std::vector<int> > M_mMaxF;//number of sub-terms (using EIM)
 
     bool M_alreadyCountAffineDecompositionTerms;
 
     sparse_matrix_ptrtype M_inner_product_matrix;
+
+    bdf_ptrtype M_bdf;
+
+    bool M_has_eim;
+
 };
 
 
@@ -1907,15 +2728,15 @@ struct AssembleInitialGuessVInCompositeCase
 
 template<typename TruthModelType>
 typename CRBModel<TruthModelType>::operatorcomposite_ptrtype
-CRBModel<TruthModelType>::preAssembleMassMatrix() const
+CRBModel<TruthModelType>::preAssembleMassMatrix( bool light_version ) const
 {
     static const bool is_composite = functionspace_type::is_composite;
-    return preAssembleMassMatrix( mpl::bool_< is_composite >() );
+    return preAssembleMassMatrix( mpl::bool_< is_composite >() , light_version );
 }
 
 template<typename TruthModelType>
 typename CRBModel<TruthModelType>::operatorcomposite_ptrtype
-CRBModel<TruthModelType>::preAssembleMassMatrix( mpl::bool_<false> ) const
+CRBModel<TruthModelType>::preAssembleMassMatrix( mpl::bool_<false> , bool light_version ) const
 {
 
     auto Xh = M_model->functionSpace();
@@ -1926,13 +2747,25 @@ CRBModel<TruthModelType>::preAssembleMassMatrix( mpl::bool_<false> ) const
     auto opfree = opLinearFree( _domainSpace=Xh , _imageSpace=Xh , _expr=expr );
     opfree->setName("mass operator (automatically created)");
     //in this case, the affine decompositon has only one element
-    op_mass->addElement( boost::make_tuple(0,0) , opfree );
+    if( light_version )
+    {
+        //note that only time independent problems need to
+        //inform if we use light version or not of the affine decomposition
+        //i.e. if we use EIM expansion or not
+        //because transient models provide already a decomposition of the mass matrix
+        //so it is not automatically created
+        op_mass->addElement( 0 , opfree );
+    }
+    else
+    {
+        op_mass->addElement( boost::make_tuple(0,0) , opfree );
+    }
     return op_mass;
 }
 
 template<typename TruthModelType>
 typename CRBModel<TruthModelType>::operatorcomposite_ptrtype
-CRBModel<TruthModelType>::preAssembleMassMatrix( mpl::bool_<true> ) const
+CRBModel<TruthModelType>::preAssembleMassMatrix( mpl::bool_<true> , bool light_version ) const
 {
     auto Xh = M_model->functionSpace();
 
@@ -2088,34 +2921,53 @@ CRBModel<TruthModelType>::assembleInitialGuess( parameter_type const& mu )
 
 template<typename TruthModelType>
 typename CRBModel<TruthModelType>::offline_merge_type
-CRBModel<TruthModelType>::offlineMergeOnFly(betaqm_type const& all_beta, parameter_type const& mu  )
+CRBModel<TruthModelType>::offlineMergeOnFly(betaqm_type const& all_beta, bool only_time_dependent_terms )
 {
+
     //recovery from the model of free operators Aqm in A = \sum_q \sum_m \beta_qm( u ; mu ) A_qm( u, v )
-    auto compositeA = this->operatorCompositeA();
     //idem with other operator / functional
-    auto compositeM = this->operatorCompositeM();
-    auto vector_compositeF = this->functionalCompositeF();
 
-    //acces to beta coefficients
-    auto beta_M = all_beta.template get<0>();
-    auto beta_A = all_beta.template get<1>();
-    //warning : beta_F is a vector of beta_coefficients
-    auto beta_F = all_beta.template get<2>();
+    operatorcomposite_ptrtype compositeM;
+    operatorcomposite_ptrtype compositeA;
+    std::vector< functionalcomposite_ptrtype > vector_compositeF;
 
-    //associate beta coefficients to operators
-    compositeA->setScalars( beta_A );
-    compositeM->setScalars( beta_M );
+    if( ! only_time_dependent_terms )
+    {
+
+        auto compositeAlight=this->operatorCompositeLightA();
+        if( compositeAlight )
+        {
+            compositeA=compositeAlight;
+            compositeM = this->operatorCompositeLightM();
+            vector_compositeF = this->functionalCompositeLightF();
+        }
+        else
+        {
+            compositeA = this->operatorCompositeA();
+            compositeM = this->operatorCompositeM();
+            vector_compositeF = this->functionalCompositeF();
+        }
+        //acces to beta coefficients
+        auto beta_M = all_beta.template get<0>();
+        auto beta_A = all_beta.template get<1>();
+
+        //associate beta coefficients to operators
+        compositeA->setScalars( beta_A );
+        compositeM->setScalars( beta_M );
+    }
 
     //merge
     auto A = this->newMatrix();
     auto M = this->newMatrix();
-    compositeA->sumAllMatrices( A );
-    //auto A = compositeA->sumAllMatrices();
-    //auto M = compositeM->sumAllMatrices();
-    compositeM->sumAllMatrices( M );
+    if( ! only_time_dependent_terms )
+    {
+        compositeA->sumAllMatrices( A );
+        compositeM->sumAllMatrices( M );
+    }
 
+    //warning : beta_F is a vector of beta_coefficients
+    auto beta_F = all_beta.template get<2>();
     std::vector<vector_ptrtype> F( Nl() );
-
     for(int output=0; output<Nl(); output++)
     {
         auto compositeF = vector_compositeF[output];
@@ -2125,12 +2977,13 @@ CRBModel<TruthModelType>::offlineMergeOnFly(betaqm_type const& all_beta, paramet
     }
 
     return boost::make_tuple( M, A, F );
+
 }
 
 
 template<typename TruthModelType>
 typename CRBModel<TruthModelType>::offline_merge_type
-CRBModel<TruthModelType>::offlineMerge( betaqm_type const& all_beta , parameter_type const& mu )
+CRBModel<TruthModelType>::offlineMerge( betaqm_type const& all_beta , bool only_time_dependent_terms )
 {
 
 #if 0
@@ -2151,31 +3004,37 @@ CRBModel<TruthModelType>::offlineMerge( betaqm_type const& all_beta , parameter_
     //size_type pattern = operatorCompositeA()->operatorlinear(0,0)->pattern();
 
 #endif
+
+    if( ! only_time_dependent_terms )
+    {
+
+        //acces to beta coefficients
+        auto beta_M = all_beta.template get<0>();
+        auto beta_A = all_beta.template get<1>();
+
+        A->zero();
+        for ( size_type q = 0; q < Qa(); ++q )
+        {
+            for(size_type m = 0; m < mMaxA(q); ++m )
+            {
+                A->addMatrix( beta_A[q][m], M_Aqm[q][m] );
+            }
+        }
+
+        if( Qm() > 0 )
+        {
+            for ( size_type q = 0; q < Qm(); ++q )
+            {
+                for(size_type m = 0; m < mMaxM(q) ; ++m )
+                    M->addMatrix( beta_M[q][m] , M_Mqm[q][m] );
+            }
+        }
+    }
+
     std::vector<vector_ptrtype> F( Nl() );
 
-    //acces to beta coefficients
-    auto beta_M = all_beta.template get<0>();
-    auto beta_A = all_beta.template get<1>();
     //warning : beta_F is a vector of beta_coefficients
     auto beta_F = all_beta.template get<2>();
-
-    A->zero();
-    for ( size_type q = 0; q < Qa(); ++q )
-    {
-        for(size_type m = 0; m < mMaxA(q); ++m )
-        {
-            A->addMatrix( beta_A[q][m], M_Aqm[q][m] );
-        }
-    }
-
-    if( Qm() > 0 )
-    {
-        for ( size_type q = 0; q < Qm(); ++q )
-        {
-            for(size_type m = 0; m < mMaxM(q) ; ++m )
-                M->addMatrix( beta_M[q][m] , M_Mqm[q][m] );
-        }
-    }
 
     for ( size_type l = 0; l < Nl(); ++l )
     {
@@ -2192,6 +3051,8 @@ CRBModel<TruthModelType>::offlineMerge( betaqm_type const& all_beta , parameter_
 
     return boost::make_tuple( M, A, F );
 }
+
+
 
 
 template<typename TruthModelType>
@@ -2257,10 +3118,78 @@ CRBModel<TruthModelType>::solveFemUsingOfflineEim( parameter_type const& mu )
 
 template<typename TruthModelType>
 typename CRBModel<TruthModelType>::element_type
-CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_type const& mu )
+CRBModel<TruthModelType>::solveFemMonolithicFormulation( parameter_type const& mu )
 {
     auto Xh= this->functionSpace();
 
+    bdf_ptrtype mybdf;
+    mybdf = bdf( _space=Xh, _vm=this->vm() , _name="mybdf" );
+    sparse_matrix_ptrtype A;
+    sparse_matrix_ptrtype M;
+    std::vector<vector_ptrtype> F;
+    element_ptrtype InitialGuess = Xh->elementPtr();
+
+    auto u = Xh->element();
+
+    double time_initial;
+    double time_step;
+    double time_final;
+
+    if ( this->isSteady() )
+    {
+        time_initial=0;
+        time_step = 1e30;
+        time_final = 1e30;
+        // !!
+        //some stuff needs to be done here
+        //to deal with non linear problems
+        //and have an initial guess
+        // !!
+    }
+    else
+    {
+        time_initial=this->timeInitial();
+        time_step=this->timeStep();
+        time_final=this->timeFinal();
+        this->initializationField( InitialGuess, mu );
+    }
+
+    mybdf->setTimeInitial( time_initial );
+    mybdf->setTimeStep( time_step );
+    mybdf->setTimeFinal( time_final );
+
+    double bdf_coeff ;
+    auto vec_bdf_poly = M_backend->newVector( Xh );
+
+    for( mybdf->start(*InitialGuess); !mybdf->isFinished(); mybdf->next() )
+    {
+        bdf_coeff = mybdf->polyDerivCoefficient( 0 );
+        auto bdf_poly = mybdf->polyDeriv();
+        *vec_bdf_poly = bdf_poly;
+
+        boost::tie(M, A, F) = this->computeMonolithicFormulation( mu );
+
+        if( !isSteady() )
+        {
+            A->addMatrix( bdf_coeff, M );
+            F[0]->addVector( *vec_bdf_poly, *M );
+        }
+        M_preconditioner_primal->setMatrix( A );
+
+        M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0] , _prec=M_preconditioner_primal);
+
+        mybdf->shiftRight(u);
+    }
+
+    return u;
+
+}
+
+template<typename TruthModelType>
+typename CRBModel<TruthModelType>::element_type
+CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_type const& mu )
+{
+    auto Xh= this->functionSpace();
     bdf_ptrtype mybdf;
     mybdf = bdf( _space=Xh, _vm=this->vm() , _name="mybdf" );
     sparse_matrix_ptrtype A;
@@ -2312,7 +3241,10 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
         auto bdf_poly = mybdf->polyDeriv();
         *vec_bdf_poly = bdf_poly;
         do {
-            boost::tie(M, A, F) = this->update( mu , u , mybdf->time() );
+            if( is_linear )
+                boost::tie(M, A, F) = this->update( mu , mybdf->time() );
+            else
+                boost::tie(M, A, F) = this->update( mu , u , mybdf->time() );
             *Rhs = *F[0];
 
             if( !isSteady() )
@@ -2323,7 +3255,7 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
             uold = u;
             M_preconditioner_primal->setMatrix( A );
             M_backend_primal->solve( _matrix=A , _solution=u, _rhs=Rhs , _prec=M_preconditioner_primal);
-            if( option(_name="crb.use-linear-model").template as<bool>() )
+            if( is_linear )
                 norm = 0;
             else
                 norm = this->computeNormL2( uold , u );
@@ -2332,6 +3264,103 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
         mybdf->shiftRight(u);
     }
     return u;
+}
+
+template<typename TruthModelType>
+typename CRBModel<TruthModelType>::element_type
+CRBModel<TruthModelType>::solveFemDualMonolithicFormulation( parameter_type const& mu )
+{
+    int output_index = option(_name="crb.output-index").template as<int>();
+
+    auto Xh= this->functionSpace();
+
+    bdf_ptrtype mybdf;
+    mybdf = bdf( _space=Xh, _vm=this->vm() , _name="mybdf" );
+    sparse_matrix_ptrtype A,Adu;
+    sparse_matrix_ptrtype M;
+    std::vector<vector_ptrtype> F;
+    vector_ptrtype Rhs( M_backend->newVector( Xh ) );
+    element_ptrtype InitialGuess = Xh->elementPtr();
+    auto dual_initial_field = Xh->elementPtr();
+
+    auto udu = Xh->element();
+
+    double time_initial;
+    double time_step;
+    double time_final;
+
+    if ( this->isSteady() )
+    {
+        time_initial=0;
+        time_step = 1e30;
+        time_final = 1e30;
+        // !!
+        //some stuff needs to be done here
+        //to deal with non linear problems
+        //and have an initial guess
+        // !!
+    }
+    else
+    {
+        time_initial=this->timeFinal()+this->timeStep();
+        time_step=-this->timeStep();
+        time_final=this->timeInitial()+this->timeStep();
+    }
+
+    mybdf->setTimeInitial( time_initial );
+    mybdf->setTimeStep( time_step );
+    mybdf->setTimeFinal( time_final );
+
+    double bdf_coeff ;
+    auto vec_bdf_poly = M_backend->newVector( Xh );
+
+    if ( this->isSteady() )
+        udu.zero() ;
+    else
+    {
+        boost::tie(M, A, F) = this->computeMonolithicFormulation( mu );
+        *Rhs=*F[output_index];
+        M_preconditioner_dual->setMatrix( M );
+        M_backend_dual->solve( _matrix=M, _solution=dual_initial_field, _rhs=Rhs, _prec=M_preconditioner_dual );
+        udu=*dual_initial_field;
+    }
+
+    for( mybdf->start(*InitialGuess); !mybdf->isFinished(); mybdf->next() )
+    {
+        bdf_coeff = mybdf->polyDerivCoefficient( 0 );
+        auto bdf_poly = mybdf->polyDeriv();
+        *vec_bdf_poly = bdf_poly;
+
+        boost::tie(M, A, F) = this->computeMonolithicFormulation( mu );
+
+        if( ! isSteady() )
+        {
+            A->addMatrix( bdf_coeff, M );
+            Rhs->zero();
+            *vec_bdf_poly = bdf_poly;
+            Rhs->addVector( *vec_bdf_poly, *M );
+        }
+        else
+        {
+            *Rhs = *F[output_index];
+            Rhs->close();
+            Rhs->scale( -1 );
+        }
+
+        if( option("crb.use-symmetric-matrix").template as<bool>() )
+            Adu = A;
+        else
+            A->transpose( Adu );
+
+        M_preconditioner_dual->setMatrix( Adu );
+
+        M_backend_dual->solve( _matrix=Adu , _solution=udu, _rhs=Rhs , _prec=M_preconditioner_dual);
+
+        mybdf->shiftRight(udu);
+    }
+
+    return udu;
+
 }
 
 template<typename TruthModelType>
@@ -2401,7 +3430,10 @@ CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parame
         auto bdf_poly = mybdf->polyDeriv();
         *vec_bdf_poly = bdf_poly;
         do {
-            boost::tie(M, A, F) = this->update( mu , udu , mybdf->time() );
+            if( is_linear )
+                boost::tie(M, A, F) = this->update( mu , mybdf->time() );
+            else
+                boost::tie(M, A, F) = this->update( mu , udu , mybdf->time() );
 
             if( ! isSteady() )
             {
