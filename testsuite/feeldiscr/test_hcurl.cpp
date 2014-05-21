@@ -156,8 +156,7 @@ public:
 
         this->changeRepository( boost::format( "%1%/h_%2%/" )
                                 % this->about().appName()
-                                % this->vm()["hsize"].as<double>()
-                              );
+                                % doption("gmsh.hsize") );
     }
 
     /**
@@ -186,37 +185,41 @@ TestHCurl::exampleProblem1()
     mesh_ptrtype mesh = loadMesh(_mesh = new mesh_type);
 
     // Xh : space build with Nedelec elements
+    auto Vh = Pchv<1>( mesh );
     auto Xh = Ned1h<0>( mesh );
     auto u = Xh->element();
     auto phi = Xh->element();
 
-    auto u_exact = ( 1-Py()*Py() )*unitX() + ( 1-Px()*Px() )*unitY(); //exact solution (analytical)
-    auto f = ( 3-Py()*Py() )*unitX() + ( 3-Px()*Px() )*unitY(); //f = curl(curl(u_exact)) + u_exact
+    auto u_exact = expr<2,1>( "{1,1}:x:y" );
+    auto f = u_exact;
+    auto v = Vh->element( u_exact );
+    //auto f = curl(curl( u_exact ))+u_exact;
+    //std::
+
+        //auto f = ( 3-Py()*Py() )*unitX() + ( 3-Px()*Px() )*unitY(); //f = curl(curl(u_exact)) + u_exact
 
     //variationnal formulation : curl(curl(u)) + u = f
-    auto F = M_backend->newVector( Xh );
-    form1( _test=Xh, _vector=F, _init=true ) = integrate( _range=elements(mesh), _expr=trans(f)*id(phi) );
+    auto l = form1( _test=Xh );
+    l = integrate( _range=elements(mesh), _expr=trans(f)*id(phi) );
 
-    auto M = M_backend->newMatrix( Xh, Xh );
     //form2( _test=Xh, _trial=Xh, _matrix=M, _init=true) = integrate(elements(mesh), trans(curlt(u))*curl(phi) + trans(idt(u))*id(phi) );
-    form2( _test=Xh, _trial=Xh, _matrix=M, _init=true) = integrate(elements(mesh), curlxt(u)*curlx(phi) + trans(idt(u))*id(phi) );
+    //form2( _test=Xh, _trial=Xh, _matrix=M, _init=true) = integrate(elements(mesh), curlxt(u)*curlx(phi) + trans(idt(u))*id(phi) );
+    auto a = form2( _test=Xh, _trial=Xh );
+    a = integrate(elements(mesh), trans(idt(u))*id(phi) );
+    a.solve( _solution=u, _rhs=l );
+    l.vector().printMatlab( "rhs.m" );
+    a.matrix().printMatlab( "mass.m" );
+    u.printMatlab( "u.m" );
 
+    std::cout << "norm L2 = " << normL2( elements(mesh), idv(u)-u_exact, _quad=_Q<2>() );
 
-    //! solve the system for V
-    M_backend->solve( _matrix=M, _solution=u, _rhs=F );
-
-    // auto hcurl = opProjection( _domainSpace=Xh, _imageSpace=Xh, _type=HCURL );
-    // auto error_hcurl = hcurl->project( _expr=trans( u_exact - idv(u) ) );
-
-    // if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
-    //     std::cout << "error Hcurl: " << math::sqrt( hcurl->energy( error_hcurl, error_hcurl ) ) << "\n";
-
+#if 0
     auto l2proj = opProjection( _domainSpace=Xh, _imageSpace=Xh, _type=L2 );
     auto error_hcurl = l2proj->project( _expr=trans( u_exact - idv(u) ) );
 
     if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
         std::cout << "error Hcurl: " << math::sqrt( l2proj->energy( error_hcurl, error_hcurl ) ) << "\n";
-
+#endif
     std::string pro1_name = "problem1";
     export_ptrtype exporter_pro1( export_type::New( this->vm(),
                                   ( boost::format( "%1%-%2%-%3%" )
@@ -226,7 +229,8 @@ TestHCurl::exampleProblem1()
 
     exporter_pro1->step( 0 )->setMesh( mesh );
     exporter_pro1->step( 0 )->add( "u", u );
-    exporter_pro1->step( 0 )->add( "error", error_hcurl );
+    exporter_pro1->step( 0 )->add( "exact", v );
+    //exporter_pro1->step( 0 )->add( "error", error_hcurl );
     exporter_pro1->save();
 
 }

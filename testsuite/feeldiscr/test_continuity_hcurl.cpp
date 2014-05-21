@@ -64,10 +64,18 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( HCurlNed1, T, dim_types )
     auto u = Xh->element();
     auto a1 = form1( _test=Xh );
     a1  = integrate( internalfaces( mesh ), (leftface(trans(id(u))*vec(Tx(),Ty()))+rightface(-trans(id(u))*vec(Tx(),Ty()))));
-    u.on(  _range=elements(mesh), _expr=expr<T::value,1>(std::string("{x*y,x+y}:x:y")) );
+    u.on(  _range=elements(mesh), _expr=expr<T::value,1>(std::string("{1,1}:x:y")) );
     a1.vector().printMatlab("HcurlNed1.m");
-    u.printMatlab("uNED1.m");
+
+//u.printMatlab("uNED1.m");
     BOOST_CHECK_SMALL( a1( u ), 1e-10 );
+    auto a2 = form1( _test=Xh );
+    a2  = integrate( internalfaces( mesh ), (leftface(trans(id(u))*vec(Tx(),Ty()))+rightface(+trans(id(u))*vec(Tx(),Ty()))));
+    a2.vector().printMatlab("HcurlNed1_2.m");
+
+    auto a3 = form1( _test=Xh );
+    a3  = integrate( boundaryfaces( mesh ), trans(id(u))*vec(Tx(),Ty()));
+    a3.vector().printMatlab("HcurlNed1_3.m");
 
     BOOST_TEST_MESSAGE( "HCurlNED1, a1(u)=" << a1(u)  );
     BOOST_TEST_MESSAGE( "check continuity for HCurlNED1 in  " << T::value << "D done\n" );
