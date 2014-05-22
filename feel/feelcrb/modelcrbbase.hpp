@@ -538,6 +538,19 @@ public :
         return boost::make_tuple( M_monoA , M_monoF );
     }
 
+    virtual monolithic_type computeMonolithicFormulationU( parameter_type const& mu, element_type const& u )
+    {
+        return computeMonolithicFormulationU( mu , u, mpl::bool_< is_time_dependent >() );
+    }
+    monolithic_type computeMonolithicFormulationU( parameter_type const& mu, element_type const& u, mpl::bool_<true> )
+    {
+        return boost::make_tuple( M_monoM , M_monoA , M_monoF );
+    }
+    monolithic_type computeMonolithicFormulationU( parameter_type const& mu, element_type const& u, mpl::bool_<false> )
+    {
+        return boost::make_tuple( M_monoA , M_monoF );
+    }
+
     virtual beta_vector_type computeBetaLinearDecompositionA( parameter_type const& mu ,  double time=0 )
     {
         return computeBetaLinearDecompositionA( mu, mpl::bool_< is_time_dependent >(), time );
