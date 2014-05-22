@@ -207,7 +207,7 @@ public:
         auto eim_g = M_funs[0];
         int M = eim_g->mMax();
         vectorN_type beta_g = eim_g->beta( mu , T );
-        fillBetaQmNewton(beta_g, mu);
+        fillBetaQm(beta_g, mu);
         if( M_use_newton )
             return boost::make_tuple( this->M_betaJqm, this->M_betaRqm);
         else
@@ -220,14 +220,14 @@ public:
         auto eim_g = M_funs[0];
         int M = eim_g->mMax();
         vectorN_type beta_g = eim_g->beta( mu );
-        fillBetaQmNewton(beta_g, mu);
+        fillBetaQm(beta_g, mu);
         if( M_use_newton )
             return boost::make_tuple( this->M_betaJqm, this->M_betaRqm);
         else
             return boost::make_tuple( this->M_betaAqm, this->M_betaFqm);
     }
 
-    void fillBetaQmNewton(vectorN_type beta, parameter_type const& mu)
+    void fillBetaQm(vectorN_type beta, parameter_type const& mu)
     {
         auto eim_g = M_funs[0];
         int M = eim_g->mMax();
@@ -254,9 +254,12 @@ public:
             this->M_betaAqm[0][0]=1;
             for(int m=0; m<M; m++)
             {
-                this->M_betaFqm[0][0][m]=mu(0)/mu(1)*( beta(m) - 1 );
+                //this->M_betaFqm[0][0][m]=mu(0)/mu(1)*( beta(m) - 1);
+                this->M_betaFqm[0][0][m]=-mu(0)/mu(1)* beta(m) ;
             }
-            this->M_betaFqm[0][1][0]=100;
+            //this->M_betaFqm[0][0][0]=0 ;
+            this->M_betaFqm[0][1][0]=mu(0)/mu(1) ;
+            this->M_betaFqm[0][2][0]=100;
             this->M_betaFqm[1][0][0]=1;
         }
 
@@ -298,7 +301,7 @@ public:
     void assembleJacobianWithAffineDecomposition(element_type const& X,std::vector<std::vector<sparse_matrix_ptrtype> > & Jqm);
     void updateResidualMonolithic(vector_ptrtype const& X, vector_ptrtype & R, parameter_type const& mu);
     void updateJacobianMonolithic(vector_ptrtype const& X, sparse_matrix_ptrtype & J, parameter_type const& mu);
-    monolithic_type computeMonolithicFormulation( parameter_type const& mu );
+    monolithic_type computeMonolithicFormulationU( parameter_type const& mu , element_type const& solution );
 
     element_type solve( parameter_type const& mu );
 
@@ -363,7 +366,7 @@ void BenchmarkGreplNonlinearElliptic<Order>::initModel()
     M_Qr0=3;
     M_Qr1=1;
     M_Qa=1;
-    M_Qf0=2;
+    M_Qf0=3;
     M_Qf1=1;
 
     M_use_newton = option(_name="crb.use-newton").template as<bool>();
@@ -499,6 +502,7 @@ void BenchmarkGreplNonlinearElliptic<Order>::initModel()
         this->M_betaFqm[0].resize( M_Qf0 );
         this->M_betaFqm[0][0].resize( M );
         this->M_betaFqm[0][1].resize( 1 );
+        this->M_betaFqm[0][2].resize( 1 );
         this->M_betaFqm[1].resize( M_Qf1 );
         this->M_betaFqm[1][0].resize( 1 );
 
@@ -507,7 +511,7 @@ void BenchmarkGreplNonlinearElliptic<Order>::initModel()
         this->M_Aqm[0][0] = backend()->newMatrix( _test=this->Xh, _trial=this->Xh );
 
         this->M_Fqm.resize(2);
-        this->M_Fqm[0].resize(2);
+        this->M_Fqm[0].resize(M_Qf0);
         this->M_Fqm[0][0].resize( M );
         for(int m=0; m<M; m++)
         {
@@ -515,6 +519,8 @@ void BenchmarkGreplNonlinearElliptic<Order>::initModel()
         }
         this->M_Fqm[0][1].resize(1);
         this->M_Fqm[0][1][0]=backend()->newVector( this->Xh );
+        this->M_Fqm[0][2].resize(1);
+        this->M_Fqm[0][2][0]=backend()->newVector( this->Xh );
         this->M_Fqm[1].resize(1);
         this->M_Fqm[1][0].resize(1);
         this->M_Fqm[1][0][0]=backend()->newVector( this->Xh );
@@ -585,7 +591,7 @@ BenchmarkGreplNonlinearElliptic<Order>::assembleResidualWithAffineDecomposition(
 
     form1( _test=Xh, _vector=Rqm[0][2][0] ) =
         integrate( _range= elements( mesh ),
-                   _expr=sin(2*M_PI*Px())*cos(2*M_PI*Py()) * id(v) );
+                   _expr=0*sin(2*M_PI*Px())*cos(2*M_PI*Py()) * id(v) );
 
     form1( _test=Xh, _vector=Rqm[1][0][0] ) =
         integrate( _range= elements( mesh ),
@@ -680,27 +686,35 @@ void BenchmarkGreplNonlinearElliptic<Order>::assemble()
         double gamma = option(_name="gamma").template as<double>();
 
         form2( _test=Xh, _trial=Xh, _matrix=this->M_Aqm[0][0] ) =
-            integrate( _range= elements( mesh ),
-                       _expr = gradt(u)*trans(grad(v)) )
-            + integrate( _range = markedfaces( mesh, "boundaries"),
-                         _expr = gamma*idt(u)*id(v)/hFace()
-                         - (gradt(u)*vf::N())*id(v) +
-                         - (grad(v)*vf::N())*idt(u) );
+        integrate( _range= elements( mesh ),
+                   _expr = gradt(u)*trans(grad(v)) )
+        + integrate( _range = markedfaces( mesh, "boundaries"),
+                     _expr = gamma*idt(u)*id(v)/hFace()
+                     - (gradt(u)*vf::N())*id(v) +
+                     - (grad(v)*vf::N())*idt(u) );
 
         for(int m=0; m<M; m++)
         {
-            form1( _test=Xh, _matrix=this->M_Fqm[0][0][m] ) =
+            form1( _test=Xh, _vector=this->M_Fqm[0][0][m] ) =
                 integrate( _range= elements( mesh ),
                            _expr=( idv(eim_g->q(m))*id(v) - id(v) ) );
+            this->M_Fqm[0][0][m]->close();
         }
 
         form1( _test=Xh, _vector=this->M_Fqm[0][1][0] ) =
             integrate( _range= elements( mesh ),
+                       _expr= id(v) );
+        this->M_Fqm[0][1][0]->close();
+
+        form1( _test=Xh, _vector=this->M_Fqm[0][2][0] ) =
+            integrate( _range= elements( mesh ),
                        _expr=sin(2*M_PI*Px())*cos(2*M_PI*Py()) * id(v) );
+        this->M_Fqm[0][2][0]->close();
 
         form1( _test=Xh, _vector=this->M_Fqm[1][0][0] ) =
             integrate( _range= elements( mesh ),
                        _expr=id(v) );
+        this->M_Fqm[1][0][0]->close();
 
     }//no newton
 
@@ -708,19 +722,21 @@ void BenchmarkGreplNonlinearElliptic<Order>::assemble()
 
 template<int Order>
 typename BenchmarkGreplNonlinearElliptic<Order>::monolithic_type
-BenchmarkGreplNonlinearElliptic<Order>::computeMonolithicFormulation( parameter_type const& mu )
+BenchmarkGreplNonlinearElliptic<Order>::computeMonolithicFormulationU( parameter_type const& mu , element_type const& solution)
 {
     auto Xh = this->Xh;
     auto u=Xh->element();
     auto v=Xh->element();
     double gamma = option(_name="gamma").template as<double>();
 
-    auto solution=this->solve(mu);
+    //auto solution=this->solve(mu);
+
     auto exprg = exp( mu(1)*idv(solution) );
     auto g = vf::project( _space=Xh, _expr=exprg );
+
     M_monoA = backend()->newMatrix( Xh, Xh );
     M_monoF.resize(2);
-    M_monoF[0] = backend()->newVector( Xh );
+    M_monoF[0] = backend()->newVector( this->functionSpace() );
     M_monoF[1] = backend()->newVector( Xh );
     form2( Xh, Xh, M_monoA ) =
         integrate( _range= elements( mesh ),
@@ -732,7 +748,7 @@ BenchmarkGreplNonlinearElliptic<Order>::computeMonolithicFormulation( parameter_
 
     form1( Xh, M_monoF[0] ) =
         integrate( _range= elements( mesh ),
-                   _expr=mu(0)/mu(1)*( idv(g)*id(v) - id(v) ) )
+                   _expr=-mu(0)/mu(1)*( idv(g)*id(v) - id(v) ) )
         + integrate( _range= elements( mesh ),
                      _expr=100*sin(2*M_PI*Px())*cos(2*M_PI*Py()) * id(v) );
 
@@ -740,6 +756,9 @@ BenchmarkGreplNonlinearElliptic<Order>::computeMonolithicFormulation( parameter_
         integrate( _range= elements( mesh ),
                    _expr=id(v) );
 
+    M_monoF[0]->close();
+    M_monoF[1]->close();
+    M_monoA->close();
 
     return boost::make_tuple( M_monoA, M_monoF );
 
