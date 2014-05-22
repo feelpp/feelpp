@@ -26,59 +26,6 @@ set(FEELPP_PREFIX ${CMAKE_INSTALL_PREFIX})
 if (NOT FEELPP_DATADIR )
   set(FEELPP_DATADIR ${CMAKE_INSTALL_PREFIX}/share/feel )
 endif()
-CONFIGURE_FILE(feelconfig.h.in feel/feelconfig.h  @ONLY)
-CONFIGURE_FILE(feelinfo.h.in feel/feelinfo.h  @ONLY)
-
-#
-# Packaging
-#
-INCLUDE(InstallRequiredSystemLibraries)
-feelpp_list_subdirs(feeldirs ${CMAKE_CURRENT_SOURCE_DIR}/feel)
-
-foreach(includedir ${feeldirs})
-  FILE(GLOB files "feel/${includedir}/*.hpp" )
-  FILE(GLOB cppfiles "feel/${includedir}/*.cpp" )
-  INSTALL(FILES ${files} ${cppfiles} DESTINATION include/feel/${includedir} COMPONENT Devel)
-  FILE(GLOB details "feel/${includedir}/detail/*.hpp")
-  INSTALL(FILES ${details} DESTINATION include/feel/${includedir}/detail COMPONENT Devel)
-endforeach()
-FILE(GLOB files "feel/*.hpp")
-INSTALL(FILES ${files} DESTINATION include/feel COMPONENT Devel)
-
-# install cln headers
-FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/contrib/cln/include/cln/*.h")
-INSTALL(FILES ${files} DESTINATION include/feel/cln COMPONENT Devel)
-FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/contrib/cln/lib/lib*" "${CMAKE_CURRENT_BINARY_DIR}/contrib/cln/lib64/lib*")
-INSTALL(FILES ${files} DESTINATION lib/ COMPONENT Devel)
-
-# install gflags headers
-FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/contrib/gflags/include/gflags/*.h")
-INSTALL(FILES ${files} DESTINATION include/feel/gflags COMPONENT Devel)
-FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/contrib/gflags/lib/lib*" "${CMAKE_CURRENT_BINARY_DIR}/contrib/gflags/lib64/lib*")
-INSTALL(FILES ${files} DESTINATION lib/ COMPONENT Devel)
-
-# install glog headers
-FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/contrib/glog/include/glog/*.h")
-INSTALL(FILES ${files} DESTINATION include/feel/glog COMPONENT Devel)
-FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/contrib/glog/lib/lib*" "${CMAKE_CURRENT_BINARY_DIR}/contrib/glog/lib64/lib*")
-INSTALL(FILES ${files} DESTINATION lib/ COMPONENT Devel)
-
-# install matheval headers
-FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/contrib/libmatheval/include/*.h")
-INSTALL(FILES ${files} DESTINATION include/feel/matheval COMPONENT Devel)
-FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/contrib/libmatheval/lib/lib*" "${CMAKE_CURRENT_BINARY_DIR}/contrib/libmatheval/lib64/lib*")
-INSTALL(FILES ${files} DESTINATION lib/ COMPONENT Devel)
-
-
-# # gmm
-# IF ( NOT GMM_FOUND )
-#   FILE(GLOB files "contrib/gmm/include/*.h")
-#   INSTALL(FILES ${files} DESTINATION include/feel COMPONENT Devel)
-# ENDIF()
-
-# feel++ config headers
-FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/feel/*.h")
-INSTALL(FILES ${files} DESTINATION include/feel COMPONENT Devel)
 
 
 FILE(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/applications/crb/templates/*")
