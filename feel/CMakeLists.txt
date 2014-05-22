@@ -21,6 +21,8 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+CONFIGURE_FILE(feelconfig.h.in feelconfig.h  @ONLY)
+CONFIGURE_FILE(feelinfo.h.in feelinfo.h  @ONLY)
 
 macro(feel_append_src DIRNAME FILES)
   foreach(FILE ${FILES})
@@ -70,3 +72,4 @@ if(FEELPP_ENABLE_BUILD_STATIC)
     INSTALL(TARGETS feelpp-static DESTINATION lib/ COMPONENT Bin)
 endif()
 
+include(feelpp.lib.install)
