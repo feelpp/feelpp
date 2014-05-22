@@ -66,7 +66,7 @@ makeAdvectionDiffusionOptions()
     ( "mu2", po::value<double>()->default_value( 0.1 ), "Peclet number in [0.1;100]" )
     ( "no-export", "don't export results" )
     ;
-    return AdvectionDiffusionoptions.add( Feel::feel_options() );
+    return AdvectionDiffusionoptions;
 }
 AboutData
 makeAdvectionDiffusionAbout( std::string const& str = "AdvectionDiffusion" )
@@ -326,14 +326,9 @@ public:
      * \brief compute the beta coefficient for both bilinear and linear form
      * \param mu parameter to evaluate the coefficients
      */
-    boost::tuple<beta_vector_type, std::vector<beta_vector_type> >
-    computeBetaQm( element_type const& T,parameter_type const& mu , double time=1e30 )
-    {
-        return computeBetaQm( mu , time );
-    }
 
     boost::tuple<beta_vector_type, std::vector<beta_vector_type> >
-    computeBetaQm( parameter_type const& mu , double time=0 )
+    computeBetaQm( parameter_type const& mu )
     {
         M_betaAqm.resize( Qa() );
         for(int i=0; i<Qa(); i++)
@@ -423,7 +418,7 @@ public:
     /**
      * H1 scalar product
      */
-    sparse_matrix_ptrtype innerProduct ( void )
+    sparse_matrix_ptrtype energyMatrix ( void )
     {
         return M;
     }

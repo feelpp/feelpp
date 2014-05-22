@@ -92,7 +92,13 @@ functions_options( std::string const& prefix )
 {
     po::options_description _options( "Functions " + prefix + " options" );
     _options.add_options()
+        ( prefixvm( prefix,"x" ).c_str(), Feel::po::value<double>()->default_value( 0 ), "x coordinate value " )
+        ( prefixvm( prefix,"y" ).c_str(), Feel::po::value<double>()->default_value( 0 ), "y coordinate value " )
+        ( prefixvm( prefix,"z" ).c_str(), Feel::po::value<double>()->default_value( 0 ), "z coordinate value " )
         ( prefixvm( prefix,"functions.f" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "f" )
+        ( prefixvm( prefix,"functions.p" ).c_str(), Feel::po::value<std::string>()->default_value( "0" ), "p" )
+        ( prefixvm( prefix,"functions.q" ).c_str(), Feel::po::value<std::string>()->default_value( "0" ), "q" )
+        ( prefixvm( prefix,"functions.z" ).c_str(), Feel::po::value<std::string>()->default_value( "0" ), "z" )
         ( prefixvm( prefix,"functions.g" ).c_str(), Feel::po::value<std::string>()->default_value( "0" ), "g" )
         ( prefixvm( prefix,"functions.alpha" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "alpha" )
         ( prefixvm( prefix,"functions.beta" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "beta" )
@@ -147,6 +153,8 @@ gmsh_options( std::string const& prefix )
         ( prefixvm( prefix,"gmsh.rebuild" ).c_str(), Feel::po::value<bool>()->default_value( true ), "force rebuild msh file from geo file" )
         ( prefixvm( prefix,"gmsh.physical_are_elementary_regions" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Physical regions are defined by elementary regions, useful for medit format" )
         ( prefixvm( prefix,"gmsh.partition" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Partition Gmsh mesh once generated or loaded" )
+        ( prefixvm( prefix,"gmsh.respect_partition" ).c_str(), Feel::po::value<bool>()->default_value( false ), "true to respect paritioning when mesh is loaded, false to ensure that partition is within the number of processors" )
+        ( prefixvm( prefix,"gmsh.npartitions" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "Number of partitions" )
 #if defined(HAVE_METIS)
         ( prefixvm( prefix,"gmsh.partitioner" ).c_str(), Feel::po::value<int>()->default_value( GMSH_PARTITIONER_DEFAULT ), "Gmsh partitioner (1=CHACO, 2=METIS)" )
 #else
@@ -208,6 +216,7 @@ parallel_options( std::string const& prefix )
         ( prefixvm( prefix,"parallel.cpu.impl" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "Specify the implementation for multithreading" )
         ( prefixvm( prefix,"parallel.cpu.restrict" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "Restrict the multithreading to N additional cores per MPI process (0: guess the maximum number of usable cores)" )
         ( prefixvm( prefix,"parallel.gpu.enable" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Enable the use of GPU for parallelization" )
+        ( prefixvm( prefix,"parallel.debug" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "Enable debugging for parallelization" )
         ;
     return _options;
 }
@@ -278,12 +287,16 @@ eimOptions( std::string const& prefix )
         ( "eim.norm-used-for-residual" , Feel::po::value<std::string>()->default_value( "Linfty" ), "name of the norm used : Linfty - L2 - LinftyVec" )
         ( "eim.check.residual"   , Feel::po::value<int>()->default_value( 0 ),  "check residual" )
         ( "eim.reuse-prec"   , Feel::po::value<bool>()->default_value( 0 ),       "reuse or not the preconditioner" )
-        ( "eim.rebuild-database" , Feel::po::value<bool>()->default_value( 0 ), "rebuild database (if it already exists)" )
+        ( "eim.rebuild-database" , Feel::po::value<bool>()->default_value( false ), "rebuild database (if it already exists)" )
+        ( "eim.enrich-database" , Feel::po::value<bool>()->default_value( true ), "enrich the database (if it already exists)" )
         ( "eim.cvg-study" , Feel::po::value<bool>()->default_value( 0 ), "for convergence study" )
-        ( "eim.compute-error-with-truth-expression" , Feel::po::value<bool>()->default_value( true ), "compute the error with the truth expression ( not its projection ) if true" )
+        ( "eim.compute-error-with-truth-expression" , Feel::po::value<bool>()->default_value( false ), "compute the error with the truth expression ( not its projection ) if true" )
         ( "eim.use-dimension-max-functions" , Feel::po::value<bool>()->default_value( 0 ), "force to use dimension-max basis functions" )
         ( "eim.computational-time-neval",Feel::po::value<int>()->default_value( 0 )," number of evaluation to perform to have the computational time of eim online step" )
         ( "eim.compute-expansion-of-expression",Feel::po::value<bool>()->default_value( false )," use true expression if true, else use the projection of the expression" )
+        ( "eim.show-mu-selection",Feel::po::value<bool>()->default_value( false )," print list of parameters selected during offline step" )
+        ( "eim.show-t-selection",Feel::po::value<bool>()->default_value( false )," print list of interpolation points selected during offline step" )
+        ( "eim.show-offline-error",Feel::po::value<bool>()->default_value( false )," print list of error associated to mu selected during offline step" )
         ;
 
     return eimoptions;
@@ -343,8 +356,9 @@ crbSCMOptions( std::string const& prefix = "")
     ( "crb.scm.use-logEquidistributed-C",Feel::po::value<int>()->default_value( 0 ), "parameters are log-equidistributed for the offline step (the value indicates the number of parameters)")
     ( "crb.scm.use-equidistributed-C",Feel::po::value<int>()->default_value( 0 ), "parameters are equidistributed for the offline step (the value indicates the number of parameters)")
     ( "crb.scm.use-predefined-C",Feel::po::value<bool>()->default_value( false ), "use a predefined sampling C ( parameters written on the file SamplingC")
-    ( "crb.scm.use-scm",Feel::po::value<bool>()->default_value( true ), "use scm if true")
+    ( "crb.scm.use-scm",Feel::po::value<bool>()->default_value( false ), "use scm if true")
     ( "crb.scm.check-eigenvector",Feel::po::value<bool>()->default_value( true ), "check that eigenvector and eigenvalue are solution of the generalized eiganvalue problem if true")
+    ( "crb.scm.check-eigenvector-tol",Feel::po::value<double>()->default_value( 1e-11 ), "tolerance of check-eigenvector")
     ;
 
     crbscmoptions
@@ -364,9 +378,9 @@ crbOptions( std::string const& prefix )
     ( "crb.all-procs-have-same-sampling" , Feel::po::value<bool>()->default_value( "false" ), "all procs have the same sampling if true" )
     ( "crb.error-max"   , Feel::po::value<double>()->default_value( 1e-6 ),       "Offline  tolerance" )
     ( "crb.online-tolerance"   , Feel::po::value<double>()->default_value( 1e-2 ),       "Online  tolerance" )
-    ( "crb.dimension-max"   , Feel::po::value<int>()->default_value( 50 ),       "Offline  max WN size" )
+    ( "crb.dimension-max"   , Feel::po::value<int>()->default_value( 1 ),       "Offline max WN size, set to 1 by default to avoid to enrich the existing database if this option doesn't appear in onefeel interface or in the config file." )
     ( "crb.dimension"   , Feel::po::value<int>()->default_value( -1 ),       "Online  WN size" )
-    ( "crb.error-type"   , Feel::po::value<int>()->default_value( ( int )CRB_RESIDUAL ),       "CRB error type to be computed" )
+    ( "crb.error-type"   , Feel::po::value<int>()->default_value( ( int )CRB_RESIDUAL_SCM ),       "CRB error type to be computed" )
     ( "crb.factor"   , Feel::po::value<int>()->default_value( -1 ),  "factor useful to estimate error by empirical method" )
     ( "crb.Nm"   , Feel::po::value<int>()->default_value( 1 ),       "Offline  number of modes per mu (for the POD) " )
     ( "crb.apply-POD-to-WN"   , Feel::po::value<bool>()->default_value( false ), "apply a POD on approximation functions spaces (primal and dual) if true and if deal with a transient problem " )
@@ -433,7 +447,10 @@ crbOptions( std::string const& prefix )
 
     ( "crb.user-parameters",Feel::po::value<std::string>()->default_value( "" ), "values of parameters (used for one feel)")
     ( "crb.vary-only-parameter-components",Feel::po::value<std::string>()->default_value( "" ), "specify which parameter component vary (max : 2 components + time 't') and how many values we take in each direction. For example 0 10 1 20 means that component 0 will take 10 values and component 1 will take 20 values. We can write also t 1 10 and in this case the time will vary and also component 1")
-    ( "crb.load-elements-database",Feel::po::value<bool>()->default_value( true ), "load database of elements if true, need to be true for visualization, need to be false to run CRB approximation on a different number of processors than this was used to build the reduced basis ")
+    ( "crb.load-elements-database",Feel::po::value<bool>()->default_value( false ), "load database of elements if true, need to be true for visualization, need to be false to run CRB approximation on a different number of processors than this was used to build the reduced basis ")
+
+    ( "crb.solve-fem-monolithic",Feel::po::value<bool>()->default_value( false ), "solve FEM problem without using EIM and without affine decomposition ")
+    ( "crb.export-name-max-size",Feel::po::value<int>()->default_value( 10 ), "maximum size for variable names in export (truncature)")
     ;
 
     crboptions
@@ -451,6 +468,7 @@ podOptions( std::string const& prefix )
     ( "pod.store-pod-matrix-format-octave"   , Feel::po::value<bool>()->default_value( false ), "indicate if we store the pod matrix on a file with octave format" )
     ("pod.check-orthogonality",Feel::po::value<bool>()->default_value( true ), "check orthogonality of modes")
     ("pod.minimum-eigenvalue",Feel::po::value<double>()->default_value( 1e-11 ), "minimum acceptable value for eigenvalues")
+    ("pod.check-tol",Feel::po::value<double>()->default_value( 1e-10 ), "when solving A w = lambda w, check that norm(A w) = norm( lambda w)")
     ;
 
     return podoptions;

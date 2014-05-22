@@ -63,6 +63,7 @@ BOOST_PARAMETER_FUNCTION(
       ( name,           *( boost::is_convertible<mpl::_,std::string> ) )
       )
     ( optional
+      ( worldcomm,      *, Environment::worldComm() )
       ( shape,          *( boost::is_convertible<mpl::_,std::string> ),  option(_name="gmsh.domain.shape").template as<std::string>() )
       ( shear,          *( boost::is_arithmetic<mpl::_> )    ,  option(_name="gmsh.domain.shear").template as<double>() )
       ( recombine,      *( boost::is_integral<mpl::_> )    , option(_name="gmsh.domain.recombine").template as<bool>() )
@@ -81,8 +82,7 @@ BOOST_PARAMETER_FUNCTION(
       ( zmax,           *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.domain.zmax").template as<double>() )
       ( substructuring, *( boost::is_integral<mpl::_> ), option(_name="gmsh.domain.substructuring").template as<bool>() ) ) )
 {
-    gmsh_ptrtype gmsh_ptr = Gmsh::New( shape, 3, 1, convex );
-
+    gmsh_ptrtype gmsh_ptr = Gmsh::New( shape, 3, 1, convex, worldcomm );
     gmsh_ptr->setPrefix( name );
     gmsh_ptr->setGeoParameters( gmsh_ptr->retrieveGeoParameters( gmsh_ptr->description() ), 0 );
     gmsh_ptr->setGeoParameters( geo_parameters );

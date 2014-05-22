@@ -178,6 +178,7 @@ const size_type jkp = vm::KB|vm::JACOBIAN|vm::POINT;
         };                                                              \
         typedef VF_GD_NAME(O) this_type;                                \
         typedef double value_type;                                      \
+        typedef value_type evaluate_type;                               \
                                                                         \
         VF_GD_NAME(O) ()                                                \
         {                                                               \
@@ -185,14 +186,14 @@ const size_type jkp = vm::KB|vm::JACOBIAN|vm::POINT;
         VF_GD_NAME(O) ( VF_GD_NAME(O) const& /*__vf*/ )                 \
         {                                                               \
         }                                                               \
-        template<typename TheExpr>                                      \
+        template<typename... TheExpr>                                      \
         struct Lambda                                                   \
         {                                                               \
             typedef this_type type;                                     \
         };                                                              \
-        template<typename TheExpr>                                      \
-        typename Lambda<TheExpr>::type                                  \
-        operator()( TheExpr const& e  ) { return this_type(); }         \
+        template<typename... TheExpr>                                      \
+        typename Lambda<TheExpr...>::type                                  \
+        operator()( TheExpr... e  ) { return this_type(); }         \
                                                                         \
                                                                         \
         template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t> \
@@ -205,6 +206,7 @@ const size_type jkp = vm::KB|vm::JACOBIAN|vm::POINT;
             typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype; \
             typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type; \
             typedef typename gmc_type::value_type value_type;           \
+            typedef  value_type evaluate_type;                          \
             typedef VF_GD_RETURN(O)<gmc_type::NDim> return_value_type;  \
             typedef Shape<gmc_type::NDim, VF_GD_RETURN(O), false> shape; \
                                                                         \

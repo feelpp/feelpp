@@ -85,6 +85,9 @@ public:
                int _localColor,// int localRank,
                std::vector<int> const& isActive );
 
+    //! copy a worldcomm
+    WorldComm& operator=( WorldComm const& wc );
+
     static self_ptrtype New() { return self_ptrtype(new self_type); }
     static self_ptrtype New( super const& s ) { return self_ptrtype(new self_type( s )); }
     void init( int color = 0, bool colormap = false );
@@ -109,15 +112,15 @@ public:
         return this->subWorldCommSeq();
     }
 
-    int globalSize() const
+    rank_type globalSize() const
     {
         return this->globalComm().size();
     }
-    int localSize() const
+    rank_type localSize() const
     {
         return this->localComm().size();
     }
-    int godSize() const
+    rank_type godSize() const
     {
         return this->godComm().size();
     }
@@ -135,11 +138,11 @@ public:
         return this->godComm().rank();
     }
 
-    bool hasSubWorlds( int n );
-    std::vector<WorldComm> const& subWorlds( int n );
+    bool hasSubWorlds( int n ) const;
+    std::vector<WorldComm> const& subWorlds( int n ) const;
     std::vector<WorldComm> const& subWorldsGroupBySubspace( int n );
-    WorldComm const& subWorld( int n ) ;
-    int subWorldId( int n ) ;
+    WorldComm const& subWorld( int n ) const;
+    int subWorldId( int n ) const;
 
     std::vector<int> const& mapColorWorld() const
     {
@@ -226,7 +229,7 @@ public:
     /**
      * register sub worlds associated to \p worldmap
      */
-    void registerSubWorlds( int n );
+    void registerSubWorlds( int n ) const;
     void registerSubWorldsGroupBySubspace( int n );
 
 private :
@@ -242,7 +245,7 @@ private :
     std::vector<int> M_mapColorWorld;
     std::vector<rank_type> M_mapLocalRankToGlobalRank;
     std::vector<rank_type> M_mapGlobalRankToGodRank;
-    std::map<int, std::pair<WorldComm,std::vector<WorldComm> > > M_subworlds;
+    mutable std::map<int, std::pair<WorldComm,std::vector<WorldComm> > > M_subworlds;
 
     int M_masterRank;
     mutable std::vector<int/*bool*/> M_isActive;

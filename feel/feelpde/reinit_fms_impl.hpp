@@ -50,7 +50,8 @@ ReinitializerFMS( functionspace_ptrtype const& __functionspace,
     M_neighbors(),
     M_coords( __functionspace->dof()->nDof() ),
     M_translation( __periodicity.translation() ),
-    firstDof( M_functionspace->dof()->firstDofGlobalCluster() )
+    firstDof( M_functionspace->dof()->firstDofGlobalCluster() ),
+    M_nbDofTag1(0)
 {
 
     const uint16_type ndofv = functionspace_type::fe_type::nDof;
@@ -58,6 +59,7 @@ ReinitializerFMS( functionspace_ptrtype const& __functionspace,
     auto it = M_functionspace->mesh()->beginElementWithProcessId();
     auto en = M_functionspace->mesh()->endElementWithProcessId();
 
+    // create the first neighbours data structure (M_neighbors)
     for ( ; it!=en ; ++it )
         {
             std::vector<size_type> indices( ndofv );
@@ -79,7 +81,130 @@ ReinitializerFMS( functionspace_ptrtype const& __functionspace,
                       M_neighbors[indices[k]].insert( indices[j] );
                     }
         }
+
+    // periodic tables if necessary
+    if ( M_periodicity.isPeriodic() )
+        createPeriodicCorrespondanceTable();
+
 }
+
+
+template<typename FunctionSpaceType, typename periodicity_type>
+void
+ReinitializerFMS<FunctionSpaceType, periodicity_type>::
+createPeriodicCorrespondanceTable()
+{
+    /* create a data structure periodic,
+       a bi-directionnal map containing :
+       idGlobal of dofs having tag1, corresponding by trans idGlobal of dofs having tag2
+     */
+    const uint16_type ndofv = functionspace_type::fe_type::nDof;
+
+    // store idGlobTag1 and coords
+    typedef std::vector< std::pair<size_type, node_type> > idCoord_type;
+    idCoord_type idsTag1;
+    std::set< size_type > dofTag1Done;
+    auto rg1 = markedfaces( M_functionspace->mesh(), M_periodicity.tag1() );
+    for ( auto it = rg1.template get<1>(), en = rg1.template get<2>(); it!=en; ++it)
+        for (size_type k=0; k<M_functionspace->dof()->nLocalDofOnFace() ; ++k)
+            {
+                const size_type index = boost::get<0>( M_functionspace->dof()->localToGlobal( *it, k, 0 ) );
+                const size_type idOnCluster = processorToCluster(index);
+                const node_type coordPointPlusTrans = get<0>( M_functionspace->dof()->dofPoint( index ) ) + M_translation;
+
+                if ( ! dofTag1Done.count(idOnCluster) && (! M_functionspace->dof()->dofGlobalProcessIsGhost(index)) )
+                    {
+                        idsTag1.push_back( std::make_pair(idOnCluster, coordPointPlusTrans) );
+                        dofTag1Done.insert(idOnCluster);
+                    }
+            }
+
+    dofTag1Done.clear(); // no need anymore
+
+    M_nbDofTag1 = mpi::all_reduce(Environment::worldComm().globalComm(),
+                                          idsTag1.size(),
+                                          std::plus<size_type>() );
+
+    std::vector< idCoord_type > allIdsTag1;
+    mpi::all_gather( Environment::worldComm().globalComm(),
+                     idsTag1,
+                     allIdsTag1 );
+
+    typedef std::vector< std::pair< size_type, size_type > > idstag1tag2_type;
+    idstag1tag2_type idsTag1_idsTag2;
+
+    auto distNodes = []( const node_type& a, const node_type& b )->double
+        {
+            const node_type c = a-b;
+            double dist=0;
+            for (int d=0; d<Dim; ++d)
+                dist += std::abs( c[d] );
+            return dist;
+        };
+
+    // for each point on the periodic face
+    // search if there is a correspondant point on
+    // the other face
+    std::set< size_type > dofTag2Done;
+
+    auto rg2 = markedfaces( M_functionspace->mesh(), M_periodicity.tag2() );
+    for (auto it = rg2.template get<1>(), en=rg2.template get<2>(); it!=en; ++it)
+        for (size_type k=0; k<M_functionspace->dof()->nLocalDofOnFace() ; ++k)
+            {
+                const size_type indexTag2 = boost::get<0>( M_functionspace->dof()->localToGlobal( *it, k, 0 ) );
+                if ( ! dofTag2Done.count( indexTag2 ) )
+                    {
+                        const size_type globalIndexTag2 = processorToCluster( indexTag2 );
+                        const node_type coordPointTag2 = get<0>( M_functionspace->dof()->dofPoint( indexTag2 ) );
+                        bool dofFound = false;
+
+                        for (auto const& allIdsVec : allIdsTag1)
+                            {
+                                for (auto const& idCoordPointTag1 : allIdsVec )
+                                    {
+                                        const double distPoints = distNodes( coordPointTag2, idCoordPointTag1.second );
+
+                                        if (distPoints < 1e-10)
+                                            {
+                                                idsTag1_idsTag2.push_back( std::make_pair( idCoordPointTag1.first,
+                                                                                           globalIndexTag2 ) );
+                                                dofFound = true;
+                                                dofTag2Done.insert(indexTag2);
+                                                break;
+                                            }
+                                    }
+
+                                if (dofFound)
+                                    break;
+                            }
+                    }
+            }
+
+    dofTag2Done.clear();
+
+    // only one proc gather all the informations in a bi-map
+    std::vector< idstag1tag2_type > all_idsTag1_idsTag2;
+    mpi::gather( Environment::worldComm().globalComm(),
+                 idsTag1_idsTag2,
+                 all_idsTag1_idsTag2,
+                 0);
+
+    if (Environment::worldComm().rank() == 0)
+        for (auto const& idTag1Tag2 : all_idsTag1_idsTag2)
+            for (auto const& id1_id2 : idTag1Tag2 )
+                M_idTag1_idTag2.left.insert( id1_id2 );
+
+    mpi::broadcast( Environment::worldComm(),
+                    M_idTag1_idTag2,
+                    0 );
+
+    CHECK( M_idTag1_idTag2.left.size() == M_nbDofTag1 ) <<"problem in periodicity table of fast marching\n"
+                                                              <<"all nodes tagged 1 should have a conter part in tag2\n"
+                                                              <<"M_idTag1_idTag2.left.size() = "<< M_idTag1_idTag2.left.size() <<"\n"
+                                                              <<"nbDofTag1 = "<< M_nbDofTag1 <<"\n";
+
+}// createPeriodicCorrespondanceTable
+
 
 template<typename FunctionSpaceType, typename periodicity_type>
 void
@@ -296,7 +421,7 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
         return std::abs(a.first.first) < std::abs(b.first.first) ? a : b; };
 
 
-    const int nbTotalIterFM = M_functionspace->dof()->nDof() - nbTotalDone;
+    const int nbTotalIterFM = M_functionspace->dof()->nDof() - nbTotalDone - M_nbDofTag1;
 
     unsigned int count_iteration=0;
 
@@ -318,21 +443,35 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
 
         bool dofIsPresentOnProcess = false;
 
-        size_type newIdOnProc;
+        //        size_type newIdOnProc;
+        std::vector< size_type > newIdsOnProc;
         if ( M_functionspace->dof()->dofGlobalClusterIsOnProc( newIdOnCluster ) )
-          {
-            newIdOnProc = clusterToProcessor(newIdOnCluster);
-            dofIsPresentOnProcess=true;
-          }
+              newIdsOnProc.push_back( clusterToProcessor(newIdOnCluster) );
+
         else if ( M_ghostClusterToProc.count( newIdOnCluster ) )
-          {
-            newIdOnProc = M_ghostClusterToProc[newIdOnCluster];
-            dofIsPresentOnProcess=true;
-          }
+            newIdsOnProc.push_back( M_ghostClusterToProc[newIdOnCluster] );
 
-        if (dofIsPresentOnProcess)
-          {
+        if (M_periodicity.isPeriodic())
+            {
+                size_type idOnClusterPeriodicPoint = invalid_size_type_value;
+                // look from tag1 to tag 2
+                if (M_idTag1_idTag2.left.count( newIdOnCluster ) )
+                    idOnClusterPeriodicPoint = M_idTag1_idTag2.left.at( newIdOnCluster );
+                else if (M_idTag1_idTag2.right.count( newIdOnCluster ) )
+                    idOnClusterPeriodicPoint = M_idTag1_idTag2.right.at( newIdOnCluster );
 
+                if ( idOnClusterPeriodicPoint != invalid_size_type_value )
+                    {
+                        if ( M_functionspace->dof()->dofGlobalClusterIsOnProc( idOnClusterPeriodicPoint ) )
+                            newIdsOnProc.push_back( clusterToProcessor(idOnClusterPeriodicPoint) );
+
+                        else if ( M_ghostClusterToProc.count( idOnClusterPeriodicPoint ) )
+                            newIdsOnProc.push_back( M_ghostClusterToProc[idOnClusterPeriodicPoint] );
+                    }
+            }
+
+        for( size_type newIdOnProc : newIdsOnProc )
+          {
             theHeap.removeFromHeap( newIdOnProc );
 
             status[newIdOnProc] = DONE;
@@ -340,10 +479,6 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
             __v[newIdOnProc] = newAccepted.first.first;
 
             fmsHeapUpdate( newIdOnProc, __v, status, theHeap );
-
-            if (M_periodicity.isPeriodic())
-              updatePeriodicPoint(newAccepted.first, __v, status, theHeap);
-
           }
 
         checkHeap("in loop");
@@ -394,66 +529,6 @@ fmsHeapUpdate( size_type idDone,
                 } // if CLOSE
         } // loop over neighbor 0
 } // fmsHeapUpdate
-
-
-
-template<typename FunctionSpaceType, typename periodicity_type>
-void ReinitializerFMS<FunctionSpaceType, periodicity_type>::
-updatePeriodicPoint(heap_entry_type const& newAccepted, element_type& __v, element_type& status, heap_type& theHeap) const
-{
-
-  /* ++++++++++++++++  This function has not been ported to parallel yet +++++++++++++ */
-
-    // search if the point at newIdx has a corresponding point by periodic translation
-    // if yes, mark the point as done and update the heap in consequence
-
-    vf::node_type pt_tofindPlus(Dim);
-    vf::node_type pt_tofindMinus(Dim);
-    vf::node_type pt_found(Dim);
-
-    const uint16_type ndofv = functionspace_type::fe_type::nDof;
-
-    uint16_type newIdx = newAccepted.second;
-
-    for (int c = 0 ; c<Dim; c++)
-        {
-            pt_tofindPlus [c] = M_coords[newIdx][c] + M_translation[c];
-            pt_tofindMinus[c] = M_coords[newIdx][c] - M_translation[c];
-        }
-
-    int foundPlusMinus = 0;
-    size_type id_found;
-
-    if (M_functionspace->findPoint(pt_tofindPlus, id_found, pt_found))
-        foundPlusMinus = 1;
-    else if (M_functionspace->findPoint(pt_tofindMinus, id_found, pt_found))
-        foundPlusMinus = -1;
-
-    if (foundPlusMinus)
-      for (int k = 0; k < ndofv; ++k)
-        {
-          size_type index_k = M_functionspace->dof()->localToGlobal(id_found, k, 0).index();
-          value_type diff_position=0;
-          for (int c = 0; c < Dim; c++)
-            diff_position += std::abs(M_coords[index_k][c] - (M_coords[newIdx][c] + foundPlusMinus * M_translation[c] ) );
-          if ( diff_position < 1e-9 )
-            {
-              //set the value of phi at the point
-              __v[index_k] = newAccepted.first;
-
-              //remove it from the heap
-              theHeap.removeFromHeap(index_k);
-
-              // mark as DONE
-              status[index_k]=DONE;
-
-              //add its neigbours in CLOSE
-              fmsHeapUpdate(index_k, __v, status, theHeap);
-              break ; // don't need to search for other corresp
-            }
-        }
-
-} //updatePeriodicDof
 
 
 template<typename FunctionSpaceType, typename periodicity_type>

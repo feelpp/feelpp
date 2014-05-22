@@ -31,7 +31,7 @@ namespace Feel
 {
 namespace vf
 {
-enum InnerProperties  { NONE = 0, IS_SAME = (1<<0), SQRT = (1<<1) };
+enum InnerProperties  { IS_SAME = (1<<0), SQRT = (1<<1) };
 
 /// \cond detail
 /**
@@ -41,7 +41,7 @@ enum InnerProperties  { NONE = 0, IS_SAME = (1<<0), SQRT = (1<<1) };
  * @author Christophe Prud'homme
  * @see
  */
-template<typename ExprL, typename ExprR, int Type = 1, int Props = InnerProperties::NONE>
+template<typename ExprL, typename ExprR, int Type = 1, int Props = NONE>
 class Product
 {
 public:
@@ -79,6 +79,7 @@ public:
     typedef ExprL left_expression_type;
     typedef ExprR right_expression_type;
     typedef typename left_expression_type::value_type value_type;
+    typedef value_type evaluate_type;
     typedef Product<ExprL,ExprR,Type,Props> this_type;
 
 
@@ -387,10 +388,10 @@ private:
  */
 template<typename ExprL, typename ExprR>
 inline
-Expr< Product<ExprL, ExprR,1,InnerProperties::NONE> >
+Expr< Product<ExprL, ExprR,1,NONE> >
 inner( ExprL l, ExprR r)
 {
-    typedef Product<ExprL, ExprR,1,InnerProperties::NONE> product_t;
+    typedef Product<ExprL, ExprR,1,NONE> product_t;
     return Expr< product_t >(  product_t( l, r ) );
 }
 

@@ -1,0 +1,12 @@
+diff -N -u -r ann-1.1.2+doc.orig//include/ANN/ANN.h ann-1.1.2+doc//include/ANN/ANN.h
+--- ann-1.1.2+doc.orig//include/ANN/ANN.h	2010-01-28 05:40:01.000000000 +0100
++++ ann-1.1.2+doc//include/ANN/ANN.h	2011-10-26 00:18:28.912976148 +0200
+@@ -755,7 +755,7 @@
+ 	int annkFRSearch(					// approx fixed-radius kNN search
+ 		ANNpoint		q,				// the query point
+ 		ANNdist			sqRad,			// squared radius of query ball
+-		int				k,				// number of neighbors to return
++		int				k = 0,				// number of neighbors to return
+ 		ANNidxArray		nn_idx = NULL,	// nearest neighbor array (modified)
+ 		ANNdistArray	dd = NULL,		// dist to near neighbors (modified)
+ 		double			eps=0.0);		// error bound

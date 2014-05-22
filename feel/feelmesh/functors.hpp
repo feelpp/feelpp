@@ -244,7 +244,7 @@ private:
 
 struct updateIdInOthersPartitions
 {
-    updateIdInOthersPartitions( uint16_type pid, size_type id )
+    updateIdInOthersPartitions( rank_type pid, size_type id )
         :
         M_pid( pid ),
         M_id( id )
@@ -255,13 +255,13 @@ struct updateIdInOthersPartitions
         element.setIdInOthersPartitions( M_pid, M_id );
     }
 private:
-    uint16_type M_pid;
+    rank_type M_pid;
     size_type M_id;
 };
 
 struct UpdateProcessId
 {
-    UpdateProcessId( int pid )
+    UpdateProcessId( rank_type pid )
         :
         M_pid( pid )
     {}
@@ -271,12 +271,12 @@ struct UpdateProcessId
         element.setProcessId( M_pid );
     }
 private:
-    int M_pid;
+    rank_type M_pid;
 };
 
 struct UpdateNeighborPartition
 {
-    UpdateNeighborPartition( int pid )
+    UpdateNeighborPartition( rank_type pid )
         :
         M_pid( pid )
     {}
@@ -286,7 +286,7 @@ struct UpdateNeighborPartition
         element.addNeighborPartitionId( M_pid );
     }
 private:
-    int M_pid;
+    rank_type M_pid;
 };
 
 

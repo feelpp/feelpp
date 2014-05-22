@@ -126,6 +126,10 @@ po::options_description mesh_options( int Dim, std::string const& prefix )
     _options.add_options()
         ( prefixvm( prefix, (boost::format("mesh%1%d.hsize") % Dim).str() ).c_str(), Feel::po::value<double>()->default_value(0.1), "mesh characteristic size" )
         ( prefixvm( prefix, (boost::format("mesh%1%d.markers") % Dim).str() ).c_str(), Feel::po::value<std::string>(), "mesh markers map" )
+        ( prefixvm( prefix, (boost::format("mesh%1%d.localisation.use-extrapolation") % Dim).str() ).c_str(), Feel::po::value<bool>()->default_value(true),
+          "use extrapolation if localisation fails" )
+        ( prefixvm( prefix, (boost::format("mesh%1%d.localisation.nelt-in-leaf-kdtree") % Dim).str() ).c_str(), Feel::po::value<int>()->default_value(-1),
+          "use extrapolation if localisation fails" )
 
         ;
     return _options;

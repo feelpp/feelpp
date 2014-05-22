@@ -41,6 +41,8 @@
 #include <feel/feelvf/ginac.hpp>
 #include <feel/feelvf/norm2.hpp>
 #include <feel/feelvf/on.hpp>
+#include <feel/feelvf/unary.hpp>
+#include <feel/feelvf/trans.hpp>
 #include <feel/feelvf/matvec.hpp>
 #include <feel/feelvf/ones.hpp>
 
@@ -159,8 +161,3 @@ int main(int argc, char** argv )
     LOG(INFO) << "time project tangent by hand : " << ti.elapsed();
 }
 #endif
-
-
-
-
-

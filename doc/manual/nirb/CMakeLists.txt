@@ -22,4 +22,4 @@
 #
 #
 set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
-feelpp_add_application( nirb SRCS nirb.cpp LABEL doc )
+feelpp_add_application( nirb SRCS nirb.cpp LABELS doc )

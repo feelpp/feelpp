@@ -310,6 +310,7 @@ int ConvectionCrb::Nl() const
 
 int ConvectionCrb::mMaxF( int output_index, int q)
 {
+    int dumy=0;
     if( output_index < 2 )
     {
         if ( q < Ql(output_index) )
@@ -324,6 +325,7 @@ int ConvectionCrb::mMaxF( int output_index, int q)
     }
     if( output_index > 2 )
             throw std::logic_error( "[Model] ERROR : try to acces to mMaxF(output_index,q) with a bad value of output_index");
+    return dumy;
 }
 
 /**
