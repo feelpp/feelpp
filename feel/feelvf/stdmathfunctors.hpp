@@ -185,6 +185,7 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
         typedef VF_FUNC_NAME(O)<ExprT1> this_type;                      \
         typedef typename expression_1_type::value_type value_1_type;    \
         typedef value_1_type value_type;                                \
+        typedef value_type evaluate_type;                               \
                                                                         \
         VF_CHECK_ARITHMETIC_TYPE()                                      \
                                                                         \
@@ -211,15 +212,15 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
             for( int i = 0; i < nx; ++i )                               \
                 f[i] = VF_FUNC_IMPL(O)( x[i] );                         \
         }                                                               \
-        template<typename TheExpr>                                      \
+        template<typename... TheExpr>                                      \
         struct Lambda                                                   \
         {                                                               \
-            typedef VF_FUNC_NAME( O )<TheExpr> type;                    \
+            typedef VF_FUNC_NAME( O )<TheExpr...> type;                    \
         };                                                              \
                                                                         \
-        template<typename TheExpr>                                        \
-            typename Lambda<TheExpr>::type                               \
-        operator()( TheExpr const& e ) { return VF_FUNC_NAME(O)<TheExpr>( e ); } \
+        template<typename... TheExpr>                                        \
+            typename Lambda<TheExpr...>::type                               \
+        operator()( TheExpr... e ) { return VF_FUNC_NAME(O)<TheExpr...>( e... ); } \
                                                                         \
                                                                         \
         expression_1_type const& expression() const { return M_expr_1; } \

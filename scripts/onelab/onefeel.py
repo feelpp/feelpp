@@ -13,7 +13,7 @@ def checkExecutable(executable):
     ret = 0
     try:
         with open(os.devnull, "w") as fnull:
-            ret = subprocess.call(executable, stdout = fnull, stderr = fnull)
+            ret = subprocess.call(executable, stdout = fnull)
     except OSError as e:
         return False
 
@@ -29,6 +29,17 @@ def main():
     pargs=[]
     # path to the script for synchronizing data
     syncData = os.path.dirname(os.path.abspath(__file__)) + "/syncData.py"
+
+    # Check that we have the option separator
+    hasDDash = False
+    for i in range(0, len(sys.argv)):
+        if(sys.argv[i] == "--"):
+            hasDDash = True
+
+    if(not hasDDash):
+        print "Missing -- separator"
+        print "usage: " + sys.argv[0] + " [script options] -- [application executable] [application options]"
+        return 1
 
     for i in range(0, len(sys.argv)):
         if(sys.argv[i] == "--"):
@@ -134,7 +145,7 @@ def main():
         if(retval != 0):
             exit(1)
     # we copy the config file for the local config only if we are not already in the same path
-    elif(os.path.dirname(pargs[0]) != os.getcwd()):
+    elif(os.path.abspath(os.path.dirname(pargs[0])) != os.getcwd()):
         print "Copying config file ..."
         cmd = ["cp", pargs[0] + ".ol", "."]
         if(args.debug > 0):

@@ -66,7 +66,7 @@ makeFinalCabineHeatOptions()
     ( "mu3", po::value<double>()->default_value( 0.1 ), "mu3" )
     ( "no-export", "don't export results" )
     ;
-    return rbheatoptions.add( Feel::feel_options() );
+    return rbheatoptions;
 }
 AboutData
 makeFinalCabineHeatAbout( std::string const& str = "FinalCabineHeat" )

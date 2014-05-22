@@ -131,7 +131,7 @@ public:
 
     void add( element_type const& elt,
               size_type& next_free_dof,
-              size_type processor = 0,
+              rank_type processor = 0,
               size_type shift = 0 );
 
     //@}
@@ -159,7 +159,7 @@ private:
             return *this;
         }
 
-    void addVertexDof( element_type const& elt, uint16_type processor, size_type& next_free_dof,
+    void addVertexDof( element_type const& elt, rank_type processor, size_type& next_free_dof,
                        ref_shift_type& shifts  )
         {
             uint16_type local_shift;
@@ -206,7 +206,7 @@ private:
             DVLOG(4) << "[Dof::updateVolumeDof(addVertexDof] vertex proc" << processor << " next_free_dof = " << next_free_dof << "\n";
 #endif
         }
-    void addEdgeDof( element_type const& elt, uint16_type processor, size_type& next_free_dof,
+    void addEdgeDof( element_type const& elt, rank_type processor, size_type& next_free_dof,
                      ref_shift_type& shifts )
         {
             //static const bool cond = mortar_fe_type::nDofPerEdge > 0 && mortar_fe_type::nOrder > 1;
@@ -217,11 +217,11 @@ private:
                                mpl::int_<mortar_fe_type::nDim>(),
                                mpl::bool_<true>() );
         }
-    void addEdgeDof( element_type const& /*M*/, uint16_type /*processor*/, size_type& /*next_free_dof*/,
+    void addEdgeDof( element_type const& /*M*/, rank_type /*processor*/, size_type& /*next_free_dof*/,
                      ref_shift_type& /*shifts*/, mpl::int_<1>, mpl::bool_<false> )
         {}
 
-    void addEdgeDof( element_type const& elt, uint16_type processor, size_type& next_free_dof,
+    void addEdgeDof( element_type const& elt, rank_type processor, size_type& next_free_dof,
                      ref_shift_type& shifts, mpl::int_<1>, mpl::bool_<true> )
         {
             uint16_type local_shift;
@@ -233,7 +233,8 @@ private:
             DVLOG(2) << "adding mortar dof on edge " << mortar_fe_type::nDofPerEdge << " nOrder = " << nOrder;
             for ( uint16_type l = 0; l < mortar_fe_type::nDofPerEdge; ++l, ++lc )
             {
-                size_type gDof = ie * mortar_fe_type::nDofPerEdge + l;
+                //size_type gDof = ie * mortar_fe_type::nDofPerEdge + l;
+                size_type gDof = ie * fe_type::nDofPerEdge + l;
                 if ( nOrder == 0 )//is_p0_continuous )
                 {
                     auto n = elt.neighbor( 0 );
@@ -262,10 +263,10 @@ private:
             DVLOG(4) << "[Dof::addEdgeDof(1)] element proc" << processor << " next_free_dof = " << next_free_dof << "\n";
 #endif
         }
-    void addEdgeDof( element_type const& /*elt*/, uint16_type /*processor*/, size_type& /*next_free_dof*/,
+    void addEdgeDof( element_type const& /*elt*/, rank_type /*processor*/, size_type& /*next_free_dof*/,
                      ref_shift_type& /*shifts*/, mpl::int_<2>, mpl::bool_<false> )
         {}
-    void addEdgeDof( element_type const& elt, uint16_type processor, size_type& next_free_dof,
+    void addEdgeDof( element_type const& elt, rank_type processor, size_type& next_free_dof,
                      ref_shift_type& shifts, mpl::int_<2>, mpl::bool_<true> )
         {
             uint16_type local_shift;
@@ -318,11 +319,11 @@ private:
 #endif
         }
 
-    void addEdgeDof( element_type const& /*elt*/, uint16_type /*processor*/, size_type& /*next_free_dof*/,
+    void addEdgeDof( element_type const& /*elt*/, rank_type /*processor*/, size_type& /*next_free_dof*/,
                      ref_shift_type& /*shifts*/, mpl::int_<3>, mpl::bool_<false> )
         {}
 
-    void addEdgeDof( element_type const& elt, uint16_type processor, size_type& next_free_dof,
+    void addEdgeDof( element_type const& elt, rank_type processor, size_type& next_free_dof,
                      ref_shift_type& shifts, mpl::int_<3>, mpl::bool_<true> )
         {
             uint16_type local_shift;
@@ -374,18 +375,18 @@ private:
         }
 
 
-    void addFaceDof( element_type const& elt, uint16_type processor, size_type& next_free_dof,
+    void addFaceDof( element_type const& elt, rank_type processor, size_type& next_free_dof,
                      ref_shift_type& shifts )
         {
             return addFaceDof( elt, processor, next_free_dof, shifts, mpl::int_<mortar_fe_type::nDim>(), mpl::bool_<(mortar_fe_type::nDofPerFace > 0)>() );
         }
-    void addFaceDof( element_type const& /*M*/, uint16_type /*processor*/, size_type& /*next_free_dof*/,
+    void addFaceDof( element_type const& /*M*/, rank_type /*processor*/, size_type& /*next_free_dof*/,
                      ref_shift_type& /*shifts*/, mpl::int_<1>, mpl::bool_<false> )
         {}
-    void addFaceDof( element_type const& /*M*/, uint16_type /*processor*/, size_type& /*next_free_dof*/,
+    void addFaceDof( element_type const& /*M*/, rank_type /*processor*/, size_type& /*next_free_dof*/,
                      ref_shift_type& /*shifts*/, mpl::int_<2>, mpl::bool_<false> )
         {}
-    void addFaceDof( element_type const& elt, uint16_type processor, size_type& next_free_dof,
+    void addFaceDof( element_type const& elt, rank_type processor, size_type& next_free_dof,
                      ref_shift_type& shifts, mpl::int_<2>, mpl::bool_<true> )
         {
             uint16_type local_shift;
@@ -407,10 +408,10 @@ private:
             DVLOG(4) << "[Dof::addFaceDof(2,true)] face proc" << processor << " next_free_dof = " << next_free_dof << "\n";
 #endif
         }
-    void addFaceDof( element_type const& /*M*/, uint16_type /*processor*/, size_type& /*next_free_dof*/,
+    void addFaceDof( element_type const& /*M*/, rank_type /*processor*/, size_type& /*next_free_dof*/,
                      ref_shift_type& /*shifts*/, mpl::int_<3>, mpl::bool_<false> )
         {}
-    void addFaceDof( element_type const& elt, uint16_type processor, size_type& next_free_dof,
+    void addFaceDof( element_type const& elt, rank_type processor, size_type& next_free_dof,
                      ref_shift_type& shifts, mpl::int_<3>, mpl::bool_<true> )
         {
             uint16_type local_shift;
@@ -489,15 +490,15 @@ private:
             DVLOG(4) << "[Dof::addFaceDof<3>] face proc" << processor << " next_free_dof = " << next_free_dof << "\n";
 #endif
         }
-    void addVolumeDof( element_type const& elt, uint16_type processor, size_type& next_free_dof,
+    void addVolumeDof( element_type const& elt, rank_type processor, size_type& next_free_dof,
                        ref_shift_type& shifts )
         {
             return addVolumeDof( elt, processor, next_free_dof, shifts, mpl::bool_<(mortar_fe_type::nDofPerVolume>0)>() );
         }
-    void addVolumeDof( element_type const& /*M*/, uint16_type /*processor*/, size_type& /*next_free_dof*/,
+    void addVolumeDof( element_type const& /*M*/, rank_type /*processor*/, size_type& /*next_free_dof*/,
                        ref_shift_type& /*shifts*/, mpl::bool_<false> )
         {}
-    void addVolumeDof( element_type const& elt, uint16_type processor, size_type& next_free_dof,
+    void addVolumeDof( element_type const& elt, rank_type processor, size_type& next_free_dof,
                        ref_shift_type& shifts, mpl::bool_<true> )
         {
             BOOST_STATIC_ASSERT( element_type::numVolumes );
@@ -527,7 +528,7 @@ template <typename DofTableType, typename MortarFEType, typename FEType>
 void
 DofFromMortar<DofTableType,MortarFEType,FEType>::add( element_type const& elt,
                                                       size_type& next_free_dof,
-                                                      size_type processor,
+                                                      rank_type processor,
                                                       size_type shift )
 {
 #if 0

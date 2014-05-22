@@ -152,6 +152,11 @@ public:
     WorldComm const& worldComm() const { return M_worldComm; }
 
     /**
+     * View preconditioner context
+     */
+    virtual void view() const {};
+
+    /**
      * Computes the preconditioned vector "y" based on input "x".
      * Usually by solving Py=x to get the action of P^-1 x.
      */

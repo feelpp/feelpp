@@ -280,6 +280,11 @@ public:
     static AboutData const& about() { return S_about; }
 
     /**
+     * Adds a file to automatically load in Gmsh with Onelab
+     */
+    static void olLoadInGmsh(std::string filename) { olAutoloadFiles.push_back(filename); }
+
+    /**
      * return options description data structure
      */
     static po::options_description const& optionsDescription() { return *S_desc; }
@@ -454,6 +459,16 @@ private:
     static boost::shared_ptr<po::options_description> S_desc_lib;
     static std::vector<std::string> S_to_pass_further;
 
+    /**
+     * Stores the absolute path and executable name
+     */
+    static std::string olAppPath;
+
+    /**
+     * Stores names of output files for automatic loading in Gmsh with Onelab
+     */
+    static std::vector<std::string> olAutoloadFiles;
+
     static boost::signals2::signal<void()> S_deleteObservers;
 
     static boost::shared_ptr<WorldComm> S_worldcomm;
@@ -493,6 +508,100 @@ BOOST_PARAMETER_FUNCTION(
 {
     return Environment::vm(_name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix);
 }
+
+BOOST_PARAMETER_FUNCTION(
+    (double),
+    doption, tag,
+    (required
+     (name,(std::string)))
+    (optional
+     (worldcomm, ( WorldComm ), Environment::worldComm() )
+     (sub,( std::string ),"")
+     (prefix,( std::string ),"")
+        ))
+{
+    double opt;
+    try
+    {
+        opt = Environment::vm(_name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix).template as<double>();
+    }
+    catch (boost::bad_any_cast bac)
+    {
+        CHECK( false ) <<"Option "<< name << "  either does not exist or is not a double" <<std::endl;
+    }
+    return opt;
+}
+
+BOOST_PARAMETER_FUNCTION(
+    (bool),
+    boption, tag,
+    (required
+     (name,(std::string)))
+    (optional
+     (worldcomm, ( WorldComm ), Environment::worldComm() )
+     (sub,( std::string ),"")
+     (prefix,( std::string ),"")
+        ))
+{
+    bool opt;
+    try
+    {
+        opt = Environment::vm(_name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix).template as<bool>();
+    }
+    catch (boost::bad_any_cast bac)
+    {
+        CHECK( false ) <<"Option "<< name << "  either does not exist or is not a boolean" <<std::endl;
+    }
+    return opt;
+}
+
+BOOST_PARAMETER_FUNCTION(
+    (int),
+    ioption, tag,
+    (required
+     (name,(std::string)))
+    (optional
+     (worldcomm, ( WorldComm ), Environment::worldComm() )
+     (sub,( std::string ),"")
+     (prefix,( std::string ),"")
+        ))
+{
+    int opt;
+    try
+    {
+        opt = Environment::vm(_name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix).template as<int>();
+    }
+    catch (boost::bad_any_cast bac)
+    {
+        CHECK( false ) <<"Option "<< name << "  either does not exist or is not an integer" <<std::endl;
+    }
+    return opt;
+}
+
+
+BOOST_PARAMETER_FUNCTION(
+    (std::string),
+    soption, tag,
+    (required
+     (name,(std::string)))
+    (optional
+     (worldcomm, ( WorldComm ), Environment::worldComm() )
+     (sub,( std::string ),"")
+     (prefix,( std::string ),"")
+        ))
+{
+    std::string opt;
+    try
+    {
+        opt = Environment::vm(_name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix).template as<std::string>();
+    }
+    catch (boost::bad_any_cast bac)
+    {
+        CHECK( false ) <<"Option "<< name << "  either does not exist or is not a string" <<std::endl;
+    }
+    return opt;
+}
+
 
 namespace detail
 {

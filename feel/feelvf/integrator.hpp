@@ -44,6 +44,7 @@
 #include <feel/feelpoly/quadmapped.hpp>
 
 #include <feel/feelvf/expr.hpp>
+#include <feel/feelvf/cst.hpp>
 #include <feel/feelvf/detail/clean.hpp>
 #include <feel/feelvf/block.hpp>
 
@@ -204,6 +205,7 @@ public:
                 mpl::identity<Eigen::Matrix<expression_value_type, shape::M, shape::N> > >::type::type value_type;
 #else
         typedef Eigen::Matrix<expression_value_type, shape::M, shape::N> value_type;
+        typedef Eigen::Matrix<expression_value_type, shape::M, shape::N> evaluate_type;
 #endif
         typedef Eigen::Matrix<expression_value_type, shape::M, shape::N> matrix_type;
         static value_type zero( mpl::bool_<false> )
@@ -228,6 +230,7 @@ public:
     //typedef typename eval::value_type value_type;
     typedef typename eval::matrix_type matrix_type;
     typedef typename eval::matrix_type value_type;
+    typedef typename eval::matrix_type evaluate_type;
     //@}
 
     /** @name Constructors, destructor
@@ -303,28 +306,28 @@ public:
      */
     //@{
 
-    template<typename TheExpr>
+    template<typename... TheExpr>
     struct Lambda
     {
-        typedef typename expression_type::template Lambda<TheExpr>::type expr_type;
+        typedef typename expression_type::template Lambda<TheExpr...>::type expr_type;
         typedef _Q< ExpressionOrder<Elements,expr_type>::value > quad_type;
         typedef _Q< ExpressionOrder<Elements,expr_type>::value_1 > quad1_type;
         typedef Integrator<Elements, quad_type, expr_type, quad1_type> type;
     };
 
-    template<typename ExprT>
-    typename Lambda<ExprT>::type
-    operator()( ExprT const& e )
+    template<typename... ExprT>
+    typename Lambda<ExprT...>::type
+    operator()( ExprT...  e )
         {
 #if 0
-            typedef decltype(expr(M_expr(e))) t1;
+            typedef decltype(expr(M_expr(e...))) t1;
             typedef typename Lambda<ExprT>::expr_type t2;
             BOOST_MPL_ASSERT_MSG( (boost::is_same<t1,t2>), INVALID_TYPE_IN_META_EXPRESSION,
-                                  (decltype(expr(M_expr(e))), typename Lambda<ExprT>::expr_type ) );
+                                  (decltype(expr(M_expr(e...))), typename Lambda<ExprT>::expr_type ) );
 #endif
-            auto new_expr = M_expr(e);
+            auto new_expr = M_expr(e...);
             typedef decltype(new_expr) expr_type;
-            typedef typename Lambda<ExprT>::expr_type e_type;
+            typedef typename Lambda<ExprT...>::expr_type e_type;
             typedef _Q< ExpressionOrder<Elements,e_type>::value > quad_type;
             typedef _Q< ExpressionOrder<Elements,e_type>::value_1 > quad1_type;
             typedef boost::shared_ptr<QuadPtLocalization<Elements,quad_type,expr_type > > quadptloc_ptrtype;

@@ -83,6 +83,7 @@ public :
     typedef Mesh<Simplex<Dim> > mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
     typedef FunctionSpace<mesh_type,bases<Lagrange<Order, Vectorial> > > space_type;
+    typedef space_type functionspace_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
     typedef boost::shared_ptr<element_type> element_ptrtype;
@@ -98,7 +99,7 @@ public :
         auto mesh=unitHypercube<Dim>();
         Xh = Pchv<Order>( mesh );
 
-        auto RbSpace = RbSpacePchv<Order>( this->shared_from_this() , mesh );
+        auto RbSpace = RbSpacePch( this->shared_from_this() );
         auto basis_x = vf::project( Xh , elements(mesh), vec( Px() , Px()*Px() ) );
         auto basis_y = vf::project( Xh , elements(mesh), vec( Py() , Py()*Px() ) );
         RbSpace->addPrimalBasisElement( basis_x );
@@ -152,16 +153,16 @@ public :
         double norm_rb_evaluations = rb_evaluations.norm();
         double true_norm=true_values.norm();
 
-        BOOST_CHECK_SMALL( math::abs(norm_fem_evaluations-true_norm), 1e-14 );
-        BOOST_CHECK_SMALL( math::abs(norm_fem_evaluations-norm_rb_evaluations), 1e-14 );
+        BOOST_CHECK_SMALL( math::abs(norm_fem_evaluations-true_norm), 1e-13 );
+        BOOST_CHECK_SMALL( math::abs(norm_fem_evaluations-norm_rb_evaluations), 1e-13 );
 
         auto rb_evaluate_from_contextrb = evaluateFromContext( _context=ctxrb , _expr=idv(u) );
         auto rb_evaluate_from_contextfem = evaluateFromContext( _context=ctxfem , _expr=idv(u) );
         double norm_rb_evaluations_from_ctxrb = rb_evaluate_from_contextrb.norm();
         double norm_rb_evaluations_from_ctxfem = rb_evaluate_from_contextfem.norm();
 
-        BOOST_CHECK_SMALL( math::abs(norm_rb_evaluations_from_ctxrb-true_norm), 1e-14 );
-        BOOST_CHECK_SMALL( math::abs(norm_rb_evaluations_from_ctxrb-norm_rb_evaluations_from_ctxfem), 1e-14 );
+        BOOST_CHECK_SMALL( math::abs(norm_rb_evaluations_from_ctxrb-true_norm), 1e-13 );
+        BOOST_CHECK_SMALL( math::abs(norm_rb_evaluations_from_ctxrb-norm_rb_evaluations_from_ctxfem), 1e-13 );
 
         LOG( INFO ) << "rb unknown : \n"<<u;
         LOG( INFO ) << " rb_evaluations : \n"<<rb_evaluations;
@@ -180,8 +181,8 @@ public :
         double norm_grad_fem = grad_fem.norm();
         double norm_grad_rb = grad_rb.norm();
         double norm_true_grad = true_values_grad.norm();
-        BOOST_CHECK_SMALL( math::abs(norm_grad_fem-norm_true_grad), 1e-14 );
-        BOOST_CHECK_SMALL( math::abs(norm_grad_rb-norm_true_grad), 1e-14 );
+        BOOST_CHECK_SMALL( math::abs(norm_grad_fem-norm_true_grad), 1e-13 );
+        BOOST_CHECK_SMALL( math::abs(norm_grad_rb-norm_true_grad), 1e-13 );
         LOG( INFO ) << " rb grad from contextrb :\n"<<grad_rb;
 
 
@@ -195,8 +196,8 @@ public :
         double norm_dx_fem = dx_fem.norm();
         double norm_dx_rb = dx_rb.norm();
         double norm_true_dx = true_values_dx.norm();
-        BOOST_CHECK_SMALL( math::abs(norm_dx_fem-norm_true_dx), 1e-14 );
-        BOOST_CHECK_SMALL( math::abs(norm_dx_rb-norm_true_dx), 1e-14 );
+        BOOST_CHECK_SMALL( math::abs(norm_dx_fem-norm_true_dx), 1e-13 );
+        BOOST_CHECK_SMALL( math::abs(norm_dx_rb-norm_true_dx), 1e-13 );
         LOG( INFO ) << " rb dx from contextrb :\n"<<dx_rb;
 
         //dy
@@ -209,8 +210,8 @@ public :
         double norm_dy_fem = dy_fem.norm();
         double norm_dy_rb = dy_rb.norm();
         double norm_true_dy = true_values_dy.norm();
-        BOOST_CHECK_SMALL( math::abs(norm_dy_fem-norm_true_dy), 1e-14 );
-        BOOST_CHECK_SMALL( math::abs(norm_dy_rb-norm_true_dy), 1e-14 );
+        BOOST_CHECK_SMALL( math::abs(norm_dy_fem-norm_true_dy), 1e-13 );
+        BOOST_CHECK_SMALL( math::abs(norm_dy_rb-norm_true_dy), 1e-13 );
         LOG( INFO ) << " rb dy from contextrb :\n"<<dy_rb;
 
 
@@ -228,13 +229,13 @@ public :
         norm_rb_evaluations = rb_evaluations.norm();
         true_norm=true_values.norm();
 
-        BOOST_CHECK_SMALL( math::abs(norm_fem_evaluations-true_norm), 1e-14 );
-        BOOST_CHECK_SMALL( math::abs(norm_fem_evaluations-norm_rb_evaluations), 1e-14 );
+        BOOST_CHECK_SMALL( math::abs(norm_fem_evaluations-true_norm), 1e-13 );
+        BOOST_CHECK_SMALL( math::abs(norm_fem_evaluations-norm_rb_evaluations), 1e-13 );
 
         LOG( INFO ) << "call evaluate from context rb idv(u)";
         rb_evaluate_from_contextrb = evaluateFromContext( _context=ctxrb , _expr=idv(u) );
         norm_rb_evaluations_from_ctxrb = rb_evaluate_from_contextrb.norm();
-        BOOST_CHECK_SMALL( math::abs(norm_rb_evaluations_from_ctxrb-true_norm), 1e-14 );
+        BOOST_CHECK_SMALL( math::abs(norm_rb_evaluations_from_ctxrb-true_norm), 1e-13 );
 
         LOG( INFO ) << "rb unknown : \n"<<u;
         LOG( INFO ) << " rb_evaluations : \n"<<rb_evaluations;
@@ -249,8 +250,8 @@ public :
         norm_grad_fem = grad_fem.norm();
         norm_grad_rb = grad_rb.norm();
         norm_true_grad = true_values_grad.norm();
-        BOOST_CHECK_SMALL( math::abs(norm_grad_fem-norm_true_grad), 1e-14 );
-        BOOST_CHECK_SMALL( math::abs(norm_grad_rb-norm_true_grad), 1e-14 );
+        BOOST_CHECK_SMALL( math::abs(norm_grad_fem-norm_true_grad), 1e-13 );
+        BOOST_CHECK_SMALL( math::abs(norm_grad_rb-norm_true_grad), 1e-13 );
         LOG( INFO ) << " rb grad from contextrb :\n"<<grad_rb;
 
     }
@@ -277,4 +278,3 @@ BOOST_AUTO_TEST_CASE( test_1 )
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-
