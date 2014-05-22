@@ -121,7 +121,8 @@ struct BFAssign1
         M_bf( lfa.M_bf ),
         M_test( lfa.M_test ),
         M_expr( lfa.M_expr ),
-        M_trial_index( lfa.M_trial_index )
+        M_trial_index( lfa.M_trial_index ),
+        M_test_index( lfa.M_test_index )
     {}
     BFAssign1( BFType& lf,
                ExprType const& expr,
@@ -164,6 +165,7 @@ struct BFAssign3
         M_bf( lfa.M_bf ),
         M_trial( lfa.M_trial ),
         M_expr( lfa.M_expr ),
+        M_trial_index( lfa.M_trial_index ),
         M_test_index( lfa.M_test_index )
     {}
     BFAssign3( BFType& lf,
@@ -537,9 +539,11 @@ public:
     public:
 
         template<typename Left, typename Right>
-        map_trial_fecontext_type getMap( Left  left, Right right )
+        map_trial_fecontext_type getMap( Left  left, Right right, bool same_mesh = true )
         {
-            return getMap( left, right, boost::is_same<Left, map_trial_fecontext_type>() );
+            if ( same_mesh )
+                return getMap( left, right, boost::is_same<Left, map_trial_fecontext_type>() );
+            return getMap( left, right, mpl::bool_<false>() );
         }
         template<typename Left, typename Right>
         map_trial_fecontext_type getMap( Left  left, Right /*right*/, mpl::bool_<true> )
@@ -553,9 +557,11 @@ public:
         }
 
         template<typename Left, typename Right>
-        map_left_trial_fecontext_type getMapL( Left  left, Right right )
+        map_left_trial_fecontext_type getMapL( Left  left, Right right, bool same_mesh = true )
         {
-            return getMap( left, right, boost::is_same<Left, map_left_trial_fecontext_type>() );
+            if ( same_mesh )
+                return getMapL( left, right, boost::is_same<Left, map_left_trial_fecontext_type>() );
+            return getMapL( left, right, mpl::bool_<false>() );
         }
         template<typename Left, typename Right>
         map_left_trial_fecontext_type getMapL( Left  left, Right /*right*/, mpl::bool_<true> )

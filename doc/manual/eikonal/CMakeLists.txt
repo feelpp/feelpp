@@ -21,13 +21,25 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+
+if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
+cmake_minimum_required(VERSION 2.8)
+find_path(FEELPP_CMAKE_MODULES FindFeel++.cmake PATHS /usr/share/feel/cmake/modules/ /usr/local/share/feel/cmake/modules/ )
+if(FEELPP_CMAKE_MODULES)
+	set(CMAKE_MODULE_PATH ${FEELPP_CMAKE_MODULES})
+else()
+	message(FATAL_ERROR "Feel++ does not seem to have been installed on this platform")
+endif()
+find_package(Feel++)
+endif()
+
 set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
+feelpp_add_application(normalToBoundary SRCS normalToBoundary.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES})
 feelpp_add_application(dist2walls SRCS dist2walls.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES})
-
 feelpp_add_application(dist2wallsoptimized SRCS dist2wallsoptimized.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES})
-
 feelpp_add_application(dist2curve SRCS dist2curve.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES})
 feelpp_add_application(dist2curveperf SRCS dist2curveperf.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES})
 feelpp_add_application(dist2curveho SRCS dist2curveho.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES})
+feelpp_add_application(dist2curvehoperiodic SRCS dist2curvehoperiodic.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES})
 feelpp_add_application(dist2paramcurve SRCS dist2paramcurve.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES})
 feelpp_add_application(dist2paramsurface SRCS dist2paramsurface.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES})

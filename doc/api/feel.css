@@ -1,8 +1,17 @@
 /* The standard CSS for doxygen */
+@import url(https://fonts.googleapis.com/css?family=Lato:300italic,700italic,300,700);
+@import url(http://fonts.googleapis.com/css?family=Droid+Sans+Mono);
+
+body {
+}
 
 body, table, div, p, dl {
-	font-family: Lato, Arizonia, Lucida Grande, Verdana, Geneva, Arial, sans-serif;
-	font-size: 14px;
+  font:14px/1.5 Lato, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color:#333;
+  font-weight:300;
+
+/*	font-family: Lato, Arizonia, Lucida Grande, Verdana, Geneva, Arial, sans-serif;
+	font-size: 14px;*/
 	line-height: 1.3;
 }
 
@@ -1218,4 +1227,13 @@ div.toc li.level4 {
     white-space: pre-wrap; /* CSS3  */
     word-wrap: break-word; /* IE 5.5+ */
   }
+}
+
+/* Doxygen does not allow to customize size for images inserted with \image */
+/* other than eps file */
+/* This tweak allow to modify the size param of the image */
+/* It can be applied to a specific image by adding the name of the image in [] */
+/* e.g. div.image img[src="bift_001.png"]{  */
+div.image img{ 
+        width:100%; 
 }

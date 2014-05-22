@@ -75,7 +75,7 @@ set(FEELPP_DEFAULT ON CACHE INTERNAL "Default value for enabled-by-default optio
 OPTION(FEELPP_ENABLE_VERBOSE_CMAKE "enable Feel++ verbose cmake" OFF)
 OPTION(FEELPP_ENABLE_BUILD_STATIC "Enable Feel++ library statically built" OFF )
 OPTION(FEELPP_BENCHMARK_FLAGS "enable benchmarks flags" OFF)
-OPTION(FEELPP_ENABLE_DOCUMENTATION "enable Feel++ documentation" ${FEELPP_DEFAULT})
+OPTION(FEELPP_ENABLE_DOCUMENTATION "enable Feel++ documentation (aka examples)" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_BENCHMARKS "enable Feel++ benchmarks" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_APPLICATIONS "enable Feel++ applications" ${FEELPP_DEFAULT})
 # enable PCH only for GCC as for now
@@ -130,7 +130,17 @@ else(APPLE)
 endif(APPLE)
 
 if(CMAKE_COMPILER_IS_GNUCXX)
-  SET(CMAKE_CXX_FLAGS "-std=c++0x -pedantic  -ftemplate-depth-256 -Wno-inline" CACHE STRING "Default flags" FORCE)
+  SET(CMAKE_CXX_FLAGS "-std=c++0x")
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.8.0)
+     set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+     # A cosmetic change - do not work properly within emacs
+     #if (CMAKE_CXX_COMPILER_VERSION VERSION_EQUAL 4.9.0 OR CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.9.0)
+     #  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=always" )
+     #endif()
+     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}" CACHE STRING "Default flags" FORCE)
+  endif()
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic  -ftemplate-depth-256 -Wno-inline" )
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}" CACHE STRING "Default flags" FORCE)
   SET(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fPIC" CACHE STRING "Debug flags" FORCE)
   SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O1" CACHE STRING "Release With Debug information flags" FORCE)
   SET(CMAKE_CXX_FLAGS_RELEASE "-g0 -O3 -DNDEBUG  -finline-functions"  CACHE STRING "Release flags" FORCE)
@@ -153,6 +163,9 @@ endif()
 message(STATUS "using ${NProcs2} cores out of ${NProcs} cores" )
 #  set(CTEST_BUILD_FLAGS -j${N2})
 #  set(ctest_test_args ${ctest_test_args} PARALLEL_LEVEL ${N2})
+
+# set test timeout to 300s
+set(CTEST_TIMEOUT "20")
 
 #else()
 #  OPTION(FEELPP_ENABLE_MPI_MODE "Instantiation mode" OFF )
@@ -269,18 +282,18 @@ include( feelpp.macros )
 # it assumes that a project is valid if :
 #   there is README.md file in the directory
 #   that the directory path include "research"
-# for each detected project it creates an FEELPP_ENABLE_${PROJECT}_DOCUMENTATION option
-SET(projects_list)
-find_directories_containing(projects_list FILE README.md FILTER research)
+# for each detected project it creates an FEELPP_ENABLE_${PROJECT} and FEELPP_ENABLE_${PROJECT}_DOCUMENTATION
+# option which are set to OFF by default
 MESSAGE(STATUS "Feel++ projects :")
-foreach(project ${projects_list})
-  #get shortname
-  GET_FILENAME_COMPONENT(dirname ${project} NAME)
-  MESSAGE(STATUS "      " ${dirname})
-
-  #define option to control doc generation
-  string(TOUPPER ${dirname} PROJECT)
-  option(FEELPP_ENABLE_${PROJECT}_DOCUMENTATION "Enable/Disable documentation in research/${dirname}" OFF)
+feelpp_list_subdir(projects ${CMAKE_CURRENT_SOURCE_DIR}/research)
+foreach(project ${projects})
+  if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/research/${project}/README.md )
+    MESSAGE(STATUS "    " ${project})
+    string(TOUPPER ${project} PROJECT)
+    option(FEELPP_ENABLE_RESEARCH_${PROJECT} "Enable/Disable research/${project} " OFF)
+    option(FEELPP_ENABLE_${PROJECT}_DOCUMENTATION "Enable/Disable documentation in research/${project}" OFF)
+    SET(FEELPP_ENABLED_PROJECTS "${FEELPP_ENABLED_PROJECTS} ${project}" )
+  endif()
 endforeach()
 
 #
@@ -311,10 +324,10 @@ IF( FEELPP_MINIMAL_CONFIGURATION )
   SET(FEELPP_MESH_MAX_ORDER "1" CACHE STRING "maximum geometrical order in templates to instantiate" FORCE )
 ENDIF( FEELPP_MINIMAL_CONFIGURATION )
 
-option(FEELPP_ENABLE_APPLICATIONS_CRB "Enable CRB applications in Feel++" OFF)
+option(FEELPP_ENABLE_APPLICATIONS_CRB "Enable CRB applications in Feel++" ON)
 if (ANN_FOUND AND GLPK_FOUND)
-  set( FEELPP_ENABLE_APPLICATIONS_CRB ON )
-  set( FEELPP_ENABLE_OPENTURNS ON)
+  #set( FEELPP_ENABLE_APPLICATIONS_CRB ON )
+  #set( FEELPP_ENABLE_OPENTURNS ON)
 else()
   set( FEELPP_ENABLE_APPLICATIONS_CRB OFF )
 endif()
@@ -337,10 +350,10 @@ IF(FEELPP_ENABLE_TESTS )
 endif()
 
 
-if ( FEELPP_ENABLE_DOCUMENTATION )
+if ( FEELPP_ENABLE_DOCUMENTATION OR FEELPP_ENABLE_DOXYGEN )
   set(FEELPP_DOC_ENABLE_CAVITY_CRB off)
   ADD_SUBDIRECTORY ( doc )
-endif ( FEELPP_ENABLE_DOCUMENTATION )
+endif ()
 
 if ( FEELPP_ENABLE_BENCHMARKS AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/benchmarks )
   ADD_SUBDIRECTORY ( benchmarks )

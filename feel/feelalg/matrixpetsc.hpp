@@ -110,6 +110,9 @@ public:
     typedef typename super::datamap_type datamap_type;
     typedef typename super::datamap_ptrtype datamap_ptrtype;
 
+    typedef typename super::indexsplit_type indexsplit_type;
+    typedef typename super::indexsplit_ptrtype indexsplit_ptrtype;
+
     //@}
 
     /** @name Constructors, destructor
@@ -250,7 +253,7 @@ public:
     /**
      *
      */
-    void setIndexSplit( std::vector< std::vector<size_type> > const &indexSplit );
+    void setIndexSplit( indexsplit_ptrtype const& indexSplit );
 
     /**
      * reinitialize the matrix
@@ -460,7 +463,7 @@ public:
      */
     void updateBlockMat( boost::shared_ptr<MatrixSparse<T> > m, std::vector<size_type> start_i, std::vector<size_type> start_j );
 
-
+    void updatePCFieldSplit( PC & pc, indexsplit_ptrtype const& is );
     void updatePCFieldSplit( PC & pc );
 
     std::vector<IS> const& petscSplitIS() const { return M_petscIS; }
