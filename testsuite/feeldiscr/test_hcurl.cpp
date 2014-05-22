@@ -163,7 +163,7 @@ public:
      * run the application
      */
 
-    void testProjector();
+    //void testProjector();
     void exampleProblem1();
 
 private:
@@ -214,6 +214,11 @@ TestHCurl::exampleProblem1()
     b.matrix().printMatlab( "curlcurl.m" );
     u.printMatlab( "u.m" );
 
+    for( auto const& dof : Xh->dof()->localDof() )
+    {
+        LOG(INFO) << "local dof element " << dof.first.elementId() << " id:" << dof.first.localDof()
+                  << " global dof : " << dof.second.index() << " pts: " << Xh->dof()->dofPoint( dof.second.index() ).template get<0>();
+    }
     std::cout << "norm L2 = " << normL2( elements(mesh), idv(u)-u_exact, _quad=_Q<2>() );
 
 #if 0
@@ -238,6 +243,7 @@ TestHCurl::exampleProblem1()
 
 }
 
+#if 0
 void
 TestHCurl::testProjector()
 {
@@ -320,6 +326,7 @@ TestHCurl::testProjector()
     exporter_proj->step( 0 )->add( "proj_HDiv_E[NED]", E_pHCURL_ned );
     exporter_proj->save();
 }
+#endif
 }
 
 #if USE_BOOST_TEST
@@ -328,6 +335,7 @@ FEELPP_ENVIRONMENT_WITH_OPTIONS( Feel::makeAbout(), Feel::makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( space )
 
+#if 0
 BOOST_AUTO_TEST_CASE( test_hcurl_projection )
 {
     BOOST_TEST_MESSAGE( "test_hcurl_N0 on one real element" );
@@ -335,7 +343,7 @@ BOOST_AUTO_TEST_CASE( test_hcurl_projection )
     t.testProjector();
     BOOST_TEST_MESSAGE( "test_hcurl_N0 on one real element done" );
 }
-
+#endif
 BOOST_AUTO_TEST_CASE( test_hcurl_example_1 )
 {
     BOOST_TEST_MESSAGE( "test_hcurl on example 1" );
