@@ -282,18 +282,18 @@ include( feelpp.macros )
 # it assumes that a project is valid if :
 #   there is README.md file in the directory
 #   that the directory path include "research"
-# for each detected project it creates an FEELPP_ENABLE_${PROJECT}_DOCUMENTATION option
-SET(projects_list)
-find_directories_containing(projects_list FILE README.md FILTER research)
+# for each detected project it creates an FEELPP_ENABLE_${PROJECT} and FEELPP_ENABLE_${PROJECT}_DOCUMENTATION
+# option which are set to OFF by default
 MESSAGE(STATUS "Feel++ projects :")
-foreach(project ${projects_list})
-  #get shortname
-  GET_FILENAME_COMPONENT(dirname ${project} NAME)
-  MESSAGE(STATUS "      " ${dirname})
-
-  #define option to control doc generation
-  string(TOUPPER ${dirname} PROJECT)
-  option(FEELPP_ENABLE_${PROJECT}_DOCUMENTATION "Enable/Disable documentation in research/${dirname}" OFF)
+feelpp_list_subdir(projects ${CMAKE_CURRENT_SOURCE_DIR}/research)
+foreach(project ${projects})
+  if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/research/${project}/README.md )
+    MESSAGE(STATUS "    " ${project})
+    string(TOUPPER ${project} PROJECT)
+    option(FEELPP_ENABLE_RESEARCH_${PROJECT} "Enable/Disable research/${project} " OFF)
+    option(FEELPP_ENABLE_${PROJECT}_DOCUMENTATION "Enable/Disable documentation in research/${project}" OFF)
+    SET(FEELPP_ENABLED_PROJECTS "${FEELPP_ENABLED_PROJECTS} ${project}" )
+  endif()
 endforeach()
 
 #
