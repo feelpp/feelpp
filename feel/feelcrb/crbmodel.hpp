@@ -1383,6 +1383,21 @@ public:
         return boost::make_tuple( M_monoM, M_monoA, M_monoF );
     }
 
+    monolithic_type computeMonolithicFormulationU( parameter_type const& mu , element_type const& u )
+    {
+        return computeMonolithicFormulationU( mu, u, mpl::bool_<model_type::is_time_dependent>() );
+    }
+    monolithic_type computeMonolithicFormulationU( parameter_type const& mu , element_type const& u , mpl::bool_<true> )
+    {
+        boost::tie( M_monoM, M_monoA, M_monoF ) = M_model->computeMonolithicFormulationU( mu, u );
+        return boost::make_tuple( M_monoM, M_monoA, M_monoF );
+    }
+    monolithic_type computeMonolithicFormulationU( parameter_type const& mu , element_type const& u ,  mpl::bool_<false> )
+    {
+        boost::tie( M_monoA, M_monoF ) = M_model->computeMonolithicFormulationU( mu, u );
+        return boost::make_tuple( M_monoM, M_monoA, M_monoF );
+    }
+
 
     /*
      * return true if the model use EIM and need to comute associated error
@@ -3161,24 +3176,44 @@ CRBModel<TruthModelType>::solveFemMonolithicFormulation( parameter_type const& m
     double bdf_coeff ;
     auto vec_bdf_poly = M_backend->newVector( Xh );
 
+    auto uold = Xh->element();
+    u=uold;
+
+    int max_fixedpoint_iterations  = this->vm()["crb.max-fixedpoint-iterations"].template as<int>();
+    double increment_fixedpoint_tol  = this->vm()["crb.increment-fixedpoint-tol"].template as<double>();
+    int iter=0;
+    double norm=0;
+
     for( mybdf->start(*InitialGuess); !mybdf->isFinished(); mybdf->next() )
     {
         bdf_coeff = mybdf->polyDerivCoefficient( 0 );
         auto bdf_poly = mybdf->polyDeriv();
         *vec_bdf_poly = bdf_poly;
+        iter=0;
+        do {
 
-        boost::tie(M, A, F) = this->computeMonolithicFormulation( mu );
+            if( is_linear )
+                boost::tie(M, A, F) = this->computeMonolithicFormulation( mu );
+            else
+                boost::tie(M, A, F) = this->computeMonolithicFormulationU( mu , u );
 
-        if( !isSteady() )
-        {
-            A->addMatrix( bdf_coeff, M );
-            F[0]->addVector( *vec_bdf_poly, *M );
-        }
-        M_preconditioner_primal->setMatrix( A );
+            if( !isSteady() )
+            {
+                A->addMatrix( bdf_coeff, M );
+                F[0]->addVector( *vec_bdf_poly, *M );
+            }
+            uold=u;
+            M_preconditioner_primal->setMatrix( A );
+            M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0] , _prec=M_preconditioner_primal);
 
-        M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0] , _prec=M_preconditioner_primal);
+            mybdf->shiftRight(u);
 
-        mybdf->shiftRight(u);
+            if( is_linear )
+                norm = 0;
+            else
+                norm = this->computeNormL2( uold , u );
+            iter++;
+        } while( norm > increment_fixedpoint_tol && iter<max_fixedpoint_iterations );
     }
 
     return u;
