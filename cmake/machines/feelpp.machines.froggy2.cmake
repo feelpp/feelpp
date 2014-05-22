@@ -21,22 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-#set(FEELPP_ENABLE_SCHED_LOADLEVELER ON CACHE BOOL "")
-#set(FEELPP_RESET_ENV_LIBRARY_PATH OFF)
-
 set(FEELPP_ENABLE_MANUAL OFF)
 set(Boost_NO_BOOST_CMAKE TRUE)
 set(Boost_NO_SYSTEM_PATHS TRUE)
 
-
-#set(BLAS_blas_LIBRARY $ENV{packagesBaseDir}/blas/BLAS/blas_LINUX.a)
-#message(STATUS "on froggy1 : BLAS_blas_LIBRARY : ${BLAS_blas_LIBRARY} ")
-# find the gfortran library
-#FIND_LIBRARY(GFORTRAN_LIBRARY
-#    NAMES
-#    gfortran
-#    PATHS
-#    $ENV{gccDir}/lib
-#    $ENV{LIBRARY_PATH}
-#)
-#message(STATUS "on froggy1 : gfortran lib: ${GFORTRAN_LIBRARY} ")
