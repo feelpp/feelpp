@@ -2459,7 +2459,7 @@ Mesh<Shape, T, Tag>::Inverse::distribute( bool extrapolation )
     M_ref_coords.clear();
     M_cvx_pts.clear();
     M_pts_cvx.clear();
-    M_pts_cvx.resize( nActifElt );
+    M_pts_cvx.clear();
 
     KDTree::points_type boxpts;
     gmc_ptrtype __c( new gmc_type( M_mesh->gm(),

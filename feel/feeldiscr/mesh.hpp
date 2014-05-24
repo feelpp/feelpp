@@ -995,14 +995,21 @@ public:
 
         size_type nPointsInConvex( size_type i ) const
         {
-            return M_pts_cvx[i].size();
+            auto itFind = M_pts_cvx.find(i);
+            if ( itFind != M_pts_cvx.end() )
+                return M_pts_cvx.find(i)->second.size();
+            else
+                return 0;
         }
         void pointsInConvex( size_type i, std::vector<boost::tuple<size_type, uint16_type > > &itab ) const
         {
-            itab.resize( M_pts_cvx[i].size() );
-            size_type j = 0;
+            const size_type nPts = this->nPointsInConvex( i );
+            itab.resize( nPts );
+            if (nPts == 0 ) return;
 
-            for ( map_iterator it = M_pts_cvx[i].begin(); it != M_pts_cvx[i].end(); ++it )
+            auto it = M_pts_cvx.find(i)->second.begin();
+            auto const en = M_pts_cvx.find(i)->second.end();
+            for ( size_type j = 0 ; it != en ; ++it )
                 itab[j++] = boost::make_tuple( it->first, it->second );
         }
 
@@ -1025,7 +1032,7 @@ public:
 
     private:
         boost::shared_ptr<self_type> M_mesh;
-        std::vector<std::map<size_type,uint16_type > > M_pts_cvx;
+        boost::unordered_map<size_type, boost::unordered_map<size_type,uint16_type > > M_pts_cvx;
         typedef typename std::map<size_type, uint16_type >::const_iterator map_iterator;
         //typedef typename node<value_type>::type node_type;
         boost::unordered_map<size_type,node_type> M_ref_coords;
