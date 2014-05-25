@@ -279,15 +279,27 @@ public:
      */
     value_type output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve=false);
 
+    bool referenceParametersGivenByUser() { return true; }
     parameter_type refParameter()
     {
-        return Dmu->min();
+        auto muref = Dmu->element();
+        muref(0)=1; muref(1)=1; muref(2)=1;
+        muref(3)=1; muref(4)=1; muref(5)=1;
+        muref(6)=1; muref(7)=1;
+        return muref;
     }
+    // parameter_type refParameter()
+    // {
+    //     auto muref = Dmu->element();
+    //     muref(0)=1;
+    //     return muref;
+    // }
 
     void initDataStructureForBetaCoeff();
     void buildGinacExpressions();
 
     affine_decomposition_light_type computeAffineDecompositionLight(){ return boost::make_tuple( M_Aq, M_Fq ); }
+
 
 private:
     value_type gamma_dir;
@@ -565,6 +577,24 @@ ThermalBlock::initModel()
         mu_max[i]=10;
     }
 
+    // mu_min[0]=0.1;
+    // mu_max[0]=10;
+    // mu_min[1]=1;
+    // mu_max[1]=1;
+    // mu_min[2]=1;
+    // mu_max[2]=1;
+    // mu_min[3]=1;
+    // mu_max[3]=1;
+    // mu_min[4]=1;
+    // mu_max[4]=1;
+    // mu_min[5]=1;
+    // mu_max[5]=1;
+    // mu_min[6]=1;
+    // mu_max[6]=1;
+    // mu_min[7]=1;
+    // mu_max[7]=1;
+
+
     Dmu->setMin( mu_min );
     Dmu->setMax( mu_max );
 
@@ -583,7 +613,8 @@ ThermalBlock::initModel()
 
     auto M = backend()->newMatrix( Xh , Xh );
     M->zero();
-    double mu_min_coeff=0.1;
+    auto muref=refParameter();
+    double muref_coeff=muref(0);
     form1( Xh, M_Fq[0][0] );
     // on boundary north we have u=0 so term from weak dirichlet condition
     // vanish in the right hand side
@@ -593,6 +624,8 @@ ThermalBlock::initModel()
         subdomain_index = subdomainId( marker );
         south_subdomain_index.push_back( subdomain_index );
     }
+
+
 
     DVLOG(2) <<"[ThermalBlock::init] done with rhs\n";
     BOOST_FOREACH( auto domain, domainMarkers )
@@ -610,12 +643,13 @@ ThermalBlock::initModel()
         else
         {
             form2( Xh, Xh, M ) +=
-                integrate( markedelements( mmesh, domain ), gradt( u )*trans( grad( v ) ) * mu_min_coeff );
+                integrate( markedelements( mmesh, domain ), gradt( u )*trans( grad( v ) ) * muref_coeff );
         }
         DVLOG(2) <<"[ThermalBlock::init] done with Aqm[" << index << "]\n";
 
         index++;
     }
+
 
     DVLOG(2) <<"[ThermalBlock::init] done with domainMarkers\n";
     int last_index = Qa()-1;
@@ -630,8 +664,8 @@ ThermalBlock::initModel()
                                                                 );
 
         form2( Xh, Xh, M ) +=  integrate( markedfaces( mmesh, marker ),
-                                          -gradt( u )*vf::N()*id( v ) * mu_min_coeff
-                                          -grad( u )*vf::N()*idt( v ) * mu_min_coeff
+                                          -gradt( u )*vf::N()*id( v ) * muref_coeff
+                                          -grad( u )*vf::N()*idt( v ) * muref_coeff
                                           );
 
         form2( Xh, Xh, M_Aq[last_index] ) += integrate( markedfaces( mmesh, marker ),gamma_dir*idt( u )*id( v )/h() );
