@@ -245,11 +245,9 @@ Mesh<Shape, T, Tag>::updateForUse()
         {
             updateOnBoundary();
         }
-        this->setUpdatedForUse( true );
-    }
 
-    {
-        element_iterator iv,  en;
+
+
         if ( this->components().test( MESH_ADD_ELEMENTS_INFO ) )
         {
             boost::tie( iv, en ) = this->elementsRange();
@@ -264,6 +262,22 @@ Mesh<Shape, T, Tag>::updateForUse()
             }
         }
 
+        this->updateNumGlobalElements();
+
+        if ( this->components().test( MESH_PROPAGATE_MARKERS ) )
+            propagateMarkers(mpl::int_<nDim>() );
+
+        for ( auto itf = this->beginFace(), ite = this->endFace(); itf != ite; ++ itf )
+        {
+            this->faces().modify( itf,[this]( face_type& f ) { f.setMesh( this ); } );
+        }
+
+
+        this->setUpdatedForUse( true );
+    }
+
+    {
+        element_iterator iv,  en;
         boost::tie( iv, en ) = this->elementsRange();
         auto pc = M_gm->preCompute( M_gm, M_gm->referenceConvex().vertices() );
         auto pcf =  M_gm->preComputeOnFaces( M_gm, M_gm->referenceConvex().barycenterFaces() );
@@ -321,17 +335,7 @@ Mesh<Shape, T, Tag>::updateForUse()
             }
         }
 
-        for ( auto itf = this->beginFace(), ite = this->endFace(); itf != ite; ++ itf )
-        {
-            this->faces().modify( itf,[this]( face_type& f ) { f.setMesh( this ); } );
-        }
     }
-
-
-    this->updateNumGlobalElements();
-
-    if ( this->components().test( MESH_PROPAGATE_MARKERS ) )
-        propagateMarkers(mpl::int_<nDim>() );
 
     // check mesh connectivity
     this->check();
