@@ -141,6 +141,7 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
 
     DVLOG(2) << "[Dof::generateDofPoints] generating dof coordinates\n";
     typedef typename mesh_type::element_type element_type;
+    typedef typename mesh_type::face_type face_type;
     typedef typename gm_type::template Context<vm::POINT, element_type> gm_context_type;
     typedef boost::shared_ptr<gm_context_type> gm_context_ptrtype;
 
@@ -233,14 +234,40 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
                                                         val ) );
             }
         }
-    }
 
+        // update internal data point of faces attached on this elt
+        for ( size_type j = 0; j < imesh->numLocalFaces(); j++ )
+        {
+            if ( !curElt.facePtr( j ) ) continue;
+            face_type const& curFace = curElt.face( j );
+
+            for ( int f = 0; f < face_type::numVertices; ++f )
+            {
+                uint16_type ptLocalId = ( MeshType::nDim==1 )?j:curElt.fToP( j, f );
+                auto const& curPoint = curElt.point( ptLocalId );
+                for ( uint16_type comp = 0; comp < fe_type::nComponents; ++comp )
+                {
+                    val[ comp ] = curPoint( comp );
+                }
+                imesh->faces().modify( imesh->faceIterator( curFace ),
+                                       lambda::bind( &face_type::setPointCoordG,
+                                                     lambda::_1,
+                                                     f,
+                                                     val ) );
+            }
+        }
+
+        // Todo : edges
+    }
+#if 1
+    imesh->updateForUse();
+#else
     imesh->gm()->initCache( imesh.get() );
     imesh->gm1()->initCache( imesh.get() );
+#endif
     // notify observers that the mesh has changed
     imesh->meshChanged( MESH_CHANGES_POINTS_COORDINATES );
     //return boost::make_tuple( omesh, 1.0  );
-
     imesh->tool_localization()->reset();
 }
 
