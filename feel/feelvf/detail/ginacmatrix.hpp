@@ -88,7 +88,7 @@ public:
         super( syms ),
         M_fun( fun.evalm() ),
         M_cfun( new GiNaC::FUNCP_CUBA() ),
-        M_filename(filename.empty()?filename:(fs::current_path()/filename).string())
+        M_filename( (filename.empty() || fs::path(filename).is_absolute())? filename : (fs::current_path()/filename).string())
         {
             DVLOG(2) << "Ginac matrix matrix constructor with expression_type \n";
             GiNaC::lst exprs;
@@ -118,6 +118,8 @@ public:
                 // master rank check if the lib exist and compile this one if not done
                 if ( ( world.isMasterRank() && !fs::exists( filenameWithSuffix ) ) || M_filename.empty() )
                 {
+                    if ( !M_filename.empty() && fs::path(filename).is_absolute() && !fs::exists(fs::path(filename).parent_path()) )
+                        fs::create_directories( fs::path(filename).parent_path() );
                     DVLOG(2) << "GiNaC::compile_ex with filenameWithSuffix " << filenameWithSuffix << "\n";
                     GiNaC::compile_ex(exprs, syml, *M_cfun, M_filename);
                     hasLinked=true;
