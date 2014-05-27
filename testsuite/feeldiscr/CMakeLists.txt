@@ -19,7 +19,7 @@ feelpp_add_test( hdiv_oneelt NO_MPI_TEST )
 feelpp_add_test( hdiv3D CFG hdiv3D.cfg)
 feelpp_add_test( hdiv3D_oneelt NO_MPI_TEST )
 feelpp_add_test( hcurl_oneelt NO_MPI_TEST )
-feelpp_add_test( hcurl CFG hcurl.cfg)
+feelpp_add_test( hcurl CFG hcurl.cfg GEO two_elements_mesh.geo eight_elements_mesh.msh)
 feelpp_add_test( hcurl3D_oneelt NO_MPI_TEST )
 
 feelpp_add_test( continuity_h1 NO_MPI_TEST )
