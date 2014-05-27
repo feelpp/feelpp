@@ -3953,7 +3953,8 @@ public:
     element( ExprT e, std::string const& name = "u", typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type* = 0 )
     {
         element_type u( this->shared_from_this(), name );
-        u.on( _range=elements(M_mesh), _expr=e );
+        bool addExtendedElt = this->dof()->buildDofTableMPIExtended();
+        u.on( _range=elements(M_mesh,addExtendedElt), _expr=e );
         return u;
     }
 
@@ -3978,7 +3979,8 @@ public:
     elementPtr( ExprT e, std::string const& name = "u", typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type* = 0 )
     {
         element_ptrtype u( new element_type( this->shared_from_this(), name ) );
-        u->on( _range=elements(M_mesh), _expr=e );
+        bool addExtendedElt = this->dof()->buildDofTableMPIExtended();
+        u->on( _range=elements(M_mesh,addExtendedElt), _expr=e );
         return u;
     }
 
