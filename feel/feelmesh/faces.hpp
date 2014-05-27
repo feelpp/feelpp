@@ -322,6 +322,10 @@ public:
     {
         return  M_faces.find( face_type( i ) );
     }
+    face_iterator faceIterator( face_type const& face ) const
+    {
+        return faceIterator( face.id() );
+    }
 
     face_iterator beginFace()
     {

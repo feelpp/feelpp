@@ -715,6 +715,10 @@ public:
         return ( sgn > 0 ) ? 1 : 0;
     }
 
+    void setPointCoordG( int i, ublas::vector<double> const& u )
+    {
+        ublas::column( M_G, i ) = u;
+    }
     void applyDisplacement( int i, ublas::vector<double> const& u )
     {
         ublas::column( M_G, i ) += u;
