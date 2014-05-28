@@ -94,12 +94,15 @@ functions_options( std::string const& prefix )
     _options.add_options()
         ( prefixvm( prefix,"x" ).c_str(), Feel::po::value<double>()->default_value( 0 ), "x coordinate value " )
         ( prefixvm( prefix,"y" ).c_str(), Feel::po::value<double>()->default_value( 0 ), "y coordinate value " )
-        ( prefixvm( prefix,"z" ).c_str(), Feel::po::value<double>()->default_value( 0 ), "z coordinate value " )
-        ( prefixvm( prefix,"functions.f" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "f" )
-        ( prefixvm( prefix,"functions.p" ).c_str(), Feel::po::value<std::string>()->default_value( "0" ), "p" )
-        ( prefixvm( prefix,"functions.q" ).c_str(), Feel::po::value<std::string>()->default_value( "0" ), "q" )
-        ( prefixvm( prefix,"functions.z" ).c_str(), Feel::po::value<std::string>()->default_value( "0" ), "z" )
-        ( prefixvm( prefix,"functions.g" ).c_str(), Feel::po::value<std::string>()->default_value( "0" ), "g" )
+        ( prefixvm( prefix,"z" ).c_str(), Feel::po::value<double>()->default_value( 0 ), "z coordinate value " );
+
+    std::string alphabet = "abcdefghijklmnopqrstuvwxyz";
+    for( char c : alphabet)
+    {
+        _options.add_options()
+            ( prefixvm( prefix, std::string("functions.")+c ).c_str(), Feel::po::value<std::string>()->default_value( "0" ), (std::string("function ") + c).c_str() );
+    }
+    _options.add_options()
         ( prefixvm( prefix,"functions.alpha" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "alpha" )
         ( prefixvm( prefix,"functions.beta" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "beta" )
         ( prefixvm( prefix,"functions.beta_x" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "beta x" )
@@ -118,9 +121,13 @@ po::options_description
 parameters_options( std::string const& prefix )
 {
     po::options_description _options( "Parameters " + prefix + " options" );
+    std::string alphabet = "abcdefghijklmnopqrstuvwxyz";
+    for( char c : alphabet)
+    {
+        _options.add_options()
+            ( prefixvm( prefix, std::string("parameters.")+c ).c_str(), Feel::po::value<double>()->default_value( 0 ), (std::string("parameter ") + c).c_str() );
+    }
     _options.add_options()
-        ( prefixvm( prefix,"parameters.f" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "f" )
-        ( prefixvm( prefix,"parameters.g" ).c_str(), Feel::po::value<double>()->default_value( 0 ), "g" )
         ( prefixvm( prefix,"parameters.alpha" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "alpha" )
         ( prefixvm( prefix,"parameters.beta" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "beta" )
         ( prefixvm( prefix,"parameters.beta_x" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "beta x" )
