@@ -433,19 +433,29 @@ TestHCurl::exampleProblem1()
     auto l = form1( _test=Xh );
     l = integrate( _range=elements(mesh), _expr=trans(f)*id(phi) );
     //Dirichlet bc on weak form
-    l += integrate(boundaryfaces(mesh), - curlx(phi)*(Nx()*idv(v.comp(Y)) - Ny()*idv(v.comp(X)))
-        + penaldir*trans(idv(v))*id(phi)/hFace() );
+    l += integrate(boundaryfaces(mesh), - curlx(phi)*cross(idv(v),N())
+        + penaldir*trans( cross(idv(v),N()) )*cross(id(phi),N())/hFace() );
 
     auto a = form2( _test=Xh, _trial=Xh );
     a = integrate(elements(mesh), curlxt(u)*curlx(phi) + trans(idt(u))*id(phi) );
     //a += on( _range=boundaryfaces( mesh ),_element=u, _rhs=l, _expr=cst(0.) );
 
     //Dirichlet bc on weak form
-    a += integrate(boundaryfaces(mesh), -curlxt(u)*(Nx()*id(phi.comp(Y)) - Ny()*id(phi.comp(X)))
-        - curlx(phi)*(Nx()*idt(u.comp(Y)) - Ny()*idt(u.comp(X)))
-        + penaldir*trans(idt(u))*id(phi)/hFace() );
+    a += integrate(boundaryfaces(mesh), -curlxt(u)*cross(id(phi),N())
+        - curlx(phi)*cross(idt(u),N())
+        + penaldir*trans( cross(idt(u),N()) )*cross(id(phi),N())/hFace() );
 
     a.solve( _solution=u, _rhs=l, _rebuild=true);
+
+    // L2 projection of solution u
+    auto u_L2proj = Xh->element();
+    auto phi_L2proj = Xh->element();
+
+    auto a_L2proj = form2( _test=Xh, _trial=Xh );
+    a_L2proj = integrate( _range=elements(mesh), _expr = trans(idt(u_L2proj))*id(phi_L2proj) );
+    auto f_L2proj = form1( _test=Xh );
+    f_L2proj = integrate( _range=elements(mesh), _expr = trans(idv(u))*id(phi_L2proj) );
+    a_L2proj.solve( _solution=u_L2proj, _rhs=f_L2proj, _rebuild=true);
 
 #if 0
     auto l2proj = opProjection( _domainSpace=Xh, _imageSpace=Xh, _type=L2 );
@@ -461,6 +471,7 @@ TestHCurl::exampleProblem1()
 
     exporter_pro1->step( 0 )->setMesh( mesh );
     exporter_pro1->step( 0 )->add( "u", u );
+    exporter_pro1->step( 0 )->add( "proj_L2_u", u );
     exporter_pro1->step( 0 )->add( "u_exact", v );
     exporter_pro1->save();
 
