@@ -182,6 +182,12 @@ brew install feelpp
 
 And you should be set to use \feel on MacOS X.
 
+Be careful: you have to specifically use clang++ (and not clang).
+
+<!--
+cmake ../where/is/my/code -DCMAKE_CXX_COMPILER=`which clang++`
+-->
+
 \subsection HomebrewFeelDependencies Advanced usage: Homebrew and Feel++ dependencies
 
 If Homebrew is already installed on your system, you might want to customize your installation for the correct dependencies to be met for \feel.
