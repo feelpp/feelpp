@@ -2645,7 +2645,7 @@ struct AssembleMassMatrixInCompositeCase
 
     AssembleMassMatrixInCompositeCase( element_type const u ,
                                        element_type const v ,
-                                       boost::shared_ptr<CRBModel<ModelType> > crb_model)
+                                       CRBModel<ModelType>* crb_model)
         :
         M_composite_u ( u ),
         M_composite_v ( v ),
@@ -2671,7 +2671,7 @@ struct AssembleMassMatrixInCompositeCase
 
     element_type  M_composite_u;
     element_type  M_composite_v;
-    mutable boost::shared_ptr<CRBModel<ModelType>  > M_crb_model;
+    mutable CRBModel<ModelType>* M_crb_model;
 };
 
 template <typename ModelType>
@@ -2828,7 +2828,7 @@ CRBModel<TruthModelType>::assembleMassMatrix( mpl::bool_<true> )
     M_Mqm[0].resize(1);
     M_Mqm[0][0]=M_backend->newMatrix( _test=Xh , _trial=Xh );
 
-    AssembleMassMatrixInCompositeCase<TruthModelType> assemble_mass_matrix_in_composite_case ( u , v , this->shared_from_this());
+    AssembleMassMatrixInCompositeCase<TruthModelType> assemble_mass_matrix_in_composite_case ( u , v , this );
     fusion::for_each( index_vector, assemble_mass_matrix_in_composite_case );
 
     M_Mqm[0][0]->close();
