@@ -1939,6 +1939,7 @@ public:
         int n_eval = option(_name="eim.computational-time-neval").template as<int>();
 
         Eigen::Matrix<double, Eigen::Dynamic, 1> time_crb;
+        Eigen::Matrix<double, Eigen::Dynamic, 1> time;
         time_crb.resize( n_eval );
 
         typename crb_type::sampling_ptrtype Sampling( new typename crb_type::sampling_type( M_model->parameterSpace() ) );
@@ -1953,7 +1954,7 @@ public:
         {
             //LOG( INFO ) << "[computational] mu = \n"<<mu;
             boost::mpi::timer tcrb;
-            auto o = M_crb->run( mu,  option(_name="crb.online-tolerance").template as<double>() , N);
+            auto o = M_crb->run( mu, time, option(_name="crb.online-tolerance").template as<double>() , N);
             auto solutions=o.template get<2>();
             auto uN = solutions.template get<0>();//vector of solutions ( one solution at each time step )
 
