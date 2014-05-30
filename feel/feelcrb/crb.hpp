@@ -260,7 +260,9 @@ public:
                                                      fusion::vector< mpl::int_<0>, mpl::int_<1>, mpl::int_<2>, mpl::int_<3>, mpl::int_<4> >
                                                      >::type >::type >::type index_vector_type;
 
+#if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
     mutable crbCLContext clContext_;
+#endif
 
     //@}
 
