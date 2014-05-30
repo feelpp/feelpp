@@ -259,6 +259,15 @@ int main( int argc, char** argv )
     endif()
   endforeach()
 
-
+  # Install OpenCL source files
+  if ( HARTS_LIBRARIES AND ENABLE_OPENCL )
+      set(CRB_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/feel/feelcrb")
+      if ( EXISTS ${CRB_INCLUDE_DIR} )
+          file(GLOB OPENCL_SOURCE_FILES "${CRB_INCLUDE_DIR}/*.cl")
+          if(OPENCL_SOURCE_FILES)
+              file(COPY ${OPENCL_SOURCE_FILES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+          endif()
+      endif()
+  endif()
 
 endmacro()

@@ -1,5 +1,13 @@
 // Enable double support: not needed for 1.2
-//#pragma OPENCL EXTENSION cl_khr_fp64 : enable
+#if defined(cl_khr_fp64)  // Khronos extension available?
+#pragma OPENCL EXTENSION cl_khr_fp64 : enable
+#define DOUBLE_SUPPORT_AVAILABLE
+#elif defined(cl_amd_fp64)  // AMD extension available?
+#pragma OPENCL EXTENSION cl_amd_fp64 : enable
+#define DOUBLE_SUPPORT_AVAILABLE
+#else
+    #error "Double precision floating point not supported by OpenCL implementation."
+#endif
 
 /* In this first version, we make as many blocks as there are value in BetaAq (Attention to block size limit) */
 /* we apply this kernel to matrix and vector (same way stored) */
@@ -28,8 +36,8 @@ __kernel void SVProd(__global double * S, __global double * V, const int Vsz)
     for(i = 0; i < nIt; i++)
     {
         /* get current element index */
-        lidx = nIt * get_local_size(0) + get_local_id(0);
-
+        lidx = i * get_local_size(0) + get_local_id(0);
+        
         /* check if we are still inside valid memory */
         if(lidx < Vsz)
         {
@@ -61,14 +69,16 @@ __kernel void VSum(__global double * out, __global double * V, const int Vsz, co
         nIt++;
     }
 
-    /* iterate of all vectors */
+    /* iterate over all vectors */
     for(j = 0; j < nV; j++)
     {
-        /* iterate over the matrix */
+        /* iterate over the components of the vector */
         for(i = 0; i < nIt; i++)
         {
             /* get current element index */
-            lidx = nIt * get_local_size(0) + get_local_id(0);
+            lidx = i * get_local_size(0) + get_local_id(0);
+
+            //printf("%d/%d %d/%d %d\n", get_group_id(0), get_num_groups(0), get_local_id(0), get_local_size(0), lidx);
 
             /* check if we are still inside valid memory */
             if(lidx < Vsz)
@@ -91,11 +101,12 @@ __kernel void VSum(__global double * out, __global double * V, const int Vsz, co
     for(i = 0; i < nIt; i++)
     {
         /* get current element index */
-        lidx = nIt * get_local_size(0) + get_local_id(0);
+        lidx = i * get_local_size(0) + get_local_id(0);
 
         /* check if we are still inside valid memory */
         if(lidx < Vsz)
         {
+            //printf("%f\n", lV[lidx]);
             out[lidx] = lV[lidx];
         }
     }
