@@ -127,7 +127,31 @@ class crbCLContext
 
                     deviceList_[i].getInfo(CL_DEVICE_TYPE, &devType);
                     deviceList_[i].getInfo(CL_DEVICE_NAME, &dname);
-                    std::cout << "Using device " << dname << " (" << devType << ")" << std::endl;
+                    std::cout << "Using device " << i << ":" << std::endl;
+                    std::cout << "- Name: " << dname << std::endl;
+                    std::cout << "- Type: " << devType << std::endl;
+
+                    /*
+                    cl_uint maxCU;
+                    deviceList_[i].getInfo(CL_DEVICE_MAX_COMPUTE_UNITS, &maxCU);
+                    std::cout << "- CL_DEVICE_MAX_COMPUTE_UNITS: " << maxCU << std::endl;
+
+                    cl_uint maxWIDim;
+                    deviceList_[i].getInfo(CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS, &maxWIDim);
+                    std::cout << "- CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS: " << maxWIDim << std::endl;
+
+                    size_t * mwis = new size_t[maxWIDim];
+                    deviceList_[i].getInfo(CL_DEVICE_MAX_WORK_ITEM_SIZES, mwis);
+                    for(int j = 0; j < maxWIDim; j++)
+                    {
+                        std::cout << " * Max work items[" << j << "]: " << mwis[j] << std::endl;
+                    }
+                    delete[] mwis;
+
+                    size_t maxWGsize;
+                    deviceList_[i].getInfo(CL_DEVICE_MAX_WORK_GROUP_SIZE, &maxWGsize);
+                    std::cout << "- CL_DEVICE_MAX_WORK_GROUP_SIZE: " << maxWGsize << std::endl;
+                    */
                 }
 
                 initialized_ = true;
