@@ -97,7 +97,7 @@
 #include <CL/cl.hpp>
 #endif
 
-#include "crbCLContext.hpp"
+#include <feel/feelcrb/crbclcontext.hpp>
 //#include "feel/feelcrb/crb.cl.hpp"
 
 // declare that we want to use a custom context
