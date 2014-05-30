@@ -97,13 +97,7 @@
 #include <CL/cl.hpp>
 #endif
 
-#define OPENCL_CHECK_ERR( err, name ) do {                                                                          \
-   cl_int rerr = err;                                                                                                      \
-   if( rerr != CL_SUCCESS ) {                                                                                        \
-       std::cerr << "OpenCL error (" << std::hex << rerr << ") in file '" << __FILE__ << " in line " << __LINE__ << ": " << name << std::endl;    \
-       exit(EXIT_FAILURE);                                                                                          \
-   } } while (0)
-
+#include "crbCLContext.hpp"
 //#include "feel/feelcrb/crb.cl.hpp"
 
 // declare that we want to use a custom context
@@ -266,6 +260,7 @@ public:
                                                      fusion::vector< mpl::int_<0>, mpl::int_<1>, mpl::int_<2>, mpl::int_<3>, mpl::int_<4> >
                                                      >::type >::type >::type index_vector_type;
 
+    mutable crbCLContext clContext_;
 
     //@}
 
@@ -869,7 +864,7 @@ public:
      * \param array : Array to dump
      * \param nbelem : Number of elements to dump
      */
-    void dumpData(std::string out, std::string prefix, double * array, int nbelem) const ;
+    void dumpData(std::string out, std::string prefix, const double * array, int nbelem) const ;
 
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
     /*
@@ -4835,6 +4830,90 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
                 }
             }
 
+#if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
+    if(option(_name="parallel.debug").template as<int>())
+    {
+        int nbelem = N * N * M_model->Qa();
+        double * array = new double[nbelem];
+
+        for( size_type q = 0; q < M_model->Qa(); ++q )
+        {
+            memcpy(array + q * N * N, M_Aqm_pr[q][0].block( 0,0,N,N ).data(), N * N * sizeof(double));
+        }
+
+        this->dumpData("./out.cpu.dump", "[CPU] Aq: ", array, nbelem);
+
+        delete[] array;
+    }
+#endif
+
+#if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
+    if(option(_name="parallel.debug").template as<int>())
+    {
+        int nbelem = N * M_model->Ql(0);
+        double * array = new double[nbelem];
+
+        for( size_type q = 0; q < M_model->Ql(0); ++q )
+        {
+            memcpy(array + q * N, M_Fqm_pr[q][0].head(N).data(), N * sizeof(double));
+        }
+
+        this->dumpData("./out.cpu.dump", "[CPU] Aq: ", array, nbelem);
+
+        delete[] array;
+    }
+#endif
+
+#if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
+    if(option(_name="parallel.debug").template as<int>())
+    {
+        int nbelem = M_model->Qa();
+        double * array = new double[nbelem];
+
+        for( size_type q = 0; q < M_model->Qa(); ++q )
+        {
+            memcpy(array + q, &(betaAqm[q][0]), sizeof(double));
+        }
+
+        this->dumpData("./out.gpu.dump", "[CPU] betaAq: ", array, nbelem);
+
+        delete[] array;
+        //this->dumpData("./out.cpu.dump", "[CPU] betaAq: ", betaAqm[0].data(), M_model->Qa());
+    }
+#endif
+
+#if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
+    if(option(_name="parallel.debug").template as<int>())
+    {
+        int nbelem = M_model->Ql(0);
+        double * array = new double[nbelem];
+
+        for( size_type q = 0; q < M_model->Ql(0); ++q )
+        {
+            memcpy(array + q, &(betaFqm[0][q][0]), sizeof(double));
+        }
+
+        this->dumpData("./out.gpu.dump", "[CPU] betaFq: ", array, nbelem);
+
+        delete[] array;
+        //this->dumpData("./out.cpu.dump", "[CPU] betaFq: ", betaFqm[0][0].data(), M_model->Ql(0));
+    }
+#endif
+
+#if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
+    if(option(_name="parallel.debug").template as<int>())
+    {
+        this->dumpData("./out.cpu.dump", "[CPU] A: ", A.data(), N * N);
+    }
+#endif
+    
+#if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
+    if(option(_name="parallel.debug").template as<int>())
+    {
+        this->dumpData("./out.cpu.dump", "[CPU] F: ", F.data(), N);
+    }
+#endif
+
             // backup uN
             previous_uN = uN[time_index];
 
@@ -4911,7 +4990,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
 }
 
 template<typename TruthModelType>
-void CRB<TruthModelType>::dumpData(std::string out, std::string prefix, double * array, int nbelem) const
+void CRB<TruthModelType>::dumpData(std::string out, std::string prefix, const double * array, int nbelem) const
 {
     std::ofstream ofs(out, std::ofstream::out | std::ofstream::app);
 
@@ -4940,6 +5019,9 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
 {
     int i;
     int devID;
+    int nDevOK;
+    int nbelem;
+    int nDevNeeded = 1;
     size_t devPWSM;
     size_t devLMS;
 
@@ -4948,90 +5030,32 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
     cl_device_fp_config fpConfig;
     cl_int err;
     cl_double dzero = 0.0;
-    std::vector< cl::Platform > platformList;
-    std::vector< cl::Device > deviceList;
-    std::vector< cl::Device > allList;
-    std::vector< cl::Device > cpuList;
-    std::vector< cl::Device > gpuList;
 
     LOG( INFO ) << "[CRB::fixedPointPrimalCL] Checking for OpenCL support\n";
 
-    /* Get available OpenCL platforms */
-    cl::Platform::get(&platformList);
-    LOG( INFO ) << "[CRB::fixedPointPrimalCL] Platform count is: " << platformList.size() << std::endl;
-    err = platformList.size()!=0 ? CL_SUCCESS : -1;
-    OPENCL_CHECK_ERR(err, "cl::Platform::get: No OpenCL Platform available");
-
-    /* Gather available GPUs on the current node */
-    for(size_t k = 0; k < platformList.size(); k++)
+    /* initialize context and create queues for needed devices */
+    if(option(_name="parallel.opencl.device").template as<std::string>() == "gpu")
     {
-        std::string platformVendor, platformName;
-        platformList[k].getInfo((cl_platform_info)CL_PLATFORM_VENDOR, &platformVendor);
-        platformList[k].getInfo((cl_platform_info)CL_PLATFORM_NAME, &platformName);
-        //std::cout << "Platform " << k << " (" << platformName << ") is by: " << platformVendor << "\n";
-
-        try {
-            platformList[k].getDevices(CL_DEVICE_TYPE_ALL, &deviceList);
-            allList.insert(allList.end(), deviceList.begin(), deviceList.end());
-            deviceList.clear();
-
-            platformList[k].getDevices(CL_DEVICE_TYPE_CPU, &deviceList);
-            cpuList.insert(cpuList.end(), deviceList.begin(), deviceList.end());
-            deviceList.clear();
-
-            platformList[k].getDevices(CL_DEVICE_TYPE_GPU, &deviceList);
-            gpuList.insert(gpuList.end(), deviceList.begin(), deviceList.end());
-            deviceList.clear();
-        }
-        catch(cl::Error error) {
-            std::cout << error.what() << "(" << error.err() << ")" << std::endl;
-        }
+        nDevOK = clContext_.init(CL_DEVICE_TYPE_GPU, nDevNeeded);
     }
-
-    std::cout << "All=" << allList.size() << " CPU=" << cpuList.size() << " GPU=" << gpuList.size() << std::endl;
-
-    /* Check for device availability */
-    cl_bool devAvail = false;
-    std::string dname;
-    for(devID = 0; devID < gpuList.size(); devID++)
+    else
     {
-        try {
-            gpuList[devID].getInfo(CL_DEVICE_AVAILABLE, &devAvail);
-        }
-        catch(cl::Error error) {
-            std::cout << error.what() << "(" << error.err() << ")" << std::endl;
-        }
-
-        if(devAvail)
-        {
-            break;
-        }
+        nDevOK = clContext_.init(CL_DEVICE_TYPE_CPU, nDevNeeded);
     }
 
     /* revert back to classical implementation */
     /* if no GPU is available */
-    if(gpuList.size() == 0 || !devAvail)
+    if(nDevOK != nDevNeeded)
     {
         LOG( INFO ) << "[CRB::fixedPointPrimalCL] Reverting to classic implementation\n";
         return fixedPointPrimal(N, mu, uN, uNold, output_vector, K, print_rb_matrix);
     }
 
-    gpuList[devID].getInfo(CL_DEVICE_NAME, &dname);
-    //std::cout << "Using device 0: " << dname << std::endl;
-
-    // TODO
-    // Check if there are several MPI processes on the same node
-    // if so, check that there are enough GPUs or split them
-
-    cl::Context context(gpuList,
-                        NULL,
-                        NULL,
-                        NULL,
-                        &err);
-    OPENCL_CHECK_ERR(err, "Could not create OpenCL Context");
-
-    cl::CommandQueue queue(context, gpuList[devID], 0, &err);
-    OPENCL_CHECK_ERR(err, "Could not create main queue");
+    /* get back the device ID */
+    //devID = clContext_.getDeviceID();
+    cl::Context * context = clContext_.getContext();
+    cl::CommandQueue * queue = clContext_.getCommandQueue(0);
+    cl::Device * device = clContext_.getDevice(0);
 
     // TODO Typechecking of matrices
     // TODO Check whether its better to pass the matrices row-major or column-major
@@ -5059,112 +5083,156 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
     std::cout << "M_model->Ql(0): " << M_model->Ql(0) << std::endl;
     */
 
-    gpuList[devID].getInfo(CL_DEVICE_LOCAL_MEM_SIZE, &devLMS);
+    //gpuList[devID].getInfo(CL_DEVICE_LOCAL_MEM_SIZE, &devLMS);
     //std::cout << "Local Mem Size: " << devLMS << std::endl;
 
-    gpuList[devID].getInfo(CL_DEVICE_DOUBLE_FP_CONFIG, &fpConfig);
     /*
+    gpuList[devID].getInfo(CL_DEVICE_DOUBLE_FP_CONFIG, &fpConfig);
     std::cout << "Double support: "
               << (fpConfig >= (CL_FP_FMA | CL_FP_ROUND_TO_NEAREST | CL_FP_ROUND_TO_ZERO | CL_FP_ROUND_TO_INF | CL_FP_INF_NAN | CL_FP_DENORM) ? "OK" : "KO") << std::endl;
     */
 
     /* create buffers on the GPU */
     /* we add one more matrix to store results */
-    cl::Buffer Aq(context, CL_MEM_READ_ONLY, N * N * (M_model->Qa()) * sizeof(double), NULL, &err);
-    OPENCL_CHECK_ERR(err, "Could not allocate buffer");
+    nbelem = N * N * M_model->Qa();
+    dbuf = new double[nbelem];
     for( size_type q = 0; q < M_model->Qa(); ++q )
     {
-        queue.enqueueWriteBuffer(Aq, CL_FALSE,
-                                q * N * N * sizeof(double),
-                                N * N * sizeof(double),
-                                M_Aqm_pr[q][0].block( 0,0,N,N ).data(),
-                                NULL, NULL);
+        memcpy(dbuf + q * N * N, M_Aqm_pr[q][0].block( 0,0,N,N ).data(), N * N * sizeof(double));
     }
+#if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
+    if(option(_name="parallel.debug").template as<int>())
+    {
+        this->dumpData("./out.gpu.dump", "[CPU] Aq: ", dbuf, nbelem);
+    }
+#endif
+    cl::Buffer * Aq = clContext_.getBuffer("Aq", CL_MEM_READ_WRITE, nbelem * sizeof(double), NULL, &err);
+    OPENCL_CHECK_ERR(err, "Could not allocate buffer");
+    OPENCL_CHECK_ERR(queue->enqueueWriteBuffer(*Aq, CL_TRUE,
+                0,
+                nbelem * sizeof(double),
+                dbuf,
+                NULL, NULL), "Failed to write to buffer");
 
+    delete[] dbuf;
+
+
+    nbelem = N * M_model->Ql(0);
+    dbuf = new double[nbelem];
+    for( size_type q = 0; q < M_model->Ql(0); ++q )
+    {
+        memcpy(dbuf + q * N, M_Fqm_pr[q][0].head(N).data(), N * sizeof(double));
+    }
+#if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
+    if(option(_name="parallel.debug").template as<int>())
+    {
+        this->dumpData("./out.gpu.dump", "[CPU] Fq: ", dbuf, nbelem);
+    }
+#endif
     /* we add one more vector to store results */
-    cl::Buffer Fq(context, CL_MEM_READ_ONLY, N * (M_model->Ql( 0 )) * sizeof(double), NULL, &err);
+    cl::Buffer * Fq = clContext_.getBuffer("Fq", CL_MEM_READ_WRITE, nbelem * sizeof(double), NULL, &err);
     OPENCL_CHECK_ERR(err, "Could not allocate buffer");
-    for ( size_type q = 0; q < M_model->Ql( 0 ); ++q )
+    OPENCL_CHECK_ERR(queue->enqueueWriteBuffer(*Fq, CL_TRUE,
+            0,
+            nbelem * sizeof(double),
+            dbuf,
+            NULL, NULL), "Failed to write to buffer");
+    delete[] dbuf;
+
+
+    nbelem = M_model->Qa();
+    dbuf = new double[nbelem];
+    for( size_type q = 0; q < M_model->Qa(); ++q )
     {
-        queue.enqueueWriteBuffer(Fq, CL_FALSE,
-                                q * N * sizeof(double),
-                                N * sizeof(double),
-                                M_Fqm_pr[q][0].head( N ).data(),
-                                NULL, NULL);
+        dbuf[q] = betaAqm[q][0];
     }
-
-    cl::Buffer betaAq(context, CL_MEM_READ_WRITE, M_model->Qa() * sizeof(double), NULL, &err);
-    OPENCL_CHECK_ERR(err, "Could not allocate buffer");
-    queue.enqueueWriteBuffer(betaAq, CL_FALSE,
-                            0, M_model->Qa() * sizeof(double),
-                            betaAqm[0].data(),
-                            NULL, NULL);
-
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
     if(option(_name="parallel.debug").template as<int>())
     {
-        this->dumpData("./out.gpu.dump", "[CPU] betaAq: ", betaAqm[0].data(), M_model->Qa());
+        this->dumpData("./out.gpu.dump", "[CPU] betaAq: ", dbuf, nbelem);
+        //this->dumpData("./out.gpu.dump", "[CPU] betaAq: ", betaAqm[0].data(), M_model->Qa());
     }
 #endif
-
-    cl::Buffer betaFq(context, CL_MEM_READ_WRITE, M_model->Ql( 0 ) * sizeof(double), NULL, &err);
+    cl::Buffer * betaAq = clContext_.getBuffer("betaAq", CL_MEM_READ_WRITE, nbelem * sizeof(double), NULL, &err);
     OPENCL_CHECK_ERR(err, "Could not allocate buffer");
-    queue.enqueueWriteBuffer(betaFq, CL_FALSE,
-                            0, M_model->Ql( 0 ) * sizeof(double),
-                            betaFqm[0][0].data(),
+    queue->enqueueWriteBuffer(*betaAq, CL_TRUE,
+                            0, nbelem * sizeof(double),
+                            dbuf,
                             NULL, NULL);
+    delete[] dbuf;
 
+
+    nbelem = M_model->Ql(0);
+    dbuf = new double[nbelem];
+    for( size_type q = 0; q < M_model->Ql(0); ++q )
+    {
+        dbuf[q] = betaFqm[0][q][0];
+    }
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
     if(option(_name="parallel.debug").template as<int>())
     {
-        this->dumpData("./out.gpu.dump", "[CPU] betaFq: ", betaFqm[0][0].data(), M_model->Ql(0));
+        this->dumpData("./out.gpu.dump", "[CPU] betaFq: ", dbuf, nbelem);
+        //this->dumpData("./out.gpu.dump", "[CPU] betaFq: ", betaFqm[0][0].data(), M_model->Ql(0));
     }
 #endif
+    cl::Buffer * betaFq = clContext_.getBuffer("betaFq", CL_MEM_READ_WRITE, nbelem * sizeof(double), NULL, &err);
+    OPENCL_CHECK_ERR(err, "Could not allocate buffer");
+    queue->enqueueWriteBuffer(*betaFq, CL_TRUE,
+                            0, nbelem * sizeof(double),
+                            dbuf,
+                            NULL, NULL);
+    delete[] dbuf;
 
     dbuf = new double[N * N];
     for(int i = 0; i < N * N; i++)
     { dbuf[i] = 0.0; }
 
-    cl::Buffer A(context, CL_MEM_READ_WRITE, N * N * sizeof(double), NULL, &err);
+    cl::Buffer * A = clContext_.getBuffer("A", CL_MEM_READ_WRITE, N * N * sizeof(double), NULL, &err);
     OPENCL_CHECK_ERR(err, "Could not allocate buffer");
     //queue.enqueueFillBuffer<double>(A, dzero, 0, N * N * sizeof(double), NULL, NULL);
-    queue.enqueueWriteBuffer(A, CL_TRUE,
+    queue->enqueueWriteBuffer(*A, CL_TRUE,
                             0, N * N * sizeof(double),
                             dbuf,
                             NULL, NULL);
 
-    cl::Buffer F(context, CL_MEM_READ_WRITE, N * sizeof(double), NULL, &err);
+    cl::Buffer * F = clContext_.getBuffer("F", CL_MEM_READ_WRITE, N * sizeof(double), NULL, &err);
     OPENCL_CHECK_ERR(err, "Could not allocate buffer");
     //queue.enqueueFillBuffer<double>(F, dzero, 0, N * sizeof(double), NULL, NULL);
-    queue.enqueueWriteBuffer(F, CL_TRUE,
+    queue->enqueueWriteBuffer(*F, CL_TRUE,
                             0, N * sizeof(double),
                             dbuf,
                             NULL, NULL);
     delete[] dbuf;
 
-#if 0
-    cl::Program::Sources source(1, std::make_pair(crb_kernels, strlen(crb_kernels)+1));
-#else
-    std::ifstream file("/ssd/home/ancel/git/feelpp/feel/feelcrb/crb.cl");
-    err = file.is_open() ? CL_SUCCESS : -1;
-    OPENCL_CHECK_ERR(err, "Could not open .cl file");
-
-    std::string prog(std::istreambuf_iterator<char>(file), (std::istreambuf_iterator<char>()));
-    cl::Program::Sources source(1, std::make_pair(prog.c_str(), prog.length()));
-#endif
-    cl::Program program(context, source, &err);
-    OPENCL_CHECK_ERR(err, "Could not init program");
-    err = program.build(gpuList);
-    if(err != CL_SUCCESS)
+    cl::Program * program = clContext_.getProgram("CRB");
+    if(!program)
     {
-        cl_build_status status;
-        program.getBuildInfo(gpuList[devID], CL_PROGRAM_BUILD_STATUS, &status);
+#if 0
+        cl::Program::Sources source(1, std::make_pair(crb_kernels, strlen(crb_kernels)+1));
+#endif
+        std::string clsrc = Environment::findFile("crb.cl");
+        /* If we found the cl source file, */
+        /* we build the cl code */
+        if(clsrc != "")
+        {
+            std::ifstream file(clsrc);
+            err = file.is_open() ? CL_SUCCESS : -1;
+            OPENCL_CHECK_ERR(err, "Could not open .cl file");
 
-        std::string log;
-        program.getBuildInfo(gpuList[devID], CL_PROGRAM_BUILD_LOG, &log);
-        std::cout << log  << std::endl;
+            std::string prog(std::istreambuf_iterator<char>(file), (std::istreambuf_iterator<char>()));
+
+            clContext_.addProgram("CRB", prog.c_str(), prog.length());
+            program = clContext_.getProgram("CRB");
+        }
+        /* otherwise we revert to the standard implementation */
+        else
+        {
+            LOG( INFO ) << "[CRB::fixedPointPrimalCL] Could not find .cl source file. Reverting to classic implementation\n";
+            /* Clean all previously allocated data */
+            clContext_.clean();
+            return fixedPointPrimal(N, mu, uN, uNold, output_vector, K, print_rb_matrix);
+        }
     }
-    OPENCL_CHECK_ERR(err, "Could not build kernel");
 
     /* Scalar * Matrices */
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
@@ -5172,7 +5240,7 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
     {
         int nbelem = N * N * M_model->Qa();
         double * array = new double[nbelem];
-        err = queue.enqueueReadBuffer(Aq, CL_TRUE, 0, nbelem, array, NULL, NULL);
+        OPENCL_CHECK_ERR(queue->enqueueReadBuffer(*Aq, CL_TRUE, 0, nbelem * sizeof(double), array, NULL, NULL), "Cannor read back data");
 
         this->dumpData("./out.gpu.dump", "[GPU] Aq: ", array, nbelem);
 
@@ -5183,31 +5251,30 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
     int nM = M_model->Qa();
     int nV = M_model->Ql(0);
     int NN = N * N;
-    cl::Kernel smk(program, "SVProd");
+    cl::Kernel smk(*program, "SVProd");
 
-    smk.getWorkGroupInfo(gpuList[devID], CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, &devPWSM);
+    smk.getWorkGroupInfo(*device, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, &devPWSM);
     //std::cout << "Preferred work group size: " << devPWSM << std::endl;
 
-    OPENCL_CHECK_ERR(smk.setArg(0, betaAq), "Could not add argument: betaAq");
-    OPENCL_CHECK_ERR(smk.setArg(1, Aq), "Could not add argument: Aq");
+    OPENCL_CHECK_ERR(smk.setArg(0, *betaAq), "Could not add argument: betaAq");
+    OPENCL_CHECK_ERR(smk.setArg(1, *Aq), "Could not add argument: Aq");
     OPENCL_CHECK_ERR(smk.setArg(2, sizeof(int), (void *)(&NN)), "Could not add argument: NN");
 
-    err = queue.enqueueNDRangeKernel(
+    OPENCL_CHECK_ERR(queue->enqueueNDRangeKernel(
             smk,
             cl::NullRange,
             cl::NDRange(nM),
-            cl::NDRange(devPWSM),
+            cl::NDRange(devPWSM, 1),
             NULL,
-            &event);
-    OPENCL_CHECK_ERR(err, "Could not launch kernel");
-    event.wait();
+            NULL), "Could not launch kernel");
+    //event.wait();
 
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
     if(option(_name="parallel.debug").template as<int>())
     {
         int nbelem = N * N * M_model->Qa();
         double * array = new double[nbelem];
-        err = queue.enqueueReadBuffer(Aq, CL_TRUE, 0, nbelem, array, NULL, NULL);
+        err = queue->enqueueReadBuffer(*Aq, CL_TRUE, 0, nbelem * sizeof(double), array, NULL, NULL);
 
         this->dumpData("./out.gpu.dump", "[GPU] Aq: ", array, nbelem);
 
@@ -5216,29 +5283,29 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
 #endif
 
     /* Matrix sum */
-    cl::Kernel msum(program, "VSum");
+    cl::Kernel msum(*program, "VSum");
 
-    OPENCL_CHECK_ERR(msum.setArg(0, A), "Could not add argument: A");
-    OPENCL_CHECK_ERR(msum.setArg(1, Aq), "Could not add argument: Aq");
+    OPENCL_CHECK_ERR(msum.setArg(0, *A), "Could not add argument: A");
+    OPENCL_CHECK_ERR(msum.setArg(1, *Aq), "Could not add argument: Aq");
     OPENCL_CHECK_ERR(msum.setArg(2, sizeof(int), (void *)(&NN)), "Could not add argument: NN");
     OPENCL_CHECK_ERR(msum.setArg(3, sizeof(int), (void *)(&nM)), "Could not add argument: nM");
 
-    err = queue.enqueueNDRangeKernel(
+    err = queue->enqueueNDRangeKernel(
             msum,
             cl::NullRange,
             cl::NDRange(1),
             cl::NDRange(devPWSM),
             NULL,
-            &event);
+            NULL);
     OPENCL_CHECK_ERR(err, "Could not launch kernel");
-    event.wait();
+    //event.wait();
 
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
     if(option(_name="parallel.debug").template as<int>())
     {
         int nbelem = N * N;
         double * array = new double[nbelem];
-        err = queue.enqueueReadBuffer(A, CL_TRUE, 0, nbelem, array, NULL, NULL);
+        err = queue->enqueueReadBuffer(*A, CL_TRUE, 0, nbelem * sizeof(double), array, NULL, NULL);
 
         this->dumpData("./out.gpu.dump", "[GPU] A: ", array, nbelem);
 
@@ -5252,35 +5319,35 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
     {
         int nbelem = N * M_model->Ql( 0 );
         double * array = new double[nbelem];
-        err = queue.enqueueReadBuffer(Fq, CL_TRUE, 0, nbelem, array, NULL, NULL);
+        err = queue->enqueueReadBuffer(*Fq, CL_TRUE, 0, nbelem * sizeof(double), array, NULL, NULL);
 
         this->dumpData("./out.gpu.dump", "[GPU] Fq: ", array, nbelem);
 
         delete[] array;
     }
 #endif
-    cl::Kernel svk(program, "SVProd");
+    cl::Kernel svk(*program, "SVProd");
 
-    OPENCL_CHECK_ERR(svk.setArg(0, betaFq), "Could not add argument: betaFq");
-    OPENCL_CHECK_ERR(svk.setArg(1, Fq), "Could not add argument: Fq");
+    OPENCL_CHECK_ERR(svk.setArg(0, *betaFq), "Could not add argument: betaFq");
+    OPENCL_CHECK_ERR(svk.setArg(1, *Fq), "Could not add argument: Fq");
     OPENCL_CHECK_ERR(svk.setArg(2, sizeof(int), (void *)(&N)), "Could not add argument: N");
 
-    err = queue.enqueueNDRangeKernel(
+    err = queue->enqueueNDRangeKernel(
             svk,
             cl::NullRange,
             cl::NDRange(nV),
             cl::NDRange(devPWSM),
             NULL,
-            &event);
+            NULL);
     OPENCL_CHECK_ERR(err, "Could not launch kernel");
-    event.wait();
+    //event.wait();
 
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
     if(option(_name="parallel.debug").template as<int>())
     {
         int nbelem = N * M_model->Ql( 0 );
         double * array = new double[nbelem];
-        err = queue.enqueueReadBuffer(Fq, CL_TRUE, 0, nbelem, array, NULL, NULL);
+        err = queue->enqueueReadBuffer(*Fq, CL_TRUE, 0, nbelem * sizeof(double), array, NULL, NULL);
 
         this->dumpData("./out.gpu.dump", "[GPU] Fq: ", array, nbelem);
 
@@ -5289,29 +5356,29 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
 #endif
 
     /* Vector Sum */
-    cl::Kernel vsum(program, "VSum");
+    cl::Kernel vsum(*program, "VSum");
 
-    OPENCL_CHECK_ERR(vsum.setArg(0, F), "Could not add argument: F");
-    OPENCL_CHECK_ERR(vsum.setArg(1, Fq), "Could not add argument: Fq");
+    OPENCL_CHECK_ERR(vsum.setArg(0, *F), "Could not add argument: F");
+    OPENCL_CHECK_ERR(vsum.setArg(1, *Fq), "Could not add argument: Fq");
     OPENCL_CHECK_ERR(vsum.setArg(2, sizeof(int), (void *)(&N)), "Could not add argument: N");
     OPENCL_CHECK_ERR(vsum.setArg(3, sizeof(int), (void *)(&nV)), "Could not add argument: nV");
 
-    err = queue.enqueueNDRangeKernel(
+    err = queue->enqueueNDRangeKernel(
             vsum,
             cl::NullRange,
             cl::NDRange(1),
             cl::NDRange(devPWSM),
             NULL,
-            &event);
+            NULL);
     OPENCL_CHECK_ERR(err, "Could not launch kernel");
-    event.wait();
+    //event.wait();
 
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
     if(option(_name="parallel.debug").template as<int>())
     {
         int nbelem = N;
         double * array = new double[nbelem];
-        err = queue.enqueueReadBuffer(F, CL_TRUE, 0, nbelem, array, NULL, NULL);
+        err = queue->enqueueReadBuffer(*F, CL_TRUE, 0, nbelem * sizeof(double), array, NULL, NULL);
 
         this->dumpData("./out.gpu.dump", "[GPU] F: ", array, nbelem);
 
@@ -5320,11 +5387,15 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
 #endif
 
     /* setup ViennaCL with current context */
-    viennacl::ocl::setup_context(0, context(), gpuList[devID](), queue());
+    if(!(clContext_.isLinkedToVCL()))
+    {
+        viennacl::ocl::setup_context(0, (*context)(), (*device)(), (*queue)());
+        clContext_.setLinkedToVCL();
+    }
 
     /* wrap existing data */
-    viennacl::vector<double> vclF(F(), N);
-    viennacl::matrix<double> vclA(A(), N, N);
+    viennacl::vector<double> vclF((*F)(), N);
+    viennacl::matrix<double> vclA((*A)(), N, N);
     viennacl::vector<double> vcl_result;
     std::vector<double> cpures;
 
@@ -5421,7 +5492,7 @@ CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::ve
 
     matrix_info_tuple matrix_info;
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
-    if(option(_name="parallel.gpu.enable").template as<bool>())
+    if(option(_name="parallel.opencl.enable").template as<bool>())
     {
         matrix_info = fixedPointPrimalCL( N, mu , uN , uNold, output_vector, K , print_rb_matrix) ;
 
@@ -5437,7 +5508,7 @@ CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::ve
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
         if(option(_name="parallel.debug").template as<int>())
         {
-            this->dumpData("./out.gpu.dump", "[CPU] uN: ", uN[0].data(), N);
+            this->dumpData("./out.cpu.dump", "[CPU] uN: ", uN[0].data(), N);
         }
     }
 #endif
