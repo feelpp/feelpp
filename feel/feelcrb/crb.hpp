@@ -5684,11 +5684,22 @@ CRB<TruthModelType>::delta( size_type N,
             }
         }
 
+        //index associated to the output time
         int global_time_index=0;
         output_upper_bound.resize(K+1);
 
+        bool compute_error_for_each_time_step=option(_name="crb.compute-apee-for-each-time-step").template as<bool>();
+
         bool model_has_eim_error = M_model->hasEimError();
-        for(double output_time=0; math::abs(output_time-Tf-dt)>1e-9; output_time+=dt)
+
+        double start_time=0;
+        if( ! compute_error_for_each_time_step )
+        {
+            start_time=Tf;
+            global_time_index=K;
+        }
+
+        for(double output_time=start_time; math::abs(output_time-Tf-dt)>1e-9; output_time+=dt)
         {
             time_index=restart_time_index;
             if( accurate_apee )
@@ -5803,7 +5814,7 @@ CRB<TruthModelType>::delta( size_type N,
             }
 
             global_time_index++;
-        }//end of loop over time
+        }//end of loop over output time
 
         bool show_residual = option(_name="crb.show-residual").template as<bool>() ;
         if( ! M_offline_step && show_residual )
