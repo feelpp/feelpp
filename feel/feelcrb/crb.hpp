@@ -9557,7 +9557,7 @@ CRB<TruthModelType>::computationalTimeStatistics(std::string appname)
     Sampling->logEquidistribute( n_eval  );
 
     bool cvg = option(_name="crb.cvg-study").template as<bool>();
-    int dimension = this->dimension();
+    int dimension = option(_name="crb.dimension").template as<int>();
     double tol = option(_name="crb.online-tolerance").template as<double>();
 
     int N=dimension;//by default we perform only one time statistics
@@ -9569,13 +9569,17 @@ CRB<TruthModelType>::computationalTimeStatistics(std::string appname)
     int master =  Environment::worldComm().masterRank();
 
     //write on a file
-    std::string file_name = "cvg-timing-crb.dat";
+    std::string file_name_prediction = "cvg-timing-crb-prediction.dat";
+    std::string file_name_error_estimation = "cvg-timing-crb-error-estimation.dat";
 
-    std::ofstream conv;
+    std::ofstream conv1;
+    std::ofstream conv2;
     if( proc_number == master )
     {
-        conv.open(file_name, std::ios::app);
-        conv << "NbBasis" << "\t" << "min" <<"\t"<< "max" <<"\t"<< "mean"<<"\t"<<"standard_deviation" << "\n";
+        conv1.open(file_name_prediction, std::ios::app);
+        conv1 << "NbBasis" << "\t" << "min" <<"\t"<< "max" <<"\t"<< "mean"<<"\t"<<"standard_deviation" << "\n";
+        conv2.open(file_name_error_estimation, std::ios::app);
+        conv2 << "NbBasis" << "\t" << "min" <<"\t"<< "max" <<"\t"<< "mean"<<"\t"<<"standard_deviation" << "\n";
     }
 
     //loop over basis functions (if cvg option)
@@ -9599,17 +9603,18 @@ CRB<TruthModelType>::computationalTimeStatistics(std::string appname)
         mean=stat_prediction(2);
         standard_deviation=stat_prediction(3);
         if( proc_number == master )
-            conv << N << "\t" << min << "\t" << max<< "\t"<< mean<< "\t"<< standard_deviation<<"\n";
+            conv1 << N << "\t" << min << "\t" << max<< "\t"<< mean<< "\t"<< standard_deviation<<"\n";
 
         min=stat_error_estimation(0);
         max=stat_error_estimation(1);
         mean=stat_error_estimation(2);
         standard_deviation=stat_error_estimation(3);
         if( proc_number == master )
-            conv << N << "\t" << min << "\t" << max<< "\t"<< mean<< "\t"<< standard_deviation<<"\n";
+            conv2 << N << "\t" << min << "\t" << max<< "\t"<< mean<< "\t"<< standard_deviation<<"\n";
 
     }//loop over basis functions
-    conv.close();
+    conv1.close();
+    conv2.close();
 }
 
 
