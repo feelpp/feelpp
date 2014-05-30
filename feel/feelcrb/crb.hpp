@@ -1075,7 +1075,8 @@ public:
     //boost::tuple<double,double,double> run( parameter_type const& mu, double eps = 1e-6 );
     //boost::tuple<double,double,double,double> run( parameter_type const& mu, double eps = 1e-6 );
     //by default N=-1 so we take dimension-max but if N>0 then we take N basis functions toperform online step
-    boost::tuple<std::vector<double>,double, solutions_tuple, matrix_info_tuple, double, double, upper_bounds_tuple > run( parameter_type const& mu, double eps = 1e-6, int N = -1, bool print_rb_matrix=false );
+    boost::tuple<std::vector<double>,double, solutions_tuple, matrix_info_tuple, double, double, upper_bounds_tuple > run( parameter_type const& mu, vectorN_type & time,
+                                                                                                                           double eps = 1e-6, int N = -1, bool print_rb_matrix=false );
 
     /**
      * run the certified reduced basis with P parameters and returns 1 output
@@ -8612,7 +8613,7 @@ CRB<TruthModelType>::expansion( vectorN_type const& u , int const N, wn_type con
 template<typename TruthModelType>
 typename boost::tuple<std::vector<double>,double, typename CRB<TruthModelType>::solutions_tuple, typename CRB<TruthModelType>::matrix_info_tuple,
                       double, double, typename CRB<TruthModelType>::upper_bounds_tuple >
-CRB<TruthModelType>::run( parameter_type const& mu, double eps , int N, bool print_rb_matrix)
+CRB<TruthModelType>::run( parameter_type const& mu, vectorN_type & time, double eps , int N, bool print_rb_matrix)
 {
 
     M_compute_variance = option(_name="crb.compute-variance").template as<bool>();
@@ -8664,11 +8665,16 @@ CRB<TruthModelType>::run( parameter_type const& mu, double eps , int N, bool pri
         //M_N may be different of dimension-max
         Nwn = M_N;
     }
+    boost::mpi::timer t1;
     auto o = lb( Nwn, mu, uN, uNdu , uNold, uNduold , print_rb_matrix);
+    double time_prediction=t1.elapsed();
     auto output_vector=o.template get<0>();
     double output_vector_size=output_vector.size();
     double output = output_vector[output_vector_size-1];
+
+    t1.restart();
     auto error_estimation = delta( Nwn, mu, uN, uNdu , uNold, uNduold );
+    double time_error_estimation=t1.elapsed();
     auto vector_output_upper_bound = error_estimation.template get<0>();
     double output_upper_bound = vector_output_upper_bound[0];
     auto matrix_info = o.template get<1>();
@@ -8702,10 +8708,15 @@ CRB<TruthModelType>::run( parameter_type const& mu, double eps , int N, bool pri
     double delta_pr = error_estimation.template get<3>();
     double delta_du = error_estimation.template get<4>();
 
+    time.resize(2);
+    time(0)=time_prediction;
+    time(1)=time_error_estimation;
+
     int size = uN.size();
 
     auto upper_bounds = boost::make_tuple(vector_output_upper_bound , delta_pr, delta_du , primal_coefficients , dual_coefficients );
     auto solutions = boost::make_tuple( uN , uNdu, uNold, uNduold);
+
     return boost::make_tuple( output_vector , Nwn , solutions, matrix_info , primal_residual_norm , dual_residual_norm, upper_bounds );
 }
 
@@ -9523,11 +9534,13 @@ CRB<TruthModelType>::computationalTimeStatistics(std::string appname)
 {
 
     double min=0,max=0,mean=0,standard_deviation=0;
-
     int n_eval = option(_name="crb.computational-time-neval").template as<int>();
 
-    Eigen::Matrix<double, Eigen::Dynamic, 1> time_crb;
-    time_crb.resize( n_eval );
+    vectorN_type time;
+    Eigen::Matrix<double, Eigen::Dynamic, 1> time_crb_prediction;
+    Eigen::Matrix<double, Eigen::Dynamic, 1> time_crb_error_estimation;
+    time_crb_prediction.resize( n_eval );
+    time_crb_error_estimation.resize( n_eval );
 
     sampling_ptrtype Sampling( new sampling_type( M_Dmu ) );
     Sampling->logEquidistribute( n_eval  );
@@ -9561,21 +9574,29 @@ CRB<TruthModelType>::computationalTimeStatistics(std::string appname)
         int mu_number = 0;
         BOOST_FOREACH( auto mu, *Sampling )
         {
-            boost::mpi::timer tcrb;
-            auto o = this->run( mu, tol , N);
-            time_crb( mu_number ) = tcrb.elapsed() ;
+            //boost::mpi::timer tcrb;
+            auto o = this->run( mu, time, tol , N );
+            time_crb_prediction( mu_number ) = time(0) ;
+            time_crb_error_estimation( mu_number ) = time(1) ;
             mu_number++;
         }
 
-        auto stat = M_model->computeStatistics( time_crb , appname );
-
-        min=stat(0);
-        max=stat(1);
-        mean=stat(2);
-        standard_deviation=stat(3);
-
+        auto stat_prediction = M_model->computeStatistics( time_crb_prediction , appname );
+        auto stat_error_estimation = M_model->computeStatistics( time_crb_error_estimation , appname );
+        min=stat_prediction(0);
+        max=stat_prediction(1);
+        mean=stat_prediction(2);
+        standard_deviation=stat_prediction(3);
         if( proc_number == master )
             conv << N << "\t" << min << "\t" << max<< "\t"<< mean<< "\t"<< standard_deviation<<"\n";
+
+        min=stat_error_estimation(0);
+        max=stat_error_estimation(1);
+        mean=stat_error_estimation(2);
+        standard_deviation=stat_error_estimation(3);
+        if( proc_number == master )
+            conv << N << "\t" << min << "\t" << max<< "\t"<< mean<< "\t"<< standard_deviation<<"\n";
+
     }//loop over basis functions
     conv.close();
 }
