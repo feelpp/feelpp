@@ -99,12 +99,15 @@ functions_options( std::string const& prefix )
     _options.add_options()
         ( prefixvm( prefix,"x" ).c_str(), Feel::po::value<double>()->default_value( 0 ), "x coordinate value " )
         ( prefixvm( prefix,"y" ).c_str(), Feel::po::value<double>()->default_value( 0 ), "y coordinate value " )
-        ( prefixvm( prefix,"z" ).c_str(), Feel::po::value<double>()->default_value( 0 ), "z coordinate value " )
-        ( prefixvm( prefix,"functions.f" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "f" )
-        ( prefixvm( prefix,"functions.p" ).c_str(), Feel::po::value<std::string>()->default_value( "0" ), "p" )
-        ( prefixvm( prefix,"functions.q" ).c_str(), Feel::po::value<std::string>()->default_value( "0" ), "q" )
-        ( prefixvm( prefix,"functions.z" ).c_str(), Feel::po::value<std::string>()->default_value( "0" ), "z" )
-        ( prefixvm( prefix,"functions.g" ).c_str(), Feel::po::value<std::string>()->default_value( "0" ), "g" )
+        ( prefixvm( prefix,"z" ).c_str(), Feel::po::value<double>()->default_value( 0 ), "z coordinate value " );
+
+    std::string alphabet = "abcdefghijklmnopqrstuvwxyz";
+    for( char c : alphabet)
+    {
+        _options.add_options()
+            ( prefixvm( prefix, std::string("functions.")+c ).c_str(), Feel::po::value<std::string>()->default_value( "0" ), (std::string("function ") + c).c_str() );
+    }
+    _options.add_options()
         ( prefixvm( prefix,"functions.alpha" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "alpha" )
         ( prefixvm( prefix,"functions.beta" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "beta" )
         ( prefixvm( prefix,"functions.beta_x" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "beta x" )
@@ -123,9 +126,13 @@ po::options_description
 parameters_options( std::string const& prefix )
 {
     po::options_description _options( "Parameters " + prefix + " options" );
+    std::string alphabet = "abcdefghijklmnopqrstuvwxyz";
+    for( char c : alphabet)
+    {
+        _options.add_options()
+            ( prefixvm( prefix, std::string("parameters.")+c ).c_str(), Feel::po::value<double>()->default_value( 0 ), (std::string("parameter ") + c).c_str() );
+    }
     _options.add_options()
-        ( prefixvm( prefix,"parameters.f" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "f" )
-        ( prefixvm( prefix,"parameters.g" ).c_str(), Feel::po::value<double>()->default_value( 0 ), "g" )
         ( prefixvm( prefix,"parameters.alpha" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "alpha" )
         ( prefixvm( prefix,"parameters.beta" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "beta" )
         ( prefixvm( prefix,"parameters.beta_x" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "beta x" )
@@ -389,6 +396,7 @@ crbOptions( std::string const& prefix )
     ( "crb.dimension-max"   , Feel::po::value<int>()->default_value( 1 ),       "Offline max WN size, set to 1 by default to avoid to enrich the existing database if this option doesn't appear in onefeel interface or in the config file." )
     ( "crb.dimension"   , Feel::po::value<int>()->default_value( -1 ),       "Online  WN size" )
     ( "crb.error-type"   , Feel::po::value<int>()->default_value( ( int )CRB_RESIDUAL_SCM ),       "CRB error type to be computed" )
+    ( "crb.compute-apee-for-each-time-step",Feel::po::value<bool>()->default_value( true ),"Compute error estimation for each time step (parabolic problems) is true, else compute only for the last one")
     ( "crb.factor"   , Feel::po::value<int>()->default_value( -1 ),  "factor useful to estimate error by empirical method" )
     ( "crb.Nm"   , Feel::po::value<int>()->default_value( 1 ),       "Offline  number of modes per mu (for the POD) " )
     ( "crb.apply-POD-to-WN"   , Feel::po::value<bool>()->default_value( false ), "apply a POD on approximation functions spaces (primal and dual) if true and if deal with a transient problem " )

@@ -445,9 +445,7 @@ TestHCurl3DOneElt::shape_functions( std::string ( *one_element_mesh_desc_fun )()
                                       _filename=mesh_name,
                                       _refine=( int )refine_level);
 
-    std::cout << "avant definition xh" << std::endl;
     space_ptrtype Xh = space_type::New( oneelement_mesh );
-    std::cout << "apres definition xh" << std::endl;
 
     std::cout << "Family = " << Xh->basis()->familyName() << "\n"
               << "Dim    = " << Xh->basis()->nDim << "\n"
