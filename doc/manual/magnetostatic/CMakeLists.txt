@@ -1,9 +1,9 @@
-###  CMakeLists.txt ---
+###  TEMPLATE.txt.tpl; coding: utf-8 ---
 
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-#       Date: 2009-11-12
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+#       Date: 2014-05-28
 #
-#  Copyright (C) 2009 Universit� Joseph Fourier (Grenoble I)
+#  Copyright (C) 2014 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -21,14 +21,4 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
-
-project( feel-research )
-
-separate_arguments(FEELPP_ENABLED_PROJECTS)
-FOREACH( project ${FEELPP_ENABLED_PROJECTS} )
-	string(TOUPPER ${project} PROJECT)
-	IF(${FEELPP_ENABLE_RESEARCH_${PROJECT}})
-		add_subdirectory( ${project} )
-	endif()
-endforeach()
+feelpp_add_application( doc_magnetostatic SRCS magnetostatic.cpp LABELS doc CFG magnetostatic.cfg)

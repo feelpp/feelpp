@@ -397,6 +397,10 @@ public:
     {
         *this = p;
     }
+    void setPointCoordG( int i, ublas::vector<double> const& p )
+    {
+        *this = p;
+    }
 
     /**
      * translate the point by \p trans

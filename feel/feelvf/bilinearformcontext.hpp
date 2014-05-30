@@ -645,9 +645,9 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
             M_local_rows.array() = M_test_dof->localToGlobalIndices( elt_0 ).array() + row_start;
             M_local_cols.array() = M_trial_dof->localToGlobalIndices( trial_eid ).array() + col_start;
 
-
             if ( test_dof_type::is_modal || trial_dof_type::is_modal ||
-                 is_hdiv_conforming<trial_fe_type>::value || is_hdiv_conforming<test_fe_type>::value )
+                 is_hdiv_conforming<trial_fe_type>::value || is_hdiv_conforming<test_fe_type>::value ||
+                 is_hcurl_conforming<trial_fe_type>::value || is_hcurl_conforming<test_fe_type>::value )
             {
                 M_local_rowsigns = M_test_dof->localToGlobalSigns( elt_0 );
                 M_local_colsigns = M_trial_dof->localToGlobalSigns( trial_eid );
@@ -665,9 +665,9 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
             M_mortar_local_rows.array() = M_test_dof->localToGlobalIndices( elt_0 ).array() + row_start;
             M_local_cols.array() = M_trial_dof->localToGlobalIndices( trial_eid ).array() + col_start;
 
-
             if ( test_dof_type::is_modal || trial_dof_type::is_modal ||
-                 is_hdiv_conforming<trial_fe_type>::value || is_hdiv_conforming<test_fe_type>::value )
+                 is_hdiv_conforming<trial_fe_type>::value || is_hdiv_conforming<test_fe_type>::value ||
+                 is_hcurl_conforming<trial_fe_type>::value || is_hcurl_conforming<test_fe_type>::value )
             {
                 M_local_rowsigns = M_test_dof->localToGlobalSigns( elt_0 );
                 M_local_colsigns = M_trial_dof->localToGlobalSigns( trial_eid );
