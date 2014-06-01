@@ -994,7 +994,7 @@ public:
                                     //auto u_fem = model->solveRB( mu );
                                     //auto u_fem = model->solveFemUsingOfflineEim( mu );
 
-                                    if( boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value && ! use_newton )
+                                    if( boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value )
                                     {
                                         if( option(_name="crb.solve-fem-monolithic").template as<bool>() )
                                         {
@@ -1020,7 +1020,6 @@ public:
                                         LOG(INFO) << "export u_fem \n";
                                         std::string exportName = u_fem.name().substr(0,exportNameSize) + "-" + std::to_string(curpar);
                                         e->add( exportName, u_fem );
-
                                     }
 
                                     ti.restart();
@@ -1049,7 +1048,7 @@ public:
 
                                     output_fem = ofem[0];
                                     time_fem = ofem[1]+time_fem_solve;
-                                    if( boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value && ! use_newton )
+                                    if( boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value )
                                     {
                                         if( solve_dual_problem )
                                         {
@@ -1078,6 +1077,7 @@ public:
                                     double output_vector_size=output_vector.size();
                                     double ocrb = output_vector[output_vector_size-1];//output at last time
                                     std::vector<double> v = boost::assign::list_of( output_fem )( time_fem )( ocrb )( relative_estimated_error )( time_crb_prediction )( relative_error )( condition_number )( l2_error )( h1_error );
+
                                     if( proc_number == Environment::worldComm().masterRank() )
                                     {
                                         std::cout << "output=" << ocrb << " with " << o.template get<1>() << " basis functions\n";
@@ -1092,12 +1092,10 @@ public:
                                             h1_error_vector[curpar-1] = h1_error;
                                             time_fem_vector[curpar-1] = time_fem;
                                             time_crb_vector_prediction[curpar-1] = time_crb_prediction;
-                                            relative_estimated_error_vector[curpar-1] = relative_estimated_error;
+                                            time_crb_vector_error_estimation[curpar-1] = time_crb_error_estimation;
                                         }
-
                                         std::ofstream res(option(_name="result-file").template as<std::string>() );
                                         res << "output="<< ocrb << "\n";
-
                                     }
 
                                 }//end of crb->errorType==2
