@@ -241,7 +241,7 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
             if ( !curElt.facePtr( j ) ) continue;
             face_type const& curFace = curElt.face( j );
 
-            for ( int f = 0; f < face_type::numVertices; ++f )
+            for ( int f = 0; f < face_type::numPoints; ++f )
             {
                 uint16_type ptLocalId = ( MeshType::nDim==1 )?j:curElt.fToP( j, f );
                 auto const& curPoint = curElt.point( ptLocalId );
