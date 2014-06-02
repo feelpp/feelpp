@@ -256,11 +256,11 @@ Darcy<Dim, OrderU, OrderP>::convergence(int nb_refine)
     if( proc_rank == 0 )
         {
             // Open
-            cvg_p.open( "convergence_p.dat", ios::out | ios::trunc);
-            cvg_u.open( "convergence_u.dat", ios::out | ios::trunc);
-            cvg_divu.open( "convergence_divu.dat", ios::out | ios::trunc);
-            cvg_projL2.open( "convergence_projL2.dat", ios::out | ios::trunc);
-            cvg_projHDIV.open( "convergence_projHDIV.dat", ios::out | ios::trunc);
+            cvg_p.open( "convergence_p.dat", std::ios::out | std::ios::trunc);
+            cvg_u.open( "convergence_u.dat", std::ios::out | std::ios::trunc);
+            cvg_divu.open( "convergence_divu.dat", std::ios::out | std::ios::trunc);
+            cvg_projL2.open( "convergence_projL2.dat", std::ios::out | std::ios::trunc);
+            cvg_projHDIV.open( "convergence_projHDIV.dat", std::ios::out | std::ios::trunc);
 
             // Head
             cvg_u << "hsize" << "\t" << "nDof" << "\t" << "l2err" << "\t" << "h1err" << "\n";
