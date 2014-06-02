@@ -1449,6 +1449,12 @@ private:
      */
     void updateOnBoundary();
 
+    /**
+     * fix duplication of point in connection1 with 3d mesh at order 3 and 4
+     */
+    void fixPointDuplicationInHOMesh( element_iterator iv, face_iterator __fit, mpl::true_ );
+    void fixPointDuplicationInHOMesh( element_iterator iv, face_iterator __fit, mpl::false_ );
+
 private:
 
     //! communicator
