@@ -1101,6 +1101,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                     this->elements().modify( elt1, Feel::detail::UpdateFace<face_type>( boost::cref( *__fit ) ) );
                     this->elements().modify( iv, Feel::detail::UpdateFace<face_type>( boost::cref( *__fit ) ) );
 
+                    // fix duplication of point in connection1 with 3d mesh at order 3 and 4
+                    this->fixPointDuplicationInHOMesh( iv,__fit, mpl::bool_< nDim == 3 && nOrder >= 3 >() );
 
                     DVLOG(2) << "adding face info : \n";
                     DVLOG(2) << "id: " << __fit->id() << "\n";
@@ -1154,6 +1156,82 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
     VLOG(2) << "element/face connectivity : " << ti.elapsed() << "\n";
     ti.restart();
 }
+
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::fixPointDuplicationInHOMesh( element_iterator iv,face_iterator __fit, mpl::true_ )
+{
+    CHECK( nOrder == 3 || nOrder == 4 ) << "this fix with nOrder " << nOrder << " not implement, only order 3 and 4\n";
+    if ( nOrder == 3 )
+    {
+        uint16_type startPt = face_type::numVertices*face_type::nbPtsPerVertex + face_type::numEdges*face_type::nbPtsPerEdge;
+        CHECK( startPt == 9 && face_type::numPoints==10 ) << "invalid case\n";
+
+        // easy case : only one point in face
+        uint16_type idx = element_type::fToP( __fit->pos_second(), startPt );
+        auto const& ptOnFace = __fit->point( startPt );
+        size_type ptIdToCheck = iv->point( idx ).id();
+        if ( ptIdToCheck != ptOnFace.id() )
+        {
+            // erase duplicate point
+            this->points().erase( this->pointIterator( ptIdToCheck ) );
+            // fix point coordinate
+            this->elements().modify( iv, Feel::detail::UpdateEltPoint<point_type>( idx, ptOnFace ) );
+        }
+    }
+    else if ( nOrder == 4 )
+    {
+        const uint16_type startPt = face_type::numVertices*face_type::nbPtsPerVertex + face_type::numEdges*face_type::nbPtsPerEdge;
+        CHECK( startPt == 12 && face_type::numPoints==15 ) << "invalid case\n";
+
+        // get a correspondance between the face and elt point numbering
+        std::set<uint16_type> idxDone;
+        std::vector<uint16_type> idxDistribution(3,invalid_uint16_type_value);
+        for ( uint16_type k = startPt; k < face_type::numPoints; ++k )
+        {
+            auto const& ptOnFaceElt = iv->point( element_type::fToP( __fit->pos_second(), k ) );
+
+            double dist=0, distMin= 1000*iv->hFace( __fit->pos_second() );// INT_MAX;
+            uint16_type idxFaceNear = invalid_uint16_type_value;
+
+            for ( uint16_type idxV = startPt ; idxV < face_type::numPoints ; ++idxV )
+            {
+                auto const& ptOnFace = __fit->point( idxV );
+                dist=0;
+                for ( uint16_type d=0 ; d< nRealDim ; ++d )
+                    dist += std::pow( ptOnFace(d)- ptOnFaceElt(d),2);
+                if ( dist<distMin ) { distMin=dist; idxFaceNear=idxV; }
+            }
+
+            CHECK( idxDone.find( idxFaceNear ) == idxDone.end() ) << " idxVSearch is already done\n";
+            idxDone.insert( idxFaceNear );
+            idxDistribution[k-12] = idxFaceNear;
+        }
+
+        // fix point if necessary
+        for ( uint16_type i = 0;i<3;++i)
+        {
+            // point index in element
+            uint16_type idx = element_type::fToP( __fit->pos_second(), startPt + i );
+            size_type ptIdToCheck = iv->point( idx ).id();
+            auto const& ptOnFace = __fit->point( idxDistribution[i] );
+
+            if ( ptIdToCheck != ptOnFace.id() )
+            {
+                // erase duplicate point
+                this->points().erase( this->pointIterator( ptIdToCheck ) );
+                // fix point coordinate
+                this->elements().modify( iv, Feel::detail::UpdateEltPoint<point_type>( idx, ptOnFace ) );
+            }
+        }
+    }
+
+}
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::fixPointDuplicationInHOMesh( element_iterator iv, face_iterator __fit, mpl::false_ )
+{}
+
 
 template<typename Shape, typename T, int Tag>
 void
