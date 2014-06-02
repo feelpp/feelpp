@@ -29,7 +29,6 @@
 #include <feel/feel.hpp>
 #include <feel/feeldiscr/ned1h.hpp>
 
-#define FEELPP_DIM 2
 int main(int argc, char**argv )
 {
     /// [marker1]
@@ -45,23 +44,35 @@ int main(int argc, char**argv )
     auto Nh = Ned1h<0>( mesh );
     auto a = form2( _trial=Nh, _test=Nh );
     auto c = doption("parameters.c");
-    auto f = expr<FEELPP_DIM,1>(soption("functions.f"));
-    auto e = expr<FEELPP_DIM,1>(soption("functions.e"));
-    std::cout << "curl(curl(E)) + E = " << curl(curl(e)) << "\n";
+    auto f = expr<FEELPP_DIM,1>(soption("functions.f"), "f");
+    auto e = expr<FEELPP_DIM,1>(soption("functions.e"), "e");
+    //std::cout << "curl(curl(E)) + E = " << curl(curl(e)) << "\n";
     auto u = Nh->element();
     auto v = Nh->element();
     auto w = Xh->element(e);
     auto z = Xh->element();
     double penaldir=30;
+#if FEELPP_DIM == 2
     a = integrate(_range=elements(mesh), _expr=c*trans(idt(u))*id(v)+curlxt(u)*curlx(v));
     a += integrate(boundaryfaces(mesh), -curlxt(u)*(cross(N(),id(u)) )
                    - curlx(u)*(cross(N(),idt(u)) )
                    + penaldir*trans(cross(idt(u),N()))*cross(id(u),N())/hFace() );
+#else
+    a = integrate(_range=elements(mesh), _expr=c*trans(idt(u))*id(v)+trans(curlt(u))*curl(v));
+    a += integrate(boundaryfaces(mesh), -trans(curlt(u))*(cross(N(),id(u)) )
+                   - trans(curl(u))*(cross(N(),idt(u)) )
+                   + penaldir*trans(cross(idt(u),N()))*cross(id(u),N())/hFace() );
+#endif
 
     auto l = form1( _test=Nh );
     l = integrate( _range=elements(mesh), _expr=trans(f)*id(v));
+#if FEELPP_DIM == 2
     l += integrate(boundaryfaces(mesh), - curlx(u)*(cross(N(),e) )
                    + penaldir*trans(cross(e,N()))*cross(id(u),N())/hFace() );
+#else
+    l += integrate(boundaryfaces(mesh), - trans(curl(u))*(cross(N(),e) )
+                   + penaldir*trans(cross(e,N()))*cross(id(u),N())/hFace() );
+#endif
 
     a.solve(_rhs=l,_solution=u);
     auto err = normL2( _range=elements(mesh), _expr=idv(u)-e );
@@ -80,5 +91,4 @@ int main(int argc, char**argv )
     ex->add( "e", w );
     ex->add( "ul2", z );
     ex->save();
-
 }
