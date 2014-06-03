@@ -1,0 +1,19 @@
+// -*- mode: c++ -*-
+
+
+/** \page Magnetostatic Magnetostatic Example
+
+    \tableofcontents
+
+    This example solve the magnetostatic equation.
+
+    \section MagnetostaticFormulation Formulation
+
+    Denote \f$\Omega = [-1,1]^2\f$  the computational domain and \f$u\f$ the electric field solution of the following equation
+    \f[
+    -\curl \curl u + c u  = f, u \times n = 0
+    \f].
+
+
+
+*/

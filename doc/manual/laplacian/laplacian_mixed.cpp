@@ -70,32 +70,7 @@ int main(int argc, char**argv )
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
 
-    auto mesh = loadMesh( _mesh=new Mesh<Simplex<2>> );
-#if 1
-    auto RTh = Dh<0>( mesh );
-    auto u = RTh->element();
-    auto v = RTh->element();
-    auto a = form2( _trial=RTh, _test=RTh );
-    a = integrate(_range=elements(mesh), _expr=trans(idt(u))*id(v)+divt(u)*div(v));
-    a.matrixPtr()->printMatlab( "A.m" );
-    auto l = form1( _test=RTh );
-    auto e1 = expr( option(_name="functions.mu").as<std::string>() );
-    auto e2 = expr( option(_name="functions.beta").as<std::string>() );
-    auto e3 = expr( option(_name="functions.alpha").as<std::string>() );
-    auto e4 = expr( option(_name="functions.gamma").as<std::string>() );
-
-    l = integrate(_range=elements(mesh), _expr=trans(vec(e1,e2))*id(v) +e4*div(v));
-    l.vectorPtr()->printMatlab( "L.m" );
-    a.solve(_rhs=l,_solution=u);
-
-    u.printMatlab( "u.m" );
-    std::cout << "I=" << integrate( markedfaces(mesh,"hypo" ), trans(idv(u))*N() ).evaluate() << "\n";
-    auto e = exporter( _mesh=mesh );
-    e->add( "u", u );
-    e->save();
-#endif
-#if 1
-#if 0
+    auto mesh = loadMesh( _mesh=new Mesh<Simplex<3>> );
     auto Mh = DhPdh<0>( mesh );
     auto U = Mh->element();
     auto V = Mh->element();
@@ -109,37 +84,18 @@ int main(int argc, char**argv )
     for( int i : std::vector<int>{ 1, 2, 3 } )
         l += integrate(_range=markedfaces(mesh,(boost::any)i), _expr=trans(id(v))*N());
 
-    l.vectorPtr()->printMatlab( "L.m" );
-
-#if 1
     auto a = form2( _trial=Mh, _test=Mh );
 
     a = integrate(_range=elements(mesh), _expr=trans(idt(u))*id(v));
     a += integrate(_range=elements(mesh), _expr=id(q)*divt(u) - idt(p)*div(v) );
     a += integrate(_range=elements(mesh), _expr=1e-6*id(q)*idt(p));
-    a += on( markedfaces(mesh, (boost::any)4 ), _element=u, _rhs=l, _expr=vec(cst(1.0),cst(1.) ) );
-
-    a.matrixPtr()->printMatlab( "A.m" );
+    a += on( markedfaces(mesh, (boost::any)4 ), _element=u, _rhs=l, _expr=vec(cst(1.0),cst(1.),cst(0.) ) );
 
     a.solve(_rhs=l,_solution=U);
 
     auto e = exporter( _mesh=mesh );
-    //v.on( _range=elements(mesh), _expr=vec(cst(1.),cst(1.) ) );
     e->add( "u", u );
     e->add( "p", p );
     e->save();
     /// [marker1]
-#endif
-    return 0;
-#else
-    for( auto const& dof : RTh->dof()->localDof() )
-    {
-        LOG(INFO) << "local dof element " << dof.first.elementId() << " id:" << dof.first.localDof()
-                  << " global dof : " << dof.second.index();
-        LOG(INFO) << "dof point : " << RTh->dof()->dofPoint( dof.second.index() ).get<0>();
-    }
-
-#endif
-
-#endif // 0
 }

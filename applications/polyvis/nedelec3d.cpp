@@ -3,9 +3,9 @@
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2010-05-09
+       Date: 2010-06-01
 
-  Copyright (C) 2011 Universite Joseph Fourier (Grenoble I)
+  Copyright (C) 2014 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -21,17 +21,12 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-/**
-   \file nedelec2d.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2010-05-09
- */
 #include "nedelec.hpp"
 
 namespace Feel
 {
 namespace detail
 {
-BOOST_PP_LIST_FOR_EACH_PRODUCT( NEDELEC_FACTORY_OP, 3, ( DIM2, ORDER0, SIMPLEX ) )
+BOOST_PP_LIST_FOR_EACH_PRODUCT( NEDELEC_FACTORY_OP, 3, ( DIM3, ORDER0, SIMPLEX ) )
 }
 }
