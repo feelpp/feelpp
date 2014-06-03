@@ -1,6 +1,6 @@
 Using LinuxBrew on "Scientific" Linux or RedHat 6.5
 
-**[red] THAT DOES NOT WORK AT THIS POINT !**
+**THAT DOES NOT WORK AT THIS POINT !**
 
 The main problem is the lack of a compiler that support c++11.
 
