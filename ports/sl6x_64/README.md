@@ -1,3 +1,7 @@
+Using LinuxBrew on "Scientific" Linux or RedHat 6.5
+
+The main problem is the lack of a compiler that support c++11.
+
 # First step - Preparing system
 ```
 sudo yum update -y
