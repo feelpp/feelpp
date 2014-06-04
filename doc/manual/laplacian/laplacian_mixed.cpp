@@ -93,8 +93,17 @@ int main(int argc, char**argv )
 
     a.solve(_rhs=l,_solution=U);
 
+    auto Xh = Pchv<1>( mesh );
+    auto w = Xh->element();
+    auto b = form2( _test=Xh, _trial=Xh );
+    b = integrate(_range=elements(mesh), _expr=trans(idt(w))*id(w));
+    auto ll = form1( _test=Xh );
+    ll = integrate( _range=elements(mesh), _expr=trans(idv(u))*id(w));
+    b.solve( _solution=w, _rhs=ll, _rebuild=true );
+
     auto e = exporter( _mesh=mesh );
     e->add( "u", u );
+    e->add( "ul2", w );
     e->add( "p", p );
     e->save();
     /// [marker1]
