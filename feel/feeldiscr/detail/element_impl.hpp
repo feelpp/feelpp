@@ -2217,7 +2217,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
             DVLOG(2)  << "[elementon] dof range = " << range_dof.second << "\n";
 
             __fe->faceInterpolate( expr, IhLoc );
-            this->faceAssign( *__face_it, IhLoc );
+            this->assign( *__face_it, IhLoc );
         }
 
     } // __face_it != __face_en
