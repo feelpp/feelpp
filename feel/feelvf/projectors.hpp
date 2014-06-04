@@ -284,9 +284,9 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
     gmc1_ptrtype __c1( new gmc1_type( __gm1, firstFace.element( 0 ), __geopc1, __face_id ) );
 
     map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
-    t_expr_type expr( basis_type::isomorphism( M_expr ), mapgmc );
+    t_expr_type expr( M_expr, mapgmc );
     map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
-    t_expr1_type expr1( basis_type::isomorphism( M_expr ), mapgmc1 );
+    t_expr1_type expr1( M_expr, mapgmc1 );
 
 
 
