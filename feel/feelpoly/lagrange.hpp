@@ -315,6 +315,8 @@ public:
     static const bool is_vectorial = polyset_type::is_vectorial;
     static const bool is_scalar = polyset_type::is_scalar;
     static const uint16_type nComponents = polyset_type::nComponents;
+    static const uint16_type nComponents1 = polyset_type::nComponents1;
+    static const uint16_type nComponents2 = polyset_type::nComponents2;
     static const bool is_product = true;
 
     typedef Lagrange<N, RealDim, O, PolySetType, ContinuityType, T, Convex,  Pts, TheTAG> this_type;
@@ -331,13 +333,21 @@ public:
     typedef typename dual_space_type::reference_convex_type reference_convex_type;
     typedef typename reference_convex_type::node_type node_type;
     typedef typename reference_convex_type::points_type points_type;
+    typedef typename convex_type::topological_face_type face_type;
 
     static const uint16_type numPoints = reference_convex_type::numPoints;
     static const uint16_type nbPtsPerVertex = reference_convex_type::nbPtsPerVertex;
     static const uint16_type nbPtsPerEdge = reference_convex_type::nbPtsPerEdge;
     static const uint16_type nbPtsPerFace = reference_convex_type::nbPtsPerFace;
     static const uint16_type nbPtsPerVolume = reference_convex_type::nbPtsPerVolume;
-
+    static const uint16_type nLocalDof = dual_space_type::nLocalDof;
+    static const uint16_type nDofPerVertex = dual_space_type::nDofPerVertex;
+    static const uint16_type nDofPerEdge = dual_space_type::nDofPerEdge;
+    static const uint16_type nDofPerFace = dual_space_type::nDofPerFace;
+    static const uint16_type nDofPerVolume = dual_space_type::nDofPerVolume;
+    static const uint16_type nLocalFaceDof = ( face_type::numVertices * nDofPerVertex +
+                                               face_type::numEdges * nDofPerEdge +
+                                               face_type::numFaces * nDofPerFace );
     template<int subN>
     struct SubSpace
     {
@@ -422,14 +432,38 @@ public:
     /** @name  Methods
      */
     //@{
+    typedef Eigen::MatrixXd local_interpolant_type;
+    local_interpolant_type
+    localInterpolant() const
+        {
+            return local_interpolant_type::Zero( nComponents*nLocalDof, 1 );
+        }
 
     template<typename ExprType>
-    static auto
-    isomorphism( ExprType& expr ) -> decltype( expr )
-    {
-        return expr;
-        //return expr;
-    }
+    void
+    interpolate( ExprType& expr, local_interpolant_type& Ihloc ) const
+        {
+            for( int q = 0; q < nLocalDof; ++q )
+                for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
+                    for( int c2 = 0; c2 < ExprType::shape::N; ++c2 )
+                        Ihloc(nComponents*q + nComponents1*c1+c2) = expr.evalq( c1, c2, q );
+
+        }
+    local_interpolant_type
+    faceLocalInterpolant() const
+        {
+            return local_interpolant_type::Zero( nComponents*nLocalFaceDof, 1 );
+        }
+    template<typename ExprType>
+    void
+    faceInterpolate( ExprType& expr, local_interpolant_type& Ihloc ) const
+        {
+            for( int q = 0; q < nLocalFaceDof; ++q )
+                for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
+                    for( int c2 = 0; c2 < ExprType::shape::N; ++c2 )
+                        Ihloc(nComponents*q + nComponents1*c1+c2) = expr.evalq( c1, c2, q );
+
+        }
     //@}
 
 private:
