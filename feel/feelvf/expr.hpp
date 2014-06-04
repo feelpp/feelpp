@@ -437,20 +437,25 @@ public:
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
             :
+            M_geo( geom ),
             M_tensor_expr( expr.expression(), geom, fev, feu )
         {}
 
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev )
             :
+            M_geo( geom ),
             M_tensor_expr( expr.expression(), geom, fev )
         {}
 
         tensor( this_type const& expr, Geo_t const& geom )
             :
+            M_geo( geom ),
             M_tensor_expr( expr.expression(), geom )
         {
         }
+
+        int nPoints() const { return M_geo.nPoints(); }
 
         template<typename IM>
         void init( IM const& im )
@@ -518,7 +523,7 @@ public:
         {
             return M_tensor_expr.evalq( c1, c2, q );
         }
-
+        Geo_t const& M_geo;
         tensor_expr_type M_tensor_expr;
     };
 #if 0
