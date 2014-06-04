@@ -977,12 +977,12 @@ public:
     template<typename ElementVecType>
     void updateMarker2( ElementVecType const& evec )
     {
-        element_iterator it;
-        element_iterator en;
-        boost::tie( it, en ) = elementsWithProcessId( this->worldCommElements().localRank() );
+        auto rangeElt = Feel::elements( evec.mesh(), evec.functionSpace()->dof()->buildDofTableMPIExtended() );
+        auto it = rangeElt.template get<1>();
+        auto en = rangeElt.template get<2>();
 
         for ( ; it != en; ++it )
-            M_elements.modify( it, [&evec]( element_type& e )
+            M_elements.modify( this->elementIterator( boost::unwrap_ref(*it).id(), boost::unwrap_ref(*it).processId() ), [&evec]( element_type& e )
         {
             e.setMarker2(  evec.localToGlobal( e.id(), 0, 0 ) );
         } );
@@ -991,12 +991,12 @@ public:
     template<typename ElementVecType>
     void updateMarker3( ElementVecType const& evec )
     {
-        element_iterator it;
-        element_iterator en;
-        boost::tie( it, en ) = elementsWithProcessId( this->worldCommElements().localRank() );
+        auto rangeElt = Feel::elements( evec.mesh(), evec.functionSpace()->dof()->buildDofTableMPIExtended() );
+        auto it = rangeElt.template get<1>();
+        auto en = rangeElt.template get<2>();
 
         for ( ; it != en; ++it )
-            M_elements.modify( it, [&evec]( element_type& e )
+            M_elements.modify( this->elementIterator( boost::unwrap_ref(*it).id(), boost::unwrap_ref(*it).processId() ), [&evec]( element_type& e )
         {
             e.setMarker3(  evec.localToGlobal( e.id(), 0, 0 ) );
         } );
