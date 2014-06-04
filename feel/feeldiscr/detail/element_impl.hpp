@@ -2085,16 +2085,24 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     const size_type context = ExprType::context|vm::POINT;
     typedef ExprType expression_type;
     typedef Element<Y,Cont> element_type;
+
     // mesh element
     typedef typename element_type::functionspace_type::mesh_type::element_type geoelement_type;
-    typedef typename geoelement_type::face_type face_type;
+    typedef typename element_type::functionspace_type::mesh_type::face_type face_type;
+    //typedef typename geoelement_type::face_type face_type;
 
     // geometric mapping context
-    typedef typename element_type::functionspace_type::mesh_type::gm_type gm_type;
+    typedef typename geoelement_type::gm_type gm_type;
     typedef boost::shared_ptr<gm_type> gm_ptrtype;
+    typedef typename geoelement_type::gm1_type gm1_type;
+    typedef boost::shared_ptr<gm1_type> gm1_ptrtype;
+
     typedef typename gm_type::template Context<context, geoelement_type> gmc_type;
     typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
-    typedef fusion::map<fusion::pair<Feel::vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+    typedef typename gm1_type::template Context<context, geoelement_type> gmc1_type;
+    typedef boost::shared_ptr<gmc1_type> gmc1_ptrtype;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc1_ptrtype> > map_gmc1_type;
 
 
     // dof
@@ -2104,123 +2112,151 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     typedef typename element_type::functionspace_type::fe_type fe_type;
     typedef typename fe_type::template Context< context, fe_type, gm_type, geoelement_type> fecontext_type;
     typedef boost::shared_ptr<fecontext_type> fecontext_ptrtype;
-    //typedef fusion::map<fusion::pair<Feel::vf::detail::gmc<0>, fecontext_ptrtype> > map_gmc_type;
+    typedef typename fe_type::template Context< context, fe_type, gm1_type, geoelement_type> fecontext1_type;
+    typedef boost::shared_ptr<fecontext1_type> fecontext1_ptrtype;
+    //typedef fusion::map<fusion::pair<vf::detail::gmc<0>, fecontext_ptrtype> > map_gmc_type;
 
     // expression
     //typedef typename expression_type::template tensor<map_gmc_type,fecontext_type> t_expr_type;
-    typedef typename expression_type::template tensor<map_gmc_type> t_expr_type;
+    //typedef decltype( basis_type::isomorphism( M_expr ) ) the_expression_type;
+    typedef expression_type the_expression_type;
+    typedef typename boost::remove_reference<typename boost::remove_const<the_expression_type>::type >::type iso_expression_type;
+    typedef typename iso_expression_type::template tensor<map_gmc_type> t_expr_type;
+    typedef typename iso_expression_type::template tensor<map_gmc1_type> t_expr1_type;
     typedef typename t_expr_type::shape shape;
 
     //
     // start
     //
-    boost::timer __timer;
+    DVLOG(2)  << "assembling Dirichlet conditions\n";
 
-    std::vector<value_type> values;
+    dof_type const* __dof = this->functionSpace()->dof().get();
+
+    fe_type const* __fe = this->functionSpace()->fe().get();
+
     auto __face_it = r.first;
-    auto __face_en = r.second;
-    if ( __face_it != __face_en )
+    auto const __face_en = r.second;
+
+    if ( __face_it == __face_en )
+        return;
+
+    gm_ptrtype __gm( new gm_type );
+    gm1_ptrtype __gm1( new gm1_type );
+
+
+
+    //
+    // Precompute some data in the reference element for
+    // geometric mapping and reference finite element
+    //
+    typedef typename geoelement_type::permutation_type permutation_type;
+    typedef typename gm_type::precompute_ptrtype geopc_ptrtype;
+    typedef typename gm_type::precompute_type geopc_type;
+    typedef typename gm1_type::precompute_ptrtype geopc1_ptrtype;
+    typedef typename gm1_type::precompute_type geopc1_type;
+
+    DVLOG(2)  << "[integratoron] numTopologicalFaces = " << geoelement_type::numTopologicalFaces << "\n";
+    std::vector<std::map<permutation_type, geopc_ptrtype> > __geopc( geoelement_type::numTopologicalFaces );
+    std::vector<std::map<permutation_type, geopc1_ptrtype> > __geopc1( geoelement_type::numTopologicalFaces );
+
+    for ( uint16_type __f = 0; __f < geoelement_type::numTopologicalFaces; ++__f )
     {
-        // get the first face properly connected
-        for( ; __face_it != __face_en; ++__face_it )
-            if ( __face_it->isConnectedTo0() )
-                break;
-
-
-        dof_type const* __dof = this->functionSpace()->dof().get();
-
-        fe_type const* __fe = this->functionSpace()->fe().get();
-
-        gm_ptrtype __gm( new gm_type );
-
-
-        //
-        // Precompute some data in the reference element for
-        // geometric mapping and reference finite element
-        //
-        typedef typename geoelement_type::permutation_type permutation_type;
-        typedef typename gm_type::precompute_ptrtype geopc_ptrtype;
-        typedef typename gm_type::precompute_type geopc_type;
-        DVLOG(2)  << "[elementon] numTopologicalFaces = " << geoelement_type::numTopologicalFaces << "\n";
-        std::vector<std::map<permutation_type, geopc_ptrtype> > __geopc( geoelement_type::numTopologicalFaces );
-
-        for ( uint16_type __f = 0; __f < geoelement_type::numTopologicalFaces; ++__f )
+        for ( permutation_type __p( permutation_type::IDENTITY );
+                __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
         {
-            for ( permutation_type __p( permutation_type::IDENTITY );
-                  __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
-            {
-                __geopc[__f][__p] = geopc_ptrtype(  new geopc_type( __gm, __fe->points( __f ) ) );
-                //DVLOG(2) << "[geopc] FACE_ID = " << __f << " ref pts=" << __fe->dual().points( __f ) << "\n";
-                FEELPP_ASSERT( __geopc[__f][__p]->nPoints() ).error( "invalid number of points" );
-            }
+            __geopc[__f][__p] = geopc_ptrtype(  new geopc_type( __gm, __fe->points( __f ) ) );
+            __geopc1[__f][__p] = geopc1_ptrtype(  new geopc1_type( __gm1, __fe->points( __f ) ) );
+            //DVLOG(2) << "[geopc] FACE_ID = " << __f << " ref pts=" << __fe->dual().points( __f ) << "\n";
+            FEELPP_ASSERT( __geopc[__f][__p]->nPoints() ).error( "invalid number of points for geopc" );
+            FEELPP_ASSERT( __geopc1[__f][__p]->nPoints() ).error( "invalid number of points for geopc1" );
         }
-
-        uint16_type __face_id = __face_it->pos_first();
-        gmc_ptrtype __c( new gmc_type( __gm, __face_it->element( 0 ), __geopc, __face_id ) );
-
-        map_gmc_type mapgmc( fusion::make_pair<Feel::vf::detail::gmc<0> >( __c ) );
-
-        DVLOG(2)  << "face_type::numVertices = " << face_type::numVertices << ", fe_type::nDofPerVertex = " << fe_type::nDofPerVertex << "\n"
-                  << "face_type::numEdges = " << face_type::numEdges << ", fe_type::nDofPerEdge = " << fe_type::nDofPerEdge << "\n"
-                  << "face_type::numFaces = " << face_type::numFaces << ", fe_type::nDofPerFace = " << fe_type::nDofPerFace << "\n";
-
-        size_type nbFaceDof = invalid_size_type_value;
-
-        if ( !fe_type::is_modal )
-            nbFaceDof = ( face_type::numVertices * fe_type::nDofPerVertex +
-                          face_type::numEdges * fe_type::nDofPerEdge +
-                          face_type::numFaces * fe_type::nDofPerFace );
-
-        else
-            nbFaceDof = face_type::numVertices * fe_type::nDofPerVertex;
-
-        DVLOG(2)  << "nbFaceDof = " << nbFaceDof << "\n";
-        //const size_type nbFaceDof = __fe->boundaryFE()->points().size2();
-        auto IhLoc = __fe->faceLocalInterpolant();
-        for ( ; __face_it != __face_en; ++__face_it )
-        {
-            if ( !__face_it->isConnectedTo0() )
-            {
-                LOG( WARNING ) << "face not connected" << *__face_it;
-
-                continue;
-            }
-            // do not process the face if it is a ghost face: belonging to two
-            // processes and being in a process id greater than the one
-            // corresponding face
-            if ( __face_it->isGhostFace() )
-            {
-                LOG(WARNING) << "face id : " << __face_it->id() << " is a ghost face";
-                continue;
-            }
-
-            DVLOG(2) << "FACE_ID = " << __face_it->id()
-                     << " element id= " << __face_it->ad_first()
-                     << " pos in elt= " << __face_it->pos_first()
-                     << " marker: " << __face_it->marker() << "\n";
-            DVLOG(2) << "FACE_ID = " << __face_it->id() << " face pts=" << __face_it->G() << "\n";
-
-            uint16_type __face_id = __face_it->pos_first();
-            __c->update( __face_it->element( 0 ), __face_id );
-
-            DVLOG(2) << "FACE_ID = " << __face_it->id() << "  ref pts=" << __c->xRefs() << "\n";
-            DVLOG(2) << "FACE_ID = " << __face_it->id() << " real pts=" << __c->xReal() << "\n";
-
-            map_gmc_type mapgmc( fusion::make_pair<Feel::vf::detail::gmc<0> >( __c ) );
-
-            t_expr_type expr( ex, mapgmc );
-            expr.update( mapgmc );
-
-            std::pair<size_type,size_type> range_dof( std::make_pair( this->start(),
-                                                                      this->functionSpace()->nDof() ) );
-            DVLOG(2)  << "[elementon] dof start = " << range_dof.first << "\n";
-            DVLOG(2)  << "[elementon] dof range = " << range_dof.second << "\n";
-
-            __fe->faceInterpolate( expr, IhLoc );
-            this->assign( *__face_it, IhLoc );
-        }// __face_it != __face_en
-
     }
+    face_type const& firstFace = *__face_it;
+    uint16_type __face_id = firstFace.pos_first();
+    gmc_ptrtype __c( new gmc_type( __gm, firstFace.element( 0 ), __geopc, __face_id ) );
+    gmc1_ptrtype __c1( new gmc1_type( __gm1, firstFace.element( 0 ), __geopc1, __face_id ) );
+
+    map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
+    t_expr_type expr( ex, mapgmc );
+    map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
+    t_expr1_type expr1( ex, mapgmc1 );
+
+
+
+
+    size_type nbFaceDof = invalid_size_type_value;
+
+    if ( !fe_type::is_modal )
+        nbFaceDof = ( face_type::numVertices * fe_type::nDofPerVertex +
+                      face_type::numEdges * fe_type::nDofPerEdge +
+                      face_type::numFaces * fe_type::nDofPerFace );
+
+    else
+        nbFaceDof = face_type::numVertices * fe_type::nDofPerVertex;
+
+    DVLOG(2)  << "[projector::operator(MESH_FACES)] nbFaceDof = " << nbFaceDof << "\n";
+
+    auto IhLoc = __fe->faceLocalInterpolant();
+    for ( ; __face_it != __face_en; ++__face_it )
+    {
+        face_type const& curFace = boost::unwrap_ref(*__face_it);
+        FEELPP_ASSERT( curFace.isOnBoundary() && !curFace.isConnectedTo1() )
+        ( curFace.marker() )
+        ( curFace.isOnBoundary() )
+        ( curFace.ad_first() )
+        ( curFace.pos_first() )
+        ( curFace.ad_second() )
+        ( curFace.pos_second() )
+        ( curFace.id() ).warn( "inconsistent data face" );
+        DVLOG(2) << "[projector] FACE_ID = " << curFace.id()
+                      << " element id= " << curFace.ad_first()
+                      << " pos in elt= " << curFace.pos_first()
+                      << " marker: " << curFace.marker() << "\n";
+        DVLOG(2) << "[projector] FACE_ID = " << curFace.id() << " real pts=" << curFace.G() << "\n";
+
+        uint16_type __face_id = curFace.pos_first();
+
+        std::pair<size_type,size_type> range_dof( std::make_pair( this->start(),
+                this->functionSpace()->nDof() ) );
+        DVLOG(2)  << "[projector] dof start = " << range_dof.first << "\n";
+        DVLOG(2)  << "[projector] dof range = " << range_dof.second << "\n";
+
+        switch ( geomap_strategy )
+        {
+        default:
+        case GeomapStrategyType::GEOMAP_OPT:
+        case GeomapStrategyType::GEOMAP_HO:
+        {
+            __c->update( curFace.element( 0 ), __face_id );
+            DVLOG(2) << "[projector] FACE_ID = " << curFace.id() << "  ref pts=" << __c->xRefs() << "\n";
+            DVLOG(2) << "[projector] FACE_ID = " << curFace.id() << " real pts=" << __c->xReal() << "\n";
+
+            map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
+
+            expr.update( mapgmc );
+            __fe->faceInterpolate( expr, IhLoc );
+        }
+        break;
+
+        case GeomapStrategyType::GEOMAP_O1:
+        {
+            __c1->update( curFace.element( 0 ), __face_id );
+            DVLOG(2) << "[projector] FACE_ID = " << curFace.id() << "  ref pts=" << __c1->xRefs() << "\n";
+            DVLOG(2) << "[projector] FACE_ID = " << curFace.id() << " real pts=" << __c1->xReal() << "\n";
+
+            map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
+
+            expr1.update( mapgmc1 );
+            __fe->faceInterpolate( expr1, IhLoc );
+        }
+        break;
+        }
+        if ( accumulate )
+            this->plus_assign( curFace, IhLoc );
+        else
+            this->assign( curFace, IhLoc );
+    } // face_it
+
 }
 
 

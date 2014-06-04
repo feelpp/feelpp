@@ -2239,6 +2239,14 @@ public:
                 this->operator[]( index ) += Ihloc( ldof.first.localDof() );
             }
         }
+        void plus_assign( geoface_type const& e, typename fe_type::local_interpolant_type const& Ihloc )
+        {
+            for( auto ldof : M_functionspace->dof()->faceLocalDof( e.id() ) )
+            {
+                size_type index=start()+ ldof.second.index();
+                this->operator[]( index ) += Ihloc( ldof.first );
+            }
+        }
 
         //@}
 
