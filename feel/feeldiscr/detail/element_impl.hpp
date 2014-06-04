@@ -2010,10 +2010,11 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     std::vector<bool> points_done( this->functionSpace()->dof()->nLocalDof()/this->nComponents );
     std::fill( points_done.begin(), points_done.end(),false );
 
-    const int ncdof  = fe_type::is_product?nComponents:1;
+    auto IhLoc = __fe->localInterpolant();
     for ( ; it!=en ; ++it )
     {
         geoelement_type const& curElt = boost::unwrap_ref(*it);
+
         switch ( geomap_strategy )
         {
         case GeomapStrategyType::GEOMAP_HO:
@@ -2021,19 +2022,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
             __c->update( *it );
             map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
             tensor_expr.update( mapgmc );
-
-            for ( uint16_type __j = 0; __j < ndofv; ++__j )
-            {
-
-                for ( uint16_type c1 = 0; c1 < ncdof; ++c1 )
-                {
-                    if ( accumulate )
-                        this->plus_assign( curElt.id(), __j, c1, tensor_expr.evalq( c1, 0, __j ) );
-
-                    else
-                        this->assign( curElt.id(), __j, c1, tensor_expr.evalq( c1, 0, __j ) );
-                }
-            }
+            __fe->interpolate( tensor_expr, IhLoc );
         }
         break;
 
@@ -2042,19 +2031,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
             __c1->update( *it );
             map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
             tensor_expr1.update( mapgmc1 );
-
-            for ( uint16_type __j = 0; __j < ndofv; ++__j )
-            {
-                for ( uint16_type c1 = 0; c1 < ncdof; ++c1 )
-                    //for ( uint16_type c2 = 0; c2 < shape::N;++c2 )
-                {
-                    if ( accumulate )
-                        this->plus_assign( curElt.id(), __j, c1, tensor_expr1.evalq( c1, 0, __j ) );
-
-                    else
-                        this->assign( curElt.id(), __j, c1, tensor_expr1.evalq( c1, 0, __j ) );
-                }
-            }
+            __fe->interpolate( tensor_expr1, IhLoc );
         }
         break;
 
@@ -2066,19 +2043,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
                 __c->update( *it );
                 map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
                 tensor_expr.update( mapgmc );
-
-                for ( uint16_type __j = 0; __j < ndofv; ++__j )
-                {
-                    for ( uint16_type c1 = 0; c1 < ncdof; ++c1 )
-                        //for ( uint16_type c2 = 0; c2 < shape::N;++c2 )
-                    {
-                        if ( accumulate )
-                            this->plus_assign( curElt.id(), __j, c1, tensor_expr.evalq( c1, 0, __j ) );
-
-                        else
-                            this->assign( curElt.id(), __j, c1, tensor_expr.evalq( c1, 0, __j ) );
-                    }
-                }
+                __fe->interpolate( tensor_expr, IhLoc );
             }
 
             else
@@ -2086,23 +2051,16 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
                 __c1->update( *it );
                 map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
                 tensor_expr1.update( mapgmc1 );
-
-                for ( uint16_type __j = 0; __j < ndofv; ++__j )
-                {
-                    for ( uint16_type c1 = 0; c1 < ncdof; ++c1 )
-                        //for ( uint16_type c2 = 0; c2 < shape::N;++c2 )
-                    {
-                        if ( accumulate )
-                            this->plus_assign( curElt.id(), __j, c1, tensor_expr1.evalq( c1, 0, __j ) );
-
-                        else
-                            this->assign( curElt.id(), __j, c1, tensor_expr1.evalq( c1, 0, __j ) );
-                    }
-                }
+                __fe->interpolate( tensor_expr1, IhLoc );
             }
         }
         break;
         }
+        if ( accumulate )
+            this->plus_assign( curElt, IhLoc );
+        else
+            this->assign( curElt, IhLoc );
+
 
         //if P0 continuous finish loop here
         if ( isP0Continuous<fe_type>::result )
@@ -2158,7 +2116,6 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     //
     boost::timer __timer;
 
-    std::vector<int> dofs;
     std::vector<value_type> values;
     auto __face_it = r.first;
     auto __face_en = r.second;
@@ -2219,10 +2176,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
 
         DVLOG(2)  << "nbFaceDof = " << nbFaceDof << "\n";
         //const size_type nbFaceDof = __fe->boundaryFE()->points().size2();
-
-        for ( ;
-              __face_it != __face_en;
-              ++__face_it )
+        auto IhLoc = __fe->faceLocalInterpolant();
+        for ( ; __face_it != __face_en; ++__face_it )
         {
             if ( !__face_it->isConnectedTo0() )
             {
@@ -2261,30 +2216,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
             DVLOG(2)  << "[elementon] dof start = " << range_dof.first << "\n";
             DVLOG(2)  << "[elementon] dof range = " << range_dof.second << "\n";
 
-            for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
-                for ( uint16_type c2 = 0; c2 < shape::N; ++c2 )
-                {
-                    for ( uint16_type l = 0; l < nbFaceDof; ++l )
-                    {
-                        DVLOG(2) << "[elementonexpr] local dof=" << l
-                                 << " |comp1=" << c1 << " comp 2= " << c2 << " | pt = " <<  __c->xReal( l ) << "\n";
-                        typename expression_type::value_type __value = expr.evalq( c1, c2, l );
-                        DVLOG(2) << "[elementonexpr] value=" << __value << "\n";
-
-                        // global Dof
-                        size_type thedof =  this->start() +
-                            boost::get<0>( __dof->faceLocalToGlobal( __face_it->id(), l, c1 ) );
-
-                        //size_type thedof_nproc = __dof->dofNProc( thedof );
-                        if ( std::find( dofs.begin(),
-                                        dofs.end(),
-                                        thedof ) != dofs.end() )
-                            continue;
-
-                        this->operator()( thedof ) = __value;
-                    } // loop on space components
-
-                } // loop on face dof
+            __fe->faceInterpolate( expr, IhLoc );
+            this->faceAssign( *__face_it, IhLoc );
         }
 
     } // __face_it != __face_en
