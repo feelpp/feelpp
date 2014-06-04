@@ -65,6 +65,9 @@ int main(int argc, char**argv )
     auto e = exporter( _mesh=mesh );
     e->add( "u", u );
     e->add( "g", v );
+    auto w = Vh->element();
+    w.on(_range=boundaryfaces(mesh),_expr=g);
+    e->add( "gb", w );
     e->save();
     return 0;
     //# endmarker4 #
