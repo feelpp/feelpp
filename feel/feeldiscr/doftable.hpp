@@ -174,7 +174,8 @@ public:
      * -local number in the element
      **/
 
-    typedef boost::tuple<size_type, int16_type, bool, int16_type> global_dof_fromface_type;
+    //typedef boost::tuple<size_type, int16_type, bool, int16_type> global_dof_fromface_type;
+    typedef FaceDof global_dof_fromface_type;
 
 
     /**
@@ -186,6 +187,7 @@ public:
     typedef boost::bimap<bimaps::set_of<localdof_type>, bimaps::multiset_of<Dof> > dof_table;
     typedef typename dof_table::value_type dof_relation;
     typedef std::unordered_map<int,std::map<int,global_dof_fromface_type> > Container_fromface;
+    typedef typename std::map<int,global_dof_fromface_type>::const_iterator face_local_dof_const_iterator;
     typedef typename dof_table::left_iterator local_dof_iterator;
     typedef typename dof_table::left_const_iterator local_dof_const_iterator;
     typedef typename dof_table::right_iterator global_dof_iterator;
@@ -609,6 +611,13 @@ public:
             auto upper = M_el_l2g.left.upper_bound( localdof_type(ElId,invalid_uint16_type_value) );
             //DCHECK( it.first != M_el_l2g.left.end() ) << "Invalid element dof entry " << ElId;
             return std::make_pair( lower, upper );
+        }
+
+    std::pair<face_local_dof_const_iterator,face_local_dof_const_iterator> faceLocalDof( size_type ElId ) const
+        {
+            auto be = M_face_l2g.find( ElId )->second.begin();
+            auto en = M_face_l2g.find( ElId )->second.end();
+            return std::make_pair( be, en );
         }
 
     template<typename ElemTest,typename ElemTrial>
