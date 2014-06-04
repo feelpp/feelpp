@@ -281,7 +281,7 @@ private:
                     auto temp = M_doftable->localToGlobal( iElAd,
                                                      iVeEl * fe_type::nDofPerVertex + l,
                                                      c );
-                    M_doftable->M_face_l2g[ face_it->id()][ lcc++ ] = boost::make_tuple( boost::get<0>( temp ),boost::get<1>( temp ),boost::get<2>( temp ),
+                    M_doftable->M_face_l2g[ face_it->id()][ lcc++ ] = FaceDof( boost::get<0>( temp ),boost::get<1>( temp ),boost::get<2>( temp ),
                             iVeEl * fe_type::nDofPerVertex + l );
                 }
             }
@@ -355,7 +355,7 @@ private:
                                                  element_type::numVertices*fe_type::nDofPerVertex +
                                                  iFaEl * fe_type::nDofPerEdge + l,
                                                  c );
-                M_doftable->M_face_l2g[ face_it->id()][ lcc++ ] = boost::make_tuple( boost::get<0>( temp ),boost::get<1>( temp ),boost::get<2>( temp ),
+                M_doftable->M_face_l2g[ face_it->id()][ lcc++ ] = FaceDof( boost::get<0>( temp ),boost::get<1>( temp ),boost::get<2>( temp ),
                         element_type::numVertices*fe_type::nDofPerVertex +
                         iFaEl * fe_type::nDofPerEdge + l );
             }
@@ -417,7 +417,7 @@ private:
                                                      element_type::numVertices*fe_type::nDofPerVertex +
                                                      iEdEl * fe_type::nDofPerEdge + l,
                                                      c );
-                    M_doftable->M_face_l2g[ face_it->id()][ lcc++ ] = boost::make_tuple( boost::get<0>( temp ),boost::get<1>( temp ),boost::get<2>( temp ),
+                    M_doftable->M_face_l2g[ face_it->id()][ lcc++ ] = FaceDof( boost::get<0>( temp ),boost::get<1>( temp ),boost::get<2>( temp ),
                             element_type::numVertices*fe_type::nDofPerVertex +
                             iEdEl * fe_type::nDofPerEdge + l );
                 }
@@ -484,7 +484,7 @@ private:
                                                            element_type::numEdges*fe_type::nDofPerEdge +
                                                            iFaEl * fe_type::nDofPerFace + l,
                                                            c );
-                    M_doftable->M_face_l2g[ face_it->id()][ lcc++ ] = boost::make_tuple( boost::get<0>( temp ),boost::get<1>( temp ),boost::get<2>( temp ),
+                    M_doftable->M_face_l2g[ face_it->id()][ lcc++ ] = FaceDof( boost::get<0>( temp ),boost::get<1>( temp ),boost::get<2>( temp ),
                                                                                element_type::numVertices*fe_type::nDofPerVertex +
                                                                                element_type::numEdges*fe_type::nDofPerEdge +
                                                                                iFaEl * fe_type::nDofPerFace + l );
