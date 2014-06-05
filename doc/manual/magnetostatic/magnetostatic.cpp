@@ -48,7 +48,7 @@ int main(int argc, char**argv )
     auto e = expr<FEELPP_DIM,1>(soption("functions.e"), "e");
     //std::cout << "curl(curl(E)) + E = " << curl(curl(e)) << "\n";
     auto u = Nh->element();
-    auto v = Nh->element();
+    auto v = Nh->element(e);
     auto w = Xh->element(e);
     auto z = Xh->element();
     double penaldir=30;
@@ -88,6 +88,7 @@ int main(int argc, char**argv )
 
     auto ex = exporter( _mesh=mesh );
     ex->add( "u", u );
+    ex->add( "Ihe", v );
     ex->add( "e", w );
     ex->add( "ul2", z );
     ex->save();
