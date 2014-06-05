@@ -852,6 +852,7 @@ public:
     typedef typename dual_space_type::reference_convex_type reference_convex_type;
     typedef typename reference_convex_type::node_type node_type;
     typedef typename reference_convex_type::points_type points_type;
+    typedef typename convex_type::topological_face_type face_type;
 
     static const uint16_type nOrder =  dual_space_type::nOrder;
     static const uint16_type nbPtsPerVertex = 0;
@@ -867,7 +868,13 @@ public:
     // static const uint16_type nbPtsPerVolume = reference_convex_type::nbPtsPerVolume;
 
     static const uint16_type nLocalDof = dual_space_type::nLocalDof;
-
+    static const uint16_type nDofPerVertex = dual_space_type::nDofPerVertex;
+    static const uint16_type nDofPerEdge = dual_space_type::nDofPerEdge;
+    static const uint16_type nDofPerFace = dual_space_type::nDofPerFace;
+    static const uint16_type nDofPerVolume = dual_space_type::nDofPerVolume;
+    static const uint16_type nLocalFaceDof = ( face_type::numVertices * nDofPerVertex +
+                                               face_type::numEdges * nDofPerEdge +
+                                               face_type::numFaces * nDofPerFace );
     template<int subN>
     struct SubSpace
     {
@@ -959,147 +966,55 @@ public:
      */
     //@{
 
+
+    typedef Eigen::MatrixXd local_interpolant_type;
+    local_interpolant_type
+    localInterpolant() const
+        {
+            return local_interpolant_type::Zero( nLocalDof, 1 );
+        }
+
     template<typename ExprType>
-    static auto
-    isomorphism( ExprType expr ) -> decltype( Feel::vf::detJ()*( trans( Feel::vf::JinvT() )*expr )*Feel::vf::Nref() )
-    //isomorphism( ExprType& expr ) -> decltype( expr )
-    {
-        using namespace Feel::vf;
-        return detJ()*( trans( JinvT() )*expr )*Nref();
-        //return expr;
-    }
-#if 0
-    /**
-     *
-     * \return the value of the expression at the dof
-     */
-    template<typename ExprType, typename ContextType>
-    std::vector<value_type>
-    interpolate( boost::shared_ptr<ContextType>& ctx, ExprType & expr )
-    {
-        using namespace Feel::vf;
-        typedef boost::shared_ptr<ContextType> gmc_ptrtype;
-        typedef fusion::map<fusion::pair<Feel::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
-
-        std::vector<value_type> v( nLocalDof );
-
-        // First deal with the face dof
-        for ( int face = 0; face < numTopologicalFaces; ++face )
+    void
+    interpolate( ExprType& expr, local_interpolant_type& Ihloc ) const
         {
-            // update the geomap at dof on face
-            ctx->update( _face=face, _element=ctx->id() );
-
-            map_gmc_type mapgmc( fusion::make_pair<Feel::detail::gmc<0> >( ctx ) );
-            expr.update( mapgmc, face );
-
-            for ( int q = 0; q < nDofPerFace; ++q )
-            {
-                int ldof = nDofPerFace*face+i;
-                v[ldof] = expr.evalq( 0,0,i );
-            }
-        }
-
-        // evaluate expr \cdot n  on each face
-
-        // evaluate moments of the expression
-    }
-
-    template<typename GMContext, typename PC, typename Phi, typename GPhi, typename HPhi >
-    static void transform( boost::shared_ptr<GMContext> gmc,  boost::shared_ptr<PC> const& pc,
-                           Phi& phi_t,
-                           GPhi& g_phi_t, const bool do_gradient,
-                           HPhi& h_phi_t, const bool do_hessian
-
-                         )
-    {
-        transform ( *gmc, *pc, phi_t, g_phi_t, do_gradient, h_phi_t, do_hessian );
-    }
-    template<typename GMContext, typename PC, typename Phi, typename GPhi, typename HPhi >
-    static void transform( GMContext const& gmc,
-                           PC const& pc,
-                           Phi& phi_t,
-                           GPhi& g_phi_t, const bool do_gradient,
-                           HPhi& h_phi_t, const bool do_hessian
-
-                         )
-    {
-        //phi_t = phi; return ;
-        typename GMContext::gm_type::matrix_type const B = gmc.B( 0 );
-        typename GMContext::gm_type::matrix_type const K = gmc.K( 0 );
-        typename GMContext::gm_type::matrix_type JB( K/gmc.J( 0 ) );
-#if 0
-        VLOG(1) << "K= " << gmc.K( 0 ) << "\n";
-        VLOG(1) << "B= " << B << "\n";
-        VLOG(1) << "J= " << gmc.J( 0 ) << "\n";
-        VLOG(1) << "JB= " << JB << "\n";
-#endif
-        std::fill( phi_t.data(), phi_t.data()+phi_t.num_elements(), value_type( 0 ) );
-
-        if ( do_gradient )
-        {
-            //VLOG(1) << "compute gradient\n";
-            std::fill( g_phi_t.data(), g_phi_t.data()+g_phi_t.num_elements(), value_type( 0 ) );
-        }
-
-        if ( do_hessian )
-            std::fill( h_phi_t.data(), h_phi_t.data()+h_phi_t.num_elements(), value_type( 0 ) );
-
-        const uint16_type Q = gmc.nPoints();//M_grad.size2();
-
-        // transform
-        for ( uint16_type i = 0; i < nLocalDof; ++i )
-        {
-            for ( uint16_type l = 0; l < nDim; ++l )
+            Ihloc.setZero();
+            auto g = expr.geom();
+            auto const& K = g->K(0);
+            std::cout << "K = " << K << "\n";
+            ublas::vector<value_type> t( nDim );
+            for( int e = 0; e < face_type::numEdges; ++e )
             {
 
-                for ( uint16_type p = 0; p < nDim; ++p )
+                std::cout << "ref t = " << g->geometricMapping()->referenceConvex().tangent( e ) << "\n";
+                ublas::axpy_prod( K,
+                                  g->geometricMapping()->referenceConvex().tangent( e ),
+                                  t,
+                                  true );
+                double ratio = g->geometricMapping()->referenceConvex().h( e )/g->element().hEdge(e);
+                t *= ratio;
+                std::cout << "t=" << t << "\n";
+                for ( int l = 0; l < nDofPerEdge; ++l )
                 {
-                    for ( uint16_type q = 0; q < Q; ++q )
-                    {
-                        // \warning : here the transformation depends on the
-                        // numbering of the degrees of freedom of the finite
-                        // element
-                        //phi_t[i][l][0][q] =  pc.phi(i,l,0,q);
-                        phi_t[i][l][0][q] += JB( l, p ) * pc.phi( i,p,0,q );
-                        //phi_t[i][l][0][q] = gmc.J( 0 ) * B( p, l ) * pc.phi(i,p,0,q);
-                        //VLOG(1) << "pc[" << i << "][" << l << "][" << q << "]=" << pc.phi(i,l,0,q) << "\n";
-                        //VLOG(1) << "phi_t[" << i << "][" << l << "][" << q << "]=" << phi_t[i][l][0][q] << "\n";
-                    }
+                    int q = e*nDofPerEdge+l;
+                    for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
+                        Ihloc(q) += expr.evalq( c1, 0, q )*t(c1);
                 }
             }
-
-            //if ( do_gradient )
-            {
-
-                for ( uint16_type p = 0; p < nDim; ++p )
-                {
-                    for ( uint16_type r = 0; r < nDim; ++r )
-                    {
-                        for ( uint16_type s = 0; s < Q; ++s )
-                        {
-                            g_phi_t[i][p][r][s] = 0;
-
-                            for ( uint16_type q = 0; q < nDim; ++q )
-                            {
-                                g_phi_t[i][p][r][s] += JB( p, q ) * pc.grad( i,q,r,s );
-                                //g_phi_t[i][p][r][s] = pc.grad(i,p,r,s);
-
-                                //VLOG(1) << "J G[" << i << "][" << q << "][" << r << "][" << s << "=" << JB( p, q ) * pc.grad(i,q,r,s) << "\n";
-                            }
-                        }
-
-                        //VLOG(1) << "g_phi_t[" << i << "][" << p << "][" << r << "][" << 0 << "=" << g_phi_t[i][p][r][0] << "\n";
-
-                    }
-                }
-            }
-
-            if ( do_hessian )
-            {
-            }
         }
-    }
-#endif
+    local_interpolant_type
+    faceLocalInterpolant() const
+        {
+            return local_interpolant_type::Zero( nLocalFaceDof, 1 );
+        }
+    template<typename ExprType>
+    void
+    faceInterpolate( ExprType& expr, local_interpolant_type& Ihloc ) const
+        {
+            for( int q = 0; q < nLocalFaceDof; ++q )
+                Ihloc(q) = expr.evalq( 0, 0, q );
+
+        }
 
     //@}
 
