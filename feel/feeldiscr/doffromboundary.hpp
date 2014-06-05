@@ -224,7 +224,7 @@ private:
                 auto temp= M_doftable->localToGlobal( iElAd,
                                                 iFaEl * fe_type::nDofPerVertex + l,
                                                 c );
-                M_doftable->M_face_l2g[ face_it->id()][ lc++ ] = boost::make_tuple( boost::get<0>( temp ),boost::get<1>( temp ),boost::get<2>( temp ),
+                M_doftable->M_face_l2g[ face_it->id()][ lc++ ] = FaceDof( boost::get<0>( temp ),boost::get<1>( temp ),boost::get<2>( temp ),
                                                         iFaEl * fe_type::nDofPerVertex + l );
             }
         }
