@@ -1924,7 +1924,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
                                                             bool verbose,
                                                             mpl::int_<MESH_ELEMENTS> )
 {
-    const size_type context = ExprType::context|vm::POINT;
+    const size_type context = ExprType::context|vm::POINT|vm::KB|vm::JACOBIAN;
     typedef ExprType expression_type;
     typedef Element<Y,Cont> element_type;
     // mesh element
