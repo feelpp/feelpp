@@ -308,6 +308,25 @@ private:
 };
 
 
+template<typename PointType>
+struct UpdateEltPoint
+{
+    UpdateEltPoint( uint16_type k, PointType const& pt )
+        :
+        M_idx( k ),
+        M_pt( pt )
+    {}
+    template<typename EltType>
+    void operator()( EltType& element  ) const
+    {
+        element.setPoint( M_idx, M_pt );
+    }
+private:
+    uint16_type M_idx;
+    PointType const& M_pt;
+};
+
+
 } // detail
 /// \endcond detail
 }
