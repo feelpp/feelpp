@@ -2217,34 +2217,39 @@ public:
 
         void assign( geoelement_type const& e, typename fe_type::local_interpolant_type const& Ihloc )
         {
+            auto const& s = M_functionspace->dof()->localToGlobalSigns( e.id() );
+
             for( auto ldof : M_functionspace->dof()->localDof( e.id() ) )
             {
                 size_type index=start()+ ldof.second.index();
-                this->operator[]( index ) = Ihloc( ldof.first.localDof() );
+                this->operator[]( index ) = s(ldof.first.localDof())*Ihloc( ldof.first.localDof() );
             }
         }
         void assign( geoface_type const& e, typename fe_type::local_interpolant_type const& Ihloc )
         {
+            auto const& s = M_functionspace->dof()->localToGlobalSigns( e.id() );
             for( auto ldof : M_functionspace->dof()->faceLocalDof( e.id() ) )
             {
                 size_type index=start()+ ldof.second.index();
-                this->operator[]( index ) = Ihloc( ldof.first );
+                this->operator[]( index ) = s(ldof.first)*Ihloc( ldof.first );
             }
         }
         void plus_assign( geoelement_type const& e, typename fe_type::local_interpolant_type const& Ihloc )
         {
+            auto const& s = M_functionspace->dof()->localToGlobalSigns( e.id() );
             for( auto ldof : M_functionspace->dof()->localDof( e.id() ) )
             {
                 size_type index=start()+ ldof.second.index();
-                this->operator[]( index ) += Ihloc( ldof.first.localDof() );
+                this->operator[]( index ) += s(ldof.first.localDof())*Ihloc( ldof.first.localDof() );
             }
         }
         void plus_assign( geoface_type const& e, typename fe_type::local_interpolant_type const& Ihloc )
         {
+            auto const& s = M_functionspace->dof()->localToGlobalSigns( e.id() );
             for( auto ldof : M_functionspace->dof()->faceLocalDof( e.id() ) )
             {
                 size_type index=start()+ ldof.second.index();
-                this->operator[]( index ) += Ihloc( ldof.first );
+                this->operator[]( index ) += s(ldof.first)*Ihloc( ldof.first );
             }
         }
 
