@@ -422,6 +422,12 @@ public:
         typedef typename expression_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> tensor_expr_type;
         typedef typename tensor_expr_type::value_type value_type;
 
+        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t,vf::detail::gmc<0> >,
+                                  mpl::identity<vf::detail::gmc<0> >,
+                                  mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
+        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
+        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
+
         typedef typename tensor_expr_type::shape shape;
 
         template <class Args> struct sig
@@ -437,25 +443,27 @@ public:
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
             :
-            M_geo( geom ),
+            M_geo( fusion::at_key<key_type>( geom ).get() ),
             M_tensor_expr( expr.expression(), geom, fev, feu )
         {}
 
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev )
             :
-            M_geo( geom ),
+            M_geo( fusion::at_key<key_type>( geom ).get() ),
             M_tensor_expr( expr.expression(), geom, fev )
         {}
 
         tensor( this_type const& expr, Geo_t const& geom )
             :
-            M_geo( geom ),
+            M_geo( fusion::at_key<key_type>( geom ).get() ),
             M_tensor_expr( expr.expression(), geom )
         {
         }
 
-        int nPoints() const { return M_geo.nPoints(); }
+        gmc_ptrtype geom() const { return M_geo; }
+
+        int nPoints() const { return M_geo->nPoints(); }
 
         template<typename IM>
         void init( IM const& im )
@@ -523,7 +531,9 @@ public:
         {
             return M_tensor_expr.evalq( c1, c2, q );
         }
-        Geo_t const& M_geo;
+
+        gmc_ptrtype M_geo;
+        //Geo_t const& M_geo;
         tensor_expr_type M_tensor_expr;
     };
 #if 0
