@@ -5283,8 +5283,8 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
     OPENCL_CHECK_ERR(queue->enqueueNDRangeKernel(
             smk,
             cl::NullRange,
-            cl::NDRange(nM),
-            cl::NDRange(devPWSM, 1),
+            cl::NDRange(nM * devPWSM),
+            cl::NDRange(devPWSM),
             NULL,
             NULL), "Could not launch kernel");
     //event.wait();
@@ -5313,7 +5313,7 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
     err = queue->enqueueNDRangeKernel(
             msum,
             cl::NullRange,
-            cl::NDRange(1),
+            cl::NDRange(devPWSM),
             cl::NDRange(devPWSM),
             NULL,
             NULL);
@@ -5355,7 +5355,7 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
     err = queue->enqueueNDRangeKernel(
             svk,
             cl::NullRange,
-            cl::NDRange(nV),
+            cl::NDRange(nV * devPWSM),
             cl::NDRange(devPWSM),
             NULL,
             NULL);
@@ -5386,7 +5386,7 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
     err = queue->enqueueNDRangeKernel(
             vsum,
             cl::NullRange,
-            cl::NDRange(1),
+            cl::NDRange(devPWSM),
             cl::NDRange(devPWSM),
             NULL,
             NULL);
