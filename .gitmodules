@@ -43,3 +43,6 @@
 	url = https://github.com/feelpp/chorus
     fetchRecurseSubmodules = on-demand
     branch = master
+[submodule "holo3"]
+	path = projects/holo3
+	url = https://github.com/feelpp/holo3
