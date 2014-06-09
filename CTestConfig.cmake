@@ -24,9 +24,10 @@ testcrb
 testdiscr
 testmesh
 testalg
-testpoly
 testinterpolation
 testintegration
+testpoly
+testts
 testvf
 testsuite
 benchmarks
