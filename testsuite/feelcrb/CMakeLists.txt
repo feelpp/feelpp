@@ -29,3 +29,6 @@ feelpp_add_test( nlsolve_eigen )
 if ( FEELPP_HAS_SLEPC )
   feelpp_add_test( slepc )
 endif()
+
+feelpp_add_test( rbspace )
+feelpp_add_test( rbspacevector )
