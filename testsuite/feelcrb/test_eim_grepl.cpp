@@ -196,11 +196,11 @@ public:
             S->equidistribute(n);
             int fun_number=0;
             std::vector<vectorN_type> time_vector( M_funs.size() );
-            BOOST_FOREACH( auto fun, M_funs )
+            for( auto fun : M_funs )
             {
                 time_vector[fun_number].resize( n );
                 int mu_number=0;
-                BOOST_FOREACH( auto p, *S )
+                for( auto p : *S )
                 {
                     *solution = solve(p);
                     int max = fun->mMax();
