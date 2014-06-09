@@ -1080,6 +1080,7 @@ public:
 
     virtual element_type operator()( parameter_type const& ) = 0;
     virtual element_type operator()( solution_type const& T, parameter_type const& ) = 0;
+    virtual element_type interpolant( parameter_type const& ) = 0;
     virtual element_type interpolant( parameter_type const& , solution_type const & , int ) = 0;
 
     value_type operator()( node_type const& x, parameter_type const& mu )
