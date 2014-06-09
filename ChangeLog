@@ -1,13 +1,27 @@
 /* -*- mode: c++ -*- */
 /**
-   \page ChangeLog ChangeLog
+  \page ChangeLog ChangeLog
 
-   \tableofcontents
+  \tableofcontents
 
-   \section feelpp0980 Feel++ Release 0.98.0
-   release date 22-05-2014
+  \section feelpp0990 Feel++ Release 0.99.0
+  release date dd-mm-2014
 
-   \subsection changes0980 Changes
+  \subsection changes0990 Changes
+
+  \subsection features0990 Features
+
+  \subsection issues0990 Noteworthy Issues
+
+  - #374 Move test_bdf* to testsuite/feelts
+  - #372 FTE in test_bdf2 : invalid c++ code generated at runtime by ginac
+  - #373 Support simple operators + - in GiNaC::matrix
+  - #354 Bug in one of the tests in 3D in test_integration_opt (high order geom)
+
+  \section feelpp0980 Feel++ Release 0.98.0
+  release date 22-05-2014
+
+  \subsection changes0980 Changes
 
    - Improve documentation, see <a
      href="https://github.com/feelpp/feelpp/issues/300">#300</a>
