@@ -363,7 +363,6 @@ Mesh<Shape, T, Tag>::updateForUse()
         LOG(INFO) << "    h max : " << this->hMax() << "\n";
     }
 
-    }
     // check mesh connectivity
     this->check();
     //std::cout<<"pass hier\n";
