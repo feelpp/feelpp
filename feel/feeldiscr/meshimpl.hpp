@@ -337,6 +337,33 @@ Mesh<Shape, T, Tag>::updateForUse()
 
     }
 
+    // compute h information: average, min and max
+    {
+        element_iterator iv,  en;
+        boost::tie( iv, en ) = this->elementsRange();
+        value_type h_min = iv->h();
+        value_type h_max = iv->h();
+        value_type h_avg = 0;
+        for ( ; iv != en; ++iv )
+        {
+            h_min = (h_min>iv->h())?iv->h():h_min;
+            h_max = (h_max<iv->h())?iv->h():h_max;
+            h_avg += iv->h();
+        }
+        h_avg /= this->numGlobalElements();
+        M_h_avg = 0;
+        M_h_min = 0;
+        M_h_max = 0;
+        mpi::all_reduce(this->worldComm(), h_avg, M_h_avg, std::plus<value_type>());
+        mpi::all_reduce(this->worldComm(), h_min, M_h_min, mpi::minimum<value_type>());
+        mpi::all_reduce(this->worldComm(), h_max, M_h_max, mpi::maximum<value_type>());
+
+        LOG(INFO) << "h average : " << mesh->hAverage() << "\n";
+        LOG(INFO) << "    h min : " << mesh->hMin() << "\n";
+        LOG(INFO) << "    h max : " << mesh->hMax() << "\n";
+    }
+
+    }
     // check mesh connectivity
     this->check();
     //std::cout<<"pass hier\n";
