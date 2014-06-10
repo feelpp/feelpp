@@ -473,6 +473,13 @@ public:
         return M_tool_localization;
     }
 
+    //! \return the average h
+    value_type hAverage() const { return M_h_avg; }
+    //! \return the minimum h
+    value_type hMin() const { return M_h_min; }
+    //! \return the maximum h
+    value_type hMax() const { return M_h_max; }
+
     /**
      * \return the measure of the mesh (sum of the measure of the elements)
      */
@@ -1462,6 +1469,11 @@ private:
 
     gm_ptrtype M_gm;
     gm1_ptrtype M_gm1;
+
+    value_type M_h_avg;
+    value_type M_h_min;
+    value_type M_h_max;
+
 
     //! measure of the mesh
     value_type M_meas;
