@@ -358,9 +358,9 @@ Mesh<Shape, T, Tag>::updateForUse()
         mpi::all_reduce(this->worldComm(), h_min, M_h_min, mpi::minimum<value_type>());
         mpi::all_reduce(this->worldComm(), h_max, M_h_max, mpi::maximum<value_type>());
 
-        LOG(INFO) << "h average : " << mesh->hAverage() << "\n";
-        LOG(INFO) << "    h min : " << mesh->hMin() << "\n";
-        LOG(INFO) << "    h max : " << mesh->hMax() << "\n";
+        LOG(INFO) << "h average : " << this->hAverage() << "\n";
+        LOG(INFO) << "    h min : " << this->hMin() << "\n";
+        LOG(INFO) << "    h max : " << this->hMax() << "\n";
     }
 
     }
