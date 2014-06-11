@@ -53,6 +53,7 @@ Exporter<MeshType, N>::Exporter( WorldComm const& worldComm )
     super2(),
     M_worldComm( worldComm ),
     M_do_export( true ),
+    M_use_single_transient_file( false ),
     M_type(),
     M_prefix( Environment::about().appName() ),
     M_freq( 1 ),
