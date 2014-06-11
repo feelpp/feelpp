@@ -242,9 +242,9 @@ add_definitions(-UBOOST_UBLAS_TYPE_CHECK )
 # generate different c++ codes and undefined references at link time.
 # in a short future, this should not be necessary anymore
 IF(NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" OR NOT APPLE)
-#  ADD_DEFINITIONS(-DBOOST_NO_SCOPED_ENUMS)
+  ADD_DEFINITIONS(-DBOOST_NO_SCOPED_ENUMS)
   IF(Boost_MAJOR_VERSION EQUAL "1" AND Boost_MINOR_VERSION GREATER "51")
-#    ADD_DEFINITIONS(-DBOOST_NO_CXX11_SCOPED_ENUMS)
+    ADD_DEFINITIONS(-DBOOST_NO_CXX11_SCOPED_ENUMS)
   endif()
 endif()
 
