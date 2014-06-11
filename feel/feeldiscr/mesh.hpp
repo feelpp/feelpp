@@ -45,6 +45,7 @@
 #include <feel/feelcore/context.hpp>
 //#include <feel/feelcore/worldcomm.hpp>
 
+#include <feel/feelcore/functors.hpp>
 #include <feel/feelmesh/mesh0d.hpp>
 #include <feel/feelmesh/mesh1d.hpp>
 #include <feel/feelmesh/mesh2d.hpp>
@@ -319,13 +320,7 @@ public:
         {
             std::vector<int> locals{ ne, nf, ned, np, (int)this->numVertices() };
             std::vector<int> globals( 5, 0 );
-            mpi::all_reduce( this->worldComm(), locals, globals,
-                             [] ( std::vector<int> const& x, std::vector<int> const& y )
-                             {
-                                 std::vector<int> z(5);
-                                 for(int i = 0; i < 5; ++i ) z[i] = x[i] + y[i];
-                                 return z;
-                             } );
+            mpi::all_reduce( this->worldComm(), locals, globals, Functor::AddStdVectors<int>() );
             M_numGlobalElements = globals[0];
             M_numGlobalFaces = globals[1];
             M_numGlobalEdges = globals[2];
@@ -506,9 +501,11 @@ public:
     /**
      * \return the measure of the mesh (sum of the measure of the elements)
      */
-    value_type measure() const
+    value_type measure( bool parallel = true ) const
     {
-        return M_meas;
+        if ( parallel )
+            return M_meas;
+        return M_local_meas;
     }
 
     /**
@@ -1499,10 +1496,10 @@ private:
 
 
     //! measure of the mesh
-    value_type M_meas;
+    value_type M_meas, M_local_meas;
 
     //! measure of the boundary of the mesh
-    value_type M_measbdy;
+    value_type M_measbdy, M_local_measbdy;
 
     /**
      * The processors who neighbor the current

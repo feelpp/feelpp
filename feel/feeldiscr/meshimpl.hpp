@@ -315,6 +315,15 @@ Mesh<Shape, T, Tag>::updateForUse()
                     if ( ( *_faces.first ) && ( *_faces.first )->isOnBoundary() )
                         M_measbdy += ( *_faces.first )->measure();
         }
+        M_local_meas = M_meas;
+        M_meas = 0;
+        M_local_measbdy = M_measbdy;
+        M_measbdy = 0;
+        std::vector<value_type> lmeas{ M_local_meas, M_local_measbdy };
+        std::vector<value_type> gmeas( 2, 0. );
+        mpi::all_reduce(this->worldComm(), lmeas, gmeas, Functor::AddStdVectors<value_type>());
+        M_meas = gmeas[0];
+        M_measbdy = gmeas[1];
 
         // now that all elements have been updated, build inter element
         // data such as the measure of point element neighbors
