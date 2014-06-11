@@ -38,6 +38,8 @@
 #include <feel/feelvf/operations.hpp>
 #include <feel/feelvf/ginac.hpp>
 #include <feel/feelvf/on.hpp>
+#include <feel/feelvf/trans.hpp>
+
 
 /** use Feel namespace */
 using namespace Feel;
@@ -68,7 +70,7 @@ public :
     void run()
     {
         auto mesh = createGMSHMesh( _mesh=new Mesh<Simplex<Dim,1>>,
-                                    _desc=domain( _name=( boost::format( "%1%-%2%" ) % option(_name="gmsh.domain.shape").template as<std::string>() % Dim ).str() ,
+                                    _desc=domain( _name=( boost::format( "%1%-%2%" ) % soption(_name="gmsh.domain.shape") % Dim ).str() ,
                                                   _dim=Dim ) );
 
 
@@ -79,14 +81,16 @@ public :
         auto solution = Xh->element();
         auto mybdf = bdf( _space=Xh, _name="mybdf" );
 
-        auto g=option(_name="functions.g").template as<std::string>();
+        auto g=soption(_name="functions.g");
         auto vars = Symbols{"x","y","t","alpha","beta"};
         auto eg = parse(g,vars);
-        auto fg = -laplacian( eg, {vars[0],vars[1]} )+diff( eg,  {vars[2]});
+        GiNaC::matrix fg = -laplacian( eg, {vars[0],vars[1]} ) + diff( eg,  {vars[2]},1);
         LOG(INFO) << "fg= " << fg;
 
-        auto fe = expr( fg, vars );
-        auto ue_g = expr( eg, vars );
+        auto fe = expr( fg, vars, "fg" );
+        LOG(INFO) << "fe: "<< fe << std::endl;
+        auto ue_g = expr( eg, vars, "eg" );
+        LOG(INFO) << "ue_g: "<< ue_g << std::endl;
 
         //stiffness matrix
         auto a = form2( _test=Xh, _trial=Xh ), at=form2(_test=Xh, _trial=Xh);
@@ -182,8 +186,3 @@ int main(int argc, char** argv )
     test.run();
 }
 #endif
-
-
-
-
-

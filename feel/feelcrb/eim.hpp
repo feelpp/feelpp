@@ -1081,6 +1081,8 @@ public:
     virtual element_type operator()( parameter_type const& ) = 0;
     virtual element_type operator()( solution_type const& T, parameter_type const& ) = 0;
     virtual element_type interpolant( parameter_type const& ) = 0;
+    virtual element_type interpolant( parameter_type const& , solution_type const & , int ) = 0;
+
     value_type operator()( node_type const& x, parameter_type const& mu )
         {
             VLOG(2) << "calling EIMFunctionBase::operator()( x=" << x << ", mu=" << mu << ")\n";
@@ -1351,7 +1353,6 @@ public:
 
     model_functionspace_ptrtype modelFunctionSpace() const { return M_model->functionSpace();}
     model_functionspace_ptrtype modelFunctionSpace() { return M_model->functionSpace();}
-
 
     element_type
     projectedResidual( size_type __M ) const
@@ -1939,6 +1940,7 @@ public:
         int n_eval = option(_name="eim.computational-time-neval").template as<int>();
 
         Eigen::Matrix<double, Eigen::Dynamic, 1> time_crb;
+        Eigen::Matrix<double, Eigen::Dynamic, 1> time;
         time_crb.resize( n_eval );
 
         typename crb_type::sampling_ptrtype Sampling( new typename crb_type::sampling_type( M_model->parameterSpace() ) );
@@ -1953,7 +1955,7 @@ public:
         {
             //LOG( INFO ) << "[computational] mu = \n"<<mu;
             boost::mpi::timer tcrb;
-            auto o = M_crb->run( mu,  option(_name="crb.online-tolerance").template as<double>() , N);
+            auto o = M_crb->run( mu, time, option(_name="crb.online-tolerance").template as<double>() , N);
             auto solutions=o.template get<2>();
             auto uN = solutions.template get<0>();//vector of solutions ( one solution at each time step )
 
@@ -1978,6 +1980,11 @@ public:
         auto beta = this->beta( mu );
         return expansion( M_q_vector, this->beta( mu ) , M_M_max);
     }
+    element_type interpolant( parameter_type const& mu , solution_type const & solution , int M)
+    {
+        return expansion( M_q_vector, this->beta( mu , solution , M) , M );
+    }
+
     //return M_eim->operator()( mu , M_eim->mMax() ); }
 
     //element_type const& q( int m ) const { return M_eim->q( m ); }

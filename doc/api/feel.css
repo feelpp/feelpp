@@ -1228,3 +1228,12 @@ div.toc li.level4 {
     word-wrap: break-word; /* IE 5.5+ */
   }
 }
+
+/* Doxygen does not allow to customize size for images inserted with \image */
+/* other than eps file */
+/* This tweak allow to modify the size param of the image */
+/* It can be applied to a specific image by adding the name of the image in [] */
+/* e.g. div.image img[src="bift_001.png"]{  */
+div.image img{ 
+        width:100%; 
+}
