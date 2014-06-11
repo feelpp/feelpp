@@ -317,7 +317,7 @@ public:
 
         if ( this->worldComm().localSize() >1 )
         {
-            std::vector<int> locals{ ne, nf, ned, np, this->numVertices() };
+            std::vector<int> locals{ ne, nf, ned, np, (int)this->numVertices() };
             std::vector<int> globals( 5, 0 );
             mpi::all_reduce( this->worldComm(), locals, globals,
                              [] ( std::vector<int> const& x, std::vector<int> const& y )
