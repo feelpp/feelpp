@@ -297,25 +297,48 @@ public:
 #endif
 
     size_type numGlobalElements() const { return M_numGlobalElements; }
+    size_type numGlobalFaces() const { return M_numGlobalFaces; }
+    size_type numGlobalEdges() const { return M_numGlobalEdges; }
+    size_type numGlobalPoints() const { return M_numGlobalPoints; }
+    size_type numGlobalVertices() const { return M_numGlobalVertices; }
 
     void updateNumGlobalElements()
     {
         //int ne = numElements();
         int ne = std::distance( this->beginElementWithProcessId( this->worldComm().rank() ),
                                 this->endElementWithProcessId( this->worldComm().rank() ) );
+        int nf = std::distance( this->beginFaceWithProcessId( this->worldComm().rank() ),
+                                this->endFaceWithProcessId( this->worldComm().rank() ) );
+        int ned = 0;/*std::distance( this->beginEdgeWithProcessId( this->worldComm().rank() ),
+                      this->endEdgeWithProcessId( this->worldComm().rank() ) );*/
+        int np = std::distance( this->beginPointWithProcessId( this->worldComm().rank() ),
+                                this->endPointWithProcessId( this->worldComm().rank() ) );
+
 
         if ( this->worldComm().localSize() >1 )
         {
-            int gne = 0;
-            mpi::all_reduce( this->worldComm(), ne, gne, [] ( int x, int y )
+            std::vector<int> locals{ ne, nf, ned, np, (int)this->numVertices() };
+            std::vector<int> globals( 5, 0 );
+            mpi::all_reduce( this->worldComm(), locals, globals,
+                             [] ( std::vector<int> const& x, std::vector<int> const& y )
                              {
-                                 return x + y;
+                                 std::vector<int> z(5);
+                                 for(int i = 0; i < 5; ++i ) z[i] = x[i] + y[i];
+                                 return z;
                              } );
-            M_numGlobalElements = gne;
+            M_numGlobalElements = globals[0];
+            M_numGlobalFaces = globals[1];
+            M_numGlobalEdges = globals[2];
+            M_numGlobalPoints = globals[3];
+            M_numGlobalVertices = globals[4];
         }
         else
         {
             M_numGlobalElements = ne;
+            M_numGlobalFaces = nf;
+            M_numGlobalEdges = ned;
+            M_numGlobalPoints = np;
+            M_numGlobalVertices = this->numVertices();
         }
     }
     /**
@@ -1465,7 +1488,7 @@ private:
 private:
 
     //! communicator
-    size_type M_numGlobalElements;
+    size_type M_numGlobalElements, M_numGlobalFaces, M_numGlobalEdges, M_numGlobalPoints, M_numGlobalVertices;
 
     gm_ptrtype M_gm;
     gm1_ptrtype M_gm1;
