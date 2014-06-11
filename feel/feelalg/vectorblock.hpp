@@ -90,7 +90,7 @@ public :
     /**
      * build vector representating all blocks
      */
-    void buildVector( backend_ptrtype _backend );
+    void buildVector( backend_ptrtype _backend = Feel::backend(_rebuild=false));
 
     vector_ptrtype& vector() { return M_vector; }
     vector_ptrtype const& vector() const { return M_vector; }
