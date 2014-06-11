@@ -29,7 +29,8 @@ endif()
 IF( ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU") OR
     ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang") OR
     ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel") )
-  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x" )
+  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -fPIC -Bdynamic" )
+  set( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXEC_LINKER_FLAGS}  -fPIC -Bdynamic" )
   IF("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
     IF(APPLE OR FEELPP_USE_CLANG_LIBCXX)
       message(STATUS "Use clang libc++")
@@ -166,7 +167,12 @@ ELSE ()
   CHECK_FUNCTION_EXISTS (dlopen FEELPP_HAS_DLOPEN)
 ENDIF (FEELPP_HAS_LIBDL)
 
-
+find_package(GMP)
+if ( GMP_FOUND )
+  SET(FEELPP_LIBRARIES  ${GMP_LIBRARIES} ${FEELPP_LIBRARIES})
+  message(STATUS "GMP: ${GMP_LIBRARIES}" )
+  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Gmp" )
+endif()
 #
 # Blas and Lapack
 #
@@ -244,9 +250,9 @@ add_definitions(-UBOOST_UBLAS_TYPE_CHECK )
 # generate different c++ codes and undefined references at link time.
 # in a short future, this should not be necessary anymore
 IF(NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" OR NOT APPLE)
-  ADD_DEFINITIONS(-DBOOST_NO_SCOPED_ENUMS)
+#  ADD_DEFINITIONS(-DBOOST_NO_SCOPED_ENUMS)
   IF(Boost_MAJOR_VERSION EQUAL "1" AND Boost_MINOR_VERSION GREATER "51")
-    ADD_DEFINITIONS(-DBOOST_NO_CXX11_SCOPED_ENUMS)
+#    ADD_DEFINITIONS(-DBOOST_NO_CXX11_SCOPED_ENUMS)
   endif()
 endif()
 
