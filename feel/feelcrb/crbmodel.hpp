@@ -367,12 +367,19 @@ public:
         u = Xh->element();
         v = Xh->element();
 
-        this->computeAffineDecomposition();
-        this->countAffineDecompositionTerms();
         bool symmetric = option(_name="crb.use-symmetric-matrix").template as<bool>();
+        bool stock = option(_name="crb.stock-matrices").template as<bool>();
+
+        if( stock )
+            this->computeAffineDecomposition();
+
+        this->countAffineDecompositionTerms();
+
         M_inner_product_matrix=this->newMatrix();
         if( this->hasEim() || (!symmetric) )
         {
+            CHECK( stock )<<"There is some work to do before using operators free when using EIM, for now we compute (and stock matrices) affine decomposition to assemble the inner product \n";
+
             //in this case, we use linear part of bilinear form a
             //as the inner product
             auto muref = this->refParameter();
@@ -1009,10 +1016,11 @@ public:
     operatorcomposite_ptrtype operatorCompositeLightM( mpl::bool_<false> ) const
     {
         bool constructed_by_model = M_model->constructOperatorCompositeM();
+        bool light_version=true;
         if( constructed_by_model )
             return M_model->operatorCompositeLightM();
         else
-            return preAssembleMassMatrix();
+            return preAssembleMassMatrix( light_version );
     }
 
 
@@ -1140,6 +1148,17 @@ public:
                         M_mMaxF[output][q]=M_Fqm[output][q].size();
                         if( M_mMaxF[output][q] > 1 )
                             M_has_eim=true;
+                    }
+                }
+
+                if( M_has_eim )
+                {
+                    M_linearAqm = M_model->computeLinearDecompositionA();
+                    M_QLinearDecompositionA = M_linearAqm.size();
+                    M_mMaxLinearDecompositionA.resize( M_QLinearDecompositionA );
+                    for(int q=0; q<M_QLinearDecompositionA; q++)
+                    {
+                        M_mMaxLinearDecompositionA[q] = M_linearAqm[q].size();
                     }
                 }
 
@@ -1361,6 +1380,21 @@ public:
     monolithic_type computeMonolithicFormulation( parameter_type const& mu , mpl::bool_<false> )
     {
         boost::tie( M_monoA, M_monoF ) = M_model->computeMonolithicFormulation( mu );
+        return boost::make_tuple( M_monoM, M_monoA, M_monoF );
+    }
+
+    monolithic_type computeMonolithicFormulationU( parameter_type const& mu , element_type const& u )
+    {
+        return computeMonolithicFormulationU( mu, u, mpl::bool_<model_type::is_time_dependent>() );
+    }
+    monolithic_type computeMonolithicFormulationU( parameter_type const& mu , element_type const& u , mpl::bool_<true> )
+    {
+        boost::tie( M_monoM, M_monoA, M_monoF ) = M_model->computeMonolithicFormulationU( mu, u );
+        return boost::make_tuple( M_monoM, M_monoA, M_monoF );
+    }
+    monolithic_type computeMonolithicFormulationU( parameter_type const& mu , element_type const& u ,  mpl::bool_<false> )
+    {
+        boost::tie( M_monoA, M_monoF ) = M_model->computeMonolithicFormulationU( mu, u );
         return boost::make_tuple( M_monoM, M_monoA, M_monoF );
     }
 
@@ -2480,9 +2514,9 @@ private:
     void assembleMassMatrix( mpl::bool_<true> );
     void assembleMassMatrix( mpl::bool_<false> );
 
-    operatorcomposite_ptrtype preAssembleMassMatrix( ) const ;
-    operatorcomposite_ptrtype preAssembleMassMatrix( mpl::bool_<true> ) const ;
-    operatorcomposite_ptrtype preAssembleMassMatrix( mpl::bool_<false> ) const ;
+    operatorcomposite_ptrtype preAssembleMassMatrix( bool light_version=false ) const ;
+    operatorcomposite_ptrtype preAssembleMassMatrix( mpl::bool_<true> , bool light_version ) const ;
+    operatorcomposite_ptrtype preAssembleMassMatrix( mpl::bool_<false>, bool light_version ) const ;
 
     void assembleInitialGuessV( initial_guess_type & initial_guess );
     void assembleInitialGuessV( initial_guess_type & initial_guess, mpl::bool_<true> );
@@ -2611,7 +2645,7 @@ struct AssembleMassMatrixInCompositeCase
 
     AssembleMassMatrixInCompositeCase( element_type const u ,
                                        element_type const v ,
-                                       boost::shared_ptr<CRBModel<ModelType> > crb_model)
+                                       CRBModel<ModelType>* crb_model)
         :
         M_composite_u ( u ),
         M_composite_v ( v ),
@@ -2637,7 +2671,7 @@ struct AssembleMassMatrixInCompositeCase
 
     element_type  M_composite_u;
     element_type  M_composite_v;
-    mutable boost::shared_ptr<CRBModel<ModelType>  > M_crb_model;
+    mutable CRBModel<ModelType>* M_crb_model;
 };
 
 template <typename ModelType>
@@ -2709,15 +2743,15 @@ struct AssembleInitialGuessVInCompositeCase
 
 template<typename TruthModelType>
 typename CRBModel<TruthModelType>::operatorcomposite_ptrtype
-CRBModel<TruthModelType>::preAssembleMassMatrix() const
+CRBModel<TruthModelType>::preAssembleMassMatrix( bool light_version ) const
 {
     static const bool is_composite = functionspace_type::is_composite;
-    return preAssembleMassMatrix( mpl::bool_< is_composite >() );
+    return preAssembleMassMatrix( mpl::bool_< is_composite >() , light_version );
 }
 
 template<typename TruthModelType>
 typename CRBModel<TruthModelType>::operatorcomposite_ptrtype
-CRBModel<TruthModelType>::preAssembleMassMatrix( mpl::bool_<false> ) const
+CRBModel<TruthModelType>::preAssembleMassMatrix( mpl::bool_<false> , bool light_version ) const
 {
 
     auto Xh = M_model->functionSpace();
@@ -2728,13 +2762,25 @@ CRBModel<TruthModelType>::preAssembleMassMatrix( mpl::bool_<false> ) const
     auto opfree = opLinearFree( _domainSpace=Xh , _imageSpace=Xh , _expr=expr );
     opfree->setName("mass operator (automatically created)");
     //in this case, the affine decompositon has only one element
-    op_mass->addElement( boost::make_tuple(0,0) , opfree );
+    if( light_version )
+    {
+        //note that only time independent problems need to
+        //inform if we use light version or not of the affine decomposition
+        //i.e. if we use EIM expansion or not
+        //because transient models provide already a decomposition of the mass matrix
+        //so it is not automatically created
+        op_mass->addElement( 0 , opfree );
+    }
+    else
+    {
+        op_mass->addElement( boost::make_tuple(0,0) , opfree );
+    }
     return op_mass;
 }
 
 template<typename TruthModelType>
 typename CRBModel<TruthModelType>::operatorcomposite_ptrtype
-CRBModel<TruthModelType>::preAssembleMassMatrix( mpl::bool_<true> ) const
+CRBModel<TruthModelType>::preAssembleMassMatrix( mpl::bool_<true> , bool light_version ) const
 {
     auto Xh = M_model->functionSpace();
 
@@ -2782,7 +2828,7 @@ CRBModel<TruthModelType>::assembleMassMatrix( mpl::bool_<true> )
     M_Mqm[0].resize(1);
     M_Mqm[0][0]=M_backend->newMatrix( _test=Xh , _trial=Xh );
 
-    AssembleMassMatrixInCompositeCase<TruthModelType> assemble_mass_matrix_in_composite_case ( u , v , this->shared_from_this());
+    AssembleMassMatrixInCompositeCase<TruthModelType> assemble_mass_matrix_in_composite_case ( u , v , this );
     fusion::for_each( index_vector, assemble_mass_matrix_in_composite_case );
 
     M_Mqm[0][0]->close();
@@ -3130,24 +3176,44 @@ CRBModel<TruthModelType>::solveFemMonolithicFormulation( parameter_type const& m
     double bdf_coeff ;
     auto vec_bdf_poly = M_backend->newVector( Xh );
 
+    auto uold = Xh->element();
+    u=uold;
+
+    int max_fixedpoint_iterations  = this->vm()["crb.max-fixedpoint-iterations"].template as<int>();
+    double increment_fixedpoint_tol  = this->vm()["crb.increment-fixedpoint-tol"].template as<double>();
+    int iter=0;
+    double norm=0;
+
     for( mybdf->start(*InitialGuess); !mybdf->isFinished(); mybdf->next() )
     {
         bdf_coeff = mybdf->polyDerivCoefficient( 0 );
         auto bdf_poly = mybdf->polyDeriv();
         *vec_bdf_poly = bdf_poly;
+        iter=0;
+        do {
 
-        boost::tie(M, A, F) = this->computeMonolithicFormulation( mu );
+            if( is_linear )
+                boost::tie(M, A, F) = this->computeMonolithicFormulation( mu );
+            else
+                boost::tie(M, A, F) = this->computeMonolithicFormulationU( mu , u );
 
-        if( !isSteady() )
-        {
-            A->addMatrix( bdf_coeff, M );
-            F[0]->addVector( *vec_bdf_poly, *M );
-        }
-        M_preconditioner_primal->setMatrix( A );
+            if( !isSteady() )
+            {
+                A->addMatrix( bdf_coeff, M );
+                F[0]->addVector( *vec_bdf_poly, *M );
+            }
+            uold=u;
+            M_preconditioner_primal->setMatrix( A );
+            M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0] , _prec=M_preconditioner_primal);
 
-        M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0] , _prec=M_preconditioner_primal);
+            mybdf->shiftRight(u);
 
-        mybdf->shiftRight(u);
+            if( is_linear )
+                norm = 0;
+            else
+                norm = this->computeNormL2( uold , u );
+            iter++;
+        } while( norm > increment_fixedpoint_tol && iter<max_fixedpoint_iterations );
     }
 
     return u;

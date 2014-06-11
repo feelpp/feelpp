@@ -26,28 +26,20 @@ else()
 endif()
 
 #should check the version of gcc for -std=c++0x ou -std=c++11
+
 IF( ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU") OR
     ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang") OR
     ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel") )
-  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -fPIC -Bdynamic" )
-  set( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXEC_LINKER_FLAGS}  -fPIC -Bdynamic" )
+  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -std=c++11 -ftemplate-depth=1024" )
   IF("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
     IF(APPLE OR FEELPP_USE_CLANG_LIBCXX)
       message(STATUS "Use clang libc++")
-      set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -std=c++11 -stdlib=libc++ -ftemplate-depth=1024" )
+      set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++" )
     ELSE()
-      set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -std=c++11 -stdlib=libstdc++" )
+      set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libstdc++" )
     ENDIF()
   ENDIF()
-
-  IF("${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel")
-    IF(APPLE)
-      set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -std=c++11 -stdlib=libc++" )
-      #ELSE()
-      #set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -std=c++11 -stdlib=libstdc++" )
-    ENDIF()
-  ENDIF()
-endif()
+ENDIF()
 
 # IBM XL compiler
 IF( ("${CMAKE_CXX_COMPILER_ID}" MATCHES "XL") )
@@ -231,7 +223,7 @@ endif()
 OPTION(BOOST_ENABLE_TEST_DYN_LINK "enable boost test with dynamic lib" ON)
 MARK_AS_ADVANCED(BOOST_ENABLE_TEST_DYN_LINK)
 
-set(Boost_ADDITIONAL_VERSIONS "1.39" "1.40" "1.41" "1.42" "1.43" "1.44" "1.45" "1.46" "1.47" "1.48" "1.49" "1.50" "1.51" "1.52" "1.53")
+set(Boost_ADDITIONAL_VERSIONS "1.39" "1.40" "1.41" "1.42" "1.43" "1.44" "1.45" "1.46" "1.47" "1.48" "1.49" "1.50" "1.51" "1.52" "1.53" "1.54" "1.55")
 set( BOOST_PARAMETER_MAX_ARITY 24 )
 #set( BOOST_FILESYSTEM_VERSION 2)
 set( BOOST_FILESYSTEM_VERSION 3)

@@ -1016,6 +1016,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
     if ( elt_id == invalid_size_type_value )
         return;
 
+    auto const& s = M_functionspace->dof()->localToGlobalSigns( elt_id );
     for ( int l = 0; l < basis_type::nDof; ++l )
     {
         const int ncdof = is_product?nComponents1:1;
@@ -1042,13 +1043,13 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
                 {
                     for ( typename array_type::index i = 0; i < nDim; ++i )
                     {
-                        v[q]( i,0 ) += v_*context.curl( ldof, i, 0, q );
+                        v[q]( i,0 ) += s(ldof)*v_*context.curl( ldof, i, 0, q );
                     }
                 }
 
                 else if ( nDim == 2 )
                 {
-                    v[q]( 0,0 ) += v_*context.curl( ldof, 0, 0, q );
+                    v[q]( 0,0 ) += s(ldof)*v_*context.curl( ldof, 0, 0, q );
                 }
 
             }
@@ -1075,7 +1076,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
     if ( elt_id == invalid_size_type_value )
         return;
 
-
+    auto const& s = M_functionspace->dof()->localToGlobalSigns( elt_id );
     for ( int l = 0; l < basis_type::nDof; ++l )
     {
         const int ncdof = is_product?nComponents1:1;
@@ -1100,12 +1101,12 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
             {
                 if ( nDim == 3 )
                 {
-                    v[q]( 0,0 ) += v_*context.curl( ldof, comp, 0, q );
+                    v[q]( 0,0 ) += s(ldof)*v_*context.curl( ldof, comp, 0, q );
                 }
 
                 else if ( nDim == 2 )
                 {
-                    v[q]( 0,0 ) += v_*context.curl( ldof, 2, 0, q );
+                    v[q]( 0,0 ) += s(ldof)*v_*context.curl( ldof, 2, 0, q );
                 }
 
             }
@@ -1999,11 +2000,12 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
                           ( mpl::int_<shape::M>, mpl::int_<nComponents>, shape ) );
 
     map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
-    t_expr_type tensor_expr( basis_type::isomorphism( ex ), mapgmc );
+    //t_expr_type tensor_expr( basis_type::isomorphism( ex ), mapgmc );
+    t_expr_type tensor_expr( ex, mapgmc );
 
     map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
 
-    t_expr1_type tensor_expr1( basis_type::isomorphism( ex ), mapgmc1 );
+    t_expr1_type tensor_expr1( ex, mapgmc1 );
 
     std::vector<bool> points_done( this->functionSpace()->dof()->nLocalDof()/this->nComponents );
     std::fill( points_done.begin(), points_done.end(),false );
