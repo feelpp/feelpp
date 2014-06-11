@@ -182,7 +182,8 @@ public :
     static const bool is_linear = FunctionSpaceDefinition::is_linear;
 #else
     static const bool is_time_dependent = ((_Options&TimeDependent)==TimeDependent);
-    static const bool is_linear = ((_Options&Linear)==Linear);
+    //static const bool is_linear = ((_Options&Linear)==Linear);
+    static const bool is_linear = !((_Options&NonLinear)==NonLinear);
 #endif
     static const int Options = _Options;
 
@@ -533,6 +534,19 @@ public :
         return boost::make_tuple( M_monoM , M_monoA , M_monoF );
     }
     monolithic_type computeMonolithicFormulation( parameter_type const& mu, mpl::bool_<false> )
+    {
+        return boost::make_tuple( M_monoA , M_monoF );
+    }
+
+    virtual monolithic_type computeMonolithicFormulationU( parameter_type const& mu, element_type const& u )
+    {
+        return computeMonolithicFormulationU( mu , u, mpl::bool_< is_time_dependent >() );
+    }
+    monolithic_type computeMonolithicFormulationU( parameter_type const& mu, element_type const& u, mpl::bool_<true> )
+    {
+        return boost::make_tuple( M_monoM , M_monoA , M_monoF );
+    }
+    monolithic_type computeMonolithicFormulationU( parameter_type const& mu, element_type const& u, mpl::bool_<false> )
     {
         return boost::make_tuple( M_monoA , M_monoF );
     }
@@ -1416,9 +1430,11 @@ protected :
     std::vector<std::vector<vector_ptrtype> > M_Fq;
 
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Aqm;
+    std::vector< std::vector<sparse_matrix_ptrtype> > M_Jqm;
     std::vector< std::vector<sparse_matrix_ptrtype> > M_linearAqm;
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Mqm;
     std::vector< std::vector<std::vector<vector_ptrtype> > > M_Fqm;
+    std::vector< std::vector<std::vector<vector_ptrtype> > > M_Rqm;
 
     sparse_matrix_ptrtype M_monoA;
     sparse_matrix_ptrtype M_monoM;
@@ -1439,6 +1455,11 @@ protected :
     beta_vector_type M_betaAqm;
     beta_vector_type M_betaMqm;
     std::vector<beta_vector_type> M_betaFqm;
+
+    beta_vector_type M_betaJqm;
+    std::vector<beta_vector_type> M_betaRqm;
+
+    beta_vector_type M_betaInitialGuess;
 
     lhs_light_type M_lhs;
     lhs_light_type M_mass;

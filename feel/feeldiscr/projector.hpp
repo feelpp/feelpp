@@ -276,6 +276,7 @@ public :
         return this->project( expr, range );
     }
 
+		using OperatorLinear<DomainSpace, DualImageSpace>::apply;
     void
     apply( domain_element_type& de,
            image_element_type const& ie )

@@ -1,0 +1,74 @@
+#mesh size
+hsize=3e-2
+trainset-eim-size=40
+
+#name of the .msh file
+#for example :
+#mshfile = ....msh
+
+[benchmarkgrepl1]
+run.mode=2
+run.sampling.size=10
+export-solution=false
+
+[backend-primal]
+ksp-rtol=1e-15
+reuse-prec=false
+
+[backend-dual]
+ksp-rtol=1e-15
+reuse-prec=false
+
+[backendl2]
+ksp-rtol=1e-15
+reuse-prec=true #resolution with the same matrix, only rhs change
+
+[eim]
+cvg-study=false
+rebuild-database=true
+enrich-database=true
+error-max=1e-14
+dimension-max=15
+show-t-selection=true
+show-mu-selection=true
+show-offline-error=true
+
+[crb]
+#use-predefined-WNmu=true
+#use-predefined-test-sampling=true
+dimension-max=5
+solve-fem-monolithic=true
+output-index=1
+error-max=1e-14
+error-type=2
+orthonormalize-primal=true
+orthonormalize-dual=true
+visualize-basis=false
+show-mu-selection=true
+seek-mu-in-complement=true
+rebuild-database=true
+solve-dual-problem=true
+print-error-during-rb-construction=false
+cvg-study=false
+show-residual=false
+load-elements-database=true
+[crb.check]
+gs=0
+rb=0
+residual=false
+residual-transient-problems=false
+results-repo-name=BnchmarkGrepl
+
+#parameter for scm
+[crb.scm]
+iter-max=30
+strategy=0
+rebuild-database=false
+#do-scm-for-mass-matrix=true
+print-matrix=false
+#solver parameters
+solvereigen.tol=1e-10
+solvereigen.maxiter=100000
+solvereigen.ncv=10
+use-scm=false
+

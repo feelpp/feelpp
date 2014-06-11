@@ -722,7 +722,8 @@ public:
             vectorN_type h1_error_vector;
             vectorN_type relative_error_vector;
             vectorN_type time_fem_vector;
-            vectorN_type time_crb_vector;
+            vectorN_type time_crb_vector_prediction;
+            vectorN_type time_crb_vector_error_estimation;
             vectorN_type relative_estimated_error_vector;
 
             vectorN_type scm_relative_error;
@@ -757,7 +758,8 @@ public:
                 h1_error_vector.resize( Sampling->size() );
                 relative_error_vector.resize( Sampling->size() );
                 time_fem_vector.resize( Sampling->size() );
-                time_crb_vector.resize( Sampling->size() );
+                time_crb_vector_prediction.resize( Sampling->size() );
+                time_crb_vector_error_estimation.resize( Sampling->size() );
 
                 if( crb->errorType()!=2 )
                     relative_estimated_error_vector.resize( Sampling->size() );
@@ -921,9 +923,11 @@ public:
 
                                 bool print_rb_matrix = option(_name="crb.print-rb-matrix").template as<bool>();
                                 double online_tol = option(_name="crb.online-tolerance").template as<double>();
+                                vectorN_type time_crb;
                                 ti.restart();
-                                auto o = crb->run( mu, online_tol , N, print_rb_matrix);
-                                double time_crb = ti.elapsed();
+                                auto o = crb->run( mu, time_crb, online_tol , N, print_rb_matrix);
+                                double time_crb_prediction=time_crb(0);
+                                double time_crb_error_estimation=time_crb(1);
 
                                 auto WN = crb->wn();
                                 auto WNdu = crb->wndu();
@@ -990,7 +994,7 @@ public:
                                     //auto u_fem = model->solveRB( mu );
                                     //auto u_fem = model->solveFemUsingOfflineEim( mu );
 
-                                    if( boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value && ! use_newton )
+                                    if( boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value )
                                     {
                                         if( option(_name="crb.solve-fem-monolithic").template as<bool>() )
                                         {
@@ -1016,7 +1020,6 @@ public:
                                         LOG(INFO) << "export u_fem \n";
                                         std::string exportName = u_fem.name().substr(0,exportNameSize) + "-" + std::to_string(curpar);
                                         e->add( exportName, u_fem );
-
                                     }
 
                                     ti.restart();
@@ -1045,7 +1048,7 @@ public:
 
                                     output_fem = ofem[0];
                                     time_fem = ofem[1]+time_fem_solve;
-                                    if( boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value && ! use_newton )
+                                    if( boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value )
                                     {
                                         if( solve_dual_problem )
                                         {
@@ -1073,7 +1076,8 @@ public:
                                     auto output_vector=o.template get<0>();
                                     double output_vector_size=output_vector.size();
                                     double ocrb = output_vector[output_vector_size-1];//output at last time
-                                    std::vector<double> v = boost::assign::list_of( output_fem )( time_fem )( ocrb )( relative_estimated_error )( time_crb )( relative_error )( condition_number )( l2_error )( h1_error );
+                                    std::vector<double> v = boost::assign::list_of( output_fem )( time_fem )( ocrb )( relative_estimated_error )( time_crb_prediction )( relative_error )( condition_number )( l2_error )( h1_error );
+
                                     if( proc_number == Environment::worldComm().masterRank() )
                                     {
                                         std::cout << "output=" << ocrb << " with " << o.template get<1>() << " basis functions\n";
@@ -1087,12 +1091,11 @@ public:
                                             l2_error_vector[curpar-1] = l2_error;
                                             h1_error_vector[curpar-1] = h1_error;
                                             time_fem_vector[curpar-1] = time_fem;
-                                            time_crb_vector[curpar-1] = time_crb;
+                                            time_crb_vector_prediction[curpar-1] = time_crb_prediction;
+                                            time_crb_vector_error_estimation[curpar-1] = time_crb_error_estimation;
                                         }
-
                                         std::ofstream res(option(_name="result-file").template as<std::string>() );
                                         res << "output="<< ocrb << "\n";
-
                                     }
 
                                 }//end of crb->errorType==2
@@ -1104,7 +1107,7 @@ public:
                                     auto output_vector=o.template get<0>();
                                     double output_vector_size=output_vector.size();
                                     double ocrb = output_vector[output_vector_size-1];//output at last time
-                                    std::vector<double> v = boost::assign::list_of( output_fem )( time_fem )( ocrb )( relative_estimated_error )( time_crb )( relative_error )( condition_number )( l2_error )( h1_error );
+                                    std::vector<double> v = boost::assign::list_of( output_fem )( time_fem )( ocrb )( relative_estimated_error )( time_crb_prediction )( relative_error )( condition_number )( l2_error )( h1_error );
                                     if( proc_number == Environment::worldComm().masterRank() )
                                     {
                                         std::cout << "output=" << ocrb << " with " << o.template get<1>() << " basis functions  (error estimation on this output : " << output_estimated_error<<") \n";
@@ -1119,7 +1122,8 @@ public:
                                             l2_error_vector[curpar-1] = l2_error;
                                             h1_error_vector[curpar-1] = h1_error;
                                             time_fem_vector[curpar-1] = time_fem;
-                                            time_crb_vector[curpar-1] = time_crb;
+                                            time_crb_vector_prediction[curpar-1] = time_crb_prediction;
+                                            time_crb_vector_error_estimation[curpar-1] = time_crb_error_estimation;
                                             relative_estimated_error_vector[curpar-1] = relative_estimated_error;
                                         }
                                         std::ofstream res(option(_name="result-file").template as<std::string>() );
@@ -1167,15 +1171,19 @@ public:
                                     std::ofstream fileOutputError ( "CrbConvergenceOutputError.dat",std::ios::out | std::ios::app );
                                     std::ofstream fileOutputEstimatedError ( "CrbConvergenceOutputErrorEstimated.dat" ,std::ios::out | std::ios::app );
                                     std::ofstream fileOutputErrorBoundEfficiency ( "CrbConvergenceOutputErrorBoundEfficiency.dat" ,std::ios::out | std::ios::app );
+                                    std::ofstream fileAbsoluteOutputErrorBoundEfficiency ( "CrbConvergenceAbsoluteOutputErrorBoundEfficiency.dat" ,std::ios::out | std::ios::app );
                                     std::ofstream fileSolutionErrorBoundEfficiency ("CrbConvergencePrimalSolutionErrorBoundEfficiency.dat" ,std::ios::out | std::ios::app );
+                                    std::ofstream fileAbsoluteSolutionErrorBoundEfficiency ("CrbConvergencePrimalAbsoluteSolutionErrorBoundEfficiency.dat" ,std::ios::out | std::ios::app );
                                     std::ofstream fileSolutionError ("CrbConvergencePrimalSolutionError.dat" ,std::ios::out | std::ios::app );
                                     std::ofstream fileSolutionErrorEstimated ("CrbConvergencePrimalSolutionErrorEstimated.dat" ,std::ios::out | std::ios::app );
                                     std::ofstream fileSolutionDualErrorBoundEfficiency ("CrbConvergenceDualSolutionErrorBoundEfficiency.dat" ,std::ios::out | std::ios::app );
+                                    std::ofstream fileAbsoluteSolutionDualErrorBoundEfficiency ("CrbConvergenceDualAbsoluteSolutionErrorBoundEfficiency.dat" ,std::ios::out | std::ios::app );
                                     std::ofstream fileSolutionDualError ("CrbConvergenceDualSolutionError.dat" ,std::ios::out | std::ios::app );
                                     std::ofstream fileSolutionDualErrorEstimated ("CrbConvergenceDualSolutionErrorEstimated.dat" ,std::ios::out | std::ios::app );
                                     std::ofstream filePrimalResidualNorm ("CrbConvergencePrimalResidualNorm.dat" ,std::ios::out | std::ios::app );
                                     std::ofstream fileDualResidualNorm ( "CrbConvergenceDualResidualNorm.dat" ,std::ios::out | std::ios::app );
-                                    std::ofstream fileCrbTime ( "CrbConvergenceCrbTime.dat" ,std::ios::out | std::ios::app );
+                                    std::ofstream fileCrbTimePrediction ( "CrbConvergenceCrbTimePrediction.dat" ,std::ios::out | std::ios::app );
+                                    std::ofstream fileCrbTimeErrorEstimation ( "CrbConvergenceCrbTimeErrorEstimation.dat" ,std::ios::out | std::ios::app );
                                     std::ofstream fileFemTime ( "CrbConvergenceFemTime.dat" ,std::ios::out | std::ios::app );
 
                                     int Nmax = option("crb.dimension-max").template as<int>();
@@ -1186,24 +1194,26 @@ public:
                                             fileOutputError << Nmax <<"\t";
                                             fileOutputEstimatedError << Nmax << "\t";
                                             fileOutputErrorBoundEfficiency <<  Nmax << "\t";
+                                            fileAbsoluteOutputErrorBoundEfficiency <<  Nmax << "\t";
                                             fileSolutionErrorBoundEfficiency << Nmax << "\t";
+                                            fileAbsoluteSolutionErrorBoundEfficiency << Nmax << "\t";
                                             fileSolutionError << Nmax << "\t";
                                             fileSolutionErrorEstimated << Nmax << "\t";
                                             fileSolutionDualErrorBoundEfficiency << Nmax << "\t" ;
+                                            fileAbsoluteSolutionDualErrorBoundEfficiency << Nmax << "\t" ;
                                             fileSolutionDualError << Nmax << "\t";
                                             fileSolutionDualErrorEstimated << Nmax << "\t";
                                             filePrimalResidualNorm << Nmax << "\t";
                                             fileDualResidualNorm << Nmax << "\t";
-                                            fileCrbTime << Nmax << "\t";
+                                            fileCrbTimePrediction << Nmax << "\t";
+                                            fileCrbTimeErrorEstimation << Nmax << "\t";
                                             fileFemTime << Nmax << "\t" ;
                                     }
                                     std::string str = "\t";
-                                    double crb_time=0;
+                                    vectorN_type crb_time;
                                     for( int N = 1; N <= Nmax ; N++ )
                                     {
-                                        ti.restart();
-                                        auto o= crb->run( mu,  online_tol , N, print_rb_matrix);
-                                        crb_time= ti.elapsed();
+                                        auto o= crb->run( mu, crb_time, online_tol , N, print_rb_matrix);
 
                                         auto output_vector=o.template get<0>();
                                         double output_vector_size=output_vector.size();
@@ -1235,6 +1245,7 @@ public:
 
                                         //auto o = crb->run( mu,  option(_name="crb.online-tolerance").template as<double>() , N);
                                         double rel_err = std::abs( output_fem-ocrb ) /output_fem;
+                                        double err = std::abs( output_fem-ocrb );
 
                                         double output_relative_estimated_error = output_estimated_error / output_fem;
 
@@ -1452,31 +1463,47 @@ public:
                                         double h1_error = h1Norm( u_error )/h1Norm( u_fem );
                                         auto matrix_info = o.template get<3>();
                                         double condition_number = matrix_info.template get<0>();
-                                        double output_error_bound_efficiency = output_relative_estimated_error / rel_err;
+                                        double output_error_bound_efficiency = 1;
+                                        double absolute_output_error_bound_efficiency = 1;
 
+                                        if( err > 1e-12 )
+                                        {
+                                            output_error_bound_efficiency = output_relative_estimated_error / rel_err;
+                                            absolute_output_error_bound_efficiency = output_estimated_error / err;
+                                        }
                                         double relative_primal_solution_error = solution_error / ref_primal ;
                                         double relative_primal_solution_estimated_error = solution_estimated_error / ref_primal;
-                                        double relative_primal_solution_error_bound_efficiency = relative_primal_solution_estimated_error / relative_primal_solution_error;
-
-                                        if( relative_primal_solution_error_bound_efficiency < 1 )
+                                        double relative_primal_solution_error_bound_efficiency=1;
+                                        double absolute_primal_solution_error_bound_efficiency=1;
+                                        if( solution_error > 1e-12 )
                                         {
-                                            vector_sampling_for_primal_efficiency_under_1[N-1]->push_back( mu , 1);
+                                            //compute bounds efficiency only if error is big enough
+                                            relative_primal_solution_error_bound_efficiency = relative_primal_solution_estimated_error / relative_primal_solution_error;
+                                            absolute_primal_solution_error_bound_efficiency = solution_estimated_error / solution_error;
                                         }
+
+                                        // if( relative_primal_solution_error_bound_efficiency < 1 )
+                                        // {
+                                        //     vector_sampling_for_primal_efficiency_under_1[N-1]->push_back( mu , 1);
+                                        // }
 
                                         double relative_dual_solution_error = 1;
                                         double relative_dual_solution_estimated_error = 1;
                                         double relative_dual_solution_error_bound_efficiency = 1;
+                                        double absolute_dual_solution_error_bound_efficiency = 1;
                                         if( solve_dual_problem )
                                         {
                                             relative_dual_solution_error = dual_solution_error / ref_dual ;
                                             relative_dual_solution_estimated_error = dual_solution_estimated_error / ref_dual;
-                                            relative_dual_solution_error_bound_efficiency = relative_dual_solution_estimated_error / relative_dual_solution_error;
-
-                                            if( relative_dual_solution_error_bound_efficiency < 1 )
+                                            if( dual_solution_error > 1e-12 )
                                             {
-                                                vector_sampling_for_dual_efficiency_under_1[N-1]->push_back( mu , 0);
+                                                relative_dual_solution_error_bound_efficiency = relative_dual_solution_estimated_error / relative_dual_solution_error;
+                                                absolute_dual_solution_error_bound_efficiency = dual_solution_estimated_error / dual_solution_error;
                                             }
-
+                                            // if( relative_dual_solution_error_bound_efficiency < 1 )
+                                            // {
+                                            //     vector_sampling_for_dual_efficiency_under_1[N-1]->push_back( mu , 0);
+                                            // }
                                         }
                                         conver[N]=boost::make_tuple( rel_err, l2_error, h1_error , relative_estimated_error, condition_number , output_error_bound_efficiency , relative_primal_solution_error_bound_efficiency );
 
@@ -1493,15 +1520,19 @@ public:
                                             fileOutputError << rel_err <<str;
                                             fileOutputEstimatedError << output_relative_estimated_error << str;
                                             fileOutputErrorBoundEfficiency <<  output_error_bound_efficiency << str;
+                                            fileAbsoluteOutputErrorBoundEfficiency <<  absolute_output_error_bound_efficiency << str;
                                             fileSolutionErrorBoundEfficiency << relative_primal_solution_error_bound_efficiency << str;
+                                            fileAbsoluteSolutionErrorBoundEfficiency << absolute_primal_solution_error_bound_efficiency << str;
                                             fileSolutionError << relative_primal_solution_error << str;
                                             fileSolutionErrorEstimated << relative_primal_solution_estimated_error << str;
                                             fileSolutionDualErrorBoundEfficiency << relative_dual_solution_error_bound_efficiency << str ;
+                                            fileAbsoluteSolutionDualErrorBoundEfficiency << absolute_dual_solution_error_bound_efficiency << str ;
                                             fileSolutionDualError << relative_dual_solution_error << str;
                                             fileSolutionDualErrorEstimated <<  relative_dual_solution_estimated_error << str;
                                             filePrimalResidualNorm << primal_residual_norm << str;
                                             fileDualResidualNorm <<  dual_residual_norm << str;
-                                            fileCrbTime<< crb_time << str;
+                                            fileCrbTimePrediction<< crb_time(0) << str;
+                                            fileCrbTimeErrorEstimation<< crb_time(1) << str;
                                             fileFemTime<< time_fem << str;
                                         }
                                         if( option(_name="crb.compute-matrix-information").template as<bool>() )
@@ -1514,40 +1545,40 @@ public:
                                             LOG( INFO ) << std::setprecision(15)<<"conditioning : "<<conditioning;
                                             LOG( INFO ) << std::setprecision(15)<<"determinant : "<<determinant;
                                         }
-                                        if( relative_primal_solution_error_bound_efficiency < 1 )
-                                        {
-                                            LOG( INFO ) << "N : "<<N;
-                                            LOG( INFO ) << std::setprecision(15)<<"efficiency of error estimation on primal solution is "<<relative_primal_solution_error_bound_efficiency<<" ( should be >= 1 )";
-                                            LOG( INFO ) << std::setprecision(15)<<"mu : \n"<<mu;
-                                            LOG( INFO ) << std::setprecision(15)<<"relative_primal_solution_estimated_error : "<<relative_primal_solution_estimated_error;
-                                            LOG( INFO ) << std::setprecision(15)<<"relative_primal_solution_error : "<<relative_primal_solution_error;
-                                            LOG( INFO ) << std::setprecision(15)<<"primal_solution_estimated_error : "<<solution_estimated_error;
-                                            LOG( INFO ) << std::setprecision(15)<<"primal_solution_error : "<<solution_error;
-                                            LOG( INFO ) << std::setprecision(15)<<"square error : "<<square_solution_error;
-                                            //LOG( INFO ) << std::setprecision(15)<<"u_crb : \n"<<u_crb[size-1];
-                                            LOG( INFO ) << std::setprecision(15)<<"primal solution norme  : "<<uN.l2Norm();
-                                        }
-                                        if( relative_dual_solution_error_bound_efficiency < 1 )
-                                        {
-                                            LOG( INFO ) <<std::setprecision(15)<< "efficiency of error estimation on dual solution is "<<relative_dual_solution_error_bound_efficiency<<" ( should be >= 1 )";
-                                            LOG( INFO ) <<std::setprecision(15)<< "mu : \n"<<mu;
-                                            LOG( INFO ) <<std::setprecision(15)<<"relative_dual_solution_estimated_error : "<<relative_dual_solution_estimated_error;
-                                            LOG( INFO ) <<std::setprecision(15)<<"relative_dual_solution_error : "<<relative_dual_solution_error;
-                                            LOG( INFO ) <<std::setprecision(15)<<"dual_solution_estimated_error : "<<dual_solution_estimated_error;
-                                            LOG( INFO ) <<std::setprecision(15)<<"dual_solution_error : "<<dual_solution_error;
-                                            LOG( INFO ) << std::setprecision(15)<<"square error : "<<square_dual_solution_error;
-                                            //LOG( INFO ) << std::setprecision(15)<<"u_crb_du : \n"<<u_crb_du[0];
-                                            LOG( INFO ) << std::setprecision(15)<<"dual solution norme  : "<<uNdu.l2Norm();
-                                        }
-                                        if( output_error_bound_efficiency < 1 )
-                                        {
-                                            LOG( INFO ) <<std::setprecision(15)<<"efficiency of error estimation on output is "<<output_error_bound_efficiency<<" ( should be >= 1 )";
-                                            LOG( INFO ) <<std::setprecision(15)<< "mu : \n"<<mu;
-                                            LOG( INFO ) <<std::setprecision(15)<< "output_relative_estimated_error : "<<output_relative_estimated_error;
-                                            LOG( INFO ) <<std::setprecision(15)<< "output_relative_error : "<<rel_err;
-                                            LOG( INFO ) <<std::setprecision(15)<< "output_estimated_error : "<<output_estimated_error;
-                                            LOG( INFO ) <<std::setprecision(15)<< "output_error : "<< std::abs( output_fem-ocrb );
-                                        }
+                                        // if( relative_primal_solution_error_bound_efficiency < 1 )
+                                        // {
+                                        //     LOG( INFO ) << "N : "<<N;
+                                        //     LOG( INFO ) << std::setprecision(15)<<"efficiency of error estimation on primal solution is "<<relative_primal_solution_error_bound_efficiency<<" ( should be >= 1 )";
+                                        //     LOG( INFO ) << std::setprecision(15)<<"mu : \n"<<mu;
+                                        //     LOG( INFO ) << std::setprecision(15)<<"relative_primal_solution_estimated_error : "<<relative_primal_solution_estimated_error;
+                                        //     LOG( INFO ) << std::setprecision(15)<<"relative_primal_solution_error : "<<relative_primal_solution_error;
+                                        //     LOG( INFO ) << std::setprecision(15)<<"primal_solution_estimated_error : "<<solution_estimated_error;
+                                        //     LOG( INFO ) << std::setprecision(15)<<"primal_solution_error : "<<solution_error;
+                                        //     LOG( INFO ) << std::setprecision(15)<<"square error : "<<square_solution_error;
+                                        //     //LOG( INFO ) << std::setprecision(15)<<"u_crb : \n"<<u_crb[size-1];
+                                        //     LOG( INFO ) << std::setprecision(15)<<"primal solution norme  : "<<uN.l2Norm();
+                                        // }
+                                        // if( relative_dual_solution_error_bound_efficiency < 1 )
+                                        // {
+                                        //     LOG( INFO ) <<std::setprecision(15)<< "efficiency of error estimation on dual solution is "<<relative_dual_solution_error_bound_efficiency<<" ( should be >= 1 )";
+                                        //     LOG( INFO ) <<std::setprecision(15)<< "mu : \n"<<mu;
+                                        //     LOG( INFO ) <<std::setprecision(15)<<"relative_dual_solution_estimated_error : "<<relative_dual_solution_estimated_error;
+                                        //     LOG( INFO ) <<std::setprecision(15)<<"relative_dual_solution_error : "<<relative_dual_solution_error;
+                                        //     LOG( INFO ) <<std::setprecision(15)<<"dual_solution_estimated_error : "<<dual_solution_estimated_error;
+                                        //     LOG( INFO ) <<std::setprecision(15)<<"dual_solution_error : "<<dual_solution_error;
+                                        //     LOG( INFO ) << std::setprecision(15)<<"square error : "<<square_dual_solution_error;
+                                        //     //LOG( INFO ) << std::setprecision(15)<<"u_crb_du : \n"<<u_crb_du[0];
+                                        //     LOG( INFO ) << std::setprecision(15)<<"dual solution norme  : "<<uNdu.l2Norm();
+                                        // }
+                                        // if( output_error_bound_efficiency < 1 )
+                                        // {
+                                        //     LOG( INFO ) <<std::setprecision(15)<<"efficiency of error estimation on output is "<<output_error_bound_efficiency<<" ( should be >= 1 )";
+                                        //     LOG( INFO ) <<std::setprecision(15)<< "mu : \n"<<mu;
+                                        //     LOG( INFO ) <<std::setprecision(15)<< "output_relative_estimated_error : "<<output_relative_estimated_error;
+                                        //     LOG( INFO ) <<std::setprecision(15)<< "output_relative_error : "<<rel_err;
+                                        //     LOG( INFO ) <<std::setprecision(15)<< "output_estimated_error : "<<output_estimated_error;
+                                        //     LOG( INFO ) <<std::setprecision(15)<< "output_error : "<< std::abs( output_fem-ocrb );
+                                        // }
 
                                         if ( option(_name="crb.check.residual").template as<bool>()  && solve_dual_problem  )
                                         {
@@ -1602,7 +1633,8 @@ public:
                                 std::cout << "CRB Online mode\n";
                                 boost::mpi::timer ti;
                                 ti.restart();
-                                auto o = crb->run( mu,  option(_name="crb.online-tolerance").template as<double>() );
+                                vectorN_type time_crb;
+                                auto o = crb->run( mu, time_crb, option(_name="crb.online-tolerance").template as<double>() );
                                 auto output_vector=o.template get<0>();
                                 double output_vector_size=output_vector.size();
                                 double ocrb = output_vector[output_vector_size-1];//output at last time
@@ -1712,6 +1744,7 @@ public:
 
                 //have min/max
                 Sampling->equidistribute( 2 );
+                vectorN_type time_crb;
 
                 curpar=1;
                 if( ! vary_comp_time )
@@ -1729,7 +1762,7 @@ public:
                     {
                         double x = mu(vary_mu_comp0);
                         double mu0 = mu(vary_mu_comp0);
-                        auto o = crb->run( mu,  online_tol , N);
+                        auto o = crb->run( mu, time_crb, online_tol , N);
                         auto output_vector=o.template get<0>();
                         double output_vector_size=output_vector.size();
                         double ocrb = output_vector[output_vector_size-1];//output at last time
@@ -1746,12 +1779,13 @@ public:
                 }
                 else
                 {
+                    vectorN_type time_crb;
                     auto mu=Sampling->min().template get<0>();
                     if( select_parameter_via_one_feel )
                     {
                         mu = user_mu_onefeel;
                     }
-                    auto o = crb->run( mu,  online_tol , N);
+                    auto o = crb->run( mu, time_crb, online_tol , N);
                     auto output_vector=o.template get<0>();
                     auto all_upper_bounds = o.template get<6>();
                     auto vector_output_estimated_error = all_upper_bounds.template get<0>();
@@ -1820,6 +1854,7 @@ public:
                 auto u = Vh->element();
                 parameter_type mu ( model->parameterSpace() );
                 int time_index=0;
+                vectorN_type time_crb;
                 for(int i=0; i<ndof; i++)
                 {
                     double mux=px(i);
@@ -1838,7 +1873,7 @@ public:
                         mu( vary_mu_comp1 ) = muy;
                     }
 
-                    auto run = crb->run( mu,  online_tol, N );
+                    auto run = crb->run( mu, time_crb, online_tol, N );
                     auto output_vector=run.template get<0>();
                     double output=0;
                     if( vary_comp_time )
@@ -1908,8 +1943,8 @@ public:
                 Eigen::MatrixXf::Index index_min_h1;
                 Eigen::MatrixXf::Index index_max_time_fem;
                 Eigen::MatrixXf::Index index_min_time_fem;
-                Eigen::MatrixXf::Index index_max_time_crb;
-                Eigen::MatrixXf::Index index_min_time_crb;
+                Eigen::MatrixXf::Index index_max_time_crb_prediction;
+                Eigen::MatrixXf::Index index_min_time_crb_prediction;
                 Eigen::MatrixXf::Index index_max_estimated_error;
                 Eigen::MatrixXf::Index index_min_estimated_error;
                 Eigen::MatrixXf::Index index_max_output_error;
@@ -1924,9 +1959,9 @@ public:
                 double max_time_fem = time_fem_vector.maxCoeff(&index_max_time_fem);
                 double min_time_fem = time_fem_vector.minCoeff(&index_min_time_fem);
                 double mean_time_fem = time_fem_vector.mean();
-                double max_time_crb = time_crb_vector.maxCoeff(&index_max_time_crb);
-                double min_time_crb = time_crb_vector.minCoeff(&index_min_time_crb);
-                double mean_time_crb = time_crb_vector.mean();
+                double max_time_crb_prediction = time_crb_vector_prediction.maxCoeff(&index_max_time_crb_prediction);
+                double min_time_crb_prediction = time_crb_vector_prediction.minCoeff(&index_min_time_crb_prediction);
+                double mean_time_crb_prediction = time_crb_vector_prediction.mean();
                 double max_output_error = relative_error_vector.maxCoeff(&index_max_output_error);
                 double min_output_error = relative_error_vector.minCoeff(&index_min_output_error);
                 double mean_output_error = relative_error_vector.mean();
@@ -1958,9 +1993,9 @@ public:
                     file_summary_of_simulations <<"max of time FEM : "<<max_time_fem<<" at the "<<index_max_time_fem+1<<"^th simulation\n";
                     file_summary_of_simulations <<"min of time FEM : "<<min_time_fem<<" at the "<<index_min_time_fem+1<<"^th simulation\n";
                     file_summary_of_simulations <<"mean of time FEM : "<<mean_time_fem<<"\n\n";
-                    file_summary_of_simulations <<"max of time CRB : "<<max_time_crb<<" at the "<<index_max_time_crb+1<<"^th simulation\n";
-                    file_summary_of_simulations <<"min of time CRB : "<<min_time_crb<<" at the "<<index_min_time_crb+1<<"^th simulation\n";
-                    file_summary_of_simulations <<"mean of time CRB : "<<mean_time_crb<<"\n\n";
+                    file_summary_of_simulations <<"max of time CRB : "<<max_time_crb_prediction<<" at the "<<index_max_time_crb_prediction+1<<"^th simulation\n";
+                    file_summary_of_simulations <<"min of time CRB : "<<min_time_crb_prediction<<" at the "<<index_min_time_crb_prediction+1<<"^th simulation\n";
+                    file_summary_of_simulations <<"mean of time CRB : "<<mean_time_crb_prediction<<"\n\n";
                 }
             }//end of compute-stat CRB
             if( M_mode==CRBModelMode::SCM )
@@ -2279,10 +2314,10 @@ private:
     {
         int N = option("crb.dimension-max").template as<int>();
 
-        std::vector< vectorN_type > L2, H1, OutputError, OutputErrorEstimated, OutputErrorBoundEfficiency;
-        std::vector< vectorN_type > PrimalSolutionError, PrimalSolutionErrorEstimated, PrimalSolutionErrorBoundEfficiency;
-        std::vector< vectorN_type > DualSolutionError, DualSolutionErrorEstimated, DualSolutionErrorBoundEfficiency;
-        std::vector< vectorN_type > CrbTime, FemTime;
+        std::vector< vectorN_type > L2, H1, OutputError, OutputErrorEstimated, OutputErrorBoundEfficiency, AbsoluteOutputErrorBoundEfficiency;
+        std::vector< vectorN_type > PrimalSolutionError, PrimalSolutionErrorEstimated, PrimalSolutionErrorBoundEfficiency , PrimalAbsoluteSolutionErrorBoundEfficiency;
+        std::vector< vectorN_type > DualSolutionError, DualSolutionErrorEstimated, DualSolutionErrorBoundEfficiency, DualAbsoluteSolutionErrorBoundEfficiency;
+        std::vector< vectorN_type > CrbTimePrediction, CrbTimeErrorEstimation, FemTime;
 
         //load information contained in files
         std::string filename = "CrbConvergenceL2.dat";
@@ -2295,20 +2330,28 @@ private:
         model->readConvergenceDataFromFile( OutputErrorEstimated, filename );
         filename = "CrbConvergenceOutputErrorBoundEfficiency.dat";
         model->readConvergenceDataFromFile( OutputErrorBoundEfficiency, filename );
+        filename = "CrbConvergenceAbsoluteOutputErrorBoundEfficiency.dat";
+        model->readConvergenceDataFromFile( AbsoluteOutputErrorBoundEfficiency, filename );
         filename = "CrbConvergencePrimalSolutionError.dat";
         model->readConvergenceDataFromFile( PrimalSolutionError , filename );
         filename = "CrbConvergencePrimalSolutionErrorEstimated.dat";
         model->readConvergenceDataFromFile( PrimalSolutionErrorEstimated , filename );
         filename = "CrbConvergencePrimalSolutionErrorBoundEfficiency.dat";
         model->readConvergenceDataFromFile( PrimalSolutionErrorBoundEfficiency , filename );
+        filename = "CrbConvergencePrimalAbsoluteSolutionErrorBoundEfficiency.dat";
+        model->readConvergenceDataFromFile( PrimalAbsoluteSolutionErrorBoundEfficiency , filename );
         filename = "CrbConvergenceDualSolutionError.dat";
         model->readConvergenceDataFromFile( DualSolutionError , filename );
         filename = "CrbConvergenceDualSolutionErrorEstimated.dat";
         model->readConvergenceDataFromFile( DualSolutionErrorEstimated , filename );
         filename = "CrbConvergenceDualSolutionErrorBoundEfficiency.dat";
         model->readConvergenceDataFromFile( DualSolutionErrorBoundEfficiency , filename );
-        filename = "CrbConvergenceCrbTime.dat";
-        model->readConvergenceDataFromFile( CrbTime , filename );
+        filename = "CrbConvergenceDualAbsoluteSolutionErrorBoundEfficiency.dat";
+        model->readConvergenceDataFromFile( DualAbsoluteSolutionErrorBoundEfficiency , filename );
+        filename = "CrbConvergenceCrbTimePrediction.dat";
+        model->readConvergenceDataFromFile( CrbTimePrediction , filename );
+        filename = "CrbConvergenceCrbTimeErrorEstimation.dat";
+        model->readConvergenceDataFromFile( CrbTimeErrorEstimation , filename );
         filename = "CrbConvergenceFemTime.dat";
         model->readConvergenceDataFromFile( FemTime , filename );
 
@@ -2323,20 +2366,28 @@ private:
         model->writeConvergenceStatistics( OutputErrorEstimated , filename);
         filename = "cvg-crb-OutputErrorBoundEfficiency.dat";
         model->writeConvergenceStatistics( OutputErrorBoundEfficiency , filename);
+        filename = "cvg-crb-AbsoluteOutputErrorBoundEfficiency.dat";
+        model->writeConvergenceStatistics( AbsoluteOutputErrorBoundEfficiency , filename);
         filename = "cvg-crb-PrimalSolutionError.dat";
         model->writeConvergenceStatistics( PrimalSolutionError , filename);
         filename = "cvg-crb-PrimalSolutionErrorEstimated.dat";
         model->writeConvergenceStatistics( PrimalSolutionErrorEstimated , filename);
         filename = "cvg-crb-PrimalSolutionErrorBoundEfficiency.dat";
         model->writeConvergenceStatistics( PrimalSolutionErrorBoundEfficiency , filename);
+        filename = "cvg-crb-PrimalAbsoluteSolutionErrorBoundEfficiency.dat";
+        model->writeConvergenceStatistics( PrimalAbsoluteSolutionErrorBoundEfficiency , filename);
         filename = "cvg-crb-DualSolutionError.dat";
         model->writeConvergenceStatistics( DualSolutionError , filename);
         filename = "cvg-crb-DualSolutionErrorEstimated.dat";
         model->writeConvergenceStatistics( DualSolutionErrorEstimated , filename);
         filename = "cvg-crb-DualSolutionErrorBoundEfficiency.dat";
         model->writeConvergenceStatistics( DualSolutionErrorBoundEfficiency , filename);
-        filename = "cvg-crb-CrbTime.dat";
-        model->writeConvergenceStatistics( CrbTime , filename, "totaltime");
+        filename = "cvg-crb-DualAbsoluteSolutionErrorBoundEfficiency.dat";
+        model->writeConvergenceStatistics( DualAbsoluteSolutionErrorBoundEfficiency , filename);
+        filename = "cvg-crb-CrbTimePrediction.dat";
+        model->writeConvergenceStatistics( CrbTimePrediction , filename, "totaltime");
+        filename = "cvg-crb-CrbTimeErrorEstimation.dat";
+        model->writeConvergenceStatistics( CrbTimeErrorEstimation , filename, "totaltime");
         filename = "cvg-crb-FemTime.dat";
         model->writeConvergenceStatistics( FemTime , filename , "totaltime" );
 

@@ -29,8 +29,8 @@
 
    date 2014-01-19
  */
-#ifndef FEELPP_BENCHMARKGREPL_HPP
-#define FEELPP_BENCHMARKGREPL_HPP 1
+#ifndef FEELPP_BENCHMARKGREPLLINEARELLIPTIC_HPP
+#define FEELPP_BENCHMARKGREPLLINEARELLIPTIC_HPP 1
 
 #include <boost/timer.hpp>
 #include <boost/shared_ptr.hpp>
@@ -47,9 +47,9 @@ namespace Feel
 {
 
 po::options_description
-makeBenchmarkGreplOptions()
+makeBenchmarkGreplLinearEllipticOptions()
 {
-    po::options_description bgoptions( "BenchmarkGrepl options" );
+    po::options_description bgoptions( "BenchmarkGreplLinearElliptic options" );
     bgoptions.add_options()
         ( "mshfile", Feel::po::value<std::string>()->default_value( "" ), "name of the gmsh file input")
         ( "hsize", Feel::po::value<double>()->default_value( 1e-1 ), "hsize")
@@ -59,7 +59,7 @@ makeBenchmarkGreplOptions()
     return bgoptions;
 }
 AboutData
-makeBenchmarkGreplAbout( std::string const& str = "benchmarkGrepl" )
+makeBenchmarkGreplLinearEllipticAbout( std::string const& str = "benchmarkGrepl" )
 {
     Feel::AboutData about( str.c_str(),
                            str.c_str(),
@@ -119,7 +119,7 @@ public :
 };
 
 /**
- * \class BenchmarkGrepl
+ * \class BenchmarkGreplLinearElliptic
  * \brief brief description
  *
  * This is from the paper
@@ -136,7 +136,7 @@ public :
  * @see
  */
 template<int Order>
-class BenchmarkGrepl : public ModelCrbBase< ParameterDefinition, FunctionSpaceDefinition<Order> ,TimeIndependent, EimDefinition<ParameterDefinition, FunctionSpaceDefinition<Order> > >
+class BenchmarkGreplLinearElliptic : public ModelCrbBase< ParameterDefinition, FunctionSpaceDefinition<Order> ,TimeIndependent, EimDefinition<ParameterDefinition, FunctionSpaceDefinition<Order> > >
 {
 public:
 
@@ -172,7 +172,7 @@ public:
     std::string modelName()
     {
         std::ostringstream ostr;
-        ostr << "BenchMarkGrepl" <<  Order;
+        ostr << "BenchMarkGreplLinearElliptic" <<  Order;
         return ostr.str();
     }
 
@@ -352,7 +352,7 @@ private:
 
 template<int Order>
 gmsh_ptrtype
-BenchmarkGrepl<Order>::createGeo( double hsize )
+BenchmarkGreplLinearElliptic<Order>::createGeo( double hsize )
 {
     gmsh_ptrtype gmshp( new Gmsh );
     std::ostringstream ostr;
@@ -379,7 +379,7 @@ BenchmarkGrepl<Order>::createGeo( double hsize )
 }
 
 template<int Order>
-void BenchmarkGrepl<Order>::initModel()
+void BenchmarkGreplLinearElliptic<Order>::initModel()
 {
     std::string mshfile_name = option("mshfile").as<std::string>();
 
@@ -480,11 +480,11 @@ void BenchmarkGrepl<Order>::initModel()
 
     assemble();
 
-} // BenchmarkGrepl::init
+} // BenchmarkGreplLinearElliptic::init
 
 
 template<int Order>
-void BenchmarkGrepl<Order>::checkEimExpansion()
+void BenchmarkGreplLinearElliptic<Order>::checkEimExpansion()
 {
     auto Xh=this->Xh;
     auto Pset = this->Dmu->sampling();
@@ -571,8 +571,8 @@ void BenchmarkGrepl<Order>::checkEimExpansion()
 }
 
 template<int Order>
-typename BenchmarkGrepl<Order>::monolithic_type
-BenchmarkGrepl<Order>::computeMonolithicFormulation( parameter_type const& mu )
+typename BenchmarkGreplLinearElliptic<Order>::monolithic_type
+BenchmarkGreplLinearElliptic<Order>::computeMonolithicFormulation( parameter_type const& mu )
 {
     auto Xh = this->Xh;
     auto u=Xh->element();
@@ -599,7 +599,7 @@ BenchmarkGrepl<Order>::computeMonolithicFormulation( parameter_type const& mu )
 
 
 template<int Order>
-void BenchmarkGrepl<Order>::assemble()
+void BenchmarkGreplLinearElliptic<Order>::assemble()
 {
     auto Xh=this->Xh;
     auto u = Xh->element();
@@ -670,8 +670,8 @@ void BenchmarkGrepl<Order>::assemble()
 
 
 template<int Order>
-typename BenchmarkGrepl<Order>::vector_sparse_matrix
-BenchmarkGrepl<Order>::computeLinearDecompositionA()
+typename BenchmarkGreplLinearElliptic<Order>::vector_sparse_matrix
+BenchmarkGreplLinearElliptic<Order>::computeLinearDecompositionA()
 {
     auto Xh=this->Xh;
     auto muref = refParameter();
@@ -694,15 +694,15 @@ BenchmarkGrepl<Order>::computeLinearDecompositionA()
 }
 
 template<int Order>
-typename BenchmarkGrepl<Order>::affine_decomposition_type
-BenchmarkGrepl<Order>::computeAffineDecomposition()
+typename BenchmarkGreplLinearElliptic<Order>::affine_decomposition_type
+BenchmarkGreplLinearElliptic<Order>::computeAffineDecomposition()
 {
     return boost::make_tuple( this->M_Aqm, this->M_Fqm );
 }
 
 
 template<int Order>
-double BenchmarkGrepl<Order>::output( int output_index, parameter_type const& mu, element_type &solution, bool need_to_solve , bool export_outputs )
+double BenchmarkGreplLinearElliptic<Order>::output( int output_index, parameter_type const& mu, element_type &solution, bool need_to_solve , bool export_outputs )
 {
 
     CHECK( ! need_to_solve ) << "The model need to have the solution to compute the output\n";
@@ -731,6 +731,6 @@ double BenchmarkGrepl<Order>::output( int output_index, parameter_type const& mu
 
 }
 
-#endif /* __BenchmarkGrepl_H */
+#endif /* __BenchmarkGreplLinearElliptic_H */
 
 

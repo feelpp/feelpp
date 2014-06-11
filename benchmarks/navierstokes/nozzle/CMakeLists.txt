@@ -23,4 +23,8 @@
 #
 
 feelpp_add_application( ns_oseen_3d SRCS ns_oseen.cpp INCLUDE_IN_ALL GEO FDA2.geo CFG ns_oseen.cfg DEFS FEELPP_DIM=3 )
-feelpp_add_application( ns_oseen_2d SRCS ns_oseen.cpp INCLUDE_IN_ALL GEO 2D_FDA_L.geo cyl.geo CFG fda-2d.cfg cyl.geo DEFS FEELPP_DIM=2 )
+
+feelpp_add_application( ns_oseen_2d SRCS ns_oseen.cpp INCLUDE_IN_ALL
+  GEO 2D_FDA_L.geo marche.geo cyl.geo step-erturk.geo
+  CFG fda-2d.cfg marche.cfg step-erturk.cfg
+  DEFS FEELPP_DIM=2 )

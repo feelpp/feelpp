@@ -1,0 +1,27 @@
+# DP: recognize ppl version 1.0
+
+--- a/configure.ac
++++ b/configure.ac
+@@ -1566,7 +1566,9 @@
+   if test "x$pwllib" = x; then
+     saved_LIBS="$LIBS"
+     LIBS="$LIBS $ppllibs -lstdc++ -lm"
+-    AC_CHECK_LIB(pwl, PWL_handle_timeout, [pwllib="-lpwl"])
++    AC_CHECK_LIB(ppl, PWL_handle_timeout,
++      [# included in libppl 1.0],
++      [AC_CHECK_LIB(pwl, PWL_handle_timeout, [pwllib="-lpwl"])])
+     LIBS="$saved_LIBS"
+   fi
+ 
+@@ -1577,8 +1579,10 @@
+     CFLAGS="$CFLAGS $pplinc $gmpinc"
+     AC_MSG_CHECKING([for version 0.11 (revision 0 or later) of PPL])
+     AC_TRY_COMPILE([#include "ppl_c.h"],[
+-    #if PPL_VERSION_MAJOR != 0 || PPL_VERSION_MINOR < 11
++    #if PPL_VERSION_MAJOR < 1
++    # if PPL_VERSION_MINOR < 11
+     choke me
++    # endif
+     #endif
+     ], [AC_MSG_RESULT([yes])], [AC_MSG_RESULT([no]); ppllibs= ; pplinc= ; with_ppl=no ])
+     CFLAGS="$saved_CFLAGS"
