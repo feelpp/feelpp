@@ -504,12 +504,21 @@ public :
     struct rangeiteratorType
     {
         typedef typename fusion::result_of::find<rangeiterator_test_type,fusion::pair<mpl::int_<I>,mpl::int_<J> > >::type resultfindrange_it_type;
-        typedef typename fusion::result_of::value_of<resultfindrange_it_type>::type resultfindrange_type;
-
         typedef typename boost::is_same<resultfindrange_it_type, typename fusion::result_of::end<rangeiterator_test_type>::type> hasnotfindrange_type;
+
         typedef typename boost::tuple<mpl::size_t<MESH_ELEMENTS>,
                                       typename MeshTraits<typename test_space_type::mesh_type>::element_const_iterator,
                                       typename MeshTraits<typename test_space_type::mesh_type>::element_const_iterator> defaultrange_type;
+
+        // fix compilation from boost 1.55
+        // if not find in fusion map else there is a problem now with result_of::value_of
+        // so we create an bid iterator to fix that
+        typedef fusion::map< fusion::pair< fusion::pair<mpl::int_<-1>,mpl::int_<-1> >, defaultrange_type > > mapbid;
+        typedef typename fusion::result_of::find< mapbid,fusion::pair<mpl::int_<-1>,mpl::int_<-1> > >::type resultfindrange_it_bid_type;
+        typedef typename mpl::if_< hasnotfindrange_type,
+                                   resultfindrange_it_bid_type,
+                                   resultfindrange_it_type >::type resultfindrange_it2_type;
+        typedef typename fusion::result_of::value_of<resultfindrange_it2_type>::type resultfindrange_type;
 
         typedef typename mpl::if_< hasnotfindrange_type,
                                    mpl::identity< defaultrange_type >,
@@ -521,12 +530,21 @@ public :
     struct rangeExtendedIteratorType
     {
         typedef typename fusion::result_of::find<rangeiterator_extended_type,fusion::pair<mpl::int_<I>,mpl::int_<J> > >::type resultfindrange_it_type;
-        typedef typename fusion::result_of::value_of<resultfindrange_it_type>::type resultfindrange_type;
-
         typedef typename boost::is_same<resultfindrange_it_type, typename fusion::result_of::end<rangeiterator_extended_type>::type> hasnotfindrange_type;
+
         typedef typename boost::tuple<mpl::size_t<MESH_FACES>,
                                       typename MeshTraits<typename test_space_type::mesh_type>::location_face_const_iterator,
                                       typename MeshTraits<typename test_space_type::mesh_type>::location_face_const_iterator> defaultrange_type;
+
+        // fix compilation from boost 1.55
+        // if not find in fusion map else there is a problem now with result_of::value_of
+        // so we create an bid iterator to fix that
+        typedef fusion::map< fusion::pair< fusion::pair<mpl::int_<-1>,mpl::int_<-1> >, defaultrange_type > > mapbid;
+        typedef typename fusion::result_of::find< mapbid,fusion::pair<mpl::int_<-1>,mpl::int_<-1> > >::type resultfindrange_it_bid_type;
+        typedef typename mpl::if_< hasnotfindrange_type,
+                                   resultfindrange_it_bid_type,
+                                   resultfindrange_it_type >::type resultfindrange_it2_type;
+        typedef typename fusion::result_of::value_of<resultfindrange_it2_type>::type resultfindrange_type;
 
         typedef typename mpl::if_< hasnotfindrange_type,
                                    mpl::identity< defaultrange_type >,
