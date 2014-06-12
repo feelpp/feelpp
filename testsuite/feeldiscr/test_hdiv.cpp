@@ -243,7 +243,7 @@ TestHDiv::exampleProblem1()
     auto l2err_u = normL2( _range=elements(mesh), _expr=idv(u_l) - idv(u_rt) );
     auto l2err_p = normL2( _range=elements(mesh), _expr=idv(p_l) - idv(p_rt) );
 
-    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+    if( Environment::isMasterRank() )
         {
             std::cout << "||u(primal) - u(dual-mixed)|| = " << l2err_u << std::endl;
             std::cout << "||p(primal) - p(dual-mixed)|| = " << l2err_p << std::endl;
