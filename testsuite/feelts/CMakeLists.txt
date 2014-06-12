@@ -1,9 +1,9 @@
-###  CMakeLists.txt ---
+###  TEMPLATE.txt.tpl; coding: utf-8 --- 
 
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-#       Date: 2009-11-28
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+#       Date: 2014-06-08
 #
-#  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+#  Copyright (C) 2014 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -21,12 +21,6 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
-
-add_custom_target( testsuite )
-
-foreach( testdir core alg mesh poly filters material interpolation integration discr crb ts vf leaks )
-  add_custom_target( test${testdir} )
-  add_subdirectory( feel${testdir} )
-
-endforeach()
+set_directory_properties(PROPERTIES LABEL testts )
+feelpp_add_test( bdf )
+feelpp_add_test( bdf2 CFG test_bdf2.cfg )

@@ -25,7 +25,7 @@
 INCLUDE_DIRECTORIES ( ${CMAKE_CURRENT_SOURCE_DIR} )
 feelpp_add_application( polyvis EXCLUDE_FROM_ALL SRCS geom.cpp
   polyvisapp.cpp polyvisbase.cpp
-  nedelec2d.cpp
+  nedelec2d.cpp   nedelec3d.cpp
   crouzeixraviart2d.cpp
   #crouzeixraviart3d.cpp
   #hermite.cpp
@@ -77,5 +77,3 @@ foreach( poly raviartthomas  )
     endforeach()
   endforeach()
 endforeach()
-
-

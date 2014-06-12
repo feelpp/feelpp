@@ -1080,7 +1080,8 @@ public:
 
     virtual element_type operator()( parameter_type const& ) = 0;
     virtual element_type operator()( solution_type const& T, parameter_type const& ) = 0;
-    virtual element_type interpolant( parameter_type const& , element_type const & , int ) = 0;
+    virtual element_type interpolant( parameter_type const& ) = 0;
+    virtual element_type interpolant( parameter_type const& , solution_type const & , int ) = 0;
 
     value_type operator()( node_type const& x, parameter_type const& mu )
         {
@@ -1979,7 +1980,7 @@ public:
         auto beta = this->beta( mu );
         return expansion( M_q_vector, this->beta( mu ) , M_M_max);
     }
-    element_type interpolant( parameter_type const& mu , element_type const & solution , int M)
+    element_type interpolant( parameter_type const& mu , solution_type const & solution , int M)
     {
         return expansion( M_q_vector, this->beta( mu , solution , M) , M );
     }

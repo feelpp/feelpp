@@ -31,7 +31,7 @@
 #include <feel/feelvf/operators.hpp>
 #include <feel/feelvf/operations.hpp>
 #include <feel/feelvf/mean.hpp>
-
+#include <feel/feelvf/trans.hpp>
 inline
 Feel::po::options_description
 makeOptions()

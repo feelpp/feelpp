@@ -45,6 +45,7 @@
 #include <feel/feelcore/context.hpp>
 //#include <feel/feelcore/worldcomm.hpp>
 
+#include <feel/feelcore/functors.hpp>
 #include <feel/feelmesh/mesh0d.hpp>
 #include <feel/feelmesh/mesh1d.hpp>
 #include <feel/feelmesh/mesh2d.hpp>
@@ -297,25 +298,42 @@ public:
 #endif
 
     size_type numGlobalElements() const { return M_numGlobalElements; }
+    size_type numGlobalFaces() const { return M_numGlobalFaces; }
+    size_type numGlobalEdges() const { return M_numGlobalEdges; }
+    size_type numGlobalPoints() const { return M_numGlobalPoints; }
+    size_type numGlobalVertices() const { return M_numGlobalVertices; }
 
     void updateNumGlobalElements()
     {
         //int ne = numElements();
         int ne = std::distance( this->beginElementWithProcessId( this->worldComm().rank() ),
                                 this->endElementWithProcessId( this->worldComm().rank() ) );
+        int nf = std::distance( this->beginFaceWithProcessId( this->worldComm().rank() ),
+                                this->endFaceWithProcessId( this->worldComm().rank() ) );
+        int ned = 0;/*std::distance( this->beginEdgeWithProcessId( this->worldComm().rank() ),
+                      this->endEdgeWithProcessId( this->worldComm().rank() ) );*/
+        int np = std::distance( this->beginPointWithProcessId( this->worldComm().rank() ),
+                                this->endPointWithProcessId( this->worldComm().rank() ) );
+
 
         if ( this->worldComm().localSize() >1 )
         {
-            int gne = 0;
-            mpi::all_reduce( this->worldComm(), ne, gne, [] ( int x, int y )
-                             {
-                                 return x + y;
-                             } );
-            M_numGlobalElements = gne;
+            std::vector<int> locals{ ne, nf, ned, np, (int)this->numVertices() };
+            std::vector<int> globals( 5, 0 );
+            mpi::all_reduce( this->worldComm(), locals, globals, Functor::AddStdVectors<int>() );
+            M_numGlobalElements = globals[0];
+            M_numGlobalFaces = globals[1];
+            M_numGlobalEdges = globals[2];
+            M_numGlobalPoints = globals[3];
+            M_numGlobalVertices = globals[4];
         }
         else
         {
             M_numGlobalElements = ne;
+            M_numGlobalFaces = nf;
+            M_numGlobalEdges = ned;
+            M_numGlobalPoints = np;
+            M_numGlobalVertices = this->numVertices();
         }
     }
     /**
@@ -473,12 +491,21 @@ public:
         return M_tool_localization;
     }
 
+    //! \return the average h
+    value_type hAverage() const { return M_h_avg; }
+    //! \return the minimum h
+    value_type hMin() const { return M_h_min; }
+    //! \return the maximum h
+    value_type hMax() const { return M_h_max; }
+
     /**
      * \return the measure of the mesh (sum of the measure of the elements)
      */
-    value_type measure() const
+    value_type measure( bool parallel = true ) const
     {
-        return M_meas;
+        if ( parallel )
+            return M_meas;
+        return M_local_meas;
     }
 
     /**
@@ -1449,19 +1476,30 @@ private:
      */
     void updateOnBoundary();
 
+    /**
+     * fix duplication of point in connection1 with 3d mesh at order 3 and 4
+     */
+    void fixPointDuplicationInHOMesh( element_iterator iv, face_iterator __fit, mpl::true_ );
+    void fixPointDuplicationInHOMesh( element_iterator iv, face_iterator __fit, mpl::false_ );
+
 private:
 
     //! communicator
-    size_type M_numGlobalElements;
+    size_type M_numGlobalElements, M_numGlobalFaces, M_numGlobalEdges, M_numGlobalPoints, M_numGlobalVertices;
 
     gm_ptrtype M_gm;
     gm1_ptrtype M_gm1;
 
+    value_type M_h_avg;
+    value_type M_h_min;
+    value_type M_h_max;
+
+
     //! measure of the mesh
-    value_type M_meas;
+    value_type M_meas, M_local_meas;
 
     //! measure of the boundary of the mesh
-    value_type M_measbdy;
+    value_type M_measbdy, M_local_measbdy;
 
     /**
      * The processors who neighbor the current
