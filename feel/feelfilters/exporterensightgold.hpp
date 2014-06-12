@@ -66,6 +66,7 @@ public:
     //@{
 
     typedef MeshType mesh_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef typename super::timeset_type timeset_type;
     typedef typename super::timeset_ptrtype timeset_ptrtype;
@@ -212,6 +213,8 @@ private:
        write the 'geo' file for ensight
     */
     void writeGeoFiles() const;
+    void writeGeoDomains(MPI_File fh, mesh_ptrtype mesh) const;
+    void writeGeoMarkers(MPI_File fh, MPI_Offset start, mesh_ptrtype mesh) const;
 
     /**
        write the variables file for ensight
