@@ -33,6 +33,12 @@
 #include <feel/feelfilters/exporterensightgold.hpp>
 #include <feel/feelfilters/detail/fileindex.hpp>
 
+// temporary fix before movign to MPIIO
+#if defined(FEELPP_HAS_MPI_H)
+#if FEELPP_USE_MPIIO
+#define USE_MPIIO
+#endif
+#endif
 
 namespace Feel
 {
@@ -117,6 +123,10 @@ ExporterEnsightGold<MeshType,N>::save() const
     if ( !this->worldComm().isActive() ) return;
 
     //static int freq = 0;
+
+#if defined(USE_MPIIO)
+    std::cout << "Using MPIIO" << std::endl;
+#endif
 
     DVLOG(2) << "checking if frequency is ok\n";
 
@@ -541,6 +551,13 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
 {
     namespace lambda = boost::lambda;
 
+    char entry[80];
+
+    MPI_File fh;
+    MPI_Status status;
+    MPI_Info info;
+    MPI_Offset offset = 0;
+
     timeset_const_iterator __ts_it = this->beginTimeSet();
     timeset_const_iterator __ts_en = this->endTimeSet();
 
@@ -553,55 +570,614 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
         __it = boost::prior( __end );
 
 
+        /* static geometry */
         if ( this->exporterGeometry() == EXPORTER_GEOMETRY_STATIC )
         {
             time_index = 0 ;
+
+            /* generate geo filename */
             std::ostringstream __geofname;
             __geofname << this->path() << "/"
                        << __ts->name()
-#if !defined(USE_MPIIO)
-                       << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank()
-#endif
                        << ".geo";
             M_filename =  __geofname.str();
             CHECK( (*__it)->hasMesh() || __ts->hasMesh()  ) << "Invalid mesh data structure in static geometry mode\n";
+
+            /* write info */
+            mesh_ptrtype mesh;
             if ( __ts->hasMesh() )
-                __ts->mesh()->accept( const_cast<ExporterEnsightGold<MeshType,N>&>( *this ) );
+                mesh = __ts->mesh();
             if ( (*__it)->hasMesh() && !__ts->hasMesh() )
-                (*__it)->mesh()->accept( const_cast<ExporterEnsightGold<MeshType,N>&>( *this ) );
-        }
+                mesh = (*__it)->mesh();
 
-        while ( __it != __end )
-        {
-            typename timeset_type::step_ptrtype __step = *__it;
-            time_index = __step->index();
+            /* Open File with MPI IO */
+            char * str = strdup(M_filename.c_str());
+            MPI_File_open( mesh->worldComm().comm(), str, MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL, &fh );
+            free(str);
 
-            std::ostringstream __geofname;
-
-            if ( this->exporterGeometry() != EXPORTER_GEOMETRY_STATIC )
-            {
-                __geofname << this->path() << "/"
-                           << __ts->name()
-#if !defined(USE_MPIIO)
-                           << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank()
-#endif
-                           << ".geo";
-                if ( !this->useSingleTransientFile() )
-                    __geofname << std::setfill( '0' ) << std::setw( 3 ) << __step->index();
-
-                if ( __step->isInMemory() )
-                {
-                    //__writegeo( __step->mesh(), __ts->name(), __geofname.str() );
-                    //, __ts->name(), __geofname.str() );
-                    M_filename =  __geofname.str();
-                    __step->mesh()->accept( const_cast<ExporterEnsightGold<MeshType,N>&>( *this ) );
-                }
+            /* Either write processors domains or data by markers */
+            if(option( _name="exporter.merge.domains" ).template as<bool>()) {
+                this->writeGeoMarkers(fh, offset, mesh);
             }
-            ++__it;
+            else {
+                this->writeGeoDomains(fh, mesh);
+            }
+            
+            /* close file */
+            MPI_File_close(&fh);
+        }
+        /* changing geometry */
+        else
+        {
+            /* Transient mode */
+            if ( this->useSingleTransientFile() )
+            {
+                /* TODO */
+                /* MPI_File_Open -> f */
+                /* P0 : Write "C Binary" */
+                /* for each Timestep T in TS */
+                /* P0 : Write "BEGIN TIME STEP" */
+                /* WriteGeo(T, f) */
+                /* P0 : Write "END TIME STEP" */
+#if 0
+                while ( __it != __end )
+                {
+                    typename timeset_type::step_ptrtype __step = *__it;
+                    time_index = __step->index();
+
+                    std::ostringstream __geofname;
+
+                    __geofname << this->path() << "/"
+                        << __ts->name()
+                        << ".geo";
+                    if ( !this->useSingleTransientFile() )
+                        __geofname << std::setfill( '0' ) << std::setw( 3 ) << __step->index();
+
+                    if ( __step->isInMemory() )
+                    {
+                        //__writegeo( __step->mesh(), __ts->name(), __geofname.str() );
+                        //, __ts->name(), __geofname.str() );
+                        M_filename =  __geofname.str();
+                        __step->mesh()->accept( const_cast<ExporterEnsightGold<MeshType,N>&>( *this ) );
+                    }
+
+                    ++__it;
+                }
+#endif
+            }
+            /* non transient */
+            else
+            {
+                // TODO
+                /* for each Timestep T in TS */
+                /* MPI_File_Open -> f */
+                /* WriteGeo(T, f) */
+#if 0
+                while ( __it != __end )
+                {
+                    typename timeset_type::step_ptrtype __step = *__it;
+                    time_index = __step->index();
+
+                    std::ostringstream __geofname;
+
+                    __geofname << this->path() << "/"
+                        << __ts->name()
+                        << ".geo"
+                        <<  std::setfill( '0' ) << std::setw( 3 ) << __step->index();
+
+                    if ( __step->isInMemory() )
+                    {
+                        //__writegeo( __step->mesh(), __ts->name(), __geofname.str() );
+                        //, __ts->name(), __geofname.str() );
+                        M_filename =  __geofname.str();
+                        __step->mesh()->accept( const_cast<ExporterEnsightGold<MeshType,N>&>( *this ) );
+                    }
+
+                    ++__it;
+                }
+#endif
+            }
         }
 
         ++__ts_it;
     }
+}
+
+template<typename MeshType, int N>
+void
+ExporterEnsightGold<MeshType,N>::writeGeoDomains(MPI_File fh, mesh_ptrtype mesh) const
+{
+    /* DATA PER PROCESSOR */
+    /* Function WriteGeoDomain(Timestep T, MPI_File f) */
+        /* each process build the data to be written */
+        /* corresponding to its part as a string */
+        /* P* : MPI_File_Write_Shared */
+}
+
+template<typename MeshType, int N>
+void
+ExporterEnsightGold<MeshType,N>::writeGeoMarkers(MPI_File fh, MPI_Offset start, mesh_ptrtype mesh) const
+{
+    /* Function WriteGeoMarker(Timestep T, MPI_File f) */
+        /* P0 : Write "C Binary", part, #, desc, coords */
+        /* for each part Marker in T */
+            /* P0 : Write "part", Write # */
+            /* P* : Compute nn, build points id array, build points array */
+            /* P0 : Write nn */
+            /* P* : Write_shared id */
+            /* P* : Write_shared points */
+
+            /* for each face/element type */
+                /* P* : compute ne, build elements id array, build elements array */
+                /* P0 : Write element type */
+                /* P0 : Write ne */
+                /* P* : Write_shared id */
+                /* P* : Write_shared elements */
+                /* WriteGeoPart(P, f) */
+
+    MPI_Status status;
+
+    int size = 0;
+    char buffer[80];
+
+    std::vector<int> idnode, idelem;
+
+    /* write header */
+    /* little trick to only perform collective operation (optimized) */
+    /* and avoid scattering offset and reseting the shared pointer if we would write this only on master proc */
+    if( Environment::isMasterRank() ) 
+    { size = sizeof(buffer); }
+    else 
+    { size = 0; }
+
+    memset(buffer, '\0', sizeof(buffer));
+    strcpy(buffer, "C Binary");
+    MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+    std::cout << "wrote " << buffer << std::endl;
+
+    // get only the filename (maybe with full path)
+    fs::path gp = M_filename;
+    std::string theFileName = gp.filename().string();
+    CHECK( theFileName.length() < 80 ) << "the file name is too long : theFileName=" << theFileName << "\n";
+
+    memset(buffer, '\0', sizeof(buffer));
+    strcpy( buffer, theFileName.c_str() );
+    MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+    std::cout << "wrote " << buffer << std::endl;
+
+    memset(buffer, '\0', sizeof(buffer));
+    strcpy( buffer, "elements" );
+    MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+
+    memset(buffer, '\0', sizeof(buffer));
+    strcpy( buffer, "node id given" );
+    MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+
+    memset(buffer, '\0', sizeof(buffer));
+    strcpy( buffer, "element id given" );
+    MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+    MPI_File_write(fh, buffer, sizeof(buffer), MPI_CHAR, &status );
+
+    // TODO write the faces
+    // Integrate them into the parts corresponding to the elements ?
+    int nbmarkers = mesh->markerNames().size();
+
+    BOOST_FOREACH( auto m, mesh->markerNames() )
+    {
+        /* save faces */
+        if ( option( _name="exporter.ensightgold.save-face" ).template as<bool>() )
+        {
+            if ( m.second[1] != mesh->nDim-1 )
+                continue;
+            VLOG(1) << "writing face with marker " << m.first << " with id " << m.second[0];
+            auto pairit = mesh->facesWithMarker( m.second[0], mesh->worldComm().localRank() );
+            auto fit = pairit.first;
+            auto fen = pairit.second;
+            Feel::detail::MeshPoints<float> mp( mesh.get(), fit, fen, true, true, true );
+            int __ne = std::distance( fit, fen );
+            int nverts = fit->numLocalVertices;
+            DVLOG(2) << "Faces : " << __ne << "\n";
+
+            if( Environment::isMasterRank() ) 
+            { size = sizeof(buffer); }
+            else 
+            { size = 0; }
+
+            memset(buffer, '\0', sizeof(buffer));
+            strcpy( buffer, "part" );
+            MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+            int partid = m.second[0];
+
+            if( Environment::isMasterRank() ) 
+            { size = 1; }
+            else 
+            { size = 0; }
+            MPI_File_write_ordered(fh, &partid, size, MPI_INT, &status);
+
+            if( Environment::isMasterRank() ) 
+            { size = sizeof(buffer); }
+            else 
+            { size = 0; }
+            memset(buffer, '\0', sizeof(buffer));
+            strncpy(buffer, m.first.c_str(), sizeof(buffer) - 1 );
+            MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+
+            if( Environment::isMasterRank() ) 
+            { size = sizeof(buffer); }
+            else 
+            { size = 0; }
+            memset(buffer, '\0', sizeof(buffer));
+            strcpy(buffer, "coordinates");
+            MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+
+            // write points coordinates
+            fit = pairit.first;
+            fen = pairit.second;
+
+            size_type __nv = mp.ids.size();
+            size_type gnop = mp.globalNumberOfPoints();
+            if( Environment::isMasterRank() ) 
+            { size = 1; }
+            else 
+            { size = 0; }
+            // write number of points 
+            MPI_File_write_ordered(fh, &gnop, size, MPI_INT, &status);
+            /* write points ids */
+            MPI_File_write_ordered(fh, mp.ids.data(), mp.ids.size(), MPI_INT, &status );
+            /* write points coordinates in the order x1 ... xn y1 ... yn z1 ... zn */
+            for(int i = 0; i < 3; i++)
+            {
+                MPI_File_write_ordered(fh, mp.coords.data() + i * __nv, __nv, MPI_FLOAT, &status );
+            }
+
+            // write connectivity
+            fit = pairit.first;
+            fen = pairit.second;
+
+            if( Environment::isMasterRank() ) 
+            { size = sizeof(buffer); }
+            else 
+            { size = 0; }
+            memset(buffer, '\0', sizeof(buffer));
+            strcpy( buffer, M_face_type.c_str() );
+            MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+            VLOG(1) << "face type " << buffer;
+
+            if( Environment::isMasterRank() ) 
+            { size = 1; }
+            else 
+            { size = 0; }
+            MPI_File_write_ordered(fh, &__ne, size, MPI_INT, &status);
+            VLOG(1) << "n faces " << __ne;
+
+            idelem.resize( __ne );
+            fit = pairit.first;
+            size_type e = 0;
+            for ( ; fit != fen; ++fit, ++e )
+            {
+                idelem[e] = fit->id() + 1;
+            }
+            CHECK( e == idelem.size() ) << "Invalid number of face id for part " << m.first;
+            MPI_File_write_ordered(fh, idelem.data(), idelem.size(), MPI_INT, &status);
+
+            idelem.resize( __ne*nverts );
+            fit = pairit.first;
+            e = 0;
+            for( ; fit != fen; ++fit, ++e )
+            {
+                for ( size_type j = 0; j < nverts; j++ )
+                {
+                    // ensight id start at 1
+                    idelem[e*nverts+j] = mp.old2new[fit->point( j ).id()];
+                }
+            }
+            CHECK( e*nverts == idelem.size() ) << "Invalid number of faces " << e*nverts << " != " << idelem.size() << " in connectivity for part " << m.first;
+            MPI_File_write_ordered(fh, idelem.data(), idelem.size(), MPI_INT, &status);
+        }
+    }
+
+#if 0
+
+    typename mesh_type::parts_const_iterator_type p_it = __mesh->beginParts();
+    typename mesh_type::parts_const_iterator_type p_en = __mesh->endParts();
+
+#if defined(USE_MPIIO)
+    //std::vector<size_type> myoffset(std::distance(p_it,p_en)), offsets;
+    // we have already written 5*80 chars
+    offset=0;
+    // compute offset between processors
+    for ( int p = 0; p_it != p_en; ++p_it, ++p )
+    {
+        auto r = markedelements(__mesh, p_it->first, EntityProcessType::ALL );
+        auto elt_it = r.template get<1>();
+        auto elt_en = r.template get<2>();
+        auto r1 = markedelements(__mesh, p_it->first, EntityProcessType::GHOST_ONLY );
+        auto elt_it1 = r1.template get<1>();
+        auto elt_en1 = r1.template get<2>();
+        auto r2 = markedelements(__mesh, p_it->first, EntityProcessType::LOCAL_ONLY );
+        auto elt_it2 = r2.template get<1>();
+        auto elt_en2 = r2.template get<2>();
+        Feel::detail::MeshPoints<float> mp( __mesh, elt_it, elt_en, true, true );
+        offset = 4*80;
+        // ints
+        offset += 3*sizeof(int);
+        // vertices
+        size_type __nv = mp.ids.size();
+        offset+=mp.ids.size() * sizeof( int )+mp.coords.size() * sizeof( float );
+        // elements
+        int __ne = std::distance( elt_it2, elt_en2 );
+        offset += __ne*sizeof(int);
+        offset += __ne*__mesh->numLocalVertices()*sizeof( int );
+    }
+    std::vector<MPI_Offset> offsets;
+    // do communication to retrieve the offsets to access the paralLel io file
+    mpi::all_gather( __mesh->worldComm().comm(), offset, offsets );
+    std::cout << "offsets: ";
+    for ( auto i : offsets ) { std::cout << i << ","; }
+    std::cout << std::endl;
+    offset = 5*80;
+    std::cout << "Offset for proc " << __mesh->worldComm().localRank() << "=" << offset << std::endl;
+    MPI_File_seek(fh, offset, MPI_SEEK_SET );
+    p_it = __mesh->beginParts();
+#endif // USE_MPIIO
+#if 1
+    for ( ; p_it != p_en; ++p_it )
+    {
+        auto r = markedelements(__mesh, p_it->first, EntityProcessType::ALL );
+        auto elt_it = r.template get<1>();
+        auto elt_en = r.template get<2>();
+        auto r1 = markedelements(__mesh, p_it->first, EntityProcessType::GHOST_ONLY );
+        auto elt_it1 = r1.template get<1>();
+        auto elt_en1 = r1.template get<2>();
+        auto r2 = markedelements(__mesh, p_it->first, EntityProcessType::LOCAL_ONLY );
+        auto elt_it2 = r2.template get<1>();
+        auto elt_en2 = r2.template get<2>();
+
+        VLOG(1) << "material : " << p_it->first << " total nb element: " << std::distance(elt_it, elt_en );
+        VLOG(1) << "material : " << p_it->first << " ghost nb element: " << std::distance(elt_it1, elt_en1 );
+        VLOG(1) << "material : " << p_it->first << " local nb element: " << std::distance(elt_it2, elt_en2 );
+        Feel::detail::MeshPoints<float> mp( __mesh, elt_it, elt_en, true, true );
+        VLOG(1) << "mesh pts size : " << mp.ids.size();
+
+        // part
+        memset(buffer, '\0', sizeof(buffer));
+        strcpy( buffer, "part" );
+#if defined(USE_MPIIO)
+        MPI_File_write(fh, buffer, sizeof(buffer), MPI_CHAR, &status );
+        MPI_File_seek(fh, -sizeof(buffer), MPI_SEEK_CUR );
+        MPI_File_read(fh, buffer, sizeof(buffer), MPI_CHAR, &status );
+        std::cout << " --> read back part->buffer = " << buffer << std::endl;
+#else
+        __out.write( buffer, sizeof( buffer ) );
+#endif
+
+        // part id
+        int partid = p_it->first;
+#if defined(USE_MPIIO)
+        if ( Environment::isMasterRank() )
+            std::cout << "writing part " << partid << std::endl;
+        MPI_File_write(fh, &partid, 1, MPI_INT, &status );
+#else
+        __out.write( ( char * ) & partid, sizeof(int) );
+#endif
+
+        // material
+        memset(buffer, '\0', sizeof(buffer));
+        sprintf( buffer, "Material %d", p_it->first );
+#if defined(USE_MPIIO)
+        MPI_File_write(fh, buffer, sizeof(buffer), MPI_CHAR, &status );
+#else
+        __out.write( buffer, sizeof( buffer ) );
+#endif
+
+        memset(buffer, '\0', sizeof(buffer));
+        strcpy( buffer, "coordinates" );
+#if defined(USE_MPIIO)
+        MPI_File_write(fh, buffer, sizeof(buffer), MPI_CHAR, &status );
+        MPI_File_seek(fh, -sizeof(buffer), MPI_SEEK_CUR );
+        MPI_File_read(fh, buffer, sizeof(buffer), MPI_CHAR, &status );
+        std::cout << " --> read back coordinates->buffer = " << buffer << std::endl;
+        MPI_File_get_position(fh, &offset);
+        MPI_File_read_at( fh, offset-2*sizeof(buffer), buffer, 80, MPI_CHAR, &status );
+        std::cout << " --> read back material->buffer = " << buffer << std::endl;
+
+#else
+        __out.write( buffer, sizeof( buffer ) );
+#endif
+
+        //offset += 3*sizeof(buffer)+sizeof(int);
+#if defined(USE_MPIIO)
+        int __nv = mp.globalNumberOfPoints();
+        MPI_File_write(fh, &__nv, 1, MPI_INT, &status );
+        // now we need to move with respect to the processors for the coordinates
+        //MPI_File_seek(fh, mp.offsets_pts, MPI_SEEK_CUR );
+        MPI_Offset offset2;
+        MPI_File_get_position(fh, &offset2 );
+        int nn;
+        MPI_File_read_at( fh, offset2-sizeof(int), &nn, 1, MPI_INT, &status );
+        std::cout << "read npts->nn = " << nn << " was " << __nv << std::endl;
+
+#if 0
+        MPI_File_write(fh, &mp.ids.front(), mp.ids.size(), MPI_INT, &status );
+
+
+        std::vector<int> ids(mp.ids.size());
+        MPI_File_get_position(fh, &offset2 );
+        MPI_File_read_at(fh, offset2-mp.ids.size()*sizeof(int),&ids.front(), ids.size(), MPI_INT, &status );
+        if ( Environment::rank() == 0 )
+        {
+            std::ofstream ofs( "ids" );
+            std::for_each( ids.begin(), ids.end(), [&]( int i ) { ofs << i << "\n"; } );
+        }
+        else
+        {
+            std::ofstream ofs( "titi" );
+            std::for_each( ids.begin(), ids.end(), [&]( int i ) { ofs << i << "\n"; } );
+        }
+#endif
+        std::vector<float> x(mp.globalNumberOfPoints()),y(mp.globalNumberOfPoints()),z(mp.globalNumberOfPoints());
+        MPI_File_write_ordered(fh, mp.coords.data(), mp.ids.size(), MPI_FLOAT, &status );
+        MPI_File_write_ordered(fh, mp.coords.data()+mp.ids.size(), mp.ids.size(), MPI_FLOAT, &status );
+        MPI_File_write_ordered(fh, mp.coords.data()+2*mp.ids.size(), mp.ids.size(), MPI_FLOAT, &status );
+        MPI_File_get_position(fh, &offset2 );
+        MPI_File_read_at(fh, offset2-3*mp.globalNumberOfPoints()*sizeof(float),&x.front(), x.size(), MPI_FLOAT, &status );
+        MPI_File_read_at(fh, offset2-2*mp.globalNumberOfPoints()*sizeof(float),&y.front(), y.size(), MPI_FLOAT, &status );
+        MPI_File_read_at(fh, offset2-mp.globalNumberOfPoints()*sizeof(float),&z.front(), z.size(), MPI_FLOAT, &status );
+        if ( Environment::rank() == 0 )
+        {
+            std::ofstream ofs( "x" );
+            std::for_each( x.begin(), x.end(), [&]( double i ) { ofs << i << "\n"; } );
+            std::ofstream yfs( "y" );
+            std::for_each( y.begin(), y.end(), [&]( double i ) { yfs << i << "\n"; } );
+            std::ofstream zfs( "z" );
+            std::for_each( z.begin(), z.end(), [&]( double i ) { zfs << i << "\n"; } );
+
+        }
+
+        //offset += mp.global_offsets_pts+sizeof(int);
+        //MPI_File_seek(fh, offset, MPI_SEEK_SET );
+        MPI_File_get_position(fh, &offset2 );
+        MPI_File_read_at( fh, offset2-mp.global_offsets_pts-sizeof(int)-80, buffer, 80, MPI_CHAR, &status );
+        std::cout << "read back coordinates->buffer = " << buffer << std::endl;
+        // local elements
+        memset(buffer, '\0', sizeof(buffer));
+        strcpy( buffer, this->elementType().c_str() );
+        MPI_File_write(fh, buffer, sizeof(buffer), MPI_CHAR, &status );
+        offset += sizeof(buffer);
+        MPI_File_read_at( fh, offset-sizeof(buffer), buffer, 80, MPI_CHAR, &status );
+        std::cout << "proc " << Environment::rank()
+                  << " --> read back element material->buffer = " << buffer << std::endl;
+
+        int __ne = mp.globalNumberOfElements();
+        MPI_File_write(fh, &__ne, 1, MPI_INT, &status );
+        // now we need to move with respect to the processors for the coordinates
+        //MPI_File_seek(fh, mp.offsets_elts, MPI_SEEK_CUR );
+
+        MPI_File_get_position(fh, &offset2 );
+        MPI_File_read_at( fh, offset2-mp.offsets_elts-sizeof(int), &nn, 1, MPI_INT, &status );
+        std::cout << "proc " << Environment::rank()
+                  << " offsets_elts : " << mp.offsets_elts
+                  << "read npts->nn = " << nn << " was " << __ne << std::endl;
+
+#if 0
+        MPI_File_write(fh, &mp.elemids.front(), mp.elemids.size(), MPI_INT, &status );
+#endif
+
+        MPI_File_write_ordered(fh, &mp.elem.front(), mp.elem.size(), MPI_INT, &status );
+        //offset += mp.global_offsets_elts+sizeof(int);
+        MPI_File_get_position(fh, &offset2 );
+        //MPI_File_seek(fh, offset, MPI_SEEK_SET );
+        MPI_File_read_at( fh, offset2-mp.global_offsets_elts-sizeof(int), &nn, 1, MPI_INT, &status );
+        std::cout << "proc " << Environment::rank()
+                  << " global offsets_elts : " << mp.global_offsets_elts
+                  << "read npts->ne = " << nn << " was " << __ne << std::endl;
+
+#else
+        size_type __nv = mp.ids.size();
+        __out.write( ( char * ) &__nv, sizeof( int ) );
+        __out.write( ( char * ) & mp.ids.front(), mp.ids.size() * sizeof( int ) );
+        __out.write( ( char * ) mp.coords.data(), mp.coords.size() * sizeof( float ) );
+        // local elements
+        memset(buffer, '\0', sizeof(buffer));
+        strcpy( buffer, this->elementType().c_str() );
+        __out.write( buffer, sizeof( buffer ) );
+        int __ne = mp.elemids.size();
+        __out.write( ( char * ) &__ne, sizeof( int ) );
+        __out.write( ( char * ) &mp.elemids.front(), mp.elemids.size() * sizeof( int ) );
+        __out.write( ( char * ) &mp.elem.front() , mp.elem.size()*sizeof( int ) );
+
+#endif
+
+
+
+#if 0
+        // save only the elements belonging to the current mpi process
+        r = markedelements(__mesh, p_it->first, EntityProcessType::LOCAL_ONLY );
+        elt_it = r.template get<1>();
+        elt_en = r.template get<2>();
+        VLOG(1) << "material : " << p_it->first << " local nb element: " << std::distance(elt_it, elt_en );
+        idelem.resize( __ne*__mesh->numLocalVertices() );
+        size_type e=0;
+        for (  ; elt_it != elt_en; ++elt_it, ++e )
+        {
+            for ( size_type j = 0; j < __mesh->numLocalVertices(); j++ )
+            {
+                // ensight id start at 1
+                idelem[e*__mesh->numLocalVertices()+j] = mp.old2new[elt_it->get().point( j ).id()];
+                DCHECK( (idelem[e*__mesh->numLocalVertices()+j] > 0) && (idelem[e*__mesh->numLocalVertices()+j] <= __nv ) )
+                    << "Invalid entry : " << idelem[e*__mesh->numLocalVertices()+j]
+                    << " at index : " << e*__mesh->numLocalVertices()+j
+                    << " element :  " << e
+                    << " vertex :  " << j;
+            }
+        }
+        CHECK( e==__ne) << "Invalid number of elements, e= " << e << "  should be " << __ne;
+        std::for_each( idelem.begin(), idelem.end(), [=]( int e ) { CHECK( ( e > 0) && e <= __nv ) << "invalid entry e = " << e << " nv = " << __nv; } );
+#endif
+
+
+
+#if !defined( USE_MPIIO )
+        if ( Environment::numberOfProcessors() > 1 )
+        {
+            std::string ghost_t = "g_" + this->elementType();
+            // ghosts elements
+            memset(buffer, '\0', sizeof(buffer));
+            strcpy( buffer, ghost_t.c_str() );
+            __out.write( buffer, sizeof( buffer ) );
+
+            int __ne = std::distance( elt_it1, elt_en1 );
+            VLOG(1) << "material : " << p_it->first << " ghost nb element: " << __ne;
+
+            __out.write( ( char * ) &__ne, sizeof( int ) );
+
+            idelem.resize( __ne );
+            size_type e = 0;
+            for ( ; elt_it1 != elt_en1; ++elt_it1 )
+            {
+                if ( elt_it1->get().isGhostCell() )
+                {
+                    idelem[e] = 1;
+                    ++e;
+                }
+            }
+            CHECK( e == __ne ) << "Invalid number of ghosts cells: " << e << " != " << __ne;
+            __out.write( ( char * ) & idelem.front(), idelem.size() * sizeof( int ) );
+
+            elt_it1 = r1.template get<1>();
+            idelem.resize( __ne*__mesh->numLocalVertices() );
+            for ( size_type e=0 ; elt_it1 != elt_en1; ++elt_it1, ++e )
+            {
+                for ( size_type j = 0; j < __mesh->numLocalVertices(); j++ )
+                {
+                    // ensight id start at 1
+                    idelem[e*__mesh->numLocalVertices()+j] = mp.old2new[elt_it1->get().point( j ).id()];
+                    DCHECK( idelem[e*__mesh->numLocalVertices()+j] > 0 )
+                        << "Invalid entry : " << idelem[e*__mesh->numLocalVertices()+j]
+                        << " at index : " << e*__mesh->numLocalVertices()+j
+                        << " element :  " << e
+                        << " vertex :  " << j;
+                }
+            }
+            CHECK( e==__ne) << "Invalid number of elements, e= " << e << "  should be " << __ne;
+            std::for_each( idelem.begin(), idelem.end(), [=]( int e ) { CHECK( ( e > 0) && e <= __nv ) << "invalid entry e = " << e << " nv = " << __nv; } );
+            __out.write( ( char * ) &idelem.front() , __ne*__mesh->numLocalVertices()*sizeof( int ) );
+        }
+#endif // USE_MPIIO
+    }
+    if ( this->useSingleTransientFile() )
+    {
+        memset(buffer, '\0', sizeof(buffer));
+        strcpy(buffer,"END TIME STEP");
+        __out.write(buffer,sizeof(buffer));
+        VLOG(1) << "out : " << buffer;
+#if 0
+        // rewrite FILE_INDEX in file
+        index.write( __out );
+#endif
+    }
+#endif // 0
+#endif
 }
 
 template<typename MeshType, int N>
@@ -991,8 +1567,16 @@ template<typename MeshType, int N>
 void
 ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
 {
+    // TODO Use an MPI IO view to avoid differentiating between the master rank and other processes
+    // when writing an element that must be written one (like the headers) 
+
     char buffer[ 80 ];
     std::vector<int> idnode, idelem;
+
+    MPI_Offset offset = 0;
+    MPI_File fh;
+    MPI_Status status;
+    MPI_Info info;
 
     LOG(INFO) << "visit(mesh) for " << M_filename << " time_index=" << time_index;
     std::fstream __out;
@@ -1017,6 +1601,8 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
     }
 #endif
 
+    // TODO Handle transient case
+    /*
     Feel::detail::FileIndex index;
     if ( this->useSingleTransientFile() )
     {
@@ -1038,39 +1624,28 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
         }
 
     }
+    */
 
-#if defined(USE_MPIIO)
     if ( Environment::isMasterRank() )
     {
         std::cout << "creating parallel file " << M_filename << "..." << std::endl;
     }
 
-    MPI_File fh;
-    MPI_Status status;
-    MPI_Info info;
-    MPI_File_open( __mesh->worldComm().comm(), M_filename.c_str(),
-                   MPI_MODE_RDWR|MPI_MODE_CREATE, MPI_INFO_NULL, &fh );
+    char * str = strdup(M_filename.c_str());
+    MPI_File_open( __mesh->worldComm().comm(), str, MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL, &fh );
+    free(str);
     if ( Environment::isMasterRank() )
     {
         std::cout << "created parallel file..." << std::endl;
     }
-#else
-    if ( this->useSingleTransientFile() )
-        __out.open( M_filename.c_str(), std::ios::out |  std::ios::app | std::ios::binary );
-    else
-        __out.open( M_filename.c_str(), std::ios::out | std::ios::binary );
-#endif
 
-    memset(buffer, '\0', sizeof(buffer));
-    strcpy( buffer, "C Binary" );
-#if defined(USE_MPIIO)
-    MPI_File_write(fh, buffer, sizeof(buffer), MPI_CHAR, &status );
-    if ( Environment::isMasterRank() )
+    if( Environment::isMasterRank() )
     {
+        memset(buffer, '\0', sizeof(buffer));
+        strcpy(buffer, "C Binary");
+        MPI_File_write(fh, buffer, sizeof(buffer), MPI_CHAR, &status );
         std::cout << "wrote " << buffer << std::endl;
     }
-#else
-    __out.write( buffer, sizeof( buffer ) );
 
 #if 0
         memset(buffer, '\0', sizeof(buffer));
@@ -1093,48 +1668,38 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
         // register in index the address of the new TIME_STEP
         index.add( __out.tellp() );
 #endif // TIME_STEP
-#endif
 
     // get only the filename (maybe with full path)
     fs::path gp = M_filename;
     std::string theFileName = gp.filename().string();
     CHECK( theFileName.length() <= 80 ) << "the file name is too long : theFileName=" << theFileName << "\n";
 
-    memset(buffer, '\0', sizeof(buffer));
-    strcpy( buffer, theFileName.c_str() );
-#if defined(USE_MPIIO)
-    MPI_File_write(fh, buffer, sizeof(buffer), MPI_CHAR, &status );
-    std::cout << "wrote " << buffer << std::endl;
-#else
-    __out.write( buffer, sizeof( buffer ) );
-#endif
-    memset(buffer, '\0', sizeof(buffer));
-    strcpy( buffer, "elements" );
-#if defined(USE_MPIIO)
-    MPI_File_write(fh, buffer, sizeof(buffer), MPI_CHAR, &status );
-#else
-    __out.write( buffer, sizeof( buffer ) );
-#endif
-    memset(buffer, '\0', sizeof(buffer));
-    strcpy( buffer, "node id given" );
-#if defined(USE_MPIIO)
-    MPI_File_write(fh, buffer, sizeof(buffer), MPI_CHAR, &status );
-#else
-    __out.write( buffer, sizeof( buffer ) );
-#endif
-    memset(buffer, '\0', sizeof(buffer));
-    strcpy( buffer, "element id given" );
-#if defined(USE_MPIIO)
-    MPI_File_write(fh, buffer, sizeof(buffer), MPI_CHAR, &status );
-#else
-    __out.write( buffer, sizeof( buffer ) );
-#endif
+    if( Environment::isMasterRank() )
+    {
+        memset(buffer, '\0', sizeof(buffer));
+        strcpy( buffer, theFileName.c_str() );
+        MPI_File_write(fh, buffer, sizeof(buffer), MPI_CHAR, &status );
+        std::cout << "wrote " << buffer << std::endl;
 
-#if defined( USE_MPIIO )
+        memset(buffer, '\0', sizeof(buffer));
+        strcpy( buffer, "elements" );
+        MPI_File_write(fh, buffer, sizeof(buffer), MPI_CHAR, &status );
+
+        memset(buffer, '\0', sizeof(buffer));
+        strcpy( buffer, "node id given" );
+        MPI_File_write(fh, buffer, sizeof(buffer), MPI_CHAR, &status );
+
+        memset(buffer, '\0', sizeof(buffer));
+        strcpy( buffer, "element id given" );
+        MPI_File_write(fh, buffer, sizeof(buffer), MPI_CHAR, &status );
+    }
+
     // update all file descriptors: we have already written 5 buffers of char of size 80
-    //MPI_File_seek(fh, 5*80, MPI_SEEK_SET );
-#endif
+    MPI_File_seek(fh, 5*80, MPI_SEEK_SET );
 
+    // TODO write the faces
+    // Integrate them into the parts corresponding to the elements ?
+#if 0
     if ( option( _name="exporter.ensightgold.save-face" ).template as<bool>() )
     {
         BOOST_FOREACH( auto m, __mesh->markerNames() )
@@ -1210,13 +1775,17 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
             __out.write( ( char * ) &idelem.front() , __ne*nverts*sizeof( int ) );
         }
     }
+#endif
+
+#if 0
+
     typename mesh_type::parts_const_iterator_type p_it = __mesh->beginParts();
     typename mesh_type::parts_const_iterator_type p_en = __mesh->endParts();
 
 #if defined(USE_MPIIO)
     //std::vector<size_type> myoffset(std::distance(p_it,p_en)), offsets;
     // we have already written 5*80 chars
-    MPI_Offset offset=0;
+    offset=0;
     // compute offset between processors
     for ( int p = 0; p_it != p_en; ++p_it, ++p )
     {
@@ -1509,9 +2078,9 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
 #endif
     }
 #endif // 0
-#if defined(USE_MPIIO)
-    MPI_File_close(&fh);
 #endif
+
+    MPI_File_close(&fh);
 }
 
 #if 0
