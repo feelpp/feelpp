@@ -2042,7 +2042,7 @@ template<typename T>
 struct MeshPoints
 {
     template<typename MeshType, typename IteratorType>
-    MeshPoints( MeshType*, IteratorType it, IteratorType en, const bool outer = false, const bool renumber = false );
+    MeshPoints( MeshType*, IteratorType it, IteratorType en, const bool outer = false, const bool renumber = false, const bool fill = false );
 
     int globalNumberOfPoints() const { return global_npts; }
     int globalNumberOfElements() const { return global_nelts; }
@@ -2058,9 +2058,18 @@ struct MeshPoints
     size_type offsets_elts, global_offsets_elts;
 
 };
+
+/**
+ * Builds information around faces/elements for exporting data
+ * @param mesh The mesh from which data is extracted
+ * @param it Starting iterator over the faces/elements
+ * @param en Ending iterator over the faces/elements
+ * @param outer If false, the vertices are place in an x1 y1 z1 ... xn yn zn order, otherwise in the x1 ... xn y1 ... yn z1 ... zn
+ * @param fill It true, the method will generate points coordinates that are 3D, even if the point is specified with 1D or 2D coordinates (filled with 0)
+ */
 template<typename T>
 template<typename MeshType, typename IteratorType>
-MeshPoints<T>::MeshPoints( MeshType* mesh, IteratorType it, IteratorType en, const bool outer, const bool renumber )
+MeshPoints<T>::MeshPoints( MeshType* mesh, IteratorType it, IteratorType en, const bool outer, const bool renumber, const bool fill )
 {
     std::set<int> nodeset;
     size_type p = 0;
@@ -2120,12 +2129,35 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, IteratorType it, IteratorType en, con
             else
                 coords[3*i+1] = ( T ) p.node()[1];
         }
+        /* Fill 2nd components with 0 if told to do so */
+        else
+        {
+            if(fill)
+            {
+                if ( outer )
+                    coords[nv+i] = (T)0;
+                else
+                    coords[3*i+1] = (T)0;
+            }
+        }
+
         if ( MeshType::nRealDim >= 3 )
         {
             if ( outer )
                 coords[2*nv+i] = T( p.node()[2] );
             else
                 coords[3*i+2] = T( p.node()[2] );
+        }
+        /* Fill 3nd components with 0 if told to do so */
+        else
+        {
+            if(fill)
+            {
+                if ( outer )
+                    coords[2*nv+i] = (T)0;
+                else
+                    coords[3*i+2] = (T)0;
+            }
         }
     }
 
