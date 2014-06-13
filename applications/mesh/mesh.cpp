@@ -42,7 +42,8 @@ int main( int argc, char** argv )
                                    _email="feelpp-devel@feelpp.org" ) );
 
     // create a mesh with GMSH using Feel++ geometry tool
-    auto mesh = loadMesh(_mesh=new  Mesh<Simplex<FEELPP_DIM>>);
+    auto numPartition = ioption(_name="numPartition");
+    auto mesh = loadMesh(_mesh=new  Mesh<Simplex<FEELPP_DIM>>, _partitions=numPartition);
 
     if ( Environment::isMasterRank() )
     {
@@ -58,14 +59,11 @@ int main( int argc, char** argv )
         std::cout << "                h min : " << mesh->hMin() << std::endl;
         std::cout << "                h avg : " << mesh->hAverage() << std::endl;
         std::cout << "              measure : " << mesh->measure() << std::endl;
+
+        std::cout << "Number of Partitions : " << numPartition << std::endl ;
     }
 
-    auto numPartition = ioption(_name="numPartition");
-    std::cout << "Number of Partitions : " << numPartition << std::endl ;
     
-    // call metis partitionning algorithm 
-    mesh->partition (numPartition) ;
-
     // export results for post processing
     auto e = exporter( _mesh=mesh);
     e->addRegions();
