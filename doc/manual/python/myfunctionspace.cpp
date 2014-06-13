@@ -34,13 +34,16 @@
    @author Christophe Prud'homme
 */
 //! [all]
-#include <feel/feel.hpp>
-using namespace Feel;
+//#include <feel/feel.hpp>
+#include <string>
+//using namespace Feel;
+
+#include<iostream>
 
 
-int main( int argc,char** argv)
+int test (int argc,char** argv)
 {
-
+/*
     //Initialize Feel++ Environment
     Environment env( _argc=argc, _argv=argv,
                      _about=about( _name="myfunctionspace",
@@ -91,7 +94,9 @@ int main( int argc,char** argv)
 
     e->save();
     //! [export]
-
+    */
+        std::cout << "It's working !!!!" << std::endl;
+    return 1;  
 }
 //! [all]
 
@@ -99,28 +104,38 @@ int main( int argc,char** argv)
 #include <boost/python.hpp>
 #include <boost/python/stl_iterator.hpp>
 
-void wrap(const boost::python::list& argv)
+void wrap( boost::python::list argv)
 {
     int argc = boost::python::len(argv);
-
+    std::cout << argc << std::endl ;
     // - Could be a one-liner call to extract<>():-
-
-    const char** pyargv = new const char*[argc+1];
+    
+    char** pyarg =new char* [argc];
     boost::python::stl_input_iterator<std::string> begin(argv), end;
     int i=0;
     while (begin != end)
     {
-        pyargv[i++] = (*begin).c_str();
+        std::cout << *begin << std::endl ;
+        pyarg[i] =strdup((*begin).c_str());
         begin++;
+        i++;
     }
-    pyargv[i] =(char*)'\0';
-    const char* const* p_argv = &pyargv[0];
-    /// ----------
+   // pyarg[i] =new char();
+   // *pyarg[i]='\0'; 
+               /// ----------
+    std::cout << pyarg[0] << std::endl;
+    test(argc,pyarg);
 
-    main(argc,(char**) p_argv);
-    delete[] pyargv;
+    
+    for(int i=0;i<argc;i++)
+        delete pyarg[i];
+    delete[] pyarg;
 }
 
+int main (int argc,char** argv)
+{
+    test(argc,argv);
+}    
 
 
 
@@ -128,7 +143,9 @@ void wrap(const boost::python::list& argv)
 using namespace boost::python;
 
 BOOST_PYTHON_MODULE(libFunct)
-{ 
+{
+    def("test",test); 
     def("wrap",wrap);
-    def("main", main);
+    def("main",main);
+   
 }
