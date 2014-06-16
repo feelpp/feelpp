@@ -34,16 +34,16 @@
    @author Christophe Prud'homme
 */
 //! [all]
-//#include <feel/feel.hpp>
+#include <feel/feel.hpp>
 #include <string>
-//using namespace Feel;
-
+using namespace Feel;
+#include<mpi.h>
 #include<iostream>
 
 
 int test (int argc,char** argv)
 {
-/*
+
     //Initialize Feel++ Environment
     Environment env( _argc=argc, _argv=argv,
                      _about=about( _name="myfunctionspace",
@@ -94,7 +94,7 @@ int test (int argc,char** argv)
 
     e->save();
     //! [export]
-    */
+    
         std::cout << "It's working !!!!" << std::endl;
     return 1;  
 }
@@ -103,6 +103,8 @@ int test (int argc,char** argv)
 
 #include <boost/python.hpp>
 #include <boost/python/stl_iterator.hpp>
+#include <mpi4py/mpi4py.h>
+
 
 void wrap( boost::python::list argv)
 {
@@ -123,7 +125,6 @@ void wrap( boost::python::list argv)
    // pyarg[i] =new char();
    // *pyarg[i]='\0'; 
                /// ----------
-    std::cout << pyarg[0] << std::endl;
     test(argc,pyarg);
 
     
@@ -144,6 +145,9 @@ using namespace boost::python;
 
 BOOST_PYTHON_MODULE(libFunct)
 {
+    if (import_mpi4py() <0) return ;
+
+
     def("test",test); 
     def("wrap",wrap);
     def("main",main);
