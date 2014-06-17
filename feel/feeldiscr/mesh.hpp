@@ -2044,6 +2044,8 @@ struct MeshPoints
     template<typename MeshType, typename IteratorType>
     MeshPoints( MeshType*, IteratorType it, IteratorType en, const bool outer = false, const bool renumber = false, const bool fill = false );
 
+    int translateIds(std::vector<int> & ids);
+
     int globalNumberOfPoints() const { return global_npts; }
     int globalNumberOfElements() const { return global_nelts; }
     int global_nelts{0}, global_npts{0};
@@ -2056,6 +2058,7 @@ struct MeshPoints
     std::vector<int> elem;
     size_type offsets_pts, global_offsets_pts;
     size_type offsets_elts, global_offsets_elts;
+    int shift_p;
 
 };
 
@@ -2167,7 +2170,7 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, IteratorType it, IteratorType en, con
     //std::cout << "n_pts : " << n_pts << std::endl;
     std::vector<size_type> p_s;
     mpi::all_gather( mesh->worldComm().comm(), n_pts, p_s );
-    int shift_p = 0;
+    shift_p = 0;
 #if defined(USE_MPIIO)
 
     for( size_type i = 0; i < p_s.size(); i++ )
@@ -2221,8 +2224,14 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, IteratorType it, IteratorType en, con
 
     //size_type offset_pts = ids.size()*sizeof(int)+ coords.size()*sizeof(float);
     //size_type offset_elts = elemids.size()*sizeof(int)+ elem.size()*sizeof(int);
+#if 0 
     size_type offset_pts = coords.size()*sizeof(float);
     size_type offset_elts = elem.size()*sizeof(int);
+#else
+    size_type offset_pts = coords.size();
+    size_type offset_elts = elem.size();
+#endif
+    
     //std::cout << "offset pts : " << offset_pts << std::endl;
     //std::cout << "offset elts : " << offset_elts << std::endl;
     std::vector<size_type> osp, ose;
@@ -2249,6 +2258,22 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, IteratorType it, IteratorType en, con
 //    std::cout << "global offset elts : " << global_offsets_elts << std::endl;
     //std::cout << "done with offsets" << std::endl;
 }
+
+/**
+ * Translate the list of points ids to the new global layout
+ * @param ids Array of local point ids to be translated
+ */
+template<typename T>
+int MeshPoints<T>::translateIds(std::vector<int> & ptids)
+{
+    for(int i = 0; i < ptids.size(); i++)
+    {
+        ptids[i] = shift_p + old2new[ ptids[i] ];
+    }
+
+    return 0;
+}
+
 }
 
 } // Feel
