@@ -48,7 +48,7 @@ if ( DOXYGEN AND FEELPP_ENABLE_DOXYGEN)
    set(FEELPP_PROJECTS_DIR,"")
 	 set(FEELPP_DOXYGEN_PROJECT "OFF")
    # if projects have been detected
-   foreach(project ${projects_list})
+   foreach(project ${projects})
      #get shortname
      GET_FILENAME_COMPONENT(dirname ${project} NAME)
 
@@ -62,7 +62,7 @@ if ( DOXYGEN AND FEELPP_ENABLE_DOXYGEN)
        FILE(APPEND ${CMAKE_CURRENT_SOURCE_DIR}/pages.doc "/** \\page Project Project\n")
 		 endif()
    
-	 foreach(project ${projects_list})
+	 foreach(project ${projects})
      #get shortname
      GET_FILENAME_COMPONENT(dirname ${project} NAME)
 
