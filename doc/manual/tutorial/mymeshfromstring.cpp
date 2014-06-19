@@ -55,7 +55,7 @@ int main( int argc, char** argv )
 	// create a mesh with GMSH using Feel++ geometry tool
 	std::ostringstream str;
 	str
-		<< "h = 0.1;\n"; 
+		<< "h = 0.1;\n" 
 		<< "Point(1) = {0,0,0,h};\n"
 		<< "Point(2) = {1,0,0,h};\n"
 		<< "Point(3) = {0,1,0,h};\n"
