@@ -3753,6 +3753,7 @@ public:
     */
     basis_ptrtype const& basis() const
     {
+        DCHECK( M_ref_fe ) << "Invalid reference element\n";
         return M_ref_fe;
     }
 
@@ -3801,12 +3802,7 @@ public:
     */
     reference_element_ptrtype const& fe() const
     {
-        LOG_IF( WARNING, !M_ref_fe ) << "finite element data structure not allocated\n";
-        if ( !M_ref_fe )
-        {
-            LOG(INFO) << "allocating finite element...\n";
-            M_ref_fe.reset( new reference_element_type );
-        }
+        DCHECK( M_ref_fe ) << "Invalid reference element\n";
         return M_ref_fe;
     }
 

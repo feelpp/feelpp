@@ -1393,7 +1393,7 @@ public:
      */
     //@{
 
-
+#if !defined( __INTEL_COMPILER )
     /**
      * mesh changed its connectivity
      */
@@ -1404,6 +1404,7 @@ public:
     {
         meshChanged.connect( obs );
     }
+#endif // __INTEL_COMPILER
 
     void removeFacesFromBoundary( std::initializer_list<uint16_type> markers );
 
