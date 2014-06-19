@@ -22,7 +22,7 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file pdh.hpp
+   \file pdhv.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-12-24
  */
@@ -34,7 +34,7 @@
 namespace Feel {
 
 /**
-   Given a \p mesh, build a function space of vectorial continuous function
+   Given a \p mesh, build a function space of vectorial discontinuous function
    which are piecewise polynomial of degree (total or in each variable) less
    than k using Lagrange basis functions
  */
