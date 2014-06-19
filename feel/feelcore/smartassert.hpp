@@ -36,8 +36,10 @@
 #include <utility>
 #include <vector>
 #include <map>
+#pragma warning push
+#pragma warning(disable:780)
 #include <glog/logging.h>
-
+#pragma warning pop
 namespace Feel
 {
 enum
