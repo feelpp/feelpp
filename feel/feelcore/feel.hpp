@@ -77,7 +77,10 @@
 #include <limits>
 #include <iosfwd>
 
+#pragma warning push
+#pragma warning(disable:780)
 #include <glog/logging.h>
+#pragma warning pop
 
 #include <feel/feelconfig.h>
 #include <feel/feelcore/info.hpp>
