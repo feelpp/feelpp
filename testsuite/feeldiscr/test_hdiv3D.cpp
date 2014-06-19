@@ -173,7 +173,7 @@ void
 TestHDiv3D::exampleProblem1()
 {
     mesh_ptrtype mesh = loadMesh(_mesh = new mesh_type);
-    auto hsize = option(_name="gmsh.hsize").template as<double>();
+    auto hsize = doption("gmsh.hsize");
     std::cout << "hsize=" << hsize << std::endl;
 
     //auto K = ones<2,2>(); // Hydraulic conductivity tensor

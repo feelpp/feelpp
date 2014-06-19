@@ -166,7 +166,13 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
     auto rangeElt = elements( imesh, addExtendedMPIElt );
     auto it_elt = rangeElt.template get<1>();
     auto en_elt = rangeElt.template get<2>();
-    if ( std::distance(it_elt,en_elt)==0 ) return;
+    if ( std::distance(it_elt,en_elt)==0 )
+    {
+        // call updateForUse in parallel here because this function is call ( at the end of this function)
+        // by others proc which have elements and need collective comm
+        if ( imesh->worldComm().localSize() > 1 ) imesh->updateForUse();
+        return;
+    }
 
     typedef typename DisplType::pc_type pc_type;
     typedef boost::shared_ptr<pc_type> pc_ptrtype;
