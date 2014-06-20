@@ -8,9 +8,9 @@ compiler:
 - clang
 before_install:
 - if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo add-apt-repository -y ppa:mapnik/boost-backports-1-54; fi
-- if test "x$TRAVIS_OS_NAME" = "xlinux"; sudo add-apt-repository -y ppa:kalakris/eigen; fi
-- if test "x$TRAVIS_OS_NAME" = "xlinux"; sudo apt-get -qq update; fi
-- if test "x$TRAVIS_OS_NAME" = "xlinux"; sudo apt-get install -qq libboost1.54-all-dev mpi-default-dev mpi-default-bin libeigen3-dev
+- if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo add-apt-repository -y ppa:kalakris/eigen; fi
+- if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo apt-get -qq update; fi
+- if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo apt-get install -qq libboost1.54-all-dev mpi-default-dev mpi-default-bin libeigen3-dev
     libcln-dev petsc-dev libxml2-dev gmsh bison flex doxygen doxygen-latex transfig
     imagemagick libtbb-dev libann-dev libglpk-dev; fi
 - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew tap feelpp/science; fi
