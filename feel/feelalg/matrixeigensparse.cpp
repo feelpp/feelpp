@@ -42,12 +42,12 @@ MatrixEigenSparse<T>::MatrixEigenSparse()
     M_mat()
 {}
 template <typename T>
-MatrixEigenSparse<T>::MatrixEigenSparse( size_type r, size_type c )
+MatrixEigenSparse<T>::MatrixEigenSparse( size_type r, size_type c, WorldComm const& worldComm )
     :
-    super(),
-    M_is_initialized( false ),
-    M_is_closed( false ),
-    M_mat( r, c )
+    super(worldComm),
+    _M_is_initialized( false ),
+    _M_is_closed( false ),
+    _M_mat( r, c )
 {}
 
 template <typename T>
