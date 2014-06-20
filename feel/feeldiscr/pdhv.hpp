@@ -33,19 +33,41 @@
 
 namespace Feel {
 
+namespace meta
+{
+
+template<typename MeshType,
+         int Order,
+         int Tag = 0,
+         template<class, uint16_type, class> class Pts = PointSetEquiSpaced>
+struct Pdhv
+{
+    typedef FunctionSpace<MeshType,
+                          bases<Lagrange<Order,Vectorial,Discontinuous,Pts,Tag>>,
+                          double,
+                          Periodicity <NoPeriodicity>,
+                          mortars<NoMortar>> type;
+    typedef boost::shared_ptr<type> ptrtype;
+};
+
+} // meta
+
 /**
    Given a \p mesh, build a function space of vectorial discontinuous function
    which are piecewise polynomial of degree (total or in each variable) less
    than k using Lagrange basis functions
  */
-template<int Order,template<class, uint16_type, class> class Pts = PointSetEquiSpaced,typename MeshType>
+template<int Order,
+         int Tag = 0,
+         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,typename MeshType>
 inline
-boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order,Vectorial,Discontinuous,Pts>>>>
+typename meta::Pdhv<MeshType,Order,Tag,Pts>::ptrtype
 Pdhv( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false  )
 {
-    return FunctionSpace<MeshType,bases<Lagrange<Order,Vectorial,Discontinuous,Pts>>>::New( _mesh=mesh,
-                                                                          _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
-                                                                          _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
+    typedef typename meta::Pdhv<MeshType,Order,Tag,Pts>::type space_type;
+    return space_type::New( _mesh=mesh,
+                            _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
+                            _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
 }
 
 }
