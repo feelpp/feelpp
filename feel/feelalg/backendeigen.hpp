@@ -107,7 +107,9 @@ public:
         Context ctx( matrix_properties );
         //if ( ctx.test( DENSE ) )
         {
-            auto A= sparse_matrix_ptrtype( new eigen_sparse_matrix_type( space1->nDof(), space2->nDof() ) );
+            //auto A= sparse_matrix_ptrtype( new eigen_sparse_matrix_type( space1->nDof(), space2->nDof() ) );
+            //auto A= sparse_matrix_ptrtype( new eigen_sparse_matrix_type( space1->nDof(), space2->nDof(), this->comm() ) );
+            auto A= sparse_matrix_ptrtype( new eigen_sparse_matrix_type( space1->nDof(), space2->nDof(), space1->map()->worldComm() ) );
             A->setMatrixProperties( matrix_properties );
             return A;
         }
@@ -122,7 +124,8 @@ public:
                const size_type noz=10,
                size_type matrix_properties = NON_HERMITIAN )
     {
-        sparse_matrix_ptrtype mat( new eigen_sparse_matrix_type( m,n ) );
+        //sparse_matrix_ptrtype mat( new eigen_sparse_matrix_type( m,n ) );
+        sparse_matrix_ptrtype mat( new eigen_sparse_matrix_type( m,n,this->comm() ) );
         mat->setMatrixProperties( matrix_properties );
         return mat;
     }
@@ -135,7 +138,8 @@ public:
                graph_ptrtype const & graph,
                size_type matrix_properties = NON_HERMITIAN )
     {
-        sparse_matrix_ptrtype mat( new eigen_sparse_matrix_type( m,n ) );
+        //sparse_matrix_ptrtype mat( new eigen_sparse_matrix_type( m,n ) );
+        sparse_matrix_ptrtype mat( new eigen_sparse_matrix_type( m,n,this->comm() ) );
         mat->setMatrixProperties( matrix_properties );
         return mat;
     }
@@ -143,7 +147,9 @@ public:
     sparse_matrix_ptrtype
     newMatrix( datamap_ptrtype const& d1, datamap_ptrtype const& d2, size_type matrix_properties = NON_HERMITIAN, bool init = true )
     {
-        auto A = sparse_matrix_ptrtype( new eigen_sparse_matrix_type( d1->nGlobalElements(), d2->nGlobalElements() ) );
+#warning THIS DIFFERS BETWEEN EXPLICIT and DEVELOP
+        // develop:: auto A = sparse_matrix_ptrtype( new eigen_sparse_matrix_type( d1->nGlobalElements(), d2->nGlobalElements() ) );
+        auto A = sparse_matrix_ptrtype( new eigen_sparse_matrix_type( d1.nGlobalElements(), d2.nGlobalElements(), this->comm() ) );
         A->setMatrixProperties( matrix_properties );
         return A;
     }
@@ -171,24 +177,28 @@ public:
     template<typename SpaceT>
     static vector_ptrtype newVector( boost::shared_ptr<SpaceT> const& space )
     {
-        return vector_ptrtype( new eigen_vector_type( space->nDof() ) );
+        //return vector_ptrtype( new eigen_vector_type( space->nDof() ) );
+        return vector_ptrtype( new eigen_vector_type( space->nDof(), space->map()->comm() ) );
     }
 
     template<typename SpaceT>
     static vector_ptrtype newVector( SpaceT const& space )
     {
-        return vector_ptrtype( new eigen_vector_type( space.nDof() ) );
+        //return vector_ptrtype( new eigen_vector_type( space.nDof() ) );
+        return vector_ptrtype( new eigen_vector_type( space.nDof(), space.map()->comm() ) );
     }
 
     vector_ptrtype
     newVector( datamap_ptrtype const& d )
     {
-        return vector_ptrtype( new eigen_vector_type( d->nGlobalElements() ) );
+#warning THIS DIFFERS BETWEEN EXPLICIT and DEVELOP
+        // develop : return vector_ptrtype( new eigen_vector_type( d->nGlobalElements() ) );
+        return vector_ptrtype( new eigen_vector_type( d.nGlobalElements(), this->comm() ) );
     }
 
     vector_ptrtype newVector( const size_type n, const size_type n_local )
     {
-        return vector_ptrtype( new eigen_vector_type( n ) );
+        return vector_ptrtype( new eigen_vector_type( n, this->comm() ) );
     }
 
 
@@ -248,15 +258,15 @@ private:
 
 // -- CONSTRUCTOR --
 template<typename T, int _Options>
-BackendEigen<T,_Options>::BackendEigen( WorldComm const& )
+BackendEigen<T,_Options>::BackendEigen( WorldComm const& _worldComm )
     :
-    super()
+    super(_worldComm)
 {}
 
 template<typename T, int _Options>
-BackendEigen<T,_Options>::BackendEigen( po::variables_map const& vm, std::string const& prefix, WorldComm const&  )
+BackendEigen<T,_Options>::BackendEigen( po::variables_map const& vm, std::string const& prefix, WorldComm const& _worldComm  )
     :
-    super( vm, prefix )
+    super( vm, prefix, _worldComm )
 {
     std::string _prefix = prefix;
 
