@@ -24,7 +24,7 @@
 set_directory_properties(PROPERTIES LABEL testcrb )
 feelpp_add_test( eim )
 feelpp_add_test( eim_grepl TIMEOUT 90 )
-
+feelpp_add_test( eim_composite ) 
 
 
 feelpp_add_test( rbspace )
