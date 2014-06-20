@@ -22,7 +22,8 @@ script:
 - make -j2 feelpp
 - make quickstart
 - make tutorial
-after_script: make check
+- make check
+#after_script: make check
 branches:
   only:
   - develop
