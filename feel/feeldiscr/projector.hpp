@@ -107,7 +107,7 @@ public :
                DirichletType dirichlet_type = WEAK
              )
         :
-        ol_type( domainSpace, dualImageSpace, abackend ),
+        ol_type( domainSpace, dualImageSpace, abackend, false ),
         M_backend( abackend ),
         M_epsilon( epsilon ),
         M_gamma( gamma ),
@@ -115,11 +115,18 @@ public :
         M_dir( dirichlet_type )
 
     {
-        M_matrix = M_backend->newMatrix( _trial=domainSpace, _test=dualImageSpace ) ;
+        M_matrixFull = M_backend->newMatrix( _trial=this->domainSpace(), _test=this->dualImageSpace() );
+        if ( M_proj_type == LIFT )
+            M_matrix = M_backend->newMatrix( _trial=this->domainSpace(), _test=this->dualImageSpace() ) ;
+        else
+            M_matrix = M_matrixFull; // same pointer
+
+        ie = M_backend->newVector( this->dualImageSpace() );
+
         initMatrix();
     }
 
-    ~Projector() {}
+    //~Projector() {}
     //@}
 
     /** @name  Methods
@@ -163,14 +170,12 @@ public :
 
         auto sol = this->domainSpace()->element();
 
-        ie = M_backend->newVector( this->dualImageSpace() );
-
-        form1( _test=this->dualImageSpace(), _vector=ie, _init=true );
+        ie->zero();
 
         if ( (M_proj_type != LIFT) )
         {
             form1( _test=this->dualImageSpace(), _vector=ie ) +=
-                integrate( _range=range, _expr=expr*id( this->dualImageSpace()->element() ),
+                integrate( _range=range, _expr=inner(expr,id( this->dualImageSpace()->element() ) ),
                            _quad=quad, _quad1=quad1, _geomap=geomap );
 
             switch( M_proj_type )
@@ -199,7 +204,7 @@ public :
         {
             form1( _test=this->dualImageSpace(), _vector=ie ) +=
                 integrate( _range=range,
-                           _expr=expr*( -grad( this->dualImageSpace()->element() )*vf::N() +
+                           _expr=inner( expr, -grad( this->dualImageSpace()->element() )*vf::N() +
                                         M_gamma / vf::hFace() *id( this->dualImageSpace()->element() ) ),
                            _quad=quad, _quad1=quad1, _geomap=geomap );
         }
@@ -209,34 +214,35 @@ public :
         {
             form1( _test=this->dualImageSpace(), _vector=ie ) +=
                 integrate( _range=boundaryfaces( this->dualImageSpace()->mesh() ),
-                           _expr=expr*M_epsilon*( -grad( this->domainSpace()->element() )*vf::N() +
-                                                  M_gamma / vf::hFace() *id( this->dualImageSpace()->element() ) ),
+                           _expr=inner( expr, M_epsilon*( -grad( this->domainSpace()->element() )*vf::N() +
+                                                          M_gamma / vf::hFace() *id( this->dualImageSpace()->element() ) ) ),
                            _quad=quad, _quad1=quad1, _geomap=geomap );
         }
 
-        ie->close();
 
-        M_matrixFull = M_backend->newMatrix( _trial=this->domainSpace(), _test=this->dualImageSpace() );
-        auto bilinearForm = form2( _trial=this->domainSpace(), _test=this->dualImageSpace(), _matrix=M_matrixFull );
-
-        if ( ( M_proj_type == LIFT ) && ( M_dir == WEAK ) )
+        if ( M_proj_type == LIFT )
         {
-            bilinearForm +=
-                integrate( _range=range, _expr=
-                           ( -trans( id( this->dualImageSpace()->element() ) )*gradt( this->domainSpace()->element() )*vf::N()
-                             -trans( idt( this->domainSpace()->element() ) )* grad( this->dualImageSpace()->element() )*vf::N()
-                             + M_gamma * trans( idt( this->domainSpace()->element() ) ) /*trial*/
-                             *id( this->dualImageSpace()->element() ) / vf::hFace()   /*test*/
-                             ), _quad=quad, _quad1=quad1, _geomap=geomap );
+            M_matrixFull->zero();
+            M_matrixFull->addMatrix( 1., M_matrix );
+            auto bilinearForm = form2( _trial=this->domainSpace(), _test=this->dualImageSpace(), _matrix=M_matrixFull );
+
+            if ( M_dir == WEAK )
+            {
+                bilinearForm +=
+                    integrate( _range=range, _expr=
+                               ( -trans( id( this->dualImageSpace()->element() ) )*gradt( this->domainSpace()->element() )*vf::N()
+                                 -trans( idt( this->domainSpace()->element() ) )* grad( this->dualImageSpace()->element() )*vf::N()
+                                 + M_gamma * trans( idt( this->domainSpace()->element() ) ) /*trial*/
+                                 *id( this->dualImageSpace()->element() ) / vf::hFace()   /*test*/
+                                 ), _quad=quad, _quad1=quad1, _geomap=geomap );
+            }
+            else if ( M_dir == STRONG )
+            {
+                this->applyOn(range, expr);
+            }
         }
 
-        M_matrixFull->close();
-        M_matrixFull->addMatrix( 1., M_matrix );
-
-        if ( ( M_proj_type == LIFT ) && ( M_dir == STRONG )  )
-            this->applyOn(range, expr);
-
-        M_backend->solve( M_matrixFull, sol, ie );
+        M_backend->solve( _matrix=M_matrixFull, _solution=sol, _rhs=ie );
 
         return sol;
     }
@@ -326,8 +332,7 @@ private :
         using namespace vf;
         auto a = form2 ( _trial=this->domainSpace(),
                          _test=this->dualImageSpace(),
-                         _matrix=M_matrix,
-                         _init=true );
+                         _matrix=M_matrix );
 
         switch ( M_proj_type )
         {
