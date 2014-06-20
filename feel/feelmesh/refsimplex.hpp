@@ -634,8 +634,8 @@ public:
                 return make_tetrahedron_points( interior );
         }
 
-        else if ( nOrder == 0 )
-            return glas::average( M_vertices );
+        DCHECK ( nOrder == 0 ) << "Invalid polynomial order";
+        return glas::average( M_vertices );
     }
 
     /**
