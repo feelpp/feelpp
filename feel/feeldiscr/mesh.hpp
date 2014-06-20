@@ -2044,7 +2044,8 @@ struct MeshPoints
     template<typename MeshType, typename IteratorType>
     MeshPoints( MeshType*, IteratorType it, IteratorType en, const bool outer = false, const bool renumber = false, const bool fill = false );
 
-    int translateIds(std::vector<int> & ids);
+    int translatePointIds(std::vector<int> & ids);
+    int translateElementIds(std::vector<int> & ids);
 
     int globalNumberOfPoints() const { return global_npts; }
     int globalNumberOfElements() const { return global_nelts; }
@@ -2058,7 +2059,6 @@ struct MeshPoints
     std::vector<int> elem;
     size_type offsets_pts, global_offsets_pts;
     size_type offsets_elts, global_offsets_elts;
-    int shift_p;
 
 };
 
@@ -2068,6 +2068,7 @@ struct MeshPoints
  * @param it Starting iterator over the faces/elements
  * @param en Ending iterator over the faces/elements
  * @param outer If false, the vertices are place in an x1 y1 z1 ... xn yn zn order, otherwise in the x1 ... xn y1 ... yn z1 ... zn
+ * @param renumber If true, the vertices will be renumbered with maps to keep the correspondance between the twoi, otherwise the original ids are kept
  * @param fill It true, the method will generate points coordinates that are 3D, even if the point is specified with 1D or 2D coordinates (filled with 0)
  */
 template<typename T>
@@ -2080,9 +2081,9 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, IteratorType it, IteratorType en, con
 
     /* Gather all the vertices of which the elements are made up with into a std::set */
     /* build up correspondance arrays between index in nodeset and previous id */
-    for( ; it != en; ++it )
+    for( auto eit = it ; eit != en; ++eit )
     {
-        auto const& elt = boost::unwrap_ref( *it );
+        auto const& elt = boost::unwrap_ref( *eit );
         for ( size_type j = 0; j < elt.numLocalVertices; j++ )
         {
             int pid = elt.point( j ).id();
@@ -2170,7 +2171,7 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, IteratorType it, IteratorType en, con
     //std::cout << "n_pts : " << n_pts << std::endl;
     std::vector<size_type> p_s;
     mpi::all_gather( mesh->worldComm().comm(), n_pts, p_s );
-    shift_p = 0;
+    int shift_p = 0;
 #if defined(USE_MPIIO)
 
     for( size_type i = 0; i < p_s.size(); i++ )
@@ -2228,8 +2229,8 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, IteratorType it, IteratorType en, con
     size_type offset_pts = coords.size()*sizeof(float);
     size_type offset_elts = elem.size()*sizeof(int);
 #else
-    size_type offset_pts = coords.size();
-    size_type offset_elts = elem.size();
+    size_type offset_pts = nv;
+    size_type offset_elts = __ne;
 #endif
     
     //std::cout << "offset pts : " << offset_pts << std::endl;
@@ -2264,11 +2265,26 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, IteratorType it, IteratorType en, con
  * @param ids Array of local point ids to be translated
  */
 template<typename T>
-int MeshPoints<T>::translateIds(std::vector<int> & ptids)
+int MeshPoints<T>::translatePointIds(std::vector<int> & ptids)
 {
     for(int i = 0; i < ptids.size(); i++)
     {
-        ptids[i] = shift_p + old2new[ ptids[i] ];
+        ptids[i] = offsets_pts + old2new[ ptids[i] ];
+    }
+
+    return 0;
+}
+
+/**
+ * Translate the list of element ids to the new global layout
+ * @param ids Array of local point ids to be translated
+ */
+template<typename T>
+int MeshPoints<T>::translateElementIds(std::vector<int> & elids)
+{
+    for(int i = 0; i < elids.size(); i++)
+    {
+        elids[i] = offsets_elts + elids[i];
     }
 
     return 0;

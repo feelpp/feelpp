@@ -37,8 +37,8 @@ class FileIndex
 {
 public:
     FileIndex() : n_steps( 0 ), fileblock_n_steps( -1 ) {}
-    void read( std::istream& os );
-    void write( std::ostream& os );
+    void read( MPI_File fh );
+    void write( MPI_File fh );
     void add( int64_type tellp ) { ++n_steps ; fileblocks.push_back( tellp ); }
     bool defined() const { return n_steps != 0; }
     int64_type n_steps;

@@ -26,8 +26,9 @@
 
 namespace Feel { namespace detail {
 
-void FileIndex::read( std::istream& is )
+void FileIndex::read( MPI_File fh )
 {
+#if 0
     LOG(INFO) << "Start reading FILE_INDEX (if any)";
     is.seekg (0, is.end);
     int length = is.tellg();
@@ -74,10 +75,12 @@ void FileIndex::read( std::istream& is )
         LOG(INFO) << "Done reading FILE_INDEX";
     }
 
+#endif
 }
 
-void FileIndex::write( std::ostream& os )
+void FileIndex::write( MPI_File fh )
 {
+#if 0
     LOG(INFO) << "Start writing FILE_INDEX";
     // go to end of file
     os.seekp( 0, std::ios::end );
@@ -105,6 +108,7 @@ void FileIndex::write( std::ostream& os )
     strcpy( buffer, "FILE_INDEX" );
     os.write( (char*)&buffer, sizeof(buffer) );
     LOG(INFO) << "Done writing FILE_INDEX";
+#endif
 }
 
 } // detail
