@@ -48,7 +48,7 @@ template <uint16_type OrderPoly = 1, uint16_type DimGeo = 2>
 void run()
 {
     BOOST_TEST_MESSAGE( "test_eval_at_point D=" << DimGeo << " P=" << OrderPoly << "..." );
-    Environment::changeRepository( boost::format( "D%1%/P%2%" ) % DimGeo % OrderPoly );
+    Environment::changeRepository( boost::format( "%1%/D%2%/P%3%" ) % Environment::about().appName() % DimGeo % OrderPoly );
     auto mesh = loadMesh(_mesh = new Mesh<Simplex<DimGeo>>);
     auto Vh = Pchv<OrderPoly>( mesh );
     auto u = Vh->element();
@@ -100,23 +100,21 @@ BOOST_AUTO_TEST_SUITE( form_eval_at_point )
 
 BOOST_AUTO_TEST_CASE( form_eval_at_point_P1_D2 )
 {
-    for(int i = 0; i < 10; ++i )
+//    for(int i = 0; i < 10; ++i )
         test_eval_at_point::run<1,2>();
 }
 BOOST_AUTO_TEST_CASE( form_eval_at_point_P1_D3 )
 {
-    for(int i = 0; i < 5; ++i )
+//    for(int i = 0; i < 5; ++i )
         test_eval_at_point::run<1,3>();
 }
 BOOST_AUTO_TEST_CASE( form_eval_at_point_P4_D2 )
 {
-    for(int i = 0; i < 10; ++i )
-        test_eval_at_point::run<4,2>();
+    test_eval_at_point::run<4,2>();
 }
 BOOST_AUTO_TEST_CASE( form_eval_at_point_P4_D3 )
 {
-    for(int i = 0; i < 5; ++i )
-        test_eval_at_point::run<4,3>();
+    test_eval_at_point::run<4,3>();
 }
 BOOST_AUTO_TEST_SUITE_END()
 
