@@ -120,8 +120,6 @@ public:
      */
     MatrixSparse( WorldComm const& worldComm=Environment::worldComm() );
 
-    MatrixSparse( WorldComm const& worldComm );
-
     MatrixSparse( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm=Environment::worldComm() );
 
     /**
@@ -780,14 +778,6 @@ inline
 MatrixSparse<T>::MatrixSparse( WorldComm const& worldComm ) :
     M_worldComm( worldComm ),
     M_is_initialized( false ),
-    M_mprop( NON_HERMITIAN )
-{}
-
-template <typename T>
-inline
-MatrixSparse<T>::MatrixSparse ( WorldComm const& worldComm ) :
-    M_worldComm( worldComm ),
-    _M_is_initialized( false ),
     M_mprop( NON_HERMITIAN )
 {}
 

@@ -58,7 +58,7 @@ template <typename T>
 VectorEigen<T>::VectorEigen( size_type __s, WorldComm const& _worldComm )
     :
     super1( __s, _worldComm ),
-    _M_vec( __s )
+    M_vec( __s )
 {
     this->init( __s, __s, false );
 }
@@ -77,7 +77,7 @@ template <typename T>
 VectorEigen<T>::VectorEigen( size_type __s, size_type __n_local, WorldComm const& _worldComm  )
     :
     super1( __s, __n_local, _worldComm ),
-    _M_vec( __s )
+    M_vec( __s )
 {
     this->init( this->size(), this->localSize(), false );
 }
