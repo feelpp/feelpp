@@ -30,6 +30,7 @@ branches:
   - develop
   - master
   - feature/explicit
+  - merging-with-explicit
 cache:
 - apt
 notifications:
