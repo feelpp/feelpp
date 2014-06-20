@@ -29,6 +29,7 @@
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelfilters/unitcircle.hpp>
 #include <feel/feeldiscr/pdhv.hpp>
+#include <feel/feelvf/ones.hpp>
 
 int main( int argc, char **argv)
 {
@@ -38,5 +39,8 @@ int main( int argc, char **argv)
     auto Xh=Pdhv<0>(mesh);
     auto v = Xh->element();
     CHECK( v.nDof() == 2*mesh->numGlobalElements() );
+    v.on( _range=elements(mesh), _expr=ones<2,1>() );
+    auto s = v.sum();
+    CHECK( s == 2*mesh->numGlobalElements() );
     return 0;
 }
