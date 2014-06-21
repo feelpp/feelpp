@@ -34,7 +34,11 @@
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/region.hpp>
 #include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelfilters/domain.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelvf/vf.hpp>
+
 
 /** use Feel namespace */
 using namespace Feel;
