@@ -438,6 +438,15 @@ public:
 
     boost::shared_ptr<MatrixEigenDense<T>> sqrt() const;
 
+    /**
+     * Compute the eigenvalues of the current Sparse matrix,
+     * stores the result in \p Eingvs:
+     * \f$ Engvs = \texttt{this}*In \f$.
+     */
+    void eigenValues ( std::vector<std::complex<value_type>> &Eingvs );
+
+
+
     MatrixEigenDense<T>  operator * ( MatrixEigenDense<T> const& M )
     {
         MatrixEigenDense<T>  R;
