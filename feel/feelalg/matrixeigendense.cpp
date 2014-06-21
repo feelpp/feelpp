@@ -297,6 +297,18 @@ MatrixEigenDense<T>::sqrt( MatrixSparse<value_type>& _m ) const
 
 template <typename T>
 void
+MatrixEigenDense<T>::eigenValues ( std::vector<std::complex<value_type>> &Eingvs )
+{
+    auto eigen_vals = M_mat.eigenvalues();
+    for (size_type i=0; i < eigen_vals.size(); ++i )
+    {
+        Eingvs.push_back(eigen_vals[i]);
+    }
+}
+
+
+template <typename T>
+void
 MatrixEigenDense<T>::matMatMult ( MatrixSparse<T> const& In, MatrixSparse<T> &Res )
 {
     //FEELPP_ASSERT ( this->isInitialized() ).error( "eigendense matrix not initialized" );
