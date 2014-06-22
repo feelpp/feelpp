@@ -37,3 +37,4 @@ install(TARGETS feelpp_qs_ns DESTINATION bin/ COMPONENT Bin )
 
 add_dependencies(quickstart feelpp_qs_laplacian)
 add_dependencies(quickstart feelpp_qs_stokes)
+add_dependencies(quickstart feelpp_qs_ns)
