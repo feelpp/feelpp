@@ -7,6 +7,7 @@
 #include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelfilters/creategmshmesh.hpp>
+#include <feel/feelfilters/savegmshmesh.hpp>
 #include <feel/feelfilters/domain.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelfilters/exporter.hpp>
