@@ -380,14 +380,14 @@ Bdf<SpaceType>::Bdf( po::variables_map const& vm,
                      std::string const& prefix )
     :
     super( vm, name, prefix, __space->worldComm() ),
-    M_prefix( prefix ),
     M_order( vm[prefixvm( prefix, "bdf.order" )].as<int>() ),
     M_strategyHighOrderStart( vm[prefixvm( prefix, "bdf.strategy-high-order-start" )].as<int>() ),
     M_order_cur( M_order ),
     M_iterations_between_order_change( vm[prefixvm( prefix, "bdf.iterations-between-order-change" )].as<int>() ),
     M_space( __space ),
     M_alpha( BDF_MAX_ORDER ),
-    M_beta( BDF_MAX_ORDER )
+    M_beta( BDF_MAX_ORDER ),
+    M_prefix( prefix )
 {
     M_unknowns.resize( BDF_MAX_ORDER );
 
@@ -406,13 +406,13 @@ Bdf<SpaceType>::Bdf( space_ptrtype const& __space,
     :
     super( name, __space->worldComm() ),
     M_order( 1 ),
-    M_prefix( "" ),
     M_strategyHighOrderStart( 0 ),
     M_order_cur( 1 ),
     M_iterations_between_order_change( 1 ),
     M_space( __space ),
     M_alpha( BDF_MAX_ORDER ),
-    M_beta( BDF_MAX_ORDER )
+    M_beta( BDF_MAX_ORDER ),
+    M_prefix( "" )
 {
     M_unknowns.resize( BDF_MAX_ORDER );
 
