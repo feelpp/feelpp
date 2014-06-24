@@ -358,7 +358,14 @@ MatrixEigenDense<T>::createSubmatrix( MatrixSparse<T>& submatrix,
 {
     MatrixEigenDense<T>* A = dynamic_cast<MatrixEigenDense<T>*> ( &submatrix );
 
-    A->mat() = this->M_mat.block(rows[0],cols[0],rows.size(),cols.size());
+    // eigen can not extract non-contiguous submatrices, hence we cannot use block
+    for (size_type i=0; i<rows.size(); ++i)
+    {
+        for (size_type j=0; j<rows.size(); ++j)
+        {
+            A->mat()(i,j) = this->M_mat(rows[i],cols[j]);
+        }
+    }
 }
 
 //
