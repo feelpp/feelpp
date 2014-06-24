@@ -547,7 +547,7 @@ exporter_options( std::string const& prefix )
         ( prefixvm( prefix,"exporter.fileset" ).c_str(), Feel::po::value<bool>()->default_value( false ), "use fileset for transient simulations" )
 
         // merge timeteps or domains into single files
-        ( prefixvm( prefix,"exporter.merge.domains" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Merge exported data from different domains into a single file (reduces the number of output files )" )
+        ( prefixvm( prefix,"exporter.merge.markers" ).c_str(), Feel::po::value<bool>()->default_value( true ), "Merge exported data from different markers into a single file (reduces the number of output files )" )
         ( prefixvm( prefix,"exporter.merge.timesteps" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Merge exported timesteps into a single file (reduces the number of output files)" )
 
         ;
