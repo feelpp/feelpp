@@ -151,7 +151,8 @@ public:
         M_space( b.M_space ),
         M_unknowns( b.M_unknowns ),
         M_alpha( b.M_alpha ),
-        M_beta( b.M_beta )
+        M_beta( b.M_beta ),
+        M_prefix( b.M_prefix )
     {}
 
     ~Bdf();
@@ -186,6 +187,12 @@ public:
     void setOrder( int order )
     {
         M_order = order;
+    }
+
+    //!return the prefix
+    std::string bdfPrefix() const
+    {
+        return M_prefix;
     }
 
     //! return the number of iterations between order change
@@ -363,6 +370,7 @@ private:
     //! Coefficients \f$ \beta_i \f$ of the extrapolation
     std::vector<ublas::vector<double> > M_beta;
 
+    std::string M_prefix;
 };
 
 template <typename SpaceType>
@@ -372,6 +380,7 @@ Bdf<SpaceType>::Bdf( po::variables_map const& vm,
                      std::string const& prefix )
     :
     super( vm, name, prefix, __space->worldComm() ),
+    M_prefix( prefix ),
     M_order( vm[prefixvm( prefix, "bdf.order" )].as<int>() ),
     M_strategyHighOrderStart( vm[prefixvm( prefix, "bdf.strategy-high-order-start" )].as<int>() ),
     M_order_cur( M_order ),
@@ -397,6 +406,7 @@ Bdf<SpaceType>::Bdf( space_ptrtype const& __space,
     :
     super( name, __space->worldComm() ),
     M_order( 1 ),
+    M_prefix( "" ),
     M_strategyHighOrderStart( 0 ),
     M_order_cur( 1 ),
     M_iterations_between_order_change( 1 ),
@@ -471,7 +481,10 @@ template <typename SpaceType>
 void
 Bdf<SpaceType>::init()
 {
-    this->setPathSave( (boost::format("bdf_o_%1%_dt_%2%")%this->bdfOrder()%this->timeStep()).str() );
+    this->setPathSave( (boost::format("%3%bdf_o_%1%_dt_%2%")
+                        %this->bdfOrder()
+                        %this->timeStep()
+                        %this->bdfPrefix()  ).str() );
 
     super::init();
 
