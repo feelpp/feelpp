@@ -1,6 +1,7 @@
 #include <feel/feelfilters/loadmesh.hpp>
-#include <feel/feelfilters/partitionio.hpp>
+#include <feel/feelfilters/exporterhdf5.hpp>
 #include <feel/feelcore/hdf5.hpp>
+#include <feel/feeldiscr/mesh.hpp>
 
 using namespace Feel;
 int main (int argc, char ** argv) { 
@@ -12,7 +13,9 @@ int main (int argc, char ** argv) {
 
     auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
 
-    h5partition (_mesh = mesh) ;
+   Exporterhdf5 <Mesh<Simplex<2>>> expo ("ben.h5", Environment::worldComm ()) ;
+   expo.write (mesh) ;
+
 
     return 0 ;
 }
