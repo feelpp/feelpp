@@ -1314,8 +1314,6 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
     int size = 0;
     char buffer[ 80 ];
 
-    int partindex = 1;
-
     MPI_Offset offset = 0;
     MPI_File fh;
     MPI_Status status;
@@ -1392,6 +1390,8 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
         memset(buffer, '\0', sizeof(buffer));
         strcpy( buffer, __var->second.name().c_str() );
         MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+
+        int partindex = 1;
 
 #if 0
         /* handle faces data */
@@ -1498,16 +1498,17 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
 
             /* we get that from the local processor */
             /* We do not need the renumbered global index */
-            auto r = markedelements(__mesh,(boost::any)p_it->first,EntityProcessType::LOCAL_ONLY);
+            auto r = markedelements(__mesh,(boost::any)p_it->first,EntityProcessType::ALL);
             auto elt_it = r.template get<1>();
             auto elt_en = r.template get<2>();
 
-            Feel::detail::MeshPoints<float> mp( __step->mesh().get(), elt_it, elt_en, true, true );
+            Feel::detail::MeshPoints<float> mp( __step->mesh().get(), elt_it, elt_en, true, true, true );
 
             // previous implementation 
             //size_type __field_size = mp.ids.size();
-            int nelts = std::distance(elt_it, elt_en);
-            size_type __field_size = nelts;
+            //int nelts = std::distance(elt_it, elt_en);
+            int npts = mp.ids.size();
+            size_type __field_size = npts;
             if ( __var->second.is_vectorial )
                 __field_size *= 3;
             std::vector<float> __field( __field_size, 0. );
@@ -1528,28 +1529,26 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
                     for ( uint16_type p = 0; p < __step->mesh()->numLocalVertices(); ++p, ++e )
                     {
                         /* previous code */
-                        /*
                         size_type ptid = mp.old2new[elt_it->get().point( p ).id()]-1;
                         size_type global_node_id = mp.ids.size()*c + ptid ;
                         DCHECK( ptid < __step->mesh()->numPoints() ) << "Invalid point id " << ptid << " element: " << elt_it->get().id()
                                                                      << " local pt:" << p
                                                                      << " mesh numPoints: " << __step->mesh()->numPoints();
                         DCHECK( global_node_id < __field_size ) << "Invalid dof id : " << global_node_id << " max size : " << __field_size;
-                        */
 
                         if ( c < __var->second.nComponents )
                         {
                             size_type dof_id = boost::get<0>( __var->second.functionSpace()->dof()->localToGlobal( elt_it->get().id(), p, c ) );
 
-                            //__field[global_node_id] = __var->second.globalValue( dof_id );
-                            __field[nelts*c + index] = __var->second.globalValue( dof_id );
+                            __field[global_node_id] = __var->second.globalValue( dof_id );
+                            //__field[npts*c + index] = __var->second.globalValue( dof_id );
                             //DVLOG(3) << "v[" << global_node_id << "]=" << __var->second.globalValue( dof_id ) << "  dof_id:" << dof_id;
-                            DVLOG(3) << "v[" << (nelts*c + index) << "]=" << __var->second.globalValue( dof_id ) << "  dof_id:" << dof_id;
+                            DVLOG(3) << "v[" << (npts*c + index) << "]=" << __var->second.globalValue( dof_id ) << "  dof_id:" << dof_id;
                         }
                         else
                         {
-                            //__field[global_node_id] = 0;
-                            __field[nelts*c + index] = 0.0;
+                            __field[global_node_id] = 0;
+                            //__field[npts*c + index] = 0.0;
                         }
                     }
                 }
@@ -1561,17 +1560,9 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
             /* Write each component separately */
             for ( uint16_type c = 0; c < __var->second.nComponents; ++c )
             {
-                MPI_File_write_ordered(fh, __field.data() + nelts * c, nelts, MPI_FLOAT, &status);
+                MPI_File_write_ordered(fh, __field.data() + npts * c, npts, MPI_FLOAT, &status);
             }
             //__out.write( ( char * ) __field.data().begin(), __field.size() * sizeof( float ) );
-
-            /* If we have more than one processor */
-            /* we have ghost cells,thus we skip them and increment the partindex to keep it in sync */
-            if ( Environment::numberOfProcessors() > 1 )
-            {
-                partindex++;
-            }
-
         } // parts loop
 
 #if 0
