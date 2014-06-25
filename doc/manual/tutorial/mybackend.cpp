@@ -24,18 +24,15 @@
 	 */
 
 
+/// [marker_main]
 #include <feel/feel.hpp>
 using namespace Feel;
 
-/// [marker_main]
 int main(int argc, char**argv )
 {
+/// [marker_opt]
 	po::options_description app_options( "MyBackend options" );
-	app_options.add_options()
-		( "value",
-			po::value<double>() -> default_value(4.2),
-			"a 'double' with default value" );
-	app_options.add(Feel::feel_options());
+	app_options.add(Feel::feel_options()); //default Feel++ options - embed default backend's one
 	app_options.add(backend_options("myBackend"));
 	
 	Environment env( _argc=argc, _argv=argv,
@@ -43,9 +40,12 @@ int main(int argc, char**argv )
 			_about=about(_name="mybackend",
 				_author="Feel++ Consortium",
 				_email="feelpp-devel@feelpp.org"));
+/// [marker_opt]
 
+/// [marker_obj]
 	// create a backend
 	boost::shared_ptr<Backend<double>> myBackend(backend(_name="myBackend"));
+/// [marker_obj]
 
 	// create the mesh
 	auto mesh = loadMesh(_mesh=new Mesh<Simplex< 2 > > );
@@ -72,19 +72,22 @@ int main(int argc, char**argv )
 	a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u,
 			_expr=expr(soption("functions.g")));
 
+/// [marker_default]
 	// solve a(u,v)=l(v)
 	std::cout << "With standard backend\n";
 	a.solve(_rhs=l,_solution=u1);
+/// [marker_default]
+/// [marker_hm]
+	// solve a(u,v)=l(v)
 	std::cout << "With home maid backend\n";
 	a.solveb(_rhs=l,_solution=u2, _backend=myBackend);
+/// [marker_hm]
 	//# endmarker_main #
 
 	// save results
 	auto e = exporter( _mesh=mesh );
-	e->step(0) -> add( "u1", u1 );
-	e->step(0) -> add( "u2", u2 );
-	e->step(1) -> add( "u1", u1 );
-	e->step(1) -> add( "u2", u2 );
+	e->step(0) -> add( "u", u1 );
+	e->step(1) -> add( "u", u2 );
 	e->save();
 }
 /// [marker_main]
