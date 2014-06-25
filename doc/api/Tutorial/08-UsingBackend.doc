@@ -1,0 +1,12 @@
+/* -*- mode: c++; coding: utf-8 -*- */
+namespace Feel {
+/*! \page TutorialBackend Using a backend
+
+A backend is an object that manage the resolution of `Ax = b`.
+Feel++ provide a default backend.
+
+You may have various problems to solve, and that may require many backend.
+We will highlight how to use a backend.
+
+*/
+}
