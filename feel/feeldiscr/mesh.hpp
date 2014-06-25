@@ -2195,17 +2195,23 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, IteratorType it, IteratorType en, con
     mpi::all_reduce( mesh->worldComm().comm(), __ne, global_nelts, std::plus<int>()  );
     //std::cout <<  "global_nelts=" << global_nelts << std::endl;
     //std::cout <<  "global_npts=" << global_npts << std::endl;
-    elem.resize( __ne*mesh->numLocalVertices() );
+
+    elem.resize( __ne*boost::unwrap_ref( *elt_it ).numLocalVertices );
+    //elem.resize( __ne*mesh->numLocalVertices() );
     elemids.resize( __ne );
     size_type e=0;
     for (  ; elt_it != en; ++elt_it, ++e )
     {
         auto const& elt = boost::unwrap_ref( *elt_it );
         elemids[e] = elt.id()+1;
-        for ( size_type j = 0; j < mesh->numLocalVertices(); j++ )
+        //std::cout << "LocalV = " << elt.numLocalVertices << std::endl;
+        //for ( size_type j = 0; j < mesh->numLocalVertices(); j++ )
+        for ( size_type j = 0; j < elt.numLocalVertices; j++ )
         {
+            //std::cout << "LocalVId = " << j << " " << e*elt.numLocalVertices+j << std::endl;
+            //std::cout << elt.point( j ).id() << std::endl;
             // ensight id start at 1
-            elem[e*mesh->numLocalVertices()+j] = shift_p+old2new[elt.point( j ).id()];
+            elem[e*elt.numLocalVertices+j] = shift_p+old2new[elt.point( j ).id()];
 #if 0
             DCHECK( (elem[e*mesh->numLocalVertices()+j] > 0) && (elem[e*mesh->numLocalVertices()+j] <= nv ) )
                 << "Invalid entry : " << elem[e*mesh->numLocalVertices()+j]
