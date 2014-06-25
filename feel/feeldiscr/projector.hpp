@@ -175,7 +175,7 @@ public :
         if ( (M_proj_type != LIFT) )
         {
             form1( _test=this->dualImageSpace(), _vector=ie ) +=
-                integrate( _range=range, _expr=inner(expr,id( this->dualImageSpace()->element() ) ),
+                integrate( _range=range, _expr=inner(trans(expr),id( this->dualImageSpace()->element() ) ),
                            _quad=quad, _quad1=quad1, _geomap=geomap );
 
             switch( M_proj_type )
@@ -204,7 +204,7 @@ public :
         {
             form1( _test=this->dualImageSpace(), _vector=ie ) +=
                 integrate( _range=range,
-                           _expr=inner( expr, -grad( this->dualImageSpace()->element() )*vf::N() +
+                           _expr=inner( trans(expr), -grad( this->dualImageSpace()->element() )*vf::N() +
                                         M_gamma / vf::hFace() *id( this->dualImageSpace()->element() ) ),
                            _quad=quad, _quad1=quad1, _geomap=geomap );
         }
@@ -214,7 +214,7 @@ public :
         {
             form1( _test=this->dualImageSpace(), _vector=ie ) +=
                 integrate( _range=boundaryfaces( this->dualImageSpace()->mesh() ),
-                           _expr=inner( expr, M_epsilon*( -grad( this->domainSpace()->element() )*vf::N() +
+                           _expr=inner( trans(expr), M_epsilon*( -grad( this->domainSpace()->element() )*vf::N() +
                                                           M_gamma / vf::hFace() *id( this->dualImageSpace()->element() ) ) ),
                            _quad=quad, _quad1=quad1, _geomap=geomap );
         }
