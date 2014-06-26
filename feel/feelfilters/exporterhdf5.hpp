@@ -67,7 +67,10 @@ void Exporterhdf5<MeshType>::write (const mesh_ptrtype& mesh)
 template <typename MeshType>
 void Exporterhdf5<MeshType>::read (mesh_ptrtype& mesh)
 {
-    
+   mesh.reset () ;
+   M_meshIn.reset (new mesh_type) ;
+   
+   mesh = M_meshIn ;
 }
 
 template <typename MeshType>
@@ -81,21 +84,23 @@ void Exporterhdf5<MeshType>::writePoints ()
     hsize_t currentSpaceDims [2] ;
     hsize_t currentCount [2] ;
 
-    currentSpaceDims[0] = 1 ;
+    currentSpaceDims[0] = 1;
     currentSpaceDims[1] = maxNumPoints ;
 
     currentCount[0] = 3 ;
     currentCount[1] = maxNumPoints ;
 
-    M_HDF5.createTable ("point_ids", H5T_STD_U32BE, currentSpaceDims) ;
     M_HDF5.createTable ("point_coords", H5T_IEEE_F64BE, currentCount) ;
+    M_HDF5.createTable ("point_ids", H5T_STD_U32BE, currentSpaceDims) ;
 
-    M_uintBuffer.resize (maxNumPoints, 0) ;
+    M_uintBuffer.resize (currentSpaceDims[0]*currentSpaceDims[1], 0) ;
     M_realBuffer.resize (currentCount[0]*currentCount[1], 0) ;
 
-    for (size_type i = 0 ; i < maxNumPoints ; i ++ , pt_it++) 
+    for (size_type i = 0 ; i < maxNumPoints ; i++ , pt_it++) 
     {
-        M_uintBuffer[i] = pt_it->id () + 1 ;
+        M_uintBuffer[i] = pt_it->id () ;
+
+        //M_uintBuffer[i] =  1 ;
         std::cout << M_uintBuffer[i] << std::endl ;
 
         M_realBuffer[i] = pt_it->node()[0] ;
@@ -107,12 +112,15 @@ void Exporterhdf5<MeshType>::writePoints ()
 
     hsize_t currentOffset[2] = {0, 0} ;
 
-    M_HDF5.write ("point_ids", H5T_NATIVE_INT, currentSpaceDims, currentOffset , &M_uintBuffer[0]) ;
     M_HDF5.write ("point_coords", H5T_NATIVE_DOUBLE, currentCount, currentOffset, &M_realBuffer[0]) ;
+    currentOffset[0] = 0 ;
+    currentOffset[1] = 0 ;
+    std::cout << sizeof (size_type) << " " << sizeof (unsigned int) << std::endl ;
+    M_HDF5.write ("point_ids", H5T_NATIVE_LLONG, currentSpaceDims, currentOffset , &M_uintBuffer[0]) ;
 
     
-    M_HDF5.closeTable("point_ids") ;
     M_HDF5.closeTable("point_coords") ;
+    M_HDF5.closeTable("point_ids") ;
 }
 
 }
