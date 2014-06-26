@@ -155,8 +155,8 @@ public:
             std::cout << "u size = " << u.size() << std::endl;
             u1 = Xh1->element();
             u2 = Xh1->element();
-            u1 = u.template element<0>();
-            u2 = u.template element<1>();
+            u1 = u.element<0>();
+            u2 = u.element<1>();
             LOG(INFO) << "u1 size = " << u1.size() << std::endl;
             LOG(INFO) << "u2 size = " << u2.size() << std::endl;
             Dmu = parameterspace_type::New();
