@@ -3,7 +3,8 @@
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-             Guillaume Dollé <guillaume.dolle@math.unistra.fr>
+             Guillaume Dollé <guillaume.dolle@math.unistra.f>
+             Thomas Lantz
 
   Date: 2013-02-11
 
@@ -37,18 +38,24 @@
 #include <feel/feel.hpp>
 #include <string>
 using namespace Feel;
-#include<mpi.h>
-#include<iostream>
+#include <mpi.h>
+#include <iostream>
 
 
 int test (int argc,char** argv)
 {
-
+    for(int i=0;i<argc;i++)
+         std::cout << argv[i] << std::endl;
     //Initialize Feel++ Environment
+   
+   /*
     Environment env( _argc=argc, _argv=argv,
                      _about=about( _name="myfunctionspace",
                                    _author="Feel++ Consortium",
                                    _email="feelpp-devel@feelpp.org" )  );
+    */
+    Environment env(argc,argv);
+    
 
     //! [mesh]
     // create the mesh
@@ -94,9 +101,8 @@ int test (int argc,char** argv)
 
     e->save();
     //! [export]
-    
-        std::cout << "It's working !!!!" << std::endl;
-    return 1;  
+
+            return 1;  
 }
 //! [all]
 
@@ -105,14 +111,13 @@ int test (int argc,char** argv)
 #include <boost/python/stl_iterator.hpp>
 #include <mpi4py/mpi4py.h>
 
-
+// build an arguments recuperator from a Python object list to call the test method
 void wrap( boost::python::list argv)
 {
     int argc = boost::python::len(argv);
     std::cout << argc << std::endl ;
-    // - Could be a one-liner call to extract<>():-
-    
-    char** pyarg =new char* [argc];
+        
+    char** pyarg =new char* [argc+1];
     boost::python::stl_input_iterator<std::string> begin(argv), end;
     int i=0;
     while (begin != end)
@@ -122,32 +127,28 @@ void wrap( boost::python::list argv)
         begin++;
         i++;
     }
-   // pyarg[i] =new char();
-   // *pyarg[i]='\0'; 
-               /// ----------
+    pyarg[argc]=NULL;
     test(argc,pyarg);
-
-    
+    std::cout << "It's working !!!!" << std::endl; 
     for(int i=0;i<argc;i++)
         delete pyarg[i];
     delete[] pyarg;
 }
 
+//call the test method 
 int main (int argc,char** argv)
 {
     test(argc,argv);
 }    
 
 
-
 #include <boost/python.hpp>
 using namespace boost::python;
 
+// build the module, named libFunct, from previous methods
 BOOST_PYTHON_MODULE(libFunct)
 {
     if (import_mpi4py() <0) return ;
-
-
     def("test",test); 
     def("wrap",wrap);
     def("main",main);
