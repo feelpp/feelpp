@@ -579,7 +579,20 @@ public:
         data[1]=__topoDim;
         M_markername[__name]=data;
     }
+    /**
+      * \return true if all markers are defined in the mesh, false otherwise
+      */
+    bool hasMarkers( std::initializer_list<std::string> l ) const
+    {
+      for( auto m : l )
+      {
+        if ( !hasMarker( m ) ) return false;          
+      }
+      return true;
 
+    }
+    
+    /// \return the marker id given the marker name \p marker
     flag_type markerId( boost::any const& marker );
 
     /**
