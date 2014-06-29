@@ -4,127 +4,57 @@ namespace Feel {
 
 \tableofcontents
 
-\section section1 What are you talking about ?
+\section section1 Introduction
 
-The main purpose for Feel++ is to create a (non) linear system that is solved via Petsc or other library.
+After the discretization process, one may have to solve a (non) linear system. Feel++ interfaces with PETSc/SLEPc and Eigen3.
+Consider this system
+\f[A x = b \f]
 
-Theses libraries has to solve : 
-@li \f$A x = b \f$
+We call \c Backend an object that manages the solution strategy to solve it. Some explanation are available \ref Solver and \ref Preconditioner.
 
-A backend is an object that manage the resolution of \f$Ax = b\f$.
 
-\section math Mathematics
-
-That is only a reminder about mathematical framework.
-You may find a complete course on that topic on the internet.
-
-\subsection math11 To avoid
-
-The first method to solve such a system is simply to compute the inverse of A to write: \f$x = A^{-1} b\f$.
-
-We do never solve a problem in that way
-
-Actually, determining \f$A^{-1}\f$ is time and memory consumming, and moreover, it is impossible to parallelize this.
-
-\subsection math12 Iterativ methods
-
-Thus we use iteratives method to solve our system.
-
-General principle:
-
-We write: 
-\f$A = M+N\f$ 
-such as M is easily inversible (such as the diagonal of \f$A\f$).
-
-It exists many ways to determine \f$M\f$ and \f$N\f$.
-AS long as that is provided via Petsc, you can have a look to
-http://math.iit.edu/~mccomic/595/lectures/lecture6KSP.pdf
-
-We can write: 
-\f$M x = Nx + b\f$
-
-Given an initial guess \f$x_0\f$, we compute:
- 
-@li \f$
-M x^{k+1} = N x^k + b \\
-x^{k+1} = M^{-1} N x^k + M^{-1} b \\
-x^{k+1} = C x^k + d \\
-\f$
-
-As long as the spectral radius of \f$C\f$ is lower than one, the system will converge.
-
-\subsection math13 Smarter maths
-
-The main used theorem is about the spectral radius of \f$C\f$. Thus, we have to improve this matrix, simply writting:
-
-@li \f$ P_1 A x = P_1 b  \f$
-
-for a so called right preconditioner, or 
-
-@li \f$ 
-A P_2^{-1} z = b \\ 
-x = P_2^{-1} z  
-\f$ 
-
-That does not modify the solution.
-
-For a right preconditioner, we does not anymore write \f$A\f$ as the sum of  \f$M\f$ and \f$N\f$ , but  \f$P_1 A\f$ as this sum.
-
-In petsc, to inverse the matrix, you have to use the preconditioner LU, that will compute the inverse of \f$A\f$ and store it in \f$P_1\f$.
-
-\section comp Computer Science
-
-Given a problem, the \f$ A \f$ could be constant over the time, thus the preconditionner also, and so does the \f$ C \f$ matrix.
-
-It the the backend's job to compute, hold and manage this.
-
-\subsection gen General considerations
-
-Libraries such as Petsc can compute some preconditionners and iteratives matrixes, but users may want to use specifics one.
-
-\subsection feel1 Feel++ behavior
-
-Feel++ provide a default backend that is mostly hidden to the final user. In many examples, you do not have to take care of the backend. You can - off course - influence the backend behavior via the command line (or config file).
+Feel++ provides a default backend that is mostly hidden to the final user.
+In many examples, you do not have to take care of the backend. You change the backend behavior via the command line or config files.
+For example
 \verbatim
 ./feelpp_doc_mybackend --backend.pc-type=id
 \endverbatim
 will use the identity matrix as a right preconditionner for the default backend.
 The size of the preconditionner will be defined from the size of the A matrix.
 
-Of course, if you try to solve a different system (in size) with the same backend without rebuilding it, it will fail.
+If you try to solve a different system \f$A_1 y= c\f$ (in size) with the same backend or the default without rebuilding it, it will fail.
+\verbatim
+backend(_rebuild=true)->solve(_matrix=A1,_rhs=c,_sol=y);
+\endverbatim
 
-\subsection feel2 Backend's options
+\remark Each of that options can be retrieved via the \c --help-lib argument in the command line.
 
-Each of that options can be retrieved via the \verbatim --help\endverbatim argument in the command line.
+\subsection feel3 Non default backend
 
-\subsection feel3 Home maid backend
+You may need to manage more than one backend in an application: you have different systems to solve and you want to
+keep some already computed objects such as preconditioners.
 
-You may need to manage more than one backend for an application.
-To create your own backend, you have to create the associates options for a backend, see:
+The default backend is in fact an unnamed backend: in order to distinguish between backend you have to name them. for example
 \snippet mybackend.cpp marker_opt
 
 After that, you create the backend object:
 \snippet mybackend.cpp marker_obj
-Be carreful, the backend' name has to match the name you gave at the options step.
 
-Then, you load meshes, creates spaces etc.
+\remark Be careful, the backend' name has to match the name you gave at the options step.
 
-At solve time, or you solve with the default backend:
+Then, you load meshes, creates spaces etc. At solve time, or you solve with the default backend:
 \snippet mybackend.cpp marker_default
 
-A fantastic option given by the backend it the ability to monitor it.
+One of the important backend option is to be able to monitor the residuals and iteration count
 \verbatim
-./feelpp_doc_mybackend --backend.pc-type=id --backend.ksp-monitor=true --myBackend.backend.ksp-monitor=true
+./feelpp_doc_mybackend --pc-type=id --ksp-monitor=true --myBackend.ksp-monitor=true
 \endverbatim
-The previous command line will use default values except for the forced one.
-Thus, you will be able to see what is the numericall difference for a (really) small problem.
-For various configuration, you may - or not - converge at the desired solution, without changing the problem.
 
-or with your personnal backend:
+Finally you can create a named backend:
 \snippet mybackend.cpp marker_hm
 
 
-Here is given the whole code.
+The whole code example :
 \snippet mybackend.cpp marker_main
 */
 }
