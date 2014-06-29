@@ -647,22 +647,26 @@ Environment::parseAndStoreOptions( po::command_line_parser parser, bool extra_pa
     VLOG(2) << "[parseAndStoreOptions] parsing options done\n";
 
     S_to_pass_further = po::collect_unrecognized( parsed->options, po::include_positional );
-    VLOG(2)<< " number of unrecognized options: " << ( S_to_pass_further.size() ) << "\n";
-
-    BOOST_FOREACH( std::string const& s, S_to_pass_further )
+    if ( Environment::isMasterRank() )
     {
-        VLOG(2)<< " option: " << s << "\n";
-    }
-    std::vector<po::basic_option<char> >::iterator it = parsed->options.begin();
-    std::vector<po::basic_option<char> >::iterator en  = parsed->options.end();
+        LOG(ERROR) << "Some options (" << ( S_to_pass_further.size() ) << ") were not recognized.";
+        LOG(ERROR) << "We remove them from Feel++ options management system and pass them to PETSc/SLEPc";
+        LOG(ERROR) << "and other third party libraries";
 
-    for ( ; it != en ; ++it )
-        if ( it->unregistered )
+        for( std::string const& s: S_to_pass_further )
         {
-            VLOG(2)<< " remove from vector " << it->string_key << "\n";
-            parsed->options.erase( it );
+            LOG(ERROR) << "  |- unrecognized option: " << s << "\n";
         }
+        std::vector<po::basic_option<char> >::iterator it = parsed->options.begin();
+        std::vector<po::basic_option<char> >::iterator en  = parsed->options.end();
 
+        for ( ; it != en ; ++it )
+            if ( it->unregistered )
+            {
+                LOG(ERROR) << "  |- remove " << it->string_key << " from Feel++ options management system"  << "\n";
+                parsed->options.erase( it );
+            }
+    }   
     po::store( *parsed, S_vm );
 }
 
