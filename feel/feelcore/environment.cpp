@@ -647,7 +647,7 @@ Environment::parseAndStoreOptions( po::command_line_parser parser, bool extra_pa
     VLOG(2) << "[parseAndStoreOptions] parsing options done\n";
 
     S_to_pass_further = po::collect_unrecognized( parsed->options, po::include_positional );
-    if ( Environment::isMasterRank() )
+    if ( Environment::isMasterRank() && S_to_pass_further.size() )
     {
         LOG(ERROR) << "Some options (" << ( S_to_pass_further.size() ) << ") were not recognized.";
         LOG(ERROR) << "We remove them from Feel++ options management system and pass them to PETSc/SLEPc";
