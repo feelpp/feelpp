@@ -499,22 +499,11 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
             *itd+=thedofshift;
     }
     
-    // make sure that we have dofs to eliminate otherwise PETSc might complain and crash 
-    if ( dofs.size() )
-    {
-        auto x = M_rhs->clone();
-        CHECK( values.size() == dofs.size() ) << "Invalid dofs/values size: " << dofs.size() << "/" << values.size();
-        //x->zero();
-        x->addVector( dofs.data(), dofs.size(), values.data() );
-        //values->zero();
-
-        __form.zeroRows( dofs, *x, *M_rhs, M_on_strategy );
-        x.reset();
-    }
-    else
-    {
-        LOG(WARNING) << "There was no Dirichlet dof to eliminate";
-    }
+    auto x = M_rhs->clone();
+    CHECK( values.size() == dofs.size() ) << "Invalid dofs/values size: " << dofs.size() << "/" << values.size();
+    x->addVector( dofs.data(), dofs.size(), values.data() );
+    __form.zeroRows( dofs, *x, *M_rhs, M_on_strategy );
+    x.reset();
 }
 
 
