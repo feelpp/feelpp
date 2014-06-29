@@ -30,22 +30,21 @@ using namespace Feel;
 
 int main(int argc, char**argv )
 {
-/// [marker_opt]
+	/// [marker_opt]
 	po::options_description app_options( "MyBackend options" );
-	app_options.add(Feel::feel_options()); //default Feel++ options - embed default backend's one
 	app_options.add(backend_options("myBackend"));
-	
-	Environment env( _argc=argc, _argv=argv,
-			_desc = app_options, 
-			_about=about(_name="mybackend",
-				_author="Feel++ Consortium",
-				_email="feelpp-devel@feelpp.org"));
-/// [marker_opt]
 
-/// [marker_obj]
+	Environment env(_argc=argc, _argv=argv,
+	                _desc = app_options,
+	                _about=about(_name="mybackend",
+	                             _author="Feel++ Consortium",
+	                             _email="feelpp-devel@feelpp.org"));
+	/// [marker_opt]
+
+	/// [marker_obj]
 	// create a backend
 	boost::shared_ptr<Backend<double>> myBackend(backend(_name="myBackend"));
-/// [marker_obj]
+	/// [marker_obj]
 
 	// create the mesh
 	auto mesh = loadMesh(_mesh=new Mesh<Simplex< 2 > > );
@@ -55,34 +54,35 @@ int main(int argc, char**argv )
 
 	// element in Vh
 	auto u  = Vh->element();
-	auto u1 = Vh->element(); //computed with built-in backend 
-	auto u2 = Vh->element(); //computed with home maid backend
+	auto u1 = Vh->element(); //computed with default backend
+	auto u2 = Vh->element(); //computed with named backend
 
 	// left hand side
 	auto a = form2( _trial=Vh, _test=Vh );
 	a = integrate(_range=elements(mesh),
-			_expr=expr(soption("functions.alpha"))*trace(gradt(u)*trans(grad(u))) );
+	              _expr=expr(soption("functions.alpha"))*trace(gradt(u)*trans(grad(u))) );
 
 	// right hand side
 	auto l = form1( _test=Vh );
 	l = integrate(_range=elements(mesh),
-			_expr=expr(soption("functions.f"))*id(u));
+	              _expr=expr(soption("functions.f"))*id(u));
 
 	// BC
 	a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u,
-			_expr=expr(soption("functions.g")));
+	      _expr=expr(soption("functions.g")));
 
-/// [marker_default]
+	/// [marker_default]
 	// solve a(u,v)=l(v)
-	std::cout << "With standard backend\n";
+	if ( Environment::isMasterRank() )
+		std::cout << "With default backend\n";
 	a.solve(_rhs=l,_solution=u1);
-/// [marker_default]
-/// [marker_hm]
+	/// [marker_default]
+	/// [marker_hm]
 	// solve a(u,v)=l(v)
-	std::cout << "With home maid backend\n";
+	if ( Environment::isMasterRank() )
+		std::cout << "With named backend\n";
 	a.solveb(_rhs=l,_solution=u2, _backend=myBackend);
-/// [marker_hm]
-	//# endmarker_main #
+	/// [marker_hm]
 
 	// save results
 	auto e = exporter( _mesh=mesh );
