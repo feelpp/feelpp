@@ -194,7 +194,7 @@ TestHCurl::twoElementsMesh()
     for( auto const& dof : Xh->dof()->localDof() )
         {
             LOG(INFO) << "test local dof element " << dof.first.elementId() << " id:" << dof.first.localDof()
-                      << " global dof : " << dof.second.index() << " pts: " << Xh->dof()->dofPoint( dof.second.index() ).template get<0>() << std::endl;
+                      << " global dof : " << dof.second.index() << " pts: " << Xh->dof()->dofPoint( dof.second.index() ).get<0>() << std::endl;
         }
 
     // assembly curl(curl(u)) + u
@@ -327,7 +327,7 @@ TestHCurl::eightElementsMesh()
     for( auto const& dof : Xh->dof()->localDof() )
         {
             LOG(INFO) << "test local dof element " << dof.first.elementId() << " id:" << dof.first.localDof()
-                      << " global dof : " << dof.second.index() << " pts: " << Xh->dof()->dofPoint( dof.second.index() ).template get<0>() << std::endl;
+                      << " global dof : " << dof.second.index() << " pts: " << Xh->dof()->dofPoint( dof.second.index() ).get<0>() << std::endl;
         }
 
     auto u_cst = Xh->element();

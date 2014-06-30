@@ -315,6 +315,15 @@ Mesh<Shape, T, Tag>::updateForUse()
                     if ( ( *_faces.first ) && ( *_faces.first )->isOnBoundary() )
                         M_measbdy += ( *_faces.first )->measure();
         }
+        M_local_meas = M_meas;
+        M_meas = 0;
+        M_local_measbdy = M_measbdy;
+        M_measbdy = 0;
+        std::vector<value_type> lmeas{ M_local_meas, M_local_measbdy };
+        std::vector<value_type> gmeas( 2, 0. );
+        mpi::all_reduce(this->worldComm(), lmeas, gmeas, Functor::AddStdVectors<value_type>());
+        M_meas = gmeas[0];
+        M_measbdy = gmeas[1];
 
         // now that all elements have been updated, build inter element
         // data such as the measure of point element neighbors
@@ -335,6 +344,32 @@ Mesh<Shape, T, Tag>::updateForUse()
             }
         }
 
+    }
+
+    // compute h information: average, min and max
+    {
+        element_iterator iv,  en;
+        boost::tie( iv, en ) = this->elementsRange();
+        value_type h_min = iv->h();
+        value_type h_max = iv->h();
+        value_type h_avg = 0;
+        for ( ; iv != en; ++iv )
+        {
+            h_min = (h_min>iv->h())?iv->h():h_min;
+            h_max = (h_max<iv->h())?iv->h():h_max;
+            h_avg += iv->h();
+        }
+        h_avg /= this->numGlobalElements();
+        M_h_avg = 0;
+        M_h_min = 0;
+        M_h_max = 0;
+        mpi::all_reduce(this->worldComm(), h_avg, M_h_avg, std::plus<value_type>());
+        mpi::all_reduce(this->worldComm(), h_min, M_h_min, mpi::minimum<value_type>());
+        mpi::all_reduce(this->worldComm(), h_max, M_h_max, mpi::maximum<value_type>());
+
+        LOG(INFO) << "h average : " << this->hAverage() << "\n";
+        LOG(INFO) << "    h min : " << this->hMin() << "\n";
+        LOG(INFO) << "    h max : " << this->hMax() << "\n";
     }
 
     // check mesh connectivity
