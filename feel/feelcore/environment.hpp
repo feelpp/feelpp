@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2010-04-14
  */
-#ifndef __Environment_H
-#define __Environment_H 1
+#ifndef FEELPP_ENVIRONMENT_HPP
+#define FEELPP_ENVIRONMENT_HPP 1
 
 #include <cstdlib>
 
@@ -643,4 +643,4 @@ BOOST_PARAMETER_FUNCTION(
 }
 
 }
-#endif /* __Environment_H */
+#endif /* FEELPP_ENVIRONMENT_HPP */

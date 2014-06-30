@@ -19,6 +19,7 @@ namespace Feel
     - \subpage TutorialVisualize
     - \subpage TutorialIntegrals
     - \subpage TutorialSpaces
+    - \subpage TutorialBackend
  */
 /** \page ProgEnv Programming Environment
    - \subpage BuildingP
