@@ -30,3 +30,5 @@ feelpp_add_test( interp_twomesh NO_MPI_TEST )
 feelpp_add_test( eval_at_point TIMEOUT 60)
 feelpp_add_test( operatorinterpolation )
 feelpp_add_test( hypercubeinterpolation )
+
+feelpp_add_test( interpolation_RT NO_MPI_TEST)

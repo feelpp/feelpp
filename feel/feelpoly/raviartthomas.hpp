@@ -486,7 +486,7 @@ public:
     typedef typename dual_space_type::reference_convex_type reference_convex_type;
     typedef typename reference_convex_type::node_type node_type;
     typedef typename reference_convex_type::points_type points_type;
-
+    typedef typename convex_type::topological_face_type face_type;
 
     static const uint16_type nOrder =  dual_space_type::nOrder;
     static const uint16_type nbPtsPerVertex = 0;
@@ -496,6 +496,16 @@ public:
     static const uint16_type numPoints = dual_space_type::numPoints;
 
     static const uint16_type nLocalDof = dual_space_type::nLocalDof;
+
+    static const uint16_type nDofPerVertex = dual_space_type::nDofPerVertex;
+    static const uint16_type nDofPerEdge = dual_space_type::nDofPerEdge;
+    static const uint16_type nDofPerFace = dual_space_type::nDofPerFace;
+    static const uint16_type nDofPerVolume = dual_space_type::nDofPerVolume;
+    static const uint16_type nLocalFaceDof = ( face_type::numVertices * nDofPerVertex +
+                                               face_type::numEdges * nDofPerEdge +
+                                               face_type::numFaces * nDofPerFace );
+    //@}
+
     //@}
 
     /** @name Constructors, destructor
@@ -585,6 +595,78 @@ public:
     /** @name  Methods
      */
     //@{
+
+    template<typename ExprType>
+    void
+    getFaceNormal( ExprType& expr, int faceId, ublas::vector<value_type>& n) const
+    {
+        auto g = expr.geom();
+        auto const& K = g->K(0);
+        //std::cout << "K = " << K << "\n";
+
+        std::cout << "ref n = " << g->geometricMapping()->referenceConvex().normal( faceId ) << "\n";
+        ublas::axpy_prod( K,
+                          g->geometricMapping()->referenceConvex().normal( faceId ),
+                          n,
+                          true );
+        double ratio = g->geometricMapping()->referenceConvex().h( faceId )/g->element().hFace( faceId ); //normalize n ?
+        std::cout << "ratio = " << ratio << std::endl; 
+        n *= ratio;
+        std::cout << "n=" << n << "\n";
+    }
+
+    typedef Eigen::MatrixXd local_interpolant_type;
+    local_interpolant_type
+    localInterpolant() const
+        {
+            return local_interpolant_type::Zero( nLocalDof, 1 );
+        }
+
+    template<typename ExprType>
+    void
+    interpolate( ExprType& expr, local_interpolant_type& Ihloc ) const
+        {
+            Ihloc.setZero();
+            ublas::vector<value_type> n( nDim ); //normal
+
+            std::cout << "[interpolate] numFaces = " << convex_type::numTopologicalFaces << std::endl;
+            for( int f = 0; f < convex_type::numTopologicalFaces; ++f )
+            {
+                getFaceNormal(expr, f, n);
+                for ( int l = 0; l < (nDim==2) ? nDofPerEdge : nDofPerFace; ++l )
+                {
+                    int q = (nDim == 2) ? f*nDofPerEdge+l : f*nDofPerFace+l;
+                    for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
+                        {
+                            std::cout << "n(" << c1 << ") = " << n(c1) << std::endl;
+                            std::cout << "Ihloc += " << expr.evalq( c1, 0, q )*n(c1) << std::endl;
+                            Ihloc(q) += expr.evalq( c1, 0, q )*n(c1);
+                        }
+                }
+            }
+        }
+    local_interpolant_type
+    faceLocalInterpolant() const
+        {
+            return local_interpolant_type::Zero( nLocalFaceDof, 1 );
+        }
+    template<typename ExprType>
+    void
+    faceInterpolate( ExprType& expr, local_interpolant_type& Ihloc ) const
+        {
+            ublas::vector<value_type> n( nDim ); //normal
+
+            for( int f = 0; f < face_type::numFaces; ++f )
+            {
+                getFaceNormal(expr, f, n);
+                for ( int l = 0; l < (nDim==2) ? nDofPerEdge : nDofPerFace; ++l )
+                {
+                    int q = (nDim == 2) ? f*nDofPerEdge+l : f*nDofPerFace+l;
+                    for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
+                        Ihloc(q) += expr.evalq( c1, 0, q )*n(c1);
+                }
+            }
+        }
 
     template<typename ExprType>
     static auto
