@@ -24,6 +24,8 @@
 #ifndef FEELPP_INDEX_HPP
 #define FEELPP_INDEX_HPP 1
 
+#include <feel/feelcore/environment.hpp>
+
 namespace Feel {
 
 namespace detail {
