@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2010-04-21
 
-  Copyright (C) 2010 UniversitÃ© Joseph Fourier (Grenoble I)
+  Copyright (C) 2010-2014 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -53,6 +53,7 @@ Exporter<MeshType, N>::Exporter( WorldComm const& worldComm )
     super2(),
     M_worldComm( worldComm ),
     M_do_export( true ),
+    M_use_single_transient_file( false ),
     M_type(),
     M_prefix( Environment::about().appName() ),
     M_freq( 1 ),
@@ -71,6 +72,7 @@ Exporter<MeshType, N>::Exporter( std::string const& __type, std::string const& _
     super2(),
     M_worldComm( worldComm ),
     M_do_export( true ),
+    M_use_single_transient_file( false ),
     M_type( __type ),
     M_prefix( __prefix ),
     M_freq( __freq ),
@@ -89,6 +91,7 @@ Exporter<MeshType, N>::Exporter( po::variables_map const& vm, std::string const&
     super2(),
     M_worldComm( worldComm ),
     M_do_export( true ),
+    M_use_single_transient_file( false ),
     M_type(),
     M_prefix( exp_prefix ),
     M_freq( 1 ),
@@ -107,6 +110,7 @@ Exporter<MeshType, N>::Exporter( Exporter const & __ex )
     super2(),
     M_worldComm( __ex.M_worldComm ),
     M_do_export( __ex.M_do_export ),
+    M_use_single_transient_file( __ex.M_use_single_transient_file ),
     M_type( __ex.M_type ),
     M_prefix( __ex.M_prefix ),
     M_freq( __ex.M_freq ),

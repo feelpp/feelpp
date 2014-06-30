@@ -30,7 +30,7 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/options.hpp>
 #include <feel/feelcore/application.hpp>
-#include <feel/feeldiscr/tsbase.hpp>
+#include <feel/feelts/tsbase.hpp>
 
 Feel::AboutData
 makeAbout()
@@ -40,7 +40,7 @@ makeAbout()
                            "0.1",
                            "Bdf test",
                            Feel::AboutData::License_LGPL,
-                           "Copyright (c) 2008 Universite Joseph Fourier" );
+                           "Copyright (c) 2014 Feel++ Consortium" );
 
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;

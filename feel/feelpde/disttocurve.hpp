@@ -560,7 +560,7 @@ namespace Feel
                         const size_type indexGlobDof = M_spaceP1->dof()->localToGlobal(it_elt->id(), j, 0).index();
 
                         // coords of the dof
-                        const node_type dofCoord = M_spaceP1->dof()->dofPoint( indexGlobDof ).get<0>();
+                        const node_type dofCoord = M_spaceP1->dof()->dofPoint( indexGlobDof ).template get<0>();
 
                         // find the point in the element having the closest distance with the dof. This distance will be the value of shape at this dof (if a smaller distance on the same dof is not found in an other element).
                         //This method assumes that the distance between the points of the curve is very small compared to the size of the mesh

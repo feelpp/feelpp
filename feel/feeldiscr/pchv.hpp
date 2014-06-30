@@ -31,21 +31,44 @@
 
 #include <feel/feeldiscr/functionspace.hpp>
 
-namespace Feel {
+namespace Feel
+{
+
+namespace meta
+{
+
+template<typename MeshType,
+         int Order,
+         int Tag = 0,
+         template<class, uint16_type, class> class Pts = PointSetEquiSpaced>
+struct Pchv
+{
+    typedef FunctionSpace<MeshType,
+                          bases<Lagrange<Order,Vectorial,Continuous,Pts,Tag>>,
+                          double,
+                          Periodicity <NoPeriodicity>,
+                          mortars<NoMortar>> type;
+    typedef boost::shared_ptr<type> ptrtype;
+};
+
+} // meta
 
 /**
    Given a \p mesh, build a function space of vectorial continuous function
    which are piecewise polynomial of degree (total or in each variable) less
    than k using Lagrange basis functions
  */
-template<int Order,template<class, uint16_type, class> class Pts = PointSetEquiSpaced,typename MeshType>
+template<int Order,
+         int Tag = 0,
+         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,typename MeshType>
 inline
-boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order,Vectorial,Continuous,Pts>>>>
+typename meta::Pchv<MeshType,Order,Tag,Pts>::ptrtype
 Pchv( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false  )
 {
-    return FunctionSpace<MeshType,bases<Lagrange<Order,Vectorial,Continuous,Pts>>>::New( _mesh=mesh,
-                                                                          _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
-                                                                          _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
+    typedef typename meta::Pchv<MeshType,Order,Tag,Pts>::type space_type;
+    return space_type::New( _mesh=mesh,
+                            _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
+                            _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
 }
 
 }

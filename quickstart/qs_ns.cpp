@@ -38,7 +38,7 @@ int main(int argc, char**argv )
                                   _email="feelpp-devel@feelpp.org"));
 
     auto mesh = loadMesh( new Mesh<Simplex<2>> );
-
+    CHECK( mesh->hasMarkers( {"wall","inlet"} ) ) << "Mesh markers wall or inlet are not set properly in "  << soption("gmsh.filename");
     auto Vh = THch<1>( mesh );
     auto U = Vh->element();
     auto V = Vh->element();
@@ -57,7 +57,7 @@ int main(int argc, char**argv )
 
     auto a = form2( _trial=Vh, _test=Vh), at = form2( _trial=Vh, _test=Vh);
 
-    a = integrate( _range=elements( mesh ), _expr=mu*inner( deft,def ) + mybdf->polyDerivCoefficient(0)*trans(idt(u))*id(u) );
+    a = integrate( _range=elements( mesh ), _expr=mu*inner( deft, grad(v) ) + mybdf->polyDerivCoefficient(0)*trans(idt(u))*id(u) );
     a +=integrate( _range=elements( mesh ), _expr=-div( v )*idt( p ) - divt( u )*id( q ) );
     auto e = exporter( _mesh=mesh );
 
