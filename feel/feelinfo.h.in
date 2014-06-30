@@ -33,3 +33,9 @@
 
 /* define data dir for feel installation */
 #cmakedefine FEELPP_DATADIR @FEELPP_DATADIR@
+
+/* define dir for source */
+#cmakedefine FEELPP_SOURCE_DIR @FEELPP_SOURCE_DIR@
+
+/* define dir for source */
+#cmakedefine FEELPP_BUILD_DIR @FEELPP_BUILD_DIR@
