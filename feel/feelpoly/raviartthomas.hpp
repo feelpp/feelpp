@@ -595,15 +595,8 @@ public:
     void
     getFaceNormal( ExprType& expr, int faceId, ublas::vector<value_type>& n) const
     {
-        // j = length of edges
-        std::vector<double> j;
-        if ( nDim == 2 )
-            j = {2.8284271247461903,2.0,2.0};
-
-        if ( nDim == 3 )
-            j = {3.464101615137754, 2, 2, 2};
-
         auto g = expr.geom();
+
         auto const& K = g->K(0);
         //std::cout << "K = " << K << "\n";
 
@@ -612,7 +605,8 @@ public:
                           g->geometricMapping()->referenceConvex().normal( faceId ),
                           n,
                           true );
-        n *= j[faceId]/ublas::norm_2(n);
+
+        n *= g->element().hFace(faceId)/ublas::norm_2(n);
         std::cout << "n=" << n << "\n";
     }
 
@@ -809,8 +803,6 @@ public:
 #endif
 
     //@}
-
-
 
 protected:
     reference_convex_type M_refconvex;
