@@ -89,9 +89,10 @@ BOOST_PARAMETER_FUNCTION(
     // look for mesh_name in various directories (executable directory, current directory. ...)
     // return an empty string if the file is not found
 
-    fs::path mesh_name=fs::path(Environment::findFile(filename));
+    std::string filenameExpand = Environment::expand(filename);
+    fs::path mesh_name=fs::path(Environment::findFile(filenameExpand));
     LOG_IF( WARNING, mesh_name.extension() != ".geo" && mesh_name.extension() != ".msh" )
-        << "Invalid filename " << filename << " it should have either the .geo or .msh extension\n";
+        << "Invalid filename " << filenameExpand << " it should have either the .geo or .msh extension\n";
 
 
     if ( mesh_name.extension() == ".geo" )
