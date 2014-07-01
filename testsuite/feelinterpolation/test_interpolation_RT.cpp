@@ -41,43 +41,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 namespace Feel
 {
-
-    /// Geometry for one-element meshes
-    std::string
-    oneelement_geometry_ref()
-    {
-        std::string name = "one-elt-ref";
-        if(!fs::exists( name+".msh" ))
-            {
-                std::ofstream costr(name+".msh");
-                costr << "$MeshFormat\n"
-                      << "2.2 0 8\n"
-                      << "$EndMeshFormat\n"
-                      << "$PhysicalNames\n"
-                      << "3\n"
-                      << "1 1 \"hor\"\n"
-                      << "1 2 \"hypo\"\n"
-                      << "1 3 \"vert\"\n"
-                      << "$EndPhysicalNames\n"
-                      << "$Nodes\n"
-                      << "3\n"
-                      << "1 -1 -1 0\n"
-                      << "2 1 -1 0\n"
-                      << "3 -1 1 0\n"
-                      << "$EndNodes\n"
-                      << "$Elements\n"
-                      << "4\n"
-                      << "1 1 4 1 1 1 2 1 2\n"
-                      << "2 1 4 2 2 1 2 2 3\n"
-                      << "3 1 4 3 3 1 2 3 1\n"
-                      << "4 2 4 9 5 1 2 1 2 3\n"
-                      << "$EndElements\n";
-                costr.close();
-            }
-
-        return name;
-    }
-
 /**
  * This routine returns the list of options using the
  * boost::program_options library. The data returned is typically used
@@ -89,7 +52,11 @@ inline
 po::options_description
 makeOptions()
 {
-    return Feel::feel_options();
+    po::options_description testHdivInterpolationOptions( "test h_div options" );
+    testHdivInterpolationOptions.add_options()
+        ( "meshes", po::value< std::vector<std::string> >(), "vector containing mesh names" )
+        ;
+    return testHdivInterpolationOptions.add( Feel::feel_options() );
 }
 
 inline
@@ -158,7 +125,8 @@ public :
                               );
     }
 
-    void testInterpolation( std::string ( *one_element_mesh )() );
+    //void testInterpolation( std::string ( *one_element_mesh )() );
+    void testInterpolation( std::string one_element_mesh );
 
 private:
     //! linear algebra backend
@@ -171,13 +139,13 @@ private:
 
 template<int Dim>
 void
-TestInterpolationHDiv<Dim>::testInterpolation( std::string ( *one_element_mesh )() )
+TestInterpolationHDiv<Dim>::testInterpolation( std::string one_element_mesh )
 {
     // expr to interpolate
     auto myexpr = unitX() + unitY() ; //(1,1)
 
     // one element mesh
-    auto mesh_name = one_element_mesh()+".msh"; //create the mesh and load it
+    auto mesh_name = one_element_mesh + ".msh"; //create the mesh and load it
     mesh_ptrtype oneelement_mesh = loadMesh( _mesh=new mesh_type,
                                              _filename=mesh_name);
 
@@ -207,12 +175,12 @@ TestInterpolationHDiv<Dim>::testInterpolation( std::string ( *one_element_mesh )
                                   ( boost::format( "%1%" ) % this->about().appName() ).str() ) );
 
     exporter_proj->step( 0 )->setMesh( mesh );
-    exporter_proj->step( 0 )->add( "U_interpolation_handly", U_h_int );
-    exporter_proj->step( 0 )->add( "U_interpolation_on", U_h_on );
+    exporter_proj->step( 0 )->add( "U_interpolation_handly"+one_element_mesh, U_h_int );
+    exporter_proj->step( 0 )->add( "U_interpolation_on"+one_element_mesh, U_h_on );
     exporter_proj->save();
 
-    U_h_int.printMatlab("U_h_int.m");
-    U_h_on.printMatlab("U_h_on.m");
+    //U_h_int.printMatlab( "U_h_int_" + one_element_mesh + ".m" );
+    //U_h_on.printMatlab( "U_h_on_" + one_element_mesh + ".m" );
 
     //L2 norm of error
     auto error = vf::project(_space=Xh, _range=elements(oneelement_mesh), _expr=idv(U_h_int) - idv(U_h_on) );
@@ -229,9 +197,14 @@ BOOST_AUTO_TEST_SUITE( HDIV_INTERPOLANT )
 
 BOOST_AUTO_TEST_CASE( test_hdiv_interpolant_1 )
 {
-    BOOST_TEST_MESSAGE( "*** shape functions on reference element (1 elt) ***" );
-    Feel::TestInterpolationHDiv<2> t;
-    t.testInterpolation( &Feel::oneelement_geometry_ref );
+    using namespace Feel;
+    TestInterpolationHDiv<2> t;
+    std::vector<std::string> mygeoms = option(_name="meshes").template as< std::vector<std::string> >();
+    for(std::string geo : mygeoms)
+        {
+            BOOST_TEST_MESSAGE( "*** interpolant on " << geo << " ***" );
+            t.testInterpolation(geo);
+        }
 }
 BOOST_AUTO_TEST_SUITE_END()
 #else
