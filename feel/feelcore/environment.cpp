@@ -52,6 +52,7 @@ extern "C"
 #include <petscsys.h>
 #endif
 
+#include <feel/feelinfo.h>
 #include <feel/feelconfig.h>
 #include <feel/feelcore/feel.hpp>
 
@@ -1458,6 +1459,34 @@ Environment::logMemoryUsage( std::string const& message )
 #endif
     return mem;
 }
+
+std::string
+Environment::expand( std::string const& expr )
+{
+    std::string topSrcDir = BOOST_PP_STRINGIZE(FEELPP_SOURCE_DIR);
+    std::string topBuildDir = BOOST_PP_STRINGIZE(FEELPP_BUILD_DIR);
+    std::string homeDir = ::getenv( "HOME" );
+    std::string dataDir = (fs::path(topSrcDir)/fs::path("data")).string();
+    std::string exprdbDir = (fs::path(Environment::rootRepository())/fs::path("exprDB")).string();
+
+    VLOG(2) << "topSrcDir " << topSrcDir << "\n"
+            << "topBuildDir " << topBuildDir << "\n"
+            << "HOME " << homeDir << "\n"
+            << "Environment::rootRepository() " << Environment::rootRepository()
+            << "dataDir " << dataDir << "\n"
+            << "exprdbdir " << exprdbDir << "\n"
+            << "\n";
+
+    std::string res=expr;
+    boost::replace_all( res, "$top_srcdir", topSrcDir );
+    boost::replace_all( res, "$top_builddir", topBuildDir );
+    boost::replace_all( res, "$home", homeDir );
+    boost::replace_all( res, "$repository", Environment::rootRepository());
+    boost::replace_all( res, "$datadir", dataDir);
+    boost::replace_all( res, "$exprdbdir", exprdbDir);
+    return res;
+}
+
 
 AboutData Environment::S_about;
 po::variables_map Environment::S_vm;
