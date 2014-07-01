@@ -417,7 +417,26 @@ public:
     static const fs::path& scratchDirectory() { return S_scratchdir; }
 
     /**
-     * \return the expansion of the feel++ variables defined in string expr
+     * @brief expand feel++ pathes in a string
+     * @details Feel++ defines some paths
+     *  - top_srcdir : top source directory from which feel++ was compiled
+     *  - top_builddir : top build directory in which feel++ was compiled
+     *  - repository : repository for the results (default: $HOME/feel)
+     *  - datadir : repository for data like meshes ($top_srcdir/data)
+     *  - exprdbdir : top level directory of ginac expression ($repository/exprDB)
+     *  - home : $HOME directory
+     * The paths can be used in filename string and expanded using this function by prefixing them by $
+     * @code
+     * std::string topsrcdir = Environment::expand( "$top_srcdir");
+     * std::string topbuilddir = Environment::expand( "$top_builddir");
+     * @endcode
+     * They can be used in config files or in the command line
+     * @code
+     * feelpp_qs_laplacian --gmsh.filename=\$home/mesh.geo
+     * @endcode
+     *
+     * @param expr string where paths might be expanded
+     * @return the expansion of the feel++ paths defined in string expr
      */
     static std::string expand( std::string const& expr );
 
