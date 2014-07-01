@@ -197,12 +197,8 @@ TestInterpolationHDiv<Dim>::testInterpolation( std::string ( *one_element_mesh )
 
     // handly computed interpolant coeff (in hdiv basis)
     for ( int i = 0; i < Xh->nLocalDof(); ++i )
-        {
-            // TODO : find why there is length factor between u_h_int and u_h_on
-            double length = integrate( markedfaces( oneelement_mesh, faces[i] ), cst(1.) ).evaluate()(0,0);
-            U_h_int(i) = integrate( markedfaces( oneelement_mesh, faces[i] ), trans(N())*myexpr ).evaluate()(0,0);
-            U_h_int(i) /= length;
-        }
+        U_h_int(i) = integrate( markedfaces( oneelement_mesh, faces[i] ), trans(N())*myexpr ).evaluate()(0,0);
+
     // raviart-thomas interpolant using on
     U_h_on.zero();
     U_h_on.on(_range=elements(oneelement_mesh), _expr=myexpr);
