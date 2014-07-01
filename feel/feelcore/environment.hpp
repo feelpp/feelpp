@@ -417,7 +417,7 @@ public:
     static const fs::path& scratchDirectory() { return S_scratchdir; }
 
     /**
-     * \return the expansion of the feel++ variables defined in string
+     * \return the expansion of the feel++ variables defined in string expr
      */
     static std::string expand( std::string const& expr );
 
