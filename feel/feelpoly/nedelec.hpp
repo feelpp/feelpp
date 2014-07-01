@@ -965,7 +965,27 @@ public:
     /** @name  Methods
      */
     //@{
+    template<typename ExprType>
+    void
+    getEdgeTangent(ExprType& expr, int edgeId, ublas::vector<value_type>& t) const
+    {
+        auto g = expr.geom();
+        auto const& K = g->K(0);
+        std::cout << "K = " << K << "\n";
 
+        std::cout << "ref t = " << g->geometricMapping()->referenceConvex().tangent( edgeId ) << "\n";
+        ublas::axpy_prod( K,
+                          g->geometricMapping()->referenceConvex().tangent( edgeId ),
+                          t,
+                          true );
+        double ratio = g->geometricMapping()->referenceConvex().h( edgeId )/g->element().hEdge( edgeId );
+        //double ratio = g->element().hEdge( edgeId );
+        std::cout << "h(edgeId) = " << g->geometricMapping()->referenceConvex().h( edgeId ) << std::endl;
+        std::cout << "hEdge(edgeId) = " << g->element().hEdge( edgeId ) << std::endl;
+        std::cout << "ratio = " << ratio << std::endl;
+        t *= ratio/ublas::norm_2(t);
+        std::cout << "t=" << t << "\n";
+    }
 
     typedef Eigen::MatrixXd local_interpolant_type;
     local_interpolant_type
@@ -979,21 +999,11 @@ public:
     interpolate( ExprType& expr, local_interpolant_type& Ihloc ) const
         {
             Ihloc.setZero();
-            auto g = expr.geom();
-            auto const& K = g->K(0);
-            std::cout << "K = " << K << "\n";
             ublas::vector<value_type> t( nDim );
-            for( int e = 0; e < face_type::numEdges; ++e )
-            {
 
-                std::cout << "ref t = " << g->geometricMapping()->referenceConvex().tangent( e ) << "\n";
-                ublas::axpy_prod( K,
-                                  g->geometricMapping()->referenceConvex().tangent( e ),
-                                  t,
-                                  true );
-                double ratio = g->geometricMapping()->referenceConvex().h( e )/g->element().hEdge(e);
-                t *= ratio;
-                std::cout << "t=" << t << "\n";
+            for( int e = 0; e < convex_type::numEdges; ++e )
+            {
+                getEdgeTangent(expr, e, t);
                 for ( int l = 0; l < nDofPerEdge; ++l )
                 {
                     int q = e*nDofPerEdge+l;
@@ -1011,8 +1021,17 @@ public:
     void
     faceInterpolate( ExprType& expr, local_interpolant_type& Ihloc ) const
         {
-            for( int q = 0; q < nLocalFaceDof; ++q )
-                Ihloc(q) = expr.evalq( 0, 0, q );
+            ublas::vector<value_type> t( nDim );
+            for( int e = 0; e < face_type::numEdges; ++e )
+            {
+                getEdgeTangent(expr, e, t);
+                for ( int l = 0; l < nDofPerEdge; ++l )
+                {
+                    int q = e*nDofPerEdge+l;
+                    for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
+                        Ihloc(q) += expr.evalq( c1, 0, q )*t(c1);
+                }
+            }
 
         }
 
