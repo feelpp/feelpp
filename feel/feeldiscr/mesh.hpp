@@ -116,19 +116,19 @@ std::vector<MeshMarkerName> markerMap( int Dim );
 
 
 
-/**
- * partitioner base class
- */
+// partitioner class
 template<typename Mesh> class Partitioner;
 
-/*!
-  \brief unifying mesh class
-
-  @author Christophe Prud'homme
-  @see
-*/
-//    template <typename GeoShape, typename T > class Mesh;
-
+/**
+ * @brief unifying mesh class
+ * @details This structure is an aggregation of elements, faces,
+ * edges(3D) and points data structures and provides a unified
+ * interface with respect to the dimension.
+ *
+ * @tparam GeoShape Geometric entities type
+ * @tparam T numerical type for coordinates
+ * @tparam Tag = 0 to discriminate between meshes of the same type
+ */
 template <typename GeoShape, typename T = double, int Tag = 0>
 class Mesh
     :
@@ -271,8 +271,8 @@ public:
             super::clear();
         }
     /**
-     * generate a new Mesh shared pointer
-     * \return the Mesh shared pointer
+     * @brief allocate a new Mesh
+     * @return the Mesh shared pointer
      */
     static mesh_ptrtype New()
         {
@@ -285,24 +285,53 @@ public:
      */
     //@{
 
+
+
     /**
-     * \retirm the number of elements associated to the current processor
+     * @brief get the global number of elements
+     * @details it requires communication in parallel to
+     * retrieve and sum the number of elements in each subdomain.
+     * @return the global number of elements
      */
-#if 0
-    size_type numElements() const
-        {
-
-            return std::distance( this->beginElementWithProcessId( this->worldComm().rank() ),
-                                  this->endElementWithProcessId( this->worldComm().rank() ) );
-        }
-#endif
-
     size_type numGlobalElements() const { return M_numGlobalElements; }
+    /**
+     * @brief get the global number of faces
+     * @details it requires communication in parallel to
+     * retrieve and sum the number of faces in each subdomain.
+     * @return the global number of faces
+     */
     size_type numGlobalFaces() const { return M_numGlobalFaces; }
+
+    /**
+     * @brief get the global number of edges
+     * @details it requires communication in parallel to
+     * retrieve and sum the number of edges in each subdomain.
+     * @return the global number of edges
+     */
     size_type numGlobalEdges() const { return M_numGlobalEdges; }
+
+
+    /**
+     * @brief get the global number of points
+     * @details it requires communication in parallel to
+     * retrieve and sum the number of points in each subdomain.
+     * @return the global number of points
+     */
     size_type numGlobalPoints() const { return M_numGlobalPoints; }
+
+    /**
+     * @brief get the global number of vertices
+     * @details it requires communication in parallel to
+     * retrieve and sum the number of vertices in each subdomain.
+     * @return the global number of vertices
+     */
     size_type numGlobalVertices() const { return M_numGlobalVertices; }
 
+    /**
+     * @brief compute the global number of elements,faces,points and vertices
+     * @details it requires communications in parallel to
+     * retrieve and sum the contribution of each subdomain.
+     */
     void updateNumGlobalElements()
     {
         //int ne = numElements();
@@ -337,7 +366,7 @@ public:
         }
     }
     /**
-     * \return the topological dimension
+     * @return the topological dimension
      */
     uint16_type dimension() const
     {
@@ -345,7 +374,7 @@ public:
     }
 
     /**
-     * \return geometric mapping
+     * @return geometric mapping
      */
     gm_ptrtype const& gm() const
     {
@@ -353,7 +382,7 @@ public:
     }
 
     /**
-         * \return geometric mapping of order 1
+         * @return geometric mapping of order 1
          */
     gm1_ptrtype const& gm1() const
     {
@@ -361,7 +390,7 @@ public:
     }
 
     /**
-     * \return the geometric mapping
+     * @return the geometric mapping
      */
     gm_ptrtype& gm()
     {
@@ -369,7 +398,7 @@ public:
     }
 
     /**
-        * \return the geometric mapping of order 1
+        * @return the geometric mapping of order 1
         */
     gm1_ptrtype& gm1()
     {
@@ -377,7 +406,7 @@ public:
     }
 
     /**
-     * \return the reference convex associated with the element of the
+     * @return the reference convex associated with the element of the
      * mesh
      */
     reference_convex_type referenceConvex() const
@@ -386,7 +415,7 @@ public:
     }
 
     /**
-     * \return the face index of the face \p n in the element \p e
+     * @return the face index of the face \p n in the element \p e
      */
     face_processor_type const& localFaceId( element_type const& e,
                                             size_type const n ) const
@@ -395,7 +424,7 @@ public:
     }
 
     /**
-     * \return the face index of the face \p n in the element \p e
+     * @return the face index of the face \p n in the element \p e
      */
     face_processor_type const& localFaceId( size_type const e,
                                             size_type const n ) const
@@ -404,7 +433,7 @@ public:
     }
 #if 0
     /**
-     * \return the world comm
+     * @return the world comm
      */
     WorldComm const& worldComm() const
     {
@@ -436,7 +465,7 @@ public:
     }
 
     /**
-     * \return the face index of the face \p n in the element \p e
+     * @return the face index of the face \p n in the element \p e
      */
     face_processor_type& localFaceId( element_type const& e,
                                       size_type const n )
@@ -445,7 +474,7 @@ public:
     }
 
     /**
-     * \return the face index of the face \p n in the element \p e
+     * @return the face index of the face \p n in the element \p e
      */
     face_processor_type& localFaceId( size_type const e,
                                       size_type const n )
@@ -454,7 +483,7 @@ public:
     }
 
     /**
-     * \return the id associated to the \p marker
+     * @return the id associated to the \p marker
      */
     size_type markerName( std::string const& marker ) const
     {
@@ -464,7 +493,7 @@ public:
         return invalid_size_type_value;
     }
     /**
-     * \return the topological dimension associated to the \p marker
+     * @return the topological dimension associated to the \p marker
      */
     size_type markerDim( std::string const& marker ) const
     {
@@ -475,7 +504,7 @@ public:
     }
 
     /**
-     * \return the marker names
+     * @return the marker names
      */
     std::map<std::string, std::vector<size_type> > markerNames() const
     {
@@ -483,7 +512,7 @@ public:
     }
 
     /**
-     * \return a localization tool
+     * @return a localization tool
      */
     struct Localization;
     boost::shared_ptr<typename self_type::Localization> tool_localization()
@@ -491,15 +520,26 @@ public:
         return M_tool_localization;
     }
 
-    //! \return the average h
+    /**
+     * @brief get the average h
+     * @return the average h
+     */
     value_type hAverage() const { return M_h_avg; }
-    //! \return the minimum h
+
+    /**
+     * @brief get the min h
+     * @return the min h
+     */
     value_type hMin() const { return M_h_min; }
-    //! \return the maximum h
+
+    /**
+     * @brief get the max h
+     * @return the max h
+     */
     value_type hMax() const { return M_h_max; }
 
     /**
-     * \return the measure of the mesh (sum of the measure of the elements)
+     * @return the measure of the mesh (sum of the measure of the elements)
      */
     value_type measure( bool parallel = true ) const
     {
@@ -509,7 +549,7 @@ public:
     }
 
     /**
-     * \return the measure of the mesh (sum of the measure of the elements)
+     * @return the measure of the mesh (sum of the measure of the elements)
      */
     value_type measureBoundary() const
     {
@@ -533,7 +573,7 @@ public:
     //@{
 
     /**
-     * \return true if \p marker exists, false otherwise
+     * @return true if \p marker exists, false otherwise
      */
     bool
     hasMarker( std::string marker ) const
@@ -542,7 +582,7 @@ public:
         }
 
     /**
-     * \return true if \p marker exists and topological dimension of the entity
+     * @return true if \p marker exists and topological dimension of the entity
      * associated is Dim-1, false otherwise
      */
     bool
@@ -552,7 +592,7 @@ public:
         }
 
     /**
-     * \return true if \p marker exists and topological dimension of the entity
+     * @return true if \p marker exists and topological dimension of the entity
      * associated is Dim-2, false otherwise
      */
     bool
@@ -580,19 +620,19 @@ public:
         M_markername[__name]=data;
     }
     /**
-      * \return true if all markers are defined in the mesh, false otherwise
+      * @return true if all markers are defined in the mesh, false otherwise
       */
     bool hasMarkers( std::initializer_list<std::string> l ) const
     {
       for( auto m : l )
       {
-        if ( !hasMarker( m ) ) return false;          
+        if ( !hasMarker( m ) ) return false;
       }
       return true;
 
     }
-    
-    /// \return the marker id given the marker name \p marker
+
+    /// @return the marker id given the marker name \p marker
     flag_type markerId( boost::any const& marker );
 
     /**
@@ -607,7 +647,19 @@ public:
      */
     element_iterator eraseElement( element_iterator position, bool modify=true );
 
-
+    /**
+     * @brief compute the trace mesh
+     * @details compute the trace mesh associated to the
+     * range \p range and tag \p TheTag. The \p range provides
+     * the iterators over the boundary faces of the mesh.
+     * \@code
+     * auto trace_mesh1 = mesh->trace(boundaryfaces(mesh));
+     * auto trace_mesh2 = mesh->trace(markedfaces(mesh,"marker"));
+     * @endcode
+     *
+     * @param range iterator range
+     * @return the computed trace mesh
+     */
     template<typename RangeT, int TheTag>
     typename trace_mesh<TheTag>::ptrtype
     trace( RangeT const& range, mpl::int_<TheTag> ) const;
