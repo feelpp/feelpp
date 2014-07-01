@@ -146,6 +146,7 @@ public:
         this->get<2>() =  t.get<2>();
         return *this;
     }
+
     //@}
 
     /** @name Accessors
@@ -231,6 +232,21 @@ protected:
 private:
     ublas::vector<double> M_coords;
 };
+
+
+inline
+std::ostream&
+operator<<( std::ostream& __os, Dof const& __dof )
+{
+    __os << "-----------Dof-Info------------\n"
+         << "index        : " << __dof.index() << "\n"
+         << "sign         : " << __dof.sign() << "\n"
+         << "isPeriodic   : " << __dof.isPeriodic() << "\n"
+         << "isOnBoundary : " << __dof.isOnBoundary() << "\n"
+         << "marker       : " << __dof.marker() << "\n"
+         << "coords       : " << __dof.coords() << "\n";
+    return __os;
+}
 
 /**
  * \brief Describe a Dof on a Face
@@ -437,7 +453,21 @@ public:
     uint16_type localDofPerComponent() const { return this->second/nComponents(); }
     // returns the local dof component given the number of local dof per component @arg nLocalDofPerComponent
     uint16_type component( uint16_type nLocalDofPerComponent ) const { return this->second/nLocalDofPerComponent; }
+
+
 };
+
+template<int NC>
+std::ostream&
+operator<<( std::ostream& __os, LocalDof<NC> const& __dof )
+{
+    __os << "-----------Dof-Info------------\n"
+         << "elementId             : " << __dof.elementId() << "\n"
+         << "localDof              : " << __dof.localDof() << "\n"
+         << "localDofPerComponent  : " << __dof.localDofPerComponent() << "\n"
+         << "nComponents : " << __dof.nComponents() << "\n";
+    return __os;
+}
 
 template<int NC = 1>
 class LocalDofSet : public std::vector<LocalDof<NC>>
@@ -467,5 +497,6 @@ public:
             return *this;
         }
 };
+
 } // Feel
 #endif /* __Dof_H */
