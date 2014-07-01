@@ -31,9 +31,14 @@
 
 int main(int argc, char**argv )
 {
+    po::options_description magnetooptions( "Magnetostatic options" );
+    magnetooptions.add_options()
+    ( "bctype", po::value<bool>()->default_value( true ), "true if strong Dirichlet, false if weak Dirichlet treatment" )
+    ;
     /// [marker1]
     using namespace Feel;
     Environment env( _argc=argc, _argv=argv,
+                    _desc=magnetooptions,
                      _about=about(_name="magnetostatic",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
@@ -54,26 +59,34 @@ int main(int argc, char**argv )
     double penaldir=30;
 #if FEELPP_DIM == 2
     a = integrate(_range=elements(mesh), _expr=c*trans(idt(u))*id(v)+curlxt(u)*curlx(v));
-    a += integrate(boundaryfaces(mesh), -curlxt(u)*(cross(N(),id(u)) )
+    if ( boption( "bctype") )
+      a += on(_range=boundaryfaces(mesh), _rhs=l, _element=u, _expr=e );
+    else
+      a += integrate(boundaryfaces(mesh), -curlxt(u)*(cross(N(),id(u)) )
                    - curlx(u)*(cross(N(),idt(u)) )
                    + penaldir*trans(cross(idt(u),N()))*cross(id(u),N())/hFace() );
 #else
     a = integrate(_range=elements(mesh), _expr=c*trans(idt(u))*id(v)+trans(curlt(u))*curl(v));
-    a += integrate(boundaryfaces(mesh), -trans(curlt(u))*(cross(N(),id(u)) )
+    if ( boption( "bctype") )
+      a += on(_range=boundaryfaces(mesh), _rhs=l, _element=u,_expr=e );
+    else
+      a += integrate(boundaryfaces(mesh), -trans(curlt(u))*(cross(N(),id(u)) )
                    - trans(curl(u))*(cross(N(),idt(u)) )
                    + penaldir*trans(cross(idt(u),N()))*cross(id(u),N())/hFace() );
 #endif
 
     auto l = form1( _test=Nh );
     l = integrate( _range=elements(mesh), _expr=trans(f)*id(v));
+    if ( boption("bctype") == false )
+    {
 #if FEELPP_DIM == 2
-    l += integrate(boundaryfaces(mesh), - curlx(u)*(cross(N(),e) )
+      l += integrate(boundaryfaces(mesh), - curlx(u)*(cross(N(),e) )
                    + penaldir*trans(cross(e,N()))*cross(id(u),N())/hFace() );
 #else
-    l += integrate(boundaryfaces(mesh), - trans(curl(u))*(cross(N(),e) )
+      l += integrate(boundaryfaces(mesh), - trans(curl(u))*(cross(N(),e) )
                    + penaldir*trans(cross(e,N()))*cross(id(u),N())/hFace() );
 #endif
-
+    }
     a.solve(_rhs=l,_solution=u);
     auto err = normL2( _range=elements(mesh), _expr=idv(u)-e );
     if ( Environment::isMasterRank() )
