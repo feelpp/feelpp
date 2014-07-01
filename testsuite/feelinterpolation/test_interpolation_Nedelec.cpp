@@ -164,7 +164,7 @@ TestInterpolationHCurl<Dim>::testInterpolation( std::string one_element_mesh )
 
     // handly computed interpolant coeff (in hdiv basis)
     for ( int i = 0; i < Xh->nLocalDof(); ++i )
-        U_h_int(i) = integrate( markedfaces( oneelement_mesh, edges[i] ), trans(print(T()))*myexpr ).evaluate()(0,0);
+        U_h_int(i) = integrate( markedfaces( oneelement_mesh, edges[i] ), trans(print(T(),"integrate T="))*myexpr ).evaluate()(0,0);
 
     // raviart-thomas interpolant using on
     U_h_on.zero();
