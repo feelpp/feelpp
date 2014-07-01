@@ -677,14 +677,16 @@ class Context
         M_G( ( gm_type::nNodes == element_type::numVertices ) ?__e.vertices() : __e.G() ),
         M_n( M_gm->referenceConvex().normals() ),
         M_n_real( NDim ),
-        M_u_n_real( NDim ),
+        M_un_real( NDim ),
         M_n_norm( 0 ),
         M_t_real( NDim ),
+        M_ut_real( NDim ),
+        M_t_norm( 0 ),
         M_xrefq( PDim, nPoints() ),
         M_xrealq( NDim, nPoints() ),
-        M_nrealq( NDim, nPoints() ),
-        M_unrealq( NDim, nPoints() ),
-        M_nnormq( nPoints() ),
+        M_n_realq( NDim, nPoints() ),
+        M_un_realq( NDim, nPoints() ),
+        M_n_normq( nPoints() ),
 
         M_g( M_G.size2(), PDim ),
         M_K( NDim, PDim ),
@@ -743,14 +745,16 @@ Context( gm_ptrtype __gm,
     M_G( ( gm_type::nNodes == element_type::numVertices ) ?__e.vertices() : __e.G() ),
     M_n( M_gm->referenceConvex().normals() ),
     M_n_real( NDim ),
-    M_u_n_real( NDim ),
+    M_un_real( NDim ),
     M_n_norm( 0 ),
     M_t_real( NDim ),
+    M_ut_real( NDim ),
+    M_t_norm( 0 ),
     M_xrefq( PDim, nPoints() ),
     M_xrealq( NDim, nPoints() ),
-    M_nrealq( NDim, nPoints() ),
-    M_unrealq( NDim, nPoints() ),
-    M_nnormq( nPoints() ),
+    M_n_realq( NDim, nPoints() ),
+    M_un_realq( NDim, nPoints() ),
+    M_n_normq( nPoints() ),
 
     M_g( M_G.size2(), PDim ),
     M_K( NDim, PDim ),
@@ -804,14 +808,16 @@ Context( gmc_ptrtype& p )
     M_G( ( gm_type::nNodes == element_type::numVertices ) ?M_element->vertices() : M_element->G() ),
     M_n( p->M_n ),
     M_n_real( p->M_n_real ),
-    M_u_n_real( p->M_u_n_real ),
+    M_un_real( p->M_un_real ),
     M_n_norm( p->M_n_norm ),
     M_t_real( p->M_t_real ),
+    M_ut_real( p->M_ut_real ),
+    M_t_norm( p->M_t_norm ),
     M_xrefq( p->M_xrefq ),
     M_xrealq( p->M_xrealq ),
-    M_nrealq( p->M_nrealq ),
-    M_unrealq( p->M_unrealq ),
-    M_nnormq( p->M_nnormq ),
+    M_n_realq( p->M_n_realq ),
+    M_un_realq( p->M_un_realq ),
+    M_n_normq( p->M_n_normq ),
     M_g( p->M_g ),
     M_K( p->M_K ),
     M_CS( p->M_CS ),
@@ -982,9 +988,9 @@ void update( element_type const& __e,
 
         M_xrefq.resize( PDim, nPoints() );
         M_xrealq.resize( NDim, nPoints() );
-        M_nrealq.resize( NDim, nPoints() );
-        M_unrealq.resize( NDim, nPoints() );
-        M_nnormq.resize( nPoints() );
+        M_n_realq.resize( NDim, nPoints() );
+        M_un_realq.resize( NDim, nPoints() );
+        M_n_normq.resize( nPoints() );
 
         if ( is_linear )
         {
@@ -1325,7 +1331,7 @@ value_type normalNorm( int q ) const
         return M_n_norm;
 
     else
-        return M_nnormq[q];
+        return M_n_normq[q];
 }
 
 /**
@@ -1352,7 +1358,8 @@ ublas::matrix_column<matrix_node_t_type const> normal( int q ) const
 
     else
     {
-        return ublas::column( M_nrealq, q );
+        return ublas::column( M_n_realq
+                     , q );
     }
 }
 
@@ -1364,7 +1371,7 @@ ublas::matrix_column<matrix_node_t_type const> normal( int q ) const
 node_t_type const& unitNormal() const
 {
     //BOOST_STATIC_ASSERT( vm::has_normal<context>::value );
-    return M_u_n_real;
+    return M_un_real;
 }
 
 //ublas::matrix_column<matrix_node_t_type const> unitNormal( int q ) const
@@ -1373,10 +1380,10 @@ node_t_type unitNormal( int q ) const
 {
     //BOOST_STATIC_ASSERT( vm::has_normal<context>::value );
     if ( is_linear )
-        return M_u_n_real;
+        return M_un_real;
 
     else
-        return ublas::column( M_unrealq, q );
+        return ublas::column( M_un_realq, q );
 }
 
 
@@ -1385,41 +1392,74 @@ value_type const& unitNormal( int n, int q ) const
     //BOOST_STATIC_ASSERT( vm::has_normal<context>::value );
 
     if ( is_linear )
-        return M_u_n_real( n );
+        return M_un_real( n );
 
     else
-        return M_unrealq( n, q );
+        return M_un_realq( n, q );
 }
-
+/**
+ * @brief the scaled tangent to the current face
+ * @return the scaled tangent
+ */
 node_t_type const& tangent() const
 {
-    //BOOST_STATIC_ASSERT( vm::has_normal<context>::value );
+    DCHECK( nDim == 2 ) <<  "Tangent is available only in 2D";
+    DCHECK( is_linear ) << "Invalid call to unitTangent, the geometric mapping is not linear";
     return M_t_real;
 }
-//ublas::matrix_column<matrix_node_t_type const> unitNormal( int q ) const
-// node_t_type const& unitNormal( int q ) const
-node_t_type tangent( int q ) const
+
+/**
+ * @brief scaled tangent at point
+
+ * @param q index of the point at which the tangent is evaluated
+ * @return the scaled tamgent at the point
+ */
+node_t_type const& tangent( int q ) const
 {
-    //BOOST_STATIC_ASSERT( vm::has_normal<context>::value );
+    DCHECK( nDim == 2 ) <<  "Tangent is available only in 2D";
     if ( is_linear )
         return M_t_real;
-
-    //else
-    //return ublas::column( M_utrealq, q );
+    return M_t_realq(q);
+}
+/**
+ * @brief the unit Tangent (linear case)
+ *
+ * @return the unit tangent in the linear case
+ */
+node_t_type const& unitTangent() const
+{
+    DCHECK( nDim == 2 ) <<  "Tangent is available only in 2D";
+    DCHECK( is_linear ) << "Invalid call to unitTangent, the geometric mapping is not linear";
+    return M_ut_real;
 }
 
+/**
+ * @brief the unit tangent a point \p q
+ *
+ * @param q point index
+ * @return unit tangent
+ */
+node_t_type const& unitTangent( int q ) const
+{
+    DCHECK( nDim == 2 ) <<  "Tangent is available only in 2D";
+    DCHECK( is_linear ) << "Invalid call to unitTangent, the geometric mapping is not linear";
+    return M_ut_real;
+}
 
+/**
+ * @brief unit tangent coordinate \p n at point \p q
+ *
+ * @param n coordinate
+ * @param q point index
+ *
+ * @return [description]
+ */
 value_type const& unitTangent( int n, int q ) const
 {
-    //BOOST_STATIC_ASSERT( vm::has_normal<context>::value );
-#if 0
+    DCHECK( nDim == 2 ) <<  "Tangent is available only in 2D";
     if ( is_linear )
-        return M_t_real( n );
-
-    else
-        return M_utrealq( n, q );
-
-#endif
+        return M_ut_real( n );
+    return M_ut_realq( n, q );
 }
 
 /**
@@ -1754,7 +1794,7 @@ void updateJKBN( mpl::bool_<true>  )
                           M_n_real,
                           true );
         M_n_norm = ublas::norm_2( M_n_real );
-        M_u_n_real = M_n_real/M_n_norm;
+        M_un_real = M_n_real/M_n_norm;
 
     }
 
@@ -1769,13 +1809,15 @@ void updateJKBN( mpl::bool_<true>  )
                               true );
             double ratio = M_gm->referenceConvex().h( M_face_id )/M_h_face;
 
-            M_t_real *= ratio;
+
+            M_t_norm = ublas::norm_2( M_t_real );
+            M_ut_real = M_t_real/M_t_norm;
         }
 
         // compute projector on tangent plane
         Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> > P(M_Ptangent.data().begin(), NDim, NDim);
         P.setIdentity(NDim, NDim);
-        Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> > N(M_u_n_real.data().begin(), NDim,1);
+        Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> > N(M_un_real.data().begin(), NDim,1);
         P.noalias() -= N*N.transpose();
     }
 
@@ -1891,10 +1933,11 @@ void updateJKBN( mpl::bool_<false>  )
 #endif
             //std::cout << "[geomap] point " << q << " n_real = " << M_n_real << "\n";
             M_n_norm = ublas::norm_2( M_n_real );
-            M_u_n_real = M_n_real/M_n_norm;
-            ublas::column( M_nrealq, q ) = M_n_real;
-            ublas::column( M_unrealq, q ) = M_u_n_real;
-            M_nnormq[q] = M_n_norm;
+            M_un_real = M_n_real/M_n_norm;
+            ublas::column( M_n_realq
+                 , q ) = M_n_real;
+            ublas::column( M_un_realq, q ) = M_un_real;
+            M_n_normq[q] = M_n_norm;
 
             if ( NDim != PDim )
                 M_Jt[q] *= M_n_norm;
@@ -1908,9 +1951,10 @@ void updateJKBN( mpl::bool_<false>  )
 #if 0
         std::cout << "[geomap] face id = " << M_face_id << "\n"
                   << "[geomap] ref normal = " << M_gm->referenceConvex().normal( M_face_id ) << "\n"
-                  << "[geomap] M_n_real = " << M_nrealq << "\n"
-                  << "[geomap] M_unrealq = " << M_unrealq << "\n"
-                  << "[geomap] M_nnormq = " << M_nnormq << "\n";
+                  << "[geomap] M_n_real = " << M_n_realq
+          << "\n"
+                  << "[geomap] M_un_realq = " << M_un_realq << "\n"
+                  << "[geomap] M_n_normq = " << M_n_normq << "\n";
 #endif
     }
 }
@@ -1931,21 +1975,26 @@ uint16_type M_npoints;
 
 value_type M_J;
 
-//matrix_node_t_type  M_G;
 matrix_type  M_G;
 ublas::vector<node_t_type> M_n;
 node_t_type M_n_real;
-node_t_type M_u_n_real;
+node_t_type M_un_real;
 value_type M_n_norm;
 node_t_type M_t_real;
+node_t_type M_ut_real;
+value_type M_t_norm;
 
-//matrix_node_t_type const& M_xrefq;
 matrix_node_t_type  M_xrefq;
-//matrix_node_t_type M_xrealq;
 matrix_type M_xrealq;
-matrix_node_t_type M_nrealq;
-matrix_node_t_type M_unrealq;
-ublas::vector<value_type> M_nnormq;
+
+// normals
+matrix_node_t_type M_n_realq;
+matrix_node_t_type M_un_realq;
+ublas::vector<value_type> M_n_normq;
+// tangents
+matrix_node_t_type M_t_realq;
+matrix_node_t_type M_ut_realq;
+ublas::vector<value_type> M_t_normq;
 
 matrix_type M_g_linear;
 matrix_type M_g;

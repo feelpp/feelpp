@@ -971,20 +971,12 @@ public:
     {
         auto g = expr.geom();
         auto const& K = g->K(0);
-        std::cout << "K = " << K << "\n";
 
-        std::cout << "ref t = " << g->geometricMapping()->referenceConvex().tangent( edgeId ) << "\n";
         ublas::axpy_prod( K,
                           g->geometricMapping()->referenceConvex().tangent( edgeId ),
                           t,
                           true );
-        double ratio = g->geometricMapping()->referenceConvex().h( edgeId )/g->element().hEdge( edgeId );
-        //double ratio = g->element().hEdge( edgeId );
-        std::cout << "h(edgeId) = " << g->geometricMapping()->referenceConvex().h( edgeId ) << std::endl;
-        std::cout << "hEdge(edgeId) = " << g->element().hEdge( edgeId ) << std::endl;
-        std::cout << "ratio = " << ratio << std::endl;
-        t *= ratio/ublas::norm_2(t);
-        std::cout << "t=" << t << "\n";
+        t *= g->element().hEdge( edgeId )/ublas::norm_2(t);
     }
 
     typedef Eigen::MatrixXd local_interpolant_type;
