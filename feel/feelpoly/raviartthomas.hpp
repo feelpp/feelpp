@@ -313,16 +313,11 @@ public:
         // jacobian of the transformation from reference face to the face in the
         // reference element
         std::vector<double> j;
-        {
-            // bring 'operator+=()' into scope
-            using namespace boost::assign;
+        if ( nDim == 2 )
+            j = {2.8284271247461903,2.0,2.0};
 
-            if ( nDim == 2 )
-                j += 2.8284271247461903,2.0,2.0;
-
-            if ( nDim == 3 )
-                j+= 3.464101615137754, 2, 2, 2;
-        }
+        if ( nDim == 3 )
+            j = {3.464101615137754, 2, 2, 2};
 
         //for( int k = 0; k < nDim; ++k )
         {
@@ -600,6 +595,14 @@ public:
     void
     getFaceNormal( ExprType& expr, int faceId, ublas::vector<value_type>& n) const
     {
+        // j = length of edges
+        std::vector<double> j;
+        if ( nDim == 2 )
+            j = {2.8284271247461903,2.0,2.0};
+
+        if ( nDim == 3 )
+            j = {3.464101615137754, 2, 2, 2};
+
         auto g = expr.geom();
         auto const& K = g->K(0);
         //std::cout << "K = " << K << "\n";
@@ -609,9 +612,7 @@ public:
                           g->geometricMapping()->referenceConvex().normal( faceId ),
                           n,
                           true );
-        double ratio = g->geometricMapping()->referenceConvex().h( faceId )/g->element().hFace( faceId ); //normalize n ?
-        std::cout << "ratio = " << ratio << std::endl; 
-        n *= ratio;
+        n *= j[faceId]/ublas::norm_2(n);
         std::cout << "n=" << n << "\n";
     }
 
@@ -629,7 +630,6 @@ public:
             Ihloc.setZero();
             ublas::vector<value_type> n( nDim ); //normal
 
-            std::cout << "[interpolate] numFaces = " << convex_type::numTopologicalFaces << std::endl;
             for( int f = 0; f < convex_type::numTopologicalFaces; ++f )
             {
                 getFaceNormal(expr, f, n);
@@ -637,11 +637,7 @@ public:
                 {
                     int q = (nDim == 2) ? f*nDofPerEdge+l : f*nDofPerFace+l;
                     for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
-                        {
-                            std::cout << "n(" << c1 << ") = " << n(c1) << std::endl;
-                            std::cout << "Ihloc += " << expr.evalq( c1, 0, q )*n(c1) << std::endl;
-                            Ihloc(q) += expr.evalq( c1, 0, q )*n(c1);
-                        }
+                        Ihloc(q) += expr.evalq( c1, 0, q )*n(c1);
                 }
             }
         }
