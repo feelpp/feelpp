@@ -493,6 +493,17 @@ template<uint16_type N,
          uint16_type TheTAG >
 const uint16_type Lagrange<N,RealDim,O,PolySetType,ContinuityType,T,Convex,Pts,TheTAG>::nOrder;
 
+template<uint16_type N,
+         uint16_type RealDim,
+         uint16_type O,
+         template<uint16_type Dim> class PolySetType,
+         typename ContinuityType,
+         typename T,
+         template<uint16_type, uint16_type, uint16_type> class Convex,
+         template<class, uint16_type, class> class Pts,
+         uint16_type TheTAG >
+const uint16_type Lagrange<N,RealDim,O,PolySetType,ContinuityType,T,Convex,Pts,TheTAG>::nLocalDof;
+
 } // namespace fem
 template<uint16_type Order,
          template<uint16_type Dim> class PolySetType = Scalar,
