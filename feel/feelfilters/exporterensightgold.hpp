@@ -216,7 +216,8 @@ private:
     void writeGeoMarkers(MPI_File fh, mesh_ptrtype mesh) const;
     void writeGeoHeader(MPI_File fh) const;
     void writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype mesh, int & partindex, std::pair<const std::string, std::vector<size_type> > & m) const;
-    void writeGeoMarkedElements(MPI_File fh, mesh_ptrtype mesh, int & partindex, typename mesh_type::parts_const_iterator_type part) const;
+    //void writeGeoMarkedElements(MPI_File fh, mesh_ptrtype mesh, int & partindex, typename mesh_type::parts_const_iterator_type part) const;
+    void writeGeoMarkedElements(MPI_File fh, mesh_ptrtype mesh, int & partindex, size_type markerid) const;
 
     /**
        write the variables file for ensight
@@ -235,6 +236,7 @@ private:
     std::string M_element_type;
     std::string M_face_type;
     mutable int time_index;
+    mutable std::vector<size_type> M_markersToWrite;
 };
 
 
