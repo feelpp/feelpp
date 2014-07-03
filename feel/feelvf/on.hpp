@@ -343,9 +343,10 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
     {
         // get the first face properly connected
         for( ; __face_it != __face_en; ++__face_it )
-            if ( __face_it->isConnectedTo0() )
+            if ( boost::unwrap_ref(*__face_it).isConnectedTo0() )
                 break;
 
+        auto const& faceForInit = boost::unwrap_ref( *__face_it );
 
         dof_type const* __dof = M_u.functionSpace()->dof().get();
 
@@ -375,8 +376,8 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
             }
         }
 
-        uint16_type __face_id = __face_it->pos_first();
-        gmc_ptrtype __c( new gmc_type( __gm, __face_it->element( 0 ), __geopc, __face_id ) );
+        uint16_type __face_id = faceForInit.pos_first();
+        gmc_ptrtype __c( new gmc_type( __gm, faceForInit.element( 0 ), __geopc, __face_id ) );
 
         map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
         //t_expr_type expr( M_expr, mapgmc );
@@ -403,32 +404,34 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
               __face_it != this->endElement();
               ++__face_it )
         {
-            if ( !__face_it->isConnectedTo0() )
+            auto const& theface = boost::unwrap_ref( *__face_it );
+
+            if ( !theface.isConnectedTo0() )
             {
-                LOG( WARNING ) << "face not connected" << *__face_it;
+                LOG( WARNING ) << "face not connected" << theface;
 
                 continue;
             }
             // do not process the face if it is a ghost face: belonging to two
             // processes and being in a process id greater than the one
             // corresponding face
-            if ( __face_it->isGhostFace() )
+            if ( theface.isGhostFace() )
             {
-                LOG(WARNING) << "face id : " << __face_it->id() << " is a ghost face";
+                LOG(WARNING) << "face id : " << theface.id() << " is a ghost face";
                 continue;
             }
 
-            DVLOG(2) << "FACE_ID = " << __face_it->id()
-                     << " element id= " << __face_it->ad_first()
-                     << " pos in elt= " << __face_it->pos_first()
-                     << " marker: " << __face_it->marker() << "\n";
-            DVLOG(2) << "FACE_ID = " << __face_it->id() << " face pts=" << __face_it->G() << "\n";
+            DVLOG(2) << "FACE_ID = " << theface.id()
+                     << " element id= " << theface.ad_first()
+                     << " pos in elt= " << theface.pos_first()
+                     << " marker: " << theface.marker() << "\n";
+            DVLOG(2) << "FACE_ID = " << theface.id() << " face pts=" << theface.G() << "\n";
 
-            uint16_type __face_id = __face_it->pos_first();
-            __c->update( __face_it->element( 0 ), __face_id );
+            uint16_type __face_id = theface.pos_first();
+            __c->update( theface.element( 0 ), __face_id );
 
-            DVLOG(2) << "FACE_ID = " << __face_it->id() << "  ref pts=" << __c->xRefs() << "\n";
-            DVLOG(2) << "FACE_ID = " << __face_it->id() << " real pts=" << __c->xReal() << "\n";
+            DVLOG(2) << "FACE_ID = " << theface.id() << "  ref pts=" << __c->xRefs() << "\n";
+            DVLOG(2) << "FACE_ID = " << theface.id() << " real pts=" << __c->xReal() << "\n";
 
             map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
 
@@ -452,7 +455,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
 
                         // global Dof
                         size_type thedof =  M_u.start() +
-                            boost::get<0>( __dof->faceLocalToGlobal( __face_it->id(), l, c1 ) );
+                            boost::get<0>( __dof->faceLocalToGlobal( theface.id(), l, c1 ) );
 
                         //size_type thedof_nproc = __dof->dofNProc( thedof );
                         if ( std::find( dofs.begin(),
@@ -498,13 +501,10 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
         for (auto itd=dofs.begin(),end=dofs.end() ; itd!=end ; ++itd)
             *itd+=thedofshift;
     }
+    
     auto x = M_rhs->clone();
-    //CHECK( dofs.size() > 0 ) << "Invalid number of Dirichlet dof, should be > 0 ";
     CHECK( values.size() == dofs.size() ) << "Invalid dofs/values size: " << dofs.size() << "/" << values.size();
-    //x->zero();
     x->addVector( dofs.data(), dofs.size(), values.data() );
-    //values->zero();
-
     __form.zeroRows( dofs, *x, *M_rhs, M_on_strategy );
     x.reset();
 }
