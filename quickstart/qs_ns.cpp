@@ -49,7 +49,7 @@ int main(int argc, char**argv )
 
     auto deft = gradt( u );
     auto def = grad( v );
-    double mu = option(_name="mu").as<double>();
+    double mu = doption(_name="mu");
 
     auto mybdf = bdf( _space=Vh, _name="mybdf" );
 
@@ -73,9 +73,9 @@ int main(int argc, char**argv )
         at = a;
         at += integrate( _range=elements( mesh ), _expr= trans(gradt(u)*idv(extrapu))*id(v) );
         at+=on(_range=markedfaces(mesh,"wall"), _rhs=ft, _element=u,
-              _expr=0*one() );
+              _expr=zero<2>() );
         at+=on(_range=markedfaces(mesh,"inlet"), _rhs=ft, _element=u,
-              _expr=-expr( option(_name="functions.g").as<std::string>() )*N() );
+              _expr=-expr( soption(_name="functions.g")*N() );
 
         at.solve(_rhs=ft,_solution=U);
 
