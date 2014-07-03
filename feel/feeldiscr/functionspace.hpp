@@ -1863,7 +1863,17 @@ public:
     /*virtual*/ basis_context_ptrtype contextBasis( std::pair<int, basis_context_ptrtype> const& p, Context const& c ) { return p.second; }
 
     /**
-     * \class Element
+     * @brief Element of a Function Space
+     * @details this class provides the concept of element of a function space \f$X_h\f$
+     * which are functions written as \f$u = \sum_{i=1}ˆ{\dim X_h} u_i \phi_i\f$
+     * where \f$(u_i)\f$ are the coefficients in the basis \f$\{\phi_i, i=,...,dim X_h\}\f$ which
+     * spans \f$X_h\f$.
+     * The container for the coefficients are simple vectors however they can be also views over
+     * parts of a container for example in the case of element with several components. This is the
+     * case when one wants to access elements of a sub-space of a product of spaces.
+     *
+     * @tparam T numerical type
+     * @tparam Cont = VectorUblas<T>  container for the element
      */
     template<typename T = double,  typename Cont = VectorUblas<T> >
     class Element
@@ -3983,6 +3993,13 @@ public:
         element_ptrtype u( new element_type( this->shared_from_this(), name ) );
         bool addExtendedElt = this->dof()->buildDofTableMPIExtended();
         u->on( _range=elements(M_mesh,addExtendedElt), _expr=e );
+        return u;
+    }
+    typedef Element<value_type,VectorUblas<value_type,ublas::extarray_vector<value_type>>> ext_element_type;
+    ext_element_type
+    element( vector_ptrtype v, std::string const& name = "u" )
+    {
+        ext_element_type u( v->data(), this->shared_from_this(), name );
         return u;
     }
 

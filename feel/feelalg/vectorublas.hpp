@@ -38,10 +38,58 @@
 #include <feel/feelalg/vector.hpp>
 
 
+namespace boost { namespace numeric { namespace ublas {
 
+
+template<class T>
+class extarray_vector :
+    public vector<T, array_adaptor<T> >
+{
+    typedef vector<T, array_adaptor<T> > vector_type;
+public:
+    typedef typename vector_type::size_type size_type;
+    typedef typename vector_type::pointer pointer;
+
+    BOOST_UBLAS_INLINE
+    extarray_vector(size_type size, pointer p)
+    { this->data().resize(size, p); }
+
+    template <size_type N>
+    BOOST_UBLAS_INLINE
+    extarray_vector(T (&a)[N])
+    { this->data().resize(N, a); }
+
+    template<class V>
+    BOOST_UBLAS_INLINE
+    extarray_vector& operator = (const vector<T, V>& v)
+    {
+        vector_type::operator = (v);
+        return *this;
+    }
+
+    template<class VC>
+    BOOST_UBLAS_INLINE
+    extarray_vector& operator = (const vector_container<VC>& v)
+    {
+        vector_type::operator = (v);
+        return *this;
+    }
+
+    template<class VE>
+    BOOST_UBLAS_INLINE
+    extarray_vector& operator = (const vector_expression<VE>& ae)
+    {
+        vector_type::operator = (ae);
+        return *this;
+    }
+};
+
+}}}
 namespace Feel
 {
 namespace ublas = boost::numeric::ublas;
+
+
 /*!
  * \class VectorUblas
  * \brief interface to vector
@@ -98,6 +146,7 @@ public:
     typedef typename super1::datamap_type datamap_type;
     typedef typename super1::datamap_ptrtype datamap_ptrtype;
 
+    static constexpr bool has_extern_data = boost::is_same<vector_type,ublas::extarray_vector<T>>::value;
     //@}
 
     /** @name Constructors, destructor

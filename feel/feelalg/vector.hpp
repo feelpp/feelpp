@@ -54,6 +54,7 @@ public:
     typedef typename type_traits<T>::real_type real_type;
 
     typedef Vector<T> self_type;
+    typedef T* pointer;
     typedef boost::shared_ptr<Vector<T> > self_ptrtype;
     typedef boost::shared_ptr<Vector<T> > clone_ptrtype;
 
@@ -325,6 +326,12 @@ public:
     {
         return M_map->dofGlobalProcessIsGhost(localDof);
     }
+
+    /**
+     * @brief pointer to the dadta stored in the vector
+     * @return the pointer
+     */
+    virtual pointer data() const { return 0; };
 
     /**
      * \return the communicator
