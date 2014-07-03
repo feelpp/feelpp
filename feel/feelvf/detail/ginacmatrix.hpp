@@ -67,14 +67,14 @@ public:
 
     typedef Eigen::Matrix<double,Eigen::Dynamic,1> vec_type;
 
-    template<typename TheExpr>
+    template<typename... TheExpr>
     struct Lambda
     {
         typedef this_type type;
     };
-    template<typename TheExpr>
-    typename Lambda<TheExpr>::type
-    operator()( TheExpr const& e  ) { return *this; }
+    template<typename... TheExpr>
+    typename Lambda<TheExpr...>::type
+    operator()( TheExpr... e  ) { return *this; }
 
     //@}
 
