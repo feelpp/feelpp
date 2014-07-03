@@ -75,7 +75,7 @@ int main(int argc, char**argv )
         at+=on(_range=markedfaces(mesh,"wall"), _rhs=ft, _element=u,
               _expr=zero<2>() );
         at+=on(_range=markedfaces(mesh,"inlet"), _rhs=ft, _element=u,
-              _expr=-expr( soption(_name="functions.g")*N() );
+               _expr=-expr( soption(_name="functions.g")) *N() );
 
         at.solve(_rhs=ft,_solution=U);
 
