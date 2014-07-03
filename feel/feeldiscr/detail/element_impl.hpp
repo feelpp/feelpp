@@ -1016,6 +1016,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
     if ( elt_id == invalid_size_type_value )
         return;
 
+    auto const& s = M_functionspace->dof()->localToGlobalSigns( elt_id );
     for ( int l = 0; l < basis_type::nDof; ++l )
     {
         const int ncdof = is_product?nComponents1:1;
@@ -1042,13 +1043,13 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
                 {
                     for ( typename array_type::index i = 0; i < nDim; ++i )
                     {
-                        v[q]( i,0 ) += v_*context.curl( ldof, i, 0, q );
+                        v[q]( i,0 ) += s(ldof)*v_*context.curl( ldof, i, 0, q );
                     }
                 }
 
                 else if ( nDim == 2 )
                 {
-                    v[q]( 0,0 ) += v_*context.curl( ldof, 0, 0, q );
+                    v[q]( 0,0 ) += s(ldof)*v_*context.curl( ldof, 0, 0, q );
                 }
 
             }
@@ -1075,7 +1076,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
     if ( elt_id == invalid_size_type_value )
         return;
 
-
+    auto const& s = M_functionspace->dof()->localToGlobalSigns( elt_id );
     for ( int l = 0; l < basis_type::nDof; ++l )
     {
         const int ncdof = is_product?nComponents1:1;
@@ -1100,12 +1101,12 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
             {
                 if ( nDim == 3 )
                 {
-                    v[q]( 0,0 ) += v_*context.curl( ldof, comp, 0, q );
+                    v[q]( 0,0 ) += s(ldof)*v_*context.curl( ldof, comp, 0, q );
                 }
 
                 else if ( nDim == 2 )
                 {
-                    v[q]( 0,0 ) += v_*context.curl( ldof, 2, 0, q );
+                    v[q]( 0,0 ) += s(ldof)*v_*context.curl( ldof, 2, 0, q );
                 }
 
             }

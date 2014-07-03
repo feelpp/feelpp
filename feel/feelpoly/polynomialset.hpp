@@ -846,6 +846,10 @@ public:
         {
             return M_nodes;
         }
+        matrix_node_t_type const& points() const
+        {
+            return M_nodes;
+        }
 
         /**
            \return the nodes at which the basis functions, gradient
