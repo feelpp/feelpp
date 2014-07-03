@@ -826,6 +826,199 @@ ExporterEnsightGold<MeshType, N>::writeGeoHeader(MPI_File fh) const
 }
 
 template<typename MeshType, int N>
+void
+ExporterEnsightGold<MeshType,N>::writeGeoMarkers(MPI_File fh, mesh_ptrtype mesh) const
+{
+    /* Function WriteGeoMarker(Timestep T, MPI_File f) */
+        /* P0 : Write "C Binary", part, #, desc, coords */
+        /* for each part Marker in T */
+            /* P0 : Write "part", Write # */
+            /* P* : Compute nn, build points id array, build points array */
+            /* P0 : Write nn */
+            /* P* : Write_shared id */
+            /* P* : Write_shared points */
+
+            /* for each face/element type */
+                /* P* : compute ne, build elements id array, build elements array */
+                /* P0 : Write element type */
+                /* P0 : Write ne */
+                /* P* : Write_shared id */
+                /* P* : Write_shared elements */
+                /* WriteGeoPart(P, f) */
+
+    // TODO write the faces
+    // Integrate them into the parts corresponding to the elements ?
+    int partindex = 1;
+    int nbmarkers = mesh->markerNames().size();
+
+    std::cout << "nMarkers " << nbmarkers << std::endl;
+
+    if(boption( _name="exporter.merge.markers" )) 
+    {
+        // TODO find a better place for this code to be executed 
+        // as we have allreduce, this can take serious execution time
+        /* determine for which markers, we have data to write */
+#if 0
+        /* Display info about markers */
+        std::ostringstream ossmn;
+        ossmn << mesh->worldComm().rank() << " markers ";
+        BOOST_FOREACH( auto marker, mesh->markerNames() )
+        {
+            ossmn << " " << marker.second[0];
+        }
+        std::cout << ossmn.str() << std::endl;
+#endif
+
+#if 0
+        M_markersToWrite.clear();
+        std::ostringstream osselts;
+        osselts << mesh->worldComm().rank();
+        BOOST_FOREACH( auto marker, mesh->markerNames() )
+        {
+            /* Check whether at least one process has elements to write */
+            int localNElts = std::distance(mesh->beginElementWithMarker(marker.second[0]), mesh->endElementWithMarker(marker.second[0]));
+            int globalNElts = 0;
+
+            osselts << " " << marker.second[0] << " (" << localNElts << ")";
+
+            mpi::all_reduce(mesh->worldComm(), localNElts, globalNElts, mpi::maximum<int>());
+
+            /* if we have at least one element for the current marker */
+            /* all the processes need to parse it to avoid deadlocks with gather in MeshPoints */
+            if(globalNElts)
+            {
+                M_markersToWrite.push_back(marker.second[0]);
+            }
+        }
+        std::cout << osselts.str() << std::endl;
+#endif
+
+#if 0
+        std::ostringstream ossmw;
+        ossmw << mesh->worldComm().rank() << " markersToWrite ";
+        for(int i = 0; i < M_markersToWrite.size(); i++)
+        {
+            ossmw << " " << M_markersToWrite.at(i);
+        }
+        std::cout << ossmw.str() << std::endl;
+#endif
+
+        /* Write file header */
+        this->writeGeoHeader(fh);
+
+        /* Write faces */
+        if ( option( _name="exporter.ensightgold.save-face" ).template as<bool>() )
+        {
+            for( std::pair<const std::string, std::vector<size_type> > & m : mesh->markerNames() )
+            {
+                this->writeGeoMarkedFaces(fh, mesh, partindex, m);
+            }
+        }
+
+        // TODO If the number of parts per process is not the sam
+        // some processes might not enter some instance of the function in the following loop
+        // and inside it there is a allgather that would cause the processes to be stuck in it
+        // check the number of parts
+        /*
+        int localNParts = std::distance(p_it, p_en);
+        int globalNParts = 0;
+
+        mpi::all_reduce(mesh->worldComm(), localNParts, globalNParts, mpi::maximum<int>());
+
+        std::cout << mesh->worldComm().rank() << " " << localNParts << " " << globalNParts << " " << mesh->markerNames().size() << std::endl;
+        */
+
+        // TODO Removed this loop, as it was causing MPI deadlocks when the numebr of parts was different
+        // from one process to the other 
+        /* Write elements */
+        /*
+        typename mesh_type::parts_const_iterator_type p_it = mesh->beginParts();
+        typename mesh_type::parts_const_iterator_type p_en = mesh->endParts();
+
+        for ( ; p_it != p_en; ++p_it )
+        {
+            this->writeGeoMarkedElements(fh, mesh, partindex, p_it);
+        }
+        */
+
+        /* Check whether successive part id are the same on different processes */
+        /* does not seem to be the case */
+#if 1
+        typename mesh_type::parts_const_iterator_type p_st = mesh->beginParts();
+        typename mesh_type::parts_const_iterator_type p_en = mesh->endParts();
+
+        std::ostringstream osspi;
+        osspi << mesh->worldComm().rank() << " partid";
+        for(auto p_it = p_st ; p_it != p_en; ++p_it )
+        {
+            osspi << " " << p_it->first << "(" << p_it->second << ")";
+        }
+        std::cout << osspi.str() << std::endl;
+#endif
+
+        /* iterate over the markes to get the different markers needed to be written */
+        /*
+        typename mesh_type::parts_const_iterator_type p_it = mesh->beginParts();
+        typename mesh_type::parts_const_iterator_type p_en = mesh->endParts();
+        */
+
+        std::vector<int> localMarkers;
+        for(auto p_it = p_st ; p_it != p_en; ++p_it )
+        {
+            localMarkers.push_back(p_it->first);
+        }
+
+        /* gather all the markers to be writtent on the different processes */
+        /* to order the writing step */
+        std::vector<std::vector<int> > globalMarkers;
+        mpi::all_gather(mesh->worldComm(), localMarkers, globalMarkers);
+
+        for(int i = 0; i < globalMarkers.size(); i++)
+        {
+            for(int j = 0; j < globalMarkers[i].size(); j++)
+            {
+                M_markersToWrite.insert(globalMarkers[i][j]);
+            }
+        }
+
+        std::ostringstream osss;
+        osss << mesh->worldComm().rank() << " parts/markers";
+        for(std::set<int>::iterator it = M_markersToWrite.begin(); it != M_markersToWrite.end(); it++)
+        {
+            osss << " " << *it << " (" << std::distance(mesh->beginElementWithMarker(*it), mesh->endElementWithMarker(*it)) << ")";
+        }
+        std::cout << osss.str() << std::endl;
+
+#if 1
+        /* Working with marker names instead */
+        //for(int i = 0; i < M_markersToWrite.size(); i++)
+        for(std::set<int>::iterator mit = M_markersToWrite.begin(); mit != M_markersToWrite.end(); mit++)
+        {
+            this->writeGeoMarkedElements(fh, mesh, partindex, *mit);
+        }
+
+#if 0
+        /* if we have no markers, we revert to the classical part implementation */
+        if(M_markersToWrite.size() == 0)
+        {
+            typename mesh_type::parts_const_iterator_type p_it = mesh->beginParts();
+            typename mesh_type::parts_const_iterator_type p_en = mesh->endParts();
+
+            for ( ; p_it != p_en; ++p_it )
+            {
+                this->writeGeoMarkedElements(fh, mesh, partindex, p_it->first);
+            }
+        }
+#endif
+#endif
+    }
+    else
+    {
+    }
+}
+
+
+template<typename MeshType, int N>
 void 
 ExporterEnsightGold<MeshType,N>::writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype mesh, int & partindex, std::pair<const std::string, std::vector<size_type> > & m) const
 {
@@ -1290,143 +1483,6 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
 
 template<typename MeshType, int N>
 void
-ExporterEnsightGold<MeshType,N>::writeGeoMarkers(MPI_File fh, mesh_ptrtype mesh) const
-{
-    /* Function WriteGeoMarker(Timestep T, MPI_File f) */
-        /* P0 : Write "C Binary", part, #, desc, coords */
-        /* for each part Marker in T */
-            /* P0 : Write "part", Write # */
-            /* P* : Compute nn, build points id array, build points array */
-            /* P0 : Write nn */
-            /* P* : Write_shared id */
-            /* P* : Write_shared points */
-
-            /* for each face/element type */
-                /* P* : compute ne, build elements id array, build elements array */
-                /* P0 : Write element type */
-                /* P0 : Write ne */
-                /* P* : Write_shared id */
-                /* P* : Write_shared elements */
-                /* WriteGeoPart(P, f) */
-
-    // TODO write the faces
-    // Integrate them into the parts corresponding to the elements ?
-    int partindex = 1;
-    int nbmarkers = mesh->markerNames().size();
-
-    std::cout << "nMarkers " << nbmarkers << std::endl;
-
-    if(boption( _name="exporter.merge.markers" )) 
-    {
-        // TODO find a better place for this code to be executed 
-        // as we have allreduce, this can take serious execution time
-        /* determine for which markers, we have data to write */
-#if 0
-        /* Display info about markers */
-        std::ostringstream ossmn;
-        ossmn << this->worldComm().rank();
-        BOOST_FOREACH( auto marker, mesh->markerNames() )
-        {
-            ossmn << " " << marker.second[0];
-        }
-        std::cout << ossmn.str() << std::endl;
-#endif
-
-        M_markersToWrite.clear();
-        //std::ostringstream osselts;
-        //osselts << this->worldComm().rank();
-        BOOST_FOREACH( auto marker, mesh->markerNames() )
-        {
-            /* Check whether at least one process has elements to write */
-            int localNElts = std::distance(mesh->beginElementWithMarker(marker.second[0]), mesh->endElementWithMarker(marker.second[0]));
-            int globalNElts = 0;
-
-            //osselts << " " << localNElts;
-
-            mpi::all_reduce(mesh->worldComm(), localNElts, globalNElts, mpi::maximum<int>());
-
-            /* if we have at least one element for the current marker */
-            /* all the processes need to parse it to avoid deadlocks with gather in MeshPoints */
-            if(globalNElts)
-            {
-                M_markersToWrite.push_back(marker.second[0]);
-            }
-        }
-        //std::cout << osselts.str() << std::endl;
-
-#if 0
-        std::ostringstream oss;
-        oss << this->worldComm().rank();
-        for(int i = 0; i < M_markersToWrite.size(); i++)
-        {
-            oss << " " << M_markersToWrite.at(i);
-        }
-        std::cout << oss.str() << std::endl;
-#endif
-
-        /* Write file header */
-        this->writeGeoHeader(fh);
-
-        /* Write faces */
-        if ( option( _name="exporter.ensightgold.save-face" ).template as<bool>() )
-        {
-            for( std::pair<const std::string, std::vector<size_type> > & m : mesh->markerNames() )
-            {
-                this->writeGeoMarkedFaces(fh, mesh, partindex, m);
-            }
-        }
-
-        // TODO If the number of parts per process is not the sam
-        // some processes might not enter some instance of the function in the following loop
-        // and inside it there is a allgather that would cause the processes to be stuck in it
-        // check the number of parts
-        /*
-        int localNParts = std::distance(p_it, p_en);
-        int globalNParts = 0;
-
-        mpi::all_reduce(mesh->worldComm(), localNParts, globalNParts, mpi::maximum<int>());
-
-        std::cout << mesh->worldComm().rank() << " " << localNParts << " " << globalNParts << " " << mesh->markerNames().size() << std::endl;
-        */
-
-        // TODO Removed this loop, as it was causing MPI deadlocks when the numebr of parts was different
-        // from one process to the other 
-        /* Write elements */
-        /*
-        typename mesh_type::parts_const_iterator_type p_it = mesh->beginParts();
-        typename mesh_type::parts_const_iterator_type p_en = mesh->endParts();
-
-        for ( ; p_it != p_en; ++p_it )
-        {
-            this->writeGeoMarkedElements(fh, mesh, partindex, p_it);
-        }
-        */
-
-        /* Check whether successive part id are the same on different processes */
-        /* does not seem to be the case */
-        /*
-        std::ostringstream oss;
-        oss << mesh->worldComm().rank() << "partid ";
-        for ( ; p_it != p_en; ++p_it )
-        {
-            oss << " " << p_it->first;
-        }
-        std::cout << oss.str() << std::endl;
-        */
-
-        /* Working with marker names instead */
-        for(int i = 0; i < M_markersToWrite.size(); i++)
-        {
-            this->writeGeoMarkedElements(fh, mesh, partindex, M_markersToWrite[i]);
-        }
-    }
-    else
-    {
-    }
-}
-
-template<typename MeshType, int N>
-void
 ExporterEnsightGold<MeshType,N>::writeVariableFiles() const
 {
     namespace lambda = boost::lambda;
@@ -1645,7 +1701,8 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
         */
 
         //for ( ; p_it != p_en; ++p_it )
-        for( int i = 0; i < M_markersToWrite.size(); i++)
+        //for( int i = 0; i < M_markersToWrite.size(); i++)
+        for( std::set<int>::iterator mit = M_markersToWrite.begin(); mit != M_markersToWrite.end(); mit++)
         {
             if( Environment::isMasterRank() ) 
             { size = sizeof(buffer); }
@@ -1684,7 +1741,8 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
             /* we get that from the local processor */
             /* We do not need the renumbered global index */
             //auto r = markedelements(__mesh,(boost::any)p_it->first,EntityProcessType::ALL);
-            auto r = markedelements(__mesh, M_markersToWrite[i], EntityProcessType::ALL);
+            //auto r = markedelements(__mesh, M_markersToWrite[i], EntityProcessType::ALL);
+            auto r = markedelements(__mesh, *mit, EntityProcessType::ALL);
             auto elt_it = r.template get<1>();
             auto elt_en = r.template get<2>();
 
@@ -1855,7 +1913,8 @@ ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtyp
         */
 
         //for ( ; p_it != p_en; ++p_it )
-        for( int i = 0 ; i < M_markersToWrite.size(); i++ )
+        //for( int i = 0 ; i < M_markersToWrite.size(); i++ )
+        for( std::set<int>::iterator mit = M_markersToWrite.begin() ; mit != M_markersToWrite.end(); mit++ )
         {
             if( Environment::isMasterRank() ) 
             { size = sizeof(buffer); }
@@ -1901,7 +1960,11 @@ ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtyp
             boost::tie( elt_it, elt_en ) = __step->mesh()->elementsWithMarker( p_it->first,
                                                                                __evar->second.worldComm().localRank() ); // important localRank!!!!
                                                                                */
+            /*
             boost::tie( elt_st, elt_en ) = __step->mesh()->elementsWithMarker( M_markersToWrite[i],
+                                                                               __evar->second.worldComm().localRank() ); // important localRank!!!!
+                                                                               */
+            boost::tie( elt_st, elt_en ) = __step->mesh()->elementsWithMarker( *mit,
                                                                                __evar->second.worldComm().localRank() ); // important localRank!!!!
 
             if ( !__evar->second.areGlobalValuesUpdated() )
