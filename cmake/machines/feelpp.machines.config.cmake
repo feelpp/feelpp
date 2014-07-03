@@ -49,6 +49,15 @@ if( FEELPP_NAME_LOGIN AND EXISTS /cineca )
   endif()
 endif()
 
+STRING(REGEX MATCH "curie.*" FEELPP_NAME_LOGIN ${FEELPP_MACHINE_NAME} )
+if( FEELPP_NAME_LOGIN AND EXISTS /ccc )
+  message(STATUS "use curie config")
+  if ( EXISTS ${FEELPP_SOURCE_DIR}/cmake/machines/feelpp.machines.curie.cmake )
+    message( STATUS "[Feel++] Configuration found for : ccc(curie)" )
+    include( feelpp.machines.curie )
+  endif()
+endif()
+
 
 if( FEELPP_ENABLE_HOMEBREW AND EXISTS /usr/local/bin/brew )
   if ( EXISTS ${FEELPP_SOURCE_DIR}/cmake/machines/feelpp.machines.homebrew.cmake )
