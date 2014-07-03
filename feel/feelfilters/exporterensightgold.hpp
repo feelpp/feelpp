@@ -236,7 +236,7 @@ private:
     std::string M_element_type;
     std::string M_face_type;
     mutable int time_index;
-    mutable std::vector<size_type> M_markersToWrite;
+    mutable std::set<int> M_markersToWrite;
 };
 
 
