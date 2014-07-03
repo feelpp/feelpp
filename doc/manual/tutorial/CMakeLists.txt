@@ -30,7 +30,7 @@ add_custom_target(
 )
 add_custom_target(tutorial)
 
-foreach(app myapp mymesh myintegrals myfunctionspace geotool loadmesh mylaplacian myadvection myexporter myexpression mymeshfromstring )
+foreach(app myapp mymesh myintegrals myfunctionspace geotool loadmesh mylaplacian myadvection myexporter myexpression mymeshfromstring mybackend )
 
   if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${app}.cfg )
     feelpp_add_application( doc_${app} SRCS ${app}.cpp LABELS doc CFG ${app}.cfg)

@@ -12,6 +12,9 @@ feelpp_add_test( functionallinearfree )
 feelpp_add_test( fspace_context )
 feelpp_add_test( geomap )
 
+feelpp_add_test( spacefunc )
+
+
 feelpp_add_test( hdiv CFG hdiv.cfg NO_MPI_TEST)
 feelpp_add_test( hdiv_oneelt NO_MPI_TEST )
 feelpp_add_test( hdiv3D CFG hdiv3D.cfg)
