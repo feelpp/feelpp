@@ -60,7 +60,7 @@ int main(int argc, char**argv )
     a = integrate( _range=elements( mesh ), _expr=mu*inner( deft, grad(v) ) + mybdf->polyDerivCoefficient(0)*trans(idt(u))*id(u) );
     a +=integrate( _range=elements( mesh ), _expr=-div( v )*idt( p ) - divt( u )*id( q ) );
     auto e = exporter( _mesh=mesh );
-
+    auto w = Vh->functionSpace<0>()->element( curlv(u), "w" );
     for ( mybdf->start();  mybdf->isFinished() == false; mybdf->next(U) )
     {
         auto bdf_poly = mybdf->polyDeriv();
@@ -79,9 +79,12 @@ int main(int argc, char**argv )
 
         at.solve(_rhs=ft,_solution=U);
 
-
+        w.on( _range=elements(mesh), _expr=curlv(u) );
         e->step(mybdf->time())->add( "u", u );
+        e->step(mybdf->time())->add( "w", w );
         e->step(mybdf->time())->add( "p", p );
+        auto mean_p = mean( _range=elements(mesh), _expr=idv(p) )( 0, 0 );
+        e->step(mybdf->time())->addScalar( "mean_p", mean_p );
         e->save();
 
 

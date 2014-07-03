@@ -147,7 +147,46 @@ IF ( MPI_FOUND )
   SET(FEELPP_LIBRARIES ${MPI_LIBRARIES} ${FEELPP_LIBRARIES})
   INCLUDE_DIRECTORIES(${MPI_INCLUDE_PATH})
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Mpi" )
+
+  OPTION(FEELPP_USE_MPIIO "Enable support for MPI-IO (default auto detect)" ON)
+  IF (FEELPP_USE_MPIIO)
+    #TRY_COMPILE(MPIIO_SUCCESS ${CMAKE_CURRENT_BINARY_DIR}/tryCompileMPIIO
+      #${CMAKE_SOURCE_DIR}/cmake/codes/try-mpiio.cpp
+      #LINK_LIBRARIES ${FEELPP_LIBRARIES} )
+      set(CMAKE_REQUIRED_LIBRARIES_save ${CMAKE_REQUIRED_LIBRARIES})
+      set(CMAKE_REQUIRED_LIBRARIES ${MPI_LIBRARIES})
+      set(CMAKE_REQUIRED_INCLUDES_save ${CMAKE_REQUIRED_INCLUDES})
+      set(CMAKE_REQUIRED_INCLUDES ${MPI_INCLUDE_PATH})
+      CHECK_CXX_SOURCE_COMPILES(
+          "          
+          #include <mpi.h>
+
+          int main(int argc, char** argv)
+          {
+          MPI_File fh;
+          MPI_Status status;
+          MPI_Info info;
+          }
+          "
+          MPIIO_DETECTED)
+      set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES_save})
+      set(CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES_save})
+
+    IF (MPIIO_DETECTED)
+      MESSAGE(STATUS "MPIIO detected and enabled.")
+    ELSE()
+        # Make the cmake process crash if we don't have MPI IO
+        # As it is required for exporting data
+        MESSAGE(FATAL_ERROR "MPIIO not detected and disabled.")
+      SET(FEELPP_USE_MPIIO FALSE)
+    ENDIF()
+  ENDIF()
 ENDIF()
+IF (FEELPP_USE_MPIIO)
+  add_definitions(-DFEELPP_USE_MPIIO=1)
+  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Mpi-IO" )
+ENDIF()
+
 
 
 
