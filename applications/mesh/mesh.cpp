@@ -36,6 +36,7 @@ int main( int argc, char** argv )
     // create a mesh with GMSH using Feel++ geometry tool
     auto mesh = loadMesh(_mesh=new  Mesh<Simplex<FEELPP_DIM>>);
 
+
     if ( Environment::isMasterRank() )
     {
         std::cout << " - mesh entities" << std::endl;
@@ -52,6 +53,28 @@ int main( int argc, char** argv )
         std::cout << "              measure : " << mesh->measure() << std::endl;
     }
 
+    for( auto marker: mesh->markerNames() )
+    {
+       auto name = marker.first;
+       auto data = marker.second;
+       if ( data[1] == mesh->dimension() )
+       {
+          size_type nelts = nelements( markedelements(mesh, name ), true );
+          if ( Environment::isMasterRank() )
+          {
+            std::cout << "Marker (elements) " << name << std::endl;
+            std::cout << " - number of elements " << nelts << std::endl;
+
+          }
+       }
+       else if ( data[1] == mesh->dimension()-1 )
+       {
+          size_type nelts = nelements( markedfaces(mesh, name ), true );
+          std::cout << "Marker (faces) " << name << std::endl;
+            std::cout << " - number of faces " << nelts << std::endl;
+       }
+
+    }
     // export results for post processing
     auto e = exporter( _mesh=mesh );
     e->addRegions();
