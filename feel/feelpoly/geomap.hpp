@@ -1798,7 +1798,7 @@ void updateJKBN( mpl::bool_<true>  )
 
     }
 
-    if ( vm::has_tangent<context>::value && ( M_face_id != invalid_uint16_type_value ) )
+    if( vm::has_tangent<context>::value  && ( M_face_id != invalid_uint16_type_value ) )
     {
         if ( NDim == 2 )
         {
@@ -1808,7 +1808,6 @@ void updateJKBN( mpl::bool_<true>  )
                               M_t_real,
                               true );
             double ratio = M_gm->referenceConvex().h( M_face_id )/M_h_face;
-
 
             M_t_norm = ublas::norm_2( M_t_real );
             M_ut_real = M_t_real/M_t_norm;

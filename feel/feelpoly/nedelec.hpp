@@ -972,11 +972,14 @@ public:
         auto g = expr.geom();
         auto const& K = g->K(0);
 
+        //std::cout << "[getEdgeTangent] K = " << K << std::endl;
+        //std::cout << "[getEdgeTangent] tangent ref = " << g->geometricMapping()->referenceConvex().tangent( edgeId ) << std::endl;
         ublas::axpy_prod( K,
                           g->geometricMapping()->referenceConvex().tangent( edgeId ),
                           t,
                           true );
         t *= g->element().hEdge( edgeId )/ublas::norm_2(t);
+        std::cout << "[getEdgeTangent] t = " << t << std::endl;
     }
 
     typedef Eigen::MatrixXd local_interpolant_type;
@@ -991,11 +994,16 @@ public:
     interpolate( ExprType& expr, local_interpolant_type& Ihloc ) const
         {
             Ihloc.setZero();
+            auto g = expr.geom();
             ublas::vector<value_type> t( nDim );
 
             for( int e = 0; e < convex_type::numEdges; ++e )
             {
-                getEdgeTangent(expr, e, t);
+                if( g->faceId() == invalid_uint16_type_value)
+                    getEdgeTangent(expr, e, t);
+                else
+                    getEdgeTangent(expr, g->faceId(), t);
+
                 for ( int l = 0; l < nDofPerEdge; ++l )
                 {
                     int q = e*nDofPerEdge+l;
@@ -1014,14 +1022,24 @@ public:
     faceInterpolate( ExprType& expr, local_interpolant_type& Ihloc ) const
         {
             ublas::vector<value_type> t( nDim );
+            auto g = expr.geom();
+
             for( int e = 0; e < face_type::numEdges; ++e )
             {
-                getEdgeTangent(expr, e, t);
+                if( g->faceId() == invalid_uint16_type_value)
+                    getEdgeTangent(expr, e, t);
+                else
+                    getEdgeTangent(expr, g->faceId(), t);
+
                 for ( int l = 0; l < nDofPerEdge; ++l )
                 {
                     int q = e*nDofPerEdge+l;
                     for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
-                        Ihloc(q) += expr.evalq( c1, 0, q )*t(c1);
+                        {
+                            //std::cout << "[faceintterpolate] Ihloc(" << q <<")+= " << expr.evalq( c1, 0, q )*t(c1) << std::endl;
+                            Ihloc(q) += expr.evalq( c1, 0, q )*t(c1);
+                        }
+                    std::cout << "[faceintterpolate] Ihloc(" << q << ")= " << Ihloc(q) << std::endl;
                 }
             }
 
