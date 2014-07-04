@@ -31,22 +31,29 @@
 
 int main(int argc, char**argv )
 {
+    using namespace Feel;
     po::options_description magnetooptions( "Magnetostatic options" );
     magnetooptions.add_options()
-    ( "bctype", po::value<bool>()->default_value( true ), "true if strong Dirichlet, false if weak Dirichlet treatment" )
+    ( "weakdirichlet", po::value<bool>()->default_value( false ), "false if strong Dirichlet, true if weak Dirichlet treatment" )
     ;
+
     /// [marker1]
-    using namespace Feel;
     Environment env( _argc=argc, _argv=argv,
-                    _desc=magnetooptions,
+                     _desc=magnetooptions,
                      _about=about(_name="magnetostatic",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
 
     auto mesh = loadMesh( _mesh=new Mesh<Simplex<FEELPP_DIM>> );
+    //auto mesh_name = "$datadir/gmsh/one-elt-meshes-2d/one-elt-real-rot1.msh"; //create the mesh and load it
+    //auto mesh = loadMesh( _mesh=new Mesh<Simplex<FEELPP_DIM>>,
+    //                      _filename=mesh_name);
 
     auto Xh = Pchv<1>( mesh );
+    std::cout << "nb dof lagrange = " << Xh->nDof() << std::endl;
     auto Nh = Ned1h<0>( mesh );
+    std::cout << "nb dof nedelec = " << Nh->nDof() << std::endl;
+    std::cout << "nb dof on boundary = " << nelements(boundaryfaces(mesh)) << std::endl;
     auto a = form2( _trial=Nh, _test=Nh );
     auto c = doption("parameters.c");
     auto f = expr<FEELPP_DIM,1>(soption("functions.f"), "f");
@@ -57,42 +64,47 @@ int main(int argc, char**argv )
     auto w = Xh->element(e);
     auto z = Xh->element();
     double penaldir=30;
+
 #if FEELPP_DIM == 2
     a = integrate(_range=elements(mesh), _expr=c*trans(idt(u))*id(v)+curlxt(u)*curlx(v));
-    if ( boption( "bctype") )
-      a += on(_range=boundaryfaces(mesh), _rhs=l, _element=u, _expr=e );
-    else
-      a += integrate(boundaryfaces(mesh), -curlxt(u)*(cross(N(),id(u)) )
-                   - curlx(u)*(cross(N(),idt(u)) )
-                   + penaldir*trans(cross(idt(u),N()))*cross(id(u),N())/hFace() );
-#else
+
+    if ( boption("weakdirichlet") ) //weak Dirichlet
+        a += integrate(boundaryfaces(mesh), -curlxt(u)*(cross(N(),id(u)) )
+                       - curlx(u)*(cross(N(),idt(u)) )
+                       + penaldir*trans(cross(idt(u),N()))*cross(id(u),N())/hFace() );
+#else //Dim = 3
     a = integrate(_range=elements(mesh), _expr=c*trans(idt(u))*id(v)+trans(curlt(u))*curl(v));
-    if ( boption( "bctype") )
-      a += on(_range=boundaryfaces(mesh), _rhs=l, _element=u,_expr=e );
-    else
-      a += integrate(boundaryfaces(mesh), -trans(curlt(u))*(cross(N(),id(u)) )
-                   - trans(curl(u))*(cross(N(),idt(u)) )
-                   + penaldir*trans(cross(idt(u),N()))*cross(id(u),N())/hFace() );
+
+    if ( boption("weakdirichlet") ) //weak Dirichlet
+        a += integrate(boundaryfaces(mesh), -trans(curlt(u))*(cross(N(),id(u)) )
+                       - trans(curl(u))*(cross(N(),idt(u)) )
+                       + penaldir*trans(cross(idt(u),N()))*cross(id(u),N())/hFace() );
 #endif
 
     auto l = form1( _test=Nh );
     l = integrate( _range=elements(mesh), _expr=trans(f)*id(v));
-    if ( boption("bctype") == false )
+    if ( boption("weakdirichlet") ) //weak Dirichlet
     {
 #if FEELPP_DIM == 2
       l += integrate(boundaryfaces(mesh), - curlx(u)*(cross(N(),e) )
                    + penaldir*trans(cross(e,N()))*cross(id(u),N())/hFace() );
-#else
+#else //Dim = 3
       l += integrate(boundaryfaces(mesh), - trans(curl(u))*(cross(N(),e) )
                    + penaldir*trans(cross(e,N()))*cross(id(u),N())/hFace() );
 #endif
     }
+    else //strong Dirichlet
+    {
+        a += on(_range=boundaryfaces(mesh), _rhs=l, _element=u,_expr=e );
+    }
+
     a.solve(_rhs=l,_solution=u);
     auto err = normL2( _range=elements(mesh), _expr=idv(u)-e );
     if ( Environment::isMasterRank() )
     {
         std::cout << "L2 error = " << err << "\n";
     }
+
     auto b = form2( _test=Xh, _trial=Xh );
     b = integrate(_range=elements(mesh), _expr=trans(idt(w))*id(w));
     auto ll = form1( _test=Xh );
