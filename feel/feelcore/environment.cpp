@@ -1,30 +1,30 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
-  This file is part of the Feel library
+   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2010-04-14
+   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+Date: 2010-04-14
 
-  Copyright (C) 2010,2011 Université Joseph Fourier (Grenoble I)
+Copyright (C) 2010,2011 Université Joseph Fourier (Grenoble I)
 
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 2.1 of the License, or (at your option) any later version.
 
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Lesser General Public License for more details.
 
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+You should have received a copy of the GNU Lesser General Public
+License along with this library; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ */
 /**
-   \file environment.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2010-04-14
+  \file environment.cpp
+  \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+  \date 2010-04-14
  */
 #include <cstdlib>
 #include <pwd.h>
@@ -64,710 +64,549 @@ extern "C"
 #define stringize2(x) #x
 #define stringize(x) stringize2(x)
 
+
+
 namespace GiNaC {
-extern void cleanup_ex( bool verbose );
+    extern void cleanup_ex( bool verbose );
 }
 namespace detail
 {
-class Env{
-public:
-    static std::string getUserName()
-        {
-            struct passwd *pw;
-            uid_t uid;
-            int c;
-
-            uid = geteuid ();
-            pw = getpwuid (uid);
-            if (pw)
+    class Env{
+        public:
+            static std::string getUserName()
             {
-                return std::string(pw->pw_name);
+                struct passwd *pw;
+                uid_t uid;
+                int c;
+
+                uid = geteuid ();
+                pw = getpwuid (uid);
+                if (pw)
+                {
+                    return std::string(pw->pw_name);
+                }
+                return std::string("");
             }
-            return std::string("");
-        }
-};
+    };
 }
 namespace google
 {
-namespace glog_internal_namespace_
-{
-bool IsGoogleLoggingInitialized();
-}
+    namespace glog_internal_namespace_
+    {
+        bool IsGoogleLoggingInitialized();
+    }
 }
 namespace Feel
 {
 
-namespace detail
-{
-FEELPP_NO_EXPORT
-std::pair<std::string, std::string>
-at_option_parser_2( std::string const&s )
-{
-    if ( '@' == s[0] )
-        return std::make_pair( std::string( "response-file" ), s.substr( 1 ) );
-
-    else
-        return std::pair<std::string, std::string>();
-}
-
-/**
-   \fn freeargv -- free an argument vector
-
-   void freeargv (char** vector)
-
-   Free an argument vector that was built using dupargv.  Simply scans
-   through the vector, freeing the memory for each argument until the
-   terminating NULL is found, and then frees the vector itself.
-
-*/
-
-void freeargv (char** vector)
-{
-    char **scan;
-
-    if (vector != NULL)
+    namespace detail
     {
-        for (scan = vector; *scan != NULL; scan++)
-        {
-            free (*scan);
-        }
-        free (vector);
-    }
-}
-
-
-/**
-   \fn dupargv -- duplicate an argument vector
-
-   char **dupargv (char** vector)
-
-   Duplicate an argument vector.  Simply scans through the
-   vector, duplicating each argument until the
-   terminating NULL is found.
-
-   \return a pointer to the argument vector if
-   successful. Returns NULL if there is insufficient memory to
-   complete building the argument vector.
-*/
-char **
-dupargv (char** argv)
-{
-  int argc;
-  char **copy;
-
-  if (argv == NULL)
-    return NULL;
-
-  /* the vector */
-  for (argc = 0; argv[argc] != NULL; argc++);
-  copy = (char **) malloc ((argc + 1) * sizeof (char *));
-  if (copy == NULL)
-      return NULL;
-
-  /* the strings */
-  for (argc = 0; argv[argc] != NULL; argc++)
-  {
-      int len = strlen (argv[argc]);
-      copy[argc] = (char*)malloc (sizeof (char *) * (len + 1));
-      if (copy[argc] == NULL)
-      {
-          freeargv (copy);
-          return NULL;
-      }
-      strcpy (copy[argc], argv[argc]);
-  }
-  copy[argc] = NULL;
-  return copy;
-}
-
-void
-Environment::generateOLFiles( int argc, char** argv, std::string const& appName)
-{
-    //Application path
-    int i;
-    bool isNum = false;
-    fs::path p(argv[0]);
-    std::ostringstream appPath;
-
-    /* get app name */
-    appPath.str("");
-    appPath << fs::absolute(p).string();
-
-    std::ostringstream optionPath;
-
-    std::ofstream ol;
-    ol.open(appPath.str() + ".ol", std::ofstream::out | std::ofstream::trunc); //.ol file
-    std::ofstream cfgol;
-    cfgol.open(appPath.str() + ".onelab.cfg.ol", std::ofstream::out | std::ofstream::trunc); //.cfg.ol file
-
-    /* map from feel option name to onelab option path */
-    std::map<std::string, std::string> mOptToOptPath;
-
-    std::map<std::string, std::vector<boost::shared_ptr<po::option_description> >> moptions{
-        {"Feelpp", Environment::optionsDescriptionLibrary().options() },
-        {S_about.appName(), Environment::optionsDescriptionApplication().options() },
-    };
-
-    for( auto o : moptions )
-    {
-        for(boost::shared_ptr<po::option_description> option : o.second )
-        {
-            //Informations about the option
-            std::string optName = option->format_name().erase(0,2);//Putting the option name in a variable for easier manipulations
-            std::string defVal = ""; //option->format_parameter(); //Putting the option default value in a variable for easier manipulations
-            std::string desc=option->description(); // Option description
-
-            // reset option path
-            optionPath.str("");
-            // reset type
-            isNum = false;
-
-            //std::cout << optName << ";" << defVal << ";" << desc << std::endl;
-
-            std::string ens,funcName;
-
-            std::vector<std::string> strings; //Vector of the split name
-            boost::split(strings,optName,boost::is_any_of(".")); //Spliting option name
-            ens = "";
-            if(strings.size() > 1)
+        FEELPP_NO_EXPORT
+            std::pair<std::string, std::string>
+            at_option_parser_2( std::string const&s )
             {
-                ens = strings[0] + "/"; //Getting the first split element for the option set in the .cfg.ol file
-                for(size_t i = 1; i < strings.size() - 1; i++) //Getting the option set
-                {
-                    ens += strings[i] + "/";
-                }
-            }
-            funcName = strings[strings.size() - 1]; //Raw option name
+                if ( '@' == s[0] )
+                    return std::make_pair( std::string( "response-file" ), s.substr( 1 ) );
 
-            /* skip some options */
-            /* they won't be displayed in Gmsh */
-            if(funcName == "config-file")
-            {
-                continue;
-            }
-
-            /* if an option has been set either through command line */
-            /* or through the initial config file */
-            /* we use its configuration */
-            //if(S_vm.count(optName) && !(S_vm[optName].defaulted()))
-            if(S_vm.count(optName))
-            {
-                std::ostringstream oss;
-                oss.str("");
-                //std::cout << defVal;
-
-                //std::cout << "Entry for " << optName << ": ";
-                // if the option if defaulted and soesn't starts with onelab,
-                // we put it in the end of Gmsh options
-                if(S_vm[optName].defaulted() && optName.find("onelab.") == std::string::npos )
-                {
-                    //std::cout << "defaulted ";
-                    optionPath << "GeneralParameters/" << o.first << "/" << ens;
-                }
-                // if we have a user defined option or a onelab option
-                // we want them to be on top of the list for easier access
                 else
-                {
-                    optionPath << "DefinedParameters/" << o.first << "/" << ens;
-                }
-
-                //optionPath << "Parameters/" << ens;
-
-                if(optName == "licence")
-                {
-                    const std::type_info & ti = S_vm[optName].value().type();
-                    std::cout << ti.name() << " " << std::endl;
-                }
-
-                if(S_vm[optName].empty())
-                {
-                    //std::cout << "empty ";
-                }
-                else
-                {
-                    const std::type_info & ti = S_vm[optName].value().type();
-                    //std::cout << ti.name() << " ";
-                    if(ti == typeid(bool))
-                    {
-                        oss.str("");
-                        oss << (S_vm[optName].as<bool>() ? "1" : "0");
-                        isNum = false;
-                    }
-                    else if(ti == typeid(int))
-                    {
-                        oss.str("");
-                        oss << S_vm[optName].as<int>();
-                        isNum = true;
-                    }
-                    else if(ti == typeid(size_type))
-                    {
-                        oss.str("");
-                        oss << S_vm[optName].as<size_type>();
-                        isNum = true;
-                    }
-                    else if(ti == typeid(float))
-                    {
-                        oss.str("");
-                        oss << S_vm[optName].as<float>();
-                        isNum = true;
-                    }
-                    else if(ti == typeid(double))
-                    {
-                        oss.str("");
-                        oss << S_vm[optName].as<double>();
-                        isNum = true;
-                    }
-                    else if(ti == typeid(std::string))
-                    {
-                        oss.str("");
-                        oss <<  S_vm[optName].as<std::string>();
-                        isNum = false;
-                    }
-                    else
-                    {
-                        std::cout << "Unknown type for parameter " << optName << "(" << typeid(void).name() << ")" << std::endl;
-                        isNum = false;
-                    }
-                }
-                //std::cout << oss.str() << std::endl;
-                defVal = oss.str();
-
-                /* Force Gmsh as a the default exporter */
-                /* as we are using OneLab */
-                if(ens == "exporter/" && funcName == "format")
-                {
-                    defVal = "gmsh";
-                }
-
-                if(optName == "onelab.enable")
-                {
-                    defVal = "2";
-                }
-
-                /*
-                  if(defVal.size() != 0) //Excluding options without a default value
-                  {
-                */
-                if(isNum)
-                {
-                    ol << funcName << ".number(" << defVal << ", " << optionPath.str() << ");" << " # "<< desc << std::endl;
-                    cfgol << optName << "=OL.get(" << optionPath.str() << funcName << ")" << std::endl;
-                }
-                else
-                {
-                    ol << funcName << ".string(" << defVal << ", " << optionPath.str() << ");" << " # "<< desc << std::endl;
-                    cfgol << optName << "=OL.get(" << optionPath.str() << funcName << ")" << std::endl;
-                }
-                //}
-
-                /* Hide some options from users */
-                if(optName == "onelab.enable"
-                || optName == "onelab.remote"
-                || optName == "onelab.sync.script")
-                {
-                    ol << funcName << ".setVisible(0);" << std::endl;
-                }
-
-                ol << funcName << ".setReadOnly(0);" << std::endl;
-
-                /* store some option paths for building ol script */
-                if(optName == "onelab.chroot"
-                || optName == "onelab.remote"
-                || optName == "onelab.np"
-                || optName == "onelab.sync.script")
-                {
-                    mOptToOptPath[optName] = optionPath.str() + funcName;
-                }
-
+                    return std::pair<std::string, std::string>();
             }
 
-        }
-    }
-
-    ol << "" << std::endl;
-
-    /* Mesher instructions */
-    ol << "Mesher.register(native," << stringize(GMSH_EXECUTABLE) << ");" << std::endl;
-    ol << "OL.if(OL.get(Parameters/gmsh/filename) == untitled.geo)" << std::endl;
-    ol << "OL.msg(No geo file specified. Using a default one);" << std::endl;
-    ol << "OL.endif" << std::endl;
-
-    if(S_vm.count("onelab.remote")
-    && S_vm["onelab.remote"].as<std::string>() != ""
-    && S_vm["onelab.remote"].as<std::string>() != "localhost")
-    {
-        ol << "FeelApp.remote(" << "OL.get(" + mOptToOptPath["onelab.remote"] << "), " << p.parent_path().string() << "/" << ");" << std::endl;
-
-        ol << "FeelApp.register(interfaced, ./OL.get(Arguments/FileName).onelab.py);" << std::endl;
-
-        ol << "FeelApp.in(OL.get(Arguments/FileName).onelab.cfg.ol);" << std::endl;
-
-        /* test for chroots */
-        ol << "OL.if(OL.get(" << mOptToOptPath["onelab.chroot"] << "))" << std::endl;
-        ol << "FeelApp.run( schroot -c OL.get(" << mOptToOptPath["onelab.chroot"] << ") -- ";
-        ol << stringize(MPIEXEC) << " " << stringize(MPIEXEC_NUMPROC_FLAG) << " OL.get(" << mOptToOptPath["onelab.np"] << ") " << appPath.str();
-        ol << " --config-file OL.get(Arguments/FileName).onelab.cfg --nochdir );" << std::endl;
-        ol << "OL.else" << std::endl;
-        ol << "FeelApp.run(" << stringize(MPIEXEC) << " " << stringize(MPIEXEC_NUMPROC_FLAG) << " OL.get(" << mOptToOptPath["onelab.np"] << ") " << appPath.str();
-        ol << " --config-file OL.get(Arguments/FileName).onelab.cfg --nochdir );" << std::endl;
-        ol << "OL.endif" << std::endl;
-
-        ol << "FeelApp.out(OL.get(Arguments/FileName).onelab.out);" << std::endl;
-
-        ol << "SyncData.register(interfaced, OL.get(" << mOptToOptPath["onelab.sync.script"] << "));" << std::endl;
-        ol << "SyncData.in(OL.get(Arguments/FileName).onelab.out);" << std::endl;
-        ol << "SyncData.run(OL.get(Arguments/FileName).onelab.out);" << std::endl;
-
-        ol << "OL.include(OL.get(Arguments/FileName).onelab.out);" << std::endl;
-    }
-    else
-    {
-        /* setup chroot */
-        ol << "FeelApp.register(interfaced, " << appPath.str() << ".onelab.py);" << std::endl;
-
-        std::string cpath = "";
-        if(S_vm.count("onelab.remote")
-        && (S_vm["onelab.remote"].as<std::string>() == ""
-        || S_vm["onelab.remote"].as<std::string>() == "localhost"))
-        {
-            cpath = fs::current_path().string();
-            size_t n = std::count(cpath.begin(), cpath.end(), '/');
-            cpath = "";
-            for(int i = 0; i < n; i++)
-            {
-                cpath = cpath + "../";
-            }
-        }
-
-        ol << "FeelApp.in(" << cpath << appPath.str() << ".onelab.cfg.ol);" << std::endl;
-
-        /* test for chroots */
-        ol << "OL.if(OL.get(" << mOptToOptPath["onelab.chroot"] << "))" << std::endl;
-        ol << "FeelApp.run( schroot -c OL.get(" << mOptToOptPath["onelab.chroot"] << ") -- ";
-        ol << stringize(MPIEXEC) << " " << stringize(MPIEXEC_NUMPROC_FLAG) << " OL.get(" << mOptToOptPath["onelab.np"] << ") " << appPath.str();
-        ol << " --config-file " << appPath.str() << ".onelab.cfg --nochdir );" << std::endl;
-        ol << "OL.else" << std::endl;
-        ol << "FeelApp.run(" << stringize(MPIEXEC) << " " << stringize(MPIEXEC_NUMPROC_FLAG) << " OL.get(" << mOptToOptPath["onelab.np"] << ") " << appPath.str();
-        ol << " --config-file " << appPath.str() << ".onelab.cfg --nochdir );" << std::endl;
-        ol << "OL.endif" << std::endl;
-
-        ol << "FeelApp.out( " << cpath << appPath.str() << ".onelab.out);" << std::endl;
-
-        ol << "OL.include(" << cpath << appPath.str() << ".onelab.out);" << std::endl;
-    }
-
-    ol.close();
-    cfgol.close();
-
-    /* generate a script for executing the application */
-    /* to avoid patching Gmsh */
-    std::string pyscript = appPath.str() + ".onelab.py";
-    std::ofstream shs;
-    shs.open(pyscript, std::ofstream::out | std::ofstream::trunc);
-
-    shs << "#!/usr/bin/python" << std::endl;
-    shs << "import sys, subprocess" << std::endl << std::endl;
-
-    shs << "def main():" << std::endl;
-
-    shs << "  cmd = sys.argv[1:]" << std::endl;
-    shs << "  print cmd" << std::endl;
-    shs << "  retval = subprocess.call(cmd)" << std::endl;
-    shs << "  return retval" << std::endl;
-
-    shs << "main()" << std::endl;
-
-    shs.close();
-
-    chmod(pyscript.c_str(), S_IRWXU|S_IRGRP|S_IROTH);
-
-}
-
-void
-Environment::processGenericOptions()
-{
-//     // leave this to subclasses or users
-// #if 0
-//     if ( S_vm.count( "help" ) )
-//         std::cout << S_desc << "\n";
-
-// #endif
-
-
-//     if ( S_vm.count( "response-file" ) )
-//     {
-//         using namespace std;
-//         // Load the file and tokenize it
-//         ifstream ifs( S_vm["response-file"].as<std::string>().c_str() );
-
-//         if ( !ifs )
-//         {
-//             cout << "Could not open the response file\n";
-//             return ;
-//         }
-
-//         // Read the whole file into a string
-//         stringstream ss;
-//         ss << ifs.rdbuf();
-//         // Split the file content
-//         boost::char_separator<char> sep( " \n\r" );
-//         boost::tokenizer<boost::char_separator<char> > tok( ss.str(), sep );
-//         vector<string> args;
-//         copy( tok.begin(), tok.end(), back_inserter( args ) );
-
-//         parseAndStoreOptions( po::command_line_parser( args ) );
-//     }
-
-    if ( worldComm().isMasterRank() )
-    {
-
-        if ( S_vm.count( "feelinfo" ) )
-            std::cout << std::setw( 15 ) << std::right << "Feel Version : " << Info::versionString() << "\n"
-                      << std::setw( 15 ) << std::right << "Major : " << Info::versionMajor() << "\n"
-                      << std::setw( 15 ) << std::right << "Minor : " << Info::versionMinor() << "\n"
-                      << std::setw( 15 ) << std::right << "Micro : " << Info::versionMicro() << "\n"
-                      << std::setw( 15 ) << std::right << "Revision : " << Info::revision() << "\n"
-                      << std::setw( 15 ) << std::right << "BuildId : " << Info::buildId() << "\n"
-                      << std::setw( 15 ) << std::right << "Feel Prefix : " << Info::prefix() << "\n"
-                      << std::setw( 15 ) << std::right << "Feel DataDir : " << Info::datadir() << "\n";
-
-        if ( S_vm.count( "verbose" ) ||
-             S_vm.count( "help" ) ||
-             S_vm.count( "help-lib" ) ||
-             S_vm.count( "version" ) ||
-             S_vm.count( "copyright" ) ||
-             S_vm.count( "license" ) ||
-             S_vm.count( "authors" ) )
-        {
-            std::cout << S_about.appName() << ": " << S_about.shortDescription() <<  "\n";
-        }
-
-        if ( S_vm.count( "version" ) )
-        {
-            std::cout << " version : " << S_about.version() << "\n";
-        }
-
-        if ( S_vm.count( "copyright" ) )
-        {
-            std::cout << " copyright : " << S_about.copyrightStatement() << "\n";
-        }
-
-        if ( S_vm.count( "license" ) )
-        {
-            std::cout << " license : " << S_about.license() << "\n";
-        }
-
-        if ( S_vm.count( "authors" ) )
-        {
-#if 0
-            std::cout << std::setw( 30 )
-                      << "Author Name"
-                      << " " << std::setw( 15 )
-                      << "Task"
-                      << " " << std::setw( 40 )
-                      << "Email Address"
-                      << "\n";
-            std::cout << std::setw( 85+3 ) << std::setfill( '-' ) << "\n" << std::setfill( ' ' );
-            std::for_each( S_about.authors().begin(),
-                           S_about.authors().end(),
-                           std::cout
-                           << std::setw( 30 )
-                           << lambda::bind( &AboutPerson::name,
-                                            lambda::_1 )
-                           << " " << std::setw( 15 )
-                           << lambda::bind( &AboutPerson::task,
-                                            lambda::_1 )
-                           << " " << std::setw( 40 )
-                           << lambda::bind( &AboutPerson::emailAddress,
-                                            lambda::_1 )
-                           << "\n" );
-#endif
-        }
-
-        if ( S_vm.count( "help" ) )
-        {
-            std::cout << optionsDescriptionApplication() << "\n";
-            std::cout << file_options(S_about.appName()) << "\n";
-            std::cout << generic_options() << "\n";
-        }
-        if ( S_vm.count( "help-lib" ) )
-        {
-            std::cout << optionsDescriptionLibrary() << "\n";
-            std::cout << file_options(S_about.appName()) << "\n";
-            std::cout << generic_options() << "\n";
-        }
-    }
-    if ( S_vm.count( "verbose" ) ||
-         S_vm.count( "help" ) ||
-         S_vm.count( "help-lib" ) ||
-         S_vm.count( "version" ) ||
-         S_vm.count( "copyright" ) ||
-         S_vm.count( "license" ) ||
-         S_vm.count( "authors" ) )
-    {
-        if ( Environment::initialized() )
-        {
-            worldComm().barrier();
-            MPI_Finalize();
-        }
-        exit(0);
-    }
-#if 0
-    std::cout << "count = " << S_vm.count( "debug" ) << "\n"
-              << "string = " << S_vm["debug"].as<std::string>() << "\n";
-#endif
-
-    VLOG(2) << "[processGenericOptions] done\n";
-}
-
-void
-Environment::parseAndStoreOptions( po::command_line_parser parser, bool extra_parser )
-{
-    VLOG(2) << " parsing options...\n";
-
-    boost::shared_ptr<po::parsed_options> parsed;
-
-    if ( extra_parser )
-    {
-        parsed = boost::shared_ptr<po::parsed_options>( new po::parsed_options( parser
-                                                                                .options( *S_desc )
-                                                                                .extra_parser( at_option_parser_2 )
-                                                                                .allow_unregistered()
-                                                                                .run() ) );
-    }
-
-    else
-    {
-        parsed = boost::shared_ptr<po::parsed_options>( new po::parsed_options( parser
-                                                                                .options( *S_desc )
-                                                                                .allow_unregistered()
-                                                                                .run() ) );
-    }
-
-    VLOG(2) << "[parseAndStoreOptions] parsing options done\n";
-
-    S_to_pass_further = po::collect_unrecognized( parsed->options, po::include_positional );
-    VLOG(2)<< " number of unrecognized options: " << ( S_to_pass_further.size() ) << "\n";
-
-    BOOST_FOREACH( std::string const& s, S_to_pass_further )
-    {
-        VLOG(2)<< " option: " << s << "\n";
-    }
-    std::vector<po::basic_option<char> >::iterator it = parsed->options.begin();
-    std::vector<po::basic_option<char> >::iterator en  = parsed->options.end();
-
-    for ( ; it != en ; ++it )
-        if ( it->unregistered )
-        {
-            VLOG(2)<< " remove from vector " << it->string_key << "\n";
-            parsed->options.erase( it );
-        }
-
-    po::store( *parsed, S_vm );
-}
-
-
-void
-Environment::doOptions( int argc, char** argv,
-                        po::options_description const& desc,
-                        po::options_description const& desc_lib,
-                        std::string const& appName )
-{
-    //std::locale::global(std::locale(""));
-    try
-    {
-        parseAndStoreOptions( po::command_line_parser( argc, argv ), true );
-        processGenericOptions();
-
-        VLOG(2) << "options parsed and stored in database";
         /**
-         * parse config file if given to command line
+          \fn freeargv -- free an argument vector
+
+          void freeargv (char** vector)
+
+          Free an argument vector that was built using dupargv.  Simply scans
+          through the vector, freeing the memory for each argument until the
+          terminating NULL is found, and then frees the vector itself.
+
          */
-        if ( S_vm.count( "config-file" ) )
+
+        void freeargv (char** vector)
         {
+            char **scan;
 
-            if ( fs::exists(  S_vm["config-file"].as<std::string>() ) )
+            if (vector != NULL)
             {
-                LOG(INFO) << "Reading " << S_vm["config-file"].as<std::string>() << "...";
-
-                std::ifstream ifs( S_vm["config-file"].as<std::string>().c_str() );
-                po::store( parse_config_file( ifs, *S_desc, true ), S_vm );
-                po::notify( S_vm );
+                for (scan = vector; *scan != NULL; scan++)
+                {
+                    free (*scan);
+                }
+                free (vector);
             }
         }
-        else
-        {
-            using namespace boost::assign;
-            std::vector<fs::path> prefixes = S_paths;
-#if 0
-            prefixes += boost::assign::list_of( fs::current_path() )
-                ( fs::path ( Environment::localConfigRepository() ) )
-                ( fs::path ( Environment::systemConfigRepository().get<0>() ) )
-                ( fs::path ( "/usr/share/feel/config" ) )
-                ( fs::path ( "/usr/local/share/feel/config" ) )
-                ( fs::path ( "/opt/local/share/feel/config" ) );
-#endif
-            char* env;
-            env = getenv("FEELPP_DIR");
-            if (env != NULL && env[0] != '\0')
+
+
+        /**
+          \fn dupargv -- duplicate an argument vector
+
+          char **dupargv (char** vector)
+
+          Duplicate an argument vector.  Simply scans through the
+          vector, duplicating each argument until the
+          terminating NULL is found.
+
+          \return a pointer to the argument vector if
+          successful. Returns NULL if there is insufficient memory to
+          complete building the argument vector.
+         */
+        char **
+            dupargv (char** argv)
             {
-                prefixes.push_back( fs::path( env ) );
+                int argc;
+                char **copy;
+
+                if (argv == NULL)
+                    return NULL;
+
+                /* the vector */
+                for (argc = 0; argv[argc] != NULL; argc++);
+                copy = (char **) malloc ((argc + 1) * sizeof (char *));
+                if (copy == NULL)
+                    return NULL;
+
+                /* the strings */
+                for (argc = 0; argv[argc] != NULL; argc++)
+                {
+                    int len = strlen (argv[argc]);
+                    copy[argc] = (char*)malloc (sizeof (char *) * (len + 1));
+                    if (copy[argc] == NULL)
+                    {
+                        freeargv (copy);
+                        return NULL;
+                    }
+                    strcpy (copy[argc], argv[argc]);
+                }
+                copy[argc] = NULL;
+                return copy;
             }
 
-            VLOG(2) << "try processing cfg files...\n";
-            std::string config_name;
-            bool found = false;
-            BOOST_FOREACH( auto prefix, prefixes )
+        void
+            Environment::generateOLFiles( int argc, char** argv, std::string const& appName)
             {
-                config_name = ( boost::format( "%1%/%2%.cfg" ) % prefix.string() % appName ).str();
-                VLOG(2) << " Looking for " << config_name << "\n";
+                //Application path
+                int i;
+                bool isNum = false;
+                fs::path p(argv[0]);
+                std::ostringstream appPath;
 
-                if ( fs::exists( config_name ) )
+                /* get app name */
+                appPath.str("");
+                appPath << fs::absolute(p).string();
+
+                std::ostringstream optionPath;
+
+                std::ofstream ol;
+                ol.open(appPath.str() + ".ol", std::ofstream::out | std::ofstream::trunc); //.ol file
+                std::ofstream cfgol;
+                cfgol.open(appPath.str() + ".onelab.cfg.ol", std::ofstream::out | std::ofstream::trunc); //.cfg.ol file
+
+                /* map from feel option name to onelab option path */
+                std::map<std::string, std::string> mOptToOptPath;
+
+                std::map<std::string, std::vector<boost::shared_ptr<po::option_description> >> moptions{
+                    {"Feelpp", Environment::optionsDescriptionLibrary().options() },
+                        {S_about.appName(), Environment::optionsDescriptionApplication().options() },
+                };
+
+                for( auto o : moptions )
                 {
-                    found = true;
-                    break;
+                    for(boost::shared_ptr<po::option_description> option : o.second )
+                    {
+                        //Informations about the option
+                        std::string optName = option->format_name().erase(0,2);//Putting the option name in a variable for easier manipulations
+                        std::string defVal = ""; //option->format_parameter(); //Putting the option default value in a variable for easier manipulations
+                        std::string desc=option->description(); // Option description
+
+                        // reset option path
+                        optionPath.str("");
+                        // reset type
+                        isNum = false;
+
+                        //std::cout << optName << ";" << defVal << ";" << desc << std::endl;
+
+                        std::string ens,funcName;
+
+                        std::vector<std::string> strings; //Vector of the split name
+                        boost::split(strings,optName,boost::is_any_of(".")); //Spliting option name
+                        ens = "";
+                        if(strings.size() > 1)
+                        {
+                            ens = strings[0] + "/"; //Getting the first split element for the option set in the .cfg.ol file
+                            for(size_t i = 1; i < strings.size() - 1; i++) //Getting the option set
+                            {
+                                ens += strings[i] + "/";
+                            }
+                        }
+                        funcName = strings[strings.size() - 1]; //Raw option name
+
+                        /* skip some options */
+                        /* they won't be displayed in Gmsh */
+                        if(funcName == "config-file")
+                        {
+                            continue;
+                        }
+
+                        /* if an option has been set either through command line */
+                        /* or through the initial config file */
+                        /* we use its configuration */
+                        //if(S_vm.count(optName) && !(S_vm[optName].defaulted()))
+                        if(S_vm.count(optName))
+                        {
+                            std::ostringstream oss;
+                            oss.str("");
+                            //std::cout << defVal;
+
+                            //std::cout << "Entry for " << optName << ": ";
+                            // if the option if defaulted and soesn't starts with onelab,
+                            // we put it in the end of Gmsh options
+                            if(S_vm[optName].defaulted() && optName.find("onelab.") == std::string::npos )
+                            {
+                                //std::cout << "defaulted ";
+                                optionPath << "GeneralParameters/" << o.first << "/" << ens;
+                            }
+                            // if we have a user defined option or a onelab option
+                            // we want them to be on top of the list for easier access
+                            else
+                            {
+                                optionPath << "DefinedParameters/" << o.first << "/" << ens;
+                            }
+
+                            //optionPath << "Parameters/" << ens;
+
+                            if(optName == "licence")
+                            {
+                                const std::type_info & ti = S_vm[optName].value().type();
+                                std::cout << ti.name() << " " << std::endl;
+                            }
+
+                            if(S_vm[optName].empty())
+                            {
+                                //std::cout << "empty ";
+                            }
+                            else
+                            {
+                                const std::type_info & ti = S_vm[optName].value().type();
+                                //std::cout << ti.name() << " ";
+                                if(ti == typeid(bool))
+                                {
+                                    oss.str("");
+                                    oss << (S_vm[optName].as<bool>() ? "1" : "0");
+                                    isNum = false;
+                                }
+                                else if(ti == typeid(int))
+                                {
+                                    oss.str("");
+                                    oss << S_vm[optName].as<int>();
+                                    isNum = true;
+                                }
+                                else if(ti == typeid(size_type))
+                                {
+                                    oss.str("");
+                                    oss << S_vm[optName].as<size_type>();
+                                    isNum = true;
+                                }
+                                else if(ti == typeid(float))
+                                {
+                                    oss.str("");
+                                    oss << S_vm[optName].as<float>();
+                                    isNum = true;
+                                }
+                                else if(ti == typeid(double))
+                                {
+                                    oss.str("");
+                                    oss << S_vm[optName].as<double>();
+                                    isNum = true;
+                                }
+                                else if(ti == typeid(std::string))
+                                {
+                                    oss.str("");
+                                    oss <<  S_vm[optName].as<std::string>();
+                                    isNum = false;
+                                }
+                                else
+                                {
+                                    std::cout << "Unknown type for parameter " << optName << "(" << typeid(void).name() << ")" << std::endl;
+                                    isNum = false;
+                                }
+                            }
+                            //std::cout << oss.str() << std::endl;
+                            defVal = oss.str();
+
+                            /* Force Gmsh as a the default exporter */
+                            /* as we are using OneLab */
+                            if(ens == "exporter/" && funcName == "format")
+                            {
+                                defVal = "gmsh";
+                            }
+
+                            if(optName == "onelab.enable")
+                            {
+                                defVal = "2";
+                            }
+
+                            /*
+                               if(defVal.size() != 0) //Excluding options without a default value
+                               {
+                             */
+                            if(isNum)
+                            {
+                                ol << funcName << ".number(" << defVal << ", " << optionPath.str() << ");" << " # "<< desc << std::endl;
+                                cfgol << optName << "=OL.get(" << optionPath.str() << funcName << ")" << std::endl;
+                            }
+                            else
+                            {
+                                ol << funcName << ".string(" << defVal << ", " << optionPath.str() << ");" << " # "<< desc << std::endl;
+                                cfgol << optName << "=OL.get(" << optionPath.str() << funcName << ")" << std::endl;
+                            }
+                            //}
+
+                            /* Hide some options from users */
+                            if(optName == "onelab.enable"
+                                    || optName == "onelab.remote"
+                                    || optName == "onelab.sync.script")
+                            {
+                                ol << funcName << ".setVisible(0);" << std::endl;
+                            }
+
+                            ol << funcName << ".setReadOnly(0);" << std::endl;
+
+                            /* store some option paths for building ol script */
+                            if(optName == "onelab.chroot"
+                                    || optName == "onelab.remote"
+                                    || optName == "onelab.np"
+                                    || optName == "onelab.sync.script")
+                            {
+                                mOptToOptPath[optName] = optionPath.str() + funcName;
+                            }
+
+                        }
+
+                    }
+                }
+
+                ol << "" << std::endl;
+
+                /* Mesher instructions */
+                ol << "Mesher.register(native," << stringize(GMSH_EXECUTABLE) << ");" << std::endl;
+                ol << "OL.if(OL.get(Parameters/gmsh/filename) == untitled.geo)" << std::endl;
+                ol << "OL.msg(No geo file specified. Using a default one);" << std::endl;
+                ol << "OL.endif" << std::endl;
+
+                if(S_vm.count("onelab.remote")
+                        && S_vm["onelab.remote"].as<std::string>() != ""
+                        && S_vm["onelab.remote"].as<std::string>() != "localhost")
+                {
+                    ol << "FeelApp.remote(" << "OL.get(" + mOptToOptPath["onelab.remote"] << "), " << p.parent_path().string() << "/" << ");" << std::endl;
+
+                    ol << "FeelApp.register(interfaced, ./OL.get(Arguments/FileName).onelab.py);" << std::endl;
+
+                    ol << "FeelApp.in(OL.get(Arguments/FileName).onelab.cfg.ol);" << std::endl;
+
+                    /* test for chroots */
+                    ol << "OL.if(OL.get(" << mOptToOptPath["onelab.chroot"] << "))" << std::endl;
+                    ol << "FeelApp.run( schroot -c OL.get(" << mOptToOptPath["onelab.chroot"] << ") -- ";
+                    ol << stringize(MPIEXEC) << " " << stringize(MPIEXEC_NUMPROC_FLAG) << " OL.get(" << mOptToOptPath["onelab.np"] << ") " << appPath.str();
+                    ol << " --config-file OL.get(Arguments/FileName).onelab.cfg --nochdir );" << std::endl;
+                    ol << "OL.else" << std::endl;
+                    ol << "FeelApp.run(" << stringize(MPIEXEC) << " " << stringize(MPIEXEC_NUMPROC_FLAG) << " OL.get(" << mOptToOptPath["onelab.np"] << ") " << appPath.str();
+                    ol << " --config-file OL.get(Arguments/FileName).onelab.cfg --nochdir );" << std::endl;
+                    ol << "OL.endif" << std::endl;
+
+                    ol << "FeelApp.out(OL.get(Arguments/FileName).onelab.out);" << std::endl;
+
+                    ol << "SyncData.register(interfaced, OL.get(" << mOptToOptPath["onelab.sync.script"] << "));" << std::endl;
+                    ol << "SyncData.in(OL.get(Arguments/FileName).onelab.out);" << std::endl;
+                    ol << "SyncData.run(OL.get(Arguments/FileName).onelab.out);" << std::endl;
+
+                    ol << "OL.include(OL.get(Arguments/FileName).onelab.out);" << std::endl;
                 }
                 else
                 {
-                    // try with a prefix feel_
-                    config_name = ( boost::format( "%1%/feelpp_%2%.cfg" ) % prefix.string() % appName ).str();
-                    VLOG(2) << " Looking for " << config_name << "\n";
-                    if ( fs::exists( config_name ) )
+                    /* setup chroot */
+                    ol << "FeelApp.register(interfaced, " << appPath.str() << ".onelab.py);" << std::endl;
+
+                    std::string cpath = "";
+                    if(S_vm.count("onelab.remote")
+                            && (S_vm["onelab.remote"].as<std::string>() == ""
+                                || S_vm["onelab.remote"].as<std::string>() == "localhost"))
                     {
-                        found = true;
-                        break;
+                        cpath = fs::current_path().string();
+                        size_t n = std::count(cpath.begin(), cpath.end(), '/');
+                        cpath = "";
+                        for(int i = 0; i < n; i++)
+                        {
+                            cpath = cpath + "../";
+                        }
+                    }
+
+                    ol << "FeelApp.in(" << cpath << appPath.str() << ".onelab.cfg.ol);" << std::endl;
+
+                    /* test for chroots */
+                    ol << "OL.if(OL.get(" << mOptToOptPath["onelab.chroot"] << "))" << std::endl;
+                    ol << "FeelApp.run( schroot -c OL.get(" << mOptToOptPath["onelab.chroot"] << ") -- ";
+                    ol << stringize(MPIEXEC) << " " << stringize(MPIEXEC_NUMPROC_FLAG) << " OL.get(" << mOptToOptPath["onelab.np"] << ") " << appPath.str();
+                    ol << " --config-file " << appPath.str() << ".onelab.cfg --nochdir );" << std::endl;
+                    ol << "OL.else" << std::endl;
+                    ol << "FeelApp.run(" << stringize(MPIEXEC) << " " << stringize(MPIEXEC_NUMPROC_FLAG) << " OL.get(" << mOptToOptPath["onelab.np"] << ") " << appPath.str();
+                    ol << " --config-file " << appPath.str() << ".onelab.cfg --nochdir );" << std::endl;
+                    ol << "OL.endif" << std::endl;
+
+                    ol << "FeelApp.out( " << cpath << appPath.str() << ".onelab.out);" << std::endl;
+
+                    ol << "OL.include(" << cpath << appPath.str() << ".onelab.out);" << std::endl;
+                }
+
+                ol.close();
+                cfgol.close();
+
+                /* generate a script for executing the application */
+                /* to avoid patching Gmsh */
+                std::string pyscript = appPath.str() + ".onelab.py";
+                std::ofstream shs;
+                shs.open(pyscript, std::ofstream::out | std::ofstream::trunc);
+
+                shs << "#!/usr/bin/python" << std::endl;
+                shs << "import sys, subprocess" << std::endl << std::endl;
+
+                shs << "def main():" << std::endl;
+
+                shs << "  cmd = sys.argv[1:]" << std::endl;
+                shs << "  print cmd" << std::endl;
+                shs << "  retval = subprocess.call(cmd)" << std::endl;
+                shs << "  return retval" << std::endl;
+
+                shs << "main()" << std::endl;
+
+                shs.close();
+
+                chmod(pyscript.c_str(), S_IRWXU|S_IRGRP|S_IROTH);
+
+            }
+
+        void
+            Environment::processGenericOptions()
+            {
+                //     // leave this to subclasses or users
+                // #if 0
+                //     if ( S_vm.count( "help" ) )
+                //         std::cout << S_desc << "\n";
+
+                // #endif
+
+
+                //     if ( S_vm.count( "response-file" ) )
+                //     {
+                //         using namespace std;
+                //         // Load the file and tokenize it
+                //         ifstream ifs( S_vm["response-file"].as<std::string>().c_str() );
+
+                //         if ( !ifs )
+                //         {
+                //             cout << "Could not open the response file\n";
+                //             return ;
+                //         }
+
+                //         // Read the whole file into a string
+                //         stringstream ss;
+                //         ss << ifs.rdbuf();
+                //         // Split the file content
+                //         boost::char_separator<char> sep( " \n\r" );
+                //         boost::tokenizer<boost::char_separator<char> > tok( ss.str(), sep );
+                //         vector<string> args;
+                //         copy( tok.begin(), tok.end(), back_inserter( args ) );
+
+                //         parseAndStoreOptions( po::command_line_parser( args ) );
+                //     }
+
+                if ( worldComm().isMasterRank() )
+                {
+
+                    if ( S_vm.count( "feelinfo" ) )
+                        std::cout << std::setw( 15 ) << std::right << "Feel Version : " << Info::versionString() << "\n"
+                            << std::setw( 15 ) << std::right << "Major : " << Info::versionMajor() << "\n"
+                            << std::setw( 15 ) << std::right << "Minor : " << Info::versionMinor() << "\n"
+                            << std::setw( 15 ) << std::right << "Micro : " << Info::versionMicro() << "\n"
+                            << std::setw( 15 ) << std::right << "Revision : " << Info::revision() << "\n"
+                            << std::setw( 15 ) << std::right << "BuildId : " << Info::buildId() << "\n"
+                            << std::setw( 15 ) << std::right << "Feel Prefix : " << Info::prefix() << "\n"
+                            << std::setw( 15 ) << std::right << "Feel DataDir : " << Info::datadir() << "\n";
+
+                    if ( S_vm.count( "verbose" ) ||
+                            S_vm.count( "help" ) ||
+                            S_vm.count( "help-lib" ) ||
+                            S_vm.count( "version" ) ||
+                            S_vm.count( "copyright" ) ||
+                            S_vm.count( "license" ) ||
+                            S_vm.count( "authors" ) )
+                    {
+                        std::cout << S_about.appName() << ": " << S_about.shortDescription() <<  "\n";
+                    }
+
+                    if ( S_vm.count( "version" ) )
+                    {
+                        std::cout << " version : " << S_about.version() << "\n";
+                    }
+
+                    if ( S_vm.count( "copyright" ) )
+                    {
+                        std::cout << " copyright : " << S_about.copyrightStatement() << "\n";
+                    }
+
+                    if ( S_vm.count( "license" ) )
+                    {
+                        std::cout << " license : " << S_about.license() << "\n";
+                    }
+
+                    if ( S_vm.count( "authors" ) )
+                    {
+#if 0
+                        std::cout << std::setw( 30 )
+                            << "Author Name"
+                            << " " << std::setw( 15 )
+                            << "Task"
+                            << " " << std::setw( 40 )
+                            << "Email Address"
+                            << "\n";
+                        std::cout << std::setw( 85+3 ) << std::setfill( '-' ) << "\n" << std::setfill( ' ' );
+                        std::for_each( S_about.authors().begin(),
+                                S_about.authors().end(),
+                                std::cout
+                                << std::setw( 30 )
+                                << lambda::bind( &AboutPerson::name,
+                                    lambda::_1 )
+                                << " " << std::setw( 15 )
+                                << lambda::bind( &AboutPerson::task,
+                                    lambda::_1 )
+                                << " " << std::setw( 40 )
+                                << lambda::bind( &AboutPerson::emailAddress,
+                                    lambda::_1 )
+                                << "\n" );
+#endif
+                    }
+
+                    if ( S_vm.count( "help" ) )
+                    {
+                        std::cout << optionsDescriptionApplication() << "\n";
+                        std::cout << file_options(S_about.appName()) << "\n";
+                        std::cout << generic_options() << "\n";
+                    }
+                    if ( S_vm.count( "help-lib" ) )
+                    {
+                        std::cout << optionsDescriptionLibrary() << "\n";
+                        std::cout << file_options(S_about.appName()) << "\n";
+                        std::cout << generic_options() << "\n";
                     }
                 }
-            }
-            if ( found )
-            {
-                LOG(INFO) << "Reading  " << config_name << "...\n";
-                std::ifstream ifs( config_name.c_str() );
-                store( parse_config_file( ifs, *S_desc, true ), S_vm );
-                LOG(INFO) << "Reading  " << config_name << " done.\n";
-                //po::store(po::parse_command_line(argc, argv, desc), S_vm);
-                po::notify( S_vm );
-            }
-        }
-
-
-        /* handle the generation of onelab files after having processed */
-        /* the regular config file, so we have parsed user defined parameters */
-        /* or restored a previous configuration */
-
-        /* We store the application path for further use */
-        fs::path p(argv[0]);
-        Environment::olAppPath = fs::absolute(p).string();
-
-        if ( worldComm().isMasterRank() )
-        {
-            if ( S_vm.count("onelab.enable") )
-            {
-
-                if ( S_vm["onelab.enable"].as<int>() == 1 )
+                if ( S_vm.count( "verbose" ) ||
+                        S_vm.count( "help" ) ||
+                        S_vm.count( "help-lib" ) ||
+                        S_vm.count( "version" ) ||
+                        S_vm.count( "copyright" ) ||
+                        S_vm.count( "license" ) ||
+                        S_vm.count( "authors" ) )
                 {
-                    Environment::generateOLFiles( argc, argv, appName );
-
                     if ( Environment::initialized() )
                     {
                         worldComm().barrier();
@@ -775,182 +614,403 @@ Environment::doOptions( int argc, char** argv,
                     }
                     exit(0);
                 }
-            }
-        }
-    }
-    // catches program_options exceptions
-    catch ( boost::program_options::multiple_occurrences const& e )
-    {
-        LOG(WARNING) << "Command line or config file option parsing error: " << e.what() << "\n"
-                     << "  o faulty option: " << e.get_option_name() << "\n"
-                     << "Warning: the .cfg file or some options may not have been read properly\n";
-    }
-
-    catch ( boost::program_options::ambiguous_option const& e )
-    {
-        LOG(WARNING) << "Command line or config file option parsing error: " << e.what() << "\n"
-                     << "  o faulty option: " << e.get_option_name() << "\n"
-                     << "  o possible alternatives: " ;
-        std::for_each( e.alternatives().begin(), e.alternatives().end(), []( std::string const& s )
-                       {
-                           LOG(WARNING) << s << " ";
-                       } );
-        LOG(WARNING) << "\n"
-                     << "Warning: the .cfg file or some options may not have been read properly\n";
-    }
-
-    // catches program_options exceptions
-    catch ( std::exception& e )
-    {
-        LOG(WARNING) << "Application option parsing: unknown option:" << e.what() << " (the .cfg file or some options may not have been read properly)\n";
-    }
-
-    catch ( ... )
-    {
-        LOG(WARNING) << "Application option parsing: unknown exception triggered  (the .cfg file or some options may not have been read properly)\n";
-    }
-}
-
-Environment::Environment()
-    :
-    M_env(false)
-{
-    // Initialize Google's logging library.
-    if ( !google::glog_internal_namespace_::IsGoogleLoggingInitialized() )
-        google::InitGoogleLogging("feel++");
-    google::InstallFailureSignalHandler();
-#if defined( FEELPP_HAS_TBB )
-    int n = tbb::task_scheduler_init::default_num_threads();
-    VLOG(2) << "[Feel++] TBB running with " << n << " threads\n";
-#else
-    int n = 1 ;
+#if 0
+                std::cout << "count = " << S_vm.count( "debug" ) << "\n"
+                    << "string = " << S_vm["debug"].as<std::string>() << "\n";
 #endif
 
-    //tbb::task_scheduler_init init(1);
+                VLOG(2) << "[processGenericOptions] done\n";
+            }
 
-    S_worldcomm = worldcomm_type::New();
-    CHECK( S_worldcomm ) << "Environment : creating worldcomm failed\n";
-    S_worldcommSeq.reset( new WorldComm(S_worldcomm->subWorldCommSeq()) );
+        void
+            Environment::parseAndStoreOptions( po::command_line_parser parser, bool extra_parser )
+            {
+                VLOG(2) << " parsing options...\n";
+
+                boost::shared_ptr<po::parsed_options> parsed;
+
+                if ( extra_parser )
+                {
+                    parsed = boost::shared_ptr<po::parsed_options>( new po::parsed_options( parser
+                                .options( *S_desc )
+                                .extra_parser( at_option_parser_2 )
+                                .allow_unregistered()
+                                .run() ) );
+                }
+
+                else
+                {
+                    parsed = boost::shared_ptr<po::parsed_options>( new po::parsed_options( parser
+                                .options( *S_desc )
+                                .allow_unregistered()
+                                .run() ) );
+                }
+
+                VLOG(2) << "[parseAndStoreOptions] parsing options done\n";
+
+                S_to_pass_further = po::collect_unrecognized( parsed->options, po::include_positional );
+                VLOG(2)<< " number of unrecognized options: " << ( S_to_pass_further.size() ) << "\n";
+
+                BOOST_FOREACH( std::string const& s, S_to_pass_further )
+                {
+                    VLOG(2)<< " option: " << s << "\n";
+                }
+                std::vector<po::basic_option<char> >::iterator it = parsed->options.begin();
+                std::vector<po::basic_option<char> >::iterator en  = parsed->options.end();
+
+                for ( ; it != en ; ++it )
+                    if ( it->unregistered )
+                    {
+                        VLOG(2)<< " remove from vector " << it->string_key << "\n";
+                        parsed->options.erase( it );
+                    }
+
+                po::store( *parsed, S_vm );
+            }
+
+
+        void
+            Environment::doOptions( int argc, char** argv,
+                    po::options_description const& desc,
+                    po::options_description const& desc_lib,
+                    std::string const& appName )
+            {
+                //std::locale::global(std::locale(""));
+                try
+                {
+                    parseAndStoreOptions( po::command_line_parser( argc, argv ), true );
+                    processGenericOptions();
+
+                    VLOG(2) << "options parsed and stored in database";
+                    /**
+                     * parse config file if given to command line
+                     */
+                    if ( S_vm.count( "config-file" ) )
+                    {
+
+                        if ( fs::exists(  S_vm["config-file"].as<std::string>() ) )
+                        {
+                            LOG(INFO) << "Reading " << S_vm["config-file"].as<std::string>() << "...";
+
+                            std::ifstream ifs( S_vm["config-file"].as<std::string>().c_str() );
+                            po::store( parse_config_file( ifs, *S_desc, true ), S_vm );
+                            po::notify( S_vm );
+                        }
+                    }
+                    else
+                    {
+                        using namespace boost::assign;
+                        std::vector<fs::path> prefixes = S_paths;
+#if 0
+                        prefixes += boost::assign::list_of( fs::current_path() )
+                            ( fs::path ( Environment::localConfigRepository() ) )
+                            ( fs::path ( Environment::systemConfigRepository().get<0>() ) )
+                            ( fs::path ( "/usr/share/feel/config" ) )
+                            ( fs::path ( "/usr/local/share/feel/config" ) )
+                            ( fs::path ( "/opt/local/share/feel/config" ) );
+#endif
+                        char* env;
+                        env = getenv("FEELPP_DIR");
+                        if (env != NULL && env[0] != '\0')
+                        {
+                            prefixes.push_back( fs::path( env ) );
+                        }
+
+                        VLOG(2) << "try processing cfg files...\n";
+                        std::string config_name;
+                        bool found = false;
+                        BOOST_FOREACH( auto prefix, prefixes )
+                        {
+                            config_name = ( boost::format( "%1%/%2%.cfg" ) % prefix.string() % appName ).str();
+                            VLOG(2) << " Looking for " << config_name << "\n";
+
+                            if ( fs::exists( config_name ) )
+                            {
+                                found = true;
+                                break;
+                            }
+                            else
+                            {
+                                // try with a prefix feel_
+                                config_name = ( boost::format( "%1%/feelpp_%2%.cfg" ) % prefix.string() % appName ).str();
+                                VLOG(2) << " Looking for " << config_name << "\n";
+                                if ( fs::exists( config_name ) )
+                                {
+                                    found = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if ( found )
+                        {
+                            LOG(INFO) << "Reading  " << config_name << "...\n";
+                            std::ifstream ifs( config_name.c_str() );
+                            store( parse_config_file( ifs, *S_desc, true ), S_vm );
+                            LOG(INFO) << "Reading  " << config_name << " done.\n";
+                            //po::store(po::parse_command_line(argc, argv, desc), S_vm);
+                            po::notify( S_vm );
+                        }
+                    }
+
+
+                    /* handle the generation of onelab files after having processed */
+                    /* the regular config file, so we have parsed user defined parameters */
+                    /* or restored a previous configuration */
+
+                    /* We store the application path for further use */
+                    fs::path p(argv[0]);
+                    Environment::olAppPath = fs::absolute(p).string();
+
+                    if ( worldComm().isMasterRank() )
+                    {
+                        if ( S_vm.count("onelab.enable") )
+                        {
+
+                            if ( S_vm["onelab.enable"].as<int>() == 1 )
+                            {
+                                Environment::generateOLFiles( argc, argv, appName );
+
+                                if ( Environment::initialized() )
+                                {
+                                    worldComm().barrier();
+                                    MPI_Finalize();
+                                }
+                                exit(0);
+                            }
+                        }
+                    }
+                }
+                // catches program_options exceptions
+                catch ( boost::program_options::multiple_occurrences const& e )
+                {
+                    LOG(WARNING) << "Command line or config file option parsing error: " << e.what() << "\n"
+                        << "  o faulty option: " << e.get_option_name() << "\n"
+                        << "Warning: the .cfg file or some options may not have been read properly\n";
+                }
+
+                catch ( boost::program_options::ambiguous_option const& e )
+                {
+                    LOG(WARNING) << "Command line or config file option parsing error: " << e.what() << "\n"
+                        << "  o faulty option: " << e.get_option_name() << "\n"
+                        << "  o possible alternatives: " ;
+                    std::for_each( e.alternatives().begin(), e.alternatives().end(), []( std::string const& s )
+                            {
+                            LOG(WARNING) << s << " ";
+                            } );
+                    LOG(WARNING) << "\n"
+                        << "Warning: the .cfg file or some options may not have been read properly\n";
+                }
+
+                // catches program_options exceptions
+                catch ( std::exception& e )
+                {
+                    LOG(WARNING) << "Application option parsing: unknown option:" << e.what() << " (the .cfg file or some options may not have been read properly)\n";
+                }
+
+                catch ( ... )
+                {
+                    LOG(WARNING) << "Application option parsing: unknown exception triggered  (the .cfg file or some options may not have been read properly)\n";
+                }
+            }
+
+        Environment::Environment()
+            :
+                M_env(false)
+        {
+            // Initialize Google's logging library.
+            if ( !google::glog_internal_namespace_::IsGoogleLoggingInitialized() )
+                google::InitGoogleLogging("feel++");
+            google::InstallFailureSignalHandler();
+#if defined( FEELPP_HAS_TBB )
+            int n = tbb::task_scheduler_init::default_num_threads();
+            VLOG(2) << "[Feel++] TBB running with " << n << " threads\n";
+#else
+            int n = 1 ;
+#endif
+
+            //tbb::task_scheduler_init init(1);
+
+            S_worldcomm = worldcomm_type::New();
+            CHECK( S_worldcomm ) << "Environment : creating worldcomm failed\n";
+            S_worldcommSeq.reset( new WorldComm(S_worldcomm->subWorldCommSeq()) );
 
 #if defined ( FEELPP_HAS_PETSC_H )
-    PetscTruth is_petsc_initialized;
-    PetscInitialized( &is_petsc_initialized );
+            PetscTruth is_petsc_initialized;
+            PetscInitialized( &is_petsc_initialized );
 
-    if ( !is_petsc_initialized )
-    {
-        i_initialized = true;
-        int ierr = PetscInitializeNoArguments();
+            if ( !is_petsc_initialized )
+            {
+                i_initialized = true;
+                int ierr = PetscInitializeNoArguments();
 
-        boost::ignore_unused_variable_warning( ierr );
-        CHKERRABORT( *S_worldcomm,ierr );
-    }
+                boost::ignore_unused_variable_warning( ierr );
+                CHKERRABORT( *S_worldcomm,ierr );
+            }
 
-    // make sure that petsc do not catch signals and hence do not print long
-    //and often unuseful messages
-    PetscPopSignalHandler();
+            // make sure that petsc do not catch signals and hence do not print long
+            //and often unuseful messages
+            PetscPopSignalHandler();
 #endif // FEELPP_HAS_PETSC_H
 
 
-}
-
-fs::path scratchdir()
-{
-    const char* env;
-    // if scratsch dir not defined, define it
-    env = getenv("FEELPP_SCRATCHDIR");
-    if (env == NULL || env[0] == '\0')
-    {
-        env = getenv("SCRATCHDIR");
-        if (env != NULL && env[0] != '\0')
-        {
-            std::string value = (boost::format("%1%/%2%/feelpp/") % env % ::detail::Env::getUserName()).str();
-            setenv("FEELPP_SCRATCHDIR", (boost::format("%1%/%2%/feelpp/") % env % ::detail::Env::getUserName() ).str().c_str(),0);
         }
-        else
+
+        fs::path scratchdir()
         {
-            env = getenv("SCRATCH");
+            const char* env;
+            // if scratsch dir not defined, define it
+            env = getenv("FEELPP_SCRATCHDIR");
+            if (env == NULL || env[0] == '\0')
+            {
+                env = getenv("SCRATCHDIR");
+                if (env != NULL && env[0] != '\0')
+                {
+                    std::string value = (boost::format("%1%/%2%/feelpp/") % env % ::detail::Env::getUserName()).str();
+                    setenv("FEELPP_SCRATCHDIR", (boost::format("%1%/%2%/feelpp/") % env % ::detail::Env::getUserName() ).str().c_str(),0);
+                }
+                else
+                {
+                    env = getenv("SCRATCH");
+                    if (env != NULL && env[0] != '\0')
+                    {
+                        std::string value = (boost::format("%1%/%2%/feelpp/") % env % ::detail::Env::getUserName()).str();
+                        setenv("FEELPP_SCRATCHDIR", (boost::format("%1%/%2%/feelpp/") % env % ::detail::Env::getUserName() ).str().c_str(),0);
+                    }
+                    else
+                    {
+                        std::string value = (boost::format("/tmp/%1%/feelpp/") % ::detail::Env::getUserName()).str();
+                        setenv("FEELPP_SCRATCHDIR", value.c_str(),0);
+                    }
+                }
+            }
+            env = getenv("FEELPP_SCRATCHDIR");
             if (env != NULL && env[0] != '\0')
             {
-                std::string value = (boost::format("%1%/%2%/feelpp/") % env % ::detail::Env::getUserName()).str();
-                setenv("FEELPP_SCRATCHDIR", (boost::format("%1%/%2%/feelpp/") % env % ::detail::Env::getUserName() ).str().c_str(),0);
+                return fs::path( env );
             }
-            else
-            {
-                std::string value = (boost::format("/tmp/%1%/feelpp/") % ::detail::Env::getUserName()).str();
-                setenv("FEELPP_SCRATCHDIR", value.c_str(),0);
-            }
+            std::string value = (boost::format("/tmp/%1%/feelpp/") % ::detail::Env::getUserName()).str();
+            return fs::path( value );
         }
-    }
-    env = getenv("FEELPP_SCRATCHDIR");
-    if (env != NULL && env[0] != '\0')
-    {
-        return fs::path( env );
-    }
-    std::string value = (boost::format("/tmp/%1%/feelpp/") % ::detail::Env::getUserName()).str();
-    return fs::path( value );
-}
 
-Environment::Environment( int& argc, char**& argv )
-    :
-    M_env( argc, argv, false )
-{
-    S_scratchdir = scratchdir()/fs::path(argv[0]).filename();
-    if ( !fs::exists( S_scratchdir ) )
-        fs::create_directories( S_scratchdir );
-    FLAGS_log_dir=S_scratchdir.string();
 
-    google::AllowCommandLineReparsing();
-    google::ParseCommandLineFlags(&argc, &argv, false);
 
-    // Initialize Google's logging library.
-    if ( !google::glog_internal_namespace_::IsGoogleLoggingInitialized() )
-    {
-        if ( argc > 0 )
-            google::InitGoogleLogging(argv[0]);
-        else
-            google::InitGoogleLogging("feel++");
-    }
-    google::InstallFailureSignalHandler();
+        Environment::Environment( int& argc, char**& argv )
+            :
+                M_env( argc, argv, false )
+        {
+            S_scratchdir = scratchdir()/fs::path(argv[0]).filename();
+            if ( !fs::exists( S_scratchdir ) )
+                fs::create_directories( S_scratchdir );
+            FLAGS_log_dir=S_scratchdir.string();
+
+            google::AllowCommandLineReparsing();
+            google::ParseCommandLineFlags(&argc, &argv, false);
+
+            // Initialize Google's logging library.
+            if ( !google::glog_internal_namespace_::IsGoogleLoggingInitialized() )
+            {
+                if ( argc > 0 )
+                    google::InitGoogleLogging(argv[0]);
+                else
+                    google::InitGoogleLogging("feel++");
+            }
+            google::InstallFailureSignalHandler();
 
 #if defined( FEELPP_HAS_TBB )
-    int n = tbb::task_scheduler_init::default_num_threads();
-    //int n = 2;
-    //VLOG(2) << "[Feel++] TBB running with " << n << " threads\n";
-    //tbb::task_scheduler_init init(2);
+            int n = tbb::task_scheduler_init::default_num_threads();
+            //int n = 2;
+            //VLOG(2) << "[Feel++] TBB running with " << n << " threads\n";
+            //tbb::task_scheduler_init init(2);
 #endif
 
-    S_worldcomm = worldcomm_type::New();
-    CHECK( S_worldcomm ) << "Feel++ Environment: creang worldcomm failed!";
-    S_worldcommSeq.reset( new WorldComm(S_worldcomm->subWorldCommSeq()) );
+            S_worldcomm = worldcomm_type::New();
+            CHECK( S_worldcomm ) << "Feel++ Environment: creang worldcomm failed!";
+            S_worldcommSeq.reset( new WorldComm(S_worldcomm->subWorldCommSeq()) );
 
 #if defined ( FEELPP_HAS_PETSC_H )
-    PetscTruth is_petsc_initialized;
-    PetscInitialized( &is_petsc_initialized );
+            PetscTruth is_petsc_initialized;
+            PetscInitialized( &is_petsc_initialized );
 
-    if ( !is_petsc_initialized )
-    {
-        i_initialized = true;
+            if ( !is_petsc_initialized )
+            {
+                i_initialized = true;
 #if defined( FEELPP_HAS_SLEPC )
-        int ierr = SlepcInitialize( &argc,&argv, PETSC_NULL, PETSC_NULL );
+                int ierr = SlepcInitialize( &argc,&argv, PETSC_NULL, PETSC_NULL );
 #else
-        int ierr = PetscInitialize( &argc, &argv, PETSC_NULL, PETSC_NULL );
+                int ierr = PetscInitialize( &argc, &argv, PETSC_NULL, PETSC_NULL );
 #endif
-        boost::ignore_unused_variable_warning( ierr );
-        CHKERRABORT( *S_worldcomm,ierr );
-    }
+                boost::ignore_unused_variable_warning( ierr );
+                CHKERRABORT( *S_worldcomm,ierr );
+            }
 
-    // make sure that petsc do not catch signals and hence do not print long
-    //and often unuseful messages
-    PetscPopSignalHandler();
+            // make sure that petsc do not catch signals and hence do not print long
+            //and often unuseful messages
+            PetscPopSignalHandler();
 #endif // FEELPP_HAS_PETSC_H
 
+        }
+
+
+
+Environment::Environment(boost::python::list arg)
+{
+    
+    int argc = boost::python::len(arg);
+           std::cout << argc << std::endl ;
+
+           char** argv =new char* [argc+1];
+           boost::python::stl_input_iterator<std::string> begin(arg), end;
+           int i=0;
+           while (begin != end)
+           {
+           std::cout << *begin << std::endl ;
+           argv[i] =strdup((*begin).c_str());
+           begin++;
+           i++;
+           }
+           argv[argc]=NULL;
+
+    S_desc_app = boost::shared_ptr<po::options_description>( new po::options_description(Feel::feel_nooptions() ) );
+    S_desc_lib = boost::shared_ptr<po::options_description>( new po::options_description( Feel::feel_options() ) );
+    AboutData about =makeAbout(argv[0]);
+    S_desc = boost::shared_ptr<po::options_description>( new po::options_description( ) );
+    S_desc->add( *S_desc_app );
+
+    // try to see if the feel++ lib options are already in S_desc_app, if yes then we do not add S_desc_lib
+    // otherwise we will have duplicated options
+    std::vector<boost::shared_ptr<po::option_description>> opts = Environment::optionsDescriptionApplication().options();
+    auto it = std::find_if( opts.begin(), opts.end(),
+            []( boost::shared_ptr<po::option_description> const&o )
+            {
+            return o->format_name().erase(0,2) == "backend";
+            });
+
+    if   ( it == opts.end() )
+        S_desc->add( *S_desc_lib );
+    S_desc->add( file_options( about.appName() ) );
+    S_desc->add( generic_options() );
+
+
+    init( argc, argv, *S_desc, *S_desc_lib, about );
+    if ( S_vm.count("nochdir") == 0 )
+    {
+        std::string defaultdir = about.appName();
+        if ( S_vm.count("directory") )
+            defaultdir = S_vm["directory"].as<std::string>();
+        std::string d =defaultdir;
+        LOG(INFO) << "change directory to " << d << "\n";
+        boost::format f( d );
+        changeRepository( _directory=f );
+    }
 }
 
-void
+
+
+    void
 Environment::init( int argc, char** argv,
-                   po::options_description const& desc,
-                   po::options_description const& desc_lib,
-                   AboutData const& about )
+        po::options_description const& desc,
+        po::options_description const& desc_lib,
+        AboutData const& about )
 {
     S_worldcomm = worldcomm_type::New();
     CHECK( S_worldcomm ) << "Feel++ Environment: creang worldcomm failed!";
@@ -1045,7 +1105,7 @@ Environment::init( int argc, char** argv,
     freeargv( envargv );
 
 }
-void
+    void
 Environment::clearSomeMemory()
 {
     Environment::logMemoryUsage( "Environment::clearSomeMemory before:" );
@@ -1057,12 +1117,18 @@ Environment::clearSomeMemory()
 
     Environment::logMemoryUsage( "Environment::clearSomeMemory after:" );
 }
+
+
 Environment::~Environment()
 {
     /* if we were using onelab */
     /* we write the file containing the filename marked for automatic loading in Gmsh */
     /* we serialize the writing of the size by the different MPI processes */
-    if ( S_vm["onelab.enable"].as<int>() == 2 )
+
+
+    //std::cout << S_vm["onelab.enable"].as<int>() << std::endl;
+
+    if ( ioption( _name="onelab.enable") == 2 )
     {
         for(int i = 0; i < worldComm().size(); i++)
         {
@@ -1121,7 +1187,6 @@ Environment::~Environment()
             Environment::worldComm().barrier();
         }
     }
-
     VLOG(2) << "[~Environment] sending delete to all deleters" << "\n";
 
     Environment::clearSomeMemory();
@@ -1154,12 +1219,11 @@ Environment::~Environment()
         google::ShutdownGoogleLogging();
     }
 
-
 }
 
 
 
-bool
+    bool
 Environment::initialized()
 {
 
@@ -1172,7 +1236,7 @@ Environment::initialized()
 #endif
 }
 
-bool
+    bool
 Environment::finalized()
 {
 #if defined( FEELPP_HAS_PETSC_H )
@@ -1185,7 +1249,7 @@ Environment::finalized()
 }
 
 
-std::string
+    std::string
 Environment::rootRepository()
 {
     char * senv = ::getenv( "FEELPP_REPOSITORY" );
@@ -1215,7 +1279,7 @@ Environment::rootRepository()
     }
     return std::string();
 }
-std::string
+    std::string
 Environment::findFile( std::string const& filename )
 {
     fs::path cp = fs::current_path();
@@ -1238,12 +1302,12 @@ Environment::findFile( std::string const& filename )
 
     // look in to paths list from end-1 to begin
     auto it = std::find_if( S_paths.rbegin(), S_paths.rend(),
-                            [&filename] ( fs::path const& p ) -> bool
-                            {
-                                if ( fs::exists( p/filename) )
-                                    return true;
-                                return false;
-                            } );
+            [&filename] ( fs::path const& p ) -> bool
+            {
+            if ( fs::exists( p/filename) )
+            return true;
+            return false;
+            } );
     if ( it != S_paths.rend() )
     {
         LOG(INFO) << "File " << (*it/filename) << " found";
@@ -1265,7 +1329,7 @@ Environment::findFile( std::string const& filename )
         }
 
         if ( Environment::systemGeoRepository().get<1>()  &&
-             fs::exists( fs::path( Environment::systemGeoRepository().get<0>() ) / filename ) )
+                fs::exists( fs::path( Environment::systemGeoRepository().get<0>() ) / filename ) )
         {
             LOG(INFO) << "File" << ( fs::path( Environment::systemGeoRepository().get<0>() ) / filename ) << " found";
             return ( fs::path( Environment::systemGeoRepository().get<0>() ) / filename ).string();
@@ -1274,24 +1338,24 @@ Environment::findFile( std::string const& filename )
     LOG(INFO) << "File " << filename << " not found";
     return std::string();
 }
-std::vector<std::string>
+    std::vector<std::string>
 Environment::geoPathList()
 {
     std::vector<std::string> plist;
     plist.push_back( fs::current_path().string() );
     std::for_each( S_paths.rbegin(), S_paths.rend(),
-                   [&plist] ( fs::path const& p )
-                   {
-                       plist.push_back( p.string() );
-                   } );
+            [&plist] ( fs::path const& p )
+            {
+            plist.push_back( p.string() );
+            } );
     if ( fs::exists( Environment::localGeoRepository() ) )
         plist.push_back( Environment::localGeoRepository() );
     if ( Environment::systemGeoRepository().get<1>()  &&
-         fs::exists( Environment::systemGeoRepository().get<0>() ) )
+            fs::exists( Environment::systemGeoRepository().get<0>() ) )
         plist.push_back( Environment::systemGeoRepository().get<0>() );
     return plist;
 }
-std::string
+    std::string
 Environment::localGeoRepository()
 {
     fs::path rep_path;
@@ -1304,7 +1368,7 @@ Environment::localGeoRepository()
 
     return rep_path.string();
 }
-boost::tuple<std::string,bool>
+    boost::tuple<std::string,bool>
 Environment::systemGeoRepository()
 {
     fs::path rep_path;
@@ -1314,7 +1378,7 @@ Environment::systemGeoRepository()
     return boost::make_tuple( rep_path.string(), fs::exists( rep_path ) );
 }
 
-std::string
+    std::string
 Environment::localConfigRepository()
 {
     fs::path rep_path;
@@ -1327,7 +1391,7 @@ Environment::localConfigRepository()
 
     return rep_path.string();
 }
-boost::tuple<std::string,bool>
+    boost::tuple<std::string,bool>
 Environment::systemConfigRepository()
 {
     fs::path rep_path;
@@ -1337,7 +1401,7 @@ Environment::systemConfigRepository()
     return boost::make_tuple( rep_path.string(), fs::exists( rep_path ) );
 }
 
-void
+    void
 Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfilename, bool add_subdir_np )
 {
     if ( Environment::vm().count( "nochdir" ) )
@@ -1384,7 +1448,7 @@ Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfile
 }
 
 #if 0
-po::variables_map
+    po::variables_map
 Environment::vm( po::options_description const& desc )
 {
     po::variables_map vm;
@@ -1395,28 +1459,28 @@ Environment::vm( po::options_description const& desc )
 }
 #endif
 
-void
+    void
 Environment::setLogs( std::string const& prefix )
 {
 
 
 }
 
-std::vector<WorldComm> const&
+    std::vector<WorldComm> const&
 Environment::worldsComm( int n )
 {
     CHECK( S_worldcomm ) << "Environment: worldcomm not allocated\n";
     return S_worldcomm->subWorlds(n);
 }
 
-std::vector<WorldComm> const&
+    std::vector<WorldComm> const&
 Environment::worldsCommSeq( int n )
 {
     CHECK( S_worldcommSeq ) << "Environment: worldcomm not allocated\n";
     return S_worldcommSeq->subWorlds(n);
 }
 
-std::vector<WorldComm> const&
+    std::vector<WorldComm> const&
 Environment::worldsCommGroupBySubspace( int n )
 {
 #if 0
@@ -1430,14 +1494,14 @@ Environment::worldsCommGroupBySubspace( int n )
 }
 
 
-WorldComm const&
+    WorldComm const&
 Environment::masterWorldComm( int n )
 {
     return S_worldcomm->masterWorld(n);
 }
 
 
-MemoryUsage
+    MemoryUsage
 Environment::logMemoryUsage( std::string const& message )
 {
     MemoryUsage mem;
@@ -1468,8 +1532,8 @@ boost::shared_ptr<WorldComm> Environment::S_worldcomm;
 boost::shared_ptr<WorldComm> Environment::S_worldcommSeq;
 
 std::vector<fs::path> Environment::S_paths = { fs::current_path(),
-                                               Environment::systemConfigRepository().get<0>(),
-                                               Environment::systemGeoRepository().get<0>() };
+    Environment::systemConfigRepository().get<0>(),
+    Environment::systemGeoRepository().get<0>() };
 fs::path Environment::S_scratchdir;
 
 std::string Environment::olAppPath;
