@@ -64,3 +64,30 @@ Physical Line(45) = {20};
 Physical Line(46) = {21};
 Physical Line(47) = {22};
 Physical Surface(48) = {25, 27, 29, 31, 33, 35, 37};
+
+
+Extrude {{0, 0, 1}, {0, 0, 0}, Pi/2} {
+  Surface{25, 27, 29, 31, 33, 35, 37};
+}
+
+Extrude {{0, 0, 1}, {0, 0, 0}, Pi/2} {
+  Surface{65, 82, 99, 116, 133, 150, 167};
+}
+
+Extrude {{0, 0, 1}, {0, 0, 0}, Pi/2} {
+  Surface{184, 201, 218, 235, 252, 269, 286};
+}
+
+Extrude {{0, 0, 1}, {0, 0, 0}, Pi/2} {
+  Surface{303, 320, 337, 354, 371, 388, 405};
+}
+
+Physical Surface("inlet") = {56, 175, 294, 413};
+Physical Surface("outlet") = {165, 284, 403, 510};
+Physical Surface("face1") = {63, 182, 301, 420};
+Physical Surface("face2") = {80, 199, 318, 435};
+Physical Surface("face3") = {97, 216, 335, 450};
+Physical Surface("face4") = {114, 233, 352, 465};
+Physical Surface("face5") = {131, 250, 369, 480};
+Physical Surface("face6") = {148, 267, 386, 495};
+Physical Surface("wall") = {60, 77, 94, 111, 128, 162, 145, 179, 196, 213, 230, 247, 264, 281, 507, 492, 477, 462, 447, 432, 417, 400, 383, 366, 349, 332, 315, 298};
