@@ -59,19 +59,28 @@ int main( int argc, char** argv )
        auto data = marker.second;
        if ( data[1] == mesh->dimension() )
        {
+
+          auto meas1 = integrate( _range=elements( mesh ), _expr=cst(1.) ).evaluate();
           size_type nelts = nelements( markedelements(mesh, name ), true );
+          auto meas = integrate( _range=markedelements( mesh, name ), _expr=cst(1.) ).evaluate();
           if ( Environment::isMasterRank() )
           {
-            std::cout << "Marker (elements) " << name << std::endl;
-            std::cout << " - number of elements " << nelts << std::endl;
+            std::cout << " - Marker (elements) " << name << std::endl;
+            std::cout << "    |- number of elements " << nelts << std::endl;
+            std::cout << "    |- measure : " << meas << "," << meas1 << std::endl;
 
           }
        }
        else if ( data[1] == mesh->dimension()-1 )
        {
           size_type nelts = nelements( markedfaces(mesh, name ), true );
-          std::cout << "Marker (faces) " << name << std::endl;
-            std::cout << " - number of faces " << nelts << std::endl;
+          auto meas = integrate( _range=markedfaces( mesh, name ), _expr=cst(1.) ).evaluate();
+          if ( Environment::isMasterRank() )
+          {
+            std::cout << " - Marker (faces) " << name << std::endl;
+            std::cout << "    |- number of faces " << nelts << std::endl;
+            std::cout << "    |- measure : " << meas << std::endl;
+          }
        }
 
     }

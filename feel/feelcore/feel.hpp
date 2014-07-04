@@ -549,6 +549,14 @@ BOOST_DETAIL_IS_XXX_DEF( shared_ptr, boost::shared_ptr, 1 )
 }
 }
 
+#if !defined(MPI_INT64_T)
+#define MPI_INT64_T MPI_LONG_INT
+#endif
+
+#if !defined(MPI_INT32_T)
+#define MPI_INT32_T MPI_INT
+#endif
+
 #if defined(FEELPP_HAS_OPENMP)
 #include <omp.h>
 
