@@ -446,7 +446,7 @@ public:
             for( int q = 0; q < nLocalDof; ++q )
                 for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
                     for( int c2 = 0; c2 < ExprType::shape::N; ++c2 )
-                        Ihloc( (c1+nComponents2*c2)*nLocalDof+q ) = expr.evalq( c1, c2, q );
+                        Ihloc( (c1+nComponents1*c2)*nLocalFaceDof+q ) = expr.evalq( c1, c2, q );
 
         }
     local_interpolant_type
@@ -461,7 +461,7 @@ public:
             for( int q = 0; q < nLocalFaceDof; ++q )
                 for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
                     for( int c2 = 0; c2 < ExprType::shape::N; ++c2 )
-                        Ihloc( (c1+nComponents2*c2)*nLocalDof+q ) = expr.evalq( c1, c2, q );
+                        Ihloc( (c1+nComponents1*c2)*nLocalFaceDof+q ) = expr.evalq( c1, c2, q );
 
         }
     //@}
