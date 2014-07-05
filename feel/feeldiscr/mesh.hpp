@@ -451,11 +451,24 @@ public:
         return M_worldComm.localComm();
     }
 #endif
+
+    /**
+     * \return true if the mesh is substructured, false otherwise
+     */
+    bool subStructuring() const
+        {
+            return M_substructuring;
+        }
     //@}
 
     /** @name  Mutators
      */
     //@{
+
+    void setSubStructuring( bool s )
+        {
+            M_substructuring = s;
+        }
 
     /**
      * set the partitioner to \p partitioner
@@ -1567,6 +1580,9 @@ private:
 
     //! measure of the boundary of the mesh
     value_type M_measbdy, M_local_measbdy;
+
+    //!sub structuring
+    bool M_substructuring;
 
     /**
      * The processors who neighbor the current
