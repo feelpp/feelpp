@@ -50,6 +50,7 @@ Mesh<Shape, T, Tag>::Mesh( WorldComm const& worldComm )
     M_gm1( new gm1_type ),
     M_meas( 0 ),
     M_measbdy( 0 ),
+    M_substructuring( false ),
     //M_part(),
     M_tool_localization( new Localization() )
 {
@@ -2466,6 +2467,8 @@ Mesh<Shape, T, Tag>::decode()
     //this->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
     //this->updateForUse();
     //std::cout<<"decode=   " << this->worldComm().localSize() << std::endl;
+#warning  THIS DIFFERS FROM EXPLICIT AND DEVELOP
+    this->setSubStructuring(true);
 }
 
 template<typename Shape, typename T, int Tag1, int Tag2=Tag1, int TheTag=Tag1>

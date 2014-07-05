@@ -893,7 +893,8 @@ public:
                                      ( optional
                                        //(prec,(sparse_matrix_ptrtype), matrix )
                                        ( prec,( preconditioner_ptrtype ), preconditioner( _prefix=this->prefix(),_matrix=matrix,_pc=this->pcEnumType()/*LU_PRECOND*/,
-                                                                                          _pcfactormatsolverpackage=this->matSolverPackageEnumType(), _backend=this->shared_from_this() ) )
+                                                                                          _pcfactormatsolverpackage=this->matSolverPackageEnumType(), _backend=this->shared_from_this(),
+                                                                                          _worldcomm=this->comm() ) )
                                        ( maxit,( size_type ), M_maxitKSP/*1000*/ )
                                        ( rtolerance,( double ), M_rtolerance/*1e-13*/ )
                                        ( atolerance,( double ), M_atolerance/*1e-50*/ )
@@ -1278,6 +1279,60 @@ BOOST_PARAMETER_FUNCTION(
         Feel::detail::BackendManager::instance().operator[]( boost::make_tuple( kind, name, worldcomm.globalSize() ) ) = b;
         return b;
     }
+
+}
+
+template<typename T>
+bool isMatrixInverseSymmetric ( boost::shared_ptr<MatrixSparse<T> >& A, boost::shared_ptr<MatrixSparse<T> >& At, bool print=false  )
+{
+    auto u = Backend<T>::build( BACKEND_PETSC, A->comm() )->newVector(A->size1(), A->size1());
+    auto v = Backend<T>::build( BACKEND_PETSC, A->comm() )->newVector(A->size1(), A->size1());
+
+    auto res_u = Backend<T>::build( BACKEND_PETSC, A->comm() )->newVector(A->size1(), A->size1());
+    auto res_v = Backend<T>::build( BACKEND_PETSC, A->comm() )->newVector(A->size1(), A->size1());
+
+
+    for (size_type i = 0; i < u->size(); i++)
+    {
+        u->set(i,(double(std::rand())/double(RAND_MAX)));
+    }
+
+    for (size_type i = 0; i < v->size(); i++)
+    {
+        v->set(i,(double(std::rand())/double(RAND_MAX)));
+    }
+
+    Backend<T>::build( BACKEND_PETSC, A->comm() )->solve(_matrix=A,
+                                                         _solution=res_u,
+                                                         _rhs=u,
+                                                         _pcfactormatsolverpackage="mumps"
+                                                         );
+
+
+
+    Backend<T>::build( BACKEND_PETSC, A->comm() )->solve(_matrix=At,
+                                                         _solution=res_v,
+                                                         _rhs=v,
+                                                         _pcfactormatsolverpackage="mumps"
+                                                         );
+
+
+
+    T val1 = inner_product(res_u,v);
+    T val2 = inner_product(res_v,u);
+
+    T res = math::abs(val1-val2);
+
+    if ((res >= 1e-12) && print)
+    {
+        std::cout<<"-----------Subdomain "<< Environment::worldComm().rank() <<"-----------\n";
+        std::cout<<"--Val1= "<< val1 <<"\n";
+        std::cout<<"--Val2= "<< val2 <<"\n";
+        std::cout<<"--|Val1-val2|= "<< res <<"\n";
+        std::cout<<"---------------------------------\n";
+    }
+
+    return  res < 1e-12;
 
 }
 
