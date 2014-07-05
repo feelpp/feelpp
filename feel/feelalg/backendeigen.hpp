@@ -147,9 +147,9 @@ public:
     sparse_matrix_ptrtype
     newMatrix( datamap_ptrtype const& d1, datamap_ptrtype const& d2, size_type matrix_properties = NON_HERMITIAN, bool init = true )
     {
-#warning THIS DIFFERS BETWEEN EXPLICIT and DEVELOP
-        // develop:: auto A = sparse_matrix_ptrtype( new eigen_sparse_matrix_type( d1->nGlobalElements(), d2->nGlobalElements() ) );
-        auto A = sparse_matrix_ptrtype( new eigen_sparse_matrix_type( d1->nGlobalElements(), d2->nGlobalElements(), this->comm() ) );
+        auto A = sparse_matrix_ptrtype( new eigen_sparse_matrix_type( d1->nGlobalElements(),
+                                                                      d2->nGlobalElements(),
+                                                                      this->comm() ) );
         A->setMatrixProperties( matrix_properties );
         return A;
     }
@@ -191,8 +191,6 @@ public:
     vector_ptrtype
     newVector( datamap_ptrtype const& d )
     {
-#warning THIS DIFFERS BETWEEN EXPLICIT and DEVELOP
-        // develop : return vector_ptrtype( new eigen_vector_type( d->nGlobalElements() ) );
         return vector_ptrtype( new eigen_vector_type( d->nGlobalElements(), this->comm() ) );
     }
 
