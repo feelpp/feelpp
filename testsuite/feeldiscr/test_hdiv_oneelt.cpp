@@ -163,7 +163,8 @@ TestHDivOneElt::testProjector(std::string one_element_mesh )
     mesh_ptrtype mesh = loadMesh( _mesh=new mesh_type,
                                   _filename=mesh_name );
 
-    auto RTh = Dh<0>( mesh );
+    //auto RTh = Dh<0>( mesh );
+    space_ptrtype RTh = space_type::New( mesh );
     lagrange_space_v_ptrtype Yh_v = lagrange_space_v_type::New( mesh ); //lagrange vectorial space
     lagrange_space_s_ptrtype Yh_s = lagrange_space_s_type::New( mesh ); //lagrange scalar space
 
@@ -176,21 +177,11 @@ TestHDivOneElt::testProjector(std::string one_element_mesh )
     auto E_pL2_lag = l2_lagV->project( _expr= E );
     auto error_pL2_lag = l2_lagS->project( _expr=divv(E_pL2_lag) - f );
 
-    // L2 projection (RT)
-    auto l2_rt = opProjection( _domainSpace=RTh, _imageSpace=RTh, _type=L2 );
-    auto E_pL2_rt = l2_rt->project( _expr= E );
-    auto error_pL2_rt = l2_lagS->project( _expr=divv(E_pL2_lag) - f );
-
     // H1 projection (Lagrange)
     auto h1_lagV = opProjection( _domainSpace=Yh_v, _imageSpace=Yh_v, _type=H1 ); //h1 vectorial proj
     auto h1_lagS = opProjection( _domainSpace=Yh_s, _imageSpace=Yh_s, _type=H1 ); //h1 scalar proj
     auto E_pH1_lag = h1_lagV->project( _expr= E, _grad_expr=mat<2,2>(cst(0.),cst(1.),cst(1.),cst(0.)) );
     auto error_pH1_lag = l2_lagS->project( _expr=divv(E_pH1_lag) - f );
-
-    // H1 projection (RT)
-    auto h1_rt = opProjection( _domainSpace=RTh, _imageSpace=RTh, _type=H1 ); //h1 vectorial proj
-    auto E_pH1_rt = h1_rt->project( _expr= E, _grad_expr=mat<2,2>(cst(0.),cst(1.),cst(1.),cst(0.)) );
-    auto error_pH1_rt = l2_lagS->project( _expr=divv(E_pH1_rt) - f );
 
     // HDIV projection (Lagrange)
     auto hdiv_lagV = opProjection( _domainSpace=Yh_v, _imageSpace=Yh_v, _type=HDIV );
@@ -198,29 +189,44 @@ TestHDivOneElt::testProjector(std::string one_element_mesh )
     auto E_pHDIV_lag = hdiv_lagV->project( _expr= E, _div_expr=cst(0.) );
     auto error_pHDIV_lag = l2_lagS->project( _expr=divv(E_pHDIV_lag) - f );
 
+    // L2 projection (RT)
+    auto l2_rt = opProjection( _domainSpace=RTh, _imageSpace=RTh, _type=L2 );
+    auto E_pL2_rt = l2_rt->project( _expr= E );
+    auto error_pL2_rt = l2_lagS->project( _expr=divv(E_pL2_lag) - f );
+
+#if 0
+    // H1 projection (RT)
+    auto h1_rt = opProjection( _domainSpace=RTh, _imageSpace=RTh, _type=H1 ); //h1 vectorial proj
+    auto E_pH1_rt = h1_rt->project( _expr= E, _grad_expr=mat<2,2>(cst(0.),cst(1.),cst(1.),cst(0.)) );
+    auto error_pH1_rt = l2_lagS->project( _expr=divv(E_pH1_rt) - f );
+
     // HDIV projection (RT)
     auto hdiv = opProjection( _domainSpace=RTh, _imageSpace=RTh, _type=HDIV ); //hdiv proj (RT elts)
     auto E_pHDIV_rt = hdiv->project( _expr= E, _div_expr=cst(0.) );
     auto error_pHDIV_rt = l2_lagS->project( _expr=divv(E_pHDIV_rt) - f );
+#endif
 
     BOOST_TEST_MESSAGE("L2 projection [Lagrange]: error[div(E)-f]");
     std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pL2_lag, error_pL2_lag ) ) << "\n";
     BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pL2_lag, error_pL2_lag ) ), 1e-13 );
-    BOOST_TEST_MESSAGE("L2 projection [RT]: error[div(E)-f]");
-    std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pL2_rt, error_pL2_rt ) ) << "\n";
-    BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pL2_rt, error_pL2_rt ) ), 1e-13 );
     BOOST_TEST_MESSAGE("H1 projection [Lagrange]: error[div(E)-f]");
     std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pH1_lag, error_pH1_lag ) ) << "\n";
     BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pH1_lag, error_pH1_lag ) ), 1e-13 );
-    BOOST_TEST_MESSAGE("H1 projection [RT]: error[div(E)-f]");
-    std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pH1_rt, error_pH1_rt ) ) << "\n";
-    BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pH1_rt, error_pH1_rt ) ), 1e-13 );
     BOOST_TEST_MESSAGE("HDIV projection [Lagrange]: error[div(E)-f]");
     std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pHDIV_lag, error_pHDIV_lag ) ) << "\n";
     BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pHDIV_lag, error_pHDIV_lag ) ), 1e-13 );
+
+    BOOST_TEST_MESSAGE("L2 projection [RT]: error[div(E)-f]");
+    std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pL2_rt, error_pL2_rt ) ) << "\n";
+    BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pL2_rt, error_pL2_rt ) ), 1e-13 );
+#if 0
+    BOOST_TEST_MESSAGE("H1 projection [RT]: error[div(E)-f]");
+    std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pH1_rt, error_pH1_rt ) ) << "\n";
+    BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pH1_rt, error_pH1_rt ) ), 1e-13 );
     BOOST_TEST_MESSAGE("HDIV projection [RT]: error[div(E)-f]");
     std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pHDIV_rt, error_pHDIV_rt ) ) << "\n";
     BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pHDIV_rt, error_pHDIV_rt ) ), 1e-13 );
+#endif
 
     std::string proj_name = "projection";
     export_ptrtype exporter_proj( export_type::New( this->vm(),
@@ -231,11 +237,13 @@ TestHDivOneElt::testProjector(std::string one_element_mesh )
 
     exporter_proj->step( 0 )->setMesh( mesh );
     exporter_proj->step( 0 )->add( "proj_L2_E[Lagrange]", E_pL2_lag );
-    exporter_proj->step( 0 )->add( "proj_L2_E[RT]", E_pL2_rt );
     exporter_proj->step( 0 )->add( "proj_H1_E[Lagrange]", E_pH1_lag );
-    exporter_proj->step( 0 )->add( "proj_H1_E[RT]", E_pH1_rt );
     exporter_proj->step( 0 )->add( "proj_HDiv_E[Lagrange]", E_pHDIV_lag );
+    exporter_proj->step( 0 )->add( "proj_L2_E[RT]", E_pL2_rt );
+#if 0
+    exporter_proj->step( 0 )->add( "proj_H1_E[RT]", E_pH1_rt );
     exporter_proj->step( 0 )->add( "proj_HDiv_E[RT]", E_pHDIV_rt );
+#endif
     exporter_proj->save();
 }
 
