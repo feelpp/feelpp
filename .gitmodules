@@ -46,12 +46,20 @@
 [submodule "holo3"]
 	path = projects/holo3
 	url = https://github.com/feelpp/holo3
+    fetchRecurseSubmodules = on-demand
 [submodule "projects/map"]
 	path = projects/map
 	url = https://github.com/feelpp/map.git
+    fetchRecurseSubmodules = on-demand
 [submodule "projects/eye2brain"]
 	path = projects/eye2brain
 	url = https://github.com/feelpp/eye2brain.git
+    fetchRecurseSubmodules = on-demand
 [submodule "projects/cerema"]
 	path = projects/cerema
 	url = https://github.com/cemosis/seme-cerema.git
+    fetchRecurseSubmodules = on-demand
+[submodule "data/bigdata"]
+	path = data/bigdata
+	url = https://github.com/feelpp/bigdata.git
+    fetchRecurseSubmodules = on-demand
