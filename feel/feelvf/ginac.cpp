@@ -422,7 +422,11 @@ laplacian( matrix const& f, std::vector<symbol> const& l )
     }
     return g;
 }
-
+ex
+laplacian( std::string const& s, std::vector<symbol> const& l, std::vector<symbol> const& p )
+{
+    return laplacian( parse( s, l, p ), l )(0,0);
+}
 matrix diff(ex const& f, symbol const& l, const int n)
 {
     matrix ret(1,1);
