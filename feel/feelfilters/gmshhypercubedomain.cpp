@@ -166,9 +166,6 @@ GmshHypercubeDomain::getDescription2D() const
          << "ymin=" << this->M_I[1].first << ";\n"
          << "ymax=" << this->M_I[1].second << ";\n";
 
-    if ( this->structuredMesh() == 3 )
-        ostr << "h = (xmax-xmin)/nx;\n";
-
     ostr << "Point(1) = {xmin,ymin,0.0,h};\n"
          << "Point(2) = {xmax,ymin+"<<this->shear()<<",0.0,h};\n"
          << "Point(3) = {xmax+" << this->shear() << ",ymax,0.0,h};\n"
@@ -225,6 +222,10 @@ GmshHypercubeDomain::getDescription2D() const
         else if ( this->structuredMesh() == 2 )
             ostr << "nx = 1/h;\n"
                  << "ny = 1/h;\n";
+        else if ( this->structuredMesh() == 3 )
+            ostr << "nx=" << M_nx << ";\n"
+                 << "ny=" << M_ny << ";\n";
+
 
         ostr << "\n"
              << "Transfinite Line {1,3} = ny + 1 Using Progression 1.0;\n"
