@@ -937,7 +937,7 @@ Environment::Environment( int& argc, char**& argv )
 #endif
 
     S_worldcomm = worldcomm_type::New();
-    CHECK( S_worldcomm ) << "Feel++ Environment: creang worldcomm failed!";
+    CHECK( S_worldcomm ) << "Feel++ Environment: worldcomm creation failed!";
     S_worldcommSeq.reset( new WorldComm(S_worldcomm->subWorldCommSeq()) );
 
 #if defined ( FEELPP_HAS_PETSC_H )
