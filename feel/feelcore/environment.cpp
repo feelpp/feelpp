@@ -667,8 +667,20 @@ Environment::parseAndStoreOptions( po::command_line_parser parser, bool extra_pa
                 LOG(ERROR) << "  |- remove " << it->string_key << " from Feel++ options management system"  << "\n";
                 parsed->options.erase( it );
             }
-    }   
+    }
     po::store( *parsed, S_vm );
+    if ( boption( "fail-on-unknown-option" ) && S_to_pass_further.size() )
+    {
+        std::stringstream ostr;
+        for( std::string const& s: S_to_pass_further )
+        {
+            ostr << s << " ";
+        }
+        if ( Environment::isMasterRank() )
+            LOG(ERROR) << "Unknown options [" << ostr.str() << "] passed to Feel++. Quitting application...";
+        //MPI_Barrier( S_worldcomm->comm() );
+        MPI_Abort( S_worldcomm->comm(), 1);
+    }
 }
 
 
