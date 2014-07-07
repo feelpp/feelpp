@@ -31,6 +31,9 @@ namespace Feel {
 
    \subsection Credits_Devs Current Developers and Contributors:
 
+The current developers are
+
+
  \li Alexandre Ancel <alexandre.ancel@cemosis.fr>
  \li Vincent Chabannes <vincent.chabannes@feelpp.org>
  \li Guillaume Dollé <dolleg@gmail.com>
@@ -46,6 +49,23 @@ namespace Feel {
  \li Christophe Trophime <christophe.trophime@lncmi.cnrs.fr>
  \li Stéphane Veys <stephane.veys@imag.fr>
  \li Jean-Baptiste Wahl <wahl.jb@gmail.com>
+
+Feel++ benefits from the many discussions and close research collaborations with
+the following persons
+
+ \li Zakaria Belhachmi <zakaria.belhachmi@uha.fr>
+ \li Silvia Bertoluzza <silvia.bertoluzza@imati.cnr.it>
+ \li Micol Pennacchio <Micol.Pennacchio@imati.cnr.it>
+ \li Marcela Szopos <mszopos@math.unistra.fr>
+
+Finally Feel++ also benefits from discussions within collaborative projects with
+many people (in no particular order):
+
+Yannick Hoarau, Philippe Gilotte, Benjamin Surowiec, Romain Hild, Marion Spreng,
+Benjamin Vanthong, Thomas Lantz, Mamadou Camara, Camille Boulard, Pierre
+Gerhard, Frédéric Hecht, Michel Fouquembergh, Denis Barbier, Jean-Marc Gratien,
+Daniele Di Pietro.
+
 
  \subsection Credits_PastDevs Past Developers and Contributors
 
