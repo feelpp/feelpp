@@ -619,8 +619,60 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
             MPI_File_open( mesh->worldComm().comm(), str, MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL, &fh );
             free(str);
 
+            Feel::detail::FileIndex index;
+
+            if(boption( _name="exporter.merge.timesteps" ))
+            {
+                // first read
+                index.read(fh);
+
+                // we position the cursor at the beginning of the file
+                MPI_File_seek_shared(fh, 0, MPI_SEEK_SET);
+
+                /* write C binary if we didn't find the index <=> first pass on the file */
+                if( !index.defined() )
+                {
+                    if( Environment::isMasterRank() )
+                    { size = sizeof(buffer); }
+                    else
+                    { size = 0; }
+                    memset(buffer, '\0', sizeof(buffer));
+                    strcpy(buffer, "C Binary");
+                    MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+                }
+
+                /* Write time step start */
+                if( Environment::isMasterRank() )
+                { size = sizeof(buffer); }
+                else
+                { size = 0; }
+                memset(buffer, '\0', sizeof(buffer));
+                strcpy(buffer,"BEGIN TIME STEP");
+                MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+                LOG(INFO) << "saveNodal out: " << buffer;
+
+                /* add the beginning of the new block to the file */
+                MPI_File_get_position_shared(fh, &offset);
+                index.add( offset );
+            }
+
             /* Write the file */
             this->writeGeoMarkers(fh, mesh);
+
+            if(boption( _name="exporter.merge.timesteps" ))
+            {
+                /* write timestep end */
+                if( Environment::isMasterRank() )
+                { size = sizeof(buffer); }
+                else
+                { size = 0; }
+                memset(buffer, '\0', sizeof(buffer));
+                strcpy(buffer,"END TIME STEP");
+                MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+
+                // write back the file index
+                index.write( fh );
+            }
 
             /* close file */
             MPI_File_close(&fh);
@@ -815,7 +867,7 @@ ExporterEnsightGold<MeshType, N>::writeGeoHeader(MPI_File fh) const
 
     // only write C Binary if we are not mergin timesteps
     // as it is oalready writtent at the beginning of the file
-    //if ( ! boption( _name="exporter.merge.timesteps") )
+    if ( ! boption( _name="exporter.merge.timesteps") )
     {
         memset(buffer, '\0', sizeof(buffer));
         strcpy(buffer, "C Binary");
@@ -1609,30 +1661,34 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
 
         Feel::detail::FileIndex index;
 
-#if 0
-        if ( this->useSingleTransientFile() )
+        if (boption( _name = "exporter.merge.timesteps"))
         {
             // first read
-            // TODO
-            //index.read( __out );
+            index.read(fh);
 
-            if ( index.defined() && __step->index() > 0 )
-                __out.seekp( index.fileblock_n_steps, std::ios::beg );
-            else
-            {
+            /* Move to the beginning of the fie index section */
+            /* to overwrite it */
+            if ( index.defined() && __step->index() > 0 ) {
+                MPI_File_seek_shared(fh, index.fileblock_n_steps, MPI_SEEK_SET);
+            }
+            else {
                 // we position the cursor at the beginning of the file
-                __out.seekp( 0, std::ios::beg );
+                MPI_File_seek_shared(fh, 0, MPI_SEEK_SET);
             }
 
+            /* Write time step start */
+            if( Environment::isMasterRank() )
+            { size = sizeof(buffer); }
+            else
+            { size = 0; }
             memset(buffer, '\0', sizeof(buffer));
             strcpy(buffer,"BEGIN TIME STEP");
-            __out.write(buffer,sizeof(buffer));
-            LOG(INFO) << "saveNodal out: " << buffer;
+            MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
 
-            index.add( __out.tellp() );
-
+            /* add the beginning of the new block to the file */
+            MPI_File_get_position_shared(fh, &offset);
+            index.add( offset );
         }
-#endif
 
         if( Environment::isMasterRank() )
         { size = sizeof(buffer); }
@@ -1842,19 +1898,22 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
             //__out.write( ( char * ) __field.data().begin(), __field.size() * sizeof( float ) );
         } // parts loop
 
-#if 0
-        if ( this->useSingleTransientFile() )
+        if ( boption(_name="exporter.merge.timesteps") )
         {
+            /* write timestep end */
+            if( Environment::isMasterRank() )
+            { size = sizeof(buffer); }
+            else
+            { size = 0; }
             memset(buffer, '\0', sizeof(buffer));
             strcpy(buffer,"END TIME STEP");
-            __out.write(buffer,sizeof(buffer));
-            VLOG(1) << "out: " << buffer;
+            MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
 
             // write back the file index
-            //index.write( __out );
+            index.write( fh );
         }
         DVLOG(2) << "[ExporterEnsightGold::saveNodal] saving " << __varfname.str() << "done\n";
-#endif
+
         ++__var;
 
         MPI_File_close(&fh);
@@ -1976,7 +2035,6 @@ ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtyp
             { size = 0; }
             memset(buffer, '\0', sizeof(buffer));
             strcpy( buffer, this->elementType().c_str() );
-            //strcpy( buffer, "coordinates" );
             MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
             DVLOG(2) << "element type " << buffer << "\n";
 
@@ -2009,13 +2067,11 @@ ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtyp
             DVLOG(2) << "[saveElement] lastLocalIndex = " << __evar->second.lastLocalIndex() << "\n";
             DVLOG(2) << "[saveElement] field.size = " << __field_size << "\n";
 
-            size_type ncells = __evar->second.size()/__evar->second.nComponents;
+            //size_type ncells = __evar->second.size()/__evar->second.nComponents;
+            size_type ncells = std::distance( elt_st, elt_en );
+
             for ( int c = 0; c < nComponents; ++c )
             {
-                /*
-                boost::tie( elt_it, elt_en ) = __step->mesh()->elementsWithMarker( p_it->first,
-                                                                                   __evar->second.worldComm().localRank() ); // important localRank!!!!
-                                                                                   */
                 size_type e = 0;
                 for ( auto elt_it = elt_st ; elt_it != elt_en; ++elt_it, ++e )
                 {
