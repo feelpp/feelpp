@@ -48,6 +48,7 @@ matrix div( matrix const& f, std::vector<symbol> const& l );
 matrix curl( ex const& f, std::vector<symbol> const& l );
 matrix curl( matrix const& f, std::vector<symbol> const& l );
 matrix laplacian( matrix const& f, std::vector<symbol> const& l );
+ex laplacian( std::string const& s, std::vector<symbol> const& l, std::vector<symbol> const& p );
 
 matrix diff(ex const& f, symbol const& l, const int n);
 matrix diff(matrix const& f, symbol const& l, const int n);
