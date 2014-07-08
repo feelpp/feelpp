@@ -198,6 +198,15 @@ if ( HDF5_FOUND AND HDF5_IS_PARALLEL )
 ELSEIF ( HDF5_LIBRARY AND NOT HDF5_IS_PARALLEL )
   MESSAGE(STATUS "HDF5 is found but is not parallel, HDF5 is not enabled in Feel++")
 endif()
+
+# XDMF
+FIND_PACKAGE(XDMF)
+IF (XDMF_FOUND)
+include_directories( ${XDMF_INCLUDE_DIRS} )
+SET(FEELPP_LIBRARIES ${XDMF_LIBRARIES})
+SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} XDMF" )
+ENDIF (XDMF_FOUND )
+
 # Boost
 SET(BOOST_MIN_VERSION "1.49.0")
 FIND_PACKAGE(Boost ${BOOST_MIN_VERSION} COMPONENTS date_time filesystem system program_options unit_test_framework signals  ${FEELPP_BOOST_MPI} regex  serialization)

@@ -11,9 +11,9 @@ int main (int argc, char ** argv) {
                                   _author="Benjamin Vanthong",
                                   _email="benjamin.vanthong@icloud.com") );
 
-    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<3>>);
 
-   Exporterhdf5 <Mesh<Simplex<2>>> expo ("ben.h5", Environment::worldComm ()) ;
+   Exporterhdf5 <Mesh<Simplex<3>>> expo ("thomas", Environment::worldComm ()) ;
    expo.write (mesh) ;
 
 
