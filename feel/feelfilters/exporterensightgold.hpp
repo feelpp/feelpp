@@ -237,6 +237,9 @@ private:
     std::string M_face_type;
     mutable int time_index;
     mutable std::set<int> M_markersToWrite;
+    /* Number of digits used in timesteps */
+    /* Set to 4 by default: range [0000; 9999] for timesteps */
+    mutable int M_timeExponent;
 };
 
 
