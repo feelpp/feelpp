@@ -466,17 +466,22 @@ public:
             M_state.clear( STEP_ON_DISK );
         }
 
+        /**
+         * @brief add regions to timeset
+         * @details some regions can be automatically generated such as the
+         * process id map
+         *
+         * @param  prefix prefix string for the region
+         */
         void
         addRegions( std::string prefix = "" )
         {
             VLOG(1) << "[timeset] Adding regions...\n";
             if ( !M_ts->M_scalar_p0 )
             {
-                VLOG(1) << "[timeset] creating space...\n";
-                //if ( Environment::worldComm().numberOfSubWorlds() > 1 )
+                VLOG(1) << "[timeset] creating space... " << M_mesh.get()->worldComm().numberOfSubWorlds();
                 if ( M_mesh.get()->worldComm().numberOfSubWorlds() > 1 )
                 {
-                    //auto wc = std::vector<WorldComm>( 1, Environment::worldComm().subWorld(Environment::worldComm().numberOfSubWorlds()) );
                     auto wc = std::vector<WorldComm>( 1, M_mesh.get()->worldComm().subWorld(M_mesh.get()->worldComm().numberOfSubWorlds()) );
                     M_ts->M_scalar_p0 = scalar_p0_space_type::New ( _mesh=M_mesh.get(), _worldscomm=wc );
                 }

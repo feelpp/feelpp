@@ -1,15 +1,21 @@
+os:
+  - linux
 git:
   submodules: false
 language: cpp
 compiler:
 - clang
 before_install:
-- sudo add-apt-repository -y ppa:mapnik/boost-backports-1-54
-- sudo add-apt-repository -y ppa:kalakris/eigen
-- sudo apt-get -qq update
-- sudo apt-get install -qq libboost1.54-all-dev mpi-default-dev mpi-default-bin libeigen3-dev
-  libcln-dev petsc-dev libxml2-dev gmsh bison flex doxygen doxygen-latex transfig
-  imagemagick libtbb-dev libann-dev libglpk-dev
+- echo $TRAVIS_OS_NAME
+- if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo add-apt-repository -y ppa:mapnik/boost-backports-1-54; fi
+- if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo add-apt-repository -y ppa:kalakris/eigen; fi
+- if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo add-apt-repository -y ppa:feelpp/petsc; fi
+- if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo apt-get -qq update; fi
+- if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo apt-get install -qq libboost1.54-all-dev mpi-default-dev mpi-default-bin libeigen3-dev
+    libpetsc3.4.2-dev libcln-dev petsc-dev libxml2-dev gmsh bison flex doxygen doxygen-latex transfig
+    imagemagick libtbb-dev libann-dev libglpk-dev; fi
+- if test "x$TRAVIS_OS_NAME" = "xosx"; then brew tap feelpp/science; fi
+- if test "x$TRAVIS_OS_NAME" = "xosx"; then brew install --only-dependencies feelpp; fi
 install:
 - mkdir opt && cd opt && ../configure -r
 script:
@@ -17,11 +23,14 @@ script:
 - make -j2 feelpp
 - make quickstart
 - make tutorial
-after_script: make check
+- make check
+#after_script: make check
 branches:
   only:
   - develop
   - master
+  - feature/explicit
+  - merging-with-explicit
 cache:
 - apt
 notifications:

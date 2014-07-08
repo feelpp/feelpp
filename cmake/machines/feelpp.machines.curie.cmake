@@ -30,7 +30,12 @@ FIND_LIBRARY(GFORTRAN_LIBRARY
     NAMES
     gfortran
     PATHS
-    /usr/local/gcc-4.6.3/lib
+    /usr/local/gcc-4.8.1/lib
     $ENV{LIBRARY_PATH}
 )
 message(STATUS "curie gfortran lib: ${GFORTRAN_LIBRARY} ")
+
+# this is for petsc on curie
+set( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXEC_LINKER_FLAGS}  -L/usr/local/intel-14.0.3.174/lib/intel64/ -L/usr/local/intel-14.0.3.174/composer_xe_2013_sp1.3.174/compiler/lib/intel64 -L/usr/local/hwloc-1.7.1/lib/")
+set( CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS}  -L/usr/local/intel-14.0.3.174/lib/intel64/ -L/usr/local/intel-14.0.3.174/composer_xe_2013_sp1.3.174/compiler/lib/intel64 -L/usr/local/hwloc-1.7.1/lib/")
+set(FEELPP_LIBRARIES "-lhwloc -lifport -lifcore -limf -lsvml -liomp5 -lirc -liomp5")
