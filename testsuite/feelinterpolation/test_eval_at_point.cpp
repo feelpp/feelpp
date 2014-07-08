@@ -100,12 +100,12 @@ BOOST_AUTO_TEST_SUITE( form_eval_at_point )
 
 BOOST_AUTO_TEST_CASE( form_eval_at_point_P1_D2 )
 {
-    for(int i = 0; i < 10; ++i )
+//    for(int i = 0; i < 10; ++i )
         test_eval_at_point::run<1,2>();
 }
 BOOST_AUTO_TEST_CASE( form_eval_at_point_P1_D3 )
 {
-    for(int i = 0; i < 5; ++i )
+//    for(int i = 0; i < 5; ++i )
         test_eval_at_point::run<1,3>();
 }
 BOOST_AUTO_TEST_CASE( form_eval_at_point_P4_D2 )

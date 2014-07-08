@@ -52,6 +52,7 @@ extern "C"
 #include <petscsys.h>
 #endif
 
+#include <feel/feelinfo.h>
 #include <feel/feelconfig.h>
 #include <feel/feelcore/feel.hpp>
 
@@ -647,23 +648,39 @@ Environment::parseAndStoreOptions( po::command_line_parser parser, bool extra_pa
     VLOG(2) << "[parseAndStoreOptions] parsing options done\n";
 
     S_to_pass_further = po::collect_unrecognized( parsed->options, po::include_positional );
-    VLOG(2)<< " number of unrecognized options: " << ( S_to_pass_further.size() ) << "\n";
-
-    BOOST_FOREACH( std::string const& s, S_to_pass_further )
+    if ( Environment::isMasterRank() && S_to_pass_further.size() )
     {
-        VLOG(2)<< " option: " << s << "\n";
-    }
-    std::vector<po::basic_option<char> >::iterator it = parsed->options.begin();
-    std::vector<po::basic_option<char> >::iterator en  = parsed->options.end();
+        LOG(ERROR) << "Some options (" << ( S_to_pass_further.size() ) << ") were not recognized.";
+        LOG(ERROR) << "We remove them from Feel++ options management system and pass them to PETSc/SLEPc";
+        LOG(ERROR) << "and other third party libraries";
 
-    for ( ; it != en ; ++it )
-        if ( it->unregistered )
+        for( std::string const& s: S_to_pass_further )
         {
-            VLOG(2)<< " remove from vector " << it->string_key << "\n";
-            parsed->options.erase( it );
+            LOG(ERROR) << "  |- unrecognized option: " << s << "\n";
         }
+        std::vector<po::basic_option<char> >::iterator it = parsed->options.begin();
+        std::vector<po::basic_option<char> >::iterator en  = parsed->options.end();
 
+        for ( ; it != en ; ++it )
+            if ( it->unregistered )
+            {
+                LOG(ERROR) << "  |- remove " << it->string_key << " from Feel++ options management system"  << "\n";
+                parsed->options.erase( it );
+            }
+    }
     po::store( *parsed, S_vm );
+    if ( boption( "fail-on-unknown-option" ) && S_to_pass_further.size() )
+    {
+        std::stringstream ostr;
+        for( std::string const& s: S_to_pass_further )
+        {
+            ostr << s << " ";
+        }
+        if ( Environment::isMasterRank() )
+            LOG(ERROR) << "Unknown options [" << ostr.str() << "] passed to Feel++. Quitting application...";
+        //MPI_Barrier( S_worldcomm->comm() );
+        MPI_Abort( S_worldcomm->comm(), 1);
+    }
 }
 
 
@@ -1454,6 +1471,34 @@ Environment::logMemoryUsage( std::string const& message )
 #endif
     return mem;
 }
+
+std::string
+Environment::expand( std::string const& expr )
+{
+    std::string topSrcDir = BOOST_PP_STRINGIZE(FEELPP_SOURCE_DIR);
+    std::string topBuildDir = BOOST_PP_STRINGIZE(FEELPP_BUILD_DIR);
+    std::string homeDir = ::getenv( "HOME" );
+    std::string dataDir = (fs::path(topSrcDir)/fs::path("data")).string();
+    std::string exprdbDir = (fs::path(Environment::rootRepository())/fs::path("exprDB")).string();
+
+    VLOG(2) << "topSrcDir " << topSrcDir << "\n"
+            << "topBuildDir " << topBuildDir << "\n"
+            << "HOME " << homeDir << "\n"
+            << "Environment::rootRepository() " << Environment::rootRepository()
+            << "dataDir " << dataDir << "\n"
+            << "exprdbdir " << exprdbDir << "\n"
+            << "\n";
+
+    std::string res=expr;
+    boost::replace_all( res, "$top_srcdir", topSrcDir );
+    boost::replace_all( res, "$top_builddir", topBuildDir );
+    boost::replace_all( res, "$home", homeDir );
+    boost::replace_all( res, "$repository", Environment::rootRepository());
+    boost::replace_all( res, "$datadir", dataDir);
+    boost::replace_all( res, "$exprdbdir", exprdbDir);
+    return res;
+}
+
 
 AboutData Environment::S_about;
 po::variables_map Environment::S_vm;

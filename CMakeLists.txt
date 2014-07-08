@@ -1,9 +1,9 @@
 # -*- mode: cmake; coding: utf-8 -*-
 #
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2009-11-29
 #
-#  Copyright (C) 2009-2010 Université Joseph Fourier (Grenoble I)
+#  Copyright (C) 2009-2014 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -337,7 +337,7 @@ endif()
 #
 INCLUDE(CTest)
 ENABLE_TESTING()
-add_custom_target(check COMMAND "ctest" ARGS "-R" "qs")
+add_custom_target(check COMMAND "ctest" ARGS "-VV" "-R" "qs")
 add_dependencies(check quickstart)
 
 add_custom_target(check-full COMMAND "ctest")
