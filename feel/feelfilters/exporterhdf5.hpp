@@ -35,7 +35,6 @@ class Exporterhdf5
         void writePoints () ;
         void writeFaces () ;
         void writeElements () ;
-        void writeElements1 () ;
         void writeStats () ;
         void writeDataNodes () ;
 
@@ -53,6 +52,7 @@ class Exporterhdf5
         size_type M_elementNodes ;
         size_type M_maxNumElements ;
         size_type M_maxNumPoints ;
+        std::string M_element_type ;
 
         std::vector<size_type> M_uintBuffer ;
         std::vector<value_type> M_realBuffer ;
@@ -63,8 +63,28 @@ inline Exporterhdf5<MeshType>::Exporterhdf5 (const std::string& fileName,
                                              const WorldComm& comm) :
     M_comm (comm),
     M_fileName (fileName)
-{
+{    
+    if ( mesh_type::nDim == 1 )
+        if ( mesh_type::Shape == SHAPE_LINE )
+            M_element_type = ( mesh_type::nOrder == 1 )?"Polyline":"Edge_3";
 
+    if ( mesh_type::nDim == 2 )
+    {
+        if ( mesh_type::Shape == SHAPE_TRIANGLE )
+            M_element_type = ( mesh_type::nOrder == 1 )?"Triangle":"Tri_6";
+
+        else if ( mesh_type::Shape == SHAPE_QUAD )
+            M_element_type = ( mesh_type::nOrder == 1 )?"Quadrilateral":"Quad_8";
+    }
+
+    if ( mesh_type::nDim == 3 )
+    {
+        if ( mesh_type::Shape == SHAPE_TETRA )
+            M_element_type = ( mesh_type::nOrder == 1 )?"Tetrahedron":"Tet_10";
+
+        else if ( mesh_type::Shape == SHAPE_HEXA )
+            M_element_type = ( mesh_type::nOrder == 1 )?"Hexahedron":"Hex_20";
+    }
 }
 
 template <typename MeshType>
@@ -75,8 +95,8 @@ void Exporterhdf5<MeshType>::write (const mesh_ptrtype& mesh)
     M_HDF5.openFile (M_fileName+".h5", M_comm, false) ;
     writePoints () ;
     writeFaces () ;
-    writeElements1 () ;
-    writeDataNodes () ;
+    writeElements () ;
+    //writeDataNodes () ;
     writeStats () ;
 
     write_xdmf_xml () ;
@@ -157,6 +177,7 @@ void Exporterhdf5<MeshType>::writeFaces ()
 */  
 }
 
+
 template <typename MeshType>
 void Exporterhdf5<MeshType>::writeElements () 
 {
@@ -166,41 +187,7 @@ void Exporterhdf5<MeshType>::writeElements ()
     std::cout << "nombre d'Elements : " << M_maxNumElements << std::endl ;
     
     M_elementNodes = M_meshOut-> numLocalVertices () ;
-    std::cout << " nombre de Points par element : " << M_elementNodes << std::endl ;
-
-    hsize_t currentSpacesDims [2] ;
-
-    currentSpacesDims [0] = M_elementNodes + 1 ;
-    currentSpacesDims [1] = M_maxNumElements ;
-
-    M_HDF5.createTable ("elements", H5T_STD_U32BE, currentSpacesDims) ;
-
-    M_uintBuffer.resize (currentSpacesDims[0]*currentSpacesDims[1], -1) ;
-    for ( size_type i = 0 ; elt_it != elt_en ; ++elt_it, i++ ) 
-    {
-        M_uintBuffer[i] = elt_it->id() ;
-        for ( size_type j = 1 ; j < M_elementNodes + 1; j++ ) 
-        {
-            M_uintBuffer[j*M_maxNumElements + i] = elt_it->point(j-1).id() ;
-        }
-    }
-
-    hsize_t currentOffset[2] = {0, 0} ;
-    M_HDF5.write ( "elements", H5T_NATIVE_LLONG, currentSpacesDims, currentOffset, &M_uintBuffer[0] ) ;
-
-    M_HDF5.closeTable ("elements") ;
-}
-
-template <typename MeshType>
-void Exporterhdf5<MeshType>::writeElements1 () 
-{
-    auto elt_it = M_meshOut->beginElementWithMarker (M_meshOut->beginParts()->first) ;
-    auto elt_en = M_meshOut->endElementWithMarker (M_meshOut->beginParts()->first) ;
-    M_maxNumElements = std::distance (elt_it, elt_en) ;
-    std::cout << "nombre d'Elements : " << M_maxNumElements << std::endl ;
-    
-    M_elementNodes = M_meshOut-> numLocalVertices () ;
-    std::cout << " nombre de Points par element : " << M_elementNodes << std::endl ;
+    std::cout << "nombre de Points par element : " << M_elementNodes << std::endl ;
 
     hsize_t currentSpacesDims [2] ;
     hsize_t currentSpacesDims2 [2] ;
@@ -318,6 +305,7 @@ void Exporterhdf5<MeshType>::bubbleSort (size_type * ids, value_type * coords, s
 template <typename MeshType>
 void Exporterhdf5<MeshType>::write_xdmf_xml ()  
 {
+    std::cout << "M_element_type : " << M_element_type << std::endl ;
     FILE * xmf = 0 ;
     xmf = fopen ((M_fileName+".xmf").c_str(), "w") ;
     fprintf (xmf, "<?xml version=\"1.0\" ?>\n") ;
@@ -325,13 +313,13 @@ void Exporterhdf5<MeshType>::write_xdmf_xml ()
     fprintf (xmf, "<Xdmf Version=\"2.0\">\n") ;
     fprintf (xmf, " <Domain>\n") ;
     fprintf (xmf, "     <Grid Name=\"%s\" GridType=\"Uniform\">\n", M_fileName.c_str()) ;
-    fprintf (xmf, "         <Topology TopologyType=\"Polygon\" NumberOfElements=\"%zu\" NodesPerElement=\"%zu\">\n", M_maxNumElements, M_elementNodes) ;
-    fprintf (xmf, "             <DataItem Dimensions=\"%zu %zu\" NumberType=\"Float\" Precision=\"8\" Format=\"HDF\">\n", M_maxNumElements, M_elementNodes) ;
+    fprintf (xmf, "         <Topology TopologyType=\"%s\" NumberOfElements=\"%zu\" NodesPerElement=\"%zu\">\n", M_element_type.c_str(), M_maxNumElements, M_elementNodes) ;
+    fprintf (xmf, "             <DataItem Dimensions=\"%zu %zu\" NumberType=\"Float\" Precision=\"8\" Format=\"HDF\" Endian=\"Big\">\n", M_maxNumElements, M_elementNodes) ;
     fprintf (xmf, "             %s.h5:/element_nodes\n", M_fileName.c_str()) ;
     fprintf (xmf, "             </DataItem>\n") ;
     fprintf (xmf, "         </Topology>\n") ;
     fprintf (xmf, "         <Geometry GeometryType=\"XYZ\">\n") ;
-    fprintf (xmf, "             <DataItem Dimensions=\"%zu 3\" NumberType=\"Float\" Precision=\"8\" Format=\"HDF\">\n", M_maxNumPoints) ;
+    fprintf (xmf, "             <DataItem Dimensions=\"%zu 3\" NumberType=\"Float\" Precision=\"8\" Format=\"HDF\" Endian=\"Big\">\n", M_maxNumPoints) ;
     fprintf (xmf, "             %s.h5:/point_coords\n", M_fileName.c_str()) ;
     fprintf (xmf, "             </DataItem>\n") ;
     fprintf (xmf, "         </Geometry>\n") ;
