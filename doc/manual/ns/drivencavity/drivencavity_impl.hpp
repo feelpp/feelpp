@@ -207,6 +207,6 @@ void DrivenCavity<Dim>::run()
     }
 
     this->exportResults( U );
-};
+}
 } // namespace Feel
 #endif /* FEELPP_DRIVENCAVITY_IMPL_HPP_H */
