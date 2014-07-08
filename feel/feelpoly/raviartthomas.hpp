@@ -598,16 +598,15 @@ public:
         auto g = expr.geom();
 
         auto const& K = g->K(0);
-        //std::cout << "K = " << K << "\n";
+        auto const& B = g->B(0);
 
-        std::cout << "ref n = " << g->geometricMapping()->referenceConvex().normal( faceId ) << "\n";
-        ublas::axpy_prod( K,
+        ublas::axpy_prod( B,
                           g->geometricMapping()->referenceConvex().normal( faceId ),
                           n,
                           true );
 
-        n *= g->element().hFace(faceId)/ublas::norm_2(n);
-        std::cout << "n=" << n << "\n";
+        n *= g->element().faceMeasure(faceId)/ublas::norm_2(n);
+        LOG(INFO) << "[raviart thomas interpolant] N=" << n << "\n";
     }
 
     typedef Eigen::MatrixXd local_interpolant_type;
@@ -622,12 +621,18 @@ public:
     interpolate( ExprType& expr, local_interpolant_type& Ihloc ) const
         {
             Ihloc.setZero();
+            auto g=expr.geom();
             ublas::vector<value_type> n( nDim ); //normal
 
             for( int f = 0; f < convex_type::numTopologicalFaces; ++f )
             {
-                getFaceNormal(expr, f, n);
-                for ( int l = 0; l < (nDim==2) ? nDofPerEdge : nDofPerFace; ++l )
+                if( g->faceId() == invalid_uint16_type_value)
+                    getFaceNormal(expr, f, n);
+                else
+                    getFaceNormal(expr, g->faceId(), n);
+
+                auto nLocalDof = (nDim==2) ? nDofPerEdge : nDofPerFace;
+                for ( int l = 0; l < nLocalDof; ++l )
                 {
                     int q = (nDim == 2) ? f*nDofPerEdge+l : f*nDofPerFace+l;
                     for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
@@ -644,12 +649,18 @@ public:
     void
     faceInterpolate( ExprType& expr, local_interpolant_type& Ihloc ) const
         {
+            auto g = expr.geom();
             ublas::vector<value_type> n( nDim ); //normal
 
             for( int f = 0; f < face_type::numFaces; ++f )
             {
-                getFaceNormal(expr, f, n);
-                for ( int l = 0; l < (nDim==2) ? nDofPerEdge : nDofPerFace; ++l )
+                if( g->faceId() == invalid_uint16_type_value)
+                    getFaceNormal(expr, f, n);
+                else
+                    getFaceNormal(expr, g->faceId(), n);
+
+                auto nLocalDof = (nDim==2) ? nDofPerEdge : nDofPerFace;
+                for ( int l = 0; l < nLocalDof; ++l )
                 {
                     int q = (nDim == 2) ? f*nDofPerEdge+l : f*nDofPerFace+l;
                     for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
