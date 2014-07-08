@@ -37,6 +37,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include <testsuite/testsuite.hpp>
 #include <feel/feel.hpp>
+#include <feel/feelvf/print.hpp>
 #include <feel/feelpoly/raviartthomas.hpp>
 
 namespace Feel
@@ -54,7 +55,8 @@ makeOptions()
 {
     po::options_description testHdivInterpolationOptions( "test h_div options" );
     testHdivInterpolationOptions.add_options()
-        ( "meshes", po::value< std::vector<std::string> >(), "vector containing mesh names" )
+        ( "meshes-2d", po::value< std::vector<std::string> >(), "vector containing mesh names" )
+        ( "meshes-3d", po::value< std::vector<std::string> >(), "vector containing mesh names" )
         ;
     return testHdivInterpolationOptions.add( Feel::feel_options() );
 }
@@ -142,10 +144,16 @@ void
 TestInterpolationHDiv<Dim>::testInterpolation( std::string one_element_mesh )
 {
     // expr to interpolate
-    auto myexpr = unitX() + unitY() ; //(1,1)
+    int is3D = 0;
+    if( Dim == 3 )
+        is3D = 1;
+
+    auto myexpr = unitX() + unitY() + is3D*unitZ() ; //(1,1)
 
     // one element mesh
     auto mesh_name = one_element_mesh + ".msh"; //create the mesh and load it
+    fs::path mesh_path( mesh_name );
+
     mesh_ptrtype oneelement_mesh = loadMesh( _mesh=new mesh_type,
                                              _filename=mesh_name);
 
@@ -158,29 +166,36 @@ TestInterpolationHDiv<Dim>::testInterpolation( std::string one_element_mesh )
     space_ptrtype Xh = space_type::New( oneelement_mesh );
     std::cout << "nb dof = " << Xh->nDof() << std::endl;
 
-    std::vector<std::string> faces{ "hypo","vert","hor"}; //list of faces
+    std::vector<std::string> faces;
+    if(Dim == 2)
+        faces = { "hypo","vert","hor"};
+    else if (Dim == 3)
+        faces = {"xzFace","xyFace","xyzFace","yzFace"};
 
     element_type U_h_int = Xh->element();
     element_type U_h_on = Xh->element();
 
     // handly computed interpolant coeff (in hdiv basis)
     for ( int i = 0; i < Xh->nLocalDof(); ++i )
-        U_h_int(i) = integrate( markedfaces( oneelement_mesh, faces[i] ), trans(N())*myexpr ).evaluate()(0,0);
+        {
+            CHECK( mesh->hasMarkers( {faces[i]} ) );
+            U_h_int(i) = integrate( markedfaces( oneelement_mesh, faces[i] ), trans( print(N(), "normal=") )*myexpr ).evaluate()(0,0);
+        }
 
     // raviart-thomas interpolant using on
     U_h_on.zero();
     U_h_on.on(_range=elements(oneelement_mesh), _expr=myexpr);
 
     export_ptrtype exporter_proj( export_type::New( this->vm(),
-                                  ( boost::format( "%1%" ) % this->about().appName() ).str() ) );
+                                  ( boost::format( "%1%-%2%" ) % this->about().appName() %mesh_path.stem().string() ).str() ) );
 
     exporter_proj->step( 0 )->setMesh( mesh );
-    exporter_proj->step( 0 )->add( "U_interpolation_handly"+one_element_mesh, U_h_int );
-    exporter_proj->step( 0 )->add( "U_interpolation_on"+one_element_mesh, U_h_on );
+    exporter_proj->step( 0 )->add( "U_interpolation_handly-" + mesh_path.stem().string(), U_h_int );
+    exporter_proj->step( 0 )->add( "U_interpolation_on-" + mesh_path.stem().string(), U_h_on );
     exporter_proj->save();
 
-    //U_h_int.printMatlab( "U_h_int_" + one_element_mesh + ".m" );
-    //U_h_on.printMatlab( "U_h_on_" + one_element_mesh + ".m" );
+    U_h_int.printMatlab( "U_h_int_" + mesh_path.stem().string() + ".m" );
+    U_h_on.printMatlab( "U_h_on_" + mesh_path.stem().string() + ".m" );
 
     //L2 norm of error
     auto error = vf::project(_space=Xh, _range=elements(oneelement_mesh), _expr=idv(U_h_int) - idv(U_h_on) );
@@ -198,12 +213,20 @@ BOOST_AUTO_TEST_SUITE( HDIV_INTERPOLANT )
 BOOST_AUTO_TEST_CASE( test_hdiv_interpolant_1 )
 {
     using namespace Feel;
-    TestInterpolationHDiv<2> t;
-    std::vector<std::string> mygeoms = option(_name="meshes").template as< std::vector<std::string> >();
-    for(std::string geo : mygeoms)
+    TestInterpolationHDiv<2> t2;
+    std::vector<std::string> mygeoms2d = option(_name="meshes-2d").template as< std::vector<std::string> >();
+    for(std::string geo2d : mygeoms2d)
         {
-            BOOST_TEST_MESSAGE( "*** interpolant on " << geo << " ***" );
-            t.testInterpolation(geo);
+            BOOST_TEST_MESSAGE( "*** interpolant [2D] on " << geo2d << " ***" );
+            t2.testInterpolation(geo2d);
+        }
+
+    TestInterpolationHDiv<3> t3;
+    std::vector<std::string> mygeoms3d = option(_name="meshes-3d").template as< std::vector<std::string> >();
+    for(std::string geo3d : mygeoms3d)
+        {
+            BOOST_TEST_MESSAGE( "*** interpolant [3D] on " << geo3d << " ***" );
+            t3.testInterpolation(geo3d);
         }
 }
 BOOST_AUTO_TEST_SUITE_END()
