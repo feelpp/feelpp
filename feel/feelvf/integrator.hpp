@@ -5511,8 +5511,11 @@ integrate_impl( Elts const& elts,
                 boost::shared_ptr<QuadPtLocalization<typename Feel::detail::quadptlocrangetype<Elts>::type, Im, ExprT > > quadptloc
                 = boost::shared_ptr<QuadPtLocalization<typename Feel::detail::quadptlocrangetype<Elts>::type, Im, ExprT > >() )
 {
-    typedef Integrator<typename Feel::detail::quadptlocrangetype<Elts>::type, Im, ExprT, Im2> expr_t;
-    typedef typename boost::tuples::template element<1, Elts>::type element_iterator;
+
+    typedef typename Feel::detail::quadptlocrangetype< Elts >::type range_type;
+    typedef Integrator<range_type, Im, ExprT, Im2> expr_t;
+
+    typedef typename boost::unwrap_reference< typename boost::tuples::template element<1,range_type>::type >::type element_iterator;
     static const uint16_type geoOrder = element_iterator::value_type::nOrder;
     LOG_IF(WARNING, gt != GeomapStrategyType::GEOMAP_HO && geoOrder == 1 ) << "you use a non standard geomap : ";
     return Expr<expr_t>( expr_t( elts, im, expr, gt, im2, use_tbb, use_harts, grainsize, partitioner, quadptloc ) );
@@ -5527,7 +5530,7 @@ struct integrate_type
 {
     typedef typename clean2_type<Args,tag::expr,Expr<Cst<double> > >::type _expr_type;
     typedef typename Feel::detail::quadptlocrangetype<typename clean_type<Args,tag::range>::type>::type _range_type;
-    typedef typename boost::tuples::template element<1, _range_type>::type _element_iterator;
+    typedef typename boost::unwrap_reference< typename boost::tuples::template element<1, _range_type>::type >::type _element_iterator;
     static const uint16_type geoOrder = _element_iterator::value_type::nOrder;
 
     //typedef _Q< ExpressionOrder<_range_type,_expr_type>::value > the_quad_type;
