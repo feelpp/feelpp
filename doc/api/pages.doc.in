@@ -76,6 +76,7 @@ namespace Feel
     - \subpage StVenantKirchhoff
 */
 /** \page ElectroMagnetism Electro Magnetism
+   - \subpage Magnetostatic
    - \subpage Diode
 */
 /** \page MultiPhysics MultiPhysics
