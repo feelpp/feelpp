@@ -188,6 +188,7 @@ public:
                       expression_type const& __expr,
                       size_type __on )
         :
+        M_elts(),
         M_eltbegin( __elts.template get<1>() ),
         M_eltend( __elts.template get<2>() ),
         M_u( __u ),
@@ -195,9 +196,29 @@ public:
         M_expr( __expr ),
         M_on_strategy( __on )
     {
+        M_elts.push_back( __elts );
+    }
+    IntegratorOnExpr( std::list<ElementRange> const& __elts,
+                      element_type const& __u,
+                      rhs_element_type const& __rhs,
+                      expression_type const& __expr,
+                      size_type __on )
+        :
+        M_elts( __elts ),
+        M_u( __u ),
+        M_rhs( __rhs ),
+        M_expr( __expr ),
+        M_on_strategy( __on )
+    {
+        if ( __elts.size() )
+        {
+            M_eltbegin = __elts.begin()->template get<1>();
+            M_eltend = __elts.begin()->template get<2>();
+        }
     }
     IntegratorOnExpr( IntegratorOnExpr const& ioe )
         :
+        M_elts( ioe.M_elts ),
         M_eltbegin( ioe.M_eltbegin ),
         M_eltend( ioe.M_eltend ),
         M_u( ioe.M_u ),
@@ -269,6 +290,7 @@ private:
 
 private:
 
+    std::list<ElementRange> M_elts;
     element_iterator M_eltbegin;
     element_iterator M_eltend;
 
@@ -339,12 +361,37 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
     std::vector<value_type> values;
     element_iterator __face_it = this->beginElement();
     element_iterator __face_en = this->endElement();
-    if ( __face_it != __face_en )
+
+    bool findAFace = false;
+    for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
+    {
+        __face_it = lit->template get<1>();
+        __face_en = lit->template get<2>();
+        if ( __face_it != __face_en )
+        {
+            findAFace=true;
+            break;
+        }
+    }
+    if ( findAFace )
     {
         // get the first face properly connected
-        for( ; __face_it != __face_en; ++__face_it )
-            if ( boost::unwrap_ref(*__face_it).isConnectedTo0() )
-                break;
+        bool findAFaceToInit=false;
+        for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
+        {
+            __face_it = lit->template get<1>();
+            __face_en = lit->template get<2>();
+            for( ; __face_it != __face_en; ++__face_it )
+            {
+                if ( boost::unwrap_ref(*__face_it).isConnectedTo0() )
+                {
+                    findAFaceToInit=true;
+                    break;
+                }
+            }
+            if ( findAFaceToInit ) break;
+        }
+        CHECK( findAFaceToInit ) << "not find a face to init\n";
 
         auto const& faceForInit = boost::unwrap_ref( *__face_it );
 
@@ -400,8 +447,12 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
         DVLOG(2)  << "nbFaceDof = " << nbFaceDof << "\n";
         //const size_type nbFaceDof = __fe->boundaryFE()->points().size2();
 
+        for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
+        {
+        __face_it = lit->template get<1>();
+        __face_en = lit->template get<2>();
         for ( ;
-              __face_it != this->endElement();
+              __face_it != __face_en;//this->endElement();
               ++__face_it )
         {
             auto const& theface = boost::unwrap_ref( *__face_it );
@@ -493,7 +544,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
         }
 
     } // __face_it != __face_en
-
+    }
 
     if ( __form.rowStartInMatrix()!=0)
     {
@@ -526,10 +577,15 @@ struct v_ptr2
 template<typename Args>
 struct integratoron_type
 {
-    typedef typename clean_type<Args,tag::range>::type _range_type;
+    typedef typename clean_type<Args,tag::range>::type _range_base_type;
     typedef typename clean_type<Args,tag::rhs>::type _rhs_type;
     typedef typename clean_type<Args,tag::element>::type _element_type;
     typedef typename clean_type<Args,tag::expr>::type _expr_type;
+
+    typedef typename mpl::if_< boost::is_std_list<_range_base_type>,
+                               mpl::identity<_range_base_type>,
+                               mpl::identity<std::list<_range_base_type> > >::type::type::value_type _range_type;
+
 #if 1
     typedef typename mpl::if_<Feel::detail::is_vector_ptr<_rhs_type>,
                               mpl::identity<v_ptr1<_rhs_type> >,

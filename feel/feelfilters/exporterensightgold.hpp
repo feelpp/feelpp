@@ -25,6 +25,7 @@
 /**
    \file ExporterEnsightGold.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+   \author Alexandre Ancel <alexandre.ancel@cemosis.fr>
    \date 2006-11-26
  */
 #ifndef __ExporterEnsightGold_H
@@ -51,6 +52,7 @@ namespace fs = boost::filesystem;
  *
  * \ingroup Exporter
  * @author Christophe Prud'homme
+ * @author Alexandre Ancel
  */
 template<typename MeshType, int N>
 class ExporterEnsightGold
@@ -237,6 +239,9 @@ private:
     std::string M_face_type;
     mutable int time_index;
     mutable std::set<int> M_markersToWrite;
+    /* Number of digits used in timesteps */
+    /* Set to 4 by default: range [0000; 9999] for timesteps */
+    mutable int M_timeExponent;
 };
 
 
