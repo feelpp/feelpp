@@ -101,10 +101,19 @@ int main(int argc, char**argv )
     ll = integrate( _range=elements(mesh), _expr=trans(idv(u))*id(w));
     b.solve( _solution=w, _rhs=ll, _rebuild=true );
 
+    auto Yh = Pdh<0>( mesh );
+    auto d = Yh->element();
+    auto c = form2( _test=Yh, _trial=Yh );
+    c = integrate(_range=elements(mesh), _expr=(idt(d))*id(d));
+    auto crhs = form1( _test=Yh );
+    crhs = integrate( _range=elements(mesh), _expr=divv(u)*id(d));
+    c.solve( _solution=d, _rhs=crhs, _rebuild=true );
+
     auto e = exporter( _mesh=mesh );
     e->add( "u", u );
     e->add( "ul2", w );
     e->add( "p", p );
+    e->add( "laplacian(p)", d );
     e->save();
     /// [marker1]
 }
