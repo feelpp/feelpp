@@ -2169,13 +2169,20 @@ template<typename T>
 struct MeshPoints
 {
     template<typename MeshType, typename IteratorType>
-    MeshPoints( MeshType*, IteratorType it, IteratorType en, const bool outer = false, const bool renumber = false, const bool fill = false );
+    MeshPoints( MeshType* mesh, const WorldComm &, IteratorType it, IteratorType en, const bool outer = false, const bool renumber = false, const bool fill = false );
+
+    /* The original constructor, initialized with the other constructor (c++11 feature) */
+    template<typename MeshType, typename IteratorType>
+    MeshPoints( MeshType* mesh, IteratorType it, IteratorType en, const bool outer = false, const bool renumber = false, const bool fill = false ) 
+        : MeshPoints(mesh, Environment::worldComm(), it, en, outer, renumber, fill)
+    {}
 
     int translatePointIds(std::vector<int> & ids);
     int translateElementIds(std::vector<int> & ids);
 
     int globalNumberOfPoints() const { return global_npts; }
     int globalNumberOfElements() const { return global_nelts; }
+
     int global_nelts{0}, global_npts{0};
     std::vector<int> ids;
     std::map<int,int> new2old;
@@ -2200,7 +2207,7 @@ struct MeshPoints
  */
 template<typename T>
 template<typename MeshType, typename IteratorType>
-MeshPoints<T>::MeshPoints( MeshType* mesh, IteratorType it, IteratorType en, const bool outer, const bool renumber, const bool fill )
+MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorType it, IteratorType en, const bool outer, const bool renumber, const bool fill )
 {
     std::set<int> nodeset;
     size_type p = 0;
@@ -2297,13 +2304,13 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, IteratorType it, IteratorType en, con
     size_type n_pts = ids.size();
     //std::cout << "n_pts : " << n_pts << std::endl;
     std::vector<size_type> p_s;
-    mpi::all_gather( mesh->worldComm().comm(), n_pts, p_s );
+    mpi::all_gather( worldComm.comm(), n_pts, p_s );
     int shift_p = 0;
 #if defined(USE_MPIIO)
 
     for( size_type i = 0; i < p_s.size(); i++ )
     {
-        if ( i < mesh->worldComm().localRank() )
+        if ( i < worldComm.localRank() )
         {
             shift_p += p_s[i];
         }
@@ -2315,11 +2322,11 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, IteratorType it, IteratorType en, con
 #endif
     int __ne = std::distance( elt_it, en );
     std::vector<int> s{nv,__ne}, global_s;
-    //mpi::all_reduce( mesh->worldComm().comm(), s, global_s, std::sum<int>() );
+    //mpi::all_reduce( worldComm.comm(), s, global_s, std::sum<int>() );
     
     /* compute the number of global points and elements */
-    mpi::all_reduce( mesh->worldComm().comm(), nv, global_npts, std::plus<int>() );
-    mpi::all_reduce( mesh->worldComm().comm(), __ne, global_nelts, std::plus<int>()  );
+    mpi::all_reduce( worldComm.comm(), nv, global_npts, std::plus<int>() );
+    mpi::all_reduce( worldComm.comm(), __ne, global_nelts, std::plus<int>()  );
     //std::cout <<  "global_nelts=" << global_nelts << std::endl;
     //std::cout <<  "global_npts=" << global_npts << std::endl;
 
@@ -2370,15 +2377,15 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, IteratorType it, IteratorType en, con
     //std::cout << "offset elts : " << offset_elts << std::endl;
     std::vector<size_type> osp, ose;
     // do communication to retrieve the offsets to access the parallel io file
-    mpi::all_gather( mesh->worldComm().comm(), offset_pts, osp );
-    mpi::all_gather( mesh->worldComm().comm(), offset_elts, ose );
+    mpi::all_gather( worldComm.comm(), offset_pts, osp );
+    mpi::all_gather( worldComm.comm(), offset_elts, ose );
     offsets_pts = 0;
     global_offsets_pts = 0;
     offsets_elts = 0;
     global_offsets_elts = 0;
     for( size_type i = 0; i < osp.size(); i++ )
     {
-        if ( i < mesh->worldComm().localRank() )
+        if ( i < worldComm.localRank() )
         {
             offsets_pts += osp[i];
             offsets_elts  += ose[i];
