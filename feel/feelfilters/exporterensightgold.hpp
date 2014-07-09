@@ -25,6 +25,7 @@
 /**
    \file ExporterEnsightGold.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+   \author Alexandre Ancel <alexandre.ancel@cemosis.fr>
    \date 2006-11-26
  */
 #ifndef __ExporterEnsightGold_H
@@ -51,6 +52,7 @@ namespace fs = boost::filesystem;
  *
  * \ingroup Exporter
  * @author Christophe Prud'homme
+ * @author Alexandre Ancel
  */
 template<typename MeshType, int N>
 class ExporterEnsightGold
