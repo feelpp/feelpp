@@ -999,10 +999,7 @@ public:
 
             for( int e = 0; e < convex_type::numEdges; ++e )
             {
-                if( g->faceId() == invalid_uint16_type_value)
-                    getEdgeTangent(expr, e, t);
-                else
-                    getEdgeTangent(expr, g->faceId(), t);
+                getEdgeTangent(expr, e, t);
 
                 for ( int l = 0; l < nDofPerEdge; ++l )
                 {
@@ -1026,10 +1023,8 @@ public:
 
             for( int e = 0; e < face_type::numEdges; ++e )
             {
-                if( g->faceId() == invalid_uint16_type_value)
-                    getEdgeTangent(expr, e, t);
-                else
-                    getEdgeTangent(expr, g->faceId(), t);
+                int edgeid_in_element = convex_type::f2e( g->faceId(), e);
+                getEdgeTangent( expr, edgeid_in_element, t );
 
                 for ( int l = 0; l < nDofPerEdge; ++l )
                 {
