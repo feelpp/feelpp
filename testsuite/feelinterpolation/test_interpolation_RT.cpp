@@ -127,8 +127,10 @@ public :
                               );
     }
 
-    //void testInterpolation( std::string ( *one_element_mesh )() );
-    void testInterpolation( std::string one_element_mesh );
+    //test on one-elt meshes (2d - 3d)
+    void testInterpolationOneElt( std::string one_element_mesh );
+    //test on multi-elt meshes (2d - 3d)
+    void testInterpolation();
 
 private:
     //! linear algebra backend
@@ -141,7 +143,7 @@ private:
 
 template<int Dim>
 void
-TestInterpolationHDiv<Dim>::testInterpolation( std::string one_element_mesh )
+TestInterpolationHDiv<Dim>::testInterpolationOneElt( std::string one_element_mesh )
 {
     // expr to interpolate
     int is3D = 0;
@@ -164,7 +166,7 @@ TestInterpolationHDiv<Dim>::testInterpolation( std::string one_element_mesh )
                                   _refine=( int )refine_level);
 
     space_ptrtype Xh = space_type::New( oneelement_mesh );
-    std::cout << "nb dof = " << Xh->nDof() << std::endl;
+    //std::cout << "nb dof = " << Xh->nDof() << std::endl;
 
     std::vector<std::string> faces;
     if(Dim == 2)
@@ -179,7 +181,7 @@ TestInterpolationHDiv<Dim>::testInterpolation( std::string one_element_mesh )
     for ( int i = 0; i < Xh->nLocalDof(); ++i )
         {
             CHECK( mesh->hasMarkers( {faces[i]} ) );
-            U_h_int(i) = integrate( markedfaces( oneelement_mesh, faces[i] ), trans( print(N(), "normal=") )*myexpr ).evaluate()(0,0);
+            U_h_int(i) = integrate( markedfaces( oneelement_mesh, faces[i] ), trans( N() )*myexpr ).evaluate()(0,0);
         }
 
     // raviart-thomas interpolant using on
@@ -202,6 +204,39 @@ TestInterpolationHDiv<Dim>::testInterpolation( std::string one_element_mesh )
     double L2error = error.l2Norm();
     std::cout << "L2 error  = " << L2error << std::endl;
 }
+
+template<int Dim>
+void
+TestInterpolationHDiv<Dim>::testInterpolation()
+{
+    // expr to interpolate
+    int is3D = 0;
+    if( Dim == 3 )
+        is3D = 1;
+
+    auto myexpr = unitX() + unitY() + is3D*unitZ() ; //(1,1)
+
+    auto mesh = loadMesh( _mesh=new Mesh<Simplex<Dim>> );
+    space_ptrtype Xh = space_type::New( mesh ); // RT function space
+
+    auto u_on = Xh->element();
+    auto u_proj = Xh->element();
+
+    //test on keyword
+    u_on.on(_range=elements(mesh), _expr=myexpr);
+    //test project keyword
+    u_proj = vf::project(_space=Xh, _range=elements(mesh), _expr=myexpr);
+
+    //L2 norm of error
+    auto error_on = vf::project(_space=Xh, _range=elements(mesh), _expr=myexpr - idv(u_on) );
+    double L2error_on = error_on.l2Norm();
+    std::cout << "[on] L2 error  = " << L2error_on << std::endl;
+
+    auto error_proj = vf::project(_space=Xh, _range=elements(mesh), _expr=myexpr - idv(u_proj) );
+    double L2error_proj = error_proj.l2Norm();
+    std::cout << "[proj] L2 error  = " << L2error_proj << std::endl;
+}
+
 }// namespace Feel
 
 #if USE_BOOST_TEST
@@ -217,17 +252,21 @@ BOOST_AUTO_TEST_CASE( test_hdiv_interpolant_1 )
     std::vector<std::string> mygeoms2d = option(_name="meshes-2d").template as< std::vector<std::string> >();
     for(std::string geo2d : mygeoms2d)
         {
-            BOOST_TEST_MESSAGE( "*** interpolant [2D] on " << geo2d << " ***" );
-            t2.testInterpolation(geo2d);
+            BOOST_TEST_MESSAGE( "*** interpolant [one-elt 2D] on " << geo2d << " ***" );
+            t2.testInterpolationOneElt(geo2d);
         }
+    BOOST_TEST_MESSAGE( "*** interpolant [2D] ***" );
+    t2.testInterpolation();
 
     TestInterpolationHDiv<3> t3;
     std::vector<std::string> mygeoms3d = option(_name="meshes-3d").template as< std::vector<std::string> >();
     for(std::string geo3d : mygeoms3d)
         {
-            BOOST_TEST_MESSAGE( "*** interpolant [3D] on " << geo3d << " ***" );
-            t3.testInterpolation(geo3d);
+            BOOST_TEST_MESSAGE( "*** interpolant [one-elt 3D] on " << geo3d << " ***" );
+            t3.testInterpolationOneElt(geo3d);
         }
+    BOOST_TEST_MESSAGE( "*** interpolant [3D] ***" );
+    t3.testInterpolation();
 }
 BOOST_AUTO_TEST_SUITE_END()
 #else
