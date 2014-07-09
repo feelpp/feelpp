@@ -57,8 +57,8 @@ int main( int argc, char** argv )
     //! [space]
 
     //! [expression]
-    auto g = expr( soption(_name="functions.g"));
-    auto gradg = grad<2>(g);
+    auto g = expr<4>( soption(_name="functions.g"));
+    auto gradg = grad<3>(g);
     //! [expression]
 
     //! [interpolant]
@@ -76,9 +76,12 @@ int main( int argc, char** argv )
     double L2uerror = normL2( elements( mesh ), ( idv( u )-g ) );
     double H1uerror = normH1( elements( mesh ), _expr=( idv( u )-g ),
                               _grad_expr=( gradv( u )-gradg ) );
-    std::cout << "||u-g||_0 = " << L2uerror/L2g << std::endl;
-    std::cout << "||u-g||_1 = " << H1uerror/H1g << std::endl;
-     //! [interpolant]
+    if ( Environment::isMasterRank() )
+    {
+        std::cout << "||u-g||_0 = " << L2uerror/L2g << std::endl;
+        std::cout << "||u-g||_1 = " << H1uerror/H1g << std::endl;
+    }
+    //! [interpolant]
 
     //! [export]
     // export for post-processing
