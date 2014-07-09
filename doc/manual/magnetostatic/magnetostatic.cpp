@@ -99,10 +99,12 @@ int main(int argc, char**argv )
     }
 
     a.solve(_rhs=l,_solution=u);
-    auto err = normL2( _range=elements(mesh), _expr=idv(u)-e );
+    auto erru = normL2( _range=elements(mesh), _expr=idv(u)-e );
+    auto errinterp = normL2( _range=elements(mesh), _expr=idv(v)-e );
     if ( Environment::isMasterRank() )
     {
-        std::cout << "L2 error = " << err << "\n";
+        std::cout << "L2 error (u-e) = " << erru << "\n";
+        std::cout << "L2 error (interp_curl(e) -e) = " << errinterp << "\n";
     }
 
     auto b = form2( _test=Xh, _trial=Xh );
