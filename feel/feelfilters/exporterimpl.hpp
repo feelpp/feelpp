@@ -38,7 +38,7 @@
 #include <feel/feelfilters/exportergmsh.hpp>
 #include <feel/feelfilters/exporterensight.hpp>
 
-#if FEELPP_USE_MPIIO
+#ifdef FEELPP_HAS_MPIIO
 #include <feel/feelfilters/exporterensightgold.hpp>
 #endif
 
@@ -48,7 +48,7 @@ namespace Feel
 {
 template<typename MeshType, int N> class ExporterEnsight;
 
-#if FEELPP_USE_MPIIO
+#ifdef FEELPP_HAS_MPIIO
 template<typename MeshType, int N> class ExporterEnsightGold;
 #endif
 
@@ -142,7 +142,7 @@ Exporter<MeshType, N>::New( std::string const& exportername, std::string prefix,
 
     if ( N == 1 && ( exportername == "ensight" ) )
         exporter = new ExporterEnsight<MeshType, N>( worldComm );
-#if FEELPP_USE_MPIIO
+#ifdef FEELPP_HAS_MPIIO
     else if ( N == 1 && ( exportername == "ensightgold"  ) )
         exporter = new ExporterEnsightGold<MeshType, N>( worldComm );
 #endif
@@ -172,7 +172,7 @@ Exporter<MeshType, N>::New( po::variables_map const& vm, std::string prefix, Wor
 
     if ( N == 1 && ( estr == "ensight"   ) )
         exporter = new ExporterEnsight<MeshType, N>( worldComm );
-#if FEELPP_USE_MPIIO
+#ifdef FEELPP_HAS_MPIIO
     else if ( N == 1 && ( estr == "ensightgold"   ) )
         exporter = new ExporterEnsightGold<MeshType, N>( worldComm );
 #endif

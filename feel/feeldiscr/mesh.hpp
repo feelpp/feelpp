@@ -2307,7 +2307,7 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
     mpi::all_gather( worldComm.comm(), n_pts, p_s );
     int shift_p = 0;
 
-#if defined(FEELPP_USE_MPIIO)
+#ifdef FEELPP_HAS_MPIIO
     for( size_type i = 0; i < p_s.size(); i++ )
     {
         if ( i < worldComm.localRank() )
