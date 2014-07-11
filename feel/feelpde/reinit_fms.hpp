@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -38,13 +38,19 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelvf/vf.hpp>
 
-#include "fmsheap.hpp"
-#include "fmspoint.hpp"
+#include <feel/feelpde/fmsheap.hpp>
+#include <feel/feelpde/fmspoint.hpp>
 #include <boost/serialization/set.hpp>
 
 namespace Feel
 {
-
+/**
+ * @brief Fast Marching algorithm
+ * @details implements the fast marching algorithm
+ *
+ * @tparam FunctionSpaceType function space type
+ * @tparam periodicity_type = NoPeriodicity periodicity of the distance function
+ */
 template<typename FunctionSpaceType, typename periodicity_type = NoPeriodicity>
 class ReinitializerFMS
 {
@@ -158,18 +164,25 @@ private:
 typedef Feel::bases<Feel::Lagrange<1, Feel::Scalar> > basisP1LS_type;
 
 //2d
-typedef Feel::Mesh< Feel::Simplex<2> > mesh_typeLS;
-typedef Feel::FunctionSpace<mesh_typeLS, basisP1LS_type, double, Feel::Periodicity <Feel::NoPeriodicity>, Feel::mortars<Feel::NoMortar> > spaceP1LS_type;
+typedef Feel::Mesh< Feel::Simplex<2> > mesh_typeLSs;
+typedef Feel::FunctionSpace<mesh_typeLSs, basisP1LS_type, double, Feel::Periodicity <Feel::NoPeriodicity>, Feel::mortars<Feel::NoMortar> > spaceP1LSs_type;
+
+typedef Feel::Mesh< Feel::Hypercube<2> > mesh_typeLSh;
+typedef Feel::FunctionSpace<mesh_typeLSh, basisP1LS_type, double, Feel::Periodicity <Feel::NoPeriodicity>, Feel::mortars<Feel::NoMortar> > spaceP1LSh_type;
 
 // 3d
-typedef Feel::Mesh< Feel::Simplex<3> > mesh_3d_typeLS;
-typedef Feel::FunctionSpace<mesh_3d_typeLS, basisP1LS_type, double, Feel::Periodicity <Feel::NoPeriodicity>, Feel::mortars<Feel::NoMortar> > spaceP1LS_3d_type;
+typedef Feel::Mesh< Feel::Simplex<3> > mesh_3d_typeLSs;
+typedef Feel::FunctionSpace<mesh_3d_typeLSs, basisP1LS_type, double, Feel::Periodicity <Feel::NoPeriodicity>, Feel::mortars<Feel::NoMortar> > spaceP1LSs_3d_type;
+typedef Feel::Mesh< Feel::Hypercube<3> > mesh_3d_typeLSh;
+typedef Feel::FunctionSpace<mesh_3d_typeLSh, basisP1LS_type, double, Feel::Periodicity <Feel::NoPeriodicity>, Feel::mortars<Feel::NoMortar> > spaceP1LSh_3d_type;
 
 #if !defined( FEELPP_INSTANTIATE_FMS )
-extern template class Feel::ReinitializerFMS< spaceP1LS_type, Feel::Periodic<> > ;
-extern template class Feel::ReinitializerFMS< spaceP1LS_type, Feel::NoPeriodicity  > ;
-extern template class Feel::ReinitializerFMS< spaceP1LS_3d_type, Feel::NoPeriodicity > ;
-extern template class Feel::ReinitializerFMS< spaceP1LS_3d_type, Feel::Periodic<> > ;
+extern template class Feel::ReinitializerFMS< spaceP1LSs_type, Feel::Periodic<> > ;
+extern template class Feel::ReinitializerFMS< spaceP1LSs_type, Feel::NoPeriodicity  > ;
+extern template class Feel::ReinitializerFMS< spaceP1LSh_type, Feel::NoPeriodicity  > ;
+extern template class Feel::ReinitializerFMS< spaceP1LSs_3d_type, Feel::NoPeriodicity > ;
+extern template class Feel::ReinitializerFMS< spaceP1LSh_3d_type, Feel::NoPeriodicity > ;
+extern template class Feel::ReinitializerFMS< spaceP1LSs_3d_type, Feel::Periodic<> > ;
 #endif
 
 
