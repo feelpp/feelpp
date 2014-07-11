@@ -2306,8 +2306,8 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
     std::vector<size_type> p_s;
     mpi::all_gather( worldComm.comm(), n_pts, p_s );
     int shift_p = 0;
-#if defined(USE_MPIIO)
 
+#if defined(FEELPP_USE_MPIIO)
     for( size_type i = 0; i < p_s.size(); i++ )
     {
         if ( i < worldComm.localRank() )
@@ -2320,6 +2320,7 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
     for( auto& i : ids )
         i += shift_p;
 #endif
+
     int __ne = std::distance( elt_it, en );
     std::vector<int> s{nv,__ne}, global_s;
     //mpi::all_reduce( worldComm.comm(), s, global_s, std::sum<int>() );
