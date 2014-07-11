@@ -56,9 +56,13 @@ public :
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef typename mpl::if_<mpl::bool_<mesh_type::shape_type::is_simplex>,
+                              mpl::identity< Mesh< Simplex< mesh_type::nDim,mesh_type::nOrder,mesh_type::nRealDim>, value_type, tag > >,
+                              mpl::identity< Mesh< Hypercube<mesh_type::nDim,mesh_type::nOrder,mesh_type::nRealDim>, value_type, tag > > >::type::type mesh_elements_type;
+    typedef boost::shared_ptr<mesh_elements_type> mesh_elements_ptrtype;
+
+    typedef typename mpl::if_<mpl::bool_<mesh_type::shape_type::is_simplex>,
                               mpl::identity< Mesh< Simplex< mesh_type::nDim-1,mesh_type::nOrder,mesh_type::nRealDim>, value_type, tag > >,
                               mpl::identity< Mesh< Hypercube<mesh_type::nDim-1,mesh_type::nOrder,mesh_type::nRealDim>, value_type, tag > > >::type::type mesh_faces_type;
-
     typedef boost::shared_ptr<mesh_faces_type> mesh_faces_ptrtype;
 
     typedef typename mpl::if_<mpl::bool_<mesh_type::shape_type::is_simplex>,
@@ -67,7 +71,7 @@ public :
     typedef boost::shared_ptr<mesh_edges_type> mesh_edges_ptrtype;
 
     typedef typename mpl::if_< mpl::equal_to< idim_type ,mpl::size_t<MESH_ELEMENTS> >,
-                               mpl::identity<mesh_type>,
+                               mpl::identity<mesh_elements_type>,
                                typename mpl::if_< mpl::equal_to< idim_type ,mpl::size_t<MESH_FACES> >,
                                                   mpl::identity<mesh_faces_type>,
                                                   mpl::identity<mesh_edges_type> >::type>::type::type mesh_build_type;
@@ -115,8 +119,7 @@ public :
 
 private:
 
-    mesh_ptrtype build( mpl::int_<MESH_ELEMENTS> /**/ );
-
+    mesh_elements_ptrtype build( mpl::int_<MESH_ELEMENTS> /**/ );
     mesh_faces_ptrtype build( mpl::int_<MESH_FACES> /**/ );
     mesh_edges_ptrtype build( mpl::int_<MESH_EDGES> /**/ );
 
@@ -129,14 +132,14 @@ private:
 };
 
 template <typename MeshType,typename IteratorRange,int TheTag>
-typename createSubmeshTool<MeshType,IteratorRange,TheTag>::mesh_ptrtype
+typename createSubmeshTool<MeshType,IteratorRange,TheTag>::mesh_elements_ptrtype
 createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS> /**/ )
 {
     typedef typename mesh_type::element_type element_type;
     typedef typename mesh_type::point_type point_type;
     typedef typename mesh_type::face_type face_type;
 
-    mesh_ptrtype newMesh( new mesh_type(M_worldComm));
+    mesh_elements_ptrtype newMesh( new mesh_elements_type(M_worldComm));
 
     //-----------------------------------------------------------//
 
