@@ -2316,9 +2316,9 @@ public:
             return p0Element;
         }
 
-        value_type max() const
+        value_type max( bool parallel = true ) const
         {
-            return super::max();
+            return super::max( parallel );
         }
 
         template < typename p0_space_type >
@@ -2327,9 +2327,9 @@ public:
             return this->extremeValue( P0h, "max" );
         }
 
-        value_type min() const
+        value_type min( bool parallel = true ) const
         {
-            return super::min();
+            return super::min( parallel );
         }
 
         template < typename p0_space_type >
@@ -3963,7 +3963,8 @@ public:
     {
         element_type u( this->shared_from_this(), name );
         bool addExtendedElt = this->dof()->buildDofTableMPIExtended();
-        u.on( _range=elements(M_mesh,addExtendedElt), _expr=e );
+        EntityProcessType entityProcess = (addExtendedElt)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
+        u.on( _range=elements(M_mesh,entityProcess), _expr=e );
         return u;
     }
 
