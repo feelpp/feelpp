@@ -2316,7 +2316,11 @@ public:
             return p0Element;
         }
 
-        value_type max( bool parallel = true ) const
+        value_type max() const
+        {
+            return this->max( true );
+        }
+        value_type max( bool parallel ) const
         {
             return super::max( parallel );
         }
@@ -2327,6 +2331,10 @@ public:
             return this->extremeValue( P0h, "max" );
         }
 
+        value_type min() const
+        {
+            return this->min( true );
+        }
         value_type min( bool parallel = true ) const
         {
             return super::min( parallel );
