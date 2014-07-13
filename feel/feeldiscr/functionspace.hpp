@@ -2335,7 +2335,7 @@ public:
         {
             return this->min( true );
         }
-        value_type min( bool parallel = true ) const
+        value_type min( bool parallel ) const
         {
             return super::min( parallel );
         }
