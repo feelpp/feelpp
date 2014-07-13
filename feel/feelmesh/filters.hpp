@@ -50,6 +50,17 @@ ITERATOR end( boost::tuple<mpl::size_t<S>,ITERATOR,ITERATOR> &range )
 {
     return range.template get<2>();
 }
+template<size_t S, class ITERATOR, class CONTAINER>
+ITERATOR begin( boost::tuple<mpl::size_t<S>,ITERATOR,ITERATOR,CONTAINER> &range )
+{
+    return range.template get<1>();
+}
+
+template<size_t S, class ITERATOR, class CONTAINER>
+ITERATOR end( boost::tuple<mpl::size_t<S>,ITERATOR,ITERATOR,CONTAINER> &range )
+{
+    return range.template get<2>();
+}
 
 enum ElementsType
 {
@@ -1501,17 +1512,18 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
              typename std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::element_type const> >::const_iterator,
              boost::shared_ptr<std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::element_type const> > >
              >
-elements( MeshType const& mesh, bool addExtendedMPIElt )
+elements( MeshType const& mesh, EntityProcessType entity )
 {
     typedef std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::element_type const> > cont_range_type;
     boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
 
-    for ( auto const& elt : elements(mesh) )
-    {
-        myelts->push_back(boost::cref(elt));
-    }
+    if ( ( entity == EntityProcessType::LOCAL_ONLY ) || ( entity == EntityProcessType::ALL ) )
+        for ( auto const& elt : elements(mesh) )
+        {
+            myelts->push_back(boost::cref(elt));
+        }
 
-    if ( addExtendedMPIElt )
+    if ( ( entity == EntityProcessType::GHOST_ONLY ) || ( entity == EntityProcessType::ALL ) )
     {
         std::set<size_type> eltGhostDone;
 
@@ -1595,17 +1607,18 @@ boost::tuple<mpl::size_t<MESH_FACES>,
              typename std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::face_type const> >::const_iterator,
              boost::shared_ptr<std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::face_type const> > >
              >
-boundaryfaces( MeshType const& mesh, bool addExtendedMPIElt )
+boundaryfaces( MeshType const& mesh, EntityProcessType entity )
 {
     typedef std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::face_type const> > cont_range_type;
     boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
 
-    for ( auto const& theface : boundaryfaces(mesh) )
-    {
-        myelts->push_back(boost::cref(theface));
-    }
+    if ( ( entity == EntityProcessType::LOCAL_ONLY ) || ( entity == EntityProcessType::ALL ) )
+        for ( auto const& theface : boundaryfaces(mesh) )
+        {
+            myelts->push_back(boost::cref(theface));
+        }
 
-    if ( addExtendedMPIElt )
+    if ( ( entity == EntityProcessType::GHOST_ONLY ) || ( entity == EntityProcessType::ALL ) )
     {
         //std::set<size_type> faceGhostDone;
         auto face_it = mesh->interProcessFaces().first;
