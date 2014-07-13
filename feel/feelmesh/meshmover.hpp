@@ -163,7 +163,8 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
     //*omesh = *imesh;
 
     bool addExtendedMPIElt =  (imesh->worldComm().localSize() > 1) && u.functionSpace()->dof()->buildDofTableMPIExtended();
-    auto rangeElt = elements( imesh, addExtendedMPIElt );
+    EntityProcessType entityProcess = (addExtendedMPIElt)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
+    auto rangeElt = elements( imesh, entityProcess );
     auto it_elt = rangeElt.template get<1>();
     auto en_elt = rangeElt.template get<2>();
     if ( std::distance(it_elt,en_elt)==0 )
