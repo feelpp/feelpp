@@ -33,13 +33,6 @@
 #include <feel/feelfilters/exporterensightgold.hpp>
 #include <feel/feelfilters/detail/fileindex.hpp>
 
-// temporary fix before movign to MPIIO
-#if defined(FEELPP_HAS_MPI_H)
-#if FEELPP_USE_MPIIO
-#define USE_MPIIO
-#endif
-#endif
-
 namespace Feel
 {
 template<typename MeshType, int N>
@@ -985,7 +978,6 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkers(MPI_File fh, mesh_ptrtype mesh)
 
     // TODO write the faces
     // Integrate them into the parts corresponding to the elements ?
-    int partindex = 1;
     int nbmarkers = mesh->markerNames().size();
 
     LOG(INFO) << "nMarkers " << nbmarkers << std::endl;
@@ -1048,7 +1040,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkers(MPI_File fh, mesh_ptrtype mesh)
         {
             for( std::pair<const std::string, std::vector<size_type> > & m : mesh->markerNames() )
             {
-                this->writeGeoMarkedFaces(fh, mesh, partindex, m);
+                this->writeGeoMarkedFaces(fh, mesh, m);
             }
         }
 
@@ -1074,7 +1066,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkers(MPI_File fh, mesh_ptrtype mesh)
 
         for ( ; p_it != p_en; ++p_it )
         {
-            this->writeGeoMarkedElements(fh, mesh, partindex, p_it);
+            this->writeGeoMarkedElements(fh, mesh, p_it);
         }
         */
 
@@ -1131,7 +1123,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkers(MPI_File fh, mesh_ptrtype mesh)
         //for(int i = 0; i < M_markersToWrite.size(); i++)
         for(std::set<int>::iterator mit = M_markersToWrite.begin(); mit != M_markersToWrite.end(); mit++)
         {
-            this->writeGeoMarkedElements(fh, mesh, partindex, *mit);
+            this->writeGeoMarkedElements(fh, mesh, *mit);
         }
 
 #if 0
@@ -1143,7 +1135,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkers(MPI_File fh, mesh_ptrtype mesh)
 
             for ( ; p_it != p_en; ++p_it )
             {
-                this->writeGeoMarkedElements(fh, mesh, partindex, p_it->first);
+                this->writeGeoMarkedElements(fh, mesh, p_it->first);
             }
         }
 #endif
@@ -1157,7 +1149,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkers(MPI_File fh, mesh_ptrtype mesh)
 
 template<typename MeshType, int N>
 void
-ExporterEnsightGold<MeshType,N>::writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype mesh, int & partindex, std::pair<const std::string, std::vector<size_type> > & m) const
+ExporterEnsightGold<MeshType,N>::writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype mesh, std::pair<const std::string, std::vector<size_type> > & m) const
 {
     int size;
     char buffer[80];
@@ -1188,7 +1180,6 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype m
     memset(buffer, '\0', sizeof(buffer));
     strcpy( buffer, "part" );
     MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
-    //int partid = partindex++; //m.second[0];
     int partid = m.second[0]; 
 
     if( this->worldComm().isMasterRank() )
@@ -1281,8 +1272,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype m
 
 template<typename MeshType, int N>
 void
-//ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtype mesh, int & partindex, typename mesh_type::parts_const_iterator_type part) const
-ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtype mesh, int & partindex, size_type markerid) const
+ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtype mesh, size_type markerid) const
 {
     MPI_Status status;
 
@@ -1320,7 +1310,6 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
 
     // Was previously using p_it->first as partid
     // part id
-    //int partid = partindex++;
     int partid = markerid;
 
     if ( this->worldComm().isMasterRank() )
@@ -1776,8 +1765,6 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
         strcpy( buffer, __var->second.name().c_str() );
         MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
 
-        int partindex = 1;
-
         /* handle faces data */
         if ( option( _name="exporter.ensightgold.save-face" ).template as<bool>() )
         {
@@ -1804,8 +1791,6 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
                 strcpy( buffer, "part" );
                 MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
 
-                // previous: int partid = m.second[0];
-                //int partid = partindex++;
                 int partid = m.second[0];
                 if( this->worldComm().isMasterRank() )
                 { size = 1; }
@@ -1884,8 +1869,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
             { size = 1; }
             else
             { size = 0; }
-            // Was previously using p_it->first as partid
-            //int partid = partindex++;
+
             int partid = *mit;
             MPI_File_write_ordered(fh, &partid, size, MPI_INT, &status);
 
@@ -2084,9 +2068,6 @@ ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtyp
         }
         */
 
-        // TODO ensure the correspondance for the partids (Problem if we save faces ?)
-        int partindex = 1;
-
         if( this->worldComm().isMasterRank() )
         { size = sizeof(buffer); }
         else
@@ -2112,10 +2093,6 @@ ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtyp
             strcpy( buffer, "part" );
             MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
 
-            //sprintf( buffer, "%d",p_it->first );
-            // TODO Change the partid
-            //int partid = p_it->first;
-            //int partid = partindex++;
             int partid = *mit;
             if( this->worldComm().isMasterRank() )
             { size = 1; }
