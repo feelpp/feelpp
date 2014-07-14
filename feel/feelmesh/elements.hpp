@@ -977,7 +977,8 @@ public:
     template<typename ElementVecType>
     void updateMarker2( ElementVecType const& evec )
     {
-        auto rangeElt = Feel::elements( evec.mesh(), evec.functionSpace()->dof()->buildDofTableMPIExtended() );
+        EntityProcessType entityProcess = (evec.functionSpace()->dof()->buildDofTableMPIExtended())? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
+        auto rangeElt = Feel::elements( evec.mesh(), entityProcess );
         auto it = rangeElt.template get<1>();
         auto en = rangeElt.template get<2>();
 
@@ -991,7 +992,8 @@ public:
     template<typename ElementVecType>
     void updateMarker3( ElementVecType const& evec )
     {
-        auto rangeElt = Feel::elements( evec.mesh(), evec.functionSpace()->dof()->buildDofTableMPIExtended() );
+        EntityProcessType entityProcess = (evec.functionSpace()->dof()->buildDofTableMPIExtended())? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
+        auto rangeElt = Feel::elements( evec.mesh(), entityProcess );
         auto it = rangeElt.template get<1>();
         auto en = rangeElt.template get<2>();
 

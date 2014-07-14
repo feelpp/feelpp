@@ -939,6 +939,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( boost::shared_ptr<Elem1> const& _
     typedef typename boost::mpl::and_< same1_mesh_type,same2_mesh_type>::type same_mesh_type;
 
     element_iterator it, en;
+    // get one elt for init
     bool findEltForInit = false;
     for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len && !findEltForInit; ++lit )
     {
@@ -953,19 +954,18 @@ Integrator<Elements, Im, Expr, Im2>::assemble( boost::shared_ptr<Elem1> const& _
     }
     if (!findEltForInit) return;
 
-    bool same_mesh = ( dynamic_cast<void*>( const_cast<MeshBase*>( it->mesh() ) ) == dynamic_cast<void*>( __u->mesh().get() ) &&
-                       dynamic_cast<void*>( const_cast<MeshBase*>( it->mesh() ) ) == dynamic_cast<void*>( __v->mesh().get() ) );
-    const bool test_related_to_trial = __v->mesh()->isRelatedTo( __u->mesh() ) && ( __u->mesh()->isSameMesh( it->mesh() ) || __v->mesh()->isSameMesh( it->mesh() ) );
-    if ( same_mesh || test_related_to_trial )
-        {
-            DLOG(INFO) << "[integrator::assemble bilinear form] with_relation_mesh (same_mesh: " << same_mesh_type::value/*same_mesh*/ << " test_related_to_trial: " << test_related_to_trial << ")\n";
-            assemble( __form, mpl::int_<iDim>(), mpl::bool_<same_mesh_type::value>(), test_related_to_trial );
-        }
+    // run assemble process according to isRelated meshes
+    const bool test_related_to_trial = __v->mesh()->isRelatedTo( __u->mesh() ) && ( __u->mesh()->isRelatedTo( it->mesh() ) || __v->mesh()->isRelatedTo( it->mesh() ) );
+    LOG(INFO) << "[integrator::assemble bilinear form] with_relation_mesh (same_mesh: " << same_mesh_type::value
+              << " test_related_to_trial: " << test_related_to_trial << ")\n";
+    if ( test_related_to_trial )
+    {
+        assemble( __form, mpl::int_<iDim>(), mpl::bool_<same_mesh_type::value>(), test_related_to_trial );
+    }
     else
-        {
-            DLOG(INFO) << "[integrator::assemble bilinear form] no_relation_mesh\n";
-            assemble( __form, mpl::int_<iDim>(), mpl::bool_<false>(), test_related_to_trial );
-        }
+    {
+        assemble( __form, mpl::int_<iDim>(), mpl::bool_<false>(), test_related_to_trial );
+    }
 
 }
 
