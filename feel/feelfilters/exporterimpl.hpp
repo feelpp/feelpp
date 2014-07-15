@@ -45,6 +45,7 @@ namespace Feel
 template<typename MeshType, int N> class ExporterEnsight;
 template<typename MeshType, int N> class ExporterEnsightGold;
 template<typename MeshType, int N> class ExporterGmsh;
+template<typename MeshType, int N> class Exporterhdf5;
 
 template<typename MeshType, int N>
 Exporter<MeshType, N>::Exporter( WorldComm const& worldComm )
@@ -138,6 +139,8 @@ Exporter<MeshType, N>::New( std::string const& exportername, std::string prefix,
         exporter = new ExporterEnsightGold<MeshType, N>( worldComm );
     else if ( N == 1 && ( exportername == "exodus"  ) )
         exporter = new ExporterExodus<MeshType, N>( worldComm );
+    else if ( N == 1 && ( exportername == "hdf5" ))
+        exporter = new Exporterhdf5<MeshType, N> ( worldComm ) ;
     else if ( N > 1 || ( exportername == "gmsh" ) )
         exporter = new ExporterGmsh<MeshType,N>;
     else // fallback
@@ -166,6 +169,8 @@ Exporter<MeshType, N>::New( po::variables_map const& vm, std::string prefix, Wor
         exporter = new ExporterEnsightGold<MeshType, N>( worldComm );
     else if ( N == 1 && ( estr == "exodus"   ) )
         exporter = new ExporterExodus<MeshType, N>( worldComm );
+    else if ( N == 1 && ( estr == "hdf5" ) )
+        exporter = new Exporterhdf5<MeshType, N> ( worldComm ) ;
     else if ( N > 1 || estr == "gmsh" )
         exporter = new ExporterGmsh<MeshType,N>;
     else // fallback
