@@ -2173,7 +2173,7 @@ struct MeshPoints
 
     /* The original constructor, initialized with the other constructor (c++11 feature) */
     template<typename MeshType, typename IteratorType>
-    MeshPoints( MeshType* mesh, IteratorType it, IteratorType en, const bool outer = false, const bool renumber = false, const bool fill = false ) 
+    MeshPoints( MeshType* mesh, IteratorType it, IteratorType en, const bool outer = false, const bool renumber = false, const bool fill = false )
         : MeshPoints(mesh, Environment::worldComm(), it, en, outer, renumber, fill)
     {}
 
@@ -2307,7 +2307,7 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
     mpi::all_gather( worldComm.comm(), n_pts, p_s );
     int shift_p = 0;
 
-#ifdef FEELPP_HAS_MPIIO
+#if 0 //FEELPP_HAS_MPIIO
     for( size_type i = 0; i < p_s.size(); i++ )
     {
         if ( i < worldComm.localRank() )
@@ -2324,7 +2324,7 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
     int __ne = std::distance( elt_it, en );
     std::vector<int> s{nv,__ne}, global_s;
     //mpi::all_reduce( worldComm.comm(), s, global_s, std::sum<int>() );
-    
+
     /* compute the number of global points and elements */
     mpi::all_reduce( worldComm.comm(), nv, global_npts, std::plus<int>() );
     mpi::all_reduce( worldComm.comm(), __ne, global_nelts, std::plus<int>()  );
@@ -2366,14 +2366,14 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
 
     //size_type offset_pts = ids.size()*sizeof(int)+ coords.size()*sizeof(float);
     //size_type offset_elts = elemids.size()*sizeof(int)+ elem.size()*sizeof(int);
-#if 0 
+#if 0
     size_type offset_pts = coords.size()*sizeof(float);
     size_type offset_elts = elem.size()*sizeof(int);
 #else
     size_type offset_pts = nv;
     size_type offset_elts = __ne;
 #endif
-    
+
     //std::cout << "offset pts : " << offset_pts << std::endl;
     //std::cout << "offset elts : " << offset_elts << std::endl;
     std::vector<size_type> osp, ose;
