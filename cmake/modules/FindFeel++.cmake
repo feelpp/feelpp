@@ -158,7 +158,7 @@ IF ( MPI_FOUND )
   set(CMAKE_REQUIRED_INCLUDES_save ${CMAKE_REQUIRED_INCLUDES})
   set(CMAKE_REQUIRED_INCLUDES ${MPI_INCLUDE_PATH})
   CHECK_CXX_SOURCE_COMPILES(
-      "          
+      "
       #include <mpi.h>
 
       int main(int argc, char** argv)
@@ -304,13 +304,33 @@ INCLUDE_DIRECTORIES(BEFORE contrib/)
 #ENDIF()
 
 add_definitions(-DHAVE_LIBDL)
-# cln and ginac
+
 if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/contrib )
+
+  #
+  # cln and ginac
+  #
   add_definitions(-DIN_GINAC -DHAVE_LIBDL)
   include_directories(${FEELPP_BUILD_DIR}/contrib/cln/include ${FEELPP_SOURCE_DIR}/contrib/ginac/ ${FEELPP_BUILD_DIR}/contrib/ginac/ ${FEELPP_SOURCE_DIR}/contrib/ginac/ginac ${FEELPP_BUILD_DIR}/contrib/ginac/ginac )
   SET(FEELPP_LIBRARIES feelpp_ginac ${CLN_LIBRARIES} ${FEELPP_LIBRARIES} ${CMAKE_DL_LIBS} )
   set(DL_LIBS ${CMAKE_DL_LIBS})
   add_subdirectory(contrib/ginac)
+
+endif()
+
+#
+# nlopt
+#
+find_package(NLOpt)
+if ( NLOPT_FOUND )
+  include_directories(${NLOPT_INCLUDE_DIR})
+  SET(FEELPP_LIBRARIES ${NLOPT_LIBRARY} ${FEELPP_LIBRARIES} )
+  message(STATUS "NLOpt: ${NLOPT_LIBRARY}" )
+  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} NLOpt" )
+  SET(FEELPP_HAS_NLOPT 1)
+else()
+  #add_subdirectory(contrib/nlopt)
+  #SET(FEELPP_LIBRARIES feelpp_nlopt ${FEELPP_LIBRARIES} )
 endif()
 
 #
