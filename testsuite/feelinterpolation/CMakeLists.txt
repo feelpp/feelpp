@@ -33,3 +33,4 @@ feelpp_add_test( hypercubeinterpolation )
 
 feelpp_add_test( interpolation_RT CFG interpolation_RT.cfg NO_MPI_TEST)
 feelpp_add_test( interpolation_Nedelec CFG interpolation_Nedelec.cfg NO_MPI_TEST)
+feelpp_add_test( interpolation_Nedelec3d CFG test_interpolation_Nedelec3D.cfg NO_MPI_TEST)

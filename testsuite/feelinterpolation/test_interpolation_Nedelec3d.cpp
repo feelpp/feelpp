@@ -55,7 +55,7 @@ makeOptions()
 {
     po::options_description testHcurlInterpolationOptions( "test h_div options" );
     testHcurlInterpolationOptions.add_options()
-        ( "meshes-2d", po::value< std::vector<std::string> >(), "vector containing mesh names" )
+        ( "meshes-3d", po::value< std::vector<std::string> >(), "vector containing mesh names" )
         ;
     return testHcurlInterpolationOptions.add( Feel::feel_options() );
 }
@@ -64,8 +64,8 @@ inline
 AboutData
 makeAbout()
 {
-    AboutData about( "test_interpolation_hcurl" ,
-                     "test_interpolation_hcurl" ,
+    AboutData about( "test_interpolation_hcurl3d" ,
+                     "test_interpolation_hcurl3d" ,
                      "0.1",
                      "Test for interpolation with h_curl space",
                      AboutData::License_GPL,
@@ -77,7 +77,7 @@ makeAbout()
 
     //using namespace Feel;
 
-class TestInterpolationHCurl
+class TestInterpolationHCurl3D
     :
 public Application
 {
@@ -93,28 +93,40 @@ public :
     typedef typename boost::shared_ptr<backend_type> backend_ptrtype ;
 
     //! geometry entities type composing the mesh, here Simplex in Dimension Dim of Order G_order
-    typedef Simplex<2,1> convex_type;
+    typedef Simplex<3,1> convex_type;
     //! mesh type
     typedef Mesh<convex_type> mesh_type;
+    typedef Mesh< Simplex<2,1,3> > submesh2d_type;
+    typedef Mesh< Simplex<1,1,3> > submesh1d_type;
     //! mesh shared_ptr<> type
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef boost::shared_ptr<submesh2d_type> submesh2d_ptrtype;
+    typedef boost::shared_ptr<submesh1d_type> submesh1d_ptrtype;
 
     //! the basis type of our approximation space
     typedef bases< Nedelec<0,NedelecKind::NED1> > basis_type;
     //! the approximation function space type
     typedef FunctionSpace<mesh_type, basis_type> space_type;
+    typedef FunctionSpace<submesh2d_type, Nedelec<0,NedelecKind::NED1> > subspace2d_type;
+    typedef FunctionSpace<submesh1d_type, Lagrange<1,Scalar> > subspace1d_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef boost::shared_ptr<subspace2d_type> subspace2d_ptrtype;
+    typedef boost::shared_ptr<subspace1d_type> subspace1d_ptrtype;
     typedef typename space_type::element_type element_type;
 
     //! the exporter factory type
     typedef Exporter<mesh_type> export_type;
+    typedef Exporter<submesh2d_type> export2d_type;
+    typedef Exporter<submesh1d_type> export1d_type;
     //! the exporter factory (shared_ptr<> type)
     typedef boost::shared_ptr<export_type> export_ptrtype;
+    typedef boost::shared_ptr<export2d_type> export2d_ptrtype;
+    typedef boost::shared_ptr<export1d_type> export1d_ptrtype;
 
     /**
      * Constructor
      */
-    TestInterpolationHCurl()
+    TestInterpolationHCurl3D()
         :
         super(),
         M_backend( backend_type::build( this->vm() ) ),
@@ -137,10 +149,10 @@ private:
 };
 
 void
-TestInterpolationHCurl::testInterpolation( std::string one_element_mesh )
+TestInterpolationHCurl3D::testInterpolation( std::string one_element_mesh )
 {
-    // expr to interpolate
-    auto myexpr = unitX() + unitY(); //(1,1)
+    //auto myexpr = unitX() + unitY() + unitZ() ; //(1,1,1)
+    auto myexpr = vec( cst(1.), cst(1.), cst(1.));
 
     // one element mesh
     auto mesh_name = one_element_mesh + ".msh"; //create the mesh and load it
@@ -157,22 +169,62 @@ TestInterpolationHCurl::testInterpolation( std::string one_element_mesh )
 
     space_ptrtype Xh = space_type::New( oneelement_mesh );
     std::cout << "nb dof = " << Xh->nDof() << std::endl;
-    std::vector<std::string> faces, edges; //list of edges
-    edges = {"hypo","vert","hor"};
+
+    std::vector<std::string> faces = {"yzFace","xyzFace","xyFace"};
+    std::vector<std::string> edges = {"zAxis","yAxis","yzAxis","xyAxis","xzAxis","xAxis"};
 
     element_type U_h_int = Xh->element();
     element_type U_h_on = Xh->element();
 
-    // handly computed interpolant coeff (in hcurl basis)
-    for ( int i = 0; i < Xh->nLocalDof(); ++i )
+    submesh1d_ptrtype edgeMesh( new submesh1d_type );
+    edgeMesh = createSubmesh(oneelement_mesh, boundaryedges(oneelement_mesh) ); //submesh of edges
+
+    // Tangents on ref element
+    auto t0 = vec(cst(0.),cst(0.),cst(-2.));
+    auto t1 = vec(cst(0.),cst(2.),cst(0.));
+    auto t2 = vec(cst(0.),cst(-2.),cst(2.));
+    auto t3 = vec(cst(2.),cst(-2.),cst(0.));
+    auto t4 = vec(cst(2.),cst(0.),cst(-2.));
+    auto t5 = vec(cst(2.),cst(0.),cst(0.));
+
+    // Jacobian of geometrical transforms
+    std::string jac;
+    if(mesh_path.stem().string() == "one-elt-ref-3d" || mesh_path.stem().string() == "one-elt-real-homo-3d" )
+        jac = "{1,0,0,0,1,0,0,0,1}:x:y:z";
+    else if(mesh_path.stem().string() == "one-elt-real-rotx" )
+        jac = "{1,0,0,0,0,-1,0,1,0}:x:y:z";
+    else if(mesh_path.stem().string() == "one-elt-real-roty" )
+        jac = "{0,0,1,0,1,0,-1,0,0}:x:y:z";
+    else if(mesh_path.stem().string() == "one-elt-real-rotz" )
+        jac = "{0,-1,0,1,0,0,0,0,1}:x:y:z";
+
+    U_h_int(0) = integrate( markedelements(edgeMesh, edges[0]), trans(expr<3,3>(jac)*t0)*myexpr ).evaluate()(0,0);
+    U_h_int(1) = integrate( markedelements(edgeMesh, edges[1]), trans(expr<3,3>(jac)*t1)*myexpr ).evaluate()(0,0);
+    U_h_int(2) = integrate( markedelements(edgeMesh, edges[2]), trans(expr<3,3>(jac)*t2)*myexpr ).evaluate()(0,0);
+    U_h_int(3) = integrate( markedelements(edgeMesh, edges[3]), trans(expr<3,3>(jac)*t3)*myexpr ).evaluate()(0,0);
+    U_h_int(4) = integrate( markedelements(edgeMesh, edges[4]), trans(expr<3,3>(jac)*t4)*myexpr ).evaluate()(0,0);
+    U_h_int(5) = integrate( markedelements(edgeMesh, edges[5]), trans(expr<3,3>(jac)*t5)*myexpr ).evaluate()(0,0);
+
+    for(int i=0; i<edges.size(); i++)
         {
-            std::cout << "dof coord = " << Xh->dof()->dofPoint(i) << std::endl;
-            std::cout << "current edge = " << edges[i] << std::endl;
-            CHECK( oneelement_mesh->hasMarkers( {edges[i]} ) );
-            U_h_int(i) = integrate( markedfaces( oneelement_mesh, edges[i] ), trans( T() )*myexpr ).evaluate()(0,0);
+            double edgeLength = integrate( markedelements(edgeMesh, edges[i]), cst(1.) ).evaluate()(0,0);
+            U_h_int(i) /= edgeLength;
         }
 
-    // nedelec interpolant using on
+    for(int i=0; i<Xh->nLocalDof(); i++)
+        std::cout << "U_h_int(" << i << ")= " << U_h_int(i) << std::endl;
+
+#if 0 //Doesn't work for now
+    for(int i=0; i<Xh->nLocalDof(); i++)
+        {
+            CHECK( edgeMesh->hasMarkers( {edges[i]} ) );
+            U_h_int(i) = integrate( markedelements(edgeMesh, edges[i]), trans( print(T(),"T=") )*myexpr ).evaluate()(0,0);
+            std::cout << "U_h_int(" << i << ")= " << U_h_int(i) << std::endl;
+        }
+#endif
+
+    // nedelec interpolant using on keyword
+    // interpolate on element
     U_h_on.zero();
     U_h_on.on(_range=elements(oneelement_mesh), _expr=myexpr);
 
@@ -204,12 +256,13 @@ BOOST_AUTO_TEST_SUITE( HCURL_INTERPOLANT )
 BOOST_AUTO_TEST_CASE( test_hcurl_interpolant_1 )
 {
     using namespace Feel;
-    TestInterpolationHCurl t2;
-    std::vector<std::string> mygeoms2d = option(_name="meshes-2d").template as< std::vector<std::string> >();
-    for(std::string geo2d : mygeoms2d)
+
+    TestInterpolationHCurl3D t3;
+    std::vector<std::string> mygeoms3d = option(_name="meshes-3d").template as< std::vector<std::string> >();
+    for(std::string geo3d : mygeoms3d)
         {
-            std::cout << "*** interpolant on " << geo2d << " *** \n";
-            t2.testInterpolation(geo2d);
+            std::cout << "*** interpolant on " << geo3d << " *** \n";
+            t3.testInterpolation(geo3d);
         }
 }
 BOOST_AUTO_TEST_SUITE_END()
@@ -220,8 +273,8 @@ main( int argc, char* argv[] )
 {
     Feel::Environment env( argc,argv,
                            makeAbout(), makeOptions() );
-    Feel::TestInterpolationHCurl app_hcurl;
-    std::vector<std::string> mygeoms = option(_name="meshes-2d").template as< std::vector<std::string> >();
+    Feel::TestInterpolationHCurl3D app_hcurl;
+    std::vector<std::string> mygeoms = option(_name="meshes-3d").template as< std::vector<std::string> >();
     for(std::string geo : mygeoms)
         {
             app_hcurl.testInterpolant(geo);
