@@ -114,7 +114,7 @@ straightenMeshUpdateEdgesOnBoundaryIsolated( ElementSpaceType & straightener, mp
     // apply a null displacement on egdes founded (not straighten)
     if (edgeIdFoundToUpdate.size() > 0)
     {
-        auto range = elements(mesh,true);
+        auto range = elements(mesh,EntityProcessType::ALL);
         auto iteltactif = range.template get<1>();
         auto const eneltactif = range.template get<2>();
         for ( ; iteltactif!=eneltactif ; ++iteltactif )
@@ -177,11 +177,12 @@ BOOST_PARAMETER_FUNCTION(
 
     using namespace vf;
     bool upExtendedElt = true;
+    EntityProcessType entityProcess = (upExtendedElt)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
     auto Xh = Pchv<_mesh_type::nOrder>( _mesh,upExtendedElt );
-    auto xHo = vf::project( _space=Xh, _range=elements( mesh,upExtendedElt ), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_HO );
-    auto xLo = vf::project( _space=Xh, _range=elements( mesh,upExtendedElt ), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_O1 );
-    auto xHoBdy = vf::project( _space=Xh, _range=boundaryfaces( mesh,upExtendedElt ), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_HO );
-    auto xLoBdy = vf::project( _space=Xh, _range=boundaryfaces( mesh,upExtendedElt ), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_O1 );
+    auto xHo = vf::project( _space=Xh, _range=elements( mesh, entityProcess ), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_HO );
+    auto xLo = vf::project( _space=Xh, _range=elements( mesh, entityProcess ), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_O1 );
+    auto xHoBdy = vf::project( _space=Xh, _range=boundaryfaces( mesh, entityProcess ), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_HO );
+    auto xLoBdy = vf::project( _space=Xh, _range=boundaryfaces( mesh, entityProcess ), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_O1 );
 
     auto straightener = Xh->element();
     straightener=( xLo-xHo )-( xLoBdy-xHoBdy );

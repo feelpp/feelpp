@@ -113,7 +113,8 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
     //auto it = f.functionSpace()->mesh()->beginElementWithProcessId();
     //auto en = f.functionSpace()->mesh()->endElementWithProcessId();
     bool upExtendedElt = ( space->mesh()->worldComm().localSize()>1 && f.functionSpace()->dof()->buildDofTableMPIExtended() && space->dof()->buildDofTableMPIExtended() );
-    auto rangeElt = elements( f.functionSpace()->mesh(), upExtendedElt );
+    EntityProcessType entityProcess = (upExtendedElt)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
+    auto rangeElt = elements( f.functionSpace()->mesh(), entityProcess );
     auto it = rangeElt.template get<1>();
     auto en = rangeElt.template get<2>();
     if ( it==en ) return;
