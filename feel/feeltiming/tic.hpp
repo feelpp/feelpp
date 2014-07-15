@@ -29,6 +29,7 @@
 #if !defined(FEELPP_TIMING_TIC_HPP)
 #define FEELPP_TIMING_TIC_HPP 1
 
+#include <feel/feelcore/environment.hpp>
 #include <feel/feeltiming/timer.hpp>
 #include <feel/feeltiming/now.hpp>
 
@@ -40,10 +41,13 @@ struct SecondBasedTimer
 {
     static void print( std::string const& msg, const double& val )
     {
-        if ( !msg.empty() )
-            std::cout << "[" << msg << "] Time : " << val << "s\n";
-        else
-            std::cout << "Time : " << val << "s\n";
+        if ( Environment::isMasterRank() )
+        {
+            if ( !msg.empty() )
+                std::cout << "[" << msg << "] Time : " << val << "s\n";
+            else
+                std::cout << "Time : " << val << "s\n";
+        }
     }
     static inline double  time()
     {
