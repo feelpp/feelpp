@@ -72,6 +72,8 @@
 #include "Utils/PerfTools/PerfCounterMng.h"
 #endif //defined(FEELPP_HAS_HARTS)
 
+namespace fs = boost::filesystem;
+
 namespace Feel
 {
 namespace vf
@@ -4601,7 +4603,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 
         // Compute Number of MPI processes
         char * str = NULL;
-        int nMPIProc = 1;
+        int nMPIProc = Environment::worldComm().size();
 
         // Compute a number of available cores for computation
         // Taking into account the number of MPI processes launched for this app on this node
@@ -4613,14 +4615,6 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         int nAvailCores = nTotalCoresNode - nMPIProc;
         int coresPerProcess = 0;
         int remainder = 0;
-
-        #ifdef FEELPP_HAS_MPI
-        str = getenv("OMPI_COMM_WORLD_LOCAL_SIZE");
-        if(str)
-        {
-            nMPIProc = atoi(str);
-        }
-        #endif
 
         // TOFIX: Have a repartition taking into account the NUMA architecture
         // Guess the number of threads that can be spawned
@@ -4707,7 +4701,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 
                 if(k == nb)
                 {
-                    std::cout << "T" << i << ": nbelem=" << nbElts << " (" << k << ", " << nb << ")" << std::endl;
+                    std::cout << "P" << Environment::worldComm().rank() << "T" << i << ": nbelem=" << nbElts << " (" << k << ", " << nb << ")" << std::endl;
                     i++;
 
                     k = 0;
@@ -4741,11 +4735,6 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
             res += hce[i]->result();
         }
 
-        for(int i = 0; i < nbThread; i++)
-        {
-            std::cout << "T" << i << ": " << hce[i]->elapsed() << "s" << std::endl;
-        }
-
         // Free memory
         #if 0
         delete threadEnv;
@@ -4758,8 +4747,21 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         #endif
 
         perf_mng.stop("total") ;
+        
+        std::ostringstream oss;
+        oss << fs::current_path().string() << "/" << Environment::worldComm().size() << "_" << Environment::worldComm().rank() << "-" << nbThread << ".dat";
+        std::ofstream f;
 
-        std::cout << "Total: " << perf_mng.getValueInSeconds("total") << std::endl;
+        f.open(oss.str().c_str(), std::ofstream::out | std::ofstream::trunc);
+
+        for(int i = 0; i < nbThread; i++)
+        {
+            f << hce[i]->elapsed() << " ";
+        }
+
+        f << perf_mng.getValueInSeconds("total") << std::endl;
+
+        f.close();
 
         DLOG(INFO) << "integrating over elements done in " << __timer.elapsed() << "s\n";
         return res;
