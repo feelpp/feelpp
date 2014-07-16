@@ -148,43 +148,37 @@ IF ( MPI_FOUND )
   INCLUDE_DIRECTORIES(${MPI_INCLUDE_PATH})
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Mpi" )
 
-  OPTION(FEELPP_USE_MPIIO "Enable support for MPI-IO (default auto detect)" ON)
-  IF (FEELPP_USE_MPIIO)
-    #TRY_COMPILE(MPIIO_SUCCESS ${CMAKE_CURRENT_BINARY_DIR}/tryCompileMPIIO
-      #${CMAKE_SOURCE_DIR}/cmake/codes/try-mpiio.cpp
-      #LINK_LIBRARIES ${FEELPP_LIBRARIES} )
-      set(CMAKE_REQUIRED_LIBRARIES_save ${CMAKE_REQUIRED_LIBRARIES})
-      set(CMAKE_REQUIRED_LIBRARIES ${MPI_LIBRARIES})
-      set(CMAKE_REQUIRED_INCLUDES_save ${CMAKE_REQUIRED_INCLUDES})
-      set(CMAKE_REQUIRED_INCLUDES ${MPI_INCLUDE_PATH})
-      CHECK_CXX_SOURCE_COMPILES(
-          "          
-          #include <mpi.h>
+  # Check for MPI IO Support
 
-          int main(int argc, char** argv)
-          {
-          MPI_File fh;
-          MPI_Status status;
-          MPI_Info info;
-          }
-          "
-          MPIIO_DETECTED)
-      set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES_save})
-      set(CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES_save})
+  #TRY_COMPILE(MPIIO_SUCCESS ${CMAKE_CURRENT_BINARY_DIR}/tryCompileMPIIO
+  #${CMAKE_SOURCE_DIR}/cmake/codes/try-mpiio.cpp
+  #LINK_LIBRARIES ${FEELPP_LIBRARIES} )
+  set(CMAKE_REQUIRED_LIBRARIES_save ${CMAKE_REQUIRED_LIBRARIES})
+  set(CMAKE_REQUIRED_LIBRARIES ${MPI_LIBRARIES})
+  set(CMAKE_REQUIRED_INCLUDES_save ${CMAKE_REQUIRED_INCLUDES})
+  set(CMAKE_REQUIRED_INCLUDES ${MPI_INCLUDE_PATH})
+  CHECK_CXX_SOURCE_COMPILES(
+      "
+      #include <mpi.h>
 
-    IF (MPIIO_DETECTED)
+      int main(int argc, char** argv)
+      {
+      MPI_File fh;
+      MPI_Status status;
+      MPI_Info info;
+      }
+      "
+      MPIIO_DETECTED)
+  set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES_save})
+  set(CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES_save})
+
+  IF (MPIIO_DETECTED)
       MESSAGE(STATUS "MPIIO detected and enabled.")
-    ELSE()
-        # Make the cmake process crash if we don't have MPI IO
-        # As it is required for exporting data
-        MESSAGE(FATAL_ERROR "MPIIO not detected and disabled.")
-      SET(FEELPP_USE_MPIIO FALSE)
-    ENDIF()
+      SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Mpi-IO" )
+      SET(FEELPP_HAS_MPIIO 1)
+  ELSE()
+      MESSAGE(WARNING "MPIIO not detected and disabled (Related features disable, e.g. Ensight Gold exporter).")
   ENDIF()
-ENDIF()
-IF (FEELPP_USE_MPIIO)
-  add_definitions(-DFEELPP_USE_MPIIO=1)
-  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Mpi-IO" )
 ENDIF()
 
 
@@ -310,13 +304,33 @@ INCLUDE_DIRECTORIES(BEFORE contrib/)
 #ENDIF()
 
 add_definitions(-DHAVE_LIBDL)
-# cln and ginac
+
 if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/contrib )
+
+  #
+  # cln and ginac
+  #
   add_definitions(-DIN_GINAC -DHAVE_LIBDL)
   include_directories(${FEELPP_BUILD_DIR}/contrib/cln/include ${FEELPP_SOURCE_DIR}/contrib/ginac/ ${FEELPP_BUILD_DIR}/contrib/ginac/ ${FEELPP_SOURCE_DIR}/contrib/ginac/ginac ${FEELPP_BUILD_DIR}/contrib/ginac/ginac )
   SET(FEELPP_LIBRARIES feelpp_ginac ${CLN_LIBRARIES} ${FEELPP_LIBRARIES} ${CMAKE_DL_LIBS} )
   set(DL_LIBS ${CMAKE_DL_LIBS})
   add_subdirectory(contrib/ginac)
+
+endif()
+
+#
+# nlopt
+#
+find_package(NLOpt)
+if ( NLOPT_FOUND )
+  include_directories(${NLOPT_INCLUDE_DIR})
+  SET(FEELPP_LIBRARIES ${NLOPT_LIBRARY} ${FEELPP_LIBRARIES} )
+  message(STATUS "NLOpt: ${NLOPT_LIBRARY}" )
+  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} NLOpt" )
+  SET(FEELPP_HAS_NLOPT 1)
+else()
+  #add_subdirectory(contrib/nlopt)
+  #SET(FEELPP_LIBRARIES feelpp_nlopt ${FEELPP_LIBRARIES} )
 endif()
 
 #

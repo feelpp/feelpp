@@ -63,6 +63,7 @@ int main(int argc, char**argv )
 
     //# marker4 #
     auto e = exporter( _mesh=mesh );
+    e->addRegions();
     e->add( "u", u );
     e->add( "g", v );
     e->save();

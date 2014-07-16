@@ -182,6 +182,7 @@ public:
      */
     //typedef std::unordered_map<int,std::map<int,global_dof_type> > Container;
     //typedef typename std::map<int,global_dof_type>::iterator local_map_iterator;
+    typedef Dof globaldof_type;
     typedef LocalDof<nDofComponents()> localdof_type;
     typedef boost::bimap<bimaps::set_of<localdof_type>, bimaps::multiset_of<Dof> > dof_table;
     typedef typename dof_table::value_type dof_relation;
@@ -580,6 +581,16 @@ public:
         return it->second.index();
     }
 
+    std::pair<global_dof_const_iterator,global_dof_const_iterator> const& globalDof()  const
+        {
+            return std::make_pair( M_el_l2g.right.begin(), M_el_l2g.right.end() );
+        }
+    std::pair<global_dof_const_iterator,global_dof_const_iterator> globalDof( size_type GlobalDofId ) const
+        {
+            auto lower = M_el_l2g.right.lower_bound( globaldof_type(GlobalDofId,-1) );
+            auto upper = M_el_l2g.right.upper_bound( globaldof_type(GlobalDofId,2) );
+            return std::make_pair( lower, upper );
+        }
     /**
      * \return the specified entries of the globalToLocal table
      *
@@ -889,6 +900,7 @@ public:
 
     bool buildDofTableMPIExtended() const { return M_buildDofTableMPIExtended; }
     void setBuildDofTableMPIExtended( bool b ) { M_buildDofTableMPIExtended = b; }
+    size_type nGhostDofAddedInExtendedDofTable() const { return M_nGhostDofAddedInExtendedDofTable; }
 
     /**
      * \return the dictionnary for the global dof
@@ -1310,7 +1322,7 @@ private:
     vector_indices_type M_locglobOnCluster_signs;
 
     bool M_buildDofTableMPIExtended;
-
+    size_type M_nGhostDofAddedInExtendedDofTable;
 
     std::vector<uint16_type> M_localIndicesPerm, M_localIndicesIdentity;
 
@@ -1338,6 +1350,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( mesh_type& me
     M_dof_indices(),
     M_periodicity( periodicity ),
     M_buildDofTableMPIExtended( false ),
+    M_nGhostDofAddedInExtendedDofTable( 0 ),
     M_localIndicesPerm( nDofPerElement ),
     M_localIndicesIdentity( nDofPerElement )
 {
@@ -1368,6 +1381,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( fe_ptrtype co
     M_dof_indices(),
     M_periodicity( periodicity ),
     M_buildDofTableMPIExtended( false ),
+    M_nGhostDofAddedInExtendedDofTable( 0 ),
     M_localIndicesPerm( nDofPerElement ),
     M_localIndicesIdentity( nDofPerElement )
 {
@@ -1389,9 +1403,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( const self_ty
     M_dof_indices( dof2.M_dof_indices ),
     M_periodicity( dof2.M_periodicity ),
     M_buildDofTableMPIExtended( dof2.M_buildDofTableMPIExtended ),
+    M_nGhostDofAddedInExtendedDofTable( dof2.M_nGhostDofAddedInExtendedDofTable ),
     M_localIndicesPerm( dof2.M_localIndicesPerm ),
     M_localIndicesIdentity( dof2.M_localIndicesIdentity )
-
 {
 }
 

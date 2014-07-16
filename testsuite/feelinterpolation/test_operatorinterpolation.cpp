@@ -98,8 +98,8 @@ test2dTo1d()
 
     //-----------------------------------------------------------//
 
-    auto Xh1d = Pchv<5,0/*Tag*/,PointSetFekete>( mesh1d );
-    auto Xh2d = Pchv<3,0/*Tag*/,PointSetFekete>( mesh2d );
+    auto Xh1d = Pchv<5,PointSetFekete>( mesh1d );
+    auto Xh2d = Pchv<3,PointSetFekete>( mesh2d );
 
     auto exprProj = vec( cos( M_PI*Px() ),sin( M_PI*Py() ) );
     //auto exprProj = vec( 2*Px()*Py(), 0.25*(1.0-Py())*Px() );
@@ -151,8 +151,8 @@ test2dTo2d()
                               _name="test2dTo2d_domain"+mesh_type::shape_type::name(),
                               _partitions=myWorldComm.localSize() );
 
-    auto Xh1 = Pchv<3,0/*Tag*/,PointSetFekete>( mesh );
-    auto Xh2 = Pchv<4,0/*Tag*/,PointSetFekete>( mesh );
+    auto Xh1 = Pchv<3,PointSetFekete>( mesh );
+    auto Xh2 = Pchv<4,PointSetFekete>( mesh );
     auto u1 = Xh1->element();
     auto u2 = Xh2->element();
     auto u2a = Xh2->element();
@@ -197,7 +197,7 @@ test2dTo2d()
     auto mesh2 = C2.createMesh(_mesh=new mesh_type,
                                _name="test2dTo2d_domain2"+mesh_type::shape_type::name(),
                                _partitions=myWorldComm.localSize() );
-    auto Xh2bis = Pchv<4,0/*Tag*/,PointSetFekete>(mesh2);
+    auto Xh2bis = Pchv<4,PointSetFekete>(mesh2);
     auto u2bis = Xh2bis->element();
     auto u2bisbis = Xh2bis->element();
     auto u2bisproj = vf::project( _space=Xh2bis,
@@ -451,7 +451,7 @@ test2dOpLagrangeP1()
                               _name="test2dOpLagrangeP1_domain"+mesh_type::shape_type::name(),
                               _partitions=Environment::worldComm().localSize() );
 
-    auto Xh = Pchv<3,0/*Tag*/,PointSetFekete>( mesh );
+    auto Xh = Pchv<3,PointSetFekete>( mesh );
     auto exprProj = vec( cos( M_PI*Px() ),sin( M_PI*Py() ) );
     auto u = vf::project( _space=Xh,
                           _range=elements( mesh ),

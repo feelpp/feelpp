@@ -48,6 +48,7 @@
 
 #include <feel/feelts/ts.hpp>
 #include <feel/feeldiscr/discr.hpp>
+#include <feel/feeltiming/tic.hpp>
 
 #include <ginac/ginac.h>
 namespace Feel
