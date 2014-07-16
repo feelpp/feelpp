@@ -280,8 +280,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
 
     auto testmesh = createSubmesh(mesh, markedfaces(mesh,"NORTH"),Environment::worldComm() );
     auto trialmesh = createSubmesh(mesh2, markedfaces(mesh2,"SOUTH"),Environment::worldComm() );
-    auto Xh = Pch<T::value,0,PointSetGaussLobatto>(testmesh);
-    auto Vh = Pch<T::value,0,PointSetGaussLobatto>(trialmesh);
+    auto Xh = Pch<T::value,PointSetGaussLobatto>(testmesh);
+    auto Vh = Pch<T::value,PointSetGaussLobatto>(trialmesh);
     auto Mh = Moch<T::value,PointSetGaussLobatto>(testmesh);
 
     BOOST_CHECK_MESSAGE(Mh->is_mortar == true, "Space should be mortar" ) ;
