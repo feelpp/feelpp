@@ -29,14 +29,14 @@ int main(int argc, char**argv )
     using namespace Feel;
 	po::options_description laplacianoptions( "Laplacian options" );
 	laplacianoptions.add_options()
-		( "mu", po::value<double>()->default_value( 1.0 ), "coeff" )
+    ( "mu", po::value<double>()->default_value( 1.0 ), "coeff" )
 		;
 
 	Environment env( _argc=argc, _argv=argv,
-                     _desc=laplacianoptions,
-                     _about=about(_name="qs_laplacian",
-                                  _author="Feel++ Consortium",
-                                  _email="feelpp-devel@feelpp.org"));
+                   _desc=laplacianoptions,
+                   _about=about(_name="qs_laplacian",
+                                _author="Feel++ Consortium",
+                                _email="feelpp-devel@feelpp.org"));
     //# endmarker1 #
 
     //# marker2 #
@@ -63,6 +63,7 @@ int main(int argc, char**argv )
 
     //# marker4 #
     auto e = exporter( _mesh=mesh );
+    e->addRegions();
     e->add( "u", u );
     e->add( "g", v );
     e->save();

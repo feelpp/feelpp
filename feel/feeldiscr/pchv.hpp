@@ -39,8 +39,8 @@ namespace meta
 
 template<typename MeshType,
          int Order,
-         int Tag = 0,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced>
+         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         int Tag = 0>
 struct Pchv
 {
     typedef FunctionSpace<MeshType,
@@ -59,13 +59,14 @@ struct Pchv
    than k using Lagrange basis functions
  */
 template<int Order,
-         int Tag = 0,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,typename MeshType>
+         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         typename MeshType,
+         int Tag = 0>
 inline
-typename meta::Pchv<MeshType,Order,Tag,Pts>::ptrtype
+typename meta::Pchv<MeshType,Order,Pts,Tag>::ptrtype
 Pchv( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false  )
 {
-    typedef typename meta::Pchv<MeshType,Order,Tag,Pts>::type space_type;
+    typedef typename meta::Pchv<MeshType,Order,Pts,Tag>::type space_type;
     return space_type::New( _mesh=mesh,
                             _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
                             _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
