@@ -370,6 +370,7 @@ public:
     typedef typename primal_space_type::template convex<nOrder+1>::type convex_type;
     typedef Reference<convex_type, nDim, nOrder+1, nDim, value_type> reference_convex_type;
     typedef typename reference_convex_type::node_type node_type;
+    typedef typename convex_type::topological_face_type face_type;
 
     typedef typename primal_space_type::Pkp1_v_type Pkp1_v_type;
     typedef typename primal_space_type::vectorial_polynomialset_type vectorial_polynomialset_type;
@@ -400,13 +401,19 @@ public:
     /** Total number of degrees of freedom (equal to refEle::nDof) */
     static const uint16_type nLocalDof = reference_convex_type::numEdges*nbPtsPerEdge;
 
+    static const uint16_type nFacesInConvex = mpl::if_< mpl::equal_to<mpl::int_<nDim>, mpl::int_<1> >,
+                                                        mpl::int_<reference_convex_type::numVertices>,
+                                                        typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<2> >,
+                                                                          mpl::int_<reference_convex_type::numEdges>,
+                                                                          mpl::int_<reference_convex_type::numGeometricFaces> >::type >::type::value;
+
     NedelecDualFirstKind( primal_space_type const& primal )
         :
         super( primal ),
         M_convex_ref(),
         M_eid( M_convex_ref.topologicalDimension()+1 ),
         M_pts( nDim, numPoints ),
-        M_pts_per_face( convex_type::numEdges ),
+        M_pts_per_face( nFacesInConvex ),
         M_fset( primal )
     {
         VLOG(1) << "Nedelec finite element(dual): \n";
@@ -420,6 +427,14 @@ public:
         VLOG(1) << " o- nbPtsPerVolume = " << ( int )nbPtsPerVolume << "\n";
         VLOG(1) << " o- nLocalDof      = " << nLocalDof << "\n";
 
+        for(auto& m : M_pts_per_face)
+            m.resize(nDim,face_type::numTopologicalFaces*nbPtsPerEdge);
+
+        //VLOG(1) << "[Nedelec1stKind Dual] done 1\n";
+        // compute  \f$ \ell_e( U ) = (U * n[e]) (edge_pts(e)) \f$
+        typedef Functional<primal_space_type> functional_type;
+        std::vector<functional_type> fset;
+
         // loop on each entity forming the convex of topological
         // dimension nDim-1 ( the faces)
         int d = (nDim == 2 )?nDim-1:1;
@@ -427,9 +442,22 @@ public:
                 e < M_convex_ref.entityRange( d ).end();
                 ++e )
         {
+            // Dof coord on current edge
             points_type Gt ( M_convex_ref.makePoints( d, e ) );
-            M_pts_per_face[e] =  Gt ;
 
+            for( int f = M_convex_ref.entityRange( nDim-1 ).begin(); f < M_convex_ref.entityRange( nDim-1 ).end(); ++f)
+                {
+                    // M_pts_per_face[f] : set of dofs on a face (face_type::numTopologicalFaces*nbPtsPerFace)
+                    for(int k=0; k<face_type::numTopologicalFaces; ++k)
+                        {
+                            if( convex_type::f2e(f,k) == e )
+                                {
+                                    ublas::subrange( M_pts_per_face[f], 0, nDim, nbPtsPerEdge*k, nbPtsPerEdge*(k+1) ) = Gt;
+                                }
+                        }
+                }
+
+            // M_pts : set of dofs on an element
             if ( Gt.size2() )
             {
                 VLOG(1) << "Gt = " << Gt << "\n";
@@ -439,43 +467,15 @@ public:
                 //M_eid[d].push_back( p+j );
                 p+=Gt.size2();
             }
-        }
 
-        //VLOG(1) << "[Nedelec1stKind Dual] done 1\n";
-        // compute  \f$ \ell_e( U ) = (U * n[e]) (edge_pts(e)) \f$
-        typedef Functional<primal_space_type> functional_type;
-        std::vector<functional_type> fset;
+            typedef Feel::functional::DirectionalComponentPointsEvaluation<primal_space_type> dcpe_type;
+            VLOG(1) << "tangent " << e << ":" << M_convex_ref.tangent( e ) << "\n";
+            node_type dir= M_convex_ref.tangent(e);
 
-        // jacobian of the transformation from reference face to the face in the
-        // reference element
-        std::vector<double> j;
-        {
-            // bring 'operator+=()' into scope
-            using namespace boost::assign;
+            //dcpe_type __dcpe( primal, dir, M_pts_per_face[e] );
+            dcpe_type __dcpe( primal, dir, Gt );
+            std::copy( __dcpe.begin(), __dcpe.end(), std::back_inserter( fset ) );
 
-            if ( nDim == 2 )
-                j += 2.8284271247461903,2.0,2.0;
-
-            if ( nDim == 3 )
-                j+= 3.464101615137754, 2, 2, 2;
-        }
-
-        //for( int k = 0; k < nDim; ++k )
-        {
-            // loopover the each edge entities and add the correponding functionals
-            for ( int e = M_convex_ref.entityRange( d ).begin();
-                    e < M_convex_ref.entityRange( d ).end();
-                    ++e )
-            {
-                typedef Feel::functional::DirectionalComponentPointsEvaluation<primal_space_type> dcpe_type;
-                VLOG(1) << "tangent " << e << ":" << M_convex_ref.tangent( e ) << "\n";
-                //node_type dir= M_convex_ref.tangent( e )*j[e];
-                node_type dir= M_convex_ref.tangent(e);
-
-                //dcpe_type __dcpe( primal, 1, dir, pts_per_face[e] );
-                dcpe_type __dcpe( primal, dir, M_pts_per_face[e] );
-                std::copy( __dcpe.begin(), __dcpe.end(), std::back_inserter( fset ) );
-            }
         }
 
         // add integrals of tangential component
@@ -972,14 +972,12 @@ public:
         auto g = expr.geom();
         auto const& K = g->K(0);
 
-        //std::cout << "[getEdgeTangent] K = " << K << std::endl;
-        //std::cout << "[getEdgeTangent] tangent ref = " << g->geometricMapping()->referenceConvex().tangent( edgeId ) << std::endl;
         ublas::axpy_prod( K,
                           g->geometricMapping()->referenceConvex().tangent( edgeId ),
                           t,
                           true );
         t *= g->element().hEdge( edgeId )/ublas::norm_2(t);
-        std::cout << "[getEdgeTangent] t = " << t << std::endl;
+        //std::cout << "[getEdgeTangent] t = " << t << std::endl;
     }
 
     typedef Eigen::MatrixXd local_interpolant_type;
@@ -1024,18 +1022,14 @@ public:
             for( int e = 0; e < face_type::numEdges; ++e )
             {
                 int edgeid_in_element = g->element().fToE( g->faceId(), e);
-                std::cout << "face id:  " << g->faceId() << " einf :" << e << " edge id in element : " << edgeid_in_element << std::endl;
+                VLOG(1) << "face id:  " << g->faceId() << " einf :" << e << " edge id in element : " << edgeid_in_element << std::endl;
                 getEdgeTangent( expr, edgeid_in_element, t );
 
                 for ( int l = 0; l < nDofPerEdge; ++l )
                 {
                     int q = e*nDofPerEdge+l;
                     for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
-                        {
-                            //std::cout << "[faceintterpolate] Ihloc(" << q <<")+= " << expr.evalq( c1, 0, q )*t(c1) << std::endl;
-                            Ihloc(q) += expr.evalq( c1, 0, q )*t(c1);
-                        }
-                    std::cout << "[faceintterpolate] Ihloc(" << q << ")= " << Ihloc(q) << std::endl;
+                        Ihloc(q) += expr.evalq( c1, 0, q )*t(c1);
                 }
             }
 
