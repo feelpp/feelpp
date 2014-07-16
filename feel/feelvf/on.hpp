@@ -384,7 +384,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
         gmc_ptrtype __c( new gmc_type( __gm, faceForInit.element( 0 ), __geopc, __face_id ) );
 
         map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
-        //t_expr_type expr( M_expr, mapgmc );
+        t_expr_type expr( M_expr, mapgmc );
 
 
         DVLOG(2)  << "face_type::numVertices = " << face_type::numVertices << ", fe_type::nDofPerVertex = " << fe_type::nDofPerVertex << "\n"
@@ -397,13 +397,13 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
             nbFaceDof = ( face_type::numVertices * fe_type::nDofPerVertex +
                           face_type::numEdges * fe_type::nDofPerEdge +
                           face_type::numFaces * fe_type::nDofPerFace );
-
         else
             nbFaceDof = face_type::numVertices * fe_type::nDofPerVertex;
 
         DVLOG(2)  << "nbFaceDof = " << nbFaceDof << "\n";
         //const size_type nbFaceDof = __fe->boundaryFE()->points().size2();
 
+        auto IhLoc = __fe->faceLocalInterpolant();
         for ( ;
               __face_it != this->endElement();
               ++__face_it )
@@ -448,18 +448,16 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
             DVLOG(2)  << "[integratoron] dof range = " << range_dof.second << "\n";
 
             //use interpolant
-            auto IhLoc = __fe->faceLocalInterpolant();
             __fe->faceInterpolate( expr, IhLoc );
 
-            auto const& s = M_u.functionSpace()->dof()->localToGlobalSigns( theface.id() );
+            auto const& s = M_u.functionSpace()->dof()->localToGlobalSigns( theface.element(0).id() );
+
             for( auto ldof : M_u.functionSpace()->dof()->faceLocalDof( theface.id() ) )
                 {
                     size_type thedof = M_u.start()+ ldof.second.index(); // global dof
-                    std::cout << "[on] thedof = " << thedof << std::endl;
-                    std::cout << "[on] thedof coord= " << boost::get<0>(M_u.functionSpace()->dof()->dofPoint(thedof)) << std::endl;
-                    std::cout << "[on] IhLoc( " << ldof.first << ") = " << IhLoc( ldof.first ) << std::endl;
-
-                    double __value = s(ldof.first)*IhLoc( ldof.first );
+                    size_type dofIndexInElt = geoelement_type::f2e(theface.id(),ldof.first);
+                    double __value = s(dofIndexInElt)*IhLoc( ldof.first );
+                    //double __value = s(ldof.first)*IhLoc( ldof.first );
                     //double __value = IhLoc( ldof.first );
 
                     if ( std::find( dofs.begin(),
@@ -509,9 +507,6 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
 
     auto x = M_rhs->clone();
     CHECK( values.size() == dofs.size() ) << "Invalid dofs/values size: " << dofs.size() << "/" << values.size();
-    std::cout << "M_rhs.size() = " << M_rhs->size() << std::endl;
-    std::cout << "values.size() = " << values.size() << std::endl;
-    std::cout << "dofs.size() = " << dofs.size() << std::endl;
     x->addVector( dofs.data(), dofs.size(), values.data() );
     __form.zeroRows( dofs, *x, *M_rhs, M_on_strategy );
     x.reset();
