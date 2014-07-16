@@ -1,9 +1,9 @@
 ###  TEMPLATE.txt.tpl; coding: utf-8 ---
 
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-#       Date: 2011-03-15
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+#       Date: 2014-07-15
 #
-#  Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
+#  Copyright (C) 2014 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -21,10 +21,12 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
-feelpp_add_application( dofpoints SRCS dofpoints.cpp LABELS doc)
-feelpp_add_application( meshho SRCS meshho.cpp LABELS doc)
-feelpp_add_application( bdfpod SRCS bdfpod.cpp LABELS doc)
-feelpp_add_application( perf_int SRCS perf.cpp LABELS doc )
-feelpp_add_application( pmesh SRCS pmesh.cpp CFG pmesh.cfg LABELS doc)
-feelpp_add_application( dofneighbors SRCS dofneighbors.cpp LABELS doc)
+
+set_directory_properties(PROPERTIES LABEL testopt )
+
+# for applications using NLOpt
+if ( FEELPP_HAS_NLOPT )
+
+  feelpp_add_test( nlopt )
+
+endif()
