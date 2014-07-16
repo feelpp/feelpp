@@ -939,6 +939,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( boost::shared_ptr<Elem1> const& _
     typedef typename boost::mpl::and_< same1_mesh_type,same2_mesh_type>::type same_mesh_type;
 
     element_iterator it, en;
+    // get one elt for init
     bool findEltForInit = false;
     for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len && !findEltForInit; ++lit )
     {
@@ -953,19 +954,18 @@ Integrator<Elements, Im, Expr, Im2>::assemble( boost::shared_ptr<Elem1> const& _
     }
     if (!findEltForInit) return;
 
-    bool same_mesh = ( dynamic_cast<void*>( const_cast<MeshBase*>( it->mesh() ) ) == dynamic_cast<void*>( __u->mesh().get() ) &&
-                       dynamic_cast<void*>( const_cast<MeshBase*>( it->mesh() ) ) == dynamic_cast<void*>( __v->mesh().get() ) );
-    const bool test_related_to_trial = __v->mesh()->isRelatedTo( __u->mesh() ) && ( __u->mesh()->isSameMesh( it->mesh() ) || __v->mesh()->isSameMesh( it->mesh() ) );
-    if ( same_mesh || test_related_to_trial )
-        {
-            DLOG(INFO) << "[integrator::assemble bilinear form] with_relation_mesh (same_mesh: " << same_mesh_type::value/*same_mesh*/ << " test_related_to_trial: " << test_related_to_trial << ")\n";
-            assemble( __form, mpl::int_<iDim>(), mpl::bool_<same_mesh_type::value>(), test_related_to_trial );
-        }
+    // run assemble process according to isRelated meshes
+    const bool test_related_to_trial = __v->mesh()->isRelatedTo( __u->mesh() ) && ( __u->mesh()->isRelatedTo( it->mesh() ) || __v->mesh()->isRelatedTo( it->mesh() ) );
+    LOG(INFO) << "[integrator::assemble bilinear form] with_relation_mesh (same_mesh: " << same_mesh_type::value
+              << " test_related_to_trial: " << test_related_to_trial << ")\n";
+    if ( test_related_to_trial )
+    {
+        assemble( __form, mpl::int_<iDim>(), mpl::bool_<same_mesh_type::value>(), test_related_to_trial );
+    }
     else
-        {
-            DLOG(INFO) << "[integrator::assemble bilinear form] no_relation_mesh\n";
-            assemble( __form, mpl::int_<iDim>(), mpl::bool_<false>(), test_related_to_trial );
-        }
+    {
+        assemble( __form, mpl::int_<iDim>(), mpl::bool_<false>(), test_related_to_trial );
+    }
 
 }
 
@@ -5511,8 +5511,11 @@ integrate_impl( Elts const& elts,
                 boost::shared_ptr<QuadPtLocalization<typename Feel::detail::quadptlocrangetype<Elts>::type, Im, ExprT > > quadptloc
                 = boost::shared_ptr<QuadPtLocalization<typename Feel::detail::quadptlocrangetype<Elts>::type, Im, ExprT > >() )
 {
-    typedef Integrator<typename Feel::detail::quadptlocrangetype<Elts>::type, Im, ExprT, Im2> expr_t;
-    typedef typename boost::tuples::template element<1, Elts>::type element_iterator;
+
+    typedef typename Feel::detail::quadptlocrangetype< Elts >::type range_type;
+    typedef Integrator<range_type, Im, ExprT, Im2> expr_t;
+
+    typedef typename boost::unwrap_reference< typename boost::tuples::template element<1,range_type>::type >::type element_iterator;
     static const uint16_type geoOrder = element_iterator::value_type::nOrder;
     LOG_IF(WARNING, gt != GeomapStrategyType::GEOMAP_HO && geoOrder == 1 ) << "you use a non standard geomap : ";
     return Expr<expr_t>( expr_t( elts, im, expr, gt, im2, use_tbb, use_harts, grainsize, partitioner, quadptloc ) );
@@ -5527,7 +5530,7 @@ struct integrate_type
 {
     typedef typename clean2_type<Args,tag::expr,Expr<Cst<double> > >::type _expr_type;
     typedef typename Feel::detail::quadptlocrangetype<typename clean_type<Args,tag::range>::type>::type _range_type;
-    typedef typename boost::tuples::template element<1, _range_type>::type _element_iterator;
+    typedef typename boost::unwrap_reference< typename boost::tuples::template element<1, _range_type>::type >::type _element_iterator;
     static const uint16_type geoOrder = _element_iterator::value_type::nOrder;
 
     //typedef _Q< ExpressionOrder<_range_type,_expr_type>::value > the_quad_type;

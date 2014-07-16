@@ -66,6 +66,7 @@
 #include <feel/feeldiscr/interpolate.hpp>
 #include <feel/feeldiscr/subelements.hpp>
 
+#include <feel/feelmesh/filters.hpp>
 
 namespace Feel
 {
@@ -466,17 +467,22 @@ public:
             M_state.clear( STEP_ON_DISK );
         }
 
+        /**
+         * @brief add regions to timeset
+         * @details some regions can be automatically generated such as the
+         * process id map
+         *
+         * @param  prefix prefix string for the region
+         */
         void
         addRegions( std::string prefix = "" )
         {
             VLOG(1) << "[timeset] Adding regions...\n";
             if ( !M_ts->M_scalar_p0 )
             {
-                VLOG(1) << "[timeset] creating space...\n";
-                //if ( Environment::worldComm().numberOfSubWorlds() > 1 )
+                VLOG(1) << "[timeset] creating space... " << M_mesh.get()->worldComm().numberOfSubWorlds();
                 if ( M_mesh.get()->worldComm().numberOfSubWorlds() > 1 )
                 {
-                    //auto wc = std::vector<WorldComm>( 1, Environment::worldComm().subWorld(Environment::worldComm().numberOfSubWorlds()) );
                     auto wc = std::vector<WorldComm>( 1, M_mesh.get()->worldComm().subWorld(M_mesh.get()->worldComm().numberOfSubWorlds()) );
                     M_ts->M_scalar_p0 = scalar_p0_space_type::New ( _mesh=M_mesh.get(), _worldscomm=wc );
                 }
@@ -625,7 +631,20 @@ public:
                 //M_nodal_scalar[__fname].setName( __n );
                 //M_nodal_scalar[__fname].setFunctionSpace( M_scalar_p1 );
                 if ( func.worldComm().isActive() )
+                {
+                    // interpolate field on visualisation space
                     interpolate( M_scalar_p1, func, M_nodal_scalar[__fname] );
+                    // if exporter use extended dof table but the field to export is not define on this part
+                    // we put to local min value for these ghosts dofs (else can disturbe visualisation range)
+                    if ( M_scalar_p1->dof()->buildDofTableMPIExtended() && !func.functionSpace()->dof()->buildDofTableMPIExtended() )
+                    {
+                        double thelocalmin = func.min( false );
+                        size_type nGhostDofAddedInExtendedDofTable = M_scalar_p1->dof()->nGhostDofAddedInExtendedDofTable();
+                        size_type startDof = (M_scalar_p1->dof()->lastDof()-M_scalar_p1->dof()->firstDof()+1)-nGhostDofAddedInExtendedDofTable;
+                        for ( int k=0;k<nGhostDofAddedInExtendedDofTable;++k )
+                            M_nodal_scalar[__fname].set( startDof+k, thelocalmin );
+                    }
+                }
 
                 DVLOG(2) << "[timset::add] scalar time : " << t.elapsed() << "\n";
             }
@@ -669,7 +688,43 @@ public:
                 t.restart();
 
                 if ( func.worldComm().isActive() )
+                {
+                    // interpolate field on visualisation space
                     interpolate( M_vector_p1, func, M_nodal_vector[__fname] );
+                    // if exporter use extended dof table but the field to export is not define on this part
+                    // we put to a random vectorial value for these ghosts dofs (else can disturbe visualisation range)
+                    size_type nGhostDofAddedInExtendedDofTable = M_vector_p1->dof()->nGhostDofAddedInExtendedDofTable();
+                    if ( nGhostDofAddedInExtendedDofTable>0 && !func.functionSpace()->dof()->buildDofTableMPIExtended() )
+                    {
+                        // get a random value (in the first elt valid)
+                        std::vector<typename vector_p1_space_type::value_type> randomEval( vector_p1_space_type::nComponents1 );
+                        for ( auto const& elt : elements(M_vector_p1->mesh()) )
+                        {
+                            if ( M_vector_p1->dof()->isElementDone( elt.id() ) && !elt.isGhostCell() )
+                            {
+                                for ( uint16_type comp=0; comp<vector_p1_space_type::nComponents1 ; ++comp )
+                                {
+                                    const size_type index = M_vector_p1->dof()->localToGlobal( elt.id(), 0, comp ).index();
+                                    randomEval[comp] = M_nodal_vector[__fname]( index );
+                                }
+                                break;
+                            }
+                        }
+                        // update extended elt with this vectorial value
+                        for ( auto const& eltWrap : elements(M_vector_p1->mesh(),EntityProcessType::GHOST_ONLY) )
+                        {
+                            auto const& elt = boost::unwrap_ref(eltWrap);
+                            for ( uint16_type locDof=0; locDof < vector_p1_space_type::fe_type::nLocalDof; ++locDof )
+                                for ( uint16_type comp=0; comp<vector_p1_space_type::nComponents1 ; ++comp )
+                                {
+                                    const size_type index = M_vector_p1->dof()->localToGlobal( elt.id(), locDof, comp ).index();
+                                    if ( index <= ( M_vector_p1->dof()->lastDof()-nGhostDofAddedInExtendedDofTable) )
+                                        continue;
+                                    M_nodal_vector[__fname].set( index, randomEval[comp] );
+                                }
+                        }
+                    } // if ( nGhostDofAddedInExtendedDofTable>0 && !func.functionSpace()->dof()->buildDofTableMPIExtended() )
+                } // if ( func.worldComm().isActive() )
 
                 DVLOG(2) << "[timset::add] scalar time : " << t.elapsed() << "\n";
             }
@@ -718,8 +773,8 @@ public:
                 //M_element_scalar[__fname].setName( __n );
                 //M_element_scalar[__fname].setFunctionSpace( M_scalar_p0 );
 
-                if ( func.worldComm().isActive() )
-                    interpolate( M_scalar_p0, func, M_element_scalar[__fname] );
+                // interpolate field on visualisation space
+                interpolate( M_scalar_p0, func, M_element_scalar[__fname] );
 
                 //std::copy( func.begin(), func.end(), M_element_scalar[__fname].begin() );
                 DVLOG(2) << "[TimeSet::add] scalar p0 function " << __n << " added to exporter with filename " << __fname <<  "\n";
@@ -758,8 +813,8 @@ public:
                 //M_element_vector[__fname].setName( __n );
                 //M_element_vector[__fname].setFunctionSpace( M_vector_p0 );
 
-                if ( func.worldComm().isActive() )
-                    interpolate( M_vector_p0, func, M_element_vector[__fname] );
+                // interpolate field on visualisation space
+                interpolate( M_vector_p0, func, M_element_vector[__fname] );
 
                 //std::copy( func.begin(), func.end(), M_element_vector[__fname].begin() );
             }
@@ -769,8 +824,8 @@ public:
                 M_element_tensor2[__fname].setName( __n );
                 M_element_tensor2[__fname].setFunctionSpace( M_tensor2_p0 );
 
-                if ( func.worldComm().isActive() )
-                    interpolate( M_tensor2_p0, func, M_element_tensor2[__fname] );
+                // interpolate field on visualisation space
+                interpolate( M_tensor2_p0, func, M_element_tensor2[__fname] );
 
                 //std::copy( func.begin(), func.end(), M_element_tensor2[__fname].begin() );
             }

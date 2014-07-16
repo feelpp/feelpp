@@ -37,13 +37,21 @@
 
 #include <feel/feelfilters/exportergmsh.hpp>
 #include <feel/feelfilters/exporterensight.hpp>
+
+#ifdef FEELPP_HAS_MPIIO
 #include <feel/feelfilters/exporterensightgold.hpp>
+#endif
+
 #include <feel/feelfilters/exporterexodus.hpp>
 
 namespace Feel
 {
 template<typename MeshType, int N> class ExporterEnsight;
+
+#ifdef FEELPP_HAS_MPIIO
 template<typename MeshType, int N> class ExporterEnsightGold;
+#endif
+
 template<typename MeshType, int N> class ExporterGmsh;
 
 template<typename MeshType, int N>
@@ -134,8 +142,10 @@ Exporter<MeshType, N>::New( std::string const& exportername, std::string prefix,
 
     if ( N == 1 && ( exportername == "ensight" ) )
         exporter = new ExporterEnsight<MeshType, N>( worldComm );
+#ifdef FEELPP_HAS_MPIIO
     else if ( N == 1 && ( exportername == "ensightgold"  ) )
         exporter = new ExporterEnsightGold<MeshType, N>( worldComm );
+#endif
     else if ( N == 1 && ( exportername == "exodus"  ) )
         exporter = new ExporterExodus<MeshType, N>( worldComm );
     else if ( N > 1 || ( exportername == "gmsh" ) )
@@ -162,8 +172,10 @@ Exporter<MeshType, N>::New( po::variables_map const& vm, std::string prefix, Wor
 
     if ( N == 1 && ( estr == "ensight"   ) )
         exporter = new ExporterEnsight<MeshType, N>( worldComm );
+#ifdef FEELPP_HAS_MPIIO
     else if ( N == 1 && ( estr == "ensightgold"   ) )
         exporter = new ExporterEnsightGold<MeshType, N>( worldComm );
+#endif
     else if ( N == 1 && ( estr == "exodus"   ) )
         exporter = new ExporterExodus<MeshType, N>( worldComm );
     else if ( N > 1 || estr == "gmsh" )

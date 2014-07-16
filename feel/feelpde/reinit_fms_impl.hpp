@@ -27,7 +27,7 @@
 
 #define FEELPP_INSTANTIATE_FMS 1
 
-#include "reinit_fms.hpp"
+#include <feel/feelpde/reinit_fms.hpp>
 
 //#define FM_EXPORT 1
 

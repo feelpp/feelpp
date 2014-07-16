@@ -898,6 +898,7 @@ public:
 
     bool buildDofTableMPIExtended() const { return M_buildDofTableMPIExtended; }
     void setBuildDofTableMPIExtended( bool b ) { M_buildDofTableMPIExtended = b; }
+    size_type nGhostDofAddedInExtendedDofTable() const { return M_nGhostDofAddedInExtendedDofTable; }
 
     /**
      * \return the dictionnary for the global dof
@@ -956,10 +957,15 @@ public:
 
     void printDofMarker(std::string const& filename )
         {
+            // std::ofstream ofs( filename.c_str() );
+            // BOOST_FOREACH( auto dof, _M_dof_marker )
+            // {
+            //     //ofs << dof.first << " " << dof.second << "\n";
+            // }
             std::ofstream ofs( filename.c_str() );
-            BOOST_FOREACH( auto dof, M_dof_marker.left )
+            for( auto dofleft : M_dof_marker.left )
             {
-                ofs << dof.first << " " << dof.second << "\n";
+                ofs << dofleft.first << " " << dofleft.second << "\n";
             }
         }
     /**
@@ -1314,7 +1320,7 @@ private:
     vector_indices_type M_locglobOnCluster_signs;
 
     bool M_buildDofTableMPIExtended;
-
+    size_type M_nGhostDofAddedInExtendedDofTable;
 
     std::vector<uint16_type> M_localIndicesPerm, M_localIndicesIdentity;
 
@@ -1342,6 +1348,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( mesh_type& me
     M_dof_indices(),
     M_periodicity( periodicity ),
     M_buildDofTableMPIExtended( false ),
+    M_nGhostDofAddedInExtendedDofTable( 0 ),
     M_localIndicesPerm( nDofPerElement ),
     M_localIndicesIdentity( nDofPerElement )
 {
@@ -1372,6 +1379,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( fe_ptrtype co
     M_dof_indices(),
     M_periodicity( periodicity ),
     M_buildDofTableMPIExtended( false ),
+    M_nGhostDofAddedInExtendedDofTable( 0 ),
     M_localIndicesPerm( nDofPerElement ),
     M_localIndicesIdentity( nDofPerElement )
 {
@@ -1393,9 +1401,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( const self_ty
     M_dof_indices( dof2.M_dof_indices ),
     M_periodicity( dof2.M_periodicity ),
     M_buildDofTableMPIExtended( dof2.M_buildDofTableMPIExtended ),
+    M_nGhostDofAddedInExtendedDofTable( dof2.M_nGhostDofAddedInExtendedDofTable ),
     M_localIndicesPerm( dof2.M_localIndicesPerm ),
     M_localIndicesIdentity( dof2.M_localIndicesIdentity )
-
 {
 }
 

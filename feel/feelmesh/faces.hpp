@@ -549,7 +549,7 @@ public:
     std::pair<interprocess_face_iterator, interprocess_face_iterator>
     interProcessFaces( rank_type p = invalid_rank_type_value ) const
     {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+        const rank_type part =  this->worldCommFaces().localRank();
         if ( p != invalid_rank_type_value )
             return M_faces.template get<Feel::detail::by_interprocessdomain>().equal_range( boost::make_tuple( true, part, p ) );
         else

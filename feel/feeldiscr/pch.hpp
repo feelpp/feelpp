@@ -36,8 +36,8 @@ namespace Feel {
 namespace meta {
 template<typename MeshType,
          int Order,
-         int Tag = 0,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced>
+         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         int Tag = 0>
 struct Pch
 {
     typedef FunctionSpace<MeshType,
@@ -56,14 +56,14 @@ struct Pch
  * of degree (total or in each variable) less than k.
  */
 template<int Order,
-         int Tag = 0,
          template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
-         typename MeshType>
+         typename MeshType,
+         int Tag = 0>
 inline
-typename meta::Pch<MeshType,Order,Tag,Pts>::ptrtype
+typename meta::Pch<MeshType,Order,Pts,Tag>::ptrtype
 Pch( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
 {
-    typedef typename meta::Pch<MeshType,Order,Tag,Pts>::type space_type;
+    typedef typename meta::Pch<MeshType,Order,Pts,Tag>::type space_type;
     return space_type::New( _mesh=mesh,
                             _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
                             _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );

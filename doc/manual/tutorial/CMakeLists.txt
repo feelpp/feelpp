@@ -24,7 +24,7 @@
 add_custom_target(
   loadmesh
   ALL
-  COMMAND ${CMAKE_COMMAND} -E copy ${FEELPP_SOURCE_DIR}/data/gmsh/feel.geo
+  COMMAND ${CMAKE_COMMAND} -E copy ${FEELPP_SOURCE_DIR}/data/gmsh/feelpp/feel.geo
                                    ${FEELPP_BUILD_DIR}/doc/manual/tutorial
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
