@@ -147,7 +147,40 @@ IF ( MPI_FOUND )
   SET(FEELPP_LIBRARIES ${MPI_LIBRARIES} ${FEELPP_LIBRARIES})
   INCLUDE_DIRECTORIES(${MPI_INCLUDE_PATH})
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Mpi" )
+
+  # Check for MPI IO Support
+
+  #TRY_COMPILE(MPIIO_SUCCESS ${CMAKE_CURRENT_BINARY_DIR}/tryCompileMPIIO
+  #${CMAKE_SOURCE_DIR}/cmake/codes/try-mpiio.cpp
+  #LINK_LIBRARIES ${FEELPP_LIBRARIES} )
+  set(CMAKE_REQUIRED_LIBRARIES_save ${CMAKE_REQUIRED_LIBRARIES})
+  set(CMAKE_REQUIRED_LIBRARIES ${MPI_LIBRARIES})
+  set(CMAKE_REQUIRED_INCLUDES_save ${CMAKE_REQUIRED_INCLUDES})
+  set(CMAKE_REQUIRED_INCLUDES ${MPI_INCLUDE_PATH})
+  CHECK_CXX_SOURCE_COMPILES(
+      "          
+      #include <mpi.h>
+
+      int main(int argc, char** argv)
+      {
+      MPI_File fh;
+      MPI_Status status;
+      MPI_Info info;
+      }
+      "
+      MPIIO_DETECTED)
+  set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES_save})
+  set(CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES_save})
+
+  IF (MPIIO_DETECTED)
+      MESSAGE(STATUS "MPIIO detected and enabled.")
+      SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Mpi-IO" )
+      SET(FEELPP_HAS_MPIIO 1)
+  ELSE()
+      MESSAGE(WARNING "MPIIO not detected and disabled (Related features disable, e.g. Ensight Gold exporter).")
+  ENDIF()
 ENDIF()
+
 
 
 

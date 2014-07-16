@@ -164,8 +164,9 @@ GmshHypercubeDomain::getDescription2D() const
     ostr << "xmin=" << this->M_I[0].first << ";\n"
          << "xmax=" << this->M_I[0].second << ";\n"
          << "ymin=" << this->M_I[1].first << ";\n"
-         << "ymax=" << this->M_I[1].second << ";\n"
-         << "Point(1) = {xmin,ymin,0.0,h};\n"
+         << "ymax=" << this->M_I[1].second << ";\n";
+
+    ostr << "Point(1) = {xmin,ymin,0.0,h};\n"
          << "Point(2) = {xmax,ymin+"<<this->shear()<<",0.0,h};\n"
          << "Point(3) = {xmax+" << this->shear() << ",ymax,0.0,h};\n"
          << "Point(4) = {xmin+" << this->shear() << ",ymax+"<<this->shear()<<",0.0,h};\n"
@@ -214,12 +215,17 @@ GmshHypercubeDomain::getDescription2D() const
 
     if ( this->structuredMesh() || M_use_hypercube )
     {
-        if ( this->structuredMesh() == 1 || M_use_hypercube )
+        //if ( this->structuredMesh() == 1 || M_use_hypercube )
+        if ( this->structuredMesh() == 1 )
             ostr << "nx = (xmax-xmin)/h;\n"
                  << "ny = (ymax-ymin)/h;\n";
         else if ( this->structuredMesh() == 2 )
             ostr << "nx = 1/h;\n"
                  << "ny = 1/h;\n";
+        else if ( this->structuredMesh() == 3 )
+            ostr << "nx=" << M_nx << ";\n"
+                 << "ny=" << M_ny << ";\n";
+
 
         ostr << "\n"
              << "Transfinite Line {1,3} = ny + 1 Using Progression 1.0;\n"
@@ -312,7 +318,8 @@ GmshHypercubeDomain::getDescription3D() const
              << "Physical Surface(\"SOUTH\") = {23};\n"
              << "Physical Surface(\"EAST\") = {27};\n"
              << "Physical Surface(\"BOTTOM\") = {28};\n"
-             << "Physical Volume(30) = {1};\n";
+             << "Physical Volume(\"Omega\") = {1};\n";
+            //<< "Physical Volume(30) = {1};\n";
     }
     else
     {

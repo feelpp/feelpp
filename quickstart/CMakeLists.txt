@@ -23,16 +23,16 @@
 #
 add_custom_target(quickstart)
 
-feelpp_add_application( qs_laplacian SRCS qs_laplacian.cpp INCLUDE_IN_ALL GEO feel.geo feel3d.geo CFG qs_laplacian.cfg)
+feelpp_add_application( qs_laplacian SRCS qs_laplacian.cpp INCLUDE_IN_ALL CFG qs_laplacian.cfg)
 install(TARGETS feelpp_qs_laplacian DESTINATION bin/ COMPONENT Bin )
 
-feelpp_add_application( ls_laplacian SRCS ls_laplacian.cpp INCLUDE_IN_ALL GEO feel.geo feel3d.geo CFG ls_laplacian.cfg)
+feelpp_add_application( ls_laplacian SRCS ls_laplacian.cpp INCLUDE_IN_ALL CFG ls_laplacian.cfg TIMEOUT 60)
 install(TARGETS feelpp_ls_laplacian DESTINATION bin/ COMPONENT Bin )
 
 feelpp_add_application( qs_stokes SRCS qs_stokes.cpp INCLUDE_IN_ALL CFG qs_stokes.cfg )
 install(TARGETS feelpp_qs_stokes DESTINATION bin/ COMPONENT Bin )
 
-feelpp_add_application( qs_ns SRCS qs_ns.cpp INCLUDE_IN_ALL CFG qs_ns.cfg GEO feel2d-ns.geo )
+feelpp_add_application( qs_ns SRCS qs_ns.cpp INCLUDE_IN_ALL CFG qs_ns.cfg  )
 install(TARGETS feelpp_qs_ns DESTINATION bin/ COMPONENT Bin )
 
 add_dependencies(quickstart feelpp_qs_laplacian)
