@@ -340,6 +340,12 @@ void MatrixPetsc<T>::init ( const size_type m,
                    this->graph()->nNzOnProc().end(),
                    dnz );
         //std::copy( dnz, dnz+this->graph()->nNzOnProc().size(), std::ostream_iterator<PetscInt>( std::cout, "\n" ) );
+        for( int i = 0; i < this->graph()->nNzOnProc().size(); ++i )
+        {
+            DLOG_IF(ERROR, dnz[i] == n_global ) << "row " << i << " is full : number of non zero entries = " << dnz[i] << " == cols " << n_global;
+            LOG_IF(FATAL, dnz[i] > n_global ) << "row " << i << " has invalid data : number of non zero entries = " << dnz[i] << " == cols " << n_global;
+        }
+
         ierr = MatCreateSeqAIJ ( this->comm(), m_global, n_global,
                                  0,
                                  dnz,
