@@ -996,6 +996,11 @@ MatrixPetsc<T>::createSubmatrix( MatrixSparse<T>& submatrix,
 #endif
     ierr = MatGetSubMatrix(this->mat(), isrow, iscol, MAT_INITIAL_MATRIX, &A->mat());
     CHKERRABORT( this->comm(),ierr );
+
+    ISDestroy( &isrow );
+    ISDestroy( &iscol );
+    delete[] rowMap;
+    delete[] colMap;
 }
 
 template <typename T>
