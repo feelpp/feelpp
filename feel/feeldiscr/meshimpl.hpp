@@ -3269,7 +3269,7 @@ Mesh<Shape, T, Tag>::Localization::searchElement( const node_type & p,
         {
             if( this->doExtrapolation() )
                 {
-                    std::cout << "WARNING EXTRAPOLATION for the point" << p << std::endl;
+                    LOG(WARNING) << "WARNING EXTRAPOLATION for the point" << p;
                     //std::cout << "W";
                     auto const& eltUsedForExtrapolation = mesh->element(ListTri.begin()->first);
                     gmc_inverse_type gic( mesh->gm(), eltUsedForExtrapolation, mesh->worldComm().subWorldCommSeq() );
