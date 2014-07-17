@@ -40,6 +40,7 @@
 
 #include <testsuite/testsuite.hpp>
 #include <feel/feel.hpp>
+#include <feel/feelvf/print.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelpoly/nedelec.hpp>
 
@@ -101,8 +102,10 @@ public:
     typedef Simplex<3,1> convex_type;
     //! mesh type
     typedef Mesh<convex_type> mesh_type;
+    typedef Mesh< Simplex<1,1,3> > submesh1d_type;
     //! mesh shared_ptr<> type
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef boost::shared_ptr<submesh1d_type> submesh1d_ptrtype;
 
     //! the basis type of our approximation space
     typedef bases<Nedelec<0,NedelecKind::NED1> > basis_type;
@@ -271,7 +274,7 @@ TestHCurl3DOneElt::shape_functions( std::string one_element_mesh )
     export_ptrtype exporter_shape( export_type::New( this->vm(),
                                    ( boost::format( "%1%-%2%-%3%" )
                                      % this->about().appName()
-                                     % mesh_path.stem()
+                                     % mesh_path.stem().string()
                                      % shape_name ).str() ) );
 
     exporter_shape->step( 0 )->setMesh( mesh );
@@ -285,7 +288,7 @@ TestHCurl3DOneElt::shape_functions( std::string one_element_mesh )
         u_vec[i] = U_ref;
 
         std::ostringstream ostr;
-        ostr << mesh_path.stem() << "-" << Xh->basis()->familyName() << "-" << i;
+        ostr << mesh_path.stem().string() << "-" << Xh->basis()->familyName() << "-" << i;
         exporter_shape->step( 0 )->add( ostr.str(), U_ref );
     }
 
@@ -297,7 +300,33 @@ TestHCurl3DOneElt::shape_functions( std::string one_element_mesh )
     int check_size = Xh->nLocalDof()*Xh->nLocalDof();
     std::vector<double> checkidv( check_size );
     std::vector<double> checkform1( check_size );
-    std::vector<std::string> edges = boost::assign::list_of( "hypo" )( "vert" )( "hor" );
+    std::vector<std::string> edges = {"zAxis","yAxis","yzAxis","xyAxis","xzAxis","xAxis"};
+
+    submesh1d_ptrtype edgeMesh( new submesh1d_type );
+    edgeMesh = createSubmesh(oneelement_mesh, boundaryedges(oneelement_mesh) ); //submesh of edges
+
+    double div1sqrt2 = 1/sqrt(2.);
+
+    // Tangents (normalized) on ref element
+    auto t0 = vec(cst(0.),cst(0.),cst(-1.));
+    auto t1 = vec(cst(0.),cst(1.),cst(0.));
+    auto t2 = vec(cst(0.),cst(-div1sqrt2),cst(div1sqrt2));
+    auto t3 = vec(cst(div1sqrt2),cst(-div1sqrt2),cst(0.));
+    auto t4 = vec(cst(div1sqrt2),cst(0.),cst(-div1sqrt2));
+    auto t5 = vec(cst(1.),cst(0.),cst(0.));
+    std::vector< decltype(t0) > tangentRef{t0,t1,t2,t3,t4,t5};
+
+    // Jacobian of geometrical transforms
+    std::string jac;
+    std::string jac_name = "jac_"+ mesh_path.stem().string();
+    if(mesh_path.stem().string() == "one-elt-ref-3d" || mesh_path.stem().string() == "one-elt-real-homo-3d" )
+        jac = "{1,0,0,0,1,0,0,0,1}:x:y:z";
+    else if(mesh_path.stem().string() == "one-elt-real-rotx" )
+        jac = "{1,0,0,0,0,-1,0,1,0}:x:y:z";
+    else if(mesh_path.stem().string() == "one-elt-real-roty" )
+        jac = "{0,0,1,0,1,0,-1,0,0}:x:y:z";
+    else if(mesh_path.stem().string() == "one-elt-real-rotz" )
+        jac = "{0,-1,0,1,0,0,0,0,1}:x:y:z";
 
     std::vector<double> checkStokesidv( 2*Xh->nLocalDof() );
     std::vector<double> checkStokesform1( 2*Xh->nLocalDof() );
@@ -307,17 +336,19 @@ TestHCurl3DOneElt::shape_functions( std::string one_element_mesh )
         int edgeid = 0;
         BOOST_FOREACH( std::string edge, edges )
         {
-            auto int_u_t = integrate( markedfaces( oneelement_mesh, edge ), trans( T() )*idv( u_vec[i] ) ).evaluate()( 0,0 );
+            CHECK( oneelement_mesh->hasMarkers({edge}) );
+            auto int_u_t = integrate( markedelements(edgeMesh, edge),
+                                      trans(expr<3,3>(jac,jac_name)*tangentRef[edgeid])*idv( u_vec[i] ) ).evaluate()(0,0);
 
             if ( edgeid == i )
                 BOOST_CHECK_CLOSE( int_u_t, 1, 1e-13 );
-
             else
                 BOOST_CHECK_SMALL( int_u_t, 1e-13 );
 
-            checkidv[3*i+edgeid] = int_u_t;
+            checkidv[Xh->nLocalDof()*i+edgeid] = int_u_t;
 
-            form1( _test=Xh, _vector=F, _init=true ) = integrate( markedfaces( oneelement_mesh, edge ), trans( T() )*id( V_ref ) );
+            form1( _test=Xh, _vector=F, _init=true ) = integrate( markedelements(edgeMesh, edge),
+                                                                  trans(expr<3,3>(jac,jac_name)*tangentRef[edgeid])*id( V_ref ) );
             auto form_v_t = inner_product( u_vec[i], *F );
 
             if ( edgeid == i )
@@ -325,32 +356,34 @@ TestHCurl3DOneElt::shape_functions( std::string one_element_mesh )
             else
                 BOOST_CHECK_SMALL( form_v_t, 1e-13 );
 
-            checkform1[3*i+edgeid] = form_v_t;
+            checkform1[Xh->nLocalDof()*i+edgeid] = form_v_t;
 
             ++edgeid;
         }
 
-        // curl2D(u1,u2) = d(u2)/dx1 - d(u1)/dx2
-        // 2D case : only curlx is initialized to curl2D(u1,u2) (curl is a vector with only one component initialized)
-        auto int_curlxv = integrate( elements( oneelement_mesh ), curlxv( u_vec[i] ) ).evaluate()( 0,0 );
-        auto int_vt = integrate( boundaryfaces( oneelement_mesh ), trans( T() )*idv( u_vec[i] ) ).evaluate()( 0,0 );
+        //Stokes Theorem for curl :
+        auto int_curlv = integrate( elements( oneelement_mesh ), curlv( u_vec[i] ) ).evaluate()(0,0);
+        int_curlv += integrate( elements( oneelement_mesh ), curlv( u_vec[i] ) ).evaluate()(1,0);
+        int_curlv += integrate( elements( oneelement_mesh ), curlv( u_vec[i] ) ).evaluate()(2,0);
 
-        BOOST_CHECK_CLOSE( int_vt, 1, 1e-13 );
-        BOOST_CHECK_CLOSE( int_curlxv, int_vt, 1e-13 );
-        checkStokesidv[i] = int_curlxv;
-        checkStokesidv[i + Xh->nLocalDof()] = int_vt;
+        form1( _test=Xh, _vector=F, _init=true ) = integrate( elements( oneelement_mesh ), trans(one())*curl( V_ref ) );
+        auto form_curlv = inner_product( u_vec[i], *F );
 
-        // curl2D(u1,u2) = d(u2)/dx1 - d(u1)/dx2
-        // 2D case : only curlx is initialized to curl2D(u1,u2) (curl is a vector with only one component initialized)
-        form1( _test=Xh, _vector=F, _init=true ) = integrate( elements( oneelement_mesh ), curlx( V_ref ) );
-        auto form_curlxv = inner_product( u_vec[i], *F );
-        form1( _test=Xh, _vector=F, _init=true ) = integrate( boundaryfaces( oneelement_mesh ),trans( T() )*id( V_ref ) );
-        auto form_vt = inner_product( u_vec[i], *F );
+        auto int_vn = integrate(boundaryfaces(oneelement_mesh), -cross( idv(u_vec[i]),N() )).evaluate()(0,0);
+        int_vn += integrate(boundaryfaces(oneelement_mesh), -cross( idv(u_vec[i]),N() )).evaluate()(1,0);
+        int_vn += integrate(boundaryfaces(oneelement_mesh), -cross( idv(u_vec[i]),N() )).evaluate()(2,0);
 
-        BOOST_CHECK_CLOSE( form_vt, 1, 1e-13 );
-        BOOST_CHECK_CLOSE( form_curlxv, form_vt, 1e-13 );
-        checkStokesform1[i] = form_curlxv;
-        checkStokesform1[i + Xh->nLocalDof()] = form_vt;
+        form1( _test=Xh, _vector=F, _init=true ) = integrate( boundaryfaces( oneelement_mesh ),
+                                                              -trans(one())*cross( idv(u_vec[i]),N() ) );
+        auto form_vn = inner_product( u_vec[i], *F );
+
+        BOOST_CHECK_SMALL( int_curlv - int_vn, 1e-13 );
+        checkStokesidv[i] = int_curlv;
+        checkStokesidv[i + Xh->nLocalDof()] = int_vn;
+
+        BOOST_CHECK_SMALL( form_curlv - form_vn, 1e-13 );
+        checkStokesform1[i] = form_curlv;
+        checkStokesform1[i + Xh->nLocalDof()] = form_vn;
     }
 
     BOOST_TEST_MESSAGE( " ********** Values of alpha_i (N_j ) = delta_{i,j}  ********** \n"
@@ -358,7 +391,7 @@ TestHCurl3DOneElt::shape_functions( std::string one_element_mesh )
                         << " ********** Using idv keyword ********************* "
                         << "\n" );
 
-    for ( int i = 0; i < 3; ++i )
+    for ( int i = 0; i < Xh->nLocalDof(); ++i )
     {
         int edgeid = 0;
         BOOST_FOREACH( std::string edge, edges )
@@ -375,7 +408,7 @@ TestHCurl3DOneElt::shape_functions( std::string one_element_mesh )
                         << " ********** Using form1 keyword ********************* "
                         << "\n" );
 
-    for ( int i = 0; i < 3; ++i )
+    for ( int i = 0; i < Xh->nLocalDof(); ++i )
     {
         int edgeid = 0;
         BOOST_FOREACH( std::string edge, edges )
@@ -394,7 +427,7 @@ TestHCurl3DOneElt::shape_functions( std::string one_element_mesh )
     for ( int i = 0; i < Xh->nLocalDof(); ++i )
     {
         BOOST_TEST_MESSAGE("int(Omega) curl(N_" << i << ") = " << checkStokesidv[i] );
-        BOOST_TEST_MESSAGE("int(boundary) N_" << i << ".t = " << checkStokesidv[i+Xh->nLocalDof()] );
+        BOOST_TEST_MESSAGE("int(boundary) N_" << i << "^n = " << checkStokesidv[i+Xh->nLocalDof()] );
         BOOST_TEST_MESSAGE( "*********************************************** \n" );
     }
 
@@ -405,7 +438,7 @@ TestHCurl3DOneElt::shape_functions( std::string one_element_mesh )
     for ( int i = 0; i < Xh->nLocalDof(); ++i )
     {
         BOOST_TEST_MESSAGE("int(Omega) curl(N_" << i << ") = " << checkStokesform1[i] );
-        BOOST_TEST_MESSAGE("int(boundary) N_" << i << ".t = " << checkStokesform1[i+Xh->nLocalDof()] );
+        BOOST_TEST_MESSAGE("int(boundary) N_" << i << "^n = " << checkStokesform1[i+Xh->nLocalDof()] );
         BOOST_TEST_MESSAGE( "*********************************************** \n" );
     }
 
@@ -426,7 +459,7 @@ BOOST_AUTO_TEST_CASE( test_hcurl3D_N0 )
         {
             std::cout << "*** shape functions on " << geo << " *** \n";
             t.shape_functions( geo );
-            std::cout << "*** projections on " << geo << " *** \n";
+            // std::cout << "*** projections on " << geo << " *** \n";
             // t.testProjector( geo );
         }
 }
