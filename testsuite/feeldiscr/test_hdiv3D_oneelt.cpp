@@ -308,7 +308,7 @@ TestHDiv3DOneElt::shape_functions( std::string one_element_mesh )
     std::vector<double> checkidv( check_size );
     std::vector<double> checkform1( check_size );
     // Faces have to be in the correct order
-    std::vector<std::string> faces = boost::assign::list_of( "xzFace" )( "xyFace" )( "xyzFace" )( "yzFace" );
+    std::vector<std::string> faces{"xzFace","xyFace","xyzFace","yzFace"};
 
     std::vector<double> checkStokesidv( 2*Xh->nLocalDof() );
     std::vector<double> checkStokesform1( 2*Xh->nLocalDof() );
