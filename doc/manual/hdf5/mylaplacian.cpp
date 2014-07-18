@@ -25,6 +25,7 @@
 
 #include <feel/feel.hpp>
 #include <feel/feelfilters/exporterhdf5.hpp>
+
 using namespace Feel;
 
 /** \page LaplacianTutorial Laplacian with homogeneous Dirichlet conditions
@@ -95,7 +96,7 @@ int main(int argc, char**argv )
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
     // create mesh
-    auto mesh = unitSquare();
+    auto mesh = loadMesh ( _mesh = new Mesh <Simplex<2>>) ;
 
     // function space
     auto Vh = Pch<1>( mesh );
@@ -119,9 +120,13 @@ int main(int argc, char**argv )
     // solve the equation a(u,v) = l(v)
     a.solve(_rhs=l,_solution=u);
 
-    Exporterhdf5 <Mesh<Simplex<2>>> expo ("exemple", Environment::worldComm()) ;
+/*
+    Exporterhdf5 <Mesh<Simplex<2>>, 1> expo ("exemple", Environment::worldComm()) ;
     expo.write (mesh) ;
+*/
 
-
+    auto e = exporter ( _mesh=mesh ); 
+    e->add ("u", u) ;
+    e->save () ;
 }
 /// [marker1]
