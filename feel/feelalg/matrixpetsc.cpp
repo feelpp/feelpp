@@ -340,6 +340,12 @@ void MatrixPetsc<T>::init ( const size_type m,
                    this->graph()->nNzOnProc().end(),
                    dnz );
         //std::copy( dnz, dnz+this->graph()->nNzOnProc().size(), std::ostream_iterator<PetscInt>( std::cout, "\n" ) );
+        for( int i = 0; i < this->graph()->nNzOnProc().size(); ++i )
+        {
+            DLOG_IF(ERROR, dnz[i] == n_global ) << "row " << i << " is full : number of non zero entries = " << dnz[i] << " == cols " << n_global;
+            LOG_IF(FATAL, dnz[i] > n_global ) << "row " << i << " has invalid data : number of non zero entries = " << dnz[i] << " == cols " << n_global;
+        }
+
         ierr = MatCreateSeqAIJ ( this->comm(), m_global, n_global,
                                  0,
                                  dnz,
@@ -958,7 +964,7 @@ MatrixPetsc<T>::createSubmatrix( MatrixSparse<T>& submatrix,
                                  const std::vector<size_type>& cols ) const
 {
     //auto sub_graph = GraphCSR(rows.size()*cols.size(),0,rows.size()-1,0,cols.size()-1,this->comm());
-    auto sub_graph = graph_ptrtype(new graph_type(rows.size()*cols.size(),0,rows.size(),0,cols.size(),this->comm()));
+    auto sub_graph = graph_ptrtype(new graph_type(0,0,rows.size(),0,cols.size(),this->comm()));
 
     MatrixPetsc<T>* A = dynamic_cast<MatrixPetsc<T>*> ( &submatrix );
     A->setGraph( sub_graph );
@@ -990,6 +996,11 @@ MatrixPetsc<T>::createSubmatrix( MatrixSparse<T>& submatrix,
 #endif
     ierr = MatGetSubMatrix(this->mat(), isrow, iscol, MAT_INITIAL_MATRIX, &A->mat());
     CHKERRABORT( this->comm(),ierr );
+
+    ISDestroy( &isrow );
+    ISDestroy( &iscol );
+    delete[] rowMap;
+    delete[] colMap;
 }
 
 template <typename T>
