@@ -182,6 +182,7 @@ public:
      */
     //typedef std::unordered_map<int,std::map<int,global_dof_type> > Container;
     //typedef typename std::map<int,global_dof_type>::iterator local_map_iterator;
+    typedef Dof globaldof_type;
     typedef LocalDof<nDofComponents()> localdof_type;
     typedef boost::bimap<bimaps::set_of<localdof_type>, bimaps::multiset_of<Dof> > dof_table;
     typedef typename dof_table::value_type dof_relation;
@@ -580,6 +581,16 @@ public:
         return it->second.index();
     }
 
+    std::pair<global_dof_const_iterator,global_dof_const_iterator> const& globalDof()  const
+        {
+            return std::make_pair( M_el_l2g.right.begin(), M_el_l2g.right.end() );
+        }
+    std::pair<global_dof_const_iterator,global_dof_const_iterator> globalDof( size_type GlobalDofId ) const
+        {
+            auto lower = M_el_l2g.right.lower_bound( globaldof_type(GlobalDofId,-1) );
+            auto upper = M_el_l2g.right.upper_bound( globaldof_type(GlobalDofId,2) );
+            return std::make_pair( lower, upper );
+        }
     /**
      * \return the specified entries of the globalToLocal table
      *
