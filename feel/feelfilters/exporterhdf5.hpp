@@ -158,13 +158,41 @@ void Exporterhdf5<MeshType, N>::write (const mesh_ptrtype& mesh) const
 {
     std::cout << "mesh_type::nRealDim : " << mesh_type::nRealDim << std::endl ;
     M_meshOut = mesh ;
-    M_fileName = "yo" ;
+    M_fileName = this->prefix () ;
     M_HDF5.openFile (M_fileName+".h5", M_comm, false) ;
     writePoints () ;
     writeFaces () ;
 
     writeElements1 () ;
     writeStats () ;
+
+    timeset_const_iterator __ts_it = this->beginTimeSet () ;
+    timeset_const_iterator __ts_en = this->endTimeSet () ;
+
+    while ( __ts_it != __ts_en )
+    {
+        timeset_ptrtype __ts = *__ts_it ;
+        typename timeset_type::step_const_iterator __it = __ts->beginStep () ;
+        typename timeset_type::step_const_iterator __end = __ts->endStep () ;
+        __it = boost::prior ( __end ) ;
+
+        while ( __it != __end )
+        {
+            typename timeset_type::step_ptrtype __step = * __it ;
+
+            if ( __step->isInMemory() )
+            {
+                std::cout << "time : " << __step->time () << std::endl ; 
+                std::cout << "time increment : " << __ts->timeIncrement () << std::endl ; 
+                std::cout << "numberOfSteps : " << __ts->numberOfSteps () << std::endl ; 
+                std::cout << "numberOfTotalSteps : " << __ts->numberOfTotalSteps () << std::endl ;
+                std::cout << "time set name :" << __ts->name () << std::endl ;
+                saveNodal (__step, __step->beginNodalScalar(), __step->endNodalScalar() ) ;
+            }
+            ++__it ;
+        }
+        ++__ts_it ;
+    }
 
     write_xdmf_xml () ;
     M_HDF5.closeFile () ;
@@ -367,27 +395,74 @@ template <typename MeshType, int N>
 template <typename Iterator>
 void Exporterhdf5<MeshType, N>::saveNodal ( typename timeset_type::step_ptrtype __step, Iterator __var, Iterator en ) const 
 {   
-    typename mesh_type::parts_const_iterator_type p_it = M_meshOut->beginParts();
-    typename mesh_type::parts_const_iterator_type p_en = M_meshOut->endParts();
-    M_numParts = std::distance (p_it, p_en) ;
+    std::cout << "saveNodal" << std::endl ;
+    std::cout << "__var->first : " << __var->first << std::endl ;
+    
+     hsize_t currentSpacesDims [2] ;
 
+    currentSpacesDims [0] = 1 ;
+    currentSpacesDims [1] = M_maxNumPoints ;
 
-    for ( size_type i = 0 ; i < M_numParts ; i ++ , p_it++ ) 
+    M_HDF5.createTable ("dataNodes", H5T_IEEE_F64BE, currentSpacesDims) ;
+
+    while ( __var != en )
     {
+        auto __mesh = __step->mesh () ;
         uint16_type nComponents = __var -> second.nComponents ;
         if ( __var->second.is_vectorial )
             nComponents = 3 ;
+        std::cout << "nComponents : " << nComponents << std::endl ;
+        M_realBuffer.resize (M_maxNumPoints*nComponents, 0) ;
 
-        auto r = markedelements (M_meshOut, *p_it, EntityProcessType::ALL) ;
-        auto elt_it = r.template get<1>() ;
-        auto elt_en = r.template get<2>() ;
+        typename mesh_type::parts_const_iterator_type p_it = M_meshOut->beginParts();
+        typename mesh_type::parts_const_iterator_type p_en = M_meshOut->endParts();
+        M_numParts = std::distance (p_it, p_en) ;
 
+        //for ( size_type i = 0 ; i < M_numParts ; i ++ , p_it++ ) 
+        for ( ; p_it != p_en ; p_it++) 
+        {
+
+            auto r = markedelements (__mesh, p_it->first, EntityProcessType::ALL) ;
+            auto elt_it = r.template get<1>() ;
+            auto elt_en = r.template get<2>() ;
+
+             Feel::detail::MeshPoints<float> mp ( __step->mesh().get(), elt_it, elt_en, true, true, true ) ;
+            
+             size_type e = 0 ; 
+             int index = 0 ;
+             for ( ; elt_it != elt_en ; ++elt_it )
+             {
+                 for ( uint16_type c = 0 ; c < nComponents ; ++c )
+                 {
+                     for ( uint16_type p = 0 ; p < __step->mesh()->numLocalVertices() ; ++p, ++e )
+                     {
+                         size_type ptid = elt_it->get().point(p).id()-1 ;
+                         size_type global_node_id = mp.ids.size()*c + ptid ;
+                         if ( c < __var->second.nComponents ) 
+                         {
+                             size_type dof_id = boost::get<0>( __var->second.functionSpace()->dof()->localToGlobal ( elt_it->get().id(), p, c ) ) ;
+                             M_realBuffer[global_node_id] = __var->second.globalValue ( dof_id ) ;
+                         }
+                         else
+                         {
+                             M_realBuffer[global_node_id] = 0.0 ;
+                         }
+                     }
+                 }
+             }
+             index++ ;
+        }
+        ++__var ;
     }
 
+    for ( int i = 0 ; i < 10 ; i ++ ) 
+        std::cout << "DataNode("<<i<<") : " << M_realBuffer[i] << std::endl ;
+    
+    hsize_t currentOffset[2] = {0, 0} ;
 
+    M_HDF5.write ( "dataNodes", H5T_NATIVE_DOUBLE, currentSpacesDims, currentOffset, &M_realBuffer[0] ) ;
 
-
-
+    M_HDF5.closeTable ("dataNodes") ;
    /* 
     auto d_it = M_meshOut -> beginNodalScalar () ;
     auto d_en = M_meshOut -> beginNodalScalar () ;
@@ -499,19 +574,16 @@ template <typename MeshType, int N>
 void Exporterhdf5<MeshType, N>::save () const 
 {
     std::cout << "hdf5 exporter" << std::endl ;
-
+    
     timeset_const_iterator __ts_it = this->beginTimeSet () ;
     timeset_const_iterator __ts_en = this->endTimeSet () ;
-    
     timeset_ptrtype __ts = *__ts_it ;
     typename timeset_type::step_const_iterator __it = __ts->beginStep () ;
     typename timeset_type::step_const_iterator __end = __ts->endStep () ;
     __it = boost::prior ( __end ) ;
-
     typename timeset_type::step_ptrtype __step = * __it ;
-    
 
-    write (__step->mesh()) ;
+    write ( __step->mesh()) ;
 }
 
 template <typename MeshType, int N>
@@ -540,6 +612,11 @@ void Exporterhdf5<MeshType, N>::write_xdmf_xml () const
     fprintf (xmf, "             %s.h5:/point_coords\n", M_fileName.c_str()) ;
     fprintf (xmf, "             </DataItem>\n") ;
     fprintf (xmf, "         </Geometry>\n") ;
+    fprintf (xmf, "         <Attribute Name=\"dataNodes\" Center=\"Node\">\n") ;
+    fprintf (xmf, "             <DataItem Dimensions=\"1 %zu\" NumberType=\"Float\" Precision=\"8\" Format=\"HDF\" Endian=\"Big\">\n", M_maxNumPoints) ;
+    fprintf (xmf, "             %s.h5:/dataNodes\n", M_fileName.c_str()) ;
+    fprintf (xmf, "             </DataItem>\n") ;    
+    fprintf (xmf, "         </Attribute>\n") ;
     fprintf (xmf, "     </Grid>\n") ;
     fprintf (xmf, " </Domain>\n") ;
     fprintf (xmf, "</Xdmf>\n") ;
