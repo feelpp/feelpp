@@ -35,6 +35,13 @@ install(TARGETS feelpp_qs_stokes DESTINATION bin/ COMPONENT Bin )
 feelpp_add_application( qs_ns SRCS qs_ns.cpp INCLUDE_IN_ALL CFG qs_ns.cfg  )
 install(TARGETS feelpp_qs_ns DESTINATION bin/ COMPONENT Bin )
 
+
 add_dependencies(quickstart feelpp_qs_laplacian)
 add_dependencies(quickstart feelpp_qs_stokes)
 add_dependencies(quickstart feelpp_qs_ns)
+
+if ( FEELPP_HAS_NLOPT )
+  feelpp_add_application( qs_nlopt SRCS qs_nlopt.cpp INCLUDE_IN_ALL  )
+  install(TARGETS feelpp_qs_nlopt DESTINATION bin/ COMPONENT Bin )
+  add_dependencies(quickstart feelpp_qs_nlopt)
+endif()
