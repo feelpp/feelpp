@@ -474,6 +474,12 @@ public:
             M_ny = _ny;
         }
 
+    //! set number of subdivison in z-direction
+    virtual void setNz( double _nz )
+        {
+            M_nz = _nz;
+        }
+
 
     /**
      * if add is true, set M_addmidpoint to true, false otherwise
@@ -687,6 +693,8 @@ protected:
     double M_nx;
     //! number of discretization in Y direction
     double M_ny;
+    //! number of discretization in Z direction
+    double M_nz;
     //! mid point
     bool M_addmidpoint;
     //! add physical names to msh files
