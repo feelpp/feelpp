@@ -193,6 +193,12 @@ void run( Application_ptrtype & theApp )
     std::cout << "measure from mass = " << M->energy( w, w ) << "\n";
     BOOST_CHECK_CLOSE( M->energy( w, w ), 12., 1e-12 );
 
+    // test merkerToDof
+    const std::string str = "WireBasket";
+    auto dft = Xh3D->dof()->markerToDof(str);
+    std::cout<<"nDof= "<< std::distance(dft.first,dft.second) <<"\n";
+    FEELPP_ASSERT( std::distance(dft.first,dft.second) != 0 )( std::distance(dft.first,dft.second) ).error( "invalid wirebasket nDof" );
+
     //-------------------------------------------------------------------------------------------------------
 
     exporter->step( 0 )->setMesh( mesh );

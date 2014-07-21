@@ -4045,7 +4045,7 @@ public:
     wireBasket()  const
     {
         //return trace( mpl::greater<mpl::int_<nDim>,mpl::int_<1> >::type() )
-        return trace_trace_functionspace_type::New( mesh()->wireBasket( markededges( mesh(),"WireBasket" ) ) );
+        return trace_trace_functionspace_type::New( _mesh=mesh()->wireBasket( markededges( mesh(),"WireBasket" ) ), _worldscomm=this->worldsComm() );
     }
     template<typename RangeT>
     trace_trace_functionspace_ptrtype
