@@ -1405,12 +1405,11 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
             const uint16_type  n2_dof_on_element = element_dof2.size();
 
             for ( size_type i=0; i<n1_dof_on_element; i++ )
-                //BOOST_FOREACH( auto ig1, _M_X1->dof()->getIndices( elem.id() ) )
             {
-                const size_type ig1 = _M_X1->dof()->mapGlobalProcessToGlobalCluster()[_M_X1->dof()->localToGlobalId( elem.id(), i )];
-                auto theproc = _M_X1->dof()->procOnGlobalCluster( ig1 );
                 // numLocal without ghosts ! very important for the graph with petsc
                 const size_type il1 = _M_X1->dof()->localToGlobalId( elem.id(), i );// ig1 - _M_X1->dof()->firstDofGlobalCluster( theproc );
+                const size_type ig1 = _M_X1->dof()->mapGlobalProcessToGlobalCluster()[il1];
+                auto theproc = _M_X1->dof()->procOnGlobalCluster( ig1 );
 
                 //const size_type ig1 = element_dof1[i];
                 const int ndofpercomponent1 = n1_dof_on_element / _M_X1->dof()->nComponents;
@@ -1418,20 +1417,11 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
                 const int ndofpercomponent2 = n2_dof_on_element / _M_X2->dof()->nComponents;
 
                 {
-                    // This is what I mean
-                    // assert ((ig - first_dof_on_proc) >= 0);
-                    // but do the test like this because ig and
-                    // first_dof_on_proc are size_types
-#if 0
-                    FEELPP_ASSERT ( ig1 >= first1_dof_on_proc )( ig1 )( first1_dof_on_proc ).error ( "invalid dof index" );
-                    FEELPP_ASSERT ( ( ig1 - first1_dof_on_proc ) < sparsity_graph->size() )
-                        ( ig1 )( first1_dof_on_proc )( sparsity_graph->size() ).error( "invalid dof index" );
-#endif
                     graph_type::row_type& row = sparsity_graph->row( ig1 );
                     row.get<0>() = theproc ;
                     row.get<1>() = il1;
 
-                    DVLOG(4) << "work with row " << ig1 << " local index " << ig1 - first1_dof_on_proc << "\n";
+                    DVLOG(4) << "work with row " << ig1 << " local index " << il1 << " proc " << theproc << "\n";
 
                     if ( do_less )
                     {

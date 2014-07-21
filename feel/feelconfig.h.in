@@ -129,6 +129,9 @@
 /* Define to 1 if you have harts. */
 #cmakedefine FEELPP_HAS_HARTS
 
+/* Define to 1 if you have nlopt. */
+#cmakedefine FEELPP_HAS_NLOPT
+
 /* Define to 1 if you have the <ufsparse/umfpack.h> header file. */
 #cmakedefine FEELPP_HAS_UFSPARSE_UMFPACK_H
 
