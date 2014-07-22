@@ -536,14 +536,9 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
                             __form.set( thedof, thedof, 1.0*1e30 );
                             M_rhs->set( thedof, __value*1e30 );
                         }
-                    //} // loop on space components
-
-                    //} // loop on face dof
                 }
-        }
-
-    } // __face_it != __face_en
-    }
+        }// __face_it != __face_en
+    }// findAFace
 
     if ( __form.rowStartInMatrix()!=0)
     {
