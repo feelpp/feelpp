@@ -45,15 +45,10 @@ int main(int argc, char**argv )
                                   _email="feelpp-devel@feelpp.org"));
 
     auto mesh = loadMesh( _mesh=new Mesh<Simplex<FEELPP_DIM>> );
-    //auto mesh_name = "$datadir/gmsh/one-elt-meshes-2d/one-elt-real-rot1.msh"; //create the mesh and load it
-    //auto mesh = loadMesh( _mesh=new Mesh<Simplex<FEELPP_DIM>>,
-    //                      _filename=mesh_name);
 
     auto Xh = Pchv<1>( mesh );
-    std::cout << "nb dof lagrange = " << Xh->nDof() << std::endl;
     auto Nh = Ned1h<0>( mesh );
-    std::cout << "nb dof nedelec = " << Nh->nDof() << std::endl;
-    std::cout << "nb dof on boundary = " << nelements(boundaryfaces(mesh)) << std::endl;
+
     auto a = form2( _trial=Nh, _test=Nh );
     auto c = doption("parameters.c");
     auto f = expr<FEELPP_DIM,1>(soption("functions.f"), "f");
