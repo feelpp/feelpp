@@ -150,7 +150,7 @@ public:
          (directory,(boost::format)))
         (optional
          (filename,*( boost::is_convertible<mpl::_,std::string> ),"logfile")
-         (subdir,*( boost::is_convertible<mpl::_,bool> ),true)
+         (subdir,*( boost::is_convertible<mpl::_,bool> ),boption(_name="npdir"))
             ))
         {
             changeRepositoryImpl( directory, filename, subdir );
