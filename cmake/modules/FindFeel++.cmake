@@ -125,7 +125,21 @@ if ( FEELPP_ENABLE_TBB )
   ENDIF (TBB_FOUND )
 endif()
 
-FIND_PACKAGE(OpenMP)
+# only activate OpenMP for gcc
+# (clang support should be ok by 3.5)
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    OPTION( FEELPP_ENABLE_OPENMP "Enable OpenMP" OFF )
+    if ( FEELPP_ENABLE_OPENMP )
+        FIND_PACKAGE(OpenMP)
+
+        if(OPENMP_FOUND)
+            set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}" )
+            set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}" )
+            SET( FEELPP_HAS_OPENMP 1 )
+            SET( FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} OpenMP" )
+        endif()
+    endif()
+endif()
 
 # on APPLE enfore the use of macports openmpi version
 if ( APPLE )
