@@ -134,6 +134,7 @@ ExporterEnsightGold<MeshType,N>::save() const
     if ( !this->worldComm().isActive() ) return;
 
     //static int freq = 0;
+    //
 
     DVLOG(2) << "checking if frequency is ok\n";
 
@@ -1914,6 +1915,11 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
             if ( !__var->second.areGlobalValuesUpdated() )
                 __var->second.updateGlobalValues();
 
+            /*
+            std::cout << Environment::worldComm().rank() << " marker=" << *mit << " nbPts:" << npts << " nComp:" << nComponents 
+                      << " __evar->second.nComponents:" << __var->second.nComponents << std::endl;
+            */
+
             /* loop on the elements */
             int index = 0;
             for ( ; elt_it != elt_en; ++elt_it )
@@ -2076,13 +2082,7 @@ ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtyp
         strcpy( buffer, __evar->second.name().c_str() );
         MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
 
-        /*
-        typename mesh_type::parts_const_iterator_type p_it = __step->mesh()->beginParts();
-        typename mesh_type::parts_const_iterator_type p_en = __step->mesh()->endParts();
-        */
-
-        //for ( ; p_it != p_en; ++p_it )
-        //for( int i = 0 ; i < M_markersToWrite.size(); i++ )
+        // iterate over the markers
         for( std::set<int>::iterator mit = M_markersToWrite.begin() ; mit != M_markersToWrite.end(); mit++ )
         {
             if( this->worldComm().isMasterRank() )
@@ -2118,15 +2118,10 @@ ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtyp
             size_type __field_size = nComponents * __evar->second.size()/__evar->second.nComponents;
             ublas::vector<float> __field( __field_size );
             __field.clear();
-            typename mesh_type::marker_element_const_iterator elt_st;
-            typename mesh_type::marker_element_const_iterator elt_en;
 
-            /*
-            boost::tie( elt_it, elt_en ) = __step->mesh()->elementsWithMarker( p_it->first,
-                                                                               __evar->second.worldComm().localRank() ); // important localRank!!!!
-                                                                               */
-            boost::tie( elt_st, elt_en ) = __step->mesh()->elementsWithMarker( *mit,
-                                                                               Environment::worldComm().localRank() ); // important localRank!!!!
+            auto r = markedelements(__step->mesh(), *mit, EntityProcessType::LOCAL_ONLY );
+            auto elt_st = r.template get<1>();
+            auto elt_en = r.template get<2>();
 
             if ( !__evar->second.areGlobalValuesUpdated() )
                 __evar->second.updateGlobalValues();
@@ -2138,20 +2133,26 @@ ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtyp
             //size_type ncells = __evar->second.size()/__evar->second.nComponents;
             size_type ncells = std::distance( elt_st, elt_en );
 
+            /*
+            std::cout << Environment::worldComm().rank() << " marker=" << *mit << " nbElts:" << ncells << " nComp:" << nComponents 
+                      << " __evar->second.nComponents:" << __evar->second.nComponents << std::endl;
+            */
+
             for ( int c = 0; c < nComponents; ++c )
             {
                 size_type e = 0;
                 for ( auto elt_it = elt_st ; elt_it != elt_en; ++elt_it, ++e )
                 {
+                    auto const& elt = boost::unwrap_ref( *elt_it );
                     DVLOG(2) << "pid : " << this->worldComm().globalRank()
-                             << " elt_it :  " << elt_it->id()
+                             << " elt_it :  " << elt.id()
                              << " e : " << e << "\n";
 
                     size_type global_node_id = c*ncells+e ;
 
                     if ( c < __evar->second.nComponents )
                     {
-                        size_type dof_id = boost::get<0>( __evar->second.functionSpace()->dof()->localToGlobal( elt_it->id(),0, c ) );
+                        size_type dof_id = boost::get<0>( __evar->second.functionSpace()->dof()->localToGlobal( elt.id(),0, c ) );
 
                         DVLOG(2) << "c : " << c
                                  << " gdofid: " << global_node_id
