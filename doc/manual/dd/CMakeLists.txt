@@ -26,6 +26,7 @@ include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
 
 
 feelpp_add_application( doc_traces SRCS traces.cpp LABELS doc   )
+feelpp_add_application( doc_explicit SRCS explicit.cpp LABELS doc   )
 
 
 # Overlapping schwartz domain decomposition method
