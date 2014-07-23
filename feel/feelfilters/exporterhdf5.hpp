@@ -58,7 +58,6 @@ public Exporter <MeshType, N>
         template<typename Iterator>
         void saveElement ( typename timeset_type::step_ptrtype __step, Iterator __evar, Iterator __evaren ) const ;
 
-        void write_xdmf_xml () const ;
         void write_xdmf () const ;
         void open_xdmf_xml () const ;
         void close_xdmf_xml () const ;
@@ -79,7 +78,7 @@ public Exporter <MeshType, N>
         mutable std::string M_element_type ;
 
         mutable size_type M_step = 0 ;
-        mutable FILE * M_xmf = 0 ;
+        mutable std::ofstream M_xmf  ;
 
         mutable std::vector<size_type> M_uintBuffer ;
         mutable std::vector<value_type> M_realBuffer ;
@@ -159,7 +158,6 @@ Exporterhdf5<MeshType,N>::init()
 template <typename MeshType, int N>
 void Exporterhdf5<MeshType, N>::write () const 
 {
-    char buffer [100] ;
     M_fileName = this->prefix () ;
 
     open_xdmf_xml () ;
@@ -169,12 +167,12 @@ void Exporterhdf5<MeshType, N>::write () const
     
     timeset_ptrtype __ts = *__ts_it ;
 
-    fprintf (M_xmf, "       <Grid Name=\"Simulation over time\" GridType=\"Collection\" CollectionType=\"Temporal\">\n") ;
-    fprintf (M_xmf, "           <Time TimeType=\"HyperSlab\">\n") ;
-    fprintf (M_xmf, "               <DataItem Format=\"XML\" NumberType=\"Float\" Dimensions=\"3\">\n") ;
-    fprintf (M_xmf, "               %f %f %zu\n", (*(__ts->beginStep()))->time(), __ts->timeIncrement(), __ts->numberOfTotalSteps()) ;
-    fprintf (M_xmf, "               </DataItem>\n") ;
-    fprintf (M_xmf, "           </Time>\n") ;
+    M_xmf << "       <Grid Name=\"Simulation over time\" GridType=\"Collection\" CollectionType=\"Temporal\">" << "\n" ;
+    M_xmf << "           <Time TimeType=\"HyperSlab\">\n" ;
+    M_xmf << "               <DataItem Format=\"XML\" NumberType=\"Float\" Dimensions=\"3\">\n" ;
+    M_xmf << "               " << (*(__ts->beginStep()))->time() << " " << __ts->timeIncrement() << " " << __ts->numberOfTotalSteps() << "\n" ;
+    M_xmf << "               </DataItem>\n" ;
+    M_xmf << "           </Time>\n" ;
 
     while ( __ts_it != __ts_en )
     {
@@ -190,10 +188,11 @@ void Exporterhdf5<MeshType, N>::write () const
             if ( __step->isInMemory() )
             {
                 M_meshOut = __step->mesh () ;
-                sprintf (buffer, "%zu", M_step++) ;
-                M_fileNameStep = M_fileName+buffer ;
+                std::ostringstream filestr ;
+                filestr << M_step++ ;
+                M_fileNameStep = M_fileName+filestr.str() ;
                 M_HDF5.openFile (M_fileNameStep+".h5", M_comm, false) ;
-                fprintf (M_xmf, "           <Grid Name=\"%s\" GridType=\"Uniform\">\n", M_fileNameStep.c_str()) ;
+                M_xmf << "           <Grid Name=\"" << M_fileNameStep << "\" GridType=\"Uniform\">\n" ;
 
                 writeElements () ;
                 writePoints () ;
@@ -208,7 +207,7 @@ void Exporterhdf5<MeshType, N>::write () const
                 saveElement (__step, __step->beginElementScalar(), __step->endElementScalar() ) ;
                 saveElement (__step, __step->beginElementVector(), __step->endElementVector() ) ;
 
-                fprintf (M_xmf, "           </Grid>\n") ;
+                M_xmf << "           </Grid>\n" ;
                 writeStats() ; 
                 M_HDF5.closeFile () ;
             }
@@ -265,11 +264,11 @@ void Exporterhdf5<MeshType, N>::writePoints () const
     M_HDF5.closeTable("point_coords") ;
     M_HDF5.closeTable("point_ids") ;    
 
-    fprintf (M_xmf, "           <Geometry GeometryType=\"XYZ\">\n") ;
-    fprintf (M_xmf, "               <DataItem Dimensions=\"%zu 3\" NumberType=\"Float\" Precision=\"8\" Format=\"HDF\" Endian=\"Big\">\n", M_maxNumPoints) ;
-    fprintf (M_xmf, "               %s.h5:/point_coords\n", M_fileNameStep.c_str()) ;
-    fprintf (M_xmf, "               </DataItem>\n") ;
-    fprintf (M_xmf, "           </Geometry>\n") ;
+    M_xmf << "           <Geometry GeometryType=\"XYZ\">\n" ;
+    M_xmf << "               <DataItem Dimensions=\"" << M_maxNumPoints << " 3\" NumberType=\"Float\" Precision=\"8\" Format=\"HDF\" Endian=\"Big\">\n" ;
+    M_xmf << "               " << M_fileNameStep << ".h5:/point_coords\n" ;
+    M_xmf << "               </DataItem>\n" ;
+    M_xmf << "           </Geometry>\n" ;
 }
 
 template <typename MeshType, int N>
@@ -326,11 +325,11 @@ void Exporterhdf5<MeshType, N>::writeElements () const
     M_HDF5.closeTable ("element_ids") ;
     M_HDF5.closeTable ("element_nodes") ;
 
-    fprintf (M_xmf, "           <Topology TopologyType=\"%s\" NumberOfElements=\"%zu\" NodesPerElement=\"%zu\">\n", M_element_type.c_str(), M_maxNumElements, M_elementNodes) ;
-    fprintf (M_xmf, "               <DataItem Dimensions=\"%zu %zu\" NumberType=\"Float\" Precision=\"8\" Format=\"HDF\" Endian=\"Big\">\n", M_maxNumElements, M_elementNodes) ;
-    fprintf (M_xmf, "               %s.h5:/element_nodes\n", M_fileNameStep.c_str()) ;
-    fprintf (M_xmf, "               </DataItem>\n") ;
-    fprintf (M_xmf, "           </Topology>\n") ;
+    M_xmf << "           <Topology TopologyType=\"" << M_element_type << "\" NumberOfElements=\"" << M_maxNumElements << "\" NodesPerElement=\"" << M_elementNodes << "\">\n" ;
+    M_xmf << "               <DataItem Dimensions=\"" <<M_maxNumElements << " " << M_elementNodes << "\" NumberType=\"Float\" Precision=\"8\" Format=\"HDF\" Endian=\"Big\">\n" ;
+    M_xmf << "               " << M_fileNameStep << ".h5:/element_nodes\n" ;
+    M_xmf << "               </DataItem>\n" ;
+    M_xmf << "           </Topology>\n" ;
 }
 
 template <typename MeshType, int N>
@@ -417,11 +416,11 @@ void Exporterhdf5<MeshType, N>::saveNodal ( typename timeset_type::step_ptrtype 
 
         M_HDF5.closeTable (solutionName.c_str()) ;    
 
-        fprintf (M_xmf, "           <Attribute AttributeType=\"%s\" Name=\"%s\" Center=\"Node\">\n", attributeType.c_str(), solutionName.c_str()) ;
-        fprintf (M_xmf, "               <DataItem Dimensions=\"%hu %zu\" NumberType=\"Float\" Precision=\"8\" Format=\"HDF\" Endian=\"Big\">\n", nComponents, M_maxNumPoints) ;
-        fprintf (M_xmf, "               %s.h5:/%s\n", M_fileNameStep.c_str(), solutionName.c_str()) ;
-        fprintf (M_xmf, "               </DataItem>\n") ;    
-        fprintf (M_xmf, "           </Attribute>\n") ;
+        M_xmf << "           <Attribute AttributeType=\""<< attributeType << "\" Name=\"" << solutionName << "\" Center=\"Node\">\n" ;
+        M_xmf << "               <DataItem Dimensions=\""<< nComponents << " " << M_maxNumPoints << "\" NumberType=\"Float\" Precision=\"8\" Format=\"HDF\" Endian=\"Big\">\n" ;
+        M_xmf << "               "<< M_fileNameStep <<".h5:/"<< solutionName <<"\n" ;
+        M_xmf << "               </DataItem>\n" ;    
+        M_xmf << "           </Attribute>\n" ;
         ++__var ;
     }
 }
@@ -435,7 +434,7 @@ void Exporterhdf5<MeshType, N>::saveElement ( typename timeset_type::step_ptrtyp
         std::string attributeType ("Scalar") ;
 
         std::string solutionName = __evar->first ;
-        std::cout << "solution Name                  : " << solutionName << std::endl ;
+        std::cout << "solution Name                 : " << solutionName << std::endl ;
         uint16_type nComponents = __evar->second.nComponents ;
 
         if ( __evar->second.is_scalar )
@@ -500,11 +499,11 @@ void Exporterhdf5<MeshType, N>::saveElement ( typename timeset_type::step_ptrtyp
 
         M_HDF5.closeTable (solutionName.c_str()) ;    
 
-        fprintf (M_xmf, "           <Attribute AttributeType=\"%s\" Name=\"%s\" Center=\"Cell\">\n", attributeType.c_str(), solutionName.c_str()) ;
-        fprintf (M_xmf, "               <DataItem Dimensions=\"%hu %zu\" NumberType=\"Float\" Precision=\"8\" Format=\"HDF\" Endian=\"Big\">\n", nComponents, M_maxNumElements) ;
-        fprintf (M_xmf, "               %s.h5:/%s\n", M_fileNameStep.c_str(), solutionName.c_str()) ;
-        fprintf (M_xmf, "               </DataItem>\n") ;    
-        fprintf (M_xmf, "           </Attribute>\n") ;
+        M_xmf << "           <Attribute AttributeType=\"" << attributeType << "\" Name=\"" << solutionName << "\" Center=\"Cell\">\n" ;
+        M_xmf << "               <DataItem Dimensions=\""<< nComponents <<" "<< M_maxNumElements << "\" NumberType=\"Float\" Precision=\"8\" Format=\"HDF\" Endian=\"Big\">\n" ;
+        M_xmf << "               "<< M_fileNameStep << ".h5:/" << solutionName << "\n" ;
+        M_xmf << "               </DataItem>\n" ;    
+        M_xmf << "           </Attribute>\n" ;
         __evar++ ;
     }
 }
@@ -575,7 +574,7 @@ void Exporterhdf5<MeshType, N>::bubbleSort (size_type * ids, value_type * coords
 template <typename MeshType, int N>
 void Exporterhdf5<MeshType, N>::save () const 
 {
-    std::cout << "+---------------+ hdf5 exporter +--------------+" << std::endl ;
+    std::cout << "+---------------+ hdf5 exporter +---------------+" << std::endl ;
     write () ;
 }
 
@@ -583,38 +582,6 @@ template <typename MeshType, int N>
 void Exporterhdf5<MeshType, N>::visit ( mesh_type* mesh) 
 {
     mesh->beginParts () ;
-}
-
-template <typename MeshType, int N>
-void Exporterhdf5<MeshType, N>::write_xdmf_xml () const
-{
-    std::cout << "M_element_type : " << M_element_type << std::endl ;
-    FILE * xmf = 0 ;
-    xmf = fopen ((M_fileName+".xmf").c_str(), "w") ;
-    fprintf (xmf, "<?xml version=\"1.0\" ?>\n") ;
-    fprintf (xmf, "<!DOCTYPE Xdmf SYSTEM \"Xdmf.dtd\" []>\n") ;
-    fprintf (xmf, "<Xdmf Version=\"2.0\">\n") ;
-    fprintf (xmf, " <Domain>\n") ;
-    fprintf (xmf, "     <Grid Name=\"%s\" GridType=\"Uniform\">\n", M_fileName.c_str()) ;
-    fprintf (xmf, "         <Topology TopologyType=\"%s\" NumberOfElements=\"%zu\" NodesPerElement=\"%zu\">\n", M_element_type.c_str(), M_maxNumElements, M_elementNodes) ;
-    fprintf (xmf, "             <DataItem Dimensions=\"%zu %zu\" NumberType=\"Float\" Precision=\"8\" Format=\"HDF\" Endian=\"Big\">\n", M_maxNumElements, M_elementNodes) ;
-    fprintf (xmf, "             %s.h5:/element_nodes\n", M_fileName.c_str()) ;
-    fprintf (xmf, "             </DataItem>\n") ;
-    fprintf (xmf, "         </Topology>\n") ;
-    fprintf (xmf, "         <Geometry GeometryType=\"XYZ\">\n") ;
-    fprintf (xmf, "             <DataItem Dimensions=\"%zu 3\" NumberType=\"Float\" Precision=\"8\" Format=\"HDF\" Endian=\"Big\">\n", M_maxNumPoints) ;
-    fprintf (xmf, "             %s.h5:/point_coords\n", M_fileName.c_str()) ;
-    fprintf (xmf, "             </DataItem>\n") ;
-    fprintf (xmf, "         </Geometry>\n") ;
-    fprintf (xmf, "         <Attribute Name=\"dataNodes\" Center=\"Node\">\n") ;
-    fprintf (xmf, "             <DataItem Dimensions=\"1 %zu\" NumberType=\"Float\" Precision=\"8\" Format=\"HDF\" Endian=\"Big\">\n", M_maxNumPoints) ;
-    fprintf (xmf, "             %s.h5:/dataNodes\n", M_fileName.c_str()) ;
-    fprintf (xmf, "             </DataItem>\n") ;    
-    fprintf (xmf, "         </Attribute>\n") ;
-    fprintf (xmf, "     </Grid>\n") ;
-    fprintf (xmf, " </Domain>\n") ;
-    fprintf (xmf, "</Xdmf>\n") ;
-    fclose(xmf) ;
 }
 
 template <typename MeshType, int N>
@@ -626,20 +593,20 @@ void Exporterhdf5<MeshType, N>::write_xdmf () const
 template <typename MeshType, int N>
 void Exporterhdf5<MeshType, N>::open_xdmf_xml () const
 {
-    M_xmf = fopen ((M_fileName+".xmf").c_str(), "w") ;
-    fprintf (M_xmf, "<?xml version=\"1.0\" ?>\n") ;
-    fprintf (M_xmf, "<!DOCTYPE Xdmf SYSTEM \"Xdmf.dtd\" []>\n") ;
-    fprintf (M_xmf, "<Xdmf Version=\"2.0\">\n") ;
-    fprintf (M_xmf, "   <Domain>\n") ;
+    M_xmf.open ((M_fileName+".xmf").c_str(), std::ofstream::out) ;
+    M_xmf << "<?xml version=\"1.0\" ?>\n" ;
+    M_xmf << "<!DOCTYPE Xdmf SYSTEM \"Xdmf.dtd\" []>\n" ;
+    M_xmf << "<Xdmf Version=\"2.0\">\n" ;
+    M_xmf << "   <Domain>\n" ;
 }
 
 template <typename MeshType, int N>
 void Exporterhdf5<MeshType, N>::close_xdmf_xml () const
 {
-    fprintf (M_xmf, "       </Grid>\n") ;
-    fprintf (M_xmf, "   </Domain>\n") ;
-    fprintf (M_xmf, "</Xdmf>\n") ;
-    fclose  (M_xmf) ;
+    M_xmf << "       </Grid>\n" ;
+    M_xmf << "   </Domain>\n" ;
+    M_xmf << "</Xdmf>\n"  ;
+    M_xmf.close () ;
 }
 }
 #endif /* FEELL_HAS_HDF5 */
