@@ -151,6 +151,17 @@ parameters_options( std::string const& prefix )
 }
 
 po::options_description
+nlopt_options( std::string const& prefix )
+{
+    po::options_description _options( "NLopt " + prefix + " options" );
+    _options.add_options()
+    // solver options
+        ( prefixvm( prefix,"nlopt.xtol_rel" ).c_str(), Feel::po::value<double>()->default_value( 1e-4 ), "NLopt variables  relative tolerance" )
+        ;
+    return _options;
+}
+
+po::options_description
 gmsh_options( std::string const& prefix )
 {
     po::options_description _options( "Gmsh " + prefix + " options" );
@@ -601,6 +612,9 @@ feel_options( std::string const& prefix  )
 
         /* exporter options */
         .add( exporter_options( prefix ) )
+
+        /* nlopt options */
+        .add( nlopt_options( prefix ) )
 
         /* gmsh options */
         .add( gmsh_options( prefix ) )
