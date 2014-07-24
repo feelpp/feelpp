@@ -156,7 +156,11 @@ nlopt_options( std::string const& prefix )
     po::options_description _options( "NLopt " + prefix + " options" );
     _options.add_options()
     // solver options
+        ( prefixvm( prefix,"nlopt.ftol_rel" ).c_str(), Feel::po::value<double>()->default_value( 1e-4 ), "NLopt objective function relative tolerance" )
+        ( prefixvm( prefix,"nlopt.ftol_abs" ).c_str(), Feel::po::value<double>()->default_value( 1e-10 ), "NLopt objective function  absolute tolerance" )
         ( prefixvm( prefix,"nlopt.xtol_rel" ).c_str(), Feel::po::value<double>()->default_value( 1e-4 ), "NLopt variables  relative tolerance" )
+        ( prefixvm( prefix,"nlopt.xtol_abs" ).c_str(), Feel::po::value<double>()->default_value( 1e-10 ), "NLopt variables  absolute tolerance" )
+        ( prefixvm( prefix,"nlopt.maxeval" ).c_str(), Feel::po::value<double>()->default_value( 30 ), "NLopt maximum number of evaluations" )
         ;
     return _options;
 }
