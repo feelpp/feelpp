@@ -99,7 +99,7 @@ int main(int argc, char**argv )
     auto mesh = loadMesh ( _mesh = new Mesh <Simplex<2>>) ;
 
     // function space
-    auto Vh = Pch<1>( mesh );
+    auto Vh = Pch<2>( mesh );
     auto u = Vh->element();
     auto v = Vh->element();
 
@@ -126,7 +126,9 @@ int main(int argc, char**argv )
 */
 
     auto e = exporter ( _mesh=mesh ); 
+    e->addRegions () ;
     e->add ("u", u) ;
+    e->add ("g", u) ;
     e->save () ;
 }
 /// [marker1]
