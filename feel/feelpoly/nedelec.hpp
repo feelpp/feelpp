@@ -427,8 +427,18 @@ public:
         VLOG(1) << " o- nbPtsPerVolume = " << ( int )nbPtsPerVolume << "\n";
         VLOG(1) << " o- nLocalDof      = " << nLocalDof << "\n";
 
+        size_type nbDofPerFace = mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<2> >,
+                                          mpl::int_<face_type::numEdges*nbPtsPerEdge>,
+                                          mpl::int_<face_type::numTopologicalFaces*nbPtsPerEdge + nbPtsPerFace>
+                                          >::type::value;
+
+        size_type nbEdgesPerFace = mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<2> >,
+                                             mpl::int_<face_type::numEdges>,
+                                             mpl::int_<face_type::numTopologicalFaces>
+                                             >::type::value;
+
         for(auto& m : M_pts_per_face)
-            m.resize(nDim,face_type::numTopologicalFaces*nbPtsPerEdge);
+            m.resize(nDim,nbDofPerFace);
 
         //VLOG(1) << "[Nedelec1stKind Dual] done 1\n";
         // compute  \f$ \ell_e( U ) = (U * n[e]) (edge_pts(e)) \f$
@@ -448,7 +458,8 @@ public:
             for( int f = M_convex_ref.entityRange( nDim-1 ).begin(); f < M_convex_ref.entityRange( nDim-1 ).end(); ++f)
                 {
                     // M_pts_per_face[f] : set of dofs on a face (face_type::numTopologicalFaces*nbPtsPerFace)
-                    for(int k=0; k<face_type::numTopologicalFaces; ++k)
+                    //for(int k=0; k<face_type::numTopologicalFaces; ++k)
+                    for(int k=0; k<nbEdgesPerFace; ++k)
                         {
                             if( convex_type::f2e(f,k) == e )
                                 {
@@ -585,6 +596,7 @@ public:
     typedef typename primal_space_type::template convex<nDim+nOrder-1>::type convex_type;
     typedef Reference<convex_type, nDim, nDim+nOrder-1, nDim, value_type> reference_convex_type;
     typedef typename reference_convex_type::node_type node_type;
+    typedef typename convex_type::topological_face_type face_type;
 
     typedef typename primal_space_type::template ChangeOrder<nOrder+1>::type Pkp1_v_type;
     typedef PolynomialSet<typename Basis::basis_type,Vectorial> vectorial_polynomialset_type;
@@ -596,10 +608,22 @@ public:
     typedef PointSetType<convex_type, nOrder, value_type> pointset_type;
 
     static const uint16_type nbPtsPerVertex = 0;
-    static const uint16_type nbPtsPerEdge = mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<2> >,mpl::int_<reference_convex_type::nbPtsPerEdge>,mpl::int_<0> >::type::value;
-    static const uint16_type nbPtsPerFace =mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<3> >,mpl::int_<reference_convex_type::nbPtsPerFace>,mpl::int_<0> >::type::value;
+    static const uint16_type nbPtsPerEdge = reference_convex_type::nbPtsPerEdge;
+    static const uint16_type nbPtsPerFace2D = reference_convex_type::nbPtsPerFace;
+    static const uint16_type nbPtsPerFace3D = 0;
+    static const uint16_type nbPtsPerFace = (nDim==2)?nbPtsPerFace2D:nbPtsPerFace3D;
     static const uint16_type nbPtsPerVolume = 0;
     static const uint16_type numPoints = ( reference_convex_type::numGeometricFaces*nbPtsPerFace+reference_convex_type::numEdges*nbPtsPerEdge );
+
+    // static const uint16_type nbPtsPerVertex = 0;
+    // static const uint16_type nbPtsPerEdge = reference_convex_type::nbPtsPerEdge - 1;
+    // static const uint16_type nbPtsPerFace = reference_convex_type::nbPtsPerFace - 1;
+    // // static const uint16_type nbPtsPerEdge = 1;
+    // // static const uint16_type nbPtsPerFace = 0;
+    // static const uint16_type nbPtsPerVolume = 0;
+    // static const uint16_type numPoints = ( reference_convex_type::numGeometricFaces*nbPtsPerFace+reference_convex_type::numEdges*nbPtsPerEdge );
+
+
 
     /** Number of degrees of freedom per vertex */
     static const uint16_type nDofPerVertex = 0;
@@ -616,13 +640,19 @@ public:
     /** Total number of degrees of freedom (equal to refEle::nDof) */
     static const uint16_type nLocalDof = numPoints;
 
+    static const uint16_type nFacesInConvex = mpl::if_< mpl::equal_to<mpl::int_<nDim>, mpl::int_<1> >,
+                                                        mpl::int_<reference_convex_type::numVertices>,
+                                                        typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<2> >,
+                                                                          mpl::int_<reference_convex_type::numEdges>,
+                                                                          mpl::int_<reference_convex_type::numGeometricFaces> >::type >::type::value;
+
     NedelecDualSecondKind( primal_space_type const& primal )
         :
         super( primal ),
         M_convex_ref(),
         M_eid( M_convex_ref.topologicalDimension()+1 ),
         M_pts( nDim, numPoints ),
-        M_pts_per_face( convex_type::numTopologicalFaces ),
+        M_pts_per_face( nFacesInConvex ),
         M_fset( primal )
     {
         VLOG(1) << "Nedelec finite element(dual): \n";
@@ -636,65 +666,68 @@ public:
         VLOG(1) << " o- nbPtsPerVolume = " << ( int )nbPtsPerVolume << "\n";
         VLOG(1) << " o- nLocalDof      = " << nLocalDof << "\n";
 
-        // loop on each entity forming the convex of topological
-        // dimension nDim-1 ( the faces)
-        for ( int p = 0, e = M_convex_ref.entityRange( 1 ).begin();
-                e < M_convex_ref.entityRange( 1 ).end();
-                ++e )
-        {
-            points_type Gt ( M_convex_ref.makePoints( 1, e ) );
-            M_pts_per_face[e] =  Gt ;
+        size_type nbDofPerFace = mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<2> >,
+                                          mpl::int_<face_type::numEdges*nbPtsPerEdge>,
+                                          mpl::int_<face_type::numTopologicalFaces*nbPtsPerEdge + nbPtsPerFace>
+                                          >::type::value;
 
-            if ( Gt.size2() )
-            {
-                //VLOG(1) << "Gt = " << Gt << "\n";
-                //VLOG(1) << "p = " << p << "\n";
-                ublas::subrange( M_pts, 0, nDim, p, p+Gt.size2() ) = Gt;
-                //for ( size_type j = 0; j < Gt.size2(); ++j )
-                //M_eid[d].push_back( p+j );
-                p+=Gt.size2();
-            }
-        }
+        for(auto& m : M_pts_per_face)
+            m.resize(nDim,nbDofPerFace);
 
-        //VLOG(1) << "[Nedelec1stKind Dual] done 1\n";
+        //VLOG(1) << "[Nedelec2ndKind Dual] done 1\n";
         // compute  \f$ \ell_e( U ) = (U * n[e]) (edge_pts(e)) \f$
         typedef Functional<primal_space_type> functional_type;
         std::vector<functional_type> fset;
 
-        // jacobian of the transformation from reference face to the face in the
-        // reference element
-        std::vector<double> j;
+        // loop on each entity forming the convex of topological
+        // dimension 1 ( the edges)
+        int d=1;
+        for ( int p = 0, e = M_convex_ref.entityRange( d ).begin();
+                e < M_convex_ref.entityRange( d ).end();
+                ++e )
         {
-            // bring 'operator+=()' into scope
-            using namespace boost::assign;
+            // Dof coord on current edge
+            points_type Gt ( M_convex_ref.makePoints( d, e ) );
 
-            if ( nDim == 2 )
-                j += 2.8284271247461903,2.0,2.0;
+            for( int f = M_convex_ref.entityRange( nDim-1 ).begin(); f < M_convex_ref.entityRange( nDim-1 ).end(); ++f)
+                {
+                    // M_pts_per_face[f] : set of dofs on a face (face_type::numTopologicalFaces*nbPtsPerFace)
+                    //for(int k=0; k<face_type::numTopologicalFaces; ++k)
+                    for(int k=0; k<nbDofPerFace; ++k)
+                        {
+                            if( convex_type::f2e(f,k) == e )
+                                {
+                                    ublas::subrange( M_pts_per_face[f], 0, nDim, nbPtsPerEdge*k, nbPtsPerEdge*(k+1) ) = Gt;
+                                }
+                        }
+                }
 
-            if ( nDim == 3 )
-                j+= 3.464101615137754, 2, 2, 2;
-        }
-
-        //for( int k = 0; k < nDim; ++k )
-        {
-            // loopover the each edge entities and add the correponding functionals
-            for ( int e = M_convex_ref.entityRange( 1 ).begin();
-                    e < M_convex_ref.entityRange( 1 ).end();
-                    ++e )
+            // M_pts : set of dofs on an element
+            if ( Gt.size2() )
             {
-                typedef Feel::functional::DirectionalComponentPointsEvaluation<primal_space_type> dcpe_type;
-                VLOG(1) << "tangent " << e << ":" << M_convex_ref.tangent( e ) << "\n";
-                node_type dir= M_convex_ref.tangent( e )*j[e];
-                //node_type dir= M_convex_ref.tangent(e);
-
-                //dcpe_type __dcpe( primal, 1, dir, pts_per_face[e] );
-                dcpe_type __dcpe( primal, dir, M_pts_per_face[e] );
-                std::copy( __dcpe.begin(), __dcpe.end(), std::back_inserter( fset ) );
+                VLOG(1) << "Gt = " << Gt << "\n";
+                ublas::subrange( M_pts, 0, nDim, p, p+Gt.size2() ) = Gt;
+                p+=Gt.size2();
             }
+
+            typedef Feel::functional::DirectionalComponentPointsEvaluation<primal_space_type> dcpe_type;
+            VLOG(1) << "tangent " << e << ":" << M_convex_ref.tangent( e ) << "\n";
+            node_type dir= M_convex_ref.tangent(e);
+
+            //dcpe_type __dcpe( primal, dir, M_pts_per_face[e] );
+            dcpe_type __dcpe( primal, dir, Gt );
+            std::copy( __dcpe.begin(), __dcpe.end(), std::back_inserter( fset ) );
+
         }
+
 #if 0
-        //VLOG(1) << "[Nedelec1stKind Dual] done 2" << std::endl;
+        // add integrals of tangential component
         if ( nOrder-1 > 0 )
+        {
+        }
+        //VLOG(1) << "[Nedelec2ndKind Dual] done 2" << std::endl;
+        // add integral of moments
+        if ( nOrder-2 > 0 )
         {
             // we need more equations : add interior moment
             // indeed the space is orthogonal to Pk-1
@@ -704,6 +737,7 @@ public:
 
             Pkp1_v_type Pkp1;
 
+            //TODO : Nedelec 2nd kind uses Raviart-Thomas functionspace instead of Pkm1 (Dkm1)
             vectorial_polynomialset_type Pkm1 ( Pkp1.polynomialsUpToDimension( dim_Pm1 ) );
 
             VLOG(1) << "Pkm1 = " << Pkm1.coeff() << "\n";
@@ -717,10 +751,11 @@ public:
             }
         }
 #endif
-        VLOG(1) << "[Nedelec1stKind Dual] done 3, n fset = " << fset.size() << std::endl;
+
+        VLOG(1) << "[Nedelec2ndKind Dual] done 3, n fset = " << fset.size() << std::endl;
         M_fset.setFunctionalSet( fset );
-        VLOG(1) << "[Nedelec1stKind DUAL matrix] mat = " << M_fset.rep() << "\n";
-        VLOG(1) << "[Nedelec1stKind Dual] done 4\n";
+        VLOG(1) << "[Nedelec2ndKind DUAL matrix] mat = " << M_fset.rep() << "\n";
+        VLOG(1) << "[Nedelec2ndKind Dual] done 4\n";
 
     }
 
@@ -737,7 +772,7 @@ public:
 
     matrix_type operator()( primal_space_type const& pset ) const
     {
-        //VLOG(1) << "Nedelec1stKind matrix = " << M_fset( pset ) << std::endl;
+        //VLOG(1) << "Nedelec2ndKind matrix = " << M_fset( pset ) << std::endl;
         return M_fset( pset );
     }
 
@@ -784,7 +819,7 @@ template<uint16_type N,
 struct NedelecBase
 {
     typedef typename mpl::if_<mpl::bool_<(Kind == NedelecKind::NED2)>,
-                              FiniteElement<Feel::detail::OrthonormalPolynomialSet<N, O, N, Vectorial, T, TheTAG, Simplex>,
+                              FiniteElement<Feel::detail::OrthonormalPolynomialSet<N, O+1, N, Vectorial, T, TheTAG, Simplex>,
                                             fem::detail::NedelecDualSecondKind, PointSetEquiSpaced >,
                               FiniteElement<NedelecPolynomialSet<N, O, T>,
                                             fem::detail::NedelecDualFirstKind, PointSetEquiSpaced > >::type type;
@@ -1016,13 +1051,14 @@ public:
     void
     faceInterpolate( ExprType& expr, local_interpolant_type& Ihloc ) const
         {
+            Ihloc.setZero();
             ublas::vector<value_type> t( nDim );
             auto g = expr.geom();
 
             for( int e = 0; e < face_type::numEdges; ++e )
             {
                 int edgeid_in_element = g->element().fToE( g->faceId(), e);
-                VLOG(1) << "face id:  " << g->faceId() << " einf :" << e << " edge id in element : " << edgeid_in_element << std::endl;
+                //std::cout << "face id:  " << g->faceId() << " einf :" << e << " edge id in element : " << edgeid_in_element << std::endl;
                 getEdgeTangent( expr, edgeid_in_element, t );
 
                 for ( int l = 0; l < nDofPerEdge; ++l )

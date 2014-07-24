@@ -2082,7 +2082,6 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
                                                             bool verbose,
                                                             mpl::int_<MESH_FACES> )
 {
-    const size_type context = ExprType::context|vm::POINT;
     typedef ExprType expression_type;
     typedef Element<Y,Cont> element_type;
 
@@ -2097,6 +2096,12 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     typedef typename geoelement_type::gm1_type gm1_type;
     typedef boost::shared_ptr<gm1_type> gm1_ptrtype;
 
+    typedef typename element_type::functionspace_type::fe_type fe_type;
+    const size_type context = mpl::if_< mpl::or_<is_hdiv_conforming<fe_type>, is_hcurl_conforming<fe_type> >,
+                                        mpl::int_<ExprType::context|vm::POINT|vm::JACOBIAN>,
+                                        mpl::int_<ExprType::context|vm::POINT> >::type::value;
+
+
     typedef typename gm_type::template Context<context, geoelement_type> gmc_type;
     typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
@@ -2109,7 +2114,6 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     typedef typename element_type::functionspace_type::dof_type dof_type;
 
     // basis
-    typedef typename element_type::functionspace_type::fe_type fe_type;
     typedef typename fe_type::template Context< context, fe_type, gm_type, geoelement_type> fecontext_type;
     typedef boost::shared_ptr<fecontext_type> fecontext_ptrtype;
     typedef typename fe_type::template Context< context, fe_type, gm1_type, geoelement_type> fecontext1_type;
