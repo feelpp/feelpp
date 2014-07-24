@@ -168,13 +168,13 @@ TestInterpolationHCurl3D::testInterpolation( std::string one_element_mesh )
                                   _refine=( int )refine_level);
 
     space_ptrtype Xh = space_type::New( oneelement_mesh );
-    std::cout << "nb dof = " << Xh->nDof() << std::endl;
 
     std::vector<std::string> faces = {"yzFace","xyzFace","xyFace"};
     std::vector<std::string> edges = {"zAxis","yAxis","yzAxis","xyAxis","xzAxis","xAxis"};
 
     element_type U_h_int = Xh->element();
     element_type U_h_on = Xh->element();
+    element_type U_h_on_boundary = Xh->element();
 
     submesh1d_ptrtype edgeMesh( new submesh1d_type );
     edgeMesh = createSubmesh(oneelement_mesh, boundaryedges(oneelement_mesh) ); //submesh of edges
@@ -211,9 +211,6 @@ TestInterpolationHCurl3D::testInterpolation( std::string one_element_mesh )
             U_h_int(i) /= edgeLength;
         }
 
-    for(int i=0; i<Xh->nLocalDof(); i++)
-        std::cout << "U_h_int(" << i << ")= " << U_h_int(i) << std::endl;
-
 #if 0 //Doesn't work for now
     for(int i=0; i<Xh->nLocalDof(); i++)
         {
@@ -227,6 +224,7 @@ TestInterpolationHCurl3D::testInterpolation( std::string one_element_mesh )
     // interpolate on element
     U_h_on.zero();
     U_h_on.on(_range=elements(oneelement_mesh), _expr=myexpr);
+    U_h_on_boundary.on(_range=boundaryfaces(oneelement_mesh), _expr=myexpr);
 
     export_ptrtype exporter_proj( export_type::New( this->vm(),
                                   ( boost::format( "%1%" ) % this->about().appName() ).str() ) );
@@ -239,11 +237,17 @@ TestInterpolationHCurl3D::testInterpolation( std::string one_element_mesh )
     // print coefficient only for reference element
     U_h_int.printMatlab( "U_h_int_" + mesh_path.stem().string() + ".m" );
     U_h_on.printMatlab( "U_h_on_" + mesh_path.stem().string() + ".m" );
+    U_h_on_boundary.printMatlab( "U_h_on_boundary_" + mesh_path.stem().string() + ".m" );
 
     //L2 norm of error
     auto error = vf::project(_space=Xh, _range=elements(oneelement_mesh), _expr=idv(U_h_int) - idv(U_h_on) );
     double L2error = error.l2Norm();
-    std::cout << "L2 error  = " << L2error << std::endl;
+    std::cout << "L2 error (elements) = " << L2error << std::endl;
+
+    auto error_boundary = vf::project(_space=Xh, _range=elements(oneelement_mesh), _expr=idv(U_h_int) - idv(U_h_on_boundary) );
+    double L2error_boundary = error_boundary.l2Norm();
+    std::cout << "L2 error (boundary) = " << L2error_boundary << std::endl;
+    BOOST_CHECK_SMALL( L2error_boundary - L2error, 1e-13 );
 }
 }// namespace Feel
 
