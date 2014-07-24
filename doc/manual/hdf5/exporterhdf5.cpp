@@ -11,11 +11,11 @@ int main (int argc, char ** argv) {
                                   _author="Benjamin Vanthong",
                                   _email="benjamin.vanthong@icloud.com") );
 
-    auto mesh = loadMesh(_mesh=new Mesh<Simplex<3>>);
-
-   Exporterhdf5 <Mesh<Simplex<3>>> expo ("thomas", Environment::worldComm ()) ;
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
+/*
+   Exporterhdf5 <Mesh<Simplex<2>>, 1> expo ("thomas", Environment::worldComm ()) ;
    expo.write (mesh) ;
-
+*/
 
     return 0 ;
 }
