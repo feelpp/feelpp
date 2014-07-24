@@ -236,7 +236,7 @@ namespace parallel
         value_type M_ret;
 
 #if defined(FEELPP_HAS_HARTS)
-        PerfCounterMng<std::string> perf_mng ;
+        RunTimeSystem::PerfCounterMng<std::string> perf_mng ;
 #endif
 
         double M_cpuTime;
