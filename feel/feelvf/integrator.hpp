@@ -56,6 +56,8 @@
 #include <google/profiler.h>
 #endif
 
+#include <feel/feelvf/detail/integrator.hpp>
+
 #if defined(FEELPP_HAS_HARTS)
 #include "RunTimeSystem/Model/RunTimeSysEnv.h"
 #include "RunTimeSystem/DataMng/DataHandler.h"
@@ -65,12 +67,15 @@
 #include "RunTimeSystem/TaskMng/StdDriver.h"
 #include "RunTimeSystem/TaskMng/TBBScheduler.h"
 #include "RunTimeSystem/TaskMng/TBBDriver.h"
+#include "RunTimeSystem/TaskMng/PTHScheduler.h"
 #include "RunTimeSystem/TaskMng/PTHDriver.h"
 
 #include "RunTimeSystem/DataMng/DataArgs.h"
 
 #include "Utils/PerfTools/PerfCounterMng.h"
 #endif //defined(FEELPP_HAS_HARTS)
+
+namespace fs = boost::filesystem;
 
 namespace Feel
 {
@@ -710,111 +715,8 @@ public:
     };
 #endif // FEELPP_HAS_TBB
 
-#if defined(FEELPP_HAS_HARTS)
-    template<typename ExprType, typename IMType, typename EltType>
-    class HartsContextEvaluate
-    {
-    public:
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-        //
-        // some typedefs
-        //
-        typedef ExprType expression_type;
-        typedef typename eval::gm_type gm_type;
-        typedef boost::shared_ptr<gm_type> gm_ptrtype;
-        typedef typename eval::gmc_type gmc_type;
-        typedef typename eval::gmpc_type gmpc_type;
-        typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
-        typedef boost::shared_ptr<gmpc_type> gmpc_ptrtype;
-        typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
-        typedef typename expression_type::template tensor<map_gmc_type> eval_expr_type;
-        typedef typename eval_expr_type::shape shape;
-        typedef IMType im_type;
-        typedef typename eval::matrix_type value_type;
-
-        typedef RunTimeSystem::DataHandler                               DataHandlerType ;
-        typedef RunTimeSystem::DataArgs<DataHandlerType>                 DataArgsType ;
-
-
-        HartsContextEvaluate( ExprType const& _expr,
-                         IMType const& _im,
-                         EltType const& _elt )
-            :
-            M_gm( new gm_type( *_elt.gm() ) ),
-            M_geopc( new gmpc_type( M_gm, _im.points() ) ),
-            M_c( new gmc_type( M_gm, _elt, M_geopc ) ),
-            M_expr( _expr, map_gmc_type( fusion::make_pair<vf::detail::gmc<0> >( M_c ) ) ),
-            M_im( _im ),
-            M_ret( eval::matrix_type::Zero() )
-        {
-            M_cpuTime = 0.0;
-        }
-
-        HartsContextEvaluate( HartsContextEvaluate const& c )
-            :
-            M_gm( new gm_type( *c.M_gm ) ),
-            //M_geopc( new gmpc_type( M_gm, c.M_im.points() ) ),
-            M_geopc( c.M_geopc ),
-            M_c( new gmc_type( M_gm, c.M_c->element(), M_geopc ) ),
-            M_expr( c.M_expr ),
-            M_im( c.M_im ),
-            M_ret( c.M_ret )
-        {
-            M_cpuTime = 0.0;
-        }
-
-        void computeCPU(DataArgsType& args)
-        {
-            PerfCounterMng<std::string> perf_mng ;
-            perf_mng.init("cpu") ;
-            perf_mng.start("cpu") ;
-
-            // DEFINE the range to be iterated on
-            std::vector<boost::reference_wrapper<const typename eval::element_type> > * r =
-                args.get("r")->get<std::vector<boost::reference_wrapper<const typename eval::element_type> > >();
-
-            for ( auto _elt = r->begin(); _elt != r->end(); ++_elt )
-            {
-                M_c->update( *_elt );
-                map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( M_c ) );
-
-                M_expr.update( mapgmc );
-                M_im.update( *M_c );
-
-                for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
-                {
-                    for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
-                    {
-                        M_ret( c1,c2 ) += M_im( M_expr, c1, c2 );
-                    }
-                }
-            }
-
-            perf_mng.stop("cpu") ;
-            M_cpuTime = perf_mng.getValueInSeconds("cpu");
-        }
-
-        value_type result() const
-        {
-            return M_ret;
-        }
-
-        double elapsed()
-        {
-            return M_cpuTime;
-        }
-
-        gm_ptrtype M_gm;
-        gmpc_ptrtype M_geopc;
-        gmc_ptrtype M_c;
-        eval_expr_type M_expr;
-        im_type M_im;
-        value_type M_ret;
-
-        double M_cpuTime;
-    };
-#endif // FEELPP_HAS_HARTS
     //@}
+    
 
 private:
     template<typename FormType>
@@ -4547,7 +4449,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
     boost::timer __timer;
 
 #if defined(FEELPP_HAS_TBB)
-    if ( M_use_tbb )
+    if ( boption(_name="parallel.cpu.enable") && M_use_tbb )
     {
         //std::cout << "Integrator Uses TBB: " << M_use_tbb << "\n";
         element_iterator it = this->beginElement();
@@ -4578,14 +4480,20 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
     else
 #endif // defined(FEELPP_HAS_TBB)
 #if defined(FEELPP_HAS_HARTS)
-    if ( option(_name="parallel.cpu.enable").template as<bool>() )
+    if ( boption(_name="parallel.cpu.enable") && soption(_name="parallel.cpu.impl").find("harts.") == 0 )
     {
-        PerfCounterMng<std::string> perf_mng ;
+        RunTimeSystem::PerfCounterMng<std::string> perf_mng ;
         perf_mng.init("total") ;
         perf_mng.start("total") ;
 
+        perf_mng.init("init") ;
+        perf_mng.start("init") ;
+
+        perf_mng.init("init0") ;
+        perf_mng.start("init0") ;
+
         typename eval::matrix_type res( eval::matrix_type::Zero() );
-        typedef HartsContextEvaluate<expression_type, im_type, typename eval::the_element_type> harts_context_type;
+        typedef Feel::vf::integrator::parallel::HartsContextEvaluate<expression_type, im_type, element_iterator, eval> harts_context_type;
 
         //std::cout << "Integrator Uses HARTS: " << M_use_harts << "\n";
 
@@ -4594,6 +4502,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         typedef RunTimeSystem::TaskMng::Task<harts_context_type>    TaskType;
         typedef RunTimeSystem::TaskMng                              TaskMngType;
         typedef RunTimeSystem::TaskMng::ForkJoin<PTHDriverType>     PTHForkJoinTaskType;
+        typedef RunTimeSystem::ThreadEnv                            ThreadEnv;
 
         typedef RunTimeSystem::DataHandler                          DataHandlerType;
         typedef RunTimeSystem::DataMng                              DataMngType;
@@ -4601,10 +4510,11 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 
         // Compute Number of MPI processes
         char * str = NULL;
-        int nMPIProc = 1;
+        int nMPIProc = Environment::worldComm().size();
 
         // Compute a number of available cores for computation
         // Taking into account the number of MPI processes launched for this app on this node
+        //NumaAffinityMngType numaAffMng(RunTimeSystem::NumaAffinityMng::eMode::Interleave);
         NumaAffinityMngType numaAffMng(RunTimeSystem::NumaAffinityMng::eMode::Block);
 
         // Compute Number of available CPU cores
@@ -4613,14 +4523,6 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         int nAvailCores = nTotalCoresNode - nMPIProc;
         int coresPerProcess = 0;
         int remainder = 0;
-
-        #ifdef FEELPP_HAS_MPI
-        str = getenv("OMPI_COMM_WORLD_LOCAL_SIZE");
-        if(str)
-        {
-            nMPIProc = atoi(str);
-        }
-        #endif
 
         // TOFIX: Have a repartition taking into account the NUMA architecture
         // Guess the number of threads that can be spawned
@@ -4647,13 +4549,6 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
             }
         }
 
-        /* count the number of elements */
-        int nbElts = 0;
-        for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
-        {
-            nbElts += std::distance(lit->template get<1>(), lit->template get<2>());
-        }
-
         /* create a task and data managers */
         TaskMngType taskMng;
         DataMngType dataMng;
@@ -4663,66 +4558,68 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         std::vector<int> taskList;
 
         /* Using pthread */
-        int nbThread = coresPerProcess;
-        ThreadEnv * threadEnv = new ThreadEnv(nbThread);
-
-        threadEnv->SetAffinity(numaAffMng);
-
-        PTHDriverType forkjoin(nbThread, threadEnv);
-        PTHForkJoinTaskType* compFkTask = new PTHForkJoinTaskType(forkjoin, taskMng.getTasks());
-        taskList.push_back(taskMng.addNew(compFkTask));
+        int nbThreads = coresPerProcess;
 
         //std::cout << "2. HARTS: nMPIProc=" << nMPIProc << ", nTotalCoresNode=" << nTotalCoresNode << ", coresPerProcess=" << coresPerProcess << ", remainder=" << remainder << ", nbElements="<< nbElts <<  std::endl;
 
-        int nbEltPerRange = nbElts / coresPerProcess;
-        int remainderElt = nbElts % coresPerProcess;
+        perf_mng.stop("init0") ;
 
-        std::vector<std::vector<boost::reference_wrapper<const typename eval::element_type> > > _v;
+        perf_mng.init("init1") ;
+        perf_mng.start("init1") ;
 
-        for(int i = 0; i < nbThread; i++)
+        std::vector<std::vector<std::pair<element_iterator, element_iterator> > > _v;
+        _v.resize(nbThreads);
+
+        for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit)
         {
-            std::vector<boost::reference_wrapper<const typename eval::element_type> > v1;
-            v1.reserve(nbEltPerRange + (i < remainderElt ? 1 : 0));
-            _v.push_back(v1);
-        }
+            /* set the iterator at the beginning of the elements */
+            auto sit = lit->template get<1>();
+            auto eit = lit->template get<2>();
+            auto cit = sit;
 
-        std::cout << _v.size() << std::endl;
+            /* get number of elements */
+            int nbElts = std::distance(sit, eit);
+            int nbEltPerRange = nbElts / nbThreads;
+            int remainderElt = nbElts % nbThreads;
 
-        /* build data vector for threads */
-        element_iterator it, en;
-        int i = 0, j = 0, k= 0, nb = 0;
-        nb = nbEltPerRange + (i < remainderElt ? 1 : 0);
-
-        //auto lit = M_elts.begin();
-        for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
-        {
-            it = lit->template get<1>();
-            en = lit->template get<2>();
-
-            while( it != en )
+            int j = 0;
+            for(int i = 0; i < nbThreads; i++)
             {
-                _v.at(i).push_back( boost::cref( *it ) );
-                it++;
-                k++;
+                int nb = nbEltPerRange + (i < remainderElt ? 1 : 0);
 
-                if(k == nb)
-                {
-                    std::cout << "T" << i << ": nbelem=" << nbElts << " (" << k << ", " << nb << ")" << std::endl;
-                    i++;
+                std::cout << Environment::worldComm().rank() << "|" << i << " nbElts=" << nb << std::endl;
 
-                    k = 0;
-                    nb = nbEltPerRange + (i < remainderElt ? 1 : 0);
-                }
+                /* save the current iterator position */
+                cit = sit;
+                /* advance the iterator and save the new position */
+                std::advance(sit, nb);
+                //std::cout << "T" << i << " adv:" << nb << " " << nbEltPerRange <<  std::endl;
+                std::cout << "T" << i << " adv:" << nb << " " << nbEltPerRange << "(" << j << ", " << (j + nb) << ")" << std::endl;
+                j = j + nb;
+                _v.at(i).push_back(std::make_pair(cit, sit));
             }
         }
 
+        perf_mng.stop("init1") ;
+
+        perf_mng.init("init2") ;
+        perf_mng.start("init2") ;
+
+        ThreadEnv * threadEnv = new ThreadEnv(nbThreads);
+
+        threadEnv->SetAffinity(numaAffMng);
+
+        PTHDriverType forkjoin(threadEnv);
+        PTHForkJoinTaskType* compFkTask = new PTHForkJoinTaskType(forkjoin, taskMng.getTasks());
+        taskList.push_back(taskMng.addNew(compFkTask));
+
         /* create tasks and associate them data */
-        for(int i = 0 ; i< nbThread; i++)
+        for(int i = 0 ; i< nbThreads; i++)
         {
             DataHandlerType * v_handler = dataMng.getNewData();
-            v_handler->set<std::vector<boost::reference_wrapper<const typename eval::element_type> > >(&_v[i]);
+            v_handler->set<std::vector<std::pair<element_iterator, element_iterator> > >(&_v[i]);
 
-            harts_context_type * t = new harts_context_type(this->expression(), this->im(), *(M_elts.begin()->template get<1>()) /* *it */);
+            harts_context_type * t = new harts_context_type(i, this->expression(), this->im(), *(M_elts.begin()->template get<1>()) /* *it */);
             hce.push_back(t);
             TaskType* task = new TaskType(t);
             task->args().add("r", DataHandlerType::R, v_handler);
@@ -4733,17 +4630,26 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
             compFkTask->add(uid);
         }
 
+        perf_mng.stop("init2") ;
+
+        perf_mng.stop("init") ;
+
+        perf_mng.init("comp") ;
+        perf_mng.start("comp") ;
+
         RunTimeSystem::StdScheduler scheduler;
         taskMng.run(scheduler, taskList);
 
-        for(int i = 0 ; i< nbThread; i++)
+        perf_mng.stop("comp") ;
+
+        for(int i = 0 ; i< nbThreads; i++)
         {
             res += hce[i]->result();
         }
 
-        for(int i = 0; i < nbThread; i++)
+        for(int i = 0; i < nbThreads; i++)
         {
-            std::cout << "T" << i << ": " << hce[i]->elapsed() << "s" << std::endl;
+            std::cout << Environment::worldComm().rank() << "|" << i << " elapsed=" << hce[i]->elapsed() << std::endl;
         }
 
         // Free memory
@@ -4751,25 +4657,205 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         delete threadEnv;
         delete compFkTask;
 
-        for(int i = 0 ; i < nbThread; i++)
+        for(int i = 0 ; i < nbThreads; i++)
         {
             delete hce[i];
         }
         #endif
 
         perf_mng.stop("total") ;
+        
+#if 0
+        std::ostringstream oss;
+        oss << fs::current_path().string() << "/" << Environment::worldComm().size() << "_" << Environment::worldComm().rank() << "-" << nbThreads << ".dat";
+        std::ofstream f;
 
-        std::cout << "Total: " << perf_mng.getValueInSeconds("total") << std::endl;
+        f.open(oss.str().c_str(), std::ofstream::out | std::ofstream::trunc);
+
+        for(int i = 0; i < nbThreads; i++)
+        {
+            f << hce[i]->elapsed() << " ";
+            std::cout << Environment::worldComm().rank() << "|" << i << " " << hce[i]->elapsed() << std::endl;
+        }
+
+        f << perf_mng.getValueInSeconds("total") << std::endl;
+
+        f.close();
+#endif
+
+        std::cout << Environment::worldComm().rank() <<  " Evaluation output: " << res << " in " 
+                  << perf_mng.getValueInSeconds("total") << " (" << perf_mng.getValueInSeconds("init") << " ("
+                  << perf_mng.getValueInSeconds("init0") << ", " << perf_mng.getValueInSeconds("init1") << ", " << perf_mng.getValueInSeconds("init2") << ") "
+                  << ", " << perf_mng.getValueInSeconds("comp") << ")" << std::endl;
+        std::cout << "integrating over elements done in " << __timer.elapsed() << "s\n";
 
         DLOG(INFO) << "integrating over elements done in " << __timer.elapsed() << "s\n";
         return res;
     }
     else
 #endif // defined(FEELPP_HAS_HARTS)
+#if defined(FEELPP_HAS_OPENMP)
+    if ( boption(_name="parallel.cpu.enable") && soption(_name="parallel.cpu.impl") == "openmp" )
+    {
+        // alternative: measure time with omp_get_wtime()
+#if defined(FEELPP_HAS_HARTS)
+        RunTimeSystem::PerfCounterMng<std::string> perf_mng ;
+        perf_mng.init("total") ;
+        perf_mng.start("total") ;
+
+        perf_mng.init("init") ;
+        perf_mng.start("init") ;
+
+        perf_mng.init("init0") ;
+        perf_mng.start("init0") ;
+#endif
+
+        typename eval::matrix_type res( eval::matrix_type::Zero() );
+        typedef Feel::vf::integrator::parallel::HartsContextEvaluate<expression_type, im_type, element_iterator, eval> harts_context_type;
+
+        //std::cout << "Integrator Uses HARTS: " << M_use_harts << "\n";
+
+        // Compute Number of MPI processes
+        char * str = NULL;
+        int nMPIProc = Environment::worldComm().size();
+
+        // Compute a number of available cores for computation
+        // Taking into account the number of MPI processes launched for this app on this node
+        //std::cout << "omp_get_num_procs()=" << omp_get_num_procs() << std::endl;
+
+        // Compute Number of available CPU cores
+        int paramNbCores = option(_name="parallel.cpu.restrict").template as<int>();
+        int nTotalCoresNode = omp_get_num_procs();
+        int nAvailCores = nTotalCoresNode - nMPIProc;
+        int coresPerProcess = 0;
+        int remainder = 0;
+
+        // TOFIX: Have a repartition taking into account the NUMA architecture
+        // Guess the number of threads that can be spawned
+        if(paramNbCores <= 0)
+        {
+            coresPerProcess = nAvailCores / nMPIProc;
+            remainder = nAvailCores % nMPIProc;
+        }
+        // Try to match the nb of cores in parameter
+        else
+        {
+            int nWantedCores = nMPIProc * paramNbCores;
+            if(nAvailCores - nWantedCores >= 0)
+            {
+                coresPerProcess = paramNbCores;
+                remainder = nAvailCores - nMPIProc * paramNbCores;
+            }
+            /* if we can't match the asked number of cores */
+            /* Then guess the maximal occupation repartition */
+            else
+            {
+                coresPerProcess = nAvailCores / nMPIProc;
+                remainder = nAvailCores % nMPIProc;
+            }
+        }
+
+        /* create a task list */
+        std::vector<harts_context_type * > hce;
+
+        /* Using pthread */
+        int nbThreads = coresPerProcess;
+
+        //std::cout << "2. HARTS: nMPIProc=" << nMPIProc << ", nTotalCoresNode=" << nTotalCoresNode << ", coresPerProcess=" << coresPerProcess << ", remainder=" << remainder << ", nbElements="<< nbElts <<  std::endl;
+
+#if defined(FEELPP_HAS_HARTS)
+        perf_mng.stop("init0") ;
+        perf_mng.init("init1") ;
+        perf_mng.start("init1") ;
+#endif
+
+        std::vector<std::vector<std::pair<element_iterator, element_iterator> > > _v;
+        _v.resize(nbThreads);
+
+        for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit)
+        {
+            /* set the iterator at the beginning of the elements */
+            auto sit = lit->template get<1>();
+            auto eit = lit->template get<2>();
+            auto cit = sit;
+
+            /* get number of elements */
+            int nbElts = std::distance(sit, eit);
+            int nbEltPerRange = nbElts / nbThreads;
+            int remainderElt = nbElts % nbThreads;
+
+            int j = 0;
+            for(int i = 0; i < nbThreads; i++)
+            {
+                int nb = nbEltPerRange + (i < remainderElt ? 1 : 0);
+
+                std::cout << Environment::worldComm().rank() << "|" << i << " nbElts=" << nb << std::endl;
+
+                /* save the current iterator position */
+                cit = sit;
+                /* advance the iterator and save the new position */
+                std::advance(sit, nb);
+                //std::cout << "T" << i << " adv:" << nb << " " << nbEltPerRange <<  std::endl;
+                std::cout << "T" << i << " adv:" << nb << " " << nbEltPerRange << "(" << j << ", " << (j + nb) << ")" << std::endl;
+                j = j + nb;
+                _v.at(i).push_back(std::make_pair(cit, sit));
+            }
+        }
+
+#if defined(FEELPP_HAS_HARTS)
+        perf_mng.stop("init1") ;
+
+        perf_mng.stop("init") ;
+
+        perf_mng.init("comp") ;
+        perf_mng.start("comp") ;
+#endif
+
+        omp_set_num_threads(nbThreads);
+
+        value_type * out = new value_type[nbThreads];
+
+#pragma omp parallel
+        {
+            int id = omp_get_thread_num();
+
+            harts_context_type * t = new harts_context_type(id, this->expression(), this->im(), *(M_elts.begin()->template get<1>()) /* *it */);
+            t->computeCPUOMP(&(_v[id]));
+            out[id] = t->result();
+
+            std::cout << Environment::worldComm().rank() << "|" << id << " elapsed=" << t->elapsed() << std::endl;
+
+            delete t;
+        }
+
+#if defined(FEELPP_HAS_HARTS)
+        perf_mng.stop("comp") ;
+#endif
+
+        for(int i = 0 ; i< nbThreads; i++)
+        {
+            res += out[i];
+        }
+        delete[] out;
+
+#if defined(FEELPP_HAS_HARTS)
+        perf_mng.stop("total") ;
+        
+        std::cout << Environment::worldComm().rank() <<  " Evaluation output: " << res << " in " 
+                  << perf_mng.getValueInSeconds("total") << " (" << perf_mng.getValueInSeconds("init") << " ("
+                  << perf_mng.getValueInSeconds("init0") << ", " << perf_mng.getValueInSeconds("init1") << ", " << perf_mng.getValueInSeconds("init2") << ") "
+                  << ", " << perf_mng.getValueInSeconds("comp") << ")" << std::endl;
+#endif
+
+        DLOG(INFO) << "integrating over elements done in " << __timer.elapsed() << "s\n";
+        return res;
+    }
+    else
+#endif
     if ( 1 )
     {
 #if defined(FEELPP_HAS_HARTS)
-        PerfCounterMng<std::string> perf_mng ;
+        RunTimeSystem::PerfCounterMng<std::string> perf_mng ;
         perf_mng.init("total") ;
         perf_mng.start("total") ;
 #endif
@@ -4803,6 +4889,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
             // otherwise)
             if ( it == en )
                 continue;
+
+            //std::cout << "nbElts: " << std::distance(it, en) << std::endl;
 
             //std::cout << "0" << std::endl;
 
@@ -4869,12 +4957,14 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                 default:
                 case  GeomapStrategyType::GEOMAP_HO :
                 {
+#if 1
                     __c->update( *it );
                     map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
                     expr.update( mapgmc );
                     const gmc_type& gmc = *__c;
 
                     M_im.update( gmc );
+#endif
 
 
                     for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
@@ -4887,6 +4977,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 
                 case GeomapStrategyType::GEOMAP_O1:
                 {
+#if 1
                     //DDLOG(INFO) << "geomap o1" << "\n";
                     __c1->update( *it );
                     map_gmc1_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
@@ -4894,6 +4985,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                     const gmc1_type& gmc = *__c1;
 
                     M_im.update( gmc );
+#endif
 
 
                     for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
@@ -4909,6 +5001,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                     //DDLOG(INFO) << "geomap opt" << "\n";
                     if ( it->isOnBoundary() )
                     {
+#if 1
                         //DDLOG(INFO) << "boundary element using ho" << "\n";
                         __c->update( *it );
                         map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
@@ -4916,6 +5009,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                         const gmc_type& gmc = *__c;
 
                         M_im.update( gmc );
+#endif
 
 
                         for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
@@ -4927,6 +5021,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 
                     else
                     {
+#if 1
                         //DDLOG(INFO) << "interior element using order 1" << "\n";
                         __c1->update( *it );
                         map_gmc1_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
@@ -4934,6 +5029,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                         const gmc1_type& gmc = *__c1;
 
                         M_im.update( gmc );
+#endif
 
                         for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
                             for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
@@ -4949,7 +5045,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         }
 #if defined(FEELPP_HAS_HARTS)
         perf_mng.stop("total") ;
-        std::cout << "Total: " << perf_mng.getValueInSeconds("total") << std::endl;
+        std::cout << Environment::worldComm().rank() <<  " Total: " << perf_mng.getValueInSeconds("total") << std::endl;
 #endif
 
         DLOG(INFO) << "integrating over elements done in " << __timer.elapsed() << "s\n";
