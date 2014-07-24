@@ -2218,20 +2218,21 @@ public:
         void assign( geoelement_type const& e, typename basis_0_type::local_interpolant_type const& Ihloc )
         {
             auto const& s = M_functionspace->dof()->localToGlobalSigns( e.id() );
-
             for( auto ldof : M_functionspace->dof()->localDof( e.id() ) )
             {
                 size_type index=start()+ ldof.second.index();
-                this->operator[]( index ) = s(ldof.first.localDof())*Ihloc( ldof.first.localDof() );
+                size_type ldofInElt = geoelement_type::f2e(e.id(),ldof.first.localDof());
+                this->operator[]( index ) = s(ldofInElt)*Ihloc( ldof.first.localDof() );
             }
         }
         void assign( geoface_type const& e, typename basis_0_type::local_interpolant_type const& Ihloc )
         {
-            auto const& s = M_functionspace->dof()->localToGlobalSigns( e.id() );
+            auto const& s = M_functionspace->dof()->localToGlobalSigns( e.element(0).id() );
             for( auto ldof : M_functionspace->dof()->faceLocalDof( e.id() ) )
             {
                 size_type index=start()+ ldof.second.index();
-                this->operator[]( index ) = s(ldof.first)*Ihloc( ldof.first );
+                size_type ldofInElt = geoelement_type::f2e(e.id(),ldof.first);
+                this->operator[]( index ) = s(ldofInElt)*Ihloc( ldof.first );
             }
         }
         void plus_assign( geoelement_type const& e, typename basis_0_type::local_interpolant_type const& Ihloc )
@@ -2240,16 +2241,18 @@ public:
             for( auto ldof : M_functionspace->dof()->localDof( e.id() ) )
             {
                 size_type index=start()+ ldof.second.index();
-                this->operator[]( index ) += s(ldof.first.localDof())*Ihloc( ldof.first.localDof() );
+                size_type ldofInElt = geoelement_type::f2e(e.id(),ldof.first.localDof());
+                this->operator[]( index ) += s(ldofInElt)*Ihloc( ldof.first.localDof() );
             }
         }
         void plus_assign( geoface_type const& e, typename basis_0_type::local_interpolant_type const& Ihloc )
         {
-            auto const& s = M_functionspace->dof()->localToGlobalSigns( e.id() );
+            auto const& s = M_functionspace->dof()->localToGlobalSigns( e.element(0).id() );
             for( auto ldof : M_functionspace->dof()->faceLocalDof( e.id() ) )
             {
                 size_type index=start()+ ldof.second.index();
-                this->operator[]( index ) += s(ldof.first)*Ihloc( ldof.first );
+                size_type ldofInElt = geoelement_type::f2e(e.id(),ldof.first);
+                this->operator[]( index ) += s(ldofInElt)*Ihloc( ldof.first );
             }
         }
 
