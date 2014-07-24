@@ -26,6 +26,14 @@ if ( ${CMAKE_VERSION} VERSION_GREATER 2.8.12 )
   message(STATUS "use new policy CMP0022" )
   cmake_policy(SET CMP0022 NEW)
 endif()
+if ( ${CMAKE_MAJOR_VERSION} EQUAL 3 )
+  message(STATUS "use new policy CMP0038" )
+	cmake_policy(SET CMP0038 OLD)
+endif()
+if ( ${CMAKE_MAJOR_VERSION} EQUAL 3 )
+  message(STATUS "use new policy CMP0046" )
+	cmake_policy(SET CMP0038 OLD)
+endif()
 #
 # Bug in cmake that delete destroy library path if LIBRARY_PATH is not empty
 # Ugly hack that disable the environement variable
