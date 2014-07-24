@@ -24,6 +24,8 @@
 
 INCLUDE_DIRECTORIES( ${CMAKE_CURRENT_SOURCE_DIR} )
 
+add_subdirectory(tutorial)
+
 find_program(LATEX NAMES latex pdflatex)
 find_program(CONVERT NAMES convert)
 if ( LATEX AND CONVERT )
@@ -135,7 +137,7 @@ add_custom_target(
                                    ${CMAKE_CURRENT_BINARY_DIR}/
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
-add_dependencies(tut-prerequisites feel_doc_mymesh)
+add_dependencies(tut-prerequisites feelpp_doc_mymesh)
 configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/tutorial.pos  ${CMAKE_CURRENT_BINARY_DIR}/tutorial.pos)
 
 if ( NOT FEELPP_MINIMAL_CONFIGURATION )
@@ -193,7 +195,6 @@ endmacro(add_octave_module)
 
 ENDIF( OCTAVE_FOUND )
 
-add_subdirectory(tutorial)
 
 if (NOT FEELPP_MINIMAL_CONFIGURATION)
   add_subdirectory(laplacian)
