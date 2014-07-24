@@ -8,6 +8,7 @@
 #include <feel/feeldiscr/timeset.hpp>
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelmesh/filters.hpp>
+#include <map>
 
 #if defined(FEELPP_HAS_HDF5)
 #include <feel/feelcore/hdf5.hpp>
@@ -82,6 +83,8 @@ public Exporter <MeshType, N>
 
         mutable std::vector<size_type> M_uintBuffer ;
         mutable std::vector<value_type> M_realBuffer ;
+        mutable std::map<size_type, size_type> M_newPointId ;
+        mutable std::map<size_type, size_type> M_newElementId ;
 };
 
 template<typename MeshType, int N>
@@ -158,7 +161,10 @@ Exporterhdf5<MeshType,N>::init()
 template <typename MeshType, int N>
 void Exporterhdf5<MeshType, N>::write () const 
 {
-    M_fileName = this->prefix () ;
+
+    std::ostringstream str ;
+    str <<  this->prefix () << "-" << Environment::worldComm().globalSize()<<"_"<<Environment::worldComm().globalRank()  ;
+    M_fileName = str.str () ; 
 
     open_xdmf_xml () ;
 
@@ -189,13 +195,13 @@ void Exporterhdf5<MeshType, N>::write () const
             {
                 M_meshOut = __step->mesh () ;
                 std::ostringstream filestr ;
-                filestr << M_step++ ;
+                filestr << "-" << M_step++ ;
                 M_fileNameStep = M_fileName+filestr.str() ;
-                M_HDF5.openFile (M_fileNameStep+".h5", M_comm, false) ;
+                M_HDF5.openFile (M_fileNameStep+".h5", Environment::worldCommSeq(), false) ;
                 M_xmf << "           <Grid Name=\"" << M_fileNameStep << "\" GridType=\"Uniform\">\n" ;
 
-                writeElements () ;
                 writePoints () ;
+                writeElements () ;
 
                 std::cout << "time                          : " << __step->time () << std::endl ; 
                 std::cout << "time increment                : " << __ts->timeIncrement () << std::endl ; 
@@ -203,6 +209,7 @@ void Exporterhdf5<MeshType, N>::write () const
                 std::cout << "numberOfTotalSteps            : " << __ts->numberOfTotalSteps () << std::endl ;
 
                 saveNodal (__step, __step->beginNodalScalar(), __step->endNodalScalar() ) ;
+                std::cout << "Pb : " << std::distance (__step->beginNodalVector (), __step->endNodalVector()) << std::endl ;
                 saveNodal (__step, __step->beginNodalVector(), __step->endNodalVector() ) ;
                 saveElement (__step, __step->beginElementScalar(), __step->endElementScalar() ) ;
                 saveElement (__step, __step->beginElementVector(), __step->endElementVector() ) ;
@@ -254,6 +261,13 @@ void Exporterhdf5<MeshType, N>::writePoints () const
     }
 
     bubbleSort (&M_uintBuffer[0], &M_realBuffer[0], M_maxNumPoints) ;
+
+    for (size_type i = 0 ; i < M_maxNumPoints ; i ++) 
+    {
+        M_newPointId[M_uintBuffer[i]] = i ;
+        //std::cout << M_newPointId[M_uintBuffer[i]] << std::endl ;
+    }
+
 
     hsize_t currentOffset[2] = {0, 0} ;
 
@@ -313,10 +327,15 @@ void Exporterhdf5<MeshType, N>::writeElements () const
         for ( ; elt_it != elt_en ; ++elt_it , i ++)
         {
             idsBuffer[i] = elt_it->id () ;
+            M_newElementId[idsBuffer[i]] = i ;
             for ( size_type j = 0 ; j < M_elementNodes ; j ++ )
-               M_uintBuffer[j + M_elementNodes*i] = elt_it->point(j).id() -1 ; 
+            {
+               //M_uintBuffer[j + M_elementNodes*i] = elt_it->point(j).id() -1 ; 
+               M_uintBuffer[j + M_elementNodes*i] = M_newPointId[elt_it->point(j).id()]  ; 
+            }
         }
     }
+
 
     hsize_t currentOffset[2] = {0, 0} ;
     M_HDF5.write ( "element_ids", H5T_NATIVE_LLONG, currentSpacesDims2, currentOffset, &idsBuffer[0] ) ;
@@ -341,7 +360,6 @@ void Exporterhdf5<MeshType, N>::saveNodal ( typename timeset_type::step_ptrtype 
         std::string attributeType ("Scalar") ;
 
         std::string solutionName = __var->first ;
-        std::cout << "solution name                 : " << solutionName << std::endl ;
 
         uint16_type nComponents = __var -> second.nComponents ;
 
@@ -365,6 +383,8 @@ void Exporterhdf5<MeshType, N>::saveNodal ( typename timeset_type::step_ptrtype 
         }
 
         solutionName += ".node" ;
+
+        std::cout << "solution name                 : " << solutionName << std::endl ;
 
         hsize_t currentSpacesDims [2] ;
 
@@ -395,7 +415,18 @@ void Exporterhdf5<MeshType, N>::saveNodal ( typename timeset_type::step_ptrtype 
                 {
                     for ( uint16_type p = 0 ; p < __step->mesh()->numLocalVertices() ; ++p, ++e )
                     {
-                        size_type ptid = elt_it->get().point(p).id()-1 ;
+                        /*
+                        if (M_newPointId.find(elt_it->get().point(p).id()) == M_newPointId.end())
+                        {
+                            std::cout << "elt_it : " << elt_it->get().point(p).id() << std::endl ;
+                            exit (0) ;
+                        }
+                        */
+                        size_type ptid = mp.old2new[elt_it->get().point(p).id()] -1 ;
+                        
+                        
+                        //std::cout << "elt_it->get().point("<<p<<").id() : " << elt_it->get().point(p).id() << std::endl ;
+                        //std::cout << "M_newPointId[elt_it->get().point("<<p<<").id()] : " << M_newPointId[elt_it->get().point(p).id()] << std::endl ;
                         size_type global_node_id = mp.ids.size()*c + ptid ;
                         if ( c < __var->second.nComponents ) 
                         {
@@ -527,7 +558,8 @@ void Exporterhdf5<MeshType, N>::writeStats () const
     std::cout << "nombre de Points par element  : " << M_elementNodes << std::endl ;
     std::cout << "M_numParts                    : " << M_numParts << std::endl ;
     std::cout << "mesh_type::nRealDim           : " << mesh_type::nRealDim << std::endl ;
-    std::cout << "M_fileNameStep                : " << M_fileNameStep << std::endl ;
+    std::cout << "fileNameStep                  : " << M_fileNameStep << ".h5" << std::endl ;
+    std::cout << "fileName                      : " << M_fileName << ".xmf" << std::endl ;
     
     hsize_t currentOffset [2] = {0, 0} ;
     M_HDF5.write ("stats", H5T_NATIVE_LLONG, currentSpacesDims, currentOffset, &M_uintBuffer[0]) ;
