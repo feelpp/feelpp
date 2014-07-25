@@ -25,6 +25,7 @@
 /**
    \file ExporterEnsightGold.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+   \author Alexandre Ancel <alexandre.ancel@cemosis.fr>
    \date 2006-11-26
  */
 #ifndef __ExporterEnsightGold_H
@@ -51,6 +52,7 @@ namespace fs = boost::filesystem;
  *
  * \ingroup Exporter
  * @author Christophe Prud'homme
+ * @author Alexandre Ancel
  */
 template<typename MeshType, int N>
 class ExporterEnsightGold
@@ -215,9 +217,8 @@ private:
     void writeGeoFiles() const;
     void writeGeoMarkers(MPI_File fh, mesh_ptrtype mesh) const;
     void writeGeoHeader(MPI_File fh) const;
-    void writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype mesh, int & partindex, std::pair<const std::string, std::vector<size_type> > & m) const;
-    //void writeGeoMarkedElements(MPI_File fh, mesh_ptrtype mesh, int & partindex, typename mesh_type::parts_const_iterator_type part) const;
-    void writeGeoMarkedElements(MPI_File fh, mesh_ptrtype mesh, int & partindex, size_type markerid) const;
+    void writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype mesh, std::pair<const std::string, std::vector<size_type> > & m) const;
+    void writeGeoMarkedElements(MPI_File fh, mesh_ptrtype mesh, size_type markerid) const;
 
     /**
        write the variables file for ensight
