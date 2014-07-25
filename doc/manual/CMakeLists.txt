@@ -195,7 +195,6 @@ endmacro(add_octave_module)
 
 ENDIF( OCTAVE_FOUND )
 
-add_subdirectory(tutorial)
 add_subdirectory(hdf5)
 
 if (NOT FEELPP_MINIMAL_CONFIGURATION)
