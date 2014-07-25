@@ -1,0 +1,309 @@
+#include <feel/feel.hpp>
+#include <boost/python.hpp>
+#include <boost/python/stl_iterator.hpp>
+#include <mpi4py/mpi4py.h>
+
+#include <boost/shared_ptr.hpp>
+#include <boost/parameter/keyword.hpp>
+#include <boost/parameter/preprocessor.hpp>
+#include <boost/parameter/binding.hpp>
+#include <boost/parameter/python.hpp>
+#include <boost/python.hpp>
+#include <boost/mpl/vector.hpp>
+
+#include<feel/feelcore/environment.hpp>
+#include<feel/feelfilters/loadmesh.hpp>
+#include<feel/feelfilters/exporter.hpp>
+#include<feel/feelfilters/detail/mesh.hpp>
+
+typedef boost::tuples::tuple<mpl_::size_t<0ul>, boost::multi_index::detail::bidir_node_iterator<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::index_node_base<Feel::GeoElement3D<(unsigned short)3, Feel::Simplex<(unsigned short)3, (unsigned short)1, (unsigned short)3>, double>, std::allocator<Feel::GeoElement3D<(unsigned short)3, Feel::Simplex<(unsigned short)3, (unsigned short)1, (unsigned short)3>, double> > > > > > > > > > >, boost::multi_index::detail::bidir_node_iterator<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::index_node_base<Feel::GeoElement3D<(unsigned short)3, Feel::Simplex<(unsigned short)3, (unsigned short)1, (unsigned short)3>, double>, std::allocator<Feel::GeoElement3D<(unsigned short)3, Feel::Simplex<(unsigned short)3, (unsigned short)1, (unsigned short)3>, double> > > > > > > > > > >, boost::tuples::null_type, boost::tuples::null_type, boost::tuples::null_type, boost::tuples::null_type, boost::tuples::null_type, boost::tuples::null_type, boost::tuples::null_type> elements_return_type; 
+
+typedef boost::tuples::tuple<mpl_::size_t<0ul>, boost::multi_index::detail::bidir_node_iterator<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::index_node_base<Feel::GeoElement3D<(unsigned short)3, Feel::Simplex<(unsigned short)3, (unsigned short)1, (unsigned short)3>, double>, std::allocator<Feel::GeoElement3D<(unsigned short)3, Feel::Simplex<(unsigned short)3, (unsigned short)1, (unsigned short)3>, double> > > > > > >, boost::multi_index::detail::bidir_node_iterator<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::index_node_base<Feel::GeoElement3D<(unsigned short)3, Feel::Simplex<(unsigned short)3, (unsigned short)1, (unsigned short)3>, double>, std::allocator<Feel::GeoElement3D<(unsigned short)3, Feel::Simplex<(unsigned short)3, (unsigned short)1, (unsigned short)3>, double> > > > > > >, boost::tuples::null_type, boost::tuples::null_type, boost::tuples::null_type, boost::tuples::null_type, boost::tuples::null_type, boost::tuples::null_type, boost::tuples::null_type> boundaryelements_return_type;
+
+typedef boost::tuples::tuple<mpl_::size_t<1ul>, boost::multi_index::detail::bidir_node_iterator<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::index_node_base<Feel::GeoElement2D<(unsigned short)3, Feel::Simplex<(unsigned short)2, (unsigned short)1, (unsigned short)3>, Feel::SubFaceOf<Feel::GeoElement3D<(unsigned short)3, Feel::Simplex<(unsigned short)3, (unsigned short)1, (unsigned short)3>, double> >, double>, std::allocator<Feel::GeoElement2D<(unsigned short)3, Feel::Simplex<(unsigned short)2, (unsigned short)1, (unsigned short)3>, Feel::SubFaceOf<Feel::GeoElement3D<(unsigned short)3, Feel::Simplex<(unsigned short)3, (unsigned short)1, (unsigned short)3>, double> >, double> > > > >, boost::multi_index::detail::bidir_node_iterator<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::index_node_base<Feel::GeoElement2D<(unsigned short)3, Feel::Simplex<(unsigned short)2, (unsigned short)1, (unsigned short)3>, Feel::SubFaceOf<Feel::GeoElement3D<(unsigned short)3, Feel::Simplex<(unsigned short)3, (unsigned short)1, (unsigned short)3>, double> >, double>, std::allocator<Feel::GeoElement2D<(unsigned short)3, Feel::Simplex<(unsigned short)2, (unsigned short)1, (unsigned short)3>, Feel::SubFaceOf<Feel::GeoElement3D<(unsigned short)3, Feel::Simplex<(unsigned short)3, (unsigned short)1, (unsigned short)3>, double> >, double> > > > >, boost::tuples::null_type, boost::tuples::null_type, boost::tuples::null_type, boost::tuples::null_type, boost::tuples::null_type, boost::tuples::null_type, boost::tuples::null_type> boundaryfaces_return_type;
+
+typedef Feel::vf::Expr<Feel::vf::Integrator<boost::tuples::tuple<mpl_::size_t<0>,boost::multi_index::detail::bidir_node_iterator<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::index_node_base<Feel::GeoElement3D<3, Feel::Simplex<3, 1, 3>, double>, std::allocator<Feel::GeoElement3D<3, Feel::Simplex<3, 1, 3>, double> > > > > > > > > > >,boost::multi_index::detail::bidir_node_iterator<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::index_node_base<Feel::GeoElement3D<3,Feel::Simplex<3, 1, 3>, double>, std::allocator<Feel::GeoElement3D<3, Feel::Simplex<3, 1, 3>, double> > > > > > > > > > >, boost::tuples::null_type, boost::tuples::null_type, boost::tuples::null_type, boost::tuples::null_type, boost::tuples::null_type, boost::tuples::null_type, boost::tuples::null_type>,Feel::_Q<2>, Feel::vf::Expr<Feel::vf::GinacEx<2> >, Feel::_Q<2> > >  integrate_return_type;
+
+
+typedef Feel::vf::Expr<Feel::vf::Integrator<boost::tuples::tuple<mpl_::size_t<0>,boost::multi_index::detail::bidir_node_iterator<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::index_node_base<Feel::GeoElement3D<3,Feel::Simplex<3, 1, 3>, double>, std::allocator<Feel::GeoElement3D<3, Feel::Simplex<3, 1, 3>, double> > > > > > >,boost::multi_index::detail::bidir_node_iterator<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::index_node_base<Feel::GeoElement3D<3,Feel::Simplex<3, 1, 3>, double>, std::allocator<Feel::GeoElement3D<3, Feel::Simplex<3, 1, 3>, double> > > > > > >, boost::tuples::null_type, boost::tuples::null_type, boost::tuples::null_type,boost::tuples::null_type, boost::tuples::null_type, boost::tuples::null_type, boost::tuples::null_type>,Feel::_Q<2>, Feel::vf::Expr<Feel::vf::GinacEx<2> >, Feel::_Q<2> > > integratebound_return_type;
+
+
+typedef Feel::vf::Expr<Feel::vf::Integrator<boost::tuples::tuple<mpl_::size_t<0>,boost::multi_index::detail::bidir_node_iterator<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::index_node_base<Feel::GeoElement3D<3,Feel::Simplex<3, 1, 3>, double>, std::allocator<Feel::GeoElement3D<3, Feel::Simplex<3, 1, 3>, double> > > > > > > > > > >,boost::multi_index::detail::bidir_node_iterator<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::index_node_base<Feel::GeoElement3D<3,Feel::Simplex<3, 1, 3>, double>, std::allocator<Feel::GeoElement3D<3, Feel::Simplex<3, 1, 3>, double> > > > > > > > > > >, boost::tuples::null_type, boost::tuples::null_type, boost::tuples::null_type,boost::tuples::null_type, boost::tuples::null_type, boost::tuples::null_type, boost::tuples::null_type>,Feel::_Q<2>, Feel::vf::Expr<Feel::vf::GinacMatrix<1, 2, 2> >, Feel::_Q<2> > > integrategrad_return_type;
+
+
+typedef Feel::vf::Expr<Feel::vf::Integrator<boost::tuples::tuple<mpl_::size_t<1>,boost::multi_index::detail::bidir_node_iterator<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::index_node_base<Feel::GeoElement2D<3,Feel::Simplex<2, 1, 3>, Feel::SubFaceOf<Feel::GeoElement3D<3, Feel::Simplex<3, 1, 3>, double> >, double>,std::allocator<Feel::GeoElement2D<3, Feel::Simplex<2, 1, 3>, Feel::SubFaceOf<Feel::GeoElement3D<3,Feel::Simplex<3, 1, 3>, double> >, double> > > > >,boost::multi_index::detail::bidir_node_iterator<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::index_node_base<Feel::GeoElement2D<3,Feel::Simplex<2, 1, 3>, Feel::SubFaceOf<Feel::GeoElement3D<3, Feel::Simplex<3, 1, 3>, double> >, double>,std::allocator<Feel::GeoElement2D<3, Feel::Simplex<2, 1, 3>, Feel::SubFaceOf<Feel::GeoElement3D<3,Feel::Simplex<3, 1, 3>, double> >, double> > > > >, boost::tuples::null_type, boost::tuples::null_type,boost::tuples::null_type, boost::tuples::null_type, boost::tuples::null_type, boost::tuples::null_type,boost::tuples::null_type>, Feel::_Q<2>, Feel::vf::Expr<Feel::vf::GinacEx<2> >, Feel::_Q<2> > > integrateboundfaces_return_type;
+
+//#define BOOST_PYTHON_MAX_ARITY 20
+
+using namespace boost::python;
+using namespace Feel;
+
+namespace py = boost::parameter::python;
+
+boost::shared_ptr<Exporter<Mesh<Simplex<3>>,1>> New1 (po::variables_map const& x,std::string y,WorldComm const& z) 
+{
+    return Exporter<Mesh<Simplex<3>>,1>::New(x,y,z);
+}
+
+boost::shared_ptr<Exporter<Mesh<Simplex<3>>,1>> New2 () 
+{
+    return Exporter<Mesh<Simplex<3>>,1>::New();
+}
+
+
+
+    template<typename MeshType,int N>
+void expo2 ( boost::shared_ptr<MeshType> m)
+{
+    auto x=Exporter<MeshType,N>::New();
+    x->setMesh(m);
+    x->addRegions();
+    x->save();
+}
+
+
+boost::shared_ptr<Mesh<Simplex<3>>> loadMesh3 (Mesh<Simplex<3>>* mesh)
+{
+    return loadMesh(_mesh=mesh);
+}
+
+std::string soption_w (std::string name)
+{
+    return soption(_name=name);
+}
+
+Expr< GinacEx<2> > expr_w( std::string const& s )
+{
+    std::pair< ex, std::vector<GiNaC::symbol> > g = GiNaC::parse(s);
+    return Expr< GinacEx<2> >(  GinacEx<2>( g.first, g.second,"") );
+}
+
+template<int Order=2>
+    Expr<GinacMatrix<1,1,Order> >
+laplacian_w( Expr<GinacEx<Order>> const& s)
+{
+    return expr<1,1,Order>( GiNaC::laplacian(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), "");
+}
+
+template<int M,int Order=2>
+    Expr<GinacMatrix<1,M,Order> >
+grad_w( Expr<GinacEx<Order>> const& s)
+{
+    return expr<1,M,Order>( GiNaC::grad(s.expression().expression(),s.expression().symbols()), s.expression().symbols(),"" );
+}
+
+template<typename MeshType>
+boost::tuple<mpl::size_t<MESH_ELEMENTS>,
+    typename MeshTraits<MeshType>::element_const_iterator,
+    typename MeshTraits<MeshType>::element_const_iterator>
+elements_w( MeshType const& mesh )
+{
+    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
+    return Feel::detail::elements( mesh, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
+    //return elements( mesh, flag, is_ptr_or_shared_ptr() );
+}
+
+
+template<typename MeshType>
+boost::tuple<mpl::size_t<MESH_ELEMENTS>,
+      typename MeshTraits<MeshType>::location_element_const_iterator,
+      typename MeshTraits<MeshType>::location_element_const_iterator>
+boundaryelements_w( MeshType const& mesh)
+{
+    return boundaryelements(mesh);
+}
+
+
+
+template<typename MeshType>
+boost::tuple<mpl::size_t<MESH_FACES>,
+      typename MeshTraits<MeshType>::location_face_const_iterator,
+      typename MeshTraits<MeshType>::location_face_const_iterator>
+      boundaryfaces_w( MeshType const& mesh  )
+{
+    return boundaryfaces(mesh);
+}
+
+//Expr<Integrator<elements_return_type,LinearTetra,GinacEx<2>>> 
+integrate_return_type integrate_w ( elements_return_type e , Expr<GinacEx<2>> g)
+{
+    return integrate(_range=e,_expr=g);
+}
+
+integratebound_return_type integrate_w2 ( boundaryelements_return_type e , Expr<GinacEx<2>> g)
+{
+    return integrate(_range=e,_expr=g);
+}
+
+integrategrad_return_type integrate_w3 ( elements_return_type e,Expr<GinacMatrix<1,2,2>> grad)
+{
+    return integrate(_range=e,_expr=grad);
+}
+
+integrateboundfaces_return_type integrate_w4 ( boundaryfaces_return_type e , Expr<GinacEx<2>> g)
+{
+    return integrate(_range=e,_expr=g);
+}
+
+
+
+//Eigen::Matrix<integrate_return_type::value_type,1,1>
+integrate_return_type::value_type evaluate_w (integrate_return_type i)
+{
+    return i.evaluate();
+}
+
+integratebound_return_type::value_type evaluate_w2 (integratebound_return_type i)
+{
+    return i.evaluate();
+}
+
+integrategrad_return_type::value_type evaluate_w3 (integrategrad_return_type i)
+{
+    return i.evaluate();
+}
+
+integrateboundfaces_return_type::value_type evaluate_w4 (integrateboundfaces_return_type i)
+{
+    return i.evaluate();
+}
+
+
+
+void printMa1 (integrate_return_type::value_type m)
+{
+    std::cout<< m << std::endl;
+}
+
+void printMa2 (integratebound_return_type::value_type m)
+{
+    std::cout<< m << std::endl;
+}
+
+void printMa3 (integrategrad_return_type::value_type m)
+{
+    std::cout<< m << std::endl;
+}
+
+void printMa4 (integrateboundfaces_return_type::value_type m)
+{
+    std::cout<< m << std::endl;
+}
+
+void printExpr1(Expr<GinacEx<2>> e)
+{
+    std::cout<< e << std::endl;
+}
+
+void printExpr2(Expr<GinacMatrix<1,2,2>> e)
+{
+    std::cout<< e << std::endl;
+}
+
+
+BOOST_PYTHON_MODULE(libPyInteg)
+{
+
+    if (import_mpi4py()<0) return ;
+
+    class_<Feel::detail::Environment,boost::noncopyable>("Environment", init<boost::python::list>()) 
+        .def("worldComm",&Feel::detail::Environment::worldComm,return_value_policy<copy_non_const_reference>())
+        .staticmethod("worldComm");
+
+    class_<Feel::Simplex<3>>("Simplex",init<>())
+        .def("dim",&Feel::Simplex<3>::dimension);
+
+    class_<Feel::Hypercube<3>>("Hypercube",init<>())
+        .def("dim",&Feel::Hypercube<3>::dimension);
+
+
+
+    class_<Feel::Mesh<Feel::Simplex<3>>,boost::shared_ptr<Feel::Mesh<Feel::Simplex<3>>>,boost::noncopyable>("Mesh",init<>())
+        .def("new",&Feel::Mesh<Simplex<3>>::New)
+        .staticmethod("new")
+        .def("clear",&Feel::Mesh<Simplex<3>>::clear);
+
+
+    def("loadMesh",loadMesh3);
+
+    class_<WorldComm>("WorldComm",init<>());
+
+
+
+
+    class_<ExporterEnsightGold<Mesh<Simplex<3>>,1>>("Exporter",init<WorldComm>())
+        .def("setMesh",&Exporter<Mesh<Simplex<3>>>::setMesh) 
+        .def("addRegions",&Exporter<Mesh<Simplex<3>>>::addRegions)
+        .def("save",&ExporterEnsightGold<Mesh<Simplex<3>>,1>::save);
+
+
+    def("new",New2); 
+    def("export",expo2<Mesh<Simplex<3>>,1>);
+    //////////////////
+
+    class_<Feel::meta::Pch<Mesh<Simplex<3>>,2>,boost::shared_ptr<Feel::meta::Pch<Mesh<Simplex<3>>,2>>>("Pch",no_init);
+
+    class_<Feel::FunctionSpaceBase>("FunctionSpaceBase",no_init);
+
+    class_<Feel::FunctionSpace<Mesh<Simplex<3>>,Feel::bases<Feel::Lagrange<2,Feel::Scalar,Feel::Continuous,Feel::PointSetEquiSpaced,0>>,double,Feel::Periodicity<Feel::NoPeriodicity>,Feel::mortars<Feel::NoMortar>>,boost::shared_ptr<Feel::FunctionSpace<Mesh<Simplex<3>>,Feel::bases<Feel::Lagrange<2,Feel::Scalar,Feel::Continuous,Feel::PointSetEquiSpaced,0>>,double,Feel::Periodicity<Feel::NoPeriodicity>,Feel::mortars<Feel::NoMortar>>>,boost::python::bases<Feel::FunctionSpaceBase>>("FunctSpace",no_init);
+
+
+
+
+    def("newPch",Feel::Pch<2,0,PointSetEquiSpaced,Mesh<Simplex<3>>>); 
+
+
+    class_<Expr<GinacEx<2>>>("Expr",no_init);
+    def("soption",soption_w);
+    def("expr",expr_w);
+
+    class_<Expr<GinacMatrix<1,1,2>>>("ExprLapla",no_init);
+    class_<Expr<GinacMatrix<1,2,2>>>("ExprLapla",no_init);
+    
+
+    def("laplacian",laplacian_w<2>);
+
+
+
+    class_<elements_return_type>("Elements_return_type",no_init);
+    def("elements",elements_w<Mesh<Simplex<3>>>);
+
+    class_<boundaryelements_return_type>("Boundaryelements_return_type",no_init);
+    def("boundaryelements",boundaryelements_w<Mesh<Simplex<3>>>);
+
+    class_<boundaryfaces_return_type>("Boundaryfaces_return_type",no_init);
+    def("boundaryfaces",boundaryfaces_w<Mesh<Simplex<3>>>);
+
+    def("grad",grad_w<2,2>);
+
+    class_<integrate_return_type>("Integrate_return_type",no_init);
+    class_<integratebound_return_type>("Integratebound_return_type",no_init);
+    class_<integrategrad_return_type>("Integrategrad_return_type",no_init);
+    class_<integrateboundfaces_return_type>("Integrateboundfaces_return_type",no_init);
+    
+   
+    def("integrate",integrate_w);
+    def("integrate",integrate_w2);
+    def("integrate",integrate_w3);
+    def("integrate",integrate_w4);
+
+
+    class_<Eigen::Matrix<double,1,1,0,1,1>>("Matrix1",no_init);
+    class_<Eigen::Matrix<double,1,3,1,1,3>>("Matrix1",no_init);
+
+    def("evaluate",evaluate_w);
+    def("evaluate",evaluate_w2);
+    def("evaluate",evaluate_w3);
+    def("evaluate",evaluate_w4);
+
+
+    def("printSol",printMa1);
+    def("printSol",printMa2);
+    def("printSol",printMa3);
+    def("printSol",printMa4);
+
+    def("printExpr",printExpr1);
+    def("printExpr",printExpr2);
+
+}
+
