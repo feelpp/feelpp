@@ -4482,7 +4482,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 #if defined(FEELPP_HAS_HARTS)
     if ( boption(_name="parallel.cpu.enable") && soption(_name="parallel.cpu.impl").find("harts.") == 0 )
     {
-        PerfCounterMng<std::string> perf_mng ;
+        RunTimeSystem::PerfCounterMng<std::string> perf_mng ;
         perf_mng.init("total") ;
         perf_mng.start("total") ;
 
@@ -4502,6 +4502,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         typedef RunTimeSystem::TaskMng::Task<harts_context_type>    TaskType;
         typedef RunTimeSystem::TaskMng                              TaskMngType;
         typedef RunTimeSystem::TaskMng::ForkJoin<PTHDriverType>     PTHForkJoinTaskType;
+        typedef RunTimeSystem::ThreadEnv                            ThreadEnv;
 
         typedef RunTimeSystem::DataHandler                          DataHandlerType;
         typedef RunTimeSystem::DataMng                              DataMngType;
@@ -4608,7 +4609,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 
         threadEnv->SetAffinity(numaAffMng);
 
-        PTHDriverType forkjoin(nbThreads, threadEnv);
+        PTHDriverType forkjoin(threadEnv);
         PTHForkJoinTaskType* compFkTask = new PTHForkJoinTaskType(forkjoin, taskMng.getTasks());
         taskList.push_back(taskMng.addNew(compFkTask));
 
@@ -4698,7 +4699,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
     {
         // alternative: measure time with omp_get_wtime()
 #if defined(FEELPP_HAS_HARTS)
-        PerfCounterMng<std::string> perf_mng ;
+        RunTimeSystem::PerfCounterMng<std::string> perf_mng ;
         perf_mng.init("total") ;
         perf_mng.start("total") ;
 
@@ -4854,7 +4855,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
     if ( 1 )
     {
 #if defined(FEELPP_HAS_HARTS)
-        PerfCounterMng<std::string> perf_mng ;
+        RunTimeSystem::PerfCounterMng<std::string> perf_mng ;
         perf_mng.init("total") ;
         perf_mng.start("total") ;
 #endif
