@@ -209,8 +209,8 @@ void Exporterhdf5<MeshType, N>::write () const
                 std::cout << "numberOfTotalSteps            : " << __ts->numberOfTotalSteps () << std::endl ;
 
                 saveNodal (__step, __step->beginNodalScalar(), __step->endNodalScalar() ) ;
-                std::cout << "Pb : " << std::distance (__step->beginNodalVector (), __step->endNodalVector()) << std::endl ;
                 saveNodal (__step, __step->beginNodalVector(), __step->endNodalVector() ) ;
+                
                 saveElement (__step, __step->beginElementScalar(), __step->endElementScalar() ) ;
                 saveElement (__step, __step->beginElementVector(), __step->endElementVector() ) ;
 
@@ -222,7 +222,6 @@ void Exporterhdf5<MeshType, N>::write () const
         }
         ++__ts_it ;
     }
-
     close_xdmf_xml () ;
     M_meshOut.reset () ;
 }
@@ -263,18 +262,13 @@ void Exporterhdf5<MeshType, N>::writePoints () const
     bubbleSort (&M_uintBuffer[0], &M_realBuffer[0], M_maxNumPoints) ;
 
     for (size_type i = 0 ; i < M_maxNumPoints ; i ++) 
-    {
         M_newPointId[M_uintBuffer[i]] = i ;
-        //std::cout << M_newPointId[M_uintBuffer[i]] << std::endl ;
-    }
-
 
     hsize_t currentOffset[2] = {0, 0} ;
 
     M_HDF5.write ("point_coords", H5T_NATIVE_DOUBLE, currentCount, currentOffset, &M_realBuffer[0]) ;
     M_HDF5.write ("point_ids", H5T_NATIVE_LLONG, currentSpaceDims, currentOffset , &M_uintBuffer[0]) ;
 
-    
     M_HDF5.closeTable("point_coords") ;
     M_HDF5.closeTable("point_ids") ;    
 
@@ -320,6 +314,7 @@ void Exporterhdf5<MeshType, N>::writeElements () const
     
     size_type k = 0 ;
     size_type i = 0 ;
+    M_newElementId.clear () ;
     for (p_it = M_meshOut->beginParts (); k < M_numParts ;  p_it++ , k++)
     {
         auto elt_it = M_meshOut->beginElementWithMarker (p_it->first) ;
@@ -329,10 +324,7 @@ void Exporterhdf5<MeshType, N>::writeElements () const
             idsBuffer[i] = elt_it->id () ;
             M_newElementId[idsBuffer[i]] = i ;
             for ( size_type j = 0 ; j < M_elementNodes ; j ++ )
-            {
-               //M_uintBuffer[j + M_elementNodes*i] = elt_it->point(j).id() -1 ; 
                M_uintBuffer[j + M_elementNodes*i] = M_newPointId[elt_it->point(j).id()]  ; 
-            }
         }
     }
 
@@ -402,31 +394,21 @@ void Exporterhdf5<MeshType, N>::saveNodal ( typename timeset_type::step_ptrtype 
         for ( ; p_it != p_en ; p_it++) 
         {
 
-            auto r = markedelements (M_meshOut, p_it->first, EntityProcessType::ALL) ;
+            auto r = markedelements (M_meshOut, p_it->first, EntityProcessType::LOCAL_ONLY) ;
             auto elt_it = r.template get<1>() ;
             auto elt_en = r.template get<2>() ;
 
             Feel::detail::MeshPoints<float> mp ( __step->mesh().get(), elt_it, elt_en, true, true, true ) ;
 
             size_type e = 0 ; 
+            
             for ( ; elt_it != elt_en ; ++elt_it )
             {
                 for ( uint16_type c = 0 ; c < nComponents ; ++c )
                 {
                     for ( uint16_type p = 0 ; p < __step->mesh()->numLocalVertices() ; ++p, ++e )
                     {
-                        /*
-                        if (M_newPointId.find(elt_it->get().point(p).id()) == M_newPointId.end())
-                        {
-                            std::cout << "elt_it : " << elt_it->get().point(p).id() << std::endl ;
-                            exit (0) ;
-                        }
-                        */
-                        size_type ptid = mp.old2new[elt_it->get().point(p).id()] -1 ;
-                        
-                        
-                        //std::cout << "elt_it->get().point("<<p<<").id() : " << elt_it->get().point(p).id() << std::endl ;
-                        //std::cout << "M_newPointId[elt_it->get().point("<<p<<").id()] : " << M_newPointId[elt_it->get().point(p).id()] << std::endl ;
+                        size_type  ptid = M_newPointId[elt_it->get().point(p).id()]  ;
                         size_type global_node_id = mp.ids.size()*c + ptid ;
                         if ( c < __var->second.nComponents ) 
                         {
