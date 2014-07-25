@@ -1,0 +1,57 @@
+#!/usr/bin/python
+
+# to place where the libPyInteg is created
+
+from mpi4py import MPI
+import libPyInteg
+import sys
+
+
+env=libPyInteg.Environment(sys.argv)
+w=libPyInteg.Environment.worldComm()
+
+s=libPyInteg.Simplex()
+m=libPyInteg.Mesh.new()
+l=libPyInteg.loadMesh(m)
+
+p=libPyInteg.newPch(l,False)
+
+g=libPyInteg.expr(libPyInteg.soption("functions.g"))
+
+#lapla=libPyInteg.laplacian(g)
+gradg=libPyInteg.grad(g)
+
+elem=libPyInteg.elements(l)
+belem=libPyInteg.boundaryelements(l)
+bfaces=libPyInteg.boundaryfaces(l)
+
+integra=libPyInteg.integrate(elem,g)
+integra1=libPyInteg.integrate(belem,g)
+integra2=libPyInteg.integrate(elem,gradg)
+integra3=libPyInteg.integrate(bfaces,g)
+
+sol=libPyInteg.evaluate(integra)
+sol1=libPyInteg.evaluate(integra1)
+sol2=libPyInteg.evaluate(integra2)
+sol3=libPyInteg.evaluate(integra3)
+
+libPyInteg.printExpr(g)
+print ("elements:" ) 
+libPyInteg.printSol(sol)
+
+print ("boundaryfaces:" ) 
+libPyInteg.printSol(sol3)
+
+print ("boundaryelements:" ) 
+libPyInteg.printSol(sol1)
+
+libPyInteg.printExpr(gradg)
+print ("elements:" ) 
+libPyInteg.printSol(sol2)
+
+x=libPyInteg.export(l);
+
+
+
+
+print "Thomas"
