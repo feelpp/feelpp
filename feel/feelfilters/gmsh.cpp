@@ -29,7 +29,7 @@
    \date 2005-02-10
  */
 #include <cstdlib>
-
+#include <cstdio>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -54,6 +54,10 @@
 #include <feel/feelfilters/gmshhypercubedomain.hpp>
 #include <feel/feelfilters/gmshellipsoiddomain.hpp>
 
+//#if !defined( FEELPP_HAS_STDIO_FMEMOPEN )
+#include <feel/feelcore/fmemopen.h>
+//#endif
+
 #if defined(FEELPP_HAS_GPERFTOOLS)
 #include <gperftools/heap-checker.h>
 #endif /* FEELPP_HAS_GPERFTOOLS */
@@ -63,11 +67,24 @@
 #include <GmshConfig.h>
 #include <Gmsh.h>
 #include <GModel.h>
+#include <OpenFile.h>
 #include <GmshDefines.h>
 #include <Context.h>
 //#include <meshPartition.h>
 int PartitionMesh( GModel *const model, meshPartitionOptions &options );
 #endif
+
+int gmsh_yyparse();
+int gmsh_yylex();
+void gmsh_yyflush();
+int gmsh_yy_scan_string ( const char *str );
+extern std::string gmsh_yyname;
+extern int gmsh_yylineno;
+extern FILE* gmsh_yyin;
+extern int gmsh_yyerrorstate;
+extern int gmsh_yyviewindex;
+extern char *gmsh_yytext;
+void PrintParserSymbols(bool help, std::vector<std::string> &vec);
 
 namespace Feel
 {
@@ -79,6 +96,54 @@ const GMSH_PARTITIONER GMSH_PARTITIONER_DEFAULT = GMSH_PARTITIONER_METIS;
 #else
 const GMSH_PARTITIONER GMSH_PARTITIONER_DEFAULT = GMSH_PARTITIONER_CHACO;
 #endif
+
+
+int
+ParseGeoFromMemory( GModel* model, std::string const& name, std::string const& geo  )
+{
+    //YY_BUFFER_STATE temp = YY_CURRENT_BUFFER;
+    std::cout << "geo:" << geo << std::endl;
+    gmsh_yyname = name;
+    gmsh_yylineno = 1;
+    gmsh_yyerrorstate = 0;
+    gmsh_yyviewindex = 0;
+    gmsh_yyin = fmemopen( (void*)geo.c_str(), geo.size()*sizeof(char), "r");
+
+#if 1
+      while(!feof(gmsh_yyin)){
+        gmsh_yyparse();
+        if(gmsh_yyerrorstate > 20){
+      if(gmsh_yyerrorstate != 999) // 999 is a volontary exit
+        std::cerr << "Too many errors: aborting parser...\n";
+      gmsh_yyflush();
+      break;
+    }
+    }
+    fclose(gmsh_yyin);
+    std::vector<std::string> vec;
+    PrintParserSymbols( true, vec );
+    for( auto l : vec )
+    {
+
+            std::cout << l << "\n";
+    }
+    //yy_delete_buffer(YY_CURRENT_BUFFER);
+    //yy_switch_to_buffer(temp);
+#else
+    int N=128;
+    char* buf = new char[N+1];
+    
+    char c;
+    while( (c = fgetc(gmsh_yyin)) != EOF)
+    {
+        std::cout << c;
+    }
+#endif
+
+    int imported = model->importGEOInternals();
+    std::cout << "Imported: " << imported << std::endl;
+    return imported;
+}
 
 Gmsh::Gmsh( int nDim, int nOrder, WorldComm const& worldComm )
     :
@@ -379,11 +444,21 @@ Gmsh::generate( std::string const& __name, std::string const& __geo, bool const 
     bool generated = false;
     if ( !mpi::environment::initialized() || ( mpi::environment::initialized()  && this->worldComm().globalRank() == this->worldComm().masterRank() ) )
     {
+        GModel* newGmshModel = new GModel();
+        newGmshModel->setName( __name );
+#if !defined( __APPLE__ )
+        newGmshModel->setFileName( __name );
+#endif
+
+
         LOG(INFO) << "Generate mesh on processor " <<  this->worldComm().globalRank() << "/" << this->worldComm().globalSize() << "\n";
         bool geochanged = generateGeo( __name,__geo,modifGeo );
         std::ostringstream __geoname;
         __geoname << __name << ".geo";
 
+        newGmshModel->readGEO( __geoname.str() );
+        //ParseGeoFromMemory( GModel::current(), __name, __geo );
+        newGmshModel->writeGEO( __name, true, true );
         // generate mesh
         std::ostringstream __meshname;
         __meshname << __name << ".msh";
@@ -401,6 +476,7 @@ Gmsh::generate( std::string const& __name, std::string const& __geo, bool const 
             generated = true;
         }
         fname=__meshname.str();
+        delete newGmshModel;
     }
     google::FlushLogFiles(INFO);
 
@@ -587,12 +663,6 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
 
         CTX::instance()->mesh.mshFilePartitioned = M_partition_file;
 
-        GModel* newGmshModel = new GModel();
-        GModel::current()->setName( _name );
-#if !defined( __APPLE__ )
-        GModel::current()->setFileName( _name );
-#endif
-        GModel::current()->readGEO( _name+".geo" );
         GModel::current()->mesh( dim );
         LOG(INFO) << "Mesh refinement levels : " << M_refine_levels << "\n";
         for( int l = 0; l < M_refine_levels; ++l )
@@ -608,9 +678,8 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
         CTX::instance()->mesh.binary = M_format;
         LOG(INFO) << "Writing GMSH file " << _name+".msh" << " in " << (M_format?"binary":"ascii") << " format\n";
         GModel::current()->writeMSH( _name+".msh", 2.2, CTX::instance()->mesh.binary );
-        newGmshModel->deleteMesh();
-        newGmshModel->destroy();
-        delete newGmshModel;
+        GModel::current()->deleteMesh();
+        GModel::current()->destroy();
     }
 #endif
 #else
