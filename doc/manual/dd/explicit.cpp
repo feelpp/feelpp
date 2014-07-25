@@ -61,7 +61,7 @@ Explicit<Dim,Order>::run()
     auto commSelf = Environment::worldComm().subWorldCommSeq();
 
     auto mesh = createGMSHMesh( _mesh=new Mesh<Simplex<Dim>>(commSelf),
-                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
+                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER|MESH_PROPAGATE_MARKERS,
                                 _desc=domain( _name=(boost::format( "domain-%1%" ) % commWorld.globalRank() ).str() ,
                                               _addmidpoint=false,
                                               _usenames=false,
