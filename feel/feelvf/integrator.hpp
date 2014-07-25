@@ -4687,7 +4687,6 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                   << perf_mng.getValueInSeconds("total") << " (" << perf_mng.getValueInSeconds("init") << " ("
                   << perf_mng.getValueInSeconds("init0") << ", " << perf_mng.getValueInSeconds("init1") << ", " << perf_mng.getValueInSeconds("init2") << ") "
                   << ", " << perf_mng.getValueInSeconds("comp") << ")" << std::endl;
-        std::cout << "integrating over elements done in " << __timer.elapsed() << "s\n";
 
         DLOG(INFO) << "integrating over elements done in " << __timer.elapsed() << "s\n";
         return res;

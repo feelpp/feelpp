@@ -1453,6 +1453,77 @@ Environment::masterWorldComm( int n )
     return S_worldcomm->masterWorld(n);
 }
 
+#if defined(FEELPP_HAS_HARTS)
+void Environment::bindToCore( unsigned int id )
+{
+    int err;
+    hwloc_topology_t topology;
+    hwloc_cpuset_t set;
+    hwloc_obj_t coren;
+
+    /* init and load hwloc topology for the current node */
+    hwloc_topology_init(&topology);
+    hwloc_topology_load(topology);
+
+    /* get the n'th core object */
+    coren = hwloc_get_obj_by_type(topology, HWLOC_OBJ_CORE, id);
+    /* get the cpu mask of the nth core */
+    set = hwloc_bitmap_dup(coren->cpuset);
+    /* bind the process thread to this core */
+    err = hwloc_set_cpubind(topology, set, 0);
+
+    /* free memory */
+    hwloc_bitmap_free(set);
+    hwloc_topology_destroy(topology);
+}
+
+void Environment::writeCPUData(std::string fname)
+{
+    hwloc_topology_t topology;
+    hwloc_cpuset_t set;
+    char * a;
+    char buf[256];
+    unsigned int depth;
+
+    std::ostringstream oss;
+
+    /* init and load hwloc topology for the current node */
+    hwloc_topology_init(&topology);
+    hwloc_topology_load(topology);
+
+    /* get a cpuset object */
+    set = hwloc_bitmap_alloc();
+
+    /* Get the cpu thread affinity info of the current process/thread */
+    hwloc_get_cpubind(topology, set, 0);
+    hwloc_bitmap_asprintf(&a, set);
+    oss << a << "|";
+    free(a);
+
+    /* Get the latest core location of the current process/thread */
+    hwloc_get_last_cpu_location(topology, set, 0);
+    hwloc_bitmap_asprintf(&a, set);
+    oss << a << ";";
+    free(a);
+
+    /* free memory */
+    hwloc_bitmap_free(set);
+    hwloc_topology_destroy(topology);
+
+    /* Write the gathered information with MPIIO */
+    MPI_File fh;
+    MPI_Status status;
+    if(fs::exists(fname))
+    {
+        MPI_File_delete(const_cast<char *>(fname.c_str()), MPI_INFO_NULL);
+    }
+
+    MPI_File_open( Environment::worldComm().comm(), const_cast<char *>(fname.c_str()), MPI_MODE_RDWR | MPI_MODE_CREATE | MPI_MODE_APPEND , MPI_INFO_NULL, &fh );
+    MPI_File_write_ordered( fh, const_cast<char *>(oss.str().c_str()), oss.str().size(), MPI_CHAR, &status );
+
+    MPI_File_close( &fh );
+}
+#endif
 
 MemoryUsage
 Environment::logMemoryUsage( std::string const& message )
