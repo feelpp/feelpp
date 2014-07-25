@@ -125,7 +125,21 @@ if ( FEELPP_ENABLE_TBB )
   ENDIF (TBB_FOUND )
 endif()
 
-FIND_PACKAGE(OpenMP)
+# only activate OpenMP for gcc
+# (clang support should be ok by 3.5)
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    OPTION( FEELPP_ENABLE_OPENMP "Enable OpenMP" OFF )
+    if ( FEELPP_ENABLE_OPENMP )
+        FIND_PACKAGE(OpenMP)
+
+        if(OPENMP_FOUND)
+            set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}" )
+            set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}" )
+            SET( FEELPP_HAS_OPENMP 1 )
+            SET( FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} OpenMP" )
+        endif()
+    endif()
+endif()
 
 # on APPLE enfore the use of macports openmpi version
 if ( APPLE )
@@ -148,43 +162,37 @@ IF ( MPI_FOUND )
   INCLUDE_DIRECTORIES(${MPI_INCLUDE_PATH})
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Mpi" )
 
-  OPTION(FEELPP_USE_MPIIO "Enable support for MPI-IO (default auto detect)" ON)
-  IF (FEELPP_USE_MPIIO)
-    #TRY_COMPILE(MPIIO_SUCCESS ${CMAKE_CURRENT_BINARY_DIR}/tryCompileMPIIO
-      #${CMAKE_SOURCE_DIR}/cmake/codes/try-mpiio.cpp
-      #LINK_LIBRARIES ${FEELPP_LIBRARIES} )
-      set(CMAKE_REQUIRED_LIBRARIES_save ${CMAKE_REQUIRED_LIBRARIES})
-      set(CMAKE_REQUIRED_LIBRARIES ${MPI_LIBRARIES})
-      set(CMAKE_REQUIRED_INCLUDES_save ${CMAKE_REQUIRED_INCLUDES})
-      set(CMAKE_REQUIRED_INCLUDES ${MPI_INCLUDE_PATH})
-      CHECK_CXX_SOURCE_COMPILES(
-          "          
-          #include <mpi.h>
+  # Check for MPI IO Support
 
-          int main(int argc, char** argv)
-          {
-          MPI_File fh;
-          MPI_Status status;
-          MPI_Info info;
-          }
-          "
-          MPIIO_DETECTED)
-      set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES_save})
-      set(CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES_save})
+  #TRY_COMPILE(MPIIO_SUCCESS ${CMAKE_CURRENT_BINARY_DIR}/tryCompileMPIIO
+  #${CMAKE_SOURCE_DIR}/cmake/codes/try-mpiio.cpp
+  #LINK_LIBRARIES ${FEELPP_LIBRARIES} )
+  set(CMAKE_REQUIRED_LIBRARIES_save ${CMAKE_REQUIRED_LIBRARIES})
+  set(CMAKE_REQUIRED_LIBRARIES ${MPI_LIBRARIES})
+  set(CMAKE_REQUIRED_INCLUDES_save ${CMAKE_REQUIRED_INCLUDES})
+  set(CMAKE_REQUIRED_INCLUDES ${MPI_INCLUDE_PATH})
+  CHECK_CXX_SOURCE_COMPILES(
+      "
+      #include <mpi.h>
 
-    IF (MPIIO_DETECTED)
+      int main(int argc, char** argv)
+      {
+      MPI_File fh;
+      MPI_Status status;
+      MPI_Info info;
+      }
+      "
+      MPIIO_DETECTED)
+  set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES_save})
+  set(CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES_save})
+
+  IF (MPIIO_DETECTED)
       MESSAGE(STATUS "MPIIO detected and enabled.")
-    ELSE()
-        # Make the cmake process crash if we don't have MPI IO
-        # As it is required for exporting data
-        MESSAGE(FATAL_ERROR "MPIIO not detected and disabled.")
-      SET(FEELPP_USE_MPIIO FALSE)
-    ENDIF()
+      SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Mpi-IO" )
+      SET(FEELPP_HAS_MPIIO 1)
+  ELSE()
+      MESSAGE(WARNING "MPIIO not detected and disabled (Related features disable, e.g. Ensight Gold exporter).")
   ENDIF()
-ENDIF()
-IF (FEELPP_USE_MPIIO)
-  add_definitions(-DFEELPP_USE_MPIIO=1)
-  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Mpi-IO" )
 ENDIF()
 
 
@@ -319,13 +327,33 @@ INCLUDE_DIRECTORIES(BEFORE contrib/)
 #ENDIF()
 
 add_definitions(-DHAVE_LIBDL)
-# cln and ginac
+
 if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/contrib )
+
+  #
+  # cln and ginac
+  #
   add_definitions(-DIN_GINAC -DHAVE_LIBDL)
   include_directories(${FEELPP_BUILD_DIR}/contrib/cln/include ${FEELPP_SOURCE_DIR}/contrib/ginac/ ${FEELPP_BUILD_DIR}/contrib/ginac/ ${FEELPP_SOURCE_DIR}/contrib/ginac/ginac ${FEELPP_BUILD_DIR}/contrib/ginac/ginac )
   SET(FEELPP_LIBRARIES feelpp_ginac ${CLN_LIBRARIES} ${FEELPP_LIBRARIES} ${CMAKE_DL_LIBS} )
   set(DL_LIBS ${CMAKE_DL_LIBS})
   add_subdirectory(contrib/ginac)
+
+endif()
+
+#
+# nlopt
+#
+find_package(NLOpt)
+if ( NLOPT_FOUND )
+  include_directories(${NLOPT_INCLUDE_DIR})
+  SET(FEELPP_LIBRARIES ${NLOPT_LIBRARY} ${FEELPP_LIBRARIES} )
+  message(STATUS "NLOpt: ${NLOPT_LIBRARY}" )
+  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} NLOpt" )
+  SET(FEELPP_HAS_NLOPT 1)
+else()
+  #add_subdirectory(contrib/nlopt)
+  #SET(FEELPP_LIBRARIES feelpp_nlopt ${FEELPP_LIBRARIES} )
 endif()
 
 #
@@ -716,7 +744,7 @@ if ( VTK_FOUND )
   if ( NOT FEELPP_ENABLE_OPENGL )
     SET(VTK_LIBRARIES "-lvtkRendering -lvtkGraphics -lvtkImaging  -lvtkFiltering -lvtkCommon -lvtksys" )
   endif()
-  MESSAGE(STATUS "Use VTK_LIBRARIES ${VTK_LIBRARIES}")
+  MESSAGE(STATUS "Use VTK_LIBRARIES")# ${VTK_LIBRARIES}")
   INCLUDE_DIRECTORIES(${VTK_INCLUDE_DIRS})
   MARK_AS_ADVANCED( VTK_DIR )
   SET(FEELPP_LIBRARIES ${VTK_LIBRARIES} ${FEELPP_LIBRARIES})
@@ -835,7 +863,7 @@ else()
     ${FEELPP_SOURCE_DIR}/
     ${FEELPP_SOURCE_DIR}/contrib/gmm/include
     )
-  SET(FEELPP_LIBRARIES feelpp  ${FEELPP_LIBRARIES})
+	#SET(FEELPP_LIBRARIES feelpp  ${FEELPP_LIBRARIES})
 endif()
 
 

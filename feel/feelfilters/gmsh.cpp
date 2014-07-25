@@ -7,6 +7,7 @@
 
   Copyright (C) 2005,2006 EPFL
   Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008-2014 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -253,7 +254,7 @@ Gmsh::retrieveGeoParameters( std::string const& __geo ) const
     // (TODO should strip C/CPP comments)
     // Regex for a `keyword=value;` expression. We capture only [keyword]
     // and the [value] (ex : `h_2=-1,3e+4`).
-    boost::regex kvreg("([[:word:]]*)[[:blank:]]*=[[:blank:]]*([+-]?(?:(?:(?:[[:digit:]]*\\.)?[[:digit:]]*(?:[eE][+-]?[[:digit:]]+)?)));" );
+    boost::regex kvreg("([[:word:]]+)[[:blank:]]*=[[:blank:]]*([+-]?(?:(?:(?:[[:digit:]]*\\.)?[[:digit:]]*(?:[eE][+-]?[[:digit:]]+)?)));" );
     boost::sregex_token_iterator iRex( __geo.begin(), __geo.end(), kvreg, 0 );
     boost::sregex_token_iterator end;
 

@@ -28,6 +28,7 @@
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/pdh.hpp>
+#include <feel/feeldiscr/pdhv.hpp>
 #include <feel/feeldiscr/odh.hpp>
 #include <feel/feeldiscr/moch.hpp>
 #include <feel/feeldiscr/thch.hpp>

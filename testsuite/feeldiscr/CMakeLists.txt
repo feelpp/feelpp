@@ -39,7 +39,7 @@ feelpp_add_test( normal3d )
 feelpp_add_test( on_inside GEO test_on_inside.geo)
 
 feelpp_add_test( operatorlinearfree )
-feelpp_add_test( project )
+feelpp_add_test( project NO_MPI_TEST)
 feelpp_add_test( spaces )
 feelpp_add_test( stencil )
 feelpp_add_test( submesh )

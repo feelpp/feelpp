@@ -2318,7 +2318,11 @@ public:
 
         value_type max() const
         {
-            return super::max();
+            return this->max( true );
+        }
+        value_type max( bool parallel ) const
+        {
+            return super::max( parallel );
         }
 
         template < typename p0_space_type >
@@ -2329,7 +2333,11 @@ public:
 
         value_type min() const
         {
-            return super::min();
+            return this->min( true );
+        }
+        value_type min( bool parallel ) const
+        {
+            return super::min( parallel );
         }
 
         template < typename p0_space_type >
@@ -3963,7 +3971,8 @@ public:
     {
         element_type u( this->shared_from_this(), name );
         bool addExtendedElt = this->dof()->buildDofTableMPIExtended();
-        u.on( _range=elements(M_mesh,addExtendedElt), _expr=e );
+        EntityProcessType entityProcess = (addExtendedElt)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
+        u.on( _range=elements(M_mesh,entityProcess), _expr=e );
         return u;
     }
 
@@ -4036,7 +4045,7 @@ public:
     wireBasket()  const
     {
         //return trace( mpl::greater<mpl::int_<nDim>,mpl::int_<1> >::type() )
-        return trace_trace_functionspace_type::New( mesh()->wireBasket( markededges( mesh(),"WireBasket" ) ) );
+        return trace_trace_functionspace_type::New( _mesh=mesh()->wireBasket( markededges( mesh(),"WireBasket" ) ), _worldscomm=this->worldsComm() );
     }
     template<typename RangeT>
     trace_trace_functionspace_ptrtype
