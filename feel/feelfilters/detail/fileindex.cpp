@@ -62,13 +62,13 @@ void FileIndex::read( MPI_File fh )
         MPI_File_seek_shared(fh, -80-sizeof(int64_type), MPI_SEEK_END);
 
         int64_type addr;
-        MPI_File_read_shared(fh, &addr, 1, MPI_INT64_T, &status);
+        MPI_File_read_shared(fh, &addr, 1, MPI_LONG_INT, &status);
         this->fileblock_n_steps = addr;
 
         MPI_File_seek_shared(fh, addr, MPI_SEEK_SET);
 
         int32_type n;
-        MPI_File_read_shared(fh, &n, 1, MPI_INT32_T, &status);
+        MPI_File_read_shared(fh, &n, 1, MPI_INT, &status);
         this->n_steps = n;
         LOG(INFO) << "read in FILE_INDEX number of steps: " << this->n_steps;
         // need some check here regarding the number of time steps probably
@@ -78,12 +78,12 @@ void FileIndex::read( MPI_File fh )
         for( int i = 0; i < n_steps; ++i )
         {
             int64_type fb;
-            MPI_File_read_shared(fh, &fb, 1, MPI_INT64_T, &status);
+            MPI_File_read_shared(fh, &fb, 1, MPI_LONG_INT, &status);
             this->fileblocks.push_back( fb );
         }
 
         int32_type flag;
-        MPI_File_read_shared(fh, &flag, 1, MPI_INT32_T, &status);
+        MPI_File_read_shared(fh, &flag, 1, MPI_INT, &status);
         CHECK( flag == 0 ) << "invalid FILE_INDEX, flag must be equal to 0";
         LOG(INFO) << "Done reading FILE_INDEX";
     }
@@ -117,23 +117,23 @@ void FileIndex::write( MPI_File fh )
     int32_type n = this->n_steps;
 
     // write number of steps
-    MPI_File_write_ordered(fh, &n, size, MPI_INT32_T, &status);
+    MPI_File_write_ordered(fh, &n, size, MPI_INT, &status);
     LOG(INFO) << "Writing "<< this->n_steps << " fileblocks in FILE_INDEX";
     LOG(INFO) << "Writing "<< this->fileblocks.size() << " fileblocks in FILE_INDEX";
 
     // write fileblocks stored
     for( int64_type fb : this->fileblocks )
     {
-        MPI_File_write_ordered(fh, &fb, size, MPI_INT64_T, &status);
+        MPI_File_write_ordered(fh, &fb, size, MPI_LONG_INT, &status);
     }
 
     LOG(INFO) << "Writing flag==0 in FILE_INDEX";
     // write 32bit integer flag (set to 0)
     int32_type flag = 0;
-    MPI_File_write_ordered(fh, &flag, size, MPI_INT32_T, &status);
+    MPI_File_write_ordered(fh, &flag, size, MPI_INT, &status);
     
     // write position of fileblock for number of steps
-    MPI_File_write_ordered(fh, &fb_n_step, size, MPI_INT64_T, &status);
+    MPI_File_write_ordered(fh, &fb_n_step, size, MPI_LONG_INT, &status);
 
     // write string FILE_INDEX
     if( Environment::isMasterRank() ) 

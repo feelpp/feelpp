@@ -3,7 +3,7 @@
 #  Author(s): Christophe Prud'homme <prudhomme@unistra.fr>
 #       Date: 2013-07-22
 #
-#  Copyright (C) 2013
+#  Copyright (C) 2013-2014 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
