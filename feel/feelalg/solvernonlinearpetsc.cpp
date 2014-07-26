@@ -833,8 +833,7 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
 #else
     Vec res;
     SNESGetFunction( M_snes,&res,0,0 );
-    double norm;
-    VecNorm( res, NORM_2, &norm );
+    VecNorm( res, NORM_2, &valfnorm );
 #endif
 
     for ( int i=0; i<50/*n_iterations+1*/; i++ )
