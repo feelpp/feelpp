@@ -304,7 +304,7 @@ extern "C"
             {
 #if PETSC_VERSION_LESS_THAN(3,5,0)
                 MatSetValue( *jac, i, j, jj( i, j ), INSERT_VALUES );
-#esle
+#else
                 MatSetValue( jac, i, j, jj( i, j ), INSERT_VALUES );
 #endif
             }
