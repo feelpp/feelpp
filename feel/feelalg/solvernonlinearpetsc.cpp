@@ -155,7 +155,11 @@ extern "C"
     //---------------------------------------------------------------
     // this function is called by PETSc to evaluate the Jacobian at X
     PetscErrorCode
+#if PETSC_VERSION_LESS_THAN(3,5,0)
     __feel_petsc_snes_jacobian ( SNES snes, Vec x, Mat *jac, Mat *pc, MatStructure *msflag, void *ctx )
+#else
+    __feel_petsc_snes_jacobian ( SNES snes, Vec x, Mat jac, Mat pc, void *ctx )
+#endif
     {
         int ierr=0;
         assert ( ctx != NULL );
@@ -168,13 +172,21 @@ extern "C"
 
         if ( solver->comm().size()>1 )
         {
+#if PETSC_VERSION_LESS_THAN(3,5,0)
             Jac.reset( new Feel::MatrixPetscMPI<double>( *jac,solver->mapRowPtr(),solver->mapColPtr() ) );
+#else
+            Jac.reset( new Feel::MatrixPetscMPI<double>( jac,solver->mapRowPtr(),solver->mapColPtr() ) );
+#endif
             X_global.reset( new Feel::VectorPetscMPI<double>( x,solver->mapRowPtr() ) );
         }
 
         else
         {
+#if PETSC_VERSION_LESS_THAN(3,5,0)
             Jac.reset( new Feel::MatrixPetsc<double>( *jac,solver->mapRowPtr(),solver->mapColPtr() ) );
+#else
+            Jac.reset( new Feel::MatrixPetsc<double>( jac,solver->mapRowPtr(),solver->mapColPtr() ) );
+#endif
             X_global.reset( new Feel::VectorPetsc<double>( x,solver->mapColPtr() ) );
         }
 
@@ -253,7 +265,11 @@ extern "C"
     //---------------------------------------------------------------
     // this function is called by PETSc to evaluate the Jacobian at X
     PetscErrorCode
+#if PETSC_VERSION_LESS_THAN(3,5,0)
     __feel_petsc_snes_dense_jacobian ( SNES snes, Vec x, Mat *jac, Mat *pc, MatStructure *msflag, void *ctx )
+#else
+    __feel_petsc_snes_dense_jacobian ( SNES snes, Vec x, Mat jac, Mat pc, void *ctx )
+#endif
     {
         int ierr=0;
         assert ( ctx != NULL );
@@ -272,7 +288,11 @@ extern "C"
 
         int size1;
         int size2;
+#if PETSC_VERSION_LESS_THAN(3,5,0)
         MatGetSize( *jac, &size1, &size2 );
+#else
+        MatGetSize( jac, &size1, &size2 );
+#endif
         boost::numeric::ublas::matrix<double> jj( size1, size2 );
 
         if ( solver->dense_jacobian != NULL ) solver->dense_jacobian ( xx, jj );
@@ -282,19 +302,29 @@ extern "C"
         for ( int i = 0; i < size1; ++i )
             for ( int j = 0; j < size2; ++j )
             {
+#if PETSC_VERSION_LESS_THAN(3,5,0)
                 MatSetValue( *jac, i, j, jj( i, j ), INSERT_VALUES );
-
+#esle
+                MatSetValue( jac, i, j, jj( i, j ), INSERT_VALUES );
+#endif
             }
 
         /*
           Assemble matrix
         */
+#if PETSC_VERSION_LESS_THAN(3,5,0)
         MatAssemblyBegin( *jac,MAT_FINAL_ASSEMBLY );
         MatAssemblyEnd( *jac,MAT_FINAL_ASSEMBLY );
+#else
+        MatAssemblyBegin( jac,MAT_FINAL_ASSEMBLY );
+        MatAssemblyEnd( jac,MAT_FINAL_ASSEMBLY );
+#endif
 
         VecRestoreArray( x, &xa );
 
+#if PETSC_VERSION_LESS_THAN(3,5,0)
         *msflag = MatStructure::SAME_NONZERO_PATTERN;
+#endif
 
         return ierr;
     }
@@ -339,7 +369,11 @@ extern "C"
     }
 
     PetscErrorCode
+#if PETSC_VERSION_LESS_THAN(3,5,0)
     __feel_petsc_snes_dense_jacobian_eigen ( SNES snes, Vec x, Mat *jac, Mat *pc, MatStructure *msflag, void *ctx )
+#else
+    __feel_petsc_snes_dense_jacobian_eigen ( SNES snes, Vec x, Mat jac, Mat pc, void *ctx )
+#endif
     {
         int ierr=0;
 
@@ -358,14 +392,20 @@ extern "C"
 
         int size1;
         int size2;
+#if PETSC_VERSION_LESS_THAN(3,5,0)
         MatGetSize( *jac, &size1, &size2 );
+#else
+        MatGetSize( jac, &size1, &size2 );
+#endif
 
         PetscScalar *ja;
 
 #if PETSC_VERSION_LESS_THAN(3,4,0)
         MatGetArray( *jac, &ja );
-#else
+#elif PETSC_VERSION_LESS_THAN(3,5,0)
         MatDenseGetArray( *jac, &ja );
+#else
+        MatDenseGetArray( jac, &ja );
 #endif
 
         int jac_size = size1*size2;
@@ -382,19 +422,26 @@ extern "C"
         VecRestoreArray( x, &xa );
 #if PETSC_VERSION_LESS_THAN(3,4,0)
         MatRestoreArray(*jac, &ja);
-#else
+#elif PETSC_VERSION_LESS_THAN(3,5,0)
         MatDenseRestoreArray(*jac, &ja);
+#else
+        MatDenseRestoreArray(jac, &ja);
 #endif
 
         /*
           Assemble matrix
         */
+#if PETSC_VERSION_LESS_THAN(3,5,0)
         MatAssemblyBegin( *jac,MAT_FINAL_ASSEMBLY );
         MatAssemblyEnd( *jac,MAT_FINAL_ASSEMBLY );
+#else
+        MatAssemblyBegin( jac,MAT_FINAL_ASSEMBLY );
+        MatAssemblyEnd( jac,MAT_FINAL_ASSEMBLY );
+#endif
 
-
+#if PETSC_VERSION_LESS_THAN(3,5,0)
         *msflag = MatStructure::SAME_NONZERO_PATTERN;
-
+#endif
 
         return ierr;
     }
@@ -523,7 +570,11 @@ void SolverNonLinearPetsc<T>::init ()
             //Shell Your method, often used as a (nonlinear) preconditioner
         case NSHELL: check( SNESSetType( M_snes, SNESSHELL ) ); break;
             //GS Nonlinear Gauss-Seidel sweeps
+#if PETSC_VERSION_LESS_THAN(3,5,0)
         case GS: check( SNESSetType( M_snes, SNESGS ) ); break;
+#else
+        case GS: check( SNESSetType( M_snes, SNESNGS ) ); break;
+#endif
             //NCG Nonlinear Conjugate Gradients
         case NCG: check( SNESSetType( M_snes, SNESNCG ) ); break;
             //FAS Full approximation scheme (nonlinear multigrid)
@@ -703,11 +754,19 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     ierr = SNESSetFunction ( M_snes, r->vec(), __feel_petsc_snes_residual, this );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
+#if PETSC_VERSION_LESS_THAN(3,5,0)
     ierr = SNESSetJacobian ( M_snes, jac->mat(), jac->mat(), __feel_petsc_snes_jacobian, this );
+#else
+    ierr = SNESSetJacobian ( M_snes, jac->mat(), jac->mat(), &__feel_petsc_snes_jacobian, this );
+#endif
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
+#if PETSC_VERSION_LESS_THAN(3,5,0)
     ierr = KSPSetOperators( M_ksp, jac->mat(), jac->mat(),
                             PetscGetMatStructureEnum(this->precMatrixStructure()) );
+#else
+    ierr = KSPSetOperators( M_ksp, jac->mat(), jac->mat() );
+#endif
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
     ierr = KSPSetTolerances ( M_ksp,
@@ -768,8 +827,12 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     CHKERRABORT( this->worldComm().globalComm(),ierr );
     LOG(INFO) << "[SolverNonLinearPetsc] number of nonlinear iterations = " << n_iterations << "\n";
 
+#if PETSC_VERSION_LESS_THAN(3,5,0)
     ierr = SNESGetFunctionNorm( M_snes,&valfnorm );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
+#else
+#error To do
+#endif
 
     for ( int i=0; i<50/*n_iterations+1*/; i++ )
     {
@@ -854,7 +917,11 @@ SolverNonLinearPetsc<T>::solve ( dense_matrix_type&  jac_in,  // System Jacobian
     MatAssemblyEnd( petsc_j,MAT_FINAL_ASSEMBLY );
 
 
+#if PETSC_VERSION_LESS_THAN(3,5,0)
     ierr = SNESSetJacobian ( M_snes, petsc_j, petsc_j, __feel_petsc_snes_dense_jacobian, this );
+#else
+    ierr = SNESSetJacobian ( M_snes, petsc_j, petsc_j, &__feel_petsc_snes_dense_jacobian, this );
+#endif
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
 
@@ -964,7 +1031,11 @@ SolverNonLinearPetsc<T>::solve ( map_dense_matrix_type&  jac_in,  // System Jaco
     MatAssemblyEnd( petsc_j,MAT_FINAL_ASSEMBLY );
 
 
+#if PETSC_VERSION_LESS_THAN(3,5,0)
     ierr = SNESSetJacobian ( M_snes, petsc_j, petsc_j, __feel_petsc_snes_dense_jacobian_eigen, this );
+#else
+    ierr = SNESSetJacobian ( M_snes, petsc_j, petsc_j, &__feel_petsc_snes_dense_jacobian_eigen, this );
+#endif
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
 

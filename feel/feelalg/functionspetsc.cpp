@@ -269,7 +269,9 @@ PetscGetMatStructureEnum( Feel::MatrixStructure matStruc )
     {
     case Feel::SAME_NONZERO_PATTERN : return MatStructure::SAME_NONZERO_PATTERN;
     case Feel::DIFFERENT_NONZERO_PATTERN : return MatStructure::DIFFERENT_NONZERO_PATTERN;
+#if PETSC_VERSION_LESS_THAN(3,5,0)
     case Feel::SAME_PRECONDITIONER : return MatStructure::SAME_PRECONDITIONER;
+#endif
     case Feel::SUBSET_NONZERO_PATTERN : return MatStructure::SUBSET_NONZERO_PATTERN;
         //case Feel::INVALID_STRUCTURE :
     default : return MatStructure::DIFFERENT_NONZERO_PATTERN;
