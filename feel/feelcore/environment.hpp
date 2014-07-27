@@ -46,6 +46,11 @@
 #if defined ( FEELPP_HAS_PETSC_H )
 #include <petscsys.h>
 #endif
+
+#if defined(FEELPP_HAS_HARTS)
+#include <hwloc.h>
+#endif
+
 namespace Feel
 {
 namespace detail
@@ -310,6 +315,20 @@ public:
      */
     static void setWorldComm( WorldComm& worldcomm ) { S_worldcomm = worldcomm.shared_from_this(); }
 
+#if defined(FEELPP_HAS_HARTS)
+    /**
+     * Binds the current process/thread to the specified core.
+     * (Do it early in the application launch, otherwise you might end up accessing data "far away"
+     * from the new bound core, thus degrading performance)
+     */
+    static void bindToCore( unsigned int id );
+
+    /**
+     * Writes data about processor affinity and last location of the different processes/threads
+     * (last location is not guaranteed to be right, unles you bind the process to a core)
+     */
+    static void writeCPUData(std::string fname = "CPUData.dat");
+#endif
 
 
     //@}
