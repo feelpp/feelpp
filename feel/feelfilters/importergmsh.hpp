@@ -7,6 +7,7 @@
 
   Copyright (C) 2005,2006 EPFL
   Copyright (C) 2007,2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2009-2014 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -40,12 +41,31 @@
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelfilters/importer.hpp>
 #include <feel/feelfilters/gmshenums.hpp>
+#include <feel/feeltiming/tic.hpp>
 #include <boost/algorithm/string/trim.hpp>
 
-// Gmsh
+#if defined( FEELPP_HAS_GMSH_H )
+#include <GmshConfig.h>
+#include <Gmsh.h>
+#include <GModel.h>
+#include <OpenFile.h>
+#include <GmshDefines.h>
+#include <Context.h>
 #include <GModel.h>
 #include <MElement.h>
+#include <MVertex.h>
+#include <MEdge.h>
+#include <MPoint.h>
+#include <MLine.h>
+#include <MTriangle.h>
+#include <MQuadrangle.h>
+#endif
+// there is a macro called sign in Gmsh that conflicts with 
+// at least one member function sign() from DofTable.
+// hence we undefine the macro sign after including Gmsh headers
 #undef sign
+
+
 
 // from Gmsh
 void SwapBytes(char *array, int size, int n);
@@ -138,6 +158,33 @@ struct GMSHElement
         indices( _indices )
         {
             setPartition(worldcommrank,worldcommsize);
+        }
+    template<typename T>
+    GMSHElement( T* ele, int n, int elementary, int physical )
+        :
+        GMSHElement(n,
+                    ele->getTypeForMSH(),
+                    physical,
+                    elementary,
+                    1, // numpartition
+                    ele->getPartition(),
+                    std::vector<rank_type>(),
+                    0, 0, 0, // parent, dom1, dom2
+                    ele->getNumVerticesForMSH(),
+                    std::vector<int>( ele->getNumVerticesForMSH(), 0 ),
+                    0, 1
+                    )
+        {
+          std::vector<int> verts;
+          ele->getVerticesIdForMSH(verts);
+          indices = verts;
+#if 0
+          std::cout << "Adding element index " << n << " type " << type << " phys " << physical 
+                    << " elementary " << elementary << " np " << numPartitions << " part " << partition << " nverts " << verts.size() << std::endl;
+          std::cout << "   - ";          
+          std::for_each( verts.begin(), verts.end(), []( int v ) { std::cout << v << " "; } );
+          std::cout << "\n";
+#endif
         }
     void setPartition(rank_type worldcommrank, rank_type worldcommsize)
         {
@@ -385,6 +432,14 @@ public:
             M_respect_partition = r;
         }
 
+#if defined( FEELPP_HAS_GMSH_H)
+    /**
+     * @brief set the GMsh GModel object
+     * @param gmodel GMsh GModel object
+     */
+    void setGModel( GModel* gmodel ) { M_gmodel = gmodel; }
+#endif
+
     //@}
 
     /** @name  Methods
@@ -402,6 +457,11 @@ public:
 protected:
 
 private:
+    void readFromMemory( mesh_type* mesh );
+    void readFromFile( mesh_type* mesh );
+
+    void addVertices( mesh_type* mesh, Feel::detail::GMSHElement const& elt,
+                      std::map<int, Feel::detail::GMSHPoint > const& gmshpts );
 
     void addPoint( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel );
     void addPoint( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel, mpl::int_<1> );
@@ -442,6 +502,7 @@ private:
     bool M_respect_partition;
     //std::map<int,int> itoii;
     //std::vector<int> ptseen;
+    GModel* M_gmodel;
 
 };
 
@@ -490,9 +551,152 @@ ImporterGmsh<MeshType>::isElementOnProcessor( std::vector<int> const& tag ) cons
 }
 template<typename MeshType>
 void
+ImporterGmsh<MeshType>::addVertices( mesh_type* mesh, Feel::detail::GMSHElement const& elt,
+                                     std::map<int, Feel::detail::GMSHPoint > const& gmshpts )
+{
+    node_type coords( mesh_type::nRealDim );
+    // add the points associates to the element on the processor
+    for ( uint16_type p = 0; p < elt.numVertices; ++p )
+    {
+        int ptid = elt.indices[p];
+        // don't do anything if the point is already registered
+        if ( mesh->hasPoint( ptid ) )
+            continue;
+
+        auto const& gmshpt = gmshpts.find(ptid)->second;
+        for ( uint16_type j = 0; j < mesh_type::nRealDim; ++j )
+            coords[j] = gmshpt.x[j];
+
+        point_type pt( ptid, coords, gmshpt.onbdy );
+        pt.setProcessIdInPartition( this->worldComm().localRank() );
+        if ( gmshpt.parametric )
+        {
+            pt.setGDim( gmshpt.gdim );
+            pt.setGTag( gmshpt.gtag );
+
+            if ( gmshpt.gdim < 3 )
+            {
+                pt.setParametricCoordinates( gmshpt.uv[0], gmshpt.uv[1] );
+                mesh->setParametric( true );
+            }
+        }
+        mesh->addPoint( pt );
+    } // loop over local points
+}
+template<typename MeshType>
+void
 ImporterGmsh<MeshType>::visit( mesh_type* mesh )
 {
+    DVLOG(2) << "visit("  << mesh_type::nDim << "D ) starts\n";
+    if ( ( M_gmodel != 0 ) && ( boption("gmsh.in-memory") == true ) )
+        readFromMemory( mesh );
+    else
+        readFromFile( mesh );
 
+    mesh->setNumVertices( std::accumulate( M_n_vertices.begin(), M_n_vertices.end(), 0,
+                                           []( int lhs, std::pair<int,int> const& rhs )
+                                           {
+                                               return lhs+rhs.second;
+                                           } ) );
+    M_n_vertices.clear();
+}
+
+template<typename MeshType>
+void
+ImporterGmsh<MeshType>::readFromMemory( mesh_type* mesh )
+{
+    tic();
+    LOG(INFO) << "Reading Msh from memory ";
+    // get the number of vertices and index the vertices in a continuous
+    // sequence
+    bool saveAll=true;
+    bool saveSinglePartition=false;
+    int numVertices = M_gmodel->indexMeshVertices(saveAll, saveSinglePartition);
+
+    // get the number of elements we need to save
+    int numElements = M_gmodel->getNumMeshElements();
+    if ( Environment::isMasterRank() )
+        std::cout << "  +- number of vertices: " << numVertices << "\n"
+                  << "  +- number of elements: " << numElements << "\n";
+    std::map<int, Feel::detail::GMSHPoint > gmshpts;
+    std::vector<GEntity*> entities;
+    M_gmodel->getEntities(entities);
+    for(unsigned int i = 0; i < entities.size(); i++)
+        for(unsigned int j = 0; j < entities[i]->mesh_vertices.size(); j++)
+        {
+            auto const& pt = entities[i]->mesh_vertices[j];
+            int id = pt->getIndex();
+            Eigen::Vector3d x(pt->x(), pt->y(), pt->z());
+            gmshpts[id].id = id;
+            gmshpts[id].x = x;
+            gmshpts[id].parametric = false;
+        }
+    std::map<int,int> __idGmshToFeel; // id Gmsh to id Feel
+    int num = 0;
+    // read vertices
+    for( GModel::viter it = M_gmodel->firstVertex(); it != M_gmodel->lastVertex(); ++it )
+    {
+        int elementary = (*it)->tag();
+        auto const& physicals = (*it)->physicals;
+        for( auto const& p : (*it)->points )
+        {
+            if ( physicals.size() )
+            {
+                Feel::detail::GMSHElement ele(p, ++num, elementary, physicals.size()?physicals[0]:0);
+                this->addVertices( mesh, ele, gmshpts );
+                addPoint( mesh, ele, __idGmshToFeel[p->getNum()] );
+            }
+        }
+    }
+    // read edges
+    for( GModel::eiter it = M_gmodel->firstEdge(); it != M_gmodel->lastEdge(); ++it )
+    {
+        int elementary = (*it)->tag();
+        auto const& physicals = (*it)->physicals;
+        for( auto const& edge : (*it)->lines )
+        {
+            Feel::detail::GMSHElement ele(edge, ++num, elementary, physicals.size()?physicals[0]:0);
+            this->addVertices( mesh, ele, gmshpts );
+            addEdge( mesh, ele, __idGmshToFeel[edge->getNum()] );
+        }
+    }
+    // read triangles
+    for( GModel::fiter it = M_gmodel->firstFace(); it != M_gmodel->lastFace(); ++it)
+    {
+        int elementary = (*it)->tag();
+        auto const& physicals = (*it)->physicals;
+        for( auto const& triangle : (*it)->triangles )
+        {
+            Feel::detail::GMSHElement ele(triangle, ++num, elementary, physicals.size()?physicals[0]:0);
+            this->addVertices( mesh, ele, gmshpts );
+            addFace( mesh, ele, __idGmshToFeel[triangle->getNum()] );
+        }
+    }
+    // read quadrangles
+    for( GModel::fiter it = M_gmodel->firstFace(); it != M_gmodel->lastFace(); ++it)
+    {
+        int elementary = (*it)->tag();
+        auto const& physicals = (*it)->physicals;
+        for( auto const& quad : (*it)->quadrangles )
+        {
+            Feel::detail::GMSHElement ele(quad, ++ num, elementary, physicals.size()?physicals[0]:0);
+            this->addVertices( mesh, ele, gmshpts );
+            addFace( mesh, ele, __idGmshToFeel[quad->getNum()] );
+        }
+    }
+
+#if 0
+            addVolume( mesh, *it_gmshElt, __idGmshToFeel[it_gmshElt->num] );
+#endif
+    LOG(INFO) << "Reading Msh from memory done";
+    toc("read msh from memory");
+}
+template<typename MeshType>
+void
+ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
+{
+    tic();
+    LOG(INFO) << "Reading Msh file " << this->filename();
     if ( this->version() != "1.0" &&
          this->version() != "2.0" &&
          this->version() != "2.1" &&
@@ -500,8 +704,6 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
          this->version() != FEELPP_GMSH_FORMAT_VERSION )
         throw std::logic_error( "invalid gmsh file format version" );
 
-    DVLOG(2) << "visit("  << mesh_type::nDim << "D ) starts\n";
-    DVLOG(2) << "visit("  << mesh_type::nDim << "D ) filename = " << this->filename() << "\n";
 
     std::ifstream __is ( this->filename().c_str() );
 
@@ -1102,11 +1304,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
             updateGhostCellInfoByUsingNonBlockingComm( mesh, __idGmshToFeel,  mapGhostElt, nbMsgToRecv );
     }
 
-    mesh->setNumVertices( std::accumulate( M_n_vertices.begin(), M_n_vertices.end(), 0,
-                                           []( int lhs, std::pair<int,int> const& rhs )
-                                           {
-                                               return lhs+rhs.second;
-                                           } ) );
+    
     if ( !mesh->markerNames().empty() &&
          ( mesh->markerNames().find("CrossPoints") != mesh->markerNames().end() ) &&
          ( mesh->markerNames().find("WireBasket") != mesh->markerNames().end() ) )
@@ -1116,7 +1314,8 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
         //LOG(INFO) << "[substructuring] n cp: " << std::distance( mesh->beginPointWithMarker( mesh->markerName("CrossPoints") ), mesh->endPointWithMarker( mesh->markerName("CrossPoints") ) ) << "\n";
     }
     DVLOG(2) << "done with reading and creating mesh from gmsh file\n";
-    M_n_vertices.clear();
+    
+    toc("read msh from file");
 }
 
 template<typename MeshType>
