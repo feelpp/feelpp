@@ -53,7 +53,7 @@
 #include <GmshDefines.h>
 #include <Context.h>
 #endif
-// there is a macro called sign in Gmsh that conflicts with 
+// there is a macro called sign in Gmsh that conflicts with
 // at least one member function sign() from DofTable.
 // hence we undefine the macro sign after including Gmsh headers
 #undef sign
@@ -119,7 +119,6 @@ public:
      */
     //@{
 
-    Gmsh();
     Gmsh( int nDim = 1, int nOrder = GMSH_ORDER_ONE, WorldComm const& worldComm=Environment::worldComm() );
     Gmsh( Gmsh const & __g );
     virtual ~Gmsh();
@@ -185,7 +184,7 @@ public:
 
     /**
      * @brief get the geometry
-     * @return the gmsh geo description 
+     * @return the gmsh geo description
      */
     std::pair<std::string,std::string> geo() const { return M_geo; }
 
@@ -341,7 +340,7 @@ public:
     /**
      * @brief get the Gmsh GModel data structure
      * @return the Gmsh GModel data structure
-     */    
+     */
     GModel* gModel() const { return M_gmodel; }
 
     //@}
