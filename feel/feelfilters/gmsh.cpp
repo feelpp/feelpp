@@ -108,38 +108,13 @@ ParseGeoFromMemory( GModel* model, std::string const& name, std::string const& g
           if(gmsh_yyerrorstate != 999) // 999 is a volontary exit
             std::cerr << "Too many errors: aborting parser...\n";
           gmsh_yyflush();
-          break;    
+          break;
         }
     }
     fclose(gmsh_yyin);
 
     int imported = model->importGEOInternals();
     return imported;
-}
-
-Gmsh::Gmsh()
-   :
-    M_worldComm( Environment::worldComm() ),
-    M_dimension( 3 ),
-    M_order( 1 ),
-    M_version( FEELPP_GMSH_FORMAT_VERSION ),
-    M_format( GMSH_FORMAT_ASCII ),
-    M_I( 3 ),
-    M_h( 0.1 ),
-    M_addmidpoint( true ),
-    M_usePhysicalNames( false ),
-    M_partitioner( (GMSH_PARTITIONER)GMSH_PARTITIONER_DEFAULT ),
-    M_partitions( M_worldComm.size() ),
-    M_partition_file( 0 ),
-    M_shear( 0 ),
-    M_recombine( 0 ),
-    //M_structured( false ),
-    M_structured( 2 ),
-    M_refine_levels( 0 ),
-    M_substructuring( false ),
-    M_periodic(),
-    M_gmodel( new GModel )
-{
 }
 Gmsh::Gmsh( int nDim, int nOrder, WorldComm const& worldComm )
     :
@@ -403,7 +378,7 @@ Gmsh::generateGeo( std::string const& __name, std::string const& __geo, bool con
         std::ostringstream __geoname;
         __geoname << __name << ".geo";
         fs::path __path( __geoname.str() );
-        geochanged = false;    
+        geochanged = false;
 
         // Create a new .geo.
         if ( !fs::exists( __path ) )
@@ -452,14 +427,14 @@ Gmsh::generate( std::string const& __name, std::string const& __geo, bool const 
     bool generated = false;
     if ( !mpi::environment::initialized() || ( mpi::environment::initialized()  && this->worldComm().globalRank() == this->worldComm().masterRank() ) )
     {
-        
+
 
         LOG(INFO) << "Generate mesh on processor " <<  this->worldComm().globalRank() << "/" << this->worldComm().globalSize() << "\n";
         bool geochanged = generateGeo( __name,__geo,modifGeo );
         std::ostringstream __geoname;
         __geoname << __name << ".geo";
 
-        
+
         // generate mesh
         std::ostringstream __meshname;
         __meshname << __name << ".msh";
@@ -477,7 +452,7 @@ Gmsh::generate( std::string const& __name, std::string const& __geo, bool const 
             generated = true;
         }
         fname=__meshname.str();
-        
+
     }
     google::FlushLogFiles(INFO);
 
@@ -665,7 +640,7 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
         M_gmodel->setFileName( _name );
 #endif
         if ( boption("gmsh.in-memory"))
-            ParseGeoFromMemory( M_gmodel, _name, geo().second );        
+            ParseGeoFromMemory( M_gmodel, _name, geo().second );
         else
             M_gmodel->readGEO( __geoname );
 
@@ -686,7 +661,7 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
             CTX::instance()->mesh.binary = M_format;
             LOG(INFO) << "Writing GMSH file " << _name+".msh" << " in " << (M_format?"binary":"ascii") << " format\n";
             M_gmodel->writeMSH( _name+".msh", 2.2, CTX::instance()->mesh.binary );
-        }   
+        }
 
     }
 #endif
