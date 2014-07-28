@@ -2221,8 +2221,7 @@ public:
             for( auto ldof : M_functionspace->dof()->localDof( e.id() ) )
             {
                 size_type index=start()+ ldof.second.index();
-                size_type ldofInElt = geoelement_type::f2e(e.id(),ldof.first.localDof());
-                this->operator[]( index ) = s(ldofInElt)*Ihloc( ldof.first.localDof() );
+                this->operator[]( index ) = s(ldof.first.localDof())*Ihloc( ldof.first.localDof() );
             }
         }
         void assign( geoface_type const& e, typename basis_0_type::local_interpolant_type const& Ihloc )
