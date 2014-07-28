@@ -1057,7 +1057,11 @@ public:
 
             for( int e = 0; e < face_type::numEdges; ++e )
             {
-                int edgeid_in_element = g->element().fToE( g->faceId(), e);
+                int edgeid_in_element;
+                if( nDim <= 2 )
+                    edgeid_in_element = g->element().fToE( g->faceId(), g->faceId());
+                else
+                    edgeid_in_element = g->element().fToE( g->faceId(), e);
                 //std::cout << "face id:  " << g->faceId() << " einf :" << e << " edge id in element : " << edgeid_in_element << std::endl;
                 getEdgeTangent( expr, edgeid_in_element, t );
 
