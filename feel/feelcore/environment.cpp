@@ -1076,6 +1076,11 @@ Environment::clearSomeMemory()
 }
 Environment::~Environment()
 {
+#if defined(FEELPP_HAS_HARTS)
+    /* if we used hwloc, we free tolology data */
+    Environment::destroyHwlocTopology();
+#endif
+
     /* if we were using onelab */
     /* we write the file containing the filename marked for automatic loading in Gmsh */
     /* we serialize the writing of the size by the different MPI processes */
@@ -1454,32 +1459,144 @@ Environment::masterWorldComm( int n )
 }
 
 #if defined(FEELPP_HAS_HARTS)
+
+void Environment::initHwlocTopology()
+{
+    /* init and load hwloc topology for the current node */
+    if(!(Environment::M_hwlocTopology))
+    {
+        hwloc_topology_init(&(Environment::M_hwlocTopology));
+        hwloc_topology_load(Environment::M_hwlocTopology);
+    }
+}
+
+void Environment::destroyHwlocTopology()
+{
+    if(Environment::M_hwlocTopology)
+    {
+        hwloc_topology_destroy(Environment::M_hwlocTopology);
+    }
+}
+
 void Environment::bindToCore( unsigned int id )
 {
     int err;
-    hwloc_topology_t topology;
     hwloc_cpuset_t set;
     hwloc_obj_t coren;
 
     /* init and load hwloc topology for the current node */
-    hwloc_topology_init(&topology);
-    hwloc_topology_load(topology);
+    Environment::initHwlocTopology();
 
-    /* get the n'th core object */
-    coren = hwloc_get_obj_by_type(topology, HWLOC_OBJ_CORE, id);
+    /* get the nth core object */
+    coren = hwloc_get_obj_by_type(Environment::M_hwlocTopology, HWLOC_OBJ_CORE, id);
     /* get the cpu mask of the nth core */
     set = hwloc_bitmap_dup(coren->cpuset);
     /* bind the process thread to this core */
-    err = hwloc_set_cpubind(topology, set, 0);
+    err = hwloc_set_cpubind(Environment::M_hwlocTopology, set, 0);
 
     /* free memory */
     hwloc_bitmap_free(set);
-    hwloc_topology_destroy(topology);
+}
+
+int Environment::countCoresInSubtree(hwloc_obj_t node)
+{
+    int res = 0;
+    /* get the number of cores in the subtree */
+    for(int i = 0; i < node->arity; i++)
+    {
+        res += Environment::countCoresInSubtree(node->children[i]);
+    }
+
+    /* if we are a core node, we increment the counter */
+    if(node->type == HWLOC_OBJ_CORE)
+    {
+        res++;
+    }
+
+    return res;
+}
+
+void Environment::bindNumaRoundRobin()
+{
+    int err, depth;
+    int nbCoresPerNuma = 0, nbCoresTotal = 0, nbNumaNodesTotal = 0;
+    hwloc_cpuset_t set;
+    hwloc_obj_t numaNode;
+
+    std::cout << "Round Robin Numa" << std::endl;
+
+    /* init and load hwloc topology for the current node */
+    Environment::initHwlocTopology();
+
+    /* get the first numa node */
+    numaNode = hwloc_get_obj_by_type(Environment::M_hwlocTopology, HWLOC_OBJ_NODE, 0);
+    nbCoresPerNuma = Environment::countCoresInSubtree(numaNode);
+
+    /* count the number of numaNodes */
+    depth = hwloc_get_type_depth(Environment::M_hwlocTopology, HWLOC_OBJ_NODE);
+    if(depth != HWLOC_TYPE_DEPTH_UNKNOWN)
+    {
+        nbNumaNodesTotal = hwloc_get_nbobjs_by_depth(Environment::M_hwlocTopology, depth);
+    }
+
+    /* count the number of cores on the current server */
+    depth = hwloc_get_type_depth(Environment::M_hwlocTopology, HWLOC_OBJ_CORE);
+    if(depth != HWLOC_TYPE_DEPTH_UNKNOWN)
+    {
+        nbCoresTotal = hwloc_get_nbobjs_by_depth(Environment::M_hwlocTopology, depth);
+    }
+
+    /* compute the virtual core index of the first core of the numa node to use */
+    int vcoreid = Environment::worldComm().rank() * nbCoresPerNuma;
+    /* compute the rank of the Numa processor for the current process */
+    int numaRank = Environment::worldComm().rank() % nbCoresPerNuma;
+
+    /* get the numa node where to place the process */
+    numaNode = hwloc_get_obj_by_type(Environment::M_hwlocTopology, HWLOC_OBJ_NODE, numaRank);
+
+    /* duplicate the node set of the Numa node */
+    set = hwloc_bitmap_dup(numaNode->cpuset);
+    /*
+    char * a;
+    hwloc_bitmap_asprintf(&a, set);
+    std::cout << Environment::worldComm().rank() << " " << a << ";" << std::endl;
+    free(a);
+    */
+
+    /* get the cpuset corresponding to the core we want to bind to */
+    /* compute the core number that we want to bind to on the current Numa node */
+    int tid = (vcoreid / nbCoresTotal) % nbCoresPerNuma;
+    /* get the id of the first core */
+    int bid = hwloc_bitmap_first(set);
+    /* iterate to find the core we want to bind to */
+    for(int i = 0; i < tid; i++)
+    {
+        bid = hwloc_bitmap_next(set, bid);
+    } 
+    hwloc_bitmap_only(set, bid);
+    /*
+    hwloc_bitmap_asprintf(&a, set);
+    std::cout << Environment::worldComm().rank() << " " << a << ";" << std::endl;
+    free(a);
+    */
+
+    int coreid = vcoreid % nbCoresTotal + vcoreid / nbCoresTotal;
+    std::cout << Environment::worldComm().rank() << " nbCoresNuma:" << nbCoresPerNuma << " Total:" << nbCoresTotal << " " 
+              << " coreid=" << coreid << " "
+              << " nbCoresPerNuma=" << nbCoresPerNuma
+              << " idOnNuma=" << bid
+              << " numaRank=" << numaRank
+              << std::endl;
+
+    /* bind the process thread to this core */
+    err = hwloc_set_cpubind(Environment::M_hwlocTopology, set, 0);
+
+    /* free memory */
+    hwloc_bitmap_free(set);
 }
 
 void Environment::writeCPUData(std::string fname)
 {
-    hwloc_topology_t topology;
     hwloc_cpuset_t set;
     char * a;
     char buf[256];
@@ -1488,27 +1605,25 @@ void Environment::writeCPUData(std::string fname)
     std::ostringstream oss;
 
     /* init and load hwloc topology for the current node */
-    hwloc_topology_init(&topology);
-    hwloc_topology_load(topology);
+    Environment::initHwlocTopology();
 
     /* get a cpuset object */
     set = hwloc_bitmap_alloc();
 
     /* Get the cpu thread affinity info of the current process/thread */
-    hwloc_get_cpubind(topology, set, 0);
+    hwloc_get_cpubind(Environment::M_hwlocTopology, set, 0);
     hwloc_bitmap_asprintf(&a, set);
     oss << a << "|";
     free(a);
 
     /* Get the latest core location of the current process/thread */
-    hwloc_get_last_cpu_location(topology, set, 0);
+    hwloc_get_last_cpu_location(Environment::M_hwlocTopology, set, 0);
     hwloc_bitmap_asprintf(&a, set);
     oss << a << ";";
     free(a);
 
     /* free memory */
     hwloc_bitmap_free(set);
-    hwloc_topology_destroy(topology);
 
     /* Write the gathered information with MPIIO */
     MPI_File fh;
@@ -1590,6 +1705,10 @@ fs::path Environment::S_scratchdir;
 
 std::string Environment::olAppPath;
 std::vector<std::string> Environment::olAutoloadFiles;
+
+#if defined(FEELPP_HAS_HARTS)
+    hwloc_topology_t Environment::M_hwlocTopology = NULL;
+#endif
 
 } // detail
 
