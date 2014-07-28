@@ -322,6 +322,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
 
     // mesh element
     typedef typename element_type::functionspace_type::mesh_type::element_type geoelement_type;
+    typedef typename element_type::functionspace_type::mesh_type::shape_type geoshape_type;
     typedef typename geoelement_type::face_type face_type;
 
     typedef typename element_type::functionspace_type::fe_type fe_type;
@@ -336,6 +337,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
     typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
 
+    static const uint16_type nDim = geoshape_type::nDim;
 
     // dof
     typedef typename element_type::functionspace_type::dof_type dof_type;
@@ -498,14 +500,16 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
             __fe->faceInterpolate( expr, IhLoc );
 
             auto const& s = M_u.functionSpace()->dof()->localToGlobalSigns( theface.element(0).id() );
-
             for( auto ldof : M_u.functionSpace()->dof()->faceLocalDof( theface.id() ) )
                 {
                     size_type thedof = M_u.start()+ ldof.second.index(); // global dof
-                    size_type dofIndexInElt = geoelement_type::f2e(theface.id(),ldof.first);
+                    size_type dofIndexInElt; //dof index in current element
+                    if(nDim <= 2 )
+                        dofIndexInElt = geoelement_type::f2e(theface.id(),__face_id);
+                    else
+                        dofIndexInElt = geoelement_type::f2e(theface.id(),ldof.first);
+
                     double __value = s(dofIndexInElt)*IhLoc( ldof.first );
-                    //double __value = s(ldof.first)*IhLoc( ldof.first );
-                    //double __value = IhLoc( ldof.first );
 
                     if ( std::find( dofs.begin(),
                                     dofs.end(),
