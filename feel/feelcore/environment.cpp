@@ -1516,7 +1516,7 @@ int Environment::countCoresInSubtree(hwloc_obj_t node)
     return res;
 }
 
-void Environment::bindNumaRoundRobin()
+void Environment::bindNumaRoundRobin(int lazy)
 {
     int err, depth;
     int nbCoresPerNuma = 0, nbCoresTotal = 0, nbNumaNodesTotal = 0;
@@ -1563,22 +1563,28 @@ void Environment::bindNumaRoundRobin()
     free(a);
     */
 
-    /* get the cpuset corresponding to the core we want to bind to */
-    /* compute the core number that we want to bind to on the current Numa node */
-    int tid = (vcoreid / nbCoresTotal) % nbCoresPerNuma;
-    /* get the id of the first core */
-    int bid = hwloc_bitmap_first(set);
-    /* iterate to find the core we want to bind to */
-    for(int i = 0; i < tid; i++)
+    /* if we do not want to bind lazily, i.e. to generally bind on the numa node */
+    /* we select the specific core */
+    int bid = -1;
+    if(!lazy)
     {
-        bid = hwloc_bitmap_next(set, bid);
-    } 
-    hwloc_bitmap_only(set, bid);
-    /*
-    hwloc_bitmap_asprintf(&a, set);
-    std::cout << Environment::worldComm().rank() << " " << a << ";" << std::endl;
-    free(a);
-    */
+        /* get the cpuset corresponding to the core we want to bind to */
+        /* compute the core number that we want to bind to on the current Numa node */
+        int tid = (vcoreid / nbCoresTotal) % nbCoresPerNuma;
+        /* get the id of the first core */
+        bid = hwloc_bitmap_first(set);
+        /* iterate to find the core we want to bind to */
+        for(int i = 0; i < tid; i++)
+        {
+            bid = hwloc_bitmap_next(set, bid);
+        } 
+        hwloc_bitmap_only(set, bid);
+        /*
+           hwloc_bitmap_asprintf(&a, set);
+           std::cout << Environment::worldComm().rank() << " " << a << ";" << std::endl;
+           free(a);
+           */
+    }
 
     int coreid = vcoreid % nbCoresTotal + vcoreid / nbCoresTotal;
     std::cout << Environment::worldComm().rank() << " nbCoresNuma:" << nbCoresPerNuma << " Total:" << nbCoresTotal << " " 
@@ -1598,6 +1604,7 @@ void Environment::bindNumaRoundRobin()
 void Environment::writeCPUData(std::string fname)
 {
     hwloc_cpuset_t set;
+    int cid;
     char * a;
     char buf[256];
     unsigned int depth;
@@ -1613,30 +1620,58 @@ void Environment::writeCPUData(std::string fname)
     /* Get the cpu thread affinity info of the current process/thread */
     hwloc_get_cpubind(Environment::M_hwlocTopology, set, 0);
     hwloc_bitmap_asprintf(&a, set);
-    oss << a << "|";
+    oss << a;
     free(a);
+
+    /* write the corresponding processor indexes */
+    cid = hwloc_bitmap_first(set);
+    oss << " (";
+    while(cid != -1)
+    {
+        oss << cid << " ";
+        cid = hwloc_bitmap_next(set, cid);
+    }
+    oss << ")|";
 
     /* Get the latest core location of the current process/thread */
     hwloc_get_last_cpu_location(Environment::M_hwlocTopology, set, 0);
     hwloc_bitmap_asprintf(&a, set);
-    oss << a << ";";
+    oss << a;
     free(a);
+
+    /* write the corresponding processor indexes */
+    cid = hwloc_bitmap_first(set);
+    oss << " (";
+    while(cid != -1)
+    {
+        oss << cid << " ";
+        cid = hwloc_bitmap_next(set, cid);
+    }
+    oss << ");";
 
     /* free memory */
     hwloc_bitmap_free(set);
 
-    /* Write the gathered information with MPIIO */
-    MPI_File fh;
-    MPI_Status status;
-    if(fs::exists(fname))
+    /* if filename is empty, we write to stdout */
+    if(fname == "")
     {
-        MPI_File_delete(const_cast<char *>(fname.c_str()), MPI_INFO_NULL);
+        std::cout << Environment::worldComm().rank() << " " << oss.str() << std::endl;
     }
+    else
+    {
+        /* Write the gathered information with MPIIO */
+        MPI_File fh;
+        MPI_Status status;
+        if(fs::exists(fname))
+        {
+            MPI_File_delete(const_cast<char *>(fname.c_str()), MPI_INFO_NULL);
+        }
 
-    MPI_File_open( Environment::worldComm().comm(), const_cast<char *>(fname.c_str()), MPI_MODE_RDWR | MPI_MODE_CREATE | MPI_MODE_APPEND , MPI_INFO_NULL, &fh );
-    MPI_File_write_ordered( fh, const_cast<char *>(oss.str().c_str()), oss.str().size(), MPI_CHAR, &status );
+        MPI_File_open( Environment::worldComm().comm(), const_cast<char *>(fname.c_str()), MPI_MODE_RDWR | MPI_MODE_CREATE | MPI_MODE_APPEND , MPI_INFO_NULL, &fh );
+        MPI_File_write_ordered( fh, const_cast<char *>(oss.str().c_str()), oss.str().size(), MPI_CHAR, &status );
 
-    MPI_File_close( &fh );
+        MPI_File_close( &fh );
+    }
 }
 #endif
 

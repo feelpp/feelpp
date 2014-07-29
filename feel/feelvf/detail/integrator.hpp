@@ -49,6 +49,8 @@
 #include "RunTimeSystem/DataMng/DataArgs.h"
 
 #include "Utils/PerfTools/PerfCounterMng.h"
+
+#include <hwloc.h>
 #endif //defined(FEELPP_HAS_HARTS)
 
 namespace Feel
@@ -121,6 +123,49 @@ namespace parallel
 #if defined(FEELPP_HAS_HARTS)
         void computeCPU(DataArgsType& args)
         {
+            char * a;
+            int cid;
+            hwloc_cpuset_t set;
+            std::ostringstream oss;
+
+            /* get a cpuset object */
+            set = hwloc_bitmap_alloc();
+
+            /* Get the cpu thread affinity info of the current process/thread */
+            hwloc_get_cpubind(Environment::getHwlocTopology(), set, 0);
+            hwloc_bitmap_asprintf(&a, set);
+            oss << a;
+            free(a); 
+            
+            cid = hwloc_bitmap_first(set);
+            oss << "(";
+            while(cid != -1)
+            {
+                oss << cid << " ";
+                cid = hwloc_bitmap_next(set, cid);
+            }
+            oss << ")|";
+            std::cout << Environment::worldComm().rank() << "|" << M_threadId << " " << oss.str() << std::endl;
+
+            /* Get the latest core location of the current process/thread */
+            hwloc_get_last_cpu_location(Environment::getHwlocTopology(), set, 0);
+            hwloc_bitmap_asprintf(&a, set);
+            oss << a;
+            free(a);
+
+            cid = hwloc_bitmap_first(set);
+            oss << "(";
+            while(cid != -1)
+            {
+                oss << cid << " ";
+                cid = hwloc_bitmap_next(set, cid);
+            }
+            oss << ");";
+            std::cout << Environment::worldComm().rank() << "|" << M_threadId << " " << oss.str() << std::endl;
+
+            /* free memory */
+            hwloc_bitmap_free(set);
+
             perf_mng.init("cpu") ;
             perf_mng.start("cpu") ;
 

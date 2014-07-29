@@ -326,6 +326,8 @@ public:
      */
     static void destroyHwlocTopology();
 
+    static hwloc_topology_t getHwlocTopology() { return Environment::M_hwlocTopology; }
+
     /**
      * Binds the current process/thread to the specified core.
      * (Do it early in the application launch, otherwise you might end up accessing data "far away"
@@ -341,7 +343,7 @@ public:
     /**
      * Binds the MPI processes in Round Robin on the NUMA nodes 
      */
-    static void bindNumaRoundRobin();
+    static void bindNumaRoundRobin(int lazy = false);
 
     /**
      * Writes data about processor affinity and last location of the different processes/threads
