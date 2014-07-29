@@ -461,7 +461,13 @@ public:
                     //for(int k=0; k<face_type::numTopologicalFaces; ++k)
                     for(int k=0; k<nbEdgesPerFace; ++k)
                         {
-                            if( convex_type::f2e(f,k) == e )
+                            int curEdge;
+                            if( nDim <= 2 )
+                                curEdge = convex_type::f2e(f,f);
+                            else
+                                curEdge = convex_type::f2e(f,k);
+
+                            if( curEdge == e )
                                 {
                                     ublas::subrange( M_pts_per_face[f], 0, nDim, nbPtsPerEdge*k, nbPtsPerEdge*(k+1) ) = Gt;
                                 }
@@ -695,7 +701,13 @@ public:
                     //for(int k=0; k<face_type::numTopologicalFaces; ++k)
                     for(int k=0; k<nbDofPerFace; ++k)
                         {
-                            if( convex_type::f2e(f,k) == e )
+                            int curEdge;
+                            if( nDim <= 2 )
+                                curEdge = convex_type::f2e(f,f);
+                            else
+                                curEdge = convex_type::f2e(f,k);
+
+                            if( curEdge == e )
                                 {
                                     ublas::subrange( M_pts_per_face[f], 0, nDim, nbPtsPerEdge*k, nbPtsPerEdge*(k+1) ) = Gt;
                                 }
@@ -1069,7 +1081,9 @@ public:
                 {
                     int q = e*nDofPerEdge+l;
                     for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
-                        Ihloc(q) += expr.evalq( c1, 0, q )*t(c1);
+                        {
+                            Ihloc(q) += expr.evalq( c1, 0, q )*t(c1);
+                        }
                 }
             }
 
