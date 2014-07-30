@@ -17,3 +17,9 @@ target_link_libraries(PyFeelpp ${FEELPP_LIBRARIES})
 
 add_library(PyInteg SHARED libPyInteg.cpp)
 target_link_libraries(PyInteg ${FEELPP_LIBRARIES})
+
+add_library(PyLapla SHARED libPyLapla.cpp)
+target_link_libraries(PyLapla ${FEELPP_LIBRARIES})
+
+add_library(PyMesh SHARED libPyMesh.cpp)
+target_link_libraries(PyMesh ${FEELPP_LIBRARIES})
