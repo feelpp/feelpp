@@ -170,12 +170,12 @@ BOOST_PYTHON_MODULE(libPyMesh)
     */
 
     
-    BOOST_PP_REPEAT(2,SIMPLEX,def_wrapper)
-    BOOST_PP_REPEAT(2,HYPERCUBE,def_wrapper)
+    BOOST_PP_REPEAT(3,SIMPLEX,def_wrapper)
+    BOOST_PP_REPEAT(3,HYPERCUBE,def_wrapper)
 
 
-    BOOST_PP_REPEAT(2,PCH1,def_wrapper_Pch)
-    BOOST_PP_REPEAT(2,PCH2,def_wrapper_Pch)
-    BOOST_PP_REPEAT(2,PCH3,def_wrapper_Pch)
+    BOOST_PP_REPEAT(3,PCH1,def_wrapper_Pch)
+    BOOST_PP_REPEAT(3,PCH2,def_wrapper_Pch)
+    BOOST_PP_REPEAT(3,PCH3,def_wrapper_Pch)
 }
 
