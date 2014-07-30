@@ -19,6 +19,14 @@
 
 //#define BOOST_PYTHON_MAX_ARITY 20
 
+
+#define SIMPLEX(_,n,type) type<n+1,1>("Simplex");
+#define HYPERCUBE(_,n,type) type<n+1,1>("Hypercube");
+
+#define PCH1(_,n,type) type<1,n+1>();
+#define PCH2(_,n,type) type<2,n+1>();
+#define PCH3(_,n,type) type<3,n+1>();
+
 using namespace boost::python;
 using namespace Feel;
 
@@ -139,14 +147,15 @@ BOOST_PYTHON_MODULE(libPyMesh)
 
     class_<Feel::FunctionSpaceBase>("FunctionSpaceBase",no_init);
 
-
+    /*
     def_wrapper<1,1>("Simplex");
     def_wrapper<2,1>("Simplex");
     def_wrapper<3,1>("Simplex");
     def_wrapper<1,1>("Hypercube");
     def_wrapper<2,1>("Hypercube");
     def_wrapper<3,1>("Hypercube");
-
+    
+    
     def_wrapper_Pch<1,1>();
     def_wrapper_Pch<1,2>();
     def_wrapper_Pch<1,3>();
@@ -158,6 +167,15 @@ BOOST_PYTHON_MODULE(libPyMesh)
     def_wrapper_Pch<3,1>();
     def_wrapper_Pch<3,2>();
     def_wrapper_Pch<3,3>();
+    */
 
+    
+    BOOST_PP_REPEAT(2,SIMPLEX,def_wrapper)
+    BOOST_PP_REPEAT(2,HYPERCUBE,def_wrapper)
+
+
+    BOOST_PP_REPEAT(2,PCH1,def_wrapper_Pch)
+    BOOST_PP_REPEAT(2,PCH2,def_wrapper_Pch)
+    BOOST_PP_REPEAT(2,PCH3,def_wrapper_Pch)
 }
 
