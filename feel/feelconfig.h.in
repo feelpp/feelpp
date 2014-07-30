@@ -195,6 +195,10 @@
 /* Define if we have support for MPI IO */
 #cmakedefine FEELPP_HAS_MPIIO
 
+/* Define sized types for MPI standards older than 2.2 version */
+#cmakedefine FEELPP_MPI_INT32 @FEELPP_MPI_INT32@
+#cmakedefine FEELPP_MPI_INT64 @FEELPP_MPI_INT64@
+
 /* Define to 1 if you have GMM . */
 #cmakedefine FEELPP_HAS_GMM
 

@@ -75,8 +75,6 @@
 #include "Utils/PerfTools/PerfCounterMng.h"
 #endif //defined(FEELPP_HAS_HARTS)
 
-namespace fs = boost::filesystem;
-
 namespace Feel
 {
 namespace vf
@@ -4637,8 +4635,12 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         perf_mng.init("comp") ;
         perf_mng.start("comp") ;
 
+        Environment::writeCPUData(""); 
+
         RunTimeSystem::StdScheduler scheduler;
         taskMng.run(scheduler, taskList);
+
+        Environment::writeCPUData(""); 
 
         perf_mng.stop("comp") ;
 

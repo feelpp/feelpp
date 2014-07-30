@@ -317,11 +317,33 @@ public:
 
 #if defined(FEELPP_HAS_HARTS)
     /**
+     * Init Hwloc topology structure
+     */
+    static void initHwlocTopology();
+
+    /**
+     * Destroy Hwloc topology structure
+     */
+    static void destroyHwlocTopology();
+
+    static hwloc_topology_t getHwlocTopology() { return Environment::M_hwlocTopology; }
+
+    /**
      * Binds the current process/thread to the specified core.
      * (Do it early in the application launch, otherwise you might end up accessing data "far away"
      * from the new bound core, thus degrading performance)
      */
     static void bindToCore( unsigned int id );
+
+    /**
+     * Counts the number of cores under the current hwloc object, using a recursive strategy
+     */
+    static int countCoresInSubtree(hwloc_obj_t node);
+
+    /**
+     * Binds the MPI processes in Round Robin on the NUMA nodes 
+     */
+    static void bindNumaRoundRobin(int lazy = false);
 
     /**
      * Writes data about processor affinity and last location of the different processes/threads
@@ -517,6 +539,9 @@ private:
     static boost::shared_ptr<WorldComm> S_worldcomm;
     static boost::shared_ptr<WorldComm> S_worldcommSeq;
 
+#if defined(FEELPP_HAS_HARTS)
+    static hwloc_topology_t M_hwlocTopology;
+#endif
 };
 } // detail
 
