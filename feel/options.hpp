@@ -99,6 +99,8 @@ po::options_description nlsolver_options();
 /**
  * command line options for BDF
  */
+po::options_description on_options( std::string const& prefix = "" );
+
 po::options_description ts_options( std::string const& prefix = "" );
 po::options_description bdf_options( std::string const& prefix = "" );
 
