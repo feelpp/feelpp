@@ -399,14 +399,16 @@ laplacian( ex const& f, std::vector<symbol> const& l )
 
     }
 }
-ex
+matrix
 laplacian( std::string const& s, std::vector<symbol> const& l )
 {
+    LOG(INFO) << "compute laplacian of " << s << std::endl;
     return laplacian( parse( s, l ), l );
 }
 matrix
 laplacian( matrix const& f, std::vector<symbol> const& l )
 {
+    std::cout <<  "use matrix lap\n";
     matrix g(f.rows(),1);
     for(int i = 0; i < f.rows(); ++i )
     {
@@ -420,10 +422,16 @@ laplacian( matrix const& f, std::vector<symbol> const& l )
     }
     return g;
 }
-
-ex diff(ex const& f, symbol const& l, const int n)
+ex
+laplacian( std::string const& s, std::vector<symbol> const& l, std::vector<symbol> const& p )
 {
-    return f.diff( l,n );
+    return laplacian( parse( s, l, p ), l )(0,0);
+}
+matrix diff(ex const& f, symbol const& l, const int n)
+{
+    matrix ret(1,1);
+    ret(0,0)=f.diff( l,n );
+    return ret;
 }
 
 

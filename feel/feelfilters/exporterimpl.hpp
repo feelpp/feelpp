@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2010-04-21
 
-  Copyright (C) 2010 UniversitÃ© Joseph Fourier (Grenoble I)
+  Copyright (C) 2010-2014 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -37,13 +37,21 @@
 
 #include <feel/feelfilters/exportergmsh.hpp>
 #include <feel/feelfilters/exporterensight.hpp>
+
+#ifdef FEELPP_HAS_MPIIO
 #include <feel/feelfilters/exporterensightgold.hpp>
+#endif
+
 #include <feel/feelfilters/exporterexodus.hpp>
 
 namespace Feel
 {
 template<typename MeshType, int N> class ExporterEnsight;
+
+#ifdef FEELPP_HAS_MPIIO
 template<typename MeshType, int N> class ExporterEnsightGold;
+#endif
+
 template<typename MeshType, int N> class ExporterGmsh;
 
 template<typename MeshType, int N>
@@ -53,6 +61,7 @@ Exporter<MeshType, N>::Exporter( WorldComm const& worldComm )
     super2(),
     M_worldComm( worldComm ),
     M_do_export( true ),
+    M_use_single_transient_file( false ),
     M_type(),
     M_prefix( Environment::about().appName() ),
     M_freq( 1 ),
@@ -71,6 +80,7 @@ Exporter<MeshType, N>::Exporter( std::string const& __type, std::string const& _
     super2(),
     M_worldComm( worldComm ),
     M_do_export( true ),
+    M_use_single_transient_file( false ),
     M_type( __type ),
     M_prefix( __prefix ),
     M_freq( __freq ),
@@ -89,6 +99,7 @@ Exporter<MeshType, N>::Exporter( po::variables_map const& vm, std::string const&
     super2(),
     M_worldComm( worldComm ),
     M_do_export( true ),
+    M_use_single_transient_file( false ),
     M_type(),
     M_prefix( exp_prefix ),
     M_freq( 1 ),
@@ -107,6 +118,7 @@ Exporter<MeshType, N>::Exporter( Exporter const & __ex )
     super2(),
     M_worldComm( __ex.M_worldComm ),
     M_do_export( __ex.M_do_export ),
+    M_use_single_transient_file( __ex.M_use_single_transient_file ),
     M_type( __ex.M_type ),
     M_prefix( __ex.M_prefix ),
     M_freq( __ex.M_freq ),
@@ -130,8 +142,10 @@ Exporter<MeshType, N>::New( std::string const& exportername, std::string prefix,
 
     if ( N == 1 && ( exportername == "ensight" ) )
         exporter = new ExporterEnsight<MeshType, N>( worldComm );
+#ifdef FEELPP_HAS_MPIIO
     else if ( N == 1 && ( exportername == "ensightgold"  ) )
         exporter = new ExporterEnsightGold<MeshType, N>( worldComm );
+#endif
     else if ( N == 1 && ( exportername == "exodus"  ) )
         exporter = new ExporterExodus<MeshType, N>( worldComm );
     else if ( N > 1 || ( exportername == "gmsh" ) )
@@ -158,8 +172,10 @@ Exporter<MeshType, N>::New( po::variables_map const& vm, std::string prefix, Wor
 
     if ( N == 1 && ( estr == "ensight"   ) )
         exporter = new ExporterEnsight<MeshType, N>( worldComm );
+#ifdef FEELPP_HAS_MPIIO
     else if ( N == 1 && ( estr == "ensightgold"   ) )
         exporter = new ExporterEnsightGold<MeshType, N>( worldComm );
+#endif
     else if ( N == 1 && ( estr == "exodus"   ) )
         exporter = new ExporterExodus<MeshType, N>( worldComm );
     else if ( N > 1 || estr == "gmsh" )

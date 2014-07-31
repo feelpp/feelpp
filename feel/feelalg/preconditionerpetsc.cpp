@@ -374,7 +374,11 @@ static PetscErrorCode PCFieldSplit_GetKSPInnerSchur( PC pc, KSP &ksp )
     if ( kspInner == NULL || kspInner==kspA )
     {
         ierr = KSPCreate(PetscObjectComm((PetscObject)pc), &ksp);CHKERRQ(ierr);
+#if PETSC_VERSION_LESS_THAN(3,5,0)
         ierr = KSPSetOperators(ksp,jac->mat[0],jac->pmat[0],pc->flag);CHKERRQ(ierr);
+#else
+        ierr = KSPSetOperators(ksp,jac->mat[0],jac->pmat[0]/*,pc->flag*/);CHKERRQ(ierr);
+#endif
         ierr = MatSchurComplementSetKSP(jac->schur,ksp);CHKERRQ(ierr);CHKERRQ(ierr);
     }
     else
@@ -395,7 +399,11 @@ static PetscErrorCode PCFieldSplit_GetKSPUpperSchur( PC pc, KSP &ksp )
     if ( jac->kspupper == NULL || jac->kspupper == kspA )
     {
         ierr = KSPCreate(PetscObjectComm((PetscObject)pc), &ksp);CHKERRQ(ierr);
+#if PETSC_VERSION_LESS_THAN(3,5,0)
         ierr = KSPSetOperators(ksp,jac->mat[0],jac->pmat[0],pc->flag);CHKERRQ(ierr);
+#else
+        ierr = KSPSetOperators(ksp,jac->mat[0],jac->pmat[0]/*,pc->flag*/);CHKERRQ(ierr);
+#endif
         // need in PCApply_FieldSplit_Schur
         ierr = VecDuplicate(jac->head->x, &jac->head->z);CHKERRQ(ierr);
 
@@ -427,7 +435,11 @@ static PetscErrorCode PCFieldSplit_UpdateMatPrecondSchurComplement( PC pc, Mat s
     PetscErrorCode    ierr;
 
     //jac->schur_user = schurMatPrecond;
+#if PETSC_VERSION_LESS_THAN(3,5,0)
     ierr = KSPSetOperators(jac->kspschur,jac->schur,schurMatPrecond,DIFFERENT_NONZERO_PATTERN);CHKERRQ(ierr);
+#else
+    ierr = KSPSetOperators(jac->kspschur,jac->schur,schurMatPrecond/*,DIFFERENT_NONZERO_PATTERN*/);CHKERRQ(ierr);
+#endif
 
     PetscFunctionReturn(0);
 }
@@ -543,7 +555,11 @@ void PreconditionerPetsc<T>::init ()
 
     //check( PCSetOperators( M_pc,M_mat,M_mat, PetscGetMatStructureEnum(MatrixStructure::SAME_NONZERO_PATTERN) ) );
     //check( PCSetOperators( M_pc,M_mat,M_mat, PetscGetMatStructureEnum(MatrixStructure::DIFFERENT_NONZERO_PATTERN) ) );
+#if PETSC_VERSION_LESS_THAN(3,5,0)
     check( PCSetOperators( M_pc,M_mat,M_mat, PetscGetMatStructureEnum(this->M_prec_matrix_structure) ) );
+#else
+    check( PCSetOperators( M_pc,M_mat,M_mat/*, PetscGetMatStructureEnum(this->M_prec_matrix_structure)*/ ) );
+#endif
 
     // Set the PCType.  Note: this used to be done *before* the call to
     // PCSetOperators(), and only when !M_is_initialized, but
@@ -1625,7 +1641,11 @@ ConfigurePCFieldSplit::runConfigurePCFieldSplit( PC& pc, PreconditionerPetsc<dou
 
             Mat schur = NULL, A, B, C, D;
             this->check( PetscImpl::PCFieldSplit_GetMatSchurComplement( pc, schur ) );
+#if PETSC_VERSION_LESS_THAN(3,5,0)
             this->check( MatSchurComplementGetSubmatrices( schur,&A,NULL,&B,&C,&D ) );
+#else
+            this->check( MatSchurComplementGetSubMatrices( schur,&A,NULL,&B,&C,&D ) );
+#endif
 
             Mat Bcopy;
             this->check( MatDuplicate(B,MAT_COPY_VALUES,&Bcopy) );
