@@ -24,6 +24,8 @@
 
 INCLUDE_DIRECTORIES( ${CMAKE_CURRENT_SOURCE_DIR} )
 
+add_subdirectory(tutorial)
+
 find_program(LATEX NAMES latex pdflatex)
 find_program(CONVERT NAMES convert)
 if ( LATEX AND CONVERT )
@@ -96,7 +98,7 @@ add_custom_target(figures WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ )
 
 macro( add_docex target )
  add_executable( feel_doc_${target} ${target}.cpp )
- target_link_libraries( feel_doc_${target} ${FEELPP_LIBRARIES} )
+ target_link_libraries( feel_doc_${target} feelpp ${FEELPP_LIBRARIES} )
  get_target_property(target_executable feel_doc_${target} LOCATION)
  list(APPEND LIST_APPS ${target_executable})
  add_dependencies(figures feel_doc_${target})
@@ -104,7 +106,7 @@ macro( add_docex target )
  if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${target}.cfg)
    configure_file( ${target}.cfg ${target}.cfg)
  endif()
- add_custom_command(
+add_custom_command(
    TARGET figures
    POST_BUILD
    COMMAND ${target_executable} ARGS --shape="simplex" --nochdir > ${CMAKE_CURRENT_BINARY_DIR}/${target}-simplex.out 2>&1
@@ -135,7 +137,7 @@ add_custom_target(
                                    ${CMAKE_CURRENT_BINARY_DIR}/
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
-add_dependencies(tut-prerequisites feel_doc_mymesh)
+add_dependencies(tut-prerequisites feelpp_doc_mymesh)
 configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/tutorial.pos  ${CMAKE_CURRENT_BINARY_DIR}/tutorial.pos)
 
 if ( NOT FEELPP_MINIMAL_CONFIGURATION )
@@ -180,7 +182,7 @@ macro(add_octave_module modulename)
         ${CMAKE_CURRENT_SOURCE_DIR}/${modulename}.hpp
         )
       add_dependencies(octave ${modulename}_${dim}_${order}.oct)
-      target_link_libraries( ${modulename}_${dim}_${order}.oct ${FEELPP_LIBRARIES} ${Octave_LIBRARIES})
+      target_link_libraries( ${modulename}_${dim}_${order}.oct feelpp ${FEELPP_LIBRARIES} ${Octave_LIBRARIES})
       set_target_properties( ${modulename}_${dim}_${order}.oct PROPERTIES PREFIX "" )
       set_target_properties( ${modulename}_${dim}_${order}.oct PROPERTIES SUFFIX "" )
     endforeach( order )
@@ -193,8 +195,9 @@ endmacro(add_octave_module)
 
 ENDIF( OCTAVE_FOUND )
 
-add_subdirectory(tutorial)
+
 add_subdirectory(python)
+
 
 if (NOT FEELPP_MINIMAL_CONFIGURATION)
   add_subdirectory(laplacian)

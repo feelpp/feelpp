@@ -19,6 +19,7 @@ namespace Feel
     - \subpage TutorialVisualize
     - \subpage TutorialIntegrals
     - \subpage TutorialSpaces
+    - \subpage TutorialBackend
  */
 /** \page ProgEnv Programming Environment
    - \subpage BuildingP
@@ -75,6 +76,7 @@ namespace Feel
     - \subpage StVenantKirchhoff
 */
 /** \page ElectroMagnetism Electro Magnetism
+   - \subpage Magnetostatic
    - \subpage Diode
 */
 /** \page MultiPhysics MultiPhysics
@@ -83,4 +85,5 @@ namespace Feel
 /** \page FAQ Frequently Asked Questions
    - \subpage FAQExecution
    - \subpage FAQDocumentation
+   - \subpage FAQDevelopment
  */

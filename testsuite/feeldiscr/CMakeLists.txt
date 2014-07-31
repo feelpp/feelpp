@@ -1,8 +1,6 @@
 set_directory_properties(PROPERTIES LABEL testdiscr )
 
 feelpp_add_test( aitken NO_MPI_TEST )
-feelpp_add_test( bdf )
-feelpp_add_test( bdf2 CFG test_bdf2.cfg )
 
 feelpp_add_test( disc NO_MPI_TEST )
 feelpp_add_test( element )
@@ -14,7 +12,10 @@ feelpp_add_test( functionallinearfree )
 feelpp_add_test( fspace_context )
 feelpp_add_test( geomap )
 
-feelpp_add_test( hdiv CFG hdiv.cfg)
+feelpp_add_test( spacefunc )
+
+
+feelpp_add_test( hdiv CFG hdiv.cfg NO_MPI_TEST)
 feelpp_add_test( hdiv_oneelt NO_MPI_TEST )
 feelpp_add_test( hdiv3D CFG hdiv3D.cfg)
 feelpp_add_test( hdiv3D_oneelt NO_MPI_TEST )
@@ -38,9 +39,7 @@ feelpp_add_test( normal3d )
 feelpp_add_test( on_inside GEO test_on_inside.geo)
 
 feelpp_add_test( operatorlinearfree )
-feelpp_add_test( project )
-feelpp_add_test( rbspace )
-feelpp_add_test( rbspacevector )
+feelpp_add_test( project NO_MPI_TEST)
 feelpp_add_test( spaces )
 feelpp_add_test( stencil )
 feelpp_add_test( submesh )
@@ -55,3 +54,7 @@ feelpp_add_test( exporter SRCS exporter.cpp  CFG exporter.cfg GEO bubble_inside.
 feelpp_add_test( extended )
 
 feelpp_add_test( nlSolveComposite CFG nlSolveComposite.cfg)
+
+if ( FEELPP_HAS_SLEPC )
+  feelpp_add_test( eigs )
+endif()

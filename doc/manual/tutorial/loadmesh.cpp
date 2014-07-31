@@ -38,8 +38,7 @@ int main( int argc, char** argv )
                                   _email="christophe.prudhomme@feelpp.org") );
 
 
-    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>,
-                         _filename=option(_name="gmsh.filename").as<std::string>() );
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
 
     LOG(INFO) << "mesh " << option(_name="gmsh.filename").as<std::string>() << " loaded";
 

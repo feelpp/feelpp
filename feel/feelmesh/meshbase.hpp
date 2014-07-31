@@ -192,7 +192,7 @@ public:
     /**
      * \return the measure of the mesh
      */
-    virtual double measure() const = 0;
+    virtual double measure( bool parallel = true ) const = 0;
 
     /**
      * \return true if the mesh has parametric nodes

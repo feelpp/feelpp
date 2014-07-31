@@ -149,6 +149,7 @@ public:
         M_barycenter( nRealDim ),
         M_barycenterfaces( nRealDim, numTopologicalFaces ),
         M_h( 1 ),
+        M_h_min(1),
         M_h_face( numTopologicalFaces, 1 ),
         M_h_edge( numLocalEdges, 1 ),
         M_measure( 1 ),
@@ -180,6 +181,7 @@ public:
         M_barycenter( nRealDim ),
         M_barycenterfaces( nRealDim, numTopologicalFaces ),
         M_h( 1 ),
+        M_h_min( 1 ),
         M_h_face( numTopologicalFaces, 1 ),
         M_h_edge( numLocalEdges, 1 ),
         M_measure( 1 ),
@@ -205,6 +207,7 @@ public:
         M_barycenter( e.M_barycenter ),
         M_barycenterfaces( e.M_barycenterfaces ),
         M_h( e.M_h ),
+        M_h_min( e.M_h_min ),
         M_h_face( e.M_h_face ),
         M_h_edge( e.M_h_edge ),
         M_measure( e.M_measure ),
@@ -309,6 +312,7 @@ public:
             M_barycenter = G.M_barycenter;
             M_barycenterfaces = G.M_barycenterfaces;
             M_h = G.M_h;
+            M_h_min = G.M_h_min;
             M_h_face = G.M_h_face;
             M_h_edge = G.M_h_edge;
 
@@ -584,7 +588,14 @@ public:
     {
         return M_h;
     }
-
+    /**
+     * @brief get the minimum edge length in the element
+     * @return the minimum edge length in the element
+     */
+    double hMin() const
+    { 
+        return M_h_min;
+    }
     /**
      * get the max length of the edge in the local face \c f
      *
@@ -866,7 +877,7 @@ private:
     node_type M_barycenter;
     matrix_node_type M_barycenterfaces;
 
-    double M_h;
+    double M_h,M_h_min;
     std::vector<double> M_h_face;
     std::vector<double> M_h_edge;
 
@@ -987,6 +998,7 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateWithPc( typename gm_type::precompute_pt
         typename gm_type::faces_precompute_type& pcf )
 {
     M_h = 0;
+    M_h_min = 0;
 
     for ( uint16_type __e = 0; __e < numLocalEdges; ++__e )
     {
@@ -994,6 +1006,7 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateWithPc( typename gm_type::precompute_pt
         node_type const& __x2 = this->point( this->eToP( __e, 1 ) ).node();
         M_h_edge[__e] = ublas::norm_2( __x1-__x2 );
         M_h = ( M_h > M_h_edge[__e] )?M_h:M_h_edge[__e];
+        M_h_min = ( M_h_min > M_h_edge[__e] )?M_h_edge[__e]:M_h_min;
     }
 
     auto M = glas::average( M_G );

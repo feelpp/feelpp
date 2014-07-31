@@ -36,7 +36,14 @@
 #include <utility>
 #include <vector>
 #include <map>
+#if defined(__INTEL_COMPILER)
+#pragma warning push
+#pragma warning(disable:780)
+#endif
 #include <glog/logging.h>
+#if defined(__INTEL_COMPILER)
+#pragma warning pop
+#endif
 
 namespace Feel
 {

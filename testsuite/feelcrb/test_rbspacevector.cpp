@@ -97,7 +97,7 @@ public :
     void run()
     {
         auto mesh=unitHypercube<Dim>();
-        Xh = Pchv<Order>( mesh );
+        auto Xh = Pchv<Order>( mesh );
 
         auto RbSpace = RbSpacePch( this->shared_from_this() );
         auto basis_x = vf::project( Xh , elements(mesh), vec( Px() , Px()*Px() ) );

@@ -42,7 +42,7 @@
 #include <feel/feeldiscr/region.hpp>
 #include <feel/feeldiscr/operatorlagrangep1.hpp>
 #include <feel/feelpoly/im.hpp>
-#include <feel/feeldiscr/bdf2.hpp>
+#include <feel/feelts/bdf.hpp>
 
 namespace Feel
 {

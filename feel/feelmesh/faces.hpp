@@ -464,6 +464,27 @@ public:
         return M_faces.upper_bound( face_type( m ) );
     }
 
+    pid_face_iterator beginFaceWithProcessId( rank_type p = invalid_rank_type_value )
+    {
+        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+        return M_faces.template get<Feel::detail::by_pid>().lower_bound( /*boost::make_tuple( part )*/ part );
+    }
+    pid_face_const_iterator beginFaceWithProcessId( rank_type p = invalid_rank_type_value ) const
+    {
+        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+        return M_faces.template get<Feel::detail::by_pid>().lower_bound( /*boost::make_tuple( part )*/ part );
+    }
+    pid_face_iterator endFaceWithProcessId( rank_type p = invalid_rank_type_value )
+    {
+        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+        return M_faces.template get<Feel::detail::by_pid>().upper_bound( /*boost::make_tuple( part )*/ part );
+    }
+    pid_face_const_iterator endFaceWithProcessId( rank_type p = invalid_rank_type_value ) const
+    {
+        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+        return M_faces.template get<Feel::detail::by_pid>().upper_bound( /*boost::make_tuple( part )*/ part );
+    }
+
     /**
      * \return the range of iterator \c (begin,end) over the faces
      * with marker \p m on processor \p p
@@ -528,7 +549,7 @@ public:
     std::pair<interprocess_face_iterator, interprocess_face_iterator>
     interProcessFaces( rank_type p = invalid_rank_type_value ) const
     {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
+        const rank_type part =  this->worldCommFaces().localRank();
         if ( p != invalid_rank_type_value )
             return M_faces.template get<Feel::detail::by_interprocessdomain>().equal_range( boost::make_tuple( true, part, p ) );
         else

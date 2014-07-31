@@ -340,6 +340,12 @@ void MatrixPetsc<T>::init ( const size_type m,
                    this->graph()->nNzOnProc().end(),
                    dnz );
         //std::copy( dnz, dnz+this->graph()->nNzOnProc().size(), std::ostream_iterator<PetscInt>( std::cout, "\n" ) );
+        for( int i = 0; i < this->graph()->nNzOnProc().size(); ++i )
+        {
+            DLOG_IF(ERROR, dnz[i] == n_global ) << "row " << i << " is full : number of non zero entries = " << dnz[i] << " == cols " << n_global;
+            LOG_IF(FATAL, dnz[i] > n_global ) << "row " << i << " has invalid data : number of non zero entries = " << dnz[i] << " == cols " << n_global;
+        }
+
         ierr = MatCreateSeqAIJ ( this->comm(), m_global, n_global,
                                  0,
                                  dnz,
@@ -949,6 +955,52 @@ MatrixPetsc<T>::printMatlab ( const std::string name ) const
      */
     ierr = PETSc::PetscViewerDestroy ( petsc_viewer );
     CHKERRABORT( this->comm(),ierr );
+}
+
+template <typename T>
+void
+MatrixPetsc<T>::createSubmatrix( MatrixSparse<T>& submatrix,
+                                 const std::vector<size_type>& rows,
+                                 const std::vector<size_type>& cols ) const
+{
+    //auto sub_graph = GraphCSR(rows.size()*cols.size(),0,rows.size()-1,0,cols.size()-1,this->comm());
+    auto sub_graph = graph_ptrtype(new graph_type(0,0,rows.size(),0,cols.size(),this->comm()));
+
+    MatrixPetsc<T>* A = dynamic_cast<MatrixPetsc<T>*> ( &submatrix );
+    A->setGraph( sub_graph );
+
+    int ierr=0;
+    IS isrow;
+    IS iscol;
+    PetscInt *rowMap;
+    PetscInt *colMap;
+    int nrow = rows.size();
+    int ncol = cols.size();
+
+    rowMap = new PetscInt[nrow];
+    colMap = new PetscInt[ncol];
+
+    for (int i=0; i<nrow; i++) rowMap[i] = rows[i];
+    for (int i=0; i<ncol; i++) colMap[i] = cols[i];
+
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
+    ierr = ISCreateGeneral(this->comm(),nrow,rowMap,PETSC_COPY_VALUES,&isrow);
+    CHKERRABORT( this->comm(),ierr );
+    ierr = ISCreateGeneral(this->comm(),ncol,colMap,PETSC_COPY_VALUES,&iscol);
+    CHKERRABORT( this->comm(),ierr );
+#else
+    ierr = ISCreateGeneral(this->comm(),nrow,rowMap,&isrow);
+    CHKERRABORT( this->comm(),ierr );
+    ierr = ISCreateGeneral(this->comm(),ncol,colMap,&iscol);
+    CHKERRABORT( this->comm(),ierr );
+#endif
+    ierr = MatGetSubMatrix(this->mat(), isrow, iscol, MAT_INITIAL_MATRIX, &A->mat());
+    CHKERRABORT( this->comm(),ierr );
+
+    ISDestroy( &isrow );
+    ISDestroy( &iscol );
+    delete[] rowMap;
+    delete[] colMap;
 }
 
 template <typename T>
@@ -1565,6 +1617,43 @@ MatrixPetsc<T>::updateBlockMat( boost::shared_ptr<MatrixSparse<T> > m, std::vect
     }
 
 
+}
+
+template<typename T>
+bool
+MatrixPetsc<T>::isSymmetric() const
+{
+    PetscBool b;
+    MatIsSymmetric( M_mat, 1e-13, &b );
+    return b;
+}
+
+template<typename T>
+bool
+MatrixPetsc<T>::isTransposeOf ( MatrixSparse<T> &Trans ) const
+{
+    FEELPP_ASSERT( this->size2() == Trans.size1() )( this->size2() )( Trans.size1() ).error( "incompatible dimension" );
+
+    MatrixPetsc<T>* In = dynamic_cast<MatrixPetsc<T>*> ( &Trans );
+
+    Mat Atrans;
+    PetscTruth isSymmetric;
+    int ierr = 0;
+
+#if (PETSC_VERSION_MAJOR >= 3)
+    ierr = MatTranspose( M_mat, MAT_INITIAL_MATRIX, &Atrans );
+#else
+    ierr = MatTranspose( M_mat, &Atrans );
+#endif
+    CHKERRABORT( this->comm(),ierr );
+
+    ierr = MatEqual( In->M_mat, Atrans, &isSymmetric );
+    CHKERRABORT( this->comm(),ierr );
+
+    ierr = PETSc::MatDestroy ( Atrans );
+    CHKERRABORT( this->comm(),ierr );
+
+    return isSymmetric;
 }
 
 template <typename T>

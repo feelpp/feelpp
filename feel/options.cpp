@@ -74,6 +74,8 @@ generic_options()
         ( "feelinfo", "prints feel libraries information" )
         ( "nochdir", "Don't change repository directory even though it is called" )
         ( "directory", po::value<std::string>(), "change directory to specified one" )
+        ( "npdir", po::value<bool>()->default_value(true), "enable/disable sub-directory np_<number of processors>")
+        ( "fail-on-unknown-option", po::value<bool>()->default_value(false), "exit feel++ application if unknown option found" )
         ;
     return generic;
 }
@@ -149,6 +151,21 @@ parameters_options( std::string const& prefix )
 }
 
 po::options_description
+nlopt_options( std::string const& prefix )
+{
+    po::options_description _options( "NLopt " + prefix + " options" );
+    _options.add_options()
+    // solver options
+        ( prefixvm( prefix,"nlopt.ftol_rel" ).c_str(), Feel::po::value<double>()->default_value( 1e-4 ), "NLopt objective function relative tolerance" )
+        ( prefixvm( prefix,"nlopt.ftol_abs" ).c_str(), Feel::po::value<double>()->default_value( 1e-10 ), "NLopt objective function  absolute tolerance" )
+        ( prefixvm( prefix,"nlopt.xtol_rel" ).c_str(), Feel::po::value<double>()->default_value( 1e-4 ), "NLopt variables  relative tolerance" )
+        ( prefixvm( prefix,"nlopt.xtol_abs" ).c_str(), Feel::po::value<double>()->default_value( 1e-10 ), "NLopt variables  absolute tolerance" )
+        ( prefixvm( prefix,"nlopt.maxeval" ).c_str(), Feel::po::value<double>()->default_value( 30 ), "NLopt maximum number of evaluations" )
+        ;
+    return _options;
+}
+
+po::options_description
 gmsh_options( std::string const& prefix )
 {
     po::options_description _options( "Gmsh " + prefix + " options" );
@@ -159,10 +176,11 @@ gmsh_options( std::string const& prefix )
         ( prefixvm( prefix,"gmsh.hsize" ).c_str(), Feel::po::value<double>()->default_value( 0.1 ), "default characteristic mesh size" )
         ( prefixvm( prefix,"gmsh.hsize2" ).c_str(), Feel::po::value<double>()->default_value( 0.1 ), "characteristic mesh size" )
         ( prefixvm( prefix,"gmsh.geo-variables-list" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "modify a list of geo variables (ex : alpha=1:beta=2)" )
-        ( prefixvm( prefix,"gmsh.refine" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "refinement by splitting level" )
+        ( prefixvm( prefix,"gmsh.save" ).c_str(), Feel::po::value<bool>()->default_value( true ), "save msh file to disk once generated" )
         ( prefixvm( prefix,"gmsh.straighten" ).c_str(), Feel::po::value<bool>()->default_value( true ), "straighten high order mesh" )
         ( prefixvm( prefix,"gmsh.structured" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "generated a structured mesh" )
         ( prefixvm( prefix,"gmsh.rebuild" ).c_str(), Feel::po::value<bool>()->default_value( true ), "force rebuild msh file from geo file" )
+        ( prefixvm( prefix,"gmsh.refine" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "refinement by splitting level" )
         ( prefixvm( prefix,"gmsh.physical_are_elementary_regions" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Physical regions are defined by elementary regions, useful for medit format" )
         ( prefixvm( prefix,"gmsh.partition" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Partition Gmsh mesh once generated or loaded" )
         ( prefixvm( prefix,"gmsh.respect_partition" ).c_str(), Feel::po::value<bool>()->default_value( false ), "true to respect paritioning when mesh is loaded, false to ensure that partition is within the number of processors" )
@@ -201,6 +219,9 @@ gmsh_domain_options( std::string const& prefix )
         ( prefixvm( prefix,"gmsh.domain.xmax" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "maximum value in x-direction" )
         ( prefixvm( prefix,"gmsh.domain.ymax" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "maximum value in y-direction" )
         ( prefixvm( prefix,"gmsh.domain.zmax" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "maximum value in z-direction" )
+        ( prefixvm( prefix,"gmsh.domain.nx" ).c_str(), Feel::po::value<double>()->default_value( 2 ), "number of subdivison in in x-direction" )
+        ( prefixvm( prefix,"gmsh.domain.ny" ).c_str(), Feel::po::value<double>()->default_value( 2 ), "number of subdivison in in y-direction" )
+        ( prefixvm( prefix,"gmsh.domain.nz" ).c_str(), Feel::po::value<double>()->default_value( 2 ), "number of subdivison in in z-direction" )
         ;
 
 
@@ -562,6 +583,10 @@ exporter_options( std::string const& prefix )
         //  single
         ( prefixvm( prefix,"exporter.fileset" ).c_str(), Feel::po::value<bool>()->default_value( false ), "use fileset for transient simulations" )
 
+        // merge timeteps or domains into single files
+        ( prefixvm( prefix,"exporter.merge.markers" ).c_str(), Feel::po::value<bool>()->default_value( true ), "Merge exported data from different markers into a single file (reduces the number of output files )" )
+        ( prefixvm( prefix,"exporter.merge.timesteps" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Merge exported timesteps into a single file (reduces the number of output files)" )
+
         ;
     return _options;
 }
@@ -591,6 +616,9 @@ feel_options( std::string const& prefix  )
 
         /* exporter options */
         .add( exporter_options( prefix ) )
+
+        /* nlopt options */
+        .add( nlopt_options( prefix ) )
 
         /* gmsh options */
         .add( gmsh_options( prefix ) )

@@ -7,6 +7,7 @@
 #include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelfilters/creategmshmesh.hpp>
+#include <feel/feelfilters/savegmshmesh.hpp>
 #include <feel/feelfilters/domain.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelfilters/exporter.hpp>
@@ -181,6 +182,7 @@ void run( Application_ptrtype & theApp )
     auto Wh = Xh3D->wireBasket();
     FEELPP_ASSERT( Wh->mesh()->numElements() != 0 )( Wh->mesh()->numElements() ).error( "invalid wirebasket mesh" );
 
+    saveGMSHMesh(_mesh=Wh->mesh(), _filename="wirebasket.msh");
     auto w = Wh->element();
     auto z = Wh->element();
 
@@ -190,6 +192,12 @@ void run( Application_ptrtype & theApp )
     z.setOnes();
     std::cout << "measure from mass = " << M->energy( w, w ) << "\n";
     BOOST_CHECK_CLOSE( M->energy( w, w ), 12., 1e-12 );
+
+    // test merkerToDof
+    const std::string str = "WireBasket";
+    auto dft = Xh3D->dof()->markerToDof(str);
+    std::cout<<"nDof= "<< std::distance(dft.first,dft.second) <<"\n";
+    FEELPP_ASSERT( std::distance(dft.first,dft.second) != 0 )( std::distance(dft.first,dft.second) ).error( "invalid wirebasket nDof" );
 
     //-------------------------------------------------------------------------------------------------------
 

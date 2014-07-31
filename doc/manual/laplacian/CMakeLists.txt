@@ -28,7 +28,7 @@ feelpp_add_application( doc_laplacian_lagrange_multiplier SRCS laplacian_lagrang
 feelpp_add_application( doc_laplacian_periodic SRCS laplacian_periodic.cpp LABELS doc NO_MPI_TEST )
 feelpp_add_application( doc_laplacian_harmonic SRCS harmonic.cpp LABELS doc  )
 
-feelpp_add_application( doc_laplacian_quad SRCS laplacian_quad.cpp LABELS doc  CFG laplacian_polar.cfg)
+feelpp_add_application( doc_laplacian_quad SRCS laplacian_quad.cpp LABELS doc  CFG laplacian_quad.cfg)
 feelpp_add_application( doc_laplacian_with_holes SRCS laplacian_with_holes.cpp LABELS doc  )
 
 # DG examples

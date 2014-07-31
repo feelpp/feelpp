@@ -40,6 +40,7 @@
 #endif /* BOOST_VERSION >= 103400 */
 
 #include <Eigen/Core>
+#include <unsupported/Eigen/MatrixFunctions>
 
 #include <feel/feelalg/matrixsparse.hpp>
 #include <feel/feelalg/vectorublas.hpp>
@@ -91,7 +92,7 @@ public:
 
     MatrixEigenDense();
 
-    MatrixEigenDense( size_type r, size_type c );
+    MatrixEigenDense( size_type r, size_type c, WorldComm const& worldComm=Environment::worldComm() );
 
     MatrixEigenDense( MatrixEigenDense const & m );
 
@@ -357,6 +358,32 @@ public:
      */
     void addMatrix( value_type v, MatrixSparse<value_type>& _m );
 
+
+    /**
+     * Multiply this by a Sparse matrix \p In,
+     * stores the result in \p Res:
+     * \f$ Res = \texttt{this}*In \f$.
+     */
+    void matMatMult ( MatrixSparse<value_type> const& In, MatrixSparse<value_type> &Res );
+
+    /**
+     * Multiply this by a Sparse matrix \p In,
+     * stores the result in \p Res:
+     * \f$ Res = \texttt{this}*In \f$.
+     */
+    void matInverse ( MatrixSparse<value_type> &Inv );
+
+    /**
+     * This function creates a matrix called "submatrix" which is defined
+     * by the row and column indices given in the "rows" and "cols" entries.
+     * Currently this operation is only defined for the PetscMatrix type.
+     */
+    void createSubmatrix( MatrixSparse<T>& submatrix,
+                          const std::vector<size_type>& rows,
+                          const std::vector<size_type>& cols ) const;
+
+
+
     /**
      * Add the full matrix to the
      * Sparse matrix.  This is useful
@@ -402,6 +429,42 @@ public:
     real_type linftyNorm() const
     {
         return real_type( 0 );
+    }
+
+    /**
+     * Return the square root of the matrix
+     */
+    void sqrt( MatrixSparse<value_type>& _m ) const;
+
+    boost::shared_ptr<MatrixEigenDense<T>> sqrt() const;
+
+    /**
+     * Compute the eigenvalues of the current Sparse matrix,
+     * stores the result in \p Eingvs:
+     * \f$ Engvs = \texttt{this}*In \f$.
+     */
+    void eigenValues ( std::vector<std::complex<value_type>> &Eingvs );
+
+
+
+    MatrixEigenDense<T>  operator * ( MatrixEigenDense<T> const& M )
+    {
+        MatrixEigenDense<T>  R;
+        R.mat() = this->mat() * M.mat();
+        return R;
+    }
+
+    MatrixEigenDense<T>  operator - ( MatrixEigenDense<T> const& M )
+    {
+        MatrixEigenDense<T>  R;
+        R.mat() = this->mat() - M.mat();
+        return R;
+    }
+
+    MatrixEigenDense<T> & operator = ( MatrixEigenDense<T> const& M )
+    {
+        M_mat = M.mat();
+        return *this;
     }
 
     /**
