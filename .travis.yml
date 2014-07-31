@@ -1,6 +1,7 @@
 os:
   - linux
 git:
+  depth: 1
   submodules: false
 language: cpp
 compiler:
