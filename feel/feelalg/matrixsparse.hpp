@@ -311,6 +311,18 @@ public:
     {
         return M_mprop.test( DENSE );
     }
+
+    /**
+     * \return true if matrix is symmetric, false otherwise
+     */
+    virtual bool isSymmetric() const;
+
+    /**
+     * \return true if \p this is the transpose of Trans, false otherwise
+     */
+    virtual bool isTransposeOf ( MatrixSparse<value_type> &Trans ) const;
+
+
     void checkProperties() const
     {
         if ( !haveConsistentProperties() )
@@ -714,6 +726,17 @@ public:
         }
     }
 #endif
+    virtual void sqrt( MatrixSparse<value_type>& _m ) const;
+
+    void sqrt( boost::shared_ptr<MatrixSparse<value_type> >& _m ) const
+    {
+        sqrt(*_m);
+    }
+
+    virtual void matMatMult ( MatrixSparse<value_type> const& In, MatrixSparse<value_type> &Res );
+
+    virtual void matInverse ( MatrixSparse<value_type> &Inv );
+
 protected:
     /**
      * Protected implementation of the create_submatrix and reinit_submatrix
@@ -875,6 +898,52 @@ struct is_matrix_ptr<boost::shared_ptr<MatrixType> >
         MatrixType>
 {};
 }
+
+template <typename T>
+void MatrixSparse<T>::sqrt( MatrixSparse<value_type>& _m ) const
+{
+    std::cerr << "Error! This function is not yet implemented in the base class!"
+              << std::endl;
+    FEELPP_ASSERT( 0 ).error( "invalid call" );
+}
+
+template <typename T>
+void MatrixSparse<T>::matMatMult ( MatrixSparse<value_type> const& In, MatrixSparse<value_type> &Res )
+{
+    std::cerr << "Error! This function is not yet implemented in the base class!"
+              << std::endl;
+    FEELPP_ASSERT( 0 ).error( "invalid call" );
+}
+
+template <typename T>
+void MatrixSparse<T>::matInverse ( MatrixSparse<value_type> &Inv )
+{
+    std::cerr << "Error! This function is not yet implemented in the base class!"
+              << std::endl;
+    FEELPP_ASSERT( 0 ).error( "invalid call" );
+}
+
+
+template <typename T>
+bool MatrixSparse<T>::isSymmetric () const
+{
+    std::cerr << "Error! This function is not yet implemented in the base class!"
+              << std::endl;
+    FEELPP_ASSERT( 0 ).error( "invalid call" );
+
+    return 0;
+}
+
+template <typename T>
+bool MatrixSparse<T>::isTransposeOf ( MatrixSparse<value_type> &Trans ) const
+{
+    std::cerr << "Error! This function is not yet implemented in the base class!"
+              << std::endl;
+    FEELPP_ASSERT( 0 ).error( "invalid call" );
+
+    return 0;
+}
+
 } // Feel
 
 #endif // #ifndef __sparse_matrix_h__

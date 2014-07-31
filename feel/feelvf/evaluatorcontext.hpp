@@ -178,11 +178,14 @@ EvaluatorContext<CTX, ExprT>::operator()() const
     if( M_projection )
         return evaluateProjection();
 
+    auto Xh = M_ctx.ptrFunctionSpace();
+    auto const& worldComm = Xh->worldComm();
+
     //rank of the current processor
-    int proc_number = Environment::worldComm().globalRank();
+    int proc_number = worldComm.globalRank();
 
     //total number of processors
-    int nprocs = Environment::worldComm().globalSize();
+    int nprocs = worldComm.globalSize();
 
     auto it = M_ctx.begin();
     auto en = M_ctx.end();
@@ -258,7 +261,7 @@ EvaluatorContext<CTX, ExprT>::operator()() const
     }
 
 
-    if( ! M_mpi_communications )
+    if( ! M_mpi_communications || nprocs == 1 )
     {
         //in this case, we don't call mpi::all_reduce
         //to fill __globalv
@@ -266,7 +269,7 @@ EvaluatorContext<CTX, ExprT>::operator()() const
     }
 
     //bring back each proc contribution in __globalv
-    mpi::all_reduce( Environment::worldComm() , __localv, __globalv, std::plus< element_type >() );
+    mpi::all_reduce( worldComm , __localv, __globalv, std::plus< element_type >() );
     //LOG( INFO ) << "__globalv : "<<__globalv;
     return __globalv;
 }
@@ -289,8 +292,10 @@ template<typename CTX, typename ExprT>
 typename EvaluatorContext<CTX, ExprT>::element_type
 EvaluatorContext<CTX, ExprT>::evaluateProjection( mpl::bool_<true> ) const
 {
-    int proc_number = Environment::worldComm().globalRank();
-    int nprocs = Environment::worldComm().globalSize();
+    auto Xh = M_ctx.ptrFunctionSpace();
+    auto const& worldComm = Xh->worldComm();
+    int proc_number = worldComm.globalRank();
+    int nprocs = worldComm.globalSize();
 
     auto it = M_ctx.begin();
     auto en = M_ctx.end();
@@ -329,7 +334,6 @@ EvaluatorContext<CTX, ExprT>::evaluateProjection( mpl::bool_<true> ) const
 
         t_expr_type tensor_expr( M_expr, mapgmc );
 
-        auto Xh = M_ctx.ptrFunctionSpace();
         //loop on local points
         for ( int p = 0; it!=en ; ++it, ++p )
         {
@@ -359,11 +363,11 @@ EvaluatorContext<CTX, ExprT>::evaluateProjection( mpl::bool_<true> ) const
     }
 
 
-    if( ! M_mpi_communications )
+    if( ! M_mpi_communications || nprocs == 1 )
     {
         return __localv;
     }
-    mpi::all_reduce( Environment::worldComm() , __localv, __globalv, std::plus< element_type >() );
+    mpi::all_reduce( worldComm , __localv, __globalv, std::plus< element_type >() );
     return __globalv;
 
 }

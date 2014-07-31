@@ -48,8 +48,9 @@ matrix div( matrix const& f, std::vector<symbol> const& l );
 matrix curl( ex const& f, std::vector<symbol> const& l );
 matrix curl( matrix const& f, std::vector<symbol> const& l );
 matrix laplacian( matrix const& f, std::vector<symbol> const& l );
+ex laplacian( std::string const& s, std::vector<symbol> const& l, std::vector<symbol> const& p );
 
-ex diff(ex const& f, symbol const& l, const int n);
+matrix diff(ex const& f, symbol const& l, const int n);
 matrix diff(matrix const& f, symbol const& l, const int n);
 
 ex substitute(ex const& f, symbol const& l, const double val );
@@ -191,6 +192,7 @@ inline
 Expr< GinacEx<2> >
 expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym, std::string filename="" )
 {
+    VLOG(2)<< "expr(GiNaC::ex)\n";
     return Expr< GinacEx<2> >(  GinacEx<2>( f, lsym, filename ) );
 }
 
@@ -510,6 +512,7 @@ inline
 Expr< GinacMatrix<1,1,2> >
 expr( GiNaC::matrix const& f, std::vector<GiNaC::symbol> const& lsym, std::string filename="")
 {
+    VLOG(2) << "expr(Ginac::matrix(1,1)\n";
     return Expr< GinacMatrix<1,1,2> >(  GinacMatrix<1,1,2>( f, lsym, filename ) );
 }
 

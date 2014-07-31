@@ -18,28 +18,39 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   endif()
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
   message(STATUS "Intel version :  ${CMAKE_CXX_COMPILER_VERSION}")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "XL")
+  message(STATUS "IBM XL compiler version :  ${CMAKE_CXX_COMPILER_VERSION}")
 else()
   message(WARNING "You are using an unsupported compiler! Compilation has only been tested with Clang and GCC.")
   message(WARNING "CMAKE_CXX_COMPILER_ID=" ${CMAKE_CXX_COMPILER_ID})
 endif()
 
 #should check the version of gcc for -std=c++0x ou -std=c++11
-set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x" )
-IF("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-  IF(APPLE)
-    set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -std=c++11 -stdlib=libc++ -ftemplate-depth=1024" )
-  ELSE()
-    set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -std=c++11 -stdlib=libstdc++ -ftemplate-depth=1024" )
+
+IF( ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU") OR
+    ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang") OR
+    ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel") )
+  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -std=c++11" )
+  if ( NOT ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel") )
+    set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-depth=1024" )
+  endif()
+  if ( "${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel")
+    set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -wd3373" )
+  endif()
+  IF("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+    IF(APPLE OR FEELPP_USE_CLANG_LIBCXX)
+      message(STATUS "Use clang libc++")
+      set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++" )
+    ELSE()
+      set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libstdc++" )
+    ENDIF()
   ENDIF()
 ENDIF()
 
-IF("${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel")
-  IF(APPLE)
-    set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -std=c++11 -stdlib=libc++" )
-  #ELSE()
-    #set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -std=c++11 -stdlib=libstdc++" )
-  ENDIF()
-ENDIF()
+# IBM XL compiler
+IF( ("${CMAKE_CXX_COMPILER_ID}" MATCHES "XL") )
+  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -qlanglvl=extc1x" )
+endif()
 
 LIST(REMOVE_DUPLICATES CMAKE_CXX_FLAGS)
 LIST(REMOVE_DUPLICATES CMAKE_CXX_FLAGS_DEBUG)
@@ -114,7 +125,21 @@ if ( FEELPP_ENABLE_TBB )
   ENDIF (TBB_FOUND )
 endif()
 
-FIND_PACKAGE(OpenMP)
+# only activate OpenMP for gcc
+# (clang support should be ok by 3.5)
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    OPTION( FEELPP_ENABLE_OPENMP "Enable OpenMP" OFF )
+    if ( FEELPP_ENABLE_OPENMP )
+        FIND_PACKAGE(OpenMP)
+
+        if(OPENMP_FOUND)
+            set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}" )
+            set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}" )
+            SET( FEELPP_HAS_OPENMP 1 )
+            SET( FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} OpenMP" )
+        endif()
+    endif()
+endif()
 
 # on APPLE enfore the use of macports openmpi version
 if ( APPLE )
@@ -136,7 +161,71 @@ IF ( MPI_FOUND )
   SET(FEELPP_LIBRARIES ${MPI_LIBRARIES} ${FEELPP_LIBRARIES})
   INCLUDE_DIRECTORIES(${MPI_INCLUDE_PATH})
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Mpi" )
+
+  # Check for MPI IO Support
+
+  #TRY_COMPILE(MPIIO_SUCCESS ${CMAKE_CURRENT_BINARY_DIR}/tryCompileMPIIO
+  #${CMAKE_SOURCE_DIR}/cmake/codes/try-mpiio.cpp
+  #LINK_LIBRARIES ${FEELPP_LIBRARIES} )
+  set(CMAKE_REQUIRED_LIBRARIES_save ${CMAKE_REQUIRED_LIBRARIES})
+  set(CMAKE_REQUIRED_LIBRARIES ${MPI_LIBRARIES})
+  set(CMAKE_REQUIRED_INCLUDES_save ${CMAKE_REQUIRED_INCLUDES})
+  set(CMAKE_REQUIRED_INCLUDES ${MPI_INCLUDE_PATH})
+  CHECK_CXX_SOURCE_COMPILES(
+      "
+      #include <mpi.h>
+
+      int main(int argc, char** argv)
+      {
+      MPI_File fh;
+      MPI_Status status;
+      MPI_Info info;
+      }
+      "
+      MPIIO_DETECTED)
+
+  # Check if we have the types from the 2.2 standard
+  # needed for MPI IO
+  CHECK_CXX_SOURCE_COMPILES(
+      "
+      #include <mpi.h>
+
+      int main(int argc, char** argv)
+      {
+      MPI_INT32_T i32;
+      MPI_INT64_T i64;
+      }
+      "
+      MPIIO_HAS_STD_22_TYPES)
+  set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES_save})
+  set(CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES_save})
+
+  # should be comptible with 2.2 standard
+  IF (NOT MPIIO_HAS_STD_22_TYPES)
+      include(CheckTypeSize)
+      check_type_size("int" SIZEOF_INT BUILTIN_TYPES_ONLY)
+      IF(SIZEOF_INT STREQUAL 4)
+          SET(FEELPP_MPI_INT32 MPI_INT)
+      ELSE()
+          MESSAGE(FATAL_ERROR "MPIIO: Cannot find a compatible int32 type")
+      ENDIF()
+      check_type_size("long" SIZEOF_LONG_LONG BUILTIN_TYPES_ONLY)
+      IF(SIZEOF_LONG_LONG STREQUAL 8)
+          SET(FEELPP_MPI_INT64 MPI_LONG_LONG)
+      ELSE()
+          MESSAGE(FATAL_ERROR "MPIIO: Cannot find a compatible int64 type")
+      ENDIF()
+  ENDIF()
+
+  IF (MPIIO_DETECTED)
+      MESSAGE(STATUS "MPIIO detected and enabled.")
+      SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Mpi-IO" )
+      SET(FEELPP_HAS_MPIIO 1)
+  ELSE()
+      MESSAGE(WARNING "MPIIO not detected and disabled (Related features disable, e.g. Ensight Gold exporter).")
+  ENDIF()
 ENDIF()
+
 
 
 
@@ -154,7 +243,12 @@ ELSE ()
   CHECK_FUNCTION_EXISTS (dlopen FEELPP_HAS_DLOPEN)
 ENDIF (FEELPP_HAS_LIBDL)
 
-
+find_package(GMP)
+if ( GMP_FOUND )
+  SET(FEELPP_LIBRARIES  ${GMP_LIBRARIES} ${FEELPP_LIBRARIES})
+  message(STATUS "GMP: ${GMP_LIBRARIES}" )
+  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Gmp" )
+endif()
 #
 # Blas and Lapack
 #
@@ -172,7 +266,7 @@ if (APPLE)
   ENDIF()
   FIND_PACKAGE(LAPACK )
 else (APPLE)
-  FIND_PACKAGE(LAPACK REQUIRED)
+  FIND_PACKAGE(LAPACK)
 endif (APPLE)
 SET(FEELPP_LIBRARIES  ${LAPACK_LIBRARIES} ${FEELPP_LIBRARIES})
 
@@ -258,13 +352,33 @@ INCLUDE_DIRECTORIES(BEFORE contrib/)
 #ENDIF()
 
 add_definitions(-DHAVE_LIBDL)
-# cln and ginac
+
 if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/contrib )
+
+  #
+  # cln and ginac
+  #
   add_definitions(-DIN_GINAC -DHAVE_LIBDL)
   include_directories(${FEELPP_BUILD_DIR}/contrib/cln/include ${FEELPP_SOURCE_DIR}/contrib/ginac/ ${FEELPP_BUILD_DIR}/contrib/ginac/ ${FEELPP_SOURCE_DIR}/contrib/ginac/ginac ${FEELPP_BUILD_DIR}/contrib/ginac/ginac )
   SET(FEELPP_LIBRARIES feelpp_ginac ${CLN_LIBRARIES} ${FEELPP_LIBRARIES} ${CMAKE_DL_LIBS} )
   set(DL_LIBS ${CMAKE_DL_LIBS})
   add_subdirectory(contrib/ginac)
+
+endif()
+
+#
+# nlopt
+#
+find_package(NLOpt)
+if ( NLOPT_FOUND )
+  include_directories(${NLOPT_INCLUDE_DIR})
+  SET(FEELPP_LIBRARIES ${NLOPT_LIBRARY} ${FEELPP_LIBRARIES} )
+  message(STATUS "NLOpt: ${NLOPT_LIBRARY}" )
+  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} NLOpt" )
+  SET(FEELPP_HAS_NLOPT 1)
+else()
+  #add_subdirectory(contrib/nlopt)
+  #SET(FEELPP_LIBRARIES feelpp_nlopt ${FEELPP_LIBRARIES} )
 endif()
 
 #
@@ -302,12 +416,12 @@ if (NOT EIGEN3_FOUND AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CM
   option(EIGEN_BUILD_PKGCONFIG "Build pkg-config .pc file for Eigen" OFF)
   set(EIGEN_INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/include/feel)
   add_subdirectory(contrib/eigen)
-  INCLUDE_DIRECTORIES( ${FEELPP_SOURCE_DIR}/contrib/eigen )
+  set( EIGEN3_INCLUDE_DIR ${FEELPP_SOURCE_DIR}/contrib/eigen )
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Eigen3/Contrib" )
 elseif( EIGEN3_FOUND )
-  INCLUDE_DIRECTORIES( ${EIGEN3_INCLUDE_DIR} )
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Eigen3/System" )
 endif()
+INCLUDE_DIRECTORIES( ${EIGEN3_INCLUDE_DIR} )
 message(STATUS "Eigen3: ${EIGEN3_INCLUDE_DIR}" )
 
 #FIND_PACKAGE(Eigen2 REQUIRED)
@@ -655,7 +769,7 @@ if ( VTK_FOUND )
   if ( NOT FEELPP_ENABLE_OPENGL )
     SET(VTK_LIBRARIES "-lvtkRendering -lvtkGraphics -lvtkImaging  -lvtkFiltering -lvtkCommon -lvtksys" )
   endif()
-  MESSAGE(STATUS "Use VTK_LIBRARIES ${VTK_LIBRARIES}")
+  MESSAGE(STATUS "Use VTK_LIBRARIES")# ${VTK_LIBRARIES}")
   INCLUDE_DIRECTORIES(${VTK_INCLUDE_DIRS})
   MARK_AS_ADVANCED( VTK_DIR )
   SET(FEELPP_LIBRARIES ${VTK_LIBRARIES} ${FEELPP_LIBRARIES})
@@ -774,7 +888,7 @@ else()
     ${FEELPP_SOURCE_DIR}/
     ${FEELPP_SOURCE_DIR}/contrib/gmm/include
     )
-  SET(FEELPP_LIBRARIES feelpp  ${FEELPP_LIBRARIES})
+	#SET(FEELPP_LIBRARIES feelpp  ${FEELPP_LIBRARIES})
 endif()
 
 

@@ -608,26 +608,24 @@ public:
      */
     real_type min() const
     {
+        return this->min( true );
+    }
+    real_type min( bool parallel ) const
+    {
         checkInvariant();
 
         real_type local_min = (this->localSize()>0)?
             *std::min_element( M_vec.begin(), M_vec.end() ) :
             std::numeric_limits<real_type>::max() ;
-
         real_type global_min = local_min;
 
-
-
 #ifdef FEELPP_HAS_MPI
-
-        if ( this->comm().size() > 1 )
+        if ( parallel && this->comm().size() > 1 )
         {
             MPI_Allreduce ( &local_min, &global_min, 1,
                             MPI_DOUBLE, MPI_MIN, this->comm() );
         }
-
 #endif
-
         return global_min;
     }
     /**
@@ -636,25 +634,24 @@ public:
      */
     real_type max() const
     {
+        return this->max( true );
+    }
+    real_type max( bool parallel ) const
+    {
         checkInvariant();
 
         real_type local_max = (this->localSize()>0)?
             *std::max_element( M_vec.begin(), M_vec.end() ) :
             std::numeric_limits<real_type>::min() ;
-
         real_type global_max = local_max;
 
-
 #ifdef FEELPP_HAS_MPI
-
-        if ( this->comm().size() > 1 )
+        if ( parallel && this->comm().size() > 1 )
         {
             MPI_Allreduce ( &local_max, &global_max, 1,
                             MPI_DOUBLE, MPI_MAX, this->comm() );
         }
-
 #endif
-
         return global_max;
     }
 

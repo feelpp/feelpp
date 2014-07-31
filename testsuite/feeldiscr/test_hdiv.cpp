@@ -243,7 +243,7 @@ TestHDiv::exampleProblem1()
     auto l2err_u = normL2( _range=elements(mesh), _expr=idv(u_l) - idv(u_rt) );
     auto l2err_p = normL2( _range=elements(mesh), _expr=idv(p_l) - idv(p_rt) );
 
-    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+    if( Environment::isMasterRank() )
         {
             std::cout << "||u(primal) - u(dual-mixed)|| = " << l2err_u << std::endl;
             std::cout << "||p(primal) - p(dual-mixed)|| = " << l2err_p << std::endl;
@@ -282,34 +282,34 @@ TestHDiv::testProjector()
     // L2 projection (Lagrange)
     auto l2_lagV = opProjection( _domainSpace=Yh_v, _imageSpace=Yh_v, _type=L2 ); //l2 vectorial proj
     auto l2_lagS = opProjection( _domainSpace=Yh_s, _imageSpace=Yh_s, _type=L2 ); //l2 scalar proj
-    auto E_pL2_lag = l2_lagV->project( _expr= trans(E) );
+    auto E_pL2_lag = l2_lagV->project( _expr= E );
     auto error_pL2_lag = l2_lagS->project( _expr=divv(E_pL2_lag) - f );
 
     // L2 projection (RT)
     auto l2_rt = opProjection( _domainSpace=RTh, _imageSpace=RTh, _type=L2 );
-    auto E_pL2_rt = l2_rt->project( _expr= trans(E) );
+    auto E_pL2_rt = l2_rt->project( _expr= E );
     auto error_pL2_rt = l2_lagS->project( _expr=divv(E_pL2_lag) - f );
 
     // H1 projection (Lagrange)
     auto h1_lagV = opProjection( _domainSpace=Yh_v, _imageSpace=Yh_v, _type=H1 ); //h1 vectorial proj
     auto h1_lagS = opProjection( _domainSpace=Yh_s, _imageSpace=Yh_s, _type=H1 ); //h1 scalar proj
-    auto E_pH1_lag = h1_lagV->project( _expr= trans(E), _grad_expr=mat<2,2>(cst(0.),cst(1.),cst(1.),cst(0.)) );
+    auto E_pH1_lag = h1_lagV->project( _expr= E, _grad_expr=mat<2,2>(cst(0.),cst(1.),cst(1.),cst(0.)) );
     auto error_pH1_lag = l2_lagS->project( _expr=divv(E_pH1_lag) - f );
 
     // H1 projection (RT)
     auto h1_rt = opProjection( _domainSpace=RTh, _imageSpace=RTh, _type=H1 ); //h1 vectorial proj
-    auto E_pH1_rt = h1_rt->project( _expr= trans(E), _grad_expr=mat<2,2>(cst(0.),cst(1.),cst(1.),cst(0.)) );
+    auto E_pH1_rt = h1_rt->project( _expr= E, _grad_expr=mat<2,2>(cst(0.),cst(1.),cst(1.),cst(0.)) );
     auto error_pH1_rt = l2_lagS->project( _expr=divv(E_pH1_rt) - f );
 
     // HDIV projection (Lagrange)
     auto hdiv_lagV = opProjection( _domainSpace=Yh_v, _imageSpace=Yh_v, _type=HDIV );
     auto hdiv_lagS = opProjection( _domainSpace=Yh_s, _imageSpace=Yh_s, _type=HDIV );
-    auto E_pHDIV_lag = hdiv_lagV->project( _expr= trans(E), _div_expr=cst(0.) );
+    auto E_pHDIV_lag = hdiv_lagV->project( _expr= E, _div_expr=cst(0.) );
     auto error_pHDIV_lag = l2_lagS->project( _expr=divv(E_pHDIV_lag) - f );
 
     // HDIV projection (RT)
     auto hdiv = opProjection( _domainSpace=RTh, _imageSpace=RTh, _type=HDIV ); //hdiv proj (RT elts)
-    auto E_pHDIV_rt = hdiv->project( _expr= trans(E), _div_expr=cst(0.) );
+    auto E_pHDIV_rt = hdiv->project( _expr= E, _div_expr=cst(0.) );
     auto error_pHDIV_rt = l2_lagS->project( _expr=divv(E_pHDIV_rt) - f );
 
     BOOST_TEST_MESSAGE("L2 projection [Lagrange]: error[div(E)-f]");
