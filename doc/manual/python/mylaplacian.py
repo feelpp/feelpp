@@ -1,3 +1,5 @@
+## to move into the folders where Python libraries are created
+
 #!/usr/bin/python
 
 from mpi4py import MPI

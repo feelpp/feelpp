@@ -1,6 +1,6 @@
-#!/usr/bin/python
+## to move into the folders where Python libraries are created
 
-# to place where the libPyInteg is created
+#!/usr/bin/python
 
 from mpi4py import MPI
 import libPyInteg
@@ -54,4 +54,4 @@ x=libPyInteg.export(l);
 
 
 
-print "Thomas"
+
