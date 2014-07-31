@@ -188,9 +188,12 @@ if ( HDF5_FOUND AND HDF5_IS_PARALLEL )
 ELSEIF ( HDF5_LIBRARY AND NOT HDF5_IS_PARALLEL )
   MESSAGE(STATUS "HDF5 is found but is not parallel, HDF5 is not enabled in Feel++")
 endif()
+
+option(FEELPP_ENABLE_PYTHON "Enable Boost.Python implementation" OFF)
+
 # Boost
 SET(BOOST_MIN_VERSION "1.49.0")
-FIND_PACKAGE(Boost ${BOOST_MIN_VERSION} COMPONENTS date_time filesystem system program_options unit_test_framework signals  ${FEELPP_BOOST_MPI} regex  serialization)
+FIND_PACKAGE(Boost ${BOOST_MIN_VERSION} COMPONENTS date_time filesystem system program_options unit_test_framework signals  ${FEELPP_BOOST_MPI} regex  serialization python )
 if(Boost_FOUND)
   IF(Boost_MAJOR_VERSION EQUAL "1" AND Boost_MINOR_VERSION GREATER "51")
     add_definitions(-DBOOST_RESULT_OF_USE_TR1)
