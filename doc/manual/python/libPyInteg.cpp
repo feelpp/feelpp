@@ -16,6 +16,8 @@
 #include<feel/feelfilters/exporter.hpp>
 #include<feel/feelfilters/detail/mesh.hpp>
 
+// retrieval of complicated return types with the "give bad type to have the good one" trick  
+
 typedef boost::tuples::tuple<mpl_::size_t<0ul>, boost::multi_index::detail::bidir_node_iterator<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::index_node_base<Feel::GeoElement3D<(unsigned short)3, Feel::Simplex<(unsigned short)3, (unsigned short)1, (unsigned short)3>, double>, std::allocator<Feel::GeoElement3D<(unsigned short)3, Feel::Simplex<(unsigned short)3, (unsigned short)1, (unsigned short)3>, double> > > > > > > > > > >, boost::multi_index::detail::bidir_node_iterator<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::index_node_base<Feel::GeoElement3D<(unsigned short)3, Feel::Simplex<(unsigned short)3, (unsigned short)1, (unsigned short)3>, double>, std::allocator<Feel::GeoElement3D<(unsigned short)3, Feel::Simplex<(unsigned short)3, (unsigned short)1, (unsigned short)3>, double> > > > > > > > > > >, boost::tuples::null_type, boost::tuples::null_type, boost::tuples::null_type, boost::tuples::null_type, boost::tuples::null_type, boost::tuples::null_type, boost::tuples::null_type> elements_return_type; 
 
 typedef boost::tuples::tuple<mpl_::size_t<0ul>, boost::multi_index::detail::bidir_node_iterator<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::index_node_base<Feel::GeoElement3D<(unsigned short)3, Feel::Simplex<(unsigned short)3, (unsigned short)1, (unsigned short)3>, double>, std::allocator<Feel::GeoElement3D<(unsigned short)3, Feel::Simplex<(unsigned short)3, (unsigned short)1, (unsigned short)3>, double> > > > > > >, boost::multi_index::detail::bidir_node_iterator<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::index_node_base<Feel::GeoElement3D<(unsigned short)3, Feel::Simplex<(unsigned short)3, (unsigned short)1, (unsigned short)3>, double>, std::allocator<Feel::GeoElement3D<(unsigned short)3, Feel::Simplex<(unsigned short)3, (unsigned short)1, (unsigned short)3>, double> > > > > > >, boost::tuples::null_type, boost::tuples::null_type, boost::tuples::null_type, boost::tuples::null_type, boost::tuples::null_type, boost::tuples::null_type, boost::tuples::null_type> boundaryelements_return_type;
@@ -33,12 +35,14 @@ typedef Feel::vf::Expr<Feel::vf::Integrator<boost::tuples::tuple<mpl_::size_t<0>
 
 typedef Feel::vf::Expr<Feel::vf::Integrator<boost::tuples::tuple<mpl_::size_t<1>,boost::multi_index::detail::bidir_node_iterator<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::index_node_base<Feel::GeoElement2D<3,Feel::Simplex<2, 1, 3>, Feel::SubFaceOf<Feel::GeoElement3D<3, Feel::Simplex<3, 1, 3>, double> >, double>,std::allocator<Feel::GeoElement2D<3, Feel::Simplex<2, 1, 3>, Feel::SubFaceOf<Feel::GeoElement3D<3,Feel::Simplex<3, 1, 3>, double> >, double> > > > >,boost::multi_index::detail::bidir_node_iterator<boost::multi_index::detail::ordered_index_node<boost::multi_index::detail::index_node_base<Feel::GeoElement2D<3,Feel::Simplex<2, 1, 3>, Feel::SubFaceOf<Feel::GeoElement3D<3, Feel::Simplex<3, 1, 3>, double> >, double>,std::allocator<Feel::GeoElement2D<3, Feel::Simplex<2, 1, 3>, Feel::SubFaceOf<Feel::GeoElement3D<3,Feel::Simplex<3, 1, 3>, double> >, double> > > > >, boost::tuples::null_type, boost::tuples::null_type,boost::tuples::null_type, boost::tuples::null_type, boost::tuples::null_type, boost::tuples::null_type,boost::tuples::null_type>, Feel::_Q<2>, Feel::vf::Expr<Feel::vf::GinacEx<2> >, Feel::_Q<2> > > integrateboundfaces_return_type;
 
-//#define BOOST_PYTHON_MAX_ARITY 20
 
 using namespace boost::python;
 using namespace Feel;
 
 namespace py = boost::parameter::python;
+
+
+//definition of all methods we need for the wrapping and wich are create from a BOOST_PARAMETER_FUNCTION or a method with default value arguments  
 
 boost::shared_ptr<Exporter<Mesh<Simplex<3>>,1>> New1 (po::variables_map const& x,std::string y,WorldComm const& z) 
 {
@@ -53,7 +57,7 @@ boost::shared_ptr<Exporter<Mesh<Simplex<3>>,1>> New2 ()
 
 
     template<typename MeshType,int N>
-void expo2 ( boost::shared_ptr<MeshType> m)
+void expo_w ( boost::shared_ptr<MeshType> m)
 {
     auto x=Exporter<MeshType,N>::New();
     x->setMesh(m);
@@ -62,7 +66,7 @@ void expo2 ( boost::shared_ptr<MeshType> m)
 }
 
 
-boost::shared_ptr<Mesh<Simplex<3>>> loadMesh3 (Mesh<Simplex<3>>* mesh)
+boost::shared_ptr<Mesh<Simplex<3>>> loadMesh_w (Mesh<Simplex<3>>* mesh)
 {
     return loadMesh(_mesh=mesh);
 }
@@ -92,22 +96,23 @@ grad_w( Expr<GinacEx<Order>> const& s)
     return expr<1,M,Order>( GiNaC::grad(s.expression().expression(),s.expression().symbols()), s.expression().symbols(),"" );
 }
 
+
+// elements on the mesh 
+
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
     typename MeshTraits<MeshType>::element_const_iterator,
     typename MeshTraits<MeshType>::element_const_iterator>
 elements_w( MeshType const& mesh )
 {
-    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return Feel::detail::elements( mesh, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
-    //return elements( mesh, flag, is_ptr_or_shared_ptr() );
+    return elements( mesh);
 }
 
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-      typename MeshTraits<MeshType>::location_element_const_iterator,
-      typename MeshTraits<MeshType>::location_element_const_iterator>
+    typename MeshTraits<MeshType>::location_element_const_iterator,
+    typename MeshTraits<MeshType>::location_element_const_iterator>
 boundaryelements_w( MeshType const& mesh)
 {
     return boundaryelements(mesh);
@@ -117,14 +122,16 @@ boundaryelements_w( MeshType const& mesh)
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_FACES>,
-      typename MeshTraits<MeshType>::location_face_const_iterator,
-      typename MeshTraits<MeshType>::location_face_const_iterator>
-      boundaryfaces_w( MeshType const& mesh  )
+    typename MeshTraits<MeshType>::location_face_const_iterator,
+    typename MeshTraits<MeshType>::location_face_const_iterator>
+boundaryfaces_w( MeshType const& mesh  )
 {
     return boundaryfaces(mesh);
 }
 
-//Expr<Integrator<elements_return_type,LinearTetra,GinacEx<2>>> 
+
+// integrate
+
 integrate_return_type integrate_w ( elements_return_type e , Expr<GinacEx<2>> g)
 {
     return integrate(_range=e,_expr=g);
@@ -145,9 +152,8 @@ integrateboundfaces_return_type integrate_w4 ( boundaryfaces_return_type e , Exp
     return integrate(_range=e,_expr=g);
 }
 
+//evaluate
 
-
-//Eigen::Matrix<integrate_return_type::value_type,1,1>
 integrate_return_type::value_type evaluate_w (integrate_return_type i)
 {
     return i.evaluate();
@@ -168,7 +174,7 @@ integrateboundfaces_return_type::value_type evaluate_w4 (integrateboundfaces_ret
     return i.evaluate();
 }
 
-
+// definition of print methods for some objects
 
 void printMa1 (integrate_return_type::value_type m)
 {
@@ -200,23 +206,27 @@ void printExpr2(Expr<GinacMatrix<1,2,2>> e)
     std::cout<< e << std::endl;
 }
 
+//creation of the libPyInteg library  
 
 BOOST_PYTHON_MODULE(libPyInteg)
 {
 
     if (import_mpi4py()<0) return ;
 
+// definition of the Environment object and methods and classes link to it 
     class_<Feel::detail::Environment,boost::noncopyable>("Environment", init<boost::python::list>()) 
         .def("worldComm",&Feel::detail::Environment::worldComm,return_value_policy<copy_non_const_reference>())
         .staticmethod("worldComm");
+    
+    class_<WorldComm>("WorldComm",init<>());
 
+// definition of the geometrical object (Simplex and Hypercube) and of the Mesh class 
+    
     class_<Feel::Simplex<3>>("Simplex",init<>())
         .def("dim",&Feel::Simplex<3>::dimension);
 
     class_<Feel::Hypercube<3>>("Hypercube",init<>())
         .def("dim",&Feel::Hypercube<3>::dimension);
-
-
 
     class_<Feel::Mesh<Feel::Simplex<3>>,boost::shared_ptr<Feel::Mesh<Feel::Simplex<3>>>,boost::noncopyable>("Mesh",init<>())
         .def("new",&Feel::Mesh<Simplex<3>>::New)
@@ -224,22 +234,20 @@ BOOST_PYTHON_MODULE(libPyInteg)
         .def("clear",&Feel::Mesh<Simplex<3>>::clear);
 
 
-    def("loadMesh",loadMesh3);
+//definition of the loadMesh and exporter methods with functions define before 
+    def("loadMesh",loadMesh_w);
 
-    class_<WorldComm>("WorldComm",init<>());
-
-
-
-
+ 
     class_<ExporterEnsightGold<Mesh<Simplex<3>>,1>>("Exporter",init<WorldComm>())
         .def("setMesh",&Exporter<Mesh<Simplex<3>>>::setMesh) 
         .def("addRegions",&Exporter<Mesh<Simplex<3>>>::addRegions)
         .def("save",&ExporterEnsightGold<Mesh<Simplex<3>>,1>::save);
 
-
     def("new",New2); 
-    def("export",expo2<Mesh<Simplex<3>>,1>);
-    //////////////////
+    def("export",expo_w<Mesh<Simplex<3>>,1>);
+   
+
+//definition of Pch class with others classes link to her and his constructor
 
     class_<Feel::meta::Pch<Mesh<Simplex<3>>,2>,boost::shared_ptr<Feel::meta::Pch<Mesh<Simplex<3>>,2>>>("Pch",no_init);
 
@@ -247,11 +255,10 @@ BOOST_PYTHON_MODULE(libPyInteg)
 
     class_<Feel::FunctionSpace<Mesh<Simplex<3>>,Feel::bases<Feel::Lagrange<2,Feel::Scalar,Feel::Continuous,Feel::PointSetEquiSpaced,0>>,double,Feel::Periodicity<Feel::NoPeriodicity>,Feel::mortars<Feel::NoMortar>>,boost::shared_ptr<Feel::FunctionSpace<Mesh<Simplex<3>>,Feel::bases<Feel::Lagrange<2,Feel::Scalar,Feel::Continuous,Feel::PointSetEquiSpaced,0>>,double,Feel::Periodicity<Feel::NoPeriodicity>,Feel::mortars<Feel::NoMortar>>>,boost::python::bases<Feel::FunctionSpaceBase>>("FunctSpace",no_init);
 
+    def("newPch",Feel::Pch<2,PointSetEquiSpaced,Mesh<Simplex<3>>,0>); 
 
 
-
-    def("newPch",Feel::Pch<2,0,PointSetEquiSpaced,Mesh<Simplex<3>>>); 
-
+// definition of the Expr object 
 
     class_<Expr<GinacEx<2>>>("Expr",no_init);
     def("soption",soption_w);
@@ -259,11 +266,11 @@ BOOST_PYTHON_MODULE(libPyInteg)
 
     class_<Expr<GinacMatrix<1,1,2>>>("ExprLapla",no_init);
     class_<Expr<GinacMatrix<1,2,2>>>("ExprLapla",no_init);
-    
+
 
     def("laplacian",laplacian_w<2>);
 
-
+// definition of methods link to elements on the mesh 
 
     class_<elements_return_type>("Elements_return_type",no_init);
     def("elements",elements_w<Mesh<Simplex<3>>>);
@@ -274,19 +281,21 @@ BOOST_PYTHON_MODULE(libPyInteg)
     class_<boundaryfaces_return_type>("Boundaryfaces_return_type",no_init);
     def("boundaryfaces",boundaryfaces_w<Mesh<Simplex<3>>>);
 
+//definition of all the integrate method we need for this example
+    
     def("grad",grad_w<2,2>);
 
     class_<integrate_return_type>("Integrate_return_type",no_init);
     class_<integratebound_return_type>("Integratebound_return_type",no_init);
     class_<integrategrad_return_type>("Integrategrad_return_type",no_init);
     class_<integrateboundfaces_return_type>("Integrateboundfaces_return_type",no_init);
-    
-   
+
     def("integrate",integrate_w);
     def("integrate",integrate_w2);
     def("integrate",integrate_w3);
     def("integrate",integrate_w4);
 
+// definition of all the evaluate method we need for this example
 
     class_<Eigen::Matrix<double,1,1,0,1,1>>("Matrix1",no_init);
     class_<Eigen::Matrix<double,1,3,1,1,3>>("Matrix1",no_init);
@@ -296,6 +305,7 @@ BOOST_PYTHON_MODULE(libPyInteg)
     def("evaluate",evaluate_w3);
     def("evaluate",evaluate_w4);
 
+//definition of the print methods 
 
     def("printSol",printMa1);
     def("printSol",printMa2);
