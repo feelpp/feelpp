@@ -15,6 +15,7 @@
 #include<feel/feelfilters/loadmesh.hpp>
 #include<feel/feelfilters/exporter.hpp>
 #include<feel/feelfilters/detail/mesh.hpp>
+#include<feel/feelvf/operators.hpp>
 
 
 // definiton of Macros that will be used in the library creation with BOOST_PP_REPEAT
@@ -25,6 +26,21 @@
 #define PCH1(_,n,type) type<1,n+1>();
 #define PCH2(_,n,type) type<2,n+1>();
 #define PCH3(_,n,type) type<3,n+1>();
+
+// try to implemente all the Feelpp operators 
+/*
+#define VF_CLASS_DEF(_,OT)\
+    VF_CLASS_DEF2 OT;
+
+#define VF_CLASS_DEF2(O,T) \
+     class_<Expr<BOOST_PP_CAT(expr_t,BOOST_PP_CAT(VF_OPERATOR_SYMBOL(O),VF_OP_TYPE_SUFFIX(T)))>>(BOOST_PP_STRINGIZE(BOOST_PP_CAT(expr_t,BOOST_PP_CAT(VF_OPERATOR_SYMBOL(O),VF_OP_TYPE_SUFFIX(T)))),no_init)
+
+#define VF_METHODS_DEF(_,OT)\
+    VF_METHODS_DEF2 OT;
+    
+#define VF_METHODS_DEF2(O,T)\
+    def(BOOST_PP_STRINGIZE(BOOST_PP_CAT(VF_OPERATOR_SYMBOL(O),VF_OP_TYPE_SUFFIX(T))),Feel::vf::BOOST_PP_CAT(VF_OPERATOR_SYMBOL(O),VF_OP_TYPE_SUFFIX(T)))       
+*/
 
 using namespace boost::python;
 using namespace Feel;
@@ -134,6 +150,13 @@ void def_wrapper_Pch ()
     i.str(""); 
 }
 
+/*
+#define VF_DEF(_,OT) \
+    typedef VF_OPERATOR_NAME(O)<ELEM,VF_OP_TYPEOBJECT(T)> BOOST_PP_CAT(expr_t,BOOST_PP_CAT(VF_OPERATOR_SYMBOL(0) , VF_OP_TYPE_SUFFIX(T)));
+
+    BOOST_PP_LIST_FOR_EACH_PRODUCT(VF_DEF,2,(VF_OPERATORS,VF_OPERATORS_TYPE))
+
+*/
 
 //creation of the libPyFeelpp library 
 
@@ -182,5 +205,11 @@ BOOST_PYTHON_MODULE(libPyFeelpp)
     BOOST_PP_REPEAT(3,PCH1,def_wrapper_Pch)
     BOOST_PP_REPEAT(3,PCH2,def_wrapper_Pch)
     BOOST_PP_REPEAT(3,PCH3,def_wrapper_Pch)
+
+    /*
+    BOOST_PP_LIST_FOR_EACH_PRODUCT(VF_CLASS_DEF,2,(VF_OPERATORS,VF_OPERATORS_TYPE))
+
+    BOOST_PP_LIST_FOR_EACH_PRODUCT(VF_METHODS_DEF,2,(VF_OPERATORS,VF_OPERATORS_TYPE))
+    */
 }
 

@@ -761,6 +761,18 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
 //
 BOOST_PP_LIST_FOR_EACH_PRODUCT( VF_ARRAY_OPERATOR, 2, ( VF_OPERATORS, VF_OPERATORS_TYPE ) )
 /// \endcond
+
+// try to add operators to Python library
+/*
+#define VF_DEF(_,OT) \
+    VF_DEF2 OT;
+
+#define VF_DEF2(O,T) \
+    typedef VF_OPERATOR_NAME(O)<ELEM,VF_OP_TYPEOBJECT(T)> BOOST_PP_CAT(expr_t,BOOST_PP_CAT(VF_OPERATOR_SYMBOL(O) , VF_OP_TYPE_SUFFIX(T)))
+
+BOOST_PP_LIST_FOR_EACH_PRODUCT(VF_DEF,2,(VF_OPERATORS,VF_OPERATORS_TYPE))
+*/
+
 }
 }
 
