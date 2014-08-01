@@ -2,6 +2,7 @@
 #include <string>
 
 #include "hdf5.h"
+#include <feel/feelcore/hdf5.hpp>
 #define FILE "test.h5"
 
 int main (void)
@@ -58,6 +59,13 @@ int main (void)
     status = H5Gclose (group_id1) ;
     /* Terminate access to the file. */
     status = H5Fclose(file_id); 
+
+/*
+    Feel::HDF5 M_HDF5 ;
+    M_HDF5.openFile (std::string ("boom.h5"), 0, false) ;
+    M_HDF5.createGroup (std::string ("./N")) ;
+    M_HDF5.closeFile () ;
+*/  
     return 0;  // successfully terminated
 
 }
