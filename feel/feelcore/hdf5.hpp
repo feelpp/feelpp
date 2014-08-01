@@ -119,6 +119,10 @@ public:
      */
     void createTable (const std::string& tableName, hid_t& fileDataType,
                       hsize_t tableDimensions[]);
+
+    void createTable (const std::string& GroupName, const std::string& tableName, hid_t& fileDataType,
+                             hsize_t tableDimensions[], const bool& existing);
+
     //! Open a new table
     /*!
      * Open a new table in the open file
@@ -161,6 +165,7 @@ public:
     /*!
      * \param tableName a string containing the table name
      */
+    void closeGroup (const std::string& groupName);
     void closeTable (const std::string& tableName);
     //! Close an open file
     /*!
@@ -185,6 +190,7 @@ private:
     //! Private Data Members
     //@{
     // HDF5 handles
+    std::map<std::string, hid_t> M_groupList ;
     std::map<std::string, tableHandle> M_tableList;
     hid_t M_fileId;
     //@}
