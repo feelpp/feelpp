@@ -128,6 +128,7 @@ namespace parallel
             hwloc_cpuset_t set;
             std::ostringstream oss;
 
+#if 0
             /* get a cpuset object */
             set = hwloc_bitmap_alloc();
 
@@ -162,42 +163,49 @@ namespace parallel
             }
             oss << ");";
             std::cout << Environment::worldComm().rank() << "|" << M_threadId << " " << oss.str() << std::endl;
+#endif
+
+            perf_mng.init("1.1") ;
+            perf_mng.init("1.1") ;
+            perf_mng.init("2.1") ;
+            perf_mng.init("2.2") ;
+            perf_mng.init("3") ;
 
             /* free memory */
             hwloc_bitmap_free(set);
 
-            perf_mng.init("cpu") ;
-            perf_mng.start("cpu") ;
+            //perf_mng.init("data") ;
+            //perf_mng.start("data") ;
 
             // DEFINE the range to be iterated on
             std::vector<std::pair<element_iterator, element_iterator> > * r =
                 args.get("r")->get<std::vector<std::pair<element_iterator, element_iterator> > >();
 
-            /*
-            perf_mng.init("section1") ;
-            perf_mng.init("section2") ;
-            perf_mng.init("loop") ;
-            */
+            //perf_mng.stop("data");
+
+            perf_mng.init("cpu") ;
+            perf_mng.start("cpu") ;
 
             for (int i = 0; i < r->size(); i++)
             {
                 //std::cout << Environment::worldComm().rank() <<  " nbItems: " << r->size() << " nbElts " << std::distance(r->at(i), r->at(i+1)) << std::endl;
                 for ( auto _elt = r->at(i).first; _elt != r->at(i).second; ++_elt )
                 {
-                    //perf_mng.init("section1");
-                    //perf_mng.start("section1");
+                    //perf_mng.start("1.1") ;
                     M_c->update( *_elt );
+                    //perf_mng.stop("1.1") ;
+                    //perf_mng.start("1.2") ;
                     map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( M_c ) );
-                    //perf_mng.stop("section1");
+                    //perf_mng.stop("1.2") ;
 
-                    //perf_mng.init("section2");
-                    //perf_mng.start("section2");
+                    //perf_mng.start("2.1") ;
                     M_expr.update( mapgmc );
+                    //perf_mng.stop("2.1") ;
+                    //perf_mng.start("2.2") ;
                     M_im.update( *M_c );
-                    //perf_mng.stop("section2");
+                    //perf_mng.stop("2.2") ;
 
-                    //perf_mng.init("loop");
-                    //perf_mng.start("loop");
+                    //perf_mng.start("3") ;
                     for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
                     {
                         for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
@@ -205,7 +213,7 @@ namespace parallel
                             M_ret( c1,c2 ) += M_im( M_expr, c1, c2 );
                         }
                     }
-                    //perf_mng.stop("loop");
+                    //perf_mng.stop("3") ;
                 }
             }
 
@@ -216,10 +224,57 @@ namespace parallel
 
         void computeCPUOMP(std::vector<std::pair<element_iterator, element_iterator> > * veit)
         {
+            char * a;
+            int cid;
+            hwloc_cpuset_t set;
+            std::ostringstream oss;
+
+#if 0
+            /* get a cpuset object */
+            set = hwloc_bitmap_alloc();
+
+            /* Get the cpu thread affinity info of the current process/thread */
+            hwloc_get_cpubind(Environment::getHwlocTopology(), set, 0);
+            hwloc_bitmap_asprintf(&a, set);
+            oss << a;
+            free(a); 
+            
+            cid = hwloc_bitmap_first(set);
+            oss << "(";
+            while(cid != -1)
+            {
+                oss << cid << " ";
+                cid = hwloc_bitmap_next(set, cid);
+            }
+            oss << ")|";
+            std::cout << Environment::worldComm().rank() << "|" << M_threadId << " " << oss.str() << std::endl;
+
+            /* Get the latest core location of the current process/thread */
+            hwloc_get_last_cpu_location(Environment::getHwlocTopology(), set, 0);
+            hwloc_bitmap_asprintf(&a, set);
+            oss << a;
+            free(a);
+
+            cid = hwloc_bitmap_first(set);
+            oss << "(";
+            while(cid != -1)
+            {
+                oss << cid << " ";
+                cid = hwloc_bitmap_next(set, cid);
+            }
+            oss << ");";
+            std::cout << Environment::worldComm().rank() << "|" << M_threadId << " " << oss.str() << std::endl;
+#endif
+
 #if defined(FEELPP_HAS_HARTS)
             perf_mng.init("cpu") ;
             perf_mng.start("cpu") ;
 #endif
+            perf_mng.init("1.1") ;
+            perf_mng.init("1.2") ;
+            perf_mng.init("2.1") ;
+            perf_mng.init("2.2") ;
+            perf_mng.init("3") ;
 
             for (int i = 0; i < veit->size(); i+=2)
             {
@@ -232,12 +287,21 @@ namespace parallel
                 //std::cout << Environment::worldComm().rank() << "|" << theadId << " fid=" veit.at(i).first.id() << std::endl;
                 for ( auto _elt = veit->at(i).first; _elt != veit->at(i).second; ++_elt )
                 {
+                    //perf_mng.start("1.1") ;
                     M_c->update( *_elt );
+                    //perf_mng.stop("1.1") ;
+                    //perf_mng.start("1.2") ;
                     map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( M_c ) );
+                    //perf_mng.stop("1.2") ;
 
+                    //perf_mng.start("2.1") ;
                     M_expr.update( mapgmc );
+                    //perf_mng.stop("2.1") ;
+                    //perf_mng.start("2.2") ;
                     M_im.update( *M_c );
+                    //perf_mng.stop("2.2") ;
 
+                    //perf_mng.start("3") ;
                     for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
                     {
                         for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
@@ -245,6 +309,7 @@ namespace parallel
                             M_ret( c1,c2 ) += M_im( M_expr, c1, c2 );
                         }
                     }
+                    //perf_mng.stop("3") ;
                 }
             }
 
