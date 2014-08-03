@@ -183,8 +183,39 @@ IF ( MPI_FOUND )
       }
       "
       MPIIO_DETECTED)
+
+  # Check if we have the types from the 2.2 standard
+  # needed for MPI IO
+  CHECK_CXX_SOURCE_COMPILES(
+      "
+      #include <mpi.h>
+
+      int main(int argc, char** argv)
+      {
+      MPI_INT32_T i32;
+      MPI_INT64_T i64;
+      }
+      "
+      MPIIO_HAS_STD_22_TYPES)
   set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES_save})
   set(CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES_save})
+
+  # should be comptible with 2.2 standard
+  IF (NOT MPIIO_HAS_STD_22_TYPES)
+      include(CheckTypeSize)
+      check_type_size("int" SIZEOF_INT BUILTIN_TYPES_ONLY)
+      IF(SIZEOF_INT STREQUAL 4)
+          SET(FEELPP_MPI_INT32 MPI_INT)
+      ELSE()
+          MESSAGE(FATAL_ERROR "MPIIO: Cannot find a compatible int32 type")
+      ENDIF()
+      check_type_size("long" SIZEOF_LONG_LONG BUILTIN_TYPES_ONLY)
+      IF(SIZEOF_LONG_LONG STREQUAL 8)
+          SET(FEELPP_MPI_INT64 MPI_LONG_LONG)
+      ELSE()
+          MESSAGE(FATAL_ERROR "MPIIO: Cannot find a compatible int64 type")
+      ENDIF()
+  ENDIF()
 
   IF (MPIIO_DETECTED)
       MESSAGE(STATUS "MPIIO detected and enabled.")
