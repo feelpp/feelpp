@@ -1,6 +1,7 @@
 os:
   - linux
 git:
+  depth: 1
   submodules: false
 language: cpp
 compiler:
@@ -17,7 +18,7 @@ before_install:
 - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew tap feelpp/science; fi
 - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew install --only-dependencies feelpp; fi
 install:
-- mkdir opt && cd opt && ../configure -r
+- mkdir opt && cd opt && ../configure -r -v
 script:
 - make -j16 feelpp_ginac
 - make -j2 feelpp
