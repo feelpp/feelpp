@@ -59,6 +59,8 @@
 #include <MLine.h>
 #include <MTriangle.h>
 #include <MQuadrangle.h>
+#include <MTetrahedron.h>
+#include <MHexahedron.h>
 #endif
 // there is a macro called sign in Gmsh that conflicts with 
 // at least one member function sign() from DofTable.
@@ -684,10 +686,30 @@ ImporterGmsh<MeshType>::readFromMemory( mesh_type* mesh )
             addFace( mesh, ele, __idGmshToFeel[quad->getNum()] );
         }
     }
-
-#if 0
-            addVolume( mesh, *it_gmshElt, __idGmshToFeel[it_gmshElt->num] );
-#endif
+    // read tetras
+    for( GModel::riter it = M_gmodel->firstRegion(); it != M_gmodel->lastRegion(); ++it)
+    {
+        int elementary = (*it)->tag();
+        auto const& physicals = (*it)->physicals;
+        for( auto const& tetra : (*it)->tetrahedra )
+        {
+            Feel::detail::GMSHElement ele(tetra, ++num, elementary, physicals.size()?physicals[0]:0);
+            this->addVertices( mesh, ele, gmshpts );
+            addVolume( mesh, ele, __idGmshToFeel[tetra->getNum()] );
+        }
+    }
+    // read hexa
+    for( GModel::riter it = M_gmodel->firstRegion(); it != M_gmodel->lastRegion(); ++it)
+    {
+        int elementary = (*it)->tag();
+        auto const& physicals = (*it)->physicals;
+        for( auto const& hexa : (*it)->hexahedra )
+        {
+            Feel::detail::GMSHElement ele(hexa, ++num, elementary, physicals.size()?physicals[0]:0);
+            this->addVertices( mesh, ele, gmshpts );
+            addVolume( mesh, ele, __idGmshToFeel[hexa->getNum()] );
+        }
+    }
     LOG(INFO) << "Reading Msh from memory done";
     toc("read msh from memory");
 }
