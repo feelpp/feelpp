@@ -62,7 +62,7 @@
 #include <MTetrahedron.h>
 #include <MHexahedron.h>
 #endif
-// there is a macro called sign in Gmsh that conflicts with 
+// there is a macro called sign in Gmsh that conflicts with
 // at least one member function sign() from DofTable.
 // hence we undefine the macro sign after including Gmsh headers
 #undef sign
@@ -181,9 +181,9 @@ struct GMSHElement
           ele->getVerticesIdForMSH(verts);
           indices = verts;
 #if 0
-          std::cout << "Adding element index " << n << " type " << type << " phys " << physical 
+          std::cout << "Adding element index " << n << " type " << type << " phys " << physical
                     << " elementary " << elementary << " np " << numPartitions << " part " << partition << " nverts " << verts.size() << std::endl;
-          std::cout << "   - ";          
+          std::cout << "   - ";
           std::for_each( verts.begin(), verts.end(), []( int v ) { std::cout << v << " "; } );
           std::cout << "\n";
 #endif
@@ -615,11 +615,25 @@ ImporterGmsh<MeshType>::readFromMemory( mesh_type* mesh )
     bool saveSinglePartition=false;
     int numVertices = M_gmodel->indexMeshVertices(saveAll, saveSinglePartition);
 
+    if( M_gmodel->numPhysicalNames() )
+    {
+        if ( Environment::isMasterRank() )
+            std::cout << "  +- number of physicals: " << M_gmodel->numPhysicalNames() << "\n";
+        for(GModel::piter it = M_gmodel->firstPhysicalName(); it != M_gmodel->lastPhysicalName(); it++)
+        {
+            int id = it->first.second;
+            int topodim = it->first.first;
+            std::vector<int> data = {id, topodim};
+            mesh->addMarkerName( it->second.c_str(), id, topodim );
+        }
+    }
+
     // get the number of elements we need to save
     int numElements = M_gmodel->getNumMeshElements();
     if ( Environment::isMasterRank() )
         std::cout << "  +- number of vertices: " << numVertices << "\n"
                   << "  +- number of elements: " << numElements << "\n";
+
     std::map<int, Feel::detail::GMSHPoint > gmshpts;
     std::vector<GEntity*> entities;
     M_gmodel->getEntities(entities);
@@ -1326,7 +1340,7 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
             updateGhostCellInfoByUsingNonBlockingComm( mesh, __idGmshToFeel,  mapGhostElt, nbMsgToRecv );
     }
 
-    
+
     if ( !mesh->markerNames().empty() &&
          ( mesh->markerNames().find("CrossPoints") != mesh->markerNames().end() ) &&
          ( mesh->markerNames().find("WireBasket") != mesh->markerNames().end() ) )
@@ -1336,7 +1350,7 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
         //LOG(INFO) << "[substructuring] n cp: " << std::distance( mesh->beginPointWithMarker( mesh->markerName("CrossPoints") ), mesh->endPointWithMarker( mesh->markerName("CrossPoints") ) ) << "\n";
     }
     DVLOG(2) << "done with reading and creating mesh from gmsh file\n";
-    
+
     toc("read msh from file");
 }
 
