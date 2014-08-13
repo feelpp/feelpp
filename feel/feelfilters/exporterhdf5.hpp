@@ -20,7 +20,7 @@
 #if defined(FEELPP_HAS_HDF5)
 #include <feel/feelcore/hdf5.hpp>
 
-/*
+/*!
  * \file exporterhdf5.hpp
  * \brief HDF5 and XDMF exporter
  * \author VANTHONG Benjamin
