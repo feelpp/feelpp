@@ -1685,7 +1685,11 @@ ConfigurePCFieldSplit::runConfigurePCFieldSplit( PC& pc, PreconditionerPetsc<dou
 #endif
         }
 #endif
+#if PETSC_VERSION_LESS_THAN(3,5,0)
         this->check( PCFieldSplitSchurPrecondition( pc, theSchurPrecond, schurMatPrecond/*NULL*/ ) );
+#else
+        this->check( PCFieldSplitSetSchurPre( pc, theSchurPrecond, schurMatPrecond/*NULL*/ ) );
+#endif
         // need to call MatDestroy because PCFieldSplitSchurPrecondition call PetscObjectReference ( which increase the object counter)
         // if we not call this  MatDestroy, we have a memory leak
         this->check( MatDestroy( &schurMatPrecond ) );
