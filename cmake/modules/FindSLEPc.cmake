@@ -42,6 +42,7 @@ find_path (SLEPC_DIR include/slepc.h
   /usr/lib/slepcdir/3.1 # Debian
   /usr/lib/slepcdir/3.0.0 # Debian
   /opt/local/lib/petsc # macports
+  /opt/local/lib/slepc # macports
   # Homebrew
   /usr/local/Cellar/slepc/3.4.4/arch-darwin-cxx-debug
   /usr/local/Cellar/slepc/3.4.4/arch-darwin-cxx-opt
