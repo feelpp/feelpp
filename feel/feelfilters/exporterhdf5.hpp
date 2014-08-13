@@ -20,6 +20,12 @@
 #if defined(FEELPP_HAS_HDF5)
 #include <feel/feelcore/hdf5.hpp>
 
+/*
+ * \file exporterhdf5.hpp
+ * \brief HDF5 and XDMF exporter
+ * \author VANTHONG Benjamin
+ */
+
 namespace Feel 
 {
 namespace fs = boost::filesystem;
@@ -55,53 +61,122 @@ public Exporter <MeshType, N>
         void visit ( mesh_type* mesh) ;
 
     private :
-
+        /*!
+         * \brief Fonction used in almost all constructor to initialize the element's type
+         */
         void init() ;
-        void write ()  const ;
-        void write1 ()  const ;
         
+        /*!
+         * \brief write .xmf and .h5 files for each process
+         */
+        void write ()  const ;
+        
+        /*!
+         * \brief only one write .xmf file and one .h5 file for each time step  
+         */
+        void writeMerge ()  const ;
+        
+        /*!
+         * \brief write points' coordonates   
+         */
         void writePoints () const ;
-        void writePoints1 () const ;
+
+        /*!
+         * \brief write points' coordonates (merge version)
+         */
+        void writePointsMerge () const ;
+        
+        /*!
+         * \brief write elements (an element is formed by several nodes) 
+         */
         void writeElements () const ;
-        void writeElements1 () const ;
+        
+        /*!
+         * \brief write elements (merge version) 
+         */
+        void writeElementsMerge () const ;
+
+        /*!
+         * \brief write informations of the mesh in .h5 file (unused for now)
+         */
         void writeStats () const ;
+
+        /*!
+         * \brief save solutions on nodes 
+         * \param __step a time step
+         * \param __var  iterator on solutions (begin)
+         * \param en     iterator on solutions (end)
+         */
         template<typename Iterator>
         void saveNodal ( typename timeset_type::step_ptrtype __step, Iterator __var, Iterator en ) const ;
         template<typename Iterator>
-        void saveNodal1 ( typename timeset_type::step_ptrtype __step, Iterator __var, Iterator en ) const ;
+
+        /*!
+         * \brief save solutions on nodes (merge version)
+         * \param __step a time step
+         * \param __var  iterator on solutions (begin)
+         * \param en     iterator on solutions (end)
+         */
+        void saveNodalMerge ( typename timeset_type::step_ptrtype __step, Iterator __var, Iterator en ) const ;
         template<typename Iterator>
+        
+        /*!
+         * \brief save solutions on elements  )
+         * \param __step   a time step
+         * \param __evar   iterator on solutions (begin)
+         * \param __evaren iterator on solutions (end)
+         */
         void saveElement ( typename timeset_type::step_ptrtype __step, Iterator __evar, Iterator __evaren ) const ;
         template<typename Iterator>
-        void saveElement1 ( typename timeset_type::step_ptrtype __step, Iterator __evar, Iterator __evaren ) const ;
 
-        void write_xdmf () const ;
+        /*!
+         * \brief save solutions on elements (merge version) 
+         * \param __step   a time step
+         * \param __evar   iterator on solutions (begin)
+         * \param __evaren iterator on solutions (end)
+         */
+        void saveElementMerge ( typename timeset_type::step_ptrtype __step, Iterator __evar, Iterator __evaren ) const ;
+
+        /*!
+         * \brief open XDMF file (used only in version without merge)
+         */
         void open_xdmf_xml () const ;
+        
+        /*!
+         * \brief close properly XDMF file (used only in version without merge)
+         */
         void close_xdmf_xml () const ;
 
+        
+        /*!
+         * \brief a bubble sort of 2 arrays in the same time
+         * \param ids    array of points' identifier
+         * \param coords coordinates of points
+         * \param n      size of those array
+         */
         void bubbleSort (size_type * ids, value_type * coords, size_type n) const ;
 
-        mutable WorldComm M_comm ;
-        mutable std::string M_fileName ;
-        mutable std::string M_fileNameStep ;
-        mutable HDF5 M_HDF5 ;
-        mutable mesh_ptrtype M_meshOut ;
+        mutable WorldComm M_comm ;              /*!< MPI worldComm */
+        mutable std::string M_fileName ;        /*!< file name */
+        mutable std::string M_fileNameStep ;    /*!< file name + time step */
+        mutable HDF5 M_HDF5 ;                   /*!< HDF5 IO */
+        mutable mesh_ptrtype M_meshOut ;        /*!< pointer on current mesh in a time step */
 
         // Mesh geometry
-        mutable size_type M_elementNodes ;
-        mutable size_type M_maxNumElements ;
-        mutable size_type M_maxNumPoints ;
-        mutable size_type M_numParts ;
-        mutable std::string M_element_type ;
+        mutable size_type M_elementNodes ;      /*!< number of nodes for one element */ 
+        mutable size_type M_maxNumElements ;    /*!< number of elements for the current process */
+        mutable size_type M_maxNumPoints ;      /*!< number of points for the current process */
+        mutable size_type M_numParts ;          /*!< number of partitions */
+        mutable std::string M_element_type ;    /*!< element's type */
 
-        mutable size_type M_step = 0 ;
-        mutable std::ofstream M_xmf  ;
+        mutable size_type M_step = 0 ;          /*!< number of the current step */
+        mutable std::ofstream M_xmf  ;          /*!< Out stream to write the .xmf file */
 
-        mutable std::vector<size_type> M_uintBuffer ;
-        mutable std::vector<value_type> M_realBuffer ;
-        mutable std::map<size_type, size_type> M_newPointId ;
-        mutable std::map<size_type, size_type> M_newElementId ;
-        mutable MPI_File fh ;
-        mutable std::ostringstream str ;
+        mutable std::vector<size_type> M_uintBuffer ;           /*!< buffer of integer */
+        mutable std::vector<value_type> M_realBuffer ;          /*!< buffer of double */
+        mutable std::map<size_type, size_type> M_newPointId ;   /*!< new point identifier after sort */
+        mutable MPI_File fh ;                                   /*!< file descriptor of the .xmf file (merge version only) */
+        mutable std::ostringstream M_str ;                      /*!< buffer of string */
 };
 
 template<typename MeshType, int N>
@@ -147,6 +222,7 @@ Exporterhdf5<MeshType,N>::Exporterhdf5( Exporterhdf5 const & __ex )
 {
 }
 
+
 template<typename MeshType, int N>
 void
 Exporterhdf5<MeshType,N>::init()
@@ -175,14 +251,13 @@ Exporterhdf5<MeshType,N>::init()
 }
 
 template <typename MeshType, int N>
-void Exporterhdf5<MeshType, N>::write1 () const 
+void Exporterhdf5<MeshType, N>::writeMerge () const 
 {
 
     MPI_Status status;
     int size ;
-//    str <<  this->prefix () << "-" << Environment::worldComm().globalSize()<<"_"<<Environment::worldComm().globalRank()  ;
-    str <<  this->prefix () << ".xmf" ;
-    M_fileName = str.str () ; 
+    M_str <<  this->prefix () << ".xmf" ;
+    M_fileName = M_str.str () ; 
 
     char * strTmp = strdup (M_fileName.c_str()) ;
     if(this->worldComm().isMasterRank() && fs::exists(strTmp))
@@ -195,37 +270,28 @@ void Exporterhdf5<MeshType, N>::write1 () const
 
     size_type rank = Environment::worldComm().globalRank () ;
 
-//    open_xdmf_xml () ;
-
     timeset_const_iterator __ts_it = this->beginTimeSet () ;
     timeset_const_iterator __ts_en = this->endTimeSet () ;
     
     timeset_ptrtype __ts = *__ts_it ;
 
-    str.str("") ;
-    str << "<?xml version=\"1.0\" ?>\n" ;
-    str << "<!DOCTYPE Xdmf SYSTEM \"Xdmf.dtd\" []>\n" ;
-    str << "<Xdmf Version=\"2.0\">\n" ;
-    str << "   <Domain>\n" ;
-    str << "       <Grid Name=\"Simulation\" GridType=\"Collection\" CollectionType=\"Spatial\">\n" ;
+    M_str.str("") ;
+    M_str << "<?xml version=\"1.0\" ?>\n" ;
+    M_str << "<!DOCTYPE Xdmf SYSTEM \"Xdmf.dtd\" []>\n" ;
+    M_str << "<Xdmf Version=\"2.0\">\n" ;
+    M_str << "   <Domain>\n" ;
+    M_str << "       <Grid Name=\"Simulation\" GridType=\"Collection\" CollectionType=\"Spatial\">\n" ;
 
-
-//    M_xmf << "       <Grid Name=\"Simulation over time\" GridType=\"Collection\" CollectionType=\"Temporal\">" << "\n" ;
-//    M_xmf << "           <Time TimeType=\"HyperSlab\">\n" ;
-//    M_xmf << "               <DataItem Format=\"XML\" NumberType=\"Float\" Dimensions=\"3\">\n" ;
-//    M_xmf << "               " << (*(__ts->beginStep()))->time() << " " << __ts->timeIncrement() << " " << __ts->numberOfTotalSteps() << "\n" ;
-//    M_xmf << "               </DataItem>\n" ;
-//    M_xmf << "           </Time>\n" ;
-
-
-    char * buffer  = (char *) malloc (str.str().length()*sizeof(char) + 1) ;
+    char * buffer  = (char *) malloc (M_str.str().length()*sizeof(char) + 1) ;
     if ( this->worldComm().isMasterRank() ) 
-    { size = str.str().length() ; }
+    { size = M_str.str().length() ; }
     else
     { size = 0 ; }
-    str.str().copy (buffer, size, 0) ;
+    M_str.str().copy (buffer, size, 0) ;
     MPI_File_write_ordered (fh, buffer, size, MPI_CHAR, &status) ;
 
+    if ( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+        std::cout << "file generated                : " << M_fileName << std::endl ;
 
     while ( __ts_it != __ts_en )
     {
@@ -246,59 +312,53 @@ void Exporterhdf5<MeshType, N>::write1 () const
                 M_fileNameStep = this->prefix() + filestr.str() ;
                 M_HDF5.openFile (M_fileNameStep+".h5", Environment::worldComm(), false) ;
 
-                str.str("") ;
-                str << "           <Grid Name=\"" << M_fileNameStep << "\" GridType=\"Uniform\">\n" ;
-                str << "               <Time Value=\"" << __step->time() << "\"/>\n" ;  
+                M_str.str("") ;
+                M_str << "           <Grid Name=\"" << M_fileNameStep << "\" GridType=\"Uniform\">\n" ;
+                M_str << "               <Time Value=\"" << __step->time() << "\"/>\n" ;  
 
-                writePoints1 () ;
-                writeElements1 () ;
+                writePointsMerge () ;
+                writeElementsMerge () ;
                 
-                //if ( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                if ( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
                 {
-                    
-                    std::cout << "time                          : " << __step->time () << std::endl ; 
-                    std::cout << "time increment                : " << __ts->timeIncrement () << std::endl ; 
-                    std::cout << "numberOfSteps                 : " << __ts->numberOfSteps () << std::endl ; 
-                    std::cout << "numberOfTotalSteps            : " << __ts->numberOfTotalSteps () << std::endl ;
+                    //std::cout << "time                          : " << __step->time () << std::endl ; 
+                    //std::cout << "time increment                : " << __ts->timeIncrement () << std::endl ; 
+                    //std::cout << "numberOfSteps                 : " << __ts->numberOfSteps () << std::endl ; 
+                    //std::cout << "numberOfTotalSteps            : " << __ts->numberOfTotalSteps () << std::endl ;
+                    std::cout << "file generated                : " << M_fileNameStep  << ".h5" << std::endl ;
                 }
 
-                saveNodal1 (__step, __step->beginNodalScalar(), __step->endNodalScalar() ) ;
-                saveNodal1 (__step, __step->beginNodalVector(), __step->endNodalVector() ) ;
+                saveNodalMerge (__step, __step->beginNodalScalar(), __step->endNodalScalar() ) ;
+                saveNodalMerge (__step, __step->beginNodalVector(), __step->endNodalVector() ) ;
 
-                saveElement1 (__step, __step->beginElementScalar(), __step->endElementScalar() ) ;
-                saveElement1 (__step, __step->beginElementVector(), __step->endElementVector() ) ;
+                saveElementMerge (__step, __step->beginElementScalar(), __step->endElementScalar() ) ;
+                saveElementMerge (__step, __step->beginElementVector(), __step->endElementVector() ) ;
 
-                str << "           </Grid>\n" ;
+                M_str << "           </Grid>\n" ;
                 free (buffer) ;
-                buffer  = (char *) malloc (str.str().length()*sizeof(char) + 1) ;
-                size = str.str().length() ; 
-                str.str().copy (buffer, size, 0) ;
+                buffer  = (char *) malloc (M_str.str().length()*sizeof(char) + 1) ;
+                size = M_str.str().length() ; 
+                M_str.str().copy (buffer, size, 0) ;
                 MPI_File_write_ordered (fh, buffer, size, MPI_CHAR, &status) ;
 
-
-                //writeStats() ; 
-                //if ( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
                 M_HDF5.closeFile () ;
             }
             ++__it ;
         }
         ++__ts_it ;
     }
-    //close_xdmf_xml () ;
-    //M_meshOut.reset () ;
-
-    str.str("") ;
-    str << "       </Grid>\n" ;
-    str << "   </Domain>\n" ;
-    str << "</Xdmf>\n"  ;
+    M_str.str("") ;
+    M_str << "       </Grid>\n" ;
+    M_str << "   </Domain>\n" ;
+    M_str << "</Xdmf>\n"  ;
 
     free (buffer) ;
-    buffer  = (char *) malloc (str.str().length()*sizeof(char) + 1) ;
+    buffer  = (char *) malloc (M_str.str().length()*sizeof(char) + 1) ;
     if ( this->worldComm().isMasterRank() ) 
-    { size = str.str().length() ; }
+    { size = M_str.str().length() ; }
     else
     { size = 0 ; }
-    str.str().copy (buffer, size, 0) ;
+    M_str.str().copy (buffer, size, 0) ;
     MPI_File_write_ordered (fh, buffer, size, MPI_CHAR, &status) ;
 
     MPI_File_close(&fh) ;
@@ -314,6 +374,7 @@ void Exporterhdf5<MeshType, N>::write () const
     str <<  this->prefix () << "-" << Environment::worldComm().globalSize()<<"_"<<Environment::worldComm().globalRank()  ;
     M_fileName = str.str () ; 
 
+    std::cout << "file generated                : " << M_fileName << ".xmf" << std::endl ;
     open_xdmf_xml () ;
 
     timeset_const_iterator __ts_it = this->beginTimeSet () ;
@@ -351,12 +412,13 @@ void Exporterhdf5<MeshType, N>::write () const
                 writePoints () ;
                 writeElements () ;
 
-                if ( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                if ( Environment::worldCommSeq().globalRank() == Environment::worldCommSeq().masterRank() )
                 {
-                    std::cout << "time                          : " << __step->time () << std::endl ; 
-                    std::cout << "time increment                : " << __ts->timeIncrement () << std::endl ; 
-                    std::cout << "numberOfSteps                 : " << __ts->numberOfSteps () << std::endl ; 
-                    std::cout << "numberOfTotalSteps            : " << __ts->numberOfTotalSteps () << std::endl ;
+                    //std::cout << "time                          : " << __step->time () << std::endl ; 
+                    //std::cout << "time increment                : " << __ts->timeIncrement () << std::endl ; 
+                    //std::cout << "numberOfSteps                 : " << __ts->numberOfSteps () << std::endl ; 
+                    //std::cout << "numberOfTotalSteps            : " << __ts->numberOfTotalSteps () << std::endl ;
+                    std::cout << "file generated                : " << M_fileNameStep  << ".h5" << std::endl ;
                 }
 
                 saveNodal (__step, __step->beginNodalScalar(), __step->endNodalScalar() ) ;
@@ -366,7 +428,6 @@ void Exporterhdf5<MeshType, N>::write () const
                 saveElement (__step, __step->beginElementVector(), __step->endElementVector() ) ;
 
                 M_xmf << "           </Grid>\n" ;
-                writeStats() ; 
                 M_HDF5.closeFile () ;
             }
             ++__it ;
@@ -430,7 +491,7 @@ void Exporterhdf5<MeshType, N>::writePoints () const
 }
 
 template <typename MeshType, int N>
-void Exporterhdf5<MeshType, N>::writePoints1 () const 
+void Exporterhdf5<MeshType, N>::writePointsMerge () const 
 {
     auto pt_it = M_meshOut->beginPointWithProcessId () ;
     auto const pt_en = M_meshOut->endPointWithProcessId () ;
@@ -489,15 +550,15 @@ void Exporterhdf5<MeshType, N>::writePoints1 () const
         M_HDF5.closeTable(filestr1.str()+"point_coords") ;
     }
 
-    str << "               <Geometry GeometryType=\"XYZ\">\n" ;
-    str << "                   <DataItem Dimensions=\"" << M_maxNumPoints << " 3\" NumberType=\"Float\" Precision=\"8\" Format=\"HDF\" Endian=\"Big\">\n" ;
-    str << "                   " << M_fileNameStep << ".h5:/" << filestr0.str() << "/point_coords\n" ;
-    str << "                   </DataItem>\n" ;
-    str << "               </Geometry>\n" ;
+    M_str << "               <Geometry GeometryType=\"XYZ\">\n" ;
+    M_str << "                   <DataItem Dimensions=\"" << M_maxNumPoints << " 3\" NumberType=\"Float\" Precision=\"8\" Format=\"HDF\" Endian=\"Big\">\n" ;
+    M_str << "                   " << M_fileNameStep << ".h5:/" << filestr0.str() << "/point_coords\n" ;
+    M_str << "                   </DataItem>\n" ;
+    M_str << "               </Geometry>\n" ;
 }
 
 template <typename MeshType, int N>
-void Exporterhdf5<MeshType, N>::writeElements1 () const 
+void Exporterhdf5<MeshType, N>::writeElementsMerge () const 
 {
     typename mesh_type::parts_const_iterator_type p_it = M_meshOut->beginParts();
     typename mesh_type::parts_const_iterator_type p_en = M_meshOut->endParts();
@@ -536,8 +597,6 @@ void Exporterhdf5<MeshType, N>::writeElements1 () const
     }
         currentSpacesDims [0] = M_maxNumElements ;
 
-//    M_HDF5.createTable ("element_ids", H5T_STD_U32BE, currentSpacesDims2) ;
-
     M_uintBuffer.resize (currentSpacesDims[0]*currentSpacesDims[1], 0) ;
     std::vector<size_type> idsBuffer ;
     idsBuffer.resize (currentSpacesDims2[1], 0) ;
@@ -546,7 +605,6 @@ void Exporterhdf5<MeshType, N>::writeElements1 () const
 
     size_type k = 0 ;
     size_type i = 0 ;
-    M_newElementId.clear () ;
     for (p_it = M_meshOut->beginParts (); k < M_numParts ;  p_it++ , k++)
     {
         auto elt_it = M_meshOut->beginElementWithMarker (p_it->first) ;
@@ -554,7 +612,6 @@ void Exporterhdf5<MeshType, N>::writeElements1 () const
         for ( ; elt_it != elt_en ; ++elt_it , i ++)
         {
             idsBuffer[i] = elt_it->id () ;
-            M_newElementId[idsBuffer[i]] = i ;
             for ( size_type j = 0 ; j < M_elementNodes ; j ++ )
                 M_uintBuffer[j + M_elementNodes*i] = M_newPointId[elt_it->point(j).id()]  ; 
         }
@@ -562,7 +619,6 @@ void Exporterhdf5<MeshType, N>::writeElements1 () const
 
 
     hsize_t currentOffset[2] = {0, 0} ;
-//    M_HDF5.write ( "element_ids", H5T_NATIVE_LLONG, currentSpacesDims2, currentOffset, &idsBuffer[0] ) ;
     M_HDF5.write ( filestr0.str()+"element_nodes", H5T_NATIVE_LLONG, currentSpacesDims, currentOffset, &M_uintBuffer[0] ) ;
 
     for (size_type i = 0 ; i < Environment::worldComm().globalSize() ; i++)
@@ -570,16 +626,12 @@ void Exporterhdf5<MeshType, N>::writeElements1 () const
         std::ostringstream filestr1 ;
         filestr1 << i ;
         M_HDF5.closeTable(filestr1.str()+"element_nodes") ;
-        //M_HDF5.closeGroup(filestr1.str()) ;
     }
-    str << "               <Topology TopologyType=\"" << M_element_type << "\" NumberOfElements=\"" << M_maxNumElements << "\" NodesPerElement=\"" << M_elementNodes << "\">\n" ;
-    str << "                   <DataItem Dimensions=\"" <<M_maxNumElements << " " << M_elementNodes << "\" NumberType=\"Int\" Precision=\"8\" Format=\"HDF\" Endian=\"Big\">\n" ;
-    str << "                   " << M_fileNameStep << ".h5:/" << filestr0.str() << "/element_nodes\n" ;
-    str << "                   </DataItem>\n" ;
-    str << "               </Topology>\n" ;
-
-//    M_HDF5.closeTable ("element_ids") ;
-
+    M_str << "               <Topology TopologyType=\"" << M_element_type << "\" NumberOfElements=\"" << M_maxNumElements << "\" NodesPerElement=\"" << M_elementNodes << "\">\n" ;
+    M_str << "                   <DataItem Dimensions=\"" <<M_maxNumElements << " " << M_elementNodes << "\" NumberType=\"Int\" Precision=\"8\" Format=\"HDF\" Endian=\"Big\">\n" ;
+    M_str << "                   " << M_fileNameStep << ".h5:/" << filestr0.str() << "/element_nodes\n" ;
+    M_str << "                   </DataItem>\n" ;
+    M_str << "               </Topology>\n" ;
 }
 
 
@@ -619,7 +671,6 @@ void Exporterhdf5<MeshType, N>::writeElements () const
 
     size_type k = 0 ;
     size_type i = 0 ;
-    M_newElementId.clear () ;
     for (p_it = M_meshOut->beginParts (); k < M_numParts ;  p_it++ , k++)
     {
         auto elt_it = M_meshOut->beginElementWithMarker (p_it->first) ;
@@ -627,7 +678,6 @@ void Exporterhdf5<MeshType, N>::writeElements () const
         for ( ; elt_it != elt_en ; ++elt_it , i ++)
         {
             idsBuffer[i] = elt_it->id () ;
-            M_newElementId[idsBuffer[i]] = i ;
             for ( size_type j = 0 ; j < M_elementNodes ; j ++ )
                 M_uintBuffer[j + M_elementNodes*i] = M_newPointId[elt_it->point(j).id()]  ; 
         }
@@ -650,7 +700,7 @@ void Exporterhdf5<MeshType, N>::writeElements () const
 
 template <typename MeshType, int N>
 template <typename Iterator>
-void Exporterhdf5<MeshType, N>::saveNodal1 ( typename timeset_type::step_ptrtype __step, Iterator __var, Iterator en ) const 
+void Exporterhdf5<MeshType, N>::saveNodalMerge ( typename timeset_type::step_ptrtype __step, Iterator __var, Iterator en ) const 
 {   
     while ( __var != en )
     {    
@@ -681,8 +731,8 @@ void Exporterhdf5<MeshType, N>::saveNodal1 ( typename timeset_type::step_ptrtype
 
         solutionName += ".node" ;
 
-        if ( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
-            std::cout << "solution name                 : " << solutionName << std::endl ;
+//        if ( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+//            std::cout << "solution name                 : " << solutionName << std::endl ;
 
         hsize_t currentSpacesDims [2] ;
 
@@ -756,11 +806,11 @@ void Exporterhdf5<MeshType, N>::saveNodal1 ( typename timeset_type::step_ptrtype
             M_HDF5.closeTable(filestr1.str()+solutionName) ;
         }
 
-        str << "               <Attribute AttributeType=\""<< attributeType << "\" Name=\"" << solutionName << "\" Center=\"Node\">\n" ;
-        str << "                   <DataItem Dimensions=\""<< nComponents << " " << M_maxNumPoints << "\" NumberType=\"Float\" Precision=\"8\" Format=\"HDF\" Endian=\"Big\">\n" ;
-        str << "                   "<< M_fileNameStep <<".h5:/"<< filestr0.str() << "/" <<solutionName <<"\n" ;
-        str << "                   </DataItem>\n" ;    
-        str << "               </Attribute>\n" ;
+        M_str << "               <Attribute AttributeType=\""<< attributeType << "\" Name=\"" << solutionName << "\" Center=\"Node\">\n" ;
+        M_str << "                   <DataItem Dimensions=\""<< nComponents << " " << M_maxNumPoints << "\" NumberType=\"Float\" Precision=\"8\" Format=\"HDF\" Endian=\"Big\">\n" ;
+        M_str << "                   "<< M_fileNameStep <<".h5:/"<< filestr0.str() << "/" <<solutionName <<"\n" ;
+        M_str << "                   </DataItem>\n" ;    
+        M_str << "               </Attribute>\n" ;
         ++__var ;
     }
 }
@@ -797,9 +847,6 @@ void Exporterhdf5<MeshType, N>::saveNodal ( typename timeset_type::step_ptrtype 
         }
 
         solutionName += ".node" ;
-
-        if ( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
-            std::cout << "solution name                 : " << solutionName << std::endl ;
 
         hsize_t currentSpacesDims [2] ;
 
@@ -863,15 +910,15 @@ void Exporterhdf5<MeshType, N>::saveNodal ( typename timeset_type::step_ptrtype 
 
 template<typename MeshType, int N>
 template<typename Iterator>
-void Exporterhdf5<MeshType, N>::saveElement1 ( typename timeset_type::step_ptrtype __step, Iterator __evar, Iterator __evaren ) const 
+void Exporterhdf5<MeshType, N>::saveElementMerge ( typename timeset_type::step_ptrtype __step, Iterator __evar, Iterator __evaren ) const 
 {
     while ( __evar != __evaren ) 
     {
         std::string attributeType ("Scalar") ;
 
         std::string solutionName = __evar->first ;
-        if ( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
-            std::cout << "solution Name                 : " << solutionName << std::endl ;
+//        if ( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+//            std::cout << "solution Name                 : " << solutionName << std::endl ;
         uint16_type nComponents = __evar->second.nComponents ;
 
         if ( __evar->second.is_scalar )
@@ -955,11 +1002,11 @@ void Exporterhdf5<MeshType, N>::saveElement1 ( typename timeset_type::step_ptrty
             M_HDF5.closeTable(filestr1.str()+solutionName) ;
         }
 
-        str << "               <Attribute AttributeType=\"" << attributeType << "\" Name=\"" << solutionName << "\" Center=\"Cell\">\n" ;
-        str << "                   <DataItem Dimensions=\""<< nComponents <<" "<< M_maxNumElements << "\" NumberType=\"Float\" Precision=\"8\" Format=\"HDF\" Endian=\"Big\">\n" ;
-        str << "                   "<< M_fileNameStep << ".h5:/" << filestr0.str() << "/" << solutionName << "\n" ;
-        str << "                   </DataItem>\n" ;    
-        str << "               </Attribute>\n" ;
+        M_str << "               <Attribute AttributeType=\"" << attributeType << "\" Name=\"" << solutionName << "\" Center=\"Cell\">\n" ;
+        M_str << "                   <DataItem Dimensions=\""<< nComponents <<" "<< M_maxNumElements << "\" NumberType=\"Float\" Precision=\"8\" Format=\"HDF\" Endian=\"Big\">\n" ;
+        M_str << "                   "<< M_fileNameStep << ".h5:/" << filestr0.str() << "/" << solutionName << "\n" ;
+        M_str << "                   </DataItem>\n" ;    
+        M_str << "               </Attribute>\n" ;
         __evar++ ;
     }
 }
@@ -974,8 +1021,6 @@ void Exporterhdf5<MeshType, N>::saveElement ( typename timeset_type::step_ptrtyp
         std::string attributeType ("Scalar") ;
 
         std::string solutionName = __evar->first ;
-        if ( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
-            std::cout << "solution Name                 : " << solutionName << std::endl ;
         uint16_type nComponents = __evar->second.nComponents ;
 
         if ( __evar->second.is_scalar )
@@ -1120,9 +1165,9 @@ template <typename MeshType, int N>
 void Exporterhdf5<MeshType, N>::save () const 
 {
     if ( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
-        std::cout << "exporter.merge = " << (boption (_name = "exporter.merge" ) ? "true" : "false")  << std::endl ;
+        std::cout << "exporter.merge                : " << (boption (_name = "exporter.merge" ) ? "true" : "false")  << std::endl ;
     if ( boption ( _name = "exporter.merge" ) )
-        write1() ;
+        writeMerge() ;
     else 
         write () ;
 }
@@ -1131,12 +1176,6 @@ void Exporterhdf5<MeshType, N>::save () const
 void Exporterhdf5<MeshType, N>::visit ( mesh_type* mesh) 
 {
     mesh->beginParts () ;
-}
-
-template <typename MeshType, int N>
-void Exporterhdf5<MeshType, N>::write_xdmf () const 
-{
-
 }
 
 template <typename MeshType, int N>
