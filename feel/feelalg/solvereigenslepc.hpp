@@ -51,8 +51,9 @@ extern "C"
 #else
 # include <slepceps.h>
 #if (SLEPC_VERSION_MAJOR == 3) && (SLEPC_VERSION_MINOR >= 5)
-#else
 # include <slepcbv.h>
+#else
+# include <slepcip.h>
 #endif
 #endif
 
