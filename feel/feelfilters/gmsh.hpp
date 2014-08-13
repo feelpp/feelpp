@@ -38,6 +38,7 @@
 #include <boost/icl/type_traits/is_map.hpp>
 
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/feelgmsh.hpp>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/factory.hpp>
 #include <feel/feelcore/singleton.hpp>

@@ -54,9 +54,7 @@
 #include <feel/feelfilters/gmshhypercubedomain.hpp>
 #include <feel/feelfilters/gmshellipsoiddomain.hpp>
 
-//#if !defined( FEELPP_HAS_STDIO_FMEMOPEN )
 #include <feel/feelcore/fmemopen.h>
-//#endif
 
 #if defined(FEELPP_HAS_GPERFTOOLS)
 #include <gperftools/heap-checker.h>
@@ -64,8 +62,8 @@
 
 
 #if defined( FEELPP_HAS_GMSH_H )
+
 int PartitionMesh( GModel *const model, meshPartitionOptions &options );
-#endif
 
 int gmsh_yyparse();
 int gmsh_yylex();
@@ -78,6 +76,9 @@ extern int gmsh_yyerrorstate;
 extern int gmsh_yyviewindex;
 extern char *gmsh_yytext;
 void PrintParserSymbols(bool help, std::vector<std::string> &vec);
+
+#endif // FEELPP_HAS_GMSH_H
+
 
 namespace Feel
 {
@@ -94,6 +95,7 @@ const GMSH_PARTITIONER GMSH_PARTITIONER_DEFAULT = GMSH_PARTITIONER_CHACO;
 int
 ParseGeoFromMemory( GModel* model, std::string const& name, std::string const& geo  )
 {
+#if defined(FEELPP_HAS_GMSH_H)
     gmsh_yyname = name;
     gmsh_yylineno = 1;
     gmsh_yyerrorstate = 0;
@@ -114,6 +116,11 @@ ParseGeoFromMemory( GModel* model, std::string const& name, std::string const& g
     fclose(gmsh_yyin);
 
     int imported = model->importGEOInternals();
+#else
+    LOG(ERROR) << "Invalid call: Gmsh is not available on this system.";
+    int imported = 0;
+#endif /* FEELPP_HAS_GMSH_H */
+
     return imported;
 }
 Gmsh::Gmsh( int nDim, int nOrder, WorldComm const& worldComm )
@@ -408,7 +415,6 @@ Gmsh::generateGeo( std::string const& __name, std::string const& __geo, bool con
             }
         }
     }
-    std::cerr << "geo1:"<< _geo << std::endl;
     M_geo = std::make_pair( __name, _geo );
     return geochanged;
 }
