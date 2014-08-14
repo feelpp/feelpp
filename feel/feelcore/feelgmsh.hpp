@@ -51,7 +51,9 @@
 #else
 
 #define GMSH_VERSION_LESS_THAN(major,minor,subminor)
+
 #define GMSH_VERSION_GREATER_THAN(major,minor,subminor)
+
 #define GMSH_VERSION_GREATER_OR_EQUAL_THAN(major,minor,subminor)
 
 #endif /* FEELPP_HAS_GMSH_H */
