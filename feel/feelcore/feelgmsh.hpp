@@ -32,22 +32,22 @@
 
 
 #define GMSH_VERSION_LESS_THAN(major,minor,subminor)                   \
-    ((GMSH_VERSION_MAJOR < (major) ||                                  \
-      (GMSH_VERSION_MAJOR == (major) && (GMSH_VERSION_MINOR < (minor) || \
-                                          (GMSH_VERSION_MINOR == (minor) && \
-                                           GMSH_VERSION_PATCH < (subminor))))) ? 1 : 0)
+    ((GMSH_MAJOR_VERSION < (major) ||                                  \
+      (GMSH_MAJOR_VERSION == (major) && (GMSH_MINOR_VERSION < (minor) || \
+                                          (GMSH_MINOR_VERSION == (minor) && \
+                                           GMSH_PATCH_VERSION < (subminor))))) ? 1 : 0)
 
 #define GMSH_VERSION_GREATER_THAN(major,minor,subminor)                \
-    ((GMSH_VERSION_MAJOR > (major) ||                                  \
-      (GMSH_VERSION_MAJOR == (major) && (GMSH_VERSION_MINOR > (minor) || \
-                                          (GMSH_VERSION_MINOR == (minor) && \
-                                           GMSH_VERSION_PATCH > (subminor))))) ? 1 : 0)
+    ((GMSH_MAJOR_VERSION > (major) ||                                  \
+      (GMSH_MAJOR_VERSION == (major) && (GMSH_MINOR_VERSION > (minor) || \
+                                          (GMSH_MINOR_VERSION == (minor) && \
+                                           GMSH_PATCH_VERSION > (subminor))))) ? 1 : 0)
 
 #define GMSH_VERSION_GREATER_OR_EQUAL_THAN(major,minor,subminor)       \
-    ((GMSH_VERSION_MAJOR > (major) ||                                  \
-      (GMSH_VERSION_MAJOR == (major) && (GMSH_VERSION_MINOR > (minor) || \
-                                          (GMSH_VERSION_MINOR == (minor) && \
-                                           GMSH_VERSION_PATCH >= (subminor))))) ? 1 : 0)
+    ((GMSH_MAJOR_VERSION > (major) ||                                  \
+      ((GMSH_MAJOR_VERSION == (major)) && ((GMSH_MINOR_VERSION > (minor)) || \
+                                         ((GMSH_MINOR_VERSION == (minor)) && \
+                                          ( GMSH_PATCH_VERSION >= (subminor))) ))) ? 1 : 0)
 #else
 
 #define GMSH_VERSION_LESS_THAN(major,minor,subminor)
