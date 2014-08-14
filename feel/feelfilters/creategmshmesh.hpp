@@ -127,7 +127,7 @@ BOOST_PARAMETER_FUNCTION(
             import.setElementRegionAsPhysicalRegion( physical_are_elementary_regions );
         }
         import.setRespectPartition( respect_partition );
-
+        import.setGModel( desc->gModel() );
         _mesh->accept( import );
 
         if ( update )

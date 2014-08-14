@@ -38,12 +38,26 @@
 #include <boost/icl/type_traits/is_map.hpp>
 
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/feelgmsh.hpp>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/factory.hpp>
 #include <feel/feelcore/singleton.hpp>
 #include <feel/feelcore/worldcomm.hpp>
 #include <feel/feelfilters/gmshenums.hpp>
 #include <feel/feelfilters/periodicentities.hpp>
+
+#if defined( FEELPP_HAS_GMSH_H )
+#include <GmshConfig.h>
+#include <Gmsh.h>
+#include <GModel.h>
+#include <OpenFile.h>
+#include <GmshDefines.h>
+#include <Context.h>
+#endif
+// there is a macro called sign in Gmsh that conflicts with
+// at least one member function sign() from DofTable.
+// hence we undefine the macro sign after including Gmsh headers
+#undef sign
 
 namespace Feel
 {
@@ -168,6 +182,12 @@ public:
         {
             return M_format;
         }
+
+    /**
+     * @brief get the geometry
+     * @return the gmsh geo description
+     */
+    std::pair<std::string,std::string> geo() const { return M_geo; }
 
     /**
      * @return true if gmsh format is ascii
@@ -317,6 +337,13 @@ public:
         {
             return M_refine_levels;
         }
+
+    /**
+     * @brief get the Gmsh GModel data structure
+     * @return the Gmsh GModel data structure
+     */
+    GModel* gModel() const { return M_gmodel; }
+
     //@}
 
     /** \name  Mutators
@@ -390,6 +417,12 @@ public:
         {
             M_format = format;
         }
+
+    /**
+     * @brief set the gmsh geo
+     * @param g gmsh geo
+     */
+    void setGeo( std::pair<std::string,std::string> const& g ) { M_geo = g; }
 
     /**
      * set the description of the geometry
@@ -718,6 +751,9 @@ protected:
     bool M_substructuring;
 
     PeriodicEntities M_periodic;
+
+    mutable std::pair<std::string,std::string> M_geo;
+    mutable GModel*  M_gmodel;
 };
 
 ///! \typedef gmsh_type Gmsh
