@@ -558,7 +558,8 @@ void PreconditionerPetsc<T>::init ()
 #if PETSC_VERSION_LESS_THAN(3,5,0)
     check( PCSetOperators( M_pc,M_mat,M_mat, PetscGetMatStructureEnum(this->M_prec_matrix_structure) ) );
 #else
-    check( PCSetOperators( M_pc,M_mat,M_mat/*, PetscGetMatStructureEnum(this->M_prec_matrix_structure)*/ ) );
+    check( PCSetReusePreconditioner(M_pc,(this->M_prec_matrix_structure == Feel::SAME_PRECONDITIONER)? PETSC_TRUE : PETSC_FALSE ) );
+    check( PCSetOperators( M_pc,M_mat,M_mat ) );
 #endif
 
     // Set the PCType.  Note: this used to be done *before* the call to
