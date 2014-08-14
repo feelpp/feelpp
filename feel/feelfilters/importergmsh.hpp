@@ -38,6 +38,7 @@
 #include <algorithm>
 
 #include <feel/feelcore/worldcomm.hpp>
+#include <feel/feelcore/feelgmsh.hpp>
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelfilters/importer.hpp>
 #include <feel/feelfilters/gmshenums.hpp>
@@ -177,9 +178,14 @@ struct GMSHElement
                     0, 1
                     )
         {
+#if GMSH_VERSION_GREATER_OR_EQUAL_THAN(2,8,0)
           std::vector<int> verts;
           ele->getVerticesIdForMSH(verts);
           indices = verts;
+#else
+          int* verts = ele->getVerticesIdForMSH();
+          std::copy( verts, verts+indices.size(), indices.begin() );
+#endif
 #if 0
           std::cout << "Adding element index " << n << " type " << type << " phys " << physical
                     << " elementary " << elementary << " np " << numPartitions << " part " << partition << " nverts " << verts.size() << std::endl;
