@@ -888,7 +888,6 @@ else()
     ${FEELPP_SOURCE_DIR}/
     ${FEELPP_SOURCE_DIR}/contrib/gmm/include
     )
-	#SET(FEELPP_LIBRARIES feelpp  ${FEELPP_LIBRARIES})
 endif()
 
 
