@@ -226,7 +226,8 @@ IF ( MPI_FOUND )
   ENDIF()
 ENDIF()
 
-
+CHECK_FUNCTION_EXISTS(fmemopen FEELPP_HAS_STDIO_FMEMOPEN)
+MESSAGE(STATUS "FMemOpen: ${FEELPP_HAS_STDIO_FMEMOPEN}")
 
 
 Check_Include_File_CXX(dlfcn.h FEELPP_HAS_DLFCN_H)
@@ -843,6 +844,8 @@ if ( GMSH_FOUND )
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Gmsh" )
 endif()
 
+# we include this directory : add some missing headers from Gmsh
+INCLUDE_DIRECTORIES( ${CMAKE_SOURCE_DIR}/contrib/gmsh )
 
 #
 # if Feel++ has been installed on the system
