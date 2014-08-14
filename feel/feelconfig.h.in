@@ -96,6 +96,9 @@
 /* Define to 1 if you have the <stdint.h> header file. */
 #cmakedefine FEELPP_HAS_STDINT_H
 
+/* Define if the STDIO FMEMOPEN is supported by the compiler. */
+#cmakedefine FEELPP_HAS_STDIO_FMEMOPEN
+
 /* Define to 1 if you have the <stdlib.h> header file. */
 #cmakedefine FEELPP_HAS_STDLIB_H
 
