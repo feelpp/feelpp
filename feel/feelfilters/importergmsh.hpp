@@ -709,8 +709,7 @@ ImporterGmsh<MeshType>::readFromMemory( mesh_type* mesh )
         {
             Feel::detail::GMSHElement ele(tetra, ++num, elementary, physicals.size()?physicals[0]:0);
             this->addVertices( mesh, ele, gmshpts );
-            addVolume( mesh, ele, __idGmshToFeel[tetra->getNum()] );
-        }
+            addVolume( mesh, ele, __idGmshToFeel[tetra->getNum()] );   }
     }
     // read hexa
     for( GModel::riter it = M_gmodel->firstRegion(); it != M_gmodel->lastRegion(); ++it)
