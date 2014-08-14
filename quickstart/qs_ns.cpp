@@ -38,7 +38,7 @@ int main(int argc, char**argv )
                                   _email="feelpp-devel@feelpp.org"));
 
     tic();
-    auto mesh = loadMesh( new Mesh<Simplex<3>> );
+    auto mesh = loadMesh( new Mesh<Simplex<2>> );
     CHECK( mesh->hasMarkers( {"wall","inlet"} ) ) << "Mesh markers wall or inlet are not set properly in "  << soption("gmsh.filename");
     toc("mesh");tic();
     auto Vh = THch<1>( mesh );
@@ -93,7 +93,7 @@ int main(int argc, char**argv )
         at = a;
         at += integrate( _range=elements( mesh ), _expr= trans(gradt(u)*idv(extrapu))*id(v) );
         at+=on(_range=markedfaces(mesh,"wall"), _rhs=ft, _element=u,
-               _expr=zero<3>() );
+               _expr=zero<2>() );
         at+=on(_range=markedfaces(mesh,"inlet"), _rhs=ft, _element=u,
                _expr=-expr( soption(_name="functions.g")) *N() );
         toc("update lhs");tic();
