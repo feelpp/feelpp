@@ -4,7 +4,7 @@
 
    \tableofcontents
 
-   \section feelpp0980 Feel++ Release 0.99.0
+   \section feelpp0990 Feel++ Release 0.99.0
    release date 01-09-2014
 
    \subsection changes0990 Changes
@@ -15,14 +15,15 @@
 
    \subsection features0990 Features
 
-   - Support evaluating expressions over faces (not only elements) and compute
-     min, max (`minmax`) and L infinity norm (`normLinf`) of these expressions
-   - Support PETSc and SLEPc from 3.2 to 3.5.1
+   - Support CMake 3.0
+   - Support PETSc from 3.2 to 3.5.1
+   - Support SLEPc from 3.2 to 3.5
    - Support GCC from 4.7 to 4.9 (g++ versions that support the c++11 standard)
    - Support CLANG from 3.2 to 3.5
    - Support INTEL C++ Compiler starting from intel.15 version
    - Port on Curie (@TGCC,France)
    - <a href="https://github.com/feelpp/feelpp/issues/412">#295</a> Support in-memory on Gmsh data structures (Geo and Msh)
+   -
 
    \subsection issues0990 Noteworthy Issues
 
