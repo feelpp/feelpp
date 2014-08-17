@@ -702,11 +702,12 @@ SetPCType( PC& pc, const PreconditionerType & preconditioner_type, const MatSolv
 
     case LU_PRECOND:
     {
-
         // In serial, just set the LU preconditioner type
         //if (Feel::n_processors() == 1)
         // do be changed in parallel
-        if ( worldComm.globalSize() == 1 || matSolverPackage_type == MATSOLVER_MUMPS || matSolverPackage_type == MATSOLVER_PASTIX )
+        if ( worldComm.globalSize() == 1 ||
+             matSolverPackage_type == MATSOLVER_MUMPS ||
+             matSolverPackage_type == MATSOLVER_PASTIX )
         {
             ierr = PCSetType ( pc, ( char* ) PCLU );
             CHKERRABORT( worldComm.globalComm(),ierr );
