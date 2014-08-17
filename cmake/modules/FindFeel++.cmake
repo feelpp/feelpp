@@ -263,7 +263,7 @@ if ( MKL_FOUND )
   include_directories( ${MKL_INCLUDE_DIRS} )
   SET(FEELPP_LIBRARIES ${MKL_LIBRARIES} ${FEELPP_LIBRARIES})
   #  enable MKL wherever possible for eigen3
-  add_definitions(-DEIGEN_USE_MKL_ALL=1)
+  add_definitions(-DEIGEN_USE_MKL_ALL=1 -DMKL_BLAS=MKL_DOMAIN_BLAS)
 else( MKL_FOUND )
   #
   # Blas and Lapack
