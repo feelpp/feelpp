@@ -4060,7 +4060,7 @@ public:
     */
     bool hasRegionTree() const
     {
-        return M_rt;
+        return M_rt != boost::none;
     }
 
     /**
