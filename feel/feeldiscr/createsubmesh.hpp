@@ -32,7 +32,12 @@
 
 #include <boost/mpl/if.hpp>
 #include <boost/mpl/identity.hpp>
+#include <boost/version.hpp>
+#if BOOST_VERSION >= 105600
+#include <boost/phoenix/stl/algorithm.hpp>
+#else
 #include <boost/spirit/home/phoenix/stl/algorithm.hpp>
+#endif
 #include <feel/feelmesh/submeshdata.hpp>
 
 
