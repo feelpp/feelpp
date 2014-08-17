@@ -44,15 +44,27 @@ find_path (SLEPC_DIR include/slepc.h
   /opt/local/lib/petsc # macports
   /opt/local/lib/slepc # macports
   # Homebrew
-  /usr/local/Cellar/slepc/3.4.4/arch-darwin-cxx-debug
-  /usr/local/Cellar/slepc/3.4.4/arch-darwin-cxx-opt
-  /usr/local/lib/slepcdir/3.4.3/darwin-cxx-debug
-  /usr/local/lib/slepcdir/3.4.3/darwin-cxx-opt
-  /usr/local/Cellar/slepc/3.4.3/arch-darwin-cxx-debug
-  /usr/local/Cellar/slepc/3.4.3/arch-darwin-cxx-opt
+  /usr/local/Cellar/slepc/3.5.0
+  /usr/local/Cellar/slepc/3.4.4
+  /usr/local/Cellar/slepc/3.4.3
   $ENV{HOME}/slepc
   DOC "SLEPc Directory")
 
+
+if ( NOT SLEPC_DIR )
+  foreach( version ${PETSC_VERSIONS} )
+    foreach ( flavor ${DEBIAN_FLAVORS} ${DARWIN_FLAVORS})
+      #message(STATUS "checking version ${version} for file ${flavor}/include/petsc.h...")
+      find_path (SLEPC_DIR include/slepc.h
+        PATHS
+        /usr/lib/slepcdir/${version}/${flavor}
+        /usr/local/Cellar/slepc/${version}/${flavor}
+        NO_DEFAULT_PATH
+        DOC "SLEPc Directory")
+    endforeach()
+  endforeach()
+endif()
+message(STATUS "SLEPc Dir: ${SLEPC_DIR}")
 
 SET(SLEPC_INCLUDE_DIR "${SLEPC_DIR}/include/")
 CHECK_INCLUDE_FILE( ${SLEPC_INCLUDE_DIR}/slepc.h FEELPP_HAS_SLEPC_H )
@@ -61,6 +73,7 @@ if (SLEPC_DIR AND NOT PETSC_ARCH)
   set (_slepc_arches
     $ENV{PETSC_ARCH}                   # If set, use environment variable first
     ${DEBIAN_FLAVORS}  # Debian defaults
+    ${DARWIN_FLAVORS}  # Darwin defaults
     x86_64-unknown-linux-gnu i386-unknown-linux-gnu)
   set (slepcconf "NOTFOUND" CACHE FILEPATH "Cleared" FORCE)
   foreach (arch ${_slepc_arches})
