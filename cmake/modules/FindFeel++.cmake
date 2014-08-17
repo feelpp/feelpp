@@ -116,6 +116,9 @@ IF ( FEELPP_ENABLE_INSTANTIATION_MODE )
 ENDIF()
 SET(FEELPP_MESH_MAX_ORDER "5" CACHE STRING "maximum geometrical order in templates to instantiate" )
 
+# enable host specific
+include(feelpp.host)
+
 if ( FEELPP_ENABLE_TBB )
   FIND_PACKAGE(TBB)
   IF ( TBB_FOUND )
@@ -250,26 +253,38 @@ if ( GMP_FOUND )
   message(STATUS "GMP: ${GMP_LIBRARIES}" )
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Gmp" )
 endif()
-#
-# Blas and Lapack
-#
-if (APPLE)
-  FIND_LIBRARY(ATLAS_LIBRARY
-    NAMES
-    atlas
-    PATHS
-    /opt/local/lib/lib
-    NO_DEFAULT_PATH
-    )
-  message(STATUS "ATLAS: ${ATLAS_LIBRARY}" )
-  IF( ATLAS_LIBRARY )
-    SET(FEELPP_LIBRARIES ${ATLAS_LIBRARY} ${FEELPP_LIBRARIES})
-  ENDIF()
-  FIND_PACKAGE(LAPACK )
-else (APPLE)
-  FIND_PACKAGE(LAPACK)
-endif (APPLE)
-SET(FEELPP_LIBRARIES  ${LAPACK_LIBRARIES} ${FEELPP_LIBRARIES})
+find_package(MKL)
+if ( MKL_FOUND )
+
+  message(STATUS "MKL Includes: ${MKL_INCLUDE_DIRS}")
+  message(STATUS "MKL Libraries: ${MKL_LIBRARIES}")
+  set(FEELPP_HAS_MKL 1)
+  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Intel(MKL)" )
+  include_directories( ${MKL_INCLUDE_DIRS} )
+  SET(FEELPP_LIBRARIES ${MKL_LIBRARIES} ${FEELPP_LIBRARIES})
+
+else( MKL_FOUND )
+  #
+  # Blas and Lapack
+  #
+  if (APPLE)
+    # FIND_LIBRARY(ATLAS_LIBRARY
+    #   NAMES
+    #   atlas
+    #   PATHS
+    #   /opt/local/lib/lib
+    #   NO_DEFAULT_PATH
+    #   )
+    # message(STATUS "ATLAS: ${ATLAS_LIBRARY}" )
+    # IF( ATLAS_LIBRARY )
+    #   SET(FEELPP_LIBRARIES ${ATLAS_LIBRARY} ${FEELPP_LIBRARIES})
+    # ENDIF()
+    FIND_PACKAGE(LAPACK)
+  else (APPLE)
+    FIND_PACKAGE(LAPACK)
+  endif (APPLE)
+  SET(FEELPP_LIBRARIES  ${LAPACK_LIBRARIES} ${FEELPP_LIBRARIES})
+endif(MKL_FOUND)
 
 # HDF5
 FIND_PACKAGE(HDF5)
@@ -568,16 +583,10 @@ IF( SCOTCH_FOUND )
   SET(FEELPP_LIBRARIES ${SCOTCH_LIBRARIES} ${FEELPP_LIBRARIES})
 ENDIF()
 
-FIND_LIBRARY(ML_LIBRARY
-  NAMES
-  ml
-  PATHS
-  $ENV{PETSC_DIR}/lib
-  $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
-  /opt/local/lib/petsc/lib
-  )
+find_package(ML)
 message(STATUS "ML: ${ML_LIBRARY}" )
-IF ( ML_LIBRARY )
+IF ( ML_FOUND )
+  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} PETSc" )
   SET(FEELPP_LIBRARIES ${ML_LIBRARY} ${FEELPP_LIBRARIES})
 ENDIF()
 
@@ -704,6 +713,17 @@ if ( PETSC_FOUND )
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} PETSc" )
 
 endif( PETSC_FOUND )
+
+# ML was already searched for, if it was not found then try again to look for it
+# in PETSC_DIR
+if ( NOT ML_FOUND )
+  find_package(ML)
+  message(STATUS "ML(PETSc): ${ML_LIBRARY}" )
+  IF ( ML_LIBRARY )
+    SET(FEELPP_LIBRARIES ${ML_LIBRARY} ${FEELPP_LIBRARIES})
+    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} ML" )
+  ENDIF()
+endif()
 
 #
 # parpack
