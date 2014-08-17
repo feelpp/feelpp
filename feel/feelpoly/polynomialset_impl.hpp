@@ -381,7 +381,8 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<1>, mpl::bool_
                 for ( uint16_type q = 0; q < Q; ++q )
                 {
                     // covariant piola transform
-                    M_phi[ii][q] = K*(*M_pc)->phi(ii,q)/thegmc->J(q);
+                    M_phi[ii][q].noalias() = K*(*M_pc)->phi(ii,q);
+                    M_phi[ii][q] /= thegmc->J(q);
                 }
             }
         }
@@ -392,7 +393,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<1>, mpl::bool_
                 for ( uint16_type q = 0; q < Q; ++q )
                 {
                     // piola transform
-                    M_phi[ii][q] = Bt*(*M_pc)->phi(ii,q);
+                    M_phi[ii][q].noalias() = Bt*(*M_pc)->phi(ii,q);
                 }
             }
         }
@@ -417,7 +418,8 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<1>, mpl::bool_
                                 //uint16_type c1 = c;
                                 if ( is_hdiv_conforming )
                                 {
-                                    grad_real.noalias() = K*(M_gradphi[i][0]*Bt.transpose())/thegmc->J(0);
+                                    grad_real.noalias() = K*(M_gradphi[i][0]*Bt.transpose());
+                                    grad_real /= thegmc->J(0);
                                 }
                                 else if ( is_hcurl_conforming )
                                 {
