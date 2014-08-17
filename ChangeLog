@@ -23,8 +23,8 @@
    - Support CLANG from 3.2 to 3.5
    - Support INTEL C++ Compiler starting from intel.15 version
    - Support INTEL MKL starting from version 11
-   - <a href="https://github.com/feelpp/feelpp/issues/412">#295</a> Support in-memory on Gmsh data structures (Geo and Msh)
-   -
+   - Support in-memory on Gmsh data structures (Geo and Msh) see <a href="https://github.com/feelpp/feelpp/issues/412">#295</a>
+   - Support NLOpt see <a href="https://github.com/feelpp/feelpp/issues/407">#407</a>
 
    \subsection issues0990 Noteworthy Issues
 
