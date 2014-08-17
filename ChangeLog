@@ -16,16 +16,23 @@
    \subsection features0990 Features
 
    - Support CMake 3.0
+   - Support Boost from 1.49 to 1.56
    - Support PETSc from 3.2 to 3.5.1
    - Support SLEPc from 3.2 to 3.5
    - Support GCC from 4.7 to 4.9 (g++ versions that support the c++11 standard)
    - Support CLANG from 3.2 to 3.5
    - Support INTEL C++ Compiler starting from intel.15 version
-   - Port on Curie (@TGCC,France)
+   - Support INTEL MKL starting from version 11
    - <a href="https://github.com/feelpp/feelpp/issues/412">#295</a> Support in-memory on Gmsh data structures (Geo and Msh)
    -
 
    \subsection issues0990 Noteworthy Issues
+
+   \subsection spec0990 Platform specific
+
+   - MACOSX: when using cmake3 set MACOS_RPATH to ON by default
+   - MACOSX: when using cmake3 set CMAKE_INSTALL_RPATH to CMAKE_INSTALL_PREFIX/lib
+   - Port on Curie (@TGCC,France)
 
    \section feelpp0980 Feel++ Release 0.98.0
    release date 22-05-2014
