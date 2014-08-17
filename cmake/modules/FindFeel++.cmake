@@ -262,7 +262,8 @@ if ( MKL_FOUND )
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Intel(MKL)" )
   include_directories( ${MKL_INCLUDE_DIRS} )
   SET(FEELPP_LIBRARIES ${MKL_LIBRARIES} ${FEELPP_LIBRARIES})
-
+  #  enable MKL wherever possible for eigen3
+  add_definitions(-DEIGEN_USE_MKL_ALL=1)
 else( MKL_FOUND )
   #
   # Blas and Lapack
