@@ -58,8 +58,12 @@
 /*Check IMKL version for compatibility: < 10.3 is not usable with Eigen*/
 #   ifndef INTEL_MKL_VERSION
 #       undef EIGEN_USE_MKL /* INTEL_MKL_VERSION is not even defined on older versions */
-#   elif INTEL_MKL_VERSION < 100305    /* the intel-mkl-103-release-notes say this was when the lapacke.h interface was added*/
-#       undef EIGEN_USE_MKL
+#   else
+#       if INTEL_MKL_VERSION < 100305    /* the intel-mkl-103-release-notes say this was when the lapacke.h interface was added*/
+#           undef EIGEN_USE_MKL
+#       elif INTEL_MKL_VERSION > 110200
+#           define MKL_BLAS MKL_DOMAIN_BLAS
+#       endif
 #   endif
 #   ifndef EIGEN_USE_MKL
     /*If the MKL version is too old, undef everything*/
