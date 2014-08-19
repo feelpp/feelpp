@@ -25,6 +25,9 @@
 # enable the CCC script generation
 OPTION(FEELPP_ENABLE_SCHED_CCC "Enable Feel++ tgcc/ccc submission scripts generation" ON)
 
+# disable NLOPT for now
+OPTION( FEELPP_ENABLE_NLOPT "Enable NLOPT (NonLinear Optimisation Library)" OFF)
+
 # find the gfortran library
 FIND_LIBRARY(GFORTRAN_LIBRARY
     NAMES
