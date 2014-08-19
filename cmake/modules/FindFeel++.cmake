@@ -426,6 +426,13 @@ else()
       #ERROR_FILE "nlopt-autoreconf-errors"
       )
 
+    if (NOT EXISTS ${FEELPP_SOURCE_DIR}/contrib/nlopt/configure )
+      message(FATAL_ERROR "configure not available")
+    endif()
+
+    # ensure that build dir is created
+    file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/nlopt)
+
     if ( FEELPP_ENABLE_BUILD_STATIC )
       execute_process(
         COMMAND ${FEELPP_HOME_DIR}/contrib/nlopt/configure --enable-maintainer-mode --with-cxx=yes CXX=${CMAKE_CXX_COMPILER} CC=${CMAKE_CXX_COMPILER}
