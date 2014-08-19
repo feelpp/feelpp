@@ -400,14 +400,14 @@ else()
       ERROR_FILE "nlopt-touch-errors")
 
     execute_process(
-      COMMAND autoreconf --verbose --install --symlink --force
+      COMMAND autoreconf --verbose --install --force
       WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/contrib/nlopt
       OUTPUT_FILE "nlopt-autoreconf"
       ERROR_FILE "nlopt-autoreconf-errors")
 
     if ( FEELPP_ENABLE_BUILD_STATIC )
       execute_process(
-        COMMAND ${FEELPP_HOME_DIR}/contrib/nlopt/configure --enable-maintainer-mode --with-cxx=yes CXX=${CMAKE_CXX_COMPILER} CC=${CMAKE_CXX_COMPILER} 
+        COMMAND ${FEELPP_HOME_DIR}/contrib/nlopt/configure --enable-maintainer-mode --with-cxx=yes CXX=${CMAKE_CXX_COMPILER} CC=${CMAKE_CXX_COMPILER}
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/nlopt
         #OUTPUT_QUIET
         OUTPUT_FILE "nlopt-configure"
@@ -418,7 +418,7 @@ else()
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/nlopt
         #      OUTPUT_QUIET
         #OUTPUT_FILE "nlopt-configure"
-        #ERROR_FILE "nlopt-configure-errors" 
+        #ERROR_FILE "nlopt-configure-errors"
         )
     endif()
     execute_process(
@@ -438,6 +438,9 @@ else()
     message(STATUS "NLOpt: nlopt.hpp is generated")
   endif()
   include_directories(${FEELPP_SOURCE_DIR}/contrib/nlopt/api)
+  if ( NOT FEELPP_ENABLE_BUILD_STATIC )
+    set(BUILD_SHARED_LIBS ON)
+  endif()
   add_subdirectory(contrib/nlopt)
   SET(FEELPP_LIBRARIES feelpp_nlopt ${FEELPP_LIBRARIES} )
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} NLOpt" )
