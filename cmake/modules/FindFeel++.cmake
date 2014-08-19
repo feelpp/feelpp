@@ -391,29 +391,39 @@ if ( 0 ) #NLOPT_FOUND )
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} NLOpt" )
   SET(FEELPP_HAS_NLOPT 1)
 else()
-  if (NOT EXISTS ${CMAKE_BINARY_DIR}/contrib/nlopt/api/nlopt.hpp )
+  if (NOT EXISTS ${CMAKE_SOURCE_DIR}/contrib/nlopt/api/nlopt.hpp )
+
+    execute_process(
+      COMMAND  touch  swig/nlopt.scm.in
+      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/contrib/nlopt
+      OUTPUT_FILE "nlopt-touch"
+      ERROR_FILE "nlopt-touch-errors")
 
     execute_process(
       COMMAND autoreconf --verbose --install --symlink --force
-      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/nlopt
+      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/contrib/nlopt
       OUTPUT_FILE "nlopt-autoreconf"
       ERROR_FILE "nlopt-autoreconf-errors")
 
     if ( FEELPP_ENABLE_BUILD_STATIC )
       execute_process(
-        COMMAND ${FEELPP_HOME_DIR}/contrib/nlopt/configure --with-cxx
+        COMMAND ${FEELPP_HOME_DIR}/contrib/nlopt/configure --enable-maintainer-mode --with-cxx=yes CXX=${CMAKE_CXX_COMPILER} CC=${CMAKE_CXX_COMPILER} 
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/nlopt
         #OUTPUT_QUIET
         OUTPUT_FILE "nlopt-configure"
         ERROR_FILE "nlopt-configure-errors" )
     else()
       execute_process(
-        COMMAND ${FEELPP_HOME_DIR}/contrib/nlopt/configure --with-cxx --enable-shared
+        COMMAND ${FEELPP_HOME_DIR}/contrib/nlopt/configure --enable-maintainer-mode --with-cxx=yes --enable-shared CXX=${CMAKE_CXX_COMPILER} CC=${CMAKE_CXX_COMPILER}
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/nlopt
         #      OUTPUT_QUIET
         OUTPUT_FILE "nlopt-configure"
         ERROR_FILE "nlopt-configure-errors" )
     endif()
+    execute_process(
+      COMMAND make nlopt.hpp
+      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/nlopt/api
+      OUTPUT_FILE "nlopt-nlopthpp" )
     # delete all Makefiles before Cmake generate its own
     execute_process(
       COMMAND make distclean
