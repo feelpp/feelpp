@@ -18,6 +18,12 @@
 #ifndef FEELPP_FMEMOPEN_H
 #define FEELPP_FMEMOPEN_H
 
+#include <cstdio>
+
+// fmemopen is defined in cstdio in linux
+// it is however not available in APPLE platforms
+#if defined( __APPLE__ )
+
 #if defined __cplusplus
 extern "C" {
 #endif
@@ -47,6 +53,8 @@ FILE *fmemopen(void *buf, size_t size, const char *mode);
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif
 
 #endif // #ifndef FMEMOPEN_H_
