@@ -355,6 +355,7 @@ public:
         :
         super( GMSH, _worldcomm ),
         M_version( FEELPP_GMSH_FORMAT_VERSION ),
+        M_in_memory( false ),
         M_use_elementary_region_as_physical_region( false ),
         M_respect_partition( false )
     {
@@ -367,6 +368,7 @@ public:
         :
         super( _fname, GMSH, _worldcomm ),
         M_version( _version ),
+        M_in_memory( false ),
         M_use_elementary_region_as_physical_region( false ),
         M_respect_partition( false )
     {
@@ -377,6 +379,7 @@ public:
         :
         super( i ),
         M_version( i.M_version ),
+        M_in_memory( i.M_in_memory ),
         M_use_elementary_region_as_physical_region( false ),
         M_ignorePhysicalGroup( i.M_ignorePhysicalGroup ),
         M_ignorePhysicalName( i.M_ignorePhysicalName ),
@@ -425,7 +428,10 @@ public:
     {
         M_version = version;
     }
-
+    void setInMemory( bool in )
+    {
+        M_in_memory = in;
+    }
     void setIgnorePhysicalGroup( int i )
     {
         M_ignorePhysicalGroup.insert( i );
@@ -501,6 +507,7 @@ private:
 private:
 
     std::string M_version;
+    bool M_in_memory;
     std::map<int,int> M_n_vertices;
     //std::vector<int> M_n_b_vertices;
 
@@ -596,7 +603,7 @@ void
 ImporterGmsh<MeshType>::visit( mesh_type* mesh )
 {
     DVLOG(2) << "visit("  << mesh_type::nDim << "D ) starts\n";
-    if ( ( M_gmodel != 0 ) && ( boption("gmsh.in-memory") == true ) )
+    if ( ( M_gmodel != 0 ) && ( M_in_memory == true ) )
         readFromMemory( mesh );
     else
         readFromFile( mesh );

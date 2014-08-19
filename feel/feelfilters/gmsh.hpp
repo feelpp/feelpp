@@ -411,6 +411,14 @@ public:
         }
 
     /**
+     * if \p in is true, read in-memory geo files
+     */
+    void setInMemory( bool in )
+        {
+            M_in_memory = in;
+        }
+
+    /**
      * set file \p format: ascii or binary
      */
     void setFileFormat( GMSH_FORMAT format )
@@ -717,6 +725,8 @@ protected:
 
     // geometry parameters map
     std::map< std::string, std::string > M_geoParamMap;
+
+    bool M_in_memory;
 
     //! bounding box
     std::vector<std::pair<double,double> > M_I;
