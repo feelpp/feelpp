@@ -432,7 +432,12 @@ else()
       WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/nlopt
       OUTPUT_FILE "nlopt-distclean" )
   endif()
-  include_directories(contrib/nlopt/api)
+  if (NOT EXISTS ${CMAKE_SOURCE_DIR}/contrib/nlopt/api/nlopt.hpp )
+    message(FATAL "NLOpt: nlopt.hpp was not generated")
+  else()
+    message(STATUS "NLOpt: nlopt.hpp is generated")
+  endif()
+  include_directories(${FEELPP_SOURCE_DIR}/contrib/nlopt/api)
   add_subdirectory(contrib/nlopt)
   SET(FEELPP_LIBRARIES feelpp_nlopt ${FEELPP_LIBRARIES} )
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} NLOpt" )
@@ -923,6 +928,7 @@ if ( NOT EXISTS ${CMAKE_SOURCE_DIR}/feel OR NOT EXISTS ${CMAKE_SOURCE_DIR}/contr
   #  FIND_LIBRARY(FEELPP_GFLAGS_LIBRARY feelpp_gflags PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
   #  FIND_LIBRARY(FEELPP_GLOG_LIBRARY feelpp_glog PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
   #  FIND_LIBRARY(FEELPP_CLN_LIBRARY feelpp_cln PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
+  FIND_LIBRARY(FEELPP_NLOPT_LIBRARY feelpp_nlopt PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
   FIND_LIBRARY(FEELPP_GINAC_LIBRARY feelpp_ginac PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
   FIND_LIBRARY(FEELPP_LIBRARY feelpp PATHS $ENV{FEELPP_DIR}/lib NO_DEFAULT_PATH)
   FIND_LIBRARY(FEELPP_LIBRARY feelpp )
@@ -946,7 +952,7 @@ if ( NOT EXISTS ${CMAKE_SOURCE_DIR}/feel OR NOT EXISTS ${CMAKE_SOURCE_DIR}/contr
     FEELPP_INCLUDE_DIR
     FEELPP_LIBRARY
     )
-  SET(FEELPP_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_GINAC_LIBRARY}  ${FEELPP_LIBRARIES})
+  SET(FEELPP_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_GINAC_LIBRARY} ${FEELPP_NLOPT_LIBRARY}  ${FEELPP_LIBRARIES})
 else()
   INCLUDE_DIRECTORIES (
     ${FEELPP_BUILD_DIR}/
