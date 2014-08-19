@@ -417,13 +417,15 @@ else()
         COMMAND ${FEELPP_HOME_DIR}/contrib/nlopt/configure --enable-maintainer-mode --with-cxx=yes --enable-shared CXX=${CMAKE_CXX_COMPILER} CC=${CMAKE_CXX_COMPILER}
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/nlopt
         #      OUTPUT_QUIET
-        OUTPUT_FILE "nlopt-configure"
-        ERROR_FILE "nlopt-configure-errors" )
+        #OUTPUT_FILE "nlopt-configure"
+        #ERROR_FILE "nlopt-configure-errors" 
+        )
     endif()
     execute_process(
       COMMAND make nlopt.hpp
       WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/nlopt/api
-      OUTPUT_FILE "nlopt-nlopthpp" )
+      #OUTPUT_FILE "nlopt-nlopthpp" )
+      )
     # delete all Makefiles before Cmake generate its own
     execute_process(
       COMMAND make distclean
