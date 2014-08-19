@@ -1268,7 +1268,15 @@ public:
     {
         return M_col_startInMatrix;
     }
-
+    /**
+     * @brief set the bilinear form to zero
+     * @details set the bilinear form and its 
+     * algebraic representation to zero
+     */
+    void zero()
+    {
+        M_matrix->zero();
+    }
     /**
      * \return the threshold
      */
