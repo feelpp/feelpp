@@ -391,7 +391,7 @@ if ( 0 ) #NLOPT_FOUND )
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} NLOpt" )
   SET(FEELPP_HAS_NLOPT 1)
 else()
-  if (NOT EXISTS ${CMAKE_SOURCE_DIR}/contrib/nlopt/api/nlopt.hpp )
+  if (NOT EXISTS ${FEELPP_SOURCE_DIR}/contrib/nlopt/api/nlopt.hpp )
 
     execute_process(
       COMMAND  touch  swig/nlopt.scm.in
@@ -402,16 +402,18 @@ else()
     execute_process(
       COMMAND autoreconf --verbose --install --force
       WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/contrib/nlopt
-      OUTPUT_FILE "nlopt-autoreconf"
-      ERROR_FILE "nlopt-autoreconf-errors")
+      #OUTPUT_FILE "nlopt-autoreconf"
+      #ERROR_FILE "nlopt-autoreconf-errors"
+      )
 
     if ( FEELPP_ENABLE_BUILD_STATIC )
       execute_process(
         COMMAND ${FEELPP_HOME_DIR}/contrib/nlopt/configure --enable-maintainer-mode --with-cxx=yes CXX=${CMAKE_CXX_COMPILER} CC=${CMAKE_CXX_COMPILER}
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/nlopt
         #OUTPUT_QUIET
-        OUTPUT_FILE "nlopt-configure"
-        ERROR_FILE "nlopt-configure-errors" )
+        #OUTPUT_FILE "nlopt-configure"
+        #ERROR_FILE "nlopt-configure-errors"
+        )
     else()
       execute_process(
         COMMAND ${FEELPP_HOME_DIR}/contrib/nlopt/configure --enable-maintainer-mode --with-cxx=yes --enable-shared CXX=${CMAKE_CXX_COMPILER} CC=${CMAKE_CXX_COMPILER}
@@ -430,17 +432,15 @@ else()
     execute_process(
       COMMAND make distclean
       WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/nlopt
-      OUTPUT_FILE "nlopt-distclean" )
+      #OUTPUT_FILE "nlopt-distclean"
+      )
   endif()
-  if (NOT EXISTS ${CMAKE_SOURCE_DIR}/contrib/nlopt/api/nlopt.hpp )
+  if (NOT EXISTS ${FEELPP_SOURCE_DIR}/contrib/nlopt/api/nlopt.hpp )
     message(FATAL_ERROR "NLOpt: nlopt.hpp was not generated")
   else()
     message(STATUS "NLOpt: nlopt.hpp is generated")
   endif()
   include_directories(${FEELPP_SOURCE_DIR}/contrib/nlopt/api)
-  if ( NOT FEELPP_ENABLE_BUILD_STATIC )
-    set(BUILD_SHARED_LIBS ON)
-  endif()
   add_subdirectory(contrib/nlopt)
   SET(FEELPP_LIBRARIES feelpp_nlopt ${FEELPP_LIBRARIES} )
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} NLOpt" )
