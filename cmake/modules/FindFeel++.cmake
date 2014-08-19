@@ -383,16 +383,48 @@ endif()
 #
 # nlopt
 #
-find_package(NLOpt)
-if ( NLOPT_FOUND )
+#find_package(NLOpt)
+if ( 0 ) #NLOPT_FOUND )
   include_directories(${NLOPT_INCLUDE_DIR})
   SET(FEELPP_LIBRARIES ${NLOPT_LIBRARY} ${FEELPP_LIBRARIES} )
   message(STATUS "NLOpt: ${NLOPT_LIBRARY}" )
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} NLOpt" )
   SET(FEELPP_HAS_NLOPT 1)
 else()
-  #add_subdirectory(contrib/nlopt)
-  #SET(FEELPP_LIBRARIES feelpp_nlopt ${FEELPP_LIBRARIES} )
+  if (NOT EXISTS ${CMAKE_BINARY_DIR}/contrib/nlopt/api/nlopt.hpp )
+
+    execute_process(
+      COMMAND autoreconf --verbose --install --symlink --force
+      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/nlopt
+      OUTPUT_FILE "nlopt-autoreconf"
+      ERROR_FILE "nlopt-autoreconf-errors")
+
+    if ( FEELPP_ENABLE_BUILD_STATIC )
+      execute_process(
+        COMMAND ${FEELPP_HOME_DIR}/contrib/nlopt/configure --with-cxx
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/nlopt
+        #OUTPUT_QUIET
+        OUTPUT_FILE "nlopt-configure"
+        ERROR_FILE "nlopt-configure-errors" )
+    else()
+      execute_process(
+        COMMAND ${FEELPP_HOME_DIR}/contrib/nlopt/configure --with-cxx --enable-shared
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/nlopt
+        #      OUTPUT_QUIET
+        OUTPUT_FILE "nlopt-configure"
+        ERROR_FILE "nlopt-configure-errors" )
+    endif()
+    # delete all Makefiles before Cmake generate its own
+    execute_process(
+      COMMAND make distclean
+      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/nlopt
+      OUTPUT_FILE "nlopt-distclean" )
+  endif()
+  include_directories(contrib/nlopt/api)
+  add_subdirectory(contrib/nlopt)
+  SET(FEELPP_LIBRARIES feelpp_nlopt ${FEELPP_LIBRARIES} )
+  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} NLOpt" )
+  SET(FEELPP_HAS_NLOPT 1)
 endif()
 
 #
