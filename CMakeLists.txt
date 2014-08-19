@@ -82,6 +82,9 @@ set(FEELPP_DEFAULT ON CACHE INTERNAL "Default value for enabled-by-default optio
 
 OPTION(FEELPP_ENABLE_VERBOSE_CMAKE "enable Feel++ verbose cmake" OFF)
 OPTION(FEELPP_ENABLE_BUILD_STATIC "Enable Feel++ library statically built" OFF )
+if ( NOT FEELPP_ENABLE_BUILD_STATIC )
+  set(BUILD_SHARED_LIBS ON)
+endif()
 OPTION(FEELPP_BENCHMARK_FLAGS "enable benchmarks flags" OFF)
 OPTION(FEELPP_ENABLE_DOCUMENTATION "enable Feel++ documentation (aka examples)" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_BENCHMARKS "enable Feel++ benchmarks" ${FEELPP_DEFAULT})
