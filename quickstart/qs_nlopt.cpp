@@ -21,35 +21,57 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
+#include <functional>
+
 #include <feel/feel.hpp>
 #include <feel/feelopt/nlopt.hpp>
 
 namespace Feel
 {
 typedef double (*fobj)(unsigned n, const double *x, double *fgrad, void *my_func_data);
-double myf(unsigned n, const double *x, double *fgrad, void *my_func_data)
+
+struct myf
 {
+    decltype( loadMesh(_mesh=new Mesh<Simplex<2>>) ) mesh;
+    meta::Pch<Mesh<Simplex<2>>,2>::ptrtype Vh;
+    double mu;
+    decltype(form2( _trial=Vh, _test=Vh)) a;
+    decltype(form1( _test=Vh)) l;
 
-    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
-    auto Vh = Pch<2>( mesh );
-    auto u = Vh->element("u");
-    auto mu = doption(_name="mu");
-    auto g = expr( soption(_name="functions.g") );
-    auto v = Vh->element( g, "g" );
+    myf()
+        :
+        mesh( loadMesh(_mesh=new Mesh<Simplex<2>>) ),
+        Vh( Pch<2>( mesh ) ),
+        mu(doption(_name="mu")),
+        a( form2( _trial=Vh, _test=Vh) ),
+        l( form1( _test=Vh) )
+        {
+        }
 
-    auto l = form1( _test=Vh );
-    l = integrate(_range=elements(mesh),
-                  _expr=(Px()/(1+x[1]*x[0]))*id(v));
+    double operator()(unsigned n, const double *x, double *fgrad, void *my_func_data)
+        {
+            tic();
+            auto u = Vh->element("u");
+            auto g = expr( soption(_name="functions.g") );
+            auto v = Vh->element( g, "g" );
+            l.zero();
+            l = integrate(_range=elements(mesh),
+                          _expr=(Px()/(1+x[1]*x[0]))*id(v));
+            a.zero();
+            a = integrate(_range=elements(mesh),
+                          _expr=x[0]*gradt(u)*trans(grad(v)) +idt(u)*id(u) );
+            a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u, _expr=g );
+            a.solve(_rhs=l,_solution=u);
+            auto m = mean( _range=elements(mesh), _expr=idv(u) )(0,0);
+            toc( "[call myf::operator()]" );
+            if ( Environment::isMasterRank() )
+                std::cout << "objective function = " << m
+                          << " at (" << x[0] << "," << x[1]
+                          << ") = " << "\n";
+            return m;
+        }
 
-    auto a = form2( _trial=Vh, _test=Vh);
-    a = integrate(_range=elements(mesh),
-                  _expr=x[0]*gradt(u)*trans(grad(v)) +idt(u)*id(u) );
-    a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u, _expr=g );
-    a.solve(_rhs=l,_solution=u);
-    auto m = mean( _range=elements(mesh), _expr=idv(u) )(0,0);
-    return m;
-}
-
+};
 }
 
 int main(int argc, char**argv )
@@ -76,7 +98,12 @@ int main(int argc, char**argv )
     opt.set_lower_bounds(lb);
     opt.set_upper_bounds(ub);
 
-    opt.set_min_objective(Feel::myf, NULL);
+
+    myf F;
+    // we don't want to copy myf around so use std::ref()
+    ::nlopt::func f = std::ref(F);
+    opt.set_min_objective( f, NULL);
+    opt.set_maxeval( ioption("nlopt.maxeval") );
 
     opt.set_xtol_rel(1e-4);
 
