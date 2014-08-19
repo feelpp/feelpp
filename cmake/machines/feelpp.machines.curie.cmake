@@ -28,6 +28,9 @@ OPTION(FEELPP_ENABLE_SCHED_CCC "Enable Feel++ tgcc/ccc submission scripts genera
 # disable NLOPT for now
 OPTION( FEELPP_ENABLE_NLOPT "Enable NLOPT (NonLinear Optimisation Library)" OFF)
 
+# set INTEL_ROOT to CXX_INTEL_ROOT to find MKL
+set(INTEL_ROOT $ENV{CXX_INTEL_ROOT})
+
 # find the gfortran library
 FIND_LIBRARY(GFORTRAN_LIBRARY
     NAMES
