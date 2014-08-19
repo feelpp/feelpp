@@ -81,7 +81,7 @@ endif()
 
 if(MKL_SDL)
     find_library(MKL_LIBRARY mkl_rt
-        PATHS ${MKL_ROOT}/lib/ ${MKL_ROOT}/lib/ia32/)
+        PATHS ${MKL_ROOT}/lib/ ${MKL_ROOT}/lib/intel64/)
 
     set(MKL_MINIMAL_LIBRARY ${MKL_LIBRARY})
 else()
@@ -93,7 +93,7 @@ else()
     endif()
 
     find_library(MKL_INTERFACE_LIBRARY ${MKL_INTERFACE_LIBNAME}
-      PATHS ${MKL_ROOT}/lib/ ${MKL_ROOT}/lib/ia32/)
+      PATHS ${MKL_ROOT}/lib/ ${MKL_ROOT}/lib/intel64/)
     message(STATUS "MKL_INTERFACE_LIBRARY: ${MKL_INTERFACE_LIBRARY}")
     ######################## Threading layer ########################
     if(MKL_MULTI_THREADED)
@@ -103,12 +103,12 @@ else()
     endif()
 
     find_library(MKL_THREADING_LIBRARY ${MKL_THREADING_LIBNAME}
-      PATHS ${MKL_ROOT}/lib/ ${MKL_ROOT}/lib/ia32/)
+      PATHS ${MKL_ROOT}/lib/ ${MKL_ROOT}/lib/intel64/)
     message(STATUS "MKL_THREADING_LIBRARY ${MKL_THREADING_LIBRARY}")
 
     ####################### Computational layer #####################
     find_library(MKL_CORE_LIBRARY mkl_core
-      PATHS ${MKL_ROOT}/lib/ ${MKL_ROOT}/lib/ia32/)
+      PATHS ${MKL_ROOT}/lib/ ${MKL_ROOT}/lib/intel64/)
     message(STATUS "MKL_CORE_LIBRARY ${MKL_CORE_LIBRARY}")
 
     ############################ RTL layer ##########################
@@ -118,7 +118,7 @@ else()
         set(MKL_RTL_LIBNAME iomp5)
     endif()
     find_library(MKL_RTL_LIBRARY ${MKL_RTL_LIBNAME}
-      PATHS ${INTEL_ROOT}/lib)
+      PATHS ${INTEL_ROOT}/lib ${INTEL_ROOT}/lib/intel64 ${INTEL_ROOT}/compiler/lib/intel64/)
     message(STATUS "MKL_RTL_LIBRARY ${MKL_RTL_LIBRARY}")
 
     set(MKL_LIBRARY ${MKL_INTERFACE_LIBRARY} ${MKL_THREADING_LIBRARY} ${MKL_CORE_LIBRARY} ${MKL_RTL_LIBRARY})
