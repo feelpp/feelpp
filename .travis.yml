@@ -17,6 +17,8 @@ before_install:
     imagemagick libtbb-dev libann-dev libglpk-dev; fi
 - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew tap feelpp/science; fi
 - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew install --only-dependencies feelpp; fi
+#install some submodules
+- git submodule update --init --recursive contrib/nlopt
 install:
 - mkdir opt && cd opt && ../configure -r -v
 script:
