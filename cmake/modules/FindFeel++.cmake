@@ -395,11 +395,8 @@ else()
 
     execute_process(
       COMMAND  touch  swig/nlopt.scm.in
-      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/contrib/nlopt
-      OUTPUT_FILE "nlopt-touch"
-      ERROR_FILE "nlopt-touch-errors")
-
-    execute_process(
+      COMMAND autoreconf --verbose --install --force
+      COMMAND autoreconf --verbose --install --force
       COMMAND autoreconf --verbose --install --force
       WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/contrib/nlopt
       #OUTPUT_FILE "nlopt-autoreconf"
