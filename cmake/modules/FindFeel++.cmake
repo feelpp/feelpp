@@ -391,6 +391,20 @@ if ( 0 ) #NLOPT_FOUND )
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} NLOpt" )
   SET(FEELPP_HAS_NLOPT 1)
 else()
+  if ( GIT_FOUND )
+
+    execute_process(
+      COMMAND git submodule update --init --recursive contrib/nlopt
+      WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+      )
+    MESSAGE(STATUS "Git submodule contrib/nlopt updated.")
+  else()
+    if ( NOT EXISTS ${FEELPP_SOURCE_DIR}/contrib/nlopt/ )
+      message( FATAL_ERROR "Please make sure that git submodule contrib/nlopt is available")
+      message( FATAL_ERROR "  run `git submodule update --init --recursive contrib/nlopt`")
+    endif()
+  endif()
+
   if (NOT EXISTS ${FEELPP_SOURCE_DIR}/contrib/nlopt/api/nlopt.hpp )
 
     execute_process(
