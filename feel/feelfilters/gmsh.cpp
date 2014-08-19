@@ -130,6 +130,7 @@ Gmsh::Gmsh( int nDim, int nOrder, WorldComm const& worldComm )
     M_order( nOrder ),
     M_version( FEELPP_GMSH_FORMAT_VERSION ),
     M_format( GMSH_FORMAT_ASCII ),
+    M_in_memory( false ),
     M_I( nDim ),
     M_h( 0.1 ),
     M_addmidpoint( true ),
@@ -161,6 +162,7 @@ Gmsh::Gmsh( Gmsh const & __g )
     M_version( __g.M_version ),
     M_format( __g.M_format ),
     M_geoParamMap( __g.M_geoParamMap ),
+    M_in_memory( __g.M_in_memory ),
     M_I( __g.M_I ),
     M_h( __g.M_h ),
     M_addmidpoint( __g.M_addmidpoint ),
@@ -193,6 +195,7 @@ Gmsh::operator=( Gmsh const& __g )
         M_version = __g.M_version;
         M_format = __g.M_format;
         M_geoParamMap = __g.M_geoParamMap;
+        M_in_memory = __g.M_in_memory;
         M_addmidpoint = __g.M_addmidpoint;
         M_usePhysicalNames = __g.M_usePhysicalNames;
         M_shear = __g.M_shear;
@@ -380,7 +383,7 @@ Gmsh::generateGeo( std::string const& __name, std::string const& __geo, bool con
 
     bool geochanged = true;
     // save geo file on disk if in-memory is false
-    if ( boption( "gmsh.in-memory") == false )
+    if ( M_in_memory == false )
     {
         std::ostringstream __geoname;
         __geoname << __name << ".geo";
@@ -645,7 +648,7 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
 #if !defined( __APPLE__ )
         M_gmodel->setFileName( _name );
 #endif
-        if ( boption("gmsh.in-memory"))
+        if ( M_in_memory )
             ParseGeoFromMemory( M_gmodel, _name, geo().second );
         else
             M_gmodel->readGEO( __geoname );
@@ -662,7 +665,7 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
         // convert mesh to latest binary format
         CHECK(M_gmodel->getMeshStatus() > 0)  << "Invalid Gmsh Mesh, Gmsh status : " << M_gmodel->getMeshStatus() << " should be > 0. Gmsh mesh cannot be written to disk\n";
 
-        if ( boption("gmsh.in-memory") == false )
+        if ( M_in_memory == false )
         {
             CTX::instance()->mesh.binary = M_format;
             LOG(INFO) << "Writing GMSH file " << _name+".msh" << " in " << (M_format?"binary":"ascii") << " format\n";

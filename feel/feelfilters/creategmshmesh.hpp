@@ -102,6 +102,7 @@ BOOST_PARAMETER_FUNCTION(
         desc->setFileFormat( (GMSH_FORMAT)format );
         desc->setStructuredMesh( structured );
         desc->setPeriodic( periodic );
+        desc->setInMemory( in_memory );
 
         std::string fname;
         bool generated_or_modified;
@@ -130,6 +131,7 @@ BOOST_PARAMETER_FUNCTION(
         }
         import.setRespectPartition( respect_partition );
         import.setGModel( desc->gModel() );
+        import.setInMemory( in_memory );
         _mesh->accept( import );
 
         if ( update )
