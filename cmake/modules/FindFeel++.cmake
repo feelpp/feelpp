@@ -64,7 +64,7 @@ INCLUDE(CheckSymbolExists)
 INCLUDE(CheckCXXSourceCompiles)
 INCLUDE(CheckLibraryExists)
 
-OPTION(FEELPP_ENABLE_SYSTEM_EIGEN3 "enable system eigen3 support" ON)
+OPTION(FEELPP_ENABLE_SYSTEM_EIGEN3 "enable system eigen3 support" OFF)
 
 
 
