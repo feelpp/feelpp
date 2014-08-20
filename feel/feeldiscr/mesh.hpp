@@ -30,6 +30,7 @@
 #ifndef FEELPP_MESH_HPP
 #define FEELPP_MESH_HPP 1
 
+#include <boost/version.hpp>
 #include <boost/unordered_map.hpp>
 
 #include <boost/foreach.hpp>
@@ -1325,7 +1326,18 @@ public:
 
         void computeBarycenter();
 
+<<<<<<< HEAD
         bool hasComputedBarycentersWorld() { return M_barycentersWorld; }
+=======
+        bool hasComputedBarycentersWorld()
+        {
+#if BOOST_VERSION >= 105600
+            return M_barycentersWorld != boost::none;
+#else
+            return M_barycentersWorld;
+#endif
+        }
+>>>>>>> cecb328a8c64bf8e0a0325fd15d52d1d1cfda328
 
         std::vector<boost::tuple<bool,node_type> > const& barycentersWorld() const
         {
