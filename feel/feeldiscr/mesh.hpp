@@ -1325,7 +1325,7 @@ public:
 
         void computeBarycenter();
 
-        bool hasComputedBarycentersWorld() { return M_barycentersWorld != boost::none; }
+        bool hasComputedBarycentersWorld() { return M_barycentersWorld; }
 
         std::vector<boost::tuple<bool,node_type> > const& barycentersWorld() const
         {
