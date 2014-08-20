@@ -1326,9 +1326,6 @@ public:
 
         void computeBarycenter();
 
-<<<<<<< HEAD
-        bool hasComputedBarycentersWorld() { return M_barycentersWorld; }
-=======
         bool hasComputedBarycentersWorld()
         {
 #if BOOST_VERSION >= 105600
@@ -1337,7 +1334,6 @@ public:
             return M_barycentersWorld;
 #endif
         }
->>>>>>> cecb328a8c64bf8e0a0325fd15d52d1d1cfda328
 
         std::vector<boost::tuple<bool,node_type> > const& barycentersWorld() const
         {
