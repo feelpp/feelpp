@@ -42,8 +42,8 @@
 #include <boost/fusion/container.hpp>
 #include <boost/fusion/sequence.hpp>
 #include <boost/fusion/algorithm.hpp>
-#include <boost/spirit/home/phoenix.hpp>
-#include <boost/spirit/home/phoenix/core/argument.hpp>
+//#include <boost/spirit/home/phoenix.hpp>
+//#include <boost/spirit/home/phoenix/core/argument.hpp>
 #include <feel/feelcore/context.hpp>
 #include <feel/feelalg/matrixvalue.hpp>
 #include <feel/feelalg/vectorublas.hpp>
@@ -1268,7 +1268,15 @@ public:
     {
         return M_col_startInMatrix;
     }
-
+    /**
+     * @brief set the bilinear form to zero
+     * @details set the bilinear form and its 
+     * algebraic representation to zero
+     */
+    void zero()
+    {
+        M_matrix->zero();
+    }
     /**
      * \return the threshold
      */

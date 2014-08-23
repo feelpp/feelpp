@@ -30,10 +30,6 @@
 #ifndef __MatrixBlock_H
 #define __MatrixBlock_H 1
 
-
-#include <boost/spirit/home/phoenix.hpp>
-#include <boost/spirit/home/phoenix/core/argument.hpp>
-
 #include <feel/feelalg/matrixsparse.hpp>
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelvf/block.hpp>
