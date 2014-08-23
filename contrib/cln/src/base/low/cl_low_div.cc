@@ -10,7 +10,9 @@
 // Implementation.
 
 #ifdef NEED_VAR_divu_16_rest
+extern "C" {
 uint16 divu_16_rest;
+}
 #endif
 
 #ifdef NEED_FUNCTION_divu_3216_1616_
@@ -207,7 +209,9 @@ uint32 divu_6432_3232_(uint32 xhi, uint32 xlo, uint32 y)
 #endif
 
 #ifdef NEED_VAR_divu_64_rest
+extern "C"{
 uint64 divu_64_rest;
+}
 #endif
 
 #ifdef NEED_FUNCTION_divu_6464_6464_
@@ -376,4 +380,3 @@ uint64 divu_12864_6464_(uint64 xhi, uint64 xlo, uint64 y)
 }   } }
 }  // namespace cln
 #endif
-
