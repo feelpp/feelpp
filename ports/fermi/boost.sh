@@ -27,4 +27,4 @@ export CC=powerpc64-bgq-linux-gcc
                 -sICU_PATH=${prefix} \
                 variant=release \
                 threading=single,multi \
-                link=shared
+                link=shared,static
