@@ -954,7 +954,10 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                     //------------------------
                                     // localisation process
                                     if (notUseOptLocTest) eltIdLocalised=invalid_size_type_value;
-                                    eltIdLocalised = locTool->run_analysis(ptsReal,eltIdLocalised,it->vertices()/*it->G()*/,mpl::int_<interpolation_type::value>()).template get<1>();
+                                    auto resLocalisation = locTool->run_analysis(ptsReal,eltIdLocalised,it->vertices()/*it->G()*/,mpl::int_<interpolation_type::value>());
+                                    for ( bool hasFindPtLocalised : resLocalisation.template get<0>()  )
+                                         LOG_IF(ERROR, !hasFindPtLocalised ) << "OperatorInterpolation::updateNoRelationMesh : point localisation fail!\n";
+                                    eltIdLocalised = resLocalisation.template get<1>();
                                     //------------------------
                                     // for each localised points
                                     itanal = locTool->result_analysis_begin();
