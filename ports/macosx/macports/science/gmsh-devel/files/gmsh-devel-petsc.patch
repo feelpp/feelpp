@@ -1,0 +1,28 @@
+Index: Solver/linearSystemPETSc.hpp
+===================================================================
+--- Solver/linearSystemPETSc.hpp	(révision 19319)
++++ Solver/linearSystemPETSc.hpp	(copie de travail)
+@@ -368,11 +368,20 @@
+     _kspCreate();
+   _assembleMatrixIfNeeded();
+   if (!_matrixChangedSinceLastSolve || linearSystem<scalar>::_parameters["matrix_reuse"] == "same_matrix")
+-    _try(KSPSetOperators(_ksp, _a, _a, SAME_PRECONDITIONER));
++  {
++    _try(KSPSetReusePreconditioner(_ksp,PETSC_TRUE));
++    _try(KSPSetOperators(_ksp, _a, _a/*, SAME_PRECONDITIONER*/));
++  }
+   else if (linearSystem<scalar>::_parameters["matrix_reuse"] == "same_sparsity")
+-    _try(KSPSetOperators(_ksp, _a, _a, SAME_NONZERO_PATTERN));
++  {
++    _try(KSPSetReusePreconditioner(_ksp,PETSC_FALSE));
++    _try(KSPSetOperators(_ksp, _a, _a/*, SAME_NONZERO_PATTERN*/));
++  }
+   else
+-    _try(KSPSetOperators(_ksp, _a, _a, DIFFERENT_NONZERO_PATTERN));
++  {
++    _try(KSPSetReusePreconditioner(_ksp,PETSC_FALSE));
++    _try(KSPSetOperators(_ksp, _a, _a/*, DIFFERENT_NONZERO_PATTERN*/));
++  }
+   _matrixChangedSinceLastSolve = false;
+   /*MatInfo info;
+     MatGetInfo(_a, MAT_LOCAL, &info);

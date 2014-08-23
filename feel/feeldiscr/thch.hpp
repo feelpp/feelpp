@@ -33,6 +33,19 @@
 
 namespace Feel {
 
+namespace meta {
+template<int Order,typename MeshType>
+struct THch
+{
+    typedef FunctionSpace<MeshType,
+                          bases<Lagrange<Order+1,Vectorial>,Lagrange<Order,Scalar>>,
+                          double,
+                          Periodicity <NoPeriodicity,NoPeriodicity>,
+                          mortars<NoMortar,NoMortar> > type;
+    typedef boost::shared_ptr<type> ptrtype;
+};
+
+} //meta
 /**
    Given a \p mesh and polynomial order \f$k\f$(template argument), build a
    product function space of \f$[P_{k+1}]^d \times P_{k}]\f$ where $d$ is the

@@ -93,7 +93,7 @@ public:
 
     MatrixEigenSparse();
 
-    MatrixEigenSparse( size_type r, size_type c );
+    MatrixEigenSparse( size_type r, size_type c, WorldComm const& worldComm=Environment::worldComm() );
 
     MatrixEigenSparse( MatrixEigenSparse const & m );
 

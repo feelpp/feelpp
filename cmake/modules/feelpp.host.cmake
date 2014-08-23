@@ -1,9 +1,9 @@
 ###  TEMPLATE.txt.tpl; coding: utf-8 ---
 
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-#       Date: 2012-04-12
+#       Date: 2014-08-17
 #
-#  Copyright (C) 2013 Feel++ Consortium
+#  Copyright (C) 2014 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -21,16 +21,14 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-
-# enable the CCC script generation
-OPTION(FEELPP_ENABLE_SCHED_CCC "Enable Feel++ tgcc/ccc submission scripts generation" ON)
-
-# find the gfortran library
-FIND_LIBRARY(GFORTRAN_LIBRARY
-    NAMES
-    gfortran
-    PATHS
-    /usr/local/gcc-4.6.3/lib
-    $ENV{LIBRARY_PATH}
-)
-message(STATUS "curie gfortran lib: ${GFORTRAN_LIBRARY} ")
+# OSX
+if(APPLE)
+  if ( ${CMAKE_MAJOR_VERSION} EQUAL 3 )
+    set(CMAKE_MACOSX_RPATH ON)
+    set(CMAKE_SKIP_BUILD_RPATH FALSE)
+    set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+    set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+    message(STATUS "MACOSX RPATH enabled (CMAKE Version 3)")
+  endif()
+endif()

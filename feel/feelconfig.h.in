@@ -69,6 +69,9 @@
 /* Define to 1 if you have the <memory.h> header file. */
 #cmakedefine FEELPP_HAS_MEMORY_H
 
+/* Define to 1 if you have mkl support. */
+#cmakedefine FEELPP_HAS_MKL
+
 /* Define to 1 if you have mumps support. */
 #cmakedefine FEELPP_HAS_MUMPS
 
@@ -95,6 +98,9 @@
 
 /* Define to 1 if you have the <stdint.h> header file. */
 #cmakedefine FEELPP_HAS_STDINT_H
+
+/* Define if the STDIO FMEMOPEN is supported by the compiler. */
+#cmakedefine FEELPP_HAS_STDIO_FMEMOPEN
 
 /* Define to 1 if you have the <stdlib.h> header file. */
 #cmakedefine FEELPP_HAS_STDLIB_H
@@ -128,6 +134,9 @@
 
 /* Define to 1 if you have harts. */
 #cmakedefine FEELPP_HAS_HARTS
+
+/* Define to 1 if you have nlopt. */
+#cmakedefine FEELPP_HAS_NLOPT
 
 /* Define to 1 if you have the <ufsparse/umfpack.h> header file. */
 #cmakedefine FEELPP_HAS_UFSPARSE_UMFPACK_H
@@ -188,6 +197,13 @@
 
 /* Define if support for mpi class instantiation is enabled) */
 #cmakedefine FEELPP_ENABLE_MPI_MODE
+
+/* Define if we have support for MPI IO */
+#cmakedefine FEELPP_HAS_MPIIO
+
+/* Define sized types for MPI standards older than 2.2 version */
+#cmakedefine FEELPP_MPI_INT32 @FEELPP_MPI_INT32@
+#cmakedefine FEELPP_MPI_INT64 @FEELPP_MPI_INT64@
 
 /* Define to 1 if you have GMM . */
 #cmakedefine FEELPP_HAS_GMM

@@ -7,6 +7,7 @@
 
   Copyright (C) 2005,2006 EPFL
   Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008-2014 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -28,7 +29,7 @@
    \date 2005-02-10
  */
 #include <cstdlib>
-
+#include <cstdio>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -53,20 +54,31 @@
 #include <feel/feelfilters/gmshhypercubedomain.hpp>
 #include <feel/feelfilters/gmshellipsoiddomain.hpp>
 
+#include <feel/feelcore/fmemopen.h>
+
 #if defined(FEELPP_HAS_GPERFTOOLS)
 #include <gperftools/heap-checker.h>
 #endif /* FEELPP_HAS_GPERFTOOLS */
 
 
 #if defined( FEELPP_HAS_GMSH_H )
-#include <GmshConfig.h>
-#include <Gmsh.h>
-#include <GModel.h>
-#include <GmshDefines.h>
-#include <Context.h>
-//#include <meshPartition.h>
+
 int PartitionMesh( GModel *const model, meshPartitionOptions &options );
-#endif
+
+int gmsh_yyparse();
+int gmsh_yylex();
+void gmsh_yyflush();
+int gmsh_yy_scan_string ( const char *str );
+extern std::string gmsh_yyname;
+extern int gmsh_yylineno;
+extern FILE* gmsh_yyin;
+extern int gmsh_yyerrorstate;
+extern int gmsh_yyviewindex;
+extern char *gmsh_yytext;
+void PrintParserSymbols(bool help, std::vector<std::string> &vec);
+
+#endif // FEELPP_HAS_GMSH_H
+
 
 namespace Feel
 {
@@ -79,6 +91,38 @@ const GMSH_PARTITIONER GMSH_PARTITIONER_DEFAULT = GMSH_PARTITIONER_METIS;
 const GMSH_PARTITIONER GMSH_PARTITIONER_DEFAULT = GMSH_PARTITIONER_CHACO;
 #endif
 
+
+int
+ParseGeoFromMemory( GModel* model, std::string const& name, std::string const& geo  )
+{
+#if defined(FEELPP_HAS_GMSH_H)
+    gmsh_yyname = name;
+    gmsh_yylineno = 1;
+    gmsh_yyerrorstate = 0;
+    gmsh_yyviewindex = 0;
+    gmsh_yyin = fmemopen( (void*)geo.c_str(), geo.size()*sizeof(char), "r");
+
+    while(!feof(gmsh_yyin))
+    {
+        gmsh_yyparse();
+        if(gmsh_yyerrorstate > 20)
+        {
+          if(gmsh_yyerrorstate != 999) // 999 is a volontary exit
+            std::cerr << "Too many errors: aborting parser...\n";
+          gmsh_yyflush();
+          break;
+        }
+    }
+    fclose(gmsh_yyin);
+
+    int imported = model->importGEOInternals();
+#else
+    LOG(ERROR) << "Invalid call: Gmsh is not available on this system.";
+    int imported = 0;
+#endif /* FEELPP_HAS_GMSH_H */
+
+    return imported;
+}
 Gmsh::Gmsh( int nDim, int nOrder, WorldComm const& worldComm )
     :
     M_worldComm( worldComm ),
@@ -86,6 +130,7 @@ Gmsh::Gmsh( int nDim, int nOrder, WorldComm const& worldComm )
     M_order( nOrder ),
     M_version( FEELPP_GMSH_FORMAT_VERSION ),
     M_format( GMSH_FORMAT_ASCII ),
+    M_in_memory( false ),
     M_I( nDim ),
     M_h( 0.1 ),
     M_addmidpoint( true ),
@@ -95,10 +140,12 @@ Gmsh::Gmsh( int nDim, int nOrder, WorldComm const& worldComm )
     M_partition_file( 0 ),
     M_shear( 0 ),
     M_recombine( 0 ),
-    M_structured( false ),
+    //M_structured( false ),
+    M_structured( 2 ),
     M_refine_levels( 0 ),
     M_substructuring( false ),
-    M_periodic()
+    M_periodic(),
+    M_gmodel( new GModel() )
 {
     this->setReferenceDomain();
     setX( std::make_pair( 0., 1.) );
@@ -115,6 +162,7 @@ Gmsh::Gmsh( Gmsh const & __g )
     M_version( __g.M_version ),
     M_format( __g.M_format ),
     M_geoParamMap( __g.M_geoParamMap ),
+    M_in_memory( __g.M_in_memory ),
     M_I( __g.M_I ),
     M_h( __g.M_h ),
     M_addmidpoint( __g.M_addmidpoint ),
@@ -127,10 +175,15 @@ Gmsh::Gmsh( Gmsh const & __g )
     M_structured( __g.M_structured ),
     M_refine_levels( __g.M_refine_levels ),
     M_substructuring( __g.M_substructuring ),
-    M_periodic( __g.M_periodic )
+    M_periodic( __g.M_periodic ),
+    M_gmodel( __g.M_gmodel )
 {}
 Gmsh::~Gmsh()
-{}
+{
+    M_gmodel->deleteMesh();
+    M_gmodel->destroy();
+    delete M_gmodel;
+}
 
 Gmsh&
 Gmsh::operator=( Gmsh const& __g )
@@ -142,12 +195,14 @@ Gmsh::operator=( Gmsh const& __g )
         M_version = __g.M_version;
         M_format = __g.M_format;
         M_geoParamMap = __g.M_geoParamMap;
+        M_in_memory = __g.M_in_memory;
         M_addmidpoint = __g.M_addmidpoint;
         M_usePhysicalNames = __g.M_usePhysicalNames;
         M_shear = __g.M_shear;
         M_refine_levels = __g.M_refine_levels;
         M_periodic = __g.M_periodic;
         M_worldComm = __g.M_worldComm;
+        M_gmodel = __g.M_gmodel;
     }
 
     return *this;
@@ -252,7 +307,7 @@ Gmsh::retrieveGeoParameters( std::string const& __geo ) const
     // (TODO should strip C/CPP comments)
     // Regex for a `keyword=value;` expression. We capture only [keyword]
     // and the [value] (ex : `h_2=-1,3e+4`).
-    boost::regex kvreg("([[:word:]]*)[[:blank:]]*=[[:blank:]]*([+-]?(?:(?:(?:[[:digit:]]*\\.)?[[:digit:]]*(?:[eE][+-]?[[:digit:]]+)?)));" );
+    boost::regex kvreg("([[:word:]]+)[[:blank:]]*=[[:blank:]]*([+-]?(?:(?:(?:[[:digit:]]*\\.)?[[:digit:]]*(?:[eE][+-]?[[:digit:]]+)?)));" );
     boost::sregex_token_iterator iRex( __geo.begin(), __geo.end(), kvreg, 0 );
     boost::sregex_token_iterator end;
 
@@ -326,40 +381,44 @@ Gmsh::generateGeo( std::string const& __name, std::string const& __geo, bool con
         // -----------
     }
 
-    std::ostringstream __geoname;
-    __geoname << __name << ".geo";
-    fs::path __path( __geoname.str() );
-    bool geochanged = false;
-
-    // Create a new .geo.
-    if ( !fs::exists( __path ) )
+    bool geochanged = true;
+    // save geo file on disk if in-memory is false
+    if ( M_in_memory == false )
     {
-        LOG(INFO) << "[Gmsh::generateGeo] file :" << __path << "/" << __geoname.str() << std::endl;
-        std::ofstream __geofile( __geoname.str().c_str() );
-        __geofile << _geo;
-        __geofile.close();
-        geochanged = true;
-    }
+        std::ostringstream __geoname;
+        __geoname << __name << ".geo";
+        fs::path __path( __geoname.str() );
+        geochanged = false;
 
-    // Overwrite .geo if it exists and differs.
-    else
-    {
-        std::string s = this->getDescriptionFromFile( __geoname.str() );
-
-        if ( s != _geo )
+        // Create a new .geo.
+        if ( !fs::exists( __path ) )
         {
-            LOG(INFO) << __path << " exists but is different from the expected geometry, we overwrite it now";
+            LOG(INFO) << "[Gmsh::generateGeo] file :" << __path << "/" << __geoname.str() << std::endl;
             std::ofstream __geofile( __geoname.str().c_str() );
             __geofile << _geo;
             __geofile.close();
             geochanged = true;
         }
+        // Overwrite .geo if it exists and differs.
         else
         {
-            LOG(INFO) << __path << " exists and its content correspond to the expected geometry";
+            std::string s = this->getDescriptionFromFile( __geoname.str() );
+
+            if ( s != _geo )
+            {
+                LOG(INFO) << __path << " exists but is different from the expected geometry, we overwrite it now";
+                std::ofstream __geofile( __geoname.str().c_str() );
+                __geofile << _geo;
+                __geofile.close();
+                geochanged = true;
+            }
+            else
+            {
+                LOG(INFO) << __path << " exists and its content correspond to the expected geometry";
+            }
         }
     }
-
+    M_geo = std::make_pair( __name, _geo );
     return geochanged;
 }
 
@@ -377,10 +436,13 @@ Gmsh::generate( std::string const& __name, std::string const& __geo, bool const 
     bool generated = false;
     if ( !mpi::environment::initialized() || ( mpi::environment::initialized()  && this->worldComm().globalRank() == this->worldComm().masterRank() ) )
     {
+
+
         LOG(INFO) << "Generate mesh on processor " <<  this->worldComm().globalRank() << "/" << this->worldComm().globalSize() << "\n";
         bool geochanged = generateGeo( __name,__geo,modifGeo );
         std::ostringstream __geoname;
         __geoname << __name << ".geo";
+
 
         // generate mesh
         std::ostringstream __meshname;
@@ -399,6 +461,7 @@ Gmsh::generate( std::string const& __name, std::string const& __geo, bool const 
             generated = true;
         }
         fname=__meshname.str();
+
     }
     google::FlushLogFiles(INFO);
 
@@ -449,20 +512,17 @@ Gmsh::refine( std::string const& name, int level, bool parametric  ) const
 		}
 
 #else
-		//// Initializing
-		//GmshInitialize();
-		GModel* newGmshModel = new GModel();
-		newGmshModel->readMSH(filename.str());
+		M_gmodel->readMSH(filename.str());
 
 		CTX::instance()->mesh.order = M_order;
 		CTX::instance()->mesh.secondOrderIncomplete = 0;
 		CTX::instance()->mesh.secondOrderLinear = 1; // has to 1 to work
 
 
-        int partitions = newGmshModel->getMeshPartitions().size();
+        int partitions = M_gmodel->getMeshPartitions().size();
 		LOG(INFO) << "[Gmsh::refine] Original mesh : " << filename.str() << "\n";
-		//LOG(INFO) << "[Gmsh::refine] vertices : " << newGmshModel->getNumMeshVertices() << "\n";
-		LOG(INFO) << "[Gmsh::refine] elements : " << newGmshModel->getNumMeshElements() << "\n";
+		//LOG(INFO) << "[Gmsh::refine] vertices : " << M_gmodel->getNumMeshVertices() << "\n";
+		LOG(INFO) << "[Gmsh::refine] elements : " << M_gmodel->getNumMeshElements() << "\n";
 		LOG(INFO) << "[Gmsh::refine] partitions : " << partitions << "\n";
 		//std::cout << "secondOrderLinear=" << CTX::instance()->mesh.secondOrderLinear << std::endl << std::flush;
 		CTX::instance()->partitionOptions.num_partitions =  M_partitions;
@@ -473,25 +533,23 @@ Gmsh::refine( std::string const& name, int level, bool parametric  ) const
 
 		for ( int l = 0; l < level; ++l )
 		{
-		    newGmshModel->refineMesh( CTX::instance()->mesh.secondOrderLinear );
+		    M_gmodel->refineMesh( CTX::instance()->mesh.secondOrderLinear );
 		}
 
 		if ( partitions )
             {
                 LOG(INFO) << "[Gmsh::refine] Repartioning mesh : " << filename.str() << "\n";
-                PartitionMesh( GModel::current(), CTX::instance()->partitionOptions );
+                PartitionMesh( M_gmodel, CTX::instance()->partitionOptions );
             }
-        newGmshModel->writeMSH( filename.str() );
+        M_gmodel->writeMSH( filename.str() );
 		LOG(INFO) << "[Gmsh::refine] Refined mesh : " << filename.str() << "\n";
-		//LOG(INFO) << "[Gmsh::refine] vertices : " << newGmshModel->getNumMeshVertices() << "\n";
-		LOG(INFO) << "[Gmsh::refine] elements : " << newGmshModel->getNumMeshElements() << "\n";
-		LOG(INFO) << "[Gmsh::refine] partitions : " << newGmshModel->getMeshPartitions().size() << "\n";
+		//LOG(INFO) << "[Gmsh::refine] vertices : " << M_gmodel->getNumMeshVertices() << "\n";
+		LOG(INFO) << "[Gmsh::refine] elements : " << M_gmodel->getNumMeshElements() << "\n";
+		LOG(INFO) << "[Gmsh::refine] partitions : " << M_gmodel->getMeshPartitions().size() << "\n";
 
 		_name = filename.str();
 
-		newGmshModel->destroy();
-		delete newGmshModel;
-		//GmshFinalize();
+		M_gmodel->destroy();
 #endif
 
 	}
@@ -585,30 +643,35 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
 
         CTX::instance()->mesh.mshFilePartitioned = M_partition_file;
 
-        GModel* newGmshModel = new GModel();
-        GModel::current()->setName( _name );
+        M_gmodel = new GModel;
+        M_gmodel->setName( _name );
 #if !defined( __APPLE__ )
-        GModel::current()->setFileName( _name );
+        M_gmodel->setFileName( _name );
 #endif
-        GModel::current()->readGEO( _name+".geo" );
-        GModel::current()->mesh( dim );
+        if ( M_in_memory )
+            ParseGeoFromMemory( M_gmodel, _name, geo().second );
+        else
+            M_gmodel->readGEO( __geoname );
+
+        M_gmodel->mesh( dim );
         LOG(INFO) << "Mesh refinement levels : " << M_refine_levels << "\n";
         for( int l = 0; l < M_refine_levels; ++l )
         {
-            GModel::current()->refineMesh( CTX::instance()->mesh.secondOrderLinear );
+            M_gmodel->refineMesh( CTX::instance()->mesh.secondOrderLinear );
         }
-        PartitionMesh( GModel::current(), CTX::instance()->partitionOptions );
-        LOG(INFO) << "Mesh partitions : " << GModel::current()->getMeshPartitions().size() << "\n";
+        PartitionMesh( M_gmodel, CTX::instance()->partitionOptions );
+        LOG(INFO) << "Mesh partitions : " << M_gmodel->getMeshPartitions().size() << "\n";
 
         // convert mesh to latest binary format
-        CHECK(GModel::current()->getMeshStatus() > 0)  << "Invalid Gmsh Mesh, Gmsh status : " << GModel::current()->getMeshStatus() << " should be > 0. Gmsh mesh cannot be written to disk\n";
+        CHECK(M_gmodel->getMeshStatus() > 0)  << "Invalid Gmsh Mesh, Gmsh status : " << M_gmodel->getMeshStatus() << " should be > 0. Gmsh mesh cannot be written to disk\n";
 
-        CTX::instance()->mesh.binary = M_format;
-        LOG(INFO) << "Writing GMSH file " << _name+".msh" << " in " << (M_format?"binary":"ascii") << " format\n";
-        GModel::current()->writeMSH( _name+".msh", 2.2, CTX::instance()->mesh.binary );
-        newGmshModel->deleteMesh();
-        newGmshModel->destroy();
-        delete newGmshModel;
+        if ( M_in_memory == false )
+        {
+            CTX::instance()->mesh.binary = M_format;
+            LOG(INFO) << "Writing GMSH file " << _name+".msh" << " in " << (M_format?"binary":"ascii") << " format\n";
+            M_gmodel->writeMSH( _name+".msh", 2.2, CTX::instance()->mesh.binary );
+        }
+
     }
 #endif
 #else
@@ -631,8 +694,8 @@ Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& na
         std::string _name = fs::path( nameMshInput ).stem();
 #endif
 
-        GModel* newGmshModel=new GModel();
-        newGmshModel->readMSH( nameMshInput );
+        GModel* M_gmodel=new GModel();
+        M_gmodel->readMSH( nameMshInput );
 
         meshPartitionOptions newPartionOption;
         newPartionOption.num_partitions = M_partitions;
@@ -644,17 +707,15 @@ Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& na
 
         CTX::instance()->mesh.mshFilePartitioned = M_partition_file;
         CTX::instance()->mesh.mshFileVersion = std::atof( this->version().c_str() );
-        PartitionMesh( newGmshModel, newPartionOption );
+        PartitionMesh( M_gmodel, newPartionOption );
 
         CTX::instance()->mesh.binary = M_format;
-        //newGmshModel.mesh.binary = M_format;
+        //M_gmodel.mesh.binary = M_format;
 
-        //newGmshModel->writeMSH( nameMshOutput );
-        newGmshModel->writeMSH( nameMshOutput, 2.2, CTX::instance()->mesh.binary );
+        //M_gmodel->writeMSH( nameMshOutput );
+        M_gmodel->writeMSH( nameMshOutput, 2.2, CTX::instance()->mesh.binary );
 
-        newGmshModel->destroy();
-        delete newGmshModel;
-
+        M_gmodel->destroy();
     }
 
     if ( mpi::environment::initialized() )
@@ -731,7 +792,16 @@ ostr << "// partitioning data\n"
         }
         //ostr << "Mesh.Optimize=1;\n"
         //<< "Mesh.CharacteristicLengthFromCurvature=1;\n"
+
+    // if (this->structuredMesh() == 3)
+    // {
+    //     ostr << "nx=" << M_nx << ";\n"
+    //          << "ny=" << M_ny << ";\n";
+    // }
+    // else
+    // {
     ostr << "h=" << M_h << ";\n";
+    //}
 
     if ( M_recombine )
     {

@@ -442,6 +442,15 @@ public:
     void printMatlab( const std::string name="NULL" ) const;
 
     /**
+     * This function creates a matrix called "submatrix" which is defined
+     * by the row and column indices given in the "rows" and "cols" entries.
+     * Currently this operation is only defined for the PetscMatrix type.
+     */
+    void createSubmatrix( MatrixSparse<T>& submatrix,
+                          const std::vector<size_type>& rows,
+                          const std::vector<size_type>& cols ) const;
+
+    /**
      * \return \f$ v^T M u \f$
      */
     value_type
@@ -472,6 +481,10 @@ public:
     std::vector<PetscInt> ia() { return M_ia; }
     std::vector<PetscInt> ja() { return M_ja; }
 
+
+    bool isSymmetric () const;
+
+    bool isTransposeOf ( MatrixSparse<T> &Trans ) const;
 
     //@}
 

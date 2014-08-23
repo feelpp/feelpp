@@ -2318,7 +2318,11 @@ public:
 
         value_type max() const
         {
-            return super::max();
+            return this->max( true );
+        }
+        value_type max( bool parallel ) const
+        {
+            return super::max( parallel );
         }
 
         template < typename p0_space_type >
@@ -2329,7 +2333,11 @@ public:
 
         value_type min() const
         {
-            return super::min();
+            return this->min( true );
+        }
+        value_type min( bool parallel ) const
+        {
+            return super::min( parallel );
         }
 
         template < typename p0_space_type >
@@ -2948,30 +2956,37 @@ public:
             return M_functionspace->template functionSpace<i>();
         }
 
-        Eigen::Matrix<value_type, Eigen::Dynamic, 1>
-        extractValuesWithMarker( std::string const& m )
+        template<typename BackendType>
+        typename BackendType::vector_ptrtype
+        extractValuesWithMarker( std::string const& m,
+                                 boost::shared_ptr<BackendType> backend )
             {
                 auto r =  functionSpace()->dof()->markerToDof( m );
-                Eigen::Matrix<value_type, Eigen::Dynamic, 1> res( std::distance( r.first, r.second ) );
+                size_type s = std::distance( r.first, r.second );
+                vector_ptrtype res = backend->newVector(s, s);
                 size_type i = 0;
                 for( auto it = r.first, en = r.second; it != en; ++it, ++i )
-                    res( i ) = this->operator[]( it->second );
+                    res->set( i, this->operator[]( it->second ) );
                 return res;
             }
-        Eigen::Matrix<value_type, Eigen::Dynamic, 1>
-        extractValuesWithoutMarker( std::string const& m )
+
+        template<typename BackendType>
+        typename BackendType::vector_ptrtype
+        extractValuesWithoutMarker( std::string const& m,
+                                    boost::shared_ptr<BackendType> backend )
             {
                 auto r1 =  functionSpace()->dof()->markerToDofLessThan( m );
                 auto r2 =  functionSpace()->dof()->markerToDofGreaterThan( m );
                 size_type s = std::distance( r1.first, r1.second ) + std::distance( r2.first, r2.second );
-                Eigen::Matrix<value_type, Eigen::Dynamic, 1> res( s );
+                vector_ptrtype res = backend->newVector(s, s);
                 size_type i = 0;
                 for( auto it = r1.first, en = r1.second; it != en; ++it, ++i )
-                    res( i ) = this->operator[]( it->second );
+                    res->set( i, this->operator[]( it->second ) );
                 for( auto it = r2.first, en = r2.second; it != en; ++it, ++i )
-                    res( i ) = this->operator[]( it->second );
+                    res->set( i, this->operator[]( it->second ) );
                 return res;
             }
+
 
         template<int i>
         typename mpl::at_c<element_vector_type,i>::type
@@ -3753,6 +3768,7 @@ public:
     */
     basis_ptrtype const& basis() const
     {
+        DCHECK( M_ref_fe ) << "Invalid reference element\n";
         return M_ref_fe;
     }
 
@@ -3801,6 +3817,7 @@ public:
     */
     reference_element_ptrtype const& fe() const
     {
+        DCHECK( M_ref_fe ) << "Invalid reference element\n";
         return M_ref_fe;
     }
 
@@ -3954,7 +3971,8 @@ public:
     {
         element_type u( this->shared_from_this(), name );
         bool addExtendedElt = this->dof()->buildDofTableMPIExtended();
-        u.on( _range=elements(M_mesh,addExtendedElt), _expr=e );
+        EntityProcessType entityProcess = (addExtendedElt)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
+        u.on( _range=elements(M_mesh,entityProcess), _expr=e );
         return u;
     }
 
@@ -4027,7 +4045,7 @@ public:
     wireBasket()  const
     {
         //return trace( mpl::greater<mpl::int_<nDim>,mpl::int_<1> >::type() )
-        return trace_trace_functionspace_type::New( mesh()->wireBasket( markededges( mesh(),"WireBasket" ) ) );
+        return trace_trace_functionspace_type::New( _mesh=mesh()->wireBasket( markededges( mesh(),"WireBasket" ) ), _worldscomm=this->worldsComm() );
     }
     template<typename RangeT>
     trace_trace_functionspace_ptrtype
@@ -4042,7 +4060,7 @@ public:
     */
     bool hasRegionTree() const
     {
-        return M_rt;
+        return M_rt != boost::none;
     }
 
     /**

@@ -1995,7 +1995,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     static const bool is_rank_ok = ( shape::M == nComponents1 &&
                                      shape::N == nComponents2 );
 
-    BOOST_MPL_ASSERT_MSG( mpl::bool_<is_rank_ok>::value,
+    BOOST_MPL_ASSERT_MSG( is_rank_ok,//mpl::bool_<is_rank_ok>::value,
                           INVALID_TENSOR_RANK,
                           ( mpl::int_<shape::M>, mpl::int_<nComponents>, shape ) );
 

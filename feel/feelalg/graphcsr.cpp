@@ -704,7 +704,8 @@ GraphCSR::transpose( bool doClose )
 void
 GraphCSR::addMissingZeroEntriesDiagonal()
 {
-    if ( this->mapRow().worldComm().size() >1 && this->mapRow().nDof()!=this->mapCol().nDof() )
+    //if ( this->mapRow().worldComm().size() >1 && this->mapRow().nDof()!=this->mapCol().nDof() )
+    if ( this->mapRow().nDof()!=this->mapCol().nDof() )
         return;
 
     DVLOG(2) << " GraphCSR addMissingZeroEntriesDiagonal in graph\n";
@@ -782,7 +783,7 @@ GraphCSR::close()
     size_type sum_nz = 0;
 
     M_max_nnz = 0;
-
+    VLOG(2) << "Closing graph...";
     for ( auto it = M_storage.begin(), en = M_storage.end() ; it != en; ++it )
     {
         // Get the row of the sparsity pattern
@@ -864,7 +865,7 @@ GraphCSR::close()
         }
 
     }
-
+    VLOG(2) << "Closing graph done.";
 
     if ( nProc > 1 )
     {

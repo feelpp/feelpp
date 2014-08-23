@@ -50,6 +50,7 @@ Mesh<Shape, T, Tag>::Mesh( WorldComm const& worldComm )
     M_gm1( new gm1_type ),
     M_meas( 0 ),
     M_measbdy( 0 ),
+    M_substructuring( false ),
     //M_part(),
     M_tool_localization( new Localization() )
 {
@@ -2466,6 +2467,7 @@ Mesh<Shape, T, Tag>::decode()
     //this->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
     //this->updateForUse();
     //std::cout<<"decode=   " << this->worldComm().localSize() << std::endl;
+    this->setSubStructuring(true);
 }
 
 template<typename Shape, typename T, int Tag1, int Tag2=Tag1, int TheTag=Tag1>
@@ -3217,7 +3219,7 @@ Mesh<Shape, T, Tag>::Localization::isIn( size_type _id,
     {
         bool isin2=false;
         boost::tie(isin2,x_ref,dmin) = this->isIn(_id,_pt);
-        LOG_IF(WARNING, !isin2) << "Mesh::Localization::isIn<Conformal> : check fail -> maybe x_ref is not correct";
+        LOG_IF(ERROR, !isin2) << "Mesh::Localization::isIn<Conformal> : check fail -> maybe x_ref is not correct";
     }
 
     return boost::make_tuple(isin,x_ref,dmin);
@@ -3267,7 +3269,7 @@ Mesh<Shape, T, Tag>::Localization::searchElement( const node_type & p,
         {
             if( this->doExtrapolation() )
                 {
-                    std::cout << "WARNING EXTRAPOLATION for the point" << p << std::endl;
+                    LOG(WARNING) << "WARNING EXTRAPOLATION for the point" << p;
                     //std::cout << "W";
                     auto const& eltUsedForExtrapolation = mesh->element(ListTri.begin()->first);
                     gmc_inverse_type gic( mesh->gm(), eltUsedForExtrapolation, mesh->worldComm().subWorldCommSeq() );
@@ -3302,7 +3304,7 @@ Mesh<Shape, T, Tag>::Localization::run_analysis( const matrix_node_type & m,
     size_type cv_id=eltHypothetical;
     node_type x_ref;
     double dmin;
-    std::vector<bool> hasFindPts(setPoints.size2(),false);
+    std::vector<bool> hasFindPts(m.size2(),false);
 
     M_resultAnalysis.clear();
     auto currentEltHypothetical = eltHypothetical;

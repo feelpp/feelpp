@@ -42,7 +42,7 @@ endforeach()
 
 add_executable(feel_perf_mortar bench.cpp  ${MORTAR}  )
 add_dependencies(feel_perf_mortar gen_feel_perf_mortar)
-target_link_libraries(feel_perf_mortar ${FEELPP_LIBRARIES})
+target_link_libraries(feel_perf_mortar feelpp ${FEELPP_LIBRARIES})
 
 
 configure_file(mortar.cfg mortar.cfg)
