@@ -1086,6 +1086,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMapExtende
             dfe.add( eltOffProc, next_free_dof, myRank );
         }
     }
+    this->M_nGhostDofAddedInExtendedDofTable = next_free_dof-start_next_free_dof;
     //------------------------------------------------------------------------------//
     // update local datamap
     bool hasNoElt = this->M_n_localWithGhost_df[myRank] == 0;

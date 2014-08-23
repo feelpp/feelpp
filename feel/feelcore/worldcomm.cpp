@@ -736,7 +736,7 @@ WorldComm::subWorldsGroupBySubspace( int n )
 int
 WorldComm::numberOfSubWorlds() const
 {
-    if ( this->globalSize() == 1 )
+    if ( this->globalSize() == 1 || M_subworlds.size() == 0 )
         return 1;
     return M_subworlds.begin()->first;
 }

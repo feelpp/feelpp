@@ -52,6 +52,7 @@ extern "C"
 #include <petscsys.h>
 #endif
 
+#include <feel/feelinfo.h>
 #include <feel/feelconfig.h>
 #include <feel/feelcore/feel.hpp>
 
@@ -647,23 +648,39 @@ Environment::parseAndStoreOptions( po::command_line_parser parser, bool extra_pa
     VLOG(2) << "[parseAndStoreOptions] parsing options done\n";
 
     S_to_pass_further = po::collect_unrecognized( parsed->options, po::include_positional );
-    VLOG(2)<< " number of unrecognized options: " << ( S_to_pass_further.size() ) << "\n";
-
-    BOOST_FOREACH( std::string const& s, S_to_pass_further )
+    if ( Environment::isMasterRank() && S_to_pass_further.size() )
     {
-        VLOG(2)<< " option: " << s << "\n";
-    }
-    std::vector<po::basic_option<char> >::iterator it = parsed->options.begin();
-    std::vector<po::basic_option<char> >::iterator en  = parsed->options.end();
+        LOG(ERROR) << "Some options (" << ( S_to_pass_further.size() ) << ") were not recognized.";
+        LOG(ERROR) << "We remove them from Feel++ options management system and pass them to PETSc/SLEPc";
+        LOG(ERROR) << "and other third party libraries";
 
-    for ( ; it != en ; ++it )
-        if ( it->unregistered )
+        for( std::string const& s: S_to_pass_further )
         {
-            VLOG(2)<< " remove from vector " << it->string_key << "\n";
-            parsed->options.erase( it );
+            LOG(ERROR) << "  |- unrecognized option: " << s << "\n";
         }
+        std::vector<po::basic_option<char> >::iterator it = parsed->options.begin();
+        std::vector<po::basic_option<char> >::iterator en  = parsed->options.end();
 
+        for ( ; it != en ; ++it )
+            if ( it->unregistered )
+            {
+                LOG(ERROR) << "  |- remove " << it->string_key << " from Feel++ options management system"  << "\n";
+                parsed->options.erase( it );
+            }
+    }
     po::store( *parsed, S_vm );
+    if ( boption( "fail-on-unknown-option" ) && S_to_pass_further.size() )
+    {
+        std::stringstream ostr;
+        for( std::string const& s: S_to_pass_further )
+        {
+            ostr << s << " ";
+        }
+        if ( Environment::isMasterRank() )
+            LOG(ERROR) << "Unknown options [" << ostr.str() << "] passed to Feel++. Quitting application...";
+        //MPI_Barrier( S_worldcomm->comm() );
+        MPI_Abort( S_worldcomm->comm(), 1);
+    }
 }
 
 
@@ -920,7 +937,7 @@ Environment::Environment( int& argc, char**& argv )
 #endif
 
     S_worldcomm = worldcomm_type::New();
-    CHECK( S_worldcomm ) << "Feel++ Environment: creang worldcomm failed!";
+    CHECK( S_worldcomm ) << "Feel++ Environment: worldcomm creation failed!";
     S_worldcommSeq.reset( new WorldComm(S_worldcomm->subWorldCommSeq()) );
 
 #if defined ( FEELPP_HAS_PETSC_H )
@@ -1059,6 +1076,11 @@ Environment::clearSomeMemory()
 }
 Environment::~Environment()
 {
+#if defined(FEELPP_HAS_HARTS)
+    /* if we used hwloc, we free tolology data */
+    Environment::destroyHwlocTopology();
+#endif
+
     /* if we were using onelab */
     /* we write the file containing the filename marked for automatic loading in Gmsh */
     /* we serialize the writing of the size by the different MPI processes */
@@ -1436,6 +1458,222 @@ Environment::masterWorldComm( int n )
     return S_worldcomm->masterWorld(n);
 }
 
+#if defined(FEELPP_HAS_HARTS)
+
+void Environment::initHwlocTopology()
+{
+    /* init and load hwloc topology for the current node */
+    if(!(Environment::S_hwlocTopology))
+    {
+        hwloc_topology_init(&(Environment::S_hwlocTopology));
+        hwloc_topology_load(Environment::S_hwlocTopology);
+    }
+}
+
+void Environment::destroyHwlocTopology()
+{
+    if(Environment::S_hwlocTopology)
+    {
+        hwloc_topology_destroy(Environment::S_hwlocTopology);
+    }
+}
+
+void Environment::bindToCore( unsigned int id )
+{
+    int err;
+    hwloc_cpuset_t set;
+    hwloc_obj_t coren;
+
+    /* init and load hwloc topology for the current node */
+    Environment::initHwlocTopology();
+
+    /* get the nth core object */
+    coren = hwloc_get_obj_by_type(Environment::S_hwlocTopology, HWLOC_OBJ_CORE, id);
+    /* get the cpu mask of the nth core */
+    set = hwloc_bitmap_dup(coren->cpuset);
+    /* bind the process thread to this core */
+    err = hwloc_set_cpubind(Environment::S_hwlocTopology, set, 0);
+
+    /* free memory */
+    hwloc_bitmap_free(set);
+}
+
+int Environment::countCoresInSubtree(hwloc_obj_t node)
+{
+    int res = 0;
+    /* get the number of cores in the subtree */
+    for(int i = 0; i < node->arity; i++)
+    {
+        res += Environment::countCoresInSubtree(node->children[i]);
+    }
+
+    /* if we are a core node, we increment the counter */
+    if(node->type == HWLOC_OBJ_CORE)
+    {
+        res++;
+    }
+
+    return res;
+}
+
+void Environment::bindNumaRoundRobin(int lazy)
+{
+    int err, depth;
+    int nbCoresPerNuma = 0, nbCoresTotal = 0, nbNumaNodesTotal = 0;
+    hwloc_cpuset_t set;
+    hwloc_obj_t numaNode;
+
+    std::cout << "Round Robin Numa" << std::endl;
+
+    /* init and load hwloc topology for the current node */
+    Environment::initHwlocTopology();
+
+    /* get the first numa node */
+    numaNode = hwloc_get_obj_by_type(Environment::S_hwlocTopology, HWLOC_OBJ_NODE, 0);
+    nbCoresPerNuma = Environment::countCoresInSubtree(numaNode);
+
+    /* count the number of numaNodes */
+    depth = hwloc_get_type_depth(Environment::S_hwlocTopology, HWLOC_OBJ_NODE);
+    if(depth != HWLOC_TYPE_DEPTH_UNKNOWN)
+    {
+        nbNumaNodesTotal = hwloc_get_nbobjs_by_depth(Environment::S_hwlocTopology, depth);
+    }
+
+    /* count the number of cores on the current server */
+    depth = hwloc_get_type_depth(Environment::S_hwlocTopology, HWLOC_OBJ_CORE);
+    if(depth != HWLOC_TYPE_DEPTH_UNKNOWN)
+    {
+        nbCoresTotal = hwloc_get_nbobjs_by_depth(Environment::S_hwlocTopology, depth);
+    }
+
+    /* compute the virtual core index of the first core of the numa node to use */
+    int vcoreid = Environment::worldComm().rank() * nbCoresPerNuma;
+    /* compute the rank of the Numa processor for the current process */
+    int numaRank = Environment::worldComm().rank() % nbCoresPerNuma;
+
+    /* get the numa node where to place the process */
+    numaNode = hwloc_get_obj_by_type(Environment::S_hwlocTopology, HWLOC_OBJ_NODE, numaRank);
+
+    /* duplicate the node set of the Numa node */
+    set = hwloc_bitmap_dup(numaNode->cpuset);
+    /*
+    char * a;
+    hwloc_bitmap_asprintf(&a, set);
+    std::cout << Environment::worldComm().rank() << " " << a << ";" << std::endl;
+    free(a);
+    */
+
+    /* if we do not want to bind lazily, i.e. to generally bind on the numa node */
+    /* we select the specific core */
+    int bid = -1;
+    if(!lazy)
+    {
+        /* get the cpuset corresponding to the core we want to bind to */
+        /* compute the core number that we want to bind to on the current Numa node */
+        int tid = (vcoreid / nbCoresTotal) % nbCoresPerNuma;
+        /* get the id of the first core */
+        bid = hwloc_bitmap_first(set);
+        /* iterate to find the core we want to bind to */
+        for(int i = 0; i < tid; i++)
+        {
+            bid = hwloc_bitmap_next(set, bid);
+        } 
+        hwloc_bitmap_only(set, bid);
+        /*
+           hwloc_bitmap_asprintf(&a, set);
+           std::cout << Environment::worldComm().rank() << " " << a << ";" << std::endl;
+           free(a);
+           */
+    }
+
+    int coreid = vcoreid % nbCoresTotal + vcoreid / nbCoresTotal;
+    std::cout << Environment::worldComm().rank() << " nbCoresNuma:" << nbCoresPerNuma << " Total:" << nbCoresTotal << " " 
+              << " coreid=" << coreid << " "
+              << " nbCoresPerNuma=" << nbCoresPerNuma
+              << " idOnNuma=" << bid
+              << " numaRank=" << numaRank
+              << std::endl;
+
+    /* bind the process thread to this core */
+    err = hwloc_set_cpubind(Environment::S_hwlocTopology, set, 0);
+
+    /* free memory */
+    hwloc_bitmap_free(set);
+}
+
+void Environment::writeCPUData(std::string fname)
+{
+    hwloc_cpuset_t set;
+    int cid;
+    char * a;
+    char buf[256];
+    unsigned int depth;
+
+    std::ostringstream oss;
+
+    /* init and load hwloc topology for the current node */
+    Environment::initHwlocTopology();
+
+    /* get a cpuset object */
+    set = hwloc_bitmap_alloc();
+
+    /* Get the cpu thread affinity info of the current process/thread */
+    hwloc_get_cpubind(Environment::S_hwlocTopology, set, 0);
+    hwloc_bitmap_asprintf(&a, set);
+    oss << a;
+    free(a);
+
+    /* write the corresponding processor indexes */
+    cid = hwloc_bitmap_first(set);
+    oss << " (";
+    while(cid != -1)
+    {
+        oss << cid << " ";
+        cid = hwloc_bitmap_next(set, cid);
+    }
+    oss << ")|";
+
+    /* Get the latest core location of the current process/thread */
+    hwloc_get_last_cpu_location(Environment::S_hwlocTopology, set, 0);
+    hwloc_bitmap_asprintf(&a, set);
+    oss << a;
+    free(a);
+
+    /* write the corresponding processor indexes */
+    cid = hwloc_bitmap_first(set);
+    oss << " (";
+    while(cid != -1)
+    {
+        oss << cid << " ";
+        cid = hwloc_bitmap_next(set, cid);
+    }
+    oss << ");";
+
+    /* free memory */
+    hwloc_bitmap_free(set);
+
+    /* if filename is empty, we write to stdout */
+    if(fname == "")
+    {
+        std::cout << Environment::worldComm().rank() << " " << oss.str() << std::endl;
+    }
+    else
+    {
+        /* Write the gathered information with MPIIO */
+        MPI_File fh;
+        MPI_Status status;
+        if(fs::exists(fname))
+        {
+            MPI_File_delete(const_cast<char *>(fname.c_str()), MPI_INFO_NULL);
+        }
+
+        MPI_File_open( Environment::worldComm().comm(), const_cast<char *>(fname.c_str()), MPI_MODE_RDWR | MPI_MODE_CREATE | MPI_MODE_APPEND , MPI_INFO_NULL, &fh );
+        MPI_File_write_ordered( fh, const_cast<char *>(oss.str().c_str()), oss.str().size(), MPI_CHAR, &status );
+
+        MPI_File_close( &fh );
+    }
+}
+#endif
 
 MemoryUsage
 Environment::logMemoryUsage( std::string const& message )
@@ -1454,6 +1692,34 @@ Environment::logMemoryUsage( std::string const& message )
 #endif
     return mem;
 }
+
+std::string
+Environment::expand( std::string const& expr )
+{
+    std::string topSrcDir = BOOST_PP_STRINGIZE(FEELPP_SOURCE_DIR);
+    std::string topBuildDir = BOOST_PP_STRINGIZE(FEELPP_BUILD_DIR);
+    std::string homeDir = ::getenv( "HOME" );
+    std::string dataDir = (fs::path(topSrcDir)/fs::path("data")).string();
+    std::string exprdbDir = (fs::path(Environment::rootRepository())/fs::path("exprDB")).string();
+
+    VLOG(2) << "topSrcDir " << topSrcDir << "\n"
+            << "topBuildDir " << topBuildDir << "\n"
+            << "HOME " << homeDir << "\n"
+            << "Environment::rootRepository() " << Environment::rootRepository()
+            << "dataDir " << dataDir << "\n"
+            << "exprdbdir " << exprdbDir << "\n"
+            << "\n";
+
+    std::string res=expr;
+    boost::replace_all( res, "$top_srcdir", topSrcDir );
+    boost::replace_all( res, "$top_builddir", topBuildDir );
+    boost::replace_all( res, "$home", homeDir );
+    boost::replace_all( res, "$repository", Environment::rootRepository());
+    boost::replace_all( res, "$datadir", dataDir);
+    boost::replace_all( res, "$exprdbdir", exprdbDir);
+    return res;
+}
+
 
 AboutData Environment::S_about;
 po::variables_map Environment::S_vm;
@@ -1474,6 +1740,10 @@ fs::path Environment::S_scratchdir;
 
 std::string Environment::olAppPath;
 std::vector<std::string> Environment::olAutoloadFiles;
+
+#if defined(FEELPP_HAS_HARTS)
+    hwloc_topology_t Environment::S_hwlocTopology = NULL;
+#endif
 
 } // detail
 

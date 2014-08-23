@@ -50,6 +50,17 @@ ITERATOR end( boost::tuple<mpl::size_t<S>,ITERATOR,ITERATOR> &range )
 {
     return range.template get<2>();
 }
+template<size_t S, class ITERATOR, class CONTAINER>
+ITERATOR begin( boost::tuple<mpl::size_t<S>,ITERATOR,ITERATOR,CONTAINER> &range )
+{
+    return range.template get<1>();
+}
+
+template<size_t S, class ITERATOR, class CONTAINER>
+ITERATOR end( boost::tuple<mpl::size_t<S>,ITERATOR,ITERATOR,CONTAINER> &range )
+{
+    return range.template get<2>();
+}
 
 enum ElementsType
 {
@@ -1448,6 +1459,39 @@ nelements( std::list<boost::tuple<MT,Iterator,Iterator> > const& its, bool globa
     return gd;
 }
 
+
+/**
+ * \ingroup MeshIterators
+ * \return the number of elements given element iterators constructed
+ * using custom range
+ * \param its the mesh iterators
+ * \param global all reduce number of elements if set to true
+ *
+ * The following code prints in the logfile the number of elements in
+ * the mesh that are marked with marker1 equal to 1:
+ *
+ * \code
+ * LOG(INFO) << "number of elements = " << nelements( myCustomRange ) << "\n";
+ * \endcode
+ *
+ */
+template<typename MT, typename Iterator,typename Container>
+size_type
+nelements( boost::tuple<MT,Iterator,Iterator,Container> const& its, bool global = false )
+{
+    size_type d = std::distance( boost::get<1>( its ), boost::get<2>( its ) );
+    size_type gd = d;
+    if ( global )
+        mpi::all_reduce(Environment::worldComm().globalComm(),
+                        d,
+                        gd,
+                        std::plus<size_type>());
+    return gd;
+
+}
+
+
+
 template<typename ElementType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
       typename std::list<ElementType>::const_iterator,
@@ -1468,17 +1512,18 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
              typename std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::element_type const> >::const_iterator,
              boost::shared_ptr<std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::element_type const> > >
              >
-elements( MeshType const& mesh, bool addExtendedMPIElt )
+elements( MeshType const& mesh, EntityProcessType entity )
 {
     typedef std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::element_type const> > cont_range_type;
     boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
 
-    for ( auto const& elt : elements(mesh) )
-    {
-        myelts->push_back(boost::cref(elt));
-    }
+    if ( ( entity == EntityProcessType::LOCAL_ONLY ) || ( entity == EntityProcessType::ALL ) )
+        for ( auto const& elt : elements(mesh) )
+        {
+            myelts->push_back(boost::cref(elt));
+        }
 
-    if ( addExtendedMPIElt )
+    if ( ( entity == EntityProcessType::GHOST_ONLY ) || ( entity == EntityProcessType::ALL ) )
     {
         std::set<size_type> eltGhostDone;
 
@@ -1562,17 +1607,18 @@ boost::tuple<mpl::size_t<MESH_FACES>,
              typename std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::face_type const> >::const_iterator,
              boost::shared_ptr<std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::face_type const> > >
              >
-boundaryfaces( MeshType const& mesh, bool addExtendedMPIElt )
+boundaryfaces( MeshType const& mesh, EntityProcessType entity )
 {
     typedef std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::face_type const> > cont_range_type;
     boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
 
-    for ( auto const& theface : boundaryfaces(mesh) )
-    {
-        myelts->push_back(boost::cref(theface));
-    }
+    if ( ( entity == EntityProcessType::LOCAL_ONLY ) || ( entity == EntityProcessType::ALL ) )
+        for ( auto const& theface : boundaryfaces(mesh) )
+        {
+            myelts->push_back(boost::cref(theface));
+        }
 
-    if ( addExtendedMPIElt )
+    if ( ( entity == EntityProcessType::GHOST_ONLY ) || ( entity == EntityProcessType::ALL ) )
     {
         //std::set<size_type> faceGhostDone;
         auto face_it = mesh->interProcessFaces().first;

@@ -188,6 +188,7 @@ public:
                       expression_type const& __expr,
                       size_type __on )
         :
+        M_elts(),
         M_eltbegin( __elts.template get<1>() ),
         M_eltend( __elts.template get<2>() ),
         M_u( __u ),
@@ -195,9 +196,29 @@ public:
         M_expr( __expr ),
         M_on_strategy( __on )
     {
+        M_elts.push_back( __elts );
+    }
+    IntegratorOnExpr( std::list<ElementRange> const& __elts,
+                      element_type const& __u,
+                      rhs_element_type const& __rhs,
+                      expression_type const& __expr,
+                      size_type __on )
+        :
+        M_elts( __elts ),
+        M_u( __u ),
+        M_rhs( __rhs ),
+        M_expr( __expr ),
+        M_on_strategy( __on )
+    {
+        if ( __elts.size() )
+        {
+            M_eltbegin = __elts.begin()->template get<1>();
+            M_eltend = __elts.begin()->template get<2>();
+        }
     }
     IntegratorOnExpr( IntegratorOnExpr const& ioe )
         :
+        M_elts( ioe.M_elts ),
         M_eltbegin( ioe.M_eltbegin ),
         M_eltend( ioe.M_eltend ),
         M_u( ioe.M_u ),
@@ -269,6 +290,7 @@ private:
 
 private:
 
+    std::list<ElementRange> M_elts;
     element_iterator M_eltbegin;
     element_iterator M_eltend;
 
@@ -339,13 +361,39 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
     std::vector<value_type> values;
     element_iterator __face_it = this->beginElement();
     element_iterator __face_en = this->endElement();
-    if ( __face_it != __face_en )
+
+    bool findAFace = false;
+    for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
+    {
+        __face_it = lit->template get<1>();
+        __face_en = lit->template get<2>();
+        if ( __face_it != __face_en )
+        {
+            findAFace=true;
+            break;
+        }
+    }
+    if ( findAFace )
     {
         // get the first face properly connected
-        for( ; __face_it != __face_en; ++__face_it )
-            if ( __face_it->isConnectedTo0() )
-                break;
+        bool findAFaceToInit=false;
+        for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
+        {
+            __face_it = lit->template get<1>();
+            __face_en = lit->template get<2>();
+            for( ; __face_it != __face_en; ++__face_it )
+            {
+                if ( boost::unwrap_ref(*__face_it).isConnectedTo0() )
+                {
+                    findAFaceToInit=true;
+                    break;
+                }
+            }
+            if ( findAFaceToInit ) break;
+        }
+        CHECK( findAFaceToInit ) << "not find a face to init\n";
 
+        auto const& faceForInit = boost::unwrap_ref( *__face_it );
 
         dof_type const* __dof = M_u.functionSpace()->dof().get();
 
@@ -375,8 +423,8 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
             }
         }
 
-        uint16_type __face_id = __face_it->pos_first();
-        gmc_ptrtype __c( new gmc_type( __gm, __face_it->element( 0 ), __geopc, __face_id ) );
+        uint16_type __face_id = faceForInit.pos_first();
+        gmc_ptrtype __c( new gmc_type( __gm, faceForInit.element( 0 ), __geopc, __face_id ) );
 
         map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
         //t_expr_type expr( M_expr, mapgmc );
@@ -399,36 +447,42 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
         DVLOG(2)  << "nbFaceDof = " << nbFaceDof << "\n";
         //const size_type nbFaceDof = __fe->boundaryFE()->points().size2();
 
+        for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
+        {
+        __face_it = lit->template get<1>();
+        __face_en = lit->template get<2>();
         for ( ;
-              __face_it != this->endElement();
+              __face_it != __face_en;//this->endElement();
               ++__face_it )
         {
-            if ( !__face_it->isConnectedTo0() )
+            auto const& theface = boost::unwrap_ref( *__face_it );
+
+            if ( !theface.isConnectedTo0() )
             {
-                LOG( WARNING ) << "face not connected" << *__face_it;
+                LOG( WARNING ) << "face not connected" << theface;
 
                 continue;
             }
             // do not process the face if it is a ghost face: belonging to two
             // processes and being in a process id greater than the one
             // corresponding face
-            if ( __face_it->isGhostFace() )
+            if ( theface.isGhostFace() )
             {
-                LOG(WARNING) << "face id : " << __face_it->id() << " is a ghost face";
+                LOG(WARNING) << "face id : " << theface.id() << " is a ghost face";
                 continue;
             }
 
-            DVLOG(2) << "FACE_ID = " << __face_it->id()
-                     << " element id= " << __face_it->ad_first()
-                     << " pos in elt= " << __face_it->pos_first()
-                     << " marker: " << __face_it->marker() << "\n";
-            DVLOG(2) << "FACE_ID = " << __face_it->id() << " face pts=" << __face_it->G() << "\n";
+            DVLOG(2) << "FACE_ID = " << theface.id()
+                     << " element id= " << theface.ad_first()
+                     << " pos in elt= " << theface.pos_first()
+                     << " marker: " << theface.marker() << "\n";
+            DVLOG(2) << "FACE_ID = " << theface.id() << " face pts=" << theface.G() << "\n";
 
-            uint16_type __face_id = __face_it->pos_first();
-            __c->update( __face_it->element( 0 ), __face_id );
+            uint16_type __face_id = theface.pos_first();
+            __c->update( theface.element( 0 ), __face_id );
 
-            DVLOG(2) << "FACE_ID = " << __face_it->id() << "  ref pts=" << __c->xRefs() << "\n";
-            DVLOG(2) << "FACE_ID = " << __face_it->id() << " real pts=" << __c->xReal() << "\n";
+            DVLOG(2) << "FACE_ID = " << theface.id() << "  ref pts=" << __c->xRefs() << "\n";
+            DVLOG(2) << "FACE_ID = " << theface.id() << " real pts=" << __c->xReal() << "\n";
 
             map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
 
@@ -452,7 +506,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
 
                         // global Dof
                         size_type thedof =  M_u.start() +
-                            boost::get<0>( __dof->faceLocalToGlobal( __face_it->id(), l, c1 ) );
+                            boost::get<0>( __dof->faceLocalToGlobal( theface.id(), l, c1 ) );
 
                         //size_type thedof_nproc = __dof->dofNProc( thedof );
                         if ( std::find( dofs.begin(),
@@ -490,7 +544,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
         }
 
     } // __face_it != __face_en
-
+    }
 
     if ( __form.rowStartInMatrix()!=0)
     {
@@ -498,13 +552,10 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
         for (auto itd=dofs.begin(),end=dofs.end() ; itd!=end ; ++itd)
             *itd+=thedofshift;
     }
+    
     auto x = M_rhs->clone();
-    //CHECK( dofs.size() > 0 ) << "Invalid number of Dirichlet dof, should be > 0 ";
     CHECK( values.size() == dofs.size() ) << "Invalid dofs/values size: " << dofs.size() << "/" << values.size();
-    //x->zero();
     x->addVector( dofs.data(), dofs.size(), values.data() );
-    //values->zero();
-
     __form.zeroRows( dofs, *x, *M_rhs, M_on_strategy );
     x.reset();
 }
@@ -526,10 +577,15 @@ struct v_ptr2
 template<typename Args>
 struct integratoron_type
 {
-    typedef typename clean_type<Args,tag::range>::type _range_type;
+    typedef typename clean_type<Args,tag::range>::type _range_base_type;
     typedef typename clean_type<Args,tag::rhs>::type _rhs_type;
     typedef typename clean_type<Args,tag::element>::type _element_type;
     typedef typename clean_type<Args,tag::expr>::type _expr_type;
+
+    typedef typename mpl::if_< boost::is_std_list<_range_base_type>,
+                               mpl::identity<_range_base_type>,
+                               mpl::identity<std::list<_range_base_type> > >::type::type::value_type _range_type;
+
 #if 1
     typedef typename mpl::if_<Feel::detail::is_vector_ptr<_rhs_type>,
                               mpl::identity<v_ptr1<_rhs_type> >,

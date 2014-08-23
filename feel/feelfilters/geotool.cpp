@@ -1804,73 +1804,48 @@ computeBasisOrthogonal( node_type dir,node_type centre )
     dir( 1 )=dir( 1 )/norm_dir;
     dir( 2 )=dir( 2 )/norm_dir;
 
-    //coefficient du plan qui a pour normal dir
+    // plane coefficient equation
     double a=dir( 0 );
     double b=dir( 1 );
     double c=dir( 2 );
-    double d=-dir( 0 )*centre( 0 )-dir( 1 )*centre( 1 )-dir( 2 )*centre( 2 ); //-N scalaire OA
-
+    //double d=-dir( 0 )*centre( 0 )-dir( 1 )*centre( 1 )-dir( 2 )*centre( 2 ); //-N scalaire OA
+    double d=0;// consider origin (0,0,0)
     double rayon=1;
 
-    //un point du plan autre que centre
+    // found a point in plane other that the center
     Node ptBis( 0,0,0 );
+    Node ptPerturb( dir( 0 )+1,dir( 1 ),dir( 2 ) );
+    double normPtPerturb = math::sqrt(math::pow(ptPerturb(0),2)+math::pow(ptPerturb(1),2)+math::pow(ptPerturb(2),2) );
+    double vdotn = ptPerturb(0)*dir(0)+ptPerturb(1)*dir(1)+ptPerturb(2)*dir(2);
 
-    if ( a==0 )
+    if ( std::abs(std::abs(vdotn/normPtPerturb)-1) < 1e-9 )
     {
-        ptBis( 0 )=centre( 0 )+rayon;
-
-        if ( !( std::abs( c )<1e-8 ) )
-        {
-            ptBis( 1 )=centre( 1 );
-            ptBis( 2 )=( -b*ptBis( 1 )-d )/c;
-        }
-
-        else if ( !( std::abs( b )<1e-8 ) )
-        {
-            ptBis( 2 )=centre( 2 );
-            ptBis( 1 )=( -c*ptBis( 2 )-d )/b;
-        }
+        // if colinear else change pt perturbation
+        ptPerturb(0)=dir(0);ptPerturb(1)=dir(1)+1;ptPerturb(2)=dir(2);
+        normPtPerturb = math::sqrt(math::pow(ptPerturb(0),2)+math::pow(ptPerturb(1),2)+math::pow(ptPerturb(2),2) );
+        vdotn = ptPerturb(0)*dir(0)+ptPerturb(1)*dir(1)+ptPerturb(2)*dir(2);
     }
+    CHECK( std::abs(std::abs(vdotn/normPtPerturb)-1) > 1e-9 ) << "colinear to normal : vdotn=" << vdotn
+                                                              << " normal=" << dir(0) << "," << dir(1) << "," << dir(2)
+                                                              << " v=" << ptPerturb(0) << "," << ptPerturb(1) << "," << ptPerturb(2)
+                                                              << "\n";
+    ptBis(0)=ptPerturb(0)-vdotn*dir(0);
+    ptBis(1)=ptPerturb(1)-vdotn*dir(1);
+    ptBis(2)=ptPerturb(2)-vdotn*dir(2);
 
-    else if ( b==0 )
-    {
-        ptBis( 1 )=centre( 1 )+rayon;
+    CHECK( std::abs(a*ptBis(0)+b*ptBis(1)+c*ptBis(2)+d) < 1e-9 ) << "point is not on plane\n";
 
-        if ( ! (std::abs( c )<1e-8 ) )
-        {
-            ptBis( 0 )=centre( 0 );
-            ptBis( 2 )=( -a*ptBis( 0 )-d )/c;
-        }
-
-        else if ( ! (std::abs( a )<1e-8 ) )
-        {
-            ptBis( 2 )=centre( 2 );
-            ptBis( 0 )=( -c*ptBis( 2 )-d )/a;
-        }
-    }
-
-    else if ( c==0 )
-    {
-        double xtemp=centre( 0 );
-        double ztemp=centre( 1 )+rayon;
-        double ytemp=( -a*xtemp-c*ztemp-d )/b;
-        ptBis = Node( xtemp,ytemp,ztemp );
-    }
-
-    else
-        ptBis = Node( centre( 0 )+rayon,centre( 1 ),centre( 2 ) );
-
-    //un veteur du plan
-    Node u( ptBis( 0 )-centre( 0 ),ptBis( 1 )-centre( 1 ),ptBis( 2 )-centre( 2 ) );
+    // first base vector in plane
+    Node u( ptBis( 0 )/*-centre( 0 )*/,ptBis( 1 )/*-centre( 1 )*/,ptBis( 2 )/*-centre( 2 )*/ );
 
     //a=u2v3-u3v2 ; b=u3v1-u1v3 ; c=u1v2-u2v1
-    //deuxieme vecteur qui forme une base orthogonal (u,v,dir) avec v=u ProdVect dir
+    // second base vector in plane (orthogonal basis (u,v,dir) avec v=u ProdVect dir )
     Node v( u( 1 )*dir( 2 ) - u( 2 )*dir( 1 ),
-            u( 0 )*dir( 2 ) - u( 2 )*dir( 0 ),
+            u( 2 )*dir( 0 ) - u( 0 )*dir( 2 ), //u( 0 )*dir( 2 ) - u( 2 )*dir( 0 ),
             u( 0 )*dir( 1 ) - u( 1 )*dir( 0 ) );
 
     double norm_u = std::sqrt( u( 0 )*u( 0 )+u( 1 )*u( 1 )+u( 2 )*u( 2 ) );
-    double norm_v = std::sqrt( v( 0 )*v( 0 )+v( 1 )*u( 1 )+v( 2 )*v( 2 ) );
+    double norm_v = std::sqrt( v( 0 )*v( 0 )+v( 1 )*v( 1 )+v( 2 )*v( 2 ) );
     u( 0 )/=norm_u;
     u( 1 )/=norm_u;
     u( 2 )/=norm_u;
@@ -1879,6 +1854,10 @@ computeBasisOrthogonal( node_type dir,node_type centre )
     v( 2 )/=norm_v;
 
     Node D( dir( 0 ),dir( 1 ),dir( 2 ) );
+
+    /*std::cout << "dir : " << D(0) << " " << D(1) << " " << D(2) << "\n"
+              << "u : " << u(0) << " " << u(1) << " " << u(2) << "\n"
+              << "v : " << v(0) << " " << v(1) << " " << v(2) << "\n";*/
 
     return boost::make_tuple( D,u,v );
 
