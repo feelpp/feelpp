@@ -54,6 +54,15 @@ enum   MatrixProperties
     SINGULAR           = 0x8,    /**< singular matrix : \f$det(A)=0\f$ and 0 is an eigenvalue */
     DENSE              = 0x10    /**< dense matrix */
 };
+
+enum MatrixTranspose
+{
+    MATRIX_TRANSPOSE_ASSEMBLED   = 0x1,
+    MATRIX_TRANSPOSE_UNASSEMBLED = 0x2,
+    MATRIX_TRANSPOSE_CHECK       = 0x4
+};
+        
+
 /**
  * Backend types
  *
