@@ -577,7 +577,7 @@ public:
     {
         auto opT = adjoint_ptrtype( new adjoint_type( this->dualImageSpace(), this->domainSpace(), M_backend, false ) );
         //opT->matPtr() = M_backend->newMatrix(_test=this->domainSpace(), _trial=this->dualImageSpace());
-        if ( Context( options ). test( MATRIX_TRANSPOSE_ASSEMBLED ) )
+        if ( 1 ) //Context( options ). test( MATRIX_TRANSPOSE_ASSEMBLED ) )
             opT->matPtr() = M_backend->newMatrix( this->dualImageSpace()->dofOnOff(),
                                                   this->domainSpace()->dofOn(), (size_type) NON_HERMITIAN,false);
         else
