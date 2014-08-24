@@ -374,7 +374,7 @@ public:
      *
      * \param Mt the matrix transposed
      */
-    void transpose( MatrixSparse<value_type>& Mt ) const;
+    void transpose( MatrixSparse<value_type>& Mt, size_type options ) const;
 
     /**
      * \return \f$ v^T M u \f$
