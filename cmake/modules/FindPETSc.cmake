@@ -68,11 +68,12 @@ find_path (PETSC_DIR include/petsc.h
   /opt/local/lib/petsc # macports
   $ENV{HOME}/petsc
   $ENV{PETSC_HOME}
+  $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}
   DOC "PETSc Directory")
 
 if ( NOT PETSC_DIR )
   foreach( version ${PETSC_VERSIONS} )
-    foreach ( flavor ${DEBIAN_FLAVORS} ${DARWIN_FLAVORS})
+    foreach ( flavor ${DEBIAN_FLAVORS} ${DARWIN_FLAVORS} )
       #message(STATUS "checking version ${version} for file ${flavor}/include/petsc.h...")
       find_path (PETSC_DIR include/petsc.h
         PATHS
