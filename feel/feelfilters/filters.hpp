@@ -30,7 +30,7 @@
 #include <feel/feelfilters/loadgmshmesh.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/domain.hpp>
-//#include <feel/feelfilters/geotool.hpp>
+#include <feel/feelfilters/geotool.hpp>
 #include <feel/feelfilters/img2msh.hpp>
 #include <feel/feelfilters/convert2msh.hpp>
 #include <feel/feelfilters/unitsegment.hpp>
