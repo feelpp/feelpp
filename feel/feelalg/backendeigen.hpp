@@ -99,6 +99,12 @@ public:
                   WorldComm const& worldComm=Environment::worldComm() );
 
     // -- FACTORY METHODS --
+    sparse_matrix_ptrtype
+    newMatrix()
+    {
+        auto A= sparse_matrix_ptrtype( new eigen_sparse_matrix_type(0,0,this->comm()) );
+        return A;
+    }
     template<typename DomainSpace, typename DualImageSpace>
     static sparse_matrix_ptrtype newMatrix( boost::shared_ptr<DomainSpace> const& space1,
                                             boost::shared_ptr<DualImageSpace> const& space2,
