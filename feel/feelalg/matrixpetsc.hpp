@@ -409,8 +409,9 @@ public:
      *
      * \param M the matrix to transpose
      * \param Mt the matrix transposed
+     * \param options options for tranpose
      */
-    void transpose( MatrixSparse<value_type>& Mt ) const;
+    void transpose( MatrixSparse<value_type>& Mt, size_type options ) const;
 
     /**
     * Returns the symmetric part of the matrix

@@ -447,9 +447,9 @@ MatrixBlockBase<T>::diagonal( Vector<value_type>& out ) const
 
 template <typename T>
 void
-MatrixBlockBase<T>::transpose( MatrixSparse<value_type>& Mt ) const
+MatrixBlockBase<T>::transpose( MatrixSparse<value_type>& Mt, size_type options ) const
 {
-    M_mat->transpose( Mt );
+    M_mat->transpose( Mt, options );
 }
 
 template <typename T>

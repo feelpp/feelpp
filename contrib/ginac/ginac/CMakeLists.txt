@@ -155,7 +155,7 @@ target_link_libraries(feelpp_ginac ${CLN_LIBRARIES} ${CMAKE_DL_LIBS} ${Boost_MPI
 include_directories(${CMAKE_SOURCE_DIR}/contrib/ginac/ginac ${MPI_CXX_INCLUDE_PATH})
 
 if (NOT BUILD_SHARED_LIBS)
-	set_target_properties(feelpp_ginac PROPERTIES OUTPUT_NAME "ginac")
+	set_target_properties(feelpp_ginac PROPERTIES OUTPUT_NAME "feelpp_ginac")
 	# Avoid the static library vs import library conflict (necessary for
 	# m$ toolchain).
 	set_target_properties(feelpp_ginac PROPERTIES PREFIX "lib")

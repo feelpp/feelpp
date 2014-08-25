@@ -36,21 +36,23 @@ int main( int argc, char** argv )
     // create a mesh with GMSH using Feel++ geometry tool
     auto mesh = loadMesh(_mesh=new  Mesh<Simplex<FEELPP_DIM>>);
 
+    size_type nbdyfaces = nelements(boundaryfaces(mesh));
 
     if ( Environment::isMasterRank() )
     {
         std::cout << " - mesh entities" << std::endl;
-        std::cout << "   number of elements : " << mesh->numGlobalElements() << std::endl;
-        std::cout << "      number of faces : " << mesh->numGlobalFaces() << std::endl;
+        std::cout << "      number of elements : " << mesh->numGlobalElements() << std::endl;
+        std::cout << "         number of faces : " << mesh->numGlobalFaces() << std::endl;
+        std::cout << "number of boundary faces : " << nbdyfaces << std::endl;
         if ( FEELPP_DIM > 2 )
-            std::cout << "      number of edges : " << mesh->numGlobalEdges() << std::endl;
-        std::cout << "      number of points : " << mesh->numGlobalPoints() << std::endl;
-        std::cout << "    number of vertices : " << mesh->numGlobalVertices() << std::endl;
+            std::cout << "        number of edges : " << mesh->numGlobalEdges() << std::endl;
+        std::cout << "        number of points : " << mesh->numGlobalPoints() << std::endl;
+        std::cout << "      number of vertices : " << mesh->numGlobalVertices() << std::endl;
         std::cout << " - mesh sizes" << std::endl;
-        std::cout << "                h max : " << mesh->hMax() << std::endl;
-        std::cout << "                h min : " << mesh->hMin() << std::endl;
-        std::cout << "                h avg : " << mesh->hAverage() << std::endl;
-        std::cout << "              measure : " << mesh->measure() << std::endl;
+        std::cout << "                   h max : " << mesh->hMax() << std::endl;
+        std::cout << "                   h min : " << mesh->hMin() << std::endl;
+        std::cout << "                   h avg : " << mesh->hAverage() << std::endl;
+        std::cout << "                 measure : " << mesh->measure() << std::endl;
     }
 
     for( auto marker: mesh->markerNames() )
