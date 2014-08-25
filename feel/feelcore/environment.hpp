@@ -46,6 +46,11 @@
 #if defined ( FEELPP_HAS_PETSC_H )
 #include <petscsys.h>
 #endif
+
+#if defined(FEELPP_HAS_HARTS)
+#include <hwloc.h>
+#endif
+
 namespace Feel
 {
 namespace detail
@@ -150,7 +155,7 @@ public:
          (directory,(boost::format)))
         (optional
          (filename,*( boost::is_convertible<mpl::_,std::string> ),"logfile")
-         (subdir,*( boost::is_convertible<mpl::_,bool> ),true)
+         (subdir,*( boost::is_convertible<mpl::_,bool> ),S_vm["npdir"].as<bool>())
             ))
         {
             changeRepositoryImpl( directory, filename, subdir );
@@ -310,6 +315,42 @@ public:
      */
     static void setWorldComm( WorldComm& worldcomm ) { S_worldcomm = worldcomm.shared_from_this(); }
 
+#if defined(FEELPP_HAS_HARTS)
+    /**
+     * Init Hwloc topology structure
+     */
+    static void initHwlocTopology();
+
+    /**
+     * Destroy Hwloc topology structure
+     */
+    static void destroyHwlocTopology();
+
+    static hwloc_topology_t getHwlocTopology() { return Environment::S_hwlocTopology; }
+
+    /**
+     * Binds the current process/thread to the specified core.
+     * (Do it early in the application launch, otherwise you might end up accessing data "far away"
+     * from the new bound core, thus degrading performance)
+     */
+    static void bindToCore( unsigned int id );
+
+    /**
+     * Counts the number of cores under the current hwloc object, using a recursive strategy
+     */
+    static int countCoresInSubtree(hwloc_obj_t node);
+
+    /**
+     * Binds the MPI processes in Round Robin on the NUMA nodes 
+     */
+    static void bindNumaRoundRobin(int lazy = false);
+
+    /**
+     * Writes data about processor affinity and last location of the different processes/threads
+     * (last location is not guaranteed to be right, unles you bind the process to a core)
+     */
+    static void writeCPUData(std::string fname = "CPUData.dat");
+#endif
 
 
     //@}
@@ -498,6 +539,9 @@ private:
     static boost::shared_ptr<WorldComm> S_worldcomm;
     static boost::shared_ptr<WorldComm> S_worldcommSeq;
 
+#if defined(FEELPP_HAS_HARTS)
+    static hwloc_topology_t S_hwlocTopology;
+#endif
 };
 } // detail
 

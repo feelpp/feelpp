@@ -85,6 +85,15 @@ public:
             this->get<2>() =  false;
 
         }
+    Dof( size_type gid, int16_type s )
+        :
+        super( )
+        {
+            this->get<0>() =  gid;
+            this->get<1>() =  s;
+            this->get<2>() =  false;
+
+        }
 
     Dof( boost::tuple<size_type, int16_type, bool> const& t )
         :

@@ -3219,7 +3219,7 @@ Mesh<Shape, T, Tag>::Localization::isIn( size_type _id,
     {
         bool isin2=false;
         boost::tie(isin2,x_ref,dmin) = this->isIn(_id,_pt);
-        LOG_IF(WARNING, !isin2) << "Mesh::Localization::isIn<Conformal> : check fail -> maybe x_ref is not correct";
+        LOG_IF(ERROR, !isin2) << "Mesh::Localization::isIn<Conformal> : check fail -> maybe x_ref is not correct";
     }
 
     return boost::make_tuple(isin,x_ref,dmin);
@@ -3269,7 +3269,7 @@ Mesh<Shape, T, Tag>::Localization::searchElement( const node_type & p,
         {
             if( this->doExtrapolation() )
                 {
-                    std::cout << "WARNING EXTRAPOLATION for the point" << p << std::endl;
+                    LOG(WARNING) << "WARNING EXTRAPOLATION for the point" << p;
                     //std::cout << "W";
                     auto const& eltUsedForExtrapolation = mesh->element(ListTri.begin()->first);
                     gmc_inverse_type gic( mesh->gm(), eltUsedForExtrapolation, mesh->worldComm().subWorldCommSeq() );
@@ -3304,7 +3304,7 @@ Mesh<Shape, T, Tag>::Localization::run_analysis( const matrix_node_type & m,
     size_type cv_id=eltHypothetical;
     node_type x_ref;
     double dmin;
-    std::vector<bool> hasFindPts(setPoints.size2(),false);
+    std::vector<bool> hasFindPts(m.size2(),false);
 
     M_resultAnalysis.clear();
     auto currentEltHypothetical = eltHypothetical;

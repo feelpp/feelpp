@@ -30,10 +30,6 @@
 #ifndef __MatrixBlock_H
 #define __MatrixBlock_H 1
 
-
-#include <boost/spirit/home/phoenix.hpp>
-#include <boost/spirit/home/phoenix/core/argument.hpp>
-
 #include <feel/feelalg/matrixsparse.hpp>
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelvf/block.hpp>
@@ -378,7 +374,7 @@ public:
      *
      * \param Mt the matrix transposed
      */
-    void transpose( MatrixSparse<value_type>& Mt ) const;
+    void transpose( MatrixSparse<value_type>& Mt, size_type options ) const;
 
     /**
      * \return \f$ v^T M u \f$

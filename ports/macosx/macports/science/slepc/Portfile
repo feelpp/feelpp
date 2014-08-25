@@ -4,7 +4,7 @@ PortSystem      1.0
 PortGroup       conflicts_build 1.0
 
 name            slepc
-version         3.4.4
+version         3.5.0
 license         LGPL
 categories      math science
 maintainers     mmoll
@@ -18,7 +18,7 @@ long_description    SLEPc is a software library for the solution of large \
 notes           "Add the following lines to your .bash_profile if you plan to\
                 use the PETSC/SLEPC makefile rules in $prefix/lib/petsc/conf:\n\
                 \texport PETSC_DIR=${prefix}/lib/petsc\n\
-                \texport SLEPC_DIR=${prefix}/lib/petsc"
+                \texport SLEPC_DIR=${prefix}/lib/slepc"
 
 platforms       darwin
 homepage        http://www.grycap.upv.es/slepc
@@ -26,28 +26,40 @@ master_sites    http://www.grycap.upv.es/slepc/download/distrib
 distname        ${name}-${version}
 universal_variant   no
 
-checksums           md5     329179c5139027c7b293dd5ab0bc112c \
-                    sha1    d7c09f3e2bb8910758e488e84c16a6eb266cf379 \
-                    rmd160  0c8529cd7e9f62055672d02ad1760793a010f352
+checksums           md5     53cf4316bd9fe608dbfbb77ddd197c20 \
+                    sha1    c316e668e404396e8944c9bcea804f50e6f82c80 \
+                    rmd160  be6e2eb27d40227124c9cc2a2c3f9b454c2bafff
 
 depends_lib-append  port:petsc
 
-patchfiles     slepc.patch
-patch.dir      ${worksrcpath}
+#patchfiles     slepc.patch
+#patch.dir      ${worksrcpath}
 
 
 #configure.args        --prefix=${prefix}/lib/petsc
-configure.pre_args     --prefix=${prefix}/lib/petsc
+#configure.pre_args     --prefix=${prefix}/lib/petsc
+configure.pre_args     --prefix=${prefix}/lib/slepc
+configure.args      --prefix=${prefix}/lib/slepc
+
+configure.env-append \
+                    PETSC_DIR=${prefix}/lib/petsc
+#build.env-append    PETSC_DIR=${prefix}/lib/petsc
+#destroot.env-append PETSC_DIR=${prefix}/lib/petsc
+#destroot.cmd-append SLEPC_DESTDIR=${destroot}${prefix}/lib/slepc
+
 
 #build.env-append      PETSC_DIR=${prefix}/lib/petsc PETSC_ARCH=arch-installed-petsc SLEPC_DIR=${worksrcpath}
-build.pre_args         SLEPC_DIR=${worksrcpath} PETSC_DIR=${prefix}/lib/petsc PETSC_ARCH=arch-installed-petsc
+#build.pre_args         SLEPC_DIR=${worksrcpath} PETSC_DIR=${prefix}/lib/petsc PETSC_ARCH=arch-installed-petsc
+build.pre_args         SLEPC_DIR=${worksrcpath} PETSC_DIR=${prefix}/lib/petsc
 build.target           build
 
 
 #destroot.cmd      make SLEPC_DIR=${worksrcpath} PETSC_DIR=${prefix}/lib/petsc PETSC_ARCH=arch-installed-petsc
-destroot.env-append   SLEPC_DIR=${worksrcpath} PETSC_DIR=${prefix}/lib/petsc PETSC_ARCH=arch-installed-petsc
+#destroot.env-append   SLEPC_DIR=${worksrcpath} PETSC_DIR=${prefix}/lib/petsc PETSC_ARCH=arch-installed-petsc
+destroot.env-append   SLEPC_DIR=${worksrcpath} PETSC_DIR=${prefix}/lib/petsc
 #destroot.cmd-append   SLEPC_DESTDIR=${destroot}${prefix}/lib/petsc
 destroot.destdir SLEPC_DESTDIR=${destroot}${prefix}/lib/petsc
+destroot.destdir SLEPC_DESTDIR=${destroot}${prefix}/lib/slepc
 
 # we remove the dynamic lib because there is a strange bug with this one.
 # with otool -L libslepc.dylib, we see that the temporary workdir of macoport is present
@@ -87,3 +99,9 @@ livecheck.url   http://www.grycap.upv.es/slepc/download/download.htm
 livecheck.regex slepc-(\[0-9.\]+(-p\[0-9\]+))\\.tar.gz
 
 use_parallel_build  no
+
+# fix install name
+post-destroot {
+    system "install_name_tool -id ${prefix}/lib/slepc/lib/libslepc.dylib ${destroot}${prefix}/lib/slepc/lib/libslepc.dylib"
+    reinplace -W ${destroot}${prefix}/lib/slepc/conf "s,${destroot},,g" slepc_variables slepc_rules
+}

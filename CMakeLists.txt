@@ -26,6 +26,14 @@ if ( ${CMAKE_VERSION} VERSION_GREATER 2.8.12 )
   message(STATUS "use new policy CMP0022" )
   cmake_policy(SET CMP0022 NEW)
 endif()
+if ( ${CMAKE_MAJOR_VERSION} EQUAL 3 )
+	message(STATUS "use NEW policy CMP0038" )
+	cmake_policy(SET CMP0038 NEW)
+	message(STATUS "use NEW policy CMP0042" )
+	cmake_policy(SET CMP0042 NEW)
+	#message(STATUS "use NEW policy CMP0046" )
+	#cmake_policy(SET CMP0046 NEW)
+endif()
 #
 # Bug in cmake that delete destroy library path if LIBRARY_PATH is not empty
 # Ugly hack that disable the environement variable
@@ -74,6 +82,9 @@ set(FEELPP_DEFAULT ON CACHE INTERNAL "Default value for enabled-by-default optio
 
 OPTION(FEELPP_ENABLE_VERBOSE_CMAKE "enable Feel++ verbose cmake" OFF)
 OPTION(FEELPP_ENABLE_BUILD_STATIC "Enable Feel++ library statically built" OFF )
+if ( NOT FEELPP_ENABLE_BUILD_STATIC )
+  set(BUILD_SHARED_LIBS ON)
+endif()
 OPTION(FEELPP_BENCHMARK_FLAGS "enable benchmarks flags" OFF)
 OPTION(FEELPP_ENABLE_DOCUMENTATION "enable Feel++ documentation (aka examples)" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_BENCHMARKS "enable Feel++ benchmarks" ${FEELPP_DEFAULT})
@@ -311,6 +322,9 @@ endif()
 #
 # Feel
 #
+if(NOT FEELPP_ENABLE_BUILD_STATIC)
+	set(CMAKE_C++_CREATE_SHARED_LIBRARY 1)
+endif()
 ADD_SUBDIRECTORY ( feel )
 
 IF( FEELPP_MINIMAL_CONFIGURATION )
