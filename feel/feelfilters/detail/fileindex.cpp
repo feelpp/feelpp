@@ -24,6 +24,14 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelfilters/detail/fileindex.hpp>
 
+/* handle cases where we are not using the 2.2 MPI Standard */
+#if !defined(MPI_INT32_T) && defined(FEELPP_MPI_INT32)
+    #define MPI_INT32_T FEELPP_MPI_INT32
+#endif
+#if !defined(MPI_INT64_T) && defined(FEELPP_MPI_INT64)
+    #define MPI_INT64_T FEELPP_MPI_INT64
+#endif
+
 namespace Feel { namespace detail {
 
 void FileIndex::read( MPI_File fh )

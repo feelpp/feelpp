@@ -44,8 +44,8 @@ int main(int argc, char**argv )
     auto Vh = Pch<2>( mesh );
     auto u = Vh->element("u");
     auto mu = doption(_name="mu");
-    auto f = expr( soption(_name="functions.f") );
-    auto g = expr( soption(_name="functions.g") );
+    auto f = expr( soption(_name="functions.f"), "f" );
+    auto g = expr( soption(_name="functions.g"), "g" );
     auto v = Vh->element( g, "g" );
     //# endmarker2 #
 

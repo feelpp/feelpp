@@ -374,7 +374,11 @@ static PetscErrorCode PCFieldSplit_GetKSPInnerSchur( PC pc, KSP &ksp )
     if ( kspInner == NULL || kspInner==kspA )
     {
         ierr = KSPCreate(PetscObjectComm((PetscObject)pc), &ksp);CHKERRQ(ierr);
+#if PETSC_VERSION_LESS_THAN(3,5,0)
         ierr = KSPSetOperators(ksp,jac->mat[0],jac->pmat[0],pc->flag);CHKERRQ(ierr);
+#else
+        ierr = KSPSetOperators(ksp,jac->mat[0],jac->pmat[0]/*,pc->flag*/);CHKERRQ(ierr);
+#endif
         ierr = MatSchurComplementSetKSP(jac->schur,ksp);CHKERRQ(ierr);CHKERRQ(ierr);
     }
     else
@@ -395,7 +399,11 @@ static PetscErrorCode PCFieldSplit_GetKSPUpperSchur( PC pc, KSP &ksp )
     if ( jac->kspupper == NULL || jac->kspupper == kspA )
     {
         ierr = KSPCreate(PetscObjectComm((PetscObject)pc), &ksp);CHKERRQ(ierr);
+#if PETSC_VERSION_LESS_THAN(3,5,0)
         ierr = KSPSetOperators(ksp,jac->mat[0],jac->pmat[0],pc->flag);CHKERRQ(ierr);
+#else
+        ierr = KSPSetOperators(ksp,jac->mat[0],jac->pmat[0]/*,pc->flag*/);CHKERRQ(ierr);
+#endif
         // need in PCApply_FieldSplit_Schur
         ierr = VecDuplicate(jac->head->x, &jac->head->z);CHKERRQ(ierr);
 
@@ -427,7 +435,11 @@ static PetscErrorCode PCFieldSplit_UpdateMatPrecondSchurComplement( PC pc, Mat s
     PetscErrorCode    ierr;
 
     //jac->schur_user = schurMatPrecond;
+#if PETSC_VERSION_LESS_THAN(3,5,0)
     ierr = KSPSetOperators(jac->kspschur,jac->schur,schurMatPrecond,DIFFERENT_NONZERO_PATTERN);CHKERRQ(ierr);
+#else
+    ierr = KSPSetOperators(jac->kspschur,jac->schur,schurMatPrecond/*,DIFFERENT_NONZERO_PATTERN*/);CHKERRQ(ierr);
+#endif
 
     PetscFunctionReturn(0);
 }
@@ -543,7 +555,12 @@ void PreconditionerPetsc<T>::init ()
 
     //check( PCSetOperators( M_pc,M_mat,M_mat, PetscGetMatStructureEnum(MatrixStructure::SAME_NONZERO_PATTERN) ) );
     //check( PCSetOperators( M_pc,M_mat,M_mat, PetscGetMatStructureEnum(MatrixStructure::DIFFERENT_NONZERO_PATTERN) ) );
+#if PETSC_VERSION_LESS_THAN(3,5,0)
     check( PCSetOperators( M_pc,M_mat,M_mat, PetscGetMatStructureEnum(this->M_prec_matrix_structure) ) );
+#else
+    check( PCSetReusePreconditioner(M_pc,(this->M_prec_matrix_structure == Feel::SAME_PRECONDITIONER)? PETSC_TRUE : PETSC_FALSE ) );
+    check( PCSetOperators( M_pc,M_mat,M_mat ) );
+#endif
 
     // Set the PCType.  Note: this used to be done *before* the call to
     // PCSetOperators(), and only when !M_is_initialized, but
@@ -685,11 +702,12 @@ SetPCType( PC& pc, const PreconditionerType & preconditioner_type, const MatSolv
 
     case LU_PRECOND:
     {
-
         // In serial, just set the LU preconditioner type
         //if (Feel::n_processors() == 1)
         // do be changed in parallel
-        if ( worldComm.globalSize() == 1 || matSolverPackage_type == MATSOLVER_MUMPS || matSolverPackage_type == MATSOLVER_PASTIX )
+        if ( worldComm.globalSize() == 1 ||
+             matSolverPackage_type == MATSOLVER_MUMPS ||
+             matSolverPackage_type == MATSOLVER_PASTIX )
         {
             ierr = PCSetType ( pc, ( char* ) PCLU );
             CHKERRABORT( worldComm.globalComm(),ierr );
@@ -1625,7 +1643,11 @@ ConfigurePCFieldSplit::runConfigurePCFieldSplit( PC& pc, PreconditionerPetsc<dou
 
             Mat schur = NULL, A, B, C, D;
             this->check( PetscImpl::PCFieldSplit_GetMatSchurComplement( pc, schur ) );
+#if PETSC_VERSION_LESS_THAN(3,5,0)
             this->check( MatSchurComplementGetSubmatrices( schur,&A,NULL,&B,&C,&D ) );
+#else
+            this->check( MatSchurComplementGetSubMatrices( schur,&A,NULL,&B,&C,&D ) );
+#endif
 
             Mat Bcopy;
             this->check( MatDuplicate(B,MAT_COPY_VALUES,&Bcopy) );
@@ -1665,7 +1687,11 @@ ConfigurePCFieldSplit::runConfigurePCFieldSplit( PC& pc, PreconditionerPetsc<dou
 #endif
         }
 #endif
+#if PETSC_VERSION_LESS_THAN(3,5,0)
         this->check( PCFieldSplitSchurPrecondition( pc, theSchurPrecond, schurMatPrecond/*NULL*/ ) );
+#else
+        this->check( PCFieldSplitSetSchurPre( pc, theSchurPrecond, schurMatPrecond/*NULL*/ ) );
+#endif
         // need to call MatDestroy because PCFieldSplitSchurPrecondition call PetscObjectReference ( which increase the object counter)
         // if we not call this  MatDestroy, we have a memory leak
         this->check( MatDestroy( &schurMatPrecond ) );
