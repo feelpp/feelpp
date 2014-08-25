@@ -477,8 +477,14 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
 #else
     //std::cout << "sles: " << this->precMatrixStructure() << "\n";
     // Set operators. The input matrix works as the preconditioning matrix
+#if PETSC_VERSION_LESS_THAN(3,5,0)
     ierr = KSPSetOperators( M_ksp, matrix->mat(), precond->mat(),
                             PetscGetMatStructureEnum(this->precMatrixStructure()) );
+#else
+    ierr = KSPSetReusePreconditioner( M_ksp, (this->precMatrixStructure() == Feel::SAME_PRECONDITIONER)? PETSC_TRUE : PETSC_FALSE );
+    CHKERRABORT( this->worldComm().globalComm(),ierr );
+    ierr = KSPSetOperators( M_ksp, matrix->mat(), precond->mat() );
+#endif
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
     // Set the tolerances for the iterative solver.  Use the user-supplied
@@ -498,7 +504,11 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
     // instead of || B*b ||. In the case of right preconditioner or if
     // KSPSetNormType(ksp,KSP_NORM_UNPRECONDIITONED) is used there is no B in
     // the above formula. UIRNorm is short for Use Initial Residual Norm.
+#if PETSC_VERSION_LESS_THAN(3,5,0)
     KSPDefaultConvergedSetUIRNorm( M_ksp );
+#else
+    KSPConvergedDefaultSetUIRNorm( M_ksp );
+#endif
 
     // Solve the linear system
     if ( transpose )

@@ -37,8 +37,10 @@ int main(int argc, char**argv )
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
 
+    tic();
     auto mesh = loadMesh( new Mesh<Simplex<2>> );
     CHECK( mesh->hasMarkers( {"wall","inlet"} ) ) << "Mesh markers wall or inlet are not set properly in "  << soption("gmsh.filename");
+    toc("mesh");tic();
     auto Vh = THch<1>( mesh );
     auto U = Vh->element();
     auto V = Vh->element();
@@ -46,6 +48,14 @@ int main(int argc, char**argv )
     auto v = V.element<0>();
     auto p = U.element<1>();
     auto q = V.element<1>();
+    if ( Environment::isMasterRank() )
+    {
+        std::cout << " - number of global dof : " << Vh->nDof() << "\n";
+        std::cout << " - number of local dof : " << Vh->nLocalDof() << "\n";
+        std::cout << " - number of velocity dof : " << u.size() << "\n";
+        std::cout << " - number of pressure dof : " << p.size() << "\n";
+    }
+    toc("space");tic();
 
     auto deft = gradt( u );
     auto def = grad( v );
@@ -61,24 +71,34 @@ int main(int argc, char**argv )
     a +=integrate( _range=elements( mesh ), _expr=-div( v )*idt( p ) - divt( u )*id( q ) );
     auto e = exporter( _mesh=mesh );
     auto w = Vh->functionSpace<0>()->element( curlv(u), "w" );
+
+    toc("bdf, forms,...");
+
     for ( mybdf->start();  mybdf->isFinished() == false; mybdf->next(U) )
     {
+        if ( Environment::isMasterRank() )
+        {
+            std::cout << "------------------------------------------------------------\n";
+            std::cout << "Time " << mybdf->time() << "s\n";
+        }
+        tic();
+        tic();
         auto bdf_poly = mybdf->polyDeriv();
         auto rhsu =  bdf_poly.element<0>();
         auto extrap = mybdf->poly();
         auto extrapu = extrap.element<0>();
         ft = integrate( _range=elements(mesh), _expr=(trans(idv(rhsu))*id(u) ) );
-
+        toc("update rhs");tic();
 
         at = a;
         at += integrate( _range=elements( mesh ), _expr= trans(gradt(u)*idv(extrapu))*id(v) );
         at+=on(_range=markedfaces(mesh,"wall"), _rhs=ft, _element=u,
-              _expr=zero<2>() );
+               _expr=zero<2>() );
         at+=on(_range=markedfaces(mesh,"inlet"), _rhs=ft, _element=u,
                _expr=-expr( soption(_name="functions.g")) *N() );
-
+        toc("update lhs");tic();
         at.solve(_rhs=ft,_solution=U);
-
+        toc("solve");tic();
         w.on( _range=elements(mesh), _expr=curlv(u) );
         e->step(mybdf->time())->add( "u", u );
         e->step(mybdf->time())->add( "w", w );
@@ -86,6 +106,8 @@ int main(int argc, char**argv )
         auto mean_p = mean( _range=elements(mesh), _expr=idv(p) )( 0, 0 );
         e->step(mybdf->time())->addScalar( "mean_p", mean_p );
         e->save();
+        toc("export");
+        toc("time step");
 
 
     }

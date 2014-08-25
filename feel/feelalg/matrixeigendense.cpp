@@ -139,7 +139,7 @@ MatrixEigenDense<T>::close() const
 
 template<typename T>
 void
-MatrixEigenDense<T>::transpose( MatrixSparse<value_type>& Mt ) const
+MatrixEigenDense<T>::transpose( MatrixSparse<value_type>& Mt, size_type options ) const
 {
     FEELPP_ASSERT( 0 ).warn( "not implemented yet" );
 }

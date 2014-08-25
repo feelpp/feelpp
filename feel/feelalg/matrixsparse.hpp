@@ -76,7 +76,6 @@ namespace ublas = boost::numeric::ublas;
 template <typename T> class MatrixSparse;
 template <typename T> inline std::ostream& operator << ( std::ostream& os, const MatrixSparse<T>& m );
 
-
 /**
  * Generic sparse matrix. This class contains
  * pure virtual members that must be overloaded
@@ -523,15 +522,15 @@ public:
      *
      * \param Mt the matrix transposed
      */
-    virtual void transpose( MatrixSparse<value_type>& Mt ) const = 0;
+    virtual void transpose( MatrixSparse<value_type>& Mt, size_type options = MATRIX_TRANSPOSE_ASSEMBLED ) const = 0;
 
     /**
      * \return the transpose of the matrix
      */
-    boost::shared_ptr<MatrixSparse<T> > transpose() const
+    boost::shared_ptr<MatrixSparse<T> > transpose( size_type options = MATRIX_TRANSPOSE_ASSEMBLED ) const
     {
         boost::shared_ptr<MatrixSparse<T> > Mt;
-        transpose( *Mt );
+        transpose( *Mt, options );
         return Mt;
     }
 
@@ -541,9 +540,9 @@ public:
      * \param M the matrix to transpose
      * \param Mt the matrix transposed
      */
-    void transpose( boost::shared_ptr<MatrixSparse<value_type> >& Mt ) const
+    void transpose( boost::shared_ptr<MatrixSparse<value_type> >& Mt, size_type options = MATRIX_TRANSPOSE_ASSEMBLED ) const
     {
-        this->transpose( *Mt );
+        this->transpose( *Mt, options );
     }
 
     /**

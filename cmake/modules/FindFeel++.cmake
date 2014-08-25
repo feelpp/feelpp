@@ -64,7 +64,7 @@ INCLUDE(CheckSymbolExists)
 INCLUDE(CheckCXXSourceCompiles)
 INCLUDE(CheckLibraryExists)
 
-OPTION(FEELPP_ENABLE_SYSTEM_EIGEN3 "enable system eigen3 support" ON)
+OPTION(FEELPP_ENABLE_SYSTEM_EIGEN3 "enable system eigen3 support" OFF)
 
 
 
@@ -116,6 +116,9 @@ IF ( FEELPP_ENABLE_INSTANTIATION_MODE )
 ENDIF()
 SET(FEELPP_MESH_MAX_ORDER "5" CACHE STRING "maximum geometrical order in templates to instantiate" )
 
+# enable host specific
+include(feelpp.host)
+
 if ( FEELPP_ENABLE_TBB )
   FIND_PACKAGE(TBB)
   IF ( TBB_FOUND )
@@ -125,7 +128,21 @@ if ( FEELPP_ENABLE_TBB )
   ENDIF (TBB_FOUND )
 endif()
 
-FIND_PACKAGE(OpenMP)
+# only activate OpenMP for gcc
+# (clang support should be ok by 3.5)
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    OPTION( FEELPP_ENABLE_OPENMP "Enable OpenMP" OFF )
+    if ( FEELPP_ENABLE_OPENMP )
+        FIND_PACKAGE(OpenMP)
+
+        if(OPENMP_FOUND)
+            set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}" )
+            set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}" )
+            SET( FEELPP_HAS_OPENMP 1 )
+            SET( FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} OpenMP" )
+        endif()
+    endif()
+endif()
 
 # on APPLE enfore the use of macports openmpi version
 if ( APPLE )
@@ -158,7 +175,7 @@ IF ( MPI_FOUND )
   set(CMAKE_REQUIRED_INCLUDES_save ${CMAKE_REQUIRED_INCLUDES})
   set(CMAKE_REQUIRED_INCLUDES ${MPI_INCLUDE_PATH})
   CHECK_CXX_SOURCE_COMPILES(
-      "          
+      "
       #include <mpi.h>
 
       int main(int argc, char** argv)
@@ -169,8 +186,39 @@ IF ( MPI_FOUND )
       }
       "
       MPIIO_DETECTED)
+
+  # Check if we have the types from the 2.2 standard
+  # needed for MPI IO
+  CHECK_CXX_SOURCE_COMPILES(
+      "
+      #include <mpi.h>
+
+      int main(int argc, char** argv)
+      {
+      MPI_INT32_T i32;
+      MPI_INT64_T i64;
+      }
+      "
+      MPIIO_HAS_STD_22_TYPES)
   set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES_save})
   set(CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES_save})
+
+  # should be comptible with 2.2 standard
+  IF (NOT MPIIO_HAS_STD_22_TYPES)
+      include(CheckTypeSize)
+      check_type_size("int" SIZEOF_INT BUILTIN_TYPES_ONLY)
+      IF(SIZEOF_INT STREQUAL 4)
+          SET(FEELPP_MPI_INT32 MPI_INT)
+      ELSE()
+          MESSAGE(FATAL_ERROR "MPIIO: Cannot find a compatible int32 type")
+      ENDIF()
+      check_type_size("long" SIZEOF_LONG_LONG BUILTIN_TYPES_ONLY)
+      IF(SIZEOF_LONG_LONG STREQUAL 8)
+          SET(FEELPP_MPI_INT64 MPI_LONG_LONG)
+      ELSE()
+          MESSAGE(FATAL_ERROR "MPIIO: Cannot find a compatible int64 type")
+      ENDIF()
+  ENDIF()
 
   IF (MPIIO_DETECTED)
       MESSAGE(STATUS "MPIIO detected and enabled.")
@@ -181,7 +229,8 @@ IF ( MPI_FOUND )
   ENDIF()
 ENDIF()
 
-
+CHECK_FUNCTION_EXISTS(fmemopen FEELPP_HAS_STDIO_FMEMOPEN)
+MESSAGE(STATUS "FMemOpen: ${FEELPP_HAS_STDIO_FMEMOPEN}")
 
 
 Check_Include_File_CXX(dlfcn.h FEELPP_HAS_DLFCN_H)
@@ -204,26 +253,39 @@ if ( GMP_FOUND )
   message(STATUS "GMP: ${GMP_LIBRARIES}" )
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Gmp" )
 endif()
-#
-# Blas and Lapack
-#
-if (APPLE)
-  FIND_LIBRARY(ATLAS_LIBRARY
-    NAMES
-    atlas
-    PATHS
-    /opt/local/lib/lib
-    NO_DEFAULT_PATH
-    )
-  message(STATUS "ATLAS: ${ATLAS_LIBRARY}" )
-  IF( ATLAS_LIBRARY )
-    SET(FEELPP_LIBRARIES ${ATLAS_LIBRARY} ${FEELPP_LIBRARIES})
-  ENDIF()
-  FIND_PACKAGE(LAPACK )
-else (APPLE)
-  FIND_PACKAGE(LAPACK)
-endif (APPLE)
-SET(FEELPP_LIBRARIES  ${LAPACK_LIBRARIES} ${FEELPP_LIBRARIES})
+find_package(MKL)
+if ( MKL_FOUND )
+
+  message(STATUS "MKL Includes: ${MKL_INCLUDE_DIRS}")
+  message(STATUS "MKL Libraries: ${MKL_LIBRARIES}")
+  set(FEELPP_HAS_MKL 1)
+  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Intel(MKL)" )
+  include_directories( ${MKL_INCLUDE_DIRS} )
+  SET(FEELPP_LIBRARIES ${MKL_LIBRARIES} ${FEELPP_LIBRARIES})
+  #  enable MKL wherever possible for eigen3
+  add_definitions(-DEIGEN_USE_MKL_ALL=1)
+else( MKL_FOUND )
+  #
+  # Blas and Lapack
+  #
+  if (APPLE)
+    # FIND_LIBRARY(ATLAS_LIBRARY
+    #   NAMES
+    #   atlas
+    #   PATHS
+    #   /opt/local/lib/lib
+    #   NO_DEFAULT_PATH
+    #   )
+    # message(STATUS "ATLAS: ${ATLAS_LIBRARY}" )
+    # IF( ATLAS_LIBRARY )
+    #   SET(FEELPP_LIBRARIES ${ATLAS_LIBRARY} ${FEELPP_LIBRARIES})
+    # ENDIF()
+    FIND_PACKAGE(LAPACK)
+  else (APPLE)
+    FIND_PACKAGE(LAPACK)
+  endif (APPLE)
+  SET(FEELPP_LIBRARIES  ${LAPACK_LIBRARIES} ${FEELPP_LIBRARIES})
+endif(MKL_FOUND)
 
 # HDF5
 FIND_PACKAGE(HDF5)
@@ -304,14 +366,24 @@ INCLUDE_DIRECTORIES(BEFORE contrib/)
 #ENDIF()
 
 add_definitions(-DHAVE_LIBDL)
-# cln and ginac
+
 if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/contrib )
+
+  #
+  # cln and ginac
+  #
   add_definitions(-DIN_GINAC -DHAVE_LIBDL)
   include_directories(${FEELPP_BUILD_DIR}/contrib/cln/include ${FEELPP_SOURCE_DIR}/contrib/ginac/ ${FEELPP_BUILD_DIR}/contrib/ginac/ ${FEELPP_SOURCE_DIR}/contrib/ginac/ginac ${FEELPP_BUILD_DIR}/contrib/ginac/ginac )
   SET(FEELPP_LIBRARIES feelpp_ginac ${CLN_LIBRARIES} ${FEELPP_LIBRARIES} ${CMAKE_DL_LIBS} )
   set(DL_LIBS ${CMAKE_DL_LIBS})
   add_subdirectory(contrib/ginac)
+
 endif()
+
+#
+# nlopt
+#
+include(feelpp.module.nlopt)
 
 #
 # HARTS
@@ -502,16 +574,10 @@ IF( SCOTCH_FOUND )
   SET(FEELPP_LIBRARIES ${SCOTCH_LIBRARIES} ${FEELPP_LIBRARIES})
 ENDIF()
 
-FIND_LIBRARY(ML_LIBRARY
-  NAMES
-  ml
-  PATHS
-  $ENV{PETSC_DIR}/lib
-  $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
-  /opt/local/lib/petsc/lib
-  )
+find_package(ML)
 message(STATUS "ML: ${ML_LIBRARY}" )
-IF ( ML_LIBRARY )
+IF ( ML_FOUND )
+  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} PETSc" )
   SET(FEELPP_LIBRARIES ${ML_LIBRARY} ${FEELPP_LIBRARIES})
 ENDIF()
 
@@ -639,6 +705,17 @@ if ( PETSC_FOUND )
 
 endif( PETSC_FOUND )
 
+# ML was already searched for, if it was not found then try again to look for it
+# in PETSC_DIR
+if ( NOT ML_FOUND )
+  find_package(ML)
+  message(STATUS "ML(PETSc): ${ML_LIBRARY}" )
+  IF ( ML_LIBRARY )
+    SET(FEELPP_LIBRARIES ${ML_LIBRARY} ${FEELPP_LIBRARIES})
+    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} ML" )
+  ENDIF()
+endif()
+
 #
 # parpack
 #
@@ -701,7 +778,7 @@ if ( VTK_FOUND )
   if ( NOT FEELPP_ENABLE_OPENGL )
     SET(VTK_LIBRARIES "-lvtkRendering -lvtkGraphics -lvtkImaging  -lvtkFiltering -lvtkCommon -lvtksys" )
   endif()
-  MESSAGE(STATUS "Use VTK_LIBRARIES ${VTK_LIBRARIES}")
+  MESSAGE(STATUS "Use VTK_LIBRARIES")# ${VTK_LIBRARIES}")
   INCLUDE_DIRECTORIES(${VTK_INCLUDE_DIRS})
   MARK_AS_ADVANCED( VTK_DIR )
   SET(FEELPP_LIBRARIES ${VTK_LIBRARIES} ${FEELPP_LIBRARIES})
@@ -778,6 +855,8 @@ if ( GMSH_FOUND )
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Gmsh" )
 endif()
 
+# we include this directory : add some missing headers from Gmsh
+INCLUDE_DIRECTORIES( ${CMAKE_SOURCE_DIR}/contrib/gmsh )
 
 #
 # if Feel++ has been installed on the system
@@ -790,6 +869,7 @@ if ( NOT EXISTS ${CMAKE_SOURCE_DIR}/feel OR NOT EXISTS ${CMAKE_SOURCE_DIR}/contr
   #  FIND_LIBRARY(FEELPP_GFLAGS_LIBRARY feelpp_gflags PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
   #  FIND_LIBRARY(FEELPP_GLOG_LIBRARY feelpp_glog PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
   #  FIND_LIBRARY(FEELPP_CLN_LIBRARY feelpp_cln PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
+  FIND_LIBRARY(FEELPP_NLOPT_LIBRARY feelpp_nlopt PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
   FIND_LIBRARY(FEELPP_GINAC_LIBRARY feelpp_ginac PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
   FIND_LIBRARY(FEELPP_LIBRARY feelpp PATHS $ENV{FEELPP_DIR}/lib NO_DEFAULT_PATH)
   FIND_LIBRARY(FEELPP_LIBRARY feelpp )
@@ -813,14 +893,13 @@ if ( NOT EXISTS ${CMAKE_SOURCE_DIR}/feel OR NOT EXISTS ${CMAKE_SOURCE_DIR}/contr
     FEELPP_INCLUDE_DIR
     FEELPP_LIBRARY
     )
-  SET(FEELPP_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_GINAC_LIBRARY}  ${FEELPP_LIBRARIES})
+  SET(FEELPP_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_GINAC_LIBRARY} ${FEELPP_NLOPT_LIBRARY}  ${FEELPP_LIBRARIES})
 else()
   INCLUDE_DIRECTORIES (
     ${FEELPP_BUILD_DIR}/
     ${FEELPP_SOURCE_DIR}/
     ${FEELPP_SOURCE_DIR}/contrib/gmm/include
     )
-  SET(FEELPP_LIBRARIES feelpp  ${FEELPP_LIBRARIES})
 endif()
 
 

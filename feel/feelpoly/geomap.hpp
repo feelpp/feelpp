@@ -705,6 +705,7 @@ class Context
         M_pos_in_elem_id_2( invalid_uint16_type_value ),  //__e.pos_second() ),
         M_face_id( invalid_uint16_type_value ),
         M_h( __e.h() ),
+        M_h_min( __e.hMin() ),
         M_h_face( 0 ),
         M_meas( __e.measure() ),
         M_measface( 0 ),
@@ -773,6 +774,7 @@ Context( gm_ptrtype __gm,
     M_pos_in_elem_id_2( invalid_uint16_type_value ),  //__e.pos_second() ),
     M_face_id( __f ),
     M_h( __e.h() ),
+    M_h_min( __e.hMin() ),
     M_h_face( 0 ),
     M_meas( __e.measure() ),
     M_measface( __e.faceMeasure( __f ) ),
@@ -835,6 +837,7 @@ Context( gmc_ptrtype& p )
     M_pos_in_elem_id_2( invalid_uint16_type_value ),  //M_element.pos_second() ),
     M_face_id( invalid_uint16_type_value ),
     M_h( p->M_h ),
+    M_h_min( p->M_h_min ),
     M_h_face( p->M_h_face ),
     M_meas( p->M_meas ),
     M_measface( p->M_measface ),
@@ -895,6 +898,7 @@ void update( element_type const& __e, uint16_type __f )
     M_e_marker2 = __e.marker2();
     M_e_marker3 = __e.marker3();
     M_h = __e.h();
+    M_h_min = __e.hMin();
     M_meas = __e.measure();
     M_measface = __e.faceMeasure( __f );
     M_xrefq = M_pc->nodes();
@@ -945,6 +949,7 @@ void update( element_type const& __e, uint16_type __f, permutation_type __perm, 
     M_e_marker2 = __e.marker2();
     M_e_marker3 = __e.marker3();
     M_h = __e.h();
+    M_h_min = __e.hMin();
     M_meas = __e.measure();
     M_measface = __e.faceMeasure( __f );
     M_xrefq = M_pc->nodes();
@@ -1032,6 +1037,7 @@ void update( element_type const& __e )
     M_e_marker3 = __e.marker3();
     M_face_id = invalid_uint16_type_value;
     M_h = __e.h();
+    M_h_min = __e.hMin();
     M_meas = __e.measure();
     M_xrefq = M_pc->nodes();
 
@@ -1569,16 +1575,19 @@ value_type radiusEstimate() const
 }
 
 /**
- *
- *
- *
  * @return the max length of the edges of the element
  */
 value_type h() const
 {
     return M_h;
 }
-
+/**
+ * @return the min length of the edges of the element
+ */
+value_type hMin() const
+{
+    return M_h_min;
+}
 /**
  * Get max length of the edge of the face of the element
  *
@@ -2017,6 +2026,7 @@ uint16_type M_pos_in_elem_id_2;
 uint16_type M_face_id;
 
 value_type M_h;
+value_type M_h_min;
 value_type M_h_face;
 value_type M_meas;
 value_type M_measface;

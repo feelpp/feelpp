@@ -512,6 +512,19 @@ public:
 
         return __max;
     }
+    double hMin() const
+    {
+        // FIXME: should be computed once for all in constructor
+        double __min = 0.0;
+
+        for ( int __e = 0; __e < numEdges; ++ __e )
+        {
+            double __len = ublas::norm_2( edgeVertex( __e, 1 ) - edgeVertex( __e, 0 ) );
+            __min = ( __min > __len )?__len:__min;
+        }
+
+        return __min;
+    }
     double h( int e ) const
     {
         return ublas::norm_2( edgeVertex( e, 1 ) - edgeVertex( e, 0 ) );

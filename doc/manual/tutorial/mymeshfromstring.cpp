@@ -26,36 +26,24 @@
 	 */
 //! [all]
 #include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelfilters/geo.hpp>
+#include <feel/feeldiscr/pdh.hpp>
 #include <feel/feelfilters/exporter.hpp>
 using namespace Feel;
-
-gmsh_ptrtype myGeo(std::ostringstream& ostr, std::ostringstream& nameStr, double hsize)
-{
-	gmsh_ptrtype gmshp( new Gmsh );
-
-	gmshp->setOrder( GMSH_ORDER_ONE );
-	gmshp->setRecombine( false );
-	gmshp->setCharacteristicLength( hsize );
-	ostr << gmshp->preamble() << "\n";
-
-	gmshp->setPrefix( nameStr.str() );
-	gmshp->setDescription( ostr.str() );
-	return gmshp;
-}
 
 int main( int argc, char** argv )
 {
 	// initialize Feel++ Environment
 	Environment env( _argc=argc, _argv=argv,
-			_about=about( _name="mymeshFromString" ,
-				_author="Feel++ Consortium",
-				_email="feelpp-devel@feelpp.org" ) );
-	
+                     _about=about( _name="mymeshFromString" ,
+                                   _author="Feel++ Consortium",
+                                   _email="feelpp-devel@feelpp.org" ) );
+
 	//! [create]
 	// create a mesh with GMSH using Feel++ geometry tool
 	std::ostringstream str;
 	str
-		<< "h = 0.1;\n" 
+		<< "h = 0.1;\n"
 		<< "Point(1) = {0,0,0,h};\n"
 		<< "Point(2) = {1,0,0,h};\n"
 		<< "Point(3) = {0,1,0,h};\n"
@@ -73,18 +61,16 @@ int main( int argc, char** argv )
 		<< "Physical Line(4) = {4};\n"
 		<< "Physical Surface(\"Mat1\") = {6};\n";
 
-	std::ostringstream Namestr; Namestr << "aMesh";
-	auto mesh2 = createGMSHMesh(_mesh=new  Mesh<Simplex<2>>, 
-			_desc = myGeo(str,Namestr, 0.1));
+	auto mesh2 = createGMSHMesh(_mesh=new  Mesh<Simplex<2>>,
+                                _desc = geo(_filename="aMesh",_desc=str.str()));
 	//! [create]
 
-#if 0
 	//! [export]
 	// export results for post processing
 	auto e = exporter( _mesh=mesh2 );
-	e->addRegions();
+    e->add("pid", regionProcess(Pdh<0>(mesh2)) );
 	e->save();
 	//! [export]
-#endif
+
 }   // main
 //! [all]
