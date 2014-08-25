@@ -110,6 +110,18 @@ public:
     }
     ~BackendPetsc();
     void clear();
+
+    sparse_matrix_ptrtype 
+    newMatrix() 
+    {
+        sparse_matrix_ptrtype mat;
+        if ( this->comm().globalSize()>1 )
+            mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type( this->comm() ) );
+        else // seq
+            mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type( this->comm() ) );
+        return mat;
+    }
+
     // -- FACTORY METHODS --
     template<typename DomainSpace, typename DualImageSpace>
     static sparse_matrix_ptrtype newMatrix( DomainSpace const& Xh,

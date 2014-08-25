@@ -66,4 +66,6 @@
 [submodule "contrib/nlopt"]
 	path = contrib/nlopt
 	url = https://github.com/feelpp/nlopt.git
-    fetchRecurseSubmodules = on-demand
+[submodule "contrib/ipopt"]
+	path = contrib/ipopt
+	url = https://github.com/feelpp/ipopt.git

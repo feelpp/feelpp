@@ -141,6 +141,7 @@ matSolverPackageConvertStrToEnum( std::string const& type )
     else if ( type=="essl" )         return MatSolverPackageType::MATSOLVER_ESSL;
     else if ( type=="lusol" )        return MatSolverPackageType::MATSOLVER_LUSOL;
     else if ( type=="mumps" )        return MatSolverPackageType::MATSOLVER_MUMPS;
+    else if ( type=="mkl_pardiso" )  return MatSolverPackageType::MATSOLVER_MKL_PARDISO;
     else if ( type=="pastix" )       return MatSolverPackageType::MATSOLVER_PASTIX;
     else if ( type=="dscpack" )      return MatSolverPackageType::MATSOLVER_DSCPACK;
     else if ( type=="matlab" )       return MatSolverPackageType::MATSOLVER_MATLAB;
