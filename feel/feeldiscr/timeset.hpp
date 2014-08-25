@@ -277,7 +277,7 @@ public:
         */
         bool hasMesh() const
         {
-            return M_mesh;
+            return M_mesh != boost::none;
         }
 
         /**
@@ -1718,7 +1718,7 @@ private:
 
 public:
     void setMesh( mesh_ptrtype m ) { M_mesh = m; }
-    bool hasMesh() const { return M_mesh; }
+    bool hasMesh() const { return M_mesh != boost::none; }
     mesh_ptrtype mesh() const
         {
             DLOG_IF( WARNING, hasMesh() ) << "Time Set has no mesh data structure associated\n";

@@ -27,6 +27,7 @@
    \date 2013-10-11
  */
 #include <feel/feel.hpp>
+#include <feel/feeltiming/tic.hpp>
 
 namespace Feel
 {
@@ -110,11 +111,20 @@ Traces<Dim,Order>::run()
         auto opLocal = opInterpolation( _domainSpace =VhLocal,
                                    _imageSpace = Xh,
                                    _backend= backend(_worldcomm=Environment::worldCommSeq()), _ddmethod=true );
-        auto opT = op->adjoint();
+        tic();
+        auto opT = op->adjoint(MATRIX_TRANSPOSE_UNASSEMBLED);
+        //auto opT = op->adjoint(MATRIX_TRANSPOSE_ASSEMBLED);
+        toc("op adjoint");
+        tic();
         u += opT->operator()(l);
-        auto opLocalT = opLocal->adjoint();
+        toc("op adjoint mult");
+        tic();
+        auto opLocalT = opLocal->adjoint(MATRIX_TRANSPOSE_UNASSEMBLED);
+        //auto opLocalT = opLocal->adjoint(MATRIX_TRANSPOSE_ASSEMBLED);
+        toc("op local adjoint");
+        tic();
         uLocal += opLocalT->operator()(l);
-
+        toc("op local adjoint mult");
         if ( Dim == 2 )
         {
             l.printMatlab( (boost::format( "l-%1%-%2%" ) % Dim % Environment::worldComm().globalRank()).str() );

@@ -5,7 +5,7 @@ PortGroup   conflicts_build 1.0
 PortGroup   active_variants 1.1
 
 name		petsc
-version     3.4.4
+version     3.5.1
 categories  math science
 maintainers	mmoll
 description	Portable, Extensible Toolkit for Scientific Computation
@@ -26,16 +26,16 @@ distname	${name}-lite-${version}
 worksrcdir	${name}-${version}
 universal_variant   no
 
-checksums           rmd160  1b3f69a2daa285abc315e4d3b267eb44fc26f689 \
-                    sha256  3ba6d953030a3ce56b72095adef50afbf7ada1a995b46d552cf1ca069b79ad6c
+checksums           rmd160  706e2d3e98d656bccea0c2bf38f95a21ebdf1326 \
+                    sha256  43276d362d06b10a040dfee83b01e2f119c4030acbb303e1fe6fc719626970c7
 
 depends_build-append  port:cmake
-depends_lib-append  port:hdf5-18 \
+depends_lib-append  port:hdf5 \
                     port:libyaml\
                     port:scotch\
                     port:suitesparse
 
-require_active_variants hdf5-18 fortran
+require_active_variants hdf5 fortran
 
 use_parallel_build  no
 
@@ -43,10 +43,7 @@ configure.args      --prefix=${prefix}/lib/petsc \
                     --with-mpi=1 \
                     --with-c-support=1 --with-c++-support=1 \
                     --PETSC_ARCH=darwin \
-                    --with-cholmod=1 --with-cholmod-include=${prefix}/include/ \
-                    --with-cholmod-lib=\[${prefix}/lib/libcholmod.a,${prefix}/lib/libcolamd.a\] \
-                    --with-umfpack=1 --with-umfpack-include=${prefix}/include/ \
-                    --with-umfpack-lib=\[${prefix}/lib/libumfpack.a,${prefix}/lib/libcholmod.a,${prefix}/lib/libcolamd.a,${prefix}/lib/libamd.a,${prefix}/lib/libsuitesparseconfig.a\] \
+                    --download-suitesparse \
                     --with-ptscotch-dir=${prefix} \
                     --download-scalapack \
                     --download-mumps \
@@ -57,7 +54,7 @@ configure.args      --prefix=${prefix}/lib/petsc \
 
 pre-configure {
     if {![file exists ${prefix}/lib/libhdf5_fortran.a]} {
-        return -code error "Please install hdf5-18 with the +fortran variant enabled first."
+        return -code error "Please install hdf5 with the +fortran variant enabled first."
     }
     configure.args-append \
         --COPTFLAGS="${configure.optflags}" \

@@ -641,7 +641,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
     DVLOG(2) << "[Mesh3D::updateEdges] adding edges : " << ti.elapsed() << "\n";
     ti.restart();
 
-    edge_type edg(this->worldComm());
+    edge_type edg;//(this->worldComm());
     edg.setProcessIdInPartition( this->worldComm().localRank() );
 
     if ( this->edges().empty() )
