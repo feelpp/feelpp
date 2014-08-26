@@ -43,12 +43,22 @@ if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/gflags )
     execute_process(COMMAND mkdir -p ${CMAKE_BINARY_DIR}/contrib/gflags-compile)
     if(${CMAKE_SOURCE_DIR}/contrib/gflags/configure.ac IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/gflags-compile/configure)
       message(STATUS "Building gflags in ${CMAKE_BINARY_DIR}/contrib/gflags-compile...")
-      execute_process(
-        COMMAND ${FEELPP_HOME_DIR}/contrib/gflags/configure --prefix=${CMAKE_BINARY_DIR}/contrib/gflags 
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/gflags-compile
-        #      OUTPUT_QUIET
-        OUTPUT_FILE "gflags-configure"
-        )
+      if (FEELPP_USE_STATIC_LINKAGE )
+        message(STATUS "GFlags: use static linkage")
+        execute_process(
+          COMMAND ${FEELPP_HOME_DIR}/contrib/gflags/configure --prefix=${CMAKE_BINARY_DIR}/contrib/gflags  --enable-static --disable-shared  CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} CXXFLAGS=${CMAKE_CXX_FLAGS}
+          WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/gflags-compile
+          #      OUTPUT_QUIET
+          OUTPUT_FILE "gflags-configure"
+          )
+      else()
+        execute_process(
+          COMMAND ${FEELPP_HOME_DIR}/contrib/gflags/configure --prefix=${CMAKE_BINARY_DIR}/contrib/gflags  LDFLAGS=-dynamic CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER}
+          WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/gflags-compile
+          #      OUTPUT_QUIET
+          OUTPUT_FILE "gflags-configure"
+          )
+      endif(FEELPP_USE_STATIC_LINKAGE)
     endif()
 
     set(GFLAGS_INCLUDE_DIR ${CMAKE_BINARY_DIR}/contrib/gflags/include)

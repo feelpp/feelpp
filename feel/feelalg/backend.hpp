@@ -203,6 +203,11 @@ public:
     static backend_ptrtype build( po::variables_map const& vm, std::string const& prefix = "", WorldComm const& worldComm=Environment::worldComm() );
 
     /**
+     * instantiate a new sparse matrix
+     */
+    virtual sparse_matrix_ptrtype newMatrix() = 0;
+
+    /**
      * instantiate a new sparse vector
      */
     virtual sparse_matrix_ptrtype newMatrix( const size_type m,
