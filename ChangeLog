@@ -25,6 +25,7 @@
    - Support INTEL MKL starting from version 11
    - Support in-memory on Gmsh data structures (Geo and Msh) see <a href="https://github.com/feelpp/feelpp/issues/412">#295</a>
    - Support NLOpt see <a href="https://github.com/feelpp/feelpp/issues/407">#407</a>
+   - Started work on Python wrapper thanks to internship of T. Lantz, see <a href="https://github.com/feelpp/feelpp/issues/366">#366</a>
 
    \subsection issues0990 Noteworthy Issues
 
