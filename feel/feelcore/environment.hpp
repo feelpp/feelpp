@@ -35,7 +35,12 @@
 #include <boost/signals2.hpp>
 #include <boost/format.hpp>
 
+#include <boost/python.hpp>
+#include <boost/python/stl_iterator.hpp>
 
+#ifdef FEELPP_ENABLE_PYTHON_WRAPPER
+#include <mpi4py/mpi4py.h>
+#endif
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/parameter.hpp>
@@ -149,6 +154,8 @@ public:
      */
     Environment( int& argc, char** &argv );
 
+    Environment(boost::python::list arg);
+
     BOOST_PARAMETER_MEMBER_FUNCTION(
         (void), static changeRepository, tag,
         (required
@@ -199,6 +206,10 @@ public:
                 changeRepository( _directory=f );
             }
         }
+
+
+    
+
 
     void init( int argc, char** argv, po::options_description const& desc,
                po::options_description const& desc_lib, AboutData const& about );
