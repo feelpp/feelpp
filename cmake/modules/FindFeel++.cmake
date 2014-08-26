@@ -381,9 +381,10 @@ if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_D
 endif()
 
 #
-# nlopt
+# nlopt / ipopt
 #
 include(feelpp.module.nlopt)
+include(feelpp.module.ipopt)
 
 #
 # HARTS
