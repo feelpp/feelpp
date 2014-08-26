@@ -99,6 +99,18 @@ SolverEigenSlepc<T>::init ()
         ierr = EPSCreate ( PETSC_COMM_WORLD, &M_eps );
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
+#if (SLEPC_VERSION_MAJOR == 3) && (SLEPC_VERSION_MINOR >= 5)
+        ierr = EPSGetBV ( M_eps, &M_ip );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+
+        PetscReal eta;
+        // Set modified Gram-Schmidt orthogonalization as default
+        // and leave other parameters unchanged
+        BVOrthogRefineType refinement;
+        ierr = BVGetOrthogonalization ( M_ip, PETSC_NULL, &refinement, &eta );
+        ierr = BVSetOrthogonalization ( M_ip, BV_ORTHOG_MGS, refinement, eta );
+
+#else
         ierr = EPSGetIP ( M_eps, &M_ip );
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
@@ -124,6 +136,8 @@ SolverEigenSlepc<T>::init ()
         ierr = IPSetOrthogonalization ( M_ip, IP_MGS_ORTH, refinement, eta );
 #endif //
 #endif // 0
+
+#endif
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
         // Set user-specified  solver
@@ -354,9 +368,11 @@ SolverEigenSlepc<T>::solve ( MatrixSparse<T> &matrix_A_in,
     */
     EPSGetIterationNumber( M_eps, &its );
     //PetscPrintf(PETSC_COMM_WORLD," Number of iterations of the method: %d\n",its);
+#if (SLEPC_VERSION_MAJOR == 3) && (SLEPC_VERSION_MINOR < 5)
     int lits;
     EPSGetOperationCounters( M_eps,PETSC_NULL,PETSC_NULL,&lits );
     //PetscPrintf(PETSC_COMM_WORLD," Number of linear iterations of the method: %d\n",lits);
+#endif
 #if PETSC_VERSION_LESS_THAN(3,4,0)
     const EPSType              type;
 #else
@@ -643,7 +659,11 @@ SolverEigenSlepc<T>:: setSlepcSpectralTransform()
         break;
 
     case FOLD:
+#if (SLEPC_VERSION_MAJOR == 3) && (SLEPC_VERSION_MINOR < 5)
         ierr = STSetType( st, STFOLD );
+#else
+        CHECK( false ) << "FOLD not supported from slepc 3.5\n";
+#endif
         break;
 
     case CAYLEY:
