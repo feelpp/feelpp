@@ -1,5 +1,12 @@
 #!/usr/bin/python
 
+##
+# \file feelpp-test.py
+# \author Thomas Lantz <lantz.thomas0@gmail.com>
+# \date 2014-08-26
+
+
+
 from mpi4py import MPI
 import libPyFeelpp
 import sys
