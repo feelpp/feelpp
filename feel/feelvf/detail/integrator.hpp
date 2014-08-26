@@ -125,7 +125,7 @@ namespace parallel
         {
             char * a;
             int cid;
-            hwloc_cpuset_t set;
+            hwloc_cpuset_t set = nullptr;
             std::ostringstream oss;
 
 #if 0
@@ -226,7 +226,7 @@ namespace parallel
         {
             char * a;
             int cid;
-            hwloc_cpuset_t set;
+            hwloc_cpuset_t set = nullptr;
             std::ostringstream oss;
 
 #if 0
