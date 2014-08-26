@@ -77,6 +77,13 @@ PetscPCFactorSetMatSolverPackage( PC & pc, MatSolverPackageType mspackt )
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
         break;
 
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,5,0)
+    case MATSOLVER_MKL_PARDISO :
+        ierr = PCFactorSetMatSolverPackage( pc, ( char* ) MATSOLVERMKL_PARDISO );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        break;
+#endif
+
     case MATSOLVER_PASTIX :
         ierr = PCFactorSetMatSolverPackage( pc, ( char* ) MATSOLVERPASTIX );
         CHKERRABORT( PETSC_COMM_WORLD,ierr );

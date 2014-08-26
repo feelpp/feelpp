@@ -61,19 +61,21 @@ BOOST_PARAMETER_FUNCTION(
         ) // 4. one required parameter, and
 
     ( optional
-      ( format,         *, option(_name="gmsh.format").template as<int>() )
-      ( h,              *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.hsize").template as<double>() )
+      ( prefix,(std::string), "" )
+      ( format,         *, option(_prefix=prefix,_name="gmsh.format").template as<int>() )
+      ( h,              *( boost::is_arithmetic<mpl::_> ), option(_prefix=prefix,_name="gmsh.hsize").template as<double>() )
       ( geo_parameters,  *( boost::icl::is_map<mpl::_> ), Gmsh::gpstr2map("") )
       ( parametricnodes, *( boost::is_integral<mpl::_> ), 0 )
-      ( straighten,      *( boost::is_integral<mpl::_> ), option(_name="gmsh.straighten").template as<bool>() )
-      ( refine,          *( boost::is_integral<mpl::_> ), option(_name="gmsh.refine").template as<int>() )
-      ( structured,          *( boost::is_integral<mpl::_> ), option(_name="gmsh.structured").template as<int>() )
+      ( in_memory,       *( boost::is_integral<mpl::_> ), option(_prefix=prefix,_name="gmsh.in-memory").template as<bool>() )
+      ( straighten,      *( boost::is_integral<mpl::_> ), option(_prefix=prefix,_name="gmsh.straighten").template as<bool>() )
+      ( refine,          *( boost::is_integral<mpl::_> ), option(_prefix=prefix,_name="gmsh.refine").template as<int>() )
+      ( structured,          *( boost::is_integral<mpl::_> ), option(_prefix=prefix,_name="gmsh.structured").template as<int>() )
       ( update,          *( boost::is_integral<mpl::_> ), MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK )
       ( force_rebuild,   *( boost::is_integral<mpl::_> ), 0 )
       ( physical_are_elementary_regions,           *,false )
       ( periodic,        *, PeriodicEntities() )
-      ( respect_partition,	(bool), option(_name="gmsh.respect_partition").template as<bool>() )
-      ( rebuild_partitions,	(bool), option(_name="gmsh.partition").template as<bool>() )
+      ( respect_partition,	(bool), option(_prefix=prefix,_name="gmsh.respect_partition").template as<bool>() )
+      ( rebuild_partitions,	(bool), option(_prefix=prefix,_name="gmsh.partition").template as<bool>() )
       ( rebuild_partitions_filename, *( boost::is_convertible<mpl::_,std::string> )	, desc->prefix()+".msh" )
       ( worldcomm,      *, Environment::worldComm() )
       ( partitions,   *( boost::is_integral<mpl::_> ), worldcomm.globalSize() )
@@ -100,6 +102,7 @@ BOOST_PARAMETER_FUNCTION(
         desc->setFileFormat( (GMSH_FORMAT)format );
         desc->setStructuredMesh( structured );
         desc->setPeriodic( periodic );
+        desc->setInMemory( in_memory );
 
         std::string fname;
         bool generated_or_modified;
@@ -127,7 +130,8 @@ BOOST_PARAMETER_FUNCTION(
             import.setElementRegionAsPhysicalRegion( physical_are_elementary_regions );
         }
         import.setRespectPartition( respect_partition );
-
+        import.setGModel( desc->gModel() );
+        import.setInMemory( in_memory );
         _mesh->accept( import );
 
         if ( update )

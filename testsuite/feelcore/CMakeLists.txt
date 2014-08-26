@@ -17,5 +17,5 @@ add_test(NAME test_boostmpi COMMAND mpirun -np 2 test_boostmpi --log_level=messa
 feelpp_add_test(gatherscatter_feelpp SRCS test_gatherscatter.cpp DEFS FEELPP_BUG=1)
 feelpp_add_test(gatherscatter )
 
-
+feelpp_add_application(mpi SRCS test_mpi.cpp)
 feelpp_add_test( fusion )

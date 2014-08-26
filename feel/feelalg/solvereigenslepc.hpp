@@ -42,11 +42,19 @@
 extern "C"
 {
 # include <slepceps.h>
+#if (SLEPC_VERSION_MAJOR == 3) && (SLEPC_VERSION_MINOR >= 5)
+# include <slepcbv.h>
+#else
 # include <slepcip.h>
+#endif
 }
 #else
 # include <slepceps.h>
+#if (SLEPC_VERSION_MAJOR == 3) && (SLEPC_VERSION_MINOR >= 5)
+# include <slepcbv.h>
+#else
 # include <slepcip.h>
+#endif
 #endif
 
 
@@ -245,8 +253,11 @@ private:
     /**
      * Eigenproblem inner products
      */
+#if (SLEPC_VERSION_MAJOR == 3) && (SLEPC_VERSION_MINOR >= 5)
+    BV M_ip;
+#else
     IP M_ip;
-
+#endif
     /**
      * eigenmode
      */

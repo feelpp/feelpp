@@ -337,7 +337,7 @@ public:
      */
     static void destroyHwlocTopology();
 
-    static hwloc_topology_t getHwlocTopology() { return Environment::M_hwlocTopology; }
+    static hwloc_topology_t getHwlocTopology() { return Environment::S_hwlocTopology; }
 
     /**
      * Binds the current process/thread to the specified core.
@@ -551,7 +551,7 @@ private:
     static boost::shared_ptr<WorldComm> S_worldcommSeq;
 
 #if defined(FEELPP_HAS_HARTS)
-    static hwloc_topology_t M_hwlocTopology;
+    static hwloc_topology_t S_hwlocTopology;
 #endif
 };
 } // detail

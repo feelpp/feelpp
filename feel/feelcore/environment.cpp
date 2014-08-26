@@ -1531,18 +1531,18 @@ Environment::masterWorldComm( int n )
 void Environment::initHwlocTopology()
 {
     /* init and load hwloc topology for the current node */
-    if(!(Environment::M_hwlocTopology))
+    if(!(Environment::S_hwlocTopology))
     {
-        hwloc_topology_init(&(Environment::M_hwlocTopology));
-        hwloc_topology_load(Environment::M_hwlocTopology);
+        hwloc_topology_init(&(Environment::S_hwlocTopology));
+        hwloc_topology_load(Environment::S_hwlocTopology);
     }
 }
 
 void Environment::destroyHwlocTopology()
 {
-    if(Environment::M_hwlocTopology)
+    if(Environment::S_hwlocTopology)
     {
-        hwloc_topology_destroy(Environment::M_hwlocTopology);
+        hwloc_topology_destroy(Environment::S_hwlocTopology);
     }
 }
 
@@ -1556,11 +1556,11 @@ void Environment::bindToCore( unsigned int id )
     Environment::initHwlocTopology();
 
     /* get the nth core object */
-    coren = hwloc_get_obj_by_type(Environment::M_hwlocTopology, HWLOC_OBJ_CORE, id);
+    coren = hwloc_get_obj_by_type(Environment::S_hwlocTopology, HWLOC_OBJ_CORE, id);
     /* get the cpu mask of the nth core */
     set = hwloc_bitmap_dup(coren->cpuset);
     /* bind the process thread to this core */
-    err = hwloc_set_cpubind(Environment::M_hwlocTopology, set, 0);
+    err = hwloc_set_cpubind(Environment::S_hwlocTopology, set, 0);
 
     /* free memory */
     hwloc_bitmap_free(set);
@@ -1597,21 +1597,21 @@ void Environment::bindNumaRoundRobin(int lazy)
     Environment::initHwlocTopology();
 
     /* get the first numa node */
-    numaNode = hwloc_get_obj_by_type(Environment::M_hwlocTopology, HWLOC_OBJ_NODE, 0);
+    numaNode = hwloc_get_obj_by_type(Environment::S_hwlocTopology, HWLOC_OBJ_NODE, 0);
     nbCoresPerNuma = Environment::countCoresInSubtree(numaNode);
 
     /* count the number of numaNodes */
-    depth = hwloc_get_type_depth(Environment::M_hwlocTopology, HWLOC_OBJ_NODE);
+    depth = hwloc_get_type_depth(Environment::S_hwlocTopology, HWLOC_OBJ_NODE);
     if(depth != HWLOC_TYPE_DEPTH_UNKNOWN)
     {
-        nbNumaNodesTotal = hwloc_get_nbobjs_by_depth(Environment::M_hwlocTopology, depth);
+        nbNumaNodesTotal = hwloc_get_nbobjs_by_depth(Environment::S_hwlocTopology, depth);
     }
 
     /* count the number of cores on the current server */
-    depth = hwloc_get_type_depth(Environment::M_hwlocTopology, HWLOC_OBJ_CORE);
+    depth = hwloc_get_type_depth(Environment::S_hwlocTopology, HWLOC_OBJ_CORE);
     if(depth != HWLOC_TYPE_DEPTH_UNKNOWN)
     {
-        nbCoresTotal = hwloc_get_nbobjs_by_depth(Environment::M_hwlocTopology, depth);
+        nbCoresTotal = hwloc_get_nbobjs_by_depth(Environment::S_hwlocTopology, depth);
     }
 
     /* compute the virtual core index of the first core of the numa node to use */
@@ -1620,7 +1620,7 @@ void Environment::bindNumaRoundRobin(int lazy)
     int numaRank = Environment::worldComm().rank() % nbCoresPerNuma;
 
     /* get the numa node where to place the process */
-    numaNode = hwloc_get_obj_by_type(Environment::M_hwlocTopology, HWLOC_OBJ_NODE, numaRank);
+    numaNode = hwloc_get_obj_by_type(Environment::S_hwlocTopology, HWLOC_OBJ_NODE, numaRank);
 
     /* duplicate the node set of the Numa node */
     set = hwloc_bitmap_dup(numaNode->cpuset);
@@ -1663,7 +1663,7 @@ void Environment::bindNumaRoundRobin(int lazy)
               << std::endl;
 
     /* bind the process thread to this core */
-    err = hwloc_set_cpubind(Environment::M_hwlocTopology, set, 0);
+    err = hwloc_set_cpubind(Environment::S_hwlocTopology, set, 0);
 
     /* free memory */
     hwloc_bitmap_free(set);
@@ -1686,7 +1686,7 @@ void Environment::writeCPUData(std::string fname)
     set = hwloc_bitmap_alloc();
 
     /* Get the cpu thread affinity info of the current process/thread */
-    hwloc_get_cpubind(Environment::M_hwlocTopology, set, 0);
+    hwloc_get_cpubind(Environment::S_hwlocTopology, set, 0);
     hwloc_bitmap_asprintf(&a, set);
     oss << a;
     free(a);
@@ -1702,7 +1702,7 @@ void Environment::writeCPUData(std::string fname)
     oss << ")|";
 
     /* Get the latest core location of the current process/thread */
-    hwloc_get_last_cpu_location(Environment::M_hwlocTopology, set, 0);
+    hwloc_get_last_cpu_location(Environment::S_hwlocTopology, set, 0);
     hwloc_bitmap_asprintf(&a, set);
     oss << a;
     free(a);
@@ -1810,7 +1810,7 @@ std::string Environment::olAppPath;
 std::vector<std::string> Environment::olAutoloadFiles;
 
 #if defined(FEELPP_HAS_HARTS)
-    hwloc_topology_t Environment::M_hwlocTopology = NULL;
+    hwloc_topology_t Environment::S_hwlocTopology = NULL;
 #endif
 
 } // detail

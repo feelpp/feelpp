@@ -558,7 +558,8 @@ void PreconditionerPetsc<T>::init ()
 #if PETSC_VERSION_LESS_THAN(3,5,0)
     check( PCSetOperators( M_pc,M_mat,M_mat, PetscGetMatStructureEnum(this->M_prec_matrix_structure) ) );
 #else
-    check( PCSetOperators( M_pc,M_mat,M_mat/*, PetscGetMatStructureEnum(this->M_prec_matrix_structure)*/ ) );
+    check( PCSetReusePreconditioner(M_pc,(this->M_prec_matrix_structure == Feel::SAME_PRECONDITIONER)? PETSC_TRUE : PETSC_FALSE ) );
+    check( PCSetOperators( M_pc,M_mat,M_mat ) );
 #endif
 
     // Set the PCType.  Note: this used to be done *before* the call to
@@ -701,11 +702,12 @@ SetPCType( PC& pc, const PreconditionerType & preconditioner_type, const MatSolv
 
     case LU_PRECOND:
     {
-
         // In serial, just set the LU preconditioner type
         //if (Feel::n_processors() == 1)
         // do be changed in parallel
-        if ( worldComm.globalSize() == 1 || matSolverPackage_type == MATSOLVER_MUMPS || matSolverPackage_type == MATSOLVER_PASTIX )
+        if ( worldComm.globalSize() == 1 ||
+             matSolverPackage_type == MATSOLVER_MUMPS ||
+             matSolverPackage_type == MATSOLVER_PASTIX )
         {
             ierr = PCSetType ( pc, ( char* ) PCLU );
             CHKERRABORT( worldComm.globalComm(),ierr );
@@ -1685,7 +1687,11 @@ ConfigurePCFieldSplit::runConfigurePCFieldSplit( PC& pc, PreconditionerPetsc<dou
 #endif
         }
 #endif
+#if PETSC_VERSION_LESS_THAN(3,5,0)
         this->check( PCFieldSplitSchurPrecondition( pc, theSchurPrecond, schurMatPrecond/*NULL*/ ) );
+#else
+        this->check( PCFieldSplitSetSchurPre( pc, theSchurPrecond, schurMatPrecond/*NULL*/ ) );
+#endif
         // need to call MatDestroy because PCFieldSplitSchurPrecondition call PetscObjectReference ( which increase the object counter)
         // if we not call this  MatDestroy, we have a memory leak
         this->check( MatDestroy( &schurMatPrecond ) );

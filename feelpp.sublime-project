@@ -1,0 +1,22 @@
+{
+  "folders":
+  [
+    {
+      "path": ".",
+      "folder_exclude_patterns": ["buil", ".svn", ".git", ".DS_Store"],
+      "file_exclude_patterns": ["*~", "*.sublime-workspace"]
+    }
+  ],
+  "settings":
+  {
+    "tab_size": 4,
+    "translate_tabs_to_spaces": true,
+    "smart_indent":true,
+    "indent_to_bracket":true,
+    "trim_automatic_white_space": true,
+    "ensure_newline_at_eof_on_save": true,
+    "trim_trailing_white_space_on_save": true,
+    "default_encoding": "UTF-8",
+    "default_line_ending": "unix"
+  }
+}
