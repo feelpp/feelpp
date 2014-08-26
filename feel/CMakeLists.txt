@@ -44,6 +44,7 @@ add_subdirectory (feelfilters)
 add_subdirectory (feelmaterial)
 add_subdirectory (feelvf )
 add_subdirectory (feelpde)
+add_subdirectory (feelpython)
 
 
 # Add target for dynamic library
