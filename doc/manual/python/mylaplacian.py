@@ -4,14 +4,15 @@
 
 from mpi4py import MPI
 import libPyLapla
+from libFeelpp import *
 import sys
 
 
-env=libPyLapla.Environment(sys.argv)
-#w=libPyLapla.Environment.worldComm()
+env=Environment(sys.argv)
+w=Environment.worldComm()
 
 mesh=libPyLapla.unitSquare()
-Vh=libPyLapla.newPch(mesh,False)
+Vh=newPch1(mesh)
 
 u=libPyLapla.element(Vh)
 v=libPyLapla.element(Vh)

@@ -4,21 +4,20 @@
 
 from mpi4py import MPI
 import libPyInteg
+from libFeelpp import *
 import sys
 
 
-env=libPyInteg.Environment(sys.argv)
-w=libPyInteg.Environment.worldComm()
+env=Environment(sys.argv)
+w=Environment.worldComm()
 
-s=libPyInteg.Simplex()
-m=libPyInteg.Mesh.new()
-l=libPyInteg.loadMesh(m)
+m=MeshS3()
+l=loadMesh(m)
 
-p=libPyInteg.newPch(l,False)
+p=newPch2(l)
 
 g=libPyInteg.expr(libPyInteg.soption("functions.g"))
 
-#lapla=libPyInteg.laplacian(g)
 gradg=libPyInteg.grad(g)
 
 elem=libPyInteg.elements(l)
@@ -49,7 +48,7 @@ libPyInteg.printExpr(gradg)
 print ("elements:" ) 
 libPyInteg.printSol(sol2)
 
-x=libPyInteg.export(l);
+x=export(l);
 
 
 
