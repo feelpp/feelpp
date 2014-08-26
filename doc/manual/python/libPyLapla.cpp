@@ -103,31 +103,10 @@ BOOST_PYTHON_MODULE(libPyLapla)
     if (import_mpi4py()<0) return ;
 
 
-    // definition of the Environment object and methods and classes link to it
-    class_<Feel::detail::Environment,boost::noncopyable>("Environment", init<boost::python::list>()) 
-        .def("worldComm",&Feel::detail::Environment::worldComm,return_value_policy<copy_non_const_reference>())
-        .staticmethod("worldComm");
-
-    // definition of the geometrical object (Simplex and Hypercube) and of the Mesh class 
-    class_<Feel::Simplex<2>>("Simplex",init<>())
-        .def("dim",&Feel::Simplex<2>::dimension);
-
-    class_<Feel::Mesh<Feel::Simplex<2>>,boost::shared_ptr<Feel::Mesh<Feel::Simplex<2>>>,boost::noncopyable>("Mesh",init<>())
-        .def("new",&Feel::Mesh<Simplex<2>>::New)
-        .staticmethod("new")
-        .def("clear",&Feel::Mesh<Simplex<2>>::clear);
-
+    
     def("unitSquare",unitSquare_w);
        
-      //definition of Pch class with others classes link to her and his constructor 
-     class_<Feel::meta::Pch<Mesh<Simplex<2>>,1>,boost::shared_ptr<Feel::meta::Pch<Mesh<Simplex<2>>,1>>>("Pch",no_init);
-
-    class_<Feel::FunctionSpaceBase>("FunctionSpaceBase",no_init);
-
-    class_<Feel::FunctionSpace<Mesh<Simplex<2>>,Feel::bases<Feel::Lagrange<1,Feel::Scalar,Feel::Continuous,Feel::PointSetEquiSpaced,0>>,double,Feel::Periodicity<Feel::NoPeriodicity>,Feel::mortars<Feel::NoMortar>>,boost::shared_ptr<Feel::FunctionSpace<Mesh<Simplex<2>>,Feel::bases<Feel::Lagrange<1,Feel::Scalar,Feel::Continuous,Feel::PointSetEquiSpaced,0>>,double,Feel::Periodicity<Feel::NoPeriodicity>,Feel::mortars<Feel::NoMortar>>>,boost::python::bases<Feel::FunctionSpaceBase>>("FunctSpace",no_init);
-
-def("newPch",Feel::Pch<1,PointSetEquiSpaced,Mesh<Simplex<2>>,0>); 
-  
+       
   //definition of form object and methods link to them 
   class_<form1_return_type>("Form1",no_init); 
   class_<form2_return_type>("Form2",no_init); 
