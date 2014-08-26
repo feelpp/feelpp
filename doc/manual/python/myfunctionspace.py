@@ -1,6 +1,9 @@
-## to move into the folders where Python libraries are created
-
 #!/usr/bin/python
+
+##
+# \file myfunctionspace.py
+# \author Thomas Lantz <lantz.thomas0@gmail.com>
+# \date 2014-08-26
 
 from mpi4py import MPI
 import libPyFunctSpace
