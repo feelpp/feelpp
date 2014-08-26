@@ -3,16 +3,15 @@
 #!/usr/bin/python
 
 from mpi4py import MPI
-import libPyMesh
+from libPyFeelpp import *
 import sys
 
-z=libPyMesh.Environment(sys.argv)
-s=libPyMesh.Simplex()
-m=libPyMesh.Mesh.new()
-l=libPyMesh.loadMesh(m)
-w=libPyMesh.Environment.worldComm()
+z=Environment(sys.argv)
+m=MeshS2
+l=loadMesh(m)
+w=Environment.worldComm()
 
-x=libPyMesh.export(l);
+x=export(l);
 
 
 

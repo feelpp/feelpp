@@ -213,50 +213,6 @@ BOOST_PYTHON_MODULE(libPyInteg)
 
     if (import_mpi4py()<0) return ;
 
-// definition of the Environment object and methods and classes link to it 
-    class_<Feel::detail::Environment,boost::noncopyable>("Environment", init<boost::python::list>()) 
-        .def("worldComm",&Feel::detail::Environment::worldComm,return_value_policy<copy_non_const_reference>())
-        .staticmethod("worldComm");
-    
-    class_<WorldComm>("WorldComm",init<>());
-
-// definition of the geometrical object (Simplex and Hypercube) and of the Mesh class 
-    
-    class_<Feel::Simplex<3>>("Simplex",init<>())
-        .def("dim",&Feel::Simplex<3>::dimension);
-
-    class_<Feel::Hypercube<3>>("Hypercube",init<>())
-        .def("dim",&Feel::Hypercube<3>::dimension);
-
-    class_<Feel::Mesh<Feel::Simplex<3>>,boost::shared_ptr<Feel::Mesh<Feel::Simplex<3>>>,boost::noncopyable>("Mesh",init<>())
-        .def("new",&Feel::Mesh<Simplex<3>>::New)
-        .staticmethod("new")
-        .def("clear",&Feel::Mesh<Simplex<3>>::clear);
-
-
-//definition of the loadMesh and exporter methods with functions define before 
-    def("loadMesh",loadMesh_w);
-
- 
-    class_<ExporterEnsightGold<Mesh<Simplex<3>>,1>>("Exporter",init<WorldComm>())
-        .def("setMesh",&Exporter<Mesh<Simplex<3>>>::setMesh) 
-        .def("addRegions",&Exporter<Mesh<Simplex<3>>>::addRegions)
-        .def("save",&ExporterEnsightGold<Mesh<Simplex<3>>,1>::save);
-
-    def("new",New2); 
-    def("export",expo_w<Mesh<Simplex<3>>,1>);
-   
-
-//definition of Pch class with others classes link to her and his constructor
-
-    class_<Feel::meta::Pch<Mesh<Simplex<3>>,2>,boost::shared_ptr<Feel::meta::Pch<Mesh<Simplex<3>>,2>>>("Pch",no_init);
-
-    class_<Feel::FunctionSpaceBase>("FunctionSpaceBase",no_init);
-
-    class_<Feel::FunctionSpace<Mesh<Simplex<3>>,Feel::bases<Feel::Lagrange<2,Feel::Scalar,Feel::Continuous,Feel::PointSetEquiSpaced,0>>,double,Feel::Periodicity<Feel::NoPeriodicity>,Feel::mortars<Feel::NoMortar>>,boost::shared_ptr<Feel::FunctionSpace<Mesh<Simplex<3>>,Feel::bases<Feel::Lagrange<2,Feel::Scalar,Feel::Continuous,Feel::PointSetEquiSpaced,0>>,double,Feel::Periodicity<Feel::NoPeriodicity>,Feel::mortars<Feel::NoMortar>>>,boost::python::bases<Feel::FunctionSpaceBase>>("FunctSpace",no_init);
-
-    def("newPch",Feel::Pch<2,PointSetEquiSpaced,Mesh<Simplex<3>>,0>); 
-
 
 // definition of the Expr object 
 
