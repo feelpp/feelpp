@@ -3,13 +3,13 @@
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-             Guillaume Dollé <guillaume.dolle@math.unistra.f>
+             Guillaume Dollé <guillaume.dolle@math.unistra.f
              Thomas Lantz
 
   Date: 2013-02-11
 
   Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
-                2013 Université de Strasbourg
+                2013 Université de Strasbour
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -146,7 +146,7 @@ int main (int argc,char** argv)
 using namespace boost::python;
 
 // build the module, named libFunct, from previous methods
-BOOST_PYTHON_MODULE(libFunct)
+BOOST_PYTHON_MODULE(libPyFunctSpace)
 {
     if (import_mpi4py() <0) return ;
     def("test",test); 
