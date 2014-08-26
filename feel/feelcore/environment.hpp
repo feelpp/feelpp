@@ -37,7 +37,10 @@
 
 #include <boost/python.hpp>
 #include <boost/python/stl_iterator.hpp>
+
+#ifdef FEELPP_ENABLE_PYTHON_WRAPPER
 #include <mpi4py/mpi4py.h>
+#endif
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/parameter.hpp>

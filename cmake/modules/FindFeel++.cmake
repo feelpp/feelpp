@@ -283,7 +283,7 @@ ELSEIF ( HDF5_LIBRARY AND NOT HDF5_IS_PARALLEL )
   MESSAGE(STATUS "HDF5 is found but is not parallel, HDF5 is not enabled in Feel++")
 endif()
 
-option(FEELPP_ENABLE_PYTHON "Enable Boost.Python implementation" OFF)
+option(FEELPP_ENABLE_PYTHON_WRAPPER "Enable Boost.Python wrapper implementation" OFF)
 
 # Boost
 SET(BOOST_MIN_VERSION "1.49.0")
@@ -520,6 +520,7 @@ if ( PYTHONLIBS_FOUND )
   include_directories(${PYTHON_INCLUDE_DIRS})
   #   SET(FEELPP_LIBRARIES ${PYTHON_LIBRARIES} ${FEELPP_LIBRARIES})
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Python" )
+  set( FEELPP_HAS_PYTHON 1 )
 endif()
 
 #
