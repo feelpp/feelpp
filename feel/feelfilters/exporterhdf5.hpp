@@ -330,9 +330,11 @@ void Exporterhdf5<MeshType, N>::writeMerge () const
 
                 saveNodalMerge (__step, __step->beginNodalScalar(), __step->endNodalScalar() ) ;
                 saveNodalMerge (__step, __step->beginNodalVector(), __step->endNodalVector() ) ;
+                saveNodalMerge( __step, __step->beginNodalTensor2(), __step->endNodalTensor2() );
 
                 saveElementMerge (__step, __step->beginElementScalar(), __step->endElementScalar() ) ;
                 saveElementMerge (__step, __step->beginElementVector(), __step->endElementVector() ) ;
+                saveElementMerge( __step, __step->beginElementTensor2(), __step->endElementTensor2() );
 
                 M_str << "           </Grid>\n" ;
                 free (buffer) ;
@@ -423,9 +425,11 @@ void Exporterhdf5<MeshType, N>::write () const
 
                 saveNodal (__step, __step->beginNodalScalar(), __step->endNodalScalar() ) ;
                 saveNodal (__step, __step->beginNodalVector(), __step->endNodalVector() ) ;
+                saveNodal( __step, __step->beginNodalTensor2(), __step->endNodalTensor2() );
 
                 saveElement (__step, __step->beginElementScalar(), __step->endElementScalar() ) ;
                 saveElement (__step, __step->beginElementVector(), __step->endElementVector() ) ;
+                saveElement( __step, __step->beginElementTensor2(), __step->endElementTensor2() );
 
                 M_xmf << "           </Grid>\n" ;
                 M_HDF5.closeFile () ;
@@ -1166,6 +1170,7 @@ void Exporterhdf5<MeshType, N>::save () const
 {
     if ( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
         std::cout << "exporter.merge                : " << (boption (_name = "exporter.merge" ) ? "true" : "false")  << std::endl ;
+    MPI_Barrier( Environment::worldComm().comm() );
     if ( boption ( _name = "exporter.merge" ) )
         writeMerge() ;
     else 
