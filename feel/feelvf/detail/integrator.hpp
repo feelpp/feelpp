@@ -172,7 +172,10 @@ namespace parallel
             perf_mng.init("3") ;
 
             /* free memory */
-            hwloc_bitmap_free(set);
+            if(set != nullptr)
+            {
+                hwloc_bitmap_free(set);
+            }
 
             //perf_mng.init("data") ;
             //perf_mng.start("data") ;
@@ -226,10 +229,11 @@ namespace parallel
         {
             char * a;
             int cid;
-            hwloc_cpuset_t set = nullptr;
             std::ostringstream oss;
 
 #if 0
+            hwloc_cpuset_t set = nullptr;
+
             /* get a cpuset object */
             set = hwloc_bitmap_alloc();
 
@@ -269,12 +273,12 @@ namespace parallel
 #if defined(FEELPP_HAS_HARTS)
             perf_mng.init("cpu") ;
             perf_mng.start("cpu") ;
-#endif
             perf_mng.init("1.1") ;
             perf_mng.init("1.2") ;
             perf_mng.init("2.1") ;
             perf_mng.init("2.2") ;
             perf_mng.init("3") ;
+#endif
 
             for (int i = 0; i < veit->size(); i+=2)
             {
