@@ -35,7 +35,6 @@ set(FEELPP_WORK_DIR ${WORK_DIR})
 set(FEELPP_MODULES "research/hifimagnet" "research/fluid" )
 
 #Options
-set(FEELPP_ENABLE_NLOPT OFF)
 set(ENABLE_ALTIVEC OFF)
 set(ENABLE_BUILD_STATIC OFF)
 set(ENABLE_DOXYGEN OFF)
