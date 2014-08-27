@@ -29,7 +29,7 @@ if ( FEELPP_ENABLE_NLOPT )
 
     execute_process(
       COMMAND git submodule update --init --recursive contrib/nlopt
-      WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
       )
     MESSAGE(STATUS "Git submodule contrib/nlopt updated.")
   else()
@@ -44,19 +44,19 @@ if ( FEELPP_ENABLE_NLOPT )
     execute_process(
       COMMAND  touch  swig/nlopt.scm.in
       WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/contrib/nlopt/
-      OUTPUT_FILE "nlopt-touch"
+      OUTPUT_FILE "${CMAKE_SOURCE_DIR}/contrib/nlopt-touch"
       #ERROR_FILE "nlopt-touch-errors"
       )
     execute_process(
       COMMAND autoreconf --verbose --install --force
       WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/contrib/nlopt/
-      OUTPUT_FILE "nlopt-autoreconf"
+      OUTPUT_FILE "${CMAKE_SOURCE_DIR}/contrib/nlopt-autoreconf"
       #ERROR_FILE "nlopt-autoreconf-errors"
       )
     execute_process(
       COMMAND autoreconf --verbose --install --force
       WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/contrib/nlopt/
-      OUTPUT_FILE "nlopt-autoreconf"
+      OUTPUT_FILE "${CMAKE_SOURCE_DIR}/contrib/nlopt-autoreconf"
       #ERROR_FILE "nlopt-autoreconf-errors"
       )
 
@@ -72,7 +72,7 @@ if ( FEELPP_ENABLE_NLOPT )
         COMMAND ${FEELPP_HOME_DIR}/contrib/nlopt/configure --enable-maintainer-mode --with-cxx=yes CXX=${CMAKE_CXX_COMPILER} CC=${CMAKE_CXX_COMPILER}
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/nlopt
         #OUTPUT_QUIET
-        OUTPUT_FILE "nlopt-configure"
+        OUTPUT_FILE "${CMAKE_SOURCE_DIR}/contrib/nlopt-configure"
         #ERROR_FILE "nlopt-configure-errors"
         )
     else()
@@ -80,20 +80,20 @@ if ( FEELPP_ENABLE_NLOPT )
         COMMAND ${FEELPP_HOME_DIR}/contrib/nlopt/configure --enable-maintainer-mode --with-cxx=yes --enable-shared CXX=${CMAKE_CXX_COMPILER} CC=${CMAKE_CXX_COMPILER}
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/nlopt
         #      OUTPUT_QUIET
-        OUTPUT_FILE "nlopt-configure"
+        OUTPUT_FILE "${CMAKE_SOURCE_DIR}/contrib/nlopt-configure"
         #ERROR_FILE "nlopt-configure-errors"
         )
     endif()
     execute_process(
       COMMAND make nlopt.hpp
       WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/nlopt/api
-      OUTPUT_FILE "nlopt-nlopthpp" )
+      OUTPUT_FILE "${CMAKE_SOURCE_DIR}/contrib/nlopt-nlopthpp" )
 
     # delete all Makefiles before Cmake generate its own
     execute_process(
       COMMAND make distclean
       WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/nlopt
-      OUTPUT_FILE "nlopt-distclean"
+      OUTPUT_FILE "${CMAKE_SOURCE_DIR}/contrib/nlopt-distclean"
       )
   endif()
   if (NOT EXISTS ${FEELPP_SOURCE_DIR}/contrib/nlopt/api/nlopt.hpp )
