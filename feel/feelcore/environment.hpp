@@ -35,7 +35,13 @@
 #include <boost/signals2.hpp>
 #include <boost/format.hpp>
 
+#ifdef FEELPP_ENABLE_PYTHON_WRAPPER
+#include <boost/python.hpp>
+#include <boost/python/stl_iterator.hpp>
 
+
+#include <mpi4py/mpi4py.h>
+#endif
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/parameter.hpp>
@@ -149,56 +155,68 @@ public:
      */
     Environment( int& argc, char** &argv );
 
+#if defined(FEELPP_ENABLE_PYTHON_WRAPPER)
+    Environment( boost::python::list arg );
+#endif
+
     BOOST_PARAMETER_MEMBER_FUNCTION(
-        (void), static changeRepository, tag,
-        (required
-         (directory,(boost::format)))
-        (optional
-         (filename,*( boost::is_convertible<mpl::_,std::string> ),"logfile")
-         (subdir,*( boost::is_convertible<mpl::_,bool> ),S_vm["npdir"].as<bool>())
-            ))
-        {
-            changeRepositoryImpl( directory, filename, subdir );
-        }
+        ( void ), static changeRepository, tag,
+        ( required
+          ( directory,( boost::format ) ) )
+        ( optional
+          ( filename,*( boost::is_convertible<mpl::_,std::string> ),"logfile" )
+          ( subdir,*( boost::is_convertible<mpl::_,bool> ),S_vm["npdir"].as<bool>() )
+        ) )
+    {
+        changeRepositoryImpl( directory, filename, subdir );
+    }
 
     template <class ArgumentPack>
-    Environment(ArgumentPack const& args)
+    Environment( ArgumentPack const& args )
+    {
+        char** argv = args[_argv];
+        int argc = args[_argc];
+        S_desc_app = boost::shared_ptr<po::options_description>( new po::options_description( args[_desc|Feel::feel_nooptions()] ) );
+        S_desc_lib = boost::shared_ptr<po::options_description>( new po::options_description( args[_desc_lib | Feel::feel_options()] ) );
+        AboutData about = args[_about| makeAbout( argv[0] )];
+        S_desc = boost::shared_ptr<po::options_description>( new po::options_description( ) );
+        S_desc->add( *S_desc_app );
+
+        // try to see if the feel++ lib options are already in S_desc_app, if yes then we do not add S_desc_lib
+        // otherwise we will have duplicated options
+        std::vector<boost::shared_ptr<po::option_description>> opts = Environment::optionsDescriptionApplication().options();
+        auto it = std::find_if( opts.begin(), opts.end(),
+                                []( boost::shared_ptr<po::option_description> const&o )
         {
-            char** argv = args[_argv];
-            int argc = args[_argc];
-            S_desc_app = boost::shared_ptr<po::options_description>( new po::options_description( args[_desc|Feel::feel_nooptions()] ) );
-            S_desc_lib = boost::shared_ptr<po::options_description>( new po::options_description( args[_desc_lib | Feel::feel_options()] ) );
-            AboutData about = args[_about| makeAbout(argv[0])];
-            S_desc = boost::shared_ptr<po::options_description>( new po::options_description( ) );
-            S_desc->add( *S_desc_app );
+            return o->format_name().erase( 0,2 ) == "backend";
+        } );
 
-            // try to see if the feel++ lib options are already in S_desc_app, if yes then we do not add S_desc_lib
-            // otherwise we will have duplicated options
-            std::vector<boost::shared_ptr<po::option_description>> opts = Environment::optionsDescriptionApplication().options();
-            auto it = std::find_if( opts.begin(), opts.end(),
-                                    []( boost::shared_ptr<po::option_description> const&o )
-                                    {
-                                        return o->format_name().erase(0,2) == "backend";
-                                    });
+        if   ( it == opts.end() )
+            S_desc->add( *S_desc_lib );
 
-            if   ( it == opts.end() )
-                S_desc->add( *S_desc_lib );
-            S_desc->add( file_options( about.appName() ) );
-            S_desc->add( generic_options() );
+        S_desc->add( file_options( about.appName() ) );
+        S_desc->add( generic_options() );
 
 
-            init( argc, argv, *S_desc, *S_desc_lib, about );
-            if ( S_vm.count("nochdir") == 0 )
-            {
-                std::string defaultdir = about.appName();
-                if ( S_vm.count("directory") )
-                    defaultdir = S_vm["directory"].as<std::string>();
-                std::string d = args[_directory|defaultdir];
-                LOG(INFO) << "change directory to " << d << "\n";
-                boost::format f( d );
-                changeRepository( _directory=f );
-            }
+        init( argc, argv, *S_desc, *S_desc_lib, about );
+
+        if ( S_vm.count( "nochdir" ) == 0 )
+        {
+            std::string defaultdir = about.appName();
+
+            if ( S_vm.count( "directory" ) )
+                defaultdir = S_vm["directory"].as<std::string>();
+
+            std::string d = args[_directory|defaultdir];
+            LOG( INFO ) << "change directory to " << d << "\n";
+            boost::format f( d );
+            changeRepository( _directory=f );
         }
+    }
+
+
+
+
 
     void init( int argc, char** argv, po::options_description const& desc,
                po::options_description const& desc_lib, AboutData const& about );
@@ -243,8 +261,14 @@ public:
     /**
      * return the worldcomm (static)
      */
-    static WorldComm& worldComm() { return *S_worldcomm; }
-    static WorldComm& worldCommSeq() { return *S_worldcommSeq; }
+    static WorldComm& worldComm()
+    {
+        return *S_worldcomm;
+    }
+    static WorldComm& worldCommSeq()
+    {
+        return *S_worldcommSeq;
+    }
 
     /**
      * return n sub world communicators
@@ -262,12 +286,18 @@ public:
     /**
      * return number of processors
      */
-    static int numberOfProcessors()  { return S_worldcomm->godSize(); }
+    static int numberOfProcessors()
+    {
+        return S_worldcomm->godSize();
+    }
 
     /**
      * return the rank in global mpi communicator
      */
-    static rank_type rank() { return S_worldcomm->globalRank(); }
+    static rank_type rank()
+    {
+        return S_worldcomm->globalRank();
+    }
 
     /**
      * rank 0 process is considered the master process
@@ -275,34 +305,55 @@ public:
      * the master process can then for example print information in the console
      * or in some files
      */
-    static bool isMasterRank() { return rank() == 0; }
+    static bool isMasterRank()
+    {
+        return rank() == 0;
+    }
 
     /**
      * return variables_map
      */
-    static po::variables_map const& vm() { return S_vm; }
+    static po::variables_map const& vm()
+    {
+        return S_vm;
+    }
 
-    static AboutData const& about() { return S_about; }
+    static AboutData const& about()
+    {
+        return S_about;
+    }
 
     /**
      * Adds a file to automatically load in Gmsh with Onelab
      */
-    static void olLoadInGmsh(std::string filename) { olAutoloadFiles.push_back(filename); }
+    static void olLoadInGmsh( std::string filename )
+    {
+        olAutoloadFiles.push_back( filename );
+    }
 
     /**
      * return options description data structure
      */
-    static po::options_description const& optionsDescription() { return *S_desc; }
+    static po::options_description const& optionsDescription()
+    {
+        return *S_desc;
+    }
 
     /**
      * return options description data structure
      */
-    static po::options_description const& optionsDescriptionApplication() { return *S_desc_app; }
+    static po::options_description const& optionsDescriptionApplication()
+    {
+        return *S_desc_app;
+    }
 
     /**
      * return the options description for the Feel++ library
      */
-    static po::options_description const& optionsDescriptionLibrary() { return *S_desc_lib; }
+    static po::options_description const& optionsDescriptionLibrary()
+    {
+        return *S_desc_lib;
+    }
 
     //@}
 
@@ -313,7 +364,10 @@ public:
     /**
      * set the static worldcomm
      */
-    static void setWorldComm( WorldComm& worldcomm ) { S_worldcomm = worldcomm.shared_from_this(); }
+    static void setWorldComm( WorldComm& worldcomm )
+    {
+        S_worldcomm = worldcomm.shared_from_this();
+    }
 
 #if defined(FEELPP_HAS_HARTS)
     /**
@@ -326,7 +380,10 @@ public:
      */
     static void destroyHwlocTopology();
 
-    static hwloc_topology_t getHwlocTopology() { return Environment::S_hwlocTopology; }
+    static hwloc_topology_t getHwlocTopology()
+    {
+        return Environment::S_hwlocTopology;
+    }
 
     /**
      * Binds the current process/thread to the specified core.
@@ -338,18 +395,18 @@ public:
     /**
      * Counts the number of cores under the current hwloc object, using a recursive strategy
      */
-    static int countCoresInSubtree(hwloc_obj_t node);
+    static int countCoresInSubtree( hwloc_obj_t node );
 
     /**
-     * Binds the MPI processes in Round Robin on the NUMA nodes 
+     * Binds the MPI processes in Round Robin on the NUMA nodes
      */
-    static void bindNumaRoundRobin(int lazy = false);
+    static void bindNumaRoundRobin( int lazy = false );
 
     /**
      * Writes data about processor affinity and last location of the different processes/threads
      * (last location is not guaranteed to be right, unles you bind the process to a core)
      */
-    static void writeCPUData(std::string fname = "CPUData.dat");
+    static void writeCPUData( std::string fname = "CPUData.dat" );
 #endif
 
 
@@ -402,25 +459,28 @@ public:
     static boost::tuple<std::string,bool> systemConfigRepository();
 
     BOOST_PARAMETER_MEMBER_FUNCTION(
-        (po::variable_value), static vm, tag,
-        (required
-         (name,(std::string)))
-        (optional
-         (worldcomm, ( WorldComm ), Environment::worldComm() )
-         (sub,( std::string ),"")
-         (prefix,( std::string ),"")
-            ))
-        {
-            std::ostringstream os;
-            if ( !prefix.empty() )
-                os << prefix << ".";
-            if ( !sub.empty() )
-                os << sub << "-";
-            os << name;
-            auto it = Environment::vm().find(os.str());
-            CHECK( it != Environment::vm().end() ) << "Invalid option " << os.str() << "\n";
-            return it->second;
-        }
+        ( po::variable_value ), static vm, tag,
+        ( required
+          ( name,( std::string ) ) )
+        ( optional
+          ( worldcomm, ( WorldComm ), Environment::worldComm() )
+          ( sub,( std::string ),"" )
+          ( prefix,( std::string ),"" )
+        ) )
+    {
+        std::ostringstream os;
+
+        if ( !prefix.empty() )
+            os << prefix << ".";
+
+        if ( !sub.empty() )
+            os << sub << "-";
+
+        os << name;
+        auto it = Environment::vm().find( os.str() );
+        CHECK( it != Environment::vm().end() ) << "Invalid option " << os.str() << "\n";
+        return it->second;
+    }
 
     /**
      * print resident memory usage as well as PETSc malloc usage in log file
@@ -440,22 +500,25 @@ public:
     template<typename Observer>
     static void
     addDeleteObserver( Observer const& obs )
-        {
-            S_deleteObservers.connect( obs );
-        }
+    {
+        S_deleteObservers.connect( obs );
+    }
     template<typename Observer>
     static void
     addDeleteObserver( boost::shared_ptr<Observer> const& obs )
-        {
-            S_deleteObservers.connect(boost::bind(&Observer::operator(), obs));
-        }
+    {
+        S_deleteObservers.connect( boost::bind( &Observer::operator(), obs ) );
+    }
 
     static void clearSomeMemory();
 
     /**
      * \return the scratch directory
      */
-    static const fs::path& scratchDirectory() { return S_scratchdir; }
+    static const fs::path& scratchDirectory()
+    {
+        return S_scratchdir;
+    }
 
     /**
      * @brief expand feel++ pathes in a string
@@ -551,122 +614,134 @@ class Environment : public detail::Environment
 {
 public:
     BOOST_PARAMETER_CONSTRUCTOR(
-        Environment, (detail::Environment), tag,
-        (required
-         (argc,*)
-         (argv,*))
-        (optional
-         (desc,*)
-         (desc_lib,*)
-         (about,*)
-         (directory,( std::string ))
-            )) // no semicolon
+        Environment, ( detail::Environment ), tag,
+        ( required
+          ( argc,* )
+          ( argv,* ) )
+        ( optional
+          ( desc,* )
+          ( desc_lib,* )
+          ( about,* )
+          ( directory,( std::string ) )
+        ) ) // no semicolon
 };
 
 
 BOOST_PARAMETER_FUNCTION(
-    (po::variable_value), option, tag,
-    (required
-     (name,(std::string)))
-    (optional
-     (worldcomm, ( WorldComm ), Environment::worldComm() )
-     (sub,( std::string ),"")
-     (prefix,( std::string ),"")
-        ))
+    ( po::variable_value ), option, tag,
+    ( required
+      ( name,( std::string ) ) )
+    ( optional
+      ( worldcomm, ( WorldComm ), Environment::worldComm() )
+      ( sub,( std::string ),"" )
+      ( prefix,( std::string ),"" )
+    ) )
 {
-    return Environment::vm(_name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix);
+    return Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix );
 }
 
 BOOST_PARAMETER_FUNCTION(
-    (double),
+    ( double ),
     doption, tag,
-    (required
-     (name,(std::string)))
-    (optional
-     (worldcomm, ( WorldComm ), Environment::worldComm() )
-     (sub,( std::string ),"")
-     (prefix,( std::string ),"")
-        ))
+    ( required
+      ( name,( std::string ) ) )
+    ( optional
+      ( worldcomm, ( WorldComm ), Environment::worldComm() )
+      ( sub,( std::string ),"" )
+      ( prefix,( std::string ),"" )
+    ) )
 {
     double opt;
+
     try
     {
-        opt = Environment::vm(_name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix).template as<double>();
+        opt = Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix ).template as<double>();
     }
-    catch (boost::bad_any_cast bac)
+
+    catch ( boost::bad_any_cast bac )
     {
         CHECK( false ) <<"Option "<< name << "  either does not exist or is not a double" <<std::endl;
     }
+
     return opt;
 }
 
 BOOST_PARAMETER_FUNCTION(
-    (bool),
+    ( bool ),
     boption, tag,
-    (required
-     (name,(std::string)))
-    (optional
-     (worldcomm, ( WorldComm ), Environment::worldComm() )
-     (sub,( std::string ),"")
-     (prefix,( std::string ),"")
-        ))
+    ( required
+      ( name,( std::string ) ) )
+    ( optional
+      ( worldcomm, ( WorldComm ), Environment::worldComm() )
+      ( sub,( std::string ),"" )
+      ( prefix,( std::string ),"" )
+    ) )
 {
     bool opt;
+
     try
     {
-        opt = Environment::vm(_name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix).template as<bool>();
+        opt = Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix ).template as<bool>();
     }
-    catch (boost::bad_any_cast bac)
+
+    catch ( boost::bad_any_cast bac )
     {
         CHECK( false ) <<"Option "<< name << "  either does not exist or is not a boolean" <<std::endl;
     }
+
     return opt;
 }
 
 BOOST_PARAMETER_FUNCTION(
-    (int),
+    ( int ),
     ioption, tag,
-    (required
-     (name,(std::string)))
-    (optional
-     (worldcomm, ( WorldComm ), Environment::worldComm() )
-     (sub,( std::string ),"")
-     (prefix,( std::string ),"")
-        ))
+    ( required
+      ( name,( std::string ) ) )
+    ( optional
+      ( worldcomm, ( WorldComm ), Environment::worldComm() )
+      ( sub,( std::string ),"" )
+      ( prefix,( std::string ),"" )
+    ) )
 {
     int opt;
+
     try
     {
-        opt = Environment::vm(_name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix).template as<int>();
+        opt = Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix ).template as<int>();
     }
-    catch (boost::bad_any_cast bac)
+
+    catch ( boost::bad_any_cast bac )
     {
         CHECK( false ) <<"Option "<< name << "  either does not exist or is not an integer" <<std::endl;
     }
+
     return opt;
 }
 
 
 BOOST_PARAMETER_FUNCTION(
-    (std::string),
+    ( std::string ),
     soption, tag,
-    (required
-     (name,(std::string)))
-    (optional
-     (worldcomm, ( WorldComm ), Environment::worldComm() )
-     (sub,( std::string ),"")
-     (prefix,( std::string ),"")
-        ))
+    ( required
+      ( name,( std::string ) ) )
+    ( optional
+      ( worldcomm, ( WorldComm ), Environment::worldComm() )
+      ( sub,( std::string ),"" )
+      ( prefix,( std::string ),"" )
+    ) )
 {
     std::string opt;
+
     try
     {
-        opt = Environment::vm(_name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix).template as<std::string>();
+        opt = Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix ).template as<std::string>();
     }
-    catch (boost::bad_any_cast bac)
+
+    catch ( boost::bad_any_cast bac )
     {
         CHECK( false ) <<"Option "<< name << "  either does not exist or is not a string" <<std::endl;
     }
+
     return opt;
 }
 
@@ -677,12 +752,12 @@ template<typename Args, typename Tag=tag::opt>
 struct option
 {
     typedef typename boost::remove_pointer<
-        typename boost::remove_const<
-            typename boost::remove_reference<
-                typename parameter::binding<Args, Tag>::type
-                >::type
-            >::type
-        >::type type;
+    typename boost::remove_const<
+    typename boost::remove_reference<
+    typename parameter::binding<Args, Tag>::type
+    >::type
+    >::type
+    >::type type;
 };
 
 }
@@ -690,23 +765,25 @@ struct option
 BOOST_PARAMETER_FUNCTION(
     ( typename Feel::detail::option<Args>::type ),
     optionT, tag,
-    (required
-     (name,(std::string))
-     (in_out(opt),*))
-    (optional
-     (worldcomm, ( WorldComm ), Environment::worldComm() )
-     (sub,( std::string ),"")
-     (prefix,( std::string ),"")
-        ))
+    ( required
+      ( name,( std::string ) )
+      ( in_out( opt ),* ) )
+    ( optional
+      ( worldcomm, ( WorldComm ), Environment::worldComm() )
+      ( sub,( std::string ),"" )
+      ( prefix,( std::string ),"" )
+    ) )
 {
     try
     {
-        opt = Environment::vm(_name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix).template as<typename Feel::detail::option<Args>::type>();
+        opt = Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix ).template as<typename Feel::detail::option<Args>::type>();
     }
-    catch (boost::bad_any_cast bac)
+
+    catch ( boost::bad_any_cast bac )
     {
         CHECK( false ) <<"problem in conversion type of argument "<< name << " : check the option type"<<std::endl;
     }
+
     return opt;
 }
 

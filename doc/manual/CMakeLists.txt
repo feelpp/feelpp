@@ -106,7 +106,7 @@ macro( add_docex target )
  if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${target}.cfg)
    configure_file( ${target}.cfg ${target}.cfg)
  endif()
- add_custom_command(
+add_custom_command(
    TARGET figures
    POST_BUILD
    COMMAND ${target_executable} ARGS --shape="simplex" --nochdir > ${CMAKE_CURRENT_BINARY_DIR}/${target}-simplex.out 2>&1
@@ -194,6 +194,9 @@ endmacro(add_octave_module)
 
 
 ENDIF( OCTAVE_FOUND )
+
+
+add_subdirectory(python)
 
 
 if (NOT FEELPP_MINIMAL_CONFIGURATION)
