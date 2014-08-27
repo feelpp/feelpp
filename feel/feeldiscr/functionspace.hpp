@@ -4002,6 +4002,23 @@ public:
         return u;
     }
 
+    typedef std::vector<element_ptrtype> elements_ptrtype;
+
+    /**
+     * \param u name of the elements
+     * \return a pointer to an element initialized with expression \p e
+     */
+    elements_ptrtype
+    elementsPtr( int r, std::string const& name = "u" )
+    {
+        elements_ptrtype u( r );
+        for( int i = 0; i <  r; ++i )
+        {
+            u[i] = new element_ptrtype( this->shared_from_this(), name );
+        }
+        return u;
+    }
+
     /**
      * get the \p i -th \c FunctionSpace out the list
      */
