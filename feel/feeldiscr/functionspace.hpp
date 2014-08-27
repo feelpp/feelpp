@@ -4014,7 +4014,8 @@ public:
         elements_ptrtype u( r );
         for( int i = 0; i <  r; ++i )
         {
-            u[i] = new element_ptrtype( this->shared_from_this(), name );
+            u[i] = element_ptrtype(new element_type( this->shared_from_this(), name ));
+            u[i]->zero();
         }
         return u;
     }
