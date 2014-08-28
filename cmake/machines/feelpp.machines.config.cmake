@@ -58,6 +58,15 @@ if( FEELPP_NAME_LOGIN AND EXISTS /ccc )
   endif()
 endif()
 
+STRING(REGEX MATCH "turing.*" FEELPP_NAME_LOGIN ${FEELPP_MACHINE_NAME} )
+if( FEELPP_NAME_LOGIN AND EXISTS /bglocal )
+  message(STATUS "use turing config")
+  if ( EXISTS ${FEELPP_SOURCE_DIR}/cmake/machines/feelpp.machines.turing.cmake )
+    message( STATUS "[Feel++] Configuration found for : idris(turing)" )
+    include( feelpp.machines.turing )
+  endif()
+endif()
+
 
 if( FEELPP_ENABLE_HOMEBREW AND EXISTS /usr/local/bin/brew )
   if ( EXISTS ${FEELPP_SOURCE_DIR}/cmake/machines/feelpp.machines.homebrew.cmake )
