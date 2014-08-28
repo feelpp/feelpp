@@ -77,7 +77,11 @@ void Feel::HDF5::createTable (const std::string& GroupName, const std::string& t
 {
     if (!existing)
     {   
+#ifdef H5_USE_16_API
+        M_groupList [GroupName] = H5Gcreate (M_fileId, GroupName.c_str(), H5P_DEFAULT) ;
+#else
         M_groupList [GroupName] = H5Gcreate (M_fileId, GroupName.c_str(), H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT) ;
+#endif
     }
 
     tableHandle& currentTable = M_tableList[GroupName+tableName] ;
