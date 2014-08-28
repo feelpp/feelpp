@@ -156,8 +156,13 @@ ruby -e "$(curl -fsSL https://raw.github.com/feelpp/homebrew/go)"
 brew doctor
 # Get the Formulae specific to Feel++ on the github of feelpp:
 brew tap feelpp/science
-# Install Feel++:
+
+# Finally either:
+# - Install Feel++ and all its dependencies:
 brew install feelpp
+# - Or install only the dependencies: 
+# (useful if you plan to use a different version from the master one, e.g. develop)
+brew install --only-dependencies feelpp
 \endverbatim
 
 <!--
