@@ -35,7 +35,7 @@
 #include <boost/signals2.hpp>
 #include <boost/format.hpp>
 
-#if defined(FEELPP_HAS_BOOST_PYTHON) && defined(FEELPP_ENABLE_PYTHON_WRAPPER)
+#if defined(FEELPP_HAS_BOOST_PYTHON) && defined(FEELPP_ENABLE_PYTHON_WRAPPING)
 #include <boost/python.hpp>
 #include <boost/python/stl_iterator.hpp>
 
@@ -155,7 +155,7 @@ public:
      */
     Environment( int& argc, char** &argv );
 
-#if defined(FEELPP_HAS_BOOST_PYTHON) && defined(FEELPP_ENABLE_PYTHON_WRAPPER)
+#if defined(FEELPP_HAS_BOOST_PYTHON) && defined(FEELPP_ENABLE_PYTHON_WRAPPING)
     Environment( boost::python::list arg );
 #endif
 
