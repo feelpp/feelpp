@@ -36,6 +36,7 @@
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelcore/hdf5.hpp>
 
+
 namespace Feel 
 {
 namespace fs = boost::filesystem;
@@ -135,7 +136,6 @@ public Exporter <MeshType, N>
          */
         template<typename Iterator>
             void saveNodal ( typename timeset_type::step_ptrtype __step, Iterator __var, Iterator en ) const ;
-        template<typename Iterator>
 
             /*!
              * \brief save solutions on nodes (merge version)
@@ -143,8 +143,8 @@ public Exporter <MeshType, N>
              * \param __var  iterator on solutions (begin)
              * \param en     iterator on solutions (end)
              */
-            void saveNodalMerge ( typename timeset_type::step_ptrtype __step, Iterator __var, Iterator en ) const ;
         template<typename Iterator>
+            void saveNodalMerge ( typename timeset_type::step_ptrtype __step, Iterator __var, Iterator en ) const ;
 
             /*!
              * \brief save solutions on elements  )
@@ -152,8 +152,8 @@ public Exporter <MeshType, N>
              * \param __evar   iterator on solutions (begin)
              * \param __evaren iterator on solutions (end)
              */
-            void saveElement ( typename timeset_type::step_ptrtype __step, Iterator __evar, Iterator __evaren ) const ;
         template<typename Iterator>
+            void saveElement ( typename timeset_type::step_ptrtype __step, Iterator __evar, Iterator __evaren ) const ;
 
             /*!
              * \brief save solutions on elements (merge version) 
@@ -161,6 +161,7 @@ public Exporter <MeshType, N>
              * \param __evar   iterator on solutions (begin)
              * \param __evaren iterator on solutions (end)
              */
+        template<typename Iterator>
             void saveElementMerge ( typename timeset_type::step_ptrtype __step, Iterator __evar, Iterator __evaren ) const ;
 
         /*!
@@ -182,6 +183,7 @@ public Exporter <MeshType, N>
          */
         void bubbleSort (size_type * ids, value_type * coords, size_type n) const ;
 
+    private :
         mutable WorldComm M_comm ;              /*!< MPI worldComm */
         mutable std::string M_fileName ;        /*!< file name */
         mutable std::string M_fileNameStep ;    /*!< file name + time step */
@@ -204,8 +206,10 @@ public Exporter <MeshType, N>
         mutable MPI_File fh ;                                   /*!< file descriptor of the .xmf file (merge version only) */
         mutable std::ostringstream M_str ;                      /*!< buffer of string */
 };
-}
+} // Feel
+
 #include <feel/feelfilters/exporterhdf5_impl.hpp>
+
 #endif /* FEELL_HAS_HDF5 */
 #endif /* __Exporterhdf5_H */
 
