@@ -4019,6 +4019,24 @@ public:
         }
         return u;
     }
+    /**
+     * \param e expression to initialize the element
+     * \param u name of the element
+     * \return a pointer to an element initialized with expression \p e
+     */
+    template<typename ExprT>
+    element_ptrtype
+    elementPtr( int r, ExprT e, std::string const& name = "u", typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type* = 0 )
+    {
+        elements_ptrtype u( r );
+        for( int i = 0; i <  r; ++i )
+        {
+            u[i] = element_ptrtype(new element_type( this->shared_from_this(), name ));
+            bool addExtendedElt = this->dof()->buildDofTableMPIExtended();
+            u[i]->on( _range=elements(M_mesh,addExtendedElt), _expr=e );
+        }
+        return u;
+    }
 
     /**
      * get the \p i -th \c FunctionSpace out the list
