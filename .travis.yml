@@ -1,6 +1,7 @@
 os:
   - linux
 git:
+  depth: 1
   submodules: false
 language: cpp
 compiler:
@@ -13,11 +14,13 @@ before_install:
 - if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo apt-get -qq update; fi
 - if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo apt-get install -qq libboost1.54-all-dev mpi-default-dev mpi-default-bin libeigen3-dev
     libpetsc3.4.2-dev libcln-dev petsc-dev libxml2-dev gmsh bison flex doxygen doxygen-latex transfig
-    imagemagick libtbb-dev libann-dev libglpk-dev; fi
+    imagemagick libtbb-dev libann-dev libglpk-dev automake libtool; fi
 - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew tap feelpp/science; fi
 - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew install --only-dependencies feelpp; fi
+#install some submodules
+- git submodule update --init --recursive contrib/nlopt
 install:
-- mkdir opt && cd opt && ../configure -r
+- mkdir opt && cd opt && ../configure -r -v
 script:
 - make -j16 feelpp_ginac
 - make -j2 feelpp

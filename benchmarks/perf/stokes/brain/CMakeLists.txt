@@ -28,5 +28,5 @@ add_custom_target(
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
 
-feelpp_add_application( perf_stokesCerebroVeinous SRCS stokes.cpp LABELS doc CFG stokes.cfg GEO stokes.geo)
+feelpp_add_application( perf_stokesCerebroVeinous SRCS stokes.cpp LABELS benchmarks CFG stokes.cfg GEO stokes.geo)
 install(TARGETS feelpp_perf_stokesCerebroVeinous DESTINATION bin/ COMPONENT Bin )

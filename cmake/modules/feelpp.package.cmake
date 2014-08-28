@@ -61,7 +61,7 @@ set(CPACK_SOURCE_IGNORE_FILES
   "/admin/;/Templates/;"
   "/auto/;/ltxpng/;"
   "/TAGS;/#.*;/.*~$;/*.log$;/.cvsignore;/.bzrignore;/work/;/autom4te.cache/"
-  "${PROJECT_SOURCE_DIR}/contrib/eigen"
+#  "${PROJECT_SOURCE_DIR}/contrib/eigen"
   "${PROJECT_SOURCE_DIR}/contrib/cln"
   "${PROJECT_SOURCE_DIR}/contrib/boost"
   "${PROJECT_SOURCE_DIR}/contrib/gmsh"
