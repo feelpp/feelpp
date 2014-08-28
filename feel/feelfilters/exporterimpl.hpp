@@ -43,11 +43,13 @@
 #include <feel/feelfilters/exporterensightgold.hpp>
 #endif
 
-#include <feel/feelfilters/exporterexodus.hpp>
-
 #if defined(FEELPP_HAS_HDF5)
 #include <feel/feelfilters/exporterhdf5.hpp>
 #endif
+
+#include <feel/feelfilters/exporterexodus.hpp>
+
+
 
 namespace Feel
 {
