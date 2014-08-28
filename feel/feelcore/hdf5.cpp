@@ -25,6 +25,7 @@
    \file hdf5.cpp
    \author Radu Popescu <radu.popescu@epfl.ch>
    \author Christophe Prud'homme <prudhomme@unistra.fr> (adaptation from LifeV to Feel++)
+   \author Benjamin Vanthong <benjamin.vanthong@gmail.com>
    \date 2013-10-16
  */
 
