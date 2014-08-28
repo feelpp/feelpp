@@ -294,6 +294,51 @@ Backend<T>::build( po::variables_map const& vm, std::string const& prefix, World
     // should never happen
     return backend_ptrtype();
 }
+
+template <typename T>
+typename Backend<T>::backend_ptrtype
+Backend<T>::build( BackendType bt, std::string const& prefix, WorldComm const& worldComm )
+{
+    // Build the appropriate solver
+    switch ( bt )
+    {
+    case BACKEND_EIGEN:
+    {
+        return backend_ptrtype( new BackendEigen<value_type>( Environment::vm(), prefix, worldComm ) );
+    }
+    break;
+    case BACKEND_EIGEN_DENSE:
+    {
+        return backend_ptrtype( new BackendEigen<value_type,1>( Environment::vm(), prefix, worldComm ) );
+    }
+    break;
+
+#if defined ( FEELPP_HAS_PETSC_H )
+
+    default:
+    case BACKEND_PETSC:
+    {
+        return backend_ptrtype( new BackendPetsc<value_type>( Environment::vm(), prefix, worldComm ) );
+    }
+    break;
+#endif
+#if defined ( FEELPP_HAS_TRILINOS_EPETRA )
+
+    case BACKEND_TRILINOS:
+    {
+#if defined ( FEELPP_HAS_TRILINOS_EPETRA )
+        return backend_ptrtype( new BackendTrilinos( Environment::vm(), prefix, worldComm ) );
+#else
+        return backend_ptrtype();
+#endif
+    }
+    break;
+#endif
+    }
+    // should never happen
+    return backend_ptrtype();
+}
+
 template <typename T>
 typename Backend<T>::solve_return_type
 Backend<T>::solve( sparse_matrix_ptrtype const& A,
