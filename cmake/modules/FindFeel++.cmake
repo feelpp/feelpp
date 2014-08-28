@@ -300,12 +300,22 @@ ELSEIF ( HDF5_LIBRARY AND NOT HDF5_IS_PARALLEL )
   MESSAGE(STATUS "HDF5 is found but is not parallel, HDF5 is not enabled in Feel++")
 endif()
 
-option(FEELPP_ENABLE_PYTHON_WRAPPER "Enable Boost.Python wrapper implementation" OFF)
+option(FEELPP_ENABLE_PYTHON_WRAPPING "Enable Boost.Python wrapping implementation" OFF)
 
 # Boost
 SET(BOOST_MIN_VERSION "1.49.0")
-FIND_PACKAGE(Boost ${BOOST_MIN_VERSION} COMPONENTS date_time filesystem system program_options unit_test_framework signals  ${FEELPP_BOOST_MPI} regex  serialization )
-#FIND_PACKAGE(Boost ${BOOST_MIN_VERSION} COMPONENTS date_time filesystem system program_options unit_test_framework signals  ${FEELPP_BOOST_MPI} regex  serialization python )
+
+# Making consecutive calls to find_package for Boost to find optional components (boost_python for now)
+# Making only one call to find_package and having one of the component not installed will mark Boost as not found
+
+# First we try to find boost with the python components
+FIND_PACKAGE(Boost ${BOOST_MIN_VERSION} COMPONENTS python )
+if(Boost_PYTHON_FOUND)
+    set(FEELPP_HAS_BOOST_PYTHON 1)
+endif()
+
+# Then we try to find rest of the Boost components
+FIND_PACKAGE(Boost ${BOOST_MIN_VERSION} REQUIRED date_time filesystem system program_options unit_test_framework signals ${FEELPP_BOOST_MPI} regex serialization )
 if(Boost_FOUND)
   IF(Boost_MAJOR_VERSION EQUAL "1" AND Boost_MINOR_VERSION GREATER "51")
     add_definitions(-DBOOST_RESULT_OF_USE_TR1)
