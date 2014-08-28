@@ -295,8 +295,6 @@ void Exporterhdf5<MeshType, N>::writeMerge () const
     MPI_File_open( this->worldComm().comm(), strTmp, MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL, &fh );
     free (strTmp) ;
 
-    size_type rank = Environment::worldComm().globalRank () ;
-
     timeset_const_iterator __ts_it = this->beginTimeSet () ;
     timeset_const_iterator __ts_en = this->endTimeSet () ;
     
