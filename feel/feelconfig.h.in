@@ -141,8 +141,11 @@
 /* Define to 1 if you have Python. */
 #cmakedefine FEELPP_HAS_PYTHON
 
-/* Define to 1 if you enabled Python wrapper. */
-#cmakedefine FEELPP_ENABLE_PYTHON_WRAPPER
+/* Define to 1 if you enabled Python wrapping. */
+#cmakedefine FEELPP_ENABLE_PYTHON_WRAPPING
+
+/* Define to 1 if Boost.Python is available. */
+#cmakedefine FEELPP_HAS_BOOST_PYTHON
 
 /* Define to 1 if you have the <ufsparse/umfpack.h> header file. */
 #cmakedefine FEELPP_HAS_UFSPARSE_UMFPACK_H

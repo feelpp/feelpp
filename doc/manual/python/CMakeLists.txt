@@ -1,4 +1,4 @@
-if (FEELPP_ENABLE_PYTHON_WRAPPER) 
+if (FEELPP_ENABLE_PYTHON_WRAPPING AND FEELPP_HAS_BOOST_PYTHON) 
 
 include_directories(${Boost_INCLUDE_DIRS}) 
 add_executable(myfunctspace myfunctionspace.cpp myfunctionspace.cfg)
