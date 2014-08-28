@@ -93,7 +93,7 @@ int main(int argc, char**argv )
         at = a;
         at += integrate( _range=elements( mesh ), _expr= trans(gradt(u)*idv(extrapu))*id(v) );
         at+=on(_range=markedfaces(mesh,"wall"), _rhs=ft, _element=u,
-              _expr=zero<2>() );
+               _expr=zero<2>() );
         at+=on(_range=markedfaces(mesh,"inlet"), _rhs=ft, _element=u,
                _expr=-expr( soption(_name="functions.g")) *N() );
         toc("update lhs");tic();

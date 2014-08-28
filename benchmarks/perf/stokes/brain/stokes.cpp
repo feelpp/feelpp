@@ -118,18 +118,18 @@ int main(int argc, char**argv )
     LOG(INFO) << "   hsize = " << hsize << "\n";
     LOG(INFO) << "[dof]             number of dof: " << Vh->nDof() << "\n";
     LOG(INFO) << "[dof]        number of dof/proc: " << Vh->nLocalDof() << "\n";
-    LOG(INFO) << "[dof]          number of dof(U): " << Vh->template functionSpace<0>()->nDof()  << "\n";
-    LOG(INFO) << "[dof]     number of dof/proc(U): " << Vh->template functionSpace<0>()->nLocalDof()  << "\n";
-    LOG(INFO) << "[dof]          number of dof(P): " << Vh->template functionSpace<1>()->nDof()  << "\n";
-    LOG(INFO) << "[dof]     number of dof/proc(P): " << Vh->template functionSpace<1>()->nLocalDof()  << "\n";
+    LOG(INFO) << "[dof]          number of dof(U): " << Vh->functionSpace<0>()->nDof()  << "\n";
+    LOG(INFO) << "[dof]     number of dof/proc(U): " << Vh->functionSpace<0>()->nLocalDof()  << "\n";
+    LOG(INFO) << "[dof]          number of dof(P): " << Vh->functionSpace<1>()->nDof()  << "\n";
+    LOG(INFO) << "[dof]     number of dof/proc(P): " << Vh->functionSpace<1>()->nLocalDof()  << "\n";
 
     std::cout << "Mesh size = "<< hsize << "\n";
     std::cout << "[dof]             number of dof: " << Vh->nDof() << "\n";
     std::cout << "[dof]        number of dof/proc: " << Vh->nLocalDof() << "\n";
-    std::cout << "[dof]          number of dof(U): " << Vh->template functionSpace<0>()->nDof()  << "\n";
-    std::cout << "[dof]     number of dof/proc(U): " << Vh->template functionSpace<0>()->nLocalDof()  << "\n";
-    std::cout << "[dof]          number of dof(P): " << Vh->template functionSpace<1>()->nDof()  << "\n";
-    std::cout << "[dof]     number of dof/proc(P): " << Vh->template functionSpace<1>()->nLocalDof()  << "\n";
+    std::cout << "[dof]          number of dof(U): " << Vh->functionSpace<0>()->nDof()  << "\n";
+    std::cout << "[dof]     number of dof/proc(U): " << Vh->functionSpace<0>()->nLocalDof()  << "\n";
+    std::cout << "[dof]          number of dof(P): " << Vh->functionSpace<1>()->nDof()  << "\n";
+    std::cout << "[dof]     number of dof/proc(P): " << Vh->functionSpace<1>()->nLocalDof()  << "\n";
 
 
     // save results

@@ -32,6 +32,7 @@
 #include <feel/feelalg/vectorpetsc.hpp>
 #include <feel/feelalg/matrixpetsc.hpp>
 #include <feel/feelalg/functionspetsc.hpp>
+#include <feel/feeltiming/tic.hpp>
 
 #if defined( FEELPP_HAS_PETSC_H )
 
@@ -1343,10 +1344,13 @@ MatrixPetsc<T>::diagonal( Vector<value_type>& out ) const
 }
 template<typename T>
 void
-MatrixPetsc<T>::transpose( MatrixSparse<value_type>& Mt ) const
+MatrixPetsc<T>::transpose( MatrixSparse<value_type>& Mt, size_type options ) const
 {
+    Context ctx( options );
+    tic();
     this->close();
-
+    toc("transpose: close()" );
+    tic();
     MatrixPetsc<T>* Atrans;
     if ( this->comm().size()>1 )
     {
@@ -1363,38 +1367,54 @@ MatrixPetsc<T>::transpose( MatrixSparse<value_type>& Mt ) const
         ierr = PETSc::MatDestroy( Atrans->M_mat );
         CHKERRABORT( this->comm(),ierr );
     }
-
-#if (PETSC_VERSION_MAJOR >= 3)
-    ierr = MatTranspose( M_mat, MAT_INITIAL_MATRIX,&Atrans->M_mat );
-#else
-    ierr = MatTranspose( M_mat, &Atrans->M_mat );
-#endif
-
-    CHKERRABORT( this->comm(),ierr );
-
-    if ( this->size1()==this->size2() )
-    {
-        PetscTruth isSymmetric;
-        MatEqual( M_mat, Atrans->M_mat, &isSymmetric );
-
-        if ( isSymmetric )
+    toc("transpose: matrix init");
+    tic();
+    if ( ctx.test( MATRIX_TRANSPOSE_ASSEMBLED ) )
         {
 #if (PETSC_VERSION_MAJOR >= 3)
-            MatSetOption( M_mat,MAT_SYMMETRIC,PETSC_TRUE );
+            ierr = MatTranspose( M_mat, MAT_INITIAL_MATRIX,&Atrans->M_mat );
 #else
-            MatSetOption( M_mat,MAT_SYMMETRIC );
+            ierr = MatTranspose( M_mat, &Atrans->M_mat );
 #endif
+            CHKERRABORT( this->comm(),ierr );
+            Mt.setGraph( this->graph()->transpose() );
         }
-
-        else
+    else if ( ctx.test( MATRIX_TRANSPOSE_UNASSEMBLED ) )
         {
-            DVLOG(2) << "[MatrixPETSc::transpose] Petsc matrix is non-symmetric \n";
+            ierr = MatCreateTranspose( M_mat, &Atrans->M_mat );
+            CHKERRABORT( this->comm(),ierr );
         }
-    }
 
-    Mt.setGraph( this->graph()->transpose() );
+
+    toc("transpose: create mat transpose");
+    tic();
+    if ( ctx.test( MATRIX_TRANSPOSE_CHECK ) )
+        {
+            if ( this->size1()==this->size2() )
+                {
+                    PetscTruth isSymmetric;
+                    MatEqual( M_mat, Atrans->M_mat, &isSymmetric );
+                    
+                    if ( isSymmetric )
+                        {
+#if (PETSC_VERSION_MAJOR >= 3)
+                            MatSetOption( M_mat,MAT_SYMMETRIC,PETSC_TRUE );
+#else
+                            MatSetOption( M_mat,MAT_SYMMETRIC );
+#endif
+                        }
+
+                    else
+                        {
+                            DVLOG(2) << "[MatrixPETSc::transpose] Petsc matrix is non-symmetric \n";
+                        }
+                }
+        }
+
+
+
     Mt.setInitialized( true );
-
+    toc("transpose : init done");
 }
 
 template<typename T>

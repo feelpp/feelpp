@@ -35,6 +35,11 @@
 
 #include <complex>
 
+#if defined(__APPLE__)
+#undef tolower
+#undef toupper
+#endif
+
 #include <boost/mpl/multiplies.hpp>
 #include <boost/mpl/list.hpp>
 #include <boost/mpl/lower_bound.hpp>

@@ -75,8 +75,6 @@
 #include "Utils/PerfTools/PerfCounterMng.h"
 #endif //defined(FEELPP_HAS_HARTS)
 
-namespace fs = boost::filesystem;
-
 namespace Feel
 {
 namespace vf
@@ -4637,8 +4635,12 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         perf_mng.init("comp") ;
         perf_mng.start("comp") ;
 
+        Environment::writeCPUData(""); 
+
         RunTimeSystem::StdScheduler scheduler;
         taskMng.run(scheduler, taskList);
+
+        Environment::writeCPUData(""); 
 
         perf_mng.stop("comp") ;
 
@@ -4650,17 +4652,20 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         for(int i = 0; i < nbThreads; i++)
         {
             std::cout << Environment::worldComm().rank() << "|" << i << " elapsed=" << hce[i]->elapsed() << std::endl;
+            //hce[i]->printPerfInfo();
         }
 
         // Free memory
-        #if 0
+        #if 1
         delete threadEnv;
-        delete compFkTask;
+        //delete compFkTask;
 
+        /*
         for(int i = 0 ; i < nbThreads; i++)
         {
             delete hce[i];
         }
+        */
         #endif
 
         perf_mng.stop("total") ;
@@ -4687,7 +4692,6 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                   << perf_mng.getValueInSeconds("total") << " (" << perf_mng.getValueInSeconds("init") << " ("
                   << perf_mng.getValueInSeconds("init0") << ", " << perf_mng.getValueInSeconds("init1") << ", " << perf_mng.getValueInSeconds("init2") << ") "
                   << ", " << perf_mng.getValueInSeconds("comp") << ")" << std::endl;
-        std::cout << "integrating over elements done in " << __timer.elapsed() << "s\n";
 
         DLOG(INFO) << "integrating over elements done in " << __timer.elapsed() << "s\n";
         return res;
@@ -4761,7 +4765,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         /* Using pthread */
         int nbThreads = coresPerProcess;
 
-        //std::cout << "2. HARTS: nMPIProc=" << nMPIProc << ", nTotalCoresNode=" << nTotalCoresNode << ", coresPerProcess=" << coresPerProcess << ", remainder=" << remainder << ", nbElements="<< nbElts <<  std::endl;
+        std::cout << "2. HARTS: nMPIProc=" << nMPIProc << ", nTotalCoresNode=" << nTotalCoresNode << ", coresPerProcess=" << coresPerProcess << ", remainder=" << remainder << std::endl;
 
 #if defined(FEELPP_HAS_HARTS)
         perf_mng.stop("init0") ;
@@ -4824,6 +4828,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
             out[id] = t->result();
 
             std::cout << Environment::worldComm().rank() << "|" << id << " elapsed=" << t->elapsed() << std::endl;
+            //t->printPerfInfo();
 
             delete t;
         }

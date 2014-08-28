@@ -4,6 +4,37 @@
 
    \tableofcontents
 
+   \section feelpp0990 Feel++ Release 0.99.0
+   release date 01-09-2014
+
+   \subsection changes0990 Changes
+
+   - Improve documentation, see <a
+     href="https://github.com/feelpp/feelpp/issues/300">#300</a>
+   - Refactoring of the linear and nonlinears solver and preconditioner framework
+
+   \subsection features0990 Features
+
+   - Support CMake 3.0
+   - Support Boost from 1.49 to 1.56
+   - Support PETSc from 3.2 to 3.5.1
+   - Support SLEPc from 3.2 to 3.5
+   - Support GCC from 4.7 to 4.9 (g++ versions that support the c++11 standard)
+   - Support CLANG from 3.2 to 3.5
+   - Support INTEL C++ Compiler starting from intel.15 version
+   - Support INTEL MKL starting from version 11
+   - Support in-memory on Gmsh data structures (Geo and Msh) see <a href="https://github.com/feelpp/feelpp/issues/412">#295</a>
+   - Support NLOpt see <a href="https://github.com/feelpp/feelpp/issues/407">#407</a>
+   - Started work on Python wrapper thanks to internship of T. Lantz, see <a href="https://github.com/feelpp/feelpp/issues/366">#366</a>
+
+   \subsection issues0990 Noteworthy Issues
+
+   \subsection spec0990 Platform specific
+
+   - MACOSX: when using cmake3 set MACOS_RPATH to ON by default
+   - MACOSX: when using cmake3 set CMAKE_INSTALL_RPATH to CMAKE_INSTALL_PREFIX/lib
+   - Port on Curie (@TGCC,France)
+
    \section feelpp0980 Feel++ Release 0.98.0
    release date 22-05-2014
 

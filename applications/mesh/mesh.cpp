@@ -45,12 +45,14 @@ int main( int argc, char** argv )
     auto numPartition = ioption(_name="numPartition");
     auto mesh = loadMesh(_mesh=new  Mesh<Simplex<FEELPP_DIM>>, _partitions=numPartition);
 
+    size_type nbdyfaces = nelements(boundaryfaces(mesh));
 
     if ( Environment::isMasterRank() )
     {
         std::cout << " - mesh entities" << std::endl;
-        std::cout << "   number of elements : " << mesh->numGlobalElements() << std::endl;
-        std::cout << "      number of faces : " << mesh->numGlobalFaces() << std::endl;
+        std::cout << "      number of elements : " << mesh->numGlobalElements() << std::endl;
+        std::cout << "         number of faces : " << mesh->numGlobalFaces() << std::endl;
+        std::cout << "number of boundary faces : " << nbdyfaces << std::endl;
         if ( FEELPP_DIM > 2 )
             std::cout << "      number of edges : " << mesh->numGlobalEdges() << std::endl;  
         std::cout << "      number of points : " << mesh->numGlobalPoints() << std::endl;
