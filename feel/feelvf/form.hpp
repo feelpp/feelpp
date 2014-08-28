@@ -108,7 +108,8 @@ BOOST_PARAMETER_FUNCTION(
       ( test,             *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) ) )
     ( optional                                  //    four optional parameters, with defaults
       //( in_out( vector ),   *( detail::is_vector_ptr<mpl::_> ), backend()->newVector( _test=test ) )
-      ( in_out( vector ),   *, backend()->newVector( test ) )
+      ( backend,          *, Feel::backend() )
+      ( in_out( vector ),   *, backend->newVector( test ) )
       ( init,             *( boost::is_integral<mpl::_> ), false )
       ( do_threshold,     *( boost::is_integral<mpl::_> ), bool( false ) )
       ( threshold,        *( boost::is_floating_point<mpl::_> ), type_traits<double>::epsilon() )
@@ -204,7 +205,8 @@ BOOST_PARAMETER_FUNCTION( ( typename compute_form2_return<Args,mpl::bool_<boost:
                            ( optional                                  //    four optional parameters, with defaults
                              ( init,             *( boost::is_integral<mpl::_> ), false )
                              ( pattern,          *( boost::is_integral<mpl::_> ), size_type( Pattern::COUPLED ) )
-                             ( in_out( matrix ),   *(boost::is_convertible<mpl::_, boost::shared_ptr<MatrixSparse<double>>>), backend()->newMatrix( _test=test, _trial=trial, _pattern=pattern ) )
+                             ( backend,          *, Feel::backend() )
+                             ( in_out( matrix ),   *(boost::is_convertible<mpl::_, boost::shared_ptr<MatrixSparse<double>>>), backend->newMatrix( _test=test, _trial=trial, _pattern=pattern ) )
                              ( rowstart,         *( boost::is_integral<mpl::_> ), 0 )
                              ( colstart,         *( boost::is_integral<mpl::_> ), 0 )
                                ) // optional
