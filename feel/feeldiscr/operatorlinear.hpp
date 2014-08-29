@@ -88,7 +88,11 @@ public:
     OperatorLinear()
         :
         super_type(),
+#if 0
         M_backend( backend_type::build( BACKEND_PETSC ) ),
+#else
+        M_backend( backend_type::build( ) ),
+#endif
         M_matrix(),
         M_pattern( Pattern::COUPLED ),
         M_name("operatorlinear")
