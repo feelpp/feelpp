@@ -2,6 +2,7 @@
 
 #include <feel/feel.hpp>
 #include <feel/feelalg/vectorblock.hpp>
+#include <feel/feelvf/print.hpp>
 
 namespace Feel
 {
@@ -49,9 +50,9 @@ createMeshStokesDirichletLM( mpl::int_<3> /**/ )
     //S.setMarker(_type="surface",_name="wallcylinder",_marker2=true);
     S.setMarker(_type="volume",_name="OmegaStruct",_markerAll=true);
 
-    auto mesh = (C-S).createMesh(_mesh=new mesh_type,
-                                 _name="mymesh3d.msh",
-                                 _hmax=meshSize );
+    auto mesh = C.createMesh(_mesh=new mesh_type,
+                             _name="mymesh3d",
+                             _hmax=meshSize );
 
     return mesh;
 }
@@ -104,10 +105,10 @@ void runStokesDirichletLM()
     myblockGraph(0,0) = stencil( _test=Vh1,_trial=Vh1, _diag_is_nonzero=false, _close=false)->graph();
     myblockGraph(1,0) = stencil( _test=Vh21,_trial=Vh1, _diag_is_nonzero=false, _close=false)->graph();
     myblockGraph(0,1) = stencil( _test=Vh1,_trial=Vh21, _diag_is_nonzero=false, _close=false)->graph();
-    myblockGraph(1,1) = stencil( _test=Vh21,_trial=Vh21, _diag_is_nonzero=false, _close=false)->graph();
+    myblockGraph(1,1) = stencil( _test=Vh21,_trial=Vh21, _diag_is_nonzero=true, _close=false)->graph();
     myblockGraph(2,0) = stencil( _test=Vh22, _trial=Vh1, _diag_is_nonzero=false, _close=false)->graph();
     myblockGraph(0,2) = stencil( _test=Vh1,_trial=Vh22, _diag_is_nonzero=false, _close=false)->graph();
-    myblockGraph(2,2) = stencil( _test=Vh22,_trial=Vh22, _diag_is_nonzero=false, _close=false)->graph();
+    myblockGraph(2,2) = stencil( _test=Vh22,_trial=Vh22, _diag_is_nonzero=true, _close=false)->graph();
 
     auto A = backend()->newBlockMatrix(_block=myblockGraph);
 
@@ -151,6 +152,7 @@ void runStokesDirichletLM()
     auto Clag2t = alpha*vec( idt(lambda2)*Ny(), -idt(lambda2)*Nx(), cst(0.) );
 
     //stokes +=integrate( markedfaces( mesh,inlet ), -trans(id(v))*(C*lagt));
+    std::cout << "Vh21/Vh22 trial\n";
     for( auto bdy : { inlet, outlet } )
     {
         form2( _trial=Vh21, _test=Vh1 ,_matrix=A,
@@ -164,23 +166,51 @@ void runStokesDirichletLM()
             +=integrate( markedfaces( mesh, bdy ),
                          -trans(cross(id(u),N()))*(Clag2t) );
     }
+
+
+    auto Clag1TT = vec( cst(0.), cst(0.), id(lambda1) );
+    auto Clag2inlet = vec( cst(0.), id(lambda2), cst(0.) );
+    auto Clag2outlet = vec( cst(0.), -id(lambda2), cst(0.) );
+
+
+    std::cout << "Vh21 test " << inlet << "\n";
+
+
     form2( _test=Vh21, _trial=Vh1 ,_matrix=A,
            _rowstart=Vh1->nLocalDofWithGhost(), _colstart=0 )
-        +=integrate( elements( submesh ),
-                     -trans(cross(idt(u),N()))*(Clag1) );
-    form2( _test=Vh22, _trial=Vh1 ,_matrix=A,
-           _rowstart=Vh1->nLocalDofWithGhost()+Vh21->nLocalDofWithGhost(), _colstart=0 )
-        +=integrate( elements( submesh ),
-                     -trans(cross(idt(u),N()))*(Clag2) );
+        +=integrate( markedelements( submesh, inlet  ),
+                     -trans(cross(idt(u),vec(cst(-1.0),cst(0.),cst(0.))))*Clag1TT);
 
+    std::cout << "Vh21 test " << outlet << "\n";
+
+    form2( _test=Vh21, _trial=Vh1 ,_matrix=A,
+           _rowstart=Vh1->nLocalDofWithGhost(), _colstart=0 )
+        +=integrate( markedelements( submesh, outlet ),
+                     -trans(cross(idt(u),vec(cst(1.0),cst(0.),cst(0.))))*Clag1TT);
+
+    std::cout << "Vh22 test " << inlet << "\n";
+    form2( _test=Vh22, _trial=Vh1 ,_matrix=A,
+               _rowstart=Vh1->nLocalDofWithGhost()+Vh21->nLocalDofWithGhost(), _colstart=0 )
+        +=integrate( markedelements( submesh, inlet ),
+                     -trans(cross(idt(u),vec(cst(-1.0),cst(0.),cst(0.))))*(Clag2inlet));
+
+    std::cout << "Vh22 test " << outlet << "\n";
+    form2( _test=Vh22, _trial=Vh1 ,_matrix=A,
+               _rowstart=Vh1->nLocalDofWithGhost()+Vh21->nLocalDofWithGhost(), _colstart=0 )
+        +=integrate( markedelements( submesh, outlet ),
+                     -trans(cross(idt(u),vec(cst(1.0),cst(0.),cst(0.))))*(Clag2outlet));
+
+
+    std::cout << "diag Vh1\n";
     form2( _test=Vh21, _trial=Vh21 ,_matrix=A,
            _rowstart=Vh1->nLocalDofWithGhost(), _colstart=Vh1->nLocalDofWithGhost() )
         +=integrate( elements( submesh ), 1e-4*idt(lambda1)*id(lambda1) );
 
+    std::cout << "diag Vh2\n";
     form2( _test=Vh22, _trial=Vh22 ,_matrix=A,
            _rowstart=Vh1->nLocalDofWithGhost()+Vh21->nLocalDofWithGhost(),
            _colstart=Vh1->nLocalDofWithGhost()+Vh21->nLocalDofWithGhost() )
-        +=integrate( elements( submesh ), 1e-4*idt(lambda2)*id(lambda2) );
+        +=integrate( elements( submesh ), 1e-4*idt(lambda2)*id(lambda2));
 
 
     form1( _test=Vh1, _vector=F,_rowstart=0 )
