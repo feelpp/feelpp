@@ -197,8 +197,8 @@ int main(int argc, char**argv )
                                   _email="feelpp-devel@feelpp.org"));
 
 
-    runStokesDirichletLM<2,1>();
-    //runStokesDirichletLM<3,1>();
+    //runStokesDirichletLM<2,1>();
+    runStokesDirichletLM<3,1>();
 
     return 0;
 }
