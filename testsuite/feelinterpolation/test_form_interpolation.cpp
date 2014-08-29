@@ -162,26 +162,26 @@ void run()
     double gammabc=10;
 
     // assemblage
-    form2( Xh, Xh, A, _init=true ) =
+    form2( _test=Xh, _trial=Xh, _matrix=A, _init=true ) =
         integrate( elements( mesh ), //_Q<15>(),
                    + gradt( u )*trans( grad( v ) ) );
 
-    form2( Xh, Xh, A ) +=
+    form2( _test=Xh, _trial=Xh, _matrix=A ) +=
         integrate( boundaryfaces( mesh ),
                    - gradt( u )*N()*id( v )
                    + gammabc*idt( u )*id( v )/hFace() );
 
-    form1( Xh, F, _init=true ) =
+    form1( _test=Xh, _vector=F, _init=true ) =
         integrate( elements( mesh ), // _Q<10>(),
                    trans( f )*id( v ) );
 
-    form1( Xh, F ) +=
+    form1( _test=Xh, _vector=F ) +=
         integrate( boundaryfaces( mesh ),
                    + gammabc*u_exact*id( v )/hFace() );
 
     LOG(INFO) << "A,F assembled\n";
 
-    //form2( Xh, Xh, A ) +=
+    //form2( _test=Xh, _trial=Xh, _matrix=A ) +=
     //    on( boundaryfaces(mesh) , u, F, u_exact );
 
     // solve system
@@ -216,7 +216,7 @@ void run()
 
     LOG(INFO) << "a2,f2 assembled\n";
 
-    //form2( Xh, Xh, A2 ) +=
+    //form2( _test=Xh, _trial=Xh, _matrix=A2 ) +=
     //     on( boundaryfaces(mesh) , u2, F2, u_exact );
 
 
