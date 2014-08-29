@@ -252,7 +252,7 @@ private:
     size_type M_numFaces;
     size_type M_numElements;
     //HDF5 I/O filter
-    HDF5IO M_HDF5IO;
+    HDF5 M_HDF5IO;
     // Buffers for reading/writing
     std::vector<size_type> M_uintBuffer;
     std::vector<value_type> M_realBuffer;
@@ -297,7 +297,7 @@ inline void PartitionIO<MeshType>::setup (const std::string& fileName,
 template<typename MeshType>
 void PartitionIO<MeshType>::write (const mesh_ptrtype& meshParts)
 {
-    M_meshPartsOut = mesh;
+    M_meshPartsOut = meshParts;
     // TODO:
     //M_numParts = M_meshParts->size();
 
@@ -955,8 +955,8 @@ void PartitionIO<MeshType>::readEdges()
             pe->setMarkerID (M_uintBuffer[stride * j + 2]);
         }
     }
-}
 #endif
+}
 
 
 template<typename MeshType>
@@ -1135,6 +1135,7 @@ void PartitionIO<MeshType>::readElements()
 
 #endif /* FEELPP_HAS_HDF5 */
 
+#if 0
 
 BOOST_PARAMETER_FUNCTION( ( void ),
                           h5partition,                                       // 2. name of the function template
@@ -1171,5 +1172,6 @@ BOOST_PARAMETER_FUNCTION( ( void ),
     PartitionIO<mesh_type> p( filename, worldcomm );
     p.read(mesh);
 }
+#endif
 
 #endif /* __PartitionIO_H */

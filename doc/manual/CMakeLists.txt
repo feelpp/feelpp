@@ -195,9 +195,7 @@ endmacro(add_octave_module)
 
 ENDIF( OCTAVE_FOUND )
 
-
 add_subdirectory(python)
-
 
 if (NOT FEELPP_MINIMAL_CONFIGURATION)
   add_subdirectory(laplacian)
