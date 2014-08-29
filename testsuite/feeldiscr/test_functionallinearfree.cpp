@@ -76,7 +76,11 @@ testFunctionalLinearFree()
 {
 
     typedef Backend<double> backend_type;
+#if 0
     auto backend = backend_type::build( BACKEND_PETSC );
+#else
+    auto backend = backend_type::build( );
+#endif
 
     auto mesh=unitHypercube<Dim>();
     auto Xh = Pch<Order>( mesh );
@@ -113,7 +117,11 @@ testFunctionalLinearComposite()
 {
 
     typedef Backend<double> backend_type;
+#if 0
     auto backend = backend_type::build( BACKEND_PETSC );
+#else
+    auto backend = backend_type::build( );
+#endif
 
     auto mesh=unitHypercube<Dim>();
     auto Xh = Pch<Order>( mesh );
