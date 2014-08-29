@@ -259,27 +259,27 @@ struct test_integration_internal_faces_lf : public Application
         BOOST_TEST_MESSAGE ( "jump(grad(u) u^T F = " << jump_gradu_F << "\n" );
         BOOST_CHECK_SMALL( jump_gradu_F, eps );
 
-        form1( Xh, F, _init=true ) = integrate( internalfaces( mesh ), leftface( grad( u )*N() ) );
+        form1(_test=Xh, _vector=F, _init=true ) = integrate( internalfaces( mesh ), leftface( grad( u )*N() ) );
         double left_gradu_n = inner_product( u, *F );
-        form1( Xh, F, _init=true ) = integrate( internalfaces( mesh ), rightface( grad( u )*N() ) );
+        form1( _test=Xh, _vector=F, _init=true ) = integrate( internalfaces( mesh ), rightface( grad( u )*N() ) );
         double right_gradu_n = inner_product( u, *F );
         BOOST_TEST_MESSAGE(  "jump(left(grad(u)*N)) u^T F = " << left_gradu_n << "\n" );
         BOOST_TEST_MESSAGE(  "jump(right(grad(u)*N)) u^T F = " << right_gradu_n << "\n" );
         BOOST_CHECK_CLOSE( left_gradu_n, -right_gradu_n, eps*100 );
 
         u = vf::project( Xh, elements( mesh ), cst( 1. ) );
-        form1( Xh, F, _init=true ) = integrate( internalfaces( mesh ), leftface( id( u ) ) );
+        form1( _test=Xh, _vector=F, _init=true ) = integrate( internalfaces( mesh ), leftface( id( u ) ) );
         double left_1 = inner_product( u, *F );
         BOOST_TEST_MESSAGE(  "left(id(u)) u^T F = " << left_1 << "\n" );
-        form1( Xh, F, _init=true ) = integrate( internalfaces( mesh ), rightface( id( u ) ) );
+        form1( _test=Xh, _vector=F, _init=true ) = integrate( internalfaces( mesh ), rightface( id( u ) ) );
         double right_1 = inner_product( u, *F );
         BOOST_TEST_MESSAGE(  "right(id(u)) u^T F = " << right_1 << "\n" );
         BOOST_CHECK_CLOSE( left_1, right_1, eps );
 
-        form1( Xh, F, _init=true ) = integrate( internalfaces( mesh ), trans( N() )*jump( id( u ) ) );
+        form1( _test=Xh, _vector=F, _init=true ) = integrate( internalfaces( mesh ), trans( N() )*jump( id( u ) ) );
         BOOST_CHECK_SMALL( inner_product( u, *F ), eps );
 
-        form1( Xh, F, _init=true ) = integrate( internalfaces( mesh ), jump( grad( u ) ) );
+        form1( _test=Xh, _vector=F, _init=true ) = integrate( internalfaces( mesh ), jump( grad( u ) ) );
         BOOST_CHECK_SMALL( inner_product( u, *F ), eps );
 #endif
 
