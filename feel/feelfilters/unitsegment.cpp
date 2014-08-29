@@ -34,10 +34,18 @@
 namespace Feel {
 
 boost::shared_ptr<Mesh<Simplex<1> > >
-unitSegment( double h )
+unitSegment( double h, std::string prefix, WorldComm const& wc )
 {
+    std::ostringstream ofs;
+    if ( !prefix.empty() )
+        ofs << prefix  << ".segment";
+    else
+        ofs << "segment";
     return createGMSHMesh(_mesh=new Mesh<Simplex<1> >,
-                          _desc=domain( _name="segment",
+                          _prefix=prefix,
+                          _worldcomm=wc,
+                          _desc=domain( _name=ofs.str(),
+                                        _prefix=prefix,
                                         _shape="hypercube",
                                         _dim=1,
                                         _h=h ) );

@@ -201,6 +201,8 @@ public:
      * Builds a \p Backend
      */
     static backend_ptrtype build( po::variables_map const& vm, std::string const& prefix = "", WorldComm const& worldComm=Environment::worldComm() );
+    static backend_ptrtype build( BackendType bt, std::string const& prefix = "", WorldComm const& worldComm=Environment::worldComm() );
+
 
     /**
      * instantiate a new sparse matrix
