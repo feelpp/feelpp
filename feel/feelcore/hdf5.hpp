@@ -42,8 +42,8 @@
 #include <hdf5.h>
 
 //Tell the compiler to restore the warning previously silented
-#pragma GCC diagnostic warning "-Wunused-variable"
-#pragma GCC diagnostic warning "-Wunused-parameter"
+//#pragma GCC diagnostic warning "-Wunused-variable"
+//#pragma GCC diagnostic warning "-Wunused-parameter"
 
 namespace Feel
 {
