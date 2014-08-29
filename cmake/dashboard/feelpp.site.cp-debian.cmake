@@ -23,13 +23,13 @@
 #
 set(OS_VERSION debian-wheezy)
 set(ARCH x86_64)
-set(WORK_DIR /home/vhuber)
+#set(WORK_DIR /home/vhuber)
 set(GCC_MAKE_ARGS "-j1")
 set(GCC_PARALLEL "1")
 set(CLANG_MAKE_ARGS "-j4")
 set(CLANG_PARALLEL "4")
 set(BUILD_TYPE "release")
-set(FEELPP_WORK_DIR ${WORK_DIR})
+#set(FEELPP_WORK_DIR ${WORK_DIR})
 
 #Directories to update at run time
 set(FEELPP_MODULES "research/hifimagnet" "research/fluid" )
