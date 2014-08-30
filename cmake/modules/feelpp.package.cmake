@@ -64,7 +64,7 @@ set(CPACK_SOURCE_IGNORE_FILES
 #  "${PROJECT_SOURCE_DIR}/contrib/eigen"
   "${PROJECT_SOURCE_DIR}/contrib/cln"
   "${PROJECT_SOURCE_DIR}/contrib/boost"
-  "${PROJECT_SOURCE_DIR}/contrib/gmsh"
+# "${PROJECT_SOURCE_DIR}/contrib/gmsh"
   "${PROJECT_SOURCE_DIR}/contrib/exodus-5.24"
   "${PROJECT_SOURCE_DIR}/ports"
   "${PROJECT_SOURCE_DIR}/projects"
