@@ -67,7 +67,12 @@ endif()
 #SET( CMAKE_CXX_FLAGS "-pipe -Wall -O2 ")
 #SET( CMAKE_C_FLAGS "-pipe -Wall -O2")
 
-project (Feel++ C CXX Fortran)
+if ( ${CMAKE_MAJOR_VERSION} EQUAL 3 )
+  project (Feel++ C CXX )
+else()
+  project (Feel++ C CXX Fortran)
+endif()
+
 
 macro(set_config_option VARNAME STRING)
   set(${VARNAME} TRUE)
