@@ -17,8 +17,8 @@
 
    - Support CMake 3.0
    - Support Boost from 1.49 to 1.56
-   - Support PETSc from 3.2 to 3.5.1
-   - Support SLEPc from 3.2 to 3.5
+   - Support PETSc from 3.1 to 3.5.1
+   - Support SLEPc from 3.1 to 3.5
    - Support GCC from 4.7 to 4.9 (g++ versions that support the c++11 standard)
    - Support CLANG from 3.2 to 3.5
    - Support INTEL C++ Compiler starting from intel.15 version
@@ -26,8 +26,40 @@
    - Support in-memory on Gmsh data structures (Geo and Msh) see <a href="https://github.com/feelpp/feelpp/issues/412">#295</a>
    - Support NLOpt see <a href="https://github.com/feelpp/feelpp/issues/407">#407</a>
    - Started work on Python wrapper thanks to internship of T. Lantz, see <a href="https://github.com/feelpp/feelpp/issues/366">#366</a>
+   - New XDMF/HDF5 exporter thanks to internship of B. Vanthong, see <a href="https://github.com/feelpp/feelpp/issues/194">#194</a>
 
    \subsection issues0990 Noteworthy Issues
+
+   - Add backend as argument to form1 and form2 [Issue <a href="https://github.com/feelpp/feelpp/issues/431">431</a>]
+   - Add support for Matrix transpose without assembly [Issue <a href="https://github.com/feelpp/feelpp/issues/427">427</a>]
+   - Add support for newMatrix() without args [Issue <a href="https://github.com/feelpp/feelpp/issues/426">426</a>]
+   - Add Eigen3 3.2.2 to contrib [Issue <a href="https://github.com/feelpp/feelpp/issues/422">422</a>]
+   - Better support ML with cmake [Issue <a href="https://github.com/feelpp/feelpp/issues/421">421</a>]
+   - Support MKL (starting from v11) [Issue <a href="https://github.com/feelpp/feelpp/issues/420">420</a>]
+   - Support boost 1.56 [Issue <a href="https://github.com/feelpp/feelpp/issues/419">419</a>]
+   - Add functionality to check/test Feel++ version [Issue <a href="https://github.com/feelpp/feelpp/issues/418">418</a>]
+   - Support PETSc 3.5.X and above [Issue <a href="https://github.com/feelpp/feelpp/issues/415">415</a>]
+   - Support SLEPc 3.4.X and above [Issue <a href="https://github.com/feelpp/feelpp/issues/414">414</a>]
+   - Set processor affinity & dump cpu information [Issue <a href="https://github.com/feelpp/feelpp/issues/413">413</a>]
+   - Support Reading Gmsh data structures directly in memory [Issue <a href="https://github.com/feelpp/feelpp/issues/412">412</a>]
+   - Port to cmake 3.0 [Issue <a href="https://github.com/feelpp/feelpp/issues/411">411</a>]
+   - Add an option to enable/disable creation of the np_<nproc> subdirectory [Issue <a href="https://github.com/feelpp/feelpp/issues/410">410</a>]
+   - problem with markerToDof function  [Issue <a href="https://github.com/feelpp/feelpp/issues/409">409</a>]
+   - Bug in graph construction: more non zero entries in rows than there are entries [Issue <a href="https://github.com/feelpp/feelpp/issues/408">408</a>]
+   - Need to access to the neighbours of dof and to change value of functions only on some dof [Issue <a href="https://github.com/feelpp/feelpp/issues/404">404</a>]
+   - Exporter Ensight not work [Issue <a href="https://github.com/feelpp/feelpp/issues/403">403</a>]
+   - Problem with feelpp_doc_traces [Issue <a href="https://github.com/feelpp/feelpp/issues/401">401</a>]
+   - Fast Marching with Hypercube [Issue <a href="https://github.com/feelpp/feelpp/issues/399">399</a>]
+   - .geo parser [Issue <a href="https://github.com/feelpp/feelpp/issues/398">398</a>]
+   - Support variable expansion in options [Issue <a href="https://github.com/feelpp/feelpp/issues/391">391</a>]
+   - Non existing marked elements [Issue <a href="https://github.com/feelpp/feelpp/issues/389">389</a>]
+   - Unregistered options [Issue <a href="https://github.com/feelpp/feelpp/issues/385">385</a>]
+   - Random ensight case file generation depending on architecture [Issue <a href="https://github.com/feelpp/feelpp/issues/379">379</a>]
+   - Provide average, min and max mesh size [Issue <a href="https://github.com/feelpp/feelpp/issues/377">377</a>]
+   - Bug in initialisation of CRBModel in composite case [Issue <a href="https://github.com/feelpp/feelpp/issues/361">361</a>]
+   - Bug in non conforming interpolation when space are the same but the mesh is not [Issue <a href="https://github.com/feelpp/feelpp/issues/356">356</a>]
+   - Bug in mortar dof table points coordinates [Issue <a href="https://github.com/feelpp/feelpp/issues/355">355</a>]
+   - Bug in one of the tests in 3D in test_integration_opt (high order geom) [Issue <a href="https://github.com/feelpp/feelpp/issues/354">354</a>]
 
    \subsection spec0990 Platform specific
 
