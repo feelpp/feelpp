@@ -300,6 +300,7 @@ ELSEIF ( HDF5_LIBRARY AND NOT HDF5_IS_PARALLEL )
   MESSAGE(STATUS "HDF5 is found but is not parallel, HDF5 is not enabled in Feel++")
 endif()
 
+if ( 0 )
 # XDMF
 FIND_PACKAGE(XDMF)
 IF (XDMF_FOUND)
@@ -307,6 +308,7 @@ include_directories( ${XDMF_INCLUDE_DIRS} )
 SET(FEELPP_LIBRARIES ${XDMF_LIBRARIES})
 SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} XDMF" )
 ENDIF (XDMF_FOUND )
+endif( 0 )
 
 option(FEELPP_ENABLE_PYTHON_WRAPPING "Enable Boost.Python wrapping implementation" OFF)
 
