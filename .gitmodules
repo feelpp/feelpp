@@ -69,6 +69,3 @@
 [submodule "contrib/ipopt"]
 	path = contrib/ipopt
 	url = https://github.com/feelpp/ipopt.git
-[submodule "nt2"]
-	path = nt2
-	url = https://github.com/feelpp/nt2.git
