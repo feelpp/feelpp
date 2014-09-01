@@ -203,7 +203,7 @@ IF ( MPI_FOUND )
   set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES_save})
   set(CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES_save})
 
-  # should be comptible with 2.2 standard
+  # should be compatible with 2.2 standard
   IF ( MPIIO_DETECTED AND NOT MPIIO_HAS_STD_22_TYPES)
       include(CheckTypeSize)
       check_type_size("int" SIZEOF_INT BUILTIN_TYPES_ONLY)
@@ -304,15 +304,16 @@ ELSEIF ( HDF5_LIBRARY AND NOT HDF5_IS_PARALLEL )
   MESSAGE(STATUS "[feelpp] HDF5 is found but is not parallel, HDF5 is not enabled in Feel++")
 endif()
 
-if ( 0 )
 # XDMF
-FIND_PACKAGE(XDMF)
-IF (XDMF_FOUND)
-include_directories( ${XDMF_INCLUDE_DIRS} )
-SET(FEELPP_LIBRARIES ${XDMF_LIBRARIES})
-SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} XDMF" )
-ENDIF (XDMF_FOUND )
-endif( 0 )
+find_package(XDMF)
+if (XDMF_FOUND)
+    include_directories( ${XDMF_INCLUDE_DIRS} )
+    set(FEELPP_LIBRARIES ${XDMF_LIBRARIES})
+    set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} XDMF" )
+    message("Found Xdmf." )
+else()
+    message("Could not find Xdmf." )
+endif (XDMF_FOUND)
 
 option(FEELPP_ENABLE_PYTHON_WRAPPING "Enable Boost.Python wrapping implementation" OFF)
 
