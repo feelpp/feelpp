@@ -35,15 +35,15 @@
 #include <boost/signals2.hpp>
 #include <boost/format.hpp>
 
+#include <feel/feelcore/feel.hpp>
+
 #if defined(FEELPP_HAS_BOOST_PYTHON) && defined(FEELPP_ENABLE_PYTHON_WRAPPING)
 #include <boost/python.hpp>
 #include <boost/python/stl_iterator.hpp>
 
-
 #include <mpi4py/mpi4py.h>
 #endif
 
-#include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feelcore/worldcomm.hpp>
 #include <feel/feelcore/worldscomm.hpp>
