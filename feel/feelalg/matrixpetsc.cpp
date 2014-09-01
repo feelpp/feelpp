@@ -998,8 +998,8 @@ MatrixPetsc<T>::createSubmatrix( MatrixSparse<T>& submatrix,
     ierr = MatGetSubMatrix(this->mat(), isrow, iscol, MAT_INITIAL_MATRIX, &A->mat());
     CHKERRABORT( this->comm(),ierr );
 
-    ISDestroy( &isrow );
-    ISDestroy( &iscol );
+    PETSc::ISDestroy( isrow );
+    PETSc::ISDestroy( iscol );
     delete[] rowMap;
     delete[] colMap;
 }
@@ -1394,7 +1394,7 @@ MatrixPetsc<T>::transpose( MatrixSparse<value_type>& Mt, size_type options ) con
                 {
                     PetscTruth isSymmetric;
                     MatEqual( M_mat, Atrans->M_mat, &isSymmetric );
-                    
+
                     if ( isSymmetric )
                         {
 #if (PETSC_VERSION_MAJOR >= 3)

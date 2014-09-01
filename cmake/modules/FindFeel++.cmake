@@ -203,20 +203,22 @@ IF ( MPI_FOUND )
   set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES_save})
   set(CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES_save})
 
-  # should be comptible with 2.2 standard
+  # should be compatible with 2.2 standard
   IF (NOT MPIIO_HAS_STD_22_TYPES)
       include(CheckTypeSize)
       check_type_size("int" SIZEOF_INT BUILTIN_TYPES_ONLY)
       IF(SIZEOF_INT STREQUAL 4)
           SET(FEELPP_MPI_INT32 MPI_INT)
       ELSE()
-          MESSAGE(FATAL_ERROR "MPIIO: Cannot find a compatible int32 type")
+          MESSAGE(WARNING "MPIIO: Cannot find a compatible int32 type")
+          SET(MPIIO_DETECTED 0)
       ENDIF()
       check_type_size("long" SIZEOF_LONG_LONG BUILTIN_TYPES_ONLY)
       IF(SIZEOF_LONG_LONG STREQUAL 8)
           SET(FEELPP_MPI_INT64 MPI_LONG_LONG)
       ELSE()
-          MESSAGE(FATAL_ERROR "MPIIO: Cannot find a compatible int64 type")
+          MESSAGE(WARNING "MPIIO: Cannot find a compatible int64 type")
+          SET(MPIIO_DETECTED 0)
       ENDIF()
   ENDIF()
 
@@ -299,6 +301,16 @@ if ( HDF5_FOUND AND HDF5_IS_PARALLEL )
 ELSEIF ( HDF5_LIBRARY AND NOT HDF5_IS_PARALLEL )
   MESSAGE(STATUS "HDF5 is found but is not parallel, HDF5 is not enabled in Feel++")
 endif()
+
+if ( 0 )
+# XDMF
+FIND_PACKAGE(XDMF)
+IF (XDMF_FOUND)
+include_directories( ${XDMF_INCLUDE_DIRS} )
+SET(FEELPP_LIBRARIES ${XDMF_LIBRARIES})
+SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} XDMF" )
+ENDIF (XDMF_FOUND )
+endif( 0 )
 
 option(FEELPP_ENABLE_PYTHON_WRAPPING "Enable Boost.Python wrapping implementation" OFF)
 

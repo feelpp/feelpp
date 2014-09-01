@@ -588,6 +588,9 @@ exporter_options( std::string const& prefix )
 
         // merge timeteps or domains into single files
         ( prefixvm( prefix,"exporter.merge.markers" ).c_str(), Feel::po::value<bool>()->default_value( true ), "Merge exported data from different markers into a single file (reduces the number of output files )" )
+#if defined(FEELPP_HAS_HDF5) && defined(FEELPP_HAS_MPIIO)
+        ( prefixvm( prefix,"exporter.merge" ).c_str(), Feel::po::value<bool>()->default_value( true ), "(HDF5 Only) Merge exported data from different into a single file (reduces the number of output files )" )
+#endif
         ( prefixvm( prefix,"exporter.merge.timesteps" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Merge exported timesteps into a single file (reduces the number of output files)" )
 
         ;
