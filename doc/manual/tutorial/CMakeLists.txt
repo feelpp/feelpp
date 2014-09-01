@@ -20,6 +20,8 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+cmake_minimum_required (VERSION 2.8)
+
 
 add_custom_target(
   loadmesh
