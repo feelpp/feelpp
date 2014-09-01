@@ -32,8 +32,8 @@ set(WORK_DIR /home/vhuber)
 set(FEELPP_WORK_DIR ${WORK_DIR})
 
 # CTests variables
-set(CTEST_SOURCE_DIRECTORY "${WORK_DIR}/ctest_clone")
-set(CTEST_BUILD_DIRECTORY "${WORK_DIR}/ctest_build")
+# set(CTEST_SOURCE_DIRECTORY "${WORK_DIR}/ctest_clone")
+# set(CTEST_BUILD_DIRECTORY "${WORK_DIR}/ctest_build")
 
 #Directories to update at run time
 set(FEELPP_MODULES "research/hifimagnet" "research/fluid" )
