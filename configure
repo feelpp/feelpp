@@ -17,6 +17,7 @@ Options:
  -h, --help                          help page
      --<package>-dir=PACKAGE_PATH    define <package> install directory
      --disable-<package>             disable <package>
+     --generator=GENERATOR           cmake generator
 EOT
 }
 
@@ -25,6 +26,7 @@ _HAS_ERROR=no
 _WANT_HELP=no
 PROJECT_INSTALL_PREFIX=`pwd`
 PROJECTSRCROOT=`dirname $0`
+GENERATOR="Unix Makefiles"
 
 # If an environment variable PWD exists, use first that one because it is
 # preferable than the command `pwd` which does not take into account linls and
@@ -54,6 +56,10 @@ THISCOMMAND="$0 $@"
 
 while [ -n "$1" ]; do
    case $1 in
+   --generator=*)
+       GENERATOR=`echo $1 | sed "s,^--generator=\(.*\),\1,"`
+       export GENERATOR
+       ;;
    --prefix=*)
        PROJECT_INSTALL_PREFIX=`echo $1 | sed "s,^--prefix=\(.*\),\1,"`
        export PROJECT_INSTALL_PREFIX
@@ -222,4 +228,4 @@ if [ -f CMakeCache.txt ]; then
   /bin/rm CMakeCache.txt
 fi
 
-cmake -Ccmake.configure -DCMAKE_VERBOSE_MAKEFILE:BOOL=${_WANT_VERBOSE} -DCMAKE_BUILD_TYPE:STRING=${BUILDTYPE} TRUE ${PROJECTSRCROOT}
+cmake -Ccmake.configure -G "${GENERATOR}" -DCMAKE_VERBOSE_MAKEFILE:BOOL=${_WANT_VERBOSE} -DCMAKE_BUILD_TYPE:STRING=${BUILDTYPE} TRUE ${PROJECTSRCROOT}
