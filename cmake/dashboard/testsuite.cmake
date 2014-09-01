@@ -297,7 +297,8 @@ set(CTEST_CUSTOM_MAXIMUM_NUMBER_OF_WARNINGS "33331")
 set(CTEST_CUSTOM_MAXIMUM_NUMBER_OF_ERRORS "33331")
 
 # to get CTEST_PROJECT_SUBPROJECTS definition:
-include("${CTEST_SOURCE_DIRECTORY}/CTestConfig.cmake")
+#include("${CTEST_SOURCE_DIRECTORY}/CTestConfig.cmake")
+include("${FEELPP_WORK_DIR}/feelpp/CTestConfig.cmake")
 
 # clear the binary directory and create an initial cache
 #CTEST_EMPTY_BINARY_DIRECTORY (${CTEST_BINARY_DIRECTORY})
@@ -305,7 +306,8 @@ set(CTEST_INITIAL_CACHE "CMAKE_CXX_COMPILER:STRING=${FEELPP_CXX}")
 # site
 set(CTEST_SITE "${FEELPP_SITE}")
 
-set(CMAKE_MODULE_PATH ${CTEST_SOURCE_DIRECTORY}/cmake/modules)
+#set(CMAKE_MODULE_PATH ${CTEST_SOURCE_DIRECTORY}/cmake/modules)
+set(CMAKE_MODULE_PATH ${FEELPP_WORK_DIR}/feelpp/cmake/modules)
 # build name
 set(_BLOCK_ true)
 FIND_PACKAGE(Boost)
