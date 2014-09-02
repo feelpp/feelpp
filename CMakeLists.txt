@@ -360,8 +360,8 @@ endif()
 #
 INCLUDE(CTest)
 ENABLE_TESTING()
-add_custom_target(check COMMAND "ctest" ARGS "-VV" "-R" "qs")
-add_dependencies(check quickstart)
+
+add_custom_target(check)
 
 add_custom_target(check-full COMMAND "ctest")
 add_dependencies(check-full testsuite)

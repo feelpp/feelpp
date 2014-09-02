@@ -45,3 +45,7 @@ if ( FEELPP_HAS_NLOPT )
   install(TARGETS feelpp_qs_nlopt DESTINATION bin/ COMPONENT Bin )
   add_dependencies(quickstart feelpp_qs_nlopt)
 endif()
+
+add_custom_target(quickstart-check COMMAND "ctest" ARGS "-VV" "-R" "qs")
+add_dependencies(quickstart-check quickstart)
+add_dependencies(check quickstart-check)
