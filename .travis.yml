@@ -4,11 +4,14 @@ git:
   depth: 1
   submodules: false
 language: cpp
+
 compiler:
 - clang
+
 env:
 - BUILDTYPE=Release TARGET=quickstart
 - BUILDTYPE=Release TARGET=tutorial
+
 before_install:
 - echo $TRAVIS_OS_NAME
 - if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo add-apt-repository -y ppa:mapnik/boost-backports-1-54; fi
@@ -24,14 +27,15 @@ before_install:
 - git submodule update --init --recursive contrib/nlopt
 - git submodule update --init --recursive contrib/nt2
 - git submodule update --init --recursive contrib/ipopt
+
 install:
 - mkdir opt && cd opt && ../configure --build=$BUILDTYPE -v
+
 script:
 - make -j16 feelpp_ginac
 - make -j2 feelpp
-- make $TARGET
-- make check
-#after_script: make check
+- make $TARGET-check
+
 branches:
   only:
   - develop
