@@ -13,7 +13,8 @@ compiler:
 
 env:
 - BUILDTYPE=Release TARGET=quickstart
-- BUILDTYPE=Release TARGET=tutorial
+
+#- BUILDTYPE=Release TARGET=tutorial
 
 before_install:
 - echo $TRAVIS_OS_NAME
