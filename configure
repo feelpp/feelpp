@@ -9,6 +9,7 @@ usage()
   cat <<EOT
 $0 [options...]
 Options:
+ -b, --build                         build type: Debug, Release, RelWithDebInfo
  -d, --debug                         debug mode
 -rd, --relwithdebinfo                relwithdebinfo mode
  -r, --release                       release mode
@@ -39,7 +40,7 @@ if [ "X${BUILDROOT}" = "X" ]; then
     BUILDROOT=${PWD}
   fi
 fi
-
+BUILDTYPE=Release
 _WANT_VERBOSE=no
 _WANT_DEBUG=no
 _WANT_RELWITHDEBINFO=no
@@ -56,6 +57,10 @@ THISCOMMAND="$0 $@"
 
 while [ -n "$1" ]; do
    case $1 in
+   --build=*)
+       BUILDTYPE=`echo $1 | sed "s,^--build=\(.*\),\1,"`
+       export BUILDTYPE
+       ;;
    --generator=*)
        GENERATOR=`echo $1 | sed "s,^--generator=\(.*\),\1,"`
        export GENERATOR
@@ -107,11 +112,11 @@ while [ -n "$1" ]; do
        export PETSC_DIR
        ;;
    --debug|-d)
-       _WANT_DEBUG=yes
+       BUILDTYPE=Debug    
        _WANT_CHECK=yes
        ;;
    --relwithdebinfo|-rd)
-       _WANT_RELWITHDEBINFO=yes
+       BUILDTYPE=Relwithdebinfo
        ;;
    --check)
        _WANT_CHECK=yes
@@ -120,7 +125,7 @@ while [ -n "$1" ]; do
        _WANT_VERBOSE=yes
        ;;
    --release|-r)
-       _WANT_DEBUG=no
+       BUILDTYPE=Release
        ;;
 #   --og)
 #       _WANT_OG=no
@@ -213,16 +218,6 @@ fi
 #if [ "X${_WANT_OG}" != "X" ]; then
 #echo "set( CMAKE_CXX_FLAGS_RELEASE \"-Og -DNDEBUG\" CACHE PATH \"CXX Release Flags \" FORCE)" >> cmake.configure
 #fi
-
-
-if [ "${_WANT_DEBUG}" = "yes" ]; then
-  echo 'Configuration en mode debug'
-  BUILDTYPE=Debug
-elif [ "${_WANT_RELWITHDEBINFO}" = "yes" ]; then
-    BUILDTYPE=RelWithDebInfo
-else
-  BUILDTYPE=Release
-fi
 
 if [ -f CMakeCache.txt ]; then
   /bin/rm CMakeCache.txt
