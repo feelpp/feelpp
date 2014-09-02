@@ -63,6 +63,14 @@
 
 #if defined( FEELPP_HAS_GMSH_H )
 
+#include <GmshConfig.h>
+#include <Gmsh.h>
+#include <GModel.h>
+#include <OpenFile.h>
+#include <GmshDefines.h>
+#include <Context.h>
+
+
 int PartitionMesh( GModel *const model, meshPartitionOptions &options );
 
 int gmsh_yyparse();
