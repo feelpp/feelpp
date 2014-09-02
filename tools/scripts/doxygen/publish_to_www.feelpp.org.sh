@@ -8,7 +8,7 @@ feelpp_source=$base_dir/${2:-feelpp.git}
 gh_pages=$base_dir/${3:-gh-pages}
 
 # First: generate the doc extracted from feelpp/feelpp
-/home/vhuber/feelpp/scripts/doxygen/publish.sh $base_dir $feelpp_source $gh_pages master develop 
+/home/vhuber/feelpp/tools/scripts/doxygen/publish.sh $base_dir $feelpp_source $gh_pages master develop 
 
 cd $base_dir
 
