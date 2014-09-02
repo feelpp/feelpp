@@ -1,8 +1,11 @@
 os:
   - linux
+  - osx
+
 git:
   depth: 1
   submodules: false
+
 language: cpp
 
 compiler:
@@ -27,6 +30,11 @@ before_install:
 - git submodule update --init --recursive contrib/nlopt
 - git submodule update --init --recursive contrib/nt2
 - git submodule update --init --recursive contrib/ipopt
+
+cache:
+  directories:
+  - /usr/local/Cellar/gmsh
+  - /usr/local/Cellar/petsc
 
 install:
 - mkdir opt && cd opt && ../configure --build=$BUILDTYPE -v
