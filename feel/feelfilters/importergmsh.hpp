@@ -46,12 +46,6 @@
 #include <boost/algorithm/string/trim.hpp>
 
 #if defined( FEELPP_HAS_GMSH_H )
-#include <GmshConfig.h>
-#include <Gmsh.h>
-#include <GModel.h>
-#include <OpenFile.h>
-#include <GmshDefines.h>
-#include <Context.h>
 #include <GModel.h>
 #include <MElement.h>
 #include <MVertex.h>
