@@ -23,15 +23,15 @@
 #
 cmake_minimum_required (VERSION 2.8.7)
 if ( ${CMAKE_VERSION} VERSION_GREATER 2.8.12 )
-  message(STATUS "use new policy CMP0022" )
+  message(STATUS "[feelpp] use new policy CMP0022" )
   cmake_policy(SET CMP0022 NEW)
 endif()
 if ( ${CMAKE_MAJOR_VERSION} EQUAL 3 )
-	message(STATUS "use NEW policy CMP0038" )
+	message(STATUS "[feelpp] use NEW policy CMP0038" )
 	cmake_policy(SET CMP0038 NEW)
-	message(STATUS "use NEW policy CMP0042" )
+	message(STATUS "[feelpp] use NEW policy CMP0042" )
 	cmake_policy(SET CMP0042 NEW)
-	#message(STATUS "use NEW policy CMP0046" )
+	#message(STATUS "[feelpp] use NEW policy CMP0046" )
 	#cmake_policy(SET CMP0046 NEW)
 endif()
 #
@@ -77,7 +77,7 @@ endif()
 macro(set_config_option VARNAME STRING)
   set(${VARNAME} TRUE)
   list(APPEND CONFIG_OPTIONS ${STRING})
-  message(STATUS "Found " ${STRING})
+  message(STATUS "[feelpp] Found " ${STRING})
 endmacro(set_config_option)
 
 # this variable controls the default value of the "FEELPP_ENABLE_XXX" options which are
@@ -109,10 +109,13 @@ SET(FEELPP_HOME_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
 SET(FEELPP_HOME_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
 SET(FEELPP_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
 SET(FEELPP_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
+SET(FEELPP_ROOT ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "Root directory for Feel++ sources")
+SET(FEELPP_SOURCE_ROOT ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "Root directory for Feel++ sources")
 SET(FEELPP_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR} CACHE INTERNAL "")
+SET(FEELPP_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR} CACHE INTERNAL "")
 
 
-SET( CMAKE_MODULE_PATH  ${FEELPP_HOME_DIR}/cmake/modules ${FEELPP_HOME_DIR}/cmake/machines )
+SET( CMAKE_MODULE_PATH  ${FEELPP_HOME_DIR}/cmake/modules ${FEELPP_HOME_DIR}/cmake/machines ${FEELPP_HOME_DIR}/contrib/nt2/cmake )
 add_subdirectory(cmake/modules)
 add_subdirectory(cmake/machines)
 
@@ -176,7 +179,7 @@ IF(NOT CMAKE_NPROCS)
 else()
   set(NProcs2 "${CMAKE_NPROCS}")
 endif()
-message(STATUS "using ${NProcs2} cores out of ${NProcs} cores" )
+message(STATUS "[feelpp] using ${NProcs2} cores out of ${NProcs} cores" )
 #  set(CTEST_BUILD_FLAGS -j${N2})
 #  set(ctest_test_args ${ctest_test_args} PARALLEL_LEVEL ${N2})
 
@@ -202,43 +205,43 @@ if(CMAKE_COMPILER_IS_GNUCXX)
   option(FEELPP_ENABLE_SSE2 "Enable/Disable SSE2 in tests/examples" OFF)
   if(FEELPP_ENABLE_SSE2)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse2")
-    message(STATUS "Enabling SSE2 in tests/examples")
+    message(STATUS "[feelpp] Enabling SSE2 in tests/examples")
   endif()
 
   option(FEELPP_ENABLE_SSE3 "Enable/Disable SSE3 in tests/examples" OFF)
   if(FEELPP_ENABLE_SSE3)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse3")
-    message(STATUS "Enabling SSE3 in tests/examples")
+    message(STATUS "[feelpp] Enabling SSE3 in tests/examples")
   endif()
 
   option(FEELPP_ENABLE_SSSE3 "Enable/Disable SSSE3 in tests/examples" OFF)
   if(FEELPP_ENABLE_SSSE3)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mssse3")
-    message(STATUS "Enabling SSSE3 in tests/examples")
+    message(STATUS "[feelpp] Enabling SSSE3 in tests/examples")
   endif()
 
   option(FEELPP_ENABLE_SSE4_1 "Enable/Disable SSE4.1 in tests/examples" OFF)
   if(FEELPP_ENABLE_SSE4_1)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse4.1")
-    message(STATUS "Enabling SSE4.1 in tests/examples")
+    message(STATUS "[feelpp] Enabling SSE4.1 in tests/examples")
   endif()
 
   option(FEELPP_ENABLE_SSE4_2 "Enable/Disable SSE4.2 in tests/examples" OFF)
   if(FEELPP_ENABLE_SSE4_2)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse4.2")
-    message(STATUS "Enabling SSE4.2 in tests/examples")
+    message(STATUS "[feelpp] Enabling SSE4.2 in tests/examples")
   endif()
 
   option(FEELPP_ENABLE_ALTIVEC "Enable/Disable AltiVec in tests/examples" OFF)
   if(FEELPP_ENABLE_ALTIVEC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -maltivec -mabi=altivec")
-    message(STATUS "Enabling AltiVec in tests/examples")
+    message(STATUS "[feelpp] Enabling AltiVec in tests/examples")
   endif()
 
   option(FEELPP_ENABLE_NEON "Enable/Disable Neon in tests/examples" OFF)
   if(FEELPP_ENABLE_NEON)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfloat-abi=softfp -mfpu=neon -mcpu=cortex-a8")
-    message(STATUS "Enabling NEON in tests/examples")
+    message(STATUS "[feelpp] Enabling NEON in tests/examples")
   endif()
 endif(CMAKE_COMPILER_IS_GNUCXX)
 #INCLUDE(PackageArchGlobalMacros)
@@ -251,11 +254,11 @@ include(feelpp.extra.astyle)
 add_definitions(${FEELPP_FLAGS})
 
 if("${CMAKE_CXX_FLAGS} ${FEELPP_FLAGS}" MATCHES "[^ ]")
-  message(STATUS "[feel++] Global flags: ${CMAKE_CXX_FLAGS} ${FEELPP_FLAGS}")
+  message(STATUS "[feelpp] [feel++] Global flags: ${CMAKE_CXX_FLAGS} ${FEELPP_FLAGS}")
 endif()
 
-message(STATUS "[feel++] Debug flags: ${CMAKE_CXX_FLAGS_DEBUG}")
-message(STATUS "[feel++] Release flags: ${CMAKE_CXX_FLAGS_RELEASE}")
+message(STATUS "[feelpp] [feel++] Debug flags: ${CMAKE_CXX_FLAGS_DEBUG}")
+message(STATUS "[feelpp] [feel++] Release flags: ${CMAKE_CXX_FLAGS_RELEASE}")
 
 INCLUDE(CheckIncludeFile)
 INCLUDE(CheckIncludeFiles)
@@ -281,13 +284,13 @@ CHECK_TYPE_SIZE(long SIZE_LONG )
 CHECK_TYPE_SIZE(float SIZE_FLOAT )
 CHECK_TYPE_SIZE(double SIZE_DOUBLE )
 CHECK_TYPE_SIZE("long double" SIZE_LONG_DOUBLE)
-MESSAGE(STATUS "SIZE_INT=${SIZE_INT}")
-MESSAGE(STATUS "SIZE_UINT=${SIZE_UINT}")
-MESSAGE(STATUS "SIZE_SIZE_T=${SIZE_SIZE_T}")
-MESSAGE(STATUS "SIZE_LONG=${SIZE_LONG}")
-MESSAGE(STATUS "SIZE_FLOAT=${SIZE_FLOAT}")
-MESSAGE(STATUS "SIZE_DOUBLE=${SIZE_DOUBLE}")
-MESSAGE(STATUS "SIZE_LONG_DOUBLE=${SIZE_LONG_DOUBLE}")
+MESSAGE(STATUS "[feelpp] SIZE_INT=${SIZE_INT}")
+MESSAGE(STATUS "[feelpp] SIZE_UINT=${SIZE_UINT}")
+MESSAGE(STATUS "[feelpp] SIZE_SIZE_T=${SIZE_SIZE_T}")
+MESSAGE(STATUS "[feelpp] SIZE_LONG=${SIZE_LONG}")
+MESSAGE(STATUS "[feelpp] SIZE_FLOAT=${SIZE_FLOAT}")
+MESSAGE(STATUS "[feelpp] SIZE_DOUBLE=${SIZE_DOUBLE}")
+MESSAGE(STATUS "[feelpp] SIZE_LONG_DOUBLE=${SIZE_LONG_DOUBLE}")
 
 # Find Feel++ or at least it dependencies
 FIND_PACKAGE(Feel++ REQUIRED)
@@ -300,7 +303,7 @@ include( feelpp.macros )
 #   that the directory path include "research"
 # for each detected project it creates an FEELPP_ENABLE_${PROJECT} and FEELPP_ENABLE_${PROJECT}_DOCUMENTATION
 # option which are set to OFF by default
-MESSAGE(STATUS "Feel++ projects :")
+MESSAGE(STATUS "[feelpp] Feel++ projects :")
 feelpp_list_subdir(projects ${CMAKE_CURRENT_SOURCE_DIR}/research)
 foreach(project ${projects})
   if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/research/${project}/README.md )
@@ -308,13 +311,13 @@ foreach(project ${projects})
     option(FEELPP_ENABLE_RESEARCH_${PROJECT} "Enable/Disable research/${project} " OFF)
     option(FEELPP_ENABLE_${PROJECT}_DOCUMENTATION "Enable/Disable documentation in research/${project}" OFF)
 		SET(FEELPP_ENABLED_PROJECTS "${FEELPP_ENABLED_PROJECTS} ${project}" )
-		MESSAGE(STATUS "    " ${project} " -- Compile: " ${FEELPP_ENABLE_RESEARCH_${PROJECT}} " -- Doc " ${FEELPP_ENABLE_${PROJECT}_DOCUMENTATION})
+		MESSAGE(STATUS "[feelpp] ${project} -- Compile: ${FEELPP_ENABLE_RESEARCH_${PROJECT}} -- Doc  ${FEELPP_ENABLE_${PROJECT}_DOCUMENTATION}" )
   endif()
 endforeach()
 
-#
+################################################################################
 # data
-#
+################################################################################
 IF(NOT APPLE AND EXISTS "${CMAKE_SOURCE_DIR}/data")
   ADD_SUBDIRECTORY ( data )
 ENDIF()
@@ -324,9 +327,10 @@ if (APPLE)
 endif()
 
 
-#
+
+################################################################################
 # Feel
-#
+################################################################################
 if(NOT FEELPP_ENABLE_BUILD_STATIC)
 	set(CMAKE_C++_CREATE_SHARED_LIBRARY 1)
 endif()
