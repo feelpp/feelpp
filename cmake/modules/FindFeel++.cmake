@@ -305,7 +305,7 @@ ELSEIF ( HDF5_LIBRARY AND NOT HDF5_IS_PARALLEL )
 endif()
 
 # XDMF
-find_package(XDMF)
+find_package(XDMF QUIET)
 if (XDMF_FOUND)
     include_directories( ${XDMF_INCLUDE_DIRS} )
     set(FEELPP_LIBRARIES ${XDMF_LIBRARIES})
