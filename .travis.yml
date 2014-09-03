@@ -26,6 +26,8 @@ before_install:
     libpetsc3.4.2-dev libcln-dev petsc-dev libxml2-dev gmsh bison flex doxygen doxygen-latex transfig
     imagemagick libtbb-dev libann-dev libglpk-dev automake libtool; fi
 - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew tap feelpp/science; fi
+- if test "x$TRAVIS_OS_NAME" = "xosx"; then ls /usr/local/Cellar; fi
+- if test "x$TRAVIS_OS_NAME" = "xosx"; then brew install open-mpi; fi
 - if test "x$TRAVIS_OS_NAME" = "xosx"; then travis_wait brew install --only-dependencies feelpp; fi
 #install some submodules
 - git submodule update --init --recursive contrib/nlopt
