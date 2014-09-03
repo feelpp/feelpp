@@ -26,7 +26,7 @@ before_install:
     libpetsc3.4.2-dev libcln-dev petsc-dev libxml2-dev gmsh bison flex doxygen doxygen-latex transfig
     imagemagick libtbb-dev libann-dev libglpk-dev automake libtool; fi
 - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew tap feelpp/science; fi
-- if test "x$TRAVIS_OS_NAME" = "xosx"; then brew install --only-dependencies feelpp; fi
+- if test "x$TRAVIS_OS_NAME" = "xosx"; then brew -v install --only-dependencies feelpp; fi
 #install some submodules
 - git submodule update --init --recursive contrib/nlopt
 - git submodule update --init --recursive contrib/nt2
@@ -34,6 +34,7 @@ before_install:
 
 cache:
   directories:
+  - /usr/local/Cellar/open-mpi
   - /usr/local/Cellar/gmsh
   - /usr/local/Cellar/petsc
 
