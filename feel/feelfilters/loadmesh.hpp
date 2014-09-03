@@ -29,11 +29,11 @@
 #if !defined(FEELPP_LOADMESH_HPP)
 #define FEELPP_LOADMESH_HPP 1
 
-#include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/creategmshmesh.hpp>
 #include <feel/feelfilters/loadgmshmesh.hpp>
 #include <feel/feelfilters/geo.hpp>
 #include <feel/feelfilters/domain.hpp>
+#include <feel/feelfilters/gmsh.hpp>
 
 namespace Feel {
 
