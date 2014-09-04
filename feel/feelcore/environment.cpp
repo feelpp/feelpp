@@ -1032,7 +1032,7 @@ Environment::Environment( int& argc, char**& argv )
 }
 
 
-#if defined(FEELPP_ENABLE_BOOST_PYTHON) && defined(FEELPP_ENABLE_PYTHON_WRAPPING)
+#if defined(FEELPP_HAS_BOOST_PYTHON) && defined(FEELPP_ENABLE_PYTHON_WRAPPING)
 Environment::Environment( boost::python::list arg )
 {
 

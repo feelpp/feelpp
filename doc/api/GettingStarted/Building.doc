@@ -151,7 +151,7 @@ This section is aimed at users that do not have Homebrew already installed. If i
 In order to build \feel from Homebrew, you have to do the following steps:
 \verbatim
 # Install Homebrew:
-ruby -e "$(curl -fsSL https://raw.github.com/feelpp/homebrew/go)"
+ruby -e "$(curl -fsSL https://raw.github.com/feelpp/homebrew/go/install)"
 # Check that everything is ok or fix warnings/errors if necessary:
 brew doctor
 # Get the Formulae specific to Feel++ on the github of feelpp:
