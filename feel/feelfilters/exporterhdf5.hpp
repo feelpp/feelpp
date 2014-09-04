@@ -184,7 +184,6 @@ public Exporter <MeshType, N>
         void bubbleSort (size_type * ids, value_type * coords, size_type n) const ;
 
     private :
-        mutable WorldComm M_comm ;              /*!< MPI worldComm */
         mutable std::string M_fileName ;        /*!< file name */
         mutable std::string M_fileNameStep ;    /*!< file name + time step */
         mutable HDF5 M_HDF5 ;                   /*!< HDF5 IO */
@@ -203,7 +202,6 @@ public Exporter <MeshType, N>
         mutable std::vector<size_type> M_uintBuffer ;           /*!< buffer of integer */
         mutable std::vector<value_type> M_realBuffer ;          /*!< buffer of double */
         mutable std::map<size_type, size_type> M_newPointId ;   /*!< new point identifier after sort */
-        mutable MPI_File fh ;                                   /*!< file descriptor of the .xmf file (merge version only) */
         mutable std::ostringstream M_str ;                      /*!< buffer of string */
 };
 } // Feel
