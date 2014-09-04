@@ -691,19 +691,24 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     size_type row_start = M_lb.front().globalRowStart();
     size_type col_start = M_lb.front().globalColumnStart();
 
+    size_type trial_e0id= this->trialElementId( elt_0 );
+    size_type trial_e1id= this->trialElementId( elt_1 );
+    DCHECK( trial_e0id != invalid_size_type_value && trial_e1id != invalid_size_type_value )
+        << "this case should have been taken care of earlier before the assembly process\n";
+
     M_local_rows_2.template head<test_dof_type::nDofPerElement>().array() = M_test_dof->localToGlobalIndices( elt_0 ).array() + row_start;
     M_local_rows_2.template tail<test_dof_type::nDofPerElement>().array() = M_test_dof->localToGlobalIndices( elt_1 ).array() + row_start;
 
-    M_local_cols_2.template head<trial_dof_type::nDofPerElement>().array() = M_trial_dof->localToGlobalIndices( elt_0 ).array() + col_start;
-    M_local_cols_2.template tail<trial_dof_type::nDofPerElement>().array() = M_trial_dof->localToGlobalIndices( elt_1 ).array() + col_start;
+    M_local_cols_2.template head<trial_dof_type::nDofPerElement>().array() = M_trial_dof->localToGlobalIndices( trial_e0id ).array() + col_start;
+    M_local_cols_2.template tail<trial_dof_type::nDofPerElement>().array() = M_trial_dof->localToGlobalIndices( trial_e1id ).array() + col_start;
 
     if ( test_dof_type::is_modal || trial_dof_type::is_modal )
     {
         M_local_rowsigns_2.template head<test_dof_type::nDofPerElement>() = M_test_dof->localToGlobalSigns( elt_0 );
         M_local_rowsigns_2.template tail<test_dof_type::nDofPerElement>() = M_test_dof->localToGlobalSigns( elt_1 );
 
-        M_local_colsigns_2.template head<trial_dof_type::nDofPerElement>() = M_trial_dof->localToGlobalSigns( elt_0 );
-        M_local_colsigns_2.template tail<trial_dof_type::nDofPerElement>() = M_trial_dof->localToGlobalSigns( elt_1 );
+        M_local_colsigns_2.template head<trial_dof_type::nDofPerElement>() = M_trial_dof->localToGlobalSigns( trial_e0id );
+        M_local_colsigns_2.template tail<trial_dof_type::nDofPerElement>() = M_trial_dof->localToGlobalSigns( trial_e1id );
 
         M_rep_2.array() *= ( M_local_rowsigns_2*M_local_colsigns_2.transpose() ).array().template cast<value_type>();
     }
