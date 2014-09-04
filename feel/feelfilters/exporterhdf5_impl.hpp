@@ -111,6 +111,7 @@ template <typename MeshType, int N>
 void Exporterhdf5<MeshType, N>::writeMerge () const 
 {
 
+    MPI_File fh;
     MPI_Status status;
     int size ;
     M_str <<  this->prefix () << ".xmf" ;
