@@ -4955,7 +4955,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                 /* advance the iterator and save the new position */
                 std::advance(sit, nb);
                 //std::cout << "T" << i << " adv:" << nb << " " << nbEltPerRange <<  std::endl;
-                std::cout << "T" << i << " adv:" << nb << " " << nbEltPerRange << "(" << j << ", " << (j + nb) << ")" << std::endl;
+                //std::cout << "T" << i << " adv:" << nb << " " << nbEltPerRange << "(" << j << ", " << (j + nb) << ")" << std::endl;
                 j = j + nb;
                 _v.at(i).push_back(std::make_pair(cit, sit));
             }
@@ -4968,7 +4968,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 
         ThreadEnv * threadEnv = new ThreadEnv(nbThreads);
 
-        threadEnv->SetAffinity(numaAffMng);
+        //threadEnv->SetAffinity(numaAffMng);
 
         PTHDriverType forkjoin(threadEnv);
         PTHForkJoinTaskType* compFkTask = new PTHForkJoinTaskType(forkjoin, taskMng.getTasks());
@@ -4998,12 +4998,12 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         perf_mng.init("comp") ;
         perf_mng.start("comp") ;
 
-        Environment::writeCPUData(""); 
+        //Environment::writeCPUData(""); 
 
         RunTimeSystem::StdScheduler scheduler;
         taskMng.run(scheduler, taskList);
 
-        Environment::writeCPUData(""); 
+        //Environment::writeCPUData(""); 
 
         perf_mng.stop("comp") ;
 
@@ -5023,12 +5023,10 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         delete threadEnv;
         //delete compFkTask;
 
-        /*
         for(int i = 0 ; i < nbThreads; i++)
         {
             delete hce[i];
         }
-        */
         #endif
 
         perf_mng.stop("total") ;
