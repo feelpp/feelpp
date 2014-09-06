@@ -280,7 +280,7 @@ namespace parallel
             perf_mng.init("3") ;
 #endif
 
-            for (int i = 0; i < veit->size(); i+=2)
+            for (int i = 0; i < veit->size(); i++)
             {
                 /*
                 std::cout << Environment::worldComm().rank() <<  " nbItems: " << veit->size() 
