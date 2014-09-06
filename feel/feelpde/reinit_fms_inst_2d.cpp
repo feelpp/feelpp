@@ -25,7 +25,8 @@
 
 namespace Feel {
 
-template class ReinitializerFMS< spaceP1LS_type, Periodic<> > ;
-template class ReinitializerFMS< spaceP1LS_type, NoPeriodicity  > ;
+template class ReinitializerFMS< spaceP1LSs_type, Periodic<> > ;
+template class ReinitializerFMS< spaceP1LSs_type, NoPeriodicity  > ;
+template class ReinitializerFMS< spaceP1LSh_type, NoPeriodicity  > ;
 
 }

@@ -20,51 +20,56 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-/**
-   \file myintegrals.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2008-02-07
-   Tutorial : how to use integrals
- */
-#include <feel/feel.hpp>
+/// [all]
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelvf/integrate.hpp>
+#include <feel/feelvf/ginac.hpp>
+#include <feel/feelfilters/exporter.hpp>
+
+
+
 using namespace Feel;
 
-/**
- * Entry point
- */
-//\code
-//# marker_main #
 int
 main( int argc, char** argv )
 {
     // Initialize Feel++ Environment
     Environment env( _argc=argc, _argv=argv,
-                     _desc=feel_options(),
                      _about=about( _name="myintegrals" ,
                                    _author="Feel++ Consortium",
                                    _email="feelpp-devel@feelpp.org" ) );
 
+    /// [mesh]
     // create the mesh (specify the dimension of geometric entity)
     auto mesh = loadMesh( _mesh=new Mesh<Simplex<2>> );
+    /// [mesh]
 
+    /// [expression]
     // our function to integrate
-    auto f = expr( option(_name="functions.g").as<std::string>(), Symbols{"x","y"});
+    auto g = expr( soption(_name="functions.g") );
+    /// [expression]
 
+    /// [integrals]
     // compute integral of f (global contribution)
-    double intf_1 = integrate( _range = elements( mesh ),
-                               _expr = f ).evaluate()( 0,0 );
-
-    // compute integral of f (local contribution)
-    double intf_2 = integrate( _range = elements( mesh ),
-                               _expr = f ).evaluate(false)( 0,0 );
+    auto intf_1 = integrate( _range = elements( mesh ),
+                                 _expr = g ).evaluate();
 
     // compute integral f on boundary
-    double intf_3 = integrate( _range = boundaryfaces( mesh ),
-                               _expr = f ).evaluate()( 0,0 );
+    auto intf_2 = integrate( _range = boundaryfaces( mesh ),
+                             _expr = g ).evaluate();
 
-    if ( Environment::rank() == 0 )
-        std::cout << "int global ; local ; boundary" << std::endl
-                  << intf_1 << ";" << intf_2 << ";" << intf_3 << std::endl;
+    // compute integral of grad f (global contribution)
+    auto grad_g = grad<2>(g);
+    auto intgrad_f = integrate( _range = elements( mesh ),
+                                _expr = grad_g ).evaluate();
+
+    // only the process with rank 0 prints to the screen to avoid clutter
+    if ( Environment::isMasterRank() )
+        std::cout << "int_Omega " << g << " = " << intf_1  << std::endl
+                  << "int_{boundary of Omega} " << g << " = " << intf_2 << std::endl
+                  << "int_Omega grad " << g << " = "
+                  << "int_Omega  " << grad_g << " = "
+                  << intgrad_f  << std::endl;
+    /// [integrals]
 }
-//# endmarker_main #
-//\endcode
+/// [all]

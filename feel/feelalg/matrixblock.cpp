@@ -23,7 +23,7 @@
 */
 /**
    \file matrixblock.cpp
-   \author Vincent Chabannes <vincent.chabannes@imag.fr>
+   \author Vincent Chabannes <vincent.chabannes@feelpp.org>
    \date 2011-06-10
  */
 
@@ -33,6 +33,63 @@
 
 namespace Feel
 {
+
+template <typename T>
+void
+BlocksBaseSparseMatrix<T>::close()
+{
+    if ( this->isClosed() ) return;
+
+    std::vector<boost::shared_ptr<DataMap> > dataMapRowRef(this->nRow());
+    std::vector<boost::shared_ptr<DataMap> > dataMapColRef(this->nCol());
+
+    // search a reference row datamap foreach row
+    for ( index_type i=0 ; i<this->nRow() ;++i)
+    {
+        // search a data row avalaible
+        bool findDataMapRow=false;
+        for ( index_type j=0 ; j<this->nCol() && !findDataMapRow ;++j)
+        {
+            if ( this->operator()(i,j) )
+            {
+                dataMapRowRef[i] = this->operator()(i,j)->mapRowPtr();
+                findDataMapRow=true;
+            }
+        }
+        CHECK ( findDataMapRow ) << "not find at least one DataMap initialized in row "<< i << "\n";
+    }
+
+    // search reference col datamap foreach col
+    for ( index_type j=0 ; j<this->nCol() ;++j)
+    {
+        // search a data col avalaible
+        bool findDataMapCol=false;
+        for ( index_type i=0 ; i<this->nRow() && !findDataMapCol ;++i)
+        {
+            if ( this->operator()(i,j) )
+            {
+                dataMapColRef[j] = this->operator()(i,j)->mapColPtr();
+                findDataMapCol=true;
+            }
+        }
+        CHECK ( findDataMapCol ) << "not find at least one DataMap initialized in col "<< j << "\n";
+    }
+
+    // if a block is missing then completed with zero matrix
+    for ( index_type i=0 ; i<this->nRow() ;++i)
+    {
+        for ( index_type j=0 ; j<this->nCol() ;++j)
+        {
+            if ( this->operator()(i,j) ) continue;
+
+            DVLOG(1) << "add zero matrix in block ("<<i<<","<<j<<")\n";
+            this->operator()(i,j) = backend()->newZeroMatrix(dataMapRowRef[i], dataMapColRef[j]);
+        }
+    }
+
+    M_isClosed = true;
+
+}
 
 
 template <typename T>
@@ -104,9 +161,13 @@ MatrixBlockBase<T>::MatrixBlockBase( vf::BlocksBase<graph_ptrtype> const & block
 
     M_mat->zero();
 
+    M_mat->setIndexSplit( graph->mapRow().indexSplit() );
+
+#if 0
     bool computeIndexSplit = true;
     if ( computeIndexSplit )
     {
+#if 0
         const uint16_type nRow = blockgraph.nRow();
         const uint16_type nCol = blockgraph.nCol();
         // index container for field split preconditioner
@@ -131,10 +192,22 @@ MatrixBlockBase<T>::MatrixBlockBase( vf::BlocksBase<graph_ptrtype> const & block
 
             startIS += nLocDofWithoutGhostBlock;
         }
+#else
+        const uint16_type nRow = blockgraph.nRow();
+        indexsplit_ptrtype indexSplit( new IndexSplit() );
+        const size_type firstDofGC = graph->mapRow().firstDofGlobalCluster();
+        for ( uint16_type i=0; i<nRow; ++i )
+        {
+            indexSplit->addSplit( firstDofGC, blockgraph(i,0)->mapRow().indexSplit() );
+        }
+        //indexSplit.showMe();
+        graph->mapRowPtr()->setIndexSplit( indexSplit );
+#endif
 
         // update
         M_mat->setIndexSplit( indexSplit );
     }
+#endif
 
 }
 
@@ -374,9 +447,9 @@ MatrixBlockBase<T>::diagonal( Vector<value_type>& out ) const
 
 template <typename T>
 void
-MatrixBlockBase<T>::transpose( MatrixSparse<value_type>& Mt ) const
+MatrixBlockBase<T>::transpose( MatrixSparse<value_type>& Mt, size_type options ) const
 {
-    M_mat->transpose( Mt );
+    M_mat->transpose( Mt, options );
 }
 
 template <typename T>
@@ -386,6 +459,7 @@ MatrixBlockBase<T>::updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> >
     M_mat->updateBlockMat( m,start_i,start_j );
 }
 
+template class BlocksBaseSparseMatrix<double>;
 template class MatrixBlockBase<double>;
 
 } // Feel

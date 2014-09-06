@@ -54,6 +54,15 @@ enum   MatrixProperties
     SINGULAR           = 0x8,    /**< singular matrix : \f$det(A)=0\f$ and 0 is an eigenvalue */
     DENSE              = 0x10    /**< dense matrix */
 };
+
+enum MatrixTranspose
+{
+    MATRIX_TRANSPOSE_ASSEMBLED   = 0x1,
+    MATRIX_TRANSPOSE_UNASSEMBLED = 0x2,
+    MATRIX_TRANSPOSE_CHECK       = 0x4
+};
+        
+
 /**
  * Backend types
  *
@@ -82,6 +91,7 @@ enum SolverType {CG=0,
                  BICGSTAB,
                  MINRES,
                  GMRES,
+                 FGMRES,
                  LSQR,
                  JACOBI,
                  SOR_FORWARD,
@@ -113,8 +123,11 @@ enum PreconditionerType {IDENTITY_PRECOND =0,
                          USER_PRECOND,
                          SHELL_PRECOND,
                          FIELDSPLIT_PRECOND,
+                         LSC_PRECOND,
                          ML_PRECOND,
                          GAMG_PRECOND,
+                         BOOMERAMG_PRECOND,
+                         REDUNDANT_PRECOND,
                          NONE_PRECOND,
                          INVALID_PRECONDITIONER
                         };
@@ -280,18 +293,40 @@ enum MatSolverPackageType
     MATSOLVER_ESSL,
     MATSOLVER_LUSOL,
     MATSOLVER_MUMPS,
+    MATSOLVER_MKL_PARDISO,
     MATSOLVER_PASTIX,
     MATSOLVER_DSCPACK,
     MATSOLVER_MATLAB,
     MATSOLVER_PETSC,
     MATSOLVER_PLAPACK,
-    MATSOLVER_BAS
+    MATSOLVER_BAS,
+    MATSOLVER_BOOMERAMG,
+    MATSOLVER_EUCLID,
+    MATSOLVER_PILUT,
+
 };
 #if defined(FEELPP_HAS_MUMPS) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
 const auto MATSOLVER_DEFAULT = MATSOLVER_MUMPS;
 #else
 const auto MATSOLVER_DEFAULT = MATSOLVER_PETSC;
 #endif
+
+PreconditionerType
+pcTypeConvertStrToEnum( std::string const& type );
+
+SolverType
+kspTypeConvertStrToEnum( std::string const& type );
+
+SolverNonLinearType
+snesTypeConvertStrToEnum( std::string const& type );
+
+MatSolverPackageType
+matSolverPackageConvertStrToEnum( std::string const& type );
+
+FieldSplitType
+fieldsplitTypeConvertStrToEnum( std::string const& type );
+
+
 
 } // Feel
 #endif /* FEELPP_ALG_ENUMS_HPP */

@@ -24,6 +24,8 @@
 
 INCLUDE_DIRECTORIES( ${CMAKE_CURRENT_SOURCE_DIR} )
 
+add_subdirectory(tutorial)
+
 find_program(LATEX NAMES latex pdflatex)
 find_program(CONVERT NAMES convert)
 if ( LATEX AND CONVERT )
@@ -44,7 +46,7 @@ foreach(cppfile "tutorial/*.cpp" "nonlinear/*.cpp" "../../quickstart/laplacian.c
 endforeach()
 FILE(GLOB STYFILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "styles/*.sty")
 
-FILE(WRITE version.tex "\\newcommand{\\feelversion}{${FEELPP_VERSION_STRING}}")
+#FILE(WRITE version.tex "\\newcommand{\\feelversion}{${FEELPP_VERSION_STRING}}")
 
 MESSAGE("Current revision is ${FEELPP_WC_REVISION}")
 MESSAGE("Last changed date is ${FEELPP_WC_LAST_CHANGED_DATE}")
@@ -64,30 +66,31 @@ ${RESULT} ${${RESULT}})
     ENDIF (WIN32)
 ENDMACRO (TODAY)
 TODAY(THEDATE)
-FILE(APPEND version.tex "\\newcommand{\\feelbuildid}{${FEELPP_BUILDID}}")
-FILE(APPEND version.tex "\\newcommand{\\feeldate}{${THEDATE}}")
+#FILE(APPEND version.tex "\\newcommand{\\feelbuildid}{${FEELPP_BUILDID}}")
+#FILE(APPEND version.tex "\\newcommand{\\feeldate}{${THEDATE}}")
 
 FILE(GLOB TUTO_DOC_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} tutorial/*.tex)
 
-add_latex_document(feelpp-manual.tex
-  INPUTS
-  ${TUTO_DOC_FILES}
-  nonlinear/nonlinear.tex
-  heatns/natural-convection-2d.tex
-  heat/heatsink.tex
-  dd/dd.tex
-  maxwell/maxwell.tex
-  randomnotes.tex gfdl.tex howto.tex version.tex ${CPPFILES} ${STYFILES}
-  BIBFILES
-  ../biblio/feelpp-manual.bib
-  ../biblio/feelpp.bib
-  ../biblio/feelpp-thesis.bib
-  IMAGE_DIRS pngs pdfs pngs/mymesh pngs/heatsink pngs/Laplacian pngs/myadvection
-  USE_INDEX
-  DEFAULT_PDF
-  MANGLE_TARGET_NAMES
-  )
-SET_TARGET_PROPERTIES(feelpp-manual_pdf PROPERTIES EXCLUDE_FROM_ALL true)
+#CONFIGURE_FILE(tex/version.tex.in  tex/version.tex  @ONLY)
+
+#add_latex_document(tex/feelpp-manual.tex
+#  INPUTS
+#  ${TUTO_DOC_FILES}
+#  nonlinear/nonlinear.tex
+#  heatns/natural-convection-2d.tex
+#  dd/dd.tex
+#  maxwell/maxwell.tex
+#  tex/randomnotes.tex tex/gfdl.tex tex/howto.tex tex/version.tex ${CPPFILES} ${STYFILES}
+#  BIBFILES
+#  ../biblio/feelpp-manual.bib
+#  ../biblio/feelpp.bib
+#  ../biblio/feelpp-thesis.bib
+#  IMAGE_DIRS pngs pdfs pngs/mymesh pngs/heatsink pngs/Laplacian pngs/myadvection
+#  USE_INDEX
+#  DEFAULT_PDF
+#  MANGLE_TARGET_NAMES
+#  )
+#SET_TARGET_PROPERTIES(feelpp-manual_pdf PROPERTIES EXCLUDE_FROM_ALL true)
 endif()
 
 # this target allows to create all the required figures for the tutorial
@@ -95,7 +98,7 @@ add_custom_target(figures WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ )
 
 macro( add_docex target )
  add_executable( feel_doc_${target} ${target}.cpp )
- target_link_libraries( feel_doc_${target} ${FEELPP_LIBRARIES} )
+ target_link_libraries( feel_doc_${target} feelpp ${FEELPP_LIBRARIES} )
  get_target_property(target_executable feel_doc_${target} LOCATION)
  list(APPEND LIST_APPS ${target_executable})
  add_dependencies(figures feel_doc_${target})
@@ -103,7 +106,7 @@ macro( add_docex target )
  if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${target}.cfg)
    configure_file( ${target}.cfg ${target}.cfg)
  endif()
- add_custom_command(
+add_custom_command(
    TARGET figures
    POST_BUILD
    COMMAND ${target_executable} ARGS --shape="simplex" --nochdir > ${CMAKE_CURRENT_BINARY_DIR}/${target}-simplex.out 2>&1
@@ -134,7 +137,7 @@ add_custom_target(
                                    ${CMAKE_CURRENT_BINARY_DIR}/
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
-add_dependencies(tut-prerequisites feel_doc_mymesh)
+add_dependencies(tut-prerequisites feelpp_doc_mymesh)
 configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/tutorial.pos  ${CMAKE_CURRENT_BINARY_DIR}/tutorial.pos)
 
 if ( NOT FEELPP_MINIMAL_CONFIGURATION )
@@ -179,7 +182,7 @@ macro(add_octave_module modulename)
         ${CMAKE_CURRENT_SOURCE_DIR}/${modulename}.hpp
         )
       add_dependencies(octave ${modulename}_${dim}_${order}.oct)
-      target_link_libraries( ${modulename}_${dim}_${order}.oct ${FEELPP_LIBRARIES} ${Octave_LIBRARIES})
+      target_link_libraries( ${modulename}_${dim}_${order}.oct feelpp ${FEELPP_LIBRARIES} ${Octave_LIBRARIES})
       set_target_properties( ${modulename}_${dim}_${order}.oct PROPERTIES PREFIX "" )
       set_target_properties( ${modulename}_${dim}_${order}.oct PROPERTIES SUFFIX "" )
     endforeach( order )
@@ -192,7 +195,7 @@ endmacro(add_octave_module)
 
 ENDIF( OCTAVE_FOUND )
 
-add_subdirectory(tutorial)
+add_subdirectory(python)
 
 if (NOT FEELPP_MINIMAL_CONFIGURATION)
   add_subdirectory(laplacian)
@@ -211,4 +214,5 @@ if (NOT FEELPP_MINIMAL_CONFIGURATION)
   add_subdirectory(maxwell)
   add_subdirectory(eikonal)
   add_subdirectory(eigen)
+  add_subdirectory(magnetostatic)
 endif()

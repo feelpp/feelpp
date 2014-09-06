@@ -8,12 +8,12 @@ fetch.type          svn
 fetch.user          gmsh
 fetch.password      gmsh
 svn.url             https://geuz.org/svn/gmsh/trunk
-svn.revision        16477
+svn.revision        19319
 svn.method          export
 svn.post_args       --username ${fetch.user} --password ${fetch.password}
 
 name                gmsh-devel
-version             2.8.3-svn-${svn.revision}
+version             2.9.0-svn-${svn.revision}
 categories          science
 platforms           darwin
 maintainers         feelpp.org:christophe.prudhomme
@@ -29,6 +29,9 @@ homepage            http://www.geuz.org/gmsh/
 worksrcdir          trunk
 conflicts           gmsh
 
+patchfiles     gmsh-devel.patch  \
+    gmsh-devel-petsc.patch
+patch.dir      ${worksrcpath}
 # https://trac.macports.org/ticket/33925
 compiler.blacklist  clang
 configure.compiler macports-gcc-4.8
@@ -55,7 +58,8 @@ configure.args-append \
     -DENABLE_FLTK:BOOL=ON\
     -DENABLE_GRAPHICS:BOOL=ON\
     -DENABLE_METIS=ON \
-    -DENABLE_TAUCS=OFF
+    -DENABLE_TAUCS=OFF \
+    -DSEARCH_ANN_IN_SYSTEM=OFF
 
 build.target all shared
 
@@ -72,18 +76,30 @@ depends_lib  \
     port:zlib \
     port:texinfo
 
+
+default_variants +atlas +slepc
+
+variant atlas description {Use Atlas for BLAS-LAPACK} {
+    depends_lib-append port:atlas
+    configure.args-append \
+        -DBLAS_LAPACK_LIBRARIES=${prefix}/lib/libtatlas.dylib
+}
+
+
 variant slepc description {compile with PETSC/SLEPC support} {
     depends_lib-append      port:petsc
     depends_lib-append      port:slepc
     configure.args-append \
+        -DCMAKE_PREFIX_PATH=/opt/local/lib/openmpi/bin \
         -DENABLE_MPI=ON \
         -DENABLE_PETSC=ON \
         -DPETSC_INC=${prefix}/lib/petsc/include \
-        -DPETSC_LIBS=${prefix}/lib/petsc/lib/libpetsc.a \
+        -DPETSC_LIBS=${prefix}/lib/petsc/lib/libpetsc.dylib \
         -DENABLE_SLEPC=ON \
-        -DSLEPC_INC=${prefix}/lib/petsc/include \
-        -DSLEPC_LIB=${prefix}/lib/petsc/lib/libslepc.a
+        -DSLEPC_INC=${prefix}/lib/slepc/include \
+        -DSLEPC_LIB=${prefix}/lib/slepc/lib/libslepc.dylib
 }
+
 
 if {![variant_isset slepc] } {
     configure.args-append \

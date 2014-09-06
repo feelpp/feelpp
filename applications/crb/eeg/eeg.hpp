@@ -71,7 +71,7 @@ makeEEGOptions()
         ("scalp", po::value<double>()->default_value( 0.33 ), "scalp")
         ("no-export", "don't export results")*/
     ;
-    return eegoptions.add( Feel::feel_options() );
+    return eegoptions;
 }
 AboutData
 makeEEGAbout( std::string const& str = "eeg" )
@@ -111,6 +111,9 @@ public:
     /*space*/
     typedef FunctionSpace<mesh_type, prod_basis_type, value_type> space_type;
     typedef FunctionSpace<mesh_type, bases< basis_type >, value_type> space_type1;
+
+    static const bool is_time_dependent = false;
+    static const bool is_linear = true;
 
 };
 
@@ -153,7 +156,6 @@ public:
     static const uint16_type Dim = 3;
     static const uint16_type ParameterSpaceDimension = 8;
     static const uint16_type nbtissue = 8;
-    static const bool is_time_dependent = false;
     //@}
 
     /** @name Typedefs
@@ -336,14 +338,9 @@ public:
      * \brief compute the theta coefficient for both bilinear and linear form
      * \param mu parameter to evaluate the coefficients
      */
-    boost::tuple<beta_vector_type, std::vector<beta_vector_type> >
-    computeBetaQm( element_type const& T,parameter_type const& mu , double time=1e30 )
-    {
-        return computeBetaQm( mu , time );
-    }
 
     boost::tuple<beta_vector_type, std::vector<beta_vector_type> >
-    computeBetaQm( parameter_type const& mu , double time=0 )
+    computeBetaQm( parameter_type const& mu )
     {
         std::cout << "compute thetaq for mu " << mu << "\n" ;
         M_betaAqm.resize( Qa() );

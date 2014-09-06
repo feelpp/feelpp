@@ -1,19 +1,31 @@
 // -*- mode: c++ -*-
 namespace Feel
 {
-/**
-  \page ChangeLog
-  \page md_Credits
-  \page Notations
+/** \page GettingStarted QuickStart
+    - \subpage QSLaplacian
+    - \subpage QSStokes
+    - \subpage QSNS
 */
-/** \page GettingStarted Getting Started
-   - \subpage CrashCourse
+/** \page Tutorial A Step by Step Tutorial
+    To compile the step by step tutorial, there are various options:
+
+    @li use a recent installed version of Feel++, see @ref UsingInstalledFeelpp
+
+    @li install Feel++, see @ref BuildingP
+
+    - \subpage TutorialEnv
+    - \subpage TutorialMesh
+    - \subpage TutorialExpr
+    - \subpage TutorialVisualize
+    - \subpage TutorialIntegrals
+    - \subpage TutorialSpaces
+    - \subpage TutorialBackend
+ */
+/** \page ProgEnv Programming Environment
    - \subpage BuildingP
    - \subpage DocCmakeLists
-   - \subpage FirstApp
+   - \subpage UsingInstalledFeelpp
 */
-
-
 /** \page QuickRef Quick Reference
    - \subpage Keywords
    - \subpage Environment
@@ -22,9 +34,13 @@ namespace Feel
    - \subpage Integrals
    - \subpage Projection
    - \subpage Forms
+   - \subpage Solver
    - \subpage Exporter
 */
 
+/** \page GalerkinMethod Galerkin Methods
+    \subpage Notations
+ */
 
 /** \page Learning Learning by Examples
    - \subpage NumericalMethods
@@ -60,16 +76,14 @@ namespace Feel
     - \subpage StVenantKirchhoff
 */
 /** \page ElectroMagnetism Electro Magnetism
+   - \subpage Magnetostatic
    - \subpage Diode
 */
 /** \page MultiPhysics MultiPhysics
    - \subpage NaturalConvection
 */
-
-
-
-/** \page Miscellaneous Miscellaneous
-   - \subpage Macros
-   - \subpage Types
-   - \subpage Layout
-*/
+/** \page FAQ Frequently Asked Questions
+   - \subpage FAQExecution
+   - \subpage FAQDocumentation
+   - \subpage FAQDevelopment
+ */

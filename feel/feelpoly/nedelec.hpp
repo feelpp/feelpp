@@ -40,6 +40,8 @@
 #include <boost/assign/list_of.hpp>
 #include <boost/assign/std/vector.hpp>
 
+#include <boost/type_traits.hpp>
+
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/traits.hpp>
 #include <feel/feelalg/lu.hpp>
@@ -59,6 +61,8 @@
 #include <feel/feelpoly/fe.hpp>
 
 #include <feel/feelvf/vf.hpp>
+
+#include <feel/feelpoly/hcurlpolynomialset.hpp>
 
 namespace Feel
 {
@@ -104,6 +108,7 @@ struct times_rotx
     int M_c;
 };
 
+#if 0
 template< class T >
 struct extract_all_poly_indices
 {
@@ -118,16 +123,24 @@ struct extract_all_poly_indices
         return start++;
     }
 };
+#endif
+
 }// detail
 
 template<uint16_type N,
          uint16_type O,
          typename T = double,
-            uint16_type TheTAG = 0 >
-class NedelecPolynomialSet
+         uint16_type TheTAG = 0 >
+class NedelecPolynomialSet{};
+
+template<uint16_type O,
+         typename T,
+         uint16_type TheTAG>
+class NedelecPolynomialSet<2,O,T,TheTAG>
     :
-    public Feel::detail::OrthonormalPolynomialSet<N, O+1, N, Vectorial, T, TheTAG, Simplex>
+    public Feel::detail::OrthonormalPolynomialSet<2, O+1, 2, Vectorial, T, TheTAG, Simplex>
 {
+    static const int N = 2;
     typedef Feel::detail::OrthonormalPolynomialSet<N, O+1, N, Vectorial, T, TheTAG, Simplex> super;
 
 public:
@@ -182,7 +195,7 @@ public:
         VLOG(1) << "[Nedelec1stKindset] Pk(0) =" << Pk.polynomial( 0 ).coefficients() << "\n";
 #endif
 
-        // x P_k \ P_{k-1}
+        // curl(x) P_k \ P_{k-1}
         IMGeneral<convex_type::nDim, 2*nOrder,value_type> im;
         //VLOG(1) << "[Nedelec1stKindPset] im.points() = " << im.points() << std::endl;
         ublas::matrix<value_type> xPkc( nComponents*( dim_Pk-dim_Pkm1 ),Pk.coeff().size2() );
@@ -213,6 +226,124 @@ public:
 
 };
 
+template<uint16_type O,
+         typename T,
+         uint16_type TheTAG >
+class NedelecPolynomialSet<3,O,T,TheTAG>
+    :
+        public Feel::detail::OrthonormalPolynomialSet<3, O+1, 3, Vectorial, T, TheTAG, Simplex>
+{
+    static const int N = 3;
+    typedef Feel::detail::OrthonormalPolynomialSet<N, O+1, N, Vectorial, T, TheTAG, Simplex> super;
+
+public:
+    static const uint16_type Om1 = (O==0)?0:O-1;
+    typedef Feel::detail::OrthonormalPolynomialSet<N, O, N, Vectorial, T, TheTAG, Simplex> Pk_v_type;
+    typedef Feel::detail::OrthonormalPolynomialSet<N, O+1, N, Vectorial, T, TheTAG, Simplex> Pkp1_v_type;
+    typedef Feel::detail::OrthonormalPolynomialSet<N, Om1, N, Vectorial, T, TheTAG, Simplex> Pkm1_v_type;
+    typedef Feel::detail::OrthonormalPolynomialSet<N, O, N, Scalar, T, TheTAG, Simplex> Pk_s_type;
+    typedef Feel::detail::OrthonormalPolynomialSet<N, O+1, N, Scalar, T, TheTAG, Simplex> Pkp1_s_type;
+
+    typedef PolynomialSet<typename super::basis_type,Vectorial> vectorial_polynomialset_type;
+    typedef typename vectorial_polynomialset_type::polynomial_type vectorial_polynomial_type;
+    typedef PolynomialSet<typename super::basis_type,Scalar> scalar_polynomialset_type;
+    typedef typename scalar_polynomialset_type::polynomial_type scalar_polynomial_type;
+
+    typedef NedelecPolynomialSet<N, O, T> self_type;
+
+    typedef typename super::value_type value_type;
+    typedef typename super::convex_type convex_type;
+    typedef typename super::matrix_type matrix_type;
+    typedef typename super::points_type points_type;
+
+    static const uint16_type nDim = super::nDim;
+    static const uint16_type nOrder = super::nOrder;
+    static const uint16_type nComponents = super::nComponents;
+    static const bool is_product = false;
+    NedelecPolynomialSet()
+        :
+        super()
+    {
+        VLOG(1) << "[Nedelec1stKindset] nDim = " << nDim << "\n";
+        VLOG(1) << "[Nedelec1stKindset] nOrder = " << nOrder << "\n";
+        VLOG(1) << "[Nedelec1stKindset] O = " << O << "\n";
+        uint16_type dim_Pkp1 = convex_type::polyDims( nOrder );
+        uint16_type dim_Pk = convex_type::polyDims( nOrder-1 );
+        uint16_type dim_Pkm1 = ( nOrder==1 )?0:convex_type::polyDims( nOrder-2 );
+#if 1
+        VLOG(1) << "[Nedelec1stKindset] dim_Pkp1 = " << dim_Pkp1 << "\n";
+        VLOG(1) << "[Nedelec1stKindset] dim_Pk   = " << dim_Pk << "\n";
+        VLOG(1) << "[Nedelec1stKindset] dim_Pkm1 = " << dim_Pkm1 << "\n";
+#endif
+        // (P_k)^d
+        Pkp1_v_type Pkp1_v;
+        VLOG(1) << "[Nedelec1stKindset] Pkp1_v =" << Pkp1_v.coeff() << "\n";
+        vectorial_polynomialset_type Pk_v( Pkp1_v.polynomialsUpToDimension( dim_Pk ) );
+        vectorial_polynomialset_type Pke_v( Pkp1_v.polynomialsUpToDimension( dim_Pk ) );
+#if 1
+        VLOG(1) << "[Nedelec1stKindset] Pk_v =" << Pk_v.coeff() << "\n";
+#endif
+        // P_k
+        Pkp1_s_type Pkp1;
+        VLOG(1) << "[Nedelec1stKindset] Pkp1 =" << Pkp1.coeff() << "\n";
+        scalar_polynomialset_type Pk ( Pkp1.polynomialsUpToDimension( dim_Pk ) );
+#if 1
+        VLOG(1) << "[Nedelec1stKindset] Pk =" << Pk.coeff() << "\n";
+        VLOG(1) << "[Nedelec1stKindset] Pk(0) =" << Pk.polynomial( 0 ).coefficients() << "\n";
+#endif
+
+        // curl(x) P_k \ P_{k-1}
+        IMGeneral<convex_type::nDim, 2*nOrder,value_type> im;
+        VLOG(1) << "[Nedelec1stKindPset] im.points() = " << im.points() << std::endl;
+        //ublas::matrix<value_type> xPkcV( nComponents*( dim_Pk-dim_Pkm1 ),Pk.coeff().size2() );
+        ublas::matrix<value_type> xPkcV( nComponents*nComponents*dim_Pk,Pk.coeff().size2() );
+        Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>> xPkc( xPkcV.data().begin(),
+                                                                                                  xPkcV.size1(), xPkcV.size2() );
+        xPkc.setZero();
+
+        // evaluate P_{k+1} at quad points
+        auto e_Pkp1 = Pkp1.evaluate( im.points() );
+        VLOG(1) << "e_Pkp1 = " << e_Pkp1;
+        // evaluate Pke at quad points
+        auto e_Pkv = Pk_v.evaluate( im.points() );
+        VLOG(1) << "e_Pkv = " << e_Pkv;
+        auto const& X = im.points();
+        auto const& W = im.weights();
+        VLOG(1) << "[Nedelec1stKindPset] before xPkc = " << xPkc << "\n";
+        for ( int c = 0; c < convex_type::nDim; ++c )
+        {
+
+            for ( int l = c*convex_type::nDim+dim_Pkm1; l < c*convex_type::nDim+dim_Pk; ++l )
+                //for ( int l = 0, i = 0; l < dim_Pk; ++l, ++i )
+            {
+                VLOG(1) << "polynomial(c="<<c << ",l=" << l << ")= " << l;
+                for ( int j = 0; j < convex_type::nDim; ++j )
+                {
+                    for( int q  = 0; q < im.nPoints(); ++q )
+                    {
+                        // compute cross(e_Pk(l,q),x)
+                        auto b = W(q)*( X((j+2)%3,q)*e_Pkv(l+(j+1)%3,q)-
+                                        X((j+1)%3,q)*e_Pkv(l+(j+2)%3,q) );
+                        for( int p=0;p < xPkc.cols(); ++p )
+                            xPkc(l+j,p) += b * e_Pkp1(p,q);
+                    }
+                }
+            }
+        }
+        VLOG(1) << "[Nedelec1stKindPset] after xPkc = " << xPkc << "\n";
+        VLOG(1) << "[Nedelec1stKindPset] after xPkcV = " << xPkcV << "\n";
+        vectorial_polynomialset_type xPk( typename super::basis_type(), xPkcV, true );
+        //VLOG(1) << "[Nedelec1stKindPset] here 1\n";
+        // (P_k)^d + x P_k
+        VLOG(1) << "[Nedelec1stKindPset] Nedelec1stKind Poly coeff = " << unite( Pk_v, xPk ).coeff() << "\n";
+        this->setCoefficient( unite( Pk_v, xPk ).coeff(), true );
+        //VLOG(1) << "[Nedelec1stKindPset] here 2\n";
+    }
+
+
+};
+
+
 namespace fem
 {
 
@@ -236,8 +367,8 @@ public:
     typedef typename primal_space_type::value_type value_type;
     typedef typename primal_space_type::points_type points_type;
     typedef typename primal_space_type::matrix_type matrix_type;
-    typedef typename primal_space_type::template convex<nDim+nOrder-1>::type convex_type;
-    typedef Reference<convex_type, nDim, nDim+nOrder-1, nDim, value_type> reference_convex_type;
+    typedef typename primal_space_type::template convex<nOrder+1>::type convex_type;
+    typedef Reference<convex_type, nDim, nOrder+1, nDim, value_type> reference_convex_type;
     typedef typename reference_convex_type::node_type node_type;
 
     typedef typename primal_space_type::Pkp1_v_type Pkp1_v_type;
@@ -247,8 +378,10 @@ public:
     typedef PointSetType<convex_type, nOrder, value_type> pointset_type;
 
     static const uint16_type nbPtsPerVertex = 0;
-    static const uint16_type nbPtsPerEdge = mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<2> >,mpl::int_<reference_convex_type::nbPtsPerEdge>,mpl::int_<0> >::type::value;
-    static const uint16_type nbPtsPerFace =mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<3> >,mpl::int_<reference_convex_type::nbPtsPerFace>,mpl::int_<0> >::type::value;
+    static const uint16_type nbPtsPerEdge = reference_convex_type::nbPtsPerEdge;
+    static const uint16_type nbPtsPerFace2D = reference_convex_type::nbPtsPerFace;
+    static const uint16_type nbPtsPerFace3D = 0;
+    static const uint16_type nbPtsPerFace = (nDim==2)?nbPtsPerFace2D:nbPtsPerFace3D;
     static const uint16_type nbPtsPerVolume = 0;
     static const uint16_type numPoints = ( reference_convex_type::numGeometricFaces*nbPtsPerFace+reference_convex_type::numEdges*nbPtsPerEdge );
 
@@ -262,10 +395,10 @@ public:
     static const uint16_type nDofPerFace = nbPtsPerFace;
 
     /** Number of degrees  of freedom per volume */
-    static const uint16_type nDofPerVolume = 0;
+    static const uint16_type nDofPerVolume = nbPtsPerVolume;
 
     /** Total number of degrees of freedom (equal to refEle::nDof) */
-    static const uint16_type nLocalDof = numPoints;
+    static const uint16_type nLocalDof = reference_convex_type::numEdges*nbPtsPerEdge;
 
     NedelecDualFirstKind( primal_space_type const& primal )
         :
@@ -273,7 +406,7 @@ public:
         M_convex_ref(),
         M_eid( M_convex_ref.topologicalDimension()+1 ),
         M_pts( nDim, numPoints ),
-        M_pts_per_face( convex_type::numTopologicalFaces ),
+        M_pts_per_face( convex_type::numEdges ),
         M_fset( primal )
     {
         VLOG(1) << "Nedelec finite element(dual): \n";
@@ -289,16 +422,17 @@ public:
 
         // loop on each entity forming the convex of topological
         // dimension nDim-1 ( the faces)
-        for ( int p = 0, e = M_convex_ref.entityRange( nDim-1 ).begin();
-                e < M_convex_ref.entityRange( nDim-1 ).end();
+        int d = (nDim == 2 )?nDim-1:1;
+        for ( int p = 0, e = M_convex_ref.entityRange( d ).begin();
+                e < M_convex_ref.entityRange( d ).end();
                 ++e )
         {
-            points_type Gt ( M_convex_ref.makePoints( nDim-1, e ) );
+            points_type Gt ( M_convex_ref.makePoints( d, e ) );
             M_pts_per_face[e] =  Gt ;
 
             if ( Gt.size2() )
             {
-                //VLOG(1) << "Gt = " << Gt << "\n";
+                VLOG(1) << "Gt = " << Gt << "\n";
                 //VLOG(1) << "p = " << p << "\n";
                 ublas::subrange( M_pts, 0, nDim, p, p+Gt.size2() ) = Gt;
                 //for ( size_type j = 0; j < Gt.size2(); ++j )
@@ -329,14 +463,14 @@ public:
         //for( int k = 0; k < nDim; ++k )
         {
             // loopover the each edge entities and add the correponding functionals
-            for ( int e = M_convex_ref.entityRange( nDim-1 ).begin();
-                    e < M_convex_ref.entityRange( nDim-1 ).end();
+            for ( int e = M_convex_ref.entityRange( d ).begin();
+                    e < M_convex_ref.entityRange( d ).end();
                     ++e )
             {
                 typedef Feel::functional::DirectionalComponentPointsEvaluation<primal_space_type> dcpe_type;
                 VLOG(1) << "tangent " << e << ":" << M_convex_ref.tangent( e ) << "\n";
-                node_type dir= M_convex_ref.tangent( e )*j[e];
-                //node_type dir= M_convex_ref.tangent(e);
+                //node_type dir= M_convex_ref.tangent( e )*j[e];
+                node_type dir= M_convex_ref.tangent(e);
 
                 //dcpe_type __dcpe( primal, 1, dir, pts_per_face[e] );
                 dcpe_type __dcpe( primal, dir, M_pts_per_face[e] );
@@ -344,8 +478,13 @@ public:
             }
         }
 
-        //VLOG(1) << "[Nedelec1stKind Dual] done 2" << std::endl;
+        // add integrals of tangential component
         if ( nOrder-1 > 0 )
+        {
+        }
+        //VLOG(1) << "[Nedelec1stKind Dual] done 2" << std::endl;
+        // add integral of moments
+        if ( nOrder-2 > 0 )
         {
             // we need more equations : add interior moment
             // indeed the space is orthogonal to Pk-1
@@ -499,11 +638,11 @@ public:
 
         // loop on each entity forming the convex of topological
         // dimension nDim-1 ( the faces)
-        for ( int p = 0, e = M_convex_ref.entityRange( nDim-1 ).begin();
-                e < M_convex_ref.entityRange( nDim-1 ).end();
+        for ( int p = 0, e = M_convex_ref.entityRange( 1 ).begin();
+                e < M_convex_ref.entityRange( 1 ).end();
                 ++e )
         {
-            points_type Gt ( M_convex_ref.makePoints( nDim-1, e ) );
+            points_type Gt ( M_convex_ref.makePoints( 1, e ) );
             M_pts_per_face[e] =  Gt ;
 
             if ( Gt.size2() )
@@ -539,8 +678,8 @@ public:
         //for( int k = 0; k < nDim; ++k )
         {
             // loopover the each edge entities and add the correponding functionals
-            for ( int e = M_convex_ref.entityRange( nDim-1 ).begin();
-                    e < M_convex_ref.entityRange( nDim-1 ).end();
+            for ( int e = M_convex_ref.entityRange( 1 ).begin();
+                    e < M_convex_ref.entityRange( 1 ).end();
                     ++e )
             {
                 typedef Feel::functional::DirectionalComponentPointsEvaluation<primal_space_type> dcpe_type;
@@ -637,6 +776,19 @@ private:
 
 }// detail
 
+template<uint16_type N,
+         uint16_type O,
+         NedelecKind Kind = NedelecKind::NED2,
+         typename T = double,
+         uint16_type TheTAG = 0 >
+struct NedelecBase
+{
+    typedef typename mpl::if_<mpl::bool_<(Kind == NedelecKind::NED2)>,
+                              FiniteElement<Feel::detail::OrthonormalPolynomialSet<N, O, N, Vectorial, T, TheTAG, Simplex>,
+                                            fem::detail::NedelecDualSecondKind, PointSetEquiSpaced >,
+                              FiniteElement<NedelecPolynomialSet<N, O, T>,
+                                            fem::detail::NedelecDualFirstKind, PointSetEquiSpaced > >::type type;
+};
 
 /**
  * \class Nedelec
@@ -658,25 +810,14 @@ template<uint16_type N,
          uint16_type TheTAG = 0 >
 class Nedelec
     :
-#if 0
-        public FiniteElement<typename mpl::if_<(Kind==NedelecKind::NED2),
-                                               mpl::identity<OrthonormalPolynomialSet<N, O, N, T, Simplex>, fem::detail::NedelecDualSecondKind, PointSetEquiSpaced >,
-                                               mpl::identity<NedelecPolynomialSet<N, O, T>, fem::detail::NedelecDualFirstKind, PointSetEquiSpaced > >::type>,
-#else
-        public FiniteElement<Feel::detail::OrthonormalPolynomialSet<N, O, N, Vectorial, T, TheTAG, Simplex>, fem::detail::NedelecDualSecondKind, PointSetEquiSpaced >,
-#endif
-        public boost::enable_shared_from_this<Nedelec<N,O,Kind,T,TheTAG> >
+    public HCurlPolynomialSet,
+    public NedelecBase<N,O,Kind,T,TheTAG>::type,
+    public boost::enable_shared_from_this<Nedelec<N,O,Kind,T,TheTAG> >
 {
 
 public:
+    typedef typename NedelecBase<N,O,Kind,T,TheTAG>::type super;
 
-#if 0
-    typedef FiniteElement<typename mpl::if_<(Kind==NedelecKind::NED2),
-                                            mpl::identity<OrthonormalPolynomialSet<N, O, N, T, Simplex>, fem::detail::NedelecDualSecondKind, PointSetEquiSpaced >,
-                                            mpl::identity<NedelecPolynomialSet<N, O, T>, fem::detail::NedelecDualFirstKind, PointSetEquiSpaced > >::type> super;
-#else
-    typedef FiniteElement<Feel::detail::OrthonormalPolynomialSet<N, O, N, Vectorial, T, TheTAG, Simplex>, fem::detail::NedelecDualSecondKind, PointSetEquiSpaced > super;
-#endif
     BOOST_STATIC_ASSERT( N > 1 );
 
     /** @name Typedefs
@@ -714,15 +855,10 @@ public:
 
     static const uint16_type nOrder =  dual_space_type::nOrder;
     static const uint16_type nbPtsPerVertex = 0;
-    static const uint16_type nbPtsPerEdge = mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<2> >,
-                             mpl::int_<reference_convex_type::nbPtsPerEdge>,
-                             mpl::int_<0> >::type::value;
-    static const uint16_type nbPtsPerFace = mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<3> >,
-                             mpl::int_<reference_convex_type::nbPtsPerFace>,
-                             mpl::int_<0> >::type::value;
-    static const uint16_type nbPtsPerVolume = 0;
-    static const uint16_type numPoints = ( reference_convex_type::numGeometricFaces*nbPtsPerFace+
-                                           reference_convex_type::numEdges*nbPtsPerEdge );
+    static const uint16_type nbPtsPerEdge = dual_space_type::nbPtsPerEdge;
+    static const uint16_type nbPtsPerFace = dual_space_type::nbPtsPerFace;
+    static const uint16_type nbPtsPerVolume = dual_space_type::nbPtsPerVolume;
+    static const uint16_type numPoints = dual_space_type::numPoints;
 
     // static const uint16_type numPoints = reference_convex_type::numPoints;
     // static const uint16_type nbPtsPerVertex = reference_convex_type::nbPtsPerVertex;

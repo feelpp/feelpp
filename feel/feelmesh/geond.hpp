@@ -149,13 +149,14 @@ public:
         M_barycenter( nRealDim ),
         M_barycenterfaces( nRealDim, numTopologicalFaces ),
         M_h( 1 ),
+        M_h_min(1),
         M_h_face( numTopologicalFaces, 1 ),
         M_h_edge( numLocalEdges, 1 ),
         M_measure( 1 ),
         M_measurefaces( numTopologicalFaces ),
         M_normals( nRealDim, numTopologicalFaces ),
         M_has_points( false ),
-        M_neighbors( numNeighbors, std::make_pair( invalid_size_type_value, 0 ) ),
+        M_neighbors( numNeighbors, std::make_pair( invalid_size_type_value, invalid_rank_type_value ) ),
         M_meas_pneighbors( 0 ),
         M_marker1(),
         M_marker2(),
@@ -180,13 +181,14 @@ public:
         M_barycenter( nRealDim ),
         M_barycenterfaces( nRealDim, numTopologicalFaces ),
         M_h( 1 ),
+        M_h_min( 1 ),
         M_h_face( numTopologicalFaces, 1 ),
         M_h_edge( numLocalEdges, 1 ),
         M_measure( 1 ),
         M_measurefaces( numTopologicalFaces ),
         M_normals( nRealDim, numTopologicalFaces ),
         M_has_points( false ),
-        M_neighbors( numNeighbors, std::make_pair( invalid_size_type_value, 0 ) ),
+        M_neighbors( numNeighbors, std::make_pair( invalid_size_type_value, invalid_rank_type_value ) ),
         M_meas_pneighbors( 0 ),
         M_marker1(),
         M_marker2(),
@@ -205,13 +207,14 @@ public:
         M_barycenter( e.M_barycenter ),
         M_barycenterfaces( e.M_barycenterfaces ),
         M_h( e.M_h ),
+        M_h_min( e.M_h_min ),
         M_h_face( e.M_h_face ),
         M_h_edge( e.M_h_edge ),
         M_measure( e.M_measure ),
         M_measurefaces( numTopologicalFaces  ),
         M_normals( e.M_normals ),
         M_has_points( false ),
-        M_neighbors( numNeighbors, std::make_pair( invalid_size_type_value, 0 ) ),
+        M_neighbors( numNeighbors, std::make_pair( invalid_size_type_value, invalid_rank_type_value ) ),
         M_meas_pneighbors( e.M_meas_pneighbors ),
         M_marker1( e.M_marker1 ),
         M_marker2( e.M_marker2 ),
@@ -309,6 +312,7 @@ public:
             M_barycenter = G.M_barycenter;
             M_barycenterfaces = G.M_barycenterfaces;
             M_h = G.M_h;
+            M_h_min = G.M_h_min;
             M_h_face = G.M_h_face;
             M_h_edge = G.M_h_edge;
 
@@ -353,7 +357,7 @@ public:
      *
      * \return the pair neighbor \p n index and process \p id it belongs to
      */
-    std::pair<size_type,size_type> const& neighbor( uint16_type n ) const
+    std::pair<size_type,rank_type> const& neighbor( uint16_type n ) const
     {
         return M_neighbors[n];
     }
@@ -361,7 +365,7 @@ public:
     /**
      * set the \p n -th neighbor with \p neigh
      */
-    void setNeighbor( uint16_type n, size_type neigh_id, size_type proc_id )
+    void setNeighbor( uint16_type n, size_type neigh_id, rank_type proc_id )
     {
         M_neighbors[n] = std::make_pair( neigh_id, proc_id );
     }
@@ -584,7 +588,14 @@ public:
     {
         return M_h;
     }
-
+    /**
+     * @brief get the minimum edge length in the element
+     * @return the minimum edge length in the element
+     */
+    double hMin() const
+    { 
+        return M_h_min;
+    }
     /**
      * get the max length of the edge in the local face \c f
      *
@@ -715,6 +726,10 @@ public:
         return ( sgn > 0 ) ? 1 : 0;
     }
 
+    void setPointCoordG( int i, ublas::vector<double> const& u )
+    {
+        ublas::column( M_G, i ) = u;
+    }
     void applyDisplacement( int i, ublas::vector<double> const& u )
     {
         ublas::column( M_G, i ) += u;
@@ -862,7 +877,7 @@ private:
     node_type M_barycenter;
     matrix_node_type M_barycenterfaces;
 
-    double M_h;
+    double M_h,M_h_min;
     std::vector<double> M_h_face;
     std::vector<double> M_h_edge;
 
@@ -876,7 +891,7 @@ private:
     /**
      * store neighbor element id
      */
-    std::vector<std::pair<size_type,size_type> > M_neighbors;
+    std::vector<std::pair<size_type,rank_type> > M_neighbors;
     //! point element neighbors
     std::set<size_type> M_pneighbors;
     //! measure of the set of point element neighbors
@@ -983,6 +998,7 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateWithPc( typename gm_type::precompute_pt
         typename gm_type::faces_precompute_type& pcf )
 {
     M_h = 0;
+    M_h_min = 0;
 
     for ( uint16_type __e = 0; __e < numLocalEdges; ++__e )
     {
@@ -990,6 +1006,7 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateWithPc( typename gm_type::precompute_pt
         node_type const& __x2 = this->point( this->eToP( __e, 1 ) ).node();
         M_h_edge[__e] = ublas::norm_2( __x1-__x2 );
         M_h = ( M_h > M_h_edge[__e] )?M_h:M_h_edge[__e];
+        M_h_min = ( M_h_min > M_h_edge[__e] )?M_h_edge[__e]:M_h_min;
     }
 
     auto M = glas::average( M_G );

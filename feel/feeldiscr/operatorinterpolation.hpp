@@ -27,8 +27,8 @@
    \author Chabannes Vincent <vincent.chabannes@imag.fr>
    \date 2008-02-01
  */
-#ifndef __OperatorInterpolation_H
-#define __OperatorInterpolation_H 1
+#ifndef FEELPP_OPERATORINTERPOLATION_HPP
+#define FEELPP_OPERATORINTERPOLATION_HPP 1
 
 #include <feel/feeldiscr/operatorlinear.hpp>
 
@@ -72,7 +72,7 @@ struct InterpolationNonConforme : public InterpolationTypeBase
     static const uint16_type value=0;
 
     InterpolationNonConforme( bool useComm=true, bool compAreSamePt=true, bool onlyLocalizeOnBoundary=false, int nbNearNeighborInKdTree=15 )
-    :
+        :
         InterpolationTypeBase(useComm,compAreSamePt, onlyLocalizeOnBoundary,nbNearNeighborInKdTree)
     {}
 };
@@ -82,7 +82,7 @@ struct InterpolationConforme : public InterpolationTypeBase
     static const uint16_type value=1;
 
     InterpolationConforme(bool useComm=true, bool compAreSamePt=true, bool onlyLocalizeOnBoundary=false, int nbNearNeighborInKdTree=15 )
-    :
+        :
         InterpolationTypeBase(useComm,compAreSamePt,onlyLocalizeOnBoundary,nbNearNeighborInKdTree)
     {}
 };
@@ -954,7 +954,10 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                     //------------------------
                                     // localisation process
                                     if (notUseOptLocTest) eltIdLocalised=invalid_size_type_value;
-                                    eltIdLocalised = locTool->run_analysis(ptsReal,eltIdLocalised,it->vertices()/*it->G()*/,mpl::int_<interpolation_type::value>()).template get<1>();
+                                    auto resLocalisation = locTool->run_analysis(ptsReal,eltIdLocalised,it->vertices()/*it->G()*/,mpl::int_<interpolation_type::value>());
+                                    for ( bool hasFindPtLocalised : resLocalisation.template get<0>()  )
+                                         LOG_IF(ERROR, !hasFindPtLocalised ) << "OperatorInterpolation::updateNoRelationMesh : point localisation fail!\n";
+                                    eltIdLocalised = resLocalisation.template get<1>();
                                     //------------------------
                                     // for each localised points
                                     itanal = locTool->result_analysis_begin();
@@ -2491,4 +2494,4 @@ BOOST_PARAMETER_FUNCTION(
 
 
 } // Feel
-#endif /* __OperatorInterpolation_H */
+#endif /* FEELPP_OPERATORINTERPOLATION_HPP */

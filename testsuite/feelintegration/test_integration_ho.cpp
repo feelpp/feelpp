@@ -69,6 +69,7 @@ struct f_Px
 {
     static const size_type context = vm::JACOBIAN|vm::POINT;
     typedef double value_type;
+    typedef value_type evaluate_type;
     static const uint16_type rank = 0;
     static const uint16_type imorder = 1;
     static const bool imIsPoly = true;
@@ -81,6 +82,7 @@ struct f_Nx
 {
     static const size_type context = vm::JACOBIAN|vm::POINT|vm::NORMAL;
     typedef double value_type;
+    typedef value_type evaluate_type;
     static const uint16_type rank = 0;
     static const uint16_type imorder = 1;
     static const bool imIsPoly = true;
@@ -93,6 +95,7 @@ struct f_Ny
 {
     static const size_type context = vm::JACOBIAN|vm::POINT|vm::NORMAL;
     typedef double value_type;
+    typedef value_type evaluate_type;
     static const uint16_type rank = 0;
     static const uint16_type imorder = 1;
     static const bool imIsPoly = true;
@@ -105,6 +108,7 @@ struct f_sinPx
 {
     static const size_type context = vm::JACOBIAN|vm::POINT;
     typedef double value_type;
+    typedef value_type evaluate_type;
     static const uint16_type rank = 0;
     static const uint16_type imorder = 2;
     static const bool imIsPoly = false;

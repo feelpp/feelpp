@@ -76,7 +76,6 @@ namespace ublas = boost::numeric::ublas;
 template <typename T> class MatrixSparse;
 template <typename T> inline std::ostream& operator << ( std::ostream& os, const MatrixSparse<T>& m );
 
-
 /**
  * Generic sparse matrix. This class contains
  * pure virtual members that must be overloaded
@@ -102,6 +101,9 @@ public:
 
     typedef DataMap datamap_type;
     typedef boost::shared_ptr<datamap_type> datamap_ptrtype;
+
+    typedef typename datamap_type::indexsplit_type indexsplit_type;
+    typedef typename datamap_type::indexsplit_ptrtype indexsplit_ptrtype;
 
     /**
      * Constructor; initializes the matrix to be empty, without any
@@ -205,47 +207,20 @@ public:
                         const size_type n_l,
                         graph_ptrtype const& graph ) = 0;
 
-#if 0
     /**
-     *
+     * set the indexSplit associated to the sparse matrix
      */
-    template<typename DomainSpace, typename ImageSpace>
-    void initIndexSplit( DomainSpace const& dm, ImageSpace const& im )
+    virtual void setIndexSplit( indexsplit_ptrtype const& is )
     {
-        auto nSpace = DomainSpace::element_type::nSpaces;
-
-        if ( nSpace>1 )
-        {
-            //std::cout << "\n Debug : nSpace " << nSpace << "\n";
-            std::vector < std::vector<int> > is( nSpace );
-            uint cptSpaces=0;
-            uint start=0;
-            auto result = boost::make_tuple( cptSpaces,start );
-
-            std::vector < std::vector<int> > indexSplit( nSpace );
-            //detail::computeNDofForEachSpace cndof(nSpace);
-            //detail::computeNDofForEachSpace cndof(indexSplit);
-            boost::fusion::fold( dm->functionSpaces(), result,  cndof );
-
-            this->setIndexSplit( indexSplit );
-        }
-
-    }
-#endif
-    /**
-     *
-     */
-    virtual void setIndexSplit( std::vector< std::vector<size_type> > const &_indexSplit )
-    {
-        M_IndexSplit=_indexSplit;
+        M_indexSplit = is;
     }
 
     /**
-     *
+     * \return the indexSplit associated to the sparse matrix
      */
-    std::vector< std::vector<size_type> > indexSplit() const
+    indexsplit_ptrtype const& indexSplit() const
     {
-        return M_IndexSplit;
+        return M_indexSplit;
     }
 
     /**
@@ -335,6 +310,18 @@ public:
     {
         return M_mprop.test( DENSE );
     }
+
+    /**
+     * \return true if matrix is symmetric, false otherwise
+     */
+    virtual bool isSymmetric() const;
+
+    /**
+     * \return true if \p this is the transpose of Trans, false otherwise
+     */
+    virtual bool isTransposeOf ( MatrixSparse<value_type> &Trans ) const;
+
+
     void checkProperties() const
     {
         if ( !haveConsistentProperties() )
@@ -535,15 +522,15 @@ public:
      *
      * \param Mt the matrix transposed
      */
-    virtual void transpose( MatrixSparse<value_type>& Mt ) const = 0;
+    virtual void transpose( MatrixSparse<value_type>& Mt, size_type options = MATRIX_TRANSPOSE_ASSEMBLED ) const = 0;
 
     /**
      * \return the transpose of the matrix
      */
-    boost::shared_ptr<MatrixSparse<T> > transpose() const
+    boost::shared_ptr<MatrixSparse<T> > transpose( size_type options = MATRIX_TRANSPOSE_ASSEMBLED ) const
     {
         boost::shared_ptr<MatrixSparse<T> > Mt;
-        transpose( *Mt );
+        transpose( *Mt, options );
         return Mt;
     }
 
@@ -553,9 +540,9 @@ public:
      * \param M the matrix to transpose
      * \param Mt the matrix transposed
      */
-    void transpose( boost::shared_ptr<MatrixSparse<value_type> >& Mt ) const
+    void transpose( boost::shared_ptr<MatrixSparse<value_type> >& Mt, size_type options = MATRIX_TRANSPOSE_ASSEMBLED ) const
     {
-        this->transpose( *Mt );
+        this->transpose( *Mt, options );
     }
 
     /**
@@ -738,6 +725,17 @@ public:
         }
     }
 #endif
+    virtual void sqrt( MatrixSparse<value_type>& _m ) const;
+
+    void sqrt( boost::shared_ptr<MatrixSparse<value_type> >& _m ) const
+    {
+        sqrt(*_m);
+    }
+
+    virtual void matMatMult ( MatrixSparse<value_type> const& In, MatrixSparse<value_type> &Res );
+
+    virtual void matInverse ( MatrixSparse<value_type> &Inv );
+
 protected:
     /**
      * Protected implementation of the create_submatrix and reinit_submatrix
@@ -768,7 +766,7 @@ protected:
 
     Context M_mprop;
 
-    std::vector < std::vector<size_type> > M_IndexSplit;
+    indexsplit_ptrtype M_indexSplit;
 
     /**
      * data distribution map of the vector over the processors
@@ -899,6 +897,52 @@ struct is_matrix_ptr<boost::shared_ptr<MatrixType> >
         MatrixType>
 {};
 }
+
+template <typename T>
+void MatrixSparse<T>::sqrt( MatrixSparse<value_type>& _m ) const
+{
+    std::cerr << "Error! This function is not yet implemented in the base class!"
+              << std::endl;
+    FEELPP_ASSERT( 0 ).error( "invalid call" );
+}
+
+template <typename T>
+void MatrixSparse<T>::matMatMult ( MatrixSparse<value_type> const& In, MatrixSparse<value_type> &Res )
+{
+    std::cerr << "Error! This function is not yet implemented in the base class!"
+              << std::endl;
+    FEELPP_ASSERT( 0 ).error( "invalid call" );
+}
+
+template <typename T>
+void MatrixSparse<T>::matInverse ( MatrixSparse<value_type> &Inv )
+{
+    std::cerr << "Error! This function is not yet implemented in the base class!"
+              << std::endl;
+    FEELPP_ASSERT( 0 ).error( "invalid call" );
+}
+
+
+template <typename T>
+bool MatrixSparse<T>::isSymmetric () const
+{
+    std::cerr << "Error! This function is not yet implemented in the base class!"
+              << std::endl;
+    FEELPP_ASSERT( 0 ).error( "invalid call" );
+
+    return 0;
+}
+
+template <typename T>
+bool MatrixSparse<T>::isTransposeOf ( MatrixSparse<value_type> &Trans ) const
+{
+    std::cerr << "Error! This function is not yet implemented in the base class!"
+              << std::endl;
+    FEELPP_ASSERT( 0 ).error( "invalid call" );
+
+    return 0;
+}
+
 } // Feel
 
 #endif // #ifndef __sparse_matrix_h__

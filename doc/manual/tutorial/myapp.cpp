@@ -23,40 +23,20 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
+// [marker]
 #include <feel/feelcore/environment.hpp>
 
-/**
- * Program entry point
- */
-//\code
-//# marker1 #
 int main( int argc, char* argv[] )
 {
     using namespace Feel;
 
-    // create custom command option
-    po::options_description app_options( "MyApp options" );
-    app_options.add_options()
-	( "value",
-          po::value<double>() -> default_value(4.2),
-          "a 'double' with default value" )
-    ;
-
-    // initialize feel++ environment
     Environment env( _argc=argc, _argv=argv,
-                     _desc=app_options,
                      _about=about( _name="myapp",
                                    _author="Feel++ Consortium",
                                    _email="feelpp-devel@feelpp.org") );
-
-    // create a log and write inside
-    LOG(INFO) << "value = " << option(_name="value").as<double>()
-              << std::endl;
-
-    LOG(INFO) << "proc " << Environment::worldComm().globalRank()
+    std::cout << "proc " << Environment::rank()
               <<" of "<< Environment::numberOfProcessors()
               << std::endl;
 
-} // main
-//# endmarker1 #
-//\endcode
+}
+// [marker]

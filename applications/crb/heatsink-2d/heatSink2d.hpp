@@ -49,7 +49,7 @@
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelcrb/parameterspace.hpp>
 
-#include <feel/feeldiscr/bdf.hpp>
+#include <feel/feelts/bdf.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/LU>
@@ -85,7 +85,7 @@ makeHeatSink2DOptions()
     ( "k_fin", Feel::po::value<double>()->default_value( 386 ),
       "thermal conductivity of the fin in SI unit W.m^{-1}.K^{-1}" )
     ;
-    return heatsink2doptions.add( Feel::feel_options() ).add( bdf_options( "heatSink2d" ) );
+    return heatsink2doptions.add( bdf_options( "heatSink2d" ) );
 }
 AboutData
 makeHeatSink2DAbout( std::string const& str = "heatSink" )
@@ -125,6 +125,10 @@ public :
 
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
+
+    static const bool is_time_dependent = true;
+    static const bool is_linear = true;
+
 };
 
 /**
@@ -151,7 +155,6 @@ public:
     static const uint16_type Order = 1;
     static const uint16_type ParameterSpaceDimension = 3;
     //static const bool is_time_dependent = false;
-    static const bool is_time_dependent = true;
 
     //@}
 
@@ -343,14 +346,9 @@ public:
      * \brief compute the beta coefficient for both bilinear and linear form
      * \param mu parameter to evaluate the coefficients
      */
-    boost::tuple<beta_vector_type, beta_vector_type, std::vector<beta_vector_type> >
-    computeBetaQm( element_type const& T,parameter_type const& mu , double time=1e30 )
-    {
-        return computeBetaQm( mu , time );
-    }
 
     boost::tuple<beta_vector_type, beta_vector_type, std::vector<beta_vector_type>  >
-    computeBetaQm( parameter_type const& mu , double time=1e30 )
+    computeBetaQm( parameter_type const& mu , double time , bool only_terms_time_dependent=false )
     {
         double biot      = mu( 0 );
         double L         = mu( 1 );
@@ -483,7 +481,7 @@ public:
     /**
      * H1 scalar product
      */
-    sparse_matrix_ptrtype innerProduct ( void )
+    sparse_matrix_ptrtype energyMatrix ( void )
     {
         return M;
     }
@@ -548,6 +546,9 @@ public:
     {
         return M_Dmu->min();
     }
+
+    bdf_ptrtype bdfModel(){ return M_bdf; }
+
 
 private:
 

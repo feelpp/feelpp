@@ -109,9 +109,12 @@ public:
     static const uint16_type nNodes = nDof;
     static const uint16_type nDofGrad = super::nDim*nDof;
     static const uint16_type nDofHess = super::nDim*super::nDim*nDof;
-    static const fem::transformation_type trans = ( fem::transformation_type )mpl::if_<mpl::and_<mpl::bool_<P::convex_type::is_simplex>,mpl::equal_to<mpl::int_<super::nOrder>, mpl::int_<1> > >,
-                                          mpl::int_<fem::LINEAR>,
-                                          mpl::int_<fem::NONLINEAR> >::type::value;
+    static const bool islinear_simplex = P::convex_type::is_simplex && (super::nOrder == 1);
+    static const bool islinear_hypercube = P::convex_type::is_hypercube && (super::nDim==1)  && (super::nOrder == 1);
+    static const bool islinear  = islinear_hypercube || islinear_simplex;
+    static const fem::transformation_type trans = ( fem::transformation_type )mpl::if_<mpl::bool_<islinear>,
+                                                                                       mpl::int_<fem::LINEAR>,
+                                                                                       mpl::int_<fem::NONLINEAR> >::type::value;
     //@}
 
     /** @name Constructors, destructor

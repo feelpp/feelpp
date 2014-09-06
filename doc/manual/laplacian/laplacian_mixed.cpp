@@ -52,10 +52,12 @@ namespace Feel
 
    The variational formulation reads
 
-   \f[ \forall v\in H(div)$;  $v.n = 0$ on $\Gamma_{4}\} $:    $ \int_\Omega  u v + p div v -\int_{\Gamma_{123}} gd* v.n  = 0 $
+   \f[ \forall v\in H(div)$;  \mathbf{ v } \cdot \mathbf{ n } = 0 \mbox{ on } \Gamma_{4}\] :
 
- $\forall q\in L^2$:   $  -\int_\Omega q div u = \int_Omega f q  $
-and $ u.n = (g1n,g2n).n$ on $\Gamma_4$
+   \f[ \int_\Omega  \mathbf{u} \cdot \mathbf{ v } + p div v -\int_{\Gamma_{123}} gd* \mathbf{v} \cdot \mathbf{n}  = 0 \f]
+
+   \f[ \forall q\in L^2$:   $  -\int_\Omega q div u = \int_Omega f q \f]
+   and \f[ u \cdot \mathbf{ n } = (g1n,g2n) \cdot \mathbf{ n }  \mbox{ on } \Gamma_4\f]
 
 */
 }
@@ -68,8 +70,7 @@ int main(int argc, char**argv )
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
 
-    auto mesh = loadMesh( _mesh=new Mesh<Simplex<2>> );
-
+    auto mesh = loadMesh( _mesh=new Mesh<Simplex<3>> );
     auto Mh = DhPdh<0>( mesh );
     auto U = Mh->element();
     auto V = Mh->element();
@@ -86,17 +87,15 @@ int main(int argc, char**argv )
     auto a = form2( _trial=Mh, _test=Mh );
 
     a = integrate(_range=elements(mesh), _expr=trans(idt(u))*id(v));
-    a += integrate(_range=elements(mesh), _expr=-id(q)*divt(u) - idt(p)*div(v) );
+    a += integrate(_range=elements(mesh), _expr=id(q)*divt(u) - idt(p)*div(v) );
     a += integrate(_range=elements(mesh), _expr=1e-6*id(q)*idt(p));
-    a += on( markedfaces(mesh, (boost::any)4 ), _element=u, _rhs=l, _expr=vec(cst(1.0),cst(1.) ) );
+    a += on( markedfaces(mesh, (boost::any)4 ), _element=u, _rhs=l, _expr=vec(cst(1.0),cst(1.),cst(0.) ) );
 
     a.solve(_rhs=l,_solution=U);
 
     auto e = exporter( _mesh=mesh );
-    //v.on( _range=elements(mesh), _expr=vec(cst(1.),cst(1.) ) );
     e->add( "u", u );
     e->add( "p", p );
     e->save();
     /// [marker1]
-    return 0;
 }

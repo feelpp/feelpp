@@ -37,10 +37,10 @@ int main(int argc, char**argv )
 
     auto mesh = loadMesh( _mesh=new Mesh<Simplex<3>>,
                           _filename="brainVeines20.msh",
-                          //_update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES,
-                          //_physical_are_elementary_regions=true,
-                          //_partitions=Environment::worldComm().localSize(),
-                          //_worldcomm=Environment::worldComm()
+                          _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES,
+                          _physical_are_elementary_regions=true,
+                          _partitions=Environment::worldComm().localSize(),
+                          _worldcomm=Environment::worldComm()
                          );
 
 
@@ -53,41 +53,22 @@ int main(int argc, char**argv )
     auto u = U.element<0>();
     auto p = U.element<1>();
 
-    int i;
+    auto hsize = mean(elements(mesh),h());
+    std::cout << "   hsize = " << hsize << "\n";
     //+++++++++++++++++++++++++ Velocity at inlet +++++++++++++++++++++++++++
-    /*auto sumAreaIN = integrate(markedfaces(mesh,1),cst(1.)).evaluate()(0,0);
-    std::cout << "Area of inlet 1 = "<< sumAreaIN << "\n";
-    double Area;
-    std::cout.precision(20);
-    for (i=2;i<=31;i++)
-        {
-            if( (i!=7) && (i!=24))
-               {
-                   Area = integrate(markedfaces(mesh,i),cst(1.)).evaluate()(0,0);
-                   sumAreaIN += Area;
-                   std::cout << "Area of inlet "<<i<< " = "<< Area << "\n";
-               }
-               }*/
+
     auto sumAreaIN = integrate(markedfaces(mesh,52),cst(1.)).evaluate()(0,0); //52 is a physical group assembling all the entries
     std::cout << "The total sum of the inlet area = "<<sumAreaIN << "\n";
     auto u_inlet = -6000./sumAreaIN;
     std::cout << "u_inlet = "<< u_inlet << "\n";
     auto flowIn = integrate(markedfaces(mesh,52),inner(u_inlet*N(),N() ) ).evaluate()(0,0);
-    /*auto flowIn = integrate(markedfaces(mesh,1),inner(u_inlet*N(),N() ) ).evaluate()(0,0);
-    for (i=2;i<=31;i++)
-        {
-            if( (i!=7) && (i!=24))
-                flowIn += integrate(markedfaces(mesh,i),inner(u_inlet*N(),N() ) ).evaluate()(0,0);
-                }*/
     std::cout<<"flow_inlet = "<<flowIn<<"\n";
 
     //+++++++++++++++++++++++++ Velocity at Outlet +++++++++++++++++++++++++++
-    //auto sumAreaOUT = integrate(markedfaces(mesh,7),cst(1.)).evaluate()(0,0) + integrate(markedfaces(mesh,24),cst(1.)).evaluate()(0,0);
     auto sumAreaOUT = integrate(markedfaces(mesh,51),cst(1.)).evaluate()(0,0);
     std::cout << "The total sum of the outlet area = "<<sumAreaOUT << "\n";
     auto u_outlet = 6000./sumAreaOUT;
     std::cout << "u_outlet = "<< u_outlet << "\n";
-    //auto flowOut = integrate(markedfaces(mesh,7),inner(u_outlet*N(),N() ) ).evaluate()(0,0) + integrate(markedfaces(mesh,24),inner(u_outlet*N(),N() ) ).evaluate()(0,0);
     auto flowOut = integrate(markedfaces(mesh,51),inner(u_outlet*N(),N() ) ).evaluate()(0,0) ;
     std::cout<<"flow_outlet = "<<flowOut<<"\n";
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -109,11 +90,6 @@ int main(int argc, char**argv )
 
     //++++++++ Boundary Conditions ++++++++++++++++
     //++++ At the inlets ++++
-    /*for (i=1;i<=31;i++)
-        {
-            if( (i!=7) && (i!=24))
-                a+=on(_range=markedfaces(mesh,i), _rhs=l, _element=u, _expr=vec(u_inlet*Nx(),u_inlet*Ny(),u_inlet*Nz()));
-                }*/
     a+=on(_range=markedfaces(mesh,52), _rhs=l, _element=u, _expr=vec(u_inlet*Nx(),u_inlet*Ny(),u_inlet*Nz()));
     //++++ On the wall ++++
     a+=on(_range=markedfaces(mesh,53),  _rhs=l, _element=u, _expr=vec(cst(0.), cst(0.), cst(0.)) );
@@ -127,15 +103,8 @@ int main(int argc, char**argv )
     a.solve(_rhs=l,_solution=U);
 
     //Flow at inlet
-    /*auto flowInCal = integrate(markedfaces(mesh,1),inner(idv(u),N() ) ).evaluate()(0,0);
-    for (i=2;i<=31;i++)
-        {
-            if( (i!=7) && (i!=24))
-                flowInCal += integrate(markedfaces(mesh,i),inner(idv(u),N() ) ).evaluate()(0,0);
-                }*/
     auto flowInCal = integrate(markedfaces(mesh,52),inner(idv(u),N() ) ).evaluate()(0,0);
     //Flow at the outlet
-    //auto flowOutCal = integrate(markedfaces(mesh,7),inner(idv(u),N() ) ).evaluate()(0,0) + integrate(markedfaces(mesh,24),inner(idv(u),N() ) ).evaluate()(0,0);
     auto flowOutCal = integrate(markedfaces(mesh,51),inner(idv(u),N() ) ).evaluate()(0,0) ;
     std::cout.precision(20);
     std::cout<<"flow_inlet calcule = "<<flowInCal<<"\n";
@@ -144,21 +113,23 @@ int main(int argc, char**argv )
     std::cout<<"Diff flow In/In = "<<flowInCal-flowIn<<"\n";
     std::cout<<"Diff flow Out/Out = "<<flowOutCal-flowOut<<"\n";
 
-    // LOG(INFO) << "   hsize = " << meshSizeInit() << "\n";
+    //auto hsize = mean(elements(mesh),h());
+
+    LOG(INFO) << "   hsize = " << hsize << "\n";
     LOG(INFO) << "[dof]             number of dof: " << Vh->nDof() << "\n";
     LOG(INFO) << "[dof]        number of dof/proc: " << Vh->nLocalDof() << "\n";
-    LOG(INFO) << "[dof]          number of dof(U): " << Vh->template functionSpace<0>()->nDof()  << "\n";
-    LOG(INFO) << "[dof]     number of dof/proc(U): " << Vh->template functionSpace<0>()->nLocalDof()  << "\n";
-    LOG(INFO) << "[dof]          number of dof(P): " << Vh->template functionSpace<1>()->nDof()  << "\n";
-    LOG(INFO) << "[dof]     number of dof/proc(P): " << Vh->template functionSpace<1>()->nLocalDof()  << "\n";
+    LOG(INFO) << "[dof]          number of dof(U): " << Vh->functionSpace<0>()->nDof()  << "\n";
+    LOG(INFO) << "[dof]     number of dof/proc(U): " << Vh->functionSpace<0>()->nLocalDof()  << "\n";
+    LOG(INFO) << "[dof]          number of dof(P): " << Vh->functionSpace<1>()->nDof()  << "\n";
+    LOG(INFO) << "[dof]     number of dof/proc(P): " << Vh->functionSpace<1>()->nLocalDof()  << "\n";
 
-    //std::cout << "   hsize = " << meshSizeInit() << "\n";
+    std::cout << "Mesh size = "<< hsize << "\n";
     std::cout << "[dof]             number of dof: " << Vh->nDof() << "\n";
     std::cout << "[dof]        number of dof/proc: " << Vh->nLocalDof() << "\n";
-    std::cout << "[dof]          number of dof(U): " << Vh->template functionSpace<0>()->nDof()  << "\n";
-    std::cout << "[dof]     number of dof/proc(U): " << Vh->template functionSpace<0>()->nLocalDof()  << "\n";
-    std::cout << "[dof]          number of dof(P): " << Vh->template functionSpace<1>()->nDof()  << "\n";
-    std::cout << "[dof]     number of dof/proc(P): " << Vh->template functionSpace<1>()->nLocalDof()  << "\n";
+    std::cout << "[dof]          number of dof(U): " << Vh->functionSpace<0>()->nDof()  << "\n";
+    std::cout << "[dof]     number of dof/proc(U): " << Vh->functionSpace<0>()->nLocalDof()  << "\n";
+    std::cout << "[dof]          number of dof(P): " << Vh->functionSpace<1>()->nDof()  << "\n";
+    std::cout << "[dof]     number of dof/proc(P): " << Vh->functionSpace<1>()->nLocalDof()  << "\n";
 
 
     // save results

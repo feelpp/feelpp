@@ -1,7 +1,7 @@
 // -*- coding: utf-8; mode: c++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
 #include <feel/feel.hpp>
-
+#include <feel/feelalg/vectorblock.hpp>
 
 namespace Feel
 {
@@ -100,7 +100,7 @@ void runStokesDirichletLM()
     myblockGraph(0,0) = stencil( _test=Vh1,_trial=Vh1, _diag_is_nonzero=false, _close=false)->graph();
     myblockGraph(1,0) = stencil( _test=Vh2,_trial=Vh1, _diag_is_nonzero=false, _close=false)->graph();
     myblockGraph(0,1) = stencil( _test=Vh1,_trial=Vh2, _diag_is_nonzero=false, _close=false)->graph();
-    myblockGraph(1,1) = stencil( _test=Vh2,_trial=Vh2, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
+    //myblockGraph(1,1) = stencil( _test=Vh2,_trial=Vh2, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
     auto A = backend()->newBlockMatrix(_block=myblockGraph);
 
     BlocksBaseVector<double> myblockVec(2);
@@ -197,8 +197,8 @@ int main(int argc, char**argv )
                                   _email="feelpp-devel@feelpp.org"));
 
 
-    runStokesDirichletLM<2,1>();
-    //runStokesDirichletLM<3,1>();
+    //runStokesDirichletLM<2,1>();
+    runStokesDirichletLM<3,1>();
 
     return 0;
 }

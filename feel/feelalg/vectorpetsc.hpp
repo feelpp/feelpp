@@ -190,7 +190,7 @@ public:
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunsequenced"
 #endif
-        
+
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
 
         VectorPetsc<T> const* V = dynamic_cast<VectorPetsc<T> const*> ( &v );
@@ -213,7 +213,7 @@ public:
         /* close */
         this->close(); /* no // assembly required */
 #endif
-        
+
 #if defined(__clang__)
 #pragma clang diagnostic pop
 #endif
@@ -636,9 +636,11 @@ public:
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version) const
     {
-        value_type *array = *((value_type**)this->vec()->data);
-        int n             = this->vec()->map->n;
-        int N             = this->vec()->map->N;
+        value_type* array;
+        VecGetArray(this->vec(),&array);
+
+        int n             = this->localSize();
+        int N             = this->size();
 
         int rank;
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -647,6 +649,8 @@ public:
 
         for (int i=0; i<n; i++)
             ar & array[i];
+
+        VecRestoreArray(this->vec(), &array);
     }
     //@}
 

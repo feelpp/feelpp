@@ -34,21 +34,34 @@ IF ( NOT CLN_INCLUDE_DIR )
 
   if(${CMAKE_SOURCE_DIR}/contrib/cln/configure IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/cln-compile/Makefile)
     message(STATUS "Building cln in ${CMAKE_BINARY_DIR}/contrib/cln-compile...")
-    execute_process(
-      COMMAND ${FEELPP_HOME_DIR}/contrib/cln/configure --prefix=${CMAKE_BINARY_DIR}/contrib/cln
-      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/cln-compile
-      #      OUTPUT_QUIET
-      OUTPUT_FILE "cln-configure"
-      )
+    if (FEELPP_USE_STATIC_LINKAGE )
+      set(CLN_CONF_OPTS "--disable-shared --enable-static")
+    endif()
+    if (FEELPP_USE_STATIC_LINKAGE )
+      message(STATUS "CLN: use static linkage")
+      execute_process(
+        COMMAND ${FEELPP_HOME_DIR}/contrib/cln/configure --prefix=${CMAKE_BINARY_DIR}/contrib/cln --enable-static --disable-shared 
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/cln-compile
+        # OUTPUT_QUIET
+        OUTPUT_FILE "cln-configure"
+        )
+    else()
+      execute_process(
+        COMMAND ${FEELPP_HOME_DIR}/contrib/cln/configure --prefix=${CMAKE_BINARY_DIR}/contrib/cln LDFLAGS=-dynamic
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/cln-compile
+        #      OUTPUT_QUIET
+        OUTPUT_FILE "cln-configure"
+        )
+    endif()
   endif()
   set(CLN_INCLUDE_DIR ${CMAKE_BINARY_DIR}/contrib/cln/include)
 
   if( (${CMAKE_SOURCE_DIR}/contrib/cln/include/cln/cln.h IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/cln/include/cln/cln.h) OR
       (${CMAKE_SOURCE_DIR}/contrib/cln/src/Makefile.am IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/cln-compile/src/Makefile) )
     message(STATUS "Installing cln in ${CMAKE_BINARY_DIR}/contrib/cln (this may take a while)...")
-    if ( APPLE AND (
-          ( "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" ) OR
-          ( "${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel" ) ) )
+    if ( FEELPP_USE_CLANG_LIBCXX OR ( APPLE AND (
+            ( "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" ) OR
+            ( "${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel" ) ) ) )
       execute_process(
         COMMAND make -j${NProcs2} -k install CXXFLAGS=-stdlib=libc++
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/cln-compile

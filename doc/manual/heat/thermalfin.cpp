@@ -31,7 +31,7 @@
 #include <feel/feelvf/operators.hpp>
 #include <feel/feelvf/operations.hpp>
 #include <feel/feelvf/mean.hpp>
-
+#include <feel/feelvf/trans.hpp>
 inline
 Feel::po::options_description
 makeOptions()
@@ -49,7 +49,7 @@ makeOptions()
     ( "N", Feel::po::value<int>()->default_value( 1 ), "number of samples withing parameter space" )
 
     ;
-    return thermalfinoptions.add( Feel::feel_options() );
+    return thermalfinoptions;
 }
 inline
 Feel::AboutData
@@ -67,27 +67,14 @@ makeAbout()
 
 }
 
-
-namespace Feel
+int main( int argc, char** argv )
 {
-/**
- * Thermal fin application
- *
- */
-class ThermalFin : public Application
-{
-public:
-
-    /**
-     * run the convergence test
-     */
-    void run();
-}; // ThermalFin
+    using namespace Feel;
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=makeAbout() );
 
 
-void
-ThermalFin::run()
-{
     Environment::changeRepository( boost::format( "%1%/%2%/" )
                                    % Environment::about().appName()
                                    % option( _name="gmsh.hsize" ).as<double>() );
@@ -109,8 +96,8 @@ ThermalFin::run()
     f = integrate( markedfaces( mesh, "Tflux" ), id( v ) );
 
 
-    double Bimin = option(_name="Bimin").as<double>();
-    double Bimax = option(_name="Bimax").as<double>();
+    double Bimin = doption(_name="Bimin");
+    double Bimax = doption(_name="Bimax");
     int N = option(_name="N").as<int>();
 
     auto e = exporter( _mesh=mesh );
@@ -118,10 +105,10 @@ ThermalFin::run()
     {
         int Nb = 2;
         Eigen::MatrixXd k( Nb, Nb );
-        k( 0 , 0 ) = option(_name="k0").as<double>();
-        k( 1 , 0 ) = option(_name="k1").as<double>();
-        k( 0 , 1 ) = option(_name="k2").as<double>();
-        k( 1 , 1 ) = option(_name="k3").as<double>();
+        k( 0 , 0 ) = doption(_name="k0");
+        k( 1 , 0 ) = doption(_name="k1");
+        k( 0 , 1 ) = doption(_name="k2");
+        k( 1 , 1 ) = doption(_name="k3");
         std::map<std::string,double> material{ {"Mat0", k(0,0)}, {"Mat1",k(1,0)}, {"Mat2",k(0,1)},  {"Mat3",k(1,1)} };
 
         auto a = form2( Xh, Xh );
@@ -165,28 +152,4 @@ ThermalFin::run()
 
 
     }
-} // ThermalFin::run
-
-} // Feel
-
-
-
-
-int
-main( int argc, char** argv )
-{
-    using namespace Feel;
-    Environment env( _argc=argc, _argv=argv,
-                     _desc=makeOptions(),
-                     _about=makeAbout() );
-
-    /* define and run application */
-    ThermalFin thermalfin;
-
-    thermalfin.run();
 }
-
-
-
-
-

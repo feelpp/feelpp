@@ -33,6 +33,19 @@
 
 namespace Feel {
 
+namespace meta {
+template<int Order,typename MeshType>
+struct THch
+{
+    typedef FunctionSpace<MeshType,
+                          bases<Lagrange<Order+1,Vectorial>,Lagrange<Order,Scalar>>,
+                          double,
+                          Periodicity <NoPeriodicity,NoPeriodicity>,
+                          mortars<NoMortar,NoMortar> > type;
+    typedef boost::shared_ptr<type> ptrtype;
+};
+
+} //meta
 /**
    Given a \p mesh and polynomial order \f$k\f$(template argument), build a
    product function space of \f$[P_{k+1}]^d \times P_{k}]\f$ where $d$ is the
@@ -46,14 +59,21 @@ namespace Feel {
  */
 template<int Order,typename MeshType>
 inline
-boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order+1,Vectorial>,Lagrange<Order,Scalar>>>>
+boost::shared_ptr<FunctionSpace<MeshType,
+                                bases<Lagrange<Order+1,Vectorial>,Lagrange<Order,Scalar>>,
+                                double,
+                                Periodicity <NoPeriodicity,NoPeriodicity>,
+                                mortars<NoMortar,NoMortar> >>
 THch( boost::shared_ptr<MeshType> mesh,
       std::vector<bool> buildExtendedDofTable = std::vector<bool>( 2,false ) )
 {
     CHECK( buildExtendedDofTable.size() == 2 ) << " vector activation for extended dof table must be equal to 2 but here " << buildExtendedDofTable.size() << "\n";
-    return FunctionSpace<MeshType,bases<Lagrange<Order+1,Vectorial>,Lagrange<Order,Scalar>>>::New( _mesh=mesh,
-                                                                                                   _worldscomm=std::vector<WorldComm>( 2,mesh->worldComm() ),
-                                                                                                   _extended_doftable=buildExtendedDofTable );
+    return FunctionSpace<MeshType,bases<Lagrange<Order+1,Vectorial>,Lagrange<Order,Scalar>>,
+                         double,
+                         Periodicity <NoPeriodicity,NoPeriodicity>,
+                         mortars<NoMortar,NoMortar>>::New( _mesh=mesh,
+                                                           _worldscomm=std::vector<WorldComm>( 2,mesh->worldComm() ),
+                                                           _extended_doftable=buildExtendedDofTable );
 }
 
 

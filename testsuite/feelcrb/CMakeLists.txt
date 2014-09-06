@@ -23,9 +23,9 @@
 #
 set_directory_properties(PROPERTIES LABEL testcrb )
 feelpp_add_test( eim )
-feelpp_add_test( eim_grepl )
-feelpp_add_test( nlsolve_eigen )
+feelpp_add_test( eim_grepl TIMEOUT 90 )
+feelpp_add_test( eim_composite ) 
 
-if ( FEELPP_HAS_SLEPC )
-  feelpp_add_test( slepc )
-endif()
+
+feelpp_add_test( rbspace )
+feelpp_add_test( rbspacevector )

@@ -58,10 +58,12 @@ EigenProblem<Dim, Order>::run()
     auto v = Xh->element();
     auto l = form1( _test=Xh );
     auto a = form2( _test=Xh, _trial=Xh);
-    a = integrate( _range=elements( mesh ), _expr=trans(curlt(u))*curl(v));
+    //a = integrate( _range=elements( mesh ), _expr=trans(curlt(u))*curl(v));
+    a = integrate( _range=elements( mesh ), _expr=trace(trans(gradt(u))*grad(v)));
 
     auto gamma = option(_name="parameters.gamma").template as<double>();
     a += integrate( boundaryfaces(mesh), gamma*(trans(idt(u))*N())*(trans(id(u))*N())/hFace() );
+    //a += on( _range=boundaryfaces(mesh), _element=u, _rhs=
 
     auto b = form2( _test=Xh, _trial=Xh);
     b = integrate( elements(mesh), trans(idt( u ))*id( v ) );
@@ -69,8 +71,8 @@ EigenProblem<Dim, Order>::run()
 
     if ( Environment::worldComm().isMasterRank() )
     {
-        std::cout << "nev= " << nev <<std::endl;
-        std::cout << "ncv= " << ncv <<std::endl;
+        std::cout << "number of eigenvalues computed= " << option(_name="solvereigen.nev").template as<int>() <<std::endl;
+        std::cout << "number of eigenvalues for convergence= " << option(_name="solvereigen.ncv").template as<int>() <<std::endl;
     }
 
     auto modes= veigs( _formA=a, _formB=b );
@@ -83,7 +85,13 @@ EigenProblem<Dim, Order>::run()
         int i = 0;
         for( auto const& mode: modes )
         {
+            auto norml2_div = normL2(_range=elements(mesh), _expr=divv(mode.second));
+            if ( Environment::isMasterRank() )
+            {
+                std::cout << "||div(u_" << i << ")||_0 = " << norml2_div << "\n";
+            }
             e->add( ( boost::format( "mode-u-%1%" ) % i ).str(), mode.second );
+            i++;
         }
 
         e->save();

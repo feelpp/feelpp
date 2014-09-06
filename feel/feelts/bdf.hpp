@@ -143,13 +143,20 @@ public:
     Bdf( Bdf const& b )
         :
         super( b ),
+        M_order( b.M_order ),
+        M_strategyHighOrderStart( b.M_strategyHighOrderStart ),
+        M_order_cur( b.M_order_cur ),
+        M_last_iteration_since_order_change( b.M_last_iteration_since_order_change ),
+        M_iterations_between_order_change( b.M_iterations_between_order_change ),
         M_space( b.M_space ),
         M_unknowns( b.M_unknowns ),
         M_alpha( b.M_alpha ),
-        M_beta( b.M_beta )
+        M_beta( b.M_beta ),
+        M_prefix( b.M_prefix )
     {}
 
     ~Bdf();
+
 
     //! return a deep copy of the bdf object
     bdf_ptrtype deepCopy() const
@@ -163,6 +170,43 @@ public:
 
         return b;
     }
+
+
+    //! return the curent order used at current time time
+    int timeOrder() const
+    {
+        return M_order_cur;
+    }
+
+    //! return the order in time
+    int bdfOrder() const
+    {
+        return M_order;
+    }
+
+    void setOrder( int order )
+    {
+        M_order = order;
+    }
+
+    //!return the prefix
+    std::string bdfPrefix() const
+    {
+        return M_prefix;
+    }
+
+    //! return the number of iterations between order change
+    int numberOfIterationsBetweenOrderChange() const
+    {
+        return M_iterations_between_order_change;
+    }
+
+    //! return the number of iterations since last order change
+    int numberOfIterationsSinceOrderChange() const
+    {
+        return this->iteration()-M_last_iteration_since_order_change;
+    }
+
 
     //! return a vector of the times prior to timeInitial() (included)
     std::map<int,double> priorTimes() const
@@ -206,15 +250,31 @@ public:
     template<typename container_type>
     void shiftRight( typename space_type::template Element<value_type, container_type> const& u_curr );
 
-    double next() const { return super::next(); }
+    double next() const
+    {
+        double tcur = super::next();
+
+        if ( M_strategyHighOrderStart == 1 )
+        {
+            if ( ( ( M_iteration - M_last_iteration_since_order_change ) == M_iterations_between_order_change ) &&
+                 M_order_cur < M_order )
+            {
+                M_last_iteration_since_order_change = M_iteration;
+                ++M_order_cur;
+            }
+        }
+
+        return tcur;
+    }
 
     template<typename container_type>
     double
     next( typename space_type::template Element<value_type, container_type> const& u_curr )
-        {
-            this->shiftRight( u_curr );
-            return super::next();
-        }
+    {
+        this->shiftRight( u_curr );
+
+        return this->next();
+    }
 
     double polyCoefficient( int i ) const
     {
@@ -251,6 +311,18 @@ public:
     void showMe( std::ostream& __out = std::cout ) const;
 
     void loadCurrent();
+
+    void print() const
+    {
+        LOG(INFO) << "============================================================\n";
+        LOG(INFO) << "BDF Information\n";
+        LOG(INFO) << "   time step : " << this->timeStep() << "\n";
+        LOG(INFO) << "time initial : " << this->timeInitial() << "\n";
+        LOG(INFO) << "  time final : " << this->timeFinal() << "\n";
+        LOG(INFO) << "  time order : " << this->timeOrder() << "\n";
+    }
+
+
 private:
     void init();
 
@@ -270,6 +342,22 @@ private:
 
 private:
 
+    //! bdf order
+    int M_order;
+
+    /**
+     * strategy to start with high order scheme :
+     * 0 start with order given
+     * 1 start with order 1 and increase step by step up to order given
+     */
+    int M_strategyHighOrderStart;
+
+    //! bdf order used at the current time
+    mutable int M_order_cur;
+
+    mutable int M_last_iteration_since_order_change;
+    int M_iterations_between_order_change;
+
     //! space
     space_ptrtype M_space;
 
@@ -281,6 +369,8 @@ private:
 
     //! Coefficients \f$ \beta_i \f$ of the extrapolation
     std::vector<ublas::vector<double> > M_beta;
+
+    std::string M_prefix;
 };
 
 template <typename SpaceType>
@@ -290,9 +380,14 @@ Bdf<SpaceType>::Bdf( po::variables_map const& vm,
                      std::string const& prefix )
     :
     super( vm, name, prefix, __space->worldComm() ),
+    M_order( vm[prefixvm( prefix, "bdf.order" )].as<int>() ),
+    M_strategyHighOrderStart( vm[prefixvm( prefix, "bdf.strategy-high-order-start" )].as<int>() ),
+    M_order_cur( M_order ),
+    M_iterations_between_order_change( vm[prefixvm( prefix, "bdf.iterations-between-order-change" )].as<int>() ),
     M_space( __space ),
     M_alpha( BDF_MAX_ORDER ),
-    M_beta( BDF_MAX_ORDER )
+    M_beta( BDF_MAX_ORDER ),
+    M_prefix( prefix )
 {
     M_unknowns.resize( BDF_MAX_ORDER );
 
@@ -310,9 +405,14 @@ Bdf<SpaceType>::Bdf( space_ptrtype const& __space,
                      std::string const& name  )
     :
     super( name, __space->worldComm() ),
+    M_order( 1 ),
+    M_strategyHighOrderStart( 0 ),
+    M_order_cur( 1 ),
+    M_iterations_between_order_change( 1 ),
     M_space( __space ),
     M_alpha( BDF_MAX_ORDER ),
-    M_beta( BDF_MAX_ORDER )
+    M_beta( BDF_MAX_ORDER ),
+    M_prefix( "" )
 {
     M_unknowns.resize( BDF_MAX_ORDER );
 
@@ -381,6 +481,11 @@ template <typename SpaceType>
 void
 Bdf<SpaceType>::init()
 {
+    this->setPathSave( (boost::format("%3%bdf_o_%1%_dt_%2%")
+                        %this->bdfOrder()
+                        %this->timeStep()
+                        %this->bdfPrefix()  ).str() );
+
     super::init();
 
     if ( this->isRestart() )
@@ -460,8 +565,15 @@ double
 Bdf<SpaceType>::start()
 {
     this->init();
-
-    return super::start();
+    double ti = super::start();
+    M_last_iteration_since_order_change = 1;
+    switch ( M_strategyHighOrderStart )
+    {
+    default :
+    case 0 : M_order_cur = M_order; break;
+    case 1 : M_order_cur = 1; break;
+    }
+    return ti;
 }
 
 template <typename SpaceType>
@@ -470,8 +582,15 @@ Bdf<SpaceType>::start( element_type const& u0 )
 {
     this->init();
     this->initialize( u0 );
-    auto res = super::start();
-    return res;
+    double ti = super::start();
+    M_last_iteration_since_order_change = 1;
+    switch ( M_strategyHighOrderStart )
+    {
+    default :
+    case 0 : M_order_cur = M_order; break;
+    case 1 : M_order_cur = 1; break;
+    }
+    return ti;
 }
 
 template <typename SpaceType>
@@ -480,8 +599,15 @@ Bdf<SpaceType>::start( unknowns_type const& uv0 )
 {
     this->init();
     this->initialize( uv0 );
-    auto res = super::start();
-    return res;
+    double ti = super::start();
+    M_last_iteration_since_order_change = 1;
+    switch ( M_strategyHighOrderStart )
+    {
+    default :
+    case 0 : M_order_cur = M_order; break;
+    case 1 : M_order_cur = 1; break;
+    }
+    return ti;
 }
 
 template <typename SpaceType>
@@ -490,7 +616,34 @@ Bdf<SpaceType>::restart()
 {
     this->init();
 
-    return super::restart();
+    double ti = super::restart();
+    M_last_iteration_since_order_change = 1;
+
+    switch ( M_strategyHighOrderStart )
+    {
+    default :
+    case 0 :
+    {
+        M_order_cur = M_order;
+    }
+    break;
+    case 1 :
+    {
+        M_order_cur = 1;
+        for ( int i = 2; i<=M_iteration; ++i )
+        {
+            if ( ( ( i - M_last_iteration_since_order_change ) == M_iterations_between_order_change ) &&
+                 M_order_cur < M_order )
+            {
+                M_last_iteration_since_order_change = i;
+                ++M_order_cur;
+            }
+        }
+    }
+    break;
+    }
+
+    return ti;
 }
 
 template <typename SpaceType>

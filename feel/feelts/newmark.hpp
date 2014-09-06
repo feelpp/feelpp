@@ -73,6 +73,21 @@ namespace fs = boost::filesystem;
  * \ingroup SpaceTime
  * \brief Newmark discretization
  *
+ * A differential equation of the form
+ *
+ * \f$ M \ddot{\boldsymbol{\eta}}^{n+1}  = A \boldsymbol{\eta}^{n+1} + f \f$
+ *
+ * is discretized in time as
+ *
+ *
+ * \f{eqnarray}{
+ * \ddot{\boldsymbol{\eta}}^{n+1} &=& \frac{1}{\beta \Delta t^2} \left( \boldsymbol{\eta}^{n+1}-\boldsymbol{\eta}^{n} \right)
+ * - \frac{1}{\beta \Delta t} \dot{\boldsymbol{\eta}}^{n} - \left( \frac{1}{2 \beta} -1  \right) \ddot{\boldsymbol{\eta}}^{n} \\
+ * \dot{\boldsymbol{\eta}}^{n+1} &=& \frac{\gamma}{\beta \Delta t} \left(  \boldsymbol{\eta}^{n+1}-\boldsymbol{\eta}^{n} \right)
+ * - \left( \frac{\gamma}{\beta} -1 \right) \dot{\boldsymbol{\eta}}^{n}
+ * - \Delta t \left( \frac{\gamma}{2\beta}-1 \right) \ddot{\boldsymbol{\eta}}^{n}
+ * \f}
+ *
  */
 template<typename SpaceType>
 class Newmark : public TSBase
@@ -87,8 +102,8 @@ public:
     typedef typename space_type::element_type element_type;
     typedef typename space_type::return_type return_type;
     typedef typename element_type::value_type value_type;
+    typedef boost::shared_ptr<element_type> element_ptrtype;
     typedef boost::shared_ptr<element_type> unknown_type;
-    typedef std::vector< unknown_type > unknowns_type;
     typedef typename node<value_type>::type node_type;
 
     typedef typename super::time_iterator time_iterator;
@@ -96,15 +111,17 @@ public:
     /**
      * Constructor
      *
+     * @param vm option storage
      * @param space approximation space
-     * @param n order of the BDF
+     * @param name name of the newmark ts
+     * @param prefix prefix of the newmark ts
      */
     Newmark( po::variables_map const& vm, space_ptrtype const& space, std::string const& name, std::string const& prefix="" );
 
     /**
      * Constructor
      * @param space approximation space
-     * @param name name of the BDF
+     * @param name name of the newmark ts
      */
     Newmark( space_ptrtype const& space, std::string const& name );
 
@@ -113,12 +130,13 @@ public:
         :
         super( b ),
         M_space( b.M_space ),
-        M_unknowns( b.M_unknowns ),
-        M_currentVel( b.M_currentVel ),
-        M_currentAcc( b.M_currentAcc ),
+        M_previousUnknown( b.M_previousUnknown ),
         M_previousVel( b.M_previousVel ),
         M_previousAcc( b.M_previousAcc ),
-        M_polyDeriv( b.M_polyDeriv ),
+        M_currentVel( b.M_currentVel ),
+        M_currentAcc( b.M_currentAcc ),
+        M_polyFirstDeriv( b.M_polyFirstDeriv ),
+        M_polySecondDeriv( b.M_polySecondDeriv ),
         M_gamma( b.M_gamma ),
         M_beta( b.M_beta )
     {}
@@ -132,23 +150,15 @@ public:
     void initialize( element_type const& u0 );
 
     /**
-       Initialize all the entries of the unknown vector to be derived with a
-       set of vectors uv0
-    */
-    void initialize( unknowns_type const& uv0 );
-
-    /**
-       start the bdf
+       start the newmark scheme
     */
     double start();
     double start( element_type const& u0 );
-    double start( unknowns_type const& uv0 );
 
     /**
-       restart the bdf
+       restart the newmark scheme
     */
     double restart();
-
 
     /**
        Update the vectors of the previous time steps by shifting on the right
@@ -158,70 +168,68 @@ public:
     template<typename container_type>
     void shiftRight( typename space_type::template Element<value_type, container_type> const& u_curr );
 
-    double next() const { return super::next(); }
+    double next() const;
 
     template<typename container_type>
-    double
-    next( typename space_type::template Element<value_type, container_type> const& u_curr )
-        {
-            this->shiftRight( u_curr );
-            return super::next();
-        }
+    double next( typename space_type::template Element<value_type, container_type> const& u_curr );
 
     template<typename container_type>
-    void updateVelAcc( typename space_type::template Element<value_type, container_type> const& u_curr );
+    void updateFromDisp( typename space_type::template Element<value_type, container_type> const& u_curr );
 
 
-    double polyDerivCoefficient() const
+    //! Coefficients \f$ \gamma \f$ and \f$ \beta \f$  of the time newmark discretization
+    double gamma() const { return M_gamma; }
+    double beta() const { return M_beta; }
+
+
+    double polyDerivCoefficient() const { return this->polySecondDerivCoefficient(); }
+    double polyFirstDerivCoefficient() const
     {
-      return 1.0/(M_beta*std::pow(this->timeStep(),2));
+        return this->gamma()/(this->beta()*this->timeStep());
+    }
+    double polySecondDerivCoefficient() const
+    {
+        return 1.0/(this->beta()*std::pow(this->timeStep(),2));
     }
 
-    //! Returns the right hand side \f$ \bar{p} \f$ of the time derivative
-    //! formula
+    //! Returns the right hand side \f$ \bar{p} \f$ of the time derivative formula
     element_type const& polyDeriv() const;
+    element_type const& polyFirstDeriv() const;
+    element_type const& polySecondDeriv() const;
 
-    //! Return a vector with the last n state vectors
-    unknowns_type const& unknowns() const;
+    //! Return the last unknown
+    element_type const& previousUnknown() const;
+    element_type const& previousVelocity() const;
+    element_type const& previousAcceleration() const;
 
-    //! Return a vector with the last n state vectors
-    element_type& unknown( int i );
-
-    element_type const& previousDisp( int i=0 ) const;
-    element_type const& previousVel() const;
-    element_type const& previousAcc() const;
-
-
-    template<typename container_type>
-    void setUnknown( int i,  typename space_type::template Element<value_type, container_type> const& e )
-    {
-        *M_unknowns[i] = e;
-    }
-
-    void showMe( std::ostream& __out = std::cout ) const;
+    element_type & currentVelocity();
+    element_type const& currentVelocity() const;
+    element_ptrtype & currentVelocityPtr();
+    element_ptrtype const& currentVelocityPtr() const;
+    element_type & currentAcceleration();
+    element_type const& currentAcceleration() const;
+    element_ptrtype & currentAccelerationPtr();
+    element_ptrtype const& currentAccelerationPtr() const;
 
     void loadCurrent();
-
 
 private:
     void init();
 
     void saveCurrent();
 
-    //! save/load Bdf metadata
+    //! save/load ts metadata
     template<class Archive>
     void serialize( Archive & ar, const unsigned int version )
     {
-        DVLOG(2) << "[BDF::serialize] saving/loading archive\n";
+        DVLOG(2) << "[Newmark::serialize] saving/loading archive\n";
         ar & boost::serialization::base_object<TSBase>( *this );
     }
 
-    //! compute BDF coefficients
-    void computeCoefficients();
-
-
+    //! compute first derivative poly of rhs
+    void computePolyFirstDeriv();
     //! compute second derivative poly of rhs
-    void computePolyDeriv();
+    void computePolySecondDeriv();
 
 private:
 
@@ -229,11 +237,10 @@ private:
     space_ptrtype M_space;
 
     //! Last n state vectors
-    unknowns_type M_unknowns;
-
-    unknown_type M_currentVel, M_currentAcc;
+    unknown_type M_previousUnknown;
     unknown_type M_previousVel, M_previousAcc;
-    unknown_type M_polyDeriv;
+    unknown_type M_currentVel, M_currentAcc;
+    unknown_type M_polyFirstDeriv,M_polySecondDeriv;
 
     //! Coefficients \f$ \gamma \f$ and \f$ \beta \f$  of the time newmark discretization
     double M_gamma, M_beta;
@@ -248,24 +255,16 @@ Newmark<SpaceType>::Newmark( po::variables_map const& vm,
     :
     super( vm, name, prefix, __space->worldComm() ),
     M_space( __space ),
-    M_currentVel( unknown_type( new element_type( M_space ) ) ),
-    M_currentAcc( unknown_type( new element_type( M_space ) ) ),
+    M_previousUnknown( unknown_type( new element_type( M_space ) ) ),
     M_previousVel( unknown_type( new element_type( M_space ) ) ),
     M_previousAcc( unknown_type( new element_type( M_space ) ) ),
-    M_polyDeriv( unknown_type( new element_type( M_space ) ) ),
+    M_currentVel( unknown_type( new element_type( M_space ) ) ),
+    M_currentAcc( unknown_type( new element_type( M_space ) ) ),
+    M_polyFirstDeriv( unknown_type( new element_type( M_space ) ) ),
+    M_polySecondDeriv( unknown_type( new element_type( M_space ) ) ),
     M_gamma( 0.5 ),
     M_beta( 0.25 )
-{
-    M_unknowns.resize( 2 );
-
-    for ( uint8_type __i = 0; __i < 2; ++__i )
-    {
-        M_unknowns[__i] = unknown_type( new element_type( M_space ) );
-        //M_unknowns[__i]->zero();
-    }
-
-    //computeCoefficients();
-}
+{}
 
 template <typename SpaceType>
 Newmark<SpaceType>::Newmark( space_ptrtype const& __space,
@@ -273,74 +272,84 @@ Newmark<SpaceType>::Newmark( space_ptrtype const& __space,
     :
     super( name, __space->worldComm() ),
     M_space( __space ),
-    M_currentVel( unknown_type( new element_type( M_space ) ) ),
-    M_currentAcc( unknown_type( new element_type( M_space ) ) ),
+    M_previousUnknown( unknown_type( new element_type( M_space ) ) ),
     M_previousVel( unknown_type( new element_type( M_space ) ) ),
     M_previousAcc( unknown_type( new element_type( M_space ) ) ),
-    M_polyDeriv( unknown_type( new element_type( M_space ) ) ),
+    M_currentVel( unknown_type( new element_type( M_space ) ) ),
+    M_currentAcc( unknown_type( new element_type( M_space ) ) ),
+    M_polyFirstDeriv( unknown_type( new element_type( M_space ) ) ),
+    M_polySecondDeriv( unknown_type( new element_type( M_space ) ) ),
     M_gamma( 0.5 ),
     M_beta( 0.25 )
-{
-    M_unknowns.resize( 2 );
-
-    for ( uint8_type __i = 0; __i < 2; ++__i )
-    {
-        M_unknowns[__i] = unknown_type( new element_type( M_space ) );
-        //M_unknowns[__i]->zero();
-    }
-
-    //computeCoefficients();
-}
-
-template <typename SpaceType>
-void
-Newmark<SpaceType>::computeCoefficients()
-{
-}
-
-template <typename SpaceType>
-void
-Newmark<SpaceType>::init()
-{
-    super::init();
-
-    if ( this->isRestart() )
-    {
-#warning TODO :  RESTART IN NEWMARK 
-#if 0
-        for ( int p = 0; p < std::min( M_order, M_iteration+1 ); ++p )
-        {
-            // create and open a character archive for output
-            std::ostringstream ostr;
-
-            if( M_rankProcInNameOfFiles )
-                ostr << M_name << "-" << M_iteration-p<<"-proc"<<this->worldComm().globalRank()<<"on"<<this->worldComm().globalSize();
-            else
-                ostr << M_name << "-" << M_iteration-p;
-
-            DVLOG(2) << "[Newmark::init()] load file: " << ostr.str() << "\n";
-
-            fs::ifstream ifs;
-
-            if ( this->restartPath().empty() ) ifs.open( this->path()/ostr.str() );
-
-            else ifs.open( this->restartPath()/this->path()/ostr.str() );
-
-            //fs::ifstream ifs (this->restartPath() / this->path() / ostr.str(), std::ios::binary);
-
-            // load data from archive
-            boost::archive::binary_iarchive ia( ifs );
-            ia >> *M_unknowns[p];
-        }
-#endif
-    }
-}
-
+{}
 
 template <typename SpaceType>
 Newmark<SpaceType>::~Newmark()
 {}
 
+template <typename SpaceType>
+void
+Newmark<SpaceType>::init()
+{
+    this->setPathSave( (boost::format("newmark_dt_%1%")%this->timeStep()).str() );
+
+    super::init();
+
+    if ( this->isRestart() )
+    {
+         // create and open a character archive for output
+         std::string procsufix = (boost::format("-proc%1%_%2%") %this->worldComm().globalRank() %this->worldComm().globalSize() ).str();
+
+         std::ostringstream ostrUnknown;
+         ostrUnknown << M_name << "-unknown-" << M_iteration;
+         if( M_rankProcInNameOfFiles )
+           ostrUnknown << procsufix;
+         DVLOG(2) << "[Newmark::init()] load file: " << ostrUnknown.str() << "\n";
+         fs::ifstream ifsUnknown;
+         if ( this->restartPath().empty() )
+           ifsUnknown.open( this->path()/ostrUnknown.str() );
+         else
+           ifsUnknown.open( this->restartPath()/this->path()/ostrUnknown.str() );
+         // load data from archive
+         boost::archive::binary_iarchive iaUnknown( ifsUnknown );
+         iaUnknown >> *M_previousUnknown;
+
+         std::ostringstream ostrVel;
+         ostrVel << M_name << "-velocity-" << M_iteration;
+         if( M_rankProcInNameOfFiles )
+           ostrVel << procsufix;
+         DVLOG(2) << "[Newmark::init()] load file: " << ostrVel.str() << "\n";
+         fs::ifstream ifsVel;
+         if ( this->restartPath().empty() )
+           ifsVel.open( this->path()/ostrVel.str() );
+         else
+           ifsVel.open( this->restartPath()/this->path()/ostrVel.str() );
+         // load data from archive
+         boost::archive::binary_iarchive iaVel( ifsVel );
+         iaVel >> *M_previousVel;
+
+         std::ostringstream ostrAcc;
+         ostrAcc << M_name << "-acceleration-" << M_iteration;
+         if( M_rankProcInNameOfFiles )
+           ostrAcc << procsufix;
+         DVLOG(2) << "[Newmark::init()] load file: " << ostrAcc.str() << "\n";
+         fs::ifstream ifsAcc;
+         if ( this->restartPath().empty() )
+           ifsAcc.open( this->path()/ostrAcc.str() );
+         else
+           ifsAcc.open( this->restartPath()/this->path()/ostrAcc.str() );
+         // load data from archive
+         boost::archive::binary_iarchive iaAcc( ifsAcc );
+         iaAcc >> *M_previousAcc;
+
+
+         DVLOG(2) << "[Newmark::init()] compute polyDeriv\n";
+         // compute first derivative poly of rhs
+         this->computePolyFirstDeriv();
+         // compute second derivative poly of rhs
+         this->computePolySecondDeriv();
+    }
+}
 
 template <typename SpaceType>
 void
@@ -353,29 +362,11 @@ Newmark<SpaceType>::initialize( element_type const& u0 )
         ostr << M_name << "-" << 0<<"-proc"<<this->worldComm().globalRank()<<"on"<<this->worldComm().globalSize();
     else
         ostr << M_name << "-" << 0;
-    //M_time_values_map.insert( std::make_pair( 0, boost::make_tuple( 0, ostr.str() ) ) );
-    //M_time_values_map.push_back( 0 );
-    M_time_values_map.push_back( M_Ti );
-    std::for_each( M_unknowns.begin(), M_unknowns.end(), *boost::lambda::_1 = u0 );
-    this->saveCurrent();
-}
 
-template <typename SpaceType>
-void
-Newmark<SpaceType>::initialize( unknowns_type const& uv0 )
-{
-    M_time_values_map.clear();
-    std::ostringstream ostr;
-
-    if( M_rankProcInNameOfFiles )
-        ostr << M_name << "-" << 0<<"-proc"<<this->worldComm().globalRank()<<"on"<<this->worldComm().globalSize();
-    else
-        ostr << M_name << "-" << 0;
-    //M_time_values_map.insert( std::make_pair( 0, boost::make_tuple( 0, ostr.str() ) ) );
-    //M_time_values_map.push_back( 0);
     M_time_values_map.push_back( M_Ti );
 
-    std::copy( uv0.begin(), uv0.end(), M_unknowns.begin() );
+    *M_previousUnknown = u0;
+
     this->saveCurrent();
 }
 
@@ -400,16 +391,6 @@ Newmark<SpaceType>::start( element_type const& u0 )
 
 template <typename SpaceType>
 double
-Newmark<SpaceType>::start( unknowns_type const& uv0 )
-{
-    this->init();
-    this->initialize( uv0 );
-    auto res = super::start();
-    return res;
-}
-
-template <typename SpaceType>
-double
 Newmark<SpaceType>::restart()
 {
     this->init();
@@ -418,41 +399,83 @@ Newmark<SpaceType>::restart()
 }
 
 template <typename SpaceType>
-const
-typename Newmark<SpaceType>::unknowns_type&
-Newmark<SpaceType>::unknowns() const
+typename Newmark<SpaceType>::element_type const&
+Newmark<SpaceType>::previousUnknown() const
 {
-    return M_unknowns;
-}
-
-template <typename SpaceType>
-typename Newmark<SpaceType>::element_type&
-Newmark<SpaceType>::unknown( int i )
-{
-    DVLOG(2) << "[Newmark::unknown] id: " << i << " l2norm = " << M_unknowns[i]->l2Norm() << "\n";
-    return *M_unknowns[i];
+    return *M_previousUnknown;
 }
 
 template <typename SpaceType>
 typename Newmark<SpaceType>::element_type const&
-Newmark<SpaceType>::previousDisp( int i ) const
-{
-    return *M_unknowns[i];
-}
-
-template <typename SpaceType>
-typename Newmark<SpaceType>::element_type const&
-Newmark<SpaceType>::previousVel() const
+Newmark<SpaceType>::previousVelocity() const
 {
   return *M_previousVel;
 }
 
 template <typename SpaceType>
 typename Newmark<SpaceType>::element_type const&
-Newmark<SpaceType>::previousAcc() const
+Newmark<SpaceType>::previousAcceleration() const
 {
   return *M_previousAcc;
 }
+
+template <typename SpaceType>
+typename Newmark<SpaceType>::element_type &
+Newmark<SpaceType>::currentVelocity()
+{
+  return *M_currentVel;
+}
+
+template <typename SpaceType>
+typename Newmark<SpaceType>::element_type const&
+Newmark<SpaceType>::currentVelocity() const
+{
+  return *M_currentVel;
+}
+
+template <typename SpaceType>
+typename Newmark<SpaceType>::element_ptrtype &
+Newmark<SpaceType>::currentVelocityPtr()
+{
+  return M_currentVel;
+}
+
+template <typename SpaceType>
+typename Newmark<SpaceType>::element_ptrtype const&
+Newmark<SpaceType>::currentVelocityPtr() const
+{
+  return M_currentVel;
+}
+
+template <typename SpaceType>
+typename Newmark<SpaceType>::element_type &
+Newmark<SpaceType>::currentAcceleration()
+{
+  return *M_currentAcc;
+}
+
+template <typename SpaceType>
+typename Newmark<SpaceType>::element_type const&
+Newmark<SpaceType>::currentAcceleration() const
+{
+  return *M_currentAcc;
+}
+
+template <typename SpaceType>
+typename Newmark<SpaceType>::element_ptrtype &
+Newmark<SpaceType>::currentAccelerationPtr()
+{
+  return M_currentAcc;
+}
+
+template <typename SpaceType>
+typename Newmark<SpaceType>::element_ptrtype const&
+Newmark<SpaceType>::currentAccelerationPtr() const
+{
+  return M_currentAcc;
+}
+
+
 
 template <typename SpaceType>
 void
@@ -460,56 +483,77 @@ Newmark<SpaceType>::saveCurrent()
 {
     if (!this->saveInFile()) return;
 
-    bool doSave=false;
-    for ( uint8_type i = 0; i < this->timeOrder() && !doSave; ++i )
-        {
-            int iterTranslate = M_iteration + this->timeOrder()-(i+1);
-            if (iterTranslate % this->saveFreq()==0) doSave=true;
-        }
+    //int iterTranslate = M_iteration;// + 1;
+    //bool doSave= iterTranslate % this->saveFreq()==0;
+    //if ( !doSaveIteration(i) ) return;
+    if ( this->iteration() % this->saveFreq()>0 ) return;
+    //if (!doSave) return;
 
-    if (!doSave) return;
+    TSBaseMetadata tssaver( *this );
+    tssaver.save();
 
-    TSBaseMetadata bdfsaver( *this );
-    bdfsaver.save();
+    std::string procsufix = (boost::format("-proc%1%_%2%") %this->worldComm().globalRank() %this->worldComm().globalSize() ).str();
 
-    {
-        std::ostringstream ostr;
+    std::ostringstream ostrUnknown;
+    ostrUnknown << M_name << "-unknown-" << M_iteration;
+    if( M_rankProcInNameOfFiles )
+      ostrUnknown << procsufix;
+    fs::ofstream ofsUnknown( M_path_save / ostrUnknown.str() );
+    // save data in archive
+    boost::archive::binary_oarchive oaUnknown( ofsUnknown );
+    oaUnknown << *M_previousUnknown;
 
-        if( M_rankProcInNameOfFiles )
-            ostr << M_name << "-" << M_iteration<<"-proc"<<this->worldComm().globalRank()<<"on"<<this->worldComm().globalSize();
-        else
-            ostr << M_name << "-" << M_iteration;
+    std::ostringstream ostrVel;
+    ostrVel << M_name << "-velocity-" << M_iteration;
+    if( M_rankProcInNameOfFiles )
+      ostrVel << procsufix;
+    fs::ofstream ofsVel( M_path_save / ostrVel.str() );
+    // save data in archive
+    boost::archive::binary_oarchive oaVel( ofsVel );
+    oaVel << *M_previousVel;
 
-        fs::ofstream ofs( M_path_save / ostr.str() );
-
-
-        // load data from archive
-        boost::archive::binary_oarchive oa( ofs );
-        oa << *M_unknowns[0];
-    }
+    std::ostringstream ostrAcc;
+    ostrAcc << M_name << "-acceleration-" << M_iteration;
+    if( M_rankProcInNameOfFiles )
+      ostrAcc << procsufix;
+    fs::ofstream ofsAcc( M_path_save / ostrAcc.str() );
+    // save data in archive
+    boost::archive::binary_oarchive oaAcc( ofsAcc );
+    oaAcc << *M_previousAcc;
 }
 
 template <typename SpaceType>
 void
 Newmark<SpaceType>::loadCurrent()
 {
-    //TSBaseMetadata bdfsaver( *this );
-    //bdfsaver.save();
+    std::string procsufix = (boost::format("-proc%1%_%2%") %this->worldComm().globalRank() %this->worldComm().globalSize() ).str();
 
-    {
-        std::ostringstream ostr;
+    std::ostringstream ostrUnknown;
+    ostrUnknown << M_name << "-unknown-" << M_iteration;
+    if( M_rankProcInNameOfFiles )
+      ostrUnknown << procsufix;
+    fs::ifstream ifsUnknown( M_path_save / ostrUnknown.str() );
+    // load data from archive
+    boost::archive::binary_iarchive iaUnknown( ifsUnknown );
+    iaUnknown >> *M_previousUnknown;
 
-        if( M_rankProcInNameOfFiles )
-            ostr << M_name << "-" << M_iteration<<"-proc"<<this->worldComm().globalRank()<<"on"<<this->worldComm().globalSize();
-        else
-            ostr << M_name << "-" << M_iteration;
+    std::ostringstream ostrVel;
+    ostrVel << M_name << "-velocity-" << M_iteration;
+    if( M_rankProcInNameOfFiles )
+      ostrVel << procsufix;
+    fs::ifstream ifsVel( M_path_save / ostrVel.str() );
+    // load data from archive
+    boost::archive::binary_iarchive iaVel( ifsVel );
+    iaVel >> *M_previousVel;
 
-        fs::ifstream ifs( M_path_save / ostr.str() );
-
-        // load data from archive
-        boost::archive::binary_iarchive ia( ifs );
-        ia >> *M_unknowns[0];
-    }
+    std::ostringstream ostrAcc;
+    ostrAcc << M_name << "-acceleration-" << M_iteration;
+    if( M_rankProcInNameOfFiles )
+      ostrAcc << procsufix;
+    fs::ifstream ifsAcc( M_path_save / ostrAcc.str() );
+    // load data from archive
+    boost::archive::binary_iarchive iaAcc( ifsAcc );
+    iaAcc >> *M_previousAcc;
 }
 
 template <typename SpaceType>
@@ -520,62 +564,93 @@ Newmark<SpaceType>::shiftRight( typename space_type::template Element<value_type
     DVLOG(2) << "shiftRight: inserting time " << this->time() << "s\n";
     super::shiftRight();
 
-    // update M_currentVel and M_currentAcc with new disp
-    this->updateVelAcc(__new_unk);
+    // update M_currentVelocity and M_currentAcceleration with new disp
+    this->updateFromDisp(__new_unk);
 
-    *M_previousVel=*M_currentVel;
-    *M_previousAcc=*M_currentAcc;
+    // shift all previously stored  data
+    *M_previousUnknown = __new_unk;
+    *M_previousVel = *M_currentVel;
+    *M_previousAcc = *M_currentAcc;
 
-    // shift all previously stored bdf data
-#if 0
-    using namespace boost::lambda;
-    typename unknowns_type::reverse_iterator __it = boost::next( M_unknowns.rbegin() );
-    std::for_each( M_unknowns.rbegin(), boost::prior( M_unknowns.rend() ),
-                   ( *lambda::_1 = *( *lambda::var( __it ) ), ++lambda::var( __it ) ) );
-    // u(t^{n}) coefficient is in M_unknowns[0]
-#endif
-    *M_unknowns[1] = *M_unknowns[0];
-    *M_unknowns[0] = __new_unk;
-
-    int i = 0;
-    BOOST_FOREACH( boost::shared_ptr<element_type>& t, M_unknowns  )
-    {
-        DVLOG(2) << "[Newmark::shiftright] id: " << i << " l2norm = " << t->l2Norm() << "\n";
-        ++i;
-    }
-
-    // save newly stored bdf data
+    // save newly stored data
     this->saveCurrent();
 
+    // compute first derivative poly of rhs
+    this->computePolyFirstDeriv();
     // compute second derivative poly of rhs
-    this->computePolyDeriv();
+    this->computePolySecondDeriv();
 }
 
+
+template <typename SpaceType>
+double
+Newmark<SpaceType>::next() const
+{
+  return super::next();
+}
+
+template <typename SpaceType>
+template<typename container_type>
+double
+Newmark<SpaceType>::next( typename space_type::template Element<value_type, container_type> const& u_curr )
+{
+  this->shiftRight( u_curr );
+  return super::next();
+}
 
 template <typename SpaceType>
 typename Newmark<SpaceType>::element_type const&
 Newmark<SpaceType>::polyDeriv() const
 {
-    return *M_polyDeriv;
+    return *M_polySecondDeriv;
+}
+
+template <typename SpaceType>
+typename Newmark<SpaceType>::element_type const&
+Newmark<SpaceType>::polyFirstDeriv() const
+{
+    return *M_polyFirstDeriv;
+}
+
+template <typename SpaceType>
+typename Newmark<SpaceType>::element_type const&
+Newmark<SpaceType>::polySecondDeriv() const
+{
+    return *M_polySecondDeriv;
 }
 
 template <typename SpaceType>
 void
-Newmark<SpaceType>::computePolyDeriv()
+Newmark<SpaceType>::computePolyFirstDeriv()
+{
+    double deltaT = this->timeStep();
+    double cst_vel_displ = M_gamma/(M_beta*deltaT);
+    double cst_vel_vel = (M_gamma/M_beta)-1;
+    double cst_vel_acc = deltaT*((M_gamma/(2*M_beta))-1 );
+
+    M_polyFirstDeriv->zero();
+    M_polySecondDeriv->add(cst_vel_displ, this->previousUnknown());
+    M_polySecondDeriv->add(cst_vel_vel, this->previousVelocity());
+    M_polySecondDeriv->add(cst_vel_acc, this->previousAcceleration());
+}
+
+template <typename SpaceType>
+void
+Newmark<SpaceType>::computePolySecondDeriv()
 {
     double coef_disp = 1.0/(M_beta*std::pow(this->timeStep(),2));
     double coef_vel  = 1.0/(M_beta*this->timeStep());
     double coef_acc  = 1.0/(2*M_beta) - 1.0;
-    M_polyDeriv->zero();
-    M_polyDeriv->add(coef_disp, this->previousDisp());
-    M_polyDeriv->add(coef_vel, this->previousVel());
-    M_polyDeriv->add(coef_acc, this->previousAcc());
+    M_polySecondDeriv->zero();
+    M_polySecondDeriv->add(coef_disp, this->previousUnknown());
+    M_polySecondDeriv->add(coef_vel, this->previousVelocity());
+    M_polySecondDeriv->add(coef_acc, this->previousAcceleration());
 }
 
 template <typename SpaceType>
 template<typename container_type>
 void
-Newmark<SpaceType>::updateVelAcc( typename space_type::template Element<value_type, container_type> const& __new_unk )
+Newmark<SpaceType>::updateFromDisp( typename space_type::template Element<value_type, container_type> const& __new_unk )
 {
   double deltaT = this->timeStep();
 
@@ -588,15 +663,15 @@ Newmark<SpaceType>::updateVelAcc( typename space_type::template Element<value_ty
 
   M_currentVel->zero();
   M_currentVel->add(cst_vel_displ, __new_unk );
-  M_currentVel->add(-cst_vel_displ, this->previousDisp());
-  M_currentVel->add(-cst_vel_vel, this->previousVel());
-  M_currentVel->add(-cst_vel_acc, this->previousAcc());
+  M_currentVel->add(-cst_vel_displ, this->previousUnknown());
+  M_currentVel->add(-cst_vel_vel, this->previousVelocity());
+  M_currentVel->add(-cst_vel_acc, this->previousAcceleration());
 
   M_currentAcc->zero();
   M_currentAcc->add(cst_acc_displ, __new_unk );
-  M_currentAcc->add(-cst_acc_displ, this->previousDisp());
-  M_currentAcc->add(-cst_acc_vel, this->previousVel());
-  M_currentAcc->add(-cst_acc_acc, this->previousAcc());
+  M_currentAcc->add(-cst_acc_displ, this->previousUnknown());
+  M_currentAcc->add(-cst_acc_vel, this->previousVelocity());
+  M_currentAcc->add(-cst_acc_acc, this->previousAcceleration());
 }
 
 
@@ -610,7 +685,6 @@ BOOST_PARAMETER_FUNCTION(
       ( vm,*, Environment::vm() )
       ( prefix,*,"" )
       ( name,*,"newmark" )
-      //( order,*( boost::is_integral<mpl::_> ),vm[prefixvm( prefix,"bdf.order" )].template as<int>() )
       ( initial_time,*( boost::is_floating_point<mpl::_> ),vm[prefixvm( prefix,"ts.time-initial" )].template as<double>() )
       ( final_time,*( boost::is_floating_point<mpl::_> ),vm[prefixvm( prefix,"ts.time-final" )].template as<double>() )
       ( time_step,*( boost::is_floating_point<mpl::_> ),vm[prefixvm( prefix,"ts.time-step" )].template as<double>() )
@@ -629,7 +703,6 @@ BOOST_PARAMETER_FUNCTION(
     thenewmark->setTimeInitial( initial_time );
     thenewmark->setTimeFinal( final_time );
     thenewmark->setTimeStep( time_step );
-    thenewmark->setOrder( 2/*order*/ );
     thenewmark->setSteady( steady );
     thenewmark->setRestart( restart );
     thenewmark->setRestartPath( restart_path );

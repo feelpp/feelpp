@@ -21,78 +21,72 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
    */
-
-#include <feel/feel.hpp>
+//! [all]
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelvf/ginac.hpp>
 using namespace Feel;
-
-/// [marker1]
-namespace Feel
-{
-  struct myFunctor
-  {
-    static const size_type context = vm::JACOBIAN|vm::POINT;
-    typedef double value_type;
-    typedef Feel::uint16_type uint16_type;
-    static const uint16_type rank = 0;
-    static const uint16_type imorder = 1;
-    static const bool imIsPoly = true;
-    double operator()( uint16_type, uint16_type, ublas::vector<double> const& x, ublas::vector<double> const& /*n*/ ) const
-    {
-      double a = x[0];
-      double b = x[1];
-      return _esp*std::min(a,b); 
-    }
-    void setEps(double _a=0.){ _esp = _a;}
-    double _esp;
-  };
-}
-/// [marker1]
 
 int main(int argc, char**argv )
 {
-/// [marker2]
-  po::options_description opts ( "myOptions ");
-  opts.add_options()
-    ( "_ex_", po::value<std::string>()->default_value( "cos(x)*sin(y)" ), "my Expression to project" );
+    Environment env( _argc=argc, _argv=argv,
+                     _about=about(_name="myexpression",
+                                  _author="Feel++ Consortium",
+                                  _email="feelpp-devel@feelpp.org"));
 
-  using namespace Feel;
+    //! [mesh]
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
+    //! [mesh]
 
-  Environment env( _argc=argc, _argv=argv,
-      _desc=opts.add( feel_options() ),
-      _about=about(_name="myexpression",
-        _author="Feel++ Consortium",
-        _email="feelpp-devel@feelpp.org"));
+    //! [expr]
+    auto g = expr(soption(_name="functions.g"));
+    std::cout << "g=" << g << std::endl;
 
-  // create mesh
-  const int Dim = 2;
-  auto mesh = unitSquare();
-  //Exporter
-  auto e = exporter( _mesh=mesh );
 
-  // function space
-  auto Vh = Pch<1>( mesh );
-  auto u = Vh->element();
-  auto v = Vh->element();
+    auto f = expr<2,1>(soption(_name="functions.f"));
+    std::cout << "f=" << f << std::endl;
+    //! [expr]
 
-  //Define symbols, ie "x", "y"...
-  std::vector<GiNaC::symbol> vars = symbols<Dim>();
-  std::string _u = option(_name="_ex_").as<std::string>();
+    //! [grad]
+    auto grad_g=grad<2>(g);
+    auto grad_f=grad(f);
+    std::cout << "grad(g)=" << grad_g << std::endl;
+    std::cout << "grad(f)=" << grad_f << std::endl;
+    //! [grad]
 
-  //Create the expression from the string
-  GiNaC::ex expr_u = parse(_u,vars);
-  u =  vf::project( _space=Vh, _range=elements(mesh), _expr=expr(expr_u,vars) );
-/// [marker2]
+    //! [laplacian]
+    auto laplacian_g=laplacian(g);
+    std::cout << "laplacian(g)=" << laplacian_g << std::endl;
 
-  // export results
-  e->add( "u", u );
+    auto laplacian_f=laplacian(f);
+    std::cout << "laplacian(f)=" << laplacian_f << std::endl;
 
-/// [marker3]
-  Feel::myFunctor _f;
- _f.setEps(0.1); 
-  v = vf::project( _space=Vh, _range=elements(mesh), _expr=idf(_f));
-/// [marker3]
+    //! [laplacian]
 
-  // export results
-  e->add( "v", v );
-  e->save();
+    //! [div]
+    auto div_f=div(f);
+    std::cout << "div(f)=" << div_f << std::endl;
+    //! [div]
+
+    //! [curl]
+    auto curl_f=curl(f);
+    std::cout << "curl(f)=" << curl_f << std::endl;
+    //! [curl]
+
+    //! [eval]
+    std::cout << "Evaluation  at  (" << doption("x") << "," << doption("y") << "):" << std::endl;
+    std::cout << "           g(x,y)=" << g.evaluate() << std::endl;
+    std::cout << "           f(x,y)=" << f.evaluate() << std::endl;
+    std::cout << "Gradient:\n";
+    std::cout << "     grad(g)(x,y)=" << grad_g.evaluate() << std::endl;
+    std::cout << "     grad(f)(x,y)=" << grad_f.evaluate() << std::endl;
+    std::cout << "Divergence:\n";
+    std::cout << "      div(f)(x,y)=" << div_f.evaluate() << std::endl;
+    std::cout << "Curl:\n";
+    std::cout << "     curl(f)(x,y)=" << curl_f.evaluate() << std::endl;
+    std::cout << "Laplacian:\n";
+    std::cout << "laplacian(g)(x,y)=" << laplacian_g.evaluate() << std::endl;
+    std::cout << "laplacian(f)(x,y)=" << laplacian_f.evaluate() << std::endl;
+    //! [eval]
 }
+//! [all]

@@ -22,9 +22,8 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-
 #include <feel/feelalg/backend.hpp>
-#include <feel/feeldiscr/bdf.hpp>
+#include <feel/feelts/bdf.hpp>
 #include <feel/feeldiscr/pch.hpp>
 
 #include <feel/feelfilters/loadmesh.hpp>
@@ -34,11 +33,10 @@
 #include <feel/feelvf/integrate.hpp>
 #include <feel/feelvf/form.hpp>
 #include <feel/feelvf/operators.hpp>
-#include <feel/feelvf/ppoperators.hpp>
+#include <feel/feelvf/operations.hpp>
 #include <feel/feelvf/measure.hpp>
 #include <feel/feelvf/mean.hpp>
-
-
+#include <feel/feelvf/trans.hpp>
 
 /// [marker1]
 inline
@@ -231,7 +229,7 @@ HeatSink<Dim,Order>::HeatSink()
     mesh = loadMesh( _mesh = new mesh_type );
 
     // build exporter
-    M_exporter = exporter( _mesh=mesh, _geo=EXPORTER_GEOMETRY_STATIC );
+    M_exporter = exporter( _mesh=mesh, _geo="static" );
 
     /// [marker2]
     /*
@@ -274,7 +272,7 @@ HeatSink<Dim, Order>::run()
      * T is the unknown, v the test function
      */
     element_type T( Xh, "T" );
-    element_type v( Xh, "v" );
+		element_type v( Xh, "v" );
 
     /// [marker3]
     /*

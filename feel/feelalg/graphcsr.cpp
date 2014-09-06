@@ -209,13 +209,6 @@ GraphCSR::GraphCSR( vf::BlocksBase<self_ptrtype> const & blockSet,
         start_i += blockSet(i,0)->mapRow().nLocalDofWithoutGhost( myrank );
     }
 
-
-    /*this->worldComm().barrier();
-    M_mapRow.showMeMapGlobalProcessToGlobalCluster();
-    M_mapCol.showMeMapGlobalProcessToGlobalCluster();
-    this->worldComm().barrier();*/
-
-
     //M_mapCol=M_mapRow;
     //M_mapCol.setMapGlobalClusterToGlobalProcess(M_mapRow.mapGlobalClusterToGlobalProcess());
     //M_mapCol.setMapGlobalProcessToGlobalCluster(M_mapRow.mapGlobalProcessToGlobalCluster());
@@ -425,6 +418,23 @@ GraphCSR::updateDataMap( vf::BlocksBase<self_ptrtype> const & blockSet )
         nLocalDofStartCol += mapColOnBlock.nLocalDofWithGhost( myrank );
         start_jj += mapColOnBlock.nLocalDofWithoutGhost( myrank );
     }
+
+    // index split ( only do for row )
+    bool computeIndexSplit = true;
+    if ( computeIndexSplit )
+    {
+        //const uint16_type nRow = blockgraph.nRow();
+        boost::shared_ptr<IndexSplit> indexSplit( new IndexSplit() );
+        const size_type firstDofGC = this->mapRow().firstDofGlobalCluster();
+        for ( uint16_type i=0; i<nRow; ++i )
+        {
+            indexSplit->addSplit( firstDofGC, blockSet(i,0)->mapRow().indexSplit() );
+        }
+        //indexSplit->showMe();
+        this->mapRowPtr()->setIndexSplit( indexSplit );
+    }
+
+
 
 }
 
@@ -694,7 +704,8 @@ GraphCSR::transpose( bool doClose )
 void
 GraphCSR::addMissingZeroEntriesDiagonal()
 {
-    if ( this->mapRow().worldComm().size() >1 && this->mapRow().nDof()!=this->mapCol().nDof() )
+    //if ( this->mapRow().worldComm().size() >1 && this->mapRow().nDof()!=this->mapCol().nDof() )
+    if ( this->mapRow().nDof()!=this->mapCol().nDof() )
         return;
 
     DVLOG(2) << " GraphCSR addMissingZeroEntriesDiagonal in graph\n";
@@ -772,7 +783,7 @@ GraphCSR::close()
     size_type sum_nz = 0;
 
     M_max_nnz = 0;
-
+    VLOG(2) << "Closing graph...";
     for ( auto it = M_storage.begin(), en = M_storage.end() ; it != en; ++it )
     {
         // Get the row of the sparsity pattern
@@ -854,7 +865,7 @@ GraphCSR::close()
         }
 
     }
-
+    VLOG(2) << "Closing graph done.";
 
     if ( nProc > 1 )
     {
@@ -1205,6 +1216,65 @@ GraphCSR::printPython( std::string const& nameFile ) const
 
 
 } // printPython
+
+void
+BlocksBaseGraphCSR::close()
+{
+    if ( this->isClosed() ) return;
+
+    std::vector<boost::shared_ptr<DataMap> > dataMapRowRef(this->nRow());
+    std::vector<boost::shared_ptr<DataMap> > dataMapColRef(this->nCol());
+
+    // search a reference row datamap foreach row
+    for ( index_type i=0 ; i<this->nRow() ;++i)
+    {
+        // search a data row avalaible
+        bool findDataMapRow=false;
+        for ( index_type j=0 ; j<this->nCol() && !findDataMapRow ;++j)
+        {
+            if ( this->operator()(i,j) )
+            {
+                dataMapRowRef[i] = this->operator()(i,j)->mapRowPtr();
+                findDataMapRow=true;
+            }
+        }
+        CHECK ( findDataMapRow ) << "not find at least one DataMap initialized in row "<< i << "\n";
+    }
+
+    // search reference col datamap foreach col
+    for ( index_type j=0 ; j<this->nCol() ;++j)
+    {
+        // search a data col avalaible
+        bool findDataMapCol=false;
+        for ( index_type i=0 ; i<this->nRow() && !findDataMapCol ;++i)
+        {
+            if ( this->operator()(i,j) )
+            {
+                dataMapColRef[j] = this->operator()(i,j)->mapColPtr();
+                findDataMapCol=true;
+            }
+        }
+        CHECK ( findDataMapCol ) << "not find at least one DataMap initialized in col "<< j << "\n";
+    }
+
+    // if a block is missing then completed with zero graph
+    for ( index_type i=0 ; i<this->nRow() ;++i)
+    {
+        for ( index_type j=0 ; j<this->nCol() ;++j)
+        {
+            if ( this->operator()(i,j) ) continue;
+
+            DVLOG(1) << "add zero graph in block ("<<i<<","<<j<<")\n";
+            typedef graph_ptrtype::element_type graph_type;
+            graph_ptrtype zerograph( new graph_type( dataMapRowRef[i], dataMapColRef[j] ) );
+            zerograph->zero();
+            this->operator()(i,j) = zerograph;
+        }
+    }
+
+    M_isClosed = true;
+
+}
 
 
 } // Feel

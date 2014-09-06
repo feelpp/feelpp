@@ -63,6 +63,13 @@ po::options_description mesh_options( int Dim, std::string const& prefix = "" );
 
 po::options_description gmsh_options( std::string const& prefix = "" );
 
+po::options_description gmsh_domain_options( std::string const& prefix = "" );
+
+/**
+ * command line options for Onelab interface
+ */
+po::options_description onelab_options( std::string const& prefix = "" );
+
 /**
  * command line options for multithreading and GPU parallelization
  */
@@ -94,6 +101,8 @@ po::options_description nlsolver_options();
 /**
  * command line options for BDF
  */
+po::options_description on_options( std::string const& prefix = "" );
+
 po::options_description ts_options( std::string const& prefix = "" );
 po::options_description bdf_options( std::string const& prefix = "" );
 

@@ -1129,55 +1129,83 @@ printData( std::ostream& out,
            std::string const& key,
            size_type stats = Application::ALL|Application::HEADER )
 {
-    if ( !( stats & Application::DATA ) ) return;
-    bool header = stats & Application::HEADER;
-    bool flat = stats & Application::FLAT;
-    if ( header )
+    try
     {
-        if ( !flat )
-            out << std::setw( 10 ) << std::right << "levels"
-                << std::setw( 10 ) << std::right << "h";
-        BOOST_FOREACH( auto v, statsit->get_child( key+".bool" ) )
+        if ( !( stats & Application::DATA ) ) return;
+        bool header = stats & Application::HEADER;
+        bool flat = stats & Application::FLAT;
+        if ( header )
         {
-            out << std::setw( detail::spaces ) << std::right << (flat?key+"."+v.first:v.first);
-        }
-        BOOST_FOREACH( auto v, statsit->get_child( key+".int" ) )
-        {
-            out << std::setw( detail::spaces ) << std::right << (flat?key+"."+v.first:v.first);
-        }
-        BOOST_FOREACH( auto v, statsit->get_child( key+".double" ) )
-        {
-            out << std::setw( detail::spaces ) << std::right << (flat?key+"."+v.first:v.first);
-        }
-        if ( !flat )
-            out << "\n";
-    }
-    int l=1;
-    if ( ! ( (header == true) && ( flat == true ) ) )
-        for ( auto it = statsit, en =statsen; it!=en; ++it,++l )
-        {
-            double h  = it->template get<double>( "h" );
             if ( !flat )
-                out << std::right << std::setw( 10 ) << l
-                    << std::right << std::setw( 10 ) << std::fixed  << std::setprecision( 4 ) << h;
-            BOOST_FOREACH( auto v, it->get_child( key+".bool" ) )
-            {
-                bool u  = it->template get<bool>( key+".bool."+v.first );
-                out << std::right << std::setw( detail::spaces )  << u;
+                out << std::setw( 10 ) << std::right << "levels"
+                    << std::setw( 10 ) << std::right << "h";
+            try {
+                BOOST_FOREACH( auto v, statsit->get_child( key+".bool" ) )
+                {
+                    out << std::setw( detail::spaces ) << std::right << (flat?key+"."+v.first:v.first);
+                }
             }
-            BOOST_FOREACH( auto v, it->get_child( key+".int" ) )
-            {
-                size_type u  = it->template get<size_type>( key+".int."+v.first );
-                out << std::right << std::setw( detail::spaces )  << u;
+            catch(...)
+            {}
+            try {
+                BOOST_FOREACH( auto v, statsit->get_child( key+".int" ) )
+                {
+                    out << std::setw( detail::spaces ) << std::right << (flat?key+"."+v.first:v.first);
+                }
             }
-            BOOST_FOREACH( auto v, it->get_child( key+".double" ) )
-            {
-                double u  = it->template get<double>( key+".double."+v.first );
-                out << std::right << std::setw( detail::spaces ) << std::scientific << std::setprecision( 2 ) << u;
+            catch(...)
+            {}
+            try{
+                BOOST_FOREACH( auto v, statsit->get_child( key+".double" ) )
+                {
+                    out << std::setw( detail::spaces ) << std::right << (flat?key+"."+v.first:v.first);
+                }
             }
+            catch(...)
+            {}
             if ( !flat )
                 out << "\n";
         }
+        int l=1;
+        if ( ! ( (header == true) && ( flat == true ) ) )
+            for ( auto it = statsit, en =statsen; it!=en; ++it,++l )
+            {
+                double h  = it->template get<double>( "h" );
+                if ( !flat )
+                    out << std::right << std::setw( 10 ) << l
+                        << std::right << std::setw( 10 ) << std::fixed  << std::setprecision( 4 ) << h;
+                try {
+                    BOOST_FOREACH( auto v, it->get_child( key+".bool" ) )
+                    {
+                        bool u  = it->template get<bool>( key+".bool."+v.first );
+                        out << std::right << std::setw( detail::spaces )  << u;
+                    }
+                }
+                catch(...){}
+                try {
+                    BOOST_FOREACH( auto v, it->get_child( key+".int" ) )
+                    {
+                        size_type u  = it->template get<size_type>( key+".int."+v.first );
+                        out << std::right << std::setw( detail::spaces )  << u;
+                    }
+                }
+                catch(...){}
+                try {
+                    BOOST_FOREACH( auto v, it->get_child( key+".double" ) )
+                    {
+                        double u  = it->template get<double>( key+".double."+v.first );
+                        out << std::right << std::setw( detail::spaces ) << std::scientific << std::setprecision( 2 ) << u;
+                    }
+                }
+                catch(...){}
+                if ( !flat )
+                    out << "\n";
+            }
+    }
+    catch( ptree::ptree_bad_data const& e )
+    {
+        LOG(WARNING) << "Invalid property tree data : " << e.what();
+    }
 }
 template<typename StatsIterator>
 void
@@ -1187,55 +1215,67 @@ printTime( std::ostream& out,
            std::string const& key,
            size_type stats = Application::ALL|Application::HEADER )
 {
-    if ( !( stats & Application::TIME ) ) return;
-    bool header = stats & Application::HEADER;
-    bool flat = stats & Application::FLAT;
-    if ( header )
-    {
-        if ( !flat )
-            out << std::setw( 10 ) << std::right << "levels"
-                << std::setw( 10 ) << std::right << "h";
-        BOOST_FOREACH( auto v, statsit->get_child( key ) )
+    try {
+
+        if ( !( stats & Application::TIME ) ) return;
+        bool header = stats & Application::HEADER;
+        bool flat = stats & Application::FLAT;
+        if ( header )
         {
-            int len1 = std::max( detail::spaces,( int )v.first.size() );
-            int len2 = std::max( detail::spaces,( int )( std::string( " normalized" ).size() ) );
-            out << std::setw( len1 ) << std::right << (flat?key+"."+v.first:v.first) << " "
-                << std::setw( len2 ) << std::right << (flat?key+"."+v.first+".n":v.first+".n");
-        }
-        if (!flat)
-            out << "\n";
-    }
-    int l=1;
-    std::map<std::string,double> t0;
-    if ( ! ( (header == true) && ( flat == true ) ) )
-        for ( auto it = statsit,  en =statsen; it!=en; ++it,++l )
-        {
-            double h  = it->template get<double>( "h" );
             if ( !flat )
-                out << std::right << std::setw( 10 ) << l
-                    << std::right << std::setw( 10 ) << std::fixed  << std::setprecision( 4 ) << h;
-            BOOST_FOREACH( auto v, it->get_child( key ) )
+                out << std::setw( 10 ) << std::right << "levels"
+                    << std::setw( 10 ) << std::right << "h";
+            BOOST_FOREACH( auto v, statsit->get_child( key ) )
             {
-                std::string thekey = key+"."+v.first;
-                int len1 = std::max( detail::spaces,( int )(flat?key+"."+v.first:v.first).size() );
-                int len2 = std::max( detail::spaces,(int)std::string( " normalized" ).size()-2);
-                double u  = it->template get<double>( thekey );
-
-                if ( l == 1 )
-                    t0[thekey] = u;
-
-                out << std::right << std::setw( len1 ) << std::scientific << std::setprecision( 2 ) << u << " "
-                    << std::right << std::setw( len2 ) << std::scientific << std::setprecision( 2 ) << u/t0[thekey];
+                int len1 = std::max( detail::spaces,( int )v.first.size() );
+                int len2 = std::max( detail::spaces,( int )( std::string( " normalized" ).size() ) );
+                out << std::setw( len1 ) << std::right << (flat?key+"."+v.first:v.first) << " "
+                    << std::setw( len2 ) << std::right << (flat?key+"."+v.first+".n":v.first+".n");
             }
-            if ( !flat )
+            if (!flat)
                 out << "\n";
         }
+        int l=1;
+        std::map<std::string,double> t0;
+        if ( ! ( (header == true) && ( flat == true ) ) )
+            for ( auto it = statsit,  en =statsen; it!=en; ++it,++l )
+            {
+                double h  = it->template get<double>( "h" );
+                if ( !flat )
+                    out << std::right << std::setw( 10 ) << l
+                        << std::right << std::setw( 10 ) << std::fixed  << std::setprecision( 4 ) << h;
+                BOOST_FOREACH( auto v, it->get_child( key ) )
+                {
+                    std::string thekey = key+"."+v.first;
+                    int len1 = std::max( detail::spaces,( int )(flat?key+"."+v.first:v.first).size() );
+                    int len2 = std::max( detail::spaces,(int)std::string( " normalized" ).size()-2);
+                    double u  = it->template get<double>( thekey );
+
+                    if ( l == 1 )
+                        t0[thekey] = u;
+
+                    out << std::right << std::setw( len1 ) << std::scientific << std::setprecision( 2 ) << u << " "
+                        << std::right << std::setw( len2 ) << std::scientific << std::setprecision( 2 ) << u/t0[thekey];
+                }
+                if ( !flat )
+                    out << "\n";
+            }
+    }
+    catch( ptree::ptree_bad_data const& e )
+    {
+        LOG(WARNING) << "Invalid property tree data : " << e.what();
+    }
 }
 
 void
 Application::setStats( std::vector<std::string> const& keys )
 {
     M_keys = keys;
+}
+void
+Application::storeStats( std::string const&  n, ptree::ptree const& s )
+{
+    M_stats[n].push_back( s );
 }
 void
 Application::printStats( std::ostream& out, size_type stats ) const

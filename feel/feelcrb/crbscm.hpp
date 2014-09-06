@@ -598,14 +598,15 @@ CRBSCM<TruthModelType>::offlineNoSCM()
     sparse_matrix_ptrtype inner_prod,sym,Matrix;
     M_mu_ref = M_model->refParameter();
     M_model->computeAffineDecomposition();
+    M_model->countAffineDecompositionTerms();
     if ( M_scm_for_mass_matrix )
     {
-        inner_prod = M_model->innerProductForMassMatrix();
+        inner_prod = M_model->massMatrix();
         boost::tie( Matrix, boost::tuples::ignore, boost::tuples::ignore ) = M_model->update( M_mu_ref );
     }
     else
     {
-        inner_prod = M_model->innerProduct();
+        inner_prod = M_model->energyMatrix();
         boost::tie( boost::tuples::ignore, Matrix, boost::tuples::ignore ) = M_model->update( M_mu_ref );
     }
     sym = M_model->newMatrix();sym->close();
@@ -664,7 +665,7 @@ CRBSCM<TruthModelType>::offlineSCM()
     std::vector<boost::tuple<double,double,double> > ckconv;
     // do the affine decomposition
     M_model->computeAffineDecomposition();
-
+    M_model->countAffineDecompositionTerms();
     // random sampling
     bool all_procs_have_same_sampling=true;
     M_Xi->randomize( M_vm["crb.scm.sampling-size"].template as<int>() , all_procs_have_same_sampling );
@@ -776,12 +777,12 @@ CRBSCM<TruthModelType>::offlineSCM()
         // for a given parameter \p mu assemble the left and right hand side
         if ( M_scm_for_mass_matrix )
         {
-            B = M_model->innerProductForMassMatrix();
+            B = M_model->massMatrix();
             boost::tie( Matrix, boost::tuples::ignore, F ) = M_model->update( mu );
         }
         else
         {
-            B = M_model->innerProduct();
+            B = M_model->energyMatrix();
             boost::tie( boost::tuples::ignore, Matrix, F ) = M_model->update( mu );
         }
 
@@ -967,8 +968,9 @@ CRBSCM<TruthModelType>::checkEigenVectorEigenValue( sparse_matrix_ptrtype const&
     double energyAwAw = A->energy( Aw , Aw );
     double energyAwBw = A->energy( Aw , Bw );
     double energyBwBw = A->energy( Bw , Bw );
-    CHECK( math::abs(energyAwAw - energyAwBw) <  1e-11 )<<"eigen vector and/or eigen value not satisfy generalized eigenvalue problem : math::abs(energyAwAw - energyAwBw) = "<<math::abs(energyAwAw - energyAwBw)<<std::endl;
-    CHECK( math::abs(energyAwAw - energyAwBw) <  1e-11 )<<"eigen vector and/or eigen value not satisfy generalized eigenvalue problem : math::abs(energyAwAw - energyAwBw) = "<<math::abs(energyAwAw - energyAwBw)<<std::endl;
+    double tol = option(_name="crb.scm.check-eigenvector-tol").template as<double>();
+    CHECK( math::abs(energyAwAw - energyAwBw) <  tol )<<"eigen vector and/or eigen value not satisfy generalized eigenvalue problem : math::abs(energyAwAw - energyAwBw) = "<<math::abs(energyAwAw - energyAwBw)<<std::endl;
+    CHECK( math::abs(energyAwAw - energyAwBw) <  tol )<<"eigen vector and/or eigen value not satisfy generalized eigenvalue problem : math::abs(energyAwAw - energyAwBw) = "<<math::abs(energyAwAw - energyAwBw)<<std::endl;
 }
 
 template<typename TruthModelType>
@@ -1034,12 +1036,12 @@ boost::tuple<typename CRBSCM<TruthModelType>::value_type,
 
     if ( M_scm_for_mass_matrix )
     {
-        M = M_model->innerProductForMassMatrix();
+        M = M_model->massMatrix();
         boost::tie( Matrix, boost::tuples::ignore, F ) = M_model->update( mu );
     }
     else
     {
-        M = M_model->innerProduct();
+        M = M_model->energyMatrix();
         boost::tie( boost::tuples::ignore, Matrix, F ) = M_model->update( mu );
     }
 
@@ -1548,9 +1550,9 @@ CRBSCM<TruthModelType>::computeYBounds()
 
 
     if ( M_scm_for_mass_matrix )
-        B=M_model->innerProductForMassMatrix();
+        B=M_model->massMatrix();
     else
-        B=M_model->innerProduct();
+        B=M_model->energyMatrix();
 
     B->close();
 
