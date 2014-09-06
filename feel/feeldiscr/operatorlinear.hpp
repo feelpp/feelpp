@@ -88,7 +88,11 @@ public:
     OperatorLinear()
         :
         super_type(),
+#if 0
         M_backend( backend_type::build( BACKEND_PETSC ) ),
+#else
+        M_backend( backend_type::build( ) ),
+#endif
         M_matrix(),
         M_pattern( Pattern::COUPLED ),
         M_name("operatorlinear")
@@ -573,13 +577,16 @@ public:
         return *this;
     }
 
-    adjoint_ptrtype adjoint() const
+    adjoint_ptrtype adjoint( size_type options = MATRIX_TRANSPOSE_ASSEMBLED ) const
     {
         auto opT = adjoint_ptrtype( new adjoint_type( this->dualImageSpace(), this->domainSpace(), M_backend, false ) );
         //opT->matPtr() = M_backend->newMatrix(_test=this->domainSpace(), _trial=this->dualImageSpace());
-        opT->matPtr() = M_backend->newMatrix( this->dualImageSpace()->dofOnOff(),
-                                              this->domainSpace()->dofOn(), (size_type) NON_HERMITIAN,false);
-        M_matrix->transpose(opT->matPtr());
+        if ( 1 ) //Context( options ). test( MATRIX_TRANSPOSE_ASSEMBLED ) )
+            opT->matPtr() = M_backend->newMatrix( this->dualImageSpace()->dofOnOff(),
+                                                  this->domainSpace()->dofOn(), (size_type) NON_HERMITIAN,false);
+        else
+            opT->matPtr() = M_backend->newMatrix();
+        M_matrix->transpose(opT->matPtr(),options);
         return opT;
     }
 

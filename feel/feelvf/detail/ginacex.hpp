@@ -44,7 +44,7 @@ public:
     /** @name Typedefs
      */
     //@{
-
+    typedef Feel::vf::GiNaCBase super;
 
     static const size_type context = vm::POINT;
     static const bool is_terminal = false;
@@ -65,17 +65,18 @@ public:
     typedef GiNaC::ex expression_type;
     typedef GinacEx<Order> this_type;
     typedef double value_type;
+    typedef value_type evaluate_type;
 
     typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> vec_type;
 
-    template<typename TheExpr>
+    template<typename... TheExpr>
     struct Lambda
     {
         typedef this_type type;
     };
-    template<typename TheExpr>
-    typename Lambda<TheExpr>::type
-    operator()( TheExpr const& e  ) { return *this; }
+    template<typename... TheExpr>
+    typename Lambda<TheExpr...>::type
+    operator()( TheExpr... e  ) { return *this; }
 
     //@}
 
@@ -86,11 +87,10 @@ public:
     explicit GinacEx( expression_type const & fun, std::vector<GiNaC::symbol> const& syms, std::string filename="",
                       WorldComm const& world=Environment::worldComm() )
         :
+        super( syms ),
         M_fun( fun ),
-        M_syms( syms),
-        M_params( vec_type::Zero( M_syms.size() ) ),
         M_cfun( new GiNaC::FUNCP_CUBA() ),
-        M_filename(filename.empty()?filename:(fs::current_path()/filename).string())
+        M_filename( (filename.empty() || fs::path(filename).is_absolute())? filename : (fs::current_path()/filename).string())
         {
             DVLOG(2) << "Ginac constructor with expression_type \n";
             GiNaC::lst exprs(fun);
@@ -118,6 +118,8 @@ public:
                 // master rank check if the lib exist and compile this one if not done
                 if ( ( world.isMasterRank() && !fs::exists( filenameWithSuffix ) ) || M_filename.empty() )
                 {
+                    if ( !M_filename.empty() && fs::path(filename).is_absolute() && !fs::exists(fs::path(filename).parent_path()) )
+                        fs::create_directories( fs::path(filename).parent_path() );
                     DVLOG(2) << "GiNaC::compile_ex with filenameWithSuffix " << filenameWithSuffix << "\n";
                     GiNaC::compile_ex(exprs, syml, *M_cfun, M_filename);
                     hasLinked=true;
@@ -135,14 +137,12 @@ public:
                         GinacExprManager::instance().operator[]( filename ) = M_cfun;
                 }
             }
-            this->setParameterFromOption();
         }
 
     GinacEx( GinacEx const & fun )
         :
+        super(fun),
         M_fun( fun.M_fun ),
-        M_syms( fun.M_syms),
-        M_params( fun.M_params ),
         M_cfun( fun.M_cfun ),
         M_filename( fun.M_filename )
         {
@@ -162,8 +162,6 @@ public:
      */
     //@{
 
-    vec_type const& parameterValue() const { return M_params; }
-    value_type parameterValue( int p ) const { return M_params[p]; }
 
     //@}
 
@@ -171,70 +169,6 @@ public:
      */
     //@{
 
-    void setParameterFromOption()
-        {
-            using namespace GiNaC;
-            std::map<std::string,value_type> m;
-            for( auto const& s : M_syms )
-            {
-                if ( Environment::vm().count( s.get_name() ) )
-                {
-                    // use try/catch in order to catch casting exception for
-                    // option that do not return double. Indeed we are only
-                    // collecting symbols in option database which can be cast
-                    // to numerical types
-                    try
-                    {
-                        value_type v = option( _name=s.get_name() ).template as<double>();
-                        m.insert( std::make_pair( s.get_name(), v ) );
-                        LOG(INFO) << "symbol " << s.get_name() << " found in option with value " << v;
-                    }
-                    catch(...)
-                    {}
-
-//                    try
-//                    {
-//                        expression_type e( option( _name=s.get_name() ).template as<std::string>(), 0 );
-//                        if( is_a<numeric>(e) )
-//                        {
-//                            LOG(INFO) << "symbol " << s.get_name() << " found in option with value " << v;
-//                        }
-//                        else
-//                        {
-//                            ;
-//                        }
-//                    }
-//                    catch(...)
-//                    {}
-                }
-            }
-            this->setParameterValues( m );
-        }
-
-    void setParameterValues( vec_type const& p )
-        {
-            CHECK( M_params.size() == M_syms.size() ) << "Invalid number of parameters " << M_params.size() << " >= symbol size : " << M_syms.size();
-            M_params = p;
-        }
-    void setParameterValues( std::map<std::string,value_type> const& mp )
-        {
-            CHECK( M_params.size() == M_syms.size() ) << "Invalid number of parameters " << M_params.size() << " >= symbol size : " << M_syms.size();
-            for( auto p : mp )
-            {
-                auto it = std::find_if( M_syms.begin(), M_syms.end(),
-                                        [&p]( GiNaC::symbol const& s ) { return s.get_name() == p.first; } );
-                if ( it != M_syms.end() )
-                {
-                    M_params[it-M_syms.begin()] = p.second;
-                    LOG(INFO) << "setting parameter : " << p.first << " with value: " << p.second;
-                    LOG(INFO) << "parameter: " << M_params;
-                }
-                else
-                {
-                    LOG(INFO) << "Invalid parameters : " << p.first << " with value: " << p.second;
-                }
-            }
-        }
 
     //@}
 
@@ -242,12 +176,18 @@ public:
      */
     //@{
 
+    const GiNaC::ex& expression() const
+        {
+            return M_fun;
+        }
     const GiNaC::FUNCP_CUBA& fun() const
         {
             return *M_cfun;
         }
 
     std::vector<GiNaC::symbol> const& syms() const { return M_syms; }
+
+
 
     //@}
 
@@ -270,8 +210,6 @@ public:
                                                 mpl::identity<Shape<gmc_type::nDim, Vectorial, false, false> >,
                                                 mpl::identity<Shape<gmc_type::nDim, Tensor2, false, false> > >::type >::type::type shape;
 
-    typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> vec_type;
-
     struct is_zero
     {
         static const bool value = false;
@@ -280,6 +218,7 @@ public:
     tensor( this_type const& expr,
             Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
         :
+        M_expr( expr ),
         M_fun( expr.fun() ),
         M_gmc( fusion::at_key<key_type>( geom ).get() ),
         M_nsyms( expr.syms().size() ),
@@ -291,6 +230,7 @@ public:
     tensor( this_type const& expr,
             Geo_t const& geom, Basis_i_t const& /*fev*/ )
         :
+        M_expr( expr ),
         M_fun( expr.fun() ),
         M_gmc( fusion::at_key<key_type>( geom ).get() ),
         M_nsyms( expr.syms().size() ),
@@ -301,14 +241,15 @@ public:
 
     tensor( this_type const& expr, Geo_t const& geom )
         :
+        M_expr( expr ),
         M_fun( expr.fun() ),
         M_gmc( fusion::at_key<key_type>( geom ).get() ),
         M_nsyms( expr.syms().size() ),
         M_y( vec_type::Zero(M_gmc->nPoints()) ),
         M_x( expr.parameterValue() )
-
         {
         }
+
     template<typename IM>
     void init( IM const& im )
         {
@@ -331,8 +272,8 @@ public:
 
             for(int q = 0; q < M_gmc->nPoints();++q )
             {
-                for(int k = 0;k < gmc_type::nDim;++k )
-                    M_x[k]=M_gmc->xReal( q )[k];
+                for ( auto const& comp : M_expr.indexSymbolXYZ() )
+                    M_x[comp.second] = M_gmc->xReal( q )[comp.first];
                 M_fun(&ni,M_x.data(),&no,&M_y[q]);
             }
 
@@ -346,8 +287,8 @@ public:
             int ni = M_nsyms;//gmc_type::nDim;
             for(int q = 0; q < M_gmc->nPoints();++q )
             {
-                for(int k = 0;k < gmc_type::nDim;++k )
-                    M_x[k]=M_gmc->xReal( q )[k];
+                for ( auto const& comp : M_expr.indexSymbolXYZ() )
+                    M_x[comp.second] = M_gmc->xReal( q )[comp.first];
                 M_fun(&ni,M_x.data(),&no,&M_y[q]);
             }
         }
@@ -385,6 +326,7 @@ public:
             return M_y[q];
         }
 
+    this_type const& M_expr;
     GiNaC::FUNCP_CUBA M_fun;
     gmc_ptrtype M_gmc;
 
@@ -395,23 +337,39 @@ public:
 };
 
     value_type
-    evaluate( bool parallel = true, WorldComm const& worldcomm = Environment::worldComm() ) const
+    evaluate( std::map<std::string,value_type> const& mp  )
     {
-        if(GiNaC::is_a<GiNaC::numeric>(M_fun))
-            return GiNaC::ex_to<GiNaC::numeric>(M_fun).to_double();
-        else
-            CHECK(GiNaC::is_a<GiNaC::numeric>(M_fun)) << "GiNaC expression is not a value type. Can't evaluate !";
-            return 0;
+        this->setParameterValues( mp );
+        int no = 1;
+        int ni = M_syms.size();//gmc_type::nDim;
+        value_type res;
+        (*M_cfun)(&ni,M_params.data(),&no,&res);
+        return res;
     }
 
-private:
-mutable expression_type  M_fun;
-std::vector<GiNaC::symbol> M_syms;
-vec_type M_params;
-boost::shared_ptr<GiNaC::FUNCP_CUBA> M_cfun;
-std::string M_filename;
-};
+    value_type
+    evaluate( bool parallel = true, WorldComm const& worldcomm = Environment::worldComm() ) const
+    {
+        int no = 1;
+        int ni = M_syms.size();
+        value_type res;
+        (*M_cfun)(&ni,M_params.data(),&no,&res);
+        return res;
+    }
 
+
+private:
+    mutable expression_type  M_fun;
+    boost::shared_ptr<GiNaC::FUNCP_CUBA> M_cfun;
+    std::string M_filename;
+};
+template<int Order>
+std::ostream&
+operator<<( std::ostream& os, GinacEx<Order> const& e )
+{
+    os << e.expression();
+    return os;
+}
 } // vf
 } // feel
 

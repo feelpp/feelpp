@@ -343,6 +343,24 @@ WorldComm::WorldComm( communicator_type const& _globalComm,
 
 }
 
+WorldComm&
+WorldComm::operator=( WorldComm const& wc )
+{
+    if ( this != &wc )
+    {
+        super::operator=( wc );
+        M_localComm = wc.M_localComm;
+        M_godComm = wc.M_godComm;
+        M_subWorldCommSeq = wc.M_subWorldCommSeq;
+        M_mapColorWorld = wc.M_mapColorWorld;
+        M_mapLocalRankToGlobalRank = wc.M_mapLocalRankToGlobalRank;
+        M_mapGlobalRankToGodRank = wc.M_mapGlobalRankToGodRank;
+        M_subworlds = wc.M_subworlds;
+        M_masterRank = wc.M_masterRank;
+        M_isActive = wc.M_isActive;
+    }
+    return *this;
+}
 
 //-------------------------------------------------------------------------------
 
@@ -675,7 +693,7 @@ WorldComm::applyActivityOnlyOn(int _localColor) const
 //-------------------------------------------------------------------------------
 
 WorldComm const&
-WorldComm::subWorld( int n )
+WorldComm::subWorld( int n ) const
 {
     if ( this->globalSize() == 1 )
         return *this;
@@ -684,7 +702,7 @@ WorldComm::subWorld( int n )
     return M_subworlds.find(n)->second.second[subWorldId(n)];
 }
 int
-WorldComm::subWorldId( int n )
+WorldComm::subWorldId( int n ) const
 {
     if ( this->globalSize() == 1 )
         return 0;
@@ -694,13 +712,13 @@ WorldComm::subWorldId( int n )
     return M_subworlds.find(n)->second.first.M_mapColorWorld[this->globalRank()];
 }
 bool
-WorldComm::hasSubWorlds( int n )
+WorldComm::hasSubWorlds( int n ) const
 {
     return M_subworlds.find( n ) != M_subworlds.end();
 }
 
 std::vector<WorldComm> const&
-WorldComm::subWorlds( int n )
+WorldComm::subWorlds( int n ) const
 {
     if ( !hasSubWorlds( n ) )
         registerSubWorlds( n );
@@ -718,7 +736,7 @@ WorldComm::subWorldsGroupBySubspace( int n )
 int
 WorldComm::numberOfSubWorlds() const
 {
-    if ( this->globalSize() == 1 )
+    if ( this->globalSize() == 1 || M_subworlds.size() == 0 )
         return 1;
     return M_subworlds.begin()->first;
 }
@@ -732,7 +750,7 @@ WorldComm::masterWorld( int n )
 }
 
 void
-WorldComm::registerSubWorlds( int n )
+WorldComm::registerSubWorlds( int n ) const
 {
     std::vector<WorldComm> subworlds( n, *this );
     M_subworlds.insert( std::make_pair( n, std::make_pair( *this, subworlds ) ) );

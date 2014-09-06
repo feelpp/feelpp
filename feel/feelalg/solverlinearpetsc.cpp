@@ -77,7 +77,6 @@ extern "C"
         return 0;
     }
 
-
     PetscErrorCode __feel_petsc_preconditioner_apply( void *ctx, Vec x, Vec y )
     {
         Preconditioner<double> * preconditioner = static_cast<Preconditioner<double>*>( ctx );
@@ -89,6 +88,13 @@ extern "C"
 
         return 0;
     }
+    PetscErrorCode __feel_petsc_preconditioner_view( void *ctx, PetscViewer viewer)
+    {
+        Preconditioner<double> * preconditioner = static_cast<Preconditioner<double>*>( ctx );
+        preconditioner->view();
+        return 0;
+    }
+
 #else
     PetscErrorCode __feel_petsc_preconditioner_setup ( PC pc )
     {
@@ -112,6 +118,15 @@ extern "C"
 
         preconditioner->apply( x_vec,y_vec );
 
+        return 0;
+    }
+    PetscErrorCode __feel_petsc_preconditioner_view( PC pc, PetscViewer viewer)
+    {
+        void *ctx;
+        PetscErrorCode ierr = PCShellGetContext( pc,&ctx );
+        CHKERRQ( ierr );
+        Preconditioner<double> * preconditioner = static_cast<Preconditioner<double>*>( ctx );
+        preconditioner->view();
         return 0;
     }
 #endif
@@ -281,6 +296,7 @@ void SolverLinearPetsc<T>::init ()
             PCShellSetContext( M_pc,( void* )this->M_preconditioner.get() );
             PCShellSetSetUp( M_pc,__feel_petsc_preconditioner_setup );
             PCShellSetApply( M_pc,__feel_petsc_preconditioner_apply );
+            PCShellSetView( M_pc,__feel_petsc_preconditioner_view );
 #if PETSC_VERSION_LESS_THAN(3,4,0)
             const PCType pc_type;
 #else
@@ -314,8 +330,7 @@ void SolverLinearPetsc<T>::init ()
 
 
 template <typename T>
-//std::pair<unsigned int, typename SolverLinearPetsc<T>::real_type>
-boost::tuple<bool,unsigned int, typename SolverLinearPetsc<T>::real_type>
+typename SolverLinearPetsc<T>::solve_return_type
 SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
                               MatrixSparse<T> const&  precond_in,
                               Vector<T> & solution_in,
@@ -462,8 +477,14 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
 #else
     //std::cout << "sles: " << this->precMatrixStructure() << "\n";
     // Set operators. The input matrix works as the preconditioning matrix
+#if PETSC_VERSION_LESS_THAN(3,5,0)
     ierr = KSPSetOperators( M_ksp, matrix->mat(), precond->mat(),
                             PetscGetMatStructureEnum(this->precMatrixStructure()) );
+#else
+    ierr = KSPSetReusePreconditioner( M_ksp, (this->precMatrixStructure() == Feel::SAME_PRECONDITIONER)? PETSC_TRUE : PETSC_FALSE );
+    CHKERRABORT( this->worldComm().globalComm(),ierr );
+    ierr = KSPSetOperators( M_ksp, matrix->mat(), precond->mat() );
+#endif
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
     // Set the tolerances for the iterative solver.  Use the user-supplied
@@ -483,10 +504,10 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
     // instead of || B*b ||. In the case of right preconditioner or if
     // KSPSetNormType(ksp,KSP_NORM_UNPRECONDIITONED) is used there is no B in
     // the above formula. UIRNorm is short for Use Initial Residual Norm.
-#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,4,4)
-    KSPConvergedDefaultSetUIRNorm( M_ksp );
-#else
+#if PETSC_VERSION_LESS_THAN(3,5,0)
     KSPDefaultConvergedSetUIRNorm( M_ksp );
+#else
+    KSPConvergedDefaultSetUIRNorm( M_ksp );
 #endif
 
     // Solve the linear system
@@ -545,13 +566,13 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
 #endif
     // return the # of its. and the final residual norm.
     //return std::make_pair(its, final_resid);
-    return boost::make_tuple( hasConverged, its, final_resid );
+    return solve_return_type( boost::make_tuple( hasConverged, its, final_resid ) );
 
 
 }
 
 template <typename T>
-boost::tuple<bool,unsigned int, typename SolverLinearPetsc<T>::real_type>
+typename SolverLinearPetsc<T>::solve_return_type
 SolverLinearPetsc<T>::solve ( MatrixShell<T>  const &mat,
                               Vector<T> & x,
                               Vector<T> const& b,
@@ -560,7 +581,7 @@ SolverLinearPetsc<T>::solve ( MatrixShell<T>  const &mat,
                               bool transpose )
 {
     LOG(ERROR) << "invalid call to solve() using matshell\n";
-    return boost::make_tuple( false, 0, 0 );
+    return solve_return_type( boost::make_tuple( false, 0, 0 ) );
 }
 
 template <typename T>
@@ -698,6 +719,11 @@ SolverLinearPetsc<T>::setPetscSolverType()
 
     case GMRES:
         ierr = KSPSetType ( M_ksp, ( char* ) KSPGMRES );
+        CHKERRABORT( this->worldComm().globalComm(),ierr );
+        return;
+
+    case FGMRES:
+        ierr = KSPSetType ( M_ksp, ( char* ) KSPFGMRES );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
         return;
 

@@ -50,10 +50,17 @@ public :
     typedef BlocksBaseVector<T> self_type;
     typedef Vector<T> vector_type;
     typedef boost::shared_ptr<vector_type> vector_ptrtype;
+    typedef boost::shared_ptr<Backend<T> > backend_ptrtype;
 
-    BlocksBaseVector(uint16_type nr)
+    BlocksBaseVector(uint16_type nr = 0)
         :
         super_type(nr,1)
+    {}
+
+    BlocksBaseVector(self_type const & b)
+        :
+        super_type(b),
+        M_vector( b.M_vector )
     {}
 
     BlocksBaseVector(super_type const & b)
@@ -71,27 +78,25 @@ public :
     }
 
     /**
-     * copy subblock from global vector
+     * copy subblock and M_vector if init from global vector
      */
-    void localize( vector_ptrtype const& vb )
-    {
-        vb->close();
+    void localize( vector_ptrtype const& vb, size_type _start_i=0 );
 
-        size_type _start_i=0;
-        for ( uint16_type i=0; i<this->nRow(); ++i )
-        {
-            size_type nBlockRow = this->operator()( i,0 )->localSize();
+    /**
+     * copy subblock from M_vector ( contained in this object )
+     */
+    void localize();
 
-            for ( size_type k=0; k<nBlockRow; ++k )
-            {
-                this->operator()( i,0 )->set( k, vb->operator()( _start_i+k ) );
-            }
+    /**
+     * build vector representating all blocks
+     */
+    void buildVector( backend_ptrtype _backend = Feel::backend(_rebuild=false));
 
-            this->operator()( i,0 )->close();
-            _start_i += nBlockRow;
-        }
-    }
+    vector_ptrtype& vector() { return M_vector; }
+    vector_ptrtype const& vector() const { return M_vector; }
 
+private :
+    vector_ptrtype M_vector;
 };
 
 template <int NR, typename T=double>

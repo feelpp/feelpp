@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -38,19 +38,26 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelvf/vf.hpp>
 
-#include "fmsheap.hpp"
-#include "fmspoint.hpp"
+#include <feel/feelpde/fmsheap.hpp>
+#include <feel/feelpde/fmspoint.hpp>
 #include <boost/serialization/set.hpp>
 
 namespace Feel
 {
-
+/**
+ * @brief Fast Marching algorithm
+ * @details implements the fast marching algorithm
+ *
+ * @tparam FunctionSpaceType function space type
+ * @tparam periodicity_type = NoPeriodicity periodicity of the distance function
+ */
 template<typename FunctionSpaceType, typename periodicity_type = NoPeriodicity>
 class ReinitializerFMS
 {
 public:
 
     static_assert( FunctionSpaceType::fe_type::nOrder == 1, "FunctionSpaceType needs to be a finite element space of order 1");
+    static_assert( FunctionSpaceType::mesh_type::nOrder == 1, "The mesh should be of order 1");
     static_assert( ! FunctionSpaceType::is_periodic , "Space for fast marching must be non periodic, but periodicity can be given as second template argument");
 
     /** @name Typedefs
@@ -114,11 +121,11 @@ private:
     inline size_type processorToCluster( size_type dof )
     { return M_functionspace->dof()->mapGlobalProcessToGlobalCluster( dof ); }
 
+    void createPeriodicCorrespondanceTable();
+
     void reduceDonePoints(element_type const& __v, element_type& status, std::set<size_type>& done );
 
     void reduceClosePoints(heap_type& theHeap, element_type& status );
-
-    void updatePeriodicPoint(heap_entry_type const& newAccepted, element_type& __v, element_type& status, heap_type& theHeap) const;
 
     void fmsHeapUpdate( size_type idDone,
                         element_type const& __v,
@@ -145,9 +152,11 @@ private:
     periodicity_type M_periodicity;
     neighbors_type M_neighbors;
     std::map< size_type, size_type> M_ghostClusterToProc;
+    boost::bimap< size_type, size_type > M_idTag1_idTag2;
     std::vector<point_type> M_coords;
     vf::node_type M_translation;
     const size_type firstDof;
+    int M_nbDofTag1;
     int nbTotalDone;
 };
 
@@ -155,18 +164,25 @@ private:
 typedef Feel::bases<Feel::Lagrange<1, Feel::Scalar> > basisP1LS_type;
 
 //2d
-typedef Feel::Mesh< Feel::Simplex<2> > mesh_typeLS;
-typedef Feel::FunctionSpace<mesh_typeLS, basisP1LS_type, Feel::Periodicity <Feel::NoPeriodicity> > spaceP1LS_type;
+typedef Feel::Mesh< Feel::Simplex<2> > mesh_typeLSs;
+typedef Feel::FunctionSpace<mesh_typeLSs, basisP1LS_type, double, Feel::Periodicity <Feel::NoPeriodicity>, Feel::mortars<Feel::NoMortar> > spaceP1LSs_type;
+
+typedef Feel::Mesh< Feel::Hypercube<2> > mesh_typeLSh;
+typedef Feel::FunctionSpace<mesh_typeLSh, basisP1LS_type, double, Feel::Periodicity <Feel::NoPeriodicity>, Feel::mortars<Feel::NoMortar> > spaceP1LSh_type;
 
 // 3d
-typedef Feel::Mesh< Feel::Simplex<3> > mesh_3d_typeLS;
-typedef Feel::FunctionSpace<mesh_3d_typeLS, basisP1LS_type, Feel::Periodicity <Feel::NoPeriodicity> > spaceP1LS_3d_type;
+typedef Feel::Mesh< Feel::Simplex<3> > mesh_3d_typeLSs;
+typedef Feel::FunctionSpace<mesh_3d_typeLSs, basisP1LS_type, double, Feel::Periodicity <Feel::NoPeriodicity>, Feel::mortars<Feel::NoMortar> > spaceP1LSs_3d_type;
+typedef Feel::Mesh< Feel::Hypercube<3> > mesh_3d_typeLSh;
+typedef Feel::FunctionSpace<mesh_3d_typeLSh, basisP1LS_type, double, Feel::Periodicity <Feel::NoPeriodicity>, Feel::mortars<Feel::NoMortar> > spaceP1LSh_3d_type;
 
 #if !defined( FEELPP_INSTANTIATE_FMS )
-extern template class Feel::ReinitializerFMS< spaceP1LS_type, Feel::Periodic<> > ;
-extern template class Feel::ReinitializerFMS< spaceP1LS_type, Feel::NoPeriodicity  > ;
-extern template class Feel::ReinitializerFMS< spaceP1LS_3d_type, Feel::NoPeriodicity > ;
-extern template class Feel::ReinitializerFMS< spaceP1LS_3d_type, Feel::Periodic<> > ;
+extern template class Feel::ReinitializerFMS< spaceP1LSs_type, Feel::Periodic<> > ;
+extern template class Feel::ReinitializerFMS< spaceP1LSs_type, Feel::NoPeriodicity  > ;
+extern template class Feel::ReinitializerFMS< spaceP1LSh_type, Feel::NoPeriodicity  > ;
+extern template class Feel::ReinitializerFMS< spaceP1LSs_3d_type, Feel::NoPeriodicity > ;
+extern template class Feel::ReinitializerFMS< spaceP1LSh_3d_type, Feel::NoPeriodicity > ;
+extern template class Feel::ReinitializerFMS< spaceP1LSs_3d_type, Feel::Periodic<> > ;
 #endif
 
 

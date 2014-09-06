@@ -110,6 +110,9 @@ public:
     typedef typename super::datamap_type datamap_type;
     typedef typename super::datamap_ptrtype datamap_ptrtype;
 
+    typedef typename super::indexsplit_type indexsplit_type;
+    typedef typename super::indexsplit_ptrtype indexsplit_ptrtype;
+
     //@}
 
     /** @name Constructors, destructor
@@ -250,7 +253,7 @@ public:
     /**
      *
      */
-    void setIndexSplit( std::vector< std::vector<size_type> > const &indexSplit );
+    void setIndexSplit( indexsplit_ptrtype const& indexSplit );
 
     /**
      * reinitialize the matrix
@@ -406,8 +409,9 @@ public:
      *
      * \param M the matrix to transpose
      * \param Mt the matrix transposed
+     * \param options options for tranpose
      */
-    void transpose( MatrixSparse<value_type>& Mt ) const;
+    void transpose( MatrixSparse<value_type>& Mt, size_type options ) const;
 
     /**
     * Returns the symmetric part of the matrix
@@ -439,6 +443,15 @@ public:
     void printMatlab( const std::string name="NULL" ) const;
 
     /**
+     * This function creates a matrix called "submatrix" which is defined
+     * by the row and column indices given in the "rows" and "cols" entries.
+     * Currently this operation is only defined for the PetscMatrix type.
+     */
+    void createSubmatrix( MatrixSparse<T>& submatrix,
+                          const std::vector<size_type>& rows,
+                          const std::vector<size_type>& cols ) const;
+
+    /**
      * \return \f$ v^T M u \f$
      */
     value_type
@@ -460,7 +473,7 @@ public:
      */
     void updateBlockMat( boost::shared_ptr<MatrixSparse<T> > m, std::vector<size_type> start_i, std::vector<size_type> start_j );
 
-
+    void updatePCFieldSplit( PC & pc, indexsplit_ptrtype const& is );
     void updatePCFieldSplit( PC & pc );
 
     std::vector<IS> const& petscSplitIS() const { return M_petscIS; }
@@ -469,6 +482,10 @@ public:
     std::vector<PetscInt> ia() { return M_ia; }
     std::vector<PetscInt> ja() { return M_ja; }
 
+
+    bool isSymmetric () const;
+
+    bool isTransposeOf ( MatrixSparse<T> &Trans ) const;
 
     //@}
 

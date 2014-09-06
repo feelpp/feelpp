@@ -58,6 +58,7 @@
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/typetraits.hpp>
+#include <feel/feelcore/worldcomm.hpp>
 
 
 namespace Feel
@@ -76,129 +77,14 @@ public:
     typedef std::vector<double>::const_iterator time_const_iterator;
     typedef std::vector<double> time_values_map_type;
 
-    TSBase()
-        :
-        M_order( 1 ),
-        M_order_cur( 1 ),
-        M_name( "bdf" ),
-        M_time( 0.0 ),
-        M_iteration( 0 ),
-        M_Ti( 0.0 ),
-        M_Tf( 1.0 ),
-        M_dt( 1.0 ),
-        M_state( TS_UNITIALIZED ),
-        M_n_restart( 0 ),
-        M_restart( false ),
-        M_restartPath( "" ),
-        M_restartStepBeforeLastSave( 0 ),
-        M_restartAtLastSave( false ),
-        M_saveInFile( true ),
-        M_saveFreq( 1 ),
-        M_rankProcInNameOfFiles( false ),
-        M_worldComm( Environment::worldComm() )
-    {}
-
-    TSBase( po::variables_map const& vm, std::string name, std::string const& prefix, WorldComm const& worldComm )
-        :
-        M_order( vm[prefixvm( prefix, "bdf.order" )].as<int>() ),
-        M_order_cur( M_order ),
-        M_name( name ),
-        M_time( vm[prefixvm( prefix, "bdf.time-initial" )].as<double>() ),
-        M_iteration( 0 ),
-        M_iterations_between_order_change( vm[prefixvm( prefix, "bdf.iterations-between-order-change" )].as<int>() ),
-        M_Ti( vm[prefixvm( prefix, "bdf.time-initial" )].as<double>() ),
-        M_Tf( vm[prefixvm( prefix, "bdf.time-final" )].as<double>() ),
-        M_dt( vm[prefixvm( prefix, "bdf.time-step" )].as<double>() ),
-        M_state( TS_UNITIALIZED ),
-        M_n_restart( 0 ),
-        M_restart( vm[prefixvm( prefix, "bdf.restart" )].as<bool>() ),
-        M_restartPath( vm[prefixvm( prefix, "bdf.restart.path" )].as<std::string>() ),
-        M_restartStepBeforeLastSave( vm[prefixvm( prefix, "bdf.restart.step-before-last-save" )].as<int>() ),
-        M_restartAtLastSave( vm[prefixvm( prefix, "bdf.restart.at-last-save" )].as<bool>() ),
-        M_saveInFile( vm[prefixvm( prefix, "bdf.save" )].as<bool>() ),
-        M_saveFreq( vm[prefixvm( prefix, "bdf.save.freq" )].as<int>() ),
-        M_rankProcInNameOfFiles( vm[prefixvm( prefix, "bdf.rank-proc-in-files-name" )].as<bool>() ),
-        M_worldComm( worldComm )
-    {
-    }
-    TSBase( std::string name, WorldComm const& worldComm )
-        :
-        M_order( 1 ),
-        M_order_cur( 1 ),
-        M_name( name ),
-        M_time( 0. ),
-        M_iteration( 0 ),
-        M_iterations_between_order_change( 1 ),
-        M_Ti( 0. ),
-        M_Tf( 1.0 ),
-        M_dt( 1.0 ),
-        M_state( TS_UNITIALIZED ),
-        M_n_restart( 0 ),
-        M_restart( false ),
-        M_restartPath( "" ),
-        M_restartStepBeforeLastSave( 0 ),
-        M_restartAtLastSave( false ),
-        M_saveInFile( true ),
-        M_saveFreq( 1 ),
-        M_worldComm( worldComm )
-    {
-    }
-
-    TSBase( TSBase const& b )
-        :
-        M_order( b.M_order ),
-        M_order_cur( b.M_order_cur ),
-        M_name( b.M_name ),
-        M_time( b.M_time ),
-        M_iteration( b.M_iteration ),
-        M_iterations_between_order_change( b.M_iterations_between_order_change ),
-        M_Ti( b.M_Ti ),
-        M_Tf( b.M_Tf ),
-        M_dt( b.M_dt ),
-        M_state( b.M_state ),
-        M_n_restart( b.M_n_restart ),
-        M_restart( b.M_restart ),
-        M_restartPath( b.M_restartPath ),
-        M_restartStepBeforeLastSave( b.M_restartStepBeforeLastSave ),
-        M_restartAtLastSave( b.M_restartAtLastSave ),
-        M_time_values_map( b.M_time_values_map ),
-        M_saveInFile( b.M_saveInFile ),
-        M_saveFreq( b.M_saveFreq ),
-        M_rankProcInNameOfFiles( b.M_rankProcInNameOfFiles ),
-        M_worldComm( b.M_worldComm )
-    {}
+    TSBase();
+    TSBase( po::variables_map const& vm, std::string name, std::string const& prefix, WorldComm const& worldComm );
+    TSBase( std::string name, WorldComm const& worldComm );
+    TSBase( TSBase const& b );
 
     virtual ~TSBase() {}
 
-    TSBase& operator=( TSBase const& b )
-    {
-        if ( this != &b )
-        {
-            M_order = b.M_order;
-            M_order_cur = b.M_order_cur;
-            M_name = b.M_name;
-            M_time = b.M_time;
-            M_iteration = b.M_iteration;
-            M_Ti = b.M_Ti;
-            M_Tf = b.M_Tf;
-            M_dt = b.M_dt;
-            M_iterations_between_order_change = b.M_iterations_between_order_change;
-            M_n_restart = b.M_n_restart;
-            M_state = b.M_state;
-            M_restart = b.M_restart;
-            M_restartPath = b.M_restartPath;
-            M_restartStepBeforeLastSave = b.M_restartStepBeforeLastSave;
-            M_restartAtLastSave = b.M_restartAtLastSave;
-
-            M_saveInFile = b.M_saveInFile;
-            M_rankProcInNameOfFiles = b.M_rankProcInNameOfFiles;
-
-            M_time_values_map = b.M_time_values_map;
-            M_worldComm = b.M_worldComm;
-        }
-
-        return *this;
-    }
+    TSBase& operator=( TSBase const& b );
 
     //! save/load Bdf metadata
     template<class Archive>
@@ -217,7 +103,7 @@ public:
         //ar & M_time_orders;
         ar & boost::serialization::make_nvp( "time_values", M_time_values_map );
 
-        DVLOG(2) << "[BDF::serialize] time orders size: " << M_time_orders.size() << "\n";
+        //DVLOG(2) << "[BDF::serialize] time orders size: " << M_time_orders.size() << "\n";
         DVLOG(2) << "[BDF::serialize] time values size: " << M_time_values_map.size() << "\n";
 
         for ( auto it = M_time_values_map.begin(), en = M_time_values_map.end(); it!=en; ++it )
@@ -237,12 +123,6 @@ public:
         this->init();
     }
 
-    //! return the order in time
-    int timeOrder() const
-    {
-        return M_order_cur;
-    }
-
     //! return the initial time
     double timeInitial() const
     {
@@ -259,18 +139,6 @@ public:
     double timeStep() const
     {
         return M_dt;
-    }
-
-    //! return the number of iterations between order change
-    int numberOfIterationsBetweenOrderChange() const
-    {
-        return M_iterations_between_order_change;
-    }
-
-    //! return the number of iterations since last order change
-    int numberOfIterationsSinceOrderChange() const
-    {
-        return M_iteration-M_last_iteration_since_order_change;
     }
 
     //! return the number of restarts
@@ -328,12 +196,9 @@ public:
     {
         M_state = TS_RUNNING;
         M_timer.restart();
-        M_iteration = 1;
+        // if initiliaze has been called M_iteration start to 1 else 0
+        M_iteration = M_time_values_map.size();//1;
         M_time = M_Ti+this->timeStep();
-        // warning: this needs to be fixed wrt restart
-        M_last_iteration_since_order_change = 1;
-        //M_order_cur = 1;
-        M_order_cur = M_order;
         return M_Ti;
     }
 
@@ -343,20 +208,7 @@ public:
         M_state = TS_RUNNING;
         M_timer.restart();
         M_time = M_Ti+this->timeStep();
-        M_last_iteration_since_order_change = 1;
-        M_order_cur = 1;
         ++M_iteration;
-
-        for ( int i = 2; i<=M_iteration; ++i )
-        {
-            if ( ( ( i - M_last_iteration_since_order_change ) == M_iterations_between_order_change )&&
-                    M_order_cur < M_order )
-            {
-                M_last_iteration_since_order_change = i;
-                ++M_order_cur;
-            }
-        }
-
         return M_Ti;
     }
 
@@ -400,30 +252,11 @@ public:
         M_timer.restart();
         M_time += M_dt;
         ++M_iteration;
-
-        if ( ( ( M_iteration - M_last_iteration_since_order_change ) == M_iterations_between_order_change )&&
-                M_order_cur < M_order )
-        {
-            M_last_iteration_since_order_change = M_iteration;
-            ++M_order_cur;
-        }
-
         return M_time;
     }
 
     virtual void shiftRight()
     {
-        // create and open a character archive for output
-        std::ostringstream ostr;
-
-        if( M_rankProcInNameOfFiles )
-            ostr << M_name << "-" << M_iteration<<"-proc"<< this->worldComm().globalRank()<<"on"<<this->worldComm().globalSize();
-        else
-            ostr << M_name << "-" << M_iteration;
-
-        DVLOG(2) << "[TSBase::shiftRight] solution name " << ostr.str() << "\n";
-
-        //M_time_values_map.insert( std::make_pair( M_iteration, this->time() ) );
         M_time_values_map.push_back( this->time() );
         //update();
     }
@@ -479,9 +312,10 @@ public:
         return TSStragegy::TS_STRATEGY_DT_CONSTANT;
     }
 
-    void setOrder( int order )
+
+    void setPathSave( std::string s )
     {
-        M_order = order;
+        M_path_save = s;
     }
     void setTimeInitial( double ti )
     {
@@ -528,28 +362,24 @@ public:
         M_rankProcInNameOfFiles = b;
     }
 
-    void print() const
+    virtual void print() const
     {
         LOG(INFO) << "============================================================\n";
-        LOG(INFO) << "BDF Information\n";
+        LOG(INFO) << "TS Information\n";
         LOG(INFO) << "   time step : " << this->timeStep() << "\n";
         LOG(INFO) << "time initial : " << this->timeInitial() << "\n";
         LOG(INFO) << "  time final : " << this->timeFinal() << "\n";
-        LOG(INFO) << "  time order : " << this->timeOrder() << "\n";
     }
 protected:
-    //! time order
-    int M_order;
-    mutable int M_order_cur;
 
     //! name of the file holding the bdf data
     std::string M_name;
 
     //! time
     mutable double M_time;
+
+    //! iteration
     mutable int M_iteration;
-    mutable int M_last_iteration_since_order_change;
-    int M_iterations_between_order_change;
 
     //! initial time to start
     double M_Ti;
@@ -585,7 +415,7 @@ protected:
     mutable double M_real_time_per_iteration;
 
     //! vector that holds the time order at each bdf step
-    std::vector<int> M_time_orders;
+    //std::vector<int> M_time_orders;
 
     //! vector that holds the time value at each bdf step
     time_values_map_type M_time_values_map;
@@ -606,109 +436,7 @@ protected:
     WorldComm M_worldComm;
 
 protected:
-    void init()
-    {
-        std::ostringstream ostr;
-        ostr << "bdf_o_" << M_order << "_dt_" << M_dt;
-        //ostr << "bdf/" << M_name << "/o_" << M_order << "/dt_" << M_dt;
-        M_path_save = ostr.str();
-
-        // if directory does not exist, create it
-        if ( !fs::exists( M_path_save ) && this->saveInFile() && this->worldComm().isMasterRank() )
-            fs::create_directories( M_path_save );
-        // be sure that all process can find the path after
-        this->worldComm().barrier();
-
-        if ( M_restart )
-        {
-            //fs::ifstream ifs;
-            fs::path thepath;
-
-            if ( this->restartPath().empty() ) thepath=this->path()/"metadata";//   ifs.open(this->path()/"metadata");
-
-            else thepath=this->restartPath()/this->path()/"metadata"; //ifs.open(this->restartPath()/this->path()/"metadata");
-
-            // read the saved bdf data
-            if ( fs::exists( thepath/* this->restartPath() / this->path() / "metadata" )*/ ) )
-            {
-                DVLOG(2) << "[Bdf] loading metadata from " << M_path_save.string() << "\n";
-
-                //fs::ifstream ifs( this->restartPath() / this->path() / "metadata")
-                fs::ifstream ifs( thepath );
-
-
-                boost::archive::text_iarchive ia( ifs );
-                ia >> BOOST_SERIALIZATION_NVP( *this );
-                DVLOG(2) << "[Bdf::init()] metadata loaded\n";
-                //TSBaseMetadata bdfloader( *this );
-                //bdfloader.load();
-
-                // modify Ti with last saved time
-                if ( this->doRestartAtLastSave() )
-                    M_Ti = M_time_values_map.back();
-                // modify Ti with ieme step before the last
-                if ( this->restartStepBeforeLastSave() > 0 )
-                {
-                    const int nbTimeStep = M_time_values_map.size();
-                    CHECK( nbTimeStep-1-this->restartStepBeforeLastSave() >=0 ) << "error with restartStepBeforeLastSave " << this->restartStepBeforeLastSave()
-                                                                               << "must be less to " << nbTimeStep << std::endl;
-                    M_Ti =  M_time_values_map[ nbTimeStep-1-this->restartStepBeforeLastSave() ];
-                }
-
-                M_iteration = 0;
-                // look for M_ti in the time values
-                bool found = false;
-                BOOST_FOREACH( auto time, M_time_values_map )
-                {
-                    if ( math::abs( time-M_Ti ) < 1e-10 )
-                    {
-                        //M_iteration = time.first;
-                        //std::cout << "time found " << time << std::endl;
-                        found = true;
-                        break;
-                    }
-
-                    ++M_iteration;
-                }
-                //std::cout << "M_iteration " << M_iteration << std::endl;
-
-                if ( !found )
-                {
-                    DVLOG(2) << "[Bdf] intial time " << M_Ti << " not found\n";
-                    M_Ti = 0.0;
-                    M_iteration = 0;
-                    M_time_values_map.clear();
-                    return;
-                }
-
-                else
-                {
-                    if (this->saveFreq()==1)
-                    {
-                        M_time_values_map.resize( M_iteration+1 );
-                    }
-                    else
-                    {
-                        int nItBack = M_iteration % this->saveFreq();
-                        M_iteration-=nItBack;
-                        M_time_values_map.resize( M_iteration+1 );
-                        M_Ti = M_time_values_map.back();
-                    }
-                }
-
-                DVLOG(2) << "[Bdf] initial time is Ti=" << M_Ti << "\n";
-
-                DVLOG(2) << "[Bdf::init()] file index: " << M_iteration << "\n";
-            }
-
-            else
-            {
-                M_Ti = 0.0;
-                M_time_values_map.clear();
-            }
-        }
-
-    } // init
+    void init();
 };
 class TSBaseMetadata
 {
@@ -719,38 +447,9 @@ public:
     {
     }
 
-    void load()
-    {
-        fs::ifstream ifs;
+    void load();
 
-        if ( M_ts.restartPath().empty() ) ifs.open( M_ts.path()/"metadata" );
-
-        else ifs.open( M_ts.restartPath()/M_ts.path()/"metadata" );
-
-        //fs::ifstream ifs( M_ts.path() / "metadata");
-
-        boost::archive::text_iarchive ia( ifs );
-        ia >> BOOST_SERIALIZATION_NVP( M_ts );
-        DVLOG(2) << "[Bdf::init()] metadata loaded\n";
-    }
-
-    void save()
-    {
-        if ( !M_ts.saveInFile() ) return;
-
-        // only master process write
-        if ( M_ts.worldComm().isMasterRank() )
-        {
-            fs::ofstream ofs( M_ts.path() / "metadata" );
-
-            boost::archive::text_oarchive oa( ofs );
-            oa << BOOST_SERIALIZATION_NVP( ( TSBase const& )M_ts );
-            DVLOG(2) << "[Bdf::init()] metadata saved\n";
-        }
-        // to be sure that all process can read the metadata file
-        M_ts.worldComm().barrier();
-
-    }
+    void save();
 
 private:
     TSBase& M_ts;

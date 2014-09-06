@@ -214,6 +214,8 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
             typedef typename functionspace_type::geoelement_type geoelement_type; \
             typedef typename functionspace_type::gm_type gm_type; \
             typedef typename functionspace_type::value_type value_type; \
+            typedef value_type evaluate_type;                           \
+                                                                        \
             static const uint16_type rank = fe_type::rank;              \
             static const uint16_type nComponents1 = fe_type::nComponents1; \
             static const uint16_type nComponents2 = fe_type::nComponents2; \
@@ -253,14 +255,14 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
             {                                                           \
                 DVLOG(2) << "[" BOOST_PP_STRINGIZE(VF_OPERATOR_NAME( O )) "] copy constructor\n"; \
             }                                                           \
-            template<typename TheExpr>                                  \
+            template<typename... TheExpr>                               \
             struct Lambda                                               \
             {                                                           \
                 typedef this_type type;                                 \
             };                                                          \
-            template<typename TheExpr>                                  \
-                typename Lambda<TheExpr>::type                          \
-                operator()( TheExpr const& e  ) { return *this; }       \
+            template<typename... TheExpr>                               \
+                typename Lambda<TheExpr...>::type                       \
+                operator()( TheExpr... e) { return *this; }             \
                                                                         \
             element_type const& e() const { return M_v; }              \
             bool useInterpWithConfLoc() const { return M_useInterpWithConfLoc; } \
@@ -759,6 +761,18 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
 //
 BOOST_PP_LIST_FOR_EACH_PRODUCT( VF_ARRAY_OPERATOR, 2, ( VF_OPERATORS, VF_OPERATORS_TYPE ) )
 /// \endcond
+
+// try to add operators to Python library
+/*
+#define VF_DEF(_,OT) \
+    VF_DEF2 OT;
+
+#define VF_DEF2(O,T) \
+    typedef VF_OPERATOR_NAME(O)<ELEM,VF_OP_TYPEOBJECT(T)> BOOST_PP_CAT(expr_t,BOOST_PP_CAT(VF_OPERATOR_SYMBOL(O) , VF_OP_TYPE_SUFFIX(T)))
+
+BOOST_PP_LIST_FOR_EACH_PRODUCT(VF_DEF,2,(VF_OPERATORS,VF_OPERATORS_TYPE))
+*/
+
 }
 }
 

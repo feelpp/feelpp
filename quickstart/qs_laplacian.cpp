@@ -29,38 +29,43 @@ int main(int argc, char**argv )
     using namespace Feel;
 	po::options_description laplacianoptions( "Laplacian options" );
 	laplacianoptions.add_options()
-		( "mu", po::value<double>()->default_value( 1.0 ), "coeff" )
+    ( "mu", po::value<double>()->default_value( 1.0 ), "coeff" )
 		;
+
 	Environment env( _argc=argc, _argv=argv,
-                     _desc=laplacianoptions.add(feel_options()),
-                     _about=about(_name="qs_laplacian",
-                                  _author="Feel++ Consortium",
-                                  _email="feelpp-devel@feelpp.org"));
+                   _desc=laplacianoptions,
+                   _about=about(_name="qs_laplacian",
+                                _author="Feel++ Consortium",
+                                _email="feelpp-devel@feelpp.org"));
     //# endmarker1 #
 
     //# marker2 #
     auto mesh = loadMesh(_mesh=new Mesh<Simplex<3>>);
     auto Vh = Pch<2>( mesh );
-    auto u = Vh->element();
-    auto v = Vh->element();
+    auto u = Vh->element("u");
+    auto mu = doption(_name="mu");
+    auto f = expr( soption(_name="functions.f"), "f" );
+    auto g = expr( soption(_name="functions.g"), "g" );
+    auto v = Vh->element( g, "g" );
     //# endmarker2 #
 
     //# marker3 #
     auto l = form1( _test=Vh );
     l = integrate(_range=elements(mesh),
-                  _expr=id(v));
+                  _expr=f*id(v));
 
     auto a = form2( _trial=Vh, _test=Vh);
     a = integrate(_range=elements(mesh),
-                  _expr=gradt(u)*trans(grad(v)) );
-    a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u,
-          _expr=expr( option(_name="functions.g").as<std::string>() ) );
+                  _expr=mu*gradt(u)*trans(grad(v)) );
+    a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u, _expr=g );
     a.solve(_rhs=l,_solution=u);
     //# endmarker3 #
 
     //# marker4 #
     auto e = exporter( _mesh=mesh );
+    e->addRegions();
     e->add( "u", u );
+    e->add( "g", v );
     e->save();
     return 0;
     //# endmarker4 #

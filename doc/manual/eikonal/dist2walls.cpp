@@ -33,14 +33,12 @@
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelpde/reinit_fms.hpp>
 
-#define DIM 2
 
 using namespace Feel;
-using namespace Feel::vf;
 
 void run()
 {
-    typedef Mesh< Simplex<DIM> > mesh_type;
+    typedef Mesh< FEELPP_CONVEX<FEELPP_DIM> > mesh_type;
 
     auto mesh = loadMesh( _mesh=new mesh_type );
 
@@ -50,7 +48,10 @@ void run()
 
     auto phio = Xh->element();
     phio = vf::project(Xh, elements(mesh), h() );
-    phio +=vf::project(Xh, boundaryfaces(mesh), -idv(phio) - h()/100. );
+    if ( !soption("marker").empty() )
+        phio +=vf::project(Xh, markedfaces(mesh,soption("marker")), -idv(phio) - h()/100. );
+    else
+        phio +=vf::project(Xh, boundaryfaces(mesh), -idv(phio) - h()/100. );
     auto phi = thefms->march(phio);
 
     auto exp = exporter(_mesh=mesh, _name="disttowalls");
@@ -61,7 +62,12 @@ void run()
 
 int main( int argc, char** argv )
 {
-    Feel::Environment env( _argc=argc, _argv=argv );
+    po::options_description opts( "Dist2Walls options" );
+    opts.add_options()
+    ( "marker", po::value<std::string>()->default_value( "" ),
+      "marker of the boundary from which to compute the distance function, if empty use the entire boundary" )
+    ;
+    Feel::Environment env( _argc=argc, _argv=argv, _desc=opts );
     run();
     return 0;
 }

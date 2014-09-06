@@ -3,11 +3,24 @@
 INCLUDE(CustomPCH)
 INCLUDE(ParseArguments)
 
+# list the subdicrectories of directory 'curdir'
+macro(feelpp_list_subdirs result curdir)
+  FILE(GLOB children RELATIVE ${curdir} ${curdir}/*)
+  SET(dirlist "")
+  FOREACH(child ${children})
+    IF(IS_DIRECTORY ${curdir}/${child})
+      LIST(APPEND dirlist ${child})
+    ENDIF()
+  ENDFOREACH()
+  SET(${result} ${dirlist})
+endmacro(feelpp_list_subdirs)
+
+# add a new application
 macro(feelpp_add_application)
 
   PARSE_ARGUMENTS(FEELPP_APP
-    "SRCS;LINK_LIBRARIES;CFG;GEO;MESH;LABEL;DEFS;DEPS;SCRIPTS;TEST"
-    "NO_TEST;NO_MPI_TEST;EXCLUDE_FROM_ALL;INCLUDE_IN_ALL;ADD_OT"
+    "SRCS;LINK_LIBRARIES;CFG;GEO;MESH;LABELS;DEFS;DEPS;SCRIPTS;TEST;TIMEOUT"
+    "NO_TEST;NO_MPI_TEST;NO_SEQ_TEST;EXCLUDE_FROM_ALL;INCLUDE_IN_ALL;ADD_OT"
     ${ARGN}
     )
   CAR(FEELPP_APP_NAME ${FEELPP_APP_DEFAULT_ARGS})
@@ -23,6 +36,7 @@ macro(feelpp_add_application)
     MESSAGE("      Defs file: ${FEELPP_APP_DEFS}")
     MESSAGE("       Geo file: ${FEELPP_APP_GEO}")
     MESSAGE("       Mesh file: ${FEELPP_APP_MESH}")
+    MESSAGE("    test timeout: ${FEELPP_APP_TIMEOUT}")
     MESSAGE("       Exec file: ${execname}")
     MESSAGE("exclude from all: ${FEELPP_APP_EXCLUDE_FROM_ALL}")
     MESSAGE("include from all: ${FEELPP_APP_INCLUDE_IN_ALL}")
@@ -41,7 +55,7 @@ macro(feelpp_add_application)
   if ( FEELPP_APP_DEFS )
     set_property(TARGET ${execname} PROPERTY COMPILE_DEFINITIONS ${FEELPP_APP_DEFS})
   endif()
-  target_link_libraries( ${execname} ${FEELPP_APP_LINK_LIBRARIES} ${FEELPP_LIBRARIES})
+  target_link_libraries( ${execname} feelpp ${FEELPP_APP_LINK_LIBRARIES} ${FEELPP_LIBRARIES})
 
   if( FEELPP_ENABLE_PCH_FOR_APPLICATIONS )
     # add several headers in a list form "one.hpp;two.hpp"
@@ -53,21 +67,48 @@ macro(feelpp_add_application)
     IF(NOT FEELPP_APP_NO_MPI_TEST AND NProcs2 GREATER 1)
       add_test(NAME ${execname}-np-${NProcs2} COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NProcs2} ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${FEELPP_APP_TEST} ${MPIEXEC_POSTFLAGS} )
     ENDIF()
-    add_test(NAME ${execname}-np-1 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${FEELPP_APP_TEST} ${MPIEXEC_POSTFLAGS})
+    IF(NOT FEELPP_APP_NO_SEQ_TEST)
+      add_test(NAME ${execname}-np-1 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${FEELPP_APP_TEST} ${MPIEXEC_POSTFLAGS})
+    endif()
   endif()
+
   #add_dependencies(crb ${execname})
-  # Add label if provided
-  if ( FEELPP_APP_LABEL )
-    set_property(TARGET ${execname} PROPERTY LABELS ${FEELPP_APP_LABEL})
+  # add TIMEOUT to test
+  if ( FEELPP_APP_TIMEOUT )
     if ( NOT FEELPP_APP_NO_TEST )
       IF(NOT FEELPP_APP_NO_MPI_TEST AND NProcs2 GREATER 1)
-        set_property(TEST ${execname}-np-${NProcs2} PROPERTY LABELS ${FEELPP_APP_LABEL})
+        set_property(TEST ${execname}-np-${NProcs2}  PROPERTY TIMEOUT ${FEELPP_APP_TIMEOUT})
+      endif()
+      IF(NOT FEELPP_APP_NO_SEQ_TEST)
+        set_property(TEST ${execname}-np-1  PROPERTY TIMEOUT ${FEELPP_APP_TIMEOUT})
       ENDIF()
-      set_property(TEST ${execname}-np-1 PROPERTY LABELS ${FEELPP_APP_LABEL})
     endif()
-    if ( TARGET ${FEELPP_APP_LABEL} )
-      add_dependencies( ${FEELPP_APP_LABEL} ${execname} )
+  else()
+    if ( NOT FEELPP_APP_NO_TEST )
+      IF(NOT FEELPP_APP_NO_MPI_TEST AND NProcs2 GREATER 1)
+        set_property(TEST ${execname}-np-${NProcs2}  PROPERTY TIMEOUT 30)
+      endif()
+      IF(NOT FEELPP_APP_NO_SEQ_TEST)
+        set_property(TEST ${execname}-np-1  PROPERTY TIMEOUT 30)
+      endif()
     endif()
+  endif()
+  # Add label if provided
+  if ( FEELPP_APP_LABELS )
+    set_property(TARGET ${execname} PROPERTY LABELS ${FEELPP_APP_LABELS})
+    if ( NOT FEELPP_APP_NO_TEST )
+      IF(NOT FEELPP_APP_NO_MPI_TEST AND NProcs2 GREATER 1)
+        set_property(TEST ${execname}-np-${NProcs2} PROPERTY LABELS ${FEELPP_APP_LABELS})
+      ENDIF()
+      IF(NOT FEELPP_APP_NO_SEQ_TEST)
+        set_property(TEST ${execname}-np-1 PROPERTY LABELS ${FEELPP_APP_LABELS})
+      endif()
+    endif()
+    foreach(l ${FEELPP_APP_LABELS})
+      if ( TARGET ${l} )
+        add_dependencies( ${l} ${execname} )
+      endif()
+    endforeach(l)
   endif()
 
   # include schedulers
@@ -146,7 +187,7 @@ endmacro()
 
 macro(feelpp_add_test)
   PARSE_ARGUMENTS(FEELPP_TEST
-    "SRCS;LINK_LIBRARIES;CFG;GEO;LABEL;DEFS;DEPS"
+    "SRCS;LINK_LIBRARIES;CFG;GEO;LABEL;DEFS;DEPS;TIMEOUT"
     "NO_TEST;NO_MPI_TEST;EXCLUDE_FROM_ALL"
     ${ARGN}
     )
@@ -157,7 +198,7 @@ macro(feelpp_add_test)
     set(filename test_${FEELPP_TEST_NAME}.cpp)
 
     add_executable(${targetname} ${filename})
-    target_link_libraries(${targetname} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} )
+    target_link_libraries(${targetname} feelpp ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} )
     set_property(TARGET ${targetname} PROPERTY LABELS ${FEELPP_TEST_LABEL} ${FEELPP_TEST_LABEL_DIRECTORY})
     if ( TARGET  ${FEELPP_TEST_LABEL_DIRECTORY})
       add_dependencies(  ${FEELPP_TEST_LABEL_DIRECTORY} ${targetname} )
@@ -170,13 +211,29 @@ macro(feelpp_add_test)
     if ( NOT FEELPP_TEST_NO_TEST )
       IF(NOT FEELPP_TEST_NO_MPI_TEST AND NProcs2 GREATER 1)
         add_test(NAME test_${FEELPP_TEST_NAME}-np-${NProcs2} COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NProcs2} ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${targetname} ${FEELPP_TEST_NAME} --log_level=message ${MPIEXEC_POSTFLAGS} )
-        set_property(TEST test_${FEELPP_TEST_NAME}-np-${NProcs2}  PROPERTY LABELS ${FEELPP_TEST_LABEL}  ${FEELPP_TEST_LABEL_DIRECTORY})
+        set_property(TEST test_${FEELPP_TEST_NAME}-np-${NProcs2}  PROPERTY LABELS ${FEELPP_TEST_LABEL}  ${FEELPP_TEST_LABEL_DIRECTORY} )
       ENDIF()
       add_test(NAME test_${FEELPP_TEST_NAME}-np-1 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${CMAKE_CURRENT_BINARY_DIR}/${targetname} ${FEELPP_TEST_NAME}  --log_level=message ${MPIEXEC_POSTFLAGS})
-      set_property(TEST test_${FEELPP_TEST_NAME}-np-1  PROPERTY LABELS ${FEELPP_TEST_LABEL} ${FEELPP_TEST_LABEL_DIRECTORY})
+      set_property(TEST test_${FEELPP_TEST_NAME}-np-1  PROPERTY LABELS ${FEELPP_TEST_LABEL} ${FEELPP_TEST_LABEL_DIRECTORY} PROPERTY TIMEOUT 30)
     endif()
 
 
+    # add TIMEOUT to test
+    if ( FEELPP_TEST_TIMEOUT )
+      if ( NOT FEELPP_TEST_NO_TEST )
+        IF(NOT FEELPP_TEST_NO_MPI_TEST AND NProcs2 GREATER 1)
+          set_property(TEST test_${FEELPP_TEST_NAME}-np-${NProcs2}  PROPERTY TIMEOUT ${FEELPP_TEST_TIMEOUT})
+        endif()
+        set_property(TEST test_${FEELPP_TEST_NAME}-np-1  PROPERTY TIMEOUT ${FEELPP_TEST_TIMEOUT})
+      endif()
+    else()
+      if ( NOT FEELPP_TEST_NO_TEST )
+        IF(NOT FEELPP_TEST_NO_MPI_TEST AND NProcs2 GREATER 1)
+          set_property(TEST test_${FEELPP_TEST_NAME}-np-${NProcs2}  PROPERTY TIMEOUT 30)
+        endif()
+        set_property(TEST test_${FEELPP_TEST_NAME}-np-1  PROPERTY TIMEOUT 30)
+      endif()
+    endif()
     set(cfgname test_${FEELPP_TEST_NAME}.cfg)
     if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${cfgname} )
       configure_file(  ${cfgname} ${cfgname} )
@@ -269,3 +326,15 @@ MACRO(find_directories_containing result_list)
   #MESSAGE("    LIST: ${dir_list}")
   SET(${result_list} ${dir_list})
 ENDMACRO(find_directories_containing)
+
+#
+# list of sub-directories of curdir
+MACRO(feelpp_list_subdir result curdir)
+  FILE(GLOB children RELATIVE ${curdir} ${curdir}/*)
+  FOREACH(child ${children})
+    IF(IS_DIRECTORY ${curdir}/${child})
+      LIST(APPEND dirlist ${child})
+    ENDIF()
+  ENDFOREACH()
+  SET(${result} ${dirlist})
+ENDMACRO()

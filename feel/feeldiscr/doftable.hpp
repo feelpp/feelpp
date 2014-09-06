@@ -50,6 +50,8 @@
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelpoly/mapped.hpp>
 #include <feel/feelpoly/isp0continuous.hpp>
+#include <feel/feelpoly/hdivpolynomialset.hpp>
+#include <feel/feelpoly/hcurlpolynomialset.hpp>
 #include <feel/feelalg/datamap.hpp>
 #include <feel/feeldiscr/dof.hpp>
 
@@ -138,6 +140,9 @@ public:
 
     static const bool is_p0_continuous = ( ( nOrder == 0 ) && is_continuous );
 
+    static const bool is_hdiv_conforming = Feel::is_hdiv_conforming<fe_type>::value;
+    static const bool is_hcurl_conforming = Feel::is_hcurl_conforming<fe_type>::value;
+
     static const uint16_type nDofPerEdge = fe_type::nDofPerEdge;
     static const uint16_type nDofPerElement = mpl::if_<mpl::bool_<is_product>, mpl::int_<FEType::nLocalDof*nComponents1>, mpl::int_<FEType::nLocalDof> >::type::value;
 
@@ -177,6 +182,7 @@ public:
      */
     //typedef std::unordered_map<int,std::map<int,global_dof_type> > Container;
     //typedef typename std::map<int,global_dof_type>::iterator local_map_iterator;
+    typedef Dof globaldof_type;
     typedef LocalDof<nDofComponents()> localdof_type;
     typedef boost::bimap<bimaps::set_of<localdof_type>, bimaps::multiset_of<Dof> > dof_table;
     typedef typename dof_table::value_type dof_relation;
@@ -575,6 +581,16 @@ public:
         return it->second.index();
     }
 
+    std::pair<global_dof_const_iterator,global_dof_const_iterator> const& globalDof()  const
+        {
+            return std::make_pair( M_el_l2g.right.begin(), M_el_l2g.right.end() );
+        }
+    std::pair<global_dof_const_iterator,global_dof_const_iterator> globalDof( size_type GlobalDofId ) const
+        {
+            auto lower = M_el_l2g.right.lower_bound( globaldof_type(GlobalDofId,-1) );
+            auto upper = M_el_l2g.right.upper_bound( globaldof_type(GlobalDofId,2) );
+            return std::make_pair( lower, upper );
+        }
     /**
      * \return the specified entries of the globalToLocal table
      *
@@ -871,19 +887,20 @@ public:
     void buildGlobalProcessToGlobalClusterDofMapContinuous( mesh_type& mesh );
     void buildGlobalProcessToGlobalClusterDofMapContinuousActifDof( mesh_type& mesh,
                                                                     std::vector< std::map<size_type,std::set<std::vector<size_type> > > > & listToSend,
-                                                                    std::set<int> & procRecvData );
+                                                                    std::set<rank_type> & procRecvData );
     void buildGlobalProcessToGlobalClusterDofMapContinuousGhostDofBlockingComm( mesh_type& mesh,
                                                                                 std::vector< std::map<size_type,std::set<std::vector<size_type> > > > const& listToSend,
-                                                                                std::set<int> const& procRecvData );
+                                                                                std::set<rank_type> const& procRecvData );
     void buildGlobalProcessToGlobalClusterDofMapContinuousGhostDofNonBlockingComm( mesh_type& mesh,
                                                                                    std::vector< std::map<size_type,std::set<std::vector<size_type> > > > const& listToSend,
-                                                                                   std::set<int> const& procRecvData );
+                                                                                   std::set<rank_type> const& procRecvData );
     void buildGlobalProcessToGlobalClusterDofMapDiscontinuous();
 
     void buildGhostDofMapExtended( mesh_type& mesh );
 
     bool buildDofTableMPIExtended() const { return M_buildDofTableMPIExtended; }
     void setBuildDofTableMPIExtended( bool b ) { M_buildDofTableMPIExtended = b; }
+    size_type nGhostDofAddedInExtendedDofTable() const { return M_nGhostDofAddedInExtendedDofTable; }
 
     /**
      * \return the dictionnary for the global dof
@@ -942,10 +959,15 @@ public:
 
     void printDofMarker(std::string const& filename )
         {
+            // std::ofstream ofs( filename.c_str() );
+            // BOOST_FOREACH( auto dof, _M_dof_marker )
+            // {
+            //     //ofs << dof.first << " " << dof.second << "\n";
+            // }
             std::ofstream ofs( filename.c_str() );
-            BOOST_FOREACH( auto dof, M_dof_marker.left )
+            for( auto dofleft : M_dof_marker.left )
             {
-                ofs << dof.first << " " << dof.second << "\n";
+                ofs << dofleft.first << " " << dofleft.second << "\n";
             }
         }
     /**
@@ -967,7 +989,7 @@ public:
                     uint16_type l_dof,
                     uint16_type lc,
                     dof_type gDof,
-                    uint16_type processor,
+                    rank_type processor,
                     size_type& pDof,
                     int32_type sign = 1,
                     bool is_dof_periodic = false,
@@ -1192,15 +1214,15 @@ private:
         if ( !bad_dof.empty() )
         {
             for ( uint16_type i = 0; i < bad_dof.size(); ++i )
-                Warning() << bad_dof[i] << "\n";
+                LOG(WARNING) << bad_dof[i] << "\n";
 
             if ( mpl::int_<N>() == 1 )
-                Warning() << "Edges: ";
+                LOG(WARNING) << "Edges: ";
 
             else
-                Warning() << "Faces: ";
+                LOG(WARNING) << "Faces: ";
 
-            Warning() << "Bad dof signs. \n";
+            LOG(WARNING) << "Bad dof signs. \n";
         }
 
 #endif
@@ -1300,7 +1322,7 @@ private:
     vector_indices_type M_locglobOnCluster_signs;
 
     bool M_buildDofTableMPIExtended;
-
+    size_type M_nGhostDofAddedInExtendedDofTable;
 
     std::vector<uint16_type> M_localIndicesPerm, M_localIndicesIdentity;
 
@@ -1328,6 +1350,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( mesh_type& me
     M_dof_indices(),
     M_periodicity( periodicity ),
     M_buildDofTableMPIExtended( false ),
+    M_nGhostDofAddedInExtendedDofTable( 0 ),
     M_localIndicesPerm( nDofPerElement ),
     M_localIndicesIdentity( nDofPerElement )
 {
@@ -1358,6 +1381,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( fe_ptrtype co
     M_dof_indices(),
     M_periodicity( periodicity ),
     M_buildDofTableMPIExtended( false ),
+    M_nGhostDofAddedInExtendedDofTable( 0 ),
     M_localIndicesPerm( nDofPerElement ),
     M_localIndicesIdentity( nDofPerElement )
 {
@@ -1379,9 +1403,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( const self_ty
     M_dof_indices( dof2.M_dof_indices ),
     M_periodicity( dof2.M_periodicity ),
     M_buildDofTableMPIExtended( dof2.M_buildDofTableMPIExtended ),
+    M_nGhostDofAddedInExtendedDofTable( dof2.M_nGhostDofAddedInExtendedDofTable ),
     M_localIndicesPerm( dof2.M_localIndicesPerm ),
     M_localIndicesIdentity( dof2.M_localIndicesIdentity )
-
 {
 }
 
@@ -1456,7 +1480,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::initDofMap( mesh_type& 
 
     VLOG(2) << "==============================\n";
     VLOG(2) << "[initDofMap]\n";
-    VLOG(2) << "nldof                   = "  << int( nldof ) << "\n";
+    VLOG(2) << "is_hdiv_conforming     = "  << is_hdiv_conforming << "\n";
+    VLOG(2) << "is_hcurl_conforming    = "  << is_hcurl_conforming << "\n";
+    VLOG(2) << "nldof                  = "  << int( nldof ) << "\n";
     VLOG(2) << "fe_type::nLocalDof     = "  << int( fe_type::nLocalDof ) << "\n";
     VLOG(2) << "fe_type::nDofPerVolume = "  << int( fe_type::nDofPerVolume ) << "\n";
     VLOG(2) << "fe_type::nDofPerFace   = "  << int( fe_type::nDofPerFace ) << "\n";
@@ -1478,9 +1504,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::initDofMap( mesh_type& 
     const size_type nV = M.numElements();
     int ntldof = is_product?nComponents*nldof:nldof;//this->getIndicesSize();
     M_locglob_indices.resize( nV, localglobal_indices_type::Zero( nDofPerElement ) );
-    M_locglob_signs.resize( nV, localglobal_indices_type::Zero( nDofPerElement )  );
+    M_locglob_signs.resize( nV, localglobal_indices_type::Ones( nDofPerElement )  );
     M_locglobOnCluster_indices.resize( nV, localglobal_indices_type::Zero( nDofPerElement )  );
-    M_locglobOnCluster_signs.resize( nV, localglobal_indices_type::Zero( nDofPerElement ) );
+    M_locglobOnCluster_signs.resize( nV, localglobal_indices_type::Ones( nDofPerElement ) );
 
     M_face_sign = ublas::scalar_vector<bool>( M.numFaces(), false );
 
@@ -1590,9 +1616,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
                     if ( proc!=this->worldComm().rank() && this->nLocalDofWithGhost(proc) > 0 )
                         this->addNeighborSubdomain( proc );
 
-            int themasterRank = 0;
+            rank_type themasterRank = 0;
             bool findMasterProc=false;
-            for ( int proc=0; proc<this->worldComm().localSize(); ++proc )
+            for ( rank_type proc=0; proc<this->worldComm().localSize(); ++proc )
             {
                 if (!findMasterProc && this->nLocalDofWithGhost(proc) > 0)
                 {
@@ -1641,6 +1667,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
         for ( size_type i=0; i<s ; ++i ) this->M_mapGlobalClusterToGlobalProcess[i]=i;
     }
 
+    this->buildIndexSplit();
+
+
     VLOG(2) << "[Dof::build] done building the map\n";
 }
 
@@ -1672,7 +1701,6 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildPeriodicDofMap( me
 
         it_elt = M.beginElementWithProcessId( processor );
 
-        it_elt = M.beginElementWithProcessId( processor );
         VLOG(2) << "[buildDofMap] starting with elt " << it_elt->id() << "\n";
 
         for ( ; it_elt!=en_elt; ++it_elt )
@@ -2058,7 +2086,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
                          dataSendToGather,
                          dataRecvFromGather );
 
-        for (int p=0;p<this->worldComm().localSize();++p)
+        for (rank_type p=0;p<this->worldComm().localSize();++p)
         {
             bool procHasNoElt = dataRecvFromGather[p].template get<0>();
             this->M_first_df[p] = dataRecvFromGather[p].template get<1>();
@@ -2104,11 +2132,11 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
             size_type ne = std::distance( ldof.first, ldof.second );
             VLOG(1) << "resizing indices and signs for mortar:  " << ne;
             M_locglob_indices[elid].resize( ne );
-            M_locglob_signs[elid].resize( ne );
+            //M_locglob_signs[elid].resize( ne );
             for( auto const& dof: this->localDof( elid ) )
             {
                 M_locglob_indices[elid][dof.first.localDof()] = dof.second.index();
-                M_locglob_signs[elid][dof.first.localDof()] = dof.second.sign();
+                //M_locglob_signs[elid][dof.first.localDof()] = dof.second.sign();
             }
         }
         else
@@ -2121,7 +2149,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
                     int ind = FEType::nLocalDof*c1+i;
                     auto const& dof = localToGlobal( elid, i, c1 );
                     M_locglob_indices[elid][ind] = dof.index();
-                    M_locglob_signs[elid][ind] = dof.sign();
+                    //M_locglob_signs[elid][ind] = dof.sign();
                 }
             }
     }
@@ -2222,7 +2250,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
     //
     typename gm_type::precompute_ptrtype __geopc( new typename gm_type::precompute_type( gm, fe.points() ) );
     typename gm_type::precompute_ptrtype __mgeopc( new typename gm_type::precompute_type( gm, mfe.points() ) );
-
+    DVLOG(2) << "fe pts : " << fe.points();
+    DVLOG(2) << "mortar fe pts : " << mfe.points();
 
     //const uint16_type ndofv = fe_type::nDof;
 
@@ -2267,11 +2296,21 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
                     {
                         //M_dof_points[dof_id] = boost::make_tuple( thedof, __c->xReal( l ) );
                         if ( it_elt->isOnBoundary() )
-                            M_dof_points[thedof] = boost::make_tuple( __mc->xReal( dof.first.localDofPerComponent() ), firstDof()+thedof, dof.first.component(FEType::nLocalDof) );
+                        {
+                            if ( mfe.nOrder > 0 )
+                            {
+                                M_dof_points[thedof] = boost::make_tuple( __mc->xReal( dof.first.localDofPerComponent() ), firstDof()+thedof, dof.first.component(FEType::nLocalDof) );
+                                dof_done[thedof] = true;
+                                ++dof_id;
+                            }
+
+                        }
                         else
+                        {
                             M_dof_points[thedof] = boost::make_tuple( __c->xReal( dof.first.localDofPerComponent() ), firstDof()+thedof, dof.first.component(FEType::nLocalDof) );
-                        dof_done[thedof] = true;
-                        ++dof_id;
+                            dof_done[thedof] = true;
+                            ++dof_id;
+                        }
                     }
                 }
         }

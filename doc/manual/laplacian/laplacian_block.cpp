@@ -1,7 +1,7 @@
 // -*- coding: utf-8; mode: c++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
 #include <feel/feel.hpp>
-
+#include <feel/feelalg/vectorblock.hpp>
 
 namespace Feel
 {
@@ -63,7 +63,6 @@ void runLaplacianBlockV1()
     myblockGraph(0,0) = stencil(_test=Vh1,_trial=Vh1, _diag_is_nonzero=false, _close=false)->graph();
     myblockGraph(0,1) = stencil(_test=Vh1,_trial=Vh2, _diag_is_nonzero=false, _close=false)->graph();
     myblockGraph(1,0) = stencil(_test=Vh2,_trial=Vh1, _diag_is_nonzero=false, _close=false)->graph();
-    myblockGraph(1,1) = stencil(_test=Vh2,_trial=Vh2, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
     auto A = backend()->newBlockMatrix(_block=myblockGraph);
 
     BlocksBaseVector<double> myblockVec(2);
@@ -122,7 +121,7 @@ void runLaplacianBlockV2()
     auto mesh = createMeshLaplacianBlock();
     auto submesh = createSubMeshLaplacianBlock(mesh);
 
-    auto Vh1 = Pch<1>( mesh );
+    auto Vh1 = Pch<2>( mesh );
     auto Vh2 = Pch<1>( submesh );
 
     auto u1 = Vh1->elementPtr();
@@ -131,7 +130,6 @@ void runLaplacianBlockV2()
     auto A11 = backend()->newMatrix(_test=Vh1,_trial=Vh1);
     auto A12 = backend()->newMatrix(_test=Vh1,_trial=Vh2 );
     auto A21 = backend()->newMatrix(_test=Vh2,_trial=Vh1);
-    auto A22 = backend()->newZeroMatrix(_test=Vh2,_trial=Vh2);
 
     auto F1 = backend()->newVector( Vh1 );
     auto F2 = backend()->newVector( Vh2 );
@@ -166,7 +164,6 @@ void runLaplacianBlockV2()
     myblockMat(0,0) = A11;
     myblockMat(0,1) = A12;
     myblockMat(1,0) = A21;
-    myblockMat(1,1) = A22;
     auto A = backend()->newBlockMatrix(_block=myblockMat, _copy_values=true);
 
     form2( _trial=Vh1, _test=Vh1 ,_matrix=A )

@@ -31,38 +31,6 @@
 
 namespace Feel
 {
-MatSolverPackageType
-matSolverPackageEnumType(std::string const& type )
-{
-    if ( type =="spooles" )          return MATSOLVER_SPOOLES;
-
-    else if ( type=="superlu" )      return MATSOLVER_SUPERLU;
-
-    else if ( type=="superlu-dist" ) return MATSOLVER_SUPERLU_DIST;
-
-    else if ( type=="umfpack" )      return MATSOLVER_UMFPACK;
-
-    else if ( type=="essl" )         return MATSOLVER_ESSL;
-
-    else if ( type=="lusol" )        return MATSOLVER_LUSOL;
-
-    else if ( type=="mumps" )        return MATSOLVER_MUMPS;
-
-    else if ( type=="pastix" )       return MATSOLVER_PASTIX;
-
-    else if ( type=="dscpack" )      return MATSOLVER_DSCPACK;
-
-    else if ( type=="matlab" )       return MATSOLVER_MATLAB;
-
-    else if ( type=="petsc" )        return MATSOLVER_PETSC;
-
-    else if ( type=="plapack" )      return MATSOLVER_PLAPACK;
-
-    else if ( type=="bas" )          return MATSOLVER_BAS;
-
-    else return MATSOLVER_PETSC;
-} // matSolverPackageEnumType
-
 void
 PetscPCFactorSetMatSolverPackage( PC & pc, MatSolverPackageType mspackt )
 {
@@ -108,6 +76,13 @@ PetscPCFactorSetMatSolverPackage( PC & pc, MatSolverPackageType mspackt )
         ierr = PCFactorSetMatSolverPackage( pc, ( char* ) MATSOLVERMUMPS );
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
         break;
+
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,5,0)
+    case MATSOLVER_MKL_PARDISO :
+        ierr = PCFactorSetMatSolverPackage( pc, ( char* ) MATSOLVERMKL_PARDISO );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        break;
+#endif
 
     case MATSOLVER_PASTIX :
         ierr = PCFactorSetMatSolverPackage( pc, ( char* ) MATSOLVERPASTIX );
@@ -301,11 +276,64 @@ PetscGetMatStructureEnum( Feel::MatrixStructure matStruc )
     {
     case Feel::SAME_NONZERO_PATTERN : return MatStructure::SAME_NONZERO_PATTERN;
     case Feel::DIFFERENT_NONZERO_PATTERN : return MatStructure::DIFFERENT_NONZERO_PATTERN;
+#if PETSC_VERSION_LESS_THAN(3,5,0)
     case Feel::SAME_PRECONDITIONER : return MatStructure::SAME_PRECONDITIONER;
+#endif
     case Feel::SUBSET_NONZERO_PATTERN : return MatStructure::SUBSET_NONZERO_PATTERN;
         //case Feel::INVALID_STRUCTURE :
     default : return MatStructure::DIFFERENT_NONZERO_PATTERN;
     }
+}
+
+void
+PetscConvertIndexSplit( std::vector<IS> & isPetsc ,IndexSplit const& is, WorldComm const& worldcomm )
+{
+    isPetsc.resize( is.size() );
+
+    int ierr=0;
+
+    for ( int i = 0 ; i < is.size(); ++i )
+    {
+        PetscInt nDofForThisField = is[i].size();
+        //std::cout << "\n setIndexSplit " << i << " ndof:" << nDofForThisField << "\n";
+
+        PetscInt * petscSplit = new PetscInt[nDofForThisField];
+        std::copy( is[i].begin(),is[i].end(), petscSplit );
+
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
+        ierr = ISCreateGeneral( worldcomm,nDofForThisField,petscSplit/*this->M_IndexSplit[i].data()*/,PETSC_COPY_VALUES,&isPetsc[i] );
+#else
+        ierr = ISCreateGeneral( worldcomm,nDofForThisField,petscSplit/*this->M_IndexSplit[i].data()*/,&isPetsc[i] );
+#endif
+        CHKERRABORT( worldcomm,ierr );
+
+        delete[] petscSplit;
+
+#if 0
+        ISView( isPetsc[i],PETSC_VIEWER_STDOUT_WORLD ); // PETSC_VIEWER_STDOUT_SELF
+
+        PetscInt n;
+        /*
+          Get the number of indices in the set
+        */
+        ISGetLocalSize( isPetsc[i],&n );
+        std::cout << "Local size: " << n << "\n";
+        const PetscInt *nindices;
+
+        /*
+          Get the indices in the index set
+        */
+        ISGetIndices( isPetsc[i],&nindices );
+
+        for ( int j = 0; j < n; ++j )
+        {
+            std::cout << nindices[j] << " ";
+        }
+        std::cout << "\n";
+#endif
+    }
+
+
 }
 
 } // namespace Feel

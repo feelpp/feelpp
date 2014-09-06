@@ -71,14 +71,15 @@ straightenMeshUpdateEdgesOnBoundaryIsolated( ElementSpaceType & straightener, mp
 
     std::set<size_type> edgeIdFoundToUpdate;
 
+    // search if there are some edges on boundary which are the interface of two ghost boundary faces
+    // in this case this edges must not be straigthen
     auto itedge = mesh->beginEdgeOnBoundary();
     auto const enedge = mesh->endEdgeOnBoundary();
     for ( ; itedge!=enedge ; ++itedge )
     {
-        if (itedge->processId()!=myrank || itedge->numberOfProcGhost()==0 ) continue;
+        if ( itedge->numberOfProcGhost()==0 ) continue;
 
         auto const theedgeid = itedge->id();
-
         std::set<size_type> ghostFaceIdFoundOnBoundary;
 
         auto itprocghost=itedge->elementsGhost().begin();
@@ -105,42 +106,41 @@ straightenMeshUpdateEdgesOnBoundaryIsolated( ElementSpaceType & straightener, mp
             }
         } // for ( ; itprocghost!=enprocghost ; ++itprocghost)
 
-        // if 2 faces are find then the edge must be straigten
+        // if 2 faces are find then the edge must not be straigten
         if (ghostFaceIdFoundOnBoundary.size()==2) edgeIdFoundToUpdate.insert(theedgeid);
 
     } // for ( ; itedge!=enedge ; ++itedge )
 
-
+    // apply a null displacement on egdes founded (not straighten)
     if (edgeIdFoundToUpdate.size() > 0)
+    {
+        auto range = elements(mesh,EntityProcessType::ALL);
+        auto iteltactif = range.template get<1>();
+        auto const eneltactif = range.template get<2>();
+        for ( ; iteltactif!=eneltactif ; ++iteltactif )
         {
-            auto iteltactif = mesh->beginElementOnBoundary();
-            auto const eneltactif = mesh->endElementOnBoundary();
-            for ( ; iteltactif!=eneltactif ; ++iteltactif )
+            auto const& curElt = boost::unwrap_ref(*iteltactif);
+            if ( !curElt.isOnBoundary() ) continue;
+
+            for ( uint16_type e = 0; e < mesh_type::element_type::numEdges ; ++e )
             {
-                //if (iteltactif->processId()!=myrank) continue;
-
-                for ( uint16_type e = 0; e < mesh_type::element_type::numEdges ; ++e )
+                if ( edgeIdFoundToUpdate.find(curElt.edge(e).id()) != edgeIdFoundToUpdate.end())
                 {
-                    if ( edgeIdFoundToUpdate.find(iteltactif->edge(e).id()) != edgeIdFoundToUpdate.end())
+                    // find edge
+                    auto const idEltFind = curElt.id();
+                    for ( uint16_type locdof = 0 ; locdof<fe_type::nDofPerEdge ; ++locdof )
                     {
-                        //std::cout << "find edge " << std::endl;
-                        auto const idEltFind = iteltactif->id();
-                        for ( uint16_type locdof = 0 ; locdof<fe_type::nDofPerEdge ; ++locdof )
-                            {
-                                auto const local_id = dofshift + e*fe_type::nDofPerEdge + locdof;
-
-                                for ( uint16_type comp = 0; comp < ncdof; ++comp )
-                                    {
-                                        auto const globdof = straightener.functionSpace()->dof()->localToGlobal( idEltFind, local_id, comp ).template get<0>();
-                                        //std::cout << straightener.functionSpace()->dof()->dofPoint( globdof ).template get<0>() << std::endl;
-                                        straightener(globdof) = 0;
-                                    }
-                            }
+                        auto const local_id = dofshift + e*fe_type::nDofPerEdge + locdof;
+                        for ( uint16_type comp = 0; comp < ncdof; ++comp )
+                        {
+                            const size_type globdof = straightener.functionSpace()->dof()->localToGlobal( idEltFind, local_id, comp ).template get<0>();
+                            straightener( globdof ) = 0;
+                        }
                     }
                 }
-
-            } // for ( ; iteltactif!=eneltactif ; ++iteltactif )
-        } // if (edgeIdFoundToUpdate.size() > 0)
+            }
+        } // for ( ; iteltactif!=eneltactif ; ++iteltactif )
+    } // if (edgeIdFoundToUpdate.size() > 0)
 
 
 } // straightenMeshUpdateEdgesOnBoundaryIsolated
@@ -177,13 +177,12 @@ BOOST_PARAMETER_FUNCTION(
 
     using namespace vf;
     bool upExtendedElt = true;
-    //typedef FunctionSpace<_mesh_type,bases<Lagrange<_mesh_type::nOrder,Vectorial> > > space_t;
-    //auto Xh = space_t::New( _mesh=_mesh, _worldscomm=std::vector<WorldComm>(1,worldcomm),_extended_doftable=std::vector<bool>(1,upExtendedElt) );
+    EntityProcessType entityProcess = (upExtendedElt)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
     auto Xh = Pchv<_mesh_type::nOrder>( _mesh,upExtendedElt );
-    auto xHo = vf::project( _space=Xh, _range=elements( mesh,upExtendedElt ), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_HO );
-    auto xLo = vf::project( _space=Xh, _range=elements( mesh,upExtendedElt ), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_O1 );
-    auto xHoBdy = vf::project( _space=Xh, _range=boundaryfaces( mesh,upExtendedElt ), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_HO );
-    auto xLoBdy = vf::project( _space=Xh, _range=boundaryfaces( mesh,upExtendedElt ), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_O1 );
+    auto xHo = vf::project( _space=Xh, _range=elements( mesh, entityProcess ), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_HO );
+    auto xLo = vf::project( _space=Xh, _range=elements( mesh, entityProcess ), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_O1 );
+    auto xHoBdy = vf::project( _space=Xh, _range=boundaryfaces( mesh, entityProcess ), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_HO );
+    auto xLoBdy = vf::project( _space=Xh, _range=boundaryfaces( mesh, entityProcess ), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_O1 );
 
     auto straightener = Xh->element();
     straightener=( xLo-xHo )-( xLoBdy-xHoBdy );

@@ -28,7 +28,6 @@ configure    eol=lf svneol=LF#text/x-sh
 # Data formats
 *.pdf        binary svneol=unset#application/pdf
 *.avi        binary svneol=unset#video/avi
-*.doc        binary svneol=unset#application/msword
 *.dsp        text svneol=crlf#text/plain
 *.dsw        text svneol=crlf#text/plain
 *.eps        binary svneol=unset#application/postscript
@@ -56,6 +55,7 @@ configure    eol=lf svneol=LF#text/x-sh
 *.bbk        text svneol=native#text/xml
 *.cmake      text svneol=native#text/plain
 *.css        text svneol=native#text/css
+*.doc        text svneol=native#text/plain
 *.dtd        text svneol=native#text/xml
 *.htm        text svneol=native#text/html
 *.html       text svneol=native#text/html

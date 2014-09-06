@@ -78,7 +78,7 @@ public:
             // sort by less<int> on processId
             multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_pid>,
                                             multi_index::const_mem_fun<edge_type,
-                                                                       uint16_type,
+                                                                       rank_type,
                                                                        &edge_type::processId> >,
 
             // sort by less<int> on boundary
@@ -394,6 +394,28 @@ public:
     {
         return M_edges.template get<Feel::detail::by_pid>().equal_range( p );
     }
+
+    pid_edge_iterator beginEdgeWithProcessId( rank_type p = invalid_rank_type_value )
+    {
+        const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
+        return M_edges.template get<Feel::detail::by_pid>().lower_bound( /*boost::make_tuple( part )*/ part );
+    }
+    pid_edge_const_iterator beginEdgeWithProcessId( rank_type p = invalid_rank_type_value ) const
+    {
+        const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
+        return M_edges.template get<Feel::detail::by_pid>().lower_bound( /*boost::make_tuple( part )*/ part );
+    }
+    pid_edge_iterator endEdgeWithProcessId( rank_type p = invalid_rank_type_value )
+    {
+        const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
+        return M_edges.template get<Feel::detail::by_pid>().upper_bound( /*boost::make_tuple( part )*/ part );
+    }
+    pid_edge_const_iterator endEdgeWithProcessId( rank_type p = invalid_rank_type_value ) const
+    {
+        const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
+        return M_edges.template get<Feel::detail::by_pid>().upper_bound( /*boost::make_tuple( part )*/ part );
+    }
+
 
     //@}
 
