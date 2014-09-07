@@ -5,7 +5,7 @@
    \tableofcontents
 
    \section feelpp0990 Feel++ Release 0.99.0
-   release date 01-09-2014
+   release date 07-09-2014
 
    \subsection changes0990 Changes
 
@@ -30,9 +30,12 @@
 
    \subsection issues0990 Noteworthy Issues
 
+   - Support more continuous integration using Travis [Issue <a href="https://github.com/feelpp/feelpp/issues/436">436</a>]
    - Enable support for simd  [Issue <a href="https://github.com/feelpp/feelpp/issues/435">435</a>]
+   - MPIIO integer size detection breaks feel++ 32 bits platforms [Issue <a href="https://github.com/feelpp/feelpp/issues/434">434</a>]
    - FindXdmf.cmake missing [Issue <a href="https://github.com/feelpp/feelpp/issues/433">433</a>]
    - Add backend as argument to form1 and form2 [Issue <a href="https://github.com/feelpp/feelpp/issues/431">431</a>]
+   - Add support for set of elements of function spaces [Issue <a href="https://github.com/feelpp/feelpp/issues/430">430</a>]
    - Add support for Matrix transpose without assembly [Issue <a href="https://github.com/feelpp/feelpp/issues/427">427</a>]
    - Add support for newMatrix() without args [Issue <a href="https://github.com/feelpp/feelpp/issues/426">426</a>]
    - Add compatibility headers in contrib/gmsh depending on version [Issue <a href="https://github.com/feelpp/feelpp/issues/425">425</a>]
@@ -41,6 +44,7 @@
    - Support MKL (starting from v11) [Issue <a href="https://github.com/feelpp/feelpp/issues/420">420</a>]
    - Support boost 1.56 [Issue <a href="https://github.com/feelpp/feelpp/issues/419">419</a>]
    - Add functionality to check/test Feel++ version [Issue <a href="https://github.com/feelpp/feelpp/issues/418">418</a>]
+   - Add application to provide various mesh information [Issue <a href="https://github.com/feelpp/feelpp/issues/417">417</a>]
    - Support PETSc 3.5.X and above [Issue <a href="https://github.com/feelpp/feelpp/issues/415">415</a>]
    - Support SLEPc 3.4.X and above [Issue <a href="https://github.com/feelpp/feelpp/issues/414">414</a>]
    - Set processor affinity & dump cpu information [Issue <a href="https://github.com/feelpp/feelpp/issues/413">413</a>]
@@ -49,6 +53,7 @@
    - Add an option to enable/disable creation of the np_<nproc> subdirectory [Issue <a href="https://github.com/feelpp/feelpp/issues/410">410</a>]
    - problem with markerToDof function  [Issue <a href="https://github.com/feelpp/feelpp/issues/409">409</a>]
    - Bug in graph construction: more non zero entries in rows than there are entries [Issue <a href="https://github.com/feelpp/feelpp/issues/408">408</a>]
+   - Add support for (non-linear) optimisation libraries [Issue <a href="https://github.com/feelpp/feelpp/issues/407">407</a>]
    - Need to access to the neighbours of dof and to change value of functions only on some dof [Issue <a href="https://github.com/feelpp/feelpp/issues/404">404</a>]
    - Exporter Ensight not work [Issue <a href="https://github.com/feelpp/feelpp/issues/403">403</a>]
    - Problem with feelpp_doc_traces [Issue <a href="https://github.com/feelpp/feelpp/issues/401">401</a>]
