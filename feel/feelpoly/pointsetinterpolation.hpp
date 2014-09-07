@@ -101,21 +101,21 @@ public:
         :
         super()
     {
-        _M_eid.resize( topological_dimension + 1 );
-        _M_pt_to_entity.resize( numPoints );
+        M_eid.resize( topological_dimension + 1 );
+        M_pt_to_entity.resize( numPoints );
     }
     PointSetInterpolation( size_type np )
         :
         super( np )
     {
-        _M_eid.resize( topological_dimension + 1 );
-        _M_pt_to_entity.resize( numPoints );
+        M_eid.resize( topological_dimension + 1 );
+        M_pt_to_entity.resize( numPoints );
     }
     PointSetInterpolation( PointSetInterpolation & psi )
         :
         super( psi ),
-        _M_eid( psi.getEid() ),
-        _M_pt_to_entity( psi.getPtE() )
+        M_eid( psi.getEid() ),
+        M_pt_to_entity( psi.getPtE() )
 
     {}
 
@@ -123,11 +123,11 @@ public:
 
     ublas::matrix_range<nodes_type const> pointsByEntity( uint16_type e ) const
     {
-        FEELPP_ASSERT( _M_eid[e].size() )( e ).error( "no points defined on this entity" );
+        FEELPP_ASSERT( M_eid[e].size() )( e ).error( "no points defined on this entity" );
 
         return ublas::project( this->points(),
                                ublas::range( 0,Dim ),
-                               ublas::range( *_M_eid[e].begin(), *_M_eid[e].rbegin() + 1 ) );
+                               ublas::range( *M_eid[e].begin(), *M_eid[e].rbegin() + 1 ) );
     }
 
     range_type interiorRangeById( uint16_type e, uint16_type id ) const
@@ -143,9 +143,9 @@ public:
         else if ( e == 2 )
             numEntities = convex_type::numFaces;
 
-        uint16_type N = _M_eid[e].size()/numEntities;
+        uint16_type N = M_eid[e].size()/numEntities;
 
-        return std::make_pair( *_M_eid[e].begin() + id*N, *_M_eid[e].begin() + ( id+1 )*N );
+        return std::make_pair( *M_eid[e].begin() + id*N, *M_eid[e].begin() + ( id+1 )*N );
     }
 
     ublas::matrix_range<nodes_type const> interiorPointsById( uint16_type e, uint16_type id ) const
@@ -161,17 +161,17 @@ public:
 
     uint32_type entityIds( int i, int j ) const
     {
-        return _M_eid[i][j];
+        return M_eid[i][j];
     }
 
     uint32_type numEntities( int i ) const
     {
-        return _M_eid[i].size();
+        return M_eid[i].size();
     }
 
     range_type const& pointToEntity( int p ) const
     {
-        return _M_pt_to_entity[p];
+        return M_pt_to_entity[p];
     }
 
     //Returns the local indices of all the subentities that compose the entity
@@ -218,7 +218,7 @@ public:
                             indices[0].push_back( RefConv.f2p( local_id, i ) );
                     }
 
-                    if ( ( top_dim == 2 ) && ( _M_eid[1].size() != 0 ) )
+                    if ( ( top_dim == 2 ) && ( M_eid[1].size() != 0 ) )
                     {
                         for ( uint16_type i=0; i < numPointsInEntity[1] ; i++ )
                             indices[1].push_back( RefConv.f2e( local_id, i ) );
@@ -235,7 +235,7 @@ public:
                         }
                     }
 
-                    if ( _M_eid[top_dim].size() )
+                    if ( M_eid[top_dim].size() )
                     {
                         indices[top_dim].push_back( local_id );
                     }
@@ -287,40 +287,40 @@ public:
 
     index_map_type getEid ()
     {
-        return _M_eid;
+        return M_eid;
     }
 
     std::vector<range_type> getPtE()
     {
-        return _M_pt_to_entity;
+        return M_pt_to_entity;
     }
 
     void setEid ( index_map_type eid )
     {
-        _M_eid = eid;
+        M_eid = eid;
     }
 
     void setPtE ( std::vector<range_type> pt_ent )
     {
-        _M_pt_to_entity = pt_ent;
+        M_pt_to_entity = pt_ent;
     }
 
     void addToEid ( uint16_type p, uint16_type q )
     {
-        _M_eid[p].push_back( q );
+        M_eid[p].push_back( q );
     }
 
     void addToPtE ( uint16_type p, range_type q )
     {
-        _M_pt_to_entity[p] = q;
+        M_pt_to_entity[p] = q;
     }
 
     FEELPP_DEFINE_VISITABLE();
 
 private:
 
-    index_map_type _M_eid;
-    std::vector<range_type> _M_pt_to_entity;
+    index_map_type M_eid;
+    std::vector<range_type> M_pt_to_entity;
 
 };
 }

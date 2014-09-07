@@ -10,7 +10,7 @@
 #ifndef EIGEN_BASIC_PRECONDITIONERS_H
 #define EIGEN_BASIC_PRECONDITIONERS_H
 
-namespace Eigen {
+namespace Eigen { 
 
 /** \ingroup IterativeLinearSolvers_Module
   * \brief A preconditioner based on the digonal entries
@@ -42,28 +42,28 @@ class DiagonalPreconditioner
 
     DiagonalPreconditioner() : m_isInitialized(false) {}
 
-    template<typename TheMatrixType>
-    DiagonalPreconditioner(const TheMatrixType& mat) : m_invdiag(mat.cols())
+    template<typename MatType>
+    DiagonalPreconditioner(const MatType& mat) : m_invdiag(mat.cols())
     {
       compute(mat);
     }
 
     Index rows() const { return m_invdiag.size(); }
     Index cols() const { return m_invdiag.size(); }
-
-    template<typename TheMatrixType>
-    DiagonalPreconditioner& analyzePattern(const TheMatrixType& )
+    
+    template<typename MatType>
+    DiagonalPreconditioner& analyzePattern(const MatType& )
     {
       return *this;
     }
-
-    template<typename TheMatrixType>
-    DiagonalPreconditioner& factorize(const TheMatrixType& mat)
+    
+    template<typename MatType>
+    DiagonalPreconditioner& factorize(const MatType& mat)
     {
       m_invdiag.resize(mat.cols());
       for(int j=0; j<mat.outerSize(); ++j)
       {
-        typename TheMatrixType::InnerIterator it(mat,j);
+        typename MatType::InnerIterator it(mat,j);
         while(it && it.index()!=j) ++it;
         if(it && it.index()==j)
           m_invdiag(j) = Scalar(1)/it.value();
@@ -73,9 +73,9 @@ class DiagonalPreconditioner
       m_isInitialized = true;
       return *this;
     }
-
-    template<typename TheMatrixType>
-    DiagonalPreconditioner& compute(const TheMatrixType& mat)
+    
+    template<typename MatType>
+    DiagonalPreconditioner& compute(const MatType& mat)
     {
       return factorize(mat);
     }
@@ -130,16 +130,16 @@ class IdentityPreconditioner
 
     template<typename MatrixType>
     IdentityPreconditioner(const MatrixType& ) {}
-
+    
     template<typename MatrixType>
     IdentityPreconditioner& analyzePattern(const MatrixType& ) { return *this; }
-
+    
     template<typename MatrixType>
     IdentityPreconditioner& factorize(const MatrixType& ) { return *this; }
 
     template<typename MatrixType>
     IdentityPreconditioner& compute(const MatrixType& ) { return *this; }
-
+    
     template<typename Rhs>
     inline const Rhs& solve(const Rhs& b) const { return b; }
 };

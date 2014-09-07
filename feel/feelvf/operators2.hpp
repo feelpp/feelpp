@@ -61,22 +61,22 @@ public:
     OpMass ( test_element_type const& v,
              trial_element_type const& u )
         :
-        _M_v ( v ),
-        _M_u ( u ),
-        _M_exact_mass( _M_v.functionSpace()->basis()->coeff() )
+        M_v ( v ),
+        M_u ( u ),
+        M_exact_mass( M_v.functionSpace()->basis()->coeff() )
     {
         DVLOG(2) << "[" BOOST_PP_STRINGIZE( OpMass ) "] default constructorn";
 
-        _M_exact_mass = ublas::prod( return_value_type::toMatrix( _M_v.functionSpace()->basis()->coeff() ),
-                                     ublas::trans( return_value_type::toMatrix( _M_v.functionSpace()->basis()->coeff() ) ) );
+        M_exact_mass = ublas::prod( return_value_type::toMatrix( M_v.functionSpace()->basis()->coeff() ),
+                                     ublas::trans( return_value_type::toMatrix( M_v.functionSpace()->basis()->coeff() ) ) );
 
     }
     OpMass( OpMass const& op )
         :
-        _M_v ( op._M_v ),
-        _M_u ( op._M_u ),
-        _M_exact_mass( op._M_exact_mass )
-        //_M_quad_mass() TO BE USED IF QUADRATURE IS NEEDED (transformation order >= 2)
+        M_v ( op.M_v ),
+        M_u ( op.M_u ),
+        M_exact_mass( op.M_exact_mass )
+        //M_quad_mass() TO BE USED IF QUADRATURE IS NEEDED (transformation order >= 2)
     {
         DVLOG(2) << "[" BOOST_PP_STRINGIZE( OpMass ) "] copy constructorn";
 
@@ -84,20 +84,20 @@ public:
 
     test_element_type const& testFunction() const
     {
-        return _M_v;
+        return M_v;
     }
     trial_element_type const& trialFunction() const
     {
-        return _M_u;
+        return M_u;
     }
 
     value_type exactMass( uint16_type i, uint16_type j ) const
     {
-        return _M_exact_mass( i, j );
+        return M_exact_mass( i, j );
     }
     matrix_type exactMass() const
     {
-        return _M_exact_mass;
+        return M_exact_mass;
     }
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
@@ -117,9 +117,9 @@ public:
                 Basis_i_t const& fev,
                 Basis_j_t const& feu )
             :
-            _M_mat( expr.exactMass() ),
-            _M_fev( fev ),
-            _M_feu( feu )
+            M_mat( expr.exactMass() ),
+            M_fev( fev ),
+            M_feu( feu )
         {}
 
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
@@ -131,29 +131,29 @@ public:
         value_type
         operator()( uint16_type i, uint16_type j ) const
         {
-            return _M_mat( i, j );
+            return M_mat( i, j );
         }
 
 
         value_type
         operator()( uint16_type i, uint16_type j, int q ) const
         {
-            return _M_mat( i, j );
-            //return 0;//_M_expr.quadratureMass( q, i, j );
+            return M_mat( i, j );
+            //return 0;//M_expr.quadratureMass( q, i, j );
         }
 
-        test_basis_context_type const& _M_fev;
-        trial_basis_context_type const& _M_feu;
-        //this_type const& _M_expr;
-        matrix_type const& _M_mat;
+        test_basis_context_type const& M_fev;
+        trial_basis_context_type const& M_feu;
+        //this_type const& M_expr;
+        matrix_type const& M_mat;
     };
 
 protected:
     OpMass () {}
 
-    test_element_type const& _M_v;
-    trial_element_type const& _M_u;
-    ublas::matrix<value_type> _M_exact_mass;
+    test_element_type const& M_v;
+    trial_element_type const& M_u;
+    ublas::matrix<value_type> M_exact_mass;
 };
 /// \endcond
 /**

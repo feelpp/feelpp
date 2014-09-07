@@ -57,6 +57,7 @@
 #include <feel/feelpoly/functionals2.hpp>
 #include <feel/feelpoly/quadpoint.hpp>
 #include <feel/feelpoly/fe.hpp>
+#include <feel/feelpoly/hdivpolynomialset.hpp>
 
 #include <feel/feelvf/vf.hpp>
 
@@ -71,27 +72,28 @@ struct times_x
     typedef typename P::points_type points_type;
     times_x ( P const& p, int c  )
         :
-        _M_p ( p ),
-        _M_c( c )
+        M_p ( p ),
+        M_c( c )
     {
-        //std::cout << "component : " << c << std::endl;
+        //VLOG(1) << "component : " << c << std::endl;
     }
     typename ublas::vector<value_type> operator() ( points_type const& __pts ) const
     {
 #if 0
-        std::cout << "times_x(pts) : " << __pts << std::endl;
-        std::cout << "times_x(pts) : " << _M_p.evaluate( __pts ) << std::endl;
-        std::cout << "times_x(coeff) : " << _M_p.coefficients() << std::endl;
+        VLOG(1) << "times_x(pts) : " << __pts << std::endl;
+        VLOG(1) << "times_x(pts) : " << M_p.evaluate( __pts ) << std::endl;
+        VLOG(1) << "times_x(coeff) : " << M_p.coefficients() << std::endl;
 #endif
         // __pts[c] * p( __pts )
-        return ublas::element_prod( ublas::row( __pts, _M_c ),
-                                    ublas::row( _M_p.evaluate( __pts ), 0 ) );
+        return ublas::element_prod( ublas::row( __pts, M_c ),
+                                    ublas::row( M_p.evaluate( __pts ), 0 ) );
     }
-    //P const& _M_p;
-    P _M_p;
-    int _M_c;
+    //P const& M_p;
+    P M_p;
+    int M_c;
 };
 
+#if 0
 template< class T >
 struct extract_all_poly_indices
 {
@@ -106,25 +108,28 @@ struct extract_all_poly_indices
         return start++;
     }
 };
+#endif
+
 }// detail
 
 template<uint16_type N,
          uint16_type O,
          typename T = double,
-         template<uint16_type, uint16_type, uint16_type> class Convex = Simplex>
+         template<uint16_type, uint16_type, uint16_type> class Convex = Simplex,
+         uint16_type TheTAG = 0>
 class RaviartThomasPolynomialSet
     :
-    public Feel::detail::OrthonormalPolynomialSet<N, N, O+1, Vectorial, T, Convex>
+    public Feel::detail::OrthonormalPolynomialSet<N, O+1, N, Vectorial, T, TheTAG, Convex>
 {
-    typedef Feel::detail::OrthonormalPolynomialSet<N, N, O+1, Vectorial, T, Convex> super;
+    typedef Feel::detail::OrthonormalPolynomialSet<N, O+1, N, Vectorial, T, TheTAG, Convex> super;
 
 public:
     static const uint16_type Om1 = (O==0)?0:O-1;
-    typedef Feel::detail::OrthonormalPolynomialSet<N, N, O, Vectorial, T, Convex> Pk_v_type;
-    typedef Feel::detail::OrthonormalPolynomialSet<N, N, O+1, Vectorial, T, Convex> Pkp1_v_type;
-    typedef Feel::detail::OrthonormalPolynomialSet<N, N, Om1, Vectorial, T, Convex> Pkm1_v_type;
-    typedef Feel::detail::OrthonormalPolynomialSet<N, N, O, Scalar, T, Convex> Pk_s_type;
-    typedef Feel::detail::OrthonormalPolynomialSet<N, N, O+1, Scalar, T, Convex> Pkp1_s_type;
+    typedef Feel::detail::OrthonormalPolynomialSet<N, O, N, Vectorial, T, TheTAG, Convex> Pk_v_type;
+    typedef Feel::detail::OrthonormalPolynomialSet<N, O+1, N, Vectorial, T, TheTAG, Convex> Pkp1_v_type;
+    typedef Feel::detail::OrthonormalPolynomialSet<N, Om1, N, Vectorial, T, TheTAG, Convex> Pkm1_v_type;
+    typedef Feel::detail::OrthonormalPolynomialSet<N, O, N, Scalar, T, TheTAG, Convex> Pk_s_type;
+    typedef Feel::detail::OrthonormalPolynomialSet<N, O+1, N, Scalar, T, TheTAG, Convex> Pkp1_s_type;
 
     typedef PolynomialSet<typename super::basis_type,Vectorial> vectorial_polynomialset_type;
     typedef typename vectorial_polynomialset_type::polynomial_type vectorial_polynomial_type;
@@ -150,30 +155,30 @@ public:
         uint16_type dim_Pk = convex_type::polyDims( nOrder-1 );
         uint16_type dim_Pkm1 = ( nOrder==1 )?0:convex_type::polyDims( nOrder-2 );
 #if 0
-        std::cout << "[RTPset] dim_Pkp1 = " << dim_Pkp1 << "\n";
-        std::cout << "[RTPset] dim_Pk   = " << dim_Pk << "\n";
-        std::cout << "[RTPset] dim_Pkm1 = " << dim_Pkm1 << "\n";
+        VLOG(1) << "[RTPset] dim_Pkp1 = " << dim_Pkp1 << "\n";
+        VLOG(1) << "[RTPset] dim_Pk   = " << dim_Pk << "\n";
+        VLOG(1) << "[RTPset] dim_Pkm1 = " << dim_Pkm1 << "\n";
 #endif
         // (P_k)^d
         Pkp1_v_type Pkp1_v;
         vectorial_polynomialset_type Pk_v( Pkp1_v.polynomialsUpToDimension( dim_Pk ) );
 #if 0
-        std::cout << "[RTPset] Pk_v =" << Pk_v.coeff() << "\n";
+        VLOG(1) << "[RTPset] Pk_v =" << Pk_v.coeff() << "\n";
 #endif
         // P_k
         Pkp1_s_type Pkp1;
         scalar_polynomialset_type Pk ( Pkp1.polynomialsUpToDimension( dim_Pk ) );
 #if 0
-        std::cout << "[RTPset] Pk =" << Pk.coeff() << "\n";
-        std::cout << "[RTPset] Pk(0) =" << Pk.polynomial( 0 ).coefficients() << "\n";
+        VLOG(1) << "[RTPset] Pk =" << Pk.coeff() << "\n";
+        VLOG(1) << "[RTPset] Pk(0) =" << Pk.polynomial( 0 ).coefficients() << "\n";
 #endif
 
         // x P_k \ P_{k-1}
         IMGeneral<convex_type::nDim, 2*nOrder,value_type> im;
-        //std::cout << "[RTPset] im.points() = " << im.points() << std::endl;
+        //VLOG(1) << "[RTPset] im.points() = " << im.points() << std::endl;
         ublas::matrix<value_type> xPkc( nComponents*( dim_Pk-dim_Pkm1 ),Pk.coeff().size2() );
 
-        //std::cout << "[RTPset] before xPkc = " << xPkc << "\n";
+        //VLOG(1) << "[RTPset] before xPkc = " << xPkc << "\n";
         for ( int l = dim_Pkm1, i = 0; l < dim_Pk; ++l, ++i )
         {
             for ( int j = 0; j < convex_type::nDim; ++j )
@@ -187,13 +192,13 @@ public:
         }
 
 
-        //std::cout << "[RTPset] after xPkc = " << xPkc << "\n";
+        //VLOG(1) << "[RTPset] after xPkc = " << xPkc << "\n";
         vectorial_polynomialset_type xPk( typename super::basis_type(), xPkc, true );
-        //std::cout << "[RTPset] here 1\n";
+        //VLOG(1) << "[RTPset] here 1\n";
         // (P_k)^d + x P_k
-        //std::cout << "[RTPset] RT Poly coeff = " << unite( Pk_v, xPk ).coeff() << "\n";
+        //VLOG(1) << "[RTPset] RT Poly coeff = " << unite( Pk_v, xPk ).coeff() << "\n";
         this->setCoefficient( unite( Pk_v, xPk ).coeff(), true );
-        //std::cout << "[RTPset] here 2\n";
+        //VLOG(1) << "[RTPset] here 2\n";
     }
 
 
@@ -234,10 +239,15 @@ public:
     typedef PointSetType<convex_type, nOrder, value_type> pointset_type;
 
     static const uint16_type nbPtsPerVertex = 0;
-    static const uint16_type nbPtsPerEdge = mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<2> >,mpl::int_<reference_convex_type::nbPtsPerEdge>,mpl::int_<0> >::type::value;
-    static const uint16_type nbPtsPerFace =mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<3> >,mpl::int_<reference_convex_type::nbPtsPerFace>,mpl::int_<0> >::type::value;
-    static const uint16_type nbPtsPerVolume = 0;
-    static const uint16_type numPoints = ( reference_convex_type::numGeometricFaces*nbPtsPerFace+reference_convex_type::numEdges*nbPtsPerEdge );
+    static constexpr uint16_type nbPtsPerEdge = (nDim==2)?reference_convex_type::nbPtsPerEdge:0;
+    static constexpr uint16_type nbPtsPerFace2d = (nOrder)*(nOrder+2)-reference_convex_type::numEdges*nbPtsPerEdge;
+    static constexpr uint16_type nbPtsPerFace3d = reference_convex_type::nbPtsPerFace;
+    static constexpr uint16_type nbPtsPerFace =(nDim==3)?nbPtsPerFace3d:nbPtsPerFace2d;
+    static constexpr uint16_type nbInteriorMoments3d = (nOrder)*(nOrder+1)*(nOrder+3)/2-reference_convex_type::numTopologicalFaces*nbPtsPerFace3d;
+    static constexpr uint16_type nbPtsPerVolume = (nDim==3)?nbInteriorMoments3d:0;
+    static constexpr uint16_type numPoints2d = (nOrder)*(nOrder+2);
+    static constexpr uint16_type numPoints3d = (nOrder)*(nOrder+1)*(nOrder+3)/2;
+    static constexpr uint16_type numPoints = (nDim==2)?numPoints2d:numPoints3d;
 
     /** Number of degrees of freedom per vertex */
     static const uint16_type nDofPerVertex = 0;
@@ -249,7 +259,7 @@ public:
     static const uint16_type nDofPerFace = nbPtsPerFace;
 
     /** Number of degrees  of freedom per volume */
-    static const uint16_type nDofPerVolume = 0;
+    static const uint16_type nDofPerVolume = nbPtsPerVolume;
 
     /** Total number of degrees of freedom (equal to refEle::nDof) */
     static const uint16_type nLocalDof = numPoints;
@@ -257,45 +267,45 @@ public:
     RaviartThomasDual( primal_space_type const& primal )
         :
         super( primal ),
-        _M_convex_ref(),
-        _M_eid( _M_convex_ref.topologicalDimension()+1 ),
-        _M_pts( nDim, numPoints ),
-        _M_pts_per_face( convex_type::numTopologicalFaces ),
-        _M_fset( primal )
+        M_convex_ref(),
+        M_eid( M_convex_ref.topologicalDimension()+1 ),
+        M_pts( nDim, numPoints ),
+        M_pts_per_face( convex_type::numTopologicalFaces ),
+        M_fset( primal )
     {
 #if 1
-        std::cout << "Raviart-Thomas finite element(dual): \n";
-        std::cout << " o- dim   = " << nDim << "\n";
-        std::cout << " o- order = " << nOrder << "\n";
-        std::cout << " o- numPoints      = " << numPoints << "\n";
-        std::cout << " o- nbPtsPerVertex = " << ( int )nbPtsPerVertex << "\n";
-        std::cout << " o- nbPtsPerEdge   = " << ( int )nbPtsPerEdge << "\n";
-        std::cout << " o- nbPtsPerFace   = " << ( int )nbPtsPerFace << "\n";
-        std::cout << " o- nbPtsPerVolume = " << ( int )nbPtsPerVolume << "\n";
-        std::cout << " o- nLocalDof      = " << nLocalDof << "\n";
+        VLOG(1) << "Raviart-Thomas finite element(dual): \n";
+        VLOG(1) << " o- dim   = " << nDim << "\n";
+        VLOG(1) << " o- order = " << nOrder << "\n";
+        VLOG(1) << " o- numPoints      = " << numPoints << "\n";
+        VLOG(1) << " o- nbPtsPerVertex = " << ( int )nbPtsPerVertex << "\n";
+        VLOG(1) << " o- nbPtsPerEdge   = " << ( int )nbPtsPerEdge << "\n";
+        VLOG(1) << " o- nbPtsPerFace   = " << ( int )nbPtsPerFace << "\n";
+        VLOG(1) << " o- nbPtsPerVolume = " << ( int )nbPtsPerVolume << "\n";
+        VLOG(1) << " o- nLocalDof      = " << nLocalDof << "\n";
 #endif
 
         // loop on each entity forming the convex of topological
         // dimension nDim-1 ( the faces)
-        for ( int p = 0, e = _M_convex_ref.entityRange( nDim-1 ).begin();
-                e < _M_convex_ref.entityRange( nDim-1 ).end();
+        for ( int p = 0, e = M_convex_ref.entityRange( nDim-1 ).begin();
+                e < M_convex_ref.entityRange( nDim-1 ).end();
                 ++e )
         {
-            points_type Gt ( _M_convex_ref.makePoints( nDim-1, e ) );
-            _M_pts_per_face[e] =  Gt ;
+            points_type Gt ( M_convex_ref.makePoints( nDim-1, e ) );
+            M_pts_per_face[e] =  Gt ;
 
             if ( Gt.size2() )
             {
                 //VLOG(1) << "Gt = " << Gt << "\n";
                 //VLOG(1) << "p = " << p << "\n";
-                ublas::subrange( _M_pts, 0, nDim, p, p+Gt.size2() ) = Gt;
+                ublas::subrange( M_pts, 0, nDim, p, p+Gt.size2() ) = Gt;
                 //for ( size_type j = 0; j < Gt.size2(); ++j )
-                //_M_eid[d].push_back( p+j );
+                //M_eid[d].push_back( p+j );
                 p+=Gt.size2();
             }
         }
 
-        //std::cout << "[RT Dual] done 1\n";
+        //VLOG(1) << "[RT Dual] done 1\n";
         // compute  \f$ \ell_e( U ) = (U * n[e]) (edge_pts(e)) \f$
         typedef Functional<primal_space_type> functional_type;
         std::vector<functional_type> fset;
@@ -317,19 +327,19 @@ public:
         //for( int k = 0; k < nDim; ++k )
         {
             // loopover the each edge entities and add the correponding functionals
-            for ( int e = _M_convex_ref.entityRange( nDim-1 ).begin();
-                    e < _M_convex_ref.entityRange( nDim-1 ).end();
+            for ( int e = M_convex_ref.entityRange( nDim-1 ).begin();
+                    e < M_convex_ref.entityRange( nDim-1 ).end();
                     ++e )
             {
                 typedef Feel::functional::DirectionalComponentPointsEvaluation<primal_space_type> dcpe_type;
-                node_type dir = _M_convex_ref.normal( e )*j[e];
+                node_type dir = M_convex_ref.normal( e )*j[e];
                 //dcpe_type __dcpe( primal, 1, dir, pts_per_face[e] );
-                dcpe_type __dcpe( primal, dir, _M_pts_per_face[e] );
+                dcpe_type __dcpe( primal, dir, M_pts_per_face[e] );
                 std::copy( __dcpe.begin(), __dcpe.end(), std::back_inserter( fset ) );
             }
         }
 
-        //std::cout << "[RT Dual] done 2" << std::endl;
+        //VLOG(1) << "[RT Dual] done 2" << std::endl;
         if ( nOrder-1 > 0 )
         {
             // we need more equations : add interior moment
@@ -342,21 +352,26 @@ public:
 
             vectorial_polynomialset_type Pkm1 ( Pkp1.polynomialsUpToDimension( dim_Pm1 ) );
 
-            //std::cout << "Pkm1 = " << Pkm1.coeff() << "\n";
-            //std::cout << "Primal = " << primal.coeff() << "\n";
+            //VLOG(1) << "Pkm1 = " << Pkm1.coeff() << "\n";
+            //VLOG(1) << "Primal = " << primal.coeff() << "\n";
+            if ( nDim == 2 )
+                CHECK( Pkm1.polynomialDimension() == nbPtsPerFace )
+                    << "Invalid number of interior moments in 2D "
+                    << " Pkm1.dim = " << Pkm1.polynomialDimension()
+                    << " nbPtsPerFace = " << nbPtsPerFace;
             for ( int i = 0; i < Pkm1.polynomialDimension(); ++i )
             {
                 typedef functional::IntegralMoment<primal_space_type, vectorial_polynomialset_type> fim_type;
                 //typedef functional::IntegralMoment<Pkp1_v_type, vectorial_polynomialset_type> fim_type;
-                //std::cout << "P(" << i << ")=" << Pkm1.polynomial( i ).coeff() << "\n";
+                //VLOG(1) << "P(" << i << ")=" << Pkm1.polynomial( i ).coeff() << "\n";
                 fset.push_back( fim_type( primal, Pkm1.polynomial( i ) ) );
             }
         }
 
-        //std::cout << "[RT Dual] done 3, n fset = " << fset.size() << std::endl;
-        _M_fset.setFunctionalSet( fset );
-        //        std::cout << "[RT DUAL matrix] mat = " << _M_fset.rep() << "\n";
-        //std::cout << "[RT Dual] done 4\n";
+        //VLOG(1) << "[RT Dual] done 3, n fset = " << fset.size() << std::endl;
+        M_fset.setFunctionalSet( fset );
+        //        VLOG(1) << "[RT DUAL matrix] mat = " << M_fset.rep() << "\n";
+        //VLOG(1) << "[RT Dual] done 4\n";
 
     }
 
@@ -367,27 +382,27 @@ public:
 
     points_type const& points() const
     {
-        return _M_pts;
+        return M_pts;
     }
 
 
     matrix_type operator()( primal_space_type const& pset ) const
     {
-        //std::cout << "RT matrix = " << _M_fset( pset ) << std::endl;
-        return _M_fset( pset );
+        //VLOG(1) << "RT matrix = " << M_fset( pset ) << std::endl;
+        return M_fset( pset );
     }
 
     points_type const& points( uint16_type f ) const
     {
-        return _M_pts_per_face[f];
+        return M_pts_per_face[f];
     }
     ublas::matrix_column<points_type const> point( uint16_type f, uint32_type __i ) const
     {
-        return ublas::column( _M_pts_per_face[f], __i );
+        return ublas::column( M_pts_per_face[f], __i );
     }
     ublas::matrix_column<points_type> point( uint16_type f, uint32_type __i )
     {
-        return ublas::column( _M_pts_per_face[f], __i );
+        return ublas::column( M_pts_per_face[f], __i );
     }
 
 private:
@@ -396,16 +411,16 @@ private:
      */
     void setPoints( uint16_type f, points_type const& n )
     {
-        _M_pts_per_face[f].resize( n.size1(), n.size2(), false );
-        _M_pts_per_face[f] = n;
+        M_pts_per_face[f].resize( n.size1(), n.size2(), false );
+        M_pts_per_face[f] = n;
     }
 
 private:
-    reference_convex_type _M_convex_ref;
-    std::vector<std::vector<uint16_type> > _M_eid;
-    points_type _M_pts;
-    std::vector<points_type> _M_pts_per_face;
-    FunctionalSet<primal_space_type> _M_fset;
+    reference_convex_type M_convex_ref;
+    std::vector<std::vector<uint16_type> > M_eid;
+    points_type M_pts;
+    std::vector<points_type> M_pts_per_face;
+    FunctionalSet<primal_space_type> M_fset;
 
 
 };
@@ -430,6 +445,7 @@ class RaviartThomas
 public FiniteElement<RaviartThomasPolynomialSet<N, O, T, Convex>,
     fem::detail::RaviartThomasDual,
     PointSetEquiSpaced >,
+public HDivPolynomialSet,
 public boost::enable_shared_from_this<RaviartThomas<N,O,T,Convex> >
 {
     typedef FiniteElement<RaviartThomasPolynomialSet<N, O, T, Convex>,
@@ -474,15 +490,10 @@ public:
 
     static const uint16_type nOrder =  dual_space_type::nOrder;
     static const uint16_type nbPtsPerVertex = 0;
-    static const uint16_type nbPtsPerEdge = mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<2> >,
-                             mpl::int_<reference_convex_type::nbPtsPerEdge>,
-                             mpl::int_<0> >::type::value;
-    static const uint16_type nbPtsPerFace = mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<3> >,
-                             mpl::int_<reference_convex_type::nbPtsPerFace>,
-                             mpl::int_<0> >::type::value;
-    static const uint16_type nbPtsPerVolume = 0;
-    static const uint16_type numPoints = ( reference_convex_type::numGeometricFaces*nbPtsPerFace+
-                                           reference_convex_type::numEdges*nbPtsPerEdge );
+    static const uint16_type nbPtsPerEdge = dual_space_type::nbPtsPerEdge;
+    static const uint16_type nbPtsPerFace = dual_space_type::nbPtsPerFace;
+    static const uint16_type nbPtsPerVolume = dual_space_type::nbPtsPerVolume;
+    static const uint16_type numPoints = dual_space_type::numPoints;
 
     static const uint16_type nLocalDof = dual_space_type::nLocalDof;
     //@}
@@ -497,18 +508,37 @@ public:
         M_refconvex()
     {
 #if 0
-        std::cout << "[RT] nPtsPerEdge = " << nbPtsPerEdge << "\n";
-        std::cout << "[RT] nPtsPerFace = " << nbPtsPerFace << "\n";
-        std::cout << "[RT] numPoints = " << numPoints << "\n";
+        VLOG(1) << "[RT] nPtsPerEdge = " << nbPtsPerEdge << "\n";
+        VLOG(1) << "[RT] nPtsPerFace = " << nbPtsPerFace << "\n";
+        VLOG(1) << "[RT] numPoints = " << numPoints << "\n";
 
-        std::cout << "[RT] nDof = " << super::nDof << "\n";
+        VLOG(1) << "[RT] nDof = " << super::nDof << "\n";
 
-        std::cout << "[RT] coeff : " << this->coeff() << "\n";
-        std::cout << "[RT] pts : " << this->points() << "\n";
-        std::cout << "[RT] eval at pts : " << this->evaluate( this->points() ) << "\n";
-        std::cout << "[RT] is_product : " << is_product << "\n";
+        VLOG(1) << "[RT] coeff : " << this->coeff() << "\n";
+        VLOG(1) << "[RT] pts : " << this->points() << "\n";
+        VLOG(1) << "[RT] eval at pts : " << this->evaluate( this->points() ) << "\n";
+        VLOG(1) << "[RT] is_product : " << is_product << "\n";
 #endif
     }
+
+    template<int subN>
+    struct SubSpace
+    {
+        typedef RaviartThomas<N-1, O, T, Convex, TheTAG> type;
+    };
+
+    struct SSpace
+    {
+        typedef  RaviartThomas<N, O, T, Convex, TheTAG> type;
+
+    };
+
+    template<uint16_type NewDim>
+    struct ChangeDim
+    {
+        typedef  RaviartThomas<NewDim, O, T, Convex,  TheTAG> type;
+    };
+
     RaviartThomas( RaviartThomas const & cr )
         :
         super( cr ),
@@ -558,12 +588,12 @@ public:
 
     template<typename ExprType>
     static auto
-    isomorphism( ExprType expr ) -> decltype( Feel::vf::detJ()*( trans( Feel::vf::JinvT() )*expr )*Feel::vf::Nref() )
-    //isomorphism( ExprType& expr ) -> decltype( expr )
+    //isomorphism( ExprType expr ) -> decltype( Feel::vf::detJ()*( trans( Feel::vf::JinvT() )*expr )*Feel::vf::Nref() )
+    isomorphism( ExprType& expr ) -> decltype( expr )
     {
         using namespace Feel::vf;
-        return detJ()*( trans( JinvT() )*expr )*Nref();
-        //return expr;
+        //return detJ()*( trans( JinvT() )*expr )*Nref();
+        return expr;
     }
 #if 0
     /**
@@ -579,7 +609,7 @@ public:
         typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
 
         std::vector<value_type> v( nLocalDof );
-
+        auto I = integrate( face, _expr=_e1*N() );
         // First deal with the face dof
         for ( int face = 0; face < numTopologicalFaces; ++face )
         {
@@ -627,23 +657,23 @@ public:
         typename GMContext::gm_type::matrix_type const K = gmc.K( 0 );
         typename GMContext::gm_type::matrix_type JB( K/gmc.J( 0 ) );
 #if 0
-        std::cout << "K= " << gmc.K( 0 ) << "\n";
-        std::cout << "B= " << B << "\n";
-        std::cout << "J= " << gmc.J( 0 ) << "\n";
-        std::cout << "JB= " << JB << "\n";
+        VLOG(1) << "K= " << gmc.K( 0 ) << "\n";
+        VLOG(1) << "B= " << B << "\n";
+        VLOG(1) << "J= " << gmc.J( 0 ) << "\n";
+        VLOG(1) << "JB= " << JB << "\n";
 #endif
         std::fill( phi_t.data(), phi_t.data()+phi_t.num_elements(), value_type( 0 ) );
 
         if ( do_gradient )
         {
-            //std::cout << "compute gradient\n";
+            //VLOG(1) << "compute gradient\n";
             std::fill( g_phi_t.data(), g_phi_t.data()+g_phi_t.num_elements(), value_type( 0 ) );
         }
 
         if ( do_hessian )
             std::fill( h_phi_t.data(), h_phi_t.data()+h_phi_t.num_elements(), value_type( 0 ) );
 
-        const uint16_type Q = gmc.nPoints();//_M_grad.size2();
+        const uint16_type Q = gmc.nPoints();//M_grad.size2();
 
         // transform
         for ( uint16_type i = 0; i < nLocalDof; ++i )
@@ -661,8 +691,8 @@ public:
                         //phi_t[i][l][0][q] =  pc.phi(i,l,0,q);
                         phi_t[i][l][0][q] += JB( l, p ) * pc.phi( i,p,0,q );
                         //phi_t[i][l][0][q] = gmc.J( 0 ) * B( p, l ) * pc.phi(i,p,0,q);
-                        //std::cout << "pc[" << i << "][" << l << "][" << q << "]=" << pc.phi(i,l,0,q) << "\n";
-                        //std::cout << "phi_t[" << i << "][" << l << "][" << q << "]=" << phi_t[i][l][0][q] << "\n";
+                        //VLOG(1) << "pc[" << i << "][" << l << "][" << q << "]=" << pc.phi(i,l,0,q) << "\n";
+                        //VLOG(1) << "phi_t[" << i << "][" << l << "][" << q << "]=" << phi_t[i][l][0][q] << "\n";
                     }
                 }
             }
@@ -683,11 +713,11 @@ public:
                                 g_phi_t[i][p][r][s] += JB( p, q ) * pc.grad( i,q,r,s );
                                 //g_phi_t[i][p][r][s] = pc.grad(i,p,r,s);
 
-                                //std::cout << "J G[" << i << "][" << q << "][" << r << "][" << s << "=" << JB( p, q ) * pc.grad(i,q,r,s) << "\n";
+                                //VLOG(1) << "J G[" << i << "][" << q << "][" << r << "][" << s << "=" << JB( p, q ) * pc.grad(i,q,r,s) << "\n";
                             }
                         }
 
-                        //std::cout << "g_phi_t[" << i << "][" << p << "][" << r << "][" << 0 << "=" << g_phi_t[i][p][r][0] << "\n";
+                        //VLOG(1) << "g_phi_t[" << i << "][" << p << "][" << r << "][" << 0 << "=" << g_phi_t[i][p][r][0] << "\n";
 
                     }
                 }
@@ -760,4 +790,3 @@ public:
 
 } // Feel
 #endif /* __RaviartThomas_H */
-

@@ -55,6 +55,29 @@ public:
 
     typedef boost::shared_ptr<Preconditioner<T> > preconditioner_ptrtype;
 
+    class SolveData : public boost::tuple<bool,size_type,value_type>
+    {
+        typedef boost::tuple<bool,size_type,value_type> super_type;
+    public:
+        SolveData() {}
+        // rvalue: move constructor (fast)
+        SolveData( super_type && i )
+            :
+            super_type( i )
+        {}
+        // copie
+        SolveData( super_type const& i )
+            :
+            super_type( i )
+        {}
+        bool isConverged() const { return this->template get<0>(); }
+        size_type nIterations() const { return this->template get<1>(); }
+        value_type residual() const { return this->template get<2>(); }
+    };
+
+    // return type of solve()
+    typedef SolveData solve_return_type;
+
     /**
      *  Constructor. Initializes Solver data structures
      */
@@ -85,7 +108,7 @@ public:
      */
     bool initialized () const
     {
-        return _M_is_initialized;
+        return M_is_initialized;
     }
 
 
@@ -136,7 +159,7 @@ public:
      */
     SolverType solverType () const
     {
-        return _M_solver_type;
+        return M_solver_type;
     }
 
     /**
@@ -184,7 +207,7 @@ public:
      */
     void setSolverType ( const SolverType st )
     {
-        _M_solver_type = st;
+        M_solver_type = st;
     }
 
     /**
@@ -195,7 +218,7 @@ public:
         if ( M_preconditioner )
             return M_preconditioner->type();
 
-        return _M_preconditioner_type;
+        return M_preconditioner_type;
     }
 
     /**
@@ -207,7 +230,7 @@ public:
             M_preconditioner->setType( pct );
 
         else
-            _M_preconditioner_type = pct;
+            M_preconditioner_type = pct;
     }
 
     /**
@@ -215,23 +238,23 @@ public:
      */
     void attachPreconditioner( preconditioner_ptrtype preconditioner )
     {
-        if ( this->_M_is_initialized )
+        if ( this->M_is_initialized )
         {
             std::cerr<<"Preconditioner must be attached before the solver is initialized!"<<std::endl;
         }
 
-        _M_preconditioner_type = SHELL_PRECOND;
+        M_preconditioner_type = SHELL_PRECOND;
         M_preconditioner = preconditioner;
     }
 
     void setFieldSplitType( const FieldSplitType fst )
     {
-        _M_fieldSplit_type = fst;
+        M_fieldSplit_type = fst;
     }
 
     FieldSplitType fieldSplitType() const
     {
-        return _M_fieldSplit_type;
+        return M_fieldSplit_type;
     }
 
     /**
@@ -284,8 +307,8 @@ public:
     void setShowKSPConvergedReason( bool b ) { M_showKSPConvergedReason=b; }
 
     /**
-     * This function calls the solver "_M_solver_type" preconditioned
-     * with the "_M_preconditioner_type" preconditioner.  Note that
+     * This function calls the solver "M_solver_type" preconditioned
+     * with the "M_preconditioner_type" preconditioner.  Note that
      * this method will compute the preconditioner from the system
      * matrix.
      *
@@ -297,8 +320,8 @@ public:
      * \param maxit maximum Number of Iterations
      * \param transpose true to solve the transpose system, false otherwise
      */
-    virtual /*std::pair<unsigned int, real_type>*/
-    boost::tuple<bool,unsigned int, real_type>
+    virtual
+    solve_return_type
     solve ( MatrixSparse<T> const& mat,
             Vector<T>& x,
             Vector<T> const& b,
@@ -311,8 +334,8 @@ public:
 
     /**
      * This function calls the solver
-     * "_M_solver_type" preconditioned with the
-     * "_M_preconditioner_type" preconditioner.  Note that this method
+     * "M_solver_type" preconditioned with the
+     * "M_preconditioner_type" preconditioner.  Note that this method
      * will compute the preconditioner from the system matrix.
      *
      * \param mat System Matrix
@@ -324,7 +347,7 @@ public:
      * \param transpose true to solve the transpose system, false otherwise
      */
     virtual
-    /*std::pair<unsigned int, real_type>*/boost::tuple<bool,unsigned int, real_type>
+    solve_return_type
     solve ( MatrixSparse<T> const& mat,
             MatrixSparse<T> const& prec,
             Vector<T>& x,
@@ -342,7 +365,7 @@ protected:
      */
     void setInitialized( bool init )
     {
-        _M_is_initialized = init;
+        M_is_initialized = init;
     }
 
 private:
@@ -372,12 +395,12 @@ protected:
     /**
      * Enum stating which type of iterative solver to use.
      */
-    SolverType _M_solver_type;
+    SolverType M_solver_type;
 
     /**
      * Enum statitng with type of preconditioner to use.
      */
-    PreconditionerType _M_preconditioner_type;
+    PreconditionerType M_preconditioner_type;
 
     /**
      * Holds the Preconditioner object to be used for the linear solves.
@@ -385,7 +408,7 @@ protected:
     preconditioner_ptrtype M_preconditioner;
 
 
-    FieldSplitType _M_fieldSplit_type;
+    FieldSplitType M_fieldSplit_type;
 
     /**
      * Enum the software that is used to perform the factorization
@@ -396,7 +419,7 @@ protected:
     /**
      * Flag indicating if the data structures have been initialized.
      */
-    bool _M_is_initialized;
+    bool M_is_initialized;
 
     MatrixStructure M_prec_matrix_structure;
 
@@ -412,10 +435,10 @@ template <typename T>
 inline
 SolverLinear<T>::SolverLinear ( WorldComm const& worldComm ) :
     M_worldComm( worldComm ),
-    _M_solver_type         ( GMRES ),
-    _M_preconditioner_type ( LU_PRECOND ),
+    M_solver_type         ( GMRES ),
+    M_preconditioner_type ( LU_PRECOND ),
     M_preconditioner(),
-    _M_is_initialized      ( false ),
+    M_is_initialized      ( false ),
     M_prec_matrix_structure( SAME_NONZERO_PATTERN ),
     M_showKSPMonitor( false ),
     M_showKSPConvergedReason( false )
@@ -427,9 +450,9 @@ inline
 SolverLinear<T>::SolverLinear ( po::variables_map const& vm, WorldComm const& worldComm ) :
     M_worldComm( worldComm ),
     M_vm( vm ),
-    _M_solver_type         ( GMRES ),
-    _M_preconditioner_type ( LU_PRECOND ),
-    _M_is_initialized      ( false ),
+    M_solver_type         ( GMRES ),
+    M_preconditioner_type ( LU_PRECOND ),
+    M_is_initialized      ( false ),
     M_prec_matrix_structure( SAME_NONZERO_PATTERN ),
     M_showKSPMonitor( false ),
     M_showKSPConvergedReason( false )

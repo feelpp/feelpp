@@ -97,5 +97,5 @@ Note that in order to know if solvers have converged, the best thing is to redir
 
 *** Comande line to run a 2D simulation :
 
-mpirun -np 10 ./feelpp_P3P2P3_heatns_natural_convection_cavity_2d_crb --config-file=convection.cfg -ksp_monitor -snes_monitor -ksp_type gmres -pc_type gasm -sub_pc_type lu -sub_pc_factor_mat_solver_package mumps -pc_gasm_overlap 2 -snes_\
-rtol 1e-10 -snes_CONVERGED_REASON -ksp_CONVERGED_REASON
+mpirun -np 10 ./feelpp_P3P2P3_heatns_natural_convection_cavity_2d_crb --config-file=convection.cfg --ksp-type=gmres --pc-type=gasm --sub-pc-type=lu --sub-pc-factor-mat-solver-package=mumps --pc-gasm-overlap=2 
+--snes-rtol=1e-10 -snes_CONVERGED_REASON -ksp_CONVERGED_REASON -ksp_monitor -snes_monitor

@@ -1,0 +1,59 @@
+Desctiption: fixes some spelling errors
+Author: Anton Gladky <gladky.anton@gmail.com>
+Last-Update: 2011-12-09
+
+--- a/Plugin/Bubbles.cpp
++++ b/Plugin/Bubbles.cpp
+@@ -30,7 +30,7 @@
+ {
+   return "Plugin(Bubbles) constructs a geometry consisting of "
+     "`bubbles' inscribed in the Voronoi of an input triangulation. "
+-    "`ShrinkFactor' allows to change the size of the bubbles. "
++    "`ShrinkFactor' allows one to change the size of the bubbles. "
+     "The plugin expects a triangulation in the `z = 0' plane to exist "
+     "in the current model.\n\n"
+     "Plugin(Bubbles) creates one `.geo' file.";
+--- a/contrib/lbfgs/alglibinternal.cpp
++++ b/contrib/lbfgs/alglibinternal.cpp
+@@ -3679,8 +3679,8 @@
+         {
+             return;
+         }
+-        ae_assert(j2-j1==ix2-ix1, "MatrixVectorMultiply: A and X dont match!", _state);
+-        ae_assert(i2-i1==iy2-iy1, "MatrixVectorMultiply: A and Y dont match!", _state);
++        ae_assert(j2-j1==ix2-ix1, "MatrixVectorMultiply: A and X don't match!", _state);
++        ae_assert(i2-i1==iy2-iy1, "MatrixVectorMultiply: A and Y don't match!", _state);
+         
+         /*
+          * beta*y
+@@ -3716,8 +3716,8 @@
+         {
+             return;
+         }
+-        ae_assert(i2-i1==ix2-ix1, "MatrixVectorMultiply: A and X dont match!", _state);
+-        ae_assert(j2-j1==iy2-iy1, "MatrixVectorMultiply: A and Y dont match!", _state);
++        ae_assert(i2-i1==ix2-ix1, "MatrixVectorMultiply: A and X don't match!", _state);
++        ae_assert(j2-j1==iy2-iy1, "MatrixVectorMultiply: A and Y don't match!", _state);
+         
+         /*
+          * beta*y
+--- a/doc/texinfo/gmsh.texi
++++ b/doc/texinfo/gmsh.texi
+@@ -1398,7 +1398,7 @@
+ etc.). The eigth case permits to use the value of a @var{char-option} as
+ a @var{char-expression}. The ninth case gets the value of an environment
+ variable from the operating system. The last case in the definition
+-allows to ask the user for a value interactively. The various
++allows one to ask the user for a value interactively. The various
+ @w{@var{char-option}s} are listed in @ref{Options}.
+ 
+ Character expressions are mostly used to specify non-numeric options and
+@@ -2922,7 +2922,7 @@
+ @item Extrude @{ Surface @{ @var{expression-list} @}; @var{layers} < Using Index[@var{expr}]; > < Using View[@var{expr}]; > @}
+ Extrudes a boundary layer from the specified surfaces. If no view is
+ specified, the boundary layer is created using gouraud-shaped (smoothed)
+-normal field. Specifying a boundary layer index allows to extrude
++normal field. Specifying a boundary layer index allows one to extrude
+ several independent boundary layers (with independent normal smoothing).
+ 
+ @item Transfinite Line @{ @var{expression-list} @} | "*" = @var{expression} < Using Progression | Bump @var{expression} >;

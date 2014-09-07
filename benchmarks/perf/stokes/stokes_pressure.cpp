@@ -47,10 +47,11 @@ makeOptions()
         ( "p_in", Feel::po::value<double>()->default_value( 10 ), "pressure at inlet" )
         ( "p_out", Feel::po::value<double>()->default_value( 1 ), "pressure at outlet" )
         ( "mu", Feel::po::value<double>()->default_value( 1.0 ), "reaction coefficient component" )
-        ( "geofile", Feel::po::value<std::string>()->default_value( "tube.geo" ), "geometry file name" )
+        ( "geofile", Feel::po::value<std::string>()->default_value( "straighttube.geo" ), "geometry file name" )
         ( "hsize", Feel::po::value<double>()->default_value( 0.1 ), "first h value to start convergence" )
         ( "bctype", Feel::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet" )
         ( "bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions" )
+        ( "bccoefflag", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions" )
         ( "eps", Feel::po::value<double>()->default_value( 1e-10 ), "penalisation parameter for lagrange multipliers" )
         ( "gamma-tau", Feel::po::value<double>()->default_value( 10 ), "penalty parameter for tangential velocity" )
         ;
@@ -89,16 +90,15 @@ makeAbout()
 }
 namespace Feel
 {
-// 2D
-extern template class Stokes<2, 2, 1>;
-extern template class Stokes<2, 3, 1>;
-extern template class Stokes<2, 4, 1>;
-
-extern template class Stokes<3, 2, 1>;
-extern template class Stokes<3, 2, 2>;
-extern template class Stokes<3, 3, 1>;
-extern template class Stokes<3, 3, 2>;
-extern template class Stokes<3, 4, 1>;
+    // 2D
+    extern template class Stokes<2, 2, 1>;//P2P1G1
+    extern template class Stokes<2, 3, 1>;//P3P2G1
+    extern template class Stokes<2, 4, 1>;//P4P3G1
+    //3D
+    extern template class Stokes<3, 2, 1>;//P2P1G1
+    extern template class Stokes<3, 2, 2>;//P2P1G2
+    extern template class Stokes<3, 3, 1>;//P3P2G1
+    extern template class Stokes<3, 3, 2>;//P3P2G2
 
 }
 
@@ -121,9 +121,9 @@ int main( int argc, char** argv )
     //benchmark.add( new Stokes<2, 3, 1>( "2D-P3P2G1" ) ) ;
 #else
     benchmark.add( new Stokes<3, 2, 1>( "3D-P2P1G1" ) ) ;
-    benchmark.add( new Stokes<3, 2, 2>( "3D-P2P1G2" ) ) ;
-    benchmark.add( new Stokes<3, 3, 1>( "3D-P3P2G1" ) ) ;
-    benchmark.add( new Stokes<3, 3, 2>( "3D-P3P2G2" ) ) ;
+    //benchmark.add( new Stokes<3, 2, 2>( "3D-P2P1G2" ) ) ;
+    //benchmark.add( new Stokes<3, 3, 1>( "3D-P3P2G1" ) ) ;
+    //benchmark.add( new Stokes<3, 3, 2>( "3D-P3P2G2" ) ) ;
 #endif
 
     benchmark.setStats( boost::assign::list_of( "e.h1" )( "e.semih1" )( "e.l2" )( "e.output" )("n.space")("d.solver") );
@@ -156,7 +156,8 @@ main( int argc, char** argv )
 #if defined(DIM2)
     Stokes<DIM2,2,1> stokes;
 #elif defined(DIM3)
-    Stokes<DIM3,2,1> stokes;
+    //Stokes<DIM3,2,1> stokes;
+    Stokes<DIM3,3,1> stokes;
 #endif
     stokes.run();
 }

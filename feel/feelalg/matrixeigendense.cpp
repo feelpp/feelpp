@@ -23,10 +23,14 @@
 */
 /**
    \file matrixgmm.cpp
+
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-07-15
  */
+
+#include <Eigen/Dense>
 #include <feel/feelalg/matrixeigendense.hpp>
+#include <feel/feelalg/vectoreigen.hpp>
 
 namespace Feel
 {
@@ -35,26 +39,26 @@ template <typename T>
 MatrixEigenDense<T>::MatrixEigenDense()
     :
     super(),
-    _M_is_initialized( false ),
-    _M_is_closed( false ),
-    _M_mat()
+    M_is_initialized( false ),
+    M_is_closed( false ),
+    M_mat()
 {}
 template <typename T>
-MatrixEigenDense<T>::MatrixEigenDense( size_type r, size_type c )
+MatrixEigenDense<T>::MatrixEigenDense( size_type r, size_type c, WorldComm const& worldComm )
     :
-    super(),
-    _M_is_initialized( false ),
-    _M_is_closed( false ),
-    _M_mat( r, c )
+    super(worldComm),
+    M_is_initialized( false ),
+    M_is_closed( false ),
+    M_mat( r, c )
 {}
 
 template <typename T>
 MatrixEigenDense<T>::MatrixEigenDense( MatrixEigenDense const & m )
     :
     super( m ),
-    _M_is_initialized( m._M_is_initialized ),
-    _M_is_closed( m._M_is_closed ),
-    _M_mat( m._M_mat )
+    M_is_initialized( m.M_is_initialized ),
+    M_is_closed( m.M_is_closed ),
+    M_mat( m.M_mat )
 
 {}
 
@@ -74,7 +78,7 @@ MatrixEigenDense<T>::init ( const size_type m,
     if ( ( m==0 ) || ( n==0 ) )
         return;
 
-    _M_mat.resize( m,n );
+    M_mat.resize( m,n );
     this->zero ();
 }
 template <typename T>
@@ -94,7 +98,7 @@ MatrixEigenDense<T>::init ( const size_type m,
     if ( ( m==0 ) || ( n==0 ) )
         return;
 
-    _M_mat.resize( m,n );
+    M_mat.resize( m,n );
     this->zero ();
 }
 
@@ -108,7 +112,7 @@ MatrixEigenDense<T>::addMatrix ( int* rows, int nrows,
     for( int i=0; i < nrows; ++i )
         for( int j=0; j < ncols; ++j )
         {
-            _M_mat( rows[i], cols[j] ) += data[i*ncols+j];
+            M_mat( rows[i], cols[j] ) += data[i*ncols+j];
         }
 
 }
@@ -116,26 +120,26 @@ template<typename T>
 void
 MatrixEigenDense<T>::scale( const T a )
 {
-    _M_mat *= a;
+    M_mat *= a;
 }
 
 template<typename T>
 void
 MatrixEigenDense<T>::resize( size_type nr, size_type nc, bool /*preserve*/ )
 {
-    _M_mat.resize( nr, nc );
+    M_mat.resize( nr, nc );
 }
 
 template<typename T>
 void
 MatrixEigenDense<T>::close() const
 {
-    _M_is_closed = true;
+    M_is_closed = true;
 }
 
 template<typename T>
 void
-MatrixEigenDense<T>::transpose( MatrixSparse<value_type>& Mt ) const
+MatrixEigenDense<T>::transpose( MatrixSparse<value_type>& Mt, size_type options ) const
 {
     FEELPP_ASSERT( 0 ).warn( "not implemented yet" );
 }
@@ -147,7 +151,7 @@ MatrixEigenDense<T>::diagonal ( Vector<T>& dest ) const
 {
 #if 0
     VectorEigen<T>& _dest( dynamic_cast<VectorEigen<T>&>( dest ) );
-    _dest = _M_mat.diagonal();
+    _dest = M_mat.diagonal();
 #endif
 }
 template<typename T>
@@ -165,10 +169,10 @@ MatrixEigenDense<T>::energy( Vector<value_type> const& __v,
     std::copy( u.vec().begin(), u.vec().end(), __u1.begin() );
 
     if ( !tranpose )
-        gmm::mult( _M_mat, __u1, __t );
+        gmm::mult( M_mat, __u1, __t );
 
     else
-        gmm::mult( gmm::transposed( _M_mat ), __u1, __t );
+        gmm::mult( gmm::transposed( M_mat ), __u1, __t );
 
     return gmm::vect_sp( __v1, __t );
 #endif
@@ -181,22 +185,22 @@ MatrixEigenDense<T>::addMatrix( value_type v, MatrixSparse<value_type>& _m )
 {
     MatrixEigenDense<value_type>* m = dynamic_cast<MatrixEigenDense<value_type>*>( &_m );
     FEELPP_ASSERT( m != 0 ).error( "invalid sparse matrix type, should be MatrixEigenDense" );
-    FEELPP_ASSERT( m->closed() ).error( "invalid sparse matrix type, should be closed" );
+    //FEELPP_ASSERT( m->closed() ).error( "invalid sparse matrix type, should be closed" );
 
     if ( !m )
         throw std::invalid_argument( "m" );
 
     if ( !this->closed() )
     {
-        _M_mat += v * m->_M_mat;
+        M_mat += v * m->M_mat;
     }
 }
 
 template<typename T>
 void
 MatrixEigenDense<T>::updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > m,
-                                     size_type start_i,
-                                     size_type start_j )
+                                     std::vector<size_type> start_i,
+                                     std::vector<size_type> start_j )
 {
     LOG(ERROR) << "invalid call to updateBlockMat(), not yet implemented\n";
 
@@ -233,11 +237,11 @@ MatrixEigenDense<T>::printMatlab( const std::string filename ) const
     file_out.precision( 16 );
     file_out.setf( std::ios::scientific );
 
-    for ( size_type i = 0; i < _M_mat.rows(); ++i )
+    for ( size_type i = 0; i < M_mat.rows(); ++i )
     {
-        for ( size_type j = 0; j < _M_mat.cols(); ++j )
+        for ( size_type j = 0; j < M_mat.cols(); ++j )
         {
-            value_type v = _M_mat( i,j );
+            value_type v = M_mat( i,j );
 
             file_out << i + 1 << separator
                      << j + 1 << separator
@@ -246,10 +250,123 @@ MatrixEigenDense<T>::printMatlab( const std::string filename ) const
     }
 
     file_out << "];" << std::endl;
-    file_out << "I=S(:,1); J=S(:,2); S=S(:,3);" << std::endl;
+    //file_out << "I=S(:,1); J=S(:,2); S=S(:,3);" << std::endl;
+    file_out << "I=S(:,1); J=S(:,2);" << std::endl;
     file_out << "spy(S);" << std::endl;
 }
 
+template<typename T>
+void
+MatrixEigenDense<T>::zeroRows( std::vector<int> const& rows,
+                               Vector<value_type> const& vals,
+                               Vector<value_type>& rhs,
+                               Context const& on_context )
+{
+    Feel::detail::ignore_unused_variable_warning( rhs );
+    Feel::detail::ignore_unused_variable_warning( vals );
+
+    VectorEigen<T>* prhs = dynamic_cast<VectorEigen<T>*> ( &rhs );
+    VectorEigen<T> const* pvals = dynamic_cast<const VectorEigen<T>*> ( &vals );
+
+    for ( size_type i = 0; i < rows.size(); ++i )
+    {
+        value_type value = 1.0;
+
+        if ( on_context.test( OnContext::ELIMINATION_KEEP_DIAGONAL ) )
+            value = M_mat( rows[i], rows[i] );
+        M_mat.row( rows[i] ).setZero();
+
+        prhs->vec() -= M_mat.col(rows[i])*vals(rows[i]);
+        M_mat.col( rows[i] ).setZero();
+
+        // set diagonal
+        M_mat( rows[i], rows[i] ) = value;
+
+        // multiply rhs by value of the diagonal entry value
+        rhs.set( rows[i], value * vals(rows[i]) );
+    }
+}
+
+template<typename T>
+void
+MatrixEigenDense<T>::sqrt( MatrixSparse<value_type>& _m ) const
+{
+    MatrixEigenDense<value_type>* _md = dynamic_cast<MatrixEigenDense<value_type>*>(&_m);
+    _md->mat() = this->M_mat.sqrt();
+}
+
+template <typename T>
+void
+MatrixEigenDense<T>::eigenValues ( std::vector<std::complex<value_type>> &Eingvs )
+{
+    auto eigen_vals = M_mat.eigenvalues();
+    for (size_type i=0; i < eigen_vals.size(); ++i )
+    {
+        Eingvs.push_back(eigen_vals[i]);
+    }
+}
+
+
+template <typename T>
+void
+MatrixEigenDense<T>::matMatMult ( MatrixSparse<T> const& In, MatrixSparse<T> &Res )
+{
+    //FEELPP_ASSERT ( this->isInitialized() ).error( "eigendense matrix not initialized" );
+
+    FEELPP_ASSERT( this->size2() == In.size1() )( this->size2() )( In.size1() ).error( "incompatible dimension" );
+
+    MatrixEigenDense<T> const* X = dynamic_cast<MatrixEigenDense<T> const*> ( &In );
+    MatrixEigenDense<T>* Y = dynamic_cast<MatrixEigenDense<T>*> ( &Res );
+
+    FEELPP_ASSERT ( X != 0 ).error( "invalid eigendense matrix" );
+
+    Y->mat() = this->M_mat*X->mat();
+
+    // int ierr=0;
+    // ierr = MatMatMult(this->M_mat, X->mat(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &Y->mat());
+    // CHKERRABORT( this->comm(),ierr );
+
+}
+
+template <typename T>
+void
+MatrixEigenDense<T>::matInverse ( MatrixSparse<T> &Inv )
+{
+    //FEELPP_ASSERT ( this->isInitialized() ).error( "eigendense matrix not initialized" );
+
+    FEELPP_ASSERT( this->size1() == Inv.size1() )( this->size1() )( Inv.size1() ).error( "incompatible dimension" );
+
+    //MatrixEigenDense<T> const* X = dynamic_cast<MatrixEigenDense<T> const*> ( &In );
+    MatrixEigenDense<T>* X = dynamic_cast<MatrixEigenDense<T>*> ( &Inv );
+
+    FEELPP_ASSERT ( X != 0 ).error( "invalid eigendense matrix" );
+
+    X->mat() = this->M_mat.inverse();
+
+    // int ierr=0;
+    // ierr = MatMatMult(this->M_mat, X->mat(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &Y->mat());
+    // CHKERRABORT( this->comm(),ierr );
+
+}
+
+
+template <typename T>
+void
+MatrixEigenDense<T>::createSubmatrix( MatrixSparse<T>& submatrix,
+                                 const std::vector<size_type>& rows,
+                                 const std::vector<size_type>& cols ) const
+{
+    MatrixEigenDense<T>* A = dynamic_cast<MatrixEigenDense<T>*> ( &submatrix );
+
+    // eigen can not extract non-contiguous submatrices, hence we cannot use block
+    for (size_type i=0; i<rows.size(); ++i)
+    {
+        for (size_type j=0; j<rows.size(); ++j)
+        {
+            A->mat()(i,j) = this->M_mat(rows[i],cols[j]);
+        }
+    }
+}
 
 //
 // Explicit instantiations

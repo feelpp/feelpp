@@ -36,16 +36,29 @@
 \section Diode_Description Description
 The Maxwell equations read:
 \f{eqnarray*}
+\frac{-1}{c^{2}}\frac{\partial {{\bm E}}}{\partial t}+\nabla\times {{\bm B}}& = & \mu_{0} {{\bm J}}\\
+{{\bm B}}{t}+\nabla\times {{\bm E}}& = & 0\\
+\nabla \cdot {{\bm B}}& = & 0\\
+\nabla \cdot {{\bm E}}& = & \frac{\rho}{\epsilon_{o}}
+\f}
+
+<!--
+\f{eqnarray*}
 \frac{-1}{c^{2}}\frac{\partial \ensuremath{{\bm E}}\xspace}{\partial t}+\nabla\times \ensuremath{{\bm B}}\xspace & = & \mu_{0} \ensuremath{{\bm J}}\xspace\\
 \ensuremath{{\bm B}}\xspace_{t}+\nabla\times \ensuremath{{\bm E}}\xspace & = & 0\\
 \nabla \cdot \ensuremath{{\bm B}}\xspace & = & 0\\
 \nabla \cdot \ensuremath{{\bm E}}\xspace & = & \frac{\rho}{\epsilon_{o}}
 \f}
+-->
 
+<!--
 where \f$\ensuremath{{\bm E}}\xspace\f$ is the electric field, \f$\ensuremath{{\bm B}}\xspace\f$ the magnetic field,
-\f$\ensuremath{{\bm J}}\xspace\f$ the current density, \f$ c \f$ the speed of light, \f$ \ rho \f$
-density of electric charge, \f$ \ mu_ {0} \f$ the vacuum permeability
-and \f$ \ epsilon_ {0} \f$ the vacuum permittivity.<br>
+\f$\ensuremath{{\bm J}}\xspace\f$ the current density, \f$ c \f$ the speed of light, \f$ \rho \f$
+-->
+where \f${{\bm E}}\f$ is the electric field, \f${{\bm B}}\f$ the magnetic field,
+\f${{\bm J}}\f$ the current density, \f$ c \f$ the speed of light, \f$ \rho \f$
+density of electric charge, \f$ \mu_ {0} \f$ the vacuum permeability
+and \f$ \epsilon_ {0} \f$ the vacuum permittivity.<br>
 In the midst industrial notament in aeronautics, systems
 Products must verify certain standards such as the receipt
 an electromagnetic wave emitted by a radar does not cause
@@ -57,13 +70,20 @@ to such attacks.<br>
 Also note that the last two equations are actually
 initial conditions, since if we assume they are true at the moment
 \f$ t = 0\f$ then it can be deduced from the first two.<br>
-At $t=0s$, we suppose that
+At \f$t=0s\f$, we suppose that
+\f{eqnarray}
+\nabla \cdot {{\bm B}}& = & 0\\
+\nabla \cdot {{\bm E}}& = & \frac{\rho}{\epsilon_{o}}
+\f}
+<!--
 \f{eqnarray}
 \nabla \cdot \ensuremath{{\bm B}}\xspace & = & 0\\
 \nabla \cdot \ensuremath{{\bm E}}\xspace & = & \frac{\rho}{\epsilon_{o}}
 \f}
+-->
 
-Suppose that \f$\ensuremath{{\bm B}}\xspace = (B_x, B_y, B_z )^T\f$ and \f$\ensuremath{{\bm E}}\xspace=(E_x,E_y,E_z)^T\f$
+Suppose that \f${{\bm B}} = (B_x, B_y, B_z )^T\f$ and \f${{\bm E}}=(E_x,E_y,E_z)^T\f$
+<!-- Suppose that \f$\ensuremath{{\bm B}}\xspace = (B_x, B_y, B_z )^T\f$ and \f$\ensuremath{{\bm E}}\xspace=(E_x,E_y,E_z)^T\f$ -->
 i.e.\f{eqnarray}
 \frac{\partial B_{x}}{\partial x}(t=0)+\frac{\partial B_{y}}{\partial y}(t=0)+\frac{\partial B_{z}}{\partial z} & (t=0)= & 0\\
 \frac{\partial E_{x}}{\partial x}(t=0)+\frac{\partial E_{y}}{\partial
@@ -83,21 +103,41 @@ x}B_{x}+\frac{\partial}{\partial t}\frac{\partial}{\partial y}B_{y}+\frac{\parti
 thanks to
 \f{equation}
   \label{eq:3}
+  {{\bm B}}_{t}+\nabla\times {{\bm E}} =0
+\f}
+<!--
+\f{equation}
+  \label{eq:3}
   \ensuremath{{\bm B}}\xspace_{t}+\nabla\times \ensuremath{{\bm E}}\xspace =0
 \f}
+-->
 
+So, for all \f$t\geq0\f$,
+\f{equation}
+  \label{eq:4}
+  \nabla \cdot {{\bm B}}(t)=\nabla\cdot(0)=0
+\f}
+
+<!--
 So, for all \f$t\geq0\f$,
 \f{equation}
   \label{eq:4}
   \nabla \cdot \ensuremath{{\bm B}}\xspace(t)=\nabla\cdot\B(0)=0
 \f}
+-->
 
 We deduce the same way the second equation, using the charge
 conservation equation :
 \f{equation}
   \label{eq:2}
+  \frac{\partial \rho}{\partial t} + \nabla \cdot  (\rho {{\bm J}}) = 0
+\f}
+<!--
+\f{equation}
+  \label{eq:2}
   \frac{\partial \rho}{\partial t} + \nabla \cdot  (\rho \ensuremath{{\bm J}}\xspace) = 0
 \f}
+-->
 
 \section Diode_Theory Theory
 
@@ -114,7 +154,7 @@ conservation equation :
 #include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/region.hpp>
-#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/creategmshmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feeldiscr/projector.hpp>
 #include <feel/feelvf/vf.hpp>

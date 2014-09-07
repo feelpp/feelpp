@@ -22,6 +22,7 @@
 #
 #
 set(SRC
+  hdf5.cpp
   info.cpp
   feel.cpp
   application.cpp
@@ -35,9 +36,8 @@ set(SRC
   worldcomm.cpp
   debug.cpp
  )
-
+if (NOT FEELPP_HAS_STDIO_FMEMOPEN )
+  set( SRC fmemopen.c ${SRC})
+endif()
 file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
 feel_append_src(feelcore "${SRC};${HDR}")
-
-
-

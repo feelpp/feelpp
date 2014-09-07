@@ -25,10 +25,10 @@ set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
 project( feel-research )
 
-foreach(project dot fsi hifimagnet idf ifp  hamm maxwell cabine pmp m2cssi rb publications )
-
-# a posteriori error estimation project
-if ( EXISTS ${FEELPP_SOURCE_DIR}/research/${project} )
-  add_subdirectory( ${project} )
-endif()
+separate_arguments(FEELPP_ENABLED_PROJECTS)
+FOREACH( project ${FEELPP_ENABLED_PROJECTS} )
+	string(TOUPPER ${project} PROJECT)
+	IF(${FEELPP_ENABLE_RESEARCH_${PROJECT}})
+		add_subdirectory( ${project} )
+	endif()
 endforeach()

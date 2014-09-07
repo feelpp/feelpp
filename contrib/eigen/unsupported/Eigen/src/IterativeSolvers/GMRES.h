@@ -2,7 +2,7 @@
 // for linear algebra.
 //
 // Copyright (C) 2011 Gael Guennebaud <gael.guennebaud@inria.fr>
-// Copyright (C) 2012 Kolja Brix <brix@igpm.rwth-aaachen.de>
+// Copyright (C) 2012, 2014 Kolja Brix <brix@igpm.rwth-aaachen.de>
 //
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
@@ -61,7 +61,6 @@ bool gmres(const MatrixType & mat, const Rhs & rhs, Dest & x, const Precondition
 
 	typedef typename Dest::RealScalar RealScalar;
 	typedef typename Dest::Scalar Scalar;
-	typedef Matrix < RealScalar, Dynamic, 1 > RealVectorType;
 	typedef Matrix < Scalar, Dynamic, 1 > VectorType;
 	typedef Matrix < Scalar, Dynamic, Dynamic > FMatrixType;
 
@@ -73,16 +72,20 @@ bool gmres(const MatrixType & mat, const Rhs & rhs, Dest & x, const Precondition
 
 	VectorType p0 = rhs - mat*x;
 	VectorType r0 = precond.solve(p0);
-// 	RealScalar r0_sqnorm = r0.squaredNorm();
+ 
+	// is initial guess already good enough?
+	if(abs(r0.norm()) < tol) {
+		return true; 
+	}
 
 	VectorType w = VectorType::Zero(restart + 1);
 
-	FMatrixType H = FMatrixType::Zero(m, restart + 1);
+	FMatrixType H = FMatrixType::Zero(m, restart + 1); // Hessenberg matrix
 	VectorType tau = VectorType::Zero(restart + 1);
 	std::vector < JacobiRotation < Scalar > > G(restart);
 
 	// generate first Householder vector
-	VectorType e;
+	VectorType e(m-1);
 	RealScalar beta;
 	r0.makeHouseholder(e, tau.coeffRef(0), beta);
 	w(0)=(Scalar) beta;
@@ -348,7 +351,8 @@ public:
   template<typename Rhs,typename Dest>
   void _solve(const Rhs& b, Dest& x) const
   {
-    x.setZero();
+    x = b;
+    if(x.squaredNorm() == 0) return; // Check Zero right hand side
     _solveWithGuess(b,x);
   }
 

@@ -1,0 +1,122 @@
+<!-- -*- mode: c++ -*- -->
+namespace Feel {
+/**
+   \page md_Credits Credits
+
+   \tableofcontents
+
+   \section Credits_Copyright Copyright
+
+   Feel++ is Copyright (C) 2010-2014 by
+   \li Feel++ Consortium
+
+   Feel++ is Copyright (C) 2005-2014 by
+   \li Université Joseph Fourier (Grenoble, France)
+   \li University of Coimbra (Portugal)
+
+   Feel++ is Copyright (C) 2011-2014 by
+   \li Université de Strasbourg (France)
+
+   Feel++ is Copyright (C) 2011-2014 by
+   \li CNRS (France)
+
+   Feel++ is Copyright (C) 2005-2006 by
+   \li Ecole Polytechnique Fédérale de Lausanne (EPFL, Switzerland)
+
+   \section Credits_People People
+
+   \subsection Credits_Management Management
+
+   \li Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+
+   \subsection Credits_Devs Current Developers and Contributors:
+
+The current developers are
+
+
+ \li Alexandre Ancel <alexandre.ancel@cemosis.fr>
+ \li Vincent Chabannes <vincent.chabannes@feelpp.org>
+ \li Guillaume Dollé <gdolle@unistra.fr>
+ \li Vincent Doyeux <vincent.doyeux@ujf-grenoble.fr>
+ \li Cecile Daversin <Cecile.Daversin@lncmi.cnrs.fr>
+ \li Vincent Huber <vincent.huber@cemosis.fr>
+ \li Mourad Ismail <Mourad.Ismail@ujf-grenoble.fr>
+ \li Pierre Jolivet <pierre.jolivet@ljll.math.upmc.fr>
+ \li Goncalo Pena <goncalo.pena@epfl.ch>
+ \li Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ \li Abdoulaye Samake <samakeablo@gmail.com>
+ \li Ranine Tarabay <ranine.tarbay@math.unistra.fr>
+ \li Christophe Trophime <christophe.trophime@lncmi.cnrs.fr>
+ \li Stéphane Veys <stephane.veys@imag.fr>
+ \li Jean-Baptiste Wahl <wahl.jb@gmail.com>
+
+Feel++ benefits from the many discussions and close research collaborations with
+the following persons
+
+ \li Zakaria Belhachmi <zakaria.belhachmi@uha.fr>
+ \li Silvia Bertoluzza <silvia.bertoluzza@imati.cnr.it>
+ \li Micol Pennacchio <Micol.Pennacchio@imati.cnr.it>
+ \li Marcela Szopos <mszopos@math.unistra.fr>
+
+Finally Feel++ also benefits from discussions within collaborative projects with
+many people (in no particular order):
+
+Yannick Hoarau, Philippe Gilotte, Benjamin Surowiec, Romain Hild, Marion Spreng,
+Benjamin Vanthong, Thomas Lantz, Mamadou Camara, Camille Boulard, Pierre
+Gerhard, Frédéric Hecht, Michel Fouquembergh, Denis Barbier, Jean-Marc Gratien,
+Daniele Di Pietro.
+
+
+ \subsection Credits_PastDevs Past Developers and Contributors
+
+ \li Benjamn Stamm <benjamin.stamm@epfl.ch>
+ \li Gilles Steiner <gilles.steiner@epfl.ch>
+ \li Christoph Winkelmann <christoph.winkelmann@epfl.ch>
+
+ \subsection Documentation_Authors Documentation Authors
+
+ This documentation is a contribution from many people (in alphabetical order
+ with respect to the name):
+
+ \li Alexandre Ancel
+ \li Denis Barbier
+ \li Guillaume Dollé
+ \li Vincent Huber
+ \li Christophe Prud'homme
+ \li Ranine Tarabay
+ \li Jean-Baptiste Wahl
+
+ \section Funding Funding
+
+ \subsection Funding_Current Current funding
+
+ Feel++ is supported by
+ \li ANR projects:
+   \li HAMM - http://www.hamm-project.fr (Cosinus call \li 2010-2014)
+   \li VIVABRAIN - http://www.vivabrain.fr (MN call - 2013-2017)
+   \li CHORUS (MN call - 2013-2017)
+ \li one FNRAE project
+   \li RB4FASTSIM - 2010-2014
+ \li PRACE projects
+   \li HP-FEEL++
+   \li HP-PDE{1,2}
+ \li IDEX CeMoSiS http://www.cemosis.fr
+ \li LABEX IRMIA http://labex-irmia.u-strasbg.fr/
+
+ \subsection Funding_Past  Past funding
+ - OPUS - http://www.opus-project.fr (TLOG call - 2008-2011)
+ - the region Rhônes-Alpes thanks the cluster ISLE[fn:2] and the project
+   CHPID since 2009
+
+# Footnotes
+
+[fn:1] http://www.agence-nationale-recherche.fr/
+
+[fn:2] http://cluster-isle.grenoble-inp.fr/
+
+[fn:3] http://chpid.www.forge.imag.fr/
+
+[fn:4] http://www.fnrae.org
+
+*/
+}

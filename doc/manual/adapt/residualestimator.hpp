@@ -3,10 +3,10 @@
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-             Stéphane Veys <stephane.veys@gmail.com>
+             Stephane Veys <stephane.veys@gmail.com>
        Date: 2010-08-05
 
-  Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2010 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -23,24 +23,19 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file residualestimator.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \author Stéphane Veys <stephane.veys@gmail.com>
+   \author Stephane Veys <stephane.veys@gmail.com>
    \date 2010-08-05
  */
 #include <feel/feel.hpp>
+#include <feel/feeldiscr/elementdiv.hpp>
+#include <feel/feelfilters/creategmshmesh.hpp>
 
-#if defined (FEELPP_HAS_MADLIB_H)
-#include <MAdLib.h>
-#endif // FEELPP_HAS_MADLIB_H
-
-
-
-/** use Feel namespace */
 using namespace Feel;
 using namespace boost::numeric::ublas;
 
 /**
+ * \file residualestimator.html
  * This routine defines some information about the application like
  * authors, version, or name of the application. The data returned is
  * typically used as an argument of a Feel::Application subclass.
@@ -59,15 +54,13 @@ makeAbout()
                      "Copyright (c) 2010 Universite Joseph Fourier" );
 
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
-    about.addAuthor( "Stéphane Veys", "developer", "stephane.veys@gmail.com", "" );
+    about.addAuthor( "StÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ©phane Veys", "developer", "stephane.veys@gmail.com", "" );
     return about;
 
 }
 /**
- * \class ResidualEstimator
- *
  * Laplacian Solver using continuous approximation spaces
- * solve \f$ -\Delta u = f\f$ on \f$\Omega\f$ and \f$u= g\f$ on \f$\Gamma\f$
+ * solve \f$ -\Delta u = f \f$ on \f$\Omega\f$ and \f$ u= g \f$ on \f$\Gamma \f$
  *
  * \tparam Dim the geometric dimension of the problem (e.g. Dim=1, 2 or 3)
  * \tparam Order the approximation order
@@ -202,84 +195,6 @@ public:
           ( collapseOnBoundaryTolerance, *( boost::is_arithmetic<mpl::_> ), 1e-6 ) ) // 5. optional
     )
     {
-#if defined (FEELPP_HAS_MADLIB_H)
-        saveGMSHMesh( _filename="inputmesh.msh",
-                      _parametricnodes=!model.empty(),
-                      _mesh=h.mesh() );
-        MAd::pGModel themodel = 0;
-        GM_create( &themodel,"theModel" );
-
-        if ( !model.empty() )
-            GM_read( themodel, model );
-
-        else
-            GM_read( themodel, "inputmesh.msh" );
-
-        MAd::pMesh amesh = MAd::M_new( themodel );
-        MAd::M_load( amesh, "inputmesh.msh" );
-
-        MAd::PWLSField * sizeField = new MAd::PWLSField( amesh );
-        sizeField->setCurrentSize();
-        auto _elit = h.mesh()->beginElement();
-        auto _elen = h.mesh()->endElement();
-
-        for ( ; _elit != _elen; ++_elit )
-        {
-            for ( int l = 0; l < _elit->numPoints; ++l )
-            {
-                int dof = h.functionSpace()->dof()->localToGlobal( _elit->id(), l, 0 ).get<0>();
-                int pid = _elit->point( l ).id()+1;
-                sizeField->setSize( pid , h( dof ) );
-            }
-        }
-
-        MAd::MeshAdapter* ma = new MAd::MeshAdapter( amesh,sizeField );
-
-        ma->setMaxIterationsNumber( maxit );
-        ma->setEdgeLenSqBounds( 1.0/3.0, 3.0 );
-        ma->setNoSwapQuality( 0.1 );
-        ma->setSliverQuality( 0.02 );
-        ma->setSliverPermissionInESplit( true, 10. );
-        ma->setSliverPermissionInECollapse( true, 0.1 );
-        ma->snapVertices();
-        //ma->setEdgeLenSqBounds( hmin*hmin, hmax*hmax );
-#if 1
-        ma->setGeoTracking( !model.empty() );
-#if 0
-        true,
-        0,
-        1.,
-        false,
-        false );
-#endif
-#endif
-
-        if ( statistics )
-    {
-        std::cout << "Statistics before optimization: \n";
-        ma->printStatistics( std::cout );
-            ma->writePos( "meanRatioBefore.pos",MAd::OD_MEANRATIO );
-        }
-
-        // Optimize
-        // ---------
-        ma->run();
-
-        if ( statistics )
-    {
-        // Outputs final mesh
-        // -------------------
-        std::cout << "Statistics after optimization: \n";
-        ma->printStatistics( std::cout );
-            ma->writePos( "meanRatioAfter.pos",MAd::OD_MEANRATIO );
-        }
-        MAd::M_writeMsh ( amesh, "result.msh", 2, NULL );
-
-        return loadGMSHMesh( _mesh=new mesh_type,
-        _filename="result.msh",
-        _update=update );
-
-#endif // FEELPP_HAS_MADLIB_H
 
     }
 
@@ -418,22 +333,24 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
 
     /**
      * The function space and some associated elements(functions) are then defined
+     * \snippet residualestimator.hpp toto1
      */
-    /** \code */
+    // [toto1]
     P0h = p0_space_type::New( mesh );
     P1h = p1_space_type::New( mesh );
     space_ptrtype Xh = space_type::New( mesh );
     element_type u( Xh, "u" );
     element_type v( Xh, "v" );
-    /** \endcode */
+    // [toto1]
 
 
 
     /** define \f$g\f$ the expression of the exact solution and
      * \f$f\f$ the expression of the right hand side such that \f$g\f$
      * is the exact solution
+     * \snippet residualestimator.hpp toto2
      */
-    /** \code */
+    // [toto2]
     //# marker1 #
     value_type pi = M_PI;
     //! deduce from expression the type of g (thanks to keyword 'auto')
@@ -460,7 +377,7 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
         );
 
     //# endmarker1 #
-    /** \endcode */
+    // [toto2]
 
 
     using namespace Feel::vf;
@@ -469,8 +386,9 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
      * Construction of the right hand side. F is the vector that holds
      * the algebraic representation of the right habd side of the
      * problem
+     * \snippet residualestimator.hpp toto3
      */
-    /** \code */
+    // [toto3]
     //# marker2 #
     vector_ptrtype F( M_backend->newVector( Xh ) );
     form1( _test=Xh, _vector=F, _init=true ) =
@@ -489,22 +407,26 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
 
     F->close();
 
-    /** \endcode */
+    // [toto3]
 
     /**
      * create the matrix that will hold the algebraic representation
      * of the left hand side
+     * \snippet residualestimator.hpp toto4
      */
     //# marker3 #
-    /** \code */
+    // [toto4]
     sparse_matrix_ptrtype D( M_backend->newMatrix( Xh, Xh ) );
-    /** \endcode */
+    // [toto4]
 
-    //! assemble $\int_\Omega \nu \nabla u \cdot \nabla v$
-    /** \code */
+    /**
+      * assemble \f$\int_\Omega \nu \nabla u \cdot \nabla v\f$
+     * \snippet residualestimator.hpp toto5
+    */
+    // [toto5]
     form2( Xh, Xh, D, _init=true ) =
         integrate( elements( mesh ), gradt( u )*trans( grad( v ) ) );
-    /** \endcode */
+    // [toto5]
     //# endmarker3 #
 
     if ( this->comm().size() != 1 || weakdir )
@@ -513,8 +435,9 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
          * -# assemble \f$\int_{\partial \Omega} -\nabla u \cdot \mathbf{n} v\f$
          * -# assemble \f$\int_{\partial \Omega} -\nabla v \cdot \mathbf{n} u\f$
          * -# assemble \f$\int_{\partial \Omega} \frac{\gamma}{h} u v\f$
+     * \snippet residualestimator.hpp toto6
          */
-        /** \code */
+        // [toto6]
         //# marker10 #
         form2( Xh, Xh, D ) +=
             integrate( markedfaces( mesh,tag_Dirichlet ),
@@ -523,7 +446,7 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
                        +penaldir*id( v )*idt( u )/hFace() );
         D->close();
         //# endmarker10 #
-        /** \endcode */
+        // [toto6]
     }
 
     else
@@ -531,32 +454,38 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
         /** strong(algebraic) dirichlet conditions treatment for the boundaries marked 1 and 3
          * -# first close the matrix (the matrix must be closed first before any manipulation )
          * -# modify the matrix by cancelling out the rows and columns of D that are associated with the Dirichlet dof
+     * \snippet residualestimator.hpp toto7
          */
-        /** \code */
+        // [toto7]
         //# marker5 #
         D->close();
         form2( Xh, Xh, D ) +=
             on( markedfaces( mesh, tag_Dirichlet ), u, F, g );
         //# endmarker5 #
-        /** \endcode */
+        // [toto7]
 
     }
 
-    /** \endcode */
 
-
-    //! solve the system
-    /** \code */
+    /**
+      * solve the system
+     * \snippet residualestimator.hpp toto8
+     */
+        // [toto8]
     //! solve \f$ D u = F \f$
     backend_type::build()->solve( _matrix=D, _solution=u, _rhs=F );
-    /** \endcode */
+        // [toto8]
 
-    //! compute the \f$L_2$ norm of the error
-    /** \code */
+    /**
+   * compute the \f$L_2\f$ norm of the error
+     * \snippet residualestimator.hpp toto9
+     */
+     // [toto9]
     //# marker7 #
     double L2exact = math::sqrt( integrate( elements( mesh ),g*g ).evaluate()( 0,0 ) );
     double L2error2 =integrate( elements( mesh ),( idv( u )-g )*( idv( u )-g ) ).evaluate()( 0,0 );
     double L2error = math::sqrt( L2error2 );
+    // [toto9]
     double semiH1error2 = integrate( elements( mesh ),( gradv( u )-grad_g )*( gradv( u )-grad_g ) ).evaluate()( 0,0 );
     double H1error = math::sqrt( L2error2+semiH1error2 );
     double H1exact = math::sqrt( integrate( elements( mesh ),g*g+grad_g*trans( grad_g ) ).evaluate()( 0,0 ) );
@@ -595,12 +524,12 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
 
     if ( error_type==2 )
     {
-        H1errorP1 = element_div( vf::sum( P1h, idv( H1RealErrorP0 )*meas() ), vf::sum( P1h, meas() ) );
+        H1errorP1 = div( vf::sum( P1h, idv( H1RealErrorP0 )*meas() ), vf::sum( P1h, meas() ) );
     }
 
     else if ( error_type==1 )
     {
-        H1errorP1 = element_div( vf::sum( P1h, idv( H1estimator )*meas() ), vf::sum( P1h, meas() ) );
+        H1errorP1 = div( vf::sum( P1h, idv( H1estimator )*meas() ), vf::sum( P1h, meas() ) );
     }
 
     else
@@ -632,7 +561,6 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
 
 
     //! save the results
-    /** \code */
     //! project the exact solution
     element_type exact_solution( Xh, "exact_solution" );
     exact_solution = vf::project( Xh, elements( mesh ), g );
@@ -658,7 +586,6 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
         LOG(INFO) << "exportResults done\n";
     }
 
-    /** \endcode */
 
     LOG(INFO)<< " real L2 error : "<<Y[0]<<"\n";
     LOG(INFO)<< " estimated L2 error "<<Y[2]<<"\n";

@@ -26,11 +26,12 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-12-23
  */
-#ifndef __Backend_H
-#define __Backend_H 1
+#ifndef Backend_H
+#define Backend_H 1
 
 #include <boost/timer.hpp>
 #include <boost/tuple/tuple.hpp>
+#include <boost/tuple/tuple_comparison.hpp>
 #include <boost/fusion/include/fold.hpp>
 #include <boost/smart_ptr/enable_shared_from_this.hpp>
 
@@ -42,9 +43,10 @@
 #include <feel/feelalg/vector.hpp>
 #include <feel/feelalg/matrixsparse.hpp>
 #include <feel/feelalg/matrixblock.hpp>
-#include <feel/feelalg/vectorblock.hpp>
+//#include <feel/feelalg/vectorblock.hpp>
 #include <feel/feelalg/datamap.hpp>
 
+#include <feel/feelalg/solverlinear.hpp>
 #include <feel/feelalg/solvernonlinear.hpp>
 #include <feel/feelalg/preconditioner.hpp>
 #include <feel/feeldiscr/functionspacebase.hpp>
@@ -77,23 +79,28 @@ SYMMETRIC = 1 << 3
 namespace detail
 {
 template<typename T>
-DataMap datamap( T const& t, mpl::true_ )
+boost::shared_ptr<DataMap> datamap( T const& t, mpl::true_ )
 {
-    return t->map();
+    return t->mapPtr();
 }
 template<typename T>
-DataMap datamap( T const& t, mpl::false_ )
+boost::shared_ptr<DataMap> datamap( T const& t, mpl::false_ )
 {
-    return t.map();
+    return t.mapPtr();
 }
 template<typename T>
-DataMap datamap( T const& t )
+boost::shared_ptr<DataMap> datamap( T const& t )
 {
-    return datamap( t, detail::is_shared_ptr<T>() );
+    return datamap( t, Feel::detail::is_shared_ptr<T>() );
 }
 
 template<typename T>
-typename T::reference ref( T t, mpl::true_ )
+#if BOOST_VERSION >= 105300
+typename boost::detail::sp_dereference< typename T::element_type >::type
+#else
+typename T::reference
+#endif
+ref( T t, mpl::true_ )
 {
     return *t;
 }
@@ -103,9 +110,9 @@ T& ref( T& t, mpl::false_ )
     return t;
 }
 template<typename T>
-auto ref( T& t ) -> decltype( ref( t, detail::is_shared_ptr<T>() ) )
+auto ref( T& t ) -> decltype( ref( t, Feel::detail::is_shared_ptr<T>() ) )
 {
-    return ref( t, detail::is_shared_ptr<T>() );
+    return ref( t, Feel::detail::is_shared_ptr<T>() );
 }
 
 
@@ -116,6 +123,8 @@ template<typename T> class MatrixBlockBase;
 template<int NR, int NC, typename T> class MatrixBlock;
 template<typename T> class VectorBlockBase;
 template<int NR, typename T> class VectorBlock;
+
+template<typename T> class BlocksBaseSparseMatrix;
 
 /**
  * \class Backend
@@ -154,10 +163,14 @@ public:
     typedef SolverNonLinear<value_type> solvernonlinear_type;
     typedef boost::shared_ptr<solvernonlinear_type> solvernonlinear_ptrtype;
 
-    typedef boost::tuple<bool, size_type, value_type> solve_return_type;
-    typedef boost::tuple<bool, size_type, value_type> nl_solve_return_type;
+    typedef typename SolverLinear<value_type>::solve_return_type solve_return_type;
+    typedef typename solvernonlinear_type::solve_return_type nl_solve_return_type;
 
+    typedef DataMap datamap_type;
+    typedef boost::shared_ptr<datamap_type> datamap_ptrtype;
 
+    typedef typename datamap_type::indexsplit_type indexsplit_type;
+    typedef typename datamap_type::indexsplit_ptrtype indexsplit_ptrtype;
 
     //@}
 
@@ -169,6 +182,7 @@ public:
     Backend( po::variables_map const& vm, std::string const& prefix = "", WorldComm const& worldComm=Environment::worldComm() );
     Backend( Backend const & );
     virtual ~Backend();
+
 
     /**
      * Builds a \p Backend, if Petsc is available, use Petsc by
@@ -187,6 +201,13 @@ public:
      * Builds a \p Backend
      */
     static backend_ptrtype build( po::variables_map const& vm, std::string const& prefix = "", WorldComm const& worldComm=Environment::worldComm() );
+    static backend_ptrtype build( BackendType bt, std::string const& prefix = "", WorldComm const& worldComm=Environment::worldComm() );
+
+
+    /**
+     * instantiate a new sparse matrix
+     */
+    virtual sparse_matrix_ptrtype newMatrix() = 0;
 
     /**
      * instantiate a new sparse vector
@@ -217,7 +238,7 @@ public:
                                      const size_type m_l,
                                      const size_type n_l,
                                      graph_ptrtype const & graph,
-                                     std::vector < std::vector<int> > indexSplit,
+                                     indexsplit_ptrtype const& indexSplit,
                                      size_type matrix_properties = NON_HERMITIAN )
     {
         auto mat = this->newMatrix( m,n,m_l,n_l,graph,matrix_properties );
@@ -229,24 +250,24 @@ public:
     /**
      * instantiate a new sparse vector
      */
-    virtual sparse_matrix_ptrtype newMatrix( DataMap const& dm1,
-            DataMap const& dm2,
-            size_type prop = NON_HERMITIAN,
-            bool init = true ) = 0;
+    virtual sparse_matrix_ptrtype newMatrix( datamap_ptrtype const& dm1,
+                                             datamap_ptrtype const& dm2,
+                                             size_type prop = NON_HERMITIAN,
+                                             bool init = true ) = 0;
 
     /**
      * instantiate a new sparse vector
      */
-    sparse_matrix_ptrtype newMatrix( DataMap const& domainmap,
-                                     DataMap const& imagemap,
+    sparse_matrix_ptrtype newMatrix( datamap_ptrtype const& domainmap,
+                                     datamap_ptrtype const& imagemap,
                                      graph_ptrtype const & graph,
                                      size_type matrix_properties = NON_HERMITIAN,
                                      bool init = true )
     {
         auto mat = this->newMatrix( domainmap,imagemap, matrix_properties, false );
 
-        if ( init ) mat->init( imagemap.nDof(), domainmap.nDof(),
-                                   imagemap.nLocalDofWithoutGhost(), domainmap.nLocalDofWithoutGhost(),
+        if ( init ) mat->init( imagemap->nDof(), domainmap->nDof(),
+                                   imagemap->nLocalDofWithoutGhost(), domainmap->nLocalDofWithoutGhost(),
                                    graph );
 
         mat->zero();
@@ -266,7 +287,7 @@ public:
                    const size_type m_l,
                    const size_type n_l ) =0;
 
-    virtual sparse_matrix_ptrtype newZeroMatrix( DataMap const& dm1, DataMap const& dm2 ) = 0;
+    virtual sparse_matrix_ptrtype newZeroMatrix( datamap_ptrtype const& dm1, datamap_ptrtype const& dm2 ) = 0;
 
     /**
      * helper function
@@ -283,13 +304,19 @@ public:
                                        ( buildGraphWithTranspose, ( bool ),false )
                                        ( pattern_block,    *, ( BlocksStencilPattern(1,1,size_type( Pattern::HAS_NO_BLOCK_PATTERN ) ) ) )
                                        ( diag_is_nonzero,  *( boost::is_integral<mpl::_> ), true )
-                                       ( verbose,( int ),0 )
+                                       ( verbose,   ( bool ), option(_prefix=this->prefix(),_name="backend.verbose").template as<bool>() )
                                        ( collect_garbage, *( boost::is_integral<mpl::_> ), true )
                                      ) )
     {
+        if ( verbose )
+        {
+            Environment::logMemoryUsage( "backend::newMatrix begin" );
+        }
+
+        if ( !this->comm().isActive() ) return sparse_matrix_ptrtype();
 
         //auto mat = this->newMatrix( trial->map(), test->map(), properties, false );
-        auto mat = this->newMatrix( trial->mapOnOff(), test->mapOn(), properties, false );
+        auto mat = this->newMatrix( trial->dofOnOff(), test->dofOn(), properties, false );
 
         if ( !buildGraphWithTranspose )
         {
@@ -311,10 +338,13 @@ public:
                               _pattern=pattern,
                               _pattern_block=pattern_block.transpose(),
                               _diag_is_nonzero=false,// because transpose(do just after)
+                              _close=false,
                               _collect_garbage=collect_garbage );
             // get the good graph
-            auto graph = s->graph()->transpose();
-            if ( diag_is_nonzero ) { graph->addMissingZeroEntriesDiagonal();graph->close(); }
+            auto graph = s->graph()->transpose(false);
+            if ( diag_is_nonzero )
+                graph->addMissingZeroEntriesDiagonal();
+            graph->close();
 
             //maybe do that
             //stencilManagerGarbage(boost::make_tuple( trial, test, pattern, pattern_block.transpose().getSetOfBlocks(), false/*diag_is_nonzero*/));
@@ -328,6 +358,10 @@ public:
 
         mat->zero();
         mat->setIndexSplit( trial->dofIndexSplit() );
+        if ( verbose )
+        {
+            Environment::logMemoryUsage( "backend::newMatrix end" );
+        }
         return mat;
     }
 
@@ -342,21 +376,45 @@ public:
     /**
      * instantiate a new block matrix sparse
      */
-    sparse_matrix_ptrtype newBlockMatrixImpl( vf::BlocksBase<sparse_matrix_ptrtype> const & b,
-                                              bool copy_values=true,
-                                              bool diag_is_nonzero=true )
-    {
-        typedef MatrixBlockBase<typename sparse_matrix_ptrtype::element_type::value_type> matrix_block_type;
-        boost::shared_ptr<matrix_block_type> mb( new matrix_block_type( b, *this, copy_values, diag_is_nonzero ) );
-        return mb->getSparseMatrix();
-    }
-
-    sparse_matrix_ptrtype newBlockMatrixImpl( vf::BlocksBase<boost::shared_ptr<GraphCSR> > const & b,
+    sparse_matrix_ptrtype newBlockMatrixImpl( BlocksBaseSparseMatrix<value_type> const & b,
                                               bool copy_values=true,
                                               bool diag_is_nonzero=true )
     {
         typedef MatrixBlockBase<value_type> matrix_block_type;
-        boost::shared_ptr<matrix_block_type> mb( new matrix_block_type( b, *this, diag_is_nonzero ) );
+        typedef boost::shared_ptr<matrix_block_type> matrix_block_ptrtype;
+
+        matrix_block_ptrtype mb;
+        if ( b.isClosed() )
+        {
+            mb.reset( new matrix_block_type( b, *this, copy_values, diag_is_nonzero ) );
+        }
+        else
+        {
+            BlocksBaseSparseMatrix<value_type> copyBlock( b );
+            copyBlock.close();
+            mb.reset( new matrix_block_type( copyBlock, *this, copy_values, diag_is_nonzero ) );
+        }
+        return mb->getSparseMatrix();
+    }
+
+    sparse_matrix_ptrtype newBlockMatrixImpl( BlocksBaseGraphCSR const & b,
+                                              bool copy_values=true,
+                                              bool diag_is_nonzero=true )
+    {
+        typedef MatrixBlockBase<value_type> matrix_block_type;
+        typedef boost::shared_ptr<matrix_block_type> matrix_block_ptrtype;
+
+        matrix_block_ptrtype mb;
+        if ( b.isClosed() )
+        {
+            mb.reset( new matrix_block_type( b, *this, diag_is_nonzero ) );
+        }
+        else
+        {
+            BlocksBaseGraphCSR copyBlock( b );
+            copyBlock.close();
+            mb.reset( new matrix_block_type( copyBlock, *this, diag_is_nonzero ) );
+        }
         return mb->getSparseMatrix();
     }
 
@@ -415,20 +473,18 @@ public:
                                      newZeroMatrix,
                                      tag,
                                      ( required
-                                       ( test,* )
-                                       ( trial,* )
+                                       ( test,*( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >) )
+                                       ( trial,*( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >) )
                                      )
                                    )
     {
-        //return this->newZeroMatrix( trial->map(), test->map() );
-        return this->newZeroMatrix( trial->mapOnOff(), test->mapOn() );
-
+        return this->newZeroMatrix( trial->dofOnOff(), test->dofOn() );
     }
 
     /**
      * instantiate a new vector
      */
-    virtual vector_ptrtype newVector( DataMap const& dm ) = 0;
+    virtual vector_ptrtype newVector( datamap_ptrtype const& dm ) = 0;
 
     /**
      * instantiate a new vector
@@ -438,10 +494,17 @@ public:
     /**
      * helper function
      */
-    template<typename DomainSpace>
-    vector_ptrtype newVector( DomainSpace const& dm  )
+    BOOST_PARAMETER_MEMBER_FUNCTION( ( vector_ptrtype ),
+                                     newVector,
+                                     tag,
+                                     ( required
+                                       ( test,*( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >) )
+                                     )
+                                   )
     {
-        return this->newVector( dm->map() );
+        if ( !this->comm().isActive() ) return vector_ptrtype();
+
+        return this->newVector( test->dof() );
     }
 
     //@}
@@ -471,6 +534,14 @@ public:
     std::string kspType() const
     {
         return M_ksp;
+    }
+
+    /**
+     * \return the type of non linear solver
+     */
+    std::string snesType() const
+    {
+        return M_snesType;
     }
 
     /**
@@ -506,6 +577,11 @@ public:
      * \return enum solver type from options
      **/
     SolverType kspEnumType() const;
+
+    /**
+     * \return enum snes solver type from string
+     */
+    SolverNonLinearType snesEnumType() const;
 
     /**
      * \return enum fieldsplit type from options
@@ -586,16 +662,33 @@ public:
      */
     size_type maxIterations() const
     {
-        return M_maxit;
+        return M_maxitKSP;
     }
-
-    /**
-     * \return the maximum number of SNES iterations
-     */
+    size_type maxIterationsKSP() const
+    {
+        return M_maxitKSP;
+    }
+    size_type maxIterationsKSPinSNES() const
+    {
+        return M_maxitKSPinSNES;
+    }
     size_type maxIterationsSNES() const
     {
         return M_maxitSNES;
     }
+    size_type maxIterationsKSPReuse() const
+    {
+        return M_maxitKSPReuse;
+    }
+    size_type maxIterationsKSPinSNESReuse() const
+    {
+        return M_maxitKSPinSNESReuse;
+    }
+    size_type maxIterationsSNESReuse() const
+    {
+        return M_maxitSNESReuse;
+    }
+
 
     /**
      * \return the KSP relative tolerance in SNES
@@ -667,7 +760,7 @@ public:
         M_rtolerance = rtolerance;
         M_dtolerance = dtolerance;
         M_atolerance = atolerance;
-        M_maxit = maxit;
+        M_maxitKSP = maxit;
     }
 
     BOOST_PARAMETER_MEMBER_FUNCTION( ( void ),
@@ -751,7 +844,7 @@ public:
     /**
      * clean up
      */
-    //virtual void clear() = 0;
+    virtual void clear();
 
     /**
      * \return \f$ r = x^T * y \f$
@@ -807,8 +900,9 @@ public:
                                      ( optional
                                        //(prec,(sparse_matrix_ptrtype), matrix )
                                        ( prec,( preconditioner_ptrtype ), preconditioner( _prefix=this->prefix(),_matrix=matrix,_pc=this->pcEnumType()/*LU_PRECOND*/,
-                                                                                          _pcfactormatsolverpackage=this->matSolverPackageEnumType(), _backend=this->shared_from_this() ) )
-                                       ( maxit,( size_type ), M_maxit/*1000*/ )
+                                                                                          _pcfactormatsolverpackage=this->matSolverPackageEnumType(), _backend=this->shared_from_this(),
+                                                                                          _worldcomm=this->comm() ) )
+                                       ( maxit,( size_type ), M_maxitKSP/*1000*/ )
                                        ( rtolerance,( double ), M_rtolerance/*1e-13*/ )
                                        ( atolerance,( double ), M_atolerance/*1e-50*/ )
                                        ( dtolerance,( double ), M_dtolerance/*1e5*/ )
@@ -818,9 +912,14 @@ public:
                                        ( pc,( std::string ),M_pc/*"lu"*/ )
                                        ( ksp,( std::string ),M_ksp/*"gmres"*/ )
                                        ( pcfactormatsolverpackage,( std::string ), M_pcFactorMatSolverPackage )
+                                       ( verbose,   ( bool ), option(_prefix=this->prefix(),_name="backend.verbose").template as<bool>() )
                                      )
                                    )
     {
+        if ( verbose )
+        {
+            Environment::logMemoryUsage( "backend::solve begin" );
+        }
         this->setTolerances( _dtolerance=dtolerance,
                              _rtolerance=rtolerance,
                              _atolerance=atolerance,
@@ -841,9 +940,9 @@ public:
             rhs->printMatlab( M_export+"_b.m" );
         }
 
-        vector_ptrtype _sol( this->newVector( detail::datamap( solution ) ) );
+        vector_ptrtype _sol( this->newVector( Feel::detail::datamap( solution ) ) );
         // initialize
-        *_sol = detail::ref( solution );
+        *_sol = Feel::detail::ref( solution );
         this->setTranspose( transpose );
         solve_return_type ret;
 
@@ -857,7 +956,12 @@ public:
 
         //new
         _sol->close();
-        detail::ref( solution ) = *_sol;
+        Feel::detail::ref( solution ) = *_sol;
+        Feel::detail::ref( solution ).close();
+        if ( verbose )
+        {
+            Environment::logMemoryUsage( "backend::solve end" );
+        }
         return ret;
     }
 
@@ -929,25 +1033,30 @@ public:
                                        ( pc,( std::string ),M_pc/*"lu"*/ )
                                        ( ksp,( std::string ),M_ksp/*"gmres"*/ )
                                        ( pcfactormatsolverpackage,( std::string ), M_pcFactorMatSolverPackage )
+                                       ( verbose,   ( bool ), option(_prefix=this->prefix(),_name="backend.verbose").template as<bool>() )
                                      )
                                    )
     {
+        if ( verbose )
+        {
+            Environment::logMemoryUsage( "backend::nlSolve begin" );
+        }
         this->setTolerancesSNES( _stolerance=stolerance,
                                  _rtolerance=rtolerance,
                                  _atolerance=atolerance,
                                  _maxit=maxit );
         this->setSolverType( _pc=pc, _ksp=ksp,
                              _pcfactormatsolverpackage = pcfactormatsolverpackage );
-        vector_ptrtype _sol( this->newVector( detail::datamap( solution ) ) );
+        vector_ptrtype _sol( this->newVector( Feel::detail::datamap( solution ) ) );
         // initialize
-        *_sol = detail::ref( solution );
+        *_sol = Feel::detail::ref( solution );
         this->setTranspose( transpose );
         solve_return_type ret;
 
         // this is done with nonlinerarsolver
         if ( !residual )
         {
-            residual = this->newVector( ( detail::datamap( solution ) ) );
+            residual = this->newVector( ( Feel::detail::datamap( solution ) ) );
             //this->nlSolver()->residual( _sol, residual );
         }
 
@@ -966,8 +1075,12 @@ public:
 
         //new
         _sol->close();
-        detail::ref( solution ) = *_sol;
-        detail::ref( solution ).close();
+        Feel::detail::ref( solution ) = *_sol;
+        Feel::detail::ref( solution ).close();
+        if ( verbose )
+        {
+            Environment::logMemoryUsage( "backend::nlSolve end" );
+        }
         return ret;
     }
 
@@ -994,6 +1107,8 @@ public:
      */
     void attachPreconditioner( preconditioner_ptrtype preconditioner )
     {
+        if ( M_preconditioner && M_preconditioner != preconditioner )
+            M_preconditioner->clear();
         M_preconditioner = preconditioner;
     }
 
@@ -1072,10 +1187,12 @@ private:
     bool   M_reuseFailed;
     boost::timer M_timer;
     bool   M_transpose;
-    size_type    M_maxit, M_maxitSNES;
+    size_type    M_maxitKSP, M_maxitKSPinSNES, M_maxitSNES;
+    size_type    M_maxitKSPReuse, M_maxitKSPinSNESReuse, M_maxitSNESReuse;
     size_type    M_iteration;
     std::string M_export;
     std::string M_ksp;
+    std::string M_snesType;
     std::string M_pc;
     std::string M_fieldSplit;
     std::string M_pcFactorMatSolverPackage;
@@ -1095,12 +1212,12 @@ typedef boost::shared_ptr<backend_type> backend_ptrtype;
 namespace detail
 {
 class BackendManagerImpl:
-    public std::map<std::pair<BackendType,std::string>, backend_ptrtype >,
+    public std::map<boost::tuple<BackendType,std::string,int>, backend_ptrtype >,
     public boost::noncopyable
 {
 public:
     typedef backend_ptrtype value_type;
-    typedef std::pair<BackendType,std::string> key_type;
+    typedef boost::tuple<BackendType,std::string,int> key_type;
     typedef std::map<key_type, value_type> backend_manager_type;
 
 };
@@ -1110,8 +1227,8 @@ struct BackendManagerDeleterImpl
 {
     void operator()() const
         {
-            VLOG(2) << "[BackendManagerDeleter] clear BackendManager Singleton: " << detail::BackendManager::instance().size() << "\n";
-            detail::BackendManager::instance().clear();
+            VLOG(2) << "[BackendManagerDeleter] clear BackendManager Singleton: " << Feel::detail::BackendManager::instance().size() << "\n";
+            Feel::detail::BackendManager::instance().clear();
             VLOG(2) << "[BackendManagerDeleter] clear BackendManager done\n";
         }
 };
@@ -1128,6 +1245,7 @@ BOOST_PARAMETER_FUNCTION(
       ( name,           ( std::string ), "" )
       ( kind,           ( BackendType ), BACKEND_PETSC )
       ( rebuild,        ( bool ), false )
+      ( worldcomm,      (WorldComm), Environment::worldComm() )
     ) )
 {
     // register the BackendManager into Feel::Environment so that it gets the
@@ -1135,41 +1253,95 @@ BOOST_PARAMETER_FUNCTION(
     static bool observed=false;
     if ( !observed )
     {
-        Environment::addDeleteObserver( detail::BackendManagerDeleter::instance() );
+        Environment::addDeleteObserver( Feel::detail::BackendManagerDeleter::instance() );
         observed = true;
     }
 
 
     Feel::detail::ignore_unused_variable_warning( args );
 
-    auto git = detail::BackendManager::instance().find( std::make_pair( kind, name ) );
+    auto git = Feel::detail::BackendManager::instance().find( boost::make_tuple( kind, name, worldcomm.globalSize() ) );
 
-    if (  git != detail::BackendManager::instance().end() && ( rebuild == false ) )
+    if (  git != Feel::detail::BackendManager::instance().end() && ( rebuild == false ) )
     {
-        VLOG(2) << "[backend] found backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << "\n";
+        VLOG(2) << "[backend] found backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << " worldcomm.globalSize()=" << worldcomm.globalSize() << "\n";
         return git->second;
     }
 
     else
     {
-        if (  git != detail::BackendManager::instance().end() && ( rebuild == true ) )
-            git->second->sendDeleteSignal();
+        if (  git != Feel::detail::BackendManager::instance().end() && ( rebuild == true ) )
+            git->second->clear();
 
-        VLOG(2) << "[backend] building backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << "\n";
+        VLOG(2) << "[backend] building backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << " worldcomm.globalSize()=" << worldcomm.globalSize() << "\n";
 
         backend_ptrtype b;
         if ( vm.empty() )
         {
-            b = Feel::backend_type::build( kind );
+            b = Feel::backend_type::build( kind, worldcomm );
         }
         else
-            b = Feel::backend_type::build( vm, name );
+            b = Feel::backend_type::build( vm, name, worldcomm );
         VLOG(2) << "storing backend in singleton" << "\n";
-        detail::BackendManager::instance().operator[]( std::make_pair( kind, name ) ) = b;
+        Feel::detail::BackendManager::instance().operator[]( boost::make_tuple( kind, name, worldcomm.globalSize() ) ) = b;
         return b;
     }
 
 }
 
+template<typename T>
+bool isMatrixInverseSymmetric ( boost::shared_ptr<MatrixSparse<T> >& A, boost::shared_ptr<MatrixSparse<T> >& At, bool print=false  )
+{
+    auto u = Backend<T>::build( BACKEND_PETSC, A->comm() )->newVector(A->size1(), A->size1());
+    auto v = Backend<T>::build( BACKEND_PETSC, A->comm() )->newVector(A->size1(), A->size1());
+
+    auto res_u = Backend<T>::build( BACKEND_PETSC, A->comm() )->newVector(A->size1(), A->size1());
+    auto res_v = Backend<T>::build( BACKEND_PETSC, A->comm() )->newVector(A->size1(), A->size1());
+
+
+    for (size_type i = 0; i < u->size(); i++)
+    {
+        u->set(i,(double(std::rand())/double(RAND_MAX)));
+    }
+
+    for (size_type i = 0; i < v->size(); i++)
+    {
+        v->set(i,(double(std::rand())/double(RAND_MAX)));
+    }
+
+    Backend<T>::build( BACKEND_PETSC, A->comm() )->solve(_matrix=A,
+                                                         _solution=res_u,
+                                                         _rhs=u,
+                                                         _pcfactormatsolverpackage="mumps"
+                                                         );
+
+
+
+    Backend<T>::build( BACKEND_PETSC, A->comm() )->solve(_matrix=At,
+                                                         _solution=res_v,
+                                                         _rhs=v,
+                                                         _pcfactormatsolverpackage="mumps"
+                                                         );
+
+
+
+    T val1 = inner_product(res_u,v);
+    T val2 = inner_product(res_v,u);
+
+    T res = math::abs(val1-val2);
+
+    if ((res >= 1e-12) && print)
+    {
+        std::cout<<"-----------Subdomain "<< Environment::worldComm().rank() <<"-----------\n";
+        std::cout<<"--Val1= "<< val1 <<"\n";
+        std::cout<<"--Val2= "<< val2 <<"\n";
+        std::cout<<"--|Val1-val2|= "<< res <<"\n";
+        std::cout<<"---------------------------------\n";
+    }
+
+    return  res < 1e-12;
+
 }
-#endif /* __Backend_H */
+
+}
+#endif /* Backend_H */

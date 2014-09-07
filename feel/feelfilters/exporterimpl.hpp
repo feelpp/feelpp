@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2010-04-21
 
-  Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2010-2014 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -24,6 +24,7 @@
 /**
    \file exporterimpl.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+   \author Benjamin Vanthong <benjamin.vanthong@gmail.com>
    \date 2010-04-21
  */
 #include <boost/tokenizer.hpp>
@@ -37,14 +38,31 @@
 
 #include <feel/feelfilters/exportergmsh.hpp>
 #include <feel/feelfilters/exporterensight.hpp>
+
+#ifdef FEELPP_HAS_MPIIO
 #include <feel/feelfilters/exporterensightgold.hpp>
+#endif
+
+#if defined(FEELPP_HAS_HDF5) && defined(FEELPP_HAS_MPIIO)
+#include <feel/feelfilters/exporterhdf5.hpp>
+#endif
+
 #include <feel/feelfilters/exporterexodus.hpp>
+
+
 
 namespace Feel
 {
 template<typename MeshType, int N> class ExporterEnsight;
+
+#if defined(FEELPP_HAS_MPIIO)
 template<typename MeshType, int N> class ExporterEnsightGold;
+#endif
+
 template<typename MeshType, int N> class ExporterGmsh;
+#if defined(FEELPP_HAS_HDF5) && defined(FEELPP_HAS_MPIIO)
+template<typename MeshType, int N> class Exporterhdf5;
+#endif
 
 template<typename MeshType, int N>
 Exporter<MeshType, N>::Exporter( WorldComm const& worldComm )
@@ -53,6 +71,7 @@ Exporter<MeshType, N>::Exporter( WorldComm const& worldComm )
     super2(),
     M_worldComm( worldComm ),
     M_do_export( true ),
+    M_use_single_transient_file( false ),
     M_type(),
     M_prefix( Environment::about().appName() ),
     M_freq( 1 ),
@@ -71,6 +90,7 @@ Exporter<MeshType, N>::Exporter( std::string const& __type, std::string const& _
     super2(),
     M_worldComm( worldComm ),
     M_do_export( true ),
+    M_use_single_transient_file( false ),
     M_type( __type ),
     M_prefix( __prefix ),
     M_freq( __freq ),
@@ -89,6 +109,7 @@ Exporter<MeshType, N>::Exporter( po::variables_map const& vm, std::string const&
     super2(),
     M_worldComm( worldComm ),
     M_do_export( true ),
+    M_use_single_transient_file( false ),
     M_type(),
     M_prefix( exp_prefix ),
     M_freq( 1 ),
@@ -107,6 +128,7 @@ Exporter<MeshType, N>::Exporter( Exporter const & __ex )
     super2(),
     M_worldComm( __ex.M_worldComm ),
     M_do_export( __ex.M_do_export ),
+    M_use_single_transient_file( __ex.M_use_single_transient_file ),
     M_type( __ex.M_type ),
     M_prefix( __ex.M_prefix ),
     M_freq( __ex.M_freq ),
@@ -130,10 +152,16 @@ Exporter<MeshType, N>::New( std::string const& exportername, std::string prefix,
 
     if ( N == 1 && ( exportername == "ensight" ) )
         exporter = new ExporterEnsight<MeshType, N>( worldComm );
+#if defined(FEELPP_HAS_MPIIO)
     else if ( N == 1 && ( exportername == "ensightgold"  ) )
         exporter = new ExporterEnsightGold<MeshType, N>( worldComm );
+#endif
     else if ( N == 1 && ( exportername == "exodus"  ) )
         exporter = new ExporterExodus<MeshType, N>( worldComm );
+#if defined(FEELPP_HAS_HDF5) && defined(FEELPP_HAS_MPIIO)
+    else if ( N == 1 && ( exportername == "hdf5" ))
+        exporter = new Exporterhdf5<MeshType, N> ( worldComm ) ;
+#endif
     else if ( N > 1 || ( exportername == "gmsh" ) )
         exporter = new ExporterGmsh<MeshType,N>;
     else // fallback
@@ -151,12 +179,23 @@ Exporter<MeshType, N>::New( po::variables_map const& vm, std::string prefix, Wor
     std::string estr = vm["exporter.format"].template as<std::string>();
     Exporter<MeshType, N>* exporter =  0;//Factory::type::instance().createObject( estr  );
 
+    LOG(INFO) << "[Exporter] format :  " << estr << "\n";
+    LOG(INFO) << "[Exporter] N      :  " << N << "\n";
+    if( N > 1 && estr != "gmsh" )
+        LOG(WARNING) << "[Exporter] format " << estr << " is not available for mesh order > 1 - using gmsh exporter instead\n";
+
     if ( N == 1 && ( estr == "ensight"   ) )
         exporter = new ExporterEnsight<MeshType, N>( worldComm );
+#if defined(FEELPP_HAS_MPIIO)
     else if ( N == 1 && ( estr == "ensightgold"   ) )
         exporter = new ExporterEnsightGold<MeshType, N>( worldComm );
+#endif
     else if ( N == 1 && ( estr == "exodus"   ) )
         exporter = new ExporterExodus<MeshType, N>( worldComm );
+#if defined(FEELPP_HAS_HDF5) && defined(FEELPP_HAS_MPIIO)
+    else if ( N == 1 && ( estr == "hdf5" ) )
+        exporter = new Exporterhdf5<MeshType, N> ( worldComm ) ;
+#endif
     else if ( N > 1 || estr == "gmsh" )
         exporter = new ExporterGmsh<MeshType,N>;
     else // fallback
@@ -185,7 +224,11 @@ Exporter<MeshType, N>::setOptions( std::string const& exp_prefix )
         M_prefix = Environment::vm(_name="exporter.prefix",_prefix=exp_prefix).template as<std::string>();
 
     M_freq = Environment::vm(_name="exporter.freq",_prefix=exp_prefix).template as<int>();
-    M_ft = file_type( Environment::vm(_name="exporter.file-type",_prefix=exp_prefix).template as<int>() );
+    std::string ftstr = option(_name="exporter.file-type",_prefix=exp_prefix).template as<std::string>();
+    if ( ftstr == "binary" )
+        M_ft = BINARY;
+    else
+        M_ft = ASCII;
 
     VLOG(1) << "[Exporter] type:  " << M_type << "\n";
     VLOG(1) << "[Exporter] prefix:  " << M_prefix << "\n";

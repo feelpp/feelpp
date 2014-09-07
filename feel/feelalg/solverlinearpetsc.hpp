@@ -103,9 +103,17 @@ extern "C"
      * ctx will hold the Preconditioner.
      */
     PetscErrorCode __feel_petsc_preconditioner_apply( void *ctx, Vec x, Vec y );
+
+    /**
+     * This function is called by PETSc to view the preconditioner.
+     * ctx will hold the Preconditioner.
+     */
+    PetscErrorCode __feel_petsc_preconditioner_view( void *ctx, PetscViewer viewer)
 #else
     PetscErrorCode __feel_petsc_preconditioner_setup ( PC );
     PetscErrorCode __feel_petsc_preconditioner_apply( PC, Vec x, Vec y );
+    PetscErrorCode __feel_petsc_preconditioner_view( PC, PetscViewer viewer);
+
 #endif
 } // end extern "C"
 
@@ -133,6 +141,7 @@ public:
 
     typedef typename super::value_type value_type;
     typedef typename super::real_type real_type;
+    typedef typename super::solve_return_type solve_return_type;
 
     /**
      *  Constructor. Initializes Petsc data structures
@@ -179,8 +188,7 @@ public:
      * \param maxit maximum Number of Iterations
      * \param transpose true to solve the transpose system, false otherwise
      */
-    //std::pair<unsigned int, real_type>
-    boost::tuple<bool,unsigned int, real_type>
+    solve_return_type
     solve ( MatrixSparse<T>  const &mat,
             Vector<T> & x,
             Vector<T> const& b,
@@ -191,7 +199,7 @@ public:
         return this->solve( mat, mat, x, b, tolerance, maxit, transpose );
     }
 
-    boost::tuple<bool,unsigned int, real_type>
+    solve_return_type
     solve ( MatrixShell<T>  const &mat,
             Vector<T> & x,
             Vector<T> const& b,
@@ -224,8 +232,7 @@ public:
      * \param maxit maximum Number of Iterations
      * \param transpose true to solve the transpose system, false otherwise
      */
-    //std::pair<unsigned int, real_type>
-    boost::tuple<bool,unsigned int, real_type>
+    solve_return_type
     solve ( MatrixSparse<T>  const& mat,
             MatrixSparse<T>  const& prec,
             Vector<T> & x,
@@ -242,7 +249,7 @@ public:
     PC pc()
     {
         this->init();
-        return _M_pc;
+        return M_pc;
     }
 
     /**
@@ -259,6 +266,8 @@ public:
      */
     real_type getInitialResidual();
 
+protected:
+    void check( int err ) { CHKERRABORT( this->worldComm().globalComm(), err ); }
 private:
 
     /**
@@ -281,19 +290,19 @@ private:
     /**
      * Linear solver context
      */
-    SLES _M_sles;
+    SLES M_sles;
 
 #endif
 
     /**
      * Preconditioner context
      */
-    PC _M_pc;
+    PC M_pc;
 
     /**
      * Krylov subspace context
      */
-    KSP _M_ksp;
+    KSP M_ksp;
 
     bool M_constant_null_space;
 };
@@ -336,4 +345,3 @@ SolverLinearPetsc<T>::~SolverLinearPetsc ()
 
 #endif // #ifdef FEELPP_HAS_PETSC_H
 #endif // #ifdef __petsc_linear_solver_h__
-

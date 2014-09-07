@@ -77,7 +77,11 @@ testOperatorLinearFree()
 {
 
     typedef Backend<double> backend_type;
+#if 0
     auto backend = backend_type::build( BACKEND_PETSC );
+#else
+    auto backend = backend_type::build();
+#endif
 
     auto mesh=unitHypercube<Dim>();
     auto Xh = Pch<Order>( mesh );
@@ -112,9 +116,10 @@ testOperatorLinearFree()
     double energy_op = op->energy( vector , vector );
     double energy_opfree = opfree->energy( vector , vector );
 
-    BOOST_CHECK_SMALL( math::abs(norm_op-norm_opfree), 1e-15 );
-    BOOST_CHECK_SMALL( math::abs(mat-matfree), 1e-15 );
-    BOOST_CHECK_SMALL( math::abs(energy_op-energy_opfree), 1e-15 );
+    double epsilon=1e-13;
+    BOOST_CHECK_SMALL( math::abs(norm_op-norm_opfree), epsilon );
+    BOOST_CHECK_SMALL( math::abs(mat-matfree), epsilon );
+    BOOST_CHECK_SMALL( math::abs(energy_op-energy_opfree), epsilon );
 }
 
 
@@ -124,7 +129,11 @@ testOperatorLinearComposite()
 {
 
     typedef Backend<double> backend_type;
+#if 0
     auto backend = backend_type::build( BACKEND_PETSC );
+#else
+    auto backend = backend_type::build( );
+#endif
 
     auto mesh=unitHypercube<Dim>();
     auto Xh = Pch<Order>( mesh );
@@ -172,9 +181,11 @@ testOperatorLinearComposite()
     opfree->apply( vector , result );
     double norm_opfree = result.l2Norm();
 
-    BOOST_CHECK_SMALL( math::abs(norm_op_composite-norm_op), 1e-15 );
-    BOOST_CHECK_SMALL( math::abs(norm_opfree_composite-norm_opfree), 1e-15 );
-    BOOST_CHECK_SMALL( math::abs(norm_op_composite-norm_opfree_composite), 1e-15 );
+    double epsilon=1e-13;
+
+    BOOST_CHECK_SMALL( math::abs(norm_op_composite-norm_op), epsilon );
+    BOOST_CHECK_SMALL( math::abs(norm_opfree_composite-norm_opfree), epsilon );
+    BOOST_CHECK_SMALL( math::abs(norm_op_composite-norm_opfree_composite), epsilon );
 
 
     //test access functions
@@ -188,8 +199,8 @@ testOperatorLinearComposite()
     double norm_mat_operator2_comp = mat_operator2->l1Norm();
     double norm_mat_operator2 = op2->matPtr()->l1Norm();
 
-    BOOST_CHECK_SMALL( math::abs(norm_mat_operator1_comp-norm_mat_operator1), 1e-15 );
-    BOOST_CHECK_SMALL( math::abs(norm_mat_operator2_comp-norm_mat_operator2), 1e-15 );
+    BOOST_CHECK_SMALL( math::abs(norm_mat_operator1_comp-norm_mat_operator1), epsilon );
+    BOOST_CHECK_SMALL( math::abs(norm_mat_operator2_comp-norm_mat_operator2), epsilon );
 
     auto mat_operatorfree1 = backend->newMatrix( _test=Xh , _trial=Xh );
     auto mat_operatorfree2 = backend->newMatrix( _test=Xh , _trial=Xh );
@@ -205,26 +216,28 @@ testOperatorLinearComposite()
     double norm_mat_operatorfree1 = mat_free1->l1Norm();
     double norm_mat_operatorfree2 = mat_free2->l1Norm();
 
-    BOOST_CHECK_SMALL( math::abs(norm_mat_operator1_comp - norm_mat_operator1), 1e-15 );
-    BOOST_CHECK_SMALL( math::abs(norm_mat_operator2_comp - norm_mat_operator2), 1e-15 );
-    BOOST_CHECK_SMALL( math::abs(norm_mat_operatorfree2_comp - norm_mat_operatorfree2), 1e-15 );
-    BOOST_CHECK_SMALL( math::abs(norm_mat_operatorfree1_comp - norm_mat_operatorfree1), 1e-15 );
-    BOOST_CHECK_SMALL( math::abs(norm_mat_operator1_comp - norm_mat_operatorfree1_comp), 1e-15 );
+    BOOST_CHECK_SMALL( math::abs(norm_mat_operator1_comp - norm_mat_operator1), epsilon );
+    BOOST_CHECK_SMALL( math::abs(norm_mat_operator2_comp - norm_mat_operator2), epsilon );
+    BOOST_CHECK_SMALL( math::abs(norm_mat_operatorfree2_comp - norm_mat_operatorfree2), epsilon );
+    BOOST_CHECK_SMALL( math::abs(norm_mat_operatorfree1_comp - norm_mat_operatorfree1), epsilon );
+    BOOST_CHECK_SMALL( math::abs(norm_mat_operator1_comp - norm_mat_operatorfree1_comp), epsilon );
 
     //test sum of all matrices
 
     bool scalars_are_one=true;
-    auto mat_sum = composite->sumAllMatrices( scalars_are_one );
-    auto mat_sum_free = compositefree->sumAllMatrices( scalars_are_one );
+    auto mat_sum = backend->newMatrix( _test=Xh , _trial=Xh );
+    composite->sumAllMatrices( mat_sum, scalars_are_one );
+    auto mat_sum_free = backend->newMatrix( _test=Xh , _trial=Xh );
+    compositefree->sumAllMatrices(mat_sum_free, scalars_are_one );
     opfree->matPtr(mat_free1);
     double norm_sum_composite = mat_sum->l1Norm();
     double norm_sum_compositefree = mat_sum_free->l1Norm();
     double norm_sum_op = op->matPtr()->l1Norm();
     double norm_sum_opfree = mat_free1->l1Norm();
 
-    BOOST_CHECK_SMALL( math::abs(norm_sum_composite - norm_sum_op), 1e-15 );
-    BOOST_CHECK_SMALL( math::abs(norm_sum_compositefree - norm_sum_opfree), 1e-15 );
-    BOOST_CHECK_SMALL( math::abs(norm_sum_compositefree - norm_sum_op), 1e-15 );
+    BOOST_CHECK_SMALL( math::abs(norm_sum_composite - norm_sum_op), epsilon );
+    BOOST_CHECK_SMALL( math::abs(norm_sum_compositefree - norm_sum_opfree), epsilon );
+    BOOST_CHECK_SMALL( math::abs(norm_sum_compositefree - norm_sum_op), epsilon );
 
 }
 
@@ -236,7 +249,11 @@ testExpression()
 {
 
     typedef Backend<double> backend_type;
+#if 0
     auto backend = backend_type::build( BACKEND_PETSC );
+#else
+    auto backend = backend_type::build( );
+#endif
 
     auto mesh=unitHypercube<Dim>();
     auto Xh = Pch<Order>( mesh );
@@ -263,6 +280,8 @@ testExpression()
 
     double last_value=0;
 
+    double epsilon=1e-13;
+
     for(int i=0; i<4; i++)
     {
         auto expr = integrate( _range=elements(mesh),
@@ -273,7 +292,7 @@ testExpression()
         auto op = opLinear( _domainSpace=Xh, _imageSpace=Xh,  _backend=backend );
         *op = expr;
 
-        //stock operators
+        //store operators
         operators_vector.push_back( op );
         operators_free_vector.push_back( opfree );
 
@@ -284,7 +303,7 @@ testExpression()
         LOG(INFO)<<"during the construction loop, for i = "<<i<<" - norm : "<<norm<<" and normfree : "<<normfree;
 
         //this test is ok
-        BOOST_CHECK_SMALL( norm-normfree , 1e-14 );
+        BOOST_CHECK_SMALL( norm-normfree , epsilon );
 
         if( i == 3 ) last_value = norm;
     }
@@ -296,10 +315,7 @@ testExpression()
         LOG(INFO)<<"outside the construction loop for i = "<<i<<" - norm : "<<norm<<" and normfree : "<<normfree;
 
         //this test is not ok, except for the last value of i
-        BOOST_CHECK_SMALL( norm-normfree , 1e-14 );
-
-        //but this one is unfortunately ok for each i
-        BOOST_CHECK_SMALL( last_value-normfree , 1e-14 );
+        BOOST_CHECK_SMALL( norm-normfree , epsilon );
     }
 
 
@@ -331,5 +347,3 @@ BOOST_AUTO_TEST_CASE( test_3 )
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-
-

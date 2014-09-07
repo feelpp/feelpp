@@ -4,7 +4,7 @@
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
              Guillaume Dollé <guillaume.dolle@math.unistra.fr>
-  
+
   Date: 2013-02-11
 
   Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
@@ -33,52 +33,66 @@
    \see the \ref ComputingIntegrals section in the tutorial
    @author Christophe Prud'homme
 */
+//! [all]
 #include <feel/feel.hpp>
 using namespace Feel;
 
-/**
- *  Entry point
- */
-//\code
-//# marker_main #
 int main( int argc, char** argv )
 {
 
     //Initialize Feel++ Environment
     Environment env( _argc=argc, _argv=argv,
-                     _desc=feel_options(),
                      _about=about( _name="myfunctionspace",
                                    _author="Feel++ Consortium",
                                    _email="feelpp-devel@feelpp.org" )  );
 
-    auto g = sin( 2*pi*Px() )*cos( 2*pi*Py() )*cos( 2*pi*Pz() );
-
+    //! [mesh]
     // create the mesh
-    auto mesh = unitSquare();
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
+    //! [mesh]
 
-    // function space $ X_h $ using order 2 Lagrange basis functions
+    //! [space]
+    // function space \f$ X_h \f$ using order 2 Lagrange basis functions
     auto Xh = Pch<2>( mesh );
+    //! [space]
 
-    // elements of $ u,w \in X_h $
+    //! [expression]
+    auto g = expr<4>( soption(_name="functions.g"));
+    auto gradg = grad<3>(g);
+    //! [expression]
+
+    //! [interpolant]
+    // elements of \f$ u,w \in X_h \f$
     auto u = Xh->element( "u" );
     auto w = Xh->element( "w" );
-
-    // build the interpolant
-    u = vf::project( _space=Xh, _range=elements( mesh ), _expr=g );
-    w = vf::project( _space=Xh, _range=elements( mesh ), _expr=idv( u )-g );
+    // build the interpolant of u
+    u.on( _range=elements( mesh ), _expr=g );
+    // build the interpolant of the interpolation error
+    w.on( _range=elements( mesh ), _expr=idv( u )-g );
 
     // compute L2 norms
     double L2g = normL2( elements( mesh ), g );
+    double H1g = normL2( elements( mesh ), _expr=g,_grad_expr=gradg );
     double L2uerror = normL2( elements( mesh ), ( idv( u )-g ) );
-    std::cout << "||u-g||_0 = " << L2uerror/L2g << std::endl;
+    double H1uerror = normH1( elements( mesh ), _expr=( idv( u )-g ),
+                              _grad_expr=( gradv( u )-gradg ) );
+    if ( Environment::isMasterRank() )
+    {
+        std::cout << "||u-g||_0 = " << L2uerror/L2g << std::endl;
+        std::cout << "||u-g||_1 = " << H1uerror/H1g << std::endl;
+    }
+    //! [interpolant]
 
+    //! [export]
     // export for post-processing
-    auto e = exporter( mesh );
+    auto e = exporter( _mesh=mesh );
+    // save interpolant
     e->add( "g", u );
+    // save interpolant of interpolation error
     e->add( "u-g", w );
 
     e->save();
+    //! [export]
 
-}   // main
-//# endmarker_main #
-//\endcode
+}
+//! [all]

@@ -54,8 +54,15 @@ int main(int argc, char**argv )
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
 
-    auto mesh = unitSquare();
-    auto Vh = Odh<1>( mesh );
+    //auto mesh = unitSquare();
+    auto mesh = loadMesh( _mesh=new Mesh<Hypercube<2>> );
+    //auto mesh = loadMesh( _mesh=new Mesh<Simplex<2>> );
+    //auto mesh = unitCube();
+
+    //auto Vh = Odh<1>( mesh );
+    auto Vh = Pdh<1>( mesh, true );
+    auto Xh = Pch<1>( mesh );
+
     auto u = Vh->element();
     auto v = Vh->element();
 
@@ -63,7 +70,8 @@ int main(int argc, char**argv )
     l = integrate(_range=elements(mesh),
                   _expr=id(v));
 
-    auto a = form2( _trial=Vh, _test=Vh );
+    auto a = form2( _trial=Vh, _test=Vh,
+                    _pattern=size_type(Pattern::EXTENDED) );
     a = integrate(_range=elements(mesh),
                   _expr=gradt(u)*trans(grad(v)) );
     a +=integrate( internalfaces( mesh ),
@@ -80,8 +88,12 @@ int main(int argc, char**argv )
 
     a.solve(_rhs=l,_solution=u);
 
+    auto p = opProjection( _domainSpace=Xh, _imageSpace=Xh, _type=L2 );
+    auto uc = p->project( idv(u) );
+
     auto e = exporter( _mesh=mesh );
     e->add( "u", u );
+    e->add( "uc", uc );
     e->save();
     /// [marker1]
     return 0;

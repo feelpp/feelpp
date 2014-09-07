@@ -31,7 +31,7 @@ macro(feel_add_bench_kovasznay examplename)
   set(targetname feel_bench_${examplename})
   set(filename ${examplename}.cpp)
   add_executable(${targetname} ${filename}  stokes.cpp )
-  target_link_libraries(${targetname} ${FEELPP_LIBRARIES} )
+  target_link_libraries(${targetname} feelpp ${FEELPP_LIBRARIES} )
 endmacro(feel_add_bench_kovasznay)
 
 foreach( orderp 1 2 )
@@ -55,7 +55,7 @@ int main( int argc, char** argv )
 \n" )
 
       add_executable(${targetname} ${BENCH}.cpp kovasznay.cpp)
-      target_link_libraries(${targetname} ${FEELPP_LIBRARIES} )
+      target_link_libraries(${targetname} feelpp ${FEELPP_LIBRARIES} )
       set_property(TARGET ${targetname} PROPERTY LABELS benchmarks)
       add_dependencies( benchmarks ${targetname} )
 

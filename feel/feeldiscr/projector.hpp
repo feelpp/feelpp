@@ -30,6 +30,7 @@
 #define _PROJECTOR_HPP_
 
 #include <feel/feelcore/parameter.hpp>
+#include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/operatorlinear.hpp>
 #include <feel/feelvf/vf.hpp>
 
@@ -42,15 +43,15 @@ namespace detail
 template<typename Args>
 struct projector_args
 {
-    typedef typename vf::detail::clean_type<Args,tag::domainSpace>::type::value_type domain_type;
-    typedef typename vf::detail::clean_type<Args,tag::imageSpace>::type::value_type image_type;
+    typedef typename vf::detail::clean_type<Args,tag::domainSpace>::type::element_type domain_type;
+    typedef typename vf::detail::clean_type<Args,tag::imageSpace>::type::element_type image_type;
     typedef boost::shared_ptr<Projector<domain_type,image_type> > return_type;
 };
 
 template<typename Args>
 struct lift_args
 {
-    typedef typename vf::detail::clean_type<Args,tag::domainSpace>::type::value_type domain_type;
+    typedef typename vf::detail::clean_type<Args,tag::domainSpace>::type::element_type domain_type;
     typedef boost::shared_ptr<Projector<domain_type,domain_type> > lift_return_type;
 };
 
@@ -99,25 +100,36 @@ public :
 
     Projector( domain_space_ptrtype     domainSpace,
                dual_image_space_ptrtype dualImageSpace,
-               backend_ptrtype backend = Backend<double>::build( BACKEND_PETSC ),
+               backend_ptrtype abackend = Feel::backend(_rebuild=true),
                ProjectorType proj_type=L2,
                double epsilon = 0.01,
                double gamma = 20,
                DirichletType dirichlet_type = WEAK
              )
         :
-        ol_type( domainSpace, dualImageSpace, backend ),
-        M_backend( backend ),
+        ol_type( domainSpace, dualImageSpace, abackend, false ),
+        M_backend( abackend ),
         M_epsilon( epsilon ),
         M_gamma( gamma ),
         M_proj_type( proj_type ),
-        M_dir( dirichlet_type ),
-        M_matrix( M_backend->newMatrix( _trial=domainSpace, _test=dualImageSpace ) )
+        M_dir( dirichlet_type )
+
     {
+        M_matrixFull = M_backend->newMatrix( _trial=this->domainSpace(), _test=this->dualImageSpace() );
+
+        this->matPtr() = M_matrixFull;
+
+        if ( M_proj_type == LIFT )
+            M_matrixCst = M_backend->newMatrix( _trial=this->domainSpace(), _test=this->dualImageSpace() ) ;
+        else
+            M_matrixCst = M_matrixFull; // same pointer
+
+        ie = M_backend->newVector( this->dualImageSpace() );
+
         initMatrix();
     }
 
-    ~Projector() {}
+    //~Projector() {}
     //@}
 
     /** @name  Methods
@@ -128,6 +140,9 @@ public :
     {
         typedef typename vf::detail::clean_type<Args,tag::expr>::type _expr_type;
         typedef typename vf::detail::clean2_type<Args,tag::range,IntEltsDefault>::type _range_type;
+        typedef typename boost::tuples::template element<1, _range_type>::type _element_iterator;
+        static const uint16_type geoOrder = _element_iterator::value_type::nOrder;
+
         typedef typename vf::detail::clean2_type<Args,tag::quad, _Q< vf::ExpressionOrder<_range_type,_expr_type>::value > >::type _quad_type;
         typedef typename vf::detail::clean2_type<Args,tag::quad1, _Q< vf::ExpressionOrder<_range_type,_expr_type>::value_1 > >::type _quad1_type;
     };
@@ -150,31 +165,80 @@ public :
                                        ( range,   *, elements( this->dualImageSpace()->mesh() )  )
                                        ( quad,   *, ( typename integrate_type<Args,decltype( elements( this->dualImageSpace()->mesh() ) )>::_quad_type() ) )
                                        ( quad1,   *, ( typename integrate_type<Args,decltype( elements( this->dualImageSpace()->mesh() ) )>::_quad1_type() ) )
-                                       ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
-                                     )
+                                       ( geomap, *, (integrate_type<Args,decltype( elements( this->dualImageSpace()->mesh() ) )>::geoOrder > 1 )?
+                                         GeomapStrategyType::GEOMAP_OPT:GeomapStrategyType::GEOMAP_HO )
+                                       (grad_expr, *, ( zero<domain_space_type::nComponents,domain_space_type::nDim>() ))
+                                       (div_expr, *, cst(0.) )
+                                       (curl_expr, *,  ( zero<  mpl::if_<mpl::equal_to<mpl::int_<domain_space_type::nComponents>, mpl::int_<1> >,
+                                                         mpl::int_<1>, mpl::int_<domain_space_type::nDim> >::type::value, 1>() ) )
+                                       )
                                    )
     {
         using namespace vf;
 
+        typedef typename boost::remove_reference<typename boost::remove_const< decltype(quad)>::type >::type thequad_type;
+        typedef typename boost::remove_reference<typename boost::remove_const< decltype(quad1)>::type >::type thequad1_type;
+        typedef typename boost::remove_reference<typename boost::remove_const< decltype(range)>::type >::type therange_type;
+        typedef typename boost::tuples::template element<1, therange_type>::type element_iterator;
+        static const uint16_type geoOrder = element_iterator::value_type::nOrder;
+        static const uint16_type nOrderImageSpace = dual_image_space_type::basis_type::nOrder;
+        static const uint16_type quadOrderId = nOrderImageSpace*geoOrder;
+        static const uint16_type quadOrderGrad = (nOrderImageSpace>0)?(nOrderImageSpace-1)*geoOrder:0;
+        static const uint16_type quad1OrderId = nOrderImageSpace;
+        static const uint16_type quad1OrderGrad = (nOrderImageSpace>0)?(nOrderImageSpace-1):0;
+
         auto sol = this->domainSpace()->element();
+        auto uImage = this->dualImageSpace()->element();
 
-        ie = M_backend->newVector( this->dualImageSpace() );
+        ie->zero();
 
-        form1( _test=this->dualImageSpace(), _vector=ie, _init=true );
-
-        if ( (M_proj_type != LIFT) )
+        if ( M_proj_type != LIFT )
         {
+            //typedef typename integrate_type<Args,decltype( elements( this->dualImageSpace()->mesh() ) )>::_quad_type myquad;
             form1( _test=this->dualImageSpace(), _vector=ie ) +=
-                integrate( _range=range, _expr=expr * id( this->dualImageSpace()->element() ),
-                           _quad=quad, _quad1=quad1, _geomap=geomap );
+                integrate( _range=range, _expr=inner(expr,id( this->dualImageSpace()->element() ) ),
+                //integrate( _range=range, _expr=trans(expr)*id( uImage ),
+                           _quad=_Q<thequad_type::order+quadOrderId>(),
+                           _quad1=_Q<thequad1_type::order+quad1OrderId>(),
+                           _geomap=geomap );
+
+            switch( M_proj_type )
+                {
+                case H1:
+                    form1( _test=this->dualImageSpace(), _vector=ie ) +=
+                        integrate( _range=range, _expr=trace(grad_expr*trans(grad( uImage )) ),
+                                   _quad=_Q<thequad_type::order+quadOrderGrad>(),
+                                   _quad1=_Q<thequad1_type::order+quad1OrderGrad>(),
+                                   _geomap=geomap );
+                    break;
+                case HDIV:
+                            form1( _test=this->dualImageSpace(), _vector=ie ) +=
+                                integrate( _range=range, _expr=div_expr*div( uImage ),
+                                           _quad=_Q<thequad_type::order+quadOrderGrad>(),//quad,
+                                           _quad1=_Q<thequad1_type::order+quad1OrderGrad>(),//quad1,
+                                           _geomap=geomap );
+                            break;
+                case HCURL:
+                            form1( _test=this->dualImageSpace(), _vector=ie ) +=
+                                integrate( _range=range, _expr=trans(curl_expr)*curl( uImage ),
+                                           _quad=_Q<thequad_type::order+quadOrderGrad>(),
+                                           _quad1=_Q<thequad1_type::order+quad1OrderGrad>(),
+                                           _geomap=geomap );
+                            break;
+                case L2:
+                default:
+                    break;
+                }
         }
         else if ( ( M_proj_type == LIFT ) && ( M_dir == WEAK ) )
         {
             form1( _test=this->dualImageSpace(), _vector=ie ) +=
                 integrate( _range=range,
-                           _expr=expr*( -grad( this->dualImageSpace()->element() )*vf::N() +
-                                        M_gamma / vf::hFace() *id( this->dualImageSpace()->element() ) ),
-                           _quad=quad, _quad1=quad1, _geomap=geomap );
+                           _expr=inner( expr, -grad( uImage )*vf::N() +
+                                        M_gamma / vf::hFace() *id( uImage ) ),
+                           _quad=_Q<thequad_type::order+quadOrderId>(),
+                           _quad1=_Q<thequad1_type::order+quad1OrderId>(),
+                           _geomap=geomap );
         }
 
         //weak boundary conditions
@@ -182,34 +246,40 @@ public :
         {
             form1( _test=this->dualImageSpace(), _vector=ie ) +=
                 integrate( _range=boundaryfaces( this->dualImageSpace()->mesh() ),
-                           _expr=expr*M_epsilon*( -grad( this->domainSpace()->element() )*vf::N() +
-                                                  M_gamma / vf::hFace() *id( this->dualImageSpace()->element() ) ),
-                           _quad=quad, _quad1=quad1, _geomap=geomap );
+                           _expr=inner( expr, M_epsilon*( -grad( uImage )*vf::N() +
+                                                          M_gamma / vf::hFace() *id( uImage ) ) ),
+                           _quad=_Q<thequad_type::order+quadOrderId>(),
+                           _quad1=_Q<thequad1_type::order+quad1OrderId>(),
+                           _geomap=geomap );
         }
 
-        ie->close();
 
-        M_matrixFull = M_backend->newMatrix( _trial=this->domainSpace(), _test=this->dualImageSpace() );
-        auto bilinearForm = form2( _trial=this->domainSpace(), _test=this->dualImageSpace(), _matrix=M_matrixFull );
-
-        if ( ( M_proj_type == LIFT ) && ( M_dir == WEAK ) )
+        if ( M_proj_type == LIFT )
         {
-            bilinearForm +=
-                integrate( _range=range, _expr=
-                           ( -trans( id( this->dualImageSpace()->element() ) )*gradt( this->domainSpace()->element() )*vf::N()
-                             -trans( idt( this->domainSpace()->element() ) )* grad( this->dualImageSpace()->element() )*vf::N()
-                             + M_gamma * trans( idt( this->domainSpace()->element() ) ) /*trial*/
-                             *id( this->dualImageSpace()->element() ) / vf::hFace()   /*test*/
-                             ), _quad=quad, _quad1=quad1, _geomap=geomap );
+            M_matrixFull->zero();
+            M_matrixFull->addMatrix( 1., M_matrixCst );
+            auto bilinearForm = form2( _trial=this->domainSpace(), _test=this->dualImageSpace(), _matrix=M_matrixFull );
+
+            if ( M_dir == WEAK )
+            {
+                bilinearForm +=
+                    integrate( _range=range, _expr=
+                               ( -trans( id( this->dualImageSpace()->element() ) )*gradt( this->domainSpace()->element() )*vf::N()
+                                 -trans( idt( this->domainSpace()->element() ) )* grad( this->dualImageSpace()->element() )*vf::N()
+                                 + M_gamma * trans( idt( this->domainSpace()->element() ) ) /*trial*/
+                                 *id( this->dualImageSpace()->element() ) / vf::hFace()   /*test*/
+                                 ),
+                               _quad=_Q<thequad_type::order+quadOrderId>(),
+                               _quad1=_Q<thequad1_type::order+quad1OrderId>(),
+                               _geomap=geomap );
+            }
+            else if ( M_dir == STRONG )
+            {
+                this->applyOn(range, expr);
+            }
         }
 
-        M_matrixFull->close();
-        M_matrixFull->addMatrix( 1., M_matrix );
-
-        if ( ( M_proj_type == LIFT ) && ( M_dir == STRONG )  )
-            this->applyOn(range, expr);
-
-        M_backend->solve( M_matrixFull, sol, ie );
+        M_backend->solve( _matrix=M_matrixFull, _solution=sol, _rhs=ie );
 
         return sol;
     }
@@ -232,14 +302,14 @@ public :
     operator()( image_element_type const& ie )
     {
         domain_element_type de = this->domainSpace()->element();
-        M_backend->solve( M_matrix, de, ie );
+        M_backend->solve( M_matrixFull, de, ie );
         return de ;
     }
 
     void
     operator()( domain_element_type &de, image_element_type const& ie )
     {
-        M_backend->solve( M_matrix, de, ie );
+        M_backend->solve( M_matrixFull, de, ie );
     }
 
     template<typename Range, typename Expr>
@@ -249,11 +319,12 @@ public :
         return this->project( expr, range );
     }
 
+		using OperatorLinear<DomainSpace, DualImageSpace>::apply;
     void
     apply( domain_element_type& de,
            image_element_type const& ie )
     {
-        M_backend->solve( M_matrix, de, ie );
+        M_backend->solve( M_matrixFull, de, ie );
     }
 
     template<typename RhsExpr>
@@ -283,7 +354,7 @@ public :
 
         ie->close();
 
-        M_backend->solve( M_matrix, de, ie );
+        M_backend->solve( M_matrixFull, de, ie );
         return de;
     }
 
@@ -296,30 +367,30 @@ private :
     void initMatrix()
     {
         using namespace vf;
+        auto uDomain = this->domainSpace()->element();
+        auto uImage = this->dualImageSpace()->element();
+
         auto a = form2 ( _trial=this->domainSpace(),
                          _test=this->dualImageSpace(),
-                         _matrix=M_matrix,
-                         _init=true );
+                         _matrix=M_matrixCst );
 
         switch ( M_proj_type )
         {
         case L2:
         {
-            a = integrate( elements( this->dualImageSpace()->mesh() ),
-                           trans( idt( this->domainSpace()->element() ) ) /*trial*/
-                           *id( this->dualImageSpace()->element() ) /*test*/
-                         );
+            a = integrate( _range=elements( this->dualImageSpace()->mesh() ),
+                           _expr=trans( idt( uDomain ) )*id( uImage ) );
         }
         break;
 
         case H1:
         {
             a = integrate( elements( this->dualImageSpace()->mesh() ),
-                           trans( idt( this->domainSpace()->element() ) ) /*trial*/
-                           *id( this->dualImageSpace()->element() ) /*test*/
+                           trans( idt( uDomain ) ) /*trial*/
+                           *id( uImage ) /*test*/
                            +
-                           trace( gradt( this->domainSpace()->element() )
-                                  * trans( grad( this->dualImageSpace()->element() ) ) )
+                           trace( gradt( uDomain )
+                                  * trans( grad( uImage ) ) )
                            );
         }
         break;
@@ -327,21 +398,21 @@ private :
         case DIFF:
         {
             a = integrate( elements( this->dualImageSpace()->mesh() ),
-                           trans( idt( this->domainSpace()->element() ) ) /*trial*/
-                           *id( this->dualImageSpace()->element() ) /*test*/
+                           trans( idt( uDomain ) ) /*trial*/
+                           *id( uImage ) /*test*/
                            +
                            M_epsilon *
-                           trace( gradt( this->domainSpace()->element() )
-                                  * trans( grad( this->dualImageSpace()->element() ) ) )
+                           trace( gradt( uDomain )
+                                  * trans( grad( uImage ) ) )
                            );
             //weak boundary conditions
             a += integrate( boundaryfaces( this->dualImageSpace()->mesh() ),
-                            M_epsilon*( -trans( id( this->dualImageSpace()->element() ) )*gradt( this->domainSpace()->element() )*vf::N() ) );
+                            M_epsilon*( -trans( id( uImage ) )*gradt( uDomain )*vf::N() ) );
             a += integrate( boundaryfaces( this->dualImageSpace()->mesh() ),
-                            M_epsilon*( -trans( idt( this->domainSpace()->element() ) )* grad( this->dualImageSpace()->element() )*vf::N() ) );
+                            M_epsilon*( -trans( idt( uDomain ) )* grad( uImage )*vf::N() ) );
             a += integrate( boundaryfaces( this->dualImageSpace()->mesh() ),
-                            M_epsilon*( M_gamma * trans( idt( this->domainSpace()->element() ) ) /*trial*/
-                                        *id( this->dualImageSpace()->element() ) / vf::hFace()   /*test*/
+                            M_epsilon*( M_gamma * trans( idt( uDomain ) ) /*trial*/
+                                        *id( uImage ) / vf::hFace()   /*test*/
                                         ) );
         }
         break;
@@ -349,11 +420,11 @@ private :
         case HDIV:
         {
             a = integrate( elements( this->dualImageSpace()->mesh() ),
-                           trans( idt( this->domainSpace()->element() ) ) /*trial*/
-                           *id( this->dualImageSpace()->element() ) /*test*/
+                           trans( idt( uDomain ) ) /*trial*/
+                           *id( uImage ) /*test*/
                            +
-                           ( divt( this->domainSpace()->element() ) *
-                             div( this->dualImageSpace()->element() ) )
+                           ( divt( uDomain ) *
+                             div( uImage ) )
                            );
         }
         break;
@@ -361,12 +432,12 @@ private :
         case HCURL:
         {
             a = integrate( elements( this->dualImageSpace()->mesh() ),
-                           trans( idt( this->domainSpace()->element() ) ) /*trial*/
-                           *id( this->dualImageSpace()->element() ) /*test*/
+                           trans( idt( uDomain ) ) /*trial*/
+                           *id( uImage ) /*test*/
                            +
                            // only for 2D, need to specialize this for 3D
-                           curlzt( this->domainSpace()->element() )
-                           * curlz( this->dualImageSpace()->element() )
+                           curlzt( uDomain )
+                           * curlz( uImage )
                          );
         }
         break;
@@ -374,17 +445,33 @@ private :
         case LIFT:
         {
             a = integrate( elements( this->dualImageSpace()->mesh() ),
-                           trace( gradt( this->domainSpace()->element() )
-                                  * trans( grad( this->dualImageSpace()->element() ) ) )
+                           trace( gradt( uDomain )
+                                  * trans( grad( uImage ) ) )
                            );
 
         }
         break;
+
+        case CIP:
+        {
+            a = integrate( elements( this->dualImageSpace()->mesh() ),
+                           trans( idt( uDomain ) ) /*trial*/
+                           *id( uImage ) /*test*/
+                           );
+
+            a += integrate( internalfaces( this->dualImageSpace()->mesh() ),
+                            M_gamma * hFace() * hFace()
+                           * trans(jumpt( gradt(uDomain) ))
+                           * jump( grad(uImage) )
+                           );
+        }
+        break;
+
         case NODAL:
             break;
         }
 
-        M_matrix->close();
+        M_matrixCst->close();
     }
 
     template<typename Range, typename Expr>
@@ -403,7 +490,7 @@ private :
     const double M_gamma;
     const ProjectorType M_proj_type;
     DirichletType M_dir;
-    matrix_ptrtype M_matrix;
+    matrix_ptrtype M_matrixCst;
     matrix_ptrtype M_matrixFull;
     domain_element_type de;
     vector_ptrtype ie;
@@ -423,11 +510,11 @@ template<typename TDomainSpace, typename TDualImageSpace>
 boost::shared_ptr< Projector<TDomainSpace, TDualImageSpace> >
 projector( boost::shared_ptr<TDomainSpace> const& domainspace,
            boost::shared_ptr<TDualImageSpace> const& imagespace,
-           typename Projector<TDomainSpace, TDualImageSpace>::backend_ptrtype const& backend = Backend<double>::build( BACKEND_PETSC ),
+           typename Projector<TDomainSpace, TDualImageSpace>::backend_ptrtype const& abackend = Feel::backend(_rebuild=true),
            ProjectorType proj_type=L2, double epsilon=0.01, double gamma = 20, DirichletType dirichlet_type = WEAK)
 {
     typedef Projector<TDomainSpace, TDualImageSpace > Proj_type;
-    boost::shared_ptr<Proj_type> proj( new Proj_type( domainspace, imagespace, backend, proj_type, epsilon, gamma, dirichlet_type ) );
+    boost::shared_ptr<Proj_type> proj( new Proj_type( domainspace, imagespace, abackend, proj_type, epsilon, gamma, dirichlet_type ) );
     return proj;
 }
 
@@ -441,7 +528,7 @@ BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::projector_args<Args>::return_
                           ( optional
                             ( type, (ProjectorType), L2 )
                             ( penaldir, *( boost::is_arithmetic<mpl::_> ), 20. )
-                            ( backend, *, Backend<double>::build( BACKEND_PETSC ) )
+                            ( backend, *, Feel::backend(_rebuild=true) )
                           ) )
 {
     return projector( domainSpace,imageSpace, backend, type, 0.01, penaldir );
@@ -456,7 +543,7 @@ BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::lift_args<Args>::lift_return_
                           ( optional
                             ( type, (DirichletType), WEAK )
                             ( penaldir, *( boost::is_arithmetic<mpl::_> ), 20. )
-                            ( backend, *, Backend<double>::build( BACKEND_PETSC ) )
+                            ( backend, *, backend(_rebuild=true) )
                             ) )
 {
     return projector( domainSpace, domainSpace, backend, ProjectorType::LIFT, 0.01 , penaldir, type );

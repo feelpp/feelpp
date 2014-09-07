@@ -27,13 +27,15 @@
    \date 2013-01-05
  */
 #include <feel/feelcore/feel.hpp>
-#include <feel/feelvf/vf.hpp>
+#include <feel/feelvf/expr.hpp>
+
 
 namespace Feel
 {
 namespace vf
 {
 Expr<LambdaExpr1> _e1;
+Expr<LambdaExpr2> _e2;
+Expr<LambdaExpr3> _e3;
 }
 }
-

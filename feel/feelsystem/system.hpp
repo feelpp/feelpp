@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-01-04
 
-  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2009 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2009-01-04
  */
-#ifndef __System_H
-#define __System_H 1
+#ifndef FEELPP_SYSTEM_HPP
+#define FEELPP_SYSTEM_HPP 1
 
 namespace Feel
 {
@@ -152,5 +152,4 @@ private:
 
 };
 } // Feel
-#endif /* __System_H */
-
+#endif /* FEELPP_SYSTEM_HPP */
