@@ -106,6 +106,13 @@ public:
 
     typedef typename super::graph_type graph_type;
     typedef typename super::graph_ptrtype graph_ptrtype;
+
+    typedef typename super::datamap_type datamap_type;
+    typedef typename super::datamap_ptrtype datamap_ptrtype;
+
+    typedef typename super::indexsplit_type indexsplit_type;
+    typedef typename super::indexsplit_ptrtype indexsplit_ptrtype;
+
     //@}
 
     /** @name Constructors, destructor
@@ -127,9 +134,9 @@ public:
      * the matrix before usage with
      * \p init(...).
      */
-    MatrixPetsc();
+    MatrixPetsc( WorldComm const& worldComm=Environment::worldComm() );
 
-    MatrixPetsc( DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm=Environment::worldComm() );
+    MatrixPetsc( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm=Environment::worldComm() );
 
 
     /**
@@ -140,7 +147,7 @@ public:
      * and to simply provide additional functionality with the PetscMatrix.
      */
     MatrixPetsc ( Mat m );
-    MatrixPetsc ( Mat m, DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm );
+    MatrixPetsc ( Mat m, datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol );
     MatrixPetsc ( MatrixSparse<value_type> const& M, IS& isrow, IS& iscol );
     MatrixPetsc ( MatrixSparse<value_type> const& M, std::vector<int> const& rowIndex, std::vector<int> const& colIndex );
     /**
@@ -246,7 +253,7 @@ public:
     /**
      *
      */
-    void setIndexSplit( std::vector< std::vector<int> > const &indexSplit );
+    void setIndexSplit( indexsplit_ptrtype const& indexSplit );
 
     /**
      * reinitialize the matrix
@@ -402,8 +409,9 @@ public:
      *
      * \param M the matrix to transpose
      * \param Mt the matrix transposed
+     * \param options options for tranpose
      */
-    void transpose( MatrixSparse<value_type>& Mt ) const;
+    void transpose( MatrixSparse<value_type>& Mt, size_type options ) const;
 
     /**
     * Returns the symmetric part of the matrix
@@ -417,13 +425,13 @@ public:
      */
     Mat mat () const
     {
-        FEELPP_ASSERT ( _M_mat != NULL ).error( "null petsc matrix" );
-        return _M_mat;
+        FEELPP_ASSERT ( M_mat != NULL ).error( "null petsc matrix" );
+        return M_mat;
     }
     Mat& mat ()
     {
-        FEELPP_ASSERT ( _M_mat != NULL ).warn( "null petsc matrix" );
-        return _M_mat;
+        FEELPP_ASSERT ( M_mat != NULL ).warn( "null petsc matrix" );
+        return M_mat;
     }
 
     /**
@@ -433,6 +441,15 @@ public:
      * is not specified it is dumped to the screen.
      */
     void printMatlab( const std::string name="NULL" ) const;
+
+    /**
+     * This function creates a matrix called "submatrix" which is defined
+     * by the row and column indices given in the "rows" and "cols" entries.
+     * Currently this operation is only defined for the PetscMatrix type.
+     */
+    void createSubmatrix( MatrixSparse<T>& submatrix,
+                          const std::vector<size_type>& rows,
+                          const std::vector<size_type>& cols ) const;
 
     /**
      * \return \f$ v^T M u \f$
@@ -449,22 +466,26 @@ public:
      *\warning if the matrix was symmetric before this operation, it
      * won't be afterwards. So use the proper solver (nonsymmetric)
      */
-    void zeroRows( std::vector<int> const& rows, std::vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context );
+    void zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context );
 
     /**
      * update a block matrix
      */
-    void updateBlockMat( boost::shared_ptr<MatrixSparse<T> > m, size_type start_i, size_type start_j );
+    void updateBlockMat( boost::shared_ptr<MatrixSparse<T> > m, std::vector<size_type> start_i, std::vector<size_type> start_j );
 
-
+    void updatePCFieldSplit( PC & pc, indexsplit_ptrtype const& is );
     void updatePCFieldSplit( PC & pc );
 
-    std::vector<IS> const& petscSplitIS() const { return _M_petscIS; }
-    std::map<PC*,bool > & mapSplitPC() { return _M_mapPC; }
+    std::vector<IS> const& petscSplitIS() const { return M_petscIS; }
+    std::map<PC*,bool > & mapSplitPC() { return M_mapPC; }
 
-    std::vector<PetscInt> ia() { return _M_ia; }
-    std::vector<PetscInt> ja() { return _M_ja; }
+    std::vector<PetscInt> ia() { return M_ia; }
+    std::vector<PetscInt> ja() { return M_ja; }
 
+
+    bool isSymmetric () const;
+
+    bool isTransposeOf ( MatrixSparse<T> &Trans ) const;
 
     //@}
 
@@ -478,24 +499,26 @@ private:
     // disable
     MatrixPetsc( MatrixPetsc const & );
 
-
-private:
+protected:
 
     /**
      * Petsc matrix datatype to store values
      */
-    Mat _M_mat;
+    Mat M_mat;
 
-    std::vector<IS> _M_petscIS;
+private:
 
-    std::map<PC*,bool > _M_mapPC;
+
+    std::vector<IS> M_petscIS;
+
+    std::map<PC*,bool > M_mapPC;
 
     /**
      * This boolean value should only be set to false
      * for the constructor which takes a PETSc Mat object.
      */
-    const bool _M_destroy_mat_on_exit;
-    std::vector<PetscInt> _M_ia,_M_ja;
+    const bool M_destroy_mat_on_exit;
+    std::vector<PetscInt> M_ia,M_ja;
 };
 
 
@@ -511,11 +534,14 @@ public :
     typedef typename super::graph_ptrtype graph_ptrtype;
     typedef typename super::value_type value_type;
 
-    MatrixPetscMPI();
+    typedef typename super::datamap_type datamap_type;
+    typedef typename super::datamap_ptrtype datamap_ptrtype;
 
-    MatrixPetscMPI( DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm=Environment::worldComm() );
+    MatrixPetscMPI( WorldComm const& worldComm=Environment::worldComm() );
 
-    MatrixPetscMPI( Mat m, DataMap const& dmRow, DataMap const& dmCol );
+    MatrixPetscMPI( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm=Environment::worldComm() );
+
+    MatrixPetscMPI( Mat m, datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol );
 
     ~MatrixPetscMPI()
     {
@@ -569,7 +595,7 @@ public :
     void zero( size_type start1, size_type stop1, size_type start2, size_type stop2 );
     //void zeroEntriesDiagonal();
     void zeroRows( std::vector<int> const& rows,
-                   std::vector<value_type> const& values,
+                   Vector<value_type> const& values,
                    Vector<value_type>& rhs,
                    Context const& on_context );
 

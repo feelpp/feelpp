@@ -62,7 +62,11 @@ public:
 
     FsFunctionalLinear( space_ptrtype space ) :
         super_type( space ),
+#if 0
         M_backend( backend_type::build( BACKEND_PETSC ) ),
+#else
+        M_backend( backend_type::build( ) ), // BACKEND_PETSC is the default backend
+#endif
         M_vector( M_backend->newVector( space ) ),
         M_name( "functionallinear" )
     {
@@ -75,6 +79,9 @@ public:
         M_name( "functionallinear" )
     {
     }
+
+
+    virtual ~FsFunctionalLinear() {}
 
     void setName( std::string name ) { M_name = name; }
     std::string name() const { return M_name ; }

@@ -207,6 +207,26 @@ public:
     }
 
     /**
+     * the master id is different from the id in the context of periodic
+     * boundary conditions on the slave side
+     * @return the master id
+     */
+    size_type masterId() const
+    {
+        return M_master_id;
+    }
+
+    self_type const* masterVertex() const
+    {
+        return M_master_vertex;
+    }
+
+    /**
+     * @return true if the entity is periodic, false otherwise
+     */
+    bool isPeriodic() const { return M_master_id != this->M_id; }
+
+    /**
      * \return \p true if point is a vertex, \p false otherwise
      * \attention DO NOT USE YET, returns always false
      */
@@ -342,12 +362,12 @@ public:
     bool operator<( Geo0D const& e ) const
     {
         return this->id() < e.id();
-    };
+    }
 
     bool operator<( size_type __i ) const
     {
         return this->id() < __i;
-    };
+    }
 
     /**
      * show the information about the Geo0D
@@ -359,11 +379,25 @@ public:
      */
     std::ostream & showMe( bool verbose = false, std::ostream & c = std::cout ) const;
 
+
+    void setMasterId( size_type id )
+    {
+        M_master_id = id;
+    }
+    void setMasterVertex( self_type const* m )
+    {
+        M_master_vertex = m;
+    }
+
     /**
      * set the point coordinates. This will typically be called when
      * creating faces (points) in 1D.
      */
     void setPoint( uint16_type const /*i*/, self_type const & p )
+    {
+        *this = p;
+    }
+    void setPointCoordG( int i, ublas::vector<double> const& p )
     {
         *this = p;
     }
@@ -501,6 +535,10 @@ private:
         }
 
 private:
+
+    size_type M_master_id;
+    self_type const* M_master_vertex;
+
     bool M_is_vertex;
     bool M_is_parametric;
 
@@ -529,6 +567,7 @@ Geo0D<Dim, T>::Geo0D()
     :
     super( 0, MESH_ENTITY_INTERNAL ),
     super2( Dim ),
+    M_master_id( 0 ),
     M_is_vertex( false ),
     M_is_parametric( false ),
     M_marker1(),
@@ -546,6 +585,7 @@ Geo0D<Dim, T>::Geo0D( size_type id, bool boundary, bool is_vertex )
     :
     super( id, MESH_ENTITY_INTERNAL ),
     super2( Dim ),
+    M_master_id( id ),
     M_is_vertex( is_vertex ),
     M_marker1(),
     M_marker2(),
@@ -563,6 +603,7 @@ Geo0D<Dim, T>::Geo0D( size_type id, value_type x, value_type y, value_type z, bo
     :
     super( id, MESH_ENTITY_INTERNAL ),
     super2( Dim ),
+    M_master_id( id ),
     M_is_vertex( is_vertex ),
     M_is_parametric( false ),
     M_marker1(),
@@ -588,6 +629,7 @@ Geo0D<Dim, T>::Geo0D( size_type id, node_type const& __p, bool boundary, bool is
     :
     super( id, MESH_ENTITY_INTERNAL ),
     super2( __p ),
+    M_master_id( id ),
     M_is_vertex( is_vertex ),
     M_is_parametric( false ),
     M_marker1(),
@@ -607,6 +649,7 @@ Geo0D<Dim, T>::Geo0D( Geo0D const & G )
     :
     super( G ),
     super2( G ),
+    M_master_id( G.id() ),
     M_is_vertex( G.M_is_vertex ),
     M_is_parametric( G.M_is_parametric ),
     M_marker1( G.M_marker1 ),
@@ -627,6 +670,7 @@ Geo0D<Dim, T>::operator=( Geo0D<Dim, T> const & G )
 
     super::operator=( G );
     super2::operator=( G );
+    M_master_id = G.masterId();
     M_is_vertex = G.M_is_vertex;
     M_is_parametric = G.M_is_parametric;
     M_marker1 = G.M_marker1;
@@ -754,4 +798,3 @@ cross( Geo0D<3,T> p1,
 } // Feel
 
 #endif
-

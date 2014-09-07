@@ -1,51 +1,11 @@
 // This file is part of Eigen, a lightweight C++ template library
 // for linear algebra.
 //
-// Copyright (C) 2008-2010 Gael Guennebaud <gael.guennebaud@inria.fr>
+// Copyright (C) 2008-2012 Gael Guennebaud <gael.guennebaud@inria.fr>
 //
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-
-/*
-
-NOTE: the _symbolic, and _numeric functions has been adapted from
-      the LDL library:
-
-LDL Copyright (c) 2005 by Timothy A. Davis.  All Rights Reserved.
-
-LDL License:
-
-    Your use or distribution of LDL or any modified version of
-    LDL implies that you agree to this License.
-
-    This library is free software; you can redistribute it and/or
-    modify it under the terms of the GNU Lesser General Public
-    License as published by the Free Software Foundation; either
-    version 2.1 of the License, or (at your option) any later version.
-
-    This library is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Lesser General Public License for more details.
-
-    You should have received a copy of the GNU Lesser General Public
-    License along with this library; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301
-    USA
-
-    Permission is hereby granted to use or copy this program under the
-    terms of the GNU LGPL, provided that the Copyright, this License,
-    and the Availability of the original version is retained on all copies.
-    User documentation of any code that uses this code or any modified
-    version of this code must cite the Copyright, this License, the
-    Availability note, and "Used by permission." Permission to modify
-    the code and to distribute modified code is granted, provided the
-    Copyright, this License, and the Availability note are retained,
-    and a notice that the code was modified is included.
- */
-
-#include "../Core/util/NonMPL2.h"
 
 #ifndef EIGEN_SIMPLICIAL_CHOLESKY_H
 #define EIGEN_SIMPLICIAL_CHOLESKY_H
@@ -77,6 +37,7 @@ class SimplicialCholeskyBase : internal::noncopyable
 {
   public:
     typedef typename internal::traits<Derived>::MatrixType MatrixType;
+    typedef typename internal::traits<Derived>::OrderingType OrderingType;
     enum { UpLo = internal::traits<Derived>::UpLo };
     typedef typename MatrixType::Scalar Scalar;
     typedef typename MatrixType::RealScalar RealScalar;
@@ -215,27 +176,6 @@ class SimplicialCholeskyBase : internal::noncopyable
         dest = m_Pinv * dest;
     }
 
-    /** \internal */
-    template<typename Rhs, typename DestScalar, int DestOptions, typename DestIndex>
-    void _solve_sparse(const Rhs& b, SparseMatrix<DestScalar,DestOptions,DestIndex> &dest) const
-    {
-      eigen_assert(m_factorizationIsOk && "The decomposition is not in a valid state for solving, you must first call either compute() or symbolic()/numeric()");
-      eigen_assert(m_matrix.rows()==b.rows());
-      
-      // we process the sparse rhs per block of NbColsAtOnce columns temporarily stored into a dense matrix.
-      static const int NbColsAtOnce = 4;
-      int rhsCols = b.cols();
-      int size = b.rows();
-      Eigen::Matrix<DestScalar,Dynamic,Dynamic> tmp(size,rhsCols);
-      for(int k=0; k<rhsCols; k+=NbColsAtOnce)
-      {
-        int actualCols = std::min<int>(rhsCols-k, NbColsAtOnce);
-        tmp.leftCols(actualCols) = b.middleCols(k,actualCols);
-        tmp.leftCols(actualCols) = derived().solve(tmp.leftCols(actualCols));
-        dest.middleCols(k,actualCols) = tmp.leftCols(actualCols).sparseView();
-      }
-    }
-
 #endif // EIGEN_PARSED_BY_DOXYGEN
 
   protected:
@@ -301,15 +241,16 @@ class SimplicialCholeskyBase : internal::noncopyable
     RealScalar m_shiftScale;
 };
 
-template<typename _MatrixType, int _UpLo = Lower> class SimplicialLLT;
-template<typename _MatrixType, int _UpLo = Lower> class SimplicialLDLT;
-template<typename _MatrixType, int _UpLo = Lower> class SimplicialCholesky;
+template<typename _MatrixType, int _UpLo = Lower, typename _Ordering = AMDOrdering<typename _MatrixType::Index> > class SimplicialLLT;
+template<typename _MatrixType, int _UpLo = Lower, typename _Ordering = AMDOrdering<typename _MatrixType::Index> > class SimplicialLDLT;
+template<typename _MatrixType, int _UpLo = Lower, typename _Ordering = AMDOrdering<typename _MatrixType::Index> > class SimplicialCholesky;
 
 namespace internal {
 
-template<typename _MatrixType, int _UpLo> struct traits<SimplicialLLT<_MatrixType,_UpLo> >
+template<typename _MatrixType, int _UpLo, typename _Ordering> struct traits<SimplicialLLT<_MatrixType,_UpLo,_Ordering> >
 {
   typedef _MatrixType MatrixType;
+  typedef _Ordering OrderingType;
   enum { UpLo = _UpLo };
   typedef typename MatrixType::Scalar                         Scalar;
   typedef typename MatrixType::Index                          Index;
@@ -320,9 +261,10 @@ template<typename _MatrixType, int _UpLo> struct traits<SimplicialLLT<_MatrixTyp
   static inline MatrixU getU(const MatrixType& m) { return m.adjoint(); }
 };
 
-template<typename _MatrixType,int _UpLo> struct traits<SimplicialLDLT<_MatrixType,_UpLo> >
+template<typename _MatrixType,int _UpLo, typename _Ordering> struct traits<SimplicialLDLT<_MatrixType,_UpLo,_Ordering> >
 {
   typedef _MatrixType MatrixType;
+  typedef _Ordering OrderingType;
   enum { UpLo = _UpLo };
   typedef typename MatrixType::Scalar                             Scalar;
   typedef typename MatrixType::Index                              Index;
@@ -333,9 +275,10 @@ template<typename _MatrixType,int _UpLo> struct traits<SimplicialLDLT<_MatrixTyp
   static inline MatrixU getU(const MatrixType& m) { return m.adjoint(); }
 };
 
-template<typename _MatrixType, int _UpLo> struct traits<SimplicialCholesky<_MatrixType,_UpLo> >
+template<typename _MatrixType, int _UpLo, typename _Ordering> struct traits<SimplicialCholesky<_MatrixType,_UpLo,_Ordering> >
 {
   typedef _MatrixType MatrixType;
+  typedef _Ordering OrderingType;
   enum { UpLo = _UpLo };
 };
 
@@ -355,11 +298,12 @@ template<typename _MatrixType, int _UpLo> struct traits<SimplicialCholesky<_Matr
   * \tparam _MatrixType the type of the sparse matrix A, it must be a SparseMatrix<>
   * \tparam _UpLo the triangular part that will be used for the computations. It can be Lower
   *               or Upper. Default is Lower.
+  * \tparam _Ordering The ordering method to use, either AMDOrdering<> or NaturalOrdering<>. Default is AMDOrdering<>
   *
-  * \sa class SimplicialLDLT
+  * \sa class SimplicialLDLT, class AMDOrdering, class NaturalOrdering
   */
-template<typename _MatrixType, int _UpLo>
-    class SimplicialLLT : public SimplicialCholeskyBase<SimplicialLLT<_MatrixType,_UpLo> >
+template<typename _MatrixType, int _UpLo, typename _Ordering>
+    class SimplicialLLT : public SimplicialCholeskyBase<SimplicialLLT<_MatrixType,_UpLo,_Ordering> >
 {
 public:
     typedef _MatrixType MatrixType;
@@ -425,7 +369,7 @@ public:
     Scalar determinant() const
     {
       Scalar detL = Base::m_matrix.diagonal().prod();
-      return internal::abs2(detL);
+      return numext::abs2(detL);
     }
 };
 
@@ -443,11 +387,12 @@ public:
   * \tparam _MatrixType the type of the sparse matrix A, it must be a SparseMatrix<>
   * \tparam _UpLo the triangular part that will be used for the computations. It can be Lower
   *               or Upper. Default is Lower.
+  * \tparam _Ordering The ordering method to use, either AMDOrdering<> or NaturalOrdering<>. Default is AMDOrdering<>
   *
-  * \sa class SimplicialLLT
+  * \sa class SimplicialLLT, class AMDOrdering, class NaturalOrdering
   */
-template<typename _MatrixType, int _UpLo>
-    class SimplicialLDLT : public SimplicialCholeskyBase<SimplicialLDLT<_MatrixType,_UpLo> >
+template<typename _MatrixType, int _UpLo, typename _Ordering>
+    class SimplicialLDLT : public SimplicialCholeskyBase<SimplicialLDLT<_MatrixType,_UpLo,_Ordering> >
 {
 public:
     typedef _MatrixType MatrixType;
@@ -528,8 +473,8 @@ public:
   *
   * \sa class SimplicialLDLT, class SimplicialLLT
   */
-template<typename _MatrixType, int _UpLo>
-    class SimplicialCholesky : public SimplicialCholeskyBase<SimplicialCholesky<_MatrixType,_UpLo> >
+template<typename _MatrixType, int _UpLo, typename _Ordering>
+    class SimplicialCholesky : public SimplicialCholeskyBase<SimplicialCholesky<_MatrixType,_UpLo,_Ordering> >
 {
 public:
     typedef _MatrixType MatrixType;
@@ -660,7 +605,7 @@ public:
       else
       {
         Scalar detL = Diagonal<const CholMatrixType>(Base::m_matrix).prod();
-        return internal::abs2(detL);
+        return numext::abs2(detL);
       }
     }
     
@@ -673,15 +618,13 @@ void SimplicialCholeskyBase<Derived>::ordering(const MatrixType& a, CholMatrixTy
 {
   eigen_assert(a.rows()==a.cols());
   const Index size = a.rows();
-  // TODO allows to configure the permutation
   // Note that amd compute the inverse permutation
   {
     CholMatrixType C;
     C = a.template selfadjointView<UpLo>();
-    // remove diagonal entries:
-    // seems not to be needed
-    // C.prune(keep_diag());
-    internal::minimum_degree_ordering(C, m_Pinv);
+    
+    OrderingType ordering;
+    ordering(C,m_Pinv);
   }
 
   if(m_Pinv.size()>0)
@@ -691,151 +634,6 @@ void SimplicialCholeskyBase<Derived>::ordering(const MatrixType& a, CholMatrixTy
 
   ap.resize(size,size);
   ap.template selfadjointView<Upper>() = a.template selfadjointView<UpLo>().twistedBy(m_P);
-}
-
-template<typename Derived>
-void SimplicialCholeskyBase<Derived>::analyzePattern_preordered(const CholMatrixType& ap, bool doLDLT)
-{
-  const Index size = ap.rows();
-  m_matrix.resize(size, size);
-  m_parent.resize(size);
-  m_nonZerosPerCol.resize(size);
-  
-  ei_declare_aligned_stack_constructed_variable(Index, tags, size, 0);
-
-  for(Index k = 0; k < size; ++k)
-  {
-    /* L(k,:) pattern: all nodes reachable in etree from nz in A(0:k-1,k) */
-    m_parent[k] = -1;             /* parent of k is not yet known */
-    tags[k] = k;                  /* mark node k as visited */
-    m_nonZerosPerCol[k] = 0;      /* count of nonzeros in column k of L */
-    for(typename CholMatrixType::InnerIterator it(ap,k); it; ++it)
-    {
-      Index i = it.index();
-      if(i < k)
-      {
-        /* follow path from i to root of etree, stop at flagged node */
-        for(; tags[i] != k; i = m_parent[i])
-        {
-          /* find parent of i if not yet determined */
-          if (m_parent[i] == -1)
-            m_parent[i] = k;
-          m_nonZerosPerCol[i]++;        /* L (k,i) is nonzero */
-          tags[i] = k;                  /* mark i as visited */
-        }
-      }
-    }
-  }
-  
-  /* construct Lp index array from m_nonZerosPerCol column counts */
-  Index* Lp = m_matrix.outerIndexPtr();
-  Lp[0] = 0;
-  for(Index k = 0; k < size; ++k)
-    Lp[k+1] = Lp[k] + m_nonZerosPerCol[k] + (doLDLT ? 0 : 1);
-
-  m_matrix.resizeNonZeros(Lp[size]);
-  
-  m_isInitialized     = true;
-  m_info              = Success;
-  m_analysisIsOk      = true;
-  m_factorizationIsOk = false;
-}
-
-
-template<typename Derived>
-template<bool DoLDLT>
-void SimplicialCholeskyBase<Derived>::factorize_preordered(const CholMatrixType& ap)
-{
-  eigen_assert(m_analysisIsOk && "You must first call analyzePattern()");
-  eigen_assert(ap.rows()==ap.cols());
-  const Index size = ap.rows();
-  eigen_assert(m_parent.size()==size);
-  eigen_assert(m_nonZerosPerCol.size()==size);
-
-  const Index* Lp = m_matrix.outerIndexPtr();
-  Index* Li = m_matrix.innerIndexPtr();
-  Scalar* Lx = m_matrix.valuePtr();
-
-  ei_declare_aligned_stack_constructed_variable(Scalar, y, size, 0);
-  ei_declare_aligned_stack_constructed_variable(Index,  pattern, size, 0);
-  ei_declare_aligned_stack_constructed_variable(Index,  tags, size, 0);
-  
-  bool ok = true;
-  m_diag.resize(DoLDLT ? size : 0);
-  
-  for(Index k = 0; k < size; ++k)
-  {
-    // compute nonzero pattern of kth row of L, in topological order
-    y[k] = 0.0;                     // Y(0:k) is now all zero
-    Index top = size;               // stack for pattern is empty
-    tags[k] = k;                    // mark node k as visited
-    m_nonZerosPerCol[k] = 0;        // count of nonzeros in column k of L
-    for(typename MatrixType::InnerIterator it(ap,k); it; ++it)
-    {
-      Index i = it.index();
-      if(i <= k)
-      {
-        y[i] += internal::conj(it.value());            /* scatter A(i,k) into Y (sum duplicates) */
-        Index len;
-        for(len = 0; tags[i] != k; i = m_parent[i])
-        {
-          pattern[len++] = i;     /* L(k,i) is nonzero */
-          tags[i] = k;            /* mark i as visited */
-        }
-        while(len > 0)
-          pattern[--top] = pattern[--len];
-      }
-    }
-
-    /* compute numerical values kth row of L (a sparse triangular solve) */
-
-    RealScalar d = internal::real(y[k]) * m_shiftScale + m_shiftOffset;    // get D(k,k), apply the shift function, and clear Y(k)
-    y[k] = 0.0;
-    for(; top < size; ++top)
-    {
-      Index i = pattern[top];       /* pattern[top:n-1] is pattern of L(:,k) */
-      Scalar yi = y[i];             /* get and clear Y(i) */
-      y[i] = 0.0;
-      
-      /* the nonzero entry L(k,i) */
-      Scalar l_ki;
-      if(DoLDLT)
-        l_ki = yi / m_diag[i];       
-      else
-        yi = l_ki = yi / Lx[Lp[i]];
-      
-      Index p2 = Lp[i] + m_nonZerosPerCol[i];
-      Index p;
-      for(p = Lp[i] + (DoLDLT ? 0 : 1); p < p2; ++p)
-        y[Li[p]] -= internal::conj(Lx[p]) * yi;
-      d -= internal::real(l_ki * internal::conj(yi));
-      Li[p] = k;                          /* store L(k,i) in column form of L */
-      Lx[p] = l_ki;
-      ++m_nonZerosPerCol[i];              /* increment count of nonzeros in col i */
-    }
-    if(DoLDLT)
-    {
-      m_diag[k] = d;
-      if(d == RealScalar(0))
-      {
-        ok = false;                         /* failure, D(k,k) is zero */
-        break;
-      }
-    }
-    else
-    {
-      Index p = Lp[k] + m_nonZerosPerCol[k]++;
-      Li[p] = k ;                /* store L(k,k) = sqrt (d) in column k */
-      if(d <= RealScalar(0)) {
-        ok = false;              /* failure, matrix is not positive definite */
-        break;
-      }
-      Lx[p] = internal::sqrt(d) ;
-    }
-  }
-
-  m_info = ok ? Success : NumericalIssue;
-  m_factorizationIsOk = true;
 }
 
 namespace internal {
@@ -862,7 +660,7 @@ struct sparse_solve_retval<SimplicialCholeskyBase<Derived>, Rhs>
 
   template<typename Dest> void evalTo(Dest& dst) const
   {
-    dec().derived()._solve_sparse(rhs(),dst);
+    this->defaultEvalTo(dst);
   }
 };
 

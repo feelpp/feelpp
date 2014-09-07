@@ -32,7 +32,7 @@ if (UNIX)
     ERROR_VARIABLE FEELPP_SYSTEM_MACHINE_error
     RESULT_VARIABLE FEELPP_SYSTEM_MACHINE_result)
 endif()
-SET(CPACK_PACKAGE_NAME "feel++")
+SET(CPACK_PACKAGE_NAME "feelpp")
 SET(CPACK_GENERATOR "TGZ")
 SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Feel++")
 SET(CPACK_PACKAGE_VENDOR "Christophe Prud'homme")
@@ -47,9 +47,9 @@ SET(CPACK_SOURCE_OUTPUT_CONFIG_FILE "CPackSourceConfig.cmake")
 SET(CPACK_SYSTEM_NAME "${FEELPP_OS}-${FEELPP_SYSTEM_MACHINE}")
 
 OPTION(FEELPP_ENABLE_CPACK_OPUS "Enable OPUS packaging (if available) in CPack along with Feel++" ON )
-SET(CPACK_PACKAGE_NAME "feel++")
+SET(CPACK_PACKAGE_NAME "feelpp")
 SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Feel++ (Finite Element method Embedded Library and language in C++)")
-SET(CPACK_SOURCE_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${FEELPP_VERSION_MAJOR}.${FEELPP_VERSION_MINOR}.${FEELPP_VERSION_MICRO}${FEELPP_VERSION_EXTRA}")
+SET(CPACK_SOURCE_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${FEELPP_VERSION_MAJOR}.${FEELPP_VERSION_MINOR}.${FEELPP_VERSION_MICRO}${FEELPP_VERSION_PRERELEASE}${FEELPP_VERSION_METADATA}")
 
 
 SET(CPACK_SOURCE_STRIP_FILES "")
@@ -60,9 +60,18 @@ set(CPACK_SOURCE_IGNORE_FILES
   "/\\\\.git/;\\\\.gitignore;/\\\\.svn;"
   "/admin/;/Templates/;"
   "/auto/;/ltxpng/;"
-  "/TAGS;/#.*;/.*~$;/.cvsignore;/.bzrignore;/work/;/autom4te.cache/"
-  "${PROJECT_SOURCE_DIR}/data/gmsh/aneurysm"
+  "/TAGS;/#.*;/.*~$;/*.log$;/.cvsignore;/.bzrignore;/work/;/autom4te.cache/"
+#  "${PROJECT_SOURCE_DIR}/contrib/eigen"
+  "${PROJECT_SOURCE_DIR}/contrib/cln"
+  "${PROJECT_SOURCE_DIR}/contrib/boost"
+# "${PROJECT_SOURCE_DIR}/contrib/gmsh"
+  "${PROJECT_SOURCE_DIR}/contrib/exodus-5.24"
+  "${PROJECT_SOURCE_DIR}/ports"
+  "${PROJECT_SOURCE_DIR}/projects"
+  "${PROJECT_SOURCE_DIR}/data/medit"
+  "${PROJECT_SOURCE_DIR}/data/gmsh/aneurism"
   "${PROJECT_SOURCE_DIR}/data/gmsh/aorta"
+  "${PROJECT_SOURCE_DIR}/data/ensoght"
   "${PROJECT_SOURCE_DIR}/data/gmsh/pelvis"
   "${PROJECT_SOURCE_DIR}/benchmarks/"
   "${PROJECT_SOURCE_DIR}/benchmarks/navierstokes/"
@@ -75,6 +84,11 @@ set(CPACK_SOURCE_IGNORE_FILES
   "${PROJECT_SOURCE_DIR}/doc/manual/manual/feel-manual.pdf"
   "${PROJECT_SOURCE_DIR}/doc/figures/backgrounds/"
   "${PROJECT_SOURCE_DIR}/doc/figures/logos/"
+  "${PROJECT_SOURCE_DIR}/doc/manual/feelpp-manual*"
+  "${PROJECT_SOURCE_DIR}/doc/manual/*.tex"
+  "${PROJECT_SOURCE_DIR}/doc/manual/laplacian/*.msh"
+  "${PROJECT_SOURCE_DIR}/doc/manual/heatns/cabin/Mesh/Mesh_NonUniform/*.m*"
+  "${PROJECT_SOURCE_DIR}/doc/manual/heatns/cabin/Mesh/Mesh_uniform/*.m*"
   "${PROJECT_SOURCE_DIR}/examples/fluid/"
   "${PROJECT_SOURCE_DIR}/examples/levelset/"
   "${PROJECT_SOURCE_DIR}/examples/pbeq/"

@@ -124,6 +124,9 @@ public:
     typedef typename GetGm<1>::type gm1_type;
     typedef typename GetGm<1>::ptrtype gm1_ptrtype;
 
+    typedef typename gm_type::super::reference_convex_type reference_convex_type;
+    typedef typename gm1_type::super::reference_convex_type reference_convex1_type;
+
     typedef typename super::vertex_permutation_type vertex_permutation_type;
     typedef typename super::edge_permutation_type edge_permutation_type;
     typedef typename super::face_permutation_type face_permutation_type;
@@ -141,18 +144,20 @@ public:
         :
         super( 0 ),
         M_points( numPoints ),
-        M_face_points( numTopologicalFaces ),
+        //M_face_points( numTopologicalFaces ),
         M_G( nRealDim, numPoints ),
         M_barycenter( nRealDim ),
         M_barycenterfaces( nRealDim, numTopologicalFaces ),
         M_h( 1 ),
+        M_h_min(1),
         M_h_face( numTopologicalFaces, 1 ),
         M_h_edge( numLocalEdges, 1 ),
         M_measure( 1 ),
         M_measurefaces( numTopologicalFaces ),
         M_normals( nRealDim, numTopologicalFaces ),
         M_has_points( false ),
-        M_neighbors( numNeighbors, std::make_pair( invalid_size_type_value, 0 ) ),
+        M_neighbors( numNeighbors, std::make_pair( invalid_size_type_value, invalid_rank_type_value ) ),
+        M_meas_pneighbors( 0 ),
         M_marker1(),
         M_marker2(),
         M_marker3(),
@@ -171,18 +176,20 @@ public:
         :
         super( id ),
         M_points( numPoints ),
-        M_face_points( numTopologicalFaces ),
+        //M_face_points( numTopologicalFaces ),
         M_G( nRealDim, numPoints ),
         M_barycenter( nRealDim ),
         M_barycenterfaces( nRealDim, numTopologicalFaces ),
         M_h( 1 ),
+        M_h_min( 1 ),
         M_h_face( numTopologicalFaces, 1 ),
         M_h_edge( numLocalEdges, 1 ),
         M_measure( 1 ),
         M_measurefaces( numTopologicalFaces ),
         M_normals( nRealDim, numTopologicalFaces ),
         M_has_points( false ),
-        M_neighbors( numNeighbors, std::make_pair( invalid_size_type_value, 0 ) ),
+        M_neighbors( numNeighbors, std::make_pair( invalid_size_type_value, invalid_rank_type_value ) ),
+        M_meas_pneighbors( 0 ),
         M_marker1(),
         M_marker2(),
         M_marker3(),
@@ -195,18 +202,20 @@ public:
         :
         super( e ),
         M_points( numPoints ),
-        M_face_points( e.M_face_points ),
+        //M_face_points( e.M_face_points ),
         M_G( nRealDim, numPoints ),
         M_barycenter( e.M_barycenter ),
         M_barycenterfaces( e.M_barycenterfaces ),
         M_h( e.M_h ),
+        M_h_min( e.M_h_min ),
         M_h_face( e.M_h_face ),
         M_h_edge( e.M_h_edge ),
         M_measure( e.M_measure ),
         M_measurefaces( numTopologicalFaces  ),
         M_normals( e.M_normals ),
         M_has_points( false ),
-        M_neighbors( numNeighbors, std::make_pair( invalid_size_type_value, 0 ) ),
+        M_neighbors( numNeighbors, std::make_pair( invalid_size_type_value, invalid_rank_type_value ) ),
+        M_meas_pneighbors( e.M_meas_pneighbors ),
         M_marker1( e.M_marker1 ),
         M_marker2( e.M_marker2 ),
         M_marker3( e.M_marker3 ),
@@ -222,9 +231,10 @@ public:
     /**
      * destructor, make it virtual for derived classes
      */
-    virtual ~GeoND()
+    ~GeoND()
     {
     }
+
 #if 0
     /**
      * set the mesh to which this geometric entity belongs to
@@ -296,12 +306,13 @@ public:
             for ( uint16_type i = 0; i < numLocalPoints; ++i )
                 M_points[ i ] = G.M_points[ i ];
 
-            M_face_points = G.M_face_points;
+            //M_face_points = G.M_face_points;
             M_G = G.M_G;
 
             M_barycenter = G.M_barycenter;
             M_barycenterfaces = G.M_barycenterfaces;
             M_h = G.M_h;
+            M_h_min = G.M_h_min;
             M_h_face = G.M_h_face;
             M_h_edge = G.M_h_edge;
 
@@ -346,7 +357,7 @@ public:
      *
      * \return the pair neighbor \p n index and process \p id it belongs to
      */
-    std::pair<size_type,size_type> const& neighbor( uint16_type n ) const
+    std::pair<size_type,rank_type> const& neighbor( uint16_type n ) const
     {
         return M_neighbors[n];
     }
@@ -354,7 +365,7 @@ public:
     /**
      * set the \p n -th neighbor with \p neigh
      */
-    void setNeighbor( uint16_type n, size_type neigh_id, size_type proc_id )
+    void setNeighbor( uint16_type n, size_type neigh_id, rank_type proc_id )
     {
         M_neighbors[n] = std::make_pair( neigh_id, proc_id );
     }
@@ -454,7 +465,7 @@ public:
      */
     PointType & reversepoint( uint16_type const i )
     {
-        return *( static_cast<POINTTYPE *>( M_points[ detail::ReversePoint<GEOSHAPE>::operate( i ) ] ) );
+        return *( static_cast<POINTTYPE *>( M_points[ Feel::detail::ReversePoint<GEOSHAPE>::operate( i ) ] ) );
     }
 
 
@@ -468,7 +479,7 @@ public:
      */
     PointType const & reversepoint ( uint16_type const i ) const
     {
-        return *( static_cast<POINTTYPE *>( M_points[ detail::ReversePoint<GEOSHAPE>::operate( i ) ] ) );
+        return *( static_cast<POINTTYPE *>( M_points[ Feel::detail::ReversePoint<GEOSHAPE>::operate( i ) ] ) );
     }
 
 
@@ -577,7 +588,14 @@ public:
     {
         return M_h;
     }
-
+    /**
+     * @brief get the minimum edge length in the element
+     * @return the minimum edge length in the element
+     */
+    double hMin() const
+    { 
+        return M_h_min;
+    }
     /**
      * get the max length of the edge in the local face \c f
      *
@@ -708,6 +726,10 @@ public:
         return ( sgn > 0 ) ? 1 : 0;
     }
 
+    void setPointCoordG( int i, ublas::vector<double> const& u )
+    {
+        ublas::column( M_G, i ) = u;
+    }
     void applyDisplacement( int i, ublas::vector<double> const& u )
     {
         ublas::column( M_G, i ) += u;
@@ -737,7 +759,8 @@ public:
 
             if ( tags[2] > 1 )
             {
-                std::vector<int> p( tags[2]-1 );
+                // ghosts
+                std::vector<rank_type> p( tags[2]-1 );
 
                 for ( size_type i = 0; i < p.size(); ++i )
                 {
@@ -844,17 +867,17 @@ private:
 
 private:
     /** geometric nodes of the element */
-    ublas::bounded_array<point_type*, numPoints> M_points;
+    std::vector<point_type*> M_points;
 
     /** geometric nodes of the faces of the element */
-    std::vector<ublas::bounded_array<point_type*, numPoints> > M_face_points;
+    std::vector<std::vector<point_type*> > M_face_points;
 
     /**< matrix of the geometric nodes */
     matrix_node_type M_G;
     node_type M_barycenter;
     matrix_node_type M_barycenterfaces;
 
-    double M_h;
+    double M_h,M_h_min;
     std::vector<double> M_h_face;
     std::vector<double> M_h_edge;
 
@@ -868,7 +891,7 @@ private:
     /**
      * store neighbor element id
      */
-    std::vector<std::pair<size_type,size_type> > M_neighbors;
+    std::vector<std::pair<size_type,rank_type> > M_neighbors;
     //! point element neighbors
     std::set<size_type> M_pneighbors;
     //! measure of the set of point element neighbors
@@ -917,7 +940,7 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::showMe( bool verbose, std::ostream & out ) co
     for ( int i = 0; i < numVertices; i++ )
     {
         out << "POINT id = " << i << std::endl;
-        out << point( i ).showMe( verbose, out );
+        point( i ).showMe( verbose, out );
     }
 
     out << "----- END OF GeoND data ---" << std::endl << std::endl;
@@ -975,6 +998,7 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateWithPc( typename gm_type::precompute_pt
         typename gm_type::faces_precompute_type& pcf )
 {
     M_h = 0;
+    M_h_min = 0;
 
     for ( uint16_type __e = 0; __e < numLocalEdges; ++__e )
     {
@@ -982,6 +1006,7 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateWithPc( typename gm_type::precompute_pt
         node_type const& __x2 = this->point( this->eToP( __e, 1 ) ).node();
         M_h_edge[__e] = ublas::norm_2( __x1-__x2 );
         M_h = ( M_h > M_h_edge[__e] )?M_h:M_h_edge[__e];
+        M_h_min = ( M_h_min > M_h_edge[__e] )?M_h_edge[__e]:M_h_min;
     }
 
     auto M = glas::average( M_G );

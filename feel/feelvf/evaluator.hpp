@@ -30,7 +30,6 @@
 #define __FEELPP_EVALUATORS_H 1
 
 #include <boost/timer.hpp>
-#include <boost/signal.hpp>
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 
@@ -75,11 +74,11 @@ public:
     typedef typename iterator_type::value_type mesh_element_type;
     typedef IteratorRange range_iterator;
     typedef typename mpl::if_<mpl::bool_<mesh_element_type::is_simplex>,
-                              mpl::identity<typename Pset::template apply<mesh_element_type::nDim, value_type, Simplex>::type >,
-                              mpl::identity<typename Pset::template apply<mesh_element_type::nDim, value_type, Hypercube>::type >
+                              mpl::identity<typename Pset::template apply<mesh_element_type::nRealDim, value_type, Simplex>::type >,
+                              mpl::identity<typename Pset::template apply<mesh_element_type::nRealDim, value_type, Hypercube>::type >
                               >::type::type pointset_type;
     typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> element_type;
-    typedef Eigen::Matrix<value_type,mesh_element_type::nDim,Eigen::Dynamic> node_type;
+    typedef Eigen::Matrix<value_type,mesh_element_type::nRealDim,Eigen::Dynamic> node_type;
     typedef boost::tuple<element_type,node_type> eval_element_type;
     //@}
 
@@ -332,20 +331,18 @@ template<EvaluatorType iDim, typename Iterator, typename Pset, typename ExprT>
 typename Evaluator<iDim, Iterator, Pset, ExprT>::eval_element_type
 Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) const
 {
-#if 0
+
     boost::timer __timer;
 
-    element_type __v( M_functionspace );
-    __v.setZero();
-
-    DVLOG(2) << "call project(MESH_FACES) " << "\n";
+    VLOG(2) << "evaluator(MESH_FACES) " << "\n";
     //
     // a few typedefs
     //
 
     // mesh element
-    typedef typename element_type::functionspace_type::mesh_type::element_type geoelement_type;
-    typedef typename geoelement_type::face_type face_type;
+    typedef typename mesh_element_type::entity_type geoelement_type;
+    //typedef typename geoelement_type::face_type face_type;
+    typedef mesh_element_type face_type;
 
     // geometric mapping context
     typedef typename geoelement_type::gm_type gm_type;
@@ -360,18 +357,6 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
     typedef boost::shared_ptr<gmc1_type> gmc1_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc1_ptrtype> > map_gmc1_type;
 
-
-    // dof
-    typedef typename element_type::functionspace_type::dof_type dof_type;
-
-    // basis
-    typedef typename element_type::functionspace_type::fe_type fe_type;
-    typedef typename fe_type::template Context< context, fe_type, gm_type, geoelement_type> fecontext_type;
-    typedef boost::shared_ptr<fecontext_type> fecontext_ptrtype;
-    typedef typename fe_type::template Context< context, fe_type, gm1_type, geoelement_type> fecontext1_type;
-    typedef boost::shared_ptr<fecontext1_type> fecontext1_ptrtype;
-    //typedef fusion::map<fusion::pair<vf::detail::gmc<0>, fecontext_ptrtype> > map_gmc_type;
-
     // expression
     //typedef typename expression_type::template tensor<map_gmc_type,fecontext_type> t_expr_type;
     //typedef decltype( basis_type::isomorphism( M_expr ) ) the_expression_type;
@@ -384,17 +369,20 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
     //
     // start
     //
-    DVLOG(2)  << "assembling Dirichlet conditions\n";
-
-    dof_type const* __dof = __v.functionSpace()->dof().get();
-
-    fe_type const* __fe = __v.functionSpace()->fe().get();
 
     iterator_type __face_it, __face_en;
     boost::tie( boost::tuples::ignore, __face_it, __face_en ) = M_range;
 
+    int npoints = M_pset.fpoints(0,1).size2();
+    element_type __v( M_pset.fpoints(0,1).size2()*std::distance( __face_it, __face_en )*shape::M );
+    node_type __p( mesh_element_type::nRealDim, M_pset.fpoints(0,1).size2()*std::distance( __face_it, __face_en ) );
+    __v.setZero();
+    __p.setZero();
+    VLOG(2) << "pset: " << M_pset.fpoints(0,1);
+    VLOG(2) << "Checking trivial result...";
+
     if ( __face_it == __face_en )
-        return __v;
+        return boost::make_tuple( __v, __p );
 
     gm_ptrtype __gm( new gm_type );
     gm1_ptrtype __gm1( new gm1_type );
@@ -411,20 +399,20 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
     typedef typename gm1_type::precompute_ptrtype geopc1_ptrtype;
     typedef typename gm1_type::precompute_type geopc1_type;
 
-    DVLOG(2)  << "[integratoron] numTopologicalFaces = " << geoelement_type::numTopologicalFaces << "\n";
-    std::vector<std::map<permutation_type, geopc_ptrtype> > __geopc( geoelement_type::numTopologicalFaces );
-    std::vector<std::map<permutation_type, geopc1_ptrtype> > __geopc1( geoelement_type::numTopologicalFaces );
+    std::vector<std::map<permutation_type, geopc_ptrtype> > __geopc( M_pset.nFaces() );
+    std::vector<std::map<permutation_type, geopc1_ptrtype> > __geopc1( M_pset.nFaces() );
 
-    for ( uint16_type __f = 0; __f < geoelement_type::numTopologicalFaces; ++__f )
+    VLOG(2) << "computing geopc...";
+    for ( uint16_type __f = 0; __f < M_pset.nFaces(); ++__f )
     {
         for ( permutation_type __p( permutation_type::IDENTITY );
                 __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
         {
-            __geopc[__f][__p] = geopc_ptrtype(  new geopc_type( __gm, __fe->points( __f ) ) );
-            __geopc1[__f][__p] = geopc1_ptrtype(  new geopc1_type( __gm1, __fe->points( __f ) ) );
-            //DVLOG(2) << "[geopc] FACE_ID = " << __f << " ref pts=" << __fe->dual().points( __f ) << "\n";
-            FEELPP_ASSERT( __geopc[__f][__p]->nPoints() ).error( "invalid number of points for geopc" );
-            FEELPP_ASSERT( __geopc1[__f][__p]->nPoints() ).error( "invalid number of points for geopc1" );
+            __geopc[__f][__p] = geopc_ptrtype(  new geopc_type( __gm, M_pset.fpoints(__f, __p.value() ) ) );
+            __geopc1[__f][__p] = geopc1_ptrtype(  new geopc1_type( __gm1, M_pset.fpoints(__f, __p.value() ) ) );
+            DVLOG(2) << "pset " << __f << " : " << M_pset.fpoints(__f, __p.value() );
+            CHECK( __geopc[__f][__p]->nPoints()  ) << "invalid number of points for geopc";
+            CHECK( __geopc1[__f][__p]->nPoints() ) << "invalid number of points for geopc1";
         }
     }
 
@@ -433,29 +421,16 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
     gmc1_ptrtype __c1( new gmc1_type( __gm1, __face_it->element( 0 ), __geopc1, __face_id ) );
 
     map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
-    t_expr_type expr( basis_type::isomorphism( M_expr ), mapgmc );
+    t_expr_type expr( M_expr, mapgmc );
     map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
-    t_expr1_type expr1( basis_type::isomorphism( M_expr ), mapgmc1 );
+    t_expr1_type expr1( M_expr, mapgmc1 );
 
 
 
 
     size_type nbFaceDof = invalid_size_type_value;
 
-    if ( !fe_type::is_modal )
-        nbFaceDof = ( face_type::numVertices * fe_type::nDofPerVertex +
-                      face_type::numEdges * fe_type::nDofPerEdge +
-                      face_type::numFaces * fe_type::nDofPerFace );
-
-    else
-        nbFaceDof = face_type::numVertices * fe_type::nDofPerVertex;
-
-    DVLOG(2)  << "[projector::operator(MESH_FACES)] nbFaceDof = " << nbFaceDof << "\n";
-
-    std::vector<int> dofs;
-    std::vector<value_type> values;
-
-    for ( ; __face_it != __face_en; ++__face_it )
+    for ( int e = 0; __face_it != __face_en; ++__face_it, ++e )
     {
         FEELPP_ASSERT( __face_it->isOnBoundary() && !__face_it->isConnectedTo1() )
         ( __face_it->marker() )
@@ -465,18 +440,14 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
         ( __face_it->ad_second() )
         ( __face_it->pos_second() )
         ( __face_it->id() ).warn( "inconsistent data face" );
-        DVLOG(2) << "[projector] FACE_ID = " << __face_it->id()
+        DVLOG(2) << "[evaluator] FACE_ID = " << __face_it->id()
                       << " element id= " << __face_it->ad_first()
                       << " pos in elt= " << __face_it->pos_first()
                       << " marker: " << __face_it->marker() << "\n";
-        DVLOG(2) << "[projector] FACE_ID = " << __face_it->id() << " real pts=" << __face_it->G() << "\n";
+        DVLOG(2) << "[evaluator] FACE_ID = " << __face_it->id() << " real pts=" << __face_it->G() << "\n";
 
         uint16_type __face_id = __face_it->pos_first();
 
-        std::pair<size_type,size_type> range_dof( std::make_pair( __v.start(),
-                __v.functionSpace()->nDof() ) );
-        DVLOG(2)  << "[projector] dof start = " << range_dof.first << "\n";
-        DVLOG(2)  << "[projector] dof range = " << range_dof.second << "\n";
 
         switch ( M_geomap_strategy )
         {
@@ -485,62 +456,57 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
         case GeomapStrategyType::GEOMAP_HO:
         {
             __c->update( __face_it->element( 0 ), __face_id );
-            DVLOG(2) << "[projector] FACE_ID = " << __face_it->id() << "  ref pts=" << __c->xRefs() << "\n";
-            DVLOG(2) << "[projector] FACE_ID = " << __face_it->id() << " real pts=" << __c->xReal() << "\n";
+            DVLOG(2) << "[evaluator::GEOMAP_HO|GEOMAP_OPT] FACE_ID = " << __face_it->id() << "  ref pts=" << __c->xRefs() << "\n";
+            DVLOG(2) << "[evaluator::GEOMAP_HO|GEOMAP_OPT] FACE_ID = " << __face_it->id() << " real pts=" << __c->xReal() << "\n";
 
             map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
 
             expr.update( mapgmc );
 
-            for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
-                for ( uint16_type c2 = 0; c2 < shape::N; ++c2 )
+            for ( uint16_type p = 0; p < npoints; ++p )
+            {
+                for ( uint16_type c1 = 0; c1 < mesh_element_type::nRealDim; ++c1 )
                 {
-                    for ( uint16_type l = 0; l < nbFaceDof; ++l )
-                    {
-                        typename expression_type::value_type __value = expr.evalq( c1, c2, l );
-
-                        size_type thedof =  __v.start() +
-                                            boost::get<0>( __dof->faceLocalToGlobal( __face_it->id(), l, c1 ) );
-
-                        __v( thedof ) =  __value;
-                    }
+                    __p(c1, e*npoints+p) = __c->xReal(p)[c1];
                 }
+
+                for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
+                {
+                    __v( e*npoints*shape::M+shape::M*p+c1) = expr.evalq( c1, 0, p );
+                }
+            }
         }
         break;
 
         case GeomapStrategyType::GEOMAP_O1:
         {
             __c1->update( __face_it->element( 0 ), __face_id );
-            DVLOG(2) << "[projector] FACE_ID = " << __face_it->id() << "  ref pts=" << __c1->xRefs() << "\n";
-            DVLOG(2) << "[projector] FACE_ID = " << __face_it->id() << " real pts=" << __c1->xReal() << "\n";
+            DVLOG(2) << "[evaluator::GEOMAP_O1] FACE_ID = " << __face_it->id() << "  ref pts=" << __c1->xRefs() << "\n";
+            DVLOG(2) << "[evaluator::GEOMAP_O1] FACE_ID = " << __face_it->id() << " real pts=" << __c1->xReal() << "\n";
 
             map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
 
             expr1.update( mapgmc1 );
 
-
-            for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
-                for ( uint16_type c2 = 0; c2 < shape::N; ++c2 )
+            for ( uint16_type p = 0; p < npoints; ++p )
+            {
+                for ( uint16_type c1 = 0; c1 < mesh_element_type::nRealDim; ++c1 )
                 {
-                    for ( uint16_type l = 0; l < nbFaceDof; ++l )
-                    {
-                        typename expression_type::value_type __value = expr1.evalq( c1, c2, l );
-
-                        size_type thedof =  __v.start() +
-                                            boost::get<0>( __dof->faceLocalToGlobal( __face_it->id(), l, c1 ) );
-
-                        __v( thedof ) =  __value;
-                    }
+                    __p(c1, e*npoints+p) = __c1->xReal(p)[c1];
                 }
+
+                for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
+                {
+                    __v( e*npoints*shape::M+shape::M*p+c1) = expr1.evalq( c1, 0, p );
+                }
+
+            }
         }
         break;
         }
 
     } // face_it
-#else
-    element_type __v;
-    node_type __p;
-#endif
+
 
     return boost::make_tuple( __v, __p );
 }
@@ -560,6 +526,7 @@ struct evaluate
     typedef typename eval_t::mesh_element_type mesh_element_type;
     typedef typename eval_t::eval_element_type element_type;
     static const uint16_type nDim = mesh_element_type::nDim;
+    static const uint16_type nRealDim = mesh_element_type::nRealDim;
 };
 }
 /// \endcond
@@ -610,6 +577,31 @@ BOOST_PARAMETER_FUNCTION(
 }
 
 /**
+ * \brief data returned by normLinf
+ */
+template<int Dim>
+struct normLinfData : public boost::tuple<double, Eigen::Matrix<double, Dim,1> >
+{
+    typedef boost::tuple<double, Eigen::Matrix<double, Dim,1> > super;
+    normLinfData( double v, Eigen::Matrix<double, Dim,1> const& x  ) : super( v, x ) {}
+
+    /**
+     * \return the maximum absolute value
+     */
+    double value() const { return this->template get<0>(); }
+
+    /**
+     * \return the maximum absolute value
+     */
+    double operator()() const { return this->template get<0>(); }
+
+    /**
+     * \return the point at which the expression is maximal
+     */
+    Eigen::Matrix<double, Dim,1> const& arg() const { return this->template get<1>(); }
+
+};
+/**
  *
  * \brief evaluate an expression over a range of element at a set of points defined in the reference element
  *
@@ -619,7 +611,7 @@ BOOST_PARAMETER_FUNCTION(
  * \arg geomap the type of geomap to use (make sense only using high order meshes)
  */
 BOOST_PARAMETER_FUNCTION(
-    ( boost::tuple<double, Eigen::Matrix<double, vf::detail::evaluate<Args>::nDim,1> > ), // return type
+    ( normLinfData<vf::detail::evaluate<Args>::nRealDim> ), // return type
     normLinf,    // 2. function name
 
     tag,           // 3. namespace of tag types
@@ -631,12 +623,13 @@ BOOST_PARAMETER_FUNCTION(
     ) // 4. one required parameter, and
 
     ( optional
+      ( worldcomm,       (WorldComm), Environment::worldComm() )
       ( geomap,         *, GeomapStrategyType::GEOMAP_OPT )
     )
 )
 {
 
-    int proc_number = Environment::worldComm().globalRank();
+    int proc_number = worldcomm.globalRank();
 
     LOG(INFO) << "evaluate expression..." << std::endl;
 
@@ -644,41 +637,144 @@ BOOST_PARAMETER_FUNCTION(
     int index;
     double maxe = e.template get<0>().array().abs().maxCoeff(&index);
 
-    Eigen::Matrix<double, vf::detail::evaluate<Args>::nDim,1> n = e.template get<1>().col(index);
+    Eigen::Matrix<double, vf::detail::evaluate<Args>::nRealDim,1> n = e.template get<1>().col(index);
     LOG(INFO) << "proc "<<proc_number<<" index at which function (size: " << e.template get<0>().array().size() << ") is maximal: "<< index << " coord = \n"<<n<<"\n";
 
-    int world_size = Environment::worldComm().size();
+    int world_size = worldcomm.size();
     std::vector<double> maxe_world( world_size );
-    mpi::all_gather( Environment::worldComm().globalComm(),
+    mpi::all_gather( worldcomm.globalComm(),
                      maxe,
                      maxe_world );
 
-    std::vector< Eigen::Matrix<double, vf::detail::evaluate<Args>::nDim,1> > n_world( world_size );
-    mpi::all_gather( Environment::worldComm().globalComm(),
+    std::vector< Eigen::Matrix<double, vf::detail::evaluate<Args>::nRealDim,1> > n_world( world_size );
+    mpi::all_gather( worldcomm.globalComm(),
                      n,
                      n_world );
 
     auto it_max = std::max_element( maxe_world.begin() , maxe_world.end() );
     int position = it_max - maxe_world.begin();
     LOG(INFO)<<"proc "<<proc_number<<" : global max = "<<*it_max<<" at position "<<position<<" with coord : \n "<<n<<"\n";
-    //for(int i=0;i<vf::detail::evaluate<Args>::nDim;i++) LOG(INFO) << n_world[i](i) <<" - ";
-    //LOG(INFO)<<"\n";
 
-    int index2=0;
-    double maxe2 = 0;
-    for( int i = 0; i < e.template get<0>().size(); ++i )
+    // some extra check
+    if (VLOG_IS_ON(2))
     {
-        if ( math::abs(e.template get<0>()(i)) > maxe2 )
+        int index2=0;
+        double maxe2 = 0;
+        for( int i = 0; i < e.template get<0>().size(); ++i )
         {
-            maxe2 = math::abs(e.template get<0>()(i));
-            index2 = i;
+            if ( math::abs(e.template get<0>()(i)) > maxe2 )
+            {
+                maxe2 = math::abs(e.template get<0>()(i));
+                index2 = i;
+            }
         }
+        LOG_ASSERT( index2 == index ) << " index2 = " << index2 <<  " and index  = " << index << "\n";
     }
-
-    LOG_ASSERT( index2 == index ) << " index2 = " << index2 <<  " and index  = " << index << "\n";
     LOG(INFO) << "evaluate expression done." << std::endl;
+    Eigen::Matrix<double, vf::detail::evaluate<Args>::nRealDim,1> x = n_world[position];
+    return normLinfData<vf::detail::evaluate<Args>::nRealDim> (*it_max, x);
+}
 
-    return boost::make_tuple( *it_max, n_world[position] );
+
+/**
+ * \brief data returned by minmax
+ */
+template<int Dim>
+struct minmaxData : public boost::tuple<double,double, Eigen::Matrix<double, Dim,2> >
+{
+    typedef boost::tuple<double,double, Eigen::Matrix<double, Dim,2> > super;
+    minmaxData( super const& s ) : super( s ) {}
+    /**
+     * \return the minimum absolute value
+     */
+    double min() const { return this->template get<0>(); }
+
+    /**
+     * \return the maximum absolute value
+     */
+    double max() const { return this->template get<1>(); }
+
+
+    /**
+     * \return the point at which the expression is maximal
+     */
+    Eigen::Matrix<double, Dim,1> argmin() const { return this->template get<2>().col(0); }
+
+    /**
+     * \return the point at which the expression is maximal
+     */
+    Eigen::Matrix<double, Dim,1> argmax() const { return this->template get<2>().col(1); }
+
+};
+
+
+/**
+ *
+ * \brief evaluate an expression over a range of element at a set of points defined in the reference element
+ *
+ * \arg range the range of mesh elements to apply the projection (the remaining parts are set to 0)
+ * \arg pset set of points (e.g. quadrature points) in the reference elements to be transformed in the real elements
+ * \arg expr the expression to project
+ * \arg geomap the type of geomap to use (make sense only using high order meshes)
+ */
+BOOST_PARAMETER_FUNCTION(
+    ( minmaxData<vf::detail::evaluate<Args>::nRealDim> ), // return type
+    minmax,    // 2. function name
+
+    tag,           // 3. namespace of tag types
+
+    ( required
+      ( range, *  )
+      ( pset, * )
+      ( expr, * )
+    ) // 4. one required parameter, and
+
+    ( optional
+      ( worldcomm,       (WorldComm), Environment::worldComm() )
+      ( geomap,         *, GeomapStrategyType::GEOMAP_OPT )
+    )
+)
+{
+
+    int proc_number = worldcomm.globalRank();
+
+    LOG(INFO) << "evaluate minmax(expression)..." << std::endl;
+
+    auto e = evaluate_impl( range, pset, expr, geomap );
+    int indexmin;
+    int indexmax;
+    double mine = e.template get<0>().array().minCoeff(&indexmin);
+    double maxe = e.template get<0>().array().maxCoeff(&indexmax);
+
+    Eigen::Matrix<double, vf::detail::evaluate<Args>::nRealDim,2> n;
+    n.col(0) = e.template get<1>().col(indexmin);
+    n.col(1) = e.template get<1>().col(indexmax);
+    LOG(INFO) << "proc "<<proc_number<<" index at which function (size: " << e.template get<0>().array().size() << ") is minimal: "<< indexmin << " coord = \n"<<n.col(0)<<"\n";
+    LOG(INFO) << "proc "<<proc_number<<" index at which function (size: " << e.template get<0>().array().size() << ") is maximal: "<< indexmax << " coord = \n"<<n.col(1)<<"\n";
+
+    int world_size = worldcomm.size();
+    std::vector<double> mine_world( world_size );
+    std::vector<double> maxe_world( world_size );
+    mpi::all_gather( worldcomm.globalComm(),mine,mine_world );
+    mpi::all_gather( worldcomm.globalComm(),maxe,maxe_world );
+
+    std::vector< Eigen::Matrix<double, vf::detail::evaluate<Args>::nRealDim,2> > n_world( world_size );
+    mpi::all_gather( worldcomm.globalComm(),n,n_world );
+
+    auto it_min = std::min_element( mine_world.begin() , mine_world.end() );
+    int positionmin = it_min - mine_world.begin();
+    LOG(INFO)<<"proc "<<proc_number<<" : global min = "<<*it_min<<" at position "<<positionmin<<" with coord : \n "<<n_world[positionmin]<<"\n";
+    auto it_max = std::max_element( maxe_world.begin() , maxe_world.end() );
+    int positionmax = it_max - maxe_world.begin();
+    LOG(INFO)<<"proc "<<proc_number<<" : global max = "<<*it_max<<" at position "<<positionmax<<" with coord : \n "<<n_world[positionmax]<<"\n";
+
+    Eigen::Matrix<double, vf::detail::evaluate<Args>::nRealDim,2> coords;
+    coords.col(0) = n_world[positionmin].col(0);
+    coords.col(1) = n_world[positionmax].col(1);
+
+    LOG(INFO) << "evaluate minmax(expression) done." << std::endl;
+
+    return minmaxData<vf::detail::evaluate<Args>::nRealDim> (boost::make_tuple( *it_min, *it_max, coords ));
 }
 
 } // vf
@@ -686,5 +782,3 @@ BOOST_PARAMETER_FUNCTION(
 
 
 #endif /* __FEELPP_EVALUATORS_H */
-
-

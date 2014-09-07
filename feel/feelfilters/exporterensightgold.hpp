@@ -25,6 +25,7 @@
 /**
    \file ExporterEnsightGold.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+   \author Alexandre Ancel <alexandre.ancel@cemosis.fr>
    \date 2006-11-26
  */
 #ifndef __ExporterEnsightGold_H
@@ -51,6 +52,7 @@ namespace fs = boost::filesystem;
  *
  * \ingroup Exporter
  * @author Christophe Prud'homme
+ * @author Alexandre Ancel
  */
 template<typename MeshType, int N>
 class ExporterEnsightGold
@@ -66,6 +68,7 @@ public:
     //@{
 
     typedef MeshType mesh_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef typename super::timeset_type timeset_type;
     typedef typename super::timeset_ptrtype timeset_ptrtype;
@@ -212,6 +215,10 @@ private:
        write the 'geo' file for ensight
     */
     void writeGeoFiles() const;
+    void writeGeoMarkers(MPI_File fh, mesh_ptrtype mesh) const;
+    void writeGeoHeader(MPI_File fh) const;
+    void writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype mesh, std::pair<const std::string, std::vector<size_type> > & m) const;
+    void writeGeoMarkedElements(MPI_File fh, mesh_ptrtype mesh, size_type markerid) const;
 
     /**
        write the variables file for ensight
@@ -229,13 +236,18 @@ private:
     mutable std::string M_filename;
     std::string M_element_type;
     std::string M_face_type;
+    mutable int time_index;
+    mutable std::set<int> M_markersToWrite;
+    /* Number of digits used in timesteps */
+    /* Set to 4 by default: range [0000; 9999] for timesteps */
+    mutable int M_timeExponent;
 };
 
 
 } // Feel
 
 //#if !defined( FEELPP_INSTANTIATION_MODE )
-# include <feel/feelfilters/exporterensightgold.cpp>
+# include <feel/feelfilters/exporterensightgold_impl.hpp>
 //#endif // FEELPP_INSTANTIATION_MODE
 
 #endif /* __ExporterEnsightGold_H */

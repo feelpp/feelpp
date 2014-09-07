@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-07-21
  */
-#ifndef _FEELPP_OPTIONS_HPP
-#define _FEELPP_OPTIONS_HPP 1
+#ifndef FEELPP_OPTIONS_HPP
+#define FEELPP_OPTIONS_HPP 1
 
 #include <boost/program_options.hpp>
 
@@ -40,7 +40,13 @@ po::options_description
 file_options( std::string const& prefix );
 
 po::options_description
+generic_options();
+
+po::options_description
 feel_options( std::string const& prefix = "" );
+
+inline po::options_description
+feel_nooptions() { return po::options_description(); }
 
 //! add benchmark options to feel++ applications
 po::options_description benchmark_options( std::string const& prefix = "" );
@@ -56,6 +62,18 @@ po::options_description backendpetsc_options( std::string const& prefix = "" );
 po::options_description mesh_options( int Dim, std::string const& prefix = "" );
 
 po::options_description gmsh_options( std::string const& prefix = "" );
+
+po::options_description gmsh_domain_options( std::string const& prefix = "" );
+
+/**
+ * command line options for Onelab interface
+ */
+po::options_description onelab_options( std::string const& prefix = "" );
+
+/**
+ * command line options for multithreading and GPU parallelization
+ */
+po::options_description parallel_options( std::string const& prefix = "" );
 
 po::options_description ginac_options( std::string const& prefix = "" );
 
@@ -83,6 +101,9 @@ po::options_description nlsolver_options();
 /**
  * command line options for BDF
  */
+po::options_description on_options( std::string const& prefix = "" );
+
+po::options_description ts_options( std::string const& prefix = "" );
 po::options_description bdf_options( std::string const& prefix = "" );
 
 /**
@@ -93,5 +114,6 @@ po::options_description exporter_options( std::string const& prefix = "" );
 
 po::options_description material_options( std::string const& prefix = "" );
 
+po::options_description error_options( std::string const& prefix = "" );
 }
-#endif // _FEELPP_OPTIONS_HPP
+#endif // FEELPP_OPTIONS_HPP

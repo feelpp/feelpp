@@ -17,6 +17,14 @@ string(REGEX REPLACE "^.*GINAC_LT_REVISION[ \t]+([0-9]+).*" "\\1" ginac_lt_revis
 math(EXPR ginaclib_soversion "${ginac_lt_current} - ${ginac_lt_age}")
 set(ginaclib_version ${ginaclib_soversion}.${ginac_lt_age}.${ginac_lt_revision})
 
+# # for supermuc this option should be OFF
+# option(USE_STANDARD_HEADERS_IN_GINAC_EXCOMPILER "Enable use of standard include headers in ginac-excompiler" ON)
+IF(USE_STANDARD_HEADERS_IN_GINAC_EXCOMPILER)
+  #add -DUSE_STANDARD_HEADERS_IN_GINAC_EXCOMPILER to CFLAGS
+  message( STATUS "[contrib ginac] Enable use of standard headers")
+  set(_USE_STANDARD_C_HEADERS_ "-DUSE_STANDARD_HEADERS_IN_GINAC_EXCOMPILER")
+ENDIF()
+
 # make check
 enable_testing()
 add_custom_target(check-ginac COMMAND ${CMAKE_CTEST_COMMAND})
@@ -33,6 +41,24 @@ include_directories(${CLN_INCLUDE_DIR})
 include(CheckIncludeFile)
 check_include_file("stdint.h" HAVE_STDINT_H)
 check_include_file("unistd.h" HAVE_UNISTD_H)
+
+# Check Python version
+# If python is version 3, we need to patch the scripts/yaptu.py file
+# (exec is a statement in Python 2 and a function in Python 3)
+FIND_PACKAGE(PythonInterp)
+
+if(PYTHONINTERP_FOUND)
+    if(PYTHON_VERSION_MAJOR MATCHES "3")
+        message(STATUS "Python 3 detected: patching files")
+        get_filename_component(PYTHONINTERP_PATH ${PYTHON_EXECUTABLE} PATH)
+        execute_process(COMMAND ${PYTHONINTERP_PATH}/2to3 -w --no-diffs ${CMAKE_SOURCE_DIR}/contrib/ginac/)
+        message(WARNING "Ginac files have been patched for Python 3 compatibility")
+    elseif(PYTHON_VERSION_MAJOR MATCHES "2")
+        message(STATUS "Python 2 detected: No need to patch")
+    else()
+        message(FATAL_ERROR "Unknown Python version: ${PYTHON_VERSION_STRING}")
+    endif()
+endif()
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR}/ginac)
 
@@ -169,10 +195,12 @@ add_definitions(-DHAVE_CONFIG_H)
 
 add_subdirectory(ginac)
 add_subdirectory(tools)
-add_subdirectory(check)
+# feel++ edit
+#add_subdirectory(check)
 if (BISON_FOUND AND FLEX_FOUND)
 	add_subdirectory(ginsh)
 endif()
+# feel++ edit
 #if (MAKEINFO)
 #	add_subdirectory(doc)
 #endif()

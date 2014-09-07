@@ -278,21 +278,21 @@ template<typename _MatrixType, unsigned int _Mode> class TriangularView
 
     /** Efficient triangular matrix times vector/matrix product */
     template<typename OtherDerived>
-    TriangularProduct<Mode,true,MatrixType,false,OtherDerived, OtherDerived::IsVectorAtCompileTime>
+    TriangularProduct<Mode, true, MatrixType, false, OtherDerived, OtherDerived::ColsAtCompileTime==1>
     operator*(const MatrixBase<OtherDerived>& rhs) const
     {
       return TriangularProduct
-              <Mode,true,MatrixType,false,OtherDerived,OtherDerived::IsVectorAtCompileTime>
+              <Mode, true, MatrixType, false, OtherDerived, OtherDerived::ColsAtCompileTime==1>
               (m_matrix, rhs.derived());
     }
 
     /** Efficient vector/matrix times triangular matrix product */
     template<typename OtherDerived> friend
-    TriangularProduct<Mode,false,OtherDerived,OtherDerived::IsVectorAtCompileTime,MatrixType,false>
+    TriangularProduct<Mode, false, OtherDerived, OtherDerived::RowsAtCompileTime==1, MatrixType, false>
     operator*(const MatrixBase<OtherDerived>& lhs, const TriangularView& rhs)
     {
       return TriangularProduct
-              <Mode,false,OtherDerived,OtherDerived::IsVectorAtCompileTime,MatrixType,false>
+              <Mode, false, OtherDerived, OtherDerived::RowsAtCompileTime==1, MatrixType, false>
               (lhs.derived(),rhs.m_matrix);
     }
 
@@ -779,22 +779,23 @@ MatrixBase<Derived>::triangularView() const
   * \sa isLowerTriangular()
   */
 template<typename Derived>
-bool MatrixBase<Derived>::isUpperTriangular(RealScalar prec) const
+bool MatrixBase<Derived>::isUpperTriangular(const RealScalar& prec) const
 {
+  using std::abs;
   RealScalar maxAbsOnUpperPart = static_cast<RealScalar>(-1);
   for(Index j = 0; j < cols(); ++j)
   {
     Index maxi = (std::min)(j, rows()-1);
     for(Index i = 0; i <= maxi; ++i)
     {
-      RealScalar absValue = internal::abs(coeff(i,j));
+      RealScalar absValue = abs(coeff(i,j));
       if(absValue > maxAbsOnUpperPart) maxAbsOnUpperPart = absValue;
     }
   }
   RealScalar threshold = maxAbsOnUpperPart * prec;
   for(Index j = 0; j < cols(); ++j)
     for(Index i = j+1; i < rows(); ++i)
-      if(internal::abs(coeff(i, j)) > threshold) return false;
+      if(abs(coeff(i, j)) > threshold) return false;
   return true;
 }
 
@@ -804,13 +805,14 @@ bool MatrixBase<Derived>::isUpperTriangular(RealScalar prec) const
   * \sa isUpperTriangular()
   */
 template<typename Derived>
-bool MatrixBase<Derived>::isLowerTriangular(RealScalar prec) const
+bool MatrixBase<Derived>::isLowerTriangular(const RealScalar& prec) const
 {
+  using std::abs;
   RealScalar maxAbsOnLowerPart = static_cast<RealScalar>(-1);
   for(Index j = 0; j < cols(); ++j)
     for(Index i = j; i < rows(); ++i)
     {
-      RealScalar absValue = internal::abs(coeff(i,j));
+      RealScalar absValue = abs(coeff(i,j));
       if(absValue > maxAbsOnLowerPart) maxAbsOnLowerPart = absValue;
     }
   RealScalar threshold = maxAbsOnLowerPart * prec;
@@ -818,7 +820,7 @@ bool MatrixBase<Derived>::isLowerTriangular(RealScalar prec) const
   {
     Index maxi = (std::min)(j, rows()-1);
     for(Index i = 0; i < maxi; ++i)
-      if(internal::abs(coeff(i, j)) > threshold) return false;
+      if(abs(coeff(i, j)) > threshold) return false;
   }
   return true;
 }

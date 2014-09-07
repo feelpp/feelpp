@@ -62,6 +62,8 @@ void ConvectionCrb::initModel()
     }
 
     Xh = space_type::New( mesh );
+    RbXh = rbfunctionspace_type::New( _model=this->shared_from_this() , _mesh=mesh );
+
     LOG(INFO)<<"number of dofs : "<<Xh->nLocalDof()<<"\n";
     pT = element_ptrtype( new element_type( Xh ) );
 
@@ -235,11 +237,11 @@ void ConvectionCrb::initModel()
     if ( weakdir == 1 )
     {
         // weak Dirichlet on temperature (T=0|left wall)
-        form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[1][0] ) += integrate ( markedfaces( mesh,mesh->markerName( "Tfixed" ) ),
-                                                                    - gradt( t )*N()*id( s ) );
-        form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[1][0] ) += integrate ( markedfaces( mesh,mesh->markerName( "Tfixed" ) ),
+        form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[1][0] ) += integrate ( markedfaces( mesh, "Tfixed" ),
+                                                                         - gradt( t )*N()*id( s ) );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[1][0] ) += integrate ( markedfaces( mesh,"Tfixed" ),
                                                                     - grad( s )*N()*idt( t ) );
-        form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[2][0] ) += integrate ( markedfaces( mesh,mesh->markerName( "Tfixed" ) ),
+        form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[2][0] ) += integrate ( markedfaces( mesh, "Tfixed"  ),
                                                                     gamma*idt( t )*id( s )/hFace() );
     }
 
@@ -308,6 +310,7 @@ int ConvectionCrb::Nl() const
 
 int ConvectionCrb::mMaxF( int output_index, int q)
 {
+    int dumy=0;
     if( output_index < 2 )
     {
         if ( q < Ql(output_index) )
@@ -322,13 +325,8 @@ int ConvectionCrb::mMaxF( int output_index, int q)
     }
     if( output_index > 2 )
             throw std::logic_error( "[Model] ERROR : try to acces to mMaxF(output_index,q) with a bad value of output_index");
+    return dumy;
 }
-
-int ConvectionCrb::mMaxInitialGuess( int q )
-{
-    return 1;
-}
-
 
 /**
  * \param l the index of output
@@ -339,13 +337,6 @@ int ConvectionCrb::Ql( int l ) const
     if ( l == 0 ) return 1;
     return 1;
 }
-
-
-int ConvectionCrb::QInitialGuess() const
-{
-    return 1;
-}
-
 
 
 /**
@@ -547,11 +538,11 @@ void ConvectionCrb ::updateJacobianWithoutAffineDecomposition( const vector_ptrt
         if ( weakdir == 1 )
         {
             // weak Dirichlet on temperature (T=0|left wall)
-            bf  += integrate ( markedfaces( mesh,mesh->markerName( "Tfixed" ) ),
+            bf  += integrate ( markedfaces( mesh, "Tfixed" ),
                                - gradt( t )*N()*id( s )*cst_ref( sqgrpr ) );
-            bf  += integrate ( markedfaces( mesh,mesh->markerName( "Tfixed" ) ),
+            bf  += integrate ( markedfaces( mesh, "Tfixed" ),
                                - grad( s )*N()*idt( t )*cst_ref( sqgrpr ) );
-            bf  += integrate ( markedfaces( mesh,mesh->markerName( "Tfixed" ) ),
+            bf  += integrate ( markedfaces( mesh,"Tfixed" ),
                                gamma*idt( t )*id( s )/hFace() );
         }
 

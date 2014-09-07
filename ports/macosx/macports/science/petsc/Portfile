@@ -5,7 +5,7 @@ PortGroup   conflicts_build 1.0
 PortGroup   active_variants 1.1
 
 name		petsc
-version     3.3-p6
+version     3.5.1
 categories  math science
 maintainers	mmoll
 description	Portable, Extensible Toolkit for Scientific Computation
@@ -26,37 +26,35 @@ distname	${name}-lite-${version}
 worksrcdir	${name}-${version}
 universal_variant   no
 
-checksums           rmd160  a0aedc01995d60340e302140293d82dcb1ca356c \
-                    sha256  09e03c1d871a44e4322d61b007bbefd0a3e0cea5f5568b8ce243b4ef7c19b0b0
+checksums           rmd160  706e2d3e98d656bccea0c2bf38f95a21ebdf1326 \
+                    sha256  43276d362d06b10a040dfee83b01e2f119c4030acbb303e1fe6fc719626970c7
 
 depends_build-append  port:cmake
-depends_lib-append  port:hdf5-18 \
+depends_lib-append  port:hdf5 \
                     port:libyaml\
-		    port:scotch\
-		    port:suitesparse
+                    port:scotch\
+                    port:suitesparse
 
-require_active_variants hdf5-18 fortran
+require_active_variants hdf5 fortran
+
+use_parallel_build  no
 
 configure.args      --prefix=${prefix}/lib/petsc \
                     --with-mpi=1 \
-   		--with-c-support=1 --with-c++-support=1 --with-pic=fPIC \
-		--with-shared-libraries=0 --PETSC_ARCH=darwin \
-        --with-cholmod=1 --with-cholmod-include=${prefix}/include/ \
-        --with-cholmod-lib=\[${prefix}/lib/libcholmod.a,${prefix}/lib/libcolamd.a\] \
-        --with-umfpack=1 --with-umfpack-include=${prefix}/include/ \
-        --with-umfpack-lib=\[${prefix}/lib/libumfpack.a,${prefix}/lib/libcholmod.a,${prefix}/lib/libcolamd.a,${prefix}/lib/libamd.a,${prefix}/lib/libsuitesparseconfig.a\] \
-                    --download-metis \
-                    --download-parmetis \
-                    --download-blacs \
+                    --with-c-support=1 --with-c++-support=1 \
+                    --PETSC_ARCH=darwin \
+                    --download-suitesparse \
+                    --with-ptscotch-dir=${prefix} \
                     --download-scalapack \
                     --download-mumps \
-                    --download-ptscotch \
                     --with-hdf5-dir=${prefix} \
                     --with-yaml-dir=${prefix}
 
+
+
 pre-configure {
     if {![file exists ${prefix}/lib/libhdf5_fortran.a]} {
-        return -code error "Please install hdf5-18 with the +fortran variant enabled first."
+        return -code error "Please install hdf5 with the +fortran variant enabled first."
     }
     configure.args-append \
         --COPTFLAGS="${configure.optflags}" \
@@ -68,6 +66,9 @@ pre-configure {
 }
 
 conflicts_build     petsc
+
+default_variants +atlas +ml +pastix +superlu +hypre
+
 
 variant openmpi description {Build using the OpenMPI compiler} conflicts mpich2 {
     depends_lib-append port:openmpi
@@ -95,13 +96,33 @@ variant accelerate description {Use Accelerate framework for LAPACK} conflicts a
 
 variant atlas description {Use Atlas for LAPACK} conflicts accelerate {
     configure.args-append \
-        --with-blas-lapack-lib=/usr/lib/libtatlas.dylib
-#        --with-blas-lapack-lib=${prefix}/lib/libtatlas.dylib
+        --with-blas-lapack-lib=${prefix}/lib/libtatlas.dylib
+    depends_lib-append port:atlas
 }
 
 variant ml description {Install with ML package} conflicts accelerate {
     configure.args-append \
         --download-ml
+}
+variant pastix description {Install with external package PaStiX} {
+    configure.args-append \
+        --download-pastix
+}
+variant superlu description {Install with package superlu} {
+    configure.args-append \
+        --download-superlu
+}
+variant hypre description {Install with package hypre } {
+    configure.args-append \
+        --download-hypre
+}
+
+variant static description {Install static lib} {
+    configure.args-append --with-shared-libraries=0 --with-pic=fPIC
+}
+
+if {![variant_isset static]} {
+    configure.args-append --with-shared-libraries=1
 }
 
 if {![variant_isset mpich2]} {

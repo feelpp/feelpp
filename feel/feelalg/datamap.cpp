@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:set fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -27,60 +27,48 @@
    \date 2008-02-28
  */
 #include <feel/feelalg/datamap.hpp>
+//#include <boost/thread/thread.hpp>
 
 namespace Feel
 {
 DataMap::DataMap( WorldComm const& _worldComm )
     :
     M_closed( false ),
-    _M_n_dofs( 0 ),
-    _M_n_localWithoutGhost_df( ),
-    _M_n_localWithGhost_df( ),
-    _M_first_df( ),
-    _M_last_df(),
-    _M_first_df_globalcluster(),
-    _M_last_df_globalcluster(),
+    M_n_dofs( 0 ),
+    M_n_localWithoutGhost_df( _worldComm.globalSize(),0 ),
+    M_n_localWithGhost_df( _worldComm.globalSize(),0 ),
+    M_first_df( _worldComm.globalSize(),0 ),
+    M_last_df( _worldComm.globalSize(),0 ),
+    M_first_df_globalcluster( _worldComm.globalSize(),0 ),
+    M_last_df_globalcluster( _worldComm.globalSize(),0 ),
     M_myglobalelements(),
     M_mapGlobalProcessToGlobalCluster(),
     M_mapGlobalClusterToGlobalProcess(),
-    M_worldComm( _worldComm )
-{
-    //std::cout << "\nDataMap : build empty! on godrank " << this->worldComm().godRank() << std::endl;
-    _M_n_localWithoutGhost_df.resize( this->worldComm().globalSize() );
-    _M_n_localWithGhost_df.resize( this->worldComm().globalSize() );
-    _M_first_df.resize( this->worldComm().globalSize() );
-    _M_last_df.resize( this->worldComm().globalSize() );
-    _M_first_df_globalcluster.resize( this->worldComm().globalSize() );
-    _M_last_df_globalcluster.resize( this->worldComm().globalSize() );
-}
+    M_worldComm( _worldComm ),
+    M_indexSplit()
+{}
+
 DataMap::DataMap( size_type n, size_type n_local, WorldComm const& _worldComm )
     :
     M_closed( false ),
-    _M_n_dofs( n ),
-    _M_n_localWithoutGhost_df( ),
-    _M_n_localWithGhost_df( ),
-    _M_first_df(),
-    _M_last_df(),
-    _M_first_df_globalcluster(),
-    _M_last_df_globalcluster(),
+    M_n_dofs( n ),
+    M_n_localWithoutGhost_df( _worldComm.globalSize(),0 ),
+    M_n_localWithGhost_df( _worldComm.globalSize(),0 ),
+    M_first_df( _worldComm.globalSize(),0 ),
+    M_last_df( _worldComm.globalSize(),0 ),
+    M_first_df_globalcluster( _worldComm.globalSize(),0 ),
+    M_last_df_globalcluster( _worldComm.globalSize(),0 ),
     M_myglobalelements(),
     M_mapGlobalProcessToGlobalCluster(),
     M_mapGlobalClusterToGlobalProcess(),
-    M_worldComm( _worldComm )
+    M_worldComm( _worldComm ),
+    M_indexSplit()
 {
-    _M_n_localWithoutGhost_df.resize( this->worldComm().globalSize() );
-    _M_n_localWithGhost_df.resize( this->worldComm().globalSize() );
-    _M_first_df.resize( this->worldComm().globalSize() );
-    _M_last_df.resize( this->worldComm().globalSize() );
-    _M_first_df_globalcluster.resize( this->worldComm().globalSize() );
-    _M_last_df_globalcluster.resize( this->worldComm().globalSize() );
 
     FEELPP_ASSERT ( n_local <= n )
     ( n_local )( n )
     ( this->worldComm().globalRank() )
     ( this->worldComm().globalSize() ).error( "Invalid local vector size" );
-
-    _M_n_dofs = n;
 
 #ifdef FEELPP_HAS_MPI
     std::vector<int> local_sizes     ( this->worldComm().size(), 0 );
@@ -88,65 +76,26 @@ DataMap::DataMap( size_type n, size_type n_local, WorldComm const& _worldComm )
 
     if ( this->worldComm().size() > 1 )
     {
-#if !defined(FEELPP_ENABLE_MPI_MODE)
-        local_sizes_send[this->worldComm().rank()] = n_local;
-#if 1
-        MPI_Allreduce ( &local_sizes_send[0],
-                        &local_sizes[0],
-                        local_sizes.size(),
-                        MPI_INT,
-                        MPI_SUM,
-                        this->worldComm() );
-#else
-        mpi::all_reduce( this->worldComm(), local_sizes_send, local_sizes, std::plus<std::vector<int> >() );
-#endif
-        std::vector<int> M_recvcounts( this->worldComm().size() );
-        std::vector<int> M_displs( this->worldComm().size() );
-
-        int _local_index = 0;
-
-        for ( int p=0; p<this->worldComm().size(); p++ )
-        {
-            // size of data per processor
-            M_recvcounts[p] = local_sizes[p];
-            DVLOG(2) << "VectorUblas::init M_recvcounts[" <<p<< "]=" << M_recvcounts[p] << "\n";
-
-            // first index on the p-th processor
-            M_displs[p] = _local_index;
-            DVLOG(2) << "VectorUblas::init M_displs[" <<p<< "]=" << M_displs[p] << "\n";
-
-            _local_index += local_sizes[p];
-
-            _M_first_df[p] = _local_index;
-            _M_last_df[p] = _local_index+n_local-1;
-        }
-
-#else // defined(FEELPP_ENABLE_MPI_MODE)
-
-        // Vincent TODO!
-
-#endif
-
+        LOG(WARNING) << "Not imlemented!";
     }
-
     else // sequential
     {
         local_sizes[this->worldComm().rank()] = n_local;
 
-        _M_first_df[this->worldComm().rank()] = 0;
-        _M_last_df[this->worldComm().rank()] = n_local-1;
+        M_first_df[this->worldComm().rank()] = 0;
+        M_last_df[this->worldComm().rank()] = n_local-1;
         // mpi
-        _M_n_localWithoutGhost_df[this->worldComm().rank()]=n_local;
-        _M_n_localWithGhost_df[this->worldComm().rank()]=n_local;
-        _M_first_df_globalcluster[this->worldComm().rank()]=0;
-        _M_last_df_globalcluster[this->worldComm().rank()]=n_local-1;
+        M_n_localWithoutGhost_df[this->worldComm().rank()]=n_local;
+        M_n_localWithGhost_df[this->worldComm().rank()]=n_local;
+        M_first_df_globalcluster[this->worldComm().rank()]=0;
+        M_last_df_globalcluster[this->worldComm().rank()]=n_local-1;
         // todo! : les map
         M_mapGlobalProcessToGlobalCluster.resize( n_local );
         M_mapGlobalClusterToGlobalProcess.resize( n_local );
     }
 
     if ( n == invalid_size_type_value )
-        _M_n_dofs = _M_last_df[this->worldComm().rank()]+1;
+        M_n_dofs = M_last_df[this->worldComm().rank()]+1;
 
 #  ifdef DEBUG
     // Make sure all the local sizes sum up to the global
@@ -164,7 +113,7 @@ DataMap::DataMap( size_type n, size_type n_local, WorldComm const& _worldComm )
 
 #  endif
 
-#else
+#else // FEELPP_HAS_MPI
 
     // No other options without MPI!
     if ( n != n_local )
@@ -174,7 +123,7 @@ DataMap::DataMap( size_type n, size_type n_local, WorldComm const& _worldComm )
         //error();
     }
 
-#endif
+#endif // FEELPP_HAS_MPI
 
     /*
     DVLOG(2) << "        global size = " << this->size() << "\n";
@@ -188,17 +137,19 @@ DataMap::DataMap( size_type n, size_type n_local, WorldComm const& _worldComm )
 DataMap::DataMap( DataMap const & dm )
     :
     M_closed( dm.M_closed ),
-    _M_n_dofs( dm._M_n_dofs ),
-    _M_n_localWithoutGhost_df( dm._M_n_localWithoutGhost_df ),
-    _M_n_localWithGhost_df( dm._M_n_localWithGhost_df ),
-    _M_first_df( dm._M_first_df ),
-    _M_last_df( dm._M_last_df ),
-    _M_first_df_globalcluster( dm._M_first_df_globalcluster ),
-    _M_last_df_globalcluster( dm._M_last_df_globalcluster ),
+    M_n_dofs( dm.M_n_dofs ),
+    M_n_localWithoutGhost_df( dm.M_n_localWithoutGhost_df ),
+    M_n_localWithGhost_df( dm.M_n_localWithGhost_df ),
+    M_first_df( dm.M_first_df ),
+    M_last_df( dm.M_last_df ),
+    M_first_df_globalcluster( dm.M_first_df_globalcluster ),
+    M_last_df_globalcluster( dm.M_last_df_globalcluster ),
     M_myglobalelements(),
     M_mapGlobalProcessToGlobalCluster( dm.M_mapGlobalProcessToGlobalCluster ),
     M_mapGlobalClusterToGlobalProcess( dm.M_mapGlobalClusterToGlobalProcess ),
-    M_worldComm( dm.M_worldComm )
+    M_neighbor_processors( dm.M_neighbor_processors ),
+    M_worldComm( dm.M_worldComm ),
+    M_indexSplit()
 {}
 DataMap::~DataMap()
 {}
@@ -210,16 +161,18 @@ DataMap::operator=( DataMap const& dm )
     {
         M_worldComm = dm.M_worldComm;
         M_closed = dm.M_closed;
-        _M_n_dofs = dm._M_n_dofs;
-        _M_n_localWithoutGhost_df = dm._M_n_localWithoutGhost_df;
-        _M_n_localWithGhost_df = dm._M_n_localWithGhost_df;
-        _M_first_df = dm._M_first_df;
-        _M_last_df = dm._M_last_df;
-        _M_first_df_globalcluster = dm._M_first_df_globalcluster;
-        _M_last_df_globalcluster = dm._M_last_df_globalcluster;
+        M_n_dofs = dm.M_n_dofs;
+        M_n_localWithoutGhost_df = dm.M_n_localWithoutGhost_df;
+        M_n_localWithGhost_df = dm.M_n_localWithGhost_df;
+        M_first_df = dm.M_first_df;
+        M_last_df = dm.M_last_df;
+        M_first_df_globalcluster = dm.M_first_df_globalcluster;
+        M_last_df_globalcluster = dm.M_last_df_globalcluster;
         M_myglobalelements = dm.M_myglobalelements;
         M_mapGlobalProcessToGlobalCluster = dm.M_mapGlobalProcessToGlobalCluster;
         M_mapGlobalClusterToGlobalProcess = dm.M_mapGlobalClusterToGlobalProcess;
+        M_neighbor_processors = dm.M_neighbor_processors;
+        M_indexSplit = dm.M_indexSplit;
     }
 
     return *this;
@@ -247,46 +200,45 @@ DataMap::myGlobalElements() const
 }
 
 
-
 void
 DataMap::setNDof( size_type ndof )
 {
-    _M_n_dofs=ndof;
+    M_n_dofs=ndof;
 }
 
 void
-DataMap::setNLocalDofWithoutGhost( const size_type proc, const size_type n, bool inWorld )
+DataMap::setNLocalDofWithoutGhost( const rank_type proc, const size_type n, bool inWorld )
 {
-    _M_n_localWithoutGhost_df[this->worldComm().globalRank()]=n;
+    M_n_localWithoutGhost_df[proc]=n;
 }
 void
-DataMap::setNLocalDofWithGhost( const size_type proc, const size_type n, bool inWorld )
+DataMap::setNLocalDofWithGhost( const rank_type proc, const size_type n, bool inWorld )
 {
-    _M_n_localWithGhost_df[this->worldComm().globalRank()]=n;
+    M_n_localWithGhost_df[proc]=n;
 }
 void
-DataMap::setFirstDof( const size_type proc, const size_type df, bool inWorld )
+DataMap::setFirstDof( const rank_type proc, const size_type df, bool inWorld )
 {
-    FEELPP_ASSERT( proc < _M_first_df.size() )( proc )( _M_first_df.size() ).error( "invalid proc id or dof table" );
-    _M_first_df[this->worldComm().globalRank()]=df;
+    FEELPP_ASSERT( proc < M_first_df.size() )( proc )( M_first_df.size() ).error( "invalid proc id or dof table" );
+    M_first_df[proc]=df;
 }
 void
-DataMap::setLastDof( const size_type proc, const size_type df, bool inWorld )
+DataMap::setLastDof( const rank_type proc, const size_type df, bool inWorld )
 {
-    FEELPP_ASSERT( proc < _M_first_df.size() )( proc )( _M_first_df.size() ).error( "invalid proc id or dof table" );
-    _M_last_df[this->worldComm().globalRank()]=df;
+    FEELPP_ASSERT( proc < M_first_df.size() )( proc )( M_first_df.size() ).error( "invalid proc id or dof table" );
+    M_last_df[proc]=df;
 }
 void
-DataMap::setFirstDofGlobalCluster( const size_type proc, const size_type df, bool inWorld )
+DataMap::setFirstDofGlobalCluster( const rank_type proc, const size_type df, bool inWorld )
 {
-    FEELPP_ASSERT( proc < _M_first_df_globalcluster.size() )( proc )( _M_first_df_globalcluster.size() ).error( "invalid proc id or dof table" );
-    _M_first_df_globalcluster[this->worldComm().globalRank()]=df;
+    FEELPP_ASSERT( proc < M_first_df_globalcluster.size() )( proc )( M_first_df_globalcluster.size() ).error( "invalid proc id or dof table" );
+    M_first_df_globalcluster[proc]=df;
 }
 void
-DataMap::setLastDofGlobalCluster( const size_type proc, const size_type df, bool inWorld )
+DataMap::setLastDofGlobalCluster( const rank_type proc, const size_type df, bool inWorld )
 {
-    FEELPP_ASSERT( proc < _M_first_df_globalcluster.size() )( proc )( _M_first_df_globalcluster.size() ).error( "invalid proc id or dof table" );
-    _M_last_df_globalcluster[this->worldComm().globalRank()]=df;
+    FEELPP_ASSERT( proc < M_first_df_globalcluster.size() )( proc )( M_first_df_globalcluster.size() ).error( "invalid proc id or dof table" );
+    M_last_df_globalcluster[proc]=df;
 }
 
 
@@ -325,40 +277,77 @@ void
 DataMap::updateDataInWorld()
 {
     mpi::all_gather( this->worldComm().globalComm(),
-                     this->_M_n_localWithoutGhost_df[this->worldComm().globalRank()],
-                     this->_M_n_localWithoutGhost_df );
+                     this->M_n_localWithoutGhost_df[this->worldComm().globalRank()],
+                     this->M_n_localWithoutGhost_df );
     mpi::all_gather( this->worldComm().globalComm(),
-                     this->_M_n_localWithGhost_df[this->worldComm().globalRank()],
-                     this->_M_n_localWithGhost_df );
+                     this->M_n_localWithGhost_df[this->worldComm().globalRank()],
+                     this->M_n_localWithGhost_df );
 
     mpi::all_gather( this->worldComm().globalComm(),
-                     this->_M_first_df[this->worldComm().globalRank()],
-                     this->_M_first_df );
+                     this->M_first_df[this->worldComm().globalRank()],
+                     this->M_first_df );
     mpi::all_gather( this->worldComm().globalComm(),
-                     this->_M_last_df[this->worldComm().globalRank()],
-                     this->_M_last_df );
+                     this->M_last_df[this->worldComm().globalRank()],
+                     this->M_last_df );
     mpi::all_gather( this->worldComm().globalComm(),
-                     this->_M_first_df_globalcluster[this->worldComm().globalRank()],
-                     this->_M_first_df_globalcluster );
+                     this->M_first_df_globalcluster[this->worldComm().globalRank()],
+                     this->M_first_df_globalcluster );
     mpi::all_gather( this->worldComm().globalComm(),
-                     this->_M_last_df_globalcluster[this->worldComm().globalRank()],
-                     this->_M_last_df_globalcluster );
+                     this->M_last_df_globalcluster[this->worldComm().globalRank()],
+                     this->M_last_df_globalcluster );
 
     //_globalcluster
 }
 
 
+rank_type
+DataMap::procOnGlobalCluster( size_type globDof ) const
+{
+    rank_type proc=0,res=invalid_rank_type_value;
+    bool find=false;
+
+    while ( ( !find ) && ( proc<this->nProcessors() ) )
+    {
+        if ( ( this->nLocalDofWithoutGhost(proc) > 0 ) && ( globDof <= M_last_df_globalcluster[proc] ) && ( globDof >= M_first_df_globalcluster[proc] ) )
+        {
+            res = proc;
+            find=true;
+        }
+        else
+            ++proc;
+    }
+    return res;
+}
+
+boost::tuple<bool,size_type>
+DataMap::searchGlobalProcessDof( size_type gpdof ) const
+{
+    bool find=false;
+    size_type gDofProcess = 0;
+    const size_type startLoc = this->firstDof();
+    const size_type endLoc = startLoc+this->nLocalDofWithGhost();
+    for ( size_type k=startLoc ; k < endLoc && !find ; ++k )
+        if ( this->mapGlobalProcessToGlobalCluster(k) == gpdof )
+        {
+            gDofProcess=k;
+            find =true;
+        }
+
+    return boost::make_tuple( find,gDofProcess );
+}
+
 void
-DataMap::showMeMapGlobalProcessToGlobalCluster( std::ostream& __out  ) const
+DataMap::showMeMapGlobalProcessToGlobalCluster( bool showAll, std::ostream& __out2 ) const
 {
     //__out << std::endl;
     this->comm().globalComm().barrier();
 
-    for ( int proc = 0; proc<this->comm().globalSize(); ++proc )
+    for ( rank_type proc = 0; proc<this->comm().globalSize(); ++proc )
     {
         this->comm().globalComm().barrier();
-        if ( proc==this->worldComm().masterRank() )
+        if ( proc==this->worldComm().globalRank() )//this->worldComm().masterRank() )
         {
+            std::ostringstream __out;
             this->comm().globalComm().barrier();
             __out << "\n";
             __out << "-----------------------------------------------------------------------\n"
@@ -374,54 +363,74 @@ DataMap::showMeMapGlobalProcessToGlobalCluster( std::ostream& __out  ) const
                   << "nLocalDofWithGhost : " << this->nLocalDofWithGhost() << "\n"
                   << "mapGlobalProcessToGlobalCluster().size() " << this->mapGlobalProcessToGlobalCluster().size() << "\n"
                   << "-----------------------------------------------------------------------\n";
-#if 1
-            __out << "mapGlobalProcessToGlobalCluster : \n";
-            for ( size_type i=0 ; i<this->mapGlobalProcessToGlobalCluster().size() ; ++i )
+
+            if (showAll)
             {
-                __out << i << " " << this->mapGlobalProcessToGlobalCluster()[i]
-                      << " real proc " << procOnGlobalCluster( /*this->*/mapGlobalProcessToGlobalCluster()[i] ) <<"\n";
-            }
-            __out << "-----------------------------------------------------------------------\n";
+#if 1
+                __out << "mapGlobalProcessToGlobalCluster : \n";
+                for ( size_type i=0 ; i<this->mapGlobalProcessToGlobalCluster().size() ; ++i )
+                {
+                    __out << i << " " << this->mapGlobalProcessToGlobalCluster()[i]
+                          << " real proc " << procOnGlobalCluster( /*this->*/mapGlobalProcessToGlobalCluster()[i] ) <<"\n";
+                }
+                __out << "-----------------------------------------------------------------------\n";
 #endif
 #if 0
-            __out << "mapGlobalClusterToGlobalProcess : \n";
-            for ( size_type i=0 ; i<this->mapGlobalClusterToGlobalProcess().size() ; ++i )
-            {
-                __out << i << " " << this->mapGlobalClusterToGlobalProcess()[i]
-                      <<"\n";
-            }
-            __out << "-----------------------------------------------------------------------\n";
+                __out << "mapGlobalClusterToGlobalProcess : \n";
+                for ( size_type i=0 ; i<this->mapGlobalClusterToGlobalProcess().size() ; ++i )
+                {
+                    __out << i << " " << this->mapGlobalClusterToGlobalProcess()[i]
+                          <<"\n";
+                }
+                __out << "-----------------------------------------------------------------------\n";
 #endif
+            }
 #if 1
-            __out << " _M_first_df : ";
+            __out << " M_first_df : ";
 
-            for ( int i=0; i<this->worldComm().globalSize(); ++i )
+            for ( rank_type i=0; i<this->worldComm().globalSize(); ++i )
             {
-                __out << this-> _M_first_df[i] << " ";
+                __out << this-> M_first_df[i] << " ";
             }
 
             __out << "\n";
-            __out << " _M_last_df : ";
+            __out << " M_last_df : ";
 
-            for ( int i=0; i<this->worldComm().globalSize(); ++i )
+            for ( rank_type i=0; i<this->worldComm().globalSize(); ++i )
             {
-                __out << this-> _M_last_df[i] << " ";
+                __out << this-> M_last_df[i] << " ";
             }
 
             __out << "\n";
-            __out << " _M_first_df_globalcluster : ";
+            __out << " M_first_df_globalcluster : ";
 
-            for ( int i=0; i<this->worldComm().globalSize(); ++i )
+            for ( rank_type i=0; i<this->worldComm().globalSize(); ++i )
             {
-                __out << this-> _M_first_df_globalcluster[i] << " ";
+                __out << this-> M_first_df_globalcluster[i] << " ";
             }
 
             __out << "\n";
-            __out << " _M_last_df_globalcluster : ";
+            __out << " M_last_df_globalcluster : ";
 
-            for ( int i=0; i<this->worldComm().globalSize(); ++i )
+            for ( rank_type i=0; i<this->worldComm().globalSize(); ++i )
             {
-                __out << this-> _M_last_df_globalcluster[i] << " ";
+                __out << this-> M_last_df_globalcluster[i] << " ";
+            }
+
+            __out << "\n";
+            __out << " M_n_localWithGhost_df : ";
+
+            for ( rank_type i=0; i<this->worldComm().globalSize(); ++i )
+            {
+                __out << this->M_n_localWithGhost_df[i] << " ";
+            }
+
+            __out << "\n";
+            __out << " M_n_localWithoutGhost_df : ";
+
+            for ( rank_type i=0; i<this->worldComm().globalSize(); ++i )
+            {
+                __out << this->M_n_localWithoutGhost_df[i] << " ";
             }
 
             __out << "\n";
@@ -429,17 +438,329 @@ DataMap::showMeMapGlobalProcessToGlobalCluster( std::ostream& __out  ) const
 #endif
             __out << "-----------------------------------------------------------------------\n";
 
-            __out << "\n" << std::endl;
+            __out << "\n";// << std::endl;
 
+            __out2 << __out.str() << std::endl;
         }
+        //else  sleep(1);
+
 
         //this->comm().barrier();
         this->comm().globalComm().barrier();
+        double mydelay=0.3;
+        sleep(mydelay);
+
+        //boost::this_thread::sleep( boost::posix_time::seconds(1) );
+
     }
 
     this->comm().globalComm().barrier();
+    //sleep(1);
 
 }
 
-} // namespace Feel
 
+void
+DataMap::buildIndexSplit()
+{
+    DVLOG(1) << "buildIndexSplit() start\n";
+    M_indexSplit.reset( new indexsplit_type( 1 ) );
+    M_indexSplit->operator[](0).resize( this->nLocalDofWithoutGhost() );
+
+    M_indexSplit->setFirstIndex( 0, this->firstDofGlobalCluster() );
+    M_indexSplit->setLastIndex( 0, this->lastDofGlobalCluster() );
+    M_indexSplit->setNIndex( 0, this->nLocalDofWithGhost() );
+
+    const size_type firstDof = this->firstDofGlobalCluster();
+
+    for ( size_type index = 0; index < this->nLocalDofWithGhost() ; ++index )
+    {
+        if ( this->dofGlobalProcessIsGhost(index) ) continue;
+        const size_type globalDof = this->mapGlobalProcessToGlobalCluster(index);
+        M_indexSplit->operator[](0)[globalDof - firstDof] = globalDof;
+    }
+
+    size_type nDofForSmallerRankId=0;
+    for ( rank_type proc=0;proc<this->worldComm().globalRank();++proc )
+        nDofForSmallerRankId+=this->nLocalDofWithoutGhost( proc );
+    M_indexSplit->setNIndexForSmallerRankId( 0, nDofForSmallerRankId );
+
+    DVLOG(1) << "buildIndexSplit() done\n";
+}
+
+void
+IndexSplit::FieldsDef::showMe() const
+{
+    std::cout << "FieldsDef showMe\n ";
+    for (auto it=this->begin(),en=this->end();it!=en;++it)
+    {
+        std::cout << "field " << it->first << " -> ";
+        for ( int val : it->second )
+            std::cout << " " << val;
+        std::cout << "\n";
+    }
+}
+
+
+IndexSplit::FieldsDef
+IndexSplit::parseFieldsDef( std::string s )
+{
+    // TODO : remove white space before
+
+    IndexSplit::FieldsDef res;
+
+    int index=0;
+    while ( index < s.size() )
+    {
+        bool findArrow=false;
+        int indexLenght=0;
+        int fieldId=0;
+
+        while (!findArrow && index < s.size())
+        {
+            if ( s.substr(index,2) == "->" )
+            {
+                fieldId=boost::lexical_cast<int>( s.substr(index-indexLenght,indexLenght).c_str() );
+                findArrow=true;
+                index+=2;
+            }
+            else
+            {
+                ++indexLenght;
+                ++index;
+            }
+        }
+
+        CHECK( findArrow ) << "fields def expression has not symbol -> : " << s << "\n";
+
+        if ( s.substr(index,1) == "(" )
+        {
+            ++index;
+            bool find=false;
+            std::vector<int> allIndexLenght;
+            /*int*/ indexLenght=0;
+            int nSplit=0;
+            while (!find && index < s.size() )
+            {
+                if ( s.substr(index,1) == ")" )
+                {
+                    ++nSplit;
+                    int splitId = boost::lexical_cast<int>( s.substr(index-indexLenght,indexLenght).c_str() );
+                    res[fieldId].insert( splitId );
+                    find=true;
+                    index+=indexLenght+1;
+                }
+                else
+                {
+                    if ( s.substr(index,1) == "," )
+                    {
+                        ++nSplit;
+                        int splitId = boost::lexical_cast<int>( s.substr(index-indexLenght,indexLenght).c_str() );
+                        res[fieldId].insert( splitId );
+                        indexLenght=0;
+                    }
+                    else
+                    {
+                        ++indexLenght;
+                    }
+                    ++index;
+                }
+            }
+            CHECK( find ) << "fields def expression has an invalid format " << s << "\n";
+        } // (
+
+    }
+
+    //res.showMe();
+    return res;
+}
+
+
+void
+IndexSplit::resize( int size )
+{
+    super_type::resize( size );
+    M_firstIndex.resize( size );
+    M_lastIndex.resize( size );
+    M_nIndex.resize( size );
+    M_nIndexForSmallerRankId.resize( size );
+}
+
+
+void
+IndexSplit::addSplit( size_type startSplit, self_ptrtype const& addedIndexSplit )
+{
+    const int sizeIS1 = this->size();
+    const int sizeIS2 = addedIndexSplit->size();
+    const int newSize = sizeIS1+sizeIS2;
+    this->resize( newSize );
+
+    size_type startIS = startSplit;
+    for ( int k = 0 ; k < newSize ; ++k )
+    {
+        if ( k >= sizeIS1 )
+        {
+            int sizeSplitAdded = addedIndexSplit->split(k-sizeIS1).size();
+
+            this->setFirstIndex( k, startIS );
+            this->setLastIndex( k, (sizeSplitAdded>0)? startIS+sizeSplitAdded-1 : startIS  );
+            this->setNIndex( k, sizeSplitAdded );
+
+            this->operator[](k).resize( sizeSplitAdded );
+            const size_type firstIndexAdded = addedIndexSplit->firstIndex(k-sizeIS1);
+            for ( int l=0 ; l<sizeSplitAdded ; ++l )
+                this->operator[](k)[l] = startIS + addedIndexSplit->split(k-sizeIS1)[l] - firstIndexAdded;
+            this->setNIndexForSmallerRankId( k, addedIndexSplit->nIndexForSmallerRankId( k-sizeIS1 ) );
+        }
+
+        startIS += this->operator[](k).size();
+    }
+
+}
+
+
+IndexSplit::self_ptrtype
+IndexSplit::applyFieldsDef( IndexSplit::FieldsDef const& fieldsDef ) const
+{
+#if 0
+    int nField = fieldsDef.size();
+    self_ptrtype newIS( new self_type( nField ) );
+    auto it = fieldsDef.begin();
+    auto const en = fieldsDef.end();
+    for ( ; it!=en ; ++it)
+    {
+        int k = it->first;
+        int sizeNewField = 0;
+        for ( int field : it->second )
+        {
+            sizeNewField += this->operator[]( field ).size();
+        }
+        newIS->operator[](k).resize( sizeNewField );
+
+        int startField=0;
+        for ( int field : it->second )
+        {
+            int sizeField = this->operator[]( field ).size();
+            for ( int i = 0 ; i < sizeField; ++i )
+                newISoperator[](k)[startField+i] = this->operator[]( field )[i];
+            startField += sizeField;
+        }
+    }
+
+    return newIS;
+#else
+    int nField = fieldsDef.size();
+
+    self_ptrtype newIS( new self_type( nField ) );
+
+    // get split id present in def
+    std::set<int> splitSetInDef;
+    auto it = fieldsDef.begin();
+    auto const en = fieldsDef.end();
+    for ( ; it != en ; ++it)
+        for ( int fieldId : it->second )
+            splitSetInDef.insert( fieldId );
+
+    //std::cout << "splitSetInDef.size() " << splitSetInDef.size() << "\n";
+
+    // init start index
+    std::vector<int> startSplit( this->size() );
+    for ( int i = 0 ; i < this->size(); ++i )
+        startSplit[i] = this->firstIndex( i );
+    // fix start index if not all field are present in def
+    for ( int splitId = 0 ; splitId < this->size(); ++splitId )
+    {
+        auto itFindSplit = std::find_if( splitSetInDef.begin(), splitSetInDef.end(),
+                                         [&splitId]( int s ) { return s == splitId; } );
+        if ( itFindSplit == splitSetInDef.end() )
+        {
+            for ( int splitId2 : splitSetInDef )
+            {
+                if ( splitId2 > splitId )
+                    startSplit[splitId2] -= this->nIndex(splitId);
+                startSplit[splitId2] -= this->nIndexForSmallerRankId( splitId );
+            }
+        }
+    }
+
+    // update new index split
+    for ( it = fieldsDef.begin() ; it != en ; ++it)
+    {
+        int fieldId = it->first;
+        int sizeNewSplit = 0;
+        for ( int splitId : it->second )
+            sizeNewSplit += this->operator[]( splitId ).size();
+
+        newIS->operator[](fieldId).resize( sizeNewSplit );
+
+        bool hasInitFirstIndex = false;
+        size_type startIndexSplit=0, nIndexForSmallerRank=0;
+        for ( int splitId : it->second )
+        {
+            if ( !hasInitFirstIndex )
+            {
+                newIS->setFirstIndex( fieldId, startSplit[splitId] );
+                hasInitFirstIndex=true;
+            }
+
+            int sizeSplit = this->operator[]( splitId ).size();
+            for ( int i = 0 ; i < sizeSplit; ++i )
+                newIS->operator[](fieldId)[startIndexSplit+i] = startSplit[splitId] + this->operator[]( splitId )[i] - this->firstIndex( splitId );
+            //newIS[fieldId][startIndexSplit+i] =  this->operator[]( splitId )[i];
+            startIndexSplit += sizeSplit;
+
+            nIndexForSmallerRank += this->nIndexForSmallerRankId( splitId );
+        }
+
+        newIS->setLastIndex( fieldId, (sizeNewSplit>0)? newIS->firstIndex(fieldId)+sizeNewSplit-1 : newIS->firstIndex(fieldId) );
+        newIS->setNIndex( fieldId, sizeNewSplit );
+        newIS->setNIndexForSmallerRankId( fieldId, nIndexForSmallerRank );
+    }
+
+    return newIS;
+#endif
+
+}
+
+
+
+void
+IndexSplit::showMe() const
+{
+    int nSplit = this->size();
+    std::ostringstream ostr;
+    ostr << "------------------IndexSplit::showMe()----------------\n";
+    ostr << "-proc " << Environment::worldComm().globalRank() << "\n"
+         << "-number of split : " << nSplit << "\n";
+    for (size_type k=0;k<nSplit;++k)
+    {
+        size_type nDofInSplit = this->operator[](k).size();
+        ostr << "-split : " << k << "\n"
+             << "-firstIndex : " << this->firstIndex(k) << "\n"
+             << "-lastIndex : " << this->lastIndex(k) << "\n"
+             << "-nIndex : " << this->nIndex(k) << "\n"
+             << "-nIndexForSmallerRankId : " << this->nIndexForSmallerRankId(k) << "\n";
+        if ( true )
+        {
+            for ( int i=0;i<nDofInSplit;++i)
+            {
+                ostr << this->operator[](k)[i] << " ";
+            }
+            ostr << "\n";
+        }
+        ostr << "------------------------------------------------------\n";
+    }
+
+    Environment::worldComm().barrier();
+    for ( rank_type proc = 0; proc<Environment::worldComm().globalSize(); ++proc )
+    {
+        Environment::worldComm().barrier();
+        if ( proc==Environment::worldComm().globalRank() )
+            std::cout<< ostr.str();
+    }
+    Environment::worldComm().barrier();
+
+}
+
+
+} // namespace Feel

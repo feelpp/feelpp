@@ -20,23 +20,35 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+cmake_minimum_required (VERSION 2.8)
+
 
 add_custom_target(
   loadmesh
   ALL
-  COMMAND ${CMAKE_COMMAND} -E copy ${FEELPP_SOURCE_DIR}/data/gmsh/feel.geo
+  COMMAND ${CMAKE_COMMAND} -E copy ${FEELPP_SOURCE_DIR}/data/gmsh/feelpp/feel.geo
                                    ${FEELPP_BUILD_DIR}/doc/manual/tutorial
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
+add_custom_target(tutorial)
 
-foreach(app myapp mymesh myintegrals myfunctionspace geotool loadmesh mylaplacian myadvection myexporter)
+foreach(app myapp mymesh myintegrals myfunctionspace geotool loadmesh mylaplacian myadvection myexporter myexpression mymeshfromstring mybackend )
 
   if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${app}.cfg )
-    feelpp_add_application( doc_${app} SRCS ${app}.cpp LABEL doc CFG ${app}.cfg)
+    feelpp_add_application( tut_${app} SRCS ${app}.cpp LABELS doc CFG ${app}.cfg)
   else()
-    feelpp_add_application( doc_${app} SRCS ${app}.cpp LABEL doc)
+    feelpp_add_application( tut_${app} SRCS ${app}.cpp LABELS doc)
   endif()
-  install(TARGETS feelpp_doc_${app} DESTINATION bin/ COMPONENT Bin )
+  install(TARGETS feelpp_tut_${app} DESTINATION bin/ COMPONENT Bin )
+
+  add_dependencies(tutorial feelpp_tut_${app})
 endforeach()
-feelpp_add_application( doc_mystokes SRCS mystokes.cpp LABEL doc CFG mystokes.cfg GEO mystokes.geo)
-install(TARGETS feelpp_doc_mystokes DESTINATION bin/ COMPONENT Bin )
+
+feelpp_add_application( tut_mystokes SRCS mystokes.cpp LABELS doc CFG mystokes.cfg bercovierengelmann.cfg kovasnay.cfg GEO mystokes.geo)
+install(TARGETS feelpp_tut_mystokes DESTINATION bin/ COMPONENT Bin )
+  add_dependencies(tutorial feelpp_tut_mystokes)
+
+
+add_custom_target(tutorial-check COMMAND "ctest" ARGS "-VV" "-R" "tut")
+add_dependencies(tutorial-check tutorial)
+add_dependencies(check tutorial-check)

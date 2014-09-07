@@ -125,11 +125,11 @@ public:
     HermiteDual( primal_space_type const& primal )
         :
         super( primal ),
-        _M_convex_ref(),
-        _M_eid( _M_convex_ref.topologicalDimension()+1 ),
-        _M_pts( nDim, nLocalDof ),
-        _M_points_face( nFacesInConvex ),
-        _M_fset( primal )
+        M_convex_ref(),
+        M_eid( M_convex_ref.topologicalDimension()+1 ),
+        M_pts( nDim, nLocalDof ),
+        M_points_face( nFacesInConvex ),
+        M_fset( primal )
     {
         DVLOG(2) << "Hermite finite element: \n";
         DVLOG(2) << " o- dim   = " << nDim << "\n";
@@ -150,39 +150,39 @@ public:
 
         pointset_type pts;
 
-        //_M_pts = pts.points();
+        //M_pts = pts.points();
 
         int i = 0;
 
-        for ( uint16_type e = _M_convex_ref.entityRange( 0 ).begin();
-                e < _M_convex_ref.entityRange( 0 ).end();
+        for ( uint16_type e = M_convex_ref.entityRange( 0 ).begin();
+                e < M_convex_ref.entityRange( 0 ).end();
                 ++e )
         {
-            _M_points_face[e] = pts.pointsBySubEntity( 0, e, 1 );
+            M_points_face[e] = pts.pointsBySubEntity( 0, e, 1 );
             points_type _pts = pts.pointsBySubEntity( 0, e, 1 );
 
             for ( int j = 0; j < _pts.size2(); ++j, ++i )
             {
-                ublas::column( _M_pts, i ) = ublas::column( _pts, j );
-                DVLOG(2) << "pts " << i << " = " <<  ublas::column( _M_pts, i ) << "\n";
+                ublas::column( M_pts, i ) = ublas::column( _pts, j );
+                DVLOG(2) << "pts " << i << " = " <<  ublas::column( M_pts, i ) << "\n";
             }
         }
 
         for ( int j = 0; j < nDim; ++j )
         {
-            ublas::subrange( _M_pts, 0, nDim, i, i+nDim+1 ) = ublas::subrange( _M_pts, 0, nDim, 0, nDim+1 );
+            ublas::subrange( M_pts, 0, nDim, i, i+nDim+1 ) = ublas::subrange( M_pts, 0, nDim, 0, nDim+1 );
             i+=nDim+1;
         }
 
         if ( nDim == 2 )
         {
             points_type _pts = pts.pointsBySubEntity( 2, 0, 0 );
-            ublas::column( _M_pts, i ) = ublas::column( _pts, 0 );
-            DVLOG(2) << "pts " << i << " = " <<  ublas::column( _M_pts, i ) << "\n";
+            ublas::column( M_pts, i ) = ublas::column( _pts, 0 );
+            DVLOG(2) << "pts " << i << " = " <<  ublas::column( M_pts, i ) << "\n";
         }
 
-        //std::cout << "pts = " << _M_pts << "\n";
-        setFset( primal, _M_pts, mpl::bool_<primal_space_type::is_scalar>() );
+        //std::cout << "pts = " << M_pts << "\n";
+        setFset( primal, M_pts, mpl::bool_<primal_space_type::is_scalar>() );
     }
     ~HermiteDual()
     {
@@ -190,25 +190,25 @@ public:
     }
     points_type const& points() const
     {
-        return _M_pts;
+        return M_pts;
     }
 
     points_type const& points( uint16_type f ) const
     {
-        return _M_points_face[f];
+        return M_points_face[f];
     }
     ublas::matrix_column<points_type const> point( uint16_type f, uint32_type __i ) const
     {
-        return ublas::column( _M_points_face[f], __i );
+        return ublas::column( M_points_face[f], __i );
     }
     ublas::matrix_column<points_type> point( uint16_type f, uint32_type __i )
     {
-        return ublas::column( _M_points_face[f], __i );
+        return ublas::column( M_points_face[f], __i );
     }
 
     matrix_type operator()( primal_space_type const& pset ) const
     {
-        matrix_type m = _M_fset( pset );
+        matrix_type m = M_fset( pset );
         //std::cout << "m=" << m << "\n";
         return m;
     }
@@ -249,12 +249,12 @@ private:
             it = std::copy( pd[i].begin(), pd[i].end(), it );
         }
 
-        _M_fset.setFunctionalSet( fs );
+        M_fset.setFunctionalSet( fs );
     }
 
     void setFset( primal_space_type const& primal, points_type const& __pts, mpl::bool_<false> )
     {
-        //_M_fset.setFunctionalSet( functional::ComponentsPointsEvaluation<primal_space_type>( primal,
+        //M_fset.setFunctionalSet( functional::ComponentsPointsEvaluation<primal_space_type>( primal,
         //__pts ) );
     }
 
@@ -263,16 +263,16 @@ private:
      */
     void setPoints( uint16_type f, points_type const& n )
     {
-        _M_points_face[f].resize( n.size1(), n.size2(), false );
-        _M_points_face[f] = n;
+        M_points_face[f].resize( n.size1(), n.size2(), false );
+        M_points_face[f] = n;
     }
 
 private:
-    reference_convex_type _M_convex_ref;
-    std::vector<std::vector<uint16_type> > _M_eid;
-    points_type _M_pts;
-    std::vector<points_type> _M_points_face;
-    FunctionalSet<primal_space_type> _M_fset;
+    reference_convex_type M_convex_ref;
+    std::vector<std::vector<uint16_type> > M_eid;
+    points_type M_pts;
+    std::vector<points_type> M_points_face;
+    FunctionalSet<primal_space_type> M_fset;
 
 
 };
@@ -364,8 +364,8 @@ public:
     Hermite()
         :
         super( dual_space_type( primal_space_type() ) ),
-        _M_refconvex()
-        // _M_bdylag( new face_basis_type )
+        M_refconvex()
+        // M_bdylag( new face_basis_type )
     {
 
 
@@ -392,7 +392,7 @@ public:
      */
     reference_convex_type const& referenceConvex() const
     {
-        return _M_refconvex;
+        return M_refconvex;
     }
 
     /**
@@ -444,7 +444,7 @@ public:
         if ( do_hessian )
             std::fill( h_phi_t.data(), h_phi_t.data()+g_phi_t.num_elements(), value_type( 0 ) );
 
-        const uint16_type Q = gmc.nPoints();//_M_grad.size2();
+        const uint16_type Q = gmc.nPoints();//M_grad.size2();
 
         // transform
         for ( uint16_type i = numPoints; i < nLocalDof; i+=nDim )
@@ -480,8 +480,8 @@ public:
 
 private:
 
-    reference_convex_type _M_refconvex;
-    face_basis_ptrtype _M_bdylag;
+    reference_convex_type M_refconvex;
+    face_basis_ptrtype M_bdylag;
 };
 template<uint16_type N,
          uint16_type O,
@@ -534,4 +534,3 @@ public:
 
 } // namespace Feel
 #endif /* __hermite_H */
-

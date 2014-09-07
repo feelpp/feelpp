@@ -141,6 +141,7 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
 
     DVLOG(2) << "[Dof::generateDofPoints] generating dof coordinates\n";
     typedef typename mesh_type::element_type element_type;
+    typedef typename mesh_type::face_type face_type;
     typedef typename gm_type::template Context<vm::POINT, element_type> gm_context_type;
     typedef boost::shared_ptr<gm_context_type> gm_context_ptrtype;
 
@@ -161,8 +162,19 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
     //mesh_ptrtype omesh( new mesh_type );
     //*omesh = *imesh;
 
-    element_iterator it_elt = imesh->beginElementWithProcessId( imesh->worldComm().localRank() );
-    element_iterator en_elt = imesh->endElementWithProcessId( imesh->worldComm().localRank() );
+    bool addExtendedMPIElt =  (imesh->worldComm().localSize() > 1) && u.functionSpace()->dof()->buildDofTableMPIExtended();
+    EntityProcessType entityProcess = (addExtendedMPIElt)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
+    auto rangeElt = elements( imesh, entityProcess );
+    auto it_elt = rangeElt.template get<1>();
+    auto en_elt = rangeElt.template get<2>();
+    if ( std::distance(it_elt,en_elt)==0 )
+    {
+        // call updateForUse in parallel here because this function is call ( at the end of this function)
+        // by others proc which have elements and need collective comm
+        if ( imesh->worldComm().localSize() > 1 ) imesh->updateForUse();
+        return;
+    }
+
     typedef typename DisplType::pc_type pc_type;
     typedef boost::shared_ptr<pc_type> pc_ptrtype;
     pc_ptrtype __pc( new pc_type( u.functionSpace()->fe(), gm->points() ) );
@@ -183,8 +195,7 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
     //const uint16_type ndofv = fe_type::nDof;
 
 
-    std::vector<bool> points_done( imesh->numPoints() );
-    std::fill( points_done.begin(), points_done.end(),false );
+    std::map<int,bool> points_done;
 
     //if ( !u.areGlobalValuesUpdated() )
     u.updateGlobalValues();
@@ -195,6 +206,8 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
 
     for ( ; it_elt != en_elt; ++it_elt )
     {
+        element_type const& curElt = *it_elt;
+
         __c->update( *it_elt );
         __ctx->update( __c );
         std::fill( uvalues.data(), uvalues.data()+uvalues.num_elements(), m_type::Zero() );
@@ -207,35 +220,63 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
                 val[ comp ] = uvalues[l]( comp,0 );
             }
 
-            if ( points_done[ it_elt->point( l ).id() ] == false )
+            if ( points_done.find( curElt.point( l ).id() ) == points_done.end() )
             {
-                //std::cout << "Pt: " << thedof << "Elem " << it_elt->id() << " G=" << it_elt->G() << "\n";
-                imesh->elements().modify( it_elt,
+                //std::cout << "Pt: " << thedof << "Elem " << curElt.id() << " G=" << curElt.G() << "\n";
+                imesh->elements().modify( imesh->elementIterator( curElt ), // it_elt,
                                           lambda::bind( &element_type::applyDisplacement,
                                                         lambda::_1,
                                                         l,
                                                         val ) );
-                points_done[it_elt->point( l ).id()] = true;
-                //std::cout << "Pt: " << thedof << " Moved Elem " << it_elt->id() << " G=" << it_elt->G() << "\n";
+                points_done[curElt.point( l ).id()] = true;
+                //std::cout << "Pt: " << thedof << " Moved Elem " << curElt.id() << " G=" << curElt.G() << "\n";
             }
 
             else
             {
-                imesh->elements().modify( it_elt,
+                imesh->elements().modify( imesh->elementIterator( curElt ), //it_elt,
                                           lambda::bind( &element_type::applyDisplacementG,
                                                         lambda::_1,
                                                         l,
                                                         val ) );
             }
         }
-    }
 
+        // update internal data point of faces attached on this elt
+        for ( size_type j = 0; j < imesh->numLocalFaces(); j++ )
+        {
+            if ( !curElt.facePtr( j ) ) continue;
+            face_type const& curFace = curElt.face( j );
+
+            for ( int f = 0; f < face_type::numPoints; ++f )
+            {
+                uint16_type ptLocalId = ( MeshType::nDim==1 )?j:curElt.fToP( j, f );
+                auto const& curPoint = curElt.point( ptLocalId );
+                for ( uint16_type comp = 0; comp < fe_type::nComponents; ++comp )
+                {
+                    val[ comp ] = curPoint( comp );
+                }
+                imesh->faces().modify( imesh->faceIterator( curFace ),
+                                       lambda::bind( &face_type::setPointCoordG,
+                                                     lambda::_1,
+                                                     f,
+                                                     val ) );
+            }
+        }
+
+        // Todo : edges
+    }
+#if 1
+    imesh->updateForUse();
+#else
     imesh->gm()->initCache( imesh.get() );
     imesh->gm1()->initCache( imesh.get() );
+#endif
+#if !defined( __INTEL_COMPILER )
     // notify observers that the mesh has changed
     imesh->meshChanged( MESH_CHANGES_POINTS_COORDINATES );
+#endif
     //return boost::make_tuple( omesh, 1.0  );
-
     imesh->tool_localization()->reset();
 }
 

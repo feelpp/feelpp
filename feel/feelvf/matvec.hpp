@@ -314,6 +314,22 @@ struct initialize_expression_g
     const Geo_t& M_geom;
 };
 
+template<typename CTX>
+struct update_context
+{
+    update_context( CTX const& ctx )
+        :
+        M_ctx( ctx )
+    {}
+
+    template <typename ExprT>
+    void operator()( ExprT& expr ) const
+    {
+        expr.updateContext( M_ctx );
+    }
+
+    const CTX & M_ctx;
+};
 
 template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
 struct update_expression_gij
@@ -621,6 +637,7 @@ public:
     typedef Vec<expression_vector_type> this_type;
 
     typedef double value_type;
+    typedef value_type evaluate_type;
 
     static const uint16_type vector_size =  fusion::result_of::size<expression_vector_type>::type::value;
 
@@ -754,6 +771,11 @@ public:
         {
             fusion::for_each( M_expr,vf::detail::update_expression_face_g<Geo_t>( geom, face ) );
         }
+        template<typename CTX>
+        void updateContext( CTX const& ctx )
+        {
+            fusion::for_each( M_expr,vf::detail::update_context<CTX>( ctx ) );
+        }
 
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type /*c2*/, uint16_type q ) const
@@ -871,6 +893,7 @@ public:
     typedef Mat<M, N, expression_matrix_type> this_type;
 
     typedef double value_type;
+    typedef value_type evaluate_type;
 
     static const uint16_type matrix_size1 = M;
     static const uint16_type matrix_size2 = N;
@@ -1019,6 +1042,11 @@ public:
         {
             fusion::for_each( M_expr,vf::detail::update_expression_face_g<Geo_t>( geom, face ) );
         }
+        template<typename CTX>
+        void updateContext( CTX const& ctx )
+        {
+            fusion::for_each( M_expr,vf::detail::update_context<CTX>( ctx ) );
+        }
 
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
@@ -1126,6 +1154,44 @@ mat( Expr1  expr1, Expr2  expr2, Expr3  expr3, Expr4 expr4 )
 #endif
     typedef vf::detail::Mat<M, N, fusion::vector<Expr1, Expr2, Expr3, Expr4> > expr_t;
     return Expr<expr_t>( expr_t( fusion::vector<Expr1, Expr2, Expr3, Expr4>( expr1, expr2, expr3, expr4 ) ) );
+}
+
+/**
+ * \brief matrix definition
+ */
+template<int M, int N, typename Expr1, typename Expr2, typename Expr3, typename Expr4, typename Expr5>
+inline
+Expr<vf::detail::Mat<M, N, fusion::vector<Expr1, Expr2, Expr3, Expr4, Expr5> > >
+mat( Expr1  expr1, Expr2  expr2, Expr3  expr3, Expr4 expr4, Expr5 expr5 )
+{
+#if 0
+    BOOST_MPL_ASSERT_MSG( ( M == 4 && N == 1 ||
+                            M == 1 && N == 4 ||
+                            M == 2 && N == 2 ),
+                          ( INVALID_MATRIX_SIZE ),
+                          ( mpl::int_<M>, mpl::int_<N> ) );
+#endif
+    typedef vf::detail::Mat<M, N, fusion::vector<Expr1, Expr2, Expr3, Expr4, Expr5> > expr_t;
+    return Expr<expr_t>( expr_t( fusion::vector<Expr1, Expr2, Expr3, Expr4, Expr5>( expr1, expr2, expr3, expr4, expr5 ) ) );
+}
+
+/**
+ * \brief matrix definition
+ */
+template<int M, int N, typename Expr1, typename Expr2, typename Expr3, typename Expr4, typename Expr5, typename Expr6>
+inline
+Expr<vf::detail::Mat<M, N, fusion::vector<Expr1, Expr2, Expr3, Expr4, Expr5, Expr6> > >
+mat( Expr1  expr1, Expr2  expr2, Expr3  expr3, Expr4 expr4, Expr5 expr5, Expr6 expr6 )
+{
+#if 0
+    BOOST_MPL_ASSERT_MSG( ( M == 4 && N == 1 ||
+                            M == 1 && N == 4 ||
+                            M == 2 && N == 2 ),
+                          ( INVALID_MATRIX_SIZE ),
+                          ( mpl::int_<M>, mpl::int_<N> ) );
+#endif
+    typedef vf::detail::Mat<M, N, fusion::vector<Expr1, Expr2, Expr3, Expr4, Expr5, Expr6> > expr_t;
+    return Expr<expr_t>( expr_t( fusion::vector<Expr1, Expr2, Expr3, Expr4, Expr5, Expr6>( expr1, expr2, expr3, expr4, expr5, expr6 ) ) );
 }
 
 /**

@@ -40,6 +40,7 @@
 #endif /* BOOST_VERSION >= 103400 */
 
 #include <Eigen/Core>
+#include <unsupported/Eigen/MatrixFunctions>
 
 #include <feel/feelalg/matrixsparse.hpp>
 #include <feel/feelalg/vectorublas.hpp>
@@ -50,7 +51,7 @@ namespace Feel
 template<typename T, typename Storage> class VectorUblas;
 
 /*!
- * 
+ *
  * \brief interface to eigen sparse matrix
  *
  * this class is a wrapper around \c csr_matrix<> and \c csc_matrix<>
@@ -91,7 +92,7 @@ public:
 
     MatrixEigenDense();
 
-    MatrixEigenDense( size_type r, size_type c );
+    MatrixEigenDense( size_type r, size_type c, WorldComm const& worldComm=Environment::worldComm() );
 
     MatrixEigenDense( MatrixEigenDense const & m );
 
@@ -112,7 +113,7 @@ public:
 
     value_type  operator()( size_type i, size_type j ) const
     {
-        return _M_mat( i, j );
+        return M_mat( i, j );
     }
 
     //@}
@@ -127,7 +128,7 @@ public:
      */
     size_type size1 () const
     {
-        return _M_mat.rows();
+        return M_mat.rows();
     }
 
     /**
@@ -136,7 +137,7 @@ public:
      */
     size_type size2 () const
     {
-        return _M_mat.cols();
+        return M_mat.cols();
     }
 
     /**
@@ -144,7 +145,7 @@ public:
      */
     size_type nnz() const
     {
-        return _M_mat.rows()*_M_mat.cols();
+        return M_mat.rows()*M_mat.cols();
     }
 
     /**
@@ -170,7 +171,7 @@ public:
      */
     bool isInitialized() const
     {
-        return _M_is_initialized;
+        return M_is_initialized;
     }
 
     /**
@@ -186,7 +187,7 @@ public:
      */
     bool closed() const
     {
-        return _M_is_closed;
+        return M_is_closed;
     }
 
 
@@ -195,7 +196,7 @@ public:
      */
     matrix_type const& mat () const
     {
-        return _M_mat;
+        return M_mat;
     }
 
     /**
@@ -203,7 +204,7 @@ public:
      */
     matrix_type & mat ()
     {
-        return _M_mat;
+        return M_mat;
     }
 
     //@}
@@ -251,8 +252,8 @@ public:
      */
     void clear ()
     {
-        //eigen::resize( _M_mat, 0, 0 );
-        _M_mat.setZero( _M_mat.rows(), _M_mat.cols() );
+        //eigen::resize( M_mat, 0, 0 );
+        M_mat.setZero( M_mat.rows(), M_mat.cols() );
     }
 
     /**
@@ -261,7 +262,7 @@ public:
      */
     void zero ()
     {
-        _M_mat.setZero( _M_mat.rows(), _M_mat.cols() );
+        M_mat.setZero( M_mat.rows(), M_mat.cols() );
     }
 
     void zero ( size_type start1, size_type stop1, size_type start2, size_type stop2 )
@@ -280,7 +281,7 @@ public:
                const size_type j,
                const value_type& value )
     {
-        _M_mat( i, j ) += value;
+        M_mat( i, j ) += value;
     }
 
     /**
@@ -295,7 +296,7 @@ public:
                const size_type j,
                const value_type& value )
     {
-        _M_mat( i, j ) = value;
+        M_mat( i, j ) = value;
     }
 
 
@@ -330,7 +331,7 @@ public:
      *\warning if the matrix was symmetric before this operation, it
      * won't be afterwards. So use the proper solver (nonsymmetric)
      */
-    void zeroRows( std::vector<int> const& rows, std::vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context );
+    void zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context );
 
     void init() {}
 
@@ -357,6 +358,32 @@ public:
      */
     void addMatrix( value_type v, MatrixSparse<value_type>& _m );
 
+
+    /**
+     * Multiply this by a Sparse matrix \p In,
+     * stores the result in \p Res:
+     * \f$ Res = \texttt{this}*In \f$.
+     */
+    void matMatMult ( MatrixSparse<value_type> const& In, MatrixSparse<value_type> &Res );
+
+    /**
+     * Multiply this by a Sparse matrix \p In,
+     * stores the result in \p Res:
+     * \f$ Res = \texttt{this}*In \f$.
+     */
+    void matInverse ( MatrixSparse<value_type> &Inv );
+
+    /**
+     * This function creates a matrix called "submatrix" which is defined
+     * by the row and column indices given in the "rows" and "cols" entries.
+     * Currently this operation is only defined for the PetscMatrix type.
+     */
+    void createSubmatrix( MatrixSparse<T>& submatrix,
+                          const std::vector<size_type>& rows,
+                          const std::vector<size_type>& cols ) const;
+
+
+
     /**
      * Add the full matrix to the
      * Sparse matrix.  This is useful
@@ -375,7 +402,7 @@ public:
      * \param M the matrix to transpose
      * \param Mt the matrix transposed
      */
-    void transpose( MatrixSparse<value_type>& Mt ) const;
+    void transpose( MatrixSparse<value_type>& Mt, size_type options ) const;
 
     /**
      * Return the l1-norm of the matrix, that is
@@ -405,9 +432,45 @@ public:
     }
 
     /**
+     * Return the square root of the matrix
+     */
+    void sqrt( MatrixSparse<value_type>& _m ) const;
+
+    boost::shared_ptr<MatrixEigenDense<T>> sqrt() const;
+
+    /**
+     * Compute the eigenvalues of the current Sparse matrix,
+     * stores the result in \p Eingvs:
+     * \f$ Engvs = \texttt{this}*In \f$.
+     */
+    void eigenValues ( std::vector<std::complex<value_type>> &Eingvs );
+
+
+
+    MatrixEigenDense<T>  operator * ( MatrixEigenDense<T> const& M )
+    {
+        MatrixEigenDense<T>  R;
+        R.mat() = this->mat() * M.mat();
+        return R;
+    }
+
+    MatrixEigenDense<T>  operator - ( MatrixEigenDense<T> const& M )
+    {
+        MatrixEigenDense<T>  R;
+        R.mat() = this->mat() - M.mat();
+        return R;
+    }
+
+    MatrixEigenDense<T> & operator = ( MatrixEigenDense<T> const& M )
+    {
+        M_mat = M.mat();
+        return *this;
+    }
+
+    /**
      * update a block matrix
      */
-    void updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > m, size_type start_i, size_type start_j );
+    void updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > m, std::vector<size_type> start_i, std::vector<size_type> start_j );
 
 
     //@}
@@ -418,41 +481,16 @@ protected:
 
 private:
 
-    bool _M_is_initialized;
-    mutable bool _M_is_closed;
+    bool M_is_initialized;
+    mutable bool M_is_closed;
 
     /**
      * the eigen sparse matrix data structure
      */
-    mutable matrix_type _M_mat;
+    mutable matrix_type M_mat;
 };
 
 
-template<typename T>
-void
-MatrixEigenDense<T>::zeroRows( std::vector<int> const& rows,
-                               std::vector<value_type> const& vals,
-                               Vector<value_type>& rhs,
-                               Context const& on_context )
-{
-    Feel::detail::ignore_unused_variable_warning( rhs );
-    Feel::detail::ignore_unused_variable_warning( vals );
-
-    for ( size_type i = 0; i < rows.size(); ++i )
-    {
-        value_type value = 1.0;
-
-        if ( on_context.test( ON_ELIMINATION_KEEP_DIAGONAL ) )
-            value = _M_mat( rows[i], rows[i] );
-        _M_mat.row( rows[i] ).setZero();
-        //_M_mat.col( rows[i] ).setZero();
-        // set diagonal
-        _M_mat( rows[i], rows[i] ) = value;
-
-        // multiply rhs by value of the diagonal entry value
-        rhs.set( rows[i], value * vals[i] );
-    }
-}
 
 } // Feel
 #endif /* __MatrixEigenDense_H */

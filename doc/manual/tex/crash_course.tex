@@ -1,0 +1,174 @@
+\feelchapter{Crash course}
+            {Crash course}
+            {Vincent Huber}
+            {cha:tutorial-crash-course}
+
+This chapter is designed for impatient people who wants to test \feel as soon as possible.
+\section{Requirements}
+Before installing \feel, you need to get this \underline{required packages:}\\
+\begin{itemize}
+\item g++ ($4.7$ or $4.8$) OR Clang ($\geq 3.3$)
+\item MPI : openmpi (preferred) or mpich
+\item Boost ($\geq$1.39)
+\item Petsc ($\geq$2.3.3)
+\item Cmake ($\geq$2.6)
+\item Gmsh\footnote{Gmsh is a pre/post processing software for scientific
+computing available at \url{http://www.geuz.org/gmsh}}
+\item Libxml2
+\end{itemize}
+It is assumed that all this packages are properly installed.
+
+\section{Building \feel from source on *nix}
+\feel is distributed as a tarball once in a while. The tarballs are available
+at
+\begin{center}
+  \href{http://code.google.com/p/feelpp/downloads/list}{http://code.google.com/p/feelpp/downloads/list}
+\end{center}
+Download the latest tarball. Then follow the steps and replace
+\texttt{x},\texttt{y},\texttt{z} with the corresponding numbers
+
+\begin{unixcom}
+  tar xzf feel-x.y.z.tar.gz
+  cd feel-x.y.z
+\end{unixcom}
+We define then the current directory as the source one, ie:
+\begin{unixcom}
+  export FeelppSrcDir=`pwd`
+\end{unixcom}
+
+\section{Compiling}
+Please, notice that 4 Gbytes of RAM is a minimum to make \feel compiling (with \textsc{gcc}), with clang ($\geq 3.1$), the memory footprint is much lower.
+
+In order to compile \feel and a test application, we create a new directory:
+\begin{unixcom}
+  mkdir build
+  cd build
+  export buildDir=`pwd`
+\end{unixcom}
+
+and then, we are able to compile our first application:
+\begin{unixcom}
+  cd $buildDir
+  cmake $FeelppSrcDir
+  make -j4
+\end{unixcom}
+
+This procedure will build the entire librarie (with DebWithRelInfo option) and a dummy program to presents the \feel's abilities.
+
+There is a procedure to install as a system librarie \feel.
+\begin{unixcom}
+  make install
+\end{unixcom}
+See chapter 2 for more details.
+
+\section{\feel Hello World}
+\label{sec:feel-hello-world}
+
+As an introduction to the aim and the way to do with \feel, we provide a sort of
+\textit{Hello World} program to evaluate the library.
+
+\subsection{About the math}
+\label{sec:about-math}
+
+We want to solve the simplest problem:
+\begin{equation}\nonumber
+  \begin{aligned}
+    - \Delta u &= 1,\\
+    u_{|\partial \Omega} &= 0,
+  \end{aligned}
+\end{equation}
+where $\Omega \in \mathbb{R}^n, n\in{1,2,3}$.\\
+
+That problem written in variational form is:
+looks for $v\in H^1\left( \Omega \right)$
+\begin{equation}\nonumber
+  \begin{aligned}
+    a\left( u,v \right)&=l\left( v \right)\\
+\forall v &\in H^1\left( \Omega \right).
+  \end{aligned}
+\end{equation}
+with:
+\begin{equation}\nonumber
+  \begin{aligned}
+    a\left( u,v \right)&=\int_{\Omega} \nabla u \cdot \nabla v ,\\
+    l\left( v \right) &= \int_{\Omega} v .
+  \end{aligned}
+\end{equation}
+
+The aim of \feel is to provide the simplest way to write the $a$ and $f$ forms.\\
+
+From a discrete point of view, we introduce $V_h\subset H^1\left( \Omega \right)$ such that:
+\begin{equation}\nonumber
+  \begin{aligned}
+V_h = \left\{ v \in C^0\left( \Omega \right), \forall K\in \mathcal{T}_h, \right.v\left|_K \in P_1\left( K \right) \right\},
+    \end{aligned}
+  \end{equation}
+where $\mathcal{T}_h$ is the set of element $K$ forming the mesh of $\Omega$. \\
+We now look for $u_h \in V_h$ such that:
+\begin{equation}\nonumber
+  \begin{aligned}
+    \forall v_h\in V_h, a\left( u_h,v_h \right)=l\left( v_h \right).
+    \end{aligned}
+  \end{equation}
+
+\subsection{About the code}
+\label{sec:about-code}
+
+This section is here to declare that we want to use the namespace \feel, to
+passe the command line options to the created environnement and add some
+informations (basics \feel options, application name).
+\lstinputlisting[linerange=marker1-endmarker1]{../../quickstart/laplacian.cpp}
+We have to define the mesh, the approximation space and our test and trial
+functions.
+\lstinputlisting[linerange=marker2-endmarker2]{../../quickstart/laplacian.cpp}
+We create now our bilinear and linear forms, we add the homogeneous Dirichlet
+conditions and solve the discretized (linear) system.
+\lstinputlisting[linerange=marker3-endmarker3]{../../quickstart/laplacian.cpp}
+\feel provides the possibility to save the results:
+\lstinputlisting[linerange=marker4-endmarker4]{../../quickstart/laplacian.cpp}
+
+
+\section{First execution \& vizualisation}
+\label{sec:first-execution}
+
+To test that part of code, please go to:
+\begin{unixcom}
+  cd $FeelppSrcDir/quickstart
+\end{unixcom}
+and execute the code, by:
+\begin{unixcom}
+  ./feelpp_qs_laplacian
+\end{unixcom}
+This will produce several files:
+\begin{unixcom}
+  qs_laplacian-1_0.case
+  qs_laplacian-1.sos
+  qs_laplacian.timeset
+  qs_laplacian.u-1_0.001
+  qs_laplacian-1_0.geo001
+  qs_laplacian.pid-1_0.001
+  square.geo
+  square.msh
+\end{unixcom}
+You can vizualise the results using any Ensight file reader, such as Paraview,
+opening \verb=qs_laplacian-1.sos=.
+\begin{unixcom}
+  paraview qs_laplacian-1.sos
+\end{unixcom}
+You may have a look to the differents option provided by
+\begin{unixcom}
+  ./feelpp_qs_laplacian --help
+\end{unixcom}
+
+
+%%% Local Variables:
+%%% coding: utf-8
+%%% mode: latex
+%%% TeX-PDF-mode: t
+%%% TeX-parse-self: t
+%%% x-symbol-8bits: nil
+%%% TeX-auto-regexp-list: TeX-auto-full-regexp-list
+%%% TeX-master: "../feel-manual"
+%%% ispell-local-dictionary: "american"
+%%% End:
+
