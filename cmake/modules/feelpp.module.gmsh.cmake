@@ -32,6 +32,8 @@ else( EXISTS ${CMAKE_SOURCE_DIR}/contrib/nlopt )
   FIND_PATH(GMSH_CONTRIB_INCLUDE_DIR BasisFactory.h
     $ENV{FEELPP_DIR}/include/feel/gmsh
     NO_DEFAULT_PATH)
+  FIND_PATH(GMSH_CONTRIB_INCLUDE_DIR BasisFactory.h
+    PATH_SUFFIXES feel/gmsh )
   include_directories(${GMSH_CONTRIB_INCLUDE_DIR})
   
 endif(  EXISTS ${CMAKE_SOURCE_DIR}/contrib/gmsh  )
