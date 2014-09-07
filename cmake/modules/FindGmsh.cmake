@@ -23,6 +23,33 @@
 #
 include (FindPackageHandleStandardArgs)
 
+function(_gmsh_get_version _out_major _out_minor _out_patch _gmsh_version_h)
+	file(STRINGS ${_gmsh_version_h} _gmsh_vinfo REGEX "^#define[\t ]+GMSH_.*__VERSION.*")
+	if (NOT _gmsh_vinfo)
+		message(FATAL_ERROR "include file ${_gmsh_version_h} does not exist")
+	endif()
+	string(REGEX REPLACE "^.*GMSH_MAJOR_VERSION[ \t]+([0-9]+).*" "\\1" ${_out_major} "${_gmsh_vinfo}")
+	string(REGEX REPLACE "^.*GMSH_MINOR_VERSION[ \t]+([0-9]+).*" "\\1" ${_out_minor} "${_gmsh_vinfo}")
+	string(REGEX REPLACE "^.*GMSH_PATCH_VERSION[ \t]+([0-9]+).*" "\\1" ${_out_patch} "${_gmsh_vinfo}")
+	if (NOT ${_out_major} MATCHES "[0-9]+")
+		message(FATAL_ERROR "failed to determine GMSH_MAJOR_VERSION, "
+			            "expected a number, got ${${_out_major}}")
+	endif()
+	if (NOT ${_out_minor} MATCHES "[0-9]+")
+		message(FATAL_ERROR "failed to determine GMSH_MINOR_VERSION, "
+			            "expected a number, got ${${_out_minor}}")
+	endif()
+	if (NOT ${_out_patch} MATCHES "[0-9]+")
+		message(FATAL_ERROR "failed to determine GMSH_PATCH_VERSION, "
+			            "expected a number, got ${${_out_patch}}")
+	endif()
+	message(STATUS "found Gmsh [${_gmsh_version_h}], version ${${_out_major}}.${${_out_minor}}.${${_out_patch}}")
+	set(${_out_major} ${${_out_major}} PARENT_SCOPE)
+	set(${_out_minor} ${${_out_minor}} PARENT_SCOPE)
+	set(${_out_patch} ${${_out_patch}} PARENT_SCOPE)
+endfunction()
+
+
 # some of the find_* commands are duplicated with the first instance having NO_DEFAULT_PATH
 # this is to ensure that if GMSH_DIR is defined then cmake will pick the Gmsh version in GMSH_DIR
 # otherwise in the second instance it will pich the standard version installed on the system if

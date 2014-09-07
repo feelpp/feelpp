@@ -912,9 +912,7 @@ if ( GMSH_FOUND )
   include_directories(${GMSH_INCLUDE_DIR})
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Gmsh" )
 endif()
-
-# we include this directory : add some missing headers from Gmsh
-INCLUDE_DIRECTORIES( ${CMAKE_SOURCE_DIR}/contrib/gmsh )
+include(feelpp.module.gmsh)
 
 #
 # if Feel++ has been installed on the system
