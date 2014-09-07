@@ -7,6 +7,7 @@
 
   Copyright (C) 2006 EPFL
   Copyright (C) 2007-2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2010-2014 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -43,10 +44,12 @@
 # include <boost/preprocessor/punctuation/comma.hpp>
 # include <boost/preprocessor/facilities/identity.hpp>
 
-namespace Feel
-{
-namespace vf
-{
+
+#include <feel/feelvf/expr.hpp>
+
+
+namespace Feel { namespace vf {
+
 /// \cond detail
 # /* Information about C operators */
 #
@@ -71,45 +74,47 @@ const size_type jkp = vm::KB|vm::JACOBIAN|vm::POINT;
 #if 1
 # define VF_GD                                                          \
    BOOST_PP_TUPLE_TO_LIST(                                              \
-       21,                                                              \
+       22,                                                              \
       (                                                                 \
-       ( N       , GDN       , 0, jkbn, Vectorial, _M_gmc->unitNormal( q )[ c1 ] , 0), \
-       ( Nx      , GDNx      , 0, jkbn, Scalar   , _M_gmc->unitNormal( q )[ 0 ]  , 0), \
-       ( Ny      , GDNy      , 1, jkbn, Scalar   , _M_gmc->unitNormal( q )[ 1 ]  , 0), \
-       ( Nz      , GDNz      , 2, jkbn, Scalar   , _M_gmc->unitNormal( q )[ 2 ]  , 0), \
-       ( Nref    , GDNref    , 0, 0, Vectorial, _M_gmc->refNormal( q )[ c1 ] , 0), \
-       ( normalNorm, GDnormalNorm, 0, 0, Scalar, _M_gmc->normalNorm( q ) , 0), \
-       ( T       , GDT       , 0, jt, Vectorial, _M_gmc->tangent( q )[ c1 ], 0), \
-       ( Tx      , GDTx      , 0, jt, Scalar   , _M_gmc->tangent( q )[ 0 ] , 0), \
-       ( Ty      , GDTy      , 1, jt, Scalar   , _M_gmc->tangent( q )[ 1 ] , 0), \
-       ( Tz      , GDTz      , 2, jt, Scalar   , _M_gmc->tangent( q )[ 2 ] , 0), \
-       ( detJ    , GDDetJ    , 0, jp, Scalar   , _M_gmc->J( q )                , 0), \
-       ( J       , GDJ       , 0, jkp,Tensor2  , _M_gmc->K( c1, c2, q )        , 0), \
-       ( JinvT   , GDJinv    , 0, jkp,Tensor2  , _M_gmc->B( c1, c2, q )        , 0), \
-       ( P       , GDP       , 0, jp, Vectorial, _M_gmc->xReal( q )[ c1 ]      , 1), \
-       ( Px      , GDPx      , 0, jp, Scalar   , _M_gmc->xReal( q )[ 0 ]       , 1), \
-       ( Py      , GDPy      , 1, jp, Scalar   , _M_gmc->xReal( q )[ 1 ]       , 1), \
-       ( Pz      , GDPz      , 2, jp, Scalar   , _M_gmc->xReal( q )[ 2 ]       , 1), \
-       ( C       , GDC       , 0, jp, Vectorial, _M_gmc->barycenterReal()[c1]  , 0), \
-       ( Cx      , GDCx      , 0, jp, Scalar   , _M_gmc->barycenterReal()[0]   , 0), \
-       ( Cy      , GDCy      , 1, jp, Scalar   , _M_gmc->barycenterReal()[1]   , 0), \
-       ( Cz      , GDCz      , 2, jp, Scalar   , _M_gmc->barycenterReal()[2]   , 0) \
+       ( N       , GDN       , 0, jkbn, Vectorial, M_gmc->unitNormal( q )[ c1 ] , 0), \
+       ( Nx      , GDNx      , 0, jkbn, Scalar   , M_gmc->unitNormal( q )[ 0 ]  , 0), \
+       ( Ny      , GDNy      , 1, jkbn, Scalar   , M_gmc->unitNormal( q )[ 1 ]  , 0), \
+       ( Nz      , GDNz      , 2, jkbn, Scalar   , M_gmc->unitNormal( q )[ 2 ]  , 0), \
+       ( Nref    , GDNref    , 0, 0, Vectorial, M_gmc->refNormal( q )[ c1 ] , 0), \
+       ( normalNorm, GDnormalNorm, 0, 0, Scalar, M_gmc->normalNorm( q ) , 0), \
+       ( pT      , GDpT      , 0, jt, Tensor2, M_gmc->projectorTangent( c1, c2, q), 0), \
+       ( T       , GDT       , 0, jt, Vectorial, M_gmc->tangent( q )[ c1 ], 0), \
+       ( Tx      , GDTx      , 0, jt, Scalar   , M_gmc->tangent( q )[ 0 ] , 0), \
+       ( Ty      , GDTy      , 1, jt, Scalar   , M_gmc->tangent( q )[ 1 ] , 0), \
+       ( Tz      , GDTz      , 2, jt, Scalar   , M_gmc->tangent( q )[ 2 ] , 0), \
+       ( detJ    , GDDetJ    , 0, jp, Scalar   , M_gmc->J( q )                , 0), \
+       ( J       , GDJ       , 0, jkp,Tensor2  , M_gmc->K( c1, c2, q )        , 0), \
+       ( JinvT   , GDJinv    , 0, jkp,Tensor2  , M_gmc->B( c1, c2, q )        , 0), \
+       ( P       , GDP       , 0, jp, Vectorial, M_gmc->xReal( q )[ c1 ]      , 1), \
+       ( Px      , GDPx      , 0, jp, Scalar   , M_gmc->xReal( q )[ 0 ]       , 1), \
+       ( Py      , GDPy      , 1, jp, Scalar   , M_gmc->xReal( q )[ 1 ]       , 1), \
+       ( Pz      , GDPz      , 2, jp, Scalar   , M_gmc->xReal( q )[ 2 ]       , 1), \
+       ( C       , GDC       , 0, jp, Vectorial, M_gmc->barycenterReal()[c1]  , 0), \
+       ( Cx      , GDCx      , 0, jp, Scalar   , M_gmc->barycenterReal()[0]   , 0), \
+       ( Cy      , GDCy      , 1, jp, Scalar   , M_gmc->barycenterReal()[1]   , 0), \
+       ( Cz      , GDCz      , 2, jp, Scalar   , M_gmc->barycenterReal()[2]   , 0) \
           )                                                             \
        )
 /**/
 # define VF_GD2                                                         \
     BOOST_PP_TUPLE_TO_LIST(                                             \
-        9,                                                              \
+        10,                                                              \
         (                                                               \
-            ( h       , GDH       , 0, 0 , Scalar   , _M_gmc->h()                   , 0), \
-            ( hFace   , GDHFace   , 0, 0 , Scalar   , _M_gmc->hFace()               , 0), \
-            ( meas    , GDMeas    , 0, 0 , Scalar   , _M_gmc->meas()                , 0), \
-            ( measPEN , GDMeasPEN , 0, 0 , Scalar   , _M_gmc->measurePointElementNeighbors(), 0), \
-            ( nPEN    , GDNPEN    , 0, 0 , Scalar   , _M_gmc->element().numberOfPointElementNeighbors(), 0), \
-            ( measFace, GDHMeasFace,0, 0 , Scalar   , _M_gmc->measFace()            , 0), \
-            ( eid     , GDEid     , 0, 0 , Scalar   , _M_gmc->id()                  , 0), \
-            ( emarker , GDEmarker , 0, 0 , Scalar   , _M_gmc->marker().value()      , 0), \
-            ( emarker2, GDEmarker2, 0, 0 , Scalar   , _M_gmc->marker2().value()     , 0) \
+            ( h       , GDH       , 0, 0 , Scalar   , M_gmc->h()                   , 0), \
+            ( hMin    , GDHMin    , 0, 0 , Scalar   , M_gmc->hMin()                , 0), \
+            ( hFace   , GDHFace   , 0, 0 , Scalar   , M_gmc->hFace()               , 0), \
+            ( meas    , GDMeas    , 0, 0 , Scalar   , M_gmc->meas()                , 0), \
+            ( measPEN , GDMeasPEN , 0, 0 , Scalar   , M_gmc->measurePointElementNeighbors(), 0), \
+            ( nPEN    , GDNPEN    , 0, 0 , Scalar   , M_gmc->element().numberOfPointElementNeighbors(), 0), \
+            ( measFace, GDHMeasFace,0, 0 , Scalar   , M_gmc->measFace()            , 0), \
+            ( eid     , GDEid     , 0, 0 , Scalar   , M_gmc->id()                  , 0), \
+            ( emarker , GDEmarker , 0, 0 , Scalar   , M_gmc->marker().value()      , 0), \
+            ( emarker2, GDEmarker2, 0, 0 , Scalar   , M_gmc->marker2().value()     , 0) \
             )                                                           \
         )                                                               \
 /**/
@@ -118,26 +123,26 @@ const size_type jkp = vm::KB|vm::JACOBIAN|vm::POINT;
    BOOST_PP_TUPLE_TO_LIST(                                              \
       20,                                                               \
       (                                                                 \
-       ( N       , GDN       , 0, jn, Vectorial, _M_gmc->unitNormal( q )[ c1 ] , 0), \
-       ( Nx      , GDNx      , 0, jn, Scalar   , _M_gmc->unitNormal( q )[ 0 ]  , 0), \
-       ( Ny      , GDNy      , 1, jn, Scalar   , _M_gmc->unitNormal( q )[ 1 ]  , 0), \
-       ( Nz      , GDNz      , 2, jn, Scalar   , _M_gmc->unitNormal( q )[ 2 ]  , 0), \
-       ( T       , GDT       , 0, jn, Vectorial, _M_gmc->unitTangent( q )[ c1 ], 0), \
-       ( Tx      , GDTx      , 0, jn, Scalar   , _M_gmc->unitTangent( q )[ 0 ] , 0), \
-       ( Ty      , GDTy      , 1, jn, Scalar   , _M_gmc->unitTangent( q )[ 1 ] , 0), \
-       ( Tz      , GDTz      , 2, jn, Scalar   , _M_gmc->unitTangent( q )[ 2 ] , 0), \
-       ( P       , GDP       , 0, jp, Vectorial, _M_gmc->xReal( q )[ c1 ]      , 1), \
-       ( Px      , GDPx      , 0, jp, Scalar   , _M_gmc->xReal( q )[ 0 ]       , 1), \
-       ( Py      , GDPy      , 1, jp, Scalar   , _M_gmc->xReal( q )[ 1 ]       , 1), \
-       ( Pz      , GDPz      , 2, jp, Scalar   , _M_gmc->xReal( q )[ 2 ]       , 1), \
-       ( C       , GDC       , 0, jp, Vectorial, _M_gmc->barycenterReal()[c1]  , 0), \
-       ( Cx      , GDCx      , 0, jp, Scalar   , _M_gmc->barycenterReal()[0]   , 0), \
-       ( Cy      , GDCy      , 1, jp, Scalar   , _M_gmc->barycenterReal()[1]   , 0), \
-       ( Cz      , GDCz      , 2, jp, Scalar   , _M_gmc->barycenterReal()[2]   , 0), \
-       ( h       , GDH       , 0, 0 , Scalar   , _M_gmc->h()                   , 0), \
-       ( hFace   , GDHFace   , 0, 0 , Scalar   , _M_gmc->hFace()               , 0), \
-       ( eid     , GDEid     , 0, 0 , Scalar   , _M_gmc->id()                  , 0), \
-       ( emarker , GDEmarker , 0, 0 , Scalar   , _M_gmc->marker().value()      , 0) \
+       ( N       , GDN       , 0, jn, Vectorial, M_gmc->unitNormal( q )[ c1 ] , 0), \
+       ( Nx      , GDNx      , 0, jn, Scalar   , M_gmc->unitNormal( q )[ 0 ]  , 0), \
+       ( Ny      , GDNy      , 1, jn, Scalar   , M_gmc->unitNormal( q )[ 1 ]  , 0), \
+       ( Nz      , GDNz      , 2, jn, Scalar   , M_gmc->unitNormal( q )[ 2 ]  , 0), \
+       ( T       , GDT       , 0, jn, Vectorial, M_gmc->unitTangent( q )[ c1 ], 0), \
+       ( Tx      , GDTx      , 0, jn, Scalar   , M_gmc->unitTangent( q )[ 0 ] , 0), \
+       ( Ty      , GDTy      , 1, jn, Scalar   , M_gmc->unitTangent( q )[ 1 ] , 0), \
+       ( Tz      , GDTz      , 2, jn, Scalar   , M_gmc->unitTangent( q )[ 2 ] , 0), \
+       ( P       , GDP       , 0, jp, Vectorial, M_gmc->xReal( q )[ c1 ]      , 1), \
+       ( Px      , GDPx      , 0, jp, Scalar   , M_gmc->xReal( q )[ 0 ]       , 1), \
+       ( Py      , GDPy      , 1, jp, Scalar   , M_gmc->xReal( q )[ 1 ]       , 1), \
+       ( Pz      , GDPz      , 2, jp, Scalar   , M_gmc->xReal( q )[ 2 ]       , 1), \
+       ( C       , GDC       , 0, jp, Vectorial, M_gmc->barycenterReal()[c1]  , 0), \
+       ( Cx      , GDCx      , 0, jp, Scalar   , M_gmc->barycenterReal()[0]   , 0), \
+       ( Cy      , GDCy      , 1, jp, Scalar   , M_gmc->barycenterReal()[1]   , 0), \
+       ( Cz      , GDCz      , 2, jp, Scalar   , M_gmc->barycenterReal()[2]   , 0), \
+       ( h       , GDH       , 0, 0 , Scalar   , M_gmc->h()                   , 0), \
+       ( hFace   , GDHFace   , 0, 0 , Scalar   , M_gmc->hFace()               , 0), \
+       ( eid     , GDEid     , 0, 0 , Scalar   , M_gmc->id()                  , 0), \
+       ( emarker , GDEmarker , 0, 0 , Scalar   , M_gmc->marker().value()      , 0) \
       )                                                                          \
    )                                                                             \
 /**/
@@ -174,6 +179,7 @@ const size_type jkp = vm::KB|vm::JACOBIAN|vm::POINT;
         };                                                              \
         typedef VF_GD_NAME(O) this_type;                                \
         typedef double value_type;                                      \
+        typedef value_type evaluate_type;                               \
                                                                         \
         VF_GD_NAME(O) ()                                                \
         {                                                               \
@@ -181,14 +187,14 @@ const size_type jkp = vm::KB|vm::JACOBIAN|vm::POINT;
         VF_GD_NAME(O) ( VF_GD_NAME(O) const& /*__vf*/ )                 \
         {                                                               \
         }                                                               \
-        template<typename TheExpr>                                      \
+        template<typename... TheExpr>                                      \
         struct Lambda                                                   \
         {                                                               \
             typedef this_type type;                                     \
         };                                                              \
-        template<typename TheExpr>                                      \
-        typename Lambda<TheExpr>::type                                  \
-        operator()( TheExpr const& e  ) { return this_type(); }         \
+        template<typename... TheExpr>                                      \
+        typename Lambda<TheExpr...>::type                                  \
+        operator()( TheExpr... e  ) { return this_type(); }         \
                                                                         \
                                                                         \
         template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t> \
@@ -198,9 +204,10 @@ const size_type jkp = vm::KB|vm::JACOBIAN|vm::POINT;
             typedef typename mpl::if_<fusion::result_of::has_key<Geo_t,vf::detail::gmc<0> >, \
                 mpl::identity<vf::detail::gmc<0> >,                         \
                 mpl::identity<vf::detail::gmc<1> > >::type::type key_type;  \
-            typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype; \
+            typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype; \
             typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type; \
             typedef typename gmc_type::value_type value_type;           \
+            typedef  value_type evaluate_type;                          \
             typedef VF_GD_RETURN(O)<gmc_type::NDim> return_value_type;  \
             typedef Shape<gmc_type::NDim, VF_GD_RETURN(O), false> shape; \
                                                                         \
@@ -210,18 +217,18 @@ const size_type jkp = vm::KB|vm::JACOBIAN|vm::POINT;
                     Geo_t const& geom,                                  \
                     Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ ) \
                 :                                                       \
-                _M_gmc( fusion::at_key<key_type>( geom ).get() )        \
+                M_gmc( fusion::at_key<key_type>( geom ).get() )        \
                 {}                                                      \
             tensor( this_type const& /*expr*/,                          \
                     Geo_t const& geom,                                  \
                     Basis_i_t const& /*fev*/ )                          \
                 :                                                       \
-                _M_gmc( fusion::at_key<key_type>( geom ).get() )        \
+                M_gmc( fusion::at_key<key_type>( geom ).get() )        \
                 {}                                                      \
             tensor( this_type const& /*expr*/,                          \
                     Geo_t const& geom )                                 \
                 :                                                       \
-                _M_gmc( fusion::at_key<key_type>( geom ).get() )        \
+                M_gmc( fusion::at_key<key_type>( geom ).get() )        \
                 {}                                                      \
             template<typename IM>                                       \
                 void init( IM const& im )                               \
@@ -237,12 +244,17 @@ const size_type jkp = vm::KB|vm::JACOBIAN|vm::POINT;
             }                                                           \
             void update( Geo_t const& geom )                            \
             {                                                           \
-                _M_gmc = fusion::at_key<key_type>( geom ).get();        \
+                M_gmc = fusion::at_key<key_type>( geom ).get();        \
             }                                                           \
             void update( Geo_t const& geom, uint16_type face )          \
             {                                                           \
                 /*BOOST_STATIC_ASSERT( dim_ok );*/                      \
                 update( geom );                                         \
+            }                                                           \
+            template<typename CTX>                                      \
+                void updateContext( CTX const& ctx )                    \
+            {                                                           \
+                M_gmc = ctx->gmContext().get();                        \
             }                                                           \
                                                                         \
                 value_type                                              \
@@ -281,7 +293,7 @@ const size_type jkp = vm::KB|vm::JACOBIAN|vm::POINT;
                 Feel::detail::ignore_unused_variable_warning(c2);       \
                 return VF_GD_VALUE( O );                                \
             }                                                           \
-            gmc_ptrtype _M_gmc;                                         \
+            gmc_ptrtype M_gmc;                                         \
         };                                                              \
     };                                                                  \
     inline                                                              \

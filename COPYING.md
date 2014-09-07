@@ -1,9 +1,8 @@
-Copyright
-=========
+# Copyright
 
 Feel++ stands for Finite Element Embedded Library and language in C++.
 
-# Feel++ Library
+## Feel++ Library
 
 The Feel++ library is in
  - feel/
@@ -14,7 +13,7 @@ of the Lesser GNU Public License(LGPL)
 
 See doc/manual/common/LGPL for a copy of the Lesser GNU Public License(LGPL)
 
-# Feel++ applications, examples, testsuite and benchmarks
+## Feel++ applications, examples, testsuite and benchmarks
 
 The directories are :
     - benchmarks/
@@ -28,9 +27,9 @@ Coimbra.  They are distributed under the terms of the GNU Public License(GPL).
 
 See doc/manual/common/GPL for a copy of the GNU Public License(GPL)
 
-# contrib
+## contrib
 
-## contrib/eigen
+### contrib/eigen
 
 Eigen is used for some linear algebra operations.
 

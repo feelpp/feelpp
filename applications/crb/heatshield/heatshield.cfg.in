@@ -1,0 +1,84 @@
+#mesh size
+hsize=1.5e-1
+load-mesh-already-partitioned=true
+
+#name of the .msh file
+#for example :
+#mshfile = ../mesh.msh
+#mshfile = /home/veys/feel/geofiles/heatshield/heatshield_h3e-1_np2.msh
+
+[heatshield]
+run.mode=2
+run.sampling.size=10
+export-solution=false
+
+[heatshield.bdf]
+order=1
+time-step=0.2
+time-final=20
+
+[backend-primal]
+ksp-rtol=1e-15
+reuse-prec=false
+#ksp-monitor=true
+
+[backend-dual]
+ksp-rtol=1e-15
+reuse-prec=false
+
+[backendl2]
+ksp-rtol=1e-15
+reuse-prec=true #resolution with the same matrix, only rhs change
+
+[beta]
+A0=1
+A1=BiotOut #mu(0)
+A2=BiotIn  #mu(1)
+F0.0=BiotOut #mu(0)
+F1.0=1/surface
+M0=1
+
+[crb]
+#use-predefined-WNmu=true
+#use-predefined-test-sampling=true
+dimension-max=15
+Nm=1
+output-index=1
+error-max=1e-14
+error-type=1
+orthonormalize-primal=true
+orthonormalize-dual=true
+visualize-basis=false
+show-mu-selection=true
+seek-mu-in-complement=true
+rebuild-database=true
+solve-dual-problem=true
+print-error-during-rb-construction=false
+cvg-study=true
+show-residual=false
+is-model-executed-in-steady-mode=true
+use-ginac-for-beta-expressions=false
+all-procs-have-same-sampling=false
+vary-only-parameter-components=1 100
+user-parameters=0.5 0.1
+load-elements-database=true
+[crb.check]
+gs=0
+rb=0
+residual=false
+residual-transient-problems=false
+results-repo-name=HeatShield
+
+#parameter for scm
+[crb.scm]
+iter-max=30
+strategy=0
+rebuild-database=false
+#do-scm-for-mass-matrix=true
+print-matrix=false
+#solver parameters
+solvereigen.tol=1e-10
+solvereigen.maxiter=100000
+solvereigen.ncv=10
+use-scm=false
+

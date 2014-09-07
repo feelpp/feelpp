@@ -41,15 +41,6 @@ function (petsc_get_version)
   endif ()
 endfunction ()
 
-find_path (PETSC_DIR include/petsc.h
-  HINTS ENV PETSC_DIR
-  PATHS
-  /usr/lib/petscdir/3.2 /usr/lib/petscdir/3.1 /usr/lib/petscdir/3.0.0 /usr/lib/petscdir/2.3.3 /usr/lib/petscdir/2.3.2 # Debian
-  /opt/local/lib/petsc # macports
-  $ENV{HOME}/petsc
-  $ENV{PETSC_HOME}
-  DOC "PETSc Directory")
-
 find_program (MAKE_EXECUTABLE NAMES make gmake)
 
 foreach( debian_arches linux kfreebsd )
@@ -60,26 +51,66 @@ foreach( debian_arches linux kfreebsd )
   ENDIF()
 endforeach()
 
+IF ( "${CMAKE_BUILD_TYPE}" STREQUAL "Debug" )
+  set( DARWIN_FLAVORS darwin-cxx-debug arch-darwin-cxx-debug arch-darwin-cxx-opt darwin-cxx-opt   ${DARWIN_FLAVORS})
+ELSE()
+  set( DARWIN_FLAVORS darwin-cxx-opt  arch-darwin-cxx-opt darwin-cxx-debug arch-darwin-cxx-debug  ${DARWIN_FLAVORS})
+ENDIF()
+#message(STATUS "Darwin flavors: ${DARWIN_FLAVORS}")
+set(PETSC_VERSIONS 3.5.1 3.5.0 3.4.4 3.4.3 3.4.2 3.3 3.2 )
+
+find_path (PETSC_DIR include/petsc.h
+  HINTS ENV PETSC_DIR
+  PATHS
+  /usr/lib/petsc
+  /usr/lib/petscdir/3.4.4 /usr/lib/petscdir/3.4.3 /usr/lib/petscdir/3.4.2
+  /usr/lib/petscdir/3.3 /usr/lib/petscdir/3.2 /usr/lib/petscdir/3.1 /usr/lib/petscdir/3.0.0 /usr/lib/petscdir/2.3.3 /usr/lib/petscdir/2.3.2 # Debian
+  /opt/local/lib/petsc # macports
+  $ENV{HOME}/petsc
+  $ENV{PETSC_HOME}
+  $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}
+  DOC "PETSc Directory")
+
+if ( NOT PETSC_DIR )
+  foreach( version ${PETSC_VERSIONS} )
+    foreach ( flavor ${DEBIAN_FLAVORS} ${DARWIN_FLAVORS} )
+      #message(STATUS "checking version ${version} for file ${flavor}/include/petsc.h...")
+      find_path (PETSC_DIR include/petsc.h
+        PATHS
+        /usr/lib/petscdir/${version}/${flavor}
+        /usr/local/Cellar/petsc/${version}/${flavor}
+        NO_DEFAULT_PATH
+        DOC "PETSc Directory")
+    endforeach()
+  endforeach()
+endif()
+message(STATUS "Petsc Dir: ${PETSC_DIR}")
+
+
 if (PETSC_DIR AND NOT PETSC_ARCH)
   set (_petsc_arches
     $ENV{PETSC_ARCH}                   # If set, use environment variable first
     ${DEBIAN_FLAVORS}  # Debian defaults
-    x86_64-unknown-linux-gnu i386-unknown-linux-gnu)
+    ${DARWIN_FLAVORS}  # Darwin defaults
+    x86_64-unknown-linux-gnu i386-unknown-linux-gnu )
+
   set (petscconf "NOTFOUND" CACHE FILEPATH "Cleared" FORCE)
   foreach (arch ${_petsc_arches})
     if (NOT PETSC_ARCH)
+      #message(STATUS "looking for petsc in ${arch}/include bmake/${arch}...")
       find_path (petscconf petscconf.h
-	HINTS ${PETSC_DIR}
-	PATH_SUFFIXES ${arch}/include bmake/${arch}
-	NO_DEFAULT_PATH)
+	    HINTS ${PETSC_DIR}
+	    PATH_SUFFIXES ${arch}/include bmake/${arch}
+	    NO_DEFAULT_PATH)
       if (petscconf)
-	set (PETSC_ARCH "${arch}" CACHE STRING "PETSc build architecture")
+	    set (PETSC_ARCH "${arch}" CACHE STRING "PETSc build architecture")
+        message(STATUS "PETSC ARCH : ${arch}")
       endif (petscconf)
     endif (NOT PETSC_ARCH)
   endforeach (arch)
   set (petscconf "NOTFOUND" CACHE INTERNAL "Scratch variable" FORCE)
 endif (PETSC_DIR AND NOT PETSC_ARCH)
-
+message(STATUS "PETSC_ARCH: ${PETSC_ARCH}")
 set (petsc_slaves LIBRARIES_SYS LIBRARIES_VEC LIBRARIES_MAT LIBRARIES_DM LIBRARIES_KSP LIBRARIES_SNES LIBRARIES_TS
   INCLUDE_DIR INCLUDE_CONF)
 include (FindPackageMultipass)
@@ -99,8 +130,11 @@ elseif (PETSC_DIR)
   message (SEND_ERROR "The pair PETSC_DIR=${PETSC_DIR} PETSC_ARCH=${PETSC_ARCH} do not specify a valid PETSc installation")
 endif ()
 petsc_get_version()
+IF(NOT DEFINED _BLOCK_)
+  set(_BLOCK_ false)
+endif()
 
-if (petsc_conf_rules AND petsc_conf_variables AND NOT petsc_config_current)
+if (petsc_conf_rules AND petsc_conf_variables AND NOT petsc_config_current AND NOT _BLOCK_)
   # Put variables into environment since they are needed to get
   # configuration (petscvariables) in the PETSc makefile
   set (ENV{PETSC_DIR} "${PETSC_DIR}")
@@ -220,14 +254,14 @@ int main(int argc,char *argv[]) {
       foreach (pkg SYS VEC MAT DM KSP SNES TS ALL)
 	list (APPEND PETSC_LIBRARIES_${pkg}  ${petsc_libraries_external})
       endforeach (pkg)
-      petsc_test_runs ("${petsc_includes_minimal}" "${PETSC_LIBRARIES_TS}" petsc_works_alllibraries)
+      #petsc_test_runs ("${petsc_includes_minimal}" "${PETSC_LIBRARIES_TS}" petsc_works_alllibraries)
       if (petsc_works_alllibraries)
 	 message (STATUS "PETSc only need minimal includes, but requires explicit linking to all dependencies.  This is expected when PETSc is built with static libraries.")
 	set (petsc_includes_needed ${petsc_includes_minimal})
       else (petsc_works_alllibraries)
 	# It looks like we really need everything, should have listened to Matt
 	set (petsc_includes_needed ${petsc_includes_all})
-	petsc_test_runs ("${petsc_includes_all}" "${PETSC_LIBRARIES_TS}" petsc_works_all)
+	#petsc_test_runs ("${petsc_includes_all}" "${PETSC_LIBRARIES_TS}" petsc_works_all)
 	if (petsc_works_all) # We fail anyways
 	  message (STATUS "PETSc requires extra include paths and explicit linking to all dependencies.  This probably means you have static libraries and something unexpected in PETSc headers.")
 	else (petsc_works_all) # We fail anyways
@@ -264,4 +298,7 @@ if ( PETSC_FOUND )
   add_definitions( -DFEELPP_HAS_PETSC -DFEELPP_HAS_PETSC_H )
   set(FEELPP_HAS_PETSC 1)
   set(FEELPP_HAS_PETSC_H 1)
+
+  # add PETSC includes (in case of non conventionnal install of petsc TPS)
+  include_directories(${PETSC_INCLUDES})
 endif( PETSC_FOUND )

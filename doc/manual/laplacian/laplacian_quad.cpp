@@ -80,6 +80,10 @@ int main(int argc, char**argv )
                                                  _grad_expr=(gradv(u)-gradg)*trans(gradv(u)-gradg),
                                                  _quad=_Q<20>() ) << "\n";
     v = project( _space=Vh, _expr=g );
+
+    std::cout << "values with marker WEST : " << u.extractValuesWithMarker( "WEST" ) << "\n";
+    std::cout << "values without marker WEST : " << u.extractValuesWithoutMarker( "WEST" ) << "\n";
+
     auto e = exporter( _mesh=mesh );
     e->add( "u", u );
     e->add( "exact", v );

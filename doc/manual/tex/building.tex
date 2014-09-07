@@ -1,0 +1,473 @@
+\feelchapter{Building Feel++}
+            {Building Feel++}
+            {Christophe Prud'homme, Baptiste Morin}
+            {tutorial-building}
+
+\section{Getting the source via an archive}
+\label{sec:getting-source-via-1}
+
+\feel is distributed as a tarball once in a while. The tarballs are available
+at
+\begin{center}
+  \href{http://code.google.com/p/feelpp/}{http://code.google.com/p/feelpp/}
+\end{center}
+Download the latest tarball.
+
+\begin{unixcom}
+  tar -xzf feelpp-0.92.0.tar.gz
+  cd feel-0.92.0
+\end{unixcom}
+
+
+\section{Getting the source via Git}
+\label{sec:getting-source-via}
+In order to download the sources of \feel, you can download it directly from the source depository
+thanks to Git. To make it possible, you can download them anonymously or with an account in Github that you have created. As an open-source project, we strongly suggest you to create an account and take part of the project with sharing your ideas, developments or suggests. If you're interested to participate and become a \feel developer, please don't hesitate to see how it works in the appendix ~\ref{feeldevel}. For now, if you want to get the sources without an account, open a command-line and type
+\begin{unixcom}
+    git clone https://github.com/feelpp/feelpp.git
+\end{unixcom}
+then you can go to the \feel top directory with
+\begin{unixcom}
+		cd feel
+\end{unixcom}
+You should obtain furthers directories such as :
+\begin{lstlisting}[language=sh]
+applications/   # functional applications
+benchmarks/  # applications under test
+cmake/   # do not touch, used for compilation
+contrib/
+doc/   # tutorial and examples
+feel/   # Feel++ library
+ports/   # used for Mac OS X installation
+research/   # research projects using Feel++
+testsuite/ # Feel++ unit tests testsuite
+CMakeListe.txt   # the file for cmake to build, do not modify
+...
+\end{lstlisting}
+
+\section{Unix : dependencies}
+\label{sec:about-dependencies}
+
+In order to install \feel on Unix systems (other than Mac OS X, in you have a Macintosh, please go to ~\ref{macosx}), you have to install many dependencies
+before. Those libraries and programs are necessary for the
+compilation and installation of the \feel librairies.
+This is the list of all the librairies you must have installed on your
+computer, and the \lstinline|*-dev| packages for some of them. \\
+\underline{Required packages}:
+\begin{itemize}
+\item g++ ($4.5$, $4.6$ and $4.7$) or clang++ ($\geqslant 3.1$)
+\item MPI : openmpi (preferred) or mpich
+\item Boost ($\geq$1.39)
+\item Petsc ($\geq$2.3.3)
+\item Cmake ($\geq$2.6)
+\item Gmsh\footnote{Gmsh is a pre/post processing software for scientific
+computing available at \url{http://www.geuz.org/gmsh}}
+\item Libxml2
+\end{itemize}
+\underline{Optional packages}:
+\begin{itemize}
+\item Superlu
+\item Suitesparse(umfpack)
+\item Metis: scoth with the metis interface (preferred), metis (non-free)
+\item Trilinos ($\geq$8.0.8)
+\item Google perftools
+\item Paraview\footnote{Paraview is a few parallel scientific data
+    visualisation plateform, \url{http://www.paraview.org}}, this is
+  not stricly required to run \feel programs but it is somehow
+  necessary for visualisation
+\item Python ($\geq$ 2.5) for the validation tools
+\end{itemize}
+Note that all these packages are available under Debian/GNU/Linux and
+Ubuntu. They should be available. Once you have installed those dependencies, you can jump to ~\ref{compilingfeel}.
+
+\section{\feel on Debian and Ubuntu}
+\label{sec:feel-debian-ubuntu}
+
+\subsection{Debian}
+
+Debian is the platform of choice for \feel, it was developed mainly on it. The commands to install \feel on Debian are
+\begin{unixcom}
+  sudo apt-get update
+  sudo apt-get install feel++-apps libfeel-dev feel++-doc
+\end{unixcom}
+
+
+The interested user is encourage to follow the \feel PTS page
+\begin{itemize}
+\item \feel \href{http://packages.qa.debian.org/f/feel%2B%2B.html}{Debian Packages Tracking System}
+\end{itemize}
+
+At the moment \feel compiles and is available on the following Debian
+plateforms:
+\begin{itemize}
+\item \feel \href{https://buildd.debian.org/status/package.php?p=feel%2b%2b}{Buildd results}
+\end{itemize}
+
+\subsection{Ubuntu}
+
+\feel was uploaded in the distribution Ubuntu-Natty (11.04) for the first
+time. The commands to install \feel on Ubuntu are
+\begin{unixcom}
+  sudo apt-get update
+  sudo apt-get install feel++-apps libfeel-dev feel++-doc
+\end{unixcom}
+The interested user might want to follow the Ubuntu Launchpad \feel page in
+order to know what is going on with \feel on Ubuntu
+\begin{itemize}
+\item \feel \href{https://launchpad.net/ubuntu/+source/feel++}{Ubuntu Source
+  Page for all Ubuntu versions}
+\end{itemize}
+
+
+\section{\Feel on Mac OS X}
+\label{macosx}
+\feel is also working on Mac operating systems. The way to make it work is quite different.
+
+\subsection{Compilers}
+
+In order to \feel and \cmake work properly, you have to install differents compilers :
+\begin{itemize}
+\item Gcc \\
+  The first step is to install the latest version of Xcode. If your computer is
+  recent, you can install it with your DVD that came with your machine (not the
+  OS DVD, but the applications one). You don't have to install the complete
+  Xcode (you can uncheck iOS SDK for example, it's not necessary here and
+  requiers a lot of memory). Xcode will provide your computer all basic tools to
+  compile such as gcc 4.2. It's the first step, you'll see later how to easily
+  install gcc 4.5 or later using MacPorts.
+\item Fortran \\
+  To build the Makefiles, \cmake will need a Fortran compiler. To make it works,
+  please go to \href{http://hpc.sourceforge.net/}{SourceForge.net} and download
+  \lstinline|gfortran-snwleo-intel-bin.tar.gz| which is the fortran compiler
+  only (from now, don't download the complete install with gcc 4.6 because Feel
+  needs gcc 4.5 or later). To install it, go to the directory where you have
+  downloaded the file and type in a command-line
+\begin{unixcom}
+		sudo tar -xvf gfortran-snwleo-intel-bin.tar -C /
+\end{unixcom}
+
+\end{itemize}
+
+\subsection{MacPorts}
+
+\paragraph{Introduction}
+MacPorts is an open-source community projet which aims to design an easy-to-use
+system for compiling, installing and upgrading open-source softwares on Mac OS X
+operating system. It is distributed under
+\href{http://opensource.org/licenses/bsd-license.php}{BSD License} and
+facilitate the access to thousands of ports (softwares) without installing or
+compiling open-source softwares.  MacPorts provides a single software tree which
+includes the latest stable releases of approximately 8050 ports targeting the
+current Mac OS X release (10.6 or 10.5). If you want more information, please
+visite their \href{http://www.macports.org/}{website}.
+
+\paragraph{Installation}
+To install the latest version of MacPorts, please go to
+\href{http://www.macports.org/install.php}{Installing MacPorts} page and follow
+the instructions. The simplest way is to download the $dmg$ disk image
+corresponding to your version of Mac OS X. It is recommended that you install
+X11 (X Window System) which is normally used to display X11
+applications.%, and also the Xcode Tools (only the developer tools, iOS SDK is not required).
+
+If you have installed with the package installer
+(\lstinline|MacPorts-1.x.x.dmg|) that means MacPorts will be installed in
+\lstinline|/opt/local|. From now on we will suppose that macports has been
+installed in \lstinline|/opt/local| which is the default MacPorts location. Note
+that from now on, all tools installed by MacPorts will be installed in
+\lstinline!/opt/local/bin! or \lstinline!/opt/local/sbin! for example (that's
+here you'll find gcc4.5 or later e.g \lstinline!/opt/local/bin/g++-mp-4.5! once being
+installed).%At the end of the installation, you can check if your PATH has been upgraded by the command \lstinline|echo $PATH| which should return a line containing \lstinline|/opt/local/bin:/opt/local/sbin|.
+
+\paragraph{Key commands}
+In your command-line, the software MacPorts is called by the command \lstinline|port|.
+Here is a list of key commands for using MacPorts, if you want more informations please go to \href{http://guide.macports.org/#using.port}{MacPorts Commands}.
+\begin{itemize}
+\item \lstinline|sudo port -v selfupdate|
+	This action should be used regularly to update the local tree with the global MacPorts ports. The option \lstinline|-v| enables verbose which generates verbose messages.
+\item \lstinline|port info flowd|
+	This action is used to get information about a port (description, license, maintainer, etc.)
+\item \lstinline|sudo port install mypackage|
+	This action install the port mypackage
+\item \lstinline|sudo port uninstall mypackage|
+	This action uninstall the port mypackage
+\item \lstinline|port installed|
+	This action displays all ports installed and their versions, variants and activation status. You can also use the \lstinline|-v| option to also display the platform and CPU architecture(s) for which the ports were built, and any variants which were explicitly negated.
+\item \lstinline|sudo port upgrade mypackage|
+	This action updgrades installed ports and their dependencies when a \lstinline|Portfile| in the repository has been updated. To avoid the upgrade of a port's dependencies, use the option \lstinline|-n|.
+\end{itemize}
+
+\paragraph{Portfile}
+A Portfile is a TCL script which usually contains simple keyword values and TCL
+expressions. Each package/port has a corresponding Portfile but it's only a part
+of a port description.  \feel provides some mandatory Portfiles for its
+compilation which are either not available in MacPorts or are buggy but \feel
+also provides some Portfiles which are already available in MacPorts such as
+gmsh or petsc. They usually provide either some fixes to ensure \feel works
+properly or new version not yet available in MacPorts.  These Portfiles are
+installed in \lstinline|ports/macosx/macports|.
+
+
+\subsection{MacPorts and \Feel}
+
+
+To be able to install \feel, add the following line in \lstinline|/opt/local/etc/macports/source.conf|
+at the top of the file before any other sources :
+\begin{lstlisting}[language=sh]
+file:///<path to feel top directory>/ports/macosx/macports
+\end{lstlisting}
+
+Once it's done, type in a command-line :
+\begin{unixcom}
+		cd <your path to feel top directory>/ports/macosx/macports
+		portindex -f
+\end{unixcom}
+
+You should have an output like this :
+\begin{flushleft}
+\fbox{
+   \begin{minipage}{0.81\textwidth}
+      	Reading port index in $<$your path to feel top directory$>$/ports/macosx/macports\\
+	Adding port science/feel++ \\
+	Adding port science/gmsh \\
+	Adding port science/petsc \\ \\
+	Total number of ports parsed:   3\\
+	Ports successfully parsed:      3\\
+	Ports failed:                   0\\
+	Up-to-date ports skipped:       0
+   \end{minipage}
+}
+\end{flushleft}
+Your are now able to type
+\begin{unixcom}
+		sudo port install feel++
+\end{unixcom}
+It might take some time (possibly an entire day) to compile all the requirements for \feel
+to compile properly. If you have several cores on your MacBook Pro, iMac or MacBook
+we suggest that you configure macports to use all or some of them.
+To do that uncomment the following line in the file  \lstinline|/opt/local/etc/macports/macports.conf|
+\begin{flushleft}
+\begin{lstlisting}[language=sh]
+buildmakejobs	0 $\#$ all the cores
+\end{lstlisting}
+\end{flushleft}
+At the end of the \lstinline|sudo port install feel++|, you have all
+dependencies installed. To build all the Makefile, \cmake is automatically
+launched but can have some libraries may not be found but they are not mandatory
+for build Feel++, only the features related to the missing libraries will be
+missing.
+
+\subsection{PETSc and SLEPc on Snow Leopard and Lion}
+We have heard about issues with petsc and slepc with some new MacBook Pro with
+Snow Leopard while they are being installed with the command
+\begin{unixcom}
+  sudo port install feel++
+\end{unixcom}
+If it's the case, that probably means there is an issue with
+atlas. If atlas is already installed, you have to unsinstall it (be careful
+with dependencies, they also have to be uninstalled). Once it's done, you should
+do
+\begin{unixcom}
+		cd <path to feel top directory>/ports/macosx/macports
+		portindex -f
+\end{unixcom}
+
+then type in the exact same order :
+\begin{unixcom}
+		sudo port uninstall slepc
+		sudo port uninstall petsc
+		sudo port install -d petsc
+		sudo port install slepc
+\end{unixcom}
+Then add to you shell script environment (e.g. for Bash shells \lstinline|.bashrc| or
+\lstinline|.profile| or for CSh shells \lstinline|.tcshrc|)
+\begin{unixcom}
+  # Sh based shell
+  export PETSC_DIR=/opt/local/lib/petsc
+  export SLEPC_DIR=/opt/local/lib/petsc
+
+  # CSh based shell
+  setenv PETSC_DIR /opt/local/lib/petsc
+  setenv SLEPC_DIR /opt/local/lib/petsc
+\end{unixcom}
+and type once again
+\begin{unixcom}
+		sudo port install feel++
+\end{unixcom}
+
+\noindent In that order, slepc and petsc will be installed before atlas, and feel will be properly installed.
+
+\subsection{Missing ports}
+\cmake can build Makefiles even if some packages are missing (latex2html, VTK
+...). It's not necessary to install them but you can complete the installation
+with MacPorts, \cmake will find them by itself once they have been installed.
+
+\section{Compiling Feel++}
+\label{compilingfeel}
+Feel build system uses \cmake\index{cmake}\footnote{\url{http://www.cmake.org}}
+as its build system. Check that \cmake is using gcc4.5 (or a higher version) 
+or clang++ as C++ compiler
+(you can use the option \lstinline|CMAKE_CXX_COMPILER=<path>/g++-4.5| where the
+\lstinline|path| depends on your OS, it's probably \lstinline|/usr/bin| or
+\lstinline|/opt/local/bin| but you can also change it with the command \lstinline|ccmake|
+and press \lstinline|t| for advanced options).  
+\feel, using \cmake, can be built either in source and out of source and different
+build type:
+\begin{itemize}
+\item minsizerel : minimal size release
+\item release release
+\item debug : debug
+\item none(default)
+\end{itemize}
+
+\paragraph{CMake Out Source Build (preferred)}
+The best way is to have a directory (\lstinline|FEEL| for example) in which you have : \\
+\begin{lstlisting}
+	feel/
+\end{lstlisting}
+where \lstinline|feel| is the top directory where the source have been downloaded. Placed in \lstinline|FEEL|, you can create the build directory (\lstinline|feel.opt| for example) and lauch cmake with :
+\begin{unixcom}
+  mkdir feel.opt
+  cd feel.opt
+  cmake <directory where the feel source are>
+  # e.g cmake ../feel if feel.opt is at the same
+  # directory level as feel
+\end{unixcom}
+you can customize the build type:
+\begin{unixcom}
+  # Choose g++ release
+  cmake -D CMAKE_CXX_COMPILER=/usr/bin/g++-4.5
+  # Debug build type (-g...)
+  cmake -D CMAKE_BUILD_TYPE=Debug
+  # Release build type (-O3...)
+  cmake -D CMAKE_BUILD_TYPE=Release
+  ...
+\end{unixcom}
+Once Cmake has made its work, you are now able to compile the library with
+\begin{unixcom}
+		make
+\end{unixcom}
+\textbf{Important :} from now, all commands should be type in \lstinline|feel.opt| or its subdirectories.
+
+
+% \subsection{Compiling Feel with the AutoTools}
+
+% Go in the same folder in wich you have done the checkout and type the following
+% commands :
+
+% \subsubsection{From tarball}
+% \label{sec:from-tarball}
+
+% The steps are as follows to configure the \feel Development Plateform
+
+% \begin{unixcom}
+%   cd feel-x.y.z
+%   mkdir opt
+%   cd opt
+
+%   ../configure --enable-opt2
+% \end{unixcom}
+
+% Then type
+% \begin{unixcom}
+%   make
+% \end{unixcom}
+
+% to compile the library and the tutorial. And finally type
+% \begin{unixcom}
+%   make check
+% \end{unixcom}
+% In order to compile the testsuite, the examples and the benchmarks and
+% execute some of them to verity that the \feel library is functional.
+
+
+% \subsubsection{From subversion}
+% \label{sec:from-subversion}
+
+% The steps are as follows to configure the \feel Development Plateform
+
+% \begin{unixcom}
+%   cd feel
+%   make -f Makefile.dist
+%   mkdir opt
+%   cd opt
+
+%   ../configure --enable-opt2
+% \end{unixcom}
+
+% Then, to build  the \feel library, type
+% \begin{unixcom}
+%   make
+% \end{unixcom}
+
+% And finally to check the library, type
+% \begin{unixcom}
+%   make check
+% \end{unixcom}
+
+
+% \begin{note}
+%   The script \lstinline!configure! supports many command line
+%   options. In particular if you are interested in writing some code or
+%   examples inside the \feel environment you have to enable the so
+%   called \emph{maintainer mode} to ensure that the makefiles are
+%   properly regenerated when you modify a \lstinline!Makefile.am! or if
+%   you modify \lstinline!configure.ac!, to achieve this type
+%   \begin{unixcom}
+%     configure --enable-maintainer-mode
+%   \end{unixcom}
+%   To list all configure options, type
+%   \begin{unixcom}
+%     configure --help
+%   \end{unixcom}
+% \end{note}
+
+
+% \subsubsection{Compiling an extra module}
+% \label{sec:compile-an-extra}
+
+% If you work with an extra module, \emph{e.g.} \lstinline!validation!, the steps are as follows
+% \begin{unixcom}
+% cd feel
+% make -f Makefile.dist
+% cd benchmarks/validation
+% make -f Makefile.dist
+% cd ../../..
+% mkdir opt
+% cd opt
+% ../feel/configure --enable-opt2 --enable-maintainer-mode
+% make
+% make check
+% \end{unixcom}
+
+
+\subsection{Compiling the Feel++ manual}
+\label{sec:comp-feel-tutor}
+The manual (which includes the tutorial) is edited with \LaTeX  so you need to have installed the \LaTeX  distribution on your computer. \LaTeX  is a high-quality typesetting system, it includes features designed for the production of technical and scientific documentation. There are several ways to make it work, for example you can go on \href{http://www.tug.org/mactex/}{MacTeX website} and follow the instructions to install the distribution. If the command \lstinline|make check| in \lstinline|feel.opt/| has been run before, the tutorial
+should be already compiled and ready. The steps are as follows to build the Feel tutorial
+\begin{unixcom}
+  cd feel.opt/doc/manual
+  make pdf
+\end{unixcom}
+%Here is what the directory should look like
+%\begin{unixcom}
+%  cd opt/doc/tutorial
+%  ls
+%
+%  laplacian     Makefile      myintegrals   mymesh       pngs/
+%  tutorial.blg  tutorial.out  tutorial.toc  laplacian.o  myapp
+%  myintegrals.o mymesh.o      stokes.assert tutorial.aux pdfs/ styles/
+%  stokes        stokes.o      tutorial.bbl  tutorial.log tutorial.pdf
+%\end{unixcom}
+The directory \lstinline|doc/manual| contains all examples used in the tutorial. You will see how it works in the following parts.
+
+%%% Local Variables:
+%%% coding: utf-8
+%%% mode: latex
+%%% TeX-PDF-mode: t
+%%% TeX-parse-self: t
+%%% x-symbol-8bits: nil
+%%% TeX-auto-regexp-list: TeX-auto-full-regexp-list
+%%% TeX-master: "../feel-manual"
+%%% ispell-local-dictionary: "american"
+%%% End:
+

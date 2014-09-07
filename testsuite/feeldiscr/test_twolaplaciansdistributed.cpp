@@ -40,7 +40,7 @@ makeOptions()
     ( "hsize", po::value<double>()->default_value( 0.02 ), "mesh size" )
     ( "1d-hsize", po::value<double>()->default_value( 0.02 ), "mesh size 1d" )
     ;
-    return desc_options.add( Feel::feel_options() ).add( backend_options( "laplacian" ) );
+    return desc_options.add( Feel::feel_options() ).add( backend_options( "backend1" ) );
 }
 
 /*_________________________________________________*
@@ -101,11 +101,13 @@ void run( Application_ptrtype & theApp )
                         }
                 }
             auto worldCommColored = WorldComm(MapWorld);
+            //worldCommColored.showMe();
             worldCommDomain1 = worldCommColored.subWorldComm(domainColor1);
             worldCommDomain2 = worldCommColored.subWorldComm(domainColor2);
         }
-    //worldCommColored.showMe();
-
+    //worldCommDomain1.showMe();
+    //worldCommDomain2.showMe();
+    //Environment::worldComm().showMe();
     //---------------------------------------------------------------------------------------//
     // meshes
     GeoTool::Node x11( 0,0 );
@@ -129,37 +131,20 @@ void run( Application_ptrtype & theApp )
                                    _worldcomm=worldCommDomain2 );
     //---------------------------------------------------------------------------------------//
     // functionspaces
-    typedef Lagrange<1, Scalar,Continuous,PointSetFekete> basis_type;
-    typedef FunctionSpace<mesh_type, bases<basis_type> > space_type;
-    auto Xh1 = space_type::New(_mesh=mesh1,
-                               _worldscomm=std::vector<WorldComm>(1,worldCommDomain1) );
-    auto Xh2 = space_type::New(_mesh=mesh2,
-                               _worldscomm=std::vector<WorldComm>(1,worldCommDomain2) );
+    auto Xh1 = Pch<1>( mesh1 );
+    auto Xh2 = Pch<1>( mesh2 );
     auto u1 = Xh1->element();
     auto u2 = Xh2->element();
     //---------------------------------------------------------------------------------------//
     // backends
-    auto backend1 = Backend<double>::build(theApp->vm(),"",Xh1->worldComm());
-    auto backend2 = Backend<double>::build(theApp->vm(),"",Xh2->worldComm());
-
+    auto backend1 = backend(_rebuild=true,_worldcomm=Xh1->worldComm());
+    auto backend2 = backend(_rebuild=true,_worldcomm=Xh2->worldComm());
     //---------------------------------------------------------------------------------------//
-    // init matrix and vectors (todo vincent : simplifier (tres facile) )
-    typedef Backend<double> backend_type;
-    typedef backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
-    typedef backend_type::vector_ptrtype vector_ptrtype;
-    sparse_matrix_ptrtype A1,A2;
-    vector_ptrtype F1,F2;
-    if (Xh1->worldComm().isActive())
-        {
-            A1 = backend1->newMatrix(_test=Xh1,_trial=Xh1);
-            F1 = backend1->newVector(Xh1);
-        }
-    if (Xh2->worldComm().isActive())
-        {
-            A2 = backend2->newMatrix(_test=Xh2,_trial=Xh2);
-            F2 = backend2->newVector(Xh2);
-        }
-
+    // init matrix and vectors
+    auto A1 = backend1->newMatrix(_test=Xh1,_trial=Xh1);
+    auto A2 = backend2->newMatrix(_test=Xh2,_trial=Xh2);
+    auto F1 = backend1->newVector(Xh1);
+    auto F2 = backend2->newVector(Xh2);
     //---------------------------------------------------------------------------------------//
     // assembly
     form2( _test=Xh1, _trial=Xh1, _matrix=A1 ) +=
@@ -169,7 +154,7 @@ void run( Application_ptrtype & theApp )
 
     if (Xh1->worldComm().isActive())  //(todo vincent : simplifier)
         {
-            A1->close();F1->close();
+            //A1->close();F1->close();
             form2( _test=Xh1, _trial=Xh1, _matrix=A1 ) +=
                 on( _range=boundaryfaces(mesh1),
                     _element=u1,_rhs=F1,
@@ -183,7 +168,7 @@ void run( Application_ptrtype & theApp )
 
     if (Xh2->worldComm().isActive())  //(todo vincent : simplifier)
         {
-            A2->close();F2->close();
+            //A2->close();F2->close();
             form2( _test=Xh2, _trial=Xh2, _matrix=A2 ) +=
                 on( _range=boundaryfaces(mesh2),
                     _element=u2,_rhs=F2,
@@ -194,38 +179,37 @@ void run( Application_ptrtype & theApp )
     // solve (todo vincent : simplifier (+rajouter le worldcomm automatiquement dans prec defaut de la fonction solve et nlsolve  )
     if (Xh1->worldComm().isActive())
         {
+#if 0
             auto prec1 = preconditioner(_pc=(PreconditionerType) backend1->pcEnumType() /*LU_PRECOND*/,
                                         _matrix=A1,
                                         _backend= backend1,
                                         _pcfactormatsolverpackage=(MatSolverPackageType) backend1->matSolverPackageEnumType(),
                                         _worldcomm=backend1->comm(),
                                         _prefix=backend1->prefix() );
-            backend1->solve(_matrix=A1,_solution=u1,_rhs=F1,_prec=prec1);
+#endif
+            backend1->solve(_matrix=A1,_solution=u1,_rhs=F1/*,_prec=prec1*/);
         }
     if (Xh2->worldComm().isActive())
         {
+#if 0
             auto prec2 = preconditioner(_pc=(PreconditionerType) backend2->pcEnumType() /*LU_PRECOND*/,
                                         _matrix=A2,
                                         _backend= backend2,
                                         _pcfactormatsolverpackage=(MatSolverPackageType) backend2->matSolverPackageEnumType(),
                                         _worldcomm=backend2->comm(),
                                         _prefix=backend2->prefix() );
-            backend2->solve(_matrix=A2,_solution=u2,_rhs=F2,_prec=prec2);
+#endif
+            backend2->solve(_matrix=A2,_solution=u2,_rhs=F2/*,_prec=prec2*/);
         }
 
     //---------------------------------------------------------------------------------------//
     // exports
-#if 1
-    auto myexporter1 = Exporter<mesh_type>::New( theApp->vm(), "MyExportDomain1", Xh1->worldComm() );
-    myexporter1->step(0)->setMesh( mesh1 );
+    auto myexporter1 = exporter( _mesh=mesh1, _name="MyExportDomain1" );
     myexporter1->step(0)->add( "u1", u1 );
     myexporter1->save();
-    auto myexporter2 = Exporter<mesh_type>::New( theApp->vm(), "MyExportDomain2", Xh2->worldComm() );
-    myexporter2->step(0)->setMesh( mesh2 );
+    auto myexporter2 = exporter( _mesh=mesh2, _name="MyExportDomain2" );
     myexporter2->step(0)->add( "u2", u2 );
     myexporter2->save();
-#endif
-
 
 }
 

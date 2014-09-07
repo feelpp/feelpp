@@ -32,11 +32,8 @@
 #include <feel/feelcore/feel.hpp>
 
 #if defined( FEELPP_HAS_PETSC_H )
-extern "C"
-{
 #include <petsc.h>
 #include <petscerror.h>
-}
 #if defined( FEELPP_HAS_SLEPC )
 # include <slepc.h>
 #endif /* FEELPP_HAS_SLEPC */
@@ -63,7 +60,7 @@ typedef PetscTruth  PetscBool;
 
 #define PETSC_VERSION_GREATER_OR_EQUAL_THAN(major,minor,subminor)       \
     ((PETSC_VERSION_MAJOR > (major) ||                                  \
-      (PETSC_VERSION_MAJOR == (major) && (PETSC_VERSION_MINOR >= (minor) || \
+      (PETSC_VERSION_MAJOR == (major) && (PETSC_VERSION_MINOR > (minor) || \
                                           (PETSC_VERSION_MINOR == (minor) && \
                                            PETSC_VERSION_SUBMINOR >= (subminor))))) ? 1 : 0)
 

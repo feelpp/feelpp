@@ -34,10 +34,9 @@
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/projector.hpp>
 #include <feel/feeldiscr/region.hpp>
-#include <feel/feelpoly/im.hpp>
-#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/creategmshmesh.hpp>
+#include <feel/feelfilters/domain.hpp>
 #include <feel/feelfilters/exporter.hpp>
-#include <feel/feelpoly/polynomialset.hpp>
 #include <feel/feelvf/vf.hpp>
 
 /** use Feel namespace */
@@ -200,13 +199,13 @@ TestLift<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
 
     auto D = M_backend->newMatrix( Xh, Xh ) ;
 
-    form2( Xh, Xh, D, _init=true ) =
+    form2( _test=Xh, _trial=Xh, _matrix=D, _init=true ) =
         integrate( elements( mesh ), nu*gradt( u )*trans( grad( v ) ) );
 
     if ( this->comm().size() != 1 || weakdir )
         {
 
-            form2( Xh, Xh, D ) +=
+            form2( _test=Xh, _trial=Xh, _matrix=D ) +=
                 integrate( markedfaces( mesh,"Dirichlet" ),
                            -( gradt( u )*vf::N() )*id( v )
                            -( grad( v )*vf::N() )*idt( u )
@@ -218,7 +217,7 @@ TestLift<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
         {
             D->close();
 
-            form2( Xh, Xh, D ) +=
+            form2( _test=Xh, _trial=Xh, _matrix=D ) +=
                 on( markedfaces( mesh, "Dirichlet" ), u, F, g );
         }
 

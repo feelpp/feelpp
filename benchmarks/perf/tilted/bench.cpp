@@ -6,6 +6,7 @@
        Date: 2011-10-31
 
   Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2011-2014 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -30,6 +31,7 @@
 #include <feel/feelcore/application.hpp>
 
 #include <tilted.hpp>
+#include <feel/feelpoly/crouzeixraviart.hpp>
 
 /**
  * This routine returns the list of options using the
@@ -44,6 +46,13 @@ makeOptions()
 {
     Feel::po::options_description tiltedoptions( "Tilted options" );
     tiltedoptions.add_options()
+#if defined(FEELPP_SOLUTION_1)
+        ( "testcase", Feel::po::value<std::string>()->default_value( "solution1" ), "name of the testcase" )
+#elif  defined(FEELPP_SOLUTION_2)
+        ( "testcase", Feel::po::value<std::string>()->default_value( "solution2" ), "name of the testcase" )
+#elif  defined(FEELPP_SOLUTION_3)
+        ( "testcase", Feel::po::value<std::string>()->default_value( "solution3" ), "name of the testcase" )
+#endif
         ( "faster", Feel::po::value<int>()->default_value( 1 ), "use coupled(0) or default(1) pattern or default/symmetric(2) pattern" )
         ( "penal", Feel::po::value<double>()->default_value( 0.5 ), "penalisation parameter" )
         ( "f", Feel::po::value<double>()->default_value( 0 ), "forcing term" )
@@ -102,7 +111,15 @@ int main( int argc, char** argv )
 {
 
     using namespace Feel;
-    Application benchmark( argc, argv, makeAbout(), makeOptions() );
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=makeAbout() );
+
+    Environment::changeRepository( boost::format( "%1%/%2%" )
+                                   % makeAbout().appName()
+                                   % option(_name="testcase").as<std::string>() );
+
+    Application benchmark;
 
     if ( benchmark.vm().count( "help" ) )
     {
@@ -119,5 +136,5 @@ int main( int argc, char** argv )
     //benchmark.printStats( std::cout, boost::assign::list_of( "e.l2" )( "e.h1" )( "n.space" )( "n.matrix" )( "t.init" )( "t.assembly.vector" )( "t.assembly.matrix" )( "t.solver" )( "d.solver" )( "t.integrate" )( "t.export" ) );
 
     // no h1 yet (need to compute gradient)
-    benchmark.printStats( std::cout, boost::assign::list_of( "e.l2" )( "e.h1" )( "n.space" )( "n.matrix" )( "t.init" )( "t.assembly.vector" )( "t.assembly.matrix" )( "t.solver" )( "d.solver" )( "t.integrate" )( "t.export" ) );
+    benchmark.printStats( std::cout, boost::assign::list_of( "e.l2" )( "e.h1" )( "n.space" )( "n.matrix" )( "t.init" )( "t.assembly.vector" )( "t.assembly.matrix" )( "t.solver" )( "d.solver" )( "t.integrate" )( "t.export" ), Application::ALL );
 }

@@ -27,8 +27,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2006-02-24
  */
-#ifndef __Region_H
-#define __Region_H 1
+#ifndef FEELPP_REGION_HPP
+#define FEELPP_REGION_HPP 1
 
 #include <boost/lambda/lambda.hpp>
 #include <boost/lambda/bind.hpp>
@@ -205,4 +205,4 @@ struct RegionMarker3 : public Region
 
 } // Feel
 
-#endif /* __Region_H */
+#endif /* FEELPP_REGION_HPP */

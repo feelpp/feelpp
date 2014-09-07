@@ -49,7 +49,7 @@
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelcrb/parameterspace.hpp>
 
-#include <feel/feeldiscr/bdf2.hpp>
+#include <feel/feelts/bdf.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/LU>
@@ -57,6 +57,7 @@
 
 
 #include <feel/feelcrb/modelcrbbase.hpp>
+#include <feel/feeldiscr/reducedbasisspace.hpp>
 
 namespace Feel
 {
@@ -84,7 +85,7 @@ makeHeatSink2DOptions()
     ( "k_fin", Feel::po::value<double>()->default_value( 386 ),
       "thermal conductivity of the fin in SI unit W.m^{-1}.K^{-1}" )
     ;
-    return heatsink2doptions.add( Feel::feel_options() ).add( bdf_options( "heatSink2d" ) );
+    return heatsink2doptions.add( bdf_options( "heatSink2d" ) );
 }
 AboutData
 makeHeatSink2DAbout( std::string const& str = "heatSink" )
@@ -124,6 +125,10 @@ public :
 
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
+
+    static const bool is_time_dependent = true;
+    static const bool is_linear = true;
+
 };
 
 /**
@@ -133,7 +138,8 @@ public :
  * @author Christophe Prud'homme
  * @see
  */
-    class HeatSink2D : public ModelCrbBase< ParameterDefinition, FunctionSpaceDefinition >
+class HeatSink2D : public ModelCrbBase< ParameterDefinition, FunctionSpaceDefinition > ,
+                   public boost::enable_shared_from_this< HeatSink2D >
 {
 public:
 
@@ -149,7 +155,6 @@ public:
     static const uint16_type Order = 1;
     static const uint16_type ParameterSpaceDimension = 3;
     //static const bool is_time_dependent = false;
-    static const bool is_time_dependent = true;
 
     //@}
 
@@ -190,6 +195,10 @@ public:
     typedef space_ptrtype functionspace_ptrtype;
     typedef typename space_type::element_type element_type;
     typedef boost::shared_ptr<element_type> element_ptrtype;
+
+    /*reduced basis space*/
+    typedef ReducedBasisSpace<super_type, mesh_type, basis_type, value_type> rbfunctionspace_type;
+    typedef boost::shared_ptr< rbfunctionspace_type > rbfunctionspace_ptrtype;
 
     /* export */
     typedef Exporter<mesh_type> export_type;
@@ -318,6 +327,14 @@ public:
     {
         return Xh;
     }
+    /**
+     * \brief Returns the reduced basis function space
+     */
+    rbfunctionspace_ptrtype rBFunctionSpace()
+    {
+        return RbXh;
+    }
+
 
     //! return the parameter space
     parameterspace_ptrtype parameterSpace() const
@@ -329,14 +346,9 @@ public:
      * \brief compute the beta coefficient for both bilinear and linear form
      * \param mu parameter to evaluate the coefficients
      */
-    boost::tuple<beta_vector_type, beta_vector_type, std::vector<beta_vector_type> >
-    computeBetaQm( element_type const& T,parameter_type const& mu , double time=1e30 )
-    {
-        return computeBetaQm( mu , time );
-    }
 
     boost::tuple<beta_vector_type, beta_vector_type, std::vector<beta_vector_type>  >
-    computeBetaQm( parameter_type const& mu , double time=1e30 )
+    computeBetaQm( parameter_type const& mu , double time , bool only_terms_time_dependent=false )
     {
         double biot      = mu( 0 );
         double L         = mu( 1 );
@@ -469,7 +481,7 @@ public:
     /**
      * H1 scalar product
      */
-    sparse_matrix_ptrtype innerProduct ( void )
+    sparse_matrix_ptrtype energyMatrix ( void )
     {
         return M;
     }
@@ -526,9 +538,17 @@ public:
      * Given the output index \p output_index and the parameter \p mu, return
      * the value of the corresponding FEM output
      */
-    value_type output( int output_index, parameter_type const& mu, bool export_outputs=false );
+    value_type output( int output_index, parameter_type const& mu, element_type& u, bool need_to_solve=false, bool export_outputs=false );
 
     gmsh_ptrtype createGeo( double hsize, double mu2 );
+
+    parameter_type refParameter()
+    {
+        return M_Dmu->min();
+    }
+
+    bdf_ptrtype bdfModel(){ return M_bdf; }
+
 
 private:
 
@@ -559,6 +579,7 @@ private:
     /* mesh, pointers and spaces */
     mesh_ptrtype mesh;
     space_ptrtype Xh;
+    rbfunctionspace_ptrtype RbXh;
 
     sparse_matrix_ptrtype D,M,Mpod;
     vector_ptrtype F;
@@ -693,6 +714,7 @@ void HeatSink2D::initModel()
      * The function space and some associate elements are then defined
      */
     Xh = space_type::New( mesh );
+    RbXh = rbfunctionspace_type::New( _model=this->shared_from_this() , _mesh=mesh );
     std::cout << "Number of dof " << Xh->nLocalDof() << "\n";
 
     // allocate an element of Xh
@@ -787,12 +809,12 @@ void HeatSink2D::assemble()
 
     //for scalarProduct
     M = backend->newMatrix( _test=Xh, _trial=Xh );
-    form2( Xh, Xh, M ) =
+    form2( _test=Xh, _trial=Xh, _matrix=M ) =
         integrate( elements( mesh ), id( u )*idt( v ) + grad( u )*trans( gradt( u ) ) );
     M->close();
 
     Mpod = backend->newMatrix( _test=Xh, _trial=Xh );
-    form2( Xh, Xh, Mpod ) =
+    form2( _test=Xh, _trial=Xh, _matrix=Mpod ) =
         integrate( elements( mesh ), id( u )*idt( v ) );
     Mpod->close();
 
@@ -1064,7 +1086,7 @@ void HeatSink2D::run( const double * X, unsigned long N, double * Y, unsigned lo
 
 
 
-double HeatSink2D::output( int output_index, parameter_type const& mu, bool export_outputs )
+double HeatSink2D::output( int output_index, parameter_type const& mu, element_type& unknown, bool need_to_solve, bool export_outputs )
 {
     using namespace vf;
 
@@ -1072,10 +1094,10 @@ double HeatSink2D::output( int output_index, parameter_type const& mu, bool expo
     element_type u( Xh, "u" );
     element_type v( Xh, "v" );
 
-    if ( !export_outputs )
-    {
+    if ( need_to_solve )
         this->solve( mu, pT );
-    }
+    else
+        *pT=unknown;
 
     vector_ptrtype U( backend->newVector( Xh ) );
     *U = *pT;

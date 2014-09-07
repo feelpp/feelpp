@@ -44,6 +44,7 @@
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/importergmsh.hpp>
 
 namespace Feel
 {
@@ -77,7 +78,7 @@ createMesh( double hsize )
 
     nameStr << "line." << meshSize;
     std::cout <<"Mesh generation ... \n";
-    fname = __gmsh.generate( nameStr.str(), ostr.str() );
+    fname = __gmsh.generate( nameStr.str(), ostr.str() ).get<0>();
 
     /* Mesh */
 

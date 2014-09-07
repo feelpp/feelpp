@@ -68,17 +68,17 @@ public:
 
     Block( uint16_type __ic = 0, uint16_type __jc = 0, size_type __gic = 0, size_type __gjc = 0 )
         :
-        _M_lr( __ic ),
-        _M_lc( __jc ),
-        _M_gr( __gic ),
-        _M_gc( __gjc )
+        M_lr( __ic ),
+        M_lc( __jc ),
+        M_gr( __gic ),
+        M_gc( __gjc )
     {}
     Block( Block const & __b )
         :
-        _M_lr( __b._M_lr ),
-        _M_lc( __b._M_lc ),
-        _M_gr( __b._M_gr ),
-        _M_gc( __b._M_gc )
+        M_lr( __b.M_lr ),
+        M_lc( __b.M_lc ),
+        M_gr( __b.M_gr ),
+        M_gc( __b.M_gc )
     {}
     ~Block()
     {}
@@ -93,10 +93,10 @@ public:
     {
         if ( FEELPP_ISLIKELY( this != &__b ) )
         {
-            _M_lr = __b._M_lr;
-            _M_lc = __b._M_lc;
-            _M_gr = __b._M_gr;
-            _M_gc = __b._M_gc;
+            M_lr = __b.M_lr;
+            M_lc = __b.M_lc;
+            M_gr = __b.M_gr;
+            M_gc = __b.M_gc;
         }
 
         return *this;
@@ -111,20 +111,20 @@ public:
 
     uint16_type localRow() const
     {
-        return _M_lr;
+        return M_lr;
     }
     uint16_type localColumn() const
     {
-        return _M_lc;
+        return M_lc;
     }
 
     size_type globalRowStart() const
     {
-        return _M_gr;
+        return M_gr;
     }
     size_type globalColumnStart() const
     {
-        return _M_gc;
+        return M_gc;
     }
 
     //@}
@@ -135,20 +135,20 @@ public:
 
     void setLocalRow( uint16_type __lr )
     {
-        _M_lr = __lr;
+        M_lr = __lr;
     }
     void setLocalColumn( uint16_type __lc )
     {
-        _M_lc = __lc;
+        M_lc = __lc;
     }
 
     void setGlobalRowStart( size_type __r )
     {
-        _M_gr = __r;
+        M_gr = __r;
     }
     void setGlobalColumnStart( size_type __c )
     {
-        _M_gc = __c;
+        M_gc = __c;
     }
 
     //@}
@@ -164,10 +164,10 @@ protected:
 
 private:
 
-    uint16_type _M_lr;
-    uint16_type _M_lc;
-    size_type _M_gr;
-    size_type _M_gc;
+    uint16_type M_lr;
+    uint16_type M_lc;
+    size_type M_gr;
+    size_type M_gc;
 };
 typedef std::list<Block> list_block_type;
 
@@ -190,7 +190,7 @@ template <typename T>
 struct BlocksBase
 {
     typedef T block_type;
-
+    typedef uint16_type index_type;
     BlocksBase()
         :
         M_nRow( 0 ),
@@ -199,7 +199,7 @@ struct BlocksBase
         M_cptToBuild( 0 )
     {}
 
-    BlocksBase( uint16_type nr,uint16_type nc )
+    BlocksBase( index_type nr,index_type nc )
         :
         M_nRow( nr ),
         M_nCol( nc ),
@@ -207,7 +207,7 @@ struct BlocksBase
         M_cptToBuild( 0 )
     {}
 
-    BlocksBase( uint16_type nr,uint16_type nc,block_type const& a )
+    BlocksBase( index_type nr,index_type nc,block_type const& a )
         :
         M_nRow( nr ),
         M_nCol( nc ),
@@ -249,13 +249,13 @@ struct BlocksBase
 #endif
 
     block_type &
-    operator()( uint16_type c1,uint16_type c2 )
+    operator()( index_type c1,index_type c2=0 )
     {
         return M_vec[c1*M_nCol+c2];
     }
 
     block_type
-    operator()( uint16_type c1,uint16_type c2 ) const
+    operator()( index_type c1,index_type c2=0 ) const
     {
         return M_vec[c1*M_nCol+c2];
     }
@@ -266,11 +266,11 @@ struct BlocksBase
         return M_vec;
     }
 
-    uint16_type nRow() const
+    index_type nRow() const
     {
         return M_nRow;
     }
-    uint16_type nCol() const
+    index_type nCol() const
     {
         return M_nCol;
     }
@@ -282,21 +282,28 @@ struct BlocksBase
         M_vec.resize( this->nRow()*this->nCol() );
     }
 
-    void merge( uint16_type c1,uint16_type c2,BlocksBase<T> const& b )
+    void resize( index_type nr,index_type nc=1)
     {
-        const uint16_type nRb = b.nRow(), nCb = b.nCol();
-        for ( uint16_type i=0; i<nRb; ++i )
-            for ( uint16_type j=0; j<nCb; ++j )
+        M_nRow=nr;
+        M_nCol=nc;
+        M_vec.resize( nr*nc );
+    }
+
+    void merge( index_type c1,index_type c2,BlocksBase<T> const& b )
+    {
+        const index_type nRb = b.nRow(), nCb = b.nCol();
+        for ( index_type i=0; i<nRb; ++i )
+            for ( index_type j=0; j<nCb; ++j )
                 this->operator()( c1+i,c2+j ) = b( i,j );
     }
 
-    BlocksBase<T> subBlock(uint16_type x1r,uint16_type x1c,uint16_type x2r,uint16_type x2c) const
+    BlocksBase<T> subBlock(index_type x1r,index_type x1c,index_type x2r,index_type x2c) const
     {
-        const uint16_type nrow = x2r-x1r+1;
-        const uint16_type ncol = x2c-x1c+1;
+        const index_type nrow = x2r-x1r+1;
+        const index_type ncol = x2c-x1c+1;
         BlocksBase<T> res(nrow,ncol);
-        for (uint16_type kr=0;kr<nrow;++kr)
-            for (uint16_type kc=0;kc<ncol;++kc)
+        for (index_type kr=0;kr<nrow;++kr)
+            for (index_type kc=0;kc<ncol;++kc)
                 res(kr,kc)=this->operator()(x1r+kr,x1c+kc);
         return res;
     }
@@ -304,16 +311,16 @@ struct BlocksBase
     BlocksBase<T> transpose() const
     {
         BlocksBase<T> res(this->nCol(),this->nRow());
-        for (uint16_type i=0;i<res.nRow();++i)
-            for (uint16_type j=0;j<res.nCol();++j)
+        for (index_type i=0;i<res.nRow();++i)
+            for (index_type j=0;j<res.nCol();++j)
                 res(i,j) = this->operator()(j,i);
         return res;
     }
 
 private :
-    uint16_type M_nRow,M_nCol;
+    index_type M_nRow,M_nCol;
     std::vector<block_type> M_vec;
-    uint16_type M_cptToBuild;
+    index_type M_cptToBuild;
 };
 
 
@@ -321,10 +328,11 @@ private :
 template <int NR, int NC, typename T>
 struct Blocks : public BlocksBase<T>
 {
-    static const uint16_type NBLOCKROWS = NR;
-    static const uint16_type NBLOCKCOLS = NC;
-
     typedef BlocksBase<T> super_type;
+    typedef typename super_type::index_type index_type;
+    static const index_type NBLOCKROWS = NR;
+    static const index_type NBLOCKCOLS = NC;
+
     typedef T block_type;
 
     Blocks()
@@ -370,15 +378,16 @@ struct Blocks : public BlocksBase<T>
 class BlocksStencilPattern : public vf::BlocksBase<size_type>
 {
     typedef vf::BlocksBase<size_type> super_type;
+    typedef super_type::index_type index_type;
     typedef BlocksStencilPattern self_type;
 public :
 
-    BlocksStencilPattern(uint16_type nr,uint16_type nc)
+    BlocksStencilPattern(index_type nr,index_type nc)
         :
         super_type(nr,nc)
     {}
 
-    BlocksStencilPattern(uint16_type nr,uint16_type nc, size_type pat)
+    BlocksStencilPattern(index_type nr,index_type nc, size_type pat)
         :
         super_type(nr,nc,pat)
     {}

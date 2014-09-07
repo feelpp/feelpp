@@ -7,7 +7,7 @@
   Date: 2013-02-07
 
   Copyright (C) 2008-2009 Université Joseph Fourier (Grenoble I)
-  Copyright (C) 2013 Feel++ Consortium
+  Copyright (C) 2013-2014 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -23,47 +23,20 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-/**
-   \file myapp.cpp
-   \author Guillaume DOLLÉ <guillaume.dolle@math.unistra.fr>
-   \date 2013-02-07
- */
+// [marker]
+#include <feel/feelcore/environment.hpp>
 
-#include <feel/feel.hpp>
-using namespace Feel;
-
-/**
- * Program entry point
- */
-//\code
-//# marker1 #
 int main( int argc, char* argv[] )
 {
-    // create custom command option
-    po::options_description app_options( "MyApp options" );
-    app_options.add( feel_options() );
-    app_options.add_options()
-	( "value",
-          po::value<double>() -> default_value(4.2),
-          "a 'double' with default value" )
-    ;
+    using namespace Feel;
 
-    // initialize feel++ environment
     Environment env( _argc=argc, _argv=argv,
-                     _desc=app_options,
                      _about=about( _name="myapp",
                                    _author="Feel++ Consortium",
                                    _email="feelpp-devel@feelpp.org") );
-
-    // create a log and write inside
-    LOG(INFO) << "value = " << option(_name="value").as<double>()
-              << std::endl;
-
-    LOG(INFO) << "proc " << Environment::worldComm().globalRank()
+    std::cout << "proc " << Environment::rank()
               <<" of "<< Environment::numberOfProcessors()
               << std::endl;
 
-} // main
-//# endmarker1 #
-//\endcode
-
+}
+// [marker]

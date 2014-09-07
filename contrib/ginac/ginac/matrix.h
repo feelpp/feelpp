@@ -94,7 +94,7 @@ private:
 class matrix : public basic
 {
 	GINAC_DECLARE_REGISTERED_CLASS(matrix, basic)
-	
+
 	// other constructors
 public:
 	matrix(unsigned r, unsigned c);
@@ -108,7 +108,7 @@ public:
 		m[0] = x;
 		return matrix_init<ex, exvector::iterator>(++m.begin());
 	}
-	
+
 	// functions overriding virtual functions from base classes
 public:
 	size_t nops() const;
@@ -132,7 +132,7 @@ public:
 protected:
 	bool match_same_type(const basic & other) const;
 	unsigned return_type() const { return return_types::noncommutative; };
-	
+
 	// non-virtual functions in this class
 public:
 	unsigned rows() const        /// Get number of rows.
@@ -168,14 +168,14 @@ protected:
 	void do_print(const print_context & c, unsigned level) const;
 	void do_print_latex(const print_latex & c, unsigned level) const;
 	void do_print_python_repr(const print_python_repr & c, unsigned level) const;
-	
+
 // member variables
 protected:
 	unsigned row;             ///< number of rows
 	unsigned col;             ///< number of columns
 	exvector m;               ///< representation (cols indexed first)
 };
-GINAC_DECLARE_UNARCHIVER(matrix); 
+GINAC_DECLARE_UNARCHIVER(matrix);
 
 
 // wrapper functions around member functions
@@ -215,6 +215,33 @@ inline matrix inverse(const matrix & m)
 
 inline unsigned rank(const matrix & m)
 { return m.rank(); }
+
+inline matrix operator-( matrix const& m )
+{
+    return std::move(m.mul_scalar(-1));
+}
+
+inline matrix operator+( matrix const& m1, matrix const& m2 )
+{
+    return std::move(m1.add(m2));
+}
+inline matrix operator-( matrix const& m1, matrix const& m2 )
+{
+    return std::move(m1.sub(m2));
+}
+
+inline matrix operator*( matrix const& m1, matrix const& m2 )
+{
+    return std::move(m1.mul(m2));
+}
+inline matrix operator*( matrix const& m1, ex const& m2 )
+{
+    return std::move(m1.mul_scalar(m2));
+}
+inline matrix operator*( ex const& m1, matrix const& m2 )
+{
+    return std::move(m2.mul_scalar(m1));
+}
 
 // utility functions
 

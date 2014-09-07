@@ -232,7 +232,11 @@ bool GetSectionHeaderByName(int fd, const char *name, size_t name_len,
     }
     char header_name[kMaxSectionNameLen];
     if (sizeof(header_name) < name_len) {
+#if defined(__bgq__)
+        RAW_LOG(WARNING, "Section name '%s' is too long (%" PRIuS "); "
+#else
       RAW_LOG(WARNING, "Section name '%s' is too long (%"PRIuS"); "
+#endif
               "section will not be found (even if present).", name, name_len);
       // No point in even trying.
       return false;

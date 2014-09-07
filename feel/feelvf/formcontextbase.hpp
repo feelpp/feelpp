@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2010-04-27
 
-  Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2010-2013 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -26,10 +26,10 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2010-04-27
  */
-#ifndef __FormContextBase_H
-#define __FormContextBase_H 1
+#ifndef FEELPP_FORMCONTEXTBASE_HPP
+#define FEELPP_FORMCONTEXTBASE_HPP 1
 
-#include<feel/feelvf/vf.hpp>
+#include <feel/feelvf/detail/gmc.hpp>
 
 namespace Feel
 {

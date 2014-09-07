@@ -162,16 +162,16 @@ public:
     TwoDomainsMTApp( int argc, char** argv, AboutData const& ad )
         :
         super( argc, argv, ad ),
-        _M_mesh_c( new mesh_type ),
-        _M_mesh_u_lumen( new mesh_type ),
-        _M_mesh_u_wall( new mesh_type )
+        M_mesh_c( new mesh_type ),
+        M_mesh_u_lumen( new mesh_type ),
+        M_mesh_u_wall( new mesh_type )
     {}
     TwoDomainsMTApp( int argc, char** argv, AboutData const& ad, po::options_description const& od )
         :
         super( argc, argv, ad, od ),
-        _M_mesh_c( new mesh_type ),
-        _M_mesh_u_lumen( new mesh_type ),
-        _M_mesh_u_wall( new mesh_type )
+        M_mesh_c( new mesh_type ),
+        M_mesh_u_lumen( new mesh_type ),
+        M_mesh_u_wall( new mesh_type )
     {}
 
     void setFunctionSpaces();
@@ -202,9 +202,9 @@ public:
     }
 
 private:
-    mesh_ptrtype _M_mesh_c;
-    mesh_ptrtype _M_mesh_u_lumen;
-    mesh_ptrtype _M_mesh_u_wall;
+    mesh_ptrtype M_mesh_c;
+    mesh_ptrtype M_mesh_u_lumen;
+    mesh_ptrtype M_mesh_u_wall;
 
     concentration_space_ptrtype Ch_lumen, Ch_wall;
     velocity_lumen_space_ptrtype Uh_lumen;
@@ -223,40 +223,40 @@ TwoDomainsMTApp::setFunctionSpaces()
     meshstr << "wall_lumen_" <<  this->vm()["nel"].as<int>() << ".neu";
 
     ImporterGambit<mesh_type> import( meshstr.str() );
-    _M_mesh_c->accept( import );
+    M_mesh_c->accept( import );
 
     // lumen concentration
-    Ch_lumen = concentration_space_type::New( _M_mesh_c );
+    Ch_lumen = concentration_space_type::New( M_mesh_c );
     VLOG(1) << "creating concentration lumen space done\n"
             << " - dimension = " << Ch_lumen->nDof() << "\n";
 
     // wall concentration
-    Ch_wall = concentration_space_type::New( _M_mesh_c );
+    Ch_wall = concentration_space_type::New( M_mesh_c );
     VLOG(1) << "creating concentration wall space done\n"
             << " - dimension = " << Ch_wall->nDof() << "\n";
 
     // lumen fluid
     //import.setFilename( u_lumen );
-    //_M_mesh_u_lumen->accept( import );
-    //Uh_lumen = velocity_lumen_space_type::New( _M_mesh_u_lumen );
-    _M_mesh_c->createSubmesh( *_M_mesh_u_lumen,
-                              _M_mesh_c->beginElementWithMarker( LUMEN  ),
-                              _M_mesh_c->endElementWithMarker( LUMEN  ) );
-    Uh_lumen = velocity_lumen_space_type::New( _M_mesh_u_lumen );
-    Ph_lumen = pressure_space_type::New( _M_mesh_u_lumen );
+    //M_mesh_u_lumen->accept( import );
+    //Uh_lumen = velocity_lumen_space_type::New( M_mesh_u_lumen );
+    M_mesh_c->createSubmesh( *M_mesh_u_lumen,
+                              M_mesh_c->beginElementWithMarker( LUMEN  ),
+                              M_mesh_c->endElementWithMarker( LUMEN  ) );
+    Uh_lumen = velocity_lumen_space_type::New( M_mesh_u_lumen );
+    Ph_lumen = pressure_space_type::New( M_mesh_u_lumen );
     VLOG(1) << "creating velocity/pressurelumen space done\n"
             << " - dimension Uh_lumen = " << Uh_lumen->nDof() << "\n"
             << " - dimension Ph_lumen = " << Ph_lumen->nDof() << "\n";
 
     // lumen concentration
     //import.setFilename( u_wall );
-    //_M_mesh_u_wall->accept( import );
-    //Uh_wall = velocity_wall_space_type::New( _M_mesh_u_wall );
-    _M_mesh_c->createSubmesh( *_M_mesh_u_wall,
-                              _M_mesh_c->beginElementWithMarker( WALL ),
-                              _M_mesh_c->endElementWithMarker( WALL  ) );
-    Uh_wall = velocity_wall_space_type::New( _M_mesh_u_wall );
-    Ph_wall = pressure_space_type::New( _M_mesh_u_wall );
+    //M_mesh_u_wall->accept( import );
+    //Uh_wall = velocity_wall_space_type::New( M_mesh_u_wall );
+    M_mesh_c->createSubmesh( *M_mesh_u_wall,
+                              M_mesh_c->beginElementWithMarker( WALL ),
+                              M_mesh_c->endElementWithMarker( WALL  ) );
+    Uh_wall = velocity_wall_space_type::New( M_mesh_u_wall );
+    Ph_wall = pressure_space_type::New( M_mesh_u_wall );
     VLOG(1) << "creating velocity/pressure wall space done\n"
             << " - dimension Uh_wall = " << Uh_wall->nDof() << "\n"
             << " - dimension Ph_wall = " << Ph_wall->nDof() << "\n";
@@ -267,8 +267,8 @@ void
 TwoDomainsMTApp::concentrationInit( concentration_space_type::element_type& c_l,
                                     concentration_space_type::element_type& c_w )
 {
-    c_w = vf::project( Ch_wall, markedelements( *_M_mesh_c, WALL ), constant( 0.01 ) );
-    c_l = vf::project( Ch_lumen, markedelements( *_M_mesh_c, LUMEN ), constant( 1.00 ) );
+    c_w = vf::project( Ch_wall, markedelements( *M_mesh_c, WALL ), constant( 0.01 ) );
+    c_l = vf::project( Ch_lumen, markedelements( *M_mesh_c, LUMEN ), constant( 1.00 ) );
 
 }
 void
@@ -309,25 +309,25 @@ TwoDomainsMTApp::concentrationStep( value_type dt,
         //
 
         vector_type F_l;
-        form( Ch_lumen, F_l ) = ( integrate( elements( *_M_mesh_c ), im1_type(),
+        form( Ch_lumen, F_l ) = ( integrate( elements( *M_mesh_c ), im1_type(),
                                              idv( c_l_prev ) * id( c_l_v ) ) +
-                                  integrate( markedfaces( *_M_mesh_c, ENDOTHELIUM ), im1_type(),
+                                  integrate( markedfaces( *M_mesh_c, ENDOTHELIUM ), im1_type(),
                                              dt * D_L*idv( beta_l ) * id( c_l_v ) )
                                 );
         F_l.close();
 
 
         sparse_matrix_type M_l;
-        form( Ch_lumen, Ch_lumen, M_l ) = ( integrate( elements( *_M_mesh_c ), im1_type(),
+        form( Ch_lumen, Ch_lumen, M_l ) = ( integrate( elements( *M_mesh_c ), im1_type(),
                                             lhs_der_time*idt( c_l )*id( c_l_v )+
                                             dt * D_L*( dot_gradt_grad( c_l, c_l_v ) ) +
                                             dt * dot_idv_gradt( u_l, c_l )*id( c_l_v ) )  +
 
-                                            integrate( markedfaces( *_M_mesh_c, ENDOTHELIUM ), im1_type(),
+                                            integrate( markedfaces( *M_mesh_c, ENDOTHELIUM ), im1_type(),
                                                     dt * D_L*idv( alpha_l ) * idt( c_l ) * id( c_l_v ) ) +
 
-                                            on( markedfaces( *_M_mesh_c, INFLOW_LUMEN ), c_l, F_l, constant( 1.0 ) ) +
-                                            on( markedfaces( *_M_mesh_c, INTERNAL_LUMEN ), c_l, F_l, constant( 1.0 ) ) );
+                                            on( markedfaces( *M_mesh_c, INFLOW_LUMEN ), c_l, F_l, constant( 1.0 ) ) +
+                                            on( markedfaces( *M_mesh_c, INTERNAL_LUMEN ), c_l, F_l, constant( 1.0 ) ) );
         M_l.close();
 
         //timer.restart();
@@ -350,24 +350,24 @@ TwoDomainsMTApp::concentrationStep( value_type dt,
         //
         c_w_prev = time_discr_wall.derivate();
         vector_type F_w;
-        form( Ch_wall, F_w ) = ( integrate( elements( *_M_mesh_c ), im1_type(),
+        form( Ch_wall, F_w ) = ( integrate( elements( *M_mesh_c ), im1_type(),
                                             idv( c_w_prev ) * id( c_w_v ) ) +
-                                 integrate( markedfaces( *_M_mesh_c, ENDOTHELIUM ), im1_type(),
+                                 integrate( markedfaces( *M_mesh_c, ENDOTHELIUM ), im1_type(),
                                             dt * D_w*idv( beta_w ) * id( c_w_v ) )
                                );
         F_w.close();
 
 
         sparse_matrix_type M_w;
-        form( Ch_wall, Ch_wall, M_w ) = ( integrate( elements( *_M_mesh_c ), im1_type(),
+        form( Ch_wall, Ch_wall, M_w ) = ( integrate( elements( *M_mesh_c ), im1_type(),
                                           ( lhs_der_time+dt*k_w )*idt( c_w )*id( c_w_v )+
                                           dt * D_w*dot_gradt_grad( c_w, c_w_v ) +
                                           dt* Klag * dot_idv_gradt( u_w, c_w )*id( c_w_v ) ) +
 
-                                          integrate( markedfaces( *_M_mesh_c, ENDOTHELIUM ), im1_type(),
+                                          integrate( markedfaces( *M_mesh_c, ENDOTHELIUM ), im1_type(),
                                                   dt * D_w*idv( alpha_w ) * idt( c_w ) * id( c_w_v ) ) +
 
-                                          on( markedfaces( *_M_mesh_c, ADVENDITIA ), c_w, F_w, constant( 0.01 ) ) );
+                                          on( markedfaces( *M_mesh_c, ADVENDITIA ), c_w, F_w, constant( 0.01 ) ) );
         M_w.close();
 
         //timer.restart();
@@ -434,21 +434,21 @@ TwoDomainsMTApp::solveSystem()
     {
         // velocity in the Lumen (could have come from an NS code )
         u_l = vf::project( Uh_lumen,
-                           elements( *_M_mesh_u_lumen ),
+                           elements( *M_mesh_u_lumen ),
                            oneX()* ( 2.0/L_0 )*u_filt*( 2.0-( 4.0/( L_0*L_0 ) )*( Px()*Px()+Py()*Py() ) )*Px() +
                            oneY()* ( 2.0/L_0 )*u_filt*( 2.0-( 4.0/( L_0*L_0 ) )*( Px()^( 2 )+Py()^( 2 ) )*Py() ) +
                            oneZ()* 2.0*U_0*( 1.0-( 4.0/( L_0*L_0 ) )*( Px()^( 2 )+Py()^( 2 ) ) )*( 1.0-( 4.0*u_filt/( U_0*L_0 ) )*Pz() ) );
 
         // velocity in the Arterial wall (could have come from an Darcy code )
         u_w = vf::project( Uh_wall,
-                           elements( *_M_mesh_u_wall ),
+                           elements( *M_mesh_u_wall ),
                            oneX()* ( Klag/porosity )*u_filt*( L_0/2.0 )*Px()/( Px()*Px()+Py()*Py() ) +
                            oneY()* ( Klag/porosity )*u_filt*( L_0/2.0 )*Py()/( Px()*Px()+Py()*Py() ) );
 
 
         // update P (in the future may want to update D, k, f .... whatever)
-        c_map["P_w"] = vf::project( Ch_wall, elements( *_M_mesh_c ), constant( Pr ) );
-        c_map["P_l"] = vf::project( Ch_lumen, elements( *_M_mesh_c ), constant( Pr ) );
+        c_map["P_w"] = vf::project( Ch_wall, elements( *M_mesh_c ), constant( Pr ) );
+        c_map["P_l"] = vf::project( Ch_lumen, elements( *M_mesh_c ), constant( Pr ) );
 
         //concentrationStep( dt, time_discr_lumen, time_discr_wall, c_l, u_l, c_w, u_w );
 
@@ -457,7 +457,7 @@ TwoDomainsMTApp::solveSystem()
         velocity_wall_space_type::P1Lagrange::p1_type::element_type u_w_p1 = Uh_wall_p1( u_w );
 
         timeset_type::step_ptrtype ts_step_wl = ts_wl->step( t );
-        ts_step_wl->setMesh( _M_mesh_c );
+        ts_step_wl->setMesh( M_mesh_c );
         ts_step_wl->addNodalScalar( "c_wall_lumen", c_l.size(), c_l.begin(), c_l.end() );
         //ts_step_wl->addNodalScalar( "c_w", c_l.size(), c_l.begin(), c_l.end() );
 

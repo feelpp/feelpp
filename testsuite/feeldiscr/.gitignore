@@ -21,6 +21,7 @@
 /square.0.3.msh
 /test_bdf
 /test_geomap
+/test_hdiv.cpp~
 /test_integration
 /test_integration.assert
 /test_integration_3d

@@ -6,7 +6,9 @@
 #include <feel/options.hpp>
 #include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
-#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/creategmshmesh.hpp>
+#include <feel/feelfilters/savegmshmesh.hpp>
+#include <feel/feelfilters/domain.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feeldiscr/createsubmesh.hpp>
@@ -32,8 +34,8 @@ makeOptions()
 {
     po::options_description desc_options( "test_wire_basket options" );
     desc_options.add_options()
-    ( "hsize", po::value<double>()->default_value( 0.075 ), "mesh size" )
-    ;
+        ( "hsize", po::value<double>()->default_value( 0.075 ), "mesh size" )
+        ;
     return desc_options.add( Feel::feel_options() );
 }
 
@@ -91,9 +93,12 @@ void run( Application_ptrtype & theApp )
     auto mesh = createGMSHMesh( _mesh=new mesh_type,
                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                                 _desc=domain( _name=( boost::format( "hypercube-%1%" ) % nDim ).str() ,
-                                        _addmidpoint=false, _usenames=false, _shape="hypercube",
-                                        _dim=nDim, _h=meshSize, _xmin=0., _xmax=1., _ymin=0.,
-                                        _ymax=1., _zmin=0., _zmax=1. ) );
+                                              _addmidpoint=false, _usenames=false, _shape="hypercube",
+                                              _dim=nDim, _h=meshSize,
+                                              _xmin=0., _xmax=1.,
+                                              _ymin=0., _ymax=1.,
+                                              _zmin=0., _zmax=1.,
+                                              _substructuring=true ) );
 
 
     auto backend = backend_type::build( theApp->vm() );
@@ -101,16 +106,16 @@ void run( Application_ptrtype & theApp )
     auto g = sin( pi*( 2*Px()+Py()+1./4 ) )*cos( pi*( Py()-1./4 ) );
 
     auto Xh = space_type::New(_mesh=mesh);
-    auto domain_measure = integrate( _range=elements( mesh ),_expr=cst( 1. ) ).evaluate()( 0,0 );
+    double domain_measure = integrate( _range=elements( mesh ),_expr=cst( 1. ) ).evaluate()( 0,0 );
     std::cout <<"domain_measure= " << domain_measure << std::endl;
 
     auto TXh = Xh->trace( markedfaces( mesh,6 ) ) ;
-    auto trace_measure = integrate( _range=elements( TXh->mesh() ),_expr=cst( 1. ) ).evaluate()( 0,0 );
+    double trace_measure = integrate( _range=elements( TXh->mesh() ),_expr=cst( 1. ) ).evaluate()( 0,0 );
     std::cout <<"trace_measure= " << trace_measure << std::endl;
 
     auto TTXh = TXh->trace();
     auto trace_trace_measure = integrate( _range=elements( TTXh->mesh() ),_expr=cst( 1. ) ).evaluate()( 0,0 );
-    auto trace_trace_integrate_g = integrate( _range=elements( TTXh->mesh() ),_expr=g ).evaluate()( 0,0 );
+    double trace_trace_integrate_g = integrate( _range=elements( TTXh->mesh() ),_expr=g ).evaluate()( 0,0 );
     std::cout <<"trace_trace_measure= " << trace_trace_measure << std::endl;
 
     // projections
@@ -119,10 +124,10 @@ void run( Application_ptrtype & theApp )
     auto trace_trace_projection_g = vf::project( _space=TTXh,_range=elements( TTXh->mesh() ),_expr=g );
 
     // extensions
-    auto trace_trace_integrate = integrate( _range=elements( TTXh->mesh() ),
-                                            _expr=idv( trace_trace_projection_g ) ).evaluate()( 0,0 );
-    auto ttmean_g = trace_trace_integrate/trace_trace_measure;
-    auto mean_g = trace_trace_integrate_g/trace_trace_measure;
+    double trace_trace_integrate = integrate( _range=elements( TTXh->mesh() ),
+                                              _expr=idv( trace_trace_projection_g ) ).evaluate()( 0,0 );
+    double ttmean_g = trace_trace_integrate/trace_trace_measure;
+    double mean_g = trace_trace_integrate_g/trace_trace_measure;
     std::cout << "mean_g= " << mean_g << std::endl;
     std::cout << "ttmean_g= " << ttmean_g << std::endl;
 
@@ -130,11 +135,12 @@ void run( Application_ptrtype & theApp )
     auto zero_extension = vf::project( _space=TXh,_range=boundaryfaces( TXh->mesh() ),_expr=idv( trace_trace_projection_g ) );
     auto const_extension = vf::project( _space=TXh,_range=boundaryfaces( TXh->mesh() ),_expr=idv( trace_trace_projection_g )-ttmean_g );
     const_extension += vf::project( _space=TXh, _range=elements( TXh->mesh() ), _expr=cst( ttmean_g ) );
-    auto op_lift = opLift( _domainSpace=Xh,_backend=backend );
+    //auto op_lift = opLift( _domainSpace=Xh,_backend=backend );
+    auto op_lift = opLift( _domainSpace=Xh,_backend=backend,_penaldir=100. );
     auto glift = op_lift->project( _expr=idv( const_extension ), _range=markedfaces( mesh,6 ) );
 
 
-    auto boundary_error = integrate( _range=markedfaces( mesh,6 ), _expr=idv( glift )-idv( const_extension ) ).evaluate()( 0,0 );
+    double boundary_error = integrate( _range=markedfaces( mesh,6 ), _expr=idv( glift )-idv( const_extension ) ).evaluate()( 0,0 );
     //auto laplacian_error = integrate( elements( mesh ), trace( hessv( glift ) ) ).evaluate()( 0,0 );
 
     auto const_extention_error1 = integrate( _range=boundaryfaces( TXh->mesh() ),
@@ -147,7 +153,7 @@ void run( Application_ptrtype & theApp )
     std::cout << "const_extention_error1= " << const_extention_error1 << std::endl;
     std::cout << "const_extention_error2= " << const_extention_error2 << std::endl;
 
-    BOOST_CHECK_SMALL( boundary_error,5e-5 );
+    BOOST_CHECK_SMALL( boundary_error,1e-4 );
     BOOST_CHECK_CLOSE( domain_measure, 1, 1e-10 );
     BOOST_CHECK_CLOSE( trace_measure, 1, 1e-12 );
     BOOST_CHECK_CLOSE( trace_trace_measure, 4, 1e-12 );
@@ -176,6 +182,7 @@ void run( Application_ptrtype & theApp )
     auto Wh = Xh3D->wireBasket();
     FEELPP_ASSERT( Wh->mesh()->numElements() != 0 )( Wh->mesh()->numElements() ).error( "invalid wirebasket mesh" );
 
+    saveGMSHMesh(_mesh=Wh->mesh(), _filename="wirebasket.msh");
     auto w = Wh->element();
     auto z = Wh->element();
 
@@ -185,6 +192,12 @@ void run( Application_ptrtype & theApp )
     z.setOnes();
     std::cout << "measure from mass = " << M->energy( w, w ) << "\n";
     BOOST_CHECK_CLOSE( M->energy( w, w ), 12., 1e-12 );
+
+    // test merkerToDof
+    const std::string str = "WireBasket";
+    auto dft = Xh3D->dof()->markerToDof(str);
+    std::cout<<"nDof= "<< std::distance(dft.first,dft.second) <<"\n";
+    FEELPP_ASSERT( std::distance(dft.first,dft.second) != 0 )( std::distance(dft.first,dft.second) ).error( "invalid wirebasket nDof" );
 
     //-------------------------------------------------------------------------------------------------------
 

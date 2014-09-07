@@ -93,6 +93,12 @@ public:
               size_type last_col_entry_on_proc = 0,
               WorldComm const& worldcomm = Environment::worldComm() );
 
+    GraphCSR( boost::shared_ptr<DataMap> const& mapRow,
+              boost::shared_ptr<DataMap> const& mapCol );
+
+    GraphCSR( DataMap const& mapRow,
+              DataMap const& mapCol );
+
     GraphCSR( vf::BlocksBase<self_ptrtype> const & blockSet,
               bool diagIsNonZero=true,
               bool close=true );
@@ -124,11 +130,11 @@ public:
 
     size_type nRows() const
     {
-        return M_last_row_entry_on_proc+1;
+        return M_last_row_entry_on_proc[this->worldComm().globalRank()]+1;
     }
     size_type nCols() const
     {
-        return M_last_col_entry_on_proc+1;
+        return M_last_col_entry_on_proc[this->worldComm().globalRank()]+1;
     }
 
     /**
@@ -136,7 +142,7 @@ public:
      */
     size_type firstRowEntryOnProc() const
     {
-        return M_first_row_entry_on_proc;
+        return M_first_row_entry_on_proc[this->worldComm().globalRank()];
     }
 
     /**
@@ -144,14 +150,14 @@ public:
      */
     size_type lastRowEntryOnProc() const
     {
-        return M_last_row_entry_on_proc;
+        return M_last_row_entry_on_proc[this->worldComm().globalRank()];
     }
     /**
      * \return the first entry index on proc
      */
     size_type firstColEntryOnProc() const
     {
-        return M_first_col_entry_on_proc;
+        return M_first_col_entry_on_proc[this->worldComm().globalRank()];
     }
 
     /**
@@ -159,7 +165,7 @@ public:
      */
     size_type lastColEntryOnProc() const
     {
-        return M_last_col_entry_on_proc;
+        return M_last_col_entry_on_proc[this->worldComm().globalRank()];
     }
 
     /**
@@ -306,22 +312,28 @@ public:
 
     void setFirstRowEntryOnProc( size_type entry )
     {
-        M_first_row_entry_on_proc = entry;
+        M_first_row_entry_on_proc[this->worldComm().globalRank()] = entry;
     }
     void setFirstColEntryOnProc( size_type entry )
     {
-        M_first_col_entry_on_proc = entry;
+        M_first_col_entry_on_proc[this->worldComm().globalRank()] = entry;
     }
 
     void setLastRowEntryOnProc( size_type entry )
     {
-        M_last_row_entry_on_proc = entry;
+        M_last_row_entry_on_proc[this->worldComm().globalRank()] = entry;
     }
     void setLastColEntryOnProc( size_type entry )
     {
-        M_last_col_entry_on_proc = entry;
+        M_last_col_entry_on_proc[this->worldComm().globalRank()] = entry;
     }
 
+    DataMap const& mapRow() const { return *M_mapRow; }
+    DataMap const& mapCol() const { return *M_mapCol; }
+    boost::shared_ptr<DataMap> const& mapRowPtr() const { return M_mapRow; }
+    boost::shared_ptr<DataMap> const& mapColPtr() const { return M_mapCol; }
+    boost::shared_ptr<DataMap> mapRowPtr() { return M_mapRow; }
+    boost::shared_ptr<DataMap> mapColPtr() { return M_mapCol; }
 
     //@}
 
@@ -343,8 +355,7 @@ public:
     /**
      * transpose graph
      */
-    self_ptrtype transpose();
-    self_ptrtype transpose(DataMap const& dm);
+    self_ptrtype transpose( bool doClose = true );
 
     /**
      * add missing zero entries diagonal
@@ -365,6 +376,15 @@ private :
     void mergeBlockGraph( self_ptrtype const& g,
                           size_type start_i, size_type start_j );
 
+    void mergeBlockGraphMPI( self_ptrtype const& g, vf::BlocksBase<self_ptrtype> const & blockSet, int i, int j,
+                             size_type start_i, size_type start_j );
+
+    void updateDataMap( vf::BlocksBase<self_ptrtype> const & blockSet );
+
+    size_type nLocalDofWithoutGhostOnProcStartRow( vf::BlocksBase<self_ptrtype> const & blockSet, int proc, int rowIndex, int colIndex ) const;
+    size_type nLocalDofWithoutGhostOnProcStartCol( vf::BlocksBase<self_ptrtype> const & blockSet, int proc, int rowIndex, int colIndex ) const;
+    size_type nLocalDofWithGhostOnProcStartRow( vf::BlocksBase<self_ptrtype> const & blockSet, int proc, int rowIndex, int colIndex ) const;
+    size_type nLocalDofWithGhostOnProcStartCol( vf::BlocksBase<self_ptrtype> const & blockSet, int proc, int rowIndex, int colIndex ) const;
 
 protected:
 
@@ -373,10 +393,10 @@ private:
     //mpi::communicator M_comm;
     WorldComm M_worldComm;
 
-    size_type M_first_row_entry_on_proc;
-    size_type M_last_row_entry_on_proc;
-    size_type M_first_col_entry_on_proc;
-    size_type M_last_col_entry_on_proc;
+    std::vector<size_type> M_first_row_entry_on_proc;
+    std::vector<size_type> M_last_row_entry_on_proc;
+    std::vector<size_type> M_first_col_entry_on_proc;
+    std::vector<size_type> M_last_col_entry_on_proc;
     size_type M_max_nnz;
     nz_type M_n_total_nz;
     nz_type M_n_nz;
@@ -386,6 +406,8 @@ private:
     std::vector<double> M_a;
 
     self_ptrtype M_graphT;
+
+    boost::shared_ptr<DataMap> M_mapRow, M_mapCol;
 };
 
 
@@ -393,17 +415,26 @@ class BlocksBaseGraphCSR : public vf::BlocksBase<boost::shared_ptr<GraphCSR> >
 {
 public :
     typedef vf::BlocksBase<boost::shared_ptr<GraphCSR> > super_type;
+    typedef super_type::index_type index_type;
     typedef BlocksBaseGraphCSR self_type;
     typedef boost::shared_ptr<GraphCSR> graph_ptrtype;
 
-    BlocksBaseGraphCSR(uint16_type nr,uint16_type nc)
+    BlocksBaseGraphCSR( index_type nr=0,index_type nc=0 )
         :
-        super_type(nr,nc)
+        super_type( nr,nc ),
+        M_isClosed( false )
     {}
 
-    BlocksBaseGraphCSR(super_type const & b)
+    BlocksBaseGraphCSR( self_type const & b )
         :
-        super_type(b)
+        super_type( b ),
+        M_isClosed( b.M_isClosed )
+    {}
+
+    BlocksBaseGraphCSR( super_type const & b )
+        :
+        super_type( b ),
+        M_isClosed( false )
     {}
 
     self_type
@@ -411,6 +442,14 @@ public :
     {
         return super_type::operator<<( g );
     }
+
+    void close();
+
+    bool isClosed() const { return M_isClosed; }
+
+private :
+    bool M_isClosed;
+
 
 };
 

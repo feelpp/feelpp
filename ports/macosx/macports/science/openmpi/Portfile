@@ -4,7 +4,7 @@
 PortSystem 1.0
 
 name			openmpi
-version			1.6.3
+version			1.6.5
 set branch		[join [lrange [split ${version} .] 0 1] .]
 categories		science parallel net
 platforms		darwin
@@ -24,10 +24,8 @@ master_sites		http://www.open-mpi.org/software/${subdir} \
 			http://www.open-mpi.de/software/${subdir} \
 			http://icl.cs.utk.edu/open-mpi/${subdir}
 # keep md5 & sha1 checksums as they are published on http://www.open-mpi.org/software/ompi/v1.6/
-checksums           md5     eedb73155a7a40b0b07718494298fb25 \
-                    sha1    a61aa2dee4c47d93d88e49ebed36de25df4f6492 \
-                    rmd160  b6cf02b3b56538d39f7dcc2de9f9ed8800b38b70 \
-                    sha256  0c30cfec0e420870630fdc101ffd82f7eccc90276bc4e182f8282a2448668798
+checksums           md5     03aed2a4aa4d0b27196962a2a65fc475 \
+                    sha1    93859d515b33dd9a0ee6081db285a2d1dffe21ce
 
 use_bzip2		yes
 
@@ -72,7 +70,7 @@ variant valgrind description {enable valgrind support} {
 	configure.args-append --enable-debug --enable-memchecker --with-valgrind=${prefix}
 }
 
-variant gcc43 description {build mpif77 and mpif90 using gcc43} conflicts gcc44 gcc45 gcc46 gcc47 g95 {
+variant gcc43 description {build mpif77 and mpif90 using gcc43} conflicts gcc44 gcc45 gcc46 gcc47 gcc48 g95 {
 	configure.args-delete --disable-mpi-f77 --disable-mpi-f90
 	configure.args-append --enable-mpi-f77 --enable-mpi-f90
 	configure.f77	      ${prefix}/bin/gfortran-mp-4.3
@@ -81,7 +79,7 @@ variant gcc43 description {build mpif77 and mpif90 using gcc43} conflicts gcc44 
 	lappend wrappers mpif77 mpif90
 }
 
-variant gcc44 description {build mpif77 and mpif90 using gcc44} conflicts gcc43 gcc45 gcc46 gcc47 g95 {
+variant gcc44 description {build mpif77 and mpif90 using gcc44} conflicts gcc43 gcc45 gcc46 gcc47 gcc48 g95 {
 	configure.args-delete --disable-mpi-f77 --disable-mpi-f90
 	configure.args-append --enable-mpi-f77 --enable-mpi-f90
 	configure.f77	      ${prefix}/bin/gfortran-mp-4.4
@@ -90,7 +88,7 @@ variant gcc44 description {build mpif77 and mpif90 using gcc44} conflicts gcc43 
 	lappend wrappers mpif77 mpif90
 }
 
-variant gcc45 description {build mpif77 and mpif90 using gcc45} conflicts gcc43 gcc44 gcc46 gcc47 g95 {
+variant gcc45 description {build mpif77 and mpif90 using gcc45} conflicts gcc43 gcc44 gcc46 gcc47 gcc48 g95 {
     configure.compiler    macports-gcc-4.5
 	configure.args-delete --disable-mpi-f77 --disable-mpi-f90
 	configure.args-append --enable-mpi-f77 --enable-mpi-f90
@@ -100,7 +98,7 @@ variant gcc45 description {build mpif77 and mpif90 using gcc45} conflicts gcc43 
 	lappend wrappers mpif77 mpif90
 }
 
-variant gcc46 description {build mpif77 and mpif90 using gcc46} conflicts gcc43 gcc44 gcc45 gcc47 g95 {
+variant gcc46 description {build mpif77 and mpif90 using gcc46} conflicts gcc43 gcc44 gcc45 gcc47 gcc48 g95 {
     configure.compiler    macports-gcc-4.6
 #	configure.cxx	      ${prefix}/bin/g++-mp-4.6
 #	configure.cc	      ${prefix}/bin/gcc-mp-4.6
@@ -112,13 +110,23 @@ variant gcc46 description {build mpif77 and mpif90 using gcc46} conflicts gcc43 
 	lappend wrappers mpif77 mpif90
 }
 
-variant gcc47 description {build mpif77 and mpif90 using gcc47} conflicts gcc43 gcc44 gcc45 gcc46 g95 {
-    configure.compiler    macports-gcc-4.5
+variant gcc47 description {build mpif77 and mpif90 using gcc47} conflicts gcc43 gcc44 gcc45 gcc46 gcc48 g95 {
+    configure.compiler    macports-gcc-4.7
 	configure.args-delete --disable-mpi-f77 --disable-mpi-f90
 	configure.args-append --enable-mpi-f77 --enable-mpi-f90
 	configure.f77	      ${prefix}/bin/gfortran-mp-4.7
 	configure.fc	      ${prefix}/bin/gfortran-mp-4.7
 	depends_lib-append    port:gcc47
+	lappend wrappers mpif77 mpif90
+}
+
+variant gcc48 description {build mpif77 and mpif90 using gcc48} conflicts gcc43 gcc44 gcc45 gcc46 gcc47 g95 {
+    configure.compiler    macports-gcc-4.8
+	configure.args-delete --disable-mpi-f77 --disable-mpi-f90
+	configure.args-append --enable-mpi-f77 --enable-mpi-f90
+	configure.f77	      ${prefix}/bin/gfortran-mp-4.8
+	configure.fc	      ${prefix}/bin/gfortran-mp-4.8
+	depends_lib-append    port:gcc48
 	lappend wrappers mpif77 mpif90
 }
 
@@ -132,8 +140,8 @@ variant g95 description {build mpif77 and mpif90 using g95} conflicts gcc43 gcc4
 }
 
 # dependents like netcdf need some form of fortran
-if {![variant_isset gcc43] && ![variant_isset gcc44] && ![variant_isset gcc46]  && ![variant_isset gcc47] && ![variant_isset g95]} {
-    default_variants +gcc45
+if {![variant_isset gcc43] && ![variant_isset gcc44] && ![variant_isset gcc46]  && ![variant_isset gcc47] && ![variant_isset gcc48] && ![variant_isset g95]} {
+    default_variants +gcc48
 }
 
 livecheck.type	regex

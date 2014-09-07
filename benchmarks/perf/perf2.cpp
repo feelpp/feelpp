@@ -32,8 +32,8 @@
 #include <feel/feelpoly/im.hpp>
 #include <feel/feelalg/backend.hpp>
 
-#include <feel/feelfilters/gmsh.hpp>
-#include <feel/feelfilters/gmshhypercubedomain.hpp>
+#include <feel/feelfilters/creategmshmesh.hpp>
+#include <feel/feelfilters/domain.hpp>
 #include <feel/feelpoly/polynomialset.hpp>
 
 
@@ -95,7 +95,7 @@ public:
 
     MyIntegrals( po::variables_map const& vm, AboutData const& about )
         :
-        super( vm, about ),
+        super(),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>()  ),
         nthreads( this->vm()["nthreads"].template as<int>()  ),

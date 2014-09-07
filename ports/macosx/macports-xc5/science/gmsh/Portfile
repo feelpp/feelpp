@@ -1,0 +1,75 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+# $Id$
+
+PortSystem          1.0
+PortGroup           cmake 1.0
+
+name                gmsh
+conflicts           gmsh-devel
+version             2.8.2
+categories          science
+platforms           darwin
+license             GPL-2+
+maintainers         ujf-grenoble.fr:Christophe.Prudhomme
+description         Finite element mesh generator in 1D, 2D and 3D
+long_description    \
+        Gmsh is an automatic 3D finite element mesh generator (primarily   \
+        Delaunay) with build-in CAD and post-processing facilities. Its     \
+        design goal is to provide a simple meshing tool for academic test   \
+        cases with parametric input and up to date visualization            \
+        capabilities.
+
+homepage            http://www.geuz.org/gmsh/
+master_sites        http://www.geuz.org/gmsh/src/
+distname            gmsh-${version}-source
+extract.suffix      .tgz
+
+checksums           sha1    1b1d3933738eee22da928c26e664ef8aa430b7c6 \
+                    rmd160  fb9a22810cacefda19da115101e789ff7d5eea50
+
+#patchfiles          patch-Graphics-gl2png.cpp.diff
+
+# TODO: Fix these missing includes in the appropriate files
+configure.cxxflags-append "-include /usr/include/stdlib.h -stdlib=libc++"
+configure.ldflags-append "-stdlib=libc++"
+
+configure.args-append \
+    -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
+    -DENABLE_OS_SPECIFIC_INSTALL=OFF \
+    -DENABLE_NATIVE_FILE_CHOOSER=OFF \
+    -DENABLE_OCC=OFF \
+    -DENABLE_FLTK=ON \
+    -DENABLE_GRAPHICS=ON \
+    -DENABLE_APP_BUNDLE=OFF \
+    -DENABLE_METIS=ON \
+    -DENABLE_TAUCS=OFF
+
+#build.target all lib
+
+depends_lib  \
+    port:mesa \
+    port:libpng \
+    path:lib/libfltk.dylib:fltk \
+    port:jpeg \
+    port:zlib \
+    port:texinfo\
+
+
+variant lib description {compile with header/library support} {
+    configure.args-append \
+        -DENABLE_BUILD_LIB=OFF\
+        -DENABLE_BUILD_SHARED=ON
+}
+variant slepc description {compile with PETSC/SLEPC support} {
+    depends_lib-append        port:petsc   port:slepc
+    configure.args-append \
+        -DENABLE_MPI=ON \
+        -DMPI_C_COMPILER=${prefix}/bin/openmpicc \
+        -DMPI_CXX_COMPILER=${prefix}/bin/openmpicxx \
+        -DENABLE_PETSC=ON \
+        -DPETSC_INC=${prefix}/lib/petsc/include \
+        -DPETSC_LIBS=${prefix}/lib/petsc/lib/libpetsc.a \
+        -DENABLE_SLEPC=ON \
+        -DSLEPC_INC=${prefix}/lib/petsc/include \
+        -DSLEPC_LIB=${prefix}/lib/petsc/lib/libslepc.a
+}

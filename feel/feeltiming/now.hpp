@@ -39,7 +39,7 @@ namespace Feel
 namespace details
 {
 typedef Feel::uint64_type  cycles_t;
-double    now()
+inline double    now()
 {
     struct timeval tp;
     gettimeofday( &tp,NULL );

@@ -6,6 +6,7 @@
        Date: 2009-01-23
 
   Copyright (C) 2009 Universite Joseph Fourier (Grenoble I)
+  Copyright (C) 2013 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -30,6 +31,7 @@
 #define __DiscontinuousInterfaces_H 1
 
 #include <feel/feelpoly/continuity.hpp>
+#include <feel/feeldiscr/doffromelement.hpp>
 
 namespace Feel
 {
@@ -41,7 +43,7 @@ namespace Feel
  * @see
  */
 template<typename A0>
-class DiscontinuousInterfaces : public detail::continuity_base
+class DiscontinuousInterfaces : public Feel::detail::continuity_base
 {
 public:
 
@@ -147,7 +149,8 @@ public:
         apply( MeshType& M, DofType& D )
             :
             M_mesh( M ),
-            M_dof( D )
+            M_dof( D ),
+            M_fe( D.fe() )
         {}
         template<typename T>
 #if BOOST_VERSION < 104200
@@ -227,11 +230,14 @@ public:
 #else
             boost::tie( fit, fen ) = M_mesh.elementsRange();
 
+            DofFromElement<dof_type,fe_type> dfe( &M_dof, M_fe );
             while ( fit != fen )
             {
                 if ( fit->marker().value() == ( int )boost::get<1>( marker ) )
                 {
-                    M_dof.addDofFromElement( *fit, next_free_dof, 0 );
+
+                    //M_dof.addDofFromElement( *fit, next_free_dof, 0 );
+                    dfe.add( *fit, next_free_dof, M_dof.worldComm().localRank()  );
                 }
 
                 ++fit;
@@ -296,7 +302,8 @@ public:
             {
                 if ( fit->marker().value() == boost::get<2>( marker ) )
                 {
-                    M_dof.addDofFromElement( *fit, next_free_dof );
+                    //M_dof.addDofFromElement( *fit, next_free_dof );
+                    dfe.add( *fit, next_free_dof, M_dof.worldComm().localRank()  );
                 }
 
                 ++fit;
@@ -429,6 +436,7 @@ public:
     private:
         MeshType& M_mesh;
         DofType& M_dof;
+        fe_type const& M_fe;
     };
 
 private:

@@ -5,6 +5,12 @@
 # CLN_INCLUDE_DIR       the include directories
 # CLN_LIBRARIES         CLN library and its dependencies (if any)
 
+# try the system version
+FIND_PATH(CLN_INCLUDE_DIR cln/cln.h
+  PATH_SUFFIXES
+  cln
+  )
+# use the version available in contrib if the system version is not available
 FIND_PATH(CLN_INCLUDE_DIR cln/cln.h
   ${CMAKE_BINARY_DIR}/contrib/cln/include
   $ENV{FEELPP_DIR}/include
@@ -28,29 +34,55 @@ IF ( NOT CLN_INCLUDE_DIR )
 
   if(${CMAKE_SOURCE_DIR}/contrib/cln/configure IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/cln-compile/Makefile)
     message(STATUS "Building cln in ${CMAKE_BINARY_DIR}/contrib/cln-compile...")
-    execute_process(
-      COMMAND ${FEELPP_HOME_DIR}/contrib/cln/configure --prefix=${CMAKE_BINARY_DIR}/contrib/cln
-      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/cln-compile
-      #      OUTPUT_QUIET
-      OUTPUT_FILE "cln-configure"
-      )
+    if (FEELPP_USE_STATIC_LINKAGE )
+      set(CLN_CONF_OPTS "--disable-shared --enable-static")
+    endif()
+    if (FEELPP_USE_STATIC_LINKAGE )
+      message(STATUS "CLN: use static linkage")
+      execute_process(
+        COMMAND ${FEELPP_HOME_DIR}/contrib/cln/configure --prefix=${CMAKE_BINARY_DIR}/contrib/cln --enable-static --disable-shared 
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/cln-compile
+        # OUTPUT_QUIET
+        OUTPUT_FILE "cln-configure"
+        )
+    else()
+      execute_process(
+        COMMAND ${FEELPP_HOME_DIR}/contrib/cln/configure --prefix=${CMAKE_BINARY_DIR}/contrib/cln LDFLAGS=-dynamic
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/cln-compile
+        #      OUTPUT_QUIET
+        OUTPUT_FILE "cln-configure"
+        )
+    endif()
   endif()
   set(CLN_INCLUDE_DIR ${CMAKE_BINARY_DIR}/contrib/cln/include)
 
   if( (${CMAKE_SOURCE_DIR}/contrib/cln/include/cln/cln.h IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/cln/include/cln/cln.h) OR
       (${CMAKE_SOURCE_DIR}/contrib/cln/src/Makefile.am IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/cln-compile/src/Makefile) )
     message(STATUS "Installing cln in ${CMAKE_BINARY_DIR}/contrib/cln (this may take a while)...")
-    execute_process(
-      COMMAND make -j${NProcs2} -k install
-      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/cln-compile
-      #  OUTPUT_QUIET
-      OUTPUT_FILE "cln-install"
-      )
+    if ( FEELPP_USE_CLANG_LIBCXX OR ( APPLE AND (
+            ( "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" ) OR
+            ( "${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel" ) ) ) )
+      execute_process(
+        COMMAND make -j${NProcs2} -k install CXXFLAGS=-stdlib=libc++
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/cln-compile
+        #  OUTPUT_QUIET
+        OUTPUT_FILE "cln-install"
+        )
+    else()
+      execute_process(
+        COMMAND make -j${NProcs2} -k install
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/cln-compile
+        #  OUTPUT_QUIET
+        OUTPUT_FILE "cln-install"
+        )
+    endif()
   endif()
 endif()
 string(REPLACE "include/cln" "" CLN_DIR ${CLN_INCLUDE_DIR} )
+FIND_LIBRARY(CLN_LIBRARY  NAMES cln feelpp_cln   )
+
 FIND_LIBRARY(CLN_LIBRARY
-  NAMES feelpp_cln
+  NAMES cln feelpp_cln
   PATHS
   ${CMAKE_BINARY_DIR}/contrib/cln/lib/
   $ENV{FEELPP_DIR}/lib
@@ -99,13 +131,19 @@ set(CLN_LIBRARIES)
 #	pkg_check_modules(_cln cln)
 #endif()
 
-find_path(CLN_INCLUDE_DIR NAMES feel/cln/cln.h cln/cln.h
+find_path(CLN_INCLUDE_DIR NAMES  cln/cln.h )
+find_path(CLN_INCLUDE_DIR NAMES  cln/cln.h feel/cln/cln.h
   HINTS
   ${CMAKE_BINARY_DIR}/contrib/cln/include
   ${_cln_INCLUDE_DIRS}
   $ENV{CLN_DIR}/include
   NO_DEFAULT_PATH
 )
+find_library(CLN_LIBRARIES NAMES cln libcln
+  ${_cln_LIBRARY_DIR}
+  ${_cln_LIBRARY_DIRS}
+)
+
 find_library(CLN_LIBRARIES NAMES feelpp_cln libcln cln
   HINTS
   ${CMAKE_BINARY_DIR}/contrib/cln/lib

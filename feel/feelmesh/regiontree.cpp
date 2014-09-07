@@ -270,8 +270,8 @@ RegionTree::addBox( node_type min, node_type max, size_type id )
     box_index_type bi;
     bi.min = min;
     bi.max = max;
-    bi.id = ( id + 1 ) ? id : _M_boxes.size();
-    _M_boxes.push_back( bi );
+    bi.id = ( id + 1 ) ? id : M_boxes.size();
+    M_boxes.push_back( bi );
 }
 void
 RegionTree::findIntersectingBoxes( const node_type& bmin,
@@ -280,10 +280,10 @@ RegionTree::findIntersectingBoxes( const node_type& bmin,
 {
     boxes.clear();
 
-    if ( !_M_root )
+    if ( !M_root )
         build();
 
-    findMatchingBoxes( _M_root, boxes, intersection_p( bmin,bmax ) );
+    findMatchingBoxes( M_root, boxes, intersection_p( bmin,bmax ) );
     DVLOG(2)<< "findIntersectingBoxes : found " << boxes.size() << " matches\n";
 }
 void
@@ -302,10 +302,10 @@ RegionTree::findContainingBoxes( const node_type& bmin,
 {
     boxes.clear();
 
-    if ( !_M_root )
+    if ( !M_root )
         build();
 
-    findMatchingBoxes( _M_root, boxes, contains_p( bmin,bmax ) );
+    findMatchingBoxes( M_root, boxes, contains_p( bmin,bmax ) );
     DVLOG(2)<< "findContainingBoxes : found " << boxes.size() << " matches\n";
 }
 void
@@ -324,10 +324,10 @@ RegionTree::findContainedBoxes( const node_type& bmin,
 {
     boxes.clear();
 
-    if ( !_M_root )
+    if ( !M_root )
         build();
 
-    findMatchingBoxes( _M_root, boxes, contained_p( bmin,bmax ) );
+    findMatchingBoxes( M_root, boxes, contained_p( bmin,bmax ) );
     DVLOG(2)<< "findContainedBoxes : found " << boxes.size() << " matches\n";
 }
 void
@@ -345,10 +345,10 @@ RegionTree::findBoxesAtPoint( const node_type& P,
 {
     boxes.clear();
 
-    if ( !_M_root )
+    if ( !M_root )
         build();
 
-    findMatchingBoxes( _M_root, boxes, has_point_p( P ) );
+    findMatchingBoxes( M_root, boxes, has_point_p( P ) );
     DVLOG(2)<< "findBoxesAtPointb : found " << boxes.size() << " matches\n";
 }
 
@@ -550,21 +550,21 @@ RegionTree::build()
     DVLOG(2) << "build tree\n";
     boost::timer __timer;
 
-    if ( _M_boxes.size() == 0 )
+    if ( M_boxes.size() == 0 )
         return;
 
-    FEELPP_ASSERT( _M_root == 0 ).error( "the tree has already been built" );
+    FEELPP_ASSERT( M_root == 0 ).error( "the tree has already been built" );
 
-    pbox_container_type b( _M_boxes.size() );
+    pbox_container_type b( M_boxes.size() );
     pbox_container_type::iterator b_it = b.begin();
 
-    node_type bmin( _M_boxes.front().min );
-    node_type bmax( _M_boxes.front().max );
+    node_type bmin( M_boxes.front().min );
+    node_type bmax( M_boxes.front().max );
 
     // build the bounding box of all the boxes stored
     // and store the boxes address in the pbox_container_type
-    box_container_type::const_iterator it=_M_boxes.begin();
-    box_container_type::const_iterator en=_M_boxes.end();
+    box_container_type::const_iterator it=M_boxes.begin();
+    box_container_type::const_iterator en=M_boxes.end();
 
     while ( it != en )
     {
@@ -576,7 +576,7 @@ RegionTree::build()
     }
 
     // build a tree view of the boxes
-    _M_root = Feel::build( b, bmin, bmax, 0 );
+    M_root = Feel::build( b, bmin, bmax, 0 );
 
     DVLOG(2) << "build tree done in " << __timer.elapsed() << "s\n";
 }
@@ -632,13 +632,13 @@ RegionTree::dump()
 {
     std::cout << "tree dump follows\n";
 
-    if ( !_M_root )
+    if ( !M_root )
         build();
 
     size_type count = 0;
-    Feel::dump( _M_root, 0, count );
+    Feel::dump( M_root, 0, count );
 
-    std::cout << " --- end of tree dump, nb of boxes: " << _M_boxes.size()
+    std::cout << " --- end of tree dump, nb of boxes: " << M_boxes.size()
               << ", rectangle ref in tree: " << count << "\n";
 }
 
@@ -673,8 +673,8 @@ destroy( RegionTree::element_base *n )
 void
 RegionTree::destroy()
 {
-    if (  _M_root )
-        Feel::destroy( _M_root );
+    if (  M_root )
+        Feel::destroy( M_root );
 }
 
 }

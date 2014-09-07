@@ -52,6 +52,7 @@ public:
     static const uint16_type topological_dimension = super::topological_dimension;
     static const uint16_type real_dimension = super::real_dimension;
 
+    typedef super GeoShape;
     static const size_type Shape = super::Shape;
     static const size_type Geometry = super::Geometry;
 
@@ -174,7 +175,7 @@ public:
         computeMeasure();
     }
 
-    Reference( element_type const& e, uint16_type __f )
+    Reference( element_type const& e, uint16_type __f, uint16_type __p = permutation_type::IDENTITY )
         :
         super(),
         M_id( __f ),
@@ -193,25 +194,48 @@ public:
             throw std::invalid_argument( str.str() );
         }
 
-        for ( int i = 0; i < numVertices; ++i )
-        {
-            if ( real_dimension == 3 )
-                ublas::column( M_vertices, i ) = e.vertex( element_type::f2p( __f, i ) );
 
-            else
-                ublas::column( M_vertices, i ) = e.vertex( element_type::e2p( __f, i ) );
+        CHECK( nDim <3 ) << "nDim must be less than 3 here\n";
+        if ( nDim == 2 )
+        {
+            std::map<uint16_type, std::vector<uint16_type> > permQuadrangles = {
+                {quadrangular_faces::IDENTITY, {0,1,2,3}},
+                {quadrangular_faces::ROTATION_ANTICLOCK, {3,0,1,2}},
+                {quadrangular_faces::ROTATION_CLOCKWISE, {1,2,3,0}},
+                {quadrangular_faces::REVERSE_BASE,{1,0,3,2}},
+                {quadrangular_faces::REVERSE_HEIGHT,{3,2,1,0}},
+                {quadrangular_faces::PRINCIPAL_DIAGONAL,{2,1,0,3}},
+                {quadrangular_faces::SECOND_DIAGONAL,{0,3,2,1}},
+                {quadrangular_faces::ROTATION_TWICE_CLOCKWISE,{2,3,0,1}}
+            };
+            DCHECK( permQuadrangles.find( __p )!=permQuadrangles.end() ) << "invalid permutation :" << __p << "\n";
+
+            for ( int i = 0; i < numVertices; ++i )
+            {
+                const int iperm = permQuadrangles.find( __p )->second[ i ];
+                ublas::column( M_vertices, iperm ) = e.vertex( element_type::f2p( __f, i ) );
+            }
+
+            M_points = make_quad_points();
+        }
+        else if ( nDim == 1 )
+        {
+            std::map<uint16_type, std::vector<uint16_type> > permLines{
+                {line_permutations::IDENTITY, {0,1} },
+                {line_permutations::REVERSE_PERMUTATION, {1,0} } };
+
+            DCHECK( permLines.find( __p )!=permLines.end() ) << "invalid permutation :" << __p << "\n";
+
+            for ( int i = 0; i < numVertices; ++i )
+            {
+                const int iperm = permLines.find( __p )->second[ i ];
+                ublas::column( M_vertices, iperm ) = e.vertex( element_type::e2p( __f, i ) );
+            }
+
+            M_points = make_line_points();
         }
 
-        for ( int i = 0; i < numPoints; ++i )
-        {
-            if ( real_dimension == 3 )
-                ublas::column( M_points, i ) = e.point( element_type::f2p( __f, i ) );
 
-            else
-                ublas::column( M_points, i ) = e.point( element_type::e2p( __f, i ) );
-        }
-
-        M_points = M_vertices;
         make_normals();
         computeMeasure();
     }
@@ -415,9 +439,22 @@ public:
         return M_normals.end();
     }
 
-    topological_face_type topologicalFace( uint16_type __f ) const
+    /**
+     * get the n-th unit tangent
+     *
+     * @param __n the index of the normal
+     *
+     * @return the n-th normal of the triangle
+     */
+    node_type const& tangent( uint16_type __n ) const
     {
-        topological_face_type ref( *this, __f );
+        return M_tangents[__n];
+    }
+
+
+    topological_face_type topologicalFace( uint16_type __f, uint16_type __p = permutation_type::IDENTITY ) const
+    {
+        topological_face_type ref( *this, __f, __p );
         return ref;
     }
 
@@ -475,7 +512,23 @@ public:
 
         return __max;
     }
+    double hMin() const
+    {
+        // FIXME: should be computed once for all in constructor
+        double __min = 0.0;
 
+        for ( int __e = 0; __e < numEdges; ++ __e )
+        {
+            double __len = ublas::norm_2( edgeVertex( __e, 1 ) - edgeVertex( __e, 0 ) );
+            __min = ( __min > __len )?__len:__min;
+        }
+
+        return __min;
+    }
+    double h( int e ) const
+    {
+        return ublas::norm_2( edgeVertex( e, 1 ) - edgeVertex( e, 0 ) );
+    }
 
     double hFace( int /*__f*/ ) const
     {
@@ -523,83 +576,21 @@ public:
     boost::tuple<bool, value_type>
     isIn( typename node<value_type>::type const& pt, mpl::int_<1> ) const
     {
-        typename matrix_node<value_type>::type M( nDim+1,nDim+1 );
-        typename matrix_node<value_type>::type P( nDim,nDim+1 );
-        std::fill( M.data().begin(), M.data().end(), value_type( 1.0 ) );
-
-        // compute the measure(times 2) of the segments, triangles or
-        // tetras formed by the point pt and the vertices of the
-        // simplex. The simplices are formed such that when the
-        // point is in the simplex the measure are all
-        // positive. In the case the point is outside the simplex
-        // the measure is negative
-        double meas_times = 1e30;
-
-        for ( int n = 0; n < numVertices; ++n )
-        {
-            ublas::column( P, 0 ) = pt;
-            ublas::column( P, 1 ) = this->vertex( n );
-            ublas::subrange( M, 0, nDim, 0, nDim+1 ) = P;
-            double res = details::det( M, mpl::int_<nDim+1>() )/2;
-            meas_times = ( meas_times < res )?meas_times:res;
-        }
-
-        return boost::make_tuple( meas_times>=-1e10, meas_times );
+        return (pt[0] >= -1-1e-10) && (pt[0] <= 1+1e-10);
     }
     boost::tuple<bool, value_type>
     isIn( typename node<value_type>::type const& pt, mpl::int_<2> ) const
     {
-        typename matrix_node<value_type>::type M( nDim+1,nDim+1 );
-        typename matrix_node<value_type>::type P( nDim,nDim+1 );
-        std::fill( M.data().begin(), M.data().end(), value_type( 1.0 ) );
+        return ( (pt[0] >= -1-1e-10) && (pt[0] <= 1+1e-10) &&
+                 (pt[1] >= -1-1e-10) && (pt[1] <= 1+1e-10) );
 
-        // compute the measure(times 2) of the segments, triangles or
-        // tetras formed by the point pt and the vertices of the
-        // simplex. The simplices are formed such that when the
-        // point is in the simplex the measure are all
-        // positive. In the case the point is outside the simplex
-        // the measure is negative
-        double meas_times = 1e30;
-
-        for ( int n = 0; n < numVertices; ++n )
-        {
-            ublas::column( P, 0 ) = pt;
-            ublas::column( P, 1 ) = this->vertex( n );
-            ublas::column( P, 2 ) = this->vertex( ( n+1 )%numVertices );
-            ublas::subrange( M, 0, nDim, 0, nDim+1 ) = P;
-            double res = details::det( M, mpl::int_<nDim+1>() )/2;
-            meas_times = ( meas_times < res )?meas_times:res;
-        }
-
-        return boost::make_tuple( meas_times>=-1e10, meas_times );
     }
     boost::tuple<bool, value_type>
     isIn( typename node<value_type>::type const& pt, mpl::int_<3> ) const
     {
-        typename matrix_node<value_type>::type M( nDim+1,nDim+1 );
-        typename matrix_node<value_type>::type P( nDim,nDim+1 );
-        std::fill( M.data().begin(), M.data().end(), value_type( 1.0 ) );
-
-        // compute the measure(times 2) of the segments, triangles or
-        // tetras formed by the point pt and the vertices of the
-        // simplex. The simplices are formed such that when the
-        // point is in the simplex the measure are all
-        // positive. In the case the point is outside the simplex
-        // the measure is negative
-        double meas_times = 1e30;
-
-        for ( int n = 0; n < numVertices; ++n )
-        {
-            ublas::column( P, 0 ) = pt;
-            ublas::column( P, 1 ) = this->vertex( n );
-            ublas::column( P, 2 ) = this->vertex( ( n+1 )%numVertices );
-            ublas::column( P, 3 ) = this->vertex( ( n+2 )%numVertices );
-            ublas::subrange( M, 0, nDim, 0, nDim+1 ) = P;
-            double res = details::det( M, mpl::int_<nDim+1>() )/2;
-            meas_times = ( meas_times < res )?meas_times:res;
-        }
-
-        return boost::make_tuple( meas_times>=-1e10, meas_times );
+        return ( (pt[0] >= -1-1e-10) && (pt[0] <= 1+1e-10) &&
+                 (pt[1] >= -1-1e-10) && (pt[1] <= 1+1e-10) &&
+                 (pt[2] >= -1-1e-10) && (pt[2] <= 1+1e-10) );
     }
 
     points_type makePoints( uint16_type topo_dim, uint16_type __id, int interior = 1 ) const
@@ -711,7 +702,7 @@ private:
             ublas::vector<node_type> h ( 1 );
             h( 0 ) = vertex( 1 ) - vertex( 0 );
 
-            points_type p( 1, n_line_points( interior ) );
+            points_type p( nRealDim, n_line_points( interior ) );
 
             for ( int i = interior, indp = 0; i < int( Order )+1-interior; ++i, ++indp )
             {
@@ -735,7 +726,7 @@ private:
             h( 1 ) = vertex( 3 ) - vertex( 0 );
             //DVLOG(2) << "h = " << h << "\n";
             //DVLOG(2) << "n quad pts = " << n_quad_points( interior ) << "\n";
-            points_type G( 2, n_quad_points( interior ) );
+            points_type G( nRealDim, n_quad_points( interior ) );
 
             for ( int i = interior, p = 0; i < int( Order )+1-interior; ++i )
             {
@@ -921,7 +912,7 @@ private:
     points_type M_points;
 
     normals_type M_normals;
-
+    normals_type M_tangents;
 
     node_type M_barycenter;
 

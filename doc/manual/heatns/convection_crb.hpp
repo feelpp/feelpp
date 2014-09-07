@@ -59,6 +59,7 @@
 #include <Eigen/Dense>
 
 #include <feel/feelcrb/modelcrbbase.hpp>
+#include <feel/feeldiscr/reducedbasisspace.hpp>
 
 // use the Feel namespace
 using namespace Feel;
@@ -91,6 +92,9 @@ public :
 class FunctionSpaceDefinition
 {
 public :
+    static const bool is_time_dependent = false;
+    static const bool is_linear = false;
+
     static const uint16_type Order = 1;
 
     static const int Order_s = CONVECTION_ORDER_U;
@@ -114,8 +118,25 @@ public :
 #endif
 
     typedef FunctionSpace<mesh_type, basis_type> space_type;
+
+    typedef bases< Lagrange<Order_p, Scalar> > single_basis_type;
+    typedef FunctionSpace<mesh_type, single_basis_type> mono_space_type;
+
 };
 
+
+//for compilation
+template <typename ParameterDefinition, typename FunctionSpaceDefinition >
+class EimDefinition
+{
+public :
+    typedef typename ParameterDefinition::parameterspace_type parameterspace_type;
+    typedef typename FunctionSpaceDefinition::mono_space_type mono_space_type;
+    typedef typename FunctionSpaceDefinition::space_type space_type;
+
+    typedef EIMFunctionBase<mono_space_type, space_type , parameterspace_type> fun_type;
+    typedef EIMFunctionBase<mono_space_type, space_type , parameterspace_type> fund_type;
+};
 
 /**
  * \class ConvectionCrb
@@ -126,11 +147,12 @@ public :
  * \tparam Order_p pressure polynomial order
  */
 //template< int Order_s, int Order_p, int Order_t >
-class ConvectionCrb : public ModelCrbBase< ParameterDefinition, FunctionSpaceDefinition >
+class ConvectionCrb : public ModelCrbBase< ParameterDefinition, FunctionSpaceDefinition , EimDefinition< ParameterDefinition, FunctionSpaceDefinition> >,
+                      public boost::enable_shared_from_this< ConvectionCrb >
 {
 public:
 
-    typedef ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition> super_type;
+    typedef ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition, EimDefinition<ParameterDefinition,FunctionSpaceDefinition> > super_type;
     typedef typename super_type::funs_type funs_type;
     typedef typename super_type::funsd_type funsd_type;
 
@@ -174,6 +196,7 @@ public:
     typedef FunctionSpace<mesh_type, basis_t_type> T_space_type;
     typedef boost::shared_ptr<T_space_type> T_space_ptrtype;
 
+
     /* parameter space */
     typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
     typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
@@ -194,6 +217,11 @@ public:
     typedef double value_type;
 
     typedef FunctionSpace<mesh_type, basis_type> space_type;
+
+
+    /*reduced basis space*/
+    typedef ReducedBasisSpace<ConvectionCrb, mesh_type, basis_type, value_type> rbfunctionspace_type;
+    typedef boost::shared_ptr< rbfunctionspace_type > rbfunctionspace_ptrtype;
 
     /* EIM */
     //typedef EIMFunctionBase<U_space_type, space_type , parameterspace_type> fun_type;
@@ -255,6 +283,11 @@ public:
         return M_Dmu;
     };
 
+    parameter_type refParameter()
+    {
+        return M_Dmu->min();
+    }
+
     affine_decomposition_type computeAffineDecomposition()
     {
         return boost::make_tuple( M_Aqm, M_Fqm );
@@ -281,9 +314,6 @@ public:
 
     int mMaxA( int q );
     int mMaxF( int output_index, int q );
-    int mMaxInitialGuess( int q );
-
-    int QInitialGuess() const ;
 
     /**
      * \brief compute the beta coefficient for both bilinear and linear form
@@ -351,7 +381,7 @@ public:
      * Given the output index \p output_index and the parameter \p mu, return
      * the value of the corresponding FEM output
      */
-    value_type output( int output_index, parameter_type const& mu );
+    value_type output( int output_index, parameter_type const& mu , element_type& unknown, bool need_to_solve=false);
 
     sparse_matrix_ptrtype newMatrix() const
     {
@@ -367,7 +397,16 @@ public:
     space_ptrtype functionSpace()
     {
         return Xh;
-    };
+    }
+
+    /**
+     * \brief Returns the reduced basis function space
+     */
+    rbfunctionspace_ptrtype rBFunctionSpace()
+    {
+        return RbXh;
+    }
+
 
     void setMeshSize( double s )
     {
@@ -377,7 +416,7 @@ public:
 
     po::options_description const& optionsDescription() const
     {
-        return _M_desc;
+        return M_desc;
     }
 
     /**
@@ -393,7 +432,7 @@ public:
 
 
 
-    sparse_matrix_ptrtype innerProduct()
+    sparse_matrix_ptrtype energyMatrix()
     {
         return M;
     }
@@ -407,13 +446,15 @@ public:
 
 private:
 
-    po::options_description _M_desc;
+    po::options_description M_desc;
 
     po::variables_map M_vm;
     backend_ptrtype M_backend;
 
     space_ptrtype Xh;
-    boost::shared_ptr<OperatorLagrangeP1<typename space_type::sub_functionspace<2>::type::value_type> > P1h;
+
+    rbfunctionspace_ptrtype RbXh;
+    boost::shared_ptr<OperatorLagrangeP1<typename space_type::sub_functionspace<2>::type::element_type> > P1h;
 
     oplin_ptrtype M_oplin;
     funlin_ptrtype M_lf;

@@ -1,0 +1,20 @@
+diff -N -u -r ann-1.1.2+doc.orig//src/kd_tree.cpp ann-1.1.2+doc//src/kd_tree.cpp
+--- ann-1.1.2+doc.orig//src/kd_tree.cpp	2010-01-28 05:40:01.000000000 +0100
++++ ann-1.1.2+doc//src/kd_tree.cpp	2011-10-26 00:17:48.588975039 +0200
+@@ -193,10 +193,12 @@
+ {
+ 	st.reset(dim, n_pts, bkt_size);				// reset stats
+ 												// create bounding box
+-	ANNorthRect bnd_box(dim, bnd_box_lo, bnd_box_hi);
+-	if (root != NULL) {							// if nonempty tree
+-		root->getStats(dim, st, bnd_box);		// get statistics
+-		st.avg_ar = st.sum_ar / st.n_lf;		// average leaf asp ratio
++        if (pts != NULL) {
++          ANNorthRect bnd_box(dim, bnd_box_lo, bnd_box_hi);
++          if (root != NULL) {                                                   // if nonempty tree
++            root->getStats(dim, st, bnd_box);           // get statistics
++            st.avg_ar = st.sum_ar / st.n_lf;            // average leaf asp ratio
++          }
+ 	}
+ }
+ 

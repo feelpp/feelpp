@@ -1,4 +1,0 @@
-(("svn-trac-project-root" "http://cmcsforge.epfl.ch/cgi-bin/trac.cgi/")
- ("sort-status-buffer" t)
- ("elide-list" nil)
- ("module-name" nil))

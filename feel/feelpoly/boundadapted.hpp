@@ -206,32 +206,32 @@ public:
     BoundaryAdapted()
         :
         super( *this ),
-        _M_refconvex(),
-        _M_pts( nDim, numVertices ),
-        _M_pts_face( reference_convex_type::numVertices )
+        M_refconvex(),
+        M_pts( nDim, numVertices ),
+        M_pts_face( reference_convex_type::numVertices )
     {
         PointSetEquiSpaced<convex_type,nOrder,value_type> pts;
 
         // only the points associated with the vertices
-        _M_pts = pts.pointsByEntity( 0 );
-        DVLOG(2) << "[boundaryadapted] pts= " <<  _M_pts << "\n";
+        M_pts = pts.pointsByEntity( 0 );
+        DVLOG(2) << "[boundaryadapted] pts= " <<  M_pts << "\n";
 
         // get the points for each faces
-        for ( uint16_type e = _M_refconvex.entityRange( nDim-1 ).begin();
-                e < _M_refconvex.entityRange( nDim-1 ).end();
+        for ( uint16_type e = M_refconvex.entityRange( nDim-1 ).begin();
+                e < M_refconvex.entityRange( nDim-1 ).end();
                 ++e )
         {
-            _M_pts_face[e] = pts.pointsBySubEntity( nDim-1, e, 1 );
-            DVLOG(2) << "[boundaryadapted] face " << e << " pts " <<  _M_pts_face[e] << "\n";
+            M_pts_face[e] = pts.pointsBySubEntity( nDim-1, e, 1 );
+            DVLOG(2) << "[boundaryadapted] face " << e << " pts " <<  M_pts_face[e] << "\n";
         }
     }
 
     BoundaryAdapted( BoundaryAdapted const & d )
         :
         super( *this ),
-        _M_refconvex( d._M_refconvex ),
-        _M_pts( d._M_pts ),
-        _M_pts_face( d._M_pts_face )
+        M_refconvex( d.M_refconvex ),
+        M_pts( d.M_pts ),
+        M_pts_face( d.M_pts_face )
     {}
 
     ~BoundaryAdapted()
@@ -244,7 +244,7 @@ public:
      **/
     points_type const& points() const
     {
-        return _M_pts;
+        return M_pts;
     }
 
     /**
@@ -252,7 +252,7 @@ public:
      **/
     points_type const& points( int f ) const
     {
-        return _M_pts_face[f];
+        return M_pts_face[f];
     }
 
     /** @name Operator overloads
@@ -263,8 +263,8 @@ public:
     {
         if ( this != &d )
         {
-            _M_refconvex = d._M_refconvex;
-            _M_pts = d._M_pts;
+            M_refconvex = d.M_refconvex;
+            M_pts = d.M_pts;
         }
 
         return *this;
@@ -329,7 +329,7 @@ public:
 
     matrix_type coeff() const
     {
-        return ublas::identity_matrix<value_type>( reference_convex_type::polyDims( nOrder ), _M_pts.size2() );
+        return ublas::identity_matrix<value_type>( reference_convex_type::polyDims( nOrder ), M_pts.size2() );
     }
 
 
@@ -367,7 +367,7 @@ private:
     matrix_type
     static evaluate( points_type const& __pts, mpl::int_<1> )
     {
-        matrix_type E = _M_pfunc.evaluate_1( ublas::row( __pts,0 ) );
+        matrix_type E = M_pfunc.evaluate_1( ublas::row( __pts,0 ) );
         matrix_type D;
         D.resize( E.size1(), E.size2() );
 
@@ -393,7 +393,7 @@ private:
 
         vector_matrix_type E( 1 );
         E[0].resize( nOrder+1, __pts().size2() );
-        E[0] = _M_pfunc.derivate_1( ublas::row( __pts(),0 ) );
+        E[0] = M_pfunc.derivate_1( ublas::row( __pts(),0 ) );
 
         vector_matrix_type D( 1 );
         D[0].resize( nOrder+1, __pts().size2() );
@@ -436,10 +436,10 @@ private:
     static vector_matrix_type derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<3> );
 
 private:
-    reference_convex_type _M_refconvex;
-    points_type _M_pts;
-    std::vector<points_type> _M_pts_face;
-    static principal_type _M_pfunc;
+    reference_convex_type M_refconvex;
+    points_type M_pts;
+    std::vector<points_type> M_pts_face;
+    static principal_type M_pfunc;
 
 };
 template<uint16_type Dim,
@@ -447,7 +447,7 @@ template<uint16_type Dim,
          typename T,
          template<class> class StoragePolicy>
 typename BoundaryAdapted<Dim, Degree,  T, StoragePolicy>::principal_type
-BoundaryAdapted<Dim, Degree,  T, StoragePolicy>::_M_pfunc;
+BoundaryAdapted<Dim, Degree,  T, StoragePolicy>::M_pfunc;
 
 template<uint16_type Dim,
          uint16_type Degree,
@@ -462,8 +462,8 @@ BoundaryAdapted<Dim, Degree,  T, StoragePolicy>::evaluate( points_type const& __
     vector_type eta1s = ublas::row( etas(), 0 );
     vector_type eta2s = ublas::row( etas(), 1 );
 
-    matrix_type psi_1( _M_pfunc.evaluate_1( eta1s ) );
-    vector_matrix_type psi_2( _M_pfunc.evaluate_2( eta2s ) );
+    matrix_type psi_1( M_pfunc.evaluate_1( eta1s ) );
+    vector_matrix_type psi_2( M_pfunc.evaluate_2( eta2s ) );
 
     /* 3 Vertex */
 
@@ -538,11 +538,11 @@ BoundaryAdapted<Dim, Degree,  T, StoragePolicy>::derivate( ublas::matrix_express
     vector_type eta1s = ublas::row( etas(), 0 );
     vector_type eta2s = ublas::row( etas(), 1 );
 
-    matrix_type psi_1( _M_pfunc.evaluate_1( eta1s ) );
-    vector_matrix_type psi_2( _M_pfunc.evaluate_2( eta2s ) );
+    matrix_type psi_1( M_pfunc.evaluate_1( eta1s ) );
+    vector_matrix_type psi_2( M_pfunc.evaluate_2( eta2s ) );
 
-    matrix_type dpsi_1( _M_pfunc.derivate_1( eta1s ) );
-    vector_matrix_type dpsi_2( _M_pfunc.derivate_2( eta2s ) );
+    matrix_type dpsi_1( M_pfunc.derivate_1( eta1s ) );
+    vector_matrix_type dpsi_2( M_pfunc.derivate_2( eta2s ) );
 
     vector_type ones( ublas::scalar_vector<value_type>( __pts().size2(), value_type( 1.0 ) ) );
     vector_type d1( value_type( 2.0 )*ublas::element_div( ones,ones-eta2s ) ); // 2 / (1 - xi_2)
@@ -645,9 +645,9 @@ BoundaryAdapted<Dim, Degree,  T, StoragePolicy>::evaluate( points_type const& __
     vector_type eta2s = ublas::row( etas(), 1 );
     vector_type eta3s = ublas::row( etas(), 2 );
 
-    matrix_type psi_1( _M_pfunc.evaluate_1( eta1s ) );
-    vector_matrix_type psi_2( _M_pfunc.evaluate_2( eta2s ) );
-    vector_vector_matrix_type psi_3( _M_pfunc.evaluate_3( eta3s ) );
+    matrix_type psi_1( M_pfunc.evaluate_1( eta1s ) );
+    vector_matrix_type psi_2( M_pfunc.evaluate_2( eta2s ) );
+    vector_vector_matrix_type psi_3( M_pfunc.evaluate_3( eta3s ) );
 
     ublas::scalar_vector<value_type> ones( eta3s.size(), value_type( 1.0 ) );
 
@@ -842,14 +842,14 @@ BoundaryAdapted<Dim, Degree,  T, StoragePolicy>::derivate( ublas::matrix_express
     vector_type eta2s = ublas::row( etas(), 1 );
     vector_type eta3s = ublas::row( etas(), 2 );
 
-    matrix_type psi_1( _M_pfunc.evaluate_1( eta1s ) );
-    matrix_type dpsi_1( _M_pfunc.derivate_1( eta1s ) );
+    matrix_type psi_1( M_pfunc.evaluate_1( eta1s ) );
+    matrix_type dpsi_1( M_pfunc.derivate_1( eta1s ) );
 
-    vector_matrix_type psi_2( _M_pfunc.evaluate_2( eta2s ) );
-    vector_matrix_type dpsi_2( _M_pfunc.derivate_2( eta2s ) );
+    vector_matrix_type psi_2( M_pfunc.evaluate_2( eta2s ) );
+    vector_matrix_type dpsi_2( M_pfunc.derivate_2( eta2s ) );
 
-    vector_vector_matrix_type psi_3( _M_pfunc.evaluate_3( eta3s ) );
-    vector_vector_matrix_type dpsi_3( _M_pfunc.derivate_3( eta3s ) );
+    vector_vector_matrix_type psi_3( M_pfunc.evaluate_3( eta3s ) );
+    vector_vector_matrix_type dpsi_3( M_pfunc.derivate_3( eta3s ) );
 
     ublas::scalar_vector<value_type> ones( __pts().size2(), value_type( 1.0 ) );
 
@@ -1275,4 +1275,3 @@ BoundaryAdapted<Dim, Degree,  T, StoragePolicy>::derivate( ublas::matrix_express
 
 }
 #endif /* __BoundAdapted_H */
-

@@ -85,9 +85,9 @@ makeOptions()
 {
     Feel::po::options_description ginacoptions("Ginac options");
     ginacoptions.add_options()
-        ("dim", Feel::po::value<int>()->default_value( 0 ), "geometric dimension")
-        ("params", Feel::po::value<std::string>()->default_value( "" ), "name of parameters")
-        ("exact", Feel::po::value<std::string>()->default_value( "" ), "name of the input")
+        ("dim", Feel::po::value<int>()->default_value( 1 ), "geometric dimension")
+        ("params", Feel::po::value<std::string>()->default_value( "a;b" ), "name of parameters")
+        ("exact", Feel::po::value<std::string>()->default_value( "a*x+b" ), "name of the input")
         ;
     return ginacoptions.add( Feel::feel_options() );
 }
@@ -123,26 +123,28 @@ int main( int argc, char* argv[] )
     std::vector<std::string> lst_params;
     std::string exact;
     std::string params;
-    int dim;
+    int dim = 0;
 
     if ( option(_name="ginac.strict-parser").as<bool>() )
         std::cout << "Strict Ginac Parser enabled\n";
-    if ( !env.vm()["dim"].template as<int>() )
+    if ( !env.vm()["dim"].as<int>() )
         {
             std::cout << "dim=" << std::flush;
             std::cin >> dim;
             std::cout << std::flush;
         }
+        else
+        dim = env.vm()["dim"].as<int>(); 
 
     // Load param list
-    if ( !env.vm()["params"].template as<std::string>().empty() )
+    if ( !env.vm()["params"].as<std::string>().empty() )
         {
             boost::split(lst_params, params, boost::is_any_of(";"));
             parameters = symbols(lst_params);
         }
 
     // load exact
-    if ( env.vm()["exact"].template as<std::string>().empty() )
+    if ( env.vm()["exact"].as<std::string>().empty() )
         {
             // Load param list
             std::cout << "params (eg params=\"a;b\")=" << std::flush; std::cin >> params;  std::cout << std::flush;
@@ -157,6 +159,8 @@ int main( int argc, char* argv[] )
             std::cin >> exact;
             std::cout << std::flush;
         }
+    else
+      exact = env.vm()["exact"].as<std::string>();
 
     switch (dim) {
     case(1) : {
@@ -172,7 +176,7 @@ int main( int argc, char* argv[] )
         break;
     }
     default: {
-        std::cerr << "wrong dimension - should be lesser or egal to 3\n";
+        std::cerr << "wrong dimension - should be lesser or egal to 3 - is equatl to " << dim << "\n";
         return 1;
     }
     }
@@ -263,5 +267,9 @@ int main( int argc, char* argv[] )
                                 std::cout << substitute(f, sym, f1) << std::endl;
                             }
                     });
+		    
+    exact="sin(x)";
+    auto g = expr(exact, vars);
+    		    
     return 0;
 }

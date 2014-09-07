@@ -41,14 +41,22 @@ namespace Feel
 WorldComm::WorldComm()
     :
     super(),
-    M_localComm( super::split( 0, this->globalRank() ) ),
-    M_godComm(),
-    M_mapColorWorld( this->globalSize() ),
+    M_localComm( this->globalComm() ),
+    M_godComm( this->globalComm() ),
+    M_subWorldCommSeq(),
+    M_mapColorWorld( this->globalSize(), 0 ),
     M_mapLocalRankToGlobalRank( this->localSize() ),
     M_mapGlobalRankToGodRank( this->globalSize() ),
+    M_masterRank( 0 ),
     M_isActive( this->godSize(),true )
 {
-    init( 0, false );
+    for (int p=0 ; p<this->globalSize() ; ++p )
+    {
+        M_mapLocalRankToGlobalRank[p] = p;
+        M_mapGlobalRankToGodRank[p] = p;
+    }
+
+    this->initSubWorldCommSeq();
 }
 
 WorldComm::WorldComm( super const& s )
@@ -56,6 +64,7 @@ WorldComm::WorldComm( super const& s )
     super(),
     M_localComm( super::split( 0, this->globalRank() ) ),
     M_godComm(s),
+    M_subWorldCommSeq(),
     M_mapColorWorld( this->globalSize() ),
     M_mapLocalRankToGlobalRank( this->localSize() ),
     M_mapGlobalRankToGodRank( this->globalSize() ),
@@ -70,8 +79,10 @@ WorldComm::WorldComm( super const& s )
 WorldComm::WorldComm( int color )
     :
     super(),
+    //M_selfComm( MPI_COMM_SELF, mpi::comm_attach ),
     M_localComm( super::split( color, this->globalRank() ) ),
     M_godComm(),
+    M_subWorldCommSeq(),
     M_mapColorWorld( this->globalSize() ),
     M_mapLocalRankToGlobalRank( this->localSize() ),
     M_mapGlobalRankToGodRank( this->globalSize() ),
@@ -81,20 +92,22 @@ WorldComm::WorldComm( int color )
 }
 
 //-------------------------------------------------------------------------------
+
     WorldComm::WorldComm( std::vector<int> const& colorWorld )
     :
     super(),
     M_localComm( super::split( colorWorld[this->globalRank()] ) ),
     M_godComm(),
+    M_subWorldCommSeq(),
     M_mapColorWorld( colorWorld ),
     M_mapLocalRankToGlobalRank( this->localSize() ),
     M_mapGlobalRankToGodRank( this->globalSize() ),
     M_isActive( this->godSize(),true )
 {
-    init( 0, true );
-
+    init( 0, false );
 }
 
+//-------------------------------------------------------------------------------
 
 WorldComm::WorldComm( std::vector<int> const& colorWorld,
                       int _localRank,
@@ -104,12 +117,13 @@ WorldComm::WorldComm( std::vector<int> const& colorWorld,
     super(_globalComm),
     M_localComm( super::split( colorWorld[this->globalRank()],_localRank ) ),
     M_godComm(_godComm),
+    M_subWorldCommSeq(),
     M_mapColorWorld( colorWorld ),
     M_mapLocalRankToGlobalRank( this->localSize() ),
     M_mapGlobalRankToGodRank( this->globalSize() ),
     M_isActive( this->godSize(),true )
 {
-        init( 0, true );
+    init( 0, false );
 }
 
 //-------------------------------------------------------------------------------
@@ -117,28 +131,45 @@ WorldComm::WorldComm( std::vector<int> const& colorWorld,
 void
 WorldComm::init( int color, bool colormap )
 {
-    std::vector<int> globalRanks( this->globalSize() );
-    mpi::all_gather( this->globalComm(),
-                     this->globalRank(),
-                     globalRanks );
-    //LOG(INFO) << "gather1\n";
-    if ( !colormap )
-        mpi::all_gather( this->globalComm(),
-                         color,
-                         M_mapColorWorld );
-
     mpi::all_gather( this->localComm(),
                      this->globalRank(),
                      M_mapLocalRankToGlobalRank );
 
-    mpi::all_gather( this->globalComm(),
-                     this->godRank(),
-                     M_mapGlobalRankToGodRank );
+    std::vector<int> globalRanks( this->globalSize() );
+    if ( !colormap )
+    {
+        auto dataSendToGather = boost::make_tuple( this->globalRank(),this->godRank() );
+        std::vector<boost::tuple<rank_type,rank_type> > dataRecvToGather( this->globalSize() );
+        mpi::all_gather( this->globalComm(),
+                         dataSendToGather,
+                         dataRecvToGather);
+        for (int p=0 ; p<this->globalSize() ; ++p )
+        {
+            globalRanks[p] = dataRecvToGather[p].get<0>();
+            M_mapGlobalRankToGodRank[p] = dataRecvToGather[p].get<1>();
+        }
+    }
+    else
+    {
+        auto dataSendToGather = boost::make_tuple( this->globalRank(),this->godRank(), color );
+        std::vector<boost::tuple<rank_type,rank_type,int> > dataRecvToGather( this->globalSize() );
+
+        mpi::all_gather( this->globalComm(),
+                         dataSendToGather,
+                         dataRecvToGather);
+        for (int p=0 ; p<this->globalSize() ; ++p )
+        {
+            globalRanks[p] = dataRecvToGather[p].get<0>();
+            M_mapGlobalRankToGodRank[p] = dataRecvToGather[p].get<1>();
+            M_mapColorWorld[p] = dataRecvToGather[p].get<2>();
+        }
+
+    }
 
     // choice : the smallest rank
     M_masterRank = *std::min_element( globalRanks.begin(),globalRanks.end() );
 
-    //std::cout << "\n WorldComm : warning constructor empty!! finish on godRank " << this->godRank() << std::endl;
+    this->initSubWorldCommSeq();
 
 }
 
@@ -149,9 +180,11 @@ WorldComm::WorldComm( WorldComm const& wc )
     super( wc ),
     M_localComm( wc.M_localComm ),
     M_godComm( wc.M_godComm ),
+    M_subWorldCommSeq( wc.M_subWorldCommSeq ),
     M_mapColorWorld( wc.M_mapColorWorld ),
     M_mapLocalRankToGlobalRank( wc.M_mapLocalRankToGlobalRank ),
     M_mapGlobalRankToGodRank( wc.M_mapGlobalRankToGodRank ),
+    M_subworlds( wc.M_subworlds ),
     M_masterRank( wc.M_masterRank ),
     M_isActive( wc.M_isActive )
 {}
@@ -163,6 +196,7 @@ WorldComm::WorldComm( communicator_type const& _globalComm, int _color, bool _is
     super( _globalComm ),
     M_localComm( super::split( _color ) ),
     M_godComm(),
+    M_subWorldCommSeq(),
     M_mapColorWorld( this->globalSize() ),
     M_mapLocalRankToGlobalRank( this->localSize() ),
     M_mapGlobalRankToGodRank( this->globalSize() )
@@ -184,29 +218,10 @@ WorldComm::WorldComm( communicator_type const& _globalComm, int _color, bool _is
                      ( int )_isActive,
                      M_isActive );
 
-    // choice : the smallest rank
-    M_masterRank = INT_MAX;
 
-    for ( int p=0; p<this->globalSize(); ++p )
-    {
-        if  ( _isActive )
-        {
-            if ( M_isActive[this->mapGlobalRankToGodRank()[p]] )
-            {
-                if ( M_masterRank>p ) M_masterRank=p;
-            }
-        }
+    this->upMasterRank();
 
-        else
-        {
-            if ( !M_isActive[this->mapGlobalRankToGodRank()[p]] )
-            {
-                if ( M_masterRank>p ) M_masterRank=p;
-            }
-
-        }
-    }
-
+    this->initSubWorldCommSeq();
 
 }
 
@@ -219,6 +234,7 @@ WorldComm::WorldComm( communicator_type const& _globalComm, int _color, bool _is
     super( _godComm.split( _colorGlobal, globalRank ) ),
     M_localComm( super::split( _colorLocal, localRank ) ),
     M_godComm(_godComm),
+    M_subWorldCommSeq(),
     M_mapColorWorld( this->globalSize() ),
     M_mapLocalRankToGlobalRank( this->localSize() ),
     M_mapGlobalRankToGodRank( this->globalSize() )
@@ -243,6 +259,7 @@ WorldComm::WorldComm( communicator_type const& _globalComm, int _color, bool _is
         this->upMasterRank();
     }
 
+    this->initSubWorldCommSeq();
 }
 
 
@@ -256,6 +273,7 @@ WorldComm::WorldComm( communicator_type const& _globalComm,
     super( _globalComm ),
     M_localComm( _globalComm.split( _color, localRank ) ),
     M_godComm(_godComm ),
+    M_subWorldCommSeq(),
     M_mapColorWorld( this->globalSize() ),
     M_mapLocalRankToGlobalRank( this->localSize() ),
     M_mapGlobalRankToGodRank( this->globalSize() ),
@@ -273,29 +291,10 @@ WorldComm::WorldComm( communicator_type const& _globalComm,
                      this->godRank(),
                      M_mapGlobalRankToGodRank );
 
-    // choice : the smallest rank
-    M_masterRank = INT_MAX;
 
-    for ( int p=0; p<this->globalSize(); ++p )
-    {
-        if  ( this->isActive() )
-        {
-            if ( M_isActive[this->mapGlobalRankToGodRank()[p]] )
-            {
-                if ( M_masterRank>p ) M_masterRank=p;
-            }
-        }
+    this->upMasterRank();
 
-        else
-        {
-            if ( !M_isActive[this->mapGlobalRankToGodRank()[p]] )
-            {
-                if ( M_masterRank>p ) M_masterRank=p;
-            }
-
-        }
-    }
-
+    this->initSubWorldCommSeq();
 }
 
 //-------------------------------------------------------------------------------
@@ -309,30 +308,59 @@ WorldComm::WorldComm( communicator_type const& _globalComm,
     super( _globalComm ),
     M_localComm(_localComm ),
     M_godComm(_godComm ),
+    M_subWorldCommSeq(),
     M_mapColorWorld( this->globalSize() ),
     M_mapLocalRankToGlobalRank( this->localSize() ),
     M_mapGlobalRankToGodRank( this->globalSize() ),
     M_isActive(isActive)
 {
-    mpi::all_gather( this->globalComm(),
-                     _color,
-                     M_mapColorWorld );
-
     mpi::all_gather( this->localComm(),
                      this->globalRank(),
                      M_mapLocalRankToGlobalRank );
 
+    auto dataSendToGather = boost::make_tuple( _color,this->godRank() );
+    std::vector<boost::tuple<int,rank_type> > dataRecvToGather( this->globalSize() );
     mpi::all_gather( this->globalComm(),
-                     this->godRank(),
-                     M_mapGlobalRankToGodRank );
-
-    // choice : the smallest rank
-    M_masterRank = INT_MAX;
+                     dataSendToGather,
+                     dataRecvToGather);
+    for (int p=0 ; p<this->globalSize() ; ++p )
+    {
+        M_mapColorWorld[p] = dataRecvToGather[p].get<0>();
+        M_mapGlobalRankToGodRank[p] = dataRecvToGather[p].get<1>();
+    }
 
     this->upMasterRank();
 
+    if ( this->M_isActive[this->godRank()] && this->globalSize() == 1 && this->localSize() == 1 &&
+         std::accumulate( this->M_isActive.begin(),this->M_isActive.end(), 0, std::plus<int>() ) == 1 )
+    {
+        M_subWorldCommSeq.reset( new self_type(*this) );
+    }
+    else
+    {
+        this->initSubWorldCommSeq();
+    }
+
 }
 
+WorldComm&
+WorldComm::operator=( WorldComm const& wc )
+{
+    if ( this != &wc )
+    {
+        super::operator=( wc );
+        M_localComm = wc.M_localComm;
+        M_godComm = wc.M_godComm;
+        M_subWorldCommSeq = wc.M_subWorldCommSeq;
+        M_mapColorWorld = wc.M_mapColorWorld;
+        M_mapLocalRankToGlobalRank = wc.M_mapLocalRankToGlobalRank;
+        M_mapGlobalRankToGodRank = wc.M_mapGlobalRankToGodRank;
+        M_subworlds = wc.M_subworlds;
+        M_masterRank = wc.M_masterRank;
+        M_isActive = wc.M_isActive;
+    }
+    return *this;
+}
 
 //-------------------------------------------------------------------------------
 
@@ -394,17 +422,26 @@ WorldComm::subWorldComm( int _color, std::vector<int> const& colormap )
 
 //-------------------------------------------------------------------------------
 
-WorldComm::self_type
+WorldComm::self_type const&
 WorldComm::subWorldCommSeq() const
+{
+    CHECK(M_subWorldCommSeq) << "M_subWorldCommSeq is not initialized()\n";
+    return *M_subWorldCommSeq;
+}
+
+//-------------------------------------------------------------------------------
+
+void
+WorldComm::initSubWorldCommSeq()
 {
     std::vector<int> newIsActive(this->godSize(),false);
     newIsActive[this->godRank()]=true;
 
-    return self_type( communicator_type(MPI_COMM_SELF,boost::mpi::comm_attach),
-                      communicator_type(MPI_COMM_SELF,boost::mpi::comm_attach),
-                      this->godComm(),
-                      this->godRank(), // local color
-                      newIsActive );
+    M_subWorldCommSeq.reset( new WorldComm( communicator_type(MPI_COMM_SELF,boost::mpi::comm_attach),
+                                            communicator_type(MPI_COMM_SELF,boost::mpi::comm_attach),
+                                            this->godComm(),
+                                            this->godRank(), // local color
+                                            newIsActive ) );
 }
 
 //-------------------------------------------------------------------------------
@@ -546,7 +583,7 @@ WorldComm::operator+( WorldComm const & _worldComm ) const
 
 //-------------------------------------------------------------------------------
 
-int
+rank_type
 WorldComm::localColorToGlobalRank( int _color,int _localRank ) const
 {
     int res=0,cptLoc=0;
@@ -656,7 +693,7 @@ WorldComm::applyActivityOnlyOn(int _localColor) const
 //-------------------------------------------------------------------------------
 
 WorldComm const&
-WorldComm::subWorld( int n )
+WorldComm::subWorld( int n ) const
 {
     if ( this->globalSize() == 1 )
         return *this;
@@ -665,7 +702,7 @@ WorldComm::subWorld( int n )
     return M_subworlds.find(n)->second.second[subWorldId(n)];
 }
 int
-WorldComm::subWorldId( int n )
+WorldComm::subWorldId( int n ) const
 {
     if ( this->globalSize() == 1 )
         return 0;
@@ -675,13 +712,13 @@ WorldComm::subWorldId( int n )
     return M_subworlds.find(n)->second.first.M_mapColorWorld[this->globalRank()];
 }
 bool
-WorldComm::hasSubWorlds( int n )
+WorldComm::hasSubWorlds( int n ) const
 {
     return M_subworlds.find( n ) != M_subworlds.end();
 }
 
 std::vector<WorldComm> const&
-WorldComm::subWorlds( int n )
+WorldComm::subWorlds( int n ) const
 {
     if ( !hasSubWorlds( n ) )
         registerSubWorlds( n );
@@ -699,7 +736,7 @@ WorldComm::subWorldsGroupBySubspace( int n )
 int
 WorldComm::numberOfSubWorlds() const
 {
-    if ( this->globalSize() == 1 )
+    if ( this->globalSize() == 1 || M_subworlds.size() == 0 )
         return 1;
     return M_subworlds.begin()->first;
 }
@@ -713,10 +750,10 @@ WorldComm::masterWorld( int n )
 }
 
 void
-WorldComm::registerSubWorlds( int n )
+WorldComm::registerSubWorlds( int n ) const
 {
-    std::vector<WorldComm> subworlds( n, Environment::worldComm() );
-    M_subworlds.insert( std::make_pair( n, std::make_pair( Environment::worldComm(), subworlds ) ) );
+    std::vector<WorldComm> subworlds( n, *this );
+    M_subworlds.insert( std::make_pair( n, std::make_pair( *this, subworlds ) ) );
 }
 void
 WorldComm::registerSubWorldsGroupBySubspace( int n )
@@ -756,8 +793,8 @@ WorldComm::registerSubWorldsGroupBySubspace( int n )
     }
     else if ( ( n == 1 ) || ( this->globalSize() == 1 ) )
     {
-        std::vector<WorldComm> subworlds( n, Environment::worldComm() );
-        M_subworlds.insert( std::make_pair( n, std::make_pair( Environment::worldComm(), subworlds ) ) );
+        std::vector<WorldComm> subworlds( n, *this );
+        M_subworlds.insert( std::make_pair( n, std::make_pair( *this, subworlds ) ) );
     }
 }
 
@@ -773,4 +810,3 @@ WorldComm::setColorMap( std::vector<int> const& colormap )
 }
 
 } //namespace Feel
-

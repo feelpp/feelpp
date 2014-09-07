@@ -90,7 +90,6 @@ int main(int argc, char**argv )
     // initialize feel++
     using namespace Feel;
     Environment env( _argc=argc, _argv=argv,
-                     _desc=feel_options(),
                      _about=about(_name="mylaplacian",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));

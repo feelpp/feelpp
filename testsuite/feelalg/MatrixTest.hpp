@@ -52,7 +52,7 @@ public:
 
     MatrixMass( int n )
         :
-        _M_mat( n, n )
+        M_mat( n, n )
     {
         // Defining constants.
 
@@ -62,12 +62,12 @@ public:
         for ( int __i = 0; __i < n; ++__i )
         {
             if ( __i != 0 )
-                _M_mat( __i, __i-1 ) = sub;
+                M_mat( __i, __i-1 ) = sub;
 
-            _M_mat( __i, __i ) = diag;
+            M_mat( __i, __i ) = diag;
 
             if ( __i != n-1 )
-                _M_mat( __i, __i+1 ) = sub;
+                M_mat( __i, __i+1 ) = sub;
         }
     }
 
@@ -76,28 +76,28 @@ public:
     }
     uint const * ia()const
     {
-        return _M_mat.index1_data();
+        return M_mat.index1_data();
     }
     uint const * jaData()const
     {
-        return _M_mat.index2_data();
+        return M_mat.index2_data();
     }
     double* valueData()
     {
-        return _M_mat.value_data();
+        return M_mat.value_data();
     }
 
     matrix_type const& matrix() const
     {
-        return _M_mat;
+        return M_mat;
     }
     matrix_type &      matrix()
     {
-        return _M_mat;
+        return M_mat;
     }
 
 private:
-    matrix_type _M_mat;
+    matrix_type M_mat;
 };
 #if 0
 /*!
@@ -127,36 +127,36 @@ public:
 
     ~MatrixConvectionDiffusion()
     {
-        delete _M_mat;
-        delete _M_pattern;
+        delete M_mat;
+        delete M_pattern;
     }
     uint const * iaData()const
     {
-        return _M_mat->Patt()->giveRawCSR_ia();
+        return M_mat->Patt()->giveRawCSR_ia();
     }
     uint const * jaData()const
     {
-        return _M_mat->Patt()->giveRawCSR_ja();
+        return M_mat->Patt()->giveRawCSR_ja();
     }
     double* valueData()
     {
-        return _M_mat->giveRawCSR_value();
+        return M_mat->giveRawCSR_value();
     }
 
     matrix_type const& matrix() const
     {
-        return *_M_mat;
+        return *M_mat;
     }
     matrix_type &      matrix()
     {
-        return *_M_mat;
+        return *M_mat;
     }
 
 private:
-    value_type _M_rho;
-    matrix_type* _M_mat;
-    CSRPatt* _M_pattern;
-    std::vector<double> _M_val;
+    value_type M_rho;
+    matrix_type* M_mat;
+    CSRPatt* M_pattern;
+    std::vector<double> M_val;
 };
 #endif
 }

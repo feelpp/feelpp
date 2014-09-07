@@ -60,7 +60,7 @@ int main(int argc, char**argv )
     auto lVit = form1( _test=Vh  );
     auto lPre = form1( _test=Ph );
 
-    auto exp = exporter( _mesh=mesh, _geo=EXPORTER_GEOMETRY_STATIC );
+    auto exp = exporter( _mesh=mesh );
 
     node_type aa(2);
     aa[0]=0.15;

@@ -35,8 +35,10 @@
 #include <feel/feelalg/matrixsparse.hpp>
 #include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
+
 #include <feel/feelvf/bilinearform.hpp>
 #include <feel/feelvf/linearform.hpp>
+#include <feel/feelvf/integrate.hpp>
 
 namespace Feel
 {
@@ -75,35 +77,6 @@ form( boost::shared_ptr<X1> const& __X1,
 }
 
 
-namespace detail
-{
-template <class MatrixType>
-struct is_matrix_ptr : mpl::false_ {};
-
-template <class MatrixType>
-struct is_matrix_ptr<boost::shared_ptr<MatrixType> >
-        :
-        boost::is_base_of<MatrixSparse<typename MatrixType::value_type>,
-        MatrixType>
-{};
-
-template <class VectorType>
-struct is_vector_ptr : mpl::false_ {};
-
-template <class VectorType>
-struct is_vector_ptr<boost::shared_ptr<VectorType> >
-        :
-        boost::is_base_of<Vector<typename VectorType::value_type>,
-        VectorType>
-{};
-
-
-template<typename FuncSpaceType>
-struct is_function_space_ptr : mpl::false_ {};
-
-template<typename FuncSpaceType>
-struct is_function_space_ptr<boost::shared_ptr<FuncSpaceType> > : mpl::true_ {};
-} // detail
 
 
 /// \cond detail
@@ -135,7 +108,8 @@ BOOST_PARAMETER_FUNCTION(
       ( test,             *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) ) )
     ( optional                                  //    four optional parameters, with defaults
       //( in_out( vector ),   *( detail::is_vector_ptr<mpl::_> ), backend()->newVector( _test=test ) )
-      ( in_out( vector ),   *, backend()->newVector( test ) )
+      ( backend,          *, Feel::backend() )
+      ( in_out( vector ),   *, backend->newVector( test ) )
       ( init,             *( boost::is_integral<mpl::_> ), false )
       ( do_threshold,     *( boost::is_integral<mpl::_> ), bool( false ) )
       ( threshold,        *( boost::is_floating_point<mpl::_> ), type_traits<double>::epsilon() )
@@ -155,7 +129,7 @@ BOOST_PARAMETER_FUNCTION(
     tag,                                        // 3. namespace of tag types
     ( required                                  // 4. one required parameter, and
       ( test,             *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
-      ( in_out( vector ),   *(detail::is_vector_ptr<mpl::_> ) )
+      ( in_out( vector ),   *(Feel::detail::is_vector_ptr<mpl::_> ) )
         ) // required
     ( optional                                  //    four optional parameters, with defaults
       ( init,             *( boost::is_integral<mpl::_> ), false )
@@ -202,7 +176,7 @@ BOOST_PARAMETER_FUNCTION(
     ( required                                  // 4. one required parameter, and
       ( test,             *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
       ( trial,            *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
-      ( in_out( matrix ),   *(detail::is_matrix_ptr<mpl::_> ) ) ) // required
+      ( in_out( matrix ),   *(Feel::detail::is_matrix_ptr<mpl::_> ) ) ) // required
     ( optional                                  //    four optional parameters, with defaults
       ( init,             *( boost::is_integral<mpl::_> ), false )
       ( do_threshold,     *( boost::is_integral<mpl::_> ), bool( false ) )
@@ -227,13 +201,16 @@ BOOST_PARAMETER_FUNCTION( ( typename compute_form2_return<Args,mpl::bool_<boost:
                             ( test,             * )
                             ( trial,            * )
                           ) // required
-                          ( optional                                  //    four optional parameters, with defaults
-                            ( in_out( matrix ),   *, backend()->newMatrix( _test=test, _trial=trial ) )
-                            ( init,             *( boost::is_integral<mpl::_> ), false )
-                            ( pattern,          *( boost::is_integral<mpl::_> ), size_type( Pattern::COUPLED ) )
-                            ( rowstart,         *( boost::is_integral<mpl::_> ), 0 )
-                            ( colstart,         *( boost::is_integral<mpl::_> ), 0 )
-                          ) // optional
+                          (deduced
+                           ( optional                                  //    four optional parameters, with defaults
+                             ( init,             *( boost::is_integral<mpl::_> ), false )
+                             ( pattern,          *( boost::is_integral<mpl::_> ), size_type( Pattern::COUPLED ) )
+                             ( backend,          *, Feel::backend() )
+                             ( in_out( matrix ),   *(boost::is_convertible<mpl::_, boost::shared_ptr<MatrixSparse<double>>>), backend->newMatrix( _test=test, _trial=trial, _pattern=pattern ) )
+                             ( rowstart,         *( boost::is_integral<mpl::_> ), 0 )
+                             ( colstart,         *( boost::is_integral<mpl::_> ), 0 )
+                               ) // optional
+                              ) // deduced
                         )
 {
     Feel::detail::ignore_unused_variable_warning( args );
@@ -256,7 +233,7 @@ BOOST_PARAMETER_FUNCTION(
     ( required                                  // 4. one required parameter, and
       ( test,             *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
       ( trial,            *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
-      ( in_out( matrix ),   *(detail::is_matrix_ptr<mpl::_> ) ) ) // required
+      ( in_out( matrix ),   *(Feel::detail::is_matrix_ptr<mpl::_> ) ) ) // required
     ( optional                                  //    four optional parameters, with defaults
       ( init,             *( boost::is_integral<mpl::_> ), false )
       ( do_threshold,     *( boost::is_integral<mpl::_> ), bool( false ) )

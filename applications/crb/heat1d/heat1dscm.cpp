@@ -229,7 +229,7 @@ main( int argc, char** argv )
 {
     Feel::OpusSCMApp app( argc, argv,
                           Feel::makeAbout(),
-                          Feel::makeHeat1DOptions().add( Feel::crbSCMOptions() ) );
+                          Feel::makeHeat1DOptions() );
 
     app.run();
 }

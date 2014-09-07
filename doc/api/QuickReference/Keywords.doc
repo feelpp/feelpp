@@ -11,7 +11,7 @@ namespace Feel {
 
 One of \feel assets is it finite element embedded language. The language follows the C++ grammar, and provides keywords as well as operations between objects which are, mathematically, tensors of rank 0, 1 or 2.
 
-In all following tables we use the notations :<br>
+In all following tables we use the notations:<br>
 \f$f: \mathbb{R}^n \mapsto \mathbb{R}^{m\times p}\f$  with \f$n=1,2,3\f$, \f$m=1,2,3\f$, \f$p=1,2,3\f$<br>
 \f$\Omega^e\f$ current mesh element.
 
@@ -19,7 +19,7 @@ The genesis of the language can be found in \cite prudhomme05:_domain_specif_emb
 
 \section Keywords_Points Points
 
-Current Point :
+Current Point:
 <table class="manual">
 <tr><th>\feel Keyword</th><th>Math Object</th><th>Description</th><th>Dimension</th></tr>
 <tr><td>\code{.cpp} P()\endcode</td><td>\f$\overrightarrow{P}\f$</td><td> \f$(P_x, P_y, P_z)^T\f$</td><td>\f$d \times 1\f$</td></tr>
@@ -28,7 +28,7 @@ Current Point :
 <tr><td>\code{.cpp} Pz()\endcode</td><td>\f$P_z\f$</td><td>\f$z\f$ coordinate of \f$\overrightarrow{P}\f$<br>(value is 0 in 1D and 2D)</td><td>\f$1 \times 1\f$</td></tr>
 </table>
 
-Element Barycenter Point :
+Element Barycenter Point:
 <table class="manual">
 <tr><th>\feel Keyword</th><th>Math Object</th><th>Description</th><th>Dimension</th></tr>
 <tr><td>\code{.cpp} C()\endcode</td><td>\f$\overrightarrow{C}\f$</td><td> \f$(C_x, C_y, C_z)^T\f$</td><td>\f$d \times 1\f$</td></tr>
@@ -37,7 +37,7 @@ Element Barycenter Point :
 <tr><td>\code{.cpp} Cz()\endcode</td><td>\f$C_z\f$</td><td>\f$z\f$ coordinate of \f$\overrightarrow{C}\f$<br>(value is 0 in 1D and 2D)</td><td>\f$1 \times 1\f$</td></tr>
 </table>
 
-Normal at Current Point :
+Normal at Current Point:
 <table class="manual">
 <tr><th>\feel Keyword</th><th>Math Object</th><th>Description</th><th>Dimension</th></tr>
 <tr><td>\code{.cpp} N()\endcode</td><td>\f$\overrightarrow{N}\f$</td><td> \f$(N_x, N_y, N_z)^T\f$</td><td>\f$d \times 1\f$</td></tr>
@@ -52,12 +52,12 @@ Normal at Current Point :
 <br>
 \section Keywords_Array Vectors and Matrix
 \subsection BuildingVectors Building Vectors
-Usual syntax to create vectors :
+Usual syntax to create vectors:
 <table class="manual">
 <tr><th>\feel Keyword</th><th>Math Object</th><th>Description</th><th>Dimension</th></tr>
 <tr><td>\code{.cpp} vec<n>(v_1,v_2,...,v_n)\endcode</td><td>\f$\begin{pmatrix} v_1\\v_2\\ \vdots \\v_n \end{pmatrix}\f$</td><td>Column Vector with \f$n\f$ rows<br>entries being expressions</td><td>\f$n \times 1\f$</td></tr>
 </table>
-You can also use expressions and the unit base vectors :
+You can also use expressions and the unit base vectors:
 <table class="example">
 <tr><th>\feel Keyword</th><th>Math Object</th><th>Description</th></tr>
 <tr><td>\c oneX() </td><td> \f$\begin{pmatrix} 1\\0\\0 \end{pmatrix}\f$</td><td>Unit vector \f$\overrightarrow{i}\f$</td></tr>
@@ -83,8 +83,8 @@ Let \f$A\f$ be a square matrix of size \f$n\f$.
 <tr><th>\feel Keyword</th><th>Math Object</th><th>Description</th><th>Dimension</th></tr>
 <tr><td>\code{.cpp} inv(A)\endcode</td><td>\f$A^{-1}\f$</td><td>Inverse of matrix \f$A\f$ </td><td>\f$n \times n\f$</td></tr>
 <tr><td>\code{.cpp} det(A)\endcode</td><td>\f$\det (A)\f$</td><td>Determinant of matrix \f$A\f$ </td><td>\f$1 \times 1\f$</td></tr>
-<tr><td>\co sym(A)\eco</td><td>\f$\text{Sym}(A)\f$</td><td>Symmetric part of matrix \f$A\f$ : \f$\frac{1}{2}(A+A^T)\f$<br> </td><td>\f$n \times n\f$</td></tr>
-<tr><td>\co antisym(A)\eco</td><td>\f$ \text{Asym}(A)\f$</td><td>Antisymmetric part of  \f$A\f$ : \f$\frac{1}{2}(A-A^T)\f$<br> </td><td>\f$n \times n\f$</td></tr>
+<tr><td>\co sym(A)\eco</td><td>\f$\text{Sym}(A)\f$</td><td>Symmetric part of matrix \f$A\f$: \f$\frac{1}{2}(A+A^T)\f$<br> </td><td>\f$n \times n\f$</td></tr>
+<tr><td>\co antisym(A)\eco</td><td>\f$ \text{Asym}(A)\f$</td><td>Antisymmetric part of  \f$A\f$: \f$\frac{1}{2}(A-A^T)\f$<br> </td><td>\f$n \times n\f$</td></tr>
 </table>
 
 Let A and B be two matrix (or two vectors) of same dimension \f$m \times n\f$.
@@ -119,7 +119,7 @@ Constant function equal to \f$c\f$
 </td></tr>
 </table>
 
-You can of course use all current operators ( + - / * ) and the usual following functions :
+You can of course use all current operators ( + - / * ) and the usual following functions:
 <table class="example">
 <tr><th>\feel Keyword</th><th>Math Object</th><th>Description</th>
 <tr><td>\code{.cpp} abs(expr) \endcode</td><td>\f$|f(\overrightarrow{x})|\f$</td><td>element wise absolute value of \f$f\f$</td></tr>
@@ -217,7 +217,7 @@ You can use the usual operations and logical operators.
 <br>
 \section Kyewords_Geometric Geometric Transformations
 \subsection Matrix_Jacobian Jacobian Matrix
-You can access to the jacobian matrix, \f$J\f$, of the geometric transformation, using the keyword :
+You can access to the jacobian matrix, \f$J\f$, of the geometric transformation, using the keyword:
 \co J() \eco
 There are some tools to manipulate this jacobian.
 <table class="manual">

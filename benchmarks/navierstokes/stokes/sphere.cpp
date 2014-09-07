@@ -29,9 +29,9 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
-#include <feel/feelfilters/gmsh.hpp>
-#include <feel/feelvf/vf.hpp>
 #include <feel/feelfilters/geotool.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelvf/vf.hpp>
 
 template<typename MeshType>
 void myexport( std::string const& name, boost::shared_ptr<MeshType> mesh )
@@ -85,7 +85,7 @@ int main( int argc, char** argv )
     GeoTool::Sphere C1( hsphere,"C1",GeoTool::Node( 0,0,0 ),GeoTool::Node( R,0,0 ) );
     C1.setMarker( _type="surface",_name="Sphere",_markerAll=true );
 
-    auto R1mC1mesh = ( R1-C1 ).createMesh<mesh_type>( ( boost::format( "sphere-%1%-%2%-%3%" )% Order % hcube % hsphere ).str() );
+    auto R1mC1mesh = ( R1-C1 ).createMesh( _mesh=new mesh_type, _name = ( boost::format( "sphere-%1%-%2%-%3%" )% Order % hcube % hsphere ).str() );
 
     //myexport<mesh_type>("R1-C1",R1mC1mesh);
 

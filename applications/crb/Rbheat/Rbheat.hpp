@@ -67,7 +67,7 @@ makeRbHeatOptions()
     ( "mu4", po::value<double>()->default_value( 0.1 ), "mu4" )
     ( "no-export", "don't export results" )
     ;
-    return rbheatoptions.add( Feel::feel_options() );
+    return rbheatoptions;
 }
 AboutData
 makeRbHeatAbout( std::string const& str = "rbheat" )

@@ -97,8 +97,8 @@ public :
     {
         ublas::vector<T> px( Npoints );
 
-        details::gausslobattojacobi<Npoints, T, ublas::vector<T>, ublas::vector<T> >( this->_M_w, px );
-        ublas::row( this->_M_points, 0 ) = px;
+        details::gausslobattojacobi<Npoints, T, ublas::vector<T>, ublas::vector<T> >( this->M_w, px );
+        ublas::row( this->M_points, 0 ) = px;
     }
 
     ~GaussLobatto() {}
@@ -150,12 +150,12 @@ public :
             for ( int j = 0; j < DegreeY; ++j, ++k )
             {
                 // computes the weight of the k-th node
-                this->_M_w( k ) = 0.5 * wx( i ) * wy( j );
+                this->M_w( k ) = 0.5 * wx( i ) * wy( j );
                 // use expansion for the collapsed triangle to compute the points
                 // coordinates (from cartesian to collapsed coordinates)
                 eta( 0 ) = px( i );
                 eta( 1 ) = py( j );
-                ublas::column( this->_M_points, k ) = to_xi( eta );
+                ublas::column( this->M_points, k ) = to_xi( eta );
             }
         }
 
@@ -221,13 +221,13 @@ public :
                 for ( int l = 0; l < DegreeZ; ++l, ++k )
                 {
                     // computes the weight of the k-th node
-                    this->_M_w( k ) = 0.125 * wx( i ) * wy( j ) * wz( l );
+                    this->M_w( k ) = 0.125 * wx( i ) * wy( j ) * wz( l );
                     // use expansion for the collapsed triangle to compute the points
                     // coordinates (from cartesian to collapsed coordinates)
                     eta( 0 ) = px( i );
                     eta( 1 ) = py( j );
                     eta( 2 ) = pz( l );
-                    ublas::column( this->_M_points, k ) = to_xi( eta );
+                    ublas::column( this->M_points, k ) = to_xi( eta );
                 }
             }
         }
@@ -281,9 +281,9 @@ public :
             for ( int j = 0; j < Degree; ++j, ++k )
             {
                 // computes the weight of the k-th node
-                this->_M_w( k ) = wx( i ) * wx( j );
-                this->_M_points( 0, k ) = px( i );
-                this->_M_points( 1, k ) = px( j );
+                this->M_w( k ) = wx( i ) * wx( j );
+                this->M_points( 0, k ) = px( i );
+                this->M_points( 1, k ) = px( j );
             }
         }
 
@@ -333,10 +333,10 @@ public :
                 for ( int l = 0; l < Degree ; ++l, ++k )
                 {
                     // computes the weight of the k-th node
-                    this->_M_w( k ) = wx( i ) * wx( j ) * wx( l );
-                    this->_M_points( 0, k ) = px( i );
-                    this->_M_points( 1, k ) = px( j );
-                    this->_M_points( 2, k ) = px( l );
+                    this->M_w( k ) = wx( i ) * wx( j ) * wx( l );
+                    this->M_points( 0, k ) = px( i );
+                    this->M_points( 1, k ) = px( j );
+                    this->M_points( 2, k ) = px( l );
                 }
             }
         }

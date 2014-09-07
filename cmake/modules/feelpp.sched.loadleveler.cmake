@@ -29,9 +29,8 @@ if ( FEELPP_ENABLE_SCHED_LOADLEVELER )
 #@ energy_policy_tag = NONE
 #@ job_name = ${execname}
 #@ class = test
-#@ node_usage = not_shared
 #@ wall_clock_limit = 00:40:00
-#@ network.mpi = sn_all,,us,,
+#@ network.MPI = sn_all,not_shared,us
 #@ notification = never
 #@ initialdir = ${CMAKE_CURRENT_BINARY_DIR}
 #@ output = ${execname}.$(jobid).out
@@ -39,6 +38,7 @@ if ( FEELPP_ENABLE_SCHED_LOADLEVELER )
 #@ node = 4
 #@ total_tasks =  64
 #@ queue
+
 ")
   if ( FEELPP_APP_CFG )
     foreach(  cfg ${FEELPP_APP_CFG} )

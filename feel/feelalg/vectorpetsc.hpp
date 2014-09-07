@@ -78,6 +78,8 @@ public:
     typedef typename super::value_type value_type;
     typedef typename super::real_type real_type;
     typedef typename super::clone_ptrtype clone_ptrtype;
+    typedef typename super::datamap_type datamap_type;
+    typedef typename super::datamap_ptrtype datamap_ptrtype;
 
     //@}
 
@@ -91,7 +93,7 @@ public:
     VectorPetsc ()
         :
         super(),
-        _M_destroy_vec_on_exit( true )
+        M_destroy_vec_on_exit( true )
     {
     }
 
@@ -101,7 +103,7 @@ public:
     VectorPetsc ( const size_type n, WorldComm const& _worldComm = Environment::worldComm() )
         :
         super( n, _worldComm ),
-        _M_destroy_vec_on_exit( true )
+        M_destroy_vec_on_exit( true )
     {
         this->init( n, n, false );
     }
@@ -115,18 +117,18 @@ public:
                   WorldComm const& _worldComm = Environment::worldComm() )
         :
         super( n, n_local, _worldComm ),
-        _M_destroy_vec_on_exit( true )
+        M_destroy_vec_on_exit( true )
     {
         this->init( n, n_local, false );
     }
 
-    VectorPetsc ( DataMap const& dm, bool doInit=true )
+    VectorPetsc ( datamap_ptrtype const& dm, bool doInit=true )
         :
         super( dm ),
-        _M_destroy_vec_on_exit( true )
+        M_destroy_vec_on_exit( true )
     {
         if ( doInit )
-            this->init( dm.nDof(), dm.nLocalDofWithoutGhost(), false );
+            this->init( dm->nDof(), dm->nLocalDofWithoutGhost(), false );
     }
 
 
@@ -140,18 +142,18 @@ public:
     VectorPetsc( Vec v )
         :
         super(),
-        _M_destroy_vec_on_exit( false )
+        M_destroy_vec_on_exit( false )
     {
-        this->_M_vec = v;
+        this->M_vec = v;
         this->M_is_initialized = true;
     }
 
-    VectorPetsc( Vec v, DataMap const& dm )
+    VectorPetsc( Vec v, datamap_ptrtype const& dm )
         :
         super( dm ),
-        _M_destroy_vec_on_exit( false )
+        M_destroy_vec_on_exit( false )
     {
-        this->_M_vec = v;
+        this->M_vec = v;
         this->M_is_initialized = true;
     }
 
@@ -162,16 +164,16 @@ public:
     VectorPetsc( VectorPetsc<value_type> &v, IS &is )
         :
         super(),
-        _M_destroy_vec_on_exit( false )
+        M_destroy_vec_on_exit( false )
     {
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
         /* map */
         PetscInt n;
         ISGetSize(is,&n);
-        DataMap dm(n, n, v.comm());
+        datamap_ptrtype dm( new datamap_type(n, n, v.comm()) );
         this->setMap(dm);
         /* init */
-        VecGetSubVector(v.vec(), is, &this->_M_vec);
+        VecGetSubVector(v.vec(), is, &this->M_vec);
         this->M_is_initialized = true;
         /* close */
         this->close(); /* no // assembly required */
@@ -182,8 +184,13 @@ public:
         :
         super(),
         //super(v,index),
-        _M_destroy_vec_on_exit( false )
+        M_destroy_vec_on_exit( false )
     {
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunsequenced"
+#endif
+
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
 
         VectorPetsc<T> const* V = dynamic_cast<VectorPetsc<T> const*> ( &v );
@@ -197,14 +204,18 @@ public:
         CHKERRABORT( this->comm(),ierr );
         PetscFree(map);
 
-        DataMap dm(n, n, V->comm());
+        datamap_ptrtype dm( new datamap_type(n, n, V->comm()) );
         this->setMap(dm);
         /* init */
-        ierr = VecGetSubVector(V->vec(), is, &this->_M_vec);
+        ierr = VecGetSubVector(V->vec(), is, &this->M_vec);
         CHKERRABORT( this->comm(),ierr );
         this->M_is_initialized = true;
         /* close */
         this->close(); /* no // assembly required */
+#endif
+
+#if defined(__clang__)
+#pragma clang diagnostic pop
 #endif
     }
 
@@ -221,14 +232,7 @@ public:
      * Creates a copy of this vector and returns it in an \p
      * shared_ptr<>.  This must be overloaded in the derived classes.
      */
-    clone_ptrtype clone () const
-    {
-        clone_ptrtype cloned_vector ( new VectorPetsc<T> );
-
-        *cloned_vector = *this;
-
-        return cloned_vector;
-    }
+    clone_ptrtype clone () const;
 
 
     /**
@@ -262,26 +266,7 @@ public:
      */
     //@{
 
-    value_type operator() ( const size_type i ) const
-    {
-        FEELPP_ASSERT ( this->isInitialized() ).error( "vector not initialized" );
-        FEELPP_ASSERT ( ( ( i >= this->firstLocalIndex() ) &&
-                          ( i <  this->lastLocalIndex() ) ) )( i )( this->firstLocalIndex() )( this->lastLocalIndex() ).error( "invalid vector index" );
-
-        int ierr=0;
-        PetscScalar *values, value=0.;
-
-
-        ierr = VecGetArray( _M_vec, &values );
-        CHKERRABORT( this->comm(),ierr );
-
-        value = values[i - this->firstLocalIndex()];
-
-        ierr = VecRestoreArray ( _M_vec, &values );
-        CHKERRABORT( this->comm(),ierr );
-
-        return static_cast<value_type>( value );
-    }
+    value_type operator() ( const size_type i ) const;
 
 
     /**
@@ -318,7 +303,7 @@ public:
 
     bool destroy_vec_on_exit() const
     {
-        return _M_destroy_vec_on_exit;
+        return M_destroy_vec_on_exit;
     }
 
     /**
@@ -330,14 +315,14 @@ public:
      */
     size_type size () const
     {
-        FEELPP_ASSERT ( this->isInitialized() ).error( "VectorPetsc not initialized" );
+        DCHECK( this->isInitialized() ) << "VectorPetsc not initialized";
 
 
         if ( !this->isInitialized() )
             return 0;
 
         int petsc_size=0;
-        int ierr = VecGetSize( _M_vec, &petsc_size );
+        int ierr = VecGetSize( M_vec, &petsc_size );
         CHKERRABORT( this->comm(),ierr );
         return static_cast<size_type>( petsc_size );
     }
@@ -347,10 +332,10 @@ public:
      */
     size_type localSize() const
     {
-        FEELPP_ASSERT ( this->isInitialized() ).error( "VectorPetsc not initialized" );
+        DCHECK( this->isInitialized() ) << "VectorPetsc not initialized";
 
         int petsc_size=0;
-        int ierr = VecGetLocalSize( _M_vec, &petsc_size );
+        int ierr = VecGetLocalSize( M_vec, &petsc_size );
         CHKERRABORT( this->comm(),ierr );
 
         return static_cast<size_type>( petsc_size );
@@ -363,13 +348,13 @@ public:
      */
     Vec vec () const
     {
-        FEELPP_ASSERT ( _M_vec != 0 ).error( "invalid petsc vector" );
-        return _M_vec;
+        FEELPP_ASSERT ( M_vec != 0 ).error( "invalid petsc vector" );
+        return M_vec;
     }
     Vec& vec ()
     {
-        FEELPP_ASSERT ( _M_vec != 0 ).error( "invalid petsc vector" );
-        return _M_vec;
+        FEELPP_ASSERT ( M_vec != 0 ).error( "invalid petsc vector" );
+        return M_vec;
     }
 
     //@}
@@ -394,9 +379,9 @@ public:
 
         int ierr=0;
 
-        ierr = VecAssemblyBegin( _M_vec );
+        ierr = VecAssemblyBegin( M_vec );
         CHKERRABORT( this->comm(),ierr );
-        ierr = VecAssemblyEnd( _M_vec );
+        ierr = VecAssemblyEnd( M_vec );
         CHKERRABORT( this->comm(),ierr );
 
         this->M_is_closed = true;
@@ -611,7 +596,7 @@ public:
 
         int ierr=0, petsc_first=0, petsc_last=0;
 
-        ierr = VecGetOwnershipRange ( _M_vec, &petsc_first, &petsc_last );
+        ierr = VecGetOwnershipRange ( M_vec, &petsc_first, &petsc_last );
         CHKERRABORT( this->comm(),ierr );
 
         return static_cast<size_type>( petsc_first );
@@ -629,7 +614,7 @@ public:
 
         int ierr=0, petsc_first=0, petsc_last=0;
 
-        ierr = VecGetOwnershipRange ( _M_vec, &petsc_first, &petsc_last );
+        ierr = VecGetOwnershipRange ( M_vec, &petsc_first, &petsc_last );
         CHKERRABORT( this->comm(),ierr );
 
         return static_cast<size_type>( petsc_last );
@@ -641,7 +626,7 @@ public:
      *  prints the vector to the file named \p name.  If \p name is
      *  not specified it is dumped to the screen.
      */
-    void printMatlab( const std::string name="NULL" ) const;
+    void printMatlab( const std::string name="NULL", bool renumber = false ) const;
 
     value_type dot( Vector<T> const& __v );
 
@@ -651,9 +636,11 @@ public:
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version) const
     {
-        value_type *array = *((value_type**)this->vec()->data);
-        int n             = this->vec()->map->n;
-        int N             = this->vec()->map->N;
+        value_type* array;
+        VecGetArray(this->vec(),&array);
+
+        int n             = this->localSize();
+        int N             = this->size();
 
         int rank;
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -662,6 +649,8 @@ public:
 
         for (int i=0; i<n; i++)
             ar & array[i];
+
+        VecRestoreArray(this->vec(), &array);
     }
     //@}
 
@@ -675,12 +664,12 @@ public:
     VectorPetsc( VectorPetsc const & v )
         :
         super( v ),
-        _M_destroy_vec_on_exit( true )
+        M_destroy_vec_on_exit( true )
     {
         FEELPP_ASSERT( v.closed() ).error( "copied vector is not closed" );
 
-        VecDuplicate( v._M_vec, &_M_vec );
-        VecCopy( v._M_vec, _M_vec );
+        VecDuplicate( v.M_vec, &M_vec );
+        VecCopy( v.M_vec, M_vec );
         this->M_is_initialized = true;
         this->close();
     }
@@ -691,111 +680,15 @@ protected:
     /**
      * Petsc vector datatype to store values
      */
-    Vec _M_vec;
+    Vec M_vec;
 
     /**
      * This boolean value should only be set to false
      * for the constructor which takes a PETSc Vec object.
      */
-    bool _M_destroy_vec_on_exit;
+    bool M_destroy_vec_on_exit;
 };
 
-template <typename T>
-inline
-void
-VectorPetsc<T>::init ( const size_type n,
-                       const size_type n_local,
-                       const bool fast )
-{
-    int ierr=0;
-    int petsc_n=static_cast<int>( n );
-    int petsc_n_local=static_cast<int>( n_local );
-
-
-    // Clear initialized vectors
-    if ( this->isInitialized() )
-        this->clear();
-
-
-    // create a sequential vector if on only 1 processor
-    if ( n_local == n )
-    {
-        ierr = VecCreateSeq ( PETSC_COMM_SELF, petsc_n, &_M_vec );
-        CHKERRABORT( PETSC_COMM_SELF,ierr );
-
-        ierr = VecSetFromOptions ( _M_vec );
-        CHKERRABORT( PETSC_COMM_SELF,ierr );
-    }
-
-    // otherwise create an MPI-enabled vector
-    else
-    {
-        FEELPP_ASSERT( n_local < n )( n_local )( n ).error( "invalid local size" );
-
-        ierr = VecCreateMPI ( this->comm(), petsc_n_local, petsc_n,
-                              &_M_vec );
-        CHKERRABORT( this->comm(),ierr );
-
-        ierr = VecSetFromOptions ( _M_vec );
-        CHKERRABORT( this->comm(),ierr );
-    }
-
-    this->M_is_initialized = true;
-
-
-    if ( fast == false )
-        this->zero ();
-}
-template <typename T>
-void
-VectorPetsc<T>::set ( const value_type& value )
-{
-    int ierr=0;
-    PetscScalar petsc_value = static_cast<PetscScalar>( value );
-
-    ierr = VecSet ( _M_vec, petsc_value );
-    CHKERRABORT( this->comm(),ierr );
-}
-template <typename T>
-void
-VectorPetsc<T>::set ( size_type i, const value_type& value )
-{
-    FEELPP_ASSERT( i<size() )( i )( size() ).error( "invalid index" );
-
-
-    int ierr=0;
-    int i_val = static_cast<int>( i );
-    PetscScalar petsc_value = static_cast<PetscScalar>( value );
-
-    ierr = VecSetValues ( _M_vec, 1, &i_val, &petsc_value, INSERT_VALUES );
-    CHKERRABORT( this->comm(),ierr );
-}
-
-template <typename T>
-void
-VectorPetsc<T>::add ( const size_type i, const value_type& value )
-{
-    FEELPP_ASSERT( i<size() )( i )( size() ).error( "invalid index" );
-
-    int ierr=0;
-    int i_val = static_cast<int>( i );
-    PetscScalar petsc_value = static_cast<PetscScalar>( value );
-
-    ierr = VecSetValues ( _M_vec, 1, &i_val, &petsc_value, ADD_VALUES );
-    CHKERRABORT( this->comm(),ierr );
-}
-
-template <typename T>
-void
-VectorPetsc<T>::addVector ( int* i, int n, value_type* v )
-{
-    //FEELPP_ASSERT(n<=size())( n )( size() ).error( "invalid local index array size" );
-
-    int ierr=0;
-    ierr = VecSetValues ( _M_vec, n, i, v, ADD_VALUES );
-    CHKERRABORT( this->comm(),ierr );
-
-}
 
 //----------------------------------------------------------------------------------------------------//
 //----------------------------------------------------------------------------------------------------//
@@ -808,7 +701,9 @@ class VectorPetscMPI : public VectorPetsc<T>
 {
     typedef VectorPetsc<T> super;
     typedef typename super::value_type value_type;
-
+    typedef typename super::datamap_type datamap_type;
+    typedef typename super::datamap_ptrtype datamap_ptrtype;
+    typedef typename super::clone_ptrtype clone_ptrtype;
 public:
 
     VectorPetscMPI()
@@ -816,15 +711,15 @@ public:
         super()
     {}
 
-    VectorPetscMPI( Vec v, DataMap const& dm );
+    VectorPetscMPI( Vec v, datamap_ptrtype const& dm );
 
-    VectorPetscMPI( DataMap const& dm );
+    VectorPetscMPI( datamap_ptrtype const& dm );
 
     ~VectorPetscMPI()
     {
         this->clear();
     }
-
+    clone_ptrtype clone () const;
     void init( const size_type N,
                const size_type n_local,
                const bool fast=false );
@@ -836,6 +731,9 @@ public:
     void add( const size_type i, const value_type& value );
 
     void addVector( int* i, int n, value_type* v );
+
+    void addVector ( const Vector<value_type>& V_in,
+                     const MatrixSparse<value_type>& A_in );
 
     void clear();
 
@@ -856,9 +754,9 @@ private :
 
     void duplicateFromOtherPartition_run( Vector<T> const& vecInput );
 
-    Vec _M_vecLocal;
+    Vec M_vecLocal;
 
-    VecScatter _M_vecScatter;
+    VecScatter M_vecScatter;
 
 };
 

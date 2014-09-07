@@ -71,6 +71,7 @@ public:
     typedef Func expression_type;
     typedef Function<Func> this_type;
     typedef typename expression_type::value_type value_type;
+    typedef value_type evaluate_type;
     //@}
 
     /** @name Constructors, destructor
@@ -131,7 +132,7 @@ public:
         typedef typename mpl::if_<fusion::result_of::has_key<Geo_t,vf::detail::gmc<0> >,
                 mpl::identity<vf::detail::gmc<0> >,
                 mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
-        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
+        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
         typedef typename mpl::if_<mpl::equal_to<mpl::int_<Func::rank>,mpl::int_<0> >,
                 mpl::identity<Shape<gmc_type::nDim, Scalar, false, false> >,

@@ -186,12 +186,12 @@ Convection::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
                         +gamma*trans( idv( u ) )*id( v )/hFace() );
 
         form1( Xh, R ) +=
-            integrate ( markedfaces( mesh,mesh->markerName( "Tfixed" ) ),
+            integrate ( markedfaces( mesh, "Tfixed" ),
                         // weak dirichlet condition T=T_0 | left side
                         -gradv( t )*N()*id( s )*cst_ref( sqgrpr )
                         -grad( s )*N()*idv( t )*cst_ref( sqgrpr ) );
         form1( Xh,R ) 	+=
-            integrate ( markedfaces( mesh,mesh->markerName( "Tfixed" ) ),
+            integrate ( markedfaces( mesh, "Tfixed"  ),
                         cst_ref( gamma )*idv( t )*id( s )/hFace() );
 
     }

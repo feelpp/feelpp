@@ -5,7 +5,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
 #       Date: 2010-07-28
 #
-#  Copyright (C) 2010 Université de Grenoble 1 (Joseph Fourier)
+#  Copyright (C) 2010 Universitï¿½ de Grenoble 1 (Joseph Fourier)
 #
 #  This library is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -23,48 +23,64 @@
 #
 include (FindPackageHandleStandardArgs)
 
+function(_gmsh_get_version _out_major _out_minor _out_patch _gmsh_version_h)
+	file(STRINGS ${_gmsh_version_h} _gmsh_vinfo REGEX "^#define[\t ]+GMSH_.*__VERSION.*")
+	if (NOT _gmsh_vinfo)
+		message(FATAL_ERROR "include file ${_gmsh_version_h} does not exist")
+	endif()
+	string(REGEX REPLACE "^.*GMSH_MAJOR_VERSION[ \t]+([0-9]+).*" "\\1" ${_out_major} "${_gmsh_vinfo}")
+	string(REGEX REPLACE "^.*GMSH_MINOR_VERSION[ \t]+([0-9]+).*" "\\1" ${_out_minor} "${_gmsh_vinfo}")
+	string(REGEX REPLACE "^.*GMSH_PATCH_VERSION[ \t]+([0-9]+).*" "\\1" ${_out_patch} "${_gmsh_vinfo}")
+	if (NOT ${_out_major} MATCHES "[0-9]+")
+		message(FATAL_ERROR "failed to determine GMSH_MAJOR_VERSION, "
+			            "expected a number, got ${${_out_major}}")
+	endif()
+	if (NOT ${_out_minor} MATCHES "[0-9]+")
+		message(FATAL_ERROR "failed to determine GMSH_MINOR_VERSION, "
+			            "expected a number, got ${${_out_minor}}")
+	endif()
+	if (NOT ${_out_patch} MATCHES "[0-9]+")
+		message(FATAL_ERROR "failed to determine GMSH_PATCH_VERSION, "
+			            "expected a number, got ${${_out_patch}}")
+	endif()
+	message(STATUS "found Gmsh [${_gmsh_version_h}], version ${${_out_major}}.${${_out_minor}}.${${_out_patch}}")
+	set(${_out_major} ${${_out_major}} PARENT_SCOPE)
+	set(${_out_minor} ${${_out_minor}} PARENT_SCOPE)
+	set(${_out_patch} ${${_out_patch}} PARENT_SCOPE)
+endfunction()
+
+
 # some of the find_* commands are duplicated with the first instance having NO_DEFAULT_PATH
 # this is to ensure that if GMSH_DIR is defined then cmake will pick the Gmsh version in GMSH_DIR
 # otherwise in the second instance it will pich the standard version installed on the system if
 # it is available
 
-find_program( GMSH_EXECUTABLE gmsh
-  PATH
+find_program( GMSH_EXECUTABLE
+  NAMES gmsh
+  PATHS
   $ENV{GMSH_DIR}/bin
-  NO_DEFAULT_PATH
-  DOC "GMSH mesh generator" )
-find_program( GMSH_EXECUTABLE gmsh
-  PATH
-  $ENV{GMSH_DIR}/bin
+  ${CMAKE_BINARY_DIR}/contrib/gmsh/bin
   PATH_SUFFIXES bin
   DOC "GMSH mesh generator" )
-
 
 option(FEELPP_ENABLE_GMSH_LIBRARY "Enables Gmsh library in Feel++" ON )
 if ( FEELPP_ENABLE_GMSH_LIBRARY )
   INCLUDE(CheckIncludeFileCXX)
 
-  FIND_PATH(GMSH_INCLUDE_DIR
+  FIND_PATH(GMSH_INCLUDE_PATH
     Gmsh.h Context.h GModel.h
-    PATHS
+    HINTS
     $ENV{GMSH_DIR}
-    NO_DEFAULT_PATH
-    PATH_SUFFIXES include include/gmsh
-    DOC "Directory where GMSH header files are stored" )
-  FIND_PATH(GMSH_INCLUDE_DIR
-    Gmsh.h Context.h GModel.h
-    PATHS
-    $ENV{GMSH_DIR}
-    PATH_SUFFIXES include include/gmsh
+    ${CMAKE_BINARY_DIR}/contrib/gmsh
+    PATH_SUFFIXES
+    include include/gmsh
     DOC "Directory where GMSH header files are stored" )
 
-
-  include_directories(${GMSH_INCLUDE_DIR})
-  if ( GMSH_INCLUDE_DIR )
+  if ( GMSH_INCLUDE_PATH )
     set( FEELPP_HAS_GMSH_H 1 )
     FIND_PATH(GMSH_ADAPTMESH_INCLUDE_DIR
       Openfile.h Field.h
-      PATHS ${GMSH_INCLUDE_DIR}
+      PATHS ${GMSH_INCLUDE_PATH}
       DOC "Directory where GMSH header files are stored" )
     if ( GMSH_ADAPTMESH_INCLUDE_DIR )
       set( FEELPP_HAS_GMSH_H 1 )
@@ -72,26 +88,15 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
       message(STATUS "Gmsh headers: some headers needed for meshadaptation are missing")
       message(STATUS "Check wiki pages for mesh adaptation to install properly gmsh")
     endif( GMSH_ADAPTMESH_INCLUDE_DIR )
-  endif(GMSH_INCLUDE_DIR)
-  #include(CheckIncludeFiles)
-  #set(CMAKE_REQUIRED_INCLUDES "${GMSH_INCLUDE_DIR};${CMAKE_REQUIRED_INCLUDES}")
-  #check_include_file(Gmsh.h FEELPP_HAS_GMSH_GMSH_H )
-  ##check_include_file(Context.h FEELPP_HAS_GMSH_CONTEXT_H )
-  #check_include_file(GModel.h FEELPP_HAS_GMSH_GMODEL_H )
-  #if ( FEELPP_HAS_GMSH_GMODEL_H AND FEELPP_HAS_GMSH_CONTEXT_H and FEELPP_HAS_GMSH_GMSH_H )
-  #  set( FEELPP_HAS_GMSH_H 1 )
-  #endif()
-  #message(STATUS "Gmsh headers : ${FEELPP_HAS_GMSH_H}, ${CMAKE_REQUIRED_INCLUDES}" )
+  endif(GMSH_INCLUDE_PATH)
 
   FIND_LIBRARY(GMSH_LIBRARY NAMES Gmsh gmsh-2.5.1 gmsh1 gmsh
-    PATH
-    $ENV{GMSH_DIR}/lib
-    NO_DEFAULT_PATH)
-  FIND_LIBRARY(GMSH_LIBRARY NAMES Gmsh gmsh-2.5.1 gmsh1 gmsh
-    PATH
+    PATHS
+    $ENV{GMSH_DIR}
+    ${CMAKE_BINARY_DIR}/contrib/gmsh
     ${CMAKE_SYSTEM_PREFIX_PATH}
     PATH_SUFFIXES
-    lib )
+    lib lib/x86_64-linux-gnu/ )
 
   if( NOT GMSH_LIBRARY )
     if(APPLE)
@@ -102,18 +107,21 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
     FIND_PATH(GMSH_LIBRARY_PATH ${GMSHLIB}
       PATHS
       $ENV{GMSH_DIR}/lib
-	  NO_DEFAULT_PATH)
-    FIND_PATH(GMSH_LIBRARY_PATH
-      ${GMSHLIB}
-      $ENV{GMSH_DIR}/lib )
+      ${CMAKE_BINARY_DIR}/contrib/gmsh/lib
+      NO_DEFAULT_PATH)
 
-    set(GMSH_LIBRARY "${GMSH_LIBRARY_PATH}/${GMSHLIB}" )
+    if(GMSH_LIBRARY_PATH)
+        set(GMSH_LIBRARY "${GMSH_LIBRARY_PATH}/${GMSHLIB}" )
+    else(GMSH_LIBRARY_PATH)
+        set(GMSH_LIBRARY "GMSH_LIBRARY-NOTFOUND" )
+    endif(GMSH_LIBRARY_PATH)
   endif(NOT GMSH_LIBRARY)
 
   FIND_LIBRARY(GL2PS_LIBRARY NAMES gl2ps
     PATH
-      $ENV{GMSH_DIR}
-      ${CMAKE_SYSTEM_PREFIX_PATH}
+    $ENV{GMSH_DIR}
+    ${CMAKE_BINARY_DIR}/contrib/gmsh/lib
+    ${CMAKE_SYSTEM_PREFIX_PATH}
     PATH_SUFFIXES
     lib  )
 
@@ -121,12 +129,22 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
     FIND_LIBRARY(GL_LIBRARY NAMES GL
       PATH
       $ENV{GMSH_DIR}
+      ${CMAKE_BINARY_DIR}/contrib/gmsh/
       PATH_SUFFIXES
       lib  )
   ENDIF()
 
+  if(GMSH_INCLUDE_PATH)
+      set(GMSH_INCLUDE_DIR ${GMSH_INCLUDE_PATH})
+  endif(GMSH_INCLUDE_PATH)
+
+  set(GMSH_LIBRARIES "")
+  if(GMSH_LIBRARY)
+    set(GMSH_LIBRARIES ${GMSH_LIBRARIES} ${GMSH_LIBRARY})
+endif()
+
   FIND_PACKAGE_HANDLE_STANDARD_ARGS (GMSH DEFAULT_MSG
-    GMSH_INCLUDE_DIR GMSH_LIBRARY GMSH_EXECUTABLE
+      GMSH_INCLUDE_DIR GMSH_LIBRARIES GMSH_EXECUTABLE
     )
 
   if ( GMSH_FOUND )
@@ -142,7 +160,7 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
   mark_as_advanced( GMSH_LIBRARY )
   mark_as_advanced( GL2PS_LIBRARY )
   IF ( FEELPP_ENABLE_OPENGL )
-     mark_as_advanced( GL_LIBRARY )
+    mark_as_advanced( GL_LIBRARY )
   ENDIF()
   mark_as_advanced( GMSH_EXECUTABLE )
 

@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2006-12-30
 
-  Copyright (C) 2006 Université Joseph Fourier (Grenoble)
+  Copyright (C) 2006 Universite Joseph Fourier (Grenoble)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -101,8 +101,8 @@ public :
     {
         ublas::vector<T> px( Npoints );
 
-        details::gaussjacobi<Npoints, T, ublas::vector<T>, ublas::vector<T> >( this->_M_w, px );
-        ublas::row( this->_M_points, 0 ) = px;
+        details::gaussjacobi<Npoints, T, ublas::vector<T>, ublas::vector<T> >( this->M_w, px );
+        ublas::row( this->M_points, 0 ) = px;
 
         boost::shared_ptr<GT_Lagrange<1,1,1,Simplex,T> > gm( new GT_Lagrange<1, 1, 1, Simplex, T> );
         boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
@@ -155,7 +155,7 @@ public :
 
 #if 0
         std::cout<<"[Debug quadpoint] Npoints = " << Npoints << std::endl ;
-        std::cout<<"[Debug quadpoint] _pts.size2() = " << this->_M_points.size2() << std::endl ;
+        std::cout<<"[Debug quadpoint] _pts.size2() = " << this->M_points.size2() << std::endl ;
         std::cout<<"[Debug quadpoint] Degree = " << Degree << std::endl ;
 #endif
 
@@ -174,13 +174,13 @@ public :
 #endif
 
                 // computes the weight of the k-th node
-                this->_M_w( k ) = 0.5 * wx( i ) * wy( j );
+                this->M_w( k ) = 0.5 * wx( i ) * wy( j );
                 // use expansion for the collapsed triangle to compute the points
                 // coordinates (from cartesian to collapsed coordinates)
                 eta( 0 ) = px( i );
                 eta( 1 ) = py( j );
 
-                ublas::column( this->_M_points, k ) = to_xi( eta );
+                ublas::column( this->M_points, k ) = to_xi( eta );
             }
         }
 
@@ -246,13 +246,13 @@ public :
                 for ( int l = 0; l < Degree; ++l, ++k )
                 {
                     // computes the weight of the k-th node
-                    this->_M_w( k ) = 0.125 * wx( i ) * wy( j ) * wz( l );
+                    this->M_w( k ) = 0.125 * wx( i ) * wy( j ) * wz( l );
                     // use expansion for the collapsed triangle to compute the points
                     // coordinates (from cartesian to collapsed coordinates)
                     eta( 0 ) = px( i );
                     eta( 1 ) = py( j );
                     eta( 2 ) = pz( l );
-                    ublas::column( this->_M_points, k ) = to_xi( eta );
+                    ublas::column( this->M_points, k ) = to_xi( eta );
                 }
             }
         }
@@ -305,14 +305,14 @@ public :
         for ( int i = 0; i < Degree; ++i )
         {
             // computes the weight of the k-th node
-            this->_M_w( i ) = wx( i );
-            this->_M_points( 0, i ) = px( i );
+            this->M_w( i ) = wx( i );
+            this->M_points( 0, i ) = px( i );
         }
 
 
 #if 0
-        VLOG(1) << "[gauss<SP<2,1>] p = " << this->_M_points << "\n";
-        VLOG(1) << "[gauss<SP<2,1>] w = " << this->_M_w << "\n";
+        VLOG(1) << "[gauss<SP<2,1>] p = " << this->M_points << "\n";
+        VLOG(1) << "[gauss<SP<2,1>] w = " << this->M_w << "\n";
 #endif
 
 
@@ -366,15 +366,15 @@ public :
             for ( int j = 0; j < Degree; ++j, ++k )
             {
                 // computes the weight of the k-th node
-                this->_M_w( k ) = wx( i ) * wx( j );
-                this->_M_points( 0, k ) = px( i );
-                this->_M_points( 1, k ) = px( j );
+                this->M_w( k ) = wx( i ) * wx( j );
+                this->M_points( 0, k ) = px( i );
+                this->M_points( 1, k ) = px( j );
             }
         }
 
 #if 0
-        VLOG(1) << "[gauss<SP<2,1>] p = " << this->_M_points << "\n";
-        VLOG(1) << "[gauss<SP<2,1>] w = " << this->_M_w << "\n";
+        VLOG(1) << "[gauss<SP<2,1>] p = " << this->M_points << "\n";
+        VLOG(1) << "[gauss<SP<2,1>] w = " << this->M_w << "\n";
 #endif
         boost::shared_ptr<GT_Lagrange<2, 1, 2, Hypercube, T> > gm( new GT_Lagrange<2, 1, 2, Hypercube, T> );
         boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
@@ -423,10 +423,10 @@ public :
                 for ( int l = 0; l < Degree ; ++l, ++k )
                 {
                     // computes the weight of the k-th node
-                    this->_M_w( k ) = wx( i ) * wx( j ) * wx( l );
-                    this->_M_points( 0, k ) = px( i );
-                    this->_M_points( 1, k ) = px( j );
-                    this->_M_points( 2, k ) = px( l );
+                    this->M_w( k ) = wx( i ) * wx( j ) * wx( l );
+                    this->M_points( 0, k ) = px( i );
+                    this->M_points( 1, k ) = px( j );
+                    this->M_points( 2, k ) = px( l );
                 }
             }
         }
@@ -479,11 +479,11 @@ public :
                     for ( int r = 0; r < Degree ; ++r, ++k )
                     {
                         // computes the weight of the k-th node
-                        this->_M_w( k ) = wx( i ) * wx( j ) * wx( l ) * wx( r );
-                        this->_M_points( 0, k ) = px( i );
-                        this->_M_points( 1, k ) = px( j );
-                        this->_M_points( 2, k ) = px( l );
-                        this->_M_points( 3, k ) = px( r );
+                        this->M_w( k ) = wx( i ) * wx( j ) * wx( l ) * wx( r );
+                        this->M_points( 0, k ) = px( i );
+                        this->M_points( 1, k ) = px( j );
+                        this->M_points( 2, k ) = px( l );
+                        this->M_points( 3, k ) = px( r );
                     }
                 }
             }
@@ -533,12 +533,12 @@ public :
                         for ( int s = 0; s < Degree ; ++s, ++k )
                         {
                             // computes the weight of the k-th node
-                            this->_M_w( k ) = wx( i ) * wx( j ) * wx( l ) * wx( r ) * wx ( s );
-                            this->_M_points( 0, k ) = px( i );
-                            this->_M_points( 1, k ) = px( j );
-                            this->_M_points( 2, k ) = px( l );
-                            this->_M_points( 3, k ) = px( r );
-                            this->_M_points( 4, k ) = px( s );
+                            this->M_w( k ) = wx( i ) * wx( j ) * wx( l ) * wx( r ) * wx ( s );
+                            this->M_points( 0, k ) = px( i );
+                            this->M_points( 1, k ) = px( j );
+                            this->M_points( 2, k ) = px( l );
+                            this->M_points( 3, k ) = px( r );
+                            this->M_points( 4, k ) = px( s );
                         }
                     }
                 }

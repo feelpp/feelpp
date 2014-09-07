@@ -5,7 +5,8 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-02-17
 
-  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2009 Universite Joseph Fourier (Grenoble I)
+  Copyright (C) 2013 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -47,7 +48,7 @@ namespace fusion = boost::fusion;
 class Discontinuous
     :
     // necessary for boost.parameters
-public detail::continuity_base
+public Feel::detail::continuity_base
 {
 public:
 
@@ -153,4 +154,3 @@ private:
 
 } // Feel
 #endif /* __Discontinuous_H */
-

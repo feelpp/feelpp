@@ -24,9 +24,9 @@
 set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
 include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
-feelpp_add_application(doc_residualestimator SRCS residualestimator.cpp LABEL doc)
+feelpp_add_application(doc_residualestimator SRCS residualestimator.cpp LABELS doc)
 if (OCTAVE_FOUND)
   add_octave_module(residualestimator)
 endif()
 
-feelpp_add_application(doc_LShape SRCS Lshape.cpp  CFG Lshape.cfg Lshape3D.cfg LABEL doc )
+feelpp_add_application(doc_LShape SRCS Lshape.cpp  CFG Lshape.cfg Lshape3D.cfg LABELS doc )

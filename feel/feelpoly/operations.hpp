@@ -33,6 +33,7 @@
 #include <feel/feelalg/svd.hpp>
 #include <feel/feelpoly/im.hpp>
 #include <feel/feelpoly/polynomialset.hpp>
+#include <Eigen/SVD>
 
 namespace Feel
 {
@@ -476,8 +477,8 @@ unite( Poly1<P, Type> const& pset1,
              ublas::range( 0,pset1.coeff().size2() ) ) = pset2.coeff();
 
     M = res_type::polyset_type::toMatrix( M );
-#if 0
-    std::cout << "before SVD M = " << M << "\n";
+#if 1
+    //std::cout << "before SVD M = " << M << "\n";
     Eigen::MatrixXd A ( Eigen::MatrixXd::Zero( M.size1(), M.size2() ) );
 
     for ( int i = 0; i < M.size1(); ++i )
@@ -486,13 +487,15 @@ unite( Poly1<P, Type> const& pset1,
             A( i,j ) = M( i,j );
         }
 
-    Eigen::SVD<Eigen::MatrixXd> svdOfA( A );
-    std::cout << "SVDofA.S() = " << svdOfA.singularValues() << "\n";
-    std::cout << "SVDofA.V() = " << svdOfA.matrixV().transpose() << "\n";
+    Eigen::JacobiSVD<Eigen::MatrixXd> svdOfA( A, Eigen::ComputeThinU | Eigen::ComputeThinV );
+    //std::cout << "SVDofA.S() = " << svdOfA.singularValues() << "\n";
+    //std::cout << "SVDofA.U() = " << svdOfA.matrixU() << "\n";
+    //std::cout << "SVDofA.V() = " << svdOfA.matrixV() << "\n";
 #endif
-    SVD<ublas::matrix<value_type> > svd( M );
-#if 0
+    //SVD<ublas::matrix<value_type> > svd( M );
     //std::cout << "S() = " << svd.S() << "\n";
+#if 1
+
     ublas::matrix<value_type> m ( svdOfA.singularValues().size(), M.size2() );
 
     for ( int i = 0; i < m.size1(); ++i )
@@ -500,9 +503,11 @@ unite( Poly1<P, Type> const& pset1,
         {
             m( i,j ) = svdOfA.matrixV()( j, i );
         }
-
+    //VLOG(1) << "V=" << m << "\n";
 #else
     ublas::matrix<value_type> m ( ublas::subrange( svd.V(), 0, svd.S().size(), 0, M.size2() ) );
+
+    //std::cout << "m=" << m << "\n";
 #endif
     return res_type( P(), res_type::polyset_type::toType( m ), true  );
 }

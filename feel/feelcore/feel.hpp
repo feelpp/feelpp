@@ -35,6 +35,11 @@
 
 #include <complex>
 
+#if defined(__APPLE__)
+#undef tolower
+#undef toupper
+#endif
+
 #include <boost/mpl/multiplies.hpp>
 #include <boost/mpl/list.hpp>
 #include <boost/mpl/lower_bound.hpp>
@@ -77,7 +82,14 @@
 #include <limits>
 #include <iosfwd>
 
+#if defined(__INTEL_COMPILER)
+#pragma warning push
+#pragma warning(disable:780)
+#endif
 #include <glog/logging.h>
+#if defined(__INTEL_COMPILER)
+#pragma warning pop
+#endif
 
 #include <feel/feelconfig.h>
 #include <feel/feelcore/info.hpp>
@@ -148,7 +160,8 @@ template <class T> inline void ignore_unused_variable_warning( const T& ) { }
 
   Feel defines a number of types that are used in the library.
 
-  -# \c Real 64 bits real number type
+  -# \c real32_type 32 bits real number type
+  -# \c real64_type 64 bits real number type
 
   \section ints Integers
 
@@ -174,7 +187,19 @@ template <class T> inline void ignore_unused_variable_warning( const T& ) { }
 
   Feel defines a number of useful aliases for integers
   -# \c dim_type an alias to uint16_type used to identify dimensions
+  -# \c rank_type an alias to uint16_type used for mpi process ranks
   -# \c size_type an alias to size_t used as indices for arrays, vectors or matrices
+
+  Feel++ defines also some invalid number associated to each unsigned integer
+  types. it usually serves to identify a situation where something went
+  wrong. The invalid value corresponds to the maximum value of the unsigned type.
+  -# invalid_uint8_type_value
+  -# invalid_uint16_type_value
+  -# invalid_uint32_type_value
+  -# invalid_uint64_type_value
+  -# invalid_dim_type_value
+  -# invalid_rank_type_value
+  -# invalid_size_type_value
 
 */
 
@@ -318,6 +343,9 @@ typedef uint16_type dim_type;
 //! Indices (starting from 0)
 typedef size_t size_type;
 
+//! type for mpi rank ids
+typedef uint16_type rank_type;
+
 #if defined( __APPLE__ )
 typedef unsigned int uint;
 #endif // __APPLE__
@@ -348,10 +376,16 @@ const uint32_type invalid_uint32_type_value = uint32_type( -1 );
  */
 const uint64_type invalid_uint64_type_value = uint64_type( -1 );
 #endif  // BOOST_NO_INT64_T
+
 /**
  * Invalid dim type value
  */
 const dim_type invalid_dim_type_value = dim_type( -1 );
+
+/**
+ * Invalid dim type value
+ */
+const rank_type invalid_rank_type_value = rank_type( -1 );
 
 
 /**
@@ -520,6 +554,14 @@ BOOST_DETAIL_IS_XXX_DEF( shared_ptr, boost::shared_ptr, 1 )
 }
 }
 
+#if !defined(MPI_INT64_T)
+#define MPI_INT64_T MPI_LONG_INT
+#endif
+
+#if !defined(MPI_INT32_T)
+#define MPI_INT32_T MPI_INT
+#endif
+
 #if defined(FEELPP_HAS_OPENMP)
 #include <omp.h>
 
@@ -543,6 +585,16 @@ BOOST_DETAIL_IS_XXX_DEF( shared_ptr, boost::shared_ptr, 1 )
 
 #endif /* FEELPP_HAS_OPENMP */
 
+#if !defined( DVLOG_IF )
+
+#ifndef NDEBUG
+#define DVLOG_IF(verboselevel, condition) VLOG(verboselevel)
+#else
+#define DVLOG_IF(verboselevel,condition)                                \
+    (true || ( !VLOG_IS_ON(verboselevel) && !(condition))) ?            \
+    (void) 0 : google::LogMessageVoidify() & LOG(INFO)
+#endif // NDEBUG
+
+#endif // DVLOG_IF
 
 #endif
-

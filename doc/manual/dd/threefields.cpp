@@ -30,7 +30,8 @@
 #include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/region.hpp>
-#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/creategmshmesh.hpp>
+#include <feel/feelfilters/domain.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelfilters/geotool.hpp>
@@ -265,7 +266,7 @@ ThreeFieldsLaplacian<Dim, Order1, Order2, Order3>::createMesh( double meshSize, 
         throw std::logic_error( os.str() );
     }
 
-    std::string fname = __gmsh.generate( nameStr.str(), ostr.str() );
+    std::string fname = __gmsh.generate( nameStr.str(), ostr.str() ).template get<0>();
     ImporterGmsh<trace_mesh_type> import( fname );
     mesh->accept( import );
 

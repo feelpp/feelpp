@@ -285,7 +285,8 @@ The compact form of \f$(3)\f$ is
 \f}
 
 \subsection Computing_Implementation Implementation
-Assembly of the right hand side \f$ B = \mathlarger \int_\Gamma \kappa v w \f$
+Assembly of the right hand side \f$ B = \int_\Gamma \kappa v w \f$
+<!-- Assembly of the right hand side \f$ B = \mathlarger \int_\Gamma \kappa v w \f$ -->
 \co
  auto B = M_backend->newMatrix( Xh, Xh ) ;
  form2( _test=Xh, _trial=Xh, _matrix=B, _init=true );
@@ -296,7 +297,8 @@ Assembly of the right hand side \f$ B = \mathlarger \int_\Gamma \kappa v w \f$
  }
  B->close();
 \eco
-Assembly of the left hand side \f$ A = \mathlarger \int_\Omega \eta v w + \kappa \nabla v \cdot \nabla w \f$
+Assembly of the left hand side \f$ A = \int_\Omega \eta v w + \kappa \nabla v \cdot \nabla w \f$
+<!-- Assembly of the left hand side \f$ A = \mathlarger \int_\Omega \eta v w + \kappa \nabla v \cdot \nabla w \f$ -->
 \co
  auto A = M_backend->newMatrix( Xh, Xh ) ;
  form2( _test=Xh, _trial=Xh, _matrix=A, _init=true ) =

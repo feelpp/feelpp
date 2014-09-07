@@ -1,0 +1,25 @@
+// -*- mode: c++ -*-
+h=5e-3;
+Point(0) ={0    , 0   , 0 , h};
+Point(1) ={1/2  , 0   , 0 , h};
+Point(2) ={2/2  , 0   , 0 , h};
+Point(3) ={0    , 1   , 0 , h};
+Point(4) ={1/2  , 1   , 0 , h};
+Point(5) ={2/2  , 1   , 0 , h};
+Line(101)={0,1};//south_domain-1
+Line(102)={1,4};
+Line(103)={4,3};//north_domain-1
+Line(104)={3,0};
+Line(105)={1,2};//south_domain-2
+Line(106)={2,5};
+Line(107)={5,4};//north_domain-2
+Line Loop (201) = {101,102,103,104};//domain-1
+Line Loop (202) = {105,106,107,-102};//domain-2
+Plane Surface (301) = {201};
+Plane Surface (302) = {202};
+Physical Line ("south_domain-1")={101};
+Physical Line ("south_domain-2")={105};
+Physical Line ("north_domain-1")={103};
+Physical Line ("north_domain-2")={107};
+Physical Surface ("domain-1") = {301};
+Physical Surface ("domain-2") = {302};

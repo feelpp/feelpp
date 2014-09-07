@@ -875,7 +875,7 @@ static char **fcn_completion(const char *text, int start, int end)
 	if (rl_line_buffer[0] == '!') {
 		// For shell commands, revert back to filename completion
 		rl_completion_append_character = orig_completion_append_character;
-		rl_basic_word_break_characters = orig_basic_word_break_characters;
+		rl_basic_word_break_characters = const_cast<char*>(orig_basic_word_break_characters);
 		rl_completer_word_break_characters = GINAC_RL_COMPLETER_CAST(rl_basic_word_break_characters);
 		return rl_completion_matches(text, rl_filename_completion_function);
 	} else {

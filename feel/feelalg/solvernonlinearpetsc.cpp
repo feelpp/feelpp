@@ -40,7 +40,6 @@
 #include <feel/feelalg/functionspetsc.hpp>
 #include <feel/feelalg/preconditionerpetsc.hpp>
 
-
 //--------------------------------------------------------------------
 // Functions with C linkage to pass to PETSc.  PETSc will call these
 // methods as needed.
@@ -126,21 +125,13 @@ extern "C"
         Feel::SolverNonLinearPetsc<double>* solver =
             static_cast<Feel::SolverNonLinearPetsc<double>*> ( ctx );
 
-#if !defined(FEELPP_ENABLE_MPI_MODE)
-        boost::shared_ptr<Feel::Vector<double> > R( new Feel::VectorPetsc<double>( r ) );
-        boost::shared_ptr<Feel::MatrixSparse<double> >  PC;
-        boost::shared_ptr<Feel::Vector<double> > X_global( new Feel::VectorPetsc<double>( x ) );
-        boost::shared_ptr<Feel::Vector<double> > X_local( new Feel::VectorPetsc<double>( X_global->size() ) );
-
-        X_global->localize ( *X_local );
-#else
         boost::shared_ptr<Feel::Vector<double> > R;
         boost::shared_ptr<Feel::Vector<double> > X_global;
 
         if ( solver->comm().size()>1 )
         {
-            R.reset( new Feel::VectorPetscMPI<double>( r,solver->mapRow() ) );
-            X_global.reset( new Feel::VectorPetscMPI<double>( x,solver->mapRow() ) );
+            R.reset( new Feel::VectorPetscMPI<double>( r, solver->mapRowPtr() ) );
+            X_global.reset( new Feel::VectorPetscMPI<double>( x,solver->mapRowPtr() ) );
         }
 
         else // MPI
@@ -148,8 +139,6 @@ extern "C"
             R.reset( new Feel::VectorPetsc<double>( r ) );
             X_global.reset( new Feel::VectorPetsc<double>( x ) );
         }
-
-#endif
 
         //if (solver->residual != NULL) solver->residual (X_local, R);
         if ( solver->residual != NULL ) solver->residual ( X_global, R );
@@ -166,7 +155,11 @@ extern "C"
     //---------------------------------------------------------------
     // this function is called by PETSc to evaluate the Jacobian at X
     PetscErrorCode
+#if PETSC_VERSION_LESS_THAN(3,5,0)
     __feel_petsc_snes_jacobian ( SNES snes, Vec x, Mat *jac, Mat *pc, MatStructure *msflag, void *ctx )
+#else
+    __feel_petsc_snes_jacobian ( SNES snes, Vec x, Mat jac, Mat pc, void *ctx )
+#endif
     {
         int ierr=0;
         assert ( ctx != NULL );
@@ -174,31 +167,28 @@ extern "C"
         Feel::SolverNonLinearPetsc<double>* solver =
             static_cast<Feel::SolverNonLinearPetsc<double>*> ( ctx );
 
-#if !defined(FEELPP_ENABLE_MPI_MODE)
-        boost::shared_ptr<Feel::Vector<double> > R;
-        boost::shared_ptr<Feel::MatrixSparse<double> >  PC( new Feel::MatrixPetsc<double>( *pc ) );
-        boost::shared_ptr<Feel::MatrixSparse<double> >  Jac( new Feel::MatrixPetsc<double>( *jac ) );
-        boost::shared_ptr<Feel::Vector<double> > X_global( new Feel::VectorPetsc<double>( x ) );
-        boost::shared_ptr<Feel::Vector<double> > X_local( new Feel::VectorPetsc<double>( X_global->size() ) );
-
-        X_global->localize ( *X_local );
-#else // MPI
         boost::shared_ptr<Feel::MatrixSparse<double> > Jac;
         boost::shared_ptr<Feel::Vector<double> > X_global;
 
         if ( solver->comm().size()>1 )
         {
-            Jac.reset( new Feel::MatrixPetscMPI<double>( *jac,solver->mapRow(),solver->mapCol() ) );
-            X_global.reset( new Feel::VectorPetscMPI<double>( x,solver->mapRow() ) );
+#if PETSC_VERSION_LESS_THAN(3,5,0)
+            Jac.reset( new Feel::MatrixPetscMPI<double>( *jac,solver->mapRowPtr(),solver->mapColPtr() ) );
+#else
+            Jac.reset( new Feel::MatrixPetscMPI<double>( jac,solver->mapRowPtr(),solver->mapColPtr() ) );
+#endif
+            X_global.reset( new Feel::VectorPetscMPI<double>( x,solver->mapRowPtr() ) );
         }
 
         else
         {
-            Jac.reset( new Feel::MatrixPetsc<double>( *jac ) );
-            X_global.reset( new Feel::VectorPetsc<double>( x ) );
-        }
-
+#if PETSC_VERSION_LESS_THAN(3,5,0)
+            Jac.reset( new Feel::MatrixPetsc<double>( *jac,solver->mapRowPtr(),solver->mapColPtr() ) );
+#else
+            Jac.reset( new Feel::MatrixPetsc<double>( jac,solver->mapRowPtr(),solver->mapColPtr() ) );
 #endif
+            X_global.reset( new Feel::VectorPetsc<double>( x,solver->mapColPtr() ) );
+        }
 
         //if (solver->jacobian != NULL) solver->jacobian (X_local, PC );
         if ( solver->jacobian != NULL ) solver->jacobian ( X_global, Jac );
@@ -275,7 +265,11 @@ extern "C"
     //---------------------------------------------------------------
     // this function is called by PETSc to evaluate the Jacobian at X
     PetscErrorCode
+#if PETSC_VERSION_LESS_THAN(3,5,0)
     __feel_petsc_snes_dense_jacobian ( SNES snes, Vec x, Mat *jac, Mat *pc, MatStructure *msflag, void *ctx )
+#else
+    __feel_petsc_snes_dense_jacobian ( SNES snes, Vec x, Mat jac, Mat pc, void *ctx )
+#endif
     {
         int ierr=0;
         assert ( ctx != NULL );
@@ -294,7 +288,11 @@ extern "C"
 
         int size1;
         int size2;
+#if PETSC_VERSION_LESS_THAN(3,5,0)
         MatGetSize( *jac, &size1, &size2 );
+#else
+        MatGetSize( jac, &size1, &size2 );
+#endif
         boost::numeric::ublas::matrix<double> jj( size1, size2 );
 
         if ( solver->dense_jacobian != NULL ) solver->dense_jacobian ( xx, jj );
@@ -304,19 +302,29 @@ extern "C"
         for ( int i = 0; i < size1; ++i )
             for ( int j = 0; j < size2; ++j )
             {
+#if PETSC_VERSION_LESS_THAN(3,5,0)
                 MatSetValue( *jac, i, j, jj( i, j ), INSERT_VALUES );
-
+#else
+                MatSetValue( jac, i, j, jj( i, j ), INSERT_VALUES );
+#endif
             }
 
         /*
           Assemble matrix
         */
+#if PETSC_VERSION_LESS_THAN(3,5,0)
         MatAssemblyBegin( *jac,MAT_FINAL_ASSEMBLY );
         MatAssemblyEnd( *jac,MAT_FINAL_ASSEMBLY );
+#else
+        MatAssemblyBegin( jac,MAT_FINAL_ASSEMBLY );
+        MatAssemblyEnd( jac,MAT_FINAL_ASSEMBLY );
+#endif
 
         VecRestoreArray( x, &xa );
 
+#if PETSC_VERSION_LESS_THAN(3,5,0)
         *msflag = MatStructure::SAME_NONZERO_PATTERN;
+#endif
 
         return ierr;
     }
@@ -361,7 +369,11 @@ extern "C"
     }
 
     PetscErrorCode
+#if PETSC_VERSION_LESS_THAN(3,5,0)
     __feel_petsc_snes_dense_jacobian_eigen ( SNES snes, Vec x, Mat *jac, Mat *pc, MatStructure *msflag, void *ctx )
+#else
+    __feel_petsc_snes_dense_jacobian_eigen ( SNES snes, Vec x, Mat jac, Mat pc, void *ctx )
+#endif
     {
         int ierr=0;
 
@@ -380,10 +392,21 @@ extern "C"
 
         int size1;
         int size2;
+#if PETSC_VERSION_LESS_THAN(3,5,0)
         MatGetSize( *jac, &size1, &size2 );
+#else
+        MatGetSize( jac, &size1, &size2 );
+#endif
 
         PetscScalar *ja;
+
+#if PETSC_VERSION_LESS_THAN(3,4,0)
         MatGetArray( *jac, &ja );
+#elif PETSC_VERSION_LESS_THAN(3,5,0)
+        MatDenseGetArray( *jac, &ja );
+#else
+        MatDenseGetArray( jac, &ja );
+#endif
 
         int jac_size = size1*size2;
         //Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > map_jac ( ja, size1, size2 );
@@ -397,17 +420,28 @@ extern "C"
 
 
         VecRestoreArray( x, &xa );
+#if PETSC_VERSION_LESS_THAN(3,4,0)
         MatRestoreArray(*jac, &ja);
+#elif PETSC_VERSION_LESS_THAN(3,5,0)
+        MatDenseRestoreArray(*jac, &ja);
+#else
+        MatDenseRestoreArray(jac, &ja);
+#endif
 
         /*
           Assemble matrix
         */
+#if PETSC_VERSION_LESS_THAN(3,5,0)
         MatAssemblyBegin( *jac,MAT_FINAL_ASSEMBLY );
         MatAssemblyEnd( *jac,MAT_FINAL_ASSEMBLY );
+#else
+        MatAssemblyBegin( jac,MAT_FINAL_ASSEMBLY );
+        MatAssemblyEnd( jac,MAT_FINAL_ASSEMBLY );
+#endif
 
-
+#if PETSC_VERSION_LESS_THAN(3,5,0)
         *msflag = MatStructure::SAME_NONZERO_PATTERN;
-
+#endif
 
         return ierr;
     }
@@ -457,12 +491,12 @@ void SolverNonLinearPetsc<T>::setReuse ( int jac, int prec )
 template <typename T>
 void SolverNonLinearPetsc<T>::init ()
 {
+    int ierr=0;
     // Initialize the data structures if not done so already.
     if ( !this->initialized() )
     {
         this->M_is_initialized = true;
 
-        int ierr=0;
 
 # if ((PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 1) && (PETSC_VERSION_SUBMINOR <= 1))
 
@@ -492,71 +526,88 @@ void SolverNonLinearPetsc<T>::init ()
         ierr = SNESSetFromOptions( M_snes );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
 
-        //int ierr=0;
+#if 1
         // if the non linear solver type is define by the user in the code
         switch ( this->getType() )
         {
+            //LS, TR Newton-type with line search and trust region
+        default:
         case LINE_SEARCH :
         {
+#if PETSC_VERSION_LESS_THAN(3,4,0)
             ierr = SNESSetType( M_snes, SNESLS );
+#else
+            ierr = SNESSetType( M_snes, SNESNEWTONLS );
+#endif
             CHKERRABORT( this->worldComm().globalComm(),ierr );
         }
         break;
 
         case TRUST_REGION :
         {
+#if PETSC_VERSION_LESS_THAN(3,4,0)
             ierr = SNESSetType( M_snes, SNESTR );
+#else
+            ierr = SNESSetType( M_snes, SNESNEWTONTR );
+#endif
             CHKERRABORT( this->worldComm().globalComm(),ierr );
         }
         break;
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,4,0)
+
+        //NRichardson Nonlinear Richardson, usually preconditioned
+        case NRICHARDSON: check( SNESSetType( M_snes, SNESNRICHARDSON ) ); break;
+
+        case NKSPONLY: check( SNESSetType( M_snes, SNESKSPONLY ) ); break;
+            //VIRS, VISS reduced space and semi-smooth method for
+            //variational inequalities
+        case VINEWTONRSLS: check( SNESSetType( M_snes, SNESVINEWTONRSLS ) ); break;
+        case VINEWTONRSTR: check( SNESSetType( M_snes, SNESVINEWTONSSLS ) ); break;
+            //NGMRES Nonlinear GMRES
+        case NGMRES: check( SNESSetType( M_snes, SNESNGMRES ) ); break;
+            //QN Quasi-Newton methods like BFGS
+        case QN: check( SNESSetType( M_snes, SNESQN ) ); break;
+            //Shell Your method, often used as a (nonlinear) preconditioner
+        case NSHELL: check( SNESSetType( M_snes, SNESSHELL ) ); break;
+            //GS Nonlinear Gauss-Seidel sweeps
+#if PETSC_VERSION_LESS_THAN(3,5,0)
+        case GS: check( SNESSetType( M_snes, SNESGS ) ); break;
+#else
+        case GS: check( SNESSetType( M_snes, SNESNGS ) ); break;
+#endif
+            //NCG Nonlinear Conjugate Gradients
+        case NCG: check( SNESSetType( M_snes, SNESNCG ) ); break;
+            //FAS Full approximation scheme (nonlinear multigrid)
+        case FAS: check( SNESSetType( M_snes, SNESFAS ) ); break;
+            //MS Multi-stage smoothers (in FAS for hyperbolic problems)
+        case MS: check( SNESSetType( M_snes, SNESMS ) ); break;
+        case NASM: check( SNESSetType( M_snes, SNESNASM ) ); break;
+        case ANDERSON: check( SNESSetType( M_snes, SNESANDERSON ) ); break;
+        case ASPIN: check( SNESSetType( M_snes, SNESASPIN ) ); break;
+#endif
+
 
         case SELECT_IN_ARGLIST:
             // no-op
             break;
         }
-
-
-        double __relResTol,__absResTol,__absSolTol;
-        int __nbItMax, __nbEvalFuncMax;
-
-        if ( this->getAbsoluteResidualTol()==0 )
-        {
-            ierr = SNESGetTolerances( M_snes, &__absResTol, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL );
-            CHKERRABORT( this->worldComm().globalComm(),ierr );
-        }
-
-        else __absResTol = this->getAbsoluteResidualTol();
-
-        if ( this->getRelativeResidualTol()==0 )
-        {
-            ierr = SNESGetTolerances( M_snes, PETSC_NULL, &__relResTol, PETSC_NULL, PETSC_NULL, PETSC_NULL );
-            CHKERRABORT( this->worldComm().globalComm(),ierr );
-        }
-
-        else __relResTol = this->getRelativeResidualTol();
-
-        if ( this->getAbsoluteSolutionTol()==0 )
-        {
-            ierr = SNESGetTolerances( M_snes, PETSC_NULL, PETSC_NULL, &__absSolTol, PETSC_NULL, PETSC_NULL );
-            CHKERRABORT( this->worldComm().globalComm(),ierr );
-        }
-
-        else __absSolTol = this->getAbsoluteSolutionTol();
-
-        if ( this->getNbItMax()==0 )
-        {
-            ierr = SNESGetTolerances( M_snes, PETSC_NULL, PETSC_NULL, PETSC_NULL, &__nbItMax, PETSC_NULL );
-            CHKERRABORT( this->worldComm().globalComm(),ierr );
-        }
-
-        else __nbItMax = this->getNbItMax();
-
-        ierr = SNESGetTolerances( M_snes, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, &__nbEvalFuncMax );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
-
-        ierr = SNESSetTolerances( M_snes,__absResTol,__relResTol,__absSolTol,__nbItMax,__nbEvalFuncMax );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
-
+#else
+        std::string s = option(_name="snes-type",_prefix=this->prefix()).template as<std::string>();
+        DVLOG(1) << "snes type: " << s;
+        check( SNESSetType( M_snes, s.c_str() ) );
+#if 0
+        //check( SNESNGMRESSetRestartType( M_snes, 5 ) );
+        SNES pc;
+        check( SNESGetPC( M_snes, &pc ) );
+        SNESType spc;
+        check( SNESGetType( pc, &spc ) );
+        LOG(INFO) << "npc snes type: " << spc;
+        //check( SNESSetType( pc, SNESNRICHARDSON ) );
+        check( SNESSetType( pc, SNESNEWTONLS ) );
+        //check( SNESSetIterationNumber(pc, 5 ) );
+        check( SNESMonitorSet( pc,SNESMonitorDefault,PETSC_NULL,PETSC_NULL ) );
+#endif
+#endif
         //KSP ksp;
         ierr = SNESGetKSP ( M_snes, &M_ksp );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
@@ -566,13 +617,13 @@ void SolverNonLinearPetsc<T>::init ()
 
         // Set user-specified  solver and preconditioner types
         this->setPetscKspSolverType();
-        this->setPetscPreconditionerType();
+        //this->setPetscPreconditionerType();
         //this->setPetscConstantNullSpace();
         // sets the software that is used to perform the factorization
-        PetscPCFactorSetMatSolverPackage( M_pc,this->matSolverPackageType() );
+        //PetscPCFactorSetMatSolverPackage( M_pc,this->matSolverPackageType() );
 
 
-        if ( this->M_preconditioner /*&& this->preconditionerType()==PreconditionerType::SHELL_PRECOND*/ )
+        if ( this->M_preconditioner )
         {
             PCSetType( M_pc, PCSHELL );
             PCShellSetContext( M_pc,( void* )this->M_preconditioner.get() );
@@ -580,6 +631,13 @@ void SolverNonLinearPetsc<T>::init ()
             //Re-Use the shell functions from petsc_linear_solver
             PCShellSetSetUp( M_pc,__feel_petsc_preconditioner_setup );
             PCShellSetApply( M_pc,__feel_petsc_preconditioner_apply );
+            PCShellSetView( M_pc,__feel_petsc_preconditioner_view );
+        }
+        else
+        {
+            this->setPetscPreconditionerType();
+            // sets the software that is used to perform the factorization
+            PetscPCFactorSetMatSolverPackage( M_pc,this->matSolverPackageType() );
         }
 
         if ( Environment::vm(_name="snes-monitor",_prefix=this->prefix()).template as<bool>() )
@@ -594,7 +652,50 @@ void SolverNonLinearPetsc<T>::init ()
             CHKERRABORT( this->worldComm().globalComm(),ierr );
         }
 
+    } // if ( !this->initialized() )
+
+
+
+    double __relResTol,__absResTol,__absSolTol;
+    int __nbItMax, __nbEvalFuncMax;
+
+    if ( this->getAbsoluteResidualTol()==0 )
+    {
+        ierr = SNESGetTolerances( M_snes, &__absResTol, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL );
+        CHKERRABORT( this->worldComm().globalComm(),ierr );
     }
+
+    else __absResTol = this->getAbsoluteResidualTol();
+
+    if ( this->getRelativeResidualTol()==0 )
+    {
+        ierr = SNESGetTolerances( M_snes, PETSC_NULL, &__relResTol, PETSC_NULL, PETSC_NULL, PETSC_NULL );
+        CHKERRABORT( this->worldComm().globalComm(),ierr );
+    }
+
+    else __relResTol = this->getRelativeResidualTol();
+
+    if ( this->getAbsoluteSolutionTol()==0 )
+    {
+        ierr = SNESGetTolerances( M_snes, PETSC_NULL, PETSC_NULL, &__absSolTol, PETSC_NULL, PETSC_NULL );
+        CHKERRABORT( this->worldComm().globalComm(),ierr );
+    }
+
+    else __absSolTol = this->getAbsoluteSolutionTol();
+
+    if ( this->getNbItMax()==0 )
+    {
+        ierr = SNESGetTolerances( M_snes, PETSC_NULL, PETSC_NULL, PETSC_NULL, &__nbItMax, PETSC_NULL );
+        CHKERRABORT( this->worldComm().globalComm(),ierr );
+    }
+
+    else __nbItMax = this->getNbItMax();
+
+    ierr = SNESGetTolerances( M_snes, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, &__nbEvalFuncMax );
+    CHKERRABORT( this->worldComm().globalComm(),ierr );
+
+    ierr = SNESSetTolerances( M_snes,__absResTol,__relResTol,__absSolTol,__nbItMax,__nbEvalFuncMax );
+    CHKERRABORT( this->worldComm().globalComm(),ierr );
 
 
 }
@@ -602,7 +703,7 @@ void SolverNonLinearPetsc<T>::init ()
 
 
 template <typename T>
-std::pair< int, typename SolverNonLinearPetsc<T>::real_type>
+typename SolverNonLinearPetsc<T>::solve_return_type
 SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jacobian Matrix
                                  vector_ptrtype& x_in,    // Solution vector
                                  vector_ptrtype& r_in,    // Residual vector
@@ -617,11 +718,6 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
 
     int ierr=0;
 
-#if !defined(FEELPP_ENABLE_MPI_MODE)
-    MatrixPetsc<T>* jac = dynamic_cast<MatrixPetsc<T>*>( jac_in.get() );
-    VectorPetsc<T>* x   = dynamic_cast<VectorPetsc<T>*>( x_in.get() );
-    VectorPetsc<T>* r   = dynamic_cast<VectorPetsc<T>*>( r_in.get() );
-#else // MPI
     MatrixPetsc<T>* jac;
     VectorPetsc<T>* x;
     VectorPetsc<T>* r;
@@ -632,8 +728,6 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
         x = dynamic_cast<VectorPetscMPI<T>*>( x_in.get() );
         r = dynamic_cast<VectorPetscMPI<T>*>( r_in.get() );
         //usefull in __feel_petsc_snes_jacobian and __feel_petsc_snes_residual
-        this->setMapRow( jac_in->mapRow() );
-        this->setMapCol( jac_in->mapCol() );
     }
     else
     {
@@ -642,8 +736,8 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
         r   = dynamic_cast<VectorPetsc<T>*>( r_in.get() );
     }
 
-#endif
-
+    this->setMapRow( jac_in->mapRowPtr() );
+    this->setMapCol( jac_in->mapColPtr() );
 
     // We cast to pointers so we can be sure that they succeeded
     // by comparing the result against NULL.
@@ -655,15 +749,26 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     assert( r->vec()   != NULL );
 
     int n_iterations =0;
+    PetscReal valfnorm = 0;
 
     ierr = SNESSetFunction ( M_snes, r->vec(), __feel_petsc_snes_residual, this );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
+#if PETSC_VERSION_LESS_THAN(3,5,0)
     ierr = SNESSetJacobian ( M_snes, jac->mat(), jac->mat(), __feel_petsc_snes_jacobian, this );
+#else
+    ierr = SNESSetJacobian ( M_snes, jac->mat(), jac->mat(), &__feel_petsc_snes_jacobian, this );
+#endif
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
+#if PETSC_VERSION_LESS_THAN(3,5,0)
     ierr = KSPSetOperators( M_ksp, jac->mat(), jac->mat(),
                             PetscGetMatStructureEnum(this->precMatrixStructure()) );
+#else
+    ierr = KSPSetReusePreconditioner( M_ksp, (this->precMatrixStructure() == Feel::SAME_PRECONDITIONER)? PETSC_TRUE : PETSC_FALSE );
+    CHKERRABORT( this->worldComm().globalComm(),ierr );
+    ierr = KSPSetOperators( M_ksp, jac->mat(), jac->mat() );
+#endif
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
     ierr = KSPSetTolerances ( M_ksp,
@@ -724,7 +829,16 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     CHKERRABORT( this->worldComm().globalComm(),ierr );
     LOG(INFO) << "[SolverNonLinearPetsc] number of nonlinear iterations = " << n_iterations << "\n";
 
-    for ( int i=0; i<n_iterations+1; i++ )
+#if PETSC_VERSION_LESS_THAN(3,5,0)
+    ierr = SNESGetFunctionNorm( M_snes,&valfnorm );
+    CHKERRABORT( this->worldComm().globalComm(),ierr );
+#else
+    Vec res;
+    SNESGetFunction( M_snes,&res,0,0 );
+    VecNorm( res, NORM_2, &valfnorm );
+#endif
+
+    for ( int i=0; i<50/*n_iterations+1*/; i++ )
     {
         LOG(INFO) << "iteration " << i << ": Linear iterations : " << hist_its[i] << " Function norm = " << history[i] << "\n";
     }
@@ -733,7 +847,10 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     SNESGetConvergedReason( M_snes,&reason );
     LOG(INFO) << "[solvernonlinearpetsc] convergence reason : " << reason << "\n";
 
-    if ( reason<0 )
+    if ( option( _prefix=this->prefix(), _name="snes-view" ).template as<bool>() )
+        check( SNESView( M_snes, PETSC_VIEWER_STDOUT_WORLD ) );
+    bool hasConverged = reason>0;
+    if ( !hasConverged )
     {
         LOG(ERROR) << "Nonlinear solve did not converge due to " << PetscConvertSNESReasonToString(reason)
                    << " iterations " << n_iterations << std::endl;
@@ -748,13 +865,10 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
                       << " iterations " << n_iterations << std::endl;
     }
 
-
-#if 0
-    this->clear();
-#endif
     // return the # of its. and the final residual norm.  Note that
     // n_iterations may be zero for PETSc versions 2.2.x and greater.
-    return std::make_pair( reason, 0. );
+    //return std::make_pair( reason, 0. );
+    return solve_return_type( boost::make_tuple( hasConverged, n_iterations, valfnorm/*history[std::min(n_iterations,49)]*/ ) );
 }
 
 
@@ -807,7 +921,11 @@ SolverNonLinearPetsc<T>::solve ( dense_matrix_type&  jac_in,  // System Jacobian
     MatAssemblyEnd( petsc_j,MAT_FINAL_ASSEMBLY );
 
 
+#if PETSC_VERSION_LESS_THAN(3,5,0)
     ierr = SNESSetJacobian ( M_snes, petsc_j, petsc_j, __feel_petsc_snes_dense_jacobian, this );
+#else
+    ierr = SNESSetJacobian ( M_snes, petsc_j, petsc_j, &__feel_petsc_snes_dense_jacobian, this );
+#endif
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
 
@@ -862,10 +980,14 @@ SolverNonLinearPetsc<T>::solve ( dense_matrix_type&  jac_in,  // System Jacobian
     SNESConvergedReason reason;
     SNESGetConvergedReason( M_snes,&reason );
 
+
+    if ( option( _prefix=this->prefix(), _name="snes-view" ).template as<bool>() )
+        check( SNESView( M_snes,PETSC_VIEWER_STDOUT_SELF ) );
+
     //LOG(INFO) << "[solvernonlinearpetsc] convergence reason : " << reason << "\n";
     if ( reason<0 )
     {
-        DVLOG(2)  << "[solvernonlinearpetsc] not converged (see petscsnes.h for an explanation): " << reason << "\n";
+        VLOG(1)  << "[solvernonlinearpetsc] not converged (see petscsnes.h for an explanation): " << reason << "\n";
     }
 
     this->clear();
@@ -913,7 +1035,11 @@ SolverNonLinearPetsc<T>::solve ( map_dense_matrix_type&  jac_in,  // System Jaco
     MatAssemblyEnd( petsc_j,MAT_FINAL_ASSEMBLY );
 
 
+#if PETSC_VERSION_LESS_THAN(3,5,0)
     ierr = SNESSetJacobian ( M_snes, petsc_j, petsc_j, __feel_petsc_snes_dense_jacobian_eigen, this );
+#else
+    ierr = SNESSetJacobian ( M_snes, petsc_j, petsc_j, &__feel_petsc_snes_dense_jacobian_eigen, this );
+#endif
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
 
@@ -970,10 +1096,13 @@ SolverNonLinearPetsc<T>::solve ( map_dense_matrix_type&  jac_in,  // System Jaco
     SNESConvergedReason reason;
     SNESGetConvergedReason( M_snes,&reason );
 
+    if ( option( _prefix=this->prefix(), _name="snes-view" ).template as<bool>() )
+        check( SNESView( M_snes,PETSC_VIEWER_STDOUT_SELF ) );
+
     //LOG(INFO) << "[solvernonlinearpetsc] convergence reason : " << reason << "\n";
     if ( reason<0 )
     {
-        DVLOG(2)  << "[solvernonlinearpetsc] not converged (see petscsnes.h for an explanation): " << reason << "\n";
+        VLOG(1)  << "[solvernonlinearpetsc] not converged (see petscsnes.h for an explanation): " << reason << "\n";
     }
 
     this->clear();
@@ -1048,6 +1177,11 @@ SolverNonLinearPetsc<T>::setPetscKspSolverType()
     case GMRES:
         ierr = KSPSetType ( M_ksp, ( char* ) KSPGMRES );
         CHKERRABORT( this->comm(),ierr );
+        return;
+
+    case FGMRES:
+        ierr = KSPSetType ( M_ksp, ( char* ) KSPFGMRES );
+        CHKERRABORT( this->worldComm().globalComm(),ierr );
         return;
 
     case RICHARDSON:

@@ -103,12 +103,15 @@ public:
 
     //@}
 
-
+    class ElementBase {};
 
 protected:
 
 private:
 
 };
+
+
+
 }
 #endif /* __FunctionSpaceBase_H */

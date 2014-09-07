@@ -343,6 +343,9 @@ DECLARE_int32(logbufsecs);
 // are suppressed.
 DECLARE_int32(minloglevel);
 
+// Set whether log messages go to stderr instead of logfiles
+DECLARE_int32(no_log);
+
 // If specified, logfiles are written into this directory instead of the
 // default logging directory.
 DECLARE_string(log_dir);

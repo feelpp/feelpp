@@ -21,6 +21,8 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+CONFIGURE_FILE(feelconfig.h.in feelconfig.h  @ONLY)
+CONFIGURE_FILE(feelinfo.h.in feelinfo.h  @ONLY)
 
 macro(feel_append_src DIRNAME FILES)
   foreach(FILE ${FILES})
@@ -37,25 +39,42 @@ add_subdirectory (feelpoly)
 add_subdirectory (feelopt)
 add_subdirectory (feelcrb)
 add_subdirectory (feeldiscr)
+add_subdirectory (feelts)
 add_subdirectory (feelfilters)
 add_subdirectory (feelmaterial)
 add_subdirectory (feelvf )
-#add_subdirectory (feelsystem)
+add_subdirectory (feelpde)
+add_subdirectory (feelpython)
 
 
-if( NOT cmake_build_type_tolower STREQUAL "debug" AND NOT FEELPP_ENABLE_BUILD_STATIC )
-  add_library(feelpp SHARED options.cpp ${FEELPP_SRCS})
-  set_target_properties( feelpp PROPERTIES VERSION ${FEELPP_SHARED_VERSION} SOVERSION ${FEELPP_SHARED_SOVERSION})
-  set_property(TARGET feelpp PROPERTY LABELS feel++)
-
-  #target_link_libraries (feelpp ${PETSC_LIBRARIES} ${Boost_LIBRARIES} ${MPI_LIBRARIES} ${LIBXML2_LIBRARIES} ${TBB_LIBRARIES})
-  target_link_libraries (feelpp ${FEELPP_LIBRARIES})
-  set_target_properties(feelpp PROPERTIES VERSION ${FEELPP_SHARED_VERSION} SOVERSION ${FEELPP_SHARED_SOVERSION})
-
-  # Install feelpp
-  INSTALL(TARGETS feelpp DESTINATION lib/ COMPONENT Bin)
+# Add target for dynamic library
+#add_library(feelpp-dynamic SHARED $<TARGET_OBJECTS:feelpp-core>)
+if(FEELPP_ENABLE_BUILD_STATIC)
+  add_library(feelpp STATIC options.cpp ${FEELPP_SRCS})
 else()
-  add_library(feelpp options.cpp ${FEELPP_SRCS})
-  set_property(TARGET feelpp PROPERTY LABELS feel++)
-  target_link_libraries (feelpp ${FEELPP_LIBRARIES})
+  add_library(feelpp SHARED options.cpp ${FEELPP_SRCS})
+  set_target_properties(feelpp PROPERTIES VERSION ${FEELPP_SHARED_VERSION} SOVERSION ${FEELPP_SHARED_SOVERSION})
 endif()
+set_target_properties(feelpp PROPERTIES OUTPUT_NAME "feelpp")
+set_property(TARGET feelpp PROPERTY LABELS feel++)
+
+#target_link_libraries (feelpp ${PETSC_LIBRARIES} ${Boost_LIBRARIES} ${MPI_LIBRARIES} ${LIBXML2_LIBRARIES} ${TBB_LIBRARIES})
+target_link_libraries(feelpp ${FEELPP_LIBRARIES})
+
+# Install feelpp
+INSTALL(TARGETS feelpp DESTINATION lib/ COMPONENT Bin)
+
+# Handle static library if needed
+# if(FEELPP_ENABLE_BUILD_STATIC)
+#     add_library(feelpp-static STATIC options.cpp ${FEELPP_SRCS})
+#     set_target_properties(feelpp-static PROPERTIES OUTPUT_NAME "feelpp")
+#     set_target_properties(feelpp-static PROPERTIES VERSION ${FEELPP_SHARED_VERSION})
+#     set_property(TARGET feelpp-static PROPERTY LABELS feel++)
+
+#     target_link_libraries(feelpp-static ${FEELPP_LIBRARIES})
+
+#     # Install feelpp
+#     INSTALL(TARGETS feelpp-static DESTINATION lib/ COMPONENT Bin)
+# endif()
+
+include(feelpp.lib.install)

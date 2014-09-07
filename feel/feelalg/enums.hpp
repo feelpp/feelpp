@@ -6,7 +6,8 @@
        Date: 2005-11-27
 
   Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2006,2007 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2006,2007 Universite Joseph Fourier (Grenoble I)
+  Copyright (C) 2011-2014 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -22,13 +23,8 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-/**
-   \file enums.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2005-11-27
- */
-#ifndef __FeelAlgEnums_H
-#define __FeelAlgEnums_H 1
+#ifndef FEELPP_ALG_ENUMS_HPP
+#define FEELPP_ALG_ENUMS_HPP 1
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/feelpetsc.hpp>
@@ -39,36 +35,34 @@ namespace Feel
 /**
  * Context for 'on' operation on sparse matrices
  */
-#if 0
-enum ZeroOutOptions
+enum class OnContext
 {
-    PENALISATION                = 0x1, /**< penalisation */
-    ELIMINATION                 = 0x2 /**< elimination */
+    NONE                        = 0x0, /**< none */
+    ELIMINATION                 = 0x1, /**< elimination */
+    PENALISATION                = 0x2, /**< penalisation */
+    ELIMINATION_KEEP_DIAGONAL   = 0x4, /**< enables elimination and keep diagonal entry(ie don't put 1), modify rhs accordingly */
+    ELIMINATION_SYMMETRIC       = 0x8  /**< enables elimination and make a symmetric elimination */
 };
-enum EliminationOptions
-{
-    ELIMINATION_KEEP_DIAGONAL   = 0x1, /**< enables elimination and keep diagonal entry(ie don't put 1), modify rhs accordingly */
-    ELIMINATION_SYMMETRIC       = 0x2  /**< enables elimination and make a symmetric elimination */
-};
-#else
-enum on_context_type
-{
-    ON_NONE                        = 0x0, /**< none */
-    ON_ELIMINATION                 = 0x1, /**< elimination */
-    ON_PENALISATION                = 0x2, /**< penalisation */
-    ON_ELIMINATION_KEEP_DIAGONAL   = 0x4, /**< enables elimination and keep diagonal entry(ie don't put 1), modify rhs accordingly */
-    ON_ELIMINATION_SYMMETRIC       = 0x8  /**< enables elimination and make a symmetric elimination */
-};
-#endif
+extern std::map<std::string, OnContext> OnContextMap;
+
 
 enum   MatrixProperties
 {
     HERMITIAN          = 0x1,   /**< hermitian : \f$A^* = A\f$ */
     NON_HERMITIAN      = 0x2,   /**< non hermitian : \f$A^* != A\f$ */
-    POSITIVE_DEFINITE  = 0x4,   /**< positive definite matrix : \f$v^* A v > 0 \$f for all non-zero v */
+    POSITIVE_DEFINITE  = 0x4,   /**< positive definite matrix : \f$v^* A v > 0 \f$ for all non-zero v */
     SINGULAR           = 0x8,    /**< singular matrix : \f$det(A)=0\f$ and 0 is an eigenvalue */
     DENSE              = 0x10    /**< dense matrix */
 };
+
+enum MatrixTranspose
+{
+    MATRIX_TRANSPOSE_ASSEMBLED   = 0x1,
+    MATRIX_TRANSPOSE_UNASSEMBLED = 0x2,
+    MATRIX_TRANSPOSE_CHECK       = 0x4
+};
+        
+
 /**
  * Backend types
  *
@@ -97,6 +91,7 @@ enum SolverType {CG=0,
                  BICGSTAB,
                  MINRES,
                  GMRES,
+                 FGMRES,
                  LSQR,
                  JACOBI,
                  SOR_FORWARD,
@@ -104,6 +99,7 @@ enum SolverType {CG=0,
                  SSOR,
                  RICHARDSON,
                  CHEBYSHEV,
+                 PREONLY,
 
                  INVALID_SOLVER
                 };
@@ -127,7 +123,12 @@ enum PreconditionerType {IDENTITY_PRECOND =0,
                          USER_PRECOND,
                          SHELL_PRECOND,
                          FIELDSPLIT_PRECOND,
+                         LSC_PRECOND,
                          ML_PRECOND,
+                         GAMG_PRECOND,
+                         BOOMERAMG_PRECOND,
+                         REDUNDANT_PRECOND,
+                         NONE_PRECOND,
                          INVALID_PRECONDITIONER
                         };
 
@@ -209,6 +210,9 @@ enum SpectralTransformType {SHIFT=0,
                             FOLD,
                             CAYLEY
                            };
+
+extern std::map<std::string, size_type> EigenMap;
+
 /**
  * Defines an \p enum for various linear solver packages.  This
  * allows for run-time switching between solver packages
@@ -233,7 +237,21 @@ enum SolverNonLinearType
 {
     SELECT_IN_ARGLIST=0,
     LINE_SEARCH,
-    TRUST_REGION
+    TRUST_REGION,
+    NRICHARDSON,
+    NKSPONLY,
+    VINEWTONRSLS,
+    VINEWTONRSTR,
+    NGMRES,
+    QN,
+    NSHELL,
+    GS,
+    NCG,
+    FAS,
+    MS,
+    NASM,
+    ANDERSON,
+    ASPIN
 };
 
 /**
@@ -262,7 +280,8 @@ enum ProjectorType
     DIFF=2,
     HDIV=3,
     HCURL=4,
-    LIFT=5
+    LIFT=5,
+    CIP=6
 };
 
 enum MatSolverPackageType
@@ -274,12 +293,17 @@ enum MatSolverPackageType
     MATSOLVER_ESSL,
     MATSOLVER_LUSOL,
     MATSOLVER_MUMPS,
+    MATSOLVER_MKL_PARDISO,
     MATSOLVER_PASTIX,
     MATSOLVER_DSCPACK,
     MATSOLVER_MATLAB,
     MATSOLVER_PETSC,
     MATSOLVER_PLAPACK,
-    MATSOLVER_BAS
+    MATSOLVER_BAS,
+    MATSOLVER_BOOMERAMG,
+    MATSOLVER_EUCLID,
+    MATSOLVER_PILUT,
+
 };
 #if defined(FEELPP_HAS_MUMPS) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
 const auto MATSOLVER_DEFAULT = MATSOLVER_MUMPS;
@@ -287,5 +311,22 @@ const auto MATSOLVER_DEFAULT = MATSOLVER_MUMPS;
 const auto MATSOLVER_DEFAULT = MATSOLVER_PETSC;
 #endif
 
+PreconditionerType
+pcTypeConvertStrToEnum( std::string const& type );
+
+SolverType
+kspTypeConvertStrToEnum( std::string const& type );
+
+SolverNonLinearType
+snesTypeConvertStrToEnum( std::string const& type );
+
+MatSolverPackageType
+matSolverPackageConvertStrToEnum( std::string const& type );
+
+FieldSplitType
+fieldsplitTypeConvertStrToEnum( std::string const& type );
+
+
+
 } // Feel
-#endif /* __FeelAlgEnums_H */
+#endif /* FEELPP_ALG_ENUMS_HPP */

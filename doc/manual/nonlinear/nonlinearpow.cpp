@@ -94,6 +94,7 @@ main( int argc, char** argv )
                                - trans( idv( u ) )*( grad( v )*N() )
                                + penalbc*trans( idv( u ) )*id( v )/hFace() ) );
         };
+
     u.zero();
     backend()->nlSolver()->residual = Residual;
     backend()->nlSolver()->jacobian = Jacobian;

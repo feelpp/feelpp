@@ -53,13 +53,15 @@
 /** include  polynomialset header */
 #include <feel/feelpoly/polynomialset.hpp>
 #include <feel/feelpoly/lagrange.hpp>
-//#include <feel/feelpoly/raviartthomas.hpp>
+
 
 /** include  the header for the variational formulation language (vf) aka FEEL++ */
 #include <feel/feelvf/vf.hpp>
 
 /** include linear algebra backend */
 #include <feel/feelalg/backend.hpp>
+#include <feel/feelfilters/creategmshmesh.hpp>
+#include <feel/feelfilters/domain.hpp>
 
 #include "polyvisbase.hpp"
 
@@ -162,8 +164,8 @@ public:
     Polyvis( po::variables_map vm )
         :
         super(),
-        meshSize( this->vm()["hsize"].template as<double>() ),
-        exporter( Exporter<mesh_type>::New( this->vm() ) )
+        meshSize( Environment::vm()["hsize"].template as<double>() ),
+        exporter( Exporter<mesh_type>::New( Environment::vm() ) )
         {
             this->init( vm );
         }
@@ -194,42 +196,42 @@ private:
 
 
 template<
-typename A0,
-         typename A1,
-         typename A2,
-         typename A3,
-         typename A4>
+    typename A0,
+    typename A1,
+    typename A2,
+    typename A3,
+    typename A4>
 void
 Polyvis<A0,A1,A2,A3,A4>::run()
 {
     // First we create the mesh with one element
     mesh_ptrtype oneelement_mesh = createGMSHMesh( _mesh=new mesh_type,
-                                   _desc=domain( _name="one-elt",
-                                           _shape="simplex",
-                                           _dim=Dim,
-                                           _h=2.0,
-                                           _addmidpoint=false,
-                                           _xmin=this->vm()["xmin"].template as<double>(),
-                                           _ymin=this->vm()["ymin"].template as<double>(),
-                                           _zmin=this->vm()["zmin"].template as<double>() ) );
+                                                   _desc=domain( _name="one-elt",
+                                                                 _shape="simplex",
+                                                                 _dim=Dim,
+                                                                 _h=2.0,
+                                                                 _addmidpoint=false,
+                                                                 _xmin=Environment::vm()["xmin"].template as<double>(),
+                                                                 _ymin=Environment::vm()["ymin"].template as<double>(),
+                                                                 _zmin=Environment::vm()["zmin"].template as<double>() ) );
 
 #if 0
     mesh_ptrtype oneelement_mesh_ref = createGMSHMesh( _mesh=new mesh_type,
-                                       _desc = oneelement_geometry_ref() );
+                                                       _desc = oneelement_geometry_ref() );
 
     mesh_ptrtype oneelement_mesh_real = createGMSHMesh( _mesh=new mesh_type,
-                                        _desc = oneelement_geometry_real() );
+                                                        _desc = oneelement_geometry_real() );
 #endif
     // then a fine mesh which we use to export the basis function to
     // visualize them
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _desc=domain( _name="fine",
-                                                _shape="simplex",
-                                                _dim=Dim,
-                                                _h=meshSize,
-                                                _xmin=this->vm()["xmin"].template as<double>(),
-                                                _ymin=this->vm()["ymin"].template as<double>(),
-                                                _zmin=this->vm()["zmin"].template as<double>() ) );
+                                                      _shape="simplex",
+                                                      _dim=Dim,
+                                                      _h=meshSize,
+                                                      _xmin=Environment::vm()["xmin"].template as<double>(),
+                                                      _ymin=Environment::vm()["ymin"].template as<double>(),
+                                                      _zmin=Environment::vm()["zmin"].template as<double>() ) );
     /** \endcode */
 
     using namespace Feel::vf;
@@ -260,9 +262,9 @@ Polyvis<A0,A1,A2,A3,A4>::run()
 #if 0 // for rtk
         using namespace vf;
         std::cout << "flux " << i << " = " << integrate( boundaryfaces( oneelement_mesh_ref ),
-                  trans( idv( U ) )*N(), _Q<4>() ).evaluate()( 0, 0 ) << "\n";;
+                                                         trans( idv( U ) )*N(), _Q<4>() ).evaluate()( 0, 0 ) << "\n";;
         std::cout << "div " << i << " = " << integrate( elements( oneelement_mesh_ref ),
-                  divv( U ), _Q<4>() ).evaluate()( 0, 0 ) << "\n";
+                                                        divv( U ), _Q<4>() ).evaluate()( 0, 0 ) << "\n";
 #endif
         std::ostringstream ostr;
         ostr << Xh_ref->basis()->familyName() << "-" << i;

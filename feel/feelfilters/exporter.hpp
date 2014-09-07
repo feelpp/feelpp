@@ -279,6 +279,19 @@ public:
     Exporter<MeshType,N>* addPath( boost::format fmt );
 
     /**
+     * set the path
+     */
+    void setPath( std::string path )
+    {
+        if ( !fs::exists(path) && this->worldComm().isMasterRank() )
+            fs::create_directories( path );
+        // be sure that all process can find the path after
+        this->worldComm().barrier();
+
+        M_path = path;
+    }
+
+    /**
      * set the prefix to \p __prefix
      */
     Exporter<MeshType,N>* setPrefix( std::string const& __prefix )
@@ -404,7 +417,7 @@ public:
      */
     void saveTimeSet() const
     {
-        if ( this->worldComm().rank() != this->worldComm().masterRank() )
+        if ( ! this->worldComm().isMasterRank() )
             {
                 ++M_cptOfSave;
                 return;
@@ -501,15 +514,21 @@ BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::compute_exporter_return<Args>
                             ( fileset, *, option(_name="exporter.fileset").template as<bool>() )
                             ( order, *, mpl::int_<1>() )
                             ( name,  *, Environment::about().appName() )
-                            ( geo,   *, option(_name="exporter.geometry").template as<int>() )
-                            ( worldcomm, *, Environment::worldComm() )
+                            ( geo,   *, option(_name="exporter.geometry").template as<std::string>() )
+                            ( path, *( boost::is_convertible<mpl::_,std::string> ), std::string(".") )
                           ) )
 {
     typedef typename Feel::detail::compute_exporter_return<Args>::type exporter_type;
-    auto e =  exporter_type::New(Environment::vm(),name,worldcomm);
+    auto e =  exporter_type::New( Environment::vm(),name,mesh->worldComm() );
     e->setPrefix( name );
     e->setUseSingleTransientFile( fileset );
-    e->setMesh( mesh, (ExporterGeometry) geo );
+    if ( geo == "change_coords_only" )
+        e->setMesh( mesh, EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY );
+    else if ( geo == "change" )
+        e->setMesh( mesh, EXPORTER_GEOMETRY_CHANGE );
+    else // default
+        e->setMesh( mesh, EXPORTER_GEOMETRY_STATIC );
+    e->setPath( path );
     // addRegions not work with transient simulation!
     //e->addRegions();
     return e;

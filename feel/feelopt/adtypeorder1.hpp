@@ -78,33 +78,33 @@ public:
     //@ {
     ADType()
         :
-        _M_val( 0. ),
-        _M_grad( nvar ),
+        M_val( 0. ),
+        M_grad( nvar ),
         __dep( nvar, false ),
         __deps()
     {}
 
     ADType( value_type val )
         :
-        _M_val( val ),
-        _M_grad( nvar ),
+        M_val( val ),
+        M_grad( nvar ),
         __dep( nvar, false ),
         __deps()
     {
-        _M_grad = boost::numeric::ublas::zero_vector<value_type>( nvar );
+        M_grad = boost::numeric::ublas::zero_vector<value_type>( nvar );
 
         if ( Var != -1 )
         {
             __dep[Var]=true;
-            _M_grad( Var ) = 1.;
+            M_grad( Var ) = 1.;
         }
     }
 
     template<int VarNum>
     ADType( ADType<T,Nvar,1,VarNum> const& sad )
         :
-        _M_val( sad._M_val ),
-        _M_grad( sad._M_grad ),
+        M_val( sad.M_val ),
+        M_grad( sad.M_grad ),
         __dep( sad.__dep ),
         __deps()
     {
@@ -113,8 +113,8 @@ public:
     template<typename ExprT>
     ADType ( const ADExpr<ExprT>& expr )
         :
-        _M_val( 0 ),
-        _M_grad( nvar ),
+        M_val( 0 ),
+        M_grad( nvar ),
         __dep( nvar, false ),
         __deps()
     {
@@ -127,7 +127,7 @@ public:
     //@{
     value_type value() const
     {
-        return _M_val;
+        return M_val;
     }
     deps_type deps() const
     {
@@ -143,12 +143,12 @@ public:
 
     value_type grad( int __i ) const
     {
-        return _M_grad( __i );
+        return M_grad( __i );
     }
 
     gradient_type grad() const
     {
-        return _M_grad;
+        return M_grad;
     }
 
     //@}
@@ -158,7 +158,7 @@ public:
     //@{
     value_type& value()
     {
-        return _M_val;
+        return M_val;
     }
     //! tells if the gradient or the hessian depends on the ith variable
     bool& deps( int __i )
@@ -168,12 +168,12 @@ public:
     }
     value_type& grad( int __i )
     {
-        return _M_grad( __i );
+        return M_grad( __i );
     }
 
     gradient_type& grad()
     {
-        return _M_grad;
+        return M_grad;
     }
 
     //@}
@@ -203,7 +203,7 @@ public:
 #define AD_UNARY_OP( op )                         \
       This& operator op ( value_type val )         \
       {                                            \
-        _M_val op val;                              \
+        M_val op val;                              \
         return *this;                              \
       }
 
@@ -216,29 +216,29 @@ public:
 
     This& operator += ( This const& sad )
     {
-        _M_val += sad._M_val;
-        _M_grad += sad._M_grad;
+        M_val += sad.M_val;
+        M_grad += sad.M_grad;
         return *this;
     }
     This& operator -= ( This const& sad )
     {
-        _M_val -= sad._M_val;
-        _M_grad -= sad._M_grad;
+        M_val -= sad.M_val;
+        M_grad -= sad.M_grad;
         return *this;
     }
 
 
     This& operator *= ( This const& sad )
     {
-        _M_val *= sad._M_val;
-        _M_grad = _M_grad * sad._M_val + _M_val * sad._M_grad;
+        M_val *= sad.M_val;
+        M_grad = M_grad * sad.M_val + M_val * sad.M_grad;
         return *this;
     }
 
     This& operator /= ( This const& sad )
     {
-        _M_val /= sad._M_val;
-        _M_grad = ( _M_grad * sad._M_val - _M_val * sad._M_grad ) / ( sad._M_val * sad._M_val );
+        M_val /= sad.M_val;
+        M_grad = ( M_grad * sad.M_val - M_val * sad.M_grad ) / ( sad.M_val * sad.M_val );
         return *this;
     }
 
@@ -273,8 +273,8 @@ public:
 protected:
 
 private:
-    value_type _M_val;
-    gradient_type _M_grad;
+    value_type M_val;
+    gradient_type M_grad;
 
     deps_type __dep;
     dependency_type __deps;
@@ -284,8 +284,8 @@ template<typename T,int Nvar, int Var>
 ADType<T, Nvar, 1, Var>&
 ADType<T, Nvar, 1, Var>::operator=( value_type const& val )
 {
-    _M_val = val;
-    _M_grad = boost::numeric::ublas::zero_vector<value_type>( nvar );
+    M_val = val;
+    M_grad = boost::numeric::ublas::zero_vector<value_type>( nvar );
     __dep = false;
     return *this;
 }
@@ -294,8 +294,8 @@ template<typename T,int Nvar, int Var>
 ADType<T, Nvar, 1, Var>&
 ADType<T, Nvar, 1, Var>::operator=( This const& sad )
 {
-    _M_val = sad._M_val;
-    _M_grad = sad._M_grad;
+    M_val = sad.M_val;
+    M_grad = sad.M_grad;
     __dep = sad.__dep;
     return *this;
 }
@@ -304,7 +304,7 @@ template <class ExprT>
 ADType<T,Nvar, 1, Var> &
 ADType<T,Nvar, 1, Var>::operator=( const ADExpr<ExprT>& expr )
 {
-    _M_val = expr.value();
+    M_val = expr.value();
 #if 0
     __deps.clear();
 
@@ -323,8 +323,8 @@ ADType<T,Nvar, 1, Var>::operator=( const ADExpr<ExprT>& expr )
 
     if ( ! __deps.empty() && __deps.size() < nvar )
     {
-        //_M_grad = 0;
-        //__hessian = _M_grad;
+        //M_grad = 0;
+        //__hessian = M_grad;
 
         dependency_type::iterator __begin = __deps.begin();
         dependency_type::iterator __end = __deps.end();
@@ -333,7 +333,7 @@ ADType<T,Nvar, 1, Var>::operator=( const ADExpr<ExprT>& expr )
 
         while ( __it != __end )
         {
-            _M_grad( *__it )= expr.grad( *__it );
+            M_grad( *__it )= expr.grad( *__it );
             ++__it;
         }
     }
@@ -344,7 +344,7 @@ ADType<T,Nvar, 1, Var>::operator=( const ADExpr<ExprT>& expr )
 
         for ( int __i = 0; __i < nvar; ++__i )
         {
-            _M_grad( __i )= expr.grad( __i );
+            M_grad( __i )= expr.grad( __i );
         }
 
 #if 0
@@ -373,4 +373,3 @@ operator << ( std::ostream& os, const Feel::ADType<T, Nvar, 1, Var>& a )
 
 
 #endif /* __ADTypeOrder1_H */
-

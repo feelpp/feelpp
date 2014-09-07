@@ -99,6 +99,18 @@ SolverEigenSlepc<T>::init ()
         ierr = EPSCreate ( PETSC_COMM_WORLD, &M_eps );
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
+#if (SLEPC_VERSION_MAJOR == 3) && (SLEPC_VERSION_MINOR >= 5)
+        ierr = EPSGetBV ( M_eps, &M_ip );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+
+        PetscReal eta;
+        // Set modified Gram-Schmidt orthogonalization as default
+        // and leave other parameters unchanged
+        BVOrthogRefineType refinement;
+        ierr = BVGetOrthogonalization ( M_ip, PETSC_NULL, &refinement, &eta );
+        ierr = BVSetOrthogonalization ( M_ip, BV_ORTHOG_MGS, refinement, eta );
+
+#else
         ierr = EPSGetIP ( M_eps, &M_ip );
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
@@ -124,6 +136,8 @@ SolverEigenSlepc<T>::init ()
         ierr = IPSetOrthogonalization ( M_ip, IP_MGS_ORTH, refinement, eta );
 #endif //
 #endif // 0
+
+#endif
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
         // Set user-specified  solver
@@ -354,11 +368,16 @@ SolverEigenSlepc<T>::solve ( MatrixSparse<T> &matrix_A_in,
     */
     EPSGetIterationNumber( M_eps, &its );
     //PetscPrintf(PETSC_COMM_WORLD," Number of iterations of the method: %d\n",its);
+#if (SLEPC_VERSION_MAJOR == 3) && (SLEPC_VERSION_MINOR < 5)
     int lits;
     EPSGetOperationCounters( M_eps,PETSC_NULL,PETSC_NULL,&lits );
     //PetscPrintf(PETSC_COMM_WORLD," Number of linear iterations of the method: %d\n",lits);
-
+#endif
+#if PETSC_VERSION_LESS_THAN(3,4,0)
     const EPSType              type;
+#else
+    EPSType              type;
+#endif
     EPSGetType( M_eps,&type );
     //PetscPrintf(PETSC_COMM_WORLD," Solution method: %s\n\n",type);
 
@@ -505,7 +524,11 @@ void SolverEigenSlepc<T>::setSlepcSolverType()
     //ierr = EPSSetType (M_eps, (char*) EPSARPACK);
     CHKERRABORT( PETSC_COMM_WORLD,ierr );
 #endif
+#if PETSC_VERSION_LESS_THAN(3,4,0)
     const EPSType etype;
+#else
+    EPSType etype;
+#endif
     ierr = EPSGetType( M_eps,&etype );
     CHKERRABORT( PETSC_COMM_WORLD,ierr );
     VLOG(1) << "solution method:  " << etype << "\n";
@@ -636,7 +659,11 @@ SolverEigenSlepc<T>:: setSlepcSpectralTransform()
         break;
 
     case FOLD:
+#if (SLEPC_VERSION_MAJOR == 3) && (SLEPC_VERSION_MINOR < 5)
         ierr = STSetType( st, STFOLD );
+#else
+        CHECK( false ) << "FOLD not supported from slepc 3.5\n";
+#endif
         break;
 
     case CAYLEY:
@@ -666,7 +693,8 @@ SolverEigenSlepc<T>::eigenPair( unsigned int i )
     PetscScalar kr, ki;
 
     int s;
-    VecGetSize( M_mode,&s );
+    ierr = VecGetSize( M_mode,&s );
+    CHKERRABORT( PETSC_COMM_WORLD,ierr );
     ierr = EPSGetEigenpair( M_eps, i, &kr, &ki, M_mode, PETSC_NULL );
     CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
@@ -678,9 +706,23 @@ SolverEigenSlepc<T>::eigenPair( unsigned int i )
     im = ki;
 #endif
 
-    vector_ptrtype solution( new VectorPetsc<value_type>( s, s ) );
+    //vector_ptrtype solution( new VectorPetsc<value_type>( s, s ) );
+    vector_ptrtype solution;
+    if ( this->mapRow().worldComm().globalSize()>1 )
+        solution = vector_ptrtype( new VectorPetscMPI<value_type>( M_mode,this->mapRowPtr() ) );
+    else
+        solution = vector_ptrtype( new VectorPetsc<value_type>( M_mode,this->mapRowPtr() ) );
+
+#if 0
+    for ( size_type k = 0; k < solution->map().nLocalDofWithGhost(); ++k )
+    {
+        std::cout << "sol(k)"<<solution->operator()(k) << std::endl;
+    }
+#endif
+#if 0
     double* a;
-    VecGetArray( M_mode, &a );
+    ierr = VecGetArray( M_mode, &a );
+    CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
     for ( int i = 0; i < s; ++i )
     {
@@ -688,7 +730,10 @@ SolverEigenSlepc<T>::eigenPair( unsigned int i )
     }
 
     solution->close();
-    VecRestoreArray( M_mode, &a );
+
+    ierr = VecRestoreArray( M_mode, &a );
+    CHKERRABORT( PETSC_COMM_WORLD,ierr );
+#endif
     return boost::make_tuple( re, im, solution );
 }
 

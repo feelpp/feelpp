@@ -30,7 +30,6 @@
 #ifndef __OperatorLinearFree_H
 #define __OperatorLinearFree_H 1
 
-#include <feel/feel.hpp>
 #include <boost/ref.hpp>
 #include <boost/next_prior.hpp>
 #include <boost/type_traits.hpp>
@@ -38,6 +37,7 @@
 #if BOOST_VERSION >= 104700
 #include <boost/math/special_functions/nonfinite_num_facets.hpp>
 #endif
+#include <feel/feeldiscr/operatorlinear.hpp>
 #include <feel/feelvf/vf.hpp>
 namespace Feel
 {
@@ -95,6 +95,8 @@ public:
         M_pattern( pattern )
     {}
 
+    virtual ~OperatorLinearFree() {}
+
 
     virtual void
     init( domain_space_ptrtype     domainSpace,
@@ -132,9 +134,9 @@ public:
 
         matrix->close();
 
-        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( ie.space()->map() ) );
+        vector_ptrtype _v2( M_backend->newVector( _test=ie.space() ) );
         M_backend->prod( matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
@@ -156,11 +158,11 @@ public:
 
         matrix->close();
 
-        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
+        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
         *_v2 = ie;
-        vector_ptrtype _v3( M_backend->newVector( ie.map() ) );
+        vector_ptrtype _v3( M_backend->newVector( _test=ie.functionSpace() ) );
         M_backend->prod( matrix, _v1, _v3 );
         return inner_product( _v2, _v3 );
     }
@@ -181,9 +183,9 @@ public:
 
         matrix->close();
 
-        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
+        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
         M_backend->prod( matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
@@ -204,9 +206,9 @@ public:
 
         matrix->close();
 
-        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
+        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
         M_backend->prod( matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
@@ -227,9 +229,9 @@ public:
 
         matrix->close();
 
-        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
+        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
         M_backend->prod( matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
@@ -250,9 +252,9 @@ public:
 
         matrix->close();
 
-        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
+        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
         M_backend->prod( matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
@@ -272,9 +274,9 @@ public:
 
         matrix->close();
 
-        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
+        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
         M_backend->prod( matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
@@ -295,9 +297,9 @@ public:
 
         matrix->close();
 
-        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
+        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
         M_backend->prod( matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
@@ -317,9 +319,9 @@ public:
 
         matrix->close();
 
-        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
+        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
         M_backend->prod( matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
@@ -341,9 +343,9 @@ public:
 
         matrix->close();
 
-        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
+        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
         M_backend->prod( matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
@@ -363,9 +365,9 @@ public:
 
         matrix->close();
 
-        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
+        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
         M_backend->prod( matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
@@ -386,8 +388,8 @@ public:
 
         matrix->close();
 
-        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
-        vector_ptrtype _v2( M_backend->newVector( ie.space()->map() ) );
+        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
+        vector_ptrtype _v2( M_backend->newVector( _test=ie.space() ) );
         *_v2 = ie.container();
         M_backend->solve( matrix, matrix, _v1, _v2 );
         de = *_v1;

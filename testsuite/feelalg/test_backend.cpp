@@ -55,7 +55,8 @@ makeOptions()
     simgetoptions.add_options()
     ( "hsize", po::value<double>()->default_value( 0.5 ), "mesh size" )
     ;
-    return simgetoptions.add( Feel::feel_options() );
+    return simgetoptions.add( Feel::feel_options() )
+                        .add( backend_options("test1"));
 }
 
 
@@ -94,7 +95,7 @@ public:
             BOOST_TEST_MESSAGE( "mpi ok" );
             BOOST_CHECK_EQUAL( detail::BackendManager::instance().size(), 0 );
             BOOST_TEST_MESSAGE( "backend manager empty" );
-            auto b = backend(_name="test1");
+            auto b1 = backend(_name="test1");
 #if 0
             BOOST_TEST_MESSAGE( "creating backend" );
             BOOST_CHECK_EQUAL( detail::BackendManager::instance().size(), 1 );
@@ -131,7 +132,6 @@ BOOST_AUTO_TEST_CASE( test_backend1 )
     app.add( new sim );
     BOOST_TEST_MESSAGE( "run simget" );
     app.run();
-
 
     BOOST_TEST_MESSAGE( "test_backend1 done" );
 

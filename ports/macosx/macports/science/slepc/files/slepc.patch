@@ -1,0 +1,10 @@
+--- slepc-3.4.3/makefile	2013-10-14 16:06:15.000000000 +0200
++++ makefile	2014-03-21 17:32:29.000000000 +0100
+@@ -277,7 +277,6 @@
+             if [ -f ${PETSC_ARCH}/lib/libslepc.${AR_LIB_SUFFIX} ]; then \
+               cp -f ${PETSC_ARCH}/lib/*.${AR_LIB_SUFFIX} ${SLEPC_DESTDIR}/lib; \
+               ${RANLIB} ${SLEPC_DESTDIR}/lib/*.${AR_LIB_SUFFIX} ; \
+-	      ${OMAKE} PETSC_DIR=${PETSC_DIR} PETSC_ARCH="" SLEPC_DIR=${SLEPC_DESTDIR} OTHERSHAREDLIBS="${PETSC_KSP_LIB} ${SLEPC_EXTERNAL_LIB}" shared; \
+             elif [ -f ${PETSC_ARCH}/lib/libslepc.${SL_LINKER_SUFFIX} ]; then \
+               cp -f ${PETSC_ARCH}/lib/*.${SL_LINKER_SUFFIX} ${SLEPC_DESTDIR}/lib; \
+             fi; \

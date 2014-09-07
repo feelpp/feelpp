@@ -58,9 +58,9 @@ BOOST_AUTO_TEST_CASE( test_element_1 )
     auto w = backend()->newVector( Xh );
     v->setOnes();
     a.matrixPtr()->multVector( u, *w );
-    BOOST_CHECK_CLOSE( v->dot( w ), 1, 1e-13 );
+    BOOST_CHECK_CLOSE( v->dot( w ), 1, 1.5e-13 );
     a.matrixPtr()->multVector( *v, *w );
-    BOOST_CHECK_CLOSE( v->dot( w ), 1, 1e-13 );
+    BOOST_CHECK_CLOSE( v->dot( w ), 1, 1.5e-13 );
 
     BOOST_TEST_MESSAGE( "test_element_1 done" );
 }

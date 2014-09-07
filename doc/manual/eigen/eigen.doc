@@ -1,0 +1,10 @@
+/* -*- mode: c++ -*- */
+/** \page Eigen Eigenvalue Problems
+
+A list of various examples solving for standard eigenvalue problems \f$A x = \lambda x \f$
+and generalized eigenvalue problems \f$A x = \lambda B x \f$ where \f$A \f$ and \f$B \f$ are matrices
+obtained from finite element discretisation.
+
+ - \subpage EigenGen Generalized eigenvalue problem
+
+*/

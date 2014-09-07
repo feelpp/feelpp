@@ -123,21 +123,21 @@ public:
 
     TensorisedBoundaryAdapted()
         :
-        _M_refconvex(),
-        _M_pts( nDim, numVertices ),
-        _M_pts_face( numVertices )
+        M_refconvex(),
+        M_pts( nDim, numVertices ),
+        M_pts_face( numVertices )
     {
         PointSetEquiSpaced<convex_type, nOrder, value_type> pts;
 
         // only the points associated with the vertices
-        _M_pts = pts.pointsByEntity( 0 );
+        M_pts = pts.pointsByEntity( 0 );
 
         // get the points for each faces
-        for ( uint16_type e = _M_refconvex.entityRange( nDim-1 ).begin();
-                e < _M_refconvex.entityRange( nDim-1 ).end();
+        for ( uint16_type e = M_refconvex.entityRange( nDim-1 ).begin();
+                e < M_refconvex.entityRange( nDim-1 ).end();
                 ++e )
         {
-            _M_pts_face[e] = pts.pointsBySubEntity( nDim-1, e, 1 );
+            M_pts_face[e] = pts.pointsBySubEntity( nDim-1, e, 1 );
         }
 
         matrix_type A( ublas::trans( evaluate( pts.points() ) ) );
@@ -145,20 +145,20 @@ public:
         LU<matrix_type> lu( A );
         matrix_type C = lu.solve( D );
         vector_matrix_type d ( derivate( pts.points() ) );
-        _M_D.resize( d.size() );
+        M_D.resize( d.size() );
 
         for ( size_type i = 0; i < d.size(); ++i )
         {
-            _M_D[i] = ublas::prod( d[i], C );
-            glas::clean( _M_D[i] );
+            M_D[i] = ublas::prod( d[i], C );
+            glas::clean( M_D[i] );
         }
     }
 
     TensorisedBoundaryAdapted( TensorisedBoundaryAdapted const & d )
         :
-        _M_refconvex( d._M_refconvex ),
-        _M_pts( d._M_pts ),
-        _M_pts_face( d._M_pts_face )
+        M_refconvex( d.M_refconvex ),
+        M_pts( d.M_pts ),
+        M_pts_face( d.M_pts_face )
     {
     }
 
@@ -174,7 +174,7 @@ public:
 
     points_type points()
     {
-        return _M_pts;
+        return M_pts;
     }
 
     /**
@@ -182,7 +182,7 @@ public:
      **/
     points_type const& points( int f ) const
     {
-        return _M_pts_face[f];
+        return M_pts_face[f];
     }
 
     /** @name Operator overloads
@@ -193,8 +193,8 @@ public:
     {
         if ( this != &d )
         {
-            _M_pts = d._M_pts;
-            _M_D = d._M_D;
+            M_pts = d.M_pts;
+            M_D = d.M_D;
         }
 
         return *this;
@@ -260,7 +260,7 @@ public:
 
     matrix_type coeff() const
     {
-        return ublas::identity_matrix<value_type>( reference_convex_type::polyDims( nOrder ), _M_pts.size2() );
+        return ublas::identity_matrix<value_type>( reference_convex_type::polyDims( nOrder ), M_pts.size2() );
     }
 
 
@@ -288,7 +288,7 @@ public:
      */
     matrix_type const& d( uint16_type i )
     {
-        return _M_D[i];
+        return M_D[i];
     }
 
     /**
@@ -299,7 +299,7 @@ public:
      */
     matrix_type const& derivate( uint16_type i )
     {
-        return _M_D[i];
+        return M_D[i];
     }
 
     //@}
@@ -319,7 +319,7 @@ private:
     matrix_type
     evaluate( points_type const& __pts, mpl::int_<1> ) const
     {
-        return _M_pfunc.evaluate_1( ublas::row( __pts,0 ) );
+        return M_pfunc.evaluate_1( ublas::row( __pts,0 ) );
     }
 
     /**
@@ -333,7 +333,7 @@ private:
 
         vector_matrix_type D( 1 );
         D[0].resize( nOrder+1, __pts().size2() );
-        D[0] = _M_pfunc.derivate_1( ublas::row( __pts(),0 ) );
+        D[0] = M_pfunc.derivate_1( ublas::row( __pts(),0 ) );
 
         return D;
     }
@@ -365,13 +365,13 @@ private:
     vector_matrix_type derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<3> ) const;
 
 private:
-    reference_convex_type _M_refconvex;
-    points_type _M_pts;
-    std::vector<points_type> _M_pts_face;
+    reference_convex_type M_refconvex;
+    points_type M_pts;
+    std::vector<points_type> M_pts_face;
 
-    Principal<Degree, T, StoragePolicy> _M_pfunc;
+    Principal<Degree, T, StoragePolicy> M_pfunc;
 
-    vector_matrix_type _M_D;
+    vector_matrix_type M_D;
 };
 
 template<uint16_type Dim,
@@ -386,8 +386,8 @@ TensorisedBoundaryAdapted<Dim, Degree,  T, StoragePolicy>::evaluate( points_type
     vector_type eta1s = ublas::row( __pts, 0 );
     vector_type eta2s = ublas::row( __pts, 1 );
 
-    matrix_type psi_1( _M_pfunc.evaluate_1( eta1s ) );
-    matrix_type psi_2( _M_pfunc.evaluate_1( eta2s ) );
+    matrix_type psi_1( M_pfunc.evaluate_1( eta1s ) );
+    matrix_type psi_2( M_pfunc.evaluate_1( eta2s ) );
 
     /*
 
@@ -483,11 +483,11 @@ TensorisedBoundaryAdapted<Dim, Degree,  T, StoragePolicy>::derivate( ublas::matr
     vector_type eta1s = ublas::row( __pts(), 0 );
     vector_type eta2s = ublas::row( __pts(), 1 );
 
-    matrix_type psi_1( _M_pfunc.evaluate_1( eta1s ) );
-    matrix_type psi_2( _M_pfunc.evaluate_1( eta2s ) );
+    matrix_type psi_1( M_pfunc.evaluate_1( eta1s ) );
+    matrix_type psi_2( M_pfunc.evaluate_1( eta2s ) );
 
-    matrix_type dpsi_1( _M_pfunc.derivate_1( eta1s ) );
-    matrix_type dpsi_2( _M_pfunc.derivate_1( eta2s ) );
+    matrix_type dpsi_1( M_pfunc.derivate_1( eta1s ) );
+    matrix_type dpsi_2( M_pfunc.derivate_1( eta2s ) );
 
     /* 4 Vertex */
 
@@ -571,9 +571,9 @@ TensorisedBoundaryAdapted<Dim, Degree,  T, StoragePolicy>::evaluate( points_type
     ublas::vector<value_type> eta2s = ublas::row( __pts, 1 );
     ublas::vector<value_type> eta3s = ublas::row( __pts, 2 );
 
-    matrix_type psi_1( _M_pfunc.evaluate_1( eta1s ) );
-    matrix_type psi_2( _M_pfunc.evaluate_1( eta2s ) );
-    matrix_type psi_3( _M_pfunc.evaluate_1( eta3s ) );
+    matrix_type psi_1( M_pfunc.evaluate_1( eta1s ) );
+    matrix_type psi_2( M_pfunc.evaluate_1( eta2s ) );
+    matrix_type psi_3( M_pfunc.evaluate_1( eta3s ) );
 
     /*
 
@@ -834,14 +834,14 @@ TensorisedBoundaryAdapted<Dim, Degree,  T, StoragePolicy>::derivate( ublas::matr
     vector_type eta2s = ublas::row( __pts(), 1 );
     vector_type eta3s = ublas::row( __pts(), 2 );
 
-    matrix_type psi_1( _M_pfunc.evaluate_1( eta1s ) );
-    matrix_type dpsi_1( _M_pfunc.derivate_1( eta1s ) );
+    matrix_type psi_1( M_pfunc.evaluate_1( eta1s ) );
+    matrix_type dpsi_1( M_pfunc.derivate_1( eta1s ) );
 
-    matrix_type psi_2( _M_pfunc.evaluate_1( eta2s ) );
-    matrix_type dpsi_2( _M_pfunc.derivate_1( eta2s ) );
+    matrix_type psi_2( M_pfunc.evaluate_1( eta2s ) );
+    matrix_type dpsi_2( M_pfunc.derivate_1( eta2s ) );
 
-    matrix_type psi_3( _M_pfunc.evaluate_1( eta3s ) );
-    matrix_type dpsi_3( _M_pfunc.derivate_1( eta3s ) );
+    matrix_type psi_3( M_pfunc.evaluate_1( eta3s ) );
+    matrix_type dpsi_3( M_pfunc.derivate_1( eta3s ) );
 
     /* 8 Vertex */
 

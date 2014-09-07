@@ -50,6 +50,7 @@ public:
     static const uint16_type topological_dimension = super::topological_dimension;
     static const uint16_type real_dimension = super::real_dimension;
 
+    typedef super GeoShape;
     static const size_type Shape = super::Shape;
     static const size_type Geometry = super::Geometry;
 
@@ -87,6 +88,10 @@ public:
     typedef ublas::vector<normal_type> normals_type;
     typedef typename normals_type::const_iterator normal_const_iterator;
 
+    typedef node_type edge_tangent_type;
+    typedef ublas::vector<edge_tangent_type> edge_tangents_type;
+    typedef typename edge_tangents_type::const_iterator edge_tangent_const_iterator;
+
     typedef typename super::permutation_type permutation_type;
     //@}
 
@@ -101,7 +106,7 @@ public:
         M_vertices( nRealDim, numVertices ),
         M_points( nRealDim, numPoints ),
         M_normals( numNormals ),
-        M_tangents( numNormals ),
+        M_edge_tangents( numEdges ),
         M_barycenter( nRealDim ),
         M_barycenterfaces( nRealDim, numTopologicalFaces ),
         M_meas( 0 )
@@ -150,21 +155,20 @@ public:
         //std::cout << "P = " << M_points << "\n";
         make_normals();
 
-        if ( nDim == 2 )
-            make_tangents();
+        make_edge_tangents();
 
         computeBarycenters();
         computeMeasure();
     }
 
-    Reference( element_type const& e, uint16_type __f )
+    Reference( element_type const& e, uint16_type __f, uint16_type __p = permutation_type::IDENTITY )
         :
         super(),
         M_id( __f ),
         M_vertices( nRealDim, numVertices ),
         M_points( nRealDim, numPoints ),
         M_normals( numNormals ),
-        M_tangents( numNormals ),
+        M_edge_tangents( numNormals ),
         M_barycenter( nRealDim ),
         M_barycenterfaces( nRealDim, numTopologicalFaces ),
         M_meas( 0 )
@@ -177,22 +181,46 @@ public:
             throw std::invalid_argument( str.str() );
         }
 
-        for ( int i = 0; i < numVertices; ++i )
-        {
-            if ( real_dimension == 3 )
-                ublas::column( M_vertices, i ) = e.vertex( element_type::f2p( __f, i ) );
 
-            else
-                ublas::column( M_vertices, i ) = e.vertex( element_type::e2p( __f, i ) );
+
+        CHECK( nDim <3 ) << "nDim must be less than 3 here\n";
+        if ( nDim == 2 )
+        {
+
+            std::map<uint16_type, std::vector<uint16_type> > permTriangles = {
+                {triangular_faces_type::IDENTITY, {0,1,2}},
+                {triangular_faces_type::ROTATION_ANTICLOCK, {1,2,0}},
+                {triangular_faces_type::ROTATION_CLOCKWISE, {2,0,1}},
+                {triangular_faces_type::REVERSE_BASE,{0,2,1}},
+                {triangular_faces_type::REVERSE_HYPOTENUSE,{1,0,2}},
+                {triangular_faces_type::REVERSE_HEIGHT,{2,1,0}}
+            };
+
+            DCHECK( permTriangles.find( __p )!=permTriangles.end() ) << "invalid permutation :" << __p << "\n";
+
+            for ( int i = 0; i < numVertices; ++i )
+            {
+                const int iperm = permTriangles.find( __p )->second[ i ];
+                ublas::column( M_vertices, iperm ) = e.vertex( element_type::f2p( __f, i ) );
+            }
+
+            M_points = make_triangle_points();
         }
-
-        for ( int i = 0; i < numPoints; ++i )
+        else if ( nDim == 1 )
         {
-            if ( real_dimension == 3 )
-                ublas::column( M_points, i ) = e.point( element_type::f2p( __f, i ) );
+            std::map<uint16_type, std::vector<uint16_type> > permLines{
+                {line_permutations::IDENTITY, {0,1} },
+                {line_permutations::REVERSE_PERMUTATION, {1,0} } };
 
-            else
-                ublas::column( M_points, i ) = e.point( element_type::e2p( __f, i ) );
+            DCHECK( permLines.find( __p )!=permLines.end() ) << "invalid permutation :" << __p << "\n";
+
+            for ( int i = 0; i < numVertices; ++i )
+            {
+                const int iperm = permLines.find( __p )->second[ i ];
+                ublas::column( M_vertices, iperm ) = e.vertex( element_type::e2p( __f, i ) );
+            }
+
+            M_points = make_line_points();
         }
 
         make_normals();
@@ -207,7 +235,7 @@ public:
         M_vertices( r.M_vertices ),
         M_points( r.M_points ),
         M_normals( r.M_normals ),
-        M_tangents( r.M_tangents ),
+        M_edge_tangents( r.M_edge_tangents ),
         M_barycenter( r.M_barycenter ),
         M_barycenterfaces( r.M_barycenterfaces ),
         M_meas( r.M_meas )
@@ -231,7 +259,7 @@ public:
             M_vertices = r.M_vertices;
             M_points = r.M_points;
             M_normals = r.M_normals;
-            M_tangents = r.M_tangents;
+            M_edge_tangents = r.M_edge_tangents;
             M_barycenter = r.M_barycenter;
             M_barycenterfaces = r.M_barycenterfaces;
             M_meas = r.M_meas;
@@ -379,16 +407,29 @@ public:
     }
 
     /**
-     * get the n-th unit tangent
+     * get the n-th unit edge tangent
      *
      * @param __n the index of the normal
      *
      * @return the n-th normal of the triangle
      */
-    node_type const& tangent( uint16_type __n ) const
+    edge_tangent_type const& tangent( uint16_type __n ) const
     {
-        return M_tangents[__n];
+        return M_edge_tangents[__n];
     }
+
+    /**
+     * get the n-th unit edge tangent
+     *
+     * @param __n the index of the normal
+     *
+     * @return the n-th normal of the triangle
+     */
+    edge_tangent_type const& edgeTangent( uint16_type __n ) const
+    {
+        return M_edge_tangents[__n];
+    }
+
 
     /**
      * the first iterator of the normal vector
@@ -412,9 +453,9 @@ public:
         return M_normals.end();
     }
 
-    topological_face_type topologicalFace( uint16_type __f ) const
+    topological_face_type topologicalFace( uint16_type __f, uint16_type __p = permutation_type::IDENTITY ) const
     {
-        topological_face_type ref( *this, __f );
+        topological_face_type ref( *this, __f, __p );
         return ref;
     }
 
@@ -479,6 +520,19 @@ public:
         }
 
         return __max;
+    }
+    double hMin() const
+    {
+        // FIXME: should be computed once for all in constructor
+        double __min = 0.0;
+
+        for ( int __e = 0; __e < numEdges; ++ __e )
+        {
+            double __len = ublas::norm_2( edgeVertex( __e, 1 ) - edgeVertex( __e, 0 ) );
+            __min = ( __min > __len )?__len:__min;
+        }
+
+        return __min;
     }
     double h( int e ) const
     {
@@ -593,8 +647,8 @@ public:
                 return make_tetrahedron_points( interior );
         }
 
-        else if ( nOrder == 0 )
-            return glas::average( M_vertices );
+        DCHECK ( nOrder == 0 ) << "Invalid polynomial order";
+        return glas::average( M_vertices );
     }
 
     /**
@@ -897,25 +951,31 @@ private:
         mapping_type mapping;
     };
 
-    void make_tangents()
+    void make_edge_tangents()
     {
         uint16_type reindex1[][4] = { { 1, 0, 0, 0},
             { 0, 1, 2, 0},
             { 0, 1, 2, 3}
         };
 
-        for ( uint16_type __n = 0; __n < numNormals; ++__n )
+        for ( uint16_type __n = 0; __n < numEdges; ++__n )
         {
-            const int ind_normal = reindex1[nDim-1][__n];
-            M_tangents[ind_normal].resize( nDim );
+            //const int ind_normal = reindex1[nDim-1][__n];
+            M_edge_tangents[__n].resize( nDim );
         }
-
-        M_tangents[0][0]=-1/math::sqrt( 2. );
-        M_tangents[0][1]= 1/math::sqrt( 2. );
-        M_tangents[1][0]=  0;
-        M_tangents[1][1]= -1;
-        M_tangents[2][0]= 1;
-        M_tangents[2][1]= 0;
+        for(int edge = 0; edge < numEdges; ++edge )
+        {
+            M_edge_tangents[edge] = edgeVertex(edge,1)-edgeVertex(edge,0);
+            //M_edge_tangents[edge] /= ublas::norm_2( M_edge_tangents[edge] );
+        }
+#if 0
+[0]=-1/math::sqrt( 2. );
+            M_edge_tangents[0][1]= 1/math::sqrt( 2. );
+        M_edge_tangents[1][0]=  0;
+        M_edge_tangents[1][1]= -1;
+        M_edge_tangents[2][0]= 1;
+        M_edge_tangents[2][1]= 0;
+#endif
     }
     void make_normals()
     {
@@ -973,7 +1033,7 @@ private:
     points_type M_points;
 
     normals_type M_normals;
-    normals_type M_tangents;
+    edge_tangents_type M_edge_tangents;
 
     node_type M_barycenter;
 

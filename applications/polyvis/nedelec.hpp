@@ -6,6 +6,7 @@
        Date: 2010-05-09
 
   Copyright (C) 2010-2011 Universite Joseph Fourier (Grenoble I)
+  Copyright (C) 2014 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -21,11 +22,6 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-/**
-   \file nedelec.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2010-05-09
- */
 #ifndef __pnedelec_H
 #define __pnedelec_H 1
 
@@ -61,4 +57,3 @@ createNedelec()
 } // detail
 } // Feel
 #endif /* __nedelec_H */
-

@@ -28,6 +28,7 @@
  */
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelalg/backendeigen.hpp>
+#undef MatType
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 

@@ -298,7 +298,7 @@ public:
 }; // PointsGradient
 
 /**
- * 
+ *
  * \brief generate the functionals associated with  point set
  *
  * Given a function space \f$ E \f$ and a set of points in the
@@ -384,12 +384,10 @@ public:
         ublas::matrix<value_type> m( d.size(), b.basis().size() );
         ublas::matrix<value_type> pts( __pt.size(), 1 );
         ublas::column( pts, 0 ) = __pt;
-
         for ( int i = 0; i < d.size(); ++i )
         {
             ublas::row( m, i ) = d( i ) * ublas::column( b.basis().evaluate( pts ), 0 );
         }
-
         this->setCoefficient( m );
     }
 }; // DirectionalComponentPointEvaluation
@@ -450,4 +448,3 @@ public:
 } // Feel
 
 #endif // __FEELPP_FUNCTIONALS_HPP
-

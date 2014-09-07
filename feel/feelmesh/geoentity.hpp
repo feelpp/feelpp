@@ -114,12 +114,14 @@ public:
         M_entity( MESH_ENTITY_INTERNAL ),
         M_geometry( Geometry ),
         M_shape( Shape ),
+        M_boundaryEntityDimension( invalid_uint16_type_value ),
         M_npids( 1 ),
-        M_pid( 0 ),
-        M_pidInPartition( 0 ),
+        M_pid( invalid_rank_type_value ),
+        M_pidInPartition( invalid_rank_type_value ),
         M_neighor_pids(),
         M_idInOthersPartitions(),
-        M_elist()
+        M_elist(),
+        M_elistGhost()
     {}
 
     explicit GeoEntity( size_type i,
@@ -132,12 +134,14 @@ public:
         M_entity( context ),
         M_geometry( geometry ),
         M_shape( shape ),
+        M_boundaryEntityDimension( invalid_uint16_type_value ),
         M_npids( 1 ),
-        M_pid( 0 ),
-        M_pidInPartition( 0 ),
+        M_pid( invalid_rank_type_value ),
+        M_pidInPartition( invalid_rank_type_value ),
         M_neighor_pids(),
         M_idInOthersPartitions(),
-        M_elist()
+        M_elist(),
+        M_elistGhost()
     {}
 
     GeoEntity( GeoEntity const& __me )
@@ -147,12 +151,14 @@ public:
         M_entity( __me.M_entity ),
         M_geometry( __me.M_geometry ),
         M_shape( __me.M_shape ),
+        M_boundaryEntityDimension( __me.M_boundaryEntityDimension ),
         M_npids( __me.M_npids ),
         M_pid( __me.M_pid ),
         M_pidInPartition( __me.M_pidInPartition ),
         M_neighor_pids( __me.M_neighor_pids ),
         M_idInOthersPartitions( __me.M_idInOthersPartitions ),
-        M_elist( __me.M_elist )
+        M_elist( __me.M_elist ),
+        M_elistGhost( __me.M_elistGhost )
     {}
 
     GeoEntity& operator=( GeoEntity const& __me )
@@ -163,12 +169,14 @@ public:
             M_entity = __me.M_entity;
             M_geometry = __me.M_geometry;
             M_shape = __me.M_shape;
+            M_boundaryEntityDimension = __me.M_boundaryEntityDimension;
             M_npids = __me.M_npids;
             M_pid = __me.M_pid;
             M_pidInPartition = __me.M_pidInPartition;
             M_neighor_pids = __me.M_neighor_pids;
             M_idInOthersPartitions = __me.M_idInOthersPartitions;
             M_elist = __me.M_elist;
+            M_elistGhost = __me.M_elistGhost;
         }
 
         return *this;
@@ -185,16 +193,16 @@ public:
     bool operator==( GeoEntity const& e ) const
     {
         return M_id == e.id();
-    };
+    }
     bool operator<( GeoEntity const& e ) const
     {
         return M_id < e.id();
-    };
+    }
 
     bool operator<( size_type __i ) const
     {
         return M_id < __i;
-    };
+    }
 
     //@}
 
@@ -257,6 +265,16 @@ public:
     uint16_type nFaces() const
     {
         return super::numFaces;
+    }
+
+    /**
+     * number of topological faces on the reference shape
+     *
+     * @return the number of topological faces on the reference shape
+     */
+    constexpr uint16_type nTopologicalFaces() const
+    {
+        return super::numTopologicalFaces;
     }
 
     /**
@@ -411,8 +429,15 @@ public:
     bool isOnBoundary() const
     {
         return M_entity.test( MESH_ENTITY_BOUNDARY );
-    };
+    }
 
+    /**
+     * maximum dimension of the entity of the element touching the boundary
+     */
+    uint16_type boundaryEntityDimension() const
+    {
+        return M_boundaryEntityDimension;
+    }
     /**
      * \return \c true if ghost cell, \c false otherwise
      */
@@ -427,7 +452,7 @@ public:
     /**
      * \return the processor id of the entity
      */
-    uint16_type processId() const
+    rank_type processId() const
     {
         return M_pid;
     }
@@ -436,7 +461,7 @@ public:
      * set the processor id of the entity
      & \param pid processor id
      */
-    void setProcessId( uint16_type pid )
+    void setProcessId( rank_type pid )
     {
         M_pid = pid ;
     }
@@ -444,7 +469,7 @@ public:
     /**
      * \return the processor id of the entity
      */
-    uint16_type pidInPartition() const
+    rank_type pidInPartition() const
     {
         return M_pidInPartition;
     }
@@ -452,7 +477,7 @@ public:
      * set the processor id of the entity
      & \param pid processor id
      */
-    void setProcessIdInPartition( uint16_type pid )
+    void setProcessIdInPartition( rank_type pid )
     {
         M_pidInPartition = pid ;
     }
@@ -460,7 +485,7 @@ public:
     /**
      * \return the partition id
      */
-    uint16_type partitionId() const
+    rank_type partitionId() const
     {
         return M_pid;
     }
@@ -469,7 +494,7 @@ public:
      * \return the number of partition the element is linked to including the
      * partition to which it belongs
      */
-    uint16_type numberOfPartitions() const
+    rank_type numberOfPartitions() const
     {
         return M_npids;
     }
@@ -494,22 +519,29 @@ public:
     /**
      * \return the number of partition the element is linked to
      */
-    std::vector<int> const& neighborPartitionIds() const
+    std::vector<rank_type> const& neighborPartitionIds() const
     {
         return M_neighor_pids;
     }
     /**
      * \return the number of partition the element is linked to
      */
-    std::vector<int> & neighborPartitionIds()
+    std::vector<rank_type> & neighborPartitionIds()
     {
         return M_neighor_pids;
+    }
+    /**
+     * clear the neighbor partition ids container
+     */
+    void clearNeighborPartitionIds()
+    {
+        M_neighor_pids.clear();
     }
 
     /**
      * set id in a partition pid of the entity
      */
-    void setIdInOthersPartitions( uint16_type pid, size_type id )
+    void setIdInOthersPartitions( rank_type pid, size_type id )
     {
         M_idInOthersPartitions.insert( std::make_pair( pid, id ) );
     }
@@ -517,25 +549,25 @@ public:
     /**
      * \return the id of the entity in a partition pid
      */
-    size_type idInOthersPartitions( uint16_type pid ) const
+    size_type idInOthersPartitions( rank_type pid ) const
     {
+        DCHECK( M_idInOthersPartitions.find( pid )!=M_idInOthersPartitions.end() ) << " id is unknow for this pid " << pid << "\n";
         return M_idInOthersPartitions.find( pid )->second;
     }
 
     /**
      * \return idInOthersPartitions map
      */
-    std::map<uint16_type, size_type> const& idInOthersPartitions() const
+    std::map<rank_type, size_type> const& idInOthersPartitions() const
     {
         return M_idInOthersPartitions;
     }
-
     /**
-     * \return idInOthersPartitions map
+     * clear id in others partitions container
      */
-    std::map<uint16_type, size_type> & idInOthersPartitions()
+    void clearIdInOthersPartitions()
     {
-        return M_idInOthersPartitions;
+        M_idInOthersPartitions.clear();
     }
 
     /**
@@ -568,19 +600,19 @@ public:
      * set the boundary flag
      * @param b true if the item is on the boundary, false otherwise
      */
-    void setOnBoundary( bool b )
+    void setOnBoundary( bool b, uint16_type ent_d = invalid_uint16_type_value )
     {
         if ( b )
         {
             M_entity.set( MESH_ENTITY_BOUNDARY );
             M_entity.clear( MESH_ENTITY_INTERNAL );
         }
-
         else
         {
             M_entity.clear( MESH_ENTITY_BOUNDARY );
             M_entity.set( MESH_ENTITY_INTERNAL );
         }
+        M_boundaryEntityDimension = ent_d;
     }
 
     /**
@@ -604,9 +636,18 @@ public:
     /**
      * \return the number of partition the element is linked to
      */
-    void setNeighborPartitionIds( std::vector<int> const& npids )
+    void setNeighborPartitionIds( std::vector<rank_type> const& npids )
     {
         M_neighor_pids = npids;
+    }
+
+    void addNeighborPartitionId( rank_type p )
+    {
+        if ( std::find( M_neighor_pids.begin(), M_neighor_pids.end(), p) == M_neighor_pids.end() )
+        {
+            M_neighor_pids.push_back(p);
+            ++M_npids;
+        }
     }
 
     //@}
@@ -672,16 +713,16 @@ public:
     /**
      * add a new ghost element to which the point belongs
      */
-    self_type& addElementGhost( int proc, size_type e  )
+    self_type& addElementGhost( rank_type proc, size_type e  )
     {
-        M_elistGhost.insert( boost::make_tuple( proc,e ) );
+        M_elistGhost[proc].insert(e);
         return *this;
     }
 
     /**
      * \return the number of ghost elements whom the point belongs to
      */
-    size_type numberOfElementsGhost() const
+    rank_type numberOfProcGhost() const
     {
         return M_elistGhost.size();
     }
@@ -689,13 +730,14 @@ public:
     /**
      * \return the set of ids of ghost elements whom the point belongs to
      */
-    std::set<boost::tuple<int,size_type> > const& elementsGhost() const
+    std::map<rank_type,std::set<size_type> > const& elementsGhost() const
     {
         return M_elistGhost;
     }
-    std::set<boost::tuple<int,size_type> >& elementsGhost()
+
+    void clearElementsGhost()
     {
-        return M_elistGhost;
+        M_elistGhost.clear();
     }
 
     //@}
@@ -743,16 +785,19 @@ private:
     Context M_geometry;
     Context M_shape;
 
-    uint16_type M_npids;
-    uint16_type M_pid;
-    uint16_type M_pidInPartition;
-    std::vector<int> M_neighor_pids;
+    //! maximum dimension of the entity touching the boundary within the element
+    uint16_type M_boundaryEntityDimension;
+
+    rank_type M_npids;
+    rank_type M_pid;
+    rank_type M_pidInPartition;
+    std::vector<rank_type> M_neighor_pids;
     std::map<uint16_type, size_type> M_idInOthersPartitions;
 
     //! element list to which the point belongs
     std::set<size_type> M_elist;
-    //! element list to which the point belongs
-    std::set<boost::tuple<int,size_type> > M_elistGhost;
+    //! ghost elements which share the entity
+    std::map<rank_type,std::set<size_type > > M_elistGhost;
 
 };
 

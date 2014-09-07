@@ -1,0 +1,18 @@
+--- Make-config.orig	2013-10-21 11:32:26.000000000 +0200
++++ Make-config	2013-10-21 11:34:43.000000000 +0200
+@@ -85,6 +85,15 @@
+ 	"MAKELIB = libtool -static -o " \
+ 	"RANLIB = true"
+ 
++#					Mac OS X using clang++
++macosx-clang++:
++	$(MAKE) targets \
++	"ANNLIB = libANN.a" \
++	"C++ = clang++" \
++	"CFLAGS = -O3 -std=c++11 -stdlib=libc++" \
++	"MAKELIB = libtool -static -o " \
++	"RANLIB = true"
++
+ #					SunOS5
+ sunos5:
+ 	$(MAKE) targets \

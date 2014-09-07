@@ -69,10 +69,10 @@ public:
     ReinitializerFMS( functionspace_ptrtype const& __functionspace,
                       IteratorRange const& r )
         :
-        _M_functionspace( __functionspace ),
-        _M_range( r ),
-        _M_neighbors(),
-        _M_coords( __functionspace->dof()->nDof() )
+        M_functionspace( __functionspace ),
+        M_range( r ),
+        M_neighbors(),
+        M_coords( __functionspace->dof()->nDof() )
     {
         DVLOG(2) << "ReinitializerFMS constructor from space and iterator range\n";
 
@@ -86,7 +86,7 @@ public:
 
         const uint16_type ndofv = functionspace_type::fe_type::nDof;
         iterator_type it, en;
-        boost::tie( boost::tuples::ignore, it, en ) = _M_range;
+        boost::tie( boost::tuples::ignore, it, en ) = M_range;
 
         gm_context_ptrtype __c( new gm_context_type( __functionspace->gm(),
                                 *it,
@@ -102,28 +102,28 @@ public:
 
             for ( uint16_type __j = 0; __j < ndofv; ++__j )
             {
-                size_type index = boost::get<0>( _M_functionspace->dof()->localToGlobal( it->id(), __j, 0 ) );
+                size_type index = boost::get<0>( M_functionspace->dof()->localToGlobal( it->id(), __j, 0 ) );
                 indices[__j] = index;
 
                 for ( uint16_type c = 0; c < Dim; ++c )
-                    _M_coords[index][c] = tensor_expr.evalq( c, 0, __j );
+                    M_coords[index][c] = tensor_expr.evalq( c, 0, __j );
             }
 
             for ( uint16_type __j = 0; __j < ndofv; ++__j )
                 for ( uint16_type __k = __j+1; __k < ndofv; ++__k )
                 {
-                    _M_neighbors[indices[__j]].insert( indices[__k] );
-                    _M_neighbors[indices[__k]].insert( indices[__j] );
+                    M_neighbors[indices[__j]].insert( indices[__k] );
+                    M_neighbors[indices[__k]].insert( indices[__j] );
                 }
         }
     }
 
     ReinitializerFMS( ReinitializerFMS const& __vfi )
         :
-        _M_functionspace( __vfi._M_functionspace ),
-        _M_range( __vfi._M_range ),
-        _M_neighbors( __vfi._M_neighbors ),
-        _M_coords( __vfi._M_coords )
+        M_functionspace( __vfi.M_functionspace ),
+        M_range( __vfi.M_range ),
+        M_neighbors( __vfi.M_neighbors ),
+        M_coords( __vfi.M_coords )
     {
         DVLOG(2) << "ReinitializerFMS copy constructor\n";
     }
@@ -178,10 +178,10 @@ private:
         return a*a < b*b ? a : b;
     }
 
-    functionspace_ptrtype const& _M_functionspace;
-    range_iterator _M_range;
-    neighbors_type _M_neighbors;
-    std::vector<point_type> _M_coords;
+    functionspace_ptrtype const& M_functionspace;
+    range_iterator M_range;
+    neighbors_type M_neighbors;
+    std::vector<point_type> M_coords;
 
 };
 
@@ -193,7 +193,7 @@ ReinitializerFMS<FunctionSpaceType, Iterator>::operator()
 
     //     VLOG(1) << "[ReinitFMS] operator()\n";
 
-    element_type __v( _M_functionspace );
+    element_type __v( M_functionspace );
     __v.clear();
 
     fe_type* __fe = __v.functionSpace()->fe().get();
@@ -203,11 +203,11 @@ ReinitializerFMS<FunctionSpaceType, Iterator>::operator()
     //BOOST_STATIC_ASSERT(( boost::is_same<return_value_type, typename functionspace_type::return_value_type>::value ));
 
     const uint16_type ndofv = functionspace_type::fe_type::nDof;
-    FEELPP_ASSERT( __v.size() == _M_functionspace->dof()->nDof() )( __v.size() )( _M_functionspace->dof()->nDof() ).warn( "invalid size" );
+    FEELPP_ASSERT( __v.size() == M_functionspace->dof()->nDof() )( __v.size() )( M_functionspace->dof()->nDof() ).warn( "invalid size" );
     // assert functionspace_type::nComponents == 1
-    __v.resize( _M_functionspace->dof()->nDof() );
+    __v.resize( M_functionspace->dof()->nDof() );
     iterator_type it, en;
-    boost::tie( boost::tuples::ignore, it, en ) = _M_range;
+    boost::tie( boost::tuples::ignore, it, en ) = M_range;
 
     // acquire interface (=done) cells
     // Note: Might be based on indicatorGamma from ReinitializerILP
@@ -227,7 +227,7 @@ ReinitializerFMS<FunctionSpaceType, Iterator>::operator()
 
         for ( uint16_type __j = 0; __j < ndofv; ++__j )
         {
-            size_type index = phi.start() + boost::get<0>( _M_functionspace->dof()->localToGlobal( it->id(), __j, 0 ) );
+            size_type index = phi.start() + boost::get<0>( M_functionspace->dof()->localToGlobal( it->id(), __j, 0 ) );
             indices[__j] = index;
 
             if ( phi[index] < 0.0 )
@@ -284,7 +284,7 @@ fmsHeapUpdate( size_type idDone,
                std::vector<status_type>& status,
                details::FmsHeap<value_type>& theHeap ) const
 {
-    std::set<size_type> const & nbrs = _M_neighbors.find( idDone )->second;
+    std::set<size_type> const & nbrs = M_neighbors.find( idDone )->second;
     std::set<size_type>::const_iterator n0it;
     std::vector<size_type> ids( 1, idDone );
 
@@ -322,7 +322,7 @@ fmsDistRec( std::vector<size_type> & ids,
 
     value_type phiNew( phiOld );
 
-    std::set<size_type> const & nbrs = _M_neighbors.find( idClose )->second;
+    std::set<size_type> const & nbrs = M_neighbors.find( idClose )->second;
     std::set<size_type>::const_iterator nit;
 
     for ( nit = nbrs.begin(); nit != nbrs.end(); ++nit )
@@ -339,8 +339,8 @@ fmsDistRec( std::vector<size_type> & ids,
         if ( !unique ) // points must be unique
             continue;
 
-        if ( _M_neighbors.find( ids[0] )->second.find( *nit ) ==
-                _M_neighbors.find( ids[0] )->second.end() )
+        if ( M_neighbors.find( ids[0] )->second.find( *nit ) ==
+                M_neighbors.find( ids[0] )->second.end() )
             continue;
 
         // one neighbor more
@@ -381,7 +381,7 @@ fmsDistN( std::vector<size_type> const & ids,
 
     for ( uint32_type i=0; i<nPts; ++i )
     {
-        basis[i] = _M_coords[ids[i+1]] - _M_coords[ids[0]];
+        basis[i] = M_coords[ids[i+1]] - M_coords[ids[0]];
 
         for ( uint32_type j=0; j<i; j++ )
         {
@@ -422,7 +422,7 @@ fmsDistN( std::vector<size_type> const & ids,
 
     // verify gradient to new value comes through convex hull of points used
     // to construct it
-    point_type dx( _M_coords[ids[nPts]] - _M_coords[ids[0]] );
+    point_type dx( M_coords[ids[nPts]] - M_coords[ids[0]] );
     std::vector<value_type> lambda( nPts, 0.0 );
     lambda[nPts-1] = dot( dx , basis[nPts-1] ) / dot( grad, basis[nPts-1] );
     value_type lambdaTot = 0.0;

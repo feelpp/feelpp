@@ -29,9 +29,11 @@ IF ( ENABLE_INSTANTIATION_MODE )
   endif()
 
 SET(SRC
+  unitsegment.cpp unitsquare.cpp unitcube.cpp
   gmshhypercubedomain.cpp gmshsimplexdomain.cpp gmshellipsoiddomain.cpp
   #exporterfactorysimplex.cpp exporterfactoryhypercube.cpp
-  exporter.cpp gmsh.cpp  ${FEELFILTERS_INST_SRCS} geotool.cpp
+  gmsh.cpp  ${FEELFILTERS_INST_SRCS} geotool.cpp
+  detail/fileindex.cpp
   )
 
 file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)

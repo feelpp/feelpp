@@ -62,12 +62,25 @@ if(NOT DEFINED HAS_GCC_WALL)
 endif()
 
 if(HAS_GCC_WALL)
-  set(FEELPP_FLAGS "${FEELPP_FLAGS} -Wall -Wno-unused -Wno-sign-compare")
+  set(FEELPP_FLAGS "${FEELPP_FLAGS} -Wall -Wno-unused -Wno-sign-compare ")
 endif()
 if(FEELPP_EXTRA_WARNINGS)
   if(HAS_GCC_WEXTRA)
     set(FEELPP_FLAGS "${FEELPP_FLAGS} -Wextra")
   endif()
+endif()
+
+
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+   if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.7)
+      CHECK_CXX_COMPILER_FLAG( "-Wno-deprecated-register" HAS_NO_DEPRECATED_REGISTER )
+   endif()
+else()
+   CHECK_CXX_COMPILER_FLAG( "-Wno-deprecated-register" HAS_NO_DEPRECATED_REGISTER )
+endif()
+
+if (  HAS_NO_DEPRECATED_REGISTER )
+  set( FEELPP_FLAGS "${FEELPP_FLAGS} -Wno-deprecated-register")
 endif()
 
 ################################################################################
@@ -81,4 +94,9 @@ if(FEELPP_EXTRA_WARNINGS)
   if(HAS_MSVC_W4)
     set(FEELPP_FLAGS "${FEELPP_FLAGS} /W4")
   endif()
+endif()
+
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+   set(FEELPP_FLAGS "${FEELPP_FLAGS} -fmacro-backtrace-limit=0" )
+   set(FEELPP_FLAGS "${FEELPP_FLAGS} -ftemplate-backtrace-limit=0" )
 endif()

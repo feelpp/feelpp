@@ -35,9 +35,9 @@ namespace Feel
 //
 MatrixMass::MatrixMass( int n )
     :
-    _M_mat( 0 ),
-    _M_pattern( 0 ),
-    _M_val()
+    M_mat( 0 ),
+    M_pattern( 0 ),
+    M_val()
 {
     // Defining constants.
 
@@ -49,7 +49,7 @@ MatrixMass::MatrixMass( int n )
     int nnz = 3*n-2;
 
     std::vector<uint> __ia( n+1 ), __ja( nnz );
-    _M_val.resize( nnz );
+    M_val.resize( nnz );
 
     __ia[0] = 0;
     int __j = 0;
@@ -58,24 +58,24 @@ MatrixMass::MatrixMass( int n )
     {
         if ( __i != 0 )
         {
-            _M_val[__j] =  sub;
+            M_val[__j] =  sub;
             __ja[__j++] = __i-1;
         }
 
-        _M_val[__j] =  diag;
+        M_val[__j] =  diag;
         __ja[__j++] = __i;
 
         if ( __i != ( n-1 ) )
         {
-            _M_val[__j] =  sub;
+            M_val[__j] =  sub;
             __ja[__j++] = __i+1;
         }
 
         __ia[__i+1] = __j;
     }
 
-    _M_pattern = new CSRPatt( nnz, n, n, __ia, __ja );
-    _M_mat = new CSRMatr<CSRPatt, double>( *_M_pattern, _M_val );
+    M_pattern = new CSRPatt( nnz, n, n, __ia, __ja );
+    M_mat = new CSRMatr<CSRPatt, double>( *M_pattern, M_val );
 
 }
 
@@ -86,17 +86,17 @@ MatrixMass::MatrixMass( int n )
 
 MatrixConvectionDiffusion::MatrixConvectionDiffusion( int nx, value_type __rho )
     :
-    _M_rho( __rho ),
-    _M_mat( 0 ),
-    _M_pattern( 0 ),
-    _M_val()
+    M_rho( __rho ),
+    M_mat( 0 ),
+    M_pattern( 0 ),
+    M_val()
 {
 
     int N = nx*nx;
     int nnz = 5*N-4*nx;
 
     std::vector<uint> __ia( N+1 ), __ja( nnz );
-    _M_val.resize( nnz );
+    M_val.resize( nnz );
 
     __ia[0] = 0;
     int i = 0;
@@ -105,44 +105,44 @@ MatrixConvectionDiffusion::MatrixConvectionDiffusion( int nx, value_type __rho )
     value_type h2 = h*h;
     value_type dd = 4.0/h2;
     value_type df = -1.0/h2;
-    value_type dl = df - 0.5*_M_rho/h;
-    value_type du = df + 0.5*_M_rho/h;
+    value_type dl = df - 0.5*M_rho/h;
+    value_type du = df + 0.5*M_rho/h;
 
     for ( int j = 0; j < N; j++ )
     {
         if ( j >= nx )
         {
-            _M_val[i] = df;
+            M_val[i] = df;
             __ja[i++]=j-nx;
         }
 
         if ( ( j%nx ) != 0 )
         {
-            _M_val[i] = du;
+            M_val[i] = du;
             __ja[i++] = j-1;
         }
 
-        _M_val[i] = dd;
+        M_val[i] = dd;
         __ja[i++] = j;
 
         if ( ( ( j+1 )%nx ) != 0 )
         {
-            _M_val[i] = dl;
+            M_val[i] = dl;
             __ja[i++] = j+1;
         }
 
         if ( j < N-nx )
         {
-            _M_val[i] = df;
+            M_val[i] = df;
             __ja[i++] = j+nx;
         }
 
         __ia[j+1]=i;
     }
 
-    _M_pattern = new CSRPatt( nnz, N, N, __ia, __ja );
-    _M_mat = new CSRMatr<CSRPatt, double>( *_M_pattern, _M_val );
-    assert( _M_mat != 0 );
+    M_pattern = new CSRPatt( nnz, N, N, __ia, __ja );
+    M_mat = new CSRMatr<CSRPatt, double>( *M_pattern, M_val );
+    assert( M_mat != 0 );
 
     std::cerr << __PRETTY_FUNCTION__ << " matrix constructed" << std::endl;
 }

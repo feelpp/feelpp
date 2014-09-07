@@ -47,7 +47,7 @@ int main( int argc, char** argv )
 \n" )
 
 add_executable(${targetname} ${modulename}_${continuity}_${dim}_${order}_${convex}.cpp)
-target_link_libraries(${targetname} ${FEELPP_LIBRARIES} )
+target_link_libraries(${targetname} feelpp ${FEELPP_LIBRARIES} )
 set_property(TARGET ${targetname} PROPERTY LABELS benchmarks)
 add_dependencies( benchmarks ${targetname} )
 # test each backend

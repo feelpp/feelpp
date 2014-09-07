@@ -33,6 +33,7 @@
 #include <boost/foreach.hpp>
 
 #include <feel/feel.hpp>
+#include <feel/feelvf/print.hpp>
 
 #include <opusmodel.hpp>
 #include <opusmodelthermal.hpp>

@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2007-06-01
 
-  Copyright (C) 2007 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -244,34 +244,86 @@ private:
 
 struct updateIdInOthersPartitions
 {
-    updateIdInOthersPartitions( uint16_type pid, size_type id )
+    updateIdInOthersPartitions( rank_type pid, size_type id )
         :
-        _M_pid( pid ),
-        _M_id( id )
+        M_pid( pid ),
+        M_id( id )
     {}
     template<typename ElementType>
     void operator()( ElementType& element )
     {
-        element.setIdInOthersPartitions( _M_pid, _M_id );
+        element.setIdInOthersPartitions( M_pid, M_id );
     }
 private:
-    uint16_type _M_pid;
-    size_type _M_id;
+    rank_type M_pid;
+    size_type M_id;
 };
 
 struct UpdateProcessId
 {
-    UpdateProcessId( int pid )
+    UpdateProcessId( rank_type pid )
         :
-        _M_pid( pid )
+        M_pid( pid )
     {}
     template<typename ElementType>
     void operator()( ElementType& element )
     {
-        element.setProcessId( _M_pid );
+        element.setProcessId( M_pid );
     }
 private:
-    int _M_pid;
+    rank_type M_pid;
+};
+
+struct UpdateNeighborPartition
+{
+    UpdateNeighborPartition( rank_type pid )
+        :
+        M_pid( pid )
+    {}
+    template<typename ElementType>
+    void operator()( ElementType& element )
+    {
+        element.addNeighborPartitionId( M_pid );
+    }
+private:
+    rank_type M_pid;
+};
+
+
+
+struct UpdateMarker
+{
+    UpdateMarker( flag_type v )
+        :
+        M_v( v )
+    {}
+
+    template<typename ElementType>
+    void operator()( ElementType& element )
+    {
+        element.setMarker( M_v );
+    }
+private:
+    flag_type M_v;
+};
+
+
+template<typename PointType>
+struct UpdateEltPoint
+{
+    UpdateEltPoint( uint16_type k, PointType const& pt )
+        :
+        M_idx( k ),
+        M_pt( pt )
+    {}
+    template<typename EltType>
+    void operator()( EltType& element  ) const
+    {
+        element.setPoint( M_idx, M_pt );
+    }
+private:
+    uint16_type M_idx;
+    PointType const& M_pt;
 };
 
 

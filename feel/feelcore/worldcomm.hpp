@@ -35,6 +35,8 @@
 #endif /* FEELPP_HAS_MPI_H */
 #include <boost/smart_ptr/enable_shared_from_this.hpp>
 
+#include <feel/feelcore/feel.hpp>
+
 namespace Feel
 {
 
@@ -83,6 +85,9 @@ public:
                int _localColor,// int localRank,
                std::vector<int> const& isActive );
 
+    //! copy a worldcomm
+    WorldComm& operator=( WorldComm const& wc );
+
     static self_ptrtype New() { return self_ptrtype(new self_type); }
     static self_ptrtype New( super const& s ) { return self_ptrtype(new self_type( s )); }
     void init( int color = 0, bool colormap = false );
@@ -102,48 +107,52 @@ public:
     {
         return M_localComm;
     }
+    communicator_type const& selfComm() const
+    {
+        return this->subWorldCommSeq();
+    }
 
-    int globalSize() const
+    rank_type globalSize() const
     {
         return this->globalComm().size();
     }
-    int localSize() const
+    rank_type localSize() const
     {
         return this->localComm().size();
     }
-    int godSize() const
+    rank_type godSize() const
     {
         return this->godComm().size();
     }
 
-    int globalRank() const
+    rank_type globalRank() const
     {
         return this->globalComm().rank();
     }
-    int localRank() const
+    rank_type localRank() const
     {
         return this->localComm().rank();
     }
-    int godRank() const
+    rank_type godRank() const
     {
         return this->godComm().rank();
     }
 
-    bool hasSubWorlds( int n );
-    std::vector<WorldComm> const& subWorlds( int n );
+    bool hasSubWorlds( int n ) const;
+    std::vector<WorldComm> const& subWorlds( int n ) const;
     std::vector<WorldComm> const& subWorldsGroupBySubspace( int n );
-    WorldComm const& subWorld( int n ) ;
-    int subWorldId( int n ) ;
+    WorldComm const& subWorld( int n ) const;
+    int subWorldId( int n ) const;
 
     std::vector<int> const& mapColorWorld() const
     {
         return M_mapColorWorld;
     }
-    std::vector<int> const& mapLocalRankToGlobalRank() const
+    std::vector<rank_type> const& mapLocalRankToGlobalRank() const
     {
         return M_mapLocalRankToGlobalRank;
     }
-    std::vector<int> const& mapGlobalRankToGodRank() const
+    std::vector<rank_type> const& mapGlobalRankToGodRank() const
     {
         return M_mapGlobalRankToGodRank;
     }
@@ -152,20 +161,26 @@ public:
     {
         return M_mapColorWorld[k];
     }
-    int mapLocalRankToGlobalRank(int k) const
+    rank_type mapLocalRankToGlobalRank(int k) const
     {
         return M_mapLocalRankToGlobalRank[k];
     }
-    int mapGlobalRankToGodRank(int k) const
+    rank_type mapGlobalRankToGodRank(int k) const
     {
         return M_mapGlobalRankToGodRank[k];
     }
 
 
-    int masterRank() const
+    rank_type masterRank() const
     {
         return M_masterRank;
     }
+
+    bool isMasterRank() const
+    {
+        return ( this->globalRank() ==  this->masterRank() );
+    }
+
 
     WorldComm subWorldComm() const;
     WorldComm subWorldComm( int color ) const;
@@ -174,12 +189,17 @@ public:
     WorldComm const& masterWorld( int n );
     int numberOfSubWorlds() const;
 
-    WorldComm subWorldCommSeq() const;
+    WorldComm const& subWorldCommSeq() const;
 
 
     bool isActive() const
     {
-        return M_isActive[this->godRank()];
+        return this->isActive(this->godRank());
+    }
+
+    bool isActive( int rank ) const
+    {
+        return M_isActive[rank];
     }
 
     std::vector<int> const& activityOnWorld() const
@@ -187,7 +207,7 @@ public:
         return M_isActive;
     }
 
-    int localColorToGlobalRank( int _color,int _localRank ) const;
+    rank_type localColorToGlobalRank( int _color,int _localRank ) const;
 
     void setColorMap( std::vector<int> const& colormap );
 
@@ -209,18 +229,23 @@ public:
     /**
      * register sub worlds associated to \p worldmap
      */
-    void registerSubWorlds( int n );
+    void registerSubWorlds( int n ) const;
     void registerSubWorldsGroupBySubspace( int n );
+
+private :
+
+    void initSubWorldCommSeq();
 
 private :
 
     communicator_type M_localComm;
     communicator_type M_godComm;
+    boost::shared_ptr<WorldComm> M_subWorldCommSeq;
 
     std::vector<int> M_mapColorWorld;
-    std::vector<int> M_mapLocalRankToGlobalRank;
-    std::vector<int> M_mapGlobalRankToGodRank;
-    std::map<int, std::pair<WorldComm,std::vector<WorldComm> > > M_subworlds;
+    std::vector<rank_type> M_mapLocalRankToGlobalRank;
+    std::vector<rank_type> M_mapGlobalRankToGodRank;
+    mutable std::map<int, std::pair<WorldComm,std::vector<WorldComm> > > M_subworlds;
 
     int M_masterRank;
     mutable std::vector<int/*bool*/> M_isActive;

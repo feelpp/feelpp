@@ -175,6 +175,9 @@ static const char* DefaultLogDir() {
   return "";
 }
 
+GLOG_DEFINE_int32(no_log, 1,
+                 "disable logging. 0 enable logging for all processes, 1 enable only for master 2 disable for all processes");
+
 GLOG_DEFINE_string(log_dir, DefaultLogDir(),
                    "If specified, logfiles are written into this directory instead "
                    "of the default logging directory.");
@@ -933,7 +936,7 @@ void LogFileObject::Write(bool force_flush,
   MutexLock l(&lock_);
 
   // We don't log if the base_name_ is "" (which means "don't write")
-  if (base_filename_selected_ && base_filename_.empty()) {
+  if ( FLAGS_no_log || (base_filename_selected_ && base_filename_.empty())) {
     return;
   }
 

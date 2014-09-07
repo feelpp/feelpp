@@ -164,7 +164,7 @@ public:
 
     real_type relaxation () const
     {
-        return _M_relaxation;
+        return M_relaxation;
     }
     int iteration() const
     {
@@ -204,7 +204,7 @@ public:
 
     void setRelaxation ( real_type __w )
     {
-        _M_relaxation = __w;
+        M_relaxation = __w;
     }
     //@}
 
@@ -325,7 +325,7 @@ protected:
         __residual( 0 ),
         __precision( 0 ),
         __norm_init( 1.0 ),
-        _M_relaxation( 1.0 )
+        M_relaxation( 1.0 )
     {
         // do nothing here
     }
@@ -366,7 +366,7 @@ private:
     real_type __precision;
     real_type __norm_init;
 
-    real_type _M_relaxation;
+    real_type M_relaxation;
 };
 
 typedef Iteration<double> iteration_type;

@@ -67,10 +67,17 @@ public:
     {
     }
     bool
-    isInterProcessDomain( size_type /*p*/ ) const
+    isGhostFace( rank_type /*p*/ ) const
     {
         return false;
     }
+    bool
+    isInterProcessDomain( rank_type /*p*/ ) const
+    {
+        return false;
+    }
+    rank_type partition1( rank_type /*p*/ ) const { return invalid_rank_type_value; }
+    rank_type partition2( rank_type /*p*/ ) const { return invalid_rank_type_value; }
 private:
     friend class boost::serialization::access;
     template<class Archive>
@@ -90,18 +97,18 @@ public:
         typedef ElementType type;
     };
     typedef ElementType entity_type;
-    typedef boost::tuple<ElementType const*, size_type, uint16_type, size_type> element_connectivity_type;
+    typedef boost::tuple<ElementType const*, size_type, uint16_type, rank_type> element_connectivity_type;
 
     SubFaceOf()
         :
-        M_element0( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_size_type_value ),
-        M_element1( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_size_type_value )
+        M_element0( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_rank_type_value ),
+        M_element1( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_rank_type_value )
     {}
 
     SubFaceOf( element_connectivity_type const& connect0 )
         :
         M_element0( connect0 ),
-        M_element1( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_uint16_type_value )
+        M_element1( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_rank_type_value )
     {}
     SubFaceOf( element_connectivity_type const& connect0,
                element_connectivity_type const& connect1 )
@@ -118,8 +125,8 @@ public:
     }
     SubFaceOf( SubFaceOfNone const& /*sf*/ )
         :
-        M_element0( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_size_type_value ),
-        M_element1( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_size_type_value )
+        M_element0( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_rank_type_value ),
+        M_element1( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_rank_type_value )
     {
     }
     virtual ~SubFaceOf() {}
@@ -165,9 +172,13 @@ public:
     {
         return boost::get<2>( M_element0 );
     }
-    size_type proc_first() const
+    rank_type proc_first() const
     {
         return boost::get<3>( M_element0 );
+    }
+    rank_type partition1( rank_type p ) const
+    {
+        return p;
     }
 
     size_type ad_second() const
@@ -178,9 +189,13 @@ public:
     {
         return boost::get<2>( M_element1 );
     }
-    size_type proc_second() const
+    rank_type proc_second() const
     {
         return boost::get<3>( M_element1 );
+    }
+    rank_type partition2( size_type p ) const
+    {
+        return ( p == this->proc_first() )? this->proc_second() : this->proc_first();
     }
 
     element_connectivity_type const& connection0() const
@@ -211,29 +226,38 @@ public:
         M_element1 = connect;
     }
 
+    bool isConnected() const { return isConnectedTo0() && isConnectedTo1(); }
+
     bool isConnectedTo0() const
     {
         return ( boost::get<1>( M_element0 ) != invalid_size_type_value &&
                  boost::get<2>( M_element0 ) != invalid_uint16_type_value &&
-                 boost::get<3>( M_element0 ) != invalid_size_type_value );
+                 boost::get<3>( M_element0 ) != invalid_rank_type_value );
     }
     bool isConnectedTo1() const
     {
         return ( boost::get<1>( M_element1 ) != invalid_size_type_value &&
                  boost::get<2>( M_element1 ) != invalid_uint16_type_value &&
-                 boost::get<3>( M_element1 ) != invalid_size_type_value );
+                 boost::get<3>( M_element1 ) != invalid_rank_type_value );
     }
 
+    bool
+    isGhostFace( rank_type p ) const
+    {
+        return ( ( boost::get<3>( M_element1 ) != invalid_rank_type_value ) &&
+                 ( ( ( boost::get<3>( M_element0 ) == p ) && ( boost::get<3>( M_element1 ) < p ) ) ||
+                   ( ( boost::get<3>( M_element0 ) < p ) && ( boost::get<3>( M_element1 ) == p ) ) ) );
+    }
 
     bool
-    isInterProcessDomain( size_type p ) const
+    isInterProcessDomain( rank_type p ) const
     {
-        return ( ( boost::get<3>( M_element1 ) != invalid_size_type_value ) &&
+        return ( ( boost::get<3>( M_element1 ) != invalid_rank_type_value ) &&
                  ( ( boost::get<3>( M_element0 ) == p ) || ( boost::get<3>( M_element1 ) == p ) ) &&
                  ( boost::get<3>( M_element0 ) != boost::get<3>( M_element1 ) ) );
     }
     bool
-    isIntraProcessDomain( size_type p ) const
+    isIntraProcessDomain( rank_type p ) const
     {
         return ( ( boost::get<3>( M_element0 ) == p ) &&
                  ( boost::get<3>( M_element1 ) == p ) );
@@ -244,7 +268,7 @@ public:
         M_element0 = boost::make_tuple( ( ElementType const* )0,
                                         invalid_size_type_value,
                                         invalid_uint16_type_value,
-                                        invalid_size_type_value );
+                                        invalid_rank_type_value );
     }
 
     void disconnect1()
@@ -252,7 +276,7 @@ public:
         M_element1 = boost::make_tuple( ( ElementType const* )0,
                                         invalid_size_type_value,
                                         invalid_uint16_type_value,
-                                        invalid_size_type_value );
+                                        invalid_rank_type_value );
     }
 
     void disconnect()
@@ -487,13 +511,15 @@ public:
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<SubFace::nDim>, mpl::int_<0> >, mpl::identity<self_type>, mpl::identity<typename SubFace::template Element<self_type>::type> >::type::type element_type;
     typedef self_type point_type;
 
+    typedef typename super::matrix_node_type matrix_node_type;
+
     static const uint16_type numLocalVertices = super::numVertices;
 
     GeoElement0D()
         :
         super(),
-        super2(),
-        M_facept()
+        super2()
+        //M_facept()
     {}
 
 
@@ -501,15 +527,15 @@ public:
     GeoElement0D( size_type id, bool boundary = false )
         :
         super( id, boundary ),
-        super2(),
-        M_facept()
+        super2()
+        //M_facept()
     {}
 
     GeoElement0D( size_type id, node_type const& n,  bool boundary = false )
         :
         super( id, n, boundary ),
-        super2(),
-        M_facept()
+        super2()
+        //M_facept()
     {}
 
     //! Declares item id and if it is on boundary, and provides coordinate
@@ -517,8 +543,8 @@ public:
     GeoElement0D( size_type id, Real x, Real y, Real z, bool boundary = false )
         :
         super( id, x, y, z, boundary ),
-        super2(),
-        M_facept()
+        super2()
+        //M_facept()
     {}
 
     template<typename SF>
@@ -559,9 +585,30 @@ public:
     /**
      * \return process id
      */
-    uint16_type processId() const
+    rank_type processId() const
     {
         return super::processId();
+    }
+
+    /**
+     * \return process id
+     */
+    rank_type partition1() const
+    {
+        return super2::partition1( super::processId() );
+    }
+
+    /**
+     * \return process id
+     */
+    rank_type partition2() const
+    {
+        return super2::partition2( super::processId() );
+    }
+
+    bool isGhostFace() const
+    {
+        return super2::isGhostFace( super::processId()  );
     }
 
     /**
@@ -581,6 +628,14 @@ public:
     }
 
     /**
+     * \return maximum \c dimension of the sub-entity touching the boundary of the element
+     */
+    uint16_type boundaryEntityDimension() const
+    {
+        return 0;
+    }
+
+    /**
      * \return \c true if ghost cell, \c false otherwise
      */
     bool isGhostCell() const
@@ -593,16 +648,47 @@ public:
      */
     geo0d_type const& point( uint16_type /*i*/ ) const
     {
-        return M_facept;
+        return *( static_cast<geo0d_type *>( M_facept ) );
+        //return M_facept;
     }
 
     /**
      * set the geometrical point associated to the face
      */
-    //void setPoint( uint16_type /*i*/, GeoElement0D<Dim,SubFaceOfNone,T> const& e ) { M_facept = e; }
     void setPoint( uint16_type /*i*/, geo0d_type const& e )
     {
-        M_facept = e;
+        //M_facept = e;
+        M_facept= const_cast<geo0d_type *>( &e );
+    }
+
+    matrix_node_type /*const&*/ G() const
+    {
+        return this->G( mpl::bool_<boost::is_same<SubFace,SubFaceOfNone>::value>() );
+    }
+
+    matrix_node_type /*const&*/ G( mpl::bool_<true> /**/ ) const
+    {
+        return super::G();
+    }
+
+    matrix_node_type /*const&*/ G( mpl::bool_<false> /**/ ) const
+    {
+        return M_facept->G();
+    }
+
+    matrix_node_type /*const&*/ vertices() const
+    {
+        return this->vertices( mpl::bool_<boost::is_same<SubFace,SubFaceOfNone>::value>() );
+    }
+
+    matrix_node_type /*const&*/ vertices( mpl::bool_<true> /**/ ) const
+    {
+        return super::vertices();
+    }
+
+    matrix_node_type /*const&*/ vertices( mpl::bool_<false> /**/ ) const
+    {
+        return M_facept->vertices();
     }
 
     /**
@@ -649,7 +735,7 @@ public:
     }
 
 //private:
-    geo0d_type M_facept;
+    geo0d_type* M_facept;
 
 private:
 
@@ -664,6 +750,10 @@ private:
 
 };
 
+template<uint16_type Dim,
+         typename SubFace,
+         typename T>
+const uint16_type GeoElement0D<Dim,SubFace,T>::numLocalVertices;
 
 
 
@@ -776,6 +866,12 @@ public:
         return super::id();
     }
 
+    bool isGhostFace() const
+    {
+        return super2::isGhostFace( super::processId()  );
+    }
+
+
     /**
      * \return \p true if interprocess domain face, \p false otherwise
      */
@@ -793,6 +889,14 @@ public:
     }
 
     /**
+     * \return maximum \c dimension of the sub-entity touching the boundary of the element
+     */
+    uint16_type boundaryEntityDimension() const
+    {
+        return 0;
+    }
+
+    /**
      * \return \c true if ghost cell, \c false otherwise
      */
     bool isGhostCell() const
@@ -803,9 +907,25 @@ public:
     /**
      * \return process id
      */
-    uint16_type processId() const
+    rank_type processId() const
     {
         return super::processId();
+    }
+
+    /**
+     * \return process id
+     */
+    rank_type partition1() const
+    {
+        return super2::partition1( super::processId() );
+    }
+
+    /**
+     * \return process id
+     */
+    rank_type partition2() const
+    {
+        return super2::partition2( super::processId() );
     }
 
     void setMap( uint8_type k_1, uint8_type k_2 )
@@ -930,6 +1050,12 @@ template<uint16_type Dim,
          typename T>
 const uint16_type GeoElement1D<Dim,GEOSHAPE,SubFace,T>::nDim;
 
+template<uint16_type Dim,
+         typename GEOSHAPE,
+         typename SubFace,
+         typename T>
+const uint16_type GeoElement1D<Dim,GEOSHAPE,SubFace,T>::nRealDim;
+
 /**
  * \class GeoElement2D
  * \brief  Class for 2D elements.
@@ -995,13 +1121,9 @@ public:
         :
         super( id ),
         super2(),
-        M_edges( numLocalEdges ),
-        M_edge_permutation( numLocalEdges )
+        M_edges( numLocalEdges, nullptr ),
+        M_edge_permutation( numLocalEdges, edge_permutation_type( edge_permutation_type::IDENTITY ) )
     {
-        std::fill( M_edges.begin(), M_edges.end(), ( edge_type* )0 );
-        std::fill( M_edge_permutation.begin(),
-                   M_edge_permutation.end(),
-                   edge_permutation_type( edge_permutation_type::IDENTITY ) );
     }
 
     /**
@@ -1067,6 +1189,12 @@ public:
         return super::marker3();
     }
 
+    bool isGhostFace() const
+    {
+        return super2::isGhostFace( super::processId()  );
+    }
+
+
     /**
      * \return \p true if interprocess domain face, \p false otherwise
      */
@@ -1084,6 +1212,14 @@ public:
     }
 
     /**
+     * \return maximum \c dimension of the sub-entity touching the boundary of the element
+     */
+    uint16_type boundaryEntityDimension() const
+    {
+        return super::boundaryEntityDimension();
+    }
+
+    /**
      * \return \c true if ghost cell, \c false otherwise
      */
     bool isGhostCell() const
@@ -1094,10 +1230,27 @@ public:
     /**
      * \return process id
      */
-    uint16_type processId() const
+    rank_type processId() const
     {
         return super::processId();
     }
+
+    /**
+     * \return process id
+     */
+    rank_type partition1() const
+    {
+        return super2::partition1( super::processId() );
+    }
+
+    /**
+     * \return process id
+     */
+    rank_type partition2() const
+    {
+        return super2::partition2( super::processId() );
+    }
+
 
 
 
@@ -1106,8 +1259,8 @@ public:
      */
     edge_type const& edge( uint16_type i ) const
     {
-        FEELPP_ASSERT( i < numLocalEdges )( i )( numLocalEdges ).error( "invalid local edge index" );
-        FEELPP_ASSERT( M_edges[i] )( i ).error( "invalid edge (null pointer)" );
+        DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
+        DCHECK( M_edges[i] != nullptr ) << "invalid edge (null pointer) for edge local id " << i << " in element " << this->id();
         return boost::cref( *M_edges[i] );
     }
 
@@ -1117,14 +1270,15 @@ public:
     edge_type& edge( uint16_type i )
     {
         DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
-        DCHECK( M_edges[i] ) << "invalid edge (null pointer) for edge local id " << i << " in element " << this->id();
+        DCHECK( M_edges[i] != nullptr ) << "invalid edge (null pointer) for edge local id " << i << " in element " << this->id();
         return boost::ref( *M_edges[i] );
     }
 
     edge_type & face( uint16_type i )
     {
-        FEELPP_ASSERT( i < numLocalEdges )( i )( numLocalEdges ).error( "invalid local edge index" );
-        FEELPP_ASSERT( M_edges[i] )( i ).error( "invalid edge (null pointer)" );
+        DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
+        DCHECK( M_edges[i] != nullptr ) << "invalid edge (null pointer) for edge local id " << i << " in element " << this->id();
+
         return boost::ref( *M_edges[i] );
     }
 
@@ -1133,15 +1287,17 @@ public:
      */
     edge_type const& face( uint16_type i ) const
     {
-        FEELPP_ASSERT( i < numLocalEdges )( i )( numLocalEdges ).error( "invalid local edge index" );
-        FEELPP_ASSERT( M_edges[i] )( i ).error( "invalid edge (null pointer)" );
+        DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
+        DCHECK( M_edges[i] != nullptr ) << "invalid edge (null pointer) for edge local id " << i << " in element " << this->id();
+
         return boost::cref( *M_edges[i] );
     }
 
     edge_type const* facePtr( uint16_type i ) const
     {
-        FEELPP_ASSERT( i < numLocalEdges )( this->id() )( i ).error( "invalid local edge index" );
-        FEELPP_ASSERT( M_edges[i] )( i ).error( "invalid edge (null pointer)" );
+        DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
+        DCHECK( M_edges[i] != nullptr ) << "invalid edge (null pointer) for edge local id " << i << " in element " << this->id();
+
         return M_edges[i];
     }
 
@@ -1151,7 +1307,8 @@ public:
      */
     void setFace( uint16_type const i, edge_type const & p )
     {
-        FEELPP_ASSERT( i < numLocalEdges )( i ).error( "invalid local edge index" );
+        DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
+
         M_edges[i] = const_cast<edge_type*>( boost::addressof( p ) );
     }
 
@@ -1160,7 +1317,8 @@ public:
      */
     edge_permutation_type edgePermutation( uint16_type i ) const
     {
-        FEELPP_ASSERT( i < numLocalEdges )( i )( numLocalEdges ).error( "invalid local edge index" );
+        DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
+
         return M_edge_permutation[i];
     }
     /**
@@ -1168,7 +1326,8 @@ public:
      */
     edge_permutation_type facePermutation( uint16_type i ) const
     {
-        FEELPP_ASSERT( i < numLocalEdges )( i )( numLocalEdges ).error( "invalid local edge index" );
+        DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
+
         return M_edge_permutation[i];
     }
 
@@ -1187,18 +1346,19 @@ public:
      */
     void setEdge( uint16_type i, edge_type const & p )
     {
-        FEELPP_ASSERT( i < numLocalEdges )( i ).error( "invalid local edge index" );
+        DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
         M_edges[i] = const_cast<edge_type*>( boost::addressof( p ) );
     }
 
     void setEdgePermutation( uint16_type i, edge_permutation_type o )
     {
-        FEELPP_ASSERT( i < numLocalEdges )( i ).error( "invalid local edge index" );
+        DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
+
         M_edge_permutation[i] = o;
     }
 
-    typedef typename ublas::bounded_array<edge_type*, numLocalEdges>::iterator face_iterator;
-    typedef typename ublas::bounded_array<edge_type*, numLocalEdges>::const_iterator face_const_iterator;
+    typedef typename std::vector<edge_type*>::iterator face_iterator;
+    typedef typename std::vector<edge_type*>::const_iterator face_const_iterator;
 
     /**
      * \return the iterator pair (begin,end) of faces
@@ -1241,8 +1401,8 @@ private:
 
 private:
 
-    ublas::bounded_array<edge_type*, numLocalEdges> M_edges;
-    ublas::bounded_array<edge_permutation_type, numLocalEdges> M_edge_permutation;
+    std::vector<edge_type*> M_edges;
+    std::vector<edge_permutation_type> M_edge_permutation;
 };
 
 /*-------------------------------------------------------------------------
@@ -1252,6 +1412,8 @@ template <uint16_type Dim, typename GEOSHAPE, typename SFO, typename T>
 const uint16_type GeoElement2D<Dim, GEOSHAPE, SFO, T>::numLocalEdges;
 template <uint16_type Dim, typename GEOSHAPE, typename SFO, typename T>
 const uint16_type GeoElement2D<Dim, GEOSHAPE, SFO, T>::nDim;
+template <uint16_type Dim, typename GEOSHAPE, typename SFO, typename T>
+const uint16_type GeoElement2D<Dim, GEOSHAPE, SFO, T>::nRealDim;
 
 
 /**
@@ -1307,15 +1469,13 @@ public:
         :
         super( id ),
         super2(),
-        M_edges( numLocalEdges ),
+        M_edges( numLocalEdges, nullptr ),
         M_faces( numLocalFaces ),
-        M_edge_permutation( numLocalEdges ),
+        M_edge_permutation( numLocalEdges, edge_permutation_type( edge_permutation_type::IDENTITY ) ),
         M_face_permutation( numLocalFaces )
     {
-        std::fill( M_edges.begin(), M_edges.end(), ( edge_type* )0 );
         std::fill( M_faces.begin(), M_faces.end(), ( face_type* )0 );
 
-        std::fill( M_edge_permutation.begin(), M_edge_permutation.end(), edge_permutation_type( edge_permutation_type::IDENTITY ) );
         std::fill( M_face_permutation.begin(), M_face_permutation.end(), face_permutation_type( face_permutation_type::IDENTITY ) );
     }
 
@@ -1326,8 +1486,8 @@ public:
         :
         super( g ),
         super2( g ),
-        M_edges( numLocalEdges ),
-        M_faces( numLocalFaces ),
+        M_edges( g.M_edges ),
+        M_faces( g.M_faces ),
         M_edge_permutation( g.M_edge_permutation ),
         M_face_permutation( g.M_face_permutation )
     {}
@@ -1385,6 +1545,12 @@ public:
         return super::marker3();
     }
 
+    bool isGhostFace() const
+    {
+        return super2::isGhostFace( super::processId()  );
+    }
+
+
     /**
      * \return \p true if interprocess domain face, \p false otherwise
      */
@@ -1402,6 +1568,14 @@ public:
     }
 
     /**
+     * \return maximum \c dimension of the sub-entity touching the boundary of the element
+     */
+    uint16_type boundaryEntityDimension() const
+    {
+        return super::boundaryEntityDimension();
+    }
+
+    /**
      * \return \c true if ghost cell, \c false otherwise
      */
     bool isGhostCell() const
@@ -1412,10 +1586,27 @@ public:
     /**
      * \return process id
      */
-    uint16_type processId() const
+    rank_type processId() const
     {
         return super::processId();
     }
+
+    /**
+     * \return process id
+     */
+    rank_type partition1() const
+    {
+        return super2::partition1( super::processId() );
+    }
+
+    /**
+     * \return process id
+     */
+    rank_type partition2() const
+    {
+        return super2::partition2( super::processId() );
+    }
+
 
     size_type ad_first() const
     {
@@ -1436,30 +1627,33 @@ public:
 
     edge_type const& edge( uint16_type i ) const
     {
-        FEELPP_ASSERT( i < numLocalEdges )( i ).error( "invalid local edge index" );
-        FEELPP_ASSERT( M_edges[i] )( i ).error( "invalid edge (null pointer)" );
+        DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
+        DCHECK( M_edges[i] != nullptr ) << "invalid edge (null pointer) for edge local id " << i << " in element " << this->id();
+
         return *M_edges[i];
     }
 
     edge_type& edge( uint16_type i )
     {
-        FEELPP_ASSERT( i < numLocalEdges )( i ).error( "invalid local edge index" );
-        FEELPP_ASSERT( M_edges[i] )( i ).error( "invalid edge (null pointer)" );
+        DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
+        DCHECK( M_edges[i] != nullptr ) << "invalid edge (null pointer) for edge local id " << i << " in element " << this->id();
+
         return *M_edges[i];
     }
 
     edge_type const* edgePtr( uint16_type i ) const
     {
-        FEELPP_ASSERT( i < numLocalEdges )( i ).error( "invalid local edge index" );
-        FEELPP_ASSERT( M_edges[i] )( i ).error( "invalid edge (null pointer)" );
+        DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
+        DCHECK( M_edges[i] != nullptr ) << "invalid edge (null pointer) for edge local id " << i << " in element " << this->id();
+
         return M_edges[i];
     }
 
     edge_permutation_type edgePermutation( uint16_type i ) const
     {
-        FEELPP_ASSERT( i < numLocalEdges )( i ).error( "invalid local edge index" );
+        DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
+        DCHECK( M_edges[i] != nullptr ) << "invalid edge (null pointer) for edge local id " << i << " in element " << this->id();
 
-        FEELPP_ASSERT( M_edges[i] )( i ).warn( "invalid edge (null pointer)" );
 
         return M_edge_permutation[i];
     }
@@ -1469,15 +1663,15 @@ public:
      */
     void setEdge( uint16_type const i, edge_type const & p )
     {
-        FEELPP_ASSERT( boost::addressof( p ) )( i ).error( "invalid edge (null pointer)" );
+        DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
+        DCHECK( boost::addressof( p ) ) << "invalid edge (null pointer) for edge local id " << i << " in element " << this->id();
         M_edges[i] = const_cast<edge_type*>( boost::addressof( p ) );
-        FEELPP_ASSERT( M_edges[i] )( i ).error( "invalid edge (null pointer)" );
-
     }
 
     void setEdgePermutation( uint16_type i, edge_permutation_type o )
     {
-        FEELPP_ASSERT( i < numLocalEdges )( i ).error( "invalid local edge index" );
+        DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
+
         M_edge_permutation[i] = o;
     }
 

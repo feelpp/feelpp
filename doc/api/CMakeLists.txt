@@ -25,13 +25,65 @@
 set(DOXYFILE_LATEX 1)
 
 find_program(DOXYGEN doxygen)
-if ( DOXYGEN )
+if ( DOXYGEN AND FEELPP_ENABLE_DOXYGEN)
+
+  ## We extract the cmake option for the documentation
+  execute_process(
+    COMMAND
+    ${CMAKE_CURRENT_SOURCE_DIR}/extract_command.sh ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE FEELPP_ENABLE_LISTE
+    )
    # doxygen is optional
    include(UseDoxygen OPTIONAL)
 
    # make sure that doxygen is not run byt default
    set_target_properties(doxygen PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
+   # add subpages to projects/modules
+   configure_file(
+     ${CMAKE_CURRENT_SOURCE_DIR}/pages.doc.in
+     ${CMAKE_CURRENT_SOURCE_DIR}/pages.doc
+     )
+
+   set(FEELPP_PROJECTS_DIR,"")
+	 set(FEELPP_DOXYGEN_PROJECT "OFF")
+   # if projects have been detected
+   foreach(project ${projects})
+     #get shortname
+     GET_FILENAME_COMPONENT(dirname ${project} NAME)
+
+     #define option to control doc generation
+     string(TOUPPER ${dirname} PROJECT)
+     if (FEELPP_ENABLE_${PROJECT}_DOCUMENTATION )
+			 set(FEELPP_DOXYGEN_PROJECT "ON")
+		 endif()
+	 endforeach()
+	 if(${FEELPP_DOXYGEN_PROJECT})
+       FILE(APPEND ${CMAKE_CURRENT_SOURCE_DIR}/pages.doc "/** \\page Project Project\n")
+		 endif()
+   
+	 foreach(project ${projects})
+     #get shortname
+     GET_FILENAME_COMPONENT(dirname ${project} NAME)
+
+     #define option to control doc generation
+     string(TOUPPER ${dirname} PROJECT)
+     if (FEELPP_ENABLE_${PROJECT}_DOCUMENTATION )
+       set(FEELPP_PROJECTS_DIR ${FEELPP_PROJECTS_DIR} "\"${CMAKE_SOURCE_DIR}/research/${project}/\" \\ \n")
+       FILE(APPEND ${CMAKE_CURRENT_SOURCE_DIR}/pages.doc "   - \\subpage ${dirname}\n")
+       MESSAGE(STATUS "Doxygen Documention for ${project} will be generated")
+     endif()
+   endforeach()
+   FILE(APPEND ${CMAKE_CURRENT_SOURCE_DIR}/pages.doc "*/\n")
+
+       set(FEELPP_PROJECTS_DIR ${FEELPP_PROJECTS_DIR} "\"\" \n") #force empty directory
+   STRING(REPLACE ";" " " _TMP_STR "${FEELPP_PROJECTS_DIR}")
+   SET(FEELPP_PROJECTS_DIR "${_TMP_STR}")
+
+   FILE(APPEND ${CMAKE_CURRENT_SOURCE_DIR}/pages.doc "\n\n}\n")
+
+
+   #
    configure_file(
      ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in
      ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile

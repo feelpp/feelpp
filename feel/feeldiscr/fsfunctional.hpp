@@ -52,6 +52,8 @@ public:
     {
     }
 
+    virtual ~FsFunctional() {}
+
     // apply the functional
     virtual value_type
     operator()( const element_type& x ) const = 0;

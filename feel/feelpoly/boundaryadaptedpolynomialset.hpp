@@ -258,7 +258,7 @@ public:
 };
 } // detail
 
-/** \encond  */
+/// \encond 
 
 template<uint16_type Order,
          template<uint16_type Dim> class PolySetType = Scalar>

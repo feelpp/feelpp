@@ -152,6 +152,11 @@ public:
     WorldComm const& worldComm() const { return M_worldComm; }
 
     /**
+     * View preconditioner context
+     */
+    virtual void view() const {};
+
+    /**
      * Computes the preconditioned vector "y" based on input "x".
      * Usually by solving Py=x to get the action of P^-1 x.
      */
@@ -313,8 +318,8 @@ struct PreconditionerManagerDeleterImpl
 {
     void operator()() const
         {
-            VLOG(2) << "[PreconditionerManagerDeleter] clear PreconditionerManager Singleton: " << detail::PreconditionerManager::instance().size() << "\n";
-            detail::PreconditionerManager::instance().clear();
+            VLOG(2) << "[PreconditionerManagerDeleter] clear PreconditionerManager Singleton: " << Feel::detail::PreconditionerManager::instance().size() << "\n";
+            Feel::detail::PreconditionerManager::instance().clear();
             VLOG(2) << "[PreconditionerManagerDeleter] clear PreconditionerManager done\n";
         }
 };
@@ -333,7 +338,6 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
                                    ( matrix,( d_sparse_matrix_ptrtype ),d_sparse_matrix_ptrtype() )
 
                                    ( pcfactormatsolverpackage,( MatSolverPackageType ), MATSOLVER_DEFAULT )
-                                   ( worldcomm,      *, Environment::worldComm() )
                                    ( rebuild,      (bool), false )
                                      )
     )
@@ -343,16 +347,16 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
     static bool observed=false;
     if ( !observed )
     {
-        Environment::addDeleteObserver( detail::PreconditionerManagerDeleter::instance() );
+        Environment::addDeleteObserver( Feel::detail::PreconditionerManagerDeleter::instance() );
         observed = true;
     }
 
 
     Feel::detail::ignore_unused_variable_warning( args );
 
-    auto git = detail::PreconditionerManager::instance().find( std::make_pair( backend, prefix ) );
+    auto git = Feel::detail::PreconditionerManager::instance().find( std::make_pair( backend, prefix ) );
 
-    if (  git != detail::PreconditionerManager::instance().end() && ( rebuild == false ) )
+    if (  git != Feel::detail::PreconditionerManager::instance().end() && ( rebuild == false ) )
     {
         VLOG(2) << "[preconditioner] found preconditioner name=" << prefix << " rebuild=" << rebuild << "\n";
         return git->second;
@@ -361,7 +365,7 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
     else
     {
 
-        preconditioner_ptrtype p = Preconditioner<double>::build( prefix, backend->type(), worldcomm );
+        preconditioner_ptrtype p = Preconditioner<double>::build( prefix, backend->type(), backend->comm() );
         p->setType( pc );
         p->setMatSolverPackageType( pcfactormatsolverpackage );
 
@@ -370,7 +374,7 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
             p->setMatrix( matrix );
         }
         VLOG(2) << "storing preconditionerin singleton" << "\n";
-        detail::PreconditionerManager::instance().operator[]( std::make_pair( backend, prefix ) ) = p;
+        Feel::detail::PreconditionerManager::instance().operator[]( std::make_pair( backend, prefix ) ) = p;
         backend->addDeleteObserver( p );
         return p;
     }

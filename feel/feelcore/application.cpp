@@ -107,7 +107,7 @@ void
 Application::initPETSc()
 {
 #if defined ( FEELPP_HAS_PETSC_H )
-    //if ( _M_vm["backend"].as<std::string>() == "petsc" )
+    //if ( M_vm["backend"].as<std::string>() == "petsc" )
     {
         PETSC_COMM_WORLD = COMM_WORLD;
         int __argc = this->unknownArgc();
@@ -140,7 +140,7 @@ void
 Application::initTrilinos()
 {
 #if defined( FEELPP_HAS_TRILINOS_EPETRA )
-    //if ( _M_vm["backend"].as<std::string>() == "trilinos" )
+    //if ( M_vm["backend"].as<std::string>() == "trilinos" )
     {
 
     }
@@ -162,7 +162,11 @@ Application::initMPI( int argc, char** argv, MPI_Comm comm )
     if ( !mpi::environment::initialized() )
     {
         MPI_Init ( &argc, &argv );
+#if MPI_VERSION >= 2
+        MPI_Comm_set_errhandler( MPI_COMM_WORLD, MPI_ERRORS_RETURN );
+#else
         MPI_Errhandler_set( MPI_COMM_WORLD, MPI_ERRORS_RETURN );
+#endif
     }
 
     M_comm = Environment::worldComm();
@@ -182,9 +186,9 @@ Application::initMPI( int argc, char** argv, MPI_Comm comm )
 
 Application::Application()
     :
-    _M_about( Environment::about() ),
-    _M_desc( Environment::optionsDescription() ),
-    _M_vm( Environment::vm() )
+    M_about( Environment::about() ),
+    M_desc( Environment::optionsDescription() ),
+    M_vm( Environment::vm() )
 {
 
 }
@@ -201,20 +205,20 @@ Application::Application( int argc,
                           AboutData const& ad )
 #endif // FEELPP_HAS_MPI_H
     :
-    _M_about( ad ),
-    _M_desc( Environment::optionsDescription() ),
-    _M_vm( Environment::vm() ),
-    _M_to_pass_further()
+    M_about( ad ),
+    M_desc( Environment::optionsDescription() ),
+    M_vm( Environment::vm() ),
+    M_to_pass_further()
 #if defined( FEELPP_HAS_MPI_H )
     ,
     M_env()
 #endif
 {
-    //_M_desc.add( Feel::feel_options() );
+    //M_desc.add( Feel::feel_options() );
     if ( !google::glog_internal_namespace_::IsGoogleLoggingInitialized() )
     {
         // Initialize Google's logging library.
-        google::InitGoogleLogging(_M_about.appName().c_str());
+        google::InitGoogleLogging(M_about.appName().c_str());
     }
 
     initMPI( argc, argv, comm );
@@ -262,10 +266,10 @@ Application::Application( int argc,
                           po::options_description const& od )
 #endif // FEELPP_HAS_MPI_H
     :
-    _M_about( ad ),
-    _M_desc( Environment::optionsDescription() ),
-    _M_vm( Environment::vm() ),
-    _M_to_pass_further()
+    M_about( ad ),
+    M_desc( Environment::optionsDescription() ),
+    M_vm( Environment::vm() ),
+    M_to_pass_further()
 #if defined( FEELPP_HAS_MPI_H )
     ,
     M_env()
@@ -275,11 +279,11 @@ Application::Application( int argc,
     if ( !google::glog_internal_namespace_::IsGoogleLoggingInitialized() )
     {
         // Initialize Google's logging library.
-        google::InitGoogleLogging(_M_about.appName().c_str());
+        google::InitGoogleLogging(M_about.appName().c_str());
     }
 
-    //_M_desc.add( Feel::feel_options() ).add( od );
-    _M_desc.add( od );
+    //M_desc.add( Feel::feel_options() ).add( od );
+    M_desc.add( od );
 
 
     initMPI( argc, argv, comm );
@@ -327,10 +331,10 @@ Application::Application( AboutData const& ad,
                           po::options_description const& od )
 #endif // FEELPP_HAS_MPI_H
     :
-    _M_about( ad ),
-    _M_desc( Environment::optionsDescription() ),
-    _M_vm( Environment::vm() ),
-    _M_to_pass_further()
+    M_about( ad ),
+    M_desc( Environment::optionsDescription() ),
+    M_vm( Environment::vm() ),
+    M_to_pass_further()
 #if defined( FEELPP_HAS_MPI_H )
     ,
     M_env()
@@ -340,11 +344,11 @@ Application::Application( AboutData const& ad,
     if ( !google::glog_internal_namespace_::IsGoogleLoggingInitialized() )
     {
         // Initialize Google's logging library.
-        google::InitGoogleLogging(_M_about.appName().c_str());
+        google::InitGoogleLogging(M_about.appName().c_str());
     }
 
-    //_M_desc.add( Feel::feel_options() ).add( od );
-    _M_desc.add( od );
+    //M_desc.add( Feel::feel_options() ).add( od );
+    M_desc.add( od );
 
     //
     // if we are using openmpi, then we need to dlopen mpi with some special flags
@@ -357,8 +361,8 @@ Application::Application( AboutData const& ad,
 
     int argc = 1;
     char** argv = new char*[argc];
-    argv[0] = new char[_M_about.appName().size()+1];
-    ::strcpy( argv[0], _M_about.appName().c_str() );
+    argv[0] = new char[M_about.appName().size()+1];
+    ::strcpy( argv[0], M_about.appName().c_str() );
 
 
     initMPI( argc, argv, comm );
@@ -405,10 +409,10 @@ Application::Application( AboutData const& ad )
 
 #endif // FEELPP_HAS_MPI_H
     :
-    _M_about( ad ),
-    _M_desc( Environment::optionsDescription() ),
-    _M_vm( Environment::vm() ),
-    _M_to_pass_further()
+    M_about( ad ),
+    M_desc( Environment::optionsDescription() ),
+    M_vm( Environment::vm() ),
+    M_to_pass_further()
 #if defined( FEELPP_HAS_MPI_H )
     ,
     M_env()
@@ -418,7 +422,7 @@ Application::Application( AboutData const& ad )
     if ( !google::glog_internal_namespace_::IsGoogleLoggingInitialized() )
     {
         // Initialize Google's logging library.
-        google::InitGoogleLogging(_M_about.appName().c_str());
+        google::InitGoogleLogging(M_about.appName().c_str());
     }
 #if 1
 
@@ -433,8 +437,8 @@ Application::Application( AboutData const& ad )
 
     int argc = 1;
     char** argv = new char*[argc];
-    argv[0] = new char[_M_about.appName().size()+1];
-    ::strcpy( argv[0], _M_about.appName().c_str() );
+    argv[0] = new char[M_about.appName().size()+1];
+    ::strcpy( argv[0], M_about.appName().c_str() );
 
 
     initMPI( argc, argv, comm );
@@ -470,10 +474,10 @@ Application::Application( AboutData const& ad )
 }
 Application::Application( Application const& __app )
     :
-    _M_about( __app._M_about ),
-    _M_desc( __app._M_desc ),
-    _M_vm( __app._M_vm ),
-    _M_to_pass_further( __app._M_to_pass_further )
+    M_about( __app.M_about ),
+    M_desc( __app.M_desc ),
+    M_vm( __app.M_vm ),
+    M_to_pass_further( __app.M_to_pass_further )
 {
 }
 Application::~Application()
@@ -538,7 +542,7 @@ Application::doOptions( int argc, char** argv )
         po::options_description debug( "Debugging options" );
         debug.add_options()
         ( "debug", po::value<std::string>()->default_value( "" ), "specify a debugging area list" );
-        _M_desc.add( generic ).add( debug ).add( benchmark_options() );
+        M_desc.add( generic ).add( debug ).add( benchmark_options() );
 
         this->parseAndStoreOptions( po::command_line_parser( argc, argv ), true );
         processGenericOptions();
@@ -546,16 +550,16 @@ Application::doOptions( int argc, char** argv )
         /**
          * parse config file if given to command line
          */
-        if ( _M_vm.count( "config-file" ) )
+        if ( M_vm.count( "config-file" ) )
         {
-            DVLOG(2) << "[Application] parsing " << _M_vm["config-file"].as<std::string>() << "\n";
+            DVLOG(2) << "[Application] parsing " << M_vm["config-file"].as<std::string>() << "\n";
 
-            if ( fs::exists(  _M_vm["config-file"].as<std::string>() ) )
+            if ( fs::exists(  M_vm["config-file"].as<std::string>() ) )
             {
 
-                std::ifstream ifs( _M_vm["config-file"].as<std::string>().c_str() );
-                po::store( parse_config_file( ifs, _M_desc, true ), _M_vm );
-                po::notify( _M_vm );
+                std::ifstream ifs( M_vm["config-file"].as<std::string>().c_str() );
+                po::store( parse_config_file( ifs, M_desc, true ), M_vm );
+                po::notify( M_vm );
             }
         }
 
@@ -576,7 +580,7 @@ Application::doOptions( int argc, char** argv )
             {
                 DVLOG(2) << "[Application] parsing " << config_name << "\n";
                 std::ifstream ifs( config_name.c_str() );
-                store( parse_config_file( ifs, _M_desc, true ), _M_vm );
+                store( parse_config_file( ifs, M_desc, true ), M_vm );
                 break;
             }
 
@@ -590,13 +594,13 @@ Application::doOptions( int argc, char** argv )
                 {
                     DVLOG(2) << "[Application] loading configuration file " << config_name << "...\n";
                     std::ifstream ifs( config_name.c_str() );
-                    store( parse_config_file( ifs, _M_desc, true ), _M_vm );
+                    store( parse_config_file( ifs, M_desc, true ), M_vm );
                     break;
                 }
             }
         }
-        //po::store(po::parse_command_line(argc, argv, _M_desc), _M_vm);
-        po::notify( _M_vm );
+        //po::store(po::parse_command_line(argc, argv, M_desc), M_vm);
+        po::notify( M_vm );
 
     }
 
@@ -635,14 +639,14 @@ Application::doOptions( int argc, char** argv )
 char**
 Application::unknownArgv() const
 {
-    char** argv = new char*[ _M_to_pass_further.size()+1 ];
+    char** argv = new char*[ M_to_pass_further.size()+1 ];
     argv[0] = new char[ std::strlen( this->about().appName().c_str() )+1 ];
     strcpy( argv[0], this->about().appName().c_str() );
     argv[0][std::strlen( this->about().appName().c_str() )] = '\0';
     int n_a = 0;
     DVLOG(2) << "argv[ " << n_a << " ]=" << argv[0] << "\n";
     ++n_a;
-    BOOST_FOREACH( std::string const& s, _M_to_pass_further )
+    BOOST_FOREACH( std::string const& s, M_to_pass_further )
     {
         size_type ssize=s.size();
         DVLOG(2) << "new arg " << s << " size = " << ssize << "\n";
@@ -658,25 +662,25 @@ Application::unknownArgv() const
 void
 Application::setName1( std::string const& name1 )
 {
-    _M_name1 = name1;
+    M_name1 = name1;
 }
 
 void
 Application::setName2( std::string const& name2 )
 {
-    _M_name2 = name2;
+    M_name2 = name2;
 }
 
 void
 Application::setH( double h, int precision )
 {
-    _M_h = std::make_pair( h, precision );
+    M_h = std::make_pair( h, precision );
 }
 
 void
 Application::setDimension( int dim )
 {
-    _M_dim = dim;
+    M_dim = dim;
 }
 std::string
 Application::resultFileName() const
@@ -692,17 +696,17 @@ Application::processGenericOptions()
 {
     // leave this to subclasses or users
 #if 0
-    if ( _M_vm.count( "help" ) )
-        std::cout << _M_desc << "\n";
+    if ( M_vm.count( "help" ) )
+        std::cout << M_desc << "\n";
 
 #endif
 
 
-    if ( _M_vm.count( "response-file" ) )
+    if ( M_vm.count( "response-file" ) )
     {
         using namespace std;
         // Load the file and tokenize it
-        ifstream ifs( _M_vm["response-file"].as<std::string>().c_str() );
+        ifstream ifs( M_vm["response-file"].as<std::string>().c_str() );
 
         if ( !ifs )
         {
@@ -725,7 +729,7 @@ Application::processGenericOptions()
     if ( this->comm().rank() == 0 )
     {
 
-        if ( _M_vm.count( "feelinfo" ) )
+        if ( M_vm.count( "feelinfo" ) )
             std::cout << std::setw( 15 ) << std::right << "Feel Version : " << Info::versionString() << "\n"
                       << std::setw( 15 ) << std::right << "Major : " << Info::versionMajor() << "\n"
                       << std::setw( 15 ) << std::right << "Minor : " << Info::versionMinor() << "\n"
@@ -735,31 +739,31 @@ Application::processGenericOptions()
                       << std::setw( 15 ) << std::right << "Feel Prefix : " << Info::prefix() << "\n"
                       << std::setw( 15 ) << std::right << "Feel DataDir : " << Info::datadir() << "\n";
 
-        if ( _M_vm.count( "help" ) ||
-             _M_vm.count( "version" ) ||
-             _M_vm.count( "copyright" ) ||
-             _M_vm.count( "license" ) ||
-             _M_vm.count( "authors" ) )
+        if ( M_vm.count( "help" ) ||
+             M_vm.count( "version" ) ||
+             M_vm.count( "copyright" ) ||
+             M_vm.count( "license" ) ||
+             M_vm.count( "authors" ) )
         {
-            std::cout << _M_about.appName() << ": " << _M_about.shortDescription() <<  "\n";
+            std::cout << M_about.appName() << ": " << M_about.shortDescription() <<  "\n";
         }
 
-        if ( _M_vm.count( "version" ) )
+        if ( M_vm.count( "version" ) )
         {
-            std::cout << " version : " << _M_about.version() << "\n";
+            std::cout << " version : " << M_about.version() << "\n";
         }
 
-        if ( _M_vm.count( "copyright" ) )
+        if ( M_vm.count( "copyright" ) )
         {
-            std::cout << " copyright : " << _M_about.copyrightStatement() << "\n";
+            std::cout << " copyright : " << M_about.copyrightStatement() << "\n";
         }
 
-        if ( _M_vm.count( "license" ) )
+        if ( M_vm.count( "license" ) )
         {
-            std::cout << " license : " << _M_about.license() << "\n";
+            std::cout << " license : " << M_about.license() << "\n";
         }
 
-        if ( _M_vm.count( "authors" ) )
+        if ( M_vm.count( "authors" ) )
         {
             std::cout << std::setw( 30 )
                       << "Author Name"
@@ -769,8 +773,8 @@ Application::processGenericOptions()
                       << "Email Address"
                       << "\n";
             std::cout << std::setw( 85+3 ) << std::setfill( '-' ) << "\n" << std::setfill( ' ' );
-            std::for_each( _M_about.authors().begin(),
-                           _M_about.authors().end(),
+            std::for_each( M_about.authors().begin(),
+                           M_about.authors().end(),
                            std::cout
                            << std::setw( 30 )
                            << lambda::bind( &AboutPerson::name,
@@ -784,26 +788,26 @@ Application::processGenericOptions()
                            << "\n" );
         }
 
-        if ( _M_vm.count( "help" ) )
+        if ( M_vm.count( "help" ) )
         {
             std::cout << this->optionsDescription() << "\n";
         }
 
 
     }
-    if ( _M_vm.count( "help" ) ||
-         _M_vm.count( "version" ) ||
-         _M_vm.count( "copyright" ) ||
-         _M_vm.count( "license" ) ||
-         _M_vm.count( "authors" ) )
+    if ( M_vm.count( "help" ) ||
+         M_vm.count( "version" ) ||
+         M_vm.count( "copyright" ) ||
+         M_vm.count( "license" ) ||
+         M_vm.count( "authors" ) )
     {
         this->comm().barrier();
         MPI_Finalize();
         exit(0);
     }
 #if 0
-    std::cout << "count = " << _M_vm.count( "debug" ) << "\n"
-              << "string = " << _M_vm["debug"].as<std::string>() << "\n";
+    std::cout << "count = " << M_vm.count( "debug" ) << "\n"
+              << "string = " << M_vm["debug"].as<std::string>() << "\n";
 #endif
 
     DVLOG(2) << "[Application::processGenericOptions] done\n";
@@ -817,13 +821,13 @@ Application::rootRepository() const
 Application&
 Application::changeRepository( boost::format fmt )
 {
-    if ( _M_vm.count( "nochdir" ) )
+    if ( M_vm.count( "nochdir" ) )
     {
         this->setLogs();
         return *this;
     }
 
-    Environment::changeRepository( fmt, _M_about.appName() );
+    Environment::changeRepository( fmt, M_about.appName() );
     this->setLogs();
     return *this;
 }
@@ -837,7 +841,7 @@ Application::parseAndStoreOptions( po::command_line_parser parser, bool extra_pa
     if ( extra_parser )
     {
         parsed = boost::shared_ptr<po::parsed_options>( new po::parsed_options( parser
-                 .options( _M_desc )
+                 .options( M_desc )
                  .extra_parser( at_option_parser )
                  .allow_unregistered()
                  .run() ) );
@@ -846,17 +850,17 @@ Application::parseAndStoreOptions( po::command_line_parser parser, bool extra_pa
     else
     {
         parsed = boost::shared_ptr<po::parsed_options>( new po::parsed_options( parser
-                 .options( _M_desc )
+                 .options( M_desc )
                  .allow_unregistered()
                  .run() ) );
     }
 
     DVLOG(2) << "[Application::Application] parsing options done\n";
 
-    _M_to_pass_further = po::collect_unrecognized( parsed->options, po::include_positional );
-    DVLOG(2) << "[Application::Application] number of unrecognized options: " << ( _M_to_pass_further.size() ) << "\n";
+    M_to_pass_further = po::collect_unrecognized( parsed->options, po::include_positional );
+    DVLOG(2) << "[Application::Application] number of unrecognized options: " << ( M_to_pass_further.size() ) << "\n";
 
-    BOOST_FOREACH( std::string const& s, _M_to_pass_further )
+    BOOST_FOREACH( std::string const& s, M_to_pass_further )
     {
         DVLOG(2) << "[Application::Application] option: " << s << "\n";
     }
@@ -870,7 +874,7 @@ Application::parseAndStoreOptions( po::command_line_parser parser, bool extra_pa
             parsed->options.erase( it );
         }
 
-    po::store( *parsed, _M_vm );
+    po::store( *parsed, M_vm );
 }
 
 void
@@ -946,8 +950,8 @@ updateStats( std::vector<ptree::ptree>& stats )
 void
 Application::run()
 {
-    std::string runonly = _M_vm["benchmark.only"].as<std::string>();
-    bool prepare = _M_vm["benchmark.prepare"].as<bool>();
+    std::string runonly = M_vm["benchmark.only"].as<std::string>();
+    bool prepare = M_vm["benchmark.prepare"].as<bool>();
 
     // get current work directory before a simget eventually change the working
     // directory to store its results. the statistics files will be stored in the
@@ -961,11 +965,11 @@ Application::run()
             continue;
 
         std::string s1 = prefixvm( i->name(),"benchmark.nlevels" );
-        int nlevels = _M_vm.count( s1 )?_M_vm[s1].as<int>():_M_vm["benchmark.nlevels"].as<int>();
+        int nlevels = M_vm.count( s1 )?M_vm[s1].as<int>():M_vm["benchmark.nlevels"].as<int>();
         std::string s2 = prefixvm( i->name(),"benchmark.hsize" );
-        double hsize = _M_vm.count( s2 )?_M_vm[s2].as<double>():_M_vm["benchmark.hsize"].as<double>();
+        double hsize = M_vm.count( s2 )?M_vm[s2].as<double>():M_vm["benchmark.hsize"].as<double>();
         std::string s3 = prefixvm( i->name(),"benchmark.refine" );
-        double refine = _M_vm.count( s3 )?_M_vm[s3].as<double>():_M_vm["benchmark.refine"].as<double>();
+        double refine = M_vm.count( s3 )?M_vm[s3].as<double>():M_vm["benchmark.refine"].as<double>();
         i->setMeshSizeInit( hsize );
         bool has_stats = false;
         for ( int l = 0; l < nlevels; ++l )
@@ -989,15 +993,15 @@ Application::run()
         }
         if ( !prepare && has_stats == true )
         {
-            std::string fname = (boost::format( "%1%-%2%.dat" )% i->name()% Environment::numberOfProcessors() ).str();
+            std::string fname = (boost::format( "%1%-%2%.tsv" )% i->name()% Environment::numberOfProcessors() ).str();
             fs::ofstream ofs( cp / fname );
-            std::string fnameall = (boost::format( "%1%-%2%-all.dat" )% i->name()% Environment::numberOfProcessors() ).str();
+            std::string fnameall = (boost::format( "%1%-%2%-all.tsv" )% i->name()% Environment::numberOfProcessors() ).str();
             fs::ofstream ofsall( cp / fnameall );
-            std::string fnameerrors = (boost::format( "%1%-%2%-errors.dat" )% i->name()% Environment::numberOfProcessors() ).str();
+            std::string fnameerrors = (boost::format( "%1%-%2%-errors.tsv" )% i->name()% Environment::numberOfProcessors() ).str();
             fs::ofstream ofserrors( cp / fnameerrors );
-            std::string fnametime = (boost::format( "%1%-%2%-timings.dat" )% i->name()% Environment::numberOfProcessors() ).str();
+            std::string fnametime = (boost::format( "%1%-%2%-timings.tsv" )% i->name()% Environment::numberOfProcessors() ).str();
             fs::ofstream ofstime( cp / fnametime );
-            std::string fnamedata = (boost::format( "%1%-%2%-data.dat" )% i->name()% Environment::numberOfProcessors() ).str();
+            std::string fnamedata = (boost::format( "%1%-%2%-data.tsv" )% i->name()% Environment::numberOfProcessors() ).str();
             fs::ofstream ofsdata( cp / fnamedata );
 
             this->printStats( ofs, Application::ALL );
@@ -1125,55 +1129,83 @@ printData( std::ostream& out,
            std::string const& key,
            size_type stats = Application::ALL|Application::HEADER )
 {
-    if ( !( stats & Application::DATA ) ) return;
-    bool header = stats & Application::HEADER;
-    bool flat = stats & Application::FLAT;
-    if ( header )
+    try
     {
-        if ( !flat )
-            out << std::setw( 10 ) << std::right << "levels"
-                << std::setw( 10 ) << std::right << "h";
-        BOOST_FOREACH( auto v, statsit->get_child( key+".bool" ) )
+        if ( !( stats & Application::DATA ) ) return;
+        bool header = stats & Application::HEADER;
+        bool flat = stats & Application::FLAT;
+        if ( header )
         {
-            out << std::setw( detail::spaces ) << std::right << (flat?key+"."+v.first:v.first);
-        }
-        BOOST_FOREACH( auto v, statsit->get_child( key+".int" ) )
-        {
-            out << std::setw( detail::spaces ) << std::right << (flat?key+"."+v.first:v.first);
-        }
-        BOOST_FOREACH( auto v, statsit->get_child( key+".double" ) )
-        {
-            out << std::setw( detail::spaces ) << std::right << (flat?key+"."+v.first:v.first);
-        }
-        if ( !flat )
-            out << "\n";
-    }
-    int l=1;
-    if ( ! ( (header == true) && ( flat == true ) ) )
-        for ( auto it = statsit, en =statsen; it!=en; ++it,++l )
-        {
-            double h  = it->template get<double>( "h" );
             if ( !flat )
-                out << std::right << std::setw( 10 ) << l
-                    << std::right << std::setw( 10 ) << std::fixed  << std::setprecision( 4 ) << h;
-            BOOST_FOREACH( auto v, it->get_child( key+".bool" ) )
-            {
-                bool u  = it->template get<bool>( key+".bool."+v.first );
-                out << std::right << std::setw( detail::spaces )  << u;
+                out << std::setw( 10 ) << std::right << "levels"
+                    << std::setw( 10 ) << std::right << "h";
+            try {
+                BOOST_FOREACH( auto v, statsit->get_child( key+".bool" ) )
+                {
+                    out << std::setw( detail::spaces ) << std::right << (flat?key+"."+v.first:v.first);
+                }
             }
-            BOOST_FOREACH( auto v, it->get_child( key+".int" ) )
-            {
-                size_type u  = it->template get<size_type>( key+".int."+v.first );
-                out << std::right << std::setw( detail::spaces )  << u;
+            catch(...)
+            {}
+            try {
+                BOOST_FOREACH( auto v, statsit->get_child( key+".int" ) )
+                {
+                    out << std::setw( detail::spaces ) << std::right << (flat?key+"."+v.first:v.first);
+                }
             }
-            BOOST_FOREACH( auto v, it->get_child( key+".double" ) )
-            {
-                double u  = it->template get<double>( key+".double."+v.first );
-                out << std::right << std::setw( detail::spaces ) << std::scientific << std::setprecision( 2 ) << u;
+            catch(...)
+            {}
+            try{
+                BOOST_FOREACH( auto v, statsit->get_child( key+".double" ) )
+                {
+                    out << std::setw( detail::spaces ) << std::right << (flat?key+"."+v.first:v.first);
+                }
             }
+            catch(...)
+            {}
             if ( !flat )
                 out << "\n";
         }
+        int l=1;
+        if ( ! ( (header == true) && ( flat == true ) ) )
+            for ( auto it = statsit, en =statsen; it!=en; ++it,++l )
+            {
+                double h  = it->template get<double>( "h" );
+                if ( !flat )
+                    out << std::right << std::setw( 10 ) << l
+                        << std::right << std::setw( 10 ) << std::fixed  << std::setprecision( 4 ) << h;
+                try {
+                    BOOST_FOREACH( auto v, it->get_child( key+".bool" ) )
+                    {
+                        bool u  = it->template get<bool>( key+".bool."+v.first );
+                        out << std::right << std::setw( detail::spaces )  << u;
+                    }
+                }
+                catch(...){}
+                try {
+                    BOOST_FOREACH( auto v, it->get_child( key+".int" ) )
+                    {
+                        size_type u  = it->template get<size_type>( key+".int."+v.first );
+                        out << std::right << std::setw( detail::spaces )  << u;
+                    }
+                }
+                catch(...){}
+                try {
+                    BOOST_FOREACH( auto v, it->get_child( key+".double" ) )
+                    {
+                        double u  = it->template get<double>( key+".double."+v.first );
+                        out << std::right << std::setw( detail::spaces ) << std::scientific << std::setprecision( 2 ) << u;
+                    }
+                }
+                catch(...){}
+                if ( !flat )
+                    out << "\n";
+            }
+    }
+    catch( ptree::ptree_bad_data const& e )
+    {
+        LOG(WARNING) << "Invalid property tree data : " << e.what();
+    }
 }
 template<typename StatsIterator>
 void
@@ -1183,55 +1215,67 @@ printTime( std::ostream& out,
            std::string const& key,
            size_type stats = Application::ALL|Application::HEADER )
 {
-    if ( !( stats & Application::TIME ) ) return;
-    bool header = stats & Application::HEADER;
-    bool flat = stats & Application::FLAT;
-    if ( header )
-    {
-        if ( !flat )
-            out << std::setw( 10 ) << std::right << "levels"
-                << std::setw( 10 ) << std::right << "h";
-        BOOST_FOREACH( auto v, statsit->get_child( key ) )
+    try {
+
+        if ( !( stats & Application::TIME ) ) return;
+        bool header = stats & Application::HEADER;
+        bool flat = stats & Application::FLAT;
+        if ( header )
         {
-            int len1 = std::max( detail::spaces,( int )v.first.size() );
-            int len2 = std::max( detail::spaces,( int )( std::string( " normalized" ).size() ) );
-            out << std::setw( len1 ) << std::right << (flat?key+"."+v.first:v.first) << " "
-                << std::setw( len2 ) << std::right << (flat?key+"."+v.first+".n":v.first+".n");
-        }
-        if (!flat)
-            out << "\n";
-    }
-    int l=1;
-    std::map<std::string,double> t0;
-    if ( ! ( (header == true) && ( flat == true ) ) )
-        for ( auto it = statsit,  en =statsen; it!=en; ++it,++l )
-        {
-            double h  = it->template get<double>( "h" );
             if ( !flat )
-                out << std::right << std::setw( 10 ) << l
-                    << std::right << std::setw( 10 ) << std::fixed  << std::setprecision( 4 ) << h;
-            BOOST_FOREACH( auto v, it->get_child( key ) )
+                out << std::setw( 10 ) << std::right << "levels"
+                    << std::setw( 10 ) << std::right << "h";
+            BOOST_FOREACH( auto v, statsit->get_child( key ) )
             {
-                std::string thekey = key+"."+v.first;
-                int len1 = std::max( detail::spaces,( int )(flat?key+"."+v.first:v.first).size() );
-                int len2 = std::max( detail::spaces,(int)std::string( " normalized" ).size()-2);
-                double u  = it->template get<double>( thekey );
-
-                if ( l == 1 )
-                    t0[thekey] = u;
-
-                out << std::right << std::setw( len1 ) << std::scientific << std::setprecision( 2 ) << u << " "
-                    << std::right << std::setw( len2 ) << std::scientific << std::setprecision( 2 ) << u/t0[thekey];
+                int len1 = std::max( detail::spaces,( int )v.first.size() );
+                int len2 = std::max( detail::spaces,( int )( std::string( " normalized" ).size() ) );
+                out << std::setw( len1 ) << std::right << (flat?key+"."+v.first:v.first) << " "
+                    << std::setw( len2 ) << std::right << (flat?key+"."+v.first+".n":v.first+".n");
             }
-            if ( !flat )
+            if (!flat)
                 out << "\n";
         }
+        int l=1;
+        std::map<std::string,double> t0;
+        if ( ! ( (header == true) && ( flat == true ) ) )
+            for ( auto it = statsit,  en =statsen; it!=en; ++it,++l )
+            {
+                double h  = it->template get<double>( "h" );
+                if ( !flat )
+                    out << std::right << std::setw( 10 ) << l
+                        << std::right << std::setw( 10 ) << std::fixed  << std::setprecision( 4 ) << h;
+                BOOST_FOREACH( auto v, it->get_child( key ) )
+                {
+                    std::string thekey = key+"."+v.first;
+                    int len1 = std::max( detail::spaces,( int )(flat?key+"."+v.first:v.first).size() );
+                    int len2 = std::max( detail::spaces,(int)std::string( " normalized" ).size()-2);
+                    double u  = it->template get<double>( thekey );
+
+                    if ( l == 1 )
+                        t0[thekey] = u;
+
+                    out << std::right << std::setw( len1 ) << std::scientific << std::setprecision( 2 ) << u << " "
+                        << std::right << std::setw( len2 ) << std::scientific << std::setprecision( 2 ) << u/t0[thekey];
+                }
+                if ( !flat )
+                    out << "\n";
+            }
+    }
+    catch( ptree::ptree_bad_data const& e )
+    {
+        LOG(WARNING) << "Invalid property tree data : " << e.what();
+    }
 }
 
 void
 Application::setStats( std::vector<std::string> const& keys )
 {
     M_keys = keys;
+}
+void
+Application::storeStats( std::string const&  n, ptree::ptree const& s )
+{
+    M_stats[n].push_back( s );
 }
 void
 Application::printStats( std::ostream& out, size_type stats ) const
@@ -1247,8 +1291,8 @@ Application::printStats( std::ostream& out,
     bool flat = stats & Application::FLAT;
     if ( keys.empty() ) return;
     if ( M_comm.rank() != 0 ) return ;
-    std::string runonly = _M_vm["benchmark.only"].as<std::string>();
-    bool prepare = _M_vm["benchmark.prepare"].as<bool>();
+    std::string runonly = M_vm["benchmark.only"].as<std::string>();
+    bool prepare = M_vm["benchmark.prepare"].as<bool>();
     if ( prepare ) return;
     for ( auto i = M_simgets.begin(), end = M_simgets.end(); i != end; ++i )
     {

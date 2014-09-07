@@ -75,9 +75,9 @@ public:
      */
     Importer( MeshFormat const& _format = GMSH, WorldComm const& _worldcomm = Environment::worldComm() )
         :
-        _M_worldComm( _worldcomm ),
-        _M_filename(),
-        _M_format( _format )
+        M_worldComm( _worldcomm ),
+        M_filename(),
+        M_format( _format )
     {}
 
     /**
@@ -87,9 +87,9 @@ public:
      */
     Importer( std::string const& _filename,  MeshFormat const& _format = GMSH, WorldComm const& _worldcomm = Environment::worldComm() )
         :
-        _M_worldComm( _worldcomm ),
-        _M_filename( _filename ),
-        _M_format( _format )
+        M_worldComm( _worldcomm ),
+        M_filename( _filename ),
+        M_format( _format )
     {}
 
     virtual ~Importer()
@@ -101,7 +101,7 @@ public:
      */
     void setFilename( std::string const& __filename )
     {
-        _M_filename = __filename;
+        M_filename = __filename;
     }
 
     /**
@@ -110,7 +110,7 @@ public:
      */
     void setFormat( MeshFormat const& __format )
     {
-        _M_format = __format;
+        M_format = __format;
     }
 
     /**
@@ -118,7 +118,7 @@ public:
      */
     std::string const& filename() const
     {
-        return _M_filename;
+        return M_filename;
     }
 
 
@@ -127,7 +127,7 @@ public:
      */
     MeshFormat format() const
     {
-        return _M_format;
+        return M_format;
     }
 
     /**
@@ -135,19 +135,19 @@ public:
      */
     WorldComm const& worldComm() const
     {
-        return _M_worldComm;
+        return M_worldComm;
     }
 
 private:
 
     //! communicator
-    WorldComm _M_worldComm;
+    WorldComm M_worldComm;
 
     //! name of the file to import
-    std::string _M_filename;
+    std::string M_filename;
 
     //! format of the file to import
-    MeshFormat _M_format;
+    MeshFormat M_format;
 };
 }
 

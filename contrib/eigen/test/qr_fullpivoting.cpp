@@ -20,7 +20,6 @@ template<typename MatrixType> void qr()
 
   typedef typename MatrixType::Scalar Scalar;
   typedef Matrix<Scalar, MatrixType::RowsAtCompileTime, MatrixType::RowsAtCompileTime> MatrixQType;
-  typedef Matrix<Scalar, MatrixType::ColsAtCompileTime, 1> VectorType;
   MatrixType m1;
   createRandomPIMatrixOfRank(rank,rows,cols,m1);
   FullPivHouseholderQR<MatrixType> qr(m1);
@@ -51,6 +50,8 @@ template<typename MatrixType> void qr()
 
 template<typename MatrixType> void qr_invertible()
 {
+  using std::log;
+  using std::abs;
   typedef typename NumTraits<typename MatrixType::Scalar>::Real RealScalar;
   typedef typename MatrixType::Scalar Scalar;
 
@@ -78,12 +79,12 @@ template<typename MatrixType> void qr_invertible()
   // now construct a matrix with prescribed determinant
   m1.setZero();
   for(int i = 0; i < size; i++) m1(i,i) = internal::random<Scalar>();
-  RealScalar absdet = internal::abs(m1.diagonal().prod());
+  RealScalar absdet = abs(m1.diagonal().prod());
   m3 = qr.matrixQ(); // get a unitary
   m1 = m3 * m1 * m3;
   qr.compute(m1);
   VERIFY_IS_APPROX(absdet, qr.absDeterminant());
-  VERIFY_IS_APPROX(internal::log(absdet), qr.logAbsDeterminant());
+  VERIFY_IS_APPROX(log(absdet), qr.logAbsDeterminant());
 }
 
 template<typename MatrixType> void qr_verify_assert()
@@ -129,4 +130,8 @@ void test_qr_fullpivoting()
 
   // Test problem size constructors
   CALL_SUBTEST_7(FullPivHouseholderQR<MatrixXf>(10, 20));
+  CALL_SUBTEST_7((FullPivHouseholderQR<Matrix<float,10,20> >(10,20)));
+  CALL_SUBTEST_7((FullPivHouseholderQR<Matrix<float,10,20> >(Matrix<float,10,20>::Random())));
+  CALL_SUBTEST_7((FullPivHouseholderQR<Matrix<float,20,10> >(20,10)));
+  CALL_SUBTEST_7((FullPivHouseholderQR<Matrix<float,20,10> >(Matrix<float,20,10>::Random())));
 }

@@ -1,0 +1,117 @@
+/* -*- mode: c++ -*- */
+/**
+   \page LaplacianParabolic Parabolic equation example
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+   \date 2013-06-19
+
+	\tableofcontents
+
+	\section Description Description
+	This section is about another example easy to learn and understand :  the parabolic equation. The aim is to solve equations like :
+	\f{equation}
+	\left\{
+	\begin{aligned}
+		\dfrac{\partial u}{\partial t} - nu*\Delta u = f & \text{on}\; \Omega \;, \
+		        u & =  0 & \text{on}\;\partial\Omega \;,\
+	\end{aligned}
+	\right.
+	\f}
+
+	where \f$u\in\Omega\f$ is the unknown "trial" function and \f$\Omega\f$ the domain.
+
+	However this LaplacianParabolic application can also be used in the stationnary form, that is to say, solve the equation :
+	\f{equation}
+	\left\{
+	\begin{aligned}
+			 - nu*\Delta u = f & \text{on}\; \Omega \;, \
+		        u & =  0 & \text{on}\;\partial\Omega \;,\
+	\end{aligned}
+	\right.
+	\f}
+
+	\subsection Discretization Time Discretization
+
+
+
+	\section Implementation Implementation
+	The overall code is based on the laplacian.cpp application to which we added time discretization and other useful options. The time derivative will be discretized following a backward method called \textit{Backward Differentiation Formula}; it is a finite differences method, used a lot in time discretization. Here, we don't go deeply in the implementation of BDF; a how-to about it can be get in Feel++ pdf tutorial.
+
+    \subsection BDF BDF set up
+    The instationnary solving of this equation is not far different from solving the laplacian equation : in fact the laplacian equation is solved at each time iteration (called time-step). First we instantiate BDF objects :
+    \snippet laplacian_parabolic.cpp marker1
+
+    Then we put a \c do..while loop for the time iteration :
+    \code
+    do{
+        //set the linear form
+        form1=...
+
+        //set the bilinear form
+        form2=...
+
+	//solve
+	backend(_rebuild=true)->solve(...);
+    }while( M-bdf->isFinished() == false );
+    \endcode
+
+    The time derivative discretization is done in black box; we simply wrote :
+    \snippet laplacian_parabolic.cpp marker8
+    for the bilinear form, and :
+    \snippet laplacian_parabolic.cpp marker9
+    for the linear form. In steady mode, those terms will not be added.
+
+    At the begining, one should have put all terms inside the time loop. But here, in our case, there are terms which are not time depending ones; so it is useless to have them inside the time loop and performing useless computations. The application will compute once and for all before the begining of the time loop and will add them to the temporal terms :
+    \snippet laplacian_parabolic.cpp marker3
+    \snippet laplacian_parabolic.cpp marker10
+
+    \warning At the end of each solve, we should re-initialised $\fu^{n}$\f, $\fu^{n-1}$\f...; so don't forget the shifting operation :
+    \snippet laplacian_parabolic.cpp marker15
+    and also, don't forget to increment the time :
+    \snippet laplacian_parabolic.cpp marker16
+
+	\subsection Error Error class
+	The Error class allows users to define a test solution that has to be found by the application, to compute the Right Hand Side term of the equation and to compute L2 and H1 errors.
+
+	First we set the exact solution (if it is given in the \c .cfg file) and the associated parameter(s) :
+	\snippet laplacian_parabolic.cpp marker11
+	\snippet laplacian_parabolic.cpp marker12
+
+	Then compute the rhs according to the equation :
+	\snippet laplacian_parabolic.cpp marker13
+
+	Eventually, compute the L2 and H1 error :
+	\snippet laplacian_parabolic.cpp marker14
+
+	\warning  Be careful, do NOT use the L2 and H1 error computation of the Error class, because they are written in cylindrical coordinates !
+
+	\section Results Results
+
+	To verify and validate the implementation, we made convergence study in stationnary and in temporal modes.
+	The exact solution in the input is :
+	\f{equation}
+	\sin(\Pi(x-1)) \sin(\Pi\dfrac{y-0.05}{0.1})e^{-t}
+	\f}
+	(in the border, it is indeed equal to 0).
+
+	For the time error, we implemented this formula :
+
+	\f{equation}
+	E_{r} = \left( \Delta t \: \sum\limits_{t=t_i}^{t_f} \| u - u^n \|_{L^2(\Omega^{tn})}^2 \right)^{\frac{1}{2}}
+	\f}
+
+	Here we go with the graphs :
+	\subsection Stationnary Stationnary study
+
+    We have a very good convergence slope in P1. We should also get a good convergence in P2 and further.
+
+	\image html Laplacian_parabolic_L2_error.png
+    \image html Laplacian_parabolic_H1_error.png
+
+	\subsection Temporal Temporal study
+
+    Here is something very interesting : depending the problem (the exact solution, the rhs, boundary conditions etc...), the theorical slope is not reached for "big" time-steps, but only when they are decreasing (BDF1, BDF2, BDF3); then, if the slope begins to behave wrongly, try to increase the precision of the geometry (BDF2 and BDF3).
+	\image html Laplacian_parabolic_BDF1.png
+	\image html Laplacian_parabolic_BDF2.png
+	\image html Laplacian_parabolic_BDF3.png
+
+ */

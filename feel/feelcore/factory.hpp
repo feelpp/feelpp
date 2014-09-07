@@ -59,16 +59,16 @@ struct FactoryDefaultError
         Exception( IdentifierType id )
             :
             std::exception(),
-            _M_ex()
+            M_ex()
         {
-            _M_ex = this->getEx( id );
+            M_ex = this->getEx( id );
 
         }
         ~Exception() throw()
         {}
         const char* what() const throw ()
         {
-            return _M_ex.c_str();
+            return M_ex.c_str();
         }
         std::string getEx( std::string const& id )
         {
@@ -84,7 +84,7 @@ struct FactoryDefaultError
             return __ex_str.str();
         }
     private:
-        std::string _M_ex;
+        std::string M_ex;
     };
 
     static AbstractProduct* onUnknownType( IdentifierType id )
@@ -148,7 +148,7 @@ public:
     bool registerProduct( const identifier_type& id, creator_type creator )
     {
         DVLOG(2) << "Registered type with id : " << id << "\n";
-        return _M_associations.insert( typename id_to_product_type::value_type( id, creator ) ).second;
+        return M_associations.insert( typename id_to_product_type::value_type( id, creator ) ).second;
     }
 
     /**
@@ -161,7 +161,7 @@ public:
     bool unregisterProduct( const identifier_type& id )
     {
         DVLOG(2) << "Unregistered type with id : " << id << "\n";
-        return _M_associations.erase( id ) == 1;
+        return M_associations.erase( id ) == 1;
     }
 
     /**
@@ -174,9 +174,9 @@ public:
      */
     product_type* createObject( const identifier_type& id )
     {
-        typename id_to_product_type::const_iterator i = _M_associations.find( id );
+        typename id_to_product_type::const_iterator i = M_associations.find( id );
 
-        if ( i != _M_associations.end() )
+        if ( i != M_associations.end() )
         {
             DVLOG(2) << "Creating type with id : " << id << "\n";
             return ( i->second )();
@@ -191,7 +191,7 @@ public:
     //@}
 private:
     typedef std::map<identifier_type, creator_type> id_to_product_type;
-    id_to_product_type _M_associations;
+    id_to_product_type M_associations;
 
 };
 
@@ -257,21 +257,21 @@ public:
 
     bool registerProduct( const TypeInfo& id, ProductCreator creator )
     {
-        return _M_associations.insert( typename id_to_product_type::value_type( id, creator ) ).second;
+        return M_associations.insert( typename id_to_product_type::value_type( id, creator ) ).second;
     }
 
     bool unregisterProduct( const TypeInfo& id )
     {
-        return _M_associations.erase( id ) == 1;
+        return M_associations.erase( id ) == 1;
     }
 
     AbstractProduct* createObject( const AbstractProduct* model )
     {
         if ( model == 0 ) return 0;
 
-        typename id_to_product_type::const_iterator i = _M_associations.find( typeid( *model ) );
+        typename id_to_product_type::const_iterator i = M_associations.find( typeid( *model ) );
 
-        if ( i != _M_associations.end() )
+        if ( i != M_associations.end() )
         {
             return ( i->second )( model );
         }
@@ -283,7 +283,7 @@ public:
 
 private:
     typedef std::map<TypeInfo, ProductCreator> id_to_product_type;
-    id_to_product_type _M_associations;
+    id_to_product_type M_associations;
 };
 
 

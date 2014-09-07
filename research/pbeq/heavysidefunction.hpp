@@ -56,10 +56,10 @@ public:
     typedef element_type::gm_type             gm_type;
     typedef element_type::gm_ptrtype          gm_ptrtype;
 
-    heavysideFunction() : _M_elt( 0 ), M_molecule( 0 ), M_stretch( 0 ), M_translation( 0 ) {}
+    heavysideFunction() : M_elt( 0 ), M_molecule( 0 ), M_stretch( 0 ), M_translation( 0 ) {}
     ~heavysideFunction()
     {
-        _M_elt=0;
+        M_elt=0;
         M_molecule=0;
         M_stretch=0;
         M_translation=0;
@@ -82,11 +82,11 @@ public:
 
     void setElement( element_type const* elt )
     {
-        _M_elt = elt;
+        M_elt = elt;
     }
     void unSetElement( )
     {
-        _M_elt = 0;
+        M_elt = 0;
     }
 
     void setStretch( node_type const*  stretch )
@@ -113,7 +113,7 @@ private:
 
 
 private:
-    element_type const* _M_elt;
+    element_type const* M_elt;
     molecule_type const* M_molecule;
     node_type const*     M_stretch;
     node_type const*     M_translation;

@@ -27,6 +27,8 @@
    \date 2009-03-04
  */
 #include "convection.hpp"
+#include <feel/feelfilters/loadgmshmesh.hpp>
+#include <feel/feelfilters/creategmshmesh.hpp>
 
 // <int Order_s, int Order_p, int Order_t>
 void

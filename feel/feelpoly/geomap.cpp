@@ -43,8 +43,8 @@ namespace Feel
 template<typename Elem, typename T>
 RealToReference<Elem,T>::RealToReference( Elem const& elem )
     :
-    _M_gm( new gm_type ),
-    _M_igm( _M_gm, elem )
+    M_gm( new gm_type ),
+    M_igm( M_gm, elem )
 {}
 
 
@@ -52,7 +52,7 @@ template<typename Elem, typename T>
 typename RealToReference<Elem,T>::points_type
 RealToReference<Elem,T>::operator()( points_type const& pts ) const
 {
-    return _M_igm( pts );
+    return M_igm( pts );
 }
 
 template class RealToReference< GeoND<2,GeoEntity<Simplex<2,1> >, double>, double >;

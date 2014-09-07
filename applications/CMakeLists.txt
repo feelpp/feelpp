@@ -26,6 +26,7 @@
 set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
 project( feel-applications )
+add_subdirectory( mesh )
 add_subdirectory( polyvis )
 add_subdirectory( check )
 if ( EXISTS ${FEELPP_SOURCE_DIR}/applications/crb AND FEELPP_ENABLE_APPLICATIONS_CRB )
