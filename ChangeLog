@@ -30,9 +30,12 @@
 
    \subsection issues0990 Noteworthy Issues
 
+   - Enable support for simd  [Issue <a href="https://github.com/feelpp/feelpp/issues/435">435</a>]
+   - FindXdmf.cmake missing [Issue <a href="https://github.com/feelpp/feelpp/issues/433">433</a>]
    - Add backend as argument to form1 and form2 [Issue <a href="https://github.com/feelpp/feelpp/issues/431">431</a>]
    - Add support for Matrix transpose without assembly [Issue <a href="https://github.com/feelpp/feelpp/issues/427">427</a>]
    - Add support for newMatrix() without args [Issue <a href="https://github.com/feelpp/feelpp/issues/426">426</a>]
+   - Add compatibility headers in contrib/gmsh depending on version [Issue <a href="https://github.com/feelpp/feelpp/issues/425">425</a>]
    - Add Eigen3 3.2.2 to contrib [Issue <a href="https://github.com/feelpp/feelpp/issues/422">422</a>]
    - Better support ML with cmake [Issue <a href="https://github.com/feelpp/feelpp/issues/421">421</a>]
    - Support MKL (starting from v11) [Issue <a href="https://github.com/feelpp/feelpp/issues/420">420</a>]
