@@ -113,14 +113,14 @@ if ( FEELPP_ENABLE_NLOPT )
   else( EXISTS ${CMAKE_SOURCE_DIR}/contrib/nlopt )
 
     FIND_PATH(NLOPT_INCLUDE_DIR nlopt.hpp
-      $ENV{FEELPP_DIR}/include/feel
+      $ENV{FEELPP_DIR}/include/feel/nlopt
       NO_DEFAULT_PATH)
 
     FIND_PATH(NLOPT_INCLUDE_DIR nlopt.hpp
       $ENV{FEELPP_DIR}/include/feel
-      /usr/include/feel
-      /usr/local/include/feel
-      /opt/local/include/feel
+      /usr/include/feel/nlopt
+      /usr/local/include/feel/nlopt
+      /opt/local/include/feel/nlopt
       NO_DEFAULT_PATH)
     message(STATUS "NLopt/system: ${NLOPT_INCLUDE_DIR}")
     FIND_LIBRARY(NLOPT_LIBRARY  NAMES feelpp_nlopt  PATHS   $ENV{FEELPP_DIR}/lib  NO_DEFAULT_PATH)
