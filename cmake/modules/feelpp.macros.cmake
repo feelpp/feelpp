@@ -55,7 +55,7 @@ macro(feelpp_add_application)
   if ( FEELPP_APP_DEFS )
     set_property(TARGET ${execname} PROPERTY COMPILE_DEFINITIONS ${FEELPP_APP_DEFS})
   endif()
-  target_link_libraries( ${execname} feelpp ${FEELPP_APP_LINK_LIBRARIES} ${FEELPP_LIBRARIES})
+  target_link_libraries( ${execname} ${FEELPP_LIBRARY} ${FEELPP_APP_LINK_LIBRARIES} ${FEELPP_LIBRARIES})
 
   if( FEELPP_ENABLE_PCH_FOR_APPLICATIONS )
     # add several headers in a list form "one.hpp;two.hpp"
@@ -198,7 +198,7 @@ macro(feelpp_add_test)
     set(filename test_${FEELPP_TEST_NAME}.cpp)
 
     add_executable(${targetname} ${filename})
-    target_link_libraries(${targetname} feelpp ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} )
+    target_link_libraries(${targetname} ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} )
     set_property(TARGET ${targetname} PROPERTY LABELS ${FEELPP_TEST_LABEL} ${FEELPP_TEST_LABEL_DIRECTORY})
     if ( TARGET  ${FEELPP_TEST_LABEL_DIRECTORY})
       add_dependencies(  ${FEELPP_TEST_LABEL_DIRECTORY} ${targetname} )
