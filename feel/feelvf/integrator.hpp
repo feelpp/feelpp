@@ -4974,22 +4974,58 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         PTHForkJoinTaskType* compFkTask = new PTHForkJoinTaskType(forkjoin, taskMng.getTasks());
         taskList.push_back(taskMng.addNew(compFkTask));
 
+        std::ostringstream oss1;
+        perf_mng.init("init2.2") ;
+        perf_mng.start("init2.2") ;
+
+        perf_mng.init("init2.2.0") ;
+        perf_mng.init("init2.2.1") ;
+        perf_mng.init("init2.2.2") ;
+        perf_mng.init("init2.2.3") ;
+
+        /* getting parameters to avoid problems with const */
+        expression_type expr = this->expression();
+        im_type im = this->im();
+        element_iterator elt_it = M_elts.begin()->template get<1>();
+
         /* create tasks and associate them data */
         for(int i = 0 ; i< nbThreads; i++)
         {
-            DataHandlerType * v_handler = dataMng.getNewData();
-            v_handler->set<std::vector<std::pair<element_iterator, element_iterator> > >(&_v[i]);
+            DataHandlerType * d_tid = dataMng.getNewData();
+            d_tid->set<int>(&i);
+            DataHandlerType * d_elts = dataMng.getNewData();
+            d_elts->set<std::vector<std::pair<element_iterator, element_iterator> > >(&_v[i]);
+            DataHandlerType * d_expr = dataMng.getNewData();
+            d_expr->set<expression_type>(&expr);
+            DataHandlerType * d_im = dataMng.getNewData();
+            d_im->set<im_type>(&im);
+            DataHandlerType * d_elt = dataMng.getNewData();
+            d_elt->set<element_iterator>(&elt_it);
 
-            harts_context_type * t = new harts_context_type(i, this->expression(), this->im(), *(M_elts.begin()->template get<1>()) /* *it */);
+            if(i == 0) { perf_mng.start("init2.2.0") ; }
+            //harts_context_type * t = new harts_context_type(i, this->expression(), this->im(), *(M_elts.begin()->template get<1>()) /* *it */);
+            harts_context_type * t = new harts_context_type();
+            if(i == 0) { perf_mng.stop("init2.2.0") ; }
+            if(i == 0) { perf_mng.start("init2.2.1") ; }
             hce.push_back(t);
+            if(i == 0) { perf_mng.stop("init2.2.1") ; }
+            if(i == 0) { perf_mng.start("init2.2.2") ; }
             TaskType* task = new TaskType(t);
-            task->args().add("r", DataHandlerType::R, v_handler);
+            if(i == 0) { perf_mng.stop("init2.2.2") ; }
+            if(i == 0) { perf_mng.start("init2.2.3") ; }
+            task->args().add("threadId", DataHandlerType::R, d_tid);
+            task->args().add("elements", DataHandlerType::R, d_elts);
+            task->args().add("expr", DataHandlerType::R, d_expr);
+            task->args().add("im", DataHandlerType::R, d_im);
+            task->args().add("elt", DataHandlerType::R, d_elt);
+            if(i == 0) { perf_mng.stop("init2.2.3") ; }
 
             typename TaskType::FuncType f = &harts_context_type::computeCPU;
             task->set("cpu",f);
             int uid = taskMng.addNew(task);
             compFkTask->add(uid);
         }
+        perf_mng.stop("init2.2") ;
 
         perf_mng.stop("init2") ;
 
@@ -5053,6 +5089,12 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                   << perf_mng.getValueInSeconds("total") << " (" << perf_mng.getValueInSeconds("init") << " ("
                   << perf_mng.getValueInSeconds("init0") << ", " << perf_mng.getValueInSeconds("init1") << ", " << perf_mng.getValueInSeconds("init2") << ") "
                   << ", " << perf_mng.getValueInSeconds("comp") << ")" << std::endl;
+
+        std::cout << Environment::worldComm().rank() <<  " Evaluation " 
+                  << perf_mng.getValueInSeconds("init2.2.0") << " "
+                  << perf_mng.getValueInSeconds("init2.2.1") << " "
+                  << perf_mng.getValueInSeconds("init2.2.2") << " "
+                  << perf_mng.getValueInSeconds("init2.2.3") << std::endl;
 
         DLOG(INFO) << "integrating over elements done in " << __timer.elapsed() << "s\n";
         return res;
@@ -5180,12 +5222,26 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 
         value_type * out = new value_type[nbThreads];
 
+        expression_type expr = this->expression();
+        im_type im = this->im();
+        element_iterator elt_it = M_elts.begin()->template get<1>();
+
+
 #pragma omp parallel
         {
             int id = omp_get_thread_num();
 
-            harts_context_type * t = new harts_context_type(id, this->expression(), this->im(), *(M_elts.begin()->template get<1>()) /* *it */);
-            t->computeCPUOMP(&(_v[id]));
+            RunTimeSystem::PerfCounterMng<std::string> local_perf_mng ;
+
+            //local_perf_mng.init("Creation") ;
+            //local_perf_mng.start("Creation") ;
+            //harts_context_type * t = new harts_context_type(id, this->expression(), this->im(), *(M_elts.begin()->template get<1>()) /* *it */);
+            harts_context_type * t = new harts_context_type();
+            //local_perf_mng.stop("Creation") ;
+
+            std::cout << Environment::worldComm().rank() << "|" << id << " Creation:" << local_perf_mng.getValueInSeconds("Creation") << std::endl;
+
+            t->computeCPUOMP(id, &expr, &im, &elt_it, &(_v[id]));
             out[id] = t->result();
 
             std::cout << Environment::worldComm().rank() << "|" << id << " elapsed=" << t->elapsed() << std::endl;
