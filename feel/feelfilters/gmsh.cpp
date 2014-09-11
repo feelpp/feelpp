@@ -635,11 +635,11 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
 
     else
     {
-        CTX::instance()->mesh.algo2d = ALGO_2D_FRONTAL;
+        CTX::instance()->mesh.algo2d = ioption("gmsh.algo") ;
 #if defined(HAVE_TETGEN)
-        CTX::instance()->mesh.algo3d = ALGO_3D_DELAUNAY;
+        CTX::instance()->mesh.algo3d = ioption("gmsh.algo") ;// ALGO_3D_DELAUNAY;
 #else
-        CTX::instance()->mesh.algo3d = ALGO_3D_FRONTAL;
+        CTX::instance()->mesh.algo3d = ioption("gmsh.algo") ;// ALGO_3D_FRONTAL;
 #endif
     }
     // disable heap checking if enabled
