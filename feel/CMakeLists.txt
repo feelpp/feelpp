@@ -33,6 +33,7 @@ macro(feel_append_src DIRNAME FILES)
 endmacro(feel_append_src)
 
 add_subdirectory (feelcore)
+add_subdirectory (feelmath)
 add_subdirectory (feelalg)
 add_subdirectory (feelmesh)
 add_subdirectory (feelpoly)
