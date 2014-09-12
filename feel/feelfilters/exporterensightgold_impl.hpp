@@ -136,6 +136,32 @@ ExporterEnsightGold<MeshType,N>::save() const
     //static int freq = 0;
     //
 
+    /* Check that we have steps to save */
+    /* Ensures that we do not end up in a segfault */
+    timeset_const_iterator __ts_it = this->beginTimeSet();
+    timeset_const_iterator __ts_en = this->endTimeSet();
+    bool hasSteps = true;
+    while ( __ts_it != __ts_en )
+    {
+        timeset_ptrtype __ts = *__ts_it;
+
+        typename timeset_type::step_const_iterator __it = __ts->beginStep();
+        typename timeset_type::step_const_iterator __end = __ts->endStep();
+
+        if(__it == __end)
+        {
+            LOG(INFO) << "Timeset " << __ts->name() << " (" << __ts->index() << ") contains no timesteps (Consider using add() or addRegions())" << std::endl;
+            hasSteps = false;
+        }
+
+        ++__ts_it;
+    }
+
+    if(!hasSteps)
+    {
+        return;
+    }
+
     DVLOG(2) << "checking if frequency is ok\n";
 
     if ( this->cptOfSave() % this->freq()  )
