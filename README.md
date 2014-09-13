@@ -12,7 +12,9 @@ Some basic installation procedure are available in the [INSTALL](INSTALL.md) fil
 
 ## Releases
 
-[![DOI](https://zenodo.org/badge/3881/feelpp/feelpp.png)](http://dx.doi.org/10.5281/zenodo.11624)
+Here are the latest releases of Feel++ 
+
+   - Feel++ [0.99.0](https://github.com/feelpp/feelpp/releases/tag/v0.99.0-final.1) [![DOI](https://zenodo.org/badge/3881/feelpp/feelpp.png)](http://dx.doi.org/10.5281/zenodo.11624)
 
 ## Build Status
 
