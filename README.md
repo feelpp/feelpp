@@ -10,6 +10,10 @@ Feel++ is a C++ library for arbitrary order Galerkin methods (e.g. finite and sp
 
 Some basic installation procedure are available in the [INSTALL](INSTALL.md) file.
 
+## Releases
+
+[![DOI](https://zenodo.org/badge/3881/feelpp/feelpp.png)](http://dx.doi.org/10.5281/zenodo.11624)
+
 ## Build Status
 
 Feel++ uses Travis-CI for continuous integration.
