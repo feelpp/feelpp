@@ -58,8 +58,12 @@ int main(int argc, char *argv[])
         // there is an issue here with MPI_IN_PLACE, normally we should not have to specify
         // the number of bytes and type for recv buffer but here we have to otherwise the scatter hangs
         // it seems that it occurs only when using boost::mpi
+#if defined(USE_DATATYPE)
+        MPI_Scatter(rhs, 4, MPI_DOUBLE, MPI_IN_PLACE, 4, MPI_DOUBLE, 0, MPI_COMM_WORLD); // < this line doesn't hang
+#else
         MPI_Scatter(rhs, 4, MPI_DOUBLE, MPI_IN_PLACE, 4, MPI_DATATYPE_NULL, 0, MPI_COMM_WORLD);
-        // MPI_Scatter(rhs, 4, MPI_DOUBLE, MPI_IN_PLACE, 4, MPI_DOUBLE, 0, MPI_COMM_WORLD); // < this line doesn't hang
+#endif
+
     }
     else
     {
@@ -74,8 +78,13 @@ int main(int argc, char *argv[])
         // there is an issue here with MPI_IN_PLACE, normally we should not have to specify
         // the number of bytes and type for send buffer but here we have to otherwise the gather returns wrong results
         // it seems that it occurs only when using boost::mpi
+#if defined(USE_DATATYPE)
+        MPI_Gather(MPI_IN_PLACE, 0, MPI_DOUBLE, rhs, 4, MPI_DOUBLE, 0, MPI_COMM_WORLD); // < this line gives the correct results
+#else
         MPI_Gather(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL, rhs, 4, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-        // MPI_Gather(MPI_IN_PLACE, 0, MPI_DOUBLE, rhs, 4, MPI_DOUBLE, 0, MPI_COMM_WORLD); // < this line gives the correct results
+#endif
+
+
         for(int i = 0; i < size * 4; ++i) {
             std::cout << rhs[i] << " ";
             if((i + 1) % 4 == 0)
