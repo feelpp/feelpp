@@ -191,14 +191,22 @@ macro(feelpp_add_test)
     "NO_TEST;NO_MPI_TEST;EXCLUDE_FROM_ALL"
     ${ARGN}
     )
+  
+  
+
   CAR(FEELPP_TEST_NAME ${FEELPP_TEST_DEFAULT_ARGS})
   get_directory_property( FEELPP_TEST_LABEL_DIRECTORY LABEL )
-  if ( NOT FEELPP_TEST_SRCS )
-    set(targetname test_${FEELPP_TEST_NAME})
-    set(filename test_${FEELPP_TEST_NAME}.cpp)
+  set(targetname feelpp_test_${FEELPP_TEST_NAME})
 
-    add_executable(${targetname} ${filename})
-    target_link_libraries(${targetname} ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} )
+  if ( NOT FEELPP_TEST_SRCS )
+    set(filename test_${FEELPP_TEST_NAME}.cpp)
+    feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${filename} CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO}  DEFS ${FEELPP_TEST_DEFS} LINK_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  )
+    #add_executable(${targetname} ${filename})
+  else()
+    feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${FEELPP_TEST_SRCS}  CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO} DEFS ${FEELPP_TEST_DEFS}  LINK_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES}  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  )
+    #add_executable(${targetname} ${FEELPP_TEST_SRCS})
+  endif()
+    #target_link_libraries(${targetname} ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES}  )
     set_property(TARGET ${targetname} PROPERTY LABELS ${FEELPP_TEST_LABEL} ${FEELPP_TEST_LABEL_DIRECTORY})
     if ( TARGET  ${FEELPP_TEST_LABEL_DIRECTORY})
       add_dependencies(  ${FEELPP_TEST_LABEL_DIRECTORY} ${targetname} )
@@ -250,8 +258,6 @@ macro(feelpp_add_test)
         endif(DEFINED ENV{FEELPP_WORKDIR})
       endforeach()
     endif(FEELPP_TEST_GEO)
-
-  endif()
 
 
 endmacro(feelpp_add_test)
