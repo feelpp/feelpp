@@ -44,7 +44,8 @@ public:
 template<int Dim,int Order>
 void Debugpp<Dim,Order>::run() {
 #else
-#include <mpi.h>
+// #include <mpi.h>
+#include <boost/mpi.hpp>
 #include <stdio.h>
 #include <iostream>
     int main(int argc, char *argv[]) {
@@ -57,23 +58,39 @@ void Debugpp<Dim,Order>::run() {
         double* rhsSlave = new double[4];
         if(rank == 0)
         {
-            //MPI_Scatter(rhs, 4, MPI_DOUBLE, rhsSlave, 4, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-            //MPI_Scatter(rhs, 4, MPI_DOUBLE, rhsSlave, 4, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-            //MPI_Scatter(rhs, 4, MPI_DOUBLE, rhsSlave, 4, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-            //mpi::scatter( MPI_COMM_WORLD, rhs, rhsSlave, 4, 0 );
             // there is an issue here with MPI_IN_PLACE, normally we should not have to specify
             // the number of bytes and type for recv buffer but here we have to otherwise the scatter hangs
             // it seems that it occurs only when using boost::mpi
-            MPI_Scatter(rhs, 4, MPI_DOUBLE, MPI_IN_PLACE, 4, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+            MPI_Scatter(rhs, 4, MPI_DOUBLE, MPI_IN_PLACE, 4, MPI_DATATYPE_NULL, 0, MPI_COMM_WORLD);
+            // MPI_Scatter(rhs, 4, MPI_DOUBLE, MPI_IN_PLACE, 4, MPI_DOUBLE, 0, MPI_COMM_WORLD); // < this line doesn't hang
         }
         else
         {
             MPI_Scatter(NULL, 0, MPI_DATATYPE_NULL, rhsSlave, 4, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-            //mpi::scatter( MPI_COMM_WORLD, rhsSlave, 4, 0 );
         }
         MPI_Barrier(MPI_COMM_WORLD);
         if(rank == 0)
-            std::cout << "Done !" << std::endl;
+            std::cout << "Done with the scatter !" << std::endl;
+        if(rank == 0)
+        {
+            std::fill(rhs, rhs + 4, rank);
+            // there is an issue here with MPI_IN_PLACE, normally we should not have to specify
+            // the number of bytes and type for send buffer but here we have to otherwise the gather returns wrong results
+            // it seems that it occurs only when using boost::mpi
+            MPI_Gather(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL, rhs, 4, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+            // MPI_Gather(MPI_IN_PLACE, 0, MPI_DOUBLE, rhs, 4, MPI_DOUBLE, 0, MPI_COMM_WORLD); // < this line gives the correct results
+            for(int i = 0; i < size * 4; ++i) {
+                std::cout << rhs[i] << " ";
+                if((i + 1) % 4 == 0)
+                    std::cout << "(this line should be filled with " << i / 4 << ")" << std::endl;
+            }
+            std::cout << "Done with the gather !" << std::endl;
+        }
+        else
+        {
+            std::fill(rhsSlave, rhsSlave + 4, rank);
+            MPI_Gather(rhsSlave, 4, MPI_DOUBLE, NULL, 0, MPI_DATATYPE_NULL, 0, MPI_COMM_WORLD);
+        }
         delete [] rhs;
         delete [] rhsSlave;
 #ifdef FEELPP_BUG
@@ -92,7 +109,7 @@ int main(int argc, char** argv) {
     app.run();
 }
 #else
-MPI_Finalize();
-return 0;
-}
+        MPI_Finalize();
+        return 0;
+    }
 #endif
