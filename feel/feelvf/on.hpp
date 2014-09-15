@@ -505,10 +505,12 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
                     size_type thedof = M_u.start()+ ldof.second.index(); // global dof
                     size_type dofIndexInElt; //dof index in current element
                     if(nDim <= 2 )
-                        dofIndexInElt = geoelement_type::f2e(theface.id(),__face_id);
+                        dofIndexInElt = geoelement_type::f2e(__face_id,__face_id);
                     else
-                        dofIndexInElt = geoelement_type::f2e(theface.id(),ldof.first);
+                        dofIndexInElt = geoelement_type::f2e(__face_id,ldof.first);
 
+                    DVLOG(2) << "Ihloc(" << ldof.first << ")= " << IhLoc( ldof.first ) << std::endl;
+                    DVLOG(2) << "s(" << dofIndexInElt << ")= " << s(dofIndexInElt) << std::endl;
                     double __value = s(dofIndexInElt)*IhLoc( ldof.first );
 
                     if ( std::find( dofs.begin(),
