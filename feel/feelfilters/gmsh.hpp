@@ -7,6 +7,8 @@
 
   Copyright (C) 2005,2006 EPFL
   Copyright (C) 2007 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2010-2014 Feel++ Consortium
+  
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -46,14 +48,11 @@
 #include <feel/feelfilters/gmshenums.hpp>
 #include <feel/feelfilters/periodicentities.hpp>
 
+
 #if defined( FEELPP_HAS_GMSH_H )
-#include <GmshConfig.h>
-#include <Gmsh.h>
-#include <GModel.h>
-#include <OpenFile.h>
-#include <GmshDefines.h>
-#include <Context.h>
+class GModel;
 #endif
+
 // there is a macro called sign in Gmsh that conflicts with
 // at least one member function sign() from DofTable.
 // hence we undefine the macro sign after including Gmsh headers
@@ -763,7 +762,10 @@ protected:
     PeriodicEntities M_periodic;
 
     mutable std::pair<std::string,std::string> M_geo;
+
+#if defined( FEELPP_HAS_GMSH_H )
     mutable GModel*  M_gmodel;
+#endif
 };
 
 ///! \typedef gmsh_type Gmsh

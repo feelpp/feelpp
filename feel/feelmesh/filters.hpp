@@ -1215,7 +1215,7 @@ boost::tuple<mpl::size_t<MESH_FACES>,
       interprocessfaces( MeshType const& mesh )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return Feel::detail::interprocessfaces( mesh, invalid_size_type_value, is_ptr_or_shared_ptr() );
+    return Feel::detail::interprocessfaces( mesh, invalid_rank_type_value, is_ptr_or_shared_ptr() );
 }
 
 

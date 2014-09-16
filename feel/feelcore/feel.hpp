@@ -35,6 +35,11 @@
 
 #include <complex>
 
+#if defined(__APPLE__)
+#undef tolower
+#undef toupper
+#endif
+
 #include <boost/mpl/multiplies.hpp>
 #include <boost/mpl/list.hpp>
 #include <boost/mpl/lower_bound.hpp>
@@ -199,8 +204,12 @@ template <class T> inline void ignore_unused_variable_warning( const T& ) { }
 */
 
 typedef double Real;
+typedef double float64_t;
 typedef double scalar_type;
 typedef std::complex<double> complex_type;
+typedef std::complex<double> complex64_type;
+typedef std::complex<float64_t> complex128_type;
+typedef complex128_type complex128_t;
 
 //
 // Create type that are machine independent

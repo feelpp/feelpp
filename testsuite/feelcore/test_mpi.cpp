@@ -47,6 +47,7 @@ int main( int argc, char** argv )
 {
     using namespace Feel;
 
+#if 0
     Feel::po::options_description test( "test options" );
     test.add_options()
     ( "testall", "run all test cases" )
@@ -64,4 +65,10 @@ int main( int argc, char** argv )
               << "[Application] Id : " << Application::processId() << "\n";
 #endif
     //PetscFinalize();
+#else
+		Environment env(_argc=argc, _argv=argv,
+										_about=makeAbout() );
+    std::cout << "[Environment] N process: " << Environment::numberOfProcessors() << "\n"
+              << "[Environment] Id : "       << Environment::rank() << "\n";
+#endif
 }
