@@ -125,10 +125,14 @@ struct test_interpolation_op
 
     typedef Backend<double> backend_type;
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
+#if 0
 #if defined( FEELPP_HAS_PETSC_H )
-    backend_ptrtype backend( Backend<double>::build( BACKEND_PETSC ) );
+    backend_ptrtype backend( backend_type::build( BACKEND_PETSC ) );
 #else
-    backend_ptrtype backend( Backend<double>::build( BACKEND_GMM ) );
+    backend_ptrtype backend( backend_type::build( BACKEND_GMM ) );
+#endif
+#else
+    backend_ptrtype backend( backend_type::build( ) );
 #endif
     BOOST_MESSAGE(  "[test_interpolation_op] backend allocated\n" );
 

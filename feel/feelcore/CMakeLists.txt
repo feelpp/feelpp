@@ -35,6 +35,7 @@ set(SRC
   pslogger.cpp
   worldcomm.cpp
   debug.cpp
+  
  )
 if (NOT FEELPP_HAS_STDIO_FMEMOPEN )
   set( SRC fmemopen.c ${SRC})

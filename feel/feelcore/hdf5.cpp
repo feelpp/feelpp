@@ -25,6 +25,7 @@
    \file hdf5.cpp
    \author Radu Popescu <radu.popescu@epfl.ch>
    \author Christophe Prud'homme <prudhomme@unistra.fr> (adaptation from LifeV to Feel++)
+   \author Benjamin Vanthong <benjamin.vanthong@gmail.com>
    \date 2013-10-16
  */
 
@@ -71,6 +72,35 @@ void Feel::HDF5::openFile (const std::string& fileName,
     H5Pclose (plistId);
 }
 
+void Feel::HDF5::createTable (const std::string& GroupName, const std::string& tableName, hid_t& fileDataType, 
+                                     hsize_t tableDimensions[], const bool& existing)
+{
+    if (!existing)
+    {   
+#ifdef H5_USE_16_API
+        M_groupList [GroupName] = H5Gcreate (M_fileId, GroupName.c_str(), H5P_DEFAULT) ;
+#else
+        M_groupList [GroupName] = H5Gcreate (M_fileId, GroupName.c_str(), H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT) ;
+#endif
+    }
+
+    tableHandle& currentTable = M_tableList[GroupName+tableName] ;
+    hid_t group_id = M_groupList[GroupName] ;
+
+    currentTable.filespace = H5Screate_simple (2, tableDimensions,
+                                               tableDimensions);
+#ifdef H5_USE_16_API
+    currentTable.dataset = H5Dcreate (group_id, tableName.c_str(), fileDataType,
+                                      currentTable.filespace, H5P_DEFAULT);
+#else
+    currentTable.dataset = H5Dcreate (group_id, tableName.c_str(), fileDataType,
+                                      currentTable.filespace, H5P_DEFAULT,
+                                      H5P_DEFAULT, H5P_DEFAULT);
+#endif
+    currentTable.plist = H5Pcreate (H5P_DATASET_XFER);
+    H5Pset_dxpl_mpio (currentTable.plist, H5FD_MPIO_COLLECTIVE);
+}
+
 void Feel::HDF5::createTable (const std::string& tableName,
                                  hid_t& fileDataType,
                                  hsize_t tableDimensions[])
@@ -88,7 +118,7 @@ void Feel::HDF5::createTable (const std::string& tableName,
                                       H5P_DEFAULT, H5P_DEFAULT);
 #endif
     currentTable.plist = H5Pcreate (H5P_DATASET_XFER);
-    H5Pset_dxpl_mpio (currentTable.plist, H5FD_MPIO_COLLECTIVE);
+    H5Pset_dxpl_mpio (currentTable.plist, H5FD_MPIO_INDEPENDENT);
 }
 
 void Feel::HDF5::openTable (const std::string& tableName,
@@ -143,14 +173,22 @@ void Feel::HDF5::read (const std::string& tableName,
 void Feel::HDF5::closeTable (const std::string& tableName)
 {
     tableHandle& currentTable = M_tableList[tableName];
-    H5Sclose (currentTable.filespace);
     H5Dclose (currentTable.dataset);
+    H5Sclose (currentTable.filespace);
     H5Pclose (currentTable.plist);
     M_tableList.erase (tableName);
 }
 
+void Feel::HDF5::closeGroup (const std::string& groupName)
+{
+    H5Gclose (M_groupList [groupName]) ;
+    M_groupList.erase (groupName) ;
+}
+
 void Feel::HDF5::closeFile()
 {
+    for (std::map<std::string, hid_t>::iterator it = M_groupList.begin() ; it != M_groupList.end() ; it++)
+        H5Gclose (it->second) ;
     H5Fclose (M_fileId);
 }
 

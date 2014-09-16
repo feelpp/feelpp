@@ -25,6 +25,7 @@
    \file hdf5.hpp
   @author Radu Popescu <radu.popescu@epfl.ch> (LifeV)
    \author Christophe Prud'homme <prudhomme@unistra.fr> (adaptation from LifeV to Feel++)
+   \author Benjamin Vanthong <benjamin.vanthong@gmail.com>
    \date 2013-10-16
  */
 #ifndef FEELPP_HDF5_HPP
@@ -41,8 +42,8 @@
 #include <hdf5.h>
 
 //Tell the compiler to restore the warning previously silented
-#pragma GCC diagnostic warning "-Wunused-variable"
-#pragma GCC diagnostic warning "-Wunused-parameter"
+//#pragma GCC diagnostic warning "-Wunused-variable"
+//#pragma GCC diagnostic warning "-Wunused-parameter"
 
 namespace Feel
 {
@@ -119,6 +120,10 @@ public:
      */
     void createTable (const std::string& tableName, hid_t& fileDataType,
                       hsize_t tableDimensions[]);
+
+    void createTable (const std::string& GroupName, const std::string& tableName, hid_t& fileDataType,
+                             hsize_t tableDimensions[], const bool& existing);
+
     //! Open a new table
     /*!
      * Open a new table in the open file
@@ -161,6 +166,7 @@ public:
     /*!
      * \param tableName a string containing the table name
      */
+    void closeGroup (const std::string& groupName);
     void closeTable (const std::string& tableName);
     //! Close an open file
     /*!
@@ -185,6 +191,7 @@ private:
     //! Private Data Members
     //@{
     // HDF5 handles
+    std::map<std::string, hid_t> M_groupList ;
     std::map<std::string, tableHandle> M_tableList;
     hid_t M_fileId;
     //@}
