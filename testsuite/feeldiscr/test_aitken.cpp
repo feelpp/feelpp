@@ -265,7 +265,7 @@ TestAitken<Dim>::localProblem( element_type& u,
 
     BOOST_FOREACH( int marker, dirichletFlags )
     {
-        form2( Xh, Xh, A ) +=
+        form2( _test=Xh, _trial=Xh, _matrix=A ) +=
             on( markedfaces( mesh, marker ) ,	u, B, gD );
     }
 
@@ -273,7 +273,7 @@ TestAitken<Dim>::localProblem( element_type& u,
     {
         BOOST_FOREACH( int marker, interfaceFlags )
         {
-            form2( Xh, Xh, A ) +=
+            form2( _test=Xh, _trial=Xh, _matrix=A ) +=
                 on( markedfaces( mesh, marker ) ,	u, B, w );
         }
     }

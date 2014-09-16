@@ -79,16 +79,19 @@ testSlepc()
     auto mesh=unitHypercube<Dim>();
     auto Xh = Pch<Order>( mesh );
     LOG(INFO)<<"nDof : "<<Xh->nLocalDof();
-
+#if 0
     auto backend = backend_type::build( BACKEND_PETSC );
+#else
+    auto backend = backend_type::build( );
+#endif
 
     auto u = Xh->element();
     auto v = Xh->element();
 
     auto A = backend->newMatrix( _test=Xh, _trial=Xh );
     auto B = backend->newMatrix( _test=Xh, _trial=Xh );
-    form2( Xh, Xh, A ) = integrate( _range= elements( mesh ), _expr= idt( u )*id(  v  ) );
-    form2( Xh, Xh, B ) = integrate( _range= elements( mesh ), _expr= idt( u )*id(  v  ) );
+    form2( _test=Xh, _trial=Xh, _matrix=A ) = integrate( _range= elements( mesh ), _expr= idt( u )*id(  v  ) );
+    form2( _test=Xh, _trial=Xh, _matrix=B ) = integrate( _range= elements( mesh ), _expr= idt( u )*id(  v  ) );
     A->close();
     B->close();
     SolverEigen<double>::eigenmodes_type modes;

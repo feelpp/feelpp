@@ -24,6 +24,7 @@
 /**
    \file exporterimpl.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+   \author Benjamin Vanthong <benjamin.vanthong@gmail.com>
    \date 2010-04-21
  */
 #include <boost/tokenizer.hpp>
@@ -42,17 +43,26 @@
 #include <feel/feelfilters/exporterensightgold.hpp>
 #endif
 
+#if defined(FEELPP_HAS_HDF5) && defined(FEELPP_HAS_MPIIO)
+#include <feel/feelfilters/exporterhdf5.hpp>
+#endif
+
 #include <feel/feelfilters/exporterexodus.hpp>
+
+
 
 namespace Feel
 {
 template<typename MeshType, int N> class ExporterEnsight;
 
-#ifdef FEELPP_HAS_MPIIO
+#if defined(FEELPP_HAS_MPIIO)
 template<typename MeshType, int N> class ExporterEnsightGold;
 #endif
 
 template<typename MeshType, int N> class ExporterGmsh;
+#if defined(FEELPP_HAS_HDF5) && defined(FEELPP_HAS_MPIIO)
+template<typename MeshType, int N> class Exporterhdf5;
+#endif
 
 template<typename MeshType, int N>
 Exporter<MeshType, N>::Exporter( WorldComm const& worldComm )
@@ -142,12 +152,16 @@ Exporter<MeshType, N>::New( std::string const& exportername, std::string prefix,
 
     if ( N == 1 && ( exportername == "ensight" ) )
         exporter = new ExporterEnsight<MeshType, N>( worldComm );
-#ifdef FEELPP_HAS_MPIIO
+#if defined(FEELPP_HAS_MPIIO)
     else if ( N == 1 && ( exportername == "ensightgold"  ) )
         exporter = new ExporterEnsightGold<MeshType, N>( worldComm );
 #endif
     else if ( N == 1 && ( exportername == "exodus"  ) )
         exporter = new ExporterExodus<MeshType, N>( worldComm );
+#if defined(FEELPP_HAS_HDF5) && defined(FEELPP_HAS_MPIIO)
+    else if ( N == 1 && ( exportername == "hdf5" ))
+        exporter = new Exporterhdf5<MeshType, N> ( worldComm ) ;
+#endif
     else if ( N > 1 || ( exportername == "gmsh" ) )
         exporter = new ExporterGmsh<MeshType,N>;
     else // fallback
@@ -172,12 +186,16 @@ Exporter<MeshType, N>::New( po::variables_map const& vm, std::string prefix, Wor
 
     if ( N == 1 && ( estr == "ensight"   ) )
         exporter = new ExporterEnsight<MeshType, N>( worldComm );
-#ifdef FEELPP_HAS_MPIIO
+#if defined(FEELPP_HAS_MPIIO)
     else if ( N == 1 && ( estr == "ensightgold"   ) )
         exporter = new ExporterEnsightGold<MeshType, N>( worldComm );
 #endif
     else if ( N == 1 && ( estr == "exodus"   ) )
         exporter = new ExporterExodus<MeshType, N>( worldComm );
+#if defined(FEELPP_HAS_HDF5) && defined(FEELPP_HAS_MPIIO)
+    else if ( N == 1 && ( estr == "hdf5" ) )
+        exporter = new Exporterhdf5<MeshType, N> ( worldComm ) ;
+#endif
     else if ( N > 1 || estr == "gmsh" )
         exporter = new ExporterGmsh<MeshType,N>;
     else // fallback

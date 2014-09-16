@@ -27,3 +27,4 @@ feelpp_add_application( doc_stokes_curl SRCS stokes_curl.cpp LABELS doc GEO curv
 feelpp_add_application( doc_stokes_lm SRCS stokes.cpp LABELS doc DEFS FEELPP_USE_LM )
 feelpp_add_application( doc_stokes_periodic SRCS stokes_periodic.cpp LABELS doc NO_MPI_TEST )
 feelpp_add_application( doc_stokes_dirichletlm SRCS stokes_dirichletlm.cpp LABELS doc  )
+feelpp_add_application( doc_stokes_pressurelm SRCS stokes_pressurelm.cpp LABELS doc  )

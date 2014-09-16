@@ -193,6 +193,23 @@ gmsh_options( std::string const& prefix )
         ( prefixvm( prefix,"gmsh.format" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "Gmsh file format (0=ASCII, 1=BINARY)" )
 
         ( prefixvm( prefix,"gmsh.in-memory" ).c_str(), Feel::po::value<bool>()->default_value( false ), "false to save on disk, true to read geometry directly from memory" )
+        ( prefixvm( prefix,"gmsh.algo" ).c_str(), Feel::po::value<int>()->default_value( 5 ), "used algorithm to mesh\n"
+"2D : \n"
+" MESHADAPT       1\n"
+" AUTO            2\n"
+" MESHADAPT_OLD   4\n"
+" DELAUNAY        5\n"
+" FRONTAL         6\n"
+" BAMG            7\n"
+" FRONTAL_QUAD    8\n"
+" PACK_PRLGRMS    9\n"
+"3D :\n"
+" DELAUNAY          1\n"
+" FRONTAL           4\n"
+" FRONTAL_DEL       5\n"
+" FRONTAL_HEX       6\n"
+" MMG3D             7\n"
+" RTREE             9" )
 
         ( prefixvm( prefix,"partition.linear" ).c_str(), Feel::po::value<bool>()->default_value( false ), "linear partitioning if true (false otherwise)" );
 
@@ -588,6 +605,9 @@ exporter_options( std::string const& prefix )
 
         // merge timeteps or domains into single files
         ( prefixvm( prefix,"exporter.merge.markers" ).c_str(), Feel::po::value<bool>()->default_value( true ), "Merge exported data from different markers into a single file (reduces the number of output files )" )
+#if defined(FEELPP_HAS_HDF5) && defined(FEELPP_HAS_MPIIO)
+        ( prefixvm( prefix,"exporter.merge" ).c_str(), Feel::po::value<bool>()->default_value( true ), "(HDF5 Only) Merge exported data from different into a single file (reduces the number of output files )" )
+#endif
         ( prefixvm( prefix,"exporter.merge.timesteps" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Merge exported timesteps into a single file (reduces the number of output files)" )
 
         ;

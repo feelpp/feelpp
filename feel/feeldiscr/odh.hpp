@@ -34,18 +34,35 @@
 
 namespace Feel {
 
+namespace meta {
+template<typename MeshType,
+         int Order,
+         int Tag = 0>
+struct Odh
+{
+    typedef FunctionSpace<MeshType,
+                          bases<OrthonormalPolynomialSet<Order,Scalar>>,
+                          double,
+                          Periodicity <NoPeriodicity>,
+                          mortars<NoMortar>> type;
+    typedef boost::shared_ptr<type> ptrtype;
+};
+
+} // meta
+
 /**
    Given a \p mesh, build a function space of discontinuous function which are
   piecewise polynomial of degree and \f$L_2\f$ Orthonormal
  */
-template<int Order,typename MeshType>
+template<int Order,typename MeshType, int Tag = 0>
 inline
-boost::shared_ptr<FunctionSpace<MeshType,bases<OrthonormalPolynomialSet<Order,Scalar>>>>
+typename meta::Odh<MeshType,Order,Tag>::ptrtype
 Odh( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
 {
-    return FunctionSpace<MeshType,bases<OrthonormalPolynomialSet<Order,Scalar>>>::New( _mesh=mesh,
-                                                                                       _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
-                                                                                       _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
+    typedef typename meta::Odh<MeshType,Order,Tag>::type space_type;
+    return space_type::New( _mesh=mesh,
+                            _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
+                            _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
 }
 
 }
