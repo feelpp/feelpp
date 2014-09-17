@@ -66,7 +66,7 @@ int main(int argc, char**argv )
     a +=integrate( _range=elements( mesh ), _expr=-div( v )*idt( p ) + divt( u )*id( q ) );
 
     a+=on(_range=markedfaces(mesh,"wall"), _rhs=l, _element=u,
-          _expr=zero<2>() ) ;
+          _expr=zero<2,1>() ) ;
     a+=on(_range=markedfaces(mesh,"inlet"), _rhs=l, _element=u,
           _expr=g );
 
