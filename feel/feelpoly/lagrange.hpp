@@ -443,6 +443,12 @@ public:
     void
     interpolate( ExprType& expr, local_interpolant_type& Ihloc ) const
         {
+            BOOST_MPL_ASSERT_MSG( nComponents1==ExprType::shape::M,
+                                  INCOMPATIBLE_NUMBER_OF_COMPONENTS,
+                                  (mpl::int_<nComponents1>,mpl::int_<ExprType::shape::M>));
+            BOOST_MPL_ASSERT_MSG( nComponents2==ExprType::shape::N,
+                                  INCOMPATIBLE_NUMBER_OF_COMPONENTS,
+                                  (mpl::int_<nComponents2>,mpl::int_<ExprType::shape::N>));
             for( int q = 0; q < nLocalDof; ++q )
                 for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
                     for( int c2 = 0; c2 < ExprType::shape::N; ++c2 )
@@ -458,6 +464,12 @@ public:
     void
     faceInterpolate( ExprType& expr, local_interpolant_type& Ihloc ) const
         {
+            BOOST_MPL_ASSERT_MSG( nComponents1==ExprType::shape::M,
+                                  INCOMPATIBLE_NUMBER_OF_COMPONENTS,
+                                  (mpl::int_<nComponents1>,mpl::int_<ExprType::shape::M>));
+            BOOST_MPL_ASSERT_MSG( nComponents2==ExprType::shape::N,
+                                  INCOMPATIBLE_NUMBER_OF_COMPONENTS,
+                                  (mpl::int_<nComponents2>,mpl::int_<ExprType::shape::N>));
             for( int q = 0; q < nLocalFaceDof; ++q )
                 for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
                     for( int c2 = 0; c2 < ExprType::shape::N; ++c2 )
