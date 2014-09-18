@@ -155,6 +155,7 @@ public:
         this->get<2>() =  t.get<2>();
         return *this;
     }
+
     //@}
 
     /** @name Accessors
@@ -240,6 +241,170 @@ protected:
 private:
     ublas::vector<double> M_coords;
 };
+
+
+inline
+std::ostream&
+operator<<( std::ostream& __os, Dof const& __dof )
+{
+    __os << "-----------Dof-Info------------\n"
+         << "index        : " << __dof.index() << "\n"
+         << "sign         : " << __dof.sign() << "\n"
+         << "isPeriodic   : " << __dof.isPeriodic() << "\n"
+         << "isOnBoundary : " << __dof.isOnBoundary() << "\n"
+         << "marker       : " << __dof.marker() << "\n"
+         << "coords       : " << __dof.coords() << "\n";
+    return __os;
+}
+
+/**
+ * \brief Describe a Dof on a Face
+ */
+struct FaceDof : public boost::tuple<size_type, int16_type, bool, int16_type>
+{
+    typedef boost::tuple<size_type, int16_type, bool, int16_type> super;
+public:
+
+    /** @name Constructors, destructor
+     */
+    //@{
+
+    //! default constructor
+    FaceDof()
+        :
+        super()
+    {
+    }
+
+    FaceDof( size_type gid )
+        :
+        super( )
+        {
+            this->get<0>() =  gid;
+            this->get<1>() =  1;
+            this->get<2>() =  false;
+            this->get<3>() =  -1;
+
+
+        }
+
+    FaceDof( boost::tuple<size_type, int16_type, bool> const& t )
+        :
+        super( )
+        {
+            this->get<0>() =  t.get<0>();
+            this->get<1>() =  t.get<1>();
+            this->get<2>() =  t.get<2>();
+
+        }
+    FaceDof( super const& t )
+        :
+        super( t )
+        {
+        }
+
+
+    /**
+     *
+     */
+    FaceDof( size_type _index, int16_type _sign, bool per, int16_type ld  )
+        :
+        super(_index, _sign, per, ld )
+    {
+    }
+
+    //! copy constructor
+    FaceDof( FaceDof const & dof )
+        :
+        super( dof )
+    {}
+
+    //! destructor
+    ~FaceDof()
+    {}
+
+    //@}
+
+    /** @name Operator overloads
+     */
+    //@{
+
+    //! copy operator
+    FaceDof& operator=( FaceDof const & o )
+    {
+        if ( this != &o )
+        {
+            super::operator=( o );
+        }
+
+        return *this;
+    }
+    FaceDof& operator=( size_type t )
+    {
+        this->get<0>() =  t;
+        this->get<1>() =  1;
+        this->get<2>() =  false;
+        return *this;
+    }
+    FaceDof& operator=( boost::tuple<size_type, int16_type, bool> const& t )
+    {
+        this->get<0>() =  t.get<0>();
+        this->get<1>() =  t.get<1>();
+        this->get<2>() =  t.get<2>();
+        return *this;
+    }
+
+    //@}
+
+    /** @name Accessors
+     */
+    //@{
+
+    /// \return the global index
+    size_type index() const
+    {
+        return this->get<0>();
+    }
+
+    /// \return the sign
+    int16_type sign() const
+    {
+        return this->get<1>();
+    }
+    /// \return if periodic
+    bool isPeriodic() const
+    {
+        return this->get<2>();
+    }
+
+    /// \return the entity type (0: vertex, 1:edge, 2:face, 3:volume)
+    int16_type localDof() const
+    {
+        return this->get<3>();
+    }
+
+    //@}
+
+    /** @name  Mutators
+     */
+    //@{
+    // set the global dof id
+    void setIndex( size_type id )
+    {
+        this->get<0>() = id;
+    }
+
+    //@}
+
+
+    /** @name  Methods
+     */
+    //@{
+
+
+    //@}
+
+};
 #if 0
 typedef multi_index::multi_index_container<
 Dof,
@@ -297,7 +462,21 @@ public:
     uint16_type localDofPerComponent() const { return this->second/nComponents(); }
     // returns the local dof component given the number of local dof per component @arg nLocalDofPerComponent
     uint16_type component( uint16_type nLocalDofPerComponent ) const { return this->second/nLocalDofPerComponent; }
+
+
 };
+
+template<int NC>
+std::ostream&
+operator<<( std::ostream& __os, LocalDof<NC> const& __dof )
+{
+    __os << "-----------Dof-Info------------\n"
+         << "elementId             : " << __dof.elementId() << "\n"
+         << "localDof              : " << __dof.localDof() << "\n"
+         << "localDofPerComponent  : " << __dof.localDofPerComponent() << "\n"
+         << "nComponents : " << __dof.nComponents() << "\n";
+    return __os;
+}
 
 template<int NC = 1>
 class LocalDofSet : public std::vector<LocalDof<NC>>
@@ -327,5 +506,6 @@ public:
             return *this;
         }
 };
+
 } // Feel
 #endif /* __Dof_H */

@@ -1,6 +1,5 @@
 os:
   - linux
-  - osx
 
 git:
   depth: 1
@@ -77,6 +76,8 @@ notifications:
     recipients:
     - feelpp-devel@feelpp.org
     on_success: change
+    on_failure: change
+
 matrix:
   allow_failures:
   - gcc
