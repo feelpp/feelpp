@@ -45,6 +45,7 @@ template<typename T>
 class PreconditionerPetsc
     : public Preconditioner<T>
 {
+    typedef Preconditioner<T> super_type;
 public:
 
     typedef typename MatrixSparse<T>::indexsplit_type indexsplit_type;
@@ -147,6 +148,7 @@ public:
                                              WorldComm const& worldComm=Environment::worldComm(),
                                              std::string const& prefix="");
 
+    void setPrecMatrixStructure( MatrixStructure mstruct  );
 
     //@}
 
