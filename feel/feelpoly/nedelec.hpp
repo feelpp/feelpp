@@ -1117,17 +1117,6 @@ public:
         VLOG(1) << "[N] pts : " << this->points() << "\n";
         VLOG(1) << "[N] eval at pts : " << this->evaluate( this->points() ) << "\n";
         VLOG(1) << "[N] is_product : " << is_product << "\n";
-
-        std::cout << "[N] nPtsPerEdge = " << nbPtsPerEdge << "\n";
-        std::cout << "[N] nPtsPerFace = " << nbPtsPerFace << "\n";
-        std::cout << "[N] numPoints = " << numPoints << "\n";
-
-        std::cout << "[N] nDof = " << super::nDof << "\n";
-
-        std::cout << "[N] coeff : " << this->coeff() << "\n";
-        std::cout << "[N] pts : " << this->points() << "\n";
-        std::cout << "[N] eval at pts : " << this->evaluate( this->points() ) << "\n";
-        std::cout << "[N] is_product : " << is_product << "\n";
 #endif
     }
 

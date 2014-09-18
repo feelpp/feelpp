@@ -64,12 +64,12 @@ inline
 AboutData
 makeAbout()
 {
-    AboutData about( "test_interpolation_hcurl3d" ,
-                     "test_interpolation_hcurl3d" ,
+    AboutData about( "test_interpolation_Nedelec3d" ,
+                     "test_interpolation_Nedelec3d" ,
                      "0.1",
                      "Test for interpolation with h_curl space",
                      AboutData::License_GPL,
-                     "Copyright (c) 2009 Universite Joseph Fourier" );
+                     "Copyright (c) 2014 Universite Joseph Fourier" );
     about.addAuthor( "Cecile Daversin", "developer", "daversin@math.unistra.fr", "" );
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
