@@ -57,19 +57,19 @@ makeOptions()
     testHcurlInterpolationOptions.add_options()
         ( "meshes-2d", po::value< std::vector<std::string> >(), "vector containing mesh names" )
         ;
-    return testHcurlInterpolationOptions.add( Feel::feel_options() );
+    return testHcurlInterpolationOptions;
 }
 
 inline
 AboutData
 makeAbout()
 {
-    AboutData about( "test_interpolation_hcurl" ,
-                     "test_interpolation_hcurl" ,
+    AboutData about( "test_interpolation_Nedelec" ,
+                     "test_interpolation_Nedelec" ,
                      "0.1",
                      "Test for interpolation with h_curl space",
                      AboutData::License_GPL,
-                     "Copyright (c) 2009 Universite Joseph Fourier" );
+                     "Copyright (c) 2014 Universite Joseph Fourier" );
     about.addAuthor( "Cecile Daversin", "developer", "daversin@math.unistra.fr", "" );
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
