@@ -4843,6 +4843,7 @@ struct is_function_space_ptr<boost::shared_ptr<FuncSpaceType> > : mpl::true_ {};
 } // Feel
 
 #include <feel/feeldiscr/detail/element_impl.hpp>
+#include <feel/feeldiscr/functionspace_inst.hpp>
 
 
 

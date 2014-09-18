@@ -1097,8 +1097,8 @@ public:
             M_mesh ( m )
         {}
 
-        ~Inverse()
-        {}
+        FEELPP_DONT_INLINE virtual ~Inverse();
+
 
         size_type nPointsInConvex( size_type i ) const
         {

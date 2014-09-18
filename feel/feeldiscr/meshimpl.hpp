@@ -2557,6 +2557,10 @@ merge( boost::shared_ptr<Mesh<Shape, T, Tag1> > m1,
 }
 
 template<typename Shape, typename T, int Tag>
+Mesh<Shape, T, Tag>::Inverse::~Inverse()
+{
+}
+template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::Inverse::distribute( bool extrapolation )
 {
@@ -2670,17 +2674,28 @@ Mesh<Shape, T, Tag>::Inverse::distribute( bool extrapolation )
 
 # define DIMS3 BOOST_PP_TUPLE_TO_LIST(1,(3))
 # define RDIMS3 BOOST_PP_TUPLE_TO_LIST(1,(3))
-# define ORDERS3 BOOST_PP_TUPLE_TO_LIST(2,(1,2))
+# define ORDERS3 BOOST_PP_TUPLE_TO_LIST(1,(1))
 
-# define FACTORY_SIMPLEX(LDIM,LORDER,RDIM) template class Mesh<Simplex<LDIM, LORDER, RDIM> >;
-# define FACTORY_HYPERCUBE(LDIM,LORDER,RDIM) template class Mesh<Hypercube<LDIM, LORDER, RDIM> >;
+# define FACTORY_SIMPLEX(LDIM,LORDER,RDIM)                              \
+    template class Mesh<Simplex<LDIM, LORDER, RDIM> >;                  \
+    /**/
+
+# define FACTORY_HYPERCUBE(LDIM,LORDER,RDIM)                            \
+    template class Mesh<Hypercube<LDIM, LORDER, RDIM> >;                \
+    /**/
+
 
 # define FACTORY_SIMPLEX_OP(_, GDO) FACTORY_SIMPLEX GDO
 # define FACTORY_HYPERCUBE_OP(_, GDO) FACTORY_HYPERCUBE GDO
 
 
-# define FACTORY_SIMPLEX_E(LDIM,LORDER,RDIM) extern template class Mesh<Simplex<LDIM, LORDER, RDIM> >;
-# define FACTORY_HYPERCUBE_E(LDIM,LORDER,RDIM) extern template class Mesh<Hypercube<LDIM, LORDER, RDIM> >;
+# define FACTORY_SIMPLEX_E(LDIM,LORDER,RDIM)                            \
+    extern template class Mesh<Simplex<LDIM, LORDER, RDIM> >;           \
+    /**/
+
+# define FACTORY_HYPERCUBE_E(LDIM,LORDER,RDIM)                          \
+    extern template class Mesh<Hypercube<LDIM, LORDER, RDIM> >;         \
+    /**/
 
 # define FACTORY_SIMPLEX_OP_E(_, GDO) FACTORY_SIMPLEX_E GDO
 # define FACTORY_HYPERCUBE_OP_E(_, GDO) FACTORY_HYPERCUBE_E GDO
