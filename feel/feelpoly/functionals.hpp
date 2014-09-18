@@ -437,7 +437,6 @@ public:
                 ublas::row( m, i ) = d( i ) * ublas::column( b.basis()( ublas::column( __pts, j ) ), 0 );
             }
 
-            std::cout << "[DirectionalComponentPointsEvaluation] m " << j << " = " << m << "\n";
             this->push_back( functional_type( b, m ) );
         }
     }
