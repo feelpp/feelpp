@@ -322,21 +322,27 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
 
     // mesh element
     typedef typename element_type::functionspace_type::mesh_type::element_type geoelement_type;
+    typedef typename element_type::functionspace_type::mesh_type::shape_type geoshape_type;
     typedef typename geoelement_type::face_type face_type;
+
+    typedef typename element_type::functionspace_type::fe_type fe_type;
 
     // geometric mapping context
     typedef typename element_type::functionspace_type::mesh_type::gm_type gm_type;
     typedef boost::shared_ptr<gm_type> gm_ptrtype;
-    typedef typename gm_type::template Context<context, geoelement_type> gmc_type;
+    //typedef typename gm_type::template Context<context, geoelement_type> gmc_type;
+    typedef typename mpl::if_< mpl::or_<is_hdiv_conforming<fe_type>, is_hcurl_conforming<fe_type> >,
+                               typename gm_type::template Context<context|vm::JACOBIAN|vm::KB|vm::TANGENT|vm::NORMAL, geoelement_type>,
+                               typename gm_type::template Context<context, geoelement_type> >::type gmc_type;
     typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
 
+    static const uint16_type nDim = geoshape_type::nDim;
 
     // dof
     typedef typename element_type::functionspace_type::dof_type dof_type;
 
     // basis
-    typedef typename element_type::functionspace_type::fe_type fe_type;
     typedef typename fe_type::template Context< context, fe_type, gm_type, geoelement_type> fecontext_type;
     typedef boost::shared_ptr<fecontext_type> fecontext_ptrtype;
     //typedef fusion::map<fusion::pair<vf::detail::gmc<0>, fecontext_ptrtype> > map_gmc_type;
@@ -427,7 +433,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
         gmc_ptrtype __c( new gmc_type( __gm, faceForInit.element( 0 ), __geopc, __face_id ) );
 
         map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
-        //t_expr_type expr( M_expr, mapgmc );
+        t_expr_type expr( M_expr, mapgmc );
 
 
         DVLOG(2)  << "face_type::numVertices = " << face_type::numVertices << ", fe_type::nDofPerVertex = " << fe_type::nDofPerVertex << "\n"
@@ -440,17 +446,13 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
             nbFaceDof = ( face_type::numVertices * fe_type::nDofPerVertex +
                           face_type::numEdges * fe_type::nDofPerEdge +
                           face_type::numFaces * fe_type::nDofPerFace );
-
         else
             nbFaceDof = face_type::numVertices * fe_type::nDofPerVertex;
 
         DVLOG(2)  << "nbFaceDof = " << nbFaceDof << "\n";
         //const size_type nbFaceDof = __fe->boundaryFE()->points().size2();
 
-        for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
-        {
-        __face_it = lit->template get<1>();
-        __face_en = lit->template get<2>();
+        auto IhLoc = __fe->faceLocalInterpolant();
         for ( ;
               __face_it != __face_en;//this->endElement();
               ++__face_it )
@@ -494,27 +496,29 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
             DVLOG(2)  << "[integratoron] dof start = " << range_dof.first << "\n";
             DVLOG(2)  << "[integratoron] dof range = " << range_dof.second << "\n";
 
-            for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
-                for ( uint16_type c2 = 0; c2 < shape::N; ++c2 )
+            //use interpolant
+            __fe->faceInterpolate( expr, IhLoc );
+
+            auto const& s = M_u.functionSpace()->dof()->localToGlobalSigns( theface.element(0).id() );
+            for( auto ldof : M_u.functionSpace()->dof()->faceLocalDof( theface.id() ) )
                 {
-                    for ( uint16_type l = 0; l < nbFaceDof; ++l )
-                    {
-                        DVLOG(2) << "[integratoronexpr] local dof=" << l
-                                 << " |comp1=" << c1 << " comp 2= " << c2 << " | pt = " <<  __c->xReal( l ) << "\n";
-                        typename expression_type::value_type __value = expr.evalq( c1, c2, l );
-                        DVLOG(2) << "[integratoronexpr] value=" << __value << "\n";
+                    size_type thedof = M_u.start()+ ldof.second.index(); // global dof
+                    size_type dofIndexInElt; //dof index in current element
+                    if(nDim <= 2 )
+                        dofIndexInElt = geoelement_type::f2e(__face_id,__face_id);
+                    else
+                        dofIndexInElt = geoelement_type::f2e(__face_id,ldof.first);
 
-                        // global Dof
-                        size_type thedof =  M_u.start() +
-                            boost::get<0>( __dof->faceLocalToGlobal( theface.id(), l, c1 ) );
+                    DVLOG(2) << "Ihloc(" << ldof.first << ")= " << IhLoc( ldof.first ) << std::endl;
+                    DVLOG(2) << "s(" << dofIndexInElt << ")= " << s(dofIndexInElt) << std::endl;
+                    double __value = s(dofIndexInElt)*IhLoc( ldof.first );
 
-                        //size_type thedof_nproc = __dof->dofNProc( thedof );
-                        if ( std::find( dofs.begin(),
-                                        dofs.end(),
-                                        thedof ) != dofs.end() )
-                            continue;
+                    if ( std::find( dofs.begin(),
+                                    dofs.end(),
+                                    thedof ) != dofs.end() )
+                        continue;
 
-                        if ( M_on_strategy.test( size_type(OnContext::ELIMINATION)|size_type(OnContext::ELIMINATION_SYMMETRIC) ) )
+                    if ( M_on_strategy.test( size_type(OnContext::ELIMINATION)|size_type(OnContext::ELIMINATION_SYMMETRIC) ) )
                         {
                             DVLOG(2) << "Eliminating row " << thedof << " using value : " << __value << "\n";
 
@@ -532,19 +536,15 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
                             //M_rhs.set( thedof, __value );
                         }
 
-                        else if (  M_on_strategy.test( OnContext::PENALISATION ) &&
-                                   !M_on_strategy.test( size_type(OnContext::ELIMINATION) | size_type(OnContext::ELIMINATION_SYMMETRIC) ) )
+                    else if (  M_on_strategy.test( OnContext::PENALISATION ) &&
+                               !M_on_strategy.test( size_type(OnContext::ELIMINATION) | size_type(OnContext::ELIMINATION_SYMMETRIC) ) )
                         {
                             __form.set( thedof, thedof, 1.0*1e30 );
                             M_rhs->set( thedof, __value*1e30 );
                         }
-                    } // loop on space components
-
-                } // loop on face dof
-        }
-
-    } // __face_it != __face_en
-    }
+                }
+        }// __face_it != __face_en
+    }// findAFace
 
     if ( __form.rowStartInMatrix()!=0)
     {
@@ -552,7 +552,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
         for (auto itd=dofs.begin(),end=dofs.end() ; itd!=end ; ++itd)
             *itd+=thedofshift;
     }
-    
+
     auto x = M_rhs->clone();
     CHECK( values.size() == dofs.size() ) << "Invalid dofs/values size: " << dofs.size() << "/" << values.size();
     x->addVector( dofs.data(), dofs.size(), values.data() );

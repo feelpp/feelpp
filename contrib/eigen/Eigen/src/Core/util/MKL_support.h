@@ -53,7 +53,11 @@
   #define EIGEN_USE_MKL
 #endif
 
+
 #if defined EIGEN_USE_MKL
+#if defined(MKL_Complex16) || defined(MKL_Complex8)
+#   undef EIGEN_USE_MKL
+#endif
 #   include <mkl.h>
 /*Check IMKL version for compatibility: < 10.3 is not usable with Eigen*/
 #   ifndef INTEL_MKL_VERSION

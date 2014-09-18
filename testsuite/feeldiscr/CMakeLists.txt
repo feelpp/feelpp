@@ -16,12 +16,12 @@ feelpp_add_test( spacefunc )
 
 
 feelpp_add_test( hdiv CFG hdiv.cfg NO_MPI_TEST)
-feelpp_add_test( hdiv_oneelt NO_MPI_TEST )
+feelpp_add_test( hdiv_oneelt CFG hdiv_oneelt.cfg NO_MPI_TEST )
 feelpp_add_test( hdiv3D CFG hdiv3D.cfg)
-feelpp_add_test( hdiv3D_oneelt NO_MPI_TEST )
-feelpp_add_test( hcurl_oneelt NO_MPI_TEST )
+feelpp_add_test( hdiv3D_oneelt CFG hdiv3D_oneelt.cfg NO_MPI_TEST )
+feelpp_add_test( hcurl_oneelt CFG hcurl_oneelt.cfg NO_MPI_TEST )
 feelpp_add_test( hcurl CFG hcurl.cfg GEO two_elements_mesh.geo eight_elements_mesh.msh)
-feelpp_add_test( hcurl3D_oneelt NO_TEST )
+feelpp_add_test( hcurl3D_oneelt CFG hcurl3D_oneelt.cfg NO_TEST )
 
 feelpp_add_test( continuity_h1 NO_MPI_TEST )
 feelpp_add_test( continuity_hdiv NO_MPI_TEST )
@@ -50,10 +50,10 @@ feelpp_add_test( matching NO_MPI_TEST )
 feelpp_add_test( wire_basket NO_MPI_TEST )
 feelpp_add_test( mortar NO_MPI_TEST)
 
-feelpp_add_test( exporter SRCS exporter.cpp  CFG exporter.cfg GEO bubble_inside.geo NO_MPI_TEST)
+feelpp_add_test( exporter   CFG exporter.cfg NO_MPI_TEST)
 feelpp_add_test( extended )
 
-feelpp_add_test( nlSolveComposite CFG nlSolveComposite.cfg)
+feelpp_add_test( nlSolveComposite CFG test_nlSolveComposite.cfg)
 
 if ( FEELPP_HAS_SLEPC )
   feelpp_add_test( eigs )
