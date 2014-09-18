@@ -437,11 +437,74 @@ public:
                 ublas::row( m, i ) = d( i ) * ublas::column( b.basis()( ublas::column( __pts, j ) ), 0 );
             }
 
-            //std::cout << "[DirectionalComponentPointsEvaluation] m " << j << " = " << m << "\n";
+            std::cout << "[DirectionalComponentPointsEvaluation] m " << j << " = " << m << "\n";
             this->push_back( functional_type( b, m ) );
         }
     }
 }; // DirectionalComponentPointsEvaluation
+
+/**
+ * \class DirectionalComponentPointsEvaluation
+ * \brief functional associate with directional component point evaluation
+ *
+ *
+ * \author Christophe Prud'homme
+ */
+    template<typename Space>
+struct SecondDirectionalComponentPointEvaluation
+        :
+    public std::vector<Functional<Space> >
+{
+    typedef std::vector<Functional<Space> > super;
+public:
+
+    typedef SecondDirectionalComponentPointEvaluation<Space> self_type;
+    typedef Functional<Space> functional_type;
+    typedef Space space_type;
+    typedef typename space_type::points_type points_type;
+
+    typedef typename space_type::value_type value_type;
+    typedef typename node<value_type>::type node_type;
+
+
+    BOOST_STATIC_ASSERT( space_type::is_vectorial ||
+                         space_type::is_tensor2 );
+
+    SecondDirectionalComponentPointEvaluation()
+        :
+        super()
+    {}
+    SecondDirectionalComponentPointEvaluation( space_type const& b,
+                                               node_type const& d,
+                                               points_type const& __pts,
+                                               ublas::vector<value_type> poly)
+        : super()
+    {
+        ublas::matrix<value_type> m( ublas::zero_matrix<value_type>( d.size(), b.basis().size() ) );
+
+        // Evaluate poly on points of __pts (2 points)
+        double q1_1 = 0;
+        double q1_2 = 0;
+        for(int k=0; k<__pts.size1(); ++k)
+            {
+                q1_1 += poly(k)*__pts(k,0);
+                q1_2 += poly(k)*__pts(k,1);
+            }
+        q1_1 += poly(poly.size() - 1);
+        q1_2 += poly(poly.size() - 1);
+
+        // approximate integral
+        for ( int i = 0; i < d.size(); ++i )
+            {
+                ublas::row( m, i ) = 0.5*d( i )* q1_1 *ublas::column( b.basis()( ublas::column( __pts, 0 ) ), 0 )
+                    - 0.5*d( i )* q1_2 *ublas::column( b.basis()( ublas::column( __pts, 1 ) ), 0 );
+            }
+
+        std::cout << "[SecondDirectionalComponentPointEvaluation] m  = " << m << "\n";
+        //this->push_back( functional_type( b, m ) );
+        this->push_back( functional_type( b, m ) );
+    }
+}; // SecondDirectionalComponentPointEvaluation
 
 } // functional
 

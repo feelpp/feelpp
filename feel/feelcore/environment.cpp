@@ -1036,8 +1036,9 @@ Environment::Environment( int& argc, char**& argv )
 Environment::Environment( boost::python::list arg )
 {
 
+    /* Convert python options into argc/argv format */
     int argc = boost::python::len( arg );
-    std::cout << argc << std::endl ;
+    //std::cout << argc << std::endl ;
 
     char** argv =new char* [argc+1];
     boost::python::stl_input_iterator<std::string> begin( arg ), end;
@@ -1045,7 +1046,7 @@ Environment::Environment( boost::python::list arg )
 
     while ( begin != end )
     {
-        std::cout << *begin << std::endl ;
+        //std::cout << *begin << std::endl ;
         argv[i] =strdup( ( *begin ).c_str() );
         begin++;
         i++;
@@ -1076,6 +1077,14 @@ Environment::Environment( boost::python::list arg )
 
 
     init( argc, argv, *S_desc, *S_desc_lib, about );
+
+    /* free allocated arrays (as they are duplicated in the init functions) */
+    // Last element is NULL
+    for(int i = 0; i < argc; i++)
+    {
+        delete argv[i];
+    }
+    delete[] argv;
 
     if ( S_vm.count( "nochdir" ) == 0 )
     {
