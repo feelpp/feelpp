@@ -612,6 +612,19 @@ void PreconditionerPetsc<T>::view() const
     this->check( PCView( M_pc, PETSC_VIEWER_STDOUT_WORLD ) );
 }
 
+template <typename T>
+void
+PreconditionerPetsc<T>::setPrecMatrixStructure( MatrixStructure mstruct  )
+{
+    super_type::setPrecMatrixStructure( mstruct );
+
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,5,0)
+    if ( this-> M_is_initialized )
+    {
+        check( PCSetReusePreconditioner(M_pc,(this->M_prec_matrix_structure == Feel::SAME_PRECONDITIONER)? PETSC_TRUE : PETSC_FALSE ) );
+    }
+#endif
+}
 
 
 template <typename T>
