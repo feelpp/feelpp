@@ -216,7 +216,7 @@ public:
     /**
      * information about the preconditioner matrix structure during successive linear solves
      */
-    void setPrecMatrixStructure( MatrixStructure mstruct  );
+    virtual void setPrecMatrixStructure( MatrixStructure mstruct  );
 
 
     //@}

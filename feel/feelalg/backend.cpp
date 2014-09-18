@@ -350,7 +350,7 @@ Backend<T>::solve( sparse_matrix_ptrtype const& A,
     M_reusePC = reusePC;
 
     MatrixStructure matStructInitial = this->precMatrixStructure();
-
+    size_type maxitKSPInitial = M_maxitKSP;
     vector_ptrtype x_save;
 
     if ( !M_reusePC )
@@ -364,6 +364,7 @@ Backend<T>::solve( sparse_matrix_ptrtype const& A,
         x_save = this->newVector(x->mapPtr());
         *x_save=*x;
         this->setPrecMatrixStructure( SAME_PRECONDITIONER );
+        M_maxitKSP = M_maxitKSPReuse;
     }
 
     //start();
@@ -385,9 +386,12 @@ Backend<T>::solve( sparse_matrix_ptrtype const& A,
         *x=*x_save;
 
         this->setPrecMatrixStructure( matStructInitial );//DIFFERENT_NONZERO_PATTERN,SAME_NONZERO_PATTERN
-        if (this->comm().globalRank() == this->comm().masterRank() )
+        M_maxitKSP = maxitKSPInitial;
+
+        if (this->comm().isMasterRank() )
             std::cout << "Backend "  << M_prefix << " reuse failed, rebuilding preconditioner...\n";
         LOG(INFO) << "Backend "  << M_prefix << " reuse failed, rebuilding preconditioner...\n";
+
         boost::tie( M_converged, M_iteration, M_residual ) = this->solve( A, P, x, b );
 
         //if ( !M_converged ) throw std::logic_error( "solver failed to converge" );
@@ -397,6 +401,7 @@ Backend<T>::solve( sparse_matrix_ptrtype const& A,
     }
 
     this->setPrecMatrixStructure( matStructInitial );
+    M_maxitKSP = maxitKSPInitial;
 
     return boost::make_tuple( M_converged, M_iteration, M_residual );
 }
