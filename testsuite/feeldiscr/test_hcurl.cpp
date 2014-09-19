@@ -164,8 +164,8 @@ public:
     /**
      * run the application
      */
-    void twoElementsMesh();
-    void eightElementsMesh();
+    //void twoElementsMesh();
+    //void eightElementsMesh();
     void testProjector();
     void exampleProblem1();
 
@@ -180,233 +180,6 @@ private:
     export_ptrtype exporter;
 
 }; //TestHCurl
-
-void
-TestHCurl::twoElementsMesh()
-{
-    auto geo_name = "two_elements_mesh.geo"; //create the mesh and load it
-    mesh_ptrtype mesh = loadMesh( _mesh=new mesh_type,
-                                  _filename=geo_name);
-
-    auto Xh = Ned1h<0>( mesh );
-    auto u = Xh->element();
-    auto phi = Xh->element();
-    for( auto const& dof : Xh->dof()->localDof() )
-        {
-            LOG(INFO) << "test local dof element " << dof.first.elementId() << " id:" << dof.first.localDof()
-                      << " global dof : " << dof.second.index() << " pts: " << Xh->dof()->dofPoint( dof.second.index() ).get<0>() << std::endl;
-        }
-
-    // assembly curl(curl(u)) + u
-    auto a = form2( _test=Xh, _trial=Xh);
-    a = integrate(elements( mesh ), curlxt(u)*curlx(phi) + trans(idt(u))*id(phi) );
-    a.matrix().printMatlab( "mass_assembly.m" );
-
-    //Check each component of the mass matrix
-    BOOST_CHECK_CLOSE( a.matrix()(0,0), 4./3., 1e-10 );
-    BOOST_CHECK_CLOSE( a.matrix()(1,0), 0.5, 1e-10 );
-    BOOST_CHECK_CLOSE( a.matrix()(2,0), 0.5, 1e-10 );
-    BOOST_CHECK_CLOSE( a.matrix()(3,0), -0.5, 1e-10 );
-    BOOST_CHECK_CLOSE( a.matrix()(4,0), -0.5, 1e-10 );
-
-    BOOST_CHECK_CLOSE( a.matrix()(0,1), 0.5, 1e-10 );
-    BOOST_CHECK_CLOSE( a.matrix()(1,1), 5./6., 1e-10 );
-    BOOST_CHECK_CLOSE( a.matrix()(2,1), 1./3., 1e-10 );
-    BOOST_CHECK_CLOSE( a.matrix()(3,1), 0, 1e-10 );
-    BOOST_CHECK_CLOSE( a.matrix()(4,1), 0, 1e-10 );
-
-    BOOST_CHECK_CLOSE( a.matrix()(0,2), 0.5, 1e-10 );
-    BOOST_CHECK_CLOSE( a.matrix()(1,2), 1./3., 1e-10 );
-    BOOST_CHECK_CLOSE( a.matrix()(2,2), 5./6., 1e-10 );
-    BOOST_CHECK_CLOSE( a.matrix()(3,2), 0, 1e-10 );
-    BOOST_CHECK_CLOSE( a.matrix()(4,2), 0, 1e-10 );
-
-    BOOST_CHECK_CLOSE( a.matrix()(0,3), -0.5, 1e-10 );
-    BOOST_CHECK_CLOSE( a.matrix()(1,3), 0, 1e-10 );
-    BOOST_CHECK_CLOSE( a.matrix()(2,3), 0, 1e-10 );
-    BOOST_CHECK_CLOSE( a.matrix()(3,3), 5./6., 1e-10 );
-    BOOST_CHECK_CLOSE( a.matrix()(4,3), 1./3., 1e-10 );
-
-    BOOST_CHECK_CLOSE( a.matrix()(0,4), -0.5, 1e-10 );
-    BOOST_CHECK_CLOSE( a.matrix()(1,4), 0, 1e-10 );
-    BOOST_CHECK_CLOSE( a.matrix()(2,4), 0, 1e-10 );
-    BOOST_CHECK_CLOSE( a.matrix()(3,4), 1./3., 1e-10 );
-    BOOST_CHECK_CLOSE( a.matrix()(4,4), 5./6., 1e-10 );
-
-    // Find u = l2_proj( (1,1) ) on Hcurl space
-    // \int u_proj*phi = \int u_ex*phi \forall phi \in \Hcurl
-    auto u_cst = Xh->element();
-    phi.zero();
-    auto u_cst_exact = vec( cst(1.), cst(1.) );
-    auto a_cst = form2( _test=Xh, _trial=Xh );
-    a_cst = integrate( _range=elements(mesh), _expr = trans(idt(u_cst))*id(phi) );
-    auto f_cst = form1( _test=Xh );
-    f_cst = integrate( _range=elements(mesh), _expr = trans(u_cst_exact)*id(phi) );
-    a_cst.solve( _solution=u_cst, _rhs=f_cst );
-
-    BOOST_CHECK_SMALL( u_cst(0), 1e-10 );
-    BOOST_CHECK_CLOSE( u_cst(1), -2, 1e-10 );
-    BOOST_CHECK_CLOSE( u_cst(2), 2, 1e-10 );
-    BOOST_CHECK_CLOSE( u_cst(3), -2, 1e-10 );
-    BOOST_CHECK_CLOSE( u_cst(4), 2, 1e-10 );
-
-    // Find u = l2_proj( (-y,x) ) on Hcurl space
-    // \int u_proj*phi = \int u_ex*phi \forall phi \in \Hcurl
-    auto u_yx = Xh->element();
-    phi.zero();
-    auto u_yx_exact = vec( -Py(), Px() );
-    auto a_yx = form2( _test=Xh, _trial=Xh );
-    a_yx = integrate( _range=elements(mesh), _expr = trans(idt(u_yx))*id(phi) );
-    auto f_yx = form1( _test=Xh );
-    f_yx = integrate( _range=elements(mesh), _expr = trans(u_yx_exact)*id(phi) );
-    a_yx.solve( _solution=u_yx, _rhs=f_yx );
-
-    BOOST_CHECK_SMALL( u_yx(0), 1e-10 );
-    BOOST_CHECK_CLOSE( u_yx(1), 2, 1e-10 );
-    BOOST_CHECK_CLOSE( u_yx(2), 2, 1e-10 );
-    BOOST_CHECK_CLOSE( u_yx(3), 2, 1e-10 );
-    BOOST_CHECK_CLOSE( u_yx(4), 2, 1e-10 );
-
-    // Find u = l2_proj( (1-y^2,1-x^2) ) on Hcurl space
-    // \int u_proj*phi = \int u_ex*phi \forall phi \in \Hcurl
-    // Coarse mesh (2 elements, 5 dofs) : interpolant is not exact (u_exact is 2nd degree)
-    // => Projection of u_exact is the constant vector (2/3, 2/3)
-    auto u_pb1=Xh->element();
-    phi.zero();
-    auto u_pb1_exact = vec( 1-Py()*Py(), 1-Px()*Px() );
-    auto a_pb1 = form2( _test=Xh, _trial=Xh );
-    a_pb1 = integrate( _range=elements(mesh), _expr = trans(idt(u_pb1))*id(phi) );
-    auto f_pb1 = form1( _test=Xh );
-    f_pb1 = integrate( _range=elements(mesh), _expr = trans(u_pb1_exact)*id(phi) );
-    a_pb1.solve( _solution=u_pb1, _rhs=f_pb1 );
-
-    BOOST_CHECK_SMALL( f_pb1.vector()(0), 1e-10 );
-    BOOST_CHECK_CLOSE( f_pb1.vector()(1), -2./3., 1e-10 );
-    BOOST_CHECK_CLOSE( f_pb1.vector()(2), 2./3., 1e-10 );
-    BOOST_CHECK_CLOSE( f_pb1.vector()(3), -2./3., 1e-10 );
-    BOOST_CHECK_CLOSE( f_pb1.vector()(4), 2./3., 1e-10 );
-
-    BOOST_CHECK_SMALL( u_pb1(0), 1e-10 );
-    BOOST_CHECK_CLOSE( u_pb1(1), -4./3., 1e-10 );
-    BOOST_CHECK_CLOSE( u_pb1(2), 4./3., 1e-10 );
-    BOOST_CHECK_CLOSE( u_pb1(3), -4./3., 1e-10 );
-    BOOST_CHECK_CLOSE( u_pb1(4), 4./3., 1e-10 );
-
-    // Finer mesh, interpolant is not exact but has to be more precise
-    mesh_ptrtype refined_mesh = loadMesh(_mesh = new mesh_type);
-    auto Xhf = Ned1h<0>( refined_mesh );
-    auto u_pb1f = Xhf->element();
-    auto phi_pb1f = Xhf->element();
-
-    auto a_pb1f = form2( _test=Xhf, _trial=Xhf );
-    a_pb1f = integrate( _range=elements(refined_mesh), _expr = trans(idt(u_pb1f))*id(phi_pb1f) );
-    auto f_pb1f = form1( _test=Xhf );
-    f_pb1f = integrate( _range=elements(refined_mesh), _expr = trans(u_pb1_exact)*id(phi_pb1f) );
-    a_pb1f.solve( _solution=u_pb1f, _rhs=f_pb1f, _rebuild=true);
-
-    // Check exportation of these Hcurl elements
-    export_ptrtype exporterProj( export_type::New( this->vm(),std::string("test_L2proj_2elts")) );
-    exporterProj->step( 0 )->setMesh( refined_mesh );
-    exporterProj->step( 0 )->add( "vec_cst_proj_2elts", u_cst );
-    exporterProj->step( 0 )->add( "vec_yx_proj_2elts", u_yx );
-    exporterProj->step( 0 )->add( "vec_pb1_coarse_proj_2elts", u_pb1 );
-    exporterProj->step( 0 )->add( "vec_pb1_fine_proj_2elts", u_pb1f );
-    exporterProj->save();
-}
-
-void
-TestHCurl::eightElementsMesh()
-{
-    auto msh_name = "eight_elements_mesh.msh"; //create the mesh and load it
-    mesh_ptrtype mesh = loadMesh( _mesh=new mesh_type,
-                                  _filename=msh_name);
-
-    auto Xh = Ned1h<0>( mesh );
-    auto u = Xh->element();
-    auto phi = Xh->element();
-    for( auto const& dof : Xh->dof()->localDof() )
-        {
-            LOG(INFO) << "test local dof element " << dof.first.elementId() << " id:" << dof.first.localDof()
-                      << " global dof : " << dof.second.index() << " pts: " << Xh->dof()->dofPoint( dof.second.index() ).get<0>() << std::endl;
-        }
-
-    auto u_cst = Xh->element();
-    phi.zero();
-    auto u_cst_exact = vec( cst(1.), cst(1.) );
-    auto a_cst = form2( _test=Xh, _trial=Xh );
-    a_cst = integrate( _range=elements(mesh), _expr = trans(idt(u_cst))*id(phi) );
-    auto f_cst = form1( _test=Xh );
-    f_cst = integrate( _range=elements(mesh), _expr = trans(u_cst_exact)*id(phi) );
-    a_cst.solve( _solution=u_cst, _rhs=f_cst, _rebuild=true );
-
-    //Check matrix assembly (non zero components)
-    std::vector<int> diag_48 = {0,1,2,3,5,6,7,9,12,13,14,15};
-    std::vector<int> diag_24 = {4,8,10,11};
-    BOOST_FOREACH( int comp, diag_48 )
-        {
-            BOOST_TEST_MESSAGE( "a(N" << comp << ",N" << comp << ") = " << a_cst.matrix()(comp,comp) << "\n");
-            BOOST_CHECK_CLOSE( a_cst.matrix()(comp,comp), 1./3., 1e-10 );
-        }
-    BOOST_FOREACH( int comp, diag_24 )
-        {
-            BOOST_TEST_MESSAGE( "a(N" << comp << ",N" << comp << ") = " << a_cst.matrix()(comp,comp) << "\n");
-            BOOST_CHECK_CLOSE( a_cst.matrix()(comp,comp), 2./3., 1e-10 );
-        }
-
-    typedef std::pair<int,int> map_value_type;
-    std::map<int,int> other_comp_inf1 ={{1,2},{5,4},{8,4},{8,7},{11,10},{15,14}};
-    std::map<int,int> other_comp_inf2 ={{11,12},{10,13}};
-    BOOST_FOREACH( map_value_type comp, other_comp_inf1)
-        {
-            BOOST_TEST_MESSAGE( "a(N" << comp.first << ",N" << comp.second << ") = " << a_cst.matrix()(comp.first,comp.second) << "\n");
-            BOOST_CHECK_CLOSE( a_cst.matrix()(comp.first,comp.second), -1./6., 1e-10 );
-            BOOST_CHECK_CLOSE( a_cst.matrix()(comp.second,comp.first), -1./6., 1e-10 );
-        }
-    BOOST_FOREACH( map_value_type comp, other_comp_inf2)
-        {
-            BOOST_TEST_MESSAGE( "a(N" << comp.first << ",N" << comp.second << ") = " << a_cst.matrix()(comp.first,comp.second) << "\n");
-            BOOST_CHECK_CLOSE( a_cst.matrix()(comp.first,comp.second), 1./6., 1e-10 );
-            BOOST_CHECK_CLOSE( a_cst.matrix()(comp.second,comp.first), 1./6., 1e-10 );
-        }
-
-    auto u_yx = Xh->element();
-    phi.zero();
-    auto u_yx_exact = vec( -Py(), Px() );
-    auto a_yx = form2( _test=Xh, _trial=Xh );
-    a_yx = integrate( _range=elements(mesh), _expr = trans(idt(u_yx))*id(phi) );
-    auto f_yx = form1( _test=Xh );
-    f_yx = integrate( _range=elements(mesh), _expr = trans(u_yx_exact)*id(phi) );
-    a_yx.solve( _solution=u_yx, _rhs=f_yx, _rebuild=true);
-
-    auto u_pb1=Xh->element();
-    phi.zero();
-    auto u_pb1_exact = vec( 1-Py()*Py(), 1-Px()*Px() );
-    auto a_pb1 = form2( _test=Xh, _trial=Xh );
-    a_pb1 = integrate( _range=elements(mesh), _expr = trans(idt(u_pb1))*id(phi) );
-    auto f_pb1 = form1( _test=Xh );
-    f_pb1 = integrate( _range=elements(mesh), _expr = trans(u_pb1_exact)*id(phi) );
-    a_pb1.solve( _solution=u_pb1, _rhs=f_pb1, _rebuild=true);
-
-    mesh_ptrtype refined_mesh = loadMesh(_mesh = new mesh_type);
-    auto Xhf = Ned1h<0>( refined_mesh );
-    auto u_pb1f = Xhf->element();
-    auto phi_pb1f = Xhf->element();
-
-    auto a_pb1f = form2( _test=Xhf, _trial=Xhf );
-    a_pb1f = integrate( _range=elements(refined_mesh), _expr = trans(idt(u_pb1f))*id(phi_pb1f) );
-    auto f_pb1f = form1( _test=Xhf );
-    f_pb1f = integrate( _range=elements(refined_mesh), _expr = trans(u_pb1_exact)*id(phi_pb1f) );
-    a_pb1f.solve( _solution=u_pb1f, _rhs=f_pb1f, _rebuild=true);
-
-    // Check exportation of these Hcurl elements
-    export_ptrtype exporterProj( export_type::New( this->vm(),std::string("test_L2proj_8elts")) );
-    exporterProj->step( 0 )->setMesh( refined_mesh );
-    exporterProj->step( 0 )->add( "vec_cst_proj_8elts", u_cst );
-    exporterProj->step( 0 )->add( "vec_yx_proj_8elts", u_yx );
-    exporterProj->step( 0 )->add( "vec_pb1_coarse_proj_8elts", u_pb1 );
-    exporterProj->step( 0 )->add( "vec_pb1_fine_proj_8elts", u_pb1f );
-    exporterProj->save();
-}
 
 // Resolve problem curl(curl(u)) + u = f with cross_prod(u,n) = 0 on boundary
 void
@@ -569,24 +342,6 @@ FEELPP_ENVIRONMENT_WITH_OPTIONS( Feel::makeAbout(), Feel::makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( space )
 
-
-BOOST_AUTO_TEST_CASE( test_hcurl_two_elements )
-{
-    BOOST_TEST_MESSAGE( "test_hcurl_N0  : assembly on two elements mesh" );
-    Feel::TestHCurl t;
-    t.twoElementsMesh();
-    BOOST_TEST_MESSAGE( "test_hcurl_N0  : assembly on two elements mesh done" );
-}
-
-BOOST_AUTO_TEST_CASE( test_hcurl_eight_elements )
-{
-    BOOST_TEST_MESSAGE( "test_hcurl_N0  : assembly on eight elements mesh" );
-    Feel::TestHCurl t;
-    t.eightElementsMesh();
-    BOOST_TEST_MESSAGE( "test_hcurl_N0  : assembly on eight elements mesh done" );
-}
-
-
 #if 0
 BOOST_AUTO_TEST_CASE( test_hcurl_projection )
 {
@@ -618,7 +373,6 @@ main( int argc, char* argv[] )
 
     app_hcurl.testProjector();
     app_hcurl.exampleProblem1();
-    app_hcurl.twoElementsMesh();
 }
 
 #endif

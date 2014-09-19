@@ -156,7 +156,6 @@ private:
 
 }; //TestHDiv
 
-#if 0
 void
 TestHCurl3DOneElt::testProjector(std::string one_element_mesh )
 {
@@ -194,15 +193,16 @@ TestHCurl3DOneElt::testProjector(std::string one_element_mesh )
     auto E_pL2_ned = l2_ned->project( _expr= E );
     auto error_pL2_ned = l2_lagV->project( _expr=curlv(E_pL2_lag) - f );
 
+#if 0
     // H1 projection (Nedelec)
     auto h1_ned = opProjection( _domainSpace=Nh, _imageSpace=Nh, _type=H1 ); //h1 vectorial proj
     auto E_pH1_ned = h1_ned->project( _expr= E, _grad_expr=mat<2,2>(cst(0.),cst(1.),cst(1.),cst(0.)) );
     auto error_pH1_ned = l2_lagV->project( _expr=curlv(E_pH1_ned) - f );
-
     // HCURL projection (Nedelec)
     auto hcurl = opProjection( _domainSpace=Nh, _imageSpace=Nh, _type=HCURL ); //hdiv proj (RT elts)
     auto E_pHCURL_ned = hcurl->project( _expr= E /*, _curl_expr=cst(0.)*/ );
     auto error_pHCURL_ned = l2_lagV->project( _expr=curlv(E_pHCURL_ned) - f );
+#endif
 
     BOOST_TEST_MESSAGE("L2 projection [Lagrange]: error[div(E)-f]");
     std::cout << "error L2: " << math::sqrt( l2_lagV->energy( error_pL2_lag, error_pL2_lag ) ) << "\n";
@@ -217,12 +217,14 @@ TestHCurl3DOneElt::testProjector(std::string one_element_mesh )
     BOOST_TEST_MESSAGE("L2 projection [NED]: error[div(E)-f]");
     std::cout << "error L2: " << math::sqrt( l2_lagV->energy( error_pL2_ned, error_pL2_ned ) ) << "\n";
     BOOST_CHECK_SMALL( math::sqrt( l2_lagV->energy( error_pL2_ned, error_pL2_ned ) ), 1e-13 );
+#if 0
     BOOST_TEST_MESSAGE("H1 projection [NED]: error[div(E)-f]");
     std::cout << "error L2: " << math::sqrt( l2_lagV->energy( error_pH1_ned, error_pH1_ned ) ) << "\n";
     BOOST_CHECK_SMALL( math::sqrt( l2_lagV->energy( error_pH1_ned, error_pH1_ned ) ), 1e-13 );
     BOOST_TEST_MESSAGE("HCURL projection [NED]: error[div(E)-f]");
     std::cout << "error L2: " << math::sqrt( l2_lagV->energy( error_pHCURL_ned, error_pHCURL_ned ) ) << "\n";
     BOOST_CHECK_SMALL( math::sqrt( l2_lagV->energy( error_pHCURL_ned, error_pHCURL_ned ) ), 1e-13 );
+#endif
 
     std::string proj_name = "projection";
     export_ptrtype exporter_proj( export_type::New( this->vm(),
@@ -236,11 +238,10 @@ TestHCurl3DOneElt::testProjector(std::string one_element_mesh )
     exporter_proj->step( 0 )->add( "proj_H1_E[Lagrange]", E_pH1_lag );
     exporter_proj->step( 0 )->add( "proj_HDiv_E[Lagrange]", E_pHCURL_lag );
     exporter_proj->step( 0 )->add( "proj_L2_E[NED]", E_pL2_ned );
-    exporter_proj->step( 0 )->add( "proj_H1_E[NED]", E_pH1_ned );
-    exporter_proj->step( 0 )->add( "proj_HDiv_E[NED]", E_pHCURL_ned );
+    // exporter_proj->step( 0 )->add( "proj_H1_E[NED]", E_pH1_ned );
+    // exporter_proj->step( 0 )->add( "proj_HDiv_E[NED]", E_pHCURL_ned );
     exporter_proj->save();
 }
-#endif
 
 void
 TestHCurl3DOneElt::shape_functions( std::string one_element_mesh )
@@ -459,8 +460,8 @@ BOOST_AUTO_TEST_CASE( test_hcurl3D_N0 )
         {
             std::cout << "*** shape functions on " << geo << " *** \n";
             t.shape_functions( geo );
-            // std::cout << "*** projections on " << geo << " *** \n";
-            // t.testProjector( geo );
+            std::cout << "*** projections on " << geo << " *** \n";
+            t.testProjector( geo );
         }
 }
 
