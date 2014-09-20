@@ -174,7 +174,6 @@ TestHDiv3D::exampleProblem1()
 {
     mesh_ptrtype mesh = loadMesh(_mesh = new mesh_type);
     auto hsize = doption("gmsh.hsize");
-    std::cout << "hsize=" << hsize << std::endl;
 
     //auto K = ones<2,2>(); // Hydraulic conductivity tensor
     auto K = mat<3,3>(cst(2.),cst(1.),cst(1.),
@@ -213,8 +212,6 @@ TestHDiv3D::exampleProblem1()
     // Deduce u :
     u_l = vf::project( Xhvec, elements(mesh), -K*trans(gradv(p_l)) );
 
-    std::cout << "[Darcy] Lagrange solve done" << std::endl;
-
     // ****** Dual-mixed solving - with Raviart Thomas ******
     prod_space_ptrtype Yh = prod_space_type::New( mesh );
     auto U_rt = Yh->element( "(u,p)" ); //trial
@@ -242,8 +239,6 @@ TestHDiv3D::exampleProblem1()
     // Solve problem
     backend(_rebuild=true)->solve( _matrix=M_rt, _solution=U_rt, _rhs=F_rt );
 
-    std::cout << "[Darcy] RT solve done" << std::endl;
-
     // ****** Compute error ******
     auto l2err_u = normL2( _range=elements(mesh), _expr=idv(u_l) - idv(u_rt) );
     auto l2err_p = normL2( _range=elements(mesh), _expr=idv(p_l) - idv(p_rt) );
@@ -270,6 +265,7 @@ TestHDiv3D::exampleProblem1()
     exporter_pro1->step( 0 )->add( "velocity_RT", u_rt );
     exporter_pro1->step( 0 )->add( "potential_RT", p_rt );
     exporter_pro1->save();
+
 }
 
 void
@@ -290,21 +286,11 @@ TestHDiv3D::testProjector()
     auto E_pL2_lag = l2_lagV->project( _expr= E );
     auto error_pL2_lag = l2_lagS->project( _expr=divv(E_pL2_lag) - f );
 
-    // L2 projection (RT)
-    auto l2_rt = opProjection( _domainSpace=RTh, _imageSpace=RTh, _type=L2 );
-    auto E_pL2_rt = l2_rt->project( _expr= E );
-    auto error_pL2_rt = l2_lagS->project( _expr=divv(E_pL2_lag) - f );
-
     // H1 projection (Lagrange)
     auto h1_lagV = opProjection( _domainSpace=Yh_v, _imageSpace=Yh_v, _type=H1 ); //h1 vectorial proj
     auto h1_lagS = opProjection( _domainSpace=Yh_s, _imageSpace=Yh_s, _type=H1 ); //h1 scalar proj
     auto E_pH1_lag = h1_lagV->project( _expr= E, _grad_expr=eye<3>() );
     auto error_pH1_lag = l2_lagS->project( _expr=divv(E_pH1_lag) - f );
-
-    // H1 projection (RT)
-    auto h1_rt = opProjection( _domainSpace=RTh, _imageSpace=RTh, _type=H1 ); //h1 vectorial proj
-    auto E_pH1_rt = h1_rt->project( _expr= E, _grad_expr=eye<3>() );
-    auto error_pH1_rt = l2_lagS->project( _expr=divv(E_pH1_rt) - f );
 
     // HDIV projection (Lagrange)
     auto hdiv_lagV = opProjection( _domainSpace=Yh_v, _imageSpace=Yh_v, _type=HDIV );
@@ -312,29 +298,23 @@ TestHDiv3D::testProjector()
     auto E_pHDIV_lag = hdiv_lagV->project( _expr= E, _div_expr=cst(0.) );
     auto error_pHDIV_lag = l2_lagS->project( _expr=divv(E_pHDIV_lag) - f );
 
-    // HDIV projection (RT)
-    auto hdiv = opProjection( _domainSpace=RTh, _imageSpace=RTh, _type=HDIV ); //hdiv proj (RT elts)
-    auto E_pHDIV_rt = hdiv->project( _expr= E, _div_expr=cst(0.) );
-    auto error_pHDIV_rt = l2_lagS->project( _expr=divv(E_pHDIV_rt) - f );
+    // L2 projection (RT)
+    auto l2_rt = opProjection( _domainSpace=RTh, _imageSpace=RTh, _type=L2 );
+    auto E_pL2_rt = l2_rt->project( _expr= E );
+    auto error_pL2_rt = l2_lagS->project( _expr=divv(E_pL2_lag) - f );
 
     BOOST_TEST_MESSAGE("L2 projection [Lagrange]: error[div(E)-f]");
     std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pL2_lag, error_pL2_lag ) ) << "\n";
     BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pL2_lag, error_pL2_lag ) ), 1e-13 );
-    BOOST_TEST_MESSAGE("L2 projection [RT]: error[div(E)-f]");
-    std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pL2_rt, error_pL2_rt ) ) << "\n";
-    BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pL2_rt, error_pL2_rt ) ), 1e-13 );
     BOOST_TEST_MESSAGE("H1 projection [Lagrange]: error[div(E)-f]");
     std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pH1_lag, error_pH1_lag ) ) << "\n";
     BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pH1_lag, error_pH1_lag ) ), 1e-13 );
-    BOOST_TEST_MESSAGE("H1 projection [RT]: error[div(E)-f]");
-    std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pH1_rt, error_pH1_rt ) ) << "\n";
-    BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pH1_rt, error_pH1_rt ) ), 1e-13 );
     BOOST_TEST_MESSAGE("HDIV projection [Lagrange]: error[div(E)-f]");
     std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pHDIV_lag, error_pHDIV_lag ) ) << "\n";
-    BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pHDIV_lag, error_pHDIV_rt ) ), 1e-13 );
-    BOOST_TEST_MESSAGE("HDIV projection [RT]: error[div(E)-f]");
-    std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pHDIV_rt, error_pHDIV_rt ) ) << "\n";
-    BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pHDIV_rt, error_pHDIV_rt ) ), 1e-13 );
+    BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pHDIV_lag, error_pHDIV_lag ) ), 1e-13 );
+    BOOST_TEST_MESSAGE("L2 projection [RT]: error[div(E)-f]");
+    std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pL2_rt, error_pL2_rt ) ) << "\n";
+    BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pL2_rt, error_pL2_rt ) ), 1e-13 );
 
     std::string proj_name = "projection";
     export_ptrtype exporter_proj( export_type::New( this->vm(),
@@ -345,11 +325,9 @@ TestHDiv3D::testProjector()
 
     exporter_proj->step( 0 )->setMesh( mesh );
     exporter_proj->step( 0 )->add( "proj_L2_E[Lagrange]", E_pL2_lag );
-    exporter_proj->step( 0 )->add( "proj_L2_E[RT]", E_pL2_rt );
     exporter_proj->step( 0 )->add( "proj_H1_E[Lagrange]", E_pH1_lag );
-    exporter_proj->step( 0 )->add( "proj_H1_E[RT]", E_pH1_rt );
     exporter_proj->step( 0 )->add( "proj_HDiv_E[Lagrange]", E_pHDIV_lag );
-    exporter_proj->step( 0 )->add( "proj_HDiv_E[RT]", E_pHDIV_rt );
+    exporter_proj->step( 0 )->add( "proj_L2_E[RT]", E_pL2_rt );
     exporter_proj->save();
 }
 
