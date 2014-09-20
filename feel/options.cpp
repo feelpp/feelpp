@@ -193,23 +193,24 @@ gmsh_options( std::string const& prefix )
         ( prefixvm( prefix,"gmsh.format" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "Gmsh file format (0=ASCII, 1=BINARY)" )
 
         ( prefixvm( prefix,"gmsh.in-memory" ).c_str(), Feel::po::value<bool>()->default_value( false ), "false to save on disk, true to read geometry directly from memory" )
-        ( prefixvm( prefix,"gmsh.algo" ).c_str(), Feel::po::value<int>()->default_value( 5 ), "used algorithm to mesh\n"
-"2D : \n"
-" MESHADAPT       1\n"
-" AUTO            2\n"
-" MESHADAPT_OLD   4\n"
-" DELAUNAY        5\n"
-" FRONTAL         6\n"
-" BAMG            7\n"
-" FRONTAL_QUAD    8\n"
-" PACK_PRLGRMS    9\n"
-"3D :\n"
-" DELAUNAY          1\n"
-" FRONTAL           4\n"
-" FRONTAL_DEL       5\n"
-" FRONTAL_HEX       6\n"
-" MMG3D             7\n"
-" RTREE             9" )
+        ( prefixvm( prefix,"gmsh.algo2d" ).c_str(), Feel::po::value<int>(), "used algorithm to mesh\n"
+          "2D : \n"
+          " MESHADAPT       1\n"
+          " AUTO            2\n"
+          " MESHADAPT_OLD   4\n"
+          " DELAUNAY        5\n"
+          " FRONTAL         6\n"
+          " BAMG            7\n"
+          " FRONTAL_QUAD    8\n"
+          " PACK_PRLGRMS    9\n" )
+        ( prefixvm( prefix,"gmsh.algo3d" ).c_str(), Feel::po::value<int>(), "used algorithm to mesh\n"
+          "3D :\n"
+          " DELAUNAY          1\n"
+          " FRONTAL           4\n"
+          " FRONTAL_DEL       5\n"
+          " FRONTAL_HEX       6\n"
+          " MMG3D             7\n"
+          " RTREE             9" )
 
         ( prefixvm( prefix,"partition.linear" ).c_str(), Feel::po::value<bool>()->default_value( false ), "linear partitioning if true (false otherwise)" );
 
