@@ -240,7 +240,7 @@ public:
     }
 
 
-    real_type dot( const vector_type& f,
+    value_type dot( const vector_type& f,
                    const vector_type& x ) const
     {
         eigen_vector_type const& _f = dynamic_cast<eigen_vector_type const&>( f );

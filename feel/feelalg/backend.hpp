@@ -159,11 +159,12 @@ public:
 
     typedef Backend<value_type> backend_type;
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef backend_ptrtype ptrtype;
 
     typedef SolverNonLinear<value_type> solvernonlinear_type;
     typedef boost::shared_ptr<solvernonlinear_type> solvernonlinear_ptrtype;
 
-    typedef typename SolverLinear<value_type>::solve_return_type solve_return_type;
+    typedef typename SolverLinear<real_type>::solve_return_type solve_return_type;
     typedef typename solvernonlinear_type::solve_return_type nl_solve_return_type;
 
     typedef DataMap datamap_type;
@@ -188,7 +189,7 @@ public:
      * Builds a \p Backend, if Petsc is available, use Petsc by
      * default, otherwise use GMM which is distributed with feel
      */
-    static backend_ptrtype build(
+    static FEELPP_DEPRECATED backend_ptrtype build(
 #if defined( FEELPP_HAS_PETSC_H )
         BackendType = BACKEND_PETSC
 #else
@@ -198,10 +199,25 @@ public:
     );
 
     /**
-     * Builds a \p Backend
+     * build a backend
+     * \param kind the type of backend
+     * \param prefix the name of the backend
+     * \param worldcomm the communicator
+     * \return the backend
      */
-    static backend_ptrtype build( po::variables_map const& vm, std::string const& prefix = "", WorldComm const& worldComm=Environment::worldComm() );
-    static backend_ptrtype build( BackendType bt, std::string const& prefix = "", WorldComm const& worldComm=Environment::worldComm() );
+    static backend_ptrtype build( std::string const& kind, std::string const& prefix = "", WorldComm const& worldComm=Environment::worldComm() );
+
+    
+    static FEELPP_DEPRECATED backend_ptrtype build( po::variables_map const& vm, std::string const& prefix = "", WorldComm const& worldComm=Environment::worldComm() );
+
+    /**
+     * build a backend
+     * \param bt the type of backend
+     * \param prefix the name of the backend
+     * \param worldcomm the communicator
+     * \return the backend
+     */
+    static FEELPP_DEPRECATED backend_ptrtype build( BackendType bt, std::string const& prefix = "", WorldComm const& worldComm=Environment::worldComm() );
 
 
     /**
@@ -612,7 +628,7 @@ public:
     /**
      * \return the relative tolerance
      */
-    value_type rTolerance() const
+    real_type rTolerance() const
     {
         return M_rtolerance;
     }
@@ -620,7 +636,7 @@ public:
     /**
      * \return the relative tolerance SNES
      */
-    value_type rToleranceSNES() const
+    real_type rToleranceSNES() const
     {
         return M_rtoleranceSNES;
     }
@@ -628,7 +644,7 @@ public:
     /**
      * \return the divergence tolerance
      */
-    value_type dTolerance() const
+    real_type dTolerance() const
     {
         return M_dtolerance;
     }
@@ -636,7 +652,7 @@ public:
     /**
      * \return the SNES step length tolerance
      */
-    value_type sToleranceSNES() const
+    real_type sToleranceSNES() const
     {
         return M_stoleranceSNES;
     }
@@ -644,7 +660,7 @@ public:
     /**
      * \return the absolute tolerance
      */
-    value_type aTolerance() const
+    real_type aTolerance() const
     {
         return M_atolerance;
     }
@@ -652,7 +668,7 @@ public:
     /**
      * \return the SNES absolute tolerance
      */
-    value_type aToleranceSNES() const
+    real_type aToleranceSNES() const
     {
         return M_atoleranceSNES;
     }
@@ -693,7 +709,7 @@ public:
     /**
      * \return the KSP relative tolerance in SNES
      */
-    value_type rtoleranceKSPinSNES() const
+    real_type rtoleranceKSPinSNES() const
     {
         return M_rtoleranceKSPinSNES;
     }
@@ -735,6 +751,14 @@ public:
 
     BackendType type() const { return M_backend; }
 
+    static std::string enumToKind( BackendType bt ) 
+        {
+            if ( bt == BACKEND_EIGEN ) return "eigen";
+            if ( bt == BACKEND_EIGEN_DENSE ) return "eigen_dense";
+            if ( bt == BACKEND_PETSC ) return "petsc";
+            LOG(WARNING) << "Unknown backend, setting up for 'petsc'";
+            return "petsc";
+        }
     //@}
 
     /** @name  Mutators
@@ -749,12 +773,12 @@ public:
                                      setTolerances,
                                      tag,
                                      ( required
-                                       ( rtolerance, ( double ) )
+                                       ( rtolerance, ( real_type ) )
                                      )
                                      ( optional
                                        ( maxit,      ( size_type ), 1000 )
-                                       ( atolerance, ( double ),    1e-50 )
-                                       ( dtolerance, ( double ),    1e5 )
+                                       ( atolerance, ( real_type ),    1e-50 )
+                                       ( dtolerance, ( real_type ),    1e5 )
                                      ) )
     {
         M_rtolerance = rtolerance;
@@ -849,13 +873,13 @@ public:
     /**
      * \return \f$ r = x^T * y \f$
      */
-    virtual real_type dot( vector_type const& x, vector_type const& y ) const;
+    virtual value_type dot( vector_type const& x, vector_type const& y ) const;
 
 
     /**
      * \return \f$ r = x^T * y \f$
      */
-    real_type dot( vector_ptrtype const& x, vector_ptrtype const& y ) const
+    value_type dot( vector_ptrtype const& x, vector_ptrtype const& y ) const
     {
         return this->dot( *x, *y );
     }
@@ -1208,85 +1232,110 @@ private:
 typedef Backend<double> backend_type;
 typedef boost::shared_ptr<backend_type> backend_ptrtype;
 
+typedef Backend<std::complex<double>> c_backend_type;
+typedef boost::shared_ptr<c_backend_type> c_backend_ptrtype;
+
+
 
 namespace detail
 {
+template<typename T>
 class BackendManagerImpl:
-    public std::map<boost::tuple<BackendType,std::string,int>, backend_ptrtype >,
-    public boost::noncopyable
+        public std::map<boost::tuple<std::string,std::string,int>, typename Backend<T>::ptrtype >,
+        public boost::noncopyable
 {
 public:
-    typedef backend_ptrtype value_type;
-    typedef boost::tuple<BackendType,std::string,int> key_type;
+    typedef typename Backend<T>::ptrtype value_type;
+    typedef boost::tuple<std::string,std::string,int> key_type;
     typedef std::map<key_type, value_type> backend_manager_type;
 
 };
-typedef Feel::Singleton<BackendManagerImpl> BackendManager;
+template<typename T> 
+struct BackendManager : public  Feel::Singleton<BackendManagerImpl<T>> {};
 
+template<typename T>
 struct BackendManagerDeleterImpl
 {
     void operator()() const
         {
-            VLOG(2) << "[BackendManagerDeleter] clear BackendManager Singleton: " << Feel::detail::BackendManager::instance().size() << "\n";
-            Feel::detail::BackendManager::instance().clear();
+            VLOG(2) << "[BackendManagerDeleter] clear BackendManager Singleton: " << Feel::detail::BackendManager<T>::instance().size() << "\n";
+            Feel::detail::BackendManager<T>::instance().clear();
             VLOG(2) << "[BackendManagerDeleter] clear BackendManager done\n";
         }
 };
-typedef Feel::Singleton<BackendManagerDeleterImpl> BackendManagerDeleter;
-} // detail
+template<typename T>
+struct BackendManagerDeleter
+    : public  Feel::Singleton<BackendManagerDeleterImpl<T>> 
+{};
 
 
-BOOST_PARAMETER_FUNCTION(
-    ( backend_ptrtype ), // return type
-    backend,           // 2. function name
-    tag,               // 3. namespace of tag types
-    ( optional
-      ( vm,           ( po::variables_map ), Environment::vm() )
-      ( name,           ( std::string ), "" )
-      ( kind,           ( BackendType ), BACKEND_PETSC )
-      ( rebuild,        ( bool ), false )
-      ( worldcomm,      (WorldComm), Environment::worldComm() )
-    ) )
+
+
+template<typename T>
+typename Backend<T>::ptrtype
+backend_impl( std::string const& name, std::string const& kind, bool rebuild, WorldComm const& worldcomm )
 {
     // register the BackendManager into Feel::Environment so that it gets the
     // BackendManager is cleared up when the Environment is deleted
     static bool observed=false;
     if ( !observed )
     {
-        Environment::addDeleteObserver( Feel::detail::BackendManagerDeleter::instance() );
+        Environment::addDeleteObserver( Feel::detail::BackendManagerDeleter<T>::instance() );
         observed = true;
     }
+    
+    auto git = Feel::detail::BackendManager<T>::instance().find( boost::make_tuple( kind, name, worldcomm.globalSize() ) );
 
-
-    Feel::detail::ignore_unused_variable_warning( args );
-
-    auto git = Feel::detail::BackendManager::instance().find( boost::make_tuple( kind, name, worldcomm.globalSize() ) );
-
-    if (  git != Feel::detail::BackendManager::instance().end() && ( rebuild == false ) )
+    if (  git != Feel::detail::BackendManager<T>::instance().end() && ( rebuild == false ) )
     {
-        VLOG(2) << "[backend] found backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << " worldcomm.globalSize()=" << worldcomm.globalSize() << "\n";
+        DVLOG(2) << "[backend] found backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << " worldcomm.globalSize()=" << worldcomm.globalSize() << "\n";
         return git->second;
     }
 
     else
     {
-        if (  git != Feel::detail::BackendManager::instance().end() && ( rebuild == true ) )
+        if (  git != Feel::detail::BackendManager<T>::instance().end() && ( rebuild == true ) )
             git->second->clear();
 
-        VLOG(2) << "[backend] building backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << " worldcomm.globalSize()=" << worldcomm.globalSize() << "\n";
+        DVLOG(2) << "[backend] building backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << " worldcomm.globalSize()=" << worldcomm.globalSize() << "\n";
 
-        backend_ptrtype b;
-        if ( vm.empty() )
-        {
-            b = Feel::backend_type::build( kind, worldcomm );
-        }
-        else
-            b = Feel::backend_type::build( vm, name, worldcomm );
-        VLOG(2) << "storing backend in singleton" << "\n";
-        Feel::detail::BackendManager::instance().operator[]( boost::make_tuple( kind, name, worldcomm.globalSize() ) ) = b;
+        typename Backend<T>::ptrtype b;
+        b = Feel::Backend<T>::build( kind, name, worldcomm );
+        DVLOG(2) << "[backend] storing backend in singleton" << "\n";
+        Feel::detail::BackendManager<T>::instance().operator[]( boost::make_tuple( kind, name, worldcomm.globalSize() ) ) = b;
         return b;
     }
 
+}
+
+} // detail
+
+BOOST_PARAMETER_FUNCTION(
+                         ( backend_ptrtype ), // return type
+                         backend,           // 2. function name
+                         tag,               // 3. namespace of tag types
+                         ( optional
+                           ( name,           ( std::string ), "" )
+                           ( kind,           ( std::string ), soption(_prefix=name,_name="backend"))
+                           ( rebuild,        ( bool ), boption(_prefix=name,_name="backend.rebuild") )
+                           ( worldcomm,      (WorldComm), Environment::worldComm() )
+                           ) )
+{
+    return Feel::detail::backend_impl<double>( name, kind, rebuild, worldcomm);
+}
+
+BOOST_PARAMETER_FUNCTION(
+                         ( c_backend_ptrtype ), // return type
+                         cbackend,           // 2. function name
+                         tag,               // 3. namespace of tag types
+                         ( optional
+                           ( name,           ( std::string ), "" )
+                           ( kind,           ( std::string ), soption(_prefix=name,_name="backend"))
+                           ( rebuild,        ( bool ), boption(_prefix=name,_name="backend.rebuild") )
+                           ( worldcomm,      (WorldComm), Environment::worldComm() )
+                           ) )
+{
+    return Feel::detail::backend_impl<std::complex<double>>( name, kind, rebuild, worldcomm);
 }
 
 template<typename T>
@@ -1342,6 +1391,11 @@ bool isMatrixInverseSymmetric ( boost::shared_ptr<MatrixSparse<T> >& A, boost::s
     return  res < 1e-12;
 
 }
+
+#if !defined(FEELPP_BACKEND_NOEXTERN)
+extern template class Backend<double>;
+extern template class Backend<std::complex<double>>;
+#endif
 
 }
 #endif /* Backend_H */

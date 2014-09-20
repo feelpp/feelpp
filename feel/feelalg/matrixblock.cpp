@@ -83,7 +83,7 @@ BlocksBaseSparseMatrix<T>::close()
             if ( this->operator()(i,j) ) continue;
 
             DVLOG(1) << "add zero matrix in block ("<<i<<","<<j<<")\n";
-            this->operator()(i,j) = backend()->newZeroMatrix(dataMapRowRef[i], dataMapColRef[j]);
+            //this->operator()(i,j) = M_backend->newZeroMatrix(dataMapRowRef[i], dataMapColRef[j]);
         }
     }
 
@@ -94,11 +94,12 @@ BlocksBaseSparseMatrix<T>::close()
 
 template <typename T>
 MatrixBlockBase<T>::MatrixBlockBase( vf::BlocksBase<matrix_ptrtype> const & blockSet,
-                                     backend_type &backend,
+                                     backend_ptrtype backend,
                                      bool copy_values,
                                      bool diag_is_nonzero )
     :
     super(),
+    M_backend(backend),
     M_mat()
 {
     const uint16_type nRow = blockSet.nRow();
@@ -109,7 +110,7 @@ MatrixBlockBase<T>::MatrixBlockBase( vf::BlocksBase<matrix_ptrtype> const & bloc
         for ( uint16_type j=0; j<nCol; ++j )
             blockGraph(i,j) = blockSet(i,j)->graph();
 
-    M_mat = backend.newBlockMatrix(_block=blockGraph);
+    M_mat = M_backend->newBlockMatrix(_block=blockGraph);
 
     if ( copy_values )
     {
@@ -141,10 +142,12 @@ MatrixBlockBase<T>::MatrixBlockBase( vf::BlocksBase<matrix_ptrtype> const & bloc
 
 
 template <typename T>
-MatrixBlockBase<T>::MatrixBlockBase( vf::BlocksBase<graph_ptrtype> const & blockgraph, backend_type &backend,
+MatrixBlockBase<T>::MatrixBlockBase( vf::BlocksBase<graph_ptrtype> const & blockgraph, 
+                                     backend_ptrtype backend,
                                      bool diag_is_nonzero )
     :
     super(),
+    M_backend(backend),
     M_mat()
 {
     graph_ptrtype graph( new graph_type( blockgraph,diag_is_nonzero,true) );
@@ -154,7 +157,7 @@ MatrixBlockBase<T>::MatrixBlockBase( vf::BlocksBase<graph_ptrtype> const & block
     //graph->printPython("GraphG.py");
 
     size_type properties = NON_HERMITIAN;
-    M_mat = backend.newMatrix( graph->mapColPtr(),  graph->mapRowPtr(), properties, false );
+    M_mat = M_backend->newMatrix( graph->mapColPtr(),  graph->mapRowPtr(), properties, false );
     M_mat->init( graph->mapRow().nDof(), graph->mapCol().nDof(),
                  graph->mapRow().nLocalDofWithoutGhost(), graph->mapCol().nLocalDofWithoutGhost(),
                  graph );
@@ -389,7 +392,7 @@ MatrixBlockBase<T>::scale( value_type const a )
 }
 
 template <typename T>
-typename MatrixBlockBase<T>::value_type
+typename MatrixBlockBase<T>::real_type
 MatrixBlockBase<T>::energy( Vector<value_type> const& __v,
                             Vector<value_type> const& __u,
                             bool _transpose ) const
@@ -461,5 +464,7 @@ MatrixBlockBase<T>::updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> >
 
 template class BlocksBaseSparseMatrix<double>;
 template class MatrixBlockBase<double>;
+template class BlocksBaseSparseMatrix<std::complex<double>>;
+template class MatrixBlockBase<std::complex<double>>;
 
 } // Feel

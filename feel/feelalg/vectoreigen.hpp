@@ -29,6 +29,7 @@
 #ifndef __VectorEigen_H
 #define __VectorEigen_H 1
 
+#include <boost/serialization/complex.hpp>
 #include <set>
 #include <boost/operators.hpp>
 #include <Eigen/Core>
@@ -809,6 +810,7 @@ element_product( boost::shared_ptr<VectorEigen<T> > const& v1,
  */
 #if !defined( FEELPP_INSTANTIATE_VECTOREIGEN )
 extern template class VectorEigen<double>;
+extern template class VectorEigen<std::complex<double>>;
 #endif
 
 } // Feel

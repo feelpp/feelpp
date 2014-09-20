@@ -27,7 +27,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-07-15
  */
-
+#define FEELPP_INSTANTIATE_MATRIXEIGENDENSE 1
 #include <Eigen/Dense>
 #include <feel/feelalg/matrixeigendense.hpp>
 #include <feel/feelalg/vectoreigen.hpp>
@@ -155,7 +155,7 @@ MatrixEigenDense<T>::diagonal ( Vector<T>& dest ) const
 #endif
 }
 template<typename T>
-typename MatrixEigenDense<T>::value_type
+typename MatrixEigenDense<T>::real_type
 MatrixEigenDense<T>::energy( Vector<value_type> const& __v,
                              Vector<value_type> const& __u,
                              bool tranpose ) const
@@ -372,5 +372,6 @@ MatrixEigenDense<T>::createSubmatrix( MatrixSparse<T>& submatrix,
 // Explicit instantiations
 //
 template class MatrixEigenDense<double>;
+template class MatrixEigenDense<std::complex<double>>;
 //template class MatrixEigenDense<double,gmm::col_major>;
 }

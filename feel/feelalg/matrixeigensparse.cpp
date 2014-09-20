@@ -26,6 +26,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-07-15
  */
+#define FEELPP_INSTANTIATE_MATRIXEIGENSPARSE
 #include <boost/unordered_map.hpp>
 
 #include <feel/feelalg/matrixeigensparse.hpp>
@@ -227,7 +228,7 @@ MatrixEigenSparse<T>::zeroRows( std::vector<int> const& rows,
         for (typename matrix_type::InnerIterator it(M_mat,rows[k]); it; ++it)
         {
             m[it.row()].insert(it.col());
-            double value = 1.0;
+            value_type value = 1.0;
             if ( on_context.test( OnContext::ELIMINATION_KEEP_DIAGONAL ) )
                 value = it.value();
             rhs.add( it.row(), -it.value() * vals(rows[k]) );
@@ -308,5 +309,5 @@ MatrixEigenSparse<T>::printMatlab( const std::string filename ) const
 // Explicit instantiations
 //
 template class MatrixEigenSparse<double>;
-//template class MatrixEigenSparse<double,gmm::col_major>;
+template class MatrixEigenSparse<std::complex<double>>;
 }

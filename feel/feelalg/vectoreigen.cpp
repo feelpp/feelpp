@@ -510,8 +510,7 @@ VectorEigen<T>::pow( int n ) const
 {
     this_type _out( this->mapPtr() );
 
-    for ( int i = 0; i < ( int )this->localSize(); ++i )
-        _out[i] = math::pow( this->operator[]( i ), n );
+    _out.M_vec = M_vec.array().pow(n);
 
     return _out;
 }
@@ -541,4 +540,5 @@ void VectorEigen<T>::addVector ( const Vector<value_type>& V_in,
 // instantiation
 //
 template class VectorEigen<double>;
+template class VectorEigen<std::complex<double>>;
 } // Feel

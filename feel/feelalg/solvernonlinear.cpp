@@ -26,6 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-04-17
  */
+#define FEELPP_INSTANTIATE_SOLVERNONLINEAR
+
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelalg/solvernonlinear.hpp>
 #include <feel/feelalg/solvernonlinearpetsc.hpp>
@@ -166,6 +168,70 @@ SolverNonLinear<T>::build( po::variables_map const& vm, std::string const& prefi
     return solvernonlinear_ptrtype();
 }
 
+template <>
+boost::shared_ptr<SolverNonLinear<std::complex<double>> >
+SolverNonLinear<std::complex<double>>::build( po::variables_map const& vm, std::string const& prefix, WorldComm const& worldComm )
+{
+    SolverPackage solver_package=SOLVER_INVALID_PACKAGE;
+
+    if ( vm["backend"].template as<std::string>() == "petsc" )
+    {
+#if defined( FEELPP_HAS_PETSC )
+        solver_package = SOLVERS_PETSC;
+#endif
+    }
+
+    else if ( vm["backend"].template as<std::string>() == "trilinos" )
+    {
+#if defined( FEELPP_HAS_TRILINOS )
+        solver_package = SOLVERS_TRILINOS;
+#endif
+    }
+
+    else
+    {
+        LOG(INFO) << "[SolverNonLinear] solver " << vm["backend"].template as<std::string>() << " not available\n";
+        LOG(INFO) << "[Backend] use fallback  gmm\n";
+#if defined( FEELPP_HAS_PETSC )
+        solver_package = SOLVERS_PETSC;
+#endif
+    }
+
+    // Build the appropriate solver
+    switch ( solver_package )
+    {
+#if defined( FEELPP_HAS_PETSC ) && defined (PETSC_HAS_COMPLEX_SUPPORT)
+
+    case SOLVERS_PETSC:
+    {
+
+
+        solvernonlinear_ptrtype ap( new SolverNonLinearPetsc<T>( worldComm ) );
+        return ap;
+    }
+    break;
+#endif
+
+#if defined( FEELPP_HAS_TRILINOS )
+
+    case SOLVERS_TRILINOS:
+    {
+        solvernonlinear_ptrtype ap( new SolverNonLinearTrilinos<T>( worldComm )  );
+        return ap;
+    }
+    break;
+#endif
+
+    default:
+        std::cerr << "ERROR:  Unrecognized NonLinear solver package: "
+                  << solver_package
+                  << std::endl;
+        throw std::invalid_argument( "invalid solver package" );
+    }
+
+    return solvernonlinear_ptrtype();
+}
+
 template <typename T>
 boost::shared_ptr<SolverNonLinear<T> >
 SolverNonLinear<T>::build( SolverPackage solver_package, WorldComm const& worldComm )
@@ -219,11 +285,65 @@ SolverNonLinear<T>::build( SolverPackage solver_package, WorldComm const& worldC
     return solvernonlinear_ptrtype();
 }
 
+template <>
+boost::shared_ptr<SolverNonLinear<std::complex<double>> >
+SolverNonLinear<std::complex<double>>::build( SolverPackage solver_package, WorldComm const& worldComm )
+{
+#if defined( FEELPP_HAS_PETSC )
+
+    if ( solver_package != SOLVERS_PETSC )
+    {
+        LOG(INFO) << "[SolverNonLinear] solver " << solver_package << " not available\n";
+        LOG(INFO) << "[Backend] use fallback  petsc: " << SOLVERS_PETSC << "\n";
+        solver_package = SOLVERS_PETSC;
+    }
+
+    // Build the appropriate solver
+    switch ( solver_package )
+    {
+
+    case SOLVERS_PETSC:
+    {
+
+#if defined( FEELPP_HAS_PETSC ) && defined (PETSC_HAS_COMPLEX_SUPPORT )
+        solvernonlinear_ptrtype ap(new SolverNonLinearPetsc<T>( worldComm ) );
+        return ap;
+#else
+        std::cerr << "PETSc is not available/installed" << std::endl;
+        throw std::invalid_argument( "invalid solver PETSc package" );
+#endif
+    }
+    break;
+
+    case SOLVERS_TRILINOS:
+    {
+#if defined( FEELPP_HAS_TRILINOS )
+        solvernonlinear_ptrtype ap( new SolverNonLinearTrilinos<T>( worldComm ) );
+        return ap;
+#else
+        std::cerr << "Trilinos NOX is not available/installed" << std::endl;
+        throw std::invalid_argument( "invalid solver NOX package" );
+#endif
+    }
+    break;
+
+    default:
+        std::cerr << "ERROR:  Unrecognized NonLinear solver package: "
+                  << solver_package
+                  << std::endl;
+        throw std::invalid_argument( "invalid solver package" );
+    }
+
+#endif
+    return solvernonlinear_ptrtype();
+}
+
 
 /*
  * Explicit instantiations
  */
 template class SolverNonLinear<double>;
+template class SolverNonLinear<std::complex<double>>;
 
 /**
  * \return the command lines options of the petsc backend
