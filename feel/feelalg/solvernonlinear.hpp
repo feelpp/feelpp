@@ -637,5 +637,10 @@ protected:
 
 };
 
+#if !defined( FEELPP_INSTANTIATE_SOLVERNONLINEAR )
+extern template class SolverNonLinear<double>;
+extern template class SolverNonLinear<std::complex<double>>;
+#endif
+
 } // Feel
 #endif /* __SolverNonLinear_H */

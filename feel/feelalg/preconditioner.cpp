@@ -26,6 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2012-01-16
  */
+#define FEELPP_INSTANTIATE_PRECONDITIONER 1
+
 #include <feel/feelalg/preconditioner.hpp>
 #include <feel/feelalg/preconditionerpetsc.hpp>
 
@@ -48,6 +50,25 @@ Preconditioner<T>::build( std::string const& name,
     return preconditioner_ptrtype();
 }
 
+template <>
+typename Preconditioner<std::complex<double>>::preconditioner_ptrtype
+Preconditioner<std::complex<double>>::build( std::string const& name,
+                                             BackendType backend,
+                                             WorldComm const& worldComm )
+{
+#if defined(PETSC_HAS_COMPLEX_SUPPORT ) 
+    switch ( backend )
+    {
+    default:
+    case BACKEND_PETSC:
+        {
+            return preconditioner_ptrtype( new PreconditionerPetsc<T>( name, worldComm ) );
+        }
+    }
+#endif
+    return preconditioner_ptrtype();
+}
+    
 template <typename T>
 FEELPP_STRONG_INLINE
 void
@@ -99,5 +120,6 @@ Preconditioner<T>::setPrecMatrixStructure( MatrixStructure mstruct  )
 
 
 template class Preconditioner<double>;
+template class Preconditioner<std::complex<double>>;
 
 } // Feel

@@ -1425,8 +1425,8 @@ public:
                                        ( rhs, * ) )
                                      ( optional
                                        ( name,           ( std::string ), "" )
-                                       ( kind,           ( BackendType ), BACKEND_PETSC )
-                                       ( rebuild,        ( bool ), false )
+                                       ( kind,           ( std::string ), soption(_prefix=name,_name="backend") )
+                                       ( rebuild,        ( bool ), boption(_prefix=name,_name="backend.rebuild") )
                                          ) )
         {
             return backend( _name=name, _kind=kind, _rebuild=rebuild,

@@ -430,6 +430,10 @@ private:
     mutable std::vector<triplet> M_tripletList;
 };
 
+#if !defined( FEELPP_INSTANTIATE_MATRIXEIGENSPARSE )
+extern template class MatrixEigenSparse<double>;
+extern template class MatrixEigenSparse<std::complex<double>>;
+#endif
 
 
 } // Feel

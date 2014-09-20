@@ -251,6 +251,7 @@ Vector<double>::compare ( const Vector<double> &other_vector,
 
     return rvalue;
 }
+
 #if 0
 // Full specialization for long double datatypes
 template <>
@@ -279,21 +280,19 @@ Vector<long double>::compare ( const Vector<long double> &other_vector,
     return rvalue;
 }
 #endif
-#if 0
-
 // Full specialization for Complex datatypes
 template <>
 int
-Vector<Complex>::compare ( const Vector<Complex> &other_vector,
-                           const Real threshold ) const
+Vector<std::complex<double>>::compare ( const Vector<std::complex<double>> &other_vector,
+                                        const real_type threshold ) const
 {
-    assert ( this->initialized() );
-    assert ( other_vector.initialized() );
-    assert ( this->first_local_index() == other_vector.first_local_index() );
-    assert ( this->last_local_index()  == other_vector.last_local_index() );
+    CHECK ( this->isInitialized() ) << "vector not initialized";
+    CHECK ( other_vector.isInitialized() ) << "other vector not initialized";
+    CHECK ( this->firstLocalIndex() == other_vector.firstLocalIndex() ) << "invalid index";
+    CHECK ( this->lastLocalIndex()  == other_vector.lastLocalIndex() ) << "invalid index";
 
     int rvalue     = -1;
-    size_type i = first_local_index();
+    size_type i = firstLocalIndex();
 
     do
     {
@@ -304,11 +303,10 @@ Vector<Complex>::compare ( const Vector<Complex> &other_vector,
         else
             i++;
     }
-    while ( rvalue==-1 && i<this->last_local_index() );
+    while ( rvalue==-1 && i<this->lastLocalIndex() );
 
     return rvalue;
 }
-#endif
 
 
 template <typename T>
@@ -330,6 +328,7 @@ void Vector<T>::localize( Vector<T> const& v )
 }
 
 template class Vector<double>;
+template class Vector<std::complex<double>>;
 //template class Vector<long double>;
 
 }

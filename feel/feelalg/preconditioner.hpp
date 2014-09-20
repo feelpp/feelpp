@@ -380,6 +380,16 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
     }
 }
 
+/**
+ * FEELPP_INSTANTIATE_PRECONDITIONER is never defined except in preconditioner.cpp
+ * where we do the instantiate. This allows to reduce the Preconditioner
+ * instantiation to the strict minimum
+ */
+#if !defined( FEELPP_INSTANTIATE_PRECONDITIONER )
+extern template class Preconditioner<double>;
+extern template class Preconditioner<std::complex<double>>;
+#endif
+
 
 } // Feel
 #endif /* __Preconditioner_H */

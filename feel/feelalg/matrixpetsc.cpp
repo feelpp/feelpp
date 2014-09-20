@@ -1529,7 +1529,7 @@ MatrixPetsc<T>::symmetricPart( MatrixSparse<value_type>& Mt ) const
 
 
 template<typename T>
-typename MatrixPetsc<T>::value_type
+typename MatrixPetsc<T>::real_type
 MatrixPetsc<T>::energy( Vector<value_type> const& __v,
                         Vector<value_type> const& __u,
                         bool transpose ) const
