@@ -26,6 +26,10 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-12-23
  */
+#define FEELPP_BACKEND_NOEXTERN 1
+
+#include <boost/serialization/complex.hpp>
+
 #include <feel/feelalg/backend.hpp>
 // PETSc defines MatType which is used as a typename by eigen3 and it conflicts
 // undef MatType here to ensure compilation since it is not needed to compile this file
@@ -222,75 +226,68 @@ Backend<T>::build( BackendType bt, WorldComm const& worldComm )
 
     return backend_ptrtype();
 }
-template <typename T>
-typename Backend<T>::backend_ptrtype
-Backend<T>::build( po::variables_map const& vm, std::string const& prefix, WorldComm const& worldComm )
+template <>
+typename Backend<std::complex<double>>::backend_ptrtype
+Backend<std::complex<double>>::build( BackendType bt, WorldComm const& worldComm )
 {
-
-    std::string n = option( _name="backend" ).template as<std::string>();
-    LOG(INFO) << "Loading backend " << n;
-    BackendType bt;
-
-    if ( ( n == "eigen_dense" ) || ( prefix.find("dd") != std::string::npos ) )
-        bt = BACKEND_EIGEN_DENSE;
-
-    else if ( n == "eigen" )
-        bt = BACKEND_EIGEN;
-
-    else if ( n == "petsc" )
-        bt = BACKEND_PETSC;
-
-    else if ( n == "trilinos" )
-        bt = BACKEND_TRILINOS;
-
-    else
-    {
-
-#if defined( FEELPP_HAS_PETSC_H )
-
-        LOG(INFO) << "Falling back to backend petsc\n";
-        bt = BACKEND_PETSC;
-#else
-        LOG(FATAL) << "Backend " << n << " not available";
-#endif
-    }
-
     // Build the appropriate solver
     switch ( bt )
     {
     case BACKEND_EIGEN:
     {
-        return backend_ptrtype( new BackendEigen<value_type>( Environment::vm(), prefix, worldComm ) );
+        return backend_ptrtype( new BackendEigen<value_type>( worldComm ) );
     }
     break;
     case BACKEND_EIGEN_DENSE:
     {
-        return backend_ptrtype( new BackendEigen<value_type,1>( Environment::vm(), prefix, worldComm ) );
+        return backend_ptrtype( new BackendEigen<value_type,1>( worldComm ) );
     }
     break;
-
-#if defined ( FEELPP_HAS_PETSC_H )
 
     default:
-    case BACKEND_PETSC:
-    {
-        return backend_ptrtype( new BackendPetsc<value_type>( Environment::vm(), prefix, worldComm ) );
+        std::cerr << "ERROR:  Unrecognized backend type package: "
+                  << bt
+                  << std::endl;
+        throw std::invalid_argument( "invalid backend type" );
     }
-    break;
-#endif
-#if defined ( FEELPP_HAS_TRILINOS_EPETRA )
 
-    case BACKEND_TRILINOS:
-    {
-#if defined ( FEELPP_HAS_TRILINOS_EPETRA )
-        return backend_ptrtype( new BackendTrilinos( Environment::vm(), prefix, worldComm ) );
+    return backend_ptrtype();
+}
+
+template <typename T>
+typename Backend<T>::backend_ptrtype
+Backend<T>::build( po::variables_map const& vm, std::string const& prefix, WorldComm const& worldComm )
+{
+    std::string kind = soption( _name="backend" );
+    return build( kind, prefix, worldComm );
+}
+template <typename T>
+typename Backend<T>::backend_ptrtype
+Backend<T>::build( std::string const& kind, std::string const& prefix, WorldComm const& worldComm )
+{
+    if ( kind == "eigen")
+        return backend_ptrtype( new BackendEigen<value_type>( Environment::vm(), prefix, worldComm ) );
+    if ( kind == "eigen_dense")
+        return backend_ptrtype( new BackendEigen<value_type,1>( Environment::vm(), prefix, worldComm ) );
+#if defined ( FEELPP_HAS_PETSC_H )
+    if ( kind == "petsc")
+        return backend_ptrtype( new BackendPetsc<value_type>( Environment::vm(), prefix, worldComm ) );
 #else
-        return backend_ptrtype();
+    if ( kind == "petsc")
+        LOG(FATAL) << "Backend 'petsc' not available";
 #endif
-    }
-    break;
-#endif
-    }
+    // should never happen
+    return backend_ptrtype();
+}
+
+template <>
+typename Backend<std::complex<double>>::backend_ptrtype
+Backend<std::complex<double>>::build( std::string const& kind, std::string const& prefix, WorldComm const& worldComm )
+{
+    if ( kind == "eigen")
+        return backend_ptrtype( new BackendEigen<value_type>( Environment::vm(), prefix, worldComm ) );
+    if ( kind == "eigen_dense")
+        return backend_ptrtype( new BackendEigen<value_type,1>( Environment::vm(), prefix, worldComm ) );
     // should never happen
     return backend_ptrtype();
 }
@@ -299,44 +296,7 @@ template <typename T>
 typename Backend<T>::backend_ptrtype
 Backend<T>::build( BackendType bt, std::string const& prefix, WorldComm const& worldComm )
 {
-    // Build the appropriate solver
-    switch ( bt )
-    {
-    case BACKEND_EIGEN:
-    {
-        return backend_ptrtype( new BackendEigen<value_type>( Environment::vm(), prefix, worldComm ) );
-    }
-    break;
-    case BACKEND_EIGEN_DENSE:
-    {
-        return backend_ptrtype( new BackendEigen<value_type,1>( Environment::vm(), prefix, worldComm ) );
-    }
-    break;
-
-#if defined ( FEELPP_HAS_PETSC_H )
-
-    default:
-    case BACKEND_PETSC:
-    {
-        return backend_ptrtype( new BackendPetsc<value_type>( Environment::vm(), prefix, worldComm ) );
-    }
-    break;
-#endif
-#if defined ( FEELPP_HAS_TRILINOS_EPETRA )
-
-    case BACKEND_TRILINOS:
-    {
-#if defined ( FEELPP_HAS_TRILINOS_EPETRA )
-        return backend_ptrtype( new BackendTrilinos( Environment::vm(), prefix, worldComm ) );
-#else
-        return backend_ptrtype();
-#endif
-    }
-    break;
-#endif
-    }
-    // should never happen
-    return backend_ptrtype();
+    return build( enumToKind( bt ), prefix, worldComm );
 }
 
 template <typename T>
@@ -558,20 +518,37 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
     return ret;
 }
 template <typename T>
-typename Backend<T>::real_type
+typename Backend<T>::value_type
 Backend<T>::dot( vector_type const& x, vector_type const& y ) const
 {
-    real_type localres = 0;
+    value_type localres = 0;
 
     for ( size_type i = 0; i < x.localSize(); ++i )
     {
         localres += x( i )*y( i );
     }
 
-    real_type globalres=localres;
-    mpi::all_reduce( M_worldComm.globalComm(), localres, globalres, std::plus<real_type>() );
+    value_type globalres=localres;
+    mpi::all_reduce( M_worldComm.globalComm(), localres, globalres, std::plus<value_type>() );
     return globalres;
 }
+
+template <>
+typename Backend<std::complex<double>>::value_type
+Backend<std::complex<double>>::dot( vector_type const& x, vector_type const& y ) const
+{
+    value_type localres = 0;
+    
+    for ( size_type i = 0; i < x.localSize(); ++i )
+    {
+        localres += std::conj(x( i ))*y( i );
+    }
+    
+    value_type globalres=localres;
+    mpi::all_reduce( M_worldComm.globalComm(), localres, globalres, std::plus<value_type>() );
+    return globalres;
+}
+
 
 template <typename T>
 void
@@ -675,10 +652,6 @@ Backend<T>::matSolverPackageEnumType() const
 }
 
 
-/*
- * Explicit instantiations
- */
-template class Backend<double>;
 
 void updateBackendPreconditionerOptions( po::options_description & _options, std::string const& prefix, std::string const& sub = "",
                                          std::string pcType = "lu", bool useDefaultValue=true )
@@ -907,6 +880,7 @@ po::options_description backend_options( std::string const& prefix )
     _options.add_options()
         // solver options
         ( prefixvm( prefix,"backend" ).c_str(), Feel::po::value<std::string>()->default_value( "petsc" ), "backend type: petsc, eigen, eigen_dense" )
+        ( prefixvm( prefix,"backend.rebuild" ).c_str(), Feel::po::value<bool>()->default_value( false ), "rebuild the backend each time it is called" )
         ( prefixvm( prefix,"backend.verbose" ).c_str(), Feel::po::value<bool>()->default_value( false ), "set the backend to be verbose" )
 
         ( prefixvm( prefix,"reuse-jac" ).c_str(), Feel::po::value<bool>()->default_value( false ), "reuse jacobian" )
@@ -952,5 +926,11 @@ po::options_description backend_options( std::string const& prefix )
 }
 
 
+/*
+ * Explicit instantiations
+ */
+template class Backend<double>;
+template class Backend<std::complex<double>>;
+    
 
 } // namespace Feel

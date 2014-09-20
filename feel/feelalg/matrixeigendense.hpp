@@ -320,7 +320,7 @@ public:
     /**
      * \return \f$ v^T M u \f$
      */
-    value_type
+    real_type
     energy( Vector<value_type> const& __v,
             Vector<value_type> const& __u, bool transpose = false ) const;
 
@@ -489,6 +489,12 @@ private:
      */
     mutable matrix_type M_mat;
 };
+
+#if !defined( FEELPP_INSTANTIATE_MATRIXEIGENDENSE )
+extern template class MatrixEigenDense<double>;
+extern template class MatrixEigenDense<std::complex<double>>;
+#endif
+
 
 
 

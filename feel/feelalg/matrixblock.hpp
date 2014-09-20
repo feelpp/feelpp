@@ -153,17 +153,36 @@ public:
     //@{
 
     MatrixBlockBase( vf::BlocksBase<matrix_ptrtype > const & blockSet,
-                     backend_type &backend,
+                     backend_ptrtype backend,
                      bool copy_values=true,
                      bool diag_is_nonzero=true );
 
     MatrixBlockBase( vf::BlocksBase<graph_ptrtype> const & graph,
-                     backend_type &backend,
+                     backend_ptrtype backend,
                      bool diag_is_nonzero=true );
+
+    
+    MatrixBlockBase( vf::BlocksBase<matrix_ptrtype > const & blockSet,
+                     backend_type &backend,
+                     bool copy_values=true,
+                     bool diag_is_nonzero=true )
+        :
+        MatrixBlockBase( blockSet, backend.shared_from_this(), copy_values, diag_is_nonzero )
+    {}
+
+    MatrixBlockBase( vf::BlocksBase<graph_ptrtype> const & graph,
+                     backend_type &backend,
+                     bool diag_is_nonzero=true )
+        :
+        MatrixBlockBase( graph, backend.shared_from_this(), diag_is_nonzero )
+    {}
+
+    
 
     MatrixBlockBase( MatrixBlockBase const & mb )
         :
         super( mb ),
+        M_backend(mb.M_backend),
         M_mat( mb.M_mat )
     {}
 
@@ -379,7 +398,7 @@ public:
     /**
      * \return \f$ v^T M u \f$
      */
-    value_type
+    real_type
     energy( Vector<value_type> const& __v,
             Vector<value_type> const& __u,
             bool transpose = false ) const;
@@ -493,7 +512,7 @@ protected:
 
 private:
 
-    //vector_matrix_ptrtype M_v;
+    backend_ptrtype M_backend;
 
     boost::shared_ptr<MatrixSparse<value_type> > M_mat;
 };
