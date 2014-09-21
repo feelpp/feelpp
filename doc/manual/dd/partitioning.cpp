@@ -26,7 +26,9 @@
    \author Pierre Jolivet <pierre.jolivet@imag.fr>
    \date 2014-09-21
  */
-#include <feel/feel.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feeldiscr/pdh.hpp>
 
 namespace Feel
 {
@@ -51,27 +53,42 @@ template<int Dim>
 void
 Partitioning<Dim>::run()
 {
-    MPI_Comm comm;
-    int p = 1;
-    MPI_Group orig_group, new_group;
-    MPI_Comm_group(Environment::worldComm(), &orig_group);
+    int p = 2;
     int* pm = new int[p];
     for(unsigned short i = 0; i < p; ++i)
         pm[i] = i * (Environment::numberOfProcessors() / p);
     bool excluded = std::binary_search(pm, pm + p, Environment::rank());
+    mpi::group new_group;
     if(excluded)
-        MPI_Group_incl(orig_group, p, pm, &new_group);
+        new_group = Environment::worldComm().group().include(pm,pm+p);
     else
-        MPI_Group_excl(orig_group, p, pm, &new_group);
-    MPI_Comm_create(Environment::worldComm(), new_group, &comm);
-    MPI_Group_free(&orig_group);
-    MPI_Group_free(&new_group);
+        new_group = Environment::worldComm().group().exclude(pm,pm+p);
     delete [] pm;
-    boost::mpi::communicator bComm(comm, boost::mpi::comm_take_ownership);
-    WorldComm wComm(bComm);
+
+    boost::mpi::communicator bComm(Environment::worldComm(), new_group);
+    std::vector<int> active( bComm.size(), true );
+    WorldComm wComm(bComm,bComm,bComm,bComm.rank(),active);
+    //wComm.showMe();
     boost::shared_ptr<Mesh<Simplex<Dim>>> mesh;
     if(!excluded)
-        mesh = loadMesh(_mesh = new Mesh<Simplex<Dim>>, _worldcomm = wComm);
+    {
+        std::cout << "proc " << Environment::rank() 
+                  << " is not excluded and is locally rank " << wComm.rank() << " and loads mesh with " 
+                  << wComm.globalSize() << " partitions\n";
+        mesh = loadMesh(_mesh = new Mesh<Simplex<Dim>>(wComm), _worldcomm=wComm );
+        //auto e = exporter( _mesh=mesh );
+        //e->add("pid", regionProcess(Pdh<0>(mesh)) );
+        //e->save();
+    }
+    else
+    {
+        std::cout << "proc " << Environment::rank() 
+                  << " is excluded and does not load mesh";
+        int np = 0;
+        mpi::all_reduce(wComm, 1, np, std::plus<int>());
+        std::cout << "proc " << Environment::rank() 
+                  <<   " - nb proc = " << np << "\n";
+    }
 } // Partitioning::run
 
 } // Feel
@@ -82,12 +99,11 @@ int main(int argc, char** argv) {
      * Initialize Feel++ Environment
      */
     Environment env( _argc=argc, _argv=argv,
-                     _desc=feel_options(),
                      _about=about(_name="doc_partitioning",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org") );
     Application app;
     app.add(new Partitioning<2>());
-    app.add(new Partitioning<3>());
+    //app.add(new Partitioning<3>());
     app.run();
 }
