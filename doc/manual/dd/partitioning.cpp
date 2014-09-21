@@ -29,6 +29,7 @@
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feeldiscr/pdh.hpp>
+#include <feel/feel.hpp>
 
 namespace Feel
 {
@@ -76,9 +77,30 @@ Partitioning<Dim>::run()
                   << " is not excluded and is locally rank " << wComm.rank() << " and loads mesh with " 
                   << wComm.globalSize() << " partitions\n";
         mesh = loadMesh(_mesh = new Mesh<Simplex<Dim>>(wComm), _worldcomm=wComm );
-        //auto e = exporter( _mesh=mesh );
-        //e->add("pid", regionProcess(Pdh<0>(mesh)) );
-        //e->save();
+        std::cout << " - nelement(mesh)=" << nelements(elements(mesh)) << "\n";
+        std::cout << " - loading space\n";
+        auto Vh = Pch<2>( mesh );
+
+        auto u = Vh->element("u");
+        auto f = expr( soption(_name="functions.f"), "f", wComm );
+
+        auto g = expr( soption(_name="functions.g"), "g", wComm );
+        auto v = Vh->element( g, "g" );
+
+        auto l = form1( _test=Vh );
+        l = integrate(_range=elements(mesh),_expr=f*id(v));
+
+        auto a = form2( _trial=Vh, _test=Vh);
+        a = integrate(_range=elements(mesh),
+                      _expr=gradt(u)*trans(grad(v)) );
+        a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u, _expr=g );
+
+        a.solve(_rhs=l,_solution=u);
+        auto e = exporter( _mesh=mesh );
+        //e->addRegions();
+        e->add( "u", u );
+        e->add( "g", v );
+        e->save();
     }
     else
     {
