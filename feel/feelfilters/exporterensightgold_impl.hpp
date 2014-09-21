@@ -205,10 +205,10 @@ void
 ExporterEnsightGold<MeshType,N>::writeSoSFile() const
 {
     // only on proc 0
-    if ( Environment::worldComm().rank() == Environment::worldComm().masterRank() )
+    if ( this->worldComm().rank() == this->worldComm().masterRank() )
     {
         std::ostringstream filestr;
-        filestr << this->path() << "/" << this->prefix() << "-" << Environment::worldComm().globalSize() << ".sos";
+        filestr << this->path() << "/" << this->prefix() << "-" << this->worldComm().globalSize() << ".sos";
         std::ofstream __out( filestr.str().c_str() );
 
         if ( __out.fail() )
@@ -231,21 +231,21 @@ ExporterEnsightGold<MeshType,N>::writeSoSFile() const
         else
         {
             __out << "MULTIPLE_CASEFILES\n"
-                << "total number of cfiles: " << Environment::worldComm().globalSize() << "\n"
+                << "total number of cfiles: " << this->worldComm().globalSize() << "\n"
                 << "cfiles global path: " << fs::current_path().string() << "\n"
-                << "cfiles pattern: "<<this->prefix() << "-" << Environment::worldComm().globalSize() << "_*.case\n"
+                << "cfiles pattern: "<<this->prefix() << "-" << this->worldComm().globalSize() << "_*.case\n"
                 << "cfiles start number: 0\n"
                 << "cfiles increment: 1\n\n";
         }
         __out << "SERVERS\n"
-              << "number of servers: "<< (Environment::worldComm().globalSize()/100)+1 <<" repeat\n";
+              << "number of servers: "<< (this->worldComm().globalSize()/100)+1 <<" repeat\n";
 
         //
         // save also a sos that paraview can understand, the previous format
         // does not seem to be supported by paraview
         //
         std::ostringstream filestrparaview;
-        filestrparaview << this->path() << "/" << this->prefix() << "-paraview-" << Environment::worldComm().globalSize() << ".sos";
+        filestrparaview << this->path() << "/" << this->prefix() << "-paraview-" << this->worldComm().globalSize() << ".sos";
         std::ofstream __outparaview( filestrparaview.str().c_str() );
 
         __outparaview << "FORMAT:\n"
@@ -266,15 +266,15 @@ ExporterEnsightGold<MeshType,N>::writeSoSFile() const
         }
         else
         {
-            __outparaview << "number of servers: " << Environment::worldComm().globalSize() << "\n";
+            __outparaview << "number of servers: " << this->worldComm().globalSize() << "\n";
 
-            for ( int pid = 0 ; pid < Environment::worldComm().globalSize(); ++pid )
+            for ( int pid = 0 ; pid < this->worldComm().globalSize(); ++pid )
             {
                 __outparaview << "#Server " << pid+1 << "\n"
                     << "machine id: " << mpi::environment::processor_name() << "\n"
                     << "executable: /usr/local/bin/ensight76/bin/ensight7.server\n"
                     << "data_path: " << fs::current_path().string() << "\n"
-                    << "casefile: " << this->prefix() << "-" << Environment::worldComm().globalSize() << "_" << pid << ".case\n";
+                    << "casefile: " << this->prefix() << "-" << this->worldComm().globalSize() << "_" << pid << ".case\n";
             }
         }
     }
@@ -288,7 +288,7 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
     filestr << this->path() << "/"
             << this->prefix();
     if( ! boption( _name="exporter.merge.markers") )
-    { filestr << "-" << Environment::worldComm().globalSize() << "_" << Environment::worldComm().globalRank(); }
+    { filestr << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
     filestr << ".case";
 
     std::ofstream __out( filestr.str().c_str() );
@@ -313,7 +313,7 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
         timeset_ptrtype __ts = *__ts_it;
         __out << "model: " << __ts->name();
         if( ! boption( _name="exporter.merge.markers") )
-        { __out << "-" << Environment::worldComm().globalSize() << "_" << Environment::worldComm().globalRank(); }
+        { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
         __out << ".geo";
     }
     break;
@@ -330,14 +330,14 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
             {
                 __out << "model: " << __ts->index() << " 1 " << __ts->name();
                 if( ! boption( _name="exporter.merge.markers") )
-                { __out << "-" << Environment::worldComm().globalSize() << "_" << Environment::worldComm().globalRank(); }
+                { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
                 __out << ".geo";
             }
             else
             {
                 __out << "model: " << __ts->index() << " " << __ts->name();
                 if( ! boption( _name="exporter.merge.markers") )
-                { __out << "-" << Environment::worldComm().globalSize() << "_" << Environment::worldComm().globalRank(); }
+                { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
                 __out << ".geo" << "." << std::string(M_timeExponent, '*');
             }
 
@@ -409,7 +409,7 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
                       << __ts->index() << " 1 " // << *__ts_it->beginStep() << " "
                       << __it->second.name() << " " << __it->first;
                 if( ! boption( _name="exporter.merge.markers") )
-                { __out << "-" << Environment::worldComm().globalSize() << "_" << Environment::worldComm().globalRank(); }
+                { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
                 __out << ".scl" << std::endl;
             }
             else
@@ -418,7 +418,7 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
                       << __ts->index() << " " // << *__ts_it->beginStep() << " "
                       << __it->second.name() << " " << __it->first;
                 if( ! boption( _name="exporter.merge.markers") )
-                { __out << "-" << Environment::worldComm().globalSize() << "_" << Environment::worldComm().globalRank(); }
+                { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
                 __out << ".scl" << "." << std::string(M_timeExponent, '*') << std::endl;
             }
             ++__it;
@@ -436,7 +436,7 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
                       << __ts->index() << " 1 " // << *__ts_it->beginStep() << " "
                       << __itv->second.name() << " " << __itv->first;
                 if( ! boption( _name="exporter.merge.markers") )
-                { __out << "-" << Environment::worldComm().globalSize() << "_" << Environment::worldComm().globalRank(); }
+                { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
                 __out << ".vec" << std::endl;
             }
             else
@@ -445,7 +445,7 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
                       << __ts->index() << " " // << *__ts_it->beginStep() << " "
                       << __itv->second.name() << " " << __itv->first;
                 if( ! boption( _name="exporter.merge.markers") )
-                { __out << "-" << Environment::worldComm().globalSize() << "_" << Environment::worldComm().globalRank(); }
+                { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
                 __out << ".vec" << "." << std::string(M_timeExponent, '*') << std::endl;
             }
             ++__itv;
@@ -463,7 +463,7 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
                       << __ts->index() << " 1 " // << *__ts_it->beginStep() << " "
                       << __itt->second.name() << " " << __itt->first;
                 if( ! boption( _name="exporter.merge.markers") )
-                { __out << "-" << Environment::worldComm().globalSize() << "_" << Environment::worldComm().globalRank(); }
+                { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
                 __out << ".tsr" << std::endl;
             }
             else
@@ -472,7 +472,7 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
                       << __ts->index() << " " // << *__ts_it->beginStep() << " "
                       << __itt->second.name() << " " << __itt->first;
                 if( ! boption( _name="exporter.merge.markers") )
-                { __out << "-" << Environment::worldComm().globalSize() << "_" << Environment::worldComm().globalRank(); }
+                { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
                 __out << ".tsr" << "." << std::string(M_timeExponent, '*') << std::endl; 
             }
             ++__itt;
@@ -490,7 +490,7 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
                       << __ts->index() << " 1 " // << *__ts_it->beginStep() << " "
                       << __it_el->second.name() << " " << __it_el->first;
                 if( ! boption( _name="exporter.merge.markers") )
-                { __out << "-" << Environment::worldComm().globalSize() << "_" << Environment::worldComm().globalRank(); }
+                { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
                 __out << ".scl" << std::endl;
             }
             else
@@ -499,7 +499,7 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
                       << __ts->index() << " " // << *__ts_it->beginStep() << " "
                       << __it_el->second.name() << " " << __it_el->first;
                 if( ! boption( _name="exporter.merge.markers") )
-                { __out << "-" << Environment::worldComm().globalSize() << "_" << Environment::worldComm().globalRank(); }
+                { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
                 __out << ".scl" << "." << std::string(M_timeExponent, '*') << std::endl;
             }
             ++__it_el;
@@ -517,7 +517,7 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
                       << __ts->index() << " 1 " // << *__ts_it->beginStep() << " "
                       << __itv_el->second.name() << " " << __itv_el->first;
                 if( ! boption( _name="exporter.merge.markers") )
-                { __out << "-" << Environment::worldComm().globalSize() << "_" << Environment::worldComm().globalRank(); }
+                { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
                 __out << ".vec" << std::endl;
             }
             else
@@ -526,7 +526,7 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
                       << __ts->index() << " " // << *__ts_it->beginStep() << " "
                       << __itv_el->second.name() << " " << __itv_el->first;
                 if( ! boption( _name="exporter.merge.markers") )
-                { __out << "-" << Environment::worldComm().globalSize() << "_" << Environment::worldComm().globalRank(); }
+                { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
                 __out << ".vec" << "." << std::string(M_timeExponent, '*') << std::endl;
             }
             ++__itv_el;
@@ -543,7 +543,7 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
                       << __ts->index() << " 1 " // << *__ts_it->beginStep() << " "
                       << __itt_el->second.name() << " " << __itt_el->first;
                 if( ! boption( _name="exporter.merge.markers") )
-                { __out << "-" << Environment::worldComm().globalSize() << "_" << Environment::worldComm().globalRank(); }
+                { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
                 __out << ".tsr" << std::endl;
             }
             else
@@ -552,7 +552,7 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
                     << __ts->index() << " " // << *__ts_it->beginStep() << " "
                     << __itt_el->second.name() << " " << __itt_el->first;
                 if( ! boption( _name="exporter.merge.markers") )
-                { __out << "-" << Environment::worldComm().globalSize() << "_" << Environment::worldComm().globalRank(); }
+                { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
                 __out << ".tsr" << "." << std::string(M_timeExponent, '*') << std::endl;
             }
             ++__itt_el;
@@ -672,7 +672,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
             std::ostringstream __geofname;
             __geofname << this->path() << "/" << __ts->name();
             if( ! boption( _name="exporter.merge.markers") )
-            { __geofname << "-" << Environment::worldComm().globalSize() << "_" << Environment::worldComm().localRank(); }
+            { __geofname << "-" << this->worldComm().globalSize() << "_" << this->worldComm().localRank(); }
             __geofname << ".geo";
             M_filename =  __geofname.str();
             CHECK( (*__it)->hasMesh() || __ts->hasMesh()  ) << "Invalid mesh data structure in static geometry mode\n";
@@ -693,7 +693,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
             {
                 MPI_File_delete(str, MPI_INFO_NULL);
             }
-            MPI_Barrier( Environment::worldComm().comm() );
+            MPI_Barrier( this->worldComm().comm() );
 
             MPI_File_open( this->worldComm().comm(), str, MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL, &fh );
 
@@ -782,7 +782,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
                     __geofname << this->path() << "/"
                         << __ts->name();
                     if( ! boption( _name="exporter.merge.markers") )
-                    { __geofname << "-" << Environment::worldComm().globalSize() << "_" << Environment::worldComm().localRank(); }
+                    { __geofname << "-" << this->worldComm().globalSize() << "_" << this->worldComm().localRank(); }
                     __geofname << ".geo";
 
                     if ( __step->isInMemory() )
@@ -803,7 +803,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
                         {
                             MPI_File_delete(str, MPI_INFO_NULL);
                         }
-                        MPI_Barrier(Environment::worldComm().comm());
+                        MPI_Barrier(this->worldComm().comm());
 
                         MPI_File_open( this->worldComm().comm(), str, MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL, &fh );
                         free(str);
@@ -886,7 +886,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
 
                     __geofname << this->path() << "/" << __ts->name();
                     if( ! boption( _name="exporter.merge.markers") )
-                    { __geofname << "-" << Environment::worldComm().globalSize() << "_" << Environment::worldComm().localRank(); }
+                    { __geofname << "-" << this->worldComm().globalSize() << "_" << this->worldComm().localRank(); }
                     __geofname << ".geo" << "." << std::setfill( '0' ) << std::setw( M_timeExponent ) << __step->index();
 
                     if ( __step->isInMemory() )
@@ -907,7 +907,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
                         {
                             MPI_File_delete(str, MPI_INFO_NULL);
                         }
-                        MPI_Barrier(Environment::worldComm().comm());
+                        MPI_Barrier(this->worldComm().comm());
 
                         MPI_File_open( this->worldComm().comm(), str, MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL, &fh );
                         free(str);
@@ -1017,7 +1017,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkers(MPI_File fh, mesh_ptrtype mesh)
 #if 0
         /* Display info about markers */
         std::ostringstream ossmn;
-        ossmn << Environment::worldComm().rank() << " markers ";
+        ossmn << this->worldComm().rank() << " markers ";
         BOOST_FOREACH( auto marker, mesh->markerNames() )
         {
             ossmn << " " << marker.second[0];
@@ -1037,7 +1037,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkers(MPI_File fh, mesh_ptrtype mesh)
 
             osselts << " " << marker.second[0] << " (" << localNElts << ")";
 
-            mpi::all_reduce(Environment::worldComm(), localNElts, globalNElts, mpi::maximum<int>());
+            mpi::all_reduce(this->worldComm(), localNElts, globalNElts, mpi::maximum<int>());
 
             /* if we have at least one element for the current marker */
             /* all the processes need to parse it to avoid deadlocks with gather in MeshPoints */
@@ -1051,7 +1051,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkers(MPI_File fh, mesh_ptrtype mesh)
 
 #if 0
         std::ostringstream ossmw;
-        ossmw << Environment::worldComm().rank() << " markersToWrite ";
+        ossmw << this->worldComm().rank() << " markersToWrite ";
         for(int i = 0; i < M_markersToWrite.size(); i++)
         {
             ossmw << " " << M_markersToWrite.at(i);
@@ -1079,9 +1079,9 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkers(MPI_File fh, mesh_ptrtype mesh)
         int localNParts = std::distance(p_it, p_en);
         int globalNParts = 0;
 
-        mpi::all_reduce(Environment::worldComm(), localNParts, globalNParts, mpi::maximum<int>());
+        mpi::all_reduce(this->worldComm(), localNParts, globalNParts, mpi::maximum<int>());
 
-        LOG(INFO) << Environment::worldComm().rank() << " " << localNParts << " " << globalNParts << " " << mesh->markerNames().size() << std::endl;
+        LOG(INFO) << this->worldComm().rank() << " " << localNParts << " " << globalNParts << " " << mesh->markerNames().size() << std::endl;
         */
 
         // TODO Removed this loop, as it was causing MPI deadlocks when the numebr of parts was different
@@ -1104,7 +1104,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkers(MPI_File fh, mesh_ptrtype mesh)
         typename mesh_type::parts_const_iterator_type p_en = mesh->endParts();
 
         std::ostringstream osspi;
-        osspi << Environment::worldComm().rank() << " partid";
+        osspi << this->worldComm().rank() << " partid";
         for(auto p_it = p_st ; p_it != p_en; ++p_it )
         {
             osspi << " " << p_it->first << "(" << p_it->second << ")";
@@ -1127,7 +1127,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkers(MPI_File fh, mesh_ptrtype mesh)
         /* gather all the markers to be written on the different processes */
         /* to order the writing step */
         std::vector<std::vector<int> > globalMarkers;
-        mpi::all_gather(Environment::worldComm(), localMarkers, globalMarkers);
+        mpi::all_gather(this->worldComm(), localMarkers, globalMarkers);
 
         for(int i = 0; i < globalMarkers.size(); i++)
         {
@@ -1138,7 +1138,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkers(MPI_File fh, mesh_ptrtype mesh)
         }
 
         std::ostringstream osss;
-        osss << Environment::worldComm().rank() << " parts/markers";
+        osss << this->worldComm().rank() << " parts/markers";
         for(std::set<int>::iterator it = M_markersToWrite.begin(); it != M_markersToWrite.end(); it++)
         {
             osss << " " << *it << " (" << std::distance(mesh->beginElementWithMarker(*it), mesh->endElementWithMarker(*it)) << ")";
@@ -1191,7 +1191,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype m
         return;
 
     VLOG(1) << "writing face with marker " << m.first << " with id " << m.second[0];
-    auto pairit = mesh->facesWithMarker( m.second[0], Environment::worldComm().localRank() );
+    auto pairit = mesh->facesWithMarker( m.second[0], this->worldComm().localRank() );
     auto fit = pairit.first;
     auto fen = pairit.second;
     Feel::detail::MeshPoints<float> mp( mesh.get(), this->worldComm(), fit, fen, true, true, true );
@@ -1714,7 +1714,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
 
         __varfname << this->path() << "/" << __var->first;
         if( ! boption( _name="exporter.merge.markers") )
-        { __varfname << "-" << Environment::worldComm().globalSize() << "_" << Environment::worldComm().localRank(); }
+        { __varfname << "-" << this->worldComm().globalSize() << "_" << this->worldComm().localRank(); }
         // add extension
         if(__var->second.is_scalar)
         { __varfname << ".scl"; }
@@ -1800,7 +1800,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
                 if ( m.second[1] != __mesh->nDim-1 )
                     continue;
                 VLOG(1) << "writing face with marker " << m.first << " with id " << m.second[0];
-                auto pairit = __mesh->facesWithMarker( m.second[0], Environment::worldComm().localRank() );
+                auto pairit = __mesh->facesWithMarker( m.second[0], this->worldComm().localRank() );
                 auto fit = pairit.first;
                 auto fen = pairit.second;
 
@@ -1942,7 +1942,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
                 __var->second.updateGlobalValues();
 
             /*
-            std::cout << Environment::worldComm().rank() << " marker=" << *mit << " nbPts:" << npts << " nComp:" << nComponents 
+            std::cout << this->worldComm().rank() << " marker=" << *mit << " nbPts:" << npts << " nComp:" << nComponents 
                       << " __evar->second.nComponents:" << __var->second.nComponents << std::endl;
             */
 
@@ -2036,7 +2036,7 @@ ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtyp
         __evarfname << this->path() << "/" << __evar->first;
 
         if( ! boption( _name="exporter.merge.markers") )
-        { __evarfname << "-" << Environment::worldComm().globalSize() << "_" << Environment::worldComm().localRank(); }
+        { __evarfname << "-" << this->worldComm().globalSize() << "_" << this->worldComm().localRank(); }
 
         // add extension
         if(__evar->second.is_scalar)
@@ -2160,7 +2160,7 @@ ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtyp
             size_type ncells = std::distance( elt_st, elt_en );
 
             /*
-            std::cout << Environment::worldComm().rank() << " marker=" << *mit << " nbElts:" << ncells << " nComp:" << nComponents 
+            std::cout << this->worldComm().rank() << " marker=" << *mit << " nbElts:" << ncells << " nComp:" << nComponents 
                       << " __evar->second.nComponents:" << __evar->second.nComponents << std::endl;
             */
 

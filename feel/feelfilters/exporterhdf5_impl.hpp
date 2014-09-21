@@ -122,7 +122,7 @@ void Exporterhdf5<MeshType, N>::writeMerge () const
     {
         MPI_File_delete(strTmp, MPI_INFO_NULL);
     }
-    MPI_Barrier( Environment::worldComm().comm() );
+    MPI_Barrier( this->worldComm().comm() );
     MPI_File_open( this->worldComm().comm(), strTmp, MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL, &fh );
     free (strTmp) ;
 
@@ -146,7 +146,7 @@ void Exporterhdf5<MeshType, N>::writeMerge () const
     M_str.str().copy (buffer, size, 0) ;
     MPI_File_write_ordered (fh, buffer, size, MPI_CHAR, &status) ;
 
-    if ( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+    if ( this->worldComm().globalRank() == this->worldComm().masterRank() )
         std::cout << "file generated                : " << M_fileName << std::endl ;
 
     while ( __ts_it != __ts_en )
@@ -166,7 +166,7 @@ void Exporterhdf5<MeshType, N>::writeMerge () const
                 std::ostringstream filestr ;
                 filestr << "-" << M_step++ ;
                 M_fileNameStep = this->prefix() + filestr.str() ;
-                M_HDF5.openFile (M_fileNameStep+".h5", Environment::worldComm(), false) ;
+                M_HDF5.openFile (M_fileNameStep+".h5", this->worldComm(), false) ;
 
                 M_str.str("") ;
                 M_str << "           <Grid Name=\"" << M_fileNameStep << "\" GridType=\"Uniform\">\n" ;
@@ -175,7 +175,7 @@ void Exporterhdf5<MeshType, N>::writeMerge () const
                 writePointsMerge () ;
                 writeElementsMerge () ;
                 
-                if ( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                if ( this->worldComm().globalRank() == this->worldComm().masterRank() )
                 {
                     //std::cout << "time                          : " << __step->time () << std::endl ; 
                     //std::cout << "time increment                : " << __ts->timeIncrement () << std::endl ; 
@@ -229,7 +229,7 @@ void Exporterhdf5<MeshType, N>::write () const
 {
 
     std::ostringstream str ;
-    str <<  this->prefix () << "-" << Environment::worldComm().globalSize()<<"_"<<Environment::worldComm().globalRank()  ;
+    str <<  this->prefix () << "-" << this->worldComm().globalSize()<<"_"<<this->worldComm().globalRank()  ;
     M_fileName = str.str () ; 
 
     std::cout << "file generated                : " << M_fileName << ".xmf" << std::endl ;
@@ -366,11 +366,11 @@ void Exporterhdf5<MeshType, N>::writePointsMerge () const
     currentCount[0] = M_maxNumPoints ;
     currentCount[1] = 3 ;
     std::ostringstream filestr0 ;
-    filestr0 << Environment::worldComm().globalRank () ;
+    filestr0 << this->worldComm().globalRank () ;
     std::vector <size_type> globalNumPoint ;
-    globalNumPoint.resize (Environment::worldComm().globalSize(), 0) ;
-    boost::mpi::all_gather(Environment::worldComm(), M_maxNumPoints, globalNumPoint) ;
-    for (size_type i = 0 ; i < Environment::worldComm().globalSize () ; i++)
+    globalNumPoint.resize (this->worldComm().globalSize(), 0) ;
+    boost::mpi::all_gather(this->worldComm(), M_maxNumPoints, globalNumPoint) ;
+    for (size_type i = 0 ; i < this->worldComm().globalSize () ; i++)
     {
         std::ostringstream filestr ;
         filestr << i  ;
@@ -399,11 +399,11 @@ void Exporterhdf5<MeshType, N>::writePointsMerge () const
 
     hsize_t currentOffset[2] = {0, 0} ;
 
-    Environment::worldComm().barrier() ;
+    this->worldComm().barrier() ;
     M_HDF5.write (filestr0.str()+"point_coords", H5T_NATIVE_DOUBLE, currentCount, currentOffset, &M_realBuffer[0]) ;
-    Environment::worldComm().barrier() ;
+    this->worldComm().barrier() ;
 
-    for (size_type i = 0 ; i < Environment::worldComm().globalSize() ; i++)
+    for (size_type i = 0 ; i < this->worldComm().globalSize() ; i++)
     {
         std::ostringstream filestr1 ;
         filestr1 << i ;
@@ -442,12 +442,12 @@ void Exporterhdf5<MeshType, N>::writeElementsMerge () const
     currentSpacesDims2 [1] = M_maxNumElements ;
 
     std::ostringstream filestr0 ;
-    filestr0 << Environment::worldComm().globalRank () ;
+    filestr0 << this->worldComm().globalRank () ;
     std::vector <size_type> globalNumElements ;
-    globalNumElements.resize (Environment::worldComm().globalSize(), 0) ;
-    boost::mpi::all_gather(Environment::worldComm(), M_maxNumElements, globalNumElements) ;
+    globalNumElements.resize (this->worldComm().globalSize(), 0) ;
+    boost::mpi::all_gather(this->worldComm(), M_maxNumElements, globalNumElements) ;
 
-    for (size_type i = 0 ; i < Environment::worldComm().globalSize () ; i++)
+    for (size_type i = 0 ; i < this->worldComm().globalSize () ; i++)
     {
         std::ostringstream filestr ;
         filestr << i  ;
@@ -481,7 +481,7 @@ void Exporterhdf5<MeshType, N>::writeElementsMerge () const
     hsize_t currentOffset[2] = {0, 0} ;
     M_HDF5.write ( filestr0.str()+"element_nodes", H5T_NATIVE_LLONG, currentSpacesDims, currentOffset, &M_uintBuffer[0] ) ;
 
-    for (size_type i = 0 ; i < Environment::worldComm().globalSize() ; i++)
+    for (size_type i = 0 ; i < this->worldComm().globalSize() ; i++)
     {
         std::ostringstream filestr1 ;
         filestr1 << i ;
@@ -591,7 +591,7 @@ void Exporterhdf5<MeshType, N>::saveNodalMerge ( typename timeset_type::step_ptr
 
         solutionName += ".node" ;
 
-//        if ( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+//        if ( this->worldComm().globalRank() == this->worldComm().masterRank() )
 //            std::cout << "solution name                 : " << solutionName << std::endl ;
 
         hsize_t currentSpacesDims [2] ;
@@ -600,13 +600,13 @@ void Exporterhdf5<MeshType, N>::saveNodalMerge ( typename timeset_type::step_ptr
         currentSpacesDims [1] = M_maxNumPoints ;
 
         std::ostringstream filestr0 ;
-        filestr0 << Environment::worldComm().globalRank () ;
+        filestr0 << this->worldComm().globalRank () ;
 
         std::vector <size_type> globalNumPoint ;
-        globalNumPoint.resize (Environment::worldComm().globalSize(), 0) ;
-        boost::mpi::all_gather(Environment::worldComm(), M_maxNumPoints, globalNumPoint) ;
+        globalNumPoint.resize (this->worldComm().globalSize(), 0) ;
+        boost::mpi::all_gather(this->worldComm(), M_maxNumPoints, globalNumPoint) ;
 
-        for (size_type i = 0 ; i < Environment::worldComm().globalSize () ; i++)
+        for (size_type i = 0 ; i < this->worldComm().globalSize () ; i++)
         {
             std::ostringstream filestr ;
             filestr << i  ;
@@ -659,7 +659,7 @@ void Exporterhdf5<MeshType, N>::saveNodalMerge ( typename timeset_type::step_ptr
 
         M_HDF5.write ( filestr0.str() + solutionName, H5T_NATIVE_DOUBLE, currentSpacesDims, currentOffset, &M_realBuffer[0] ) ;
 
-        for (size_type i = 0 ; i < Environment::worldComm().globalSize() ; i++)
+        for (size_type i = 0 ; i < this->worldComm().globalSize() ; i++)
         {
             std::ostringstream filestr1 ;
             filestr1 << i ;
@@ -777,7 +777,7 @@ void Exporterhdf5<MeshType, N>::saveElementMerge ( typename timeset_type::step_p
         std::string attributeType ("Scalar") ;
 
         std::string solutionName = __evar->first ;
-//        if ( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+//        if ( this->worldComm().globalRank() == this->worldComm().masterRank() )
 //            std::cout << "solution Name                 : " << solutionName << std::endl ;
         uint16_type nComponents = __evar->second.nComponents ;
 
@@ -806,12 +806,12 @@ void Exporterhdf5<MeshType, N>::saveElementMerge ( typename timeset_type::step_p
         currentSpacesDims [1] = M_maxNumElements ;
 
         std::ostringstream filestr0 ;
-        filestr0 << Environment::worldComm().globalRank () ;
+        filestr0 << this->worldComm().globalRank () ;
         std::vector <size_type> globalNumElements ;
-        globalNumElements.resize (Environment::worldComm().globalSize(), 0) ;
-        boost::mpi::all_gather(Environment::worldComm(), M_maxNumElements, globalNumElements) ;
+        globalNumElements.resize (this->worldComm().globalSize(), 0) ;
+        boost::mpi::all_gather(this->worldComm(), M_maxNumElements, globalNumElements) ;
 
-        for (size_type i = 0 ; i < Environment::worldComm().globalSize () ; i++)
+        for (size_type i = 0 ; i < this->worldComm().globalSize () ; i++)
         {
             std::ostringstream filestr ;
             filestr << i  ;
@@ -855,7 +855,7 @@ void Exporterhdf5<MeshType, N>::saveElementMerge ( typename timeset_type::step_p
 
         M_HDF5.write ( filestr0.str() + solutionName, H5T_NATIVE_DOUBLE, currentSpacesDims, currentOffset, &M_realBuffer[0] ) ;
 
-        for (size_type i = 0 ; i < Environment::worldComm().globalSize() ; i++)
+        for (size_type i = 0 ; i < this->worldComm().globalSize() ; i++)
         {
             std::ostringstream filestr1 ;
             filestr1 << i ;
@@ -968,7 +968,7 @@ void Exporterhdf5<MeshType, N>::writeStats () const
     M_uintBuffer[1] = M_maxNumElements ;
     M_uintBuffer[2] = M_elementNodes ;
 
-    if ( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+    if ( this->worldComm().globalRank() == this->worldComm().masterRank() )
     {
         std::cout << "nombre de Points              : " << M_maxNumPoints << std::endl ;
         std::cout << "M_numMaxElements              : " << M_maxNumElements << std::endl ;
@@ -1024,9 +1024,9 @@ void Exporterhdf5<MeshType, N>::bubbleSort (size_type * ids, value_type * coords
 template <typename MeshType, int N>
 void Exporterhdf5<MeshType, N>::save () const 
 {
-    if ( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+    if ( this->worldComm().globalRank() == this->worldComm().masterRank() )
         std::cout << "exporter.merge                : " << (boption (_name = "exporter.merge" ) ? "true" : "false")  << std::endl ;
-    MPI_Barrier( Environment::worldComm().comm() );
+    MPI_Barrier( this->worldComm().comm() );
     if ( boption ( _name = "exporter.merge" ) )
         writeMerge() ;
     else 
