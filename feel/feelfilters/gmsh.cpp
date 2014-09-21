@@ -765,64 +765,63 @@ Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& na
 
 #endif
 
-std::string
-Gmsh::preamble() const
-{
-    std::ostringstream ostr;
-
-    ostr << "Mesh.MshFileVersion = " << this->version() << ";\n"
-         << "Mesh.CharacteristicLengthExtendFromBoundary=1;\n"
-         << "Mesh.CharacteristicLengthFromPoints=1;\n"
-         << "Mesh.ElementOrder=" << M_order << ";\n"
-         << "Mesh.SecondOrderIncomplete = 0;\n";
-
-    if ( M_recombine )
-        ostr << "Mesh.Algorithm = 5;\n";
-    else
+    std::string
+    Gmsh::preamble() const
     {
-        ostr << "Mesh.Algorithm = " << ALGO_2D_FRONTAL << ";\n";
-#if defined(HAVE_TETGEN)
-        ostr << "Mesh.Algorithm3D = " << ALGO_3D_DELAUNAY << ";\n";
-#else
-        ostr << "Mesh.Algorithm3D = " << ALGO_3D_FRONTAL << ";\n";
-#endif
-    }
+        std::ostringstream ostr;
 
-    ostr << "//Mesh.OptimizeNetgen=1;\n";
+        ostr << "Mesh.MshFileVersion = " << this->version() << ";\n"
+             << "Mesh.CharacteristicLengthExtendFromBoundary=1;\n"
+             << "Mesh.CharacteristicLengthFromPoints=1;\n"
+             << "Mesh.ElementOrder=" << M_order << ";\n"
+             << "Mesh.SecondOrderIncomplete = 0;\n";
 
-
-    if ( this->worldComm().globalSize() != 1 )
+        if ( M_recombine )
+            ostr << "Mesh.Algorithm = 5;\n";
+        else
         {
-ostr << "// partitioning data\n"
-         << "Mesh.Partitioner=" << M_partitioner << ";\n"
-         << "Mesh.NbPartitions=" << M_partitions << ";\n"
-         << "Mesh.MshFilePartitioned=" << M_partition_file << ";\n";
+            ostr << "Mesh.Algorithm = " << ALGO_2D_FRONTAL << ";\n";
+#if defined(HAVE_TETGEN)
+            ostr << "Mesh.Algorithm3D = " << ALGO_3D_DELAUNAY << ";\n";
+#else
+            ostr << "Mesh.Algorithm3D = " << ALGO_3D_FRONTAL << ";\n";
+#endif
+        }
+
+        ostr << "//Mesh.OptimizeNetgen=1;\n";
+
+        if ( this->worldComm().globalSize() != 1 )
+        {
+            ostr << "// partitioning data\n"
+                 << "Mesh.Partitioner=" << M_partitioner << ";\n"
+                 << "Mesh.NbPartitions=" << M_partitions << ";\n"
+                 << "Mesh.MshFilePartitioned=" << M_partition_file << ";\n";
         }
         //ostr << "Mesh.Optimize=1;\n"
         //<< "Mesh.CharacteristicLengthFromCurvature=1;\n"
 
-    // if (this->structuredMesh() == 3)
-    // {
-    //     ostr << "nx=" << M_nx << ";\n"
-    //          << "ny=" << M_ny << ";\n";
-    // }
-    // else
-    // {
-    ostr << "h=" << M_h << ";\n";
-    //}
+        // if (this->structuredMesh() == 3)
+        // {
+        //     ostr << "nx=" << M_nx << ";\n"
+        //          << "ny=" << M_ny << ";\n";
+        // }
+        // else
+        // {
+        ostr << "h=" << M_h << ";\n";
+        //}
 
-    if ( M_recombine )
-    {
-        ostr << "Mesh.RecombinationAlgorithm=1;//blossom\n"
-             << "Mesh.RecombineAll=1; //all\n";
-    }
-    else
-    {
-        ostr << "Mesh.RecombinationAlgorithm=0;\n";
-    }
+        if ( M_recombine )
+        {
+            ostr << "Mesh.RecombinationAlgorithm=1;//blossom\n"
+                 << "Mesh.RecombineAll=1; //all\n";
+        }
+        else
+        {
+            ostr << "Mesh.RecombinationAlgorithm=0;\n";
+        }
 
-    return ostr.str();
-}
+        return ostr.str();
+    }
 
 /// \cond detail
 namespace detail
