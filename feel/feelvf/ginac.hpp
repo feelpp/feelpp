@@ -190,17 +190,17 @@ namespace vf
 {
 inline
 Expr< GinacEx<2> >
-expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym, std::string filename="" )
+expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym, std::string filename="", WorldComm const& world=Environment::worldComm() )
 {
     VLOG(2)<< "expr(GiNaC::ex)\n";
-    return Expr< GinacEx<2> >(  GinacEx<2>( f, lsym, filename ) );
+    return Expr< GinacEx<2> >(  GinacEx<2>( f, lsym, filename, world ) );
 }
 
 inline
 Expr< GinacEx<2> >
-expr( std::string const& s, std::vector<GiNaC::symbol> const& lsym, std::string filename="" )
+expr( std::string const& s, std::vector<GiNaC::symbol> const& lsym, std::string filename="", WorldComm const& world=Environment::worldComm() )
 {
-    return Expr< GinacEx<2> >(  GinacEx<2>( parse(s,lsym), lsym, filename) );
+    return Expr< GinacEx<2> >(  GinacEx<2>( parse(s,lsym), lsym, filename, world ) );
 }
 
 
@@ -211,17 +211,17 @@ expr( std::string const& s, std::vector<GiNaC::symbol> const& lsym, std::string 
 template<int Order>
 inline
 Expr< GinacEx<Order> >
-expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym, std::string filename="" )
+expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym, std::string filename="", WorldComm const& world=Environment::worldComm() )
 {
-    return Expr< GinacEx<Order> >(  GinacEx<Order>( f, lsym, filename ));
+    return Expr< GinacEx<Order> >(  GinacEx<Order>( f, lsym, filename, world ));
 }
 
 template<int Order>
 inline
 Expr< GinacEx<Order> >
-expr( std::string const& s, std::vector<GiNaC::symbol> const& lsym, std::string filename="" )
+expr( std::string const& s, std::vector<GiNaC::symbol> const& lsym, std::string filename="", WorldComm const& world=Environment::worldComm() )
 {
-    return Expr< GinacEx<Order> >(  GinacEx<Order>( parse(s,lsym), lsym, filename) );
+    return Expr< GinacEx<Order> >(  GinacEx<Order>( parse(s,lsym), lsym, filename, world ) );
 }
 
 /**
@@ -233,10 +233,10 @@ expr( std::string const& s, std::vector<GiNaC::symbol> const& lsym, std::string 
 * @return Feel++ Expression
 */
 inline
-Expr< GinacEx<2> > expr( std::string const& s, std::string filename="" )
+Expr< GinacEx<2> > expr( std::string const& s, std::string filename="", WorldComm const& world=Environment::worldComm() )
 {
     std::pair< ex, std::vector<GiNaC::symbol> > g = GiNaC::parse(s);
-    return Expr< GinacEx<2> >(  GinacEx<2>( g.first, g.second, filename) );
+    return Expr< GinacEx<2> >(  GinacEx<2>( g.first, g.second, filename, world ) );
 }
 
 /**
@@ -248,11 +248,11 @@ Expr< GinacEx<2> > expr( std::string const& s, std::string filename="" )
 * @return Feel++ Expression
 */
 inline
-Expr< GinacEx<2> > expr( const char* s_, std::string filename="" )
+Expr< GinacEx<2> > expr( const char* s_, std::string filename="", WorldComm const& world=Environment::worldComm() )
 {
     std::string s = s_;
     std::pair< ex, std::vector<GiNaC::symbol> > g = GiNaC::parse(s);
-    return Expr< GinacEx<2> >(  GinacEx<2>( g.first, g.second, filename) );
+    return Expr< GinacEx<2> >(  GinacEx<2>( g.first, g.second, filename, world ) );
 }
 
 /**
@@ -267,10 +267,10 @@ Expr< GinacEx<2> > expr( const char* s_, std::string filename="" )
 template<int Order>
 inline
 Expr< GinacEx<Order> >
-expr( std::string const& s, std::string filename="" )
+expr( std::string const& s, std::string filename="", WorldComm const& world=Environment::worldComm() )
 {
     std::pair< ex, std::vector<GiNaC::symbol> > g = GiNaC::parse(s);
-    return Expr< GinacEx<Order> >(  GinacEx<Order>( g.first, g.second, filename) );
+    return Expr< GinacEx<Order> >(  GinacEx<Order>( g.first, g.second, filename, world ) );
 }
 
 
@@ -284,9 +284,9 @@ expr( std::string const& s, std::string filename="" )
 * @return Feel++ Expression
 */
 inline
-Expr< GinacEx<2> > expr( std::string const& s, std::map<std::string,double> const& mp, std::string filename="" )
+Expr< GinacEx<2> > expr( std::string const& s, std::map<std::string,double> const& mp, std::string filename="", WorldComm const& world=Environment::worldComm() )
 {
-    auto ginacEx = expr(s,filename);
+    auto ginacEx = expr(s,filename, world);
     ginacEx.setParameterValues( mp );
     return ginacEx;
 }
@@ -294,7 +294,7 @@ Expr< GinacEx<2> > expr( std::string const& s, std::map<std::string,double> cons
 inline
 Expr< GinacEx<2> > expr( std::string const& s, std::pair<std::string,double> const& mp, std::string filename="" )
 {
-    return expr( s, { { mp.first, mp.second } }, filename );
+    return expr( s, { { mp.first, mp.second } }, filename, world );
 }
 #endif
 
@@ -311,18 +311,18 @@ Expr< GinacEx<2> > expr( std::string const& s, std::pair<std::string,double> con
 template<int Order>
 inline
 Expr< GinacEx<Order> >
-expr( std::string const& s, std::map<std::string,double> const& mp, std::string filename="" )
+expr( std::string const& s, std::map<std::string,double> const& mp, std::string filename="", WorldComm const& world=Environment::worldComm() )
 {
-    auto ginacEx = expr<Order>(s,filename);
+    auto ginacEx = expr<Order>(s,filename, world);
     ginacEx.setParameterValues( mp );
     return ginacEx;
 }
 template<int Order>
 inline
 Expr< GinacEx<Order> >
-expr( std::string const& s, std::pair<std::string,double> const& mp, std::string filename="" )
+expr( std::string const& s, std::pair<std::string,double> const& mp, std::string filename="", WorldComm const& world=Environment::worldComm() )
 {
-    return expr<Order>( s, { { mp.first, mp.second } }, filename );
+    return expr<Order>( s, { { mp.first, mp.second } }, filename, world );
 }
 
 // ------------------------------------------------------------
@@ -332,27 +332,27 @@ expr( std::string const& s, std::pair<std::string,double> const& mp, std::string
 template<typename ExprT, int Order=2>
 inline
 Expr< GinacExVF<ExprT,Order> >
-expr( ex const& myexpr, std::vector<GiNaC::symbol> const & syms , GiNaC::symbol const& s, ExprT const& e, std::string filename="" )
+expr( ex const& myexpr, std::vector<GiNaC::symbol> const & syms , GiNaC::symbol const& s, ExprT const& e, std::string filename="", WorldComm const& world=Environment::worldComm() )
 {
     std::vector< std::pair<GiNaC::symbol,ExprT> > VFmap;
     VFmap.push_back( std::make_pair(s,e) );
-    return Expr< GinacExVF<ExprT,Order> >(  GinacExVF<ExprT,Order>( myexpr, syms, VFmap, filename ) );
+    return Expr< GinacExVF<ExprT,Order> >(  GinacExVF<ExprT,Order>( myexpr, syms, VFmap, filename, world ) );
 }
 
 template<typename ExprT, int Order=2>
 inline
 Expr< GinacExVF<ExprT,Order> >
-expr( std::string const& s, std::vector<GiNaC::symbol> const& lsym, std::pair<GiNaC::symbol,ExprT> const& e, std::string filename="" )
+expr( std::string const& s, std::vector<GiNaC::symbol> const& lsym, std::pair<GiNaC::symbol,ExprT> const& e, std::string filename="", WorldComm const& world=Environment::worldComm() )
 {
     std::vector< std::pair<GiNaC::symbol,ExprT> > VFmap;
     VFmap.push_back( e );
-    return Expr< GinacExVF<ExprT,Order> >(  GinacExVF<ExprT,Order>( parse(s,lsym), lsym, VFmap, filename ) );
+    return Expr< GinacExVF<ExprT,Order> >(  GinacExVF<ExprT,Order>( parse(s,lsym), lsym, VFmap, filename, world ) );
 }
 
 template<typename ExprT, int Order=2>
 inline
 Expr< GinacExVF<ExprT,Order> >
-expr( ex const& myexpr, std::vector<GiNaC::symbol> const & syms , std::initializer_list<GiNaC::symbol> const& s, std::initializer_list<ExprT> const& e, std::string filename="" )
+expr( ex const& myexpr, std::vector<GiNaC::symbol> const & syms , std::initializer_list<GiNaC::symbol> const& s, std::initializer_list<ExprT> const& e, std::string filename="", WorldComm const& world=Environment::worldComm() )
 {
     std::vector< std::pair<GiNaC::symbol,ExprT> > VFmap;
     CHECK( s.size() == e.size() ) << "List of expressions and associated symbols have not the same size \n";
@@ -364,13 +364,13 @@ expr( ex const& myexpr, std::vector<GiNaC::symbol> const & syms , std::initializ
             VFmap.push_back( std::make_pair(*it1,*it2) );
             it2++;
         }
-    return Expr< GinacExVF<ExprT,Order> >(  GinacExVF<ExprT,Order>( myexpr, syms, VFmap, filename ) );
+    return Expr< GinacExVF<ExprT,Order> >(  GinacExVF<ExprT,Order>( myexpr, syms, VFmap, filename, world ) );
 }
 
 template<typename ExprT, int Order=2>
 inline
 Expr< GinacExVF<ExprT,Order> >
-expr( ex const& myexpr, std::vector<GiNaC::symbol> const & syms , std::vector<GiNaC::symbol> const& s, std::vector<ExprT> const& e, std::string filename="" )
+expr( ex const& myexpr, std::vector<GiNaC::symbol> const & syms , std::vector<GiNaC::symbol> const& s, std::vector<ExprT> const& e, std::string filename="", WorldComm const& world=Environment::worldComm() )
 {
     std::vector< std::pair<GiNaC::symbol,ExprT> > VFmap;
     CHECK( s.size() == e.size() ) << "List of expressions and associated symbols have not the same size \n";
@@ -382,7 +382,7 @@ expr( ex const& myexpr, std::vector<GiNaC::symbol> const & syms , std::vector<Gi
             VFmap.push_back( std::make_pair(*it1, *it2) );
             it2++;
         }
-    return Expr< GinacExVF<ExprT,Order> >(  GinacExVF<ExprT,Order>( myexpr, syms, VFmap, filename ) );
+    return Expr< GinacExVF<ExprT,Order> >(  GinacExVF<ExprT,Order>( myexpr, syms, VFmap, filename, world ) );
 }
 
 /**
@@ -399,7 +399,7 @@ expr( ex const& myexpr, std::vector<GiNaC::symbol> const & syms , std::vector<Gi
 template<typename ExprT,int Order=2>
 inline
 Expr< GinacExVF<ExprT,Order> >
-expr( std::string const& s, std::string const& se, ExprT const& e, std::string filename="" )
+expr( std::string const& s, std::string const& se, ExprT const& e, std::string filename="", WorldComm const& world=Environment::worldComm() )
 {
     std::pair< ex, std::vector<GiNaC::symbol> > g = GiNaC::parse(s);
     auto it = std::find_if( g.second.begin(), g.second.end(),
@@ -408,13 +408,13 @@ expr( std::string const& s, std::string const& se, ExprT const& e, std::string f
 
     std::vector< std::pair<GiNaC::symbol,ExprT> > VFmap;
     VFmap.push_back(std::make_pair(*it, e));
-    return Expr< GinacExVF<ExprT,Order> >(  GinacExVF<ExprT,Order>( g.first, g.second, VFmap, filename) );
+    return Expr< GinacExVF<ExprT,Order> >(  GinacExVF<ExprT,Order>( g.first, g.second, VFmap, filename, world ) );
 }
 
 template<typename ExprT,int Order=2>
 inline
 Expr< GinacExVF<ExprT,Order> >
-expr( std::string const& s, std::initializer_list<std::string> const& se, std::initializer_list<ExprT> const& e, std::string filename="" )
+expr( std::string const& s, std::initializer_list<std::string> const& se, std::initializer_list<ExprT> const& e, std::string filename="", WorldComm const& world=Environment::worldComm() )
 {
     std::pair< ex, std::vector<GiNaC::symbol> > g = GiNaC::parse(s);
     std::vector< std::pair<GiNaC::symbol,ExprT> > VFmap;
@@ -430,13 +430,13 @@ expr( std::string const& s, std::initializer_list<std::string> const& se, std::i
             VFmap.push_back(std::make_pair(*it, *it2));
             it2++;
         }
-    return Expr< GinacExVF<ExprT,Order> >(  GinacExVF<ExprT,Order>( g.first, g.second, VFmap, filename) );
+    return Expr< GinacExVF<ExprT,Order> >(  GinacExVF<ExprT,Order>( g.first, g.second, VFmap, filename, world ) );
 }
 
 template<typename ExprT,int Order=2>
 inline
 Expr< GinacExVF<ExprT,Order> >
-expr( std::string const& s, std::vector<std::string> const& se, std::vector<ExprT> const& e, std::string filename="" )
+expr( std::string const& s, std::vector<std::string> const& se, std::vector<ExprT> const& e, std::string filename="", WorldComm const& world=Environment::worldComm() )
 {
     std::pair< ex, std::vector<GiNaC::symbol> > g = GiNaC::parse(s);
     std::vector< std::pair<GiNaC::symbol,ExprT> > VFmap;
@@ -452,7 +452,7 @@ expr( std::string const& s, std::vector<std::string> const& se, std::vector<Expr
             VFmap.push_back(std::make_pair(*it, *it2));
             it2++;
         }
-    return Expr< GinacExVF<ExprT,Order> >(  GinacExVF<ExprT,Order>( g.first, g.second, VFmap, filename) );
+    return Expr< GinacExVF<ExprT,Order> >(  GinacExVF<ExprT,Order>( g.first, g.second, VFmap, filename, world ) );
 }
 
 /**
@@ -469,7 +469,7 @@ expr( std::string const& s, std::vector<std::string> const& se, std::vector<Expr
 template<typename ExprT,int Order=2>
 inline
 Expr< GinacExVF<ExprT,Order> >
-diff( std::string const& s, std::string const& ds, std::string const& se, ExprT const& e, std::string filename="" )
+diff( std::string const& s, std::string const& ds, std::string const& se, ExprT const& e, std::string filename="", WorldComm const& world=Environment::worldComm() )
 {
     std::pair< ex, std::vector<GiNaC::symbol> > g = GiNaC::parse(s);
     auto it = std::find_if( g.second.begin(), g.second.end(),
@@ -483,7 +483,7 @@ diff( std::string const& s, std::string const& ds, std::string const& se, ExprT 
 
     std::vector< std::pair<GiNaC::symbol,ExprT> > VFmap;
     VFmap.push_back(std::make_pair(*it, e));
-    return Expr< GinacExVF<ExprT,Order> >(  GinacExVF<ExprT,Order>( diffe, g.second, VFmap, filename) );
+    return Expr< GinacExVF<ExprT,Order> >(  GinacExVF<ExprT,Order>( diffe, g.second, VFmap, filename, world ) );
 }
 
 // ------------------------------------------------------------
@@ -501,19 +501,19 @@ diff( std::string const& s, std::string const& ds, std::string const& se, ExprT 
 template<int M, int N, int Order=2>
 inline
 Expr< GinacMatrix<M,N,Order> >
-expr( std::string const& s, std::string filename="" )
+expr( std::string const& s, std::string filename="", WorldComm const& world=Environment::worldComm() )
 {
     std::pair< ex, std::vector<GiNaC::symbol> > g = GiNaC::parse(s);
-    return Expr< GinacMatrix<M,N,Order> >(  GinacMatrix<M,N,Order>( g.first, g.second, filename) );
+    return Expr< GinacMatrix<M,N,Order> >(  GinacMatrix<M,N,Order>( g.first, g.second, filename, world ) );
 }
 
 
 inline
 Expr< GinacMatrix<1,1,2> >
-expr( GiNaC::matrix const& f, std::vector<GiNaC::symbol> const& lsym, std::string filename="")
+expr( GiNaC::matrix const& f, std::vector<GiNaC::symbol> const& lsym, std::string filename="", WorldComm const& world=Environment::worldComm())
 {
     VLOG(2) << "expr(Ginac::matrix(1,1)\n";
-    return Expr< GinacMatrix<1,1,2> >(  GinacMatrix<1,1,2>( f, lsym, filename ) );
+    return Expr< GinacMatrix<1,1,2> >(  GinacMatrix<1,1,2>( f, lsym, filename, world ) );
 }
 
 /**
@@ -523,109 +523,109 @@ expr( GiNaC::matrix const& f, std::vector<GiNaC::symbol> const& lsym, std::strin
 template<int M, int N, int Order>
 inline
 Expr< GinacMatrix<M,N,Order> >
-expr( GiNaC::matrix const& f, std::vector<GiNaC::symbol> const& lsym, std::string filename="" )
+expr( GiNaC::matrix const& f, std::vector<GiNaC::symbol> const& lsym, std::string filename="", WorldComm const& world=Environment::worldComm() )
 {
-    return Expr< GinacMatrix<M,N,Order> >(  GinacMatrix<M,N,Order>( f, lsym, filename) );
+    return Expr< GinacMatrix<M,N,Order> >(  GinacMatrix<M,N,Order>( f, lsym, filename, world ) );
 }
 
 template<int M, int N, int Order>
 inline
 Expr< GinacMatrix<M,N,Order> >
-expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym, std::string filename="" )
+expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym, std::string filename="", WorldComm const& world=Environment::worldComm() )
 {
-    return Expr< GinacMatrix<M,N,Order> >(  GinacMatrix<M,N,Order>( f, lsym, filename ) );
+    return Expr< GinacMatrix<M,N,Order> >(  GinacMatrix<M,N,Order>( f, lsym, filename, world ) );
 }
 
 template<int M,int Order=2>
 inline
 Expr<GinacMatrix<1,M,Order> >
-grad( Expr<GinacEx<Order>> const& s, std::string filename="" )
+grad( Expr<GinacEx<Order>> const& s, std::string filename="", WorldComm const& world=Environment::worldComm() )
 {
-    return expr<1,M,Order>( GiNaC::grad(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), filename );
+    return expr<1,M,Order>( GiNaC::grad(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), filename, world );
 }
 
 template<int M,int Order=2>
 inline
 Expr<GinacMatrix<M,M,Order> >
-grad( Expr<GinacMatrix<M,1,Order>> const& s, std::string filename="" )
+grad( Expr<GinacMatrix<M,1,Order>> const& s, std::string filename="", WorldComm const& world=Environment::worldComm() )
 {
-    return expr<M,M,Order>( GiNaC::grad(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), filename );
+    return expr<M,M,Order>( GiNaC::grad(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), filename, world );
 }
 // Divergence
 template<int M=1,int Order=2>
 inline
 Expr<GinacMatrix<M,1,Order> >
-div( Expr<GinacEx<Order>> const& s, std::string filename="" )
+div( Expr<GinacEx<Order>> const& s, std::string filename="", WorldComm const& world=Environment::worldComm() )
 {
-    return expr<M,1,Order>( GiNaC::div(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), filename );
+    return expr<M,1,Order>( GiNaC::div(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), filename, world );
 }
 template<int M,int Order=2>
 inline
 Expr<GinacMatrix<1,1,Order> >
-div( Expr<GinacMatrix<M,1,Order>> const& s, std::string filename="" )
+div( Expr<GinacMatrix<M,1,Order>> const& s, std::string filename="", WorldComm const& world=Environment::worldComm() )
 {
-    return expr<1,1,Order>( GiNaC::div(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), filename );
+    return expr<1,1,Order>( GiNaC::div(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), filename, world );
 }
 template<int M,int Order=2>
 inline
 Expr<GinacMatrix<1,1,Order> >
-div( Expr<GinacMatrix<1,M,Order>> const& s, std::string filename="" )
+div( Expr<GinacMatrix<1,M,Order>> const& s, std::string filename="", WorldComm const& world=Environment::worldComm() )
 {
-    return expr<1,1,Order>( GiNaC::div(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), filename );
+    return expr<1,1,Order>( GiNaC::div(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), filename, world );
 }
 template<int M,int N,int Order=2>
 inline
 Expr<GinacMatrix<M,1,Order> >
-div( Expr<GinacMatrix<M,M,Order>> const& s, std::string filename="" )
+div( Expr<GinacMatrix<M,M,Order>> const& s, std::string filename="", WorldComm const& world=Environment::worldComm() )
 {
-    return expr<M,1,Order>( GiNaC::div(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), filename );
+    return expr<M,1,Order>( GiNaC::div(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), filename, world );
 }
 // Curl
 template<int M=1,int Order=2>
 inline
 Expr<GinacMatrix<M,1,Order> >
-curl( Expr<GinacEx<Order>> const& s, std::string filename="" )
+curl( Expr<GinacEx<Order>> const& s, std::string filename="", WorldComm const& world=Environment::worldComm() )
 {
-    return expr<M,1,Order>( GiNaC::curl(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), filename );
+    return expr<M,1,Order>( GiNaC::curl(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), filename, world );
 }
 template<int M,int Order=2>
 inline
 Expr<GinacMatrix<((M==2)?1:3),1,Order> >
-curl( Expr<GinacMatrix<M,1,Order>> const& s, std::string filename="" )
+curl( Expr<GinacMatrix<M,1,Order>> const& s, std::string filename="", WorldComm const& world=Environment::worldComm() )
 {
-    return expr<((M==2)?1:3),1,Order>( GiNaC::curl(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), filename );
+    return expr<((M==2)?1:3),1,Order>( GiNaC::curl(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), filename, world );
 }
 template<int Order=2>
 inline
 Expr<GinacMatrix<2,1,Order> >
-curl( Expr<GinacMatrix<1,1,Order>> const& s, std::string filename="" )
+curl( Expr<GinacMatrix<1,1,Order>> const& s, std::string filename="", WorldComm const& world=Environment::worldComm() )
 {
-    return expr<2,1,Order>( GiNaC::curl(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), filename );
+    return expr<2,1,Order>( GiNaC::curl(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), filename, world );
 }
 
 template<int M,int Order=2>
 inline
 Expr<GinacMatrix<1,M,Order> >
-curl( Expr<GinacMatrix<1,M,Order>> const& s, std::string filename="" )
+curl( Expr<GinacMatrix<1,M,Order>> const& s, std::string filename="", WorldComm const& world=Environment::worldComm() )
 {
-    return expr<1,M,Order>( GiNaC::curl(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), filename );
+    return expr<1,M,Order>( GiNaC::curl(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), filename, world );
 }
 
 // Laplacian
 template<int Order=2>
 inline
 Expr<GinacMatrix<1,1,Order> >
-laplacian( Expr<GinacEx<Order>> const& s, std::string filename="" )
+laplacian( Expr<GinacEx<Order>> const& s, std::string filename="", WorldComm const& world=Environment::worldComm() )
 {
-    return expr<1,1,Order>( GiNaC::laplacian(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), filename );
+    return expr<1,1,Order>( GiNaC::laplacian(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), filename, world );
 }
 
 template<int M,int N=1, int Order=2>
 inline
 Expr<GinacMatrix<M,N,Order> >
-laplacian( Expr<GinacMatrix<M,N,Order>> const& s, std::string filename="" )
+laplacian( Expr<GinacMatrix<M,N,Order>> const& s, std::string filename="", WorldComm const& world=Environment::worldComm() )
 {
-    return expr<M,N,Order>( GiNaC::laplacian(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), filename );
+    return expr<M,N,Order>( GiNaC::laplacian(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), filename, world );
 }
 
 } // vf
