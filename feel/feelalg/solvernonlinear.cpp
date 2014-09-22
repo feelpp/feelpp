@@ -174,14 +174,14 @@ SolverNonLinear<std::complex<double>>::build( po::variables_map const& vm, std::
 {
     SolverPackage solver_package=SOLVER_INVALID_PACKAGE;
 
-    if ( vm["backend"].template as<std::string>() == "petsc" )
+    if ( soption(_name="backend") == "petsc" )
     {
 #if defined( FEELPP_HAS_PETSC )
         solver_package = SOLVERS_PETSC;
 #endif
     }
 
-    else if ( vm["backend"].template as<std::string>() == "trilinos" )
+    else if ( soption(_name="backend") == "trilinos" )
     {
 #if defined( FEELPP_HAS_TRILINOS )
         solver_package = SOLVERS_TRILINOS;
@@ -190,7 +190,7 @@ SolverNonLinear<std::complex<double>>::build( po::variables_map const& vm, std::
 
     else
     {
-        LOG(INFO) << "[SolverNonLinear] solver " << vm["backend"].template as<std::string>() << " not available\n";
+        LOG(INFO) << "[SolverNonLinear] solver " << soption(_name="backend") << " not available\n";
         LOG(INFO) << "[Backend] use fallback  gmm\n";
 #if defined( FEELPP_HAS_PETSC )
         solver_package = SOLVERS_PETSC;
