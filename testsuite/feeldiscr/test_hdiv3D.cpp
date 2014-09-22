@@ -288,14 +288,12 @@ TestHDiv3D::testProjector()
 
     // H1 projection (Lagrange)
     auto h1_lagV = opProjection( _domainSpace=Yh_v, _imageSpace=Yh_v, _type=H1 ); //h1 vectorial proj
-    auto h1_lagS = opProjection( _domainSpace=Yh_s, _imageSpace=Yh_s, _type=H1 ); //h1 scalar proj
     auto E_pH1_lag = h1_lagV->project( _expr= E, _grad_expr=eye<3>() );
     auto error_pH1_lag = l2_lagS->project( _expr=divv(E_pH1_lag) - f );
 
     // HDIV projection (Lagrange)
     auto hdiv_lagV = opProjection( _domainSpace=Yh_v, _imageSpace=Yh_v, _type=HDIV );
-    auto hdiv_lagS = opProjection( _domainSpace=Yh_s, _imageSpace=Yh_s, _type=HDIV );
-    auto E_pHDIV_lag = hdiv_lagV->project( _expr= E, _div_expr=cst(0.) );
+    auto E_pHDIV_lag = hdiv_lagV->project( _expr= E, _div_expr=cst(3.) );
     auto error_pHDIV_lag = l2_lagS->project( _expr=divv(E_pHDIV_lag) - f );
 
     // L2 projection (RT)

@@ -503,11 +503,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
             for( auto ldof : M_u.functionSpace()->dof()->faceLocalDof( theface.id() ) )
                 {
                     size_type thedof = M_u.start()+ ldof.second.index(); // global dof
-                    size_type dofIndexInElt; //dof index in current element
-                    if(nDim <= 2 )
-                        dofIndexInElt = geoelement_type::f2e(__face_id,__face_id);
-                    else
-                        dofIndexInElt = geoelement_type::f2e(__face_id,ldof.first);
+                    int16_type dofIndexInElt = ldof.second.localDof(); // localdof index in element0
 
                     DVLOG(2) << "Ihloc(" << ldof.first << ")= " << IhLoc( ldof.first ) << std::endl;
                     DVLOG(2) << "s(" << dofIndexInElt << ")= " << s(dofIndexInElt) << std::endl;
