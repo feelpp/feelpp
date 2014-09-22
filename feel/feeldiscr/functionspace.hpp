@@ -2490,7 +2490,7 @@ public:
             return __globalr;
         }
 
-        double
+        value_type
         evaluate( functionspace_type::Context const & context, int i , bool do_communications=true) const
         {
             //rank of the current processor
@@ -2505,7 +2505,7 @@ public:
             shape[0] = 1;
             id_array_type v( shape );
 
-            double result=0;
+            value_type result=0;
             int proc_having_the_point = context.processorHavingPoint( i );
             if( proc_number == proc_having_the_point )
             {
