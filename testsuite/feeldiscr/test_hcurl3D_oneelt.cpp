@@ -159,7 +159,6 @@ private:
 void
 TestHCurl3DOneElt::testProjector(std::string one_element_mesh )
 {
-    std::cout << "projection" << std::endl;
     std::string mesh_name = one_element_mesh + ".msh";
     mesh_ptrtype mesh = loadMesh( _mesh=new mesh_type,
                                   _filename=mesh_name );
