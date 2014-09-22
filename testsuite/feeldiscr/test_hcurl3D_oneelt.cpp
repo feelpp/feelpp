@@ -159,6 +159,7 @@ private:
 void
 TestHCurl3DOneElt::testProjector(std::string one_element_mesh )
 {
+    std::cout << "projection" << std::endl;
     std::string mesh_name = one_element_mesh + ".msh";
     mesh_ptrtype mesh = loadMesh( _mesh=new mesh_type,
                                   _filename=mesh_name );
@@ -172,37 +173,25 @@ TestHCurl3DOneElt::testProjector(std::string one_element_mesh )
 
     // L2 projection (Lagrange)
     auto l2_lagV = opProjection( _domainSpace=Yh_v, _imageSpace=Yh_v, _type=L2 ); //l2 vectorial proj
-    auto l2_lagS = opProjection( _domainSpace=Yh_s, _imageSpace=Yh_s, _type=L2 ); //l2 scalar proj
     auto E_pL2_lag = l2_lagV->project( _expr= E );
     auto error_pL2_lag = l2_lagV->project( _expr=curlv(E_pL2_lag) - f );
 
     // H1 projection (Lagrange)
     auto h1_lagV = opProjection( _domainSpace=Yh_v, _imageSpace=Yh_v, _type=H1 ); //h1 vectorial proj
-    auto h1_lagS = opProjection( _domainSpace=Yh_s, _imageSpace=Yh_s, _type=H1 ); //h1 scalar proj
-    auto E_pH1_lag = h1_lagV->project( _expr= E, _grad_expr=mat<2,2>(cst(0.),cst(1.),cst(1.),cst(0.)) );
+    auto E_pH1_lag = h1_lagV->project( _expr= E, _grad_expr=mat<3,3>(cst(0.),cst(1.),cst(1.),
+                                                                     cst(1.),cst(0.),cst(1.),
+                                                                     cst(1.),cst(1.),cst(0.) ) );
     auto error_pH1_lag = l2_lagV->project( _expr=curlv(E_pH1_lag) - f );
 
     // HCURL projection (Lagrange)
     auto hcurl_lagV = opProjection( _domainSpace=Yh_v, _imageSpace=Yh_v, _type=HCURL );
-    auto hcurl_lagS = opProjection( _domainSpace=Yh_s, _imageSpace=Yh_s, _type=HCURL );
-    auto E_pHCURL_lag = hcurl_lagV->project( _expr= E /*, _curl_expr=cst(0.)*/ );
+    auto E_pHCURL_lag = hcurl_lagV->project( _expr= E /*, _curl_expr=f*/ );
     auto error_pHCURL_lag = l2_lagV->project( _expr=curlv(E_pHCURL_lag) - f );
 
     // L2 projection (Nedelec)
     auto l2_ned = opProjection( _domainSpace=Nh, _imageSpace=Nh, _type=L2 );
     auto E_pL2_ned = l2_ned->project( _expr= E );
     auto error_pL2_ned = l2_lagV->project( _expr=curlv(E_pL2_lag) - f );
-
-#if 0
-    // H1 projection (Nedelec)
-    auto h1_ned = opProjection( _domainSpace=Nh, _imageSpace=Nh, _type=H1 ); //h1 vectorial proj
-    auto E_pH1_ned = h1_ned->project( _expr= E, _grad_expr=mat<2,2>(cst(0.),cst(1.),cst(1.),cst(0.)) );
-    auto error_pH1_ned = l2_lagV->project( _expr=curlv(E_pH1_ned) - f );
-    // HCURL projection (Nedelec)
-    auto hcurl = opProjection( _domainSpace=Nh, _imageSpace=Nh, _type=HCURL ); //hdiv proj (RT elts)
-    auto E_pHCURL_ned = hcurl->project( _expr= E /*, _curl_expr=cst(0.)*/ );
-    auto error_pHCURL_ned = l2_lagV->project( _expr=curlv(E_pHCURL_ned) - f );
-#endif
 
     BOOST_TEST_MESSAGE("L2 projection [Lagrange]: error[div(E)-f]");
     std::cout << "error L2: " << math::sqrt( l2_lagV->energy( error_pL2_lag, error_pL2_lag ) ) << "\n";
@@ -238,8 +227,6 @@ TestHCurl3DOneElt::testProjector(std::string one_element_mesh )
     exporter_proj->step( 0 )->add( "proj_H1_E[Lagrange]", E_pH1_lag );
     exporter_proj->step( 0 )->add( "proj_HDiv_E[Lagrange]", E_pHCURL_lag );
     exporter_proj->step( 0 )->add( "proj_L2_E[NED]", E_pL2_ned );
-    // exporter_proj->step( 0 )->add( "proj_H1_E[NED]", E_pH1_ned );
-    // exporter_proj->step( 0 )->add( "proj_HDiv_E[NED]", E_pHCURL_ned );
     exporter_proj->save();
 }
 
