@@ -297,7 +297,7 @@ MatrixEigenDense<T>::sqrt( MatrixSparse<value_type>& _m ) const
 
 template <typename T>
 void
-MatrixEigenDense<T>::eigenValues ( std::vector<std::complex<value_type>> &Eingvs )
+MatrixEigenDense<T>::eigenValues ( std::vector<std::complex<double>> &Eingvs )
 {
     auto eigen_vals = M_mat.eigenvalues();
     for (size_type i=0; i < eigen_vals.size(); ++i )
@@ -346,6 +346,30 @@ MatrixEigenDense<T>::matInverse ( MatrixSparse<T> &Inv )
     // int ierr=0;
     // ierr = MatMatMult(this->M_mat, X->mat(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &Y->mat());
     // CHKERRABORT( this->comm(),ierr );
+
+}
+
+
+template<typename T>
+void
+MatrixEigenDense<T>::applyInverseSqrt( Vector<T>& vec_in, Vector<T>& vec_out )
+{
+    std::vector<std::complex<double>> eigen_vals;
+    this->eigenValues(eigen_vals);
+
+    std::sort(eigen_vals.begin(), eigen_vals.end(),
+              [&]( std::complex<double> const& x, std::complex<double> const& y )->bool{
+                  return real(x) < real(y); } );
+
+    double m = real(eigen_vals.front());
+    double M = real(eigen_vals.back());
+
+    double k = (std::pow(M/m,1./4)-1)/(std::pow(M/m,1./4)+1);
+    double L = -std::log(k)/pi;
+
+    double K, Kp;
+    math::ellipkkp(L, K, Kp);
+
 
 }
 
