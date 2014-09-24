@@ -354,6 +354,11 @@ template<typename T>
 void
 MatrixEigenDense<T>::applyInverseSqrt( Vector<T>& vec_in, Vector<T>& vec_out )
 {
+
+    VectorEigen<T>* _rhs = dynamic_cast<VectorEigen<T>*> ( &vec_in );
+    VectorEigen<T>* _res = dynamic_cast<VectorEigen<T>*> ( &vec_out );
+
+
     std::vector<std::complex<double>> eigen_vals;
     this->eigenValues(eigen_vals);
 
@@ -369,6 +374,58 @@ MatrixEigenDense<T>::applyInverseSqrt( Vector<T>& vec_in, Vector<T>& vec_out )
 
     double K, Kp;
     math::ellipkkp(L, K, Kp);
+
+    std::cout<<"arrived\n";
+
+    //std::vector<std::complex<double>> t, u, sn, cn, dn;
+    //std::vector<std::complex<double>> u, sn, cn, dn;
+
+    size_type N = 15;
+    Eigen::Matrix<std::complex<double>,Eigen::Dynamic,Eigen::Dynamic> AA;
+    Eigen::Matrix<std::complex<double>,Eigen::Dynamic,1> Amb(N);
+    Eigen::Matrix<std::complex<double>,Eigen::Dynamic,1> Am1b(N);
+
+    for (double it = 0.5; it < N; ++it)
+    {
+        //t.push_back(std::complex<double>(0,0.5*Kp) - std::complex<double>(K,0) + std::complex<double>(it*2*K/N,0));
+        auto t = std::complex<double>(0,0.5*Kp) - std::complex<double>(K,0) + std::complex<double>(it*2*K/N,0);
+
+        std::complex<double> snl ,cnl, dnl, w, dzdt;
+        math::ellipjc(t,L,snl,cnl,dnl);
+        // sn.push_back(snl);
+        // cn.push_back(snl);
+        // dn.push_back(snl);
+
+        w = math::pow(m*M,0.25)*((std::complex<double>(1./k,0)+snl)/(std::complex<double>(1./k,0)-snl));
+        dzdt = cnl*dnl/(std::pow(std::complex<double>(1./k,0)-snl,2.));
+
+        //Eigen::Matrix<std::complex<double>,Eigen::Dynamic,Eigen::Dynamic> A(this->size1(),this->size2());
+        Eigen::Matrix<std::complex<double>,Eigen::Dynamic,Eigen::Dynamic> A = this->M_mat.template cast<std::complex<double>>();
+        AA = A;
+        //A.template cast<std::complex<double>>();
+        A *= std::complex<double>(-1.,0);
+
+        for (size_type iti = 0; iti < A.rows(); ++iti)
+        {
+            A(iti,iti) = std::pow(w,2.)-(this->M_mat).operator()(iti,iti);
+        }
+
+        Eigen::Matrix<std::complex<double>,Eigen::Dynamic,1> rhs = _rhs->vec().template cast<std::complex<double>>();
+
+        Am1b = (A.inverse())*rhs;
+
+        auto fw = std::pow(w,-0.5);
+        Amb += Am1b*dzdt*(std::pow(fw,2.)/w);
+    }
+
+    Amb = -8*K*std::pow(m*M,1./4)*AA*Amb.imag()/(k*pi*N);
+
+    // math::ellipjc<double>(t,L,sn,cn,dn);
+
+    for (size_type it = 0; it < Amb.size(); ++it)
+    {
+        std::cout<<"Amb["<< it <<"]= "<< Amb.operator()(it) <<"\n";
+    }
 
 
 }
