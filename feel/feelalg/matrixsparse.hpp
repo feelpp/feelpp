@@ -736,6 +736,8 @@ public:
 
     virtual void matInverse ( MatrixSparse<value_type> &Inv );
 
+    virtual void applyInverseSqrt( Vector<value_type>& vec_in, Vector<value_type>& vec_out );
+
 protected:
     /**
      * Protected implementation of the create_submatrix and reinit_submatrix
@@ -922,6 +924,13 @@ void MatrixSparse<T>::matInverse ( MatrixSparse<value_type> &Inv )
     FEELPP_ASSERT( 0 ).error( "invalid call" );
 }
 
+template <typename T>
+void MatrixSparse<T>::applyInverseSqrt( Vector<value_type>& vec_in, Vector<value_type>& vec_out )
+{
+    std::cerr << "Error! This function is not yet implemented in the base class!"
+              << std::endl;
+    FEELPP_ASSERT( 0 ).error( "invalid call" );
+}
 
 template <typename T>
 bool MatrixSparse<T>::isSymmetric () const
