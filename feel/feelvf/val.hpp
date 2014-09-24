@@ -48,36 +48,36 @@
 
 
 #if defined( FEELPP_HAS_QD_H ) && defined(FEELPP_HAS_MPFR)
-# define VF_CHECK_ARITHMETIC_TYPE()                                     \
-    BOOST_STATIC_ASSERT( (::boost::is_arithmetic<value_1_type>::value || \
-                          ::boost::is_same<value_1_type, std::complex<float> >::value || \
-                          ::boost::is_same<value_1_type, std::complex<double> >::value || \
-                          ::boost::is_same<value_1_type,mp_type>::value || \
-                          ::boost::is_same<value_1_type,dd_real>::value || \
-                          ::boost::is_same<value_1_type,qd_real>::value) ); \
-    /**/
+# define VF_CHECK_ARITHMETIC_TYPE(VALUE_TYPE)                           \
+   BOOST_STATIC_ASSERT( (::boost::is_arithmetic<VALUE_TYPE>::value ||    \
+                         ::boost::is_same<VALUE_TYPE, std::complex<float> >::value || \
+                         ::boost::is_same<VALUE_TYPE, std::complex<double> >::value || \
+                         ::boost::is_same<VALUE_TYPE,mp_type>::value ||  \
+                         ::boost::is_same<VALUE_TYPE,dd_real>::value ||  \
+                         ::boost::is_same<VALUE_TYPE,qd_real>::value) ); \
+   /**/
 #elif defined( FEELPP_HAS_QD_H )
-# define VF_CHECK_ARITHMETIC_TYPE()                                     \
-    BOOST_STATIC_ASSERT( (::boost::is_arithmetic<value_1_type>::value || \
-                          ::boost::is_same<value_1_type, std::complex<float> >::value || \
-                          ::boost::is_same<value_1_type, std::complex<double> >::value || \
-                          ::boost::is_same<value_1_type,dd_real>::value || \
-                          ::boost::is_same<value_1_type,qd_real>::value) ); \
-    /**/
+# define VF_CHECK_ARITHMETIC_TYPE(VALUE_TYPE)                           \
+   BOOST_STATIC_ASSERT( (::boost::is_arithmetic<VALUE_TYPE>::value ||    \
+                         ::boost::is_same<VALUE_TYPE, std::complex<float> >::value || \
+                         ::boost::is_same<VALUE_TYPE, std::complex<double> >::value || \
+                         ::boost::is_same<VALUE_TYPE,dd_real>::value ||  \
+                         ::boost::is_same<VALUE_TYPE,qd_real>::value) ); \
+   /**/
 #elif defined( FEELPP_HAS_MPFR )
-# define VF_CHECK_ARITHMETIC_TYPE()                                     \
-    BOOST_STATIC_ASSERT( (::boost::is_arithmetic<value_1_type>::value || \
-                          ::boost::is_same<value_1_type, std::complex<float> >::value || \
-                          ::boost::is_same<value_1_type, std::complex<double> >::value || \
-                          ::boost::is_same<value_1_type,mp_type>::value) ); \
-    /**/
+# define VF_CHECK_ARITHMETIC_TYPE(VALUE_TYPE)                           \
+   BOOST_STATIC_ASSERT( (::boost::is_arithmetic<VALUE_TYPE>::value ||    \
+                         ::boost::is_same<VALUE_TYPE, std::complex<float> >::value || \
+                         ::boost::is_same<VALUE_TYPE, std::complex<double> >::value || \
+                         ::boost::is_same<VALUE_TYPE,mp_type>::value) ); \
+   /**/
 #else
-# define VF_CHECK_ARITHMETIC_TYPE()                                     \
-    BOOST_STATIC_ASSERT( ( ::boost::is_arithmetic<value_1_type>::value || \
-                           ::boost::is_same<value_1_type, std::complex<float> >::value || \
-                           ::boost::is_same<value_1_type, std::complex<double> >::value ) \
+# define VF_CHECK_ARITHMETIC_TYPE(VALUE_TYPE)                           \
+    BOOST_STATIC_ASSERT( ( ::boost::is_arithmetic<VALUE_TYPE>::value || \
+                           ::boost::is_same<VALUE_TYPE, std::complex<float> >::value || \
+                           ::boost::is_same<VALUE_TYPE, std::complex<double> >::value ) \
                          );                                             \
-    /**/
+   /**/
 #endif
 
 namespace Feel
@@ -119,7 +119,7 @@ public:
     typedef value_1_type value_type;
     typedef value_type evaluate_type;
 
-    VF_CHECK_ARITHMETIC_TYPE()
+    VF_CHECK_ARITHMETIC_TYPE(value_1_type)
 
     explicit Val( expression_1_type const& __expr1  )
         :
