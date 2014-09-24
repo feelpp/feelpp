@@ -21,36 +21,53 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-add_custom_target(feel_mesh_data ALL)
+add_custom_target(feelpp_mesh_data ALL)
 
 if (EXISTS $ENV{HOME})
   # create $ENV{HOME}/feel/geo if it does not exist already: this is the geometry
   # files repository
   file(MAKE_DIRECTORY $ENV{HOME}/feel/geo)
 
+  message(STATUS "Copying geo/msh files to $ENV{HOME}/feel/geo")
+
   foreach(exp "medit/*.geo" "medit/*.mesh" "gmsh/*.geo" "gmsh/*.stl" )
     FILE(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/${exp}")
     foreach(file ${files})
       get_filename_component(filename ${file} NAME )
       message(STATUS ${filename})
-      add_custom_command(TARGET feel_mesh_data
-        COMMAND ${CMAKE_COMMAND} -E copy  ${file} $ENV{HOME}/feel/geo )
-      add_dependencies(feel_mesh_data copy_mesh_data_${filename} )
+
+      # Create a custom target so the geo files can be copied with make
+      add_custom_target(copy_home_mesh_data_${filename})
+      add_custom_command(TARGET copy_home_mesh_data_${filename}
+        COMMAND ${CMAKE_COMMAND} -E copy ${file} $ENV{HOME}/feel/geo )
+      add_dependencies(feelpp_mesh_data copy_home_mesh_data_${filename} )
+
+      # also copies the files by default
+      configure_file(${file} $ENV{HOME}/feel/geo/${filename})
     endforeach()
   endforeach()
 endif(EXISTS $ENV{HOME})
 
 if (DEFINED ENV{FEELPP_WORKDIR})
   if (NOT EXISTS $ENV{FEELPP_WORKDIR})
-    file(MAKE_DIRECTORY $ENV{FEELPP_WORKDIR})
     file(MAKE_DIRECTORY $ENV{FEELPP_WORKDIR}/geo)
   endif(NOT EXISTS $ENV{FEELPP_WORKDIR})
+
+  message(STATUS "Copying geo/msh files to FEELPP_WORKDIR=$ENV{FEELPP_WORKDIR}/geo")
 
   foreach(exp "medit/*.geo" "medit/*.mesh" "gmsh/*.geo" "gmsh/*.stl" )
     FILE(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/${exp}")
     foreach(file ${files})
-      message(STATUS ${file})
       get_filename_component(filename ${file} NAME )
+      message(STATUS ${filename})
+
+      # Create a custom target so the geo files can be copied with make
+      add_custom_target(copy_workdir_mesh_data_${filename})
+      add_custom_command(TARGET copy_workdir_mesh_data_${filename}
+          COMMAND ${CMAKE_COMMAND} -E copy  ${file} $ENV{FEELPP_WORKDIR}/geo )
+      add_dependencies(feelpp_mesh_data copy_workdir_mesh_data_${filename} )
+
+      # also copies the files by default
       configure_file(${file}  $ENV{FEELPP_WORKDIR}/geo/${filename})
     endforeach()
   endforeach()
