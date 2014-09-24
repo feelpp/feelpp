@@ -262,18 +262,20 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                                 _desc=domain( _name="mesh", _addmidpoint=false, _usenames=false, _shape="hypercube",
                                               _dim=2, _h=option(_name="gmsh.hsize").template as<double>(),
-                                              _convex="Hypercube",_structured=1,_substructuring=1,
+                                              _convex="Hypercube",_substructuring=true,
                                               _xmin=0., _xmax=1., _ymin=0., _ymax=1.
-                                    )
+                                              ),
+                                _structured=1
         );
 
     auto mesh2 = createGMSHMesh( _mesh=new Mesh<Hypercube<2,1,2> >,
                                  _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                                  _desc=domain( _name="mesh2", _addmidpoint=false, _usenames=false, _shape="hypercube",
                                                _dim=2, _h=option(_name="gmsh.hsize2").template as<double>(),
-                                               _convex="Hypercube",_structured=1,_substructuring=1,
+                                               _convex="Hypercube",_substructuring=true,
                                                _xmin=0., _xmax=1., _ymin=1., _ymax=2.
-                                     )
+                                               ),
+                                 _structured=1
         );
 #endif
 
