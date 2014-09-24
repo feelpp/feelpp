@@ -28,7 +28,7 @@ feelpp_add_test( continuity_h1 NO_MPI_TEST )
 feelpp_add_test( continuity_hdiv NO_MPI_TEST )
 feelpp_add_test( continuity_hcurl NO_MPI_TEST )
 
-feelpp_add_test( functionals )
+feelpp_add_test( functionals NO_MPI_TEST )
 
 feelpp_add_test( lambda )
 feelpp_add_test( lift )
