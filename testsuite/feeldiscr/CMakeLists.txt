@@ -49,7 +49,7 @@ feelpp_add_test( vect_comp )
 feelpp_add_test( matching NO_MPI_TEST )
 
 feelpp_add_test( wire_basket NO_MPI_TEST )
-feelpp_add_test( mortar NO_MPI_TEST)
+feelpp_add_test( mortar CFG test_mortar.cfg NO_MPI_TEST)
 
 feelpp_add_test( exporter   CFG exporter.cfg NO_MPI_TEST)
 feelpp_add_test( extended )
