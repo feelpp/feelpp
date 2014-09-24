@@ -408,7 +408,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
     BOOST_CHECK_CLOSE( c_s( l, u ), i1, 1e-12 );
     BOOST_CHECK_CLOSE( c_s( l, u1 ), 0.5, 1e-12 );
     BOOST_CHECK_CLOSE( c_s( l, u2 ), 1./3., (T::value>=2)?1e-12:10 );
-    BOOST_CHECK_CLOSE( c_s( l, u3 ), 2./pi, 1e-5 );
+    BOOST_CHECK_CLOSE( c_s( l, u3 ), 2./pi, (T::value>=2)?1e-5:1e-02 );
 
     BOOST_TEST_MESSAGE( "build bilinear form c_m(Mh,Vh)" );
     auto c_m = form2(_test=Mh, _trial=Vh);
@@ -419,7 +419,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
     BOOST_CHECK_CLOSE( c_m( l, v ), 1, 1e-12 );
     BOOST_CHECK_CLOSE( c_m( l, w ), 0.5, 1e-12 );
     BOOST_CHECK_CLOSE( c_m( l, z ), 1./3., (T::value>=2)?1e-12:10 );
-    BOOST_CHECK_CLOSE( c_m( l, zz ), 2./pi, 1e-5 );
+    BOOST_CHECK_CLOSE( c_m( l, zz ), 2./pi, (T::value>=2)?1e-5:1e-02 );
 
     // build matrix C_m without mortar space
     BOOST_TEST_MESSAGE( "build bilinear form c_m(Xh,Vh)" );
