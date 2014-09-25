@@ -71,9 +71,15 @@ public:
             multi_index::ordered_unique<multi_index::identity<edge_type> >,
             // sort by less<int> on marker
             multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_marker>,
+                                            multi_index::composite_key<
+                                            edge_type,
                                             multi_index::const_mem_fun<edge_type,
                                                                        Marker1 const&,
-                                                                       &edge_type::marker> >,
+                                                                       &edge_type::marker>,
+                                            multi_index::const_mem_fun<edge_type,
+                                                                       rank_type,
+                                                                       &edge_type::processId>
+                                            > >,
 
             // sort by less<int> on processId
             multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_pid>,
@@ -158,7 +164,7 @@ public:
     /**
      * \return the world communicatior
      */
-    WorldComm const& worldCommFaces() const
+    WorldComm const& worldCommEdges() const
     {
         return M_worldCommEdges;
     }
@@ -212,12 +218,11 @@ public:
      * with marker \p m on processor \p p
      */
     std::pair<marker_edge_iterator, marker_edge_iterator>
-    edgesWithMarker( size_type m, size_type p ) const
+    edgesWithMarker( size_type m, rank_type p = invalid_rank_type_value ) const
     {
-        //return M_edges.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), p ) );
-        return M_edges.template get<Feel::detail::by_marker>().equal_range( Marker1( m ) );
+        const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
+        return M_edges.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) );
     }
-
 
     marker_edge_iterator beginEdgeWithMarker( size_type m )
     {
@@ -390,7 +395,12 @@ public:
      * with processor \p p
      */
     std::pair<pid_edge_iterator, pid_edge_iterator>
-    edgesWithProcessId( size_type p ) const
+    edgesWithProcessId( rank_type p )
+    {
+        return M_edges.template get<Feel::detail::by_pid>().equal_range( p );
+    }
+    std::pair<pid_edge_const_iterator, pid_edge_const_iterator>
+    edgesWithProcessId( rank_type p ) const
     {
         return M_edges.template get<Feel::detail::by_pid>().equal_range( p );
     }
