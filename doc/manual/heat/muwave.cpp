@@ -33,33 +33,36 @@ int main(int argc, char** argv)
 	space_ptrtype Vh = space_type::New(mesh);
 
 	auto u = Vh->element("u");
-	auto v = Vh->element("v");
 	auto theta = Vh->element("theta");
-	auto beta = Vh->element("beta");
 
 	auto a_complex_expr=expr(cst(complex_type(1.,0)));
 	auto xx = vf::project(Vh,elements(mesh),a_complex_expr);
 
-	// // Helmhotz
-	// auto f11 = form1(Vh);
-	// auto f12 = form2(Vh,Vh);
-	// // heat
-	// auto f21 = form1(Vh);
-	// auto f22 = form2(Vh,Vh);
+	// Helmhotz
+	auto f11 = form1(Vh);
+	auto f12 = form2(Vh,Vh);
+	// heat
+	auto f21 = form1(Vh);
+	auto f22 = form2(Vh,Vh);
 
-	// f12  = integrate(_range=markedelements(mesh,"oven") ,_expr=id(u)*idt(v) );
-	// f12 += integrate(_range=markedelements(mesh,"steak"),_expr=2.*id(u)*idt(v) );
- 	// //f12 += integrate(_range=elements(mesh),_expr=cst(complex_type(1,-0.5))*gradt( v )*trans( grad( u ) ) );
-	// 
-	// f12 += on (markedfaces(mesh,"border"),_rhs=f11,_element=u,_expr=f);
-	// f12 += on (markedfaces(mesh,"source"),_rhs=f11,_element=u,_expr=g);
-	// f12.solve(_rhs=f11,_solution=u);
+	f12  = integrate(_range=markedelements(mesh,"oven") ,_expr=id(u)*idt(u) );
+	f12 += integrate(_range=markedelements(mesh,"steak"),_expr=2.*id(u)*idt(u) );
+ 	f12 += integrate(_range=elements(mesh),_expr=cst(complex_type(1,-0.5))*gradt( u )*trans( grad( u ) ) );
+	
+	f12 += on (markedfaces(mesh,"border"),_rhs=f11,_element=u,_expr=f);
+	f12 += on (markedfaces(mesh,"source"),_rhs=f11,_element=u,_expr=g);
+	f12.solve(_rhs=f11,_solution=u);
 
-	// auto ff = cst(2);//vf::project(element(mesh),real(u)*real(u)) + vf::project(element(mesh),imag(u)*imag(u));
-	// f22  = integrate(_range=elements(mesh),_expr=grad(theta)*trans(gradt(theta)));
-	// f21  = integrate(_range=markedelements(mesh,"steak"),_expr=ff*id(theta));
-	// f22 += on(_range=markedfaces(mesh,"border"),_rhs=f21,_element=theta,_expr=cst(0.));
-	// f22 += on(_range=markedfaces(mesh,"source"),_rhs=f21,_element=theta,_expr=cst(0.));
+	auto ff = vf::project(element(mesh),real(u)*real(u)) + vf::project(element(mesh),imag(u)*imag(u));
+	f22  = integrate(_range=elements(mesh),_expr=grad(theta)*trans(gradt(theta)));
+	f21  = integrate(_range=markedelements(mesh,"steak"),_expr=idv(ff)*id(theta));
+	f22 += on(_range=markedfaces(mesh,"border"),_rhs=f21,_element=theta,_expr=cst(0.));
+	f22 += on(_range=markedfaces(mesh,"source"),_rhs=f21,_element=theta,_expr=cst(0.));
+
+	auto e = exporter(mesh);
+	e->add("u",u);
+	e->add("theta",theta);
+	e->save();
 
 	return 0;
 }
