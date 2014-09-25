@@ -672,7 +672,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
                     ++next_edge;
 
                 // reset the process id (edge not connected to an active elt take this value)
-                edg.setProcessId( invalid_uint16_type_value );
+                edg.setProcessId( invalid_rank_type_value );
 
                 if ( edgeinserted )
                 {
@@ -724,7 +724,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
             M_e2e[ vid ][ j] = boost::make_tuple( _edgeit->second, 1 );
 
             // reset the process id (edge not connected to an active elt take this value)
-            edg.setProcessId( invalid_uint16_type_value );
+            edg.setProcessId( invalid_rank_type_value );
 
             if ( edgeinserted )
             {
