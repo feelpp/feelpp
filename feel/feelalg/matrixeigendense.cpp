@@ -297,7 +297,7 @@ MatrixEigenDense<T>::sqrt( MatrixSparse<value_type>& _m ) const
 
 template <typename T>
 void
-MatrixEigenDense<T>::eigenValues ( std::vector<std::complex<value_type>> &Eingvs )
+MatrixEigenDense<T>::eigenValues ( std::vector<std::complex<double>> &Eingvs )
 {
     auto eigen_vals = M_mat.eigenvalues();
     for (size_type i=0; i < eigen_vals.size(); ++i )
@@ -347,6 +347,74 @@ MatrixEigenDense<T>::matInverse ( MatrixSparse<T> &Inv )
     // ierr = MatMatMult(this->M_mat, X->mat(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &Y->mat());
     // CHKERRABORT( this->comm(),ierr );
 
+}
+
+
+template<typename T>
+void
+MatrixEigenDense<T>::applyInverseSqrt( Vector<T>& vec_in, Vector<T>& vec_out )
+{
+
+    VectorEigen<T>* _rhs = dynamic_cast<VectorEigen<T>*> ( &vec_in );
+    VectorEigen<T>* res = dynamic_cast<VectorEigen<T>*> ( &vec_out );
+
+
+    std::vector<std::complex<double>> eigen_vals;
+    this->eigenValues(eigen_vals);
+
+    std::sort(eigen_vals.begin(), eigen_vals.end(),
+              [&]( std::complex<double> const& x, std::complex<double> const& y )->bool{
+                  return real(x) < real(y); } );
+
+    double m = real(eigen_vals.front());
+    double M = real(eigen_vals.back());
+
+    double k = (std::pow(M/m,1./4)-1)/(std::pow(M/m,1./4)+1);
+    double L = -std::log(k)/pi;
+
+    double K, Kp;
+    math::ellipkkp(L, K, Kp);
+
+    size_type N = 15;
+    Eigen::Matrix<std::complex<double>,Eigen::Dynamic,Eigen::Dynamic> AA;
+    Eigen::Matrix<std::complex<double>,Eigen::Dynamic,1> Amb(N);
+    Eigen::Matrix<std::complex<double>,Eigen::Dynamic,1> Am1b(N);
+    std::vector<std::complex<double>> t, sn ,cn, dn;
+
+    for (double dt = 0.5; dt < N; ++dt)
+    {
+        t.push_back(std::complex<double>(0,0.5*Kp) - std::complex<double>(K,0) + std::complex<double>(dt*2*K/N,0));
+    }
+
+    math::ellipjc(t,L,sn,cn,dn);
+
+    for (size_type it = 0; it < N; ++it)
+    {
+        std::complex<double> w = math::pow(m*M,0.25)*((std::complex<double>(1./k,0)+sn[it])/(std::complex<double>(1./k,0)-sn[it]));
+        std::complex<double> dzdt = cn[it]*dn[it]/(std::pow(std::complex<double>(1./k,0)-sn[it],2.));
+
+        Eigen::Matrix<std::complex<double>,Eigen::Dynamic,Eigen::Dynamic> A = this->M_mat.template cast<std::complex<double>>();
+        AA = A;
+        A *= std::complex<double>(-1.,0);
+
+        for (size_type iti = 0; iti < A.rows(); ++iti)
+        {
+            A(iti,iti) = std::pow(w,2.)-(this->M_mat).operator()(iti,iti);
+        }
+
+        Eigen::Matrix<std::complex<double>,Eigen::Dynamic,1> rhs = _rhs->vec().template cast<std::complex<double>>();
+
+        Am1b = (A.inverse())*rhs;
+        auto fw = std::pow(w,-0.5);
+        Amb += Am1b*dzdt*(std::pow(fw,2.)/w);
+    }
+
+    Amb = -8*K*std::pow(m*M,1./4)*AA*Amb.imag()/(k*pi*N);
+
+    for (size_type it = 0; it < Amb.size(); ++it)
+    {
+        res->set(it, Amb.real().operator()(it));
+    }
 }
 
 

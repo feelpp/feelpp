@@ -45,6 +45,8 @@
 #include <feel/feelalg/matrixsparse.hpp>
 #include <feel/feelalg/vectorublas.hpp>
 
+#include <feel/feelmath/jacobiellipticfunctions.hpp>
+
 
 namespace Feel
 {
@@ -443,7 +445,7 @@ public:
      * stores the result in \p Eingvs:
      * \f$ Engvs = \texttt{this}*In \f$.
      */
-    void eigenValues ( std::vector<std::complex<value_type>> &Eingvs );
+    void eigenValues ( std::vector<std::complex<double>> &Eingvs );
 
 
 
@@ -474,6 +476,8 @@ public:
 
 
     //@}
+
+    void applyInverseSqrt( Vector<value_type>& vec_in, Vector<value_type>& vec_out );
 
 
 

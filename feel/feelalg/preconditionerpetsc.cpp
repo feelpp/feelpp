@@ -1666,7 +1666,11 @@ ConfigurePCFieldSplit::runConfigurePCFieldSplit( PC& pc, PreconditionerPetsc<dou
             this->check( MatDuplicate(B,MAT_COPY_VALUES,&Bcopy) );
 
             Vec scaleDiag;
+#if PETSC_VERSION_LESS_THAN(3,5,3)
             this->check( MatGetVecs(A,&scaleDiag,NULL) );
+#else
+            this->check( MatCreateVecs(A,&scaleDiag,NULL) );
+#endif
             this->check( MatGetDiagonal(A,scaleDiag) ); /* Should be the mass matrix, but we don't have plumbing for that yet */
             this->check( VecReciprocal(scaleDiag) );
             this->check( MatDiagonalScale( Bcopy, scaleDiag ,NULL) );

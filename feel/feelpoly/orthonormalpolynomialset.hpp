@@ -115,6 +115,11 @@ public:
     static const uint16_type nDofHess = super::nDim*super::nDim*nDof;
     typedef typename matrix_node<value_type>::type points_type;
 
+    /**
+     * local interpolant is undefined
+     */
+    typedef boost::none_t local_interpolant_type;
+
     struct SSpace
     {
         static constexpr uint16_type TheOrder = (Order > 1)?Order-1:0;
@@ -220,6 +225,11 @@ public:
     typedef Legendre<Dim, RealDim, Order, Normalized<true>, T> basis_type;
     typedef Hypercube<Dim, Order, /*RealDim*/Dim> convex_type;
     typedef typename matrix_node<value_type>::type points_type;
+
+    /**
+     * local interpolant is undefined
+     */
+    typedef boost::none_t local_interpolant_type;
 
     template<int O>
     struct convex

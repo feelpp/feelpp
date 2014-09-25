@@ -202,7 +202,107 @@ namespace math
         }
     }
 
+    template<typename T>
+    void ellipjc(std::vector<std::complex<T>> u, T l, std::vector<std::complex<T>> &sn,
+                 std::vector<std::complex<T>> &cn, std::vector<std::complex<T>> &dn, bool flag=true)
+     {
 
+         const T eps=sqrt(std::numeric_limits<T>::epsilon());
+         std::vector<size_type> high;
+         double m;
+
+         if ( flag )
+         {
+             double k, kp;
+             math::ellipkkp(l, k, kp);
+
+             for (size_type i = 0; i < u.size(); ++i)
+             {
+                 if (std::imag(u[i]) > kp/2)
+                     high.push_back(i);
+             }
+
+             for (size_type const& s : high )
+             {
+                 u[s] = std::complex<T>(0,kp) - u[s];
+             }
+
+             m = std::exp(-2*pi*l);
+         }
+         else
+         {
+             m = l;
+         }
+
+         if ( m < 4*eps )
+         {
+             for (size_type i = 0; i < u.size(); ++i)
+             {
+                 sn.push_back(std::sin(u[i]) + (m/4)*(std::sin(u[i])*std::cos(u[i])-u[i])*std::cos(u[i]));
+                 cn.push_back(std::cos(u[i]) + (m/4)*(-std::sin(u[i])*std::cos(u[i])+u[i])*std::sin(u[i]));
+                 dn.push_back(std::complex<T>(1,0) + (m/4)*(std::pow(std::cos(u[i]),2.)-std::pow(std::sin(u[i]),2.)-std::complex<T>(1,0)));
+             }
+         }
+         else
+         {
+             double kappa = 0;
+
+             if ( m > 1e-03 )
+             {
+                 kappa = (1-math::sqrt(1-m))/(1+math::sqrt(1-m));
+             }
+             else
+             {
+                 std::vector<double> polycoeffs = {132, 42, 14, 5, 2, 1, 0};
+                 for ( size_type expt=0; expt<polycoeffs.size(); ++expt )
+                 {
+                     kappa += polycoeffs[expt]*std::pow((m/4),polycoeffs.size()-expt-1);
+                 }
+             }
+
+             double mu = std::pow(kappa,2.);
+             std::vector<std::complex<T>> v;
+             for (size_type i = 0; i < u.size(); ++i)
+             {
+                 v.push_back((1/(1+kappa))*u[i]);
+             }
+
+             std::vector<std::complex<T>> sn1, cn1, dn1;
+             ellipjc(v, mu, sn1, cn1, dn1, false);
+
+             std::vector<std::complex<T>> denom;
+             for (size_type i = 0; i < u.size(); ++i)
+             {
+                 denom.push_back(std::complex<T>(1,0)+kappa*std::pow(sn1[i],2.));
+             }
+
+             for (size_type i = 0; i < u.size(); ++i)
+             {
+                 sn.push_back((1+kappa)*sn1[i]/denom[i]);
+                 cn.push_back(cn1[i]*dn1[i]/denom[i]);
+                 dn.push_back((std::complex<T>(1,0)-kappa*std::pow(sn1[i],2))/denom[i]);
+             }
+
+             if (!high.empty())
+             {
+                 std::vector<std::complex<T>> snh(sn.size());
+                 std::vector<std::complex<T>> cnh(sn.size());
+                 std::vector<std::complex<T>> dnh(sn.size());
+
+                 snh = sn;
+                 cnh = cn;
+                 dnh = dn;
+
+                 for (size_type const& s : high )
+                 {
+                     sn[s] = -std::complex<T>(1,0)/(math::sqrt(m)*sn[s]);
+                     cn[s] = std::complex<T>(0,1)*dnh[s]/(math::sqrt(m)*sn[s]);
+                     dn[s] = std::complex<T>(0,1)*cnh[s]/(sn[s]);
+                 }
+             }
+         }
+
+     }
 }
 
 }
