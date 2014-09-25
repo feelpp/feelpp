@@ -1544,7 +1544,9 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const
     e.setMarker( __e.physical );
     e.setMarker2( __e.elementary );
     e.setNumberOfPartitions( __e.numPartitions );
-    e.setProcessId( __e.partition );
+    // warning : process id is define after (when call mesh->updateForUse()
+    // and only for edges which belong to an active 3d element )
+    e.setProcessId( invalid_rank_type_value/*__e.partition*/ );
     e.setNeighborPartitionIds( __e.ghosts );
 
     if ( __e.type == GMSH_LINE ||
