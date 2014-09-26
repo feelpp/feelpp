@@ -876,18 +876,16 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_EDGES> /
     auto const enListRange = M_listRange.end();
     for ( ; itListRange!=enListRange ; ++itListRange)
     {
-    iterator_type it, en;
-    boost::tie( boost::tuples::ignore, it, en ) = *itListRange;
+    auto it = itListRange->template get<1>();
+    auto const en = itListRange->template get<2>();
 
     DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] extracting " << std::distance(it,en)  << " edges " << "\n";
     for ( ; it != en; ++ it )
     {
-        // create a new element
-        //element_type const& old_elem = *it;
-        auto oldElem = *it;
-        DVLOG(2) << "[Mesh<Shape,T>::createSubmesh]   + face : " << it->id() << "\n";
+        auto const& oldElem = boost::unwrap_ref( *it );
+        DVLOG(2) << "[Mesh<Shape,T>::createSubmesh]   + face : " << oldElem.id() << "\n";
 
-        // copy element so that we can modify it
+        // create new element
         new_element_type newElem;// = oldElem;
 
         // get element markers
