@@ -424,7 +424,7 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
      * \snippet residualestimator.hpp toto5
     */
     // [toto5]
-    form2( Xh, Xh, D, _init=true ) =
+    form2( _test=Xh, _trial=Xh, _matrix=D, _init=true ) =
         integrate( elements( mesh ), gradt( u )*trans( grad( v ) ) );
     // [toto5]
     //# endmarker3 #
@@ -439,7 +439,7 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
          */
         // [toto6]
         //# marker10 #
-        form2( Xh, Xh, D ) +=
+        form2( _test=Xh, _trial=Xh, _matrix=D ) +=
             integrate( markedfaces( mesh,tag_Dirichlet ),
                        -( gradt( u )*vf::N() )*id( v )
                        -( grad( v )*vf::N() )*idt( u )
@@ -459,7 +459,7 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
         // [toto7]
         //# marker5 #
         D->close();
-        form2( Xh, Xh, D ) +=
+        form2( _test=Xh, _trial=Xh, _matrix=D ) +=
             on( markedfaces( mesh, tag_Dirichlet ), u, F, g );
         //# endmarker5 #
         // [toto7]
