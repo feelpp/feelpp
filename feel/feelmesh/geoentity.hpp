@@ -735,6 +735,14 @@ public:
         return M_elistGhost;
     }
 
+    /**
+     * \return true if geoentity is a subentity of a ghost elt belongs to partition p
+     */
+    bool isSubEntityOfGhostElement( rank_type p ) const
+    {
+        return M_elistGhost.find( p ) != M_elistGhost.end();
+    }
+
     void clearElementsGhost()
     {
         M_elistGhost.clear();

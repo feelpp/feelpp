@@ -130,6 +130,8 @@ public:
     typedef typename super_edges::marker_face_const_iterator marker_edge_const_iterator;
     typedef typename super_edges::location_face_iterator location_edge_iterator;
     typedef typename super_edges::location_face_const_iterator location_edge_const_iterator;
+    typedef typename super_edges::pid_face_iterator pid_edge_iterator;
+    typedef typename super_edges::pid_face_const_iterator pid_edge_const_iterator;
 
     typedef Mesh2D<Shape> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;

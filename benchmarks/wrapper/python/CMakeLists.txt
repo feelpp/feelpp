@@ -25,7 +25,7 @@
 macro(add_python_module modulename)
 
   FILE(COPY ${modulename}test.py DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-  add_custom_target( ${modulename}py DEPENDS ${modulename}test.py )
+  add_custom_target( ${modulename}test.py DEPENDS ${modulename}test.py )
   add_library( ${modulename} MODULE  ${modulename}_wrapper.cpp  )
   target_link_libraries( ${modulename} feelpp ${FEELPP_LIBRARIES} )
   set_target_properties( ${modulename} PROPERTIES PREFIX "" )

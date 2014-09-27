@@ -131,9 +131,10 @@ BOOST_PP_TUPLE_TO_LIST(                                        \
     /**/
 #define FEELPP_STD_BINARY_FUNCS                                  \
 BOOST_PP_TUPLE_TO_LIST(                                        \
-    1,                                                         \
+    2,                                                         \
     (                                                          \
-        (pow       , std::pow, pow  )                          \
+        (pow       , std::pow, pow  ),                         \
+        (atan2     , std::atan2, atan2  )                      \
      )                                                         \
     )                                                          \
     /**/
