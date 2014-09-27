@@ -93,9 +93,11 @@ public:
         {
             BOOST_CHECK( mpi::environment::initialized() );
             BOOST_TEST_MESSAGE( "mpi ok" );
-            BOOST_CHECK_EQUAL( detail::BackendManager::instance().size(), 0 );
+            BOOST_CHECK_EQUAL( detail::BackendManager<double>::instance().size(), 0 );
+            BOOST_CHECK_EQUAL( detail::BackendManager<std::complex<double>>::instance().size(), 0 );
             BOOST_TEST_MESSAGE( "backend manager empty" );
             auto b1 = backend(_name="test1");
+            auto c1 = cbackend(_name="ctest1");
 #if 0
             BOOST_TEST_MESSAGE( "creating backend" );
             BOOST_CHECK_EQUAL( detail::BackendManager::instance().size(), 1 );

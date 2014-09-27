@@ -53,6 +53,7 @@ struct MeshTraits
 
     typedef typename mesh_type::element_type element_type;
     typedef typename mesh_type::face_type face_type;
+    typedef typename mesh_type::edge_type edge_type;
 
     // element iterators
     typedef typename mesh_type::element_iterator element_iterator;
@@ -98,6 +99,9 @@ struct MeshTraits
 
     typedef typename mesh_type::location_edge_iterator location_edge_iterator;
     typedef typename mesh_type::location_edge_const_iterator location_edge_const_iterator;
+
+    typedef typename mesh_type::pid_edge_iterator pid_edge_iterator;
+    typedef typename mesh_type::pid_edge_const_iterator pid_edge_const_iterator;
 
     // point iterators
     typedef typename mesh_type::point_iterator point_iterator;

@@ -1519,6 +1519,7 @@ public:
     static const bool is_tensor2 = ( is_composite? false : basis_0_type::is_tensor2 );
     static const bool is_continuous = ( is_composite? false : basis_0_type::isContinuous );
     static const bool is_modal = ( is_composite? false : basis_0_type::is_modal );
+    static const bool is_nodal = !is_modal;
     static const uint16_type nComponents1 = ( is_composite? invalid_uint16_type_value : basis_0_type::nComponents1 );
     static const uint16_type nComponents2 = ( is_composite? invalid_uint16_type_value : basis_0_type::nComponents2 );
     static const bool is_product = ( is_composite? invalid_uint16_type_value : basis_0_type::is_product );
@@ -1949,6 +1950,13 @@ public:
                 mpl::identity<boost::none_t>,
                 mpl::identity<typename basis_0_type::polynomial_type> >::type::type polynomial_view_type;
 
+        /**
+         * interpolate type if available
+         */
+        typedef typename mpl::if_<mpl::bool_<is_modal>,
+                                  mpl::identity<boost::none_t>,
+                                  mpl::identity<typename basis_0_type::local_interpolant_type> >::type::type local_interpolant_type;
+
         typedef Element<T,Cont> this_type;
         template<int i>
         struct sub_element
@@ -2215,7 +2223,8 @@ public:
             this->operator[]( index ) += __v;
         }
 
-        void assign( geoelement_type const& e, typename basis_0_type::local_interpolant_type const& Ihloc )
+        void assign( geoelement_type const& e, local_interpolant_type const& Ihloc )
+                     
         {
             auto const& s = M_functionspace->dof()->localToGlobalSigns( e.id() );
             for( auto ldof : M_functionspace->dof()->localDof( e.id() ) )
@@ -2224,7 +2233,7 @@ public:
                 this->operator[]( index ) = s(ldof.first.localDof())*Ihloc( ldof.first.localDof() );
             }
         }
-        void assign( geoface_type const& e, typename basis_0_type::local_interpolant_type const& Ihloc )
+        void assign( geoface_type const& e, local_interpolant_type const& Ihloc )
         {
             auto const& s = M_functionspace->dof()->localToGlobalSigns( e.element(0).id() );
             for( auto ldof : M_functionspace->dof()->faceLocalDof( e.id() ) )
@@ -2233,7 +2242,7 @@ public:
                 this->operator[]( index ) = s(ldof.second.localDof())*Ihloc( ldof.first );
             }
         }
-        void plus_assign( geoelement_type const& e, typename basis_0_type::local_interpolant_type const& Ihloc )
+        void plus_assign( geoelement_type const& e, local_interpolant_type const& Ihloc )
         {
             auto const& s = M_functionspace->dof()->localToGlobalSigns( e.id() );
             for( auto ldof : M_functionspace->dof()->localDof( e.id() ) )
@@ -2242,8 +2251,8 @@ public:
                 this->operator[]( index ) += s(ldof.first.localDof())*Ihloc( ldof.first.localDof() );
             }
         }
-        void plus_assign( geoface_type const& e, typename basis_0_type::local_interpolant_type const& Ihloc )
-        {
+        void plus_assign( geoface_type const& e, local_interpolant_type const& Ihloc )
+         {
             auto const& s = M_functionspace->dof()->localToGlobalSigns( e.element(0).id() );
             for( auto ldof : M_functionspace->dof()->faceLocalDof( e.id() ) )
             {

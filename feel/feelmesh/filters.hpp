@@ -37,7 +37,7 @@
 
 namespace Feel
 {
-enum class EntityProcessType {LOCAL_ONLY,GHOST_ONLY,ALL};
+enum class EntityProcessType {LOCAL_ONLY,GHOST_ONLY,ALL,IGNORE_ENTITY_ON_INTERPROCESS_FACE};
 
 template<size_t S, class ITERATOR>
 ITERATOR begin( boost::tuple<mpl::size_t<S>,ITERATOR,ITERATOR> &range )
@@ -1676,6 +1676,74 @@ concatenate( IteratorType it1, IteratorType it2 )
                               myelts );
 
 }
+
+template<typename MeshType>
+boost::tuple<mpl::size_t<MESH_EDGES>,
+             typename std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::edge_type const> >::const_iterator,
+             typename std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::edge_type const> >::const_iterator,
+             boost::shared_ptr<std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::edge_type const> > >
+             >
+interprocessedges( MeshType const& mesh, rank_type neighbor_pid = invalid_rank_type_value, EntityProcessType entity = EntityProcessType::ALL )
+{
+    typedef typename MeshTraits<MeshType>::face_type face_type;
+    typedef typename MeshTraits<MeshType>::edge_type edge_type;
+    typedef std::vector<boost::reference_wrapper<edge_type const> > cont_range_type;
+    boost::shared_ptr<cont_range_type> myedges( new cont_range_type );
+
+    if ( entity == EntityProcessType::ALL )
+    {
+        if ( neighbor_pid == invalid_rank_type_value )
+        {
+            for ( auto const& theedge : edges(mesh) )
+            {
+                if ( theedge.numberOfProcGhost() > 0 )
+                    myedges->push_back(boost::cref(theedge));
+            }
+        }
+        else
+        {
+            for ( auto const& theedge : edges(mesh) )
+            {
+                if ( theedge.numberOfProcGhost() > 0 && theedge.isSubEntityOfGhostElement( neighbor_pid ) )
+                    myedges->push_back(boost::cref(theedge));
+            }
+        }
+    }
+    else if (  entity == EntityProcessType::IGNORE_ENTITY_ON_INTERPROCESS_FACE )
+    {
+        std::set<size_type> saveIdEdges;
+        for ( auto const& theface : interprocessfaces(mesh,neighbor_pid) )
+        {
+            for ( uint16_type e=0 ; e<face_type::numLocalEdges ; ++e )
+                saveIdEdges.insert( theface.face(e).id() );
+        }
+
+        if ( neighbor_pid == invalid_rank_type_value )
+        {
+            for ( auto const& theedge : edges(mesh) )
+            {
+                if ( theedge.numberOfProcGhost() > 0 && saveIdEdges.find(theedge.id()) == saveIdEdges.end() )
+                    myedges->push_back(boost::cref(theedge));
+            }
+        }
+        else
+        {
+            for ( auto const& theedge : edges(mesh) )
+            {
+                if ( theedge.numberOfProcGhost() > 0 && theedge.isSubEntityOfGhostElement( neighbor_pid ) &&
+                     saveIdEdges.find(theedge.id()) == saveIdEdges.end() )
+                    myedges->push_back(boost::cref(theedge));
+            }
+        }
+    }
+
+    return boost::make_tuple( mpl::size_t<MESH_EDGES>(),
+                              myedges->begin(),
+                              myedges->end(),
+                              myedges );
+
+}
+
 } // namespace Feel
 
 
