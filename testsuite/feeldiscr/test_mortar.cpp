@@ -262,26 +262,28 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                                 _desc=domain( _name="mesh", _addmidpoint=false, _usenames=false, _shape="hypercube",
                                               _dim=2, _h=option(_name="gmsh.hsize").template as<double>(),
-                                              _convex="Hypercube",_structured=1,_substructuring=1,
+                                              _convex="Hypercube",_substructuring=true,
                                               _xmin=0., _xmax=1., _ymin=0., _ymax=1.
-                                    )
+                                              ),
+                                _structured=1
         );
 
     auto mesh2 = createGMSHMesh( _mesh=new Mesh<Hypercube<2,1,2> >,
                                  _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                                  _desc=domain( _name="mesh2", _addmidpoint=false, _usenames=false, _shape="hypercube",
                                                _dim=2, _h=option(_name="gmsh.hsize2").template as<double>(),
-                                               _convex="Hypercube",_structured=1,_substructuring=1,
+                                               _convex="Hypercube",_substructuring=true,
                                                _xmin=0., _xmax=1., _ymin=1., _ymax=2.
-                                     )
+                                               ),
+                                 _structured=1
         );
 #endif
 
 
     auto testmesh = createSubmesh(mesh, markedfaces(mesh,"NORTH"),Environment::worldComm() );
     auto trialmesh = createSubmesh(mesh2, markedfaces(mesh2,"SOUTH"),Environment::worldComm() );
-    auto Xh = Pch<T::value,PointSetGaussLobatto>(testmesh);
-    auto Vh = Pch<T::value,PointSetGaussLobatto>(trialmesh);
+    auto Xh = Pch<T::value,double,PointSetGaussLobatto>(testmesh);
+    auto Vh = Pch<T::value,double,PointSetGaussLobatto>(trialmesh);
     auto Mh = Moch<T::value,PointSetGaussLobatto>(testmesh);
 
     BOOST_CHECK_MESSAGE(Mh->is_mortar == true, "Space should be mortar" ) ;
@@ -394,34 +396,30 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
     BOOST_TEST_MESSAGE( "build bilinear form c_s(Mh,Xh)" );
     auto c_s = form2(_test=Mh, _trial=Xh), cs1= form2(_test=Mh, _trial=Xh);
     BOOST_TEST_MESSAGE( "integrate" );
-    c_s = integrate(_range=internalelements(testmesh),_expr=idt(u)*id(l));
-    c_s += integrate(_range=boundaryelements(testmesh),_expr=idt(u)*id(l),_quad1=_Q<4>());
+    c_s = integrate(_range=elements(testmesh),_expr=idt(u)*id(l),_quad1=_Q<20>(),_quad=_Q<20>());
 
-    cs1 = integrate(_range=internalelements(testmesh),_expr=idt(u)*id(l));
-    cs1 += integrate(_range=boundaryelements(testmesh),_expr=idt(u));
     BOOST_TEST_MESSAGE( "printMatlab" );
     c_s.matrixPtr()->printMatlab( "C_s.m" );
-    cs1.matrixPtr()->printMatlab( "C_s1.m" );
-    double i1 = integrate(_range=internalelements(testmesh), _expr=cst(1.)).evaluate()(0,0);
+
+    double i1 = integrate(_range=elements(testmesh), _expr=cst(1.)).evaluate()(0,0);
     BOOST_TEST_MESSAGE("integrate(1)=" << i1 );
-    double i2 = integrate(_range=markedfaces(mesh,(boost::any)4), _expr=cst(1.)).evaluate()(0,0);
+    double i2 = integrate(_range=markedfaces(mesh,"NORTH"), _expr=cst(1.)).evaluate()(0,0);
     BOOST_TEST_MESSAGE("integrate_2(1)=" << i2 );
     BOOST_CHECK_CLOSE( c_s( l, u ), i1, 1e-12 );
-    if ( T::value == 1 )
-        BOOST_CHECK_CLOSE( cs1( l, u ), 1, 1e-12 );
     BOOST_CHECK_CLOSE( c_s( l, u1 ), 0.5, 1e-12 );
     BOOST_CHECK_CLOSE( c_s( l, u2 ), 1./3., (T::value>=2)?1e-12:10 );
-    BOOST_CHECK_CLOSE( c_s( l, u3 ), 2./pi, 1e-5 );
+    BOOST_CHECK_CLOSE( c_s( l, u3 ), 2./pi, (T::value>=2)?1e-5:1e-02 );
 
     BOOST_TEST_MESSAGE( "build bilinear form c_m(Mh,Vh)" );
     auto c_m = form2(_test=Mh, _trial=Vh);
     BOOST_TEST_MESSAGE( "integrate" );
     c_m = integrate(_range=elements(testmesh),_expr=idt(v)*id(l),_quad1=_Q<20>(),_quad=_Q<20>());
+
     c_m.matrixPtr()->printMatlab( "C_m.m" );
     BOOST_CHECK_CLOSE( c_m( l, v ), 1, 1e-12 );
     BOOST_CHECK_CLOSE( c_m( l, w ), 0.5, 1e-12 );
     BOOST_CHECK_CLOSE( c_m( l, z ), 1./3., (T::value>=2)?1e-12:10 );
-    BOOST_CHECK_CLOSE( c_m( l, zz ), 2./pi, 1e-5 );
+    BOOST_CHECK_CLOSE( c_m( l, zz ), 2./pi, (T::value>=2)?1e-5:1e-02 );
 
     // build matrix C_m without mortar space
     BOOST_TEST_MESSAGE( "build bilinear form c_m(Xh,Vh)" );
