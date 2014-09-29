@@ -191,6 +191,8 @@ test2dTo2d()
     BOOST_CHECK_SMALL( s2a,1e-8 );
     BOOST_TEST_MESSAGE( "s2a=" << s2a );
 
+    if ( OrderGeo == 1 )
+    {
     //-----------------------------------------------------
     // Lagrange <-> Nedelec
     auto XhNed = Ned1h<0>( mesh );
@@ -232,7 +234,7 @@ test2dTo2d()
                               _expr=inner( idv( u1RT ) , idv( u1RT ), mpl::int_<InnerProperties::IS_SAME>() ) ).evaluate()( 0,0 );
     //BOOST_CHECK_SMALL( std::abs(sRT-sRT2),1e-3 );
     BOOST_TEST_MESSAGE( "sRT2=" << sRT << "(vs sRT=" << sRT << ")" );
-
+    }
 
     //-------------------------------------------------------//
     //case 2 : with interpolation tool
