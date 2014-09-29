@@ -65,8 +65,8 @@ inline
 AboutData
 makeAbout()
 {
-    AboutData about( "test_interpolation_hdiv" ,
-                     "test_interpolation_hdiv" ,
+    AboutData about( "test_interpolation_RT" ,
+                     "test_interpolation_RT" ,
                      "0.1",
                      "Test for interpolation with h_div space",
                      AboutData::License_GPL,
