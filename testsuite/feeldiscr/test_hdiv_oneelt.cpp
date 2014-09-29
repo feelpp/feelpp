@@ -406,7 +406,7 @@ BOOST_AUTO_TEST_SUITE( HDIV )
 BOOST_AUTO_TEST_CASE( test_hdiv_N0_shape_func )
 {
     TestHDivOneElt t;
-    std::vector<std::string> mygeoms = option(_name="meshes").template as< std::vector<std::string> >();
+    std::vector<std::string> mygeoms = soption(_name="meshes");//.template as< std::vector<std::string> >();
     for(std::string geo : mygeoms)
         {
             std::cout << "*** shape functions on " << geo << " *** \n";
