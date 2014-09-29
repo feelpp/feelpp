@@ -476,6 +476,33 @@ public:
                         Ihloc( (c1+nComponents1*c2)*nLocalFaceDof+q ) = expr.evalq( c1, c2, q );
 
         }
+
+    template<typename ExprType>
+    void
+    interpolateBasisFunction( ExprType& expr, local_interpolant_type& Ihloc ) const
+    {
+        BOOST_MPL_ASSERT_MSG( nComponents1==ExprType::shape::M,
+                              INCOMPATIBLE_NUMBER_OF_COMPONENTS,
+                              (mpl::int_<nComponents1>,mpl::int_<ExprType::shape::M>));
+        BOOST_MPL_ASSERT_MSG( nComponents2==ExprType::shape::N,
+                              INCOMPATIBLE_NUMBER_OF_COMPONENTS,
+                              (mpl::int_<nComponents2>,mpl::int_<ExprType::shape::N>));
+
+        //for ( int cc1 = 0; cc1 < nComponents1; ++cc1 )
+        typedef typename ExprType::tensor_expr_type::expression_type::fe_type fe_expr_type;
+
+        for( int q = 0; q <expr.geom()->nPoints(); ++q )
+            for( int i = 0; i < fe_expr_type::nLocalDof; ++i )
+                for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
+                    for( int c2 = 0; c2 < ExprType::shape::N; ++c2 )
+                    {
+                        int ldof = (c1+fe_expr_type::nComponents1*c2)*fe_expr_type::nLocalDof + i;
+                        int ldof2 = (fe_expr_type::is_product)? ldof : i;
+                        Ihloc( ldof, q ) = expr.evaliq( /*i*/ldof2, c1, c2, q );
+                    }
+    }
+
+
     //@}
 
 private:
