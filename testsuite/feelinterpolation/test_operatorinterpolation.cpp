@@ -4,8 +4,12 @@
 
 #include <feel/options.hpp>
 #include <feel/feelalg/backend.hpp>
+
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pchv.hpp>
+#include <feel/feeldiscr/ned1h.hpp>
+#include <feel/feeldiscr/dh.hpp>
+
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelfilters/geotool.hpp>
@@ -164,9 +168,9 @@ test2dTo2d()
 
     auto mybackend = backend(_rebuild=true);
 
-    auto opI=opInterpolation( _domainSpace=Xh1,
-                              _imageSpace=Xh2,
-                              _backend=mybackend );
+    auto opI = opInterpolation( _domainSpace=Xh1,
+                                _imageSpace=Xh2,
+                                _backend=mybackend );
     opI->apply( u1,u2 );
 
     auto s1 = integrate( _range=elements( mesh ),
@@ -186,6 +190,51 @@ test2dTo2d()
                           _expr=inner( idv( u1 )-idv( u2a ) , idv( u1 )-idv( u2a ), mpl::int_<InnerProperties::IS_SAME>() ) ).evaluate()( 0,0 );
     BOOST_CHECK_SMALL( s2a,1e-8 );
     BOOST_TEST_MESSAGE( "s2a=" << s2a );
+
+    if ( OrderGeo == 1 )
+    {
+    //-----------------------------------------------------
+    // Lagrange <-> Nedelec
+    auto XhNed = Ned1h<0>( mesh );
+    auto opINed=opInterpolation( _domainSpace=Xh1,
+                                 _imageSpace=XhNed );
+    auto uNed = XhNed->element();
+    opINed->apply( u1,uNed );
+    auto sNed = integrate( _range=elements( mesh ),
+                           _expr=inner( idv( uNed ) , idv( uNed ), mpl::int_<InnerProperties::IS_SAME>() ) ).evaluate()( 0,0 );
+    BOOST_CHECK_SMALL( std::abs(s1-sNed),1e-2 );
+    BOOST_TEST_MESSAGE( "sNed=" << sNed << "(vs s1=" << s1 << ")" );
+    auto opINed2=opInterpolation( _domainSpace=XhNed,
+                                  _imageSpace=Xh1 );
+    uNed.on(_range=elements(mesh),_expr=vec(-sin(Py()),-sin(Px()) ) );
+    auto u1Ned = Xh1->element();
+    opINed2->apply( uNed, u1Ned );
+    double sNed2 = integrate( _range=elements( mesh ),
+                              _expr=inner( idv( u1Ned ) , idv( u1Ned ), mpl::int_<InnerProperties::IS_SAME>() ) ).evaluate()( 0,0 );
+    //BOOST_CHECK_SMALL( std::abs(sNed-sNed2),1e-2 );
+    BOOST_TEST_MESSAGE( "sNed2=" << sNed << "(vs sNed=" << sNed << ")" );
+
+    //-----------------------------------------------------
+    // Lagrange <-> Raviart-Thomas
+    auto XhRT = Dh<0>( mesh );
+    auto opIRT = opInterpolation( _domainSpace=Xh1,
+                                  _imageSpace=XhRT );
+    auto uRT = XhRT->element();
+    opIRT->apply( u1,uRT );
+    double sRT = integrate( _range=elements( mesh ),
+                            _expr=inner( idv( uRT ) , idv( uRT ), mpl::int_<InnerProperties::IS_SAME>() ) ).evaluate()( 0,0 );
+    BOOST_CHECK_SMALL( std::abs(s1-sRT),1e-2 );
+    BOOST_TEST_MESSAGE( "sRT=" << sRT << "(vs s1=" << s1 << ")" );
+    auto opIRT2 = opInterpolation( _domainSpace=XhRT,
+                                   _imageSpace=Xh1 );
+    uRT.on(_range=elements(mesh),_expr=vec(-sin(Py()),-sin(Px()) ) );
+    auto u1RT = Xh1->element();
+    opIRT2->apply( uRT, u1RT );
+    double sRT2 = integrate( _range=elements( mesh ),
+                              _expr=inner( idv( u1RT ) , idv( u1RT ), mpl::int_<InnerProperties::IS_SAME>() ) ).evaluate()( 0,0 );
+    //BOOST_CHECK_SMALL( std::abs(sRT-sRT2),1e-3 );
+    BOOST_TEST_MESSAGE( "sRT2=" << sRT << "(vs sRT=" << sRT << ")" );
+    }
 
     //-------------------------------------------------------//
     //case 2 : with interpolation tool
