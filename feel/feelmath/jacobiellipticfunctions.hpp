@@ -249,7 +249,7 @@ namespace math
 
              if ( m > 1e-03 )
              {
-                 kappa = (1-math::sqrt(1-m))/(1+math::sqrt(1-m));
+                 kappa = (1-sqrt(1-m))/(1+sqrt(1-m));
              }
              else
              {
@@ -295,8 +295,8 @@ namespace math
 
                  for (size_type const& s : high )
                  {
-                     sn[s] = -std::complex<T>(1,0)/(math::sqrt(m)*sn[s]);
-                     cn[s] = std::complex<T>(0,1)*dnh[s]/(math::sqrt(m)*sn[s]);
+                     sn[s] = -std::complex<T>(1,0)/(sqrt(m)*sn[s]);
+                     cn[s] = std::complex<T>(0,1)*dnh[s]/(sqrt(m)*sn[s]);
                      dn[s] = std::complex<T>(0,1)*cnh[s]/(sn[s]);
                  }
              }
