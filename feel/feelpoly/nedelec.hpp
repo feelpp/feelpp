@@ -1062,7 +1062,7 @@ public:
     typedef typename convex_type::topological_face_type face_type;
 
     static const uint16_type nOrder =  dual_space_type::nOrder;
-    static const uint16_type nbPtsPerVertex = reference_convex_type::nbPtsPerVertex; ;
+    static const uint16_type nbPtsPerVertex = reference_convex_type::nbPtsPerVertex;
     static const uint16_type nbPtsPerEdge = dual_space_type::nbPtsPerEdge;
     static const uint16_type nbPtsPerFace = dual_space_type::nbPtsPerFace;
     static const uint16_type nbPtsPerVolume = dual_space_type::nbPtsPerVolume;
@@ -1243,6 +1243,35 @@ public:
             }
 
         }
+
+    template<typename ExprType>
+    void
+    interpolateBasisFunction( ExprType& expr, local_interpolant_type& Ihloc ) const
+    {
+        typedef typename ExprType::tensor_expr_type::expression_type::fe_type fe_expr_type;
+        Ihloc.setZero();
+        //auto g = expr.geom();
+        ublas::vector<value_type> t( nDim );
+
+        for( int e = 0; e < convex_type::numEdges; ++e )
+        {
+            getEdgeTangent(expr, e, t);
+
+            for ( int l = 0; l < nDofPerEdge; ++l )
+            {
+                int q = e*nDofPerEdge+l;
+                for( int i = 0; i < fe_expr_type::nLocalDof; ++i )
+                    for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
+                    {
+                        int ldof = c1*fe_expr_type::nLocalDof + i;
+                        int ldof2 = (fe_expr_type::is_product)? ldof : i;
+                        Ihloc(ldof,q) = expr.evaliq( ldof2, c1, 0, q )*t(c1);
+                    }
+            }
+        }
+
+    }
+
 
     //@}
 
