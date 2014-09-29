@@ -795,20 +795,6 @@ template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRang
 void
 OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::updateSameMesh()
 {
-    //std::cout << "OperatorInterpolation::updateSameMesh start " << std::endl;
-    const size_type proc_id              = this->dualImageSpace()->worldsComm()[0].localRank();
-    const size_type nrow_dof_on_proc     = this->dualImageSpace()->nLocalDof();
-    const size_type firstrow_dof_on_proc = this->dualImageSpace()->dof()->firstDofGlobalCluster( proc_id );
-    const size_type lastrow_dof_on_proc  = this->dualImageSpace()->dof()->lastDofGlobalCluster( proc_id );
-    const size_type firstcol_dof_on_proc = this->domainSpace()->dof()->firstDofGlobalCluster( proc_id );
-    const size_type lastcol_dof_on_proc  = this->domainSpace()->dof()->lastDofGlobalCluster( proc_id );
-
-    graph_ptrtype sparsity_graph( new graph_type( this->dualImageSpace()->dof(), this->domainSpace()->dof() ) );
-
-
-    static const uint16_type nDimDomain = domain_mesh_type::nDim;
-    static const uint16_type nDimImage = image_mesh_type::nDim;
-    static const uint16_type nDimDiffBetweenDomainImage = ( nDimDomain > nDimImage )? nDimDomain-nDimImage : nDimImage-nDimDomain;
 
 #if 0
     std::cout << "Interpolation operator (Basis info) \n"
@@ -827,140 +813,139 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
     auto const& imagedof = this->dualImageSpace()->dof();
     auto const& domaindof = this->domainSpace()->dof();
-    auto const& imagebasis = this->dualImageSpace()->basis();
-    auto const& domainbasis = this->domainSpace()->basis();
 
-
-    std::vector<std::set<uint16_type> > dof_done( nrow_dof_on_proc, std::set<uint16_type>() );
-    std::vector< std::list<std::pair<size_type,double> > > memory_valueInMatrix( nrow_dof_on_proc );
-
+    graph_ptrtype sparsity_graph( new graph_type( this->dualImageSpace()->dof(), this->domainSpace()->dof() ) );
 
     // Local assembly: compute matrix by evaluating
     // the domain space basis function at the dual image space
-    // dof points (nodal basis) since we have only computation
+    // dof points (nodal basis)
+    // for Lagrange we have only computation
     // in the ref elements and the basis and dof points in ref
-    // element are the same, we compute Mloc outside the
-    // element loop.
-
+    // element are the same, this compute are done only one times
+    // For other fe like Nedelec,Raviart-Thomas this assembly must
+    // done for each element
 
     auto uDomain = this->domainSpace()->element();
     auto expr = vf::id(uDomain);
-    auto MlocEvalBasisNEW = Feel::detail::precomputeDomainBasisFunction(this->domainSpace(),this->dualImageSpace(), expr );
+    auto MlocEvalBasisNEW = Feel::detail::precomputeDomainBasisFunction( this->domainSpace(), this->dualImageSpace(), expr );
+    Eigen::MatrixXd IhLoc;
 
-
-    const bool image_related_to_domain = this->dualImageSpace()->mesh()->isSubMeshFrom( this->domainSpace()->mesh() );
-    const bool domain_related_to_image = this->domainSpace()->mesh()->isSubMeshFrom( this->dualImageSpace()->mesh() );
-    const bool domain_sibling_of_image = this->domainSpace()->mesh()->isSiblingOf( this->dualImageSpace()->mesh() );
-
-
-    auto itListRange = M_listRange.begin();
-    auto const enListRange = M_listRange.end();
-    for ( ; itListRange!=enListRange ; ++itListRange)
+    // we perfom 2 pass : first build matrix graph, second assembly matrix
+    std::vector<std::string> opToApplySet = { "build-graph", "assembly-matrix" };
+    for ( std::string opToApply : opToApplySet )
     {
-    iterator_type it, en;
-    boost::tie( boost::tuples::ignore, it, en ) = *itListRange;
-    for ( ; it != en; ++ it )
-    {
-        auto const& theImageElt = *it;
-        auto idElem = detailsup::idElt( theImageElt,idim_type() );
-        auto const domains_eid_set = Feel::detail::domainEltIdFromImageEltId( this->domainSpace()->mesh(),this->dualImageSpace()->mesh(),idElem );
-        if ( domains_eid_set.size() == 0 )
-            continue;
+        std::vector<std::set<uint16_type> > dof_done( this->dualImageSpace()->nLocalDof(), std::set<uint16_type>() );
 
-        // Global assembly
-        for ( uint16_type iloc = 0; iloc < nLocalDofInDualImageElt; ++iloc )
+        if ( opToApply == "assembly-matrix" )
         {
-            for ( uint16_type comp = 0; comp < image_basis_type::nComponents; ++comp )
-            {
-                uint16_type compDofTableImage = (image_basis_type::is_product)? comp : 0;
-                auto thedofImage = imagedof->localToGlobal( theImageElt, iloc, compDofTableImage );
-                size_type i = thedofImage.index();
-                if ( imagedof->dofGlobalProcessIsGhost( i ) ) continue;
-
-                if ( ( image_basis_type::is_product && dof_done[i].empty() ) ||
-                     ( !image_basis_type::is_product && dof_done[i].find( comp ) == dof_done[i].end() ) )
-                {
-                    const auto ig1 = imagedof->mapGlobalProcessToGlobalCluster()[i];
-                    const auto theproc = imagedof->procOnGlobalCluster( ig1 );
-
-                    auto& row = sparsity_graph->row( ig1 );
-                    row.template get<0>() = theproc;
-                    const size_type il1 = ig1 - imagedof->firstDofGlobalCluster( theproc );
-                    row.template get<1>() = il1;
-
-                    auto it_domainIds=domains_eid_set.begin();
-                    auto const en_domainIds=domains_eid_set.end();
-                    for ( ; it_domainIds!=en_domainIds ; ++it_domainIds )
-                    {
-                        const size_type domain_eid = *it_domainIds;
-
-
-                        const uint16_type ilocprime = Feel::detail::domainLocalDofFromImageLocalDof( domaindof,imagedof, theImageElt, iloc, i,comp, domain_eid, MlocEvalBasisNEW->gmc()/*gmcDomain*/ );
-
-                        MlocEvalBasisNEW->update( this->domainSpace()->mesh()->element( domain_eid, it->processId() ) );
-                        auto const& IhLoc = MlocEvalBasisNEW->interpolant();
-
-                        for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
-                        {
-                            uint16_type compDomain = (domain_basis_type::is_product)? comp : 0;
-
-                            // get column
-                            auto thedofDomain = domaindof->localToGlobal( domain_eid, jloc, compDomain );
-                            const size_type j = thedofDomain.index();
-
-                            //up the pattern graph
-                            row.template get<2>().insert( domaindof->mapGlobalProcessToGlobalCluster()[j] );
-
-                            const value_type v = thedofImage.sign()*IhLoc( (comp/*+nComponents1*c2*/)*domain_basis_type::nLocalDof+jloc,
-                                                                           ilocprime );
-
-
-#if 0
-                            // get interpolated value
-                            const value_type v = Mloc( domain_basis_type::nComponents1*jloc +
-                                                       comp*domain_basis_type::nComponents1*domain_basis_type::nLocalDof +
-                                                       comp,
-                                                       ilocprime );
-#endif
-                            //const value_type v = 0.;
-                            // save in matrux
-                            memory_valueInMatrix[i].push_back( std::make_pair( j,v ) );
-                        }
-
-                    }  // for ( ; it_trial!=en_trial ; ++it_trial )
-
-                    //dof_done[i]=true;
-                    dof_done[i].insert( comp );
-                } // if ( !dof_done[i] )
-            } // for ( uint16_type comp ... )
-        } // for ( uint16_type iloc ... )
-
-    } // for ( ; it != en; ++ it )
-    } // for ( ; itListRange!=enListRange ; ++itListRange)
-
-    //-----------------------------------------
-    // compute graph
-    sparsity_graph->close();
-    //-----------------------------------------
-    // create matrix
-    VLOG(1) << "Building interpolation matrix ( " << this->domainSpace()->dofOnOff()->nDof() << "," << this->domainSpace()->dofOnOff()->nLocalDof()
-            << "," << this->dualImageSpace()->dofOn()->nDof() << ", " << this->dualImageSpace()->dofOn()->nLocalDof() << ")";
-    google::FlushLogFiles(google::INFO);
-    this->matPtr() = this->backend()->newMatrix( this->domainSpace()->dofOnOff(),
-                                                 this->dualImageSpace()->dofOn(),
-                                                 sparsity_graph  );
-    //-----------------------------------------
-
-    // assemble matrix
-    for ( size_type idx_i=0 ; idx_i<nrow_dof_on_proc; ++idx_i )
-    {
-        auto it_j=memory_valueInMatrix[idx_i].begin(),en_j=memory_valueInMatrix[idx_i].end();
-        for (  ; it_j!=en_j ; ++it_j )
-        {
-            this->matPtr()->set( idx_i,it_j->first,it_j->second );
-            //this->matPtr()->add( idx_i,it_j->first,it_j->second );
+            //-----------------------------------------
+            // compute graph
+            sparsity_graph->close();
+            //-----------------------------------------
+            // create matrix
+            VLOG(1) << "Building interpolation matrix ( " << this->domainSpace()->dofOnOff()->nDof() << "," << this->domainSpace()->dofOnOff()->nLocalDof()
+                    << "," << this->dualImageSpace()->dofOn()->nDof() << ", " << this->dualImageSpace()->dofOn()->nLocalDof() << ")";
+            google::FlushLogFiles(google::INFO);
+            this->matPtr() = this->backend()->newMatrix( this->domainSpace()->dofOnOff(),
+                                                         this->dualImageSpace()->dofOn(),
+                                                         sparsity_graph  );
         }
-    }
+
+        auto itListRange = M_listRange.begin();
+        auto const enListRange = M_listRange.end();
+        for ( ; itListRange!=enListRange ; ++itListRange)
+        {
+            iterator_type it, en;
+            boost::tie( boost::tuples::ignore, it, en ) = *itListRange;
+            for ( ; it != en; ++ it )
+            {
+                auto const& theImageElt = *it;
+                auto idElem = detailsup::idElt( theImageElt,idim_type() );
+                auto const domains_eid_set = Feel::detail::domainEltIdFromImageEltId( this->domainSpace()->mesh(),this->dualImageSpace()->mesh(),idElem );
+                if ( domains_eid_set.size() == 0 )
+                    continue;
+
+                // Global assembly
+                for ( uint16_type iloc = 0; iloc < nLocalDofInDualImageElt; ++iloc )
+                {
+                    for ( uint16_type comp = 0; comp < image_basis_type::nComponents; ++comp )
+                    {
+                        uint16_type compDofTableImage = (image_basis_type::is_product)? comp : 0;
+                        auto thedofImage = imagedof->localToGlobal( theImageElt, iloc, compDofTableImage );
+                        size_type i = thedofImage.index();
+                        if ( imagedof->dofGlobalProcessIsGhost( i ) ) continue;
+
+                        if ( ( image_basis_type::is_product && dof_done[i].empty() ) ||
+                             ( !image_basis_type::is_product && dof_done[i].find( comp ) == dof_done[i].end() ) )
+                        {
+                            const auto ig1 = imagedof->mapGlobalProcessToGlobalCluster()[i];
+                            const auto theproc = imagedof->procOnGlobalCluster( ig1 );
+
+                            if ( opToApply == "build-graph" )
+                            {
+                                // define row in graph
+                                auto& row = sparsity_graph->row( ig1 );
+                                row.template get<0>() = theproc;
+                                const size_type il1 = ig1 - imagedof->firstDofGlobalCluster( theproc );
+                                row.template get<1>() = il1;
+                            }
+
+                            auto it_domainIds=domains_eid_set.begin();
+                            auto const en_domainIds=domains_eid_set.end();
+                            for ( ; it_domainIds!=en_domainIds ; ++it_domainIds )
+                            {
+                                const size_type domain_eid = *it_domainIds;
+
+                                const uint16_type ilocprime = Feel::detail::domainLocalDofFromImageLocalDof( domaindof,imagedof, theImageElt, iloc, i,comp, domain_eid, MlocEvalBasisNEW->gmc()/*gmcDomain*/ );
+
+                                if ( opToApply == "assembly-matrix" )
+                                {
+                                    MlocEvalBasisNEW->update( this->domainSpace()->mesh()->element( domain_eid, it->processId() ) );
+                                    IhLoc = MlocEvalBasisNEW->interpolant();
+                                }
+
+                                for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
+                                {
+                                    uint16_type compDomain = (domain_basis_type::is_product)? comp : 0;
+
+                                    // get column
+                                    auto thedofDomain = domaindof->localToGlobal( domain_eid, jloc, compDomain );
+                                    const size_type j = thedofDomain.index();
+
+                                    if ( opToApply == "build-graph" )
+                                    {
+                                        //up the pattern graph
+                                        auto& row = sparsity_graph->row( ig1 );
+                                        row.template get<2>().insert( domaindof->mapGlobalProcessToGlobalCluster()[j] );
+                                    }
+                                    else if ( opToApply == "assembly-matrix" )
+                                    {
+                                        const value_type val = thedofImage.sign()*IhLoc( (comp/*+nComponents1*c2*/)*domain_basis_type::nLocalDof+jloc,
+                                                                                       ilocprime );
+                                        //this->matPtr()->add( i,j,val );
+                                        this->matPtr()->set( i,j,val );
+#if 0
+                                        // get interpolated value ( by call fe->evaluate() )
+                                        // keep this code in order to memory ordering of this one
+                                        const value_type val = Mloc( domain_basis_type::nComponents1*jloc +
+                                                                     comp*domain_basis_type::nComponents1*domain_basis_type::nLocalDof +
+                                                                     comp,
+                                                                     ilocprime );
+#endif
+                                    }
+                                }
+
+                            }  // for ( ; it_trial!=en_trial ; ++it_trial )
+
+                            dof_done[i].insert( comp );
+                        } // if ( !dof_done[i] )
+                    } // for ( uint16_type comp ... )
+                } // for ( uint16_type iloc ... )
+
+            } // for ( ; it != en; ++ it )
+        } // for ( ; itListRange!=enListRange ; ++itListRange)
+    } // opToApply
+
 }
 
 //-----------------------------------------------------------------------------------------------------------------//
