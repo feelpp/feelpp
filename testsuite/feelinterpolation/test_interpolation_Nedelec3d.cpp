@@ -262,7 +262,7 @@ BOOST_AUTO_TEST_CASE( test_hcurl_interpolant_1 )
     using namespace Feel;
 
     TestInterpolationHCurl3D t3;
-    std::vector<std::string> mygeoms3d = option(_name="meshes-3d").template as< std::vector<std::string> >();
+    std::vector<std::string> mygeoms3d = soption("meshes-3d"); //option(_name="meshes-3d").template as< std::vector<std::string> >();
     for(std::string geo3d : mygeoms3d)
         {
             std::cout << "*** interpolant on " << geo3d << " *** \n";
