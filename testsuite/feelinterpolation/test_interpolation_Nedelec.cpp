@@ -210,7 +210,7 @@ BOOST_AUTO_TEST_CASE( test_hcurl_interpolant_1 )
 {
     using namespace Feel;
     TestInterpolationHCurl t2;
-    std::vector<std::string> mygeoms2d = option(_name="meshes-2d").template as< std::vector<std::string> >();
+    std::vector<std::string> mygeoms2d = vsoption(_name="meshes-2d");//.template as< std::vector<std::string> >();
     for(std::string geo2d : mygeoms2d)
         {
             std::cout << "*** interpolant on " << geo2d << " *** \n";

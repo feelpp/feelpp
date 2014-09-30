@@ -442,75 +442,142 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 namespace detail
 {
 
-template <typename DomainBasisType, typename ImageBasisType>
-typename DomainBasisType::matrix_type
-precomputeDomainBasis( boost::shared_ptr<DomainBasisType> const& domainbasis , boost::shared_ptr<ImageBasisType> const& imagebasis, mpl::bool_<true> /**/ )
+template <typename DomainSpaceType, typename ImageSpaceType, typename ExprType>
+struct PrecomputeDomainBasisFunction
 {
-    VLOG(1) << " precomputeDomainBasis <true> \n";
-    return domainbasis->evaluate( imagebasis->dual().points() );
-}
+    typedef boost::shared_ptr<DomainSpaceType> domain_space_ptrtype;
+    typedef boost::shared_ptr<ImageSpaceType> image_space_ptrtype;
+    //typedef GeoElementType geoelement_type;
+    typedef typename DomainSpaceType::mesh_type::element_type geoelement_type;
+    typedef typename DomainSpaceType::basis_type fe_type;
+    typedef ExprType expression_type;
 
-template <typename DomainBasisType, typename ImageBasisType>
-typename DomainBasisType::matrix_type
-precomputeDomainBasis( boost::shared_ptr<DomainBasisType> const& domainbasis , boost::shared_ptr<ImageBasisType> const& imagebasis, mpl::bool_<false> /**/ )
+    // geomap context
+    typedef typename geoelement_type::gm_type gm_type;
+    typedef typename geoelement_type::gm_ptrtype gm_ptrtype;
+    typedef typename gm_type::precompute_type geopc_type;
+    typedef typename gm_type::precompute_ptrtype geopc_ptrtype;
+    static const size_type context2 = (mpl::or_<is_hdiv_conforming<fe_type>, is_hcurl_conforming<fe_type> >::type::value)?
+        expression_type::context|vm::JACOBIAN|vm::KB|vm::TANGENT|vm::NORMAL :
+        expression_type::context;
+    static const size_type context = ( DomainSpaceType::nDim == ImageSpaceType::nDim )? context2 : context2|vm::POINT;
+    typedef typename gm_type::template Context<context, geoelement_type> gmc_type;
+    typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+
+    // fe context
+    typedef typename fe_type::template Context< context, fe_type, gm_type, geoelement_type,gmc_type::context> fecontext_type;
+    typedef boost::shared_ptr<fecontext_type> fecontext_ptrtype;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, fecontext_ptrtype> > map_fec_type;
+
+    // tensor expression
+    typedef typename expression_type::template tensor<map_gmc_type,map_fec_type> t_expr_type;
+
+    PrecomputeDomainBasisFunction( domain_space_ptrtype const& XhDomain, image_space_ptrtype const& XhImage, ExprType const& expr )
+        :
+        M_XhDomain( XhDomain ),
+        M_XhImage( XhImage ),
+        M_expr( expr )
+    {
+        if ( M_XhDomain->mesh()->beginElementWithProcessId() == M_XhDomain->mesh()->endElementWithProcessId()  )
+            return;
+
+        this->init( mpl::bool_<DomainSpaceType::nDim == ImageSpaceType::nDim>() );
+    }
+
+
+    void update( geoelement_type const& elt )
+    {
+        if ( !mpl::or_<is_hdiv_conforming<typename DomainSpaceType::fe_type>, is_hcurl_conforming<typename DomainSpaceType::fe_type> >::type::value &&
+             !mpl::or_<is_hdiv_conforming<typename ImageSpaceType::fe_type>, is_hcurl_conforming<typename ImageSpaceType::fe_type> >::type::value )
+            return;
+
+        M_gmc->update( elt );
+        M_fec->update( M_gmc );
+
+        map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( M_gmc ) );
+        map_fec_type mapfec( fusion::make_pair<vf::detail::gmc<0> >( M_fec ) );
+        t_expr_type texpr( M_expr, mapgmc, mapfec );
+
+        //IhLoc = Eigen::MatrixXd::Zero( fe_type::nComponents*fe_type::nLocalDof, texpr.geom()->nPoints() );
+        M_XhImage->fe()->interpolateBasisFunction( texpr, M_IhLoc );
+    }
+
+    Eigen::MatrixXd const& interpolant() const { return M_IhLoc; }
+
+    gmc_ptrtype & gmc() { return M_gmc; }
+
+private :
+    void init( mpl::true_ )
+    {
+        auto const& elt = *M_XhDomain->mesh()->beginElementWithProcessId();
+
+        gm_ptrtype gm = M_XhDomain->gm();
+
+        //geopc_ptrtype geopc( new geopc_type( gm, imageSpace->fe()->dual().points() ) );
+        auto refPts = M_XhImage->fe()->dual().points();
+        auto geopc = gm->preCompute( gm, refPts );
+        auto fepc = M_XhDomain->fe()->preCompute( M_XhDomain->fe(), refPts/*gmc->xRefs()*/ );
+
+        gmc_ptrtype gmc( new gmc_type( gm, elt, geopc ) );
+        fecontext_ptrtype fec( new fecontext_type( M_XhDomain->fe(), gmc, fepc /*geopc*/ ) );
+
+        M_gmc.reset( new gmc_type( gm, elt, geopc ) );
+        M_fec.reset( new fecontext_type( M_XhDomain->fe(), gmc, fepc /*geopc*/ ) );
+
+        map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( M_gmc ) );
+        map_fec_type mapfec( fusion::make_pair<vf::detail::gmc<0> >( M_fec ) );
+        t_expr_type texpr( M_expr, mapgmc, mapfec );
+
+        M_IhLoc = Eigen::MatrixXd::Zero( fe_type::nComponents*fe_type::nLocalDof, texpr.geom()->nPoints() );
+        M_XhImage->fe()->interpolateBasisFunction( texpr, M_IhLoc );
+    }
+    void init(mpl::false_ )
+    {
+        typedef typename ImageSpaceType::basis_type::template ChangeDim<DomainSpaceType::basis_type::nDim>::type new_basis_type;
+        new_basis_type newImageBasis;
+
+        auto const& elt = *M_XhDomain->mesh()->beginElementWithProcessId();
+        gm_ptrtype gm = M_XhDomain->gm();
+
+        auto refPts = newImageBasis.dual().points();//M_XhImage->fe()->dual().points();
+        auto geopc = gm->preCompute( gm, refPts );
+        auto fepc = M_XhDomain->fe()->preCompute( M_XhDomain->fe(), refPts/*gmc->xRefs()*/ );
+
+        gmc_ptrtype gmc( new gmc_type( gm, elt, geopc ) );
+        fecontext_ptrtype fec( new fecontext_type( M_XhDomain->fe(), gmc, fepc /*geopc*/ ) );
+
+        M_gmc.reset( new gmc_type( gm, elt, geopc ) );
+        M_fec.reset( new fecontext_type( M_XhDomain->fe(), gmc, fepc /*geopc*/ ) );
+
+        map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( M_gmc ) );
+        map_fec_type mapfec( fusion::make_pair<vf::detail::gmc<0> >( M_fec ) );
+        t_expr_type texpr( M_expr, mapgmc, mapfec );
+
+        M_IhLoc = Eigen::MatrixXd::Zero( fe_type::nComponents*fe_type::nLocalDof, texpr.geom()->nPoints() );
+        newImageBasis.interpolateBasisFunction( texpr, M_IhLoc );
+    }
+
+private :
+    domain_space_ptrtype M_XhDomain;
+    image_space_ptrtype M_XhImage;
+    expression_type const& M_expr;
+
+    gmc_ptrtype M_gmc;
+    fecontext_ptrtype M_fec;
+    Eigen::MatrixXd M_IhLoc;
+
+};
+
+
+
+template <typename DomainSpaceType, typename ImageSpaceType, typename ExprType>
+boost::shared_ptr<PrecomputeDomainBasisFunction<DomainSpaceType,ImageSpaceType,ExprType>>
+precomputeDomainBasisFunction( boost::shared_ptr<DomainSpaceType> const& domainSpace , boost::shared_ptr<ImageSpaceType> const& imageSpace,
+                               ExprType const& expr )
 {
-    VLOG(1) << " precomputeDomainBasis <false> \n";
-    typedef typename ImageBasisType::template ChangeDim<DomainBasisType::nDim>::type new_basis_type;
-    new_basis_type newImageBasis;
-    return domainbasis->evaluate( newImageBasis.dual().points() );
-}
-template <typename DomainBasisType, typename ImageBasisType>
-typename DomainBasisType::matrix_type
-precomputeDomainBasis( boost::shared_ptr<DomainBasisType> const& domainbasis , boost::shared_ptr<ImageBasisType> const& imagebasis )
-{
-    return precomputeDomainBasis( domainbasis, imagebasis, mpl::bool_< DomainBasisType::nDim == ImageBasisType::nDim >() );
-}
-
-//--------------------------------------------------------------------------------------------------//
-
-template <typename DomainDofType,typename ImageDofType>
-boost::shared_ptr<typename DomainDofType::mesh_type::gm_type::template Context<vm::POINT, typename DomainDofType::mesh_type::element_type> >
-buildGMCdomain(boost::shared_ptr<DomainDofType> const& domaindof,boost::shared_ptr<ImageDofType> const& imagedof, mpl::bool_<true> /**/)
-{
-    return boost::shared_ptr<typename DomainDofType::mesh_type::gm_type::template Context<vm::POINT, typename DomainDofType::mesh_type::element_type> >();
-}
-
-template <typename DomainDofType,typename ImageDofType>
-boost::shared_ptr<typename DomainDofType::mesh_type::gm_type::template Context<vm::POINT, typename DomainDofType::mesh_type::element_type> >
-buildGMCdomain(boost::shared_ptr<DomainDofType> const& domaindof,boost::shared_ptr<ImageDofType> const& imagedof, mpl::bool_<false> /**/)
-{
-    // interpolation point in ref elt
-    typedef typename ImageDofType::fe_type ImageBasisType;
-    typedef typename DomainDofType::fe_type DomainBasisType;
-    typedef typename ImageBasisType::template ChangeDim<DomainBasisType::nDim>::type new_basis_type;
-    new_basis_type newImageBasis;
-    auto const& imagebasis = imagedof->fe();
-    auto const& domainbasis = domaindof->fe();
-    auto const imageBasisPoint = newImageBasis.dual().points();
-
-    // typedef for geomap context
-    typedef typename DomainDofType::mesh_type::gm_type gm_type;
-    typedef boost::shared_ptr<gm_type> gm_ptrtype;
-    typedef typename DomainDofType::mesh_type::gm_type::template Context<vm::POINT, typename DomainDofType::mesh_type::element_type> gm_context_type;
-    typedef boost::shared_ptr<gm_context_type> gm_context_ptrtype;
-
-    auto it_elt = domaindof->mesh()->beginElementWithProcessId();
-    auto const en_elt = domaindof->mesh()->endElementWithProcessId();
-    if ( std::distance(it_elt,en_elt)==0 ) return gm_context_ptrtype();
-
-    // build geomap context
-    gm_ptrtype gm( new gm_type );
-    typename gm_type::precompute_ptrtype __geopc( new typename gm_type::precompute_type( gm, imageBasisPoint ) );
-    gm_context_ptrtype gmc( new gm_context_type( gm,  *it_elt, __geopc ) );
-
-    return gmc;
-}
-
-template <typename DomainDofType,typename ImageDofType>
-boost::shared_ptr<typename DomainDofType::mesh_type::gm_type::template Context<vm::POINT, typename DomainDofType::mesh_type::element_type> >
-buildGMCdomain(boost::shared_ptr<DomainDofType> const& domaindof,boost::shared_ptr<ImageDofType> const& imagedof)
-{
-    return buildGMCdomain( domaindof, imagedof, mpl::bool_< DomainDofType::nDim == ImageDofType::nDim >() );
+    typedef PrecomputeDomainBasisFunction<DomainSpaceType,ImageSpaceType,ExprType> res_type;
+    return boost::shared_ptr<res_type>( new res_type( domainSpace, imageSpace, expr ) );
 }
 
 //--------------------------------------------------------------------------------------------------//
@@ -641,11 +708,12 @@ domainEltIdFromImageEltId( boost::shared_ptr<DomainMeshType> const& domainMesh, 
 
 //--------------------------------------------------------------------------------------------------//
 
-template <typename DomainDofType,typename ImageDofType, typename ImageEltType>
+template <typename DomainDofType,typename ImageDofType, typename ImageEltType, typename DomainGmcType>
 uint16_type
 domainLocalDofFromImageLocalDof(boost::shared_ptr<DomainDofType> const& domaindof,boost::shared_ptr<ImageDofType> const& imagedof,
                                 ImageEltType const& imageElt, uint16_type imageLocDof, size_type imageGlobDof, uint16_type comp, size_type domainEltId,
-                                boost::shared_ptr<typename DomainDofType::mesh_type::gm_type::template Context<vm::POINT, typename DomainDofType::mesh_type::element_type> > gmcDomain,
+                                //boost::shared_ptr<typename DomainDofType::mesh_type::gm_type::template Context<vm::POINT, typename DomainDofType::mesh_type::element_type> > & /*gmcDomain*/,
+                                boost::shared_ptr<DomainGmcType> & /*gmcDomain*/,
                                 mpl::bool_<true> /**/ )
 {
     return imagedof->localDofInElement( imageElt, imageLocDof, comp );
@@ -676,11 +744,12 @@ domainLocalDofFromImageLocalDof(boost::shared_ptr<DomainDofType> const& domaindo
     return thelocDofToFind;
 }
 #else
-template <typename DomainDofType,typename ImageDofType, typename ImageEltType>
+template <typename DomainDofType,typename ImageDofType, typename ImageEltType, typename DomainGmcType>
 uint16_type
 domainLocalDofFromImageLocalDof(boost::shared_ptr<DomainDofType> const& domaindof,boost::shared_ptr<ImageDofType> const& imagedof,
                                 ImageEltType const& imageElt, uint16_type imageLocDof, size_type imageGlobDof, uint16_type comp, size_type domainEltId,
-                                boost::shared_ptr<typename DomainDofType::mesh_type::gm_type::template Context<vm::POINT, typename DomainDofType::mesh_type::element_type> > gmcDomain,
+                                //boost::shared_ptr<typename DomainDofType::mesh_type::gm_type::template Context<vm::POINT, typename DomainDofType::mesh_type::element_type> > & gmcDomain,
+                                boost::shared_ptr<DomainGmcType> & gmcDomain,
                                 mpl::bool_<false> /**/ )
 {
     typedef typename ImageDofType::fe_type ImageBasisType;
@@ -706,11 +775,13 @@ domainLocalDofFromImageLocalDof(boost::shared_ptr<DomainDofType> const& domaindo
     return thelocDofToFind;
 }
 #endif
-template <typename DomainDofType,typename ImageDofType, typename ImageEltType>
+    template <typename DomainDofType,typename ImageDofType, typename ImageEltType, typename DomainGmcType>
 uint16_type
 domainLocalDofFromImageLocalDof( boost::shared_ptr<DomainDofType> const& domaindof,boost::shared_ptr<ImageDofType> const& imagedof,
                                  ImageEltType const& imageElt, uint16_type imageLocDof, size_type imageGlobDof,uint16_type comp, size_type domainEltId,
-                                 boost::shared_ptr<typename DomainDofType::mesh_type::gm_type::template Context<vm::POINT, typename DomainDofType::mesh_type::element_type> > gmcDomain )
+                                 //boost::shared_ptr<typename DomainDofType::mesh_type::gm_type::template Context<vm::POINT, typename DomainDofType::mesh_type::element_type> > & gmcDomain
+                                 boost::shared_ptr<DomainGmcType> & gmcDomain
+                                 )
 {
     return domainLocalDofFromImageLocalDof( domaindof,imagedof,imageElt,imageLocDof,imageGlobDof,comp,domainEltId,gmcDomain,
                                             mpl::bool_< DomainDofType::nDim == ImageDofType::nDim >() );
@@ -724,147 +795,157 @@ template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRang
 void
 OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::updateSameMesh()
 {
-    //std::cout << "OperatorInterpolation::updateSameMesh start " << std::endl;
-    const size_type proc_id              = this->dualImageSpace()->worldsComm()[0].localRank();
-    const size_type nrow_dof_on_proc     = this->dualImageSpace()->nLocalDof();
-    const size_type firstrow_dof_on_proc = this->dualImageSpace()->dof()->firstDofGlobalCluster( proc_id );
-    const size_type lastrow_dof_on_proc  = this->dualImageSpace()->dof()->lastDofGlobalCluster( proc_id );
-    const size_type firstcol_dof_on_proc = this->domainSpace()->dof()->firstDofGlobalCluster( proc_id );
-    const size_type lastcol_dof_on_proc  = this->domainSpace()->dof()->lastDofGlobalCluster( proc_id );
 
 #if 0
-    graph_ptrtype sparsity_graph( new graph_type( nrow_dof_on_proc,
-                                                  firstrow_dof_on_proc, lastrow_dof_on_proc,
-                                                  firstcol_dof_on_proc, lastcol_dof_on_proc,
-                                                  this->dualImageSpace()->mesh()->worldComm().subWorldComm() ) );
-#else
-    graph_ptrtype sparsity_graph( new graph_type( this->dualImageSpace()->dof(), this->domainSpace()->dof() ) );
+    std::cout << "Interpolation operator (Basis info) \n"
+              << "  domain_basis_type::nDof         : " << domain_basis_type::nDof << "\n"
+              << "  domain_basis_type::nLocalDof    : " << domain_basis_type::nLocalDof << "\n"
+              << "  domain_basis_type::nComponents  : " << domain_basis_type::nComponents << "\n"
+              << "  domain_basis_type::nComponents1 : " << domain_basis_type::nComponents1 << "\n"
+              << "  domain_basis_type::is_product   : " << domain_basis_type::is_product << "\n"
+              << "  image_basis_type::nDof          : " << image_basis_type::nDof << "\n"
+              << "  image_basis_type::nLocalDof     : " << image_basis_type::nLocalDof << "\n"
+              << "  image_basis_type::nComponents   : " << image_basis_type::nComponents << "\n"
+              << "  image_basis_type::nComponents1  : " << image_basis_type::nComponents1 << "\n"
+              << "  image_basis_type::is_product    : " << image_basis_type::is_product << "\n"
+              << "\n";
 #endif
-
-
-
-    static const uint16_type nDimDomain = domain_mesh_type::nDim;
-    static const uint16_type nDimImage = image_mesh_type::nDim;
-    static const uint16_type nDimDiffBetweenDomainImage = ( nDimDomain > nDimImage )? nDimDomain-nDimImage : nDimImage-nDimDomain;
 
     auto const& imagedof = this->dualImageSpace()->dof();
     auto const& domaindof = this->domainSpace()->dof();
-    auto const& imagebasis = this->dualImageSpace()->basis();
-    auto const& domainbasis = this->domainSpace()->basis();
 
+    graph_ptrtype sparsity_graph( new graph_type( this->dualImageSpace()->dof(), this->domainSpace()->dof() ) );
 
-    std::vector<bool> dof_done( nrow_dof_on_proc, false );
-    std::vector< std::list<std::pair<size_type,double> > > memory_valueInMatrix( nrow_dof_on_proc );
-
-
-    // Local assembly: compute the Mloc matrix by evaluating
+    // Local assembly: compute matrix by evaluating
     // the domain space basis function at the dual image space
-    // dof points (nodal basis) since we have only computation
+    // dof points (nodal basis)
+    // for Lagrange we have only computation
     // in the ref elements and the basis and dof points in ref
-    // element are the same, we compute Mloc outside the
-    // element loop.
+    // element are the same, this compute are done only one times
+    // For other fe like Nedelec,Raviart-Thomas this assembly must
+    // done for each element
 
-    auto const Mloc = Feel::detail::precomputeDomainBasis(domainbasis,imagebasis);
+    auto uDomain = this->domainSpace()->element();
+    auto expr = vf::id(uDomain);
+    auto MlocEvalBasisNEW = Feel::detail::precomputeDomainBasisFunction( this->domainSpace(), this->dualImageSpace(), expr );
+    Eigen::MatrixXd IhLoc;
 
-    // usefull only if nDimDomain!=nDimImage
-    auto gmcDomain = buildGMCdomain(domaindof,imagedof);
-
-    DVLOG(2) << "[interpolate] Same mesh but not same space\n";
-
-    const bool image_related_to_domain = this->dualImageSpace()->mesh()->isSubMeshFrom( this->domainSpace()->mesh() );
-    const bool domain_related_to_image = this->domainSpace()->mesh()->isSubMeshFrom( this->dualImageSpace()->mesh() );
-    const bool domain_sibling_of_image = this->domainSpace()->mesh()->isSiblingOf( this->dualImageSpace()->mesh() );
-
-
-    auto itListRange = M_listRange.begin();
-    auto const enListRange = M_listRange.end();
-    for ( ; itListRange!=enListRange ; ++itListRange)
+    // we perfom 2 pass : first build matrix graph, second assembly matrix
+    std::vector<std::string> opToApplySet = { "build-graph", "assembly-matrix" };
+    for ( std::string opToApply : opToApplySet )
     {
-    iterator_type it, en;
-    boost::tie( boost::tuples::ignore, it, en ) = *itListRange;
-    for ( ; it != en; ++ it )
-    {
-        auto const& theImageElt = *it;
-        auto idElem = detailsup::idElt( theImageElt,idim_type() );
-        auto const domains_eid_set = Feel::detail::domainEltIdFromImageEltId( this->domainSpace()->mesh(),this->dualImageSpace()->mesh(),idElem );
-        if ( domains_eid_set.size() == 0 )
-            continue;
+        std::vector<std::set<uint16_type> > dof_done( this->dualImageSpace()->nLocalDof(), std::set<uint16_type>() );
 
-        // Global assembly
-        for ( uint16_type iloc = 0; iloc < nLocalDofInDualImageElt; ++iloc )
+        if ( opToApply == "assembly-matrix" )
         {
-            for ( uint16_type comp = 0; comp < image_basis_type::nComponents; ++comp )
-            {
-                size_type i =  boost::get<0>( imagedof->localToGlobal( theImageElt, iloc, comp ) );
-
-                if ( !dof_done[i] )
-                {
-
-                    const auto ig1 = imagedof->mapGlobalProcessToGlobalCluster()[i];
-                    const auto theproc = imagedof->procOnGlobalCluster( ig1 );
-
-                    auto& row = sparsity_graph->row( ig1 );
-                    row.template get<0>() = theproc;
-                    const size_type il1 = ig1 - imagedof->firstDofGlobalCluster( theproc );
-                    row.template get<1>() = il1;
-
-                    auto it_domainIds=domains_eid_set.begin();
-                    auto const en_domainIds=domains_eid_set.end();
-                    for ( ; it_domainIds!=en_domainIds ; ++it_domainIds )
-                    {
-                        const size_type domain_eid = *it_domainIds;
-
-                        const uint16_type ilocprime = Feel::detail::domainLocalDofFromImageLocalDof( domaindof,imagedof, theImageElt, iloc, i,comp, domain_eid, gmcDomain );
-
-                        for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
-                        {
-                            // get column
-                            const size_type j =  boost::get<0>( domaindof->localToGlobal( domain_eid, jloc, comp ) );
-
-                            //up the pattern graph
-                            row.template get<2>().insert( domaindof->mapGlobalProcessToGlobalCluster()[j] );
-
-                            // get interpolated value
-                            const value_type v = Mloc( domain_basis_type::nComponents1*jloc +
-                                                       comp*domain_basis_type::nComponents1*domain_basis_type::nLocalDof +
-                                                       comp,
-                                                       ilocprime );
-                            // save in matrux
-                            memory_valueInMatrix[i].push_back( std::make_pair( j,v ) );
-                        }
-
-                    }  // for ( ; it_trial!=en_trial ; ++it_trial )
-
-                    dof_done[i]=true;
-                } // if ( !dof_done[i] )
-            } // for ( uint16_type comp ... )
-        } // for ( uint16_type iloc ... )
-
-    } // for ( ; it != en; ++ it )
-    } // for ( ; itListRange!=enListRange ; ++itListRange)
-
-    //-----------------------------------------
-    // compute graph
-    sparsity_graph->close();
-    //-----------------------------------------
-    // create matrix
-    VLOG(1) << "Building interpolation matrix ( " << this->domainSpace()->dofOnOff()->nDof() << "," << this->domainSpace()->dofOnOff()->nLocalDof()
-            << "," << this->dualImageSpace()->dofOn()->nDof() << ", " << this->dualImageSpace()->dofOn()->nLocalDof() << ")";
-    google::FlushLogFiles(google::INFO);
-    this->matPtr() = this->backend()->newMatrix( this->domainSpace()->dofOnOff(),
-                                                 this->dualImageSpace()->dofOn(),
-                                                 sparsity_graph  );
-    //-----------------------------------------
-
-    // assemble matrix
-    for ( size_type idx_i=0 ; idx_i<nrow_dof_on_proc; ++idx_i )
-    {
-        auto it_j=memory_valueInMatrix[idx_i].begin(),en_j=memory_valueInMatrix[idx_i].end();
-        for (  ; it_j!=en_j ; ++it_j )
-        {
-            this->matPtr()->set( idx_i,it_j->first,it_j->second );
+            //-----------------------------------------
+            // compute graph
+            sparsity_graph->close();
+            //-----------------------------------------
+            // create matrix
+            VLOG(1) << "Building interpolation matrix ( " << this->domainSpace()->dofOnOff()->nDof() << "," << this->domainSpace()->dofOnOff()->nLocalDof()
+                    << "," << this->dualImageSpace()->dofOn()->nDof() << ", " << this->dualImageSpace()->dofOn()->nLocalDof() << ")";
+            google::FlushLogFiles(google::INFO);
+            this->matPtr() = this->backend()->newMatrix( this->domainSpace()->dofOnOff(),
+                                                         this->dualImageSpace()->dofOn(),
+                                                         sparsity_graph  );
         }
-    }
+
+        auto itListRange = M_listRange.begin();
+        auto const enListRange = M_listRange.end();
+        for ( ; itListRange!=enListRange ; ++itListRange)
+        {
+            iterator_type it, en;
+            boost::tie( boost::tuples::ignore, it, en ) = *itListRange;
+            for ( ; it != en; ++ it )
+            {
+                auto const& theImageElt = *it;
+                auto idElem = detailsup::idElt( theImageElt,idim_type() );
+                auto const domains_eid_set = Feel::detail::domainEltIdFromImageEltId( this->domainSpace()->mesh(),this->dualImageSpace()->mesh(),idElem );
+                if ( domains_eid_set.size() == 0 )
+                    continue;
+
+                // Global assembly
+                for ( uint16_type iloc = 0; iloc < nLocalDofInDualImageElt; ++iloc )
+                {
+                    for ( uint16_type comp = 0; comp < image_basis_type::nComponents; ++comp )
+                    {
+                        uint16_type compDofTableImage = (image_basis_type::is_product)? comp : 0;
+                        auto thedofImage = imagedof->localToGlobal( theImageElt, iloc, compDofTableImage );
+                        size_type i = thedofImage.index();
+                        if ( imagedof->dofGlobalProcessIsGhost( i ) ) continue;
+
+                        if ( ( image_basis_type::is_product && dof_done[i].empty() ) ||
+                             ( !image_basis_type::is_product && dof_done[i].find( comp ) == dof_done[i].end() ) )
+                        {
+                            const auto ig1 = imagedof->mapGlobalProcessToGlobalCluster()[i];
+                            const auto theproc = imagedof->procOnGlobalCluster( ig1 );
+
+                            if ( opToApply == "build-graph" )
+                            {
+                                // define row in graph
+                                auto& row = sparsity_graph->row( ig1 );
+                                row.template get<0>() = theproc;
+                                const size_type il1 = ig1 - imagedof->firstDofGlobalCluster( theproc );
+                                row.template get<1>() = il1;
+                            }
+
+                            auto it_domainIds=domains_eid_set.begin();
+                            auto const en_domainIds=domains_eid_set.end();
+                            for ( ; it_domainIds!=en_domainIds ; ++it_domainIds )
+                            {
+                                const size_type domain_eid = *it_domainIds;
+
+                                const uint16_type ilocprime = Feel::detail::domainLocalDofFromImageLocalDof( domaindof,imagedof, theImageElt, iloc, i,comp, domain_eid, MlocEvalBasisNEW->gmc()/*gmcDomain*/ );
+
+                                if ( opToApply == "assembly-matrix" )
+                                {
+                                    MlocEvalBasisNEW->update( this->domainSpace()->mesh()->element( domain_eid, it->processId() ) );
+                                    IhLoc = MlocEvalBasisNEW->interpolant();
+                                }
+
+                                for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
+                                {
+                                    uint16_type compDomain = (domain_basis_type::is_product)? comp : 0;
+
+                                    // get column
+                                    auto thedofDomain = domaindof->localToGlobal( domain_eid, jloc, compDomain );
+                                    const size_type j = thedofDomain.index();
+
+                                    if ( opToApply == "build-graph" )
+                                    {
+                                        //up the pattern graph
+                                        auto& row = sparsity_graph->row( ig1 );
+                                        row.template get<2>().insert( domaindof->mapGlobalProcessToGlobalCluster()[j] );
+                                    }
+                                    else if ( opToApply == "assembly-matrix" )
+                                    {
+                                        const value_type val = thedofImage.sign()*IhLoc( (comp/*+nComponents1*c2*/)*domain_basis_type::nLocalDof+jloc,
+                                                                                       ilocprime );
+                                        //this->matPtr()->add( i,j,val );
+                                        this->matPtr()->set( i,j,val );
+#if 0
+                                        // get interpolated value ( by call fe->evaluate() )
+                                        // keep this code in order to memory ordering of this one
+                                        const value_type val = Mloc( domain_basis_type::nComponents1*jloc +
+                                                                     comp*domain_basis_type::nComponents1*domain_basis_type::nLocalDof +
+                                                                     comp,
+                                                                     ilocprime );
+#endif
+                                    }
+                                }
+
+                            }  // for ( ; it_trial!=en_trial ; ++it_trial )
+
+                            dof_done[i].insert( comp );
+                        } // if ( !dof_done[i] )
+                    } // for ( uint16_type comp ... )
+                } // for ( uint16_type iloc ... )
+
+            } // for ( ; it != en; ++ it )
+        } // for ( ; itListRange!=enListRange ; ++itListRange)
+    } // opToApply
+
 }
 
 //-----------------------------------------------------------------------------------------------------------------//
@@ -2478,7 +2559,7 @@ BOOST_PARAMETER_FUNCTION(
     ) // required
     ( optional
       ( range,          *, elements( imageSpace->mesh() )  )
-      ( backend,        *, Backend<typename compute_opInterpolation_return<Args>::domain_space_type::value_type>::build() )
+      ( backend,        *, Backend<typename compute_opInterpolation_return<Args>::domain_space_type::value_type>::build( soption( _name="backend" ) ) )
       ( type,           *, InterpolationNonConforme()  )
       ( ddmethod,  (bool),  false )
     ) // optionnal
