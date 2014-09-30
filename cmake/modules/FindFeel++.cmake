@@ -292,16 +292,21 @@ else( MKL_FOUND )
 endif(MKL_FOUND)
 
 # HDF5
-FIND_PACKAGE(HDF5)
-if ( HDF5_FOUND AND HDF5_IS_PARALLEL )
-  message(STATUS "[feelpp] HDF5 - Headers ${HDF5_INCLUDE_DIRS}" )
-  message(STATUS "[feelpp] HDF5 - Libraries ${HDF5_LIBRARIES}" )
-  include_directories( ${HDF5_INCLUDE_DIRS} )
-  SET(FEELPP_LIBRARIES ${HDF5_LIBRARIES} ${FEELPP_LIBRARIES})
-  set(FEELPP_HAS_HDF5 1)
-  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} HDF5" )
-ELSEIF ( HDF5_LIBRARY AND NOT HDF5_IS_PARALLEL )
-  MESSAGE(STATUS "[feelpp] HDF5 is found but is not parallel, HDF5 is not enabled in Feel++")
+# On debian, 
+# - do not install hdf5-helpers, otherwise it will pick the serial version by default
+# - install only the libhdf5-openmpi-dev package
+find_package(HDF5)
+if( HDF5_FOUND ) 
+    if( HDF5_IS_PARALLEL )
+        message(STATUS "[feelpp] HDF5 - Headers ${HDF5_INCLUDE_DIRS}" )
+        message(STATUS "[feelpp] HDF5 - Libraries ${HDF5_LIBRARIES}" )
+        include_directories( ${HDF5_INCLUDE_DIRS} )
+        set(FEELPP_LIBRARIES ${HDF5_LIBRARIES} ${FEELPP_LIBRARIES})
+        set(FEELPP_HAS_HDF5 1)
+        set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} HDF5" )
+    else()
+        MESSAGE(STATUS "[feelpp] HDF5 has been found but is not parallel, HDF5 is not enabled in Feel++")
+    endif()
 endif()
 
 # XDMF
@@ -733,18 +738,6 @@ FIND_LIBRARY(YAML_LIBRARY
   )
 if ( YAML_LIBRARY )
   SET(FEELPP_LIBRARIES ${YAML_LIBRARY} ${FEELPP_LIBRARIES})
-endif()
-FIND_LIBRARY(HDF5_LIBRARY
-  NAMES
-  hdf5
-  PATHS
-  $ENV{PETSC_DIR}/lib
-  $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
-  $ENV{SUITESPARSE_DIR}/lib
-  /opt/local/lib
-  )
-if ( HDF5_LIBRARY )
-  SET(FEELPP_LIBRARIES ${HDF5_LIBRARY} ${FEELPP_LIBRARIES})
 endif()
 
 #
