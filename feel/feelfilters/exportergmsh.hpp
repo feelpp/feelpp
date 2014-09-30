@@ -84,8 +84,8 @@ public:
      */
     //@{
 
+    ExporterGmsh( WorldComm const& worldComm = Environment::worldComm() );
     ExporterGmsh( std::string const& __p = "default", int freq = 1, WorldComm const& worldComm = Environment::worldComm() );
-
     ExporterGmsh( po::variables_map const& vm, std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() );
 
     ExporterGmsh( ExporterGmsh const & __ex );
@@ -184,6 +184,8 @@ private:
     size_type numberOfGlobalPtAndIndex( mesh_ptrtype mesh ) const;
 
     boost::tuple<size_type,size_type> numberOfGlobalEltAndIndex( mesh_ptrtype mesh ) const;
+
+    std::string M_element_type;
 
 };
 
