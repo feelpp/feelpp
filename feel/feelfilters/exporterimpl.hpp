@@ -163,7 +163,7 @@ Exporter<MeshType, N>::New( std::string const& exportername, std::string prefix,
         exporter = new Exporterhdf5<MeshType, N> ( worldComm ) ;
 #endif
     else if ( N > 1 || ( exportername == "gmsh" ) )
-        exporter = new ExporterGmsh<MeshType,N>;
+        exporter = new ExporterGmsh<MeshType,N>( worldComm );
     else // fallback
         exporter = new ExporterEnsight<MeshType, N>( worldComm );
 
@@ -185,21 +185,21 @@ Exporter<MeshType, N>::New( po::variables_map const& vm, std::string prefix, Wor
         LOG(WARNING) << "[Exporter] format " << estr << " is not available for mesh order > 1 - using gmsh exporter instead\n";
 
     if ( N == 1 && ( estr == "ensight"   ) )
-        exporter = new ExporterEnsight<MeshType, N>( worldComm );
+        exporter = new ExporterEnsight<MeshType, N>( vm, prefix, worldComm );
 #if defined(FEELPP_HAS_MPIIO)
     else if ( N == 1 && ( estr == "ensightgold"   ) )
-        exporter = new ExporterEnsightGold<MeshType, N>( worldComm );
+        exporter = new ExporterEnsightGold<MeshType, N>( vm, prefix, worldComm );
 #endif
     else if ( N == 1 && ( estr == "exodus"   ) )
-        exporter = new ExporterExodus<MeshType, N>( worldComm );
+        exporter = new ExporterExodus<MeshType, N>( vm, prefix, worldComm );
 #if defined(FEELPP_HAS_HDF5) && defined(FEELPP_HAS_MPIIO)
     else if ( N == 1 && ( estr == "hdf5" ) )
-        exporter = new Exporterhdf5<MeshType, N> ( worldComm ) ;
+        exporter = new Exporterhdf5<MeshType, N> ( vm, prefix, worldComm ) ;
 #endif
     else if ( N > 1 || estr == "gmsh" )
-        exporter = new ExporterGmsh<MeshType,N>;
+        exporter = new ExporterGmsh<MeshType,N>( vm, prefix, worldComm );
     else // fallback
-        exporter = new ExporterEnsight<MeshType, N>( worldComm );
+        exporter = new ExporterEnsight<MeshType, N>( vm, prefix, worldComm );
 
 
     exporter->setOptions();
