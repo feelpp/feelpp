@@ -831,17 +831,16 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     Eigen::MatrixXd IhLoc;
 
     // we perfom 2 pass : first build matrix graph, second assembly matrix
-    std::vector<std::string> opToApplySet = { "build-graph", "assembly-matrix" };
-    for ( std::string opToApply : opToApplySet )
+    enum OpToApplyEnum { BUILD_GRAPH, ASSEMBLY_MATRIX };
+    std::vector<OpToApplyEnum> opToApplySet = { OpToApplyEnum::BUILD_GRAPH, OpToApplyEnum::ASSEMBLY_MATRIX };
+    for ( OpToApplyEnum opToApply : opToApplySet )
     {
         std::vector<std::set<uint16_type> > dof_done( this->dualImageSpace()->nLocalDof(), std::set<uint16_type>() );
 
-        if ( opToApply == "assembly-matrix" )
+        if ( opToApply == OpToApplyEnum::ASSEMBLY_MATRIX )
         {
-            //-----------------------------------------
             // compute graph
             sparsity_graph->close();
-            //-----------------------------------------
             // create matrix
             VLOG(1) << "Building interpolation matrix ( " << this->domainSpace()->dofOnOff()->nDof() << "," << this->domainSpace()->dofOnOff()->nLocalDof()
                     << "," << this->dualImageSpace()->dofOn()->nDof() << ", " << this->dualImageSpace()->dofOn()->nLocalDof() << ")";
@@ -855,17 +854,15 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
         auto const enListRange = M_listRange.end();
         for ( ; itListRange!=enListRange ; ++itListRange)
         {
-            iterator_type it, en;
-            boost::tie( boost::tuples::ignore, it, en ) = *itListRange;
-            for ( ; it != en; ++ it )
+            for( auto const& theImageEltWrap : *itListRange )
             {
-                auto const& theImageElt = *it;
+                auto const& theImageElt = boost::unwrap_ref(theImageEltWrap);
+
                 auto idElem = detailsup::idElt( theImageElt,idim_type() );
                 auto const domains_eid_set = Feel::detail::domainEltIdFromImageEltId( this->domainSpace()->mesh(),this->dualImageSpace()->mesh(),idElem );
                 if ( domains_eid_set.size() == 0 )
                     continue;
 
-                // Global assembly
                 for ( uint16_type iloc = 0; iloc < nLocalDofInDualImageElt; ++iloc )
                 {
                     for ( uint16_type comp = 0; comp < image_basis_type::nComponents; ++comp )
@@ -881,7 +878,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                             const auto ig1 = imagedof->mapGlobalProcessToGlobalCluster()[i];
                             const auto theproc = imagedof->procOnGlobalCluster( ig1 );
 
-                            if ( opToApply == "build-graph" )
+                            if ( opToApply == OpToApplyEnum::BUILD_GRAPH )
                             {
                                 // define row in graph
                                 auto& row = sparsity_graph->row( ig1 );
@@ -898,9 +895,9 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
                                 const uint16_type ilocprime = Feel::detail::domainLocalDofFromImageLocalDof( domaindof,imagedof, theImageElt, iloc, i,comp, domain_eid, MlocEvalBasisNEW->gmc()/*gmcDomain*/ );
 
-                                if ( opToApply == "assembly-matrix" )
+                                if ( opToApply == OpToApplyEnum::ASSEMBLY_MATRIX )
                                 {
-                                    MlocEvalBasisNEW->update( this->domainSpace()->mesh()->element( domain_eid, it->processId() ) );
+                                    MlocEvalBasisNEW->update( this->domainSpace()->mesh()->element( domain_eid, theImageElt.processId() ) );
                                     IhLoc = MlocEvalBasisNEW->interpolant();
                                 }
 
@@ -912,13 +909,13 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                     auto thedofDomain = domaindof->localToGlobal( domain_eid, jloc, compDomain );
                                     const size_type j = thedofDomain.index();
 
-                                    if ( opToApply == "build-graph" )
+                                    if ( opToApply == OpToApplyEnum::BUILD_GRAPH )
                                     {
                                         //up the pattern graph
                                         auto& row = sparsity_graph->row( ig1 );
                                         row.template get<2>().insert( domaindof->mapGlobalProcessToGlobalCluster()[j] );
                                     }
-                                    else if ( opToApply == "assembly-matrix" )
+                                    else if ( opToApply == OpToApplyEnum::ASSEMBLY_MATRIX )
                                     {
                                         const value_type val = thedofImage.sign()*IhLoc( (comp/*+nComponents1*c2*/)*domain_basis_type::nLocalDof+jloc,
                                                                                        ilocprime );
@@ -1011,15 +1008,18 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     auto const enListRange = M_listRange.end();
     for ( ; itListRange!=enListRange ; ++itListRange)
     {
-    iterator_type it, en;
-    boost::tie( boost::tuples::ignore, it, en ) = *itListRange;
-    for ( ; it != en; ++ it )
+        //iterator_type it, en;
+        //boost::tie( boost::tuples::ignore, it, en ) = *itListRange;
+        //for ( ; it != en; ++ it )
+        for( auto const& theImageEltWrap : *itListRange )
         {
+            //auto const& theImageElt = boost::unwrap_ref(*it);
+            auto const& theImageElt = boost::unwrap_ref(theImageEltWrap);
             for ( uint16_type iloc = 0; iloc < nLocalDofInDualImageElt; ++iloc )
                 {
                     for ( uint16_type comp = 0; comp < image_basis_type::nComponents; ++comp )
                         {
-                            const auto gdof =  boost::get<0>(imagedof->localToGlobal( *it, iloc, comp ));
+                            const auto gdof =  boost::get<0>(imagedof->localToGlobal( theImageElt, iloc, comp ));
                             if (!dof_done[gdof])
                                 {
                                     //------------------------
@@ -1035,7 +1035,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                     //------------------------
                                     // localisation process
                                     if (notUseOptLocTest) eltIdLocalised=invalid_size_type_value;
-                                    auto resLocalisation = locTool->run_analysis(ptsReal,eltIdLocalised,it->vertices()/*it->G()*/,mpl::int_<interpolation_type::value>());
+                                    auto resLocalisation = locTool->run_analysis(ptsReal,eltIdLocalised,theImageElt.vertices()/*theImageElt.G()*/,mpl::int_<interpolation_type::value>());
                                     for ( bool hasFindPtLocalised : resLocalisation.template get<0>()  )
                                          LOG_IF(ERROR, !hasFindPtLocalised ) << "OperatorInterpolation::updateNoRelationMesh : point localisation fail!\n";
                                     eltIdLocalised = resLocalisation.template get<1>();
@@ -2357,7 +2357,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
     const int nProc_domain = this->domainSpace()->mesh()->worldComm().localSize();
 
     auto const* imagedof = this->dualImageSpace()->dof().get();
-    iterator_type it, en;
+    //iterator_type it, en;
 
     auto locTool = this->domainSpace()->mesh()->tool_localization();
 
@@ -2398,14 +2398,18 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
         auto const enListRange = M_listRange.end();
         for ( ; itListRange!=enListRange ; ++itListRange)
         {
-            boost::tie( boost::tuples::ignore, it, en ) = *itListRange;
-            for ( ; it!=en;++it )
+            //boost::tie( boost::tuples::ignore, it, en ) = *itListRange;
+            //for ( ; it!=en;++it )
+            for( auto const& theImageEltWrap : *itListRange )
             {
+                //auto const& theImageElt = boost::unwrap_ref(*it);
+                auto const& theImageElt = boost::unwrap_ref(theImageEltWrap);
                 for ( uint16_type iloc = 0; iloc < nLocalDofInDualImageElt; ++iloc )
                 {
                     for ( uint16_type comp = 0;comp < image_basis_type::nComponents;++comp )
                     {
-                        const auto gdof =  boost::get<0>(imagedof->localToGlobal( *it, iloc, comp ));
+
+                        const auto gdof =  boost::get<0>(imagedof->localToGlobal( theImageElt, iloc, comp ));
                         if (!dof_done[gdof] && memory_valueInMatrix[gdof].size()==0)
                         {
                             // the dof point
@@ -2432,13 +2436,13 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
                                 }
                                 memSetGdofAndComp[procForPt].push_back(boost::make_tuple(gdof,comp));
                                 if (InterpType::value==1)  // conformal case
-                                    memSetVertices_conformeInterp[procForPt].push_back(it->vertices());
+                                    memSetVertices_conformeInterp[procForPt].push_back(theImageElt.vertices());
                             }
                             else // only with myself
                             {
                                 memSetGdofAndComp[this->domainSpace()->worldComm().globalRank()].push_back(boost::make_tuple(gdof,comp));
                                 if (InterpType::value==1) // conformal case
-                                    memSetVertices_conformeInterp[this->domainSpace()->worldComm().globalRank()].push_back(it->vertices());
+                                    memSetVertices_conformeInterp[this->domainSpace()->worldComm().globalRank()].push_back(theImageElt.vertices());
                             }
 
                             dof_done[gdof]=true;
