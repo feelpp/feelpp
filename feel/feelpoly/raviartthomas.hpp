@@ -668,6 +668,37 @@ public:
                 }
             }
         }
+    template<typename ExprType>
+    void
+    interpolateBasisFunction( ExprType& expr, local_interpolant_type& Ihloc ) const
+    {
+        typedef typename ExprType::tensor_expr_type::expression_type::fe_type fe_expr_type;
+        Ihloc.setZero();
+        auto g=expr.geom();
+        ublas::vector<value_type> n( nDim ); //normal
+
+        for( int f = 0; f < convex_type::numTopologicalFaces; ++f )
+        {
+            if( g->faceId() == invalid_uint16_type_value)
+                getFaceNormal(expr, f, n);
+            else
+                getFaceNormal(expr, g->faceId(), n);
+
+            auto nLocalDof = (nDim==2) ? nDofPerEdge : nDofPerFace;
+            for ( int l = 0; l < nLocalDof; ++l )
+            {
+                int q = (nDim == 2) ? f*nDofPerEdge+l : f*nDofPerFace+l;
+                for( int i = 0; i < fe_expr_type::nLocalDof; ++i )
+                    for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
+                    {
+                        int ldof = c1*fe_expr_type::nLocalDof + i;
+                        int ldof2 = (fe_expr_type::is_product)? ldof : i;
+                        Ihloc(ldof,q) = expr.evaliq( ldof2, c1, 0, q )*n(c1);
+                    }
+            }
+        }
+
+    }
 
     template<typename ExprType>
     static auto

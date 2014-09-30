@@ -249,7 +249,7 @@ BOOST_AUTO_TEST_CASE( test_hdiv_interpolant_1 )
 {
     using namespace Feel;
     TestInterpolationHDiv<2> t2;
-    std::vector<std::string> mygeoms2d = option(_name="meshes-2d").template as< std::vector<std::string> >();
+    std::vector<std::string> mygeoms2d = vsoption(_name="meshes-2d"); //.template as< std::vector<std::string> >();
     for(std::string geo2d : mygeoms2d)
         {
             BOOST_TEST_MESSAGE( "*** interpolant [one-elt 2D] on " << geo2d << " ***" );
@@ -259,7 +259,7 @@ BOOST_AUTO_TEST_CASE( test_hdiv_interpolant_1 )
     t2.testInterpolation();
 
     TestInterpolationHDiv<3> t3;
-    std::vector<std::string> mygeoms3d = option(_name="meshes-3d").template as< std::vector<std::string> >();
+    std::vector<std::string> mygeoms3d = vsoption(_name="meshes-3d"); //.as< std::vector<std::string> >();
     for(std::string geo3d : mygeoms3d)
         {
             BOOST_TEST_MESSAGE( "*** interpolant [one-elt 3D] on " << geo3d << " ***" );
