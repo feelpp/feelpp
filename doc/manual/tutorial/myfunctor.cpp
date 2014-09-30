@@ -26,6 +26,8 @@
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pchv.hpp>
+#include <feel/feeldiscr/operatorlagrangep1.hpp>
+#include <feel/feelfilters/exporter.hpp>
 using namespace Feel;
 namespace Feel
 {
@@ -39,7 +41,7 @@ namespace Feel
 		static const bool imIsPoly = true;
 		double operator()( uint16_type, uint16_type, ublas::vector<double> const& x, ublas::vector<double> const& n ) const
 		{
-			return x[i];
+			return x[val];
 		}
 		int val = 0;
 		void setVal(int i){val = i;}
@@ -54,12 +56,12 @@ int main(int argc, char**argv )
                                   _email="feelpp-devel@feelpp.org"));
 
     //! [mesh]
-    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<1>>);
     //! [mesh]
 
     //! [space]
-    auto spaces= Pch<1>(mesh); 
-    auto spacev= Pchv<1>(mesh); 
+    auto spaces= Pch<2>(mesh); 
+    auto spacev= Pchv<2>(mesh); 
     //! [space]
 	
 		//! [functors]
@@ -71,7 +73,23 @@ int main(int argc, char**argv )
 		//! [projection]
 		auto u = vf::project(spaces,elements(mesh),idf(functor1)); // Will contain x
 		auto v = vf::project(spaces,elements(mesh),idf(functor2)); // will contain y
-		auto V = vf::project(spacev,elements(mesh),vec(idf(functor1),idf(functor2)) );
+		//auto V = vf::project(spacev,elements(mesh),vec(idf(functor1),idf(functor2)) );
 		//! [projection]
+		
+		//! [export]
+		auto ex1 = exporter(_mesh=mesh,_name="ex1");
+		auto ex2 = exporter(_mesh=lagrangeP1(_space=spaces)->mesh(),_name="ex2");
+
+		ex1->add("u",u);
+		ex1->add("v",v);
+		//ex1->add("V",V);
+		ex1->save();
+
+		ex2->add("u",u);
+		ex2->add("v",v);
+		//ex2->add("V",V);
+		ex2->save();
+		//! [export]
+
 }
 //! [all]

@@ -1627,13 +1627,15 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
 
             rank_type themasterRank = 0;
             bool findMasterProc=false;
+            uint16_type nDofP0 = (fe_type::is_product)? fe_type::nComponents : 1;
             for ( rank_type proc=0; proc<this->worldComm().localSize(); ++proc )
             {
                 if (!findMasterProc && this->nLocalDofWithGhost(proc) > 0)
                 {
-                    this->M_n_localWithoutGhost_df[proc] = 1;
+                    CHECK( nDofP0 == this->nLocalDofWithGhost(proc) ) << "invalid number of dofs" << nDofP0 << " vs " << this->nLocalDofWithGhost(proc);
+                    this->M_n_localWithoutGhost_df[proc] = nDofP0;
                     this->M_first_df_globalcluster[proc] = 0;
-                    this->M_last_df_globalcluster[proc] = 0;
+                    this->M_last_df_globalcluster[proc] = nDofP0-1;
                     themasterRank=proc;
                     findMasterProc=true;
                 }
@@ -1643,25 +1645,26 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
                     this->M_first_df_globalcluster[proc] = 25;// 0;
                     this->M_last_df_globalcluster[proc] = 25; //0;
                 }
-                //this->M_n_localWithGhost_df[proc] = 1;
             }
 
             if (this->nLocalDofWithGhost() >0 )
             {
                 if (themasterRank == this->worldComm().localRank())
                 {
-                    this->M_mapGlobalClusterToGlobalProcess.resize( 1 );
-                    this->M_mapGlobalClusterToGlobalProcess[0]=0;
+                    this->M_mapGlobalClusterToGlobalProcess.resize( nDofP0 );
+                    for (uint16_type k=0 ; k<nDofP0 ; ++k )
+                        this->M_mapGlobalClusterToGlobalProcess[k]=k;
                 }
                 else
                 {
                     this->M_mapGlobalClusterToGlobalProcess.resize( 0 );
                 }
 
-                this->M_mapGlobalProcessToGlobalCluster.resize( 1 );
-                this->M_mapGlobalProcessToGlobalCluster[0]=0;
+                this->M_mapGlobalProcessToGlobalCluster.resize( nDofP0 );
+                for (uint16_type k=0 ; k<nDofP0 ; ++k )
+                    this->M_mapGlobalProcessToGlobalCluster[k]=k;
             }
-            this->M_n_dofs = 1;
+            this->M_n_dofs = nDofP0;
         }
     }
     else

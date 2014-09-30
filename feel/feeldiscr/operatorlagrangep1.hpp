@@ -1046,7 +1046,7 @@ BOOST_PARAMETER_FUNCTION(
       ( space,    *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
     ) // required
     ( optional
-      ( backend,    *, Backend<typename compute_opLagrangeP1_return<Args>::space_type::value_type>::build() )
+      ( backend,    *, Backend<typename compute_opLagrangeP1_return<Args>::space_type::value_type>::build( soption( _name="backend" ) ) )
       ( path,       *( boost::is_convertible<mpl::_,std::string> ), std::string(".") )
       ( prefix,     *( boost::is_convertible<mpl::_,std::string> ), std::string("") )
       ( rebuild,    *( boost::is_integral<mpl::_> ), 1 )
