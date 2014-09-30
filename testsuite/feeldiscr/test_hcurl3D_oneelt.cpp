@@ -441,7 +441,7 @@ BOOST_AUTO_TEST_SUITE( HCURL3D_oneelt )
 BOOST_AUTO_TEST_CASE( test_hcurl3D_N0 )
 {
     TestHCurl3DOneElt t;
-    std::vector<std::string> mygeoms = option(_name="meshes").template as< std::vector<std::string> >();
+    std::vector<std::string> mygeoms = vsoption(_name="meshes");//.template as< std::vector<std::string> >();
     for(std::string geo : mygeoms)
         {
             std::cout << "*** shape functions on " << geo << " *** \n";
