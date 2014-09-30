@@ -487,7 +487,7 @@ void
 ExporterEnsight<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype __step, Iterator __var, Iterator en ) const
 {
     auto mit = elements(__step->mesh());
-    Feel::detail::MeshPoints<float> mp( __step->mesh().get(), mit.template get<1>(), mit.template get<2>(), false, true );
+    Feel::detail::MeshPoints<float> mp( __step->mesh().get(), this->worldComm(), mit.template get<1>(), mit.template get<2>(), false, true );
     while ( __var != en )
     {
         if ( !__var->second.worldComm().isActive() ) return;
@@ -699,7 +699,7 @@ ExporterEnsight<MeshType,N>::visit( mesh_type* __mesh )
     __out.write( ( char * ) & buffer, sizeof( buffer ) );
 
     auto mit = elements(__mesh);
-    Feel::detail::MeshPoints<float> mp( __mesh, mit.template get<1>(), mit.template get<2>(), false, true );
+    Feel::detail::MeshPoints<float> mp( __mesh, this->worldComm(), mit.template get<1>(), mit.template get<2>(), false, true );
     size_type __nv = mp.ids.size();
     __out.write( ( char * ) &__nv, sizeof( int ) );
     LOG(INFO) << "n pts = " << __nv << " numppoints=" << __mesh->numPoints();
