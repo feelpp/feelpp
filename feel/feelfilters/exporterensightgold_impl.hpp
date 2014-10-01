@@ -668,101 +668,104 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
         __it = boost::prior( __end );
 
         /* static geometry */
-        /* only write the geometry in the first timestep */
-        if ( this->exporterGeometry() == EXPORTER_GEOMETRY_STATIC && (__it == __ts->beginStep())  )
+        if ( this->exporterGeometry() == EXPORTER_GEOMETRY_STATIC )
         {
             LOG(INFO) << "GEO: Static geo mode" << std::endl;
 
-            time_index = 0 ;
-
-            /* generate geo filename */
-            std::ostringstream __geofname;
-            __geofname << this->path() << "/" << __ts->name();
-            if( ! boption( _name="exporter.merge.markers") )
-            { __geofname << "-" << this->worldComm().globalSize() << "_" << this->worldComm().localRank(); }
-            __geofname << ".geo";
-            M_filename =  __geofname.str();
-            CHECK( (*__it)->hasMesh() || __ts->hasMesh()  ) << "Invalid mesh data structure in static geometry mode\n";
-
-            /* write info */
-            mesh_ptrtype mesh;
-            if ( __ts->hasMesh() )
-                mesh = __ts->mesh();
-            if ( (*__it)->hasMesh() && !__ts->hasMesh() )
-                mesh = (*__it)->mesh();
-
-            /* Open File with MPI IO */
-            char * str = strdup(__geofname.str().c_str());
-
-            /* Check if file exists and delete it, if so */
-            /* (MPI IO does not have a truncate mode ) */
-            if(this->worldComm().isMasterRank() && fs::exists(str))
+            /* only write the geometry in the first timestep */
+            if( __it == __ts->beginStep() ) 
             {
-                MPI_File_delete(str, MPI_INFO_NULL);
-            }
-            MPI_Barrier( this->worldComm().comm() );
+                time_index = 0 ;
 
-            MPI_File_open( this->worldComm().comm(), str, MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL, &fh );
+                /* generate geo filename */
+                std::ostringstream __geofname;
+                __geofname << this->path() << "/" << __ts->name();
+                if( ! boption( _name="exporter.merge.markers") )
+                { __geofname << "-" << this->worldComm().globalSize() << "_" << this->worldComm().localRank(); }
+                __geofname << ".geo";
+                M_filename =  __geofname.str();
+                CHECK( (*__it)->hasMesh() || __ts->hasMesh()  ) << "Invalid mesh data structure in static geometry mode\n";
 
-            free(str);
+                /* write info */
+                mesh_ptrtype mesh;
+                if ( __ts->hasMesh() )
+                    mesh = __ts->mesh();
+                if ( (*__it)->hasMesh() && !__ts->hasMesh() )
+                    mesh = (*__it)->mesh();
 
-            Feel::detail::FileIndex index;
+                /* Open File with MPI IO */
+                char * str = strdup(__geofname.str().c_str());
 
-            if(boption( _name="exporter.merge.timesteps" ))
-            {
-                // first read
-                index.read(fh);
-
-                // we position the cursor at the beginning of the file
-                MPI_File_seek_shared(fh, 0, MPI_SEEK_SET);
-
-                /* write C binary if we didn't find the index <=> first pass on the file */
-                if( !index.defined() )
+                /* Check if file exists and delete it, if so */
+                /* (MPI IO does not have a truncate mode ) */
+                if(this->worldComm().isMasterRank() && fs::exists(str))
                 {
+                    MPI_File_delete(str, MPI_INFO_NULL);
+                }
+                MPI_Barrier( this->worldComm().comm() );
+
+                MPI_File_open( this->worldComm().comm(), str, MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL, &fh );
+
+                free(str);
+
+                Feel::detail::FileIndex index;
+
+                if(boption( _name="exporter.merge.timesteps" ))
+                {
+                    // first read
+                    index.read(fh);
+
+                    // we position the cursor at the beginning of the file
+                    MPI_File_seek_shared(fh, 0, MPI_SEEK_SET);
+
+                    /* write C binary if we didn't find the index <=> first pass on the file */
+                    if( !index.defined() )
+                    {
+                        if( this->worldComm().isMasterRank() )
+                        { size = sizeof(buffer); }
+                        else
+                        { size = 0; }
+                        memset(buffer, '\0', sizeof(buffer));
+                        strcpy(buffer, "C Binary");
+                        MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+                    }
+
+                    /* Write time step start */
                     if( this->worldComm().isMasterRank() )
                     { size = sizeof(buffer); }
                     else
                     { size = 0; }
                     memset(buffer, '\0', sizeof(buffer));
-                    strcpy(buffer, "C Binary");
+                    strcpy(buffer,"BEGIN TIME STEP");
                     MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+                    LOG(INFO) << "saveNodal out: " << buffer;
+
+                    /* add the beginning of the new block to the file */
+                    MPI_File_get_position_shared(fh, &offset);
+                    index.add( offset );
                 }
 
-                /* Write time step start */
-                if( this->worldComm().isMasterRank() )
-                { size = sizeof(buffer); }
-                else
-                { size = 0; }
-                memset(buffer, '\0', sizeof(buffer));
-                strcpy(buffer,"BEGIN TIME STEP");
-                MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
-                LOG(INFO) << "saveNodal out: " << buffer;
+                /* Write the file */
+                this->writeGeoMarkers(fh, mesh);
 
-                /* add the beginning of the new block to the file */
-                MPI_File_get_position_shared(fh, &offset);
-                index.add( offset );
+                if(boption( _name="exporter.merge.timesteps" ))
+                {
+                    /* write timestep end */
+                    if( this->worldComm().isMasterRank() )
+                    { size = sizeof(buffer); }
+                    else
+                    { size = 0; }
+                    memset(buffer, '\0', sizeof(buffer));
+                    strcpy(buffer,"END TIME STEP");
+                    MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+
+                    // write back the file index
+                    index.write( fh );
+                }
+
+                /* close file */
+                MPI_File_close(&fh);
             }
-
-            /* Write the file */
-            this->writeGeoMarkers(fh, mesh);
-
-            if(boption( _name="exporter.merge.timesteps" ))
-            {
-                /* write timestep end */
-                if( this->worldComm().isMasterRank() )
-                { size = sizeof(buffer); }
-                else
-                { size = 0; }
-                memset(buffer, '\0', sizeof(buffer));
-                strcpy(buffer,"END TIME STEP");
-                MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
-
-                // write back the file index
-                index.write( fh );
-            }
-
-            /* close file */
-            MPI_File_close(&fh);
         }
         /* changing geometry */
         else
