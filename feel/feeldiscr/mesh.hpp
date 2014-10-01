@@ -2179,12 +2179,6 @@ struct MeshPoints
     template<typename MeshType, typename IteratorType>
     MeshPoints( MeshType* mesh, const WorldComm &, IteratorType it, IteratorType en, const bool outer = false, const bool renumber = false, const bool fill = false );
 
-    /* The original constructor, initialized with the other constructor (c++11 feature) */
-    template<typename MeshType, typename IteratorType>
-    MeshPoints( MeshType* mesh, IteratorType it, IteratorType en, const bool outer = false, const bool renumber = false, const bool fill = false )
-        : MeshPoints(mesh, Environment::worldComm(), it, en, outer, renumber, fill)
-    {}
-
     int translatePointIds(std::vector<int> & ids);
     int translateElementIds(std::vector<int> & ids);
 

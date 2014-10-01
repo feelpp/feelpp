@@ -264,20 +264,21 @@ void Exporterhdf5<MeshType, N>::write () const
                 std::ostringstream filestr ;
                 filestr << "-" << M_step++ ;
                 M_fileNameStep = M_fileName+filestr.str() ;
-                M_HDF5.openFile (M_fileNameStep+".h5", Environment::worldCommSeq(), false) ;
+                M_HDF5.openFile (M_fileNameStep+".h5", this->worldComm().subWorldCommSeq(), false) ;
                 M_xmf << "           <Grid Name=\"" << M_fileNameStep << "\" GridType=\"Uniform\">\n" ;
 
                 writePoints () ;
                 writeElements () ;
 
-                if ( Environment::worldCommSeq().globalRank() == Environment::worldCommSeq().masterRank() )
-                {
+                // useless test
+                //if ( this->worldComm().subWorldCommSeq().globalRank() == this->worldComm().subWorldCommSeq().masterRank() )
+                //{
                     //std::cout << "time                          : " << __step->time () << std::endl ; 
                     //std::cout << "time increment                : " << __ts->timeIncrement () << std::endl ; 
                     //std::cout << "numberOfSteps                 : " << __ts->numberOfSteps () << std::endl ; 
                     //std::cout << "numberOfTotalSteps            : " << __ts->numberOfTotalSteps () << std::endl ;
                     std::cout << "file generated                : " << M_fileNameStep  << ".h5" << std::endl ;
-                }
+                //}
 
                 saveNodal (__step, __step->beginNodalScalar(), __step->endNodalScalar() ) ;
                 saveNodal (__step, __step->beginNodalVector(), __step->endNodalVector() ) ;
@@ -630,7 +631,7 @@ void Exporterhdf5<MeshType, N>::saveNodalMerge ( typename timeset_type::step_ptr
             auto elt_it = r.template get<1>() ;
             auto elt_en = r.template get<2>() ;
 
-            Feel::detail::MeshPoints<float> mp ( __step->mesh().get(), elt_it, elt_en, true, true, true ) ;
+            Feel::detail::MeshPoints<float> mp ( __step->mesh().get(), this->worldComm(), elt_it, elt_en, true, true, true ) ;
 
             size_type e = 0 ; 
 
@@ -728,7 +729,7 @@ void Exporterhdf5<MeshType, N>::saveNodal ( typename timeset_type::step_ptrtype 
             auto elt_it = r.template get<1>() ;
             auto elt_en = r.template get<2>() ;
 
-            Feel::detail::MeshPoints<float> mp ( __step->mesh().get(), elt_it, elt_en, true, true, true ) ;
+            Feel::detail::MeshPoints<float> mp ( __step->mesh().get(), this->worldComm(), elt_it, elt_en, true, true, true ) ;
 
             size_type e = 0 ; 
 
