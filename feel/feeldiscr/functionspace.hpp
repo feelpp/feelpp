@@ -3413,10 +3413,23 @@ public:
 
         template<typename RangeType, typename ExprType>
         void onImpl( RangeType const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate = true, bool verbose = false )
-            {
-                const int iDim = boost::tuples::template element<0, RangeType>::type::value;
+        {
+            onImplBase( r, e, prefix, geomap_strategy, accumulate, verbose, boost::is_std_list<RangeType>()  );
+        }
+
+        template<typename RangeType, typename ExprType>
+        void onImplBase( RangeType const& rList, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::true_ )
+        {
+            const int iDim = boost::tuples::template element<0, typename RangeType::value_type>::type::value;
+            for ( auto const& r : rList )
                 onImpl( std::make_pair( r.template get<1>(), r.template get<2>()), e, prefix, geomap_strategy, accumulate, verbose, mpl::int_<iDim>() );
-            }
+        }
+        template<typename RangeType, typename ExprType>
+        void onImplBase( RangeType const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::false_ )
+        {
+            const int iDim = boost::tuples::template element<0, RangeType>::type::value;
+            onImpl( std::make_pair( r.template get<1>(), r.template get<2>()), e, prefix, geomap_strategy, accumulate, verbose, mpl::int_<iDim>() );
+        }
 
         template<typename IteratorType, typename ExprType>
         void onImpl( std::pair<IteratorType,IteratorType> const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_<MESH_ELEMENTS>  );
