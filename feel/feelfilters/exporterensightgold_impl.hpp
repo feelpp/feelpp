@@ -123,7 +123,8 @@ ExporterEnsightGold<MeshType,N>::init()
     /* process as worldComm() */
     if( ! boption( _name = "exporter.merge.markers" ) )
     {
-        this->setWorldComm(Environment::worldCommSeq());
+        //this->setWorldComm(Environment::worldCommSeq());
+        this->setWorldComm(this->worldComm().subWorldCommSeq());
     }
 }
 
@@ -614,14 +615,20 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
 
     if ( option( _name="exporter.ensightgold.use-sos" ).template as<bool>() == false )
     {
-        if ( ( Environment::numberOfProcessors() > 1 )  && ( this->worldComm().globalRank() == 0 ) )
+        // In the following line, we substituted the Environment::numberOfProcessors
+        // by the size of the worldComm passed to the exporter to ensure that we are using
+        // only the data for the current processor
+        //if ( ( Environment::numberOfProcessors() > 1 )  && ( this->worldComm().globalRank() == 0 ) )
+        if ( ( this->worldComm().globalSize() > 1 )  && ( this->worldComm().globalRank() == 0 ) )
         {
             __out << "APPENDED_CASEFILES\n"
-                  << "total number of cfiles: " << Environment::numberOfProcessors()-1 << "\n"
+                  //<< "total number of cfiles: " << Environment::numberOfProcessors()-1 << "\n"
+                  << "total number of cfiles: " << this->worldComm().globalSize()-1 << "\n"
                 // no need for that
                 // << "cfiles global path: " << fs::current_path().string() << "\n"
                   << "cfiles: ";
-            for(int p = 1; p < Environment::numberOfProcessors(); ++p )
+            //for(int p = 1; p < Environment::numberOfProcessors(); ++p )
+            for(int p = 1; p < this->worldComm().globalSize(); ++p )
             {
                 std::ostringstream filestr;
                 filestr << this->prefix() << "-"
@@ -1398,7 +1405,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
     std::vector<int> ids(mp.ids.size());
     MPI_File_get_position(fh, &offset2 );
     MPI_File_read_at(fh, offset2-mp.ids.size()*sizeof(int),&ids.front(), ids.size(), MPI_INT, &status );
-    if ( Environment::rank() == 0 )
+    if ( this->worldComm().rank() == 0 )
     {
         std::ofstream ofs( "ids" );
         std::for_each( ids.begin(), ids.end(), [&]( int i ) { ofs << i << "\n"; } );
@@ -1432,7 +1439,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
        MPI_File_read_at(fh, offset2-3*mp.globalNumberOfPoints()*sizeof(float),&x.front(), x.size(), MPI_FLOAT, &status );
        MPI_File_read_at(fh, offset2-2*mp.globalNumberOfPoints()*sizeof(float),&y.front(), y.size(), MPI_FLOAT, &status );
        MPI_File_read_at(fh, offset2-mp.globalNumberOfPoints()*sizeof(float),&z.front(), z.size(), MPI_FLOAT, &status );
-       if ( Environment::rank() == 0 )
+       if ( this->worldComm().rank() == 0 )
        {
        std::ofstream ofs( "x" );
        std::for_each( x.begin(), x.end(), [&]( double i ) { ofs << i << "\n"; } );
@@ -1461,7 +1468,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
     /*
        offset += sizeof(buffer);
        MPI_File_read_at( fh, offset-sizeof(buffer), buffer, 80, MPI_CHAR, &status );
-       LOG(INFO) << "proc " << Environment::rank()
+       LOG(INFO) << "proc " << this->worldComm().rank()
        << " --> read back element material->buffer = " << buffer << std::endl;
        */
 
@@ -1484,7 +1491,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
     /*
        MPI_File_get_position(fh, &offset2 );
        MPI_File_read_at( fh, offset2-mp.offsets_elts-sizeof(int), &nn, 1, MPI_INT, &status );
-       LOG(INFO) << "proc " << Environment::rank()
+       LOG(INFO) << "proc " << this->worldComm().rank()
        << " offsets_elts : " << mp.offsets_elts
        << "read npts->nn = " << nn << " was " << __ne << std::endl;
        */
@@ -1537,7 +1544,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
        MPI_File_get_position(fh, &offset2 );
     //MPI_File_seek(fh, offset, MPI_SEEK_SET );
     MPI_File_read_at( fh, offset2-mp.global_offsets_elts-sizeof(int), &nn, 1, MPI_INT, &status );
-    LOG(INFO) << "proc " << Environment::rank()
+    LOG(INFO) << "proc " << this->worldComm().rank()
     << " global offsets_elts : " << mp.global_offsets_elts
     << "read npts->ne = " << nn << " was " << __ne << std::endl;
     */
