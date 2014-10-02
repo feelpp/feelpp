@@ -3,6 +3,7 @@
  This file is part of the Feel++ library
  
  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+            Goncalo Pena  <gpena@mat.uc.pt>
  Date: 02 Oct 2014
  
  Copyright (C) 2014 Feel++ Consortium
@@ -27,6 +28,7 @@
 
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelalg/preconditioner.hpp>
+#include <feel/feelalg/operator.hpp>
 
 namespace Feel
 {
@@ -62,8 +64,6 @@ public:
     typedef OperatorCompose<op_mat_type, comp1_type> comp2_type;
     typedef boost::shared_ptr<comp2_type> comp2_ptrtype;
 
-    typedef Epetra_Operator operator_type;
-    typedef boost::shared_ptr<operator_type> operator_ptrtype;
 
     static const uint16_type Dim = pressure_space_type::nDim;
     static const uint16_type pOrder = pressure_space_type::basis_type::nOrder;
@@ -115,8 +115,6 @@ private:
     double M_nu, M_alpha;
 
     std::set<flag_type>::const_iterator inflowIter;
-
-    operator_ptrtype precMass, precDiff;
 
     std::string M_prob_type;
 
