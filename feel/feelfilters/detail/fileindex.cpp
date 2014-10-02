@@ -59,24 +59,24 @@ void FileIndex::read( MPI_File fh )
     }
 
     // read last line FILE_INDEX
-    MPI_File_seek_shared(fh, -80, MPI_SEEK_END);
-    MPI_File_read_shared(fh, buffer, 80, MPI_CHAR, &status);
+    MPI_File_seek(fh, -80, MPI_SEEK_END);
+    MPI_File_read_all(fh, buffer, 80, MPI_CHAR, &status);
 
     LOG(INFO) <<"buffer:" << buffer;
     if (strncmp(buffer, "FILE_INDEX", 10) == 0)
     {
         LOG(INFO) << "found FILE_INDEX";
         // right before the FILE_INDEX entry we find the address of the index start
-        MPI_File_seek_shared(fh, -80-sizeof(int64_type), MPI_SEEK_END);
+        MPI_File_seek(fh, -80-sizeof(int64_type), MPI_SEEK_END);
 
         int64_type addr;
-        MPI_File_read_shared(fh, &addr, 1, MPI_INT64_T, &status);
+        MPI_File_read_all(fh, &addr, 1, MPI_INT64_T, &status);
         this->fileblock_n_steps = addr;
 
-        MPI_File_seek_shared(fh, addr, MPI_SEEK_SET);
+        MPI_File_seek(fh, addr, MPI_SEEK_SET);
 
         int32_type n;
-        MPI_File_read_shared(fh, &n, 1, MPI_INT32_T, &status);
+        MPI_File_read_all(fh, &n, 1, MPI_INT32_T, &status);
         this->n_steps = n;
         LOG(INFO) << "read in FILE_INDEX number of steps: " << this->n_steps;
         // need some check here regarding the number of time steps probably
@@ -86,12 +86,12 @@ void FileIndex::read( MPI_File fh )
         for( int i = 0; i < n_steps; ++i )
         {
             int64_type fb;
-            MPI_File_read_shared(fh, &fb, 1, MPI_INT64_T, &status);
+            MPI_File_read_all(fh, &fb, 1, MPI_INT64_T, &status);
             this->fileblocks.push_back( fb );
         }
 
         int32_type flag;
-        MPI_File_read_shared(fh, &flag, 1, MPI_INT32_T, &status);
+        MPI_File_read_all(fh, &flag, 1, MPI_INT32_T, &status);
         CHECK( flag == 0 ) << "invalid FILE_INDEX, flag must be equal to 0";
         LOG(INFO) << "Done reading FILE_INDEX";
     }
