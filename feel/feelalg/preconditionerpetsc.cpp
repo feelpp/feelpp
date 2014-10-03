@@ -328,6 +328,9 @@ typedef struct {
   Mat                       B;                     /* The (0,1) block */
   Mat                       C;                     /* The (1,0) block */
   Mat                       schur;                 /* The Schur complement S = A11 - A10 A00^{-1} A01, the KSP here, kspinner, is H_1 in [El08] */
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,5,0)
+  Mat                       schurp;                /* Assembled approximation to S built by MatSchurComplement to be used as a preconditioning matrix when solving with S */
+#endif
   Mat                       schur_user;            /* User-provided preconditioning matrix for the Schur complement */
   PCFieldSplitSchurPreType  schurpre;              /* Determines which preconditioning matrix is used for the Schur complement */
   PCFieldSplitSchurFactType schurfactorization;
@@ -337,6 +340,10 @@ typedef struct {
   PetscBool                 reset;                  /* indicates PCReset() has been last called on this object, hack */
   PetscBool                 suboptionsset;          /* Indicates that the KSPSetFromOptions() has been called on the sub-KSPs */
   PetscBool                 dm_splits;              /* Whether to use DMCreateFieldDecomposition() whenever possible */
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,5,0)
+  PetscBool                 diag_use_amat;          /* Whether to extract diagonal matrix blocks from Amat, rather than Pmat (weaker than -pc_use_amat) */
+  PetscBool                 offdiag_use_amat;       /* Whether to extract off-diagonal matrix blocks from Amat, rather than Pmat (weaker than -pc_use_amat) */
+#endif
 } PC_FieldSplit;
 
 
