@@ -1814,17 +1814,18 @@ ConfigurePCFieldSplit::runConfigurePCFieldSplit( PC& pc, PreconditionerPetsc<dou
     }
 
     // config sub ksp/pc for each split
-    ConfigurePCFieldSplit::ConfigureSubKSP( &subksps/*pc*/,nSplit,is,this->worldComm(),this->sub(),this->prefix() );
+    ConfigurePCFieldSplit::ConfigureSubKSP( &subksps/*pc*/,nSplit,is,M_type,this->worldComm(),this->sub(),this->prefix() );
 }
 
 /**
  * ConfigurePCFieldSplitSubKSP
  */
 ConfigurePCFieldSplit::ConfigureSubKSP::ConfigureSubKSP( KSP ** subksps/*PC& pc*/, int nSplit,PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
-                                                         WorldComm const& worldComm, std::string const& sub, std::string const& prefix )
+                                                         std::string const& typeFieldSplit, WorldComm const& worldComm, std::string const& sub, std::string const& prefix )
     :
     ConfigurePCBase( worldComm,sub,prefix ),
-    M_nSplit( nSplit )
+    M_nSplit( nSplit ),
+    M_typeFieldSplit( typeFieldSplit )
 {
 #if 0
     // call necessary before PCFieldSplitGetSubKSP
@@ -1873,8 +1874,13 @@ ConfigurePCFieldSplit::ConfigureSubKSP::runConfigureSubKSP(KSP& ksp, Preconditio
     CHKERRABORT( this->worldComm().globalComm(),ierr );
     this->check( KSPSetNormType( ksp, KSP_NORM_NONE ) );*/
     // setup ksp
+#if PETSC_VERSION_LESS_THAN(3,5,0)
     this->check( KSPSetUp( ksp ) );
-
+#else
+    // error if setup ksp for schur complement ( to understand! )
+    if( M_typeFieldSplit != "schur" || splitId == 0 )
+        this->check( KSPSetUp( ksp ) );
+#endif
     PC subpc;
     // get sub-pc
     this->check( KSPGetPC( ksp, &subpc ) );
