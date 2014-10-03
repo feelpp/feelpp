@@ -505,7 +505,7 @@ template <typename T>
 void PreconditionerPetsc<T>::init ()
 {
     CHECK( this->M_matrix ) << "ERROR: No matrix set for PreconditionerPetsc, but init() called" << "\n";
-    this->M_matrix->close();
+
     indexsplit_ptrtype is;
     // Clear the preconditioner in case it has been created in the past
     if ( !this->M_is_initialized )
