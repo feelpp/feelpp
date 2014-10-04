@@ -328,6 +328,9 @@ typedef struct {
   Mat                       B;                     /* The (0,1) block */
   Mat                       C;                     /* The (1,0) block */
   Mat                       schur;                 /* The Schur complement S = A11 - A10 A00^{-1} A01, the KSP here, kspinner, is H_1 in [El08] */
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,5,0)
+  Mat                       schurp;                /* Assembled approximation to S built by MatSchurComplement to be used as a preconditioning matrix when solving with S */
+#endif
   Mat                       schur_user;            /* User-provided preconditioning matrix for the Schur complement */
   PCFieldSplitSchurPreType  schurpre;              /* Determines which preconditioning matrix is used for the Schur complement */
   PCFieldSplitSchurFactType schurfactorization;
@@ -337,6 +340,10 @@ typedef struct {
   PetscBool                 reset;                  /* indicates PCReset() has been last called on this object, hack */
   PetscBool                 suboptionsset;          /* Indicates that the KSPSetFromOptions() has been called on the sub-KSPs */
   PetscBool                 dm_splits;              /* Whether to use DMCreateFieldDecomposition() whenever possible */
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,5,0)
+  PetscBool                 diag_use_amat;          /* Whether to extract diagonal matrix blocks from Amat, rather than Pmat (weaker than -pc_use_amat) */
+  PetscBool                 offdiag_use_amat;       /* Whether to extract off-diagonal matrix blocks from Amat, rather than Pmat (weaker than -pc_use_amat) */
+#endif
 } PC_FieldSplit;
 
 
@@ -498,7 +505,7 @@ template <typename T>
 void PreconditionerPetsc<T>::init ()
 {
     CHECK( this->M_matrix ) << "ERROR: No matrix set for PreconditionerPetsc, but init() called" << "\n";
-    this->M_matrix->close();
+
     indexsplit_ptrtype is;
     // Clear the preconditioner in case it has been created in the past
     if ( !this->M_is_initialized )
@@ -1807,17 +1814,18 @@ ConfigurePCFieldSplit::runConfigurePCFieldSplit( PC& pc, PreconditionerPetsc<dou
     }
 
     // config sub ksp/pc for each split
-    ConfigurePCFieldSplit::ConfigureSubKSP( &subksps/*pc*/,nSplit,is,this->worldComm(),this->sub(),this->prefix() );
+    ConfigurePCFieldSplit::ConfigureSubKSP( &subksps/*pc*/,nSplit,is,M_type,this->worldComm(),this->sub(),this->prefix() );
 }
 
 /**
  * ConfigurePCFieldSplitSubKSP
  */
 ConfigurePCFieldSplit::ConfigureSubKSP::ConfigureSubKSP( KSP ** subksps/*PC& pc*/, int nSplit,PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
-                                                         WorldComm const& worldComm, std::string const& sub, std::string const& prefix )
+                                                         std::string const& typeFieldSplit, WorldComm const& worldComm, std::string const& sub, std::string const& prefix )
     :
     ConfigurePCBase( worldComm,sub,prefix ),
-    M_nSplit( nSplit )
+    M_nSplit( nSplit ),
+    M_typeFieldSplit( typeFieldSplit )
 {
 #if 0
     // call necessary before PCFieldSplitGetSubKSP
@@ -1866,8 +1874,13 @@ ConfigurePCFieldSplit::ConfigureSubKSP::runConfigureSubKSP(KSP& ksp, Preconditio
     CHKERRABORT( this->worldComm().globalComm(),ierr );
     this->check( KSPSetNormType( ksp, KSP_NORM_NONE ) );*/
     // setup ksp
+#if PETSC_VERSION_LESS_THAN(3,5,0)
     this->check( KSPSetUp( ksp ) );
-
+#else
+    // error if setup ksp for schur complement ( to understand! )
+    if( M_typeFieldSplit != "schur" || splitId == 0 )
+        this->check( KSPSetUp( ksp ) );
+#endif
     PC subpc;
     // get sub-pc
     this->check( KSPGetPC( ksp, &subpc ) );

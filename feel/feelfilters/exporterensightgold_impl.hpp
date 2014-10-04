@@ -206,7 +206,7 @@ void
 ExporterEnsightGold<MeshType,N>::writeSoSFile() const
 {
     // only on proc 0
-    if ( this->worldComm().rank() == this->worldComm().masterRank() )
+    if ( this->worldComm().isMasterRank() )
     {
         std::ostringstream filestr;
         filestr << this->path() << "/" << this->prefix() << "-" << this->worldComm().globalSize() << ".sos";
@@ -284,362 +284,365 @@ template<typename MeshType, int N>
 void
 ExporterEnsightGold<MeshType,N>::writeCaseFile() const
 {
-    std::ostringstream filestr;
+    // only on proc 0
+    if( this->worldComm().isMasterRank() )
+    {
+        std::ostringstream filestr;
 
-    filestr << this->path() << "/"
+        filestr << this->path() << "/"
             << this->prefix();
-    if( ! boption( _name="exporter.merge.markers") )
-    { filestr << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
-    filestr << ".case";
-
-    std::ofstream __out( filestr.str().c_str() );
-
-    if ( __out.fail() )
-    {
-        DVLOG(2) << "cannot open " << filestr.str()  << "\n";
-        exit( 0 );
-    }
-
-    __out << "FORMAT:\n"
-          << "type: ensight gold\n"
-          << "GEOMETRY:\n";
-
-    timeset_const_iterator __ts_it = this->beginTimeSet();
-    timeset_const_iterator __ts_en = this->endTimeSet();
-
-    switch ( this->exporterGeometry() )
-    {
-    case EXPORTER_GEOMETRY_STATIC:
-    {
-        timeset_ptrtype __ts = *__ts_it;
-        __out << "model: " << __ts->name();
         if( ! boption( _name="exporter.merge.markers") )
-        { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
-        __out << ".geo";
-    }
-    break;
-    default:
-    case EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY:
-    case EXPORTER_GEOMETRY_CHANGE:
-    {
+        { filestr << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
+        filestr << ".case";
+
+        std::ofstream __out( filestr.str().c_str() );
+
+        if ( __out.fail() )
+        {
+            DVLOG(2) << "cannot open " << filestr.str()  << "\n";
+            exit( 0 );
+        }
+
+        __out << "FORMAT:\n"
+            << "type: ensight gold\n"
+            << "GEOMETRY:\n";
+
+        timeset_const_iterator __ts_it = this->beginTimeSet();
+        timeset_const_iterator __ts_en = this->endTimeSet();
+
+        switch ( this->exporterGeometry() )
+        {
+            case EXPORTER_GEOMETRY_STATIC:
+                {
+                    timeset_ptrtype __ts = *__ts_it;
+                    __out << "model: " << __ts->name();
+                    if( ! boption( _name="exporter.merge.markers") )
+                    { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
+                    __out << ".geo";
+                }
+                break;
+            default:
+            case EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY:
+            case EXPORTER_GEOMETRY_CHANGE:
+                {
+                    while ( __ts_it != __ts_en )
+                    {
+                        timeset_ptrtype __ts = *__ts_it;
+
+                        //if ( this->useSingleTransientFile() )
+                        if( boption( _name="exporter.merge.timesteps") )
+                        {
+                            __out << "model: " << __ts->index() << " 1 " << __ts->name();
+                            if( ! boption( _name="exporter.merge.markers") )
+                            { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
+                            __out << ".geo";
+                        }
+                        else
+                        {
+                            __out << "model: " << __ts->index() << " " << __ts->name();
+                            if( ! boption( _name="exporter.merge.markers") )
+                            { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
+                            __out << ".geo" << "." << std::string(M_timeExponent, '*');
+                        }
+
+                        if ( this->exporterGeometry() == EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY )
+                            __out << " change_coords_only";
+
+                        ++__ts_it;
+                    }
+                }
+                break;
+        }
+        __out << "\n";
+
+#if 1
+        __out << "VARIABLES:" << "\n";
+
+        __ts_it = this->beginTimeSet();
+
         while ( __ts_it != __ts_en )
         {
             timeset_ptrtype __ts = *__ts_it;
 
-            //if ( this->useSingleTransientFile() )
-            if ( boption( _name="exporter.merge.timesteps") )
+            // treat constant per case
+            auto s_it = ( *__ts->rbeginStep() )->beginScalar();
+            auto s_en = ( *__ts->rbeginStep() )->endScalar();
+            for ( ; s_it != s_en; ++s_it )
             {
-                __out << "model: " << __ts->index() << " 1 " << __ts->name();
-                if( ! boption( _name="exporter.merge.markers") )
-                { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
-                __out << ".geo";
-            }
-            else
-            {
-                __out << "model: " << __ts->index() << " " << __ts->name();
-                if( ! boption( _name="exporter.merge.markers") )
-                { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
-                __out << ".geo" << "." << std::string(M_timeExponent, '*');
+                if ( s_it->second.second )
+                {
+                    // constant over time
+                    __out << "constant per case: " << s_it->first << " " << s_it->second.first << "\n";
+                }
+                else
+                {
+                    if ( this->worldComm().isMasterRank() )
+                    {
+
+                        __out << "constant per case file: " << __ts->index() << " " << s_it->first << " " << s_it->first << ".scl";
+                        // loop over time
+                        auto stepit = __ts->beginStep();
+                        auto stepen = __ts->endStep();
+
+                        std::ofstream ofs;
+                        int d = std::distance( stepit, stepen );
+                        LOG(INFO) << "distance = " << d;
+                        if ( d > 1 )
+                            ofs.open( s_it->first+".scl", std::ios::out | std::ios::app );
+                        else
+                            ofs.open( s_it->first+".scl", std::ios::out );
+
+                        auto step = *boost::prior(stepen);
+                        ofs << step->scalar( s_it->first ) << "\n";
+                        ofs.close();
+                        __out << "\n";
+                    }
+
+                }
             }
 
-            if ( this->exporterGeometry() == EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY )
-                __out << " change_coords_only";
+            typename timeset_type::step_type::nodal_scalar_const_iterator __it = ( *__ts->rbeginStep() )->beginNodalScalar();
+            typename timeset_type::step_type::nodal_scalar_const_iterator __end = ( *__ts->rbeginStep() )->endNodalScalar();
+
+            while ( __it != __end )
+            {
+                //if ( this->useSingleTransientFile() )
+                if( boption( _name="exporter.merge.timesteps") )
+                {
+                    __out << "scalar per node: "
+                        << __ts->index() << " 1 " // << *__ts_it->beginStep() << " "
+                        << __it->second.name() << " " << __it->first;
+                    if( ! boption( _name="exporter.merge.markers") )
+                    { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
+                    __out << ".scl" << std::endl;
+                }
+                else
+                {
+                    __out << "scalar per node: "
+                        << __ts->index() << " " // << *__ts_it->beginStep() << " "
+                        << __it->second.name() << " " << __it->first;
+                    if( ! boption( _name="exporter.merge.markers") )
+                    { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
+                    __out << ".scl" << "." << std::string(M_timeExponent, '*') << std::endl;
+                }
+                ++__it;
+            }
+
+            typename timeset_type::step_type::nodal_vector_const_iterator __itv = ( *__ts->rbeginStep() )->beginNodalVector();
+            typename timeset_type::step_type::nodal_vector_const_iterator __env = ( *__ts->rbeginStep() )->endNodalVector();
+
+            while ( __itv != __env )
+            {
+                //if ( this->useSingleTransientFile() )
+                if( boption( _name="exporter.merge.timesteps") )
+                {
+                    __out << "vector per node: "
+                        << __ts->index() << " 1 " // << *__ts_it->beginStep() << " "
+                        << __itv->second.name() << " " << __itv->first;
+                    if( ! boption( _name="exporter.merge.markers") )
+                    { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
+                    __out << ".vec" << std::endl;
+                }
+                else
+                {
+                    __out << "vector per node: "
+                        << __ts->index() << " " // << *__ts_it->beginStep() << " "
+                        << __itv->second.name() << " " << __itv->first;
+                    if( ! boption( _name="exporter.merge.markers") )
+                    { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
+                    __out << ".vec" << "." << std::string(M_timeExponent, '*') << std::endl;
+                }
+                ++__itv;
+            }
+
+            typename timeset_type::step_type::nodal_tensor2_const_iterator __itt = ( *__ts->rbeginStep() )->beginNodalTensor2();
+            typename timeset_type::step_type::nodal_tensor2_const_iterator __ent = ( *__ts->rbeginStep() )->endNodalTensor2();
+
+            while ( __itt != __ent )
+            {
+                //if ( this->useSingleTransientFile() )
+                if( boption( _name="exporter.merge.timesteps") )
+                {
+                    __out << "tensor per node: "
+                        << __ts->index() << " 1 " // << *__ts_it->beginStep() << " "
+                        << __itt->second.name() << " " << __itt->first;
+                    if( ! boption( _name="exporter.merge.markers") )
+                    { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
+                    __out << ".tsr" << std::endl;
+                }
+                else
+                {
+                    __out << "tensor per node: "
+                        << __ts->index() << " " // << *__ts_it->beginStep() << " "
+                        << __itt->second.name() << " " << __itt->first;
+                    if( ! boption( _name="exporter.merge.markers") )
+                    { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
+                    __out << ".tsr" << "." << std::string(M_timeExponent, '*') << std::endl; 
+                }
+                ++__itt;
+            }
+
+            typename timeset_type::step_type::element_scalar_const_iterator __it_el = ( *__ts->rbeginStep() )->beginElementScalar();
+            typename timeset_type::step_type::element_scalar_const_iterator __end_el = ( *__ts->rbeginStep() )->endElementScalar();
+
+            while ( __it_el != __end_el )
+            {
+                //if ( this->useSingleTransientFile() )
+                if( boption( _name="exporter.merge.timesteps") )
+                {
+                    __out << "scalar per element: "
+                        << __ts->index() << " 1 " // << *__ts_it->beginStep() << " "
+                        << __it_el->second.name() << " " << __it_el->first;
+                    if( ! boption( _name="exporter.merge.markers") )
+                    { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
+                    __out << ".scl" << std::endl;
+                }
+                else
+                {
+                    __out << "scalar per element: "
+                        << __ts->index() << " " // << *__ts_it->beginStep() << " "
+                        << __it_el->second.name() << " " << __it_el->first;
+                    if( ! boption( _name="exporter.merge.markers") )
+                    { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
+                    __out << ".scl" << "." << std::string(M_timeExponent, '*') << std::endl;
+                }
+                ++__it_el;
+            }
+
+            typename timeset_type::step_type::element_vector_const_iterator __itv_el = ( *__ts->rbeginStep() )->beginElementVector();
+            typename timeset_type::step_type::element_vector_const_iterator __env_el = ( *__ts->rbeginStep() )->endElementVector();
+
+            while ( __itv_el != __env_el )
+            {
+                //if ( this->useSingleTransientFile() )
+                if( boption( _name="exporter.merge.timesteps") )
+                {
+                    __out << "vector per element: "
+                        << __ts->index() << " 1 " // << *__ts_it->beginStep() << " "
+                        << __itv_el->second.name() << " " << __itv_el->first;
+                    if( ! boption( _name="exporter.merge.markers") )
+                    { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
+                    __out << ".vec" << std::endl;
+                }
+                else
+                {
+                    __out << "vector per element: "
+                        << __ts->index() << " " // << *__ts_it->beginStep() << " "
+                        << __itv_el->second.name() << " " << __itv_el->first;
+                    if( ! boption( _name="exporter.merge.markers") )
+                    { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
+                    __out << ".vec" << "." << std::string(M_timeExponent, '*') << std::endl;
+                }
+                ++__itv_el;
+            }
+
+            typename timeset_type::step_type::element_tensor2_const_iterator __itt_el = ( *__ts->rbeginStep() )->beginElementTensor2();
+            typename timeset_type::step_type::element_tensor2_const_iterator __ent_el = ( *__ts->rbeginStep() )->endElementTensor2();
+
+            while ( __itt_el != __ent_el )
+            {
+                if( boption( _name="exporter.merge.timesteps") )
+                {
+                    __out << "tensor per element: "
+                        << __ts->index() << " 1 " // << *__ts_it->beginStep() << " "
+                        << __itt_el->second.name() << " " << __itt_el->first;
+                    if( ! boption( _name="exporter.merge.markers") )
+                    { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
+                    __out << ".tsr" << std::endl;
+                }
+                else
+                {
+                    __out << "tensor per element: "
+                        << __ts->index() << " " // << *__ts_it->beginStep() << " "
+                        << __itt_el->second.name() << " " << __itt_el->first;
+                    if( ! boption( _name="exporter.merge.markers") )
+                    { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
+                    __out << ".tsr" << "." << std::string(M_timeExponent, '*') << std::endl;
+                }
+                ++__itt_el;
+            }
 
             ++__ts_it;
         }
-    }
-    break;
-    }
-    __out << "\n";
-
-#if 1
-    __out << "VARIABLES:" << "\n";
-
-    __ts_it = this->beginTimeSet();
-
-    while ( __ts_it != __ts_en )
-    {
-        timeset_ptrtype __ts = *__ts_it;
-
-        // treat constant per case
-        auto s_it = ( *__ts->rbeginStep() )->beginScalar();
-        auto s_en = ( *__ts->rbeginStep() )->endScalar();
-        for ( ; s_it != s_en; ++s_it )
-        {
-            if ( s_it->second.second )
-            {
-                // constant over time
-                __out << "constant per case: " << s_it->first << " " << s_it->second.first << "\n";
-            }
-            else
-            {
-                if ( this->worldComm().isMasterRank() )
-                {
-
-                __out << "constant per case file: " << __ts->index() << " " << s_it->first << " " << s_it->first << ".scl";
-                    // loop over time
-                    auto stepit = __ts->beginStep();
-                    auto stepen = __ts->endStep();
-
-                    std::ofstream ofs;
-                    int d = std::distance( stepit, stepen );
-                    LOG(INFO) << "distance = " << d;
-                    if ( d > 1 )
-                        ofs.open( s_it->first+".scl", std::ios::out | std::ios::app );
-                    else
-                        ofs.open( s_it->first+".scl", std::ios::out );
-
-                    auto step = *boost::prior(stepen);
-                    ofs << step->scalar( s_it->first ) << "\n";
-                    ofs.close();
-                __out << "\n";
-                }
-
-            }
-        }
-
-        typename timeset_type::step_type::nodal_scalar_const_iterator __it = ( *__ts->rbeginStep() )->beginNodalScalar();
-        typename timeset_type::step_type::nodal_scalar_const_iterator __end = ( *__ts->rbeginStep() )->endNodalScalar();
-
-        while ( __it != __end )
-        {
-            //if ( this->useSingleTransientFile() )
-            if ( boption( _name="exporter.merge.timesteps") )
-            {
-                __out << "scalar per node: "
-                      << __ts->index() << " 1 " // << *__ts_it->beginStep() << " "
-                      << __it->second.name() << " " << __it->first;
-                if( ! boption( _name="exporter.merge.markers") )
-                { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
-                __out << ".scl" << std::endl;
-            }
-            else
-            {
-                __out << "scalar per node: "
-                      << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                      << __it->second.name() << " " << __it->first;
-                if( ! boption( _name="exporter.merge.markers") )
-                { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
-                __out << ".scl" << "." << std::string(M_timeExponent, '*') << std::endl;
-            }
-            ++__it;
-        }
-
-        typename timeset_type::step_type::nodal_vector_const_iterator __itv = ( *__ts->rbeginStep() )->beginNodalVector();
-        typename timeset_type::step_type::nodal_vector_const_iterator __env = ( *__ts->rbeginStep() )->endNodalVector();
-
-        while ( __itv != __env )
-        {
-            //if ( this->useSingleTransientFile() )
-            if ( boption( _name="exporter.merge.timesteps") )
-            {
-                __out << "vector per node: "
-                      << __ts->index() << " 1 " // << *__ts_it->beginStep() << " "
-                      << __itv->second.name() << " " << __itv->first;
-                if( ! boption( _name="exporter.merge.markers") )
-                { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
-                __out << ".vec" << std::endl;
-            }
-            else
-            {
-                __out << "vector per node: "
-                      << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                      << __itv->second.name() << " " << __itv->first;
-                if( ! boption( _name="exporter.merge.markers") )
-                { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
-                __out << ".vec" << "." << std::string(M_timeExponent, '*') << std::endl;
-            }
-            ++__itv;
-        }
-
-        typename timeset_type::step_type::nodal_tensor2_const_iterator __itt = ( *__ts->rbeginStep() )->beginNodalTensor2();
-        typename timeset_type::step_type::nodal_tensor2_const_iterator __ent = ( *__ts->rbeginStep() )->endNodalTensor2();
-
-        while ( __itt != __ent )
-        {
-            //if ( this->useSingleTransientFile() )
-            if ( boption( _name="exporter.merge.timesteps") )
-            {
-                __out << "tensor per node: "
-                      << __ts->index() << " 1 " // << *__ts_it->beginStep() << " "
-                      << __itt->second.name() << " " << __itt->first;
-                if( ! boption( _name="exporter.merge.markers") )
-                { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
-                __out << ".tsr" << std::endl;
-            }
-            else
-            {
-                __out << "tensor per node: "
-                      << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                      << __itt->second.name() << " " << __itt->first;
-                if( ! boption( _name="exporter.merge.markers") )
-                { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
-                __out << ".tsr" << "." << std::string(M_timeExponent, '*') << std::endl; 
-            }
-            ++__itt;
-        }
-
-        typename timeset_type::step_type::element_scalar_const_iterator __it_el = ( *__ts->rbeginStep() )->beginElementScalar();
-        typename timeset_type::step_type::element_scalar_const_iterator __end_el = ( *__ts->rbeginStep() )->endElementScalar();
-
-        while ( __it_el != __end_el )
-        {
-            //if ( this->useSingleTransientFile() )
-            if ( boption( _name="exporter.merge.timesteps") )
-            {
-                __out << "scalar per element: "
-                      << __ts->index() << " 1 " // << *__ts_it->beginStep() << " "
-                      << __it_el->second.name() << " " << __it_el->first;
-                if( ! boption( _name="exporter.merge.markers") )
-                { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
-                __out << ".scl" << std::endl;
-            }
-            else
-            {
-                __out << "scalar per element: "
-                      << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                      << __it_el->second.name() << " " << __it_el->first;
-                if( ! boption( _name="exporter.merge.markers") )
-                { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
-                __out << ".scl" << "." << std::string(M_timeExponent, '*') << std::endl;
-            }
-            ++__it_el;
-        }
-
-        typename timeset_type::step_type::element_vector_const_iterator __itv_el = ( *__ts->rbeginStep() )->beginElementVector();
-        typename timeset_type::step_type::element_vector_const_iterator __env_el = ( *__ts->rbeginStep() )->endElementVector();
-
-        while ( __itv_el != __env_el )
-        {
-            //if ( this->useSingleTransientFile() )
-            if ( boption( _name="exporter.merge.timesteps") )
-            {
-                __out << "vector per element: "
-                      << __ts->index() << " 1 " // << *__ts_it->beginStep() << " "
-                      << __itv_el->second.name() << " " << __itv_el->first;
-                if( ! boption( _name="exporter.merge.markers") )
-                { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
-                __out << ".vec" << std::endl;
-            }
-            else
-            {
-                __out << "vector per element: "
-                      << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                      << __itv_el->second.name() << " " << __itv_el->first;
-                if( ! boption( _name="exporter.merge.markers") )
-                { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
-                __out << ".vec" << "." << std::string(M_timeExponent, '*') << std::endl;
-            }
-            ++__itv_el;
-        }
-
-        typename timeset_type::step_type::element_tensor2_const_iterator __itt_el = ( *__ts->rbeginStep() )->beginElementTensor2();
-        typename timeset_type::step_type::element_tensor2_const_iterator __ent_el = ( *__ts->rbeginStep() )->endElementTensor2();
-
-        while ( __itt_el != __ent_el )
-        {
-            if ( boption( _name="exporter.merge.timesteps") )
-            {
-                __out << "tensor per element: "
-                      << __ts->index() << " 1 " // << *__ts_it->beginStep() << " "
-                      << __itt_el->second.name() << " " << __itt_el->first;
-                if( ! boption( _name="exporter.merge.markers") )
-                { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
-                __out << ".tsr" << std::endl;
-            }
-            else
-            {
-                __out << "tensor per element: "
-                    << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                    << __itt_el->second.name() << " " << __itt_el->first;
-                if( ! boption( _name="exporter.merge.markers") )
-                { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
-                __out << ".tsr" << "." << std::string(M_timeExponent, '*') << std::endl;
-            }
-            ++__itt_el;
-        }
-
-        ++__ts_it;
-    }
 
 #endif
-    __out << "TIME:\n";
-    __ts_it = this->beginTimeSet();
+        __out << "TIME:\n";
+        __ts_it = this->beginTimeSet();
 
-    while ( __ts_it != __ts_en )
-    {
-        timeset_ptrtype __ts = *__ts_it;
-        typename timeset_type::step_const_iterator __its = __ts->beginStep();
-
-        __out << "time set:        " << __ts->index() << "\n"
-              << "number of steps: " << __ts->numberOfSteps() << "\n"
-              << "filename start number: " << ( *__its )->index() << "\n"
-              << "filename increment: " << 1 << "\n"
-              << "time values: ";
-
-        uint16_type __l = 0;
-        typename timeset_type::step_const_iterator __ens = __ts->endStep();
-
-        while ( __its != __ens )
+        while ( __ts_it != __ts_en )
         {
+            timeset_ptrtype __ts = *__ts_it;
+            typename timeset_type::step_const_iterator __its = __ts->beginStep();
 
-            __out << ( *__its )->time() << " ";
+            __out << "time set:        " << __ts->index() << "\n"
+                << "number of steps: " << __ts->numberOfSteps() << "\n"
+                << "filename start number: " << ( *__its )->index() << "\n"
+                << "filename increment: " << 1 << "\n"
+                << "time values: ";
 
-            if ( __l++ % 10 == 0 )
-                __out << "\n";
+            uint16_type __l = 0;
+            typename timeset_type::step_const_iterator __ens = __ts->endStep();
 
-            ++__its;
-        }
+            while ( __its != __ens )
+            {
+
+                __out << ( *__its )->time() << " ";
+
+                if ( __l++ % 10 == 0 )
+                    __out << "\n";
+
+                ++__its;
+            }
 
 #if 0
-        namespace lambda = boost::lambda;
-        std::for_each( __ts->beginStep(), __ts->endStep(),
-                       __out << lambda::bind( &timeset_type::step_type::time, *lambda::_1 ) << boost::lambda::constant( ' ' ) );
-        std::for_each( __ts->beginStep(), __ts->endStep(),
-                       std::cerr << lambda::bind( &timeset_type::step_type::time, *lambda::_1 ) << boost::lambda::constant( ' ' ) );
+            namespace lambda = boost::lambda;
+            std::for_each( __ts->beginStep(), __ts->endStep(),
+                    __out << lambda::bind( &timeset_type::step_type::time, *lambda::_1 ) << boost::lambda::constant( ' ' ) );
+            std::for_each( __ts->beginStep(), __ts->endStep(),
+                    std::cerr << lambda::bind( &timeset_type::step_type::time, *lambda::_1 ) << boost::lambda::constant( ' ' ) );
 #endif
-        ++__ts_it;
-    }
-    __out << "\n";
-
-    //if ( this->useSingleTransientFile() )
-    if ( boption( _name="exporter.merge.timesteps") )
-    {
-        __out << "FILE\n";
-        __out << "file set: 1\n";
-        auto ts = *this->beginTimeSet();
-        __out << "number of steps: " << ts->numberOfSteps() << "\n";
-    }
-
-    __out << "\n";
-
-    if ( option( _name="exporter.ensightgold.use-sos" ).template as<bool>() == false )
-    {
-        // In the following line, we substituted the Environment::numberOfProcessors
-        // by the size of the worldComm passed to the exporter to ensure that we are using
-        // only the data for the current processor
-        //if ( ( Environment::numberOfProcessors() > 1 )  && ( this->worldComm().globalRank() == 0 ) )
-        if ( ( this->worldComm().globalSize() > 1 )  && ( this->worldComm().globalRank() == 0 ) )
-        {
-            __out << "APPENDED_CASEFILES\n"
-                  //<< "total number of cfiles: " << Environment::numberOfProcessors()-1 << "\n"
-                  << "total number of cfiles: " << this->worldComm().globalSize()-1 << "\n"
-                // no need for that
-                // << "cfiles global path: " << fs::current_path().string() << "\n"
-                  << "cfiles: ";
-            //for(int p = 1; p < Environment::numberOfProcessors(); ++p )
-            for(int p = 1; p < this->worldComm().globalSize(); ++p )
-            {
-                std::ostringstream filestr;
-                filestr << this->prefix() << "-"
-                        << this->worldComm().globalSize() << "_" << p << ".case";
-                __out << filestr.str() << "\n        ";
-            }
+            ++__ts_it;
         }
-    } // use-sos
+        __out << "\n";
 
-    __out.close();
+        //if ( this->useSingleTransientFile() )
+        if( boption( _name="exporter.merge.timesteps") )
+        {
+            __out << "FILE\n";
+            __out << "file set: 1\n";
+            auto ts = *this->beginTimeSet();
+            __out << "number of steps: " << ts->numberOfSteps() << "\n";
+        }
 
+        __out << "\n";
+
+        if ( option( _name="exporter.ensightgold.use-sos" ).template as<bool>() == false )
+        {
+            // In the following line, we substituted the Environment::numberOfProcessors
+            // by the size of the worldComm passed to the exporter to ensure that we are using
+            // only the data for the current processor
+            //if ( ( Environment::numberOfProcessors() > 1 )  && ( this->worldComm().globalRank() == 0 ) )
+            if ( ( this->worldComm().globalSize() > 1 )  && ( this->worldComm().globalRank() == 0 ) )
+            {
+                __out << "APPENDED_CASEFILES\n"
+                    //<< "total number of cfiles: " << Environment::numberOfProcessors()-1 << "\n"
+                    << "total number of cfiles: " << this->worldComm().globalSize()-1 << "\n"
+                    // no need for that
+                    // << "cfiles global path: " << fs::current_path().string() << "\n"
+                    << "cfiles: ";
+                //for(int p = 1; p < Environment::numberOfProcessors(); ++p )
+                for(int p = 1; p < this->worldComm().globalSize(); ++p )
+                {
+                    std::ostringstream filestr;
+                    filestr << this->prefix() << "-"
+                        << this->worldComm().globalSize() << "_" << p << ".case";
+                    __out << filestr.str() << "\n        ";
+                }
+            }
+        } // use-sos
+
+        __out.close();
+    }
 }
 
 template<typename MeshType, int N>
@@ -710,7 +713,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
 
                 Feel::detail::FileIndex index;
 
-                if(boption( _name="exporter.merge.timesteps" ))
+                if( boption( _name="exporter.merge.timesteps" ) )
                 {
                     // first read
                     index.read(fh);
@@ -748,7 +751,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
                 /* Write the file */
                 this->writeGeoMarkers(fh, mesh);
 
-                if(boption( _name="exporter.merge.timesteps" ))
+                if( boption( _name="exporter.merge.timesteps" ) )
                 {
                     /* write timestep end */
                     if( this->worldComm().isMasterRank() )
@@ -772,7 +775,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
         {
             LOG(INFO) << "GEO: Changing geo mode" << std::endl;
             /* Transient mode */
-            if ( boption( _name="exporter.merge.timesteps") )
+            if( boption( _name="exporter.merge.timesteps") )
             {
                 /* TODO */
                 /* MPI_File_Open -> f */
@@ -959,7 +962,7 @@ ExporterEnsightGold<MeshType, N>::writeGeoHeader(MPI_File fh) const
 
     // only write C Binary if we are not mergin timesteps
     // as it is oalready writtent at the beginning of the file
-    if ( ! boption( _name="exporter.merge.timesteps") )
+    if( ! boption( _name="exporter.merge.timesteps") )
     {
         memset(buffer, '\0', sizeof(buffer));
         strcpy(buffer, "C Binary");
@@ -1252,7 +1255,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype m
     else
     { size = 0; }
     // write number of points
-    MPI_File_write_ordered(fh, &gnop, size, MPI_INT, &status);
+    MPI_File_write_ordered(fh, &gnop, size, boost::mpi::get_mpi_datatype(gnop), &status);
     /* write points ids */
     MPI_File_write_ordered(fh, mp.ids.data(), mp.ids.size(), MPI_INT, &status );
     /* write points coordinates in the order x1 ... xn y1 ... yn z1 ... zn */
@@ -1390,7 +1393,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
     { size = 1; }
     else
     { size = 0; }
-    MPI_File_write_ordered(fh, &gnop, size, MPI_INT, &status );
+    MPI_File_write_ordered(fh, &gnop, size, boost::mpi::get_mpi_datatype(gnop), &status );
     // now we need to move with respect to the processors for the coordinates
     /* readback */
     /*
@@ -1683,13 +1686,13 @@ ExporterEnsightGold<MeshType,N>::writeVariableFiles() const
                 if( (dist = std::distance(__step->beginElementTensor2(), __step->endElementTensor2())) != 0)
                 { LOG(INFO) << "ElementTensor2: " << dist << std::endl; }
 
-                saveNodal( __step, __step->beginNodalScalar(), __step->endNodalScalar() );
-                saveNodal( __step, __step->beginNodalVector(), __step->endNodalVector() );
-                saveNodal( __step, __step->beginNodalTensor2(), __step->endNodalTensor2() );
+                saveNodal( __step, (__it == __ts->beginStep()), __step->beginNodalScalar(), __step->endNodalScalar() );
+                saveNodal( __step, (__it == __ts->beginStep()), __step->beginNodalVector(), __step->endNodalVector() );
+                saveNodal( __step, (__it == __ts->beginStep()), __step->beginNodalTensor2(), __step->endNodalTensor2() );
 
-                saveElement( __step, __step->beginElementScalar(), __step->endElementScalar() );
-                saveElement( __step, __step->beginElementVector(), __step->endElementVector() );
-                saveElement( __step, __step->beginElementTensor2(), __step->endElementTensor2() );
+                saveElement( __step, (__it == __ts->beginStep()), __step->beginElementScalar(), __step->endElementScalar() );
+                saveElement( __step, (__it == __ts->beginStep()), __step->beginElementVector(), __step->endElementVector() );
+                saveElement( __step, (__it == __ts->beginStep()), __step->beginElementTensor2(), __step->endElementTensor2() );
 
             }
 
@@ -1704,7 +1707,7 @@ ExporterEnsightGold<MeshType,N>::writeVariableFiles() const
 template<typename MeshType, int N>
 template<typename Iterator>
 void
-ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype __step, Iterator __var, Iterator en ) const
+ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype __step, bool isFirstStep, Iterator __var, Iterator en ) const
 {
     int size = 0;
     char buffer[ 80 ];
@@ -1712,7 +1715,6 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
     MPI_Offset offset = 0;
     MPI_File fh;
     MPI_Status status;
-    MPI_Info info;
 
     while ( __var != en )
     {
@@ -1736,7 +1738,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
         { __varfname << ".scl"; LOG(ERROR) << "Could not detect data type (scalar, vector, tensor2). Defaulted to scalar." << std::endl; }
 
         // if ( !this->useSingleTransientFile() )
-        if ( ! boption( _name="exporter.merge.timesteps") )
+        if( ! boption( _name="exporter.merge.timesteps") )
         {
             __varfname << "." << std::setfill( '0' ) << std::setw( M_timeExponent ) << __step->index();
         }
@@ -1746,26 +1748,21 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
         /* Open File with MPI IO */
         char * str = strdup(__varfname.str().c_str());
 
-        //if ( this->useSingleTransientFile() && __step->index() > 0 ) 
-        if ( boption( _name="exporter.merge.timesteps") && __step->index() > 0 ) {
-            MPI_File_open( this->worldComm().comm(), str, MPI_MODE_RDWR | MPI_MODE_CREATE | MPI_MODE_APPEND , MPI_INFO_NULL, &fh );
+        /* Check if file exists if we are on step one and delete it if so */
+        /* (MPI IO does not have a truncate mode ) */
+        // std::cout << "Nodes " << this->worldComm().isMasterRank() << " " << __step->index() << " " << isFirstStep << " " << fs::exists(str) << std::endl;
+        if(this->worldComm().isMasterRank() && isFirstStep && fs::exists(str))
+        {
+            MPI_File_delete(str, MPI_INFO_NULL);
         }
-        else {
-            /* Check if file exists and delete it, if so */
-            /* (MPI IO does not have a truncate mode ) */
-            if(fs::exists(str))
-            {
-                MPI_File_delete(str, MPI_INFO_NULL);
-            }
+        MPI_Barrier(this->worldComm().comm());
 
-            MPI_File_open( this->worldComm().comm(), str, MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL, &fh );
-        }
-
+        MPI_File_open( this->worldComm().comm(), str, MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL, &fh );
         free(str);
 
         Feel::detail::FileIndex index;
 
-        if (boption( _name = "exporter.merge.timesteps"))
+        if( boption( _name = "exporter.merge.timesteps") )
         {
             // first read
             index.read(fh);
@@ -2004,7 +2001,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
             //__out.write( ( char * ) __field.data().begin(), __field.size() * sizeof( float ) );
         } // parts loop
 
-        if ( boption(_name="exporter.merge.timesteps") )
+        if( boption(_name="exporter.merge.timesteps") )
         {
             /* write timestep end */
             if( this->worldComm().isMasterRank() )
@@ -2020,21 +2017,22 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
         }
         DVLOG(2) << "[ExporterEnsightGold::saveNodal] saving " << __varfname.str() << "done\n";
 
-        ++__var;
-
         MPI_File_close(&fh);
+
+        ++__var;
     }
 }
 
 template<typename MeshType, int N>
 template<typename Iterator>
 void
-ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtype __step, Iterator __evar, Iterator __evaren ) const
+ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtype __step, bool isFirstStep, Iterator __evar, Iterator __evaren ) const
 {
     int size;
     char buffer[ 80 ];
 
     MPI_File fh;
+    MPI_Offset offset = 0;
     MPI_Status status;
 
     while ( __evar != __evaren )
@@ -2059,7 +2057,7 @@ ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtyp
         { __evarfname << ".scl"; LOG(ERROR) << "Could not detect data type (scalar, vector, tensor2). Defaulted to scalar." << std::endl; }
 
         //if ( !this->useSingleTransientFile() )
-        if ( ! boption( _name="exporter.merge.timesteps") )
+        if(! boption( _name="exporter.merge.timesteps") )
         {
             __evarfname << "." << std::setfill( '0' ) << std::setw( M_timeExponent ) << __step->index();
         }
@@ -2071,44 +2069,48 @@ ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtyp
         /* Open File with MPI IO */
         char * str = strdup(__evarfname.str().c_str());
 
-        //if ( this->useSingleTransientFile() && __step->index() > 0 ) 
-        if ( boption( _name="exporter.merge.timesteps") && __step->index() > 0 ) {
-            MPI_File_open( this->worldComm().comm(), str, MPI_MODE_RDWR | MPI_MODE_CREATE | MPI_MODE_APPEND , MPI_INFO_NULL, &fh );
+        /* Check if file exists if we are on step one and delete it if so */
+        /* (MPI IO does not have a truncate mode ) */
+        // std::cout << "Elt: " << this->worldComm().isMasterRank() << " " << __step->index() << " " << isFirstStep << " " << fs::exists(str) << std::endl;
+        if(this->worldComm().isMasterRank() && isFirstStep && fs::exists(str))
+        {
+            MPI_File_delete(str, MPI_INFO_NULL);
         }
-        else {
-            /* Check if file exists and delete it, if so */
-            /* (MPI IO does not have a truncate mode ) */
-            if(fs::exists(str))
-            {
-                MPI_File_delete(str, MPI_INFO_NULL);
-            }
+        MPI_Barrier(this->worldComm().comm());
 
-            MPI_File_open( this->worldComm().comm(), str, MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL, &fh );
-        }
-
+        MPI_File_open( this->worldComm().comm(), str, MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL, &fh );
         free(str);
 
         Feel::detail::FileIndex index;
-        /*
-        if ( this->useSingleTransientFile() )
+
+        if( boption( _name = "exporter.merge.timesteps") )
         {
             // first read
-            //index.read( __out );
+            index.read(fh);
 
-            if ( index.defined() && __step->index() > 0 )
-                __out.seekp( index.fileblock_n_steps, std::ios::beg );
-            else
-            {
+            /* Move to the beginning of the fie index section */
+            /* to overwrite it */
+            if ( index.defined() && __step->index() > 0 ) {
+                MPI_File_seek_shared(fh, index.fileblock_n_steps, MPI_SEEK_SET);
+            }
+            else {
                 // we position the cursor at the beginning of the file
-                __out.seekp( 0, std::ios::beg );
+                MPI_File_seek_shared(fh, 0, MPI_SEEK_SET);
             }
 
+            /* Write time step start */
+            if( this->worldComm().isMasterRank() )
+            { size = sizeof(buffer); }
+            else
+            { size = 0; }
             memset(buffer, '\0', sizeof(buffer));
             strcpy(buffer,"BEGIN TIME STEP");
-            __out.write(buffer,sizeof(buffer));
-            //index.add( __out.tellp() );
+            MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+
+            /* add the beginning of the new block to the file */
+            MPI_File_get_position_shared(fh, &offset);
+            index.add( offset );
         }
-        */
 
         if( this->worldComm().isMasterRank() )
         { size = sizeof(buffer); }
@@ -2221,16 +2223,21 @@ ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtyp
             }
             //__out.write( ( char * ) __field.data().begin(), nComponents * e * sizeof( float ) );
         }
-        /*
-        if ( this->useSingleTransientFile() )
+
+        if( boption(_name="exporter.merge.timesteps") )
         {
+            /* write timestep end */
+            if( this->worldComm().isMasterRank() )
+            { size = sizeof(buffer); }
+            else
+            { size = 0; }
             memset(buffer, '\0', sizeof(buffer));
             strcpy(buffer,"END TIME STEP");
-            __out.write(buffer,sizeof(buffer));
+            MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+
             // write back the file index
-            //index.write( __out );
+            index.write( fh );
         }
-        */
 
         MPI_File_close(&fh);
 

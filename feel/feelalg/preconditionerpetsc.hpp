@@ -478,12 +478,13 @@ private :
     {
     public :
         ConfigureSubKSP( KSP ** subksps/*PC& pc*/, int nSplit, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
-                         WorldComm const& worldComm, std::string const& sub, std::string const& prefix );
+                         std::string const& typeFieldSplit, WorldComm const& worldComm, std::string const& sub, std::string const& prefix );
     private :
         void runConfigureSubKSP(KSP& ksp, PreconditionerPetsc<double>::indexsplit_ptrtype const& is, int splitId );
     private :
         int M_nSplit;
         std::vector<std::string> M_prefixSplit;
+        std::string M_typeFieldSplit;
         std::vector<bool> M_subPCview;
         std::vector<std::string> M_subPCtype, M_subMatSolverPackage;
     };
