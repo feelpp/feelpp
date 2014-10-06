@@ -1489,6 +1489,7 @@ public:
     template<typename Observer>
     void addObserver( Observer& obs )
     {
+				LOG(INFO) << "Observer attached ! \n";
         meshChanged.connect( obs );
     }
 #endif // __INTEL_COMPILER
