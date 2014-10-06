@@ -2205,6 +2205,14 @@ public:
         void operator()( MESH_CHANGES mesh_changes )
         {
             DVLOG(2) << "Update element after a change in the mesh\n";
+						switch(mesh_changes)
+						{
+							case MESH_CHANGES_POINTS_COORDINATES:
+								M_dof->rebuildDofPoints( *M_mesh );
+								break;
+							default:
+								break;
+						}
         }
 
         template<typename AE>
@@ -3597,6 +3605,10 @@ public:
 
         this->init( mesh, mesh_components, periodicity, dofindices, mpl::bool_<is_composite>() );
         //mesh->addObserver( *this );
+#if !defined(__INTEL_COMPILER ) 
+				if(boption( "connect"))
+					mesh->addObserver( *this );
+#endif
     }
 
     //! destructor: do nothing thanks to shared_ptr<>
@@ -3646,7 +3658,14 @@ public:
     void operator()( MESH_CHANGES mesh_changes )
     {
         DVLOG(2) << "Update function space after a change in the mesh\n";
-
+				switch(mesh_changes)
+				{
+					case MESH_CHANGES_POINTS_COORDINATES:
+						rebuildDofPoints( );
+						break;
+					default:
+						break;
+				}
     }
 
 
