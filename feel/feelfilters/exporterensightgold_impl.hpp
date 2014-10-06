@@ -1255,7 +1255,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype m
     else
     { size = 0; }
     // write number of points
-    MPI_File_write_ordered(fh, &gnop, size, boost::mpi::get_mpi_datatype(gnop), &status);
+    MPI_File_write_ordered(fh, &gnop, size, MPI_INT, &status);
     /* write points ids */
     MPI_File_write_ordered(fh, mp.ids.data(), mp.ids.size(), MPI_INT, &status );
     /* write points coordinates in the order x1 ... xn y1 ... yn z1 ... zn */
@@ -1393,7 +1393,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
     { size = 1; }
     else
     { size = 0; }
-    MPI_File_write_ordered(fh, &gnop, size, boost::mpi::get_mpi_datatype(gnop), &status );
+    MPI_File_write_ordered(fh, &gnop, size, MPI_INT, &status );
     // now we need to move with respect to the processors for the coordinates
     /* readback */
     /*
