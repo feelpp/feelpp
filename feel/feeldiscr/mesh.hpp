@@ -2302,38 +2302,19 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
         }
     }
 
-    /* dispatch the knowledge of how many points there are */
-    /* on each process to each process */
-    size_type n_pts = ids.size();
-    //std::cout << "n_pts : " << n_pts << std::endl;
-    std::vector<size_type> p_s;
-    mpi::all_gather( worldComm.comm(), n_pts, p_s );
-    int shift_p = 0;
-
-#if 0 //FEELPP_HAS_MPIIO
-    for( size_type i = 0; i < p_s.size(); i++ )
-    {
-        if ( i < worldComm.localRank() )
-        {
-            shift_p += p_s[i];
-        }
-    }
-
-    // shift all local ids
-    for( auto& i : ids )
-        i += shift_p;
-#endif
-
-    int __ne = std::distance( elt_it, en );
+    int __ne = std::distance( it, en );
     std::vector<int> s{nv,__ne}, global_s;
     //mpi::all_reduce( worldComm.comm(), s, global_s, std::sum<int>() );
 
     /* compute the number of global points and elements */
+#if 0
     mpi::all_reduce( worldComm.comm(), nv, global_npts, std::plus<int>() );
     mpi::all_reduce( worldComm.comm(), __ne, global_nelts, std::plus<int>()  );
+#endif
     //std::cout <<  "global_nelts=" << global_nelts << std::endl;
     //std::cout <<  "global_npts=" << global_npts << std::endl;
 
+    /* build the array containing the id of each vertex for each element */
     elem.resize( __ne*boost::unwrap_ref( *elt_it ).numLocalVertices );
     //elem.resize( __ne*mesh->numLocalVertices() );
     elemids.resize( __ne );
@@ -2349,7 +2330,7 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
             //std::cout << "LocalVId = " << j << " " << e*elt.numLocalVertices+j << std::endl;
             //std::cout << elt.point( j ).id() << std::endl;
             // ensight id start at 1
-            elem[e*elt.numLocalVertices+j] = shift_p+old2new[elt.point( j ).id()];
+            elem[e*elt.numLocalVertices+j] = old2new[elt.point( j ).id()];
 #if 0
             DCHECK( (elem[e*mesh->numLocalVertices()+j] > 0) && (elem[e*mesh->numLocalVertices()+j] <= nv ) )
                 << "Invalid entry : " << elem[e*mesh->numLocalVertices()+j]
@@ -2377,12 +2358,54 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
     size_type offset_elts = __ne;
 #endif
 
+    std::ostringstream osst;
+
+#if 0
     //std::cout << "offset pts : " << offset_pts << std::endl;
     //std::cout << "offset elts : " << offset_elts << std::endl;
     std::vector<size_type> osp, ose;
     // do communication to retrieve the offsets to access the parallel io file
     mpi::all_gather( worldComm.comm(), offset_pts, osp );
     mpi::all_gather( worldComm.comm(), offset_elts, ose );
+
+    if(worldComm.isMasterRank())
+    {
+    osst << worldComm.rank() << "osp: ";
+    for(int i = 0; i < osp.size(); i++)
+    { osst << osp.at(i) << " "; }
+    std::cout << osst.str() << std::endl;
+
+    osst.str("");
+    osst << worldComm.rank() << "ose: ";
+    for(int i = 0; i < ose.size(); i++)
+    { osst << ose.at(i) << " "; }
+    std::cout << osst.str() << std::endl;
+    }
+
+#else
+
+    std::vector<int> ost{nv, __ne};
+    std::vector<std::vector<int>> ospe;
+
+    mpi::all_gather( worldComm.comm(), ost, ospe );
+    //if(worldComm.isMasterRank())
+    //{
+    //osst.str("");
+    //osst << worldComm.rank() << "ospe: ";
+    //for(int i = 0; i < ospe.size(); i++)
+    //{ 
+        //osst << "(";
+        //for(int j = 0; j < ospe.at(i).size(); j++)
+        //{
+            //osst << ospe.at(i).at(j) << " ";
+        //}
+        //osst << ") "; 
+    //}
+    //std::cout << osst.str() << std::endl;
+    //}
+#endif
+
+#if 0
     offsets_pts = 0;
     global_offsets_pts = 0;
     offsets_elts = 0;
@@ -2397,11 +2420,35 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
         global_offsets_pts += osp[i];
         global_offsets_elts  += ose[i];
     }
+
+    std::cout << worldComm.rank() << " 1 " << offsets_pts << " " << global_offsets_pts << " " << offsets_elts << " " << global_offsets_elts << std::endl;
+
     //std::cout << "local offset pts : " << offsets_pts << std::endl;
     //std::cout << "local offset elts : " << offsets_elts << std::endl;
     //std::cout << "global offset pts : " << global_offsets_pts << std::endl;
-//    std::cout << "global offset elts : " << global_offsets_elts << std::endl;
+    //std::cout << "global offset elts : " << global_offsets_elts << std::endl;
     //std::cout << "done with offsets" << std::endl;
+
+#else
+    
+    offsets_pts = 0;
+    global_offsets_pts = 0;
+    offsets_elts = 0;
+    global_offsets_elts = 0;
+    for( size_type i = 0; i < ospe.size(); i++ )
+    {
+        if ( i < worldComm.localRank() )
+        {
+            offsets_pts += ospe[i][0];
+            offsets_elts += ospe[i][1];
+        }
+        global_offsets_pts += ospe[i][0];
+        global_offsets_elts += ospe[i][1];
+    }
+    global_npts = global_offsets_pts;
+    global_nelts = global_offsets_elts;
+    //std::cout << worldComm.rank() << " 2 " << offsets_pts << " " << global_offsets_pts << " " << global_npts << " " << offsets_elts << " " << global_offsets_elts << " " << global_nelts << std::endl;
+#endif
 }
 
 /**
