@@ -29,6 +29,10 @@
 
 #include <feel/feelpde/reinit_fms.hpp>
 
+#include <feel/feelvf/cst.hpp>
+#include <feel/feelvf/projectors.hpp>
+#include <feel/feelvf/operators.hpp>
+
 //#define FM_EXPORT 1
 
 #if defined(FM_EXPORT)
