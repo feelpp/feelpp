@@ -130,7 +130,6 @@ po::options_description mesh_options( int Dim, std::string const& prefix )
           "use extrapolation if localisation fails" )
         ( prefixvm( prefix, (boost::format("mesh%1%d.localisation.nelt-in-leaf-kdtree") % Dim).str() ).c_str(), Feel::po::value<int>()->default_value(-1),
           "use extrapolation if localisation fails" )
-
         ;
     return _options;
 }
