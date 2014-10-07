@@ -35,8 +35,12 @@
 #ifndef __Reinit_Fms_H
 #define __Reinit_Fms_H 1
 
+#include <boost/bimap.hpp>
+
+
 #include <feel/feelcore/feel.hpp>
-#include <feel/feelvf/vf.hpp>
+#include <feel/feelalg/backend.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
 
 #include <feel/feelpde/fmsheap.hpp>
 #include <feel/feelpde/fmspoint.hpp>
@@ -81,6 +85,8 @@ public:
     typedef typename functionspace_type::mesh_type mesh_type;
     typedef typename mesh_type::element_type geoelement_type;
     static const uint16_type Dim = geoelement_type::nDim;
+
+    typedef typename periodicity_type::node_type node_type;
 
     ReinitializerFMS( functionspace_ptrtype const& __functionspace,
                       periodicity_type __periodicity=NoPeriodicity());
@@ -154,7 +160,7 @@ private:
     std::map< size_type, size_type> M_ghostClusterToProc;
     boost::bimap< size_type, size_type > M_idTag1_idTag2;
     std::vector<point_type> M_coords;
-    vf::node_type M_translation;
+    node_type M_translation;
     const size_type firstDof;
     int M_nbDofTag1;
     int nbTotalDone;
