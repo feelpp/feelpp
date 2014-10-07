@@ -2179,20 +2179,20 @@ struct MeshPoints
     template<typename MeshType, typename IteratorType>
     MeshPoints( MeshType* mesh, const WorldComm &, IteratorType it, IteratorType en, const bool outer = false, const bool renumber = false, const bool fill = false );
 
-    int translatePointIds(std::vector<int> & ids);
-    int translateElementIds(std::vector<int> & ids);
+    int translatePointIds(std::vector<int32_t> & ids);
+    int translateElementIds(std::vector<int32_t> & ids);
 
     int globalNumberOfPoints() const { return global_npts; }
     int globalNumberOfElements() const { return global_nelts; }
 
     int global_nelts{0}, global_npts{0};
-    std::vector<int> ids;
-    std::map<int,int> new2old;
-    std::map<int,int> old2new;
-    std::map<int,int> nodemap;
+    std::vector<int32_t> ids;
+    std::map<int32_t, int32_t> new2old;
+    std::map<int32_t, int32_t> old2new;
+    std::map<int32_t, int32_t> nodemap;
     std::vector<T> coords;
-    std::vector<int> elemids;
-    std::vector<int> elem;
+    std::vector<int32_t> elemids;
+    std::vector<int32_t> elem;
     size_type offsets_pts, global_offsets_pts;
     size_type offsets_elts, global_offsets_elts;
 
@@ -2408,7 +2408,7 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
  * @param ids Array of local point ids to be translated
  */
 template<typename T>
-int MeshPoints<T>::translatePointIds(std::vector<int> & ptids)
+int MeshPoints<T>::translatePointIds(std::vector<int32_t> & ptids)
 {
     for(int i = 0; i < ptids.size(); i++)
     {
@@ -2423,7 +2423,7 @@ int MeshPoints<T>::translatePointIds(std::vector<int> & ptids)
  * @param ids Array of local point ids to be translated
  */
 template<typename T>
-int MeshPoints<T>::translateElementIds(std::vector<int> & elids)
+int MeshPoints<T>::translateElementIds(std::vector<int32_t> & elids)
 {
     for(int i = 0; i < elids.size(); i++)
     {
