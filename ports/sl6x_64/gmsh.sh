@@ -7,7 +7,7 @@ tar xzf gmsh-2.6.1-source.tgz
 cd gmsh-2.6.1-source
 mkdir BuildDir
 cd BuildDir
-cmake28 -DCMAKE_INSTALL_PREFIX=$GMSH_DIR -DENABLE_MPI=ON -DCMAKE_BUILD_TYPE=release -DCMAKE_PREFIX_PATH=$openmpiDir/include ..
+cmake28 -DCMAKE_INSTALL_PREFIX=$GMSH_DIR -DENABLE_MPI=ON -DENABLE_BUILD_LIB=ON -DENABLE_BUILD_SHARED=ON -DCMAKE_BUILD_TYPE=release -DCMAKE_PREFIX_PATH=$openmpiDir/include ..
 make -j$nbProc lib
 make -j$nbProc shared
 make -j$nbProc install
