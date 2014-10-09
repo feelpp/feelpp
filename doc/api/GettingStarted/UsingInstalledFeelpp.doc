@@ -8,6 +8,27 @@ namespace Feel {
 
 This section discusses how to compile an application, when \feel is already installed on your system, through the packaging system notably.
 
+\section IntroductionWithInstalledFeelpp Introduction
+
+In this section, we consider that you installed feel++ through the packaging system of your operating system. Here are a few tips that will help
+you with building the applicatins from the tutorial or your applications:
+- Check the compiler you are using. You advise you to either use gcc or clang for the compilation process. 
+If your system has low RAM memory (<8 GB), prefer using clang. You can specify which compiler you want to use by adding options to the cmake commands
+in the following section. The options are the following:
+\verbatim
+-DCMAKE_C_COMPILER=<c_compiler> -DCMAKE_CXX_COMPILER=<c++_compiler>
+\endverbatim
+So if for example you want to use clang, you can specify it the following way (if clang is installed in /usr/bin):
+\verbatim
+cmake <path_to_source_code> -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++
+\endverbatim
+
+- Compile in Release mode. Feel++ applications can bew compiled in several modes: Debug, RelWithDebInfo, Release. Prefer the Release version to decrease
+compilation time. To change the compilation module, add the following option to the cmake step (e.g. Release mode):
+\verbatim
+-DCMAKE_BUILD_TYPE=Release
+\endverbatim
+
 \section BuildTutoWithInstalledFeelpp Building the examples from the tutorial
 
 If you want to build the examples from \feel tutorial:
@@ -17,7 +38,7 @@ If you want to build the examples from \feel tutorial:
 mkdir feelpp-tutorial
 cd feelpp-tutorial
 # build the tutorial
-cmake -DCMAKE_CXX_COMPILER=/usr/bin/clang++ -DCMAKE_BUILD_TYPE=Release /usr/share/doc/feel++-doc/examples/
+cmake /usr/share/doc/feel++-doc/examples
 # Adapt the number of processors you want to use
 make -j 10
 \endverbatim
@@ -28,7 +49,10 @@ You can then launch the applications:
 ./feelpp_doc_myintegrals
 \endverbatim
 
-Optionally retrieve data from the serveur (e.g. irma-atlas):
+The data exported by the application will be located in the $FEELPP_WORKDIR directory.
+If the environment variable $FEELPP_WORKDIR is not set, they will be in ~/feel.
+
+Optionally retrieve data from the server (e.g. irma-atlas):
 
 \verbatim
 mkdir feel
@@ -53,10 +77,32 @@ else()
     message(FATAL_ERROR "Feel++ does not seem to have been installed on this platform")
 endif()
 find_package(Feel++)
+feelpp_add_application(<appname> SRCS <appsrc.cpp> INCLUDE_IN_ALL)
+\endverbatim
+
+In this CMakeLists.txt file, you have to specify your application name (<appname>) and the source file corresponding to the application (<appsrc.cpp>).
+Then configure your Feel++ application using this command and compile your application according to the resources available:
+
+\verbatim
+mkdir build;
+cd build
+cmake ..
+make -j 4
+\endverbatim
+
+Here is presented an exemple for an application named loadmesh, built from the source file loadmesh.cpp.
+\verbatim
+cmake_minimum_required(VERSION 2.8)
+find_path(FEELPP_CMAKE_MODULES FindFeel++.cmake PATHS /usr/share/feel/cmake/modules/ /usr/local/share/feel/cmake/modules/ )
+if(FEELPP_CMAKE_MODULES)
+    set(CMAKE_MODULE_PATH ${FEELPP_CMAKE_MODULES})
+else()
+    message(FATAL_ERROR "Feel++ does not seem to have been installed on this platform")
+endif()
+find_package(Feel++)
 feelpp_add_application(loadmesh SRCS loadmesh.cpp INCLUDE_IN_ALL)
 \endverbatim
 
-Here is presented an application named loadmesh, built from the source file loadmesh.cpp.
 The file loadmesh.cpp is a sample C++ file that will allow to load a mesh:
 
 \verbatim
@@ -80,17 +126,6 @@ int main( int argc, char** argv )
 
 }                                                                                                                                                                                 
 \endverbatim
-
-Then configure your Feel++ application using this command and compile your application according to the resources available:
-
-\verbatim
-mkdir build;
-cd build
-cmake ..
-make -j 4
-\endverbatim
-
-Note that .. indicates that the CMakeLists.txt is in the top directory.
 
 <a href="#" class="top">top</a>
 <hr>
