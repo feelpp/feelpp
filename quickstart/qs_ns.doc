@@ -5,5 +5,7 @@ namespace Feel {
 
    \tableofcontents
 
+\c Note: The source code of this example is available in \c quickstart/qs_ns.cpp
+
 */
 }
