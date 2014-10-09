@@ -35,9 +35,6 @@
 #ifndef __Reinit_Fms_H
 #define __Reinit_Fms_H 1
 
-#include <boost/bimap.hpp>
-
-
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
