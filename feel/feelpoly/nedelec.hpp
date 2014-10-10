@@ -1197,6 +1197,7 @@ public:
             auto g = expr.geom();
             ublas::vector<value_type> t( nDim );
 
+            // edge dof
             for( int e = 0; e < convex_type::numEdges; ++e )
             {
                 getEdgeTangent(expr, e, t);
@@ -1206,6 +1207,29 @@ public:
                     int q = e*nDofPerEdge+l;
                     for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
                         Ihloc(q) += expr.evalq( c1, 0, q )*t(c1);
+                }
+            }
+            // internal dof: internal moment of the expression against
+            // polynomials of degree k-1
+            if ( nOrder-2 > 0 )
+            {
+                int first_dof = convex_type::numEdges*nDofPerEdge+convex_type::numFaces*nDofPerFace;
+                static const uint16_type Or  = (nOrder-2>0)?nOrder-2:0;
+                Feel::detail::OrthonormalPolynomialSet<nDim,Or,nDim,Vectorial,value_type,0,Simplex> p;
+                IM<nDim,2*(nOrder+1),value_type,Simplex> im;
+                auto Pkm1_at_quad_pts = p.evaluate( im.points() );
+                const uint16_type n_internal_dof = (nDim==2)?nDofPerFace:nDofPerVolume;
+                for ( int l = 0; l < n_internal_dof; ++l )
+                {
+                    int dof = first_dof+l;
+                    
+                    for( int q=0;q < im.nPoints(); ++q  )
+                    {
+                        value_type scal = 0.;
+                        for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
+                            scal += expr.evalq( c1, 0, q )*Pkm1_at_quad_pts(nComponents*l+c1,q);
+                        Ihloc(dof) += im.weight(q)*scal;
+                    }
                 }
             }
         }
