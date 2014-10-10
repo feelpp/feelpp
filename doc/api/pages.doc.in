@@ -2,9 +2,11 @@
 namespace Feel
 {
 /** \page ProgEnv Programming Environment
-   - \subpage UsingInstalledFeelpp
+		Here you will find information about installing Feel++ and using it.
+
    - \subpage BuildingP
    - \subpage DocCmakeLists
+   - \subpage UsingInstalledFeelpp
 */
 /** \page GettingStarted QuickStart
     - \subpage QSLaplacian
