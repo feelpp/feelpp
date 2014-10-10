@@ -12,8 +12,8 @@ at<br>
 <center><a href="https://github.com/feelpp/feelpp/releases">https://github.com/feelpp/feelpp/releases</a></center><br>
 Download the latest tarball.
 \verbatim
-  tar -xzf feelpp-0.96.0.tar.gz
-  cd feelpp-0.96.0
+  tar -xzf feelpp-X.YY.0.tar.gz
+  cd feelpp-X.YY.0
 \endverbatim
 
 <a href="#" class="top">top</a>
@@ -92,17 +92,18 @@ platforms:
 \li Feel++ <a href="https://buildd.debian.org/status/package.php?p=feel%2b%2b">Build results</a>
 
 \subsection Ubuntu Ubuntu
-\feel was uploaded in the distribution Ubuntu-Natty (11.04) for the first
-time. The commands to install \feel on Ubuntu are
-\verbatim
-    sudo apt-get install feel++-apps libfeel++-dev
-\endverbatim
+\feel has its own PPA, checkout <a href="https://launchpad.net/~feelpp/+archive/ppa">feelpp ppa for Trusty, Saucy and Precise</a>.
 
 The interested user might want to look at the following Ubuntu Launchpad \feel page <a href="https://launchpad.net/ubuntu/+source/feel++">Ubuntu Source
   Page for all Ubuntu versions</a>
 
+\subsubsection natty Ubuntu Precise - 12.04
+\verbatim
+	sudo add-apt-repository ppa:feelpp/ppa
+	sudo apt-get -qq update
+	sudo apt-get install feel++-apps libfeel++-dev
+\endverbatim
 
-\feel has its own PPA, checkout <a href="https://launchpad.net/~feelpp/+archive/ppa">feelpp ppa for Trusty, Saucy and Precise</a>.
 It allows you to have a recent version of \feel on these three distributions. It
 allows us also to provide a recent version to compile the \feel projects on
 Travis-ci. The installation procedure is currently as follows
@@ -115,6 +116,8 @@ Travis-ci. The installation procedure is currently as follows
 	sudo apt-get install feel++-apps libfeel++-dev
 \endverbatim
 
+\subsubsection natty Ubuntu Saucy - 13.10 
+\subsubsection natty Ubuntu Trusty - 14.04
 
 <a href="#" class="top">top</a>
 <hr>
