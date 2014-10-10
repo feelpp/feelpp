@@ -2492,9 +2492,7 @@ int MeshPoints<T>::translateElementIds(std::vector<int32_t> & elids)
 
 } // Feel
 
+#include <feel/feeldiscr/meshimpl.hpp>
 
-//#if !defined(FEELPP_INSTANTIATION_MODE)
-# include <feel/feeldiscr/meshimpl.hpp>
-//#endif //
 
 #endif /* FEELPP_MESH_HPP */

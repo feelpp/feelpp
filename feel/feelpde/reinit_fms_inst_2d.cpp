@@ -29,5 +29,4 @@ template class ReinitializerFMS< spaceP1LSs_type, Periodic<> > ;
 template class ReinitializerFMS< spaceP1LSs_type, NoPeriodicity  > ;
 template class ReinitializerFMS< spaceP1LSh_type, NoPeriodicity  > ;
 
-
 }

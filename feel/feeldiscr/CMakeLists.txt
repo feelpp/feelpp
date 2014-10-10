@@ -22,7 +22,9 @@
 #
 #
 IF ( FEELPP_ENABLE_INSTANTIATION_MODE )
-  SET( FEELDISCR_INST_SRCS mesh1.cpp mesh2.cpp mesh3.cpp ) #partitioner.cpp ) #ale.cpp meshhighorder.cpp )
+  SET( FEELDISCR_INST_SRCS mesh_inst_3d.cpp
+    functionspace_inst_pdh_3d.cpp functionspace_inst_pch_3d.cpp
+    functionspace_inst_qdh_3d.cpp functionspace_inst_qch_3d.cpp)
 endif()
 
 

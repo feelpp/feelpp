@@ -613,7 +613,6 @@ exporter_options( std::string const& prefix )
         ( prefixvm( prefix,"exporter.ensightgold.save-face" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Save nodal functions on the face" )
         //  single
         ( prefixvm( prefix,"exporter.fileset" ).c_str(), Feel::po::value<bool>()->default_value( false ), "use fileset for transient simulations" )
-
         // merge timeteps or domains into single files
         ( prefixvm( prefix,"exporter.merge.markers" ).c_str(), Feel::po::value<bool>()->default_value( true ), "Merge exported data from different markers into a single file (reduces the number of output files )" )
 #if defined(FEELPP_HAS_HDF5) && defined(FEELPP_HAS_MPIIO)

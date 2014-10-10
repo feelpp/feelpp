@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-07-07
 
-  Copyright (C) 2009,2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -22,7 +22,7 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file mesh1.cpp
+   \file mesh2.cpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2009-07-07
  */
@@ -35,10 +35,13 @@ namespace Feel
 // Explicit instatiations
 //
 #if defined( FEELPP_INSTANTIATION_MODE )
+//BOOST_PP_LIST_FOR_EACH_PRODUCT( FACTORY_SIMPLEX_OP, 3, ( DIMS2, BOOST_PP_LIST_FIRST_N( FEELPP_MESH_MAX_ORDER, ORDERS2 ), RDIMS2 ) )
+BOOST_PP_LIST_FOR_EACH_PRODUCT( FACTORY_SIMPLEX_OP, 3, ( DIMS2, ORDERS2, RDIMS2 ) )
+BOOST_PP_LIST_FOR_EACH_PRODUCT( FACTORY_HYPERCUBE_OP, 3, ( DIMS2, BOOST_PP_LIST_FIRST_N( FEELPP_MESH_MAX_ORDER, ORDERS2 ), RDIMS2 ) )
 
 
-BOOST_PP_LIST_FOR_EACH_PRODUCT( FACTORY_SIMPLEX_OP, 3, ( DIMS1, BOOST_PP_LIST_FIRST_N( FEELPP_MESH_MAX_ORDER, ORDERS1 ), RDIMS1 ) )
-BOOST_PP_LIST_FOR_EACH_PRODUCT( FACTORY_HYPERCUBE_OP, 3, ( DIMS1, BOOST_PP_LIST_FIRST_N( FEELPP_MESH_MAX_ORDER, ORDERS1 ), RDIMS1 ) )
+
+
 
 
 

@@ -407,6 +407,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<1>, mpl::bool_
 
                 matrix_eigen_grad_type grad_real = matrix_eigen_grad_type::Zero();
                 //matrix_eigen_PN_type B=Bt.transpose();
+
                 for ( uint16_type ii = 0; ii < I; ++ii )
                 {
                         int ncomp= ( reference_element_type::is_product?nComponents1:1 );
