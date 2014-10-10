@@ -5,6 +5,8 @@ namespace Feel {
 
 \tableofcontents
 
+\c Note: The source code of this example is available in \c quickstart/qs_laplacian.cpp
+
 As an introduction to the aim and the way to do with \feel, we provide a sort of
 <tt>Hello World</tt> program to evaluate the library. We solve for the laplacian
 with Dirichlet boundary conditions.
