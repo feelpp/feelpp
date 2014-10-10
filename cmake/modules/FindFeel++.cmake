@@ -302,8 +302,10 @@ endif(FEELPP_ENABLE_MKL)
 # On debian, 
 # - do not install hdf5-helpers, otherwise it will pick the serial version by default
 # - install only the libhdf5-openmpi-dev package
-find_package(HDF5)
-if( HDF5_FOUND ) 
+OPTION( FEELPP_ENABLE_HDF5 "Enable the HDF5 library" ON )
+if ( FEELPP_ENABLE_HDF5 )
+  find_package(HDF5)
+  if( HDF5_FOUND ) 
     if( HDF5_IS_PARALLEL )
         message(STATUS "[feelpp] HDF5 - Headers ${HDF5_INCLUDE_DIRS}" )
         message(STATUS "[feelpp] HDF5 - Libraries ${HDF5_LIBRARIES}" )
@@ -314,7 +316,9 @@ if( HDF5_FOUND )
     else()
         MESSAGE(STATUS "[feelpp] HDF5 has been found but is not parallel, HDF5 is not enabled in Feel++")
     endif()
-endif()
+  endif()
+endif(FEELPP_ENABLE_HDF5)
+
 
 # XDMF
 find_package(XDMF QUIET)
@@ -836,18 +840,21 @@ endif()
 #
 # VTK
 #
-FIND_PACKAGE(VTK)
-if ( VTK_FOUND )
-  set(FEELPP_HAS_VTK 1)
-  if ( NOT FEELPP_ENABLE_OPENGL )
-    SET(VTK_LIBRARIES "-lvtkRendering -lvtkGraphics -lvtkImaging  -lvtkFiltering -lvtkCommon -lvtksys" )
+OPTION( FEELPP_ENABLE_VTK "Enable the VTK library" ON )
+if ( FEELPP_ENABLE_VTK )
+  FIND_PACKAGE(VTK)
+  if ( VTK_FOUND )
+    set(FEELPP_HAS_VTK 1)
+    if ( NOT FEELPP_ENABLE_OPENGL )
+      SET(VTK_LIBRARIES "-lvtkRendering -lvtkGraphics -lvtkImaging  -lvtkFiltering -lvtkCommon -lvtksys" )
+    endif()
+    MESSAGE(STATUS "[feelpp] Found VTK ${VTK_MAJOR_VERSION}.${VTK_MINOR_VERSION}")# ${VTK_LIBRARIES}")
+    INCLUDE_DIRECTORIES(${VTK_INCLUDE_DIRS})
+    MARK_AS_ADVANCED( VTK_DIR )
+    SET(FEELPP_LIBRARIES ${VTK_LIBRARIES} ${FEELPP_LIBRARIES})
+    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} VTK" )
   endif()
-  MESSAGE(STATUS "[feelpp] Found VTK ${VTK_MAJOR_VERSION}.${VTK_MINOR_VERSION}")# ${VTK_LIBRARIES}")
-  INCLUDE_DIRECTORIES(${VTK_INCLUDE_DIRS})
-  MARK_AS_ADVANCED( VTK_DIR )
-  SET(FEELPP_LIBRARIES ${VTK_LIBRARIES} ${FEELPP_LIBRARIES})
-  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} VTK" )
-endif()
+endif( FEELPP_ENABLE_VTK )
 
 #
 # Octave
