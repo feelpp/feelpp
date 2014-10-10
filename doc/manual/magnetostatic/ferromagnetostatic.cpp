@@ -21,33 +21,28 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-/**
-   \file magnetostatic.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2014-05-28
- */
 #include <feel/feel.hpp>
 #include <feel/feeldiscr/ned1h.hpp>
 
 int main(int argc, char**argv )
 {
     using namespace Feel;
-    po::options_description magnetooptions( "Magnetostatic options" );
+    po::options_description magnetooptions( "Ferro-Magnetostatic options" );
     magnetooptions.add_options()
-    ( "weakdirichlet", po::value<bool>()->default_value( false ), "false if strong Dirichlet, true if weak Dirichlet treatment" )
-    ;
+        ( "weakdirichlet", po::value<bool>()->default_value( false ), "false if strong Dirichlet, true if weak Dirichlet treatment" )
+        ;
 
     /// [marker1]
     Environment env( _argc=argc, _argv=argv,
                      _desc=magnetooptions,
-                     _about=about(_name="magnetostatic",
+                     _about=about(_name="ferro-magnetostatic",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
 
     auto mesh = loadMesh( _mesh=new Mesh<Simplex<FEELPP_DIM>> );
 
     auto Xh = Pchv<1>( mesh );
-    auto Nh = Ned1h<1>( mesh );
+    auto Nh = Ned1h<0>( mesh );
 
     auto a = form2( _trial=Nh, _test=Nh );
     auto c = doption("parameters.c");
@@ -60,46 +55,42 @@ int main(int argc, char**argv )
     auto z = Xh->element();
     double penaldir=30;
 
-#if FEELPP_DIM == 2
-    a = integrate(_range=elements(mesh), _expr=c*trans(idt(u))*id(v)+curlxt(u)*curlx(v));
-
-    if ( boption("weakdirichlet") ) //weak Dirichlet
-        a += integrate(boundaryfaces(mesh), -curlxt(u)*(cross(N(),id(u)) )
-                       - curlx(u)*(cross(N(),idt(u)) )
-                       + penaldir*trans(cross(idt(u),N()))*cross(id(u),N())/hFace() );
-#else //Dim = 3
-    a = integrate(_range=elements(mesh), _expr=c*trans(idt(u))*id(v)+trans(curlt(u))*curl(v));
-
-    if ( boption("weakdirichlet") ) //weak Dirichlet
-        a += integrate(boundaryfaces(mesh), -trans(curlt(u))*(cross(N(),id(u)) )
-                       - trans(curl(u))*(cross(N(),idt(u)) )
-                       + penaldir*trans(cross(idt(u),N()))*cross(id(u),N())/hFace() );
-#endif
-
-    auto l = form1( _test=Nh );
-    l = integrate( _range=elements(mesh), _expr=trans(f)*id(v));
-    if ( boption("weakdirichlet") ) //weak Dirichlet
+    for( auto i : { 1, 2 ,3, 4, 5 } )
     {
 #if FEELPP_DIM == 2
-      l += integrate(boundaryfaces(mesh), - curlx(u)*(cross(N(),e) )
-                   + penaldir*trans(cross(e,N()))*cross(id(u),N())/hFace() );
-#else //Dim = 3
-      l += integrate(boundaryfaces(mesh), - trans(curl(u))*(cross(N(),e) )
-                   + penaldir*trans(cross(e,N()))*cross(id(u),N())/hFace() );
-#endif
-    }
-    else //strong Dirichlet
-    {
-        a += on(_range=boundaryfaces(mesh), _rhs=l, _element=u,_expr=e );
-    }
+        a = integrate(_range=elements(mesh), _expr=c*trans(idt(u))*id(v)+curlxt(u)*curlx(v));
 
-    a.solve(_rhs=l,_solution=u);
-    auto erru = normL2( _range=elements(mesh), _expr=idv(u)-e );
-    auto errinterp = normL2( _range=elements(mesh), _expr=idv(v)-e );
-    if ( Environment::isMasterRank() )
-    {
-        std::cout << "L2 error (u-e) = " << erru << "\n";
-        std::cout << "L2 error (interp_curl(e) -e) = " << errinterp << "\n";
+        if ( boption("weakdirichlet") ) //weak Dirichlet
+            a += integrate(boundaryfaces(mesh), -curlxt(u)*(cross(N(),id(u)) )
+                           - curlx(u)*(cross(N(),idt(u)) )
+                           + penaldir*trans(cross(idt(u),N()))*cross(id(u),N())/hFace() );
+#else //Dim = 3
+        a = integrate(_range=elements(mesh), _expr=c*trans(idt(u))*id(v)+trans(curlt(u))*curl(v));
+
+        if ( boption("weakdirichlet") ) //weak Dirichlet
+            a += integrate(boundaryfaces(mesh), -trans(curlt(u))*(cross(N(),id(u)) )
+                           - trans(curl(u))*(cross(N(),idt(u)) )
+                           + penaldir*trans(cross(idt(u),N()))*cross(id(u),N())/hFace() );
+#endif
+
+        auto l = form1( _test=Nh );
+        l = integrate( _range=elements(mesh), _expr=trans(f)*id(v));
+        if ( boption("weakdirichlet") ) //weak Dirichlet
+        {
+#if FEELPP_DIM == 2
+            l += integrate(boundaryfaces(mesh), - curlx(u)*(cross(N(),e) )
+                           + penaldir*trans(cross(e,N()))*cross(id(u),N())/hFace() );
+#else //Dim = 3
+            l += integrate(boundaryfaces(mesh), - trans(curl(u))*(cross(N(),e) )
+                           + penaldir*trans(cross(e,N()))*cross(id(u),N())/hFace() );
+#endif
+        }
+        else //strong Dirichlet
+        {
+            a += on(_range=boundaryfaces(mesh), _rhs=l, _element=u,_expr=e );
+        }
+
+        a.solve(_rhs=l,_solution=u);
     }
 
     auto b = form2( _test=Xh, _trial=Xh );
