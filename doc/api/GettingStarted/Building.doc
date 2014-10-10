@@ -97,7 +97,7 @@ platforms:
 The interested user might want to look at the following Ubuntu Launchpad \feel page <a href="https://launchpad.net/ubuntu/+source/feel++">Ubuntu Source
   Page for all Ubuntu versions</a>
 
-\subsubsection natty Ubuntu Precise - 12.04
+\subsubsection precise Ubuntu Precise - 12.04
 \verbatim
 	sudo add-apt-repository ppa:feelpp/ppa
 	sudo apt-get -qq update
@@ -116,8 +116,8 @@ Travis-ci. The installation procedure is currently as follows
 	sudo apt-get install feel++-apps libfeel++-dev
 \endverbatim
 
-\subsubsection natty Ubuntu Saucy - 13.10 
-\subsubsection natty Ubuntu Trusty - 14.04
+\subsubsection saucy Ubuntu Saucy - 13.10 
+\subsubsection trusty Ubuntu Trusty - 14.04
 
 <a href="#" class="top">top</a>
 <hr>
