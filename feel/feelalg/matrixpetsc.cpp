@@ -1349,7 +1349,7 @@ MatrixPetsc<T>::transpose( MatrixSparse<value_type>& Mt, size_type options ) con
     Context ctx( options );
     tic();
     this->close();
-    toc("transpose: close()" );
+    toc("transpose: close()", FLAGS_v > 0);
     tic();
     MatrixPetsc<T>* Atrans;
     if ( this->comm().size()>1 )
@@ -1367,7 +1367,7 @@ MatrixPetsc<T>::transpose( MatrixSparse<value_type>& Mt, size_type options ) con
         ierr = PETSc::MatDestroy( Atrans->M_mat );
         CHKERRABORT( this->comm(),ierr );
     }
-    toc("transpose: matrix init");
+    toc("transpose: matrix init", FLAGS_v > 0);
     tic();
     if ( ctx.test( MATRIX_TRANSPOSE_ASSEMBLED ) )
         {
@@ -1386,7 +1386,7 @@ MatrixPetsc<T>::transpose( MatrixSparse<value_type>& Mt, size_type options ) con
         }
 
 
-    toc("transpose: create mat transpose");
+    toc("transpose: create mat transpose", FLAGS_v > 0);
     tic();
     if ( ctx.test( MATRIX_TRANSPOSE_CHECK ) )
         {
@@ -1414,7 +1414,7 @@ MatrixPetsc<T>::transpose( MatrixSparse<value_type>& Mt, size_type options ) con
 
 
     Mt.setInitialized( true );
-    toc("transpose : init done");
+    toc("transpose: init done", FLAGS_v > 0);
 }
 
 template<typename T>

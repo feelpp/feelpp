@@ -1,6 +1,11 @@
 // -*- mode: c++ -*-
 namespace Feel
 {
+/** \page ProgEnv Programming Environment
+   - \subpage UsingInstalledFeelpp
+   - \subpage BuildingP
+   - \subpage DocCmakeLists
+*/
 /** \page GettingStarted QuickStart
     - \subpage QSLaplacian
     - \subpage QSStokes
@@ -21,11 +26,6 @@ namespace Feel
     - \subpage TutorialSpaces
     - \subpage TutorialBackend
  */
-/** \page ProgEnv Programming Environment
-   - \subpage BuildingP
-   - \subpage DocCmakeLists
-   - \subpage UsingInstalledFeelpp
-*/
 /** \page QuickRef Quick Reference
    - \subpage Keywords
    - \subpage Environment
