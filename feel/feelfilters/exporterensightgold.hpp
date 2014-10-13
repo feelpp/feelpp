@@ -39,7 +39,6 @@
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
 
-#include <feel/feelfilters/exporter.hpp>
 #include <feel/feelmesh/filters.hpp>
 
 namespace Feel
