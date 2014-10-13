@@ -350,9 +350,9 @@ public:
                             model ),
         M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC, Environment::worldComm() ) ),
         M_model(),
-        M_backend( backend_type::build( vm ) ),
-        M_backend_primal( backend_type::build( vm , "backend-primal" ) ),
-        M_backend_dual( backend_type::build( vm , "backend-dual") ),
+        M_backend( backend() ),
+        M_backend_primal( backend(_name="backend-primal") ),
+        M_backend_dual( backend(_name="backend-dual") ),
         M_output_index( vm["crb.output-index"].template as<int>() ),
         M_tolerance( vm["crb.error-max"].template as<double>() ),
         M_iter_max( vm["crb.dimension-max"].template as<int>() ),
@@ -3598,7 +3598,7 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( int N, parameter_type
 {
 
     LOG( INFO ) <<"\n compareResidualsForTransientProblems \n";
-    backend_ptrtype backend = backend_type::build( BACKEND_PETSC ) ;
+    //backend_ptrtype backend = backend_type::build( BACKEND_PETSC, Environment::worldComm() ) ;
 
     if ( M_model->isSteady() )
     {
@@ -3609,17 +3609,17 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( int N, parameter_type
     //vector_ptrtype MF;
     std::vector<vector_ptrtype> F,L;
 
-    vector_ptrtype Rhs( backend->newVector( M_model->functionSpace() ) );
-    vector_ptrtype Aun( backend->newVector( M_model->functionSpace() ) );
-    vector_ptrtype AduUn( backend->newVector( M_model->functionSpace() ) );
+    vector_ptrtype Rhs( backend()->newVector( M_model->functionSpace() ) );
+    vector_ptrtype Aun( backend()->newVector( M_model->functionSpace() ) );
+    vector_ptrtype AduUn( backend()->newVector( M_model->functionSpace() ) );
 
-    vector_ptrtype Mun( backend->newVector( M_model->functionSpace() ) );
-    vector_ptrtype Munold( backend->newVector( M_model->functionSpace() ) );
-    vector_ptrtype Frhs( backend->newVector( M_model->functionSpace() ) );
-    vector_ptrtype un( backend->newVector( M_model->functionSpace() ) );
-    vector_ptrtype unold( backend->newVector( M_model->functionSpace() ) );
-    vector_ptrtype undu( backend->newVector( M_model->functionSpace() ) );
-    vector_ptrtype unduold( backend->newVector( M_model->functionSpace() ) );
+    vector_ptrtype Mun( backend()->newVector( M_model->functionSpace() ) );
+    vector_ptrtype Munold( backend()->newVector( M_model->functionSpace() ) );
+    vector_ptrtype Frhs( backend()->newVector( M_model->functionSpace() ) );
+    vector_ptrtype un( backend()->newVector( M_model->functionSpace() ) );
+    vector_ptrtype unold( backend()->newVector( M_model->functionSpace() ) );
+    vector_ptrtype undu( backend()->newVector( M_model->functionSpace() ) );
+    vector_ptrtype unduold( backend()->newVector( M_model->functionSpace() ) );
 
     //set parameters for time discretization
     auto bdf_primal = bdf( _space=M_model->functionSpace(), _vm=this->vm() , _name="bdf_primal_check_residual_transient" );
@@ -3650,10 +3650,10 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( int N, parameter_type
         Mun->scale( -1 );
         *Frhs = *F[0];
 
-        vector_ptrtype __ef_pr(  backend->newVector( M_model->functionSpace() ) );
-        vector_ptrtype __ea_pr(  backend->newVector( M_model->functionSpace() ) );
-        vector_ptrtype __emu_pr(  backend->newVector( M_model->functionSpace() ) );
-        vector_ptrtype __emuold_pr(  backend->newVector( M_model->functionSpace() ) );
+        vector_ptrtype __ef_pr(  backend()->newVector( M_model->functionSpace() ) );
+        vector_ptrtype __ea_pr(  backend()->newVector( M_model->functionSpace() ) );
+        vector_ptrtype __emu_pr(  backend()->newVector( M_model->functionSpace() ) );
+        vector_ptrtype __emuold_pr(  backend()->newVector( M_model->functionSpace() ) );
         M_model->l2solve( __ef_pr, Frhs );
         M_model->l2solve( __ea_pr, Aun );
         M_model->l2solve( __emu_pr, Mun );
@@ -3718,13 +3718,13 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( int N, parameter_type
         *Frhs = *F[0];
 
 
-        auto R = backend->newVector( M_model->functionSpace() );
+        auto R = backend()->newVector( M_model->functionSpace() );
         R = Frhs;
         R->add( -1 , *Mun ); //R -= Mun;
         //std::cout<<"[COMPARE] R->l2Norm() : "<<R->l2Norm()<<std::endl;
 
-        vector_ptrtype __ef_du(  backend->newVector( M_model->functionSpace() ) );
-        vector_ptrtype __emu_du(  backend->newVector( M_model->functionSpace() ) );
+        vector_ptrtype __ef_du(  backend()->newVector( M_model->functionSpace() ) );
+        vector_ptrtype __emu_du(  backend()->newVector( M_model->functionSpace() ) );
         M_model->l2solve( __ef_du, Frhs );
         M_model->l2solve( __emu_du, Mun );
         double check_Cff_du = M_model->scalarProduct( __ef_du,__ef_du );
@@ -3754,9 +3754,9 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( int N, parameter_type
             Munold->scale( -1 );
             *Frhs = *F[0];
 
-            vector_ptrtype __ea_du(  backend->newVector( M_model->functionSpace() ) );
-            vector_ptrtype __emu_du(  backend->newVector( M_model->functionSpace() ) );
-            vector_ptrtype __emuold_du(  backend->newVector( M_model->functionSpace() ) );
+            vector_ptrtype __ea_du(  backend()->newVector( M_model->functionSpace() ) );
+            vector_ptrtype __emu_du(  backend()->newVector( M_model->functionSpace() ) );
+            vector_ptrtype __emuold_du(  backend()->newVector( M_model->functionSpace() ) );
             M_model->l2solve( __ea_du, AduUn );
             M_model->l2solve( __emu_du, Mun );
             M_model->l2solve( __emuold_du, Munold );

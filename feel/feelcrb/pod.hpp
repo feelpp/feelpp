@@ -388,7 +388,8 @@ void POD<TruthModelType>::fillPodMatrix( const wn_type& elements_set)
 template<typename TruthModelType>
 int POD<TruthModelType>::pod( mode_set_type& ModeSet, bool is_primal, const wn_type& elements_set, bool use_solutions )
 {
-    M_backend = backend_type::build( BACKEND_PETSC );
+    //M_backend = backend_type::build( BACKEND_PETSC, Environment::worldComm() );
+    M_backend = backend();
 
     Eigen::SelfAdjointEigenSolver< matrixN_type > eigen_solver;
     M_use_solutions = use_solutions;
