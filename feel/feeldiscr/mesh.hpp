@@ -52,7 +52,6 @@
 #include <boost/mpi/operations.hpp>
 
 #include <feel/feelcore/context.hpp>
-//#include <feel/feelcore/worldcomm.hpp>
 
 #include <feel/feelcore/functors.hpp>
 #include <feel/feelmesh/mesh0d.hpp>
