@@ -36,7 +36,7 @@
 namespace Feel
 {
 template< typename space_type >
-class PreconditionerBTPCD : public Preconditioner<typename space_type::value>
+class PreconditionerBTPCD : public Preconditioner<typename space_type::value_type>
 {
 public:
 
@@ -88,9 +88,9 @@ public:
     template< typename Expr_convection, typename Expr_bc >
     void update( Expr_convection const& expr_b, Expr_bc const& g, double& time2Update );
 
-    int apply( const vector_type & X, vector_type & Y ) const
+    void apply( const vector_type & X, vector_type & Y ) const
     {
-        return (-1); //Not implemented
+        return ; //Not implemented
     }
 
     int applyInverse ( const vector_type& X, vector_type& Y ) const;
@@ -253,7 +253,8 @@ template < typename space_type >
 void
 PreconditionerBTPCD<space_type>::assembleSchurApp( double nu, double alpha )
 {
-    pcdOp = pcd( M_Qh, M_bcFlags, nu, alpha );
+#warning TODO
+    //pcdOp = pcd( M_Qh, M_bcFlags, nu, alpha );
 }
 
 
@@ -350,7 +351,11 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
                                    )
                                  )
 {
-
+    typedef typename parameter::value_type<Args, tag::space>::type::element_type the_space_type;
+    std::map<std::string, std::set<flag_type> > bcFlags;
+    double nu = 1;
+    preconditioner_ptrtype p( new PreconditionerBTPCD<the_space_type>( space, bcFlags, nu ) );
+    return p;
 } // btcpd
 } // Feel
 #endif
