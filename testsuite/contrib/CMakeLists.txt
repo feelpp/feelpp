@@ -1,9 +1,9 @@
-# -*- mode: cmake; coding: utf-8 -*-
+###  CMakeLists.txt; coding: utf-8 --- 
+
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+#       Date: 04 Oct 2014
 #
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-#       Date: 2009-11-29
-#
-#  Copyright (C) 2009-2010 Université Joseph Fourier (Grenoble I)
+#  Copyright (C) 2014 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -21,12 +21,9 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-SET( SRC
-  exprbase.cpp
-  expr.cpp
-  ginac.cpp
-  detail/ginacbuildlibrary.cpp
-  )
 
-file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp detail/*.hpp)
-feel_append_src(feelvf "${SRC};${HDR}")
+add_executable(test_po po.cpp)
+target_link_libraries(test_po  ${Boost_PROGRAM_OPTIONS_LIBRARY_RELEASE} )
+
+add_executable(test_mpi mpi.cpp)
+target_link_libraries(test_mpi ${Boost_MPI_LIBRARY_RELEASE} ${Boost_SERIALIZATION_LIBRARY_RELEASE} ${MPI_C_LIBRARIES} )

@@ -33,7 +33,6 @@
 #include <feel/feelmesh/geoentity.hpp>
 #include <feel/feelmesh/simplex.hpp>
 #include <feel/feelmesh/hypercube.hpp>
-#include <feel/feelmesh/filters.hpp>
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelalg/solvernonlinearpetsc.hpp>
