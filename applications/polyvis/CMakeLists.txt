@@ -32,7 +32,7 @@ feelpp_add_application( polyvis EXCLUDE_FROM_ALL SRCS geom.cpp
   raviartthomas2d.cpp  raviartthomas3d.cpp
   lagrange1d.cpp lagrange2d.cpp lagrange3d.cpp
   #orthonormalpset1d.cpp orthonormalpset2d.cpp orthonormalpset3d.cpp
-
+  CFG polyvis.cfg
 
   LINK_LIBRARIES ${FEELPP_LIBRARIES} )
 
