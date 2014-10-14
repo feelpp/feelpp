@@ -2,19 +2,18 @@
 
 . ~/.bash_profile
 
-prefix=$WORKDIR/local/boost/1.56-bgq
+prefix=$COMMONDIR/local/boost/1.56-bgq-static
 cat > user-config.jam << EOF
 using mpi : mpicxx : :  ;
-# using gcc : bgq  :  powerpc64-bgq-linux-clang++11 ; 
-using clang :  :  powerpc64-bgq-linux-clang++11 ; 
+using gcc : 4.7.2 :  powerpc64-bgq-linux-g++ ;  
 EOF
 
 export CXX=powerpc64-bgq-linux-g++
-export CC=powerpc64-bgq-linux-gcc
+export CC=powerpc64-bgq-linux-gcc-4.7.2
 #./b2 clean
 #./b2 toolset=clang-bg cxxflags="-stdlib=libc++ -std=c++11" linkflags="-stdlib=libc++"
 #./b2 install -j20 -d2 --prefix=$prefix toolset=clang-bg cxxflags="-stdlib=libc++ -std=c++11" linkflags="-stdlib=libc++" \
-./b2 install -j20 -d2 --prefix=$prefix toolset=gcc-bgq cxxflags="-std=c++11 -Bdynamic -fPIC"  linkflags="-std=c++11 -dynamic"\
+./b2 install -j20 -d2 --prefix=$prefix  cxxflags=" -fPIC -Bdynamic -std=c++0x"  linkflags="-fPIC -dynamic -Bdynamic -std=c++0x "\
                 --layout=tagged \
                 --debug-configuration \
                 --without-python \
@@ -28,4 +27,4 @@ export CC=powerpc64-bgq-linux-gcc
                 -sICU_PATH=${prefix} \
                 variant=release \
                 threading=single,multi \
-                link=shared,static
+                link=static
