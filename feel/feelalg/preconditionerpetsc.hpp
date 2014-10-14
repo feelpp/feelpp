@@ -160,7 +160,7 @@ public:
      * Computes the preconditioned vector "y" based on input "x".
      * Usually by solving Py=x to get the action of P^-1 x.
      */
-    virtual void apply( const Vector<T> & x, Vector<T> & y );
+    virtual void apply( const Vector<T> & x, Vector<T> & y ) const;
 
 
     //@}
