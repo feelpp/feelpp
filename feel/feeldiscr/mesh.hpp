@@ -355,9 +355,8 @@ public:
 
         if ( this->worldComm().localSize() >1 )
         {
-            std::vector<int> locals{ ne, nf, ned, np, (int)this->numVertices() };
-            std::vector<int> globals( 5, 0 );
-            mpi::all_reduce( this->worldComm(), locals, globals, Functor::AddStdVectors<int>() );
+            std::vector<int> globals{ ne, nf, ned, np, (int)this->numVertices() };
+            mpi::all_reduce( this->worldComm(), mpi::inplace(globals.data()), 5, std::plus<int>() );
             M_numGlobalElements = globals[0];
             M_numGlobalFaces = globals[1];
             M_numGlobalEdges = globals[2];
