@@ -159,6 +159,8 @@ if (NOT BUILD_SHARED_LIBS)
 	# Avoid the static library vs import library conflict (necessary for
 	# m$ toolchain).
 	set_target_properties(feelpp_ginac PROPERTIES PREFIX "lib")
+else()
+  set_property(TARGET feelpp_ginac PROPERTY MACOSX_RPATH ON)
 endif()
 
 install(TARGETS feelpp_ginac LIBRARY DESTINATION "${LIB_INSTALL_DIR}"
