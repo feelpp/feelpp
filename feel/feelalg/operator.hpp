@@ -34,21 +34,25 @@ namespace Feel
 /**
  * Base class for Operators
  */
+template<typename T>
 class OperatorBase
 {
   public:
- 
-    OperatorBase( WorldComm const& comm, std::string label, bool use_transpose  ) 
+    typedef T value_type;
+
+    OperatorBase( WorldComm const& comm, std::string label, bool use_transpose, bool has_norminf  ) 
         : 
         M_label( label ),
         M_comm( comm ), 
-        M_use_transpose( use_transpose ) 
+        M_use_transpose( use_transpose ) ,
+        M_has_norminf( has_norminf )
         {}
-    OperatorBase( std::string label, bool use_transpose = false  ) 
+    OperatorBase( std::string label, bool use_transpose = false, bool has_norminf = false  ) 
         : 
         M_label( label ),
         M_comm( Environment::worldComm() ), 
-        M_use_transpose( use_transpose ) 
+        M_use_transpose( use_transpose ) ,
+        M_has_norminf( has_norminf )
         {}
     
     virtual ~OperatorBase() {};
@@ -86,8 +90,13 @@ class OperatorBase
     /**
      * \return  true if Operator can compute the inf norm, false otherwise
      */
-    virtual bool hasNormInf() const = 0;
+    virtual bool hasNormInf() const { return M_has_norminf; };
     
+    /**
+     * set if the operator can compute its inf norm
+     */
+    void setHasNormInf( bool b ) { M_has_norminf = b; }
+
     /**
      * \return the WorldComm of the Operator
      */
@@ -97,10 +106,11 @@ protected:
     std::string M_label;
     WorldComm M_comm;
     bool M_use_transpose;
+    bool M_has_norminf;
 };
 
 template<typename T>
-class OperatorMatrix : public OperatorBase
+class OperatorMatrix : public OperatorBase<T>
 {
 public:
     typedef T value_type;
@@ -112,12 +122,12 @@ public:
     typedef Vector<value_type> vector_type;
     typedef boost::shared_ptr<vector_type> vector_ptrtype;
 
-    typedef OperatorBase prec_type;
+    typedef OperatorBase<T> prec_type;
     typedef boost::shared_ptr<prec_type> prec_ptrtype;
 
     OperatorMatrix( sparse_matrix_ptrtype const& F, std::string _label, bool transpose = 0 )
         :
-        OperatorBase( F->comm(), _label, transpose ),
+        OperatorBase<T>( F->comm(), _label, transpose, true ),
         M_F( F ),
         M_Prec( ),
         M_hasInverse( 1 ),
@@ -130,7 +140,7 @@ public:
                     std::string _label,
                     prec_ptrtype  Prec, bool transpose = 0 )
         :
-        OperatorBase( F->comm(), _label, transpose ),
+        OperatorBase<T>( F->comm(), _label, transpose, true ),
         M_F( F ),
         M_Prec( Prec ),
         M_hasInverse( 1 ),
@@ -142,7 +152,7 @@ public:
 
     OperatorMatrix( const OperatorMatrix& tc )
         :
-        OperatorBase( tc ),
+        OperatorBase<T>( tc ),
         M_F( tc.M_F ),
         M_Prec( tc.M_Prec ),
         M_hasInverse( tc.M_hasInverse ),
@@ -151,6 +161,7 @@ public:
         DVLOG(2) << "Copy operator " << this->label() << " ...\n";
     }
 
+    
     bool hasInverse() const
     {
         return M_hasInverse;
@@ -171,17 +182,19 @@ public:
     int applyInverse ( const vector_type& X, vector_type& Y ) const
     {
         CHECK( hasInverse() ) << "Operator " << this->label() << "cannot be inverted.";
-
-        auto r = backend(_prefix=this->label())->solve( _matrix=M_F, _rhs=X, _solution=Y );
-        return r->isConverged();
+#warning TODO
+        //auto r = backend(_prefix=this->label())->solve( _matrix=M_F, _rhs=X, _solution=Y );
+        //return r->isConverged();
+        return true;
     }
+
 
     value_type normInf() const
     {
         return M_F->linftyNorm();
     }
 
-    ~OperatorMatrix()
+    virtual ~OperatorMatrix()
     {
         DVLOG(2) << "Destroyed matrix operator: " << this->label() << " ...\n";
     };
@@ -195,21 +208,34 @@ private:
 };
 
 /**
+ * \param M matrix
+ * \oaram l label of the operator
+ * \param transpose boolean to say wether we want the matrix or its transpose
+ * \return the Operator associated to the matrix \p M
+ */
+template<typename T>
+boost::shared_ptr<OperatorMatrix<T>> 
+op( boost::shared_ptr<MatrixSparse<T>> M, std::string const& l, bool transpose = false ) 
+{ 
+    return boost::shared_ptr<OperatorMatrix<T>> ( new OperatorMatrix<T>( M, l, transpose ) ); 
+}
+
+/**
  * Operator class to model an inverse operator
  */
 template< typename operator_type >
-class OperatorInverse : public OperatorBase
+class OperatorInverse : public OperatorBase<T>
 {
-    typedef OperatorBase super;
+    typedef OperatorBase<T> super;
 public:
 
     typedef boost::shared_ptr<operator_type> operator_ptrtype;
     typedef typename operator_type::value_type value_type;
 
     // This constructor implements the F^-1 operator
-    OperatorInverse( operator_ptrtype& F, std::string label )
+    OperatorInverse( operator_ptrtype& F )
         :
-        OperatorBase( F->comm(), label, F->useTranspose() ),
+        OperatorBase<T>( F->comm(), F->label(), F->useTranspose(), false ),
         M_F( F )
     {
         this->setName();
@@ -281,14 +307,26 @@ private:
 };
 
 
+/**
+ * \param op an operator
+ * \oaram l label of the operator
+ * \param transpose boolean to say wether we want the matrix or its transpose
+ * \return the Operator associated to the matrix \p M
+ */
+template<typename O>
+boost::shared_ptr<OperatorInverse<O>> 
+inv( boost::shared_ptr<O> op  ) 
+{ 
+    return boost::shared_ptr<OperatorInverse<O> >( new OperatorInverse<O>( op ) ); 
+}
 
 
 
 
 template< typename op1_type, typename op2_type >
-class OperatorCompose : public OperatorBase
+class OperatorCompose : public OperatorBase<T>
 {
-    typedef OperatorBase super;
+    typedef OperatorBase<T> super;
 public:
 
     typedef boost::shared_ptr<op1_type> op1_ptrtype;
@@ -311,6 +349,7 @@ public:
 
     OperatorCompose( op1_ptrtype& F, op2_ptrtype& G )
         :
+        super( F->comm(), "", false, false ),
         M_F( F ),
         M_G( G )
     {
@@ -389,12 +428,25 @@ private:
 };
 
 /**
+ * \param op1 an operator
+ * \param op2 an operator
+ * \return the operator which is the composition of op1 with op2
+ */
+template<typename O1, typename O2>
+boost::shared_ptr<OperatorCompose<O1,O2> > 
+compose( boost::shared_ptr<O1> op1, boost::shared_ptr<O2> op2  ) 
+{ 
+    return boost::shared_ptr<OperatorCompose<O1,O2> >( new OperatorCompose<O1,O2>( op1, op2 ) ); 
+}
+
+
+/**
  * Scaling Operator class
  */
 template< typename op1_type>
-class OperatorScale : public OperatorBase
+class OperatorScale : public OperatorBase<T>
 {
-    typedef OperatorBase super;
+    typedef OperatorBase<T> super;
 public:
 
     typedef boost::shared_ptr<op1_type> op1_ptrtype;
@@ -410,6 +462,7 @@ public:
 
     OperatorScale( op1_ptrtype& F )
         :
+        super( F->comm(), "", false, false ),
         M_F( F ),
         M_alpha( 1 )
     {
@@ -426,6 +479,7 @@ public:
 
     OperatorScale( op1_ptrtype& F, value_type alpha )
         :
+        super( F->comm(), "", false, false ),
         M_F( F ),
         M_alpha( alpha )
     {
@@ -505,18 +559,30 @@ private:
 
 
 
+/**
+ * \param op an operator
+ * \param s a scalar
+ * \return the operator which is the scaling of op by s
+ */
+template<typename O>
+boost::shared_ptr<OperatorScale<O> > 
+scale( boost::shared_ptr<O> op  ) 
+{ 
+    return boost::shared_ptr<OperatorScale<O> >( new OperatorScale<O>( op ) ); 
+}
+
 
 
 
 template< typename operator_type >
-class OperatorFree : public OperatorBase
+class OperatorFree : public OperatorBase<T>
 {
-    typedef OperatorBase super;
+    typedef OperatorBase<T> super;
 public:
 
     typedef boost::shared_ptr<operator_type> operator_ptrtype;
     typedef typename operator_type::value_type value_type;
-    typedef OperatorBase prec_type;
+    typedef OperatorBase<T> prec_type;
     typedef boost::shared_ptr<prec_type> prec_ptrtype;
 
     OperatorFree( operator_ptrtype F )
