@@ -274,7 +274,8 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
 #endif
 #if !defined( __INTEL_COMPILER )
     // notify observers that the mesh has changed
-    imesh->meshChanged( MESH_CHANGES_POINTS_COORDINATES );
+		LOG(INFO) << "Notify observers that the mesh has changed\n"; 
+    imesh->meshChanged(MESH_CHANGES_POINTS_COORDINATES );
 #endif
     //return boost::make_tuple( omesh, 1.0  );
     imesh->tool_localization()->reset();

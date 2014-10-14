@@ -32,7 +32,21 @@
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/operatorlinear.hpp>
-#include <feel/feelvf/vf.hpp>
+//#include <feel/feelvf/vf.hpp>
+#include <feel/feelvf/expr.hpp>
+#include <feel/feelvf/ones.hpp>
+#include <feel/feelvf/cst.hpp>
+#include <feel/feelvf/projectors.hpp>
+#include <feel/feelvf/operations.hpp>
+#include <feel/feelvf/trans.hpp>
+#include <feel/feelvf/inner.hpp>
+#include <feel/feelvf/twovalued.hpp>
+#include <feel/feelvf/trace.hpp>
+#include <feel/feelvf/form.hpp>
+#include <feel/feelvf/integrate.hpp>
+#include <feel/feelvf/unary.hpp>
+#include <feel/feelvf/operators.hpp>
+#include <feel/feelvf/geometricdata.hpp>
 
 namespace Feel
 {
@@ -167,9 +181,9 @@ public :
                                        ( quad1,   *, ( typename integrate_type<Args,decltype( elements( this->dualImageSpace()->mesh() ) )>::_quad1_type() ) )
                                        ( geomap, *, (integrate_type<Args,decltype( elements( this->dualImageSpace()->mesh() ) )>::geoOrder > 1 )?
                                          GeomapStrategyType::GEOMAP_OPT:GeomapStrategyType::GEOMAP_HO )
-                                       (grad_expr, *, ( zero<domain_space_type::nComponents,domain_space_type::nDim>() ))
+                                       (grad_expr, *, ( vf::zero<domain_space_type::nComponents,domain_space_type::nDim>() ))
                                        (div_expr, *, cst(0.) )
-                                       (curl_expr, *,  ( zero<  mpl::if_<mpl::equal_to<mpl::int_<domain_space_type::nComponents>, mpl::int_<1> >,
+                                       (curl_expr, *,  ( vf::zero<  mpl::if_<mpl::equal_to<mpl::int_<domain_space_type::nComponents>, mpl::int_<1> >,
                                                          mpl::int_<1>, mpl::int_<domain_space_type::nDim> >::type::value, 1>() ) )
                                        )
                                    )

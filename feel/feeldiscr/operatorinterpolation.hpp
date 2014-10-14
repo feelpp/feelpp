@@ -32,6 +32,10 @@
 
 #include <feel/feeldiscr/operatorlinear.hpp>
 
+#include <feel/feeldiscr/stencil.hpp>
+#include <feel/feelvf/expr.hpp>
+#include <feel/feelvf/operators.hpp>
+
 namespace Feel
 {
 

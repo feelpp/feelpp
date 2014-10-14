@@ -36,8 +36,9 @@ set(FEELPP_ENABLE_OPENGL OFF)
 # Disable use of standard c headers in ginac-excompiler
 set(USE_STANDARD_HEADERS_IN_GINAC_EXCOMPILER OFF)
 
-set( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXEC_LINKER_FLAGS} -dynamic -Bdynamic -Wl,--allow-multiple-definition  -stdlib=libstdc++" )
-set( CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -dynamic" )
+set(CMAKE_CXX_FLAGS "-Wno-redeclared-class-member")
+set( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXEC_LINKER_FLAGS} -dynamic -Bdynamic -Wl,--allow-multiple-definition  -stdlib=libstdc++ -Wl,-rpath,/opt/ibmcmp/xlf/bg/14.1/bglib64/../../../../lib64/bg/bglib64/" )
+set( CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -dynamic  -Wl,-rpath,/opt/ibmcmp/xlf/bg/14.1/bglib64/../../../../lib64/bg/bglib64/" )
 
 set(MPI_CXX_COMPILER "mpicxx")
 set(MPI_C_COMPILER "mpicc")

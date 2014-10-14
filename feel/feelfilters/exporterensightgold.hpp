@@ -39,7 +39,6 @@
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
 
-#include <feel/feelfilters/exporter.hpp>
 #include <feel/feelmesh/filters.hpp>
 
 namespace Feel
@@ -226,10 +225,10 @@ private:
     void writeVariableFiles() const;
 
     template<typename Iterator>
-    void saveNodal( typename timeset_type::step_ptrtype __step, Iterator __var, Iterator en ) const;
+    void saveNodal( typename timeset_type::step_ptrtype __step, bool isFirstStep, Iterator __var, Iterator en ) const;
 
     template<typename Iterator>
-    void saveElement( typename timeset_type::step_ptrtype __step, Iterator __evar, Iterator __evaren ) const;
+    void saveElement( typename timeset_type::step_ptrtype __step, bool isFirstStep, Iterator __evar, Iterator __evaren ) const;
 
 private:
 

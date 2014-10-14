@@ -31,7 +31,12 @@
 #define _OPERATORLINEAR_HPP_
 
 #include <feel/feeldiscr/operator.hpp>
-#include <feel/feelvf/vf.hpp>
+
+#include <feel/feelvf/expr.hpp>
+#include <feel/feelvf/integrate.hpp>
+#include <feel/feelvf/operators.hpp>
+#include <feel/feelvf/inner.hpp>
+
 
 namespace Feel
 {
@@ -88,11 +93,7 @@ public:
     OperatorLinear()
         :
         super_type(),
-#if 0
-        M_backend( backend_type::build( BACKEND_PETSC ) ),
-#else
-        M_backend( backend_type::build( ) ),
-#endif
+        M_backend( backend_type::build( soption( _name="backend" ) ) ),
         M_matrix(),
         M_pattern( Pattern::COUPLED ),
         M_name("operatorlinear")
@@ -461,8 +462,8 @@ public:
 
         auto ie = M_backend->newVector( _test=this->dualImageSpace() );
         form1( _test=this->dualImageSpace(), _vector=ie ) =
-            integrate( elements( this->domainSpace()->mesh() ),
-                       rhs_expr * id( this->dualImageSpace()->element() ) );
+            integrate( _range=elements( this->domainSpace()->mesh() ),
+                       _expr=inner( rhs_expr , id( this->dualImageSpace()->element() ) ) );
 
         M_backend->solve( M_matrix, de, ie );
 
@@ -618,7 +619,7 @@ BOOST_PARAMETER_FUNCTION(
       ( imageSpace,     *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
     ) // required
     ( optional
-      ( backend,        *, Backend<typename compute_opLinear_return<Args>::domain_space_type::value_type>::build() )
+      ( backend,        *, Backend<typename compute_opLinear_return<Args>::domain_space_type::value_type>::build( soption( _name="backend" ) ) )
       ( pattern,        *, (size_type)Pattern::COUPLED  )
     ) // optionnal
 )
