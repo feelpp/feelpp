@@ -1,7 +1,7 @@
-###  TEMPLATE.txt.tpl; coding: utf-8 ---
+###  CMakeLists.txt; coding: utf-8 --- 
 
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-#       Date: 2014-08-17
+#       Date: 04 Oct 2014
 #
 #  Copyright (C) 2014 Feel++ Consortium
 #
@@ -21,19 +21,9 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-# OSX
-if(APPLE)
-  if ( ${CMAKE_MAJOR_VERSION} EQUAL 3 )
-    OPTION( FEELPP_ENABLE_MACOSX_RPATH "Enables MACOSX Rpath feature" OFF )
-    if  ( FEELPP_ENABLE_MACOSX_RPATH )
-      set(CMAKE_MACOSX_RPATH ON)
-      set(CMAKE_SKIP_BUILD_RPATH FALSE)
-      set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
-      set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
-      set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-      message(STATUS "MACOSX RPATH enabled (CMAKE Version 3)")
-    else()
-      message(STATUS "MACOSX RPATH disabled (CMAKE Version 3)")
-    endif()
-  endif()
-endif()
+
+add_executable(test_po po.cpp)
+target_link_libraries(test_po  ${Boost_PROGRAM_OPTIONS_LIBRARY_RELEASE} )
+
+add_executable(test_mpi mpi.cpp)
+target_link_libraries(test_mpi ${Boost_MPI_LIBRARY_RELEASE} ${Boost_SERIALIZATION_LIBRARY_RELEASE} ${MPI_C_LIBRARIES} )

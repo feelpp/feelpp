@@ -442,7 +442,7 @@ public:
     static const uint16_type nbPtsPerEdge = reference_convex_type::nbPtsPerEdge;
     static const uint16_type nbPtsPerFace2D = reference_convex_type::nbPtsPerFace;
     static const uint16_type nbPtsPerFace3D = 0;
-    static const uint16_type nbPtsPerFace = (nDim==2)?nbPtsPerFace2D:nbPtsPerFace3D;
+    static const uint16_type nbPtsPerFace = ((nDim==2)?nbPtsPerFace2D:nbPtsPerFace3D)*nDim;
     static const uint16_type nbPtsPerVolume = 0;
     static const uint16_type numPoints = ( reference_convex_type::numGeometricFaces*nbPtsPerFace+reference_convex_type::numEdges*nbPtsPerEdge );
 
@@ -459,7 +459,7 @@ public:
     static const uint16_type nDofPerVolume = nbPtsPerVolume;
 
     /** Total number of degrees of freedom (equal to refEle::nDof) */
-    static const uint16_type nLocalDof = reference_convex_type::numEdges*nbPtsPerEdge;
+    static const uint16_type nLocalDof = numPoints;
 
     static const uint16_type nFacesInConvex = mpl::if_< mpl::equal_to<mpl::int_<nDim>, mpl::int_<1> >,
                                                         mpl::int_<reference_convex_type::numVertices>,
@@ -486,6 +486,11 @@ public:
         VLOG(1) << " o- nbPtsPerFace   = " << ( int )nbPtsPerFace << "\n";
         VLOG(1) << " o- nbPtsPerVolume = " << ( int )nbPtsPerVolume << "\n";
         VLOG(1) << " o- nLocalDof      = " << nLocalDof << "\n";
+
+        if ( nDim == 2 )
+            CHECK( nLocalDof == nOrder*(nOrder+2) ) 
+                << "Invalid finite element dimension. Expected : " 
+                << nOrder*(nOrder+2) << " Actual: " << nLocalDof;
 
         std::cout << "Nedelec finite element(dual): \n";
         std::cout << " o- dim   = " << nDim << "\n";
@@ -572,7 +577,7 @@ public:
         }
         //VLOG(1) << "[Nedelec1stKind Dual] done 2" << std::endl;
         // add integral of moments
-        if ( nOrder-2 > 0 )
+        if ( nOrder-2 >= 0 )
         {
             // we need more equations : add interior moment
             // indeed the space is orthogonal to Pk-1
@@ -584,8 +589,9 @@ public:
 
             vectorial_polynomialset_type Pkm1 ( Pkp1.polynomialsUpToDimension( dim_Pm1 ) );
 
-            VLOG(1) << "Pkm1 = " << Pkm1.coeff() << "\n";
-            VLOG(1) << "Primal = " << primal.coeff() << "\n";
+            VLOG(1) << "[nedelec 1st kind] Dim Pkm1 = " << dim_Pm1 << "\n";
+            VLOG(1) << "[nedelec 1st kind] Pkm1 = " << Pkm1.coeff() << "\n";
+            VLOG(1) << "[nedelec 1st kind] Primal = " << primal.coeff() << "\n";
             for ( int i = 0; i < Pkm1.polynomialDimension(); ++i )
             {
                 typedef functional::IntegralMoment<primal_space_type, vectorial_polynomialset_type> fim_type;
@@ -1197,6 +1203,7 @@ public:
             auto g = expr.geom();
             ublas::vector<value_type> t( nDim );
 
+            // edge dof
             for( int e = 0; e < convex_type::numEdges; ++e )
             {
                 getEdgeTangent(expr, e, t);
@@ -1206,6 +1213,36 @@ public:
                     int q = e*nDofPerEdge+l;
                     for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
                         Ihloc(q) += expr.evalq( c1, 0, q )*t(c1);
+                }
+            }
+            // internal dof: internal moment of the expression against
+            // polynomials of degree k-1
+            if ( nOrder-2 >= 0 )
+            {
+                int first_dof = convex_type::numEdges*nDofPerEdge+convex_type::numGeometricFaces*nDofPerFace;
+                static const uint16_type Or  = (nOrder-2>0)?nOrder-2:0;
+                Feel::detail::OrthonormalPolynomialSet<nDim,Or,nDim,Vectorial,value_type,0,Simplex> p;
+                IM<nDim,2*(nOrder+1),value_type,Simplex> im;
+                auto Pkm1_at_quad_pts = p.evaluate( im.points() );
+#if 0
+                // we have to evaluate the expression at the quadrature points
+                // 1- retrieve the geometric mapping
+                // 2- build precompute type for geomap
+                // 3- evaluate expression at quadrature points
+#endif
+                // 4- evaluate functionals
+                const uint16_type n_internal_dof = (nDim==2)?nDofPerFace:nDofPerVolume;
+                for ( int l = 0; l < n_internal_dof; ++l )
+                {
+                    int dof = first_dof+l;
+                    
+                    for( int q=0;q < im.nPoints(); ++q  )
+                    {
+                        value_type scal = 0.;
+                        for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
+                            scal += expr.evalq( c1, 0, q )*Pkm1_at_quad_pts(nComponents*l+c1,q);
+                        Ihloc(dof) += im.weight(q)*scal;
+                    }
                 }
             }
         }
@@ -1303,7 +1340,7 @@ const uint16_type Nedelec<N,O,Kind,T,TheTAG>::nLocalDof;
 
 } // fem
 template<uint16_type Order,
-         NedelecKind Kind=NedelecKind::NED2,
+         NedelecKind Kind=NedelecKind::NED1,
          uint16_type TheTAG=0>
 class Nedelec
 {
