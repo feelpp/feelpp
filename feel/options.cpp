@@ -81,6 +81,16 @@ generic_options()
 }
 
 po::options_description
+functionspace_options( std::string const& prefix )
+{
+    po::options_description _options( "Function Space options" );
+    _options.add_options()
+        ( prefixvm( prefix, "connect").c_str(), Feel::po::value<bool>()->default_value(false), "Update dof when MESH_CHANGE_COORD ?" )
+        ;
+    return _options;
+}
+
+po::options_description
 onelab_options( std::string const& prefix )
 {
     po::options_description onelab( "Onelab options" );
@@ -674,6 +684,11 @@ feel_options( std::string const& prefix  )
 
         /* onelab options */
         .add( onelab_options( prefix ) )
+
+        /* function space options */
+#if !defined( FEELPP_HAS_TRILINOS_EPETRA )
+        .add( functionspace_options( prefix ) )
+#endif
 
         ;
 

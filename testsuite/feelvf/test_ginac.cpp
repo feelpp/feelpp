@@ -23,17 +23,33 @@
 /**
    \file test_ginac.cpp
    \author Christophe Trophime <christophe.trophime@lncmi.cnrs.fr>
+   \author Vincent Chabannes <vincent.chabannes@feelpp.org>
    \date 2013-04-04
 */
+
+#define USE_BOOST_TEST 1
+#if defined(USE_BOOST_TEST)
+#define BOOST_TEST_MODULE test_ginac
+#include <testsuite/testsuite.hpp>
+#endif
+
 #include <iostream>
 #include <string>
 #include <list>
 
-#include <feel/feel.hpp>
-#include <feel/feelvf/ginac.hpp>
-
 #include <boost/algorithm/string/split.hpp>
 #include <boost/foreach.hpp>
+
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feeldiscr/pchv.hpp>
+#include <feel/feelvf/ginac.hpp>
+#include <feel/feelvf/operations.hpp>
+#include <feel/feelvf/stdmathfunctors.hpp>
+#include <feel/feelvf/matvec.hpp>
+#include <feel/feelvf/trans.hpp>
+#include <feel/feelvf/pow.hpp>
+
 
 using namespace Feel;
 
@@ -96,8 +112,8 @@ inline
 Feel::AboutData
 makeAbout()
 {
-    Feel::AboutData about( "ginac" ,
-                           "ginac" ,
+    Feel::AboutData about( "test_ginac" ,
+                           "test_ginac" ,
                            "0.1",
                            "test ginac integration with Feelpp",
                            Feel::AboutData::License_GPL,
@@ -108,13 +124,9 @@ makeAbout()
 
 }
 
-int main( int argc, char* argv[] )
-{
-    using namespace Feel;
-    Environment env( _argc=argc, _argv=argv,
-                     _desc=makeOptions(),
-                     _about=makeAbout() );
 
+void runTest0()
+{
     using GiNaC::symtab;
     using GiNaC::symbol;
 
@@ -125,26 +137,26 @@ int main( int argc, char* argv[] )
     std::string params;
     int dim = 0;
 
-    if ( option(_name="ginac.strict-parser").as<bool>() )
+    if ( boption(_name="ginac.strict-parser") )
         std::cout << "Strict Ginac Parser enabled\n";
-    if ( !env.vm()["dim"].as<int>() )
+    if ( !ioption(_name="dim") )
         {
             std::cout << "dim=" << std::flush;
             std::cin >> dim;
             std::cout << std::flush;
         }
         else
-        dim = env.vm()["dim"].as<int>(); 
+            dim = ioption(_name="dim");
 
     // Load param list
-    if ( !env.vm()["params"].as<std::string>().empty() )
+    if ( !soption(_name="params").empty() )
         {
             boost::split(lst_params, params, boost::is_any_of(";"));
             parameters = symbols(lst_params);
         }
 
     // load exact
-    if ( env.vm()["exact"].as<std::string>().empty() )
+    if ( soption(_name="exact").empty() )
         {
             // Load param list
             std::cout << "params (eg params=\"a;b\")=" << std::flush; std::cin >> params;  std::cout << std::flush;
@@ -160,7 +172,7 @@ int main( int argc, char* argv[] )
             std::cout << std::flush;
         }
     else
-      exact = env.vm()["exact"].as<std::string>();
+        exact = soption(_name="exact");
 
     switch (dim) {
     case(1) : {
@@ -176,8 +188,7 @@ int main( int argc, char* argv[] )
         break;
     }
     default: {
-        std::cerr << "wrong dimension - should be lesser or egal to 3 - is equatl to " << dim << "\n";
-        return 1;
+        CHECK( false ) << "wrong dimension - should be lesser or egal to 3 - is equatl to " << dim << "\n";
     }
     }
 
@@ -267,9 +278,130 @@ int main( int argc, char* argv[] )
                                 std::cout << substitute(f, sym, f1) << std::endl;
                             }
                     });
-		    
+
     exact="sin(x)";
     auto g = expr(exact, vars);
-    		    
-    return 0;
 }
+
+void runTest1()
+{
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
+    auto XhScalar = Pch<3>( mesh );
+    auto XhVectorial = Pchv<3>( mesh );
+
+    // id scalar
+    auto exprScalarFeel = Px()*Px()*cos(M_PI*Py()) + 2*Py()*sin(Px())*exp(Px()*Px());
+    auto exprScalarGinac = expr( "x*x*cos(pi*y)+2*y*sin(x)*exp(x*x):x:y"/*, "scalarExpr"*/ );
+    auto uFeel = XhScalar->element( exprScalarFeel );
+    auto uGinac = XhScalar->element( exprScalarGinac );
+    for ( size_type k=0;k<XhScalar->nLocalDof();++k )
+    {
+        BOOST_CHECK_CLOSE( uFeel(k), uGinac(k), 1e-10 );
+        if ( std::abs(uFeel(k)-uGinac(k) ) > 1e-10 )
+            break;
+    }
+
+    // grad scalar
+    auto exprScalarFeelGrad = vec( 2*Px()*cos(M_PI*Py()) + 2*Py()*( cos(Px())*exp(Px()*Px()) + sin(Px())*2*Px()*exp(Px()*Px()) ),
+                                   -M_PI*Px()*Px()*sin(M_PI*Py()) + 2*sin(Px())*exp(Px()*Px()) );
+    auto exprScalarGinacGrad = trans( grad<2>( exprScalarGinac/*, "scalarExprGrad"*/ ) );
+    auto uFeelGrad = XhVectorial->element( exprScalarFeelGrad );
+    auto uGinacGrad = XhVectorial->element( exprScalarGinacGrad );
+    for ( size_type k=0;k<XhVectorial->nLocalDof();++k )
+    {
+        BOOST_CHECK_CLOSE( uFeelGrad(k), uGinacGrad(k), 1e-10 );
+        if ( std::abs(uFeelGrad(k)-uGinacGrad(k) ) > 1e-10 )
+            break;
+    }
+
+    // laplacian scalar
+    auto exprScalarFeelLaplacian = 2*exp(Px()*Px())*(4*Px()*Px()+1)*Py()*sin(Px())+8*exp(Px()*Px())*Px()*Py()*cos(Px())+(2-M_PI*M_PI*Px()*Px())*cos(M_PI*Py());
+    auto exprScalarGinacLaplacian = laplacian( exprScalarGinac/*, "scalarExprLaplacian"*/ );
+    auto uFeelLaplacian = XhScalar->element( exprScalarFeelLaplacian );
+    auto uGinacLaplacian = XhScalar->element( exprScalarGinacLaplacian );
+    for ( size_type k=0;k<XhScalar->nLocalDof();++k )
+    {
+        BOOST_CHECK_CLOSE( uFeelLaplacian(k), uGinacLaplacian(k), 1e-10 );
+        if ( std::abs(uFeelLaplacian(k)-uGinacLaplacian(k) ) > 1e-10 )
+            break;
+    }
+
+    // id vectorial
+    auto exprVectorialFeel = vec( Px()*Px()*cos(M_PI*Py()),
+                                  2*Py()*sin(Px())*exp(Px()*Px()) );
+    auto exprVectorialGinac = expr<2,1>( "{x*x*cos(pi*y),2*y*sin(x)*exp(x*x)}:x:y"/*, "vectorialExpr"*/ );
+    auto uVectorialFeel = XhVectorial->element( exprVectorialFeel );
+    auto uVectorialGinac = XhVectorial->element( exprVectorialGinac );
+    for ( size_type k=0;k<XhVectorial->nLocalDof();++k )
+    {
+        BOOST_CHECK_CLOSE( uVectorialFeel(k), uVectorialGinac(k), 1e-10 );
+        if ( std::abs(uVectorialFeel(k)-uVectorialGinac(k) ) > 1e-10 )
+            break;
+    }
+
+    // div vectorial
+    auto exprVectorialFeelDiv = 2*Px()*cos(M_PI*Py()) + 2*sin(Px())*exp(Px()*Px());
+    auto exprVectorialGinacDiv = div<2>( exprVectorialGinac/*, "vectorialExprDiv"*/ );
+    auto uVectorialFeelDiv = XhScalar->element( exprVectorialFeelDiv );
+    auto uVectorialGinacDiv = XhScalar->element( exprVectorialGinacDiv );
+    for ( size_type k=0;k<XhScalar->nLocalDof();++k )
+    {
+        BOOST_CHECK_CLOSE( uVectorialFeelDiv(k), uVectorialGinacDiv(k), 1e-10 );
+        if ( std::abs(uVectorialFeelDiv(k)-uVectorialGinacDiv(k) ) > 1e-10 )
+            break;
+    }
+
+    // id vf
+    auto exprScalarField = Px()*Px()*cos(M_PI*Py()) + 2*Py()*sin(Px())*exp(Px()*Px());
+    auto scalarField = XhScalar->element( exprScalarField );
+    auto exprScalarFeelVF = 2*Px()*sin(Py())*exp(pow(idv(scalarField),2));
+    auto exprScalarGinacVF = expr( "2*x*sin(y)*exp(u^2):x:y:u", "u", idv(scalarField) );
+    auto uScalarFeelVF = XhScalar->element( exprScalarFeelVF );
+    auto uScalarFeelGinacVF = XhScalar->element( exprScalarGinacVF );
+    for ( size_type k=0;k<XhScalar->nLocalDof();++k )
+    {
+        BOOST_CHECK_CLOSE( uScalarFeelVF(k), uScalarFeelGinacVF(k), 1e-10 );
+        if ( std::abs(uScalarFeelVF(k)-uScalarFeelGinacVF(k) ) > 1e-10 )
+            break;
+    }
+
+    // diff vf
+    auto exprScalarFeelVFDiff = 2*Px()*sin(Py())*2*idv(scalarField)*exp(pow(idv(scalarField),2));
+    auto exprScalarGinacVFDiff = diff( "2*x*sin(y)*exp(u^2):x:u:y", "u", "u", idv(scalarField) );
+    auto uScalarFeelVFDiff = XhScalar->element( exprScalarFeelVFDiff );
+    auto uScalarGinacVFDiff = XhScalar->element( exprScalarGinacVFDiff );
+    for ( size_type k=0;k<XhScalar->nLocalDof();++k )
+    {
+        BOOST_CHECK_CLOSE( uScalarFeelVFDiff(k), uScalarGinacVFDiff(k), 1e-10 );
+        if ( std::abs(uScalarFeelVFDiff(k)-uScalarGinacVFDiff(k) ) > 1e-10 )
+            break;
+    }
+
+}
+
+#if defined(USE_BOOST_TEST)
+
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
+BOOST_AUTO_TEST_SUITE( inner_suite )
+BOOST_AUTO_TEST_CASE( test_0 )
+{
+    runTest0();
+}
+BOOST_AUTO_TEST_CASE( test_1 )
+{
+    runTest1();
+}
+BOOST_AUTO_TEST_SUITE_END()
+
+#else
+
+int main( int argc, char* argv[] )
+{
+    using namespace Feel;
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=makeAbout() );
+    runTest0();
+    runTest1();
+}
+#endif
