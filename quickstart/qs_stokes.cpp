@@ -22,6 +22,7 @@
    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 #include <feel/feel.hpp>
+#include <feel/feelalg/preconditionerbtpcd.hpp>
 
 int main(int argc, char**argv )
 {
@@ -70,7 +71,8 @@ int main(int argc, char**argv )
     a+=on(_range=markedfaces(mesh,"inlet"), _rhs=l, _element=u,
           _expr=g );
 
-    a.solve(_rhs=l,_solution=U);
+    auto a_btpcd = btpcd( _space=Vh );
+    a.solveb(_rhs=l,_solution=U,_backend=backend(),_prec=a_btpcd );
 
     auto e = exporter( _mesh=mesh );
     e->add( "u", u );
