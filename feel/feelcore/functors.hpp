@@ -35,26 +35,15 @@ namespace Feel
 {
 namespace Functor
 {
-/**
- * functors to add two vectors \p x and \p y.
- *
- * The structure must provide \c .size() and \c operator[] to access entries
- *
- * Requirements: x and y must be of the same size
- */
-template<typename T>
-struct AddStdVectors
+template<typename T, typename C>
+static inline void AvgMinMax(const T* const in, T* const inout, const int* const len, C* type)
 {
-    std::vector<T>
-    operator()( std::vector<T> const& x, std::vector<T> const& y )
-        {
-            DCHECK( x.size() == y.size() ) << "incompatible vector size()";
-            std::vector<T> z(x.size());
-            const int s = x.size();
-            for(int i = 0; i < s; ++i ) z[i] = x[i] + y[i];
-            return z;
-        }
-};
+    for(int i = 0; i < *len; i += 3) {
+        inout[0 + 3 * i] += in[0 + 3 * i];
+        inout[1 + 3 * i] = std::min(in[1 + 3 * i], inout[1 + 3 * i]);
+        inout[2 + 3 * i] = std::max(in[2 + 3 * i], inout[2 + 3 * i]);
+    }
+}
 } // Functor
 } // Feel
 
