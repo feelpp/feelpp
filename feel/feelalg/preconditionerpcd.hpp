@@ -29,12 +29,13 @@
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelalg/preconditioner.hpp>
 #include <feel/feelalg/operator.hpp>
+#include <feel/feelalg/preconditioner.hpp>
 
 namespace Feel
 {
 
 template< typename pressure_space_type, uint16_type uOrder>
-class PreconditionerPCD : public Preconditioner
+class PreconditionerPCD : public Preconditioner<typename  pressure_space_type::value_type>
 {
 public:
 
@@ -52,10 +53,10 @@ public:
     typedef typename pressure_space_type::mesh_type mesh_type;
     typedef typename pressure_space_type::mesh_ptrtype mesh_ptrtype;
 
-    typedef OperatorMatrix op_mat_type;
+    typedef OperatorMatrix<value_type> op_mat_type;
     typedef boost::shared_ptr<op_mat_type> op_mat_ptrtype;
 
-    typedef OperatorInverse<OperatorMatrix> op_inv_type;
+    typedef OperatorInverse<op_mat_type> op_inv_type;
     typedef boost::shared_ptr<op_inv_type> op_inv_ptrtype;
 
     typedef OperatorCompose<op_inv_type, op_mat_type> comp1_type;
@@ -110,7 +111,7 @@ private:
 
     std::map< std::string, std::set<flag_type> > M_bcFlags;
 
-    comp2_ptrtype precOp;
+    comp2_ptrtype precOp, precMass, precDiff;
 
     double M_nu, M_alpha;
 
@@ -141,11 +142,11 @@ PreconditionerPCD<pressure_space_type,uOrder>::PreconditionerPCD( pressure_space
     M_Qh( Qh ),
     p( M_Qh, "p" ),
     q( M_Qh, "q" ),
-    M_mass( M_b->newMatrix(Qh, Qh) ),
-    M_diff( M_b->newMatrix(Qh, Qh) ),
-    M_conv( M_b->newMatrix(Qh, Qh) ),
-    G( M_b->newMatrix(Qh, Qh) ),
-    rhs( M_b->newVector( Qh ) ),
+    M_mass( backend()->newMatrix(Qh, Qh) ),
+    M_diff( backend()->newMatrix(Qh, Qh) ),
+    M_conv( backend()->newMatrix(Qh, Qh) ),
+    G( backend()->newMatrix(Qh, Qh) ),
+    rhs( backend()->newVector( Qh ) ),
     M_bcFlags( bcFlags ),
     M_nu( nu ),
     M_alpha( alpha )
@@ -170,7 +171,6 @@ PreconditionerPCD<pressure_space_type,uOrder>::PreconditionerPCD( pressure_space
 template < typename pressure_space_type, uint16_type uOrder >
 PreconditionerPCD<pressure_space_type,uOrder>::PreconditionerPCD( const PreconditionerPCD& tc )
     :
-    M_b( tc.M_b ),
     M_Qh( tc.M_Qh ),
     p( tc.p ),
     q( tc.q ),

@@ -31,7 +31,7 @@
 #include <feel/feelalg/preconditioner.hpp>
 #include <feel/feelalg/preconditionerpcd.hpp>
 
-#include "preconditionerPCD.hpp"
+#include <feel/feelalg/preconditionerPCD.hpp>
 
 namespace Feel
 {
@@ -65,8 +65,8 @@ public:
     static const uint16_type uOrder = velocity_space_type::basis_type::nOrder;
     static const uint16_type pOrder = pressure_space_type::basis_type::nOrder;
 
-    typedef OperatorMatrix op_mat_type;
-    typedef boost::shared_ptr<OperatorMatrix> op_mat_ptrtype;
+    typedef OperatorMatrix<value_type> op_mat_type;
+    typedef boost::shared_ptr<op_mat_type> op_mat_ptrtype;
 
     typedef PreconditionerPCD<pressure_space_type, uOrder> op_pcd_type;
     typedef boost::shared_ptr<op_pcd_type> op_pcd_ptrtype;
@@ -88,12 +88,12 @@ public:
     template< typename Expr_convection, typename Expr_bc >
     void update( Expr_convection const& expr_b, Expr_bc const& g, double& time2Update );
 
-    int apply( const Epetra_MultiVector & X, Epetra_MultiVector & Y ) const
+    int apply( const vector_type & X, vector_type & Y ) const
     {
         return (-1); //Not implemented
     }
 
-    int applyInverse ( const Epetra_MultiVector& X, Epetra_MultiVector& Y ) const;
+    int applyInverse ( const vector_type& X, vector_type& Y ) const;
 
     // other function
     int SetUseTranspose( bool UseTranspose)
@@ -120,36 +120,18 @@ public:
     {
         return(false);
     }
-
-
-    const Epetra_Comm & Comm() const
-    {
-        return( M_globalMap.Comm() );
-    }
-
-    const Epetra_Map & OperatorDomainMap() const
-    {
-        return( M_globalMap );
-    }
-
-    const Epetra_Map & OperatorRangeMap() const
-    {
-        return( M_globalMap );
-    }
-
+    
     ~PreconditionerBTPCD(){};
 
 private:
 
     backend_ptrtype M_b;
-    boost::shared_ptr<BackendTrilinos> M_bT;
+    backend_ptrtype M_bT;
 
     space_ptrtype M_Xh;
 
     velocity_space_ptrtype M_Vh;
     pressure_space_ptrtype M_Qh;
-
-    Epetra_Map M_globalMap;
 
     sparse_matrix_ptrtype M_helm, G, M_div;
     op_mat_ptrtype divOp, helmOp;
@@ -163,7 +145,7 @@ private:
 
     std::map<std::string, std::set<flag_type> > M_bcFlags;
 
-    operator_ptrtype precHelm;
+    op_mat_ptrtype precHelm;
 };
 
 
@@ -279,7 +261,8 @@ PreconditionerBTPCD<space_type>::assembleSchurApp( double nu, double alpha )
 template < typename space_type >
 template< typename Expr_convection, typename Expr_bc >
 void
-PreconditionerBTPCD<space_type>::update( Expr_convection const& expr_b, Expr_bc const& g, double& time2Update )
+PreconditionerBTPCD<space_type>::update( Expr_convection const& expr_b, 
+                                         Expr_bc const& g, double& time2Update )
 {
     static bool init_G = true;
 
@@ -288,9 +271,9 @@ PreconditionerBTPCD<space_type>::update( Expr_convection const& expr_b, Expr_bc 
     if ( !init_G )
         G->zero();
 
-    auto g = form2( _trial=M_Vh, _test=M_Vh, _matrix=G );
+    auto lg = form2( _trial=M_Vh, _test=M_Vh, _matrix=G );
     
-    g = integrate( elements(M_Xh->mesh()),
+    lg = integrate( elements(M_Xh->mesh()),
                    trans( gradt(u)*val(expr_b) )*id(v)
                    );
 
@@ -301,7 +284,7 @@ PreconditionerBTPCD<space_type>::update( Expr_convection const& expr_b, Expr_bc 
     std::set<flag_type>::const_iterator diriIter;
     for( auto dir : M_bcFlags["Dirichlet"] )
     {
-        a += on( markedfaces(M_Xh->mesh(), dir ), u, M_rhs, g, ON_ELIMINATION );
+        lg += on( _range=markedfaces(M_Xh->mesh(), dir ), _element=u, _rhs=M_rhs, _expr=g );
     }
 
     helmOp = op( G, "HN" );
@@ -319,23 +302,29 @@ template < typename space_type >
 int
 PreconditionerBTPCD<space_type>::applyInverse ( const vector_type& X, vector_type& Y ) const
 {
+#warning TODO: applyInverse
+#if 0
+    element_type x = Xh->element(X);
+    element_type y = Xh->element(Y);
+
+
     //LOG(INFO) << "Create velocity component...\n";
-    vector_type velocity_in ( getComponent<0>(M_Xh, X) );
+    auto velocity_in = X.template element<0>();
     
-    vector_type pressure_in ( getComponent<1>(M_Xh, X) );
+    auto  pressure_in = X.template element<1>();
 
     //LOG(INFO) << "Copy velocity component...\n";
-    vector_type velocity_out( velocity_in );
+    auto velocity_out = velocity_in.clone();
 
     //LOG(INFO) << "Copy pressure component...\n";
-    vector_type pressure_out( pressure_in);
+    auto pressure_out = pressure_in.clone();
 
 
     //LOG(INFO) << "apply inverse helmholtz...\n";
     helmOp->applyInverse(velocity_in, velocity_out);
 
     //LOG(INFO) << "apply divergence...\n";
-    vector_type aux( pressure_in );
+    auto aux = pressure_in.clone();
     divOp->apply( velocity_out, aux );
 
     pressure_in.Update( 1.0, aux, -1.0);
@@ -344,13 +333,24 @@ PreconditionerBTPCD<space_type>::applyInverse ( const vector_type& X, vector_typ
     pcdOp->applyInverse(pressure_in, pressure_out);
 
     //LOG(INFO) << "Update pressure...\n";
-    UpdateComponent<1>(M_Xh, Y, pressure_out);
-
-    //LOG(INFO) << "Update velocity...\n";
-    UpdateComponent<0>(M_Xh, Y, velocity_out);
-
+    y.template element<0>() = velocity_out;
+    y.template element<1>() = pressure_out;
+    LOG(INFO) << "Update velocity...\n";
+#endif
     return 0;
 }
 
+BOOST_PARAMETER_MEMBER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
+                                 btpcd,
+                                 tag,
+                                 ( required
+                                   ( space, *) )
+                                 ( optional
+                                   ( prefix, *( boost::is_convertible<mpl::_,std::string> ), "" )
+                                   )
+                                 )
+{
+
+} // btcpd
 } // Feel
 #endif
