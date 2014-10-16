@@ -102,21 +102,6 @@ namespace parameter = boost::parameter;
 namespace detail
 {
 
-
-template<typename T>
-struct vector_plus
-{
-    std::vector<T> operator()( std::vector<T> const& v1, std::vector<T> const& v2 ) const
-    {
-        FEELPP_ASSERT( v1.size() == v2.size() )( v1.size() )( v2.size() ).error( "invalid vector size for vector_plus<>" );
-        std::vector<T> res( v1.size() );
-
-        for ( size_type i = 0; i < v1.size(); ++i )
-            res[i]=v1[i]+v2[i];
-
-        return res;
-    }
-};
 template<typename T,int M, int N>
 struct ID
 {
@@ -1775,7 +1760,7 @@ public:
                 //DVLOG(2) << "Context size: " << this->size() << "\n";
 
                 if ( nprocs > 1 )
-                    mpi::all_reduce( M_Xh->mesh()->comm(), found_pt, global_found_pt, Feel::detail::vector_plus<int>() );
+                    mpi::all_reduce( M_Xh->mesh()->comm(), found_pt.data(), found_pt.size(), global_found_pt.data(), std::plus<int>() );
                 else
                     global_found_pt[ 0 ] = found_pt[ 0 ];
 
@@ -1783,7 +1768,7 @@ public:
             else
             {
                 if ( nprocs > 1 )
-                    mpi::all_reduce( M_Xh->mesh()->comm(), found_pt, global_found_pt, Feel::detail::vector_plus<int>() );
+                    mpi::all_reduce( M_Xh->mesh()->comm(), found_pt.data(), found_pt.size(), global_found_pt.data(), std::plus<int>() );
 
             }//not found case
 
