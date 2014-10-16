@@ -777,8 +777,6 @@ CRBTrilinear<TruthModelType>::findNearestNeighborInWNmu( parameter_type const& m
     //std::cout<<"[CRBTrilinear::findNearestNeighborInWNmu] for Gr = "<<mu(0)<<" th nearest neighbor in WNmu is "<<neighbor(0)<<" at index "<<index<<std::endl;
 }
 
-
-
 template<typename TruthModelType>
 typename boost::tuple<std::vector<double>,typename CRBTrilinear<TruthModelType>::matrix_info_tuple >
 CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu,
@@ -815,10 +813,24 @@ CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu,
     //we look for the nearest neighbor of mu in the sampling WNmu
     //let i the index of this neighbor in WNmu, we will set zeros in uN except at the i^th component where we will set 1
     uN[0].setZero( (int) N );
-    parameter_type neighbor( this->M_Dmu );
-    int index;
-    findNearestNeighborInWNmu(  mu,  neighbor, index );
-    if( this->vm()["crb.cvg-study"].template as<bool>() == true )
+    int number_of_neighbors = M_N - N + 1;
+    std::vector<int> index_vector;
+    sampling_ptrtype S = this->M_WNmu->searchNearestNeighbors( mu, number_of_neighbors, index_vector);
+    int n_index=0;
+    //with this loop we check that the index of the nearest neighbor is not out
+    //of range. This case only happens when you do not want to use all the reduced basis :
+    // online Wn size < offline Wn size
+    do
+    {
+        index=index_vector[n_index];
+        n_index++;
+    }while( index>=N );
+
+    //parameter_type neighbor( this->M_Dmu );
+    //int index;
+    //    findNearestNeighborInWNmu(  mu,  neighbor, index );
+
+     if( this->vm()["crb.cvg-study"].template as<bool>() == true )
     {
         //in this case, index may be smaller than uN.size
         //so we do nothing
