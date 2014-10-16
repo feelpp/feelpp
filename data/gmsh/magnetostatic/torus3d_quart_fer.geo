@@ -18,7 +18,7 @@ P2= newp; Point(P2) = {r2,0,-h, lc};
 P3= newp; Point(P3) = {r2,0, h, lc};
 P4= newp; Point(P4) = {r1,0, h, lc};
 
-// Define fer section
+// Define iron section
 PF1= newp; Point(PF1) = {r1/4.0,0,-hf, lc};
 PF2= newp; Point(PF2) = {r2/4.0,0,-hf, lc};
 PF3= newp; Point(PF3) = {r2/4.0,0, hf, lc};
@@ -81,7 +81,7 @@ Extrude { {0,0,1} , {0,0,0} , Pi/2. } {
 Physical Volume("Torus") = {1}; // Tore
 Physical Volume("Air") = {2}; // Air
 Physical Volume("Inf") = {3}; // Infini
-Physical Volume("Fer") = {4}; // Fer
+Physical Volume("Iron") = {4}; // Fer
 
 Physical Surface("V0") = {10};   // V0
 Physical Surface("V1") = {46};  // V1
@@ -91,12 +91,12 @@ Physical Surface("HChannel1") = {33};  // Hchannel Bas
 Physical Surface("HChannel2") = {41};  // Hchannel Haut
 
 // Fer
-Physical Surface("V0_Fer") = {12};   // V0
-Physical Surface("V1_Fer") = {124};  // V1
-Physical Surface("Rint_Fer") = {123};  // Rint
-Physical Surface("Rext_Fer") = {115};  // Rext
-Physical Surface("HChannel1_Fer") = {111};  // Hchannel Bas
-Physical Surface("HChannel2_Fer") = {119};  // Hchannel Haut
+Physical Surface("V0_Iron") = {12};   // V0
+Physical Surface("V1_Iron") = {144};  // V1
+Physical Surface("Rint_Iron") = {99};  // Rint
+Physical Surface("Rext_Iron") = {91};  // Rext
+Physical Surface("HChannel1_Iron") = {87};  // Hchannel Bas
+Physical Surface("HChannel2_Iron") = {95};  // Hchannel Haut
 
 Physical Surface("Border0") = {18, 24};  // Sym
 Physical Surface("Border1") = {100, 122};  // Sym
