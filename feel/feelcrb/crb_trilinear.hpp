@@ -813,10 +813,11 @@ CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu,
     //we look for the nearest neighbor of mu in the sampling WNmu
     //let i the index of this neighbor in WNmu, we will set zeros in uN except at the i^th component where we will set 1
     uN[0].setZero( (int) N );
-    int number_of_neighbors = M_N - N + 1;
+    int number_of_neighbors = this->M_N - N + 1;
     std::vector<int> index_vector;
     sampling_ptrtype S = this->M_WNmu->searchNearestNeighbors( mu, number_of_neighbors, index_vector);
     int n_index=0;
+    int index;
     //with this loop we check that the index of the nearest neighbor is not out
     //of range. This case only happens when you do not want to use all the reduced basis :
     // online Wn size < offline Wn size
