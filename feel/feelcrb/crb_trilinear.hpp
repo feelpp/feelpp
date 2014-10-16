@@ -766,7 +766,9 @@ CRBTrilinear<TruthModelType>::offline()
 
 template<typename TruthModelType>
 void
-CRBTrilinear<TruthModelType>::findNearestNeighborInWNmu( parameter_type const& mu, parameter_type & neighbor, int & index ) const
+CRBTrilinear<TruthModelType>::findNearestNeighborInWNmu( parameter_type const& mu,
+                                                         parameter_type & neighbor,
+                                                         int & index ) const
 {
     std::vector<int> index_vector;
     sampling_ptrtype S =  this->M_WNmu->searchNearestNeighbors( mu, 1 , index_vector);
@@ -774,6 +776,7 @@ CRBTrilinear<TruthModelType>::findNearestNeighborInWNmu( parameter_type const& m
     index = index_vector[0];
     //std::cout<<"[CRBTrilinear::findNearestNeighborInWNmu] for Gr = "<<mu(0)<<" th nearest neighbor in WNmu is "<<neighbor(0)<<" at index "<<index<<std::endl;
 }
+
 
 
 template<typename TruthModelType>
@@ -830,45 +833,43 @@ CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu,
     Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic , 1> > map_uN ( uN_data, N );
     Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic , Eigen::Dynamic> > map_J ( j_data, N , N );
 
-    double gr = mu( 0 );
+    /*double gr = mu( 0 );
     double pr = mu( 1 );
-
     bool use_continuity = this->vm()["crb.use-continuity"].template as<bool>();
     int Nmax=1;
-
     if( use_continuity )
         Nmax=std::max( 1.0,std::max( std::ceil( std::log( gr ) ),std::ceil( std::log( pr )-std::log( 1.e-2 ) ) ) );
 
     for ( int i = 0; i < Nmax; ++i )
     {
+     double current_Grashofs;
+     double current_Prandtl;
+     if( use_continuity )
+     {
+     int denom = ( Nmax==1 )?1:Nmax-1;
+     current_Grashofs = math::exp( math::log( 1. )+i*( math::log( gr )-math::log( 1. ) )/denom );
+     current_Prandtl = math::exp( math::log( 1.e-2 )+i*( math::log( pr )-math::log( 1.e-2 ) )/denom );
+     //LOG( INFO ) << "[CRBTrilinear::lb] i/N = " << i+1 << "/" << Nmax ;
+     //LOG( INFO ) << "[CRBTrilinear::lb] intermediary Grashof = " << current_Grashofs;
+     //LOG( INFO ) << "[CRBTrilinear::lb] and Prandtl = " << current_Prandtl ;
+     }
+     else
+     {
+     current_Grashofs = gr;
+     current_Prandtl = pr;
+     }*/
 
-        double current_Grashofs;
-        double current_Prandtl;
-        if( use_continuity )
-        {
-            int denom = ( Nmax==1 )?1:Nmax-1;
-            current_Grashofs = math::exp( math::log( 1. )+i*( math::log( gr )-math::log( 1. ) )/denom );
-            current_Prandtl = math::exp( math::log( 1.e-2 )+i*( math::log( pr )-math::log( 1.e-2 ) )/denom );
-            //LOG( INFO ) << "[CRBTrilinear::lb] i/N = " << i+1 << "/" << Nmax ;
-            //LOG( INFO ) << "[CRBTrilinear::lb] intermediary Grashof = " << current_Grashofs;
-            //LOG( INFO ) << "[CRBTrilinear::lb] and Prandtl = " << current_Prandtl ;
-        }
-        else
-        {
-            current_Grashofs = gr;
-            current_Prandtl = pr;
-        }
+    //current_mu << current_Grashofs, current_Prandtl;
+    current_mu = mu;
 
-        current_mu << current_Grashofs, current_Prandtl;
+    this->updateLinearTerms( current_mu , N );
 
-        this->updateLinearTerms( current_mu , N );
-
-        //this->M_nlsolver->setRelativeResidualTol( 1e-12 );
-        this->M_nlsolver->map_dense_jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2  , current_mu , N );
-        this->M_nlsolver->map_dense_residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2  , current_mu , N );
-        this->M_nlsolver->setType( TRUST_REGION );
-        this->M_nlsolver->solve( map_J , map_uN , map_R, 1e-12, 100);
-    }
+    //this->M_nlsolver->setRelativeResidualTol( 1e-12 );
+    this->M_nlsolver->map_dense_jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2  , current_mu , N );
+    this->M_nlsolver->map_dense_residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2  , current_mu , N );
+    this->M_nlsolver->setType( TRUST_REGION );
+    this->M_nlsolver->solve( map_J , map_uN , map_R, 1e-12, 100);
+    //}
 
     LOG(INFO) << "[CRBTrilinear::lb] solve with Newton done";
 
