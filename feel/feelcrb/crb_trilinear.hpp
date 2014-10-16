@@ -470,16 +470,66 @@ CRBTrilinear<TruthModelType>::offline()
     bool use_predefined_WNmu = this->vm()["crb.use-predefined-WNmu"].template as<bool>() ;
     int N_log_equi = this->vm()["crb.use-logEquidistributed-WNmu"].template as<int>() ;
     int N_equi = this->vm()["crb.use-equidistributed-WNmu"].template as<int>() ;
+    int N_random = ioption( "crb.use-random-WNmu" );
 
-    if( N_log_equi > 0 || N_equi > 0 )
-        use_predefined_WNmu = true;
+    /*    if( N_log_equi > 0 || N_equi > 0 )
+     use_predefined_WNmu = true;*/
 
-    if ( use_predefined_WNmu )
+    // file where the sampling is savec
+    std::string file_name = ( boost::format("SamplingWNmu") ).str();
+    std::ifstream file ( file_name );
+
+    this->M_WNmu->clear();
+
+    if ( use_predefined_WNmu ) // In this case we want to read the sampling
     {
+        if( ! file ) // The user forgot to give the sampling file
+            throw std::logic_error( "[CRB::offline] ERROR the file SamplingWNmu doesn't exist so it's impossible to known which parameters you want to use to build the database" );
+        else
+        {
+            int sampling_size = this->M_WNmu->readFromFile(file_name);
+            if( Environment::isMasterRank() )
+                std::cout<<"[CRB::offline] Read WNmu ( sampling size : "
+                         << sampling_size <<" )"<<std::endl;
+            LOG( INFO )<<"[CRB::offline] Read WNmu ( sampling size : "
+                       << sampling_size <<" )";
+        }
+    }
+    else // We generate the sampling with choosen strategy
+    {
+        if ( N_log_equi>0 )
+        {
+            this->M_WNmu->logEquidistribute( N_log_equi , true );
+            if( Environment::isMasterRank() )
+                std::cout<<"[CRB::offline] Log-Equidistribute WNmu ( sampling size : "
+                         <<N_log_equi<<" )"<<std::endl;
+            LOG( INFO )<<"[CRB::offline] Log-Equidistribute WNmu ( sampling size : "
+                       <<N_log_equi<<" )";
+        }
+        else if ( N_equi>0 )
+        {
+            this->M_WNmu->equidistribute( N_equi , true );
+            if( Environment::isMasterRank() )
+                std::cout<<"[CRB::offline] Equidistribute WNmu ( sampling size : "
+                         <<N_equi<<" )"<<std::endl;
+            LOG( INFO )<<"[CRB::offline] Equidistribute WNmu ( sampling size : "
+                       <<N_equi<<" )";
+        }
+        else if ( N_random>0 )
+        {
+            this->M_WNmu->randomize( N_random , true );
+            if( Environment::isMasterRank() )
+                std::cout<<"[CRB::offline] Randomize WNmu ( sampling size : "
+                         <<N_random<<" )"<<std::endl;
+            LOG( INFO )<<"[CRB::offline] Randomize WNmu ( sampling size : "
+                       <<N_random<<" )";
+        }
+        else // In this case we don't know what sampling to use
+            throw std::logic_error( "[CRB::offline] ERROR : You have to choose an appropriate strategy for the offline sampling : random, equi, logequi or predefined" );
 
-        std::string file_name = ( boost::format("SamplingWNmu") ).str();
-        std::ifstream file ( file_name );
-        if( ! file )
+        this->M_WNmu->writeOnFile(file_name);
+
+        /*        if( ! file )
         {
             this->M_WNmu->clear();
             std::vector< parameter_type > V;
@@ -516,19 +566,13 @@ CRBTrilinear<TruthModelType>::offline()
             this->M_WNmu->setElements( V );
             this->M_iter_max = this->M_WNmu->size();
             this->M_WNmu->writeOnFile(file_name);
-        }
-        else
-        {
-            this->M_WNmu->clear();
-            int sampling_size = this->M_WNmu->readFromFile(file_name);
-            this->M_iter_max = sampling_size;
-        }
-        mu = this->M_WNmu->at( this->M_N ); // first element
-        //std::cout<<" [use_predefined_WNmu] mu = \n"<<mu<<std::endl;
+         }*/
+        use_predefined_WNmu=true;
+    } //build sampling
 
-        LOG( INFO )<<"[CRB::offline] read WNmu ( sampling size : "<<this->M_iter_max<<" )";
+    this->M_iter_max = this->M_WNmu->size();
+    mu = this->M_WNmu->at( this->M_N ); // first element
 
-    }
 
     if( this->M_error_type == CRB_NO_RESIDUAL || use_predefined_WNmu )
     {
@@ -734,8 +778,12 @@ CRBTrilinear<TruthModelType>::findNearestNeighborInWNmu( parameter_type const& m
 
 template<typename TruthModelType>
 typename boost::tuple<std::vector<double>,typename CRBTrilinear<TruthModelType>::matrix_info_tuple >
-CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vectorN_type >& uN, std::vector< vectorN_type >& uNdu ,
-                                  std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold, bool print_rb_matrix, int K ) const
+CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu,
+                                  std::vector< vectorN_type >& uN,
+                                  std::vector< vectorN_type >& uNdu,
+                                  std::vector<vectorN_type> & uNold,
+                                  std::vector<vectorN_type> & uNduold,
+                                  bool print_rb_matrix, int K ) const
 {
     uN.resize(1);
     if ( N > this->M_N ) N =this->M_N;
@@ -931,7 +979,7 @@ CRBTrilinear<TruthModelType>::updateResidual( const map_dense_vector_type& map_X
     matrixN_type temp ( N , N );
     temp.setZero( N , N );
 
-    map_R = M_linear_terms;
+    map_R = -M_linear_terms;
     map_R += M_bilinear_terms * map_X ;
 
     bool enable = this->vm()["crb.enable-convection-terms"].template as<bool>();
