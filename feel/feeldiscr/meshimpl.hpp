@@ -319,8 +319,14 @@ Mesh<Shape, T, Tag>::updateForUse()
         M_meas = 0;
         M_local_measbdy = M_measbdy;
         M_measbdy = 0;
+#if BOOST_VERSION >= 105500
         std::vector<value_type> gmeas{ M_local_meas, M_local_measbdy };
         mpi::all_reduce(this->worldComm(), mpi::inplace(gmeas.data()), 2, std::plus<value_type>());
+#else
+        std::vector<value_type> lmeas{ M_local_meas, M_local_measbdy };
+        std::vector<value_type> gmeas( 2, 0.0 );
+        mpi::all_reduce(this->worldComm(), lmeas.data(), 2, gmeas.data(), std::plus<value_type>());
+#endif
         M_meas = gmeas[0];
         M_measbdy = gmeas[1];
 
@@ -350,17 +356,17 @@ Mesh<Shape, T, Tag>::updateForUse()
         M_h_avg = 0;
         M_h_min = std::numeric_limits<value_type>::max();
         M_h_max = 0;
-        for ( const element_type& elt : this->elementsRange() )
+        for ( const element_type& elt : allelements( this->shared_from_this() ) )
         {
             M_h_avg += elt.h();
             M_h_min = std::min(M_h_min, elt.h());
             M_h_max = std::max(M_h_max, elt.h());
         }
         M_h_avg /= this->numGlobalElements();
-        std::array<value_type, 3> reduction { { M_h_avg, M_h_min, M_h_max } };
+        value_type reduction[3] = { M_h_avg, M_h_min, M_h_max };
         MPI_Op op;
         MPI_Op_create((MPI_User_function*)(Functor::AvgMinMax<value_type, WorldComm::communicator_type>), 1, &op);
-        MPI_Allreduce(MPI_IN_PLACE, reduction.data(), 3, mpi::get_mpi_datatype<value_type>(), op, this->worldComm());
+        MPI_Allreduce(MPI_IN_PLACE, reduction, 3, mpi::get_mpi_datatype<value_type>(), op, this->worldComm());
         MPI_Op_free(&op);
 
         M_h_avg = reduction[0];
