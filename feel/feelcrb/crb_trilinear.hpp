@@ -1017,7 +1017,7 @@ CRBTrilinear<TruthModelType>::updateResidual( const map_dense_vector_type& map_X
     {
         //bring the residual matrix from the model and then project it into the reduced basis
         auto expansionX = this->expansion( map_X , N , this->M_model->rBFunctionSpace()->primalRB() );
-        auto R = this->M_model->residual( expansionX );
+        auto R = this->M_model->residual( expansionX, mu );
         vectorN_type model_reduced_residual( N );
         element_ptrtype eltR( new element_type( this->M_model->functionSpace() ) );
         for(int i=0; i<eltR->localSize();i++)
