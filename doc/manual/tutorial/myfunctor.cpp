@@ -28,6 +28,7 @@
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/operatorlagrangep1.hpp>
 #include <feel/feelfilters/exporter.hpp>
+#include <feel/feelvf/function.hpp>
 using namespace Feel;
 namespace Feel
 {
@@ -71,8 +72,8 @@ int main(int argc, char**argv )
 		//! [functors]
 
 		//! [projection]
-		auto u = vf::project(spaces,elements(mesh),idf(functor1)); // Will contain x
-		auto v = vf::project(spaces,elements(mesh),idf(functor2)); // will contain y
+		auto u = vf::project(_space=spaces,_range=elements(mesh),_expr=idf(functor1)); // Will contain x
+		auto v = vf::project(_space=spaces,_range=elements(mesh),_expr=idf(functor2)); // will contain y
 		//auto V = vf::project(spacev,elements(mesh),vec(idf(functor1),idf(functor2)) );
 		//! [projection]
 		
