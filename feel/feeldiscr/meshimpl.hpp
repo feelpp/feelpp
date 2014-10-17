@@ -356,7 +356,7 @@ Mesh<Shape, T, Tag>::updateForUse()
         M_h_avg = 0;
         M_h_min = std::numeric_limits<value_type>::max();
         M_h_max = 0;
-        for ( const element_type& elt : this->elementsRange() )
+        for ( const element_type& elt : allelements( this->shared_from_this() ) )
         {
             M_h_avg += elt.h();
             M_h_min = std::min(M_h_min, elt.h());
