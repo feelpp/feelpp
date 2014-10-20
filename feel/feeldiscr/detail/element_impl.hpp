@@ -352,8 +352,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator()( node_type const&
 
         if ( nprocs > 1 )
         {
-            //mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, std::plus<std::vector<int> >() );
-            mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, Feel::detail::vector_plus<int>() );
+            mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt.data(), found_pt.size(), global_found_pt.data(), std::plus<int>() );
         }
 
 #else
@@ -381,8 +380,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator()( node_type const&
 
         if ( functionSpace()->mesh()->comm().size() > 1 )
         {
-            //mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, std::plus<std::vector<int> >() );
-            mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, Feel::detail::vector_plus<int>() );
+            mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt.data(), found_pt.size(), global_found_pt.data(), std::plus<int>() );
         }
 
 #endif /* FEELPP_HAS_MPI */
@@ -618,8 +616,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad( node_type const& __x )
 
         if ( functionSpace()->mesh()->comm().size() > 1 )
         {
-            //mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, std::plus<std::vector<int> >() );
-            mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, Feel::detail::vector_plus<int>() );
+            mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt.data(), found_pt.size(), global_found_pt.data(), std::plus<int>() );
         }
 
 #else
@@ -647,8 +644,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad( node_type const& __x )
 
         if ( functionSpace()->mesh()->comm().size() > 1 )
         {
-            //mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, std::plus<std::vector<int> >() );
-            mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, Feel::detail::vector_plus<int>() );
+            mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt.data(), found_pt.size(), global_found_pt.data(), std::plus<int>() );
         }
 
 #endif /* FEELPP_HAS_MPI */

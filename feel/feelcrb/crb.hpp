@@ -6204,6 +6204,7 @@ CRB<TruthModelType>::exportBasisFunctions( const export_vector_wn_type& export_v
     auto first_element = first_wn[0];
 
     exporter->step( 0 )->setMesh( first_element.functionSpace()->mesh() );
+    exporter->addRegions();
     int basis_number=0;
     BOOST_FOREACH( auto wn , vect_wn )
     {
@@ -6235,6 +6236,7 @@ CRB<TruthModelType>::exportBasisFunctions( const export_vector_wn_type& export_v
         }
         basis_number++;
     }
+
 
     exporter->save();
 
