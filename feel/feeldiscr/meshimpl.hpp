@@ -319,9 +319,14 @@ Mesh<Shape, T, Tag>::updateForUse()
         M_meas = 0;
         M_local_measbdy = M_measbdy;
         M_measbdy = 0;
+#if BOOST_VERSION >= 105500
+        std::vector<value_type> gmeas{ M_local_meas, M_local_measbdy };
+        mpi::all_reduce(this->worldComm(), mpi::inplace(gmeas.data()), 2, std::plus<value_type>());
+#else
         std::vector<value_type> lmeas{ M_local_meas, M_local_measbdy };
-        std::vector<value_type> gmeas( 2, 0. );
-        mpi::all_reduce(this->worldComm(), lmeas, gmeas, Functor::AddStdVectors<value_type>());
+        std::vector<value_type> gmeas( 2, 0.0 );
+        mpi::all_reduce(this->worldComm(), lmeas.data(), 2, gmeas.data(), std::plus<value_type>());
+#endif
         M_meas = gmeas[0];
         M_measbdy = gmeas[1];
 
@@ -348,24 +353,25 @@ Mesh<Shape, T, Tag>::updateForUse()
 
     // compute h information: average, min and max
     {
-        element_iterator iv,  en;
-        boost::tie( iv, en ) = this->elementsRange();
-        value_type h_min = iv->h();
-        value_type h_max = iv->h();
-        value_type h_avg = 0;
-        for ( ; iv != en; ++iv )
-        {
-            h_min = (h_min>iv->h())?iv->h():h_min;
-            h_max = (h_max<iv->h())?iv->h():h_max;
-            h_avg += iv->h();
-        }
-        h_avg /= this->numGlobalElements();
         M_h_avg = 0;
-        M_h_min = 0;
+        M_h_min = std::numeric_limits<value_type>::max();
         M_h_max = 0;
-        mpi::all_reduce(this->worldComm(), h_avg, M_h_avg, std::plus<value_type>());
-        mpi::all_reduce(this->worldComm(), h_min, M_h_min, mpi::minimum<value_type>());
-        mpi::all_reduce(this->worldComm(), h_max, M_h_max, mpi::maximum<value_type>());
+        for ( const element_type& elt : allelements( this->shared_from_this() ) )
+        {
+            M_h_avg += elt.h();
+            M_h_min = std::min(M_h_min, elt.h());
+            M_h_max = std::max(M_h_max, elt.h());
+        }
+        M_h_avg /= this->numGlobalElements();
+        value_type reduction[3] = { M_h_avg, M_h_min, M_h_max };
+        MPI_Op op;
+        MPI_Op_create((MPI_User_function*)(Functor::AvgMinMax<value_type, WorldComm::communicator_type>), 1, &op);
+        MPI_Allreduce(MPI_IN_PLACE, reduction, 3, mpi::get_mpi_datatype<value_type>(), op, this->worldComm());
+        MPI_Op_free(&op);
+
+        M_h_avg = reduction[0];
+        M_h_min = reduction[1];
+        M_h_max = reduction[2];
 
         LOG(INFO) << "h average : " << this->hAverage() << "\n";
         LOG(INFO) << "    h min : " << this->hMin() << "\n";
