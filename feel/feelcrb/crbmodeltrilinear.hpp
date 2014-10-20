@@ -239,9 +239,9 @@ public:
         return this->M_model->jacobian( xi );
     }
 
-    vector_ptrtype residual( element_type const& xi, const parameter_type & mu )
+    vector_ptrtype residual( element_type const& xi )
     {
-        return this->M_model->residual( xi,mu );
+        return this->M_model->residual( xi );
     }
 
 
