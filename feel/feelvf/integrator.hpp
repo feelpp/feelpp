@@ -5231,7 +5231,9 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         {
             int id = omp_get_thread_num();
 
+#if defined(FEELPP_HAS_HARTS)
             RunTimeSystem::PerfCounterMng<std::string> local_perf_mng ;
+#endif
 
             //local_perf_mng.init("Creation") ;
             //local_perf_mng.start("Creation") ;
@@ -5239,7 +5241,9 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
             harts_context_type * t = new harts_context_type();
             //local_perf_mng.stop("Creation") ;
 
+#if defined(FEELPP_HAS_HARTS)
             std::cout << Environment::worldComm().rank() << "|" << id << " Creation:" << local_perf_mng.getValueInSeconds("Creation") << std::endl;
+#endif
 
             t->computeCPUOMP(id, &expr, &im, &elt_it, &(_v[id]));
             out[id] = t->result();

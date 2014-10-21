@@ -33,7 +33,6 @@
 
 #include <feel/feelcore/debug.hpp>
 #include <feel/feelfilters/gmsh.hpp>
-#include <feel/feelfilters/exporterensight.hpp>
 #include <feel/feelfilters/importergmsh.hpp>
 #include <feel/feelfilters/gmshhypercubedomain.hpp>
 #include <feel/feelfilters/gmshsimplexdomain.hpp>
