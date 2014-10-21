@@ -192,9 +192,7 @@ platforms:
 The interested user might want to look at the following Ubuntu Launchpad \feel page <a href="https://launchpad.net/ubuntu/+source/feel++">Ubuntu Source
   Page for all Ubuntu versions</a>
 
-\subsubsection precise Ubuntu Precise - 12.04 / Travis-ci
-It allows us also to provide a recent version to compile the \feel projects on
-Travis-ci. The installation procedure is currently <a href="https://github.com/feelpp/feelpp/blob/develop/.travis.yml">as follows</a>
+\subsubsection precise Ubuntu Precise - 12.04
 \verbatim
 	sudo add-apt-repository -y ppa:feelpp/ppa
 	sudo add-apt-repository -y ppa:feelpp/petsc
@@ -204,6 +202,10 @@ Travis-ci. The installation procedure is currently <a href="https://github.com/f
 	sudo apt-get install -qq libboost1.54-all-dev mpi-default-dev mpi-default-bin libeigen3-dev libpetsc3.4.2-dev libcln-dev petsc-dev libxml2-dev gmsh bison flex doxygen doxygen-latex transfig imagemagick libtbb-dev libann-dev libglpk-dev automake libtool
 	sudo apt-get install feel++-apps libfeel++-dev
 \endverbatim
+
+\remark 
+It allows us also to provide a recent version to compile the \feel projects on <a href="https://travis-ci.org/feelpp/feelpp">Travis-ci</a>, which is a continuous integration tool. 
+The installation procedure is currently <a href="https://github.com/feelpp/feelpp/blob/develop/.travis.yml">as follows</a>.
 
 \subsubsection trusty Ubuntu Trusty - 14.04
 \verbatim
