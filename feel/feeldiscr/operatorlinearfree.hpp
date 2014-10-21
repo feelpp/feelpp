@@ -449,7 +449,8 @@ BOOST_PARAMETER_FUNCTION(
       ( expr ,   * )
     ) // required
     ( optional
-      ( backend,        *, Backend<typename Feel::detail::compute_opLinearFree_return<Args>::domain_space_type::value_type>::build() )
+      //( backend,        *, Backend<typename Feel::detail::compute_opLinearFree_return<Args>::domain_space_type::value_type>::build() )
+      ( backend,        *, backend() )
       ( pattern,        *, (size_type)Pattern::COUPLED  )
     ) // optionnal
 )
