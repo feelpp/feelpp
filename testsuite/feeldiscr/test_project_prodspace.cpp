@@ -64,10 +64,10 @@ int main( int argc, char **argv)
     auto myproj2 = vf::project(_space=Xh, _expr= myexpr_noview);
     std::cout << "classical proj (with copy) ok" << std::endl;
 
-    auto myproj3 = vf::project(_space=Xh, _expr= idv(U1.template element<0>()));
+    auto myproj3 = vf::project(_space=Xh, _expr= idv(U1.element<0>()));
     std::cout << "view proj (directly in expr) ok" << std::endl;
 
-    auto myexpr_view = idv(U1.template element<0>());
+    auto myexpr_view = idv(U1.element<0>());
     auto myproj4 = vf::project(_space=Xh, _expr=myexpr_view );
     std::cout << "view proj (with copy) ok" << std::endl;
 
