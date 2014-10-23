@@ -16,6 +16,8 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.3)
     message(WARNING "Clang version must be at least 3.3! we have clang ${CMAKE_CXX_COMPILER_VERSION}")
   endif()
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
+    message(STATUS "[feelpp] Apple Clang version :  ${CMAKE_CXX_COMPILER_VERSION}")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
   message(STATUS "[feelpp] Intel version :  ${CMAKE_CXX_COMPILER_VERSION}")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "XL")
@@ -29,6 +31,7 @@ endif()
 
 IF( ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU") OR
     ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang") OR
+    ("${CMAKE_CXX_COMPILER_ID}" MATCHES "AppleClang") OR
     ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel") )
   set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -std=c++11" )
   if ( NOT ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel") )
@@ -37,7 +40,7 @@ IF( ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU") OR
   if ( "${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel")
     set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -wd3373" )
   endif()
-  IF("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+  IF("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "AppleClang")
     IF(APPLE OR FEELPP_USE_CLANG_LIBCXX)
       message(STATUS "[feelpp] Use clang libc++")
       set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++" )
