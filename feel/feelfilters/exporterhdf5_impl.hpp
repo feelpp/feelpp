@@ -528,7 +528,7 @@ void Exporterhdf5<MeshType, N>::writeElements(typename timeset_type::step_ptrtyp
     }
     else
     {
-        M_XDMFContent << M_fileName << "-" << __step->index() << ".h5:/element_nodes" << std::endl;
+        M_XDMFContent << M_fileName.str() << "-" << __step->index() << ".h5:/element_nodes" << std::endl;
     }
     M_XDMFContent << "</DataItem>" << std::endl;
     M_XDMFContent << "</Topology>" << std::endl;
@@ -669,7 +669,7 @@ void Exporterhdf5<MeshType, N>::saveNodal ( typename timeset_type::step_ptrtype 
         }
         else
         {
-            M_XDMFContent << M_fileName << "-" << __step->index() << ".h5:/" << solutionName << std::endl;
+            M_XDMFContent << M_fileName.str() << "-" << __step->index() << ".h5:/" << solutionName << std::endl;
         }
         M_XDMFContent << "</DataItem>" << std::endl;    
         M_XDMFContent << "</Attribute>" << std::endl;
@@ -824,7 +824,7 @@ void Exporterhdf5<MeshType, N>::writeStats () const
         std::cout << "M_numParts                    : " << M_numParts << std::endl ;
         std::cout << "mesh_type::nRealDim           : " << mesh_type::nRealDim << std::endl ;
         //std::cout << "fileNameStep                  : " << M_fileNameStep << ".h5" << std::endl ;
-        std::cout << "fileName                      : " << M_fileName << ".xmf" << std::endl ;
+        std::cout << "fileName                      : " << M_fileName.str() << ".xmf" << std::endl ;
     }
 
     hsize_t currentOffset [2] = {0, 0} ;
