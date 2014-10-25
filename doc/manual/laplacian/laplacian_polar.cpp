@@ -68,8 +68,11 @@ main(int argc, char**argv )
 #endif
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
-    //typedef Mesh<Hypercube<2> > mesh_type;
+#if FEELPP_POLAR
+    typedef Mesh<Hypercube<2> > mesh_type;
+#else
     typedef Mesh<Simplex<2> > mesh_type;
+#endif
 
     auto mesh =  loadMesh( _mesh=new mesh_type );
 
