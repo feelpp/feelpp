@@ -245,6 +245,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrty
     DVLOG(2) << "Element<range>::ndof = " << this->nDof() << "\n";
     DVLOG(2) << "Element<range>::nlocaldof = " << this->nLocalDof() << "\n";
     M_start = __c.start();
+    this->initSubElementView( mpl::bool_<functionspace_type::is_composite>() );
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
@@ -308,6 +309,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator=( Element<Y,Cont> c
         M_start = __e.M_start;
         M_ct = __e.M_ct;
         M_containersOffProcess = __e.M_containersOffProcess;
+        M_elements = __e.M_elements;
         this->resize( M_functionspace->nLocalDof() );
         super::operator=( __e );
         this->outdateGlobalValues();
