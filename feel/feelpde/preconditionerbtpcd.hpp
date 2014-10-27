@@ -29,9 +29,7 @@
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelalg/operator.hpp>
 #include <feel/feelalg/preconditioner.hpp>
-#include <feel/feelalg/preconditionerpcd.hpp>
-
-#include <feel/feelalg/preconditionerPCD.hpp>
+#include <feel/feelpde/operatorpcd.hpp>
 
 namespace Feel
 {
@@ -68,7 +66,7 @@ public:
     typedef OperatorMatrix<value_type> op_mat_type;
     typedef boost::shared_ptr<op_mat_type> op_mat_ptrtype;
 
-    typedef PreconditionerPCD<pressure_space_type, uOrder> op_pcd_type;
+    typedef OperatorPCD<pressure_space_type, uOrder> op_pcd_type;
     typedef boost::shared_ptr<op_pcd_type> op_pcd_ptrtype;
 
     PreconditionerBTPCD( space_ptrtype Xh, std::map<std::string, std::set<flag_type> > bcFlags, double nu, double alpha = 0 );
@@ -126,7 +124,6 @@ public:
 private:
 
     backend_ptrtype M_b;
-    backend_ptrtype M_bT;
 
     space_ptrtype M_Xh;
 
@@ -157,6 +154,7 @@ template < typename space_type >
 PreconditionerBTPCD<space_type>::PreconditionerBTPCD( space_ptrtype Xh, std::map<std::string, std::set<flag_type> > bcFlags,
                                                       double nu, double alpha )
     :
+    M_b(backend()),
     M_Xh( Xh ),
     M_Vh( M_Xh->template functionSpace<0>() ),
     M_Qh( M_Xh->template functionSpace<1>() ),
@@ -170,20 +168,22 @@ PreconditionerBTPCD<space_type>::PreconditionerBTPCD( space_ptrtype Xh, std::map
     q( M_Qh, "q" ),
     M_bcFlags( bcFlags )
 {
+    LOG(INFO) << "Alpha: " << alpha << "\n";
+
     mpi::timer ti;
     initialize();
 
     LOG(INFO) << "Assemble Helmholtz Operator...\n";
     assembleHelmholtz( nu, alpha );
-    //LOG(INFO) << "[PreconditionerBTPCD] Constructor: Helmholtz assembly time: " << M_timer.ElapsedTime() << "\n";
+    LOG(INFO) << "[PreconditionerBTPCD] Constructor: Helmholtz assembly\n" ;
 
     LOG(INFO) << "Assemble Divergence Operator...\n";
     assembleDivergence();
-    //LOG(INFO) << "[PreconditionerBTPCD] Constructor: Divergence assembly time: " << M_timer.ElapsedTime() << "\n";
+    LOG(INFO) << "[PreconditionerBTPCD] Constructor: Divergence assembly time\n";
 
     LOG(INFO) << "Assemble Schur Operator...\n";
     assembleSchurApp(nu, alpha);
-    //LOG(INFO) << "[PreconditionerBTPCD] Constructor: Schur approximation assembly time: " << M_timer.ElapsedTime() << "\n";
+    LOG(INFO) << "[PreconditionerBTPCD] Constructor: Schur approximation assembly time:\n";
 }
 
 
@@ -223,14 +223,13 @@ void
 PreconditionerBTPCD<space_type>::assembleHelmholtz( double nu, double alpha  )
 {
     auto a = form2( _trial=M_Vh, _test=M_Vh, _matrix=M_helm );
-    LOG(INFO) << "Alpha: " << alpha << "\n";
+    
     if ( alpha != 0 )
         
         a = integrate( _range=elements(M_Xh->mesh()),  _expr=alpha*trans(idt(u))*id(v) + nu*(trace(trans(gradt(u))*grad(v))) );
     else
         a = integrate( _range=elements(M_Xh->mesh()),  _expr=nu*(trace(trans(gradt(u))*grad(v))) );
 
-    std::set<flag_type>::const_iterator diriIter;
     for( auto dir : M_bcFlags["Dirichlet"] )
         {
             a += integrate( markedfaces(M_Xh->mesh(), dir), - nu*trans(gradt(u)*N())*id(v) );
@@ -253,7 +252,7 @@ template < typename space_type >
 void
 PreconditionerBTPCD<space_type>::assembleSchurApp( double nu, double alpha )
 {
-    pcdOp = pcd( M_Qh, M_bcFlags, nu, alpha );
+    pcdOp = OperatorPCD<pressure_space_type,uOrder>( M_Qh, M_bcFlags, nu, alpha );
 }
 
 
@@ -309,7 +308,7 @@ PreconditionerBTPCD<space_type>::applyInverse ( const vector_type& X, vector_typ
 
 
     //LOG(INFO) << "Create velocity component...\n";
-    auto velocity_in = X.template element<0>();
+    auto velocity_in  X.template element<0>();
     
     auto  pressure_in = X.template element<1>();
 
@@ -339,18 +338,33 @@ PreconditionerBTPCD<space_type>::applyInverse ( const vector_type& X, vector_typ
 #endif
     return 0;
 }
-
-BOOST_PARAMETER_MEMBER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
+namespace meta
+{
+template< typename space_type >
+struct btpcd
+{
+    typedef PreconditionerBTPCD<space_type> type;
+    typedef boost::shared_ptr<type> ptrtype;
+};
+}
+BOOST_PARAMETER_MEMBER_FUNCTION( ( typename meta::btpcd<typename parameter::value_type<Args, tag::space>::type::element_type>::ptrtype ),
                                  btpcd,
                                  tag,
                                  ( required
-                                   ( space, *) )
+                                   ( space, *)
+                                   ( bc, *)
+                                   )
                                  ( optional
                                    ( prefix, *( boost::is_convertible<mpl::_,std::string> ), "" )
+                                   ( nu, *( double ), 1. )
+                                   ( alpha, *( double ), 0. )
                                    )
                                  )
 {
-
+    typedef typename meta::btpcd<typename parameter::value_type<Args, tag::space>::type::element_type>::ptrtype pbtpcd_t;
+    typedef typename meta::btpcd<typename parameter::value_type<Args, tag::space>::type::element_type>::type btpcd_t;
+    pbtpcd_t btpcd( new btpcd_t( space, bc, nu, alpha ) );
+    return btpcd;
 } // btcpd
 } // Feel
 #endif
