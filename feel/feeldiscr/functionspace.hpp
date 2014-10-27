@@ -43,6 +43,7 @@
 #include <boost/fusion/container/vector.hpp>
 #include <boost/fusion/algorithm.hpp>
 #include <boost/fusion/adapted/mpl.hpp>
+#include <boost/mpl/range_c.hpp>
 
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/array.hpp>
@@ -1860,16 +1861,18 @@ public:
     public:
         typedef T value_type;
 
-        template<typename BasisType>
+        template<typename BasisType,typename keyType>
         struct ChangeElement
         {
             typedef T value_type;
             BOOST_MPL_ASSERT_NOT( ( boost::is_same<BasisType,mpl::void_> ) );
             typedef typename ChangeBasis<BasisType>::type::element_type fs_type;
             typedef typename fs_type::template Element<value_type, typename VectorUblas<T>::range::type > element_type;
-            typedef element_type type;
+            typedef std::pair< keyType, boost::shared_ptr<element_type> > type;
         };
-        typedef typename mpl::transform<bases_list, ChangeElement<mpl::_1>, mpl::back_inserter<mpl::vector<> > >::type element_vector_type;
+
+        typedef mpl::range_c<int,0, FunctionSpace<A0,A1,A2,A3,A4>::nSpaces> rangeElementStorageType;
+        typedef typename mpl::transform<bases_list, rangeElementStorageType, ChangeElement<mpl::_1,mpl::_2>, mpl::back_inserter<fusion::vector<> > >::type element_vector_type;
 
         //typedef typename fusion::result_of::accumulate<bases_list, fusion::vector<>, ChangeElement<> >
         typedef typename VectorUblas<T>::range::type ct_type;
@@ -1946,7 +1949,9 @@ public:
         template<int i>
         struct sub_element
         {
-            typedef typename mpl::at_c<element_vector_type,i>::type type;
+            //typedef typename mpl::at_c<element_vector_type,i>::type type;
+            typedef typename mpl::at_c<element_vector_type,i>::type::second_type ptrtype;
+            typedef typename ptrtype::element_type type;
         };
         typedef typename functionspace_type::component_functionspace_type component_functionspace_type;
         typedef typename functionspace_type::component_functionspace_ptrtype component_functionspace_ptrtype;
@@ -3029,18 +3034,33 @@ public:
 
 
         template<int i>
-        typename mpl::at_c<element_vector_type,i>::type
-        element( std::string const& name ="u", bool updateOffViews=true );
+        typename sub_element<i>::type
+        elementImpl( std::string const& name ="u", bool updateOffViews=true );
 
         template<int i,typename ExprT>
-        typename mpl::at_c<element_vector_type,i>::type
+        typename sub_element<i>::type &
         element( ExprT e, std::string const& name = "u",
                  bool updateOffViews = true,
                  typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type* = 0 );
 
         template<int i>
-        typename mpl::at_c<element_vector_type,i>::type
-        element( std::string const& name ="u", bool updateOffViews=true ) const;
+        typename sub_element<i>::type
+        elementImpl( std::string const& name ="u", bool updateOffViews=true ) const;
+
+        template<int i>
+        typename sub_element<i>::type &
+        element( std::string const& name ="u", bool updateOffViews=true )
+        {
+            CHECK ( fusion::at_c<i>( M_elements ).second ) << " has not element \n";
+            return *(fusion::at_c<i>( M_elements ).second);
+        }
+        template<int i>
+        typename sub_element<i>::type const&
+        element( std::string const& name ="u", bool updateOffViews=true ) const
+        {
+            CHECK ( fusion::at_c<i>( M_elements ).second ) << " has not element \n";
+            return *(fusion::at_c<i>( M_elements ).second);
+        }
 
         /**
          *
@@ -3314,6 +3334,14 @@ public:
         //@}
     private:
 
+        /*
+         *
+         */
+        void initSubElementView( mpl::true_ );
+
+        void initSubElementView( mpl::false_ ) {}
+
+
         friend class boost::serialization::access;
 
         template<class Archive>
@@ -3445,6 +3473,10 @@ public:
 
         // only init in // with composite case : ex p = U.element<1>()
         mutable boost::optional<container_vector_type> M_containersOffProcess;
+
+        // views on subelement
+        element_vector_type M_elements;
+
 
     }; // Element
 
