@@ -25,7 +25,8 @@
 /*!
  * \file exporterhdf5_impl.hpp
  * \brief HDF5 and XDMF exporter
- * \author VANTHONG Benjamin <benjamin.vanthong@gmail.com>
+ * \author Benjamin Vanthong <benjamin.vanthong@gmail.com>
+ * \author Alexandre Ancel <alexandre.ancel@cemosis.fr>
  * \date 2014-08-28
  */
 #ifndef __Exporterhdf5_CPP
@@ -112,9 +113,9 @@ void Exporterhdf5<MeshType, N>::save () const
 {
     /*
     if ( this->worldComm().globalRank() == this->worldComm().masterRank() )
-        std::cout << "exporter.merge                : " << (boption (_name = "exporter.merge" ) ? "true" : "false")  << std::endl;
+        std::cout << "exporter.hdf5.merge                : " << (boption (_name = "exporter.hdf5.merge" ) ? "true" : "false")  << std::endl;
     MPI_Barrier( this->worldComm().comm() );
-    if ( boption ( _name = "exporter.merge" ) )
+    if ( boption ( _name = "exporter.hdf5.merge" ) )
         writeMerge();
     else 
         write ();
@@ -127,7 +128,7 @@ void Exporterhdf5<MeshType, N>::save () const
     M_fileName.str("");
     M_fileName << this->prefix();
     std::cout << this->prefix() << std::endl;
-    if( ! boption( _name = "exporter.merge" ) )
+    if( ! boption( _name = "exporter.hdf5.merge" ) )
     {
         M_fileName << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank();
     }
@@ -152,97 +153,121 @@ void Exporterhdf5<MeshType, N>::writeXDMF() const
     // sequential worldcomm
     WorldComm const & wcs = this->worldComm().subWorldCommSeq();
 
-    /* build file name */
-    cbuf << M_fileName.str() << ".xmf";
+    timeset_const_iterator __ts_it = this->beginTimeSet();
+    timeset_const_iterator __ts_en = this->endTimeSet();
 
-    /* Test master rank only once */
-    /* whether we used a normal worldcomm or a sequentialized one */
-    bool isMasterRank = false;
-    if( boption( _name = "exporter.merge" ) )
-    {
-        isMasterRank = this->worldComm().isMasterRank();
-    }
-    else
-    {
-        isMasterRank = wcs.isMasterRank();
-    }
-
-    /* Open file with MPI IO */
-    char * strTmp = strdup(cbuf.str().c_str());
-    if(isMasterRank && fs::exists(strTmp))
-    {
-        MPI_File_delete(strTmp, MPI_INFO_NULL);
-    }
-    if( boption( _name = "exporter.merge" ) )
-    {
-        MPI_Barrier(this->worldComm().comm());
-        MPI_File_open(this->worldComm().comm(), strTmp, MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL, &fh);
-    }
-    else
-    {
-        MPI_Barrier(wcs.comm());
-        MPI_File_open(wcs.comm(), strTmp, MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL, &fh);
-
-    }
-    free(strTmp);
-
-    /* write file header */
-    cbuf.str("");
-    cbuf << "<?xml version=\"1.0\" ?>" << std::endl;
-    cbuf << "<!DOCTYPE Xdmf SYSTEM \"Xdmf.dtd\" []>" << std::endl;
-    cbuf << "<Xdmf Version=\"2.0\">" << std::endl;
-    cbuf << "<Domain>" << std::endl;
-    cbuf << "<Grid Name=\"Simulation\" GridType=\"Collection\" CollectionType=\"Spatial\">" << std::endl;
-
-    if( isMasterRank ) 
-    { size = cbuf.str().size(); }
-    else
-    { size = 0; }
-    strTmp = strdup(cbuf.str().c_str());
-    MPI_File_write_ordered(fh, strTmp, size, MPI_CHAR, &status);
-    free(strTmp);
-
-    /* Write time info */
-    /*
-    timeset_const_iterator __ts_it = this->beginTimeSet ();
-    timeset_const_iterator __ts_en = this->endTimeSet ();
     timeset_ptrtype __ts = *__ts_it;
 
-    cbuf.str("");
-    cbuf << "       <Grid Name=\"Simulation over time\" GridType=\"Collection\" CollectionType=\"Temporal\">" << "" << std::endl;
-    cbuf << "           <Time TimeType=\"HyperSlab\">" << std::endl;
-    M_xmf << "               <DataItem Format=\"XML\" NumberType=\"Float\" Dimensions=\"3\">" << std::endl;
-    cbuf << "               " << (*(__ts->beginStep()))->time() << " " << __ts->timeIncrement() << " " << __ts->numberOfTotalSteps() << std::endl;
-    cbuf << "               </DataItem>" << std::endl;
-    cbuf << "           </Time>" << std::endl;
+    while ( __ts_it != __ts_en )
+    {
+        __ts = *__ts_it;
+        typename timeset_type::step_const_iterator __it = __ts->beginStep();
+        typename timeset_type::step_const_iterator __end = __ts->endStep();
+        __it = boost::prior ( __end );
 
-    if( isMasterRank ) 
-    { size = cbuf.str().size(); }
-    else
-    { size = 0; }
-    MPI_File_write_ordered(fh, cbuf.str().c_str(), size, MPI_CHAR, &status);
-    */
+        while ( __it != __end )
+        {
+            typename timeset_type::step_ptrtype __step = * __it;
 
-    /* write Xdmf content */
-    strTmp = strdup(M_XDMFContent.str().c_str());
-    MPI_File_write_ordered(fh, strTmp, M_XDMFContent.str().size(), MPI_CHAR, &status);
-    free(strTmp);
+            if ( __step->isInMemory() )
+            {
 
-    /* write footer */
-    cbuf.str("");
-    cbuf << "</Grid>" << std::endl;
-    cbuf << "</Domain>" << std::endl;
-    cbuf << "</Xdmf>" << std::endl;
+                /* build file name */
+                cbuf << M_fileName.str() << "-" << __step->index() << ".xmf";
 
-    if( isMasterRank ) 
-    { size = cbuf.str().size(); }
-    else
-    { size = 0; }
-    strTmp = strdup(cbuf.str().c_str());
-    MPI_File_write_ordered(fh, strTmp, size, MPI_CHAR, &status);
-    free(strTmp);
+                /* Test master rank only once */
+                /* whether we used a normal worldcomm or a sequentialized one */
+                bool isMasterRank = false;
+                if( boption( _name = "exporter.hdf5.merge" ) )
+                {
+                    isMasterRank = this->worldComm().isMasterRank();
+                }
+                else
+                {
+                    isMasterRank = wcs.isMasterRank();
+                }
 
-    MPI_File_close(&fh);
+                /* Open file with MPI IO */
+                char * strTmp = strdup(cbuf.str().c_str());
+                if(isMasterRank && fs::exists(strTmp))
+                {
+                    MPI_File_delete(strTmp, MPI_INFO_NULL);
+                }
+                if( boption( _name = "exporter.hdf5.merge" ) )
+                {
+                    MPI_Barrier(this->worldComm().comm());
+                    MPI_File_open(this->worldComm().comm(), strTmp, MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL, &fh);
+                    }
+                else
+                {
+                    MPI_Barrier(wcs.comm());
+                    MPI_File_open(wcs.comm(), strTmp, MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL, &fh);
+
+                }
+                free(strTmp);
+
+                /* write file header */
+                cbuf.str("");
+                cbuf << "<?xml version=\"1.0\" ?>" << std::endl;
+                cbuf << "<!DOCTYPE Xdmf SYSTEM \"Xdmf.dtd\" []>" << std::endl;
+                cbuf << "<Xdmf Version=\"2.0\">" << std::endl;
+                cbuf << "<Domain>" << std::endl;
+                cbuf << "<Grid Name=\"Simulation\" GridType=\"Collection\" CollectionType=\"Spatial\">" << std::endl;
+
+                if( isMasterRank ) 
+                { size = cbuf.str().size(); }
+                else
+                { size = 0; }
+                strTmp = strdup(cbuf.str().c_str());
+                MPI_File_write_ordered(fh, strTmp, size, MPI_CHAR, &status);
+                free(strTmp);
+
+                /* Write time info */
+                /*
+                timeset_const_iterator __ts_it = this->beginTimeSet ();
+                timeset_const_iterator __ts_en = this->endTimeSet ();
+                timeset_ptrtype __ts = *__ts_it;
+
+                cbuf.str("");
+                cbuf << "       <Grid Name=\"Simulation over time\" GridType=\"Collection\" CollectionType=\"Temporal\">" << "" << std::endl;
+                cbuf << "           <Time TimeType=\"HyperSlab\">" << std::endl;
+                M_xmf << "               <DataItem Format=\"XML\" NumberType=\"Float\" Dimensions=\"3\">" << std::endl;
+                cbuf << "               " << (*(__ts->beginStep()))->time() << " " << __ts->timeIncrement() << " " << __ts->numberOfTotalSteps() << std::endl;
+                cbuf << "               </DataItem>" << std::endl;
+                cbuf << "           </Time>" << std::endl;
+
+                if( isMasterRank ) 
+                { size = cbuf.str().size(); }
+                else
+                { size = 0; }
+                MPI_File_write_ordered(fh, cbuf.str().c_str(), size, MPI_CHAR, &status);
+                 */
+
+                 /* write Xdmf content */
+                 strTmp = strdup(M_XDMFContent.str().c_str());
+                 MPI_File_write_ordered(fh, strTmp, M_XDMFContent.str().size(), MPI_CHAR, &status);
+                 free(strTmp);
+
+                 /* write footer */
+                 cbuf.str("");
+                 cbuf << "</Grid>" << std::endl;
+                 cbuf << "</Domain>" << std::endl;
+                 cbuf << "</Xdmf>" << std::endl;
+
+                 if( isMasterRank ) 
+                 { size = cbuf.str().size(); }
+                 else
+                 { size = 0; }
+                 strTmp = strdup(cbuf.str().c_str());
+                 MPI_File_write_ordered(fh, strTmp, size, MPI_CHAR, &status);
+                 free(strTmp);
+
+                 MPI_File_close(&fh);
+            }
+            ++__it;
+        }
+        ++__ts_it;
+    }
 }
 
 template <typename MeshType, int N>
@@ -272,7 +297,7 @@ void Exporterhdf5<MeshType, N>::writeHDF5() const
                 oss << M_fileName.str() << "-" << __step->index() << ".h5";
 
                 /* open the corresponding h5 file for output */
-                if( boption( _name = "exporter.merge" ) )
+                if( boption( _name = "exporter.hdf5.merge" ) )
                 {
                     M_HDF5.openFile(oss.str(), this->worldComm(), false);
                 }
@@ -345,7 +370,7 @@ void Exporterhdf5<MeshType, N>::writePoints(typename timeset_type::step_ptrtype 
 
     /* if we are using MPI IO all the processes must create the tables */
     /* for all processes of we end up in a deadlock (see HDF5 FAQ) */
-    if( boption( _name = "exporter.merge" ) )
+    if( boption( _name = "exporter.hdf5.merge" ) )
     {
         oss.str("");
         oss << this->worldComm().globalRank();
@@ -389,7 +414,7 @@ void Exporterhdf5<MeshType, N>::writePoints(typename timeset_type::step_ptrtype 
     hsize_t currentOffset[2] = {0, 0};
 
     /* write the point coordinates */
-    if( boption( _name = "exporter.merge" ) )
+    if( boption( _name = "exporter.hdf5.merge" ) )
     {
         M_HDF5.write(oss.str() + "point_coords", H5T_NATIVE_DOUBLE, currentCount, currentOffset, &M_realBuffer[0]);
 
@@ -413,7 +438,7 @@ void Exporterhdf5<MeshType, N>::writePoints(typename timeset_type::step_ptrtype 
 
     M_XDMFContent << "<Geometry GeometryType=\"XYZ\">" << std::endl;
     M_XDMFContent << "<DataItem Dimensions=\"" << M_maxNumPoints << " 3\" NumberType=\"Float\" Precision=\"8\" Format=\"HDF\" Endian=\"Big\">" << std::endl;
-    if( boption( _name = "exporter.merge" ) )
+    if( boption( _name = "exporter.hdf5.merge" ) )
     {
         M_XDMFContent << M_fileName.str() << "-" << __step->index() << ".h5:/" << this->worldComm().rank() << "/point_coords" << std::endl;
     }
@@ -451,7 +476,7 @@ void Exporterhdf5<MeshType, N>::writeElements(typename timeset_type::step_ptrtyp
     currentSpacesDims2 [0] = 1;
     currentSpacesDims2 [1] = M_maxNumElements;
 
-    if( boption( _name = "exporter.merge" ) )
+    if( boption( _name = "exporter.hdf5.merge" ) )
     {
         std::ostringstream filestr0;
         filestr0 << this->worldComm().globalRank();
@@ -498,7 +523,7 @@ void Exporterhdf5<MeshType, N>::writeElements(typename timeset_type::step_ptrtyp
 
     hsize_t currentOffset[2] = {0, 0};
 
-    if( boption( _name = "exporter.merge" ) )
+    if( boption( _name = "exporter.hdf5.merge" ) )
     {
         std::ostringstream filestr0;
         filestr0 << this->worldComm().globalRank();
@@ -522,7 +547,7 @@ void Exporterhdf5<MeshType, N>::writeElements(typename timeset_type::step_ptrtyp
 
     M_XDMFContent << "<Topology TopologyType=\"" << M_element_type << "\" NumberOfElements=\"" << M_maxNumElements << "\" NodesPerElement=\"" << M_elementNodes << "\">" << std::endl;
     M_XDMFContent << "<DataItem Dimensions=\"" <<M_maxNumElements << " " << M_elementNodes << "\" NumberType=\"Int\" Precision=\"8\" Format=\"HDF\" Endian=\"Big\">" << std::endl;
-    if( boption( _name = "exporter.merge" ) )
+    if( boption( _name = "exporter.hdf5.merge" ) )
     {
         M_XDMFContent << M_fileName.str() << "-" << __step->index() << ".h5:/" << this->worldComm().rank() << "/element_nodes" << std::endl;
     }
@@ -574,7 +599,7 @@ void Exporterhdf5<MeshType, N>::saveNodal ( typename timeset_type::step_ptrtype 
         currentSpacesDims [0] = nComponents;
         currentSpacesDims [1] = M_maxNumPoints;
 
-        if( boption( _name = "exporter.merge") )
+        if( boption( _name = "exporter.hdf5.merge") )
         {
             std::ostringstream filestr0;
             filestr0 << this->worldComm().globalRank();
@@ -640,7 +665,7 @@ void Exporterhdf5<MeshType, N>::saveNodal ( typename timeset_type::step_ptrtype 
         }    
         hsize_t currentOffset[2] = {0, 0};
 
-        if( boption( _name = "exporter.merge" ) )
+        if( boption( _name = "exporter.hdf5.merge" ) )
         {
             std::ostringstream filestr0;
             filestr0 << this->worldComm().globalRank ();
@@ -663,7 +688,7 @@ void Exporterhdf5<MeshType, N>::saveNodal ( typename timeset_type::step_ptrtype 
 
         M_XDMFContent << "<Attribute AttributeType=\""<< attributeType << "\" Name=\"" << solutionName << "\" Center=\"Node\">" << std::endl;
         M_XDMFContent << "<DataItem Dimensions=\""<< nComponents << " " << M_maxNumPoints << "\" NumberType=\"Float\" Precision=\"8\" Format=\"HDF\" Endian=\"Big\">" << std::endl;
-        if( boption( _name = "exporter.merge" ) )
+        if( boption( _name = "exporter.hdf5.merge" ) )
         {
             M_XDMFContent << M_fileName.str() << "-" << __step->index() << ".h5:/" << this->worldComm().rank() << "/" << solutionName << std::endl;
         }
@@ -711,7 +736,7 @@ void Exporterhdf5<MeshType, N>::saveElement ( typename timeset_type::step_ptrtyp
         currentSpacesDims [0] = nComponents;
         currentSpacesDims [1] = M_maxNumElements;
 
-        if( boption( _name = "exporter.merge" ) )
+        if( boption( _name = "exporter.hdf5.merge" ) )
         {
             std::ostringstream filestr0;
             filestr0 << this->worldComm().globalRank();
@@ -766,7 +791,7 @@ void Exporterhdf5<MeshType, N>::saveElement ( typename timeset_type::step_ptrtyp
         }   
         hsize_t currentOffset[2] = {0, 0};
 
-        if( boption( _name = "exporter.merge" ) )
+        if( boption( _name = "exporter.hdf5.merge" ) )
         {
             std::ostringstream filestr0;
             filestr0 << this->worldComm().globalRank();
@@ -789,7 +814,7 @@ void Exporterhdf5<MeshType, N>::saveElement ( typename timeset_type::step_ptrtyp
 
         M_XDMFContent << "<Attribute AttributeType=\"" << attributeType << "\" Name=\"" << solutionName << "\" Center=\"Cell\">" << std::endl;
         M_XDMFContent << "<DataItem Dimensions=\""<< nComponents <<" "<< M_maxNumElements << "\" NumberType=\"Float\" Precision=\"8\" Format=\"HDF\" Endian=\"Big\">" << std::endl;
-        if( boption( _name = "exporter.merge" ) )
+        if( boption( _name = "exporter.hdf5.merge" ) )
         {
             M_XDMFContent << M_fileName.str() << "-" << __step->index() << ".h5:/" << this->worldComm().rank() << "/" << solutionName << std::endl;
         }

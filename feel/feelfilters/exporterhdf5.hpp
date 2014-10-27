@@ -25,7 +25,8 @@
 /*!
  * \file exporterhdf5.hpp
  * \brief HDF5 and XDMF exporter
- * \author VANTHONG Benjamin <benjamin.vanthong@gmail.com>
+ * \author Benjamin Vanthong <benjamin.vanthong@gmail.com>
+ * \author Alexandre Ancel <alexandre.ancel@cemosis.fr>
  * \date 2014-08-28
  */
 #ifndef __Exporterhdf5_H
