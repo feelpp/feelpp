@@ -1868,7 +1868,11 @@ public:
             BOOST_MPL_ASSERT_NOT( ( boost::is_same<BasisType,mpl::void_> ) );
             typedef typename ChangeBasis<BasisType>::type::element_type fs_type;
             typedef typename fs_type::template Element<value_type, typename VectorUblas<T>::range::type > element_type;
-            typedef std::pair< keyType, boost::shared_ptr<element_type> > type;
+            typedef std::pair< keyType, boost::shared_ptr<element_type> > the_type;
+
+            typedef typename mpl::if_<mpl::bool_<FunctionSpace<A0,A1,A2,A3,A4>::is_composite>,
+                                      mpl::identity<the_type>,
+                                      mpl::identity<boost::none_t> >::type::type type;
         };
 
         typedef mpl::range_c<int,0, FunctionSpace<A0,A1,A2,A3,A4>::nSpaces> rangeElementStorageType;
