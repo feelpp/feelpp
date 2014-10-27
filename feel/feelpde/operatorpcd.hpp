@@ -22,8 +22,8 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-#ifndef FEELPP_PRECONDITIONERPCD_HPP
-#define FEELPP_PRECONDITIONERPCD_HPP 1
+#ifndef FEELPP_OPERATORPCD_HPP
+#define FEELPP_OPERATORPCD_HPP 1
 
 
 #include <feel/feelalg/backend.hpp>
@@ -35,7 +35,7 @@ namespace Feel
 {
 
 template< typename pressure_space_type, uint16_type uOrder>
-class PreconditionerPCD : public Preconditioner<typename  pressure_space_type::value_type>
+class OperatorPCD : public OperatorBase
 {
 public:
 
@@ -69,22 +69,17 @@ public:
     static const uint16_type Dim = pressure_space_type::nDim;
     static const uint16_type pOrder = pressure_space_type::basis_type::nOrder;
 
-    PreconditionerPCD( pressure_space_ptrtype Qh,
-                       std::map< std::string, std::set<flag_type> > bcFlags,
-                       double nu,
-                       double alpha );
-
-    PreconditionerPCD( const PreconditionerPCD& tc );
+    OperatorPCD( pressure_space_ptrtype Qh,
+                 std::map< std::string, std::set<flag_type> > bcFlags,
+                 double nu,
+                 double alpha );
+    
+    OperatorPCD( const OperatorPCD& tc );
 
     void initialize();
 
-    template < typename ExprConvection >
-    void update( ExprConvection const& expr_b );
-
-    comp2_ptrtype getOperator() const
-    {
-        return precOp;
-    }
+    template < typename ExprConvection, typename ExprBC >
+    void update( ExprConvection const& expr_b, ExprBC const& ebc );
 
     void setProblemType( std::string prob_type )
     {
@@ -96,7 +91,10 @@ public:
         return M_prob_type;
     }
 
-    ~PreconditionerPCD() {};
+    ~OperatorPCD() {};
+
+    int apply(const vector_type& X, vector_type& Y) const;
+    int applyInverse(const vector_type& X, vector_type& Y) const;
 
 private:
 
@@ -134,7 +132,7 @@ private:
 
 
 template < typename pressure_space_type, uint16_type uOrder >
-PreconditionerPCD<pressure_space_type,uOrder>::PreconditionerPCD( pressure_space_ptrtype Qh,
+OperatorPCD<pressure_space_type,uOrder>::OperatorPCD( pressure_space_ptrtype Qh,
                                                       std::map< std::string, std::set<flag_type> > bcFlags,
                                                       double nu,
                                                       double alpha )
@@ -169,7 +167,7 @@ PreconditionerPCD<pressure_space_type,uOrder>::PreconditionerPCD( pressure_space
 
 
 template < typename pressure_space_type, uint16_type uOrder >
-PreconditionerPCD<pressure_space_type,uOrder>::PreconditionerPCD( const PreconditionerPCD& tc )
+OperatorPCD<pressure_space_type,uOrder>::OperatorPCD( const OperatorPCD& tc )
     :
     M_Qh( tc.M_Qh ),
     p( tc.p ),
@@ -191,22 +189,23 @@ PreconditionerPCD<pressure_space_type,uOrder>::PreconditionerPCD( const Precondi
     precDiff( tc.precDiff ),
     M_prob_type( tc.M_prob_type )
 {
-    //LOG(INFO) << "Call for PreconditionerPCD copy constructor...\n";
+    //LOG(INFO) << "Call for OperatorPCD copy constructor...\n";
 }
 
 
 template < typename pressure_space_type, uint16_type uOrder >
 void
-PreconditionerPCD<pressure_space_type,uOrder>::initialize()
+OperatorPCD<pressure_space_type,uOrder>::initialize()
 {
     rhs->zero();
     rhs->close();
 }
 
 template < typename pressure_space_type, uint16_type uOrder >
-template < typename ExprConvection >
+template < typename ExprConvection, typename ExprBC >
 void
-PreconditionerPCD<pressure_space_type,uOrder>::update( ExprConvection const& expr_b )
+OperatorPCD<pressure_space_type,uOrder>::update( ExprConvection const& expr_b, 
+                                                 ExprBC const& ebc )
 {
     static bool init_G = true;
 
@@ -217,14 +216,14 @@ PreconditionerPCD<pressure_space_type,uOrder>::update( ExprConvection const& exp
     conv = integrate( elements(M_Qh->mesh()), (trans(expr_b)*trans(gradt(p)))*id(q));
 
     G->close();
-    LOG(INFO) << "[PreconditionerPCD] Add diffusion matrix...\n";
+    LOG(INFO) << "[OperatorPCD] Add diffusion matrix...\n";
     G->addMatrix( M_nu, M_diff );
 
     this->applyBC(G);
 
     if ( this->problemType() == "unsteady" )
     {
-        LOG(INFO) << "[PreconditionerPCD] Add mass matrix...\n";
+        LOG(INFO) << "[OperatorPCD] Add mass matrix...\n";
         G->addMatrix( M_alpha, M_mass );
     }
 
@@ -240,7 +239,7 @@ PreconditionerPCD<pressure_space_type,uOrder>::update( ExprConvection const& exp
 
 template < typename pressure_space_type, uint16_type uOrder >
 void
-PreconditionerPCD<pressure_space_type,uOrder>::assembleMass()
+OperatorPCD<pressure_space_type,uOrder>::assembleMass()
 {
     auto m = form2( _test=M_Qh, _trial=M_Qh, _matrix=M_mass );
     m = integrate( elements(M_Qh->mesh()), idt(p)*id(q) );
@@ -250,7 +249,7 @@ PreconditionerPCD<pressure_space_type,uOrder>::assembleMass()
 
 template < typename pressure_space_type, uint16_type uOrder >
 void
-PreconditionerPCD<pressure_space_type,uOrder>::assembleDiffusion()
+OperatorPCD<pressure_space_type,uOrder>::assembleDiffusion()
 {
     auto d = form2( _test=M_Qh, _trial=M_Qh, _matrix=M_diff );
     d = integrate( elements(M_Qh->mesh()), trace(trans(gradt(p))*grad(q)));
@@ -262,7 +261,7 @@ PreconditionerPCD<pressure_space_type,uOrder>::assembleDiffusion()
 
 template < typename pressure_space_type, uint16_type uOrder >
 void
-PreconditionerPCD<pressure_space_type,uOrder>::assembleConvection()
+OperatorPCD<pressure_space_type,uOrder>::assembleConvection()
 {
     /*
     form2( M_Qh, M_Qh, M_conv, _init=true ) =
@@ -279,12 +278,23 @@ PreconditionerPCD<pressure_space_type,uOrder>::assembleConvection()
 
 template < typename pressure_space_type, uint16_type uOrder >
 void
-PreconditionerPCD<pressure_space_type,uOrder>::applyBC( sparse_matrix_ptrtype& A )
+OperatorPCD<pressure_space_type,uOrder>::applyBC( sparse_matrix_ptrtype& A )
 {
 }
 
-
-
+template < typename pressure_space_type, uint16_type uOrder >
+int
+OperatorPCD<pressure_space_type,uOrder>::apply(const vector_type& X, vector_type& Y) const
+{
+    precOp->apply( X, Y );
+}
+template < typename pressure_space_type, uint16_type uOrder >
+int
+OperatorPCD<pressure_space_type,uOrder>::applyInverse(const vector_type& X, vector_type& Y) const
+{
+    
+    precOp->applyInverse( X, Y );
+}
 
 
 } // Feel
