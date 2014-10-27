@@ -121,7 +121,7 @@ ExporterEnsightGold<MeshType,N>::init()
     /* we isolate each process by using worldCommSeq() from Environment */
     /* Each process will be in a group seeing only itself and not every */
     /* process as worldComm() */
-    if( ! boption( _name = "exporter.merge.markers" ) )
+    if( ! boption( _name = "exporter.ensightgold.merge.markers" ) )
     {
         //this->setWorldComm(Environment::worldCommSeq());
         this->setWorldComm(this->worldComm().subWorldCommSeq());
@@ -217,7 +217,7 @@ ExporterEnsightGold<MeshType,N>::writeSoSFile() const
 
         __out << "FORMAT:\n"
               << "type: master_server gold \n\n";
-        if( boption( _name="exporter.merge.markers") )
+        if( boption( _name="exporter.ensightgold.merge.markers") )
         {
             __out << "MULTIPLE_CASEFILES\n"
                 << "total number of cfiles: 1 " << std::endl
@@ -252,7 +252,7 @@ ExporterEnsightGold<MeshType,N>::writeSoSFile() const
 
         /* set the number of servers to one */
         /* if we merged the markers in a single file */
-        if( boption( _name="exporter.merge.markers") )
+        if( boption( _name="exporter.ensightgold.merge.markers") )
         {
             __outparaview << "number of servers: 1 " << std::endl;
 
@@ -288,7 +288,7 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
 
         filestr << this->path() << "/"
             << this->prefix();
-        if( ! boption( _name="exporter.merge.markers") )
+        if( ! boption( _name="exporter.ensightgold.merge.markers") )
         { filestr << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
         filestr << ".case";
 
@@ -313,7 +313,7 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
                 {
                     timeset_ptrtype __ts = *__ts_it;
                     __out << "model: " << __ts->name();
-                    if( ! boption( _name="exporter.merge.markers") )
+                    if( ! boption( _name="exporter.ensightgold.merge.markers") )
                     { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
                     __out << ".geo";
                 }
@@ -326,17 +326,17 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
                     {
                         timeset_ptrtype __ts = *__ts_it;
 
-                        if( boption( _name="exporter.merge.timesteps") )
+                        if( boption( _name="exporter.ensightgold.merge.timesteps") )
                         {
                             __out << "model: " << __ts->index() << " 1 " << __ts->name();
-                            if( ! boption( _name="exporter.merge.markers") )
+                            if( ! boption( _name="exporter.ensightgold.merge.markers") )
                             { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
                             __out << ".geo";
                         }
                         else
                         {
                             __out << "model: " << __ts->index() << " " << __ts->name();
-                            if( ! boption( _name="exporter.merge.markers") )
+                            if( ! boption( _name="exporter.ensightgold.merge.markers") )
                             { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
                             __out << ".geo" << "." << std::string(M_timeExponent, '*');
                         }
@@ -402,12 +402,12 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
             while ( __it != __end )
             {
                 //if ( this->useSingleTransientFile() )
-                if( boption( _name="exporter.merge.timesteps") )
+                if( boption( _name="exporter.ensightgold.merge.timesteps") )
                 {
                     __out << "scalar per node: "
                         << __ts->index() << " 1 " // << *__ts_it->beginStep() << " "
                         << __it->second.name() << " " << __it->first;
-                    if( ! boption( _name="exporter.merge.markers") )
+                    if( ! boption( _name="exporter.ensightgold.merge.markers") )
                     { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
                     __out << ".scl" << std::endl;
                 }
@@ -416,7 +416,7 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
                     __out << "scalar per node: "
                         << __ts->index() << " " // << *__ts_it->beginStep() << " "
                         << __it->second.name() << " " << __it->first;
-                    if( ! boption( _name="exporter.merge.markers") )
+                    if( ! boption( _name="exporter.ensightgold.merge.markers") )
                     { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
                     __out << ".scl" << "." << std::string(M_timeExponent, '*') << std::endl;
                 }
@@ -429,12 +429,12 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
             while ( __itv != __env )
             {
                 //if ( this->useSingleTransientFile() )
-                if( boption( _name="exporter.merge.timesteps") )
+                if( boption( _name="exporter.ensightgold.merge.timesteps") )
                 {
                     __out << "vector per node: "
                         << __ts->index() << " 1 " // << *__ts_it->beginStep() << " "
                         << __itv->second.name() << " " << __itv->first;
-                    if( ! boption( _name="exporter.merge.markers") )
+                    if( ! boption( _name="exporter.ensightgold.merge.markers") )
                     { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
                     __out << ".vec" << std::endl;
                 }
@@ -443,7 +443,7 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
                     __out << "vector per node: "
                         << __ts->index() << " " // << *__ts_it->beginStep() << " "
                         << __itv->second.name() << " " << __itv->first;
-                    if( ! boption( _name="exporter.merge.markers") )
+                    if( ! boption( _name="exporter.ensightgold.merge.markers") )
                     { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
                     __out << ".vec" << "." << std::string(M_timeExponent, '*') << std::endl;
                 }
@@ -456,12 +456,12 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
             while ( __itt != __ent )
             {
                 //if ( this->useSingleTransientFile() )
-                if( boption( _name="exporter.merge.timesteps") )
+                if( boption( _name="exporter.ensightgold.merge.timesteps") )
                 {
                     __out << "tensor per node: "
                         << __ts->index() << " 1 " // << *__ts_it->beginStep() << " "
                         << __itt->second.name() << " " << __itt->first;
-                    if( ! boption( _name="exporter.merge.markers") )
+                    if( ! boption( _name="exporter.ensightgold.merge.markers") )
                     { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
                     __out << ".tsr" << std::endl;
                 }
@@ -470,7 +470,7 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
                     __out << "tensor per node: "
                         << __ts->index() << " " // << *__ts_it->beginStep() << " "
                         << __itt->second.name() << " " << __itt->first;
-                    if( ! boption( _name="exporter.merge.markers") )
+                    if( ! boption( _name="exporter.ensightgold.merge.markers") )
                     { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
                     __out << ".tsr" << "." << std::string(M_timeExponent, '*') << std::endl; 
                 }
@@ -483,12 +483,12 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
             while ( __it_el != __end_el )
             {
                 //if ( this->useSingleTransientFile() )
-                if( boption( _name="exporter.merge.timesteps") )
+                if( boption( _name="exporter.ensightgold.merge.timesteps") )
                 {
                     __out << "scalar per element: "
                         << __ts->index() << " 1 " // << *__ts_it->beginStep() << " "
                         << __it_el->second.name() << " " << __it_el->first;
-                    if( ! boption( _name="exporter.merge.markers") )
+                    if( ! boption( _name="exporter.ensightgold.merge.markers") )
                     { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
                     __out << ".scl" << std::endl;
                 }
@@ -497,7 +497,7 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
                     __out << "scalar per element: "
                         << __ts->index() << " " // << *__ts_it->beginStep() << " "
                         << __it_el->second.name() << " " << __it_el->first;
-                    if( ! boption( _name="exporter.merge.markers") )
+                    if( ! boption( _name="exporter.ensightgold.merge.markers") )
                     { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
                     __out << ".scl" << "." << std::string(M_timeExponent, '*') << std::endl;
                 }
@@ -510,12 +510,12 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
             while ( __itv_el != __env_el )
             {
                 //if ( this->useSingleTransientFile() )
-                if( boption( _name="exporter.merge.timesteps") )
+                if( boption( _name="exporter.ensightgold.merge.timesteps") )
                 {
                     __out << "vector per element: "
                         << __ts->index() << " 1 " // << *__ts_it->beginStep() << " "
                         << __itv_el->second.name() << " " << __itv_el->first;
-                    if( ! boption( _name="exporter.merge.markers") )
+                    if( ! boption( _name="exporter.ensightgold.merge.markers") )
                     { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
                     __out << ".vec" << std::endl;
                 }
@@ -524,7 +524,7 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
                     __out << "vector per element: "
                         << __ts->index() << " " // << *__ts_it->beginStep() << " "
                         << __itv_el->second.name() << " " << __itv_el->first;
-                    if( ! boption( _name="exporter.merge.markers") )
+                    if( ! boption( _name="exporter.ensightgold.merge.markers") )
                     { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
                     __out << ".vec" << "." << std::string(M_timeExponent, '*') << std::endl;
                 }
@@ -536,12 +536,12 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
 
             while ( __itt_el != __ent_el )
             {
-                if( boption( _name="exporter.merge.timesteps") )
+                if( boption( _name="exporter.ensightgold.merge.timesteps") )
                 {
                     __out << "tensor per element: "
                         << __ts->index() << " 1 " // << *__ts_it->beginStep() << " "
                         << __itt_el->second.name() << " " << __itt_el->first;
-                    if( ! boption( _name="exporter.merge.markers") )
+                    if( ! boption( _name="exporter.ensightgold.merge.markers") )
                     { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
                     __out << ".tsr" << std::endl;
                 }
@@ -550,7 +550,7 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
                     __out << "tensor per element: "
                         << __ts->index() << " " // << *__ts_it->beginStep() << " "
                         << __itt_el->second.name() << " " << __itt_el->first;
-                    if( ! boption( _name="exporter.merge.markers") )
+                    if( ! boption( _name="exporter.ensightgold.merge.markers") )
                     { __out << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
                     __out << ".tsr" << "." << std::string(M_timeExponent, '*') << std::endl;
                 }
@@ -599,7 +599,7 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
         }
         __out << "\n";
 
-        if( boption( _name="exporter.merge.timesteps") )
+        if( boption( _name="exporter.ensightgold.merge.timesteps") )
         {
             __out << "FILE\n";
             __out << "file set: 1\n";
@@ -676,7 +676,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
                 /* generate geo filename */
                 std::ostringstream __geofname;
                 __geofname << this->path() << "/" << __ts->name();
-                if( ! boption( _name="exporter.merge.markers") )
+                if( ! boption( _name="exporter.ensightgold.merge.markers") )
                 { __geofname << "-" << this->worldComm().globalSize() << "_" << this->worldComm().localRank(); }
                 __geofname << ".geo";
                 M_filename =  __geofname.str();
@@ -706,7 +706,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
 
                 Feel::detail::FileIndex index;
 
-                if( boption( _name="exporter.merge.timesteps" ) )
+                if( boption( _name="exporter.ensightgold.merge.timesteps" ) )
                 {
                     // first read
                     index.read(fh);
@@ -744,7 +744,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
                 /* Write the file */
                 this->writeGeoMarkers(fh, mesh);
 
-                if( boption( _name="exporter.merge.timesteps" ) )
+                if( boption( _name="exporter.ensightgold.merge.timesteps" ) )
                 {
                     /* write timestep end */
                     if( this->worldComm().isMasterRank() )
@@ -768,7 +768,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
         {
             LOG(INFO) << "GEO: Changing geo mode" << std::endl;
             /* Transient mode */
-            if( boption( _name="exporter.merge.timesteps") )
+            if( boption( _name="exporter.ensightgold.merge.timesteps") )
             {
                 /* TODO */
                 /* MPI_File_Open -> f */
@@ -787,7 +787,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
 
                     __geofname << this->path() << "/"
                         << __ts->name();
-                    if( ! boption( _name="exporter.merge.markers") )
+                    if( ! boption( _name="exporter.ensightgold.merge.markers") )
                     { __geofname << "-" << this->worldComm().globalSize() << "_" << this->worldComm().localRank(); }
                     __geofname << ".geo";
 
@@ -889,7 +889,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
                     std::ostringstream __geofname;
 
                     __geofname << this->path() << "/" << __ts->name();
-                    if( ! boption( _name="exporter.merge.markers") )
+                    if( ! boption( _name="exporter.ensightgold.merge.markers") )
                     { __geofname << "-" << this->worldComm().globalSize() << "_" << this->worldComm().localRank(); }
                     __geofname << ".geo" << "." << std::setfill( '0' ) << std::setw( M_timeExponent ) << __step->index();
 
@@ -951,7 +951,7 @@ ExporterEnsightGold<MeshType, N>::writeGeoHeader(MPI_File fh) const
 
     // only write C Binary if we are not mergin timesteps
     // as it is oalready writtent at the beginning of the file
-    if( ! boption( _name="exporter.merge.timesteps") )
+    if( ! boption( _name="exporter.ensightgold.merge.timesteps") )
     {
         memset(buffer, '\0', sizeof(buffer));
         strcpy(buffer, "C Binary");
@@ -1011,7 +1011,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkers(MPI_File fh, mesh_ptrtype mesh)
 
     LOG(INFO) << "nMarkers " << nbmarkers << std::endl;
 
-    if(1/*boption( _name="exporter.merge.markers" )*/)
+    if(1/*boption( _name="exporter.ensightgold.merge.markers" )*/)
     {
         // TODO find a better place for this code to be executed
         // as we have allreduce, this can take serious execution time
@@ -1579,7 +1579,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
         auto __mesh = __step->mesh();
 
         __varfname << this->path() << "/" << __var->first;
-        if( ! boption( _name="exporter.merge.markers") )
+        if( ! boption( _name="exporter.ensightgold.merge.markers") )
         { __varfname << "-" << this->worldComm().globalSize() << "_" << this->worldComm().localRank(); }
         // add extension
         if(__var->second.is_scalar)
@@ -1592,7 +1592,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
         { __varfname << ".scl"; LOG(ERROR) << "Could not detect data type (scalar, vector, tensor2). Defaulted to scalar." << std::endl; }
 
         // if ( !this->useSingleTransientFile() )
-        if( ! boption( _name="exporter.merge.timesteps") )
+        if( ! boption( _name="exporter.ensightgold.merge.timesteps") )
         {
             __varfname << "." << std::setfill( '0' ) << std::setw( M_timeExponent ) << __step->index();
         }
@@ -1616,7 +1616,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
 
         Feel::detail::FileIndex index;
 
-        if( boption( _name = "exporter.merge.timesteps") )
+        if( boption( _name = "exporter.ensightgold.merge.timesteps") )
         {
             // first read
             index.read(fh);
@@ -1853,7 +1853,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
             }
         } // parts loop
 
-        if( boption(_name="exporter.merge.timesteps") )
+        if( boption(_name="exporter.ensightgold.merge.timesteps") )
         {
             /* write timestep end */
             if( this->worldComm().isMasterRank() )
@@ -1895,7 +1895,7 @@ ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtyp
 
         __evarfname << this->path() << "/" << __evar->first;
 
-        if( ! boption( _name="exporter.merge.markers") )
+        if( ! boption( _name="exporter.ensightgold.merge.markers") )
         { __evarfname << "-" << this->worldComm().globalSize() << "_" << this->worldComm().localRank(); }
 
         // add extension
@@ -1908,7 +1908,7 @@ ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtyp
         else
         { __evarfname << ".scl"; LOG(ERROR) << "Could not detect data type (scalar, vector, tensor2). Defaulted to scalar." << std::endl; }
 
-        if(! boption( _name="exporter.merge.timesteps") )
+        if(! boption( _name="exporter.ensightgold.merge.timesteps") )
         {
             __evarfname << "." << std::setfill( '0' ) << std::setw( M_timeExponent ) << __step->index();
         }
@@ -1934,7 +1934,7 @@ ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtyp
 
         Feel::detail::FileIndex index;
 
-        if( boption( _name = "exporter.merge.timesteps") )
+        if( boption( _name = "exporter.ensightgold.merge.timesteps") )
         {
             // first read
             index.read(fh);
@@ -2074,7 +2074,7 @@ ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtyp
             }
         }
 
-        if( boption(_name="exporter.merge.timesteps") )
+        if( boption(_name="exporter.ensightgold.merge.timesteps") )
         {
             /* write timestep end */
             if( this->worldComm().isMasterRank() )
