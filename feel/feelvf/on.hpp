@@ -453,6 +453,10 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
         //const size_type nbFaceDof = __fe->boundaryFE()->points().size2();
 
         auto IhLoc = __fe->faceLocalInterpolant();
+        for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
+        {
+        __face_it = lit->template get<1>();
+        __face_en = lit->template get<2>();
         for ( ;
               __face_it != __face_en;//this->endElement();
               ++__face_it )
@@ -540,6 +544,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
                         }
                 }
         }// __face_it != __face_en
+        } // for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
     }// findAFace
 
     if ( __form.rowStartInMatrix()!=0)
