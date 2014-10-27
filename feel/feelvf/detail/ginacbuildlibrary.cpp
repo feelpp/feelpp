@@ -45,11 +45,14 @@ void ginacBuildLibrary( GiNaC::lst const& exprs, GiNaC::lst const& syml, std::st
         observed = true;
     }
 
+    std::string keyExprManager = exprDesc;
+    if ( exprDesc.empty() && !filename.empty() )
+        keyExprManager = filename;
 
-    bool hasLinked = ( GinacExprManager::instance().find( exprDesc/*filename*/ ) != GinacExprManager::instance().end() )? true : false;
+    bool hasLinked = ( GinacExprManager::instance().find( keyExprManager/*exprDesc*//*filename*/ ) != GinacExprManager::instance().end() )? true : false;
     if ( hasLinked )
     {
-        cfun = GinacExprManager::instance().find( exprDesc/*filename*/ )->second;
+        cfun = GinacExprManager::instance().find( keyExprManager/*exprDesc*//*filename*/ )->second;
     }
     else
     {
@@ -80,7 +83,7 @@ void ginacBuildLibrary( GiNaC::lst const& exprs, GiNaC::lst const& syml, std::st
             hasLinked=true;
             if ( !filename.empty() )
             {
-                GinacExprManager::instance().operator[]( exprDesc/*filename*/ ) = cfun;
+                GinacExprManager::instance().operator[]( keyExprManager/*exprDesc*//*filename*/ ) = cfun;
 
                 if ( !exprDesc.empty() )
                 {
@@ -99,7 +102,7 @@ void ginacBuildLibrary( GiNaC::lst const& exprs, GiNaC::lst const& syml, std::st
             DVLOG(2) << "GiNaC::link_ex with filenameWithSuffix " << filenameWithSuffix << "\n";
             GiNaC::link_ex(filenameWithSuffix, *cfun);
             if ( !filename.empty() )
-                GinacExprManager::instance().operator[]( exprDesc/*filename*/ ) = cfun;
+                GinacExprManager::instance().operator[]( keyExprManager/*exprDesc*//*filename*/ ) = cfun;
         }
     }
 

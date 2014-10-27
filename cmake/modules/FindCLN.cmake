@@ -61,6 +61,7 @@ IF ( NOT CLN_INCLUDE_DIR )
     message(STATUS "Installing cln in ${CMAKE_BINARY_DIR}/contrib/cln (this may take a while)...")
     if ( FEELPP_USE_CLANG_LIBCXX OR ( APPLE AND (
             ( "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" ) OR
+            ( "${CMAKE_CXX_COMPILER_ID}" MATCHES "AppleClang" ) OR
             ( "${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel" ) ) ) )
       execute_process(
         COMMAND make -j${NProcs2} -k install CXXFLAGS=-stdlib=libc++
