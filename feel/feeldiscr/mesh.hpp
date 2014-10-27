@@ -519,6 +519,19 @@ public:
         return invalid_size_type_value;
     }
     /**
+     * @return the marker nae associated to the \p marker id
+     */
+    std::string markerName( size_type marker ) const
+        {
+            for( auto n : M_markername )
+            {
+                if (n.second[0] == marker )
+                    return n.first;
+            }
+            return std::string();
+        }
+
+    /**
      * @return the topological dimension associated to the \p marker
      */
     size_type markerDim( std::string const& marker ) const

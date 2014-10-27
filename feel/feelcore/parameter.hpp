@@ -275,6 +275,10 @@ BOOST_PARAMETER_NAME( options )
 
     BOOST_PARAMETER_NAME( max_points_used )
     BOOST_PARAMETER_NAME( projection )
+
+    BOOST_PARAMETER_NAME( bc )
+    BOOST_PARAMETER_NAME( nu )
+    BOOST_PARAMETER_NAME( alpha )
 } // Feel
 
 
