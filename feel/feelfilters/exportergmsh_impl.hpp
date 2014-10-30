@@ -1288,11 +1288,13 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
         out << "3\n";//number of integer tags:
         out << __step->index()-1 << "\n";//"0\n";//the time step (0; time steps always start at 0)
         out << "1\n";//n-component (1 is scalar) field
-        out << mesh->numElements() << "\n";//number associated nodal values
+        //out << mesh->numElements() << "\n";//number associated nodal values
 
         element_mesh_const_iterator elt_it;
         element_mesh_const_iterator elt_en;
         boost::tie( boost::tuples::ignore, elt_it, elt_en ) = elements( mesh );
+
+        out << std::distance(elt_it, elt_en) << "\n";
 
         if ( !__u.areGlobalValuesUpdated() )
             __u.updateGlobalValues();
