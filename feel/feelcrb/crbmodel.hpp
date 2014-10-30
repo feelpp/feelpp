@@ -728,7 +728,6 @@ public:
     }
     betaqm_type computeBetaQm( parameter_type const& mu , mpl::bool_<false>, double time=0 , bool only_time_dependent_terms=false )
     {
-
         beta_vector_type betaAqm;
         beta_vector_type betaMqm;
         std::vector<beta_vector_type>  betaFqm;
@@ -770,7 +769,6 @@ public:
             betaMqm[0].resize(1);
             betaMqm[0][0] = 1 ;
         }
-
         return boost::make_tuple( betaMqm, betaAqm, betaFqm );
     }
 
@@ -2659,8 +2657,8 @@ struct AssembleMassMatrixInCompositeCase
 
         using namespace Feel::vf;
 
-        auto u = M_composite_u.template element< T::value >();
-        auto v = M_composite_v.template element< T::value >();
+        auto u = this->M_composite_u.template element< T::value >();
+        auto v = this->M_composite_v.template element< T::value >();
         auto Xh = M_composite_u.functionSpace();
         mesh_ptrtype mesh = Xh->mesh();
 
@@ -3000,7 +2998,6 @@ template<typename TruthModelType>
 typename CRBModel<TruthModelType>::offline_merge_type
 CRBModel<TruthModelType>::offlineMerge( betaqm_type const& all_beta , bool only_time_dependent_terms )
 {
-
 #if 0
     sparse_matrix_ptrtype A( M_backend->newMatrix(
                                                   _test=M_model->functionSpace(),
@@ -3022,7 +3019,6 @@ CRBModel<TruthModelType>::offlineMerge( betaqm_type const& all_beta , bool only_
 
     if( ! only_time_dependent_terms )
     {
-
         //acces to beta coefficients
         auto beta_M = all_beta.template get<0>();
         auto beta_A = all_beta.template get<1>();
@@ -3059,7 +3055,9 @@ CRBModel<TruthModelType>::offlineMerge( betaqm_type const& all_beta , bool only_
         for ( size_type q = 0; q < Ql( l ); ++q )
         {
             for ( size_type m = 0; m < mMaxF(l,q); ++m )
+            {
                 F[l]->add( beta_F[l][q][m] , M_Fqm[l][q][m] );
+            }
         }
         F[l]->close();
     }
@@ -3231,8 +3229,8 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
     sparse_matrix_ptrtype M;
     std::vector<vector_ptrtype> F;
     element_ptrtype InitialGuess = Xh->elementPtr();
-    auto u = Xh->element();
-    auto uold = Xh->element();
+    auto u = Xh->element("u");
+    auto uold = Xh->element("u_old");
     vector_ptrtype Rhs( M_backend->newVector( Xh ) );
 
     double time_initial;
@@ -3290,6 +3288,7 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
             uold = u;
             M_preconditioner_primal->setMatrix( A );
             M_backend_primal->solve( _matrix=A , _solution=u, _rhs=Rhs , _prec=M_preconditioner_primal);
+
             if( is_linear )
                 norm = 0;
             else
