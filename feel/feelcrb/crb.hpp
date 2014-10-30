@@ -3159,8 +3159,8 @@ CRB<TruthModelType>::offline()
                     int index = M_N-l;
                     M_Lqm_pr[q][m]( index ) = M_model->Fqm( M_output_index, q, m, M_model->rBFunctionSpace()->primalBasisElement(index) );
                     M_Lqm_du[q][m]( index ) = M_model->Fqm( M_output_index, q, m, M_model->rBFunctionSpace()->dualBasisElement(index) );
-                    //M_Lqm_pr[q][m]( index ) = M_model->Fqm( M_output_index, q, m, M_WN[index] );
-                    //M_Lqm_du[q][m]( index ) = M_model->Fqm( M_output_index, q, m, M_WNdu[index] );
+                    // M_Lqm_pr[q][m]( index ) = M_model->Fqm( M_output_index, q, m, M_WN[index] );
+                    // M_Lqm_du[q][m]( index ) = M_model->Fqm( M_output_index, q, m, M_WNdu[index] );
                 }
             }//loop over m
         }//loop over q
@@ -4790,6 +4790,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
                         bool only_terms_time_dependent=false;
                         boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( this->expansion( uN[time_index], N , M_model->rBFunctionSpace()->primalRB() ),
                                                                                           mu , time, only_terms_time_dependent );
+                        A.setZero( N,N );
                         for ( size_type q = 0; q < Qa; ++q )
                         {
                             for(int m=0; m<mMaxA[q]; m++)
@@ -4818,6 +4819,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
                     bool only_terms_time_dependent=false;
                     boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time , only_terms_time_dependent );
 
+                    A.setZero( N,N );
                     for ( size_type q = 0; q < Qa; ++q )
                     {
                         for(int m=0; m< mMaxA[q]; m++)
@@ -5562,7 +5564,6 @@ typename boost::tuple<std::vector<double>,typename CRB<TruthModelType>::matrix_i
 CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN, std::vector< vectorN_type > & uNdu,
                          std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold, bool print_rb_matrix, int K  ) const
 {
-
     bool save_output_behavior = option(_name="crb.save-output-behavior").template as<bool>();
 
     //if K>0 then the time at which we want to evaluate output is defined by
@@ -8718,7 +8719,6 @@ typename boost::tuple<std::vector<double>,double, typename CRB<TruthModelType>::
                       double, double, typename CRB<TruthModelType>::upper_bounds_tuple >
 CRB<TruthModelType>::run( parameter_type const& mu, vectorN_type & time, double eps , int N, bool print_rb_matrix)
 {
-
     M_compute_variance = option(_name="crb.compute-variance").template as<bool>();
 
     //int Nwn = M_N;
@@ -8751,6 +8751,7 @@ CRB<TruthModelType>::run( parameter_type const& mu, vectorN_type & time, double 
     }
 #endif
     M_model->countAffineDecompositionTerms();
+
     std::vector<vectorN_type> uN;
     std::vector<vectorN_type> uNdu;
     std::vector<vectorN_type> uNold;
