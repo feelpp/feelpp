@@ -39,6 +39,7 @@ template<typename MeshType, int N>
 ExporterEnsightGold<MeshType,N>::ExporterEnsightGold( WorldComm const& worldComm )
 :
 super( worldComm ),
+M_worldCommBase(worldComm),
 M_element_type()
 {
     init();
@@ -47,6 +48,7 @@ template<typename MeshType, int N>
 ExporterEnsightGold<MeshType,N>::ExporterEnsightGold( std::string const& __p, int freq, WorldComm const& worldComm )
     :
     super( "ensightgold", __p, freq, worldComm ),
+    M_worldCommBase(worldComm),
     M_element_type()
 {
     init();
@@ -54,7 +56,8 @@ ExporterEnsightGold<MeshType,N>::ExporterEnsightGold( std::string const& __p, in
 template<typename MeshType, int N>
 ExporterEnsightGold<MeshType,N>::ExporterEnsightGold( po::variables_map const& vm, std::string const& exp_prefix, WorldComm const& worldComm )
     :
-    super( vm, exp_prefix, worldComm )
+    super( vm, exp_prefix, worldComm ),
+    M_worldCommBase(worldComm)
 {
     init();
 }
@@ -63,6 +66,7 @@ template<typename MeshType, int N>
 ExporterEnsightGold<MeshType,N>::ExporterEnsightGold( ExporterEnsightGold const & __ex )
     :
     super( __ex ),
+    M_worldCommBase( __ex.worldCommBase() ),
     M_element_type( __ex.M_element_type )
 {
 }
@@ -282,14 +286,14 @@ void
 ExporterEnsightGold<MeshType,N>::writeCaseFile() const
 {
     // only on proc 0
-    if( this->worldComm().isMasterRank() )
+    if( ! boption( _name="exporter.ensightgold.merge.markers") || ( boption( _name="exporter.ensightgold.merge.markers") && this->worldComm().isMasterRank() ) )
     {
         std::ostringstream filestr;
 
         filestr << this->path() << "/"
             << this->prefix();
         if( ! boption( _name="exporter.ensightgold.merge.markers") )
-        { filestr << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank(); }
+        { filestr << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().globalRank(); }
         filestr << ".case";
 
         std::ofstream __out( filestr.str().c_str() );
@@ -677,7 +681,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
                 std::ostringstream __geofname;
                 __geofname << this->path() << "/" << __ts->name();
                 if( ! boption( _name="exporter.ensightgold.merge.markers") )
-                { __geofname << "-" << this->worldComm().globalSize() << "_" << this->worldComm().localRank(); }
+                { __geofname << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().localRank(); }
                 __geofname << ".geo";
                 M_filename =  __geofname.str();
                 CHECK( (*__it)->hasMesh() || __ts->hasMesh()  ) << "Invalid mesh data structure in static geometry mode\n";
@@ -701,7 +705,6 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
                 MPI_Barrier( this->worldComm().comm() );
 
                 MPI_File_open( this->worldComm().comm(), str, MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL, &fh );
-
                 free(str);
 
                 Feel::detail::FileIndex index;
@@ -788,7 +791,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
                     __geofname << this->path() << "/"
                         << __ts->name();
                     if( ! boption( _name="exporter.ensightgold.merge.markers") )
-                    { __geofname << "-" << this->worldComm().globalSize() << "_" << this->worldComm().localRank(); }
+                    { __geofname << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().localRank(); }
                     __geofname << ".geo";
 
                     if ( __step->isInMemory() )
@@ -890,7 +893,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
 
                     __geofname << this->path() << "/" << __ts->name();
                     if( ! boption( _name="exporter.ensightgold.merge.markers") )
-                    { __geofname << "-" << this->worldComm().globalSize() << "_" << this->worldComm().localRank(); }
+                    { __geofname << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().localRank(); }
                     __geofname << ".geo" << "." << std::setfill( '0' ) << std::setw( M_timeExponent ) << __step->index();
 
                     if ( __step->isInMemory() )
@@ -1011,7 +1014,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkers(MPI_File fh, mesh_ptrtype mesh)
 
     LOG(INFO) << "nMarkers " << nbmarkers << std::endl;
 
-    if(1/*boption( _name="exporter.ensightgold.merge.markers" )*/)
+    if(boption( _name="exporter.ensightgold.merge.markers" ))
     {
         // TODO find a better place for this code to be executed
         // as we have allreduce, this can take serious execution time
@@ -1172,6 +1175,23 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkers(MPI_File fh, mesh_ptrtype mesh)
     }
     else
     {
+        /* Write file header */
+        this->writeGeoHeader(fh);
+
+        /* Write faces */
+        if ( option( _name="exporter.ensightgold.save-face" ).template as<bool>() )
+        {
+            for( std::pair<const std::string, std::vector<size_type> > & m : mesh->markerNames() )
+            {
+                this->writeGeoMarkedFaces(fh, mesh, m);
+            }
+        }
+
+        /* Working with marker names instead */
+        for(std::set<int>::iterator mit = M_markersToWrite.begin(); mit != M_markersToWrite.end(); mit++)
+        {
+            this->writeGeoMarkedElements(fh, mesh, *mit);
+        }
     }
 }
 
@@ -1580,7 +1600,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
 
         __varfname << this->path() << "/" << __var->first;
         if( ! boption( _name="exporter.ensightgold.merge.markers") )
-        { __varfname << "-" << this->worldComm().globalSize() << "_" << this->worldComm().localRank(); }
+        { __varfname << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().localRank(); }
         // add extension
         if(__var->second.is_scalar)
         { __varfname << ".scl"; }
@@ -1896,7 +1916,7 @@ ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtyp
         __evarfname << this->path() << "/" << __evar->first;
 
         if( ! boption( _name="exporter.ensightgold.merge.markers") )
-        { __evarfname << "-" << this->worldComm().globalSize() << "_" << this->worldComm().localRank(); }
+        { __evarfname << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().localRank(); }
 
         // add extension
         if(__evar->second.is_scalar)
