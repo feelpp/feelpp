@@ -279,7 +279,8 @@ struct InitializeElement
         typedef typename T::first_type key_type;
         typedef typename T::second_type::element_type myelt_type;
         std::string name = (boost::format("%1%_%2%")%M_element->name() %key_type::value).str();
-        x = std::make_pair(key_type(), boost::shared_ptr<myelt_type>( new myelt_type( M_element->template elementImpl<key_type::value>( name ) ) ) );
+        if( !x.second )
+            x = std::make_pair(key_type(), boost::shared_ptr<myelt_type>( new myelt_type( M_element->template elementImpl<key_type::value>( name ) ) ) );
     }
     ElementType * M_element;
 };
@@ -308,6 +309,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator=( Element<Y,Cont> c
         M_start = __e.M_start;
         M_ct = __e.M_ct;
         M_containersOffProcess = __e.M_containersOffProcess;
+
+        this->initSubElementView( mpl::bool_<functionspace_type::is_composite>() );
 
         this->resize( M_functionspace->nLocalDof() );
         super::operator=( __e );
