@@ -199,7 +199,6 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( Element const& __e 
 {
     DVLOG(2) << "Element<copy>::range::start = " << this->start() << "\n";
     DVLOG(2) << "Element<copy>::range::size = " << this->size() << "\n";
-
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
@@ -309,7 +308,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator=( Element<Y,Cont> c
         M_start = __e.M_start;
         M_ct = __e.M_ct;
         M_containersOffProcess = __e.M_containersOffProcess;
-        M_elements = __e.M_elements;
+
         this->resize( M_functionspace->nLocalDof() );
         super::operator=( __e );
         this->outdateGlobalValues();
