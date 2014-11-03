@@ -35,8 +35,9 @@ namespace Feel
 {
 
 template< typename pressure_space_type, uint16_type uOrder>
-class OperatorPCD : public OperatorBase
+class OperatorPCD : public OperatorBase<typename pressure_space_type::value_type>
 {
+    typedef OperatorBase<typename pressure_space_type::value_type> super;
 public:
 
     typedef typename pressure_space_type::value_type value_type;
@@ -65,10 +66,15 @@ public:
     typedef OperatorCompose<op_mat_type, comp1_type> comp2_type;
     typedef boost::shared_ptr<comp2_type> comp2_ptrtype;
 
+    typedef super op_type;
+    typedef boost::shared_ptr<op_type> op_ptrtype;
+
 
     static const uint16_type Dim = pressure_space_type::nDim;
     static const uint16_type pOrder = pressure_space_type::basis_type::nOrder;
 
+    OperatorPCD() {}
+        
     OperatorPCD( pressure_space_ptrtype Qh,
                  std::map< std::string, std::set<flag_type> > bcFlags,
                  double nu,
@@ -82,14 +88,14 @@ public:
     void update( ExprConvection const& expr_b, ExprBC const& ebc );
 
     void setProblemType( std::string prob_type )
-    {
-        M_prob_type = prob_type;
-    }
+        {
+            M_prob_type = prob_type;
+        }
 
     std::string problemType() const
-    {
-        return M_prob_type;
-    }
+        {
+            return M_prob_type;
+        }
 
     ~OperatorPCD() {};
 
@@ -109,7 +115,7 @@ private:
 
     std::map< std::string, std::set<flag_type> > M_bcFlags;
 
-    comp2_ptrtype precOp, precMass, precDiff;
+    op_ptrtype precOp;
 
     double M_nu, M_alpha;
 
@@ -137,6 +143,7 @@ OperatorPCD<pressure_space_type,uOrder>::OperatorPCD( pressure_space_ptrtype Qh,
                                                       double nu,
                                                       double alpha )
     :
+    super( Qh->worldComm(), "PCD", false ),
     M_Qh( Qh ),
     p( M_Qh, "p" ),
     q( M_Qh, "q" ),
@@ -169,6 +176,7 @@ OperatorPCD<pressure_space_type,uOrder>::OperatorPCD( pressure_space_ptrtype Qh,
 template < typename pressure_space_type, uint16_type uOrder >
 OperatorPCD<pressure_space_type,uOrder>::OperatorPCD( const OperatorPCD& tc )
     :
+    super(tc),
     M_Qh( tc.M_Qh ),
     p( tc.p ),
     q( tc.q ),
@@ -185,8 +193,6 @@ OperatorPCD<pressure_space_type,uOrder>::OperatorPCD( const OperatorPCD& tc )
     M_nu( tc.M_nu ),
     M_alpha( tc.M_alpha ),
     inflowIter( tc.inflowIter ),
-    precMass( tc.precMass ),
-    precDiff( tc.precDiff ),
     M_prob_type( tc.M_prob_type )
 {
     //LOG(INFO) << "Call for OperatorPCD copy constructor...\n";
@@ -207,19 +213,27 @@ void
 OperatorPCD<pressure_space_type,uOrder>::update( ExprConvection const& expr_b, 
                                                  ExprBC const& ebc )
 {
-    static bool init_G = true;
-
-    if ( !init_G )
-        G->zero();
 
     auto conv  = form2( _test=M_Qh, _trial=M_Qh, _matrix=G );
+    G->zero();
+    
     conv = integrate( elements(M_Qh->mesh()), (trans(expr_b)*trans(gradt(p)))*id(q));
+
+    for( auto dir : M_bcFlags["Dirichlet"])
+    {
+        std::string m = M_Qh->mesh()->markerName(dir);
+        if (( soption("btpcd.pcd.inflow") == "Robin" ) && 
+            ( ( m == "inlet" )  || ( m == "inflow") ) )
+        {
+            conv += integrate( _range=markedfaces(M_Qh->mesh(), dir), _expr=trans(ebc)*N()*idt(p)*id(q));
+        }
+    }
 
     G->close();
     LOG(INFO) << "[OperatorPCD] Add diffusion matrix...\n";
     G->addMatrix( M_nu, M_diff );
 
-    this->applyBC(G);
+
 
     if ( this->problemType() == "unsteady" )
     {
@@ -227,10 +241,21 @@ OperatorPCD<pressure_space_type,uOrder>::update( ExprConvection const& expr_b,
         G->addMatrix( M_alpha, M_mass );
     }
 
-    // S = F G^-1 M
-    precOp = compose( diffOp, compose(inv(op(G,"Ap")),massOp) );
+    this->applyBC(G);    
+    
+    static bool init_G = false;
 
-    init_G = false;
+    if ( !init_G )
+    {
+        // S = F G^-1 M
+        LOG(INFO) << "[OperatorPCD] setting pcd operator...\n";
+        if ( ioption("btpcd.pcd.order") == 1 )
+            precOp = compose( massOp, compose(inv(op(G,"Ap")),diffOp) );
+        else 
+            precOp = compose( diffOp, compose(inv(op(G,"Ap")),massOp) );
+        LOG(INFO) << "[OperatorPCD] setting pcd operator done.\n";
+        init_G = true;
+    }
 }
 
 
@@ -243,7 +268,7 @@ OperatorPCD<pressure_space_type,uOrder>::assembleMass()
 {
     auto m = form2( _test=M_Qh, _trial=M_Qh, _matrix=M_mass );
     m = integrate( elements(M_Qh->mesh()), idt(p)*id(q) );
-
+    M_mass->close();
     massOp = op( M_mass, "Mp" );
 }
 
@@ -254,6 +279,8 @@ OperatorPCD<pressure_space_type,uOrder>::assembleDiffusion()
     auto d = form2( _test=M_Qh, _trial=M_Qh, _matrix=M_diff );
     d = integrate( elements(M_Qh->mesh()), trace(trans(gradt(p))*grad(q)));
 
+    M_diff->close();
+    
     this->applyBC(M_diff);
     
     diffOp = op( M_diff, "Fp" );
@@ -264,15 +291,15 @@ void
 OperatorPCD<pressure_space_type,uOrder>::assembleConvection()
 {
     /*
-    form2( M_Qh, M_Qh, M_conv, _init=true ) =
-        integrate( elements(M_Qh->mesh()), typename MyIm<2*pOrder>::type(),
-                   trace(trans(gradt(p))*grad(q))
-                   );
+     form2( M_Qh, M_Qh, M_conv, _init=true ) =
+     integrate( elements(M_Qh->mesh()), typename MyIm<2*pOrder>::type(),
+     trace(trans(gradt(p))*grad(q))
+     );
 
-    M_conv->close();
+     M_conv->close();
 
-    this->applyBC(M_conv);
-    */
+     this->applyBC(M_conv);
+     */
 
 }
 
@@ -280,20 +307,37 @@ template < typename pressure_space_type, uint16_type uOrder >
 void
 OperatorPCD<pressure_space_type,uOrder>::applyBC( sparse_matrix_ptrtype& A )
 {
+    auto a = form2( _test=M_Qh, _trial=M_Qh, _matrix=A );
+    for( auto dir : M_bcFlags["Dirichlet"])
+    {
+        std::string m = M_Qh->mesh()->markerName(dir);
+        if (( soption("btpcd.pcd.inflow") == "Robin" ) && 
+            ( ( m == "inlet" )  || ( m == "inflow") ) )
+            continue;
+            
+        a += on( markedfaces(M_Qh->mesh(),dir), _element=p, _rhs=rhs, _expr=cst(0.) );
+    }
+    // on neumann boundary on velocity, apply Dirichlet condition on pressure
+    if ( soption("btpcd.pcd.outflow") == "Dirichlet" )
+        for( auto dir : M_bcFlags["Neumann"])
+        {
+            std::string m = M_Qh->mesh()->markerName(dir);
+            if ( (m=="outlet") || (m == "outflow") )
+                a += on( markedfaces(M_Qh->mesh(),dir), _element=p, _rhs=rhs, _expr=cst(0.) );
+        }
 }
 
 template < typename pressure_space_type, uint16_type uOrder >
 int
 OperatorPCD<pressure_space_type,uOrder>::apply(const vector_type& X, vector_type& Y) const
 {
-    precOp->apply( X, Y );
+    return precOp->apply( X, Y );
 }
 template < typename pressure_space_type, uint16_type uOrder >
 int
 OperatorPCD<pressure_space_type,uOrder>::applyInverse(const vector_type& X, vector_type& Y) const
 {
-    
-    precOp->applyInverse( X, Y );
+    return precOp->applyInverse( X, Y );
 }
 
 

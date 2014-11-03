@@ -34,10 +34,12 @@ namespace Feel
 /**
  * Base class for Operators
  */
+template<typename T>
 class OperatorBase
 {
   public:
- 
+    typedef T value_type;
+
     OperatorBase( WorldComm const& comm, std::string label, bool use_transpose  ) 
         : 
         M_label( label ),
@@ -53,10 +55,10 @@ class OperatorBase
     
     virtual ~OperatorBase() {};
     
-    virtual int setUseTranspose(bool UseTranspose)  { M_use_transpose = UseTranspose; }
+    virtual void setUseTranspose(bool UseTranspose)  { M_use_transpose = UseTranspose; }
     
     virtual int apply(const vector_ptrtype& X, vector_ptrtype& Y) const { return apply( *X, *Y ); }
-    virtual int apply(const vector_type& X, vector_type& Y) const;
+    virtual int apply(const vector_type& X, vector_type& Y) const = 0;
     
     virtual int applyInverse(const vector_ptrtype& X, vector_ptrtype& Y) const { return apply( *X, *Y ); }
     virtual int applyInverse(const vector_type& X, vector_type& Y) const = 0;
@@ -66,7 +68,7 @@ class OperatorBase
      
      \warning This method must not be called unless HasNormInf() returns true.
      */ 
-    virtual double normInf() const = 0;
+    virtual double normInf() const { return 0; };
     
     /**
      * \return the label of the operator
@@ -86,7 +88,7 @@ class OperatorBase
     /**
      * \return  true if Operator can compute the inf norm, false otherwise
      */
-    virtual bool hasNormInf() const = 0;
+    virtual bool hasNormInf() const  { return false; };
     
     /**
      * \return the WorldComm of the Operator
@@ -100,7 +102,7 @@ protected:
 };
 
 template<typename T>
-class OperatorMatrix : public OperatorBase
+class OperatorMatrix : public OperatorBase<T>
 {
 public:
     typedef T value_type;
@@ -112,43 +114,25 @@ public:
     typedef Vector<value_type> vector_type;
     typedef boost::shared_ptr<vector_type> vector_ptrtype;
 
-    typedef OperatorBase prec_type;
-    typedef boost::shared_ptr<prec_type> prec_ptrtype;
-
     OperatorMatrix( sparse_matrix_ptrtype const& F, std::string _label, bool transpose = 0 )
         :
-        OperatorBase( F->comm(), _label, transpose ),
+        OperatorBase<T>( F->comm(), _label, transpose ),
         M_F( F ),
-        M_Prec( ),
         M_hasInverse( 1 ),
         M_hasApply( 1 )
     {
-        DVLOG(2) << "Create operator " << this->label() << " ...\n";
+        LOG(INFO) << "Create operator " << this->label() << " ...\n";
     }
 
-    OperatorMatrix( sparse_matrix_ptrtype const& F,
-                    std::string _label,
-                    prec_ptrtype  Prec, bool transpose = 0 )
-        :
-        OperatorBase( F->comm(), _label, transpose ),
-        M_F( F ),
-        M_Prec( Prec ),
-        M_hasInverse( 1 ),
-        M_hasApply( 1 )
-    {
-        DVLOG(2) << "Create operator " << this->label() << " ...\n";
-
-    }
 
     OperatorMatrix( const OperatorMatrix& tc )
         :
-        OperatorBase( tc ),
+        OperatorBase<T>( tc ),
         M_F( tc.M_F ),
-        M_Prec( tc.M_Prec ),
         M_hasInverse( tc.M_hasInverse ),
         M_hasApply( tc.M_hasApply )
     {
-        DVLOG(2) << "Copy operator " << this->label() << " ...\n";
+        LOG(INFO) << "Copy operator " << this->label() << " ...\n";
     }
 
     bool hasInverse() const
@@ -164,6 +148,7 @@ public:
 
     int apply( const vector_type& X, vector_type& Y ) const
     {
+        LOG(INFO) << "OperatorMatrix: apply(X,Y)";
         M_F->multVector( X, Y );
         return !hasApply();
     }
@@ -171,9 +156,16 @@ public:
     int applyInverse ( const vector_type& X, vector_type& Y ) const
     {
         CHECK( hasInverse() ) << "Operator " << this->label() << "cannot be inverted.";
-
-        auto r = backend(_prefix=this->label())->solve( _matrix=M_F, _rhs=X, _solution=Y );
-        return r->isConverged();
+        LOG(INFO) << "OperatorMatrix: applyInverse(X,Y)";
+        auto xx = backend(_name=this->label())->newVector( Y.mapPtr() );
+        *xx = X;
+        xx->close();
+        auto yy = backend(_name=this->label())->newVector( Y.mapPtr() );
+        //auto r = backend(_name=this->label())->solve( _matrix=M_F, _rhs=X.shared_from_this(), _solution=Y.shared_from_this() );
+        auto r = backend(_name=this->label())->solve( _matrix=M_F, _rhs=xx, _solution=yy );
+        Y=*yy;
+        Y.close();
+        return r.isConverged();
     }
 
     value_type normInf() const
@@ -181,39 +173,45 @@ public:
         return M_F->linftyNorm();
     }
 
+    bool hasNormInf() const { return true; }
+
     ~OperatorMatrix()
     {
-        DVLOG(2) << "Destroyed matrix operator: " << this->label() << " ...\n";
+        LOG(INFO) << "Destroyed matrix operator: " << this->label() << " ...\n";
     };
 
 private:
 
     sparse_matrix_ptrtype M_F;
-    prec_ptrtype M_Prec;
 
     bool M_hasInverse, M_hasApply;
 };
-
+template<typename MatrixType>
+boost::shared_ptr<OperatorMatrix<typename MatrixType::value_type>>
+op( boost::shared_ptr<MatrixType> M, std::string label, bool transpose = false )
+{
+    return boost::make_shared<OperatorMatrix<typename MatrixType::value_type>>(M,label,transpose) ;
+}
 /**
  * Operator class to model an inverse operator
  */
 template< typename operator_type >
-class OperatorInverse : public OperatorBase
+class OperatorInverse : public OperatorBase<typename operator_type::value_type>
 {
-    typedef OperatorBase super;
+    typedef OperatorBase<typename operator_type::value_type> super;
 public:
 
     typedef boost::shared_ptr<operator_type> operator_ptrtype;
     typedef typename operator_type::value_type value_type;
 
     // This constructor implements the F^-1 operator
-    OperatorInverse( operator_ptrtype& F, std::string label )
+    OperatorInverse( operator_ptrtype F )
         :
-        OperatorBase( F->comm(), label, F->useTranspose() ),
+        super( F->comm(), F->label(), F->useTranspose() ),
         M_F( F )
     {
         this->setName();
-        DVLOG(2) << "Create inverse operator " << this->label() << "...\n";
+        LOG(INFO) << "Create inverse operator " << this->label() << "...\n";
     }
 
     OperatorInverse( const OperatorInverse& tc )
@@ -221,7 +219,7 @@ public:
         super(tc),
         M_F( tc.M_F )
     {
-        DVLOG(2) << "Copy inverse operator " << this->label() << "...\n";
+        LOG(INFO) << "Copy inverse operator " << this->label() << "...\n";
     }
 
     bool hasInverse() const
@@ -236,9 +234,9 @@ public:
 
     int apply( const vector_type & X, vector_type & Y ) const
     {
-        DVLOG(2) << "apply matrix " << label() << "\n";
+        LOG(INFO) << "OperatorInverse: apply matrix " << this->label() << "\n";
 
-        CHECK( hasApply() ) << "This operator" << this->label() << " cannot be applied.";
+        CHECK( hasApply() ) << "This operator " << this->label() << " cannot be applied.";
         M_F->applyInverse( X,Y );
 
         return !hasApply();
@@ -246,10 +244,10 @@ public:
 
     int applyInverse ( const vector_type& X, vector_type& Y ) const
     {
-        DVLOG(2) << "applyInverse matrix " << label() << "\n";
+        LOG(INFO) << "OperatorInverse: applyInverse matrix " << this->label() << "\n";
 
         CHECK( hasInverse() ) << "This operator" << this->label() << " cannot be inverted.";
-
+        CHECK(M_F) << "Invalid operator " << this->label() << " to inverse";
         M_F->apply( X,Y );
 
         return !hasInverse();
@@ -262,7 +260,7 @@ public:
 
     ~OperatorInverse()
     {
-        DVLOG(2) << "Destroyed inverse operator: " << this->label() << " ...\n";
+        LOG(INFO) << "Destroyed inverse operator: " << this->label() << " ...\n";
     };
 
 private:
@@ -282,13 +280,19 @@ private:
 
 
 
+template<typename OpType>
+boost::shared_ptr<OperatorInverse<OpType>>
+inv( boost::shared_ptr<OpType>  M )
+{
+    return boost::make_shared<OperatorInverse<OpType>>(M) ;
+}
 
 
 
 template< typename op1_type, typename op2_type >
-class OperatorCompose : public OperatorBase
+class OperatorCompose : public OperatorBase<typename op1_type::value_type>
 {
-    typedef OperatorBase super;
+    typedef OperatorBase<typename op1_type::value_type> super;
 public:
 
     typedef boost::shared_ptr<op1_type> op1_ptrtype;
@@ -298,6 +302,7 @@ public:
 
     OperatorCompose()
         :
+        super(Environment::worldComm(),"",false),
         M_F(),
         M_G()
     {
@@ -309,8 +314,9 @@ public:
         this->setLabel(t);
     }
 
-    OperatorCompose( op1_ptrtype& F, op2_ptrtype& G )
+    OperatorCompose( op1_ptrtype F, op2_ptrtype G )
         :
+        super(F->comm(),F->label(),F->useTranspose()),
         M_F( F ),
         M_G( G )
     {
@@ -320,7 +326,7 @@ public:
         t.append( "*" );
         t.append( u );
         this->setLabel(t);
-        DVLOG(2) << "Create operator " << label() << " ...\n";
+        LOG(INFO) << "Create operator " << this->label() << " ...\n";
     }
 
     OperatorCompose( const OperatorCompose& tc )
@@ -329,7 +335,7 @@ public:
         M_F( tc.M_F ),        
         M_G( tc.M_G )
     {
-        DVLOG(2) << "Copy operator " << label() << " ...\n";
+        LOG(INFO) << "Copy operator " << this->label() << " ...\n";
     }
 
     bool hasInverse() const
@@ -346,12 +352,16 @@ public:
     {
         CHECK( hasApply() ) << "This operator " << this->label() << " cannot be applied.";
 
-        DVLOG(2) << "apply operator " << label() << " ...\n";
+        LOG(INFO) << "OperatorCompose: apply operator " << this->label() << " ...\n";
 
-        vector_ptrtype Z;
-
-        M_G->apply( X,Z );
-        M_F->apply( Z,Y );
+        auto Z = backend()->newVector( Y.mapPtr() );
+        //vector_ptrtype Z=X.clone();
+        
+        LOG(INFO) << "  - apply operator " << M_G->label() << " ...\n";
+        M_G->apply( X,*Z );
+        LOG(INFO) << "  - apply operator " << M_F->label() << " ...\n";
+        M_F->apply( *Z,Y );
+        LOG(INFO) << "OperatorCompose apply operator " << this->label() << " done.\n";
 
         return !hasApply();
     }
@@ -360,13 +370,16 @@ public:
     {
         CHECK( hasInverse() ) << "This operator " << this->label() << " cannot be inverted.";
 
-        DVLOG(2) << "apply Inverse operator " << label() << " ...\n";
+        LOG(INFO) << "OperatorCompose apply operator " << this->label() << " ...\n";
 
-        vector_ptrtype Z = X.clone();
+        //vector_ptrtype Z = X.clone();
+        auto Z = backend()->newVector( Y.mapPtr() );
 
-        M_F->applyInverse( X,Z );
-        M_G->applyInverse( Z,Y );
-
+        LOG(INFO) << "  - apply operator " << M_F->label() << " ...\n";
+        M_F->applyInverse( X,*Z );
+        LOG(INFO) << "  - apply operator " << M_G->label() << " ...\n";
+        M_G->applyInverse( *Z,Y );
+        LOG(INFO) << "OperatorCompose applyInverse operator " << this->label() << " done.\n";
         return hasInverse();
     }
 
@@ -378,7 +391,7 @@ public:
 
     ~OperatorCompose()
     {
-        DVLOG(2) << "Destroyed compose operator: " << this->label() << " ...\n";
+        LOG(INFO) << "Destroyed compose operator: " << this->label() << " ...\n";
     };
 
 private:
@@ -388,13 +401,21 @@ private:
 
 };
 
+template<typename Op1Type, typename Op2Type>
+boost::shared_ptr<OperatorCompose<Op1Type,Op2Type>>
+compose( boost::shared_ptr<Op1Type>  op1,  boost::shared_ptr<Op2Type>  op2  )
+{
+    return boost::make_shared<OperatorCompose<Op1Type,Op2Type>>(op1,op2) ;
+}
+
+
 /**
  * Scaling Operator class
  */
 template< typename op1_type>
-class OperatorScale : public OperatorBase
+class OperatorScale : public OperatorBase<typename op1_type::value_type>
 {
-    typedef OperatorBase super;
+    typedef OperatorBase<typename op1_type::value_type> super;
 public:
 
     typedef boost::shared_ptr<op1_type> op1_ptrtype;
@@ -403,6 +424,7 @@ public:
     // This constructor implements the (\alpha F) operator
     OperatorScale()
         :
+        super(),
         M_F(),
         M_alpha( 0 )
     {
@@ -410,6 +432,7 @@ public:
 
     OperatorScale( op1_ptrtype& F )
         :
+        super( F->comm(), F->label(), F->useTranspose() ),
         M_F( F ),
         M_alpha( 1 )
     {
@@ -421,7 +444,7 @@ public:
         
         this->setLabel(temp);
 
-        DVLOG(2) << "Create scale operator " << label() << " ...\n";
+        LOG(INFO) << "Create scale operator " << this->label() << " ...\n";
     }
 
     OperatorScale( op1_ptrtype& F, value_type alpha )
@@ -437,7 +460,7 @@ public:
 
         this->setLabel(temp);
 
-        DVLOG(2) << "Create scale operator " << label() << " ...\n";
+        LOG(INFO) << "Create scale operator " << this->label() << " ...\n";
     }
 
     OperatorScale( const OperatorScale& tc )
@@ -446,7 +469,7 @@ public:
         M_F( tc.M_F ),
         M_alpha( tc.M_alpha )
     {
-        DVLOG(2) << "Copy scale operator " << label() << " ...\n";
+        LOG(INFO) << "Copy scale operator " << this->label() << " ...\n";
     }
 
     bool hasInverse() const
@@ -463,7 +486,7 @@ public:
 
     int apply( const vector_type& X, vector_type & Y ) const
     {
-        DVLOG(2) << "apply scale operator " << label() << "\n";
+        LOG(INFO) << "apply scale operator " << this->label() << "\n";
 
         M_F->apply( X,Y );
 
@@ -474,7 +497,7 @@ public:
 
     int applyInverse ( const vector_type& X, vector_type& Y ) const
     {
-        DVLOG(2) << "applyInverse scale operator " << label() << "\n";
+        LOG(INFO) << "applyInverse scale operator " << this->label() << "\n";
 
         FEELPP_ASSERT( hasInverse() && ( M_alpha != 0 ) ).error( "This operator cannot be inverted." );
 
@@ -493,7 +516,7 @@ public:
 
     ~OperatorScale()
     {
-        //DVLOG(2) << "Destroyed scale operator: " << label() << " ...\n";
+        //LOG(INFO) << "Destroyed scale operator: " << label() << " ...\n";
     };
 
 private:
@@ -503,21 +526,26 @@ private:
     value_type M_alpha;
 };
 
+template<typename OpType>
+boost::shared_ptr<OperatorInverse<OpType>>
+scale( boost::shared_ptr<OpType> const& M, typename OpType::value_type s )
+{
+    return boost::make_shared<OperatorScale<OpType>>(M,s) ;
+}
+
 
 
 
 
 
 template< typename operator_type >
-class OperatorFree : public OperatorBase
+class OperatorFree : public OperatorBase<typename operator_type::value_type>
 {
-    typedef OperatorBase super;
+    typedef OperatorBase<typename operator_type::value_type> super;
 public:
 
     typedef boost::shared_ptr<operator_type> operator_ptrtype;
     typedef typename operator_type::value_type value_type;
-    typedef OperatorBase prec_type;
-    typedef boost::shared_ptr<prec_type> prec_ptrtype;
 
     OperatorFree( operator_ptrtype F )
         :
@@ -526,30 +554,17 @@ public:
         M_hasInverse( 0 ),
         M_hasApply( F->hasApply() )
     {
-        DVLOG(2) << "Create operator " << label() << " ...\n";
+        LOG(INFO) << "Create operator " << this->label() << " ...\n";
     }
-
-    OperatorFree( operator_ptrtype F, prec_ptrtype Prec )
-        :
-        super(F->label(), F->useTranspose()),
-        M_op( F ),
-        M_hasInverse( 1 ),
-        M_hasApply( F->hasApply() ),
-        M_Prec( Prec )
-    {
-        DVLOG(2) << "Create operator " << label() << " ...\n";
-    }
-
 
     OperatorFree( const OperatorFree& tc )
         :
         super( tc ),
         M_op( tc.M_op ),
         M_hasInverse( tc.M_hasInverse ),
-        M_hasApply( tc.M_hasApply ),
-        M_Prec( tc.M_Prec )
+        M_hasApply( tc.M_hasApply )
     {
-        DVLOG(2) << "Copy operator " << label() << " ...\n";
+        LOG(INFO) << "Copy operator " << this->label() << " ...\n";
     }
 
 
@@ -566,25 +581,24 @@ public:
 
     int apply( const vector_ptrtype & X, vector_ptrtype & Y ) const
     {
-        DVLOG(2) << "apply operator " << label() << "\n";
+        LOG(INFO) << "apply operator " << this->label() << "\n";
         M_op->apply( X,Y );
-        DVLOG(2) << "Finished apply operator " << label() << "\n";
+        LOG(INFO) << "Finished apply operator " << this->label() << "\n";
 
         return !hasApply();
     }
 
     int applyInverse ( const vector_type& X, vector_type& Y ) const
     {
-        DVLOG(2) << "applyInverse operator " << label() << "\n";
+        LOG(INFO) << "applyInverse operator " << this->label() << "\n";
 
         FEELPP_ASSERT( hasInverse() ).error( "This operator cannot be inverted." );
 
 #if 0
         std::pair<unsigned int, real_type> result = M_Solver->solve( M_op, M_Prec, Y, X, M_tol, M_maxiter );
 #endif
-#warning TODO : solve system
 
-        DVLOG(2) << "Finished applyInverse operator " << label() << "\n";
+        LOG(INFO) << "Finished applyInverse operator " << this->label() << "\n";
         return !hasInverse();
     }
 
@@ -600,7 +614,7 @@ public:
 
     ~OperatorFree()
     {
-        DVLOG(2) << "Destroyed operator: " << label() << " ...\n";
+        LOG(INFO) << "Destroyed operator: " << this->label() << " ...\n";
     };
 
 private:
@@ -610,7 +624,6 @@ private:
 
     bool M_hasInverse, M_hasApply;
 
-    prec_ptrtype M_Prec;
 };
 
 
