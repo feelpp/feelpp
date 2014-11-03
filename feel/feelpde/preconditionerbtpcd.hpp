@@ -34,7 +34,7 @@
 namespace Feel
 {
 template< typename space_type >
-class PreconditionerBTPCD : public Preconditioner<typename space_type::value>
+class PreconditionerBTPCD : public Preconditioner<typename space_type::value_type>
 {
 public:
 
@@ -47,7 +47,7 @@ public:
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::mesh_type mesh_type;
     typedef typename space_type::mesh_ptrtype mesh_ptrtype;
-
+    typedef typename space_type::element_type element_type;
     typedef typename space_type::template sub_functionspace<0>::type velocity_space_ptrtype;
     typedef typename space_type::template sub_functionspace<1>::type pressure_space_ptrtype;
 
@@ -84,11 +84,11 @@ public:
     void assembleSchurApp( double nu, double alpha = 0 );
 
     template< typename Expr_convection, typename Expr_bc >
-    void update( Expr_convection const& expr_b, Expr_bc const& g, double& time2Update );
+    void update( Expr_convection const& expr_b, Expr_bc const& g );
 
-    int apply( const vector_type & X, vector_type & Y ) const
+    void apply( const vector_type & X, vector_type & Y ) const
     {
-        return (-1); //Not implemented
+        applyInverse( X, Y );
     }
 
     int applyInverse ( const vector_type& X, vector_type& Y ) const;
@@ -133,8 +133,9 @@ private:
     sparse_matrix_ptrtype M_helm, G, M_div;
     op_mat_ptrtype divOp, helmOp;
 
-    vector_ptrtype M_rhs;
+    mutable vector_ptrtype M_rhs, M_aux, M_vin,M_pin, M_vout, M_pout;
 
+    mutable element_type U;
     velocity_element_type u, v;
     pressure_element_type p, q;
 
@@ -162,6 +163,12 @@ PreconditionerBTPCD<space_type>::PreconditionerBTPCD( space_ptrtype Xh, std::map
     G( M_b->newMatrix( M_Vh, M_Vh ) ),
     M_div ( M_b->newMatrix( M_Vh, M_Qh ) ),
     M_rhs( M_b->newVector( M_Vh )  ),
+    M_aux( M_b->newVector( M_Qh )  ),
+    M_vin( M_b->newVector( M_Vh )  ),
+    M_pin( M_b->newVector( M_Qh )  ),
+    M_vout( M_b->newVector( M_Vh )  ),
+    M_pout( M_b->newVector( M_Qh )  ),
+    U( M_Xh, "U" ),
     u( M_Vh, "u" ),
     v( M_Vh, "v" ),
     p( M_Qh, "p" ),
@@ -200,6 +207,11 @@ PreconditionerBTPCD<space_type>::PreconditionerBTPCD( const PreconditionerBTPCD&
     divOp( tc.divOp ),
     helmOp( tc.helmOp ),
     M_rhs( tc.M_rhs ),
+    M_aux( tc.M_aux ),
+    M_vin( tc.M_vin ),
+    M_pin( tc.M_pin ),
+    M_vout( tc.M_vout ),
+    M_pout( tc.M_pout ),
     u( tc.u ),
     v( tc.v ),
     q( tc.q ),
@@ -252,7 +264,10 @@ template < typename space_type >
 void
 PreconditionerBTPCD<space_type>::assembleSchurApp( double nu, double alpha )
 {
-    pcdOp = OperatorPCD<pressure_space_type,uOrder>( M_Qh, M_bcFlags, nu, alpha );
+    LOG(INFO) << "Assembling schur complement";
+    //pcdOp = boost::make_shared<op_pcd_type>( M_Qh, M_bcFlags, nu, alpha );
+    pcdOp = op_pcd_ptrtype( new op_pcd_type( M_Qh, M_bcFlags, nu, alpha  ) );
+    LOG(INFO) << "Assembling schur complement done";
 }
 
 
@@ -261,7 +276,7 @@ template < typename space_type >
 template< typename Expr_convection, typename Expr_bc >
 void
 PreconditionerBTPCD<space_type>::update( Expr_convection const& expr_b, 
-                                         Expr_bc const& g, double& time2Update )
+                                         Expr_bc const& g )
 {
     static bool init_G = true;
 
@@ -286,11 +301,10 @@ PreconditionerBTPCD<space_type>::update( Expr_convection const& expr_b,
         lg += on( _range=markedfaces(M_Xh->mesh(), dir ), _element=u, _rhs=M_rhs, _expr=g );
     }
 
-    helmOp = op( G, "HN" );
+    helmOp = op( G, "Fu" );
 
     ti.restart();
-    pcdOp->update( expr_b );
-    time2Update += ti.elapsed();
+    pcdOp->update( expr_b, g );
 
     init_G = false;
 }
@@ -301,41 +315,53 @@ template < typename space_type >
 int
 PreconditionerBTPCD<space_type>::applyInverse ( const vector_type& X, vector_type& Y ) const
 {
-#warning TODO: applyInverse
-#if 0
-    element_type x = Xh->element(X);
-    element_type y = Xh->element(Y);
+    U = X;
+    U.close();
 
+    LOG(INFO) << "Create velocity/pressure component...\n";
+    *M_vin = U.template element<0>();
+    M_vin->close();
+    *M_pin = U.template element<1>();
+    M_pin->close();
 
-    //LOG(INFO) << "Create velocity component...\n";
-    auto velocity_in  X.template element<0>();
     
-    auto  pressure_in = X.template element<1>();
+    if ( boption("btpcd.cd") )
+    {
+        LOG(INFO) << "velocity block : apply inverse convection diffusion...\n";
+        helmOp->applyInverse(*M_vin, *M_vout);
+    }
+    else
+    {
+        *M_vout = *M_vin;
+    }
+    LOG(INFO) << "pressure/velocity block : apply divergence...\n";
+    divOp->apply( *M_vout, *M_pout );
+    *M_aux = *M_pin;
+    M_aux->close();
+    M_aux->add( -1.0, *M_pout );
 
-    //LOG(INFO) << "Copy velocity component...\n";
-    auto velocity_out = velocity_in.clone();
+    if ( boption("btpcd.pcd") )
+    {
+        LOG(INFO) << "pressure block: Solve for the pressure convection diffusion...\n";
+        CHECK(pcdOp) << "Invalid PCD oeprator\n";
+        CHECK(M_aux) << "Invalid aux vector\n";
+        CHECK(M_pout) << "Invalid aux vector\n";
 
-    //LOG(INFO) << "Copy pressure component...\n";
-    auto pressure_out = pressure_in.clone();
-
-
-    //LOG(INFO) << "apply inverse helmholtz...\n";
-    helmOp->applyInverse(velocity_in, velocity_out);
-
-    //LOG(INFO) << "apply divergence...\n";
-    auto aux = pressure_in.clone();
-    divOp->apply( velocity_out, aux );
-
-    pressure_in.Update( 1.0, aux, -1.0);
-
-    //LOG(INFO) << "Solve for the pressure...\n";
-    pcdOp->applyInverse(pressure_in, pressure_out);
-
-    //LOG(INFO) << "Update pressure...\n";
-    y.template element<0>() = velocity_out;
-    y.template element<1>() = pressure_out;
-    LOG(INFO) << "Update velocity...\n";
-#endif
+        pcdOp->applyInverse( *M_aux, *M_pout );
+        LOG(INFO) << "pressure block: Solve for the pressure convection diffusion done\n";
+    }
+    else
+    {
+        *M_pout = *M_aux;
+    }
+    M_vout->close();
+    M_pout->close();
+    LOG(INFO) << "Update output velocity/pressure...\n";
+    U.template element<0>() = *M_vout;
+    U.template element<1>() = *M_pout;
+    U.close();
+    Y=U;
+    Y.close();
     return 0;
 }
 namespace meta
@@ -363,8 +389,8 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename meta::btpcd<typename parameter::valu
 {
     typedef typename meta::btpcd<typename parameter::value_type<Args, tag::space>::type::element_type>::ptrtype pbtpcd_t;
     typedef typename meta::btpcd<typename parameter::value_type<Args, tag::space>::type::element_type>::type btpcd_t;
-    pbtpcd_t btpcd( new btpcd_t( space, bc, nu, alpha ) );
-    return btpcd;
+    pbtpcd_t p( new btpcd_t( space, bc, nu, alpha ) );
+    return p;
 } // btcpd
 } // Feel
 #endif
