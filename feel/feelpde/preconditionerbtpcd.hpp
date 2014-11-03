@@ -265,8 +265,8 @@ void
 PreconditionerBTPCD<space_type>::assembleSchurApp( double nu, double alpha )
 {
     LOG(INFO) << "Assembling schur complement";
-    //pcdOp = boost::make_shared<op_pcd_type>( M_Qh, M_bcFlags, nu, alpha );
-    pcdOp = op_pcd_ptrtype( new op_pcd_type( M_Qh, M_bcFlags, nu, alpha  ) );
+    pcdOp = boost::make_shared<op_pcd_type>( M_Qh, M_bcFlags, nu, alpha );
+    //pcdOp = op_pcd_ptrtype( new op_pcd_type( M_Qh, M_bcFlags, nu, alpha  ) );
     LOG(INFO) << "Assembling schur complement done";
 }
 
