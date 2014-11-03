@@ -14,7 +14,7 @@ cd $base_dir
 
 if [ ! -d "$base_dir/www.feelpp.org" ]; 
 then
-  git clone http://github.com/feelpp/www.feelpp.org $base_dir/www.feelpp.org
+  git clone -depth 1 http://github.com/feelpp/www.feelpp.org $base_dir/www.feelpp.org
 else
   cd $base_dir/www.feelpp.org
   git pull
