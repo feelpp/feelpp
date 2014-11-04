@@ -688,8 +688,8 @@ INPUT                  = \
  "@FEELPP_HOME_DIR@/doc/api" \
  "@FEELPP_HOME_DIR@/ChangeLog" \
  "@FEELPP_HOME_DIR@/doc/biblio/" \
- @FEELPP_PROJECTS_DIR@
-# "@FEELPP_HOME_DIR@/feel/"
+ " @FEELPP_PROJECTS_DIR@" \
+  "@FEELPP_HOME_DIR@/feel/"
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding, which is
