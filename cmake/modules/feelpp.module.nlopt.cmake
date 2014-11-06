@@ -123,6 +123,7 @@ if ( FEELPP_ENABLE_NLOPT )
       /opt/local/include/feel/nlopt
       NO_DEFAULT_PATH)
     message(STATUS "NLopt/system: ${NLOPT_INCLUDE_DIR}")
+    include_directories(${NLOPT_INCLUDE_DIR})
     FIND_LIBRARY(NLOPT_LIBRARY  NAMES feelpp_nlopt  PATHS   $ENV{FEELPP_DIR}/lib  NO_DEFAULT_PATH)
     FIND_LIBRARY(NLOPT_LIBRARY  NAMES feelpp_nlopt    )
 
