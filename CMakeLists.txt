@@ -76,7 +76,7 @@ if ( DOXYGEN AND FEELPP_ENABLE_DOXYGEN)
    endforeach()
    FILE(APPEND ${CMAKE_CURRENT_SOURCE_DIR}/pages.doc "*/\n")
 
-       set(FEELPP_PROJECTS_DIR ${FEELPP_PROJECTS_DIR} "\"\" \n") #force empty directory
+   #set(FEELPP_PROJECTS_DIR ${FEELPP_PROJECTS_DIR} "\"\" \n") #force empty directory
    STRING(REPLACE ";" " " _TMP_STR "${FEELPP_PROJECTS_DIR}")
    SET(FEELPP_PROJECTS_DIR "${_TMP_STR}")
 
