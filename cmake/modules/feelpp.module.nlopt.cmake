@@ -63,7 +63,7 @@ if ( FEELPP_ENABLE_NLOPT )
         )
 
       if (NOT EXISTS ${FEELPP_SOURCE_DIR}/contrib/nlopt/configure )
-        message(FATAL_ERROR "configure not available")
+          message(FATAL_ERROR "configure not available (Possible cause: autotools might be missing from your system)")
       endif()
 
       # ensure that build dir is created
