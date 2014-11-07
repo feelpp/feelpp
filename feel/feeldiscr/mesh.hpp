@@ -2325,10 +2325,17 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
     //std::cout <<  "global_nelts=" << global_nelts << std::endl;
     //std::cout <<  "global_npts=" << global_npts << std::endl;
 
+    /* only do this resize if we have at least one elements in the iterator */
+    /* otherwise it will segfault */
+    if(it != en)
+    {
+        elem.resize( __ne*boost::unwrap_ref( *elt_it ).numLocalVertices );
+        //elem.resize( __ne*mesh->numLocalVertices() );
+        elemids.resize( __ne );
+    }
+
     /* build the array containing the id of each vertex for each element */
-    elem.resize( __ne*boost::unwrap_ref( *elt_it ).numLocalVertices );
-    //elem.resize( __ne*mesh->numLocalVertices() );
-    elemids.resize( __ne );
+    elt_it = it;
     size_type e=0;
     for (  ; elt_it != en; ++elt_it, ++e )
     {
