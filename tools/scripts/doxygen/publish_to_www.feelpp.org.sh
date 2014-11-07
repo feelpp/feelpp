@@ -19,7 +19,7 @@ else
   cd $base_dir/www.feelpp.org
   git pull
 fi
-cd www.feelpp.org
+cd $base_dir/www.feelpp.org
 
 git checkout master
 # the resulting static pages are in _site that is not tracked by github
