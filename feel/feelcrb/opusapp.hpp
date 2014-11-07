@@ -857,7 +857,6 @@ public:
                 for ( int i=0; i<sizemax-1; i++ ) mu_str << std::scientific << std::setprecision( 5 ) << mu[i] <<",";
                 mu_str << std::scientific << std::setprecision( 5 ) << mu[size-1];
 
-                std::cout << "mu=" << mu << "\n";
 #if !NDEBUG
                 LOG(INFO) << "mu=" << mu << "\n";
                 mu.check();
