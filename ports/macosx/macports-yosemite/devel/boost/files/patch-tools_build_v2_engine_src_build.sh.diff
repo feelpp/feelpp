@@ -1,0 +1,11 @@
+--- tools/build/src/engine/build.sh.orig	2014-08-14 12:49:00.000000000 +0200
++++ tools/build/src/engine/build.sh	2014-08-14 12:51:00.000000000 +0200
+@@ -134,7 +134,7 @@
+     ;;
+ 
+     darwin)
+-    BOOST_JAM_CC=cc
++    BOOST_JAM_CC=%%CONFIGURE.CC%%
+     ;;
+ 
+     intel-darwin)

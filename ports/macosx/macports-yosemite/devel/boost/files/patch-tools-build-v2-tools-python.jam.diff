@@ -1,0 +1,25 @@
+--- tools/build/src/tools/python.jam.orig	2014-08-14 13:21:35.000000000 +0200
++++ tools/build/src/tools/python.jam	2014-08-14 13:30:56.000000000 +0200
+@@ -426,7 +426,7 @@
+     version ?= $(.version-countdown) ;
+ 
+     local prefix
+-      = [ GLOB /System/Library/Frameworks /Library/Frameworks
++      = [ GLOB @PREFIX@/Library/Frameworks
+           : Python.framework ] ;
+ 
+     return $(prefix)/Versions/$(version)/bin/python ;
+@@ -537,6 +537,13 @@
+         libraries ?= $(default-library-path) ;
+         includes ?= $(default-include-path) ;
+     }
++    else if $(target-os) = darwin
++    {
++        includes ?= $(prefix)/Headers ;
++
++        local lib = $(exec-prefix)/lib ;
++        libraries ?= $(lib)/python$(version)/config $(lib) ;
++    }
+     else
+     {
+         includes ?= $(prefix)/include/python$(version) ;
