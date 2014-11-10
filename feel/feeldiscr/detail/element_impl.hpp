@@ -194,11 +194,11 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( Element const& __e 
     M_name( __e.M_name ),
     M_start( __e.M_start ),
     M_ct( __e.M_ct ),
-    M_containersOffProcess( __e.M_containersOffProcess ),
-    M_elements( __e.M_elements )
+    M_containersOffProcess( __e.M_containersOffProcess )
 {
     DVLOG(2) << "Element<copy>::range::start = " << this->start() << "\n";
     DVLOG(2) << "Element<copy>::range::size = " << this->size() << "\n";
+    this->initSubElementView( mpl::bool_<functionspace_type::is_composite>() );
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
