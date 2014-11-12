@@ -721,6 +721,20 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
         {
             LOG(INFO) << "GEO: Static geo mode" << std::endl;
 
+            /* write info */
+            mesh_ptrtype mesh;
+            if ( __ts->hasMesh() )
+                mesh = __ts->mesh();
+            if ( (*__it)->hasMesh() && !__ts->hasMesh() )
+                mesh = (*__it)->mesh();
+
+            /* If we haven't yet computed the markers to be written */
+            /* or we restart a simulation, we need to update the markers to be written */
+            if( M_markersToWrite.size() == 0)
+            {
+                this->computeMarkersToWrite(mesh);
+            }
+
             /* only write the geometry in the first timestep */
             if( __it == __ts->beginStep() ) 
             {
@@ -734,13 +748,6 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
                 __geofname << ".geo";
                 M_filename =  __geofname.str();
                 CHECK( (*__it)->hasMesh() || __ts->hasMesh()  ) << "Invalid mesh data structure in static geometry mode\n";
-
-                /* write info */
-                mesh_ptrtype mesh;
-                if ( __ts->hasMesh() )
-                    mesh = __ts->mesh();
-                if ( (*__it)->hasMesh() && !__ts->hasMesh() )
-                    mesh = (*__it)->mesh();
 
                 /* Open File with MPI IO */
                 char * str = strdup(__geofname.str().c_str());
@@ -856,6 +863,13 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
 
                         auto mesh = __step->mesh();
 
+                        /* If we haven't yet computed the markers to be written */
+                        /* or we restart a simulation, we need to update the markers to be written */
+                        if( M_markersToWrite.size() == 0)
+                        {
+                            this->computeMarkersToWrite(mesh);
+                        }
+
                         /* Open File with MPI IO */
                         char * str = strdup(M_filename.c_str());
 
@@ -958,6 +972,13 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
 
                         auto mesh = __step->mesh();
 
+                        /* If we haven't yet computed the markers to be written */
+                        /* or we restart a simulation, we need to update the markers to be written */
+                        if( M_markersToWrite.size() == 0)
+                        {
+                            this->computeMarkersToWrite(mesh);
+                        }
+
                         /* Open File with MPI IO */
                         char * str = strdup(M_filename.c_str());
 
@@ -990,79 +1011,8 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
 
 template<typename MeshType, int N>
 void
-ExporterEnsightGold<MeshType, N>::writeGeoHeader(MPI_File fh) const
+ExporterEnsightGold<MeshType, N>::computeMarkersToWrite(mesh_ptrtype mesh) const
 {
-    MPI_Status status;
-
-    int size = 0;
-    char buffer[80];
-
-    DVLOG(2) << "Merging markers : " << "\n";
-
-    /* write header */
-    /* little trick to only perform collective operation (optimized) */
-    /* and avoid scattering offset and reseting the shared pointer if we would write this only on master proc */
-    if( this->worldComm().isMasterRank() )
-    { size = sizeof(buffer); }
-    else
-    { size = 0; }
-
-    // only write C Binary if we are not mergin timesteps
-    // as it is oalready writtent at the beginning of the file
-    if( ! boption( _name="exporter.ensightgold.merge.timesteps") )
-    {
-        memset(buffer, '\0', sizeof(buffer));
-        strcpy(buffer, "C Binary");
-        MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
-        //LOG(INFO) << "wrote " << buffer << std::endl;
-    }
-
-    // get only the filename (maybe with full path)
-    fs::path gp = M_filename;
-    std::string theFileName = gp.filename().string();
-    CHECK( theFileName.length() < 80 ) << "the file name is too long : theFileName=" << theFileName << "\n";
-
-    memset(buffer, '\0', sizeof(buffer));
-    strcpy( buffer, theFileName.c_str() );
-    MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
-    //LOG(INFO) << "wrote " << buffer << std::endl;
-
-    memset(buffer, '\0', sizeof(buffer));
-    strcpy( buffer, "elements" );
-    MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
-
-    memset(buffer, '\0', sizeof(buffer));
-    strcpy( buffer, "node id given" );
-    MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
-
-    memset(buffer, '\0', sizeof(buffer));
-    strcpy( buffer, "element id given" );
-    MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
-    //MPI_File_write(fh, buffer, sizeof(buffer), MPI_CHAR, &status );
-
-}
-
-template<typename MeshType, int N>
-void
-ExporterEnsightGold<MeshType,N>::writeGeoMarkers(MPI_File fh, mesh_ptrtype mesh) const
-{
-    /* Function WriteGeoMarker(Timestep T, MPI_File f) */
-        /* P0 : Write "C Binary", part, #, desc, coords */
-        /* for each part Marker in T */
-            /* P0 : Write "part", Write # */
-            /* P* : Compute nn, build points id array, build points array */
-            /* P0 : Write nn */
-            /* P* : Write_shared id */
-            /* P* : Write_shared points */
-
-            /* for each face/element type */
-                /* P* : compute ne, build elements id array, build elements array */
-                /* P0 : Write element type */
-                /* P0 : Write ne */
-                /* P* : Write_shared id */
-                /* P* : Write_shared elements */
-                /* WriteGeoPart(P, f) */
-
     // TODO write the faces
     // Integrate them into the parts corresponding to the elements ?
     int nbmarkers = mesh->markerNames().size();
@@ -1118,18 +1068,6 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkers(MPI_File fh, mesh_ptrtype mesh)
         }
         LOG(INFO) << ossmw.str() << std::endl;
 #endif
-
-        /* Write file header */
-        this->writeGeoHeader(fh);
-
-        /* Write faces */
-        if ( option( _name="exporter.ensightgold.save-face" ).template as<bool>() )
-        {
-            for( std::pair<const std::string, std::vector<size_type> > & m : mesh->markerNames() )
-            {
-                this->writeGeoMarkedFaces(fh, mesh, m);
-            }
-        }
 
         // TODO If the number of parts per process is not the sam
         // some processes might not enter some instance of the function in the following loop
@@ -1204,36 +1142,10 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkers(MPI_File fh, mesh_ptrtype mesh)
             osss << " " << *it << " (" << std::distance(mesh->beginElementWithMarker(*it), mesh->endElementWithMarker(*it)) << ")";
         }
         LOG(INFO) << osss.str() << std::endl;
-
-#if 1
-        /* Working with marker names instead */
-        //for(int i = 0; i < M_markersToWrite.size(); i++)
-        for(std::set<int>::iterator mit = M_markersToWrite.begin(); mit != M_markersToWrite.end(); mit++)
-        {
-            this->writeGeoMarkedElements(fh, mesh, *mit);
-        }
-
-#if 0
-        /* if we have no markers, we revert to the classical part implementation */
-        if(M_markersToWrite.size() == 0)
-        {
-            typename mesh_type::parts_const_iterator_type p_it = mesh->beginParts();
-            typename mesh_type::parts_const_iterator_type p_en = mesh->endParts();
-
-            for ( ; p_it != p_en; ++p_it )
-            {
-                this->writeGeoMarkedElements(fh, mesh, p_it->first);
-            }
-        }
-#endif
-#endif
     }
     else
     {
-        /* Write file header */
-        this->writeGeoHeader(fh);
-
-        /* iterate over the markes to get the different markers needed to be written */
+        /* iterate over the markers to get the different markers needed to be written */
         /* (in this case all the markers local to the processor) */
         typename mesh_type::parts_const_iterator_type p_st = mesh->beginParts();
         typename mesh_type::parts_const_iterator_type p_en = mesh->endParts();
@@ -1241,24 +1153,105 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkers(MPI_File fh, mesh_ptrtype mesh)
         {
             M_markersToWrite.insert(p_it->first);
         }
+    }
 
-        /* Write faces */
-        if ( option( _name="exporter.ensightgold.save-face" ).template as<bool>() )
-        {
-            for( std::pair<const std::string, std::vector<size_type> > & m : mesh->markerNames() )
-            {
-                this->writeGeoMarkedFaces(fh, mesh, m);
-            }
-        }
+}
 
-        /* Working with marker names instead */
-        for(std::set<int>::iterator mit = M_markersToWrite.begin(); mit != M_markersToWrite.end(); mit++)
+template<typename MeshType, int N>
+void
+ExporterEnsightGold<MeshType,N>::writeGeoMarkers(MPI_File fh, mesh_ptrtype mesh) const
+{
+    /* Function WriteGeoMarker(Timestep T, MPI_File f) */
+        /* P0 : Write "C Binary", part, #, desc, coords */
+        /* for each part Marker in T */
+            /* P0 : Write "part", Write # */
+            /* P* : Compute nn, build points id array, build points array */
+            /* P0 : Write nn */
+            /* P* : Write_shared id */
+            /* P* : Write_shared points */
+
+            /* for each face/element type */
+                /* P* : compute ne, build elements id array, build elements array */
+                /* P0 : Write element type */
+                /* P0 : Write ne */
+                /* P* : Write_shared id */
+                /* P* : Write_shared elements */
+                /* WriteGeoPart(P, f) */
+
+    /* Write file header */
+    this->writeGeoHeader(fh);
+
+    /* Write faces */
+    if ( option( _name="exporter.ensightgold.save-face" ).template as<bool>() )
+    {
+        for( std::pair<const std::string, std::vector<size_type> > & m : mesh->markerNames() )
         {
-            this->writeGeoMarkedElements(fh, mesh, *mit);
+            this->writeGeoMarkedFaces(fh, mesh, m);
         }
+    }
+
+    /* Working with marker names instead */
+    //for(int i = 0; i < M_markersToWrite.size(); i++)
+    for(std::set<int>::iterator mit = M_markersToWrite.begin(); mit != M_markersToWrite.end(); mit++)
+    {
+        this->writeGeoMarkedElements(fh, mesh, *mit);
     }
 }
 
+
+template<typename MeshType, int N>
+void
+ExporterEnsightGold<MeshType, N>::writeGeoHeader(MPI_File fh) const
+{
+    MPI_Status status;
+
+    int size = 0;
+    char buffer[80];
+
+    DVLOG(2) << "Merging markers : " << "\n";
+
+    /* write header */
+    /* little trick to only perform collective operation (optimized) */
+    /* and avoid scattering offset and reseting the shared pointer if we would write this only on master proc */
+    if( this->worldComm().isMasterRank() )
+    { size = sizeof(buffer); }
+    else
+    { size = 0; }
+
+    // only write C Binary if we are not mergin timesteps
+    // as it is oalready writtent at the beginning of the file
+    if( ! boption( _name="exporter.ensightgold.merge.timesteps") )
+    {
+        memset(buffer, '\0', sizeof(buffer));
+        strcpy(buffer, "C Binary");
+        MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+        //LOG(INFO) << "wrote " << buffer << std::endl;
+    }
+
+    // get only the filename (maybe with full path)
+    fs::path gp = M_filename;
+    std::string theFileName = gp.filename().string();
+    CHECK( theFileName.length() < 80 ) << "the file name is too long : theFileName=" << theFileName << "\n";
+
+    memset(buffer, '\0', sizeof(buffer));
+    strcpy( buffer, theFileName.c_str() );
+    MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+    //LOG(INFO) << "wrote " << buffer << std::endl;
+
+    memset(buffer, '\0', sizeof(buffer));
+    strcpy( buffer, "elements" );
+    MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+
+    memset(buffer, '\0', sizeof(buffer));
+    strcpy( buffer, "node id given" );
+    MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+
+    memset(buffer, '\0', sizeof(buffer));
+    strcpy( buffer, "element id given" );
+    MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+    //MPI_File_write(fh, buffer, sizeof(buffer), MPI_CHAR, &status );
+
+}
 
 template<typename MeshType, int N>
 void

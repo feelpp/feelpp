@@ -219,6 +219,11 @@ private:
     void writeCaseFile() const;
 
     /**
+       updates the markers to be written by he exporters
+    */
+    void computeMarkersToWrite(mesh_ptrtype mesh) const;
+
+    /**
        write the 'geo' file for ensight
     */
     void writeGeoFiles() const;
