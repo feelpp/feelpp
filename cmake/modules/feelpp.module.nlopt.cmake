@@ -63,7 +63,7 @@ if ( FEELPP_ENABLE_NLOPT )
         )
 
       if (NOT EXISTS ${FEELPP_SOURCE_DIR}/contrib/nlopt/configure )
-        message(FATAL_ERROR "configure not available")
+          message(FATAL_ERROR "configure not available (Possible cause: autotools might be missing from your system)")
       endif()
 
       # ensure that build dir is created
@@ -123,6 +123,7 @@ if ( FEELPP_ENABLE_NLOPT )
       /opt/local/include/feel/nlopt
       NO_DEFAULT_PATH)
     message(STATUS "NLopt/system: ${NLOPT_INCLUDE_DIR}")
+    include_directories(${NLOPT_INCLUDE_DIR})
     FIND_LIBRARY(NLOPT_LIBRARY  NAMES feelpp_nlopt  PATHS   $ENV{FEELPP_DIR}/lib  NO_DEFAULT_PATH)
     FIND_LIBRARY(NLOPT_LIBRARY  NAMES feelpp_nlopt    )
 

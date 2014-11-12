@@ -3065,6 +3065,20 @@ public:
             CHECK ( fusion::at_c<i>( M_elements ).second ) << " has not element \n";
             return *(fusion::at_c<i>( M_elements ).second);
         }
+        template<int i>
+        typename sub_element<i>::ptrtype &
+        elementPtr()
+        {
+            CHECK ( fusion::at_c<i>( M_elements ).second ) << " has not element \n";
+            return fusion::at_c<i>( M_elements ).second;
+        }
+        template<int i>
+        typename sub_element<i>::ptrtype const&
+        elementPtr() const
+        {
+            CHECK ( fusion::at_c<i>( M_elements ).second ) << " has not element \n";
+            return fusion::at_c<i>( M_elements ).second;
+        }
 
         /**
          *
