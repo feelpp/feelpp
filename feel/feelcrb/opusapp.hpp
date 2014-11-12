@@ -123,6 +123,15 @@ public:
 
     typedef typename crb_type::sampling_ptrtype sampling_ptrtype;
 
+    static const int nb_spaces = functionspace_type::nSpaces;
+    typedef typename mpl::if_< boost::is_same< mpl::int_<nb_spaces> , mpl::int_<2> > , fusion::vector< mpl::int_<0>, mpl::int_<1> >  ,
+                               typename mpl::if_ < boost::is_same< mpl::int_<nb_spaces> , mpl::int_<3> > ,
+                                                   fusion::vector < mpl::int_<0> , mpl::int_<1> , mpl::int_<2> >,
+                                                   typename mpl::if_< boost::is_same< mpl::int_<nb_spaces> , mpl::int_<4> >,
+                                                                      fusion::vector< mpl::int_<0>, mpl::int_<1>, mpl::int_<2>, mpl::int_<3> >,
+                                                                      fusion::vector< mpl::int_<0>, mpl::int_<1>, mpl::int_<2>, mpl::int_<3>, mpl::int_<4> >
+                                                                      >::type >::type >::type index_vector_type;
+
     OpusApp()
         :
         super(),
@@ -133,7 +142,11 @@ public:
 
     OpusApp( AboutData const& ad, po::options_description const& od )
         :
-        super( ad, opusapp_options(ad.appName()).add( od ).add( crbOptions() ).add(file_options(ad.appName())).add( eimOptions() ).add( podOptions() ) ),
+        super( ad, opusapp_options(ad.appName())
+               .add( od )
+               .add( crbOptions() )
+               .add( eimOptions() )
+               .add( podOptions() )),
         M_mode( ( CRBModelMode )option(_name=_o( this->about().appName(),"run.mode" )).template as<int>() )
         {
             this->init();
@@ -141,7 +154,11 @@ public:
 
     OpusApp( AboutData const& ad, po::options_description const& od, CRBModelMode mode )
         :
-        super( ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add(file_options(ad.appName())).add( eimOptions() ).add( podOptions() ) ),
+        super( ad, opusapp_options( ad.appName() )
+               .add( od )
+               .add( crbOptions() )
+               .add( eimOptions() )
+               .add( podOptions() )),
         M_mode( mode )
         {
             this->init();
@@ -149,14 +166,22 @@ public:
 
     OpusApp( int argc, char** argv, AboutData const& ad, po::options_description const& od )
         :
-        super( ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add(file_options(ad.appName())).add( eimOptions() ).add( podOptions() ) ),
+        super( ad, opusapp_options( ad.appName() )
+               .add( od )
+               .add( crbOptions() )
+               .add( eimOptions() )
+               .add( podOptions() )),
         M_mode( ( CRBModelMode )option(_name=_o( this->about().appName(),"run.mode" )).template as<int>() )
         {
             this->init();
         }
     OpusApp( int argc, char** argv, AboutData const& ad, po::options_description const& od, CRBModelMode mode )
         :
-        super( ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add(file_options(ad.appName())).add( eimOptions() ).add( podOptions() ) ),
+        super( ad, opusapp_options( ad.appName() )
+               .add( od )
+               .add( crbOptions() )
+               .add( eimOptions() )
+               .add( podOptions() )),
         M_mode( mode )
         {
             this->init();
@@ -343,7 +368,6 @@ public:
     FEELPP_DONT_INLINE
     void run()
         {
-
             bool export_solution = option(_name=_o( this->about().appName(),"export-solution" )).template as<bool>();
             int proc_number =  Environment::worldComm().globalRank();
 
@@ -374,6 +398,7 @@ public:
             }
 
             this->loadDB();
+
             int run_sampling_size = option(_name=_o( this->about().appName(),"run.sampling.size" )).template as<int>();
             SamplingMode run_sampling_type = ( SamplingMode )option(_name=_o( this->about().appName(),"run.sampling.mode" )).template as<int>();
             int output_index = option(_name="crb.output-index").template as<int>();
@@ -431,7 +456,6 @@ public:
                 Sampling->addElement( user_mu_onefeel );
                 sampling_is_already_generated=true;
             }
-
 
             std::string vary_only_parameter_components = option(_name="crb.vary-only-parameter-components").template as<std::string>();
             std::vector< std::string > str;
@@ -559,7 +583,6 @@ public:
                 model->computeAffineDecomposition();
                 crb->computationalTimeStatistics( appname );
             }
-
 
             //here we can be interested by computing FEM and CRB solutions
             //so it is important that every proc has the same sampling (for FEM solution)
@@ -772,6 +795,7 @@ public:
                 }
 
             }
+
             if( M_mode==CRBModelMode::SCM )
             {
                 if (option(_name="crb.scm.cvg-study").template as<bool>() )
@@ -803,7 +827,6 @@ public:
             {
                 double time = time_index*dt;
                 ref_betaAqm.push_back( model->computeBetaQm( ref_mu , time ).template get<1>() );
-
                 ref_betaLinearDecompositionAqm.push_back( model->computeBetaLinearDecompositionA( ref_mu , time ) );
             }
             auto ref_betaMqm = model->computeBetaQm( ref_mu , tf ).template get<0>() ;
@@ -925,6 +948,7 @@ public:
                                 double online_tol = option(_name="crb.online-tolerance").template as<double>();
                                 vectorN_type time_crb;
                                 ti.restart();
+
                                 auto o = crb->run( mu, time_crb, online_tol , N, print_rb_matrix);
                                 double time_crb_prediction=time_crb(0);
                                 double time_crb_error_estimation=time_crb(1);
@@ -1034,6 +1058,7 @@ public:
                                     auto u_dual_error = model->functionSpace()->element();
                                     std::ostringstream u_error_str;
                                     u_error = (( u_fem - u_crb ).pow(2)).sqrt()  ;
+
                                     u_error_str << "u_error(" << mu_str.str() << ")";
                                     u_error.setName( u_error_str.str()  );
                                     if( export_solution )
@@ -1041,13 +1066,16 @@ public:
                                             std::string exportName = u_error.name().substr(0,exportNameSize) + "-" + std::to_string(curpar);
                                             e->add( exportName, u_error );
                                         }
+
                                     LOG(INFO) << "L2(fem)=" << l2Norm( u_fem )    << "\n";
                                     LOG(INFO) << "H1(fem)=" << h1Norm( u_fem )    << "\n";
+
                                     l2_error = l2Norm( u_error )/l2Norm( u_fem );
                                     h1_error = h1Norm( u_error )/h1Norm( u_fem );
 
                                     output_fem = ofem[0];
                                     time_fem = ofem[1]+time_fem_solve;
+
                                     if( boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value )
                                     {
                                         if( solve_dual_problem )
@@ -2149,9 +2177,10 @@ private:
     }
     double l2Norm( element_type const& u, mpl::bool_<true>)
     {
-        auto mesh = model->functionSpace()->mesh();
-        auto uT = u.template element<1>();
-        return math::sqrt( integrate( elements(mesh), (vf::idv(uT))*(vf::idv(uT)) ).evaluate()(0,0) );
+        ComputeNormL2InCompositeCase compute_normL2_in_composite_case( u );
+        index_vector_type index_vector;
+        fusion::for_each( index_vector, compute_normL2_in_composite_case );
+        return compute_normL2_in_composite_case.norm();
     }
     //double h1Norm( typename ModelType::parameter_type const& mu, int N )
     double h1Norm( element_type const& u )
@@ -2175,6 +2204,37 @@ private:
         return math::sqrt( l22+semih12 );
     }
 
+    struct ComputeNormL2InCompositeCase
+    {
+        ComputeNormL2InCompositeCase( element_type const composite_u )
+            :
+            M_composite_u( composite_u )
+            {}
+
+        template< typename T >
+        void
+        operator()( const T& t ) const
+            {
+                int i = T::value;
+                if( i == 0 )
+                    M_vec.resize( 1 );
+                else
+                    M_vec.conservativeResize( i+1 );
+
+                auto u = M_composite_u.template element< T::value >();
+                auto mesh = u.functionSpace()->mesh();
+                double norm  = normL2(_range=elements( mesh ),_expr=( idv(u) ) );
+                M_vec(i)= norm ;
+            }
+
+        double norm()
+            {
+                return M_vec.sum();
+            }
+
+        mutable vectorN_type M_vec;
+        element_type M_composite_u;
+    };
 
 
     void initializeConvergenceScmMap( int sampling_size )
