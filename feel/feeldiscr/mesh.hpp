@@ -2189,7 +2189,7 @@ template<typename T>
 struct MeshPoints
 {
     template<typename MeshType, typename IteratorType>
-    MeshPoints( MeshType* mesh, const WorldComm &, IteratorType it, IteratorType en, const bool outer = false, const bool renumber = false, const bool fill = false );
+    MeshPoints( MeshType* mesh, const WorldComm &, IteratorType it, IteratorType en, const bool outer = false, const bool renumber = false, const bool fill = false, const int startIndex = 1 );
 
     int translatePointIds(std::vector<int32_t> & ids);
     int translateElementIds(std::vector<int32_t> & ids);
@@ -2218,10 +2218,11 @@ struct MeshPoints
  * @param outer If false, the vertices are place in an x1 y1 z1 ... xn yn zn order, otherwise in the x1 ... xn y1 ... yn z1 ... zn
  * @param renumber If true, the vertices will be renumbered with maps to keep the correspondance between the twoi, otherwise the original ids are kept
  * @param fill It true, the method will generate points coordinates that are 3D, even if the point is specified with 1D or 2D coordinates (filled with 0)
+ * @param Specify the startIndex of the renumbered points (typically set to 0 or 1, but no restriction)
  */
 template<typename T>
 template<typename MeshType, typename IteratorType>
-MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorType it, IteratorType en, const bool outer, const bool renumber, const bool fill )
+MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorType it, IteratorType en, const bool outer, const bool renumber, const bool fill, const int startIndex )
 {
     std::set<int> nodeset;
     size_type p = 0;
@@ -2239,7 +2240,7 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
             if ( ins.second )
             {
                 if ( renumber )
-                    ids.push_back( p+1 );
+                    ids.push_back( p + startIndex );
                 else
                     ids.push_back( pid );
                 old2new[pid]=ids[p];
@@ -2263,7 +2264,7 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
     /* otherwise, the coords are placed like: x1 y1 z1 x2 y2 z2 ... xn yn zn */
     for( int i = 0; pit != pen; ++pit, ++i )
     {
-        CHECK( *pit > 0 ) << "invalid id " << *pit;
+        //CHECK( *pit > 0 ) << "invalid id " << *pit;
         //LOG(INFO) << "p " << i << "/" << nv << " =" << *pit;
         //int pid = (renumber)?nodemap[*pit]+1:*pit;
         int pid = *pit;
