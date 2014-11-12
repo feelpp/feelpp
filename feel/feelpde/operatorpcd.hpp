@@ -143,7 +143,7 @@ OperatorPCD<pressure_space_type,uOrder>::OperatorPCD( pressure_space_ptrtype Qh,
                                                       double nu,
                                                       double alpha )
     :
-    super( Qh->worldComm(), "PCD", false ),
+    super( Qh->worldComm(), "PCD", false, false ),
     M_Qh( Qh ),
     p( M_Qh, "p" ),
     q( M_Qh, "q" ),
