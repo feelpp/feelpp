@@ -213,7 +213,7 @@ public:
     //! return the number of \f$\mu\f$ independent terms for the bilinear form
     size_type Qa() const
     {
-        return this->M_model->Qa()-this->M_model->QaTri();
+        return this->M_model->Qa();
     }
 
 

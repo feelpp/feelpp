@@ -366,6 +366,25 @@ expr( ex const& myexpr, std::vector<GiNaC::symbol> const & syms , std::vector<Gi
     return Expr< GinacExVF<ExprT,Order> >(  GinacExVF<ExprT,Order>( myexpr, syms, std::string(""), VFmap, filename, world ) );
 }
 
+template<typename ExprT, int Order=2>
+inline
+Expr< GinacExVF<ExprT,Order> >
+expr( std::string const& myexpr, std::vector<GiNaC::symbol> const & syms , std::vector<GiNaC::symbol> const& s, std::vector<ExprT> const& e, std::string filename="", WorldComm const& world=Environment::worldComm() )
+{
+    std::vector< std::pair<GiNaC::symbol,ExprT> > VFmap;
+    CHECK( s.size() == e.size() ) << "List of expressions and associated symbols have not the same size \n";
+
+    typename std::vector<GiNaC::symbol>::const_iterator it1 = s.begin();
+    typename std::vector<ExprT>::const_iterator it2 = e.begin();
+    for(it1; it1!=s.end(); it1++)
+        {
+            VFmap.push_back( std::make_pair(*it1, *it2) );
+            it2++;
+        }
+    //std::cout << "ginac ExVF : filename = " << filename << std::endl;
+    return Expr< GinacExVF<ExprT,Order> >(  GinacExVF<ExprT,Order>( parse(myexpr,syms), syms, myexpr, VFmap, filename, world ) );
+}
+
 /**
  * @brief Create an Feel++ expression from a GiNaC expression as a string
  *
