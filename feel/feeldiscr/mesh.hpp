@@ -2253,9 +2253,9 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
             if ( ins.second )
             {
                 if ( renumber )
-                    ids.push_back( p + startIndex );
+                { ids.push_back( p + startIndex ); }
                 else
-                    ids.push_back( pid );
+                { ids.push_back( pid ); }
                 old2new[pid]=ids[p];
                 new2old[ids[p]]=pid;
                 nodemap[pid] = p;
@@ -2284,16 +2284,16 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
 
         auto const& p = mesh->point( new2old[*pit] );
         if ( outer )
-            coords[i] = ( T ) p.node()[0];
+        { coords[i] = ( T ) p.node()[0]; }
         else
-            coords[3*i] = ( T ) p.node()[0];
+        { coords[3*i] = ( T ) p.node()[0]; }
 
         if ( MeshType::nRealDim >= 2 )
         {
             if ( outer )
-                coords[nv+i] = ( T ) p.node()[1];
+            { coords[nv+i] = ( T ) p.node()[1]; }
             else
-                coords[3*i+1] = ( T ) p.node()[1];
+            { coords[3*i+1] = ( T ) p.node()[1]; }
         }
         /* Fill 2nd components with 0 if told to do so */
         else
@@ -2301,18 +2301,18 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
             if(fill)
             {
                 if ( outer )
-                    coords[nv+i] = (T)0;
+                { coords[nv+i] = (T)0; }
                 else
-                    coords[3*i+1] = (T)0;
+                { coords[3*i+1] = (T)0; }
             }
         }
 
         if ( MeshType::nRealDim >= 3 )
         {
             if ( outer )
-                coords[2*nv+i] = T( p.node()[2] );
+            { coords[2*nv+i] = T( p.node()[2] ); }
             else
-                coords[3*i+2] = T( p.node()[2] );
+            { coords[3*i+2] = T( p.node()[2] ); }
         }
         /* Fill 3nd components with 0 if told to do so */
         else
@@ -2320,30 +2320,21 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
             if(fill)
             {
                 if ( outer )
-                    coords[2*nv+i] = (T)0;
+                { coords[2*nv+i] = (T)0; }
                 else
-                    coords[3*i+2] = (T)0;
+                { coords[3*i+2] = (T)0; }
             }
         }
     }
 
+    /* number of local elements */
     int __ne = std::distance( it, en );
-    std::vector<int> s{nv,__ne}, global_s;
-    //mpi::all_reduce( worldComm.comm(), s, global_s, std::sum<int>() );
-
-    /* compute the number of global points and elements */
-#if 0
-    mpi::all_reduce( worldComm.comm(), nv, global_npts, std::plus<int>() );
-    mpi::all_reduce( worldComm.comm(), __ne, global_nelts, std::plus<int>()  );
-#endif
-    //std::cout <<  "global_nelts=" << global_nelts << std::endl;
-    //std::cout <<  "global_npts=" << global_npts << std::endl;
 
     /* only do this resize if we have at least one elements in the iterator */
     /* otherwise it will segfault */
     if(it != en)
     {
-        elem.resize( __ne*boost::unwrap_ref( *elt_it ).numLocalVertices );
+        elem.resize( __ne*boost::unwrap_ref( *it ).numLocalVertices );
         //elem.resize( __ne*mesh->numLocalVertices() );
         elemids.resize( __ne );
     }
@@ -2377,8 +2368,6 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
     std::for_each( elem.begin(), elem.end(), [=]( int e )
                    { CHECK( ( e > 0) && e <= __nv ) << "invalid entry e = " << e << " nv = " << nv; } );
 #endif
-    //std::cout << "done with elem and elemids" << std::endl;
-
 
     //size_type offset_pts = ids.size()*sizeof(int)+ coords.size()*sizeof(float);
     //size_type offset_elts = elemids.size()*sizeof(int)+ elem.size()*sizeof(int);
@@ -2390,79 +2379,14 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
     size_type offset_elts = __ne;
 #endif
 
-    std::ostringstream osst;
-
-#if 0
-    //std::cout << "offset pts : " << offset_pts << std::endl;
-    //std::cout << "offset elts : " << offset_elts << std::endl;
-    std::vector<size_type> osp, ose;
-    // do communication to retrieve the offsets to access the parallel io file
-    mpi::all_gather( worldComm.comm(), offset_pts, osp );
-    mpi::all_gather( worldComm.comm(), offset_elts, ose );
-
-    if(worldComm.isMasterRank())
-    {
-    osst << worldComm.rank() << "osp: ";
-    for(int i = 0; i < osp.size(); i++)
-    { osst << osp.at(i) << " "; }
-    std::cout << osst.str() << std::endl;
-
-    osst.str("");
-    osst << worldComm.rank() << "ose: ";
-    for(int i = 0; i < ose.size(); i++)
-    { osst << ose.at(i) << " "; }
-    std::cout << osst.str() << std::endl;
-    }
-
-#else
-
+    /* gather the number of points and elements fo each process */
     std::vector<int> ost{nv, __ne};
     std::vector<std::vector<int>> ospe;
 
     mpi::all_gather( worldComm.comm(), ost, ospe );
-    //if(worldComm.isMasterRank())
-    //{
-    //osst.str("");
-    //osst << worldComm.rank() << "ospe: ";
-    //for(int i = 0; i < ospe.size(); i++)
-    //{ 
-        //osst << "(";
-        //for(int j = 0; j < ospe.at(i).size(); j++)
-        //{
-            //osst << ospe.at(i).at(j) << " ";
-        //}
-        //osst << ") "; 
-    //}
-    //std::cout << osst.str() << std::endl;
-    //}
-#endif
 
-#if 0
-    offsets_pts = 0;
-    global_offsets_pts = 0;
-    offsets_elts = 0;
-    global_offsets_elts = 0;
-    for( size_type i = 0; i < osp.size(); i++ )
-    {
-        if ( i < worldComm.localRank() )
-        {
-            offsets_pts += osp[i];
-            offsets_elts  += ose[i];
-        }
-        global_offsets_pts += osp[i];
-        global_offsets_elts  += ose[i];
-    }
-
-    std::cout << worldComm.rank() << " 1 " << offsets_pts << " " << global_offsets_pts << " " << offsets_elts << " " << global_offsets_elts << std::endl;
-
-    //std::cout << "local offset pts : " << offsets_pts << std::endl;
-    //std::cout << "local offset elts : " << offsets_elts << std::endl;
-    //std::cout << "global offset pts : " << global_offsets_pts << std::endl;
-    //std::cout << "global offset elts : " << global_offsets_elts << std::endl;
-    //std::cout << "done with offsets" << std::endl;
-
-#else
-    
+    /* compute offsets to shift the point and element ids */
+    /* regarding to the processor rank */
     offsets_pts = 0;
     global_offsets_pts = 0;
     offsets_elts = 0;
@@ -2479,8 +2403,13 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
     }
     global_npts = global_offsets_pts;
     global_nelts = global_offsets_elts;
-    //std::cout << worldComm.rank() << " 2 " << offsets_pts << " " << global_offsets_pts << " " << global_npts << " " << offsets_elts << " " << global_offsets_elts << " " << global_nelts << std::endl;
-#endif
+
+    //
+    //std::cout << "local offset pts : " << offsets_pts << std::endl;
+    //std::cout << "local offset elts : " << offsets_elts << std::endl;
+    //std::cout << "global offset pts : " << global_offsets_pts << std::endl;
+    //std::cout << "global offset elts : " << global_offsets_elts << std::endl;
+    //std::cout << "done with offsets" << std::endl;
 }
 
 /**
