@@ -43,7 +43,8 @@ livecheck.type  regex
 livecheck.regex ${name}-(\[0-9.\]+)${extract.suffix}
 
 if {![variant_isset gcc48] && ![variant_isset clang36] } {
-    default_variants +gcc48
+    #default_variants +gcc48
+    default_variants +clang36
 }
 
 
@@ -55,4 +56,5 @@ variant gcc48 description {Build with gcc 4.8} conflicts clang36 {
 variant clang36 description {Build with clang 3.6} conflicts gcc48 {
     depends_lib-append  port:clang-3.6
     configure.compiler  macports-clang-3.6
+    #configure.env-append CXXFLAGS=-stdlib=libc++
 }
