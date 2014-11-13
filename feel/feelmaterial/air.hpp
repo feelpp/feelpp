@@ -82,7 +82,7 @@ public:
     virtual double k() const
     {
         double T = 273; // K (default)
-        return pow( 10,( 0.8616*log10( abs( T ) )-3.7142 ) );
+        return pow( 10,( 0.8616*log10( std::abs( T ) )-3.7142 ) );
     }
 
     //! density in \f$ kg/m^3 \f$
