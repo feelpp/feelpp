@@ -22,7 +22,7 @@
    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 #include <feel/feel.hpp>
-#include <feel/feelalg/preconditionerbtpcd.hpp>
+#include <feel/feelpde/preconditionerbtpcd.hpp>
 
 int main(int argc, char**argv )
 {
@@ -38,14 +38,19 @@ int main(int argc, char**argv )
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
 
+#if 0
     double meshSize = option(_name="gmsh.hsize").as<double>();
     GeoTool::Rectangle R( meshSize,"myRectangle",GeoTool::Node(0,0),GeoTool::Node(5,1));
     R.setMarker(_type="line",_name="inlet",_marker4=true);
     R.setMarker(_type="line",_name="outlet",_marker2=true);
     R.setMarker(_type="line",_name="wall",_marker1=true,_marker3=true);
     R.setMarker(_type="surface",_name="Omega",_markerAll=true);
-
     auto mesh = R.createMesh(_mesh=new Mesh<Simplex<2>>,_name="qs_stokes");
+#else
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
+#endif
+
+
 
     auto g = expr<2,1>( soption(_name="functions.g") );
     auto Vh = THch<1>( mesh );
@@ -71,8 +76,19 @@ int main(int argc, char**argv )
     a+=on(_range=markedfaces(mesh,"inlet"), _rhs=l, _element=u,
           _expr=g );
 
-    auto a_btpcd = btpcd( _space=Vh );
-    a.solveb(_rhs=l,_solution=U,_backend=backend(),_prec=a_btpcd );
+    if ( boption("btpcd") )
+    {
+        std::map<std::string,std::set<flag_type>> bcs;
+        bcs["Dirichlet"].insert(mesh->markerName("inlet"));
+        bcs["Dirichlet"].insert(mesh->markerName("wall"));
+        bcs["Neumann"].insert(mesh->markerName("outlet"));
+        auto a_btpcd = btpcd( _space=Vh, _bc=bcs );
+        a_btpcd->update( zero<2,1>(), g );
+        a.solveb(_rhs=l,_solution=U,_backend=backend(),_prec=a_btpcd );
+
+    }
+    else
+        a.solve(_rhs=l,_solution=U );
 
     auto e = exporter( _mesh=mesh );
     e->add( "u", u );

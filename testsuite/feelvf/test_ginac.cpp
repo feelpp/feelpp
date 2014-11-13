@@ -379,6 +379,43 @@ void runTest1()
 
 }
 
+void runTest2()
+{
+    using GiNaC::symbol;
+    using GiNaC::ex;
+
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
+    double area = integrate( _range=elements(mesh), _expr=cst(1.) ).evaluate()(0,0);
+    std::vector<symbol> vars = symbols<2>();
+
+    std::string ex1_s = "1";
+    std::string ex2_s = "2";
+
+    ex ex1 = parse(ex1_s, vars);
+    ex ex2 = parse(ex2_s, vars);
+
+    double int_expr1 = area;
+    double int_expr2 = 2*area;
+
+    // Expressions computed from a string
+    auto expr1_1 = expr(ex1_s, vars, "ex1_s_file");
+    auto expr2_1 = expr(ex2_s, vars, "ex2_s_file");
+
+    double int_expr1_string = integrate( _range=elements(mesh), _expr=expr1_1 ).evaluate()(0,0);
+    BOOST_CHECK_CLOSE( int_expr1_string, int_expr1, 1e-10 );
+    double int_expr2_string = integrate( _range=elements(mesh), _expr=expr2_1 ).evaluate()(0,0);
+    BOOST_CHECK_CLOSE( int_expr2_string, int_expr2, 1e-10 );
+
+    // Expressions computed from a string
+    auto expr1_2 = expr(ex1, vars, "ex1_file");
+    auto expr2_2 = expr(ex2, vars, "ex2_file");
+
+    double int_expr1_ex = integrate( _range=elements(mesh), _expr=expr1_2 ).evaluate()(0,0);
+    BOOST_CHECK_CLOSE( int_expr1_ex, int_expr1, 1e-10 );
+    double int_expr2_ex = integrate( _range=elements(mesh), _expr=expr2_2 ).evaluate()(0,0);
+    BOOST_CHECK_CLOSE( int_expr2_ex, int_expr2, 1e-10 );
+}
+
 #if defined(USE_BOOST_TEST)
 
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
@@ -390,6 +427,10 @@ BOOST_AUTO_TEST_CASE( test_0 )
 BOOST_AUTO_TEST_CASE( test_1 )
 {
     runTest1();
+}
+BOOST_AUTO_TEST_CASE( test_2 )
+{
+    runTest2();
 }
 BOOST_AUTO_TEST_SUITE_END()
 
@@ -403,5 +444,6 @@ int main( int argc, char* argv[] )
                      _about=makeAbout() );
     runTest0();
     runTest1();
+    runTest2();
 }
 #endif

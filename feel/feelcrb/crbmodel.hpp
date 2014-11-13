@@ -221,7 +221,7 @@ public:
         M_mode( CRBModelMode::PFEM ),
         M_is_initialized( false ),
         M_model( new model_type() ),
-        M_backend( backend_type::build( BACKEND_PETSC ) ),
+        M_backend( backend() ),
         M_alreadyCountAffineDecompositionTerms( false )
     {
         this->init();
@@ -238,10 +238,10 @@ public:
         M_is_initialized( false ),
         M_vm( vm ),
         M_mode( mode ),
-        M_backend( backend_type::build( vm ) ),
-        M_backend_primal( backend_type::build( vm , "backend-primal" ) ),
-        M_backend_dual( backend_type::build( vm , "backend-dual" ) ),
-        M_backend_l2( backend_type::build( vm , "backend-l2" ) ),
+        M_backend( backend() ),
+        M_backend_primal( backend( _name="backend-primal") ),
+        M_backend_dual( backend( _name="backend-dual") ),
+        M_backend_l2( backend( _name="backend-l2") ),
         M_alreadyCountAffineDecompositionTerms( false )
     {
         this->init();
@@ -261,10 +261,10 @@ public:
         M_is_initialized( false ),
         M_vm(),
         M_mode( CRBModelMode::PFEM ),
-        M_backend( backend_type::build( model->vm ) ),
-        M_backend_primal( backend_type::build( model->vm , "backend-primal" ) ),
-        M_backend_dual( backend_type::build( model->vm , "backend-dual") ),
-        M_backend_l2( backend_type::build( model->vm , "backend-l2") ),
+        M_backend( backend(_name="backend") ),
+        M_backend_primal( backend( _name="backend-primal") ),
+        M_backend_dual( backend( _name="backend-dual") ),
+        M_backend_l2( backend( _name="backend-l2") ),
         M_alreadyCountAffineDecompositionTerms( false )
     {
         this->init();
@@ -281,10 +281,10 @@ public:
         M_is_initialized( false ),
         M_vm(),
         M_mode( mode ),
-        M_backend( backend_type::build( Environment::vm() ) ),
-        M_backend_primal( backend_type::build( Environment::vm() , "backend-primal" ) ),
-        M_backend_dual( backend_type::build( Environment::vm() , "backend-dual" ) ),
-        M_backend_l2( backend_type::build( Environment::vm() , "backend-l2" ) ),
+        M_backend( backend() ),
+        M_backend_primal( backend( _name="backend-primal") ),
+        M_backend_dual( backend( _name="backend-dual") ),
+        M_backend_l2( backend( _name="backend-l2") ),
         M_alreadyCountAffineDecompositionTerms( false )
     {
         this->init();

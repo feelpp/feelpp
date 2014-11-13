@@ -490,6 +490,7 @@ crbOptions( std::string const& prefix )
     ( "crb.use-predefined-WNmu",Feel::po::value<bool>()->default_value( false ), "read parameters to take for the offline step from a file named SamplingWNmu if true")
     ( "crb.use-predefined-test-sampling",Feel::po::value<bool>()->default_value( false ), "read parameters from file named SamplingForTest if true to run the test")
     ( "crb.use-logEquidistributed-WNmu",Feel::po::value<int>()->default_value( 0 ), "parameters are log-equidistributed for the offline step (the value indicates the number of parameters)")
+    ( "crb.use-random-WNmu",Feel::po::value<int>()->default_value( 0 ), "parameters are log-equidistributed for the offline step (the value indicates the number of parameters)")
     ( "crb.use-equidistributed-WNmu",Feel::po::value<int>()->default_value( 0 ), "parameters are equidistributed for the offline step (the value indicates the number of parameters)")
 
     ( "crb.compute-stat",Feel::po::value<bool>()->default_value( true ), "compute statistics on the run if true")
@@ -570,6 +571,22 @@ error_options( std::string const& prefix )
     return _options;
 }
 
+po::options_description
+btpcd_options( std::string const& prefix )
+{
+    po::options_description _options( "BTPCD options (" + prefix + ")" );
+    _options.add_options()
+        // error options
+        ( prefixvm( prefix, "btpcd" ).c_str(), Feel::po::value<bool>()->default_value(false), "enable BTPCD preconditioner" )
+        ( prefixvm( prefix, "btpcd.cd" ).c_str(), Feel::po::value<bool>()->default_value(false), "enable BTPCD/Velocity CD preconditioner" )
+        ( prefixvm( prefix, "btpcd.pcd" ).c_str(), Feel::po::value<bool>()->default_value(false), "enable BTPCD/Pressure CD preconditioner" )
+        ( prefixvm( prefix, "btpcd.pcd.inflow" ).c_str(), Feel::po::value<std::string>()->default_value("Robin"), "Type of boundary conditions at inflow: Robin or Dirichlet" )
+        ( prefixvm( prefix, "btpcd.pcd.outflow" ).c_str(), Feel::po::value<std::string>()->default_value("Dirichlet"), "Type of boundary conditions at inflow: Neumann or Dirichlet" )
+        ( prefixvm( prefix, "btpcd.pcd.order" ).c_str(), Feel::po::value<int>()->default_value(1), "order for pcd operator 1:Ap^-1 Fp Mp^-1 other: Mp^-1 Fp Ap^-1" )
+        ;
+    return _options;
+}
+
 /**
  * \return the command lines options for the exporter
  */
@@ -641,6 +658,12 @@ feel_options( std::string const& prefix  )
 #if defined( FEELPP_HAS_TRILINOS_EPETRA )
         .add( backendtrilinos_options( prefix ) )
 #endif
+        .add( backend_options("Ap") )
+        .add( backend_options("Fp") )
+        .add( backend_options("Mp") )
+        .add( backend_options("Fu") )
+        .add( btpcd_options( prefix ) )
+
         /* nonlinear solver options */
         .add( nlsolver_options() )
 

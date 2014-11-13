@@ -148,7 +148,10 @@ public:
     typedef typename functionspace_type::element_type element_type;
     typedef typename functionspace_type::element_ptrtype element_ptrtype;
 
-    typedef typename ModelType::solution_type solution_type;
+    typedef typename ModelType::model_functionspace_type model_functionspace_type;
+    typedef boost::shared_ptr<model_functionspace_type> model_functionspace_ptrtype;
+    typedef typename model_functionspace_type::element_type model_element_type;
+    typedef typename model_functionspace_type::element_type model_solution_type;
 
     typedef typename ModelType::parameterspace_type parameterspace_type;
     typedef typename ModelType::parameter_type parameter_type;
@@ -318,13 +321,13 @@ public:
        data structure.
     */
     vector_type beta( parameter_type const& mu  ) const { return M_model->beta( mu, M_model->mMax() ); }
-    vector_type beta( parameter_type const& mu, solution_type const& T  ) const { return M_model->beta( mu, T, M_model->mMax() ); }
+    vector_type beta( parameter_type const& mu, model_solution_type const& T  ) const { return M_model->beta( mu, T, M_model->mMax() ); }
     vector_type beta( parameter_type const& mu, size_type M  ) const { return M_model->beta( mu , M ); }
-    vector_type beta( parameter_type const& mu, solution_type const& T, size_type M  ) const {return M_model->beta( mu , T , M ); }
+    vector_type beta( parameter_type const& mu, model_solution_type const& T, size_type M  ) const {return M_model->beta( mu , T , M ); }
 
-    void studyConvergence( parameter_type const & mu, solution_type & solution , std::vector< std::string > all_file_name ) const;
-    boost::tuple<double,element_type> interpolationErrorEstimation( parameter_type const & mu, solution_type const& solution , int M ) const ;
-    double errorEstimationLinf( parameter_type const & mu, solution_type const& solution , int M ) const ;
+    void studyConvergence( parameter_type const & mu, model_solution_type & solution , std::vector< std::string > all_file_name ) const;
+    boost::tuple<double,element_type> interpolationErrorEstimation( parameter_type const & mu, model_solution_type const& solution , int M ) const ;
+    double errorEstimationLinf( parameter_type const & mu, model_solution_type const& solution , int M ) const ;
 
     void computationalTimeStatistics( std::string appname )  { return M_model->computationalTimeStatistics(); }
     element_type residual ( size_type M ) const;
@@ -332,7 +335,7 @@ public:
     parameter_residual_type computeBestFit( sampling_ptrtype trainset, int __M );
 
     element_type operator()( parameter_type const& mu , int N) const { return expansion( M_model->q(), M_model->beta( mu, N ) , N); }
-    element_type operator()( parameter_type const& mu, solution_type const& T , int N ) const { return expansion( M_model->q(), M_model->beta( mu, T, N ) , N ); }
+    element_type operator()( parameter_type const& mu, model_solution_type const& T , int N ) const { return expansion( M_model->q(), M_model->beta( mu, T, N ) , N ); }
 
     /**
        orthonormalize
@@ -411,7 +414,7 @@ public:
 
 template <typename ModelType>
 typename boost::tuple< double, typename EIM<ModelType>::element_type >
-EIM<ModelType>::interpolationErrorEstimation( parameter_type const & mu, solution_type const& solution , int M ) const
+EIM<ModelType>::interpolationErrorEstimation( parameter_type const & mu, model_solution_type const& solution , int M ) const
 {
     double max = M_model->mMax();
     CHECK( M <= max ) << "Invalid number M for errorEstimation: " << M << " Mmax : " << max << "\n";
@@ -437,7 +440,7 @@ EIM<ModelType>::interpolationErrorEstimation( parameter_type const & mu, solutio
 
 template <typename ModelType>
 double
-EIM<ModelType>::errorEstimationLinf( parameter_type const & mu, solution_type const& solution , int M ) const
+EIM<ModelType>::errorEstimationLinf( parameter_type const & mu, model_solution_type const& solution , int M ) const
 {
     double max = M_model->mMax();
     CHECK( M <= max ) << "Invalid number M for errorEstimation: " << M << " Mmax : " << max << "\n";
@@ -565,6 +568,8 @@ EIM<ModelType>::offline(  )
 
         DVLOG( 2 ) <<" parameter added";
         timer2.restart();
+
+
         solution = M_model->solve( mu );
         time=timer2.elapsed();
         if( Environment::worldComm().isMasterRank() )
@@ -586,6 +591,8 @@ EIM<ModelType>::offline(  )
             M_model->addExpressionEvaluation( M_model->operator()( solution , mu ) );
         }
 #endif
+        if( Environment::worldComm().isMasterRank() )
+            std::cout << "compute finite element solution at mu_1 done";
         VLOG(2) << "compute finite element solution at mu_1 done";
 
         DVLOG(2) << "compute T^" << 0 << "...\n";
@@ -843,7 +850,7 @@ EIM<ModelType>::offline(  )
 
 template<typename ModelType>
 void
-EIM<ModelType>::studyConvergence( parameter_type const & mu , solution_type & solution , std::vector<std::string> all_file_name ) const
+EIM<ModelType>::studyConvergence( parameter_type const & mu , model_solution_type & solution , std::vector<std::string> all_file_name ) const
 {
     LOG(INFO) << " Convergence study \n";
     int proc_number =  Environment::worldComm().globalRank();
@@ -1002,8 +1009,10 @@ public:
 
     typedef SpaceType functionspace_type;
     typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
-    typedef typename functionspace_type::element_type element_type;
     typedef typename functionspace_type::element_ptrtype element_ptrtype;
+    typedef typename functionspace_type::element_type solution_type;
+    typedef typename functionspace_type::element_type element_type;
+
     typedef typename functionspace_type::mesh_type mesh_type;
     typedef typename functionspace_type::mesh_ptrtype mesh_ptrtype;
     typedef typename functionspace_type::value_type value_type;
@@ -1011,7 +1020,9 @@ public:
 
     typedef ModelSpaceType model_functionspace_type;
     typedef boost::shared_ptr<model_functionspace_type> model_functionspace_ptrtype;
-    typedef typename model_functionspace_type::element_type solution_type;
+    typedef typename model_functionspace_type::element_type model_element_type;
+    typedef typename model_functionspace_type::element_type model_solution_type;
+    typedef typename model_functionspace_type::element_ptrtype model_element_ptrtype;
 
     static const uint16_type nDim = mesh_type::nDim;
 
@@ -1079,9 +1090,9 @@ public:
     mesh_ptrtype mesh()  { return M_fspace->mesh(); }
 
     virtual element_type operator()( parameter_type const& ) = 0;
-    virtual element_type operator()( solution_type const& T, parameter_type const& ) = 0;
+    virtual element_type operator()( model_solution_type const& , parameter_type const& ) = 0;
     virtual element_type interpolant( parameter_type const& ) = 0;
-    virtual element_type interpolant( parameter_type const& , solution_type const & , int ) = 0;
+    virtual element_type interpolant( parameter_type const& , model_solution_type const & , int ) = 0;
 
     value_type operator()( node_type const& x, parameter_type const& mu )
         {
@@ -1095,7 +1106,7 @@ public:
     // evaluate eim expansion at interpolation points in space and mu in parameter where T provides the coefficient
     //value_type operator()( vector_type const& T, parameter_type const& mu ) = 0;
 
-    value_type operator()( solution_type const& T, node_type const& x, parameter_type const& mu )
+    value_type operator()( model_solution_type const& T, node_type const& x, parameter_type const& mu )
         {
             VLOG(2) << "calling EIMFunctionBase::operator()( x=" << x << ", mu=" << mu << ")\n";
             element_type v = this->operator()( T, mu );
@@ -1105,35 +1116,35 @@ public:
         }
 
     virtual vector_type operator()( context_type const& ctx, parameter_type const& mu , int M=-1) = 0;
-    virtual vector_type operator()( solution_type const& T, context_type const& ctx, parameter_type const& mu , int M=-1) = 0;
+    virtual vector_type operator()( model_solution_type const& T, context_type const& ctx, parameter_type const& mu , int M=-1) = 0;
 
     virtual element_type const& q( int m )  const = 0;
     virtual std::vector<element_type> const& q() const = 0;
     virtual vector_type  beta( parameter_type const& mu ) const = 0;
-    virtual vector_type  beta( parameter_type const& mu, solution_type const& T ) const = 0;
+    virtual vector_type  beta( parameter_type const& mu, model_solution_type const& T ) const = 0;
     virtual vector_type  beta( parameter_type const& mu , size_type M )  = 0;
-    virtual vector_type  beta( parameter_type const& mu, solution_type const& T , size_type M)  = 0;
+    virtual vector_type  beta( parameter_type const& mu, model_solution_type const& T , size_type M)  = 0;
     virtual size_type  mMax(bool & error) const = 0;
     virtual size_type  mMax() const = 0;
 
-    virtual boost::tuple<double,element_type> interpolationErrorEstimation ( parameter_type const& mu, solution_type const& solution , int M) const = 0;
-    virtual double errorEstimationLinf( parameter_type const & mu, solution_type const& solution , int M ) const=0 ;
+    virtual boost::tuple<double,element_type> interpolationErrorEstimation ( parameter_type const& mu, model_solution_type const& solution , int M) const = 0;
+    virtual double errorEstimationLinf( parameter_type const & mu, model_solution_type const& solution , int M ) const=0 ;
     virtual node_type interpolationPoint( int position ) const = 0;
 
-    virtual void studyConvergence( parameter_type const & mu , solution_type & solution, std::vector< std::string > all_file_name ) const = 0;
+    virtual void studyConvergence( parameter_type const & mu , model_solution_type & solution, std::vector< std::string > all_file_name ) const = 0;
     virtual void computationalTimeStatistics( std::string appname )  = 0;
-    virtual double expressionL2Norm( solution_type const& T , parameter_type const& mu ) const = 0;
-    virtual double diffL2Norm( solution_type const& T , parameter_type const& mu , element_type const& eim_expansion ) const = 0;
-    virtual double projExpressionL2Norm( solution_type const& T , parameter_type const& mu ) const = 0;
-    virtual double projDiffL2Norm( solution_type const& T , parameter_type const& mu , element_type const& eim_expansion ) const = 0;
-    virtual double projDiffLinfNorm( solution_type const& T , parameter_type const& mu , element_type const& eim_expansion ) const = 0;
-    virtual double projExprLinfNorm( solution_type const& T , parameter_type const& mu ) const = 0;
-    virtual double interpolationError( solution_type const& T , parameter_type const& mu ) const = 0;
-    virtual solution_type solve( parameter_type const&  mu ) = 0;
+    virtual double expressionL2Norm( model_solution_type const& T , parameter_type const& mu ) const = 0;
+    virtual double diffL2Norm( model_solution_type const& T , parameter_type const& mu , element_type const& eim_expansion ) const = 0;
+    virtual double projExpressionL2Norm( model_solution_type const& T , parameter_type const& mu ) const = 0;
+    virtual double projDiffL2Norm( model_solution_type const& T , parameter_type const& mu , element_type const& eim_expansion ) const = 0;
+    virtual double projDiffLinfNorm( model_solution_type const& T , parameter_type const& mu , element_type const& eim_expansion ) const = 0;
+    virtual double projExprLinfNorm( model_solution_type const& T , parameter_type const& mu ) const = 0;
+    virtual double interpolationError( model_solution_type const& T , parameter_type const& mu ) const = 0;
+    virtual model_solution_type solve( parameter_type const&  mu ) = 0;
     virtual element_type residual( element_type const& z, element_type const& g ) = 0;
-    virtual vector_type computeExpansionCoefficients( parameter_type const& mu, solution_type const& solution,  int M)=0;
-    virtual boost::tuple<double,node_type> computeMaximumOfExpression( parameter_type const& mu, solution_type const& solution )=0;
-    virtual boost::tuple<double,node_type> computeMaximumOfResidual( parameter_type const& mu, solution_type const& solution  , element_type const& z)=0;
+    virtual vector_type computeExpansionCoefficients( parameter_type const& mu, model_solution_type const& solution,  int M)=0;
+    virtual boost::tuple<double,node_type> computeMaximumOfExpression( parameter_type const& mu, model_solution_type const& solution )=0;
+    virtual boost::tuple<double,node_type> computeMaximumOfResidual( parameter_type const& mu, model_solution_type const& solution  , element_type const& z)=0;
     virtual void fillInterpolationMatrix( )=0;
     virtual void fillInterpolationMatrixFirstTime( )=0;
 
@@ -1149,7 +1160,7 @@ public:
     virtual void addBasis( element_type const &q ) = 0;
     virtual void addExpressionEvaluation( element_type const &g ) = 0;
     virtual void addZ( element_type const &z ) = 0;
-    virtual void addSolution( solution_type const &solutions ) = 0;
+    virtual void addSolution( model_solution_type const &solutions ) = 0;
     virtual void addParameter( parameter_type const& mu ) = 0;
     virtual void clearParameterSampling() = 0;
     virtual boost::any buildBasisFunction( int m ) = 0;
@@ -1163,7 +1174,7 @@ public:
 
     virtual void initializeDataStructures() = 0;
 
-    virtual vector_type evaluateExpressionAtInterpolationPoints(solution_type const &solution, parameter_type const& mu, int M)=0;
+    virtual vector_type evaluateExpressionAtInterpolationPoints(model_solution_type const &solution, parameter_type const& mu, int M)=0;
     virtual vector_type evaluateElementAtInterpolationPoints(element_type const & element, int M)=0;
     po::variables_map M_vm;
     functionspace_ptrtype M_fspace;
@@ -1191,12 +1202,16 @@ public:
     typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
     typedef typename super::element_type element_type;
     typedef typename super::element_ptrtype element_ptrtype;
+    typedef typename super::model_element_type model_element_type;
+    typedef typename super::model_element_ptrtype model_element_ptrtype;
     typedef typename super::value_type value_type;
 
-    typedef typename ModelType::element_type solution_type;
+    typedef typename super::model_solution_type model_solution_type;
+    typedef typename super::solution_type solution_type;
 
     typedef typename super::model_functionspace_type model_functionspace_type;
     typedef boost::shared_ptr<model_functionspace_type> model_functionspace_ptrtype;
+
 
     typedef typename SpaceType::mesh_type mesh_type;
     static const uint16_type nDim = mesh_type::nDim;
@@ -1229,7 +1244,7 @@ public:
     EIMFunction( po::variables_map const& vm,
                  model_ptrtype model,
                  functionspace_ptrtype space,
-                 solution_type& u,
+                 model_solution_type& u,
                  parameter_type& mu,
                  expr_type& expr,
                  sampling_ptrtype sampling,
@@ -1240,7 +1255,7 @@ public:
         M_vm( vm ),
         M_model( model ),
         M_expr( expr ),
-        M_u( u ),
+        M_u( &u ),
         M_mu( mu ),
         M_mu_sampling( new sampling_type ( model->parameterSpace() , 1 , sampling ) ),
         M_q_vector(),
@@ -1336,7 +1351,7 @@ public:
     }
 
     vector_type
-    beta( parameter_type const& mu, solution_type const& T, size_type __M )
+    beta( parameter_type const& mu, model_solution_type const& T, size_type __M )
     {
         // beta=B_M\g(Od(indx),mut(i))'
         vector_type __beta( __M );
@@ -1405,7 +1420,7 @@ public:
     {
         M_z_vector.push_back( z );
     }
-    void addSolution( solution_type const &solution )
+    void addSolution( model_solution_type const &solution )
     {
         M_solution_vector.push_back ( solution );
     }
@@ -1426,7 +1441,7 @@ public:
         M_offline_error.resize(0);
     }
 
-    solution_type solve( parameter_type const&  mu )
+    model_solution_type solve( parameter_type const&  mu )
         {
             M_mu = mu;
 #if !defined(NDEBUG)
@@ -1435,17 +1450,19 @@ public:
             return M_model->solve( mu );
         }
 
+    //TODO : chaque composante doit etre projetee sur l'espace non produit ?
     element_type operator()( parameter_type const&  mu )
         {
             M_mu = mu;
 #if !defined(NDEBUG)
             M_mu.check();
 #endif
-            M_u = M_model->solve( mu );
+            *M_u = M_model->solve( mu );
+
             //LOG(INFO) << "operator() mu=" << mu << "\n" << "sol=" << M_u << "\n";
             return vf::project( _space=this->functionSpace(), _expr=M_expr );
         }
-    element_type operator()( solution_type const& T, parameter_type const&  mu )
+    element_type operator()( model_solution_type const& T, parameter_type const&  mu )
         {
             M_mu = mu;
 #if !defined(NDEBUG)
@@ -1453,33 +1470,33 @@ public:
 #endif
             // no need to solve we have already an approximation (typically from
             // an nonlinear iteration procedure)
-            M_u = T;
+            *M_u = T;
             return vf::project( _space=this->functionSpace(), _expr=M_expr );
         }
 
     vector_type operator()( context_type const& ctx, parameter_type const& mu , int M)
         {
             M_mu=mu;
-            M_u = M_model->solve( mu );
+            *M_u = M_model->solve( mu );
             //auto projected_expr = vf::project( _space=this->functionSpace(), _expr=M_expr );
             //return evaluateFromContext( _context=ctx, _expr=idv(projected_expr) , _max_points_used=M );
             return evaluateFromContext( _context=ctx, _expr=M_expr , _max_points_used=M, _projection=true );
         }
-    vector_type operator()( solution_type const& T, context_type const& ctx, parameter_type const& mu , int M)
+    vector_type operator()( model_solution_type const& T, context_type const& ctx, parameter_type const& mu , int M)
         {
             M_mu = mu;
-            M_u = T;
+            *M_u = T;
             //auto projected_expr = vf::project( _space=this->functionSpace(), _expr=M_expr );
             //return evaluateFromContext( _context=ctx, _expr=idv(projected_expr) , _max_points_used=M );
             return evaluateFromContext( _context=ctx, _expr=M_expr , _max_points_used=M, _projection=true );
         }
 
-    vector_type computeExpansionCoefficients( parameter_type const& mu, solution_type const& solution,  int M)
+    vector_type computeExpansionCoefficients( parameter_type const& mu, model_solution_type const& solution,  int M)
     {
         vector_type rhs( M );
 
         M_mu = mu;
-        M_u = solution;
+        *M_u = solution;
 
         if( 0 )// option(_name="eim.compute-expansion-of-expression").template as<bool>() )
         {
@@ -1499,10 +1516,10 @@ public:
     }
 
 
-    vector_type evaluateExpressionAtInterpolationPoints(solution_type const &solution, parameter_type const& mu, int M)
+    vector_type evaluateExpressionAtInterpolationPoints(model_solution_type const &solution, parameter_type const& mu, int M)
     {
         M_mu = mu;
-        M_u = solution;
+        *M_u = solution;
         return evaluateFromContext( _context=M_ctx, _expr=M_expr , _max_points_used=M, _projection=true );
     }
     vector_type evaluateElementAtInterpolationPoints(element_type const & element, int M)
@@ -1515,14 +1532,14 @@ public:
     // mu : parameter
     // z  : expansion in the EIM basis
     // g  : projection of the expression
-    boost::tuple<double,node_type> computeMaximumOfResidual( parameter_type const& mu, solution_type const& solution, element_type const& z)
+    boost::tuple<double,node_type> computeMaximumOfResidual( parameter_type const& mu, model_solution_type const& solution, element_type const& z)
     {
         double max=0;
         node_type node(nDim);
         for(int d=0; d<nDim; d++) node(d)=0;
 
         M_mu = mu;
-        M_u = solution;
+        *M_u = solution;
 
         auto residual_expr = M_expr - idv(z);
         auto proj_g = vf::project( _space=this->functionSpace(), _expr=M_expr );
@@ -1583,14 +1600,14 @@ public:
         return boost::make_tuple( max , node );
     }
 
-    boost::tuple<double,node_type> computeMaximumOfExpression( parameter_type const& mu, solution_type const& solution )
+    boost::tuple<double,node_type> computeMaximumOfExpression( parameter_type const& mu, model_solution_type const& solution )
     {
         double max=0;
         node_type node(nDim);
         for(int d=0; d<nDim; d++) node(d)=0;
 
         M_mu = mu;
-        M_u = solution;
+        *M_u = solution;
 
         auto expr = M_expr;
         auto proj_g = vf::project( _space=this->functionSpace(),_expr=M_expr );
@@ -1598,7 +1615,7 @@ public:
 
         std::string norm_used = option(_name="eim.norm-used-for-residual").template as<std::string>();
         bool check_name_norm = false;
-        DVLOG( 2 ) << "[computeMaximalResidual] norm used : "<<norm_used;
+        DVLOG( 2 ) << "[computeMaximumOfExpression] norm used : "<<norm_used;
         if( norm_used == "Linfty" )
         {
             check_name_norm=true;
@@ -1655,7 +1672,6 @@ public:
         auto residual_projected_expr = idv(g) - idv(z);
 
         element_type projection;
-
         projection = vf::project( _space=this->functionSpace(),_expr=residual_projected_expr );
 
         return projection;
@@ -1676,7 +1692,7 @@ public:
         if( expression_expansion )
         {
             M_mu = M_mu_sampling->at(0);
-            M_u = M_solution_vector[0] ;
+            *M_u = M_solution_vector[0];
             auto expression_evaluated = evaluateFromContext( _context=M_ctx, _expr=M_expr );
             double eval = expression_evaluated(0);
             auto expression_q = M_expr / eval ; // normalization
@@ -1688,6 +1704,7 @@ public:
         else
         {
             auto projected_g = vf::project( _space=this->functionSpace(),_expr=M_expr );
+
             auto projected_g_evaluated = evaluateFromContext( _context=M_ctx, _expr=idv( projected_g ) );
             double eval = projected_g_evaluated(0);
             projected_g.scale( 1./eval );
@@ -1723,7 +1740,7 @@ public:
             int proc_having_the_point ;
 
             M_mu = M_mu_sampling->at(m);
-            M_u = M_solution_vector[m];
+            *M_u = M_solution_vector[m];
 
             //we want to normalize the expression with its evaluation at
             //the interpolation point
@@ -1818,27 +1835,27 @@ public:
 
     //Let g the expression that we want to have an eim expasion
     //here is computed its l2 norm : || g ||_L2
-    double expressionL2Norm( solution_type const& T , parameter_type const& mu ) const
+    double expressionL2Norm( model_solution_type const& T , parameter_type const& mu ) const
     {
         M_mu = mu;
 #if !defined(NDEBUG)
         M_mu.check();
 #endif
-        M_u = T;
+        *M_u = T;
         auto mesh = this->functionSpace()->mesh();
         return math::sqrt( integrate( _range=elements( mesh ), _expr=M_expr*M_expr ).evaluate()( 0,0 ) );
     }
 
     //Let geim the eim expansion of g
     //here is computed || g - geim ||_L2
-    double diffL2Norm(  solution_type const& T , parameter_type const& mu , element_type const & eim_expansion ) const
+    double diffL2Norm(  model_solution_type const& T , parameter_type const& mu , element_type const & eim_expansion ) const
     {
         M_mu = mu;
 #if !defined(NDEBUG)
         M_mu.check();
 #endif
-        M_u = T;
-        auto mesh = this->functionSpace()->mesh();
+        *M_u = T;
+        auto mesh = this->modelFunctionSpace()->mesh();
         auto difference = M_expr - idv(eim_expansion);
         return math::sqrt( integrate( _range=elements( mesh ), _expr=difference*difference ).evaluate()( 0,0 ) );
     }
@@ -1846,26 +1863,26 @@ public:
 
     //Let \pi_g the projection of g on the function space
     //here is computed || \pi_g ||_L2
-    double projExpressionL2Norm( solution_type const& T , parameter_type const& mu ) const
+    double projExpressionL2Norm( model_solution_type const& T , parameter_type const& mu ) const
     {
         M_mu = mu;
 #if !defined(NDEBUG)
         M_mu.check();
 #endif
-        M_u = T;
+        *M_u = T;
         auto mesh = this->functionSpace()->mesh();
         auto pi_g = vf::project( _space=this->functionSpace(), _expr=M_expr );
         return math::sqrt( integrate( _range=elements( mesh ), _expr=idv(pi_g)*idv(pi_g) ).evaluate()( 0,0 ) );
     }
 
     //here is computed || \pi_g - geim ||_L2
-    double projDiffL2Norm( solution_type const& T , parameter_type const& mu , element_type const& eim_expansion ) const
+    double projDiffL2Norm( model_solution_type const& T , parameter_type const& mu , element_type const& eim_expansion ) const
     {
         M_mu = mu;
 #if !defined(NDEBUG)
         M_mu.check();
 #endif
-        M_u = T;
+        *M_u = T;
         auto mesh = this->functionSpace()->mesh();
         auto pi_g = vf::project( _space=this->functionSpace(), _expr=M_expr );
         auto diff = pi_g - eim_expansion;
@@ -1873,14 +1890,14 @@ public:
     }
 
     //here is computed || \pi_g - geim ||_Linf
-    double projDiffLinfNorm( solution_type const& T , parameter_type const& mu , element_type const& eim_expansion ) const
+    double projDiffLinfNorm( model_solution_type const& T , parameter_type const& mu , element_type const& eim_expansion ) const
     {
         M_mu = mu;
 #if !defined(NDEBUG)
         M_mu.check();
 #endif
-        M_u = T;
-        auto mesh = this->functionSpace()->mesh();
+        *M_u = T;
+        auto mesh = this->modelFunctionSpace()->mesh();
         auto pi_g = vf::project( _space=this->functionSpace(), _expr=M_expr );
         auto diff = pi_g - eim_expansion;
         auto linf = normLinf( _range=elements( mesh ), _pset=_Q<5>(), _expr=idv(diff) );
@@ -1888,27 +1905,27 @@ public:
     }
 
     //here is computed || \pi_g  ||_Linf
-    double projExprLinfNorm( solution_type const& T , parameter_type const& mu ) const
+    double projExprLinfNorm( model_solution_type const& T , parameter_type const& mu ) const
     {
         M_mu = mu;
 #if !defined(NDEBUG)
         M_mu.check();
 #endif
-        M_u = T;
+        *M_u = T;
         auto mesh = this->functionSpace()->mesh();
         auto pi_g = vf::project( _space=this->functionSpace(), _expr=M_expr );
         auto linf = normLinf( _range=elements( mesh ), _pset=_Q<5>(), _expr=idv(pi_g) );
         return linf.template get<0>();
     }
 
-    double interpolationError( solution_type const& T , parameter_type const& mu ) const
+    double interpolationError(model_solution_type const& T , parameter_type const& mu ) const
     {
         M_mu = mu;
 #if !defined(NDEBUG)
         M_mu.check();
 #endif
-        M_u = T;
-        auto mesh = this->functionSpace()->mesh();
+        *M_u = T;
+        auto mesh = this->modelFunctionSpace()->mesh();
         auto pi_g = vf::project( _space=this->functionSpace(), _expr=M_expr );
         auto difference = M_expr - idv(pi_g);
         return math::sqrt( integrate( _range=elements( mesh ), _expr=difference*difference ).evaluate()( 0,0 ) );
@@ -1980,7 +1997,7 @@ public:
         auto beta = this->beta( mu );
         return expansion( M_q_vector, this->beta( mu ) , M_M_max);
     }
-    element_type interpolant( parameter_type const& mu , solution_type const & solution , int M)
+    element_type interpolant( parameter_type const& mu , model_solution_type const & solution , int M)
     {
         return expansion( M_q_vector, this->beta( mu , solution , M) , M );
     }
@@ -2069,11 +2086,11 @@ public:
     std::vector<element_type> const& q() const { return M_q_vector; }
 
     vector_type  beta( parameter_type const& mu ) const { return M_eim->beta( mu ); }
-    vector_type  beta( parameter_type const& mu, solution_type const& T ) const { return M_eim->beta( mu, T ); }
+    vector_type  beta( parameter_type const& mu, model_solution_type const& T ) const { return M_eim->beta( mu, T ); }
 
-    void studyConvergence( parameter_type const & mu , solution_type & solution, std::vector< std::string > all_file_name ) const { return M_eim->studyConvergence( mu , solution , all_file_name ) ; }
-    boost::tuple<double,element_type> interpolationErrorEstimation( parameter_type const & mu , solution_type const& solution, int M ) const { return M_eim->interpolationErrorEstimation(mu , solution, M) ; }
-    double errorEstimationLinf( parameter_type const & mu, solution_type const& solution , int M ) const { return M_eim->errorEstimationLinf(mu, solution, M) ; }
+    void studyConvergence( parameter_type const & mu , model_solution_type & solution, std::vector< std::string > all_file_name ) const { return M_eim->studyConvergence( mu , solution , all_file_name ) ; }
+    boost::tuple<double,element_type> interpolationErrorEstimation( parameter_type const & mu , model_solution_type const& solution, int M ) const { return M_eim->interpolationErrorEstimation(mu , solution, M) ; }
+    double errorEstimationLinf( parameter_type const & mu, model_solution_type const& solution , int M ) const { return M_eim->errorEstimationLinf(mu, solution, M) ; }
     //size_type mMax() const { return M_eim->mMax(); }
     size_type mMax( bool & error) const
     {
@@ -2253,14 +2270,15 @@ private:
     po::variables_map M_vm;
     model_ptrtype M_model;
     expr_type M_expr;
-    solution_type& M_u;
+    // model_solution_type& M_u;
+    model_solution_type * M_u;
     parameter_type& M_mu;
     crb_ptrtype M_crb;
     sampling_ptrtype M_mu_sampling ;
     std::vector< element_type > M_q_vector ;
     std::vector< element_type > M_g_vector ;
     std::vector< element_type > M_z_vector ; // we need to store this to be able to compute expression of eim basis functions and the user can use them in integrals
-    std::vector< solution_type > M_solution_vector ;
+    std::vector< model_solution_type > M_solution_vector ;
     std::vector< double > M_evaluation_vector; // we need to store this to be able to compute expression of eim basis functions and the user can use them in integrals
     int M_M_max;
     int M_max_q;

@@ -33,8 +33,8 @@ namespace Feel{
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<int i>
-typename mpl::at_c<typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::element_vector_type,i>::type
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::element( std::string const& name,
+typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::template sub_element<i>::type
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::elementImpl( std::string const& name,
                                                                       bool updateOffViews )
 {
     size_type nbdof_start =  fusion::accumulate( this->functionSpaces(),
@@ -65,7 +65,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::element( std::string const& 
 
         DVLOG(2) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
         DVLOG(2) << "Element <" << i << ">::range.start :  "<<  ct.start()<< "\n";
-        return typename mpl::at_c<element_vector_type,i>::type( space, ct, name );
+        return typename sub_element<i>::type( space, ct, name );
     }
 
     else
@@ -89,28 +89,33 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::element( std::string const& 
         DVLOG(2) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
         DVLOG(2) << "Element <" << i << ">::range.start :  "<<  ct.start()<< "\n";
 
-        return typename mpl::at_c<element_vector_type,i>::type( space, ct, name );
+        return typename sub_element<i>::type( space, ct, name );
     }
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<int i,typename ExprT>
-typename mpl::at_c<typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::element_vector_type,i>::type
+typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::template sub_element<i>::type &
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::element( ExprT e, std::string const& name,
                                                              bool updateOffViews,
                                                              typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type*  )
 {
+#if 0
     auto u = this->element<i>(name,updateOffViews);
     u.on( _range=elements(this->mesh()), _expr=e );
     return u;
+#else
+    this->element<i>(name,updateOffViews).on( _range=elements(this->mesh()), _expr=e );
+    return this->element<i>(name,updateOffViews);
+#endif
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<int i>
-typename mpl::at_c<typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::element_vector_type,i>::type
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::element( std::string const& name, bool updateOffViews ) const
+typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::template sub_element<i>::type
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::elementImpl( std::string const& name, bool updateOffViews ) const
 {
     size_type nbdof_start =  fusion::accumulate( M_functionspace->functionSpaces(),
                                                  size_type( 0 ),
@@ -141,7 +146,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::element( std::string const& 
 
         DVLOG(2) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
         DVLOG(2) << "Element <" << i << ">::range.start :  "<<  ct.start()<< "\n";
-        return typename mpl::at_c<element_vector_type,i>::type( space, ct, name );
+        return typename sub_element<i>::type( space, ct, name );
+
     }
 
     else
@@ -159,7 +165,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::element( std::string const& 
 
         DVLOG(2) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
         DVLOG(2) << "Element <" << i << ">::range.start :  "<<  ct.start()<< "\n";
-        return typename mpl::at_c<element_vector_type,i>::type( space, ct, name );
+        return typename sub_element<i>::type( space, ct, name );
     }
 
 
@@ -188,7 +194,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( Element const& __e 
     M_name( __e.M_name ),
     M_start( __e.M_start ),
     M_ct( __e.M_ct ),
-    M_containersOffProcess( __e.M_containersOffProcess )
+    M_containersOffProcess( __e.M_containersOffProcess ),
+    M_elements( __e.M_elements )
 {
     DVLOG(2) << "Element<copy>::range::start = " << this->start() << "\n";
     DVLOG(2) << "Element<copy>::range::size = " << this->size() << "\n";
@@ -213,6 +220,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrty
     DVLOG(2) << "Element::size = " << this->size() << "\n";
     DVLOG(2) << "Element::ndof = " << this->nDof() << "\n";
     DVLOG(2) << "Element::nlocaldof = " << this->nLocalDof() << "\n";
+    this->initSubElementView( mpl::bool_<functionspace_type::is_composite>() );
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
@@ -237,6 +245,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrty
     DVLOG(2) << "Element<range>::ndof = " << this->nDof() << "\n";
     DVLOG(2) << "Element<range>::nlocaldof = " << this->nLocalDof() << "\n";
     M_start = __c.start();
+    this->initSubElementView( mpl::bool_<functionspace_type::is_composite>() );
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
@@ -256,6 +265,35 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::initFromSpace( functionspace
     ( container_type )*this = __c;
 }
 
+namespace detail
+{
+template<typename ElementType>
+struct InitializeElement
+{
+    InitializeElement( ElementType * element )
+        :
+        M_element( element )
+        {}
+    template <typename T>
+    void operator()( T & x ) const
+    {
+        typedef typename T::first_type key_type;
+        typedef typename T::second_type::element_type myelt_type;
+        std::string name = (boost::format("%1%_%2%")%M_element->name() %key_type::value).str();
+        x = std::make_pair(key_type(), boost::shared_ptr<myelt_type>( new myelt_type( M_element->template elementImpl<key_type::value>( name ) ) ) );
+    }
+    ElementType * M_element;
+};
+} // namespace detail
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename Y,  typename Cont>
+void
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::initSubElementView( mpl::true_ )
+{
+    fusion::for_each( M_elements,
+                      Feel::detail::InitializeElement<Element<Y,Cont>>(this) );
+}
+
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>&
@@ -271,6 +309,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator=( Element<Y,Cont> c
         M_start = __e.M_start;
         M_ct = __e.M_ct;
         M_containersOffProcess = __e.M_containersOffProcess;
+        M_elements = __e.M_elements;
         this->resize( M_functionspace->nLocalDof() );
         super::operator=( __e );
         this->outdateGlobalValues();
@@ -352,8 +391,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator()( node_type const&
 
         if ( nprocs > 1 )
         {
-            //mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, std::plus<std::vector<int> >() );
-            mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, Feel::detail::vector_plus<int>() );
+            mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt.data(), found_pt.size(), global_found_pt.data(), std::plus<int>() );
         }
 
 #else
@@ -381,8 +419,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator()( node_type const&
 
         if ( functionSpace()->mesh()->comm().size() > 1 )
         {
-            //mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, std::plus<std::vector<int> >() );
-            mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, Feel::detail::vector_plus<int>() );
+            mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt.data(), found_pt.size(), global_found_pt.data(), std::plus<int>() );
         }
 
 #endif /* FEELPP_HAS_MPI */
@@ -618,8 +655,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad( node_type const& __x )
 
         if ( functionSpace()->mesh()->comm().size() > 1 )
         {
-            //mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, std::plus<std::vector<int> >() );
-            mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, Feel::detail::vector_plus<int>() );
+            mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt.data(), found_pt.size(), global_found_pt.data(), std::plus<int>() );
         }
 
 #else
@@ -647,8 +683,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad( node_type const& __x )
 
         if ( functionSpace()->mesh()->comm().size() > 1 )
         {
-            //mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, std::plus<std::vector<int> >() );
-            mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, Feel::detail::vector_plus<int>() );
+            mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt.data(), found_pt.size(), global_found_pt.data(), std::plus<int>() );
         }
 
 #endif /* FEELPP_HAS_MPI */
