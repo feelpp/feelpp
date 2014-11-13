@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2014-06-11
+       Date: 2010-05-09
 
-  Copyright (C) 2014 Feel++ Consortium
+  Copyright (C) 2011 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -22,30 +22,16 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file functors.hpp
+   \file nedelec2d.cpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2014-06-11
+   \date 2010-05-09
  */
-#if !defined(FEELPP_CORE_FUNCTORS_HPP)
-#define FEELPP_CORE_FUNCTORS_HPP 1
-
-#include <vector>
+#include "nedelec.hpp"
 
 namespace Feel
 {
-namespace Functor
+namespace detail
 {
-template<typename T, typename C>
-static inline void AvgMinMax(const T* const in, T* const inout, const int* const len, C* type)
-{
-    for(int i = 0; i < *len; i += 3) {
-        inout[0 + 3 * i] += in[0 + 3 * i];
-        inout[1 + 3 * i] = std::min(in[1 + 3 * i], inout[1 + 3 * i]);
-        inout[2 + 3 * i] = std::max(in[2 + 3 * i], inout[2 + 3 * i]);
-    }
+BOOST_PP_LIST_FOR_EACH_PRODUCT( NEDELEC_FACTORY_OP, 3, ( DIM2, ORDER0123, SIMPLEX ) )
 }
-} // Functor
-} // Feel
-
-
-#endif /* FEELPP_FUNCTORS_HPP */
+}

@@ -52,7 +52,6 @@
 #include <boost/mpi/operations.hpp>
 
 #include <feel/feelcore/context.hpp>
-//#include <feel/feelcore/worldcomm.hpp>
 
 #include <feel/feelcore/functors.hpp>
 #include <feel/feelmesh/mesh0d.hpp>
@@ -356,9 +355,14 @@ public:
 
         if ( this->worldComm().localSize() >1 )
         {
+#if BOOST_VERSION >= 105500
+            std::vector<int> globals{ ne, nf, ned, np, (int)this->numVertices() };
+            mpi::all_reduce( this->worldComm(), mpi::inplace(globals.data()), 5, std::plus<int>() );
+#else
             std::vector<int> locals{ ne, nf, ned, np, (int)this->numVertices() };
             std::vector<int> globals( 5, 0 );
-            mpi::all_reduce( this->worldComm(), locals, globals, Functor::AddStdVectors<int>() );
+            mpi::all_reduce( this->worldComm(), locals.data(), 5, globals.data(), std::plus<int>() );
+#endif
             M_numGlobalElements = globals[0];
             M_numGlobalFaces = globals[1];
             M_numGlobalEdges = globals[2];
@@ -514,6 +518,19 @@ public:
             return mit->second[0];
         return invalid_size_type_value;
     }
+    /**
+     * @return the marker nae associated to the \p marker id
+     */
+    std::string markerName( size_type marker ) const
+        {
+            for( auto n : M_markername )
+            {
+                if (n.second[0] == marker )
+                    return n.first;
+            }
+            return std::string();
+        }
+
     /**
      * @return the topological dimension associated to the \p marker
      */

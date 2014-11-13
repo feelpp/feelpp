@@ -34,13 +34,7 @@
 #define __filter_H 1
 
 #include <feel/feelcore/visitor.hpp>
-//#include <feel/feelmesh/mesh1d.hpp>
-#include <feel/feelmesh/mesh2d.hpp>
-#include <feel/feelmesh/mesh3d.hpp>
 #include <feel/feeldiscr/mesh.hpp>
-
-#include <feel/feelcore/feel.hpp>
-
 
 #if defined(FEELPP_HAS_VTK)
 // Vtk header files
