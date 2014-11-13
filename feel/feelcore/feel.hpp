@@ -63,8 +63,14 @@
 
 #include <boost/lambda/lambda.hpp>
 #include <boost/lambda/bind.hpp>
-
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdivision-by-zero"
+#endif
 #include <boost/mpi.hpp>
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 
 #include <boost/program_options.hpp>
 
