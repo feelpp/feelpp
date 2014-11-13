@@ -34,14 +34,14 @@
 namespace Feel
 {
 
-template< typename pressure_space_type, uint16_type uOrder>
+template<typename pressure_space_type, uint16_type uOrder>
 class OperatorPCD : public OperatorBase<typename pressure_space_type::value_type>
 {
     typedef OperatorBase<typename pressure_space_type::value_type> super;
 public:
-
+    
     typedef typename pressure_space_type::value_type value_type;
-
+    
     typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
     typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
 
@@ -157,7 +157,7 @@ OperatorPCD<pressure_space_type,uOrder>::OperatorPCD( pressure_space_ptrtype Qh,
     M_alpha( alpha )
 {
     initialize();
-
+        
     LOG(INFO) << "[Pressure Correction Diffusion Operator] Constructor: using nu=" << M_nu << "\n";
     LOG(INFO) << "[Pressure Correction Diffusion Operator] Constructor: using alpha=" << M_alpha << "\n";
 
@@ -192,8 +192,8 @@ OperatorPCD<pressure_space_type,uOrder>::OperatorPCD( const OperatorPCD& tc )
     M_bcFlags( tc.M_bcFlags ),
     M_nu( tc.M_nu ),
     M_alpha( tc.M_alpha ),
-    inflowIter( tc.inflowIter ),
-    M_prob_type( tc.M_prob_type )
+                                                                                              inflowIter( tc.inflowIter ),
+                                                                                              M_prob_type( tc.M_prob_type )
 {
     //LOG(INFO) << "Call for OperatorPCD copy constructor...\n";
 }
