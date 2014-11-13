@@ -98,13 +98,15 @@ post-configure {
     }
 
     set cxx_stdlibflags {}
+    set cxx_stdflags -std=c++11
     if {[info exists configure.cxx_stdlib] &&
         ${configure.cxx_stdlib} ne {} &&
         [string match *clang* ${configure.cxx}]} {
         set cxx_stdlibflags -stdlib=${configure.cxx_stdlib}
     }
 
-    write_jam "using darwin : : ${configure.cxx} : <cxxflags>\"${configure.cxxflags} ${cxx_stdlibflags}\" ${compileflags} <linkflags>\"${configure.ldflags} ${cxx_stdlibflags}\" : ;"
+    #write_jam "using darwin : : ${configure.cxx} : <cxxflags>\"${configure.cxxflags} ${cxx_stdlibflags}\" ${compileflags} <linkflags>\"${configure.ldflags} ${cxx_stdlibflags}\" : ;"
+    write_jam "using darwin : : ${configure.cxx} : <cxxflags>\"${configure.cxxflags} ${cxx_stdlibflags} ${cxx_stdflags}\" ${compileflags} <linkflags>\"${configure.ldflags} ${cxx_stdlibflags} ${cxx_stdflags}\" : ;"
 
 }
 
@@ -195,7 +197,8 @@ foreach s ${pythons_suffixes} {
             configure.args-delete   --without-libraries=python
             configure.args-append   --with-python=${prefix}/bin/python${v}
 
-            patchfiles-append   ${bppatch} patch-tools-build-v2-tools-python.jam.diff
+            patchfiles-append   ${bppatch} patch-tools-build-v2-tools-python.jam.diff \
+                                py_nonblocking.patch 
 
 #                                patch-tools-build-v2-tools-python-2.jam.diff
 
@@ -217,8 +220,18 @@ if {![variant_isset debug]} {
     default_variants +${selected_python}
 }
 
-#default_variants +no_single +no_static
-default_variants +no_single +no_static +openmpi-gcc48 +gcc48
+default_variants +no_single +no_static
+
+if {![variant_isset gcc47] && ![variant_isset gcc48] && ![variant_isset clang35] && ![variant_isset clang36]  } {
+    #default_variants +gcc48
+    default_variants +clang36
+}
+if {![variant_isset openmpi_gcc48] && ![variant_isset openmpi_clang35] } {
+    #default_variants +openmpi_gcc48
+    default_variants +openmpi_clang35
+}
+
+
 
 variant debug description {Builds debug versions of the libraries as well} {
     build.args-delete   variant=release
@@ -226,7 +239,7 @@ variant debug description {Builds debug versions of the libraries as well} {
 }
 
 variant no_static description {Disable building static libraries} {
-    build.args-delete   link=shared,static
+    build.args-delete   link=static,shared
     build.args-append   link=shared
 }
 
@@ -235,21 +248,29 @@ variant no_single description {Disable building single-threaded libraries} {
     build.args-append   threading=multi
 }
 
-variant gcc47 description {Build with gcc47} conflicts gcc48 clang36 {
+variant gcc47 description {Build with gcc47} conflicts gcc48 clang35 clang36 {
     depends_lib-append      port:gcc47
     build.args-append   pch=off
     build.args-delete   architecture=x86
     configure.cxx /opt/local/bin/g++-mp-4.7
 }
 
-variant gcc48 description {Build with gcc48} conflicts gcc47 clang36 {
+variant gcc48 description {Build with gcc48} conflicts gcc47 clang35 clang36 {
     depends_lib-append      port:gcc48
     build.args-append   pch=off
     build.args-delete   architecture=x86
     configure.cxx /opt/local/bin/g++-mp-4.8
 }
 
-variant clang36 description {Build with clang 3.6} conflicts gcc48 gcc47 {
+variant clang35 description {Build with clang 3.5} conflicts gcc48 gcc47 clang36 {
+    depends_lib-append  port:clang-3.5
+    build.args-append   pch=off
+    build.args-delete   architecture=x86
+    #configure.cxx /opt/local/bin/clang++-mp-3.5
+    configure.compiler  macports-clang-3.5
+}
+
+variant clang36 description {Build with clang 3.6} conflicts gcc48 gcc47 clang35 {
     depends_lib-append  port:clang-3.6
     build.args-append   pch=off
     build.args-delete   architecture=x86
@@ -258,7 +279,7 @@ variant clang36 description {Build with clang 3.6} conflicts gcc48 gcc47 {
 }
 
 
-variant openmpi-gcc48 conflicts debug openmpi-clang35 description {Build Boost.MPI} {
+variant openmpi_gcc48 description {Build Boost.MPI} conflicts debug openmpi_clang35 {
 
     # There is a conflict with debug support.
     # The issue has been reported to both the MacPorts team and the boost team, as per:
@@ -291,7 +312,7 @@ variant openmpi-gcc48 conflicts debug openmpi-clang35 description {Build Boost.M
 
 }
 
-variant openmpi-clang35 conflicts debug openmpi-gcc48 description {Build Boost.MPI} {
+variant openmpi_clang35 description {Build Boost.MPI with openmpi-clang35 } conflicts debug openmpi_gcc48 {
 
     # There is a conflict with debug support.
     # The issue has been reported to both the MacPorts team and the boost team, as per:
