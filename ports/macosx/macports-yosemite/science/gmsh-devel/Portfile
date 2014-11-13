@@ -34,16 +34,14 @@ patchfiles     gmsh-devel.patch  \
     gmsh-devel-petsc.patch
 patch.dir      ${worksrcpath}
 # https://trac.macports.org/ticket/33925
-compiler.blacklist  clang
-configure.compiler macports-gcc-4.8
+#compiler.blacklist  clang
+#configure.compiler macports-gcc-4.8
 
 worksrcdir	build
 configure	{ system "mkdir -p ${worksrcpath}/ && cd ${worksrcpath}/ && cmake ${configure.args} ../trunk" }
 
 #configure.pre_args
 configure.args-append \
-    -DCMAKE_C_COMPILER=/opt/local/bin/gcc-mp-4.8\
-    -DCMAKE_CXX_COMPILER=/opt/local/bin/g++-mp-4.8\
     -DCMAKE_INSTALL_PREFIX=${prefix}\
     -DCMAKE_VERBOSE_MAKEFILE=ON \
     -DCMAKE_COLOR_MAKEFILE=ON \
@@ -80,6 +78,41 @@ depends_lib  \
 
 default_variants +atlas +slepc
 
+if { ![variant_isset gcc48] && ![variant_isset clang36]  } {
+    #default_variants +gcc48
+    default_variants +clang36
+}
+if {![variant_isset openmpi_gcc48] && ![variant_isset openmpi_clang35] } {
+    #default_variants +openmpi_gcc48
+    default_variants +openmpi_clang35
+}
+
+variant gcc48 description {Build with gcc48} conflicts clang36 {
+    depends_lib-append      port:gcc48
+    configure.compiler macports-gcc-4.8
+    configure.args-append \
+       -DCMAKE_C_COMPILER=/opt/local/bin/gcc-mp-4.8 \
+       -DCMAKE_CXX_COMPILER=/opt/local/bin/g++-mp-4.8
+}
+variant clang36 description {Build with clang36} conflicts gcc48 {
+    depends_lib-append  port:clang-3.6
+    configure.compiler  macports-clang-3.6
+    configure.args-append \
+        -DCMAKE_C_COMPILER=/opt/local/bin/clang-mp-3.6 \
+        -DCMAKE_CXX_COMPILER=/opt/local/bin/clang++-mp-3.6
+}
+variant openmpi_gcc48 description {Build Boost.MPI} conflicts debug openmpi_clang35 {
+    depends_lib-append      port:openmpi-gcc48
+    configure.args-append \
+        -DMPI_CXX_COMPILER=/opt/local/bin/mpicxx-openmpi-gcc48 \
+        -DMPI_C_COMPILER=/opt/local/bin/mpicc-openmpi-gcc48
+}
+variant openmpi_clang35 description {Build Boost.MPI with openmpi-clang35 } conflicts debug openmpi_gcc48 {
+    depends_lib-append      port:openmpi-clang35
+    configure.args-append \
+        -DMPI_CXX_COMPILER=/opt/local/bin/mpicxx-openmpi-clang35 \
+        -DMPI_C_COMPILER=/opt/local/bin/mpicc-openmpi-clang35
+}
 variant atlas description {Use Atlas for BLAS-LAPACK} {
     depends_lib-append port:atlas
     configure.args-append \
@@ -89,21 +122,11 @@ variant atlas description {Use Atlas for BLAS-LAPACK} {
 
 variant slepc description {compile with PETSC/SLEPC support} {
     depends_lib-append      port:petsc
-    require_active_variants petsc atlas
-    require_active_variants petsc gcc48
-    require_active_variants petsc hdf5
-    require_active_variants petsc ml
-    require_active_variants petsc mumps
-    require_active_variants petsc openmpi
-    require_active_variants petsc parmetis
-    require_active_variants petsc suitesparse
-    #require_active_variants petsc atlas gcc48 hdf5 hypre ml mumps openmpi parmetis suitesparse 
     depends_lib-append      port:slepc
-    require_active_variants slepc gcc48
-    require_active_variants slepc openmpi
 
+    #-DCMAKE_PREFIX_PATH=/opt/local/lib/openmpi/bin \
+ 
     configure.args-append \
-        -DCMAKE_PREFIX_PATH=/opt/local/lib/openmpi/bin \
         -DENABLE_MPI=ON \
         -DENABLE_PETSC=ON \
         -DPETSC_INC=${prefix}/lib/petsc/include \
