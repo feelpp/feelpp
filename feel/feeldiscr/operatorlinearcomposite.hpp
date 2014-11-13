@@ -637,7 +637,8 @@ BOOST_PARAMETER_FUNCTION(
       ( imageSpace,     *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
     ) // required
     ( optional
-      ( backend,        *, Backend<typename Feel::detail::compute_opLinearComposite_return<Args>::domain_space_type::value_type>::build() )
+      //( backend,        *, Backend<typename Feel::detail::compute_opLinearComposite_return<Args>::domain_space_type::value_type>::build() )
+      ( backend,        *, backend() )
       ( pattern,        *, (size_type)Pattern::COUPLED  )
     ) // optionnal
 )

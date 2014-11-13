@@ -957,10 +957,10 @@ template<typename TruthModelType>
 void
 CRBSCM<TruthModelType>::checkEigenVectorEigenValue( sparse_matrix_ptrtype const& A, sparse_matrix_ptrtype const& B, vector_ptrtype const& eigenvector, double eigenvalue ) const
 {
-    auto backend = backend_type::build( BACKEND_PETSC );
+    //auto backend = backend_type::build( BACKEND_PETSC, Environment::worldComm() );
     auto Xh = M_model->functionSpace() ;
-    auto Aw =  backend->newVector( Xh );
-    auto Bw =  backend->newVector( Xh );
+    auto Aw =  backend()->newVector( Xh );
+    auto Bw =  backend()->newVector( Xh );
     A->multVector( eigenvector, Aw );
     B->multVector( eigenvector, Bw );
     //we should have Aw = eigen_value Bw
