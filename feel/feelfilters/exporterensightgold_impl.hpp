@@ -150,10 +150,28 @@ ExporterEnsightGold<MeshType,N>::save() const
         typename timeset_type::step_const_iterator __it = __ts->beginStep();
         typename timeset_type::step_const_iterator __end = __ts->endStep();
 
+        /* check if we have steps for the current dataset */
         if(__it == __end)
         {
             LOG(INFO) << "Timeset " << __ts->name() << " (" << __ts->index() << ") contains no timesteps (Consider using add() or addRegions())" << std::endl;
             hasSteps = false;
+        }
+        /* if we have steps */
+        else
+        {
+            /* get the step that will be saved */
+            __it = boost::prior( __end );
+
+            /* get the mesh for the timestep to save */
+            typename timeset_type::step_ptrtype __step = *__it;
+            auto mesh = __step->mesh();
+
+            /* If we haven't yet computed the markers to be written */
+            /* or we restart a simulation, we need to update the markers to be written */
+            if( M_markersToWrite.size() == 0)
+            {
+                this->computeMarkersToWrite(mesh);
+            }
         }
 
         ++__ts_it;
@@ -408,7 +426,6 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
 
             while ( __it != __end )
             {
-                //if ( this->useSingleTransientFile() )
                 if( boption( _name="exporter.ensightgold.merge.timesteps") )
                 {
                     __out << "scalar per node: "
@@ -438,7 +455,6 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
 
             while ( __itv != __env )
             {
-                //if ( this->useSingleTransientFile() )
                 if( boption( _name="exporter.ensightgold.merge.timesteps") )
                 {
                     __out << "vector per node: "
@@ -468,7 +484,6 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
 
             while ( __itt != __ent )
             {
-                //if ( this->useSingleTransientFile() )
                 if( boption( _name="exporter.ensightgold.merge.timesteps") )
                 {
                     __out << "tensor per node: "
@@ -498,7 +513,6 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
 
             while ( __it_el != __end_el )
             {
-                //if ( this->useSingleTransientFile() )
                 if( boption( _name="exporter.ensightgold.merge.timesteps") )
                 {
                     __out << "scalar per element: "
@@ -528,7 +542,6 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
 
             while ( __itv_el != __env_el )
             {
-                //if ( this->useSingleTransientFile() )
                 if( boption( _name="exporter.ensightgold.merge.timesteps") )
                 {
                     __out << "vector per element: "
@@ -613,13 +626,6 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
                 ++__its;
             }
 
-#if 0
-            namespace lambda = boost::lambda;
-            std::for_each( __ts->beginStep(), __ts->endStep(),
-                    __out << lambda::bind( &timeset_type::step_type::time, *lambda::_1 ) << boost::lambda::constant( ' ' ) );
-            std::for_each( __ts->beginStep(), __ts->endStep(),
-                    std::cerr << lambda::bind( &timeset_type::step_type::time, *lambda::_1 ) << boost::lambda::constant( ' ' ) );
-#endif
             ++__ts_it;
         }
         __out << "\n";
@@ -667,16 +673,13 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
             // In the following line, we substituted the Environment::numberOfProcessors
             // by the size of the worldComm passed to the exporter to ensure that we are using
             // only the data for the current processor
-            //if ( ( Environment::numberOfProcessors() > 1 )  && ( this->worldComm().globalRank() == 0 ) )
             if ( ( this->worldComm().globalSize() > 1 )  && ( this->worldComm().globalRank() == 0 ) )
             {
                 __out << "APPENDED_CASEFILES\n"
-                    //<< "total number of cfiles: " << Environment::numberOfProcessors()-1 << "\n"
                     << "total number of cfiles: " << this->worldComm().globalSize()-1 << "\n"
                     // no need for that
                     // << "cfiles global path: " << fs::current_path().string() << "\n"
                     << "cfiles: ";
-                //for(int p = 1; p < Environment::numberOfProcessors(); ++p )
                 for(int p = 1; p < this->worldComm().globalSize(); ++p )
                 {
                     std::ostringstream filestr;
@@ -721,20 +724,6 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
         {
             LOG(INFO) << "GEO: Static geo mode" << std::endl;
 
-            /* write info */
-            mesh_ptrtype mesh;
-            if ( __ts->hasMesh() )
-                mesh = __ts->mesh();
-            if ( (*__it)->hasMesh() && !__ts->hasMesh() )
-                mesh = (*__it)->mesh();
-
-            /* If we haven't yet computed the markers to be written */
-            /* or we restart a simulation, we need to update the markers to be written */
-            if( M_markersToWrite.size() == 0)
-            {
-                this->computeMarkersToWrite(mesh);
-            }
-
             /* only write the geometry in the first timestep */
             if( __it == __ts->beginStep() ) 
             {
@@ -748,6 +737,13 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
                 __geofname << ".geo";
                 M_filename =  __geofname.str();
                 CHECK( (*__it)->hasMesh() || __ts->hasMesh()  ) << "Invalid mesh data structure in static geometry mode\n";
+
+                /* get mesh data */
+                mesh_ptrtype mesh;
+                if ( __ts->hasMesh() )
+                    mesh = __ts->mesh();
+                if ( (*__it)->hasMesh() && !__ts->hasMesh() )
+                    mesh = (*__it)->mesh();
 
                 /* Open File with MPI IO */
                 char * str = strdup(__geofname.str().c_str());
@@ -863,13 +859,6 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
 
                         auto mesh = __step->mesh();
 
-                        /* If we haven't yet computed the markers to be written */
-                        /* or we restart a simulation, we need to update the markers to be written */
-                        if( M_markersToWrite.size() == 0)
-                        {
-                            this->computeMarkersToWrite(mesh);
-                        }
-
                         /* Open File with MPI IO */
                         char * str = strdup(M_filename.c_str());
 
@@ -972,13 +961,6 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
 
                         auto mesh = __step->mesh();
 
-                        /* If we haven't yet computed the markers to be written */
-                        /* or we restart a simulation, we need to update the markers to be written */
-                        if( M_markersToWrite.size() == 0)
-                        {
-                            this->computeMarkersToWrite(mesh);
-                        }
-
                         /* Open File with MPI IO */
                         char * str = strdup(M_filename.c_str());
 
@@ -1059,16 +1041,6 @@ ExporterEnsightGold<MeshType, N>::computeMarkersToWrite(mesh_ptrtype mesh) const
         LOG(INFO) << osselts.str() << std::endl;
 #endif
 
-#if 0
-        std::ostringstream ossmw;
-        ossmw << this->worldComm().rank() << " markersToWrite ";
-        for(int i = 0; i < M_markersToWrite.size(); i++)
-        {
-            ossmw << " " << M_markersToWrite.at(i);
-        }
-        LOG(INFO) << ossmw.str() << std::endl;
-#endif
-
         // TODO If the number of parts per process is not the sam
         // some processes might not enter some instance of the function in the following loop
         // and inside it there is a allgather that would cause the processes to be stuck in it
@@ -1097,7 +1069,6 @@ ExporterEnsightGold<MeshType, N>::computeMarkersToWrite(mesh_ptrtype mesh) const
 
         /* Check whether successive part id are the same on different processes */
         /* does not seem to be the case */
-#if 1
         typename mesh_type::parts_const_iterator_type p_st = mesh->beginParts();
         typename mesh_type::parts_const_iterator_type p_en = mesh->endParts();
 
@@ -1108,14 +1079,8 @@ ExporterEnsightGold<MeshType, N>::computeMarkersToWrite(mesh_ptrtype mesh) const
             osspi << " " << p_it->first << "(" << p_it->second << ")";
         }
         LOG(INFO) << osspi.str() << std::endl;
-#endif
 
-        /* iterate over the markes to get the different markers needed to be written */
-        /*
-        typename mesh_type::parts_const_iterator_type p_it = mesh->beginParts();
-        typename mesh_type::parts_const_iterator_type p_en = mesh->endParts();
-        */
-
+        /* iterate over the local markers to get the different markers needed to be written */
         std::vector<int> localMarkers;
         for(auto p_it = p_st ; p_it != p_en; ++p_it )
         {
@@ -1191,7 +1156,6 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkers(MPI_File fh, mesh_ptrtype mesh)
     }
 
     /* Working with marker names instead */
-    //for(int i = 0; i < M_markersToWrite.size(); i++)
     for(std::set<int>::iterator mit = M_markersToWrite.begin(); mit != M_markersToWrite.end(); mit++)
     {
         this->writeGeoMarkedElements(fh, mesh, *mit);
@@ -1236,7 +1200,6 @@ ExporterEnsightGold<MeshType, N>::writeGeoHeader(MPI_File fh) const
     memset(buffer, '\0', sizeof(buffer));
     strcpy( buffer, theFileName.c_str() );
     MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
-    //LOG(INFO) << "wrote " << buffer << std::endl;
 
     memset(buffer, '\0', sizeof(buffer));
     strcpy( buffer, "elements" );
@@ -1249,8 +1212,6 @@ ExporterEnsightGold<MeshType, N>::writeGeoHeader(MPI_File fh) const
     memset(buffer, '\0', sizeof(buffer));
     strcpy( buffer, "element id given" );
     MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
-    //MPI_File_write(fh, buffer, sizeof(buffer), MPI_CHAR, &status );
-
 }
 
 template<typename MeshType, int N>
@@ -1676,7 +1637,6 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
         else
         { __varfname << ".scl"; LOG(ERROR) << "Could not detect data type (scalar, vector, tensor2). Defaulted to scalar." << std::endl; }
 
-        // if ( !this->useSingleTransientFile() )
         if( ! boption( _name="exporter.ensightgold.merge.timesteps") )
         {
             __varfname << "." << std::setfill( '0' ) << std::setw( M_timeExponent ) << __step->index();
@@ -1820,13 +1780,6 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
         }
 
         /* handle elements */
-        /*
-        typename mesh_type::parts_const_iterator_type p_it = __step->mesh()->beginParts();
-        typename mesh_type::parts_const_iterator_type p_en = __step->mesh()->endParts();
-        */
-
-        //for ( ; p_it != p_en; ++p_it )
-        //for( int i = 0; i < M_markersToWrite.size(); i++)
         for( std::set<int>::iterator mit = M_markersToWrite.begin(); mit != M_markersToWrite.end(); mit++)
         {
             if( this->worldComm().isMasterRank() )
@@ -1853,7 +1806,6 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
             strcpy( buffer, "coordinates" );
             MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
 
-
             uint16_type nComponents = __var->second.nComponents;
 
             VLOG(1) << "nComponents field: " << nComponents;
@@ -1866,16 +1818,13 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
             /* we get that from the local processor */
             /* We do not need the renumbered global index */
             //auto r = markedelements(__mesh,(boost::any)p_it->first,EntityProcessType::ALL);
-            //auto r = markedelements(__mesh, M_markersToWrite[i], EntityProcessType::ALL);
             auto r = markedelements(__mesh, *mit, EntityProcessType::ALL);
             auto elt_it = r.template get<1>();
             auto elt_en = r.template get<2>();
 
             Feel::detail::MeshPoints<float> mp( __step->mesh().get(), this->worldComm(), elt_it, elt_en, true, true, true );
 
-            // previous implementation
-            //size_type __field_size = mp.ids.size();
-            //int nelts = std::distance(elt_it, elt_en);
+            /* create an array to store data per node */
             int npts = mp.ids.size();
             size_type __field_size = npts;
             if ( __var->second.is_vectorial )
@@ -1897,7 +1846,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
             {
                 VLOG(3) << "is ghost cell " << elt_it->get().isGhostCell();
                 /* looop on the ccomponents is outside of the loop on the vertices */
-                /* becaus we need to pack the data in the x1 x2 ... xn y1 y2 ... yn z1 z2 ... zn order */
+                /* because we need to pack the data in the x1 x2 ... xn y1 y2 ... yn z1 z2 ... zn order */
                 for ( uint16_type c = 0; c < nComponents; ++c )
                 {
                     for ( uint16_type p = 0; p < __step->mesh()->numLocalVertices(); ++p, ++e )
@@ -2005,7 +1954,6 @@ ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtyp
             __evarfname << "." << std::setfill( '0' ) << std::setw( M_timeExponent ) << __step->index();
         }
         DVLOG(2) << "[ExporterEnsightGold::saveElement] saving " << __evarfname.str() << "...\n";
-        //std::fstream __out( __evarfname.str().c_str(), std::ios::out | std::ios::binary );
 
         auto __mesh = __step->mesh();
 
