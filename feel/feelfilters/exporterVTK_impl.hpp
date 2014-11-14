@@ -164,14 +164,20 @@ ExporterVTK<MeshType,N>::save() const
                 */
 
 #if 0
-                vtkMultiBlockDataSet *mbds = vtkMultiBlockDataSet::New();
+                vtkSmartPointer<vtkMultiBlockDataSet> mbds = vtkSmartPointer<vtkMultiBlockDataSet>::New();
                 mbds->SetNumberOfBlocks( this->worldComm().globalSize() );
+
+                std::ostringstream oss;
 
                 for( unsigned int block = 0 ; block < mbds->GetNumberOfBlocks(); ++block )
                 {
                     if( block == this->worldComm().rank() )
                     {
+                        oss.str("");
+                        oss << "P" << this->worldComm().rank();
                         mbds->SetBlock( block, out );
+                        mbds->GetMetaData(block)->Set(vtkCompositeDataSet::NAME(), oss.str().c_str() );
+                        mbds->GetMetaData(block)->Set(vtkCompositeDataSet::DATA_TIME_STEP(), __step->index());
                     } // END if we own the block
                     else
                     {
@@ -184,15 +190,21 @@ ExporterVTK<MeshType,N>::save() const
                 #if VTK_MAJOR_VERSION <= 5 && VTK_MINOR_VERSION < 10
                     //#warning parallel export not supported with this version of VTK
                 #else  
-#if 0
+#if 1
+                MPI_Comm comm = this->worldComm().comm();
+                vtkMPICommunicatorOpaqueComm * mpicoc = new vtkMPICommunicatorOpaqueComm(&comm);
                 vtkSmartPointer<vtkMPICommunicator> mpicomm = vtkSmartPointer<vtkMPICommunicator>::New();
-                    mpicomm->InitializeExternal(new vtkMPICommunicatorOpaqueComm(this->worldComm().comm()));
+                    mpicomm->InitializeExternal(mpicoc);
                 vtkSmartPointer<vtkMPIController> mpictrl = vtkSmartPointer<vtkMPIController>::New();
                     mpictrl->SetCommunicator(mpicomm);
 #endif
+                fname.str("");
+                fname  << __ts->name()  //<< this->prefix() //this->path()
+                    << "-" << __step->index()
+                    << ".vtm";
 
                 vtkSmartPointer<vtkXMLPMultiBlockDataWriter> xmlpw = vtkSmartPointer<vtkXMLPMultiBlockDataWriter>::New();
-                    //xmlpw->SetController(mpictrl);
+                    xmlpw->SetController(mpictrl);
                     xmlpw->SetFileName(fname.str().c_str());
 #if VTK_MAJOR_VERSION <= 5
                     xmlpw->SetInput(mbds);
@@ -226,7 +238,7 @@ ExporterVTK<MeshType,N>::save() const
                     int blockID = 0;
                     mbds->SetBlock(blockID, out);
                     mbds->GetMetaData(blockID)->Set(vtkCompositeDataSet::NAME(), "marker 1");
-                    mbds->GetMetaData(blockID)->Set(vtkCompositeDataSet::DATA_TIME_STEP(), __step->index());
+                    //mbds->GetMetaData(blockID)->Set(vtkCompositeDataSet::DATA_TIME_STEP(), __step->index());
 
                 vtkXMLMultiBlockDataWriter* mbw = vtkXMLMultiBlockDataWriter::New();
                     mbw->SetFileName(mfname.str().c_str());
