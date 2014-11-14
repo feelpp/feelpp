@@ -128,6 +128,8 @@ public:
                     mpl::identity<vtkTriangle>,
                     mpl::identity<vtkQuad>
                 >::type,
+                /* We should normally not reach this case */
+                /* anyway we set a default vtkTriangle for face type */
                 mpl::identity<vtkTriangle>
             >::type
         >::type
@@ -152,6 +154,8 @@ public:
                     mpl::identity<vtkTetra>,
                     mpl::identity<vtkHexahedron>
                 >::type,
+                /* We should normally not reach this case */
+                /* anyway we set a default vtkTetra for face type */
                 mpl::identity<vtkTetra>
             >::type
         >::type
