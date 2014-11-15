@@ -35,12 +35,12 @@
 #include <iostream>
 #include <fstream>
 
-
-#include <boost/lambda/lambda.hpp>
-
 #include <feel/feelcore/debug.hpp>
-
 #include <feel/feelfilters/exporter.hpp>
+
+#include <cstring>
+#include <libxml/parser.h>
+#include <libxml/tree.h>
 
 #include <vtkSmartPointer.h>
 #include <vtkCellType.h>
@@ -54,9 +54,16 @@
 #include <vtkPolyData.h>
 #include <vtkPolyDataWriter.h>
 
+
+/* Only use MPI when we have vtk 5.8+ */
+/* features initializing MPI using an external context a missing in 5.8- */
+/* but lets aim for the latest major version 6 to reduce the complexity */
+#if VTK_MAJOR_VERSION >= 6 && defined(VTK_HAS_PARALLEL)
 #include <vtkMPI.h>
 #include <vtkMPIController.h>
 #include <vtkMPICommunicator.h>
+#endif
+
 #include <vtkInformation.h>
 #include <vtkVertex.h>
 #include <vtkLine.h>
@@ -234,6 +241,12 @@ public:
     void saveNodeData( typename timeset_type::step_ptrtype step, Iterator __var, Iterator en, vtkSmartPointer<vtkout_type> out ) const;
     template<typename Iterator>
     void saveElementData( typename timeset_type::step_ptrtype step, Iterator __var, Iterator en, vtkSmartPointer<vtkout_type> out ) const;
+    /**
+     * As we process the timesteps one by one, we need a way to record each new timestep.
+     * To do so, we use a pvd file (Paraview format) that allows use to specify new timesteps
+     * using xml syntax.
+     */
+    int saveTimePVD(std::string xmlFilename, double timestep, std::string dataFilename) const;
 
     //@}
 

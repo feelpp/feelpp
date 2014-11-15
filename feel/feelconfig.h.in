@@ -165,6 +165,9 @@
 /* Define to 1 if you have VTK . */
 #cmakedefine FEELPP_HAS_VTK
 
+/* Define to 1 if you have the parallel component for VTK. */
+#cmakedefine VTK_HAS_PARALLEL
+
 /* The path of installation */
 #cmakedefine INSTALL_PATH
 
