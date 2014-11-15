@@ -1,3 +1,4 @@
+
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*-
 
    This file is part of the Feel library
@@ -223,7 +224,7 @@ grad( ex const& f, std::vector<symbol> const& l )
     lst g;
     std::for_each( l.begin(), l.end(),
                    [&] ( symbol const& x ) { g.append( f.diff( x ) ); } );
-    if ( is_a<lst>( f ) )
+    if ( f.info(info_flags::list) ) // is_a<lst>( f )
     {
         std::vector<ex> v;
         for( int e = 0; e < g.nops(); ++e )
@@ -356,7 +357,7 @@ matrix
 laplacian( ex const& f, std::vector<symbol> const& l )
 {
     ex e = f.evalm();
-    if ( is_a<matrix>(e) )
+    if ( e.is_a_matrix() ) //is_a<matrix>(e) )
     {
         matrix m( ex_to<matrix>(e) );
         matrix g( m.rows(),1 );
@@ -370,7 +371,7 @@ laplacian( ex const& f, std::vector<symbol> const& l )
         }
         return g;
     }
-    else if ( is_a<lst>(e) )
+    else if ( e.info(info_flags::list) ) //is_a<lst>(e) )
     {
         std::vector<ex> g(e.nops());
         for(int n = 0; n < e.nops(); ++n )
@@ -378,7 +379,7 @@ laplacian( ex const& f, std::vector<symbol> const& l )
             std::for_each( l.begin(), l.end(),
                            [&] ( symbol const& x )
                            {
-                               CHECK ( !is_a<lst>(e.op(0)) )
+                               CHECK ( !e.op(0).info(info_flags::list) ) //  !is_a<lst>(e.op(0)) )
                                    << "the matricial case (expression: " << e << ") is not implemented, please contact feelpp-devel@feelpp.org";
                                g[n] += e.op(n).diff( x,2 );
                            } );
