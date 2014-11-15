@@ -217,6 +217,9 @@ public:
 	}
 	bool is_zero_matrix() const;
 
+    // patch feel++ (done by Vincent C.) : add is_a_matrix method
+    bool is_a_matrix() const;
+
 	// symmetry
 	ex symmetrize() const;
 	ex symmetrize(const lst & l) const;
