@@ -135,7 +135,7 @@ public:
     TestHDivOneElt()
         :
         super(),
-        M_backend( backend_type::build( this->vm() ) ),
+        M_backend( backend_type::build( soption( _name="backend" ) ) ),
         exporter( Exporter<mesh_type>::New( this->vm() ) )
     {
         this->changeRepository( boost::format( "%1%" ) % this->about().appName() );

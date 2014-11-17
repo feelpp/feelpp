@@ -81,7 +81,7 @@ struct test_disc: public Application
     test_disc()
         :
         Application(),
-        backend( Backend<double>::build( this->vm() ) ),
+        backend( Backend<double>::build( soption( _name="backend" ) ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() ),
         mesh()
