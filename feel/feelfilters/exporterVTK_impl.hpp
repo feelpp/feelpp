@@ -127,67 +127,78 @@ int ExporterVTK<MeshType,N>::saveTimePVD(std::string xmlFilename, double timeste
     xmlNodePtr root = NULL, node1 = NULL, node2 = NULL;
     std::ostringstream oss;
 
-    /* First Step: Find the Collection node */
-    /* Either in a newly created file or in an existing file */
-    /* check if the time file already exists */
-    /* if so we update its data by adding a new DataSet node */
-    if(boost::filesystem::exists(xmlFilename))
+    /* only do this on the master rank */
+    if(this->worldComm().isMasterRank())
     {
-        doc = xmlReadFile(xmlFilename.c_str(), NULL, 0);
-        if (doc == NULL) {
-            //fprintf(stderr, "Failed to parse %s\n", filename);
-            return 1;
-        }
-        root = xmlDocGetRootElement(doc);
-
-        /* check that we have VTKFile as a first entry */
-        if(xmlStrncmp(root->name, BAD_CAST "VTKFile", 7) == 0 && root->children != NULL)
+        /* First Step: Find the Collection node */
+        /* Either in a newly created file or in an existing file */
+        /* check if the time file already exists */
+        /* if so we update its data by adding a new DataSet node */
+        if(boost::filesystem::exists(xmlFilename))
         {
-            /* get first child */
-            node1 = root->children;
-            if(xmlStrncmp(node1->name, BAD_CAST "Collection", 10) != 0)
-            { node1 = NULL; retcode = 1; }
-        } 
-        /* mark this as an error */
+            doc = xmlReadFile(xmlFilename.c_str(), NULL, 0);
+            if (doc == NULL) {
+                //fprintf(stderr, "Failed to parse %s\n", filename);
+                return 1;
+            }
+            root = xmlDocGetRootElement(doc);
+
+            /* check that we have VTKFile as a first entry */
+            if(xmlStrncmp(root->name, BAD_CAST "VTKFile", 7) == 0 && root->children != NULL)
+            {
+                /* get first child */
+                node1 = root->children;
+                if(xmlStrncmp(node1->name, BAD_CAST "Collection", 10) != 0)
+                { node1 = NULL; retcode = 1; }
+            } 
+            /* mark this as an error */
+            else
+            { retcode = 1; }
+        }
+        /* if the file does not already exists we create it */
         else
-        { retcode = 1; }
+        {
+            /* create a new document */
+            doc = xmlNewDoc(BAD_CAST "1.0");
+            root = xmlNewNode(NULL, BAD_CAST "VTKFile");
+            xmlSetProp(root, BAD_CAST "type", BAD_CAST "Collection");
+            xmlSetProp(root, BAD_CAST "version", BAD_CAST "0.1");
+            xmlDocSetRootElement(doc, root);
+
+            node1 = xmlNewNode(NULL, BAD_CAST "Collection");
+            xmlAddChild(root, node1);
+        }
+
+        /* Second step */
+        /* Create a new dataset entry to add to the Collection node */
+        if(node1)
+        {
+            node2 = xmlNewNode(NULL, BAD_CAST "Dataset");
+            xmlAddChild(node1, node2);
+
+            oss.str("");
+            oss << timestep;
+            xmlSetProp(node2, BAD_CAST "timestep", BAD_CAST oss.str().c_str());
+            xmlSetProp(node2, BAD_CAST "group", BAD_CAST "");
+            xmlSetProp(node2, BAD_CAST "part", BAD_CAST "0");
+            oss.str("");
+            oss << dataFilename;
+            xmlSetProp(node2, BAD_CAST "file", BAD_CAST oss.str().c_str());
+
+            xmlChar * mem = NULL;
+            int size = 0;
+            xmlDocDumpFormatMemory(doc, &mem, &size, 1);
+            std::cout << mem << std::endl;
+            xmlFree(mem);
+
+            std::cout << "Writing file " << xmlFilename << std::endl;
+            FILE * f = fopen(xmlFilename.c_str(), "w");
+            xmlDocDump(f, doc);
+            fclose(f);
+        }
+
+        xmlFreeDoc(doc);
     }
-    /* if the file does not already exists we create it */
-    else
-    {
-        /* create a new document */
-        doc = xmlNewDoc(BAD_CAST "1.0");
-        root = xmlNewNode(NULL, BAD_CAST "VTKFile");
-        xmlSetProp(root, BAD_CAST "type", BAD_CAST "Collection");
-        xmlSetProp(root, BAD_CAST "version", BAD_CAST "0.1");
-        xmlDocSetRootElement(doc, root);
-
-        node1 = xmlNewNode(NULL, BAD_CAST "Collection");
-        xmlAddChild(root, node1);
-    }
-
-    /* Second step */
-    /* Create a new dataset entry to add to the Collection node */
-    if(node1)
-    {
-        node2 = xmlNewNode(NULL, BAD_CAST "Dataset");
-        xmlAddChild(node1, node2);
-
-        oss.str("");
-        oss << timestep;
-        xmlSetProp(node2, BAD_CAST "timestep", BAD_CAST oss.str().c_str());
-        xmlSetProp(node2, BAD_CAST "group", BAD_CAST "");
-        xmlSetProp(node2, BAD_CAST "part", BAD_CAST "0");
-        oss.str("");
-        oss << dataFilename;
-        xmlSetProp(node2, BAD_CAST "file", BAD_CAST oss.str().c_str());
-
-        FILE * f = fopen(xmlFilename.c_str(), "w");
-        xmlDocDump(f, doc);
-        fclose(f);
-    }
-
-    xmlFreeDoc(doc);
 
     return retcode;
 }
@@ -242,10 +253,12 @@ ExporterVTK<MeshType,N>::save() const
                 saveElementData( __step, __step->beginElementTensor2(), __step->endElementTensor2(), out );
 
                 /* Build file name */
+#if 0
                 fname   << __ts->name()  //<< this->prefix() //this->path()
                     << "-" << __step->index()
                     << "-" << this->worldComm().size() << "_" << this->worldComm().rank()
                     << ".vtk";
+#endif
 
                 /*
                 out->GetOutputInformation(0).Set(vtk.vtkStreamingDemandDrivenPipeline.UPDATE_NUMBER_OF_PIECES(), this->worldComm().globalSize());
@@ -333,10 +346,11 @@ ExporterVTK<MeshType,N>::save() const
                 dw->Update();
 #endif
             }
+
+            this->saveTimePVD(__ts->name() + ".pvd", (*__it)->time(), fname.str());
+
             __it++;
         }
-
-        this->saveTimePVD(__ts->name() + ".pvd", (*__it)->time(), fname.str());
 
         __ts_it++;
     }

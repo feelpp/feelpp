@@ -30,7 +30,7 @@
 #ifndef __ExporterVTK_H
 #define __ExporterVTK_H 1
 
-#if defined(FEELPP_HAS_VTK)
+#if defined(FEELPP_EXPORTER_VTK_ENABLED) && defined(FEELPP_HAS_VTK)
 
 #include <iostream>
 #include <fstream>
@@ -79,6 +79,7 @@
 #include <vtkQuadraticHexahedron.h>
 #include <vtkTriangle.h>
 #include <vtkMultiBlockDataSet.h>
+#include <vtkXMLMultiBlockDataWriter.h>
 
 namespace Feel
 {
