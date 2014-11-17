@@ -62,6 +62,8 @@
 #include <vtkMPI.h>
 #include <vtkMPIController.h>
 #include <vtkMPICommunicator.h>
+#include <vtkXMLPMultiBlockDataWriter.h>
+#include <vtkXMLPUnstructuredGridWriter.h>
 #endif
 
 #include <vtkInformation.h>
@@ -77,8 +79,6 @@
 #include <vtkQuadraticHexahedron.h>
 #include <vtkTriangle.h>
 #include <vtkMultiBlockDataSet.h>
-#include <vtkXMLPMultiBlockDataWriter.h>
-#include <vtkXMLPUnstructuredGridWriter.h>
 
 namespace Feel
 {
