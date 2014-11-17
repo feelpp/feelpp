@@ -330,7 +330,11 @@ ExporterVTK<MeshType,N>::save() const
                 vtkXMLMultiBlockDataWriter* mbw = vtkXMLMultiBlockDataWriter::New();
                     mbw->SetTimeStep(__step->index());
                     mbw->SetFileName(fname.str().c_str());
+#if VTK_MAJOR_VERSION <= 5
                     mbw->SetInput(mbds);
+#else
+                    mbw->SetInputData(mbds);
+#endif
                     mbw->Write();
 #endif
 
@@ -345,9 +349,9 @@ ExporterVTK<MeshType,N>::save() const
                 dw->SetFileName(fname.str().c_str());
                 dw->Update();
 #endif
-            }
 
-            this->saveTimePVD(__ts->name() + ".pvd", (*__it)->time(), fname.str());
+                this->saveTimePVD(__ts->name() + ".pvd", (*__it)->time(), fname.str());
+            }
 
             __it++;
         }
