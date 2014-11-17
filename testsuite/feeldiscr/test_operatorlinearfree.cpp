@@ -80,7 +80,7 @@ testOperatorLinearFree()
 #if 0
     auto backend = backend_type::build( BACKEND_PETSC );
 #else
-    auto backend = backend_type::build();
+    auto backend = backend_type::build( soption( _name="backend" ) );
 #endif
 
     auto mesh=unitHypercube<Dim>();
@@ -132,7 +132,7 @@ testOperatorLinearComposite()
 #if 0
     auto backend = backend_type::build( BACKEND_PETSC );
 #else
-    auto backend = backend_type::build( );
+    auto backend = backend_type::build( soption( _name="backend" ) );
 #endif
 
     auto mesh=unitHypercube<Dim>();
@@ -252,7 +252,7 @@ testExpression()
 #if 0
     auto backend = backend_type::build( BACKEND_PETSC );
 #else
-    auto backend = backend_type::build( );
+    auto backend = backend_type::build( soption( _name="backend" ) );
 #endif
 
     auto mesh=unitHypercube<Dim>();
