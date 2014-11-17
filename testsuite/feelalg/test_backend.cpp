@@ -56,7 +56,8 @@ makeOptions()
     ( "hsize", po::value<double>()->default_value( 0.5 ), "mesh size" )
     ;
     return simgetoptions.add( Feel::feel_options() )
-                        .add( backend_options("test1"));
+                        .add( backend_options("test1"))
+                        .add( backend_options("ctest1"));
 }
 
 
