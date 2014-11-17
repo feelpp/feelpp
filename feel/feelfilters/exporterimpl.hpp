@@ -43,7 +43,7 @@
 #include <feel/feelfilters/exporterensightgold.hpp>
 #endif
 
-#ifdef FEELPP_HAS_VTK
+#if defined(FEELPP_EXPORTER_VTK_ENABLED) && defined(FEELPP_HAS_VTK)
 #include <feel/feelfilters/exporterVTK.hpp>
 #endif
 
@@ -166,7 +166,7 @@ Exporter<MeshType, N>::New( std::string const& exportername, std::string prefix,
     else if ( N == 1 && ( exportername == "hdf5" ))
         exporter = new Exporterhdf5<MeshType, N> ( worldComm ) ;
 #endif
-#if defined(FEELPP_HAS_VTK)
+#if defined(FEELPP_EXPORTER_VTK_ENABLED) && defined(FEELPP_HAS_VTK)
     else if ( N == 1 && ( exportername == "vtk"  ) )
         exporter = new ExporterVTK<MeshType, N>( worldComm );
 #endif
@@ -204,7 +204,7 @@ Exporter<MeshType, N>::New( po::variables_map const& vm, std::string prefix, Wor
     else if ( N == 1 && ( estr == "hdf5" ) )
         exporter = new Exporterhdf5<MeshType, N> ( vm, prefix, worldComm ) ;
 #endif
-#if defined(FEELPP_HAS_VTK)
+#if defined(FEELPP_EXPORTER_VTK_ENABLED) && defined(FEELPP_HAS_VTK)
     else if ( N == 1 && ( estr == "vtk"  ) )
         exporter = new ExporterVTK<MeshType, N>( vm, prefix, worldComm );
 #endif
