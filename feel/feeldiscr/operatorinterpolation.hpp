@@ -834,6 +834,131 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     auto MlocEvalBasisNEW = Feel::detail::precomputeDomainBasisFunction( this->domainSpace(), this->dualImageSpace(), expr );
     Eigen::MatrixXd IhLoc;
 
+
+    // determine if ghost dofs must used if the active dof in not present from the range
+    std::set<size_type> ghostDofUsedToInterpolate;
+    if ( this->dualImageSpace()->worldComm().localSize() > 0 )
+    {
+        std::map< rank_type, std::vector< boost::tuple< size_type, size_type > > > dataToSend, dataToRecv;
+        // init container used in send/recv
+        for ( rank_type p : this->dualImageSpace()->dof()->neighborSubdomains() )
+        {
+            dataToSend[p].clear();
+            dataToRecv[p].clear();
+        }
+
+        std::vector<std::set<uint16_type> > dof_done( this->dualImageSpace()->nLocalDof(), std::set<uint16_type>() );
+        std::set<size_type> activeDofSharedPresentInRange;
+        auto itListRange = M_listRange.begin();
+        auto const enListRange = M_listRange.end();
+        for ( ; itListRange!=enListRange ; ++itListRange)
+        {
+            for( auto const& theImageEltWrap : *itListRange )
+            {
+                auto const& theImageElt = boost::unwrap_ref(theImageEltWrap);
+                auto idElem = detailsup::idElt( theImageElt,idim_type() );
+                auto const domains_eid_set = Feel::detail::domainEltIdFromImageEltId( this->domainSpace()->mesh(),this->dualImageSpace()->mesh(),idElem );
+                if ( domains_eid_set.size() == 0 )
+                    continue;
+
+                for ( uint16_type iloc = 0; iloc < nLocalDofInDualImageElt; ++iloc )
+                {
+                    for ( uint16_type comp = 0; comp < image_basis_type::nComponents; ++comp )
+                    {
+                        uint16_type compDofTableImage = (image_basis_type::is_product)? comp : 0;
+                        auto thedofImage = imagedof->localToGlobal( theImageElt, iloc, compDofTableImage );
+                        size_type igp = thedofImage.index();
+
+                        if ( ( image_basis_type::is_product && dof_done[igp].empty() ) ||
+                             ( !image_basis_type::is_product && dof_done[igp].find( comp ) == dof_done[igp].end() ) )
+                        {
+                            if ( imagedof->dofGlobalProcessIsGhost( igp ) )
+                            {
+                                const size_type igc = imagedof->mapGlobalProcessToGlobalCluster()[igp];
+                                const rank_type theproc = imagedof->procOnGlobalCluster( igc );
+                                dataToSend[theproc].push_back( boost::make_tuple(igp,igc) );
+
+                                dof_done[igp].insert( comp );
+                            }
+                            else if ( imagedof->activeDofSharedOnCluster().find( igp ) != imagedof->activeDofSharedOnCluster().end() )
+                            {
+                                activeDofSharedPresentInRange.insert(igp);
+                            }
+                        } // dof_done
+                    } // comp
+                }
+            }
+        }
+
+        int nbRequest=2*this->dualImageSpace()->dof()->neighborSubdomains().size();
+        mpi::request * reqs = new mpi::request[nbRequest];
+        int cptRequest=0;
+
+        for ( rank_type p : this->dualImageSpace()->dof()->neighborSubdomains() )
+        {
+            CHECK( dataToSend.find(p) != dataToSend.end() ) << " no data to send to proc " << p << "\n";
+            reqs[cptRequest] = this->dualImageSpace()->worldComm().localComm().isend( p , 0, dataToSend.find(p)->second );
+            ++cptRequest;
+            reqs[cptRequest] = this->dualImageSpace()->worldComm().localComm().irecv( p , 0, dataToRecv[p] );
+            ++cptRequest;
+        }
+        // wait all requests
+        mpi::wait_all(reqs, reqs + nbRequest);
+
+
+        std::map< size_type, std::set<rank_type> > dataToTreat;
+        for ( auto const& dataR : dataToRecv )
+        {
+            rank_type theproc = dataR.first;
+            for ( auto const& dofInProc : dataR.second )
+                dataToTreat[dofInProc.template get<1>()].insert( theproc );
+        }
+
+        std::map< rank_type, std::vector< size_type > > dataToReSend, dataToReRecv;
+        for ( rank_type p : this->dualImageSpace()->dof()->neighborSubdomains() )
+        {
+            dataToReSend[p].clear();
+            dataToReRecv[p].clear();
+        }
+
+        for ( auto const& dofAsked : dataToTreat )
+        {
+            size_type thedofGC = dofAsked.first;
+            CHECK( imagedof->dofGlobalClusterIsOnProc( thedofGC ) ) << " thedofGC "<< thedofGC << "is not on proc\n";
+            size_type thedofGP = imagedof->mapGlobalClusterToGlobalProcess( thedofGC - imagedof->firstDofGlobalCluster() );
+
+            CHECK ( imagedof->mapGlobalProcessToGlobalCluster( thedofGP ) == thedofGC ) << "error " << imagedof->mapGlobalProcessToGlobalCluster( thedofGP ) << "must be equal to " << thedofGC;
+
+            if ( activeDofSharedPresentInRange.find(thedofGP) == activeDofSharedPresentInRange.end() )
+            {
+                // define one rank to interpolate the dof
+                dataToReSend[ *(dofAsked.second.begin()) ].push_back( thedofGC );
+            }
+
+        }
+
+        cptRequest=0;
+        for ( rank_type p : this->dualImageSpace()->dof()->neighborSubdomains() )
+        {
+            CHECK( dataToReSend.find(p) != dataToReSend.end() ) << " no data to send to proc " << p << "\n";
+            reqs[cptRequest] = this->dualImageSpace()->worldComm().localComm().isend( p , 0, dataToReSend.find(p)->second );
+            ++cptRequest;
+            reqs[cptRequest] = this->dualImageSpace()->worldComm().localComm().irecv( p , 0, dataToReRecv[p] );
+            ++cptRequest;
+        }
+        // wait all requests
+        mpi::wait_all(reqs, reqs + nbRequest);
+        delete [] reqs;
+
+        for ( rank_type p : this->dualImageSpace()->dof()->neighborSubdomains() )
+        {
+            for ( size_type k : dataToReRecv[p] )
+                ghostDofUsedToInterpolate.insert( k );
+        }
+
+    } // if parallel
+
+
     // we perfom 2 pass : first build matrix graph, second assembly matrix
     enum OpToApplyEnum { BUILD_GRAPH, ASSEMBLY_MATRIX };
     std::vector<OpToApplyEnum> opToApplySet = { OpToApplyEnum::BUILD_GRAPH, OpToApplyEnum::ASSEMBLY_MATRIX };
@@ -874,13 +999,16 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                         uint16_type compDofTableImage = (image_basis_type::is_product)? comp : 0;
                         auto thedofImage = imagedof->localToGlobal( theImageElt, iloc, compDofTableImage );
                         size_type i = thedofImage.index();
-                        if ( imagedof->dofGlobalProcessIsGhost( i ) ) continue;
 
                         if ( ( image_basis_type::is_product && dof_done[i].empty() ) ||
                              ( !image_basis_type::is_product && dof_done[i].find( comp ) == dof_done[i].end() ) )
                         {
                             const auto ig1 = imagedof->mapGlobalProcessToGlobalCluster()[i];
                             const auto theproc = imagedof->procOnGlobalCluster( ig1 );
+
+                            if ( imagedof->dofGlobalProcessIsGhost( i ) &&
+                                 ( ghostDofUsedToInterpolate.find(ig1) == ghostDofUsedToInterpolate.end() ) ) continue;
+
 
                             if ( opToApply == OpToApplyEnum::BUILD_GRAPH )
                             {
