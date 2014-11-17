@@ -851,10 +851,15 @@ endif()
 # VTK
 #
 OPTION( FEELPP_ENABLE_VTK "Enable the VTK library" ON )
+OPTION( FEELPP_ENABLE_VTK_EXPORTER "Enable the VTK exporter" OFF )
 if ( FEELPP_ENABLE_VTK )
     FIND_PACKAGE(VTK)
     if( VTK_FOUND )
         set(FEELPP_HAS_VTK 1)
+
+        if ( FEELPP_ENABLE_VTK_EXPORTER )
+            set(FEELPP_VTK_EXPORTER_ENABLED 1)
+        endif()
 
         set(VTK_HAS_PARALLEL 0)
         # Prior to VTK version 6, VTK_KITS was used
