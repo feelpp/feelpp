@@ -76,7 +76,7 @@ run()
     auto u = Xh->element();
     auto v = Yh->element();
 
-    auto backend = backend_type::build( Environment::vm(), "test_matching" );
+    auto backend = backend_type::build( soption( _name="backend" ), "test_matching" );
     auto M = backend->newMatrix( _test=Xh, _trial=Yh );
     form2( _trial=Xh, _test=Yh, _matrix=M ) = integrate( _range=elements(mesh_2), _expr=idt(u)*id(v) );
 

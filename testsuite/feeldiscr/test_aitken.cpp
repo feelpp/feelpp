@@ -175,7 +175,7 @@ public:
     TestAitken( )
         :
         super(  ),
-        M_backend( backend_type::build( this->vm() ) ),
+        M_backend( backend_type::build( soption( _name="backend" ) ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() ),
         timers()
@@ -278,7 +278,7 @@ TestAitken<Dim>::localProblem( element_type& u,
         }
     }
 
-    backend_type::build()->solve( _matrix=A, _solution=u, _rhs=B );
+    backend_type::build( soption( _name="backend" ) )->solve( _matrix=A, _solution=u, _rhs=B );
 
 }
 
