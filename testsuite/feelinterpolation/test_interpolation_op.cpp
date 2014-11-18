@@ -132,7 +132,7 @@ struct test_interpolation_op
     backend_ptrtype backend( backend_type::build( BACKEND_GMM ) );
 #endif
 #else
-    backend_ptrtype backend( backend_type::build( ) );
+    backend_ptrtype backend( backend_type::build( soption( _name="backend" ) ) );
 #endif
     BOOST_MESSAGE(  "[test_interpolation_op] backend allocated\n" );
 
