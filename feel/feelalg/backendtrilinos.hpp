@@ -112,6 +112,7 @@ public:
         M_prec_type( "" ),
         M_Prec()
     {
+        this->M_backend = BackendType::BACKEND_TRILINOS;
         set_maxiter( 1000 );
         set_tol( 1e-10 );
     }
