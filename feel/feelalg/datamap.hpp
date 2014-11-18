@@ -325,7 +325,7 @@ public:
         return this->dofGlobalClusterIsOnProc( globDof, this->worldComm().globalRank() );
     }
 
-    bool dofGlobalClusterIsOnProc( size_type globDof, int proc ) const
+    bool dofGlobalClusterIsOnProc( size_type globDof, rank_type proc ) const
     {
         return ( ( this->nLocalDofWithoutGhost(proc) > 0 ) && ( globDof <= M_last_df_globalcluster[proc] ) && ( globDof >= M_first_df_globalcluster[proc] ) );
     }
