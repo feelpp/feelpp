@@ -107,7 +107,7 @@ ExporterVTK<MeshType,N>::init()
 }
 
 template<typename MeshType, int N>
-int ExporterVTK<MeshType,N>::saveTimePVD(std::string xmlFilename, double timestep, std::string dataFilename) const
+int ExporterVTK<MeshType,N>::writeTimePVD(std::string xmlFilename, double timestep, std::string dataFilename) const
 {
 
     /*
@@ -205,6 +205,92 @@ int ExporterVTK<MeshType,N>::saveTimePVD(std::string xmlFilename, double timeste
 
 template<typename MeshType, int N>
 void
+ExporterVTK<MeshType,N>::write( typename timeset_type::step_ptrtype step, std::string filename, vtkSmartPointer<vtkout_type> out ) const
+{
+    /*
+       out->GetOutputInformation(0).Set(vtk.vtkStreamingDemandDrivenPipeline.UPDATE_NUMBER_OF_PIECES(), this->worldComm().globalSize());
+       out->GetOutputInformation(0).Set(vtk.vtkStreamingDemandDrivenPipeline.UPDATE_PIECE_NUMBER(), this->worldComm().rank());
+       */
+
+    /* InitializeExternal is only supported from 5.10+, */
+    /* but lets aim for the latest major version 6 to reduce the complexity */
+#if VTK_MAJOR_VERSION >= 6 && defined(VTK_HAS_PARALLEL)
+    vtkSmartPointer<vtkMultiBlockDataSet> mbds = vtkSmartPointer<vtkMultiBlockDataSet>::New();
+    mbds->SetNumberOfBlocks( this->worldComm().globalSize() );
+
+    std::ostringstream oss;
+
+    for( unsigned int block = 0 ; block < mbds->GetNumberOfBlocks(); ++block )
+    {
+        if( block == this->worldComm().rank() )
+        {
+            oss.str("");
+            oss << "P" << this->worldComm().rank();
+            mbds->SetBlock( block, out );
+            mbds->GetMetaData(block)->Set(vtkCompositeDataSet::NAME(), oss.str().c_str() );
+            mbds->GetMetaData(block)->Set(vtkCompositeDataSet::DATA_TIME_STEP(), step->index());
+        } // END if we own the block
+        else
+        {
+            mbds->SetBlock( block, NULL );
+        } // END else we don't own the block
+    } // END for all blocks
+
+    /* Build vtk objects while reusing the current mpi communicator */
+    /* before version 5.10, we cannot initialize a MPIController with an external MPI_Comm */
+    MPI_Comm comm = this->worldComm().comm();
+
+    vtkMPICommunicatorOpaqueComm * mpicoc = new vtkMPICommunicatorOpaqueComm(&comm);
+    vtkSmartPointer<vtkMPICommunicator> mpicomm = vtkSmartPointer<vtkMPICommunicator>::New();
+        mpicomm->InitializeExternal(mpicoc);
+    vtkSmartPointer<vtkMPIController> mpictrl = vtkSmartPointer<vtkMPIController>::New();
+        mpictrl->SetCommunicator(mpicomm);
+
+    vtkSmartPointer<vtkXMLPMultiBlockDataWriter> xmlpw = vtkSmartPointer<vtkXMLPMultiBlockDataWriter>::New();
+        xmlpw->SetController(mpictrl);
+        xmlpw->SetTimeStep(step->index());
+        xmlpw->SetFileName(filename.c_str());
+        xmlpw->SetInputData(mbds);
+        xmlpw->Update();
+
+    //delete mpicomm;
+#else
+    vtkSmartPointer<vtkMultiBlockDataSet> mbds = vtkSmartPointer<vtkMultiBlockDataSet>::New();
+    mbds->SetNumberOfBlocks(1);
+
+    int blockID = 0;
+        mbds->SetBlock(blockID, out);
+        mbds->GetMetaData(blockID)->Set(vtkCompositeDataSet::NAME(), "marker 1");
+    // not supported in version 5.x
+    //mbds->GetMetaData(blockID)->Set(vtkDataObject::DATA_TIME_STEP(), step->index());
+
+    vtkXMLMultiBlockDataWriter* mbw = vtkXMLMultiBlockDataWriter::New();
+        mbw->SetTimeStep(step->index());
+        mbw->SetFileName(filename.c_str());
+#if VTK_MAJOR_VERSION <= 5
+        mbw->SetInput(mbds);
+#else
+        mbw->SetInputData(mbds);
+#endif
+        mbw->Write();
+#endif
+
+    /* basic exporter code */
+#if 0
+    vtkSmartPointer<vtkoutwriter_type> dw = vtkSmartPointer<vtkoutwriter_type>::New();
+#if VTK_MAJOR_VERSION <= 5
+        dw->SetInput(out);
+#else
+        dw->SetInputData(out);
+#endif
+        dw->SetFileName(filename.c_str());
+        dw->Update();
+#endif
+
+}
+
+template<typename MeshType, int N>
+void
 ExporterVTK<MeshType,N>::save() const
 {
     std::ostringstream oss;
@@ -232,10 +318,9 @@ ExporterVTK<MeshType,N>::save() const
         typename timeset_type::step_const_iterator __end = __ts->endStep();
         __it = boost::prior( __end );
 
-        std::ostringstream fname;
-
         while ( __it != __end )
         {
+            std::ostringstream fname;
             typename timeset_type::step_ptrtype __step = *__it;
 
             if ( __step->isInMemory() )
@@ -244,119 +329,39 @@ ExporterVTK<MeshType,N>::save() const
                 vtkSmartPointer<vtkout_type> out = vtkSmartPointer<vtkout_type>::New();
 
                 /* write data into vtk object */
-                saveMesh(__step, out);
-                saveNodeData( __step, __step->beginNodalScalar(), __step->endNodalScalar(), out );
-                saveNodeData( __step, __step->beginNodalVector(), __step->endNodalVector(), out );
-                saveNodeData( __step, __step->beginNodalTensor2(), __step->endNodalTensor2(), out );
-                saveElementData( __step, __step->beginElementScalar(), __step->endElementScalar(), out );
-                saveElementData( __step, __step->beginElementVector(), __step->endElementVector(), out );
-                saveElementData( __step, __step->beginElementTensor2(), __step->endElementTensor2(), out );
+                this->saveMesh(__step, out);
+                this->saveNodeData( __step, __step->beginNodalScalar(), __step->endNodalScalar(), out );
+                this->saveNodeData( __step, __step->beginNodalVector(), __step->endNodalVector(), out );
+                this->saveNodeData( __step, __step->beginNodalTensor2(), __step->endNodalTensor2(), out );
+                this->saveElementData( __step, __step->beginElementScalar(), __step->endElementScalar(), out );
+                this->saveElementData( __step, __step->beginElementVector(), __step->endElementVector(), out );
+                this->saveElementData( __step, __step->beginElementTensor2(), __step->endElementTensor2(), out );
 
-                /* Build file name */
-#if 0
-                fname   << __ts->name()  //<< this->prefix() //this->path()
-                    << "-" << __step->index()
-                    << "-" << this->worldComm().size() << "_" << this->worldComm().rank()
-                    << ".vtk";
-#endif
-
-                /*
-                out->GetOutputInformation(0).Set(vtk.vtkStreamingDemandDrivenPipeline.UPDATE_NUMBER_OF_PIECES(), this->worldComm().globalSize());
-                out->GetOutputInformation(0).Set(vtk.vtkStreamingDemandDrivenPipeline.UPDATE_PIECE_NUMBER(), this->worldComm().rank());
-                */
-
-/* InitializeExternal is only supported from 5.10+, */
-/* but lets aim for the latest major version 6 to reduce the complexity */
-#if VTK_MAJOR_VERSION >= 6 && defined(VTK_HAS_PARALLEL)
-                vtkSmartPointer<vtkMultiBlockDataSet> mbds = vtkSmartPointer<vtkMultiBlockDataSet>::New();
-                mbds->SetNumberOfBlocks( this->worldComm().globalSize() );
-
-                std::ostringstream oss;
-
-                for( unsigned int block = 0 ; block < mbds->GetNumberOfBlocks(); ++block )
-                {
-                    if( block == this->worldComm().rank() )
-                    {
-                        oss.str("");
-                        oss << "P" << this->worldComm().rank();
-                        mbds->SetBlock( block, out );
-                        mbds->GetMetaData(block)->Set(vtkCompositeDataSet::NAME(), oss.str().c_str() );
-                        mbds->GetMetaData(block)->Set(vtkCompositeDataSet::DATA_TIME_STEP(), __step->index());
-                    } // END if we own the block
-                    else
-                    {
-                        mbds->SetBlock( block, NULL );
-                    } // END else we don't own the block
-                } // END for all blocks
-
-                /* Build vtk objects while reusing the current mpi communicator */
-                /* before version 5.10, we cannot initialize a MPIController with an external MPI_Comm */
-                MPI_Comm comm = this->worldComm().comm();
-
-                vtkMPICommunicatorOpaqueComm * mpicoc = new vtkMPICommunicatorOpaqueComm(&comm);
-                vtkSmartPointer<vtkMPICommunicator> mpicomm = vtkSmartPointer<vtkMPICommunicator>::New();
-                    mpicomm->InitializeExternal(mpicoc);
-                vtkSmartPointer<vtkMPIController> mpictrl = vtkSmartPointer<vtkMPIController>::New();
-                    mpictrl->SetCommunicator(mpicomm);
-
+    /* InitializeExternal is only supported from 5.10+, */
+    /* but lets aim for the latest major version 6 to reduce the complexity */
                 fname.str("");
+#if VTK_MAJOR_VERSION >= 6 && defined(VTK_HAS_PARALLEL)
                 fname  << __ts->name()  //<< this->prefix() //this->path()
                     << "-" << __step->index()
                     << ".vtm";
-
-                vtkSmartPointer<vtkXMLPMultiBlockDataWriter> xmlpw = vtkSmartPointer<vtkXMLPMultiBlockDataWriter>::New();
-                    xmlpw->SetController(mpictrl);
-                    xmlpw->SetTimeStep(__step->index());
-                    xmlpw->SetFileName(fname.str().c_str());
-                    xmlpw->SetInputData(mbds);
-                    xmlpw->Update();
-
-                //delete mpicomm;
 #else
                 fname   << __ts->name()  //<< this->prefix() //this->path()
                     << "-" << __step->index()
                     << "-" << this->worldComm().size() << "_" << this->worldComm().rank()
                     << ".vtm";
-
-                vtkSmartPointer<vtkMultiBlockDataSet> mbds = vtkSmartPointer<vtkMultiBlockDataSet>::New();
-                    mbds->SetNumberOfBlocks(1);
-
-                    int blockID = 0;
-                    mbds->SetBlock(blockID, out);
-                    mbds->GetMetaData(blockID)->Set(vtkCompositeDataSet::NAME(), "marker 1");
-                    // not supported in version 5.x
-                    //mbds->GetMetaData(blockID)->Set(vtkDataObject::DATA_TIME_STEP(), __step->index());
-
-                vtkXMLMultiBlockDataWriter* mbw = vtkXMLMultiBlockDataWriter::New();
-                    mbw->SetTimeStep(__step->index());
-                    mbw->SetFileName(fname.str().c_str());
-#if VTK_MAJOR_VERSION <= 5
-                    mbw->SetInput(mbds);
-#else
-                    mbw->SetInputData(mbds);
-#endif
-                    mbw->Write();
 #endif
 
-/* basic exporter code */
-#if 0
-                vtkSmartPointer<vtkoutwriter_type> dw = vtkSmartPointer<vtkoutwriter_type>::New();
-#if VTK_MAJOR_VERSION <= 5
-                dw->SetInput(out);
-#else
-                dw->SetInputData(out);
-#endif
-                dw->SetFileName(fname.str().c_str());
-                dw->Update();
-#endif
+                /* write VTK files */
+                this->write(__step, fname.str(), out);
 
-                this->saveTimePVD(__ts->name() + ".pvd", (*__it)->time(), fname.str());
+                /* write additional file for handling time steps */
+                this->writeTimePVD(__ts->name() + ".pvd", (*__it)->time(), fname.str());
             }
-
             __it++;
-        }
 
+        }
         __ts_it++;
+
     }
 
 
