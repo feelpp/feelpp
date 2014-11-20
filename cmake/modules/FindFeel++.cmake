@@ -347,6 +347,8 @@ FIND_PACKAGE(Boost ${BOOST_MIN_VERSION} COMPONENTS python )
 if(Boost_PYTHON_FOUND)
     set(FEELPP_HAS_BOOST_PYTHON 1)
     set(FEELPP_LIBRARIES ${Boost_PYTHON_LIBRARY} ${FEELPP_LIBRARIES})
+else()
+	message(STATUS "[feelpp] Boost PYTHON not found")
 endif()
 
 # Then we try to find rest of the Boost components
