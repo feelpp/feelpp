@@ -88,6 +88,9 @@ public:
     //! copy a worldcomm
     WorldComm& operator=( WorldComm const& wc );
 
+    //! comparison of worldcomm
+    bool operator==( WorldComm const& wc );
+
     static self_ptrtype New() { return self_ptrtype(new self_type); }
     static self_ptrtype New( super const& s ) { return self_ptrtype(new self_type( s )); }
     void init( int color = 0, bool colormap = false );
