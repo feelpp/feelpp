@@ -364,7 +364,7 @@ WorldComm::operator=( WorldComm const& wc )
 
 
 bool
-WorldComm::operator==( WorldComm const& wc )
+WorldComm::operator==( WorldComm const& wc ) const
 {
     if ( this->localSize() != wc.localSize() || this->globalSize() != wc.globalSize() )
         return false;
