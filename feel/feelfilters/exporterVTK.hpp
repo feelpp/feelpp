@@ -68,8 +68,9 @@
 #if defined(FEELPP_VTK_INSITU_ENABLED)
 #include <vtkCPProcessor.h>
 #include <vtkCPPipeline.h>
+#include <vtkCPPythonScriptPipeline.h>
 #include <vtkCPDataDescription.h>
-
+#include <vtkCPInputDataDescription.h>
 #endif
 
 #endif
@@ -269,6 +270,15 @@ private:
 
     mutable VTKCellType M_face_type;
     mutable VTKCellType M_element_type;
+
+    /* class members for in-situ visualization */
+#if VTK_MAJOR_VERSION >= 6 && defined(VTK_HAS_PARALLEL)
+    mutable vtkMPICommunicatorOpaqueComm * opaqueComm;
+#if defined(FEELPP_VTK_INSITU_ENABLED)
+    mutable vtkSmartPointer<vtkCPProcessor> inSituProcessor;
+#endif
+#endif
+
 };
 
 } // Feel
