@@ -317,6 +317,12 @@ PreconditionerBTPCD<space_type>::applyInverse ( const vector_type& X, vector_typ
 {
     U = X;
     U.close();
+#if 0
+    Y.setZero();
+    Y.add( 1., X );
+    Y.close();
+    return 1;
+#endif
 
     LOG(INFO) << "Create velocity/pressure component...\n";
     *M_vin = U.template element<0>();
@@ -333,6 +339,7 @@ PreconditionerBTPCD<space_type>::applyInverse ( const vector_type& X, vector_typ
     else
     {
         *M_vout = *M_vin;
+        M_vout->close();
     }
     LOG(INFO) << "pressure/velocity block : apply divergence...\n";
     divOp->apply( *M_vout, *M_pout );
@@ -382,7 +389,7 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename meta::btpcd<typename parameter::valu
                                    )
                                  ( optional
                                    ( prefix, *( boost::is_convertible<mpl::_,std::string> ), "" )
-                                   ( nu, *( double ), 1. )
+                                   ( nu,  *(double), doption("mu") )
                                    ( alpha, *( double ), 0. )
                                    )
                                  )
