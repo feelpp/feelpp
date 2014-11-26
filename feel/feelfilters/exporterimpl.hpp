@@ -43,6 +43,10 @@
 #include <feel/feelfilters/exporterensightgold.hpp>
 #endif
 
+#if defined(FEELPP_VTK_EXPORTER_ENABLED) && defined(FEELPP_HAS_VTK)
+#include <feel/feelfilters/exporterVTK.hpp>
+#endif
+
 #if defined(FEELPP_HAS_HDF5) && defined(FEELPP_HAS_MPIIO)
 #include <feel/feelfilters/exporterhdf5.hpp>
 #endif
@@ -162,6 +166,10 @@ Exporter<MeshType, N>::New( std::string const& exportername, std::string prefix,
     else if ( N == 1 && ( exportername == "hdf5" ))
         exporter = new Exporterhdf5<MeshType, N> ( worldComm ) ;
 #endif
+#if defined(FEELPP_VTK_EXPORTER_ENABLED) && defined(FEELPP_HAS_VTK)
+    else if ( N == 1 && ( exportername == "vtk"  ) )
+        exporter = new ExporterVTK<MeshType, N>( worldComm );
+#endif
     else if ( N > 1 || ( exportername == "gmsh" ) )
         exporter = new ExporterGmsh<MeshType,N>( worldComm );
     else // fallback
@@ -195,6 +203,10 @@ Exporter<MeshType, N>::New( po::variables_map const& vm, std::string prefix, Wor
 #if defined(FEELPP_HAS_HDF5) && defined(FEELPP_HAS_MPIIO)
     else if ( N == 1 && ( estr == "hdf5" ) )
         exporter = new Exporterhdf5<MeshType, N> ( vm, prefix, worldComm ) ;
+#endif
+#if defined(FEELPP_VTK_EXPORTER_ENABLED) && defined(FEELPP_HAS_VTK)
+    else if ( N == 1 && ( estr == "vtk"  ) )
+        exporter = new ExporterVTK<MeshType, N>( vm, prefix, worldComm );
 #endif
     else if ( N > 1 || estr == "gmsh" )
         exporter = new ExporterGmsh<MeshType,N>( vm, prefix, worldComm );

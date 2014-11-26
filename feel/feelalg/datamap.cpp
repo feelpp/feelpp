@@ -148,6 +148,7 @@ DataMap::DataMap( DataMap const & dm )
     M_mapGlobalProcessToGlobalCluster( dm.M_mapGlobalProcessToGlobalCluster ),
     M_mapGlobalClusterToGlobalProcess( dm.M_mapGlobalClusterToGlobalProcess ),
     M_neighbor_processors( dm.M_neighbor_processors ),
+    M_activeDofSharedOnCluster( dm.M_activeDofSharedOnCluster ),
     M_worldComm( dm.M_worldComm ),
     M_indexSplit()
 {}
@@ -172,6 +173,7 @@ DataMap::operator=( DataMap const& dm )
         M_mapGlobalProcessToGlobalCluster = dm.M_mapGlobalProcessToGlobalCluster;
         M_mapGlobalClusterToGlobalProcess = dm.M_mapGlobalClusterToGlobalProcess;
         M_neighbor_processors = dm.M_neighbor_processors;
+        M_activeDofSharedOnCluster = dm.M_activeDofSharedOnCluster;
         M_indexSplit = dm.M_indexSplit;
     }
 

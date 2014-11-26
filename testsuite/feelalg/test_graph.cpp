@@ -122,7 +122,7 @@ void run( Application_ptrtype & theApp )
     //--------------------------------------------------------------------------------------------------//
     // matrix
     typedef Backend<double> backend_type;
-    auto backend = backend_type::build( theApp->vm(),"graph" );
+    auto backend = backend_type::build( soption( _name="backend" ),"graph" );
     auto blockPattern = vf::Blocks<3,3,size_type>() << size_type( Pattern::COUPLED ) << size_type( Pattern::ZERO ) << size_type( Pattern::COUPLED )
                         << size_type( Pattern::ZERO ) << size_type( Pattern::COUPLED ) << size_type( Pattern::COUPLED )
                         << size_type( Pattern::COUPLED ) << size_type( Pattern::COUPLED ) << size_type( Pattern::ZERO );
