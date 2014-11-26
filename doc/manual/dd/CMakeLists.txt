@@ -42,3 +42,7 @@ feelpp_add_application( doc_multi_levels SRCS multi_levels.cpp LABELS doc NO_MPI
 # Non-conforming domain decomposition methods
 feelpp_add_application( doc_mortar SRCS mortar.cpp LABELS doc  NO_MPI_TEST )
 feelpp_add_application( doc_threefields SRCS threefields.cpp TEST -pc_type ilu -ksp_monitor  LABELS doc NO_MPI_TEST )
+
+if(FEELPP_HAS_HPDDM)
+  feelpp_add_application(doc_geneo SRCS geneo.cpp CFG geneo.cfg LABELS doc)
+endif()

@@ -623,6 +623,10 @@ exporter_options( std::string const& prefix )
 #if defined(FEELPP_HAS_HDF5) && defined(FEELPP_HAS_MPIIO)
         ( prefixvm( prefix,"exporter.hdf5.merge" ).c_str(), Feel::po::value<bool>()->default_value( true ), "Merge exported data from different into a single file (reduces the number of output files)" )
 #endif
+#if defined(FEELPP_HAS_VTK) && defined(FEELPP_VTK_INSITU_ENABLED)
+        ( prefixvm( prefix,"exporter.vtk.insitu.enable" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Enable In-situ visualization with VTK exporter (Data won't be written to disk any longer)." )
+        ( prefixvm( prefix,"exporter.vtk.insitu.pyscript" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "Specify a python user script for visualization." )
+#endif
 
         ;
     return _options;

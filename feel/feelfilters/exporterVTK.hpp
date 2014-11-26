@@ -64,6 +64,15 @@
 #include <vtkMPICommunicator.h>
 #include <vtkXMLPMultiBlockDataWriter.h>
 #include <vtkXMLPUnstructuredGridWriter.h>
+
+#if defined(FEELPP_VTK_INSITU_ENABLED)
+#include <vtkCPProcessor.h>
+#include <vtkCPPipeline.h>
+#include <vtkCPPythonScriptPipeline.h>
+#include <vtkCPDataDescription.h>
+#include <vtkCPInputDataDescription.h>
+#endif
+
 #endif
 
 #include <vtkInformation.h>
@@ -242,12 +251,18 @@ public:
     void saveNodeData( typename timeset_type::step_ptrtype step, Iterator __var, Iterator en, vtkSmartPointer<vtkout_type> out ) const;
     template<typename Iterator>
     void saveElementData( typename timeset_type::step_ptrtype step, Iterator __var, Iterator en, vtkSmartPointer<vtkout_type> out ) const;
+
     /**
      * As we process the timesteps one by one, we need a way to record each new timestep.
      * To do so, we use a pvd file (Paraview format) that allows use to specify new timesteps
      * using xml syntax.
      */
-    int saveTimePVD(std::string xmlFilename, double timestep, std::string dataFilename) const;
+    int writeTimePVD(std::string xmlFilename, double timestep, std::string dataFilename) const;
+
+    /**
+     * Actual write of the dataset into a file 
+     */
+    void write( typename timeset_type::step_ptrtype step, std::string filename, vtkSmartPointer<vtkout_type> out) const;
 
     //@}
 
@@ -255,6 +270,15 @@ private:
 
     mutable VTKCellType M_face_type;
     mutable VTKCellType M_element_type;
+
+    /* class members for in-situ visualization */
+#if VTK_MAJOR_VERSION >= 6 && defined(VTK_HAS_PARALLEL)
+    mutable vtkMPICommunicatorOpaqueComm * opaqueComm;
+#if defined(FEELPP_VTK_INSITU_ENABLED)
+    mutable vtkSmartPointer<vtkCPProcessor> inSituProcessor;
+#endif
+#endif
+
 };
 
 } // Feel
