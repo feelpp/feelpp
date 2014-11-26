@@ -40,7 +40,7 @@ namespace Feel
 		static const uint16_type rank = 0;
 		static const uint16_type imorder = 1;
 		static const bool imIsPoly = true;
-		double operator()( uint16_type, uint16_type, ublas::vector<double> const& x, ublas::vector<double> const& n ) const
+		double operator()( uint16_type a, uint16_type b, ublas::vector<double> const& x, ublas::vector<double> const& n ) const
 		{
 			return x[val];
 		}
@@ -52,12 +52,12 @@ namespace Feel
 int main(int argc, char**argv )
 {
     Environment env( _argc=argc, _argv=argv,
-                     _about=about(_name="myexpression",
+                     _about=about(_name="myfunctor",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
 
     //! [mesh]
-    auto mesh = loadMesh(_mesh=new Mesh<Simplex<1>>);
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
     //! [mesh]
 
     //! [space]

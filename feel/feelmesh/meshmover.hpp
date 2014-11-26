@@ -204,6 +204,7 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
     uint16_type nptsperelem = gm->points().size2();
     ublas::vector<value_type> val( fe_type::nComponents );
 
+#pragma omp parallel for
     for ( ; it_elt != en_elt; ++it_elt )
     {
         element_type const& curElt = *it_elt;
