@@ -165,6 +165,15 @@
 /* Define to 1 if you have VTK . */
 #cmakedefine FEELPP_HAS_VTK
 
+/* Define to 1 if you have VTK . */
+#cmakedefine FEELPP_VTK_EXPORTER_ENABLED
+
+/* Define to 1 if you the insitu part is enabled for VTK . */
+#cmakedefine FEELPP_VTK_INSITU_ENABLED
+
+/* Define to 1 if you have the parallel component for VTK. */
+#cmakedefine VTK_HAS_PARALLEL
+
 /* The path of installation */
 #cmakedefine INSTALL_PATH
 

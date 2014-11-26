@@ -78,6 +78,8 @@ namespace Feel
     M_prec_type( "" ),
     M_Prec()
 {
+    this->M_backend = BackendType::BACKEND_TRILINOS;
+
     std::string _prefix = prefix;
 
     if ( !_prefix.empty() )
