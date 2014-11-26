@@ -191,7 +191,7 @@ struct test_integration_circle: public Application
     test_integration_circle()
         :
         Application(),
-        M_backend( Backend<double>::build( this->vm() ) ),
+        M_backend( Backend<double>::build( soption( _name="backend" ) ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( "ellipsoid" ),
         mesh()
@@ -327,7 +327,7 @@ struct test_integration_simplex: public Application
     test_integration_simplex()
         :
         Application(),
-        M_backend( Backend<double>::build( this->vm() ) ),
+        M_backend( Backend<double>::build( soption( _name="backend" ) ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( "simplex" ),
         mesh()
@@ -477,7 +477,7 @@ struct test_integration_domain: public Application
     test_integration_domain()
         :
         Application(),
-        M_backend( Backend<double>::build( this->vm() ) ),
+        M_backend( Backend<double>::build( soption( _name="backend" ) ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( "hypercube" ),
         mesh()
@@ -601,7 +601,7 @@ struct test_integration_boundary: public Application
     test_integration_boundary()
         :
         Application(),
-        M_backend( Backend<double>::build( this->vm() ) ),
+        M_backend( Backend<double>::build( soption( _name="backend" ) ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( "hypercube" ),
         mesh()
@@ -689,7 +689,7 @@ struct test_integration_functions: public Application
     test_integration_functions()
         :
         Application(),
-        M_backend( Backend<double>::build( this->vm() ) ),
+        M_backend( Backend<double>::build( soption( _name="backend" ) ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( "hypercube" ),
         mesh()
@@ -840,7 +840,7 @@ struct test_integration_vectorial_functions: public Application
     test_integration_vectorial_functions()
         :
         Application(),
-        M_backend( Backend<double>::build( this->vm() ) ),
+        M_backend( Backend<double>::build( soption( _name="backend" ) ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( "hypercube" ),
         mesh()
@@ -1010,7 +1010,7 @@ struct test_integration_composite_functions: public Application
     test_integration_composite_functions()
         :
         Application(),
-        M_backend( Backend<double>::build( this->vm() ) ),
+        M_backend( Backend<double>::build( soption( _name="backend" ) ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( "hypercube" ),
         mesh()

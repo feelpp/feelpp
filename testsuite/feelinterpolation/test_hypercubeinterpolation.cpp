@@ -81,7 +81,7 @@ public:
     Test()
         :
         super(),
-        backend( backend_type::build( Environment::vm() ) )
+        backend( backend_type::build( soption( _name="backend" ) ) )
     {}
 
     void run();

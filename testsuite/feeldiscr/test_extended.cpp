@@ -36,7 +36,7 @@ int main(int argc, char**argv )
     auto Xh_F = space_type_F::New( mesh,_extended_doftable=ext_doft );
 
     // Matrix creation with extended pattern
-    backend_ptrtype backend( backend_type::build() );
+    backend_ptrtype backend( backend_type::build( soption( _name="backend" ) ) );
     auto blockStruct = BlocksStencilPattern(3,3)
         << size_type(Pattern::EXTENDED) << size_type(Pattern::COUPLED) << size_type(Pattern::ZERO) // velocity
         << size_type(Pattern::COUPLED)  << size_type(Pattern::COUPLED) << size_type(Pattern::COUPLED) // pressure

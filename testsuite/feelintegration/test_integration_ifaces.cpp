@@ -76,7 +76,7 @@ struct test_integration_internal_faces_v: public Application
     test_integration_internal_faces_v()
         :
         Application(),
-        backend( Backend<double>::build( this->vm() ) ),
+        backend( Backend<double>::build( soption( _name="backend" ) ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() ),
         mesh()
@@ -205,7 +205,7 @@ struct test_integration_internal_faces_lf : public Application
     test_integration_internal_faces_lf()
         :
         Application(),
-        backend( Backend<double>::build( this->vm() ) ),
+        backend( Backend<double>::build( soption( _name="backend" ) ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() ),
         mesh()
