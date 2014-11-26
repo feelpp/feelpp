@@ -53,12 +53,15 @@ int main(int argc, char**argv )
 
 
     auto g = expr<2,1>( soption(_name="functions.g") );
-    auto Vh = THch<1>( mesh );
+    auto Vh = THch<2>( mesh );
     auto U = Vh->element();
+    auto Un = Vh->element();
     auto V = Vh->element();
     auto u = U.element<0>();
+    auto un = Un.element<0>();
     auto v = V.element<0>(g,"poiseuille");
     auto p = U.element<1>();
+    auto pn = Un.element<1>();
     auto q = V.element<1>();
 
     auto deft = gradt( u );
@@ -66,35 +69,82 @@ int main(int argc, char**argv )
     double mu = doption(_name="mu");
 
     auto l = form1( _test=Vh );
+    auto r = form1( _test=Vh );
 
     auto a = form2( _trial=Vh, _test=Vh);
-    a = integrate( _range=elements( mesh ), _expr=mu*inner( deft,def ) );
+    auto at = form2( _trial=Vh, _test=Vh);
+    a = integrate( _range=elements( mesh ), _expr=mu*inner( sym(deft),def ) );
     a +=integrate( _range=elements( mesh ), _expr=-div( v )*idt( p ) + divt( u )*id( q ) );
 
-    a+=on(_range=markedfaces(mesh,"wall"), _rhs=l, _element=u,
-          _expr=zero<2,1>() ) ;
-    a+=on(_range=markedfaces(mesh,"inlet"), _rhs=l, _element=u,
-          _expr=g );
-
-    if ( boption("btpcd") )
-    {
-        std::map<std::string,std::set<flag_type>> bcs;
-        bcs["Dirichlet"].insert(mesh->markerName("inlet"));
-        bcs["Dirichlet"].insert(mesh->markerName("wall"));
-        bcs["Neumann"].insert(mesh->markerName("outlet"));
-        auto a_btpcd = btpcd( _space=Vh, _bc=bcs );
-        a_btpcd->update( zero<2,1>(), g );
-        a.solveb(_rhs=l,_solution=U,_backend=backend(),_prec=a_btpcd );
-
-    }
-    else
-        a.solve(_rhs=l,_solution=U );
-
+    
     auto e = exporter( _mesh=mesh );
-    e->add( "u", u );
-    e->add( "v", v );
-    e->add( "p", p );
+    
+    
+    std::map<std::string,std::set<flag_type>> bcs;
+    bcs["Dirichlet"].insert(mesh->markerName("inlet"));
+    bcs["Dirichlet"].insert(mesh->markerName("wall"));
+    bcs["Neumann"].insert(mesh->markerName("outlet"));
+    auto a_btpcd = btpcd( _space=Vh, _bc=bcs );
+    auto incru = normL2( _range=elements(mesh), _expr=idv(u)-idv(un));
+    auto incrp = normL2( _range=elements(mesh), _expr=idv(p)-idv(pn));
+    int fixedpt_iter = 0;
+    at=a;
+    at+=on(_range=markedfaces(mesh,"wall"), _rhs=l, _element=u,
+           _expr=zero<2,1>() ) ;
+    at+=on(_range=markedfaces(mesh,"inlet"), _rhs=l, _element=u,
+           _expr=g );
+    a.solve(_rhs=l,_solution=U);
+    e->step(1)->add( "u", u );
+    e->step(1)->add( "p", p );
     e->save();
 
+    do 
+    {
+        at = a;
+        at += integrate( _range=elements(mesh),_expr=trans(id(v))*(gradt(u)*idv(u)) );
+        at += integrate( _range=elements(mesh), _expr=trans(id(v))*gradv(u)*idt(u) );
+
+        r = integrate( _range=elements( mesh ), _expr=mu*inner( sym(gradv(u)),def ) );
+        r +=integrate( _range=elements( mesh ), _expr=-div( v )*idv( p ) + divv( u )*id( q ) );
+        r += integrate( _range=elements(mesh),_expr=trans(id(v))*(gradv(u)*idv(u)) );
+        at+=on(_range=markedfaces(mesh,"wall"), _rhs=r, _element=u,
+               _expr=zero<2,1>() ) ;
+        at+=on(_range=markedfaces(mesh,"inlet"), _rhs=r, _element=u,
+               _expr=zero<2,1>() );
+        r.vectorPtr()->scale(-1);
+        if ( Environment::isMasterRank() )
+        {
+            std::cout << "non linear iteration " << fixedpt_iter << " \n";
+        }
+        if ( boption("btpcd") )
+        {
+            a_btpcd->update( idv(u), zero<2,1>() );
+            at.solveb(_rhs=r,_solution=U,_backend=backend(),_prec=a_btpcd );
+        }
+        else
+            at.solveb(_rhs=r,_solution=U,_backend=backend(_rebuild=true) );
+            
+        incru = normL2( _range=elements(mesh), _expr=idv(u)-idv(un));
+        incrp = normL2( _range=elements(mesh), _expr=idv(p)-idv(pn));
+        fixedpt_iter++;
+        if ( Environment::isMasterRank() )
+        {
+            std::cout << "Iteration "  << fixedpt_iter << "\n";
+            std::cout << " . ||u-un|| = " << incru << std::endl;
+            std::cout << " . ||p-pn|| = " << incrp << std::endl;
+        }
+        if  ( fixedpt_iter < 10 )
+        {
+            Un = U;
+            Un.close();
+        }
+        e->step(fixedpt_iter)->add( "u", u );
+        e->step(fixedpt_iter)->add( "p", p );
+        e->save();
+
+    }
+    while ( ( incru > 1e-6 && incrp > 1e-6 ) && ( fixedpt_iter < 10 ) );
+ 
+    
     return 0;
 }
