@@ -54,6 +54,20 @@
 #include <vtkPolyData.h>
 #include <vtkPolyDataWriter.h>
 
+#include <vtkInformation.h>
+#include <vtkVertex.h>
+#include <vtkLine.h>
+#include <vtkPolyLine.h>
+#include <vtkQuadraticTriangle.h>
+#include <vtkQuad.h>
+#include <vtkQuadraticQuad.h>
+#include <vtkTetra.h>
+#include <vtkQuadraticTetra.h>
+#include <vtkHexahedron.h>
+#include <vtkQuadraticHexahedron.h>
+#include <vtkTriangle.h>
+#include <vtkMultiBlockDataSet.h>
+#include <vtkXMLMultiBlockDataWriter.h>
 
 /* Only use MPI when we have vtk 5.8+ */
 /* features initializing MPI using an external context a missing in 5.8- */
@@ -75,20 +89,6 @@
 
 #endif
 
-#include <vtkInformation.h>
-#include <vtkVertex.h>
-#include <vtkLine.h>
-#include <vtkPolyLine.h>
-#include <vtkQuadraticTriangle.h>
-#include <vtkQuad.h>
-#include <vtkQuadraticQuad.h>
-#include <vtkTetra.h>
-#include <vtkQuadraticTetra.h>
-#include <vtkHexahedron.h>
-#include <vtkQuadraticHexahedron.h>
-#include <vtkTriangle.h>
-#include <vtkMultiBlockDataSet.h>
-#include <vtkXMLMultiBlockDataWriter.h>
 
 namespace Feel
 {
@@ -259,10 +259,18 @@ public:
      */
     int writeTimePVD(std::string xmlFilename, double timestep, std::string dataFilename) const;
 
+
+    /**
+     * Build a multi block structure based on the data gathered 
+     * on the different processes.
+     */
+    vtkSmartPointer<vtkMultiBlockDataSet>
+        buildMultiBlockDataSet( typename timeset_type::step_ptrtype step, vtkSmartPointer<vtkout_type> out ) const;
+
     /**
      * Actual write of the dataset into a file 
      */
-    void write( typename timeset_type::step_ptrtype step, std::string filename, vtkSmartPointer<vtkout_type> out) const;
+    void write( typename timeset_type::step_ptrtype step, std::string filename, vtkSmartPointer<vtkMultiBlockDataSet> out) const;
 
     //@}
 
