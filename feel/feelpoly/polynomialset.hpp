@@ -739,6 +739,8 @@ public:
         typedef boost::multi_array<id_type,2> functionvalue_type;
         typedef boost::multi_array<g_type,2> grad_type;
         typedef boost::multi_array<h_type,2> hessian_type;
+        typedef Eigen::Matrix<value_type,nComponents1,1> laplacian_type;
+
         PreCompute() {}
 
 #if 0
@@ -752,7 +754,8 @@ public:
             M_nodes( __pts ),
             M_phi(),
             M_grad(),
-            M_hessian()
+            M_hessian(),
+            M_laplacian()
         {
             init( M_ref_ele, __pts, mpl::int_<rank>() );
         }
@@ -769,7 +772,8 @@ public:
             M_nodes( __pts ),
             M_phi(),
             M_grad(),
-            M_hessian()
+            M_hessian(),
+            M_laplacian()
         {
             init( M_ref_ele, __pts, mpl::int_<rank>() );
         }
@@ -781,7 +785,8 @@ public:
             M_nodes( __pc.M_nodes ),
             M_phi( __pc.M_phi ),
             M_grad( __pc.M_grad ),
-            M_hessian( __pc.M_hessian )
+            M_hessian( __pc.M_hessian ),
+            M_laplacian( __pc.M_laplacian )
         {}
 
         /** */
@@ -798,6 +803,7 @@ public:
                 M_phi = __pc.M_phi;
                 M_grad = __pc.M_grad;
                 M_hessian = __pc.M_hessian;
+                M_laplacian = __pc.M_laplacian;
             }
 
             return *this;
@@ -917,6 +923,18 @@ public:
             return M_hessian[i][q]( c1,c2 );
         }
 
+
+
+        laplacian_type const& laplacian() const
+            {
+                return M_laplacian;
+            }
+
+        value_type laplacian( size_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
+            {
+                return M_laplacian[i][q]( c1,c2 );
+            }
+
         void print()
             {
                 typedef typename grad_type::index index;
@@ -940,6 +958,7 @@ public:
             M_phi.resize( boost::extents[M_ref_ele->nbDof()][__pts.size2()] );
             M_grad.resize( boost::extents[M_ref_ele->nbDof()][__pts.size2()] );
             M_hessian.resize( boost::extents[M_ref_ele->nbDof()][__pts.size2()] );
+            M_laplacian.resize( boost::extents[M_ref_ele->nbDof()][__pts.size2()] );
 
             matrix_type phiv = M_ref_ele->evaluate( __pts );
             ublas::vector<matrix_type> __grad( M_ref_ele->derivate( __pts ) );
@@ -966,6 +985,12 @@ public:
                             M_hessian[i][q]( j,k ) = t;
                             M_hessian[i][q]( k,j ) = t;
                         }
+                for ( index q = 0; q < Q; ++q )
+                    for ( index j = 0; j < nDim; ++j )
+                    {
+                        value_type t = __hessian( nDim*nDim*I*( nDim*j+j )+nDim*nDim*i+nDim*j+j, q );
+                        M_laplacian[i][q]( 0,0 ) += t;
+                    }
             }
 
         }
@@ -1026,6 +1051,7 @@ public:
         functionvalue_type M_phi;
         grad_type M_grad;
         hessian_type M_hessian;
+        laplacian_type M_laplacian;
     }; /** class PreCompute **/
 
     typedef PreCompute precompute_type;
@@ -1122,6 +1148,7 @@ public:
         typedef Eigen::Matrix<value_type,nComponents1,nDim> ref_grad_type;
         typedef Eigen::Matrix<value_type,nComponents1,NDim> grad_type;
         typedef Eigen::Matrix<value_type,NDim,NDim> hess_type;
+        typedef Eigen::Matrix<value_type,nComponents1,1> laplacian_type;
         typedef Eigen::Matrix<value_type,1,1> div_type;
         typedef Eigen::Matrix<value_type,nComponents1,1> dn_type;
         typedef Eigen::Matrix<value_type,3,1> curl_type;
@@ -1387,6 +1414,10 @@ public:
                 if ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value  )
                 {
                     M_hessian.resize( boost::extents[ntdof][M_npoints] );
+                }
+                if ( vm::has_laplacian<context>::value )
+                {
+                    M_laplacian.resize( boost::extents[ntdof][M_npoints] );
                 }
             }
 
@@ -1837,6 +1868,7 @@ public:
         boost::multi_array<div_type,2> M_div;
         boost::multi_array<curl_type,2> M_curl;
         boost::multi_array<hess_type,2> M_hessian;
+        boost::multi_array<id_type,2> M_laplacian;
     };
 
     template<size_type context_v, typename BasisType, typename GeoType, typename ElementType>
