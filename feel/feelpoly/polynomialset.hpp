@@ -736,10 +736,11 @@ public:
         typedef Eigen::Matrix<value_type,nComponents1,1> id_type;
         typedef Eigen::Matrix<value_type,nComponents1,nDim> g_type;
         typedef Eigen::Matrix<value_type,nDim,nDim> h_type;
+        typedef Eigen::Matrix<value_type,nComponents1,1> l_type;
         typedef boost::multi_array<id_type,2> functionvalue_type;
         typedef boost::multi_array<g_type,2> grad_type;
         typedef boost::multi_array<h_type,2> hessian_type;
-        typedef Eigen::Matrix<value_type,nComponents1,1> laplacian_type;
+        typedef boost::multi_array<l_type,2> laplacian_type;
 
         PreCompute() {}
 
