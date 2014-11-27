@@ -64,7 +64,16 @@ ExporterVTK<MeshType,N>::ExporterVTK( ExporterVTK const & __ex )
 {}
 template<typename MeshType, int N>
 ExporterVTK<MeshType,N>::~ExporterVTK()
-{}
+{
+#if VTK_MAJOR_VERSION >= 6 && defined(VTK_HAS_PARALLEL) && defined(FEELPP_VTK_INSITU_ENABLED)
+    /* end up in situ simulation */
+    inSituProcessor->Finalize();
+    //inSituProcessor->Delete();
+
+    /* clean memory */
+    delete opaqueComm;
+#endif
+}
 
 template<typename MeshType, int N>
 void
@@ -102,6 +111,50 @@ ExporterVTK<MeshType,N>::init()
             M_face_type = ( mesh_type::nOrder == 1 )? VTK_QUAD : VTK_QUADRATIC_QUAD;
         }
     }
+
+#if VTK_MAJOR_VERSION >= 6 && defined(VTK_HAS_PARALLEL)
+    /* before version 5.10, we cannot initialize a MPIController with an external MPI_Comm */
+    MPI_Comm comm = this->worldComm().comm();
+    /* initialize the VTK communicator from the current MPI communicator */
+    opaqueComm = new vtkMPICommunicatorOpaqueComm(&comm);
+
+#if defined(FEELPP_VTK_INSITU_ENABLED)
+    /* initialize in-situ visualization if needed */
+    if(boption( _name="exporter.vtk.insitu.enable" ))
+    {
+        if(inSituProcessor == NULL)
+        {
+            inSituProcessor = vtkSmartPointer<vtkCPProcessor>::New();
+            //inSituProcessor->Initialize(*opaqueComm);
+            inSituProcessor->Initialize();
+            inSituProcessor->DebugOn();
+        }
+        else
+        {
+            inSituProcessor->RemoveAllPipelines();
+        }
+
+        /*
+        for(int i=1;i<numScripts;i++)
+        {
+            vtkNew<vtkCPPythonScriptPipeline> pipeline;
+            pipeline->Initialize(scripts[i]);
+            inSituProcessor->AddPipeline(pipeline.GetPointer());
+        } 
+        */
+
+        vtkSmartPointer<vtkCPPythonScriptPipeline> pipeline = vtkSmartPointer<vtkCPPythonScriptPipeline>::New();
+
+        /* specify a user script */
+        std::string pyscript = soption( _name="exporter.vtk.insitu.pyscript" );
+        if(pyscript != "")
+        {
+            pipeline->Initialize(pyscript.c_str());
+            inSituProcessor->AddPipeline(pipeline.GetPointer());
+        }
+    }
+#endif
+#endif
 
     //std::cout << "Faces: " << M_face_type << "; Elements: " << M_element_type << std::endl;
 }
@@ -240,9 +293,8 @@ ExporterVTK<MeshType,N>::write( typename timeset_type::step_ptrtype step, std::s
     /* before version 5.10, we cannot initialize a MPIController with an external MPI_Comm */
     MPI_Comm comm = this->worldComm().comm();
 
-    vtkMPICommunicatorOpaqueComm * mpicoc = new vtkMPICommunicatorOpaqueComm(&comm);
     vtkSmartPointer<vtkMPICommunicator> mpicomm = vtkSmartPointer<vtkMPICommunicator>::New();
-        mpicomm->InitializeExternal(mpicoc);
+        mpicomm->InitializeExternal(opaqueComm);
     vtkSmartPointer<vtkMPIController> mpictrl = vtkSmartPointer<vtkMPIController>::New();
         mpictrl->SetCommunicator(mpicomm);
 
@@ -351,11 +403,32 @@ ExporterVTK<MeshType,N>::save() const
                     << ".vtm";
 #endif
 
-                /* write VTK files */
-                this->write(__step, fname.str(), out);
+#if defined(FEELPP_VTK_INSITU_ENABLED)
+                /* initialize in-situ visualization if needed and if we specified pipelines to handle */
+                if(boption( _name="exporter.vtk.insitu.enable" ) && inSituProcessor->GetNumberOfPipelines() > 0)
+                {
+                    std::cout << "Processing timestep In-Situ " << __step->index() << " " << __step->time() << std::endl;
+                    vtkSmartPointer<vtkCPDataDescription> dataDescription = vtkSmartPointer<vtkCPDataDescription>::New();
+                    dataDescription->AddInput("input");
+                    dataDescription->SetTimeData(__step->index(), __step->time());
 
-                /* write additional file for handling time steps */
-                this->writeTimePVD(__ts->name() + ".pvd", (*__it)->time(), fname.str());
+                    if(inSituProcessor->RequestDataDescription(dataDescription.GetPointer()) != 0)
+                    {
+                        dataDescription->GetInputDescriptionByName("input")->SetGrid(out);
+                        dataDescription->SetForceOutput(true);
+                        std::cout << "CoProcess " << inSituProcessor->CoProcess(dataDescription.GetPointer())<< std::endl;
+                    }
+                }
+                else
+#endif
+                if(1)
+                {
+                    /* write VTK files */
+                    this->write(__step, fname.str(), out);
+
+                    /* write additional file for handling time steps */
+                    this->writeTimePVD(__ts->name() + ".pvd", __step->time(), fname.str());
+                }
             }
             __it++;
 
