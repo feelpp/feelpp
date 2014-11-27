@@ -46,6 +46,8 @@
 #include <HPDDM.hpp>
 #endif
 
+#include "geneo_coefficients.hpp"
+
 namespace Feel
 {
 template<uint16_type Dim, uint16_type Order>
@@ -95,8 +97,10 @@ static inline void generateRBM(unsigned short& nb, double**& ev, boost::shared_p
 }
 template<uint16_type Dim, uint16_type Order>
 static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<double>::vector_ptrtype& f, boost::shared_ptr<Mesh<Simplex<Dim>>>& mesh, boost::shared_ptr<FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order, Scalar>>>>& Vh, typename FunctionSpace<typename Mesh<Simplex<Dim>>::mesh_type, bases<Lagrange<Order, Scalar>>>::element_type& u, typename FunctionSpace<typename Mesh<Simplex<Dim>>::mesh_type, bases<Lagrange<Order, Scalar>>>::element_type& v) {
+    kappa k;
+    k.val = doption("parameters.kappa");
     auto a = form2(_trial = Vh, _test = Vh, _matrix = A);
-    a = integrate(_range = elements(mesh), _expr = gradt(u) * trans(grad(v)));
+    a = integrate(_range = elements(mesh), _expr = idf(k) * gradt(u) * trans(grad(v)));
     auto l = form1(_test = Vh, _vector = f);
     l = integrate(_range = elements(mesh), _expr = id(v));
     if(nelements(markedfaces(mesh, "Dirichlet")) > 0)
@@ -104,12 +108,17 @@ static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<d
 }
 template<uint16_type Order>
 static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<double>::vector_ptrtype& f, boost::shared_ptr<Mesh<Simplex<2>>>& mesh, boost::shared_ptr<FunctionSpace<Mesh<Simplex<2>>, bases<Lagrange<Order, Vectorial>>>>& Vh, typename FunctionSpace<typename Mesh<Simplex<2>>::mesh_type, bases<Lagrange<Order, Vectorial>>>::element_type& u, typename FunctionSpace<typename Mesh<Simplex<2>>::mesh_type, bases<Lagrange<Order, Vectorial>>>::element_type& v) {
-    const double E = 1.0e8;
-    const double nu = 0.4;
+    stripes s;
+    s.first  = doption("parameters.epsilon");
+    s.second = doption("parameters.e");
+    auto E = idf(s);
+    s.first  = doption("parameters.n");
+    s.second = doption("parameters.nu");
+    auto nu = idf(s);
+    auto mu = E / (2 * (1 + nu));
+    auto lambda = E * nu / ((1 + nu) * (1 - 2 * nu));
 
-    const double mu = E / (2 * (1 + nu));
-    const double lambda = E * nu / ((1 + nu) * (1 - 2 * nu));
-    const double density = 1.0e3;
+    const double density = 1.0e+3;
 
     auto a = form2(_trial = Vh, _test = Vh, _matrix = A);
     a = integrate(_range = elements(mesh),
@@ -122,12 +131,17 @@ static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<d
 }
 template<uint16_type Order>
 static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<double>::vector_ptrtype& f, boost::shared_ptr<Mesh<Simplex<3>>>& mesh, boost::shared_ptr<FunctionSpace<Mesh<Simplex<3>>, bases<Lagrange<Order, Vectorial>>>>& Vh, typename FunctionSpace<typename Mesh<Simplex<3>>::mesh_type, bases<Lagrange<Order, Vectorial>>>::element_type& u, typename FunctionSpace<typename Mesh<Simplex<3>>::mesh_type, bases<Lagrange<Order, Vectorial>>>::element_type& v) {
-    const double E = 1.0e8;
-    const double nu = 0.4;
+    stripes s;
+    s.first  = doption("parameters.epsilon");
+    s.second = doption("parameters.e");
+    auto E = idf(s);
+    s.first  = doption("parameters.n");
+    s.second = doption("parameters.nu");
+    auto nu = idf(s);
+    auto mu = E / (2 * (1 + nu));
+    auto lambda = E * nu / ((1 + nu) * (1 - 2 * nu));
 
-    const double mu = E / (2 * (1 + nu));
-    const double lambda = E * nu / ((1 + nu) * (1 - 2 * nu));
-    const double density = 1.0e3;
+    const double density = 1.0e+3;
 
     auto a = form2(_trial = Vh, _test = Vh, _matrix = A);
     a = integrate(_range = elements(mesh),
@@ -209,7 +223,26 @@ Geneopp<Dim, Order, Type>::run()
     std::vector<int> interface;
     if(!excluded) {
         tic();
-        mesh = loadMesh(_mesh = new Mesh<Simplex<Dim>>(wComm), _worldcomm = wComm);
+        if(std::is_same<Type<Dim>, Vectorial<Dim>>::value) {
+            mesh = createGMSHMesh(_mesh = new Mesh<Simplex<Dim>>,
+                                  _update = MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK,
+                                  _worldcomm = wComm,
+                                  _desc = domain(_name = "hypercube", _shape = "hypercube",
+                                                 _xmin = 0.0, _xmax = 10.0,
+                                                 _ymin = 0.0, _ymax = 1.0,
+                                                 _zmin = 0.0, _zmax = 1.0));
+            mesh->addMarkerName("Dirichlet", Dim == 2 ? 1 : 19, Dim == 2 ? 1 : 2);
+        }
+        else {
+            mesh = createGMSHMesh(_mesh = new Mesh<Simplex<Dim>>,
+                                  _update = MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK,
+                                  _worldcomm = wComm,
+                                  _desc = domain(_name = "hypercube", _shape = "hypercube",
+                                                 _xmin = 0.0, _xmax = 1.0,
+                                                 _ymin = 0.0, _ymax = 1.0,
+                                                 _zmin = 0.0, _zmax = 1.0));
+            mesh->addMarkerName("Dirichlet", Dim == 2 ? 1 : 19, Dim == 2 ? 1 : 2);
+        }
         toc("global mesh");
         tic();
         double** ev;
@@ -378,8 +411,24 @@ Geneopp<Dim, Order, Type>::run()
         auto e = exporter(_mesh = mesh, _name = (boost::format("%1%-%2%") % this->about().appName() % Dim).str());
         e->add("u", uVisu);
         e->add("rank", regionProcess(Pdh<0>(mesh)));
+#if defined(DEBUG_SOL)
+        toc("exporter");
+        auto D = backend()->newMatrix(VhVisu, VhVisu);
+        auto F = backend()->newVector(VhVisu);
+        auto vVisu = VhVisu->element();
+        auto u = VhVisu->element();
+        assemble(D, F, mesh, VhVisu, u, vVisu);
+        backend()->solve(_matrix = D, _solution = u, _rhs = F);
+        e->add("u_ref", u);
+        u -= uVisu;
+        double error = u.l2Norm();
+        if(bComm.rank() == 0)
+            std::cout << std::scientific << " --- error with respect to solution from PETSc = " << error << std::endl;
+        e->save();
+#else
         e->save();
         toc("exporter");
+#endif
     }
 } // Geneopp::run
 
@@ -407,9 +456,9 @@ int main(int argc, char** argv) {
                                    _author = "Feel++ Consortium",
                                    _email = "feelpp-devel@feelpp.org"));
     Application app;
-    app.add(new Geneopp<2, 1, Scalar>());
+    // app.add(new Geneopp<2, 1, Scalar>());
     // app.add(new Geneopp<3, 2, Scalar>());
-    // app.add(new Geneopp<2, 2, Vectorial>());
+    app.add(new Geneopp<2, 1, Vectorial>());
     // app.add(new Geneopp<3, 2, Vectorial>());
     app.run();
 }
