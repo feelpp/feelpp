@@ -44,5 +44,5 @@ feelpp_add_application( doc_mortar SRCS mortar.cpp LABELS doc  NO_MPI_TEST )
 feelpp_add_application( doc_threefields SRCS threefields.cpp TEST -pc_type ilu -ksp_monitor  LABELS doc NO_MPI_TEST )
 
 if(FEELPP_HAS_HPDDM)
-  feelpp_add_application(doc_geneo SRCS geneo.cpp CFG geneo.cfg LABELS doc)
+  feelpp_add_application(doc_geneo SRCS geneo.cpp geneo_coefficients.cpp CFG geneo.cfg LABELS doc)
 endif()

@@ -46,11 +46,11 @@ build/
 /opt
 /package.m4
 /subdirs
-/tools
 /usb_modeswitch.conf
 /testsuite/feeldiscr/#test_mortar.cpp#
 /testsuite/feeldiscr/.#test_mortar.cpp
 /contrib/eigen-eigen*
+*.sw?
 \#*
 \.\#*
 /applications/crb/GeoHeatDiffusion/geoheatdiffusionapp.cpp
