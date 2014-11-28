@@ -866,7 +866,7 @@ endif()
 # VTK
 #
 OPTION( FEELPP_ENABLE_VTK "Enable the VTK library" ON )
-OPTION( FEELPP_ENABLE_VTK_EXPORTER "Enable the VTK exporter" OFF )
+OPTION( FEELPP_ENABLE_VTK_EXPORTER "Enable the VTK exporter" ON )
 OPTION( FEELPP_ENABLE_VTK_INSITU "Enable In-Situ Visualization using VTK/Paraview" OFF )
 if ( FEELPP_ENABLE_VTK )
 
