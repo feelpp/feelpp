@@ -984,7 +984,11 @@ endif( FEELPP_ENABLE_OCTAVE)
 #
 # Gmsh
 #
-FIND_PACKAGE(Gmsh)
+if(FEELPP_USE_GMSH_PACKAGE)
+	FIND_PACKAGE(Gmsh)
+else()
+	set(GMSH_FOUND false)
+endif()
 if(NOT GMSH_FOUND)#Download and Instal it
   message(STATUS "[feelpp] GMSH NOT FOUND - Downloading and Installing it" )
   execute_process(COMMAND mkdir -p ${CMAKE_BINARY_DIR}/contrib/gmsh-compile)
