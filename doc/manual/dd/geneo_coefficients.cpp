@@ -7,6 +7,6 @@ namespace Feel
     }
 
     double stripes::operator()(uint16_type, uint16_type, boost::numeric::ublas::vector<double> const& x, boost::numeric::ublas::vector<double> const&) const {
-        return ((x[0] > 0.1 && x[0] < 0.3) || (x[0] > 0.7 && x[0] < 0.9)) ? first : second;
+        return ((x[1] > 0.1 && x[1] < 0.3) || (x[1] > 0.7 && x[1] < 0.9)) ? first : second;
     }
 }
