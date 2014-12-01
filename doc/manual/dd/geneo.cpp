@@ -31,6 +31,9 @@
 #ifndef MKL_Complex16
 #define MKL_Complex16 std::complex<double>
 #endif
+#ifndef MKL_Complex8
+#define MKL_Complex8 std::complex<float>
+#endif
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feeldiscr/pdh.hpp>
@@ -217,6 +220,8 @@ Geneopp<Dim, Order, Type>::run()
     std::vector<int> active(bComm.size(), true);
     WorldComm wComm(bComm, bComm, bComm, bComm.rank(), active);
     toc("communicators");
+    std::vector<double> timers(6 + (nu != 0 ? 2 : 0));
+    mpi::timer time;
     boost::shared_ptr<Mesh<Simplex<Dim>>> mesh;
     typename FunctionSpace<typename Mesh<Simplex<Dim>>::mesh_type, bases<Lagrange<Order, Type>>>::element_type uLocal;
     double* b;
@@ -244,17 +249,22 @@ Geneopp<Dim, Order, Type>::run()
             mesh->addMarkerName("Dirichlet", Dim == 2 ? 1 : 19, Dim == 2 ? 1 : 2);
         }
         toc("global mesh");
-        tic();
+        bComm.barrier();
+        time.restart();
         double** ev;
         auto meshLocal = createSubmesh(mesh, elements(mesh), Environment::worldCommSeq());
+        timers[0] = time.elapsed();
+        bComm.barrier();
+        time.restart();
         auto VhLocal = FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order, Type>>>::New(_mesh = meshLocal,
                        _worldscomm = Environment::worldsCommSeq(1));
-        toc("local mesh and FE space");
+        timers[1] = time.elapsed();
+        bComm.barrier();
+        time.restart();
         uLocal = VhLocal->element();
         {
             std::vector<std::vector<int>*> map;
             map.resize(mesh->faceNeighborSubdomains().size());
-            tic();
             int i;
 #pragma omp parallel for shared(map) private(uLocal, i) schedule(static, 4)
             for(i = 0; i < map.size(); ++i) {
@@ -291,14 +301,16 @@ Geneopp<Dim, Order, Type>::run()
                     for(int& i : *pt)
                         i = mapping[i];
             }
-            toc("interface");
-            tic();
+            timers[2] = time.elapsed();
+            bComm.barrier();
+            time.restart();
             auto vLocal = VhLocal->element();
             boost::shared_ptr<Backend<double>> ptr_backend = Backend<double>::build("petsc", "", Environment::worldCommSeq());
             Backend<double>::sparse_matrix_ptrtype A = ptr_backend->newMatrix(VhLocal, VhLocal);
             Backend<double>::vector_ptrtype        f = ptr_backend->newVector(VhLocal);
             assemble(A, f, meshLocal, VhLocal, uLocal, vLocal);
             A->close();
+            timers[3] = time.elapsed();
             Mat PetscA = static_cast<MatrixPetsc<double>*>(&*A)->mat();
             Vec PetscF = static_cast<VectorPetsc<double>*>(&*f)->vec();
             PetscInt n;
@@ -320,7 +332,6 @@ Geneopp<Dim, Order, Type>::run()
 #endif
             MatSeqAIJRestoreArray(PetscA, &array);
             MatRestoreRowIJ(PetscA, 0, PETSC_FALSE, PETSC_FALSE, &n, &ia, &ja, &done);
-            toc("assembly");
 #ifdef FEELPP_HAS_HPDDM
             K.Subdomain::initialize(pt, mesh->faceNeighborSubdomains().cbegin(), mesh->faceNeighborSubdomains().cend(), map, &comm);
             if(nu == 0) {
@@ -342,16 +353,19 @@ Geneopp<Dim, Order, Type>::run()
                 delete pt;
         }
 #ifdef FEELPP_HAS_HPDDM
-        tic();
+        bComm.barrier();
+        time.restart();
         K.renumber(interface, b);
-        toc("renumbering");
+        timers[4] = time.elapsed();
         if(nu != 0) {
-            tic();
+            bComm.barrier();
+            time.restart();
             K.computeSchurComplement();
-            toc("Schur complement");
-            tic();
+            timers[6] = time.elapsed();
+            bComm.barrier();
+            time.restart();
             K.solveGEVP<'S'>(nu);
-            toc("GenEO");
+            timers[7] = time.elapsed();
             K.super::super::initialize(nu);
         }
         K.callNumfactPreconditioner();
@@ -379,7 +393,10 @@ Geneopp<Dim, Order, Type>::run()
             K.buildTwo<1>(Environment::worldComm(), parm);
         else
             K.buildTwo<0>(Environment::worldComm(), parm);
+        bComm.barrier();
+        time.restart();
         K.callNumfact();
+        timers[5] = time.elapsed();
         std::fill(uLocal.begin(), uLocal.end(), 0.0);
         HPDDM::IterativeMethod::PCG<false>(K, &(uLocal[0]), b, iter, eps, Environment::worldComm(), Environment::isMasterRank());
 
@@ -389,24 +406,23 @@ Geneopp<Dim, Order, Type>::run()
 
         K.originalNumbering(interface, &(uLocal[0]));
 
-        auto VhVisu = FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order, Type>>>::New(_mesh = mesh);
-        double stats[2] = { K.getMult() / 2.0, mesh->faceNeighborSubdomains().size() / static_cast<double>(bComm.size()) };
+        double stats[3] = { K.getMult() / 2.0, mesh->faceNeighborSubdomains().size() / static_cast<double>(bComm.size()), static_cast<double>(K.getAllDof()) };
         if(bComm.rank() == 0) {
             std::streamsize ss = std::cout.precision();
             std::cout << std::scientific << " --- error = " << storage[1] << " / " << storage[0] << std::endl;
-            MPI_Reduce(MPI_IN_PLACE, stats, 2, MPI_DOUBLE, MPI_SUM, 0, comm);
-            std::cout << std::fixed << " --- number of Lagrange multipliers: " << static_cast<unsigned long>(stats[0]) << ", number of dof: " << VhVisu->nDof() << ", on average, number of neighbors: " << std::setprecision(1) << stats[1] << " and h: " << std::scientific << mesh->hAverage() << std::endl;
+            MPI_Reduce(MPI_IN_PLACE, stats, 3, MPI_DOUBLE, MPI_SUM, 0, comm);
+            std::cout << std::fixed << " --- number of Lagrange multipliers: " << static_cast<unsigned long>(stats[0]) << ", number of dof: " << static_cast<unsigned long>(stats[2]) << ", on average, number of neighbors: " << std::setprecision(1) << stats[1] << " and h: " << std::scientific << mesh->hAverage() << std::endl;
             std::cout << std::fixed;
             std::cout.precision(ss);
         }
         else
-            MPI_Reduce(stats, NULL, 2, MPI_DOUBLE, MPI_SUM, 0, comm);
+            MPI_Reduce(stats, NULL, 3, MPI_DOUBLE, MPI_SUM, 0, comm);
         delete [] storage;
 #else
-        auto VhVisu = FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order, Type>>>::New(_mesh = mesh);
         uLocal = vf::project(VhLocal, elements(meshLocal), Px() + Py());
 #endif
         tic();
+        auto VhVisu = FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order, Type>>>::New(_mesh = mesh);
         auto uVisu = vf::project(_space = VhVisu, _expr = idv(uLocal));
         auto e = exporter(_mesh = mesh, _name = (boost::format("%1%-%2%") % this->about().appName() % Dim).str());
         e->add("u", uVisu);
@@ -429,6 +445,22 @@ Geneopp<Dim, Order, Type>::run()
         e->save();
         toc("exporter");
 #endif
+        double* allTimers = new double[timers.size() * bComm.size()];
+        MPI_Gather(timers.data(), timers.size(), MPI_DOUBLE, allTimers, timers.size(), MPI_DOUBLE, 0, bComm);
+        if(bComm.rank() == 0) {
+
+            std::cout << "Submesh extraction  Local FE space   Interface    Assem. solver  Renumbering    Fact. pinv.  ";
+            if(timers.size() == 8)
+                std::cout << "Schur complement  GenEO" << std::endl;
+            std::cout.precision(4);
+            for(int i = 0; i < bComm.size(); ++i) {
+                std::cout << std::scientific << allTimers[0 + i * timers.size()] << "          " << allTimers[1 + i * timers.size()] << "       " << allTimers[2 + i * timers.size()] << "   " << allTimers[3 + i * timers.size()] << "     " << allTimers[4 + i * timers.size()] << "     " << allTimers[5 + i * timers.size()] << "   ";
+                if(timers.size() == 8)
+                    std::cout << std::scientific << allTimers[6 + i * timers.size()] << "        " << allTimers[7 + i * timers.size()];
+                std::cout << std::endl;
+            }
+        }
+        delete [] allTimers;
     }
 } // Geneopp::run
 
