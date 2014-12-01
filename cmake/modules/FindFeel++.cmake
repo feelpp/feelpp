@@ -376,7 +376,8 @@ endif()
 IF ( FEELPP_ENABLE_MOVE_SEMANTICS AND Boost_MAJOR_VERSION EQUAL "1" AND Boost_MINOR_VERSION LESS "57" )
   SET( BOOST_UBLAS_MOVE_SEMANTICS 1 CACHE STRING "Enable Boost Ublas move semantics" FORCE )
   ADD_DEFINITIONS( -DBOOST_UBLAS_MOVE_SEMANTICS )
-ENDIF( FEELPP_ENABLE_MOVE_SEMANTICS  AND Boost_MAJOR_VERSION EQUAL "1" AND Boost_MINOR_VERSION LESS "57" )
+ENDIF()
+
 
 OPTION(BOOST_ENABLE_TEST_DYN_LINK "enable boost test with dynamic lib" ON)
 MARK_AS_ADVANCED(BOOST_ENABLE_TEST_DYN_LINK)
@@ -984,7 +985,11 @@ endif( FEELPP_ENABLE_OCTAVE)
 #
 # Gmsh
 #
-FIND_PACKAGE(Gmsh)
+if(FEELPP_USE_GMSH_PACKAGE)
+	FIND_PACKAGE(Gmsh)
+else()
+	set(GMSH_FOUND false)
+endif()
 if(NOT GMSH_FOUND)#Download and Instal it
   message(STATUS "[feelpp] GMSH NOT FOUND - Downloading and Installing it" )
   execute_process(COMMAND mkdir -p ${CMAKE_BINARY_DIR}/contrib/gmsh-compile)
