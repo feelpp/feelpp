@@ -22,7 +22,9 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 #include <feel/feel.hpp>
+#include <feel/feeldiscr/ned1h.hpp>
 
+using namespace Feel;
 struct DofEdgeInfo
 {
     enum EdgeType
@@ -42,7 +44,7 @@ struct DofEdgeInfo
 
 int main(int argc, char**argv )
 {
-    using namespace Feel;
+    
 	po::options_description dofboundaryoptions( "dofboundary options" );
 	dofboundaryoptions.add_options()
     ( "dof", po::value<int>()->default_value( 0 ), "global dof id" )
@@ -55,20 +57,23 @@ int main(int argc, char**argv )
                                   _email="feelpp-devel@feelpp.org"));
 
     auto mesh = loadMesh(_mesh=new Mesh<Simplex<3>>);
-    auto Vh = Ned1h<1>( mesh );
+    auto Vh = Ned1h<0>( mesh );
     auto Xh = Pch<1>( mesh );
 
     std::vector<bool> done( Vh->nLocalDof(), false );
     // this vector store the ids
-    std::vector<DofEdgeInfo> dof_edge_info( Vh->nLocalDof(), {invalid_uint16_type_value,1,EDGE_INTERIOR,invalid_size_type_value,invalid_size_type_value} );
+    std::vector<DofEdgeInfo> dof_edge_info( Vh->nLocalDof(), {invalid_uint16_type_value,1,DofEdgeInfo::EDGE_INTERIOR,invalid_size_type_value,invalid_size_type_value} );
     // loop over the multiset of global dof the dof table provides a relation
     // between local dof (element id + local dof id) and global dof. While the
     // global dof is unique, it is possibly associated to multiple local dof.
     // we can work here with the global view (global dof) of the relation or the
     // local view (local dof) of the relation.
-    for( auto const& localdof : Vh->dof()->globalDof() )
+    auto dofbegin = Vh->dof()->globalDof().first;
+    auto dofend = Vh->dof()->globalDof().second;
+    for( auto dofit = dofbegin; dofit != dofend; ++dofit)
     {
-        if ( !done[ dof.index() ] )
+        auto const& dof = *dofit;
+        if ( !done[ dof.first.index() ] )
         {
             // first print the local dof associated to the global dof 'dof'
             std::cout << "dof element id : " << dof.second.elementId() 
@@ -76,8 +81,8 @@ int main(int argc, char**argv )
             // note that local dof provides (for lowest order) the edge id for Nedelec
             
             auto const& edge = mesh->element(dof.second.elementId()).edge(dof.second.localDof());
-            dof_edge_info[dof.index()].index = dof.index();
-            dof_edge_info[dof.index()].sign = dof.sign();
+            dof_edge_info[dof.first.index()].index = dof.first.index();
+            dof_edge_info[dof.first.index()].sign = dof.first.sign();
 
             // get the vertex id of the end points
             auto const& pt1 = edge.point( 0 );
@@ -90,20 +95,20 @@ int main(int argc, char**argv )
             {
                 if ( mesh->element( dof.second.elementId() ).point( i ).id() == pt1.id() )
                 {
-                    dofid1 = Xh->localToGlobal( dof.second.elementId(), i, 0 ).index();
+                    dofid1 = Xh->dof()->localToGlobal( dof.second.elementId(), i, 0 ).index();
                 }
                 if ( mesh->element( dof.second.elementId() ).point( i ).id() == pt2.id() )
                 {
-                    dofid2 = Xh->localToGlobal( dof.second.elementId(), i, 0 ).index();
+                    dofid2 = Xh->dof()->localToGlobal( dof.second.elementId(), i, 0 ).index();
                 }
                 
             }
 
             if ( edge.isOnBoundary() )
             {
-                dof_edge_info[dof.index()].type = EDGE_BOUNDARY;
-                dof_edge_info[dof.index()].dof_vertex_id1 = dofid1;
-                dof_edge_info[dof.index()].dof_vertex_id2 = dofid2;
+                dof_edge_info[dof.first.index()].type = DofEdgeInfo::EDGE_BOUNDARY;
+                dof_edge_info[dof.first.index()].dof_vertex_id1 = dofid1;
+                dof_edge_info[dof.first.index()].dof_vertex_id2 = dofid2;
             }
             if ( !edge.isOnBoundary() )
                 {
@@ -112,37 +117,38 @@ int main(int argc, char**argv )
                     //both points touch the boundary
                     if ( pt1.isOnBoundary() && pt2.isOnBoundary() )
                     {
-                        dof_edge_info[dof.index()].type = EDGE_BOUNDARY_VERTEX_2;   
-                        dof_edge_info[dof.index()].dof_vertex_id1 = dofid1;
-                        dof_edge_info[dof.index()].dof_vertex_id2 = dofid2;
+                        dof_edge_info[dof.first.index()].type = DofEdgeInfo::EDGE_BOUNDARY_VERTEX_2;   
+                        dof_edge_info[dof.first.index()].dof_vertex_id1 = dofid1;
+                        dof_edge_info[dof.first.index()].dof_vertex_id2 = dofid2;
                         CHECK( dofid1 != invalid_size_type_value ) << "Invalid dof vertex id1";
                         CHECK( dofid2 != invalid_size_type_value ) << "Invalid dof vertex id2";
                     }
                     // one of the end points touch the boundary
                     else if ( pt1.isOnBoundary()  )
                     {
-                        dof_edge_info[dof.index()].type = EDGE_BOUNDARY_VERTEX_1;   
-                        dof_edge_info[dof.index()].dof_vertex_id1 = dofid1;
-                        dof_edge_info[dof.index()].dof_vertex_id2 = invalid_size_type_value;
+                        dof_edge_info[dof.first.index()].type = DofEdgeInfo::EDGE_BOUNDARY_VERTEX_1;   
+                        dof_edge_info[dof.first.index()].dof_vertex_id1 = dofid1;
+                        dof_edge_info[dof.first.index()].dof_vertex_id2 = invalid_size_type_value;
                         CHECK( dofid1 != invalid_size_type_value ) << "Invalid dof vertex id1";
                     }
                     else if ( pt2.isOnBoundary()  )
                     {
-                        dof_edge_info[dof.index()].type = EDGE_BOUNDARY_VERTEX_1;   
-                        dof_edge_info[dof.index()].dof_vertex_id1 = dofid2;
-                        dof_edge_info[dof.index()].dof_vertex_id2 = invalid_size_type_value;
+                        dof_edge_info[dof.first.index()].type = DofEdgeInfo::EDGE_BOUNDARY_VERTEX_1;   
+                        dof_edge_info[dof.first.index()].dof_vertex_id1 = dofid2;
+                        dof_edge_info[dof.first.index()].dof_vertex_id2 = invalid_size_type_value;
                         CHECK( dofid2 != invalid_size_type_value ) << "Invalid dof vertex id1";
                     }
                     else
                     {
-                        dof_edge_info[dof.index()].type = EDGE_INTERIOR;   
-                        dof_edge_info[dof.index()].dof_vertex_id1 = invalid_size_type_value;
-                        dof_edge_info[dof.index()].dof_vertex_id2 = invalid_size_type_value;
+                        dof_edge_info[dof.first.index()].type = DofEdgeInfo::EDGE_INTERIOR;   
+                        dof_edge_info[dof.first.index()].dof_vertex_id1 = invalid_size_type_value;
+                        dof_edge_info[dof.first.index()].dof_vertex_id2 = invalid_size_type_value;
                     }   
                     
                 }
+            std::cout << "  - edge id " << dof_edge_info[dof.first.index()].index << " type " << dof_edge_info[dof.first.index()].type << " sign " << dof_edge_info[dof.first.index()].sign << "\n";
         }
-        done[dof.index()] = true;
+        done[dof.first.index()] = true;
             
     }
     return 0;
