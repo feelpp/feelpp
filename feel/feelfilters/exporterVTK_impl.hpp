@@ -65,10 +65,15 @@ ExporterVTK<MeshType,N>::ExporterVTK( ExporterVTK const & __ex )
 template<typename MeshType, int N>
 ExporterVTK<MeshType,N>::~ExporterVTK()
 {
-#if VTK_MAJOR_VERSION >= 6 && defined(VTK_HAS_PARALLEL) && defined(FEELPP_VTK_INSITU_ENABLED)
+#if VTK_MAJOR_VERSION >= 6 && defined(VTK_HAS_PARALLEL)
+#if defined(FEELPP_VTK_INSITU_ENABLED)
     /* end up in situ simulation */
-    inSituProcessor->Finalize();
-    //inSituProcessor->Delete();
+    if(boption( _name="exporter.vtk.insitu.enable" ))
+    {
+        inSituProcessor->Finalize();
+        //inSituProcessor->Delete();
+    }
+#endif
 
     /* clean memory */
     delete this->opaqueComm;
@@ -114,9 +119,9 @@ ExporterVTK<MeshType,N>::init()
 
 #if VTK_MAJOR_VERSION >= 6 && defined(VTK_HAS_PARALLEL)
     /* before version 5.10, we cannot initialize a MPIController with an external MPI_Comm */
-    MPI_Comm comm = this->worldComm().comm();
+    this->lComm = this->worldComm().comm();
     /* initialize the VTK communicator from the current MPI communicator */
-    this->opaqueComm = new vtkMPICommunicatorOpaqueComm(&comm);
+    this->opaqueComm = new vtkMPICommunicatorOpaqueComm(&(this->lComm));
 
 #if defined(FEELPP_VTK_INSITU_ENABLED)
     /* initialize in-situ visualization if needed */
@@ -306,8 +311,6 @@ ExporterVTK<MeshType,N>::write( typename timeset_type::step_ptrtype step, std::s
 #if VTK_MAJOR_VERSION >= 6 && defined(VTK_HAS_PARALLEL)
     /* Build vtk objects while reusing the current mpi communicator */
     /* before version 5.10, we cannot initialize a MPIController with an external MPI_Comm */
-    MPI_Comm comm = this->worldComm().comm();
-
     vtkSmartPointer<vtkMPICommunicator> mpicomm = vtkSmartPointer<vtkMPICommunicator>::New();
         mpicomm->InitializeExternal(this->opaqueComm);
     vtkSmartPointer<vtkMPIController> mpictrl = vtkSmartPointer<vtkMPIController>::New();
