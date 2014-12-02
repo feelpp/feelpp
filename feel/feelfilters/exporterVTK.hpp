@@ -281,6 +281,7 @@ private:
 
     /* class members for in-situ visualization */
 #if VTK_MAJOR_VERSION >= 6 && defined(VTK_HAS_PARALLEL)
+    mutable MPI_Comm lComm;
     mutable vtkMPICommunicatorOpaqueComm * opaqueComm;
 #if defined(FEELPP_VTK_INSITU_ENABLED)
     mutable vtkSmartPointer<vtkCPProcessor> inSituProcessor;
