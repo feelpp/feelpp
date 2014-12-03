@@ -131,7 +131,6 @@ ExporterVTK<MeshType,N>::init()
         {
             inSituProcessor = vtkSmartPointer<vtkCPProcessor>::New();
             inSituProcessor->Initialize(*(this->opaqueComm));
-            //inSituProcessor->Initialize();
             //inSituProcessor->DebugOn();
         }
         else
@@ -187,7 +186,7 @@ int ExporterVTK<MeshType,N>::writeTimePVD(std::string xmlFilename, double timest
         {
             doc = xmlReadFile(xmlFilename.c_str(), NULL, 0);
             if (doc == NULL) {
-                //fprintf(stderr, "Failed to parse %s\n", filename);
+                //std::cerr << "Failed to parse %s" << std::endl;
                 return 1;
             }
             root = xmlDocGetRootElement(doc);
@@ -291,7 +290,7 @@ ExporterVTK<MeshType,N>::buildMultiBlockDataSet( typename timeset_type::step_ptr
         mbds->SetBlock(blockNo, out);
         mbds->GetMetaData(blockNo)->Set(vtkCompositeDataSet::NAME(), oss.str().c_str());
         // not supported in version 5.x
-        //mbds->GetMetaData(0)->Set(vtkDataObject::DATA_TIME_STEP(), step->index() - TS_INITIAL_INDEX);
+        //mbds->GetMetaData(0)->Set(vtkDataObject::DATA_TIME_STEP(), step->time());
 #endif
 
     return mbds;
@@ -402,12 +401,10 @@ ExporterVTK<MeshType,N>::save() const
 
 #if VTK_MAJOR_VERSION >= 6 && defined(VTK_HAS_PARALLEL)
                 out->GetInformation()->Set(vtkDataObject::DATA_TIME_STEP(), __step->time());
-                //out->GetInformation()->PrintSelf(std::cout, vtkIndent());
 #endif
 
                 /* Build a multi block dataset based on gathered data */
                 vtkSmartPointer<vtkMultiBlockDataSet> mbds = this->buildMultiBlockDataSet( __step, out );
-                //mbds->PrintSelf(std::cout, vtkIndent());
 
                 /* InitializeExternal is only supported from 5.10+, */
                 /* but lets aim for the latest major version 6 to reduce the complexity */
