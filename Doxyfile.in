@@ -683,8 +683,8 @@ WARN_LOGFILE           =
 # with spaces.
 
 INPUT                  = \
-"@FEELPP_HOME_DIR@/applications" \
-"@FEELPP_HOME_DIR@/quickstart" \
+ "@FEELPP_HOME_DIR@/applications" \
+ "@FEELPP_HOME_DIR@/quickstart" \
  "@FEELPP_HOME_DIR@/doc/manual/" \
  "@FEELPP_HOME_DIR@/doc/api" \
  "@FEELPP_HOME_DIR@/ChangeLog" \
@@ -759,6 +759,8 @@ EXCLUDE_SYMBOLS        = "BOOST_P*"
 
 EXAMPLE_PATH           = "@FEELPP_HOME_DIR@/doc/manual/tutorial" \
                          "@FEELPP_HOME_DIR@/doc/" \
+                         #"@FEELPP_HOME_DIR@/tutorial/" \
+                         "@FEELPP_HOME_DIR@/quickstart/" \
                          "@CMAKE_CURRENT_BINARY_DIR@/../" \
 												  @FEELPP_PROJECTS_DIR@
 
