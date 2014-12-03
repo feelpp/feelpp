@@ -172,7 +172,7 @@ struct GMSHElement
                     0, 1
                     )
         {
-#if GMSH_VERSION_GREATER_OR_EQUAL_THAN(2,8,0)
+#if GMSH_VERSION_GREATER_OR_EQUAL_THAN(2,6,1)
           std::vector<int> verts;
           ele->getVerticesIdForMSH(verts);
           indices = verts;
