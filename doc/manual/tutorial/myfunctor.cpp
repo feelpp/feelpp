@@ -30,6 +30,8 @@
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelvf/function.hpp>
 using namespace Feel;
+
+//! [functor]
 namespace Feel
 {
 	struct myFunctor
@@ -48,6 +50,7 @@ namespace Feel
 		void setVal(int i){val = i;}
 	};
 }
+//! [functor]
 
 int main(int argc, char**argv )
 {
@@ -65,6 +68,7 @@ int main(int argc, char**argv )
     auto spacev= Pchv<2>(mesh); 
     //! [space]
 	
+		//! [functors_and_proj]
 		//! [functors]
 		myFunctor functor1, functor2;
 		functor1.setVal(0);
@@ -74,8 +78,8 @@ int main(int argc, char**argv )
 		//! [projection]
 		auto u = vf::project(_space=spaces,_range=elements(mesh),_expr=idf(functor1)); // Will contain x
 		auto v = vf::project(_space=spaces,_range=elements(mesh),_expr=idf(functor2)); // will contain y
-		//auto V = vf::project(spacev,elements(mesh),vec(idf(functor1),idf(functor2)) );
 		//! [projection]
+		//! [functors_and_proj]
 		
 		//! [export]
 		auto ex1 = exporter(_mesh=mesh,_name="ex1");

@@ -5,6 +5,7 @@ namespace Feel {
 
    \tableofcontents
 
+\snippet qs_stokes.cpp marker1
 \c Note: The source code of this example is available in \c quickstart/qs_stokes.cpp
 
 */
