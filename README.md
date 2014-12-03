@@ -46,10 +46,8 @@ Travis-CI Build Status :
 
 ### Laplacian in 2D using P3 Lagrange basis functions
 
-Here is a full example to solve
-
-[![pic](http://www.sciweavers.org/tex2img.php?eq=-%5CDelta%20u%20%3D%20f%20%5Cmbox%7B%20in%20%7D%20%5COmega%2C%5Cquad%20u%3Dg%20%5Cmbox%7B%20on%20%7D%20%5Cpartial%20%5COmega%5C&bc=White&fc=Black&im=jpg&fs=12&ff=arev&edit=0)]
-\(-\Delta u = f \mbox{ in } \Omega,\quad u=g \mbox{ on } \partial \Omega\)
+Here is a full example to solve 
+![pic](http://www.sciweavers.org/tex2img.php?eq=-%5CDelta%20u%20%3D%20f%20%5Cmbox%7B%20in%20%7D%20%5COmega%2C%5Cquad%20u%3Dg%20%5Cmbox%7B%20on%20%7D%20%5Cpartial%20%5COmega%5C&bc=White&fc=Black&im=jpg&fs=12&ff=arev&edit=0)
 
 ```
 #include <feel/feel.hpp>
@@ -90,7 +88,7 @@ int main(int argc, char**argv )
 ### Bratu equation in 2D
 
 Here is a full non-linear example - the Bratu equation - to solve
-\(-\Delta u + e^u = 0 \mbox{ in } \Omega,\quad u=0 \mbox{ on } \partial \Omega\).
+![pic2](http://www.sciweavers.org/tex2img.php?eq=-%5CDelta%20u%20%2B%20e%5Eu%20%3D%200%20%5Cmbox%7B%20in%20%7D%20%5COmega%2C%5Cquad%20u%3D0%20%5Cmbox%7B%20on%20%7D%20%5Cpartial%20%5COmega&bc=White&fc=Black&im=png&fs=12&ff=arev&edit=0)
 
 ```
 #include <feel/feel.hpp>
