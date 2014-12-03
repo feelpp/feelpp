@@ -336,7 +336,7 @@ foreach(subproject ${CTEST_PROJECT_SUBPROJECTS})
 
   message(WARNING "build target " ${subproject})
   #set(CTEST_BUILD_TARGET “${subproject}”)
-  set(CTEST_BUILD_TARGET ${subproject})
+  set(CTEST_BUILD_TARGET "${subproject}")
   ctest_build(BUILD "${CTEST_BINARY_DIRECTORY}" APPEND)
   ctest_submit(PARTS Build)
 
