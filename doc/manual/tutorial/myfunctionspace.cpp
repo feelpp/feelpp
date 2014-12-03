@@ -52,7 +52,7 @@ int main( int argc, char** argv )
     //! [mesh]
 
     //! [space]
-    // function space \f$ X_h \f$ using order 2 Lagrange basis functions
+    // function space \( X_h \) using order 2 Lagrange basis functions
     auto Xh = Pch<2>( mesh );
     //! [space]
 
@@ -62,15 +62,17 @@ int main( int argc, char** argv )
     //! [expression]
 
     //! [interpolant]
-    // elements of \f$ u,w \in X_h \f$
+    // elements of \( u,w \in X_h \)
     auto u = Xh->element( "u" );
     auto w = Xh->element( "w" );
-    // build the interpolant of u
+    
+		// build the interpolant of u
     u.on( _range=elements( mesh ), _expr=g );
-    // build the interpolant of the interpolation error
+    
+		// build the interpolant of the interpolation error
     w.on( _range=elements( mesh ), _expr=idv( u )-g );
 
-    // compute L2 norms
+    // compute L2 norms \(||\cdot||_{L^2}\)
     double L2g = normL2( elements( mesh ), g );
     double H1g = normL2( elements( mesh ), _expr=g,_grad_expr=gradg );
     double L2uerror = normL2( elements( mesh ), ( idv( u )-g ) );
@@ -86,9 +88,11 @@ int main( int argc, char** argv )
     //! [export]
     // export for post-processing
     auto e = exporter( _mesh=mesh );
-    // save interpolant
+   
+	 	// save interpolant
     e->add( "g", u );
-    // save interpolant of interpolation error
+   
+	 	// save interpolant of interpolation error
     e->add( "u-g", w );
 
     e->save();
