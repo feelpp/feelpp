@@ -25,7 +25,7 @@
 
 int main(int argc, char**argv )
 {
-    //# marker1 #
+    //! [marker1]
     using namespace Feel;
 	po::options_description stokesoptions( "Stokes options" );
 	stokesoptions.add_options()
@@ -77,6 +77,7 @@ int main(int argc, char**argv )
     e->add( "v", v );
     e->add( "p", p );
     e->save();
+    //! [marker1]
 
     return 0;
 }

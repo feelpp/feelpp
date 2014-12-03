@@ -8,12 +8,12 @@ namespace Feel {
 The next step is to load a mesh. The source code is available in \c mymesh.cpp.
 
 \section TutorialMeshSteps Step by step explanations
-@par Loading a Mesh in 2D
-The laodMesh function has a "_name" option set by default as the default value of the "--gmsh.filename" option.
+\par Loading a Mesh in 2D
+The `loadMesh` function has a `_name` option set by default as the default value of the `--gmsh.filename` option.
 
 \snippet mymesh.cpp load
 
-@par Loading2DMeshExport Exporting the Mesh for visualisation
+\par Exporting the Mesh for visualisation
 
 \snippet mymesh.cpp export
 
