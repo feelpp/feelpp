@@ -257,7 +257,7 @@ public:
      * To do so, we use a pvd file (Paraview format) that allows use to specify new timesteps
      * using xml syntax.
      */
-    int writeTimePVD(std::string xmlFilename, double timestep, std::string dataFilename) const;
+    int writeTimePVD(std::string xmlFilename, double timestep, std::string dataFilename, int partNo = 0) const;
 
 
     /**
