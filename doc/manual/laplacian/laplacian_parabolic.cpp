@@ -193,7 +193,6 @@ Laplacian_parabolic<Dim,Order>::run()
   ///**
   // * Creation of a new mesh depending on the information of the geofile
   // */
-  ///** \code */
   //// access to the geofile
   //std::string access_geofile = ( boost::format( "%1%.geo" ) % geofile ).str();
 
@@ -204,9 +203,8 @@ Laplacian_parabolic<Dim,Order>::run()
   //mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
   //    _desc=desc_geo,
   //    _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
-
+  ///** \code */
   mesh_ptrtype mesh = loadMesh(_mesh=new mesh_type,_filename=this->vm()["geofile"].template as<std::string>()); 
-
   /** \endcode */
 
 #if 0
@@ -240,15 +238,15 @@ Laplacian_parabolic<Dim,Order>::run()
 
   if( !exact.empty() )
   {
-    /// [marker11]
+    //! [marker11]
     if ( !params.empty() )
       cvg->setParams ( params );
-    /// [marker11]
+    //! [marker11]
     LOG(INFO) << "Loading function : " << exact << std::endl;
     std::cout << "Loading function : " << exact << std::endl;
-    /// [marker12]
+    //! [marker12]
     cvg->setSolution(exact, params);
-    /// [marker12]
+    //! [marker12]
     cvg->print();
   }
 
@@ -373,36 +371,36 @@ Laplacian_parabolic<Dim,Order>::run()
    * create the matrix that will hold the algebraic representation
    * of the left hand side (only stationnary terms)
    */
-  /// [marker3]
+  //! [marker3]
   /** \code */
   auto D = backend()->newMatrix( _test=Xh, _trial=Xh  );
   /** \endcode */
 
-  //! assemble $\int_\Omega \nu \nabla u \cdot \nabla v$
+  //! assemble \(\int_\Omega \nu \nabla u \cdot \nabla v\)
   /** \code */
   auto a = form2( _test=Xh, _trial=Xh, _matrix=D );
   a = integrate( _range=elements( mesh ), _expr=nu*gradt( u )*trans( grad( v ) ) );
   /** \endcode */
-  /// [marker3]
+  //! [marker3]
 
   if ( weak_dirichlet )
   {
     /** weak dirichlet conditions treatment for the boundaries marked 1 and 3
-     * -# assemble \f$\int_{\partial \Omega} -\nabla u \cdot \mathbf{n} v\f$
-     * -# assemble \f$\int_{\partial \Omega} -\nabla v \cdot \mathbf{n} u\f$
-     * -# assemble \f$\int_{\partial \Omega} \frac{\gamma}{h} u v\f$
+     * -# assemble \(\int_{\partial \Omega} -\nabla u \cdot \mathbf{n} v\)
+     * -# assemble \(\int_{\partial \Omega} -\nabla v \cdot \mathbf{n} u\)
+     * -# assemble \(\int_{\partial \Omega} \frac{\gamma}{h} u v\)
      */
     /** \code */
-    /// [marker10]
+    //! [marker10]
     a += integrate( _range=markedfaces( mesh,"Dirichlet" ),
         _expr= nu * ( -( gradt( u )*vf::N() )*id( v )
           -( grad( v )*vf::N() )*idt( u )
           +penaldir*id( v )*idt( u )/hFace() ) );
-    /// [marker10]
+    //! [marker10]
     /** \endcode */
   }
 
-  //! assemble $\int_\Omega u^{n+1} v$
+  //! assemble \(int_\Omega u^{n+1} v\)
   /** \code */
   /// [marker8]
   if( !steady )
