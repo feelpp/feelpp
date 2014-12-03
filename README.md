@@ -26,8 +26,8 @@ Travis-CI Build Status :
 
 ## Documentation
 
-  - develop branch : [Feel++ Online Reference Manual](http://feelpp.github.io/feelpp/develop)
-  - master branch (latest release) : [Feel++ Online Reference Manual](http://feelpp.github.io/feelpp/master)
+  - develop branch : [Feel++ Online Reference Manual](http://www.feelpp.org/docs/develop/index.html)
+  - master branch (latest release) : [Feel++ Online Reference Manual](http://www.feelpp.org/docs/master/index.html)
 
 ## Features
 
