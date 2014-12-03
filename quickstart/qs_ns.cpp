@@ -25,7 +25,7 @@
 
 int main(int argc, char**argv )
 {
-    //# marker1 #
+    //! [marker1]
     using namespace Feel;
 	po::options_description qsnsoptions( "Quickstart Navier-Stokes options" );
 	qsnsoptions.add_options()
@@ -111,6 +111,7 @@ int main(int argc, char**argv )
 
 
     }
+    //! [marker1]
 
 
 

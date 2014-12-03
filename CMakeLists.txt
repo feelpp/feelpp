@@ -321,7 +321,7 @@ endforeach()
 ################################################################################
 # data
 ################################################################################
-IF(NOT APPLE AND EXISTS "${CMAKE_SOURCE_DIR}/data")
+IF(EXISTS "${CMAKE_SOURCE_DIR}/data")
   ADD_SUBDIRECTORY ( data )
 ENDIF()
 
