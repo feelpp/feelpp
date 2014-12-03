@@ -47,6 +47,7 @@ Travis-CI Build Status :
 ### Laplacian in 2D using P3 Lagrange basis functions
 
 Here is a full example to solve
+![img]http://www.sciweavers.org/tex2img.php?eq=-%5CDelta%20u%20%3D%20f%20%5Cmbox%7B%20in%20%7D%20%5COmega%2C%5Cquad%20u%3Dg%20%5Cmbox%7B%20on%20%7D%20%5Cpartial%20%5COmega%5C&bc=White&fc=Black&im=jpg&fs=12&ff=arev&edit=0
 \(-\Delta u = f \mbox{ in } \Omega,\quad u=g \mbox{ on } \partial \Omega\)
 
 ```
