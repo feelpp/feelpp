@@ -33,7 +33,7 @@ if (EXISTS $ENV{HOME})
   foreach(exp "medit/*.geo" "medit/*.mesh" "gmsh/*.geo" "gmsh/*.stl" "gmsh/feelpp/feel.geo" )
     FILE(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/${exp}")
     foreach(file ${files})
-			get_filename_component(filename ${file} NAME )
+      get_filename_component(filename ${file} NAME )
       message(STATUS ${filename})
 
       # Create a custom target so the geo files can be copied with make
