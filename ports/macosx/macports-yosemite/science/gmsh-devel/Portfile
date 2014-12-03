@@ -9,7 +9,7 @@ fetch.type          svn
 fetch.user          gmsh
 fetch.password      gmsh
 svn.url             https://geuz.org/svn/gmsh/trunk
-svn.revision        19319
+svn.revision        19884
 svn.method          export
 svn.post_args       --username ${fetch.user} --password ${fetch.password}
 
@@ -31,7 +31,8 @@ worksrcdir          trunk
 conflicts           gmsh
 
 patchfiles     gmsh-devel.patch  \
-    gmsh-devel-petsc.patch
+    centerlinefield.patch
+    #gmsh-devel-petsc.patch
 patch.dir      ${worksrcpath}
 # https://trac.macports.org/ticket/33925
 #compiler.blacklist  clang
