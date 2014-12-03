@@ -47,7 +47,7 @@ Travis-CI Build Status :
 ### Laplacian in 2D using P3 Lagrange basis functions
 
 Here is a full example to solve
-$$-\Delta u = f \mbox{ in } \Omega,\quad u=g \mbox{ on } \partial \Omega$$
+\(-\Delta u = f \mbox{ in } \Omega,\quad u=g \mbox{ on } \partial \Omega\)
 
 ```
 #include <feel/feel.hpp>
@@ -88,7 +88,7 @@ int main(int argc, char**argv )
 ### Bratu equation in 2D
 
 Here is a full non-linear example - the Bratu equation - to solve
-$$-\Delta u + e^u = 0 \mbox{ in } \Omega,\quad u=0 \mbox{ on } \partial \Omega$$.
+\(-\Delta u + e^u = 0 \mbox{ in } \Omega,\quad u=0 \mbox{ on } \partial \Omega\).
 
 ```
 #include <feel/feel.hpp>
@@ -113,7 +113,7 @@ makeOptions()
 /**
  * Bratu Problem
  *
- * solve \f$ -\Delta u + \lambda \exp(u) = 0, \quad u_\Gamma = 0\f$ on \f$\Omega\f$
+ * solve \( -\Delta u + \lambda \exp(u) = 0, \quad u_\Gamma = 0\) on \(\Omega\)
  */
 int
 main( int argc, char** argv )
