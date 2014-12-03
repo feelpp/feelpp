@@ -1,0 +1,658 @@
+Index: Mesh/CenterlineField.cpp
+===================================================================
+--- Mesh/CenterlineField.cpp	(révision 19884)
++++ Mesh/CenterlineField.cpp	(copie de travail)
+@@ -323,6 +323,7 @@
+   is_cut = 0;
+   is_closed = 0;
+   is_extruded = 0;
++  descInletOutlet = "";
+ 
+   options["closeVolume"] = new FieldOptionInt
+     (is_closed, "Action: Create In/Outlet planar faces");
+@@ -346,6 +347,13 @@
+     (nbElemSecondLayer, "Number of mesh elements the second extruded layer");
+   options["hSecondLayer"] = new FieldOptionDouble
+     (hSecondLayer, "Thickness (% of radius) of the second extruded layer");
++
++  //double * outlet0= new double(0);//outlet0CenterX
++  //double SavehLayer = hLayer;
++  options["descInletOutlet"] = new FieldOptionString
++    (descInletOutlet, "descInletOutlet");
++
++
+ }
+ 
+ Centerline::~Centerline()
+@@ -632,11 +640,24 @@
+   for (int i=0; i < NE; i++){
+     std::vector<GEdge*>e_compound;
+     GEdge *pe = current->getEdgeByTag(i+1);//current edge
++    //std::cout << "PPPPP faces().size " << pe->faces().size()<< "\n";
++
++    //discreteEdge hola( (const GEdge) *pe);
++    //discreteEdge * hola = new discreteEdge( *pe );
++    //discreteEdge * hola = new discreteEdge(current, NE+900, pe->getBeginVertex(), pe->getEndVertex());
++    //discreteEdge * hola = new discreteEdge(current, NE+900,  pe->getEndVertex(),pe->getBeginVertex());
++    //discreteEdge * hola = new discreteEdge(current, NE+900,0,0 );
++    //delete hola;
++
+     e_compound.push_back(pe);
+     int num_gec = NE+i+1;
+-    Msg::Info("Create Compound Line (%d) = %d discrete edge",
++    //int num_gec = 2*NE+2*i+2;
++    Msg::Info("Create Compound Line (%d)     = %d discrete edge",
+               num_gec, pe->tag());
+     GEdge *gec =  current->addCompoundEdge(e_compound,num_gec);
++    Msg::Info("Create Compound Line (%d) tag = %d discrete edge",
++              num_gec, gec->tag());
++
+     if (CTX::instance()->mesh.algo2d != ALGO_2D_BAMG){
+       gec->meshAttributes.method = MESH_TRANSFINITE;
+       gec->meshAttributes.nbPointsTransfinite = nbPoints+1;
+@@ -644,7 +665,64 @@
+       gec->meshAttributes.coeffTransfinite = 1.0;
+     }
+   }
++#if 0
++  std::map<int,bool> mapReverseMesh;
++  // search inltet to start
++  bool find=false;
++  for (int i=0; i < NE && !find; i++)
++    {
++      GEdge *pe = current->getEdgeByTag(i+1);//current edge
++      if ( pe->faces().size() == 1 )
++	{
++	  mapReverseMesh[ pe->faces().front()->tag() ] = false;
++	  std::cout << " mapReverseMesh init with " << pe->faces().front()->tag()  << " val " << mapReverseMesh[ pe->faces().front()->tag() ] << "\n";
++	  find=true;
++	}
++      //std::cout << "PPPPP regions().size " << pe->regions().size()<< "\n";
++      //std::cout << "PPPPP faces().size " << pe->faces().size()<< "\n";
++    }
++  if ( !find ) exit(0);
++  //int pe->faces().front()->tag();
++  //GFace *pf =  current->getFaceByTag( mapReverseMesh.begin()->first );
+ 
++  while( mapReverseMesh.size() < NF-1 )
++    {
++      for (int i=0; i < NF; i++)
++	{
++	  GFace *pf =  current->getFaceByTag( i+1 );
++	  if ( mapReverseMesh.find( i+1 ) != mapReverseMesh.end() )
++	    {
++	      std::list<GEdge*> myEdges = pf->edges();
++	      std::list<GEdge*>::iterator itE = myEdges.begin();
++	      std::list<GEdge*>::iterator enE = myEdges.end();
++	      //for (  pf->edges().size();++kk )
++	      for ( ; itE!=enE;++itE ) // foreach edges
++		{
++		  std::list<GFace*> myFaces = (*itE)->faces();
++		  std::list<GFace*>::iterator itF = myFaces.begin();
++		  std::list<GFace*>::iterator enF = myFaces.end();
++		  for ( ; itF!=enF;++itF ) // foreach edges
++		    {
++		      if ( (*itF)->tag() == i+1 ) continue;
++		      std::cout << "(*itF)->tag()" << (*itF)->tag() << " vs i+1 " << i+1 << "\n";
++		      if ( mapReverseMesh.find( (*itF)->tag() ) == mapReverseMesh.end() )
++			{
++			  mapReverseMesh[ (*itF)->tag() ] = !(mapReverseMesh.find( i+1 )->second);
++			  std::cout << " mapReverseMesh add  with " << (*itF)->tag() << " val " << mapReverseMesh[ (*itF)->tag() ] << "\n";
++			}
++		      else if ( (mapReverseMesh.find( (*itF)->tag() )->second == mapReverseMesh.find( i+1 )->second) )
++			{
++			  //std::cout << mapReverseMesh[ (*itF)->tag() ]<< " vs " << mapReverseMesh.find( i+1 )->second << "n";
++			  exit(0);
++			}
++		    }
++
++		}
++	    }
++	}
++      std::cout<< " mapReverseMesh.size() " << mapReverseMesh.size() << "\n";
++    } // while
++#endif
+   // Parametrize Compound surfaces
+   std::list<GEdge*> U0;
+   for (int i=0; i < NF; i++){
+@@ -652,17 +730,32 @@
+     GFace *pf =  current->getFaceByTag(i+1);//current face
+     f_compound.push_back(pf);
+     int num_gfc = NF+i+1;
+-    Msg::Info("Create Compound Surface (%d) = %d discrete face",
++    Msg::Info("Create Compound Surface (%d)     = %d discrete face",
+               num_gfc, pf->tag());
+ 
+     //1=conf_spectral 4=convex_circle, 7=conf_fe
+     GFace *gfc = current->addCompoundFace(f_compound, 7, 0, num_gfc);
+ 
++    Msg::Info("Create Compound Surface (%d) tag = %d discrete face",
++              num_gfc, gfc->tag());
++
++    //if ( gfc->tag() == 14 )
++    //if ( pf->tag() == 1 )
++    //if ( mapReverseMesh.find( gfc->tag() ) != mapReverseMesh.end() && mapReverseMesh.find( i+1 )->second )
++
++#if 0
++    if ( mapReverseMesh.find( i+1 ) != mapReverseMesh.end() && mapReverseMesh.find( i+1 )->second )
++      gfc->revertMeshPATCHAngiotk=true;
++#endif
++    //gfc->meshAttributes.reverseMesh=true;
++
+     gfc->meshAttributes.recombine = recombine;
+     gfc->addPhysicalEntity(1);
+     current->setPhysicalName("wall", 2, 1);//tag 1
+ 
+   }
++
++
+ }
+ 
+ void Centerline::createFaces()
+@@ -717,11 +810,77 @@
+   }
+ }
+ 
++void Centerline::initPhysicalMarkerFromDescFile( std::vector<GEdge*> boundEdges )
++{
++  if ( !descInletOutlet.empty() )
++   {
++      Msg::Info("Centerline: action (initPhysicalMarkerFromDescFile) use descInletOutlet %s ",descInletOutlet.c_str());
++      //std::cout << "descInletOutlet : " << descInletOutlet << "\n";
++      std::map<std::pair<std::string,std::string>,SPoint3> mapPhysicalMarkerToPointLoc;
++
++      std::ifstream fichier(descInletOutlet.c_str(), std::ios::in);  // on ouvre le fichier en lecture
++      if(fichier)  // si l'ouverture a réussi
++        {       
++	  // instructions
++	  std::string physicalMarkerLumen,physicalMarkerArterialWall;double ptx,pty,ptz;
++	  while ( !fichier.eof() )
++	    {
++	      fichier >> physicalMarkerLumen >> physicalMarkerArterialWall >> ptx >> pty >> ptz;
++	      //std::cout << "load physicalMarker " << physicalMarkerLumen << "," << physicalMarkerArterialWall << " :" << ptx << " " << pty << " " << ptz << "\n";
++	      //mapPhysicalMarkerToPointLoc[std::make_pair(physicalMarkerLumen,physicalMarkerLumen+"ring")] = SPoint3( ptx, pty, ptz );
++	      mapPhysicalMarkerToPointLoc[std::make_pair(physicalMarkerLumen,physicalMarkerArterialWall)] = SPoint3( ptx, pty, ptz );
++
++	    }
++	  fichier.close();  // on ferme le fichier
++        }
++        else  // sinon
++	  Msg::Fatal("Impossible d'ouvrir le fichier %s ", descInletOutlet.c_str());
++
++      //std::map<std::string,SPoint3>::iterator itPM = mapPhysicalMarkerToPointLoc.begin();
++      //std::map<std::string,SPoint3>::iterator enPM = mapPhysicalMarkerToPointLoc.end();
++      std::map<std::pair<std::string,std::string>,SPoint3>::iterator itPM = mapPhysicalMarkerToPointLoc.begin();
++      std::map<std::pair<std::string,std::string>,SPoint3>::iterator enPM = mapPhysicalMarkerToPointLoc.end();
++      for ( ; itPM != enPM ; ++itPM )
++	{
++	  double minDist = 1.e6;
++	  unsigned int idxE = boundEdges.size()+10; 
++	  SPoint3 pt = itPM->second;
++	  //for each boundary edges search 
++	  for (unsigned int i = 0; i<  boundEdges.size(); i++)
++	    {
++	      //TODO trouver le plus proche
++	      GEdge * gec;
++	      if(is_cut) gec = current->getEdgeByTag(NE+boundEdges[i]->tag());
++	      else gec = current->getEdgeByTag(boundEdges[i]->tag());
++
++	      GVertex *gv = gec->getBeginVertex();
++	      SPoint3 ptTest(gv->x(), gv->y(), gv->z());
++	      double dist = pt.distance(ptTest);
++	      if ( dist < minDist )
++		{
++		  minDist=dist;
++		  idxE = i;
++		}
++	    }
++	  //mapEdgeIdToPhysicalMarker[idxE] = itPM->first;
++	  //mapBoundEdgeIdToPhysicalMarker[boundEdges[idxE]->tag()] = itPM->first;
++	  mapBoundEdgeIdToPhysicalMarkerLumen[boundEdges[idxE]->tag()] = itPM->first.first;
++	  mapBoundEdgeIdToPhysicalMarkerArerialWall[boundEdges[idxE]->tag()] = itPM->first.second;
++	}
++   } // if ( !descInletOutlet.empty() )
++}
++
++
+ void Centerline::createClosedVolume(GEdge *gin, std::vector<GEdge*> boundEdges)
+ {
++
+   current->setFactory("Gmsh");
+   std::vector<std::vector<GFace *> > myFaceLoops;
+   std::vector<GFace *> myFaces;
++
++  int currentTagPhysicalMark = 100;
++  std::map<std::string,int> mapMarkerToTag;
++
+   for (unsigned int i = 0; i<  boundEdges.size(); i++){
+     std::vector<std::vector<GEdge *> > myEdgeLoops;
+     std::vector<GEdge *> myEdges;
+@@ -731,14 +890,34 @@
+     myEdges.push_back(gec);
+     myEdgeLoops.push_back(myEdges);
+     GFace *newFace = current->addPlanarFace(myEdgeLoops);
+-    if (gin==boundEdges[i]) {
+-      newFace->addPhysicalEntity(2);
+-      current->setPhysicalName("inlet", 2, 2);//tag 2
+-    }
+-    else{
+-      newFace->addPhysicalEntity(3);
+-      current->setPhysicalName("outlets", 2, 3);//tag 3
+-    }
++
++    if ( mapBoundEdgeIdToPhysicalMarkerLumen.find( boundEdges[i]->tag() ) != mapBoundEdgeIdToPhysicalMarkerLumen.end() )
++      {
++	std::string marker = mapBoundEdgeIdToPhysicalMarkerLumen.find( boundEdges[i]->tag() )->second;
++	int thetag = currentTagPhysicalMark;
++	if ( mapMarkerToTag.find(marker) != mapMarkerToTag.end() )
++	  thetag = mapMarkerToTag.find(marker)->second;
++	else
++	  {
++	    mapMarkerToTag[marker] = thetag;
++	    ++currentTagPhysicalMark;
++	  }
++
++	newFace->addPhysicalEntity( thetag);
++	current->setPhysicalName(marker, 2, thetag);//tag 2
++      }
++    else
++      {
++
++	if (gin==boundEdges[i]) {
++	  newFace->addPhysicalEntity(2);
++	  current->setPhysicalName("inlet", 2, 2);//tag 2
++	}
++	else{
++	  newFace->addPhysicalEntity(3);
++	  current->setPhysicalName("outlets", 2, 3);//tag 3
++	}
++      }
+     myFaces.push_back(newFace);
+   }
+ 
+@@ -765,6 +944,7 @@
+   Msg::Info("Centerline: extrude boundary layer wall (%d, %g%%R) ", nbElemLayer,  hLayer);
+ 
+   //orient extrude direction outward
++#if 1
+   int dir = 0;
+   MElement *e = current->getFaceByTag(1)->getMeshElement(0);
+   SVector3 ne = e->getFace(0).normal();
+@@ -778,7 +958,7 @@
+   SVector3 nc = ps-pc;
+   if (dot(ne,nc) < 0) dir = 1;
+   if (dir == 1 && hLayer > 0 ) hLayer *= -1.0;
+-
++#endif
+   //int shift = 0;
+   //if(is_cut) shift = NE;
+   for (int i= 0; i< NF; i++){
+@@ -786,6 +966,22 @@
+     if (is_cut) gfc = current->getFaceByTag(NF+i+1);
+     else gfc = current->getFaceByTag(i+1);
+     current->setFactory("Gmsh");
++#if 0
++    int dir = 0;
++    MElement *e = current->getFaceByTag(i+1)->getMeshElement(0);
++    SVector3 ne = e->getFace(0).normal();
++    SVector3 ps(e->getVertex(0)->x(), e->getVertex(0)->y(), e->getVertex(0)->z());
++    double xyz[3] = {ps.x(), ps.y(), ps.z()};
++    ANNidx index[1];
++    ANNdist dist[1];
++    kdtree->annkSearch(xyz, 1, index, dist);
++    ANNpointArray nodes = kdtree->thePoints();
++    SVector3 pc(nodes[index[0]][0], nodes[index[0]][1], nodes[index[0]][2]);
++    SVector3 nc = ps-pc;
++    if (dot(ne,nc) < 0) dir = 1;
++    if (dir == 1 && hLayer > 0 ) hLayer *= -1.0;
++#endif
++
+     //view -5 to scale hLayer by radius in BoundaryLayers.cpp
+     std::vector<GEntity*> extrudedE = current->extrudeBoundaryLayer
+       (gfc, nbElemLayer,  hLayer, dir, -5);
+@@ -809,6 +1005,9 @@
+     }
+     //end double extrusion
+ 
++
++    int currentTagPhysicalMark = 500;
++    std::map<std::string,int> mapMarkerToTag;
+     for (unsigned int j = 2; j < extrudedE.size(); j++){
+       GFace *elFace = (GFace*) extrudedE[j];
+       std::list<GEdge*> l_edges = elFace->edges();
+@@ -816,14 +1015,32 @@
+ 	GEdge *myEdge = *it;
+ 	if (is_cut) myEdge = current->getEdgeByTag((*it)->tag()-NE);
+ 	if( std::find(boundEdges.begin(), boundEdges.end(), myEdge) != boundEdges.end() ){
+-	  if (myEdge==gin){
+-	    elFace->addPhysicalEntity(7);
+-	    current->setPhysicalName("inletRing", 2, 7);//tag 7
+-	  }
+-	  else{
+-	    elFace->addPhysicalEntity(8);
+-	    current->setPhysicalName("outletRings", 2, 8);//tag 8
+-	  }
++
++	  if ( mapBoundEdgeIdToPhysicalMarkerArerialWall.find( myEdge->tag() ) != mapBoundEdgeIdToPhysicalMarkerArerialWall.end() )
++	    {
++	      std::string marker = mapBoundEdgeIdToPhysicalMarkerArerialWall.find( myEdge->tag() )->second;
++	      int thetag=currentTagPhysicalMark;
++	      if ( mapMarkerToTag.find(marker) != mapMarkerToTag.end() )
++		thetag = mapMarkerToTag.find(marker)->second;
++	      else
++		{
++		  mapMarkerToTag[marker] = thetag;
++		  ++currentTagPhysicalMark;
++		}
++	      elFace->addPhysicalEntity( thetag);
++	      current->setPhysicalName(marker, 2, thetag);//tag 2
++	    }
++	  else
++	    {
++	      if (myEdge==gin){
++		elFace->addPhysicalEntity(7);
++		current->setPhysicalName("inletRing", 2, 7);//tag 7
++	      }
++	      else{
++		elFace->addPhysicalEntity(8);
++		current->setPhysicalName("outletRings", 2, 8);//tag 8
++	      }
++	    }
+ 	}
+       }
+     }
+@@ -833,6 +1050,7 @@
+ 
+ void Centerline::run()
+ {
++  //std::cout << "hLayer " << hLayer << "\n";
+   double t1 = Cpu();
+   if (update_needed){
+     std::ifstream input;
+@@ -850,9 +1068,10 @@
+   if (is_cut) cutMesh();
+   else{
+     GFace *gf = current->getFaceByTag(1);
+-    gf->addPhysicalEntity(1);
+-    current->setPhysicalName("wall", 2, 1);//tag 1
++    gf->addPhysicalEntity(4);
++    current->setPhysicalName("wall", 2, 4);//tag 1
+     current->createTopologyFromMesh();
++    ((GFaceCompound*)gf)->coherenceNormals();
+     NV = current->getMaxElementaryNumber(0);
+     NE = current->getMaxElementaryNumber(1);
+     NF = current->getMaxElementaryNumber(2);
+@@ -863,6 +1082,7 @@
+   std::vector<GEdge*> boundEdges;
+   double dist_inlet = 1.e6;
+   GEdge *gin = NULL;
++  //int cptInOut=0;
+   for (int i= 0; i< NF; i++){
+     GFace *gf = current->getFaceByTag(i+1);
+     std::list<GEdge*> l_edges = gf->edges();
+@@ -872,6 +1092,7 @@
+       if (ite != boundEdges.end()) boundEdges.erase(ite);
+       else boundEdges.push_back(*it);
+       GVertex *gv = (*it)->getBeginVertex();
++      //std::cout << "inletoutlet " << cptInOut++ << " = " << gv->x() << " " << gv->y() << " " << gv->z() << "\n";
+       SPoint3 pt(gv->x(), gv->y(), gv->z());
+       double dist = pt.distance(ptin);
+       if(dist < dist_inlet){
+@@ -881,6 +1102,8 @@
+     }
+   }
+ 
++  if (is_closed || is_extruded)
++    this->initPhysicalMarkerFromDescFile( boundEdges );
+   if (is_closed)   createClosedVolume(gin, boundEdges);
+   if (is_extruded) extrudeBoundaryLayerWall(gin, boundEdges);
+ 
+@@ -888,6 +1111,7 @@
+   Msg::Info("Centerline operators computed in %g (s) ",t2-t1);
+ }
+ 
++#if 0
+ void Centerline::cutMesh()
+ {
+   Msg::Info("Centerline: action (cutMesh) splits surface mesh (%d tris) using %s ",
+@@ -902,12 +1126,19 @@
+     // printf("*** Centerline branch %d (AR=%.1f) \n", edges[i].tag, AR);
+ 
+     int nbSplit = (int)ceil(AR/2 + 1.1); //AR/2 + 0.9
++    //int nbSplit = (int)ceil(AR/4 + 1.1); //AR/2 + 0.9
++    //nbSplit = std::min( nbSplit, 8 );
+     if( nbSplit > 1 ){
+-      //printf("->> cut branch in %d parts \n",  nbSplit);
++      printf("->> cut branch in %d parts \n",  nbSplit);
++      std::cout << "->> cut branch "<< i << "(L="<< L << " ,D="<< D << " ,AR=" << AR << ")"
++		<< " in " << nbSplit << " parts\n";
+       double li  = L/nbSplit;
+       double lc = 0.0;
+       for (unsigned int j= 0; j < lines.size(); j++){
++      //for (unsigned int j= 2/*0*/; j < lines.size()-2; j++){
+ 	lc += lines[j]->getLength();
++	//if ( j < 3 || j >  lines.size()-3 ) continue;
++	//if ( j != (int)ceil( lines.size()/2) ) continue;
+ 	if (lc > li && nbSplit > 1) {
+ 	  MVertex *v1 = lines[j]->getVertex(0);
+ 	  MVertex *v2 = lines[j]->getVertex(1);
+@@ -920,6 +1151,7 @@
+ 	}
+       }
+     }
++#if 1
+     if(edges[i].children.size() > 0.0 && AR > 1.0){
+       MVertex *v1 = lines[lines.size()-1]->getVertex(1);//end vertex
+       MVertex *v2;
+@@ -943,6 +1175,7 @@
+       //   cutted = cutByDisk(pt, dir, itr->second);
+       // }
+     }
++#endif
+  }
+ 
+   //create discreteFaces
+@@ -953,7 +1186,169 @@
+   //write
+   Msg::Info("Centerline: writing splitted mesh 'myPARTS.msh'");
+   current->writeMSH("myPARTS.msh", 2.2, false, false);
++  //exit(0);
++  //create compounds
++  createSplitCompounds();
+ 
++  Msg::Info("Done splitting mesh by centerlines");
++}
++#else
++
++/**
++ * NEW
++ */
++void Centerline::cutMesh()
++{
++  Msg::Info("Centerline: action (cutMesh) splits surface mesh (%d tris) using %s ",
++            triangles.size(), fileName.c_str());
++
++  // i->j->(pt,radius)
++  std::vector< std::map<int, std::pair<SVector3,double> > > cutDiskToPerform(edges.size());
++  // first pass
++  for(unsigned int i = 0; i < edges.size(); i++){
++    std::vector<MLine*> lines = edges[i].lines;
++    double L = edges[i].length;
++    double D = 2.*edges[i].minRad;  //(edges[i].minRad+edges[i].maxRad);
++    double AR = L/D;
++    // printf("*** Centerline branch %d (AR=%.1f) \n", edges[i].tag, AR);
++
++    int nbSplit = (int)ceil(AR/2 + 1.1); //AR/2 + 0.9
++    //int nbSplit = (int)ceil(AR/4 + 1.1); //AR/2 + 0.9
++    //nbSplit = std::min( nbSplit, 8 );
++    if( nbSplit > 1 ){
++      printf("->> cut branch in %d parts \n",  nbSplit);
++      std::cout << "->> cut branch "<< i << "(L="<< L << " ,D="<< D << " ,AR=" << AR << ")"
++		<< " in " << nbSplit << " parts\n";
++      double li  = L/nbSplit;
++      double lc = 0.0;
++      for (unsigned int j= 0; j < lines.size(); j++){
++      //for (unsigned int j= 2/*0*/; j < lines.size()-2; j++){
++	lc += lines[j]->getLength();
++	//if ( j < 3 || j >  lines.size()-3 ) continue;
++	//if ( j != (int)ceil( lines.size()/2) ) continue;
++	if (lc > li && nbSplit > 1) {
++	  MVertex *v1 = lines[j]->getVertex(0);
++	  //MVertex *v2 = lines[j]->getVertex(1);
++	  SVector3 pt(v1->x(), v1->y(), v1->z());
++	  //SVector3 dir(v2->x()-v1->x(),v2->y()-v1->y(),v2->z()-v1->z());
++	  std::map<MLine*,double>::iterator itr = radiusl.find(lines[j]);
++	  double radius= itr->second;
++	  //cutByDisk(pt, dir, itr->second);
++
++	  bool applyCut=true;
++	  for(unsigned int ii = 0; ii < edges.size(); ii++){
++	    std::map<int, std::pair<SVector3,double> >::iterator itj = cutDiskToPerform[ii].begin();
++	    std::map<int, std::pair<SVector3,double> >::iterator enj = cutDiskToPerform[ii].end();
++	    for (; itj!=enj && applyCut;++itj)
++	      {
++		//int j= itj->first;
++		SVector3 ptTest = itj->second.first;
++		double radiusTest= itj->second.second;
++		double distBetweenCenter = std::sqrt( std::pow( pt.x()-ptTest.x(),2)+std::pow( pt.y()-ptTest.y(),2)+std::pow( pt.z()-ptTest.z(),2) );
++		if ( distBetweenCenter < (radius+radiusTest)/2. ) //if ( distBetweenCenter < (radius+radiusTest) )
++		  applyCut=false;
++	      }
++	  }
++	  if ( applyCut )
++	    cutDiskToPerform[i][j] = std::make_pair(pt,itr->second );
++	  nbSplit--;
++	  lc = 0.0;
++	}
++      }
++    }
++  } // end first for
++
++  for(unsigned int i = 0; i < edges.size(); i++){
++    std::vector<MLine*> lines = edges[i].lines;
++    std::map<int, std::pair<SVector3,double> >::iterator itj = cutDiskToPerform[i].begin();
++    std::map<int, std::pair<SVector3,double> >::iterator enj = cutDiskToPerform[i].end();
++    //std::cout << "->> cut branch "<< i << "(L="<< L << " ,D="<< D << " ,AR=" << AR << ")"
++    //<< " in " << nbSplit << " parts\n";
++    std::cout << "->> cut branch "<< i << "\n";
++    for (; itj!=enj;++itj)
++      {
++	int j= itj->first;
++	SVector3 pt = itj->second.first;
++	double radius= itj->second.second;
++
++	MVertex *v1 = lines[j]->getVertex(0);
++	MVertex *v2 = lines[j]->getVertex(1);
++	SVector3 dir(v2->x()-v1->x(),v2->y()-v1->y(),v2->z()-v1->z());
++	cutByDisk(pt, dir, radius);
++      }
++  }
++
++#if 0
++  //splitMesh
++  for(unsigned int i = 0; i < edges.size(); i++){
++    std::vector<MLine*> lines = edges[i].lines;
++    double L = edges[i].length;
++    double D = 2.*edges[i].minRad;  //(edges[i].minRad+edges[i].maxRad);
++    double AR = L/D;
++    // printf("*** Centerline branch %d (AR=%.1f) \n", edges[i].tag, AR);
++
++    int nbSplit = (int)ceil(AR/2 + 1.1); //AR/2 + 0.9
++    //int nbSplit = (int)ceil(AR/4 + 1.1); //AR/2 + 0.9
++    //nbSplit = std::min( nbSplit, 8 );
++    if( nbSplit > 1 ){
++      printf("->> cut branch in %d parts \n",  nbSplit);
++      std::cout << "->> cut branch "<< i << "(L="<< L << " ,D="<< D << " ,AR=" << AR << ")"
++		<< " in " << nbSplit << " parts\n";
++      double li  = L/nbSplit;
++      double lc = 0.0;
++      for (unsigned int j= 0; j < lines.size(); j++){
++      //for (unsigned int j= 2/*0*/; j < lines.size()-2; j++){
++	lc += lines[j]->getLength();
++	//if ( j < 3 || j >  lines.size()-3 ) continue;
++	//if ( j != (int)ceil( lines.size()/2) ) continue;
++	if (lc > li && nbSplit > 1) {
++	  MVertex *v1 = lines[j]->getVertex(0);
++	  MVertex *v2 = lines[j]->getVertex(1);
++	  SVector3 pt(v1->x(), v1->y(), v1->z());
++	  SVector3 dir(v2->x()-v1->x(),v2->y()-v1->y(),v2->z()-v1->z());
++	  std::map<MLine*,double>::iterator itr = radiusl.find(lines[j]);
++	  cutByDisk(pt, dir, itr->second);
++	  nbSplit--;
++	  lc = 0.0;
++	}
++      }
++    }
++#if 0
++    if(edges[i].children.size() > 0.0 && AR > 1.0){
++      MVertex *v1 = lines[lines.size()-1]->getVertex(1);//end vertex
++      MVertex *v2;
++      if(AR < 1.5) v2 = lines[0]->getVertex(0);
++      else if (lines.size() > 4) v2 = lines[lines.size()-4]->getVertex(0);
++      else v2 = lines[lines.size()-1]->getVertex(0);
++      SVector3 pt(v1->x(), v1->y(), v1->z());
++      SVector3 dir(v2->x()-v1->x(),v2->y()-v1->y(),v2->z()-v1->z());
++      //printf("-->> cut branch at bifurcation \n");
++      std::map<MLine*,double>::iterator itr = radiusl.find(lines[lines.size()-1]);
++      //bool cutted =
++      cutByDisk(pt, dir, itr->second);
++      // if(!cutted){
++      //   int l = lines.size()-1-lines.size()/(4*nbSplit); //chech this!
++      //   v1 = lines[l]->getVertex(1);
++      //   v2 = lines[l]->getVertex(0);
++      //   pt = SVector3(v1->x(), v1->y(), v1->z());
++      //   dir = SVector3(v2->x()-v1->x(),v2->y()-v1->y(),v2->z()-v1->z());
++      //   printf("-->> cut bifurcation NEW \n");
++      //   itr = radiusl.find(lines[l]);
++      //   cutted = cutByDisk(pt, dir, itr->second);
++      // }
++    }
++#endif
++ }
++#endif
++  //create discreteFaces
++  createFaces();
++  current->createTopologyFromFaces(discFaces);
++  current->exportDiscreteGEOInternals();
++
++  //write
++  Msg::Info("Centerline: writing splitted mesh 'myPARTS.msh'");
++  current->writeMSH("myPARTS.msh", 2.2, false, false);
++  //exit(0);
+   //create compounds
+   createSplitCompounds();
+ 
+@@ -960,6 +1355,8 @@
+   Msg::Info("Done splitting mesh by centerlines");
+ }
+ 
++
++#endif
+ bool Centerline::cutByDisk(SVector3 &PT, SVector3 &NORM, double &maxRad)
+ {
+   double a = NORM.x();
+Index: Mesh/CenterlineField.h
+===================================================================
+--- Mesh/CenterlineField.h	(révision 19884)
++++ Mesh/CenterlineField.h	(copie de travail)
+@@ -66,7 +66,9 @@
+   double hSecondLayer;
+   int nbElemLayer;
+   int nbElemSecondLayer;
+-
++  std::string descInletOutlet;
++  std::map<int,std::string> mapBoundEdgeIdToPhysicalMarkerLumen;
++  std::map<int,std::string> mapBoundEdgeIdToPhysicalMarkerArerialWall;
+   //inlet point
+   SPoint3 ptin;
+   //all (unique) lines of centerlines
+@@ -142,6 +144,9 @@
+   //actions
+   void run();
+ 
++  //load desc file and define marker which are close to a point
++  void initPhysicalMarkerFromDescFile( std::vector<GEdge*> boundEdges );
++
+   // Cut the mesh in different parts of small aspect ratio
+   void cutMesh();
+   //Create In and Outlet Planar Faces
