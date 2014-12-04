@@ -53,7 +53,11 @@ int main(int argc, char** argv)
 	f12 += on (markedfaces(mesh,"source"),_rhs=f11,_element=u,_expr=g);
 	f12.solve(_rhs=f11,_solution=u);
 
-	auto ff = vf::project(element(mesh),real(u)*real(u)) + vf::project(element(mesh),imag(u)*imag(u));
+#if 0
+	auto ff = vf::project(Vh,element(mesh),real(u)*real(u)) + vf::project(elements(mesh),imag(u)*imag(u));
+#else
+	auto ff = vf::project(Vh,elements(mesh),cst(1.));
+#endif
 	f22  = integrate(_range=elements(mesh),_expr=grad(theta)*trans(gradt(theta)));
 	f21  = integrate(_range=markedelements(mesh,"steak"),_expr=idv(ff)*id(theta));
 	f22 += on(_range=markedfaces(mesh,"border"),_rhs=f21,_element=theta,_expr=cst(0.));
