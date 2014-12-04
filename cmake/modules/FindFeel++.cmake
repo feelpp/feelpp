@@ -104,13 +104,8 @@ if ( FEELPP_DISABLE_EIGEN_ALIGNMENT )
   message(STATUS "[feelpp] Disabling alignment and vectorisation in Feel++/Eigen")
 endif()
 
-
 # enable move semantics
 MARK_AS_ADVANCED(FEELPP_ENABLE_MOVE_SEMANTICS)
-IF ( FEELPP_ENABLE_MOVE_SEMANTICS )
-  SET( BOOST_UBLAS_MOVE_SEMANTICS 1 CACHE STRING "Enable Boost Ublas move semantics" FORCE )
-  ADD_DEFINITIONS( -DBOOST_UBLAS_MOVE_SEMANTICS )
-ENDIF( FEELPP_ENABLE_MOVE_SEMANTICS )
 
 # enable instantiation
 MARK_AS_ADVANCED(FEELPP_ENABLE_INSTANTIATION_MODE)
@@ -378,6 +373,12 @@ else()
   message(STATUS "[feelpp] Please check your boost version - Should be at least ${BOOST_MIN_VERSION}")
 endif()
 
+IF ( FEELPP_ENABLE_MOVE_SEMANTICS AND Boost_MAJOR_VERSION EQUAL "1" AND Boost_MINOR_VERSION LESS "57" )
+  SET( BOOST_UBLAS_MOVE_SEMANTICS 1 CACHE STRING "Enable Boost Ublas move semantics" FORCE )
+  ADD_DEFINITIONS( -DBOOST_UBLAS_MOVE_SEMANTICS )
+ENDIF()
+
+
 OPTION(BOOST_ENABLE_TEST_DYN_LINK "enable boost test with dynamic lib" ON)
 MARK_AS_ADVANCED(BOOST_ENABLE_TEST_DYN_LINK)
 
@@ -490,8 +491,7 @@ endif()
 #
 OPTION( FEELPP_ENABLE_HPDDM "Enable HPDDM" OFF )
 if ( FEELPP_ENABLE_HPDDM )
-  UNSET(HPDDM_INCLUDE_DIR CACHE)
-  FIND_PATH(HPDDM_INCLUDE_DIR HPDDM.hpp HINTS ${FEELPP_SOURCE_DIR}/contrib $ENV{HPDDM_DIR} PATH_SUFFIXES hpddm/src src)
+  FIND_PATH(HPDDM_INCLUDE_DIR HPDDM.hpp HINTS ${FEELPP_SOURCE_DIR}/contrib $ENV{HPDDM_DIR} ${HPDDM_INCLUDE_DIR} PATH_SUFFIXES hpddm/src)
   if( HPDDM_INCLUDE_DIR )
     INCLUDE_DIRECTORIES( ${HPDDM_INCLUDE_DIR} )
     SET(FEELPP_HAS_HPDDM 1)
@@ -867,7 +867,6 @@ endif()
 # VTK
 #
 OPTION( FEELPP_ENABLE_VTK "Enable the VTK library" ON )
-OPTION( FEELPP_ENABLE_VTK_EXPORTER "Enable the VTK exporter" OFF )
 OPTION( FEELPP_ENABLE_VTK_INSITU "Enable In-Situ Visualization using VTK/Paraview" OFF )
 if ( FEELPP_ENABLE_VTK )
 
@@ -879,6 +878,9 @@ if ( FEELPP_ENABLE_VTK )
         message(STATUS "[ParaView] Use file: ${PARAVIEW_USE_FILE}")
         INCLUDE(${PARAVIEW_USE_FILE})
 
+        # Enable VTK exporter and insitu in config
+        set(FEELPP_VTK_INSITU_ENABLED 1)
+
         # Mark VTK as available
         set(FEELPP_HAS_VTK 1)
         # Check for version to ensure that we are able to
@@ -887,10 +889,6 @@ if ( FEELPP_ENABLE_VTK )
         if( VTK_MAJOR_VERSION EQUAL 6 OR VTK_MAJOR_VERSION GREATER 6 )
             set(VTK_HAS_PARALLEL 1)
         endif()
-
-        # Enable VTK exporter and insitu in config
-        set(FEELPP_VTK_EXPORTER_ENABLED 1)
-        set(FEELPP_VTK_INSITU_ENABLED 1)
 
         SET(FEELPP_LIBRARIES ${ParaView_LIBRARIES} ${FEELPP_LIBRARIES})
         SET(FEELPP_LIBRARIES ${VTK_LIBRARIES} ${FEELPP_LIBRARIES})
@@ -902,10 +900,6 @@ if ( FEELPP_ENABLE_VTK )
         if( VTK_FOUND )
             set(FEELPP_HAS_VTK 1)
             MESSAGE(STATUS "[feelpp] Found VTK ${VTK_MAJOR_VERSION}.${VTK_MINOR_VERSION}")# ${VTK_LIBRARIES}")
-
-            if ( FEELPP_ENABLE_VTK_EXPORTER )
-                set(FEELPP_VTK_EXPORTER_ENABLED 1)
-            endif()
 
             # Check for MPI suppot in VTK
             set(VTK_HAS_PARALLEL 0)
@@ -985,7 +979,11 @@ endif( FEELPP_ENABLE_OCTAVE)
 #
 # Gmsh
 #
-FIND_PACKAGE(Gmsh)
+if(FEELPP_USE_GMSH_PACKAGE)
+	FIND_PACKAGE(Gmsh)
+else()
+	set(GMSH_FOUND false)
+endif()
 if(NOT GMSH_FOUND)#Download and Instal it
   message(STATUS "[feelpp] GMSH NOT FOUND - Downloading and Installing it" )
   execute_process(COMMAND mkdir -p ${CMAKE_BINARY_DIR}/contrib/gmsh-compile)
