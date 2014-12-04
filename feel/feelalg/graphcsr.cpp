@@ -380,6 +380,12 @@ GraphCSR::updateDataMap( vf::BlocksBase<self_ptrtype> const & blockSet )
                 M_mapRow->setMapGlobalProcessToGlobalCluster( localDofRow, globalDofRow );
             }
          }
+
+        for ( auto const& activeDofShared : mapRowOnBlock.activeDofSharedOnCluster() )
+        {
+            M_mapRow->setActiveDofSharedOnCluster( nLocalDofStartRow + activeDofShared.first, activeDofShared.second );
+        }
+
         nLocalDofStartRow += mapRowOnBlock.nLocalDofWithGhost( myrank );
         start_ii += mapRowOnBlock.nLocalDofWithoutGhost( myrank );
     }
@@ -415,6 +421,12 @@ GraphCSR::updateDataMap( vf::BlocksBase<self_ptrtype> const & blockSet )
                 M_mapCol->setMapGlobalProcessToGlobalCluster( localDofCol, globalDofCol );
             }
          }
+
+        for ( auto const& activeDofShared : mapColOnBlock.activeDofSharedOnCluster() )
+        {
+            M_mapCol->setActiveDofSharedOnCluster( nLocalDofStartCol + activeDofShared.first, activeDofShared.second );
+        }
+
         nLocalDofStartCol += mapColOnBlock.nLocalDofWithGhost( myrank );
         start_jj += mapColOnBlock.nLocalDofWithoutGhost( myrank );
     }

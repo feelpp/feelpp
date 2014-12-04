@@ -72,3 +72,6 @@
 [submodule "contrib/nt2"]
 	path = contrib/nt2
 	url = https://github.com/feelpp/nt2.git
+[submodule "contrib/hpddm"]
+	path = contrib/hpddm
+	url = https://github.com/hpddm/hpddm.git

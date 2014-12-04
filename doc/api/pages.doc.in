@@ -26,6 +26,7 @@ namespace Feel
     - \subpage TutorialVisualize
     - \subpage TutorialIntegrals
     - \subpage TutorialSpaces
+    - \subpage TutorialFunctions
     - \subpage TutorialBackend
  */
 /** \page QuickRef Quick Reference

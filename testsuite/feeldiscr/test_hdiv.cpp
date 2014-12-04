@@ -138,7 +138,7 @@ public:
     TestHDiv()
         :
         super(),
-        M_backend( backend_type::build( this->vm() ) ),
+        M_backend( backend_type::build( soption( _name="backend" ) ) ),
         meshSize( this->vm()["hsize"].as<double>() ),
         exporter( Exporter<mesh_type>::New( this->vm() ) )
     {

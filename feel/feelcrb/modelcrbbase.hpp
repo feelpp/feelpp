@@ -503,10 +503,12 @@ public :
     {
         return computeAffineDecomposition( mpl::bool_< is_time_dependent >() );
     }
+
     affine_decomposition_type computeAffineDecomposition( mpl::bool_<true> )
     {
         return boost::make_tuple( M_Mqm , M_Aqm , M_Fqm );
     }
+
     affine_decomposition_type computeAffineDecomposition( mpl::bool_<false> )
     {
         return boost::make_tuple( M_Aqm , M_Fqm );
@@ -576,7 +578,7 @@ public :
         if( sizeA > 0 )
         {
             //if the user doesn't implement computeBetaQ function
-            //and so gives affne decomposition terms using addLhs ect...
+            //and so gives affine decomposition terms using addLhs ect...
             //then we consider we have 2 outputs
             int nboutputs=2;
             int sizeM=M_ginacMq.size();

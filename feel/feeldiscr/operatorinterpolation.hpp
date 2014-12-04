@@ -298,6 +298,9 @@ protected:
 
 private:
 
+    // determine if ghost dofs must used if the active dof in not present from the range
+    std::set<size_type> defineGhostDofUsedToInterpolate();
+
     void updateSameMesh();
     void updateNoRelationMesh();
     void updateNoRelationMeshMPI();
@@ -316,7 +319,8 @@ private:
                  std::vector<std::vector<typename image_mesh_type::node_type> >,
                  std::vector<std::vector< std::vector<typename image_mesh_type::node_type > > > >
     updateNoRelationMeshMPI_pointDistribution(const std::vector< std::list<boost::tuple<int,size_type,double> > > & memory_valueInMatrix,
-                                              std::vector<std::set<size_type> > & dof_searchWithProc);
+                                              std::vector<std::set<size_type> > const& dof_searchWithProc,
+                                              std::set<size_type> const& ghostDofUsedToInterpolate );
 
     // search in my world
     std::list<boost::tuple<size_type,uint16_type> >
@@ -345,6 +349,19 @@ private:
                                               bool extrapolation_mode,
                                               extrapolation_memory_type & dof_extrapolationData);
 
+    std::list<boost::tuple<size_type,uint16_type> >
+    updateNoRelationMeshMPI_upWithOtherWorld2( boost::tuple<std::vector<rank_type>,std::vector<rank_type>,std::vector<boost::tuple<int,int> > > const& worldcommFusionProperties,
+                                               std::vector< std::vector<size_type> > const& memmapGdof,
+                                               std::vector< std::vector<uint16_type> > const& memmapComp,
+                                               std::vector<std::vector<typename image_mesh_type::node_type> > const& pointsSearched,
+                                               std::vector<std::vector< std::vector<typename image_mesh_type::node_type > > > const& memmap_vertices,
+                                               graph_ptrtype & sparsity_graph,
+                                               std::vector< std::list<boost::tuple<int,size_type,double> > > & memory_valueInMatrix,
+                                              std::vector<std::map<size_type,size_type> > & memory_col_globalProcessToGlobalCluster,
+                                               std::vector<std::set<size_type> > & dof_searchWithProc,
+                                               bool extrapolation_mode,
+                                               extrapolation_memory_type & dof_extrapolationData);
+
     std::list<range_iterator> M_listRange;
     WorldComm M_WorldCommFusion;
     InterpType M_interptype;
@@ -359,7 +376,9 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     :
     super( domainspace, imagespace, backend, false ),
     M_listRange(),
-    M_WorldCommFusion( (ddmethod) ? this->domainSpace()->worldComm() : this->domainSpace()->worldComm()+this->dualImageSpace()->worldComm() ),
+    M_WorldCommFusion( (ddmethod || ( this->domainSpace()->worldComm() == this->dualImageSpace()->worldComm() ) ) ?
+                       this->domainSpace()->worldComm() :
+                       this->domainSpace()->worldComm()+this->dualImageSpace()->worldComm() ),
     M_interptype(interptype)
 {
     M_listRange.push_back( elements( imagespace->mesh() ) );
@@ -377,7 +396,9 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     :
     super( domainspace, imagespace, backend, false ),
     M_listRange(),
-    M_WorldCommFusion( (ddmethod) ? this->domainSpace()->worldComm() : this->domainSpace()->worldComm()+this->dualImageSpace()->worldComm() ),
+    M_WorldCommFusion( (ddmethod || ( this->domainSpace()->worldComm() == this->dualImageSpace()->worldComm() ) ) ?
+                       this->domainSpace()->worldComm() :
+                       this->domainSpace()->worldComm()+this->dualImageSpace()->worldComm() ),
     M_interptype(interptype)
 {
     M_listRange.push_back( r );
@@ -394,7 +415,9 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     :
     super( domainspace, imagespace, backend, false ),
     M_listRange( r ),
-    M_WorldCommFusion( (ddmethod) ? this->domainSpace()->worldComm() : this->domainSpace()->worldComm()+this->dualImageSpace()->worldComm() ),
+    M_WorldCommFusion( (ddmethod || ( this->domainSpace()->worldComm() == this->dualImageSpace()->worldComm() ) ) ?
+                       this->domainSpace()->worldComm() :
+                       this->domainSpace()->worldComm()+this->dualImageSpace()->worldComm() ),
     M_interptype(interptype)
 {
     update();
@@ -439,6 +462,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     // close matrix after build
     this->mat().close();
 }
+
 
 //-----------------------------------------------------------------------------------------------------------------//
 //-----------------------------------------------------------------------------------------------------------------//
@@ -796,6 +820,144 @@ domainLocalDofFromImageLocalDof( boost::shared_ptr<DomainDofType> const& domaind
 } // namespace detail
 
 template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange,typename InterpType>
+std::set<size_type>
+OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::defineGhostDofUsedToInterpolate()
+{
+    std::set<size_type> ghostDofUsedToInterpolate;
+    bool meshAreRelated = this->dualImageSpace()->mesh()->isRelatedTo( this->domainSpace()->mesh() );
+
+    auto const& imagedof = this->dualImageSpace()->dof();
+
+    std::map< rank_type, std::vector< size_type > > dataToSend, dataToRecv;
+    // init container used in send/recv
+    for ( rank_type p : this->dualImageSpace()->dof()->neighborSubdomains() )
+    {
+        dataToSend[p].clear();
+        dataToRecv[p].clear();
+    }
+
+    std::vector<std::set<uint16_type> > dof_done( this->dualImageSpace()->nLocalDof(), std::set<uint16_type>() );
+    std::set<size_type> activeDofSharedPresentInRange;
+    auto itListRange = M_listRange.begin();
+    auto const enListRange = M_listRange.end();
+    for ( ; itListRange!=enListRange ; ++itListRange)
+    {
+        for( auto const& theImageEltWrap : *itListRange )
+        {
+            auto const& theImageElt = boost::unwrap_ref(theImageEltWrap);
+
+            // if related -> check connection between domain and image element
+            if ( meshAreRelated )
+            {
+                auto idElem = detailsup::idElt( theImageElt,idim_type() );
+                auto const domains_eid_set = Feel::detail::domainEltIdFromImageEltId( this->domainSpace()->mesh(),this->dualImageSpace()->mesh(),idElem );
+                if ( domains_eid_set.size() == 0 )
+                    continue;
+            }
+
+            for ( uint16_type iloc = 0; iloc < nLocalDofInDualImageElt; ++iloc )
+            {
+                for ( uint16_type comp = 0; comp < image_basis_type::nComponents; ++comp )
+                {
+                    uint16_type compDofTableImage = (image_basis_type::is_product)? comp : 0;
+                    auto thedofImage = imagedof->localToGlobal( theImageElt, iloc, compDofTableImage );
+                    size_type igp = thedofImage.index();
+
+                    if ( ( image_basis_type::is_product && dof_done[igp].empty() ) ||
+                         ( !image_basis_type::is_product && dof_done[igp].find( comp ) == dof_done[igp].end() ) )
+                    {
+                        if ( imagedof->dofGlobalProcessIsGhost( igp ) )
+                        {
+                            const size_type igc = imagedof->mapGlobalProcessToGlobalCluster()[igp];
+                            const rank_type theproc = imagedof->procOnGlobalCluster( igc );
+                            dataToSend[theproc].push_back( igc );
+
+                            dof_done[igp].insert( comp );
+                        }
+                        else if ( imagedof->activeDofSharedOnCluster().find( igp ) != imagedof->activeDofSharedOnCluster().end() )
+                        {
+                            activeDofSharedPresentInRange.insert(igp);
+                        }
+                    } // dof_done
+                } // comp
+            }
+        }
+    }
+
+    int nbRequest=2*this->dualImageSpace()->dof()->neighborSubdomains().size();
+    mpi::request * reqs = new mpi::request[nbRequest];
+    int cptRequest=0;
+
+    for ( rank_type p : this->dualImageSpace()->dof()->neighborSubdomains() )
+    {
+        CHECK( dataToSend.find(p) != dataToSend.end() ) << " no data to send to proc " << p << "\n";
+        reqs[cptRequest] = this->dualImageSpace()->worldComm().localComm().isend( p , 0, dataToSend.find(p)->second );
+        ++cptRequest;
+        reqs[cptRequest] = this->dualImageSpace()->worldComm().localComm().irecv( p , 0, dataToRecv[p] );
+        ++cptRequest;
+    }
+    // wait all requests
+    mpi::wait_all(reqs, reqs + nbRequest);
+
+
+    std::map< size_type, std::set<rank_type> > dataToTreat;
+    for ( auto const& dataR : dataToRecv )
+    {
+        rank_type theproc = dataR.first;
+        for ( auto const& dofInProc : dataR.second )
+            dataToTreat[dofInProc].insert( theproc );
+    }
+
+    std::map< rank_type, std::vector< size_type > > dataToReSend, dataToReRecv;
+    for ( rank_type p : this->dualImageSpace()->dof()->neighborSubdomains() )
+    {
+        dataToReSend[p].clear();
+        dataToReRecv[p].clear();
+    }
+
+    for ( auto const& dofAsked : dataToTreat )
+    {
+        size_type thedofGC = dofAsked.first;
+        CHECK( imagedof->dofGlobalClusterIsOnProc( thedofGC ) ) << " thedofGC "<< thedofGC << "is not on proc\n";
+        size_type thedofGP = imagedof->mapGlobalClusterToGlobalProcess( thedofGC - imagedof->firstDofGlobalCluster() );
+
+        CHECK ( imagedof->mapGlobalProcessToGlobalCluster( thedofGP ) == thedofGC ) << "error " << imagedof->mapGlobalProcessToGlobalCluster( thedofGP ) << "must be equal to " << thedofGC;
+
+        if ( activeDofSharedPresentInRange.find(thedofGP) == activeDofSharedPresentInRange.end() )
+        {
+            // define one rank to interpolate the dof
+            dataToReSend[ *(dofAsked.second.begin()) ].push_back( thedofGC );
+        }
+
+    }
+
+    cptRequest=0;
+    for ( rank_type p : this->dualImageSpace()->dof()->neighborSubdomains() )
+    {
+        CHECK( dataToReSend.find(p) != dataToReSend.end() ) << " no data to send to proc " << p << "\n";
+        reqs[cptRequest] = this->dualImageSpace()->worldComm().localComm().isend( p , 0, dataToReSend.find(p)->second );
+        ++cptRequest;
+        reqs[cptRequest] = this->dualImageSpace()->worldComm().localComm().irecv( p , 0, dataToReRecv[p] );
+        ++cptRequest;
+    }
+    // wait all requests
+    mpi::wait_all(reqs, reqs + nbRequest);
+    delete [] reqs;
+
+    for ( rank_type p : this->dualImageSpace()->dof()->neighborSubdomains() )
+    {
+        for ( size_type k : dataToReRecv[p] )
+            ghostDofUsedToInterpolate.insert( k );
+    }
+
+    return ghostDofUsedToInterpolate;
+}
+
+//--------------------------------------------------------------------------------------------------//
+//--------------------------------------------------------------------------------------------------//
+//--------------------------------------------------------------------------------------------------//
+
+template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange,typename InterpType>
 void
 OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::updateSameMesh()
 {
@@ -833,6 +995,15 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     auto expr = vf::id(uDomain);
     auto MlocEvalBasisNEW = Feel::detail::precomputeDomainBasisFunction( this->domainSpace(), this->dualImageSpace(), expr );
     Eigen::MatrixXd IhLoc;
+
+
+    // determine if ghost dofs must used if the active dof in not present from the range
+    std::set<size_type> ghostDofUsedToInterpolate;
+    if ( this->dualImageSpace()->worldComm().localSize() > 0 )
+    {
+        ghostDofUsedToInterpolate = this->defineGhostDofUsedToInterpolate();
+    }
+
 
     // we perfom 2 pass : first build matrix graph, second assembly matrix
     enum OpToApplyEnum { BUILD_GRAPH, ASSEMBLY_MATRIX };
@@ -874,13 +1045,16 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                         uint16_type compDofTableImage = (image_basis_type::is_product)? comp : 0;
                         auto thedofImage = imagedof->localToGlobal( theImageElt, iloc, compDofTableImage );
                         size_type i = thedofImage.index();
-                        if ( imagedof->dofGlobalProcessIsGhost( i ) ) continue;
 
                         if ( ( image_basis_type::is_product && dof_done[i].empty() ) ||
                              ( !image_basis_type::is_product && dof_done[i].find( comp ) == dof_done[i].end() ) )
                         {
                             const auto ig1 = imagedof->mapGlobalProcessToGlobalCluster()[i];
                             const auto theproc = imagedof->procOnGlobalCluster( ig1 );
+
+                            if ( imagedof->dofGlobalProcessIsGhost( i ) &&
+                                 ( ghostDofUsedToInterpolate.find(ig1) == ghostDofUsedToInterpolate.end() ) ) continue;
+
 
                             if ( opToApply == OpToApplyEnum::BUILD_GRAPH )
                             {
@@ -1169,26 +1343,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     const size_type lastcol_dof_on_proc = this->domainSpace()->dof()->lastDofGlobalCluster( proc_id_col );
 
 
-
-    std::vector<size_type> first_col_entry( this->domainSpace()->worldComm().globalSize() );
-    std::vector<size_type> last_col_entry( this->domainSpace()->worldComm().globalSize() );
-    mpi::all_gather( this->domainSpace()->worldComm().globalComm(),
-                     firstcol_dof_on_proc,//this->firstColEntryOnProc(),
-                     first_col_entry );
-    mpi::all_gather( this->domainSpace()->worldComm().globalComm(),
-                     lastcol_dof_on_proc,//this->lastColEntryOnProc(),
-                     last_col_entry );
-    size_type thefirstCol = *std::min_element( first_col_entry.begin(),first_col_entry.end() );
-    size_type thelastCol = *std::max_element( last_col_entry.begin(),last_col_entry.end() );
-
-#if 0
-    graph_ptrtype sparsity_graph( new graph_type( nrow_dof_on_proc,
-                                                  firstrow_dof_on_proc, lastrow_dof_on_proc,
-                                                  thefirstCol,thelastCol,
-                                                  this->dualImageSpace()->worldComm() ) );
-#else
     graph_ptrtype sparsity_graph( new graph_type(this->dualImageSpace()->dof(), this->domainSpace()->dof() ) );
-#endif
+
 
     size_type new_nLocalDofWithoutGhost=this->domainSpace()->nDof()/nProc_row;
     size_type new_nLocalDofWithoutGhost_tempp=this->domainSpace()->nDof()/nProc_row;
@@ -1226,12 +1382,25 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
 
     //-----------------------------------------------------------------------------------------
-    // relation between domain/image worldcomm and the fuison worldcomm
+    // relation between domain/image worldcomm and the fusion worldcomm
     //-----------------------------------------------------------------------------------------
 
     //std::vector<boost::tuple<int,int,int,int> > worldcommFusionProperties;
     boost::tuple<std::vector<rank_type>,std::vector<rank_type>,std::vector<boost::tuple<int,int> > > worldcommFusionProperties;
-    if ( this->interpolationType().searchWithCommunication())
+    if ( this->domainSpace()->worldComm() == this->dualImageSpace()->worldComm() )
+    {
+        std::vector<rank_type> localMeshRankToWorldCommFusion_domain(nProc_col);
+        for( rank_type p = 0 ; p<nProc_col ; ++p )
+            localMeshRankToWorldCommFusion_domain[p]=p;
+        std::vector<rank_type> localMeshRankToWorldCommFusion_image(nProc_row);
+        for( rank_type p = 0 ; p<nProc_row ; ++p )
+            localMeshRankToWorldCommFusion_image[p]=p;
+        std::vector<boost::tuple<int,int> > procActivitiesOnWorldCommFusion(this->worldCommFusion().globalSize(),(int)true);
+        worldcommFusionProperties.template get<0>() = localMeshRankToWorldCommFusion_domain;
+        worldcommFusionProperties.template get<1>() = localMeshRankToWorldCommFusion_image;
+        worldcommFusionProperties.template get<2>() = procActivitiesOnWorldCommFusion;
+    }
+    else if ( this->interpolationType().searchWithCommunication())
     {
         // Attention : marche que si les 2 worldcomms qui s'emboite (mon cas)
         std::vector<rank_type> localMeshRankToWorldCommFusion_domain(nProc_col);
@@ -1242,22 +1411,12 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
         mpi::all_gather( this->dualImageSpace()->mesh()->worldComm().localComm(),
                          this->worldCommFusion().globalRank(),
                          localMeshRankToWorldCommFusion_image );
-#if 0
-        std::vector<int> domainProcIsActive_fusion(this->worldCommFusion().globalSize());
-        mpi::all_gather( this->worldCommFusion().globalComm(),
-                         (int)this->domainSpace()->worldComm().isActive(),
-                         domainProcIsActive_fusion );
-        std::vector<int> imageProcIsActive_fusion(this->worldCommFusion().globalSize());
-        mpi::all_gather( this->worldCommFusion().globalComm(),
-                         (int)this->dualImageSpace()->worldComm().isActive(),
-                         imageProcIsActive_fusion );
-#else
+
         std::vector<boost::tuple<int,int> > procActivitiesOnWorldCommFusion(this->worldCommFusion().globalSize());
         auto dataSendToAllGather = boost::make_tuple( (int)this->domainSpace()->worldComm().isActive(),(int)this->dualImageSpace()->worldComm().isActive() );
         mpi::all_gather( this->worldCommFusion().globalComm(),
                          dataSendToAllGather,
                          procActivitiesOnWorldCommFusion );
-#endif
 
 
         //----------------------------------------------//
@@ -1302,6 +1461,11 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     } // if (this->interpolationType().searchWithCommunication())
 
     //-----------------------------------------------------------------------------------------
+    // determine if ghost dofs must used if the active dof in not present from the range
+    //-----------------------------------------------------------------------------------------
+    std::set<size_type> ghostDofUsedToInterpolate = this->defineGhostDofUsedToInterpolate();
+
+    //-----------------------------------------------------------------------------------------
     // Start localization process
     //-----------------------------------------------------------------------------------------
 
@@ -1344,7 +1508,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
    while(!FinishMPIsearch)
        {
            mytimer.restart();
-           auto pointDistribution = this->updateNoRelationMeshMPI_pointDistribution(memory_valueInMatrix,dof_searchWithProc);
+           auto pointDistribution = this->updateNoRelationMeshMPI_pointDistribution(memory_valueInMatrix,dof_searchWithProc,ghostDofUsedToInterpolate);
            auto memmapGdof = pointDistribution.template get<0>();
            auto memmapComp = pointDistribution.template get<1>();
            auto pointsSearched = pointDistribution.template get<2>();
@@ -1377,18 +1541,18 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
            if (this->interpolationType().searchWithCommunication())
                {
-                   auto memory_localisationFail2 = this->updateNoRelationMeshMPI_upWithOtherWorld( worldcommFusionProperties, //input
-                                                                                                   memmapGdof, // input
-                                                                                                   memmapComp, // input
-                                                                                                   pointsSearched, // input
-                                                                                                   memmapVertices, // input
-                                                                                                   sparsity_graph, // output
-                                                                                                   memory_valueInMatrix, // output
-                                                                                                   memory_col_globalProcessToGlobalCluster, // output
-                                                                                                   dof_searchWithProc, // output
-                                                                                                   false,// extrapolation_mode
-                                                                                                   dof_extrapolationData // empty
-                                                                                                   );
+                   auto memory_localisationFail2 = this->updateNoRelationMeshMPI_upWithOtherWorld2( worldcommFusionProperties, //input
+                                                                                                    memmapGdof, // input
+                                                                                                    memmapComp, // input
+                                                                                                    pointsSearched, // input
+                                                                                                    memmapVertices, // input
+                                                                                                    sparsity_graph, // output
+                                                                                                    memory_valueInMatrix, // output
+                                                                                                    memory_col_globalProcessToGlobalCluster, // output
+                                                                                                    dof_searchWithProc, // output
+                                                                                                    false,// extrapolation_mode
+                                                                                                    dof_extrapolationData // empty
+                                                                                                    );
 
                    const size_type nbLocalisationFail_loc = memory_localisationFail.size()+memory_localisationFail2.size();
                    mpi::all_reduce( this->worldCommFusion().globalComm(),
@@ -1429,7 +1593,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
            // localisation process
            while(!FinishMPIsearchExtrap)
                {
-                   auto pointDistribution = this->updateNoRelationMeshMPI_pointDistribution(memory_valueInMatrix,dof_searchWithProcExtrap);
+                   auto pointDistribution = this->updateNoRelationMeshMPI_pointDistribution(memory_valueInMatrix,dof_searchWithProcExtrap,ghostDofUsedToInterpolate);
                    auto memmapGdof = pointDistribution.template get<0>();
                    auto memmapComp = pointDistribution.template get<1>();
                    auto pointsSearched = pointDistribution.template get<2>();
@@ -1449,7 +1613,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                    //std::cout <<  "proc " << this->worldCommFusion().globalRank() <<  " memory_localisationFail.size() " << memory_localisationFail.size() << std::endl;
                    if (this->interpolationType().searchWithCommunication())
                        {
-                           auto memory_localisationFail2 = this->updateNoRelationMeshMPI_upWithOtherWorld( worldcommFusionProperties, //input
+                           auto memory_localisationFail2 = this->updateNoRelationMeshMPI_upWithOtherWorld2( worldcommFusionProperties, //input
                                                                                                            memmapGdof, // input
                                                                                                            memmapComp, // input
                                                                                                            pointsSearched, // input
@@ -1627,9 +1791,9 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                     for (auto it_j=memory_valueInMatrix[idx_i].begin(),en_j=memory_valueInMatrix[idx_i].end() ; it_j!=en_j ; ++it_j)
                         {
                             if (memory_valueInMatrix[idx_i].size()>0)
-                                {
-                                    this->matPtr()->set(idx_i,mapCol_LocalSpaceDofToLocalInterpDof[it_j->template get<0>()][it_j->template get<1>()],it_j->template get<2>());
-                                }
+                            {
+                                this->matPtr()->set(idx_i,mapCol_LocalSpaceDofToLocalInterpDof[it_j->template get<0>()][it_j->template get<1>()],it_j->template get<2>());
+                            }
                         }
                 }
         }
@@ -2344,7 +2508,418 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
 
 
     return memory_localisationFail;
-}
+} // version1
+
+template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange,typename InterpType>
+std::list<boost::tuple<size_type,uint16_type> >
+OperatorInterpolation<DomainSpaceType, ImageSpaceType,
+                      IteratorRange,InterpType>::updateNoRelationMeshMPI_upWithOtherWorld2( boost::tuple<std::vector<rank_type>,std::vector<rank_type>,std::vector<boost::tuple<int,int> > > const& worldcommFusionProperties,
+                                                                                           std::vector< std::vector<size_type> > const& memmapGdof,
+                                                                                           std::vector< std::vector<uint16_type> > const& memmapComp,
+                                                                                           std::vector<std::vector<typename image_mesh_type::node_type> > const& pointsSearched,
+                                                                                           std::vector<std::vector< std::vector<typename image_mesh_type::node_type > > > const & memmap_vertices,
+                                                                                           graph_ptrtype & sparsity_graph,
+                                                                                           std::vector< std::list<boost::tuple<int,size_type,double> > > & memory_valueInMatrix,
+                                                                                           std::vector<std::map<size_type,size_type> > & memory_col_globalProcessToGlobalCluster,
+                                                                                           std::vector<std::set<size_type> > & dof_searchWithProc,
+                                                                                           bool extrapolation_mode,
+                                                                                           extrapolation_memory_type & dof_extrapolationData )
+{
+    std::list<boost::tuple<size_type,uint16_type> > memory_localisationFail;// gdof,comp
+
+    auto const* imagedof = this->dualImageSpace()->dof().get();
+    auto const* domaindof = this->domainSpace()->dof().get();
+    auto const* domainbasis = this->domainSpace()->basis().get();
+
+    const size_type proc_id = this->dualImageSpace()->worldComm()/*worldsComm()[0]*/.localRank();
+    const size_type proc_id_image = this->dualImageSpace()->mesh()->worldComm().localRank();
+    const size_type proc_id_domain = this->domainSpace()->mesh()->worldComm().localRank();
+    const size_type nProc = this->dualImageSpace()->mesh()->worldComm().size();
+    const size_type nProc_row = this->dualImageSpace()->mesh()->worldComm().localSize();
+    const size_type nProc_col = this->domainSpace()->mesh()->worldComm().localSize();
+    const size_type nProc_image = this->dualImageSpace()->mesh()->worldComm().localSize();
+    const size_type nProc_domain = this->domainSpace()->mesh()->worldComm().localSize();
+
+    // localisation tool with matrix node
+    auto locTool = this->domainSpace()->mesh()->tool_localization();
+    bool notUseOptLocTest = domain_mesh_type::nDim!=domain_mesh_type::nRealDim;
+    if (notUseOptLocTest) locTool->kdtree()->nbNearNeighbor(domain_mesh_type::element_type::numPoints);
+
+    matrix_node_type ptsReal( image_mesh_type::nRealDim, 1 );
+    matrix_node_type ptsRef( domain_mesh_type::nDim , 1 );
+    matrix_node_type MlocEval(domain_basis_type::nLocalDof*domain_basis_type::nComponents1,1);
+    matrix_node_type verticesOfEltSearched;
+
+    // random (just to start)
+    //size_type eltIdLocalised = this->domainSpace()->mesh()->beginElementWithId(this->domainSpace()->mesh()->worldComm().localRank())->id();
+    size_type eltIdLocalised = this->domainSpace()->mesh()->beginElementWithProcessId(this->domainSpace()->mesh()->worldComm().localRank())->id();
+    auto const& eltRandom = this->domainSpace()->mesh()->element(eltIdLocalised);
+
+    std::vector<bool> dof_done( this->dualImageSpace()->nLocalDof(), false);
+
+
+
+
+    auto const& localMeshRankToWorldCommFusion_domain = worldcommFusionProperties.template get<0>();
+    auto const& localMeshRankToWorldCommFusion_image = worldcommFusionProperties.template get<1>();
+    auto const& activitiesOnWorldCommFusion = worldcommFusionProperties.template get<2>();
+
+    std::vector<int> domainProcIsActive_fusion(this->worldCommFusion().globalSize());
+    std::vector<int> imageProcIsActive_fusion(this->worldCommFusion().globalSize());
+    for (int p=0 ; p<this->worldCommFusion().globalSize() ; ++p)
+    {
+        domainProcIsActive_fusion[p] = activitiesOnWorldCommFusion[p].template get<0>();
+        imageProcIsActive_fusion[p] = activitiesOnWorldCommFusion[p].template get<1>();
+    }
+
+
+
+    // collective mpi comm to known who comunincates whom
+    std::vector<std::vector<rank_type> > searchDistribution(nProc);
+    std::vector<rank_type> distributionToSend;
+    for (rank_type q=0;q<nProc_domain;++q)
+    {
+        if ( pointsSearched[q].size()>0 && localMeshRankToWorldCommFusion_image[proc_id_image]!=localMeshRankToWorldCommFusion_domain[q] )
+            distributionToSend.push_back(q);
+    }
+    mpi::all_gather( this->worldCommFusion().globalComm(),
+                     distributionToSend,
+                     searchDistribution );
+
+
+#if 0
+    this->worldCommFusion().barrier();
+    for (int p=0;p<this->worldCommFusion().globalSize();++p)
+        {
+            if (p==this->worldCommFusion().globalRank())
+                {
+                    std::cout << "I am proc " << p << "\n";
+                    for (int q=0;q<nProc_image;++q)
+                        {
+                            std::cout << "["<< q << "] : ";
+                            auto it_list = searchDistribution[q].begin();
+                            auto en_list = searchDistribution[q].end();
+                            for ( ; it_list!=en_list;++it_list)
+                                {
+                                    std::cout << *it_list <<" ";
+                                }
+                            std::cout << std::endl;
+                        }
+                }
+            this->worldCommFusion().barrier();
+        }
+#endif
+
+
+    // containers used in send/recv
+    std::map<rank_type, boost::tuple< std::vector<typename image_mesh_type::node_type>,
+                                      std::vector<uint16_type>,
+                                      std::vector< std::vector<typename image_mesh_type::node_type > >
+                                      > > dataToRecv, dataToSend;
+
+    std::map<rank_type, boost::tuple< std::vector<typename image_mesh_type::node_type>,
+                                      std::vector<bool>,
+                                      std::vector<int>,
+                                      std::vector<std::vector<int> >,
+                                      std::vector<std::vector<int> >,
+                                      std::vector<typename image_mesh_type::node_type> > > dataReRecv, dataReSend;
+
+
+    // compute number of request isend/irecv
+    int nbRequest=searchDistribution[proc_id_image].size();
+    for (int proc=0;proc<nProc_row;++proc)
+    {
+        if ( proc_id_image != proc &&
+             std::find(searchDistribution[proc].begin(),searchDistribution[proc].end(),proc_id_image) != searchDistribution[proc].end() )
+            ++ nbRequest;
+    }
+
+    // build container to send
+    for ( rank_type rankLocalization : searchDistribution[proc_id_image] )
+    {
+        const rank_type rankToSend = localMeshRankToWorldCommFusion_domain[rankLocalization];
+        //CHECK( rankToSend == rankLocalization ) << "strange " << rankToSend << " " << rankLocalization << "\n";
+        if (InterpType::value==0)
+            CHECK( memmap_vertices[rankLocalization].size() == 0 ) << " memmap_vertices must be empty in conformal case\n";
+
+        dataToSend[rankLocalization] = boost::make_tuple( pointsSearched[rankLocalization], memmapComp[rankLocalization], memmap_vertices[rankLocalization] );
+    }
+
+    mpi::request * reqs = new mpi::request[nbRequest];
+    int cptRequest=0;
+    // send info
+    for ( rank_type rankLocalization : searchDistribution[proc_id_image] )
+    {
+        const rank_type rankToSend = localMeshRankToWorldCommFusion_domain[rankLocalization];
+        reqs[cptRequest] = this->worldCommFusion().globalComm().isend( rankToSend , 0, dataToSend[rankLocalization] );
+        ++cptRequest;
+    }
+    // recv info
+    for (rank_type proc=0;proc<nProc_row;++proc)
+    {
+        if ( proc_id_image != proc &&
+             std::find(searchDistribution[proc].begin(),searchDistribution[proc].end(),proc_id_image) != searchDistribution[proc].end() )
+        {
+            const rank_type rankToRecv = localMeshRankToWorldCommFusion_image[proc];
+            reqs[cptRequest] = this->worldCommFusion().globalComm().irecv( rankToRecv , 0, dataToRecv[proc] );
+            ++cptRequest;
+        }
+    }
+
+    // wait all requests
+    CHECK( cptRequest == nbRequest ) << cptRequest << " vs " <<  nbRequest << "\n" ;
+    mpi::wait_all(reqs, reqs + nbRequest);
+
+
+    cptRequest=0;
+    for ( auto const& dataToTreatBase : dataToRecv )
+    {
+        //const rank_type rankToRecv = localMeshRankToWorldCommFusion_image[dataToTreatNew->first];
+        rank_type theproc = dataToTreatBase.first;
+        auto const& dataToTreat = dataToTreatBase.second;
+        const size_type nDataRecv = dataToTreat.template get<0>().size();
+        auto const& dataToRecv_ptsSearch = dataToTreat.template get<0>();
+        auto const& dataToRecv_Comp = dataToTreat.template get<1>();
+        auto const& dataToRecv_Vertices = dataToTreat.template get<2>();
+
+        // init container
+        dataReSend[theproc];
+        auto & pointsRefFinded = dataReSend[theproc].template get<0>();
+        auto & pointsRefIsFinded = dataReSend[theproc].template get<1>();
+        auto & pointsIdEltFinded = dataReSend[theproc].template get<2>();
+        auto & pointsDofsColFinded = dataReSend[theproc].template get<3>();
+        auto & pointsDofsGlobalClusterColFinded = dataReSend[theproc].template get<4>();
+        auto & pointsBaryFinded = dataReSend[theproc].template get<5>();
+        pointsRefFinded.resize(nDataRecv);
+        pointsRefIsFinded.resize(nDataRecv);std::fill(pointsRefIsFinded.begin(),pointsRefIsFinded.end(),false);
+        pointsIdEltFinded.resize(nDataRecv);
+        pointsDofsColFinded.resize(nDataRecv,std::vector<int>(1,0));
+        pointsDofsGlobalClusterColFinded.resize(nDataRecv,std::vector<int>(1,0));
+        if (extrapolation_mode) pointsBaryFinded.resize(nDataRecv);
+        else pointsBaryFinded.clear();
+
+        // iterate on points
+        for (size_type k=0;k<nDataRecv;++k)
+        {
+            // get real point to search
+            ublas::column(ptsReal,0) = dataToRecv_ptsSearch[k];
+            // vertice with conforme case
+            if (InterpType::value==1)
+            {
+                const uint16_type sizeVertices = dataToRecv_Vertices[k].size();
+                verticesOfEltSearched.resize( image_mesh_type::nRealDim,sizeVertices);
+                for ( uint16_type v=0;v<sizeVertices;++v)
+                    ublas::column(verticesOfEltSearched,v)=dataToRecv_Vertices[k][v];
+            }
+            else // random
+                verticesOfEltSearched = eltRandom.vertices();
+            // search process
+            if (notUseOptLocTest) eltIdLocalised=invalid_size_type_value;
+            auto resLocalisation = locTool->run_analysis(ptsReal,eltIdLocalised,verticesOfEltSearched,mpl::int_<interpolation_type::value>());
+            if (resLocalisation.template get<0>()[0]) // is find
+            {
+                eltIdLocalised = resLocalisation.template get<1>();
+                //-------------------------------------------------------------------------
+                if (!this->interpolationType().componentsAreSamePoint() )// all component
+                    //-------------------------------------------------------------------------
+                {
+                    const uint16_type comp=dataToRecv_Comp[k];
+                    pointsRefIsFinded[k]=true;
+                    pointsIdEltFinded[k]=eltIdLocalised;
+                    // get point in reference element
+                    auto itanal = locTool->result_analysis_begin();
+                    auto const itanal_end = locTool->result_analysis_end();
+                    for ( ;itanal!=itanal_end;++itanal)
+                    {
+                        auto const itL=itanal->second.begin();
+                        pointsRefFinded[k] = boost::get<1>(*itL);
+                    }
+                    // get global process dof and global cluster dof : column data map
+                    pointsDofsColFinded[k].resize(domain_basis_type::nLocalDof);
+                    pointsDofsGlobalClusterColFinded[k].resize(domain_basis_type::nLocalDof);
+                    for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
+                    {
+                        const auto j_gdof = boost::get<0>(domaindof->localToGlobal( eltIdLocalised,jloc,comp ));
+                        pointsDofsColFinded[k][jloc] = j_gdof;
+                        pointsDofsGlobalClusterColFinded[k][jloc] = domaindof->mapGlobalProcessToGlobalCluster()[j_gdof];
+                    }
+                    if (extrapolation_mode)
+                    {
+                        auto const& eltExtrapoled = this->domainSpace()->mesh()->element(eltIdLocalised);
+                        auto const verticesExtrapoled = eltExtrapoled.vertices();
+                        typename image_mesh_type::node_type bary(verticesExtrapoled.size1());
+                        for (int qi=0;qi<verticesExtrapoled.size1();++qi) bary(qi)=0;//important
+                        for (int qj=0;qj<verticesExtrapoled.size2();++qj)
+                        {
+                            /**/                              bary(0) += ublas::column(verticesExtrapoled,qj)(0);
+                            if (verticesExtrapoled.size1()>1) bary(1) += ublas::column(verticesExtrapoled,qj)(1);
+                            if (verticesExtrapoled.size1()>2) bary(2) += ublas::column(verticesExtrapoled,qj)(2);
+                        }
+                        /**/                              bary(0) /= verticesExtrapoled.size2();
+                        if (verticesExtrapoled.size1()>1) bary(1) /= verticesExtrapoled.size2();
+                        if (verticesExtrapoled.size1()>2) bary(2) /= verticesExtrapoled.size2();
+                        pointsBaryFinded[k]=bary;
+                    }
+                }
+                //-------------------------------------------------------------------------
+                else // components optimization
+                    //-------------------------------------------------------------------------
+                {
+                    auto const ptRefFinded = locTool->result_analysis_begin()->second.begin()->template get<1>();
+                    for ( uint16_type comp = 0;comp < image_basis_type::nComponents;++comp )
+                    {
+                        pointsRefIsFinded[k+comp]=true;
+                        pointsIdEltFinded[k+comp]=eltIdLocalised;
+                        // get point in reference element
+                        pointsRefFinded[k+comp] = ptRefFinded;
+
+                        pointsDofsColFinded[k+comp].resize(domain_basis_type::nLocalDof);
+                        pointsDofsGlobalClusterColFinded[k+comp].resize(domain_basis_type::nLocalDof);
+                        for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
+                        {
+                            const auto j_gdof = boost::get<0>(domaindof->localToGlobal( eltIdLocalised,jloc,comp ));
+                            pointsDofsColFinded[k+comp][jloc] = j_gdof;
+                            pointsDofsGlobalClusterColFinded[k+comp][jloc] = domaindof->mapGlobalProcessToGlobalCluster()[j_gdof];
+                        }
+                    }
+
+                    if (extrapolation_mode)
+                    {
+                        auto const& eltExtrapoled = this->domainSpace()->mesh()->element(eltIdLocalised);
+                        auto const verticesExtrapoled = eltExtrapoled.vertices();
+                        typename image_mesh_type::node_type bary(verticesExtrapoled.size1());
+                        for (int qi=0;qi<verticesExtrapoled.size1();++qi) bary(qi)=0;//important
+                        for (int qj=0;qj<verticesExtrapoled.size2();++qj)
+                        {
+                            /**/                              bary(0) += ublas::column(verticesExtrapoled,qj)(0);
+                            if (verticesExtrapoled.size1()>1) bary(1) += ublas::column(verticesExtrapoled,qj)(1);
+                            if (verticesExtrapoled.size1()>2) bary(2) += ublas::column(verticesExtrapoled,qj)(2);
+                        }
+                        /**/                              bary(0) /= verticesExtrapoled.size2();
+                        if (verticesExtrapoled.size1()>1) bary(1) /= verticesExtrapoled.size2();
+                        if (verticesExtrapoled.size1()>2) bary(2) /= verticesExtrapoled.size2();
+                        for ( uint16_type comp = 0;comp < image_basis_type::nComponents;++comp )
+                            pointsBaryFinded[k+comp]=bary;
+                    }
+                    // change increment in for
+                    k=k+image_basis_type::nComponents-1;
+                }
+                //std::cout << "F";
+            }
+            else // Not Find!
+            {
+                //memory_localisationFail
+                //std::cout << "NOT FIND"<<std::endl;
+            }
+
+        } // for (size_type k=0;k<nDataRecv;++k)
+
+        // send results
+        const rank_type rankToReSend = localMeshRankToWorldCommFusion_image[theproc];
+        reqs[cptRequest] = this->worldCommFusion().globalComm().isend( rankToReSend , 0, dataReSend[theproc] );
+        ++cptRequest;
+    }
+
+    // recv results
+    for ( rank_type rankLocalization : searchDistribution[proc_id_image] )
+    {
+        const rank_type rankToReRecv = localMeshRankToWorldCommFusion_domain[rankLocalization];
+        reqs[cptRequest] = this->worldCommFusion().globalComm().irecv( rankToReRecv , 0, dataReRecv[rankLocalization] );
+        ++cptRequest;
+    }
+
+    // wait all requests
+    CHECK( cptRequest == nbRequest ) << cptRequest << " vs " <<  nbRequest << "\n" ;
+    mpi::wait_all(reqs, reqs + nbRequest);
+    delete [] reqs;
+
+    for ( auto const& dataToTreatFinalBase : dataReRecv )
+    {
+        rank_type theproc = dataToTreatFinalBase.first;
+        auto const& dataToTreat = dataToTreatFinalBase.second;
+        auto const& dataPointsRefFinded = dataToTreat.template get<0>();
+        auto const& dataPointsRefIsFinded = dataToTreat.template get<1>();
+        auto const& dataPointsIdEltFinded = dataToTreat.template get<2>();
+        auto const& dataPointsDofsColFinded = dataToTreat.template get<3>();
+        auto const& dataPointsDofsGlobalClusterColFinded  = dataToTreat.template get<4>();
+        auto const& dataPointsBaryFinded = dataToTreat.template get<5>();
+
+        //const int rankRecv=rankLocalization;
+        for ( int k=0;k<dataPointsRefFinded.size();++k)
+        {
+            if (!dataPointsRefIsFinded[k])
+            {
+                memory_localisationFail.push_back(boost::make_tuple(memmapGdof[theproc][k],memmapComp[theproc][k]));
+                const auto i_gdof = memmapGdof[theproc][k];
+                dof_searchWithProc[i_gdof].insert(theproc);
+            }
+            else
+            {
+                const auto i_gdof = memmapGdof[theproc][k];
+                if (!dof_done[i_gdof])
+                {
+
+                    if (extrapolation_mode)
+                    {
+                        auto const bary = dataPointsBaryFinded[k];
+                        auto const theRefPtExtrap = dataPointsRefFinded[k];
+                        const auto comp = memmapComp[theproc][k];
+                        std::vector<std::pair<size_type,size_type> > j_gdofs(domain_basis_type::nLocalDof);
+                        for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
+                        {
+                            const size_type j_gdof =  dataPointsDofsColFinded[k][jloc];
+                            const size_type j_gdof_gc = dataPointsDofsGlobalClusterColFinded[k][jloc];
+                            j_gdofs[jloc]=std::make_pair(j_gdof,j_gdof_gc);
+                        }
+                        dof_extrapolationData[i_gdof].push_back(boost::make_tuple(theproc,bary,theRefPtExtrap,j_gdofs,comp));
+                    }
+                    else
+                    {
+                        ublas::column( ptsRef, 0 ) = dataPointsRefFinded[k];
+                        //evalute point on the reference element
+                        MlocEval = domainbasis->evaluate( ptsRef );
+
+                        const auto comp = memmapComp[theproc][k];
+                        const size_type myidElt = dataPointsIdEltFinded[k];
+                        const auto ig1 = imagedof->mapGlobalProcessToGlobalCluster()[i_gdof];
+                        const auto theRealProc = imagedof->procOnGlobalCluster(ig1);
+
+                        auto& row = sparsity_graph->row(ig1);
+                        row.template get<0>() = theRealProc;
+                        row.template get<1>() = ig1 - imagedof->firstDofGlobalCluster(theRealProc);
+
+                        for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
+                        {
+                            //get global process dof
+                            const size_type j_gdof =  dataPointsDofsColFinded[k][jloc];
+                            //get global cluster dof
+                            const size_type j_gdof_gc = dataPointsDofsGlobalClusterColFinded[k][jloc];
+                            // up graph
+                            row.template get<2>().insert(j_gdof_gc);
+                            // get value
+                            const auto v = MlocEval( domain_basis_type::nComponents1*jloc +
+                                                     comp*domain_basis_type::nComponents1*domain_basis_type::nLocalDof +
+                                                     comp, 0 );
+
+                            // save value
+                            memory_valueInMatrix[i_gdof].push_back(boost::make_tuple(theproc,j_gdof,v));
+                            // usefull to build datamap
+                            memory_col_globalProcessToGlobalCluster[theproc][j_gdof]=j_gdof_gc;
+                        }
+                        // dof ok : not anymore localise
+                        dof_searchWithProc[i_gdof].insert(theproc);
+                    }
+                    dof_done[i_gdof]=true;
+                } // if (!dof_done[i_gdof])
+            }
+        }
+
+
+    } // for ( auto const& dataToTreatFinalBase : dataReRecv )
+
+    return memory_localisationFail;
+} // version2
+
 
 template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange,typename InterpType>
 boost::tuple<std::vector< std::vector<size_type> >, std::vector< std::vector<uint16_type> >,
@@ -2352,7 +2927,8 @@ boost::tuple<std::vector< std::vector<size_type> >, std::vector< std::vector<uin
              std::vector<std::vector< std::vector<typename OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::image_mesh_type::node_type > > > >
 OperatorInterpolation<DomainSpaceType, ImageSpaceType,
                       IteratorRange,InterpType>::updateNoRelationMeshMPI_pointDistribution(const std::vector< std::list<boost::tuple<int,size_type,double> > > & memory_valueInMatrix,
-                                                                                           std::vector<std::set<size_type> > & dof_searchWithProc)
+                                                                                           std::vector<std::set<size_type> > const& dof_searchWithProc,
+                                                                                           std::set<size_type> const& ghostDofUsedToInterpolate )
 {
     //std::cout << " pointDistribution--1--- " << this->domainSpace()->mesh()->worldComm().godRank() << std::endl;
     //const size_type proc_id = this->dualImageSpace()->worldsComm()[0].localRank();
@@ -2414,6 +2990,13 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
                     {
 
                         const auto gdof =  boost::get<0>(imagedof->localToGlobal( theImageElt, iloc, comp ));
+
+                        const size_type gdofCluster = imagedof->mapGlobalProcessToGlobalCluster()[gdof];
+
+                        if ( imagedof->dofGlobalProcessIsGhost( gdof ) &&
+                             ( ghostDofUsedToInterpolate.find(gdofCluster) == ghostDofUsedToInterpolate.end() ) ) continue;
+
+
                         if (!dof_done[gdof] && memory_valueInMatrix[gdof].size()==0)
                         {
                             // the dof point

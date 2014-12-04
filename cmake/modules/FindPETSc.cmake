@@ -51,13 +51,29 @@ foreach( debian_arches linux kfreebsd )
   ENDIF()
 endforeach()
 
+set(DARWIN_FLAVORS real complex)
 IF ( "${CMAKE_BUILD_TYPE}" STREQUAL "Debug" )
   set( DARWIN_FLAVORS darwin-cxx-debug arch-darwin-cxx-debug arch-darwin-cxx-opt darwin-cxx-opt   ${DARWIN_FLAVORS})
 ELSE()
   set( DARWIN_FLAVORS darwin-cxx-opt  arch-darwin-cxx-opt darwin-cxx-debug arch-darwin-cxx-debug  ${DARWIN_FLAVORS})
 ENDIF()
 #message(STATUS "Darwin flavors: ${DARWIN_FLAVORS}")
-set(PETSC_VERSIONS 3.5.1 3.5.0 3.4.4 3.4.3 3.4.2 3.3 3.2 )
+set(PETSC_VERSIONS 3.5.2 3.5.1 3.5.0 3.4.4 3.4.3 3.4.2 3.3 3.2 )
+
+if ( NOT PETSC_DIR )
+  foreach( version ${PETSC_VERSIONS} )
+    foreach ( flavor ${DEBIAN_FLAVORS} ${DARWIN_FLAVORS} )
+      message(STATUS "checking version ${version} for file ${flavor}/include/petsc.h...")
+      find_path (PETSC_DIR include/petsc.h
+        PATHS
+        /usr/lib/petscdir/${version}/${flavor}
+        /usr/local/Cellar/petsc/${version}/${flavor}
+        NO_DEFAULT_PATH
+        DOC "PETSc Directory")
+    endforeach()
+  endforeach()
+endif()
+message(STATUS "Petsc Dir 2: ${PETSC_DIR}")
 
 find_path (PETSC_DIR include/petsc.h
   HINTS ENV PETSC_DIR
@@ -70,22 +86,7 @@ find_path (PETSC_DIR include/petsc.h
   $ENV{PETSC_HOME}
   $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}
   DOC "PETSc Directory")
-
-if ( NOT PETSC_DIR )
-  foreach( version ${PETSC_VERSIONS} )
-    foreach ( flavor ${DEBIAN_FLAVORS} ${DARWIN_FLAVORS} )
-      #message(STATUS "checking version ${version} for file ${flavor}/include/petsc.h...")
-      find_path (PETSC_DIR include/petsc.h
-        PATHS
-        /usr/lib/petscdir/${version}/${flavor}
-        /usr/local/Cellar/petsc/${version}/${flavor}
-        NO_DEFAULT_PATH
-        DOC "PETSc Directory")
-    endforeach()
-  endforeach()
-endif()
-message(STATUS "Petsc Dir: ${PETSC_DIR}")
-
+message(STATUS "Petsc Dir 1: ${PETSC_DIR}")
 
 if (PETSC_DIR AND NOT PETSC_ARCH)
   set (_petsc_arches

@@ -585,13 +585,13 @@ BenchmarkGreplLinearElliptic<Order>::computeMonolithicFormulation( parameter_typ
     M_monoF.resize(2);
     M_monoF[0] = backend()->newVector( Xh );
     M_monoF[1] = backend()->newVector( Xh );
-    form2( Xh, Xh, M_monoA ) = integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ) + idt( u )*id( v )*idv(g) ) +
+    form2( _test=Xh, _trial=Xh, _matrix=M_monoA ) = integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ) + idt( u )*id( v )*idv(g) ) +
         integrate( markedfaces( mesh, "boundaries" ), gamma_dir*idt( u )*id( v )/h()
                    -gradt( u )*vf::N()*id( v )
                    -grad( v )*vf::N()*idt( u )
                    );
-    form1( Xh, M_monoF[0] ) = integrate( _range=elements(mesh) , _expr=id( v ) * idv(g) );
-    form1( Xh, M_monoF[1] ) = integrate( _range=elements(mesh) , _expr=id( v ) );
+    form1( _test=Xh, _vector=M_monoF[0] ) = integrate( _range=elements(mesh) , _expr=id( v ) * idv(g) );
+    form1( _test=Xh, _vector=M_monoF[1] ) = integrate( _range=elements(mesh) , _expr=id( v ) );
 
     return boost::make_tuple( M_monoA, M_monoF );
 
@@ -637,11 +637,11 @@ void BenchmarkGreplLinearElliptic<Order>::assemble()
     for(int m=0; m<M_g; m++)
     {
         this->M_Fqm[0][0][m] = backend()->newVector( Xh );
-        form1( Xh, this->M_Fqm[0][0][m] ) = integrate( elements( mesh ), id( v ) * idv( eim_g->q(m) ) );
+        form1( _test=Xh, _vector=this->M_Fqm[0][0][m] ) = integrate( elements( mesh ), id( v ) * idv( eim_g->q(m) ) );
     }
     this->M_Fqm[1][0].resize(1);
     this->M_Fqm[1][0][0] = backend()->newVector( Xh );
-    form1( Xh, this->M_Fqm[1][0][0] ) = integrate( elements( mesh ), id( v ) );
+    form1( _test=Xh, _vector=this->M_Fqm[1][0][0] ) = integrate( elements( mesh ), id( v ) );
 
 
     //use computeLinearDecompositionA to provide innter product matrix
@@ -650,7 +650,7 @@ void BenchmarkGreplLinearElliptic<Order>::assemble()
     auto mu = refParameter();
 
     M = backend()->newMatrix( _test=Xh, _trial=Xh );
-    form2( Xh, Xh, M ) =
+    form2( _test=Xh, _trial=Xh, _matrix=M ) =
         integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ) )+
         integrate( markedfaces( mesh, "boundaries" ), gamma_dir*idt( u )*id( v )/h()
                    -gradt( u )*vf::N()*id( v )
@@ -662,7 +662,7 @@ void BenchmarkGreplLinearElliptic<Order>::assemble()
     {
         auto q = eim_g->q(m);
         q.scale( beta_g(m) );
-        form2( Xh, Xh, M ) +=  integrate( _range=elements( mesh ), _expr= idt( u )*id( v ) * idv( q ) );
+        form2( _test=Xh, _trial=Xh, _matrix=M ) +=  integrate( _range=elements( mesh ), _expr= idt( u )*id( v ) * idv( q ) );
     }
 #endif
 
@@ -684,7 +684,7 @@ BenchmarkGreplLinearElliptic<Order>::computeLinearDecompositionA()
     this->M_linearAqm.resize(1);
     this->M_linearAqm[0].resize(1);
     this->M_linearAqm[0][0] = backend()->newMatrix( Xh, Xh );
-    form2( Xh, Xh, this->M_linearAqm[0][0] ) = integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ) + idt( u )*id( v )*idv(g) ) +
+    form2( _test=Xh, _trial=Xh, _matrix=this->M_linearAqm[0][0] ) = integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ) + idt( u )*id( v )*idv(g) ) +
         integrate( markedfaces( mesh, "boundaries" ), gamma_dir*idt( u )*id( v )/h()
                    -gradt( u )*vf::N()*id( v )
                    -grad( v )*vf::N()*idt( u )

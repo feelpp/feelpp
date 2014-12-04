@@ -375,7 +375,7 @@ LOOKUP_CACHE_SIZE      = 0
 # Private class members and static file members will be hidden unless
 # the EXTRACT_PRIVATE and EXTRACT_STATIC tags are set to YES
 
-EXTRACT_ALL            = NO
+EXTRACT_ALL            = YES
 
 # If the EXTRACT_PRIVATE tag is set to YES all private members of a class
 # will be included in the documentation.
@@ -533,7 +533,7 @@ STRICT_PROTO_MATCHING  = NO
 # disable (NO) the todo list. This list is created by putting \todo
 # commands in the documentation.
 
-GENERATE_TODOLIST      = NO
+GENERATE_TODOLIST      = YES
 
 # The GENERATE_TESTLIST tag can be used to enable (YES) or
 # disable (NO) the test list. This list is created by putting \test
@@ -683,7 +683,8 @@ WARN_LOGFILE           =
 # with spaces.
 
 INPUT                  = \
-"@FEELPP_HOME_DIR@/quickstart" \
+ "@FEELPP_HOME_DIR@/applications" \
+ "@FEELPP_HOME_DIR@/quickstart" \
  "@FEELPP_HOME_DIR@/doc/manual/" \
  "@FEELPP_HOME_DIR@/doc/api" \
  "@FEELPP_HOME_DIR@/ChangeLog" \
@@ -758,6 +759,8 @@ EXCLUDE_SYMBOLS        = "BOOST_P*"
 
 EXAMPLE_PATH           = "@FEELPP_HOME_DIR@/doc/manual/tutorial" \
                          "@FEELPP_HOME_DIR@/doc/" \
+                         #"@FEELPP_HOME_DIR@/tutorial/" \
+                         "@FEELPP_HOME_DIR@/quickstart/" \
                          "@CMAKE_CURRENT_BINARY_DIR@/../" \
 												  @FEELPP_PROJECTS_DIR@
 
@@ -954,7 +957,7 @@ HTML_FOOTER            = "@CMAKE_CURRENT_SOURCE_DIR@/footer.html"
 # HTML_EXTRA_STYLESHEET instead of this one, as it is more robust and this
 # tag will in the future become obsolete.
 
-HTML_STYLESHEET        = "@CMAKE_CURRENT_SOURCE_DIR@/feel.css"
+HTML_STYLESHEET        = 
 
 # The HTML_EXTRA_STYLESHEET tag can be used to specify an additional
 # user-defined cascading style sheet that is included after the standard
@@ -964,7 +967,7 @@ HTML_STYLESHEET        = "@CMAKE_CURRENT_SOURCE_DIR@/feel.css"
 # robust against future updates. Doxygen will copy the style sheet file to
 # the output directory.
 
-HTML_EXTRA_STYLESHEET  =
+HTML_EXTRA_STYLESHEET  = "@CMAKE_CURRENT_SOURCE_DIR@/feel.css"
 
 # The HTML_EXTRA_FILES tag can be used to specify one or more extra images or
 # other source files which should be copied to the HTML output directory. Note
@@ -973,8 +976,8 @@ HTML_EXTRA_STYLESHEET  =
 # files. In the HTML_STYLESHEET file, use the file name only. Also note that
 # the files will be copied as-is; there are no commands or markers available.
 
-HTML_EXTRA_FILES       = "@CMAKE_CURRENT_SOURCE_DIR@/eigen_navtree_hacks.js"
-#HTML_EXTRA_FILES       =
+#HTML_EXTRA_FILES       = "@CMAKE_CURRENT_SOURCE_DIR@/eigen_navtree_hacks.js"
+HTML_EXTRA_FILES       =
 
 # The HTML_COLORSTYLE_HUE tag controls the color of the HTML output.
 # Doxygen will adjust the colors in the style sheet and background images
@@ -1774,7 +1777,7 @@ UML_LIMIT_NUM_FIELDS   = 10
 # If set to YES, the inheritance and collaboration graphs will show the
 # relations between templates and their instances.
 
-TEMPLATE_RELATIONS     = NO
+TEMPLATE_RELATIONS     = YES
 
 # If the ENABLE_PREPROCESSING, SEARCH_INCLUDES, INCLUDE_GRAPH, and HAVE_DOT
 # tags are set to YES then doxygen will generate a graph for each documented

@@ -101,7 +101,7 @@ void run( Application_ptrtype & theApp )
                                               _substructuring=true ) );
 
 
-    auto backend = backend_type::build( theApp->vm() );
+    auto backend = backend_type::build( soption( _name="backend" ) );
     auto pi = M_PI;
     auto g = sin( pi*( 2*Px()+Py()+1./4 ) )*cos( pi*( Py()-1./4 ) );
 
