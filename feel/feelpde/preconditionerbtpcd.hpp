@@ -119,7 +119,7 @@ public:
         return(false);
     }
     
-    ~PreconditionerBTPCD(){};
+    virtual ~PreconditionerBTPCD(){};
 
 private:
 
@@ -161,7 +161,7 @@ PreconditionerBTPCD<space_type>::PreconditionerBTPCD( space_ptrtype Xh, std::map
     M_Qh( M_Xh->template functionSpace<1>() ),
     M_helm ( M_b->newMatrix( M_Vh, M_Vh ) ),
     G( M_b->newMatrix( M_Vh, M_Vh ) ),
-    M_div ( M_b->newMatrix( M_Vh, M_Qh ) ),
+    M_div ( M_b->newMatrix( _trial=M_Vh, _test=M_Qh ) ),
     M_rhs( M_b->newVector( M_Vh )  ),
     M_aux( M_b->newVector( M_Qh )  ),
     M_vin( M_b->newVector( M_Vh )  ),
@@ -235,17 +235,16 @@ void
 PreconditionerBTPCD<space_type>::assembleHelmholtz( double nu, double alpha  )
 {
     auto a = form2( _trial=M_Vh, _test=M_Vh, _matrix=M_helm );
-    
+
     if ( alpha != 0 )
-        
         a = integrate( _range=elements(M_Xh->mesh()),  _expr=alpha*trans(idt(u))*id(v) + nu*(trace(trans(gradt(u))*grad(v))) );
     else
         a = integrate( _range=elements(M_Xh->mesh()),  _expr=nu*(trace(trans(gradt(u))*grad(v))) );
 
     for( auto dir : M_bcFlags["Dirichlet"] )
-        {
-            a += integrate( markedfaces(M_Xh->mesh(), dir), - nu*trans(gradt(u)*N())*id(v) );
-        }
+    {
+        a += integrate( _range=markedfaces(M_Xh->mesh(), dir), _expr=- nu*trans(gradt(u)*N())*id(v) );
+    }
 
     M_helm->close();
 }
@@ -256,6 +255,7 @@ PreconditionerBTPCD<space_type>::assembleDivergence()
 {
     auto a = form2( _trial=M_Vh, _test=M_Qh, _matrix=M_div );
     a = integrate( _range=elements(M_Xh->mesh()), _expr=divt( u ) * id( q ) );
+    M_div->close();
 
     divOp = op( M_div, "DN");
 }
@@ -287,9 +287,8 @@ PreconditionerBTPCD<space_type>::update( Expr_convection const& expr_b,
 
     auto lg = form2( _trial=M_Vh, _test=M_Vh, _matrix=G );
     
-    lg = integrate( elements(M_Xh->mesh()),
-                   trans( gradt(u)*val(expr_b) )*id(v)
-                   );
+    lg = integrate( _range=elements(M_Xh->mesh()),
+                    _expr=trans( gradt(u)*val(expr_b) )*id(v) );
 
     G->close();
 
@@ -300,6 +299,7 @@ PreconditionerBTPCD<space_type>::update( Expr_convection const& expr_b,
     {
         lg += on( _range=markedfaces(M_Xh->mesh(), dir ), _element=u, _rhs=M_rhs, _expr=g );
     }
+    G->close();
 
     helmOp = op( G, "Fu" );
 
@@ -330,7 +330,6 @@ PreconditionerBTPCD<space_type>::applyInverse ( const vector_type& X, vector_typ
     *M_pin = U.template element<1>();
     M_pin->close();
 
-    
     if ( boption("btpcd.cd") )
     {
         LOG(INFO) << "velocity block : apply inverse convection diffusion...\n";
@@ -341,11 +340,14 @@ PreconditionerBTPCD<space_type>::applyInverse ( const vector_type& X, vector_typ
         *M_vout = *M_vin;
         M_vout->close();
     }
+
     LOG(INFO) << "pressure/velocity block : apply divergence...\n";
     divOp->apply( *M_vout, *M_pout );
+
     *M_aux = *M_pin;
     M_aux->close();
     M_aux->add( -1.0, *M_pout );
+    M_aux->close();
 
     if ( boption("btpcd.pcd") )
     {
@@ -360,15 +362,16 @@ PreconditionerBTPCD<space_type>::applyInverse ( const vector_type& X, vector_typ
     else
     {
         *M_pout = *M_aux;
+        M_pout->close();
     }
-    M_vout->close();
-    M_pout->close();
     LOG(INFO) << "Update output velocity/pressure...\n";
+
     U.template element<0>() = *M_vout;
     U.template element<1>() = *M_pout;
     U.close();
     Y=U;
     Y.close();
+
     return 0;
 }
 namespace meta
