@@ -50,15 +50,15 @@ main( int argc, char** argv )
     /// [expression]
 
     /// [integrals]
-    // compute integral of f (global contribution)
+    // compute integral of g (global contribution): \(\int_{\partial \Omega} g\)
     auto intf_1 = integrate( _range = elements( mesh ),
                                  _expr = g ).evaluate();
 
-    // compute integral f on boundary
+    // compute integral g on boundary: \( \int_{\partial \Omega} g \)
     auto intf_2 = integrate( _range = boundaryfaces( mesh ),
                              _expr = g ).evaluate();
 
-    // compute integral of grad f (global contribution)
+    // compute integral of grad f (global contribution): \( \int_{\Omega} \nabla g \)
     auto grad_g = grad<2>(g);
     auto intgrad_f = integrate( _range = elements( mesh ),
                                 _expr = grad_g ).evaluate();

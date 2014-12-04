@@ -94,7 +94,9 @@ public:
         super( worldComm ),
         M_solver_petsc( worldComm ),
         M_nl_solver_petsc( worldComm )
-    {}
+    {
+        this->M_backend = BackendType::BACKEND_PETSC;
+    }
 
     BackendPetsc( po::variables_map const& vm, std::string const& prefix = "",
                   WorldComm const& worldComm=Environment::worldComm() )
@@ -103,6 +105,8 @@ public:
         M_solver_petsc( vm, worldComm ),
         M_nl_solver_petsc( worldComm )
     {
+        this->M_backend = BackendType::BACKEND_PETSC;
+
         std::string _prefix = prefix;
 
         if ( !_prefix.empty() )

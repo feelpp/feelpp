@@ -15,7 +15,7 @@ then we define some expression through the command line or config file: \c g is 
 \snippet myexpression.cpp expr
 
 here is an example how to enter them, more are available below
-\c
+\co
 feelpp_doc_myexpression --functions.g="x*y:x:y" --functions.f="{sin(pi*x),cos(pi*y)}:x:y"
 \eco
 
@@ -44,7 +44,7 @@ Finally we evaluate these expression at one point given by the option \c x and \
 
 We start with the following function \f$g=1\f$ and \f$f=(1,1)\f$.
 
-\co
+\code{.sh}
 shell> ./feelpp_doc_myexpression --functions.g=1:x:y --functions.f="{1,1}:x:y
 g=1
 f={x,-y}
@@ -70,7 +70,7 @@ Laplacian:
 laplacian(g)(x,y)=0
 laplacian(f)(x,y)=0
 0
-\eco
+\endcode
 
 The symbolic calculus system worked as expected.
 
@@ -81,7 +81,7 @@ The complete code reads as follows
 
 \snippet myexpression.cpp all
 
-to compile just type
+to compile just use the `make` command in your compilation directory
 \verbatim
 make feelpp_doc_myexpression
 \endverbatim

@@ -357,6 +357,11 @@ public:
     virtual void set ( const size_type i, const value_type& value ) = 0;
 
     /**
+     * v([i1,i2,...,in]) = [value1,...,valuen]
+     */
+    virtual void setVector ( int* i, int n, value_type* v ) = 0;
+
+    /**
      * v(i) += value
      */
     virtual void add ( const size_type i, const value_type& value ) = 0;
