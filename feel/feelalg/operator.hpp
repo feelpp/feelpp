@@ -159,6 +159,7 @@ public:
     {
         LOG(INFO) << "OperatorMatrix: apply(X,Y)";
         M_F->multVector( X, Y );
+        Y.close();
         return !hasApply();
     }
     
@@ -166,7 +167,7 @@ public:
     {
         CHECK( hasInverse() ) << "Operator " << this->label() << "cannot be inverted.";
         LOG(INFO) << "OperatorMatrix: applyInverse(X,Y)";
-        auto xx = backend(_name=this->label())->newVector( Y.mapPtr() );
+        auto xx = backend(_name=this->label())->newVector( X.mapPtr() );
         *xx = X;
         xx->close();
         auto yy = backend(_name=this->label())->newVector( Y.mapPtr() );
@@ -259,7 +260,6 @@ public:
 
         CHECK( hasApply() ) << "This operator " << this->label() << " cannot be applied.";
         M_F->applyInverse( X,Y );
-
         return !hasApply();
     }
 
@@ -380,6 +380,7 @@ public:
 
         LOG(INFO) << "OperatorCompose: apply operator " << this->label() << " ...\n";
 
+        // WARNING Y.mapPtr maybe not good !!!
         auto Z = backend()->newVector( Y.mapPtr() );
         //vector_ptrtype Z=X.clone();
         
@@ -387,6 +388,7 @@ public:
         M_G->apply( X,*Z );
         LOG(INFO) << "  - apply operator " << M_F->label() << " ...\n";
         M_F->apply( *Z,Y );
+
         LOG(INFO) << "OperatorCompose apply operator " << this->label() << " done.\n";
 
         return !hasApply();
@@ -399,6 +401,8 @@ public:
         LOG(INFO) << "OperatorCompose apply operator " << this->label() << " ...\n";
 
         //vector_ptrtype Z = X.clone();
+
+        // WARNING Y.mapPtr maybe not good !!!
         auto Z = backend()->newVector( Y.mapPtr() );
 
         LOG(INFO) << "  - apply operator " << M_F->label() << " ...\n";
@@ -522,6 +526,7 @@ public:
         M_F->apply( X,Y );
 
         Y.scale( M_alpha );
+        Y.close();
 
         return !hasApply();
     }
@@ -534,6 +539,7 @@ public:
 
         vector_ptrtype Z =  X.clone();
         Z->scale( 1./M_alpha );
+        Z->close();
 
         M_F->applyInverse( Z,Y );
 
