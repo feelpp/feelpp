@@ -31,6 +31,8 @@ int main(int argc, char**argv )
 	po::options_description stokesoptions( "Stokes options" );
 	stokesoptions.add_options()
 		( "mu", po::value<double>()->default_value( 1.0 ), "coeff" )
+		( "fixpoint.tol", po::value<double>()->default_value( 1e-8 ), "tolerance" )
+		( "fixpoint.maxit", po::value<double>()->default_value( 10 ), "max iteration" )
 		;
 	Environment env( _argc=argc, _argv=argv,
                      _desc=stokesoptions,
@@ -67,24 +69,24 @@ int main(int argc, char**argv )
     auto deft = gradt( u );
     auto def = grad( v );
     double mu = doption(_name="mu");
-
+    double fixPtTol = doption(_name="fixpoint.tol");
+    int fixPtMaxIt = doption(_name="fixpoint.maxit");
     auto l = form1( _test=Vh );
     auto r = form1( _test=Vh );
 
     auto a = form2( _trial=Vh, _test=Vh);
     auto at = form2( _trial=Vh, _test=Vh);
-    a = integrate( _range=elements( mesh ), _expr=mu*inner( sym(deft),def ) );
+    a += integrate( _range=elements( mesh ), _expr=mu*inner( sym(deft),def ) );
     a +=integrate( _range=elements( mesh ), _expr=-div( v )*idt( p ) + divt( u )*id( q ) );
 
-    
     auto e = exporter( _mesh=mesh );
-    
-    
+
     std::map<std::string,std::set<flag_type>> bcs;
     bcs["Dirichlet"].insert(mesh->markerName("inlet"));
     bcs["Dirichlet"].insert(mesh->markerName("wall"));
     bcs["Neumann"].insert(mesh->markerName("outlet"));
     auto a_btpcd = btpcd( _space=Vh, _bc=bcs );
+    a_btpcd->setMatrix( a.matrixPtr() );
     auto incru = normL2( _range=elements(mesh), _expr=idv(u)-idv(un));
     auto incrp = normL2( _range=elements(mesh), _expr=idv(p)-idv(pn));
     int fixedpt_iter = 0;
@@ -93,13 +95,22 @@ int main(int argc, char**argv )
            _expr=zero<2,1>() ) ;
     at+=on(_range=markedfaces(mesh,"inlet"), _rhs=l, _element=u,
            _expr=g );
-    a.solve(_rhs=l,_solution=U);
-    e->step(1)->add( "u", u );
-    e->step(1)->add( "p", p );
-    e->save();
-    //! [marker1]
 
-    do 
+    if ( boption("btpcd") )
+    {
+        a_btpcd->update( zero<2,1>(), g );
+        at.solveb(_rhs=l,_solution=U,_backend=backend(),_prec=a_btpcd);
+    }
+    else
+        at.solve(_rhs=l,_solution=U);
+
+    e->step(0)->add( "u", u );
+    e->step(0)->add( "p", p );
+    e->save();
+#if 1
+    auto deltaU = Vh->element();
+
+    do
     {
         at = a;
         at += integrate( _range=elements(mesh),_expr=trans(id(v))*(gradt(u)*idv(u)) );
@@ -120,11 +131,11 @@ int main(int argc, char**argv )
         if ( boption("btpcd") )
         {
             a_btpcd->update( idv(u), zero<2,1>() );
-            at.solveb(_rhs=r,_solution=U,_backend=backend(),_prec=a_btpcd );
+            at.solveb(_rhs=r,_solution=deltaU/*U*/,_backend=backend(),_prec=a_btpcd );
         }
         else
-            at.solveb(_rhs=r,_solution=U,_backend=backend(_rebuild=true) );
-            
+            at.solveb(_rhs=r,_solution=deltaU/*U*/,_backend=backend(_rebuild=true) );
+        U.add(1.,deltaU);
         incru = normL2( _range=elements(mesh), _expr=idv(u)-idv(un));
         incrp = normL2( _range=elements(mesh), _expr=idv(p)-idv(pn));
         fixedpt_iter++;
@@ -144,8 +155,8 @@ int main(int argc, char**argv )
         e->save();
 
     }
-    while ( ( incru > 1e-6 && incrp > 1e-6 ) && ( fixedpt_iter < 10 ) );
- 
+    while ( ( incru > fixPtTol && incrp > fixPtTol ) && ( fixedpt_iter < fixPtMaxIt ) );
+#endif 
     
     return 0;
 }
