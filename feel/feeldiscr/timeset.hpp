@@ -68,6 +68,8 @@
 
 #include <feel/feelmesh/filters.hpp>
 
+#define TS_INITIAL_INDEX 1
+
 namespace Feel
 {
 namespace fs = boost::filesystem;
@@ -2018,7 +2020,7 @@ TimeSet<MeshType, N>::step( Real __time )
 }
 
 template<typename MeshType, int N>
-uint32_type TimeSet<MeshType, N>::_S_current_index = 1;
+uint32_type TimeSet<MeshType, N>::_S_current_index = TS_INITIAL_INDEX;
 
 //
 // TimeSet<MeshType, N>::Step
