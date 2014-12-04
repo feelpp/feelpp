@@ -1773,7 +1773,7 @@ void updateJKBN( mpl::bool_<true>  )
 
     }
 
-    if ( vm::has_hessian<context>::value )
+    if ( vm::has_hessian<context>::value || vm::has_laplacian<context>::value )
     {
 
         for ( uint16_type k = 0; k < NDim; ++k )

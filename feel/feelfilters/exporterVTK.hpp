@@ -30,7 +30,7 @@
 #ifndef __ExporterVTK_H
 #define __ExporterVTK_H 1
 
-#if defined(FEELPP_VTK_EXPORTER_ENABLED) && defined(FEELPP_HAS_VTK)
+#if defined(FEELPP_HAS_VTK)
 
 #include <iostream>
 #include <fstream>
@@ -54,6 +54,20 @@
 #include <vtkPolyData.h>
 #include <vtkPolyDataWriter.h>
 
+#include <vtkInformation.h>
+#include <vtkVertex.h>
+#include <vtkLine.h>
+#include <vtkPolyLine.h>
+#include <vtkQuadraticTriangle.h>
+#include <vtkQuad.h>
+#include <vtkQuadraticQuad.h>
+#include <vtkTetra.h>
+#include <vtkQuadraticTetra.h>
+#include <vtkHexahedron.h>
+#include <vtkQuadraticHexahedron.h>
+#include <vtkTriangle.h>
+#include <vtkMultiBlockDataSet.h>
+#include <vtkXMLMultiBlockDataWriter.h>
 
 /* Only use MPI when we have vtk 5.8+ */
 /* features initializing MPI using an external context a missing in 5.8- */
@@ -75,20 +89,6 @@
 
 #endif
 
-#include <vtkInformation.h>
-#include <vtkVertex.h>
-#include <vtkLine.h>
-#include <vtkPolyLine.h>
-#include <vtkQuadraticTriangle.h>
-#include <vtkQuad.h>
-#include <vtkQuadraticQuad.h>
-#include <vtkTetra.h>
-#include <vtkQuadraticTetra.h>
-#include <vtkHexahedron.h>
-#include <vtkQuadraticHexahedron.h>
-#include <vtkTriangle.h>
-#include <vtkMultiBlockDataSet.h>
-#include <vtkXMLMultiBlockDataWriter.h>
 
 namespace Feel
 {
@@ -257,12 +257,20 @@ public:
      * To do so, we use a pvd file (Paraview format) that allows use to specify new timesteps
      * using xml syntax.
      */
-    int writeTimePVD(std::string xmlFilename, double timestep, std::string dataFilename) const;
+    int writeTimePVD(std::string xmlFilename, double timestep, std::string dataFilename, int partNo = 0) const;
+
+
+    /**
+     * Build a multi block structure based on the data gathered 
+     * on the different processes.
+     */
+    vtkSmartPointer<vtkMultiBlockDataSet>
+        buildMultiBlockDataSet( typename timeset_type::step_ptrtype step, vtkSmartPointer<vtkout_type> out ) const;
 
     /**
      * Actual write of the dataset into a file 
      */
-    void write( typename timeset_type::step_ptrtype step, std::string filename, vtkSmartPointer<vtkout_type> out) const;
+    void write( typename timeset_type::step_ptrtype step, std::string filename, vtkSmartPointer<vtkMultiBlockDataSet> out) const;
 
     //@}
 
@@ -273,6 +281,7 @@ private:
 
     /* class members for in-situ visualization */
 #if VTK_MAJOR_VERSION >= 6 && defined(VTK_HAS_PARALLEL)
+    mutable MPI_Comm lComm;
     mutable vtkMPICommunicatorOpaqueComm * opaqueComm;
 #if defined(FEELPP_VTK_INSITU_ENABLED)
     mutable vtkSmartPointer<vtkCPProcessor> inSituProcessor;
