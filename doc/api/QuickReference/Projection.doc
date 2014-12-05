@@ -51,16 +51,16 @@ We have based that mechanism over the GiNaC librarie or the Functor.
 
 The idea with GiNaC is to provide a string which will be parsed to generate a function:
 
-\snippet ../../manual/tutorial/myexpression.cpp marker2
+\snippet myexpression.cpp expr
 
 To use the Functor, you have to define in the Feel namespace a struct with some variable.
 That struct will provide an \c operator() interface with specific signature.
 
-\snippet ../../manual/tutorial/myexpression.cpp marker1
+\snippet myfunctor.cpp functor
 
 and then, you are allowed to define a functor based expression on that way:
 
-\snippet ../../manual/tutorial/myexpression.cpp marker3
+\snippet myfunctor.cpp functors_and_proj
 
 <a href="#" class="top">top</a>
 <hr>

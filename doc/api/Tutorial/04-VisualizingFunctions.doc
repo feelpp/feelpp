@@ -55,9 +55,9 @@ to execute just type
 
 @par Reading saved data
 You can visualize data via
-- ensight
-- paraview
-- gmsh
+- [ensight](https://www.ceisoftware.com/),
+- [paraview](www.paraview.org/),
+- [gmsh](http://geuz.org/gmsh).
  
 The results files are in \c $HOME/feel/myexporter/np_1.
 
