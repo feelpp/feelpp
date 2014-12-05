@@ -233,13 +233,15 @@ int ExporterVTK<MeshType,N>::writeTimePVD(std::string xmlFilename, double timest
             xmlSetProp(node2, BAD_CAST "part", BAD_CAST oss.str().c_str());
             xmlSetProp(node2, BAD_CAST "file", BAD_CAST dataFilename.c_str());
 
+            /*
             xmlChar * mem = NULL;
             int size = 0;
             xmlDocDumpFormatMemory(doc, &mem, &size, 1);
             std::cout << mem << std::endl;
             xmlFree(mem);
+            */
 
-            std::cout << "Writing file " << xmlFilename << std::endl;
+            //std::cout << "Writing file " << xmlFilename << std::endl;
             FILE * f = fopen(xmlFilename.c_str(), "w");
             xmlDocDump(f, doc);
             fclose(f);
