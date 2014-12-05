@@ -867,7 +867,6 @@ endif()
 # VTK
 #
 OPTION( FEELPP_ENABLE_VTK "Enable the VTK library" ON )
-OPTION( FEELPP_ENABLE_VTK_EXPORTER "Enable the VTK exporter" ON )
 OPTION( FEELPP_ENABLE_VTK_INSITU "Enable In-Situ Visualization using VTK/Paraview" OFF )
 if ( FEELPP_ENABLE_VTK )
 
@@ -879,6 +878,9 @@ if ( FEELPP_ENABLE_VTK )
         message(STATUS "[ParaView] Use file: ${PARAVIEW_USE_FILE}")
         INCLUDE(${PARAVIEW_USE_FILE})
 
+        # Enable VTK exporter and insitu in config
+        set(FEELPP_VTK_INSITU_ENABLED 1)
+
         # Mark VTK as available
         set(FEELPP_HAS_VTK 1)
         # Check for version to ensure that we are able to
@@ -887,10 +889,6 @@ if ( FEELPP_ENABLE_VTK )
         if( VTK_MAJOR_VERSION EQUAL 6 OR VTK_MAJOR_VERSION GREATER 6 )
             set(VTK_HAS_PARALLEL 1)
         endif()
-
-        # Enable VTK exporter and insitu in config
-        set(FEELPP_VTK_EXPORTER_ENABLED 1)
-        set(FEELPP_VTK_INSITU_ENABLED 1)
 
         SET(FEELPP_LIBRARIES ${ParaView_LIBRARIES} ${FEELPP_LIBRARIES})
         SET(FEELPP_LIBRARIES ${VTK_LIBRARIES} ${FEELPP_LIBRARIES})
@@ -902,10 +900,6 @@ if ( FEELPP_ENABLE_VTK )
         if( VTK_FOUND )
             set(FEELPP_HAS_VTK 1)
             MESSAGE(STATUS "[feelpp] Found VTK ${VTK_MAJOR_VERSION}.${VTK_MINOR_VERSION}")# ${VTK_LIBRARIES}")
-
-            if ( FEELPP_ENABLE_VTK_EXPORTER )
-                set(FEELPP_VTK_EXPORTER_ENABLED 1)
-            endif()
 
             # Check for MPI suppot in VTK
             set(VTK_HAS_PARALLEL 0)
