@@ -30,7 +30,7 @@
 #ifndef __ExporterVTK_H
 #define __ExporterVTK_H 1
 
-#if defined(FEELPP_VTK_EXPORTER_ENABLED) && defined(FEELPP_HAS_VTK)
+#if defined(FEELPP_HAS_VTK)
 
 #include <iostream>
 #include <fstream>
@@ -257,7 +257,7 @@ public:
      * To do so, we use a pvd file (Paraview format) that allows use to specify new timesteps
      * using xml syntax.
      */
-    int writeTimePVD(std::string xmlFilename, double timestep, std::string dataFilename) const;
+    int writeTimePVD(std::string xmlFilename, double timestep, std::string dataFilename, int partNo = 0) const;
 
 
     /**
@@ -281,6 +281,7 @@ private:
 
     /* class members for in-situ visualization */
 #if VTK_MAJOR_VERSION >= 6 && defined(VTK_HAS_PARALLEL)
+    mutable MPI_Comm lComm;
     mutable vtkMPICommunicatorOpaqueComm * opaqueComm;
 #if defined(FEELPP_VTK_INSITU_ENABLED)
     mutable vtkSmartPointer<vtkCPProcessor> inSituProcessor;
