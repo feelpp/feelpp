@@ -33,16 +33,39 @@ struct OpT
     typedef Mesh<Simplex<2,1>> mesh_type;
     typedef typename Mesh<Simplex<2,1>>::ptrtype mesh_ptrtype;
     typedef typename Feel::meta::Pch<mesh_type,1>::type space_type;
+    typedef typename space_type::element_type element_type;
     typedef typename Feel::meta::Pch<mesh_type,1>::ptrtype space_ptrtype;
     typedef typename Feel::meta::BilinearForm<space_type,space_type>::type form2_type;
     typedef typename Feel::meta::LinearForm<space_type>::type form1_type;
 
     mesh_ptrtype mesh;
     space_ptrtype Xh;
+    element_type u;
     form2_type a;
     form1_type l;
-
-    OpT() {}
+    
+    OpT() 
+        {
+            mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
+            Xh = Pch<1>( mesh );
+            u = Xh->element("u");
+            auto v = Xh->element("g");
+        
+            l = form1( _test=Xh );
+            l = integrate(_range=elements(mesh),
+                          _expr=id(v));
+        
+            a = form2( _trial=Xh, _test=Xh);
+            a = integrate(_range=elements(mesh),
+                          _expr=gradt(u)*trans(grad(v)) );
+            a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u, _expr=cst(0.) );
+        }
+    double solve()
+        {
+            a.solve(_rhs=l,_solution=u);
+            // returns the mean of u : ()\int_\Omega u)/(\int_\Omega 1)
+            return mean( _expr=idv(u), _range=elements(mesh))(0,0);
+        }
 };
 
 
@@ -55,25 +78,12 @@ int main(int argc, char** argv)
                                   _email="feelpp-devel@feelpp.org"));
 
     OpT op;
-    op.mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
-    op.Xh = Pch<1>( op.mesh );
-    auto u = op.Xh->element("u");
-    auto v = op.Xh->element("g");
-
-    op.l = form1( _test=op.Xh );
-    op.l = integrate(_range=elements(op.mesh),
-                     _expr=id(v));
     
-    op.a = form2( _trial=op.Xh, _test=op.Xh);
-    op.a = integrate(_range=elements(op.mesh),
-                     _expr=gradt(u)*trans(grad(v)) );
-    op.a+=on(_range=boundaryfaces(op.mesh), _rhs=op.l, _element=u, _expr=cst(0.) );
-    op.a.solve(_rhs=op.l,_solution=u);
+    op.solve();
 
     auto e = exporter( _mesh=op.mesh );
     e->addRegions();
-    e->add( "u", u );
-    e->add( "g", v );
+    e->add( "u", op.u );
     e->save();
     return 0;
 }
