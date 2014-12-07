@@ -174,6 +174,9 @@ public:
     /** @name Typedefs
      */
     //@{
+    typedef Mesh<GeoShape,T,Tag> type;
+    typedef boost::shared_ptr<type> ptrtype;
+    
     typedef T value_type;
     typedef GeoShape shape_type;
     typedef typename super::return_type return_type;
