@@ -66,10 +66,21 @@ public:
     typedef OperatorMatrix<value_type> op_mat_type;
     typedef boost::shared_ptr<op_mat_type> op_mat_ptrtype;
 
-    typedef OperatorPCD<pressure_space_type, uOrder> op_pcd_type;
-    typedef boost::shared_ptr<op_pcd_type> op_pcd_ptrtype;
-
-    PreconditionerBTPCD( space_ptrtype Xh, std::map<std::string, std::set<flag_type> > bcFlags, double nu, double alpha = 0 );
+    typedef typename OperatorPCD<space_type>::type op_pcd_type;
+    typedef typename OperatorPCD<space_type>::ptrtype op_pcd_ptrtype;
+    
+    /**
+     * \param Xh velocity/pressure space type
+     * \param bcFlags the boundary conditions flags
+     * \param A the full matrix \f$(F B^T;B 0)\f$
+     * \param nu viscosity
+     * \param alpha mass term
+     */
+    PreconditionerBTPCD( space_ptrtype Xh, 
+                         std::map<std::string, std::set<flag_type> > bcFlags, 
+                         sparse_matrix_ptrtype A,
+                         double nu, 
+                         double alpha = 0 );
 
     PreconditionerBTPCD( const PreconditionerBTPCD& tc );
 
@@ -127,11 +138,11 @@ private:
     backend_ptrtype M_b;
 
     space_ptrtype M_Xh;
-
+    
     velocity_space_ptrtype M_Vh;
     pressure_space_ptrtype M_Qh;
 
-    sparse_matrix_ptrtype M_helm, G, M_div;
+    sparse_matrix_ptrtype M_A, M_helm, G, M_div;
     op_mat_ptrtype divOp, helmOp;
 
     mutable vector_ptrtype M_rhs, M_aux, M_vin,M_pin, M_vout, M_pout;
@@ -153,13 +164,16 @@ private:
 
 
 template < typename space_type >
-PreconditionerBTPCD<space_type>::PreconditionerBTPCD( space_ptrtype Xh, std::map<std::string, std::set<flag_type> > bcFlags,
+PreconditionerBTPCD<space_type>::PreconditionerBTPCD( space_ptrtype Xh, 
+                                                      std::map<std::string, std::set<flag_type> > bcFlags,
+                                                      sparse_matrix_ptrtype A,
                                                       double nu, double alpha )
     :
     M_b(backend()),
     M_Xh( Xh ),
     M_Vh( M_Xh->template functionSpace<0>() ),
     M_Qh( M_Xh->template functionSpace<1>() ),
+    M_A( A ),
     M_helm ( M_b->newMatrix( M_Vh, M_Vh ) ),
     G( M_b->newMatrix( M_Vh, M_Vh ) ),
     M_div ( M_b->newMatrix( _trial=M_Vh, _test=M_Qh ) ),
@@ -391,6 +405,7 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename meta::btpcd<typename parameter::valu
                                  ( required
                                    ( space, *)
                                    ( bc, *)
+                                   ( matrix, *)
                                    )
                                  ( optional
                                    ( prefix, *( boost::is_convertible<mpl::_,std::string> ), "" )
@@ -401,7 +416,7 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename meta::btpcd<typename parameter::valu
 {
     typedef typename meta::btpcd<typename parameter::value_type<Args, tag::space>::type::element_type>::ptrtype pbtpcd_t;
     typedef typename meta::btpcd<typename parameter::value_type<Args, tag::space>::type::element_type>::type btpcd_t;
-    pbtpcd_t p( new btpcd_t( space, bc, nu, alpha ) );
+    pbtpcd_t p( new btpcd_t( space, bc, matrix, nu, alpha ) );
     return p;
 } // btcpd
 } // Feel
