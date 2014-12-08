@@ -34,13 +34,13 @@
 namespace Feel
 {
 
-template<typename pressure_space_type, uint16_type uOrder>
-class OperatorPCD : public OperatorBase<typename pressure_space_type::value_type>
+template<typename space_type, uint16_type uOrder>
+class OperatorPCD : public OperatorBase<typename space_type::value_type>
 {
-    typedef OperatorBase<typename pressure_space_type::value_type> super;
+    typedef OperatorBase<typename space_type::value_type> super;
 public:
 
-    typedef typename pressure_space_type::value_type value_type;
+    typedef typename space_type::value_type value_type;
 
     typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
     typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
@@ -48,11 +48,12 @@ public:
     typedef typename backend_type::vector_type vector_type;
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
-    typedef boost::shared_ptr<pressure_space_type> pressure_space_ptrtype;
-    typedef typename pressure_space_type::element_type pressure_element_type;
-
-    typedef typename pressure_space_type::mesh_type mesh_type;
-    typedef typename pressure_space_type::mesh_ptrtype mesh_ptrtype;
+    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef typename space_type::mesh_type mesh_type;
+    typedef typename space_type::mesh_ptrtype mesh_ptrtype;
+    typedef typename space_type::element_type element_type;
+    typedef typename space_type::template sub_functionspace<0>::type velocity_space_ptrtype;
+    typedef typename space_type::template sub_functionspace<1>::type pressure_space_ptrtype;
 
     typedef OperatorMatrix<value_type> op_mat_type;
     typedef boost::shared_ptr<op_mat_type> op_mat_ptrtype;
@@ -70,10 +71,10 @@ public:
     typedef boost::shared_ptr<op_type> op_ptrtype;
 
 
-    static const uint16_type Dim = pressure_space_type::nDim;
+    static const uint16_type Dim = space_type::nDim;
     static const uint16_type pOrder = pressure_space_type::basis_type::nOrder;
 
-    OperatorPCD() {}
+    OperatorPCD(){}
 
     OperatorPCD( pressure_space_ptrtype Qh,
                  std::map< std::string, std::set<flag_type> > bcFlags,
@@ -137,13 +138,13 @@ private:
 
 
 
-template < typename pressure_space_type, uint16_type uOrder >
-OperatorPCD<pressure_space_type,uOrder>::OperatorPCD( pressure_space_ptrtype Qh,
+template < typename space_type>
+OperatorPCD<space_type>::OperatorPCD( pressure_space_ptrtype Qh,
                                                       std::map< std::string, std::set<flag_type> > bcFlags,
                                                       double nu,
                                                       double alpha )
     :
-    super( Qh->worldComm(), "PCD", false, false ),
+    super( Qh->map(), "PCD", false, false ),
     M_Qh( Qh ),
     p( M_Qh, "p" ),
     q( M_Qh, "q" ),
@@ -173,8 +174,8 @@ OperatorPCD<pressure_space_type,uOrder>::OperatorPCD( pressure_space_ptrtype Qh,
 
 
 
-template < typename pressure_space_type, uint16_type uOrder >
-OperatorPCD<pressure_space_type,uOrder>::OperatorPCD( const OperatorPCD& tc )
+template < typename space_type>
+OperatorPCD<space_type>::OperatorPCD( const OperatorPCD& tc )
     :
     super(tc),
     M_Qh( tc.M_Qh ),
@@ -199,18 +200,18 @@ OperatorPCD<pressure_space_type,uOrder>::OperatorPCD( const OperatorPCD& tc )
 }
 
 
-template < typename pressure_space_type, uint16_type uOrder >
+template < typename space_type>
 void
-OperatorPCD<pressure_space_type,uOrder>::initialize()
+OperatorPCD<space_type>::initialize()
 {
     rhs->zero();
     rhs->close();
 }
 
-template < typename pressure_space_type, uint16_type uOrder >
+template < typename space_type>
 template < typename ExprConvection, typename ExprBC >
 void
-OperatorPCD<pressure_space_type,uOrder>::update( ExprConvection const& expr_b,
+OperatorPCD<space_type>::update( ExprConvection const& expr_b,
                                                  ExprBC const& ebc )
 {
 
@@ -262,9 +263,9 @@ OperatorPCD<pressure_space_type,uOrder>::update( ExprConvection const& expr_b,
 
 
 
-template < typename pressure_space_type, uint16_type uOrder >
+template < typename space_type>
 void
-OperatorPCD<pressure_space_type,uOrder>::assembleMass()
+OperatorPCD<space_type>::assembleMass()
 {
     auto m = form2( _test=M_Qh, _trial=M_Qh, _matrix=M_mass );
     m = integrate( elements(M_Qh->mesh()), idt(p)*id(q) );
@@ -272,9 +273,9 @@ OperatorPCD<pressure_space_type,uOrder>::assembleMass()
     massOp = op( M_mass, "Mp" );
 }
 
-template < typename pressure_space_type, uint16_type uOrder >
+template < typename space_type>
 void
-OperatorPCD<pressure_space_type,uOrder>::assembleDiffusion()
+OperatorPCD<space_type>::assembleDiffusion()
 {
     auto d = form2( _test=M_Qh, _trial=M_Qh, _matrix=M_diff );
     d = integrate( elements(M_Qh->mesh()), trace(trans(gradt(p))*grad(q)));
@@ -284,9 +285,9 @@ OperatorPCD<pressure_space_type,uOrder>::assembleDiffusion()
     diffOp = op( M_diff, "Fp" );
 }
 
-template < typename pressure_space_type, uint16_type uOrder >
+template < typename space_type>
 void
-OperatorPCD<pressure_space_type,uOrder>::assembleConvection()
+OperatorPCD<space_type>::assembleConvection()
 {
     /*
      form2( M_Qh, M_Qh, M_conv, _init=true ) =
@@ -301,9 +302,9 @@ OperatorPCD<pressure_space_type,uOrder>::assembleConvection()
 
 }
 
-template < typename pressure_space_type, uint16_type uOrder >
+template < typename space_type>
 void
-OperatorPCD<pressure_space_type,uOrder>::applyBC( sparse_matrix_ptrtype& A )
+OperatorPCD<space_type>::applyBC( sparse_matrix_ptrtype& A )
 {
     auto a = form2( _test=M_Qh, _trial=M_Qh, _matrix=A );
     for( auto dir : M_bcFlags["Dirichlet"])
@@ -327,15 +328,15 @@ OperatorPCD<pressure_space_type,uOrder>::applyBC( sparse_matrix_ptrtype& A )
     A->close();
 }
 
-template < typename pressure_space_type, uint16_type uOrder >
+template < typename space_type>
 int
-OperatorPCD<pressure_space_type,uOrder>::apply(const vector_type& X, vector_type& Y) const
+OperatorPCD<space_type>::apply(const vector_type& X, vector_type& Y) const
 {
     return precOp->apply( X, Y );
 }
-template < typename pressure_space_type, uint16_type uOrder >
+template < typename space_type>
 int
-OperatorPCD<pressure_space_type,uOrder>::applyInverse(const vector_type& X, vector_type& Y) const
+OperatorPCD<space_type>::applyInverse(const vector_type& X, vector_type& Y) const
 {
     return precOp->applyInverse( X, Y );
 }

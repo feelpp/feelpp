@@ -40,13 +40,26 @@ class OperatorBase
   public:
     typedef T value_type;
 
-    OperatorBase( WorldComm const& comm, std::string label, bool use_transpose, bool has_norminf  ) 
+    OperatorBase( DataMap const& map, std::string label, bool use_transpose, bool has_norminf  ) 
         : 
+        M_domain_map( map ),
+        M_image_map( map ),
         M_label( label ),
         M_comm( comm ), 
         M_use_transpose( use_transpose ) ,
         M_has_norminf( has_norminf )
         {}
+    OperatorBase( DataMap const& dmap, DataMap const& imap, std::string label, bool use_transpose, bool has_norminf  ) 
+        : 
+        M_domain_map( dmap ),
+        M_image_map( imap ),
+        M_label( label ),
+        M_comm( comm ), 
+        M_use_transpose( use_transpose ) ,
+        M_has_norminf( has_norminf )
+        {}
+
+#if 0
     OperatorBase( std::string label, bool use_transpose = false, bool has_norminf = false  ) 
         : 
         M_label( label ),
@@ -54,7 +67,7 @@ class OperatorBase
         M_use_transpose( use_transpose ) ,
         M_has_norminf( has_norminf )
         {}
-    
+#endif
     virtual ~OperatorBase() {};
     
     virtual void setUseTranspose(bool UseTranspose)  { M_use_transpose = UseTranspose; }
@@ -98,13 +111,25 @@ class OperatorBase
     void setHasNormInf( bool b ) { M_has_norminf = b; }
 
     /**
+     * domain map
+     */
+    DataMap const& domainMap() const { return M_domain_map; }
+
+    /**
+     * image map
+     */
+    DataMap const& imageMap() const { return M_image_map; }
+
+
+    /**
      * \return the WorldComm of the Operator
      */
-    virtual const WorldComm& comm() const { return M_comm; }
+    virtual const WorldComm& comm() const { return M_domain_map.worldComm(); }
  
 protected:
+    // domain and image map 
+    DataMap M_domain_map, M_image_map;
     std::string M_label;
-    WorldComm M_comm;
     bool M_use_transpose;
     bool M_has_norminf;
 };
@@ -125,7 +150,7 @@ public:
 
     OperatorMatrix( sparse_matrix_ptrtype const& F, std::string _label, bool transpose = 0 )
         :
-        OperatorBase<T>( F->comm(), _label, transpose, true ),
+        OperatorBase<T>( F->mapCol(), F->mapRow(), _label, transpose, true ),
         M_F( F ),
         M_hasInverse( 1 ),
         M_hasApply( 1 )
@@ -229,7 +254,7 @@ public:
     // This constructor implements the F^-1 operator
     OperatorInverse( operator_ptrtype& F )
         :
-        super( F->comm(), F->label(), F->useTranspose(), false ),
+        super( F->domainMap(), F->imageMap(), F->label(), F->useTranspose(), false ),
         M_F( F )
     {
         this->setName();
@@ -326,26 +351,16 @@ public:
     typedef typename op2_type::value_type value_type;
     // This constructor implements the (F o G) operator
 
-    OperatorCompose()
-        :
-        super(Environment::worldComm(),"",false),
-        M_F(),
-        M_G()
-    {
-        std::string t( M_F->label() );
-        std::string u( M_G->label() );
-
-        t.append( "*" );
-        t.append( u );
-        this->setLabel(t);
-    }
 
     OperatorCompose( op1_ptrtype F, op2_ptrtype G )
         :
-        super(F->comm(),F->label(),F->useTranspose(),false),
+        super(G->domainMap(),F->imageMap(), F->label(),F->useTranspose(),false),
         M_F( F ),
         M_G( G )
     {
+        // TODO:We should ensure here that the domain map of F corresponds to the
+        // image map of G.
+        
         std::string t( F->label() );
         std::string u( G->label() );
 
@@ -380,9 +395,7 @@ public:
 
         LOG(INFO) << "OperatorCompose: apply operator " << this->label() << " ...\n";
 
-        // WARNING Y.mapPtr maybe not good !!!
-        auto Z = backend()->newVector( Y.mapPtr() );
-        //vector_ptrtype Z=X.clone();
+        auto Z = backend()->newVector( G->imageMap() );
         
         LOG(INFO) << "  - apply operator " << M_G->label() << " ...\n";
         M_G->apply( X,*Z );
@@ -455,18 +468,10 @@ public:
     typedef boost::shared_ptr<op1_type> op1_ptrtype;
     typedef typename op1_type::value_type value_type;
 
-    // This constructor implements the (\alpha F) operator
-    OperatorScale()
-        :
-        super(),
-        M_F(),
-        M_alpha( 0 )
-    {
-    }
 
     OperatorScale( op1_ptrtype& F )
         :
-        super( F->comm(), F->label(), F->useTranspose(), F->hasNormInf() ),
+        super( F->domainMap(), F->imageMap(), F->label(), F->useTranspose(), F->hasNormInf() ),
         M_F( F ),
         M_alpha( 1 )
     {
@@ -483,7 +488,7 @@ public:
 
     OperatorScale( op1_ptrtype& F, value_type alpha )
         :
-        super( F->comm(), "", false, false ),
+        super( F->domainMap(), F->imageMap(), "", false, false ),
         M_F( F ),
         M_alpha( alpha )
     {
@@ -574,101 +579,6 @@ scale( boost::shared_ptr<OpType> const& M, typename OpType::value_type s )
 {
     return boost::make_shared<OperatorScale<OpType>>(M,s) ;
 }
-
-
-template< typename operator_type >
-class OperatorFree : public OperatorBase<typename operator_type::value_type>
-{
-    typedef OperatorBase<typename operator_type::value_type> super;
-public:
-
-    typedef boost::shared_ptr<operator_type> operator_ptrtype;
-    typedef typename operator_type::value_type value_type;
-    OperatorFree( operator_ptrtype F )
-        :
-        super( F->label(), F->useTranspose() ),
-        M_op( F ),
-        M_hasInverse( 0 ),
-        M_hasApply( F->hasApply() )
-    {
-        LOG(INFO) << "Create operator " << this->label() << " ...\n";
-    }
-
-    OperatorFree( const OperatorFree& tc )
-        :
-        super( tc ),
-        M_op( tc.M_op ),
-        M_hasInverse( tc.M_hasInverse ),
-        M_hasApply( tc.M_hasApply )
-    {
-        LOG(INFO) << "Copy operator " << this->label() << " ...\n";
-    }
-
-
-    bool hasInverse() const
-    {
-        return M_hasInverse;
-    }
-
-    bool hasApply() const
-    {
-        return M_hasApply;
-    }
-
-
-    int apply( const vector_ptrtype & X, vector_ptrtype & Y ) const
-    {
-        LOG(INFO) << "apply operator " << this->label() << "\n";
-        M_op->apply( X,Y );
-        LOG(INFO) << "Finished apply operator " << this->label() << "\n";
-
-        return !hasApply();
-    }
-
-    int applyInverse ( const vector_type& X, vector_type& Y ) const
-    {
-        LOG(INFO) << "applyInverse operator " << this->label() << "\n";
-
-        FEELPP_ASSERT( hasInverse() ).error( "This operator cannot be inverted." );
-
-#if 0
-        std::pair<unsigned int, real_type> result = M_Solver->solve( M_op, M_Prec, Y, X, M_tol, M_maxiter );
-#endif
-
-        LOG(INFO) << "Finished applyInverse operator " << this->label() << "\n";
-        return !hasInverse();
-    }
-
-    value_type NormInf() const
-    {
-        return 0;
-    }
-
-    bool HasNormInf () const
-    {
-        return( true );
-    }
-
-    ~OperatorFree()
-    {
-        LOG(INFO) << "Destroyed operator: " << this->label() << " ...\n";
-    };
-
-private:
-
-    operator_ptrtype M_op;
-
-
-    bool M_hasInverse, M_hasApply;
-
-};
-
-
-
-
-
-
-
 
 } // Feel
 
