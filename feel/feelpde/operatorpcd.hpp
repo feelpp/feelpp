@@ -279,8 +279,6 @@ OperatorPCD<pressure_space_type,uOrder>::assembleDiffusion()
     auto d = form2( _test=M_Qh, _trial=M_Qh, _matrix=M_diff );
     d = integrate( elements(M_Qh->mesh()), trace(trans(gradt(p))*grad(q)));
 
-    M_diff->close();
-
     this->applyBC(M_diff);
 
     diffOp = op( M_diff, "Fp" );
@@ -325,6 +323,8 @@ OperatorPCD<pressure_space_type,uOrder>::applyBC( sparse_matrix_ptrtype& A )
             if ( (m=="outlet") || (m == "outflow") )
                 a += on( markedfaces(M_Qh->mesh(),dir), _element=p, _rhs=rhs, _expr=cst(0.) );
         }
+    rhs->close();
+    A->close();
 }
 
 template < typename pressure_space_type, uint16_type uOrder >

@@ -713,6 +713,13 @@ struct updateDataMapProcessStandard
             }
         }
 
+        for ( auto const& activeDofShared : x->dof()->activeDofSharedOnCluster() )
+        {
+            M_dm->setActiveDofSharedOnCluster( M_startIndexWithGhost + activeDofShared.first, activeDofShared.second );
+        }
+
+
+
         for (int proc = 0 ; proc < worldsize ; ++proc)
             M_start_index[proc] += x->dof()->nLocalDofWithoutGhost(proc);
         M_startIndexWithGhost+=nLocWithGhost;

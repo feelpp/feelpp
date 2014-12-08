@@ -129,7 +129,7 @@ public:
     TestHCurlOneElt()
         :
         super(),
-        M_backend( backend_type::build( this->vm() ) ),
+        M_backend( backend_type::build( soption( _name="backend" ) ) ),
         exporter( Exporter<mesh_type>::New( this->vm() ) )
     {
         std::cout << "[TestHCurlOneElt]\n";

@@ -113,10 +113,26 @@ extern "C"
         PetscErrorCode ierr = PCShellGetContext( pc,&ctx );
         CHKERRQ( ierr );
         Preconditioner<double> * preconditioner = static_cast<Preconditioner<double>*>( ctx );
+#if 0
         VectorPetsc<double> x_vec( x );
         VectorPetsc<double> y_vec( y );
-
         preconditioner->apply( x_vec,y_vec );
+#else
+        boost::shared_ptr<VectorPetsc<double> > x_vec;
+        boost::shared_ptr<VectorPetsc<double> > y_vec;
+        if ( preconditioner->worldComm().localSize() > 1 )
+        {
+            CHECK ( preconditioner->matrix() ) << "matrix is not define";
+            x_vec.reset( new VectorPetscMPI<double>( x, preconditioner->matrix()->mapColPtr() ) );
+            y_vec.reset( new VectorPetscMPI<double>( y, preconditioner->matrix()->mapRowPtr() ) );
+        }
+        else
+        {
+            x_vec.reset( new VectorPetsc<double>( x ) );
+            y_vec.reset( new VectorPetsc<double>( y ) );
+        }
+        preconditioner->apply( *x_vec,*y_vec );
+#endif
 
         return 0;
     }
