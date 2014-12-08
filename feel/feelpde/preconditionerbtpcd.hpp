@@ -48,11 +48,10 @@ public:
     typedef typename space_type::mesh_type mesh_type;
     typedef typename space_type::mesh_ptrtype mesh_ptrtype;
     typedef typename space_type::element_type element_type;
-    typedef typename space_type::template sub_functionspace<0>::type velocity_space_ptrtype;
-    typedef typename space_type::template sub_functionspace<1>::type pressure_space_ptrtype;
-
-    typedef typename velocity_space_ptrtype::element_type velocity_space_type;
-    typedef typename pressure_space_ptrtype::element_type pressure_space_type;
+    typedef typename space_type::template sub_functionspace<0>::type velocity_space_type;
+    typedef typename space_type::template sub_functionspace<1>::type pressure_space_type;
+    typedef typename space_type::template sub_functionspace<0>::ptrtype velocity_space_ptrtype;
+    typedef typename space_type::template sub_functionspace<1>::ptrtype pressure_space_ptrtype;
 
     typedef typename velocity_space_type::element_type velocity_element_type;
     typedef typename pressure_space_type::element_type pressure_element_type;
@@ -281,8 +280,7 @@ void
 PreconditionerBTPCD<space_type>::assembleSchurApp( double nu, double alpha )
 {
     LOG(INFO) << "Assembling schur complement";
-    pcdOp = boost::make_shared<op_pcd_type>( M_Qh, M_bcFlags, nu, alpha );
-    //pcdOp = op_pcd_ptrtype( new op_pcd_type( M_Qh, M_bcFlags, nu, alpha  ) );
+    pcdOp = boost::make_shared<op_pcd_type>( M_Xh, M_bcFlags, nu, alpha );
     LOG(INFO) << "Assembling schur complement done";
 }
 

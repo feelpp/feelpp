@@ -1662,7 +1662,8 @@ public:
     template<int i>
     struct sub_functionspace
     {
-        typedef typename mpl::at_c<functionspace_vector_type,i>::type type;
+        typedef typename mpl::at_c<functionspace_vector_type,i>::type ptrtype;
+        typedef typename ptrtype::element_type type;
     };
 
     /**
