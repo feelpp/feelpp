@@ -34,11 +34,14 @@
 namespace Feel
 {
 
-template<typename space_type, uint16_type uOrder>
+template<typename space_type>
 class OperatorPCD : public OperatorBase<typename space_type::value_type>
 {
     typedef OperatorBase<typename space_type::value_type> super;
 public:
+
+    typedef OperatorPCD<space_type> type;
+    typedef boost::shared_ptr<type> ptrtype;
 
     typedef typename space_type::value_type value_type;
 
@@ -52,8 +55,11 @@ public:
     typedef typename space_type::mesh_type mesh_type;
     typedef typename space_type::mesh_ptrtype mesh_ptrtype;
     typedef typename space_type::element_type element_type;
-    typedef typename space_type::template sub_functionspace<0>::type velocity_space_ptrtype;
-    typedef typename space_type::template sub_functionspace<1>::type pressure_space_ptrtype;
+    typedef typename space_type::template sub_functionspace<0>::type velocity_space_type;
+    typedef typename space_type::template sub_functionspace<1>::type pressure_space_type;
+    typedef typename space_type::template sub_functionspace<0>::ptrtype velocity_space_ptrtype;
+    typedef typename space_type::template sub_functionspace<1>::ptrtype pressure_space_ptrtype;
+    typedef typename pressure_space_type::element_type pressure_element_type;
 
     typedef OperatorMatrix<value_type> op_mat_type;
     typedef boost::shared_ptr<op_mat_type> op_mat_ptrtype;
@@ -193,8 +199,8 @@ OperatorPCD<space_type>::OperatorPCD( const OperatorPCD& tc )
     M_bcFlags( tc.M_bcFlags ),
     M_nu( tc.M_nu ),
     M_alpha( tc.M_alpha ),
-                                                                                              inflowIter( tc.inflowIter ),
-                                                                                              M_prob_type( tc.M_prob_type )
+    inflowIter( tc.inflowIter ),
+    M_prob_type( tc.M_prob_type )
 {
     //LOG(INFO) << "Call for OperatorPCD copy constructor...\n";
 }
@@ -212,7 +218,7 @@ template < typename space_type>
 template < typename ExprConvection, typename ExprBC >
 void
 OperatorPCD<space_type>::update( ExprConvection const& expr_b,
-                                                 ExprBC const& ebc )
+                                 ExprBC const& ebc )
 {
 
     auto conv  = form2( _test=M_Qh, _trial=M_Qh, _matrix=G );
