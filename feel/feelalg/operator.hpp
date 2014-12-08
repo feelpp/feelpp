@@ -39,8 +39,19 @@ class OperatorBase
 {
   public:
     typedef T value_type;
+    typedef DataMap datamap_type;
+    typedef boost::shared_ptr<DataMap> datamap_ptrtype;
 
-    OperatorBase( DataMap const& map, std::string label, bool use_transpose, bool has_norminf  ) 
+    OperatorBase() 
+        : 
+        M_domain_map(),
+        M_image_map(),
+        M_label(""),
+        M_use_transpose( false ) ,
+        M_has_norminf( false )
+        {}
+
+    OperatorBase( datamap_ptrtype const& map, std::string label, bool use_transpose, bool has_norminf  ) 
         : 
         M_domain_map( map ),
         M_image_map( map ),
@@ -48,7 +59,7 @@ class OperatorBase
         M_use_transpose( use_transpose ) ,
         M_has_norminf( has_norminf )
         {}
-    OperatorBase( DataMap const& dmap, DataMap const& imap, std::string label, bool use_transpose, bool has_norminf  ) 
+    OperatorBase( datamap_ptrtype  const& dmap, datamap_ptrtype const& imap, std::string label, bool use_transpose, bool has_norminf  ) 
         : 
         M_domain_map( dmap ),
         M_image_map( imap ),
@@ -110,22 +121,42 @@ class OperatorBase
     /**
      * domain map
      */
-    DataMap const& domainMap() const { return M_domain_map; }
+    DataMap const& domainMap() const { return *M_domain_map; }
+
+    /**
+     * domain map
+     */
+    datamap_ptrtype const& domainMapPtr() const { return M_domain_map; }
+
+    /**
+     * domain map
+     */
+    datamap_ptrtype domainMapPtr() { return M_domain_map; }
 
     /**
      * image map
      */
-    DataMap const& imageMap() const { return M_image_map; }
+    DataMap const& imageMap() const { return *M_image_map; }
+
+    /**
+     * image map
+     */
+    datamap_ptrtype const& imageMapPtr() const { return M_image_map; }
+
+    /**
+     * image map
+     */
+    datamap_ptrtype imageMapPtr() { return M_image_map; }
 
 
     /**
      * \return the WorldComm of the Operator
      */
-    virtual const WorldComm& comm() const { return M_domain_map.worldComm(); }
+    virtual const WorldComm& comm() const { return M_domain_map->worldComm(); }
  
 protected:
     // domain and image map 
-    DataMap M_domain_map, M_image_map;
+    datamap_ptrtype M_domain_map, M_image_map;
     std::string M_label;
     bool M_use_transpose;
     bool M_has_norminf;
@@ -145,9 +176,13 @@ public:
     typedef boost::shared_ptr<vector_type> vector_ptrtype;
 
 
+    OperatorMatrix()
+        :
+        OperatorBase<T>()
+        {}
     OperatorMatrix( sparse_matrix_ptrtype const& F, std::string _label, bool transpose = 0 )
         :
-        OperatorBase<T>( F->mapCol(), F->mapRow(), _label, transpose, true ),
+        OperatorBase<T>( F->mapColPtr(), F->mapRowPtr(), _label, transpose, true ),
         M_F( F ),
         M_hasInverse( 1 ),
         M_hasApply( 1 )
@@ -251,7 +286,7 @@ public:
     // This constructor implements the F^-1 operator
     OperatorInverse( operator_ptrtype& F )
         :
-        super( F->domainMap(), F->imageMap(), F->label(), F->useTranspose(), false ),
+        super( F->domainMapPtr(), F->imageMapPtr(), F->label(), F->useTranspose(), false ),
         M_F( F )
     {
         this->setName();
@@ -351,7 +386,7 @@ public:
 
     OperatorCompose( op1_ptrtype F, op2_ptrtype G )
         :
-        super(G->domainMap(),F->imageMap(), F->label(),F->useTranspose(),false),
+        super(G->domainMapPtr(),F->imageMapPtr(), F->label(),F->useTranspose(),false),
         M_F( F ),
         M_G( G )
     {
@@ -392,7 +427,7 @@ public:
 
         LOG(INFO) << "OperatorCompose: apply operator " << this->label() << " ...\n";
 
-        auto Z = backend()->newVector( M_G->imageMap() );
+        auto Z = backend()->newVector( M_G->imageMapPtr() );
         
         LOG(INFO) << "  - apply operator " << M_G->label() << " ...\n";
         M_G->apply( X,*Z );
@@ -412,8 +447,7 @@ public:
 
         //vector_ptrtype Z = X.clone();
 
-        // WARNING Y.mapPtr maybe not good !!!
-        auto Z = backend()->newVector( Y.mapPtr() );
+        auto Z = backend()->newVector( M_F->imageMapPtr() );
 
         LOG(INFO) << "  - apply operator " << M_F->label() << " ...\n";
         M_F->applyInverse( X,*Z );
@@ -468,7 +502,7 @@ public:
 
     OperatorScale( op1_ptrtype& F )
         :
-        super( F->domainMap(), F->imageMap(), F->label(), F->useTranspose(), F->hasNormInf() ),
+        super( F->domainMapPtr(), F->imageMapPtr(), F->label(), F->useTranspose(), F->hasNormInf() ),
         M_F( F ),
         M_alpha( 1 )
     {
@@ -485,7 +519,7 @@ public:
 
     OperatorScale( op1_ptrtype& F, value_type alpha )
         :
-        super( F->domainMap(), F->imageMap(), "", false, false ),
+        super( F->domainMapPtr(), F->imageMapPtr(), "", false, false ),
         M_F( F ),
         M_alpha( alpha )
     {

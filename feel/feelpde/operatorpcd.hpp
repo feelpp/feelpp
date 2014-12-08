@@ -80,9 +80,7 @@ public:
     static const uint16_type Dim = space_type::nDim;
     static const uint16_type pOrder = pressure_space_type::basis_type::nOrder;
 
-    OperatorPCD(){}
-
-    OperatorPCD( pressure_space_ptrtype Qh,
+    OperatorPCD( space_ptrtype Qh,
                  std::map< std::string, std::set<flag_type> > bcFlags,
                  double nu,
                  double alpha );
@@ -111,6 +109,7 @@ public:
 
 private:
 
+    space_ptrtype M_Xh;
     pressure_space_ptrtype M_Qh;
 
     pressure_element_type p, q;
@@ -145,20 +144,21 @@ private:
 
 
 template < typename space_type>
-OperatorPCD<space_type>::OperatorPCD( pressure_space_ptrtype Qh,
-                                                      std::map< std::string, std::set<flag_type> > bcFlags,
-                                                      double nu,
-                                                      double alpha )
+OperatorPCD<space_type>::OperatorPCD( space_ptrtype Qh,
+                                      std::map< std::string, std::set<flag_type> > bcFlags,
+                                      double nu,
+                                      double alpha )
     :
-    super( Qh->map(), "PCD", false, false ),
-    M_Qh( Qh ),
+    super( Qh->template functionSpace<1>()->mapPtr(), "PCD", false, false ),
+    M_Xh( Qh ),
+    M_Qh( M_Xh->template functionSpace<1>() ),
     p( M_Qh, "p" ),
     q( M_Qh, "q" ),
-    M_mass( backend()->newMatrix(Qh, Qh) ),
-    M_diff( backend()->newMatrix(Qh, Qh) ),
-    M_conv( backend()->newMatrix(Qh, Qh) ),
-    G( backend()->newMatrix(Qh, Qh) ),
-    rhs( backend()->newVector( Qh ) ),
+    M_mass( backend()->newMatrix(M_Qh, M_Qh) ),
+    M_diff( backend()->newMatrix(M_Qh, M_Qh) ),
+    M_conv( backend()->newMatrix(M_Qh, M_Qh) ),
+    G( backend()->newMatrix(M_Qh, M_Qh) ),
+    rhs( backend()->newVector( M_Qh ) ),
     M_bcFlags( bcFlags ),
     M_nu( nu ),
     M_alpha( alpha )
@@ -184,6 +184,7 @@ template < typename space_type>
 OperatorPCD<space_type>::OperatorPCD( const OperatorPCD& tc )
     :
     super(tc),
+    M_Xh( tc.M_Xh ),
     M_Qh( tc.M_Qh ),
     p( tc.p ),
     q( tc.q ),
