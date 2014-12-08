@@ -17,25 +17,25 @@ do_clang=`echo $compiler_list | grep clang`
 export FEELPP_SCRATCHDIR=/tmp/feel-logs/
 rm -rf $FEELPP_SCRATCHDIR
 #if [ ! -z "$do_gcc46" -a -x /usr/bin/g++-4.6 ]; then
-#    export FEELPP_WORKDIR=/tmp/feel-gcc46/
+#    export FEELPP_WORKDIR=/tmp/feel-gcc46
 #    rm -rf $FEELPP_WORKDIR 
 #    $COMMON,FEELPP_CXXNAME=gcc-4.6,FEELPP_CXX=/usr/bin/g++-4.6 
 #    rm -rf $FEELPP_WORKDIR 
 #fi
 if [ ! -z "$do_gcc47" -a -x /usr/bin/g++-4.7 ]; then
-    export FEELPP_WORKDIR=/tmp/feel-gcc47/
+    export FEELPP_WORKDIR=/tmp/feel-gcc47
     rm -rf $FEELPP_WORKDIR 
     $COMMON,FEELPP_CXXNAME=gcc-4.7,FEELPP_CXX=/usr/bin/g++-4.7
     rm -rf $FEELPP_WORKDIR 
 fi
 if [ ! -z "$do_gcc48" -a -x /usr/bin/g++-4.8 ]; then
-    export FEELPP_WORKDIR=/tmp/feel-gcc48/
+    export FEELPP_WORKDIR=/tmp/feel-gcc48
     rm -rf $FEELPP_WORKDIR 
     $COMMON,FEELPP_CXXNAME=gcc-4.8,FEELPP_CXX=/usr/bin/g++-4.8 
     rm -rf $FEELPP_WORKDIR 
 fi
 if [ ! -z "$do_gcc49" -a -x /usr/bin/g++-4.9 ]; then
-    export FEELPP_WORKDIR=/tmp/feel-gcc49/
+    export FEELPP_WORKDIR=/tmp/feel-gcc49
     rm -rf $FEELPP_WORKDIR 
     $COMMON,FEELPP_CXXNAME=gcc-4.9,FEELPP_CXX=/usr/bin/g++-4.9 
     rm -rf $FEELPP_WORKDIR 
