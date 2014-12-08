@@ -325,7 +325,7 @@ public:
         return this->dofGlobalClusterIsOnProc( globDof, this->worldComm().globalRank() );
     }
 
-    bool dofGlobalClusterIsOnProc( size_type globDof, int proc ) const
+    bool dofGlobalClusterIsOnProc( size_type globDof, rank_type proc ) const
     {
         return ( ( this->nLocalDofWithoutGhost(proc) > 0 ) && ( globDof <= M_last_df_globalcluster[proc] ) && ( globDof >= M_first_df_globalcluster[proc] ) );
     }
@@ -472,6 +472,9 @@ public:
             M_neighbor_processors.insert( procIdNeigh );
     }
 
+    std::map<size_type, std::set<rank_type> > const& activeDofSharedOnCluster() const { return M_activeDofSharedOnCluster; }
+    void setActiveDofSharedOnCluster(size_type j, std::set<rank_type> const& sharedRank ) { M_activeDofSharedOnCluster[j]=sharedRank; }
+
 
     //! \return true if DataMap is close, false otherwise
     bool closed() const
@@ -580,6 +583,11 @@ protected:
      *The processors who neighbor the current processor
      */
     std::set<rank_type> M_neighbor_processors;
+
+    /**
+     * get set of rank which use an active dof (dofid on process, not cluster)
+     */
+    std::map<size_type, std::set<rank_type> > M_activeDofSharedOnCluster;
 
     /**
      * Communicator

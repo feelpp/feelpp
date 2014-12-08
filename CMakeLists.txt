@@ -105,6 +105,8 @@ OPTION(FEELPP_ENABLE_TESTS "enable Feel++ tests" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_DOXYGEN "enable Feel++ doxygen documentation generation" OFF)
 OPTION(FEELPP_MINIMAL_CONFIGURATION "enable feel minimal configuration" OFF)
 
+OPTION(FEELPP_USE_GMSH_PACKAGE "Use system installed package" ON)
+
 SET(FEELPP_HOME_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
 SET(FEELPP_HOME_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
 SET(FEELPP_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
@@ -311,14 +313,15 @@ foreach(project ${projects})
     option(FEELPP_ENABLE_RESEARCH_${PROJECT} "Enable/Disable research/${project} " OFF)
     option(FEELPP_ENABLE_${PROJECT}_DOCUMENTATION "Enable/Disable documentation in research/${project}" OFF)
 		SET(FEELPP_ENABLED_PROJECTS "${FEELPP_ENABLED_PROJECTS} ${project}" )
-		MESSAGE(STATUS "[feelpp] ${project} -- Compile: ${FEELPP_ENABLE_RESEARCH_${PROJECT}} -- Doc  ${FEELPP_ENABLE_${PROJECT}_DOCUMENTATION}" )
+		MESSAGE(STATUS "[feelpp] ${project}\t-- Compile : ${FEELPP_ENABLE_RESEARCH_${PROJECT}} ")
+		MESSAGE(STATUS "        \t\t-- Doc :     ${FEELPP_ENABLE_${PROJECT}_DOCUMENTATION}" )
   endif()
 endforeach()
 
 ################################################################################
 # data
 ################################################################################
-IF(NOT APPLE AND EXISTS "${CMAKE_SOURCE_DIR}/data")
+IF(EXISTS "${CMAKE_SOURCE_DIR}/data")
   ADD_SUBDIRECTORY ( data )
 ENDIF()
 

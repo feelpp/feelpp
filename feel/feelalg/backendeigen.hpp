@@ -265,13 +265,23 @@ template<typename T, int _Options>
 BackendEigen<T,_Options>::BackendEigen( WorldComm const& _worldComm )
     :
     super(_worldComm)
-{}
+{
+    if ( IsSparse )
+        this->M_backend = BackendType::BACKEND_EIGEN;
+    else
+        this->M_backend = BackendType::BACKEND_EIGEN_DENSE;
+}
 
 template<typename T, int _Options>
 BackendEigen<T,_Options>::BackendEigen( po::variables_map const& vm, std::string const& prefix, WorldComm const& _worldComm  )
     :
     super( vm, prefix, _worldComm )
 {
+    if ( IsSparse )
+        this->M_backend = BackendType::BACKEND_EIGEN;
+    else
+        this->M_backend = BackendType::BACKEND_EIGEN_DENSE;
+
     std::string _prefix = prefix;
 
     if ( !_prefix.empty() )

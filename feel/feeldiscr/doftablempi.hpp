@@ -632,6 +632,7 @@ buildGlobalProcessToGlobalClusterDofMapContinuousGhostDofBlockingComm( mesh_type
                     const auto dofGlobAsked = locDof;
                     // save response
                     resAskedWithMultiProcess[cptDofInFace] = this->M_mapGlobalProcessToGlobalCluster[dofGlobAsked];
+                    this->M_activeDofSharedOnCluster[dofGlobAsked].insert(proc);
                 }
                 else
                 {
@@ -664,6 +665,7 @@ buildGlobalProcessToGlobalClusterDofMapContinuousGhostDofBlockingComm( mesh_type
                 const auto dofGlobAsked = thedof.template get<0>();
                 // save response
                 resAskedWithMultiProcess[cptDofInFace] = this->M_mapGlobalProcessToGlobalCluster[dofGlobAsked];
+                this->M_activeDofSharedOnCluster[dofGlobAsked].insert(proc);
                 }
                 //------------------------------------------------------------------------------//
             }
@@ -912,6 +914,7 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
                     const auto dofGlobAsked = thedof.template get<0>();
                     // save response
                     dataToReSend[idProc][cptFace][cptDofInFace] = this->M_mapGlobalProcessToGlobalCluster[dofGlobAsked];
+                    this->M_activeDofSharedOnCluster[dofGlobAsked].insert(idProc);
                 }
                 else
                 {
@@ -922,6 +925,7 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
                         const int indexDofInFace = comp2*nDofInFace + cptDofInFace;
                         // save response
                         dataToReSend[idProc][cptFace][indexDofInFace] = this->M_mapGlobalProcessToGlobalCluster[dofGlobAsked];
+                        this->M_activeDofSharedOnCluster[dofGlobAsked].insert(idProc);
                     }
                 }
                 //------------------------------------------------------------------------------//
@@ -1337,6 +1341,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMapExtende
                 {
                     size_type dofGlobAsked = boost::get<0>( localToGlobal( idEltToSearch, locDof, c1 ) );
                     dataToReSend[idProc][cptElt][cptDof+c1] = this->M_mapGlobalProcessToGlobalCluster[dofGlobAsked];
+                    this->M_activeDofSharedOnCluster[dofGlobAsked].insert(idProc);
                 }
             } // for ( int cptDof=0; itNodes ... )
         }

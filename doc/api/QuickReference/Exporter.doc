@@ -116,8 +116,10 @@ namespace Feel {
   \f$\Omega=\{(x,y) \in \mathbb{R}^2 | x^2 + y^2 < 1\}\f$. \f$\Omega\f$
   is approximated by \f$\Omega_h\f$.
 
-  To define \f$\Omega\f$ and \f$u\f$, the code reads
-  \snippet myexporter.cpp Def_Omega_u
+  To define \f$\Omega\f$ the code reads
+  \snippet myexporter.cpp mesh
+and \f$u\f$ :
+  \snippet myexporter.cpp function
 
   We start with an \c Exporter object that allows to visualize the \f$P_1\f$ interpolant of \f$u\f$ over \f$\Omega\f$.
 
