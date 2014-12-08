@@ -85,7 +85,7 @@ int main(int argc, char**argv )
     bcs["Dirichlet"].insert(mesh->markerName("inlet"));
     bcs["Dirichlet"].insert(mesh->markerName("wall"));
     bcs["Neumann"].insert(mesh->markerName("outlet"));
-    auto a_btpcd = btpcd( _space=Vh, _bc=bcs );
+    auto a_btpcd = btpcd( _space=Vh, _bc=bcs, _matrix= a.matrixPtr() );
     a_btpcd->setMatrix( a.matrixPtr() );
     auto incru = normL2( _range=elements(mesh), _expr=idv(u)-idv(un));
     auto incrp = normL2( _range=elements(mesh), _expr=idv(p)-idv(pn));
@@ -96,9 +96,13 @@ int main(int argc, char**argv )
     at+=on(_range=markedfaces(mesh,"inlet"), _rhs=l, _element=u,
            _expr=g );
 
+    map_vector_field<2,1,2> m_dirichlet;
+    m_dirichlet["inlet"]=g;
+    m_dirichlet["wall"]=g;
+
     if ( boption("btpcd") )
     {
-        a_btpcd->update( zero<2,1>(), g );
+        a_btpcd->update( zero<2,1>(), m_dirichlet );
         at.solveb(_rhs=l,_solution=U,_backend=backend(),_prec=a_btpcd);
     }
     else
@@ -130,7 +134,7 @@ int main(int argc, char**argv )
         }
         if ( boption("btpcd") )
         {
-            a_btpcd->update( idv(u), zero<2,1>() );
+            a_btpcd->update( idv(u), m_dirichlet );
             at.solveb(_rhs=r,_solution=deltaU/*U*/,_backend=backend(),_prec=a_btpcd );
         }
         else

@@ -45,7 +45,6 @@ class OperatorBase
         M_domain_map( map ),
         M_image_map( map ),
         M_label( label ),
-        M_comm( comm ), 
         M_use_transpose( use_transpose ) ,
         M_has_norminf( has_norminf )
         {}
@@ -54,7 +53,6 @@ class OperatorBase
         M_domain_map( dmap ),
         M_image_map( imap ),
         M_label( label ),
-        M_comm( comm ), 
         M_use_transpose( use_transpose ) ,
         M_has_norminf( has_norminf )
         {}
@@ -63,7 +61,6 @@ class OperatorBase
     OperatorBase( std::string label, bool use_transpose = false, bool has_norminf = false  ) 
         : 
         M_label( label ),
-        M_comm( Environment::worldComm() ), 
         M_use_transpose( use_transpose ) ,
         M_has_norminf( has_norminf )
         {}
@@ -395,7 +392,7 @@ public:
 
         LOG(INFO) << "OperatorCompose: apply operator " << this->label() << " ...\n";
 
-        auto Z = backend()->newVector( G->imageMap() );
+        auto Z = backend()->newVector( M_G->imageMap() );
         
         LOG(INFO) << "  - apply operator " << M_G->label() << " ...\n";
         M_G->apply( X,*Z );
