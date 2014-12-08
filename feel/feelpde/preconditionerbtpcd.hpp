@@ -1,23 +1,23 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*-
- 
+
  This file is part of the Feel++ library
- 
+
  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
             Goncalo Pena  <gpena@mat.uc.pt>
  Date: 02 Oct 2014
- 
+
  Copyright (C) 2014 Feel++ Consortium
- 
+
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
  License as published by the Free Software Foundation; either
  version 2.1 of the License, or (at your option) any later version.
- 
+
  This library is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  Lesser General Public License for more details.
- 
+
  You should have received a copy of the GNU Lesser General Public
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
@@ -118,7 +118,7 @@ public:
     {
         return(false);
     }
-    
+
     ~PreconditionerBTPCD(){};
 
 private:
@@ -235,18 +235,19 @@ void
 PreconditionerBTPCD<space_type>::assembleHelmholtz( double nu, double alpha  )
 {
     auto a = form2( _trial=M_Vh, _test=M_Vh, _matrix=M_helm );
-    
+
     if ( alpha != 0 )
-        
+
         a = integrate( _range=elements(M_Xh->mesh()),  _expr=alpha*trans(idt(u))*id(v) + nu*(trace(trans(gradt(u))*grad(v))) );
     else
         a = integrate( _range=elements(M_Xh->mesh()),  _expr=nu*(trace(trans(gradt(u))*grad(v))) );
 
+    /*
     for( auto dir : M_bcFlags["Dirichlet"] )
         {
             a += integrate( markedfaces(M_Xh->mesh(), dir), - nu*trans(gradt(u)*N())*id(v) );
         }
-
+     */
     M_helm->close();
 }
 
@@ -275,7 +276,7 @@ PreconditionerBTPCD<space_type>::assembleSchurApp( double nu, double alpha )
 template < typename space_type >
 template< typename Expr_convection, typename Expr_bc >
 void
-PreconditionerBTPCD<space_type>::update( Expr_convection const& expr_b, 
+PreconditionerBTPCD<space_type>::update( Expr_convection const& expr_b,
                                          Expr_bc const& g )
 {
     static bool init_G = true;
@@ -286,7 +287,7 @@ PreconditionerBTPCD<space_type>::update( Expr_convection const& expr_b,
         G->zero();
 
     auto lg = form2( _trial=M_Vh, _test=M_Vh, _matrix=G );
-    
+
     lg = integrate( elements(M_Xh->mesh()),
                    trans( gradt(u)*val(expr_b) )*id(v)
                    );
@@ -298,7 +299,7 @@ PreconditionerBTPCD<space_type>::update( Expr_convection const& expr_b,
     std::set<flag_type>::const_iterator diriIter;
     for( auto dir : M_bcFlags["Dirichlet"] )
     {
-        lg += on( _range=markedfaces(M_Xh->mesh(), dir ), _element=u, _rhs=M_rhs, _expr=g );
+        lg += on( _range=markedfaces(M_Xh->mesh(), dir ), _element=u, _rhs=M_rhs, _expr=g.find(M_Xh->mesh()->markerName(dir))->second );
     }
 
     helmOp = op( G, "Fu" );
@@ -330,7 +331,7 @@ PreconditionerBTPCD<space_type>::applyInverse ( const vector_type& X, vector_typ
     *M_pin = U.template element<1>();
     M_pin->close();
 
-    
+
     if ( boption("btpcd.cd") )
     {
         LOG(INFO) << "velocity block : apply inverse convection diffusion...\n";
@@ -389,8 +390,8 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename meta::btpcd<typename parameter::valu
                                    )
                                  ( optional
                                    ( prefix, *( boost::is_convertible<mpl::_,std::string> ), "" )
-                                   ( nu,  *(double), doption("mu") )
-                                   ( alpha, *( double ), 0. )
+                                   ( nu,  *, doption("mu") )
+                                   ( alpha, *, 0. )
                                    )
                                  )
 {

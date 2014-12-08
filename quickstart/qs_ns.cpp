@@ -22,6 +22,7 @@
    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 #include <feel/feel.hpp>
+#include <feel/feelpde/preconditionerbtpcd.hpp>
 
 int main(int argc, char**argv )
 {
@@ -68,9 +69,23 @@ int main(int argc, char**argv )
     auto a = form2( _trial=Vh, _test=Vh), at = form2( _trial=Vh, _test=Vh);
 
     a = integrate( _range=elements( mesh ), _expr=mu*inner( deft, grad(v) ) + mybdf->polyDerivCoefficient(0)*trans(idt(u))*id(u) );
-    a +=integrate( _range=elements( mesh ), _expr=-div( v )*idt( p ) - divt( u )*id( q ) );
+    a +=integrate( _range=elements( mesh ), _expr=-div( v )*idt( p ) + divt( u )*id( q ) );
     auto e = exporter( _mesh=mesh );
     auto w = Vh->functionSpace<0>()->element( curlv(u), "w" );
+
+    auto inlet = expr<2,1>( soption(_name="functions.g"));
+    auto wall = expr<2,1>( "{0,0}:x:y");
+    std::map<std::string,std::set<flag_type>> bcs;
+    bcs["Dirichlet"].insert(mesh->markerName("inlet"));
+    bcs["Dirichlet"].insert(mesh->markerName("wall"));
+    bcs["Neumann"].insert(mesh->markerName("outlet"));
+
+    map_vector_field<2,1,2> m_dirichlet;
+    m_dirichlet["inlet"]=inlet;
+    m_dirichlet["wall"]=wall;
+
+    auto a_btpcd = btpcd( _space=Vh, _bc=bcs, _alpha=mybdf->polyDerivCoefficient(0));
+
 
     toc("bdf, forms,...");
 
@@ -93,11 +108,19 @@ int main(int argc, char**argv )
         at = a;
         at += integrate( _range=elements( mesh ), _expr= trans(gradt(u)*idv(extrapu))*id(v) );
         at+=on(_range=markedfaces(mesh,"wall"), _rhs=ft, _element=u,
-               _expr=zero<2,1>() );
+               _expr=wall );
         at+=on(_range=markedfaces(mesh,"inlet"), _rhs=ft, _element=u,
-               _expr=-expr( soption(_name="functions.g")) *N() );
+               _expr=inlet );
         toc("update lhs");tic();
-        at.solve(_rhs=ft,_solution=U);
+
+
+        if ( boption("btpcd") )
+        {
+            a_btpcd->update( idv(extrapu), m_dirichlet );
+            at.solveb(_rhs=ft,_solution=U,_backend=backend(),_prec=a_btpcd );
+        }
+        else
+            at.solve(_rhs=ft,_solution=U);
         toc("solve");tic();
         w.on( _range=elements(mesh), _expr=curlv(u) );
         e->step(mybdf->time())->add( "u", u );

@@ -1,23 +1,23 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*-
- 
+
  This file is part of the Feel++ library
- 
+
  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
             Goncalo Pena  <gpena@mat.uc.pt>
  Date: 02 Oct 2014
- 
+
  Copyright (C) 2014 Feel++ Consortium
- 
+
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
  License as published by the Free Software Foundation; either
  version 2.1 of the License, or (at your option) any later version.
- 
+
  This library is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  Lesser General Public License for more details.
- 
+
  You should have received a copy of the GNU Lesser General Public
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
@@ -39,9 +39,9 @@ class OperatorPCD : public OperatorBase<typename pressure_space_type::value_type
 {
     typedef OperatorBase<typename pressure_space_type::value_type> super;
 public:
-    
+
     typedef typename pressure_space_type::value_type value_type;
-    
+
     typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
     typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
 
@@ -74,12 +74,12 @@ public:
     static const uint16_type pOrder = pressure_space_type::basis_type::nOrder;
 
     OperatorPCD() {}
-        
+
     OperatorPCD( pressure_space_ptrtype Qh,
                  std::map< std::string, std::set<flag_type> > bcFlags,
                  double nu,
                  double alpha );
-    
+
     OperatorPCD( const OperatorPCD& tc );
 
     void initialize();
@@ -157,7 +157,7 @@ OperatorPCD<pressure_space_type,uOrder>::OperatorPCD( pressure_space_ptrtype Qh,
     M_alpha( alpha )
 {
     initialize();
-        
+
     LOG(INFO) << "[Pressure Correction Diffusion Operator] Constructor: using nu=" << M_nu << "\n";
     LOG(INFO) << "[Pressure Correction Diffusion Operator] Constructor: using alpha=" << M_alpha << "\n";
 
@@ -210,22 +210,22 @@ OperatorPCD<pressure_space_type,uOrder>::initialize()
 template < typename pressure_space_type, uint16_type uOrder >
 template < typename ExprConvection, typename ExprBC >
 void
-OperatorPCD<pressure_space_type,uOrder>::update( ExprConvection const& expr_b, 
+OperatorPCD<pressure_space_type,uOrder>::update( ExprConvection const& expr_b,
                                                  ExprBC const& ebc )
 {
 
     auto conv  = form2( _test=M_Qh, _trial=M_Qh, _matrix=G );
     G->zero();
-    
+
     conv = integrate( elements(M_Qh->mesh()), (trans(expr_b)*trans(gradt(p)))*id(q));
 
     for( auto dir : M_bcFlags["Dirichlet"])
     {
         std::string m = M_Qh->mesh()->markerName(dir);
-        if (( soption("btpcd.pcd.inflow") == "Robin" ) && 
+        if (( soption("btpcd.pcd.inflow") == "Robin" ) &&
             ( ( m == "inlet" )  || ( m == "inflow") ) )
         {
-            conv += integrate( _range=markedfaces(M_Qh->mesh(), dir), _expr=trans(ebc)*N()*idt(p)*id(q));
+            conv += integrate( _range=markedfaces(M_Qh->mesh(), dir), _expr=trans(ebc.find(M_Qh->mesh()->markerName(dir))->second)*N()*idt(p)*id(q));
         }
     }
 
@@ -241,8 +241,8 @@ OperatorPCD<pressure_space_type,uOrder>::update( ExprConvection const& expr_b,
         G->addMatrix( M_alpha, M_mass );
     }
 
-    this->applyBC(G);    
-    
+    this->applyBC(G);
+
     static bool init_G = false;
 
     if ( !init_G )
@@ -251,7 +251,7 @@ OperatorPCD<pressure_space_type,uOrder>::update( ExprConvection const& expr_b,
         LOG(INFO) << "[OperatorPCD] setting pcd operator...\n";
         if ( ioption("btpcd.pcd.order") == 1 )
             precOp = compose( massOp, compose(inv(op(G,"Ap")),diffOp) );
-        else 
+        else
             precOp = compose( diffOp, compose(inv(op(G,"Ap")),massOp) );
         LOG(INFO) << "[OperatorPCD] setting pcd operator done.\n";
         init_G = true;
@@ -280,9 +280,9 @@ OperatorPCD<pressure_space_type,uOrder>::assembleDiffusion()
     d = integrate( elements(M_Qh->mesh()), trace(trans(gradt(p))*grad(q)));
 
     M_diff->close();
-    
+
     this->applyBC(M_diff);
-    
+
     diffOp = op( M_diff, "Fp" );
 }
 
@@ -311,10 +311,10 @@ OperatorPCD<pressure_space_type,uOrder>::applyBC( sparse_matrix_ptrtype& A )
     for( auto dir : M_bcFlags["Dirichlet"])
     {
         std::string m = M_Qh->mesh()->markerName(dir);
-        if (( soption("btpcd.pcd.inflow") == "Robin" ) && 
+        if (( soption("btpcd.pcd.inflow") == "Robin" ) &&
             ( ( m == "inlet" )  || ( m == "inflow") ) )
             continue;
-            
+
         a += on( markedfaces(M_Qh->mesh(),dir), _element=p, _rhs=rhs, _expr=cst(0.) );
     }
     // on neumann boundary on velocity, apply Dirichlet condition on pressure

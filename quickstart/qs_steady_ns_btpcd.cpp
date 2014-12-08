@@ -1,25 +1,25 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
- This file is part of the Feel library
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*-
+ 
+ This file is part of the Feel++ library
+ 
  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
- Date: 2008-01-09
- Copyright (C) 2008-2009 Université Joseph Fourier (Grenoble I)
- Copyright (C) 2009-2013 Feel++ Consortium
+ Date: 19 Nov 2014
+ 
+ Copyright (C) 2014 Feel++ Consortium
+ 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
  License as published by the Free Software Foundation; either
- version 3.0 of the License, or (at your option) any later version.
+ version 2.1 of the License, or (at your option) any later version.
+ 
  This library is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  Lesser General Public License for more details.
+ 
  You should have received a copy of the GNU Lesser General Public
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- */
-/**
- \file steadyns.cpp
- \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
- \date 2013-02-05
  */
 #include <feel/feel.hpp>
 #include <feel/feelalg/backend.hpp>
@@ -37,14 +37,10 @@
 
 namespace Feel
 {
-    using namespace Feel::vf;
-    /**
-     * \class Stokes class
-     * \brief solves the stokes equations
-     *
-     */
-
-class Steady_Ns
+/**
+ * 
+ */
+class SteadyNavierStokes
 :
 public Application
 {
@@ -73,7 +69,7 @@ public:
 
 
     FEELPP_DONT_INLINE
-    Steady_Ns( );
+    SteadyNavierStokes( );
 
     // init mesh and space
     FEELPP_DONT_INLINE
@@ -99,34 +95,24 @@ private:
     sparse_matrix_ptrtype M,D;
     vector_ptrtype F;
 
-}; // Steady_Ns
+}; // SteadyNavierStokes
 
-Steady_Ns::Steady_Ns( )
-:
-super( ),
-//M_backend( backend_type::build( this->vm() ) ),
-mu( this->vm()["mu"].as<value_type>() ),
-rho( this->vm()["rho"].as<value_type>() ),
-penalbc( this->vm()["bccoeff"].as<value_type>() )
+SteadyNavierStokes::SteadyNavierStokes( )
+    :
+    super( ),
+    //M_backend( backend_type::build( this->vm() ) ),
+    mu( this->vm()["mu"].as<value_type>() ),
+    rho( this->vm()["rho"].as<value_type>() ),
+    penalbc( this->vm()["bccoeff"].as<value_type>() )
 {
 
 }
 
 
-void Steady_Ns::init()
+void SteadyNavierStokes::init()
 {
     double meshSize = option(_name="gmsh.hsize").as<double>();
-#if 0
-    GeoTool::Rectangle R( meshSize,"myRectangle",GeoTool::Node(0,0),GeoTool::Node(5,1));
-    R.setMarker(_type="line",_name="inlet",_marker4=true);
-    R.setMarker(_type="line",_name="outlet",_marker2=true);
-    R.setMarker(_type="line",_name="wall",_marker1=true,_marker3=true);
-    R.setMarker(_type="surface",_name="Omega",_markerAll=true);
-    auto mesh = R.createMesh(_mesh=new Mesh<Simplex<2>>,_name="qs_stokes");
-#else
     mesh = loadMesh(_mesh=new mesh_type);
-#endif
-
 
     if ( Environment::isMasterRank() )
     {
@@ -135,10 +121,10 @@ void Steady_Ns::init()
     Vh = space_type::New( mesh );
 }
 
-void Steady_Ns::run()
+void SteadyNavierStokes::run()
 {
     this->init();
-
+#if 1
     auto Jacobian = [=](const vector_ptrtype& X, sparse_matrix_ptrtype& J)
     {
         //std::cout<< " In Jacobian function \n";
@@ -215,7 +201,7 @@ void Steady_Ns::run()
 
 
     };
-
+#endif
 
     auto U = Vh->element( "(u,p)" );
     auto V = Vh->element( "(v,q)" );
@@ -245,8 +231,9 @@ void Steady_Ns::run()
         bcs["Dirichlet"].insert(mesh->markerName("wall"));
         bcs["Neumann"].insert(mesh->markerName("outlet"));
         auto a_btpcd = btpcd( _space=Vh, _bc=bcs );
-        a_btpcd->update( zero<2,1>(), g );
-        backend()->nlSolve(_solution=U,_backend=backend(),_prec=a_btpcd );
+        //a_btpcd->update( zero<2,1>(), g );
+        //backend()->nlSolve(_solution=U,_backend=backend(),_prec=a_btpcd );
+        
 
     }
     else
@@ -273,12 +260,12 @@ int main( int argc, char** argv )
     ( "rho", Feel::po::value<double>()->default_value( 1.0 ), "reaction coefficient component" )
     ( "bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions" )
     ;
-
+    
     Environment env( _argc=argc, _argv=argv,
-                    _desc=steadynsoptions,
-                    _about=about(_name="steady_ns",
+                     _desc=steadynsoptions,
+                     _about=about(_name="steady_ns",
                                  _author="Christophe Prud'homme",
                                  _email="christophe.prudhomme@feelpp.org") );
-    Feel::Steady_Ns Steady_Ns;
-    Steady_Ns.run();
+    SteadyNavierStokes ns;
+    ns.run();
 }
