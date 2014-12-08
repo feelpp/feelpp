@@ -37,12 +37,14 @@ struct OpT
     typedef typename Feel::meta::Pch<mesh_type,1>::ptrtype space_ptrtype;
     typedef typename Feel::meta::BilinearForm<space_type,space_type>::type form2_type;
     typedef typename Feel::meta::LinearForm<space_type>::type form1_type;
+    typedef typename Feel::meta::Exporter<mesh_type>::ptrtype exporter_ptrtype;
 
     mesh_ptrtype mesh;
     space_ptrtype Xh;
     element_type u;
     form2_type a;
     form1_type l;
+    exporter_ptrtype e;
     
     OpT() 
         {
@@ -59,10 +61,13 @@ struct OpT
             a = integrate(_range=elements(mesh),
                           _expr=gradt(u)*trans(grad(v)) );
             a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u, _expr=cst(0.) );
+            e = exporter( _mesh=mesh );
         }
-    double solve()
+    double solve(double t = 1.)
         {
             a.solve(_rhs=l,_solution=u);
+            e->step(t)->add( "u", u );
+            e->save();
             // returns the mean of u : ()\int_\Omega u)/(\int_\Omega 1)
             return mean( _expr=idv(u), _range=elements(mesh))(0,0);
         }
@@ -79,11 +84,16 @@ int main(int argc, char** argv)
 
     OpT op;
     
-    op.solve();
+    double m = op.solve( 1.0 );
+    if ( Environment::isMasterRank() )
+        std::cout << "mean value = " << m << "\n";
 
-    auto e = exporter( _mesh=op.mesh );
-    e->addRegions();
-    e->add( "u", op.u );
-    e->save();
+    m = op.solve( 2.0 );
+    if ( Environment::isMasterRank() )
+        std::cout << "mean value = " << m << "\n";
+
+    
+    
+    
     return 0;
 }
