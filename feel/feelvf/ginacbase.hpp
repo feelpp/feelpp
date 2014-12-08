@@ -39,6 +39,7 @@ public:
     typedef double value_type;
     typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> vec_type;
 
+    GiNaCBase() {}
     GiNaCBase( std::vector<GiNaC::symbol> const& syms )
         :
         M_syms( syms),
