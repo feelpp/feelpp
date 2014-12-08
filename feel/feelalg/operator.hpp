@@ -388,7 +388,9 @@ public:
         :
         super(G->domainMapPtr(),F->imageMapPtr(), F->label(),F->useTranspose(),false),
         M_F( F ),
-        M_G( G )
+        M_G( G ),
+        M_ZG ( backend()->newVector( M_G->imageMapPtr() ) ),
+        M_ZF ( backend()->newVector( M_F->imageMapPtr() ) )
     {
         // TODO:We should ensure here that the domain map of F corresponds to the
         // image map of G.
@@ -406,7 +408,9 @@ public:
         :
         super(tc),
         M_F( tc.M_F ),        
-        M_G( tc.M_G )
+        M_G( tc.M_G ),
+        M_ZG( tc.M_ZG ),
+        M_ZF( tc.M_ZF )
     {
         LOG(INFO) << "Copy operator " << this->label() << " ...\n";
     }
@@ -427,12 +431,12 @@ public:
 
         LOG(INFO) << "OperatorCompose: apply operator " << this->label() << " ...\n";
 
-        auto Z = backend()->newVector( M_G->imageMapPtr() );
+        
         
         LOG(INFO) << "  - apply operator " << M_G->label() << " ...\n";
-        M_G->apply( X,*Z );
+        M_G->apply( X,*M_ZG );
         LOG(INFO) << "  - apply operator " << M_F->label() << " ...\n";
-        M_F->apply( *Z,Y );
+        M_F->apply( *M_ZG,Y );
 
         LOG(INFO) << "OperatorCompose apply operator " << this->label() << " done.\n";
 
@@ -445,14 +449,10 @@ public:
 
         LOG(INFO) << "OperatorCompose apply operator " << this->label() << " ...\n";
 
-        //vector_ptrtype Z = X.clone();
-
-        auto Z = backend()->newVector( M_F->imageMapPtr() );
-
         LOG(INFO) << "  - apply operator " << M_F->label() << " ...\n";
-        M_F->applyInverse( X,*Z );
+        M_F->applyInverse( X,*M_ZF );
         LOG(INFO) << "  - apply operator " << M_G->label() << " ...\n";
-        M_G->applyInverse( *Z,Y );
+        M_G->applyInverse( *M_ZF,Y );
         LOG(INFO) << "OperatorCompose applyInverse operator " << this->label() << " done.\n";
         return hasInverse();
     }
@@ -472,7 +472,8 @@ private:
 
     op1_ptrtype M_F;
     op2_ptrtype M_G;
-
+    vector_ptrtype M_ZG;
+    vector_ptrtype M_ZF;
 };
 
 /**
