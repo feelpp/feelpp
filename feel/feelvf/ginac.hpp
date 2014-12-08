@@ -641,6 +641,22 @@ laplacian( Expr<GinacMatrix<M,N,Order>> const& s, std::string filename="", World
     return expr<M,N,Order>( GiNaC::laplacian(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), exprDesc, filename, world );
 }
 
+template<int Order=2>
+struct map_scalar_field: public std::map<std::string,Expr<GinacEx<Order>>>
+{
+    typedef std::map<std::string,Expr<GinacEx<Order>>> super;
+    typedef super type;
+};
+
+typedef std::map<std::string,GinacEx<2>> map_scalar_field_type;
+template<int M, int N=1, int Order=2>
+struct map_vector_field: public std::map<std::string,Expr<GinacMatrix<M,N,Order>>>
+{
+    typedef std::map<std::string,Expr<GinacMatrix<M,N,Order>>> super;
+    typedef super type;
+};
+
+
 } // vf
 } // Feel
 
