@@ -493,6 +493,7 @@ public:
      */
     //@{
 
+    LinearForm( ) {}
     LinearForm( LinearForm const & __vf );
 
     LinearForm( space_ptrtype const& __X,
@@ -520,6 +521,21 @@ public:
      */
     //@{
 
+    LinearForm& operator=( LinearForm const& lf )
+        {
+            if ( this != &lf )
+            {
+                M_X = lf.M_X;
+                M_F = lf.M_F;
+                M_lb = lf.M_lb;
+                M_row_startInVector = lf.M_row_startInVector;
+                M_test_pc = lf.M_test_pc;
+                M_test_pc_face = lf.M_test_pc_face;
+                M_do_threshold = lf.M_do_threshold;
+                M_threshold = lf.M_threshold;
+            }
+            return *this;
+        }
     /**
      * Construct the linear form given by the expression \p expr
      *
@@ -803,10 +819,6 @@ public:
         }
     //@}
 
-protected:
-
-    LinearForm();
-
 private:
     template <class ExprT> void assign( Expr<ExprT> const& expr, bool init, mpl::bool_<false> );
     template <class ExprT> void assign( Expr<ExprT> const& expr, bool init, mpl::bool_<true> );
@@ -1059,6 +1071,15 @@ LinearForm<SpaceType, VectorType, ElemContType>::operator+=( Expr<ExprT> const& 
 } // detail
 /// \endcond
 } // vf
+
+namespace meta
+{
+template<typename SpaceType,typename VectorType=typename Backend<typename SpaceType::value_type>::vector_type,typename ElemContType=typename Backend<typename SpaceType::value_type>::vector_type>
+struct LinearForm
+{
+    typedef Feel::vf::detail::LinearForm<SpaceType,VectorType,ElemContType> type;
+};
+}
 } // feel
 
 #include <feel/feelvf/linearformcontext.hpp>
