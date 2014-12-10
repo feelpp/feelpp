@@ -823,7 +823,7 @@ BOOST_PARAMETER_FUNCTION(
     )//optional
 )
 {
-    return *aitkenNew( space,type,initial_theta,tolerance,min_theta,maxit );
+    return *aitkenImpl( space,type,initial_theta,tolerance,min_theta,maxit );
 }
 
 BOOST_PARAMETER_FUNCTION(
