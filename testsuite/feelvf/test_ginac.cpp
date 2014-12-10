@@ -28,6 +28,7 @@
 */
 
 #define USE_BOOST_TEST 1
+//#undef USE_BOOST_TEST
 #if defined(USE_BOOST_TEST)
 #define BOOST_TEST_MODULE test_ginac
 #include <testsuite/testsuite.hpp>
@@ -296,7 +297,9 @@ void runTest1()
     auto uGinac = XhScalar->element( exprScalarGinac );
     for ( size_type k=0;k<XhScalar->nLocalDof();++k )
     {
+#if defined(USE_BOOST_TEST)
         BOOST_CHECK_CLOSE( uFeel(k), uGinac(k), 1e-10 );
+#endif
         if ( std::abs(uFeel(k)-uGinac(k) ) > 1e-10 )
             break;
     }
@@ -309,7 +312,9 @@ void runTest1()
     auto uGinacGrad = XhVectorial->element( exprScalarGinacGrad );
     for ( size_type k=0;k<XhVectorial->nLocalDof();++k )
     {
+#if defined(USE_BOOST_TEST)
         BOOST_CHECK_CLOSE( uFeelGrad(k), uGinacGrad(k), 1e-10 );
+#endif
         if ( std::abs(uFeelGrad(k)-uGinacGrad(k) ) > 1e-10 )
             break;
     }
@@ -321,7 +326,9 @@ void runTest1()
     auto uGinacLaplacian = XhScalar->element( exprScalarGinacLaplacian );
     for ( size_type k=0;k<XhScalar->nLocalDof();++k )
     {
+#if defined(USE_BOOST_TEST)
         BOOST_CHECK_CLOSE( uFeelLaplacian(k), uGinacLaplacian(k), 1e-10 );
+#endif
         if ( std::abs(uFeelLaplacian(k)-uGinacLaplacian(k) ) > 1e-10 )
             break;
     }
@@ -334,7 +341,9 @@ void runTest1()
     auto uVectorialGinac = XhVectorial->element( exprVectorialGinac );
     for ( size_type k=0;k<XhVectorial->nLocalDof();++k )
     {
+#if defined(USE_BOOST_TEST)
         BOOST_CHECK_CLOSE( uVectorialFeel(k), uVectorialGinac(k), 1e-10 );
+#endif
         if ( std::abs(uVectorialFeel(k)-uVectorialGinac(k) ) > 1e-10 )
             break;
     }
@@ -346,7 +355,9 @@ void runTest1()
     auto uVectorialGinacDiv = XhScalar->element( exprVectorialGinacDiv );
     for ( size_type k=0;k<XhScalar->nLocalDof();++k )
     {
+#if defined(USE_BOOST_TEST)
         BOOST_CHECK_CLOSE( uVectorialFeelDiv(k), uVectorialGinacDiv(k), 1e-10 );
+#endif
         if ( std::abs(uVectorialFeelDiv(k)-uVectorialGinacDiv(k) ) > 1e-10 )
             break;
     }
@@ -360,7 +371,9 @@ void runTest1()
     auto uScalarFeelGinacVF = XhScalar->element( exprScalarGinacVF );
     for ( size_type k=0;k<XhScalar->nLocalDof();++k )
     {
+#if defined(USE_BOOST_TEST)
         BOOST_CHECK_CLOSE( uScalarFeelVF(k), uScalarFeelGinacVF(k), 1e-10 );
+#endif
         if ( std::abs(uScalarFeelVF(k)-uScalarFeelGinacVF(k) ) > 1e-10 )
             break;
     }
@@ -372,7 +385,9 @@ void runTest1()
     auto uScalarGinacVFDiff = XhScalar->element( exprScalarGinacVFDiff );
     for ( size_type k=0;k<XhScalar->nLocalDof();++k )
     {
+#if defined(USE_BOOST_TEST)
         BOOST_CHECK_CLOSE( uScalarFeelVFDiff(k), uScalarGinacVFDiff(k), 1e-10 );
+#endif
         if ( std::abs(uScalarFeelVFDiff(k)-uScalarGinacVFDiff(k) ) > 1e-10 )
             break;
     }
@@ -402,18 +417,25 @@ void runTest2()
     auto expr2_1 = expr(ex2_s, vars, "ex2_s_file");
 
     double int_expr1_string = integrate( _range=elements(mesh), _expr=expr1_1 ).evaluate()(0,0);
+#if defined(USE_BOOST_TEST)
     BOOST_CHECK_CLOSE( int_expr1_string, int_expr1, 1e-10 );
+#endif
     double int_expr2_string = integrate( _range=elements(mesh), _expr=expr2_1 ).evaluate()(0,0);
+#if defined(USE_BOOST_TEST)
     BOOST_CHECK_CLOSE( int_expr2_string, int_expr2, 1e-10 );
-
+#endif
     // Expressions computed from a string
     auto expr1_2 = expr(ex1, vars, "ex1_file");
     auto expr2_2 = expr(ex2, vars, "ex2_file");
 
     double int_expr1_ex = integrate( _range=elements(mesh), _expr=expr1_2 ).evaluate()(0,0);
+#if defined(USE_BOOST_TEST)
     BOOST_CHECK_CLOSE( int_expr1_ex, int_expr1, 1e-10 );
+#endif
     double int_expr2_ex = integrate( _range=elements(mesh), _expr=expr2_2 ).evaluate()(0,0);
+#if defined(USE_BOOST_TEST)
     BOOST_CHECK_CLOSE( int_expr2_ex, int_expr2, 1e-10 );
+#endif
 }
 
 #if defined(USE_BOOST_TEST)

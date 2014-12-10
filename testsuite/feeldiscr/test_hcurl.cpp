@@ -149,7 +149,7 @@ public:
     TestHCurl()
         :
         super(),
-        M_backend( backend_type::build( this->vm() ) ),
+        M_backend( backend_type::build( soption( _name="backend" ) ) ),
         meshSize( doption("gmsh.hsize") ),
         exporter( Exporter<mesh_type>::New( this->vm() ) )
     {

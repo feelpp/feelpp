@@ -42,14 +42,14 @@ int main(int argc, char**argv )
 				_email="christophe.prudhomme@feelpp.org"));
 
 	//! [mesh]
-	auto mesh = unitCircle<2>(); // ``order 2'' circle
+	auto mesh = unitCircle<2>(); // circle - geometrical order: 2
 	//! [mesh]
 	//! [P1_mesh]
-	auto meshp1 = unitCircle<1>(); // ``order 1'' circle
+	auto meshp1 = unitCircle<1>(); // circle - geometrical order: 1
 	//! [P1_mesh]
 
 	//! [space]
-	auto Xh = Pch<2>( mesh ); // $\mathbb{p}_2$ space
+	auto Xh = Pch<2>( mesh ); // \( \mathbb{p}_2 \) space
 	//! [space]
 
 	//! [function]

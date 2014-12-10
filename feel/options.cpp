@@ -112,51 +112,32 @@ functions_options( std::string const& prefix )
         ( prefixvm( prefix,"x" ).c_str(), Feel::po::value<double>()->default_value( 0 ), "x coordinate value " )
         ( prefixvm( prefix,"y" ).c_str(), Feel::po::value<double>()->default_value( 0 ), "y coordinate value " )
         ( prefixvm( prefix,"z" ).c_str(), Feel::po::value<double>()->default_value( 0 ), "z coordinate value " );
-
-    std::string alphabet = "abcdefghijklmnopqrstuvwxyz";
-    for( char c : alphabet)
-    {
-        _options.add_options()
-            ( prefixvm( prefix, std::string("functions.")+c ).c_str(), Feel::po::value<std::string>()->default_value( "0" ), (std::string("function ") + c).c_str() );
+    std::vector<std::string> alphabet { "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "alpha", "beta", "gamma", "delta", "epsilon", "zeta", "eta", "theta", "iota", "kappa", "lambda", "mu", "nu", "xi", "omicron", "pi", "rho", "sigma", "tau", "upsilon", "phi", "chi", "psi", "omega" };
+    for(std::string& name : alphabet) {
+        _options.add_options() ( prefixvm( prefix,"functions." + name ).c_str(), Feel::po::value<std::string>()->default_value( name.size() == 1 ? "0" : "1" ), name.c_str() );
+        if(name == "beta") {
+            _options.add_options()
+            ( prefixvm( prefix,"functions." + name + "_x" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), std::string(name + " x").c_str() )
+            ( prefixvm( prefix,"functions." + name + "_y" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), std::string(name + " y").c_str() )
+            ( prefixvm( prefix,"functions." + name + "_z" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), std::string(name + " z").c_str() );
+        }
     }
-    _options.add_options()
-        ( prefixvm( prefix,"functions.alpha" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "alpha" )
-        ( prefixvm( prefix,"functions.beta" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "beta" )
-        ( prefixvm( prefix,"functions.beta_x" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "beta x" )
-        ( prefixvm( prefix,"functions.beta_y" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "beta y" )
-        ( prefixvm( prefix,"functions.beta_z" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "beta z" )
-        ( prefixvm( prefix,"functions.epsilon" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "epsilon" )
-        ( prefixvm( prefix,"functions.gamma" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "gamma" )
-        ( prefixvm( prefix,"functions.delta" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "delta" )
-        ( prefixvm( prefix,"functions.nu" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "nu" )
-        ( prefixvm( prefix,"functions.mu" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "mu" )
-        ( prefixvm( prefix,"functions.rho" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "rho" )
-        ;
     return _options;
 }
 po::options_description
 parameters_options( std::string const& prefix )
 {
     po::options_description _options( "Parameters " + prefix + " options" );
-    std::string alphabet = "abcdefghijklmnopqrstuvwxyz";
-    for( char c : alphabet)
-    {
-        _options.add_options()
-            ( prefixvm( prefix, std::string("parameters.")+c ).c_str(), Feel::po::value<double>()->default_value( 0 ), (std::string("parameter ") + c).c_str() );
+    std::vector<std::string> alphabet { "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "alpha", "beta", "gamma", "delta", "epsilon", "zeta", "eta", "theta", "iota", "kappa", "lambda", "mu", "nu", "xi", "omicron", "pi", "rho", "sigma", "tau", "upsilon", "phi", "chi", "psi", "omega" };
+    for(std::string& name : alphabet) {
+        _options.add_options() ( prefixvm( prefix,"parameters." + name ).c_str(), Feel::po::value<double>()->default_value( 0 ), name.c_str() );
+        if(name == "beta") {
+            _options.add_options()
+            ( prefixvm( prefix,"parameters." + name + "_x" ).c_str(), Feel::po::value<double>()->default_value( 0 ), std::string(name + " x").c_str() )
+            ( prefixvm( prefix,"parameters." + name + "_y" ).c_str(), Feel::po::value<double>()->default_value( 0 ), std::string(name + " y").c_str() )
+            ( prefixvm( prefix,"parameters." + name + "_z" ).c_str(), Feel::po::value<double>()->default_value( 0 ), std::string(name + " z").c_str() );
+        }
     }
-    _options.add_options()
-        ( prefixvm( prefix,"parameters.alpha" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "alpha" )
-        ( prefixvm( prefix,"parameters.beta" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "beta" )
-        ( prefixvm( prefix,"parameters.beta_x" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "beta x" )
-        ( prefixvm( prefix,"parameters.beta_y" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "beta y" )
-        ( prefixvm( prefix,"parameters.beta_z" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "beta z" )
-        ( prefixvm( prefix,"parameters.epsilon" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "epsilon" )
-        ( prefixvm( prefix,"parameters.gamma" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "gamma" )
-        ( prefixvm( prefix,"parameters.delta" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "delta" )
-        ( prefixvm( prefix,"parameters.nu" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "nu" )
-        ( prefixvm( prefix,"parameters.mu" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "mu" )
-        ( prefixvm( prefix,"parameters.rho" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "rho" )
-        ;
     return _options;
 }
 
@@ -623,10 +604,28 @@ exporter_options( std::string const& prefix )
 #if defined(FEELPP_HAS_HDF5) && defined(FEELPP_HAS_MPIIO)
         ( prefixvm( prefix,"exporter.hdf5.merge" ).c_str(), Feel::po::value<bool>()->default_value( true ), "Merge exported data from different into a single file (reduces the number of output files)" )
 #endif
+#if defined(FEELPP_HAS_VTK) && defined(FEELPP_VTK_INSITU_ENABLED)
+        ( prefixvm( prefix,"exporter.vtk.insitu.enable" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Enable In-situ visualization with VTK exporter (Data won't be written to disk any longer)." )
+        ( prefixvm( prefix,"exporter.vtk.insitu.pyscript" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "Specify a python user script for visualization." )
+#endif
 
         ;
     return _options;
 }
+
+po::options_description aitken_options( std::string const& prefix )
+{
+    po::options_description _options( "Aitken " + prefix + " options" );
+    _options.add_options()
+        ( prefixvm( prefix,"aitken.type" ).c_str(), Feel::po::value<std::string>()->default_value( "method1" ), "standard,method1,fixed-relaxation" )
+        ( prefixvm( prefix,"aitken.maxit" ).c_str(), Feel::po::value<int>()->default_value( 1000 ), "maximum number of iteration" )
+        ( prefixvm( prefix,"aitken.initial_theta" ).c_str(), Feel::po::value<double>()->default_value( 1.0  ), "initial theta" )
+        ( prefixvm( prefix,"aitken.min_theta" ).c_str(), Feel::po::value<double>()->default_value( 1e-4 ), "if theta computed < min_theta else theta=initial_theta" )
+        ( prefixvm( prefix,"aitken.tol" ).c_str(), Feel::po::value<double>()->default_value( 1e-6 ), "fix-point tolerance" )
+        ;
+    return _options;
+}
+
 
 po::options_description
 feel_options( std::string const& prefix  )
@@ -655,7 +654,9 @@ feel_options( std::string const& prefix  )
         .add( exporter_options( prefix ) )
 
         /* nlopt options */
+#if defined(FEELPP_HAS_NLOPT)
         .add( nlopt_options( prefix ) )
+#endif
 
         /* gmsh options */
         .add( gmsh_options( prefix ) )
@@ -692,7 +693,7 @@ feel_options( std::string const& prefix  )
 #if !defined( FEELPP_HAS_TRILINOS_EPETRA )
         .add( functionspace_options( prefix ) )
 #endif
-
+        .add( aitken_options( prefix ) )
         ;
 
     return opt;
