@@ -334,46 +334,55 @@ public:
         //auto mat = this->newMatrix( trial->map(), test->map(), properties, false );
         auto mat = this->newMatrix( trial->dofOnOff(), test->dofOn(), properties, false );
 
-        if ( !buildGraphWithTranspose )
+        if ( this->type() == BackendType::BACKEND_EIGEN_DENSE )
         {
-            auto s = stencil( _test=test,
-                              _trial=trial,
-                              _pattern=pattern,
-                              _pattern_block=pattern_block,
-                              _diag_is_nonzero=diag_is_nonzero,
-                              _collect_garbage=collect_garbage);
-
             mat->init( test->nDof(), trial->nDof(),
-                       test->nLocalDofWithoutGhost(), trial->nLocalDofWithoutGhost(),
-                       s->graph() );
+                       test->nLocalDofWithoutGhost(), trial->nLocalDofWithoutGhost() );
         }
         else
         {
-            auto s = stencil( _test=trial,
-                              _trial=test,
-                              _pattern=pattern,
-                              _pattern_block=pattern_block.transpose(),
-                              _diag_is_nonzero=false,// because transpose(do just after)
-                              _close=false,
-                              _collect_garbage=collect_garbage );
-            // get the good graph
-            auto graph = s->graph()->transpose(false);
-            if ( diag_is_nonzero )
-                graph->addMissingZeroEntriesDiagonal();
-            graph->close();
+            if ( !buildGraphWithTranspose )
+            {
+                auto s = stencil( _test=test,
+                                  _trial=trial,
+                                  _pattern=pattern,
+                                  _pattern_block=pattern_block,
+                                  _diag_is_nonzero=diag_is_nonzero,
+                                  _collect_garbage=collect_garbage);
 
-            //maybe do that
-            //stencilManagerGarbage(boost::make_tuple( trial, test, pattern, pattern_block.transpose().getSetOfBlocks(), false/*diag_is_nonzero*/));
-            //now save the good graph in the StencilManager(only if entry is empty)
-            stencilManagerAdd(boost::make_tuple( test, trial, pattern, pattern_block.getSetOfBlocks(), diag_is_nonzero), graph);
+                mat->init( test->nDof(), trial->nDof(),
+                           test->nLocalDofWithoutGhost(), trial->nLocalDofWithoutGhost(),
+                           s->graph() );
+            }
+            else
+            {
+                auto s = stencil( _test=trial,
+                                  _trial=test,
+                                  _pattern=pattern,
+                                  _pattern_block=pattern_block.transpose(),
+                                  _diag_is_nonzero=false,// because transpose(do just after)
+                                  _close=false,
+                                  _collect_garbage=collect_garbage );
+                // get the good graph
+                auto graph = s->graph()->transpose(false);
+                if ( diag_is_nonzero )
+                    graph->addMissingZeroEntriesDiagonal();
+                graph->close();
 
-            mat->init( test->nDof(), trial->nDof(),
-                       test->nLocalDofWithoutGhost(), trial->nLocalDofWithoutGhost(),
-                       graph );
+                //maybe do that
+                //stencilManagerGarbage(boost::make_tuple( trial, test, pattern, pattern_block.transpose().getSetOfBlocks(), false/*diag_is_nonzero*/));
+                //now save the good graph in the StencilManager(only if entry is empty)
+                stencilManagerAdd(boost::make_tuple( test, trial, pattern, pattern_block.getSetOfBlocks(), diag_is_nonzero), graph);
+
+                mat->init( test->nDof(), trial->nDof(),
+                           test->nLocalDofWithoutGhost(), trial->nLocalDofWithoutGhost(),
+                           graph );
+            }
+
+            mat->zero();
+            mat->setIndexSplit( trial->dofIndexSplit() );
         }
 
-        mat->zero();
-        mat->setIndexSplit( trial->dofIndexSplit() );
         if ( verbose )
         {
             Environment::logMemoryUsage( "backend::newMatrix end" );
@@ -1182,8 +1191,10 @@ private:
 
     po::variables_map M_vm;
 
+protected:
     BackendType M_backend;
 
+private:
     std::string M_prefix;
 
     solvernonlinear_ptrtype M_nlsolver;

@@ -138,6 +138,14 @@ ExporterEnsightGold<MeshType,N>::save() const
 {
     if ( !this->worldComm().isActive() ) return;
 
+    DVLOG(2) << "checking if frequency is ok\n";
+
+    if ( this->cptOfSave() % this->freq()  )
+    {
+        this->saveTimeSet();
+        return;
+    }
+
     /* Check that we have steps to save */
     /* Ensures that we do not end up in a segfault */
     timeset_const_iterator __ts_it = this->beginTimeSet();
@@ -179,14 +187,6 @@ ExporterEnsightGold<MeshType,N>::save() const
 
     if(!hasSteps)
     {
-        return;
-    }
-
-    DVLOG(2) << "checking if frequency is ok\n";
-
-    if ( this->cptOfSave() % this->freq()  )
-    {
-        this->saveTimeSet();
         return;
     }
 

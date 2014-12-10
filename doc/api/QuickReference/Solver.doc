@@ -108,7 +108,7 @@ namespace Feel {
   \par Viewing KSP solvers
 
 
-  \verbatim
+  \code{.sh}
 shell> mpirun -np 2 feelpp_qs_laplacian --ksp-monitor=1  --ksp-view=1
   0 KSP Residual norm 8.953261456448e-01
   1 KSP Residual norm 7.204431786960e-16
@@ -133,7 +133,7 @@ PC Object: 2 MPI processes
     total number of mallocs used during MatSetValues calls =0
       not using I-node (on process 0) routines
 
-  \endverbatim
+  \endcode
 
   \subsubsection SolverExamplesLaplacianSolvers Solvers and preconditioners
 
@@ -142,9 +142,11 @@ PC Object: 2 MPI processes
   We now turn to the quickstart Stokes example, recall that we wish to, given a
   domain \f$\Omega\f$, find \f$(\mathbf{u},p) \f$ such that
 
-  \f[
-  -\Delta \mathbf{u} + \nabla p = \mathbf{ f},\, \nabla \cdot \mathbf{u} =    0 \mbox{ in } \Omega, \mathbf{u} = \mathbf{g} \mbox{ on } \partial \Omega
-  \f]
+  \f{eqnarray*}{
+  -\Delta \mathbf{u} + \nabla p &= \mathbf{ f},\\
+	\nabla \cdot \mathbf{u} &=    0 \mbox{ in } \Omega\\
+	 \mathbf{u} &= \mathbf{g} \mbox{ on } \partial \Omega
+  \f}
 
   This problem is indefinite, \ref SolverDefinitionsMatrices.
 

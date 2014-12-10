@@ -427,6 +427,11 @@ public:
     void set ( size_type i, const value_type& value );
 
     /**
+     * v([i1,i2,...,in]) = [value1,...,valuen]
+     */
+    void setVector ( int* i, int n, value_type* v );
+
+    /**
      * v(i) += value
      */
     void add ( size_type i, const value_type& value );
@@ -727,6 +732,8 @@ public:
     value_type operator() ( const size_type i ) const;
 
     void set( size_type i, const value_type& value );
+
+    void setVector( int* i, int n, value_type* v );
 
     void add( const size_type i, const value_type& value );
 
