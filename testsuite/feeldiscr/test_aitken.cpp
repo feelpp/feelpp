@@ -403,7 +403,7 @@ TestAitken<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long
 
     AitkenType relaxmethod = ( AitkenType )this->vm()["relaxmethod"].template as<int>();
     auto aitkenRelax =  aitken( _space= Xh2,
-                                _type=relaxmethod,
+                                _type=( relaxmethod == 0 ) ? "standard" : "method1",
                                 _initial_theta=theta,
                                 _tolerance=tol );
     aitkenRelax.initialize( residual, lambda );
