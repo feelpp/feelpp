@@ -19,7 +19,7 @@ We considere here you have various files:
 \section cmakelists CMakeLists.txt
 
 In order to take care of that various situation, here is provided a default <tt>CMakeLists.txt</tt> to be put at the top of your project directory:
-\verbatim
+\code{cmake}
 cmake_minimum_required(VERSION 2.8)
 if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
 	FIND_PATH(FEELPP_CMAKE_MODULES FindFeel++.cmake 
@@ -39,7 +39,7 @@ feelpp_add_application(
   GEO geoFile1 geoFile2
   DEFS DIM=2
   CFG cfgFile1.cfg cfgFile2.cfg )
-\endverbatim
+\endcode{cmake}
 
 As you can see, (line 2) we check if your project is not added as a subproject to the Feel++ one (basically, located in the <tt>research</tt> directory.
 

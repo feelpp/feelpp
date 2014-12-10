@@ -583,7 +583,7 @@ public:
         return it->second.index();
     }
 
-    std::pair<global_dof_const_iterator,global_dof_const_iterator> const& globalDof()  const
+    std::pair<global_dof_const_iterator,global_dof_const_iterator>  globalDof()  const
         {
             return std::make_pair( M_el_l2g.right.begin(), M_el_l2g.right.end() );
         }

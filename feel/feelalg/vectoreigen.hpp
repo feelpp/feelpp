@@ -390,6 +390,15 @@ public:
     }
 
     /**
+     * v([i1,i2,...,in]) = [value1,...,valuen]
+     */
+    void setVector ( int* i, int n, value_type* v )
+    {
+        for ( int j = 0; j < n; ++j )
+            M_vec( i[j] ) = v[j];
+    }
+
+    /**
      * \f$ U+=v \f$ where \p v is a std::vector<T>
      * and you
      * want to specify WHERE to add it

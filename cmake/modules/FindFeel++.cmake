@@ -104,13 +104,8 @@ if ( FEELPP_DISABLE_EIGEN_ALIGNMENT )
   message(STATUS "[feelpp] Disabling alignment and vectorisation in Feel++/Eigen")
 endif()
 
-
 # enable move semantics
 MARK_AS_ADVANCED(FEELPP_ENABLE_MOVE_SEMANTICS)
-IF ( FEELPP_ENABLE_MOVE_SEMANTICS )
-  SET( BOOST_UBLAS_MOVE_SEMANTICS 1 CACHE STRING "Enable Boost Ublas move semantics" FORCE )
-  ADD_DEFINITIONS( -DBOOST_UBLAS_MOVE_SEMANTICS )
-ENDIF( FEELPP_ENABLE_MOVE_SEMANTICS )
 
 # enable instantiation
 MARK_AS_ADVANCED(FEELPP_ENABLE_INSTANTIATION_MODE)
@@ -347,6 +342,8 @@ FIND_PACKAGE(Boost ${BOOST_MIN_VERSION} COMPONENTS python )
 if(Boost_PYTHON_FOUND)
     set(FEELPP_HAS_BOOST_PYTHON 1)
     set(FEELPP_LIBRARIES ${Boost_PYTHON_LIBRARY} ${FEELPP_LIBRARIES})
+else()
+    message(STATUS "[feelpp] Boost.Python was not found on your system." )
 endif()
 
 # Then we try to find rest of the Boost components
@@ -375,6 +372,12 @@ if(Boost_FOUND)
 else()
   message(STATUS "[feelpp] Please check your boost version - Should be at least ${BOOST_MIN_VERSION}")
 endif()
+
+IF ( FEELPP_ENABLE_MOVE_SEMANTICS AND Boost_MAJOR_VERSION EQUAL "1" AND Boost_MINOR_VERSION LESS "57" )
+  SET( BOOST_UBLAS_MOVE_SEMANTICS 1 CACHE STRING "Enable Boost Ublas move semantics" FORCE )
+  ADD_DEFINITIONS( -DBOOST_UBLAS_MOVE_SEMANTICS )
+ENDIF()
+
 
 OPTION(BOOST_ENABLE_TEST_DYN_LINK "enable boost test with dynamic lib" ON)
 MARK_AS_ADVANCED(BOOST_ENABLE_TEST_DYN_LINK)
@@ -483,6 +486,19 @@ if ( FEELPP_ENABLE_HARTS )
   endif()
 endif()
 
+#
+# HPDDM
+#
+OPTION( FEELPP_ENABLE_HPDDM "Enable HPDDM" OFF )
+if ( FEELPP_ENABLE_HPDDM )
+  FIND_PATH(HPDDM_INCLUDE_DIR HPDDM.hpp HINTS ${FEELPP_SOURCE_DIR}/contrib $ENV{HPDDM_DIR} ${HPDDM_INCLUDE_DIR} PATH_SUFFIXES hpddm/src)
+  if( HPDDM_INCLUDE_DIR )
+    INCLUDE_DIRECTORIES( ${HPDDM_INCLUDE_DIR} )
+    SET(FEELPP_HAS_HPDDM 1)
+    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} HPDDM" )
+    ADD_DEFINITIONS( -DFEELPP_HAS_HPDDM )
+  endif()
+endif()
 
 if ( FEELPP_ENABLE_EXODUS )
   include_directories(${FEELPP_SOURCE_DIR}/contrib/exodus-5.24/exodus/cbind/include/)
@@ -598,6 +614,13 @@ endif()
 
 # xml
 find_package(LibXml2 2.6.27)
+if ( LIBXML2_FOUND )
+    message(STATUS "[feelpp] LibXml2: ${LIBXML2_INCLUDE_DIR} ${LIBXML2_LIBRARIES}")
+    include_directories(${LIBXML2_INCLUDE_DIR})
+    SET(FEELPP_LIBRARIES ${LIBXML2_LIBRARIES} ${FEELPP_LIBRARIES})
+    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} LibXml2" )
+    set( FEELPP_HAS_LIBXML2 1 )
+endif()
 
 # Python libs
 FIND_PACKAGE(PythonLibs)
@@ -844,19 +867,75 @@ endif()
 # VTK
 #
 OPTION( FEELPP_ENABLE_VTK "Enable the VTK library" ON )
+OPTION( FEELPP_ENABLE_VTK_INSITU "Enable In-Situ Visualization using VTK/Paraview" OFF )
 if ( FEELPP_ENABLE_VTK )
-  FIND_PACKAGE(VTK)
-  if ( VTK_FOUND )
-    set(FEELPP_HAS_VTK 1)
-    if ( NOT FEELPP_ENABLE_OPENGL )
-      SET(VTK_LIBRARIES "-lvtkRendering -lvtkGraphics -lvtkImaging  -lvtkFiltering -lvtkCommon -lvtksys" )
+
+    # If we enable in-situ visualization
+    # We need to look for the Paraview package for the corresponding headers
+    # As Paravie integrates vtk headers we don't need them
+    if ( FEELPP_ENABLE_VTK_INSITU )
+        FIND_PACKAGE(ParaView REQUIRED COMPONENTS vtkParallelMPI vtkPVCatalyst vtkPVPythonCatalyst)
+        message(STATUS "[ParaView] Use file: ${PARAVIEW_USE_FILE}")
+        INCLUDE(${PARAVIEW_USE_FILE})
+
+        # Enable VTK exporter and insitu in config
+        set(FEELPP_VTK_INSITU_ENABLED 1)
+
+        # Mark VTK as available
+        set(FEELPP_HAS_VTK 1)
+        # Check for version to ensure that we are able to
+        # use an external communicator
+        set(VTK_HAS_PARALLEL 0)
+        if( VTK_MAJOR_VERSION EQUAL 6 OR VTK_MAJOR_VERSION GREATER 6 )
+            set(VTK_HAS_PARALLEL 1)
+        endif()
+
+        SET(FEELPP_LIBRARIES ${ParaView_LIBRARIES} ${FEELPP_LIBRARIES})
+        SET(FEELPP_LIBRARIES ${VTK_LIBRARIES} ${FEELPP_LIBRARIES})
+        SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} ParaView/VTK" )
+
+        message(STATUS "Found ParaView ${PARAVIEW_VERSION_FULL}/VTK ${VTK_MAJOR_VERSION}.${VTK_MINOR_VERSION}")
+    else()
+        FIND_PACKAGE(VTK)
+        if( VTK_FOUND )
+            set(FEELPP_HAS_VTK 1)
+            MESSAGE(STATUS "[feelpp] Found VTK ${VTK_MAJOR_VERSION}.${VTK_MINOR_VERSION}")# ${VTK_LIBRARIES}")
+
+            # Check for MPI suppot in VTK
+            set(VTK_HAS_PARALLEL 0)
+            # Prior to VTK version 6, VTK_KITS was used
+            if( VTK_MAJOR_VERSION LESS 6 )
+                #message("Available VTK KITS: ${VTK_KITS}")
+                list(FIND VTK_KITS "PARALLEL" __test_vtk_parallel)
+                if( NOT ( ${__test_vtk_parallel} EQUAL -1 ) )
+                    set(VTK_HAS_PARALLEL 1)
+                    message(WARNING "External initialization of MPI Communicator is not available in VTK 5. VTK parallel export will be disabled.")
+                else()
+                    message(WARNING "MPI support for VTK 5 is not activated. VTK parallel export will be disabled.")
+                endif()
+                unset(__test_vtk_parallel)
+                # From version 6 modules ared used
+            else()
+                #message(FATAL_ERROR "${VTK_MODULES_ENABLED}")
+                list(FIND VTK_MODULES_ENABLED "vtkParallelMPI" __test_vtk_parallel)
+                if( NOT (${__test_vtk_parallel} EQUAL -1) )
+                    set(VTK_HAS_PARALLEL 1)
+                else()
+                    message(WARNING "MPI support for VTK 6 is not activated. VTK parallel export will be disabled.")
+                endif()
+                unset(__test_vtk_parallel)
+            endif() 
+
+            if ( NOT FEELPP_ENABLE_OPENGL )
+                SET(VTK_LIBRARIES "-lvtkRendering -lvtkGraphics -lvtkImaging  -lvtkFiltering -lvtkCommon -lvtksys" )
+            endif()
+            INCLUDE_DIRECTORIES(${VTK_INCLUDE_DIRS})
+            MARK_AS_ADVANCED( VTK_DIR )
+            SET(FEELPP_LIBRARIES ${VTK_LIBRARIES} ${FEELPP_LIBRARIES})
+            SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} VTK" )
+
+        endif()
     endif()
-    MESSAGE(STATUS "[feelpp] Found VTK ${VTK_MAJOR_VERSION}.${VTK_MINOR_VERSION}")# ${VTK_LIBRARIES}")
-    INCLUDE_DIRECTORIES(${VTK_INCLUDE_DIRS})
-    MARK_AS_ADVANCED( VTK_DIR )
-    SET(FEELPP_LIBRARIES ${VTK_LIBRARIES} ${FEELPP_LIBRARIES})
-    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} VTK" )
-  endif()
 endif( FEELPP_ENABLE_VTK )
 
 #
@@ -900,7 +979,11 @@ endif( FEELPP_ENABLE_OCTAVE)
 #
 # Gmsh
 #
-FIND_PACKAGE(Gmsh)
+if(FEELPP_USE_GMSH_PACKAGE)
+	FIND_PACKAGE(Gmsh)
+else()
+	set(GMSH_FOUND false)
+endif()
 if(NOT GMSH_FOUND)#Download and Instal it
   message(STATUS "[feelpp] GMSH NOT FOUND - Downloading and Installing it" )
   execute_process(COMMAND mkdir -p ${CMAKE_BINARY_DIR}/contrib/gmsh-compile)

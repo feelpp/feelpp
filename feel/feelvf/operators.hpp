@@ -72,7 +72,7 @@ namespace vf
 # /* List of applicative operators. */
 # define VF_OPERATORS \
    BOOST_PP_TUPLE_TO_LIST( \
-      12, \
+      13, \
       (                                                                 \
           ( OpId   , id   , id   , 0, 0, 0, vm::JACOBIAN          , RankSame,false, 0, 1 ), \
           ( OpDx   , dx   , dx   , 0, 1, 0, vm::JACOBIAN|vm::KB|vm::GRAD , RankSame,false,-1,1 ), \
@@ -85,7 +85,8 @@ namespace vf
           ( OpCurlX, curlx, curlx, 1, 1, 0, vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,1 ), \
           ( OpCurlY, curly, curly, 1, 1, 1, vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,1 ), \
           ( OpCurlZ, curlz, curlz, 1, 1, 2, vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,1 ), \
-          ( OpHess , hess , hess,  0, 0, 0, vm::JACOBIAN|vm::KB|vm::HESSIAN|vm::FIRST_DERIVATIVE , RankUp2,false,-2,1 ) \
+          ( OpHess , hess , hess,  0, 0, 0, vm::JACOBIAN|vm::KB|vm::HESSIAN|vm::FIRST_DERIVATIVE , RankUp2,false,-2,1 ), \
+          ( OpLap  , laplacian, laplacian,  0, 0, 0, vm::JACOBIAN|vm::KB|vm::LAPLACIAN|vm::FIRST_DERIVATIVE , RankUp2,false,-2,1 ) \
       ) \
    ) \
    /**/

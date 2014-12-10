@@ -532,12 +532,12 @@ void HeatShield<Order>::assemble()
         this->M_Mq[0] = backend()->newMatrix( this->Xh, this->Xh );
         this->M_Fq[0][0] = backend()->newVector( this->Xh );
         this->M_Fq[1][0] = backend()->newVector( this->Xh );
-        form2(this->Xh, this->Xh, this->M_Aq[0]) = integrate( _range= elements( mesh ), _expr= gradt( u )*trans( grad( v ) ) );
-        form2(this->Xh, this->Xh, this->M_Aq[1]) = integrate( _range= markedfaces( mesh, "left" ), _expr= idt( u )*id( v ) );
-        form2(this->Xh, this->Xh, this->M_Aq[2]) = integrate( _range= markedfaces( mesh, "gamma_holes" ), _expr= idt( u )*id( v ) );
-        form2(this->Xh, this->Xh, this->M_Mq[0]) = integrate ( _range=elements( mesh ), _expr=idt( u )*id( v ) );
-        form1(this->Xh, this->M_Fq[0][0]) = integrate( _range=markedfaces( mesh,"left" ), _expr= id( v ) ) ;
-        form1(this->Xh, this->M_Fq[1][0]) = integrate( _range=elements( mesh ), _expr= id( v ) ) ;
+        form2(_test=this->Xh, _trial=this->Xh, _matrix=this->M_Aq[0]) = integrate( _range= elements( mesh ), _expr= gradt( u )*trans( grad( v ) ) );
+        form2(_test=this->Xh, _trial=this->Xh, _matrix=this->M_Aq[1]) = integrate( _range= markedfaces( mesh, "left" ), _expr= idt( u )*id( v ) );
+        form2(_test=this->Xh, _trial=this->Xh, _matrix=this->M_Aq[2]) = integrate( _range= markedfaces( mesh, "gamma_holes" ), _expr= idt( u )*id( v ) );
+        form2(_test=this->Xh, _trial=this->Xh, _matrix=this->M_Mq[0]) = integrate ( _range=elements( mesh ), _expr=idt( u )*id( v ) );
+        form1(_test=this->Xh, _vector=this->M_Fq[0][0]) = integrate( _range=markedfaces( mesh,"left" ), _expr= id( v ) ) ;
+        form1(_test=this->Xh, _vector=this->M_Fq[1][0]) = integrate( _range=elements( mesh ), _expr= id( v ) ) ;
     }
     else
     {
@@ -572,7 +572,7 @@ void HeatShield<Order>::assemble()
 
     //for scalarProduct
     auto M = backend()->newMatrix( _test=this->Xh, _trial=this->Xh );
-    form2( this->Xh, this->Xh, M ) =
+    form2( _test=this->Xh, _trial=this->Xh, _matrix=M ) =
         integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ) ) +
         integrate( _range= markedfaces( mesh, "left" ), _expr= 0.01 * idt( u )*id( v ) ) +
         integrate( _range= markedfaces( mesh, "gamma_holes" ), _expr= 0.001 * idt( u )*id( v ) )
@@ -581,14 +581,14 @@ void HeatShield<Order>::assemble()
 
     //scalar product used for mass matrix
     auto InnerMassMatrix = backend()->newMatrix( _test=this->Xh, _trial=this->Xh );
-    form2( this->Xh, this->Xh, InnerMassMatrix ) =
+    form2( _test=this->Xh, _trial=this->Xh, _matrix=InnerMassMatrix ) =
         integrate( _range=elements( mesh ), _expr=idt( u ) * id( v ) ) ;
     this->addMassMatrix(InnerMassMatrix);
 
 #if 0
     //scalar product used for the POD
     Mpod = backend->newMatrix( _test=this->Xh, _trial=this->Xh );
-    form2( this->Xh, this->Xh, Mpod ) =
+    form2( _test=this->Xh, _trial=this->Xh, _matrix=Mpod ) =
         integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ) ) +
         integrate( _range= markedfaces( mesh, "left" ), _expr= 0.01 * idt( u )*id( v ) ) +
         integrate( _range= markedfaces( mesh, "gamma_holes" ), _expr= 0.001 * idt( u )*id( v ) )
