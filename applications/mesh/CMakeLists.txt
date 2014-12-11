@@ -23,6 +23,9 @@
 #
 
 INCLUDE_DIRECTORIES ( ${CMAKE_CURRENT_SOURCE_DIR} )
-feelpp_add_application( mesh3d SRCS mesh.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3)
-feelpp_add_application( mesh2d SRCS mesh.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2)
-feelpp_add_application( mesh1d SRCS mesh.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=1)
+feelpp_add_application( mesh3d SRCS mesh.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 CONVEX=Simplex)
+feelpp_add_application( mesh2d SRCS mesh.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 CONVEX=Simplex)
+feelpp_add_application( mesh1d SRCS mesh.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=1 CONVEX=Simplex)
+feelpp_add_application( mesh3d_hypercube SRCS mesh.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 CONVEX=Hypbercube)
+feelpp_add_application( mesh2d_hypercube SRCS mesh.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 CONVEX= CONVEX=Hypbercube)
+feelpp_add_application( mesh1d_hypercube SRCS mesh.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=1 CONVEX= CONVEX=Hypbercube)
