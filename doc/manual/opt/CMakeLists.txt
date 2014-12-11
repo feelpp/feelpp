@@ -1,7 +1,7 @@
-###  TEMPLATE.txt.tpl; coding: utf-8 ---
+###  CMakeLists.txt; coding: utf-8 --- 
 
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-#       Date: 2014-06-11
+#       Date: 09 Dec 2014
 #
 #  Copyright (C) 2014 Feel++ Consortium
 #
@@ -22,10 +22,8 @@
 #
 #
 
-INCLUDE_DIRECTORIES ( ${CMAKE_CURRENT_SOURCE_DIR} )
-feelpp_add_application( mesh3d SRCS mesh.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 CONVEX=Simplex)
-feelpp_add_application( mesh2d SRCS mesh.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 CONVEX=Simplex)
-feelpp_add_application( mesh1d SRCS mesh.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=1 CONVEX=Simplex)
-feelpp_add_application( mesh3d_hypercube SRCS mesh.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 CONVEX=Hypbercube)
-feelpp_add_application( mesh2d_hypercube SRCS mesh.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 CONVEX= CONVEX=Hypbercube)
-feelpp_add_application( mesh1d_hypercube SRCS mesh.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=1 CONVEX= CONVEX=Hypbercube)
+
+if ( FEELPP_HAS_NLOPT )
+  feelpp_add_application( qs_nlopt SRCS qs_nlopt.cpp INCLUDE_IN_ALL  )
+  install(TARGETS feelpp_qs_nlopt DESTINATION bin/ COMPONENT Bin )
+endif()
