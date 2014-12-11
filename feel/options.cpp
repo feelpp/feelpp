@@ -613,6 +613,20 @@ exporter_options( std::string const& prefix )
     return _options;
 }
 
+po::options_description aitken_options( std::string const& prefix )
+{
+    po::options_description _options( "Aitken " + prefix + " options" );
+    _options.add_options()
+        ( prefixvm( prefix,"aitken.type" ).c_str(), Feel::po::value<std::string>()->default_value( "method1" ), "standard,method1,fixed-relaxation" )
+        ( prefixvm( prefix,"aitken.maxit" ).c_str(), Feel::po::value<int>()->default_value( 1000 ), "maximum number of iteration" )
+        ( prefixvm( prefix,"aitken.initial_theta" ).c_str(), Feel::po::value<double>()->default_value( 1.0  ), "initial theta" )
+        ( prefixvm( prefix,"aitken.min_theta" ).c_str(), Feel::po::value<double>()->default_value( 1e-4 ), "if theta computed < min_theta else theta=initial_theta" )
+        ( prefixvm( prefix,"aitken.tol" ).c_str(), Feel::po::value<double>()->default_value( 1e-6 ), "fix-point tolerance" )
+        ;
+    return _options;
+}
+
+
 po::options_description
 feel_options( std::string const& prefix  )
 {
@@ -679,7 +693,7 @@ feel_options( std::string const& prefix  )
 #if !defined( FEELPP_HAS_TRILINOS_EPETRA )
         .add( functionspace_options( prefix ) )
 #endif
-
+        .add( aitken_options( prefix ) )
         ;
 
     return opt;
