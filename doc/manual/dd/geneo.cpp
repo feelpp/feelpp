@@ -422,9 +422,9 @@ Geneopp<Dim, Order, Type>::run()
         uLocal = vf::project(VhLocal, elements(meshLocal), Px() + Py());
 #endif
         tic();
-        auto VhVisu = FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order, Type>>>::New(_mesh = mesh);
+        auto VhVisu = FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order, Type>>>::New(_mesh = mesh, _worldscomm = worldsComm(wComm));
         auto uVisu = vf::project(_space = VhVisu, _expr = idv(uLocal));
-        auto e = exporter(_mesh = mesh, _name = (boost::format("%1%-%2%") % this->about().appName() % Dim).str());
+        auto e = exporter(_mesh = mesh/*, _name = (boost::format("%1%-%2%") % this->about().appName() % Dim).str()*/);
         e->add("u", uVisu);
         e->add("rank", regionProcess(Pdh<0>(mesh)));
 #if defined(DEBUG_SOL)
@@ -448,13 +448,13 @@ Geneopp<Dim, Order, Type>::run()
         double* allTimers = new double[timers.size() * bComm.size()];
         MPI_Gather(timers.data(), timers.size(), MPI_DOUBLE, allTimers, timers.size(), MPI_DOUBLE, 0, bComm);
         if(bComm.rank() == 0) {
-
-            std::cout << "Submesh extraction  Local FE space   Interface    Assem. solver  Renumbering    Fact. pinv.  ";
+            std::cout << "createSubmesh  FunctionSpace  Interface    Assem. solver  Renumbering    Fact. pinv.  ";
             if(timers.size() == 8)
-                std::cout << "Schur complement  GenEO" << std::endl;
+                std::cout << "Schur complement  GenEO";
+            std::cout << std::endl;
             std::cout.precision(4);
             for(int i = 0; i < bComm.size(); ++i) {
-                std::cout << std::scientific << allTimers[0 + i * timers.size()] << "          " << allTimers[1 + i * timers.size()] << "       " << allTimers[2 + i * timers.size()] << "   " << allTimers[3 + i * timers.size()] << "     " << allTimers[4 + i * timers.size()] << "     " << allTimers[5 + i * timers.size()] << "   ";
+                std::cout << std::scientific << allTimers[0 + i * timers.size()] << "     " << allTimers[1 + i * timers.size()] << "     " << allTimers[2 + i * timers.size()] << "   " << allTimers[3 + i * timers.size()] << "     " << allTimers[4 + i * timers.size()] << "     " << allTimers[5 + i * timers.size()] << "   ";
                 if(timers.size() == 8)
                     std::cout << std::scientific << allTimers[6 + i * timers.size()] << "        " << allTimers[7 + i * timers.size()];
                 std::cout << std::endl;
