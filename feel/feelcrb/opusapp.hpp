@@ -352,6 +352,7 @@ public:
                 if( ! do_offline )
                 {
                     crb->loadSCMDB();
+                    crb->setOfflineStep( false );
                 }
 
                 if( do_offline )
@@ -397,7 +398,59 @@ public:
                 }
             }
 
-            this->loadDB();
+            bool cobuild = ( (ioption(_name = "eim.cobuild-frequency") != 0) || (ioption(_name = "crb.cobuild-frequency") != 0) );
+            if( model->hasEim() && cobuild)
+            {
+                bool do_offline_eim = false;
+                // Identifiy is offline eim still needs to be done
+                auto eim_sc_vector = model->scalarContinuousEim();
+                auto eim_sd_vector = model->scalarDiscontinuousEim();
+                for( auto eim_sc : eim_sc_vector )
+                    do_offline_eim = do_offline_eim || eim_sc->getOfflineStep();
+                for( auto eim_sd : eim_sd_vector )
+                    do_offline_eim = do_offline_eim || eim_sd->getOfflineStep();
+
+                int i=0;
+                do
+                {
+                    LOG(INFO) << "[cobuild] step i= " << i << "\n";
+                    //Begin with rb since first eim has already been built in initModel
+                    if( i == 0 || crb->getOfflineStep() )
+                        this->loadDB(); // update AffineDecomposition and enrich RB database
+                    crb->setRebuild( false ); //do not rebuild since co-build is not finished
+
+                    if( do_offline_eim )
+                    {
+                        do_offline_eim = false; //re-init
+                        for( auto eim_sc : eim_sc_vector )
+                        {
+                            eim_sc->setRestart(false); //do not restart since co-build is not finished
+
+                            if( boption(_name="eim.use-rb-in-mu-selection") )
+                                eim_sc->setRB( crb ); //update rb model member to be used in eim offline
+
+                            eim_sc->offline();
+                            do_offline_eim = do_offline_eim || eim_sc->getOfflineStep();
+                        }
+                        for( auto eim_sd : eim_sd_vector )
+                        {
+                            eim_sd->setRestart(false); //do not restart since co-build is not finished
+
+                            if( boption(_name="eim.use-rb-in-mu-selection") )
+                                eim_sd->setRB( crb ); //update rb model member to be used in eim offline
+
+                            eim_sd->offline();
+                            do_offline_eim = do_offline_eim || eim_sd->getOfflineStep();
+                        }
+                        //std::cout << "do offline eim(" << i << ") = " << do_offline_eim << std::endl;
+                        model->assemble(); //Affine decomposition has changed since eim has changed
+                    }
+                    ++i;
+                }
+                while( crb->getOfflineStep() || do_offline_eim );
+            }
+            else
+                this->loadDB();
 
             int run_sampling_size = option(_name=_o( this->about().appName(),"run.sampling.size" )).template as<int>();
             SamplingMode run_sampling_type = ( SamplingMode )option(_name=_o( this->about().appName(),"run.sampling.mode" )).template as<int>();
@@ -943,6 +996,7 @@ public:
 
                                 //dimension of the RB (not necessarily the max)
                                 int N =  option(_name="crb.dimension").template as<int>();
+                                model->computeAffineDecomposition();
 
                                 bool print_rb_matrix = option(_name="crb.print-rb-matrix").template as<bool>();
                                 double online_tol = option(_name="crb.online-tolerance").template as<double>();
