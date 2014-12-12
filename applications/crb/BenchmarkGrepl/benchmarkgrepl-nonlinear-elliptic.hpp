@@ -154,6 +154,7 @@ public:
     typedef typename super_type::mesh_ptrtype mesh_ptrtype;
 
     typedef typename FunctionSpaceDefinition<Order>::space_type space_type;
+    typedef typename boost::shared_ptr<space_type> space_ptrtype;
 
     typedef typename super_type::beta_vector_type beta_vector_type;
     typedef typename super_type::affine_decomposition_type affine_decomposition_type;
@@ -237,6 +238,7 @@ public:
         betas.push_back(&beta_u);
 
         fillBetaQm(betas, mu);
+
         if( M_use_newton )
             return boost::make_tuple( this->M_betaJqm, this->M_betaRqm);
         else
@@ -254,15 +256,18 @@ public:
         if( M_use_newton )
         {
             this->M_betaJqm[0][0] = 1;
+            this->M_betaJqm[1].resize(M); //needed if cobuild
             for(int m=0; m<M; m++)
             {
                 this->M_betaJqm[1][m] = mu(0)*beta_g(m);
             }
             //rhs
+            this->M_betaRqm[0][0].resize(Mu);
             for(int m=0; m<Mu; m++)
             {
                 this->M_betaRqm[0][0][m] =  beta_u(m) ;
             }
+            this->M_betaRqm[0][1].resize(M);
             for(int m=0; m<M; m++)
             {
                 this->M_betaRqm[0][1][m] = mu(0)/mu(1)*( beta_g(m) );
@@ -275,10 +280,13 @@ public:
         else
         {
             this->M_betaAqm[0][0]=1;
+            this->M_betaFqm[0][0].resize(M);
             for(int m=0; m<M; m++)
             {
                 //this->M_betaFqm[0][0][m]=mu(0)/mu(1)*( beta(m) - 1);
                 this->M_betaFqm[0][0][m]=-mu(0)/mu(1)* beta_g(m) ;
+                // std::cout << "beta_g(" << m << ")= " << beta_g(m) << std::endl;
+                // std::cout << "M_betaFqm[0][0][" << m << "]= " << this->M_betaFqm[0][0][m] << std::endl;
             }
             //this->M_betaFqm[0][0][0]=0 ;
             this->M_betaFqm[0][1][0]=mu(0)/mu(1) ;
@@ -334,6 +342,7 @@ private:
 
     /* mesh, pointers and spaces */
     mesh_ptrtype mesh;
+    space_ptrtype Xh;
     element_ptrtype pT;
     parameter_type M_mu;
 
@@ -420,7 +429,7 @@ void BenchmarkGreplNonlinearElliptic<Order>::initModel()
     /*
      * The function space and some associate elements are then defined
      */
-    auto Xh = space_type::New( mesh );
+    Xh = space_type::New( mesh );
     this->setFunctionSpaces( Xh );
 
     if( Environment::worldComm().isMasterRank() )
@@ -489,11 +498,10 @@ void BenchmarkGreplNonlinearElliptic<Order>::initModel()
 
     M_funs.push_back( eim_g );
     M_funs.push_back( eim_u );
-    int M = eim_g->mMax();
-    int Mu = eim_u->mMax();
 
-    if( Environment::worldComm().isMasterRank() )
-        std::cout<<"M : "<<M<<" and Mu : "<<Mu<<std::endl;
+    int M = M_funs[0]->mMax();
+    int Mu = M_funs[1]->mMax();
+
     //resize data structure
 
     if( M_use_newton )
@@ -590,14 +598,15 @@ BenchmarkGreplNonlinearElliptic<Order>::assembleJacobianWithAffineDecomposition(
     double gamma = option(_name="gamma").template as<double>();
 
     form2( _test=Xh, _trial=Xh, _matrix=Jqm[0][0] ) =
-        integrate( _range= elements( mesh ),
-                   _expr = gradt(u)*trans(grad(v)) )
-        + integrate( _range = markedfaces( mesh, "boundaries"),
-                     _expr = gamma*idt(u)*id(v)/hFace()
-                     - (gradt(u)*vf::N())*id(v) +
-                     - (grad(v)*vf::N())*idt(u) );
+        integrate( _range= elements( mesh ), _expr = gradt(u)*trans(grad(v)) );
+    form2( _test=Xh, _trial=Xh, _matrix=Jqm[0][0] ) +=
+        integrate( _range = markedfaces( mesh, "boundaries"),
+                   _expr = gamma*idt(u)*id(v)/hFace()
+                   - (gradt(u)*vf::N())*id(v) +
+                   - (grad(v)*vf::N())*idt(u) );
 
     Jqm[0][0]->close();
+    Jqm[1].resize(M);
     for(int m=0; m<M; m++)
     {
         form2( _test=Xh, _trial=Xh, _matrix=Jqm[1][m] ) =
@@ -622,20 +631,21 @@ BenchmarkGreplNonlinearElliptic<Order>::assembleResidualWithAffineDecomposition(
     int Mu = eim_u->mMax();
     double gamma = option(_name="gamma").template as<double>();
 
-
+    Rqm[0][0].resize(Mu);
     for(int m=0; m<Mu; m++)
     {
         auto q = eim_u->q(m);
         form1( _test=Xh, _vector=Rqm[0][0][m] ) =
-            integrate( _range= elements( mesh ),
-                       _expr = gradv(q)*trans(grad(v)) )
-            + integrate( _range = markedfaces( mesh, "boundaries"),
-                         _expr = gamma*idv(q)*id(v)/hFace()
-                         - (gradv(q)*vf::N())*id(v) +
-                         - (grad(v)*vf::N())*idv(q) );
+            integrate( _range= elements( mesh ), _expr = gradv(q)*trans(grad(v)) );
+        form1( _test=Xh, _vector=Rqm[0][0][m] ) +=
+            integrate( _range = markedfaces( mesh, "boundaries"),
+                       _expr = gamma*idv(q)*id(v)/hFace()
+                       - (gradv(q)*vf::N())*id(v) +
+                       - (grad(v)*vf::N())*idv(q) );
 
         Rqm[0][0][m]->close();
     }
+    Rqm[0][1].resize(M);
     for(int m=0; m<M; m++)
     {
         form1( _test=Xh, _vector=Rqm[0][1][m] ) =
@@ -681,12 +691,11 @@ BenchmarkGreplNonlinearElliptic<Order>::updateJacobianMonolithic( vector_ptrtype
     auto proj_g = vf::project(_space=Xh, _expr=g);
 
     form2( _test=Xh, _trial=Xh, _matrix=J ) =
-        integrate( _range= elements( mesh ),
-                   _expr = gradt(u)*trans(grad(v)) )
-        + integrate( _range = markedfaces( mesh, "boundaries"),
-                     _expr = gamma*idt(u)*id(v)/hFace()
-                     - (gradt(u)*vf::N())*id(v) +
-                     - (grad(v)*vf::N())*idt(u) );
+        integrate( _range= elements( mesh ),_expr = gradt(u)*trans(grad(v)) );
+    form2( _test=Xh, _trial=Xh, _matrix=J ) += integrate( _range = markedfaces( mesh, "boundaries"),
+                                                          _expr = gamma*idt(u)*id(v)/hFace()
+                                                          - (gradt(u)*vf::N())*id(v) +
+                                                          - (grad(v)*vf::N())*idt(u) );
 
     form2( _test=Xh, _trial=Xh, _matrix=J ) +=
         integrate( _range = elements(mesh),
@@ -713,12 +722,13 @@ BenchmarkGreplNonlinearElliptic<Order>::updateResidualMonolithic(vector_ptrtype 
     auto proj_g = vf::project(_space=Xh, _expr=g);
 
     form1( _test=Xh, _vector=R ) =
-        integrate( _range= elements( mesh ),
-                   _expr = gradv(u)*trans(grad(v)) )
-        + integrate( _range = markedfaces( mesh, "boundaries"),
-                     _expr = gamma*idv(u)*id(v)/hFace()
-                     - (gradv(u)*vf::N())*id(v) +
-                     - (grad(v)*vf::N())*idv(u) );
+        integrate( _range= elements( mesh ), _expr = gradv(u)*trans(grad(v)) );
+
+    form1( _test=Xh, _vector=R ) +=
+        integrate( _range = markedfaces( mesh, "boundaries"),
+                   _expr = gamma*idv(u)*id(v)/hFace()
+                   - (gradv(u)*vf::N())*id(v) +
+                   - (grad(v)*vf::N())*idv(u) );
 
     form1( _test=Xh, _vector=R ) +=
         integrate( _range= elements( mesh ),
@@ -757,21 +767,23 @@ void BenchmarkGreplNonlinearElliptic<Order>::assemble()
         double gamma = option(_name="gamma").template as<double>();
 
         form2( _test=Xh, _trial=Xh, _matrix=this->M_Aqm[0][0] ) =
-        integrate( _range= elements( mesh ),
-                   _expr = gradt(u)*trans(grad(v)) )
-        + integrate( _range = markedfaces( mesh, "boundaries"),
-                     _expr = gamma*idt(u)*id(v)/hFace()
-                     - (gradt(u)*vf::N())*id(v) +
-                     - (grad(v)*vf::N())*idt(u) );
+            integrate( _range= elements( mesh ), _expr = gradt(u)*trans(grad(v)) );
+        form2( _test=Xh, _trial=Xh, _matrix=this->M_Aqm[0][0] ) += integrate( _range = markedfaces( mesh, "boundaries"),
+                                                                              _expr = gamma*idt(u)*id(v)/hFace()
+                                                                              - (gradt(u)*vf::N())*id(v) +
+                                                                              - (grad(v)*vf::N())*idt(u) );
 
+        this->M_Fqm[0][0].resize( M );
         for(int m=0; m<M; m++)
         {
+            this->M_Fqm[0][0][m] = backend()->newVector( this->Xh );
             form1( _test=Xh, _vector=this->M_Fqm[0][0][m] ) =
                 integrate( _range= elements( mesh ),
                            _expr=( idv(eim_g->q(m))*id(v) ) );
             this->M_Fqm[0][0][m]->close();
         }
 
+        this->M_Fqm[0][1][0]=backend()->newVector( this->Xh );
         form1( _test=Xh, _vector=this->M_Fqm[0][1][0] ) =
             integrate( _range= elements( mesh ),
                        _expr= id(v) );
@@ -810,22 +822,22 @@ BenchmarkGreplNonlinearElliptic<Order>::computeMonolithicFormulationU( parameter
     M_monoF[0] = backend()->newVector( this->functionSpace() );
     M_monoF[1] = backend()->newVector( Xh );
     form2( _test=Xh, _trial=Xh, _matrix=M_monoA ) =
-        integrate( _range= elements( mesh ),
-                   _expr = gradt(u)*trans(grad(v)) )
-        + integrate( _range = markedfaces( mesh, "boundaries"),
-                     _expr = gamma*idt(u)*id(v)/hFace()
-                     - (gradt(u)*vf::N())*id(v) +
-                     - (grad(v)*vf::N())*idt(u) );
+        integrate( _range= elements( mesh ), _expr = gradt(u)*trans(grad(v)) );
+    form2( _test=Xh, _trial=Xh, _matrix=M_monoA ) += integrate( _range = markedfaces( mesh, "boundaries"),
+                                                                _expr = gamma*idt(u)*id(v)/hFace()
+                                                                - (gradt(u)*vf::N())*id(v) +
+                                                                - (grad(v)*vf::N())*idt(u) );
 
+    // form1( _test=Xh, _vector=M_monoF[0] ) =
+    //     integrate( _range= elements( mesh ),
+    //                _expr=-mu(0)/mu(1)*( idv(g)*id(v) - id(v) ) )
+    //     + integrate( _range= elements( mesh ),
+    //                  _expr=100*sin(2*M_PI*Px())*cos(2*M_PI*Py()) * id(v) );
     form1( _test=Xh, _vector=M_monoF[0] ) =
-        integrate( _range= elements( mesh ),
-                   _expr=-mu(0)/mu(1)*( idv(g)*id(v) - id(v) ) )
-        + integrate( _range= elements( mesh ),
-                     _expr=100*sin(2*M_PI*Px())*cos(2*M_PI*Py()) * id(v) );
+        integrate( _range= elements( mesh ), _expr=-mu(0)/mu(1)*( idv(g)*id(v) - id(v) ) + 100*sin(2*M_PI*Px())*cos(2*M_PI*Py()) * id(v) );
 
     form1( _test=Xh, _vector=M_monoF[1] ) =
-        integrate( _range= elements( mesh ),
-                   _expr=id(v) );
+        integrate( _range= elements( mesh ), _expr=id(v) );
 
     M_monoF[0]->close();
     M_monoF[1]->close();
