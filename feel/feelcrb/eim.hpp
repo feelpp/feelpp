@@ -161,6 +161,13 @@ public:
     typedef boost::tuple<double,Eigen::Matrix<double,nDim,1> > space_residual_type;
     typedef boost::tuple<double,parameter_type> parameter_residual_type;
 
+    typedef CRBModel<ModelType> crbmodel_type;
+    typedef boost::shared_ptr<crbmodel_type> crbmodel_ptrtype;
+    typedef CRB<crbmodel_type> crb_type;
+    typedef boost::shared_ptr<crb_type> crb_ptrtype;
+
+    typedef Eigen::VectorXd vectorN_type;
+
     //@}
 
     /** @name Constructors, destructor
@@ -176,9 +183,12 @@ public:
         M_name( "default" ),
         M_M( 1 ),
         M_offline_done( false ),
+        M_offline_step( false ),
         M_tol( 1e-8 ),
         M_index_max(),
-        M_model( 0 )
+        M_model( 0 ),
+        //M_crb(),
+        M_crb_built(false)
         {}
     EIM( po::variables_map const& vm, model_type* model, sampling_ptrtype sampling, double __tol = 1e-8, bool offline_done=false )
         :
@@ -190,51 +200,54 @@ public:
         M_trainset( sampling ),
         M_M( 1 ),
         M_offline_done( offline_done ),
+        M_offline_step( false ),
         M_tol( __tol ),
         M_index_max(),
-        M_model( model )
+        M_model( model ),
+        //M_crb(),
+        M_crb_built(false)
         {
-            int user_max =option(_name="eim.dimension-max").template as<int>();
+            int user_max = ioption(_name="eim.dimension-max");
             int max_built = M_model->maxQ();
-            bool enrich_database=option(_name="eim.enrich-database").template as<bool>();
+            bool enrich_database = boption(_name="eim.enrich-database");
+            bool cobuild = ( ioption(_name="eim.cobuild-frequency") != 0 );
+
             bool do_offline=false;
             M_restart=false;
 
             if( (user_max+1) > max_built && M_offline_done )
             {
-                if( enrich_database )
-                {
+                if( enrich_database || cobuild)
                     do_offline=true;
-                    M_restart=false;
-                }
                 else
-                {
                     do_offline=false;
-                }
             }
-            if( !M_offline_done )
+            if( !M_offline_done || boption(_name="eim.rebuild-database") )
             {
                 do_offline=true;
-                M_restart=true;
-            }
-            if( option(_name="eim.rebuild-database").template as<bool>() )
-            {
-                do_offline=true;
-                M_restart=true;
+                M_restart = true;
             }
 
             if ( do_offline )
             {
                 LOG(INFO) << "construct EIM approximation...\n";
-                if( M_restart )
-                {
-                    M_model->initializeDataStructures();
-                }
-                else
+
+                if( enrich_database )
                 {
                     if( Environment::worldComm().isMasterRank() )
                         std::cout<<model->name()<<" enrich the existing database..."<<std::endl;
                 }
+                else if( cobuild )
+                {
+                    if( Environment::worldComm().isMasterRank() )
+                        std::cout<<model->name()<<" continue co-building process..."<<std::endl;
+                }
+                if( M_restart )
+                {
+                    M_model->initializeDataStructures();
+                }
+
+                this->setOfflineStep( true );
                 offline();
             }
         }
@@ -289,8 +302,50 @@ public:
 
     //@}
 
+    void setOfflineStep( bool b )
+        {
+            M_offline_step = b;
+        }
+    bool getOfflineStep()
+        {
+            return M_offline_step;
+        }
 
+    void setRestart( bool b )
+        {
+            M_restart = b;
+        }
+    bool Restart()
+        {
+            return M_restart;
+        }
 
+    //void setRB( crb_ptrtype crb )
+    void setRB( boost::any crb )
+        {
+            try
+            {
+                //this->M_crb = boost::any_cast<crb_ptrtype>(crb);
+            }
+            catch (...)
+            {
+                std::cout << "setRB fails (bad type)" << std::endl;
+            }
+            M_crb_built=true;
+        }
+    crb_ptrtype RB()
+        {
+            return M_crb;
+        }
+    const bool RBbuilt() const
+        {
+            const bool mybool_t = true;
+            const bool mybool_f = false;
+            if(M_crb_built)
+                return mybool_t;
+            else
+                return mybool_f;
+        }
 
     /** @name  Mutators
      */
@@ -332,7 +387,10 @@ public:
     void computationalTimeStatistics( std::string appname )  { return M_model->computationalTimeStatistics(); }
     element_type residual ( size_type M ) const;
 
-    parameter_residual_type computeBestFit( sampling_ptrtype trainset, int __M );
+    parameter_residual_type computeBestFit( sampling_ptrtype trainset, int __M);
+    model_solution_type computeRbExpansion( parameter_type const& mu );
+    model_solution_type computeRbExpansion( parameter_type const& mu, boost::mpl::bool_<true>);
+    model_solution_type computeRbExpansion( parameter_type const& mu, boost::mpl::bool_<false> );
 
     element_type operator()( parameter_type const& mu , int N) const { return expansion( M_model->q(), M_model->beta( mu, N ) , N); }
     element_type operator()( parameter_type const& mu, model_solution_type const& T , int N ) const { return expansion( M_model->q(), M_model->beta( mu, T, N ) , N ); }
@@ -342,7 +400,7 @@ public:
     */
     void orthonormalize( std::vector<element_type>& );
 
-
+    void offline();
     //@}
 protected:
 
@@ -357,12 +415,15 @@ protected:
     size_type M_max_q;//size of vector M_q ( to save/load )
 
     mutable bool M_offline_done;
+    mutable bool M_offline_step;
 
     double M_tol;
 
     std::vector<size_type> M_index_max;
 
     model_type* M_model;
+    crb_ptrtype M_crb;
+    bool M_crb_built;
 
     bool M_restart;
 
@@ -407,7 +468,7 @@ private:
        \f$B^M_{i \: j} = q_j (t_i)\f$,
        \f$1 \leq i,j \leq M\f$.
     */
-    void offline();
+    //void offline();
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
@@ -468,10 +529,10 @@ EIM<ModelType>::orthonormalize( std::vector<element_type> & __Z )
 
 template<typename ModelType>
 typename EIM<ModelType>::parameter_residual_type
-EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M )
+EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M)
 {
     DVLOG(2) << "compute best fit  for m=" << __M
-              << " and trainset of size " << trainset->size() << "...\n";
+             << " and trainset of size " << trainset->size() << "...\n";
     using namespace vf;
     parameter_type mu = M_model->parameterSpace()->element();
 
@@ -480,6 +541,8 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M )
     int index = 0;
     DVLOG(2) << "Compute best fit M=" << __M << "\n";
     vector_type rhs( __M );
+
+    model_solution_type solution;
     BOOST_FOREACH( mu, *trainset )
     {
         DVLOG(2) << "compute best fit check mu...\n";
@@ -487,7 +550,15 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M )
         //LOG_EVERY_N(INFO, 1 ) << " (every 10 mu) compute fit at mu="<< mu <<"\n" ;
 
         //auto proj_g = M_model->operator()( mu );
-        auto solution = M_model->solve( mu );
+#if 1
+        if( boption(_name="eim.use-rb-in-mu-selection") )
+            solution = this->computeRbExpansion( mu );
+        else
+            solution = M_model->solve( mu );
+#else
+        solution = M_model->solve( mu );
+#endif
+
         rhs = M_model->computeExpansionCoefficients( mu , solution, __M );
         auto z = expansion( M_model->q(), rhs, __M );
         auto resmax = M_model->computeMaximumOfResidual( mu , solution, z );
@@ -508,9 +579,42 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M )
     return boost::make_tuple( err, trainset->at(index) );
 }
 
+
+template<typename ModelType>
+typename EIM<ModelType>::model_solution_type
+EIM<ModelType>::computeRbExpansion( parameter_type const& mu )
+{
+    //return computeRbExpansion( mu, boost::mpl::bool_< this->RBbuilt() >() );
+    return computeRbExpansion( mu, boost::mpl::bool_< false >() );
+}
+template<typename ModelType>
+typename EIM<ModelType>::model_solution_type
+EIM<ModelType>::computeRbExpansion( parameter_type const& mu, boost::mpl::bool_<false>)
+{
+    return M_model->solve( mu );
+}
+template<typename ModelType>
+typename EIM<ModelType>::model_solution_type
+EIM<ModelType>::computeRbExpansion( parameter_type const& mu, boost::mpl::bool_<true>)
+//EIM<ModelType>::computeRbExpansion( parameter_type const& mu )
+{
+    int N = this->M_crb->dimension();
+    auto WN = M_crb->wn(); //reduced basis approximation space
+
+    vectorN_type time;
+    auto o = M_crb->run( mu, time, option(_name="crb.online-tolerance").template as<double>() , N);
+    auto solutions=o.template get<2>();
+    auto uN = solutions.template get<0>();//vector of solutions ( one solution at each time step )
+
+    int size=uN.size();
+    auto u_crb = M_crb->expansion( uN[size-1] , N , WN );
+
+    return u_crb;
+}
+
 template<typename ModelType>
 void
-EIM<ModelType>::offline(  )
+EIM<ModelType>::offline()
 {
     using namespace vf;
 
@@ -673,17 +777,38 @@ EIM<ModelType>::offline(  )
        \par build \f$W^g_M\f$
     */
     double err = 1;
-    int Mmax=option(_name="eim.dimension-max").template as<int>();
+    //int Mmax=option(_name="eim.dimension-max").template as<int>();
+    int cobuild_freq = ioption(_name="eim.cobuild-frequency");
+    LOG(INFO) << "[eim] cobuild frequency = " << cobuild_freq << "\n";
+    int user_max = ioption(_name="eim.dimension-max");
+    int Mmax;
+    int restart = M_restart ? 1 : 0;
+    //if( cobuild_freq != 0 && M_M + cobuild_freq <= user_max)
+    if( cobuild_freq != 0 && M_model->mMax() + cobuild_freq  <= user_max)
+    {
+        if( M_restart )
+            Mmax = cobuild_freq;
+        else
+            Mmax = M_model->mMax() + cobuild_freq;
+    }
+    else
+        Mmax = user_max;
+
     //to deal with error estimation we need to build an "extra" basis function
-    Mmax++;
+    if( Mmax == user_max  )
+        Mmax++;
+
+    if( Environment::worldComm().isMasterRank() )
+        std::cout << "M_M = " << M_M << ", Mmax = " << Mmax << std::endl;
+
     LOG(INFO) << "start greedy algorithm...\n";
-    for( ; M_M <=Mmax ; ++M_M ) //err >= this->M_tol )
+    for( ; M_M <=Mmax; ++M_M ) //err >= this->M_tol ) //Mmax == 1 : the basis has already been built at init step
     {
         timer3.restart();
         //LOG(INFO) << "M=" << M_M << "...\n";
         if( Environment::worldComm().isMasterRank() )
         {
-            if( M_M == Mmax )
+            if( Mmax == user_max + 1 )
                 std::cout<<"================================ last basis function needed for error estimation"<<std::endl;
             else
                 std::cout<<" ================================ "<<std::endl;
@@ -693,6 +818,7 @@ EIM<ModelType>::offline(  )
         timer2.restart();
         // compute mu = arg max inf ||G(.;mu)-z||_infty
         auto bestfit = computeBestFit( M_trainset, this->M_M-1 );
+        //auto bestfit = computeBestFit( M_trainset, this->M_M-1, crb);
         time=timer2.elapsed();
         double error=bestfit.template get<0>();
         if( Environment::worldComm().isMasterRank() )
@@ -732,6 +858,7 @@ EIM<ModelType>::offline(  )
         if ( (bestfit.template get<0>()/gmax.template get<0>()) < option(_name="eim.error-max").template as<double>() &&  ! option(_name="eim.use-dimension-max-functions").template as<bool>() )
         {
             M_M--;
+            this->setOfflineStep(false);
             break;
         }
 
@@ -813,6 +940,7 @@ EIM<ModelType>::offline(  )
         if ( resmax.template get<0>() < option(_name="eim.error-max").template as<double>() &&  ! option(_name="eim.use-dimension-max-functions").template as<bool>() )
         {
             M_M--;
+            this->setOfflineStep(false);
             break;
         }
 
@@ -846,6 +974,9 @@ EIM<ModelType>::offline(  )
     DVLOG(2) << "[offline] M_max = " << M_M << "...\n";
 
     this->M_offline_done = true;
+    //std::cout << " [eim offline] M_max = " << Mmax << " ,user max = " << user_max << std::endl;
+    if( Mmax >= user_max ) //dimension-max has been reached
+        this->setOfflineStep(false);
 }
 
 template<typename ModelType>
@@ -1157,6 +1288,11 @@ public:
     virtual int maxZ() = 0;
     virtual int maxSolution() = 0;
 
+    virtual bool getOfflineStep()=0;
+    virtual void setRestart(bool b)=0;
+    virtual void setRB( boost::any rb )=0;
+    virtual void offline()=0;
+
     virtual void addBasis( element_type const &q ) = 0;
     virtual void addExpressionEvaluation( element_type const &g ) = 0;
     virtual void addZ( element_type const &z ) = 0;
@@ -1241,6 +1377,8 @@ public:
     typedef boost::tuple<double,parameter_type> parameter_residual_type;
     typedef typename super::node_type node_type;
 
+    //typedef Eigen::VectorXd vectorN_type;
+
     EIMFunction( po::variables_map const& vm,
                  model_ptrtype model,
                  functionspace_ptrtype space,
@@ -1292,22 +1430,25 @@ public:
     }
 
     /**
-     * load the CRB database
+     * load the EIM database
      */
     bool loadDB()
     {
         if( M_q_vector.size() > 0 && M_t.size() > 0 )
+        {
             return true;
+        }
 
         fs::path db = this->lookForDB();
 
-        if ( db.empty() )
+        if ( db.empty() || !fs::exists( db ) )
+        {
             return false;
+        }
 
-        if ( !fs::exists( db ) )
-            return false;
+        // if ( !fs::exists( db ) )
+        //     return false;
 
-        //std::cout << "Loading " << db << "...\n";
         fs::ifstream ifs( db );
 
         if ( ifs )
@@ -1450,7 +1591,6 @@ public:
             return M_model->solve( mu );
         }
 
-    //TODO : chaque composante doit etre projetee sur l'espace non produit ?
     element_type operator()( parameter_type const&  mu )
         {
             M_mu = mu;
@@ -1939,7 +2079,6 @@ public:
         {}
     void computationalTimeStatistics( std::string appname, boost::mpl::bool_<true> )
     {
-        //auto crbmodel = crbmodel_ptrtype( new crbmodel_type( M_vm , CRBModelMode::CRB ) );
         auto crbmodel = crbmodel_ptrtype( new crbmodel_type( M_model , CRBModelMode::CRB ) );
         //make sure that the CRB DB is already build
         M_crb = crb_ptrtype( new crb_type( appname,
@@ -1971,6 +2110,7 @@ public:
         BOOST_FOREACH( auto mu, *Sampling )
         {
             //LOG( INFO ) << "[computational] mu = \n"<<mu;
+
             boost::mpi::timer tcrb;
             auto o = M_crb->run( mu, time, option(_name="crb.online-tolerance").template as<double>() , N);
             auto solutions=o.template get<2>();
@@ -1990,6 +2130,11 @@ public:
         M_model->computeStatistics( time_crb , super::name()+" - global crb timing" );
 
     }
+
+    bool getOfflineStep(){return M_eim->getOfflineStep();}
+    void offline(){M_eim->offline();}
+    void setRestart(bool b){ M_eim->setRestart(b);}
+    void setRB(boost::any b){ M_eim->setRB(b);}
 
     void setTrainSet( sampling_ptrtype tset ) { M_eim->setTrainSet( tset ); }
     element_type interpolant( parameter_type const& mu )
@@ -2274,6 +2419,7 @@ private:
     model_solution_type * M_u;
     parameter_type& M_mu;
     crb_ptrtype M_crb;
+    //const bool M_crb_built;
     sampling_ptrtype M_mu_sampling ;
     std::vector< element_type > M_q_vector ;
     std::vector< element_type > M_g_vector ;

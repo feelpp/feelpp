@@ -370,10 +370,14 @@ public:
         bool symmetric = option(_name="crb.use-symmetric-matrix").template as<bool>();
         bool stock = option(_name="crb.stock-matrices").template as<bool>();
 
+        // Access to eim eventually built in initModel
+        if( this->scalarContinuousEim().size() > 0 || this->scalarDiscontinuousEim().size() > 0 )
+            M_has_eim = true;
+
         if( stock )
             this->computeAffineDecomposition();
-
-        this->countAffineDecompositionTerms();
+        else
+            this->countAffineDecompositionTerms(); //already called in computeAffineDecomposition() if stock
 
         M_inner_product_matrix=this->newMatrix();
         if( this->hasEim() || (!symmetric) )
@@ -384,6 +388,7 @@ public:
             //as the inner product
             auto muref = this->refParameter();
             auto betaqm = computeBetaLinearDecompositionA( muref );
+
             M_inner_product_matrix->zero();
             for ( size_type q = 0; q < M_QLinearDecompositionA; ++q )
             {
@@ -392,6 +397,7 @@ public:
                     M_inner_product_matrix->addMatrix( betaqm[q][m], M_linearAqm[q][m] );
                 }
             }
+
             //check that the matrix is filled, else we take energy matrix
             double norm=M_inner_product_matrix->l1Norm();
             if( norm == 0 && symmetric )
@@ -822,7 +828,7 @@ public:
 
 
     element_ptrtype assembleInitialGuess( parameter_type const& mu );
-
+    void assemble(){ return M_model->assemble(); }
     /**
      * \brief update the model wrt \p mu
      */
@@ -878,8 +884,6 @@ public:
     {
         return M_model->isInitialized();
     }
-
-
 
     /**
      * returns list of eim objects ( scalar continuous)
@@ -1029,7 +1033,8 @@ public:
      */
     void countAffineDecompositionTerms()
     {
-        if( M_alreadyCountAffineDecompositionTerms )
+        bool cobuild = (ioption(_name="crb.cobuild-frequency") != 0);
+        if( M_alreadyCountAffineDecompositionTerms && !cobuild)
             return;
         else
             M_alreadyCountAffineDecompositionTerms=true;
@@ -1121,8 +1126,8 @@ public:
                 for(int q=0; q<M_Qm; q++)
                 {
                     M_mMaxM[q]=M_Mqm[q].size();
-                    if( M_mMaxM[q] > 1 )
-                        M_has_eim=true;
+                    // if( M_mMaxM[q] > 1 )
+                    //     M_has_eim=true;
                 }
 
                 M_Qa=M_Aqm.size();
@@ -1130,8 +1135,8 @@ public:
                 for(int q=0; q<M_Qa; q++)
                 {
                     M_mMaxA[q]=M_Aqm[q].size();
-                    if( M_mMaxA[q] > 1 )
-                        M_has_eim=true;
+                    // if( M_mMaxA[q] > 1 )
+                    //     M_has_eim=true;
                 }
 
                 M_Nl=M_Fqm.size();
@@ -1144,8 +1149,9 @@ public:
                     for(int q=0; q<M_Ql[output]; q++)
                     {
                         M_mMaxF[output][q]=M_Fqm[output][q].size();
-                        if( M_mMaxF[output][q] > 1 )
-                            M_has_eim=true;
+                        //std::cout << "countAffineDecomposition terms : M_mMaxF[" << output << "][" << q << "] = " << M_mMaxF[output][q] << std::endl;
+                        // if( M_mMaxF[output][q] > 1 )
+                        //     M_has_eim=true;
                     }
                 }
 
@@ -1639,7 +1645,6 @@ public:
 
         //first check is model provides a small affine decomposition or not
         boost::tie( Aq, Fq ) = M_model->computeAffineDecompositionLight();
-
         if( Aq.size() == 0 )
         {
             boost::tie( M_Aqm, M_Fqm ) = M_model->computeAffineDecomposition();

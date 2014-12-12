@@ -288,7 +288,8 @@ public:
         M_WNmu_complement(),
         M_primal_apee_mu( new sampling_type( M_Dmu, 1, M_Xi ) ),
         M_dual_apee_mu( new sampling_type( M_Dmu, 1, M_Xi ) ),
-        exporter( Exporter<mesh_type>::New( "ensight" ) )
+        exporter( Exporter<mesh_type>::New( "ensight" ) ),
+        M_rebuild( this->rebuildDB() )
     {
 
     }
@@ -324,7 +325,8 @@ public:
         M_scmA( new scm_type( name+"_a", vm ) ),
         M_scmM( new scm_type( name+"_m", vm ) ),
         exporter( Exporter<mesh_type>::New( vm, "BasisFunction" ) ),
-        M_database_contains_variance_info( vm["crb.save-information-for-variance"].template as<bool>())
+        M_database_contains_variance_info( vm["crb.save-information-for-variance"].template as<bool>()),
+        M_rebuild( this->rebuildDB() )
     {
         // this is too early to load the DB, we don't have the model yet and the
         //associated function space for the reduced basis function if
@@ -360,6 +362,7 @@ public:
         M_error_type( CRBErrorType( vm["crb.error-type"].template as<int>() ) ),
         M_Dmu( new parameterspace_type ),
         M_Xi( new sampling_type( M_Dmu ) ),
+        //M_N( 0 ),
         M_WNmu( new sampling_type( M_Dmu, 1, M_Xi ) ),
         M_WNmu_complement(),
         M_primal_apee_mu( new sampling_type( M_Dmu, 1, M_Xi ) ),
@@ -367,12 +370,14 @@ public:
         M_scmA( new scm_type( name+"_a", vm , model , false /*not scm for mass mastrix*/ )  ),
         M_scmM( new scm_type( name+"_m", vm , model , true /*scm for mass matrix*/ ) ),
         exporter( Exporter<mesh_type>::New( vm, "BasisFunction" ) ),
-        M_database_contains_variance_info( vm["crb.save-information-for-variance"].template as<bool>())
+        M_database_contains_variance_info( vm["crb.save-information-for-variance"].template as<bool>()),
+        M_rebuild( this->rebuildDB() )
     {
         this->setTruthModel( model );
         if ( this->loadDB() )
             LOG(INFO) << "Database " << this->lookForDB() << " available and loaded\n";
         //this will be in the offline step (it's only when we enrich or create the database that we want to have access to elements of the RB)
+
         M_elements_database.setMN( M_N );
         bool load_elements_db= option(_name="crb.load-elements-database").template as<bool>();
         if( load_elements_db )
@@ -390,6 +395,7 @@ public:
                if( Environment::worldComm().isMasterRank() )
                    std::cout<<"Warning ! No database for basis functions loaded. Start from the begining"<<std::endl;
                 LOG( INFO ) <<"no database for basis functions loaded. Start from the begining";
+                M_N = 0; //Re-init M_N
             }
         }
 
@@ -453,7 +459,8 @@ public:
         M_Cmm_pr_eim( o.M_Cmm_pr ),
         M_Cmm_du_eim( o.M_Cmm_du ),
         M_coeff_pr_ini_online( o.M_coeff_pr_ini_online ),
-        M_coeff_du_ini_online( o.M_coeff_du_ini_online )
+        M_coeff_du_ini_online( o.M_coeff_du_ini_online ),
+        M_rebuild( o.M_rebuild )
     {}
 
     //! destructor
@@ -603,6 +610,11 @@ public:
     void setOfflineStep( bool b )
     {
         M_offline_step = b;
+    }
+    //! get  boolean indicates if we are in offline_step or not
+    bool getOfflineStep()
+    {
+        return M_offline_step;
     }
 
     struct ComputePhi
@@ -1001,6 +1013,10 @@ public:
      */
     convergence_type offline();
 
+    /**
+     * \brief update size of Affine Decomposition (needed by co-build since size of eim decomposition can change)
+     */
+    void updateAffineDecompositionSize();
 
     /**
      * \brief Retuns maximum value of the relative error
@@ -1149,7 +1165,7 @@ public:
      * if true, rebuild the database (if already exist)
      */
     bool rebuildDB() ;
-
+    void setRebuild( bool b ){ M_rebuild = b; } ;
     /**
      * if true, show the mu selected during the offline stage
      */
@@ -1421,6 +1437,8 @@ protected:
     bool M_use_newton;
 
     bool M_offline_step;
+
+    bool M_rebuild;
 
     preconditioner_ptrtype M_preconditioner;
     preconditioner_ptrtype M_preconditioner_primal;
@@ -1953,16 +1971,17 @@ template<typename TruthModelType>
 typename CRB<TruthModelType>::convergence_type
 CRB<TruthModelType>::offline()
 {
-
     M_model_executed_in_steady_mode = option(_name="crb.is-model-executed-in-steady-mode").template as<bool>();
     int proc_number = this->worldComm().globalRank();
     int master_proc = this->worldComm().masterRank();
     M_rbconv_contains_primal_and_dual_contributions = true;
 
-    bool rebuild_database = option(_name="crb.rebuild-database").template as<bool>() ;
+    //bool rebuild_database = option(_name="crb.rebuild-database").template as<bool>() ;
     orthonormalize_primal = option(_name="crb.orthonormalize-primal").template as<bool>() ;
     orthonormalize_dual = option(_name="crb.orthonormalize-dual").template as<bool>() ;
     solve_dual_problem = option(_name="crb.solve-dual-problem").template as<bool>() ;
+
+    bool cobuild = (ioption(_name="crb.cobuild-frequency") != 0);
 
 #if 0
     M_elements_database.setMN( M_N );
@@ -1978,7 +1997,7 @@ CRB<TruthModelType>::offline()
     else
     {
         LOG( INFO ) <<"no database for basis functions loaded. Start from the begining";
-        CHECK( rebuild_database ) <<" No database for basis functions found. Use option crb.rebuild-database=true to force reconstruction";
+        CHECK( this->rebuildDB() ) <<" No database for basis functions found. Use option crb.rebuild-database=true to force reconstruction";
     }
 #endif
     M_use_newton = option(_name="crb.use-newton").template as<bool>() ;
@@ -2033,16 +2052,19 @@ CRB<TruthModelType>::offline()
             boost::tie( Mqm, Aqm, Fqm ) = M_model->computeAffineDecomposition();
     }
     M_model->countAffineDecompositionTerms();
+    this->updateAffineDecompositionSize();
 
+#if 0
     if( Nrestart == 0 )
         rebuild_database=true;
     if( Nrestart > 0 )
         rebuild_database=false;
+#endif
 
     //if M_N == 0 then there is not an already existing database
-    if ( rebuild_database || M_N == 0)
+    //if ( rebuild_database || M_N == 0)
+    if( M_rebuild || M_N == 0 )
     {
-
         ti.restart();
         //scm_ptrtype M_scm = scm_ptrtype( new scm_type( M_vm ) );
         //M_scm->setTruthModel( M_model );
@@ -2090,7 +2112,7 @@ CRB<TruthModelType>::offline()
             std::cout << " -- sampling init done in " << ti.elapsed() << "s\n";
         ti.restart();
 
-
+#if 0
         if ( M_error_type == CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
         {
 
@@ -2363,6 +2385,7 @@ CRB<TruthModelType>::offline()
 
             }//end of if ( model_type::is_time_dependent )
         }//end of if ( M_error_type == CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
+#endif
         if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
             std::cout << " -- residual data init done in " << ti.elapsed() << std::endl;
         ti.restart();
@@ -2415,6 +2438,7 @@ CRB<TruthModelType>::offline()
         delta_du = 0;
         //boost::tie( M_maxerror, mu, index ) = maxErrorBounds( N );
 
+#if 0
         LOG(INFO) << "[CRB::offline] allocate reduced basis data structures\n";
         M_Aqm_pr.resize( M_model->Qa() );
         M_Aqm_du.resize( M_model->Qa() );
@@ -2471,7 +2495,9 @@ CRB<TruthModelType>::offline()
             M_Lqm_pr[q].resize( M_model->mMaxF( M_output_index , q) );
             M_Lqm_du[q].resize( M_model->mMaxF( M_output_index , q) );
         }
+#endif
 
+        this->updateAffineDecompositionSize();
     }//end of if( rebuild_database )
     else
     {
@@ -2507,7 +2533,7 @@ CRB<TruthModelType>::offline()
         else
         {
             mu = M_current_mu;
-            if( proc_number == 0 )
+            if( proc_number == 0 && M_N < ioption(_name="crb.dimension-max") - 1 )
             {
                 std::cout<<"We are going to enrich the reduced basis"<<std::endl;
                 std::cout<<"There are "<<M_N<<" elements in the database"<<std::endl;
@@ -2515,8 +2541,10 @@ CRB<TruthModelType>::offline()
             LOG(INFO) <<"we are going to enrich the reduced basis"<<std::endl;
             LOG(INFO) <<"there are "<<M_N<<" elements in the database"<<std::endl;
         }
-    }//end of else associated to if ( rebuild_databse )
+    }//end of else associated to if ( rebuild_database )
 
+    //this->updateAffineDecompositionSize();
+    
     sparse_matrix_ptrtype Aq_transpose = M_model->newMatrix();
 
     sparse_matrix_ptrtype A = M_model->newMatrix();
@@ -2577,6 +2605,15 @@ CRB<TruthModelType>::offline()
     bool only_master=option(_name="crb.system-memory-evolution").template as<bool>();
     bool only_one_proc= only_master * ( Environment::worldComm().globalRank()==Environment::worldComm().masterRank() );
     bool write_memory_evolution = all_procs || only_one_proc ;
+
+    int cobuild_freq_rb = ioption(_name="crb.cobuild-frequency");
+    int cobuild_freq_eim = ioption(_name="eim.cobuild-frequency");
+    //std::cout << "[crb] cobuild frequency = " << cobuild_freq << std::endl;
+    int user_max = ioption(_name="crb.dimension-max");
+    if( cobuild_freq_rb != 0 && M_N + cobuild_freq_rb <= user_max)
+        M_iter_max = M_N + cobuild_freq_rb;
+    else
+        M_iter_max = user_max;
 
     while ( M_maxerror > M_tolerance && M_N < M_iter_max  )
     {
@@ -3012,17 +3049,21 @@ CRB<TruthModelType>::offline()
                             //M_Aqm_pr_du[q][m]( i, j ) = M_model->Aqm(q , m , M_WNdu[i], M_WN[j] );
                         }
                     }
+                    //std::cout << "M_Aqm_pr[" << q << "][" << m << "]= " << M_Aqm_pr[q][m] << std::endl;
                 }//loop over m
             }//loop over q
 
             LOG(INFO) << "[CRB::offline] compute Mq_pr, Mq_du, Mq_pr_du" << "\n";
 
-
             LOG(INFO) << "[CRB::offline] compute Fq_pr, Fq_du" << "\n";
-
             for ( size_type q = 0; q < M_model->Ql( 0 ); ++q )
             {
-                for( size_type m = 0; m < M_model->mMaxF( 0, q ); ++m )
+                //for( size_type m = 0; m < M_model->mMaxF( 0, q ); ++m )
+                auto mMax_old = M_model->mMaxF( 0, q );
+                if( cobuild_freq_eim != 0 && M_model->mMaxF( 0, q ) > 1 )
+                    mMax_old = M_model->mMaxF( 0, q ) - cobuild_freq_eim; //Mmax before build of last eim basis (cobuild)
+
+                for( size_type m = 0; m < mMax_old; ++m )
                 {
                     M_Fqm_pr[q][m].conservativeResize( M_N );
                     M_Fqm_du[q][m].conservativeResize( M_N );
@@ -3034,7 +3075,24 @@ CRB<TruthModelType>::offline()
                         //M_Fqm_pr[q][m]( index ) = M_model->Fqm( 0, q, m, M_WN[index] );
                         //M_Fqm_du[q][m]( index ) = M_model->Fqm( 0, q, m, M_WNdu[index] );
                     }
-                }//loop over m
+                    //std::cout << "M_Fqm_pr[" << q << "][" << m << "] = " << M_Fqm_pr[q][m] << std::endl;
+                }//loop over m (< mMaxF - cobuild_eim_freq)
+
+                for( size_type m = mMax_old; m < M_model->mMaxF( 0, q ); ++m )
+                {
+                    M_Fqm_pr[q][m].conservativeResize( M_N );
+                    M_Fqm_du[q][m].conservativeResize( M_N );
+                    for ( size_type l = 1; l <= number_of_added_elements; ++l )
+                    {
+                        int index = M_N-l;
+                        for( int idx = 0; idx<=index; idx++ )
+                        {
+                            M_Fqm_pr[q][m]( idx ) = M_model->Fqm( 0, q, m, M_model->rBFunctionSpace()->primalBasisElement(idx) );
+                            M_Fqm_du[q][m]( idx ) = M_model->Fqm( 0, q, m, M_model->rBFunctionSpace()->dualBasisElement(idx) );
+                        }
+                    }
+                    //std::cout << "M_Fqm_pr[" << q << "][" << m << "] = " << M_Fqm_pr[q][m] << std::endl;
+                }//loop over m (>= mMaxF - cobuild_eim_freq)
             }//loop over q
 
         }//end of "if ! use_newton"
@@ -3382,6 +3440,11 @@ CRB<TruthModelType>::offline()
 
     if( proc_number == 0 )
         std::cout<<"number of elements in the reduced basis : "<<M_N<<" ( nb proc : "<<worldComm().globalSize()<<")"<<std::endl;
+
+    if( M_maxerror <= M_tolerance || M_N >= user_max  )
+    {
+        this->setOfflineStep( false );
+    }
     bool visualize_basis = option(_name="crb.visualize-basis").template as<bool>() ;
 
 #if 0
@@ -3407,6 +3470,342 @@ CRB<TruthModelType>::offline()
 
     return M_rbconv;
 
+}
+
+template<typename TruthModelType>
+void
+CRB<TruthModelType>::updateAffineDecompositionSize()
+{
+    std::cout << "updateAffineDecompositionSize" << std::endl;
+    if ( M_error_type == CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
+    {
+
+        int __QLhs = M_model->Qa();
+        int __QRhs = M_model->Ql( 0 );
+        int __QOutput = M_model->Ql( M_output_index );
+        int __Qm = M_model->Qm();
+
+        //typename array_2_type::extent_gen extents2;
+        //M_C0_pr.resize( extents2[__QRhs][__QRhs] );
+        //M_C0_du.resize( extents2[__QOutput][__QOutput] );
+        M_C0_pr.resize( __QRhs );
+        for( int __q1=0; __q1< __QRhs; __q1++)
+        {
+            int __mMaxQ1=M_model->mMaxF(0,__q1);
+            M_C0_pr[__q1].resize( __mMaxQ1 );
+            for( int __m1=0; __m1< __mMaxQ1; __m1++)
+            {
+                M_C0_pr[__q1][__m1].resize(  __QRhs );
+                for( int __q2=0; __q2< __QRhs; __q2++)
+                {
+                    int __mMaxQ2=M_model->mMaxF(0,__q2);
+                    M_C0_pr[__q1][__m1][__q2].resize( __mMaxQ2 );
+                }
+            }
+        }
+
+        M_C0_du.resize( __QOutput );
+        for( int __q1=0; __q1< __QOutput; __q1++)
+        {
+            int __mMaxQ1=M_model->mMaxF(M_output_index,__q1);
+            M_C0_du[__q1].resize( __mMaxQ1 );
+            for( int __m1=0; __m1< __mMaxQ1; __m1++)
+            {
+                M_C0_du[__q1][__m1].resize(  __QOutput );
+                for( int __q2=0; __q2< __QOutput; __q2++)
+                {
+                    int __mMaxQ2=M_model->mMaxF(M_output_index,__q2);
+                    M_C0_du[__q1][__m1][__q2].resize( __mMaxQ2 );
+                }
+            }
+        }
+
+        //typename array_3_type::extent_gen extents3;
+        //M_Lambda_pr.resize( extents3[__QLhs][__QRhs] );
+        //M_Lambda_du.resize( extents3[__QLhs][__QOutput] );
+        M_Lambda_pr.resize( __QLhs );
+        for( int __q1=0; __q1< __QLhs; __q1++)
+        {
+            int __mMaxQ1=M_model->mMaxA(__q1);
+            M_Lambda_pr[__q1].resize( __mMaxQ1 );
+            for( int __m1=0; __m1< __mMaxQ1; __m1++)
+            {
+                M_Lambda_pr[__q1][__m1].resize(  __QRhs );
+                for( int __q2=0; __q2< __QRhs; __q2++)
+                {
+                    int __mMaxQ2=M_model->mMaxF(0,__q2);
+                    M_Lambda_pr[__q1][__m1][__q2].resize( __mMaxQ2 );
+                }
+            }
+        }
+
+        M_Lambda_du.resize( __QLhs );
+        for( int __q1=0; __q1< __QLhs; __q1++)
+        {
+            int __mMaxQ1=M_model->mMaxA(__q1);
+            M_Lambda_du[__q1].resize( __mMaxQ1 );
+            for( int __m1=0; __m1< __mMaxQ1; __m1++)
+            {
+                M_Lambda_du[__q1][__m1].resize(  __QOutput );
+                for( int __q2=0; __q2< __QOutput; __q2++)
+                {
+                    int __mMaxQ2=M_model->mMaxF(M_output_index,__q2);
+                    M_Lambda_du[__q1][__m1][__q2].resize( __mMaxQ2 );
+                }
+            }
+        }
+
+        //typename array_4_type::extent_gen extents4;
+        //M_Gamma_pr.resize( extents4[__QLhs][__QLhs] );
+        //M_Gamma_du.resize( extents4[__QLhs][__QLhs] );
+        M_Gamma_pr.resize( __QLhs );
+        for( int __q1=0; __q1< __QLhs; __q1++)
+        {
+            int __mMaxQ1=M_model->mMaxA(__q1);
+            M_Gamma_pr[__q1].resize( __mMaxQ1 );
+            for( int __m1=0; __m1< __mMaxQ1; __m1++)
+            {
+                M_Gamma_pr[__q1][__m1].resize(  __QLhs );
+                for( int __q2=0; __q2< __QLhs; __q2++)
+                {
+                    int __mMaxQ2=M_model->mMaxA(__q2);
+                    M_Gamma_pr[__q1][__m1][__q2].resize( __mMaxQ2 );
+                }
+            }
+        }
+
+        M_Gamma_du.resize( __QLhs );
+        for( int __q1=0; __q1< __QLhs; __q1++)
+        {
+            int __mMaxQ1=M_model->mMaxA(__q1);
+            M_Gamma_du[__q1].resize( __mMaxQ1 );
+            for( int __m1=0; __m1< __mMaxQ1; __m1++)
+            {
+                M_Gamma_du[__q1][__m1].resize(  __QLhs );
+                for( int __q2=0; __q2< __QLhs; __q2++)
+                {
+                    int __mMaxQ2=M_model->mMaxA(__q2);
+                    M_Gamma_du[__q1][__m1][__q2].resize( __mMaxQ2 );
+                }
+            }
+        }
+
+
+        M_C0_pr_eim.resize( __QRhs );
+        for( int __q1=0; __q1< __QRhs; __q1++)
+        {
+            M_C0_pr_eim[__q1].resize(  __QRhs );
+        }
+
+        M_C0_du_eim.resize( __QOutput );
+        for( int __q1=0; __q1< __QOutput; __q1++)
+        {
+            M_C0_du_eim[__q1].resize(  __QOutput );
+        }
+
+        M_Lambda_pr_eim.resize( __QLhs );
+        for( int __q1=0; __q1< __QLhs; __q1++)
+        {
+            M_Lambda_pr_eim[__q1].resize(  __QRhs );
+        }
+
+        M_Lambda_du_eim.resize( __QLhs );
+        for( int __q1=0; __q1< __QLhs; __q1++)
+        {
+            M_Lambda_du_eim[__q1].resize(  __QOutput );
+        }
+
+        M_Gamma_pr_eim.resize( __QLhs );
+        for( int __q1=0; __q1< __QLhs; __q1++)
+        {
+            M_Gamma_pr_eim[__q1].resize( __QLhs );
+        }
+
+        M_Gamma_du_eim.resize( __QLhs );
+        for( int __q1=0; __q1< __QLhs; __q1++)
+        {
+            M_Gamma_du_eim[__q1].resize( __QLhs );
+        }
+
+
+        if ( model_type::is_time_dependent )
+        {
+            // M_Cmf_pr.resize( extents3[__Qm][__QRhs] );
+            // M_Cmf_du.resize( extents3[__Qm][__QRhs] );
+            M_Cmf_pr.resize( __Qm );
+            for( int __q1=0; __q1< __Qm; __q1++)
+            {
+                int __mMaxQ1=M_model->mMaxM(__q1);
+                M_Cmf_pr[__q1].resize( __mMaxQ1 );
+                for( int __m1=0; __m1< __mMaxQ1; __m1++)
+                {
+                    M_Cmf_pr[__q1][__m1].resize(  __QRhs );
+                    for( int __q2=0; __q2< __QRhs; __q2++)
+                    {
+                        int __mMaxQ2=M_model->mMaxF(0,__q2);
+                        M_Cmf_pr[__q1][__m1][__q2].resize( __mMaxQ2 );
+                    }
+                }
+            }
+
+            M_Cmf_du.resize( __Qm );
+            for( int __q1=0; __q1< __Qm; __q1++)
+            {
+                int __mMaxQ1=M_model->mMaxM(__q1);
+                M_Cmf_du[__q1].resize( __mMaxQ1 );
+                for( int __m1=0; __m1< __mMaxQ1; __m1++)
+                {
+                    M_Cmf_du[__q1][__m1].resize( __QOutput );
+                    for( int __q2=0; __q2< __QOutput; __q2++)
+                    {
+                        int __mMaxQ2=M_model->mMaxF(M_output_index,__q2);
+                        M_Cmf_du[__q1][__m1][__q2].resize( __mMaxQ2 );
+                    }
+                }
+            }
+            M_Cmf_du_ini.resize( __Qm );
+            for( int __q1=0; __q1< __Qm; __q1++)
+            {
+                int __mMaxQ1=M_model->mMaxM(__q1);
+                M_Cmf_du_ini[__q1].resize( __mMaxQ1 );
+                for( int __m1=0; __m1< __mMaxQ1; __m1++)
+                {
+                    M_Cmf_du_ini[__q1][__m1].resize( __QOutput );
+                    for( int __q2=0; __q2< __QOutput; __q2++)
+                    {
+                        int __mMaxQ2=M_model->mMaxF(M_output_index,__q2);
+                        M_Cmf_du_ini[__q1][__m1][__q2].resize( __mMaxQ2 );
+                    }
+                }
+            }
+
+            // M_Cma_pr.resize( extents4[__Qm][__QLhs] );
+            // M_Cma_du.resize( extents4[__Qm][__QLhs] );
+            M_Cma_pr.resize( __Qm );
+            for( int __q1=0; __q1< __Qm; __q1++)
+            {
+                int __mMaxQ1=M_model->mMaxM(__q1);
+                M_Cma_pr[__q1].resize( __mMaxQ1 );
+                for( int __m1=0; __m1< __mMaxQ1; __m1++)
+                {
+                    M_Cma_pr[__q1][__m1].resize(  __QLhs );
+                    for( int __q2=0; __q2< __QLhs; __q2++)
+                    {
+                        int __mMaxQ2=M_model->mMaxA(__q2);
+                        M_Cma_pr[__q1][__m1][__q2].resize( __mMaxQ2 );
+                    }
+                }
+            }
+
+            M_Cma_du.resize( __Qm );
+            for( int __q1=0; __q1< __Qm; __q1++)
+            {
+                int __mMaxQ1=M_model->mMaxM(__q1);
+                M_Cma_du[__q1].resize( __mMaxQ1 );
+                for( int __m1=0; __m1< __mMaxQ1; __m1++)
+                {
+                    M_Cma_du[__q1][__m1].resize( __QLhs );
+                    for( int __q2=0; __q2< __QLhs; __q2++)
+                    {
+                        int __mMaxQ2=M_model->mMaxA(__q2);
+                        M_Cma_du[__q1][__m1][__q2].resize( __mMaxQ2 );
+                    }
+                }
+            }
+
+            // M_Cmm_pr.resize( extents4[__Qm][__Qm] );
+            // M_Cmm_du.resize( extents4[__Qm][__Qm] );
+            M_Cmm_pr.resize( __Qm );
+            for( int __q1=0; __q1< __Qm; __q1++)
+            {
+                int __mMaxQ1=M_model->mMaxM(__q1);
+                M_Cmm_pr[__q1].resize( __mMaxQ1 );
+                for( int __m1=0; __m1< __mMaxQ1; __m1++)
+                {
+                    M_Cmm_pr[__q1][__m1].resize(  __Qm );
+                    for( int __q2=0; __q2< __Qm; __q2++)
+                    {
+                        int __mMaxQ2=M_model->mMaxM(__q2);
+                        M_Cmm_pr[__q1][__m1][__q2].resize( __mMaxQ2 );
+                    }
+                }
+            }
+
+            M_Cmm_du.resize( __Qm );
+            for( int __q1=0; __q1< __Qm; __q1++)
+            {
+                int __mMaxQ1=M_model->mMaxM(__q1);
+                M_Cmm_du[__q1].resize( __mMaxQ1 );
+                for( int __m1=0; __m1< __mMaxQ1; __m1++)
+                {
+                    M_Cmm_du[__q1][__m1].resize( __Qm );
+                    for( int __q2=0; __q2< __Qm; __q2++)
+                    {
+                        int __mMaxQ2=M_model->mMaxM(__q2);
+                        M_Cmm_du[__q1][__m1][__q2].resize( __mMaxQ2 );
+                    }
+                }
+            }
+
+        }//end of if ( model_type::is_time_dependent )
+    }//end of if ( M_error_type == CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
+            
+    LOG(INFO) << "[CRB::offline] allocate reduced basis data structures\n";
+    M_Aqm_pr.resize( M_model->Qa() );
+    M_Aqm_du.resize( M_model->Qa() );
+    M_Aqm_pr_du.resize( M_model->Qa() );
+
+    if( M_use_newton )
+        M_Jqm_pr.resize( M_model->Qa() );
+
+    for(int q=0; q<M_model->Qa(); q++)
+    {
+        M_Aqm_pr[q].resize( M_model->mMaxA(q) );
+        M_Aqm_du[q].resize( M_model->mMaxA(q) );
+        M_Aqm_pr_du[q].resize( M_model->mMaxA(q) );
+
+        if(M_use_newton)
+            M_Jqm_pr[q].resize( M_model->mMaxA(q) );
+    }
+
+    M_Mqm_pr.resize( M_model->Qm() );
+    M_Mqm_du.resize( M_model->Qm() );
+    M_Mqm_pr_du.resize( M_model->Qm() );
+    for(int q=0; q<M_model->Qm(); q++)
+    {
+        M_Mqm_pr[q].resize( M_model->mMaxM(q) );
+        M_Mqm_du[q].resize( M_model->mMaxM(q) );
+        M_Mqm_pr_du[q].resize( M_model->mMaxM(q) );
+    }
+
+    int QInitialGuessV = M_model->QInitialGuess();
+    M_InitialGuessV_pr.resize( QInitialGuessV );
+    for(int q=0; q<QInitialGuessV; q++)
+    {
+        M_InitialGuessV_pr[q].resize( M_model->mMaxInitialGuess(q) );
+    }
+
+    M_Fqm_pr.resize( M_model->Ql( 0 ) );
+    M_Fqm_du.resize( M_model->Ql( 0 ) );
+    M_Lqm_pr.resize( M_model->Ql( M_output_index ) );
+    M_Lqm_du.resize( M_model->Ql( M_output_index ) );
+
+    if(M_use_newton)
+        M_Rqm_pr.resize( M_model->Ql( 0 ) );
+
+    for(int q=0; q<M_model->Ql( 0 ); q++)
+    {
+        M_Fqm_pr[q].resize( M_model->mMaxF( 0 , q) );
+        M_Fqm_du[q].resize( M_model->mMaxF( 0 , q) );
+
+        if(M_use_newton)
+            M_Rqm_pr[q].resize( M_model->mMaxF( 0 , q) );
+    }
+    for(int q=0; q<M_model->Ql( M_output_index ); q++)
+    {
+        M_Lqm_pr[q].resize( M_model->mMaxF( M_output_index , q) );
+        M_Lqm_du[q].resize( M_model->mMaxF( M_output_index , q) );
+    }
 }
 
 
@@ -4790,11 +5189,21 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
                         bool only_terms_time_dependent=false;
                         boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( this->expansion( uN[time_index], N , M_model->rBFunctionSpace()->primalRB() ),
                                                                                           mu , time, only_terms_time_dependent );
+                        // for ( size_type q = 0; q < Qf; ++q )
+                        // {
+                        //     for(int m=0; m<mMaxF[q]; m++)
+                        //     {
+                        //         std::cout << "betaFqm[0][" << q << "][" << m << "]= " << betaFqm[0][q][m] << std::endl;
+                        //     }
+                        // }
+
                         A.setZero( N,N );
                         for ( size_type q = 0; q < Qa; ++q )
                         {
                             for(int m=0; m<mMaxA[q]; m++)
                             {
+                                //std::cout << "betaAqm[" << q << "][" << m << "]= " << betaAqm[q][m] << std::endl;
+                                //std::cout << "Aqm_pr[" << q << "][" << m << "]= " << M_Aqm_pr[q][m].block( 0,0,N,N ) << std::endl;
                                 A += betaAqm[q][m]*M_Aqm_pr[q][m].block( 0,0,N,N );
                             }
                         }
@@ -4841,7 +5250,11 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
             for ( size_type q = 0; q < Qf; ++q )
             {
                 for(int m=0; m<mMaxF[q]; m++)
+                {
+                    // std::cout << "betaFqm[0][" << q << "][" << m << "]= " << betaFqm[0][q][m] << std::endl;
+                    // std::cout << "M_Fqm_pr[" << q << "][" << m << "] = " << M_Fqm_pr[q][m].head( N ) << std::endl;
                     F += betaFqm[0][q][m]*M_Fqm_pr[q][m].head( N );
+                }
             }
 
             for ( size_type q = 0; q < Qm; ++q )
@@ -4956,6 +5369,8 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
             {
                 for(int m=0; m < mMaxL[q]; m++)
                 {
+                    // std::cout << "betaFqm[" << M_output_index << "][" << q << "][" << m << "]= " << betaFqm[M_output_index][q][m] << std::endl;
+                    // std::cout << "M_Lqm_pr[" << q << "][" << m << "]= " << M_Lqm_pr[q][m].head( N ) << std::endl;
                     L += betaFqm[M_output_index][q][m]*M_Lqm_pr[q][m].head( N );
                 }
             }
@@ -4977,7 +5392,6 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
 
             double residual_norm = (A * uN[time_index] - F).norm() ;
             VLOG(2) << " residual_norm :  "<<residual_norm;
-
         }
         while ( increment > increment_fixedpoint_tol && fi<max_fixedpoint_iterations );
         //while ( math::abs(output - old_output) >  output_fixedpoint_tol && fi < max_fixedpoint_iterations );
@@ -5487,7 +5901,6 @@ CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::ve
                                   std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold,
                                   std::vector< double > & output_vector, int K, bool print_rb_matrix) const
 {
-
     double time_for_output;
     double time_step;
     double time_final;
@@ -5538,6 +5951,7 @@ CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::ve
 
     int size=output_vector.size();
     double o =output_vector[size-1];
+
     bool solve_dual_problem = option(_name="crb.solve-dual-problem").template as<bool>();
     //if( this->worldComm().globalSize() > 1 )
     //    solve_dual_problem=false;
@@ -8775,7 +9189,7 @@ CRB<TruthModelType>::run( parameter_type const& mu, vectorN_type & time, double 
     auto output_vector=o.template get<0>();
     double output_vector_size=output_vector.size();
     double output = output_vector[output_vector_size-1];
-
+    std::cout << "[crb run] output = " << output << std::endl;
     t1.restart();
     auto error_estimation = delta( Nwn, mu, uN, uNdu , uNold, uNduold );
     double time_error_estimation=t1.elapsed();
@@ -10016,19 +10430,25 @@ template<typename TruthModelType>
 bool
 CRB<TruthModelType>::rebuildDB()
 {
+    std::cout << "function rebuildDB" << std::endl;
     bool rebuild_db = option(_name="crb.rebuild-database").template as<bool>();
     int Nrestart = option(_name="crb.restart-from-N").template as<int>();
     bool rebuild=false;
-    if ( rebuild_db && Nrestart < 1 )
+    //if ( rebuild_db && Nrestart < 1 )
+    if ( rebuild_db || Nrestart == 0 )
     {
+        std::cout << "rebuild_db = " << rebuild_db << std::endl;
+        std::cout << "Nrestart = " << Nrestart << std::endl;
         rebuild=true;
     }
     if( M_N == 0 )
     {
+        std::cout << "M_N = " << M_N << std::endl;
         rebuild=true;
     }
     return rebuild;
 }
+
 
 template<typename TruthModelType>
 bool
@@ -10063,16 +10483,20 @@ CRB<TruthModelType>::loadDB()
     //    return false;
 
     if( this->isDBLoaded() )
+    {
         return true;
+    }
 
     fs::path db = this->lookForDB();
 
     if ( db.empty() )
+    {
         return false;
-
+    }
     if ( !fs::exists( db ) )
+    {
         return false;
-
+    }
     //std::cout << "Loading " << db << "...\n";
     fs::ifstream ifs( db );
 
