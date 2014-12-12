@@ -539,7 +539,7 @@ ginac_options( std::string const& prefix )
 po::options_description
 error_options( std::string const& prefix )
 {
-    po::options_description _options( "Error options (" + prefix + ")" );
+    po::options_description _options( "Error " + prefix + " options" );
     _options.add_options()
     // error options
         ( prefixvm( prefix, "error.exact" ).c_str(), Feel::po::value<std::string>()->default_value(""), "exact solution" )
