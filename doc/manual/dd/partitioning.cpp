@@ -93,8 +93,12 @@ Partitioning<Dim>::run()
         auto a = form2( _trial=Vh, _test=Vh);
         a = integrate(_range=elements(mesh),
                       _expr=gradt(u)*trans(grad(v)) );
-        a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u, _expr=g );
-
+        if(boption("gmsh.domain.usenames")) {
+            if(nelements(markedfaces(mesh, "Dirichlet")) > 0)
+                a+=on(_range=markedfaces(mesh, "Dirichlet"), _rhs=l, _element=u, _expr=g);
+        }
+        else
+            a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u, _expr=g);
         a.solve(_rhs=l,_solution=u);
         auto e = exporter( _mesh=mesh );
         //e->addRegions();
@@ -121,7 +125,7 @@ int main(int argc, char** argv) {
      * Initialize Feel++ Environment
      */
     Environment env( _argc=argc, _argv=argv,
-                     _about=about(_name="doc_partitioning",
+                     _about=about(_name="partitioning",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org") );
     Application app;
