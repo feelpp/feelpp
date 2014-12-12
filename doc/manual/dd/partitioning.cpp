@@ -144,7 +144,7 @@ int main(int argc, char** argv) {
      * Initialize Feel++ Environment
      */
     Environment env( _argc=argc, _argv=argv,
-                    _desc=makeOptions(),
+                     _desc=makeOptions(),
                      _about=about(_name="partitioning",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org") );
