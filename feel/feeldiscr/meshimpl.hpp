@@ -335,7 +335,7 @@ Mesh<Shape, T, Tag>::updateForUse()
             for ( ; iv != en; ++iv )
             {
                 value_type meas = 0;
-                for( auto _elt: iv->pointElementNeighborIds() )
+                for( auto const& _elt: iv->pointElementNeighborIds() )
                 {
                     // warning : only compute meas for active element (no ghost)
                     if ( this->hasElement( _elt ) )
