@@ -30,6 +30,25 @@
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feeldiscr/pdh.hpp>
 #include <feel/feel.hpp>
+#include <feel/options.hpp>
+
+/** use Feel namespace */
+using namespace Feel;
+using namespace Feel::vf;
+
+/**
+ * \return the list of options
+ */
+inline
+po::options_description
+makeOptions()
+{
+    po::options_description partionningoptions( "Partitionning options" );
+    partionningoptions.add_options()
+    ( "use_global", po::value<bool>()->default_value( false ), "use global flag on nelements" )
+      ;
+    return partionningoptions.add( Feel::feel_options() );
+}
 
 namespace Feel
 {
@@ -94,7 +113,7 @@ Partitioning<Dim>::run()
         a = integrate(_range=elements(mesh),
                       _expr=gradt(u)*trans(grad(v)) );
         if(boption("gmsh.domain.usenames")) {
-            if(nelements(markedfaces(mesh, "Dirichlet")) > 0)
+            if(nelements(markedfaces(mesh, "Dirichlet"), boption("use_global")) > 0)
                 a+=on(_range=markedfaces(mesh, "Dirichlet"), _rhs=l, _element=u, _expr=g);
         }
         else
@@ -125,6 +144,7 @@ int main(int argc, char** argv) {
      * Initialize Feel++ Environment
      */
     Environment env( _argc=argc, _argv=argv,
+                    _desc=makeOptions(),
                      _about=about(_name="partitioning",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org") );
