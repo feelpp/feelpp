@@ -106,8 +106,7 @@ static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<d
     a = integrate(_range = elements(mesh), _expr = idf(k) * gradt(u) * trans(grad(v)));
     auto l = form1(_test = Vh, _vector = f);
     l = integrate(_range = elements(mesh), _expr = id(v));
-    if(nelements(markedfaces(mesh, "Dirichlet")) > 0)
-        a += on(_range = markedfaces(mesh, "Dirichlet"), _rhs = l, _element = u, _expr = cst(0.0));
+    a += on(_range = markedfaces(mesh, "Dirichlet"), _rhs = l, _element = u, _expr = cst(0.0));
 }
 template<uint16_type Order>
 static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<double>::vector_ptrtype& f, boost::shared_ptr<Mesh<Simplex<2>>>& mesh, boost::shared_ptr<FunctionSpace<Mesh<Simplex<2>>, bases<Lagrange<Order, Vectorial>>>>& Vh, typename FunctionSpace<typename Mesh<Simplex<2>>::mesh_type, bases<Lagrange<Order, Vectorial>>>::element_type& u, typename FunctionSpace<typename Mesh<Simplex<2>>::mesh_type, bases<Lagrange<Order, Vectorial>>>::element_type& v) {
@@ -129,8 +128,7 @@ static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<d
                           2 * mu * trace(trans(sym(gradt(u))) * sym(grad(u))));
     auto l = form1(_test = Vh, _vector = f);
     l = integrate(_range = elements(mesh), _expr = -density * trans(oneY()) * id(v));
-    if(nelements(markedfaces(mesh, "Dirichlet")) > 0)
-        a += on(_range = markedfaces(mesh, "Dirichlet"), _rhs = l, _element = u, _expr = zero<2, 1>());
+    a += on(_range = markedfaces(mesh, "Dirichlet"), _rhs = l, _element = u, _expr = zero<2, 1>());
 }
 template<uint16_type Order>
 static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<double>::vector_ptrtype& f, boost::shared_ptr<Mesh<Simplex<3>>>& mesh, boost::shared_ptr<FunctionSpace<Mesh<Simplex<3>>, bases<Lagrange<Order, Vectorial>>>>& Vh, typename FunctionSpace<typename Mesh<Simplex<3>>::mesh_type, bases<Lagrange<Order, Vectorial>>>::element_type& u, typename FunctionSpace<typename Mesh<Simplex<3>>::mesh_type, bases<Lagrange<Order, Vectorial>>>::element_type& v) {
@@ -152,8 +150,7 @@ static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<d
                           2 * mu * trace(trans(sym(gradt(u))) * sym(grad(u))));
     auto l = form1(_test = Vh, _vector = f);
     l = integrate(_range = elements(mesh), _expr = -density * trans(vec(cst(1.0/std::sqrt(2.0)), cst(0.0), cst(1.0/std::sqrt(2.0)))) * id(v));
-    if(nelements(markedfaces(mesh, "Dirichlet")) > 0)
-        a += on(_range = markedfaces(mesh, "Dirichlet"), _rhs = l, _element = u, _expr = zero<3, 1>());
+    a += on(_range = markedfaces(mesh, "Dirichlet"), _rhs = l, _element = u, _expr = zero<3, 1>());
 }
 
 template<uint16_type Dim, uint16_type Order, template<uint16_type> class Type>
@@ -421,30 +418,34 @@ Geneopp<Dim, Order, Type>::run()
 #else
         uLocal = vf::project(VhLocal, elements(meshLocal), Px() + Py());
 #endif
-        tic();
-        auto VhVisu = FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order, Type>>>::New(_mesh = mesh, _worldscomm = worldsComm(wComm));
-        auto uVisu = vf::project(_space = VhVisu, _expr = idv(uLocal));
-        auto e = exporter(_mesh = mesh/*, _name = (boost::format("%1%-%2%") % this->about().appName() % Dim).str()*/);
-        e->add("u", uVisu);
-        e->add("rank", regionProcess(Pdh<0>(mesh)));
-#if defined(DEBUG_SOL)
-        toc("exporter");
-        auto D = backend()->newMatrix(VhVisu, VhVisu);
-        auto F = backend()->newVector(VhVisu);
-        auto vVisu = VhVisu->element();
-        auto u = VhVisu->element();
-        assemble(D, F, mesh, VhVisu, u, vVisu);
-        backend()->solve(_matrix = D, _solution = u, _rhs = F);
-        e->add("u_ref", u);
-        u -= uVisu;
-        double error = u.l2Norm();
-        if(bComm.rank() == 0)
-            std::cout << std::scientific << " --- error with respect to solution from PETSc = " << error << std::endl;
-        e->save();
-#else
-        e->save();
-        toc("exporter");
-#endif
+        if(boption("export")) {
+            tic();
+            time.restart();
+            auto VhVisu = FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order, Type>>>::New(_mesh = mesh, _worldscomm = worldsComm(wComm));
+            double timeFeel = time.elapsed();
+            auto uVisu = vf::project(_space = VhVisu, _expr = idv(uLocal));
+            auto e = exporter(_mesh = mesh);
+            e->add("u", uVisu);
+            e->add("rank", regionProcess(Pdh<0>(mesh)));
+            if(ioption("v") > 2) {
+                time.restart();
+                boost::shared_ptr<Backend<double>> ptr_global = Backend<double>::build("petsc", "", wComm);
+                auto D = ptr_global->newMatrix(VhVisu, VhVisu);
+                auto F = ptr_global->newVector(VhVisu);
+                auto vVisu = VhVisu->element();
+                auto u = VhVisu->element();
+                assemble(D, F, mesh, VhVisu, u, vVisu);
+                ptr_global->solve(_matrix = D, _solution = u, _rhs = F);
+                timeFeel += time.elapsed();
+                e->add("u_ref", u);
+                u -= uVisu;
+                double error = u.l2Norm() / F->l2Norm();
+                if(bComm.rank() == 0)
+                    std::cout << std::scientific << " --- relative error with respect to solution from PETSc = " << error << " (computed in " << timeFeel << ")" << std::endl;
+            }
+            e->save();
+            toc("exporter");
+        }
         double* allTimers = new double[timers.size() * bComm.size()];
         MPI_Gather(timers.data(), timers.size(), MPI_DOUBLE, allTimers, timers.size(), MPI_DOUBLE, 0, bComm);
         if(bComm.rank() == 0) {
