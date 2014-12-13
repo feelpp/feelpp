@@ -166,12 +166,13 @@ Geneopp<Dim, Order, Type>::run()
 {
     static_assert(Dim == 2 || Dim == 3, "Wrong dimension");
 #if defined(FETI)
-    HpFeti<FetiPrcdtnr::DIRICHLET, double, 'S'> K;
+    typedef HpFeti<FetiPrcdtnr::DIRICHLET, double, 'S'> prec_type;
     constexpr unsigned short nu = 0;
 #elif defined(BDD)
-    HpBdd<double, 'S'> K;
+    typedef HpBdd<double, 'S'> prec_type;
     unsigned short nu = ioption("nu");
 #endif
+    prec_type* K = new prec_type;
     tic();
     int p = ioption("p");
     int topology = ioption("topology");
@@ -325,21 +326,21 @@ Geneopp<Dim, Order, Type>::run()
             std::copy(array, array + nnz, c);
             std::copy(ia, ia + n + 1, ic);
             std::copy(ja, ja + nnz, jc);
-            HPDDM::MatrixCSR<double>* pt = new HPDDM::MatrixCSR<double>(n, n, nnz, c, ic, jc, false);
+            HPDDM::MatrixCSR<double>* pt = new HPDDM::MatrixCSR<double>(n, n, nnz, c, ic, jc, false, true);
 #endif
             MatSeqAIJRestoreArray(PetscA, &array);
             MatRestoreRowIJ(PetscA, 0, PETSC_FALSE, PETSC_FALSE, &n, &ia, &ja, &done);
 #ifdef FEELPP_HAS_HPDDM
-            K.Subdomain::initialize(pt, mesh->faceNeighborSubdomains().cbegin(), mesh->faceNeighborSubdomains().cend(), map, &comm);
+            K->Subdomain::initialize(pt, mesh->faceNeighborSubdomains().cbegin(), mesh->faceNeighborSubdomains().cend(), map, &comm);
             if(nu == 0) {
                 if(nelements(markedfaces(meshLocal, "Dirichlet")) == 0) {
                     unsigned short nb;
                     generateRBM(nb, ev, meshLocal, VhLocal);
-                    K.setVectors(ev);
-                    K.super::super::initialize(nb);
+                    K->setVectors(ev);
+                    K->super::super::initialize(nb);
                 }
                 else
-                    K.super::super::initialize(0);
+                    K->super::super::initialize(0);
             }
             b = new double[VhLocal->nDof()];
             VecGetArray(PetscF, &array);
@@ -352,22 +353,22 @@ Geneopp<Dim, Order, Type>::run()
 #ifdef FEELPP_HAS_HPDDM
         bComm.barrier();
         time.restart();
-        K.renumber(interface, b);
+        K->renumber(interface, b);
         timers[4] = time.elapsed();
         if(nu != 0) {
             bComm.barrier();
             time.restart();
-            K.computeSchurComplement();
+            K->computeSchurComplement();
             timers[6] = time.elapsed();
             bComm.barrier();
             time.restart();
-            K.solveGEVP<'S'>(nu);
+            K->solveGEVP<'S'>(nu);
             timers[7] = time.elapsed();
-            K.super::super::initialize(nu);
+            K->super::super::initialize(nu);
         }
-        K.callNumfactPreconditioner();
+        K->callNumfactPreconditioner();
         std::string scaling = soption("scaling");
-        K.buildScaling(scaling[0]);
+        K->buildScaling(scaling[0]);
     }
     std::vector<unsigned short> parm(5);
     parm[HPDDM::Parameter::P]            = p;
@@ -375,35 +376,36 @@ Geneopp<Dim, Order, Type>::run()
     parm[HPDDM::Parameter::DISTRIBUTION] = HPDDM::DMatrix::NON_DISTRIBUTED;
     parm[HPDDM::Parameter::STRATEGY]     = ioption("strategy");
     if(nu == 0)
-        parm[HPDDM::Parameter::NU]       = excluded ? 0 : K.getLocal();
+        parm[HPDDM::Parameter::NU]       = excluded ? 0 : K->getLocal();
     else
         parm[HPDDM::Parameter::NU]       = nu;
     unsigned short iter = ioption("it");
     double eps = doption("eps");
     if(excluded) {
-        K.Subdomain::initialize(&comm);
-        K.buildTwo<2>(Environment::worldComm(), parm);
-        HPDDM::IterativeMethod::PCG<true>(K, static_cast<double*>(nullptr), static_cast<double*>(nullptr), iter, eps, Environment::worldComm(), Environment::isMasterRank());
+        K->Subdomain::initialize(&comm);
+        K->buildTwo<2>(Environment::worldComm(), parm);
+        HPDDM::IterativeMethod::PCG<true>(*K, static_cast<double*>(nullptr), static_cast<double*>(nullptr), iter, eps, Environment::worldComm(), Environment::isMasterRank());
+        delete K;
     }
     else {
         if(exclude)
-            K.buildTwo<1>(Environment::worldComm(), parm);
+            K->buildTwo<1>(Environment::worldComm(), parm);
         else
-            K.buildTwo<0>(Environment::worldComm(), parm);
+            K->buildTwo<0>(Environment::worldComm(), parm);
         bComm.barrier();
         time.restart();
-        K.callNumfact();
+        K->callNumfact();
         timers[5] = time.elapsed();
         std::fill(uLocal.begin(), uLocal.end(), 0.0);
-        HPDDM::IterativeMethod::PCG<false>(K, &(uLocal[0]), b, iter, eps, Environment::worldComm(), Environment::isMasterRank());
+        HPDDM::IterativeMethod::PCG<false>(*K, &(uLocal[0]), b, iter, eps, Environment::worldComm(), Environment::isMasterRank());
 
         double* storage = new double[2];
-        K.computeError(&(uLocal[0]), b, storage);
+        K->computeError(&(uLocal[0]), b, storage);
         delete [] b;
 
-        K.originalNumbering(interface, &(uLocal[0]));
+        K->originalNumbering(interface, &(uLocal[0]));
 
-        double stats[3] = { K.getMult() / 2.0, mesh->faceNeighborSubdomains().size() / static_cast<double>(bComm.size()), static_cast<double>(K.getAllDof()) };
+        double stats[3] = { K->getMult() / 2.0, mesh->faceNeighborSubdomains().size() / static_cast<double>(bComm.size()), static_cast<double>(K->getAllDof()) };
         if(bComm.rank() == 0) {
             std::streamsize ss = std::cout.precision();
             std::cout << std::scientific << " --- error = " << storage[1] << " / " << storage[0] << std::endl;
@@ -418,6 +420,7 @@ Geneopp<Dim, Order, Type>::run()
 #else
         uLocal = vf::project(VhLocal, elements(meshLocal), Px() + Py());
 #endif
+        delete K;
         if(boption("export")) {
             tic();
             time.restart();

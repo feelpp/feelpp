@@ -556,8 +556,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
 
     auto x = M_rhs->clone();
     CHECK( values.size() == dofs.size() ) << "Invalid dofs/values size: " << dofs.size() << "/" << values.size();
-    if(!dofs.empty())
-        x->setVector( dofs.data(), dofs.size(), values.data() );
+    x->setVector( dofs.data(), dofs.size(), values.data() );
     x->close();
     __form.zeroRows( dofs, *x, *M_rhs, M_on_strategy );
     x.reset();
