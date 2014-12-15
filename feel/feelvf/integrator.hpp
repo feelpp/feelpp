@@ -5051,7 +5051,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         for(int i = 0; i < nbThreads; i++)
         {
             std::cout << Environment::worldComm().rank() << "|" << i << " elapsed=" << hce[i]->elapsed() << std::endl;
-            //hce[i]->printPerfInfo();
+            hce[i]->printPerfInfo();
         }
 
         // Free memory
@@ -5218,6 +5218,10 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         perf_mng.start("comp") ;
 #endif
 
+        /* Save the previous count of openmp threads */
+        /* in case the use set OMP_NUM_THREADS */
+        /* and we don't want to influence the next omp loop */
+        int prevThreadCount = omp_get_num_threads();
         omp_set_num_threads(nbThreads);
 
         value_type * out = new value_type[nbThreads];
@@ -5245,14 +5249,30 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
             std::cout << Environment::worldComm().rank() << "|" << id << " Creation:" << local_perf_mng.getValueInSeconds("Creation") << std::endl;
 #endif
 
+#if defined(FEELPP_HAS_HARTS)
+        struct timespec ts1;
+        struct timespec ts2;
+        clock_gettime(CLOCK_MONOTONIC_RAW, &ts1);
+#endif
+
             t->computeCPUOMP(id, &expr, &im, &elt_it, &(_v[id]));
             out[id] = t->result();
 
+#if defined(FEELPP_HAS_HARTS)
+        clock_gettime(CLOCK_MONOTONIC_RAW, &ts2);
+        double t1 = (double)(ts1.tv_sec) + (double)(ts1.tv_nsec) / (1000000000.0); 
+        double t2 = (double)(ts2.tv_sec) + (double)(ts2.tv_nsec) / (1000000000.0); 
+        std::cout << Environment::worldComm().globalRank() << "|" << id << " elapsed (MONOTONIC_RAW)=" <<  (t2 - t1) << std::endl;
+#endif
+
             std::cout << Environment::worldComm().rank() << "|" << id << " elapsed=" << t->elapsed() << std::endl;
-            //t->printPerfInfo();
+            t->printPerfInfo();
 
             delete t;
         }
+
+        /* restore previous openmp thread count */
+        omp_set_num_threads(prevThreadCount);
 
 #if defined(FEELPP_HAS_HARTS)
         perf_mng.stop("comp") ;

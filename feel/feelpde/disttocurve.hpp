@@ -40,7 +40,7 @@ This class provides an algorithm to make a distance function from a curve repres
 
 #include <boost/regex.hpp>
 #include <boost/lexical_cast.hpp>
-
+#include <random>
 
 //#define DISTANCE_FROM_UNORDERED_POINTS 1
 /*
