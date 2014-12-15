@@ -427,7 +427,9 @@ public:
                             eim_sc->setRestart(false); //do not restart since co-build is not finished
 
                             if( boption(_name="eim.use-rb-in-mu-selection") )
+                            {
                                 eim_sc->setRB( crb ); //update rb model member to be used in eim offline
+                            }
 
                             eim_sc->offline();
                             do_offline_eim = do_offline_eim || eim_sc->getOfflineStep();
@@ -437,7 +439,9 @@ public:
                             eim_sd->setRestart(false); //do not restart since co-build is not finished
 
                             if( boption(_name="eim.use-rb-in-mu-selection") )
+                            {
                                 eim_sd->setRB( crb ); //update rb model member to be used in eim offline
+                            }
 
                             eim_sd->offline();
                             do_offline_eim = do_offline_eim || eim_sd->getOfflineStep();

@@ -5146,7 +5146,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
         }
         old_output = L.dot( uN[time_index] );
 #endif
-
+        //std::cout << "mu = " << mu << std::endl;
         do
         {
             if( is_linear )
@@ -5189,21 +5189,12 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
                         bool only_terms_time_dependent=false;
                         boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( this->expansion( uN[time_index], N , M_model->rBFunctionSpace()->primalRB() ),
                                                                                           mu , time, only_terms_time_dependent );
-                        // for ( size_type q = 0; q < Qf; ++q )
-                        // {
-                        //     for(int m=0; m<mMaxF[q]; m++)
-                        //     {
-                        //         std::cout << "betaFqm[0][" << q << "][" << m << "]= " << betaFqm[0][q][m] << std::endl;
-                        //     }
-                        // }
 
                         A.setZero( N,N );
                         for ( size_type q = 0; q < Qa; ++q )
                         {
                             for(int m=0; m<mMaxA[q]; m++)
                             {
-                                //std::cout << "betaAqm[" << q << "][" << m << "]= " << betaAqm[q][m] << std::endl;
-                                //std::cout << "Aqm_pr[" << q << "][" << m << "]= " << M_Aqm_pr[q][m].block( 0,0,N,N ) << std::endl;
                                 A += betaAqm[q][m]*M_Aqm_pr[q][m].block( 0,0,N,N );
                             }
                         }
@@ -5251,8 +5242,6 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
             {
                 for(int m=0; m<mMaxF[q]; m++)
                 {
-                    // std::cout << "betaFqm[0][" << q << "][" << m << "]= " << betaFqm[0][q][m] << std::endl;
-                    // std::cout << "M_Fqm_pr[" << q << "][" << m << "] = " << M_Fqm_pr[q][m].head( N ) << std::endl;
                     F += betaFqm[0][q][m]*M_Fqm_pr[q][m].head( N );
                 }
             }
@@ -5369,8 +5358,6 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
             {
                 for(int m=0; m < mMaxL[q]; m++)
                 {
-                    // std::cout << "betaFqm[" << M_output_index << "][" << q << "][" << m << "]= " << betaFqm[M_output_index][q][m] << std::endl;
-                    // std::cout << "M_Lqm_pr[" << q << "][" << m << "]= " << M_Lqm_pr[q][m].head( N ) << std::endl;
                     L += betaFqm[M_output_index][q][m]*M_Lqm_pr[q][m].head( N );
                 }
             }
@@ -5385,6 +5372,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
             //output_vector.push_back( output );
             output_vector[time_index] = output;
             DVLOG(2) << "iteration " << fi << " increment error: " << increment << "\n";
+            std::cout << "iteration " << fi << " increment error: " << increment << ", output = " << output << "\n";
             fi++;
 
             if( fixedpoint_verbose  && this->worldComm().globalRank()==this->worldComm().masterRank() )
