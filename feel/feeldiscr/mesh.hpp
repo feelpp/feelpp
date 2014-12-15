@@ -1740,18 +1740,8 @@ Mesh<Shape, T, Tag>::createSubmesh( self_type& new_mesh,
     }
     // How the nodes on this mesh will be renumbered to nodes
     // on the new_mesh.
-    std::vector<size_type> new_node_numbers ( this->numPoints() );
-    std::vector<size_type> new_vertex ( this->numPoints() );
-
-    std::fill ( new_node_numbers.begin(),
-                new_node_numbers.end(),
-                invalid_size_type_value );
-
-    std::fill ( new_vertex.begin(),
-                new_vertex.end(),
-                0 );
-
-
+    std::vector<size_type> new_node_numbers ( this->numPoints(), invalid_size_type_value );
+    std::vector<size_type> new_vertex ( this->numPoints(), 0 );
 
     // the number of nodes on the new mesh, will be incremented
     unsigned int n_new_nodes = 0;

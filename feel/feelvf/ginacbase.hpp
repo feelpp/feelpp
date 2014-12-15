@@ -134,7 +134,7 @@ public:
     void setParameterValues( std::map<std::string,value_type> const& mp )
         {
             CHECK( M_params.size() == M_syms.size() ) << "Invalid number of parameters " << M_params.size() << " >= symbol size : " << M_syms.size();
-            for( auto p : mp )
+            for( auto const& p : mp )
             {
                 auto it = std::find_if( M_syms.begin(), M_syms.end(),
                                         [&p]( GiNaC::symbol const& s ) { return s.get_name() == p.first; } );
