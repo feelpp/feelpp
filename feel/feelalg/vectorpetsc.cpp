@@ -131,6 +131,9 @@ VectorPetsc<T>::setVector ( int* i, int n, value_type* v )
 {
     //FEELPP_ASSERT(n<=size())( n )( size() ).error( "invalid local index array size" );
 
+#if PETSC_VERSION_LESS_THAN(3,5,3)
+    if ( n == 0 ) return;
+#endif
     int ierr=0;
     ierr = VecSetValues ( M_vec, n, i, v, INSERT_VALUES );
     CHKERRABORT( this->comm(),ierr );
@@ -156,6 +159,9 @@ VectorPetsc<T>::addVector ( int* i, int n, value_type* v )
 {
     //FEELPP_ASSERT(n<=size())( n )( size() ).error( "invalid local index array size" );
 
+#if PETSC_VERSION_LESS_THAN(3,5,3)
+    if ( n == 0 ) return;
+#endif
     int ierr=0;
     ierr = VecSetValues ( M_vec, n, i, v, ADD_VALUES );
     CHKERRABORT( this->comm(),ierr );
@@ -804,7 +810,9 @@ VectorPetscMPI<T>::setVector ( int* i, int n, value_type* v )
     DCHECK( this->isInitialized() ) << "vector not initialized";
     DCHECK(n<=this->size()) << "invalid local index array size: " << n << " > " << this->size();
 
-    if ( n == 0 || i == 0 || v == 0 ) return;
+#if PETSC_VERSION_LESS_THAN(3,5,3)
+    if ( n == 0 ) return;
+#endif
     int ierr=0;
     ierr=VecSetValuesLocal( this->vec(), n, i, v, INSERT_VALUES );
     CHKERRABORT( this->comm(),ierr );
@@ -836,7 +844,9 @@ VectorPetscMPI<T>::addVector ( int* i, int n, value_type* v )
     DCHECK( this->isInitialized() ) << "vector not initialized";
     DCHECK(n<=this->size()) << "invalid local index array size: " << n << " > " << this->size();
 
-    if ( n == 0 || i == 0 || v == 0 ) return;
+#if PETSC_VERSION_LESS_THAN(3,5,3)
+    if ( n == 0 ) return;
+#endif
     int ierr=0;
     ierr=VecSetValuesLocal( this->vec(), n, i, v, ADD_VALUES );
     CHKERRABORT( this->comm(),ierr );

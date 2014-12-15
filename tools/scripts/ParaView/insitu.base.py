@@ -69,6 +69,16 @@ def DoCoProcessing(datadescription):
     "Callback to do co-processing for current timestep"
     global coprocessor
 
+    hostname = "localhost"
+    port = 22222
+
+    userdata = datadescription.GetUserData()
+    if(userdata != None):
+        if( userdata.HasArray("hostname") ):
+            hostname = userdata.GetAbstractArray("hostname").GetValue(0)
+        if( userdata.HasArray("port") ):
+            port = int(userdata.GetArray("port").GetTuple1(0))
+
     # Update the coprocessor by providing it the newly generated simulation data.
     # If the pipeline hasn't been setup yet, this will setup the pipeline.
     coprocessor.UpdateProducers(datadescription)
@@ -77,4 +87,4 @@ def DoCoProcessing(datadescription):
     #coprocessor.WriteData(datadescription);
 
     # Live Visualization, if enabled.
-    coprocessor.DoLiveVisualization(datadescription, "localhost", 22222)
+    coprocessor.DoLiveVisualization(datadescription, hostname, port)
