@@ -186,9 +186,7 @@ public:
         M_offline_step( false ),
         M_tol( 1e-8 ),
         M_index_max(),
-        M_model( 0 ),
-        //M_crb(),
-        M_crb_built(false)
+        M_model( 0 )
         {}
     EIM( po::variables_map const& vm, model_type* model, sampling_ptrtype sampling, double __tol = 1e-8, bool offline_done=false )
         :
@@ -203,9 +201,7 @@ public:
         M_offline_step( false ),
         M_tol( __tol ),
         M_index_max(),
-        M_model( model ),
-        //M_crb(),
-        M_crb_built(false)
+        M_model( model )
         {
             int user_max = ioption(_name="eim.dimension-max");
             int max_built = M_model->maxQ();
@@ -320,31 +316,9 @@ public:
             return M_restart;
         }
 
-    //void setRB( crb_ptrtype crb )
     void setRB( boost::any crb )
         {
-            try
-            {
-                //this->M_crb = boost::any_cast<crb_ptrtype>(crb);
-            }
-            catch (...)
-            {
-                std::cout << "setRB fails (bad type)" << std::endl;
-            }
-            M_crb_built=true;
-        }
-    crb_ptrtype RB()
-        {
-            return M_crb;
-        }
-    const bool RBbuilt() const
-        {
-            const bool mybool_t = true;
-            const bool mybool_f = false;
-            if(M_crb_built)
-                return mybool_t;
-            else
-                return mybool_f;
+            M_model->setRB( crb );
         }
 
     /** @name  Mutators
@@ -388,9 +362,6 @@ public:
     element_type residual ( size_type M ) const;
 
     parameter_residual_type computeBestFit( sampling_ptrtype trainset, int __M);
-    model_solution_type computeRbExpansion( parameter_type const& mu );
-    model_solution_type computeRbExpansion( parameter_type const& mu, boost::mpl::bool_<true>);
-    model_solution_type computeRbExpansion( parameter_type const& mu, boost::mpl::bool_<false> );
 
     element_type operator()( parameter_type const& mu , int N) const { return expansion( M_model->q(), M_model->beta( mu, N ) , N); }
     element_type operator()( parameter_type const& mu, model_solution_type const& T , int N ) const { return expansion( M_model->q(), M_model->beta( mu, T, N ) , N ); }
@@ -422,8 +393,6 @@ protected:
     std::vector<size_type> M_index_max;
 
     model_type* M_model;
-    crb_ptrtype M_crb;
-    bool M_crb_built;
 
     bool M_restart;
 
@@ -540,6 +509,7 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M)
     maxerr.setZero();
     int index = 0;
     DVLOG(2) << "Compute best fit M=" << __M << "\n";
+    std::cout << "Compute best fit M=" << __M << "\n";
     vector_type rhs( __M );
 
     model_solution_type solution;
@@ -552,7 +522,10 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M)
         //auto proj_g = M_model->operator()( mu );
 #if 1
         if( boption(_name="eim.use-rb-in-mu-selection") )
-            solution = this->computeRbExpansion( mu );
+        {
+            solution = M_model->computeRbExpansion( mu );
+            //std::cout << "solution = " << solution << std::endl;
+        }
         else
             solution = M_model->solve( mu );
 #else
@@ -577,39 +550,6 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M)
     auto err = maxerr.array().abs().maxCoeff( &index );
     LOG(INFO)<< "err=" << err << " reached at index " << index << " and mu=" << trainset->at(index) << "\n";
     return boost::make_tuple( err, trainset->at(index) );
-}
-
-
-template<typename ModelType>
-typename EIM<ModelType>::model_solution_type
-EIM<ModelType>::computeRbExpansion( parameter_type const& mu )
-{
-    //return computeRbExpansion( mu, boost::mpl::bool_< this->RBbuilt() >() );
-    return computeRbExpansion( mu, boost::mpl::bool_< false >() );
-}
-template<typename ModelType>
-typename EIM<ModelType>::model_solution_type
-EIM<ModelType>::computeRbExpansion( parameter_type const& mu, boost::mpl::bool_<false>)
-{
-    return M_model->solve( mu );
-}
-template<typename ModelType>
-typename EIM<ModelType>::model_solution_type
-EIM<ModelType>::computeRbExpansion( parameter_type const& mu, boost::mpl::bool_<true>)
-//EIM<ModelType>::computeRbExpansion( parameter_type const& mu )
-{
-    int N = this->M_crb->dimension();
-    auto WN = M_crb->wn(); //reduced basis approximation space
-
-    vectorN_type time;
-    auto o = M_crb->run( mu, time, option(_name="crb.online-tolerance").template as<double>() , N);
-    auto solutions=o.template get<2>();
-    auto uN = solutions.template get<0>();//vector of solutions ( one solution at each time step )
-
-    int size=uN.size();
-    auto u_crb = M_crb->expansion( uN[size-1] , N , WN );
-
-    return u_crb;
 }
 
 template<typename ModelType>
@@ -1177,7 +1117,6 @@ public:
     typedef boost::shared_ptr<matrix_type> matrix_ptrtype;
     typedef boost::tuple<double,parameter_type> parameter_residual_type;
 
-
     EIMFunctionBase( po::variables_map const& vm,
                      functionspace_ptrtype fspace,
                      parameterspace_ptrtype pspace,
@@ -1312,6 +1251,7 @@ public:
 
     virtual vector_type evaluateExpressionAtInterpolationPoints(model_solution_type const &solution, parameter_type const& mu, int M)=0;
     virtual vector_type evaluateElementAtInterpolationPoints(element_type const & element, int M)=0;
+    virtual model_solution_type computeRbExpansion( parameter_type const& mu )=0;
     po::variables_map M_vm;
     functionspace_ptrtype M_fspace;
     parameterspace_ptrtype M_pspace;
@@ -1377,7 +1317,7 @@ public:
     typedef boost::tuple<double,parameter_type> parameter_residual_type;
     typedef typename super::node_type node_type;
 
-    //typedef Eigen::VectorXd vectorN_type;
+    typedef Eigen::VectorXd vectorN_type;
 
     EIMFunction( po::variables_map const& vm,
                  model_ptrtype model,
@@ -1395,6 +1335,7 @@ public:
         M_expr( expr ),
         M_u( &u ),
         M_mu( mu ),
+        M_crb_built( false ),
         M_mu_sampling( new sampling_type ( model->parameterSpace() , 1 , sampling ) ),
         M_q_vector(),
         M_z_vector(),
@@ -1972,6 +1913,37 @@ public:
 
     }//fillInterpolationMatrix
 
+    model_solution_type computeRbExpansion( parameter_type const& mu )
+    {
+        if( this->RBbuilt() )
+            return computeRbExpansion( mu, boost::mpl::bool_< true >() );
+        else
+            return computeRbExpansion( mu, boost::mpl::bool_< false >() );
+        //return computeRbExpansion( mu, boost::mpl::bool_< true >() );
+    }
+
+    model_solution_type computeRbExpansion( parameter_type const& mu, boost::mpl::bool_<false>)
+    {
+        //std::cout << "Warning : RB approximation cannot be used to select best EIM parameter" << std::endl;
+        return M_model->solve( mu );
+    }
+
+    model_solution_type computeRbExpansion( parameter_type const& mu, boost::mpl::bool_<true>)
+    {
+        int N = this->M_crb->dimension();
+        std::cout << "computeRbExpansion : N=" << N << std::endl;
+        auto WN = M_crb->wn(); //reduced basis approximation space
+
+        vectorN_type time;
+        auto o = M_crb->run( mu, time, option(_name="crb.online-tolerance").template as<double>() , N);
+        auto solutions=o.template get<2>();
+        auto uN = solutions.template get<0>();//vector of solutions ( one solution at each time step )
+
+        int size=uN.size();
+        auto u_crb = M_crb->expansion( uN[size-1] , N , WN );
+
+        return u_crb;
+    }
 
     //Let g the expression that we want to have an eim expasion
     //here is computed its l2 norm : || g ||_L2
@@ -2134,7 +2106,21 @@ public:
     bool getOfflineStep(){return M_eim->getOfflineStep();}
     void offline(){M_eim->offline();}
     void setRestart(bool b){ M_eim->setRestart(b);}
-    void setRB(boost::any b){ M_eim->setRB(b);}
+    //void setRB(boost::any b){ M_eim->setRB(b);}
+    void setRB(boost::any rb){
+        std::cout << "setRB, M_crb_built = " << M_crb_built << std::endl;
+        try
+        {
+            M_crb = boost::any_cast<crb_ptrtype>(rb);
+        }
+        catch (...)
+        {
+            std::cout << "setRB fails (bad type)" << std::endl;
+        }
+        M_crb_built=true;
+    }
+
+    bool RBbuilt(){return M_crb_built;}
 
     void setTrainSet( sampling_ptrtype tset ) { M_eim->setTrainSet( tset ); }
     element_type interpolant( parameter_type const& mu )
@@ -2419,7 +2405,7 @@ private:
     model_solution_type * M_u;
     parameter_type& M_mu;
     crb_ptrtype M_crb;
-    //const bool M_crb_built;
+    bool M_crb_built;
     sampling_ptrtype M_mu_sampling ;
     std::vector< element_type > M_q_vector ;
     std::vector< element_type > M_g_vector ;
