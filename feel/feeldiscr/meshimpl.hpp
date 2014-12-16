@@ -281,8 +281,8 @@ Mesh<Shape, T, Tag>::updateForUse()
         boost::tie( iv, en ) = this->elementsRange();
         auto pc = M_gm->preCompute( M_gm, M_gm->referenceConvex().vertices() );
         auto pcf =  M_gm->preComputeOnFaces( M_gm, M_gm->referenceConvex().barycenterFaces() );
-        M_meas = 0;
-        M_measbdy = 0;
+        M_local_meas = 0;
+        M_local_measbdy = 0;
 
         for ( ; iv != en; ++iv )
         {
@@ -304,21 +304,17 @@ Mesh<Shape, T, Tag>::updateForUse()
 
             // only compute meas for active element (no ghost)
             if ( !iv->isGhostCell() )
-                M_meas += iv->measure();
+                M_local_meas += iv->measure();
 
             auto _faces = iv->faces();
 
             if ( nDim == 1 )
-                M_measbdy = 0;
+                M_local_measbdy = 0;
             else
                 for ( ; _faces.first != _faces.second; ++_faces.first )
                     if ( ( *_faces.first ) && ( *_faces.first )->isOnBoundary() )
-                        M_measbdy += ( *_faces.first )->measure();
+                        M_local_measbdy += ( *_faces.first )->measure();
         }
-        M_local_meas = M_meas;
-        M_meas = 0;
-        M_local_measbdy = M_measbdy;
-        M_measbdy = 0;
 #if BOOST_VERSION >= 105500
         std::vector<value_type> gmeas{ M_local_meas, M_local_measbdy };
         mpi::all_reduce(this->worldComm(), mpi::inplace(gmeas.data()), 2, std::plus<value_type>());
@@ -339,7 +335,7 @@ Mesh<Shape, T, Tag>::updateForUse()
             for ( ; iv != en; ++iv )
             {
                 value_type meas = 0;
-                for( auto _elt: iv->pointElementNeighborIds() )
+                for( auto const& _elt: iv->pointElementNeighborIds() )
                 {
                     // warning : only compute meas for active element (no ghost)
                     if ( this->hasElement( _elt ) )
