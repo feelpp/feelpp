@@ -652,6 +652,24 @@ public:
     /**
      * This function creates a matrix called "submatrix" which is defined
      * by the row and column indices given in the "rows" and "cols" entries.
+     * useSameDataMap : (opimisation) put at true if dataMapCol == dataMapRow and rows == cols for each proc
+     * checkAndFixRange : add missing dof entries in // ( typically a ghost dof present but not active dof associated )
+     */
+    virtual
+    boost::shared_ptr<MatrixSparse<T> >
+    createSubMatrix( std::vector<size_type> const& rows,
+                     std::vector<size_type> const& cols,
+                     bool useSameDataMap=false,
+                     bool checkAndFixRange=true ) const
+    {
+        CHECK( false ) << "invalid call : Not Implemented in base class";
+        boost::shared_ptr<MatrixSparse<T> > res;
+        return res;
+    }
+
+    /**
+     * This function creates a matrix called "submatrix" which is defined
+     * by the row and column indices given in the "rows" and "cols" entries.
      * Currently this operation is only defined for the PetscMatrix type.
      */
     virtual void createSubmatrix( MatrixSparse<T>& submatrix,
