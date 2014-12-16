@@ -961,16 +961,28 @@ MatrixPetsc<T>::printMatlab ( const std::string name ) const
 
 template <typename T>
 boost::shared_ptr<MatrixSparse<T> >
-MatrixPetsc<T>::createSubMatrix( std::vector<size_type> const& rows,
-                                 std::vector<size_type> const& cols,
+MatrixPetsc<T>::createSubMatrix( std::vector<size_type> const& _rows,
+                                 std::vector<size_type> const& _cols,
                                  bool useSameDataMap, bool checkAndFixRange ) const
 {
+    if ( useSameDataMap )
+        CHECK( _rows.size() == _cols.size() ) << "if useSameDataMap we must have equality of index set ( _rows == _cols )";
+
+    // update maybe input index set
+    std::vector<size_type> rows = ( checkAndFixRange )?
+        this->mapRowPtr()->buildIndexSetWithParallelMissingDof( _rows ) : _rows;
+    std::vector<size_type> cols = ( checkAndFixRange && !useSameDataMap )?
+        this->mapRowPtr()->buildIndexSetWithParallelMissingDof( _cols ) : ( useSameDataMap )? rows : _cols;
+
+    // build subdatamap row and col
+    datamap_ptrtype subMapRow = this->mapRowPtr()->createSubDataMap( rows, false );
+    datamap_ptrtype subMapCol = ( useSameDataMap )? subMapRow : this->mapColPtr()->createSubDataMap( cols, false );
+
+    // build submatrix petsc
     Mat subMatPetsc;
     this->getSubMatrixPetsc( rows,cols,subMatPetsc );
 
-    datamap_ptrtype subMapRow = this->mapRowPtr()->createSubDataMap( rows, checkAndFixRange );
-    datamap_ptrtype subMapCol = ( useSameDataMap )? subMapRow : this->mapColPtr()->createSubDataMap( cols, checkAndFixRange );
-
+    // build matrixsparse object
     boost::shared_ptr<MatrixSparse<T> > subMat;
     if ( this->comm().size()>1 )
         subMat.reset( new MatrixPetscMPI<T>( subMatPetsc,subMapRow,subMapCol,true,true ) );
