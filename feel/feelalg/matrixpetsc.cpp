@@ -151,10 +151,10 @@ MatrixPetsc<T>::MatrixPetsc( Mat m )
 
 template <typename T>
 inline
-MatrixPetsc<T>::MatrixPetsc( Mat m, datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol )
+MatrixPetsc<T>::MatrixPetsc( Mat m, datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, bool destroyMatOnExit )
     :
     super( dmRow,dmCol,dmRow->worldComm() ),
-    M_destroy_mat_on_exit( false )
+    M_destroy_mat_on_exit( destroyMatOnExit/*false*/ )
 {
     this->M_mat = m;
 #if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR > 0)
@@ -958,6 +958,106 @@ MatrixPetsc<T>::printMatlab ( const std::string name ) const
     CHKERRABORT( this->comm(),ierr );
 }
 
+
+template <typename T>
+boost::shared_ptr<MatrixSparse<T> >
+MatrixPetsc<T>::createSubMatrix( std::vector<size_type> const& rows,
+                                 std::vector<size_type> const& cols,
+                                 bool useSameDataMap, bool checkAndFixRange ) const
+{
+    Mat subMatPetsc;
+    this->getSubMatrixPetsc( rows,cols,subMatPetsc );
+
+    datamap_ptrtype subMapRow = this->mapRowPtr()->createSubDataMap( rows, checkAndFixRange );
+    datamap_ptrtype subMapCol = ( useSameDataMap )? subMapRow : this->mapColPtr()->createSubDataMap( cols, checkAndFixRange );
+
+    boost::shared_ptr<MatrixSparse<T> > subMat;
+    if ( this->comm().size()>1 )
+        subMat.reset( new MatrixPetscMPI<T>( subMatPetsc,subMapRow,subMapCol,true,true ) );
+    else
+        subMat.reset( new MatrixPetsc<T>( subMatPetsc,subMapRow,subMapCol,true ) );
+    return subMat;
+}
+
+
+template <typename T>
+void
+MatrixPetsc<T>::getSubMatrixPetsc( std::vector<size_type> const& rows,
+                                   std::vector<size_type> const& cols,
+                                   Mat &submat ) const
+{
+    int ierr=0;
+    IS isrow;
+    IS iscol;
+    PetscInt *rowMap;
+    PetscInt *colMap;
+
+    std::set<size_type> rowMapOrdering, colMapOrdering;
+    if ( this->comm().size()>1 )
+    {
+        // convert global process ids into global cluster ids, remove ghost dofs
+        // and build ordering row and col map
+        for (int i=0; i<rows.size(); i++)
+        {
+            if ( !this->mapRow().dofGlobalProcessIsGhost( rows[i] ) )
+                rowMapOrdering.insert( this->mapRow().mapGlobalProcessToGlobalCluster( rows[i] ) );
+        }
+        for (int i=0; i<cols.size(); i++)
+        {
+            if ( !this->mapCol().dofGlobalProcessIsGhost( cols[i] ) )
+                colMapOrdering.insert( this->mapCol().mapGlobalProcessToGlobalCluster( cols[i] ) );
+        }
+    }
+    else
+    {
+        // build ordering row and col map
+        rowMapOrdering.insert( rows.begin(), rows.end() );
+        colMapOrdering.insert( cols.begin(), cols.end() );
+    }
+
+    // copying into PetscInt vector
+    int nrow = rowMapOrdering.size();
+    int ncol = colMapOrdering.size();
+    rowMap = new PetscInt[nrow];
+    colMap = new PetscInt[ncol];
+    size_type curId=0;
+    for ( auto& rowId : rowMapOrdering )
+    {
+        rowMap[curId] = rowId;
+        ++curId;
+    }
+    curId=0;
+    for ( auto& colId : colMapOrdering )
+    {
+        colMap[curId] = colId;
+        ++curId;
+    }
+
+
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
+    ierr = ISCreateGeneral(this->comm(),nrow,rowMap,PETSC_COPY_VALUES,&isrow);
+    CHKERRABORT( this->comm(),ierr );
+    ierr = ISCreateGeneral(this->comm(),ncol,colMap,PETSC_COPY_VALUES,&iscol);
+    CHKERRABORT( this->comm(),ierr );
+#else
+    ierr = ISCreateGeneral(this->comm(),nrow,rowMap,&isrow);
+    CHKERRABORT( this->comm(),ierr );
+    ierr = ISCreateGeneral(this->comm(),ncol,colMap,&iscol);
+    CHKERRABORT( this->comm(),ierr );
+#endif
+    ierr = MatGetSubMatrix(this->mat(), isrow, iscol, MAT_INITIAL_MATRIX, &submat);
+    CHKERRABORT( this->comm(),ierr );
+
+    ierr = PETSc::ISDestroy( isrow );
+    CHKERRABORT( this->comm(),ierr );
+    ierr = PETSc::ISDestroy( iscol );
+    CHKERRABORT( this->comm(),ierr );
+
+    delete[] rowMap;
+    delete[] colMap;
+}
+
+// previous createSubmatrix
 template <typename T>
 void
 MatrixPetsc<T>::createSubmatrix( MatrixSparse<T>& submatrix,
@@ -1754,10 +1854,13 @@ MatrixPetscMPI<T>::MatrixPetscMPI( datamap_ptrtype const& dmRow, datamap_ptrtype
 
 template <typename T>
 inline
-MatrixPetscMPI<T>::MatrixPetscMPI( Mat m, datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol )
+MatrixPetscMPI<T>::MatrixPetscMPI( Mat m, datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol,bool initLocalToGlobalMapping, bool destroyMatOnExit )
     :
-    super( m, dmRow, dmCol )
-{}
+    super( m, dmRow, dmCol, destroyMatOnExit )
+{
+    if ( initLocalToGlobalMapping )
+        this->initLocalToGlobalMapping();
+}
 
 //----------------------------------------------------------------------------------------------------//
 
@@ -1858,7 +1961,53 @@ void MatrixPetscMPI<T>::init( const size_type m,
     CHKERRABORT( this->comm(),ierr );
 
     //----------------------------------------------------------------------------------//
-    // localToGlobalMapping
+    // localToGlobal mapping
+    this->initLocalToGlobalMapping();
+
+    //----------------------------------------------------------------------------------//
+    // options
+
+    ierr = MatSetFromOptions( this->mat() );
+    CHKERRABORT( this->comm(),ierr );
+
+#if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR > 0)
+    //MatSetOption(this->mat(),MAT_NEW_NONZERO_LOCATION_ERR,PETSC_TRUE);
+    MatSetOption( this->mat(),MAT_KEEP_NONZERO_PATTERN,PETSC_TRUE );
+#elif (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR == 0)
+    MatSetOption( this->mat(),MAT_KEEP_ZEROED_ROWS,PETSC_TRUE );
+#else
+    MatSetOption( this->mat(),MAT_KEEP_ZEROED_ROWS );
+#endif
+
+
+
+#if 0
+    // additional insertions will not be allowed if they generate
+    // a new nonzero
+    //ierr = MatSetOption (M_mat, MAT_NO_NEW_NONZERO_LOCATIONS);
+    //CHKERRABORT(this->comm(),ierr);
+
+    // generates an error for new matrix entry
+    ierr = MatSetOption ( this->mat(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE );
+    CHKERRABORT( this->comm(),ierr );
+#endif
+
+    //this->zero();
+    //this->zeroEntriesDiagonal();
+    //this->printMatlab("NULL");
+    //std::cout << "MatrixPetscMPI<T>::init with graph finish on proc"
+    //          << this->comm().globalRank() << "("<<this->comm().godRank() <<")" << std::endl;
+    //this->comm().globalComm().barrier();
+}
+
+
+//----------------------------------------------------------------------------------------------------//
+
+template <typename T>
+void
+MatrixPetscMPI<T>::initLocalToGlobalMapping()
+{
+    int ierr = 0;
     IS isRow;
     IS isCol;
     ISLocalToGlobalMapping isLocToGlobMapRow;
@@ -1933,45 +2082,7 @@ void MatrixPetscMPI<T>::init( const size_type m,
     delete[] idxRow;
     delete[] idxCol;
 
-    //----------------------------------------------------------------------------------//
-    // options
-
-    ierr = MatSetFromOptions( this->mat() );
-    CHKERRABORT( this->comm(),ierr );
-
-#if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR > 0)
-    //MatSetOption(this->mat(),MAT_NEW_NONZERO_LOCATION_ERR,PETSC_TRUE);
-    MatSetOption( this->mat(),MAT_KEEP_NONZERO_PATTERN,PETSC_TRUE );
-#elif (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR == 0)
-    MatSetOption( this->mat(),MAT_KEEP_ZEROED_ROWS,PETSC_TRUE );
-#else
-    MatSetOption( this->mat(),MAT_KEEP_ZEROED_ROWS );
-#endif
-
-
-
-#if 0
-    // additional insertions will not be allowed if they generate
-    // a new nonzero
-    //ierr = MatSetOption (M_mat, MAT_NO_NEW_NONZERO_LOCATIONS);
-    //CHKERRABORT(this->comm(),ierr);
-
-    // generates an error for new matrix entry
-    ierr = MatSetOption ( this->mat(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE );
-    CHKERRABORT( this->comm(),ierr );
-#endif
-
-    //this->zero();
-    //this->zeroEntriesDiagonal();
-    //this->printMatlab("NULL");
-    //std::cout << "MatrixPetscMPI<T>::init with graph finish on proc"
-    //          << this->comm().globalRank() << "("<<this->comm().godRank() <<")" << std::endl;
-    //this->comm().globalComm().barrier();
 }
-
-
-//----------------------------------------------------------------------------------------------------//
-
 
 
 template <typename T>
