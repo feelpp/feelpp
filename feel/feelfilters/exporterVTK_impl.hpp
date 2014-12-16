@@ -427,6 +427,21 @@ ExporterVTK<MeshType,N>::save() const
                     dataDescription->AddInput("input");
                     dataDescription->SetTimeData(__step->time(), __step->index() - TS_INITIAL_INDEX);
 
+                    vtkStdString sh = soption( _name="exporter.vtk.insitu.hostname");
+
+                    vtkSmartPointer<vtkStringArray> hname = vtkSmartPointer<vtkStringArray>::New();
+                        hname->SetName( "hostname" );
+                        hname->InsertNextValue(sh);
+                    vtkSmartPointer<vtkIntArray> port = vtkSmartPointer<vtkIntArray>::New();
+                        port->SetName( "port" );
+                        port->InsertNextValue( ioption( _name="exporter.vtk.insitu.port") );
+
+                    vtkSmartPointer<vtkFieldData> fdata = vtkSmartPointer<vtkFieldData>::New();
+                        fdata->AddArray(hname);
+                        fdata->AddArray(port);
+
+                    dataDescription->SetUserData(fdata);
+
                     if(inSituProcessor->RequestDataDescription(dataDescription.GetPointer()) != 0)
                     {
                         dataDescription->GetInputDescriptionByName("input")->SetGrid(mbds);
