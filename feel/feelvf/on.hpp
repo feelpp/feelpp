@@ -369,10 +369,10 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
     element_iterator __face_en = this->endElement();
 
     bool findAFace = false;
-    for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
+    for( auto& lit : M_elts )
     {
-        __face_it = lit->template get<1>();
-        __face_en = lit->template get<2>();
+        __face_it = lit.template get<1>();
+        __face_en = lit.template get<2>();
         if ( __face_it != __face_en )
         {
             findAFace=true;
@@ -383,10 +383,10 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
     {
         // get the first face properly connected
         bool findAFaceToInit=false;
-        for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
+        for( auto& lit : M_elts )
         {
-            __face_it = lit->template get<1>();
-            __face_en = lit->template get<2>();
+            __face_it = lit.template get<1>();
+            __face_en = lit.template get<2>();
             for( ; __face_it != __face_en; ++__face_it )
             {
                 if ( boost::unwrap_ref(*__face_it).isConnectedTo0() )
@@ -453,10 +453,10 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
         //const size_type nbFaceDof = __fe->boundaryFE()->points().size2();
 
         auto IhLoc = __fe->faceLocalInterpolant();
-        for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
+        for( auto& lit : M_elts )
         {
-        __face_it = lit->template get<1>();
-        __face_en = lit->template get<2>();
+        __face_it = lit.template get<1>();
+        __face_en = lit.template get<2>();
         for ( ;
               __face_it != __face_en;//this->endElement();
               ++__face_it )
@@ -504,7 +504,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
             __fe->faceInterpolate( expr, IhLoc );
 
             auto const& s = M_u.functionSpace()->dof()->localToGlobalSigns( theface.element(0).id() );
-            for( auto ldof : M_u.functionSpace()->dof()->faceLocalDof( theface.id() ) )
+            for( auto const& ldof : M_u.functionSpace()->dof()->faceLocalDof( theface.id() ) )
                 {
                     size_type thedof = M_u.start()+ ldof.second.index(); // global dof
                     int16_type dofIndexInElt = ldof.second.localDof(); // localdof index in element0
@@ -544,14 +544,14 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
                         }
                 }
         }// __face_it != __face_en
-        } // for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
+        } // for( auto& lit : M_elts )
     }// findAFace
 
     if ( __form.rowStartInMatrix()!=0)
     {
         auto const thedofshift = __form.rowStartInMatrix();
-        for (auto itd=dofs.begin(),end=dofs.end() ; itd!=end ; ++itd)
-            *itd+=thedofshift;
+        for (auto& itd : dofs)
+            itd+=thedofshift;
     }
 
     auto x = M_rhs->clone();
