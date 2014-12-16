@@ -338,6 +338,256 @@ DataMap::searchGlobalProcessDof( size_type gpdof ) const
     return boost::make_tuple( find,gDofProcess );
 }
 
+boost::shared_ptr<DataMap>
+DataMap::createSubDataMap( std::vector<size_type> const& _idExtract, bool _checkAndFixInputRange ) const
+{
+    rank_type curProcId = this->worldComm().localRank();
+
+    // convert input idExtract into std::set ( preserve ordering )
+    std::set<size_type> idExtract;
+    idExtract.insert( _idExtract.begin(), _idExtract.end() );
+
+    // init new dataMap pointer
+    boost::shared_ptr<DataMap> dataMapRes( new DataMap(this->worldComm()) );
+
+    // define neighbor process as identical
+    dataMapRes->setNeighborSubdomains( this->neighborSubdomains() );
+
+    bool checkAndFixInputRange = ( this->worldComm().localSize() > 1 &&  _checkAndFixInputRange );
+    if ( checkAndFixInputRange )
+    {
+        // init data used in mpi comm
+        std::map< rank_type, std::vector< size_type > > dataCheckToSend, dataToRecv;
+        for ( rank_type p : this->neighborSubdomains() )
+            dataCheckToSend[p].clear();
+
+        // up data used in mpi comm
+        for ( auto const& id : idExtract )
+        {
+            if ( !this->dofGlobalProcessIsGhost(id) )
+            {
+                if ( this->activeDofSharedOnCluster().find( id ) != this->activeDofSharedOnCluster().end() )
+                    for ( rank_type pNeighborId : this->activeDofSharedOnCluster().find( id )->second )
+                        dataCheckToSend[pNeighborId].push_back( this->mapGlobalProcessToGlobalCluster( id ) );
+            }
+            else
+            {
+                size_type gcdof = this->mapGlobalProcessToGlobalCluster( id );
+                rank_type procIdFinded = procOnGlobalCluster( gcdof );
+                CHECK ( procIdFinded != invalid_rank_type_value ) << " proc not find for gcdof : " << gcdof;
+                dataCheckToSend[procIdFinded].push_back( gcdof );
+            }
+        }
+
+        // prepare mpi com
+        int nbRequest=2*this->neighborSubdomains().size();
+        mpi::request * reqs = new mpi::request[nbRequest];
+        // apply isend/irecv
+        int cptRequest=0;
+        for ( rank_type p : this->neighborSubdomains() )
+        {
+            CHECK( dataCheckToSend.find(p) != dataCheckToSend.end() ) << " no data to send to proc " << p << "\n";
+            reqs[cptRequest] = this->worldComm().localComm().isend( p , 0, dataCheckToSend.find(p)->second );
+            ++cptRequest;
+            reqs[cptRequest] = this->worldComm().localComm().irecv( p , 0, dataToRecv[p] );
+            ++cptRequest;
+        }
+        // wait all requests
+        mpi::wait_all(reqs, reqs + nbRequest);
+        delete [] reqs;
+
+        // update idExtract : can be usefull for fix missing dof entries in input at interprocess zone!
+        for ( auto const& dataR : dataToRecv )
+        {
+            rank_type theproc = dataR.first;
+            for ( size_type dataRfromproc : dataR.second )
+            {
+                //size_type thelocdof = this->mapGlobalClusterToGlobalProcess( dataRfromproc );
+                auto thelocdof = this->searchGlobalProcessDof( dataRfromproc );
+                CHECK( thelocdof.get<0>() ) << "local dof not find with cluster id : " << dataRfromproc;
+                idExtract.insert( thelocdof.get<1>() );
+            }
+        }
+    } // if ( checkAndFixInputRange )
+
+    // number of local dof define from input
+    size_type nLocalDofWithGhost = idExtract.size();
+    // compute number of active dof on current proc
+    size_type nLocalDofWithoutGhost=0;
+    for ( auto const& id : idExtract )
+    {
+        if ( !this->dofGlobalProcessIsGhost(id) )
+            ++nLocalDofWithoutGhost;
+    }
+
+    // collective mpi comm about nLocalDofWithGhost and nLocalDofWithoutGhost
+    std::vector<boost::tuple<size_type,size_type> > dataRecvFromGather;
+    auto dataSendToGather = boost::make_tuple(nLocalDofWithGhost,nLocalDofWithoutGhost);
+    mpi::all_gather( this->worldComm(),
+                     dataSendToGather,
+                     dataRecvFromGather );
+
+    // define first, last, nlocalDof for each process and get nDof in global cluster
+    size_type nDof = 0;
+    for (rank_type p=0;p<this->worldComm().localSize();++p)
+    {
+        const size_type nLocalDofWithGhostOnProc = dataRecvFromGather[p].template get<0>();
+        dataMapRes->setFirstDof( p, 0 );
+        dataMapRes->setLastDof( p, (nLocalDofWithGhostOnProc > 0)? nLocalDofWithGhostOnProc-1 :0  );
+        dataMapRes->setNLocalDofWithGhost( p, nLocalDofWithGhostOnProc );
+
+        const size_type nLocalDofWithoutGhostOnProc = dataRecvFromGather[p].template get<1>();
+        if ( p == 0 )
+        {
+            dataMapRes->setFirstDofGlobalCluster( p, 0 );
+            dataMapRes->setLastDofGlobalCluster( p, (nLocalDofWithoutGhostOnProc>0)? nLocalDofWithoutGhostOnProc-1 : 0 );
+        }
+        else
+        {
+            if ( dataMapRes->nLocalDofWithoutGhost(p-1) > 0 )
+                dataMapRes->setFirstDofGlobalCluster( p, dataMapRes->lastDofGlobalCluster( p-1 ) + 1 );
+            else
+                dataMapRes->setFirstDofGlobalCluster( p, dataMapRes->lastDofGlobalCluster( p-1 ) );
+
+            if ( nLocalDofWithoutGhostOnProc > 0 )
+                dataMapRes->setLastDofGlobalCluster( p, dataMapRes->firstDofGlobalCluster(p) + nLocalDofWithoutGhostOnProc - 1 );
+            else
+                dataMapRes->setLastDofGlobalCluster( p, dataMapRes->firstDofGlobalCluster(p) );
+        }
+        dataMapRes->setNLocalDofWithoutGhost( p, nLocalDofWithoutGhostOnProc );
+        nDof+=nLocalDofWithoutGhostOnProc;
+    }
+    dataMapRes->setNDof( nDof );
+
+
+    // define mapping between global process and global cluster and store missing ghost dof to send
+    dataMapRes->resizeMapGlobalProcessToGlobalCluster( dataMapRes->nLocalDofWithGhost(curProcId) );
+    dataMapRes->resizeMapGlobalClusterToGlobalProcess( dataMapRes->nLocalDofWithoutGhost(curProcId) );
+    size_type firstDofGC = dataMapRes->firstDofGlobalCluster(curProcId);
+    size_type idLocalDof=0, idGlobalDof=firstDofGC;
+    std::map< rank_type, std::vector< size_type > > dataToSend, memoryDataToSend;
+    for ( rank_type p : this->neighborSubdomains() )
+    {
+        dataToSend[p].clear();
+        memoryDataToSend[p].clear();
+    }
+    std::map< size_type, size_type> dofTableRelationGP;
+    for ( auto const& id : idExtract )
+    {
+        if ( !this->dofGlobalProcessIsGhost(id) )
+        {
+            dataMapRes->M_mapGlobalProcessToGlobalCluster[idLocalDof]=idGlobalDof;
+            dataMapRes->M_mapGlobalClusterToGlobalProcess[idGlobalDof-firstDofGC]=idLocalDof;
+            if ( this->activeDofSharedOnCluster().find( id ) != this->activeDofSharedOnCluster().end() )
+                dofTableRelationGP[id]=idLocalDof;
+            ++idGlobalDof;
+        }
+        else
+        {
+            size_type gcdof = this->mapGlobalProcessToGlobalCluster( id );
+            rank_type procIdFinded = procOnGlobalCluster( gcdof );
+            CHECK ( procIdFinded != invalid_rank_type_value ) << " proc not find for gcdof : " << gcdof;
+            dataToSend[procIdFinded].push_back( gcdof );
+            memoryDataToSend[procIdFinded].push_back( idLocalDof );
+            dataMapRes->M_mapGlobalProcessToGlobalCluster[idLocalDof]=invalid_size_type_value;
+        }
+        ++idLocalDof;
+    }
+
+    if ( this->worldComm().localSize() > 1 )
+    {
+        // init data used in mpi comm
+        std::map< rank_type, std::vector< size_type > > dataToRecv;
+
+        // prepare mpi com
+        int nbRequest=2*this->neighborSubdomains().size();
+        mpi::request * reqs = new mpi::request[nbRequest];
+        // apply isend/irecv
+        int cptRequest=0;
+        for ( rank_type p : this->neighborSubdomains() )
+        {
+            CHECK( dataToSend.find(p) != dataToSend.end() ) << " no data to send to proc " << p << "\n";
+            reqs[cptRequest] = this->worldComm().localComm().isend( p , 0, dataToSend.find(p)->second );
+            ++cptRequest;
+            reqs[cptRequest] = this->worldComm().localComm().irecv( p , 0, dataToRecv[p] );
+            ++cptRequest;
+        }
+        // wait all requests
+        mpi::wait_all(reqs, reqs + nbRequest);
+
+        // treat recv and store request to re-send
+        std::map< rank_type, std::vector< size_type > > dataToReSend,dataToReRecv;
+        for ( rank_type p : this->neighborSubdomains() )
+            dataToReSend[p].clear();
+        size_type firstDofGC = this->firstDofGlobalCluster(curProcId);
+        for ( auto const& dataR : dataToRecv )
+        {
+            rank_type theproc = dataR.first;
+            for ( auto const& gcdof : dataR.second )
+            {
+                size_type gpdof = this->mapGlobalClusterToGlobalProcess(gcdof-firstDofGC);
+                dataMapRes->M_activeDofSharedOnCluster[gpdof].insert( theproc );
+
+                CHECK( dofTableRelationGP.find( gpdof ) != dofTableRelationGP.end() ) << "active dof gpdof not register";
+                size_type gcdoffinded = dataMapRes->mapGlobalProcessToGlobalCluster( dofTableRelationGP.find( gpdof )->second );
+                CHECK( gcdoffinded != invalid_size_type_value ) << " active dof not register in map";
+                dataToReSend[theproc].push_back( gcdoffinded );
+            }
+        }
+
+        // apply isend/irecv
+        cptRequest=0;
+        for ( rank_type p : this->neighborSubdomains() )
+        {
+            CHECK( dataToReSend.find(p) != dataToReSend.end() ) << " no data to send to proc " << p << "\n";
+            reqs[cptRequest] = this->worldComm().localComm().isend( p , 0, dataToReSend.find(p)->second );
+            ++cptRequest;
+            reqs[cptRequest] = this->worldComm().localComm().irecv( p , 0, dataToReRecv[p] );
+            ++cptRequest;
+        }
+        // wait all requests
+        mpi::wait_all(reqs, reqs + nbRequest);
+        delete [] reqs;
+
+        // treat last recv to fix missing entries in mapGlobalProcessToGlobalCluster
+        for ( auto const& dataRR : dataToReRecv )
+        {
+            rank_type theproc = dataRR.first;
+            size_type k=0;
+            for ( auto const& gcdof : dataRR.second )
+            {
+                size_type locdof = memoryDataToSend.find( theproc )->second[k];
+                dataMapRes->M_mapGlobalProcessToGlobalCluster[locdof] = gcdof;
+                ++k;
+            }
+
+        }
+    } // if ( this->worldComm().localSize() > 1 )
+
+
+
+    if ( true )
+    {
+        // build one split for all dof
+        dataMapRes->buildIndexSplit();
+    }
+    else
+    {
+        // TODO : reuse parent indexsplit structure to build the new one
+        boost::shared_ptr<IndexSplit> indexSplit( new IndexSplit( this->indexSplit()->size() ) );
+        size_type startIS = dataMapRes->firstDofGlobalCluster( curProcId );
+        for ( int k = 0 ; k < this->indexSplit()->size() ; ++k )
+        {
+
+        }
+    }
+
+
+
+    return dataMapRes;
+}
+
+
 void
 DataMap::showMeMapGlobalProcessToGlobalCluster( bool showAll, std::ostream& __out2 ) const
 {
@@ -363,7 +613,11 @@ DataMap::showMeMapGlobalProcessToGlobalCluster( bool showAll, std::ostream& __ou
                   << "nLocalDof : " << this->nLocalDof() << "\n"
                   << "nLocalDofWithoutGhost : " << this->nLocalDofWithoutGhost() << "\n"
                   << "nLocalDofWithGhost : " << this->nLocalDofWithGhost() << "\n"
-                  << "mapGlobalProcessToGlobalCluster().size() " << this->mapGlobalProcessToGlobalCluster().size() << "\n"
+                  << "neighbor processors : (" << M_neighbor_processors.size() << ")";
+            for ( rank_type pNeighborId : M_neighbor_processors )
+                __out << " " << pNeighborId;
+            __out << "\n";
+            __out << "mapGlobalProcessToGlobalCluster().size() " << this->mapGlobalProcessToGlobalCluster().size() << "\n"
                   << "-----------------------------------------------------------------------\n";
 
             if (showAll)
@@ -471,7 +725,7 @@ DataMap::buildIndexSplit()
 
     M_indexSplit->setFirstIndex( 0, this->firstDofGlobalCluster() );
     M_indexSplit->setLastIndex( 0, this->lastDofGlobalCluster() );
-    M_indexSplit->setNIndex( 0, this->nLocalDofWithGhost() );
+    M_indexSplit->setNIndex( 0, this->nLocalDofWithoutGhost() );
 
     const size_type firstDof = this->firstDofGlobalCluster();
 

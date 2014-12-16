@@ -522,6 +522,9 @@ public:
 
     void close() const;
 
+    boost::shared_ptr<DataMap> createSubDataMap( std::vector<size_type> const& idExtract,
+                                                 bool _checkAndFixInputRange=true ) const;
+
     //@}
 
 
