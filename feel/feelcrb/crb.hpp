@@ -1166,6 +1166,7 @@ public:
      */
     bool rebuildDB() ;
     void setRebuild( bool b ){ M_rebuild = b; } ;
+    bool getRebuild(){ return M_rebuild; } ;
     /**
      * if true, show the mu selected during the offline stage
      */
@@ -2051,6 +2052,7 @@ CRB<TruthModelType>::offline()
         if( option("crb.stock-matrices").template as<bool>() )
             boost::tie( Mqm, Aqm, Fqm ) = M_model->computeAffineDecomposition();
     }
+
     M_model->countAffineDecompositionTerms();
     this->updateAffineDecompositionSize();
 
@@ -2617,7 +2619,6 @@ CRB<TruthModelType>::offline()
 
     while ( M_maxerror > M_tolerance && M_N < M_iter_max  )
     {
-
         M_mode_number=1;
 
         std::string pslogname = (boost::format("N-%1%") %M_N ).str();
@@ -5146,7 +5147,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
         }
         old_output = L.dot( uN[time_index] );
 #endif
-        //std::cout << "mu = " << mu << std::endl;
+        std::cout << "mu = " << mu << std::endl;
         do
         {
             if( is_linear )
@@ -10418,7 +10419,6 @@ template<typename TruthModelType>
 bool
 CRB<TruthModelType>::rebuildDB()
 {
-    std::cout << "function rebuildDB" << std::endl;
     bool rebuild_db = option(_name="crb.rebuild-database").template as<bool>();
     int Nrestart = option(_name="crb.restart-from-N").template as<int>();
     bool rebuild=false;

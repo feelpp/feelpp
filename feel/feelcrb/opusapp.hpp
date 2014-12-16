@@ -313,7 +313,7 @@ public:
                 }
             }
 
-            if ( !crb->isDBLoaded() || crb->rebuildDB() )
+            if ( !crb->isDBLoaded() || crb->getRebuild() )
             {
                 if ( M_mode == CRBModelMode::CRB )
                     //|| M_mode == CRBModelMode::SCM )
@@ -330,7 +330,8 @@ public:
                     throw std::logic_error( "CRB/SCM Database could not be loaded" );
             }
 
-            if( crb->isDBLoaded() )
+            //if( crb->isDBLoaded() )
+            else
             {
                 int Nrestart = option(_name="crb.restart-from-N").template as<int>();
                 bool do_offline = false;
@@ -416,7 +417,9 @@ public:
                     LOG(INFO) << "[cobuild] step i= " << i << "\n";
                     //Begin with rb since first eim has already been built in initModel
                     if( i == 0 || crb->getOfflineStep() )
+                    {
                         this->loadDB(); // update AffineDecomposition and enrich RB database
+                    }
                     crb->setRebuild( false ); //do not rebuild since co-build is not finished
 
                     if( do_offline_eim )
