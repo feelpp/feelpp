@@ -94,16 +94,16 @@ static inline void assemble(boost::shared_ptr<Mesh<Simplex<Dim>>>& mesh, double*
     auto A = backend()->newMatrix(Vh, Vh);
     auto f = backend()->newVector(Vh);
     auto U = Vh->element();
-    // auto u = U.element<0>();
-    // auto p = U.element<1>();
+    auto u = U.template element<0>();
+    auto p = U.template element<1>();
 
-    // auto a = form2(_trial = Vh, _test = Vh, _matrix = A);
-    // a = integrate(_range = elements(mesh),
-    //               _expr = trace(gradt(u) * trans(grad(u))) - div(u) * idt(p) - divt(u) * id(p));
-    // a += on(_range = markedfaces(mesh, "Dirichlet"), _rhs = l, _element = u, _expr = zero<2, 1>());
-    // auto l = form1(_test = Vh, _vector = f);
-    // l = integrate(_range = elements(mesh),
-    //               _expr = trans(oneY()) * id(u));
+    auto a = form2(_trial = Vh, _test = Vh, _matrix = A);
+    a = integrate(_range = elements(mesh),
+                  _expr = trace(gradt(u) * trans(grad(u))) - div(u) * idt(p) - divt(u) * id(p));
+    a += on(_range = markedfaces(mesh, "Dirichlet"), _rhs = l, _element = u, _expr = zero<2, 1>());
+    auto l = form1(_test = Vh, _vector = f);
+    l = integrate(_range = elements(mesh),
+                  _expr = trans(oneY()) * id(u));
 }
 
 template<uint16_type Dim, uint16_type Order, template<uint16_type> class Type, uint16_type OrderBis = MAX_ORDER, template<uint16_type> class TypeBis = Scalar>
