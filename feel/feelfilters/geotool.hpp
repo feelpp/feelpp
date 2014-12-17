@@ -985,8 +985,7 @@ public:
             _mesh->updateForUse();
 
             if ( straighten && _mesh_type::nOrder > 1 )
-                return straightenMesh( _mesh=_mesh,
-                                       _worldcomm=worldcomm.subWorldComm() );
+                return straightenMesh( _mesh, worldcomm.subWorldComm() );
 
         } // if (worldcomm.isActive())
 
