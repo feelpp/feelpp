@@ -56,6 +56,7 @@
 // #include <boost/numeric/ublas/vector_serialize.hpp>
 
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/feelcomplex.hpp>
 #include <feel/feelcore/context.hpp>
 
 #include <feel/feelalg/glas.hpp>
