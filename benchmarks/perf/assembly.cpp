@@ -49,8 +49,10 @@ static inline void assemble(boost::shared_ptr<Mesh<Simplex<Dim>>>& mesh, double*
     time.restart();
     auto u = Vh->element();
     auto A = backend()->newMatrix(Vh, Vh);
+    vec[5] = time.elapsed();
+    time.restart();
     auto a = form2(_trial = Vh, _test = Vh, _matrix = A);
-    a = integrate(_range = elements(mesh), _expr = gradt(u) * trans(grad(v)));
+    a = integrate(_range = elements(mesh), _expr = inner(gradt(u),grad(v)));
     a += on(_range = markedfaces(mesh, "Dirichlet"), _rhs = l, _element = u, _expr = cst(0.0));
     vec[3] = time.elapsed();
 }
@@ -73,6 +75,8 @@ static inline void assemble(boost::shared_ptr<Mesh<Simplex<Dim>>>& mesh, double*
     time.restart();
     auto u = Vh->element();
     auto A = backend()->newMatrix(Vh, Vh);
+    vec[5] = time.elapsed();
+    time.restart();
     auto a = form2(_trial = Vh, _test = Vh, _matrix = A);
     a = integrate(_range = elements(mesh),
                   _expr = lambda * divt(u) * div(v) +
@@ -102,6 +106,8 @@ static inline void assemble(boost::shared_ptr<Mesh<Simplex<Dim>>>& mesh, double*
     auto p = U.template element<1>();
     auto q = V.template element<1>();
     auto A = backend()->newMatrix(Vh, Vh);
+    vec[5] = time.elapsed();
+    time.restart();
     auto a = form2(_trial = Vh, _test = Vh, _matrix = A);
     a = integrate(_range = elements(mesh),
                   _expr = trace(gradt(u) * trans(grad(v))) - div(v) * idt(p) - divt(u) * id(q));
@@ -122,7 +128,7 @@ Assembly<Dim, Order, Type, OrderBis, TypeBis>::run()
 {
     double hSize = doption("gmsh.hsize");
     int level = std::max(doption("parameters.l"), 1.0);
-    std::vector<double> stats(5 * level, std::numeric_limits<double>::quiet_NaN());
+    std::vector<double> stats(6 * level, std::numeric_limits<double>::quiet_NaN());
     for(int i = 0; i < level; ++i) {
         if((OrderBis == MAX_ORDER && (hSize / std::pow(2.0, i) > 0.005 || !std::is_same<Type<Dim>, Vectorial<Dim>>::value)) || hSize / std::pow(2.0, i) > 0.01) {
             boost::shared_ptr<Mesh<Simplex<Dim>>> mesh;
@@ -133,30 +139,33 @@ Assembly<Dim, Order, Type, OrderBis, TypeBis>::run()
                                                  _ymin = 0.0, _ymax = 1.0,
                                                  _zmin = 0.0, _zmax = 1.0));
             mesh->addMarkerName("Dirichlet", Dim == 2 ? 1 : 19, Dim == 2 ? 1 : 2);
-            stats[5 * i] = mesh->numGlobalElements();
-            assemble<Dim, Order, Type, OrderBis, TypeBis>(mesh, &(stats[5 * i]));
+            stats[6 * i] = mesh->numGlobalElements();
+            assemble<Dim, Order, Type, OrderBis, TypeBis>(mesh, &(stats[6 * i]));
         }
     }
     if(!std::is_same<Type<Dim>, Vectorial<Dim>>::value && OrderBis == MAX_ORDER && std::is_same<Type<Dim>, Scalar<Dim>>::value)
-        std::cout << "hsize\t\tnelements\tnDof\t\tFunctionSpace\tform2\t\tform1" << std::endl;
+        std::cout << "hsize\t\tnelements\tnDof\t\tFunctionSpace\tmatrix\t\tform2\t\tform1" << std::endl;
     for(int i = 0; i < level; ++i) {
         std::cout.width(16);
         std::cout << std::left << hSize / std::pow(2.0, i);
         std::cout.width(16);
-        if(stats[5 * i + 0] != stats[5 * i + 0])
+        if(stats[6 * i + 0] != stats[6 * i + 0])
             std::cout << std::left << "nan";
         else
-            std::cout << std::left << int(stats[5 * i + 0]);
+            std::cout << std::left << int(stats[6 * i + 0]);
         std::cout.width(16);
-        if(stats[5 * i + 1] != stats[5 * i + 1])
+        if(stats[6 * i + 1] != stats[6 * i + 1])
             std::cout << std::left << "nan";
         else
-            std::cout << std::left << int(stats[5 * i + 1]);
+            std::cout << std::left << int(stats[6 * i + 1]);
         std::cout.width(16);
-        std::cout << std::left << stats[5 * i + 2];
+        std::cout << std::left << stats[6 * i + 2];
         std::cout.width(16);
-        std::cout << std::left << stats[5 * i + 3];
-        std::cout << std::left << stats[5 * i + 4] << std::endl;
+        std::cout << std::left << stats[6 * i + 5];
+        std::cout.width(16);
+        std::cout << std::left << stats[6 * i + 3];
+        std::cout.width(16);
+        std::cout << std::left << stats[6 * i + 4] << std::endl;
     }
 } // Assembly::run
 
