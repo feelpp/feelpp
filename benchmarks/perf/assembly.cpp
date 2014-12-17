@@ -39,48 +39,46 @@ static inline void assemble(boost::shared_ptr<Mesh<Simplex<Dim>>>& mesh, double*
     boost::timer time;
     auto Vh = FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order, Type>>>::New(_mesh = mesh);
     vec[2] = time.elapsed();
-    vec[0] = mesh->numGlobalElements();
     vec[1] = Vh->nDof();
     time.restart();
-    auto A = backend()->newMatrix(Vh, Vh);
     auto v = Vh->element();
-    auto u = Vh->element();
-    auto a = form2(_trial = Vh, _test = Vh, _matrix = A);
-    a = integrate(_range = elements(mesh), _expr = gradt(u) * trans(grad(v)));
-    vec[3] = time.elapsed();
-    time.restart();
     auto f = backend()->newVector(Vh);
     auto l = form1(_test = Vh, _vector = f);
     l = integrate(_range = elements(mesh), _expr = id(v));
-    a += on(_range = markedfaces(mesh, "Dirichlet"), _rhs = l, _element = u, _expr = cst(0.0));
     vec[4] = time.elapsed();
+    time.restart();
+    auto u = Vh->element();
+    auto A = backend()->newMatrix(Vh, Vh);
+    auto a = form2(_trial = Vh, _test = Vh, _matrix = A);
+    a = integrate(_range = elements(mesh), _expr = gradt(u) * trans(grad(v)));
+    a += on(_range = markedfaces(mesh, "Dirichlet"), _rhs = l, _element = u, _expr = cst(0.0));
+    vec[3] = time.elapsed();
 }
 template<uint16_type Dim, uint16_type Order, template<uint16_type> class Type, uint16_type OrderBis, template<uint16_type> class TypeBis, typename std::enable_if<std::is_same<Type<Dim>, Vectorial<Dim>>::value && OrderBis == MAX_ORDER && std::is_same<TypeBis<Dim>, Scalar<Dim>>::value>::type* = nullptr>
 static inline void assemble(boost::shared_ptr<Mesh<Simplex<Dim>>>& mesh, double* vec) {
     boost::timer time;
     auto Vh = FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order, Type>>>::New(_mesh = mesh);
     vec[2] = time.elapsed();
-    vec[0] = mesh->numGlobalElements();
     vec[1] = Vh->nDof();
     auto E = 1e+8;
     auto nu = 0.25;
     auto mu = E / (2 * (1 + nu));
     auto lambda = E * nu / ((1 + nu) * (1 - 2 * nu));
     time.restart();
-    auto A = backend()->newMatrix(Vh, Vh);
     auto v = Vh->element();
+    auto f = backend()->newVector(Vh);
+    auto l = form1(_test = Vh, _vector = f);
+    l = integrate(_range = elements(mesh), _expr = -1e+3 * trans(oneY()) * id(v));
+    vec[4] = time.elapsed();
+    time.restart();
     auto u = Vh->element();
+    auto A = backend()->newMatrix(Vh, Vh);
     auto a = form2(_trial = Vh, _test = Vh, _matrix = A);
     a = integrate(_range = elements(mesh),
                   _expr = lambda * divt(u) * div(v) +
                           2 * mu * trace(trans(sym(gradt(u))) * sym(grad(u))));
-    vec[3] = time.elapsed();
-    time.restart();
-    auto f = backend()->newVector(Vh);
-    auto l = form1(_test = Vh, _vector = f);
-    l = integrate(_range = elements(mesh), _expr = -1e+3 * trans(oneY()) * id(v));
     a += on(_range = markedfaces(mesh, "Dirichlet"), _rhs = l, _element = u, _expr = zero<2, 1>());
-    vec[4] = time.elapsed();
+    vec[3] = time.elapsed();
 }
 template<uint16_type Dim, uint16_type Order, template<uint16_type> class Type, uint16_type OrderBis, template<uint16_type> class TypeBis, typename std::enable_if<std::is_same<Type<Dim>, Vectorial<Dim>>::value && OrderBis != MAX_ORDER && std::is_same<TypeBis<Dim>, Scalar<Dim>>::value>::type* = nullptr>
 static inline void assemble(boost::shared_ptr<Mesh<Simplex<Dim>>>& mesh, double* vec) {
@@ -89,24 +87,26 @@ static inline void assemble(boost::shared_ptr<Mesh<Simplex<Dim>>>& mesh, double*
                                                                                    _worldscomm = std::vector<WorldComm>(2, mesh->worldComm()),
                                                                                    _extended_doftable = std::vector<bool>(2, false));
     vec[2] = time.elapsed();
-    vec[0] = mesh->numGlobalElements();
     vec[1] = Vh->nDof();
-    auto A = backend()->newMatrix(Vh, Vh);
+    time.restart();
+    auto V = Vh->element();
+    auto v = V.template element<0>();
     auto f = backend()->newVector(Vh);
+    auto l = form1(_test = Vh, _vector = f);
+    l = integrate(_range = elements(mesh),
+                  _expr = trans(oneY()) * id(v));
+    vec[4] = time.elapsed();
+    time.restart();
     auto U = Vh->element();
     auto u = U.template element<0>();
     auto p = U.template element<1>();
-
+    auto q = V.template element<1>();
+    auto A = backend()->newMatrix(Vh, Vh);
     auto a = form2(_trial = Vh, _test = Vh, _matrix = A);
     a = integrate(_range = elements(mesh),
-                  _expr = trace(gradt(u) * trans(grad(u))) - div(u) * idt(p) - divt(u) * id(p));
-    vec[3] = time.elapsed();
-    time.restart();    
-    auto l = form1(_test = Vh, _vector = f);
-    l = integrate(_range = elements(mesh),
-                  _expr = trans(oneY()) * id(u));
+                  _expr = trace(gradt(u) * trans(grad(v))) - div(v) * idt(p) - divt(u) * id(q));
     a += on(_range = markedfaces(mesh, "Dirichlet"), _rhs = l, _element = u, _expr = zero<2, 1>());
-    vec[4] = time.elapsed();
+    vec[3] = time.elapsed();
 }
 
 template<uint16_type Dim, uint16_type Order, template<uint16_type> class Type, uint16_type OrderBis = MAX_ORDER, template<uint16_type> class TypeBis = Scalar>
@@ -122,17 +122,20 @@ Assembly<Dim, Order, Type, OrderBis, TypeBis>::run()
 {
     double hSize = doption("gmsh.hsize");
     int level = std::max(doption("parameters.l"), 1.0);
-    std::vector<double> timers(5 * level, 0);
+    std::vector<double> stats(5 * level, std::numeric_limits<double>::quiet_NaN());
     for(int i = 0; i < level; ++i) {
-        boost::shared_ptr<Mesh<Simplex<Dim>>> mesh;
-        mesh = createGMSHMesh(_mesh = new Mesh<Simplex<Dim>>,
-                              _update = MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK,
-                              _desc = domain(_name = "hypercube_" + std::to_string(i + 1), _shape = "hypercube", _h = hSize / std::pow(2.0, i),
-                                             _xmin = 0.0, _xmax = 10.0,
-                                             _ymin = 0.0, _ymax = 1.0,
-                                             _zmin = 0.0, _zmax = 1.0));
-        mesh->addMarkerName("Dirichlet", Dim == 2 ? 1 : 19, Dim == 2 ? 1 : 2);
-        assemble<Dim, Order, Type, OrderBis, TypeBis>(mesh, &(timers[5 * i]));
+        if((OrderBis == MAX_ORDER && (hSize / std::pow(2.0, i) > 0.005 || !std::is_same<Type<Dim>, Vectorial<Dim>>::value)) || hSize / std::pow(2.0, i) > 0.01) {
+            boost::shared_ptr<Mesh<Simplex<Dim>>> mesh;
+            mesh = createGMSHMesh(_mesh = new Mesh<Simplex<Dim>>,
+                                  _update = MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK,
+                                  _desc = domain(_name = "hypercube_" + std::to_string(i + 1), _shape = "hypercube", _h = hSize / std::pow(2.0, i),
+                                                 _xmin = 0.0, _xmax = 10.0,
+                                                 _ymin = 0.0, _ymax = 1.0,
+                                                 _zmin = 0.0, _zmax = 1.0));
+            mesh->addMarkerName("Dirichlet", Dim == 2 ? 1 : 19, Dim == 2 ? 1 : 2);
+            stats[5 * i] = mesh->numGlobalElements();
+            assemble<Dim, Order, Type, OrderBis, TypeBis>(mesh, &(stats[5 * i]));
+        }
     }
     if(!std::is_same<Type<Dim>, Vectorial<Dim>>::value && OrderBis == MAX_ORDER && std::is_same<Type<Dim>, Scalar<Dim>>::value)
         std::cout << "hsize\t\tnelements\tnDof\t\tFunctionSpace\tform2\t\tform1" << std::endl;
@@ -140,14 +143,20 @@ Assembly<Dim, Order, Type, OrderBis, TypeBis>::run()
         std::cout.width(16);
         std::cout << std::left << hSize / std::pow(2.0, i);
         std::cout.width(16);
-        std::cout << std::left << int(timers[5 * i + 0]);
+        if(stats[5 * i + 0] != stats[5 * i + 0])
+            std::cout << std::left << "nan";
+        else
+            std::cout << std::left << int(stats[5 * i + 0]);
         std::cout.width(16);
-        std::cout << std::left << int(timers[5 * i + 1]);
+        if(stats[5 * i + 1] != stats[5 * i + 1])
+            std::cout << std::left << "nan";
+        else
+            std::cout << std::left << int(stats[5 * i + 1]);
         std::cout.width(16);
-        std::cout << std::left << timers[5 * i + 2];
+        std::cout << std::left << stats[5 * i + 2];
         std::cout.width(16);
-        std::cout << std::left << timers[5 * i + 3];
-        std::cout << std::left << timers[5 * i + 4] << std::endl;
+        std::cout << std::left << stats[5 * i + 3];
+        std::cout << std::left << stats[5 * i + 4] << std::endl;
     }
 } // Assembly::run
 

@@ -33,7 +33,6 @@
 #include <feel/feelfilters/loadgmshmesh.hpp>
 #include <feel/feelfilters/geo.hpp>
 #include <feel/feelfilters/domain.hpp>
-#include <feel/feelfilters/gmsh.hpp>
 
 namespace Feel {
 
