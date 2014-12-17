@@ -126,8 +126,7 @@ BOOST_PARAMETER_FUNCTION(
     }
 
     if ( straighten && _mesh_type::nOrder > 1 )
-        return straightenMesh( _mesh=_mesh,
-                               _worldcomm=worldcomm.subWorldComm() );
+        return straightenMesh( _mesh, worldcomm.subWorldComm() );
 
     return _mesh;
 }
