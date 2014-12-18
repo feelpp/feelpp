@@ -2056,12 +2056,11 @@ CRB<TruthModelType>::offline()
     M_model->countAffineDecompositionTerms();
     this->updateAffineDecompositionSize();
 
-#if 0
+    int Nold = M_N; // store current M_N in case of restart
     if( Nrestart == 0 )
-        rebuild_database=true;
+        this->setRebuild( true );
     if( Nrestart > 0 )
-        rebuild_database=false;
-#endif
+        this->setRebuild( false );
 
     //if M_N == 0 then there is not an already existing database
     //if ( rebuild_database || M_N == 0)
@@ -2610,10 +2609,9 @@ CRB<TruthModelType>::offline()
 
     int cobuild_freq_rb = ioption(_name="crb.cobuild-frequency");
     int cobuild_freq_eim = ioption(_name="eim.cobuild-frequency");
-    //std::cout << "[crb] cobuild frequency = " << cobuild_freq << std::endl;
     int user_max = ioption(_name="crb.dimension-max");
-    if( cobuild_freq_rb != 0 && M_N + cobuild_freq_rb <= user_max)
-        M_iter_max = M_N + cobuild_freq_rb;
+    if( cobuild_freq_rb != 0 && Nold + cobuild_freq_rb <= user_max)
+        M_iter_max = Nold + cobuild_freq_rb;
     else
         M_iter_max = user_max;
 
