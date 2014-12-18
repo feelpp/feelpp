@@ -16,7 +16,7 @@ then we define some expression through the command line or config file: \c g is 
 
 here is an example how to enter them, more are available below
 \co
-feelpp_doc_myexpression --functions.g="x*y:x:y" --functions.f="{sin(pi*x),cos(pi*y)}:x:y"
+feelpp_doc_myexpression --a=3 --functions.g="a*x*y:x:y:a" --functions.f="{sin(pi*x),cos(pi*y)}:x:y"
 \eco
 
 \remark You can print back the expression to the screen to check that everything is ok.
