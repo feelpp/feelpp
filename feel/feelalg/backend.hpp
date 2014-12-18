@@ -334,7 +334,8 @@ public:
         //auto mat = this->newMatrix( trial->map(), test->map(), properties, false );
         auto mat = this->newMatrix( trial->dofOnOff(), test->dofOn(), properties, false );
 
-        if ( this->type() == BackendType::BACKEND_EIGEN_DENSE )
+        if ( this->type() == BackendType::BACKEND_EIGEN_DENSE ||
+             this->type() == BackendType::BACKEND_EIGEN )
         {
             mat->init( test->nDof(), trial->nDof(),
                        test->nLocalDofWithoutGhost(), trial->nLocalDofWithoutGhost() );
