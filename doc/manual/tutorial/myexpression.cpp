@@ -56,9 +56,13 @@ int main(int argc, char**argv )
     auto g = expr(soption(_name="functions.g"));
     std::cout << "g=" << g << std::endl;
 
-
     auto f = expr<2,1>(soption(_name="functions.f"));
     std::cout << "f=" << f << std::endl;
+
+		double aVal = doption("a")+doption("b");
+		std::map<std::string,double> myMap; myMap["aVal"]=aVal;
+		auto i = expr(soption("functions.i"),myMap);
+    std::cout << "i=" << i << std::endl;
     //! [expr]
 
     //! [grad]
@@ -91,6 +95,7 @@ int main(int argc, char**argv )
     std::cout << "Evaluation  at  (" << doption("x") << "," << doption("y") << "):" << std::endl;
     std::cout << "           g(x,y)=" << g.evaluate() << std::endl;
     std::cout << "           f(x,y)=" << f.evaluate() << std::endl;
+    std::cout << "           i(x,y)=" << i.evaluate() << std::endl;
     std::cout << "Gradient:\n";
     std::cout << "     grad(g)(x,y)=" << grad_g.evaluate() << std::endl;
     std::cout << "     grad(f)(x,y)=" << grad_f.evaluate() << std::endl;
