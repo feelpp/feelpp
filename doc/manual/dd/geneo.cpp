@@ -37,7 +37,7 @@
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feeldiscr/pdh.hpp>
-#include <feel/feeldiscr/pch.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feeldiscr/operatorinterpolation.hpp>
 #include <feel/feeltiming/tic.hpp>

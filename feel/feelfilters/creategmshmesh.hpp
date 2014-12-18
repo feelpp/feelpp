@@ -29,6 +29,10 @@
 #if !defined(FEELPP_CREATEGMSHMESH_HPP)
 #define FEELPP_CREATEGMSHMESH_HPP 1
 
+#include <feel/feelcore/parameter.hpp>
+#include <feel/feeldiscr/mesh.hpp>
+#include <feel/feelfilters/detail/mesh.hpp>
+
 #include <feel/feelfilters/straightenmesh.hpp>
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/importergmsh.hpp>
@@ -145,10 +149,8 @@ BOOST_PARAMETER_FUNCTION(
         {
             _mesh->components().reset();
         }
-
         if ( straighten && _mesh_type::nOrder > 1 )
-            return straightenMesh( _mesh=_mesh,
-                                   _worldcomm=worldcomm.subWorldComm() );
+            return straightenMesh( _mesh, worldcomm.subWorldComm() );
     }
     return _mesh;
 }
