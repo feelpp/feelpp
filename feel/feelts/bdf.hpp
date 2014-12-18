@@ -83,10 +83,10 @@ enum BDFTimeScheme { BDF_ORDER_ONE=1, BDF_ORDER_TWO, BDF_ORDER_THREE, BDF_ORDER_
  * \f$ M p'(t_{k+1}) = A u_{k+1} + f_{k+1} \f$
  *
  * where p denotes the polynomial of order n in t that interpolates
- * (t_i,u_i) for i = k-n+1,...,k+1.
+ * \f$ (t_i,u_i) \f$ for \f$ i = k-n+1,...,k+1\f$.
  *
  * The approximative time derivative \f$ p'(t_{k+1}) \f$ is a linear
- * combination of state vectors u_i:
+ * combination of state vectors \f$u_i\f$:
  *
  * \f$ p'(t_{k+1}) = \frac{1}{\Delta t} (\alpha_0 u_{k+1} - \sum_{i=0}^n \alpha_i u_{k+1-i} )\f$
  *
@@ -99,8 +99,8 @@ enum BDFTimeScheme { BDF_ORDER_ONE=1, BDF_ORDER_TWO, BDF_ORDER_THREE, BDF_ORDER_
  * \f$ \bar{p} = \frac{1}{\Delta t} \sum_{i=1}^n \alpha_i u_{k+1-i} \f$
  *
  * This class stores the n last state vectors in order to be able to
- * calculate \f$ \bar{p} \f$. It also provides alpha_i
- * and can extrapolate the the new state from the n last states with a
+ * calculate \f$ \bar{p} \f$. It also provides \f$ \alpha_i \f$
+ * and can extrapolate the new state from the n last states with a
  * polynomial of order n-1:
  *
  * \f$ u_{k+1} \approx \sum_{i=0}^{n-1} \beta_i u_{k-i} \f$
@@ -276,11 +276,17 @@ public:
         return this->next();
     }
 
+		/**
+		 * Return \f$ \alpha_i \f$
+		 */
     double polyCoefficient( int i ) const
     {
         CHECK( i >=0 && i < BDF_MAX_ORDER-1 ) <<  "[BDF] invalid index " << i;
         return M_beta[this->timeOrder()-1][i];
-    }
+    }  
+		/**
+		 * Return \f$ \frac{\alpha_i}{\Delta t} \f$
+		 */
     double polyDerivCoefficient( int i ) const
     {
         CHECK( i >=0 && i <= BDF_MAX_ORDER ) << "[BDF] invalid index " << i;
