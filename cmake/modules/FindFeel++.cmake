@@ -469,6 +469,7 @@ endif()
 #
 include(feelpp.module.nlopt)
 include(feelpp.module.ipopt)
+include(feelpp.module.cereal)
 
 #
 # HARTS
