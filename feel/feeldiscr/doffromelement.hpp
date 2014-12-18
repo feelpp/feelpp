@@ -260,6 +260,7 @@ private:
                     gDof += l ; // both nodal and modal case
                     if ( is_hdiv_conforming<fe_type>::value || is_hcurl_conforming<fe_type>::value )
                     {
+                        
                         M_doftable->M_locglob_signs[ie][lc] = 1;
                     }
                 }
@@ -277,6 +278,7 @@ private:
                         gDof += fe_type::nDofPerEdge - 1 - l ;
                     if ( is_hdiv_conforming<fe_type>::value || is_hcurl_conforming<fe_type>::value )
                     {
+                        sign = -1;
                         M_doftable->M_locglob_signs[ie][lc] = -1;
                     }
 
@@ -340,6 +342,7 @@ private:
                         gDof += fe_type::nDofPerEdge - 1 - l ;
                     if( is_hcurl_conforming<fe_type>::value )
                     {
+                        sign = -1;
                         M_doftable->M_locglob_signs[ie][lc] = -1;
                     }
                 }
@@ -450,7 +453,10 @@ private:
                         if (permutation  == face_permutation_type( 1 ))
                             M_doftable->M_locglob_signs[ie][l] = 1;
                         else
+                        {
+                            sign=-1;
                             M_doftable->M_locglob_signs[ie][l] = -1;
+                        }
                     }
                     else
                     {
