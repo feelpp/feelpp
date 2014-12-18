@@ -138,6 +138,9 @@
 /* Define to 1 if you have nlopt. */
 #cmakedefine FEELPP_HAS_NLOPT
 
+/* Define to 1 if you have cereal. */
+#cmakedefine FEELPP_HAS_CEREAL
+
 /* Define to 1 if you have Python. */
 #cmakedefine FEELPP_HAS_PYTHON
 
