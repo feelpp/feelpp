@@ -29,7 +29,7 @@
 #if !defined(FEELPP_STRAIGHTENMESH_HPP)
 #define FEELPP_STRAIGHTENMESH_HPP 1
 
-#define FEELPP_INSTANTIATE_STRAIGHTENMESH 
+
 
 #include <feel/feelcore/parameter.hpp>
 
@@ -215,24 +215,7 @@ straightenMesh( boost::shared_ptr<MeshType> mesh, WorldComm const& worldcomm, bo
     return _mesh;
 }
 
-template boost::shared_ptr<Mesh<Simplex<2,1>>>
-straightenMesh<Mesh<Simplex<2,1>>>( boost::shared_ptr<Mesh<Simplex<2,1>>>, 
-                                    WorldComm const& , bool, bool  );
-template boost::shared_ptr<Mesh<Simplex<2,2>>>
-straightenMesh<Mesh<Simplex<2,2>>>( boost::shared_ptr<Mesh<Simplex<2,2>>>, 
-                                    WorldComm const& , bool, bool  );
-template boost::shared_ptr<Mesh<Simplex<2,3>>>
-straightenMesh<Mesh<Simplex<2,3>>>( boost::shared_ptr<Mesh<Simplex<2,3>>>, 
-                                    WorldComm const& , bool, bool  );
-template boost::shared_ptr<Mesh<Simplex<2,4>>>
-straightenMesh<Mesh<Simplex<2,4>>>( boost::shared_ptr<Mesh<Simplex<2,4>>>, 
-                                    WorldComm const& , bool, bool  );
-template boost::shared_ptr<Mesh<Simplex<3,1>>>
-straightenMesh<Mesh<Simplex<3,1>>>( boost::shared_ptr<Mesh<Simplex<3,1>>>, 
-                                    WorldComm const& , bool, bool  );
-template boost::shared_ptr<Mesh<Simplex<3,2>>>
-straightenMesh<Mesh<Simplex<3,2>>>( boost::shared_ptr<Mesh<Simplex<3,2>>>, 
-                                    WorldComm const& , bool, bool  );
+
 
 }
 #endif /* FEELPP_STRAIGHTENMESH_HPP */

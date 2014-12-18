@@ -33,7 +33,8 @@ SET(SRC
   gmshhypercubedomain.cpp gmshsimplexdomain.cpp gmshellipsoiddomain.cpp
   #exporterfactorysimplex.cpp exporterfactoryhypercube.cpp
   gmsh.cpp  ${FEELFILTERS_INST_SRCS} geotool.cpp
-  detail/fileindex.cpp straightenmesh.cpp
+  detail/fileindex.cpp 
+  straightenmesh_inst_1d.cpp straightenmesh_inst_2d.cpp straightenmesh_inst_3d.cpp
   )
 
 file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
