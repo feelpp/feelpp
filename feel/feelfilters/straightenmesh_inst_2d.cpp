@@ -33,11 +33,13 @@ straightenMesh<Mesh<Simplex<2,1>>>( boost::shared_ptr<Mesh<Simplex<2,1>>>,
 template boost::shared_ptr<Mesh<Simplex<2,2>>>
 straightenMesh<Mesh<Simplex<2,2>>>( boost::shared_ptr<Mesh<Simplex<2,2>>>, 
                                     WorldComm const& , bool, bool  );
+
+#if 0
 template boost::shared_ptr<Mesh<Simplex<2,3>>>
 straightenMesh<Mesh<Simplex<2,3>>>( boost::shared_ptr<Mesh<Simplex<2,3>>>, 
                                     WorldComm const& , bool, bool  );
 template boost::shared_ptr<Mesh<Simplex<2,4>>>
 straightenMesh<Mesh<Simplex<2,4>>>( boost::shared_ptr<Mesh<Simplex<2,4>>>, 
                                         WorldComm const& , bool, bool  );
-
+#endif
 }
