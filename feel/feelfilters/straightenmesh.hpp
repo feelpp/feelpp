@@ -42,6 +42,15 @@ straightenMesh( boost::shared_ptr<MeshType> m,
                 bool save = false );
 
 #if !defined(FEELPP_INSTANTIATE_STRAIGHTENMESH)
+// 1D
+extern template boost::shared_ptr<Mesh<Simplex<1,1>>>
+straightenMesh<Mesh<Simplex<1,1>>>( boost::shared_ptr<Mesh<Simplex<1,1>>>, 
+                                    WorldComm const& , bool, bool  );
+extern template boost::shared_ptr<Mesh<Simplex<1,2>>>
+straightenMesh<Mesh<Simplex<1,2>>>( boost::shared_ptr<Mesh<Simplex<1,2>>>, 
+                                    WorldComm const& , bool, bool  );
+
+// 2D
 extern template boost::shared_ptr<Mesh<Simplex<2,1>>>
 straightenMesh<Mesh<Simplex<2,1>>>( boost::shared_ptr<Mesh<Simplex<2,1>>>, 
                                     WorldComm const& , bool, bool  );
@@ -54,6 +63,8 @@ straightenMesh<Mesh<Simplex<2,3>>>( boost::shared_ptr<Mesh<Simplex<2,3>>>,
 extern template boost::shared_ptr<Mesh<Simplex<2,4>>>
 straightenMesh<Mesh<Simplex<2,4>>>( boost::shared_ptr<Mesh<Simplex<2,4>>>, 
                                     WorldComm const& , bool, bool  );
+
+// 3D
 extern template boost::shared_ptr<Mesh<Simplex<3,1>>>
 straightenMesh<Mesh<Simplex<3,1>>>( boost::shared_ptr<Mesh<Simplex<3,1>>>, 
                                     WorldComm const& , bool, bool  );
