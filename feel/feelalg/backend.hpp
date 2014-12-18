@@ -1335,6 +1335,10 @@ BOOST_PARAMETER_FUNCTION(
     return Feel::detail::backend_impl<double>( name, kind, rebuild, worldcomm);
 }
 
+
+/*
+ * Complex backend
+ */
 BOOST_PARAMETER_FUNCTION(
                          ( c_backend_ptrtype ), // return type
                          cbackend,           // 2. function name
