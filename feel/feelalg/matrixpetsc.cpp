@@ -2843,7 +2843,7 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
 
 //----------------------------------------------------------------------------------------------------//
 template<typename T>
-typename MatrixPetscMPI<T>::value_type
+typename MatrixPetscMPI<T>::real_type
 MatrixPetscMPI<T>::energy( Vector<value_type> const& __v,
                            Vector<value_type> const& __u,
                            bool transpose ) const

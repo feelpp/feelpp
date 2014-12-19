@@ -31,10 +31,17 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelalg/backendpetsc.hpp>
 
+#if defined( FEELPP_HAS_PETSC_H )
+
+extern "C"
+{
+#include <petscmat.h>
+}
+
 namespace Feel
 {
 
-#if defined( FEELPP_HAS_PETSC_H )
+
 template<typename T>
 BackendPetsc<T>::~BackendPetsc()
 {
@@ -110,7 +117,7 @@ BackendPetsc<T>::solve( sparse_matrix_type const& A,
     M_solver_petsc.setShowKSPMonitor( this->showKSPMonitor() );
     M_solver_petsc.setShowKSPConvergedReason( this->showKSPConvergedReason() );
 
-    auto res = M_solver_petsc.solve( A, x, b, this->rTolerance(), this->maxIterations() );
+    auto res = M_solver_petsc.solve( A, x, b, this->rTolerance(), this->maxIterations(), false );
     DVLOG(2) << "[BackendPetsc::solve] number of iterations : " << res.template get<1>() << "\n";
     DVLOG(2) << "[BackendPetsc::solve]             residual : " << res.template get<2>() << "\n";
 
@@ -126,11 +133,11 @@ BackendPetsc<T>::PtAP( sparse_matrix_ptrtype const& A_,
                        sparse_matrix_ptrtype const& P_,
                        sparse_matrix_ptrtype & C_ ) const
 {
-    MatrixPetsc<T>* A = dynamic_cast<MatrixPetsc<T>*> ( &A_ );
-    MatrixPetsc<T>* P = dynamic_cast<MatrixPetsc<T>*> ( &P_ );
-    MatrixPetsc<T>* C = dynamic_cast<MatrixPetsc<T>*> ( &C_ );
+    MatrixPetsc<T> const* A = dynamic_cast<MatrixPetsc<T> const*> ( A_.get() );
+    MatrixPetsc<T> const* P = dynamic_cast<MatrixPetsc<T> const*> ( P_.get() );
+    MatrixPetsc<T>* C = dynamic_cast<MatrixPetsc<T>*> ( C_.get() );
     
-    MatPtAP( A->mat(), P->mat(), MAT_INITIAL_MATRIX, 0.9, C->mat() );
+    MatPtAP( A->mat(), P->mat(), MAT_INITIAL_MATRIX, 0.9, &C->mat() );
 }
 
 /**
@@ -169,8 +176,9 @@ po::options_description backendpetsc_options( std::string const& prefix )
  * Explicit instantiations
  */
 template class BackendPetsc<double>;
-template class BackendPetsc<std::complex<double>>;
+//template class BackendPetsc<std::complex<double>>;
 
-#endif /* FEELPP_HAS_PETSC_H */
+
 
 } // Feel
+#endif /* FEELPP_HAS_PETSC_H */
