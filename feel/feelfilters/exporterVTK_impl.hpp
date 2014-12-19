@@ -233,13 +233,15 @@ int ExporterVTK<MeshType,N>::writeTimePVD(std::string xmlFilename, double timest
             xmlSetProp(node2, BAD_CAST "part", BAD_CAST oss.str().c_str());
             xmlSetProp(node2, BAD_CAST "file", BAD_CAST dataFilename.c_str());
 
+            /*
             xmlChar * mem = NULL;
             int size = 0;
             xmlDocDumpFormatMemory(doc, &mem, &size, 1);
             std::cout << mem << std::endl;
             xmlFree(mem);
+            */
 
-            std::cout << "Writing file " << xmlFilename << std::endl;
+            //std::cout << "Writing file " << xmlFilename << std::endl;
             FILE * f = fopen(xmlFilename.c_str(), "w");
             xmlDocDump(f, doc);
             fclose(f);
@@ -424,6 +426,21 @@ ExporterVTK<MeshType,N>::save() const
                     vtkSmartPointer<vtkCPDataDescription> dataDescription = vtkSmartPointer<vtkCPDataDescription>::New();
                     dataDescription->AddInput("input");
                     dataDescription->SetTimeData(__step->time(), __step->index() - TS_INITIAL_INDEX);
+
+                    vtkStdString sh = soption( _name="exporter.vtk.insitu.hostname");
+
+                    vtkSmartPointer<vtkStringArray> hname = vtkSmartPointer<vtkStringArray>::New();
+                        hname->SetName( "hostname" );
+                        hname->InsertNextValue(sh);
+                    vtkSmartPointer<vtkIntArray> port = vtkSmartPointer<vtkIntArray>::New();
+                        port->SetName( "port" );
+                        port->InsertNextValue( ioption( _name="exporter.vtk.insitu.port") );
+
+                    vtkSmartPointer<vtkFieldData> fdata = vtkSmartPointer<vtkFieldData>::New();
+                        fdata->AddArray(hname);
+                        fdata->AddArray(port);
+
+                    dataDescription->SetUserData(fdata);
 
                     if(inSituProcessor->RequestDataDescription(dataDescription.GetPointer()) != 0)
                     {
