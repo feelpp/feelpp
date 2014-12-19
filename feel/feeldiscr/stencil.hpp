@@ -30,7 +30,6 @@
 #endif
 
 #include <feel/feelvf/pattern.hpp>
-#include <feel/feelvf/block.hpp>
 #include <feel/feelalg/graphcsr.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 

@@ -539,7 +539,7 @@ ginac_options( std::string const& prefix )
 po::options_description
 error_options( std::string const& prefix )
 {
-    po::options_description _options( "Error options (" + prefix + ")" );
+    po::options_description _options( "Error " + prefix + " options" );
     _options.add_options()
     // error options
         ( prefixvm( prefix, "error.exact" ).c_str(), Feel::po::value<std::string>()->default_value(""), "exact solution" )
@@ -623,11 +623,27 @@ exporter_options( std::string const& prefix )
 #if defined(FEELPP_HAS_VTK) && defined(FEELPP_VTK_INSITU_ENABLED)
         ( prefixvm( prefix,"exporter.vtk.insitu.enable" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Enable In-situ visualization with VTK exporter (Data won't be written to disk any longer)." )
         ( prefixvm( prefix,"exporter.vtk.insitu.pyscript" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "Specify a python user script for visualization." )
+        ( prefixvm( prefix,"exporter.vtk.insitu.hostname" ).c_str(), Feel::po::value<std::string>()->default_value( "localhost" ), "Specify a hostname to which the simulation will connect for coprocessing." )
+        ( prefixvm( prefix,"exporter.vtk.insitu.port" ).c_str(), Feel::po::value<int>()->default_value( 22222 ), "Specify the connection port used for coprocessing." )
 #endif
 
         ;
     return _options;
 }
+
+po::options_description aitken_options( std::string const& prefix )
+{
+    po::options_description _options( "Aitken " + prefix + " options" );
+    _options.add_options()
+        ( prefixvm( prefix,"aitken.type" ).c_str(), Feel::po::value<std::string>()->default_value( "method1" ), "standard,method1,fixed-relaxation" )
+        ( prefixvm( prefix,"aitken.maxit" ).c_str(), Feel::po::value<int>()->default_value( 1000 ), "maximum number of iteration" )
+        ( prefixvm( prefix,"aitken.initial_theta" ).c_str(), Feel::po::value<double>()->default_value( 1.0  ), "initial theta" )
+        ( prefixvm( prefix,"aitken.min_theta" ).c_str(), Feel::po::value<double>()->default_value( 1e-4 ), "if theta computed < min_theta else theta=initial_theta" )
+        ( prefixvm( prefix,"aitken.tol" ).c_str(), Feel::po::value<double>()->default_value( 1e-6 ), "fix-point tolerance" )
+        ;
+    return _options;
+}
+
 
 po::options_description
 feel_options( std::string const& prefix  )
@@ -701,7 +717,7 @@ feel_options( std::string const& prefix  )
 #if !defined( FEELPP_HAS_TRILINOS_EPETRA )
         .add( functionspace_options( prefix ) )
 #endif
-
+        .add( aitken_options( prefix ) )
         ;
 
     return opt;

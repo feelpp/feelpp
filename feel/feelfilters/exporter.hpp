@@ -93,6 +93,8 @@ public:
     typedef VisitorBase super1;
     typedef Visitor<MeshType> super2;
 
+    typedef Exporter<MeshType,N> etype;
+    typedef boost::shared_ptr<etype> ptrtype;
     typedef TimeSet<MeshType,N> timeset_type;
     typedef typename timeset_type::mesh_type mesh_type;
     typedef typename timeset_type::mesh_ptrtype mesh_ptrtype;
@@ -102,6 +104,7 @@ public:
     typedef typename timeset_set_type::const_iterator timeset_const_iterator;
     typedef typename timeset_type::step_type step_type;
     typedef typename timeset_type::step_ptrtype step_ptrtype;
+    
     struct Factory
     {
         typedef Feel::Singleton< Feel::Factory< Exporter<MeshType,N>, std::string > > type;
@@ -535,6 +538,16 @@ BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::compute_exporter_return<Args>
     //return Exporter<Mesh<Simplex<2> >,1>::New();
 }
 
+namespace meta
+{
+template<typename MeshType, int N = 1>
+struct Exporter
+{
+    typedef Feel::Exporter<MeshType,N> type;
+    typedef boost::shared_ptr<type> ptrtype;
+};
+
+}
 } // Feel
 
 //#if !defined( FEELPP_INSTANTIATION_MODE )

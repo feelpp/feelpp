@@ -1028,7 +1028,10 @@ public:
      */
     //@{
 
+    
+    BilinearForm(){}
     /**
+
 
      */
     BilinearForm( space_1_ptrtype const& __X1,
@@ -1274,7 +1277,7 @@ public:
     }
     /**
      * @brief set the bilinear form to zero
-     * @details set the bilinear form and its 
+     * @details set the bilinear form and its
      * algebraic representation to zero
      */
     void zero()
@@ -1459,10 +1462,6 @@ public:
         }
 
     //@}
-
-protected:
-
-    BilinearForm();
 
 private:
 
@@ -1803,6 +1802,19 @@ void BFAssign3<BFType,ExprType,TrialSpaceType>::operator()( boost::shared_ptr<Sp
 
 } // detail
 } // vf
+
+namespace meta
+{
+template<typename FE1,
+         typename FE2,
+         typename ElemContType = VectorUblas<typename FE1::value_type> >
+struct BilinearForm
+{
+    typedef Feel::vf::detail::BilinearForm<FE1,FE2,ElemContType> type;
+};
+
+
+}
 /// \endcond
 } // feel
 

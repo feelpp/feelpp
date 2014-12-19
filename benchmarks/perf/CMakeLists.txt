@@ -27,6 +27,11 @@ include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}
   )
 
+add_executable( feel_assembly
+  assembly.cpp
+  )
+target_link_libraries(feel_assembly feelpp ${FEELPP_LIBRARIES} )
+
 add_executable( feel_perf
   bench1_main.cpp
   bench1_run.cpp
@@ -35,7 +40,6 @@ add_executable( feel_perf
   bench1_run3d.cpp
   )
 target_link_libraries(feel_perf feelpp ${FEELPP_LIBRARIES} )
-# add_test( perf COMMAND feel_perf --hsi
 
 add_executable( feel_perf2
   perf2.cpp
