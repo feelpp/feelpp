@@ -350,6 +350,13 @@ public:
                              vector_ptrtype& x,
                              vector_ptrtype const& b );
 
+    /**
+     * assemble \f$C=P^T A P\f$
+     */
+    void PtAP( sparse_matrix_ptrtype const& A,
+               sparse_matrix_ptrtype const& P,
+               sparse_matrix_ptrtype const& C ) const;
+
     template <class Vector>
     static value_type dot( const vector_type& f,
                            const Vector& x )
@@ -369,92 +376,12 @@ private:
 }; // class BackendPetsc
 
 
-template<typename T>
-BackendPetsc<T>::~BackendPetsc()
-{
-    this->clear();
-}
-template<typename T>
-void
-BackendPetsc<T>::clear()
-{
-    LOG(INFO) << "Deleting linear solver petsc";
-    M_solver_petsc.clear();
-    LOG(INFO) << "Deleting non linear solver petsc";
-    M_nl_solver_petsc.clear();
-    LOG(INFO) << "Deleting backend petsc";
-
-    super::clear();
-
-}
-
-template<typename T>
-typename BackendPetsc<T>::solve_return_type
-BackendPetsc<T>::solve( sparse_matrix_ptrtype const& A,
-                        sparse_matrix_ptrtype const& B,
-                        vector_ptrtype& x,
-                        vector_ptrtype const& b )
-{
-    M_solver_petsc.setPrefix( this->prefix() );
-    M_solver_petsc.setPreconditionerType( this->pcEnumType() );
-    M_solver_petsc.setSolverType( this->kspEnumType() );
-    if (!M_solver_petsc.initialized())
-        M_solver_petsc.attachPreconditioner( this->M_preconditioner );
-    M_solver_petsc.setConstantNullSpace( this->hasConstantNullSpace() );
-    M_solver_petsc.setFieldSplitType( this->fieldSplitEnumType() );
-    M_solver_petsc.setTolerances( _rtolerance=this->rTolerance(),
-                                  _atolerance=this->aTolerance(),
-                                  _dtolerance=this->dTolerance(),
-                                  _maxit = this->maxIterations() );
-    M_solver_petsc.setPrecMatrixStructure( this->precMatrixStructure() );
-    M_solver_petsc.setMatSolverPackageType( this->matSolverPackageEnumType() );
-    M_solver_petsc.setShowKSPMonitor( this->showKSPMonitor() );
-    M_solver_petsc.setShowKSPConvergedReason( this->showKSPConvergedReason() );
-
-    auto res = M_solver_petsc.solve( *A, *B, *x, *b, this->rTolerance(), this->maxIterations(), this->transpose() );
-    DVLOG(2) << "[BackendPetsc::solve] number of iterations : " << res.template get<1>() << "\n";
-    DVLOG(2) << "[BackendPetsc::solve]             residual : " << res.template get<2>() << "\n";
-
-    if ( !res.template get<0>() )
-        LOG(ERROR) << "Backend " << this->prefix() << " : linear solver failed to converge" << std::endl;
-
-    return res;
-} // BackendPetsc::solve
 
 
-template<typename T>
-typename BackendPetsc<T>::solve_return_type
-BackendPetsc<T>::solve( sparse_matrix_type const& A,
-                        vector_type& x,
-                        vector_type const& b )
-{
-    M_solver_petsc.setPrefix( this->prefix() );
-    M_solver_petsc.setPreconditionerType( this->pcEnumType() );
-    M_solver_petsc.setSolverType( this->kspEnumType() );
-    if (!M_solver_petsc.initialized())
-        M_solver_petsc.attachPreconditioner( this->M_preconditioner );
-    M_solver_petsc.setConstantNullSpace( this->hasConstantNullSpace() );
-    M_solver_petsc.setFieldSplitType( this->fieldSplitEnumType() );
-    M_solver_petsc.setTolerances( _rtolerance=this->rTolerance(),
-                                  _atolerance=this->aTolerance(),
-                                  _dtolerance=this->dTolerance(),
-                                  _maxit = this->maxIterations() );
-    M_solver_petsc.setPrecMatrixStructure( this->precMatrixStructure() );
-    M_solver_petsc.setMatSolverPackageType( this->matSolverPackageEnumType() );
-    M_solver_petsc.setShowKSPMonitor( this->showKSPMonitor() );
-    M_solver_petsc.setShowKSPConvergedReason( this->showKSPConvergedReason() );
-
-    auto res = M_solver_petsc.solve( A, x, b, this->rTolerance(), this->maxIterations() );
-    DVLOG(2) << "[BackendPetsc::solve] number of iterations : " << res.template get<1>() << "\n";
-    DVLOG(2) << "[BackendPetsc::solve]             residual : " << res.template get<2>() << "\n";
-
-    if ( !res.template get<0>() )
-        LOG(ERROR) << "Backend " << this->prefix() << " : linear solver failed to converge" << std::endl;
-
-    return res;
-} // BackendPetsc::solve
-
-
+#if !defined(FEELPP_BACKEND_PETSC_NOEXTERN)
+extern template class BackendPetsc<double>;
+extern template class BackendPetsc<std::complex<double>>;
+#endif
 
 #endif // FEELPP_HAS_PETSC_H
 } // Feel

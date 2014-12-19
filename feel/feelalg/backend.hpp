@@ -1136,6 +1136,13 @@ public:
                                           bool reusePC, bool reuseJAC );
 
     /**
+     * assemble \f$C=P^T A P\f$
+     */
+    virtual void PtAP( sparse_matrix_ptrtype const& A,
+                       sparse_matrix_ptrtype const& P,
+                       sparse_matrix_ptrtype const& C
+                       ) const;
+    /**
      * Attaches a Preconditioner object to be used by the solver
      */
     void attachPreconditioner( preconditioner_ptrtype preconditioner )
