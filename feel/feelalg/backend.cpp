@@ -521,7 +521,7 @@ template <typename T>
 void
 Backend<T>::PtAP( sparse_matrix_ptrtype const& A,
                   sparse_matrix_ptrtype const& P,
-                  sparse_matrix_ptrtype const& C ) const
+                  sparse_matrix_ptrtype & C ) const
 {
     LOG(WARNING) << "PtAP not implemented in base class. You need to implement the procedure in the current backend.";
 }
