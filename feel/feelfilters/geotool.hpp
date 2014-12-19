@@ -619,7 +619,8 @@ typedef boost::tuple< GeoGMSHTool_ptrtype,
         vec_map_data_surf2_ptrtype,
         vec_map_data_surf1_ptrtype,
         vec_map_data_ptsinsurf_ptrtype,
-        map_surfaceLoop_type > data_geo_type;
+        map_surfaceLoop_type,
+        double /*meshSize*/ > data_geo_type;
 typedef boost::shared_ptr<data_geo_type> data_geo_ptrtype;
 
 
@@ -777,6 +778,443 @@ public :
     std::list<int> M_loop;
 };
 
+/*_________________________________________________*
+ *_________________________________________________*
+ *_________________________________________________*
+ * GeoGMSHTool data build :                        *
+ *_________________________________________________*
+ *_________________________________________________*
+ *_________________________________________________*/
+
+namespace detail {
+
+class GeoToolPoint
+{
+public :
+    GeoToolPoint()
+        :
+        M_localId( invalid_size_type_value ),
+        M_globalId( invalid_size_type_value ),
+        M_node(0),
+        M_hSize(0)
+        {}
+    GeoToolPoint(double x,double y,double z,double hsize, size_type localId,size_type globalId)
+        :
+        M_localId( localId ),
+        M_globalId( globalId ),
+        M_node(3),
+        M_hSize( hsize )
+        {
+            M_node[0] = x;
+            M_node[1] = y;
+            M_node[2] = z;
+        }
+    GeoToolPoint( GeoToolPoint const& p )
+        :
+        M_localId( p.M_localId ),
+        M_globalId( p.M_globalId ),
+        M_node( p.M_node ),
+        M_hSize( p.M_hSize )
+        {}
+
+    size_type localId() const { return M_localId; }
+    size_type globalId() const { return M_globalId; }
+    node_type const& node() const { return M_node; }
+    double hSize() const { return M_hSize; }
+    void showMe() const
+    {
+        std::cout << "localId  : " << this->localId() << " ; "
+                  << "globalId : " << this->globalId() << " ; "
+                  << "node     : " << M_node[0] << " " << M_node[1] << " " << M_node[2]
+                  << "hSize : " << M_hSize
+                  << "\n";
+    }
+
+private :
+    size_type M_localId,M_globalId;
+    node_type M_node;
+    double M_hSize;
+};
+
+class GeoToolLine
+{
+public :
+    GeoToolLine()
+        :
+        M_localId( invalid_size_type_value ),
+        M_globalId( invalid_size_type_value )
+        {}
+    GeoToolLine(size_type localId,size_type globalId,std::string type)
+        :
+        M_localId( localId ),
+        M_globalId( globalId ),
+        M_lineType( type )
+        {}
+    GeoToolLine( GeoToolLine const& l )
+        :
+        M_localId( l.M_localId ),
+        M_globalId( l.M_globalId ),
+        M_lineType( l.M_lineType ),
+        M_listPt( l.M_listPt ),
+        M_physicalMarker( l.M_physicalMarker )
+        {}
+    size_type localId() const { return M_localId; }
+    size_type globalId() const { return M_globalId; }
+    std::string lineType() const { return M_lineType; }
+    std::list<size_type> const& listPt() const { return M_listPt; }
+    std::string physicalMarker() const { return M_physicalMarker; }
+
+    void setPhysicalMarker( std::string s ) { M_physicalMarker=s; }
+
+    //void setPoints( std::initializer_list<size_type> const& list )
+    void setPoints( std::list<size_type> const& listPt )
+    {
+        M_listPt = listPt;
+    }
+    void replacePointId( int idIn, int idOut )
+    {
+        std::replace( M_listPt.begin(), M_listPt.end(), idIn, idOut );
+    }
+
+    void showMe() const
+    {
+        std::cout << "localId  : " << this->localId() << " ; "
+                  << "globalId : " << this->globalId() << " ; "
+                  << "lineType : " << this->lineType() << " ; "
+                  << "physicalMarker : " << this->physicalMarker() << " ; "
+                  << "ptsId    : ";
+        for ( size_type ptId : M_listPt )
+            std::cout << " " << ptId;
+        std::cout << "\n";
+
+    }
+
+private :
+    size_type M_localId,M_globalId;
+    std::string M_lineType;
+    std::list<size_type> M_listPt;
+    std::string M_physicalMarker;
+};
+
+class GeoToolLineLoop
+{
+public :
+    GeoToolLineLoop()
+        :
+        M_localId( invalid_size_type_value ),
+        M_globalId( invalid_size_type_value )
+        {}
+    GeoToolLineLoop(std::string name,size_type localId,size_type globalId)
+        :
+        M_name( name ),
+        M_localId( localId ),
+        M_globalId( globalId )
+        {}
+    GeoToolLineLoop( GeoToolLineLoop const& l )
+        :
+        M_name( l.M_name ),
+        M_localId( l.M_localId ),
+        M_globalId( l.M_globalId ),
+        M_listLine( l.M_listLine )
+        {}
+    std::string name() const { return M_name; }
+    size_type localId() const { return M_localId; }
+    size_type globalId() const { return M_globalId; }
+    std::list<int> const& listLine() const { return M_listLine; }
+
+    void replaceLineId( int idIn, int idOut )
+    {
+        std::replace( M_listLine.begin(), M_listLine.end(), idIn, idOut );
+    }
+    void setLines( std::list<int> const& listLine )
+    {
+        M_listLine = listLine;
+    }
+    void showMe() const
+    {
+        std::cout << "localId  : " << this->localId() << " ; "
+                  << "globalId : " << this->globalId() << " ; "
+                  << "linesId  : ";
+        for ( int lineId : M_listLine )
+            std::cout << " " << lineId;
+        std::cout << "\n";
+    }
+
+private :
+    std::string M_name;
+    size_type M_localId,M_globalId;
+    std::list<int> M_listLine;
+};
+
+class GeoToolSurface
+{
+public :
+
+    GeoToolSurface()
+        :
+        M_localId( invalid_size_type_value ),
+        M_globalId( invalid_size_type_value )
+        {}
+    GeoToolSurface(std::string name,size_type localId,size_type globalId,std::string type)
+        :
+        M_name( name ),
+        M_localId( localId ),
+        M_globalId( globalId ),
+        M_surfaceType( type )
+        {}
+    GeoToolSurface( GeoToolSurface const& l )
+        :
+        M_name( l.M_name ),
+        M_localId( l.M_localId ),
+        M_globalId( l.M_globalId ),
+        M_surfaceType( l.M_surfaceType ),
+        M_lineLoopId( l.M_lineLoopId ),
+        M_physicalMarker( l.M_physicalMarker ),
+        M_ptsInSurface( l.M_ptsInSurface )
+        {}
+    std::string name() const { return M_name; }
+    size_type localId() const { return M_localId; }
+    size_type globalId() const { return M_globalId; }
+    std::string surfaceType() const { return M_surfaceType; }
+    std::list<int> const& listLineLoop() const { return M_lineLoopId; }
+    std::string physicalMarker() const { return M_physicalMarker; }
+    std::set<int> const& ptsInSurface() const { return M_ptsInSurface; }
+
+    void setPhysicalMarker( std::string s ) { M_physicalMarker=s; }
+
+    void setLineLoop( int lineLoopId )
+    {
+        M_lineLoopId = { lineLoopId };
+    }
+    void setLineLoop( std::list<int> const& lineLoopId )
+    {
+        M_lineLoopId = lineLoopId;
+    }
+    void addLineLoop( int lineLoopId )
+    {
+        M_lineLoopId.push_back( lineLoopId );
+    }
+    void addLineLoop( std::list<int> const& lineLoopIds )
+    {
+        for ( auto lineLoopId : lineLoopIds )
+            M_lineLoopId.push_back( lineLoopId );
+    }
+
+    void setPtInSurface( std::set<int> const& ptIds )
+    {
+        M_ptsInSurface = ptIds;
+    }
+    void addPtInSurface( int ptId )
+    {
+        M_ptsInSurface.insert( ptId );
+    }
+
+    void showMe() const
+    {
+        std::cout << "localId : " << this->localId() << " ; "
+                  << "globalId : " << this->globalId() << " ; "
+                  << "surfaceType" << this->surfaceType() << " ; "
+                  << "physicalMarker : " << this->physicalMarker() << " ; "
+                  << "lineLoopId : ";
+        for ( auto llid : this->listLineLoop() )
+            std::cout << llid << " ";
+        std::cout << "\n";
+    }
+
+
+private :
+    std::string M_name;
+    size_type M_localId,M_globalId;
+    std::string M_surfaceType;
+    std::list<int> M_lineLoopId;
+    std::string M_physicalMarker;
+    std::set<int> M_ptsInSurface;
+
+};
+
+class GeoToolSurfaceLoop
+{
+public :
+
+    GeoToolSurfaceLoop()
+        :
+        M_localId( invalid_size_type_value ),
+        M_globalId( invalid_size_type_value )
+        {}
+    GeoToolSurfaceLoop(std::string name,size_type localId,size_type globalId)
+        :
+        M_name( name ),
+        M_localId( localId ),
+        M_globalId( globalId )
+        {}
+    GeoToolSurfaceLoop( GeoToolSurfaceLoop const& l )
+        :
+        M_name( l.M_name ),
+        M_localId( l.M_localId ),
+        M_globalId( l.M_globalId ),
+        M_listSurface( l.M_listSurface )
+        {}
+
+    std::string name() const { return M_name; }
+    size_type localId() const { return M_localId; }
+    size_type globalId() const { return M_globalId; }
+    std::list<int> const& listSurface() const { return M_listSurface; }
+
+    void replaceSurfaceId( int idIn, int idOut )
+    {
+        std::replace( M_listSurface.begin(), M_listSurface.end(), idIn, idOut );
+    }
+    void setSurfaces( std::list<int> const& listSurface )
+    {
+        M_listSurface = listSurface;
+    }
+    void showMe() const
+    {
+        std::cout << "localId  : " << this->localId() << " ; "
+                  << "globalId : " << this->globalId() << " ; "
+                  << "surfacesId  : ";
+        for ( int surfId : M_listSurface )
+            std::cout << " " << surfId;
+        std::cout << "\n";
+    }
+
+private :
+    std::string M_name;
+    size_type M_localId,M_globalId;
+    std::list<int> M_listSurface;
+
+};
+
+
+class GeoToolVolume
+{
+public :
+
+    GeoToolVolume()
+        :
+        M_localId( invalid_size_type_value ),
+        M_globalId( invalid_size_type_value )
+        {}
+    GeoToolVolume(size_type localId,size_type globalId)
+        :
+        M_localId( localId ),
+        M_globalId( globalId )
+        {}
+    GeoToolVolume( GeoToolVolume const& l )
+        :
+        M_localId( l.M_localId ),
+        M_globalId( l.M_globalId ),
+        M_surfaceLoopId( l.M_surfaceLoopId ),
+        M_physicalMarker( l.M_physicalMarker )
+        {}
+    //std::string name() const { return M_name; }
+    size_type localId() const { return M_localId; }
+    size_type globalId() const { return M_globalId; }
+    std::list<int> const& listSurfaceLoop() const { return M_surfaceLoopId; }
+    std::string physicalMarker() const { return M_physicalMarker; }
+
+    void setPhysicalMarker( std::string s ) { M_physicalMarker=s; }
+
+    void setSurfaceLoop( int surfLoopId )
+    {
+        M_surfaceLoopId = { surfLoopId };
+    }
+    void setSurfaceLoop( std::list<int> const& surfLoopIds )
+    {
+        M_surfaceLoopId = surfLoopIds;
+    }
+    void addSurfaceLoop( int surfLoopId )
+    {
+        M_surfaceLoopId.push_back( surfLoopId );
+    }
+
+    void showMe() const
+    {
+        std::cout << "localId : " << this->localId() << " ; "
+                  << "globalId : " << this->globalId() << " ; "
+                  << "physicalMarker : " << this->physicalMarker() << " ; "
+                  << "surfaceLoopId : ";
+        for ( auto llid : this->listSurfaceLoop() )
+            std::cout << llid << " ";
+        std::cout << "\n";
+    }
+
+private :
+    //std::string M_name;
+    size_type M_localId,M_globalId;
+    std::string M_surfaceType;
+    std::list<int> M_surfaceLoopId;
+    std::string M_physicalMarker;
+};
+
+
+
+class ApplyFusionMarkersLine
+{
+public :
+
+    ApplyFusionMarkersLine()
+        :
+        M_globalId1Line( 0 ),
+        M_globalId2Line( 0 ),
+        M_globalId1LineLoop( 0 ),
+        M_globalId2LineLoop( 0 )
+        {}
+
+    ApplyFusionMarkersLine( ApplyFusionMarkersLine const& a )
+        :
+        M_globalId1Line( a.M_globalId1Line ),
+        M_globalId2Line( a.M_globalId2Line ),
+        M_globalId1LineLoop( a.M_globalId1LineLoop ),
+        M_globalId2LineLoop( a.M_globalId2LineLoop )
+        {}
+
+    void setGlobalId1( int globalId1Line, int globalId1LineLoop )
+    {
+        M_globalId1Line = globalId1Line;
+        M_globalId1LineLoop = globalId1LineLoop;
+    }
+    void setGlobalId2( int globalId2Line, int globalId2LineLoop )
+    {
+        M_globalId2Line = globalId2Line;
+        M_globalId2LineLoop = globalId2LineLoop;
+    }
+
+    int globalId1Line() const { return M_globalId1Line; }
+    int globalId2Line() const { return M_globalId2Line; }
+    int globalId1LineLoop() const { return M_globalId1LineLoop; }
+    int globalId2LineLoop() const { return M_globalId2LineLoop; }
+
+private :
+
+    int M_globalId1Line, M_globalId2Line;
+    int M_globalId1LineLoop, M_globalId2LineLoop;
+};
+
+} // namespace detail
+
+//class GeoGMSHTool;
+
+class FusionMarkers
+{
+public :
+    FusionMarkers(GeoGMSHTool const& gt1, int marker1,GeoGMSHTool const& gt2, int marker2);
+
+    FusionMarkers( FusionMarkers const& f )
+        :
+        M_nameGT1( f.M_nameGT1 ), M_nameGT2( f.M_nameGT2 ),
+        M_marker1( f.M_marker1 ),M_marker2( f.M_marker2 )
+        {}
+
+    std::string nameGT1() const { return M_nameGT1; }
+    std::string nameGT2() const { return M_nameGT2; }
+    int marker1() const { return M_marker1; }
+    int marker2() const { return M_marker2; }
+
+private :
+    std::string M_nameGT1, M_nameGT2;
+    int M_marker1, M_marker2;
+};
 
 /*_________________________________________________*
  *_________________________________________________*
@@ -801,7 +1239,8 @@ public:
     typedef map_shape_names_type::const_iterator map_shape_names_const_iterator_type;
     */
     typedef boost::tuple<std::string,std::string,uint16_type> marker_base_type;
-    typedef std::map<std::string,std::list<marker_base_type > > marker_markerName_type;
+    //typedef std::map<std::string,std::list<marker_base_type > > marker_markerName_type;
+    typedef std::map<std::string,std::vector<marker_base_type > > marker_markerName_type;
     typedef std::map< std::string, marker_markerName_type > marker_type_type;
     typedef std::map< std::string, marker_type_type > marker_name_type;
     typedef std::map< std::string, marker_type_type > marker_shape_type;
@@ -910,7 +1349,10 @@ public:
         M_ostr.reset( new std::ostringstream() );
     }
 
-
+    /**
+     * Print information
+     */
+    void showMe() const;
 
 
 
@@ -1050,6 +1492,11 @@ public:
     {
         return  M_dim;
     }
+    std::string name() const
+    {
+        return M_name;
+    }
+
     uint16_type cptPt() const
     {
 
@@ -1171,13 +1618,15 @@ public:
         return M_markShape->find( __type )->second;
     }
 
-    std::list<marker_base_type>::const_iterator
+    //std::list<marker_base_type>::const_iterator
+    std::vector<marker_base_type>::const_iterator
     markerListIndiceBegin( /*std::string __shape,*/ std::string __type ,std::string __markerName ) const
     {
         return M_markShape->find( __type )->second.find( __markerName )->second.begin();
     }
 
-    std::list<marker_base_type>::const_iterator
+    //std::list<marker_base_type>::const_iterator
+    std::vector<marker_base_type>::const_iterator
     markerListIndiceEnd( /*std::string __shape,*/ std::string __type ,std::string __markerName ) const
     {
         //return M_markShape->find(__shape)->second.find(__type)->second.find(__markerName)->second.end();
@@ -1185,7 +1634,8 @@ public:
     }
 
 
-    std::list<marker_base_type>
+    //std::list<marker_base_type>
+    std::vector<marker_base_type>
     getMarkerName( /*std::string __shape,*/ std::string __type ,std::string __markerName ) const
     {
         //return M_markShape->find(__shape)->second.find(__type)->second.find(__markerName)->second;
@@ -1199,6 +1649,7 @@ public:
      *_________________________________________________*/
 
     uint16_type M_dim;
+    std::string M_name;
     // memory
     uint16_type M_cptPt;
     uint16_type M_cptLine;
@@ -1231,6 +1682,116 @@ public:
 
     boost::shared_ptr<std::ostringstream> M_ostrDefineByUser;
     bool M_geoIsDefineByUser;
+
+
+    // usefull for writing geofile
+    void addPoint(/*std::string name, */detail::GeoToolPoint const& pt)
+    {
+        //M_buildDataPoint[name].push_back(pt);
+        M_buildDataPoint[pt.globalId()] =  pt;
+    }
+    void addLine(detail::GeoToolLine const& line)
+    {
+        M_buildDataLine[line.globalId()] = line;
+    }
+    void addLineLoop(detail::GeoToolLineLoop const& lineLoop)
+    {
+        M_buildDataLineLoop[lineLoop.globalId()] = lineLoop;
+    }
+    void addSurface(detail::GeoToolSurface const& surf)
+    {
+        M_buildDataSurface[surf.globalId()] = surf;
+    }
+    void addSurfaceLoop(detail::GeoToolSurfaceLoop const& surfLoop)
+    {
+        M_buildDataSurfaceLoop[surfLoop.globalId()] = surfLoop;
+    }
+    void addVolume(detail::GeoToolVolume const& vol)
+    {
+        M_buildDataVolume[vol.globalId()] = vol;
+    }
+    std::map<size_type, detail::GeoToolPoint> M_buildDataPoint;
+    std::map<size_type, detail::GeoToolLine> M_buildDataLine;
+    std::map<size_type, detail::GeoToolLineLoop> M_buildDataLineLoop;
+    std::map<size_type, detail::GeoToolSurface> M_buildDataSurface;
+    std::map<size_type, detail::GeoToolSurfaceLoop> M_buildDataSurfaceLoop;
+    std::map<size_type, detail::GeoToolVolume> M_buildDataVolume;
+
+
+    int
+    surfaceIdFromName( std::string name ) const
+    {
+        for ( auto const& surf : M_buildDataSurface )
+            if ( surf.second.name() == name )
+                return surf.first;
+        return 0;
+    }
+
+    GeoGMSHTool&
+    fusion( GeoGMSHTool const& gt1, int marker1, GeoGMSHTool const& gt2, int marker2, bool keepInterface=true)
+    {
+        if ( keepInterface )
+            M_fusionMarkersLineWithInterface.push_back( FusionMarkers( gt1,marker1,gt2,marker2 ) );
+        else
+            M_fusionMarkersLineWithoutInterface.push_back( FusionMarkers( gt1,marker1,gt2,marker2 ) );
+        return *this;
+    }
+
+
+    std::vector<FusionMarkers> const& fusionMarkersLineWithInterface() { return M_fusionMarkersLineWithInterface; }
+    std::vector<FusionMarkers> const& fusionMarkersLineWithoutInterface() { return M_fusionMarkersLineWithoutInterface; }
+    std::vector<FusionMarkers> M_fusionMarkersLineWithInterface, M_fusionMarkersLineWithoutInterface;
+
+    std::vector<detail::ApplyFusionMarkersLine> M_buildApplyFusionMarker;
+
+    bool hasSameOrientation( detail::GeoToolLine const& l1, detail::GeoToolLine const& l2 ) const
+    {
+        CHECK( l1.lineType() == l2.lineType() ) << "error not same type";
+        if ( l1.lineType() == "line" )
+        {
+            CHECK( l1.listPt().size() == 2 ) << "error";
+            auto thenode1p1 = M_buildDataPoint.find(l1.listPt().front())->second.node();
+            auto thenode2p1 = M_buildDataPoint.find(l2.listPt().front())->second.node();
+
+            if ( ( std::abs(thenode1p1[0] - thenode2p1[0]) < 1e-9 ) &&
+                 ( std::abs(thenode1p1[1] - thenode2p1[1]) < 1e-9 ) &&
+                 ( std::abs(thenode1p1[2] - thenode2p1[2]) < 1e-9 ) )
+                return true;
+            else
+                return false;
+        }
+        else CHECK( false ) << "TODO";
+
+    }
+
+
+    // name->(list of local id )
+    //std::map<std::string,std::set<size_type> > M_fusionMarkerDoublonPoint,M_fusionMarkerDoublonLine,M_fusionMarkerDoublonLineLoop;
+
+
+    std::pair<bool,std::string>
+    findPhysicalMarker(std::string markerType, std::string __name, int __numLoc )
+    {
+        if ( this->M_markShape->find( markerType/*"line"*/) != this->M_markShape->end() )
+        {
+            for ( auto markName : this->markerMarkerName(markerType/*"line"*/) )
+            {
+                for ( auto lineMarked : markName.second )
+                {
+                    //std::string __shape = boost::get<2>( *__dg );
+                    //std::string __name = boost::get<3>( *__dg );
+                    if ( __name == lineMarked.get<1>() && __numLoc == lineMarked.get<2>() )
+                    {
+                        //myLine.setPhysicalMarker( markName.first );
+                        return std::make_pair( true,markName.first );
+                    }
+                }
+            }
+        }
+        return std::make_pair( false,std::string("") );
+    }
+
+
 };
 
 /*_________________________________________________*
@@ -1602,8 +2163,8 @@ computeBasisOrthogonal( node_type dir,node_type centre );
                                                                      GEOTOOL_SHAPE_PARAM_SIGNATURE(state) \
                                                                      uint16_type type = 0 ) /*Ne sert a rien, juste a cause de la virgule au dessus)*/ \
                 :                                                       \
-                GeoGMSHTool( GEOTOOL_SHAPE_DIM(BOOST_PP_TUPLE_ELEM(2,0,state)),shape(), __name, __meshSize), \
-                M_name(__name)                                         \
+                GeoGMSHTool( GEOTOOL_SHAPE_DIM(BOOST_PP_TUPLE_ELEM(2,0,state)),shape(), __name, __meshSize) \
+                /*M_name(__name)*/                                      \
                 {                                                       \
                     M_param.resize( GEOTOOL_SHAPE_NBPARAM(BOOST_PP_TUPLE_ELEM(2,0,state))); \
                     BOOST_PP_FOR( (0, BOOST_PP_SUB(GEOTOOL_SHAPE_NBPARAM(BOOST_PP_TUPLE_ELEM(2,0,state)),1) ), \
@@ -1669,7 +2230,7 @@ computeBasisOrthogonal( node_type dir,node_type centre );
                         marker12=true;                                  \
                     }                                                   \
                                                                         \
-                    std::list<marker_base_type > __listMarker = (*(M_markShape))[type][name]; \
+                    std::vector/*list*/<marker_base_type > __listMarker = (*(M_markShape))[type][name]; \
                                                                         \
                                                                         \
                     if (type=="point")                                  \
@@ -1717,10 +2278,10 @@ computeBasisOrthogonal( node_type dir,node_type centre );
                 }                                                       \
                                                                         \
                                                                         \
-            std::string M_name;                                        \
+            /*std::string M_name;*/                                     \
                                                                         \
             static const std::string shape() { return GEOTOOL_SHAPE_NAME_STR(BOOST_PP_TUPLE_ELEM(2,0, state));} \
-            const std::string name() const {return M_name;}			\
+            /*const std::string name() const {return M_name;}*/         \
                                                                         \
                                                                         \
             std::vector<GeoTool::Node> M_param;                        \
@@ -1803,7 +2364,7 @@ createMeshFromGeoFile( std::string geofile,std::string name,double meshSize,int 
     mesh->updateForUse();
 
     if ( straighten && mesh_type::nOrder > 1 )
-        return straightenMesh( _mesh=mesh, _worldcomm=worldcomm.subWorldComm() );
+        return straightenMesh( mesh, worldcomm.subWorldComm() );
 
     return mesh;
 }
