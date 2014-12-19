@@ -135,6 +135,13 @@ Traces<Dim,Order>::run()
         //saveGMSHMesh( _filename=(boost::format( "trace-%1%-%2%-%3%.msh" ) % Dim % Environment::worldComm().globalRank() % neighbor_subdomain).str(), _mesh=trace );
         auto m = mean( _range=elements(trace), _expr=idv(l),_worldcomm=Environment::worldCommSeq() )(0,0);
         //CHECK( math::abs( m -  double(neighbor_subdomain+1) ) < 1e-14 ) << "problem : " << m << " != " << neighbor_subdomain;
+        auto verifLocal = VhLocal->element();
+        std::iota(l.begin(), l.end(), 1.0);
+        verifLocal = opLocalT->operator()(l);
+        for(int j = 0; j < VhLocal->nDof(); ++j)
+            CHECK(std::round(verifLocal[j]) >= 0 && std::round(verifLocal[j]) <= VhLocal->nDof())
+                << "problem : " << std::round(verifLocal[j]) << " < 0 || "
+                <<  std::round(verifLocal[j]) << " > " << VhLocal->nDof();
 
         send[i] = nelements(elements(trace));
         MPI_Isend(send + i, 1, MPI_UNSIGNED, neighbor_subdomain, 0, Environment::worldComm(), rq + i);
