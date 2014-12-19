@@ -355,7 +355,7 @@ public:
      */
     void PtAP( sparse_matrix_ptrtype const& A,
                sparse_matrix_ptrtype const& P,
-               sparse_matrix_ptrtype const& C ) const;
+               sparse_matrix_ptrtype& C ) const;
 
     template <class Vector>
     static value_type dot( const vector_type& f,

@@ -546,6 +546,7 @@ public :
     typedef typename super::graph_type graph_type;
     typedef typename super::graph_ptrtype graph_ptrtype;
     typedef typename super::value_type value_type;
+    typedef typename super::real_type real_type;
 
     typedef typename super::datamap_type datamap_type;
     typedef typename super::datamap_ptrtype datamap_ptrtype;
@@ -612,9 +613,9 @@ public :
                    Vector<value_type>& rhs,
                    Context const& on_context );
 
-    value_type energy( Vector<value_type> const& __v,
-                       Vector<value_type> const& __u,
-                       bool transpose = false ) const;
+    real_type energy( Vector<value_type> const& __v,
+                      Vector<value_type> const& __u,
+                      bool transpose = false ) const;
 
 private :
 

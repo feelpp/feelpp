@@ -1141,7 +1141,7 @@ public:
      */
     virtual void PtAP( sparse_matrix_ptrtype const& A,
                        sparse_matrix_ptrtype const& P,
-                       sparse_matrix_ptrtype const& C
+                       sparse_matrix_ptrtype & C
                        ) const;
     /**
      * Attaches a Preconditioner object to be used by the solver
@@ -1417,7 +1417,7 @@ bool isMatrixInverseSymmetric ( boost::shared_ptr<MatrixSparse<T> >& A, boost::s
 
 #if !defined(FEELPP_BACKEND_NOEXTERN)
 extern template class Backend<double>;
-extern template class Backend<std::complex<double>>;
+//extern template class Backend<std::complex<double>>;
 #endif
 
 }
