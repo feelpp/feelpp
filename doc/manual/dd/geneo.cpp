@@ -37,7 +37,7 @@
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feeldiscr/pdh.hpp>
-#include <feel/feeldiscr/pch.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feeldiscr/operatorinterpolation.hpp>
 #include <feel/feeltiming/tic.hpp>
@@ -106,8 +106,7 @@ static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<d
     a = integrate(_range = elements(mesh), _expr = idf(k) * gradt(u) * trans(grad(v)));
     auto l = form1(_test = Vh, _vector = f);
     l = integrate(_range = elements(mesh), _expr = id(v));
-    if(nelements(markedfaces(mesh, "Dirichlet")) > 0)
-        a += on(_range = markedfaces(mesh, "Dirichlet"), _rhs = l, _element = u, _expr = cst(0.0));
+    a += on(_range = markedfaces(mesh, "Dirichlet"), _rhs = l, _element = u, _expr = cst(0.0));
 }
 template<uint16_type Order>
 static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<double>::vector_ptrtype& f, boost::shared_ptr<Mesh<Simplex<2>>>& mesh, boost::shared_ptr<FunctionSpace<Mesh<Simplex<2>>, bases<Lagrange<Order, Vectorial>>>>& Vh, typename FunctionSpace<typename Mesh<Simplex<2>>::mesh_type, bases<Lagrange<Order, Vectorial>>>::element_type& u, typename FunctionSpace<typename Mesh<Simplex<2>>::mesh_type, bases<Lagrange<Order, Vectorial>>>::element_type& v) {
@@ -129,8 +128,7 @@ static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<d
                           2 * mu * trace(trans(sym(gradt(u))) * sym(grad(u))));
     auto l = form1(_test = Vh, _vector = f);
     l = integrate(_range = elements(mesh), _expr = -density * trans(oneY()) * id(v));
-    if(nelements(markedfaces(mesh, "Dirichlet")) > 0)
-        a += on(_range = markedfaces(mesh, "Dirichlet"), _rhs = l, _element = u, _expr = zero<2, 1>());
+    a += on(_range = markedfaces(mesh, "Dirichlet"), _rhs = l, _element = u, _expr = zero<2, 1>());
 }
 template<uint16_type Order>
 static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<double>::vector_ptrtype& f, boost::shared_ptr<Mesh<Simplex<3>>>& mesh, boost::shared_ptr<FunctionSpace<Mesh<Simplex<3>>, bases<Lagrange<Order, Vectorial>>>>& Vh, typename FunctionSpace<typename Mesh<Simplex<3>>::mesh_type, bases<Lagrange<Order, Vectorial>>>::element_type& u, typename FunctionSpace<typename Mesh<Simplex<3>>::mesh_type, bases<Lagrange<Order, Vectorial>>>::element_type& v) {
@@ -152,8 +150,7 @@ static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<d
                           2 * mu * trace(trans(sym(gradt(u))) * sym(grad(u))));
     auto l = form1(_test = Vh, _vector = f);
     l = integrate(_range = elements(mesh), _expr = -density * trans(vec(cst(1.0/std::sqrt(2.0)), cst(0.0), cst(1.0/std::sqrt(2.0)))) * id(v));
-    if(nelements(markedfaces(mesh, "Dirichlet")) > 0)
-        a += on(_range = markedfaces(mesh, "Dirichlet"), _rhs = l, _element = u, _expr = zero<3, 1>());
+    a += on(_range = markedfaces(mesh, "Dirichlet"), _rhs = l, _element = u, _expr = zero<3, 1>());
 }
 
 template<uint16_type Dim, uint16_type Order, template<uint16_type> class Type>
@@ -169,12 +166,13 @@ Geneopp<Dim, Order, Type>::run()
 {
     static_assert(Dim == 2 || Dim == 3, "Wrong dimension");
 #if defined(FETI)
-    HpFeti<FetiPrcdtnr::DIRICHLET, double, 'S'> K;
+    typedef HpFeti<FetiPrcdtnr::DIRICHLET, double, 'S'> prec_type;
     constexpr unsigned short nu = 0;
 #elif defined(BDD)
-    HpBdd<double, 'S'> K;
+    typedef HpBdd<double, 'S'> prec_type;
     unsigned short nu = ioption("nu");
 #endif
+    prec_type* K = new prec_type;
     tic();
     int p = ioption("p");
     int topology = ioption("topology");
@@ -328,21 +326,21 @@ Geneopp<Dim, Order, Type>::run()
             std::copy(array, array + nnz, c);
             std::copy(ia, ia + n + 1, ic);
             std::copy(ja, ja + nnz, jc);
-            HPDDM::MatrixCSR<double>* pt = new HPDDM::MatrixCSR<double>(n, n, nnz, c, ic, jc, false);
+            HPDDM::MatrixCSR<double>* pt = new HPDDM::MatrixCSR<double>(n, n, nnz, c, ic, jc, false, true);
 #endif
             MatSeqAIJRestoreArray(PetscA, &array);
             MatRestoreRowIJ(PetscA, 0, PETSC_FALSE, PETSC_FALSE, &n, &ia, &ja, &done);
 #ifdef FEELPP_HAS_HPDDM
-            K.Subdomain::initialize(pt, mesh->faceNeighborSubdomains().cbegin(), mesh->faceNeighborSubdomains().cend(), map, &comm);
+            K->Subdomain::initialize(pt, mesh->faceNeighborSubdomains().cbegin(), mesh->faceNeighborSubdomains().cend(), map, &comm);
             if(nu == 0) {
                 if(nelements(markedfaces(meshLocal, "Dirichlet")) == 0) {
                     unsigned short nb;
                     generateRBM(nb, ev, meshLocal, VhLocal);
-                    K.setVectors(ev);
-                    K.super::super::initialize(nb);
+                    K->setVectors(ev);
+                    K->super::super::initialize(nb);
                 }
                 else
-                    K.super::super::initialize(0);
+                    K->super::super::initialize(0);
             }
             b = new double[VhLocal->nDof()];
             VecGetArray(PetscF, &array);
@@ -355,22 +353,22 @@ Geneopp<Dim, Order, Type>::run()
 #ifdef FEELPP_HAS_HPDDM
         bComm.barrier();
         time.restart();
-        K.renumber(interface, b);
+        K->renumber(interface, b);
         timers[4] = time.elapsed();
         if(nu != 0) {
             bComm.barrier();
             time.restart();
-            K.computeSchurComplement();
+            K->computeSchurComplement();
             timers[6] = time.elapsed();
             bComm.barrier();
             time.restart();
-            K.solveGEVP<'S'>(nu);
+            K->solveGEVP<'S'>(nu);
             timers[7] = time.elapsed();
-            K.super::super::initialize(nu);
+            K->super::super::initialize(nu);
         }
-        K.callNumfactPreconditioner();
+        K->callNumfactPreconditioner();
         std::string scaling = soption("scaling");
-        K.buildScaling(scaling[0]);
+        K->buildScaling(scaling[0]);
     }
     std::vector<unsigned short> parm(5);
     parm[HPDDM::Parameter::P]            = p;
@@ -378,35 +376,36 @@ Geneopp<Dim, Order, Type>::run()
     parm[HPDDM::Parameter::DISTRIBUTION] = HPDDM::DMatrix::NON_DISTRIBUTED;
     parm[HPDDM::Parameter::STRATEGY]     = ioption("strategy");
     if(nu == 0)
-        parm[HPDDM::Parameter::NU]       = excluded ? 0 : K.getLocal();
+        parm[HPDDM::Parameter::NU]       = excluded ? 0 : K->getLocal();
     else
         parm[HPDDM::Parameter::NU]       = nu;
     unsigned short iter = ioption("it");
     double eps = doption("eps");
     if(excluded) {
-        K.Subdomain::initialize(&comm);
-        K.buildTwo<2>(Environment::worldComm(), parm);
-        HPDDM::IterativeMethod::PCG<true>(K, static_cast<double*>(nullptr), static_cast<double*>(nullptr), iter, eps, Environment::worldComm(), Environment::isMasterRank());
+        K->Subdomain::initialize(&comm);
+        K->buildTwo<2>(Environment::worldComm(), parm);
+        HPDDM::IterativeMethod::PCG<true>(*K, static_cast<double*>(nullptr), static_cast<double*>(nullptr), iter, eps, Environment::worldComm(), Environment::isMasterRank());
+        delete K;
     }
     else {
         if(exclude)
-            K.buildTwo<1>(Environment::worldComm(), parm);
+            K->buildTwo<1>(Environment::worldComm(), parm);
         else
-            K.buildTwo<0>(Environment::worldComm(), parm);
+            K->buildTwo<0>(Environment::worldComm(), parm);
         bComm.barrier();
         time.restart();
-        K.callNumfact();
+        K->callNumfact();
         timers[5] = time.elapsed();
         std::fill(uLocal.begin(), uLocal.end(), 0.0);
-        HPDDM::IterativeMethod::PCG<false>(K, &(uLocal[0]), b, iter, eps, Environment::worldComm(), Environment::isMasterRank());
+        HPDDM::IterativeMethod::PCG<false>(*K, &(uLocal[0]), b, iter, eps, Environment::worldComm(), Environment::isMasterRank());
 
         double* storage = new double[2];
-        K.computeError(&(uLocal[0]), b, storage);
+        K->computeError(&(uLocal[0]), b, storage);
         delete [] b;
 
-        K.originalNumbering(interface, &(uLocal[0]));
+        K->originalNumbering(interface, &(uLocal[0]));
 
-        double stats[3] = { K.getMult() / 2.0, mesh->faceNeighborSubdomains().size() / static_cast<double>(bComm.size()), static_cast<double>(K.getAllDof()) };
+        double stats[3] = { K->getMult() / 2.0, mesh->faceNeighborSubdomains().size() / static_cast<double>(bComm.size()), static_cast<double>(K->getAllDof()) };
         if(bComm.rank() == 0) {
             std::streamsize ss = std::cout.precision();
             std::cout << std::scientific << " --- error = " << storage[1] << " / " << storage[0] << std::endl;
@@ -421,40 +420,45 @@ Geneopp<Dim, Order, Type>::run()
 #else
         uLocal = vf::project(VhLocal, elements(meshLocal), Px() + Py());
 #endif
-        tic();
-        auto VhVisu = FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order, Type>>>::New(_mesh = mesh);
-        auto uVisu = vf::project(_space = VhVisu, _expr = idv(uLocal));
-        auto e = exporter(_mesh = mesh, _name = (boost::format("%1%-%2%") % this->about().appName() % Dim).str());
-        e->add("u", uVisu);
-        e->add("rank", regionProcess(Pdh<0>(mesh)));
-#if defined(DEBUG_SOL)
-        toc("exporter");
-        auto D = backend()->newMatrix(VhVisu, VhVisu);
-        auto F = backend()->newVector(VhVisu);
-        auto vVisu = VhVisu->element();
-        auto u = VhVisu->element();
-        assemble(D, F, mesh, VhVisu, u, vVisu);
-        backend()->solve(_matrix = D, _solution = u, _rhs = F);
-        e->add("u_ref", u);
-        u -= uVisu;
-        double error = u.l2Norm();
-        if(bComm.rank() == 0)
-            std::cout << std::scientific << " --- error with respect to solution from PETSc = " << error << std::endl;
-        e->save();
-#else
-        e->save();
-        toc("exporter");
-#endif
+        delete K;
+        if(boption("export")) {
+            tic();
+            time.restart();
+            auto VhVisu = FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order, Type>>>::New(_mesh = mesh, _worldscomm = worldsComm(wComm));
+            double timeFeel = time.elapsed();
+            auto uVisu = vf::project(_space = VhVisu, _expr = idv(uLocal));
+            auto e = exporter(_mesh = mesh);
+            e->add("u", uVisu);
+            e->add("rank", regionProcess(Pdh<0>(mesh)));
+            if(ioption("v") > 2) {
+                time.restart();
+                boost::shared_ptr<Backend<double>> ptr_global = Backend<double>::build("petsc", "", wComm);
+                auto D = ptr_global->newMatrix(VhVisu, VhVisu);
+                auto F = ptr_global->newVector(VhVisu);
+                auto vVisu = VhVisu->element();
+                auto u = VhVisu->element();
+                assemble(D, F, mesh, VhVisu, u, vVisu);
+                ptr_global->solve(_matrix = D, _solution = u, _rhs = F);
+                timeFeel += time.elapsed();
+                e->add("u_ref", u);
+                u -= uVisu;
+                double error = u.l2Norm() / F->l2Norm();
+                if(bComm.rank() == 0)
+                    std::cout << std::scientific << " --- relative error with respect to solution from PETSc = " << error << " (computed in " << timeFeel << ")" << std::endl;
+            }
+            e->save();
+            toc("exporter");
+        }
         double* allTimers = new double[timers.size() * bComm.size()];
         MPI_Gather(timers.data(), timers.size(), MPI_DOUBLE, allTimers, timers.size(), MPI_DOUBLE, 0, bComm);
         if(bComm.rank() == 0) {
-
-            std::cout << "Submesh extraction  Local FE space   Interface    Assem. solver  Renumbering    Fact. pinv.  ";
+            std::cout << "createSubmesh  FunctionSpace  Interface    Assem. solver  Renumbering    Fact. pinv.  ";
             if(timers.size() == 8)
-                std::cout << "Schur complement  GenEO" << std::endl;
+                std::cout << "Schur complement  GenEO";
+            std::cout << std::endl;
             std::cout.precision(4);
             for(int i = 0; i < bComm.size(); ++i) {
-                std::cout << std::scientific << allTimers[0 + i * timers.size()] << "          " << allTimers[1 + i * timers.size()] << "       " << allTimers[2 + i * timers.size()] << "   " << allTimers[3 + i * timers.size()] << "     " << allTimers[4 + i * timers.size()] << "     " << allTimers[5 + i * timers.size()] << "   ";
+                std::cout << std::scientific << allTimers[0 + i * timers.size()] << "     " << allTimers[1 + i * timers.size()] << "     " << allTimers[2 + i * timers.size()] << "   " << allTimers[3 + i * timers.size()] << "     " << allTimers[4 + i * timers.size()] << "     " << allTimers[5 + i * timers.size()] << "   ";
                 if(timers.size() == 8)
                     std::cout << std::scientific << allTimers[6 + i * timers.size()] << "        " << allTimers[7 + i * timers.size()];
                 std::cout << std::endl;
