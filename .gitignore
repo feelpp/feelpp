@@ -83,3 +83,8 @@ build/
 /applications/crb/BenchmarkGrepl/benchmarkgrepl-nonlinear-elliptic3app.cpp
 /applications/crb/thermalblock/thermalblockfreeapp.cpp
 /applications/crb/thermalblock/thermalblockminimalversionapp.cpp
+/contrib/nlopt-autoreconf
+/contrib/nlopt-configure
+/contrib/nlopt-distclean
+/contrib/nlopt-nlopthpp
+/contrib/nlopt-touch

@@ -43,7 +43,7 @@ int main( int argc, char** argv )
 
     // create a mesh with GMSH using Feel++ geometry tool
     auto numPartition = ioption(_name="numPartition");
-    auto mesh = loadMesh(_mesh=new  Mesh<Simplex<FEELPP_DIM>>, _partitions=numPartition);
+    auto mesh = loadMesh(_mesh=new  Mesh<CONVEX<FEELPP_DIM>>, _partitions=numPartition);
 
     size_type nbdyfaces = nelements(boundaryfaces(mesh));
 
@@ -80,7 +80,7 @@ int main( int argc, char** argv )
           {
             std::cout << " - Marker (elements) " << name << std::endl;
             std::cout << "    |- number of elements " << nelts << std::endl;
-            std::cout << "    |- measure : " << meas << "," << meas1 << std::endl;
+            std::cout << "    |- measure (elements(mesh) - markedelements(mesh,<<"name"<<) : " << meas << " -- " << meas1 << std::endl;
 
           }
        }

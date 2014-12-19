@@ -26,7 +26,7 @@
  \date 16-06-2011
  */
 #include <feel/feelfilters/loadmesh.hpp>
-#include <feel/feelvf/integrator.hpp>
+#include <feel/feelvf/integrate.hpp>
 
 int main( int argc, char** argv )
 {

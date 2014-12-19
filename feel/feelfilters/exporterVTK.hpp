@@ -44,6 +44,8 @@
 
 #include <vtkSmartPointer.h>
 #include <vtkCellType.h>
+#include <vtkIntArray.h>
+#include <vtkStringArray.h>
 #include <vtkFloatArray.h>
 #include <vtkPoints.h>
 #include <vtkPointData.h>
