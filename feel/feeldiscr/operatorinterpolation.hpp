@@ -795,7 +795,7 @@ domainLocalDofFromImageLocalDof(boost::shared_ptr<DomainDofType> const& domaindo
         {
             find2 = find2 && (std::abs( imageGlobDofPt[d]-domainGlobDofPt[d] )<1e-9);
         }
-        if (find2) { thelocDofToFind=jloc;find=true; }
+        if (find2) { thelocDofToFind=jloc;find=true;break; }
     }
     CHECK( find ) << "not find a compatible dof\n ";
     return thelocDofToFind;
