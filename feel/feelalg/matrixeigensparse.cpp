@@ -149,7 +149,8 @@ template<typename T>
 void
 MatrixEigenSparse<T>::transpose( MatrixSparse<value_type>& Mt, size_type options ) const
 {
-    FEELPP_ASSERT( 0 ).warn( "not implemented yet" );
+    MatrixEigenSparse<T>* Atrans = dynamic_cast<MatrixEigenSparse<T>*>(&Mt);
+    Atrans->M_mat = M_mat.transpose().eval();
 }
 
 
