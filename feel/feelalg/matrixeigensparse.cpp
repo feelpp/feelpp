@@ -149,8 +149,11 @@ template<typename T>
 void
 MatrixEigenSparse<T>::transpose( MatrixSparse<value_type>& Mt, size_type options ) const
 {
-    MatrixEigenSparse<T>* Atrans = dynamic_cast<MatrixEigenSparse<T>*>(&Mt);
-    Atrans->M_mat = M_mat.transpose().eval();
+    if(M_is_closed) {
+        MatrixEigenSparse<T>* Atrans = dynamic_cast<MatrixEigenSparse<T>*>(&Mt);
+        Atrans->M_mat = M_mat.transpose().eval();
+        Atrans->M_is_closed = Atrans->M_is_initialized = true;
+    }
 }
 
 

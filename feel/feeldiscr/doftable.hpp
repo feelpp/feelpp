@@ -392,10 +392,8 @@ public:
 
         auto eit = M_face_l2g.find( id_el );
         DCHECK( eit != M_face_l2g.end() ) << "Invalid face id " << id_el;
-        auto it = eit->second.begin();
-        auto en = eit->second.end();
-        for( ; it != en; ++ it )
-            ind[it->first] = boost::get<0>( it->second );
+        for( const auto& it : eit->second )
+            ind[it.first] = boost::get<0>( it.second );
 
         return ind;
     }
