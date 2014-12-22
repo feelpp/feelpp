@@ -79,6 +79,8 @@ Traces<Dim,Order>::run()
     unsigned int* recv = new unsigned int[2 * nbNeighbors];
     unsigned int* send = recv + nbNeighbors;
     MPI_Request* rq = new MPI_Request[2 * nbNeighbors];
+    std::string kind = soption(_name = "backend");
+    boost::shared_ptr<Backend<double>> ptr_backend = Backend<double>::build(kind, "", Environment::worldCommSeq());
     int i = 0;
     for( const size_type neighbor_subdomain : mesh->faceNeighborSubdomains() )
     {
@@ -107,10 +109,10 @@ Traces<Dim,Order>::run()
 
         auto op = opInterpolation( _domainSpace =Vh,
                                    _imageSpace = Xh,
-                                   _backend= backend(_worldcomm=Environment::worldCommSeq()), _ddmethod=true );
+                                   _backend= ptr_backend, _ddmethod=true );
         auto opLocal = opInterpolation( _domainSpace =VhLocal,
                                    _imageSpace = Xh,
-                                   _backend= backend(_worldcomm=Environment::worldCommSeq()), _ddmethod=true );
+                                   _backend= ptr_backend, _ddmethod=true );
         tic();
         auto opT = op->adjoint(MATRIX_TRANSPOSE_UNASSEMBLED);
         //auto opT = op->adjoint(MATRIX_TRANSPOSE_ASSEMBLED);
@@ -135,13 +137,21 @@ Traces<Dim,Order>::run()
         //saveGMSHMesh( _filename=(boost::format( "trace-%1%-%2%-%3%.msh" ) % Dim % Environment::worldComm().globalRank() % neighbor_subdomain).str(), _mesh=trace );
         auto m = mean( _range=elements(trace), _expr=idv(l),_worldcomm=Environment::worldCommSeq() )(0,0);
         //CHECK( math::abs( m -  double(neighbor_subdomain+1) ) < 1e-14 ) << "problem : " << m << " != " << neighbor_subdomain;
-        auto verifLocal = VhLocal->element();
-        std::iota(l.begin(), l.end(), 1.0);
-        verifLocal = opLocalT->operator()(l);
-        for(int j = 0; j < VhLocal->nDof(); ++j)
-            CHECK(std::round(verifLocal[j]) >= 0 && std::round(verifLocal[j]) <= VhLocal->nDof())
-                << "problem : " << std::round(verifLocal[j]) << " < 0 || "
-                <<  std::round(verifLocal[j]) << " > " << VhLocal->nDof();
+        auto verifLocal = ptr_backend->newVector(VhLocal);
+        auto p = ptr_backend->newVector(Xh);
+        for(int i = 0; i < Xh->nDof(); ++i)
+            p->set(i, i + 1);
+        ptr_backend->prod(opLocal->matPtr(), p, verifLocal, true);
+        int nbVerif = 0;
+        for(int j = 0; j < VhLocal->nDof(); ++j) {
+            CHECK(std::round((*verifLocal)(j)) >= 0 && std::round((*verifLocal)(j)) <= VhLocal->nDof())
+                << "problem : " << std::round((*verifLocal)(j)) << " < 0 || "
+                <<  std::round((*verifLocal)(j)) << " > " << VhLocal->nDof();
+            if(std::round((*verifLocal)(j)) != 0)
+                ++nbVerif;
+        }
+        CHECK(nbVerif == Xh->nDof())
+            << "problem : " << nbVerif << " != " << Xh->nDof();
 
         send[i] = nelements(elements(trace));
         MPI_Isend(send + i, 1, MPI_UNSIGNED, neighbor_subdomain, 0, Environment::worldComm(), rq + i);
