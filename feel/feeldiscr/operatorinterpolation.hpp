@@ -1023,16 +1023,14 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                                          sparsity_graph  );
         }
 
-        auto itListRange = M_listRange.begin();
-        auto const enListRange = M_listRange.end();
-        for ( ; itListRange!=enListRange ; ++itListRange)
+        for ( auto& itListRange : M_listRange )
         {
-            for( auto const& theImageEltWrap : *itListRange )
+            for( auto const& theImageEltWrap : itListRange )
             {
                 auto const& theImageElt = boost::unwrap_ref(theImageEltWrap);
 
-                auto idElem = detailsup::idElt( theImageElt,idim_type() );
-                auto const domains_eid_set = Feel::detail::domainEltIdFromImageEltId( this->domainSpace()->mesh(),this->dualImageSpace()->mesh(),idElem );
+                auto const& idElem = detailsup::idElt( theImageElt,idim_type() );
+                auto const& domains_eid_set = Feel::detail::domainEltIdFromImageEltId( this->domainSpace()->mesh(),this->dualImageSpace()->mesh(),idElem );
                 if ( domains_eid_set.size() == 0 )
                     continue;
 
@@ -1041,7 +1039,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                     for ( uint16_type comp = 0; comp < image_basis_type::nComponents; ++comp )
                     {
                         uint16_type compDofTableImage = (image_basis_type::is_product)? comp : 0;
-                        auto thedofImage = imagedof->localToGlobal( theImageElt, iloc, compDofTableImage );
+                        auto const& thedofImage = imagedof->localToGlobal( theImageElt, iloc, compDofTableImage );
                         size_type i = thedofImage.index();
 
                         if ( ( image_basis_type::is_product && dof_done[i].empty() ) ||
@@ -1063,11 +1061,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                 row.template get<1>() = il1;
                             }
 
-                            auto it_domainIds=domains_eid_set.begin();
-                            auto const en_domainIds=domains_eid_set.end();
-                            for ( ; it_domainIds!=en_domainIds ; ++it_domainIds )
+                            for ( auto const& domain_eid : domains_eid_set )
                             {
-                                const size_type domain_eid = *it_domainIds;
 
                                 const uint16_type ilocprime = Feel::detail::domainLocalDofFromImageLocalDof( domaindof,imagedof, theImageElt, iloc, i,comp, domain_eid, MlocEvalBasisNEW->gmc()/*gmcDomain*/ );
 
@@ -1082,8 +1077,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                     uint16_type compDomain = (domain_basis_type::is_product)? comp : 0;
 
                                     // get column
-                                    auto thedofDomain = domaindof->localToGlobal( domain_eid, jloc, compDomain );
-                                    const size_type j = thedofDomain.index();
+                                    const size_type j = domaindof->localToGlobal( domain_eid, jloc, compDomain ).index();
 
                                     if ( opToApply == OpToApplyEnum::BUILD_GRAPH )
                                     {
@@ -1095,16 +1089,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                     {
                                         const value_type val = thedofImage.sign()*IhLoc( (comp/*+nComponents1*c2*/)*domain_basis_type::nLocalDof+jloc,
                                                                                        ilocprime );
-                                        //this->matPtr()->add( i,j,val );
                                         this->matPtr()->set( i,j,val );
-#if 0
-                                        // get interpolated value ( by call fe->evaluate() )
-                                        // keep this code in order to memory ordering of this one
-                                        const value_type val = Mloc( domain_basis_type::nComponents1*jloc +
-                                                                     comp*domain_basis_type::nComponents1*domain_basis_type::nLocalDof +
-                                                                     comp,
-                                                                     ilocprime );
-#endif
                                     }
                                 }
 
