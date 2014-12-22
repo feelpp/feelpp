@@ -436,8 +436,9 @@ public:
 
     void prod( sparse_matrix_type const& A,
                vector_type const& x,
-               vector_type& b ) const
+               vector_type& b, bool transpose ) const
     {
+        FEELPP_ASSERT( !transpose ).warn( "not implemented yet" );
         epetra_sparse_matrix_type const& _A = dynamic_cast<epetra_sparse_matrix_type const&>( A );
         epetra_vector_type const& _x = dynamic_cast<epetra_vector_type const&>( x );
         epetra_vector_type& _b = dynamic_cast<epetra_vector_type&>( b );
