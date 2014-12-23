@@ -45,9 +45,13 @@ namespace Feel
  * @author Christophe Prud'homme
  * @see
  */
-class Dof : public boost::tuple<size_type, int16_type, bool, uint16_type, bool, size_type>
+class Dof 
+    : 
+        public boost::tuple<size_type, int16_type, bool>
+//boost::tuple<size_type, int16_type, bool, uint16_type, bool, size_type>
 {
-    typedef boost::tuple<size_type, int16_type, bool, uint16_type, bool, size_type> super;
+    //typedef boost::tuple<size_type, int16_type, bool, uint16_type, bool, size_type> super;
+    typedef boost::tuple<size_type, int16_type, bool> super;
 public:
 
 
@@ -109,12 +113,19 @@ public:
     /**
      *
      */
+#if 0
     Dof( size_type _index, int16_type _sign, bool per, uint16_type _entity = 0, bool _location = false, size_type _marker = 0  )
         :
         super(_index, _sign, per, _entity, _location, _marker)
     {
     }
-
+#else
+    Dof( size_type _index, int16_type _sign, bool per )
+        :
+        super(_index, _sign, per)
+        {
+        }
+#endif
     //! copy constructor
     Dof( Dof const & dof )
         :
@@ -178,7 +189,7 @@ public:
     {
         return this->get<2>();
     }
-
+#if 0
     /// \return the entity type (0: vertex, 1:edge, 2:face, 3:volume)
     uint16_type entity() const
     {
@@ -196,14 +207,7 @@ public:
     {
         return this->get<5>();
     }
-
-    /**
-     * \return the coordinates
-     */
-    ublas::vector<double> const& coords() const
-    {
-        return M_coords;
-    }
+#endif
 
     //@}
 
@@ -216,14 +220,6 @@ public:
         this->get<0>() = id;
     }
 
-    /**
-     * dof coordinates
-     */
-    void
-    setCoordinates( ublas::vector<double> const& coords )
-    {
-        M_coords = coords;
-    }
     //@}
 
 
@@ -233,13 +229,6 @@ public:
 
 
     //@}
-
-
-
-protected:
-
-private:
-    ublas::vector<double> M_coords;
 };
 
 
@@ -250,10 +239,11 @@ operator<<( std::ostream& __os, Dof const& __dof )
     __os << "-----------Dof-Info------------\n"
          << "index        : " << __dof.index() << "\n"
          << "sign         : " << __dof.sign() << "\n"
-         << "isPeriodic   : " << __dof.isPeriodic() << "\n"
+         << "isPeriodic   : " << __dof.isPeriodic() << "\n";
+#if 0
          << "isOnBoundary : " << __dof.isOnBoundary() << "\n"
-         << "marker       : " << __dof.marker() << "\n"
-         << "coords       : " << __dof.coords() << "\n";
+         << "marker       : " << __dof.marker() << "\n";
+#endif
     return __os;
 }
 
