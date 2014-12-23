@@ -65,14 +65,15 @@ for(int j = 1; j <= l; ++j) {
         }
     }
 }
-cout << "hsize\t\tnelements\tnDof\t\tFunctionSpace\tform2\t\tform1" << endl;
+cout << "hsize\t\tnelements\tnDof\t\tFunctionSpace\tmatrix\t\tform2\t\tform1" << endl;
 cout.precision(6);
 cout.fixed;
 for(int j = 0; j < 3 * l; ++j) {
     cout << "nan\t\t";
     for(int i = 0; i < 2; ++i)
         cout << int(timers(j, i)) << "\t\t";
-    for(int i = 2; i < 5; ++i) {
+    cout << timers(j, 2) << "\t0\t\t";
+    for(int i = 3; i < 5; ++i) {
         cout << timers(j, i) << "\t";
     }
     cout << endl;

@@ -209,12 +209,15 @@ public:
     // -- LINEAR ALGEBRA INTERFACE --
     void prod( sparse_matrix_type const& A,
                vector_type const& x,
-               vector_type& b ) const
+               vector_type& b, bool transpose ) const
     {
         eigen_sparse_matrix_type const& _A = dynamic_cast<eigen_sparse_matrix_type const&>( A );
         eigen_vector_type const& _x = dynamic_cast<eigen_vector_type const&>( x );
         eigen_vector_type& _b = dynamic_cast<eigen_vector_type&>( b );
-        _b.vec() = _A.mat()*_x.vec();
+        if(!transpose)
+            _b.vec() = _A.mat()*_x.vec();
+        else
+            _b.vec() = _A.mat().adjoint()*_x.vec();
     }
 
     solve_return_type solve( sparse_matrix_type const& A,
