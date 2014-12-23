@@ -1090,6 +1090,14 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                         const value_type val = thedofImage.sign()*IhLoc( (comp/*+nComponents1*c2*/)*domain_basis_type::nLocalDof+jloc,
                                                                                        ilocprime );
                                         this->matPtr()->set( i,j,val );
+#if 0
+                                        // get interpolated value ( by call fe->evaluate() )
+                                        // keep this code in order to memory ordering of this one
+                                        const value_type val = Mloc( domain_basis_type::nComponents1*jloc +
+                                                                     comp*domain_basis_type::nComponents1*domain_basis_type::nLocalDof +
+                                                                     comp,
+                                                                     ilocprime );
+#endif
                                     }
                                 }
 
