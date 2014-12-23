@@ -225,16 +225,12 @@ GreplFem::updateResidual(vector_ptrtype const& X,vector_ptrtype & R)
 GreplFem::element_type
 GreplFem::solveNewton()
 {
-    
-    auto J = backend()->newMatrix( Xh, Xh);
-    auto R = backend()->newVector( Xh );
     backend()->nlSolver()->jacobian = boost::bind( &self_type::updateJacobian,
                                                    boost::ref( *this ), _1, _2);
     backend()->nlSolver()->residual = boost::bind( &self_type::updateResidual,
                                                    boost::ref( *this ), _1, _2);
 
     auto solution = Xh->element();
-    //backend()->nlSolve(_jacobian=J, _solution=solution, _residual=R);
     backend()->nlSolve(_solution=solution);
 
     return solution;
