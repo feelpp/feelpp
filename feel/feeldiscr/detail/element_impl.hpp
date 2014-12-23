@@ -55,8 +55,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::elementImpl( std::string con
         // update M_containersOffProcess<i> : send
         if ( this->worldComm().globalSize()>1 && updateOffViews && !this->functionSpace()->hasEntriesForAllSpaces() )
         {
-            std::vector<double> dataToSend( space->nLocalDof() );
-            std::copy( ct.begin(), ct.end(), dataToSend.begin() );
+            std::vector<double> dataToSend( ct.begin(), ct.end() );
 
             if ( !M_containersOffProcess ) M_containersOffProcess = boost::in_place();
 
@@ -136,8 +135,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::elementImpl( std::string con
         // update M_containersOffProcess<i> : send
         if ( this->worldComm().globalSize()>1 && updateOffViews && !this->functionSpace()->hasEntriesForAllSpaces() )
         {
-            std::vector<double> dataToSend( space->nLocalDof() );
-            std::copy( ct.begin(), ct.end(), dataToSend.begin() );
+            std::vector<double> dataToSend( ct.begin(), ct.end() );
 
             if ( !M_containersOffProcess ) M_containersOffProcess = boost::in_place();
 

@@ -37,6 +37,8 @@
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feeldiscr/pdh.hpp>
+#include <feel/feelalg/vectoreigen.hpp>
+#include <feel/feelalg/matrixeigensparse.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feeldiscr/operatorinterpolation.hpp>
@@ -263,6 +265,8 @@ Geneopp<Dim, Order, Type>::run()
         {
             std::vector<std::vector<int>*> map;
             map.resize(mesh->faceNeighborSubdomains().size());
+            std::string kind = soption(_name = "backend");
+            boost::shared_ptr<Backend<double>> ptr_backend = Backend<double>::build(kind, "", Environment::worldCommSeq());
             int i;
 #pragma omp parallel for shared(map) private(uLocal, i) schedule(static, 4)
             for(i = 0; i < map.size(); ++i) {
@@ -276,9 +280,10 @@ Geneopp<Dim, Order, Type>::run()
 
                 auto op  = opInterpolation(_domainSpace = VhLocal,
                                            _imageSpace  = Xh,
-                                           _backend     = backend(_worldcomm = Environment::worldCommSeq()), _ddmethod = true);
+                                           _backend     = ptr_backend, _ddmethod = true);
                 auto opT = op->adjoint(MATRIX_TRANSPOSE_UNASSEMBLED);
                 uLocal   = (*opT)(l);
+                // ptr_backend->prod(op->matPtr(), l, uLocal, true);
                 map[i]   = new std::vector<int>(Xh->nDof());
                 for(int j = 0; j < VhLocal->nDof(); ++j)
                     if(std::round(uLocal[j]) != 0)
@@ -303,35 +308,52 @@ Geneopp<Dim, Order, Type>::run()
             bComm.barrier();
             time.restart();
             auto vLocal = VhLocal->element();
-            boost::shared_ptr<Backend<double>> ptr_backend = Backend<double>::build("petsc", "", Environment::worldCommSeq());
             Backend<double>::sparse_matrix_ptrtype A = ptr_backend->newMatrix(VhLocal, VhLocal);
             Backend<double>::vector_ptrtype        f = ptr_backend->newVector(VhLocal);
             assemble(A, f, meshLocal, VhLocal, uLocal, vLocal);
             A->close();
             timers[3] = time.elapsed();
-            Mat PetscA = static_cast<MatrixPetsc<double>*>(&*A)->mat();
-            Vec PetscF = static_cast<VectorPetsc<double>*>(&*f)->vec();
-            PetscInt n;
-            const PetscInt* ia;
-            const PetscInt* ja;
-            PetscScalar* array;
-            PetscBool done;
-            MatGetRowIJ(PetscA, 0, PETSC_FALSE, PETSC_FALSE, &n, &ia, &ja, &done);
-            MatSeqAIJGetArray(PetscA, &array);
+            b = new double[VhLocal->nDof()];
 #ifdef FEELPP_HAS_HPDDM
-            int nnz = ia[n];
-            double* c = new double[nnz];
-            int*   ic = new    int[n + 1];
-            int*   jc = new    int[nnz];
-            std::copy(array, array + nnz, c);
-            std::copy(ia, ia + n + 1, ic);
-            std::copy(ja, ja + nnz, jc);
-            HPDDM::MatrixCSR<double>* pt = new HPDDM::MatrixCSR<double>(n, n, nnz, c, ic, jc, false, true);
+            int* ic = new int[VhLocal->nDof() + 1];
+            double* c;
+            int* jc;
+            if(kind == "petsc") {
+                Mat PetscA = static_cast<MatrixPetsc<double>*>(&*A)->mat();
+                Vec PetscF = static_cast<VectorPetsc<double>*>(&*f)->vec();
+                PetscInt n;
+                const PetscInt* ia;
+                const PetscInt* ja;
+                PetscScalar* array;
+                PetscBool done;
+                MatGetRowIJ(PetscA, 0, PETSC_FALSE, PETSC_FALSE, &n, &ia, &ja, &done);
+                MatSeqAIJGetArray(PetscA, &array);
+                std::copy_n(ia, n + 1, ic);
+                c = new double[ia[n]];
+                jc = new int[ia[n]];
+                std::copy_n(array, ia[n], c);
+                std::copy_n(ja, ia[n], jc);
+                MatSeqAIJRestoreArray(PetscA, &array);
+                MatRestoreRowIJ(PetscA, 0, PETSC_FALSE, PETSC_FALSE, &n, &ia, &ja, &done);
+                VecGetArray(PetscF, &array);
+                std::copy_n(array, VhLocal->nDof(), b);
+                VecRestoreArray(PetscF, &array);
+            }
+            else {
+                Eigen::SparseMatrix<double>& EigenA = static_cast<MatrixEigenSparse<double>*>(&*A)->mat();
+                EigenA.makeCompressed();
+                Eigen::Matrix<double, Eigen::Dynamic, 1>& EigenF = static_cast<VectorEigen<double>*>(&*f)->vec();
+#if 0
+                Eigen::SparseMatrix<double, Eigen::RowMajor> EigenC(EigenA);
 #endif
-            MatSeqAIJRestoreArray(PetscA, &array);
-            MatRestoreRowIJ(PetscA, 0, PETSC_FALSE, PETSC_FALSE, &n, &ia, &ja, &done);
-#ifdef FEELPP_HAS_HPDDM
-            K->Subdomain::initialize(pt, mesh->faceNeighborSubdomains().cbegin(), mesh->faceNeighborSubdomains().cend(), map, &comm);
+                std::copy_n(EigenA.outerIndexPtr(), VhLocal->nDof() + 1, ic);
+                c = new double[ic[VhLocal->nDof()]];
+                jc = new int[ic[VhLocal->nDof()]];
+                std::copy_n(EigenA.innerIndexPtr(), ic[VhLocal->nDof()], jc);
+                std::copy_n(EigenA.valuePtr(), ic[VhLocal->nDof()], c);
+                std::copy_n(EigenF.data(), EigenF.rows(), b);
+            }
+            K->Subdomain::initialize(new HPDDM::MatrixCSR<double>(VhLocal->nDof(), VhLocal->nDof(), ic[VhLocal->nDof()], c, ic, jc, false, true), mesh->faceNeighborSubdomains().cbegin(), mesh->faceNeighborSubdomains().cend(), map, &comm);
             if(nu == 0) {
                 if(nelements(markedfaces(meshLocal, "Dirichlet")) == 0) {
                     unsigned short nb;
@@ -342,10 +364,6 @@ Geneopp<Dim, Order, Type>::run()
                 else
                     K->super::super::initialize(0);
             }
-            b = new double[VhLocal->nDof()];
-            VecGetArray(PetscF, &array);
-            std::copy(array, array + VhLocal->nDof(), b);
-            VecRestoreArray(PetscF, &array);
 #endif
             for(std::vector<int>* pt : map)
                 delete pt;

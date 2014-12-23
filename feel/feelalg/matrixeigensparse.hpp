@@ -298,7 +298,7 @@ public:
                const size_type j,
                const value_type& value )
     {
-        FEELPP_ASSERT( 0 ).error( "nor supported" );
+        M_tripletList.push_back(triplet(i, j, value));
     }
 
 
