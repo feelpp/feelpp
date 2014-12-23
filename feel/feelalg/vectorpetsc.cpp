@@ -191,23 +191,29 @@ VectorPetsc<T>::operator() ( const size_type i ) const
 
         return static_cast<value_type>( value );
     }
-
-/**
- * \p Utility::iota is a duplication of the SGI STL extension
- * \p std::iota.  It simply assigns sequentially increasing values
- * to a range. That is, it assigns \p value to \p *first, \p value + 1
- * to \p *(first + 1) and so on. In general, each iterator \p i in the
- * range [first, last) is assigned \p value + (i - \p first).
- */
-template <typename ForwardIter, typename T>
-void iota ( ForwardIter first, ForwardIter last, T value )
-{
-    while ( first != last )
+template <typename T>
+typename VectorPetsc<T>::value_type&
+VectorPetsc<T>::operator() ( const size_type i )
     {
-        *first = value++;
-        ++first;
+        DCHECK( this->isInitialized() ) << "VectorPETSc not initialized";
+        DCHECK ( ( ( i >= this->firstLocalIndex() ) &&
+                   ( i <  this->lastLocalIndex() ) ) ) << "invalid vector index " <<  i
+                                                       << " first local index: "  << this->firstLocalIndex()
+                                                       << " last local index:  " << this->lastLocalIndex();
+
+        int ierr=0;
+        PetscScalar *values;
+
+        ierr = VecGetArray( M_vec, &values );
+        CHKERRABORT( this->comm(),ierr );
+
+        PetscScalar& value = values[i - this->firstLocalIndex()];
+
+        ierr = VecRestoreArray ( M_vec, &values );
+        CHKERRABORT( this->comm(),ierr );
+
+        return static_cast<value_type&>( value );
     }
-}
 
 template <typename T>
 void
@@ -785,6 +791,22 @@ VectorPetscMPI<T>::operator() ( const size_type i ) const
     CHKERRABORT( this->comm(),ierr );
 
     return static_cast<value_type>( value );
+}
+template <typename T>
+typename VectorPetscMPI<T>::value_type&
+VectorPetscMPI<T>::operator() ( const size_type i )
+{
+    int ierr=0;
+    PetscScalar *values;
+    ierr = VecGetArray( M_vecLocal, &values );
+    CHKERRABORT( this->comm(),ierr );
+    //std::cout << "\n operator MPI ";
+    PetscScalar& value =  values[i /*- this->firstLocalIndex()*/ ];
+
+    ierr = VecRestoreArray( M_vecLocal, &values );
+    CHKERRABORT( this->comm(),ierr );
+
+    return static_cast<value_type&>( value );
 }
 //----------------------------------------------------------------------------------------------------//
 
