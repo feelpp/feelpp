@@ -1,7 +1,7 @@
-###  CMakeLists.txt; coding: utf-8 --- 
+###  TEMPLATE.txt.tpl; coding: utf-8 ---
 
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-#       Date: 18 Dec 2014
+#  Author(s): Alexandre Ancel <alexandre.ancel@cemosis.fr>
+#       Date: 2014-12-18
 #
 #  Copyright (C) 2014 Feel++ Consortium
 #
@@ -21,4 +21,30 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+OPTION( FEELPP_ENABLE_CEREAL "Enable Cereal (A C++11 Serialization library)" OFF )
 
+if ( FEELPP_ENABLE_CEREAL )
+  if ( GIT_FOUND )
+    execute_process(
+      COMMAND git submodule update --init --recursive contrib/cereal
+      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+      )
+    MESSAGE(STATUS "Git submodule contrib/cereal updated.")
+  else()
+    if ( NOT EXISTS ${FEELPP_SOURCE_DIR}/contrib/cereal/ )
+      message( FATAL_ERROR "Please make sure that git submodule contrib/cereal is available")
+      message( FATAL_ERROR "  run `git submodule update --init --recursive contrib/cereal`")
+    endif()
+  endif()
+
+  FILE(GLOB_RECURSE files "${CMAKE_SOURCE_DIR}/contrib/cereal/include/*")
+  FOREACH(fl IN LISTS files)
+    string(REGEX REPLACE "${CMAKE_SOURCE_DIR}/contrib/cereal/include" "${CMAKE_BINARY_DIR}/contrib" fl1 ${fl})
+    get_filename_component(dir ${fl1} DIRECTORY)
+    file(COPY ${fl} DESTINATION ${dir})
+  ENDFOREACH()
+
+  include_directories(${CMAKE_SOURCE_DIR}/contrib/cereal/include)
+  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Cereal" )
+  SET(FEELPP_HAS_CEREAL 1)
+endif()
