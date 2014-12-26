@@ -506,12 +506,12 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
             auto const& s = M_u.functionSpace()->dof()->localToGlobalSigns( theface.element(0).id() );
             for( auto const& ldof : M_u.functionSpace()->dof()->faceLocalDof( theface.id() ) )
                 {
-                    size_type thedof = M_u.start()+ ldof.second.index(); // global dof
-                    int16_type dofIndexInElt = ldof.second.localDof(); // localdof index in element0
+                    size_type thedof = M_u.start()+ ldof.index(); // global dof
+                    int16_type dofIndexInElt = ldof.localDof(); // localdof index in element0
 
-                    DVLOG(2) << "Ihloc(" << ldof.first << ")= " << IhLoc( ldof.first ) << std::endl;
+                    //DVLOG(2) << "Ihloc(" << ldof.first << ")= " << IhLoc( ldof.first ) << std::endl;
                     DVLOG(2) << "s(" << dofIndexInElt << ")= " << s(dofIndexInElt) << std::endl;
-                    double __value = s(dofIndexInElt)*IhLoc( ldof.first );
+                    double __value = s(dofIndexInElt)*IhLoc( dofIndexInElt );
 
                     if ( std::find( dofs.begin(),
                                     dofs.end(),
