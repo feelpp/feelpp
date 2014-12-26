@@ -30,6 +30,8 @@
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelvf/vf.hpp>
+#include <google/heap-profiler.h>
+
 #define MAX_ORDER 30
 
 namespace Feel
@@ -59,7 +61,11 @@ static inline void assemble(boost::shared_ptr<Mesh<Simplex<Dim>>>& mesh, double*
 template<uint16_type Dim, uint16_type Order, template<uint16_type> class Type, uint16_type OrderBis, template<uint16_type> class TypeBis, typename std::enable_if<std::is_same<Type<Dim>, Vectorial<Dim>>::value && OrderBis == MAX_ORDER && std::is_same<TypeBis<Dim>, Scalar<Dim>>::value>::type* = nullptr>
 static inline void assemble(boost::shared_ptr<Mesh<Simplex<Dim>>>& mesh, double* vec) {
     boost::timer time;
+    //HeapProfilerStart("FunctionSpace");
     auto Vh = FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order, Type>>>::New(_mesh = mesh);
+    
+    //HeapProfilerDump("dump");
+    //HeapProfilerStop();
     vec[2] = time.elapsed();
     vec[1] = Vh->nDof();
     auto E = 1e+8;
@@ -171,7 +177,8 @@ Assembly<Dim, Order, Type, OrderBis, TypeBis>::run()
 
 } // Feel
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv) 
+{
     using namespace Feel;
 
     /**
