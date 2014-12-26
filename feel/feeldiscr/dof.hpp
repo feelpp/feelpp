@@ -218,6 +218,17 @@ public:
         this->get<0>() = id;
     }
 
+    /**
+     * set the global dof
+     */
+    void set( size_type _index, int16_type _sign, bool per )
+        {
+            this->get<0>() =  _index;
+            this->get<1>() =  _sign;
+            this->get<2>() =  per; 
+        }
+
+
     //@}
 
 
@@ -450,7 +461,9 @@ public:
     uint16_type localDofPerComponent() const { return this->second/nComponents(); }
     // returns the local dof component given the number of local dof per component @arg nLocalDofPerComponent
     uint16_type component( uint16_type nLocalDofPerComponent ) const { return this->second/nLocalDofPerComponent; }
-
+    
+    void setLocalDof( uint16_type l ) { this->second = l; }
+    void set( size_type e, uint16_type l ) { this->first=e; this->second = l; }
 
 };
 
