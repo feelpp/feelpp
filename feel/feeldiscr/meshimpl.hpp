@@ -241,7 +241,7 @@ Mesh<Shape, T, Tag>::updateForUse()
 
         if ( this->components().test( MESH_UPDATE_FACES ) ||
              this->components().test( MESH_UPDATE_EDGES )
-            )
+             )
         {
             updateOnBoundary();
         }
@@ -273,29 +273,27 @@ Mesh<Shape, T, Tag>::updateForUse()
         }
 
 
-        this->setUpdatedForUse( true );
-    }
 
-    {
-        element_iterator iv,  en;
-        boost::tie( iv, en ) = this->elementsRange();
-        auto pc = M_gm->preCompute( M_gm, M_gm->referenceConvex().vertices() );
-        auto pcf =  M_gm->preComputeOnFaces( M_gm, M_gm->referenceConvex().barycenterFaces() );
-        M_local_meas = 0;
-        M_local_measbdy = 0;
-
-        for ( ; iv != en; ++iv )
         {
-            this->elements().modify( iv,
-                                     [=,&pc,&pcf]( element_type& e )
-                                     {
-                                         e.setMeshAndGm( this, M_gm, M_gm1 );
-                                         e.updateWithPc(pc, boost::ref( pcf) );
-                                     } );
+            element_iterator iv,  en;
+            boost::tie( iv, en ) = this->elementsRange();
+            auto pc = M_gm->preCompute( M_gm, M_gm->referenceConvex().vertices() );
+            auto pcf =  M_gm->preComputeOnFaces( M_gm, M_gm->referenceConvex().barycenterFaces() );
+            M_local_meas = 0;
+            M_local_measbdy = 0;
+
+            for ( ; iv != en; ++iv )
+            {
+                this->elements().modify( iv,
+                                         [=,&pc,&pcf]( element_type& e )
+                                         {
+                                             e.setMeshAndGm( this, M_gm, M_gm1 );
+                                             e.updateWithPc(pc, boost::ref( pcf) );
+                                         } );
 #if 0
-                                     lambda::bind( &element_type::setMeshAndGm,
-                                                   lambda::_1,
-                                                   this, M_gm, M_gm1 ) );
+                lambda::bind( &element_type::setMeshAndGm,
+                              lambda::_1,
+                              this, M_gm, M_gm1 ) );
 
             this->elements().modify( iv,
                                      lambda::bind( &element_type::updateWithPc,
@@ -328,10 +326,9 @@ Mesh<Shape, T, Tag>::updateForUse()
 
         // now that all elements have been updated, build inter element
         // data such as the measure of point element neighbors
-        boost::tie( iv, en ) = this->elementsRange();
-
         if ( this->components().test( MESH_ADD_ELEMENTS_INFO ) )
         {
+            boost::tie( iv, en ) = this->elementsRange();
             for ( ; iv != en; ++iv )
             {
                 value_type meas = 0;
@@ -378,12 +375,18 @@ Mesh<Shape, T, Tag>::updateForUse()
     this->check();
     //std::cout<<"pass hier\n";
 
-    M_gm->initCache( this );
-    M_gm1->initCache( this );
+    if ( M_is_gm_cached == false )
+    {
+        M_gm->initCache( this );
+        M_gm1->initCache( this );
+        M_is_gm_cached = true;
+    }
 
     M_tool_localization->setMesh( this->shared_from_this(),false );
-
-    VLOG(2) << "[Mesh::updateForUse] total time : " << ti.elapsed() << "\n";
+    this->setUpdatedForUse( true );
+    }
+    if (Environment::isMasterRank())
+        std::cout << "[Mesh::updateForUse] total time : " << ti.elapsed() << "\n";
 }
 template<typename Shape, typename T, int Tag>
 typename Mesh<Shape, T, Tag>::self_type&
