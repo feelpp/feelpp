@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2010-04-20
  */
-#ifndef __Dof_H
-#define __Dof_H 1
+#ifndef FEELPP_DOF_HPP
+#define FEELPP_DOF_HPP 1
 
 #include <boost/tuple/tuple.hpp>
 #include <boost/multi_index_container.hpp>
@@ -39,11 +39,9 @@
 namespace Feel
 {
 /**
- * \class Dof
- * \brief class that represents a degree of freedom
+ * @brief class that represents a degree of freedom
  *
- * @author Christophe Prud'homme
- * @see
+ * @see DofTable, FaceDof
  */
 class Dof 
     : 
@@ -498,4 +496,4 @@ public:
 };
 
 } // Feel
-#endif /* __Dof_H */
+#endif /* FEELPP_DOF_HPP */
