@@ -10,8 +10,6 @@ language: cpp
 compiler:
 - clang
 
-sudo: false
-
 env:
 - BUILDTYPE=Release TARGET=quickstart
 
