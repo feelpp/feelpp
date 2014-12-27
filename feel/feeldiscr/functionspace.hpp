@@ -2248,7 +2248,7 @@ public:
             for( auto const& ldof : M_functionspace->dof()->faceLocalDof( e.id() ) )
             {
                 size_type index=start()+ ldof.index();
-                this->operator[]( index ) = s(ldof.localDof())*Ihloc( ldof.localDof() );
+                this->operator[]( index ) = s(ldof.localDof())*Ihloc( ldof.localDofInFace() );
             }
         }
         void plus_assign( geoelement_type const& e, local_interpolant_type const& Ihloc )
@@ -2266,7 +2266,7 @@ public:
             for( auto const& ldof : M_functionspace->dof()->faceLocalDof( e.id() ) )
             {
                 size_type index=start()+ ldof.index();
-                this->operator[]( index ) += s(ldof.localDof())*Ihloc( ldof.localDof() );
+                this->operator[]( index ) += s(ldof.localDof())*Ihloc( ldof.localDofInFace() );
             }
         }
 
