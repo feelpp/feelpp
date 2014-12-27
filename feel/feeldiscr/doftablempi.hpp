@@ -1129,6 +1129,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMapExtende
             if ( theface.isGhostCell() && faceGhostDone.find( theface.id() ) == faceGhostDone.end() )
             {
                 auto faceIt = mesh.faceIterator( theface.id() );
+                M_face_l2g[ faceIt->id()].resize( nLocalDofOnFace() );
                 dfb.add( faceIt );
                 faceGhostDone.insert( theface.id() );
             }
