@@ -185,19 +185,13 @@ int main(int argc, char** argv)
      * Initialize Feel++ Environment
      */
     Environment env(_argc = argc, _argv = argv,
-                    _about = about(_name = "assembly",
+                    _about = about(_name = (boost::format("assembly_%1%d_p%2%")%FEELPP_DIM%FEELPP_ORDER).str(),
                                    _author = "Feel++ Consortium",
                                    _email = "feelpp-devel@feelpp.org"));
     Application app;
-#if FEELPP_DIM == 2
-    app.add(new Assembly<2, 2, Scalar>());
-    app.add(new Assembly<2, 2, Vectorial>());
-    app.add(new Assembly<2, 3, Vectorial, 2, Scalar>());
-#elif FEELPP_DIM == 3
-    app.add(new Assembly<3, 2, Scalar>());
-    app.add(new Assembly<3, 2, Vectorial>());
-    app.add(new Assembly<3, 3, Vectorial, 2, Scalar>());
-#endif
+    app.add(new Assembly<FEELPP_DIM, FEELPP_ORDER, Scalar>());
+    app.add(new Assembly<FEELPP_DIM, FEELPP_ORDER, Vectorial>());
+    app.add(new Assembly<FEELPP_DIM, FEELPP_ORDER+1, Vectorial, FEELPP_ORDER, Scalar>());
     
     app.run();
 }
