@@ -30,7 +30,7 @@
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelvf/vf.hpp>
-#include <google/heap-profiler.h>
+//#include <google/heap-profiler.h>
 
 #define MAX_ORDER 30
 
@@ -185,7 +185,7 @@ int main(int argc, char** argv)
      * Initialize Feel++ Environment
      */
     Environment env(_argc = argc, _argv = argv,
-                    _about = about(_name = (boost::format("assembly_%1%d_p%2%")%FEELPP_DIM%FEELPP_ORDER).str(),
+                    _about = about(_name = boost::str(boost::format("assembly_%1%d_p%2%") % FEELPP_DIM % FEELPP_ORDER).c_str(),
                                    _author = "Feel++ Consortium",
                                    _email = "feelpp-devel@feelpp.org"));
     Application app;
