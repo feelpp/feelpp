@@ -27,8 +27,10 @@ include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}
   )
 
-feelpp_add_application( assembly_2d SRCS  assembly.cpp  DEFS FEELPP_DIM=2)
-feelpp_add_application( assembly_3d SRCS  assembly.cpp  DEFS FEELPP_DIM=3)
+feelpp_add_application( assembly_2d_p2 SRCS  assembly.cpp  DEFS FEELPP_DIM=2 FEELPP_ORDER=2)
+feelpp_add_application( assembly_3d_p2 SRCS  assembly.cpp  DEFS FEELPP_DIM=3 FEELPP_ORDER=2)
+feelpp_add_application( assembly_2d_p4 SRCS  assembly.cpp  DEFS FEELPP_DIM=2 FEELPP_ORDER=4)
+feelpp_add_application( assembly_3d_p4 SRCS  assembly.cpp  DEFS FEELPP_DIM=3 FEELPP_ORDER=4)
 
 add_executable( feel_perf
   bench1_main.cpp
