@@ -27,10 +27,8 @@ include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}
   )
 
-add_executable( feel_assembly
-  assembly.cpp
-  )
-target_link_libraries(feel_assembly feelpp ${FEELPP_LIBRARIES} )
+feelpp_add_application( assembly_2d SRCS  assembly.cpp  DEFS FEELPP_DIM=2)
+feelpp_add_application( assembly_3d SRCS  assembly.cpp  DEFS FEELPP_DIM=3)
 
 add_executable( feel_perf
   bench1_main.cpp
