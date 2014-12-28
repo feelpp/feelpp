@@ -385,7 +385,7 @@ Mesh<Shape, T, Tag>::updateForUse()
     M_tool_localization->setMesh( this->shared_from_this(),false );
     this->setUpdatedForUse( true );
     }
-    if (Environment::isMasterRank())
+    if (Environment::isMasterRank() && FLAGS_v > 2)
         std::cout << "[Mesh::updateForUse] total time : " << ti.elapsed() << "\n";
 }
 template<typename Shape, typename T, int Tag>

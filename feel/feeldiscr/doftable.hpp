@@ -939,7 +939,7 @@ public:
     size_type nGhostDofAddedInExtendedDofTable() const { return M_nGhostDofAddedInExtendedDofTable; }
 
     /**
-     * \return the dictionnary for the global dof
+     * \return the dictionary for the global dof
      */
     dof_map_type const& mapGDof() const
         {
@@ -947,7 +947,7 @@ public:
         }
 
     /**
-     * \return the dictionnary for the global dof
+     * \return the dictionary for the global dof
      */
     dof_map_type& mapGDof()
         {
@@ -955,7 +955,7 @@ public:
         }
 
     /**
-     * clear the dictionnary
+     * clear the dictionary
      */
     void clearMapGDof()
         {
@@ -963,7 +963,7 @@ public:
         }
 
     /**
-     * set the dictionnary for the dictionary of the global dof
+     * set the dictionary for the dictionary of the global dof
      */
     void setMapGDof( dof_map_type const& mapdof )
         {
@@ -1115,9 +1115,9 @@ public:
 
 #endif
                 }
+#if 0
                 else
                 {
-#if 0
                     size_type _dof = M_el_l2g.left.find(localdof_type(ie,lc_dof))->second.index();
 
                     CHECK(  M_dof_marker[_dof] == marker.value() ) << "Invalid dof marker, element id: " <<  ie
@@ -1125,8 +1125,8 @@ public:
                                                                    << ", global dof id: "<< _dof
                                                                    << ", dof marker: " <<  M_dof_marker[_dof]
                                                                    << ", marker: " << marker.value() << "\n";
-#endif
                 }
+#endif
 
                 res = res && ( __inserted || ( ( M_el_l2g.left.find(localdof_type(ie,lc_dof)) != M_el_l2g.left.end() ) && shift ) );
             }
@@ -2034,7 +2034,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
                 M_localIndicesPerm[FEType::nLocalDof*c+i] = FEType::nLocalDof*c + 2*fe_type::nDofPerVertex*element_type::numVertices +
                     fe_type::nDofPerEdge*element_type::numEdges-1-i;
         }
-    if( Environment::isMasterRank())
+    if (Environment::isMasterRank() && FLAGS_v > 2)
         std::cout << "   . buildDofMap allocation done in " << ltim.elapsed() << "s\n";
     ltim.restart();
     // compute the number of dof on current processor
@@ -2086,7 +2086,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
             }
         }
     } // elements loop
-    if( Environment::isMasterRank())
+    if (Environment::isMasterRank() && FLAGS_v > 2)
         std::cout << "   . buildDofMap dof generation done in " << ltim.elapsed() << "s\n";
     ltim.restart();
 #if 0
@@ -2190,7 +2190,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
             }
     }
 
-    if ( Environment::isMasterRank())
+    if (Environment::isMasterRank() && FLAGS_v > 2)
     {
         std::cout << "   . buildDofMap dof arrays done in " << ltim.elapsed() << "s\n";
         std::cout << " . DofTable::buildDofMap done in " << tim.elapsed() << "\n";
@@ -2255,7 +2255,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildBoundaryDofMap( me
             FEELPP_ASSERT( boost::get<0>( M_face_l2g[__face_it->id()][face_dof_id] ) != invalid_size_type_value )( __face_it->id() )( face_dof_id ).warn( "invalid dof table: initialized dof entries" );
 
 #endif
-    if ( Environment::isMasterRank())
+    if (Environment::isMasterRank() && FLAGS_v > 2)
         std::cout << " . DofTable::buildBoundaryDofMap done in " << tim.elapsed() << "s\n";
 }    // updateBoundaryDof
 

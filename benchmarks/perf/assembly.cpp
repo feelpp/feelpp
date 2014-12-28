@@ -63,7 +63,6 @@ static inline void assemble(boost::shared_ptr<Mesh<Simplex<Dim>>>& mesh, double*
     boost::timer time;
     //HeapProfilerStart("FunctionSpace");
     auto Vh = FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order, Type>>>::New(_mesh = mesh);
-    
     //HeapProfilerDump("dump");
     //HeapProfilerStop();
     vec[2] = time.elapsed();
@@ -132,6 +131,7 @@ template<uint16_type Dim, uint16_type Order, template<uint16_type> class Type, u
 void
 Assembly<Dim, Order, Type, OrderBis, TypeBis>::run()
 {
+    Environment::changeRepository(boost::format("assembly"));
     double hSize = doption("gmsh.hsize");
     int level = std::max(doption("parameters.l"), 1.0);
     std::vector<double> stats(6 * level, std::numeric_limits<double>::quiet_NaN());
@@ -140,7 +140,7 @@ Assembly<Dim, Order, Type, OrderBis, TypeBis>::run()
             boost::shared_ptr<Mesh<Simplex<Dim>>> mesh;
             mesh = createGMSHMesh(_mesh = new Mesh<Simplex<Dim>>,
                                   _update = MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK,
-                                  _desc = domain(_name = "hypercube_" + std::to_string(i + 1), _shape = "hypercube", _h = hSize / std::pow(2.0, i),
+                                  _desc = domain(_name = "hypercube_" + std::to_string(Dim) + "_" + std::to_string(i + 1), _shape = "hypercube", _h = hSize / std::pow(2.0, i),
                                                  _xmin = 0.0, _xmax = 10.0,
                                                  _ymin = 0.0, _ymax = 1.0,
                                                  _zmin = 0.0, _zmax = 1.0));
@@ -185,13 +185,12 @@ int main(int argc, char** argv)
      * Initialize Feel++ Environment
      */
     Environment env(_argc = argc, _argv = argv,
-                    _about = about(_name = boost::str(boost::format("assembly_%1%d_p%2%") % FEELPP_DIM % FEELPP_ORDER).c_str(),
+                    _about = about(_name = ("assembly_" + std::to_string(FEELPP_DIM) + "_" + std::to_string(FEELPP_ORDER)).c_str(),
                                    _author = "Feel++ Consortium",
                                    _email = "feelpp-devel@feelpp.org"));
     Application app;
     app.add(new Assembly<FEELPP_DIM, FEELPP_ORDER, Scalar>());
     app.add(new Assembly<FEELPP_DIM, FEELPP_ORDER, Vectorial>());
-    app.add(new Assembly<FEELPP_DIM, FEELPP_ORDER+1, Vectorial, FEELPP_ORDER, Scalar>());
-    
+    app.add(new Assembly<FEELPP_DIM, FEELPP_ORDER + 1, Vectorial, FEELPP_ORDER, Scalar>());
     app.run();
 }
