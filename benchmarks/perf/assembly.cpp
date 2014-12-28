@@ -87,7 +87,7 @@ static inline void assemble(boost::shared_ptr<Mesh<Simplex<Dim>>>& mesh, double*
     a = integrate(_range = elements(mesh),
                   _expr = lambda * divt(u) * div(v) +
                           2 * mu * trace(trans(sym(gradt(u))) * sym(grad(u))));
-    a += on(_range = markedfaces(mesh, "Dirichlet"), _rhs = l, _element = u, _expr = zero<2, 1>());
+    a += on(_range = markedfaces(mesh, "Dirichlet"), _rhs = l, _element = u, _expr = zero<Dim, 1>());
     vec[3] = time.elapsed();
 }
 template<uint16_type Dim, uint16_type Order, template<uint16_type> class Type, uint16_type OrderBis, template<uint16_type> class TypeBis, typename std::enable_if<std::is_same<Type<Dim>, Vectorial<Dim>>::value && OrderBis != MAX_ORDER && std::is_same<TypeBis<Dim>, Scalar<Dim>>::value>::type* = nullptr>
@@ -117,7 +117,7 @@ static inline void assemble(boost::shared_ptr<Mesh<Simplex<Dim>>>& mesh, double*
     auto a = form2(_trial = Vh, _test = Vh, _matrix = A);
     a = integrate(_range = elements(mesh),
                   _expr = trace(gradt(u) * trans(grad(v))) - div(v) * idt(p) - divt(u) * id(q));
-    a += on(_range = markedfaces(mesh, "Dirichlet"), _rhs = l, _element = u, _expr = zero<2, 1>());
+    a += on(_range = markedfaces(mesh, "Dirichlet"), _rhs = l, _element = u, _expr = zero<Dim, 1>());
     vec[3] = time.elapsed();
 }
 
