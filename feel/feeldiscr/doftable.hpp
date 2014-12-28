@@ -286,8 +286,10 @@ public:
 
     typedef std::list<local_dof_type>::const_iterator ldof_const_iterator;
 
-    typedef std::tuple<uint16_type,uint16_type,size_type> dof_type;
-    //typedef std::unordered_map<dof_type, size_type,boost::hash<dof_type>> dof_map_type;
+    // unique dof description : fist entity type (0,1,2,3: vertex, edge, face,
+    // volume), then and dof id associated to the entity that is unique with
+    // respect to the entity
+    typedef std::tuple<uint16_type,size_type> dof_type;
     typedef std::unordered_map<dof_type, size_type> dof_map_type;
     typedef typename dof_map_type::iterator dof_map_iterator;
     typedef typename dof_map_type::const_iterator dof_map_const_iterator;
@@ -1035,7 +1037,6 @@ public:
 
             //for ( int c = 0; c < ncdof; ++c )
             {
-                std::get<1>(gDof) = 0;
                 uint16_type lc_dof = fe_type::nLocalDof*0+l_dof;
                 Feel::detail::ignore_unused_variable_warning( lc );
                 dof_map_iterator itdof = map_gdof.find( gDof );
@@ -1045,21 +1046,23 @@ public:
                 if ( itdof == endof )
                 {
                     DVLOG(4) << "[dof] dof (" << std::get<0>(gDof) << "," 
-                             << std::get<1>(gDof) << "," 
-                             << std::get<2>(gDof) << ") not yet inserted in map\n";
+                             << std::get<1>(gDof) << ") not yet inserted in map\n";
                     boost::tie( itdof, __inserted ) = map_gdof.insert( std::make_pair( gDof, dofIndex( pDof ) ) );
 
                     pDof += ncdof;
 
-                    FEELPP_ASSERT( __inserted == true )( ie )( lc_dof )
-                        ( std::get<0>(gDof) )( std::get<1>(gDof) )( std::get<2>(gDof) )
-                        ( processor )( itdof->second ).error( "dof should have been inserted" );
+                    DCHECK( __inserted == true ) 
+                        << "dof should have been inserted" <<  ie << " " << lc_dof 
+                        << " "<< std::get<0>(gDof) << " " << std::get<1>(gDof) 
+                        << " " << processor << " " << itdof->second;
                 }
 
                 else
                 {
                     DVLOG(4) << "[dof] dof (" << std::get<0>(gDof) << ","
-                             << std::get<1>(gDof)                             << "," << std::get<2>(gDof)                             << ") already inserted in map with dof_id = " << itdof->second << "\n";
+                             << std::get<1>(gDof) 
+                             << ") already inserted in map with dof_id = " 
+                             << itdof->second << "\n";
                 }
 
 #if !defined( NDEBUG )
@@ -1926,17 +1929,17 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildPeriodicDofMap( me
 #if 1
                 // warning: must modify the data structure that allows to
                 // generate unique global dof ids
-                CHECK( ( map_gdof[  std::make_tuple( dof2_type, c2, gDof ) ] == corresponding_gid ) ||
-                       ( map_gdof[ std::make_tuple( dof2_type, c2, gDof ) ] == gid ) )
+                CHECK( ( map_gdof[  std::make_tuple( dof2_type, gDof ) ] == corresponding_gid ) ||
+                       ( map_gdof[ std::make_tuple( dof2_type, gDof ) ] == gid ) )
                     << "[periodic] invalid matching periodic gid, "
                     << "corresponding_gid = " << corresponding_gid << ", dof2_type = " <<  dof2_type
                     << ", gDof = " << gDof << ", gid=" << gid
                     << ", c2 = " << c2
                     << ", map_gdof[ boost::make_tuple( dof2_type, c2, gDof ) ]= "
-                    << map_gdof[ std::make_tuple( dof2_type, c2, gDof ) ] << "\n";
+                    << map_gdof[ std::make_tuple( dof2_type, gDof ) ] << "\n";
 #endif
-                VLOG(2) << "link mapgdof " <<   map_gdof[ std::make_tuple( dof2_type, c2, gDof ) ]  << " -> " << gid << "\n";
-                map_gdof[ std::make_tuple( dof2_type, c2, gDof ) ] = gid;
+                VLOG(2) << "link mapgdof " <<   map_gdof[ std::make_tuple( dof2_type, gDof ) ]  << " -> " << gid << "\n";
+                map_gdof[ std::make_tuple( dof2_type, gDof ) ] = gid;
 #if 0
                 FEELPP_ASSERT( map_gdof[ boost::make_tuple( dof2_type, c2, gDof ) ] == gid )
                 ( corresponding_gid )( dof2_type )( gDof )( gid )
