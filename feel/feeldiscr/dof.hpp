@@ -130,6 +130,9 @@ public:
         super( dof )
         {}
 
+    /// move constructor
+    Dof( Dof && d ) = default;
+
     //! destructor
     ~Dof()
         {}
@@ -141,15 +144,11 @@ public:
     //@{
 
     //! copy operator
-    Dof& operator=( Dof const & o )
-        {
-            if ( this != &o )
-            {
-                super::operator=( o );
-            }
+    Dof& operator=( Dof const & o ) = default;
 
-            return *this;
-        }
+    /// move operator=
+    Dof& operator=( Dof&& d ) = default;
+
     Dof& operator=( size_type t )
         {
             this->get<0>() =  t;
