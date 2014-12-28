@@ -189,8 +189,15 @@ int main(int argc, char** argv)
                                    _author = "Feel++ Consortium",
                                    _email = "feelpp-devel@feelpp.org"));
     Application app;
+#if FEELPP_DIM == 2
     app.add(new Assembly<2, 2, Scalar>());
     app.add(new Assembly<2, 2, Vectorial>());
     app.add(new Assembly<2, 3, Vectorial, 2, Scalar>());
+#elif FEELPP_DIM == 3
+    app.add(new Assembly<3, 2, Scalar>());
+    app.add(new Assembly<3, 2, Vectorial>());
+    app.add(new Assembly<3, 3, Vectorial, 2, Scalar>());
+#endif
+    
     app.run();
 }
