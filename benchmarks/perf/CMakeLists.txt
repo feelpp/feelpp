@@ -26,12 +26,15 @@ add_custom_target(genfiles ALL)
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}
   )
+add_custom_target(feelpp_assembly)
 
-feelpp_add_application( assembly_2d_p2 SRCS  assembly.cpp  DEFS FEELPP_DIM=2 FEELPP_ORDER=2)
-feelpp_add_application( assembly_3d_p2 SRCS  assembly.cpp  DEFS FEELPP_DIM=3 FEELPP_ORDER=2)
-feelpp_add_application( assembly_2d_p4 SRCS  assembly.cpp  DEFS FEELPP_DIM=2 FEELPP_ORDER=4)
-feelpp_add_application( assembly_3d_p4 SRCS  assembly.cpp  DEFS FEELPP_DIM=3 FEELPP_ORDER=4)
-
+foreach(D 2 3)
+  foreach(N 1 2 3 4)
+    feelpp_add_application( assembly_${D}d_p${N} SRCS  assembly.cpp  DEFS FEELPP_DIM=${D} FEELPP_ORDER=${N})
+    add_dependencies(feelpp_assembly feelpp_assembly_${D}d_p${N})
+  endforeach()
+endforeach()
+    
 add_executable( feel_perf
   bench1_main.cpp
   bench1_run.cpp
