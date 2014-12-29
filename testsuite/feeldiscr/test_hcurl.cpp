@@ -53,6 +53,7 @@
 #include <feel/feelvf/print.hpp>
 #include <feel/feeldiscr/projector.hpp>
 #include <feel/feeldiscr/ned1h.hpp>
+#include <feel/feeldiscr/pchv.hpp>
 
 #include <feel/feelfilters/loadmesh.hpp>
 
