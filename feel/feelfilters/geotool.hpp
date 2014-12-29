@@ -814,13 +814,18 @@ public :
         M_localId( p.M_localId ),
         M_globalId( p.M_globalId ),
         M_node( p.M_node ),
-        M_hSize( p.M_hSize )
+        M_hSize( p.M_hSize ),
+        M_physicalMarker( p.M_physicalMarker )
         {}
 
     size_type localId() const { return M_localId; }
     size_type globalId() const { return M_globalId; }
     node_type const& node() const { return M_node; }
     double hSize() const { return M_hSize; }
+    std::string physicalMarker() const { return M_physicalMarker; }
+
+    void setPhysicalMarker( std::string s ) { M_physicalMarker=s; }
+
     bool representSameNode( GeoToolPoint const& p ) const
     {
         return
@@ -833,8 +838,9 @@ public :
         std::cout << "POINT -> "
                   << "localId  : " << this->localId() << " ; "
                   << "globalId : " << this->globalId() << " ; "
-                  << "node     : " << M_node[0] << " " << M_node[1] << " " << M_node[2]
-                  << "hSize : " << M_hSize
+                  << "node     : " << M_node[0] << " " << M_node[1] << " " << M_node[2] << " ; "
+                  << "hSize : " << M_hSize  << " ; "
+                  << "physicalMarker : " << this->physicalMarker()
                   << "\n";
     }
 
@@ -842,6 +848,8 @@ private :
     size_type M_localId,M_globalId;
     node_type M_node;
     double M_hSize;
+    std::string M_physicalMarker;
+
 };
 
 class GeoToolLine
