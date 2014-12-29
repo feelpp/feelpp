@@ -115,7 +115,11 @@ static inline void assemble(boost::shared_ptr<Mesh<Simplex<Dim>>>& mesh, double*
     time.restart();
     auto a = form2(_trial = Vh, _test = Vh, _matrix = A);
     a = integrate(_range = elements(mesh),
-                  _expr = trace(gradt(u) * trans(grad(v))) - div(v) * idt(p) - divt(u) * id(q));
+                  _expr = trace(gradt(u) * trans(grad(v))));
+    a += integrate(_range = elements(mesh),
+                   _expr = - div(v) * idt(p) );
+    a += integrate(_range = elements(mesh),
+                   _expr = - divt(u) * id(q));
     a += on(_range = markedfaces(mesh, "Dirichlet"), _rhs = l, _element = u, _expr = zero<Dim, 1>());
     vec[3] = time.elapsed();
 }
