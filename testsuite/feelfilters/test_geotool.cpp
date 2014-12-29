@@ -2,6 +2,7 @@
 #include <testsuite/testsuite.hpp>
 
 #include <feel/options.hpp>
+#include <feel/feelfilters/straightenmesh_impl.hpp>
 #include <feel/feelfilters/geotool.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feeldiscr/pch.hpp>
