@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-12-24
  */
-#if !defined(FEELPP_STRAIGHTENMESH_HPP)
-#define FEELPP_STRAIGHTENMESH_HPP 1
+#if !defined(FEELPP_STRAIGHTENMESH_IMPL_HPP)
+#define FEELPP_STRAIGHTENMESH_IMPL_HPP 1
 
 
 
@@ -218,4 +218,4 @@ straightenMesh( boost::shared_ptr<MeshType> mesh, WorldComm const& worldcomm, bo
 
 
 }
-#endif /* FEELPP_STRAIGHTENMESH_HPP */
+#endif /* FEELPP_STRAIGHTENMESH_IMPL_HPP */
