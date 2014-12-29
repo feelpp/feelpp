@@ -821,9 +821,17 @@ public :
     size_type globalId() const { return M_globalId; }
     node_type const& node() const { return M_node; }
     double hSize() const { return M_hSize; }
+    bool representSameNode( GeoToolPoint const& p ) const
+    {
+        return
+            ( math::abs( this->node()[0]-p.node()[0] ) < 1e-9 ) &&
+            ( math::abs( this->node()[1]-p.node()[1] ) < 1e-9 ) &&
+            ( math::abs( this->node()[2]-p.node()[2] ) < 1e-9 );
+    }
     void showMe() const
     {
-        std::cout << "localId  : " << this->localId() << " ; "
+        std::cout << "POINT -> "
+                  << "localId  : " << this->localId() << " ; "
                   << "globalId : " << this->globalId() << " ; "
                   << "node     : " << M_node[0] << " " << M_node[1] << " " << M_node[2]
                   << "hSize : " << M_hSize
@@ -844,25 +852,42 @@ public :
         M_localId( invalid_size_type_value ),
         M_globalId( invalid_size_type_value )
         {}
-    GeoToolLine(size_type localId,size_type globalId,std::string type)
+    GeoToolLine(std::string name,size_type localId,size_type globalId,std::string type)
         :
+        M_name( name ),
         M_localId( localId ),
         M_globalId( globalId ),
         M_lineType( type )
-        {}
+        {
+            CHECK( type == "line" ||
+                   type == "circle" || type == "ellipse" ||
+                   type == "spline" || type == "bspline" ) << "invalid line type " << type;
+        }
     GeoToolLine( GeoToolLine const& l )
         :
+        M_name( l.M_name ),
         M_localId( l.M_localId ),
         M_globalId( l.M_globalId ),
         M_lineType( l.M_lineType ),
         M_listPt( l.M_listPt ),
         M_physicalMarker( l.M_physicalMarker )
         {}
+    std::string name() const { return M_name; }
     size_type localId() const { return M_localId; }
     size_type globalId() const { return M_globalId; }
     std::string lineType() const { return M_lineType; }
     std::list<size_type> const& listPt() const { return M_listPt; }
     std::string physicalMarker() const { return M_physicalMarker; }
+    size_type firstPointIdConnection() const
+    {
+        // warning must depend on type
+        return M_listPt.front();
+    }
+    size_type secondPointIdConnection() const
+    {
+        // warning must depend on type
+        return M_listPt.back();
+    }
 
     void setPhysicalMarker( std::string s ) { M_physicalMarker=s; }
 
@@ -878,7 +903,9 @@ public :
 
     void showMe() const
     {
-        std::cout << "localId  : " << this->localId() << " ; "
+        std::cout << "LINE -> "
+                  << "name : " << this->name() << " ; "
+                  << "localId  : " << this->localId() << " ; "
                   << "globalId : " << this->globalId() << " ; "
                   << "lineType : " << this->lineType() << " ; "
                   << "physicalMarker : " << this->physicalMarker() << " ; "
@@ -890,6 +917,7 @@ public :
     }
 
 private :
+    std::string M_name;
     size_type M_localId,M_globalId;
     std::string M_lineType;
     std::list<size_type> M_listPt;
@@ -932,7 +960,9 @@ public :
     }
     void showMe() const
     {
-        std::cout << "localId  : " << this->localId() << " ; "
+        std::cout << "LINELOOP -> "
+                  << "name : " << this->name() << " ; "
+                  << "localId  : " << this->localId() << " ; "
                   << "globalId : " << this->globalId() << " ; "
                   << "linesId  : ";
         for ( int lineId : M_listLine )
@@ -1011,7 +1041,8 @@ public :
 
     void showMe() const
     {
-        std::cout << "localId : " << this->localId() << " ; "
+        std::cout << "SURFACE -> "
+                  << "localId : " << this->localId() << " ; "
                   << "globalId : " << this->globalId() << " ; "
                   << "surfaceType" << this->surfaceType() << " ; "
                   << "physicalMarker : " << this->physicalMarker() << " ; "
@@ -1070,7 +1101,8 @@ public :
     }
     void showMe() const
     {
-        std::cout << "localId  : " << this->localId() << " ; "
+        std::cout << "SURFACELOOP -> "
+                  << "localId  : " << this->localId() << " ; "
                   << "globalId : " << this->globalId() << " ; "
                   << "surfacesId  : ";
         for ( int surfId : M_listSurface )
@@ -1130,7 +1162,8 @@ public :
 
     void showMe() const
     {
-        std::cout << "localId : " << this->localId() << " ; "
+        std::cout << "VOLUME -> "
+                  << "localId : " << this->localId() << " ; "
                   << "globalId : " << this->globalId() << " ; "
                   << "physicalMarker : " << this->physicalMarker() << " ; "
                   << "surfaceLoopId : ";
@@ -1718,6 +1751,15 @@ public:
     std::map<size_type, detail::GeoToolVolume> M_buildDataVolume;
 
 
+    /*int
+    lineIdFromNameAndLocalId( std::string name, int localId ) const
+    {
+        for ( auto const& line : M_buildDataLine )
+            if ( line.second.name() == name && line.second.localId() == localId )
+                return line.first;
+        return 0;
+     }*/
+
     int
     surfaceIdFromName( std::string name ) const
     {
@@ -1764,6 +1806,11 @@ public:
 
     }
 
+
+    bool lineLoopIsClosed( detail::GeoToolLineLoop const& lineloop ) const;
+    bool lineLoopHasConnection( detail::GeoToolLineLoop const& lineloop1, detail::GeoToolLineLoop const& lineloop2 ) const;
+    void lineLoopApplyConnection( detail::GeoToolLineLoop & lineloop1, detail::GeoToolLineLoop const& lineloop2 );
+    std::set<int> lineLoopPointIdsNotConnected( detail::GeoToolLineLoop const& lineloop ) const;
 
     // name->(list of local id )
     //std::map<std::string,std::set<size_type> > M_fusionMarkerDoublonPoint,M_fusionMarkerDoublonLine,M_fusionMarkerDoublonLineLoop;
