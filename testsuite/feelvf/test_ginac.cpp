@@ -44,12 +44,8 @@
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pchv.hpp>
-#include <feel/feelvf/ginac.hpp>
-#include <feel/feelvf/operations.hpp>
-#include <feel/feelvf/stdmathfunctors.hpp>
-#include <feel/feelvf/matvec.hpp>
-#include <feel/feelvf/trans.hpp>
-#include <feel/feelvf/pow.hpp>
+#include <feel/feelvf/vf.hpp>
+
 
 
 using namespace Feel;
