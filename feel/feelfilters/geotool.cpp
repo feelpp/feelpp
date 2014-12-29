@@ -47,6 +47,240 @@ FusionMarkers::FusionMarkers(GeoGMSHTool const& gt1, int marker1,GeoGMSHTool con
     M_marker1( marker1 ),M_marker2( marker2 )
 {}
 
+
+bool
+GeoGMSHTool::lineLoopIsClosed( detail::GeoToolLineLoop const& lineloop ) const
+{
+    if ( lineloop.listLine().size() == 0 )
+        return false;
+
+    // init with first line in lineloop
+    int lineIdStart = lineloop.listLine().front();
+    int lineIdStartPos = (lineIdStart>0)? lineIdStart: -lineIdStart;
+    auto const& thelineStart = M_buildDataLine.find(lineIdStartPos)->second;
+    int pointIdStart = (lineIdStart>0)? thelineStart.firstPointIdConnection() : thelineStart.secondPointIdConnection();
+    int currentPointId = (lineIdStart>0)? thelineStart.secondPointIdConnection() : thelineStart.firstPointIdConnection();
+
+    for (  int thelineId : lineloop.listLine() )
+    {
+        // ignore the first line
+        if ( thelineId == lineIdStart ) continue;
+
+        int thelineIdPos = ( thelineId>0 )? thelineId : -thelineId;
+        auto const& theline = M_buildDataLine.find(thelineIdPos)->second;
+        if ( thelineId > 0 )
+        {
+            if ( currentPointId != theline.firstPointIdConnection() )
+                return false;
+            currentPointId = theline.secondPointIdConnection();
+        }
+        else
+        {
+            if ( currentPointId != theline.secondPointIdConnection() )
+                return false;
+            currentPointId = theline.firstPointIdConnection();
+        }
+    }
+
+    // check last point is the first point
+    if ( currentPointId != pointIdStart )
+        return false;
+
+    // the lineloop is well closed
+    return true;
+}
+
+std::set<int>
+GeoGMSHTool::lineLoopPointIdsNotConnected( detail::GeoToolLineLoop const& lineloop ) const
+{
+    std::set<int> pointIdNotConnected;
+    for ( int thelineIdA : lineloop.listLine() )
+    {
+        int thelineIdPosA = ( thelineIdA>0 )? thelineIdA : -thelineIdA;
+        auto const& thelineA = M_buildDataLine.find(thelineIdPosA)->second;
+        int firstPointIdA = (thelineIdA>0)? thelineA.firstPointIdConnection() : thelineA.secondPointIdConnection();
+        int secondPointIdA = (thelineIdA>0)? thelineA.secondPointIdConnection() : thelineA.firstPointIdConnection();
+        bool findInternalPointFirst = false, findInternalPointSecond = false;
+        for ( int thelineIdB : lineloop.listLine() )
+        {
+            if ( thelineIdA == thelineIdB ) continue;
+            int thelineIdPosB = ( thelineIdB>0 )? thelineIdB : -thelineIdB;
+            auto const& thelineB = M_buildDataLine.find(thelineIdPosB)->second;
+            int firstPointIdB = (thelineIdB>0)? thelineB.firstPointIdConnection() : thelineB.secondPointIdConnection();
+            int secondPointIdB = (thelineIdB>0)? thelineB.secondPointIdConnection() : thelineB.firstPointIdConnection();
+
+            if ( firstPointIdA == secondPointIdB )
+                findInternalPointFirst=true;
+            if ( secondPointIdA == firstPointIdB  )
+                findInternalPointSecond=true;
+
+            if ( findInternalPointFirst && findInternalPointSecond )
+                break;
+        }
+        if ( !findInternalPointFirst )
+            pointIdNotConnected.insert( firstPointIdA );
+        if ( !findInternalPointSecond )
+            pointIdNotConnected.insert( secondPointIdA );
+    }
+    return pointIdNotConnected;
+}
+bool
+GeoGMSHTool::lineLoopHasConnection( detail::GeoToolLineLoop const& lineloop1, detail::GeoToolLineLoop const& lineloop2 ) const
+{
+    // list of point in lineloop1 not connected
+    std::set<int> pointIdNotConnected1 = this->lineLoopPointIdsNotConnected(lineloop1);
+    std::set<int> pointIdNotConnected2 = this->lineLoopPointIdsNotConnected(lineloop2);
+    for( int ptId1 : pointIdNotConnected1 )
+    {
+        CHECK( M_buildDataPoint.find(ptId1) != M_buildDataPoint.end() ) << " not find point " << ptId1;
+        auto const& thePt1 = M_buildDataPoint.find(ptId1)->second;
+
+        //bool findRelatedPoint=false;
+        for( int ptId2 : pointIdNotConnected2 )
+        {
+            CHECK( M_buildDataPoint.find(ptId2) != M_buildDataPoint.end() ) << " not find point " << ptId2;
+            auto const& thePt2 = M_buildDataPoint.find(ptId2)->second;
+            if ( thePt1.representSameNode( thePt2 ) )
+                return true;
+        }
+    }
+
+    return false;
+}
+
+void
+GeoGMSHTool::lineLoopApplyConnection( detail::GeoToolLineLoop & lineloop1, detail::GeoToolLineLoop const& lineloop2 )
+{
+    std::list<int> myNewLinesId;
+    int lineIdStart = lineloop1.listLine().front();
+    int lineIdStartPos = (lineIdStart>0)? lineIdStart: -lineIdStart;
+    auto const& thelineStart = M_buildDataLine.find(lineIdStartPos)->second;
+    int pointIdFront = (lineIdStart>0)? thelineStart.firstPointIdConnection() : thelineStart.secondPointIdConnection();
+    int pointIdBack = (lineIdStart>0)? thelineStart.secondPointIdConnection() : thelineStart.firstPointIdConnection();
+
+    myNewLinesId.push_back( lineIdStart );
+
+    std::list<int> lineIdsConcatenate;
+    for (  int thelineId : lineloop1.listLine() )
+        lineIdsConcatenate.push_back(thelineId);
+    for (  int thelineId : lineloop2.listLine() )
+        lineIdsConcatenate.push_back(thelineId);
+
+
+    bool hasFinish=false;
+    while ( !hasFinish )
+    {
+        int nLineAdded=0;
+        for ( int thelineId : lineIdsConcatenate )
+        {
+            if ( std::find(myNewLinesId.begin(),myNewLinesId.end(), thelineId ) != myNewLinesId.end() )
+                continue;
+
+            int thelineIdPos = ( thelineId>0 )? thelineId : -thelineId;
+            auto const& theline = M_buildDataLine.find(thelineIdPos)->second;
+
+            CHECK( M_buildDataPoint.find(pointIdBack) != M_buildDataPoint.end() ) << " not find point " << pointIdBack;
+            auto const& thePtBack = M_buildDataPoint.find(pointIdBack)->second;
+            CHECK( M_buildDataPoint.find(pointIdFront) != M_buildDataPoint.end() ) << " not find point " << pointIdFront;
+            auto const& thePtFront = M_buildDataPoint.find(pointIdFront)->second;
+            auto const& thePtFirstPtConnection = M_buildDataPoint.find(theline.firstPointIdConnection())->second;
+            auto const& thePtSecondPtConnection = M_buildDataPoint.find(theline.secondPointIdConnection())->second;
+
+            if ( pointIdBack == theline.firstPointIdConnection() )
+            {
+                myNewLinesId.push_back( thelineIdPos/*thelineId*/ ); // positive sign
+                pointIdBack = theline.secondPointIdConnection();
+                ++nLineAdded;
+            }
+            else if ( pointIdBack == theline.secondPointIdConnection() )
+            {
+                myNewLinesId.push_back( -thelineIdPos/*-thelineId*/ ); // negative sign
+                pointIdBack = theline.firstPointIdConnection();
+                ++nLineAdded;
+            }
+            else if ( thePtBack.representSameNode( thePtFirstPtConnection ) )
+            {
+                myNewLinesId.push_back( thelineIdPos/*thelineId*/ ); // positive sign
+                pointIdBack = theline.secondPointIdConnection();
+                // replace point in Line
+                M_buildDataLine[thelineIdPos].replacePointId( thePtFirstPtConnection.globalId(),thePtBack.globalId() );
+                ++nLineAdded;
+            }
+            else if ( thePtBack.representSameNode( thePtSecondPtConnection ) )
+            {
+                myNewLinesId.push_back( -thelineIdPos/*-thelineId*/ ); // negative sign
+                pointIdBack = theline.firstPointIdConnection();
+                // replace point in Line
+                M_buildDataLine[thelineIdPos].replacePointId( thePtSecondPtConnection.globalId(),thePtBack.globalId() );
+                ++nLineAdded;
+            }
+
+            // if line has been added, go to next line
+            if ( nLineAdded > 0 )
+                continue;
+
+            if ( pointIdFront == theline.secondPointIdConnection() )
+            {
+                myNewLinesId.push_front( thelineIdPos/*thelineId*/ ); // positive sign
+                pointIdFront = theline.firstPointIdConnection();
+                ++nLineAdded;
+            }
+            else if ( pointIdFront == theline.firstPointIdConnection() )
+            {
+                myNewLinesId.push_front( -thelineIdPos/*-thelineId*/ ); // negative sign
+                pointIdFront = theline.secondPointIdConnection();
+                ++nLineAdded;
+            }
+            else if ( thePtFront.representSameNode( thePtSecondPtConnection ) )
+            {
+                myNewLinesId.push_back( thelineIdPos/*thelineId*/ ); // positive sign
+                pointIdFront = theline.firstPointIdConnection();
+                // replace point in Line
+                M_buildDataLine[thelineIdPos].replacePointId( thePtSecondPtConnection.globalId(),thePtFront.globalId() );
+                ++nLineAdded;
+            }
+            else if ( thePtFront.representSameNode( thePtFirstPtConnection ) )
+            {
+                myNewLinesId.push_back( -thelineIdPos/*-thelineId*/ ); // negative sign
+                pointIdFront = theline.secondPointIdConnection();
+                // replace point in Line
+                M_buildDataLine[thelineIdPos].replacePointId( thePtFirstPtConnection.globalId(),thePtFront.globalId() );
+                ++nLineAdded;
+            }
+
+        } // for ( int thelineId : lineIdsConcatenate )
+
+        if ( nLineAdded == 0 )
+            hasFinish=true;
+
+    } //  while ( !hasFinish )
+
+
+    // if front point and back point have same node but not same id, fix numbering
+    auto const& thePtBack = M_buildDataPoint.find(pointIdBack)->second;
+    auto const& thePtFront = M_buildDataPoint.find(pointIdFront)->second;
+    if ( pointIdFront != pointIdBack && thePtFront.representSameNode( thePtBack ) )
+    {
+        for ( int thelineId : myNewLinesId )
+        {
+            int thelineIdPos = ( thelineId>0 )? thelineId : -thelineId;
+            M_buildDataLine[thelineIdPos].replacePointId( thePtFront.globalId(),thePtBack.globalId() );
+        }
+    }
+#if 0
+    std::cout << "RES : ";
+    for ( auto res : myNewLinesId )
+        std::cout << res << " ";
+    std::cout << "\n";
+#endif
+
+    lineloop1.setLines( myNewLinesId );
+
+}
+
+
+
+
 GeoGMSHTool::GeoGMSHTool( uint16_type __dim,
                           std::string __shape,
                           std::string __name,
@@ -857,10 +1091,15 @@ GeoGMSHTool::geoStr()
 
     }
 
-    std::set<int> ptIdErased,lineIdErased,surfaceIdErased,volumeIdErased;
+    //this->showMe();
+
+    std::set<int> ptIdErased,lineIdErased,lineloopIdErased,surfaceIdErased,volumeIdErased;
 
     if ( this->dim() == 2 )
     {
+        //---------------------------------------------------------------------//
+        //---------------------------------------------------------------------//
+        // CASE 1 : with interface
         M_buildApplyFusionMarker.resize( this->fusionMarkersLineWithInterface().size() );
         for ( auto const& mylinelooppair : this->M_buildDataLineLoop )
         {
@@ -906,7 +1145,7 @@ GeoGMSHTool::geoStr()
             int mylineGlobalId2 = M_buildApplyFusionMarker[k].globalId2Line();
             int mylineGlobalId2Pos = ( mylineGlobalId2 > 0 )? mylineGlobalId2 : -mylineGlobalId2;
             auto const& myline2 = M_buildDataLine.find(mylineGlobalId2Pos)->second;
-
+            //std::cout << "identify same line " << mylineGlobalId1Pos << " vs " << mylineGlobalId2Pos << "\n";
             int mylineloopGlobalId2 = M_buildApplyFusionMarker[k].globalId2LineLoop();
 
             std::map<int,int> mapPointToReplace;
@@ -946,18 +1185,14 @@ GeoGMSHTool::geoStr()
 
             for ( auto const& ptToRep : mapPointToReplace )
                 ptIdErased.insert( ptToRep.first );
-
-            //std::cout << "erase point " << ptToRep.first << "\n";
-            //M_buildDataPoint.erase( ptToRep.first );
         }
-
 
         //---------------------------------------------------------------------//
         //---------------------------------------------------------------------//
         // CASE 2 : without interface
 
+        // define new surface to build from initial surface (with localId of line interface)
         // newNameSurf -> ( name base surf -> list of local line Id )
-        //std::map<std::string,std::set<std::string> > mapNewSurface;
         std::map<std::string,std::map<std::string,std::set<int> > > mapNewSurface;
         int cptNewSurfaceAdded=0;
         for ( int k=0; k<this->fusionMarkersLineWithoutInterface().size(); ++k )
@@ -987,38 +1222,48 @@ GeoGMSHTool::geoStr()
             else if ( !findName1.empty() && findName2.empty() )
             {
                 //mapNewSurface[findName1].insert(name2);
+                mapNewSurface[findName1][name1].insert(markerId1);
                 mapNewSurface[findName1][name2].insert(markerId2);
             }
             else if ( findName1.empty() && !findName2.empty() )
             {
                 //mapNewSurface[findName2].insert(name1);
                 mapNewSurface[findName2][name1].insert(markerId1);
+                mapNewSurface[findName2][name2].insert(markerId2);
             }
             else
             {
                 CHECK( false ) << "TODO";
             }
-        }
+        } // for ( int k=0; ... )
 
+#if 0
         for ( auto const& newSurf : mapNewSurface )
         {
             std::cout << "[" << newSurf.first << "] -> ";
             for ( auto surfName : newSurf.second )
             {
-                std::cout << " " << surfName.first << " : ";
+                std::cout << "[" << surfName.first << " : ";
                 for ( auto surfLocId : surfName.second )
                     std::cout << " " << surfLocId;
+                std::cout << "]";
             }
             std::cout << "\n";
         }
+#endif
+
         // create new surfaces
         for ( auto const& newSurf : mapNewSurface )
         {
+            // create new surface
             int idNewSurf = this->M_cptSurface;
             ++this->M_cptSurface; //update counter
             std::string surfType = "plane";//surfaceRegisterFront.surfaceType(); // plane, ruled
             detail::GeoToolSurface myDataSurf( newSurf.first,invalid_size_type_value,idNewSurf,surfType );
-            // add all line loops and take one surface marker
+
+            std::vector<detail::GeoToolLineLoop> newLineLoopMemory;
+            // first pass : compute new line loop (not closed) and identify lineloops and surfaces to erase
+            // add all lineloops and take one surface marker
             for ( auto surfName : newSurf.second )
             {
                 int idSurf = this->surfaceIdFromName( surfName.first );
@@ -1026,16 +1271,292 @@ GeoGMSHTool::geoStr()
                 auto const& mysurf = M_buildDataSurface.find( idSurf )->second;
                 if ( myDataSurf.physicalMarker().empty() )
                     myDataSurf.setPhysicalMarker( mysurf.physicalMarker() );
-                myDataSurf.addLineLoop( mysurf.listLineLoop() );
-            }
+
+                //myDataSurf.addLineLoop( mysurf.listLineLoop() );
+
+                std::set<int> thelineIdErasedWithFusion;
+                for ( int localIdLineFusion : surfName.second )
+                {
+                    // search global line id define in fusion with surface name and local id
+                    // must be apply with initial object
+                    for ( int thelineloopId : mysurf.listLineLoop() )
+                    {
+                        CHECK( M_buildDataLineLoop.find(thelineloopId) != M_buildDataLineLoop.end() ) << "lineloop " << thelineloopId << "not exist";
+                        auto const& thelineloop = M_buildDataLineLoop.find(thelineloopId)->second;
+                        for ( int thelineId : thelineloop.listLine() )
+                        {
+                            int thelineIdPos = ( thelineId > 0 )? thelineId : -thelineId;
+                            CHECK( M_buildDataLine.find(thelineIdPos) != M_buildDataLine.end() ) << "line " << thelineIdPos << "not exist";
+                            auto const& theline = M_buildDataLine.find(thelineIdPos)->second;
+
+                            if ( theline.name() == mysurf.name() && // igore line already modified by a fusion with interface
+                                 theline.localId() == localIdLineFusion )
+                            {
+                                //std::cout << "newSurf.first " << newSurf.first << " surfName.first " << surfName.first << " theline.globalId() "<< theline.globalId() << "\n";
+                                thelineIdErasedWithFusion.insert( theline.globalId() );
+                                lineIdErased.insert( theline.globalId() );
+                            }
+                        }
+                    }
+                }
+#if 0
+                std::cout << "thelineIdErasedWithFusion : ";
+                for ( auto const& hola : thelineIdErasedWithFusion )
+                    std::cout << hola << " ";
+                std::cout << "\n";
+#endif
+                // build new lineloops without interface line ( lineloop are not closed and must be fix after)
+                for ( int thelineloopId : mysurf.listLineLoop() )
+                {
+                    CHECK( M_buildDataLineLoop.find(thelineloopId) != M_buildDataLineLoop.end() ) << "lineloop " << thelineloopId << "not exist";
+                    auto const& thelineloop = M_buildDataLineLoop.find(thelineloopId)->second;
+                    std::list<int> myNewLinesId;
+                    for ( int thelineId : thelineloop.listLine() )
+                    {
+                        int thelineIdPos = ( thelineId > 0 )? thelineId : -thelineId;
+                        if ( thelineIdErasedWithFusion.find( thelineIdPos ) == thelineIdErasedWithFusion.end() )
+                            myNewLinesId.push_back( thelineId );
+                    }
+
+                    if ( myNewLinesId.size() > 0 )
+                    {
+                        int idNewLineLoop = this->M_cptLineLoop;
+                        ++this->M_cptLineLoop; //update counter
+                        detail::GeoToolLineLoop myNewLineLoop(myDataSurf.name(), invalid_size_type_value,idNewLineLoop );
+                        myNewLineLoop.setLines( myNewLinesId );
+                        newLineLoopMemory.push_back( myNewLineLoop );
+                        //this->addLineLoop(myNewLineLoop);
+                        //myDataSurf.addLineLoop( mysurf.listLineLoop() );
+                    }
+                    lineloopIdErased.insert(thelineloop.globalId());
+                }
+                //thelineIdErasedWithFusion
+
+                surfaceIdErased.insert( mysurf.globalId() );
+            } // for ( auto surfName : )
+
             // remove interfaces lines in line loop
+#if 0
+            std::cout << " newLineLoopMemory : \n";
+            for ( auto const& idMem : newLineLoopMemory )
+                idMem.showMe();
+            //std::cout << idMem.globalId() << " ";
+            //std::cout << "\n";
+#endif
 
-            // reconnect line loops
+            // reconnect line loops and reconnect points
+            CHECK( newLineLoopMemory.size() > 0 ) << "Not Good";
+            std::vector<bool> isDone( newLineLoopMemory.size(), false );
+            //for ( auto const& thelineloop : newLineLoopMemory )
+            for ( int k=0;k<newLineLoopMemory.size();++k )
+            {
+                if ( !isDone[k] )
+                {
+                    int idNewLineLoop = this->M_cptLineLoop;
+                    ++this->M_cptLineLoop; //update counter
+                    detail::GeoToolLineLoop myNewLineLoop(myDataSurf.name(), invalid_size_type_value,idNewLineLoop );
+                    myNewLineLoop.setLines( newLineLoopMemory[k].listLine() );
+                    isDone[k]=true;
 
-            // reconnect points
-            myDataSurf.showMe();
+                    bool lineloopClosed = false;
+                    while ( !lineloopClosed/*this->lineLoopIsClosed(myNewLineLoop)*/ )
+                    {
+                        for ( int k2=0;k2<newLineLoopMemory.size() /*&& !lineloopClosed*//*!this->lineLoopIsClosed(myNewLineLoop)*/;++k2 )
+                        {
+                            if( !isDone[k2] )
+                            {
+                                if ( this->lineLoopHasConnection( myNewLineLoop, newLineLoopMemory[k2] ) )
+                                {
+                                    //std::cout << "HasConnection\n";
+                                    this->lineLoopApplyConnection( myNewLineLoop, newLineLoopMemory[k2] );
+                                    isDone[k2]=true;
+
+                                    if ( this->lineLoopIsClosed(myNewLineLoop) )
+                                    {
+                                        lineloopClosed=true;
+                                        break;
+                                    }
+                                }
+                            }
+                            //myNewLineLoop.showMe();
+                        }
+                    }
+                    CHECK( this->lineLoopIsClosed(myNewLineLoop) ) << "lineloop must be closed here";
+
+                    //std::cout << "finish lineloop\n";
+                    //myNewLineLoop.showMe();
+
+                    this->addLineLoop( myNewLineLoop );
+                    myDataSurf.addLineLoop( myNewLineLoop.globalId()  );
+                }
+            }
+
+            this->addSurface(myDataSurf);
+            //myDataSurf.showMe();
+
+        } // for ( auto const& newSurf : mapNewSurface )
+
+
+        //---------------------------------------------------
+        // update M_surfaceList after fusion without interface
+
+        //std::map< std::pair<std::string,int>,int > surfaceListModified;
+        std::map< std::pair<std::string,int>,std::pair<std::string,int> > surfaceListModified;
+        std::map< std::pair<std::string,int>,std::pair<std::string,int> > surfaceListErased;
+        if ( mapNewSurface.size() > 0 )
+        {
+            for ( auto const& newSurf : mapNewSurface )
+            {
+                std::string nameNewSurf = newSurf.first;
+                int idNewSurf = this->surfaceIdFromName( nameNewSurf );
+                std::string nameInitialUsedForInsertNewSurf;
+                for ( auto surfName : newSurf.second )
+                {
+                    std::string nameInitialSurf = surfName.first;
+                    int idInitialSurf = this->surfaceIdFromName( nameInitialSurf );
+
+                    // use first surface for replacing in surface list
+                    if ( nameInitialUsedForInsertNewSurf.empty() )
+                    {
+                        nameInitialUsedForInsertNewSurf = nameInitialSurf;
+                        surfaceListModified[std::make_pair(nameInitialSurf,idInitialSurf)]=std::make_pair(nameNewSurf,idNewSurf);
+                    }
+                    else
+                        surfaceListErased[std::make_pair(nameInitialSurf,idInitialSurf)]=std::make_pair(nameNewSurf,idNewSurf);
+
+                    //surfaceListErased.insert( std::make_pair(nameInitialSurf,idInitialSurf) );
+                }
+            }
         }
 
+        // 2 cases : front and others(diff)
+
+        std::map<int,std::set<int> > surfaceListMovedSurfFromFrontFusion;
+        for ( auto const& itSurf : *this->M_surfaceList )
+        {
+            CHECK( itSurf.size() > 0 ) << "no surface";
+            if ( itSurf.size() == 1 ) continue;
+
+            surface_type_const_iterator_type itSurf2front = itSurf.begin();
+            if (itSurf2front->get<2>().second==0) continue; // surface useless
+            CHECK( this->M_buildDataSurface.find( itSurf2front->get<2>().first ) != this->M_buildDataSurface.end() ) << "error";
+
+            std::string nameSurf = itSurf2front->get<1>();
+            int idSurf = itSurf2front->get<2>().first;
+            if ( surfaceListErased.find( std::make_pair( nameSurf,idSurf ) ) != surfaceListErased.end() )
+            {
+                int idNewSurf = surfaceListErased.find( std::make_pair( nameSurf,idSurf ) )->second.second;
+                int thecpt=0;
+                //++itSurf2front;
+                for ( auto const& itSurf2 : itSurf )
+                {
+                    if ( thecpt > 0 )
+                    {
+                        int idSurfDiff = itSurf2.get<2>().first;
+                        surfaceListMovedSurfFromFrontFusion[idNewSurf].insert( idSurfDiff );
+                    }
+                    ++thecpt;
+                }
+            }
+        }
+
+        // move maybe diff surface
+        auto itSurf = this->M_surfaceList->begin();
+        auto enSurf = this->M_surfaceList->end();
+        for ( ; itSurf != enSurf ; ++itSurf )
+        {
+            //typedef surface_type_type::iterator surface_type_iterator_type;
+            //surface_type_iterator_type itSurf2front = itSurf->begin();
+            surface_type_const_iterator_type itSurf2front = itSurf->begin();
+            if (itSurf2front->get<2>().second==0) continue; // surface useless
+
+            std::string nameSurf = itSurf2front->get<1>();
+            int idSurf = itSurf2front->get<2>().first;
+            if ( surfaceListModified.find( std::make_pair( nameSurf,idSurf ) ) != surfaceListModified.end() )
+            {
+                auto findSurfToModify = surfaceListModified.find( std::make_pair( nameSurf,idSurf ) );
+                int idNewSurf = findSurfToModify->second.second;
+                if ( surfaceListMovedSurfFromFrontFusion.find(idNewSurf) !=surfaceListMovedSurfFromFrontFusion.end() )
+                {
+                    for ( int theidSurf : surfaceListMovedSurfFromFrontFusion.find(idNewSurf)->second )
+                    {
+                        auto const& mysurf = this->M_buildDataSurface.find( theidSurf )->second;
+                        CHECK( mysurf.listLineLoop().size() == 1 ) << "diff can be used only with surface with one lineloop";
+                        itSurf->push_back( boost::make_tuple( "blabla",mysurf.name(),std::make_pair( mysurf.globalId(),mysurf.listLineLoop().front() ),0. ) );
+                    }
+                }
+
+
+            }
+        }
+
+        // modified and delete fusion surface
+        /*auto*/ itSurf = this->M_surfaceList->begin();
+        //auto enSurf = this->M_surfaceList->end();
+        for ( ; itSurf != enSurf ; ++itSurf )
+        {
+            //surface_type_const_iterator_type itSurf2front = itSurf->begin();
+            // get first surface (which is not a diff surface)
+            typedef surface_type_type::iterator surface_type_iterator_type;
+            surface_type_iterator_type itSurf2front = itSurf->begin();
+            if ( itSurf2front->get<2>().second==0 ) continue; // surface useless
+
+            std::string nameSurf = itSurf2front->get<1>();
+            int idSurf = itSurf2front->get<2>().first;
+
+            auto findSurfToModify = surfaceListModified.find( std::make_pair( nameSurf,idSurf ) );
+            if ( findSurfToModify != surfaceListModified.end() )
+            {
+                int idNewSurf = findSurfToModify->second.second;
+                CHECK( this->M_buildDataSurface.find( idNewSurf ) != this->M_buildDataSurface.end() ) << "error";
+                auto const& mysurf = this->M_buildDataSurface.find( idNewSurf )->second;
+                boost::get<0>(*itSurf2front) = "blabla"; // shape (usefull??)
+                boost::get<1>(*itSurf2front) = mysurf.name();
+                CHECK( mysurf.listLineLoop().size() == 1 ) << "diff can be used only with surface with one lineloop";
+                boost::get<2>(*itSurf2front) = std::make_pair( mysurf.globalId(),mysurf.listLineLoop().front() ); // surf id, lineloop id
+                boost::get<3>(*itSurf2front) = 0.; // mesh size (usefull??)
+            }
+            else if ( surfaceListErased.find( std::make_pair( nameSurf,idSurf ) ) != surfaceListErased.end() )
+            {
+                // delete front surface with all diff surface
+                this->M_surfaceList->erase( itSurf );
+            }
+
+            // treat diff surface
+            if ( itSurf->size() > 1 )
+            {
+                // delete diff surface
+                auto itSurfDiff = ++itSurf2front;
+                auto enSurfDiff = itSurf->end();
+                while ( itSurfDiff != enSurfDiff )
+                {
+                    std::string nameSurfDiff = itSurfDiff->get<1>();
+                    int idSurfDiff = itSurfDiff->get<2>().first;
+                    if ( surfaceListErased.find( std::make_pair( nameSurfDiff,idSurfDiff ) ) != surfaceListErased.end() )
+                    {
+                        itSurfDiff = itSurf->erase( itSurfDiff );
+                    }
+                    else
+                    {
+                        auto findSurfDiffToModify = surfaceListModified.find( std::make_pair( nameSurfDiff,idSurfDiff ) );
+                        if ( findSurfDiffToModify != surfaceListModified.end() )
+                        {
+                            int idNewSurfDiff = findSurfDiffToModify->second.second;
+                            CHECK( this->M_buildDataSurface.find( idNewSurfDiff ) != this->M_buildDataSurface.end() ) << "error";
+                            auto const& mysurf = this->M_buildDataSurface.find( idNewSurfDiff )->second;
+                            boost::get<0>(*itSurfDiff) = "blablaDiff"; // shape (usefull??)
+                            boost::get<1>(*itSurfDiff) = mysurf.name();
+                            CHECK( mysurf.listLineLoop().size() == 1 ) << "diff can be used only with surface with one lineloop";
+                            boost::get<2>(*itSurfDiff) = std::make_pair( mysurf.globalId(),mysurf.listLineLoop().front() ); // surf id, lineloop id
+                            boost::get<3>(*itSurfDiff) = 0.; // mesh size (usefull??)
+                        }
+                        ++itSurfDiff;
+                    }
+                }
+            }
+        } // for ( ; itSurf != enSurf ; ++itSurf )
+
+        //this->showMe();
 
     } // if ( dim == 2 )
 
@@ -1056,6 +1577,7 @@ GeoGMSHTool::geoStr()
         int idNewSurf = this->M_cptSurface;
         ++this->M_cptSurface; //update counter
 
+        //mapNewSurface;
         auto const& surfaceRegisterFront = this->M_buildDataSurface.find( itSurf2front->get<2>().first )->second;
 
         std::string newSurfName;
@@ -1064,6 +1586,7 @@ GeoGMSHTool::geoStr()
         {
             if ( thecpt > 0 ) newSurfName += "-";
             newSurfName += itSurf2.get<1>();
+            ++thecpt;
         }
         std::string surfType = surfaceRegisterFront.surfaceType(); // plane, ruled
         detail::GeoToolSurface mySurf( newSurfName,invalid_size_type_value,idNewSurf,surfType );
@@ -1133,6 +1656,9 @@ GeoGMSHTool::geoStr()
 
     for ( auto lid : lineIdErased )
         M_buildDataLine.erase( lid );
+
+    for ( auto llid : lineloopIdErased )
+        M_buildDataLineLoop.erase( llid );
 
     for ( auto sid : surfaceIdErased )
         M_buildDataSurface.erase( sid );
@@ -1887,7 +2413,8 @@ writeLine( uint16_type __numLoc, data_geo_ptrtype __dg ,uint16_type __n1, uint16
 {
     ( *( boost::get<1>( *__dg ) ) )[1][__numLoc] = boost::get<0>( *__dg )->cptLine();
 
-    detail::GeoToolLine myLine(__numLoc, __dg->get<0>()->cptLine(), "line" );
+    std::string name = __dg->get<3>();
+    detail::GeoToolLine myLine(name,__numLoc, __dg->get<0>()->cptLine(), "line" );
     myLine.setPoints( { (*(__dg->get<1>()))[0][__n1], (*(__dg->get<1>()))[0][__n2] } );
 
     auto mymark = __dg->get<0>()->findPhysicalMarker( "line", __dg->get<3>()/*name*/, __numLoc );
@@ -1930,7 +2457,8 @@ writeCircle( uint16_type __numLoc, data_geo_ptrtype __dg ,uint16_type __n1, uint
 {
     ( *( boost::get<1>( *__dg ) ) )[1][__numLoc] = boost::get<0>( *__dg )->cptLine();
 
-    detail::GeoToolLine myLine(__numLoc, __dg->get<0>()->cptLine(), "circle" );
+    std::string name = __dg->get<3>();
+    detail::GeoToolLine myLine(name,__numLoc, __dg->get<0>()->cptLine(), "circle" );
     myLine.setPoints( { (*(__dg->get<1>()))[0][__n1], (*(__dg->get<1>()))[0][__n2], (*(__dg->get<1>()))[0][__n3] } );
 
     auto mymark = __dg->get<0>()->findPhysicalMarker( "line", __dg->get<3>()/*name*/, __numLoc );
@@ -1958,7 +2486,8 @@ writeEllipse( uint16_type __numLoc, data_geo_ptrtype __dg ,uint16_type __n1, uin
 {
     ( *( boost::get<1>( *__dg ) ) )[1][__numLoc] = boost::get<0>( *__dg )->cptLine();
 
-    detail::GeoToolLine myLine(__numLoc, __dg->get<0>()->cptLine(), "ellipse" );
+    std::string name = __dg->get<3>();
+    detail::GeoToolLine myLine(name,__numLoc, __dg->get<0>()->cptLine(), "ellipse" );
     myLine.setPoints( { (*(__dg->get<1>()))[0][__n1], (*(__dg->get<1>()))[0][__n2], (*(__dg->get<1>()))[0][__n3], (*(__dg->get<1>()))[0][__n4] } );
 
     auto mymark = __dg->get<0>()->findPhysicalMarker( "line", __dg->get<3>()/*name*/, __numLoc );
@@ -1987,7 +2516,8 @@ writeSpline( uint16_type __numLoc, data_geo_ptrtype __dg ,Loop __loop )
 {
     ( *( boost::get<1>( *__dg ) ) )[1][__numLoc] = boost::get<0>( *__dg )->cptLine();
 
-    detail::GeoToolLine myLine(__numLoc, __dg->get<0>()->cptLine(), "spline" );
+    std::string name = __dg->get<3>();
+    detail::GeoToolLine myLine(name,__numLoc, __dg->get<0>()->cptLine(), "spline" );
     std::list<size_type> myptId;
     for ( auto it=__loop.begin(), en=__loop.end() ; it!=en ; ++it )
         myptId.push_back( *it );
@@ -2027,7 +2557,8 @@ writeBSpline( uint16_type __numLoc, data_geo_ptrtype __dg ,Loop __loop )
 {
     ( *( boost::get<1>( *__dg ) ) )[1][__numLoc] = boost::get<0>( *__dg )->cptLine();
 
-    detail::GeoToolLine myLine(__numLoc, __dg->get<0>()->cptLine(), "bspline" );
+    std::string name = __dg->get<3>();
+    detail::GeoToolLine myLine(name,__numLoc, __dg->get<0>()->cptLine(), "bspline" );
     std::list<size_type> myptId;
     for ( auto it=__loop.begin(), en=__loop.end() ; it!=en ; ++it )
         myptId.push_back( *it );
