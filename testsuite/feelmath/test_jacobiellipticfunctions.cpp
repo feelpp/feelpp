@@ -29,7 +29,9 @@
  */
 
 #define BOOST_TEST_MODULE jacobi elliptic functions testsuite
+
 #include <testsuite/testsuite.hpp>
+#include <feel/feelcore/feelcomplex.hpp>
 #include <feel/feelmath/jacobiellipticfunctions.hpp>
 using namespace Feel;
 

@@ -77,10 +77,8 @@ public :
         auto u = Xh->element();
         auto v = Xh->element();
 
-        auto g=option(_name="functions.g").template as<std::string>();
-        auto vars = symbols<Dim>();
-        auto eg = parse(g,vars);
-        u = project( _space=Xh, _expr=expr(eg,vars) );
+        auto g=soption(_name="functions.g");
+        u.on(_range=elements(mesh), _expr=expr( g ));
 
         boost::mpi::timer ti;
         if ( Environment::rank() == 0 )
