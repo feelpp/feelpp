@@ -33,16 +33,11 @@
 #include <feel/feelfilters/creategmshmesh.hpp>
 #include <feel/feelfilters/domain.hpp>
 #include <feel/feelfilters/exporter.hpp>
-#include <feel/feelvf/form.hpp>
-#include <feel/feelvf/operators.hpp>
-#include <feel/feelvf/operations.hpp>
-#include <feel/feelvf/ginac.hpp>
-#include <feel/feelvf/on.hpp>
-#include <feel/feelvf/trans.hpp>
-
+#include <feel/feelvf/vf.hpp>
 
 /** use Feel namespace */
 using namespace Feel;
+using Feel::project;
 
 inline
 AboutData
@@ -119,8 +114,8 @@ public :
                 {"alpha", option(_name="parameters.alpha").template as<double>()},
                 {"beta", option(_name="parameters.beta").template as<double>()} } );
 
-        solution = project( _space=Xh, _expr=ue_g );
-        ue = project( _space=Xh, _expr=ue_g );
+        solution.on( _range=elements(mesh), _expr=ue_g );
+        ue.on(_range=elements(mesh), _expr=ue_g );
         // compute max error which should be 0
         auto error = vf::project( _space=Xh, _expr=idv(ue)-idv(solution) );
         e->step(0)->add("exact",ue);

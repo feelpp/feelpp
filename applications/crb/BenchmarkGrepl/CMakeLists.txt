@@ -33,3 +33,5 @@ foreach(O 1 2 3)
       benchmarkgrepl-nonlinear-elliptic${O} BenchmarkGreplNonlinearElliptic CLASS BenchmarkGreplNonlinearElliptic<${O}> 
       HDRS benchmarkgrepl-nonlinear-elliptic.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG benchmarkgrepl-nonlinear-elliptic${O}.cfg XML benchmarkgrepl-nonlinear-elliptic${O}.xml )
 endforeach()
+
+feelpp_add_application(grepl_fem SRCS grepl_fem.cpp)
