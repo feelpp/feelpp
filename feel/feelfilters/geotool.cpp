@@ -1437,7 +1437,6 @@ GeoGMSHTool::geoStr()
                 }
             }
         }
-
         // 2 cases : front and others(diff)
 
         std::map<int,std::set<int> > surfaceListMovedSurfFromFrontFusion;
@@ -1502,7 +1501,7 @@ GeoGMSHTool::geoStr()
         // modified and delete fusion surface
         /*auto*/ itSurf = this->M_surfaceList->begin();
         //auto enSurf = this->M_surfaceList->end();
-        for ( ; itSurf != enSurf ; ++itSurf )
+        for ( ; itSurf != enSurf ; /*++itSurf*/ )
         {
             //surface_type_const_iterator_type itSurf2front = itSurf->begin();
             // get first surface (which is not a diff surface)
@@ -1512,6 +1511,8 @@ GeoGMSHTool::geoStr()
 
             std::string nameSurf = itSurf2front->get<1>();
             int idSurf = itSurf2front->get<2>().first;
+
+            bool hasErasedAllSurf=false;
 
             auto findSurfToModify = surfaceListModified.find( std::make_pair( nameSurf,idSurf ) );
             if ( findSurfToModify != surfaceListModified.end() )
@@ -1528,11 +1529,13 @@ GeoGMSHTool::geoStr()
             else if ( surfaceListErased.find( std::make_pair( nameSurf,idSurf ) ) != surfaceListErased.end() )
             {
                 // delete front surface with all diff surface
-                this->M_surfaceList->erase( itSurf );
+                itSurf = this->M_surfaceList->erase( itSurf );
+                hasErasedAllSurf=true;
             }
 
+
             // treat diff surface
-            if ( itSurf->size() > 1 )
+            if ( !hasErasedAllSurf && itSurf->size() > 1 )
             {
                 auto itSurfDiff = ++itSurf2front;
                 auto enSurfDiff = itSurf->end();
@@ -1550,6 +1553,7 @@ GeoGMSHTool::geoStr()
                         auto findSurfDiffToModify = surfaceListModified.find( std::make_pair( nameSurfDiff,idSurfDiff ) );
                         if ( findSurfDiffToModify != surfaceListModified.end() )
                         {
+
                             // modify diff surface
                             int idNewSurfDiff = findSurfDiffToModify->second.second;
                             CHECK( this->M_buildDataSurface.find( idNewSurfDiff ) != this->M_buildDataSurface.end() ) << "error";
@@ -1564,12 +1568,12 @@ GeoGMSHTool::geoStr()
                     }
                 }
             }
+            if( !hasErasedAllSurf ) ++itSurf;
         } // for ( ; itSurf != enSurf ; ++itSurf )
 
         //this->showMe();
 
     } // if ( dim == 2 )
-
 
     // create diff surface
     for ( auto const& itSurf : *this->M_surfaceList )
