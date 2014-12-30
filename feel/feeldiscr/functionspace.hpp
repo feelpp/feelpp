@@ -4246,7 +4246,7 @@ public:
     /**
      * build component space in vectorial case
      */
-    void buildComponentSpace();
+    void buildComponentSpace() const;
 
     /**
      * rebuild dof points after a mesh mover for example
@@ -4382,13 +4382,13 @@ protected:
     boost::shared_ptr<WorldComm> M_worldComm;
 
     // finite element mesh
-    mesh_ptrtype M_mesh;
-
+    mutable mesh_ptrtype M_mesh;
+    mutable periodicity_type M_periodicity;
     //! finite element reference type
     reference_element_ptrtype M_ref_fe;
 
     //! component fe space
-    component_functionspace_ptrtype M_comp_space;
+    mutable component_functionspace_ptrtype M_comp_space;
 
     //! Degrees of freedom
     dof_ptrtype M_dof;
@@ -4445,6 +4445,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
     DVLOG(2) << "calling init(<space>) is_periodic: " << is_periodic << "\n";
 
     M_mesh = __m;
+    M_periodicity = periodicity;
     VLOG(1) << "FunctionSpace init begin mesh use_count : " << M_mesh.use_count();
 
 
@@ -4730,7 +4731,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithoutGhostOnProc( const int proc, 
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::buildComponentSpace()
+FunctionSpace<A0, A1, A2, A3, A4>::buildComponentSpace() const
 {
     if ( is_vectorial && !M_comp_space )
     {
@@ -4739,7 +4740,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::buildComponentSpace()
         //
         M_comp_space = component_functionspace_ptrtype( new component_functionspace_type( M_mesh,
                                                                                           MESH_COMPONENTS_DEFAULTS,
-                                                                                          periodicity,
+                                                                                          M_periodicity,
                                                                                           std::vector<WorldComm>( 1,this->worldsComm()[0] ) ) );
         VLOG(2) << " - component space :: nb dim : " << M_comp_space->qDim() << "\n";
         VLOG(2) << " - component space :: nb dof : " << M_comp_space->nDof() << "\n";
