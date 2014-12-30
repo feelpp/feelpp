@@ -1649,6 +1649,7 @@ public:
 
     typedef boost::shared_ptr<dof_type> dof_ptrtype;
     typedef boost::shared_ptr<DataMap> datamap_ptrtype;
+    typedef boost::shared_ptr<IndexSplit> indexsplit_ptrtype;
 
     // return types
     //typedef typename bases_list::polyset_type return_value_type;

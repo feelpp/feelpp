@@ -45,6 +45,7 @@ public:
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
     typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef typename space_type::indexsplit_ptrtype  indexsplit_ptrtype;
     typedef typename space_type::mesh_type mesh_type;
     typedef typename space_type::mesh_ptrtype mesh_ptrtype;
     typedef typename space_type::element_type element_type;
@@ -94,7 +95,7 @@ public:
     void assembleSchurApp( double nu, double alpha = 0 );
 
     template< typename Expr_convection, typename Expr_bc >
-    void update( Expr_convection const& expr_b, Expr_bc const& g );
+    void update( sparse_matrix_ptrtype A, Expr_convection const& expr_b, Expr_bc const& g );
 
     void apply( const vector_type & X, vector_type & Y ) const
     {
@@ -140,8 +141,10 @@ private:
     
     velocity_space_ptrtype M_Vh;
     pressure_space_ptrtype M_Qh;
-
-    sparse_matrix_ptrtype M_A, M_helm, G, M_div;
+    std::vector<size_type> M_Vh_indices;
+    std::vector<size_type> M_Qh_indices;
+    
+    sparse_matrix_ptrtype M_helm, G, M_div, M_F, M_B, M_Bt;
     op_mat_ptrtype divOp, helmOp;
 
     mutable vector_ptrtype M_rhs, M_aux, M_vin,M_pin, M_vout, M_pout;
@@ -172,7 +175,8 @@ PreconditionerBTPCD<space_type>::PreconditionerBTPCD( space_ptrtype Xh,
     M_Xh( Xh ),
     M_Vh( M_Xh->template functionSpace<0>() ),
     M_Qh( M_Xh->template functionSpace<1>() ),
-    M_A( A ),
+    M_Vh_indices( M_Vh->nLocalDofWithGhost() ),
+    M_Qh_indices( M_Qh->nLocalDofWithGhost() ),
     M_helm ( M_b->newMatrix( M_Vh, M_Vh ) ),
     G( M_b->newMatrix( M_Vh, M_Vh ) ),
     M_div ( M_b->newMatrix( _trial=M_Vh, _test=M_Qh ) ),
@@ -190,6 +194,17 @@ PreconditionerBTPCD<space_type>::PreconditionerBTPCD( space_ptrtype Xh,
     M_bcFlags( bcFlags )
 {
     LOG(INFO) << "Alpha: " << alpha << "\n";
+    this->setMatrix( A );
+
+    std::iota( M_Vh_indices.begin(), M_Vh_indices.end(), 0 );
+    std::iota( M_Qh_indices.begin(), M_Qh_indices.end(), M_Vh->nLocalDofWithGhost() );
+        
+    M_F = A->createSubMatrix( M_Vh_indices, M_Vh_indices, true );
+    M_B = A->createSubMatrix( M_Qh_indices, M_Vh_indices );
+    M_Bt = A->createSubMatrix( M_Vh_indices, M_Qh_indices );
+
+    helmOp = op( M_F, "Fu" );
+    divOp = op( M_B, "DN");
 
     mpi::timer ti;
     initialize();
@@ -248,6 +263,7 @@ template < typename space_type >
 void
 PreconditionerBTPCD<space_type>::assembleHelmholtz( double nu, double alpha  )
 {
+#if 0
     auto a = form2( _trial=M_Vh, _test=M_Vh, _matrix=M_helm );
 
     if ( alpha != 0 )
@@ -262,17 +278,20 @@ PreconditionerBTPCD<space_type>::assembleHelmholtz( double nu, double alpha  )
         }
      */
     M_helm->close();
+#endif
 }
 
 template < typename space_type >
 void
 PreconditionerBTPCD<space_type>::assembleDivergence()
 {
+#if 0
     auto a = form2( _trial=M_Vh, _test=M_Qh, _matrix=M_div );
     a = integrate( _range=elements(M_Xh->mesh()), _expr=divt( u ) * id( q ) );
     M_div->close();
 
-    divOp = op( M_div, "DN");
+    divOp = op( M_B, "DN");
+#endif
 }
 
 template < typename space_type >
@@ -289,12 +308,18 @@ PreconditionerBTPCD<space_type>::assembleSchurApp( double nu, double alpha )
 template < typename space_type >
 template< typename Expr_convection, typename Expr_bc >
 void
-PreconditionerBTPCD<space_type>::update( Expr_convection const& expr_b,
+PreconditionerBTPCD<space_type>::update( sparse_matrix_ptrtype A,
+                                         Expr_convection const& expr_b,
                                          Expr_bc const& g )
 {
     static bool init_G = true;
 
     boost::timer ti;
+#if 1
+    M_F = A->createSubMatrix( M_Vh_indices, M_Vh_indices, true );
+
+    helmOp = op( M_F, "Fu" );
+#else
 
     if ( !init_G )
         G->zero();
@@ -316,7 +341,7 @@ PreconditionerBTPCD<space_type>::update( Expr_convection const& expr_b,
     G->close();
 
     helmOp = op( G, "Fu" );
-
+#endif
     ti.restart();
     pcdOp->update( expr_b, g );
 

@@ -55,6 +55,7 @@ int main(int argc, char**argv )
 
 
     auto g = expr<2,1>( soption(_name="functions.g") );
+    auto wall = expr<2,1>( soption(_name="functions.h") );
     auto Vh = THch<2>( mesh );
     auto U = Vh->element();
     auto Un = Vh->element();
@@ -66,6 +67,16 @@ int main(int argc, char**argv )
     auto pn = Un.element<1>();
     auto q = V.element<1>();
 
+    if ( Environment::isMasterRank() )
+    {
+        std::cout << "FunctionSpace\tVelocity\tPressure\n";
+        std::cout.width(16);
+        std::cout << std::left << Vh->nDof();
+        std::cout.width(16);
+        std::cout << std::left << Vh->functionSpace<0>()->nDof();
+        std::cout.width(16);
+        std::cout << std::left << Vh->functionSpace<1>()->nDof() << "\n";
+    }
     auto deft = gradt( u );
     auto def = grad( v );
     double mu = doption(_name="mu");
@@ -76,7 +87,7 @@ int main(int argc, char**argv )
 
     auto a = form2( _trial=Vh, _test=Vh);
     auto at = form2( _trial=Vh, _test=Vh);
-    a += integrate( _range=elements( mesh ), _expr=mu*inner( sym(deft),def ) );
+    a += integrate( _range=elements( mesh ), _expr=mu*inner( deft,def ) );
     a +=integrate( _range=elements( mesh ), _expr=-div( v )*idt( p ) + divt( u )*id( q ) );
 
     auto e = exporter( _mesh=mesh );
@@ -85,8 +96,7 @@ int main(int argc, char**argv )
     bcs["Dirichlet"].insert(mesh->markerName("inlet"));
     bcs["Dirichlet"].insert(mesh->markerName("wall"));
     bcs["Neumann"].insert(mesh->markerName("outlet"));
-    auto a_btpcd = btpcd( _space=Vh, _bc=bcs, _matrix= a.matrixPtr() );
-    a_btpcd->setMatrix( a.matrixPtr() );
+    
     auto incru = normL2( _range=elements(mesh), _expr=idv(u)-idv(un));
     auto incrp = normL2( _range=elements(mesh), _expr=idv(p)-idv(pn));
     int fixedpt_iter = 0;
@@ -96,13 +106,19 @@ int main(int argc, char**argv )
     at+=on(_range=markedfaces(mesh,"inlet"), _rhs=l, _element=u,
            _expr=g );
 
+    if ( Environment::isMasterRank() )
+        std::cout << " - Setting up Precondition BtPCD...\n";
+    auto a_btpcd = btpcd( _space=Vh, _bc=bcs, _matrix= at.matrixPtr() );
+    a_btpcd->setMatrix( at.matrixPtr() );
     map_vector_field<2,1,2> m_dirichlet;
     m_dirichlet["inlet"]=g;
-    m_dirichlet["wall"]=g;
+    m_dirichlet["wall"]=wall;
 
+    if ( Environment::isMasterRank() )
+        std::cout << " - Solving Stokes...\n";
     if ( boption("btpcd") )
     {
-        a_btpcd->update( zero<2,1>(), m_dirichlet );
+        a_btpcd->update( at.matrixPtr(), zero<2,1>(), m_dirichlet );
         at.solveb(_rhs=l,_solution=U,_backend=backend(),_prec=a_btpcd);
     }
     else
@@ -113,16 +129,22 @@ int main(int argc, char**argv )
     e->save();
 #if 1
     auto deltaU = Vh->element();
-
+    //m_dirichlet["inlet"]=wall;
     do
     {
+        if ( Environment::isMasterRank() )
+            std::cout << " - Assemble nonlinear terms  ...\n";
         at = a;
         at += integrate( _range=elements(mesh),_expr=trans(id(v))*(gradt(u)*idv(u)) );
         at += integrate( _range=elements(mesh), _expr=trans(id(v))*gradv(u)*idt(u) );
 
-        r = integrate( _range=elements( mesh ), _expr=mu*inner( sym(gradv(u)),def ) );
+        if ( Environment::isMasterRank() )
+            std::cout << " - Assemble residual  ...\n";
+        r = integrate( _range=elements( mesh ), _expr=mu*inner( gradv(u),def ) );
         r +=integrate( _range=elements( mesh ), _expr=-div( v )*idv( p ) + divv( u )*id( q ) );
         r += integrate( _range=elements(mesh),_expr=trans(id(v))*(gradv(u)*idv(u)) );
+        if ( Environment::isMasterRank() )
+            std::cout << " - Assemble BC   ...\n";
         at+=on(_range=markedfaces(mesh,"wall"), _rhs=r, _element=u,
                _expr=zero<2,1>() ) ;
         at+=on(_range=markedfaces(mesh,"inlet"), _rhs=r, _element=u,
@@ -132,9 +154,11 @@ int main(int argc, char**argv )
         {
             std::cout << "non linear iteration " << fixedpt_iter << " \n";
         }
+        if ( Environment::isMasterRank() )
+            std::cout << " - Solve   ...\n";
         if ( boption("btpcd") )
         {
-            a_btpcd->update( idv(u), m_dirichlet );
+            a_btpcd->update( at.matrixPtr(), idv(u), m_dirichlet );
             at.solveb(_rhs=r,_solution=deltaU/*U*/,_backend=backend(),_prec=a_btpcd );
         }
         else
