@@ -29,7 +29,7 @@
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelfilters/unitcircle.hpp>
 #include <feel/feeldiscr/pdhv.hpp>
-#include <feel/feelvf/ones.hpp>
+#include <feel/feelvf/vf.hpp>
 
 int main( int argc, char **argv)
 {

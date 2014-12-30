@@ -339,6 +339,8 @@ public:
      */
     virtual T operator() ( const size_type i ) const = 0;
 
+    virtual T& operator() ( const size_type i ) = 0;
+
     /**
      * Addition operator.
      * Fast equivalent to \p U.add(1, V).
