@@ -110,6 +110,7 @@ public:
 private:
 
     space_ptrtype M_Xh;
+    velocity_space_ptrtype M_Vh;
     pressure_space_ptrtype M_Qh;
 
     pressure_element_type p, q;
@@ -151,6 +152,7 @@ OperatorPCD<space_type>::OperatorPCD( space_ptrtype Qh,
     :
     super( Qh->template functionSpace<1>()->mapPtr(), "PCD", false, false ),
     M_Xh( Qh ),
+    M_Vh( M_Xh->template functionSpace<0>() ),
     M_Qh( M_Xh->template functionSpace<1>() ),
     p( M_Qh, "p" ),
     q( M_Qh, "q" ),
@@ -225,21 +227,20 @@ OperatorPCD<space_type>::update( ExprConvection const& expr_b,
     auto conv  = form2( _test=M_Qh, _trial=M_Qh, _matrix=G );
     G->zero();
 
-    conv = integrate( elements(M_Qh->mesh()), (trans(expr_b)*trans(gradt(p)))*id(q));
+    conv = integrate( _range=elements(M_Qh->mesh()), _expr=(trans(expr_b)*trans(gradt(p)))*id(q));
+    conv += integrate( _range=elements(M_Qh->mesh()), _expr=M_nu*gradt(p)*trans(grad(q)));
 
-    for( auto dir : M_bcFlags["Dirichlet"])
-    {
-        std::string m = M_Qh->mesh()->markerName(dir);
-        if (( soption("btpcd.pcd.inflow") == "Robin" ) &&
-            ( ( m == "inlet" )  || ( m == "inflow") ) )
+    if ( soption("btpcd.pcd.inflow") == "Robin" )
+        for( auto dir : M_bcFlags["Dirichlet"])
         {
-            conv += integrate( _range=markedfaces(M_Qh->mesh(), dir), _expr=trans(ebc.find(M_Qh->mesh()->markerName(dir))->second)*N()*idt(p)*id(q));
+            std::string m = M_Qh->mesh()->markerName(dir);
+            //conv += integrate( _range=markedfaces(M_Qh->mesh(), dir), _expr=-trans(ebc.find(M_Qh->mesh()->markerName(dir))->second)*N()*idt(p)*id(q));
+            conv += integrate( _range=markedfaces(M_Qh->mesh(), dir), _expr=-trans(expr_b)*N()*idt(p)*id(q));
         }
-    }
 
     G->close();
-    LOG(INFO) << "[OperatorPCD] Add diffusion matrix...\n";
-    G->addMatrix( M_nu, M_diff );
+    //LOG(INFO) << "[OperatorPCD] Add diffusion matrix...\n";
+    //G->addMatrix( M_nu, M_diff );
 
 
 
@@ -285,9 +286,16 @@ void
 OperatorPCD<space_type>::assembleDiffusion()
 {
     auto d = form2( _test=M_Qh, _trial=M_Qh, _matrix=M_diff );
-    d = integrate( elements(M_Qh->mesh()), trace(trans(gradt(p))*grad(q)));
+    d = integrate( _range=elements(M_Qh->mesh()), _expr=gradt(p)*trans(grad(q)));
 
-    this->applyBC(M_diff);
+    for( auto dir : M_bcFlags["Neumann"])
+    {
+        std::string m = M_Qh->mesh()->markerName(dir);
+        if ( (m=="outlet") || (m == "outflow") )
+            d += on( markedfaces(M_Qh->mesh(),dir), _element=p, _rhs=rhs, _expr=cst(0.) );
+    }
+    //this->applyBC(M_diff);
+    
 
     diffOp = op( M_diff, "Fp" );
 }
@@ -314,15 +322,14 @@ void
 OperatorPCD<space_type>::applyBC( sparse_matrix_ptrtype& A )
 {
     auto a = form2( _test=M_Qh, _trial=M_Qh, _matrix=A );
-    for( auto dir : M_bcFlags["Dirichlet"])
-    {
-        std::string m = M_Qh->mesh()->markerName(dir);
-        if (( soption("btpcd.pcd.inflow") == "Robin" ) &&
-            ( ( m == "inlet" )  || ( m == "inflow") ) )
-            continue;
 
-        a += on( markedfaces(M_Qh->mesh(),dir), _element=p, _rhs=rhs, _expr=cst(0.) );
-    }
+    if ( soption("btpcd.pcd.inflow") != "Robin" )
+        for( auto dir : M_bcFlags["Dirichlet"])
+        {
+            std::string m = M_Qh->mesh()->markerName(dir);
+            a += on( markedfaces(M_Qh->mesh(),dir), _element=p, _rhs=rhs, _expr=cst(0.) );
+        }
+
     // on neumann boundary on velocity, apply Dirichlet condition on pressure
     if ( soption("btpcd.pcd.outflow") == "Dirichlet" )
         for( auto dir : M_bcFlags["Neumann"])

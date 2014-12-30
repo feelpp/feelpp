@@ -83,8 +83,9 @@ int main(int argc, char**argv )
     map_vector_field<2,1,2> m_dirichlet;
     m_dirichlet["inlet"]=inlet;
     m_dirichlet["wall"]=wall;
-
-    auto a_btpcd = btpcd( _space=Vh, _bc=bcs, _alpha=mybdf->polyDerivCoefficient(0));
+    a.close();
+    auto a_btpcd = btpcd( _space=Vh, _bc=bcs, _alpha=mybdf->polyDerivCoefficient(0),
+                          _matrix=a.matrixPtr());
 
 
     toc("bdf, forms,...");
@@ -116,7 +117,7 @@ int main(int argc, char**argv )
 
         if ( boption("btpcd") )
         {
-            a_btpcd->update( idv(extrapu), m_dirichlet );
+            a_btpcd->update( at.matrixPtr(), idv(extrapu), m_dirichlet );
             at.solveb(_rhs=ft,_solution=U,_backend=backend(),_prec=a_btpcd );
         }
         else
