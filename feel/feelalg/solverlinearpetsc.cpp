@@ -122,7 +122,7 @@ extern "C"
         boost::shared_ptr<VectorPetsc<double> > y_vec;
         if ( preconditioner->worldComm().localSize() > 1 )
         {
-            CHECK ( preconditioner->matrix() ) << "matrix is not define";
+            CHECK ( preconditioner->matrix() ) << "matrix is not defined";
             x_vec.reset( new VectorPetscMPI<double>( x, preconditioner->matrix()->mapColPtr() ) );
             y_vec.reset( new VectorPetscMPI<double>( y, preconditioner->matrix()->mapRowPtr() ) );
         }
@@ -320,6 +320,23 @@ void SolverLinearPetsc<T>::init ()
 #endif
             ierr = PCGetType ( M_pc, &pc_type );
             CHKERRABORT( this->worldComm().globalComm(),ierr );
+
+            switch( this->M_preconditioner->side() )
+            {
+            default:
+            case preconditioner_type::LEFT:
+                VLOG(2) << " . PC is set to left side\n";
+                KSPSetPCSide( M_ksp, PC_LEFT );
+                break;
+            case preconditioner_type::RIGHT:
+                VLOG(2) << " . PC is set to right side\n";
+                KSPSetPCSide( M_ksp, PC_RIGHT );
+                break;
+            case preconditioner_type::SYMMETRIC:
+                VLOG(2) << " . PC is set to symmetric\n";
+                KSPSetPCSide( M_ksp, PC_SYMMETRIC );
+                break;
+            }
 
             VLOG(2) << "preconditioner set as "  << pc_type << "\n";
         }

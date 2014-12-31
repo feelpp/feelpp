@@ -187,6 +187,7 @@ public:
         M_hasInverse( 1 ),
         M_hasApply( 1 )
     {
+        auto b = backend(_name=this->label(),_rebuild=true);
         LOG(INFO) << "Create operator " << this->label() << " ...\n";
     }
 

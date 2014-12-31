@@ -665,6 +665,7 @@ feel_options( std::string const& prefix  )
         .add( backend_options("Fp") )
         .add( backend_options("Mp") )
         .add( backend_options("Fu") )
+        .add( backend_options("Bt") )
         .add( btpcd_options( prefix ) )
 
         /* nonlinear solver options */
