@@ -387,6 +387,15 @@ public:
         return result;
     }
 
+    /**
+     * @return the linear solver (const version)
+     */
+    SolverLinearPetsc<double> const& linearSolver() const { return M_solver_petsc; }
+    /**
+     * @return the linear solver 
+     */
+    SolverLinearPetsc<double> & linearSolver() { return M_solver_petsc; }
+    
 private:
 
     SolverLinearPetsc<double> M_solver_petsc;

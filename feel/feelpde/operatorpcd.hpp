@@ -254,7 +254,7 @@ OperatorPCD<space_type>::update( ExprConvection const& expr_b,
 
     static bool init_G = false;
 
-    if ( !init_G )
+    //if ( !init_G )
     {
         // S = F G^-1 M
         LOG(INFO) << "[OperatorPCD] setting pcd operator...\n";
