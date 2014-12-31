@@ -30,12 +30,14 @@
 #include <feel/feelalg/operator.hpp>
 #include <feel/feelalg/preconditioner.hpp>
 #include <feel/feelpde/operatorpcd.hpp>
+#include <feel/feelalg/backendpetsc.hpp>
 
 namespace Feel
 {
 template< typename space_type >
 class PreconditionerBTPCD : public Preconditioner<typename space_type::value_type>
 {
+    typedef Preconditioner<typename space_type::value_type> super;
 public:
 
     typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
@@ -99,10 +101,21 @@ public:
 
     void apply( const vector_type & X, vector_type & Y ) const
     {
-        applyInverse( X, Y );
+        BackendPetsc<double>* b = dynamic_cast<BackendPetsc<double>*>( M_b.get() );
+        if ( b != 0 )
+        {
+            LOG(INFO) << "apply btpcd...\n";
+            applyInverse( X, Y );
+        }
+        else
+        {
+            CHECK(0) << " . invalid call\n";
+        }
+        
     }
 
     int applyInverse ( const vector_type& X, vector_type& Y ) const;
+    int guess( vector_type& U ) const;
 
     // other function
     int SetUseTranspose( bool UseTranspose)
@@ -181,7 +194,7 @@ PreconditionerBTPCD<space_type>::PreconditionerBTPCD( space_ptrtype Xh,
     G( M_b->newMatrix( M_Vh, M_Vh ) ),
     M_div ( M_b->newMatrix( _trial=M_Vh, _test=M_Qh ) ),
     M_rhs( M_b->newVector( M_Vh )  ),
-    M_aux( M_b->newVector( M_Qh )  ),
+    M_aux( M_b->newVector( M_Vh )  ),
     M_vin( M_b->newVector( M_Vh )  ),
     M_pin( M_b->newVector( M_Qh )  ),
     M_vout( M_b->newVector( M_Vh )  ),
@@ -195,7 +208,7 @@ PreconditionerBTPCD<space_type>::PreconditionerBTPCD( space_ptrtype Xh,
 {
     LOG(INFO) << "Alpha: " << alpha << "\n";
     this->setMatrix( A );
-
+    this->setSide( super::RIGHT );
     std::iota( M_Vh_indices.begin(), M_Vh_indices.end(), 0 );
     std::iota( M_Qh_indices.begin(), M_Qh_indices.end(), M_Vh->nLocalDofWithGhost() );
         
@@ -204,7 +217,7 @@ PreconditionerBTPCD<space_type>::PreconditionerBTPCD( space_ptrtype Xh,
     M_Bt = A->createSubMatrix( M_Vh_indices, M_Qh_indices );
 
     helmOp = op( M_F, "Fu" );
-    divOp = op( M_B, "DN");
+    divOp = op( M_Bt, "Bt");
 
     mpi::timer ti;
     initialize();
@@ -369,25 +382,6 @@ PreconditionerBTPCD<space_type>::applyInverse ( const vector_type& X, vector_typ
     *M_pin = U.template element<1>();
     M_pin->close();
 
-    if ( boption("btpcd.cd") )
-    {
-        LOG(INFO) << "velocity block : apply inverse convection diffusion...\n";
-        helmOp->applyInverse(*M_vin, *M_vout);
-    }
-    else
-    {
-        *M_vout = *M_vin;
-        M_vout->close();
-    }
-
-    LOG(INFO) << "pressure/velocity block : apply divergence...\n";
-    divOp->apply( *M_vout, *M_pout );
-
-    *M_aux = *M_pin;
-    M_aux->close();
-    M_aux->add( -1.0, *M_pout );
-    M_aux->close();
-
     if ( boption("btpcd.pcd") )
     {
         LOG(INFO) << "pressure block: Solve for the pressure convection diffusion...\n";
@@ -395,18 +389,74 @@ PreconditionerBTPCD<space_type>::applyInverse ( const vector_type& X, vector_typ
         CHECK(M_aux) << "Invalid aux vector\n";
         CHECK(M_pout) << "Invalid aux vector\n";
 
-        pcdOp->applyInverse( *M_aux, *M_pout );
+        pcdOp->applyInverse( *M_pin, *M_pout );
+        M_pout->scale(-1);
+        M_pout->close();
         LOG(INFO) << "pressure block: Solve for the pressure convection diffusion done\n";
     }
     else
     {
-        *M_pout = *M_aux;
+        *M_pout = *M_pin;
         M_pout->close();
     }
+
+    LOG(INFO) << "pressure/velocity block : apply divergence...\n";
+    divOp->apply( *M_pout, *M_vout );
+
+    *M_aux = *M_vin;
+    M_aux->close();
+    M_aux->add( -1.0, *M_vout );
+    M_aux->close();
+
+    if ( boption("btpcd.cd") )
+    {
+        LOG(INFO) << "velocity block : apply inverse convection diffusion...\n";
+        helmOp->applyInverse(*M_aux, *M_vout);
+    }
+    else
+    {
+        *M_vout = *M_vin;
+        M_vout->close();
+    }
+
+
     LOG(INFO) << "Update output velocity/pressure...\n";
 
     U.template element<0>() = *M_vout;
     U.template element<1>() = *M_pout;
+    U.close();
+    Y=U;
+    Y.close();
+
+    return 0;
+}
+
+template < typename space_type >
+int
+PreconditionerBTPCD<space_type>::guess ( vector_type& Y ) const
+{
+    U = Y;
+    U.close();
+
+    LOG(INFO) << "Create velocity/pressure component...\n";
+    *M_vin = U.template element<0>();
+    M_vin->close();
+    *M_pin = U.template element<1>();
+    M_pin->close();
+
+    LOG(INFO) << "pressure/velocity block : apply divergence...\n";
+    divOp->apply( *M_pout, *M_vin );
+
+    M_aux->zero();
+    M_aux->add( -1.0, *M_vin );
+    M_aux->close();
+
+    LOG(INFO) << "velocity block : apply inverse convection diffusion...\n";
+    helmOp->applyInverse(*M_aux, *M_vin);
+    LOG(INFO) << "Update output velocity/pressure...\n";
+
+    U.template element<0>() = *M_vin;
+    U.template element<1>() = *M_pin;
     U.close();
     Y=U;
     Y.close();

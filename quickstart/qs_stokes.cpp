@@ -119,17 +119,22 @@ int main(int argc, char**argv )
     if ( boption("btpcd") )
     {
         a_btpcd->update( at.matrixPtr(), zero<2,1>(), m_dirichlet );
-        at.solveb(_rhs=l,_solution=U,_backend=backend(),_prec=a_btpcd);
+        p.setOnes();
+        a_btpcd->guess( U );
+        //at.solveb(_rhs=l,_solution=U,_backend=backend(),_prec=a_btpcd);
     }
-    else
+     else
         at.solve(_rhs=l,_solution=U);
 
+    
     e->step(0)->add( "u", u );
     e->step(0)->add( "p", p );
     e->save();
+
 #if 1
     auto deltaU = Vh->element();
-    //m_dirichlet["inlet"]=wall;
+    deltaU.add(1.,U);
+    m_dirichlet["inlet"]=wall;
     do
     {
         if ( Environment::isMasterRank() )
@@ -149,7 +154,7 @@ int main(int argc, char**argv )
                _expr=zero<2,1>() ) ;
         at+=on(_range=markedfaces(mesh,"inlet"), _rhs=r, _element=u,
                _expr=zero<2,1>() );
-        r.vectorPtr()->scale(-1);
+        r.scale(-1);
         if ( Environment::isMasterRank() )
         {
             std::cout << "non linear iteration " << fixedpt_iter << " \n";
