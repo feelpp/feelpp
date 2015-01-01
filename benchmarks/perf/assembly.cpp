@@ -36,6 +36,11 @@
 
 namespace Feel
 {
+void cleanup()
+{
+    Environment::clearSomeMemory();
+    stencilManagerGarbageCollect();
+}
 template<uint16_type Dim, uint16_type Order, template<uint16_type> class Type, uint16_type OrderBis, template<uint16_type> class TypeBis, typename std::enable_if<!std::is_same<Type<Dim>, Vectorial<Dim>>::value && OrderBis == MAX_ORDER && std::is_same<Type<Dim>, Scalar<Dim>>::value>::type* = nullptr>
 static inline void assemble(boost::shared_ptr<Mesh<Simplex<Dim>>>& mesh, double* vec) {
     boost::timer time;
@@ -57,6 +62,7 @@ static inline void assemble(boost::shared_ptr<Mesh<Simplex<Dim>>>& mesh, double*
     a = integrate(_range = elements(mesh), _expr = inner(gradt(u),grad(v)));
     a += on(_range = markedfaces(mesh, "Dirichlet"), _rhs = l, _element = u, _expr = cst(0.0));
     vec[3] = time.elapsed();
+    cleanup();
 }
 template<uint16_type Dim, uint16_type Order, template<uint16_type> class Type, uint16_type OrderBis, template<uint16_type> class TypeBis, typename std::enable_if<std::is_same<Type<Dim>, Vectorial<Dim>>::value && OrderBis == MAX_ORDER && std::is_same<TypeBis<Dim>, Scalar<Dim>>::value>::type* = nullptr>
 static inline void assemble(boost::shared_ptr<Mesh<Simplex<Dim>>>& mesh, double* vec) {
@@ -88,6 +94,7 @@ static inline void assemble(boost::shared_ptr<Mesh<Simplex<Dim>>>& mesh, double*
                           2 * mu * trace(trans(sym(gradt(u))) * sym(grad(u))));
     a += on(_range = markedfaces(mesh, "Dirichlet"), _rhs = l, _element = u, _expr = zero<Dim, 1>());
     vec[3] = time.elapsed();
+    cleanup();
 }
 template<uint16_type Dim, uint16_type Order, template<uint16_type> class Type, uint16_type OrderBis, template<uint16_type> class TypeBis, typename std::enable_if<std::is_same<Type<Dim>, Vectorial<Dim>>::value && OrderBis != MAX_ORDER && std::is_same<TypeBis<Dim>, Scalar<Dim>>::value>::type* = nullptr>
 static inline void assemble(boost::shared_ptr<Mesh<Simplex<Dim>>>& mesh, double* vec) {
@@ -122,12 +129,14 @@ static inline void assemble(boost::shared_ptr<Mesh<Simplex<Dim>>>& mesh, double*
                    _expr = - divt(u) * id(q));
     a += on(_range = markedfaces(mesh, "Dirichlet"), _rhs = l, _element = u, _expr = zero<Dim, 1>());
     vec[3] = time.elapsed();
+    cleanup();
 }
 
 template<uint16_type Dim, uint16_type Order, template<uint16_type> class Type, uint16_type OrderBis = MAX_ORDER, template<uint16_type> class TypeBis = Scalar>
 class Assembly : public Simget
 {
 public:
+    
     void run();
 }; // Assembly
 
@@ -177,6 +186,7 @@ Assembly<Dim, Order, Type, OrderBis, TypeBis>::run()
         std::cout.width(16);
         std::cout << std::left << stats[6 * i + 4] << std::endl;
     }
+    cleanup();
 } // Assembly::run
 
 } // Feel
