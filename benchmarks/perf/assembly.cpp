@@ -47,21 +47,26 @@ static inline void assemble(boost::shared_ptr<Mesh<Simplex<Dim>>>& mesh, double*
     auto Vh = FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order, Type>>>::New(_mesh = mesh);
     vec[2] = time.elapsed();
     vec[1] = Vh->nDof();
+    Environment::logMemoryUsage( "Assemble Laplacian Memory Usage: FunctionSpace" );
     time.restart();
     auto v = Vh->element();
     auto f = backend()->newVector(Vh);
     auto l = form1(_test = Vh, _vector = f);
     l = integrate(_range = elements(mesh), _expr = id(v));
+    
     vec[4] = time.elapsed();
+    Environment::logMemoryUsage( "Assemble Laplacian Memory Usage: Form1" );
     time.restart();
     auto u = Vh->element();
     auto A = backend()->newMatrix(Vh, Vh);
     vec[5] = time.elapsed();
+    Environment::logMemoryUsage( "Assemble Laplacian Memory Usage: Matrix" );
     time.restart();
     auto a = form2(_trial = Vh, _test = Vh, _matrix = A);
     a = integrate(_range = elements(mesh), _expr = inner(gradt(u),grad(v)));
     a += on(_range = markedfaces(mesh, "Dirichlet"), _rhs = l, _element = u, _expr = cst(0.0));
     vec[3] = time.elapsed();
+    Environment::logMemoryUsage( "Assemble Laplacian Memory Usage: form2" );
     cleanup();
 }
 template<uint16_type Dim, uint16_type Order, template<uint16_type> class Type, uint16_type OrderBis, template<uint16_type> class TypeBis, typename std::enable_if<std::is_same<Type<Dim>, Vectorial<Dim>>::value && OrderBis == MAX_ORDER && std::is_same<TypeBis<Dim>, Scalar<Dim>>::value>::type* = nullptr>
@@ -72,6 +77,7 @@ static inline void assemble(boost::shared_ptr<Mesh<Simplex<Dim>>>& mesh, double*
     //HeapProfilerDump("dump");
     //HeapProfilerStop();
     vec[2] = time.elapsed();
+    Environment::logMemoryUsage( "Assemble Elasticity Memory Usage: FunctionSpace" );
     vec[1] = Vh->nDof();
     auto E = 1e+8;
     auto nu = 0.25;
@@ -83,10 +89,12 @@ static inline void assemble(boost::shared_ptr<Mesh<Simplex<Dim>>>& mesh, double*
     auto l = form1(_test = Vh, _vector = f);
     l = integrate(_range = elements(mesh), _expr = -1e+3 * trans(oneY()) * id(v));
     vec[4] = time.elapsed();
+    Environment::logMemoryUsage( "Assemble Elasticity Memory Usage: Form1" );
     time.restart();
     auto u = Vh->element();
     auto A = backend()->newMatrix(Vh, Vh);
     vec[5] = time.elapsed();
+    Environment::logMemoryUsage( "Assemble Elasticity Memory Usage: Matrix" );
     time.restart();
     auto a = form2(_trial = Vh, _test = Vh, _matrix = A);
     a = integrate(_range = elements(mesh),
@@ -94,6 +102,7 @@ static inline void assemble(boost::shared_ptr<Mesh<Simplex<Dim>>>& mesh, double*
                           2 * mu * trace(trans(sym(gradt(u))) * sym(grad(u))));
     a += on(_range = markedfaces(mesh, "Dirichlet"), _rhs = l, _element = u, _expr = zero<Dim, 1>());
     vec[3] = time.elapsed();
+    Environment::logMemoryUsage( "Assemble Elasticity Memory Usage: Form2" );
     cleanup();
 }
 template<uint16_type Dim, uint16_type Order, template<uint16_type> class Type, uint16_type OrderBis, template<uint16_type> class TypeBis, typename std::enable_if<std::is_same<Type<Dim>, Vectorial<Dim>>::value && OrderBis != MAX_ORDER && std::is_same<TypeBis<Dim>, Scalar<Dim>>::value>::type* = nullptr>
@@ -103,6 +112,7 @@ static inline void assemble(boost::shared_ptr<Mesh<Simplex<Dim>>>& mesh, double*
                                                                                    _worldscomm = std::vector<WorldComm>(2, mesh->worldComm()),
                                                                                    _extended_doftable = std::vector<bool>(2, false));
     vec[2] = time.elapsed();
+    Environment::logMemoryUsage( "Assemble Stokes Memory Usage: FunctionSpace" );
     vec[1] = Vh->nDof();
     time.restart();
     auto V = Vh->element();
@@ -112,6 +122,7 @@ static inline void assemble(boost::shared_ptr<Mesh<Simplex<Dim>>>& mesh, double*
     l = integrate(_range = elements(mesh),
                   _expr = trans(oneY()) * id(v));
     vec[4] = time.elapsed();
+    Environment::logMemoryUsage( "Assemble Stokes Memory Usage: Form1" );
     time.restart();
     auto U = Vh->element();
     auto u = U.template element<0>();
@@ -119,6 +130,7 @@ static inline void assemble(boost::shared_ptr<Mesh<Simplex<Dim>>>& mesh, double*
     auto q = V.template element<1>();
     auto A = backend()->newMatrix(Vh, Vh);
     vec[5] = time.elapsed();
+    Environment::logMemoryUsage( "Assemble Stokes Memory Usage: Matrix" );
     time.restart();
     auto a = form2(_trial = Vh, _test = Vh, _matrix = A);
     a = integrate(_range = elements(mesh),
@@ -129,6 +141,7 @@ static inline void assemble(boost::shared_ptr<Mesh<Simplex<Dim>>>& mesh, double*
                    _expr = - divt(u) * id(q));
     a += on(_range = markedfaces(mesh, "Dirichlet"), _rhs = l, _element = u, _expr = zero<Dim, 1>());
     vec[3] = time.elapsed();
+    Environment::logMemoryUsage( "Assemble Stokes Memory Usage: Form2" );
     cleanup();
 }
 
