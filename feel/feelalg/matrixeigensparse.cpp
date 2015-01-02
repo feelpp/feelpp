@@ -139,8 +139,10 @@ MatrixEigenSparse<T>::close() const
     if ( !M_is_closed )
     {
         LOG(INFO) << "Closing matrix";
+        M_mat.makeCompressed();
         M_mat.setFromTriplets(M_tripletList.begin(), M_tripletList.end());
-        M_tripletList.clear();
+        M_mat.makeCompressed();
+        M_tripletList.resize(0);
         M_is_closed = true;
     }
 }
