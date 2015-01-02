@@ -66,7 +66,9 @@ static inline void assemble(boost::shared_ptr<Mesh<Simplex<Dim>>>& mesh, double*
     a = integrate(_range = elements(mesh), _expr = inner(gradt(u),grad(v)));
     a += on(_range = markedfaces(mesh, "Dirichlet"), _rhs = l, _element = u, _expr = cst(0.0));
     vec[3] = time.elapsed();
-    Environment::logMemoryUsage( "Assemble Laplacian Memory Usage: form2" );
+    auto mem = Environment::logMemoryUsage( "Assemble Laplacian Memory Usage: form2" );
+    v[6] = mem.memory_usage/1e9;
+    LOG(INFO) << "v[6] = " << v[6];
     cleanup();
 }
 template<uint16_type Dim, uint16_type Order, template<uint16_type> class Type, uint16_type OrderBis, template<uint16_type> class TypeBis, typename std::enable_if<std::is_same<Type<Dim>, Vectorial<Dim>>::value && OrderBis == MAX_ORDER && std::is_same<TypeBis<Dim>, Scalar<Dim>>::value>::type* = nullptr>
@@ -102,7 +104,8 @@ static inline void assemble(boost::shared_ptr<Mesh<Simplex<Dim>>>& mesh, double*
                           2 * mu * trace(trans(sym(gradt(u))) * sym(grad(u))));
     a += on(_range = markedfaces(mesh, "Dirichlet"), _rhs = l, _element = u, _expr = zero<Dim, 1>());
     vec[3] = time.elapsed();
-    Environment::logMemoryUsage( "Assemble Elasticity Memory Usage: Form2" );
+    auto mem = Environment::logMemoryUsage( "Assemble Elasticity Memory Usage: Form2" );
+    v[6] = mem.memory_usage/1e9; 
     cleanup();
 }
 template<uint16_type Dim, uint16_type Order, template<uint16_type> class Type, uint16_type OrderBis, template<uint16_type> class TypeBis, typename std::enable_if<std::is_same<Type<Dim>, Vectorial<Dim>>::value && OrderBis != MAX_ORDER && std::is_same<TypeBis<Dim>, Scalar<Dim>>::value>::type* = nullptr>
@@ -141,7 +144,8 @@ static inline void assemble(boost::shared_ptr<Mesh<Simplex<Dim>>>& mesh, double*
                    _expr = - divt(u) * id(q));
     a += on(_range = markedfaces(mesh, "Dirichlet"), _rhs = l, _element = u, _expr = zero<Dim, 1>());
     vec[3] = time.elapsed();
-    Environment::logMemoryUsage( "Assemble Stokes Memory Usage: Form2" );
+    auto mem = Environment::logMemoryUsage( "Assemble Stokes Memory Usage: Form2" );
+    v[6] = mem.memory_usage/1.e9; 
     cleanup();
 }
 
@@ -160,9 +164,10 @@ Assembly<Dim, Order, Type, OrderBis, TypeBis>::run()
     Environment::changeRepository(boost::format("assembly"));
     double hSize = doption("gmsh.hsize");
     int level = std::max(doption("parameters.l"), 1.0);
-    std::vector<double> stats(6 * level, std::numeric_limits<double>::quiet_NaN());
+    const int nfields = 7;
+    std::vector<double> stats(nfields * level, std::numeric_limits<double>::quiet_NaN());
     for(int i = 0; i < level; ++i) {
-        if((OrderBis == MAX_ORDER && (hSize / std::pow(2.0, i) > 0.005 || !std::is_same<Type<Dim>, Vectorial<Dim>>::value)) || hSize / std::pow(2.0, i) > 0.01) {
+        if((OrderBis == MAX_ORDER && (hSize / std::pow(2.0, i) > 0.005 || !std::is_same<Type<Dim>, Vectorial<Dim>>::value)) || hSize / std::pow(2.0, i) > 0.001) {
             boost::shared_ptr<Mesh<Simplex<Dim>>> mesh;
             mesh = createGMSHMesh(_mesh = new Mesh<Simplex<Dim>>,
                                   _update = MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK,
@@ -171,33 +176,35 @@ Assembly<Dim, Order, Type, OrderBis, TypeBis>::run()
                                                  _ymin = 0.0, _ymax = 1.0,
                                                  _zmin = 0.0, _zmax = 1.0));
             mesh->addMarkerName("Dirichlet", Dim == 2 ? 1 : 19, Dim == 2 ? 1 : 2);
-            stats[6 * i] = mesh->numGlobalElements();
-            assemble<Dim, Order, Type, OrderBis, TypeBis>(mesh, &(stats[6 * i]));
+            stats[nfields * i] = mesh->numGlobalElements();
+            assemble<Dim, Order, Type, OrderBis, TypeBis>(mesh, &(stats[nfields * i]));
         }
     }
     if(!std::is_same<Type<Dim>, Vectorial<Dim>>::value && OrderBis == MAX_ORDER && std::is_same<Type<Dim>, Scalar<Dim>>::value)
-        std::cout << "hsize\t\tnelements\tnDof\t\tFunctionSpace\tmatrix\t\tform2\t\tform1" << std::endl;
+        std::cout << "hsize\t\tnelements\tnDof\t\tFunctionSpace\tmatrix\t\tform2\t\tform1\t\tmemory" << std::endl;
     for(int i = 0; i < level; ++i) {
         std::cout.width(16);
         std::cout << std::left << hSize / std::pow(2.0, i);
         std::cout.width(16);
-        if(stats[6 * i + 0] != stats[6 * i + 0])
+        if(stats[nfields * i + 0] != stats[nfields * i + 0])
             std::cout << std::left << "nan";
         else
-            std::cout << std::left << int(stats[6 * i + 0]);
+            std::cout << std::left << int(stats[nfields * i + 0]);
         std::cout.width(16);
-        if(stats[6 * i + 1] != stats[6 * i + 1])
+        if(stats[nfields * i + 1] != stats[nfields * i + 1])
             std::cout << std::left << "nan";
         else
-            std::cout << std::left << int(stats[6 * i + 1]);
+            std::cout << std::left << int(stats[nfields * i + 1]);
         std::cout.width(16);
-        std::cout << std::left << stats[6 * i + 2];
+        std::cout << std::left << stats[nfields * i + 2];
         std::cout.width(16);
-        std::cout << std::left << stats[6 * i + 5];
+        std::cout << std::left << stats[nfields * i + 5];
         std::cout.width(16);
-        std::cout << std::left << stats[6 * i + 3];
+        std::cout << std::left << stats[nfields * i + 3];
         std::cout.width(16);
-        std::cout << std::left << stats[6 * i + 4] << std::endl;
+        std::cout << std::left << stats[nfields * i + 4];
+        std::cout.width(16);
+        std::cout << std::left << stats[nfields * i + 6] << std::endl;
     }
     cleanup();
 } // Assembly::run
