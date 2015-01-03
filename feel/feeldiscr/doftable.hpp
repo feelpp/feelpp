@@ -1045,24 +1045,29 @@ public:
 
                 if ( itdof == endof )
                 {
+#if 0
                     DVLOG(4) << "[dof] dof (" << std::get<0>(gDof) << "," 
                              << std::get<1>(gDof) << ") not yet inserted in map\n";
+#endif
                     boost::tie( itdof, __inserted ) = map_gdof.insert( std::make_pair( gDof, dofIndex( pDof ) ) );
 
                     pDof += ncdof;
-
+#if 0
                     DCHECK( __inserted == true ) 
                         << "dof should have been inserted" <<  ie << " " << lc_dof 
                         << " "<< std::get<0>(gDof) << " " << std::get<1>(gDof) 
                         << " " << processor << " " << itdof->second;
+#endif
                 }
 
                 else
                 {
+#if 0
                     DVLOG(4) << "[dof] dof (" << std::get<0>(gDof) << ","
                              << std::get<1>(gDof) 
                              << ") already inserted in map with dof_id = " 
                              << itdof->second << "\n";
+#endif
                 }
 
 #if !defined( NDEBUG )
