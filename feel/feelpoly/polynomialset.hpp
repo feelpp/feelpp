@@ -878,6 +878,10 @@ public:
             return M_phi;
         }
 
+        functionvalue_type const*  phiPtr() const
+            {
+                return &M_phi;
+            }
         /**
          * Returns the value of the q-th node of the i-th basis
          * functions.
@@ -908,6 +912,10 @@ public:
         {
             return M_grad;
         }
+        grad_type const* gradPtr() const
+            {
+                return &M_grad;
+            }
 
         value_type grad( size_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
@@ -1042,6 +1050,15 @@ public:
                                 //M_grad[I*c1+i][j][nRealDim-1][q] = __grad[l]( nldof*c1+nRealDim*i+j, q );
                                 //std::cout << "grad(" << i << "," << c1 << "," << j << "," << l << "," << q << ")=" <<  M_grad[I*c1+i][j](l,q) << "\n";
                             }
+#if 0
+                    for ( index q = 0; q < Q; ++q )
+                        for ( index j = 0; j < nDim; ++j )
+                        {
+                            value_type t = __hessian( nDim*nDim*I*( nDim*j+j )+nDim*nDim*i+nDim*j+j, q );
+                            M_laplacian[i][q]( 0,0 ) += t;
+                        }
+#endif //
+
                 }
             }
         }
@@ -1118,6 +1135,8 @@ public:
 
         static const bool is_hdiv_conforming = Feel::is_hdiv_conforming<Basis_t>::value;
         static const bool is_hcurl_conforming = Feel::is_hcurl_conforming<Basis_t>::value;
+
+        static const bool do_opt= ( nOrder<=1 ) && ( Geo_t::nOrder==1 ) && ( convex_type::is_simplex );
 
         typedef typename Basis_t::polyset_type polyset_type;
         static const uint16_type rank = polyset_type::rank;
@@ -1382,20 +1401,21 @@ public:
 
             M_gmc( __gmc ),
             M_phi( __pc->phi() ),
-            M_gradphi( __pc->grad() ),
+            M_gradphi( __pc->gradPtr() ),
             M_dn(),
             M_grad(),
             M_dx(),
             M_dy(),
             M_dz()
         {
+            LOG(INFO) << " Polynomial derivatives optimized for P1: " << do_opt;
             if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value  )
             {
                 const int ntdof = nDof*nComponents1;
-                M_grad.resize( boost::extents[ntdof][M_npoints] );
-                M_dx.resize( boost::extents[ntdof][M_npoints] );
-                M_dy.resize( boost::extents[ntdof][M_npoints] );
-                M_dz.resize( boost::extents[ntdof][M_npoints] );
+                if ( do_opt )
+                    M_grad.resize( boost::extents[ntdof][1] );
+                else
+                    M_grad.resize( boost::extents[ntdof][M_npoints] );
 
                 if ( vm::has_first_derivative_normal<context>::value )
                 {
@@ -1404,12 +1424,18 @@ public:
 
                 if ( vm::has_div<context>::value )
                 {
-                    M_div.resize( boost::extents[ntdof][M_npoints] );
+                    if ( do_opt )
+                        M_div.resize( boost::extents[ntdof][1] );
+                    else
+                        M_div.resize( boost::extents[ntdof][M_npoints] );
                 }
 
                 if ( vm::has_curl<context>::value )
                 {
-                    M_curl.resize( boost::extents[ntdof][M_npoints] );
+                    if ( do_opt )
+                        M_curl.resize( boost::extents[ntdof][1] );
+                    else
+                        M_curl.resize( boost::extents[ntdof][M_npoints] );       
                 }
 
                 if ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value  )
@@ -1467,11 +1493,13 @@ public:
         void transformationEquivalence( geometric_mapping_context_ptrtype const& __gmc,
                                         mpl::bool_<false> )
         {
+#if 0
             //M_ref_ele->transform( __gmc, phi, M_phi, M_gradphi, M_hessphi );
             M_ref_ele->transform( __gmc, M_pc.get(), M_phi,
                                    M_gradphi, ( vm::has_div<context>::value || vm::has_curl<context>::value || vm::has_grad<context>::value || vm::has_first_derivative<context>::value ),
                                    M_hessphi, ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value  )
                                  );
+#endif
         }
 
         FEELPP_DONT_INLINE void update( geometric_mapping_context_ptrtype const& __gmc,
@@ -1481,7 +1509,6 @@ public:
         {
             //M_phi = M_pc->get()->phi();
             //M_gradphi = M_pc->get()->grad();
-            static const bool do_opt= ( nOrder<=1 ) && ( Geo_t::nOrder==1 ) && ( convex_type::is_simplex );
             transformationEquivalence( __gmc, mpl::bool_<Basis_t::isTransformationEquivalent>() );
 #if 0
 
@@ -1581,59 +1608,60 @@ public:
         }
 
         value_type d( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
-        {
-            return M_grad[i][q]( c1,c2 );
-        }
+            {
+                return d( i, c1, c2, q, mpl::bool_<do_opt>() );
+            }
+        value_type d( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
+            {
+                return M_grad[i][0]( c1,c2 );
+            }
+        value_type d( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<false>  ) const
+            {
+                return M_grad[i][q]( c1,c2 );
+            }
 
         value_type dx( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
-        {
-            return dx( i, c1, c2, q, mpl::int_<rank>() );
-        }
-        value_type dx( uint32_type i, uint16_type /*c1*/, uint16_type /*c2*/, uint32_type q, mpl::int_<0> ) const
-        {
-            BOOST_MPL_ASSERT_MSG( nDim >= 1, INVALID_DIM, ( mpl::int_<nDim>, mpl::int_<0> ) );
-            return M_grad[i][q]( 0,0 );
-        }
-        value_type dx( uint32_type i, uint16_type c1, uint16_type /*c2*/, uint32_type q, mpl::int_<1> ) const
-        {
-            BOOST_MPL_ASSERT_MSG( nDim >= 1, INVALID_DIM, ( mpl::int_<nDim>, mpl::int_<0> ) );
-            return M_grad[i][q]( c1,0 );
-        }
+            {
+                return dx( i, c1, c2, q, mpl::bool_<do_opt>() );
+            }
+        value_type dx( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
+            {
+                BOOST_MPL_ASSERT_MSG( nDim >= 1, INVALID_DIM, ( mpl::int_<nDim>, mpl::int_<1> ) );
+                return M_grad[i][0]( c1,0 );
+            }
+        value_type dx( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<false> ) const
+            {
+                BOOST_MPL_ASSERT_MSG( nDim >= 1, INVALID_DIM, ( mpl::int_<nDim>, mpl::int_<1> ) );
+                return M_grad[i][q]( c1,0 );
+            }
         value_type dy( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
-        {
-            return dy( i, c1, c2, q, mpl::int_<rank>() );
-        }
-        value_type dy( uint32_type i, uint16_type /*c1*/, uint16_type /*c2*/, uint32_type q, mpl::int_<0> ) const
-        {
-            BOOST_MPL_ASSERT_MSG( nDim >= 2, INVALID_DIM, ( mpl::int_<nDim>, mpl::int_<1> ) );
-            return M_grad[i][q]( 0,1 );
-        }
-        value_type dy( uint32_type i, uint16_type c1, uint16_type /*c2*/, uint32_type q, mpl::int_<1> ) const
-        {
-            BOOST_MPL_ASSERT_MSG( nDim >= 2, INVALID_DIM, ( mpl::int_<nDim>, mpl::int_<1> ) );
-            return M_grad[i][q]( c1,1 );
-        }
+            {
+                return dy( i, c1, c2, q, mpl::bool_<do_opt>() );
+            }
+        value_type dy( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
+            {
+                BOOST_MPL_ASSERT_MSG( nDim >= 1, INVALID_DIM, ( mpl::int_<nDim>, mpl::int_<1> ) );
+                return M_grad[i][0]( c1,1 );
+            }
+        value_type dy( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<false> ) const
+            {
+                BOOST_MPL_ASSERT_MSG( nDim >= 1, INVALID_DIM, ( mpl::int_<nDim>, mpl::int_<1> ) );
+                return M_grad[i][q]( c1,1 );
+            }
         value_type dz( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
-        {
-            return dz( i, c1, c2, q, mpl::int_<rank>() );
-        }
-        value_type dz( uint32_type i, uint16_type /*c1*/, uint16_type /*c2*/, uint32_type q, mpl::int_<0> ) const
-        {
-            BOOST_MPL_ASSERT_MSG( nDim >= 3, INVALID_DIM, ( mpl::int_<nDim>, mpl::int_<2> ) );
-            return M_grad[i][q]( 0,2 );
-        }
-        value_type dz( uint32_type i, uint16_type c1, uint16_type /*c2*/, uint32_type q, mpl::int_<1> ) const
-        {
-            BOOST_MPL_ASSERT_MSG( nDim >= 3, INVALID_DIM, ( mpl::int_<nDim>, mpl::int_<2> ) );
-            return M_grad[i][q]( c1,2 );
-        }
-
-
-        /**
-         * \return the matrix containing the value of the normal
-         * derivative of the basis fucntions at the set of nodes
-         */
-        //matrix_type const& dn() const { return M_dn; }
+            {
+                return dz( i, c1, c2, q, mpl::bool_<do_opt>() );
+            }
+        value_type dz( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
+            {
+                BOOST_MPL_ASSERT_MSG( nDim >= 1, INVALID_DIM, ( mpl::int_<nDim>, mpl::int_<1> ) );
+                return M_grad[i][0]( c1,2 );
+            }
+        value_type dz( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<false> ) const
+            {
+                BOOST_MPL_ASSERT_MSG( nDim >= 1, INVALID_DIM, ( mpl::int_<nDim>, mpl::int_<1> ) );
+                return M_grad[i][q]( c1,2 );
+            }
 
         /**
          * \return the matrix containing the value of the normal
@@ -1651,38 +1679,67 @@ public:
         {
             return M_dn[i][q];
         }
+        grad_type const& grad( uint16_type i, uint32_type q ) const
+            {
+                return grad( i, q, mpl::bool_<do_opt>() );
+            }
+        grad_type const& grad( uint16_type i, uint32_type q, mpl::bool_<true> ) const
+            {
+                return M_grad[i][0];
+            }
+        grad_type const& grad( uint16_type i, uint32_type q, mpl::bool_<false> ) const
+            {
+                return M_grad[i][q];
+            }
 
         value_type grad( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
-        {
-            return grad( i, c1, c2, q, mpl::int_<rank>() );
-        }
-        value_type grad( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<0> ) const
-        {
-            Feel::detail::ignore_unused_variable_warning( c1 );
-            Feel::detail::ignore_unused_variable_warning( c2 );
-            return M_grad[i][q]( 0,c2 );
-        }
-        value_type grad( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<1> ) const
-        {
-            return M_grad[i][q]( c1,c2 );
-        }
-
-        grad_type const& grad( uint16_type i, uint32_type q ) const
-        {
-            return M_grad[i][q];
-        }
-        dx_type const& dx( uint16_type i, uint32_type q ) const
-        {
-            return M_dx[i][q];
-        }
-        dy_type const& dy( uint16_type i, uint32_type q ) const
-        {
-            return M_dy[i][q];
-        }
-        dz_type const& dz( uint16_type i, uint32_type q ) const
-        {
-            return M_dz[i][q];
-        }
+            {
+                return grad(i, c1, c2, q, mpl::bool_<do_opt>() );
+            }
+        value_type grad( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
+            {
+                return M_grad[i][0]( c1,c2 );
+            }
+        value_type grad( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<false> ) const
+            {
+                return M_grad[i][q]( c1,c2 );
+            }
+        dx_type  dx( uint16_type i, uint32_type q ) const
+            {
+                return dx( i, q, mpl::bool_<do_opt>() );
+            }
+        dx_type  dx( uint16_type i, uint32_type q, mpl::bool_<true> ) const
+            {
+                return M_grad[i][0].col(0);
+            }
+        dx_type  dx( uint16_type i, uint32_type q, mpl::bool_<false> ) const
+            {
+                return M_grad[i][q].col(0);
+            }
+        dy_type  dy( uint16_type i, uint32_type q ) const
+            {
+                return dy( i, q, mpl::bool_<do_opt>() );
+            }
+        dy_type  dy( uint16_type i, uint32_type q, mpl::bool_<true> ) const
+            {
+                return M_grad[i][0].col(1);
+            }
+        dy_type  dy( uint16_type i, uint32_type q, mpl::bool_<false> ) const
+            {
+                return M_grad[i][q].col(1);
+            }
+        dz_type  dz( uint16_type i, uint32_type q ) const
+            {
+                return dz( i, q, mpl::bool_<do_opt>() );
+            }
+        dz_type  dz( uint16_type i, uint32_type q, mpl::bool_<true> ) const
+            {
+                return M_grad[i][0].col(1);
+            }
+        dz_type  dz( uint16_type i, uint32_type q, mpl::bool_<false> ) const
+            {
+                return M_grad[i][q].col(1);
+            }
 
         /**
          * divergence of the basis function at the q-th point.
@@ -1708,24 +1765,26 @@ public:
             /**
              * divergence of a scalar function is undefined.
              */
-            FEELPP_ASSERT( 0 ).error( "divergence of a scalar function is undefined." );
+            CHECK( 0 ) << "divergence of a scalar function is undefined.";
             return 0;
         }
 
         value_type div( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<1> ) const
-        {
-            Feel::detail::ignore_unused_variable_warning( c1 );
-            Feel::detail::ignore_unused_variable_warning( c2 );
-            return M_div[i][q]( 0,0 );
-#if 0
-            value_type res = value_type( 0 );
-
-            for ( int ii = 0; ii < nDim; ++ii )
-                res +=  M_grad[i][ii]( ii,q );
-
-            return res;
-#endif
-        }
+            {
+                return div( i, c1, c2, q, mpl::bool_<do_opt>() );
+            }
+        value_type div( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
+            {
+                Feel::detail::ignore_unused_variable_warning( c1 );
+                Feel::detail::ignore_unused_variable_warning( c2 );
+                return M_div[i][0]( 0,0 );
+            }
+        value_type div( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<false> ) const
+            {
+                Feel::detail::ignore_unused_variable_warning( c1 );
+                Feel::detail::ignore_unused_variable_warning( c2 );
+                return M_div[i][q]( 0,0 );
+            }
 
         /**
          * curl of the basis function at the q-th point.
@@ -1753,52 +1812,84 @@ public:
         }
 
         value_type curl( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<1> ) const
-        {
-            Feel::detail::ignore_unused_variable_warning( c2 );
-            return M_curl[i][q]( c1 );
-        }
+            {
+                return curl( i, c1, c2, q, mpl::bool_<do_opt>() );
+            }
+        value_type curl( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
+            {
+                Feel::detail::ignore_unused_variable_warning( c2 );
+                return M_curl[i][0]( c1 );
+            }
+        value_type curl( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<false> ) const
+            {
+                Feel::detail::ignore_unused_variable_warning( c2 );
+                return M_curl[i][q]( c1 );
+            }
+
+
         value_type curlx( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
         {
             Feel::detail::ignore_unused_variable_warning( c1 );
             Feel::detail::ignore_unused_variable_warning( c2 );
             return curlx( i, c1, c2, q, mpl::int_<rank>() );
         }
+
         value_type curlx( uint16_type i,  uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<0> ) const
         {
-            Feel::detail::ignore_unused_variable_warning(i);
-            Feel::detail::ignore_unused_variable_warning(q);
-            Feel::detail::ignore_unused_variable_warning(c1);
-            Feel::detail::ignore_unused_variable_warning(c2);
-            throw std::logic_error("invalid use of curl operator, field must be vectorial");
-            return 0;
-        }
-        value_type curlx( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<1> ) const
-        {
+            Feel::detail::ignore_unused_variable_warning( i );
+            Feel::detail::ignore_unused_variable_warning( q );
             Feel::detail::ignore_unused_variable_warning( c1 );
             Feel::detail::ignore_unused_variable_warning( c2 );
-            return M_curl[i][q]( 0 );
+            throw std::logic_error( "invalid use of curlx operator, field must be vectorial" );
+            return 0;
         }
+
+        value_type curlx( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<1> ) const
+            {
+                return curlx( i, c1, c2, q, mpl::bool_<do_opt>() );
+            }
+        value_type curlx( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
+            {
+                Feel::detail::ignore_unused_variable_warning( c2 );
+                return M_curl[i][0]( 0 );
+            }
+        value_type curlx( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<false> ) const
+            {
+                Feel::detail::ignore_unused_variable_warning( c2 );
+                return M_curl[i][q]( 0 );
+            }
+
         value_type curly( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
         {
             Feel::detail::ignore_unused_variable_warning( c1 );
             Feel::detail::ignore_unused_variable_warning( c2 );
             return curly( i, c1, c2, q, mpl::int_<rank>() );
         }
+
         value_type curly( uint16_type i,  uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<0> ) const
         {
-            Feel::detail::ignore_unused_variable_warning(i);
-            Feel::detail::ignore_unused_variable_warning(q);
-            Feel::detail::ignore_unused_variable_warning(c1);
-            Feel::detail::ignore_unused_variable_warning(c2);
-            throw std::logic_error("invalid use of curl operator, field must be vectorial");
-            return 0;
-        }
-        value_type curly( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<1> ) const
-        {
+            Feel::detail::ignore_unused_variable_warning( i );
+            Feel::detail::ignore_unused_variable_warning( q );
             Feel::detail::ignore_unused_variable_warning( c1 );
             Feel::detail::ignore_unused_variable_warning( c2 );
-            return M_curl[i][q]( 1 );
+            throw std::logic_error( "invalid use of curly operator, field must be vectorial" );
+            return 0;
         }
+
+        value_type curly( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<1> ) const
+            {
+                return curly( i, c1, c2, q, mpl::bool_<do_opt>() );
+            }
+        value_type curly( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
+            {
+                Feel::detail::ignore_unused_variable_warning( c2 );
+                return M_curl[i][0]( 1 );
+            }
+        value_type curly( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<false> ) const
+            {
+                Feel::detail::ignore_unused_variable_warning( c2 );
+                return M_curl[i][q]( 1 );
+            }
 
         value_type curlz( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
         {
@@ -1806,21 +1897,32 @@ public:
             Feel::detail::ignore_unused_variable_warning( c2 );
             return curlz( i, c1, c2, q, mpl::int_<rank>() );
         }
+
         value_type curlz( uint16_type i,  uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<0> ) const
         {
-            Feel::detail::ignore_unused_variable_warning(i);
-            Feel::detail::ignore_unused_variable_warning(q);
-            Feel::detail::ignore_unused_variable_warning(c1);
-            Feel::detail::ignore_unused_variable_warning(c2);
-            throw std::logic_error("invalid use of curl operator, field must be vectorial");
-            return 0;
-        }
-        value_type curlz( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<1> ) const
-        {
+            Feel::detail::ignore_unused_variable_warning( i );
+            Feel::detail::ignore_unused_variable_warning( q );
             Feel::detail::ignore_unused_variable_warning( c1 );
             Feel::detail::ignore_unused_variable_warning( c2 );
-            return M_curl[i][q]( 2 );
+            throw std::logic_error( "invalid use of curlz operator, field must be vectorial" );
+            return 0;
         }
+
+        value_type curlz( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<1> ) const
+            {
+                return curlz( i, c1, c2, q, mpl::bool_<do_opt>() );
+            }
+        value_type curlz( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
+            {
+                Feel::detail::ignore_unused_variable_warning( c2 );
+                return M_curl[i][0]( 2 );
+            }
+        value_type curlz( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<false> ) const
+            {
+                Feel::detail::ignore_unused_variable_warning( c2 );
+                return M_curl[i][q]( 2 );
+            }
+
 
         value_type hess( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
         {
@@ -1830,7 +1932,10 @@ public:
         {
             return M_hessian[i][q]( c1,c2 );
         }
-
+        value_type laplacian( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
+            {
+                return M_laplacian[i][q](c1,c2);
+            }
         //    private:
         Context() {}
 
@@ -1859,7 +1964,7 @@ public:
         geometric_mapping_context_ptrtype M_gmc;
 
         boost::multi_array<id_type,2> M_phi;
-        boost::multi_array<ref_grad_type,2> M_gradphi;
+        boost::multi_array<ref_grad_type,2> const* M_gradphi;
         boost::multi_array<hess_type,2> M_hessphi;
         boost::multi_array<dn_type,2> M_dn;
         boost::multi_array<grad_type,2> M_grad;

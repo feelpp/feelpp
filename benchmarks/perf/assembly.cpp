@@ -27,6 +27,7 @@
    \author Pierre Jolivet <pierre.jolivet@imag.fr>
    \date 2014-12-16
  */
+#include <numeric>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelvf/vf.hpp>
@@ -181,7 +182,7 @@ Assembly<Dim, Order, Type, OrderBis, TypeBis>::run()
         }
     }
     if(!std::is_same<Type<Dim>, Vectorial<Dim>>::value && OrderBis == MAX_ORDER && std::is_same<Type<Dim>, Scalar<Dim>>::value)
-        std::cout << "hsize\t\tnelements\tnDof\t\tFunctionSpace\tmatrix\t\tform2\t\tform1\t\tmemory" << std::endl;
+        std::cout << "hsize\t\tnelements\tnDof\t\tFunctionSpace\tmatrix\t\tform2\t\tform1\t\ttotal\t\tmemory" << std::endl;
     for(int i = 0; i < level; ++i) {
         std::cout.width(16);
         std::cout << std::left << hSize / std::pow(2.0, i);
@@ -203,6 +204,8 @@ Assembly<Dim, Order, Type, OrderBis, TypeBis>::run()
         std::cout << std::left << stats[nfields * i + 3];
         std::cout.width(16);
         std::cout << std::left << stats[nfields * i + 4];
+        std::cout.width(16);std::cout.precision(2);
+        std::cout << std::left << std::accumulate(&(stats[nfields * i + 2]), &(stats[nfields * i + 6]), 0.);
         std::cout.width(16);
         std::cout << std::left << stats[nfields * i + 6] << std::endl;
     }
