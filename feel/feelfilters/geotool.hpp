@@ -1082,7 +1082,7 @@ public:
      *Utile pour la fct geoStr()
      *Pas de maj pour cptSurface et cptVolume car traitement different
      */
-    void updateData( GeoGMSHTool const & m );
+    //void updateData( GeoGMSHTool const & m );
 
     /*
      * Update the output stringstream wich generate the gmsh code
