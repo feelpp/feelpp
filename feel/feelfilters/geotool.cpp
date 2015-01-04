@@ -52,6 +52,33 @@ namespace detail
 {
 
 bool
+GeoToolEntitiesStorage::representSameEntity( detail::GeoToolLine const& l1, detail::GeoToolLine const& l2 ) const
+{
+    if( l1.lineType() != l2.lineType() )
+        return false;
+
+    // search if all points are present else return false
+    for ( int ptId1 : l1.listPt() )
+    {
+        bool find = false;
+        for ( int ptId2 : l2.listPt() )
+        {
+            auto mypt1 = this->getPoint( ptId1 );
+            auto mypt2 = this->getPoint( ptId2 );
+            if ( mypt1.representSameNode( mypt2 ) )
+            {
+                find=true;
+                break;
+            }
+        }
+        if ( !find )
+            return false;
+    }
+
+    return true;
+}
+
+bool
 GeoToolEntitiesStorage::hasSameOrientation( detail::GeoToolLine const& l1, detail::GeoToolLine const& l2 ) const
 {
     CHECK( l1.lineType() == l2.lineType() ) << "error not same type";
@@ -298,7 +325,155 @@ GeoToolEntitiesStorage::lineLoopApplyConnection( detail::GeoToolLineLoop & linel
 
     lineloop1.setLines( myNewLinesId );
 
+} // GeoToolEntitiesStorage::lineLoopApplyConnection
+
+
+int
+GeoToolEntitiesStorage::getDuplicatePointId( detail::GeoToolSurface const& s, detail::GeoToolPoint const& p ) const
+{
+    for ( int lineloopId : s.listLineLoop() )
+    {
+        auto const& mylineloop = this->getLineLoop( lineloopId );
+        for ( int lineId : mylineloop.listLine() )
+        {
+            int lineIdPos = (lineId>0) ? lineId : -lineId;
+            auto const& myline = this->getLine( lineIdPos );
+            for ( int pointId : myline.listPoint() )
+            {
+                auto const& mypoint = this->getPoint( pointId );
+                if ( mypoint.representSameNode( p ) )
+                    return mypoint.globalId();
+
+            }
+        }
+    }
+    return 0;
 }
+int
+GeoToolEntitiesStorage::getDuplicateLineId( detail::GeoToolSurface const& s, detail::GeoToolLine const& l ) const
+{
+    for ( int lineloopId : s.listLineLoop() )
+    {
+        auto const& mylineloop = this->getLineLoop( lineloopId );
+        for ( int lineId : mylineloop.listLine() )
+        {
+            int lineIdPos = (lineId>0) ? lineId : -lineId;
+            auto const& myline = this->getLine( lineIdPos );
+            if ( this->representSameEntity( myline, l ) )
+            {
+                if ( this->hasSameOrientation( myline, l ) )
+                    return myline.globalId();
+                else
+                    return -myline.globalId();
+            }
+        }
+    }
+    return 0;
+}
+
+boost::tuple< std::map<int,int>, std::map<int,int> >
+GeoToolEntitiesStorage::getDuplicatePointLineId( detail::GeoToolSurface const& s1, detail::GeoToolSurface const& s2 ) const
+{
+    std::map<int,int> resPoints,resLines;
+    for ( int lineloopId1 : s1.listLineLoop() )
+    {
+        auto const& mylineloop1 = this->getLineLoop( lineloopId1 );
+        for ( int lineId1 : mylineloop1.listLine() )
+        {
+            int lineId1Pos = (lineId1>0) ? lineId1 : -lineId1;
+            auto const& myline1 = this->getLine( lineId1Pos );
+
+            // lines
+            int lineId2 = this->getDuplicateLineId(s2,myline1);
+            if ( lineId2 != 0 )
+            {
+                //std::cout << "add relation line1 " << lineId1Pos << " - " << lineId2 << "\n";
+                // put positive value for s1 (important)
+                resLines[lineId1Pos] = lineId2;
+            }
+
+            // points
+            for ( int pointId1 : myline1.listPoint() )
+            {
+                auto const& mypoint1 = this->getPoint( pointId1 );
+                int pointId2 = this->getDuplicatePointId(s2,mypoint1);
+                if ( pointId2 != 0 )
+                {
+                    //std::cout << "add relation point " << pointId1 << " - " << pointId2 << "\n";
+                    resPoints[pointId1] = pointId2;
+                }
+            }
+
+
+        }
+    }
+    return boost::make_tuple( resPoints,resLines );
+}
+
+boost::tuple< std::set<int>, std::set<int>, std::set<int> >
+GeoToolEntitiesStorage::getEntityIdsUsedFromSurface() const
+{
+    std::set<int> pointIds, lineIds, lineloopIds;
+    for ( auto const& mys : this->surfaces() )
+    {
+        auto const& mysurface = mys.second;
+        for ( int lineloopId : mysurface.listLineLoop() )
+        {
+            auto const& mylineloop = this->getLineLoop( lineloopId );
+            lineloopIds.insert( lineloopId );
+            for ( int lineId : mylineloop.listLine() )
+            {
+                int lineIdPos = (lineId>0)? lineId : -lineId;
+                auto const& myline = this->getLine( lineIdPos );
+                lineIds.insert( lineIdPos );
+                for ( int pointId : myline.listPoint() )
+                {
+                    pointIds.insert(pointId);
+                }
+            }
+        }
+    }
+    return boost::make_tuple(pointIds, lineIds, lineloopIds);
+}
+
+boost::tuple< std::set<int>, std::set<int>, std::set<int>, std::set<int>, std::set<int> >
+GeoToolEntitiesStorage::getEntityIdsUsedFromVolume() const
+{
+    std::set<int> pointIds, lineIds, lineloopIds, surfaceIds, surfaceloopIds;
+    for ( auto const& myv : this->volumes() )
+    {
+        auto const& myvolume = myv.second;
+        for ( int surfaceloopId : myvolume.listSurfaceLoop() )
+        {
+            auto const& mysurfaceloop = this->getSurfaceLoop( surfaceloopId );
+            surfaceloopIds.insert( surfaceloopId );
+            for ( int surfaceId : mysurfaceloop.listSurface() )
+            {
+                int surfaceIdPos = (surfaceId>0)? surfaceId : -surfaceId;
+                auto const& mysurface = this->getSurface( surfaceIdPos );
+                surfaceIds.insert( surfaceIdPos );
+                for ( int lineloopId : mysurface.listLineLoop() )
+                {
+                    auto const& mylineloop = this->getLineLoop( lineloopId );
+                    lineloopIds.insert( lineloopId );
+                    for ( int lineId : mylineloop.listLine() )
+                    {
+                        int lineIdPos = (lineId>0)? lineId : -lineId;
+                        auto const& myline = this->getLine( lineIdPos );
+                        lineIds.insert( lineIdPos );
+                        for ( int pointId : myline.listPoint() )
+                        {
+                            pointIds.insert(pointId);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return boost::make_tuple(pointIds, lineIds, lineloopIds, surfaceIds, surfaceloopIds);
+}
+
+
 
 } // namespace detail
 
@@ -380,7 +555,9 @@ GeoGMSHTool::GeoGMSHTool( GeoGMSHTool const & m )
     M_geoIsDefineByUser( m.M_geoIsDefineByUser ),
     M_entitiesStorage( m.M_entitiesStorage ),
     M_fusionMarkersLineWithInterface( m.M_fusionMarkersLineWithInterface ),
-    M_fusionMarkersLineWithoutInterface( m.M_fusionMarkersLineWithoutInterface )
+    M_fusionMarkersLineWithoutInterface( m.M_fusionMarkersLineWithoutInterface ),
+    M_fusionMarkersSurfaceWithInterface( m.M_fusionMarkersSurfaceWithInterface ),
+    M_fusionMarkersSurfaceWithoutInterface( m.M_fusionMarkersSurfaceWithoutInterface )
 {
     updateOstr( ( m.M_ostr )->str() );
 
@@ -489,14 +666,14 @@ GeoGMSHTool::operator=( GeoGMSHTool const & m )
 }
 
 void
-GeoGMSHTool::initData( std::string __shape,
-                       std::string __name,
-                       double __meshSize,
-                       std::vector<GeoTool::Node> & __param,
-                       uint16_type dim,
-                       uint16_type __nbligne,
-                       uint16_type __nbsurface,
-                       uint16_type __nbvolume )
+GeoGMSHTool::initFromPreDefShape( std::string __shape,
+                                  std::string __name,
+                                  double __meshSize,
+                                  std::vector<GeoTool::Node> & __param,
+                                  uint16_type dim,
+                                  uint16_type __nbligne,
+                                  uint16_type __nbsurface,
+                                  uint16_type __nbvolume )
 {
     //boost::tuple<std::string,double> __id = boost::make_tuple( __name, __meshSize );
 
@@ -557,6 +734,7 @@ GeoGMSHTool::initData( std::string __shape,
 void
 GeoGMSHTool::showMe() const
 {
+#if 0
     std::cout << "cptPt = " << M_cptPt << "\n"
               << "cptLine = " << M_cptLine << "\n"
               << "cptLineLoop = " << M_cptLineLoop << "\n"
@@ -564,7 +742,7 @@ GeoGMSHTool::showMe() const
               << "cptSurfaceLoop = " << M_cptSurfaceLoop << "\n"
               << "cptSurface = " << M_cptSurface << "\n"
               << "cptVolume = " << M_cptVolume << "\n";
-
+#endif
     if ( this->dim()==2 )
     {
         surface_name_const_iterator_type itSurfff = M_surfaceList->begin();
@@ -598,6 +776,9 @@ GeoGMSHTool::showMe() const
                 std::cout << " (" << themark.get<0>() << "," << themark.get<1>() << "," << themark.get<2>() << ") ";
             std::cout << "\n";
         }
+
+
+    this->entitiesStorage().showMe();
 
 }
 
@@ -1015,95 +1196,7 @@ GeoGMSHTool::geoStr()
 
     if ( this->dim() == 2 )
     {
-        //---------------------------------------------------------------------//
-        //---------------------------------------------------------------------//
-        // CASE 1 : with interface
-        std::vector<detail::EvalFusionMarkersLine> evalFusionMarkerLine( this->fusionMarkersLineWithInterface().size() );
-        for ( auto const& mylinelooppair : this->entitiesStorage().lineloops() )
-        {
-            auto const& mylineloop = mylinelooppair.second;
-            for ( int mylineGlobalId : mylineloop.listLine() )
-            {
-                int mylineGlobalIdPos = ( mylineGlobalId > 0 )? mylineGlobalId : -mylineGlobalId;
-                auto const& myline = this->entitiesStorage().getLine(mylineGlobalIdPos);
-                int lineLocalId = myline.localId();
-
-                //evalFusionMarkerLine
-                //auto itfm = std::find_if( this->fusionMarkersLineWithInterface().begin(), this->fusionMarkersLineWithInterface().end(),
-                //                          [lineLocalId](FusionMarkers const& fm ) { return fm.marker1() == lineLocalId; } );
-                bool find1=false,find2=false;
-                int fusId1=0,fusId2=0;
-                for ( int k=0; k<this->fusionMarkersLineWithInterface().size() && ( !find1 || !find2 )  ; ++k )
-                {
-                    if ( this->fusionMarkersLineWithInterface()[k].nameGT1() == mylineloop.name() &&
-                         this->fusionMarkersLineWithInterface()[k].marker1() == lineLocalId )
-                    {
-                        fusId1=k;find1=true;
-                        //std::cout << "find marker1 " << lineLocalId << "\n";
-                        evalFusionMarkerLine[k].setGlobalId1(mylineGlobalId, mylineloop.globalId() /*myline.globalId()*/);
-                    }
-                    if ( this->fusionMarkersLineWithInterface()[k].nameGT2() == mylineloop.name() &&
-                         this->fusionMarkersLineWithInterface()[k].marker2() == lineLocalId )
-                    {
-                        fusId2=k;find2=true;
-                        //std::cout << "find marker2 " << lineLocalId << "\n";
-                        evalFusionMarkerLine[k].setGlobalId2( mylineGlobalId, mylineloop.globalId() /*myline.globalId()*/);
-                    }
-                }
-            }
-        }
-
-        //this->updateFusionMarkersLineWithInterface();
-        for ( int k=0; k<this->fusionMarkersLineWithInterface().size(); ++k )
-        {
-            int mylineGlobalId1 = evalFusionMarkerLine[k].globalId1Line();
-            int mylineGlobalId1Pos = ( mylineGlobalId1 > 0 )? mylineGlobalId1 : -mylineGlobalId1;
-            auto const& myline1 = this->entitiesStorage().getLine(mylineGlobalId1Pos);
-
-            int mylineGlobalId2 = evalFusionMarkerLine[k].globalId2Line();
-            int mylineGlobalId2Pos = ( mylineGlobalId2 > 0 )? mylineGlobalId2 : -mylineGlobalId2;
-            auto const& myline2 = this->entitiesStorage().getLine(mylineGlobalId2Pos);
-
-            //std::cout << "identify same line " << mylineGlobalId1Pos << " vs " << mylineGlobalId2Pos << "\n";
-            int mylineloopGlobalId2 = evalFusionMarkerLine[k].globalId2LineLoop();
-
-            std::map<int,int> mapPointToReplace;
-            if ( this->entitiesStorage().hasSameOrientation( myline1,myline2 ) )
-            {
-                // add here a map for lineloop if
-                M_entitiesStorage.getLineLoop(mylineloopGlobalId2).replaceLineId( mylineGlobalId2, mylineGlobalId1 );
-                auto it = myline1.listPt().begin();
-                auto en = myline1.listPt().end();
-                auto it2 = myline2.listPt().begin();
-                for ( ; it != en ;++it,++it2 )
-                {
-                    mapPointToReplace[*it2] = *it;
-                }
-                //std::cout << "has same orientation\n";
-            }
-            else
-            {
-                M_entitiesStorage.getLineLoop(mylineloopGlobalId2).replaceLineId( mylineGlobalId2, -mylineGlobalId1 );
-                //std::cout << "has NOT same orientation\n";
-
-                auto it = myline1.listPt().begin();
-                auto en = myline1.listPt().end();
-                auto it2 = myline2.listPt().end();--it2;
-                for ( ; it != en ;++it,--it2 )
-                {
-                    mapPointToReplace[*it2] = *it;
-                }
-            }
-            lineIdErased.insert(mylineGlobalId2Pos);
-            // replace point id in line ( TODO reduce search)
-            for ( auto const& mylinepair : this->entitiesStorage().lines() )
-                for ( auto const& ptToRep : mapPointToReplace )
-                    M_entitiesStorage.getLine( mylinepair.first ).replacePointId( ptToRep.first, ptToRep.second );
-
-            for ( auto const& ptToRep : mapPointToReplace )
-                ptIdErased.insert( ptToRep.first );
-        }
-
+        this->updateFusionMarkersLineWithInterface( ptIdErased,lineIdErased );
         //---------------------------------------------------------------------//
         //---------------------------------------------------------------------//
         // CASE 2 : without interface
@@ -1283,7 +1376,7 @@ GeoGMSHTool::geoStr()
                                 if ( this->entitiesStorage().lineLoopHasConnection( myNewLineLoop, newLineLoopMemory[k2] ) )
                                 {
                                     //std::cout << "HasConnection\n";
-                                    M_entitiesStorage.lineLoopApplyConnection( myNewLineLoop, newLineLoopMemory[k2] );
+                                    this->entitiesStorageAdmin().lineLoopApplyConnection( myNewLineLoop, newLineLoopMemory[k2] );
                                     isDone[k2]=true;
 
                                     if ( this->entitiesStorage().lineLoopIsClosed(myNewLineLoop) )
@@ -1301,12 +1394,12 @@ GeoGMSHTool::geoStr()
                     //std::cout << "finish lineloop\n";
                     //myNewLineLoop.showMe();
 
-                    M_entitiesStorage.addLineLoop( myNewLineLoop );
+                    this->entitiesStorageAdmin().addLineLoop( myNewLineLoop );
                     myFusionSurface.addLineLoop( myNewLineLoop.globalId()  );
                 }
             }
 
-            M_entitiesStorage.addSurface(myFusionSurface);
+            this->entitiesStorageAdmin().addSurface(myFusionSurface);
             //myFusionSurface.showMe();
 
         } // for ( auto const& newSurf : mapNewSurface )
@@ -1314,165 +1407,14 @@ GeoGMSHTool::geoStr()
 
         //---------------------------------------------------
         // update M_surfaceList after fusion without interface
-        std::map< std::pair<std::string,int>,std::pair<std::string,int> > surfaceListModified;
-        std::map< std::pair<std::string,int>,std::pair<std::string,int> > surfaceListErased;
-        if ( mapNewSurface.size() > 0 )
-        {
-            for ( auto const& newSurf : mapNewSurface )
-            {
-                std::string nameNewSurf = newSurf.first;
-                int idNewSurf = this->entitiesStorage().surfaceIdFromName( nameNewSurf );
-                std::string nameInitialUsedForInsertNewSurf;
-                for ( auto surfName : newSurf.second )
-                {
-                    std::string nameInitialSurf = surfName.first;
-                    int idInitialSurf = this->entitiesStorage().surfaceIdFromName( nameInitialSurf );
-
-                    // use first surface for replacing in surface list
-                    if ( nameInitialUsedForInsertNewSurf.empty() )
-                    {
-                        nameInitialUsedForInsertNewSurf = nameInitialSurf;
-                        surfaceListModified[std::make_pair(nameInitialSurf,idInitialSurf)]=std::make_pair(nameNewSurf,idNewSurf);
-                    }
-                    else
-                        surfaceListErased[std::make_pair(nameInitialSurf,idInitialSurf)]=std::make_pair(nameNewSurf,idNewSurf);
-                }
-            }
-        }
-        // 2 cases : front and others(diff)
-
-        std::map<int,std::set<int> > surfaceListMovedSurfFromFrontFusion;
-        for ( auto const& itSurf : *this->M_surfaceList )
-        {
-            CHECK( itSurf.size() > 0 ) << "no surface";
-            if ( itSurf.size() == 1 ) continue;
-
-            surface_type_const_iterator_type itSurf2front = itSurf.begin();
-            if (itSurf2front->get<2>().second==0) continue; // surface useless
-            CHECK( this->entitiesStorage().surfaces().find( itSurf2front->get<2>().first ) != this->entitiesStorage().surfaces().end() ) << "error";
-
-            std::string nameSurf = itSurf2front->get<1>();
-            int idSurf = itSurf2front->get<2>().first;
-            if ( surfaceListErased.find( std::make_pair( nameSurf,idSurf ) ) != surfaceListErased.end() )
-            {
-                int idNewSurf = surfaceListErased.find( std::make_pair( nameSurf,idSurf ) )->second.second;
-                int thecpt=0;
-                for ( auto const& itSurf2 : itSurf )
-                {
-                    if ( thecpt > 0 )
-                    {
-                        int idSurfDiff = itSurf2.get<2>().first;
-                        surfaceListMovedSurfFromFrontFusion[idNewSurf].insert( idSurfDiff );
-                    }
-                    ++thecpt;
-                }
-            }
-        }
-
-        // move maybe diff surface
-        auto itSurf = this->M_surfaceList->begin();
-        auto enSurf = this->M_surfaceList->end();
-        for ( ; itSurf != enSurf ; ++itSurf )
-        {
-            //typedef surface_type_type::iterator surface_type_iterator_type;
-            //surface_type_iterator_type itSurf2front = itSurf->begin();
-            surface_type_const_iterator_type itSurf2front = itSurf->begin();
-            if (itSurf2front->get<2>().second==0) continue; // surface useless
-
-            std::string nameSurf = itSurf2front->get<1>();
-            int idSurf = itSurf2front->get<2>().first;
-            if ( surfaceListModified.find( std::make_pair( nameSurf,idSurf ) ) != surfaceListModified.end() )
-            {
-                auto findSurfToModify = surfaceListModified.find( std::make_pair( nameSurf,idSurf ) );
-                int idNewSurf = findSurfToModify->second.second;
-                if ( surfaceListMovedSurfFromFrontFusion.find(idNewSurf) !=surfaceListMovedSurfFromFrontFusion.end() )
-                {
-                    for ( int theidSurf : surfaceListMovedSurfFromFrontFusion.find(idNewSurf)->second )
-                    {
-                        auto const& mysurf = this->entitiesStorage().getSurface(theidSurf);
-
-                        CHECK( mysurf.listLineLoop().size() == 1 ) << "diff can be used only with surface with one lineloop";
-                        itSurf->push_back( boost::make_tuple( "blabla",mysurf.name(),std::make_pair( mysurf.globalId(),mysurf.listLineLoop().front() ),0. ) );
-                    }
-                }
-
-
-            }
-        }
-
-        // modified and delete fusion surface
-        itSurf = this->M_surfaceList->begin();
-        for ( ; itSurf != enSurf ; /*++itSurf*/ )
-        {
-            //surface_type_const_iterator_type itSurf2front = itSurf->begin();
-            // get first surface (which is not a diff surface)
-            typedef surface_type_type::iterator surface_type_iterator_type;
-            surface_type_iterator_type itSurf2front = itSurf->begin();
-            if ( itSurf2front->get<2>().second==0 ) continue; // surface useless
-
-            std::string nameSurf = itSurf2front->get<1>();
-            int idSurf = itSurf2front->get<2>().first;
-
-            bool hasErasedAllSurf=false;
-
-            auto findSurfToModify = surfaceListModified.find( std::make_pair( nameSurf,idSurf ) );
-            if ( findSurfToModify != surfaceListModified.end() )
-            {
-                int idNewSurf = findSurfToModify->second.second;
-                auto const& mysurf = this->entitiesStorage().getSurface(idNewSurf);
-
-                boost::get<0>(*itSurf2front) = "blabla"; // shape (usefull??)
-                boost::get<1>(*itSurf2front) = mysurf.name();
-                CHECK( mysurf.listLineLoop().size() == 1 ) << "diff can be used only with surface with one lineloop";
-                boost::get<2>(*itSurf2front) = std::make_pair( mysurf.globalId(),mysurf.listLineLoop().front() ); // surf id, lineloop id
-                boost::get<3>(*itSurf2front) = 0.; // mesh size (usefull??)
-            }
-            else if ( surfaceListErased.find( std::make_pair( nameSurf,idSurf ) ) != surfaceListErased.end() )
-            {
-                // delete front surface with all diff surface
-                itSurf = this->M_surfaceList->erase( itSurf );
-                hasErasedAllSurf=true;
-            }
-
-            // treat diff surface
-            if ( !hasErasedAllSurf && itSurf->size() > 1 )
-            {
-                auto itSurfDiff = ++itSurf2front;
-                auto enSurfDiff = itSurf->end();
-                while ( itSurfDiff != enSurfDiff )
-                {
-                    std::string nameSurfDiff = itSurfDiff->get<1>();
-                    int idSurfDiff = itSurfDiff->get<2>().first;
-                    if ( surfaceListErased.find( std::make_pair( nameSurfDiff,idSurfDiff ) ) != surfaceListErased.end() )
-                    {
-                        // delete diff surface
-                        itSurfDiff = itSurf->erase( itSurfDiff );
-                    }
-                    else
-                    {
-                        auto findSurfDiffToModify = surfaceListModified.find( std::make_pair( nameSurfDiff,idSurfDiff ) );
-                        if ( findSurfDiffToModify != surfaceListModified.end() )
-                        {
-
-                            // modify diff surface
-                            int idNewSurfDiff = findSurfDiffToModify->second.second;
-                            auto const& mysurf = this->entitiesStorage().getSurface(idNewSurfDiff);
-                            boost::get<0>(*itSurfDiff) = "blablaDiff"; // shape (usefull??)
-                            boost::get<1>(*itSurfDiff) = mysurf.name();
-                            CHECK( mysurf.listLineLoop().size() == 1 ) << "diff can be used only with surface with one lineloop";
-                            boost::get<2>(*itSurfDiff) = std::make_pair( mysurf.globalId(),mysurf.listLineLoop().front() ); // surf id, lineloop id
-                            boost::get<3>(*itSurfDiff) = 0.; // mesh size (usefull??)
-                        }
-                        ++itSurfDiff;
-                    }
-                }
-            }
-            if( !hasErasedAllSurf ) ++itSurf;
-        } // for ( ; itSurf != enSurf ; ++itSurf )
-
-        //this->showMe();
-
+        this->updateSurfaceListFromFusionMarkersLineWithInterface( mapNewSurface );
     } // if ( dim == 2 )
+    else if ( this->dim() == 3 )
+    {
+        this->updateFusionMarkersSurfaceWithInterface( ptIdErased,lineIdErased,surfaceIdErased );
+    }
+
+
 
     // create diff surface
     for ( auto const& itSurf : *this->M_surfaceList )
@@ -1518,7 +1460,7 @@ GeoGMSHTool::geoStr()
                 surfaceIdErased.insert( itSurf2.get<2>().first );
 
         }
-        M_entitiesStorage.addSurface(mySurf);
+        this->entitiesStorageAdmin().addSurface(mySurf);
     }
 
     // create diff volume
@@ -1531,9 +1473,20 @@ GeoGMSHTool::geoStr()
         if (itVol2front.get<2>().second==0) continue; // surface useless
         auto const& volumeRegisterFront = this->entitiesStorage().getVolume(itVol2front.get<2>().first);
 
+        std::string newVolName;
+        int thecpt=0;
+        for ( auto const& itVol2 : itVol )
+        {
+            if ( thecpt > 0 ) newVolName += "-";
+            newVolName += itVol2.get<1>();
+            ++thecpt;
+        }
+
+
         int idNewVol = this->M_cptVolume;
         ++this->M_cptVolume; //update counter
-        detail::GeoToolVolume myVol( invalid_size_type_value,idNewVol );
+
+        detail::GeoToolVolume myVol( newVolName, invalid_size_type_value,idNewVol );
         myVol.setPhysicalMarker( volumeRegisterFront.physicalMarker() );
 
         for ( auto const& itVol2 : itVol )
@@ -1551,18 +1504,75 @@ GeoGMSHTool::geoStr()
                 volumeIdErased.insert( itVol2.get<2>().first );
 
         }
-        M_entitiesStorage.addVolume(myVol);
+        this->entitiesStorageAdmin().addVolume(myVol);
 
     }
 
 
+
+    //--------------------------------------------------------------------------//
+    //--------------------------------------------------------------------------//
+    // identitfy and clear useless entities
+    //--------------------------------------------------------------------------//
+    //--------------------------------------------------------------------------//
+
+    if (this->dim() == 2)
+    {
+        auto entityIdsUsed = this->entitiesStorage().getEntityIdsUsedFromSurface();
+        for ( auto const& myp : this->entitiesStorage().points() )
+        {
+            if ( entityIdsUsed.get<0>().find( myp.first ) == entityIdsUsed.get<0>().end() )
+                ptIdErased.insert( myp.first );
+        }
+        for ( auto const& myp : this->entitiesStorage().lines() )
+        {
+            if ( entityIdsUsed.get<1>().find( myp.first ) == entityIdsUsed.get<1>().end() )
+                lineIdErased.insert( myp.first );
+        }
+        for ( auto const& myp : this->entitiesStorage().lineloops() )
+        {
+            if ( entityIdsUsed.get<2>().find( myp.first ) == entityIdsUsed.get<2>().end() )
+                lineloopIdErased.insert( myp.first );
+        }
+    }
+    else if (this->dim() == 3)
+    {
+        auto entityIdsUsed = this->entitiesStorage().getEntityIdsUsedFromVolume();
+        for ( auto const& myp : this->entitiesStorage().points() )
+        {
+            if ( entityIdsUsed.get<0>().find( myp.first ) == entityIdsUsed.get<0>().end() )
+                ptIdErased.insert( myp.first );
+        }
+        for ( auto const& myp : this->entitiesStorage().lines() )
+        {
+            if ( entityIdsUsed.get<1>().find( myp.first ) == entityIdsUsed.get<1>().end() )
+                lineIdErased.insert( myp.first );
+        }
+        for ( auto const& myp : this->entitiesStorage().lineloops() )
+        {
+            if ( entityIdsUsed.get<2>().find( myp.first ) == entityIdsUsed.get<2>().end() )
+                lineloopIdErased.insert( myp.first );
+        }
+        for ( auto const& myp : this->entitiesStorage().surfaces() )
+        {
+            if ( entityIdsUsed.get<3>().find( myp.first ) == entityIdsUsed.get<3>().end() )
+                surfaceIdErased.insert( myp.first );
+        }
+        for ( auto const& myp : this->entitiesStorage().surfaceloops() )
+        {
+            if ( entityIdsUsed.get<4>().find( myp.first ) == entityIdsUsed.get<4>().end() )
+                surfaceloopIdErased.insert( myp.first );
+        }
+    }
+
     // clear useless entities
-    M_entitiesStorage.erasePoints(ptIdErased);
-    M_entitiesStorage.eraseLines(lineIdErased);
-    M_entitiesStorage.eraseLineLoops(lineloopIdErased);
-    M_entitiesStorage.eraseSurfaces(surfaceIdErased);
-    M_entitiesStorage.eraseSurfaceLoops(surfaceloopIdErased);
-    M_entitiesStorage.eraseVolumes(volumeIdErased);
+    this->entitiesStorageAdmin().erasePoints(ptIdErased);
+    this->entitiesStorageAdmin().eraseLines(lineIdErased);
+    this->entitiesStorageAdmin().eraseLineLoops(lineloopIdErased);
+    this->entitiesStorageAdmin().eraseSurfaces(surfaceIdErased);
+    this->entitiesStorageAdmin().eraseSurfaceLoops(surfaceloopIdErased);
+    this->entitiesStorageAdmin().eraseVolumes(volumeIdErased);
+
 
     //--------------------------------------------------------------------------//
     //--------------------------------------------------------------------------//
@@ -1771,6 +1781,387 @@ GeoGMSHTool::geoStr()
 
 
 
+
+void
+GeoGMSHTool::updateFusionMarkersLineWithInterface( std::set<int> & ptIdErased, std::set<int> & lineIdErased )
+{
+    std::vector<detail::EvalFusionMarkersLine> evalFusionMarkerLine( this->fusionMarkersLineWithInterface().size() );
+    for ( auto const& mylinelooppair : this->entitiesStorage().lineloops() )
+    {
+        auto const& mylineloop = mylinelooppair.second;
+        for ( int mylineGlobalId : mylineloop.listLine() )
+        {
+            int mylineGlobalIdPos = ( mylineGlobalId > 0 )? mylineGlobalId : -mylineGlobalId;
+            auto const& myline = this->entitiesStorage().getLine(mylineGlobalIdPos);
+            int lineLocalId = myline.localId();
+
+            //evalFusionMarkerLine
+            //auto itfm = std::find_if( this->fusionMarkersLineWithInterface().begin(), this->fusionMarkersLineWithInterface().end(),
+            //                          [lineLocalId](FusionMarkers const& fm ) { return fm.marker1() == lineLocalId; } );
+            bool find1=false,find2=false;
+            int fusId1=0,fusId2=0;
+            for ( int k=0; k<this->fusionMarkersLineWithInterface().size() && ( !find1 || !find2 )  ; ++k )
+            {
+                if ( this->fusionMarkersLineWithInterface()[k].nameGT1() == mylineloop.name() &&
+                     this->fusionMarkersLineWithInterface()[k].marker1() == lineLocalId )
+                {
+                    fusId1=k;find1=true;
+                    //std::cout << "find marker1 " << lineLocalId << "\n";
+                    evalFusionMarkerLine[k].setGlobalId1(mylineGlobalId, mylineloop.globalId() /*myline.globalId()*/);
+                }
+                if ( this->fusionMarkersLineWithInterface()[k].nameGT2() == mylineloop.name() &&
+                     this->fusionMarkersLineWithInterface()[k].marker2() == lineLocalId )
+                {
+                    fusId2=k;find2=true;
+                    //std::cout << "find marker2 " << lineLocalId << "\n";
+                    evalFusionMarkerLine[k].setGlobalId2( mylineGlobalId, mylineloop.globalId() /*myline.globalId()*/);
+                }
+            }
+        }
+    }
+
+    for ( int k=0; k<this->fusionMarkersLineWithInterface().size(); ++k )
+    {
+        int mylineGlobalId1 = evalFusionMarkerLine[k].globalId1Line();
+        int mylineGlobalId1Pos = ( mylineGlobalId1 > 0 )? mylineGlobalId1 : -mylineGlobalId1;
+        auto const& myline1 = this->entitiesStorage().getLine(mylineGlobalId1Pos);
+
+        int mylineGlobalId2 = evalFusionMarkerLine[k].globalId2Line();
+        int mylineGlobalId2Pos = ( mylineGlobalId2 > 0 )? mylineGlobalId2 : -mylineGlobalId2;
+        auto const& myline2 = this->entitiesStorage().getLine(mylineGlobalId2Pos);
+
+        //std::cout << "identify same line " << mylineGlobalId1Pos << " vs " << mylineGlobalId2Pos << "\n";
+        int mylineloopGlobalId2 = evalFusionMarkerLine[k].globalId2LineLoop();
+
+        std::map<int,int> mapPointToReplace;
+        if ( this->entitiesStorage().hasSameOrientation( myline1,myline2 ) )
+        {
+            // add here a map for lineloop if
+            this->entitiesStorageAdmin().getLineLoop(mylineloopGlobalId2).replaceLineId( mylineGlobalId2, mylineGlobalId1 );
+            auto it = myline1.listPt().begin();
+            auto en = myline1.listPt().end();
+            auto it2 = myline2.listPt().begin();
+            for ( ; it != en ;++it,++it2 )
+            {
+                mapPointToReplace[*it2] = *it;
+            }
+            //std::cout << "has same orientation\n";
+        }
+        else
+        {
+            this->entitiesStorageAdmin().getLineLoop(mylineloopGlobalId2).replaceLineId( mylineGlobalId2, -mylineGlobalId1 );
+            //std::cout << "has NOT same orientation\n";
+
+            auto it = myline1.listPt().begin();
+            auto en = myline1.listPt().end();
+            auto it2 = myline2.listPt().end();--it2;
+            for ( ; it != en ;++it,--it2 )
+            {
+                mapPointToReplace[*it2] = *it;
+            }
+        }
+        // replace point id in line ( TODO reduce search)
+        for ( auto const& mylinepair : this->entitiesStorage().lines() )
+            for ( auto const& ptToRep : mapPointToReplace )
+                this->entitiesStorageAdmin().getLine( mylinepair.first ).replacePointId( ptToRep.first, ptToRep.second );
+#if 0
+        lineIdErased.insert(mylineGlobalId2Pos);
+        for ( auto const& ptToRep : mapPointToReplace )
+            ptIdErased.insert( ptToRep.first );
+#endif
+    }
+
+}
+
+
+void
+GeoGMSHTool::updateFusionMarkersSurfaceWithInterface( std::set<int> & ptIdErased, std::set<int> & lineIdErased, std::set<int> & surfaceIdErased )
+{
+    std::vector<detail::EvalFusionMarkersLine> evalFusionMarkerSurface( this->fusionMarkersSurfaceWithInterface().size() );
+    for ( auto const& mysurfacelooppair : this->entitiesStorage().surfaceloops() )
+    {
+        auto const& mysurfaceloop = mysurfacelooppair.second;
+        for ( int mysurfaceGlobalId : mysurfaceloop.listSurface() )
+        {
+            int mysurfaceGlobalIdPos = ( mysurfaceGlobalId > 0 )? mysurfaceGlobalId : -mysurfaceGlobalId;
+            auto const& mysurface = this->entitiesStorage().getSurface(mysurfaceGlobalIdPos);
+            int surfaceLocalId = mysurface.localId();
+
+            //evalFusionMarkerLine
+            //auto itfm = std::find_if( this->fusionMarkersLineWithInterface().begin(), this->fusionMarkersLineWithInterface().end(),
+            //                          [lineLocalId](FusionMarkers const& fm ) { return fm.marker1() == lineLocalId; } );
+            bool find1=false,find2=false;
+            int fusId1=0,fusId2=0;
+            for ( int k=0; k<this->fusionMarkersSurfaceWithInterface().size() && ( !find1 || !find2 )  ; ++k )
+            {
+                if ( this->fusionMarkersSurfaceWithInterface()[k].nameGT1() == mysurfaceloop.name() &&
+                     this->fusionMarkersSurfaceWithInterface()[k].marker1() == surfaceLocalId )
+                {
+                    fusId1=k;find1=true;
+                    //std::cout << "find marker1 " << surfaceLocalId << "\n";
+                    evalFusionMarkerSurface[k].setGlobalId1(mysurfaceGlobalId, mysurfaceloop.globalId() );
+                }
+                if ( this->fusionMarkersSurfaceWithInterface()[k].nameGT2() == mysurfaceloop.name() &&
+                     this->fusionMarkersSurfaceWithInterface()[k].marker2() == surfaceLocalId )
+                {
+                    fusId2=k;find2=true;
+                    //std::cout << "find marker2 " << surfaceLocalId << "\n";
+                    evalFusionMarkerSurface[k].setGlobalId2( mysurfaceGlobalId, mysurfaceloop.globalId() );
+                }
+            }
+        }
+    }
+
+    for ( int k=0; k<this->fusionMarkersSurfaceWithInterface().size(); ++k )
+    {
+        int mysurfaceGlobalId1 = evalFusionMarkerSurface[k].globalId1Line();
+        int mysurfaceGlobalId1Pos = ( mysurfaceGlobalId1 > 0 )? mysurfaceGlobalId1 : -mysurfaceGlobalId1;
+        auto const& mysurface1 = this->entitiesStorage().getSurface(mysurfaceGlobalId1Pos);
+
+        int mysurfaceGlobalId2 = evalFusionMarkerSurface[k].globalId2Line();
+        int mysurfaceGlobalId2Pos = ( mysurfaceGlobalId2 > 0 )? mysurfaceGlobalId2 : -mysurfaceGlobalId2;
+        auto const& mysurface2 = this->entitiesStorage().getSurface(mysurfaceGlobalId2Pos);
+
+        //std::cout << "identify same surface " << mysurfaceGlobalId1Pos << " vs " << mysurfaceGlobalId2Pos << "\n";
+        int mysurfaceloopGlobalId2 = evalFusionMarkerSurface[k].globalId2LineLoop();
+        auto const& mysurfaceloop2 = this->entitiesStorage().getSurfaceLoop(mysurfaceloopGlobalId2);
+        //std::cout << "search volume with name " << mysurfaceloop2.name() << "\n";
+        auto const& myvol2 = this->entitiesStorage().getVolume( this->entitiesStorage().volumeIdFromName( mysurfaceloop2.name() ) );
+
+        std::map<int,int> mapPointToReplace;
+        if ( true /*this->entitiesStorage().hasSameOrientation( mysurface1,mysurface2 )*/ )
+        {
+            // replace surf id in surface loop
+            this->entitiesStorageAdmin().getSurfaceLoop(mysurfaceloopGlobalId2).replaceSurfaceId( mysurfaceGlobalId2, mysurfaceGlobalId1 );
+
+            // get duplicate line for other surface
+            auto duplicateEntities = this->entitiesStorage().getDuplicatePointLineId( mysurface2,mysurface1 );
+            auto duplicatePoints = duplicateEntities.get<0>();
+            auto duplicateLines = duplicateEntities.get<1>();
+
+            // replace wrong point/line id in volume 2 by a duplicated point/line in volume 1
+            for ( int mysurfaceloopIdInVol2 : myvol2.listSurfaceLoop() )
+            {
+                auto const& mysurfaceloopInVol2 = this->entitiesStorage().getSurfaceLoop( mysurfaceloopIdInVol2 );
+                for ( int mysurfaceIdInVol2 : mysurfaceloopInVol2.listSurface() )
+                {
+                    int mysurfaceIdInVol2Pos = (mysurfaceIdInVol2>0)? mysurfaceIdInVol2 : -mysurfaceIdInVol2;
+                    auto const& mysurfaceInVol2 = this->entitiesStorage().getSurface( mysurfaceIdInVol2Pos );
+                    for ( int mylineloopIdInVol2 : mysurfaceInVol2.listLineLoop() )
+                    {
+                        auto const& mylineloopInVol2 = this->entitiesStorage().getLineLoop( mylineloopIdInVol2 );
+                        for ( int mylineIdInVol2 : mylineloopInVol2.listLine() )
+                        {
+                            int mylineIdInVol2Pos = (mylineIdInVol2>0)? mylineIdInVol2 : -mylineIdInVol2;
+                            auto const& mylineInVol2 = this->entitiesStorage().getLine( mylineIdInVol2Pos );
+
+                            // apply for points duplication
+                            for ( int mypointIdInVol2 : mylineInVol2.listPoint() )
+                            {
+                                if ( duplicatePoints.find( mypointIdInVol2 ) != duplicatePoints.end() )
+                                {
+                                    //std::cout << " replace0 in line " << mylineIdInVol2Pos << " : " << mypointIdInVol2
+                                    //          << " into " << duplicatePoints.find( mypointIdInVol2 )->second << "\n";
+                                    this->entitiesStorageAdmin().getLine( mylineIdInVol2Pos ).
+                                        replacePointId( mypointIdInVol2, duplicatePoints.find( mypointIdInVol2 )->second );
+                                }
+                            }
+
+                            // apply for lines duplication
+                            if ( duplicateLines.find( mylineIdInVol2 ) != duplicateLines.end() )
+                            {
+                                //std::cout << " replace1 in lineloop " << mylineloopIdInVol2 << " : " << mylineIdInVol2
+                                //          << " into " << duplicateLines.find( mylineIdInVol2 )->second << "\n";
+                                this->entitiesStorageAdmin().getLineLoop( mylineloopIdInVol2 ).
+                                    replaceLineId( mylineIdInVol2, duplicateLines.find( mylineIdInVol2 )->second );
+                            }
+                            if ( duplicateLines.find( -mylineIdInVol2 ) != duplicateLines.end() )
+                            {
+                                //std::cout << " replace2 in lineloop " << mylineloopIdInVol2 << " : " << -mylineIdInVol2
+                                //          << " into " << -duplicateLines.find( -mylineIdInVol2 )->second << "\n";
+                                this->entitiesStorageAdmin().getLineLoop( mylineloopIdInVol2 ).
+                                    replaceLineId( mylineIdInVol2, -duplicateLines.find( -mylineIdInVol2 )->second );
+                            }
+
+                        }
+
+                    }
+
+                }
+            }
+        }
+        else
+        {
+        }
+
+        //surfaceIdErased.insert(mysurfaceGlobalId2Pos);
+    }
+
+} // updateFusionMarkersSurfaceWithInterface
+
+
+
+void
+GeoGMSHTool::updateSurfaceListFromFusionMarkersLineWithInterface( std::map<std::string,std::map<std::string,std::set<int> > > const& mapNewSurface )
+{
+    std::map< std::pair<std::string,int>,std::pair<std::string,int> > surfaceListModified;
+    std::map< std::pair<std::string,int>,std::pair<std::string,int> > surfaceListErased;
+    for ( auto const& newSurf : mapNewSurface )
+    {
+        std::string nameNewSurf = newSurf.first;
+        int idNewSurf = this->entitiesStorage().surfaceIdFromName( nameNewSurf );
+        std::string nameInitialUsedForInsertNewSurf;
+        for ( auto surfName : newSurf.second )
+        {
+            std::string nameInitialSurf = surfName.first;
+            int idInitialSurf = this->entitiesStorage().surfaceIdFromName( nameInitialSurf );
+
+            // use first surface for replacing in surface list
+            if ( nameInitialUsedForInsertNewSurf.empty() )
+            {
+                nameInitialUsedForInsertNewSurf = nameInitialSurf;
+                surfaceListModified[std::make_pair(nameInitialSurf,idInitialSurf)]=std::make_pair(nameNewSurf,idNewSurf);
+            }
+            else
+                surfaceListErased[std::make_pair(nameInitialSurf,idInitialSurf)]=std::make_pair(nameNewSurf,idNewSurf);
+        }
+    }
+    // 2 cases : front and others(diff)
+    std::map<int,std::set<int> > surfaceListMovedSurfFromFrontFusion;
+    for ( auto const& itSurf : *this->M_surfaceList )
+    {
+        CHECK( itSurf.size() > 0 ) << "no surface";
+        if ( itSurf.size() == 1 ) continue;
+
+        surface_type_const_iterator_type itSurf2front = itSurf.begin();
+        if (itSurf2front->get<2>().second==0) continue; // surface useless
+        CHECK( this->entitiesStorage().surfaces().find( itSurf2front->get<2>().first ) != this->entitiesStorage().surfaces().end() ) << "error";
+
+        std::string nameSurfFront = itSurf2front->get<1>();
+        int idSurfFront = itSurf2front->get<2>().first;
+        if ( surfaceListErased.find( std::make_pair( nameSurfFront,idSurfFront ) ) != surfaceListErased.end() )
+        {
+            int idNewSurf = surfaceListErased.find( std::make_pair( nameSurfFront,idSurfFront ) )->second.second;
+            int thecpt=0;
+            for ( auto const& itSurf2 : itSurf )
+            {
+                if ( thecpt > 0 )
+                {
+                    int idSurfDiff = itSurf2.get<2>().first;
+                    surfaceListMovedSurfFromFrontFusion[idNewSurf].insert( idSurfDiff );
+                }
+                ++thecpt;
+            }
+        }
+    }
+
+    // move maybe diff surface
+    auto itSurf = this->M_surfaceList->begin();
+    auto enSurf = this->M_surfaceList->end();
+    for ( ; itSurf != enSurf ; ++itSurf )
+    {
+        //typedef surface_type_type::iterator surface_type_iterator_type;
+        //surface_type_iterator_type itSurf2front = itSurf->begin();
+        surface_type_const_iterator_type itSurf2front = itSurf->begin();
+        if (itSurf2front->get<2>().second==0) continue; // surface useless
+
+        std::string nameSurf = itSurf2front->get<1>();
+        int idSurf = itSurf2front->get<2>().first;
+        auto findSurfToModify = surfaceListModified.find( std::make_pair( nameSurf,idSurf ) );
+        if ( findSurfToModify/*surfaceListModified.find( std::make_pair( nameSurf,idSurf ) )*/ != surfaceListModified.end() )
+        {
+            int idNewSurf = findSurfToModify->second.second;
+            if ( surfaceListMovedSurfFromFrontFusion.find(idNewSurf) != surfaceListMovedSurfFromFrontFusion.end() )
+            {
+                for ( int theidSurf : surfaceListMovedSurfFromFrontFusion.find(idNewSurf)->second )
+                {
+                    auto const& mysurf = this->entitiesStorage().getSurface(theidSurf);
+                    CHECK( mysurf.listLineLoop().size() == 1 ) << "diff can be used only with surface with one lineloop";
+                    itSurf->push_back( boost::make_tuple( "blabla",mysurf.name(),std::make_pair( mysurf.globalId(),mysurf.listLineLoop().front() ),0. ) );
+                }
+            }
+        }
+    }
+
+    // modified and delete fusion surface
+    itSurf = this->M_surfaceList->begin();
+    for ( ; itSurf != enSurf ; /*++itSurf*/ )
+    {
+        //surface_type_const_iterator_type itSurf2front = itSurf->begin();
+        // get first surface (which is not a diff surface)
+        typedef surface_type_type::iterator surface_type_iterator_type;
+        surface_type_iterator_type itSurf2front = itSurf->begin();
+        if ( itSurf2front->get<2>().second==0 ) continue; // surface useless
+
+        std::string nameSurf = itSurf2front->get<1>();
+        int idSurf = itSurf2front->get<2>().first;
+
+        bool hasErasedAllSurf=false;
+
+        auto findSurfToModify = surfaceListModified.find( std::make_pair( nameSurf,idSurf ) );
+        if ( findSurfToModify != surfaceListModified.end() )
+        {
+            int idNewSurf = findSurfToModify->second.second;
+            auto const& mysurf = this->entitiesStorage().getSurface(idNewSurf);
+
+            boost::get<0>(*itSurf2front) = "blabla"; // shape (usefull??)
+            boost::get<1>(*itSurf2front) = mysurf.name();
+            CHECK( mysurf.listLineLoop().size() == 1 ) << "diff can be used only with surface with one lineloop";
+            boost::get<2>(*itSurf2front) = std::make_pair( mysurf.globalId(),mysurf.listLineLoop().front() ); // surf id, lineloop id
+            boost::get<3>(*itSurf2front) = 0.; // mesh size (usefull??)
+        }
+        else if ( surfaceListErased.find( std::make_pair( nameSurf,idSurf ) ) != surfaceListErased.end() )
+        {
+            // delete front surface with all diff surface
+            itSurf = this->M_surfaceList->erase( itSurf );
+            hasErasedAllSurf=true;
+        }
+
+        // treat diff surface
+        if ( !hasErasedAllSurf && itSurf->size() > 1 )
+        {
+            auto itSurfDiff = ++itSurf2front;
+            auto enSurfDiff = itSurf->end();
+            while ( itSurfDiff != enSurfDiff )
+            {
+                std::string nameSurfDiff = itSurfDiff->get<1>();
+                int idSurfDiff = itSurfDiff->get<2>().first;
+                if ( surfaceListErased.find( std::make_pair( nameSurfDiff,idSurfDiff ) ) != surfaceListErased.end() )
+                {
+                    // delete diff surface
+                    itSurfDiff = itSurf->erase( itSurfDiff );
+                }
+                else
+                {
+                    auto findSurfDiffToModify = surfaceListModified.find( std::make_pair( nameSurfDiff,idSurfDiff ) );
+                    if ( findSurfDiffToModify != surfaceListModified.end() )
+                    {
+                        // modify diff surface
+                        int idNewSurfDiff = findSurfDiffToModify->second.second;
+                        auto const& mysurf = this->entitiesStorage().getSurface(idNewSurfDiff);
+                        boost::get<0>(*itSurfDiff) = "blablaDiff"; // shape (usefull??)
+                        boost::get<1>(*itSurfDiff) = mysurf.name();
+                        CHECK( mysurf.listLineLoop().size() == 1 ) << "diff can be used only with surface with one lineloop";
+                        boost::get<2>(*itSurfDiff) = std::make_pair( mysurf.globalId(),mysurf.listLineLoop().front() ); // surf id, lineloop id
+                        boost::get<3>(*itSurfDiff) = 0.; // mesh size (usefull??)
+                    }
+                    ++itSurfDiff;
+                }
+            }
+        }
+        if( !hasErasedAllSurf ) ++itSurf;
+    } // for ( ; itSurf != enSurf ; ++itSurf )
+
+} // updateSurfaceListFromFusionMarkersLineWithInterface
+
+
+
+
+
+
+
+
+
 #define GEOTOOL_GENERATE_RUN(r,state)                                   \
         if( boost::get<2>(*__dg) ==  GEOTOOL_SHAPE_NAME_STR(BOOST_PP_TUPLE_ELEM(2,0,state)) ) \
             {                                                           \
@@ -1837,8 +2228,8 @@ void writePoint( uint16_type __numLoc, data_geo_ptrtype __dg ,double __x1,double
         myPt.setPhysicalMarker( mymark.second );
 
     //__dg->get<0>()->addPoint(/*name,*/myPt);
-    __dg->get<0>()->M_entitiesStorage.addPoint(myPt);
-
+    //__dg->get<0>()->M_entitiesStorage.addPoint(myPt);
+    __dg->get<0>()->entitiesStorageAdmin().addPoint(myPt);
 
 #if 0
     std::ostringstream __ostr;
@@ -1883,8 +2274,10 @@ writeLine( uint16_type __numLoc, data_geo_ptrtype __dg ,uint16_type __n1, uint16
         }
     }
 #endif
+
     //__dg->get<0>()->addLine(myLine);
-    __dg->get<0>()->M_entitiesStorage.addLine(myLine);
+    __dg->get<0>()->entitiesStorageAdmin().addLine(myLine);
+
 #if 0
     std::ostringstream __ostr;
     __ostr << "Line(" << boost::get<0>( *__dg )->cptLine()
@@ -1912,7 +2305,7 @@ writeCircle( uint16_type __numLoc, data_geo_ptrtype __dg ,uint16_type __n1, uint
         myLine.setPhysicalMarker( mymark.second );
 
     //__dg->get<0>()->addLine(myLine);
-    __dg->get<0>()->M_entitiesStorage.addLine(myLine);
+    __dg->get<0>()->entitiesStorageAdmin().addLine(myLine);
 
 #if 0
     std::ostringstream __ostr;
@@ -1943,7 +2336,7 @@ writeEllipse( uint16_type __numLoc, data_geo_ptrtype __dg ,uint16_type __n1, uin
         myLine.setPhysicalMarker( mymark.second );
 
     //__dg->get<0>()->addLine(myLine);
-    __dg->get<0>()->M_entitiesStorage.addLine(myLine);
+    __dg->get<0>()->entitiesStorageAdmin().addLine(myLine);
 #if 0
     std::ostringstream __ostr;
     __ostr << "Ellipse(" << boost::get<0>( *__dg )->cptLine() //cptCircle
@@ -1977,7 +2370,7 @@ writeSpline( uint16_type __numLoc, data_geo_ptrtype __dg ,Loop __loop )
         myLine.setPhysicalMarker( mymark.second );
 
     //__dg->get<0>()->addLine(myLine);
-    __dg->get<0>()->M_entitiesStorage.addLine(myLine);
+    __dg->get<0>()->entitiesStorageAdmin().addLine(myLine);
 
 #if 0
     std::ostringstream __ostr;
@@ -2019,7 +2412,7 @@ writeBSpline( uint16_type __numLoc, data_geo_ptrtype __dg ,Loop __loop )
         myLine.setPhysicalMarker( mymark.second );
 
     //__dg->get<0>()->addLine(myLine);
-    __dg->get<0>()->M_entitiesStorage.addLine(myLine);
+    __dg->get<0>()->entitiesStorageAdmin().addLine(myLine);
 #if 0
     std::ostringstream __ostr;
     __ostr << "BSpline(" << boost::get<0>( *__dg )->cptLine() //cptCircle
@@ -2061,7 +2454,7 @@ writeLineLoop( uint16_type __numLoc, data_geo_ptrtype __dg , Loop /*const*/ __lo
     }
     myLineLoop.setLines( myLinesId );
     //__dg->get<0>()->addLineLoop(myLineLoop);
-    __dg->get<0>()->M_entitiesStorage.addLineLoop(myLineLoop);
+    __dg->get<0>()->entitiesStorageAdmin().addLineLoop(myLineLoop);
 
 #if 0
     std::ostringstream __ostr;
@@ -2107,7 +2500,7 @@ writePtInSurface( data_geo_ptrtype __dg , uint16_type __indLocPt,uint16_type __i
     //CHECK(__dg->get<0>()->M_buildDataSurface.find(indSurfGlob) != __dg->get<0>()->M_buildDataSurface.end() ) << "not find surface";
     //CHECK(__dg->get<0>()->entitiesStorage().surfaces().find(indSurfGlob) != __dg->get<0>()->entitiesStorage().surfaces().end() ) << "not find surface";
     //__dg->get<0>()->M_buildDataSurface[indSurfGlob].addPtInSurface( indPtGlob );
-    __dg->get<0>()->M_entitiesStorage.getSurface(indSurfGlob).addPtInSurface( indPtGlob );
+    __dg->get<0>()->entitiesStorageAdmin().getSurface(indSurfGlob).addPtInSurface( indPtGlob );
 }
 
 
@@ -2142,7 +2535,7 @@ writePlaneSurface( uint16_type __numLoc, data_geo_ptrtype __dg , uint16_type __i
         mySurf.setPhysicalMarker( mymark.second );
 
     //__dg->get<0>()->addSurface(mySurf);
-    __dg->get<0>()->M_entitiesStorage.addSurface(mySurf);
+    __dg->get<0>()->entitiesStorageAdmin().addSurface(mySurf);
 
 
 
@@ -2213,7 +2606,7 @@ writeRuledSurface( uint16_type __numLoc, data_geo_ptrtype __dg , uint16_type __i
         mySurf.setPhysicalMarker( mymark.second );
 
     //__dg->get<0>()->addSurface(mySurf);
-    __dg->get<0>()->M_entitiesStorage.addSurface(mySurf);
+    __dg->get<0>()->entitiesStorageAdmin().addSurface(mySurf);
 
 
 
@@ -2394,7 +2787,7 @@ writeSurfaceLoop( uint16_type __numLoc, data_geo_ptrtype __dg , Loop /*const*/ _
     }
     mySurfaceLoop.setSurfaces( mySurfaceId );
     //__dg->get<0>()->addSurfaceLoop(mySurfaceLoop);
-    __dg->get<0>()->M_entitiesStorage.addSurfaceLoop(mySurfaceLoop);
+    __dg->get<0>()->entitiesStorageAdmin().addSurfaceLoop(mySurfaceLoop);
 
 
 
@@ -2439,7 +2832,8 @@ writeVolume( uint16_type __numLoc, data_geo_ptrtype __dg , uint16_type __ind )
     uint16_type cptVol = __dg->get<0>()->cptVolume();
     uint16_type refSurfaceLoop= ( *( boost::get<1>( *__dg ) ) )[4][__ind];
 
-    detail::GeoToolVolume myVol(__numLoc,cptVol );
+    std::string name = __dg->get<3>();
+    detail::GeoToolVolume myVol(name,__numLoc,cptVol );
     myVol.setSurfaceLoop( refSurfaceLoop );
 
     auto mymark = __dg->get<0>()->findPhysicalMarker( "volume", __dg->get<3>()/*name*/, __numLoc );
@@ -2447,7 +2841,7 @@ writeVolume( uint16_type __numLoc, data_geo_ptrtype __dg , uint16_type __ind )
         myVol.setPhysicalMarker( mymark.second );
 
     //__dg->get<0>()->addVolume(myVol);
-    __dg->get<0>()->M_entitiesStorage.addVolume(myVol);
+    __dg->get<0>()->entitiesStorageAdmin().addVolume(myVol);
 
 
 
@@ -2600,27 +2994,6 @@ computeBasisOrthogonal( node_type dir,node_type centre )
     return boost::make_tuple( D,u,v );
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2922,14 +3295,14 @@ computeBasisOrthogonal( node_type dir,node_type centre )
                       GEOTOOL_FOR_INCR,                                 \
                       GEOTOOL_SHAPE_PARAM);                             \
                                                                         \
-        this->initData(shape(),                                         \
-                       __name,                                          \
-                       __meshSize,                                      \
-                       M_param,                                         \
-                       GEOTOOL_SHAPE_DIM(BOOST_PP_TUPLE_ELEM(2,0,state)), \
-                       1,                                               \
-                       GEOTOOL_SHAPE_NBSURFACE(BOOST_PP_TUPLE_ELEM(2,0,state)), \
-                       GEOTOOL_SHAPE_NBVOLUME(BOOST_PP_TUPLE_ELEM(2,0,state))); \
+        this->initFromPreDefShape(shape(),                              \
+                                  __name,                               \
+                                  __meshSize,                           \
+                                  M_param,                              \
+                                  GEOTOOL_SHAPE_DIM(BOOST_PP_TUPLE_ELEM(2,0,state)), \
+                                  1,                                    \
+                                  GEOTOOL_SHAPE_NBSURFACE(BOOST_PP_TUPLE_ELEM(2,0,state)), \
+                                  GEOTOOL_SHAPE_NBVOLUME(BOOST_PP_TUPLE_ELEM(2,0,state))); \
     }                                                                   \
                                                                         \
     void                                                                \
@@ -2998,27 +3371,11 @@ computeBasisOrthogonal( node_type dir,node_type centre )
 
     /**/
 
-//creation des classes representants les objets geotool
+// generate methods impl for predef geotool objects
 BOOST_PP_FOR( ( 0, BOOST_PP_SUB( BOOST_PP_ARRAY_SIZE( GEOTOOL_SHAPE ),1 ) ),
               GEOTOOL_FOR_COMP,
               GEOTOOL_FOR_INCR,
               GEOTOOL_SHAPE_CLASS_IMPL )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
