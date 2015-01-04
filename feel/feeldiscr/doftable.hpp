@@ -449,11 +449,13 @@ public:
 
     std::vector<size_type> getIndices( size_type id_el, mpl::size_t<MESH_FACES> /**/ ) const
         {
-            std::vector<size_type> ind( nLocalDofOnFace() );
+            std::vector<size_type> ind;
+            ind.reserve( nLocalDofOnFace() );
 
             auto eit = M_face_l2g.find( id_el );
             DCHECK( eit != M_face_l2g.end() ) << "Invalid face id " << id_el;
-            std::copy( eit->second.begin(), eit->second.end(), ind.begin() );
+            std::for_each( eit->second.begin(), eit->second.end(),
+                           [&ind]( FaceDof const& f ) { ind.push_back( f.index() ); } );
             return ind;
         }
 
