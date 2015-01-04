@@ -401,6 +401,7 @@ public :
     size_type globalId() const { return M_globalId; }
     std::string lineType() const { return M_lineType; }
     std::list<size_type> const& listPt() const { return M_listPt; }
+    std::list<size_type> const& listPoint() const { return M_listPt; }
     std::string physicalMarker() const { return M_physicalMarker; }
     size_type firstPointIdConnection() const
     {
@@ -566,6 +567,7 @@ public :
     void showMe() const
     {
         std::cout << "SURFACE -> "
+                  << "name : " << this->name() << " ; "
                   << "localId : " << this->localId() << " ; "
                   << "globalId : " << this->globalId() << " ; "
                   << "surfaceType" << this->surfaceType() << " ; "
@@ -626,6 +628,7 @@ public :
     void showMe() const
     {
         std::cout << "SURFACELOOP -> "
+                  << "name : " << this->name() << " ; "
                   << "localId  : " << this->localId() << " ; "
                   << "globalId : " << this->globalId() << " ; "
                   << "surfacesId  : ";
@@ -651,19 +654,21 @@ public :
         M_localId( invalid_size_type_value ),
         M_globalId( invalid_size_type_value )
         {}
-    GeoToolVolume(size_type localId,size_type globalId)
+    GeoToolVolume(std::string name,size_type localId,size_type globalId)
         :
+        M_name( name ),
         M_localId( localId ),
         M_globalId( globalId )
         {}
     GeoToolVolume( GeoToolVolume const& l )
         :
+        M_name( l.M_name ),
         M_localId( l.M_localId ),
         M_globalId( l.M_globalId ),
         M_surfaceLoopId( l.M_surfaceLoopId ),
         M_physicalMarker( l.M_physicalMarker )
         {}
-    //std::string name() const { return M_name; }
+    std::string name() const { return M_name; }
     size_type localId() const { return M_localId; }
     size_type globalId() const { return M_globalId; }
     std::list<int> const& listSurfaceLoop() const { return M_surfaceLoopId; }
@@ -687,6 +692,7 @@ public :
     void showMe() const
     {
         std::cout << "VOLUME -> "
+                  << "name : " << this->name() << " ; "
                   << "localId : " << this->localId() << " ; "
                   << "globalId : " << this->globalId() << " ; "
                   << "physicalMarker : " << this->physicalMarker() << " ; "
@@ -697,7 +703,7 @@ public :
     }
 
 private :
-    //std::string M_name;
+    std::string M_name;
     size_type M_localId,M_globalId;
     std::string M_surfaceType;
     std::list<int> M_surfaceLoopId;
@@ -891,12 +897,53 @@ public :
                 return surf.first;
         return 0;
     }
+    int
+    volumeIdFromName( std::string name ) const
+    {
+        for ( auto const& vol : this->volumes() )
+            if ( vol.second.name() == name )
+                return vol.first;
+        return 0;
+    }
+
+    void
+    showMe() const
+    {
+        for ( auto const& mypt : this->points() )
+            mypt.second.showMe();
+        for ( auto const& myline : this->lines() )
+            myline.second.showMe();
+        for ( auto const& mylineloop : this->lineloops() )
+            mylineloop.second.showMe();
+        for ( auto const& mysurf : this->surfaces() )
+            mysurf.second.showMe();
+        for ( auto const& mysurfloop : this->surfaceloops() )
+            mysurfloop.second.showMe();
+        for ( auto const& myvol : this->volumes() )
+            myvol.second.showMe();
+    }
+
+    bool representSameEntity( detail::GeoToolLine const& l1, detail::GeoToolLine const& l2 ) const;
+
     bool hasSameOrientation( detail::GeoToolLine const& l1, detail::GeoToolLine const& l2 ) const;
 
     bool lineLoopIsClosed( detail::GeoToolLineLoop const& lineloop ) const;
     bool lineLoopHasConnection( detail::GeoToolLineLoop const& lineloop1, detail::GeoToolLineLoop const& lineloop2 ) const;
     void lineLoopApplyConnection( detail::GeoToolLineLoop & lineloop1, detail::GeoToolLineLoop const& lineloop2 );
     std::set<int> lineLoopPointIdsNotConnected( detail::GeoToolLineLoop const& lineloop ) const;
+
+    int getDuplicatePointId( detail::GeoToolSurface const& s, detail::GeoToolPoint const& p ) const;
+    int getDuplicateLineId( detail::GeoToolSurface const& s, detail::GeoToolLine const& l ) const;
+
+    boost::tuple< std::map<int,int>, std::map<int,int> >
+    getDuplicatePointLineId( detail::GeoToolSurface const& s1, detail::GeoToolSurface const& s2 ) const;
+
+
+    boost::tuple< std::set<int>, std::set<int>, std::set<int> >
+    getEntityIdsUsedFromSurface() const;
+    boost::tuple< std::set<int>, std::set<int>, std::set<int>, std::set<int>, std::set<int> >
+    getEntityIdsUsedFromVolume() const;
+
 
 private :
     std::map<size_type, detail::GeoToolPoint> M_entitiesPoint;
@@ -1066,23 +1113,20 @@ public:
                int partitions=1,
                bool partition_file=false );
 
+protected :
     /*
      *
      */
-    void initData( std::string __shape,
-                   std::string __name,
-                   double __meshSize,
-                   std::vector<GeoTool::Node> & __param,
-                   uint16_type dim,
-                   uint16_type __nbligne,
-                   uint16_type __nbsurface,
-                   uint16_type __nbvolume );
+    void initFromPreDefShape( std::string __shape,
+                              std::string __name,
+                              double __meshSize,
+                              std::vector<GeoTool::Node> & __param,
+                              uint16_type dim,
+                              uint16_type __nbligne,
+                              uint16_type __nbsurface,
+                              uint16_type __nbvolume );
 
-    /*
-     *Utile pour la fct geoStr()
-     *Pas de maj pour cptSurface et cptVolume car traitement different
-     */
-    //void updateData( GeoGMSHTool const & m );
+public :
 
     /*
      * Update the output stringstream wich generate the gmsh code
@@ -1404,10 +1448,6 @@ public:
     boost::shared_ptr<volume_name_type> M_volumeList;
     boost::shared_ptr<surfaceloop_name_type> M_surfaceLoopList;
 
-    //boost::shared_ptr<std::ostringstream> M_ostrExtrude;
-    //boost::shared_ptr<std::ostringstream> M_ostrSurfaceLoop;
-
-
     // data containers
     boost::shared_ptr<parameter_name_type> M_paramShape;
     boost::shared_ptr<marker_type_type> M_markShape;
@@ -1419,22 +1459,49 @@ public:
     bool M_geoIsDefineByUser;
 
 
-    detail::GeoToolEntitiesStorage M_entitiesStorage;
     detail::GeoToolEntitiesStorage const& entitiesStorage() const { return M_entitiesStorage; }
+    detail::GeoToolEntitiesStorage & entitiesStorageAdmin() { return M_entitiesStorage; }
+
+    std::vector<FusionMarkers> const& fusionMarkersLineWithInterface() { return M_fusionMarkersLineWithInterface; }
+    std::vector<FusionMarkers> const& fusionMarkersLineWithoutInterface() { return M_fusionMarkersLineWithoutInterface; }
+    std::vector<FusionMarkers> const& fusionMarkersSurfaceWithInterface() { return M_fusionMarkersSurfaceWithInterface; }
+    std::vector<FusionMarkers> const& fusionMarkersSurfaceWithoutInterface() { return M_fusionMarkersSurfaceWithoutInterface; }
 
     GeoGMSHTool&
     fusion( GeoGMSHTool const& gt1, int marker1, GeoGMSHTool const& gt2, int marker2, bool keepInterface=true)
     {
-        if ( keepInterface )
-            M_fusionMarkersLineWithInterface.push_back( FusionMarkers( gt1,marker1,gt2,marker2 ) );
-        else
-            M_fusionMarkersLineWithoutInterface.push_back( FusionMarkers( gt1,marker1,gt2,marker2 ) );
+        CHECK( gt1.dim() == gt2.dim() ) << " dim mus be equal : " << gt1.dim() << " vs " << gt2.dim();
+        if ( gt1.dim() == 1 )
+        {
+            CHECK( false ) << "TODO";
+        }
+        else if ( gt1.dim() == 2 )
+        {
+            if ( keepInterface )
+                M_fusionMarkersLineWithInterface.push_back( FusionMarkers( gt1,marker1,gt2,marker2 ) );
+            else
+                M_fusionMarkersLineWithoutInterface.push_back( FusionMarkers( gt1,marker1,gt2,marker2 ) );
+        }
+        else if ( gt1.dim() == 3 )
+        {
+            if ( keepInterface )
+                M_fusionMarkersSurfaceWithInterface.push_back( FusionMarkers( gt1,marker1,gt2,marker2 ) );
+            else
+                M_fusionMarkersSurfaceWithoutInterface.push_back( FusionMarkers( gt1,marker1,gt2,marker2 ) );
+        }
         return *this;
     }
 
-    std::vector<FusionMarkers> const& fusionMarkersLineWithInterface() { return M_fusionMarkersLineWithInterface; }
-    std::vector<FusionMarkers> const& fusionMarkersLineWithoutInterface() { return M_fusionMarkersLineWithoutInterface; }
+private :
+    void updateFusionMarkersLineWithInterface(std::set<int> & ptIdErased, std::set<int> & lineIdErased);
+    void updateFusionMarkersSurfaceWithInterface(std::set<int> & ptIdErased, std::set<int> & lineIdErased, std::set<int> & surfaceIdErased);
+
+    void updateSurfaceListFromFusionMarkersLineWithInterface( std::map<std::string,std::map<std::string,std::set<int> > > const& mapNewSurface );
+private :
+
+    detail::GeoToolEntitiesStorage M_entitiesStorage;
     std::vector<FusionMarkers> M_fusionMarkersLineWithInterface, M_fusionMarkersLineWithoutInterface;
+    std::vector<FusionMarkers> M_fusionMarkersSurfaceWithInterface, M_fusionMarkersSurfaceWithoutInterface;
 
 };
 
