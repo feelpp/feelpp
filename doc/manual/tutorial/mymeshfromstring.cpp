@@ -68,7 +68,7 @@ int main( int argc, char** argv )
 	//! [export]
 	// export results for post processing
 	auto e = exporter( _mesh=mesh2 );
-    e->add("pid", regionProcess(Pdh<0>(mesh2)) );
+    e->add("pid", regionProcess(Pdh<0>(mesh2,true)) );
 	e->save();
 	//! [export]
 
