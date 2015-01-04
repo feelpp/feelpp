@@ -293,7 +293,6 @@ TestHDiv::testProjector()
 
     // HDIV projection (Lagrange)
     auto hdiv_lagV = opProjection( _domainSpace=Yh_v, _imageSpace=Yh_v, _type=HDIV );
-    auto hdiv_lagS = opProjection( _domainSpace=Yh_s, _imageSpace=Yh_s, _type=HDIV );
     auto E_pHDIV_lag = hdiv_lagV->project( _expr= E, _div_expr=cst(0.) );
     auto error_pHDIV_lag = l2_lagS->project( _expr=divv(E_pHDIV_lag) - f );
 
