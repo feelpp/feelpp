@@ -46,6 +46,12 @@ straightenMesh( boost::shared_ptr<MeshType> m,
 extern template boost::shared_ptr<Mesh<Simplex<1,1>>>
 straightenMesh<Mesh<Simplex<1,1>>>( boost::shared_ptr<Mesh<Simplex<1,1>>>, 
                                     WorldComm const& , bool, bool  );
+extern template boost::shared_ptr<Mesh<Simplex<1,1,2>>>
+straightenMesh<Mesh<Simplex<1,1,2>>>( boost::shared_ptr<Mesh<Simplex<1,1,2>>>, 
+                                      WorldComm const& , bool, bool  );
+extern template boost::shared_ptr<Mesh<Hypercube<1,1,2>>>
+straightenMesh<Mesh<Hypercube<1,1,2>>>( boost::shared_ptr<Mesh<Hypercube<1,1,2>>>, 
+                                      WorldComm const& , bool, bool  );
 extern template boost::shared_ptr<Mesh<Simplex<1,2>>>
 straightenMesh<Mesh<Simplex<1,2>>>( boost::shared_ptr<Mesh<Simplex<1,2>>>, 
                                     WorldComm const& , bool, bool  );
@@ -53,6 +59,9 @@ straightenMesh<Mesh<Simplex<1,2>>>( boost::shared_ptr<Mesh<Simplex<1,2>>>,
 // 2D
 extern template boost::shared_ptr<Mesh<Simplex<2,1>>>
 straightenMesh<Mesh<Simplex<2,1>>>( boost::shared_ptr<Mesh<Simplex<2,1>>>, 
+                                    WorldComm const& , bool, bool  );
+extern template boost::shared_ptr<Mesh<Hypercube<2,1>>>
+straightenMesh<Mesh<Hypercube<2,1>>>( boost::shared_ptr<Mesh<Hypercube<2,1>>>, 
                                     WorldComm const& , bool, bool  );
 extern template boost::shared_ptr<Mesh<Simplex<2,2>>>
 straightenMesh<Mesh<Simplex<2,2>>>( boost::shared_ptr<Mesh<Simplex<2,2>>>, 
