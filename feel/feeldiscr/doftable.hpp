@@ -1070,7 +1070,7 @@ public:
 #endif
                 }
 
-#if !defined( NDEBUG )
+#if 0//!defined( NDEBUG )
                 DVLOG(4) << "global dof = " << itdof->second
                          << " local dof = " << fe_type::nLocalDof*(std::get<1>(itdof->first)) + lc_dof
                          << " element = " << ie
@@ -1085,12 +1085,12 @@ public:
                 {
                     M_gdof.set( itdof->second+shift, sign, is_dof_periodic );
                     DCHECK( itdof->first == gDof ) << "very bad logical error in insertDof";
-
+#if 0
                     DCHECK( lc_dof >= fe_type::nLocalDof*(std::get<1>(itdof->first)) &&
                             lc_dof < fe_type::nLocalDof*( std::get<1>(itdof->first)+1 ) )
                         << "invalid local dof index"
                         <<  lc_dof << ", " << fe_type::nLocalDof*std::get<1>(itdof->first);
-                    
+#endif               
                     for( int c = 0; c < ncdof; ++c )
                     {
                         M_ldof.setLocalDof( fe_type::nLocalDof*c+l_dof );
@@ -1103,7 +1103,7 @@ public:
                     //TODO: M_dof_marker.insert( dof2marker( itdof->second+shift,  marker.value() ) );
 
 
-#if !defined(NDEBUG)
+#if 0// !defined(NDEBUG)
                     M_dof2elt[itdof->second+shift].push_back( boost::make_tuple( ie, lc_dof, lc, std::get<0>(itdof->first) ) );
 #endif
 #if 0
