@@ -1152,12 +1152,13 @@ GeoGMSHTool::geoStr()
     }
 
 
-    auto itList = setPPP.begin();
-    auto itList_end = setPPP.end();
-    for ( ; itList!=itList_end; ++itList )
+    //auto itList = setPPP.begin();
+    //auto itList_end = setPPP.end();
+    //for ( ; itList!=itList_end; ++itList )
+    for ( auto const& predefShape : setPPP )
     {
-        std::string Qshape = boost::get<0>( *itList );
-        std::string Qname = boost::get<1>( *itList );
+        //std::string Qshape = boost::get<0>( *itList );
+        //std::string Qname = boost::get<1>( *itList );
         //std::cout << "\n Qshape="<<Qshape <<" Qname="<<Qname<<std::endl;
         //*M_ostr << "h=" << boost::get<2>( *itList ) << ";\n";
 
@@ -1167,9 +1168,9 @@ GeoGMSHTool::geoStr()
 
         GeoTool::data_geo_ptrtype __data_geoTool( new GeoTool::data_geo_type( boost::make_tuple( this/*__geoTool*/,
                                                                                                  __dataMem,
-                                                                                                 Qshape,
-                                                                                                 Qname,
-                                                                                                 itList->get<2>() ) ) );
+                                                                                                 predefShape.get<0>()/*shape*/,
+                                                                                                 predefShape.get<1>()/*name*/,
+                                                                                                 predefShape.get<2>()/*hsize*/ ) ) );
 
         // generate the code for the geometry
         run( __data_geoTool );
@@ -1197,218 +1198,9 @@ GeoGMSHTool::geoStr()
     if ( this->dim() == 2 )
     {
         this->updateFusionMarkersLineWithInterface( ptIdErased,lineIdErased );
-        //---------------------------------------------------------------------//
-        //---------------------------------------------------------------------//
-        // CASE 2 : without interface
 
-        // define new surface to build from initial surface (with localId of line interface)
-        // newNameSurf -> ( name base surf -> list of local line Id )
-        std::map<std::string,std::map<std::string,std::set<int> > > mapNewSurface;
-        int cptNewSurfaceAdded=0;
-        for ( int k=0; k<this->fusionMarkersLineWithoutInterface().size(); ++k )
-        {
-            std::string name1 = this->fusionMarkersLineWithoutInterface()[k].nameGT1();
-            std::string name2 = this->fusionMarkersLineWithoutInterface()[k].nameGT2();
-            int markerId1 = this->fusionMarkersLineWithoutInterface()[k].marker1();
-            int markerId2 = this->fusionMarkersLineWithoutInterface()[k].marker2();
-            // search if one of surface has already register
-            std::string findName1,findName2;
-            for ( auto const& newSurf : mapNewSurface )
-            {
-                if ( findName1.empty() && newSurf.second.find( name1 ) != newSurf.second.end() )
-                    findName1 = newSurf.first;
-                if ( findName2.empty() && newSurf.second.find( name2 ) != newSurf.second.end() )
-                    findName2 = newSurf.first;
-                if ( !findName1.empty() && !findName2.empty() ) break;
-            }
-            if ( findName1.empty() && findName2.empty() )
-            {
-                std::string newNameRegister = ( boost::format("ConcatenateSurface%1%")%cptNewSurfaceAdded ).str();
-                //mapNewSurface[newNameRegister].insert(name1);
-                mapNewSurface[newNameRegister][name1].insert(markerId1);
-                mapNewSurface[newNameRegister][name2].insert(markerId2);
-                ++cptNewSurfaceAdded;
-            }
-            else if ( !findName1.empty() && findName2.empty() )
-            {
-                //mapNewSurface[findName1].insert(name2);
-                mapNewSurface[findName1][name1].insert(markerId1);
-                mapNewSurface[findName1][name2].insert(markerId2);
-            }
-            else if ( findName1.empty() && !findName2.empty() )
-            {
-                //mapNewSurface[findName2].insert(name1);
-                mapNewSurface[findName2][name1].insert(markerId1);
-                mapNewSurface[findName2][name2].insert(markerId2);
-            }
-            else
-            {
-                CHECK( false ) << "TODO";
-            }
-        } // for ( int k=0; ... )
-
-#if 0
-        for ( auto const& newSurf : mapNewSurface )
-        {
-            std::cout << "[" << newSurf.first << "] -> ";
-            for ( auto surfName : newSurf.second )
-            {
-                std::cout << "[" << surfName.first << " : ";
-                for ( auto surfLocId : surfName.second )
-                    std::cout << " " << surfLocId;
-                std::cout << "]";
-            }
-            std::cout << "\n";
-        }
-#endif
-
-        // create new surfaces
-        for ( auto const& newSurf : mapNewSurface )
-        {
-            // create new surface
-            int idNewSurf = this->M_cptSurface;
-            ++this->M_cptSurface; //update counter
-            std::string surfType = "plane";//surfaceRegisterFront.surfaceType(); // plane, ruled
-            detail::GeoToolSurface myFusionSurface( newSurf.first,invalid_size_type_value,idNewSurf,surfType );
-
-            std::vector<detail::GeoToolLineLoop> newLineLoopMemory;
-            // first pass : compute new line loop (not closed) and identify lineloops and surfaces to erase
-            // add all lineloops and take one surface marker
-            for ( auto surfName : newSurf.second )
-            {
-                int idSurf = this->entitiesStorage().surfaceIdFromName( surfName.first );
-                CHECK( idSurf > 0 ) << "surface not find";
-                auto const& mysurf = this->entitiesStorage().getSurface( idSurf );
-                if ( myFusionSurface.physicalMarker().empty() )
-                    myFusionSurface.setPhysicalMarker( mysurf.physicalMarker() );
-
-                //myFusionSurface.addLineLoop( mysurf.listLineLoop() );
-
-                std::set<int> thelineIdErasedWithFusion;
-                for ( int localIdLineFusion : surfName.second )
-                {
-                    // search global line id define in fusion with surface name and local id
-                    // must be apply with initial object
-                    for ( int thelineloopId : mysurf.listLineLoop() )
-                    {
-                        auto const& thelineloop = this->entitiesStorage().getLineLoop(thelineloopId);
-                        for ( int thelineId : thelineloop.listLine() )
-                        {
-                            int thelineIdPos = ( thelineId > 0 )? thelineId : -thelineId;
-                            auto const& theline = this->entitiesStorage().getLine(thelineIdPos);
-
-                            if ( theline.name() == mysurf.name() && // igore line already modified by a fusion with interface
-                                 theline.localId() == localIdLineFusion )
-                            {
-                                //std::cout << "newSurf.first " << newSurf.first << " surfName.first " << surfName.first << " theline.globalId() "<< theline.globalId() << "\n";
-                                thelineIdErasedWithFusion.insert( theline.globalId() );
-                                lineIdErased.insert( theline.globalId() );
-                            }
-                        }
-                    }
-                }
-#if 0
-                std::cout << "thelineIdErasedWithFusion : ";
-                for ( auto const& hola : thelineIdErasedWithFusion )
-                    std::cout << hola << " ";
-                std::cout << "\n";
-#endif
-                // build new lineloops without interface line ( lineloop are not closed and must be fix after)
-                for ( int thelineloopId : mysurf.listLineLoop() )
-                {
-                    auto const& thelineloop = this->entitiesStorage().getLineLoop(thelineloopId);
-
-                    std::list<int> myNewLinesId;
-                    for ( int thelineId : thelineloop.listLine() )
-                    {
-                        int thelineIdPos = ( thelineId > 0 )? thelineId : -thelineId;
-                        if ( thelineIdErasedWithFusion.find( thelineIdPos ) == thelineIdErasedWithFusion.end() )
-                            myNewLinesId.push_back( thelineId );
-                    }
-
-                    if ( myNewLinesId.size() > 0 )
-                    {
-                        int idNewLineLoop = this->M_cptLineLoop;
-                        ++this->M_cptLineLoop; //update counter
-                        detail::GeoToolLineLoop myNewLineLoop(myFusionSurface.name(), invalid_size_type_value,idNewLineLoop );
-                        myNewLineLoop.setLines( myNewLinesId );
-                        newLineLoopMemory.push_back( myNewLineLoop );
-                        //this->addLineLoop(myNewLineLoop);
-                        //myFusionSurface.addLineLoop( mysurf.listLineLoop() );
-                    }
-                    lineloopIdErased.insert(thelineloop.globalId());
-                }
-                //thelineIdErasedWithFusion
-
-                surfaceIdErased.insert( mysurf.globalId() );
-            } // for ( auto surfName : )
-
-            // remove interfaces lines in line loop
-#if 0
-            std::cout << " newLineLoopMemory : \n";
-            for ( auto const& idMem : newLineLoopMemory )
-                idMem.showMe();
-            //std::cout << idMem.globalId() << " ";
-            //std::cout << "\n";
-#endif
-
-            // reconnect line loops and reconnect points
-            CHECK( newLineLoopMemory.size() > 0 ) << "Not Good";
-            std::vector<bool> isDone( newLineLoopMemory.size(), false );
-            //for ( auto const& thelineloop : newLineLoopMemory )
-            for ( int k=0;k<newLineLoopMemory.size();++k )
-            {
-                if ( !isDone[k] )
-                {
-                    int idNewLineLoop = this->M_cptLineLoop;
-                    ++this->M_cptLineLoop; //update counter
-                    detail::GeoToolLineLoop myNewLineLoop(myFusionSurface.name(), invalid_size_type_value,idNewLineLoop );
-                    myNewLineLoop.setLines( newLineLoopMemory[k].listLine() );
-                    isDone[k]=true;
-
-                    bool lineloopClosed = false;
-                    while ( !lineloopClosed/*this->lineLoopIsClosed(myNewLineLoop)*/ )
-                    {
-                        for ( int k2=0;k2<newLineLoopMemory.size() /*&& !lineloopClosed*//*!this->lineLoopIsClosed(myNewLineLoop)*/;++k2 )
-                        {
-                            if( !isDone[k2] )
-                            {
-                                if ( this->entitiesStorage().lineLoopHasConnection( myNewLineLoop, newLineLoopMemory[k2] ) )
-                                {
-                                    //std::cout << "HasConnection\n";
-                                    this->entitiesStorageAdmin().lineLoopApplyConnection( myNewLineLoop, newLineLoopMemory[k2] );
-                                    isDone[k2]=true;
-
-                                    if ( this->entitiesStorage().lineLoopIsClosed(myNewLineLoop) )
-                                    {
-                                        lineloopClosed=true;
-                                        break;
-                                    }
-                                }
-                            }
-                            //myNewLineLoop.showMe();
-                        }
-                    }
-                    CHECK( this->entitiesStorage().lineLoopIsClosed(myNewLineLoop) ) << "lineloop must be closed here";
-
-                    //std::cout << "finish lineloop\n";
-                    //myNewLineLoop.showMe();
-
-                    this->entitiesStorageAdmin().addLineLoop( myNewLineLoop );
-                    myFusionSurface.addLineLoop( myNewLineLoop.globalId()  );
-                }
-            }
-
-            this->entitiesStorageAdmin().addSurface(myFusionSurface);
-            //myFusionSurface.showMe();
-
-        } // for ( auto const& newSurf : mapNewSurface )
-
-
-        //---------------------------------------------------
-        // update M_surfaceList after fusion without interface
-        this->updateSurfaceListFromFusionMarkersLineWithInterface( mapNewSurface );
-    } // if ( dim == 2 )
+        this->updateFusionMarkersLineWithoutInterface( surfaceIdErased );
+    }
     else if ( this->dim() == 3 )
     {
         this->updateFusionMarkersSurfaceWithInterface( ptIdErased,lineIdErased,surfaceIdErased );
@@ -1508,7 +1300,13 @@ GeoGMSHTool::geoStr()
 
     }
 
-
+    // clear entities erased from operators
+    this->entitiesStorageAdmin().erasePoints(ptIdErased);ptIdErased.clear();
+    this->entitiesStorageAdmin().eraseLines(lineIdErased);lineIdErased.clear();
+    this->entitiesStorageAdmin().eraseLineLoops(lineloopIdErased);lineloopIdErased.clear();
+    this->entitiesStorageAdmin().eraseSurfaces(surfaceIdErased);surfaceIdErased.clear();
+    this->entitiesStorageAdmin().eraseSurfaceLoops(surfaceloopIdErased);surfaceloopIdErased.clear();
+    this->entitiesStorageAdmin().eraseVolumes(volumeIdErased);volumeIdErased.clear();
 
     //--------------------------------------------------------------------------//
     //--------------------------------------------------------------------------//
@@ -1585,7 +1383,6 @@ GeoGMSHTool::geoStr()
 
     for ( auto const& mypt : this->entitiesStorage().points() )
     {
-        //mypt.second.showMe();
         CHECK( mypt.first == mypt.second.globalId() ) << "error";
         std::ostringstream __ostr;
         __ostr << "Point(" << mypt.second.globalId()
@@ -1602,7 +1399,6 @@ GeoGMSHTool::geoStr()
     }
     for ( auto const& myline : this->entitiesStorage().lines() )
     {
-        //myline.second.showMe();
         std::ostringstream __ostr;
         if ( myline.second.lineType() == "line" )
             __ostr << "Line";
@@ -1634,7 +1430,6 @@ GeoGMSHTool::geoStr()
     }
     for ( auto const& mylineloop : this->entitiesStorage().lineloops() )
     {
-        //mylineloop.second.showMe();
         std::ostringstream __ostr;
         __ostr << "Line Loop(" << mylineloop.second.globalId()
                << ") = {" ;
@@ -1651,7 +1446,6 @@ GeoGMSHTool::geoStr()
     }
     for ( auto const& mysurf : this->entitiesStorage().surfaces() )
     {
-        //mysurf.second.showMe();
         std::ostringstream __ostr;
         if ( mysurf.second.surfaceType() == "plane" )
             __ostr << "Plane Surface(";
@@ -1679,7 +1473,6 @@ GeoGMSHTool::geoStr()
     }
     for ( auto const& mysurfloop : this->entitiesStorage().surfaceloops() )
     {
-        //mysurfloop.second.showMe();
         std::ostringstream __ostr;
         __ostr << "Surface Loop(" <<  mysurfloop.first
                << ") = {" ;
@@ -1696,7 +1489,6 @@ GeoGMSHTool::geoStr()
     }
     for ( auto const& myvol : this->entitiesStorage().volumes() )
     {
-        //myvol.second.showMe();
         std::ostringstream __ostr;
         __ostr << "Volume(" <<  myvol.first
                << ") = {" ;
@@ -2000,9 +1792,221 @@ GeoGMSHTool::updateFusionMarkersSurfaceWithInterface( std::set<int> & ptIdErased
 } // updateFusionMarkersSurfaceWithInterface
 
 
+void
+GeoGMSHTool::updateFusionMarkersLineWithoutInterface( std::set<int> & surfaceIdErased )
+{
+    // define new surface to build from initial surface (with localId of line interface)
+    // newNameSurf -> ( name base surf -> list of local line Id )
+    std::map<std::string,std::map<std::string,std::set<int> > > mapNewSurface;
+    int cptNewSurfaceAdded=0;
+    for ( int k=0; k<this->fusionMarkersLineWithoutInterface().size(); ++k )
+    {
+        std::string name1 = this->fusionMarkersLineWithoutInterface()[k].nameGT1();
+        std::string name2 = this->fusionMarkersLineWithoutInterface()[k].nameGT2();
+        int markerId1 = this->fusionMarkersLineWithoutInterface()[k].marker1();
+        int markerId2 = this->fusionMarkersLineWithoutInterface()[k].marker2();
+        // search if one of surface has already register
+        std::string findName1,findName2;
+        for ( auto const& newSurf : mapNewSurface )
+        {
+            if ( findName1.empty() && newSurf.second.find( name1 ) != newSurf.second.end() )
+                findName1 = newSurf.first;
+            if ( findName2.empty() && newSurf.second.find( name2 ) != newSurf.second.end() )
+                findName2 = newSurf.first;
+            if ( !findName1.empty() && !findName2.empty() ) break;
+        }
+        if ( findName1.empty() && findName2.empty() )
+        {
+            std::string newNameRegister = ( boost::format("ConcatenateSurface%1%")%cptNewSurfaceAdded ).str();
+            //mapNewSurface[newNameRegister].insert(name1);
+            mapNewSurface[newNameRegister][name1].insert(markerId1);
+            mapNewSurface[newNameRegister][name2].insert(markerId2);
+            ++cptNewSurfaceAdded;
+        }
+        else if ( !findName1.empty() && findName2.empty() )
+        {
+            //mapNewSurface[findName1].insert(name2);
+            mapNewSurface[findName1][name1].insert(markerId1);
+            mapNewSurface[findName1][name2].insert(markerId2);
+        }
+        else if ( findName1.empty() && !findName2.empty() )
+        {
+            //mapNewSurface[findName2].insert(name1);
+            mapNewSurface[findName2][name1].insert(markerId1);
+            mapNewSurface[findName2][name2].insert(markerId2);
+        }
+        else
+        {
+            CHECK( false ) << "TODO";
+        }
+    } // for ( int k=0; ... )
+
+#if 0
+    for ( auto const& newSurf : mapNewSurface )
+    {
+        std::cout << "[" << newSurf.first << "] -> ";
+        for ( auto surfName : newSurf.second )
+        {
+            std::cout << "[" << surfName.first << " : ";
+            for ( auto surfLocId : surfName.second )
+                std::cout << " " << surfLocId;
+            std::cout << "]";
+        }
+        std::cout << "\n";
+    }
+#endif
+
+    // create fusionned surfaces and identify surfaces to erase
+    for ( auto const& newSurf : mapNewSurface )
+    {
+        // create new surface
+        int idNewSurf = this->M_cptSurface;
+        ++this->M_cptSurface; //update counter
+        std::string surfType = "plane";//surfaceRegisterFront.surfaceType(); // plane, ruled
+        detail::GeoToolSurface myFusionSurface( newSurf.first,invalid_size_type_value,idNewSurf,surfType );
+
+        std::vector<detail::GeoToolLineLoop> newLineLoopMemory;
+        // define physical marker of new surface and identify line erased with fusion
+        for ( auto inputSurfWithLocalIds : newSurf.second )
+        {
+            // get input surface
+            int idInputSurf = this->entitiesStorage().surfaceIdFromName( inputSurfWithLocalIds.first );
+            CHECK( idInputSurf > 0 ) << "surface not find";
+            auto const& myInputSurface = this->entitiesStorage().getSurface( idInputSurf );
+
+            // use physical marker of first surface saw
+            if ( myFusionSurface.physicalMarker().empty() )
+                myFusionSurface.setPhysicalMarker( myInputSurface.physicalMarker() );
+
+            // identify line erased with fusion
+            std::set<int> thelineIdErasedWithFusion;
+            for ( int localIdLineFusion : inputSurfWithLocalIds.second )
+            {
+                // search global line id define in fusion with surface name and local id (must be apply with initial object)
+                for ( int thelineloopId : myInputSurface.listLineLoop() )
+                {
+                    auto const& thelineloop = this->entitiesStorage().getLineLoop(thelineloopId);
+                    for ( int thelineId : thelineloop.listLine() )
+                    {
+                        int thelineIdPos = ( thelineId > 0 )? thelineId : -thelineId;
+                        auto const& theline = this->entitiesStorage().getLine(thelineIdPos);
+
+                        if ( theline.name() == myInputSurface.name() && // igore line already modified by a fusion with interface
+                             theline.localId() == localIdLineFusion )
+                        {
+                            thelineIdErasedWithFusion.insert( theline.globalId() );
+                            //lineIdErased.insert( theline.globalId() );
+                        }
+                    }
+                }
+            }
+#if 0
+            std::cout << "thelineIdErasedWithFusion : ";
+            for ( auto const& hola : thelineIdErasedWithFusion )
+                std::cout << hola << " ";
+            std::cout << "\n";
+#endif
+            // build new lineloops without interface line ( lineloop are not closed and must be fix after)
+            for ( int thelineloopId : myInputSurface.listLineLoop() )
+            {
+                auto const& thelineloop = this->entitiesStorage().getLineLoop(thelineloopId);
+
+                // copy lineloop of input surface without erased line with fusion
+                std::list<int> myNewLinesId;
+                for ( int thelineId : thelineloop.listLine() )
+                {
+                    int thelineIdPos = ( thelineId > 0 )? thelineId : -thelineId;
+                    if ( thelineIdErasedWithFusion.find( thelineIdPos ) == thelineIdErasedWithFusion.end() )
+                        myNewLinesId.push_back( thelineId );
+                }
+
+                if ( myNewLinesId.size() > 0 )
+                {
+                    int idNewLineLoop = this->M_cptLineLoop;
+                    ++this->M_cptLineLoop; //update counter
+                    detail::GeoToolLineLoop myNewLineLoop(myFusionSurface.name(), invalid_size_type_value,idNewLineLoop );
+                    myNewLineLoop.setLines( myNewLinesId );
+                    // store partial lineloop
+                    newLineLoopMemory.push_back( myNewLineLoop );
+                    //this->addLineLoop(myNewLineLoop);
+                    //myFusionSurface.addLineLoop( myInputSurface.listLineLoop() );
+                }
+                //lineloopIdErased.insert(thelineloop.globalId());
+            }
+            //thelineIdErasedWithFusion
+            // this input surface must be erased
+            surfaceIdErased.insert( myInputSurface.globalId() );
+        } // for ( auto inputSurfWithLocalIds : )
+
+        // remove interfaces lines in line loop
+#if 0
+        std::cout << " newLineLoopMemory : \n";
+        for ( auto const& idMem : newLineLoopMemory )
+            idMem.showMe();
+        //std::cout << idMem.globalId() << " ";
+        //std::cout << "\n";
+#endif
+
+        // reconnect line loops and reconnect points
+        CHECK( newLineLoopMemory.size() > 0 ) << "Not Good";
+        std::vector<bool> isDone( newLineLoopMemory.size(), false );
+        //for ( auto const& thelineloop : newLineLoopMemory )
+        for ( int k=0;k<newLineLoopMemory.size();++k )
+        {
+            if ( !isDone[k] )
+            {
+                int idNewLineLoop = this->M_cptLineLoop;
+                ++this->M_cptLineLoop; //update counter
+                detail::GeoToolLineLoop myNewLineLoop(myFusionSurface.name(), invalid_size_type_value,idNewLineLoop );
+                myNewLineLoop.setLines( newLineLoopMemory[k].listLine() );
+                isDone[k]=true;
+
+                bool lineloopClosed = false;
+                while ( !lineloopClosed/*this->lineLoopIsClosed(myNewLineLoop)*/ )
+                {
+                    for ( int k2=0;k2<newLineLoopMemory.size() /*&& !lineloopClosed*//*!this->lineLoopIsClosed(myNewLineLoop)*/;++k2 )
+                    {
+                        if( !isDone[k2] )
+                        {
+                            if ( this->entitiesStorage().lineLoopHasConnection( myNewLineLoop, newLineLoopMemory[k2] ) )
+                            {
+                                //std::cout << "HasConnection\n";
+                                this->entitiesStorageAdmin().lineLoopApplyConnection( myNewLineLoop, newLineLoopMemory[k2] );
+                                isDone[k2]=true;
+
+                                if ( this->entitiesStorage().lineLoopIsClosed(myNewLineLoop) )
+                                {
+                                    lineloopClosed=true;
+                                    break;
+                                }
+                            }
+                        }
+                        //myNewLineLoop.showMe();
+                    }
+                }
+                CHECK( this->entitiesStorage().lineLoopIsClosed(myNewLineLoop) ) << "lineloop must be closed here";
+
+                //std::cout << "finish lineloop\n";
+                //myNewLineLoop.showMe();
+
+                this->entitiesStorageAdmin().addLineLoop( myNewLineLoop );
+                myFusionSurface.addLineLoop( myNewLineLoop.globalId()  );
+            }
+        }
+
+        this->entitiesStorageAdmin().addSurface(myFusionSurface);
+        //myFusionSurface.showMe();
+
+    } // for ( auto const& newSurf : mapNewSurface )
+
+    // update M_surfaceList after fusion without interface
+    this->updateSurfaceListFromFusionMarkersLineWithoutInterface( mapNewSurface );
+
+}
+
 
 void
-GeoGMSHTool::updateSurfaceListFromFusionMarkersLineWithInterface( std::map<std::string,std::map<std::string,std::set<int> > > const& mapNewSurface )
+GeoGMSHTool::updateSurfaceListFromFusionMarkersLineWithoutInterface( std::map<std::string,std::map<std::string,std::set<int> > > const& mapNewSurface )
 {
     std::map< std::pair<std::string,int>,std::pair<std::string,int> > surfaceListModified;
     std::map< std::pair<std::string,int>,std::pair<std::string,int> > surfaceListErased;

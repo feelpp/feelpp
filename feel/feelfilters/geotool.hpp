@@ -1494,9 +1494,10 @@ public :
 
 private :
     void updateFusionMarkersLineWithInterface(std::set<int> & ptIdErased, std::set<int> & lineIdErased);
+    void updateFusionMarkersLineWithoutInterface(std::set<int> & surfaceIdErased);
     void updateFusionMarkersSurfaceWithInterface(std::set<int> & ptIdErased, std::set<int> & lineIdErased, std::set<int> & surfaceIdErased);
 
-    void updateSurfaceListFromFusionMarkersLineWithInterface( std::map<std::string,std::map<std::string,std::set<int> > > const& mapNewSurface );
+    void updateSurfaceListFromFusionMarkersLineWithoutInterface( std::map<std::string,std::map<std::string,std::set<int> > > const& mapNewSurface );
 private :
 
     detail::GeoToolEntitiesStorage M_entitiesStorage;
