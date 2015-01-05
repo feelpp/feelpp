@@ -267,6 +267,7 @@ public:
     //@{
 
     value_type operator() ( const size_type i ) const;
+    value_type& operator() ( const size_type i );
 
 
     /**
@@ -730,6 +731,7 @@ public:
                const bool fast=false );
 
     value_type operator() ( const size_type i ) const;
+    value_type& operator() ( const size_type i );
 
     void set( size_type i, const value_type& value );
 
