@@ -155,13 +155,18 @@ void run( bool useSMD )
         std::cout << "energyFacesStandart " << energyFacesStandart << " [2.4]\n";
 
     //-----------------------------------------------------------//
-
     auto rFacesNonStandartA = stencilRange<0,0>( boundaryfaces(mesh2) );
+#if 0
     //auto rFacesNonStandartAA = stencilRange<0,0>( markedfaces(mesh1,"cylinder") ); // Bug with this!!
     auto rFacesNonStandartAA = stencilRange<0,0>(markedelements(mesh1,"LocInterior"));
     auto graphFacesNonStandartA = ( ctxRelationLoc )?
         stencil(_test=Xh1,_trial=Xh2,_range=stencilRangeMap(rFacesNonStandartA) )->graph() :
         stencil(_test=Xh1,_trial=Xh2,_range=stencilRangeMap(rFacesNonStandartAA) )->graph() ;
+#else
+    auto graphFacesNonStandartA = ( ctxRelationLoc )?
+        stencil(_test=Xh1,_trial=Xh2,_range=stencilRangeMap(rFacesNonStandartA) )->graph() :
+        stencil(_test=Xh2,_trial=Xh1,_range=stencilRangeMap(rFacesNonStandartA) )->graph()->transpose();
+#endif
     auto matFacesNonStandartA = backend()->newMatrix(0,0,0,0,graphFacesNonStandartA);
     auto bfFacesNonStandartA = form2(_test=Xh1,_trial=Xh2,_matrix=matFacesNonStandartA);
     bfFacesNonStandartA = integrate(_range=boundaryfaces(mesh2),
