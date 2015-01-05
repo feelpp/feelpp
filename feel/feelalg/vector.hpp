@@ -79,7 +79,7 @@ public:
              const size_type n_local,
              WorldComm const& _worldComm = Environment::worldComm() );
 
-  Vector ( Vector const& v );
+    Vector ( Vector const& v );
 
     /**
      * Destructor, deallocates memory. Made virtual to allow
@@ -338,6 +338,8 @@ public:
      * Access components, returns \p U(i).
      */
     virtual T operator() ( const size_type i ) const = 0;
+
+    virtual T& operator() ( const size_type i ) = 0;
 
     /**
      * Addition operator.

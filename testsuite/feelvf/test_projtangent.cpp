@@ -35,16 +35,7 @@
 #include <feel/feelfilters/unitcircle.hpp>
 #include <feel/feelfilters/unitsquare.hpp>
 #include <feel/feelfilters/unitcube.hpp>
-#include <feel/feelvf/form.hpp>
-#include <feel/feelvf/operators.hpp>
-#include <feel/feelvf/operations.hpp>
-#include <feel/feelvf/ginac.hpp>
-#include <feel/feelvf/norm2.hpp>
-#include <feel/feelvf/on.hpp>
-#include <feel/feelvf/unary.hpp>
-#include <feel/feelvf/trans.hpp>
-#include <feel/feelvf/matvec.hpp>
-#include <feel/feelvf/ones.hpp>
+#include <feel/feelvf/vf.hpp>
 
 /** use Feel namespace */
 using namespace Feel;

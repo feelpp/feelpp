@@ -44,6 +44,8 @@ using boost::unit_test::test_suite;
 
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feeldiscr/mesh.hpp>
+#include <feel/feelfilters/straightenmesh.hpp>
+#include <feel/feelfilters/straightenmesh_impl.hpp>
 #include <feel/feelfilters/creategmshmesh.hpp>
 #include <feel/feelfilters/savegmshmesh.hpp>
 #include <feel/feelfilters/domain.hpp>

@@ -75,3 +75,9 @@
 [submodule "contrib/hpddm"]
 	path = contrib/hpddm
 	url = https://github.com/hpddm/hpddm.git
+[submodule "projects/tr"]
+	path = projects/tr
+	url = https://github.com/feelpp/tr.git
+[submodule "contrib/cereal"]
+	path = contrib/cereal
+	url = https://github.com/USCiLab/cereal
