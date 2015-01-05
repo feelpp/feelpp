@@ -1,47 +1,48 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
-	 This file is part of the Feel library
+ This file is part of the Feel library
 
-	 Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-Date: 2008-02-07
+ Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ Date: 2008-02-07
 
-Copyright (C) 2008-2012 Universite Joseph Fourier (Grenoble I)
+ Copyright (C) 2008-2012 Universite Joseph Fourier (Grenoble I)
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 /**
-	\file dist2walls.cpp
-	\author Vincent Doyeux <vincent.doyeux@ujf-grenoble.fr>
-	\date 2014-01-21
-	*/
+ \file dist2walls.cpp
+ \author Vincent Doyeux <vincent.doyeux@ujf-grenoble.fr>
+ \date 2014-01-21
+ */
 
 
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feeldiscr/pch.hpp>
+#include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/pdh.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelpde/reinit_fms.hpp>
 #include <feel/feeldiscr/operatorinterpolation.hpp>
 #include <feel/feeldiscr/projector.hpp>
+#include <feel/feelvf/vf.hpp>
 
 #define DIM 2
 
 using namespace Feel;
-using namespace Feel::vf;
 
 inline
-	Feel::po::options_description
+Feel::po::options_description
 makeOptions()
 {
 	Feel::po::options_description stokesoptions( "Normal options" );
@@ -91,7 +92,7 @@ namespace Feel
 
 	normal::normal()
 		: super(),
-		M_proj_backend(backend_type::build(this->vm()))
+		M_proj_backend(backend_type::build("petsc"))
 	{
 	}
 
@@ -143,7 +144,7 @@ namespace Feel
 				this->vm()["epsilon"].template as<double>(),
 				this->vm()["gamma"].template as<double>());
 		auto n_phi_p   = vf::project(_space=XhV, _range=boundaryfaces(mesh), _expr=trans(gradv(phi_P2))/sqrt( gradv(phi_P2) * trans(gradv(phi_P2))));
-		auto n_phi_s = l2pv->project(_space=XhV, _range=boundaryfaces(mesh), _expr=(gradv(phi_P2)));
+		auto n_phi_s = l2pv->project(_space=XhV, _range=boundaryfaces(mesh), _expr=trans(gradv(phi_P2)));
 		n_phi_s = vf::project(XhV, boundaryfaces(mesh),idv(n_phi_s)/sqrt(idv(n_phi_s.comp(X))*idv(n_phi_s.comp(X))+idv(n_phi_s.comp(Y))*idv(n_phi_s.comp(Y))));
 
 		auto Nmesh = vf::project(XhV, boundaryfaces(mesh),-N());
