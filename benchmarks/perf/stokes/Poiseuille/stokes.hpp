@@ -221,7 +221,7 @@ template<int POrder, int GeoOrder>
 Stokes_Dirichlet_Dirichlet<POrder,GeoOrder>::Stokes_Dirichlet_Dirichlet( )
     :
     super( ),
-    M_backend( backend_type::build( this->vm() ) ),
+    M_backend( backend_type::build( soption("backend") ) ),
     meshSize( this->vm()["hsize"].template as<double>() ),
     mu( this->vm()["mu"].template as<value_type>() ),
     penalbc( this->vm()["bccoeff"].template as<value_type>() ),

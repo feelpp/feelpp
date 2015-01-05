@@ -190,7 +190,7 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
     //# marker1 #
     double local_domain_area;
 
-    form2( Xh,Xh,M,_init=true );
+    form2( Xh,Xh,_matrix=M,_init=true );
 #if 1
     int n = tbb::task_scheduler_init::default_num_threads();
     double initt;
