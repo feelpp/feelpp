@@ -123,7 +123,7 @@ public:
     Darcy()
         :
         super(),
-        M_backend( backend_type::build( this->vm() ) ),
+        M_backend( backend_type::build( soption("backend") ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         exporter( Exporter<mesh_type>::New( this->vm() ) ),
         M_k1( this->vm()["k1"].template as<double>() ),
@@ -356,11 +356,11 @@ Darcy<Dim, OrderU, OrderP>::convergence(int nb_refine)
             // L2 projection
             auto l2_v = opProjection( _domainSpace=Xhvec, _imageSpace=Xhvec, _type=L2 ); //l2 vectorial proj
             auto l2_s = opProjection( _domainSpace=Xh, _imageSpace=Xh, _type=L2 ); //l2 scalar proj
-            auto E_l2 = l2_v->project( _expr= trans(u_exact) );
+            auto E_l2 = l2_v->project( _expr= u_exact );
             auto l2error_L2 = normL2( _range=elements(mesh), _expr=divv(E_l2) - f );
 
             auto hdiv = opProjection( _domainSpace=RTh, _imageSpace=RTh, _type=HDIV ); //hdiv proj (RT elts)
-            auto E_hdiv = hdiv->project( _expr= trans(u_exact), _div_expr=f );
+            auto E_hdiv = hdiv->project( _expr= (u_exact), _div_expr=f );
             auto l2error_HDIV = normL2( _range=elements(mesh), _expr=divv(E_hdiv) - f );
 
             if( proc_rank == 0 )
