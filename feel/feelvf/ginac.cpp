@@ -189,7 +189,7 @@ parse( std::string const& str, std::string const& seps, std::vector<symbol> cons
                      } );
 
     for ( auto it=table.begin(),en=table.end() ; it!=en ; ++it )
-        LOG(INFO) <<" - table : "  << it->first << it->second;
+        LOG(INFO) <<" - table : "  << it->first << "\t" << it->second;
 
 
     LOG(INFO) <<"Defining parser";

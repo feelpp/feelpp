@@ -334,7 +334,8 @@ public:
         //auto mat = this->newMatrix( trial->map(), test->map(), properties, false );
         auto mat = this->newMatrix( trial->dofOnOff(), test->dofOn(), properties, false );
 
-        if ( this->type() == BackendType::BACKEND_EIGEN_DENSE )
+        if ( this->type() == BackendType::BACKEND_EIGEN_DENSE ||
+             this->type() == BackendType::BACKEND_EIGEN )
         {
             mat->init( test->nDof(), trial->nDof(),
                        test->nLocalDofWithoutGhost(), trial->nLocalDofWithoutGhost() );
@@ -895,14 +896,14 @@ public:
     /**
      * \return \f$ y = A * x \f$
      */
-    virtual void prod( sparse_matrix_type const& A, vector_type const& x, vector_type& y ) const = 0;
+    virtual void prod( sparse_matrix_type const& A, vector_type const& x, vector_type& y, bool transpose = false ) const = 0;
 
     /**
      * \return \f$ y = A * x \f$
      */
-    void prod( sparse_matrix_ptrtype const& A, vector_ptrtype const& x, vector_ptrtype& y ) const
+    void prod( sparse_matrix_ptrtype const& A, vector_ptrtype const& x, vector_ptrtype& y, bool transpose = false ) const
     {
-        this->prod( *A, *x, *y );
+        this->prod( *A, *x, *y, transpose );
     }
 
     /**
@@ -1335,6 +1336,10 @@ BOOST_PARAMETER_FUNCTION(
     return Feel::detail::backend_impl<double>( name, kind, rebuild, worldcomm);
 }
 
+
+/*
+ * Complex backend
+ */
 BOOST_PARAMETER_FUNCTION(
                          ( c_backend_ptrtype ), // return type
                          cbackend,           // 2. function name

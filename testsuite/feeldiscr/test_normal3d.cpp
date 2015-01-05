@@ -4,6 +4,7 @@
 
 #include <feel/options.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feelfilters/straightenmesh.hpp>
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelvf/vf.hpp>
@@ -77,7 +78,6 @@ runtest( Application_ptrtype test_app )
     bool exportResults = test_app->vm()["exporter.export"].as<bool>();
     int straighten = test_app->vm()["straighten"].as<int>();
     GeomapStrategyType geomap = ( GeomapStrategyType )test_app->vm()["geomap"].as<int>();
-
     GeoTool::Node Centre( 0,0,0 );
     GeoTool::Node Rayon( 1 );
     GeoTool::Node Dir( 1,0,0 );
@@ -95,7 +95,7 @@ runtest( Application_ptrtype test_app )
     auto mesh=mesh_;
 
     if ( straighten )
-        mesh = straightenMesh( _mesh=mesh_, _save=1 );
+        mesh = straightenMesh( mesh_, Environment::worldComm(), false, true );
 
     //-----------------------------------------------------------//
 
