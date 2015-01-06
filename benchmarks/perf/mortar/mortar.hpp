@@ -48,6 +48,7 @@
 #include <feel/feelfilters/geotool.hpp>
 #include <feel/feelpoly/lagrange.hpp>
 #include <feel/feelalg/matrixblock.hpp>
+#include <feel/feelalg/vectorblock.hpp>
 #include <boost/assign/list_of.hpp>
 #include <boost/assign/std/vector.hpp>
 #include <boost/assign/std/vector.hpp>
