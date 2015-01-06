@@ -68,6 +68,7 @@ branches:
   - develop
   - master
   - feature/explicit
+  - feature/faster
   - merging-with-explicit
 cache:
 - apt

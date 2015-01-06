@@ -33,6 +33,7 @@
 #include <feel/feelpde/reinit_fms.hpp>
 #include <feel/feeldiscr/operatorinterpolation.hpp>
 #include <feel/feeldiscr/operatorlagrangep1.hpp>
+#include <feel/feelvf/vf.hpp>
 
 using namespace Feel;
 using namespace Feel::vf;

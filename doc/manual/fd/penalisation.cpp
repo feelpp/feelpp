@@ -62,7 +62,7 @@ Penalisation<Dim>::Penalisation():
     yp=this->vm()["y0"].template as<double>();
     zp=this->vm()["z0"].template as<double>();
 
-    backend= backend_type::build( this->vm(), "stokes_backend" );
+    M_backend= backend(_name="stokes_backend" );
 
     U=Xh->elementPtr();
     LOG(INFO)<<"U.size = "<<U->size()<<"\n";
@@ -94,13 +94,13 @@ void Penalisation<Dim>::initStokes()
     LOG(INFO)<<"Wall = "<<integrate( markedfaces( mesh, "Wall" ), vf::cst( 1. ) ).evaluate()( 0,0 )<<"\n";
     LOG(INFO)<<"H2 = "<<integrate( markedfaces( mesh, "Outflowtop" ), vf::cst( 1. ) ).evaluate()( 0,0 )<<"\n";
 
-    D=backend->newMatrix( Xh, Xh );
-    form2( Xh, Xh, D, _init=true );
+    D=M_backend->newMatrix( _test=Xh, _trial=Xh );
+    auto a = form2( _test=Xh, _trial=Xh, _matrix=D );
 
     local_chrono.restart();
 
     //try not use F
-    F = backend->newVector( Xh );
+    F = M_backend->newVector( Xh );
 
     form1( Xh, F, _init=true ) =
         integrate( elements( mesh ), trans( vf::one()-vf::one() ) * id( v ) ) ;
@@ -112,7 +112,7 @@ void Penalisation<Dim>::initStokes()
 
     local_chrono.restart();
 
-    C = backend->newMatrix( Xh, Xh );
+    C = M_backend->newMatrix( Xh, Xh );
 
     //    def(u):def(v) = trace ( def(u)* trans( def(v) ) )
     form2( Xh, Xh, C, _init=true )= integrate( elements( mesh ),
@@ -146,7 +146,7 @@ void Penalisation<Dim>::stokes()
     auto def  = sym( grad( v ) );
 
     local_chrono.restart();
-    D=backend->newMatrix( Xh, Xh );
+    D=M_backend->newMatrix( Xh, Xh );
     form2( Xh, Xh, D )= integrate( marked3elements( mesh,1 ),
                                    idv( carac ) * nu * trace( def*trans( deft ) ) / epsilon );
     LOG(INFO)<<"fin assemblage : "<<local_chrono.elapsed()<<" s"<<"\n";
@@ -159,7 +159,7 @@ void Penalisation<Dim>::stokes()
 
     addCL();
 
-    Feel::backend(_rebuild=true)->solve( _matrix=D,_solution=U,_rhs=F );
+    Feel::backend(_name="stokes_backend",_rebuild=true)->solve( _matrix=D,_solution=U,_rhs=F );
 
     LOG(INFO)<<"fin resolution : "<<local_chrono.elapsed()<<" s"<<"\n";
 
