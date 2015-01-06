@@ -285,7 +285,7 @@ Stokes_Kovaznay<POrder,GeoOrder>::init()
     std::cout << "number of elements of 2D curved: " << mesh->numElements() << "\n";
     LOG(INFO) << "number of dof in Wh: " << Wh->nDof() << "\n";
     std::cout << "number of dof in Wh: " << Wh->nDof() << "\n";
-    mesh=straightenMesh(_mesh=mesh);
+    mesh=straightenMesh( mesh, Environment::worldComm());
 
 #elif defined BOTTOM2
     //********************** Rectangle ***************************************

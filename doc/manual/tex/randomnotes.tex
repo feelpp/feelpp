@@ -237,7 +237,7 @@ See {\tiny\texttt{http://www.mcs.anl.gov/petsc/petsc-as/snapshots/petsc-current/
 \subsubsection[containsverbatim]{Example: Laplacian}
   \begin{lstlisting}
 // bilinear form (left hand side)
-form2( Xh, Xh, D ) +=
+form2( Xh, Xh, _matrix=D ) +=
 integrate( boundaryfaces(mesh), im_type(),
            -(gradt(u)*N())*id(v) // integration by part
            -(grad(v)*N())*idt(u) // adjoint consistency
@@ -302,7 +302,7 @@ integrate( boundaryfaces(mesh), im_type(),
 \subsubsection[containsverbatim]{Example: Convection-Diffusion}
   \begin{lstlisting}
 // bilinear form (left hand side)
-form2( Xh, Xh, D ) +=
+form2( Xh, Xh, _matrix=D ) +=
 integrate( boundaryfaces(mesh), im_type(),
            // integration by part
            -(gradt(u)*N())*id(v) + (idt(u)*trans(idv(c))*N())*id(v)
@@ -398,7 +398,7 @@ integrate( boundaryfaces(mesh), im_type(),
     integrate( boundaryfaces(mesh), im,
                trans(g)*(-SigmaN+gamma*id(v)/hFace() ) );
     // bilinear form (left hand side)
-    form2( Xh, Xh, D )+=
+    form2( Xh, Xh, _matrix=D )+=
     integrate( boundaryfaces(mesh), im,
                -trans(SigmaNt)*id(v)
                -trans(SigmaN)*idt(u)
@@ -459,7 +459,7 @@ called \emph{Stabilisation Methods}, here some some examples:
                         vf::pow(hFace(),2.0));
 
     // assemble the stabilisation operator
-    form2( Xh, Xh, M ) +=
+    form2( Xh, Xh, _matrix=M ) +=
      integrate(
         // internal faces of the mesh
         internalfaces(Xh->mesh()),

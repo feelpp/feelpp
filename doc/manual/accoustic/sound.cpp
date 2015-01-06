@@ -154,10 +154,10 @@ Sound<Dim, Order>::run()
                             % this->about().appName()
                             % entity_type::name()
                             % Order
-                            % this->vm()["hsize"].template as<double>()
+                            % doption("hsize")
                           );
     //! backend
-    auto backend = backend_type::build( this->vm() );
+    auto backend = backend_type::build( soption("backend") );
 
     //! eigen solver
     auto eigen = SolverEigen<value_type>::build( this->vm() );
@@ -205,7 +205,7 @@ Sound<Dim, Order>::run()
      */
     auto D = backend->newMatrix( Xh, Xh );
 
-    double kc2 = this->vm()["kc2"].template as<double>();
+    double kc2 = doption("kc2");
 
     form2( _test=Xh, _trial=Xh, _matrix=D,_init=true ) = integrate( _range=elements( mesh ),  _expr=( kc2*idt( u )*id( v )-gradt( u )*trans( grad( v ) ) ) );
     D->close();
@@ -220,7 +220,7 @@ Sound<Dim, Order>::run()
     t.restart();
 
     // eigen modes
-    double sigma = this->vm()["sigma"].template as<double>();
+    double sigma = doption("sigma");
     auto S = backend->newMatrix( Xh, Xh );
     form2( _test=Xh, _trial=Xh, _matrix=S, _init=true ) = integrate( _range=elements( mesh ),  _expr=gradt( u )*trans( grad( v ) ) );
 
@@ -233,12 +233,10 @@ Sound<Dim, Order>::run()
     t.restart();
 
 
-    int maxit = this->vm()["solvereigen.maxiter"].template as<int>();
-    int tol = this->vm()["solvereigen.tol"].template as<double>();
-
-    int nev = this->vm()["solvereigen.nev"].template as<int>();
-
-    int ncv = this->vm()["solvereigen.ncv"].template as<int>();;
+    int maxit = ioption("solvereigen.maxiter");
+    int tol =   doption("solvereigen.tol"    );
+    int nev =   ioption("solvereigen.nev"    );
+    int ncv =   ioption("solvereigen.ncv"    );
 
     double eigen_real, eigen_imag;
 
@@ -256,7 +254,7 @@ Sound<Dim, Order>::run()
               _ncv=ncv,
               _maxit=maxit,
               _tolerance=tol,
-              _spectrum=( PositionOfSpectrum )this->vm()["solvereigen.position"].template as<int>() );
+              _spectrum=( PositionOfSpectrum )ioption("solvereigen.position") );
 
     element_type mode( Xh, "mode" );
 
