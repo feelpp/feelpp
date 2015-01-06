@@ -114,7 +114,7 @@ public:
     ddmethod()
         :
         super(),
-        M_backend( backend_type::build( this->vm() ) ),
+        M_backend( backend_type::build( soption("backend")) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() ),
         M_firstExporter( export_type::New( this->vm(),
@@ -240,7 +240,7 @@ ddmethod<Dim>::localProblem( element_type& u,
 
     BOOST_FOREACH( int marker, dirichletFlags )
     {
-        form2( Xh, Xh, Afull ) +=
+        form2( Xh, Xh, _matrix=Afull ) +=
             on( markedfaces( mesh, marker ) ,	u, Ffull, gD );
     }
 
@@ -249,7 +249,7 @@ ddmethod<Dim>::localProblem( element_type& u,
 
 
     timers["solver"].first.restart();
-    backend_type::build()->solve( _matrix=Afull, _solution=u, _rhs=Ffull, _reuse_prec=true );
+    backend_type::build(soption("backend"))->solve( _matrix=Afull, _solution=u, _rhs=Ffull, _reuse_prec=true );
     timers["solver"].second = timers["solver"].first.elapsed();
 
     std::cout << "[timer] update_F: " << timers["update_F"].second << "\n";

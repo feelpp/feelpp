@@ -136,13 +136,13 @@ namespace Feel
 		m_projectorType["HCURL"] = HCURL;
 		m_projectorType["LIFT"] = LIFT;
 		m_projectorType["CIP"] = CIP;
-		CHECK(m_projectorType.count(this->vm()["proj_type"].template as<std::string>())) << this->vm()["proj_type"].template as<std::string>() <<" is not in the list of possible projector methods\n";
+		CHECK(m_projectorType.count(soption("proj_type"))) << soption("proj_type") <<" is not in the list of possible projector methods\n";
 		auto l2pv = projector( XhV ,
 				XhV,
 				M_proj_backend,
-				m_projectorType.find(this->vm()["proj_type"].template as<std::string>())->second,
-				this->vm()["epsilon"].template as<double>(),
-				this->vm()["gamma"].template as<double>());
+				m_projectorType.find(soption("proj_type"))->second,
+				doption("epsilon"),
+				doption("gamma"));
 		auto n_phi_p   = vf::project(_space=XhV, _range=boundaryfaces(mesh), _expr=trans(gradv(phi_P2))/sqrt( gradv(phi_P2) * trans(gradv(phi_P2))));
 		auto n_phi_s = l2pv->project(_space=XhV, _range=boundaryfaces(mesh), _expr=trans(gradv(phi_P2)));
 		n_phi_s = vf::project(XhV, boundaryfaces(mesh),idv(n_phi_s)/sqrt(idv(n_phi_s.comp(X))*idv(n_phi_s.comp(X))+idv(n_phi_s.comp(Y))*idv(n_phi_s.comp(Y))));

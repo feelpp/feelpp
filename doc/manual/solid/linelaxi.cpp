@@ -105,9 +105,9 @@ public:
     LinElAxi()
         :
         super(),
-        M_backend( backend_type::build( this->vm() ) ),
-        meshSize( this->vm()["hsize"].template as<double>() ),
-        bcCoeff( this->vm()["bccoeff"].template as<double>() ),
+        M_backend( backend_type::build( soption("backend") ) ),
+        meshSize( doption("hsize"  ) ),
+        bcCoeff(  doption("bccoeff") ),
         exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
     {
         LOG(INFO) << "[LinElAxi] hsize = " << meshSize << "\n";
@@ -156,7 +156,7 @@ LinElAxi<Order>::run()
                             % this->about().appName()
                             % entity_type::name()
                             % Order
-                            % this->vm()["hsize"].template as<double>()
+                            % doption("hsize")
                           );
     /*
      * First we create the mesh
@@ -206,8 +206,8 @@ LinElAxi<Order>::run()
           << "mu     = " << mu << "\n"
           << "gravity= " << gravity << "\n";
 
-    auto gr = this->vm()["gr"].template as<double>();
-    auto gz = this->vm()["gz"].template as<double>();
+    auto gr = doption("gr");
+    auto gz = doption("gz");
     /*
      * Construction of the constant right hand side
      *
@@ -240,7 +240,8 @@ LinElAxi<Order>::run()
 
 
     form2( _test=Xh, _trial=Xh, _matrix=lhs ) +=
-        on( _range=markedfaces( mesh,"Neumann" ), _element=uz, _rhs=rhs, _expr=cst( 0. ) )+
+        on( _range=markedfaces( mesh,"Neumann" ), _element=uz, _rhs=rhs, _expr=cst( 0. ) );
+    form2( _test=Xh, _trial=Xh, _matrix=lhs ) +=
         on( _range=markedfaces( mesh,"Neumann" ), _element=ur, _rhs=rhs, _expr=cst( 0. ) );
     M_backend->solve( _matrix=lhs, _solution=U, _rhs=rhs );
 

@@ -182,10 +182,10 @@ public:
     Advection()
         :
         super(),
-        backend( backend_type::build( this->vm() ) ),
-        meshSize( this->vm()["hsize"].template as<double>() ),
-        bcCoeff( this->vm()["bccoeff"].template as<double>() ),
-        geomap( ( GeomapStrategyType )this->vm()["geomap"].template as<int>() ),
+        backend( backend_type::build( soption("backend") ) ),
+        meshSize( doption("hsize") ),
+        bcCoeff(  doption("bccoeff") ),
+        geomap( ( GeomapStrategyType )ioption("geomap") ),
         exporter( export_type::New( this->vm(), "advection" ) )
     {
         LOG(INFO) << "[Advection] hsize = " << meshSize << "\n";
@@ -239,13 +239,12 @@ Advection<Dim, Order, Cont, Entity>::run()
                             % meshSize
                           );
     value_type penalisation = this->vm()["penal"].template as<value_type>();
-    int bctype = this->vm()["bctype"].template as<int>();
-
-    double beta_x = this->vm()["bx"].template as<value_type>();
-    double beta_y = this->vm()["by"].template as<value_type>();
-    value_type mu = this->vm()["mu"].template as<value_type>();
+    int bctype =       this->vm()["bctype"].template as<int>();
+    double beta_x =    this->vm()["bx"].template as<value_type>();
+    double beta_y =    this->vm()["by"].template as<value_type>();
+    value_type mu =    this->vm()["mu"].template as<value_type>();
     value_type stiff = this->vm()["stiff"].template as<value_type>();
-    bool ring = this->vm()["ring"].template as<bool>();
+    bool ring =        this->vm()["ring"].template as<bool>();
 
     /*
      * First we create the mesh
@@ -378,7 +377,7 @@ Advection<Dim, Order, Cont, Entity>::exportResults( f1_type& U,
     uEx = L2Proj->project( E );
     uC = L2Proj->project( vf::idv( U ) );
     auto L2Projv = projector( Xvch, Xvch );
-    betaC = L2Projv->project( trans( beta ) );
+    betaC = L2Projv->project( ( beta ) );
 
     exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
     exporter->step( 0 )->add( "u", U );
