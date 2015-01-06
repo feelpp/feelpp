@@ -131,11 +131,11 @@ localProblem(element_type& u, Expr expr)
     A->close();
 
  // Apply the dirichlet boundary conditions
-    form2( Xh, Xh, A ) +=
+    form2( Xh, Xh, _matrix=A ) +=
            on( markedfaces(mesh, "Dirichlet") ,u,F,g);
 
  // Apply the dirichlet interface conditions
-    form2( Xh, Xh, A ) +=
+    form2( Xh, Xh, _matrix=A ) +=
            on( markedfaces(mesh, "Interface") ,u,F,expr);
 
  // solve the linear system $ A u = F $
@@ -308,7 +308,7 @@ The compact form of (\ref{eq:40}) is
  form2( _test=Xh, _trial=Xh, _matrix=B, _init=true );
  BOOST_FOREACH( int marker, flags )
  {
-   form2( Xh, Xh, B ) +=
+   form2( Xh, Xh, _matrix=B ) +=
    integrate( markedfaces(mesh,marker), kappa*idt(u)*id(v) );
  }
  B->close();

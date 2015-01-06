@@ -59,7 +59,7 @@ public:
     Grid()
         :
         super(),
-        M_backend( backend_type::build( this->vm() ) ),
+        M_backend( backend_type::build( soption("backend") ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() ),
         eigen( SolverEigen<value_type>::build( this->vm() ) )
@@ -150,7 +150,7 @@ Grid<Dim>::run()
     form2( _test=Xh, _trial=Xh, _matrix=B );
     BOOST_FOREACH( int marker, flags )
     {
-        form2( Xh, Xh, B ) +=
+        form2( Xh, Xh, _matrix=B ) +=
             integrate( markedfaces( mesh,marker ), kappa*idt( u )*id( v ) );
     }
 
