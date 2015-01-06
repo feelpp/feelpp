@@ -182,7 +182,7 @@ template<int Dim, int Order>
 ResistanceLaplacian<Dim,Order>::ResistanceLaplacian()
     :
     super(),
-    M_backend( backend_type::build( this->vm() ) ),
+    M_backend( backend_type::build( soption("backend") ) ),
 
     // Data
     h( this->vm()["hsize"].template as<double>() ),
@@ -345,23 +345,23 @@ ResistanceLaplacian<Dim, Order>::run()
     double k2= this->vm()["k2"].template as<double>();
     double c= this->vm()["conductance"].template as<double>();
     double Q= this->vm()["Q"].template as<double>();
-    form2( Xh, Xh, M, _init=true ) = ( integrate( markedelements( mesh,  mesh->markerName( "k1" ) ),
+    form2( Xh, Xh, _matrix=M, _init=true ) = ( integrate( markedelements( mesh,  mesh->markerName( "k1" ) ),
                                        k1*gradt( u )*trans( grad( v ) ) )+
                                        integrate( markedelements( mesh,  mesh->markerName( "k2" ) ),
                                                k2*gradt( u )*trans( grad( v ) ) ) );
 
-    form2( Xh, Xh, M ) += integrate( markedfaces( mesh, mesh->markerName( "Tfixed" ) ),
+    form2( Xh, Xh, _matrix=M ) += integrate( markedfaces( mesh, mesh->markerName( "Tfixed" ) ),
                                      -k1*gradt( u )*N()*id( v )
                                      -k1*grad( v )*N()*idt( u )
                                      + penalisation_bc*id( u )*idt( v )/hFace() );
     auto N21 = vec( constant( -1. ),constant( 0. ) );
-    form2( Xh, Xh, M ) += integrate( markedfaces( mesh, mesh->markerName( "Tdiscontinuity" ) ),
+    form2( Xh, Xh, _matrix=M ) += integrate( markedfaces( mesh, mesh->markerName( "Tdiscontinuity" ) ),
                                      c*( trans( jump( id( v ) ) )*N21 )*( trans( jumpt( idt( u ) ) )*N21 ) );
 
     M->close();
 
     vector_ptrtype F( M_backend->newVector( Xh ) );
-    form1( Xh, F, _init=true ) = ( integrate( markedfaces( mesh, mesh->markerName( "Tflux" ) ), Q*id( v ) )+
+    form1( Xh, _vector=F, _init=true ) = ( integrate( markedfaces( mesh, mesh->markerName( "Tflux" ) ), Q*id( v ) )+
                                    integrate( markedfaces( mesh, mesh->markerName( "Tfixed" ) ),
                                            T0*( -k1*grad( v )*N()+ penalisation_bc*id( v )/hFace() ) ) );
 
