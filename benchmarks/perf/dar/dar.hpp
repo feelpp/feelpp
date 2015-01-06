@@ -294,7 +294,7 @@ DAR<Dim, Order, Cont, Entity>::run()
     uEx = L2Proj->project( g );
     uC = L2Proj->project( vf::idv( u ) );
     auto L2Projv = projector( Xvch, Xvch );
-    betaC = L2Projv->project( trans( beta ) );
+    betaC = L2Projv->project( ( beta ) );
 
     exporter->step( 0 )->setMesh( u.functionSpace()->mesh() );
     exporter->step( 0 )->add( "u", u );

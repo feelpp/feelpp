@@ -163,7 +163,7 @@ public:
     Stokes( int argc, char** argv, AboutData const& ad, po::options_description const& od )
         :
         super( argc, argv, ad, od ),
-        M_backend( backend_type::build( this->vm() ) ),
+        M_backend( backend_type::build( soption("backend") ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
     {
@@ -304,7 +304,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     auto f = vec( 0.*Px(),0.*Py() ) ;
 
     // right hand side
-    form1( Xh, F, _init=true )  =
+    form1( Xh, _vector=F, _init=true )  =
         integrate( elements( mesh ), trans( f )*id( v ) )+
         integrate( boundaryfaces( mesh ), trans( u_exact )*( -SigmaN+penalbc*id( v )/hFace() ) );
 
