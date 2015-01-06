@@ -89,7 +89,8 @@ public:
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     //! the basis type of our approximation space
-    typedef bases<Lagrange<1,Scalar> > basis_type; //Lagrange scalar space
+    //typedef bases<Lagrange<1,Scalar> > basis_type; //Lagrange scalar space
+    typedef bases<Lagrange<2,Scalar> > basis_type; //Lagrange scalar space
     //! the approximation function space type
     typedef FunctionSpace<mesh_type, basis_type> space_type;
     //! the approximation function space type (shared_ptr<> type)
@@ -113,7 +114,7 @@ public:
     GreplFem()
         :
         super(),
-        M_backend( backend_type::build( this->vm() ) ),
+        //M_backend( backend_type::build( this->vm() ) ),
         exporter( Exporter<mesh_type>::New( this->vm() ) )
     {
         this->changeRepository( boost::format( "/grepl_fem/%1%-%2%" )
@@ -125,7 +126,7 @@ public:
                                              _shape = "hypercube",
                                              //_usenames = true,
                                              _dim = 2,
-                                             _h=1e-2,
+                                             _h=2e-2,
                                              _xmin=0,_xmax=1,
                                              _ymin=0,_ymax=1 ) );
     }
@@ -138,7 +139,7 @@ public:
 
     private:
     //! linear algebra backend
-    backend_ptrtype M_backend;
+    //backend_ptrtype M_backend;
     //! exporter factory
     export_ptrtype exporter;
     //! mesh
@@ -154,10 +155,18 @@ GreplFem::run()
     std::cout << "newton..." << std::endl;
     //call solveNewton and export
     auto solNewton = solveNewton();
+    std::cout << "min newton = " << solNewton.min() << std::endl;
+    std::cout << "max newton = " << solNewton.max() << std::endl;
+    std::cout << "output = " << integrate( elements(mesh), idv(solNewton) ).evaluate()(0,0) << std::endl;
+
     exporter->step( 0 )->add( "newton", solNewton );
     std::cout << "picard..." << std::endl;
     //call solvePicard and export
     auto solPicard = solvePicard();
+    std::cout << "min picard = " << solPicard.min() << std::endl;
+    std::cout << "max picard = " << solPicard.max() << std::endl;
+    std::cout << "output = " << integrate( elements(mesh), idv(solPicard) ).evaluate()(0,0) << std::endl;
+
     exporter->step( 0 )->add( "picard", solPicard );
     std::cout << "end!" << std::endl;
 
@@ -177,7 +186,7 @@ GreplFem::updateJacobian( vector_ptrtype const& X, sparse_matrix_ptrtype & J)
     double mu2=doption(_name="mu2");
 
     auto g = exp( mu2*idv(u) );
-    auto proj_g = vf::project(_space=Xh, _expr=g);
+    //auto proj_g = vf::project(_space=Xh, _expr=g);
 
     J->zero();
     form2( _test=Xh, _trial=Xh, _matrix=J ) += integrate( _range= elements( mesh ),_expr = gradt(u)*trans(grad(v)) );
@@ -186,7 +195,8 @@ GreplFem::updateJacobian( vector_ptrtype const& X, sparse_matrix_ptrtype & J)
                                                           - (gradt(u)*vf::N())*id(v)
                                                           - (grad(v)*vf::N())*idt(u) );
 
-    form2( _test=Xh, _trial=Xh, _matrix=J ) += integrate( _range = elements(mesh), _expr = mu1*idv(proj_g)*idt(u)*id(v) );
+    //form2( _test=Xh, _trial=Xh, _matrix=J ) += integrate( _range = elements(mesh), _expr = mu1*idv(proj_g)*idt(u)*id(v) );
+    form2( _test=Xh, _trial=Xh, _matrix=J ) += integrate( _range = elements(mesh), _expr = mu1*g*idt(u)*id(v) );
 
     J->close();
 }
@@ -204,7 +214,6 @@ GreplFem::updateResidual(vector_ptrtype const& X,vector_ptrtype & R)
     auto v = Xh->element(); //test
 
     auto g = exp( mu2*idv(u) );
-    auto proj_g = vf::project(_space=Xh, _expr=g);
 
     R->zero();
     form1( _test=Xh, _vector=R ) +=
@@ -218,7 +227,7 @@ GreplFem::updateResidual(vector_ptrtype const& X,vector_ptrtype & R)
 
     form1( _test=Xh, _vector=R ) +=
         integrate( _range= elements( mesh ),
-                   _expr= mu1/mu2*( idv(proj_g) * id(v) ) );
+                   _expr= mu1/mu2*( g * id(v) ) );
 
     form1( _test=Xh, _vector=R ) +=
         integrate( _range= elements( mesh ),
@@ -226,7 +235,8 @@ GreplFem::updateResidual(vector_ptrtype const& X,vector_ptrtype & R)
 
     form1( _test=Xh, _vector=R ) +=
         integrate( _range= elements( mesh ),
-                   _expr=-100*sin(2*M_PI*Px())*cos(2*M_PI*Py()) * id(v) );
+                   //_expr=-100*sin(2*M_PI*Px())*cos(2*M_PI*Py()) * id(v) );
+                   _expr=-100*sin(2*M_PI*Px())*sin(2*M_PI*Py()) * id(v) );
 
     R->close();
 
@@ -259,7 +269,7 @@ GreplFem::solvePicard()
     double mu2=doption(_name="mu2");
     double tol = doption(_name="tol");
     bool weakdir = boption(_name="weakdir");
-    int nb_iter_max = 10;
+    int nb_iter_max = 100;
 
     auto solution = Xh->element();
     double error=0.0;
@@ -267,27 +277,28 @@ GreplFem::solvePicard()
     do{
         auto u=Xh->element();
         auto v=Xh->element();
+        auto solution_old = solution; //store previous iteration
 
         auto exprg = exp( mu2*idv(solution) );
-        auto g = vf::project( _space=Xh,_range=elements(mesh), _expr=exprg );
 
         auto a = form2( _test=Xh, _trial=Xh );
         a = integrate( _range= elements( mesh ), _expr = gradt(u)*trans(grad(v)) );
+        a += integrate( _range= elements( mesh ), _expr= mu1/mu2*( exprg*id(v) - id(v) ));
+
         if( weakdir )
         {
             a += integrate( _range = boundaryfaces( mesh ),
                             _expr = gamma*idt(u)*id(v)/hFace()
-                            - (gradt(u)*vf::N())*id(v) +
+                            - (gradt(u)*vf::N())*id(v)
                             - (grad(v)*vf::N())*idt(u) );
         }
 
         auto rhs = form1( _test=Xh );
-        rhs = integrate( _range= elements( mesh ), _expr=-mu1/mu2*( idv(g)*id(v) - id(v) ) + 100*sin(2*M_PI*Px())*cos(2*M_PI*Py()) * id(v) );
+        rhs = integrate( _range= elements( mesh ), _expr = 100*sin(2*M_PI*Px())*sin(2*M_PI*Py()) * id(v) );
 
         if( !weakdir )
             a += on(_range=boundaryfaces(mesh), _rhs=rhs, _element=solution, _expr=cst(0.) );
 
-        auto solution_old = solution; //store previous iteration
         a.solve( _rhs=rhs, _solution=solution );
 
         error = normL2( _range=elements(mesh), _expr=idv(solution_old) - idv(solution));
