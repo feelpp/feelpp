@@ -64,7 +64,7 @@ int main( int argc, char** argv )
                                         _h=hsize ),
                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES,
                                 _straighten=0 );
-    straightenMesh( _mesh=mesh,_save=1 );
+    straightenMesh( mesh, Environment::worldComm(), false, true );
 
     //std::cout << "read mesh\n" << std::endl;
 

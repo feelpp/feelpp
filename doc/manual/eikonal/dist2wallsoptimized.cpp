@@ -31,11 +31,11 @@
 #include <feel/feeldiscr/pdh.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelpde/reinit_fms.hpp>
+#include <feel/feelvf/vf.hpp>
 
 #define DIM 2
 
 using namespace Feel;
-using namespace Feel::vf;
 
 void run()
 {

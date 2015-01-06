@@ -36,7 +36,7 @@ Bench1::Bench1( int argc,
                 po::options_description const& od )
     :
     super( argc, argv, ad, od ),
-    M_backend( backend_type::build( this->vm() ) ),
+    M_backend( backend_type::build( soption("backend") ) ),
     meshSize( vm()["hsize"].as<double>() )
 {
 }
