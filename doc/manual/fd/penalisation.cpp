@@ -102,7 +102,7 @@ void Penalisation<Dim>::initStokes()
     //try not use F
     F = M_backend->newVector( Xh );
 
-    form1( Xh, F, _init=true ) =
+    form1( Xh, _vector=F, _init=true ) =
         integrate( elements( mesh ), trans( vf::one()-vf::one() ) * id( v ) ) ;
 
     F->close();
@@ -115,14 +115,14 @@ void Penalisation<Dim>::initStokes()
     C = M_backend->newMatrix( Xh, Xh );
 
     //    def(u):def(v) = trace ( def(u)* trans( def(v) ) )
-    form2( Xh, Xh, C, _init=true )= integrate( elements( mesh ),
+    form2( Xh, Xh, _matrix=C, _init=true )= integrate( elements( mesh ),
                                     nu * vf::trace( deft * trans( def ) ) );
-    form2( Xh, Xh, C )+= integrate( elements( mesh ),
+    form2( Xh, Xh, _matrix=C )+= integrate( elements( mesh ),
                                     - div( v ) * idt( p ) +id( q ) * divt( u ) );
-    form2( Xh, Xh, C )+= integrate( elements( mesh ),
+    form2( Xh, Xh, _matrix=C )+= integrate( elements( mesh ),
                                     - epsilonpress * idt( p ) * id( q ) );
-    form2( Xh, Xh, C )+= integrate( elements( mesh ),idt( lambda )*id( q ) );
-    form2( Xh, Xh, C )+= integrate( elements( mesh ),id( lambda )*idt( q ) );
+    form2( Xh, Xh, _matrix=C )+= integrate( elements( mesh ),idt( lambda )*id( q ) );
+    form2( Xh, Xh, _matrix=C )+= integrate( elements( mesh ),id( lambda )*idt( q ) );
     C->close();
 
     LOG(INFO)<<"Fin de l'assemblage statique (C) temps : "<<
@@ -147,7 +147,7 @@ void Penalisation<Dim>::stokes()
 
     local_chrono.restart();
     D=M_backend->newMatrix( Xh, Xh );
-    form2( Xh, Xh, D )= integrate( marked3elements( mesh,1 ),
+    form2( Xh, Xh, _matrix=D )= integrate( marked3elements( mesh,1 ),
                                    idv( carac ) * nu * trace( def*trans( deft ) ) / epsilon );
     LOG(INFO)<<"fin assemblage : "<<local_chrono.elapsed()<<" s"<<"\n";
 
@@ -189,16 +189,16 @@ void Penalisation<Dim>::addCL()
         auto outflowtop = ( 6*Qtop / ( pow( H2,3 ) ) ) * ( Px()-L1 )*( Px()-( L1+H2 ) );
         auto outflowbottom = ( 6*Qbot /( pow( H2,3 ) ) ) * ( Px()-L1 )*( Px()-( L1+H2 ) );
 
-        form2( Xh, Xh, D )+=
+        form2( Xh, Xh, _matrix=D )+=
             on( markedfaces( mesh, "Wall" ),
                 u, F, cst( 0. ) * vf::N()  );
-        form2( Xh, Xh, D )+=
+        form2( Xh, Xh, _matrix=D )+=
             on( markedfaces( mesh, "Inflow" ),
                 u, F, inflow * vf::N() );
-        form2( Xh, Xh, D )+=
+        form2( Xh, Xh, _matrix=D )+=
             on( markedfaces( mesh, "Outflowtop" ),
                 u, F, - outflowtop * vf::N() );
-        form2( Xh, Xh, D )+=
+        form2( Xh, Xh, _matrix=D )+=
             on( markedfaces( mesh, "Outflowbottom" ),
                 u, F,  - outflowbottom * vf::N() );
     }
@@ -210,16 +210,16 @@ void Penalisation<Dim>::addCL()
         auto outflowtop = ( 6*Qtop / ( pow( H2,3 ) ) ) * ( Px()-L1 )*( Px()-( L1+H2 ) ) * Pz() * ( Pz()-E ) ;
         auto outflowbottom = ( 6*Qbot /( pow( H2,3 ) ) ) * ( Px()-L1 )*( Px()-( L1+H2 ) ) * Pz() * ( Pz()-E ) ;
 
-        form2( Xh, Xh, D )+=
+        form2( Xh, Xh, _matrix=D )+=
             on( markedfaces( mesh, "Wall" ),
                 u, F, cst( 0. ) * vf::N()  );
-        form2( Xh, Xh, D )+=
+        form2( Xh, Xh, _matrix=D )+=
             on( markedfaces( mesh, "Inflow" ),
                 u, F, inflow * vf::N() );
-        form2( Xh, Xh, D )+=
+        form2( Xh, Xh, _matrix=D )+=
             on( markedfaces( mesh, "Outflowtop" ),
                 u, F, - outflowtop * vf::N() );
-        form2( Xh, Xh, D )+=
+        form2( Xh, Xh, _matrix=D )+=
             on( markedfaces( mesh, "Outflowbottom" ),
                 u, F,  - outflowbottom * vf::N() );
     }

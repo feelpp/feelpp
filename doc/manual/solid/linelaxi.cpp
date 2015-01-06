@@ -105,7 +105,7 @@ public:
     LinElAxi()
         :
         super(),
-        M_backend( backend_type::build( this->vm() ) ),
+        M_backend( backend_type::build( soption("backend") ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         bcCoeff( this->vm()["bccoeff"].template as<double>() ),
         exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
@@ -240,7 +240,8 @@ LinElAxi<Order>::run()
 
 
     form2( _test=Xh, _trial=Xh, _matrix=lhs ) +=
-        on( _range=markedfaces( mesh,"Neumann" ), _element=uz, _rhs=rhs, _expr=cst( 0. ) )+
+        on( _range=markedfaces( mesh,"Neumann" ), _element=uz, _rhs=rhs, _expr=cst( 0. ) );
+    form2( _test=Xh, _trial=Xh, _matrix=lhs ) +=
         on( _range=markedfaces( mesh,"Neumann" ), _element=ur, _rhs=rhs, _expr=cst( 0. ) );
     M_backend->solve( _matrix=lhs, _solution=U, _rhs=rhs );
 
