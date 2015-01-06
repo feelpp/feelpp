@@ -37,6 +37,7 @@
 #include <feel/feelvf/measure.hpp>
 #include <feel/feelvf/mean.hpp>
 #include <feel/feelvf/trans.hpp>
+#include <feel/feelvf/vf.hpp>
 
 /// [marker1]
 inline
@@ -300,14 +301,15 @@ HeatSink<Dim, Order>::run()
     }
 
     a +=
-        integrate( _range=markedelements( mesh, "spreader" ), _expr=rho_s*c_s*idt( T )*id( v )*M_bdf->polyDerivCoefficient( 0 ) )
-        + integrate( _range=markedelements( mesh, "fin" ), _expr=rho_f*c_f*idt( T )*id( v )*M_bdf->polyDerivCoefficient( 0 ) );
+        integrate( _range=markedelements( mesh, "spreader" ), _expr=rho_s*c_s*idt( T )*id( v )*M_bdf->polyDerivCoefficient( 0 ) );
+    a +=
+        integrate( _range=markedelements( mesh, "fin" ), _expr=rho_f*c_f*idt( T )*id( v )*M_bdf->polyDerivCoefficient( 0 ) );
     /// [marker3]
 
     /*
      * Left and right hand sides construction (non-steady state) with BDF
      */
-    T = vf::project( _space=Xh, _expr=cst( Tamb ) );
+    T = vf::project( _space=Xh, _range=elements(mesh), _expr=cst( Tamb ) );
 
     M_bdf->initialize( T );
 
@@ -334,7 +336,8 @@ HeatSink<Dim, Order>::run()
         // update right hand side with time dependent terms
         auto bdf_poly = M_bdf->polyDeriv();
         lt =
-            integrate( _range=markedelements( mesh, "spreader" ), _expr=rho_s*c_s*idv( bdf_poly )*id( v ) ) +
+            integrate( _range=markedelements( mesh, "spreader" ), _expr=rho_s*c_s*idv( bdf_poly )*id( v ) );
+        lt +=
             integrate( _range=markedelements( mesh, "fin" ), _expr=rho_f*c_f*idv( bdf_poly )*id( v ) );
         lt +=
             integrate( _range= markedfaces( mesh,"gamma4" ), _expr= heat_flux*( 1-math::exp( -M_bdf->time() ) )*id( v ) );
