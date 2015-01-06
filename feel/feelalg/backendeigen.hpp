@@ -31,6 +31,7 @@
 #ifndef _BACKENDEIGEN_HPP_
 #define _BACKENDEIGEN_HPP_
 
+#include <boost/make_shared.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include <feel/feelcore/feelpetsc.hpp>
 #undef MatType
@@ -102,7 +103,7 @@ public:
     sparse_matrix_ptrtype
     newMatrix()
     {
-        auto A= sparse_matrix_ptrtype( new eigen_sparse_matrix_type(0,0,this->comm()) );
+        auto A= boost::make_shared<eigen_sparse_matrix_type>(0,0,this->comm());
         return A;
     }
     template<typename DomainSpace, typename DualImageSpace>
@@ -115,7 +116,7 @@ public:
         {
             //auto A= sparse_matrix_ptrtype( new eigen_sparse_matrix_type( space1->nDof(), space2->nDof() ) );
             //auto A= sparse_matrix_ptrtype( new eigen_sparse_matrix_type( space1->nDof(), space2->nDof(), this->comm() ) );
-            auto A= sparse_matrix_ptrtype( new eigen_sparse_matrix_type( space1->nDof(), space2->nDof(), space1->map()->worldComm() ) );
+            auto A= boost::make_shared<eigen_sparse_matrix_type>( space1->nDof(), space2->nDof(), space1->map()->worldComm() );
             A->setMatrixProperties( matrix_properties );
             return A;
         }
