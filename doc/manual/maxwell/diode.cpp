@@ -309,13 +309,13 @@ public:
     Diode()
         :
         super(),
-        M_backend( backend_type::build( this->vm(), "mass" ) ),
-        verbose( this->vm()["verbose"].as<bool>() ),
-        meshSize( this->vm()["hsize"].as<double>() ),
-        timeStep( this->vm()["dt"].as<double>() ),
-        Tfinal( this->vm()["Tfinal"].as<double>() ),
-        rkmethod( ( RKMethod )this->vm()["rkmethod"].as<int>() ),
-        convex( this->vm()["convex"].as<std::string>() )
+        M_backend( backend_type::build( "mass" ) ),
+        verbose(  boption("verbose") ),
+        meshSize( doption("hsize") ),
+        timeStep( doption("dt") ),
+        Tfinal(   doption("Tfinal") ),
+        rkmethod( ( RKMethod )ioption("rkmethod") ),
+        convex( soption("convex") )
     {
     }
 
@@ -694,7 +694,7 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
     auto a = form2( _test=Xh, _trial=Xh, _matrix=D, _init=true );
     a = integrate( elements( mesh ), idt( Ex )*id( u ) );
     //D->printMatlab("mass.m");
-    auto backend = backend_type::build( this->vm() );
+    auto backend = backend_type::build( soption("backend") );
     auto exporter( export_type::New( this->vm(),
                                      ( boost::format( "%1%-%2%" )
                                        % this->about().appName()

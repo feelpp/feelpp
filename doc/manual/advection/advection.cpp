@@ -182,7 +182,7 @@ public:
     Advection()
         :
         super(),
-        backend( backend_type::build( this->vm() ) ),
+        backend( backend_type::build( soption("backend") ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         bcCoeff( this->vm()["bccoeff"].template as<double>() ),
         geomap( ( GeomapStrategyType )this->vm()["geomap"].template as<int>() ),
@@ -378,7 +378,7 @@ Advection<Dim, Order, Cont, Entity>::exportResults( f1_type& U,
     uEx = L2Proj->project( E );
     uC = L2Proj->project( vf::idv( U ) );
     auto L2Projv = projector( Xvch, Xvch );
-    betaC = L2Projv->project( trans( beta ) );
+    betaC = L2Projv->project( ( beta ) );
 
     exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
     exporter->step( 0 )->add( "u", U );

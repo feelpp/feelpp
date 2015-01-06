@@ -152,7 +152,7 @@ private:
 NavierStokes::NavierStokes()
     :
     super(),
-    M_backend( backend_type::build( this->vm() ) ),
+    M_backend( backend_type::build( soption("backend") ) ),
     meshSize( this->vm()["hsize"].as<double>() ),
     mu( this->vm()["mu"].as<value_type>() ),
     penalbc( this->vm()["bccoeff"].as<value_type>() ),

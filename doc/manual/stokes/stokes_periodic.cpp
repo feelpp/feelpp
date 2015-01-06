@@ -201,7 +201,7 @@ PeriodicStokes<Dim, Order>::run()
     auto M = backend()->newMatrix( Xh, Xh );
     auto F = backend()->newVector( Xh );
 
-    auto a = form2( Xh, Xh, M );
+    auto a = form2( Xh, Xh, _matrix=M );
     a = integrate( _range=elements( mesh ), _expr=trace(gradt( u )*trans( grad( v ) ) ));
     if ( vm()["wp"].template as<int>() )
     {
@@ -220,7 +220,7 @@ PeriodicStokes<Dim, Order>::run()
     a+= integrate( _range=elements( mesh ), _expr=-idt(p)*div(v)+id(q)*divt(u) );
     a+= integrate( _range=elements( mesh ), _expr=1e-6*idt(p)*id(q) );
 
-    auto b = form1( Xh, F );
+    auto b = form1( Xh, _vector=F );
 
     std::list<int> bdys = {1,3};
     BOOST_FOREACH( auto bdy, bdys )

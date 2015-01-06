@@ -137,7 +137,7 @@ public:
     ThreeFieldsLaplacian()
         :
         super(),
-        M_backend( backend_type::build( this->vm() ) ),
+        M_backend( backend_type::build( soption("backend") ) ),
         split( this->vm()["split"].template as<double>() ),
         mesh1Size( this->vm()["hsize1"].template as<double>() ),
         mesh2Size( this->vm()["hsize2"].template as<double>() ),

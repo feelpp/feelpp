@@ -96,7 +96,7 @@ public:
     NIRBTEST()
         :
         super(),
-        M_backend( backend_type::build( this->vm() ) ),
+        M_backend( backend_type::build( soption("backend")) ),
         CoarseMeshSize( this->vm()["hcoarsesize"].template as<double>() ),
         FineMeshSize( this->vm()["hfinsize"].template as<double>() ),
         ReadingMeshes( this->vm()["ReadingMeshes"].template as<int>() ),
@@ -1332,7 +1332,7 @@ typename NIRBTEST<PolynomialOrder>::element_type NIRBTEST<PolynomialOrder>::blac
      */
 
     form2( _test=Xh, _trial=Xh, _matrix=D ) += on( boundaryfaces( Xh->mesh() ), u, F,g );
-    backend_type::build()->solve( _matrix=D, _solution=u, _rhs=F );
+    backend_type::build(soption("backend"))->solve( _matrix=D, _solution=u, _rhs=F );
 
     return u;
 }
