@@ -132,8 +132,8 @@ public:
     ResidualEstimator( AboutData const& about )
         :
         super(),
-        M_backend( backend_type::build() ),
-        M_backendP1( backend_type::build() ),
+        M_backend( backend_type::build( soption("backend") ) ),
+        M_backendP1( backend_type::build( soption("backend") ) ),
         meshSize( 0.1 ),
         exporter( export_type::New( "gmsh", this->about().appName() ) ),
         order( 1 ),
@@ -152,8 +152,8 @@ public:
     ResidualEstimator()
         :
         super(),
-        M_backend( backend_type::build( this->vm() ) ),
-        M_backendP1( backend_type::build( this->vm() ) ),
+        M_backend( backend_type::build( soption("backend") ) ),
+        M_backendP1( backend_type::build( soption("backend") ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         exporter( export_type::New( "gmsh", this->about().appName() ) ),
         order( this->vm()["order"].template as<int>() ),
@@ -473,7 +473,7 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
      */
         // [toto8]
     //! solve \f$ D u = F \f$
-    backend_type::build()->solve( _matrix=D, _solution=u, _rhs=F );
+    backend_type::build( soption("backend") )->solve( _matrix=D, _solution=u, _rhs=F );
         // [toto8]
 
     /**

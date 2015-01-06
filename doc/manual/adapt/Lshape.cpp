@@ -149,7 +149,7 @@ public:
     LShape()
         :
         super(),
-        M_backend( backend_type::build( this->vm() ) ),
+        M_backend( backend_type::build( soption("backend") ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() )
     {
@@ -368,7 +368,7 @@ LShape<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
             }
 
         //! Solve the system
-        backend_type::build()->solve( _matrix=D, _solution=u, _rhs=F );
+        backend_type::build(soption("backend"))->solve( _matrix=D, _solution=u, _rhs=F );
 
         //! Exportation of results
         export_ptrtype exporter( export_type::New( this->vm(),
