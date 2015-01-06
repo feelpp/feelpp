@@ -108,7 +108,7 @@ public:
     ddmethod()
         :
         super(),
-        M_backend( backend_type::build( this->vm() ) ),
+        M_backend( backend_type::build( soption("backend") ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() ),
         M_firstExporter( export_type::New( this->vm(),
@@ -188,20 +188,20 @@ ddmethod<Dim>::localProblem( element_type& u,
     BOOST_FOREACH( int marker, dirichletFlags )
     {
         // std::cout << "apply strong dirichlet on   " << marker << std::endl;
-        form2( Xh, Xh, A ) +=
+        form2( Xh, Xh, _matrix=A ) +=
             on( markedfaces( mesh, marker ) ,	u, B, gD );
     }
     BOOST_FOREACH( int marker, interfaceFlags )
     {
         // std::cout << "apply interface condition on   " << marker << std::endl;
-        form2( Xh, Xh, A ) +=
+        form2( Xh, Xh, _matrix=A ) +=
             on( markedfaces( mesh, marker ) ,	u, B, w );
     }
     timers["assembly"].second += timers["assembly"].first.elapsed();
     timers["assembly_A"].second = timers["assembly"].first.elapsed();
 
     timers["solver"].first.restart();
-    backend_type::build()->solve( _matrix=A, _solution=u, _rhs=B );//, _reuse_prec=true );
+    backend_type::build(soption("backend"))->solve( _matrix=A, _solution=u, _rhs=B );//, _reuse_prec=true );
     timers["solver"].second = timers["solver"].first.elapsed();
 
     LOG(INFO) << "[timer] run():  assembly: " << timers["assembly"].second << "\n";

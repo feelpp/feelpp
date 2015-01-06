@@ -157,7 +157,7 @@ Sound<Dim, Order>::run()
                             % this->vm()["hsize"].template as<double>()
                           );
     //! backend
-    auto backend = backend_type::build( this->vm() );
+    auto backend = backend_type::build( soption("backend") );
 
     //! eigen solver
     auto eigen = SolverEigen<value_type>::build( this->vm() );
