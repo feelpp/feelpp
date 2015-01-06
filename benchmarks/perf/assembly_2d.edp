@@ -6,11 +6,12 @@ real Sqrt = sqrt(2.);
 macro epsilon(u)[dx(u), dy(u#B), (dy(u) + dx(u#B)) / Sqrt]// EOM
 load "gmsh"
 load "Element_P3"
+load "Element_P4"
 real[int, int] timers(l * 3, 5);
 timers = 0;
 
 for(int j = 1; j <= l; ++j) {
-    mesh Th = gmshload("hypercube_" + j + ".msh");
+    mesh Th = gmshload("hypercube_2_" + j + ".msh");
     for(int i = 0; i < 3; ++i) {
         if(i == 0) {
             func Pk = P2;

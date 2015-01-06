@@ -503,15 +503,13 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
             //use interpolant
             __fe->faceInterpolate( expr, IhLoc );
 
-            auto const& s = M_u.functionSpace()->dof()->localToGlobalSigns( theface.element(0).id() );
             for( auto const& ldof : M_u.functionSpace()->dof()->faceLocalDof( theface.id() ) )
                 {
-                    size_type thedof = M_u.start()+ ldof.second.index(); // global dof
-                    int16_type dofIndexInElt = ldof.second.localDof(); // localdof index in element0
-
-                    DVLOG(2) << "Ihloc(" << ldof.first << ")= " << IhLoc( ldof.first ) << std::endl;
-                    DVLOG(2) << "s(" << dofIndexInElt << ")= " << s(dofIndexInElt) << std::endl;
-                    double __value = s(dofIndexInElt)*IhLoc( ldof.first );
+                    size_type thedof = M_u.start()+ ldof.index(); // global dof
+                    DCHECK( ldof.localDofInFace() < IhLoc.size() ) 
+                        << "Invalid local dof index in face for face Interpolant "
+                        << ldof.localDofInFace() << ">=" << IhLoc.size();
+                    double __value = ldof.sign()*IhLoc( ldof.localDofInFace() );
 
                     if ( std::find( dofs.begin(),
                                     dofs.end(),
