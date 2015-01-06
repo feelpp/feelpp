@@ -15,15 +15,15 @@ Penalisation<Dim>::Penalisation():
 /*TODO : in the mesh, call the boundary H1, H2 ...
   and calculate here the lenghts and do not enter it in the code !
 */
-    radius( this->vm()["radius"].template as<double>() ),
-    epsilon( this->vm()["epsilon"].template as<double>() ),
-    epsilonpress( this->vm()["epsilonpress"].template as<double>() ),
-    nu( this->vm()["nu"].template as<double>() ),
-    Q( this->vm()["Q"].template as<double>() ),
-    Qtop( this->vm()["RQ"].template as<double>()*Q ),
+    radius(       doption("radius"      ) ),
+    epsilon(      doption("epsilon"     ) ),
+    epsilonpress( doption("epsilonpress") ),
+    nu(           doption("nu"          ) ),
+    Q(            doption("Q"           ) ),
+    Qtop(         doption("RQ"          )*Q ),
     Qbot( Q-Qtop ),
-    dt( this->vm()["DT"].template as<double>() ),
-    Ylimit( this->vm()["Ylimit"].template as<double>() )
+    dt(     doption("DT"    ) ),
+    Ylimit( doption("Ylimit") )
 {
     LOG(INFO)<<"Dimension : "<<Dim<<"\n";
 
@@ -33,7 +33,7 @@ Penalisation<Dim>::Penalisation():
         exit( 0 );
     }
 
-    std::string OutFolder=this->vm()["OutFolder"].template as<std::string>();
+    std::string OutFolder=soption("OutFolder");
 
     if ( !OutFolder.empty() )
         this->changeRepository( boost::format( OutFolder ) );
@@ -54,13 +54,13 @@ Penalisation<Dim>::Penalisation():
 
     t=0;
     iter=0;
-    Tfinal=this->vm()["Tfinal"].template as<double>();
+    Tfinal=doption("Tfinal");
     // if we are in test mode then do only one (or a small multiple of) time step
     if ( Environment::vm().count( "test" ) )
         Tfinal =  Environment::vm( _name="test" ).template as<int>()*dt;
-    xp=this->vm()["x0"].template as<double>();
-    yp=this->vm()["y0"].template as<double>();
-    zp=this->vm()["z0"].template as<double>();
+    xp=doption("x0");
+    yp=doption("y0");
+    zp=doption("z0");
 
     M_backend= backend(_name="stokes_backend" );
 

@@ -42,6 +42,7 @@
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelvf/print.hpp>
 #include <feel/feeldiscr/projector.hpp>
+#include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/ned1h.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 
@@ -127,7 +128,7 @@ public:
     CurlFormulation()
         :
         super(),
-        M_backend( backend_type::build( this->vm() ) ),
+        M_backend( backend_type::build( soption("backend") ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         exporter( Exporter<mesh_type>::New( this->vm() ) )
     {
