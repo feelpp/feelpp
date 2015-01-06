@@ -99,7 +99,7 @@ public:
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>()  ),
         nthreads( this->vm()["nthreads"].template as<int>()  ),
-        backend( Backend<double>::build( this->vm() ) )
+        backend( Backend<double>::build( soption("backend") ) )
     {
     }
 
