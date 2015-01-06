@@ -590,6 +590,7 @@ BenchmarkGreplNonlinearElliptic<Order>::assembleJacobianWithAffineDecomposition(
     Jqm[1].resize(M);
     for(int m=0; m<M; m++)
     {
+        this->M_Jqm[1][m] = backend()->newMatrix( _test=this->Xh, _trial=this->Xh );
         form2( _test=Xh, _trial=Xh, _matrix=Jqm[1][m] ) =
             integrate( _range = elements(mesh),
                        _expr = idv(eim_g->q(m))*idt(u)*id(v) );
@@ -617,6 +618,7 @@ BenchmarkGreplNonlinearElliptic<Order>::assembleResidualWithAffineDecomposition(
     Rqm[0][0].resize(Mu);
     for(int m=0; m<Mu; m++)
     {
+        this->M_Rqm[0][0][m] = backend()->newVector( this->Xh );
         auto q = eim_u->q(m);
         form1( _test=Xh, _vector=Rqm[0][0][m] ) =
             integrate( _range= elements( mesh ), _expr = gradv(q)*trans(grad(v)) );
@@ -632,6 +634,7 @@ BenchmarkGreplNonlinearElliptic<Order>::assembleResidualWithAffineDecomposition(
     Rqm[0][1].resize(M);
     for(int m=0; m<M; m++)
     {
+        this->M_Rqm[0][1][m] = backend()->newVector( this->Xh );
         form1( _test=Xh, _vector=Rqm[0][1][m] ) =
             integrate( _range= elements( mesh ), _expr=( idv(eim_g->q(m))*id(v) ) );
         Rqm[0][1][m]->close();
