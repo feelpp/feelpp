@@ -288,7 +288,8 @@ MatrixEigenSparse<T>::printMatlab( const std::string filename ) const
 
     FEELPP_ASSERT( file_out )( filename ).error( "[Feel::spy] ERROR: File cannot be opened for writing." );
 
-    file_out << "S = [ ";
+		std::string varName = "var_" + filename.substr(0,filename.find("."));
+    file_out << varName << " = [ ";
     file_out.precision( 16 );
     file_out.setf( std::ios::scientific );
 
@@ -305,8 +306,8 @@ MatrixEigenSparse<T>::printMatlab( const std::string filename ) const
     }
 
     file_out << "];" << std::endl;
-    file_out << "I=S(:,1); J=S(:,2); S=S(:,3);" << std::endl;
-    file_out << "spy(S);" << std::endl;
+    file_out << "I="<<varName<<"(:,1); J="<<varName<<"(:,2); "<<varName<<"="<<varName<<"(:,3);" << std::endl;
+    file_out << "spy("<<varName<<");" << std::endl;
 }
 
 
