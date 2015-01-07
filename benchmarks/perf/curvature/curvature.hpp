@@ -187,7 +187,7 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
 
     bool prepare = this->vm()["benchmark.prepare"].template as<bool>();
     if ( prepare )
-        nparts = this->vm()["benchmark.partitions"].template as<int>();
+        nparts = ioption("benchmark.partitions");
 
     // give as parameter when other shapes are avaliable
     shape_type shape = circle;

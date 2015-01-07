@@ -170,9 +170,9 @@ Kovasznay<_OrderU, _OrderP, Entity>::Kovasznay( int argc, char** argv, AboutData
     :
     super( argc, argv, ad, od ),
     M_backend( backend_type::build( this->vm() ) ),
-    meshSize( this->vm()["hsize"].template as<double>() ),
-    M_stabP( this->vm()["penalisation"].template as<double>() ),
-    M_stabD( this->vm()["penalisation"].template as<double>() ),
+    meshSize( doption("hsize") ),
+    M_stabP( doption("penalisation") ),
+    M_stabD( doption("penalisation") ),
     exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
 {
     M_weak_dirichlet = this->vm().count( "weak" );
@@ -263,7 +263,7 @@ Kovasznay<_OrderU, _OrderP, Entity>::Kovasznay( int argc, char** argv, AboutData
     .addParameterValue( Dim )
     .addParameterValue( OrderU )
     .addParameterValue( OrderP )
-    .addParameterValue( this->vm()["hsize"].template as<double>() );
+    .addParameterValue( doption("hsize") );
 
     boost::timer t;
 

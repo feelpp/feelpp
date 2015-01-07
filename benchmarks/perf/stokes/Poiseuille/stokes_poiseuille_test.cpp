@@ -220,7 +220,7 @@ Stokes_Poiseuille_Test<POrder,GeoOrder>::Stokes_Poiseuille_Test( )
     :
     super( ),
     M_backend( backend_type::build( soption("backend") ) ),
-    meshSize( this->vm()["hsize"].template as<double>() ),
+    meshSize( doption("hsize") ),
     mu( this->vm()["mu"].template as<value_type>() ),
     penalbc( this->vm()["bccoeff"].template as<value_type>() ),
     exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
@@ -243,7 +243,7 @@ Stokes_Poiseuille_Test<POrder,GeoOrder>::init()
                                 % this->about().appName()
                                 % convex_type::name()
                                 % basis_u_type::nOrder % basis_p_type::nOrder
-                                % this->vm()["hsize"].template as<double>()
+                                % doption("hsize")
                                 % Environment::numberOfProcessors() );
 
 #if (STOKESPRESSMESHTYPE == 1)

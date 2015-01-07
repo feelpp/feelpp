@@ -167,10 +167,10 @@ public:
         :
         super( argc, argv, ad, od ),
         backend( backend_type::build( this->vm() ) ),
-        meshSize( this->vm()["hsize"].template as<double>() ),
+        meshSize( doption("hsize") ),
 
         M_use_weak_dirichlet( this->vm().count( "weak" ) ),
-        M_gammabc( this->vm()["gammabc"].template as<double>() ),
+        M_gammabc( doption("gammabc") ),
 
         exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
     {
@@ -250,7 +250,7 @@ Laplacian<Dim, Order, RDim, Entity>::run()
 {
     std::vector<double> X( 1 );
     std::vector<double> Y( 2 );
-    X[0] = this->vm()["hsize"].template as<double>();
+    X[0] = doption("hsize");
     run( X.data(), X.size(), Y.data(), Y.size() );
 }
 template<int Dim, int Order, int RDim, template<uint16_type,uint16_type,uint16_type> class Entity>

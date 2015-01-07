@@ -124,17 +124,17 @@ public:
         :
         super(),
         M_backend( backend_type::build( soption("backend") ) ),
-        meshSize( this->vm()["hsize"].template as<double>() ),
+        meshSize( doption("hsize") ),
         exporter( Exporter<mesh_type>::New( this->vm() ) ),
-        M_k1( this->vm()["k1"].template as<double>() ),
-        M_k2( this->vm()["k2"].template as<double>() ),
-        M_d1( this->vm()["d1"].template as<double>() ),
-        M_d2( this->vm()["d2"].template as<double>() )
+        M_k1( doption("k1") ),
+        M_k2( doption("k2") ),
+        M_d1( doption("d1") ),
+        M_d2( doption("d2") )
     {
         std::cout << "[TestHDiv]\n";
         this->changeRepository( boost::format( "/benchmark_darcy/%1%/h_%2%/%3%-%4%/" )
                                 % this->about().appName()
-                                % this->vm()["hsize"].template as<double>()
+                                % doption("hsize")
                                 % M_k1
                                 % M_k2
                                 );

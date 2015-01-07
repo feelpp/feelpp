@@ -164,7 +164,7 @@ public:
         :
         super( argc, argv, ad, od ),
         M_backend( backend_type::build( soption("backend")) ),
-        meshSize( this->vm()["hsize"].template as<double>() ),
+        meshSize( doption("hsize") ),
         exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
     {
         mu = this->vm()["mu"].template as<value_type>();
@@ -219,7 +219,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
                                 % this->about().appName()
                                 % convex_type::name()
                                 % BasisU::nOrder
-                                % this->vm()["hsize"].template as<double>() );
+                                % doption("hsize") );
     }
 
     /*

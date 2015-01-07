@@ -234,7 +234,7 @@ Sound<Dim, Order>::run()
 
 
     int maxit = ioption("solvereigen.maxiter");
-    int tol =   doption("solvereigen.tol"    );
+    int tol =   ioption("solvereigen.tol"    );
     int nev =   ioption("solvereigen.nev"    );
     int ncv =   ioption("solvereigen.ncv"    );
 

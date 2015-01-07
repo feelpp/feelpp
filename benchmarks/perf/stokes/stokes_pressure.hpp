@@ -146,7 +146,7 @@ Stokes<nDim,uOrder,geoOrder>::Stokes(std::string const& n )
     :
     super(),
     config_name( n ),
-    meshSize( this->vm()["hsize"].template as<double>() ),
+    meshSize( doption("hsize") ),
     L( this->vm()["L"].template as<value_type>() ),
     p_in( this->vm()["p_in"].template as<value_type>() ),
     p_out( this->vm()["p_out"].template as<value_type>() ),

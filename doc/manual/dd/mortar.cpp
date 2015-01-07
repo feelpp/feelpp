@@ -94,9 +94,9 @@ public:
         :
         super(),
         M_backend( backend_type::build( soption("backend") ) ),
-        mesh1Size( this->vm()["hsize1"].template as<double>() ),
-        mesh2Size( this->vm()["hsize2"].template as<double>() ),
-        shape( this->vm()["shape"].template as<std::string>() ),
+        mesh1Size( doption("hsize1") ),
+        mesh2Size( doption("hsize2") ),
+        shape( soption("shape") ),
         exporter1( export1_type::New( this->vm(),
                                       (boost::format( "%1%-%2%-%3%" )
                                        % this->about().appName()
@@ -287,9 +287,9 @@ MortarProd<Dim, Order1, Order2>::run()
 
     auto f = pi*pi*Dim*g;
 
-    bool weakdir = this->vm()["weakdir"].template as<int>();
-    value_type penaldir = this->vm()["penaldir"].template as<double>();
-    value_type coeff = this->vm()["coeff"].template as<double>();
+    bool weakdir = ioption("weakdir");
+    value_type penaldir = doption("penaldir");
+    value_type coeff = doption("coeff");
 
     u = Xh->element();
     auto u1 = u.template element<0>();
