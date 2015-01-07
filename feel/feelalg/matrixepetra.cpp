@@ -311,7 +311,8 @@ MatrixEpetra::printMatlab ( const std::string name ) const
 		 * bool		writeHeader = true 
 		 * )
 		 */
-    int ret = EpetraExt::RowMatrixToMatlabFile( name.c_str(), *M_mat );
+		std::string matrixName = "var_"+name;
+    int ret = EpetraExt::RowMatrixToMatlabFile( name.c_str(), *M_mat, matrixName.c_str() );
 
     //int ret = EpetraExt::RowMatrixToMatrixMarketFile( name.c_str(), *M_mat, "toto", "tutu" );
     if ( ret != 0 )
