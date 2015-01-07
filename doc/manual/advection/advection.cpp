@@ -239,18 +239,10 @@ Advection<Dim, Order, Cont, Entity>::run()
                             % meshSize
                           );
     value_type penalisation = this->vm()["penal"].template as<value_type>();
-<<<<<<< Updated upstream
     int bctype =       ioption("bctype");
     double beta_x =    this->vm()["bx"].template as<value_type>();
     double beta_y =    this->vm()["by"].template as<value_type>();
     value_type mu =    this->vm()["mu"].template as<value_type>();
-=======
-    int bctype = ioption("bctype");
-
-    double beta_x = this->vm()["bx"].template as<value_type>();
-    double beta_y = this->vm()["by"].template as<value_type>();
-    value_type mu = this->vm()["mu"].template as<value_type>();
->>>>>>> Stashed changes
     value_type stiff = this->vm()["stiff"].template as<value_type>();
     bool ring =        this->vm()["ring"].template as<bool>();
 
