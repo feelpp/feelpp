@@ -159,6 +159,7 @@ DAR<Dim>::run()
     element_type gproj( Xh, "v" );
     /** \endcode */
 
+<<<<<<< Updated upstream
     bool weak_dirichlet =  ioption("weakdir"  );
     value_type penaldir =  doption("penaldir" );
     bool stab =            ioption("stab"     );
@@ -167,6 +168,16 @@ DAR<Dim>::run()
     value_type mu =        doption("mu"       );
     value_type bx =        doption("bx"       );
     value_type by =        doption("by"       );
+=======
+    bool weak_dirichlet = ioption("weakdir");
+    value_type penaldir = doption("penaldir");
+    bool stab = ioption("stab");
+    value_type stabcoeff = doption("stabcoeff");
+    value_type epsilon = doption("epsilon");
+    value_type mu = doption("mu");
+    value_type bx = doption("bx");
+    value_type by = doption("by");
+>>>>>>> Stashed changes
 
     LOG(INFO) << "[DAR] hsize = " << meshSize << "\n";
     LOG(INFO) << "[DAR] bx = " << bx << "\n";

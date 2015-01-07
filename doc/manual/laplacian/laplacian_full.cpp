@@ -156,8 +156,8 @@ public:
     Laplacian()
         :
         super(),
-        meshSize( this->vm()["hsize"].template as<double>() ),
-        shape( this->vm()["shape"].template as<std::string>() ),
+        meshSize( doption("hsize") ),
+        shape( soption("shape") ),
         b(  backend_type::build( soption("backend") ) ),
         bc( backend_type::build( soption("backend") ) ),
         exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) ),
@@ -219,7 +219,7 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
                             % this->about().appName()
                             % entity_type::name()
                             % Order
-                            % this->vm()["hsize"].template as<double>()
+                            % doption("hsize")
                           );
     this->setLogs();
 
@@ -251,7 +251,7 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
 
     value_type penalisation = this->vm()["penal"].template as<value_type>();
     value_type penalisation_bc = this->vm()["penalbc"].template as<value_type>();
-    int bctype = this->vm()["bctype"].template as<int>();
+    int bctype = ioption("bctype");
 
     double t = 0;
     auto g = val( exp( -cst_ref( t ) )*sin( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() ) );

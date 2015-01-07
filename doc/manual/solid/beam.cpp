@@ -237,7 +237,7 @@ Beam<nDim,nOrder>::run()
 
 #if 0
     MeshMover<mesh_type> meshmove;
-    u.vec() *= this->vm()["scale"].template as<double>();
+    u.vec() *= doption("scale");
     meshmove.apply( Xh->mesh(), u );
 
     element_type w( Xh, "w" );

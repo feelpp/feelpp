@@ -154,18 +154,18 @@ public:
         super(),
         M_backend( backend_type::build( soption("backend") ) ),
         M_backendP1( backend_type::build( soption("backend") ) ),
-        meshSize( this->vm()["hsize"].template as<double>() ),
+        meshSize( doption("hsize") ),
         exporter( export_type::New( "gmsh", this->about().appName() ) ),
-        order( this->vm()["order"].template as<int>() ),
-        dim( this->vm()["dim"].template as<int>() ),
-        shape( this->vm()["shape"].template as<std::string>() ),
-        fn( this->vm()["fn"].template as<int>() ),
-        alpha( this->vm()["alpha"].template as<double>() ),
-        beta( this->vm()["beta"].template as<double>() ),
-        weakdir( this->vm()["weakdir"].template as<int>() ),
-        error_type( this->vm()["adapt-error-type"].template as<int>() ),
-        tol( this->vm()["adapt-tolerance"].template as<double>() ),
-        penaldir( this->vm()["penaldir"].template as<double>() )
+        order( ioption("order") ),
+        dim( ioption("dim") ),
+        shape( soption("shape") ),
+        fn( ioption("fn") ),
+        alpha( doption("alpha") ),
+        beta( doption("beta") ),
+        weakdir( ioption("weakdir") ),
+        error_type( ioption("adapt-error-type") ),
+        tol( doption("adapt-tolerance") ),
+        penaldir( doption("penaldir") )
 
     {
     }
@@ -556,7 +556,7 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
                          vf::max( vf::pow(
                                       vf::pow( vf::h(),Order )*( tol )/idv( H1errorP1 ),
                                       1./Order ),
-                                  this->vm()["adapt-hmin"].template as<double>() ) );
+                                  doption("adapt-hmin") ) );
     /**********************end of residual estimaor*************/
 
 
@@ -606,8 +606,8 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
 
     mesh  = adapt( _h=h_new,
                    _model=geostr.str(),
-                   _hmin=this->vm()["adapt-hmin"].template as<double>(),
-                   _hmax=this->vm()["adapt-hmax"].template as<double>() );
+                   _hmin=doption("adapt-hmin"),
+                   _hmax=doption("adapt-hmax") );
 } // ResidualEstimator::run
 
 
