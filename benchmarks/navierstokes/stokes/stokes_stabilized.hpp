@@ -273,15 +273,15 @@ StokesStabilized<Order>::run( )
     const int fillin = ioption("fillin");
     const int bctype = ioption("bctype");
     const double b = doption("b");
-    const bool printMatrix = this->vm()["matrix"].template as<bool>();
+    const bool printMatrix = boption("matrix");
 
     const double drop_tolerance = doption("drop_tolerance");
     const std::string residual = soption("residual");
     double lambda = 1./( 2.*nu ) - math::sqrt( 1./( 4.*nu*nu ) + 4.*pi*pi );
 
-    const bool printErrors = this->vm()["errors"].template as<bool>();
-    const bool printTimings = this->vm()["timings"].template as<bool>();
-    const bool exportGraphics = this->vm()["graphics"].template as<bool>();
+    const bool printErrors = boption("errors");
+    const bool printTimings = boption("timings");
+    const bool exportGraphics = boption("graphics");
 
     AUTO( u1, val( 1. - exp( lambda * Px() ) * cos( 2.*pi*Py() ) ) );
     AUTO( u2, val( ( lambda/( 2.*pi ) ) * exp( lambda * Px() ) * sin( 2.*pi*Py() ) ) );

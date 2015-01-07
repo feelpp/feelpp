@@ -150,7 +150,7 @@ public:
         meshSize( doption("hsize") ),
         shape( soption("shape") ),
 
-        M_use_weak_dirichlet( this->vm()["weak"].template as<bool>() ),
+        M_use_weak_dirichlet( boption("weak") ),
         M_gammabc( doption("gammabc") ),
 
         exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
