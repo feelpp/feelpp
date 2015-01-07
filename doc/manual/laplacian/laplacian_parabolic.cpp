@@ -181,7 +181,7 @@ Laplacian_parabolic<Dim,Order>::run()
   value_type nu = doption("nu");
 
   // loading time loop variables
-  bool steady = this->vm()["bdf.steady"].template as<bool>();
+  bool steady = boption("bdf.steady");
   double t_final = doption("bdf.time-final");
   double t0 = this->vm()["bdf.time-initial"].template as <double>();
   double dt = this->vm()["bdf.time-step"].template as <double>();

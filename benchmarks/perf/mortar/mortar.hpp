@@ -184,7 +184,7 @@ MortarBench<Dim, Order1, Order2>::run()
 #endif
 
     double shear = this->vm()["shear"].template as<value_type>();
-    bool recombine = this->vm()["recombine"].template as<bool>();
+    bool recombine = boption("recombine");
 
     boost::timer t;
 

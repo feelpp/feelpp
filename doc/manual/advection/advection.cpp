@@ -244,7 +244,7 @@ Advection<Dim, Order, Cont, Entity>::run()
     double beta_y =    this->vm()["by"].template as<value_type>();
     value_type mu =    this->vm()["mu"].template as<value_type>();
     value_type stiff = this->vm()["stiff"].template as<value_type>();
-    bool ring =        this->vm()["ring"].template as<bool>();
+    bool ring =        boption("ring");
 
     /*
      * First we create the mesh
