@@ -595,9 +595,9 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
 
     std::ostringstream geostr;
 
-    if ( this->vm()["gmshmodel"].template as<bool>() )
+    if ( boption("gmshmodel") )
     {
-        if ( this->vm()["gmshgeo"].template as<bool>() )
+        if ( boption("gmshgeo") )
             geostr << shape << "-" << Dim << ".geo";
 
         else
