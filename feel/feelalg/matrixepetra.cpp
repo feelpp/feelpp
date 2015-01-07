@@ -303,6 +303,14 @@ MatrixEpetra::printMatlab ( const std::string name ) const
 
     //this->printKonsole();
     //std::cout << "[printMatlab] print matrix in matlab file done\n";
+		/*
+		 * int EpetraExt::RowMatrixToMatrixMarketFile(RowMatrixToMatrixMarketFileconst char *		filename,
+		 * const Epetra_RowMatrix &		A,
+		 * const char *		matrixName = 0,
+		 * const char *		matrixDescription = 0,
+		 * bool		writeHeader = true 
+		 * )
+		 */
     int ret = EpetraExt::RowMatrixToMatlabFile( name.c_str(), *M_mat );
 
     //int ret = EpetraExt::RowMatrixToMatrixMarketFile( name.c_str(), *M_mat, "toto", "tutu" );
