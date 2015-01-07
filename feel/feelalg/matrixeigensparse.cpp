@@ -141,7 +141,7 @@ MatrixEigenSparse<T>::close() const
         LOG(INFO) << "Closing matrix";
         M_mat.setFromTriplets(M_tripletList.begin(), M_tripletList.end());
         M_mat.makeCompressed();
-        M_tripletList.clear();
+        std::vector<triplet>().swap(M_tripletList);
         M_is_closed = true;
     }
 }
