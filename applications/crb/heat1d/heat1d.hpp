@@ -48,7 +48,7 @@ makeHeat1DOptions()
     heat1doptions.add_options()
     ( "mu1", po::value<double>()->default_value( 0.2 ), "mu1" )
     ( "mu2", po::value<double>()->default_value( 0.2 ), "mu2" )
-    ( "mu3", po::value<double>()->default_value( -1 ), "mu3" )
+    ( "mu3", po::value<double>()->default_value(-1.0 ), "mu3" )
     ( "mu4", po::value<double>()->default_value( 0.1 ), "mu4" )
     ;
     return heat1doptions;
@@ -56,12 +56,12 @@ makeHeat1DOptions()
 AboutData
 makeHeat1DAbout( std::string const& str = "heat1d" )
 {
-    Feel::AboutData about( str.c_str(),
-                           str.c_str(),
-                           "0.1",
-                           "1D Heat Benchmark",
-                           Feel::AboutData::License_GPL,
-                           "Copyright (c) 2009-2014 Feel++ Consortium" );
+    Feel::AboutData about( /*AppName  */ str.c_str(),
+                           /*ProgName */ str.c_str(),
+                           /*Version  */ "0.1",
+                           /*ShortDesc*/ "1D Heat Benchmark",
+                           /*Licence  */ Feel::AboutData::License_GPL,
+                           /*Copyright*/ "Copyright (c) 2009-2014 Feel++ Consortium" );
 
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
