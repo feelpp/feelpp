@@ -115,8 +115,8 @@ public:
         :
         super(),
         M_backend( backend_type::build( soption("backend")) ),
-        meshSize( this->vm()["hsize"].template as<double>() ),
-        shape( this->vm()["shape"].template as<std::string>() ),
+        meshSize( doption("hsize") ),
+        shape( soption("shape") ),
         M_firstExporter( export_type::New( this->vm(),
                                            ( boost::format( "%1%-%2%-%3%" )
                                              % this->about().appName()
@@ -317,8 +317,8 @@ void
 ddmethod<Dim>::run()
 {
 
-    value_type tol = this->vm()["tol"].template as<double>();
-    value_type imax = this->vm()["imax"].template as<double>();
+    value_type tol = doption("tol");
+    value_type imax = doption("imax");
 
     Environment::changeRepository( boost::format( "doc/manual/dd/%1%/%2%-%3%/P%4%/h_%5%/" )
                                    % this->about().appName()

@@ -139,7 +139,7 @@ PeriodicStokes<Dim,Order>::PeriodicStokes()
     super(),
 
     // Data
-    h( this->vm()["hsize"].template as<double>() ),
+    h( doption("hsize") ),
     penalisation_bc( this->vm()["penalbc"].template as<value_type>() ),
 
     // spaces

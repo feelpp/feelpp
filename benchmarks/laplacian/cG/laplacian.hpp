@@ -147,11 +147,11 @@ public:
         :
         super( argc, argv, ad, od ),
         backend( backend_type::build( this->vm() ) ),
-        meshSize( this->vm()["hsize"].template as<double>() ),
-        shape( this->vm()["shape"].template as<std::string>() ),
+        meshSize( doption("hsize") ),
+        shape( soption("shape") ),
 
         M_use_weak_dirichlet( this->vm()["weak"].template as<bool>() ),
-        M_gammabc( this->vm()["gammabc"].template as<double>() ),
+        M_gammabc( doption("gammabc") ),
 
         exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
     {
@@ -262,9 +262,9 @@ Laplacian<Dim, Order, RDim, ContinuityType, Entity>::run()
     this->addParameterValue( ContinuityType::is_continuous )
     .addParameterValue( Dim )
     .addParameterValue( Order )
-    .addParameterValue( this->vm()["beta"].template as<double>() )
-    .addParameterValue( this->vm()["nu"].template as<double>() )
-    .addParameterValue( this->vm()["hsize"].template as<double>() );
+    .addParameterValue( doption("beta") )
+    .addParameterValue( doption("nu") )
+    .addParameterValue( doption("hsize") );
 
     if ( this->preProcessing() == RUN_EXIT ) return;
 
@@ -303,8 +303,8 @@ Laplacian<Dim, Order, RDim, ContinuityType, Entity>::run()
     t1.restart();
 
 
-    value_type nu = this->vm()["nu"].template as<double>();
-    value_type beta = this->vm()["beta"].template as<double>();
+    value_type nu = doption("nu");
+    value_type beta = doption("beta");
 
 
     value_type pi = M_PI;

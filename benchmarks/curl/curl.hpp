@@ -129,12 +129,12 @@ public:
         :
         super(),
         M_backend( backend_type::build( soption("backend") ) ),
-        meshSize( this->vm()["hsize"].template as<double>() ),
+        meshSize( doption("hsize") ),
         exporter( Exporter<mesh_type>::New( this->vm() ) )
     {
         this->changeRepository( boost::format( "/benchmark_curl/%1%/h_%2%/" )
                                 % this->about().appName()
-                                % this->vm()["hsize"].template as<double>()
+                                % doption("hsize")
                                 );
     }
 

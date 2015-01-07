@@ -150,8 +150,8 @@ public:
         :
         super(),
         M_backend( backend_type::build( soption("backend") ) ),
-        meshSize( this->vm()["hsize"].template as<double>() ),
-        shape( this->vm()["shape"].template as<std::string>() )
+        meshSize( doption("hsize") ),
+        shape( soption("shape") )
     {
     }
 
@@ -280,9 +280,9 @@ LShape<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
                                    % meshSize );
 
     //! Set dimensions of Lshape geometry
-    double Lx = this->vm()["Lx"].template as<double>();
-    double Ly = this->vm()["Ly"].template as<double>();
-    double Lz = this->vm()["Lz"].template as<double>();
+    double Lx = doption("Lx");
+    double Ly = doption("Ly");
+    double Lz = doption("Lz");
 
     mesh_ptrtype mesh = createGMSHMesh ( _mesh = new mesh_type,
                                          _desc = createLShapeGeo( meshSize, Lx, Ly, Lz ),
@@ -293,10 +293,10 @@ LShape<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 
     // Loop for calculation and mesh adaptation
     int adapt_iter = 0; //current iteration
-    double mesh_eps = this->vm()["geo_tolerance"].template as<double>(); //geometrical tolerance
-    double tol = this->vm()["tolerance"].template as<double>(); //tolerance for stop criterion
-    int max_iter = this->vm()["max_iterations"].template as<int>();
-    std::string meshadapt_type = this->vm()["meshadapt_type"].template as<std::string>();
+    double mesh_eps = doption("geo_tolerance"); //geometrical tolerance
+    double tol = doption("tolerance"); //tolerance for stop criterion
+    int max_iter = ioption("max_iterations");
+    std::string meshadapt_type = soption("meshadapt_type");
 
     // Mesh adaptation stop criterion
     boost::tuple<double, double, p0_element_type> estimator_U;
@@ -319,8 +319,8 @@ LShape<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
         auto f = cst(1.);
         auto g = cst(0.);
 
-        bool weak_dirichlet = this->vm()["weakdir"].template as<int>();
-        value_type penaldir = this->vm()["penaldir"].template as<double>();
+        bool weak_dirichlet = ioption("weakdir");
+        value_type penaldir = doption("penaldir");
 
         //! Define right hand side :
         // \int_{\Omega} fv

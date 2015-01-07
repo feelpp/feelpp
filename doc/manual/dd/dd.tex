@@ -319,8 +319,8 @@ The compact form of (\ref{eq:40}) is
  A->close();
 
 // eigenvalue solver options
- int nev = this->vm()["solvereigen-nev"].template as<int>();
- int ncv = this->vm()["solvereigen-ncv"].template as<int>();;
+ int nev = ioption("solvereigen-nev");
+ int ncv = ioption("solvereigen-ncv");;
 // definition of the eigenmodes
  SolverEigen<double>::eigenmodes_type modes;
 // solve the eigenvalue problem $ Av =  \lambda B v $

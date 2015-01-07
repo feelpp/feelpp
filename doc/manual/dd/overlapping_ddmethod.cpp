@@ -109,8 +109,8 @@ public:
         :
         super(),
         M_backend( backend_type::build( soption("backend") ) ),
-        meshSize( this->vm()["hsize"].template as<double>() ),
-        shape( this->vm()["shape"].template as<std::string>() ),
+        meshSize( doption("hsize") ),
+        shape( soption("shape") ),
         M_firstExporter( export_type::New( this->vm(),
                                            ( boost::format( "%1%-%2%-%3%" )
                                              % this->about().appName()
@@ -305,8 +305,8 @@ ddmethod<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
 
     if ( X[1] == 1 ) shape = "hypercube";
 
-    value_type tolerance = this->vm()["tolerance"].template as<double>();
-    value_type maxIterations = this->vm()["maxIterations"].template as<double>();
+    value_type tolerance = doption("tolerance");
+    value_type maxIterations = doption("maxIterations");
 
     Environment::changeRepository( boost::format( "doc/manual/dd/%1%/%2%-%3%/P%4%/h_%5%/" )
                                    % this->about().appName()
@@ -355,7 +355,7 @@ ddmethod<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
     value_type pi = M_PI;
     auto g = sin( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() );
     auto f = pi*pi*Dim*g;
-    bool additive = this->vm()["additive"].template as<int>();
+    bool additive = ioption("additive");
     double L2erroru1 = 1.;
     double L2erroru2 = 1.;
     double H1erroru1 = 2.;

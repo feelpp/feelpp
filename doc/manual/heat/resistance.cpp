@@ -185,7 +185,7 @@ ResistanceLaplacian<Dim,Order>::ResistanceLaplacian()
     M_backend( backend_type::build( soption("backend") ) ),
 
     // Data
-    h( this->vm()["hsize"].template as<double>() ),
+    h( doption("hsize") ),
     penalisation_bc( this->vm()["penalbc"].template as<value_type>() ),
 
     // spaces
@@ -340,11 +340,11 @@ ResistanceLaplacian<Dim, Order>::run()
 
     sparse_matrix_ptrtype M( M_backend->newMatrix( Xh, Xh ) );
 
-    double T0= this->vm()["T0"].template as<double>();
-    double k1= this->vm()["k1"].template as<double>();
-    double k2= this->vm()["k2"].template as<double>();
-    double c= this->vm()["conductance"].template as<double>();
-    double Q= this->vm()["Q"].template as<double>();
+    double T0= doption("T0");
+    double k1= doption("k1");
+    double k2= doption("k2");
+    double c= doption("conductance");
+    double Q= doption("Q");
     form2( Xh, Xh, _matrix=M, _init=true ) = ( integrate( markedelements( mesh,  mesh->markerName( "k1" ) ),
                                        k1*gradt( u )*trans( grad( v ) ) )+
                                        integrate( markedelements( mesh,  mesh->markerName( "k2" ) ),
