@@ -203,10 +203,10 @@ PeriodicStokes<Dim, Order>::run()
 
     auto a = form2( Xh, Xh, _matrix=M );
     a = integrate( _range=elements( mesh ), _expr=trace(gradt( u )*trans( grad( v ) ) ));
-    if ( vm()["wp"].template as<int>() )
+    if ( ioption("wp") )
     {
-        double px = vm()["px"].template as<double>();
-        double py = vm()["py"].template as<double>();
+        double px = doption("px");
+        double py = doption("py");
 
         //auto dist2center = norm2(P()-cst(px)*oneX()-cst(py)*oneY());
         auto dist= norm2(P()-cst(px)*oneX()-cst(py)*oneY());
@@ -252,8 +252,8 @@ PeriodicStokes<Dim, Order>::exportResults( element_type& U )
 
     // position of the particle
     auto u = U.template element<1>();
-    double px = vm()["px"].template as<double>();
-    double py = vm()["py"].template as<double>();
+    double px = doption("px");
+    double py = doption("py");
     auto dist= norm2(P()-cst(px)*oneX()-cst(py)*oneY());
     auto distMinusTrans = norm2(P()-(cst(px)-translat[0])*oneX()-(cst(py)-translat[1])*oneY());
     auto distPlusTrans  = norm2(P()-(cst(px)+translat[0])*oneX()-(cst(py)+translat[1])*oneY());
