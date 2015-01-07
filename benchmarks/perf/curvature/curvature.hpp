@@ -185,7 +185,7 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
 
     int nparts = Environment::worldComm().size();
 
-    bool prepare = this->vm()["benchmark.prepare"].template as<bool>();
+    bool prepare = boption("benchmark.prepare");
     if ( prepare )
         nparts = ioption("benchmark.partitions");
 
@@ -211,7 +211,7 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
     boost::mpi::timer t;
 
     double shear = this->vm()["shear"].template as<value_type>();
-    bool recombine = this->vm()["recombine"].template as<bool>();
+    bool recombine = boption("recombine");
 
     /*
      * First we create the mesh, in the case of quads we wish to have
