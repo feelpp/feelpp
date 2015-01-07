@@ -228,15 +228,15 @@ public:
      *        This defaults to the feelpp-dev@feelpp.org mailing list.
      *
      */
-    AboutData( const char* appName = "feel++",
-               const char* programName = "feel++",
-               const char* version = Info::versionString(),
-               const char* shortDescription = "",
+    AboutData( std::string const & appName = "feel++",
+               std::string const & programName = "feel++",
+               std::string const & version = Info::versionString(),
+               std::string const & shortDescription = "",
                int licenseType = License_GPL_V3,
-               const char* copyrightStatement = "",
-               const char* text = "",
-               const char* homePageAddress = "",
-               const char* bugsEmailAddress = "feelpp-devel@feelpp.org"
+               std::string const & copyrightStatement = "",
+               std::string const & text = "",
+               std::string const & homePageAddress = "",
+               std::string const & bugsEmailAddress = "feelpp-devel@feelpp.org"
              );
 
     AboutData( AboutData const& ad );
@@ -322,14 +322,14 @@ public:
      *        marked for translation.
      *        Example: I18N_NOOP("Advanced Text Editor").
      */
-    void setProgramName( const char* programName );
+    void setProgramName( std::string const & programName );
 
     /**
      * Defines the program version string.
      *
      * @param version The program version.
      */
-    void setVersion( const char* version );
+    void setVersion( std::string const & version );
 
     /**
      * Defines a short description of what the program does.
