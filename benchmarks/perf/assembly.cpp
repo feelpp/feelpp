@@ -54,7 +54,7 @@ static inline void assemble(boost::shared_ptr<Mesh<Simplex<Dim>>>& mesh, double*
     auto f = backend()->newVector(Vh);
     auto l = form1(_test = Vh, _vector = f);
     l = integrate(_range = elements(mesh), _expr = id(v));
-    
+
     vec[4] = time.elapsed();
     Environment::logMemoryUsage( "Assemble Laplacian Memory Usage: Form1" );
     time.restart();
@@ -154,7 +154,6 @@ template<uint16_type Dim, uint16_type Order, template<uint16_type> class Type, u
 class Assembly : public Simget
 {
 public:
-    
     void run();
 }; // Assembly
 
@@ -214,7 +213,7 @@ Assembly<Dim, Order, Type, OrderBis, TypeBis>::run()
 
 } // Feel
 
-int main(int argc, char** argv) 
+int main(int argc, char** argv)
 {
     using namespace Feel;
 
@@ -222,9 +221,7 @@ int main(int argc, char** argv)
      * Initialize Feel++ Environment
      */
     Environment env(_argc = argc, _argv = argv,
-                    _about = about(_name = ("assembly_" + std::to_string(FEELPP_DIM) + "_" + std::to_string(FEELPP_ORDER)).c_str(),
-                                   _author = "Feel++ Consortium",
-                                   _email = "feelpp-devel@feelpp.org"));
+                    _about = about(_name = "assembly_" + std::to_string(FEELPP_DIM) + "_" + std::to_string(FEELPP_ORDER)));
     Application app;
     app.add(new Assembly<FEELPP_DIM, FEELPP_ORDER, Scalar>());
     app.add(new Assembly<FEELPP_DIM, FEELPP_ORDER, Vectorial>());
