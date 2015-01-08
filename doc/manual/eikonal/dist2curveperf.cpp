@@ -33,6 +33,7 @@
 #include <feel/feelpde/reinit_fms.hpp>
 #include <fstream>
 #include <sstream>
+#include <feel/feelvf/vf.hpp>
 
 using namespace Feel;
 using namespace Feel::vf;

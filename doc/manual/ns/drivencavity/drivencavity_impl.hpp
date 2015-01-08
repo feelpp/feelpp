@@ -37,8 +37,8 @@ template<int Dim>
 DrivenCavity<Dim>::DrivenCavity( )
     :
     super( ),
-    Re( this->vm()["Re"].template as<value_type>() ),
-    penalbc( this->vm()["bccoeff"].template as<value_type>() ),
+    Re(      doption("Re") ),
+    penalbc( doption("bccoeff") ),
     exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
 {
 

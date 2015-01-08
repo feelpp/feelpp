@@ -76,15 +76,15 @@ public:
     }
 };
 
-AboutData::AboutData( const char*  appName,
-                      const char*  programName,
-                      const char*  version,
-                      const char*  shortDescription,
+AboutData::AboutData( std::string const & appName,
+                      std::string const & programName,
+                      std::string const & version,
+                      std::string const & shortDescription,
                       int licenseType,
-                      const char*  copyrightStatement,
-                      const char*  text,
-                      const char*  homePageAddress,
-                      const char*  bugsEmailAddress
+                      std::string const & copyrightStatement,
+                      std::string const & text,
+                      std::string const & homePageAddress,
+                      std::string const & bugsEmailAddress
                     ) :
     M_ProgramName( programName ),
     M_Version( version ),
@@ -97,12 +97,12 @@ AboutData::AboutData( const char*  appName,
     M_LicenseText ()//,
     //d( new AboutDataPrivate )
 {
-    if ( appName )
+    if ( appName.size() > 0 )
     {
-        const char *p = ::strrchr( appName, '/' );
+        size_t found = appName.find_last_of("/\\");
 
-        if ( p )
-            M_AppName = p+1;
+        if ( found != std::string::npos )
+            M_AppName = appName.substr(found + 1);
 
         else
             M_AppName = appName;
@@ -168,13 +168,13 @@ AboutData::setAppName( std::string const & appName )
 }
 
 void
-AboutData::setProgramName( const char* programName )
+AboutData::setProgramName( std::string const & programName )
 {
     M_ProgramName = programName;
 }
 
 void
-AboutData::setVersion( const char* version )
+AboutData::setVersion( std::string const & version )
 {
     M_Version = version;
 }

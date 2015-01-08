@@ -1129,6 +1129,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMapExtende
             if ( theface.isGhostCell() && faceGhostDone.find( theface.id() ) == faceGhostDone.end() )
             {
                 auto faceIt = mesh.faceIterator( theface.id() );
+                M_face_l2g[ faceIt->id()].resize( nLocalDofOnFace() );
                 dfb.add( faceIt );
                 faceGhostDone.insert( theface.id() );
             }
@@ -1441,7 +1442,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMapExtende
 
 template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPointsExtendedGhostMap( mesh_type& mesh )
+DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPointsExtendedGhostMap( mesh_type& mesh ) const
 {
     if ( fe_type::is_modal )
         return;

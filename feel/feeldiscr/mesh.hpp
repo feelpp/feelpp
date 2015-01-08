@@ -1603,6 +1603,7 @@ private:
     //! communicator
     size_type M_numGlobalElements, M_numGlobalFaces, M_numGlobalEdges, M_numGlobalPoints, M_numGlobalVertices;
 
+    bool M_is_gm_cached = false;
     gm_ptrtype M_gm;
     gm1_ptrtype M_gm1;
 

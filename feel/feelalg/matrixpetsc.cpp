@@ -908,7 +908,7 @@ MatrixPetsc<T>::printMatlab ( const std::string name ) const
 
     // assert (this->closed());
     this->close();
-    PetscObjectSetName((PetscObject)M_mat,fs::path(name).stem().string().c_str());
+    PetscObjectSetName((PetscObject)M_mat,fs::path("var_"+name).stem().string().c_str());
     int ierr=0;
     PetscViewer petsc_viewer;
 
