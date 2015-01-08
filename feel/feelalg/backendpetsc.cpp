@@ -137,7 +137,7 @@ BackendPetsc<T>::PtAP( sparse_matrix_ptrtype const& A_,
     MatrixPetsc<T> const* P = dynamic_cast<MatrixPetsc<T> const*> ( P_.get() );
     MatrixPetsc<T>* C = dynamic_cast<MatrixPetsc<T>*> ( C_.get() );
     
-    MatPtAP( A->mat(), P->mat(), MAT_INITIAL_MATRIX, 0.9, &C->mat() );
+    MatPtAP( A->mat(), P->mat(), MAT_INITIAL_MATRIX, 1.0, &C->mat() );
 }
 
 /**
