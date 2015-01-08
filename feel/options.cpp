@@ -202,6 +202,7 @@ gmsh_options( std::string const& prefix )
           " FRONTAL_HEX       6\n"
           " MMG3D             7\n"
           " RTREE             9" )
+        ( prefixvm( prefix,"gmsh.randFactor" ).c_str(), Feel::po::value<double>()->default_value( -1 ), "Mesh.RandomFactor. -1 stand for default value" )
 
         ( prefixvm( prefix,"partition.linear" ).c_str(), Feel::po::value<bool>()->default_value( false ), "linear partitioning if true (false otherwise)" );
 
