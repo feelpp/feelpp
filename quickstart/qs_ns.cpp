@@ -84,7 +84,8 @@ int main(int argc, char**argv )
     m_dirichlet["inlet"]=inlet;
     m_dirichlet["wall"]=wall;
     a.close();
-    auto a_btpcd = btpcd( _space=Vh, _bc=bcs, _alpha=mybdf->polyDerivCoefficient(0),
+    auto a_btpcd = btpcd( _space=Vh, _type="BtPCD",
+                          _bc=bcs, _alpha=mybdf->polyDerivCoefficient(0),
                           _matrix=a.matrixPtr());
 
 

@@ -1142,7 +1142,7 @@ Environment::init( int argc, char** argv,
 
     google::AllowCommandLineReparsing();
     google::ParseCommandLineFlags( &argc, &argv, false );
-
+    //std::cout << "FLAGS_vmodule: " << FLAGS_vmodule << "\n";
 #if 0
     std::cout << "argc=" << argc << "\n";
 
@@ -1208,7 +1208,11 @@ Environment::init( int argc, char** argv,
     // make sure that we pass the proper verbosity level to glog
     if ( S_vm.count( "v" ) )
         FLAGS_v = S_vm["v"].as<int>();
-
+    if ( S_vm.count( "vmodule" ) )
+    {
+        //FLAGS_vmodule = S_vm["vmodule"].as<std::string>();
+        //google::SetVLOGLevel( "*btpcd", 2 );
+    }
     freeargv( envargv );
 
 }

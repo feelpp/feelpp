@@ -35,7 +35,7 @@ install(TARGETS feelpp_qs_stokes DESTINATION bin/ COMPONENT Bin )
 feelpp_add_application( qs_ns SRCS qs_ns.cpp INCLUDE_IN_ALL CFG qs_ns.cfg  )
 install(TARGETS feelpp_qs_ns DESTINATION bin/ COMPONENT Bin )
 
-feelpp_add_application( qs_steady_ns SRCS qs_steady_ns_btpcd.cpp INCLUDE_IN_ALL CFG qs_stokes.cfg )
+feelpp_add_application( qs_steady_ns SRCS qs_steady_ns_btpcd.cpp INCLUDE_IN_ALL CFG qs_steady_ns.cfg )
 install(TARGETS feelpp_qs_steady_ns DESTINATION bin/ COMPONENT Bin )
 
 

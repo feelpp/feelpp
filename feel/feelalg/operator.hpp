@@ -502,6 +502,10 @@ public:
     typedef typename op1_type::value_type value_type;
 
 
+    OperatorScale()
+        :
+        OperatorBase<value_type>()
+        {}
     OperatorScale( op1_ptrtype& F )
         :
         super( F->domainMapPtr(), F->imageMapPtr(), F->label(), F->useTranspose(), F->hasNormInf() ),
@@ -575,11 +579,10 @@ public:
 
         FEELPP_ASSERT( hasInverse() && ( M_alpha != 0 ) ).error( "This operator cannot be inverted." );
 
-        vector_ptrtype Z =  X.clone();
-        Z->scale( 1./M_alpha );
-        Z->close();
-
-        M_F->applyInverse( Z,Y );
+        
+        M_F->applyInverse( X,Y );
+        Y.scale( 1./M_alpha );
+        Y.close();
 
         return !hasInverse();
     }
@@ -607,8 +610,8 @@ private:
  * \return the operator which is the scaling of op by s
  */
 template<typename OpType>
-boost::shared_ptr<OperatorInverse<OpType>>
-scale( boost::shared_ptr<OpType> const& M, typename OpType::value_type s )
+boost::shared_ptr<OperatorScale<OpType>>
+scale( boost::shared_ptr<OpType> M, typename OpType::value_type s )
 {
     return boost::make_shared<OperatorScale<OpType>>(M,s) ;
 }
