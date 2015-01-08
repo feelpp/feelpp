@@ -46,22 +46,28 @@ update( geometric_mapping_context_ptrtype const& __gmc,
 
                 const int ntdof = nDof*nComponents1;
                 M_phi.resize( boost::extents[ntdof][M_npoints] );
-                M_gradphi.resize( boost::extents[ntdof][M_npoints] );
+                //M_gradphi.resize( boost::extents[ntdof][M_npoints] );
 
                 if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value  )
                 {
+                    if ( do_opt )
+                        M_grad.resize( boost::extents[ntdof][1] );
+                    else
                         M_grad.resize( boost::extents[ntdof][M_npoints] );
-                        M_dx.resize( boost::extents[ntdof][M_npoints] );
-                        M_dy.resize( boost::extents[ntdof][M_npoints] );
-                        M_dz.resize( boost::extents[ntdof][M_npoints] );
 
                         if ( vm::has_div<context>::value )
                         {
+                            if ( do_opt )
+                                M_div.resize( boost::extents[ntdof][1] );
+                            else
                                 M_div.resize( boost::extents[ntdof][M_npoints] );
                         }
 
                         if ( vm::has_curl<context>::value )
                         {
+                            if ( do_opt )
+                                M_curl.resize( boost::extents[ntdof][1] );
+                            else
                                 M_curl.resize( boost::extents[ntdof][M_npoints] );
                         }
 
@@ -74,11 +80,15 @@ update( geometric_mapping_context_ptrtype const& __gmc,
                         {
                                 M_hessian.resize( boost::extents[ntdof][M_npoints] );
                         }
+                        if ( vm::has_laplacian<context>::value || vm::has_second_derivative<context>::value  )
+                        {
+                            M_laplacian.resize( boost::extents[ntdof][M_npoints] );
+                        }
                 }
         }
 
         M_phi = M_pc.get()->phi();
-        M_gradphi = M_pc.get()->grad();
+        M_gradphi = M_pc.get()->gradPtr();
 
         update( __gmc );
 }
@@ -106,20 +116,8 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<0>, mpl::bool_
 
                 for ( uint16_type i = 0; i < I; ++i )
                 {
-                    grad_real.noalias() = M_gradphi[i][0]*Bt.transpose();
-                    for ( uint16_type q = 0; q < Q; ++q )
-                    {
-                        M_grad[i][q] = grad_real;
-                        M_dx[i][q] = M_grad[i][q].col( 0 );
-
-                        if ( NDim == 2 )
-                            M_dy[i][q] = M_grad[i][q].col( 1 );
-
-                        if ( NDim == 3 )
-                            M_dz[i][q] = M_grad[i][q].col( 2 );
-
-
-                    }
+                    grad_real.noalias() = (*M_gradphi)[i][0]*Bt.transpose();
+                    M_grad[i][0] = grad_real;
                 }
 
                 // we need the normal derivative
@@ -181,6 +179,41 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<0>, mpl::bool_
                         } // l
                 } // i
         }
+
+        if ( vm::has_laplacian<context>::value )
+        {
+                precompute_type* __pc = M_pc.get().get();
+                const uint16_type Q = M_npoints;//__gmc->nPoints();//M_grad.size2();
+                const uint16_type I = nDof; //M_ref_ele->nbDof();
+
+                // hessian only for P1 geometric mappings
+                boost::multi_array<value_type,4> const& B3 = thegmc->B3();
+
+                std::fill( M_laplacian.data(), M_laplacian.data()+M_laplacian.num_elements(), laplacian_type::Zero() );
+
+                //#pragma omp for
+                for ( uint16_type i = 0; i < I; ++i )
+                {
+                    for ( uint16_type q = 0; q < Q; ++q )
+                    {
+                        for ( uint16_type l = 0; l < NDim; ++l )
+                        {
+                            for ( uint16_type j = 0; j < NDim; ++j )
+                            {
+                                for ( uint16_type p = 0; p < PDim; ++p )
+                                {
+                                    for ( uint16_type r = 0; r < PDim; ++r )
+                                    {
+                                        // we have twice the same contibution thanks to the symmetry
+                                        value_type h = B3[l][j][p][r] * __pc->hessian( i, p, r, q );
+                                        M_hessian[i][q]( j,l )  += h;
+                                    } // q
+                                } // r
+                            } // p
+                        } // j
+                    } // l
+                } // i
+        }
 }
 
 template<typename Poly, template<uint16_type> class PolySetType>
@@ -203,7 +236,8 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<0>, mpl::bool_
                         for ( uint16_type q = 0; q < Q; ++q )
                         {
                                 matrix_eigen_ublas_type Bt ( thegmc->B( 0 ).data().begin(), gmc_type::NDim, gmc_type::PDim );
-                                M_grad[i][q] = M_gradphi[i][q]*Bt.transpose();
+                                M_grad[i][q] = (*M_gradphi)[i][q]*Bt.transpose();
+#if 0
                                 M_dx[i][q] = M_grad[i][q].col( 0 );
 
                                 if ( NDim == 2 )
@@ -211,6 +245,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<0>, mpl::bool_
 
                                 if ( NDim == 3 )
                                         M_dz[i][q] = M_grad[i][q].col( 2 );
+#endif
                         }
                 }
 
@@ -303,7 +338,8 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<1>, mpl::bool_
                                         //uint16_type c1 = c;
                                         matrix_eigen_ublas_type Bt ( thegmc->B( q ).data().begin(), gmc_type::NDim, gmc_type::PDim );
                                         //matrix_type const& Bq = thegmc->B( q );
-                                        M_grad[i][q] = M_gradphi[i][q]*Bt.transpose();
+                                        M_grad[i][q] = (*M_gradphi)[i][q]*Bt.transpose();
+#if 0
                                         M_dx[i][q] = M_grad[i][q].col( 0 );
 
                                         if ( NDim == 2 )
@@ -311,7 +347,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<1>, mpl::bool_
 
                                         if ( NDim == 3 )
                                                 M_dz[i][q] = M_grad[i][q].col( 2 );
-
+#endif
                                         // update divergence if needed
                                         if ( vm::has_div<context>::value )
                                         {
@@ -418,67 +454,57 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<1>, mpl::bool_
                                 //uint16_type c1 = c;
                                 if ( is_hdiv_conforming )
                                 {
-                                    grad_real.noalias() = K*(M_gradphi[i][0]*Bt.transpose());
+                                    grad_real.noalias() = K*((*M_gradphi)[i][0]*Bt.transpose());
                                     grad_real /= thegmc->J(0);
                                 }
                                 else if ( is_hcurl_conforming )
                                 {
-                                    grad_real.noalias() = Bt*(M_gradphi[i][0]*Bt.transpose());
+                                    grad_real.noalias() = Bt*((*M_gradphi)[i][0]*Bt.transpose());
                                 }
                                 else
-                                    grad_real.noalias() = M_gradphi[i][0]*Bt.transpose();
+                                    grad_real.noalias() = (*M_gradphi)[i][0]*Bt.transpose();
 
-                                for ( uint16_type q = 0; q < Q; ++q )
+                                M_grad[i][0] = grad_real;
+
+                                // update divergence if needed
+                                if ( vm::has_div<context>::value )
                                 {
-                                        M_grad[i][q] = grad_real;
-                                        M_dx[i][q] = M_grad[i][q].col( 0 );
-
-                                        if ( NDim == 2 )
-                                                M_dy[i][q] = M_grad[i][q].col( 1 );
-
-                                        if ( NDim == 3 )
-                                                M_dz[i][q] = M_grad[i][q].col( 2 );
-
-                                        // update divergence if needed
-                                        if ( vm::has_div<context>::value )
-                                        {
-                                            if ( is_hdiv_conforming )
-                                            {
-                                                M_div[i][q]( 0,0 ) =  M_gradphi[i][0].trace()/thegmc->J(q);
-                                            }
-                                            else if ( is_hcurl_conforming )
-                                            {
-                                                M_div[i][q]( 0,0 ) =  ( Bt*(M_gradphi[i][0]*Bt.transpose()) ).trace();
-                                            }
-                                            else
-                                            {
-                                                M_div[i][q]( 0,0 ) =  M_grad[i][q].trace();
-                                            }
-                                        }
-
-                                        // update curl if needed
-                                        if ( vm::has_curl<context>::value )
-                                        {
-                                                if ( NDim == 2 )
-                                                {
+                                    if ( is_hdiv_conforming )
+                                    {
+                                        M_div[i][0]( 0,0 ) =  (*M_gradphi)[i][0].trace()/thegmc->J(0);
+                                    }
+                                    else if ( is_hcurl_conforming )
+                                    {
+                                        M_div[i][0]( 0,0 ) =  ( Bt*((*M_gradphi)[i][0]*Bt.transpose()) ).trace();
+                                    }
+                                    else
+                                    {
+                                        M_div[i][0]( 0,0 ) =  M_grad[i][0].trace();
+                                    }
+                                }
+                                
+                                // update curl if needed
+                                if ( vm::has_curl<context>::value )
+                                {
+                                    if ( NDim == 2 )
+                                    {
 #if 0
-                                                        M_curl[i][q]( 0 ) = 0;
-                                                        M_curl[i][q]( 1 ) = 0;
+                                        M_curl[i][0]( 0 ) = 0;
+                                        M_curl[i][0]( 1 ) = 0;
 #else
-                                                        M_curl[i][q]( 0 ) = M_grad[i][q]( 1,0 ) - M_grad[i][q]( 0,1 );
-                                                        M_curl[i][q]( 1 ) = M_grad[i][q]( 1,0 ) - M_grad[i][q]( 0,1 );
+                                        M_curl[i][0]( 0 ) = M_grad[i][0]( 1,0 ) - M_grad[i][0]( 0,1 );
+                                        M_curl[i][0]( 1 ) = M_grad[i][0]( 1,0 ) - M_grad[i][0]( 0,1 );
 #endif
-                                                        M_curl[i][q]( 2 ) =  M_grad[i][q]( 1,0 ) - M_grad[i][q]( 0,1 );
-                                                }
-
-                                                else if ( NDim == 3 )
-                                                {
-                                                        M_curl[i][q]( 0 ) =  M_grad[i][q]( 2,1 ) - M_grad[i][q]( 1,2 );
-                                                        M_curl[i][q]( 1 ) =  M_grad[i][q]( 0,2 ) - M_grad[i][q]( 2,0 );
-                                                        M_curl[i][q]( 2 ) =  M_grad[i][q]( 1,0 ) - M_grad[i][q]( 0,1 );
-                                                }
-                                        }
-                                } // q
+                                        M_curl[i][0]( 2 ) =  M_grad[i][0]( 1,0 ) - M_grad[i][0]( 0,1 );
+                                    }
+                                    
+                                    else if ( NDim == 3 )
+                                    {
+                                        M_curl[i][0]( 0 ) =  M_grad[i][0]( 2,1 ) - M_grad[i][0]( 1,2 );
+                                        M_curl[i][0]( 1 ) =  M_grad[i][0]( 0,2 ) - M_grad[i][0]( 2,0 );
+                                        M_curl[i][0]( 2 ) =  M_grad[i][0]( 1,0 ) - M_grad[i][0]( 0,1 );
+                                    }
+                                }
                         } // c
                 } // ii
 

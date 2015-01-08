@@ -96,19 +96,19 @@ public:
     NIRBTEST()
         :
         super(),
-        M_backend( backend_type::build( this->vm() ) ),
-        CoarseMeshSize( this->vm()["hcoarsesize"].template as<double>() ),
-        FineMeshSize( this->vm()["hfinsize"].template as<double>() ),
-        ReadingMeshes( this->vm()["ReadingMeshes"].template as<int>() ),
-        NbSnapshot( this->vm()["NbSnapshot"].template as<int>() ),
-        sizeRB( this->vm()["sizeRB"].template as<int>() ),
-        muMin( this->vm()["muMin"].template as<double>() ),
-        muMax( this->vm()["muMax"].template as<double>() ),
-        mu( this->vm()["mu"].template as<double>() ),
-        Sampling( this->vm()["Sampling"].template as<int>() ),
-        SamplingCoarse( this->vm()["SamplingCoarse"].template as<int>() ),
-        Offline( this->vm()["Offline"].template as<int>() ),
-        ComputeError( this->vm()["ComputeError"].template as<int>() )
+        M_backend( backend_type::build( soption("backend")) ),
+        CoarseMeshSize( doption("hcoarsesize"   ) ),
+        FineMeshSize(   doption("hfinsize"      ) ),
+        ReadingMeshes(  ioption("ReadingMeshes" ) ),
+        NbSnapshot(     ioption("NbSnapshot"    ) ),
+        sizeRB(         ioption("sizeRB"        ) ),
+        muMin(          doption("muMin"         ) ),
+        muMax(          doption("muMax"         ) ),
+        mu(             doption("mu"            ) ),
+        Sampling(       ioption("Sampling"      ) ),
+        SamplingCoarse( ioption("SamplingCoarse") ),
+        Offline(        ioption("Offline"       ) ),
+        ComputeError(   ioption("ComputeError"  ) )
     {
     }
 
@@ -1332,7 +1332,7 @@ typename NIRBTEST<PolynomialOrder>::element_type NIRBTEST<PolynomialOrder>::blac
      */
 
     form2( _test=Xh, _trial=Xh, _matrix=D ) += on( boundaryfaces( Xh->mesh() ), u, F,g );
-    backend_type::build()->solve( _matrix=D, _solution=u, _rhs=F );
+    backend_type::build(soption("backend"))->solve( _matrix=D, _solution=u, _rhs=F );
 
     return u;
 }

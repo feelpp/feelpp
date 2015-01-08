@@ -139,7 +139,7 @@ PeriodicStokes<Dim,Order>::PeriodicStokes()
     super(),
 
     // Data
-    h( this->vm()["hsize"].template as<double>() ),
+    h( doption("hsize") ),
     penalisation_bc( this->vm()["penalbc"].template as<value_type>() ),
 
     // spaces
@@ -201,12 +201,12 @@ PeriodicStokes<Dim, Order>::run()
     auto M = backend()->newMatrix( Xh, Xh );
     auto F = backend()->newVector( Xh );
 
-    auto a = form2( Xh, Xh, M );
+    auto a = form2( Xh, Xh, _matrix=M );
     a = integrate( _range=elements( mesh ), _expr=trace(gradt( u )*trans( grad( v ) ) ));
-    if ( vm()["wp"].template as<int>() )
+    if ( ioption("wp") )
     {
-        double px = vm()["px"].template as<double>();
-        double py = vm()["py"].template as<double>();
+        double px = doption("px");
+        double py = doption("py");
 
         //auto dist2center = norm2(P()-cst(px)*oneX()-cst(py)*oneY());
         auto dist= norm2(P()-cst(px)*oneX()-cst(py)*oneY());
@@ -220,7 +220,7 @@ PeriodicStokes<Dim, Order>::run()
     a+= integrate( _range=elements( mesh ), _expr=-idt(p)*div(v)+id(q)*divt(u) );
     a+= integrate( _range=elements( mesh ), _expr=1e-6*idt(p)*id(q) );
 
-    auto b = form1( Xh, F );
+    auto b = form1( Xh, _vector=F );
 
     std::list<int> bdys = {1,3};
     BOOST_FOREACH( auto bdy, bdys )
@@ -252,8 +252,8 @@ PeriodicStokes<Dim, Order>::exportResults( element_type& U )
 
     // position of the particle
     auto u = U.template element<1>();
-    double px = vm()["px"].template as<double>();
-    double py = vm()["py"].template as<double>();
+    double px = doption("px");
+    double py = doption("py");
     auto dist= norm2(P()-cst(px)*oneX()-cst(py)*oneY());
     auto distMinusTrans = norm2(P()-(cst(px)-translat[0])*oneX()-(cst(py)-translat[1])*oneY());
     auto distPlusTrans  = norm2(P()-(cst(px)+translat[0])*oneX()-(cst(py)+translat[1])*oneY());

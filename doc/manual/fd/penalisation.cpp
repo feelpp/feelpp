@@ -15,15 +15,15 @@ Penalisation<Dim>::Penalisation():
 /*TODO : in the mesh, call the boundary H1, H2 ...
   and calculate here the lenghts and do not enter it in the code !
 */
-    radius( this->vm()["radius"].template as<double>() ),
-    epsilon( this->vm()["epsilon"].template as<double>() ),
-    epsilonpress( this->vm()["epsilonpress"].template as<double>() ),
-    nu( this->vm()["nu"].template as<double>() ),
-    Q( this->vm()["Q"].template as<double>() ),
-    Qtop( this->vm()["RQ"].template as<double>()*Q ),
+    radius(       doption("radius"      ) ),
+    epsilon(      doption("epsilon"     ) ),
+    epsilonpress( doption("epsilonpress") ),
+    nu(           doption("nu"          ) ),
+    Q(            doption("Q"           ) ),
+    Qtop(         doption("RQ"          )*Q ),
     Qbot( Q-Qtop ),
-    dt( this->vm()["DT"].template as<double>() ),
-    Ylimit( this->vm()["Ylimit"].template as<double>() )
+    dt(     doption("DT"    ) ),
+    Ylimit( doption("Ylimit") )
 {
     LOG(INFO)<<"Dimension : "<<Dim<<"\n";
 
@@ -33,7 +33,7 @@ Penalisation<Dim>::Penalisation():
         exit( 0 );
     }
 
-    std::string OutFolder=this->vm()["OutFolder"].template as<std::string>();
+    std::string OutFolder=soption("OutFolder");
 
     if ( !OutFolder.empty() )
         this->changeRepository( boost::format( OutFolder ) );
@@ -54,15 +54,15 @@ Penalisation<Dim>::Penalisation():
 
     t=0;
     iter=0;
-    Tfinal=this->vm()["Tfinal"].template as<double>();
+    Tfinal=doption("Tfinal");
     // if we are in test mode then do only one (or a small multiple of) time step
     if ( Environment::vm().count( "test" ) )
         Tfinal =  Environment::vm( _name="test" ).template as<int>()*dt;
-    xp=this->vm()["x0"].template as<double>();
-    yp=this->vm()["y0"].template as<double>();
-    zp=this->vm()["z0"].template as<double>();
+    xp=doption("x0");
+    yp=doption("y0");
+    zp=doption("z0");
 
-    backend= backend_type::build( this->vm(), "stokes_backend" );
+    M_backend= backend(_name="stokes_backend" );
 
     U=Xh->elementPtr();
     LOG(INFO)<<"U.size = "<<U->size()<<"\n";
@@ -94,15 +94,15 @@ void Penalisation<Dim>::initStokes()
     LOG(INFO)<<"Wall = "<<integrate( markedfaces( mesh, "Wall" ), vf::cst( 1. ) ).evaluate()( 0,0 )<<"\n";
     LOG(INFO)<<"H2 = "<<integrate( markedfaces( mesh, "Outflowtop" ), vf::cst( 1. ) ).evaluate()( 0,0 )<<"\n";
 
-    D=backend->newMatrix( Xh, Xh );
-    form2( Xh, Xh, D, _init=true );
+    D=M_backend->newMatrix( _test=Xh, _trial=Xh );
+    auto a = form2( _test=Xh, _trial=Xh, _matrix=D );
 
     local_chrono.restart();
 
     //try not use F
-    F = backend->newVector( Xh );
+    F = M_backend->newVector( Xh );
 
-    form1( Xh, F, _init=true ) =
+    form1( Xh, _vector=F, _init=true ) =
         integrate( elements( mesh ), trans( vf::one()-vf::one() ) * id( v ) ) ;
 
     F->close();
@@ -112,17 +112,17 @@ void Penalisation<Dim>::initStokes()
 
     local_chrono.restart();
 
-    C = backend->newMatrix( Xh, Xh );
+    C = M_backend->newMatrix( Xh, Xh );
 
     //    def(u):def(v) = trace ( def(u)* trans( def(v) ) )
-    form2( Xh, Xh, C, _init=true )= integrate( elements( mesh ),
+    form2( Xh, Xh, _matrix=C, _init=true )= integrate( elements( mesh ),
                                     nu * vf::trace( deft * trans( def ) ) );
-    form2( Xh, Xh, C )+= integrate( elements( mesh ),
+    form2( Xh, Xh, _matrix=C )+= integrate( elements( mesh ),
                                     - div( v ) * idt( p ) +id( q ) * divt( u ) );
-    form2( Xh, Xh, C )+= integrate( elements( mesh ),
+    form2( Xh, Xh, _matrix=C )+= integrate( elements( mesh ),
                                     - epsilonpress * idt( p ) * id( q ) );
-    form2( Xh, Xh, C )+= integrate( elements( mesh ),idt( lambda )*id( q ) );
-    form2( Xh, Xh, C )+= integrate( elements( mesh ),id( lambda )*idt( q ) );
+    form2( Xh, Xh, _matrix=C )+= integrate( elements( mesh ),idt( lambda )*id( q ) );
+    form2( Xh, Xh, _matrix=C )+= integrate( elements( mesh ),id( lambda )*idt( q ) );
     C->close();
 
     LOG(INFO)<<"Fin de l'assemblage statique (C) temps : "<<
@@ -146,8 +146,8 @@ void Penalisation<Dim>::stokes()
     auto def  = sym( grad( v ) );
 
     local_chrono.restart();
-    D=backend->newMatrix( Xh, Xh );
-    form2( Xh, Xh, D )= integrate( marked3elements( mesh,1 ),
+    D=M_backend->newMatrix( Xh, Xh );
+    form2( Xh, Xh, _matrix=D )= integrate( marked3elements( mesh,1 ),
                                    idv( carac ) * nu * trace( def*trans( deft ) ) / epsilon );
     LOG(INFO)<<"fin assemblage : "<<local_chrono.elapsed()<<" s"<<"\n";
 
@@ -159,7 +159,7 @@ void Penalisation<Dim>::stokes()
 
     addCL();
 
-    Feel::backend(_rebuild=true)->solve( _matrix=D,_solution=U,_rhs=F );
+    Feel::backend(_name="stokes_backend",_rebuild=true)->solve( _matrix=D,_solution=U,_rhs=F );
 
     LOG(INFO)<<"fin resolution : "<<local_chrono.elapsed()<<" s"<<"\n";
 
@@ -189,16 +189,16 @@ void Penalisation<Dim>::addCL()
         auto outflowtop = ( 6*Qtop / ( pow( H2,3 ) ) ) * ( Px()-L1 )*( Px()-( L1+H2 ) );
         auto outflowbottom = ( 6*Qbot /( pow( H2,3 ) ) ) * ( Px()-L1 )*( Px()-( L1+H2 ) );
 
-        form2( Xh, Xh, D )+=
+        form2( Xh, Xh, _matrix=D )+=
             on( markedfaces( mesh, "Wall" ),
                 u, F, cst( 0. ) * vf::N()  );
-        form2( Xh, Xh, D )+=
+        form2( Xh, Xh, _matrix=D )+=
             on( markedfaces( mesh, "Inflow" ),
                 u, F, inflow * vf::N() );
-        form2( Xh, Xh, D )+=
+        form2( Xh, Xh, _matrix=D )+=
             on( markedfaces( mesh, "Outflowtop" ),
                 u, F, - outflowtop * vf::N() );
-        form2( Xh, Xh, D )+=
+        form2( Xh, Xh, _matrix=D )+=
             on( markedfaces( mesh, "Outflowbottom" ),
                 u, F,  - outflowbottom * vf::N() );
     }
@@ -210,16 +210,16 @@ void Penalisation<Dim>::addCL()
         auto outflowtop = ( 6*Qtop / ( pow( H2,3 ) ) ) * ( Px()-L1 )*( Px()-( L1+H2 ) ) * Pz() * ( Pz()-E ) ;
         auto outflowbottom = ( 6*Qbot /( pow( H2,3 ) ) ) * ( Px()-L1 )*( Px()-( L1+H2 ) ) * Pz() * ( Pz()-E ) ;
 
-        form2( Xh, Xh, D )+=
+        form2( Xh, Xh, _matrix=D )+=
             on( markedfaces( mesh, "Wall" ),
                 u, F, cst( 0. ) * vf::N()  );
-        form2( Xh, Xh, D )+=
+        form2( Xh, Xh, _matrix=D )+=
             on( markedfaces( mesh, "Inflow" ),
                 u, F, inflow * vf::N() );
-        form2( Xh, Xh, D )+=
+        form2( Xh, Xh, _matrix=D )+=
             on( markedfaces( mesh, "Outflowtop" ),
                 u, F, - outflowtop * vf::N() );
-        form2( Xh, Xh, D )+=
+        form2( Xh, Xh, _matrix=D )+=
             on( markedfaces( mesh, "Outflowbottom" ),
                 u, F,  - outflowbottom * vf::N() );
     }

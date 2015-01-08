@@ -63,11 +63,40 @@ namespace detail
 {
 struct MemoryUsage
 {
+    MemoryUsage()
+        :
+#if defined ( FEELPP_HAS_PETSC_H )
+        memory_usage(0),
+        petsc_malloc_usage(0),
+        petsc_malloc_maximum_usage(0)
+#endif
+        {}
+    MemoryUsage(MemoryUsage const& m )
+        :
+#if defined ( FEELPP_HAS_PETSC_H )
+        memory_usage(m.memory_usage),
+        petsc_malloc_usage(m.petsc_malloc_usage),
+        petsc_malloc_maximum_usage(m.petsc_malloc_maximum_usage)
+#endif
+        {}
+    MemoryUsage& operator=(MemoryUsage const& m )
+        {
+            if ( this != &m )
+            {
+#if defined ( FEELPP_HAS_PETSC_H )
+                memory_usage = m.memory_usage;
+                petsc_malloc_usage = m.petsc_malloc_usage;
+                petsc_malloc_maximum_usage = m.petsc_malloc_maximum_usage;
+#endif
+            }
+            return *this;
+        }
 #if defined ( FEELPP_HAS_PETSC_H )
     PetscLogDouble memory_usage;
     PetscLogDouble petsc_malloc_usage;
     PetscLogDouble petsc_malloc_maximum_usage;
 #endif
+    
 };
 inline
 AboutData

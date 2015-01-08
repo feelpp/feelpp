@@ -36,6 +36,7 @@
 #include <boost/smart_ptr/enable_shared_from_this.hpp>
 
 #include <feel/feelcore/feel.hpp>
+#include <feel/feeltiming/tic.hpp>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/singleton.hpp>
 #include <feel/feelcore/parameter.hpp>
@@ -344,16 +345,19 @@ public:
         {
             if ( !buildGraphWithTranspose )
             {
+                tic();
                 auto s = stencil( _test=test,
                                   _trial=trial,
                                   _pattern=pattern,
                                   _pattern_block=pattern_block,
                                   _diag_is_nonzero=diag_is_nonzero,
                                   _collect_garbage=collect_garbage);
-
+                toc( "Backend::newMatrix:: build stencil", FLAGS_v > 0 );
+                tic();
                 mat->init( test->nDof(), trial->nDof(),
                            test->nLocalDofWithoutGhost(), trial->nLocalDofWithoutGhost(),
                            s->graph() );
+                toc( "Backend::newMatrix:: initialize matrix", FLAGS_v > 0 );
             }
             else
             {
@@ -379,9 +383,10 @@ public:
                            test->nLocalDofWithoutGhost(), trial->nLocalDofWithoutGhost(),
                            graph );
             }
-
+            tic();
             mat->zero();
             mat->setIndexSplit( trial->dofIndexSplit() );
+            toc("Backend::newMatrix:: zero out matrix + set split", FLAGS_v > 0 );
         }
 
         if ( verbose )

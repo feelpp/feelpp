@@ -109,8 +109,8 @@ class Laplacian_parabolic
   Laplacian_parabolic()
     :
       super(),
-      meshSize( this->vm()["hsize"].template as<double>() ),
-      shape( this->vm()["shape"].template as<std::string>() )
+      meshSize( doption("hsize") ),
+      shape( soption("shape") )
   {
   }
 
@@ -170,24 +170,24 @@ Laplacian_parabolic<Dim,Order>::run()
   /**
    * Loading variables from cfg file
    */
-  bool weak_dirichlet = this->vm()["weakdir"].template as<int>();
-  value_type penaldir = this->vm()["penaldir"].template as<double>();
-  std::string geofile = this->vm()["geofile"].template as<std::string>();
+  bool weak_dirichlet = ioption("weakdir");
+  value_type penaldir = doption("penaldir");
+  std::string geofile = soption("geofile");
 
   // loading exact and rhs
-  std::string exact  = this->vm()["error.exact"].template as<std::string>();
-  std::string rhs  = this->vm()["error.rhs"].template as<std::string>();
-  std::string params = this->vm()["error.params"].template as<std::string>();
-  value_type nu = this->vm()["nu"].template as<double>();
+  std::string exact  = soption("error.exact");
+  std::string rhs  = soption("error.rhs");
+  std::string params = soption("error.params");
+  value_type nu = doption("nu");
 
   // loading time loop variables
-  bool steady = this->vm()["bdf.steady"].template as<bool>();
-  double t_final = this->vm()["bdf.time-final"].template as<double>();
+  bool steady = boption("bdf.steady");
+  double t_final = doption("bdf.time-final");
   double t0 = this->vm()["bdf.time-initial"].template as <double>();
   double dt = this->vm()["bdf.time-step"].template as <double>();
 
   // loadgin initial temperature expression
-  std::string initial_u = this->vm()["initial_u"].template as<std::string>();
+  std::string initial_u = soption("initial_u");
 
 
   ///**
@@ -204,7 +204,7 @@ Laplacian_parabolic<Dim,Order>::run()
   //    _desc=desc_geo,
   //    _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
   ///** \code */
-  mesh_ptrtype mesh = loadMesh(_mesh=new mesh_type,_filename=this->vm()["geofile"].template as<std::string>()); 
+  mesh_ptrtype mesh = loadMesh(_mesh=new mesh_type,_filename=soption("geofile")); 
   /** \endcode */
 
 #if 0

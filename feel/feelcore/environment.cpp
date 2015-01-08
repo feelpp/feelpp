@@ -1109,7 +1109,7 @@ Environment::init( int argc, char** argv,
                    AboutData const& about )
 {
     S_worldcomm = worldcomm_type::New();
-    CHECK( S_worldcomm ) << "Feel++ Environment: creang worldcomm failed!";
+    CHECK( S_worldcomm ) << "Feel++ Environment: creating worldcomm failed!";
     S_worldcommSeq.reset( new WorldComm( S_worldcomm->subWorldCommSeq() ) );
 
     S_scratchdir = scratchdir();
