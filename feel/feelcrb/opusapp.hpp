@@ -671,7 +671,7 @@ public:
             std::map<CRBModelMode,std::vector<std::string> > hdrs;
             using namespace boost::assign;
             //std::vector<std::string> pfemhdrs = boost::assign::list_of( "FEM Output" )( "FEM Time" );
-            std::vector<std::string> pfemhdrs = boost::assign::list_of( "FEM Output" )( "FEM Time" )( "l2_error" )( "h1_error" );
+            std::vector<std::string> pfemhdrs = boost::assign::list_of( "FEM Output" )( "PFEM Output" )( "FEM Time" )( "l2_error" )( "h1_error" )( "output error" );
             std::vector<std::string> crbhdrs = boost::assign::list_of( "FEM Output" )( "FEM Time" )( "RB Output" )( "Error Bounds" )( "CRB Time" )( "output error" )( "Conditionning" )( "l2_error" )( "h1_error" );
             std::vector<std::string> scmhdrs = boost::assign::list_of( "Lb" )( "Lb Time" )( "Ub" )( "Ub Time" )( "FEM" )( "FEM Time" )( "output error" );
             std::vector<std::string> crbonlinehdrs = boost::assign::list_of( "RB Output" )( "Error Bounds" )( "CRB Time" );
@@ -835,7 +835,7 @@ public:
                 }
             }
 
-            if( M_mode==CRBModelMode::CRB )
+            if( M_mode==CRBModelMode::CRB || M_mode==CRBModelMode::PFEM )
             {
 
                 l2_error_vector.resize( Sampling->size() );
@@ -988,9 +988,17 @@ public:
                                 auto u_error = (( u_fem - u_pfem ).pow(2)).sqrt();
                                 auto l2_error = l2Norm( u_error );
                                 auto h1_error = h1Norm( u_error );
-                                std::vector<double> o = boost::assign::list_of( model->output( output_index,mu , u_pfem, true) )( ti.elapsed() )( l2_error )( h1_error );
+                                auto output_fem = model->output( output_index,mu , u_fem, true);
+                                auto output_pfem = model->output( output_index,mu , u_pfem, true);
+                                auto output_error = math::abs( output_fem - output_pfem );
+                                std::vector<double> o = boost::assign::list_of( output_fem )( output_pfem )( ti.elapsed() )( l2_error )( h1_error )( output_error );
                                 if(proc_number == Environment::worldComm().masterRank() ) std::cout << "output=" << o[0] << "\n";
                                 printEntry( ostr, mu, o );
+
+                                l2_error_vector[curpar-1] = l2_error;
+                                h1_error_vector[curpar-1] = h1_error;
+                                relative_error_vector[curpar-1] = output_error;
+                                time_fem_vector[curpar-1] = ti.elapsed();
 
                                 std::ofstream res(option(_name="result-file").template as<std::string>() );
                                 res << "output="<< o[0] << "\n";
@@ -2032,7 +2040,7 @@ public:
             if (option(_name="crb.scm.cvg-study").template as<bool>() && M_mode==CRBModelMode::SCM )
                 this->doTheScmConvergenceStat( Sampling->size() );
 
-            if ( compute_stat && compute_fem && M_mode==CRBModelMode::CRB )
+            if ( compute_stat && compute_fem && (M_mode==CRBModelMode::CRB || M_mode==CRBModelMode::PFEM) )
             {
                 LOG( INFO ) << "compute statistics \n";
                 Eigen::MatrixXf::Index index_max_l2;
@@ -2057,15 +2065,22 @@ public:
                 double max_time_fem = time_fem_vector.maxCoeff(&index_max_time_fem);
                 double min_time_fem = time_fem_vector.minCoeff(&index_min_time_fem);
                 double mean_time_fem = time_fem_vector.mean();
-                double max_time_crb_prediction = time_crb_vector_prediction.maxCoeff(&index_max_time_crb_prediction);
-                double min_time_crb_prediction = time_crb_vector_prediction.minCoeff(&index_min_time_crb_prediction);
-                double mean_time_crb_prediction = time_crb_vector_prediction.mean();
+                double max_time_crb_prediction = 0;
+                double min_time_crb_prediction = 0;
+                double mean_time_crb_prediction = 0;
                 double max_output_error = relative_error_vector.maxCoeff(&index_max_output_error);
                 double min_output_error = relative_error_vector.minCoeff(&index_min_output_error);
                 double mean_output_error = relative_error_vector.mean();
                 double max_estimated_error = 0;
                 double min_estimated_error = 0;
                 double mean_estimated_error = 0;
+
+                if( M_mode==CRBModelMode::CRB )
+                {
+                    max_time_crb_prediction = time_crb_vector_prediction.maxCoeff(&index_max_time_crb_prediction);
+                    min_time_crb_prediction = time_crb_vector_prediction.minCoeff(&index_min_time_crb_prediction);
+                    mean_time_crb_prediction = time_crb_vector_prediction.mean();
+                }
 
                 if( crb->errorType()!=2 )
                 {
