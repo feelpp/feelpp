@@ -187,7 +187,7 @@ private:
 Steady_Ns::Steady_Ns( )
     :
     super( ),
-    M_backend( backend_type::build( this->vm() ) ),
+    M_backend( backend_type::build( soption("backend") ) ),
     meshSize( this->vm()["hsize"].as<double>() ),
     mu( this->vm()["mu"].as<value_type>() ),
     rho( this->vm()["rho"].as<value_type>() ),

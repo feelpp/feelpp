@@ -265,8 +265,9 @@ VectorEpetra<T>::printMatlab ( const std::string name, bool renumber ) const
 
 #endif
 
+		std::string vectorName = "var_"+name;
     VLOG(1) << "[printMatlab] print vector in matlab file " << name << "\n";
-    EpetraExt::MultiVectorToMatlabFile( name.c_str(), M_vec );
+    EpetraExt::MultiVectorToMatlabFile( name.c_str(), M_vec, vectorName.c_str() );
 }
 template<typename T>
 void
