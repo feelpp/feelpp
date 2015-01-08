@@ -143,8 +143,7 @@ public :
  * @author Christophe Prud'homme
  * @see
  */
-class AdvectionDiffusion : public ModelCrbBase<ParameterSpace<2>,FunctionSpaceDefinition>,
-                           public boost::enable_shared_from_this< AdvectionDiffusion >
+class AdvectionDiffusion : public ModelCrbBase<ParameterSpace<2>,FunctionSpaceDefinition>
 {
 public:
 
@@ -440,8 +439,6 @@ public:
     }
 
 private:
-
-
     po::variables_map M_vm;
 
     double meshSize;
@@ -496,23 +493,19 @@ AdvectionDiffusion::initModel()
     R.setMarker( _type="surface",_name="Omega",_markerAll=true );
     mesh = R.createMesh( _mesh=new mesh_type, _name="Omega" );
 
-
     /*
      * The function space and some associate elements are then defined
      */
-    this->setFunctionSpaces( space_type::New(mesh) );
+    auto Xh = space_type::New( mesh );
+    this->setFunctionSpaces( Xh );
+    if (Environment::isMasterRank() )
+        std::cout << "Number of dof : "<< Xh->nDof() << std::endl;
     // allocate an element of Xh
     pT = element_ptrtype( new element_type( Xh ) );
 
     //  initialisation de A1 et A2
     M_Aqm.resize( Qa() );
     for(int q=0; q<Qa(); q++)
-
-
-
-
-
-
     {
         M_Aqm[q].resize( 1 );
         M_Aqm[q][0] = backend()->newMatrix( Xh, Xh );
