@@ -70,7 +70,13 @@ generic_options()
         ( "help-lib", "prints the help message associated with the Feel++ library options" )
         ( "license", "prints the license text" )
         ( "version", "prints the version" )
-        ( "v", po::value<int>()->default_value(0), "verbosity level" )
+        ( "v", po::value<int>()->default_value(0), "Show all VLOG(m) messages for m <= this."
+          " Overridable by --vmodule." )
+        ( "vmodule", po::value<std::string>()->default_value(""), "per-module verbose level."
+          " Argument is a comma-separated list of <module name>=<log level>."
+          " <module name> is a glob pattern, matched against the filename base"
+          " (that is, name ignoring .cc/.h./-inl.h)."
+          " <log level> overrides any value given by --v." )
         ( "feelinfo", "prints feel libraries information" )
         ( "nochdir", "Don't change repository directory even though it is called" )
         ( "directory", po::value<std::string>(), "change directory to specified one" )
