@@ -128,7 +128,7 @@ BackendPetsc<T>::solve( sparse_matrix_type const& A,
 } // BackendPetsc::solve
 
 template <typename T>
-void
+int
 BackendPetsc<T>::PtAP( sparse_matrix_ptrtype const& A_,
                        sparse_matrix_ptrtype const& P_,
                        sparse_matrix_ptrtype & C_ ) const
@@ -137,7 +137,41 @@ BackendPetsc<T>::PtAP( sparse_matrix_ptrtype const& A_,
     MatrixPetsc<T> const* P = dynamic_cast<MatrixPetsc<T> const*> ( P_.get() );
     MatrixPetsc<T>* C = dynamic_cast<MatrixPetsc<T>*> ( C_.get() );
     
-    MatPtAP( A->mat(), P->mat(), MAT_INITIAL_MATRIX, 1.0, &C->mat() );
+    return MatPtAP( A->mat(), P->mat(), MAT_INITIAL_MATRIX, 1.0, &C->mat() );
+}
+
+
+template <typename T>
+int
+BackendPetsc<T>::PAPt( sparse_matrix_ptrtype const& A_,
+                       sparse_matrix_ptrtype const& P_,
+                       sparse_matrix_ptrtype & C_ ) const
+{
+    MatrixPetsc<T> const* A = dynamic_cast<MatrixPetsc<T> const*> ( A_.get() );
+    MatrixPetsc<T> const* P = dynamic_cast<MatrixPetsc<T> const*> ( P_.get() );
+    MatrixPetsc<T>* C = dynamic_cast<MatrixPetsc<T>*> ( C_.get() );
+    
+    return MatRARt( A->mat(), P->mat(), MAT_INITIAL_MATRIX, 1.0, &C->mat() );
+}
+
+template <typename T>
+int
+BackendPetsc<T>::diag( sparse_matrix_type const& A_,
+                       vector_type& d_ ) const
+{
+    MatrixPetsc<T> const& A = dynamic_cast<MatrixPetsc<T>const &> ( A_ );
+    VectorPetsc<T> & d = dynamic_cast<VectorPetsc<T>&> ( d_);
+    return MatGetDiagonal(A.mat(),d.vec());
+}
+
+template <typename T>
+int
+BackendPetsc<T>::diag( vector_type const & d_,
+                       sparse_matrix_type& A_ ) const
+{
+    MatrixPetsc<T> & A = dynamic_cast<MatrixPetsc<T> &> ( A_ );
+    VectorPetsc<T> const& d = dynamic_cast<VectorPetsc<T> const&> ( d_ );
+    return MatDiagonalSet(A.mat(),d.vec(),ADD_VALUES);
 }
 
 /**
