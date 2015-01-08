@@ -82,13 +82,6 @@ makeAdvectionDiffusionAbout( std::string const& str = "AdvectionDiffusion" )
     return about;
 }
 
-class ParameterDefinition
-{
-public :
-    static const uint16_type ParameterSpaceDimension = 2;
-    typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
-};
-
 class FunctionSpaceDefinition
 {
 public :
@@ -105,6 +98,9 @@ public :
 
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
+
+    /*elements*/
+    typedef typename space_type::element_type element_type;
 
     static const bool is_time_dependent = false;
     static const bool is_linear = true;
@@ -147,12 +143,12 @@ public :
  * @author Christophe Prud'homme
  * @see
  */
-class AdvectionDiffusion : public ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition>,
+class AdvectionDiffusion : public ModelCrbBase<ParameterSpace<2>,FunctionSpaceDefinition>,
                            public boost::enable_shared_from_this< AdvectionDiffusion >
 {
 public:
 
-    typedef ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition> super_type;
+    typedef ModelCrbBase<ParameterSpace<2>,FunctionSpaceDefinition> super_type;
     typedef typename super_type::funs_type funs_type;
     typedef typename super_type::funsd_type funsd_type;
 
@@ -200,9 +196,8 @@ public:
     typedef space_type::element_type element_type;
     typedef boost::shared_ptr<element_type> element_ptrtype;
 
-    /*reduced basis space*/
-    typedef ReducedBasisSpace<super_type, mesh_type, basis_type, value_type> rbfunctionspace_type;
-    typedef boost::shared_ptr< rbfunctionspace_type > rbfunctionspace_ptrtype;
+    //typedef ReducedBasisSpace<super_type, mesh_type, basis_type, value_type> rbfunctionspace_type;
+    //typedef boost::shared_ptr< rbfunctionspace_type > rbfunctionspace_ptrtype;
 
     /* export */
     typedef Exporter<mesh_type> export_type;
@@ -245,12 +240,6 @@ public:
 
     //! initialisation of the model
     void initModel();
-    //@}
-
-    /** @name Operator overloads
-     */
-    //@{
-
     //@}
 
     /** @name Accessors
@@ -301,33 +290,17 @@ public:
     }
 
     /**
-     * \brief Returns the function space
-     */
-    space_ptrtype functionSpace()
-    {
-        return Xh;
-    }
-
-    /**
-     * \brief Returns the reduced basis function space
-     */
-    rbfunctionspace_ptrtype rBFunctionSpace()
-    {
-        return RbXh;
-    }
-
-    //! return the parameter space
-    parameterspace_ptrtype parameterSpace() const
-    {
-        return M_Dmu;
-    }
-
-    /**
      * \brief compute the beta coefficient for both bilinear and linear form
      * \param mu parameter to evaluate the coefficients
      */
 
-    boost::tuple<beta_vector_type, std::vector<beta_vector_type> >
+    betaqm_type
+    computeBetaQm(element_type const& T,  parameter_type const& mu )
+    {
+        return computeBetaQm( mu );
+    }
+
+    betaqm_type
     computeBetaQm( parameter_type const& mu )
     {
         M_betaAqm.resize( Qa() );
@@ -366,10 +339,6 @@ public:
     /** @name  Methods
      */
     //@{
-
-    /**
-     * run the convergence test
-     */
 
     /**
      * create a new matrix
@@ -467,7 +436,7 @@ public:
 
     parameter_type refParameter()
     {
-        return M_Dmu->min();
+        return Dmu->min();
     }
 
 private:
@@ -475,24 +444,17 @@ private:
 
     po::variables_map M_vm;
 
-    backend_ptrtype backend;
-
     double meshSize;
 
     bool M_do_export;
 
     int export_number;
 
-    parameterspace_ptrtype M_Dmu;
-
-
     bool M_use_weak_dirichlet;
 
     double M_gammabc;
 
     mesh_ptrtype mesh;
-    space_ptrtype Xh;
-    rbfunctionspace_ptrtype RbXh;
     sparse_matrix_ptrtype D,M;
     vector_ptrtype F;
     element_ptrtype pT;
@@ -507,22 +469,18 @@ private:
 
 AdvectionDiffusion::AdvectionDiffusion()
     :
-    backend( backend_type::build( BACKEND_PETSC ) ),
     meshSize( 0.01 ),
     M_do_export( true ),
-    export_number( 0 ),
-    M_Dmu( new parameterspace_type )
+    export_number( 0 )
 {}
 
 
 AdvectionDiffusion::AdvectionDiffusion( po::variables_map const& vm )
     :
     M_vm( vm ),
-    backend( backend_type::build( vm ) ),
     meshSize( vm["hsize"].as<double>() ),
     M_do_export( !vm.count( "no-export" ) ),
-    export_number( 0 ),
-    M_Dmu( new parameterspace_type )
+    export_number( 0 )
 {}
 void
 AdvectionDiffusion::initModel()
@@ -542,17 +500,22 @@ AdvectionDiffusion::initModel()
     /*
      * The function space and some associate elements are then defined
      */
-    Xh = space_type::New( mesh );
-    RbXh = rbfunctionspace_type::New( this->shared_from_this() , mesh );
+    this->setFunctionSpaces( space_type::New(mesh) );
     // allocate an element of Xh
     pT = element_ptrtype( new element_type( Xh ) );
 
     //  initialisation de A1 et A2
     M_Aqm.resize( Qa() );
     for(int q=0; q<Qa(); q++)
+
+
+
+
+
+
     {
         M_Aqm[q].resize( 1 );
-        M_Aqm[q][0] = backend->newMatrix( Xh, Xh );
+        M_Aqm[q][0] = backend()->newMatrix( Xh, Xh );
     }
 
     M_Fqm.resize( this->Nl() );
@@ -562,21 +525,19 @@ AdvectionDiffusion::initModel()
         for(int q=0; q<Ql(l) ; q++)
         {
             M_Fqm[l][q].resize(1);
-            M_Fqm[l][q][0] = backend->newVector( Xh );
+            M_Fqm[l][q][0] = backend()->newVector( Xh );
         }
     }
 
-    D = backend->newMatrix( Xh, Xh );
-    F = backend->newVector( Xh );
+    D = backend()->newMatrix( Xh, Xh );
+    F = backend()->newVector( Xh );
 
-    using namespace Feel::vf;
-
-    Feel::ParameterSpace<2>::Element mu_min( M_Dmu );
+    auto mu_min = Dmu->element();
     mu_min << 1, 0.1;
-    M_Dmu->setMin( mu_min );
-    Feel::ParameterSpace<2>::Element mu_max( M_Dmu );
+    Dmu->setMin( mu_min );
+    auto mu_max = Dmu->element();
     mu_max << 10,100;
-    M_Dmu->setMax( mu_max );
+    Dmu->setMax( mu_max );
 
     element_type u( Xh, "u" );
     element_type v( Xh, "v" );
@@ -584,30 +545,39 @@ AdvectionDiffusion::initModel()
     std::cout << "Number of dof " << Xh->nLocalDof() << "\n";
 
     // right hand side
-    form1( Xh, M_Fqm[0][0][0], _init=true ) = integrate( markedfaces( mesh, "Bottom" ), id( v ) );
+    form1( _test=Xh, _vector=M_Fqm[0][0][0] )
+        = integrate( markedfaces( mesh, "Bottom" ), id( v ) );
     M_Fqm[0][0][0]->close();
 
-    form2( Xh, Xh, M_Aqm[0][0], _init=true ) = integrate( elements( mesh ), Py()*dxt( u )*id( v ) );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[0][0] )
+        = integrate( elements( mesh ), Py()*dxt( u )*id( v ) );
     M_Aqm[0][0]->close();
 
-    form2( Xh, Xh, M_Aqm[1][0], _init=true ) = integrate( elements( mesh ), dxt( u )*dx( v ) );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[1][0] )
+        = integrate( elements( mesh ), dxt( u )*dx( v ) );
     M_Aqm[1][0]->close();
 
-    form2( Xh, Xh, M_Aqm[2][0], _init=true ) = integrate( elements( mesh ), dyt( u )*dy( v ) );
-    form2( Xh, Xh, M_Aqm[2][0] ) += integrate( markedfaces( mesh,"Top" ),
-                                           - dyt( u )*Ny()*id( v ) - dy( u )*Ny()*idt( v ) + 20*idt( u )*id( v )/hFace() );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[2][0] )
+        = integrate( elements( mesh ), dyt( u )*dy( v ) );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[2][0] )
+        += integrate( markedfaces( mesh,"Top" ),
+                      - dyt( u )*Ny()*id( v ) - dy( u )*Ny()*idt( v ) + 20*idt( u )*id( v )/hFace() );
     M_Aqm[2][0]->close();
 
-    form2( Xh, Xh, M_Aqm[3][0], _init=true ) = integrate( markedfaces( mesh,"Inflow" ),
-                                           - dxt( u )*Nx()*id( v ) - dx( u )*Nx()*idt( v ) );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[3][0] )
+        = integrate( markedfaces( mesh,"Inflow" ),
+                     - dxt( u )*Nx()*id( v ) - dx( u )*Nx()*idt( v ) );
     M_Aqm[3][0]->close();
-    form2( Xh, Xh, M_Aqm[4][0], _init=true ) = integrate( markedfaces( mesh,"Inflow" ),
-                                           20*idt( u )*id( v )/hFace() );
-    M_Aqm[4][0]->close();
-    M = backend->newMatrix( Xh, Xh );
 
-    form2( Xh, Xh, M, _init=true ) =
-        integrate( elements( mesh ), id( u )*idt( v ) + grad( u )*trans( gradt( u ) ) );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[4][0] )
+        = integrate( markedfaces( mesh,"Inflow" ),
+                     20*idt( u )*id( v )/hFace() );
+    M_Aqm[4][0]->close();
+
+    M = backend()->newMatrix( Xh, Xh );
+
+    form2( _test=Xh, _trial=Xh, _matrix=M )
+        = integrate( elements( mesh ), id( u )*idt( v ) + grad( u )*trans( gradt( u ) ) );
     M->close();
 
 } // AdvectionDiffusion::run
@@ -615,13 +585,13 @@ AdvectionDiffusion::initModel()
 AdvectionDiffusion::sparse_matrix_ptrtype
 AdvectionDiffusion::newMatrix() const
 {
-    return backend->newMatrix( Xh, Xh );
+    return backend()->newMatrix( Xh, Xh );
 }
 
 AdvectionDiffusion::vector_ptrtype
 AdvectionDiffusion::newVector() const
 {
-    return backend->newVector( Xh );
+    return backend()->newVector( Xh );
 }
 
 AdvectionDiffusion::affine_decomposition_type
@@ -636,7 +606,7 @@ AdvectionDiffusion::solve( sparse_matrix_ptrtype& D,
                            element_type& u,
                            vector_ptrtype& F )
 {
-    backend->solve( _matrix=D, _solution=u, _rhs=F );
+    backend()->solve( _matrix=D, _solution=u, _rhs=F );
 } // AdvectionDiffusion::solve
 
 
@@ -710,7 +680,7 @@ AdvectionDiffusion::solve( parameter_type const& mu, element_ptrtype& T )
 {
     this->computeBetaQm( mu );
     this->update( mu );
-    backend->solve( _matrix=D,  _solution=T, _rhs=F );
+    backend()->solve( _matrix=D,  _solution=T, _rhs=F );
     export_number++;
 #if 0
     std::ofstream file;
@@ -752,7 +722,7 @@ void
 AdvectionDiffusion::l2solve( vector_ptrtype& u, vector_ptrtype const& f )
 {
     //std::cout << "l2solve(u,f)\n";
-    backend->solve( _matrix=M,  _solution=u, _rhs=f );
+    backend()->solve( _matrix=M,  _solution=u, _rhs=f );
     //std::cout << "l2solve(u,f) done\n";
 }
 
@@ -772,7 +742,7 @@ AdvectionDiffusion::run( const double * X, unsigned long N, double * Y, unsigned
 {
     //std::cout<<"RUN ::::::::::: "<<std::endl;
     using namespace vf;
-    Feel::ParameterSpace<2>::Element mu( M_Dmu );
+    auto mu = Dmu->element();
     mu << X[0], X[1];
     static int do_init = true;
 
@@ -829,5 +799,3 @@ AdvectionDiffusion::output( int output_index, parameter_type const& mu, element_
 }
 
 #endif /* __AdvectionDiffusion_H */
-
-
