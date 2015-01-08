@@ -865,6 +865,9 @@ public:
     element_type solveFemMonolithicFormulation( parameter_type const& mu );
     element_type solveFemDualMonolithicFormulation( parameter_type const& mu );
     element_type solveFemUsingAffineDecompositionFixedPoint( parameter_type const& mu );
+    element_type solveFemUsingAffineDecompositionNewton( parameter_type const& mu );
+    void solveFemUpdateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype & J , const parameter_type & mu);
+    void solveFemUpdateResidual( const vector_ptrtype& X, vector_ptrtype& R , const parameter_type & mu);
     element_type solveFemDualUsingAffineDecompositionFixedPoint( parameter_type const& mu );
     element_type solveFemUsingOfflineEim( parameter_type const& mu );
 
@@ -2487,6 +2490,9 @@ protected:
     //! model
     model_ptrtype M_model;
 
+    std::vector< std::vector<sparse_matrix_ptrtype> > M_Jqm;
+    std::vector< std::vector< std::vector<vector_ptrtype> > > M_Rqm;
+
 private:
     bool M_is_initialized;
 
@@ -3303,6 +3309,63 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
         mybdf->shiftRight(u);
     }
     return u;
+}
+
+template<typename TruthModelType>
+typename CRBModel<TruthModelType>::element_type
+CRBModel<TruthModelType>::solveFemUsingAffineDecompositionNewton( parameter_type const& mu )
+{
+    sparse_matrix_ptrtype J = this->newMatrix();
+    vector_ptrtype R = this->newVector();
+
+    auto initialguess = this->functionSpace()->elementPtr();
+    initialguess = this->assembleInitialGuess( mu ) ;
+
+
+    boost::tie( boost::tuples::ignore , M_Jqm, M_Rqm ) = this->computeAffineDecomposition();
+
+    backend()->nlSolver()->jacobian = boost::bind( &CRBModel<TruthModelType>::solveFemUpdateJacobian,
+                                                          boost::ref( *this ), _1, _2, mu );
+    backend()->nlSolver()->residual = boost::bind( &CRBModel<TruthModelType>::solveFemUpdateResidual,
+                                                          boost::ref( *this ), _1, _2, mu );
+    backend()->nlSolver()->setType( TRUST_REGION );
+
+    auto solution = this->functionSpace()->element();
+    backend()->nlSolve(_jacobian=J, _solution=solution, _residual=R);
+    return solution;
+}
+
+template<typename TruthModelType>
+void
+CRBModel<TruthModelType>::solveFemUpdateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype & J , const parameter_type & mu)
+{
+    J->zero();
+
+    beta_vector_type betaJqm;
+    boost::tie( boost::tuples::ignore, betaJqm, boost::tuples::ignore ) = this->computeBetaQm( X , mu , 0 );
+
+    for ( size_type q = 0; q < this->Qa(); ++q )
+    {
+        for(int m=0; m<this->mMaxA(q); m++)
+        {
+            J->addMatrix( betaJqm[q][m], M_Jqm[q][m] );
+        }
+    }
+}
+
+template<typename TruthModelType>
+void
+CRBModel<TruthModelType>::solveFemUpdateResidual( const vector_ptrtype& X, vector_ptrtype& R , const parameter_type & mu)
+{
+    R->zero();
+    std::vector< beta_vector_type > betaRqm;
+    boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaRqm ) = this->computeBetaQm( X , mu , 0 );
+
+    for ( size_type q = 0; q < this->Ql( 0 ); ++q )
+    {
+        for(int m=0; m<this->mMaxF(0,q); m++)
+            R->add( betaRqm[0][q][m] , *M_Rqm[0][q][m] );
+    }
 }
 
 template<typename TruthModelType>
