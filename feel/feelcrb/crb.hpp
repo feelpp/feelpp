@@ -1901,10 +1901,9 @@ CRB<TruthModelType>::offlineNewtonPrimal( parameter_type const& mu )
     M_backend_primal->nlSolver()->residual = boost::bind( &self_type::offlineUpdateResidual,
                                                           boost::ref( *this ), _1, _2, mu );
     M_backend_primal->nlSolver()->setType( TRUST_REGION );
-
+    //M_backend_primal->setSnesType( "newtontr" );
 
     auto solution = M_model->functionSpace()->element();
-    solution = *initialguess;
     M_backend_primal->nlSolve(_jacobian=J, _solution=solution, _residual=R);
 
     return solution;
@@ -2779,7 +2778,7 @@ CRB<TruthModelType>::offline()
                     //in this case we have to count mu occurrences in WMmu (mode_number)
                     //to add the mode_number^th mode in the basis
                     M_mode_number=1;
-                    BOOST_FOREACH( auto _mu, *M_WNmu )
+                    for( auto _mu : *M_WNmu )
                     {
                         if( mu == _mu )
                             M_mode_number++;
@@ -3375,7 +3374,7 @@ CRB<TruthModelType>::offline()
                     bool broadcast=false;
                     mu = M_Dmu->element( broadcast );
                     //make sure that the new mu is not already is M_WNmu
-                    BOOST_FOREACH( auto _mu, *M_WNmu )
+                    for( auto _mu : *M_WNmu )
                     {
                         if( mu == _mu )
                             already_exist=true;
@@ -3889,7 +3888,7 @@ CRB<TruthModelType>::buildVarianceMatrixPhi( int const N , mpl::bool_<true> )
         //now we want to have only one element_type (global_element)
         //which sum the contribution of each space
         global_element.zero();
-        BOOST_FOREACH( auto element , vect )
+        for( auto element : vect )
             global_element += element;
         phi.push_back( global_element );
     }
@@ -5371,11 +5370,11 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
             //output_vector.push_back( output );
             output_vector[time_index] = output;
             DVLOG(2) << "iteration " << fi << " increment error: " << increment << "\n";
-            std::cout << "iteration " << fi << " increment error: " << increment << ", output = " << output << "\n";
             fi++;
 
             if( fixedpoint_verbose  && this->worldComm().globalRank()==this->worldComm().masterRank() )
-                VLOG(2)<<"[CRB::fixedPointPrimal] fixedpoint iteration " << fi << " increment : " << increment <<std::endl;
+                std::cout <<"[CRB::fixedPointPrimal] fixedpoint iteration " << fi << " increment : " << increment <<std::endl;
+                //VLOG(2)<<"[CRB::fixedPointPrimal] fixedpoint iteration " << fi << " increment : " << increment <<std::endl;
 
             double residual_norm = (A * uN[time_index] - F).norm() ;
             VLOG(2) << " residual_norm :  "<<residual_norm;
@@ -6008,7 +6007,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
     uNduold.resize( number_of_time_step );
 
     int index=0;
-    BOOST_FOREACH( auto elem, uN )
+    for( auto elem : uN )
     {
         uN[index].resize( N );
         uNdu[index].resize( N );
@@ -6608,7 +6607,7 @@ CRB<TruthModelType>::exportBasisFunctions( const export_vector_wn_type& export_v
     exporter->step( 0 )->setMesh( first_element.functionSpace()->mesh() );
     exporter->addRegions();
     int basis_number=0;
-    BOOST_FOREACH( auto wn , vect_wn )
+    for( auto wn : vect_wn )
     {
 
         if ( wn.size()==0 )
@@ -6619,7 +6618,7 @@ CRB<TruthModelType>::exportBasisFunctions( const export_vector_wn_type& export_v
         int element_number=0;
         parameter_type mu;
 
-        BOOST_FOREACH( auto element, wn )
+        for( auto element : wn )
         {
 
             std::string basis_name = vect_names[basis_number];
@@ -9176,7 +9175,6 @@ CRB<TruthModelType>::run( parameter_type const& mu, vectorN_type & time, double 
     auto output_vector=o.template get<0>();
     double output_vector_size=output_vector.size();
     double output = output_vector[output_vector_size-1];
-    std::cout << "[crb run] output = " << output << std::endl;
     t1.restart();
     auto error_estimation = delta( Nwn, mu, uN, uNdu , uNold, uNduold );
     double time_error_estimation=t1.elapsed();
@@ -9390,7 +9388,7 @@ CRB<TruthModelType>::projectionOnPodSpace( const element_type & u , element_ptrt
         if ( orthonormalize_dual )
             //in this case we can simplify because elements of reduced basis are orthonormalized
         {
-            BOOST_FOREACH( auto du, M_model->rBFunctionSpace()->dualRB() )
+            for( auto du : M_model->rBFunctionSpace()->dualRB() )
             {
                 element_type e = du.functionSpace()->element();
                 e = du;
@@ -9420,7 +9418,7 @@ CRB<TruthModelType>::projectionOnPodSpace( const element_type & u , element_ptrt
             vectorN_type projectionN ( ( int ) M_N );
             projectionN = MN.lu().solve( FN );
             int index=0;
-            BOOST_FOREACH( auto du, M_model->rBFunctionSpace()->dualRB() )
+            for( auto du : M_model->rBFunctionSpace()->dualRB() )
             {
                 element_type e = du.functionSpace()->element();
                 e = du;
@@ -9436,7 +9434,7 @@ CRB<TruthModelType>::projectionOnPodSpace( const element_type & u , element_ptrt
     {
         if ( orthonormalize_primal )
         {
-            BOOST_FOREACH( auto pr, M_model->rBFunctionSpace()->primalRB() )
+            for( auto pr : M_model->rBFunctionSpace()->primalRB() )
             {
                 auto e = pr.functionSpace()->element();
                 e = pr;
@@ -9466,7 +9464,7 @@ CRB<TruthModelType>::projectionOnPodSpace( const element_type & u , element_ptrt
             vectorN_type projectionN ( ( int ) M_N );
             projectionN = MN.lu().solve( FN );
             int index=0;
-            BOOST_FOREACH( auto pr, M_model->rBFunctionSpace()->primalRB() )
+            for( auto pr : M_model->rBFunctionSpace()->primalRB() )
             {
                 element_type e = pr.functionSpace()->element();
                 e = pr;
@@ -9660,12 +9658,12 @@ CRB<TruthModelType>::selectPrimalApeeParameters( int N, std::vector< parameter_t
             //pick randomly an element in parameter space
             mu = M_Dmu->element();
             //make sure that the new mu is not already is M_primal_apee_mu or in M_WNmu
-            BOOST_FOREACH( auto _mu, *M_primal_apee_mu )
+            for( auto _mu : *M_primal_apee_mu )
             {
                 if( mu == _mu )
                     already_exist=true;
             }
-            BOOST_FOREACH( auto _mu, *M_WNmu )
+            for( auto _mu : *M_WNmu )
             {
                 if( mu == _mu )
                     already_exist=true;
@@ -9702,12 +9700,12 @@ CRB<TruthModelType>::selectDualApeeParameters( int N, std::vector< parameter_typ
             //pick randomly an element in parameter space
             mu = M_Dmu->element();
             //make sure that the new mu is not already is M_dual_apee_mu or in M_WNmu
-            BOOST_FOREACH( auto _mu, *M_dual_apee_mu )
+            for( auto _mu : *M_dual_apee_mu )
             {
                 if( mu == _mu )
                     already_exist=true;
             }
-            BOOST_FOREACH( auto _mu, *M_WNmu )
+            for( auto _mu : *M_WNmu )
             {
                 if( mu == _mu )
                     already_exist=true;
@@ -10081,7 +10079,7 @@ CRB<TruthModelType>::computationalTimeStatistics(std::string appname)
     {
 
         int mu_number = 0;
-        BOOST_FOREACH( auto mu, *Sampling )
+        for( auto mu : *Sampling )
         {
             //boost::mpi::timer tcrb;
             auto o = this->run( mu, time, tol , N );

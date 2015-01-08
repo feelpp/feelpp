@@ -893,7 +893,7 @@ public:
 
             int sampling_size = Sampling->size();
 
-            BOOST_FOREACH( auto mu, *Sampling )
+            for( auto mu : *Sampling )
             {
                 int size = mu.size();
 
@@ -1727,7 +1727,7 @@ public:
                                             mu_str= mu_str + ( boost::format( "_%1%" ) %mu[i] ).str() ;
                                         std::string file_name = "convergence"+mu_str+".dat";
                                         std::ofstream conv( file_name );
-                                        BOOST_FOREACH( auto en, conver )
+                                        for( auto en : conver )
                                             conv << en.first << "\t" << en.second.get<0>()  << "\t" << en.second.get<1>() << "\t" << en.second.get<2>() <<
                                             "\t"<< en.second.get<3>() << "\t"<< en.second.get<4>()<< "\t" <<en.second.get<5>()<< "\n";
 #endif
@@ -1805,7 +1805,7 @@ public:
                                             mu_str= mu_str + ( boost::format( "_%1%" ) %mu[i] ).str() ;
                                         std::string file_name = "convergence-scm-"+mu_str+".dat";
                                         std::ofstream conv( file_name );
-                                        BOOST_FOREACH( auto en, conver )
+                                        for( auto en : conver )
                                             conv << en.first << "\t" << en.second.get<0>()  ;
                                     }
                                 }//end of cvg-study
@@ -1864,7 +1864,7 @@ public:
                     }
                     estimated_error_outputs_storage.resize( cutting_direction0 );
                     Sampling->logEquidistributeProduct( sampling_each_direction , mu_ );
-                    BOOST_FOREACH( auto mu, *Sampling )
+                    for( auto mu : *Sampling )
                     {
                         double x = mu(vary_mu_comp0);
                         double mu0 = mu(vary_mu_comp0);
@@ -2171,7 +2171,7 @@ private:
                 os  << hdrmanip( prec+7 ) << s.str();
             }
 
-            BOOST_FOREACH( auto output, outputhdrs )
+            for( auto output : outputhdrs )
             {
                 os << hdrmanip( 15 ) << output;
             }
@@ -2186,7 +2186,7 @@ private:
             for ( int i = 0; i < mu.size(); ++i )
                 os  << std::right <<std::setw( prec+7 ) << dmanip << mu[i];
 
-            BOOST_FOREACH( auto o, outputs )
+            for( auto o : outputs )
             {
                 os << tabmanip( 15 ) << o;
             }
@@ -2569,7 +2569,7 @@ private:
     {
         auto N = crb->scm()->KMax();
         std::list<std::string> list_error_type{"RelativeError"};
-        BOOST_FOREACH( auto error_name, list_error_type)
+        for( auto error_name : list_error_type)
         {
             std::ofstream conv;
             std::string file_name = "cvg-scm-"+ error_name +"-stats.dat";

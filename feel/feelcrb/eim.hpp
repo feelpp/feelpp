@@ -513,7 +513,7 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M)
     vector_type rhs( __M );
 
     model_solution_type solution;
-    BOOST_FOREACH( mu, *trainset )
+    for( auto mu : *trainset )
     {
         DVLOG(2) << "compute best fit check mu...\n";
         mu.check();
@@ -524,7 +524,6 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M)
         if( boption(_name="eim.use-rb-in-mu-selection") )
         {
             solution = M_model->computeRbExpansion( mu );
-            //std::cout << "solution = " << solution << std::endl;
         }
         else
             solution = M_model->solve( mu );
@@ -548,7 +547,9 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M)
 
     LOG_ASSERT( index == trainset->size() ) << "Invalid index " << index << " should be equal to trainset size = " << trainset->size() << "\n";
     auto err = maxerr.array().abs().maxCoeff( &index );
-    LOG(INFO)<< "err=" << err << " reached at index " << index << " and mu=" << trainset->at(index) << "\n";
+    //LOG(INFO)<< "err=" << err << " reached at index " << index << " and mu=" << trainset->at(index) << "\n";
+    if( Environment::worldComm().isMasterRank() )
+        std::cout << "err=" << err << " reached at index " << index << " and mu=" << trainset->at(index) << "\n";
     return boost::make_tuple( err, trainset->at(index) );
 }
 
@@ -758,7 +759,6 @@ EIM<ModelType>::offline()
         timer2.restart();
         // compute mu = arg max inf ||G(.;mu)-z||_infty
         auto bestfit = computeBestFit( M_trainset, this->M_M-1 );
-        //auto bestfit = computeBestFit( M_trainset, this->M_M-1, crb);
         time=timer2.elapsed();
         double error=bestfit.template get<0>();
         if( Environment::worldComm().isMasterRank() )
@@ -1651,12 +1651,14 @@ public:
             check_name_norm=true;
             if( option(_name="eim.compute-expansion-of-expression").template as<bool>() )
             {
-                double norm = math::sqrt( integrate( _range=elements( this->mesh() ) ,_expr=residual_expr*residual_expr ).evaluate()( 0,0 ) );
+                //double norm = math::sqrt( integrate( _range=elements( this->mesh() ) ,_expr=residual_expr*residual_expr ).evaluate()( 0,0 ) );
+                double norm = normL2( _range=elements( this->mesh()), _expr=residual_expr );
                 max = norm;
             }
             else
             {
-                double norm = math::sqrt( integrate( _range=elements( this->mesh() ) ,_expr=residual_projected_expr*residual_projected_expr ).evaluate()( 0,0 ) );
+                //double norm = math::sqrt( integrate( _range=elements( this->mesh() ) ,_expr=residual_projected_expr*residual_projected_expr ).evaluate()( 0,0 ) );
+                double norm = normL2( _range=elements( this->mesh()), _expr=residual_projected_expr );
                 max = norm;
             }
         }
@@ -1935,11 +1937,12 @@ public:
         auto WN = M_crb->wn(); //reduced basis approximation space
 
         vectorN_type time;
-        auto o = M_crb->run( mu, time, option(_name="crb.online-tolerance").template as<double>() , N);
+        auto o = M_crb->run( mu, time, doption(_name="crb.online-tolerance") , N);
         auto solutions=o.template get<2>();
         auto uN = solutions.template get<0>();//vector of solutions ( one solution at each time step )
 
         int size=uN.size();
+        //std::cout << "solution rb = " << uN[size-1] << std::endl;
         auto u_crb = M_crb->expansion( uN[size-1] , N , WN );
 
         return u_crb;
@@ -2079,7 +2082,7 @@ public:
         //reduced basis approximation space
         auto WN = M_crb->wn();
         int mu_number = 0;
-        BOOST_FOREACH( auto mu, *Sampling )
+        for( auto mu : *Sampling )
         {
             //LOG( INFO ) << "[computational] mu = \n"<<mu;
 
@@ -2177,7 +2180,7 @@ public:
             std::string filename = "MuSelection-"+super::name()+".dat";
             file.open(filename);
             int number=0;
-            BOOST_FOREACH( auto mu, *M_mu_sampling )
+            for( auto mu : *M_mu_sampling )
             {
                 int sizemu=mu.size();
                 if( number == 0 )
