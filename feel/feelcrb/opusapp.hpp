@@ -670,12 +670,11 @@ public:
 
             std::map<CRBModelMode,std::vector<std::string> > hdrs;
             using namespace boost::assign;
-            //std::vector<std::string> pfemhdrs = boost::assign::list_of( "FEM Output" )( "FEM Time" );
-            std::vector<std::string> pfemhdrs = boost::assign::list_of( "FEM Output" )( "PFEM Output" )( "FEM Time" )( "l2_error" )( "h1_error" )( "output error" );
-            std::vector<std::string> crbhdrs = boost::assign::list_of( "FEM Output" )( "FEM Time" )( "RB Output" )( "Error Bounds" )( "CRB Time" )( "output error" )( "Conditionning" )( "l2_error" )( "h1_error" );
-            std::vector<std::string> scmhdrs = boost::assign::list_of( "Lb" )( "Lb Time" )( "Ub" )( "Ub Time" )( "FEM" )( "FEM Time" )( "output error" );
-            std::vector<std::string> crbonlinehdrs = boost::assign::list_of( "RB Output" )( "Error Bounds" )( "CRB Time" );
-            std::vector<std::string> scmonlinehdrs = boost::assign::list_of( "Lb" )( "Lb Time" )( "Ub" )( "Ub Time" )( "Rel.(FEM-Lb)" );
+            std::vector<std::string> pfemhdrs{"FEM Output", "PFEM Output", "FEM Time", "l2_error", "h1_error", "output error"};
+            std::vector<std::string> crbhdrs{"FEM Output", "FEM Time", "RB Output", "Error Bounds", "CRB Time", "output error", "Conditionning", "l2_error", "h1_error"};
+            std::vector<std::string> scmhdrs{"Lb","Lb Time", "Ub", "Ub Time", "FEM", "FEM Time", "output error"};
+            std::vector<std::string> crbonlinehdrs{"RB Output", "Error Bounds", "CRB Time"};
+            std::vector<std::string> scmonlinehdrs{"Lb", "Lb Time", "Ub", "Ub Time", "Rel.(FEM-Lb)"};
             hdrs[CRBModelMode::PFEM] = pfemhdrs;
             hdrs[CRBModelMode::CRB] = crbhdrs;
             hdrs[CRBModelMode::SCM] = scmhdrs;
@@ -991,7 +990,8 @@ public:
                                 auto output_fem = model->output( output_index,mu , u_fem, true);
                                 auto output_pfem = model->output( output_index,mu , u_pfem, true);
                                 auto output_error = math::abs( output_fem - output_pfem );
-                                std::vector<double> o = boost::assign::list_of( output_fem )( output_pfem )( ti.elapsed() )( l2_error )( h1_error )( output_error );
+
+                                std::vector<double> o{output_fem, output_pfem, ti.elapsed(), l2_error, h1_error, output_error};
                                 if(proc_number == Environment::worldComm().masterRank() ) std::cout << "output=" << o[0] << "\n";
                                 printEntry( ostr, mu, o );
 
@@ -1125,7 +1125,7 @@ public:
                                     }
 
                                     ti.restart();
-                                    std::vector<double> ofem = boost::assign::list_of( model->output( output_index, mu, u_fem, true ) )( ti.elapsed() );
+                                    std::vector<double> ofem{model->output( output_index, mu, u_fem, true ), ti.elapsed()};
 
                                     relative_error = std::abs( ofem[0]- ocrb) /ofem[0];
                                     relative_estimated_error = output_estimated_error / ofem[0];
@@ -1182,7 +1182,7 @@ public:
                                     auto output_vector=o.template get<0>();
                                     double output_vector_size=output_vector.size();
                                     double ocrb = output_vector[output_vector_size-1];//output at last time
-                                    std::vector<double> v = boost::assign::list_of( output_fem )( time_fem )( ocrb )( relative_estimated_error )( time_crb_prediction )( relative_error )( condition_number )( l2_error )( h1_error );
+                                    std::vector<double> v{output_fem, time_fem, ocrb, relative_estimated_error, time_crb_prediction, relative_error, condition_number, l2_error, h1_error};
 
                                     if( proc_number == Environment::worldComm().masterRank() )
                                     {
@@ -1213,7 +1213,7 @@ public:
                                     auto output_vector=o.template get<0>();
                                     double output_vector_size=output_vector.size();
                                     double ocrb = output_vector[output_vector_size-1];//output at last time
-                                    std::vector<double> v = boost::assign::list_of( output_fem )( time_fem )( ocrb )( relative_estimated_error )( time_crb_prediction )( relative_error )( condition_number )( l2_error )( h1_error );
+                                    std::vector<double> v{output_fem, time_fem, ocrb, relative_estimated_error, time_crb_prediction, relative_error, condition_number, l2_error, h1_error};
                                     if( proc_number == Environment::worldComm().masterRank() )
                                     {
                                         std::cout << "output=" << ocrb << " with " << o.template get<1>() << " basis functions  (error estimation on this output : " << output_estimated_error<<") \n";
@@ -1747,7 +1747,7 @@ public:
 
                                 if ( crb->errorType()==2 )
                                     {
-                                        std::vector<double> v = boost::assign::list_of( ocrb )( ti.elapsed() );
+                                        std::vector<double> v{ocrb, ti.elapsed()};
                                         std::cout << "output=" << ocrb << " with " << o.template get<1>() << " basis functions\n";
                                         printEntry( ostr, mu, v );
                                     }
@@ -1763,7 +1763,7 @@ public:
                                         auto output_vector = o.template get<0>();
                                         double output_vector_size = output_vector.size();
                                         double output = output_vector[ output_vector_size-1 ];
-                                        std::vector<double> v = boost::assign::list_of( output )( output_estimated_error )( ti.elapsed() );
+                                        std::vector<double> v{output, output_estimated_error, ti.elapsed()};
                                         std::cout << "output=" << ocrb << " with " << o.template get<1>() <<
                                             " basis functions  (relative error estimation on this output : " << relative_estimated_error<<") \n";
                                         printEntry( ostr, mu, v );
@@ -2568,7 +2568,7 @@ private:
     void doTheScmConvergenceStat( int sampling_size )
     {
         auto N = crb->scm()->KMax();
-        std::list<std::string> list_error_type = boost::assign::list_of("RelativeError");
+        std::list<std::string> list_error_type{"RelativeError"};
         BOOST_FOREACH( auto error_name, list_error_type)
         {
             std::ofstream conv;
