@@ -625,6 +625,8 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
     CTX::instance()->mesh.order = M_order;
     CTX::instance()->mesh.secondOrderIncomplete = 0;
 
+		if(doption("gmsh.randFactor") > 0.)
+			CTX::instance()->mesh.randFactor = doption("gmsh.randFactor");
     //if ( M_recombine )
     if ( 0 )
     {
