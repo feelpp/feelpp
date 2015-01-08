@@ -40,6 +40,12 @@ class PreconditionerBTPCD : public Preconditioner<typename space_type::value_typ
     typedef Preconditioner<typename space_type::value_type> super;
 public:
 
+    enum Type
+    {
+        BtPCD = 0, // pressure convection diffusion
+        PM=1, // pressure mass matrix
+        SIMPLE=2 // 
+    };
     typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
     typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
 
@@ -70,6 +76,8 @@ public:
 
     typedef typename OperatorPCD<space_type>::type op_pcd_type;
     typedef typename OperatorPCD<space_type>::ptrtype op_pcd_ptrtype;
+    typedef OperatorBase<value_type> op_type;
+    typedef boost::shared_ptr<op_type> op_ptrtype;
     
     /**
      * \param Xh velocity/pressure space type
@@ -78,14 +86,16 @@ public:
      * \param nu viscosity
      * \param alpha mass term
      */
-    PreconditionerBTPCD( space_ptrtype Xh, 
+    PreconditionerBTPCD( std::string t,
+                         space_ptrtype Xh, 
                          std::map<std::string, std::set<flag_type> > bcFlags, 
                          sparse_matrix_ptrtype A,
                          double nu, 
                          double alpha = 0 );
 
-    PreconditionerBTPCD( const PreconditionerBTPCD& tc );
-
+    Type type() const { return M_type; }
+    void setType( std::string t );
+    
     void initialize();
 
     void assembleHelmholtz( double nu, double alpha = 0 );
@@ -101,17 +111,7 @@ public:
 
     void apply( const vector_type & X, vector_type & Y ) const
     {
-        BackendPetsc<double>* b = dynamic_cast<BackendPetsc<double>*>( M_b.get() );
-        if ( b != 0 )
-        {
-            LOG(INFO) << "apply btpcd...\n";
-            applyInverse( X, Y );
-        }
-        else
-        {
-            CHECK(0) << " . invalid call\n";
-        }
-        
+        applyInverse( X, Y );
     }
 
     int applyInverse ( const vector_type& X, vector_type& Y ) const;
@@ -148,6 +148,9 @@ public:
 
 private:
 
+    Type M_type;
+    value_type M_nu, M_alpha;
+    
     backend_ptrtype M_b;
 
     space_ptrtype M_Xh;
@@ -157,7 +160,7 @@ private:
     std::vector<size_type> M_Vh_indices;
     std::vector<size_type> M_Qh_indices;
     
-    sparse_matrix_ptrtype M_helm, G, M_div, M_F, M_B, M_Bt;
+    sparse_matrix_ptrtype M_helm, G, M_div, M_F, M_B, M_Bt, M_mass;
     op_mat_ptrtype divOp, helmOp;
 
     mutable vector_ptrtype M_rhs, M_aux, M_vin,M_pin, M_vout, M_pout;
@@ -167,7 +170,8 @@ private:
     pressure_element_type p, q;
 
     op_pcd_ptrtype pcdOp;
-
+    op_ptrtype pm;
+    
     std::map<std::string, std::set<flag_type> > M_bcFlags;
 
     op_mat_ptrtype precHelm;
@@ -179,11 +183,15 @@ private:
 
 
 template < typename space_type >
-PreconditionerBTPCD<space_type>::PreconditionerBTPCD( space_ptrtype Xh, 
+PreconditionerBTPCD<space_type>::PreconditionerBTPCD( std::string t,
+                                                      space_ptrtype Xh, 
                                                       std::map<std::string, std::set<flag_type> > bcFlags,
                                                       sparse_matrix_ptrtype A,
                                                       double nu, double alpha )
     :
+    M_type( BtPCD ),
+    M_nu( nu ),
+    M_alpha( alpha ),
     M_b(backend()),
     M_Xh( Xh ),
     M_Vh( M_Xh->template functionSpace<0>() ),
@@ -193,6 +201,7 @@ PreconditionerBTPCD<space_type>::PreconditionerBTPCD( space_ptrtype Xh,
     M_helm ( M_b->newMatrix( M_Vh, M_Vh ) ),
     G( M_b->newMatrix( M_Vh, M_Vh ) ),
     M_div ( M_b->newMatrix( _trial=M_Vh, _test=M_Qh ) ),
+    M_mass( M_b->newMatrix( _trial=M_Qh, _test=M_Qh) ),
     M_rhs( M_b->newVector( M_Vh )  ),
     M_aux( M_b->newVector( M_Vh )  ),
     M_vin( M_b->newVector( M_Vh )  ),
@@ -206,62 +215,28 @@ PreconditionerBTPCD<space_type>::PreconditionerBTPCD( space_ptrtype Xh,
     q( M_Qh, "q" ),
     M_bcFlags( bcFlags )
 {
-    LOG(INFO) << "Alpha: " << alpha << "\n";
+    tic();
+    LOG(INFO) << "[PreconditionerBTPCD] setup starts";
     this->setMatrix( A );
     this->setSide( super::RIGHT );
     std::iota( M_Vh_indices.begin(), M_Vh_indices.end(), 0 );
     std::iota( M_Qh_indices.begin(), M_Qh_indices.end(), M_Vh->nLocalDofWithGhost() );
-        
+
+    tic();
     M_F = A->createSubMatrix( M_Vh_indices, M_Vh_indices, true );
     M_B = A->createSubMatrix( M_Qh_indices, M_Vh_indices );
     M_Bt = A->createSubMatrix( M_Vh_indices, M_Qh_indices );
-
+    toc( "BTPCD create sub matrix done", FLAGS_v > 0 );
+    tic();
     helmOp = op( M_F, "Fu" );
     divOp = op( M_Bt, "Bt");
+    toc( "BTPCD convection-diffusion and gradient operators done ", FLAGS_v > 0 );
 
-    mpi::timer ti;
     initialize();
 
-    LOG(INFO) << "Assemble Helmholtz Operator...\n";
-    assembleHelmholtz( nu, alpha );
-    LOG(INFO) << "[PreconditionerBTPCD] Constructor: Helmholtz assembly\n" ;
-
-    LOG(INFO) << "Assemble Divergence Operator...\n";
-    assembleDivergence();
-    LOG(INFO) << "[PreconditionerBTPCD] Constructor: Divergence assembly time\n";
-
-    LOG(INFO) << "Assemble Schur Operator...\n";
-    assembleSchurApp(nu, alpha);
-    LOG(INFO) << "[PreconditionerBTPCD] Constructor: Schur approximation assembly time:\n";
-}
-
-
-
-template < typename space_type >
-PreconditionerBTPCD<space_type>::PreconditionerBTPCD( const PreconditionerBTPCD& tc )
-    :
-    M_Xh( tc.M_Xh ),
-    M_Vh( tc.M_Vh ),
-    M_Qh( tc.M_Qh ),
-    M_helm( tc.M_helm ),
-    G( tc.G ),
-    M_div( tc.M_div ),
-    divOp( tc.divOp ),
-    helmOp( tc.helmOp ),
-    M_rhs( tc.M_rhs ),
-    M_aux( tc.M_aux ),
-    M_vin( tc.M_vin ),
-    M_pin( tc.M_pin ),
-    M_vout( tc.M_vout ),
-    M_pout( tc.M_pout ),
-    u( tc.u ),
-    v( tc.v ),
-    q( tc.q ),
-    pcdOp( tc.pcdOp ),
-    M_bcFlags( tc.M_bcFlags ),
-    precHelm( tc.precHelm )
-{
-    //Log() << "Call to Preconditioner BTPCD copy constructor...\n";
+    tic();    
+    this->setType ( t );
+    toc( "[PreconditionerBTPCD] setup done ", FLAGS_v > 0 );
 }
 
 template < typename space_type >
@@ -274,49 +249,34 @@ PreconditionerBTPCD<space_type>::initialize()
 
 template < typename space_type >
 void
-PreconditionerBTPCD<space_type>::assembleHelmholtz( double nu, double alpha  )
+PreconditionerBTPCD<space_type>::setType( std::string t )
 {
-#if 0
-    auto a = form2( _trial=M_Vh, _test=M_Vh, _matrix=M_helm );
+    if ( t == "BtPCD") M_type = BtPCD;
+    if ( t == "PM") M_type = PM;
+    if ( t == "SIMPLE") M_type = SIMPLE;
 
-    if ( alpha != 0 )
-        a = integrate( _range=elements(M_Xh->mesh()),  _expr=alpha*trans(idt(u))*id(v) + nu*(trace(trans(gradt(u))*grad(v))) );
-    else
-        a = integrate( _range=elements(M_Xh->mesh()),  _expr=nu*(trace(trans(gradt(u))*grad(v))) );
-
-    /*
-    for( auto dir : M_bcFlags["Dirichlet"] )
-        {
-            a += integrate( markedfaces(M_Xh->mesh(), dir), - nu*trans(gradt(u)*N())*id(v) );
-        }
-     */
-    M_helm->close();
-#endif
+    switch( M_type )
+    {
+    case BtPCD:
+        tic();
+        pcdOp = boost::make_shared<op_pcd_type>( M_Xh, M_bcFlags, M_nu, M_alpha );
+        toc( "Assembling schur complement done", FLAGS_v > 0 );        
+        break;
+    case PM:
+    {
+        tic();
+        auto m = form2( _test=M_Qh, _trial=M_Qh, _matrix=M_mass );
+        m = integrate( elements(M_Qh->mesh()), idt(p)*id(q) );
+        M_mass->close();
+        pm = scale( op( M_mass, "Mp" ), 1./M_nu );
+        toc( "Assembling pressure mass matrix schur complement appoximation done", FLAGS_v > 0 );
+        
+    }
+    break;
+    case SIMPLE:
+        break;
+    }
 }
-
-template < typename space_type >
-void
-PreconditionerBTPCD<space_type>::assembleDivergence()
-{
-#if 0
-    auto a = form2( _trial=M_Vh, _test=M_Qh, _matrix=M_div );
-    a = integrate( _range=elements(M_Xh->mesh()), _expr=divt( u ) * id( q ) );
-    M_div->close();
-
-    divOp = op( M_B, "DN");
-#endif
-}
-
-template < typename space_type >
-void
-PreconditionerBTPCD<space_type>::assembleSchurApp( double nu, double alpha )
-{
-    LOG(INFO) << "Assembling schur complement";
-    pcdOp = boost::make_shared<op_pcd_type>( M_Xh, M_bcFlags, nu, alpha );
-    LOG(INFO) << "Assembling schur complement done";
-}
-
-
 
 template < typename space_type >
 template< typename Expr_convection, typename Expr_bc >
@@ -325,40 +285,19 @@ PreconditionerBTPCD<space_type>::update( sparse_matrix_ptrtype A,
                                          Expr_convection const& expr_b,
                                          Expr_bc const& g )
 {
-    static bool init_G = true;
 
-    boost::timer ti;
-#if 1
+    tic();
     M_F = A->createSubMatrix( M_Vh_indices, M_Vh_indices, true );
-
+        
     helmOp = op( M_F, "Fu" );
-#else
-
-    if ( !init_G )
-        G->zero();
-
-    auto lg = form2( _trial=M_Vh, _test=M_Vh, _matrix=G );
-
-    lg = integrate( _range=elements(M_Xh->mesh()),
-                    _expr=trans( gradt(u)*val(expr_b) )*id(v) );
-
-    G->close();
-
-    G->addMatrix( 1.0, M_helm );
-
-    std::set<flag_type>::const_iterator diriIter;
-    for( auto dir : M_bcFlags["Dirichlet"] )
+        
+    toc("BTPCD convection-diffusion operator updated", FLAGS_v > 0 );
+    if ( type() == BtPCD )
     {
-        lg += on( _range=markedfaces(M_Xh->mesh(), dir ), _element=u, _rhs=M_rhs, _expr=g.find(M_Xh->mesh()->markerName(dir))->second );
+        tic();
+        pcdOp->update( expr_b, g );
+        toc("BTPCD pressure convection-diffusion operator updated", FLAGS_v > 0 );
     }
-    G->close();
-
-    helmOp = op( G, "Fu" );
-#endif
-    ti.restart();
-    pcdOp->update( expr_b, g );
-
-    init_G = false;
 }
 
 
@@ -369,45 +308,47 @@ PreconditionerBTPCD<space_type>::applyInverse ( const vector_type& X, vector_typ
 {
     U = X;
     U.close();
-#if 0
-    Y.setZero();
-    Y.add( 1., X );
-    Y.close();
-    return 1;
-#endif
-
+    VLOG(2) << "coucou";
     LOG(INFO) << "Create velocity/pressure component...\n";
     *M_vin = U.template element<0>();
     M_vin->close();
     *M_pin = U.template element<1>();
     M_pin->close();
-
-    if ( boption("btpcd.pcd") )
-    {
-        LOG(INFO) << "pressure block: Solve for the pressure convection diffusion...\n";
-        CHECK(pcdOp) << "Invalid PCD oeprator\n";
-        CHECK(M_aux) << "Invalid aux vector\n";
-        CHECK(M_pout) << "Invalid aux vector\n";
-
-        pcdOp->applyInverse( *M_pin, *M_pout );
-        M_pout->scale(-1);
-        M_pout->close();
-        LOG(INFO) << "pressure block: Solve for the pressure convection diffusion done\n";
-    }
-    else
-    {
-        *M_pout = *M_pin;
-        M_pout->close();
-    }
-
-    LOG(INFO) << "pressure/velocity block : apply divergence...\n";
-    divOp->apply( *M_pout, *M_vout );
-
     *M_aux = *M_vin;
     M_aux->close();
-    M_aux->add( -1.0, *M_vout );
-    M_aux->close();
+    
+    if ( this->type() == PM )
+    {
+        VLOG(2) << "applying mass matrix";
+        pm->applyInverse( *M_pin, *M_pout );
+        M_pout->close();
+    }
+    if ( this->type() == BtPCD )
+    {
+        if ( boption("btpcd.pcd") )
+        {
+            LOG(INFO) << "pressure block: Solve for the pressure convection diffusion...\n";
+            CHECK(pcdOp) << "Invalid PCD oeprator\n";
+            CHECK(M_aux) << "Invalid aux vector\n";
+            CHECK(M_pout) << "Invalid aux vector\n";
+            
+            pcdOp->applyInverse( *M_pin, *M_pout );
+            M_pout->scale(-1);
+            M_pout->close();
+            LOG(INFO) << "pressure block: Solve for the pressure convection diffusion done\n";
+        }
+        else
+        {
+            *M_pout = *M_pin;
+            M_pout->close();
+        }
 
+        LOG(INFO) << "pressure/velocity block : apply divergence...\n";
+        divOp->apply( *M_pout, *M_vout );
+        
+        M_aux->add( -1.0, *M_vout );
+        M_aux->close();
+    }
     if ( boption("btpcd.cd") )
     {
         LOG(INFO) << "velocity block : apply inverse convection diffusion...\n";
@@ -477,11 +418,12 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename meta::btpcd<typename parameter::valu
                                  tag,
                                  ( required
                                    ( space, *)
-                                   ( bc, *)
                                    ( matrix, *)
+                                   ( type, *)
                                    )
                                  ( optional
                                    ( prefix, *( boost::is_convertible<mpl::_,std::string> ), "" )
+                                   ( bc, *, (std::map<std::string,std::set<flag_type>>()) )
                                    ( nu,  *, doption("mu") )
                                    ( alpha, *, 0. )
                                    )
@@ -489,7 +431,7 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename meta::btpcd<typename parameter::valu
 {
     typedef typename meta::btpcd<typename parameter::value_type<Args, tag::space>::type::element_type>::ptrtype pbtpcd_t;
     typedef typename meta::btpcd<typename parameter::value_type<Args, tag::space>::type::element_type>::type btpcd_t;
-    pbtpcd_t p( new btpcd_t( space, bc, matrix, nu, alpha ) );
+    pbtpcd_t p( new btpcd_t( type, space, bc, matrix, nu, alpha ) );
     return p;
 } // btcpd
 } // Feel

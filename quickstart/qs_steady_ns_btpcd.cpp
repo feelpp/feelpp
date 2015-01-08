@@ -1,271 +1,262 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*-
- 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:set fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+
  This file is part of the Feel++ library
- 
+
  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
- Date: 19 Nov 2014
- 
+ Date     : Tue Feb 25 12:13:15 2014
+
  Copyright (C) 2014 Feel++ Consortium
- 
+
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
  License as published by the Free Software Foundation; either
  version 2.1 of the License, or (at your option) any later version.
- 
+
  This library is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  Lesser General Public License for more details.
- 
+
  You should have received a copy of the GNU Lesser General Public
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 #include <feel/feel.hpp>
-#include <feel/feelalg/backend.hpp>
-#include <feel/feel.hpp>
-#include<feel/feeldiscr/projector.hpp>
-#include<feel/feelvf/operations.hpp>
-#include <boost/noncopyable.hpp>
-#include <boost/signals2.hpp>
-#include <boost/format.hpp>
-
-#include <feel/feelpoly/im.hpp>
-#include <feel/feeldiscr/operatorlinear.hpp>
 #include <feel/feelpde/preconditionerbtpcd.hpp>
 
-
-namespace Feel
+int main(int argc, char**argv )
 {
-/**
- * 
- */
-class SteadyNavierStokes
-:
-public Application
-{
-    typedef Application super;
-public:
-    typedef double value_type;
-    typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
-    /*matrix*/
-    typedef backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
-    typedef backend_type::vector_ptrtype vector_ptrtype;
-    typedef Simplex<2> convex_type;
+    //! [marker1]
+    using namespace Feel;
+	po::options_description stokesoptions( "Stokes options" );
+	stokesoptions.add_options()
+		( "mu", po::value<double>()->default_value( 1.0 ), "coeff" )
+        ( "picard", po::value<bool>()->default_value( 1 ), "picard" )
+		( "fixpoint.tol", po::value<double>()->default_value( 1e-8 ), "tolerance" )
+		( "fixpoint.maxit", po::value<double>()->default_value( 10 ), "max iteration" )
+        ( "newton", po::value<bool>()->default_value( 1 ), "newton" )
+        ( "newton.tol", po::value<double>()->default_value( 1e-8 ), "tolerance" )
+		( "newton.maxit", po::value<double>()->default_value( 10 ), "max iteration" )
+		;
+    stokesoptions.add( backend_options( "stokes" ) )
+        .add( backend_options( "newton" ) )
+         .add( backend_options( "picard" ) );
+	Environment env( _argc=argc, _argv=argv,
+                     _desc=stokesoptions,
+                     _about=about(_name="qs_steady_ns",
+                                  _author="Feel++ Consortium",
+                                  _email="feelpp-devel@feelpp.org"));
 
-    typedef Mesh<convex_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-
-    /*basis*/
-    typedef Lagrange<2, Vectorial> basis_u_type;
-    typedef Lagrange<1, Scalar> basis_p_type;
-    typedef bases<basis_u_type,basis_p_type> basis_type;
-
-    /*space*/
-    typedef FunctionSpace<mesh_type, basis_type> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
-    typedef typename space_type::element_type element_type;
-
-
-    FEELPP_DONT_INLINE
-    SteadyNavierStokes( );
-
-    // init mesh and space
-    FEELPP_DONT_INLINE
-    void init();
-
-    /**
-     * run the convergence test
-     */
-    FEELPP_DONT_INLINE
-    void run();
-
-private:
-
-    backend_ptrtype M_backend;
-    double meshSize;
- 
-    double mu;
-    double rho;
-    double penalbc;
-
-    mesh_ptrtype mesh;
-    space_ptrtype Vh;
-    sparse_matrix_ptrtype M,D;
-    vector_ptrtype F;
-
-}; // SteadyNavierStokes
-
-SteadyNavierStokes::SteadyNavierStokes( )
-    :
-    super( ),
-    //M_backend( backend_type::build( this->vm() ) ),
-    mu( this->vm()["mu"].as<value_type>() ),
-    rho( this->vm()["rho"].as<value_type>() ),
-    penalbc( this->vm()["bccoeff"].as<value_type>() )
-{
-
-}
-
-
-void SteadyNavierStokes::init()
-{
-    double meshSize = option(_name="gmsh.hsize").as<double>();
-    mesh = loadMesh(_mesh=new mesh_type);
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
+    auto g = expr<2,1>( soption(_name="functions.g") );
+    auto wall = expr<2,1>( soption(_name="functions.h") );
+    auto Vh = THch<2>( mesh );
+    auto U = Vh->element();
+    auto Un = Vh->element();
+    auto V = Vh->element();
+    auto u = U.element<0>();
+    auto un = Un.element<0>();
+    auto v = V.element<0>(g,"poiseuille");
+    auto p = U.element<1>();
+    auto pn = Un.element<1>();
+    auto q = V.element<1>();
+    double mu = doption(_name="mu");
 
     if ( Environment::isMasterRank() )
     {
-        std::cout << "number of elements of 2D: " << mesh->numElements() << "\n";
+        std::cout << "Re\tFunctionSpace\tVelocity\tPressure\n";
+        std::cout.width(16);
+        std::cout << std::left << 2./mu;
+        std::cout.width(16);
+        std::cout << std::left << Vh->nDof();
+        std::cout.width(16);
+        std::cout << std::left << Vh->functionSpace<0>()->nDof();
+        std::cout.width(16);
+        std::cout << std::left << Vh->functionSpace<1>()->nDof() << "\n";
     }
-    Vh = space_type::New( mesh );
-}
+    auto deft = gradt( u );
+    auto def = grad( v );
+    double fixPtTol = doption(_name="fixpoint.tol");
+    int fixPtMaxIt = doption(_name="fixpoint.maxit");
+    double newtonTol = doption(_name="newton.tol");
+    int newtonMaxIt = doption(_name="newton.maxit");
+    auto l = form1( _test=Vh );
+    auto r = form1( _test=Vh );
 
-void SteadyNavierStokes::run()
-{
-    this->init();
-#if 1
-    auto Jacobian = [=](const vector_ptrtype& X, sparse_matrix_ptrtype& J)
-    {
-        //std::cout<< " In Jacobian function \n";
-        auto U = Vh->element( "(u,p)" );
-        auto V = Vh->element( "(v,q)" );
-        auto u = U.element<0>( "u" );
-        auto v = V.element<0>( "u" );
-        auto p = U.element<1>( "p" );
-        auto q = V.element<1>( "p" );
-
-        auto deft = sym(gradt( u ));
-        auto def = sym(grad( v ));
-
-        //std::cout<< "        Start assembling the bilinear form a  \n";
-        if (!J) J = backend()->newMatrix( Vh, Vh );
-        auto a = form2( _test=Vh, _trial=Vh, _matrix=J );
-
-        a = integrate( elements( mesh ), 2*mu*inner(deft,def) );
-        a += integrate( elements( mesh ), - id(q)*divt(u) -idt(p)*div(v) );
-
-        //std::cout<< "        Assembling convectiv terms \n";
-        // Convective terms
-        a += integrate( elements( mesh ), rho*trans(id(v))*gradv(u)*idt(u));
-        a += integrate( elements( mesh ), rho*trans(id(v))*gradt(u)*idv(u));
-
-        //std::cout<< "        Setting boundary condition on the wall \n";
-        //(For Passerni test case)Dirichlet Boundary condition on the inlet and wall and stress free on the outlet
-        a += integrate( markedfaces(mesh,"wall"),-trans( -idt(p)*N()+2*mu*deft*N() )*id( v ));
-        a += integrate( markedfaces(mesh,"wall"),-trans( -id(p)*N()+2*mu*def*N() )*idt( u ));
-        a += integrate( markedfaces(mesh,"wall"), +penalbc*trans( idt( u ) )*id( v )/hFace() );
-
-        //std::cout<< "        Setting boundary condition on the inlet \n";
-        a += integrate( markedfaces(mesh,"inlet"),-trans( -idt(p)*N()+2*mu*deft*N() )*id( v ));
-        a += integrate( markedfaces(mesh,"inlet"),-trans( -id(p)*N()+2*mu*def*N() )*idt( u ));
-        a += integrate( markedfaces(mesh,"inlet"), +penalbc*trans( idt( u ) )*id( v )/hFace() );
-        //std::cout<< "        DONE \n";
-
-
-    };
-
-    auto Residual = [=](const vector_ptrtype& X, vector_ptrtype& R)
-    {
-        //std::cout<< " In residual function \n";
-        auto U = Vh->element( "(u,p)" );
-        auto V = Vh->element( "(v,q)" );
-        auto u = U.element<0>( "u" );
-        auto v = V.element<0>( "u" );
-        auto p = U.element<1>( "p" );
-        auto q = V.element<1>( "p" );
-
-        /////////////////////////////// Use Ginac //////////////////////////////////////
-        auto u_exact = expr<2,1>( soption(_name="functions.g") );
-        auto f = vec(cst(0.), cst(0.));
-
-        U=*X;
-        //std::cout<< "        Start assembling r \n";
-        auto r = form1( _test=Vh, _vector=R );
-        r = integrate( elements( mesh ),-inner( f,id( v ) ) );
-        r += integrate( elements( mesh ), trace(trans(2*mu*gradv( u ))*grad( v )) );
-        r +=  integrate( elements( mesh ),-idv(p)*div(v) - id(q)*divv(u));
-        //std::cout<< "        Assembling convectiv terms \n";
-        // convective terms
-        r += integrate( elements( mesh ), trans(rho*gradv( u )*idv(u))*id(v));
-
-        auto SigmaNv = ( -idv( p )*N() + 2*mu*sym(gradv( u ))*N() );
-        auto SigmaN = ( -id( q )*N() + 2*mu*sym(grad( v ))*N() );
-
-        //std::cout<< "        Setting boundary condition on the wall \n";
-        //Dirichlet Boundary condition on the inlet and wall and stress free on the outlet
-        r +=integrate ( markedfaces(mesh,"wall"),  -trans( SigmaNv )*id( v ) - trans( SigmaN )*( idv( u ) - vec(cst(0.),cst(0.)) ) + penalbc*trans( idv( u ) -vec(cst(0.),cst(0.)) )*id( v )/hFace() );
-        //std::cout<< "        Setting boundary condition on the inlet \n";
-        r +=integrate ( markedfaces(mesh,"inlet"),  -trans( SigmaNv )*id( v ) - trans( SigmaN )*( idv( u ) - u_exact ) + penalbc*trans( idv( u ) - u_exact )*id( v )/hFace() );
-        //std::cout<< "        DONE! \n";
-
-
-    };
-#endif
-
-    auto U = Vh->element( "(u,p)" );
-    auto V = Vh->element( "(v,q)" );
-    auto u = U.element<0>( "u" );
-    auto v = V.element<0>( "u" );
-    auto p = U.element<1>( "p" );
-    auto q = V.element<1>( "p" );
-
-    auto g = expr<2,1>( soption(_name="functions.g") );
-    //std::cout<< " Iniliatising p \n";
-    p=vf::project(Vh->functionSpace<1>(), elements(mesh), cst(0.));
-    //std::cout<< " Iniliatising u \n";
-    u=vf::project(Vh->functionSpace<0>(), elements(mesh), vec(cst(0.),cst(0.)));
-    
-
-    // -- INITIALIZATION -- //
-    //std::cout<< " Iniliatising the residual \n";
-    backend()->nlSolver()->residual =Residual;
-    //std::cout<< " Iniliatising the Jacobian \n";
-    backend()->nlSolver()->jacobian =Jacobian;
-
-    // Solving
-    if ( boption("btpcd") )
-    {
-        std::map<std::string,std::set<flag_type>> bcs;
-        bcs["Dirichlet"].insert(mesh->markerName("inlet"));
-        bcs["Dirichlet"].insert(mesh->markerName("wall"));
-        bcs["Neumann"].insert(mesh->markerName("outlet"));
-        auto a_btpcd = btpcd( _space=Vh, _bc=bcs );
-        //a_btpcd->update( zero<2,1>(), g );
-        //backend()->nlSolve(_solution=U,_backend=backend(),_prec=a_btpcd );
-        
-
-    }
-    else
-        backend()->nlSolve( _solution=U );
-
+    auto a = form2( _trial=Vh, _test=Vh);
+    auto at = form2( _trial=Vh, _test=Vh);
+    a += integrate( _range=elements( mesh ), _expr=mu*inner( deft,def ) );
+    a +=integrate( _range=elements( mesh ), _expr=-div( v )*idt( p ) + divt( u )*id( q ) );
 
     auto e = exporter( _mesh=mesh );
-    e->add( "u", u );
-    e->add( "v", v );
-    e->add( "p", p );
+
+    std::map<std::string,std::set<flag_type>> bcs;
+    bcs["Dirichlet"].insert(mesh->markerName("inlet"));
+    bcs["Dirichlet"].insert(mesh->markerName("wall"));
+    bcs["Neumann"].insert(mesh->markerName("outlet"));
+    
+    auto incru = normL2( _range=elements(mesh), _expr=idv(u)-idv(un));
+    auto incrp = normL2( _range=elements(mesh), _expr=idv(p)-idv(pn));
+    at=a;
+    at+=on(_range=markedfaces(mesh,"wall"), _rhs=l, _element=u,
+           _expr=zero<2,1>() ) ;
+    at+=on(_range=markedfaces(mesh,"inlet"), _rhs=l, _element=u,
+           _expr=g );
+
+    tic();
+    auto a_btpcd = btpcd( _space=Vh, _type="BtPCD", _bc=bcs, _matrix= at.matrixPtr() );
+    toc(" - Setting up Precondition BtPCD...");
+    
+    a_btpcd->setMatrix( at.matrixPtr() );
+    map_vector_field<2,1,2> m_dirichlet;
+    m_dirichlet["inlet"]=g;
+    m_dirichlet["wall"]=wall;
+
+    tic();
+    if ( boption("btpcd") )
+    {
+        a_btpcd->update( at.matrixPtr(), zero<2,1>(), m_dirichlet );
+
+
+        at.solveb(_rhs=l,_solution=U,_backend=backend(_name="stokes"),_prec=a_btpcd);
+    }
+    else
+        at.solve(_rhs=l,_solution=U);
+    toc(" - Solving Stokes...");
+
+    tic();
+    e->step(0)->add( "u", u );
+    e->step(0)->add( "p", p );
     e->save();
-
-};
-}
+    toc(" - Exporting Stokes results...");
 
 
-int main( int argc, char** argv )
-{
+    // Picard
+    if ( boption("picard") )
+    {
+        int fixedpt_iter = 0;
+
+        double res = 0;
+        auto deltaU = Vh->element();
+        m_dirichlet["inlet"]=g;
+        do
+        {
+            tic();
+            at = a;
+            at += integrate( _range=elements(mesh),_expr=trans(id(v))*(gradt(u)*idv(u)) );
+            toc( " - Picard:: Assemble nonlinear terms  ..." );
+
+            tic();
+            at+=on(_range=markedfaces(mesh,"wall"), _rhs=r, _element=u,
+                   _expr=zero<2,1>() ) ;
+            at+=on(_range=markedfaces(mesh,"inlet"), _rhs=r, _element=u,
+                   _expr=g );
+            toc(" - Picard:: Assemble BC   ...");
+            if ( Environment::isMasterRank() )
+            {
+                std::cout << "Picard:: non linear iteration " << fixedpt_iter << " \n";
+            }
+            tic();
+            if ( boption("btpcd") )
+            {
+                a_btpcd->update( at.matrixPtr(), idv(u), m_dirichlet );
+                at.solveb(_rhs=r,_solution=U,_backend=backend(_name="picard",_rebuild=true),_prec=a_btpcd );
+            }
+            else
+                at.solveb(_rhs=r,_solution=U,_backend=backend(_rebuild=true) );
+            toc(" - Picard:: Solve   ...");
+            incru = normL2( _range=elements(mesh), _expr=idv(u)-idv(un));
+            incrp = normL2( _range=elements(mesh), _expr=idv(p)-idv(pn));
+            fixedpt_iter++;
+            res = r( U );
+
+            if ( Environment::isMasterRank() )
+            {
+                std::cout << "Iteration "  << fixedpt_iter << "\n";
+                std::cout << " . ||u-un|| = " << incru << std::endl;
+                std::cout << " . ||p-pn|| = " << incrp << std::endl;
+                std::cout << " . residual = " << res << std::endl;
+            }
+            if  ( fixedpt_iter < 10 )
+            {
+                Un = U;
+                Un.close();
+            }
+            e->step(fixedpt_iter)->add( "u", u );
+            e->step(fixedpt_iter)->add( "p", p );
+            e->save();
+        }
+        //while ( ( res > fixPtTol ) && ( fixedpt_iter < fixPtMaxIt ) );
+        while ( ( incru > fixPtTol && incrp > fixPtTol ) && ( fixedpt_iter < fixPtMaxIt ) );
+    }
+
+    // Newton
+    if ( boption("newton") )
+    {
+        int newton_iter = 0;
+
+        double res = 0;
+        auto deltaU = Vh->element();
+        m_dirichlet["inlet"]=wall;
+        do
+        {
+            if ( Environment::isMasterRank() )
+                std::cout << " - Assemble nonlinear terms  ...\n";
+            at = a;
+            at += integrate( _range=elements(mesh),_expr=trans(id(v))*(gradt(u)*idv(u)) );
+            at += integrate( _range=elements(mesh), _expr=trans(id(v))*gradv(u)*idt(u) );
+
+            if ( Environment::isMasterRank() )
+                std::cout << " - Assemble residual  ...\n";
+            r = integrate( _range=elements( mesh ), _expr=mu*inner( gradv(u),def ) );
+            r +=integrate( _range=elements( mesh ), _expr=-div( v )*idv( p ) + divv( u )*id( q ) );
+            r += integrate( _range=elements(mesh),_expr=trans(id(v))*(gradv(u)*idv(u)) );
+            if ( Environment::isMasterRank() )
+                std::cout << " - Assemble BC   ...\n";
+            at+=on(_range=markedfaces(mesh,"wall"), _rhs=r, _element=u,
+                   _expr=zero<2,1>() ) ;
+            at+=on(_range=markedfaces(mesh,"inlet"), _rhs=r, _element=u,
+                   _expr=zero<2,1>() );
+            r.scale(-1);
+            if ( Environment::isMasterRank() )
+            {
+                std::cout << "non linear iteration " << newton_iter << " \n";
+            }
+            if ( Environment::isMasterRank() )
+                std::cout << " - Solve   ...\n";
+            if ( boption("btpcd") )
+            {
+                a_btpcd->update( at.matrixPtr(), idv(u), m_dirichlet );
+                deltaU.zero();
+                at.solveb(_rhs=r,_solution=deltaU/*U*/,_backend=backend(_name="newton",_rebuild=true),_prec=a_btpcd );
+            }
+            else
+                at.solveb(_rhs=r,_solution=deltaU/*U*/,_backend=backend(_rebuild=true) );
+            U.add(1.,deltaU);
+            incru = normL2( _range=elements(mesh), _expr=idv(u)-idv(un));
+            incrp = normL2( _range=elements(mesh), _expr=idv(p)-idv(pn));
+            newton_iter++;
+            res = r( U );
+
+            if ( Environment::isMasterRank() )
+            {
+                std::cout << "Iteration "  << newton_iter << "\n";
+                std::cout << " . ||u-un|| = " << incru << std::endl;
+                std::cout << " . ||p-pn|| = " << incrp << std::endl;
+                std::cout << " . residual = " << res << std::endl;
+            }
+            if  ( newton_iter < 10 )
+            {
+                Un = U;
+                Un.close();
+            }
+            e->step(newton_iter)->add( "u", u );
+            e->step(newton_iter)->add( "p", p );
+            e->save();
+        }
+        while ( ( res > newtonTol ) && ( newton_iter < newtonMaxIt ) );
+        //while ( ( incru > newtonTol && incrp > newtonTol ) && ( newton_iter < newtonMaxIt ) );
+    }
     
-    using namespace Feel;
-    po::options_description  steadynsoptions( "Navier Stokes problem options" );
-    steadynsoptions.add_options()
-    ( "mu", Feel::po::value<double>()->default_value( 1.0 ), "reaction coefficient component" )
-    ( "rho", Feel::po::value<double>()->default_value( 1.0 ), "reaction coefficient component" )
-    ( "bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions" )
-    ;
-    
-    Environment env( _argc=argc, _argv=argv,
-                     _desc=steadynsoptions,
-                     _about=about(_name="steady_ns",
-                                 _author="Christophe Prud'homme",
-                                 _email="christophe.prudhomme@feelpp.org") );
-    SteadyNavierStokes ns;
-    ns.run();
+    return 0;
 }
