@@ -173,6 +173,14 @@ Vector<T>::addVector ( const boost::shared_ptr<Vector<T> >& V_in,
     A_in->multVector( *V_in, *this );
 }
 
+template<typename T>
+int
+Vector<T>::reciprocal ()
+{
+    LOG(WARNING) << "Invalid call to reciprocal. Not implement in Vector base class";
+    return 0;
+}
+
 
 
 

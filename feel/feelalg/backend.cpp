@@ -518,13 +518,24 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
     return ret;
 }
 template <typename T>
-void
+int
 Backend<T>::PtAP( sparse_matrix_ptrtype const& A,
                   sparse_matrix_ptrtype const& P,
                   sparse_matrix_ptrtype & C ) const
 {
     LOG(WARNING) << "PtAP not implemented in base class. You need to implement the procedure in the current backend.";
+    return 0;
 }
+template <typename T>
+int
+Backend<T>::PAPt( sparse_matrix_ptrtype const& A,
+                  sparse_matrix_ptrtype const& P,
+                  sparse_matrix_ptrtype & C ) const
+{
+    LOG(WARNING) << "PAPt not implemented in base class. You need to implement the procedure in the current backend.";
+    return 0;
+}
+
 template <typename T>
 typename Backend<T>::value_type
 Backend<T>::dot( vector_type const& x, vector_type const& y ) const

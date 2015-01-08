@@ -553,6 +553,11 @@ public:
     void add ( const value_type& a_in, const Vector<value_type>& v_in );
 
     /**
+     * Replaces each component of a vector by its reciprocal.
+     */
+    int reciprocal();
+
+    /**
      * @return the minimum element in the vector.
      * In case of complex numbers, this returns the minimum
      * Real part.

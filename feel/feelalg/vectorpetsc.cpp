@@ -235,6 +235,14 @@ VectorPetsc<T>::zero()
 #endif
 }
 
+template <typename T>
+int
+VectorPetsc<T>::reciprocal()
+{
+    DCHECK( this->isInitialized() ) << "VectorPetsc<> not initialized";
+    return VecReciprocal( M_vec );
+}
+
 
 template <typename T>
 void

@@ -59,6 +59,7 @@ public:
     typedef typename space_type::template sub_functionspace<1>::type pressure_space_type;
     typedef typename space_type::template sub_functionspace<0>::ptrtype velocity_space_ptrtype;
     typedef typename space_type::template sub_functionspace<1>::ptrtype pressure_space_ptrtype;
+    typedef typename velocity_space_type::element_type velocity_element_type;
     typedef typename pressure_space_type::element_type pressure_element_type;
 
     typedef OperatorMatrix<value_type> op_mat_type;
@@ -81,6 +82,8 @@ public:
     static const uint16_type pOrder = pressure_space_type::basis_type::nOrder;
 
     OperatorPCD( space_ptrtype Qh,
+                 sparse_matrix_ptrtype A,
+                 backend_ptrtype b,
                  std::map< std::string, std::set<flag_type> > bcFlags,
                  double nu,
                  double alpha );
@@ -108,14 +111,15 @@ public:
     int applyInverse(const vector_type& X, vector_type& Y) const;
 
 private:
-
+    backend_ptrtype M_b;
     space_ptrtype M_Xh;
     velocity_space_ptrtype M_Vh;
     pressure_space_ptrtype M_Qh;
 
+    velocity_element_type u, v;
     pressure_element_type p, q;
 
-    sparse_matrix_ptrtype M_mass, M_diff, M_conv, G;
+    sparse_matrix_ptrtype M_mass, M_diff, M_conv, G, M_B, M_massv_inv, M_A;
     vector_ptrtype rhs;
 
     op_mat_ptrtype massOp, diffOp, convOp;
@@ -146,20 +150,28 @@ private:
 
 template < typename space_type>
 OperatorPCD<space_type>::OperatorPCD( space_ptrtype Qh,
+                                      sparse_matrix_ptrtype A,
+                                      backend_ptrtype b,
                                       std::map< std::string, std::set<flag_type> > bcFlags,
                                       double nu,
                                       double alpha )
     :
     super( Qh->template functionSpace<1>()->mapPtr(), "PCD", false, false ),
+    M_b( b),
     M_Xh( Qh ),
     M_Vh( M_Xh->template functionSpace<0>() ),
     M_Qh( M_Xh->template functionSpace<1>() ),
+    u( M_Vh, "u" ),
+    v( M_Vh, "v" ),
     p( M_Qh, "p" ),
     q( M_Qh, "q" ),
     M_mass( backend()->newMatrix(M_Qh, M_Qh) ),
     M_diff( backend()->newMatrix(M_Qh, M_Qh) ),
     M_conv( backend()->newMatrix(M_Qh, M_Qh) ),
     G( backend()->newMatrix(M_Qh, M_Qh) ),
+    M_B( backend()->newMatrix(_trial=M_Vh, _test=M_Qh) ),
+    M_massv_inv( backend()->newMatrix(_trial=M_Vh, _test=M_Vh) ),
+    M_A( A ),
     rhs( backend()->newVector( M_Qh ) ),
     M_bcFlags( bcFlags ),
     M_nu( nu ),
@@ -285,17 +297,37 @@ template < typename space_type>
 void
 OperatorPCD<space_type>::assembleDiffusion()
 {
-    auto d = form2( _test=M_Qh, _trial=M_Qh, _matrix=M_diff );
-    d = integrate( _range=elements(M_Qh->mesh()), _expr=gradt(p)*trans(grad(q)));
-
-    for( auto dir : M_bcFlags["Neumann"])
+    if ( soption("btpcd.pcd.diffusion") == "Laplacian" )
     {
-        std::string m = M_Qh->mesh()->markerName(dir);
-        if ( (m=="outlet") || (m == "outflow") )
-            d += on( markedfaces(M_Qh->mesh(),dir), _element=p, _rhs=rhs, _expr=cst(0.) );
+        auto d = form2( _test=M_Qh, _trial=M_Qh, _matrix=M_diff );
+        d = integrate( _range=elements(M_Qh->mesh()), _expr=gradt(p)*trans(grad(q)));
+        
+        for( auto dir : M_bcFlags["Neumann"])
+        {
+            std::string m = M_Qh->mesh()->markerName(dir);
+            if ( (m=="outlet") || (m == "outflow") )
+                d += on( markedfaces(M_Qh->mesh(),dir), _element=p, _rhs=rhs, _expr=cst(0.) );
+        }
+        //this->applyBC(M_diff);
     }
-    //this->applyBC(M_diff);
-    
+    if ( soption("btpcd.pcd.diffusion") == "BTBt" )
+    {
+        std::vector<size_type> M_Vh_indices( M_Vh->nLocalDofWithGhost() );
+        std::vector<size_type> M_Qh_indices( M_Qh->nLocalDofWithGhost() );
+        std::iota( M_Vh_indices.begin(), M_Vh_indices.end(), 0 );
+        std::iota( M_Qh_indices.begin(), M_Qh_indices.end(),
+                   M_Vh->nLocalDofWithGhost() );
+        M_B = M_A->createSubMatrix( M_Qh_indices, M_Vh_indices );
+        auto m = form2( _test=M_Vh, _trial=M_Vh );
+        m = integrate( elements(M_Vh->mesh()), trans(idt(u))*id(v) );
+        m.matrixPtr()->close();
+        auto d = M_b->newVector( M_Vh );
+        M_b->diag( m.matrixPtr(), d );
+        d->reciprocal();
+        M_b->diag( d, M_massv_inv );
+        M_massv_inv->close();
+        //M_b->RARt( M_massv_inv, M_B, M_diff );
+    }
 
     diffOp = op( M_diff, "Fp" );
 }

@@ -359,6 +359,15 @@ public:
         b.close();
     }
 
+    /**
+     * get the matrix \c M whose diagonal is \c -v
+     */
+    int diag( vector_type const& v, sparse_matrix_type& M ) const;
+
+    /**
+     * @return the vector \c v with diagonal of \c M
+     */
+    int diag( sparse_matrix_type const& M, vector_type& v ) const;
 
     solve_return_type solve( sparse_matrix_type const& A,
                              vector_type& x,
@@ -372,10 +381,16 @@ public:
     /**
      * assemble \f$C=P^T A P\f$
      */
-    void PtAP( sparse_matrix_ptrtype const& A,
-               sparse_matrix_ptrtype const& P,
-               sparse_matrix_ptrtype& C ) const;
-
+    int PtAP( sparse_matrix_ptrtype const& A,
+              sparse_matrix_ptrtype const& P,
+              sparse_matrix_ptrtype& C ) const;
+    /**
+     * assemble \f$C=P A P^T\f$
+     */
+    int PAPt( sparse_matrix_ptrtype const& A,
+              sparse_matrix_ptrtype const& P,
+              sparse_matrix_ptrtype& C ) const;
+    
     template <class Vector>
     static value_type dot( const vector_type& f,
                            const Vector& x )

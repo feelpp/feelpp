@@ -912,6 +912,39 @@ public:
     }
 
     /**
+     * get the matrix \c M whose diagonal is \c v
+     */
+    virtual int diag( vector_ptrtype const& v, sparse_matrix_ptrtype& M ) const
+        {
+            return diag( *v, *M );
+        }
+    
+    /**
+     * get the matrix \c M whose diagonal is \c v
+     */
+    virtual int diag( vector_type const& v, sparse_matrix_type& M ) const
+        {
+            CHECK(0) << "Invalid call to diag(v,M). Not implemented in Backend base class";
+            return 0;
+        }
+
+    /**
+     * @return the vector \c v with diagonal of \c M
+     */
+    virtual int diag( sparse_matrix_ptrtype const& M, vector_ptrtype& v ) const
+        {
+            return diag( *M, *v );
+        }
+    /**
+     * @return the vector \c v with diagonal of \c M
+     */
+    virtual int diag( sparse_matrix_type const& M, vector_type& v ) const
+        {
+            CHECK(0) << "Invalid call to diag(M,v). Not implemented in Backend base class";
+            return 0;
+        }
+    
+    /**
      * solve for \f$P A x = P b\f$ where \f$P\f$ is an approximation
      * of the inverse of \f$A\f$. this interface uses the
      * boost.parameter library to ease the function usage
@@ -1144,10 +1177,18 @@ public:
     /**
      * assemble \f$C=P^T A P\f$
      */
-    virtual void PtAP( sparse_matrix_ptrtype const& A,
+    virtual int PtAP( sparse_matrix_ptrtype const& A,
                        sparse_matrix_ptrtype const& P,
                        sparse_matrix_ptrtype & C
                        ) const;
+
+    /**
+     * assemble \f$C=P A P^T\f$
+     */
+    virtual int PAPt( sparse_matrix_ptrtype const& A,
+                      sparse_matrix_ptrtype const& P,
+                      sparse_matrix_ptrtype& C ) const;
+    
     /**
      * Attaches a Preconditioner object to be used by the solver
      */

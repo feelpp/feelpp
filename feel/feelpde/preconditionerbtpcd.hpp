@@ -160,7 +160,7 @@ private:
     std::vector<size_type> M_Vh_indices;
     std::vector<size_type> M_Qh_indices;
     
-    sparse_matrix_ptrtype M_helm, G, M_div, M_F, M_B, M_Bt, M_mass;
+    sparse_matrix_ptrtype M_helm, G, M_div, M_F, M_B, M_Bt, M_mass, M_massv_inv;
     op_mat_ptrtype divOp, helmOp;
 
     mutable vector_ptrtype M_rhs, M_aux, M_vin,M_pin, M_vout, M_pout;
@@ -202,6 +202,7 @@ PreconditionerBTPCD<space_type>::PreconditionerBTPCD( std::string t,
     G( M_b->newMatrix( M_Vh, M_Vh ) ),
     M_div ( M_b->newMatrix( _trial=M_Vh, _test=M_Qh ) ),
     M_mass( M_b->newMatrix( _trial=M_Qh, _test=M_Qh) ),
+    M_massv_inv( M_b->newMatrix( _trial=M_Vh, _test=M_Vh) ),
     M_rhs( M_b->newVector( M_Vh )  ),
     M_aux( M_b->newVector( M_Vh )  ),
     M_vin( M_b->newVector( M_Vh )  ),
@@ -232,6 +233,7 @@ PreconditionerBTPCD<space_type>::PreconditionerBTPCD( std::string t,
     divOp = op( M_Bt, "Bt");
     toc( "BTPCD convection-diffusion and gradient operators done ", FLAGS_v > 0 );
 
+    
     initialize();
 
     tic();    
@@ -255,11 +257,12 @@ PreconditionerBTPCD<space_type>::setType( std::string t )
     if ( t == "PM") M_type = PM;
     if ( t == "SIMPLE") M_type = SIMPLE;
 
+    LOG(INFO) << "setting preconditioner " << t << " type: " << M_type;
     switch( M_type )
     {
     case BtPCD:
         tic();
-        pcdOp = boost::make_shared<op_pcd_type>( M_Xh, M_bcFlags, M_nu, M_alpha );
+        pcdOp = boost::make_shared<op_pcd_type>( M_Xh, this->matrix(), M_b, M_bcFlags, M_nu, M_alpha );
         toc( "Assembling schur complement done", FLAGS_v > 0 );        
         break;
     case PM:
