@@ -312,21 +312,31 @@ OperatorPCD<space_type>::assembleDiffusion()
     }
     if ( soption("btpcd.pcd.diffusion") == "BTBt" )
     {
+        tic();
         std::vector<size_type> M_Vh_indices( M_Vh->nLocalDofWithGhost() );
         std::vector<size_type> M_Qh_indices( M_Qh->nLocalDofWithGhost() );
         std::iota( M_Vh_indices.begin(), M_Vh_indices.end(), 0 );
         std::iota( M_Qh_indices.begin(), M_Qh_indices.end(),
                    M_Vh->nLocalDofWithGhost() );
         M_B = M_A->createSubMatrix( M_Qh_indices, M_Vh_indices );
+        toc(" - OperatorPCD Extracted B" );
+        tic();
         auto m = form2( _test=M_Vh, _trial=M_Vh );
         m = integrate( elements(M_Vh->mesh()), trans(idt(u))*id(v) );
         m.matrixPtr()->close();
+        toc(" - OperatorPCD Velocity Mass Matrix" );
+        tic();
         auto d = M_b->newVector( M_Vh );
         M_b->diag( m.matrixPtr(), d );
         d->reciprocal();
         M_b->diag( d, M_massv_inv );
         M_massv_inv->close();
-        //M_b->RARt( M_massv_inv, M_B, M_diff );
+        toc(" - OperatorPCD inverse diagonal mass matrix extracted" );
+        tic();
+        M_b->PAPt( M_massv_inv, M_B, M_diff );
+        toc(" - OperatorPCD B T^-1 B^T built");
+        if ( Environment::numberOfProcessors() == 1 )
+            M_diff->printMatlab( "BTBt." );
     }
 
     diffOp = op( M_diff, "Fp" );
