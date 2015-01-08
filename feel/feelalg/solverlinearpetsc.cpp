@@ -57,15 +57,22 @@
 
 namespace Feel
 {
-
 extern "C"
 {
+    
 #if PETSC_VERSION_LESS_THAN(2,2,1)
     typedef int PetscErrorCode;
     typedef int PetscInt;
 #endif
 
-
+    PetscErrorCode __feel_petsc_monitor(KSP ksp,PetscInt it,PetscReal rnorm,void* ctx)
+    {
+        SolverLinear<double> *s  = static_cast<SolverLinear<double>*>( ctx );
+        if ( !s ) return 1;
+        if ( s->worldComm().isMasterRank() )
+            std::cout << " " << it  << " " << s->prefix() << " KSP Residual norm " << rnorm << "\n";
+        return 0;
+    }
 #if PETSC_VERSION_LESS_THAN(3,0,1)
     PetscErrorCode __feel_petsc_preconditioner_setup ( void * ctx )
     {
@@ -349,7 +356,8 @@ void SolverLinearPetsc<T>::init ()
 
         if ( Environment::vm(_name="ksp-monitor",_prefix=this->prefix()).template as<bool>() )
         {
-            KSPMonitorSet( M_ksp,KSPMonitorDefault,PETSC_NULL,PETSC_NULL );
+            //KSPMonitorSet( M_ksp,KSPMonitorDefault,PETSC_NULL,PETSC_NULL );
+            KSPMonitorSet( M_ksp,__feel_petsc_monitor,(void*) this,PETSC_NULL );
         }
 
     }
