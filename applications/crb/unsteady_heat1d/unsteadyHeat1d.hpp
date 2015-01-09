@@ -143,6 +143,7 @@ public :
     typedef bases<Lagrange<Order, Scalar> > basis_type;
 
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
+    typedef typename space_type::element_type element_type;
 
     static const bool is_time_dependent = true;
     static const bool is_linear = true;
@@ -157,12 +158,9 @@ public :
  * @author Christophe Prud'homme
  * @see
  */
-class UnsteadyHeat1D : public ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition>,
-                       public boost::enable_shared_from_this< UnsteadyHeat1D >
+class UnsteadyHeat1D : public ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition>
 {
 public:
-
-
     typedef ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition> super_type;
     typedef typename super_type::funs_type funs_type;
     typedef typename super_type::funsd_type funsd_type;
@@ -192,10 +190,6 @@ public:
     typedef typename FunctionSpaceDefinition::space_type space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef space_type::element_type element_type;
-
-    /*reduced basis space*/
-    typedef ReducedBasisSpace<super_type, mesh_type, basis_type, value_type> rbfunctionspace_type;
-    typedef boost::shared_ptr< rbfunctionspace_type > rbfunctionspace_ptrtype;
 
     /* parameter space */
     typedef ParameterDefinition::parameterspace_type parameterspace_type;
@@ -228,41 +222,6 @@ public:
     void initModel();
     //@}
 
-    /** @name Operator overloads
-     */
-    //@{
-
-    //@}
-
-    /** @name Accessors
-     */
-    //@{
-
-
-    /**
-     * \brief Returns the function space
-     */
-    space_ptrtype functionSpace()
-    {
-        return Xh;
-    }
-    /**
-     * \brief Returns the reduced basis function space
-     */
-    rbfunctionspace_ptrtype rBFunctionSpace()
-    {
-        return RbXh;
-    }
-
-    //! return the parameter space
-    parameterspace_ptrtype parameterSpace() const
-    {
-        return M_Dmu;
-    }
-
-
-    //@}
-
 
     /** @name  Methods
      */
@@ -280,52 +239,29 @@ private:
     double alpha;
 
     double meshSize;
-
-    parameterspace_ptrtype M_Dmu;
-
     mesh_ptrtype mesh;
-    space_ptrtype Xh;
-    rbfunctionspace_ptrtype RbXh;
-
     bdf_ptrtype M_bdf;
-
 };
 
 UnsteadyHeat1D::UnsteadyHeat1D()
     :
-    alpha( 1 ),
-    meshSize( 0.01 ),
-    M_Dmu( new parameterspace_type )
-{
-}
+    alpha( 1 )
+{}
 
-
-UnsteadyHeat1D::UnsteadyHeat1D( po::variables_map const& vm )
-    :
-    alpha( option(_name="alpha").as<double>() ),
-    meshSize( option(_name="hsize").as<double>() ),
-    M_Dmu( new parameterspace_type )
-{
-}
 void
 UnsteadyHeat1D::initModel()
 {
-
-
     /*
      * First we create the mesh
      */
     mesh = createGMSHMesh( _mesh=new mesh_type,
-                           _desc=createGeo( meshSize ) );
-
-
+                           _desc=createGeo( doption("gmsh.hsize") ) );
 
     /*
      * The function space and some associate elements are then defined
      */
     Xh = space_type::New( mesh );
-    RbXh = rbfunctionspace_type::New( _model=this->shared_from_this() , _mesh=mesh );
-
+    setFunctionSpaces(Xh);
     if( Environment::worldComm().isMasterRank() )
     {
         std::cout << "Number of local dof " << Xh->nLocalDof() << "\n";
@@ -335,18 +271,16 @@ UnsteadyHeat1D::initModel()
 
     M_bdf = bdf( _space=Xh, _name="unsteadyHeat1d" , _prefix="unsteadyHeat1d" );
 
-    Feel::ParameterSpace<4>::Element mu_min( M_Dmu );
+    auto mu_min = Dmu->element();
     mu_min << 0.2, 0.2, 0.01, 0.1;
-    M_Dmu->setMin( mu_min );
-    Feel::ParameterSpace<4>::Element mu_max( M_Dmu );
+    Dmu->setMin( mu_min );
+    auto mu_max = Dmu->element();
     mu_max << 50, 50, 5, 5;
-    M_Dmu->setMax( mu_max );
+    Dmu->setMax( mu_max );
 
     LOG(INFO) << "Number of dof " << Xh->nLocalDof() << "\n";
 
     assemble();
-
-
 } // UnsteadyHeat1d::initModel
 
 
@@ -360,34 +294,34 @@ UnsteadyHeat1D::assemble()
     auto a0 = form2( _trial=Xh, _test=Xh);
     a0 = integrate( elements( mesh ), 0.1*( gradt( u )*trans( grad( v ) ) ) ) +
          integrate( markedfaces( mesh,"right" ), idt( u )*id( v ) );
-    this->addLhs( boost::make_tuple( a0.matrixPtr() , "1" ) );
+    this->addLhs( {a0 , "1"} );
 
     auto a1 = form2( _trial=Xh, _test=Xh);
     a1 = integrate( markedelements( mesh,"k1_1" ),  gradt( u )*trans( grad( v ) )  );
-    this->addLhs( boost::make_tuple( a1.matrixPtr() , "mu0" ) );
+    this->addLhs(  {a1 , "mu0"} );
 
     auto a2 = form2( _trial=Xh, _test=Xh);
     a2 = integrate( markedelements( mesh,"k2_1" ),  gradt( u )*trans( grad( v ) )  );
-    this->addLhs( boost::make_tuple( a2.matrixPtr() , "mu1" ) );
+    this->addLhs( {a2 , "mu1"} );
 
     //mass matrix
     auto m = form2( _trial=Xh, _test=Xh);
     m = integrate ( elements( mesh ), alpha*idt( u )*id( v ) );
-    this->addMass( boost::make_tuple( m.matrixPtr() , "1" ) );
+    this->addMass( {m , "1"} );
 
     //rhs
     auto f0 = form1( _test=Xh );
     auto f1 = form1( _test=Xh );
     f0 = integrate( markedfaces( mesh,"left" ), id( v ) );
-    this->addRhs( boost::make_tuple( f0.vectorPtr() , "mu2" ) );
+    this->addRhs( {f0 , "mu2"} );
     f1 =  integrate( elements( mesh ), id( v ) );
-    this->addRhs( boost::make_tuple( f1.vectorPtr() , "mu3" ) );
+    this->addRhs( {f1 , "mu3"} );
 
     //output
     auto out = form1( _test=Xh );
     out = integrate( markedelements( mesh,"k1_2" ), id( v )/0.2 ) +
           integrate( markedelements( mesh,"k2_1" ), id( v )/0.2 );
-    this->addOutput( boost::make_tuple( out.vectorPtr() , "1" ) );
+    this->addOutput( {out , "1" } );
 
     auto energy = form2( _trial=Xh, _test=Xh);
     energy = integrate( elements( mesh ), 0.1*( gradt( u )*trans( grad( v ) ) ) ) +
@@ -432,5 +366,3 @@ UnsteadyHeat1D::output( int output_index, parameter_type const& mu, element_type
 }
 
 #endif /* __Heat1D_H */
-
-
