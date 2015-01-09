@@ -524,7 +524,7 @@ void HeatShield<Order>::assemble()
     u = this->Xh->element();
     v = this->Xh->element();
 
-    if( option(_name="do-not-use-operators-free").template as<bool>() )
+    if( boption("do-not-use-operators-free") )
     {
         this->M_Aq[0] = backend()->newMatrix( this->Xh, this->Xh );
         this->M_Aq[1] = backend()->newMatrix( this->Xh, this->Xh );
@@ -573,9 +573,9 @@ void HeatShield<Order>::assemble()
     //for scalarProduct
     auto M = backend()->newMatrix( _test=this->Xh, _trial=this->Xh );
     form2( _test=this->Xh, _trial=this->Xh, _matrix=M ) =
-        integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ) ) +
-        integrate( _range= markedfaces( mesh, "left" ), _expr= 0.01 * idt( u )*id( v ) ) +
-        integrate( _range= markedfaces( mesh, "gamma_holes" ), _expr= 0.001 * idt( u )*id( v ) )
+        integrate( elements( mesh ), gradt( u )*trans( grad( v ) ) ) +
+        integrate( markedfaces( mesh, "left" ), 0.01 * idt( u )*id( v ) ) +
+        integrate( markedfaces( mesh, "gamma_holes" ), 0.001 * idt( u )*id( v ) )
         ;
     this->addEnergyMatrix( M );
 

@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-11-13
 
-  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2009 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -68,8 +68,6 @@ makeHeatSink2DOptions()
     po::options_description heatsink2doptions( "HeatSink2D options" );
     heatsink2doptions.add_options()
     // mesh parameters
-    ( "hsize", Feel::po::value<double>()->default_value( 1e-3 ),
-      "first h value to start convergence" )
     ( "Lref", Feel::po::value<double>()->default_value( 0.02 ),
       "dimensional length of the sink (in meters)" )
     ( "width", Feel::po::value<double>()->default_value( 0.0005 ),
@@ -95,21 +93,13 @@ makeHeatSink2DAbout( std::string const& str = "heatSink" )
                            "0.1",
                            "heat sink Benchmark",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2010,2011 Université de Grenoble 1 (Joseph Fourier)" );
+                           "Copyright (c) 2010,2011 Universite de Grenoble 1 (Joseph Fourier)" );
 
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     about.addAuthor( "Stephane Veys", "developer", "stephane.veys@imag.fr", "" );
     return about;
 }
 
-
-
-class ParameterDefinition
-{
-public :
-    static const uint16_type ParameterSpaceDimension = 3;
-    typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
-};
 
 class FunctionSpaceDefinition
 {
@@ -126,6 +116,9 @@ public :
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
 
+    /*element*/
+    typedef typename space_type::element_type element_type;
+
     static const bool is_time_dependent = true;
     static const bool is_linear = true;
 
@@ -138,12 +131,11 @@ public :
  * @author Christophe Prud'homme
  * @see
  */
-class HeatSink2D : public ModelCrbBase< ParameterDefinition, FunctionSpaceDefinition > ,
-                   public boost::enable_shared_from_this< HeatSink2D >
+class HeatSink2D : public ModelCrbBase< ParameterSpace<3>, FunctionSpaceDefinition, 1 >
 {
 public:
 
-    typedef ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition> super_type;
+    typedef ModelCrbBase<ParameterSpace<3>,FunctionSpaceDefinition, 1> super_type;
     typedef typename super_type::funs_type funs_type;
     typedef typename super_type::funsd_type funsd_type;
 
@@ -196,35 +188,22 @@ public:
     typedef typename space_type::element_type element_type;
     typedef boost::shared_ptr<element_type> element_ptrtype;
 
-    /*reduced basis space*/
-    typedef ReducedBasisSpace<super_type, mesh_type, basis_type, value_type> rbfunctionspace_type;
-    typedef boost::shared_ptr< rbfunctionspace_type > rbfunctionspace_ptrtype;
-
     /* export */
     typedef Exporter<mesh_type> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
-
-
-    /* parameter space */
-    typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
-    typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
-    typedef parameterspace_type::element_type parameter_type;
-    typedef parameterspace_type::element_ptrtype parameter_ptrtype;
-    typedef parameterspace_type::sampling_type sampling_type;
-    typedef parameterspace_type::sampling_ptrtype sampling_ptrtype;
 
     /* time discretization */
     typedef Bdf<space_type>  bdf_type;
     typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
 
 
-    typedef std::vector< std::vector< double > > beta_vector_type;
+    //typedef std::vector< std::vector< double > > beta_vector_type;
 
-    typedef boost::tuple<
+    /*typedef boost::tuple<
         std::vector< std::vector<sparse_matrix_ptrtype> >,
         std::vector< std::vector<sparse_matrix_ptrtype> >,
         std::vector< std::vector<std::vector<vector_ptrtype> > >
-        > affine_decomposition_type;
+     > affine_decomposition_type;*/
 
     //typedef boost::tuple<std::vector<sparse_matrix_ptrtype>, std::vector<std::vector<vector_ptrtype>  > > affine_decomposition_type;
     //@}
@@ -236,10 +215,6 @@ public:
     //! default constructor
     HeatSink2D();
 
-    //! constructor from command line
-    HeatSink2D( po::variables_map const& vm );
-
-
     //! copy constructor
     HeatSink2D( HeatSink2D const & );
     //! destructor
@@ -248,13 +223,6 @@ public:
     //! initialization of the model
     void initModel();
     //@}
-
-    /** @name Operator overloads
-     */
-    //@{
-
-    //@}
-
     /** @name Accessors
      */
     //@{
@@ -319,35 +287,18 @@ public:
             throw std::logic_error( "[Model heatsink] ERROR : try to acces to mMaxF(output_index,q) with a bad value of q");
     }
 
-
-    /**
-     * \brief Returns the function space
-     */
-    space_ptrtype functionSpace()
-    {
-        return Xh;
-    }
-    /**
-     * \brief Returns the reduced basis function space
-     */
-    rbfunctionspace_ptrtype rBFunctionSpace()
-    {
-        return RbXh;
-    }
-
-
-    //! return the parameter space
-    parameterspace_ptrtype parameterSpace() const
-    {
-        return M_Dmu;
-    }
-
     /**
      * \brief compute the beta coefficient for both bilinear and linear form
      * \param mu parameter to evaluate the coefficients
      */
 
-    boost::tuple<beta_vector_type, beta_vector_type, std::vector<beta_vector_type>  >
+    betaqm_type
+    computeBetaQm( element_type const& T, parameter_type const& mu , double time , bool only_terms_time_dependent=false )
+    {
+        return computeBetaQm( mu, time, only_terms_time_dependent );
+    }
+
+    betaqm_type
     computeBetaQm( parameter_type const& mu , double time , bool only_terms_time_dependent=false )
     {
         double biot      = mu( 0 );
@@ -388,28 +339,9 @@ public:
 
     //@}
 
-    /** @name  Mutators
-     */
-    //@{
-
-    /**
-     * set the mesh characteristic length to \p s
-     */
-    void setMeshSize( double s )
-    {
-        meshSize = s;
-    }
-
-
-    //@}
-
     /** @name  Methods
      */
     //@{
-
-    /**
-     * run the convergence test
-     */
 
     /**
      * create a new matrix
@@ -540,25 +472,18 @@ public:
      */
     value_type output( int output_index, parameter_type const& mu, element_type& u, bool need_to_solve=false, bool export_outputs=false );
 
-    gmsh_ptrtype createGeo( double hsize, double mu2 );
+    gmsh_ptrtype createGeo( double mu2 );
 
     parameter_type refParameter()
     {
-        return M_Dmu->min();
+        return Dmu->min();
     }
 
     bdf_ptrtype bdfModel(){ return M_bdf; }
 
 
 private:
-
-    po::variables_map M_vm;
-
-    backend_ptrtype backend;
     bool M_is_steady ;
-
-    /* mesh parameters */
-    double meshSize;
 
     double Lref;//reference value for geometric parameter
 
@@ -570,29 +495,16 @@ private:
     double C;
     double k_fin;
 
-
-    parameterspace_ptrtype M_Dmu;
-
     /* surfaces*/
     double surface_gamma4, surface_gamma1;
 
     /* mesh, pointers and spaces */
     mesh_ptrtype mesh;
-    space_ptrtype Xh;
-    rbfunctionspace_ptrtype RbXh;
 
     sparse_matrix_ptrtype D,M,Mpod;
     vector_ptrtype F;
 
     element_ptrtype pT;
-
-    std::vector< std::vector<sparse_matrix_ptrtype> > M_Aqm;
-    std::vector< std::vector<sparse_matrix_ptrtype> > M_Mqm;
-    std::vector< std::vector<std::vector<vector_ptrtype> > > M_Fqm;
-
-    beta_vector_type M_betaAqm;
-    beta_vector_type M_betaMqm;
-    std::vector<beta_vector_type> M_betaFqm;
 
     bdf_ptrtype M_bdf;
     int M_Nsnap;
@@ -600,40 +512,20 @@ private:
 };
 HeatSink2D::HeatSink2D()
     :
-    backend( backend_type::build( BACKEND_PETSC ) ),
-    M_is_steady( false ),
-    meshSize( 1e-3 ),
-    Lref( 2 ),
+    M_is_steady( boption("steady") ),
+    Lref( doption("Lref") ),
     export_number( 0 ),
-    do_export( false ),
-    rho( 8940 ),
-    C( 385 ),
-    k_fin( 386 ),
-    M_Dmu( new parameterspace_type )
-{}
-
-HeatSink2D::HeatSink2D( po::variables_map const& vm )
-    :
-    M_vm( vm ),
-    backend( backend_type::build( vm ) ),
-    M_is_steady( vm["steady"].as<bool>() ),
-    meshSize( vm["hsize"].as<double>() ),
-    Lref( vm["Lref"].as<double>() ),
-    export_number( 0 ),
-    do_export( vm["do-export"].as<bool>() ),
-    rho( vm["rho"].as<double>() ),
-    C( vm["C"].as<double>() ),
-    k_fin( vm["k_fin"].as<double>() ),
-    M_Dmu( new parameterspace_type )
-{}
-
-
-
+    do_export( boption("do-export") ),
+    rho( doption("rho") ),
+    C( doption("C") ),
+    k_fin( doption("k_fin") )
+ {}
 
 
 gmsh_ptrtype
-HeatSink2D::createGeo( double hsize, double mu2 )
+HeatSink2D::createGeo(  double mu2 )
 {
+    double hsize = doption( "gmsh.hsize");
     int elements_order = 1;
     int dim = 2;
     gmsh_ptrtype gmshp( new Gmsh ( dim , elements_order ) );
@@ -707,28 +599,29 @@ void HeatSink2D::initModel()
      */
 
     mesh = createGMSHMesh ( _mesh = new mesh_type,
-                            _desc = createGeo( meshSize, Lref ),
+                            _desc = createGeo( Lref ),
                             _update=MESH_UPDATE_FACES | MESH_UPDATE_EDGES );
 
     /*
      * The function space and some associate elements are then defined
      */
     Xh = space_type::New( mesh );
-    RbXh = rbfunctionspace_type::New( _model=this->shared_from_this() , _mesh=mesh );
+    this->setFunctionSpaces( Xh );
     std::cout << "Number of dof " << Xh->nLocalDof() << "\n";
 
     // allocate an element of Xh
     pT = element_ptrtype( new element_type( Xh ) );
 
-
     surface_gamma1 = integrate( _range= markedfaces( mesh,"gamma1" ), _expr=cst( 1. ) ).evaluate()( 0,0 );
 
-    M_bdf = bdf( _space=Xh, _vm=M_vm, _name="heatSink2d" , _prefix="heatSink2d" );
+    M_bdf = bdf( _space=Xh, _name="heatSink2d" , _prefix="heatSink2d" );
 
     M_Aqm.resize( this->Qa() );
     for(int q=0; q<Qa(); q++)
+    {
         M_Aqm[q].resize( 1 );
-
+        M_Aqm[q][0] = backend()->newMatrix(Xh,Xh);
+    }
     M_Mqm.resize( this->Qm() );
     for(int q=0; q<Qm(); q++)
         M_Mqm[q].resize( 1 );
@@ -738,23 +631,21 @@ void HeatSink2D::initModel()
     //first : the compliant case.
     M_Fqm[0].resize( 1 );
     M_Fqm[0][0].resize(1);
-    M_Fqm[0][0][0] = backend->newVector( Xh );
+    M_Fqm[0][0][0] = backend()->newVector( Xh );
     //second output : non compliant case.
     M_Fqm[1].resize( 1 );
     M_Fqm[1][0].resize(1);
-    M_Fqm[1][0][0] = backend->newVector( Xh );
+    M_Fqm[1][0][0] = backend()->newVector( Xh );
 
-    D = backend->newMatrix( Xh, Xh );
-    F = backend->newVector( Xh );
+    D = backend()->newMatrix( Xh, Xh );
+    F = backend()->newVector( Xh );
 
-    Feel::ParameterSpace<ParameterSpaceDimension>::Element mu_min( M_Dmu );
-    //mu_min <<  /* Bi */ 0.4 , /*L*/2, /*k*/1;
+    auto mu_min = Dmu->element();
     mu_min <<  /* Bi */ 0.1 , /*L*/2, /*k*/1;
-    M_Dmu->setMin( mu_min );
-    Feel::ParameterSpace<ParameterSpaceDimension>::Element mu_max( M_Dmu );
+    Dmu->setMin( mu_min );
+    auto mu_max = Dmu->element();
     mu_max << /* Bi */ 0.5  ,  /*L*/8 , /*k*/10;
-    //mu_max <<  /* Bi */ 0.1 , /*L*/2, /*k*/1;
-    M_Dmu->setMax( mu_max );
+    Dmu->setMax( mu_max );
 
     LOG(INFO) << "Number of dof " << Xh->nLocalDof() << "\n";
 
@@ -774,63 +665,70 @@ void HeatSink2D::assemble()
     element_type u( Xh, "u" );
     element_type v( Xh, "v" );
 
-
-    M_Aqm[0][0] = backend->newMatrix( _test=Xh, _trial=Xh );
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[0][0] ) = integrate( _range= markedfaces( mesh, "spreader_mesh" ), _expr= gradt( u )*trans( grad( v ) ) );
-
-    M_Aqm[1][0] = backend->newMatrix( _test=Xh, _trial=Xh  );
-    M_Aqm[2][0] = backend->newMatrix( _test=Xh, _trial=Xh  );
-    M_Aqm[3][0] = backend->newMatrix( _test=Xh, _trial=Xh  );
-
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[2][0] )  = integrate( _range= markedelements( mesh,"fin_mesh" ),_expr=  dy( v )*dyt( u )  );
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[1][0] )  = integrate( _range= markedelements( mesh,"fin_mesh" ),_expr=  dx( v )*dxt( u )  );
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[3][0] )  = integrate( _range= markedfaces( mesh, "gamma5" ), _expr= idt( u )*id( v ) );
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[3][0] ) += integrate( _range= markedfaces( mesh, "gamma6" ), _expr= idt( u )*id( v ) );
-
-
-    form1( _test=Xh, _vector=M_Fqm[0][0][0] ) = integrate( _range=markedfaces( mesh,"gamma1" ), _expr= id( v ) ) ;
-    form1( _test=Xh, _vector=M_Fqm[1][0][0] ) = integrate( _range=markedfaces( mesh,"gamma1" ), _expr= id( v ) ) ;
-
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[0][0] )
+        = integrate( _range= markedelements( mesh, "spreader_mesh" ),
+                     _expr= gradt( u )*trans( grad( v ) ) );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[1][0] )
+        = integrate( _range= markedelements( mesh,"fin_mesh" ),
+                     _expr=  dx( v )*dxt( u )  );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[2][0] )
+        = integrate( _range= markedelements( mesh,"fin_mesh" ),
+                     _expr=  dy( v )*dyt( u )  );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[3][0] )
+        = integrate( _range= markedfaces( mesh, "gamma5" ),
+                     _expr= idt( u )*id( v ) );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[3][0] )
+        += integrate( _range= markedfaces( mesh, "gamma6" ),
+                      _expr= idt( u )*id( v ) );
     M_Aqm[0][0]->close();
     M_Aqm[1][0]->close();
     M_Aqm[2][0]->close();
     M_Aqm[3][0]->close();
 
+    form1( _test=Xh, _vector=M_Fqm[0][0][0] ) =
+        integrate( _range=markedfaces( mesh,"gamma1" ), _expr= id( v ) ) ;
+    form1( _test=Xh, _vector=M_Fqm[1][0][0] ) =
+        integrate( _range=markedfaces( mesh,"gamma1" ), _expr= id( v ) ) ;
     M_Fqm[0][0][0]->close();
     M_Fqm[1][0][0]->close();
 
     //mass matrix
-    M_Mqm[0][0] = backend->newMatrix( _test=Xh, _trial=Xh );
-    M_Mqm[1][0] = backend->newMatrix( _test=Xh, _trial=Xh );
-    form2( _test=Xh, _trial=Xh, _matrix=M_Mqm[0][0] ) = integrate ( _range=markedelements( mesh,"spreader_mesh" ), _expr=idt( u )*id( v ) );
-    form2( _test=Xh, _trial=Xh, _matrix=M_Mqm[1][0] ) = integrate ( _range=markedelements( mesh,"fin_mesh" ),      _expr=idt( u )*id( v ) );
+    M_Mqm[0][0] = backend()->newMatrix( _test=Xh, _trial=Xh );
+    M_Mqm[1][0] = backend()->newMatrix( _test=Xh, _trial=Xh );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Mqm[0][0] ) =
+        integrate ( _range=markedelements( mesh,"spreader_mesh" ),
+                    _expr=idt( u )*id( v ) );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Mqm[1][0] ) =
+        integrate ( _range=markedelements( mesh,"fin_mesh" ),
+                    _expr=idt( u )*id( v ) );
     M_Mqm[0][0]->close();
     M_Mqm[1][0]->close();
 
     //for scalarProduct
-    M = backend->newMatrix( _test=Xh, _trial=Xh );
+    M = backend()->newMatrix( _test=Xh, _trial=Xh );
     form2( _test=Xh, _trial=Xh, _matrix=M ) =
-        integrate( elements( mesh ), id( u )*idt( v ) + grad( u )*trans( gradt( u ) ) );
+        integrate( elements( mesh ), idt( u )*id( v ) + gradt( u )*trans( grad( v ) ) );
     M->close();
+    addEnergyMatrix( M );
 
-    Mpod = backend->newMatrix( _test=Xh, _trial=Xh );
+    Mpod = backend()->newMatrix( _test=Xh, _trial=Xh );
     form2( _test=Xh, _trial=Xh, _matrix=Mpod ) =
-        integrate( elements( mesh ), id( u )*idt( v ) );
+        integrate( elements( mesh ), idt( u )*id( v ) );
     Mpod->close();
-
+    addMassMatrix( Mpod );
 }
 
 
 typename HeatSink2D::sparse_matrix_ptrtype
 HeatSink2D::newMatrix() const
 {
-    return backend->newMatrix( Xh, Xh );
+    return backend()->newMatrix( Xh, Xh );
 }
 
 typename HeatSink2D::vector_ptrtype
 HeatSink2D::newVector() const
 {
-    return backend->newVector( Xh );
+    return backend()->newVector( Xh );
 }
 
 
@@ -846,8 +744,8 @@ void HeatSink2D::solve( sparse_matrix_ptrtype& D,
                         vector_ptrtype& F )
 {
 
-    vector_ptrtype U( backend->newVector( u.functionSpace() ) );
-    backend->solve( D, D, U, F );
+    vector_ptrtype U( backend()->newVector( u.functionSpace() ) );
+    backend()->solve( D, D, U, F );
     u = *U;
 }
 
@@ -857,11 +755,8 @@ void HeatSink2D::exportResults( double time, element_type& T, parameter_type con
 
     LOG(INFO) << "exportResults starts\n";
     std::string exp_name = "Model_T" + ( boost::format( "_%1%" ) %time ).str();
-    //export_ptrtype exp = export_ptrtype( Exporter<mesh_type>::New( exp_name ) );
     export_ptrtype exporter;
-    //exporter = export_ptrtype( Exporter<mesh_type>::New(M_vm, exp_name  ) );
     exporter = export_ptrtype( Exporter<mesh_type>::New( "ensight", exp_name  ) );
-    //exporter exp = export_ptrtype( Exporter<mesh_type>::New( exp_name ) );
     exporter->step( time )->setMesh( T.functionSpace()->mesh() );
     std::string mu_str;
 
@@ -913,7 +808,7 @@ void HeatSink2D::update( parameter_type const& mu,double bdf_coeff, element_type
         }
     }
 
-    auto vec_bdf_poly = backend->newVector( Xh );
+    auto vec_bdf_poly = backend()->newVector( Xh );
 
     //add contribution from mass matrix
     for ( size_type q = 0; q < M_Mqm.size(); ++q )
@@ -979,7 +874,7 @@ void HeatSink2D::solve( parameter_type const& mu, element_ptrtype& T, int output
         auto bdf_poly = M_bdf->polyDeriv();
         this->update( mu , bdf_coeff, bdf_poly );
 
-        backend->solve( _matrix=D,  _solution=T, _rhs=F );
+        backend()->solve( _matrix=D,  _solution=T, _rhs=F );
 
         do_export=true;
 
@@ -1038,37 +933,13 @@ HeatSink2D::computeNumberOfSnapshots()
 
 void HeatSink2D::l2solve( vector_ptrtype& u, vector_ptrtype const& f )
 {
-    //std::cout << "l2solve(u,f)\n";
-    backend->solve( _matrix=M,  _solution=u, _rhs=f );
-    //std::cout << "l2solve(u,f) done\n";
+    backend()->solve( _matrix=M,  _solution=u, _rhs=f );
 }
-
-
-double HeatSink2D::scalarProduct( vector_ptrtype const& x, vector_ptrtype const& y )
-{
-    return M->energy( x, y );
-}
-
-double HeatSink2D::scalarProduct( vector_type const& x, vector_type const& y )
-{
-    return M->energy( x, y );
-}
-
-double HeatSink2D::scalarProductForPod( vector_ptrtype const& x, vector_ptrtype const& y )
-{
-    return Mpod->energy( x, y );
-}
-
-double HeatSink2D::scalarProductForPod( vector_type const& x, vector_type const& y )
-{
-    return Mpod->energy( x, y );
-}
-
 
 void HeatSink2D::run( const double * X, unsigned long N, double * Y, unsigned long P )
 {
     using namespace vf;
-    Feel::ParameterSpace<ParameterSpaceDimension>::Element mu( M_Dmu );
+    auto mu = Dmu->element();
     mu << X[0], X[1], X[2];
     static int do_init = true;
 
@@ -1099,7 +970,7 @@ double HeatSink2D::output( int output_index, parameter_type const& mu, element_t
     else
         *pT=unknown;
 
-    vector_ptrtype U( backend->newVector( Xh ) );
+    vector_ptrtype U( backend()->newVector( Xh ) );
     *U = *pT;
 
     //std::cout<<"*U : "<<*U<<std::endl;
@@ -1126,5 +997,3 @@ double HeatSink2D::output( int output_index, parameter_type const& mu, element_t
 }
 
 #endif /* __HeatSink2D_H */
-
-
