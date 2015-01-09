@@ -145,8 +145,8 @@ public:
         typedef FunctionSpace<mesh_type, basis_type, Conti, value_type> type;
         typedef boost::shared_ptr<type> ptrtype;
         typedef typename type::element_type element_type;
-        typedef typename element_type::template sub_element<0>::type element_0_type;
-        typedef typename element_type::template sub_element<1>::type element_1_type;
+        //typedef typename element_type::template sub_element<0>::type element_0_type;
+        //typedef typename element_type::template sub_element<1>::type element_1_type;
     };
 
     /* export */
@@ -156,10 +156,10 @@ public:
     Laplacian()
         :
         super(),
-        meshSize( this->vm()["hsize"].template as<double>() ),
-        shape( this->vm()["shape"].template as<std::string>() ),
-        b( backend_type::build( this->vm() ) ),
-        bc( backend_type::build( this->vm() ) ),
+        meshSize( doption("hsize") ),
+        shape( soption("shape") ),
+        b(  backend_type::build( soption("backend") ) ),
+        bc( backend_type::build( soption("backend") ) ),
         exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) ),
         timers(),
         stats()
@@ -219,7 +219,7 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
                             % this->about().appName()
                             % entity_type::name()
                             % Order
-                            % this->vm()["hsize"].template as<double>()
+                            % doption("hsize")
                           );
     this->setLogs();
 
@@ -251,7 +251,7 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
 
     value_type penalisation = this->vm()["penal"].template as<value_type>();
     value_type penalisation_bc = this->vm()["penalbc"].template as<value_type>();
-    int bctype = this->vm()["bctype"].template as<int>();
+    int bctype = ioption("bctype");
 
     double t = 0;
     auto g = val( exp( -cst_ref( t ) )*sin( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() ) );
@@ -274,23 +274,23 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
     /*
      * Construction of the left hand side
      */
-    auto D = b->newMatrix( Xh, Xh );
+    auto D  = b->newMatrix( Xh, Xh );
     auto Mt = b->newMatrix( Xh, Xh );
 
-    value_type diff = this->vm()["diff"].template as<double>();
-    value_type dt = this->vm()["dt"].template as<double>();
-    value_type ft = this->vm()["ft"].template as<double>();
+    value_type diff = doption("diff");
+    value_type dt   = doption("dt"  );
+    value_type ft   = doption("ft"  );
 
 
 
     timers["assembly"].first.restart();
 
     size_type pattern = ( Cont::is_continuous?Pattern::COUPLED:Pattern::COUPLED|Pattern::EXTENDED );
-    form2( Xh, Xh, Mt, _init=true, _pattern=pattern ) =
+    form2( Xh, Xh, _matrix=Mt, _init=true, _pattern=pattern ) =
         integrate( elements( mesh ),
                    idt( u )*id( v )/dt );
     Mt->close();
-    form2( Xh, Xh, D, _init=true, _pattern=pattern ) =
+    form2( Xh, Xh, _matrix=D, _init=true, _pattern=pattern ) =
         integrate( elements( mesh ),
                    diff*gradt( u )*trans( grad( v ) )
                  );
@@ -323,14 +323,14 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
               << "||u||_energy_2' = " << integrate( boundaryfaces( mesh ),  ( gradv( u )*N() )*idv( v ) ).evaluate() << "\n"
               << "||u||_energy_3 = " << integrate( elements( mesh ),  -trace( hessv( u ) )*idv( v ) ).evaluate() << "\n";
 
-    form2( Xh, Xh, D, _init=true, _pattern=pattern ) =
+    form2( Xh, Xh, _matrix=D, _init=true, _pattern=pattern ) =
         integrate( elements( mesh ),
                    diff*gradt( u )*trans( grad( v ) )
                    //-trace(hesst(u))*id(v)
                  );
 
     if ( !Cont::is_continuous )
-        form2( Xh, Xh, D ) +=integrate( internalfaces( mesh ),
+        form2( Xh, Xh, _matrix=D ) +=integrate( internalfaces( mesh ),
                                         // - {grad(u)} . [v]
                                         -averaget( gradt( u ) )*jump( id( v ) )
                                         // - [u] . {grad(v)}
@@ -341,7 +341,7 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
 
     if ( bctype == 1 || !Cont::is_continuous )
     {
-        form2( Xh, Xh, D ) += integrate( boundaryfaces( mesh ),
+        form2( Xh, Xh, _matrix=D ) += integrate( boundaryfaces( mesh ),
                                          ( - trans( id( v ) )*( gradt( u )*N() )
                                            - trans( idt( u ) )*( grad( v )*N() )
                                            + penalisation_bc*trans( idt( u ) )*id( v )/hFace() ) );
@@ -358,7 +358,7 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
     auto Xch = space<Continuous>::type::New( mesh );
     auto uEx = Xch->element( "uEx" );
     auto M = bc->newMatrix( Xch, Xch );
-    form2( Xch, Xch, M, _init=true ) = integrate( elements( mesh ),  trans( idt( uEx ) )*id( uEx ) );
+    form2( Xch, Xch, _matrix=M, _init=true ) = integrate( elements( mesh ),  trans( idt( uEx ) )*id( uEx ) );
     M->close();
     auto L = bc->newVector( Xch );
 
@@ -375,7 +375,7 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
             trans( f )*id( v ) );
 
     if ( bctype == 1 || !Cont::is_continuous )
-        form1( Xh, Ft ) += integrate( boundaryfaces( mesh ),
+        form1( Xh, _vector=Ft ) += integrate( boundaryfaces( mesh ),
                                       trans( g )*( - grad( v )*N() + penalisation_bc*id( v )/hFace() ) );
 
     Ft->close();
@@ -385,7 +385,7 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
 
     timers["assembly"].second += timers["assembly"].first.elapsed();
 
-    form1( Xch, L, _init=true ) = integrate( elements( mesh ),  trans( g )*id( uEx ) );
+    form1( Xch, _vector=L, _init=true ) = integrate( elements( mesh ),  trans( g )*id( uEx ) );
     L->close();
 
     if ( this->vm().count( "export-matlab" ) )
@@ -427,7 +427,7 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
     else
     {
 
-        form1( Xch, L, _init=true ) = integrate( elements( mesh ),  trans( idv( u ) )*id( uEx ) );
+        form1( Xch, _vector=L, _init=true ) = integrate( elements( mesh ),  trans( idv( u ) )*id( uEx ) );
         typename space<Continuous>::element_type uc( Xch, "uc" );
         bc->solve( _matrix=M, _solution=uc, _rhs=L );
         this->exportResults( t, u, uc, uEx );
@@ -451,7 +451,7 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
                 trans( f )*id( v ) + idv( u )*id( v )/dt );
 
         if ( bctype == 1 || !Cont::is_continuous )
-            form1( Xh, Ft ) += integrate( boundaryfaces( mesh ),
+            form1( Xh, _vector=Ft ) += integrate( boundaryfaces( mesh ),
                                           trans( g )*( - grad( v )*N() + penalisation_bc*id( v )/hFace() ) );
 
         Ft->close();
@@ -477,7 +477,7 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
 
         // find the L2-projection (with a continuous expansion) of
         // the exact solution
-        form1( Xch, L, _init=true ) = integrate( elements( mesh ),  trans( g )*id( uEx ) );
+        form1( Xch, _vector=L, _init=true ) = integrate( elements( mesh ),  trans( g )*id( uEx ) );
         bc->solve( _matrix=M, _solution=uEx, _rhs=L );
 
         // compute local error wrt the exact solution
@@ -520,7 +520,7 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
         else
         {
 
-            form1( Xch, L, _init=true ) = integrate( elements( mesh ),  trans( idv( u ) )*id( uEx ) );
+            form1( Xch, _vector=L, _init=true ) = integrate( elements( mesh ),  trans( idv( u ) )*id( uEx ) );
             typename space<Continuous>::element_type uc( Xch, "uc" );
             bc->solve( _matrix=M, _solution=uc, _rhs=L );
             this->exportResults( t, u, uc, uEx );

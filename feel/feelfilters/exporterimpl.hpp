@@ -173,7 +173,10 @@ Exporter<MeshType, N>::New( std::string const& exportername, std::string prefix,
     else if ( N > 1 || ( exportername == "gmsh" ) )
         exporter = new ExporterGmsh<MeshType,N>( worldComm );
     else // fallback
+    {
+        LOG(INFO) << "[Exporter] The exporter format " << exportername << " Cannot be found. Falling back to Ensight exporter." << std::endl;
         exporter = new ExporterEnsight<MeshType, N>( worldComm );
+    }
 
     exporter->addTimeSet( timeset_ptrtype( new timeset_type( prefix ) ) );
     exporter->setPrefix( prefix );
@@ -211,7 +214,10 @@ Exporter<MeshType, N>::New( po::variables_map const& vm, std::string prefix, Wor
     else if ( N > 1 || estr == "gmsh" )
         exporter = new ExporterGmsh<MeshType,N>( vm, prefix, worldComm );
     else // fallback
+    {
+        LOG(INFO) << "[Exporter] The exporter format " << estr << " Cannot be found. Falling back to Ensight exporter." << std::endl;
         exporter = new ExporterEnsight<MeshType, N>( vm, prefix, worldComm );
+    }
 
 
     exporter->setOptions();

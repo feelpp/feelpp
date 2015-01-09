@@ -40,7 +40,7 @@ StVenantKirchhoff<Dim,Order>::StVenantKirchhoff( po::variables_map const& vm )
     super( Dim, vm ),
     M_backend( backend_type::build( this->vm() ) ),
     M_Xh(),
-    exporter( Exporter<mesh_type>::New( this->vm()["exporter"].template as<std::string>() )->setOptions( this->vm() ) ),
+    exporter( Exporter<mesh_type>::New( soption("exporter") )->setOptions( this->vm() ) ),
     timeSet( new timeset_type( "stvenant_kirchhoff" ) )
 {
     //timeSet->setTimeIncrement( this->dt()/this->nSubSteps() );

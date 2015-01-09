@@ -221,8 +221,8 @@ template<int POrder, int GeoOrder>
 Stokes_Dirichlet_Dirichlet<POrder,GeoOrder>::Stokes_Dirichlet_Dirichlet( )
     :
     super( ),
-    M_backend( backend_type::build( this->vm() ) ),
-    meshSize( this->vm()["hsize"].template as<double>() ),
+    M_backend( backend_type::build( soption("backend") ) ),
+    meshSize( doption("hsize") ),
     mu( this->vm()["mu"].template as<value_type>() ),
     penalbc( this->vm()["bccoeff"].template as<value_type>() ),
     exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
@@ -246,7 +246,7 @@ Stokes_Dirichlet_Dirichlet<POrder,GeoOrder>::init()
                             % convex_type::name()
                             % basis_u_type::nOrder % basis_p_type::nOrder
                             % GeoOrder
-                            % this->vm()["hsize"].template as<double>() );
+                            % doption("hsize") );
 
 #if (STOKESPRESSMESHTYPE == 1)
     //********************** Rectangle ***************************************

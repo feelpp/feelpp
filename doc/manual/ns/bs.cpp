@@ -26,7 +26,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@math.unistra.fr>
    \date 2012-09-30
  */
-#include <ns.hpp>
+#include "ns.hpp"
 
 int
 main( int argc, char** argv )
