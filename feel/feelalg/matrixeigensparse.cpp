@@ -234,7 +234,7 @@ MatrixEigenSparse<T>::zeroRows( std::vector<int> const& rows,
         {
             m[it.row()].insert(it.col());
             value_type value = 1.0;
-            if ( on_context.test( OnContext::ELIMINATION_KEEP_DIAGONAL ) )
+            if ( on_context.test( ContextOn::ELIMINATION|ContextOn::KEEP_DIAGONAL ) )
                 value = it.value();
             rhs.add( it.row(), -it.value() * vals(rows[k]) );
             it.valueRef() = 0;
