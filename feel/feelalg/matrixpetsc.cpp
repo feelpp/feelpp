@@ -2646,11 +2646,11 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
     // the matrix doesn't be closed because not all processors are present here with composite spaces(this call must be done after)
     // this->close();
     if (!withClose)
-        {
+    {
 #if !PETSC_VERSION_LESS_THAN(3,2,0)
-            MatSetOption( this->mat(),MAT_NO_OFF_PROC_ZERO_ROWS,PETSC_TRUE );
+        MatSetOption( this->mat(),MAT_NO_OFF_PROC_ZERO_ROWS,PETSC_TRUE );
 #endif
-        }
+    }
 
 #if PETSC_VERSION_LESS_THAN(3,0,0)
     MatSetOption( this->mat(),MAT_KEEP_ZEROED_ROWS );
@@ -2666,19 +2666,26 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
     const VectorPetscMPI<T>* pvalues = dynamic_cast<const VectorPetscMPI<T>*> ( &values );
     CHECK( pvalues != 0 ) << "dynamic cast from Vector to VectorPetscMPI failed for values";
 
-    VectorPetscMPI<value_type> diag( this->mapColPtr() );
-    if ( on_context.test( ContextOn::ELIMINATION|ContextOn::KEEP_DIAGONAL ) )
+    if ( on_context.test( ContextOn::ELIMINATION ) )
     {
-        MatGetDiagonal( this->M_mat, diag.vec() );
-    }
+        VectorPetscMPI<value_type> diag( this->mapColPtr() );
+        if ( on_context.test( ContextOn::KEEP_DIAGONAL ) )
+        {
+            MatGetDiagonal( this->M_mat, diag.vec() );
+        }
 
 #if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR >= 2)
-    if ( on_context.test(ContextOn::ELIMINATION|ContextOn::SYMMETRIC ) )
-    {
-        MatZeroRowsColumnsLocal(this->M_mat, rows.size(), rows.data(), 1.0, pvalues->vec(), prhs->vec() );
-        if ( ContextOn::KEEP_DIAGONAL )
+        if ( on_context.test(ContextOn::SYMMETRIC ) )
         {
-            std::cout << "keep diagonal\n";
+            MatZeroRowsColumnsLocal(this->M_mat, rows.size(), rows.data(), 1.0, pvalues->vec(), prhs->vec() );
+        }
+        else
+        {
+            MatZeroRowsLocal( this->mat(), rows.size(), rows.data(), 1.0, pvalues->vec(), prhs->vec() );
+            //CHKERRABORT(this->comm(),ierr);
+        }
+        if ( on_context.test( ContextOn::KEEP_DIAGONAL ) )
+        {
             MatDiagonalSet( this->M_mat, diag.vec(), INSERT_VALUES );
             for ( size_type i = 0; i < rows.size(); ++i )
             {
@@ -2689,41 +2696,36 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
                     rhs.set( rows[i], values(rows[i])*diag( rows[i] ) );
             }
         }
-    }
-    else
-    {
-        MatZeroRowsLocal( this->mat(), rows.size(), rows.data(), 1.0, pvalues->vec(), prhs->vec() );
-        //CHKERRABORT(this->comm(),ierr);
-    }
-#else
-    MatZeroRowsLocal( this->mat(), rows.size(), rows.data(), 1.0 );
-    
-    for ( size_type i = 0; i < rows.size(); ++i )
-    {
-        // eliminate column
-        
-        // warning: a row index may belong to another
-        // processor, so make sure that we access only the
-        // rows that belong to this processor
-        if ( rows[i] >= start && rows[i] < stop )
-            rhs.set( rows[i], values(rows[i]) );
-    }
-#endif
 
+#else
+        MatZeroRowsLocal( this->mat(), rows.size(), rows.data(), 1.0 );
+    
+        for ( size_type i = 0; i < rows.size(); ++i )
+        {
+            // eliminate column
+        
+            // warning: a row index may belong to another
+            // processor, so make sure that we access only the
+            // rows that belong to this processor
+            if ( rows[i] >= start && rows[i] < stop )
+                rhs.set( rows[i], values(rows[i]) );
+        }
+#endif
+    }
     // rsh doesn't be closed because not all processors are present here with composite spaces(this call must be done after)
     if (withClose)
-        {
-            rhs.close();
-        }
+    {
+        rhs.close();
+    }
     else
-        {
-            //reset MatOption (assemble with communication)
+    {
+        //reset MatOption (assemble with communication)
 #if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR > 1)
-            MatSetOption( this->mat(),MAT_NO_OFF_PROC_ZERO_ROWS,PETSC_FALSE );
+        MatSetOption( this->mat(),MAT_NO_OFF_PROC_ZERO_ROWS,PETSC_FALSE );
 #else
-            // ???
+        // ???
 #endif
-        }
+    }
 } // zeroRows
 
 #endif // 0
