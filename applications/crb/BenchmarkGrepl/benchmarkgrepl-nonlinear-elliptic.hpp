@@ -589,13 +589,14 @@ BenchmarkGreplNonlinearElliptic<Order>::assembleJacobianWithAffineDecomposition(
     int M = eim_g->mMax();
     double gamma = option(_name="gamma").template as<double>();
 
-    form2( _test=Xh, _trial=Xh, _matrix=Jqm[0][0] ) =
-        integrate( _range= elements( mesh ),
-                   _expr = gradt(u)*trans(grad(v)) )
-        + integrate( _range = markedfaces( mesh, "boundaries"),
-                     _expr = gamma*idt(u)*id(v)/hFace()
-                     - (gradt(u)*vf::N())*id(v) +
-                     - (grad(v)*vf::N())*idt(u) );
+    form2( _test=Xh, _trial=Xh, _matrix=Jqm[0][0] )
+        = integrate( _range= elements( mesh ),
+                   _expr = gradt(u)*trans(grad(v)) );
+    form2( _test=Xh, _trial=Xh, _matrix=Jqm[0][0] )
+        += integrate( _range = markedfaces( mesh, "boundaries"),
+                      _expr = gamma*idt(u)*id(v)/hFace()
+                      - (gradt(u)*vf::N())*id(v) +
+                      - (grad(v)*vf::N())*idt(u) );
 
     Jqm[0][0]->close();
     for(int m=0; m<M; m++)
@@ -626,13 +627,14 @@ BenchmarkGreplNonlinearElliptic<Order>::assembleResidualWithAffineDecomposition(
     for(int m=0; m<Mu; m++)
     {
         auto q = eim_u->q(m);
-        form1( _test=Xh, _vector=Rqm[0][0][m] ) =
-            integrate( _range= elements( mesh ),
-                       _expr = gradv(q)*trans(grad(v)) )
-            + integrate( _range = markedfaces( mesh, "boundaries"),
-                         _expr = gamma*idv(q)*id(v)/hFace()
-                         - (gradv(q)*vf::N())*id(v) +
-                         - (grad(v)*vf::N())*idv(q) );
+        form1( _test=Xh, _vector=Rqm[0][0][m] )
+            = integrate( _range= elements( mesh ),
+                         _expr = gradv(q)*trans(grad(v)) );
+        form1( _test=Xh, _vector=Rqm[0][0][m] )
+            += integrate( _range = markedfaces( mesh, "boundaries"),
+                          _expr = gamma*idv(q)*id(v)/hFace()
+                          - (gradv(q)*vf::N())*id(v) +
+                          - (grad(v)*vf::N())*idv(q) );
 
         Rqm[0][0][m]->close();
     }
@@ -680,10 +682,11 @@ BenchmarkGreplNonlinearElliptic<Order>::updateJacobianMonolithic( vector_ptrtype
     auto g = exp( mu(1)*idv(u) );
     auto proj_g = vf::project(_space=Xh, _expr=g);
 
-    form2( _test=Xh, _trial=Xh, _matrix=J ) =
-        integrate( _range= elements( mesh ),
-                   _expr = gradt(u)*trans(grad(v)) )
-        + integrate( _range = markedfaces( mesh, "boundaries"),
+    form2( _test=Xh, _trial=Xh, _matrix=J )
+        = integrate( _range= elements( mesh ),
+                   _expr = gradt(u)*trans(grad(v)) ) ;
+    form2( _test=Xh, _trial=Xh, _matrix=J )
+        += integrate( _range = markedfaces( mesh, "boundaries"),
                      _expr = gamma*idt(u)*id(v)/hFace()
                      - (gradt(u)*vf::N())*id(v) +
                      - (grad(v)*vf::N())*idt(u) );
@@ -714,11 +717,12 @@ BenchmarkGreplNonlinearElliptic<Order>::updateResidualMonolithic(vector_ptrtype 
 
     form1( _test=Xh, _vector=R ) =
         integrate( _range= elements( mesh ),
-                   _expr = gradv(u)*trans(grad(v)) )
-        + integrate( _range = markedfaces( mesh, "boundaries"),
-                     _expr = gamma*idv(u)*id(v)/hFace()
-                     - (gradv(u)*vf::N())*id(v) +
-                     - (grad(v)*vf::N())*idv(u) );
+                   _expr = gradv(u)*trans(grad(v)) );
+    form1( _test=Xh, _vector=R )
+        += integrate( _range = markedfaces( mesh, "boundaries"),
+                      _expr = gamma*idv(u)*id(v)/hFace()
+                      - (gradv(u)*vf::N())*id(v) +
+                      - (grad(v)*vf::N())*idv(u) );
 
     form1( _test=Xh, _vector=R ) +=
         integrate( _range= elements( mesh ),
@@ -757,12 +761,13 @@ void BenchmarkGreplNonlinearElliptic<Order>::assemble()
         double gamma = option(_name="gamma").template as<double>();
 
         form2( _test=Xh, _trial=Xh, _matrix=this->M_Aqm[0][0] ) =
-        integrate( _range= elements( mesh ),
-                   _expr = gradt(u)*trans(grad(v)) )
-        + integrate( _range = markedfaces( mesh, "boundaries"),
-                     _expr = gamma*idt(u)*id(v)/hFace()
-                     - (gradt(u)*vf::N())*id(v) +
-                     - (grad(v)*vf::N())*idt(u) );
+            integrate( _range= elements( mesh ),
+                       _expr = gradt(u)*trans(grad(v)) );
+        form2( _test=Xh, _trial=Xh, _matrix=this->M_Aqm[0][0] )
+            += integrate( _range = markedfaces( mesh, "boundaries"),
+                          _expr = gamma*idt(u)*id(v)/hFace()
+                          - (gradt(u)*vf::N())*id(v) +
+                          - (grad(v)*vf::N())*idt(u) );
 
         for(int m=0; m<M; m++)
         {
@@ -811,16 +816,18 @@ BenchmarkGreplNonlinearElliptic<Order>::computeMonolithicFormulationU( parameter
     M_monoF[1] = backend()->newVector( Xh );
     form2( _test=Xh, _trial=Xh, _matrix=M_monoA ) =
         integrate( _range= elements( mesh ),
-                   _expr = gradt(u)*trans(grad(v)) )
-        + integrate( _range = markedfaces( mesh, "boundaries"),
-                     _expr = gamma*idt(u)*id(v)/hFace()
-                     - (gradt(u)*vf::N())*id(v) +
-                     - (grad(v)*vf::N())*idt(u) );
+                   _expr = gradt(u)*trans(grad(v)) );
+    form2( _test=Xh, _trial=Xh, _matrix=M_monoA )
+        += integrate( _range = markedfaces( mesh, "boundaries"),
+                      _expr = gamma*idt(u)*id(v)/hFace()
+                      - (gradt(u)*vf::N())*id(v) +
+                      - (grad(v)*vf::N())*idt(u) );
 
     form1( _test=Xh, _vector=M_monoF[0] ) =
         integrate( _range= elements( mesh ),
-                   _expr=-mu(0)/mu(1)*( idv(g)*id(v) - id(v) ) )
-        + integrate( _range= elements( mesh ),
+                   _expr=-mu(0)/mu(1)*( idv(g)*id(v) - id(v) ) );
+    form1( _test=Xh, _vector=M_monoF[0] )
+        += integrate( _range= elements( mesh ),
                      _expr=100*sin(2*M_PI*Px())*cos(2*M_PI*Py()) * id(v) );
 
     form1( _test=Xh, _vector=M_monoF[1] ) =
@@ -868,11 +875,13 @@ BenchmarkGreplNonlinearElliptic<Order>::computeLinearDecompositionA()
     this->M_linearAqm[0].resize(1);
     this->M_linearAqm[0][0] = backend()->newMatrix( Xh, Xh );
     form2( _test=Xh, _trial=Xh, _matrix=this->M_linearAqm[0][0] ) =
-        integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ) ) +
-        integrate( markedfaces( mesh, "boundaries" ), gamma*idt( u )*id( v )/h()
-                   -gradt( u )*vf::N()*id( v )
-                   -grad( v )*vf::N()*idt( u )
-                   );
+        integrate( _range=elements( mesh ),
+                   _expr=gradt( u )*trans( grad( v ) ) );
+    form2( _test=Xh, _trial=Xh, _matrix=this->M_linearAqm[0][0] )
+        = integrate( _range=markedfaces( mesh, "boundaries" ),
+                      _expr=gamma*idt( u )*id( v )/h()
+                      -gradt( u )*vf::N()*id( v )
+                      -grad( v )*vf::N()*idt( u ) );
     this->M_linearAqm[0][0]->close();
     return this->M_linearAqm;
 
@@ -919,5 +928,3 @@ double BenchmarkGreplNonlinearElliptic<Order>::output( int output_index, paramet
 }
 
 #endif /* __BenchmarkGreplNonlinearElliptic_H */
-
-

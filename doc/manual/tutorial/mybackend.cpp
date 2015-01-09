@@ -54,8 +54,8 @@ int main(int argc, char**argv )
 
 	// element in Vh
 	auto u  = Vh->element();
-	auto u1 = Vh->element(); //computed with default backend
-	auto u2 = Vh->element(); //computed with named backend
+	auto u1 = Vh->element(); 
+	auto u2 = Vh->element(); 
 
 	// left hand side
 	auto a = form2( _trial=Vh, _test=Vh );
@@ -75,13 +75,13 @@ int main(int argc, char**argv )
 	// solve a(u,v)=l(v)
 	if ( Environment::isMasterRank() )
 		std::cout << "With default backend\n";
-	a.solve(_rhs=l,_solution=u1);
+	a.solve(_rhs=l,_solution=u1); // Compute with default backend
 	/// [marker_default]
 	/// [marker_hm]
 	// solve a(u,v)=l(v)
 	if ( Environment::isMasterRank() )
 		std::cout << "With named backend\n";
-	a.solveb(_rhs=l,_solution=u2, _backend=myBackend);
+	a.solveb(_rhs=l,_solution=u2, _backend=myBackend); // Compute with myBackend
 	/// [marker_hm]
 
 	// save results
