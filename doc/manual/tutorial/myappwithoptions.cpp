@@ -46,6 +46,7 @@ int main( int argc, char* argv[] )
     std::cout << "proc " << Environment::rank()
               <<" of "<< Environment::numberOfProcessors()
               << std::endl;
+		std::cout << "value = " << doption("value") << std::endl;
 
 }
 // [marker]
