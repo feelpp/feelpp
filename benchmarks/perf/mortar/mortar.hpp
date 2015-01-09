@@ -48,6 +48,7 @@
 #include <feel/feelfilters/geotool.hpp>
 #include <feel/feelpoly/lagrange.hpp>
 #include <feel/feelalg/matrixblock.hpp>
+#include <feel/feelalg/vectorblock.hpp>
 #include <boost/assign/list_of.hpp>
 #include <boost/assign/std/vector.hpp>
 #include <boost/assign/std/vector.hpp>
@@ -183,7 +184,7 @@ MortarBench<Dim, Order1, Order2>::run()
 #endif
 
     double shear = this->vm()["shear"].template as<value_type>();
-    bool recombine = this->vm()["recombine"].template as<bool>();
+    bool recombine = boption("recombine");
 
     boost::timer t;
 
@@ -272,9 +273,9 @@ MortarBench<Dim, Order1, Order2>::run()
 
     auto f = pi*pi*Dim*g;
 
-    bool weakdir = this->vm()["weakdir"].template as<int>();
-    value_type penaldir = this->vm()["penaldir"].template as<double>();
-    value_type coeff = this->vm()["coeff"].template as<double>();
+    bool weakdir = ioption("weakdir");
+    value_type penaldir = doption("penaldir");
+    value_type coeff = doption("coeff");
 
     auto F1 = backend()->newVector( Xh1 );
     form1( _test=Xh1, _vector=F1, _init=true ) =

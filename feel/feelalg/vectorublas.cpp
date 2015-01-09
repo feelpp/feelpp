@@ -407,7 +407,7 @@ VectorUblas<T,Storage>::printMatlab( const std::string filename, bool renumber )
 
         FEELPP_ASSERT( file_out )( filename ).error( "[VectorUblas::printMatlab] ERROR: File cannot be opened for writing." );
 
-        file_out << "F = [ ";
+        file_out << "var_"<<filename<<" = [ ";
         file_out.precision( 16 );
         file_out.setf( std::ios::scientific );
 
