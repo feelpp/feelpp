@@ -1321,129 +1321,88 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows, Vector<value_type> const
     MatSetOption( M_mat,MAT_KEEP_ZEROED_ROWS );
 #endif
 
-    if ( on_context.test( OnContext::ELIMINATION_SYMMETRIC ) )
+    if ( on_context.test( ContextOn::ELIMINATION) )
     {
-        //PetscErrorCode  MatZeroRowsColumns(Mat mat,PetscInt numRows,const PetscInt rows[],PetscScalar diag,Vec x,Vec b)
         VectorPetsc<T>* prhs = dynamic_cast<VectorPetsc<T>*> ( &rhs );
         const VectorPetsc<T>* pvalues = dynamic_cast<const VectorPetsc<T>*> ( &values );
-#if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR >= 2)
-        MatZeroRowsColumns(M_mat, rows.size(), rows.data(), 1.0, pvalues->vec(), prhs->vec() );
-#else
-        MatZeroRows( M_mat, rows.size(), rows.data(), 1.0 );
-#endif
-        PetscBool b;
-        MatIsSymmetric( M_mat, 1e-13, &b );
-        LOG(INFO) << "Mat is symmetric : " << b;
-        return;
-    }
 
-    int start=0, stop=0, ierr=0;
+        int start, stop;
+        int ierr = MatGetOwnershipRange( M_mat, &start, &stop );
+        CHKERRABORT( this->comm(),ierr );
 
-    ierr = MatGetOwnershipRange( M_mat, &start, &stop );
-    CHKERRABORT( this->comm(),ierr );
-
-    if ( on_context.test( OnContext::ELIMINATION_KEEP_DIAGONAL ) )
-    {
         VectorPetsc<value_type> diag( this->size1(), stop-start );
-        MatGetDiagonal( M_mat, diag.vec() );
-        // in Petsc 3.2, we might want to look at the new interface so that
-        // right hand side is automatically changed wrt to zeroing out the
-        // matrix entries
-#if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR >= 2)
-        MatZeroRows( M_mat, rows.size(), rows.data(), 1.0,PETSC_NULL,PETSC_NULL );
-#else
-        MatZeroRows( M_mat, rows.size(), rows.data(), 1.0 );
-#endif
-        MatDiagonalSet( M_mat, diag.vec(), INSERT_VALUES );
-
-        for ( size_type i = 0; i < rows.size(); ++i )
+        if ( on_context.test( ContextOn::KEEP_DIAGONAL ) )
         {
-            // eliminate column
-
-            // warning: a row index may belong to another
-            // processor, so make sure that we access only the
-            // rows that belong to this processor
-            if ( rows[i] >= start && rows[i] < stop )
-                rhs.set( rows[i], values(rows[i])*diag( rows[i] ) );
+            std::cout << "elimination + keep diagonal\n";
+        
+            MatGetDiagonal( M_mat, diag.vec() );
         }
-    }
-
-    else
-    {
-
-
-
+    
+        if ( on_context.test( ContextOn::SYMMETRIC ) )
+        {
+            std::cout << " - elimination + symmetric \n";
 #if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR >= 2)
-        MatZeroRows( M_mat, rows.size(), rows.data(), 1.0,PETSC_NULL,PETSC_NULL );
+            MatZeroRowsColumns(M_mat, rows.size(), rows.data(), 1.0, pvalues->vec(), prhs->vec() );
 #else
-        MatZeroRows( M_mat, rows.size(), rows.data(), 1.0 );
+            MatZeroRows( M_mat, rows.size(), rows.data(), 1.0 );
 #endif
-
-        for ( size_type i = 0; i < rows.size(); ++i )
-        {
-            // eliminate column
-
-            // warning: a row index may belong to another
-            // processor, so make sure that we access only the
-            // rows that belong to this processor
-            if ( rows[i] >= start && rows[i] < stop )
-                rhs.set( rows[i], values(rows[i]) );
-        }
-    }
-
-    //if ( on_context.test( ON_ELIMINATION_SYMMETRIC ) )
-    if ( 0 )
-    {
-        VLOG(1) << "symmetrize zero-out  operation\n";
-
-        for ( size_type i = 0; i < rows.size(); ++i )
-        {
-            int myRow = rows[i];
-            int ncols;
-            const PetscInt* cols;
-            const PetscScalar *vals;
-            MatGetRow( M_mat, myRow, &ncols, &cols, &vals );
-            // we suppose here that the pattern is
-            // symmetric (not necessarily the matrix)
-
-            // do a loop on all indices, j, in Indices and
-            // zero out corresponding columns
-            // (Indices[j],myRow)
-            for ( int j = 0; j < ncols; ++j )
+            if ( on_context.test( ContextOn::CHECK ) )
             {
-                if ( cols[j] == myRow )
-                    continue;
-
-                int ncols2;
-                const PetscInt* cols2;
-                const PetscScalar *vals2;
-
-                MatGetRow( M_mat, cols[j], &ncols2, &cols2, &vals2 );
-                PetscScalar* v = new PetscScalar[ncols2];
-                std::copy( vals2, vals2+ncols, v );
-                bool found = false;
-                Feel::detail::ignore_unused_variable_warning( found );
-
-                for ( int k = 0; k < ncols2; ++k )
-                    if ( cols2[k] == myRow )
-                    {
-                        found=true;
-                        rhs.add( cols[j], -values(i)*vals2[k] );
-                        //int j_val = cols2[k];
-                        v[k] = 0;
-                        MatSetValuesRow( M_mat, myRow,v );
-
-                        break;
-                    }
-
-                MatRestoreRow( M_mat, cols[j], &ncols2, &cols2, &vals2 );
-                FEELPP_ASSERT( found == true )( myRow )( cols[j] ).error ( "matrix graph is not symmetric" );
+                PetscBool b;
+                MatIsSymmetric( M_mat, 1e-13, &b );
+                LOG(INFO) << "Mat is symmetric : " << b;
             }
+            if ( on_context.test( ContextOn::KEEP_DIAGONAL ) )
+            {
+                std::cout << "    + keep diagonal\n";
+                MatDiagonalSet( M_mat, diag.vec(), INSERT_VALUES );
+            
+                for ( size_type i = 0; i < rows.size(); ++i )
+                {
+                    // warning: a row index may belong to another
+                    // processor, so make sure that we access only the
+                    // rows that belong to this processor
+                    if ( rows[i] >= start && rows[i] < stop )
+                        rhs.set( rows[i], values(rows[i])*diag( rows[i] ) );
+                }
+            }
+        }
+        else // non symmetric case
+        {
 
-            MatRestoreRow( M_mat, myRow, &ncols, &cols, &vals );
-        } // i
+#if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR >= 2)
+            MatZeroRows( M_mat, rows.size(), rows.data(), 1.0,PETSC_NULL,PETSC_NULL );
+#else
+            MatZeroRows( M_mat, rows.size(), rows.data(), 1.0 );
+#endif
+            if ( on_context.test( ContextOn::KEEP_DIAGONAL ) )
+            {
+                std::cout << "keep diagonal\n";
+                MatDiagonalSet( M_mat, diag.vec(), INSERT_VALUES );
+                for ( size_type i = 0; i < rows.size(); ++i )
+                {
+                    // warning: a row index may belong to another
+                    // processor, so make sure that we access only the
+                    // rows that belong to this processor
+                    if ( rows[i] >= start && rows[i] < stop )
+                        rhs.set( rows[i], values(rows[i])*diag( rows[i] ) );
+                }
+            }
+            else
+            {
+                for ( size_type i = 0; i < rows.size(); ++i )
+                {
+                    // eliminate column
+
+                    // warning: a row index may belong to another
+                    // processor, so make sure that we access only the
+                    // rows that belong to this processor
+                    if ( rows[i] >= start && rows[i] < stop )
+                        rhs.set( rows[i], values(rows[i]) );
+                }
+            }
+        }
     }
-
 }
 template<typename T>
 void
@@ -2702,76 +2661,54 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
 #endif
 
     int start=0, stop=this->mapRow().nLocalDofWithGhost(), ierr=0;
-    //ierr = MatGetOwnershipRange(_M_mat, &start, &stop);
-
     VectorPetscMPI<T>* prhs = dynamic_cast<VectorPetscMPI<T>*> ( &rhs );
     CHECK( prhs != 0 ) << "dynamic cast from Vector to VectorPetscMPI failed for rhs";
     const VectorPetscMPI<T>* pvalues = dynamic_cast<const VectorPetscMPI<T>*> ( &values );
     CHECK( pvalues != 0 ) << "dynamic cast from Vector to VectorPetscMPI failed for values";
 
-    if ( false ) // on_context.test( ON_ELIMINATION_KEEP_DIAGONAL ) )
-        {
-            VectorPetscMPI<value_type> diag( this->mapRowPtr() );
+    VectorPetscMPI<value_type> diag( this->mapColPtr() );
+    if ( on_context.test( ContextOn::ELIMINATION|ContextOn::KEEP_DIAGONAL ) )
+    {
+        MatGetDiagonal( this->M_mat, diag.vec() );
+    }
 
-            //VectorPetsc<value_type> diag( this->mapRow().nLocalDofWithoutGhost(),this->mapRow().worldComm() );
-            //diag( this->mapRow().nLocalDofWithGhost(),this->mapRow().worldComm().subWorldComm(this->mapRow().worldComm().mapColorWorld()[this->mapRow().worldComm().globalRank()  ] ));
-            ierr =MatGetDiagonal( this->mat(), diag.vec() );
-            CHKERRABORT( this->comm(),ierr );
-            // in Petsc 3.2, we might want to look at the new interface so that
-            // right hand side is automatically changed wrt to zeroing out the
-            // matrix entries
-#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,2,0)
-            ierr = MatZeroRowsLocal( this->mat(), rows.size(), rows.data(), 1.0, PETSC_NULL, PETSC_NULL );
-            //CHKERRABORT(this->comm(),ierr);
-#else
-            MatZeroRowsLocal( this->mat(), rows.size(), rows.data(), 1.0 );
-#endif
-            // doesn't work with composite space
-            ierr=MatDiagonalSet( this->mat(), diag.vec(), INSERT_VALUES );
-            //CHKERRABORT(this->comm(),ierr);
-
-            // important close
-            diag.close();
-
-            for ( size_type i = 0; i < rows.size(); ++i )
-                {
-                    // eliminate column
-
-                    // warning: a row index may belong to another
-                    // processor, so make sure that we access only the
-                    // rows that belong to this processor
-                    if ( rows[i] >= start && rows[i] < stop )
-                        rhs.set( rows[i], values(rows[i])*diag( rows[i] ) );
-                }
-        }
-
-    else
-        {
 #if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR >= 2)
-            if ( on_context.test( OnContext::ELIMINATION_SYMMETRIC ) )
-            {
-                MatZeroRowsColumnsLocal(this->M_mat, rows.size(), rows.data(), 1.0, pvalues->vec(), prhs->vec() );
-            }
-            else
-            {
-                MatZeroRowsLocal( this->mat(), rows.size(), rows.data(), 1.0, pvalues->vec(), prhs->vec() );
-                //CHKERRABORT(this->comm(),ierr);
-            }
-#else
-            MatZeroRowsLocal( this->mat(), rows.size(), rows.data(), 1.0 );
-
+    if ( on_context.test(ContextOn::ELIMINATION|ContextOn::SYMMETRIC ) )
+    {
+        MatZeroRowsColumnsLocal(this->M_mat, rows.size(), rows.data(), 1.0, pvalues->vec(), prhs->vec() );
+        if ( ContextOn::KEEP_DIAGONAL )
+        {
+            std::cout << "keep diagonal\n";
+            MatDiagonalSet( this->M_mat, diag.vec(), INSERT_VALUES );
             for ( size_type i = 0; i < rows.size(); ++i )
-                {
-                    // eliminate column
-
-                    // warning: a row index may belong to another
-                    // processor, so make sure that we access only the
-                    // rows that belong to this processor
-                    if ( rows[i] >= start && rows[i] < stop )
-                        rhs.set( rows[i], values(rows[i]) );
-                }
-#endif
+            {
+                // warning: a row index may belong to another
+                // processor, so make sure that we access only the
+                // rows that belong to this processor
+                if ( rows[i] >= start && rows[i] < stop )
+                    rhs.set( rows[i], values(rows[i])*diag( rows[i] ) );
+            }
         }
+    }
+    else
+    {
+        MatZeroRowsLocal( this->mat(), rows.size(), rows.data(), 1.0, pvalues->vec(), prhs->vec() );
+        //CHKERRABORT(this->comm(),ierr);
+    }
+#else
+    MatZeroRowsLocal( this->mat(), rows.size(), rows.data(), 1.0 );
+    
+    for ( size_type i = 0; i < rows.size(); ++i )
+    {
+        // eliminate column
+        
+        // warning: a row index may belong to another
+        // processor, so make sure that we access only the
+        // rows that belong to this processor
+        if ( rows[i] >= start && rows[i] < stop )
+            rhs.set( rows[i], values(rows[i]) );
+    }
+#endif
 
     // rsh doesn't be closed because not all processors are present here with composite spaces(this call must be done after)
     if (withClose)
