@@ -388,7 +388,7 @@ BOOST_PARAMETER_FUNCTION(
       ( space,    *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
     ) // required
     ( optional
-      ( backend,        *, Backend<typename Feel::detail::compute_functionalLinearComposite_return<Args>::space_type::value_type>::build() )
+      ( backend,        *, backend() )
     ) // optionnal
 )
 {
