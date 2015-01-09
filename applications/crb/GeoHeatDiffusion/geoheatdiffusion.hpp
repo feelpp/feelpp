@@ -53,6 +53,8 @@
 #include <feel/feelcrb/parameterspace.hpp>
 #include <feel/feelcrb/modelcrbbase.hpp>
 
+#include <feel/feelmesh/meshmover.hpp>
+
 #include <Eigen/Core>
 #include <Eigen/LU>
 #include <Eigen/Dense>
@@ -68,9 +70,6 @@ po::options_description
 makeGeoHeatDiffusionOptions()
 {
     po::options_description options( "geoHeatDiffusion options" );
-    options.add_options()
-    ( "hsize", po::value<double>()->default_value( 0.01 ), "mesh size" )
-    ;
     return options.add( bdf_options( "geoheatdiffusion" ) );
 }
 AboutData
@@ -88,14 +87,6 @@ makeGeoHeatDiffusionAbout( std::string const& str = "GeoHeatDiffusion" )
     return about;
 }
 
-
-class ParameterDefinition
-{
-public :
-    static const uint16_type ParameterSpaceDimension = 3;
-    typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
-};
-
 class FunctionSpaceDefinition
 {
 public :
@@ -112,6 +103,9 @@ public :
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
 
+    /*element*/
+    typedef typename space_type::element_type element_type;
+
     static const bool is_time_dependent = true;
     static const bool is_linear = true;
 
@@ -124,16 +118,11 @@ public :
  * @author Stephane Veys
  * @see
  */
-class GeoHeatDiffusion : public ModelCrbBase< ParameterDefinition, FunctionSpaceDefinition >,
-                         public boost::enable_shared_from_this< GeoHeatDiffusion >
+class GeoHeatDiffusion : public ModelCrbBase< ParameterSpace<3>, FunctionSpaceDefinition >
 {
 public:
 
-    typedef ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition> super_type;
-    typedef typename super_type::funs_type funs_type;
-    typedef typename super_type::funsd_type funsd_type;
-    using super_type::computeBetaQm;
-
+    typedef ModelCrbBase<ParameterSpace<3>,FunctionSpaceDefinition> super_type;
 
     typedef double value_type;
 
@@ -153,16 +142,6 @@ public:
     typedef typename FunctionSpaceDefinition::space_type space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef space_type::element_type element_type;
-
-    /* parameter space */
-    typedef ParameterDefinition::parameterspace_type parameterspace_type;
-    typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
-    typedef parameterspace_type::element_type parameter_type;
-
-    /*reduced basis space*/
-    typedef ReducedBasisSpace<self_type, mesh_type, basis_type, value_type> rbfunctionspace_type;
-    typedef boost::shared_ptr< rbfunctionspace_type > rbfunctionspace_ptrtype;
-
 
     /* time discretization */
     typedef Bdf<space_type>  bdf_type;
@@ -190,46 +169,14 @@ public:
     void initModel();
     //@}
 
-    /** @name Operator overloads
-     */
-    //@{
-
-    //@}
-
-    /** @name Accessors
-     */
-    //@{
-
-    /**
-     * \brief Returns the function space
-     */
-    space_ptrtype functionSpace()
-    {
-        return Xh;
-    }
-
-    /**
-     * \brief Returns the reduced basis function space
-     */
-    rbfunctionspace_ptrtype rBFunctionSpace()
-    {
-        return RbXh;
-    }
-
-    //! return the parameter space
-    parameterspace_ptrtype parameterSpace() const
-    {
-        return M_Dmu;
-    }
-
-
     void assemble();
 
     bool referenceParametersGivenByUser() { return true; }
+
     parameter_type refParameter()
     {
-        auto muref = M_Dmu->element();
-        muref(0)=1; muref(1)=1; muref(2)=1;
+        auto muref = Dmu->element();
+        muref << 1,1,1;
         return muref;
     }
 
@@ -250,32 +197,17 @@ public:
     }
 
 private:
-
-    parameterspace_ptrtype M_Dmu;
-
     /* mesh, pointers and spaces */
     mesh_ptrtype mesh;
     double surface;
-    space_ptrtype Xh;
-    rbfunctionspace_ptrtype RbXh;
-    double hsize;
-
     bdf_ptrtype M_bdf;
-
 };
 
 GeoHeatDiffusion::GeoHeatDiffusion()
-    :
-    M_Dmu( new parameterspace_type ),
-    hsize( option(_name="hsize").as<double>() )
 {}
 
 GeoHeatDiffusion::GeoHeatDiffusion( po::variables_map const& vm )
-    :
-    M_Dmu( new parameterspace_type ),
-    hsize( option(_name="hsize").as<double>() )
-{
-}
+{}
 
 void GeoHeatDiffusion::initModel()
 {
@@ -283,7 +215,7 @@ void GeoHeatDiffusion::initModel()
     // geometry is a ]0,1[x]0,1[
     GeoTool::Node x1( 0,0 );
     GeoTool::Node x2( 1,1 );
-    GeoTool::Rectangle R( hsize,"Omega",x1,x2 );
+    GeoTool::Rectangle R( doption( "gmsh.hsize"),"Omega",x1,x2 );
     R.setMarker( _type="line",_name="heat",_marker4=true );
     R.setMarker( _type="line",_name="iso",_marker1=true );
     R.setMarker( _type="line",_name="iso",_marker3=true );
@@ -295,19 +227,19 @@ void GeoHeatDiffusion::initModel()
      * The function space and some associate elements are then defined
      */
     Xh = space_type::New( mesh );
-    RbXh = rbfunctionspace_type::New( _model=this->shared_from_this() , _mesh=mesh );
+    this->setFunctionSpaces( Xh );
     if( Environment::worldComm().isMasterRank() )
     {
         std::cout << "Number of dof " << Xh->nDof() << "\n";
         std::cout << "Number of local dof " << Xh->nLocalDof() << "\n";
     }
 
-    typename Feel::ParameterSpace<ParameterSpaceDimension>::Element mu_min( M_Dmu );
+    auto mu_min = Dmu->element();
     mu_min <<  /*length*/0.1, /*heat transfer coefficient*/ 0.1 , 0.1;
-    M_Dmu->setMin( mu_min );
-    typename Feel::ParameterSpace<ParameterSpaceDimension>::Element mu_max( M_Dmu );
+    Dmu->setMin( mu_min );
+    auto mu_max = Dmu->element();
     mu_max << 5, 5 , 5;
-    M_Dmu->setMax( mu_max );
+    Dmu->setMax( mu_max );
 
     M_bdf = bdf( _space=Xh, _name="geoheatdiffusion" , _prefix="geoheatdiffusion" );
 
@@ -327,37 +259,37 @@ void GeoHeatDiffusion::assemble()
     double k=1;
     auto a0 = form2( _trial=Xh, _test=Xh);
     a0 = integrate( elements( mesh ),k* dxt(u)*dx(v) ) ;
-    this->addLhs( boost::make_tuple( a0.matrixPtr() , "1.0/mu0" ) );
+    this->addLhs( { a0 , "1.0/mu0" } );
 
     auto a1 = form2( _trial=Xh, _test=Xh);
     a1 = integrate( elements( mesh ), k*dyt(u)*dy(v) );
-    this->addLhs( boost::make_tuple( a1.matrixPtr() , "mu0" ) );
+    this->addLhs( { a1 , "mu0" } );
 
     auto a2 = form2( _trial=Xh, _test=Xh);
     a2 = integrate( markedfaces( mesh,"heat" ), idt( u )*id( v ) ) ;
-    this->addLhs( boost::make_tuple( a2.matrixPtr() , "mu0*mu1" ) );
+    this->addLhs( { a2 , "mu0*mu1" } );
 
     auto a3 = form2( _trial=Xh, _test=Xh);
     a3 = integrate( markedfaces( mesh,"cool" ), idt( u )*id( v ) ) ;
-    this->addLhs( boost::make_tuple( a3.matrixPtr() , "mu0*mu2" ) );
+    this->addLhs( { a3 , "mu0*mu2" } );
 
     auto m = form2( _trial=Xh, _test=Xh);
     m = integrate ( elements( mesh ), idt( u )*id( v ) );
-    this->addMass( boost::make_tuple( m.matrixPtr() , "1" ) );
+    this->addMass( { m , "1" } );
 
     //rhs
     auto f0 = form1( _test=Xh );
     f0 = integrate( markedfaces( mesh,"heat" ), uair*id( v ) );
-    this->addRhs( boost::make_tuple( f0.vectorPtr() , "mu0*mu1" ) );
+    this->addRhs( { f0 , "mu0*mu1" } );
     auto f1 = form1( _test=Xh );
     f1 = integrate( markedfaces( mesh,"cool" ), ucool*id( v ) );
-    this->addRhs( boost::make_tuple( f1.vectorPtr() , "mu0*mu2" ) );
+    this->addRhs( { f1 , "mu0*mu2" } );
 
     //output
     auto out = form1( _test=Xh );
     out = integrate( elements( mesh ), id( v ) ) ;
     //surface = mu(0) * 1 = mu(0)
-    this->addOutput( boost::make_tuple( out.vectorPtr() , "1.0/mu0" ) );
+    this->addOutput( { out , "1.0/mu0" } );
 
     //energy matrix
     auto energy = form2( _trial=Xh, _test=Xh);
@@ -366,13 +298,11 @@ void GeoHeatDiffusion::assemble()
         integrate( elements( mesh ), 1 * dyt(u)*dy(v) ) +
         integrate( markedfaces( mesh,"heat" ), 1 * idt( u )*id( v ) )+
         integrate( markedfaces( mesh,"cool" ), 1 * idt( u )*id( v ) );
-    this->addEnergyMatrix(  energy.matrixPtr() );
+    this->addEnergyMatrix( energy );
 
     auto mass = form2( _trial=Xh, _test=Xh);
     mass = integrate( _range=elements( mesh ), _expr=idt( u ) * id( v ) ) ;
-    this->addMassMatrix( mass.matrixPtr() );
-
-
+    this->addMassMatrix( mass );
 
 }
 
@@ -404,5 +334,3 @@ double GeoHeatDiffusion::output( int output_index, parameter_type const& mu, ele
 }
 
 #endif /* __GeoHeatDiffusion_H */
-
-
