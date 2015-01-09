@@ -132,9 +132,9 @@ public:
     Elaxi()
         :
         super(),
-        M_backend( backend_type::build( this->vm() ) ),
-        meshSize( this->vm()["hsize"].template as<double>() ),
-        bcCoeff( this->vm()["bccoeff"].template as<double>() ),
+        M_backend( backend_type::build( soption("backend") ) ),
+        meshSize( doption("hsize") ),
+        bcCoeff(  doption("bccoeff") ),
         exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) ),
         timers(),
         stats()
@@ -188,7 +188,7 @@ Elaxi<Order, Entity>::run()
                             % this->about().appName()
                             % entity_type::name()
                             % Order
-                            % this->vm()["hsize"].template as<double>()
+                            % doption("hsize")
                           );
     /*
      * logs will be in <feel repo>/<app name>/<entity>/P<p>/h_<h>
@@ -348,7 +348,8 @@ Elaxi<Order, Entity>::run()
         std::cout << "----> Block marked dofs\n";
 
         form2( _test=Xh, _trial=Xh, _matrix=D ) +=
-            on( _range=boundaryfaces( mesh ), _element=u0, _rhs=rhs, _expr=constant( 0. ) )+
+            on( _range=boundaryfaces( mesh ), _element=u0, _rhs=rhs, _expr=constant( 0. ) );
+        form2( _test=Xh, _trial=Xh, _matrix=D ) +=
             on( _range=boundaryfaces( mesh ), _element=u1, _rhs=rhs, _expr=constant( 0. ) );
 
         std::cout << "rhs->l2Norm= " << rhs->l2Norm() << "\n";

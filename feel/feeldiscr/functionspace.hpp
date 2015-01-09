@@ -2236,7 +2236,7 @@ public:
                      
         {
             auto const& s = M_functionspace->dof()->localToGlobalSigns( e.id() );
-            for( auto ldof : M_functionspace->dof()->localDof( e.id() ) )
+            for( auto const& ldof : M_functionspace->dof()->localDof( e.id() ) )
             {
                 size_type index=start()+ ldof.second.index();
                 this->operator[]( index ) = s(ldof.first.localDof())*Ihloc( ldof.first.localDof() );
@@ -2245,16 +2245,16 @@ public:
         void assign( geoface_type const& e, local_interpolant_type const& Ihloc )
         {
             auto const& s = M_functionspace->dof()->localToGlobalSigns( e.element(0).id() );
-            for( auto ldof : M_functionspace->dof()->faceLocalDof( e.id() ) )
+            for( auto const& ldof : M_functionspace->dof()->faceLocalDof( e.id() ) )
             {
-                size_type index=start()+ ldof.second.index();
-                this->operator[]( index ) = s(ldof.second.localDof())*Ihloc( ldof.first );
+                size_type index=start()+ ldof.index();
+                this->operator[]( index ) = s(ldof.localDof())*Ihloc( ldof.localDofInFace() );
             }
         }
         void plus_assign( geoelement_type const& e, local_interpolant_type const& Ihloc )
         {
             auto const& s = M_functionspace->dof()->localToGlobalSigns( e.id() );
-            for( auto ldof : M_functionspace->dof()->localDof( e.id() ) )
+            for( auto const& ldof : M_functionspace->dof()->localDof( e.id() ) )
             {
                 size_type index=start()+ ldof.second.index();
                 this->operator[]( index ) += s(ldof.first.localDof())*Ihloc( ldof.first.localDof() );
@@ -2263,10 +2263,10 @@ public:
         void plus_assign( geoface_type const& e, local_interpolant_type const& Ihloc )
          {
             auto const& s = M_functionspace->dof()->localToGlobalSigns( e.element(0).id() );
-            for( auto ldof : M_functionspace->dof()->faceLocalDof( e.id() ) )
+            for( auto const& ldof : M_functionspace->dof()->faceLocalDof( e.id() ) )
             {
-                size_type index=start()+ ldof.second.index();
-                this->operator[]( index ) += s(ldof.second.localDof())*Ihloc( ldof.first );
+                size_type index=start()+ ldof.index();
+                this->operator[]( index ) += s(ldof.localDof())*Ihloc( ldof.localDofInFace() );
             }
         }
 
@@ -4175,6 +4175,7 @@ public:
      */
     component_functionspace_ptrtype const& compSpace() const
     {
+        buildComponentSpace();
         return M_comp_space;
     }
 
@@ -4241,6 +4242,11 @@ public:
 
     */
     bool findPoint( node_type const& pt, size_type &cv, node_type& ptr ) const;
+
+    /**
+     * build component space in vectorial case
+     */
+    void buildComponentSpace() const;
 
     /**
      * rebuild dof points after a mesh mover for example
@@ -4376,13 +4382,13 @@ protected:
     boost::shared_ptr<WorldComm> M_worldComm;
 
     // finite element mesh
-    mesh_ptrtype M_mesh;
-
+    mutable mesh_ptrtype M_mesh;
+    mutable periodicity_type M_periodicity;
     //! finite element reference type
     reference_element_ptrtype M_ref_fe;
 
     //! component fe space
-    component_functionspace_ptrtype M_comp_space;
+    mutable component_functionspace_ptrtype M_comp_space;
 
     //! Degrees of freedom
     dof_ptrtype M_dof;
@@ -4439,6 +4445,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
     DVLOG(2) << "calling init(<space>) is_periodic: " << is_periodic << "\n";
 
     M_mesh = __m;
+    M_periodicity = periodicity;
     VLOG(1) << "FunctionSpace init begin mesh use_count : " << M_mesh.use_count();
 
 
@@ -4476,27 +4483,12 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
 
     M_dofOnOff = M_dof;
 
-    if ( is_vectorial )
-    {
-        // Warning: this works regarding the communicator . for the component space
-        // it will use in mixed spaces only numberofSudomains/numberofspace processors
-        //
-        M_comp_space = component_functionspace_ptrtype( new component_functionspace_type( M_mesh,
-                                                                                           MESH_COMPONENTS_DEFAULTS,
-                                                                                           periodicity,
-                                                                                           std::vector<WorldComm>( 1,this->worldsComm()[0] ) ) );
-    }
+    
 
     DVLOG(2) << "nb dim : " << qDim() << "\n";
     DVLOG(2) << "nb dof : " << nDof() << "\n";
     DVLOG(2) << "nb dof per component: " << nDofPerComponent() << "\n";
 
-    if ( is_vectorial )
-    {
-        DVLOG(2) << "component space :: nb dim : " << M_comp_space->qDim() << "\n";
-        DVLOG(2) << "component space :: nb dof : " << M_comp_space->nDof() << "\n";
-        DVLOG(2) << "component space :: nb dof per component: " << M_comp_space->nDofPerComponent() << "\n";
-    }
 
     //detail::searchIndicesBySpace<proc_dist_map_type>( this, procDistMap);
 
@@ -4737,6 +4729,24 @@ FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithoutGhostOnProc( const int proc, 
     return M_dof->nLocalDofWithoutGhost(proc);
 }
 
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+void
+FunctionSpace<A0, A1, A2, A3, A4>::buildComponentSpace() const
+{
+    if ( is_vectorial && !M_comp_space )
+    {
+        // Warning: this works regarding the communicator . for the component space
+        // it will use in mixed spaces only numberofSudomains/numberofspace processors
+        //
+        M_comp_space = component_functionspace_ptrtype( new component_functionspace_type( M_mesh,
+                                                                                          MESH_COMPONENTS_DEFAULTS,
+                                                                                          M_periodicity,
+                                                                                          std::vector<WorldComm>( 1,this->worldsComm()[0] ) ) );
+        VLOG(2) << " - component space :: nb dim : " << M_comp_space->qDim() << "\n";
+        VLOG(2) << " - component space :: nb dof : " << M_comp_space->nDof() << "\n";
+        VLOG(2) << " - component space :: nb dof per component: " << M_comp_space->nDofPerComponent() << "\n";
+    }
+}
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::rebuildDofPoints( mpl::bool_<false> )

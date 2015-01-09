@@ -19,8 +19,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-#
-#
+
 add_executable(sphere sphere.cpp)
 target_link_libraries(sphere feelpp ${FEELPP_LIBRARIES} )
 set_property(TARGET sphere PROPERTY LABELS benchmarks)
