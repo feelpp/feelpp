@@ -759,7 +759,6 @@ EXCLUDE_SYMBOLS        = "BOOST_P*"
 
 EXAMPLE_PATH           = "@FEELPP_HOME_DIR@/doc/manual/tutorial" \
                          "@FEELPP_HOME_DIR@/doc/" \
-                         #"@FEELPP_HOME_DIR@/tutorial/" \
                          "@FEELPP_HOME_DIR@/quickstart/" \
                          "@CMAKE_CURRENT_BINARY_DIR@/../" \
 												  @FEELPP_PROJECTS_DIR@
