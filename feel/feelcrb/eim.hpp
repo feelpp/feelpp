@@ -624,18 +624,14 @@ EIM<ModelType>::offline()
         DVLOG( 2 ) << "solution computed";
 
         M_model->addExpressionEvaluation( M_model->operator()( solution , mu ) );
-#if 0
+
         if( expression_expansion )
         {
             M_model->addSolution( solution );
             max_solution++;
         }
-        else
-        {
-            //M_g.push_back( M_model->operator()( mu ) );
-            M_model->addExpressionEvaluation( M_model->operator()( solution , mu ) );
-        }
-#endif
+        M_model->addExpressionEvaluation( M_model->operator()( solution , mu ) );
+
         if( Environment::worldComm().isMasterRank() )
             std::cout << "compute finite element solution at mu_1 done";
         VLOG(2) << "compute finite element solution at mu_1 done";
@@ -686,13 +682,13 @@ EIM<ModelType>::offline()
             auto q_projected = boost::any_cast<element_type>( any_q );
             //M_q.push_back( q_projected );
         }
-        auto zero = vf::project( _space=M_model->functionSpace() , _expr=cst(0) );
+#endif
+        auto zero = vf::project( _space=M_model->functionSpace() , _expr=cst(0.) );
         if( expression_expansion )
         {
             M_model->addZ( zero );
             max_z++;
         }
-#endif
 
         M_model->setMax(M_M, M_max_q,  max_z, max_solution);
         ++M_M;
@@ -776,13 +772,12 @@ EIM<ModelType>::offline()
             std::cout<<" -- model solution computed in "<<time<<"s"<<std::endl;
         }
 
-#if 0
         if( expression_expansion )//store the solution only if we want to have EIM expansion of the expression
         {
             M_model->addSolution( solution );
             max_solution++;
         }
-#endif
+
         timer2.restart();
         auto gmax = M_model->computeMaximumOfExpression( mu , solution  );
         time=timer2.elapsed();
@@ -833,13 +828,13 @@ EIM<ModelType>::offline()
         //auto resmax = normLinf( _range=elements(M_model->mesh()), _pset=_Q<5>(), _expr=idv(res) );
         auto coeff = M_model->computeExpansionCoefficients( mu ,  solution , M_M-1 );
         auto z = expansion( M_model->q(), coeff , M_M-1 );
-#if 0
+
         if( expression_expansion )
         {
             M_model->addZ( z );
             max_z++;
         }
-#endif
+
         timer2.restart();
         auto resmax = M_model->computeMaximumOfResidual( mu, solution , z );
         time=timer2.elapsed();
@@ -1798,7 +1793,6 @@ public:
         }
 
         DVLOG( 2 )<<" M_B : \n "<<M_B;
-
         saveDB();
 
     }//fillInterpolationMatrixFirstTime
@@ -1816,7 +1810,6 @@ public:
         int npoints = M_ctx.nPoints();
 
         CHECK( m < npoints ) << "m = "<<m<<" and there is "<<npoints<<" interpolation points" ;
-
         if( expression_expansion )
         {
             auto interpolation_point = this->functionSpace()->context();
@@ -1835,32 +1828,24 @@ public:
                 interpolation_point.addCtx( basis , proc_number );
             }
 
-            vector_type expression_evaluated ;
-            if( m == 0 )
-            {
-                expression_evaluated = evaluateFromContext( _context=interpolation_point , _expr=M_expr );
-                double eval = expression_evaluated( 0 );
-                //auto expression_q = M_expr / eval ; // first normalized basis function
-                //in order to have the same type for all eim basis we add idv(0)
-                auto element_zero = project( _space=this->functionSpace(), _expr=cst(0) );
-                auto expression_q = ( M_expr - idv( M_z_vector[0] ) ) / eval ; // first normalized basis function
+            vector_type expression_evaluated;
+            double eval = 1;
 
-                return expression_q;
-            }
-            else
+            auto residual = M_expr - idv( M_z_vector[m] );
+            expression_evaluated = evaluateFromContext( _context=interpolation_point , _expr=residual );
+            if( proc_number == proc_having_the_point )
             {
-                auto residual = M_expr - idv( M_z_vector[m] );
-                expression_evaluated = evaluateFromContext( _context=interpolation_point , _expr=residual );
-                double eval = expression_evaluated( 0 );
-                auto expression_q  = residual / eval; // __j^th normalized basis function
-
-                return expression_q;
+                eval = expression_evaluated( 0 );
             }
+            Environment::worldComm().barrier();
+            boost::mpi::broadcast( Environment::worldComm().globalComm(), eval, proc_having_the_point );
+            auto expression_q  = residual / eval; // __j^th normalized basis function
+            return expression_q;
 
         }
         else
         {
-            //in that case wa have already the eim basis functions
+            //in that case we have already the eim basis functions
             return M_q_vector[m];
         }
 
@@ -1876,7 +1861,6 @@ public:
         int proc_number = Environment::worldComm().globalRank();
 
         int size = M_ctx.nPoints();
-
         M_B.conservativeResize( size , size );
 
         DVLOG( 2 ) << "solution.size() : "<<M_solution_vector.size();
@@ -1889,7 +1873,6 @@ public:
 
         for( int __j = 0; __j < size; ++__j )
         {
-
             auto any_q = buildBasisFunction( __j );
             if( expression_expansion )
             {
@@ -1908,6 +1891,7 @@ public:
                 M_B.col( __j ) = q.evaluate( M_ctx );
             }
         }
+
         DVLOG( 2 )<<" M_B : \n "<<M_B;
         //google::FlushLogFiles(google::GLOG_INFO);
 
@@ -2349,7 +2333,9 @@ public:
                     M_z_vector.push_back( this->functionSpace()->element() );
                 }
                 for( int i = 0; i < M_max_z; ++ i )
+                {
                     __ar & BOOST_SERIALIZATION_NVP( M_z_vector[i] );
+                }
             }
             DVLOG(2) << "z saved/loaded ( "<<M_max_z<<" elements ) ";
 
@@ -2357,12 +2343,14 @@ public:
             {
                 for(int i = 0; i < M_max_solution; i++ )
                 {
-                    M_solution_vector.push_back( this->modelFunctionSpace()->element() );
+                    //M_solution_vector.push_back( this->modelFunctionSpace()->element() );
+                    M_solution_vector.push_back( this->functionSpace()->element() );
                 }
                 for( int i = 0; i < M_max_solution; ++ i )
                     __ar & BOOST_SERIALIZATION_NVP( M_solution_vector[i] );
             }
             DVLOG(2) << "vector of solutions saved/loaded ( "<<M_max_solution<<" elements ) ";
+            DVLOG(2) << "vector of solutions saved/loaded ( "<<M_max_solution<<" elements ) \n";
 
             //add interpolation points to the context
             if( M_ctx.nPoints()==0 )
@@ -2380,16 +2368,24 @@ public:
         else
         {
             for( int i = 0; i < M_max_q; ++ i )
+            {
                 __ar & BOOST_SERIALIZATION_NVP( M_q_vector[i] );
+            }
 
             for( int i = 0; i < M_max_q; ++ i )
+            {
                 __ar & BOOST_SERIALIZATION_NVP( M_g_vector[i] );
+            }
 
             for( int i = 0; i < M_max_z; ++ i )
+            {
                 __ar & BOOST_SERIALIZATION_NVP( M_z_vector[i] );
+            }
 
             for( int i = 0; i < M_max_solution; ++ i )
+            {
                 __ar & BOOST_SERIALIZATION_NVP( M_solution_vector[i] );
+            }
         }
 
         __ar & BOOST_SERIALIZATION_NVP( M_mu_sampling );

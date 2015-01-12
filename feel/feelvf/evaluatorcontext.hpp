@@ -180,7 +180,6 @@ EvaluatorContext<CTX, ExprT>::operator()() const
 
     auto Xh = M_ctx.ptrFunctionSpace();
     auto const& worldComm = Xh->worldComm();
-
     //rank of the current processor
     int proc_number = worldComm.globalRank();
 
@@ -198,22 +197,23 @@ EvaluatorContext<CTX, ExprT>::operator()() const
     typedef typename t_expr_type::value_type value_type;
     typedef typename t_expr_type::shape shape;
 
-
     //in case of scalar unknown, shape::M should be 1
     //CHECK( shape::M == 1 ) << "Invalid expression shape " << shape::M << " should be 1";
 
-    int max_size = 0;
+    int local_max_size = 0;
+    int global_max_size = 0;
     int npoints = M_ctx.nPoints();
     if( M_max_points_used > 0 )
-        max_size = M_max_points_used;
+        local_max_size = M_max_points_used;
     else
-        max_size = npoints;
+        local_max_size = npoints;
+    mpi::all_reduce( worldComm , local_max_size, global_max_size, mpi::maximum<int>() );
 
-    element_type __globalv( max_size*shape::M*shape::N );
+    element_type __globalv( global_max_size*shape::M*shape::N );
     __globalv.setZero();
 
     //local version of __v on each proc
-    element_type __localv( max_size*shape::M*shape::N );
+    element_type __localv( global_max_size*shape::M*shape::N );
     __localv.setZero();
 
     if ( !M_ctx.empty() )
@@ -240,7 +240,7 @@ EvaluatorContext<CTX, ExprT>::operator()() const
             //    LOG( INFO ) << "we have a FEM context";
             int global_p = it->first;
 
-            if( global_p < max_size )
+            if( global_p < global_max_size )
             {
                 tensor_expr.updateContext( Xh->contextBasis( ctx, M_ctx ) );
 
@@ -260,7 +260,6 @@ EvaluatorContext<CTX, ExprT>::operator()() const
         }//loop over local points
     }
 
-
     if( ! M_mpi_communications || nprocs == 1 )
     {
         //in this case, we don't call mpi::all_reduce
@@ -269,8 +268,14 @@ EvaluatorContext<CTX, ExprT>::operator()() const
     }
 
     //bring back each proc contribution in __globalv
-    mpi::all_reduce( worldComm , __localv, __globalv, std::plus< element_type >() );
+    //mpi::all_reduce( worldComm , __localv, __globalv, std::plus< element_type >() );
+    mpi::all_reduce( worldComm , __localv, __globalv, [](element_type x, element_type y)
+                     {
+                         return x + y;
+                     } );
+
     //LOG( INFO ) << "__globalv : "<<__globalv;
+
     return __globalv;
 }
 
