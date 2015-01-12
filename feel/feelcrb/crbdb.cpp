@@ -28,8 +28,7 @@
  */
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
-#include <boost/assign/std/vector.hpp>
-#include <boost/assign/list_of.hpp>
+//#include <boost/assign/std/vector.hpp>
 
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcrb/crbdb.hpp>
@@ -77,7 +76,7 @@ CRBDB::~CRBDB()
 fs::path
 CRBDB::dbSystemPath() const
 {
-    std::vector<std::string> sysdir = boost::assign::list_of( Feel::Info::prefix() )( "/usr" )( "/usr/local" )( "/opt/local" );
+    std::vector<std::string> sysdir{Feel::Info::prefix(), "/usr", "/usr/local", "/opt/local"};
     BOOST_FOREACH( auto dir, sysdir )
     {
         // generate the local repository db path

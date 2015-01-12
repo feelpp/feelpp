@@ -34,7 +34,6 @@
 #include <boost/timer.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/format.hpp>
-#include <boost/assign/list_of.hpp>
 #include <boost/foreach.hpp>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/parameter.hpp>
@@ -1721,7 +1720,8 @@ CRBSCM<TruthModelType>::run( parameter_type const& mu, int K )
         ;
     LOG( INFO ) << "------------------------------------------------------------\n";
     double rel_diff = (alpha_ex - alpha_lb)/alpha_ex;
-    return boost::assign::list_of( alpha_lb )( alpha_lbti )( alpha_ub )( alpha_ubti )( alpha_ex )( alpha_exti )( rel_diff );
+    std::vector<double> v{alpha_lb, alpha_lbti, alpha_ub, alpha_ubti, alpha_ex, alpha_exti, rel_diff};
+    return v;
 }
 
 template<typename TruthModelType>
