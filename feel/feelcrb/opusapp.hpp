@@ -33,14 +33,12 @@
 
 #include <feel/feel.hpp>
 
-#include <boost/assign/std/vector.hpp>
 #include <feel/feelcrb/crb.hpp>
 #include <feel/feelcrb/eim.hpp>
 #include <feel/feelcrb/crbmodel.hpp>
 #include <boost/serialization/version.hpp>
 #include <boost/range/join.hpp>
 #include <boost/regex.hpp>
-#include <boost/assign/list_of.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/LU>
@@ -669,7 +667,6 @@ public:
 
 
             std::map<CRBModelMode,std::vector<std::string> > hdrs;
-            using namespace boost::assign;
             std::vector<std::string> pfemhdrs{"FEM Output", "PFEM Output", "FEM Time", "l2_error", "h1_error", "output error"};
             std::vector<std::string> crbhdrs{"FEM Output", "FEM Time", "RB Output", "Error Bounds", "CRB Time", "output error", "Conditionning", "l2_error", "h1_error"};
             std::vector<std::string> scmhdrs{"Lb","Lb Time", "Ub", "Ub Time", "FEM", "FEM Time", "output error"};
