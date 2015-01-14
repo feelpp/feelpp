@@ -222,6 +222,62 @@ void runFusion2d( bool keepInterface )
     TEST_GEOTOOL2_CHECK_CLOSE( area3face, 10.0 + 4*0.6 + 4*0.4, 1e-9 );
 }
 
+
+GeoTool::GeoGMSHTool
+createCube(std::string nameObj,double l1,double meshSize,double centerX,double centerY,double centerZ, int type)
+{
+    GeoTool::Node x1( centerX-l1,centerY-l1,centerZ-l1);
+    GeoTool::Node x2( centerX+l1,centerY-l1,centerZ-l1);
+    GeoTool::Node x3( centerX+l1,centerY+l1,centerZ-l1);
+    GeoTool::Node x4( centerX-l1,centerY+l1,centerZ-l1);
+    GeoTool::Node x5( centerX-l1,centerY-l1,centerZ+l1);
+    GeoTool::Node x6( centerX+l1,centerY-l1,centerZ+l1);
+    GeoTool::Node x7( centerX+l1,centerY+l1,centerZ+l1);
+    GeoTool::Node x8( centerX-l1,centerY+l1,centerZ+l1);
+    GeoTool::Hexahedron H( meshSize,nameObj,x1,x2,x3,x4,x5,x6,x7,x8);
+
+    if ( type == 1 )
+    {
+        H.setMarker(_type="surface",_name="Interface",_marker4=true);
+        H.setMarker(_type="surface",_name="Inlet",_marker6=true);
+        H.setMarker(_type="surface",_name="Wall",
+                    _marker1=true,
+                    _marker2=true,
+                    _marker3=true,
+                    _marker5=true);
+        H.setMarker(_type="volume",_name="Omega1",_markerAll=true);
+    }
+    else
+    {
+        H.setMarker(_type="surface",_name="Interface",_marker6=true);
+        H.setMarker(_type="surface",_name="Inlet",_marker4=true);
+        H.setMarker(_type="surface",_name="Wall",
+                    _marker1=true,
+                    _marker2=true,
+                    _marker3=true,
+                    _marker5=true);
+        H.setMarker(_type="volume",_name="Omega2",_markerAll=true);
+    }
+    return H;
+}
+
+void runFusion3d( bool keepInterface )
+{
+    double meshSize = doption(_name="hsize3d");
+    typedef Mesh<Simplex<3,1,3> > mesh_type;
+    std::string keepInterfaceStr( (keepInterface)? "with-interface" : "without-interface" );
+
+    auto H1 = createCube("MyHex1",0.5,meshSize,0.0,0.0,0.0,1);
+    auto H2 = createCube("MyHex2",0.5,meshSize/2.,1.0,0.0,0.0,2);
+
+    auto mesh =
+        (H1+H2).
+        fusion(H1,4,H2,6,keepInterface).
+        createMesh(_mesh=new mesh_type,
+                   _name="domain3d_0_"+keepInterfaceStr );
+
+}
+
 } // namespace test_geotool2
 
 #if defined(USE_BOOST_TEST)
@@ -234,6 +290,8 @@ BOOST_AUTO_TEST_CASE( interp_geotool2 )
 {
     test_geotool2::runFusion2d( true );
     test_geotool2::runFusion2d( false );
+    test_geotool2::runFusion3d( true );
+
 }
 
 BOOST_AUTO_TEST_SUITE_END()
@@ -250,6 +308,7 @@ int main(int argc, char**argv )
 
     test_geotool2::runFusion2d( true );
     test_geotool2::runFusion2d( false );
+    test_geotool2::runFusion3d( true );
 
     return 0;
 }

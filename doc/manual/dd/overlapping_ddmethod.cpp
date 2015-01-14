@@ -108,9 +108,9 @@ public:
     ddmethod()
         :
         super(),
-        M_backend( backend_type::build( this->vm() ) ),
-        meshSize( this->vm()["hsize"].template as<double>() ),
-        shape( this->vm()["shape"].template as<std::string>() ),
+        M_backend( backend_type::build( soption("backend") ) ),
+        meshSize( doption("hsize") ),
+        shape( soption("shape") ),
         M_firstExporter( export_type::New( this->vm(),
                                            ( boost::format( "%1%-%2%-%3%" )
                                              % this->about().appName()
@@ -188,20 +188,20 @@ ddmethod<Dim>::localProblem( element_type& u,
     BOOST_FOREACH( int marker, dirichletFlags )
     {
         // std::cout << "apply strong dirichlet on   " << marker << std::endl;
-        form2( Xh, Xh, A ) +=
+        form2( Xh, Xh, _matrix=A ) +=
             on( markedfaces( mesh, marker ) ,	u, B, gD );
     }
     BOOST_FOREACH( int marker, interfaceFlags )
     {
         // std::cout << "apply interface condition on   " << marker << std::endl;
-        form2( Xh, Xh, A ) +=
+        form2( Xh, Xh, _matrix=A ) +=
             on( markedfaces( mesh, marker ) ,	u, B, w );
     }
     timers["assembly"].second += timers["assembly"].first.elapsed();
     timers["assembly_A"].second = timers["assembly"].first.elapsed();
 
     timers["solver"].first.restart();
-    backend_type::build()->solve( _matrix=A, _solution=u, _rhs=B );//, _reuse_prec=true );
+    backend_type::build(soption("backend"))->solve( _matrix=A, _solution=u, _rhs=B );//, _reuse_prec=true );
     timers["solver"].second = timers["solver"].first.elapsed();
 
     LOG(INFO) << "[timer] run():  assembly: " << timers["assembly"].second << "\n";
@@ -305,8 +305,8 @@ ddmethod<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
 
     if ( X[1] == 1 ) shape = "hypercube";
 
-    value_type tolerance = this->vm()["tolerance"].template as<double>();
-    value_type maxIterations = this->vm()["maxIterations"].template as<double>();
+    value_type tolerance = doption("tolerance");
+    value_type maxIterations = doption("maxIterations");
 
     Environment::changeRepository( boost::format( "doc/manual/dd/%1%/%2%-%3%/P%4%/h_%5%/" )
                                    % this->about().appName()
@@ -355,7 +355,7 @@ ddmethod<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
     value_type pi = M_PI;
     auto g = sin( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() );
     auto f = pi*pi*Dim*g;
-    bool additive = this->vm()["additive"].template as<int>();
+    bool additive = ioption("additive");
     double L2erroru1 = 1.;
     double L2erroru2 = 1.;
     double H1erroru1 = 2.;

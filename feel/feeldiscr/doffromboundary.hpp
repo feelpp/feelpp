@@ -219,13 +219,11 @@ private:
 
         for ( int c = 0; c < ncdof; ++c )
         {
-            for ( uint16_type l = 0; l < fe_type::nDofPerVertex; ++l )
+            for ( uint16_type l = 0; l < fe_type::nDofPerVertex; ++l, ++lc )
             {
-                auto temp= M_doftable->localToGlobal( iElAd,
-                                                iFaEl * fe_type::nDofPerVertex + l,
-                                                c );
-                M_doftable->M_face_l2g[ face_it->id()][ lc++ ] = FaceDof( boost::get<0>( temp ),boost::get<1>( temp ),boost::get<2>( temp ),
-                                                        iFaEl * fe_type::nDofPerVertex + l );
+                uint16_type ldinelt = iFaEl * fe_type::nDofPerVertex + l;
+                auto const& temp= M_doftable->localToGlobal( iElAd, ldinelt, c );
+                M_doftable->M_face_l2g[ face_it->id()][ lc ] = FaceDof( temp, lc, ldinelt );
             }
         }
     }
@@ -276,13 +274,11 @@ private:
                 FEELPP_ASSERT( iVeEl != invalid_uint16_type_value ).error( "invalid local dof" );
 
                 // Loop number of Dof per vertex
-                for ( uint16_type l = 0; l < fe_type::nDofPerVertex; ++l )
+                for ( uint16_type l = 0; l < fe_type::nDofPerVertex; ++l, ++lcc )
                 {
-                    auto temp = M_doftable->localToGlobal( iElAd,
-                                                     iVeEl * fe_type::nDofPerVertex + l,
-                                                     c );
-                    M_doftable->M_face_l2g[ face_it->id()][ lcc++ ] = FaceDof( boost::get<0>( temp ),boost::get<1>( temp ),boost::get<2>( temp ),
-                            iVeEl * fe_type::nDofPerVertex + l );
+                    uint16_type ldinelt = iVeEl * fe_type::nDofPerVertex + l;
+                    auto const& temp = M_doftable->localToGlobal( iElAd, ldinelt, c );
+                    M_doftable->M_face_l2g[ face_it->id()][ lcc ] = FaceDof( temp, lcc, ldinelt );
                 }
             }
         }
@@ -349,15 +345,12 @@ private:
             uint16_type lcc=nVerticesF+c*ndofF;
 
             // Loop number of Dof per edge
-            for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l )
+            for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l, ++lcc )
             {
-                auto temp = M_doftable->localToGlobal( iElAd,
-                                                 element_type::numVertices*fe_type::nDofPerVertex +
-                                                 iFaEl * fe_type::nDofPerEdge + l,
-                                                 c );
-                M_doftable->M_face_l2g[ face_it->id()][ lcc++ ] = FaceDof( boost::get<0>( temp ),boost::get<1>( temp ),boost::get<2>( temp ),
-                        element_type::numVertices*fe_type::nDofPerVertex +
-                        iFaEl * fe_type::nDofPerEdge + l );
+                uint16_type ldinelt = element_type::numVertices*fe_type::nDofPerVertex +
+                    iFaEl * fe_type::nDofPerEdge + l ;
+                auto const& temp = M_doftable->localToGlobal( iElAd,ldinelt, c );
+                M_doftable->M_face_l2g[ face_it->id()][ lcc ] = FaceDof( temp, lcc, ldinelt );
             }
         }
     }
@@ -411,15 +404,12 @@ private:
                 FEELPP_ASSERT( iEdEl != invalid_uint16_type_value ).error( "invalid local dof" );
 
                 // Loop number of Dof per edge
-                for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l )
+                for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l, ++lcc )
                 {
-                    auto temp = M_doftable->localToGlobal( iElAd,
-                                                     element_type::numVertices*fe_type::nDofPerVertex +
-                                                     iEdEl * fe_type::nDofPerEdge + l,
-                                                     c );
-                    M_doftable->M_face_l2g[ face_it->id()][ lcc++ ] = FaceDof( boost::get<0>( temp ),boost::get<1>( temp ),boost::get<2>( temp ),
-                            element_type::numVertices*fe_type::nDofPerVertex +
-                            iEdEl * fe_type::nDofPerEdge + l );
+                    uint16_type ldinelt = element_type::numVertices*fe_type::nDofPerVertex +
+                        iEdEl * fe_type::nDofPerEdge + l;
+                    auto const& temp = M_doftable->localToGlobal( iElAd, ldinelt, c );
+                    M_doftable->M_face_l2g[ face_it->id()][ lcc ] = FaceDof( temp, lcc, ldinelt );
                 }
             }
         }
@@ -477,17 +467,13 @@ private:
                 uint16_type lcc=nVerticesAndEdgeF+c*ndofF;
 
                 // Loop on number of Dof per face
-                for ( uint16_type l = 0; l < fe_type::nDofPerFace; ++l )
+                for ( uint16_type l = 0; l < fe_type::nDofPerFace; ++l, ++lcc )
                 {
-                    auto temp = M_doftable->localToGlobal( iElAd,
-                                                           element_type::numVertices*fe_type::nDofPerVertex +
-                                                           element_type::numEdges*fe_type::nDofPerEdge +
-                                                           iFaEl * fe_type::nDofPerFace + l,
-                                                           c );
-                    M_doftable->M_face_l2g[ face_it->id()][ lcc++ ] = FaceDof( boost::get<0>( temp ),boost::get<1>( temp ),boost::get<2>( temp ),
-                                                                               element_type::numVertices*fe_type::nDofPerVertex +
-                                                                               element_type::numEdges*fe_type::nDofPerEdge +
-                                                                               iFaEl * fe_type::nDofPerFace + l );
+                    uint16_type ldinelt = element_type::numVertices*fe_type::nDofPerVertex +
+                        element_type::numEdges*fe_type::nDofPerEdge +
+                        iFaEl * fe_type::nDofPerFace + l;
+                    auto const& temp = M_doftable->localToGlobal( iElAd, ldinelt, c );
+                    M_doftable->M_face_l2g[ face_it->id()][ lcc ] = FaceDof( temp, lcc, ldinelt );
                 }
             }
         }

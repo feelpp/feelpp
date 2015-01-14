@@ -1109,7 +1109,7 @@ Environment::init( int argc, char** argv,
                    AboutData const& about )
 {
     S_worldcomm = worldcomm_type::New();
-    CHECK( S_worldcomm ) << "Feel++ Environment: creang worldcomm failed!";
+    CHECK( S_worldcomm ) << "Feel++ Environment: creating worldcomm failed!";
     S_worldcommSeq.reset( new WorldComm( S_worldcomm->subWorldCommSeq() ) );
 
     S_scratchdir = scratchdir();
@@ -1142,7 +1142,7 @@ Environment::init( int argc, char** argv,
 
     google::AllowCommandLineReparsing();
     google::ParseCommandLineFlags( &argc, &argv, false );
-
+    //std::cout << "FLAGS_vmodule: " << FLAGS_vmodule << "\n";
 #if 0
     std::cout << "argc=" << argc << "\n";
 
@@ -1208,7 +1208,11 @@ Environment::init( int argc, char** argv,
     // make sure that we pass the proper verbosity level to glog
     if ( S_vm.count( "v" ) )
         FLAGS_v = S_vm["v"].as<int>();
-
+    if ( S_vm.count( "vmodule" ) )
+    {
+        //FLAGS_vmodule = S_vm["vmodule"].as<std::string>();
+        //google::SetVLOGLevel( "*btpcd", 2 );
+    }
     freeargv( envargv );
 
 }

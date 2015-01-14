@@ -152,7 +152,7 @@ void Oseen::run()
         ti.restart();
 
         at+=on(_range=markedfaces(mesh,"wall"), _rhs=ft, _element=u,
-               _expr=zero<FEELPP_DIM>() );
+               _expr=zero<FEELPP_DIM,1>() );
         //at+=on(_range=markedfaces(mesh,"inlet"), _rhs=ft, _element=u, _expr=g );
         at+=on(_range=markedfaces(mesh,"inlet"), _rhs=ft, _element=u, _expr=-g*N() );
 

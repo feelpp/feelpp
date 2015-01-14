@@ -1347,7 +1347,7 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
     }
     DVLOG(2) << "done with reading and creating mesh from gmsh file\n";
 
-    toc("read msh from file");
+    toc("read msh from file", FLAGS_v > 0);
 }
 
 template<typename MeshType>

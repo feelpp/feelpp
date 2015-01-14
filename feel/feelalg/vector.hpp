@@ -165,6 +165,11 @@ public:
     }
 
     /**
+     * Replaces each component of a vector by its reciprocal.
+     */
+    virtual int reciprocal();
+    
+    /**
      * Creates a copy of this vector and returns it in an \p shared_ptr<>.
      * This must be overloaded in the derived classes.
      */

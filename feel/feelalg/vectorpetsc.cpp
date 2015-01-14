@@ -235,6 +235,14 @@ VectorPetsc<T>::zero()
 #endif
 }
 
+template <typename T>
+int
+VectorPetsc<T>::reciprocal()
+{
+    DCHECK( this->isInitialized() ) << "VectorPetsc<> not initialized";
+    return VecReciprocal( M_vec );
+}
+
 
 template <typename T>
 void
@@ -478,7 +486,7 @@ void VectorPetsc<T>::printMatlab ( const std::string name, bool renumber ) const
     }
 
     const_cast<VectorPetsc<T>*>( this )->close();
-    PetscObjectSetName((PetscObject)M_vec,fs::path(name).stem().string().c_str());
+    PetscObjectSetName((PetscObject)M_vec,fs::path("var_"+name).stem().string().c_str());
     //this->close();
     int ierr=0;
 

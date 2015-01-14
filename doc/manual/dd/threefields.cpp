@@ -137,12 +137,12 @@ public:
     ThreeFieldsLaplacian()
         :
         super(),
-        M_backend( backend_type::build( this->vm() ) ),
-        split( this->vm()["split"].template as<double>() ),
-        mesh1Size( this->vm()["hsize1"].template as<double>() ),
-        mesh2Size( this->vm()["hsize2"].template as<double>() ),
-        mesh3Size( this->vm()["hsize3"].template as<double>() ),
-        shape( this->vm()["shape"].template as<std::string>() ),
+        M_backend( backend_type::build( soption("backend") ) ),
+        split( doption("split") ),
+        mesh1Size( doption("hsize1") ),
+        mesh2Size( doption("hsize2") ),
+        mesh3Size( doption("hsize3") ),
+        shape( soption("shape") ),
         timers(),
         M_firstExporter( export_type::New( this->vm(),
                                            ( boost::format( "%1%-%2%-%3%" )
@@ -427,9 +427,9 @@ ThreeFieldsLaplacian<Dim, Order1, Order2, Order3>::run()
 
     auto f = pi*pi*Dim*g;
 
-    bool weakdir = this->vm()["weakdir"].template as<int>();
-    value_type penaldir = this->vm()["penaldir"].template as<double>();
-    value_type coeff = this->vm()["coeff"].template as<double>();
+    bool weakdir = ioption("weakdir");
+    value_type penaldir = doption("penaldir");
+    value_type coeff = doption("coeff");
 
     LOG(INFO) << "assembly_F1 starts\n";
     timers["assemby_F1"].first.restart();

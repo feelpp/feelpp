@@ -8,11 +8,12 @@
   Author : Christophe Prud'homme      
 */
 h=0.1;
+L=10;
 Point(1) = {-1, -1, 0, h};
 Point(2) = {0, -1, 0, h};
-Point(3) = {5, -1, 0, h};
-Point(4) = {5, 0, 0, h};
-Point(5) = {5, 1, 0, h};
+Point(3) = {L, -1, 0, h};
+Point(4) = {L, 0, 0, h};
+Point(5) = {L, 1, 0, h};
 Point(6) = {0, 1, 0, h};
 Point(7) = {-1, 1, 0, h};
 Point(8) = {-1, 0, 0, h};
