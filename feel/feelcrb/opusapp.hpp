@@ -63,7 +63,7 @@ std::string _o( std::string const& prefix, std::string const& opt )
 
 enum class SamplingMode
 {
-    RANDOM = 0, EQUIDISTRIBUTED = 1, LOGEQUIDISTRIBUTED = 2
+    RANDOM = 0, EQUIDISTRIBUTED = 1, LOGEQUIDISTRIBUTED = 2, READFROMCOMMANDLINE = 3
 };
 
 #define prec 4
@@ -602,6 +602,16 @@ public:
 
                 case SamplingMode::LOGEQUIDISTRIBUTED:
                     Sampling->logEquidistribute( run_sampling_size , all_proc_have_same_sampling );
+                    break;
+                case SamplingMode::READFROMCOMMANDLINE:
+                    std::vector<double> mu_list = option(_name=_o( this->about().appName(),"run.parameter" )).template as<std::vector<double>>();
+                    parameter_type _mu = crb->Dmu()->element();
+                    if ( crbmodel_type::ParameterSpaceDimension != mu_list.size() )
+                        throw std::logic_error( "Parameter given by the command line option as note the expected size" );
+                    Sampling->clear();
+                    for ( int i=0 ; i<mu_list.size() ; i++ )
+                        _mu(i)=mu_list[i];
+                    Sampling->setElements( {_mu} );
                     break;
                 }
 
@@ -2591,4 +2601,3 @@ private:
 } // Feel
 
 #endif /* __OpusApp_H */
-
