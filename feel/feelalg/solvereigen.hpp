@@ -502,26 +502,26 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename SolverEigen<double>::eigenmodes_type
                                    ( nev, ( int ), option(_name="solvereigen.nev").template as<int>() )
                                    ( ncv, ( int ), option(_name="solvereigen.ncv").template as<int>() )
                                    ( backend,( BackendType ), BACKEND_PETSC )
-                                   ( solver,( EigenSolverType ), KRYLOVSCHUR )
-                                   ( problem,( EigenProblemType ), GHEP )
-                                   ( transform,( SpectralTransformType ), SHIFT )
-                                   ( spectrum,( PositionOfSpectrum ), LARGEST_MAGNITUDE )
-                                   ( maxit,( size_type ), 1000 )
-                                   ( tolerance,( double ), 1e-11 )
-                                   ( verbose,( bool ), false )
+                                   ( solver,( std::string ), option(_name="solvereigen.solver").template as<std::string>() )
+                                   ( problem,( std::string ), option(_name="solvereigen.problem").template as<std::string>() )
+                                   ( transform,( std::string ), option(_name="solvereigen.transform").template as<std::string>() )
+                                   ( spectrum,( std::string ), option(_name="solvereigen.spectrum").template as<std::string>()  )
+                                   ( maxit,( size_type ), option(_name="solvereigen.maxiter").template as<int>() )
+                                   ( tolerance,( double ), option(_name="solvereigen.tolerance").template as<double>() )
+                                   ( verbose,( bool ), option(_name="solvereigen.verbose").template as<bool>() )
                                  )
                                )
 {
     typedef boost::shared_ptr<Vector<double> > vector_ptrtype;
     //boost::shared_ptr<SolverEigen<double> > eigen = SolverEigen<double>::build(  backend );
     boost::shared_ptr<SolverEigen<double> > eigen = SolverEigen<double>::build();
-    eigen->setEigenSolverType( solver );
-    eigen->setEigenProblemType( problem );
-    eigen->setPositionOfSpectrum( spectrum );
+    eigen->setEigenSolverType( (EigenSolverType)EigenMap[solver] );
+    eigen->setEigenProblemType( (EigenProblemType)EigenMap[problem] );
+    eigen->setPositionOfSpectrum( (PositionOfSpectrum)EigenMap[spectrum] );
     eigen->setNumberOfEigenValues( nev );
     eigen->setNumberOfEigenValuesConverged( ncv );
     eigen->setMaxIterations( maxit );
-    eigen->setSpectralTransform( transform );
+    eigen->setSpectralTransform( (SpectralTransformType)EigenMap[transform] );
     eigen->setTolerance( tolerance );
     eigen->setMapRow( matrixA->mapRowPtr() );
     eigen->setMapCol( matrixA->mapColPtr() );
