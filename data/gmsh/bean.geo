@@ -31,7 +31,7 @@
 // Mesh size
 h=0.1;
 // Topological dimension
-dim=2;
+dim=3;
 // Bean length
 d=1;
 // Bean left radius
