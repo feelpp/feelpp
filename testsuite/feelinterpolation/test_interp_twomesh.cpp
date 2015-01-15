@@ -87,8 +87,8 @@ run_test_geomap()
     //-----------------------------------------------------------------------------------//
 
     //Geometry
-    double meshSize1 = option(_name="hsize1").template as<double>();
-    double meshSize2 = option(_name="hsize2").template as<double>();
+    double meshSize1 = doption(_name="hsize1");
+    double meshSize2 = doption(_name="hsize2");
     GeoTool::Node x1( 0,0 );
     GeoTool::Node x2( 1,1 );
     GeoTool::Rectangle R1( meshSize1,"LEFT",x1,x2 );
@@ -358,9 +358,9 @@ run_test_interp()
 
     //-----------------------------------------------------------------------------------//
 
-    double meshSize1 = option(_name="hsize1").template as<double>();
-    double meshSize2 = option(_name="hsize2").template as<double>();
-    bool userelation = option(_name="userelation").template as<bool>();
+    double meshSize1 = doption(_name="hsize1");
+    double meshSize2 = doption(_name="hsize2");
+    bool userelation = boption(_name="userelation");
     //-----------------------------------------------------------------------------------//
 
     //Geometry

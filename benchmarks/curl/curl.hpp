@@ -227,7 +227,7 @@ CurlFormulation<Dim, OrderU, OrderP>::convergence(int nb_refine)
             auto Xh = Ned1h<0>( mesh );
             auto u = Xh->element();
             auto phi = Xh->element();
-            //auto penaldir = option("penaldir").template as<double>();
+            //auto penaldir = doption("penaldir");
             auto penaldir = 50;
 
             auto v = Vh->element( u_exact );
