@@ -54,6 +54,19 @@ If( dim > 3 || dim < 2 )
     Abort;
 EndIf
 
+// Check GMSH version (> 2.8.4)
+If( GMSH_MAJOR_VERSION < 2 )
+    Error("This geometry requires GMSH version > 2.8.5");
+EndIf
+
+If( GMSH_MINOR_VERSION < 8 )
+    Error("This geometry requires GMSH version > 2.8.5");
+EndIf
+
+If( GMSH_PATCH_VERSION < 5 )
+    Error("This geometry requires GMSH version > 2.8.5");
+EndIf
+
 //------------------------------------------------------------------------------
 // DRAW2DPOINTS creates points for the 2D plane (x,y).
 //------------------------------------------------------------------------------
