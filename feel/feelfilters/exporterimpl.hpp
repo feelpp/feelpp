@@ -242,7 +242,7 @@ Exporter<MeshType, N>::setOptions( std::string const& exp_prefix )
         M_prefix = Environment::vm(_name="exporter.prefix",_prefix=exp_prefix).template as<std::string>();
 
     M_freq = Environment::vm(_name="exporter.freq",_prefix=exp_prefix).template as<int>();
-    std::string ftstr = option(_name="exporter.file-type",_prefix=exp_prefix).template as<std::string>();
+    std::string ftstr = soption(_name="exporter.file-type",_prefix=exp_prefix);
     if ( ftstr == "binary" )
         M_ft = BINARY;
     else

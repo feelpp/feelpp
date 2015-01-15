@@ -3350,7 +3350,7 @@ public:
                                            ( prefix,   ( std::string ), "" )
                                            ( geomap,         *, GeomapStrategyType::GEOMAP_OPT )
                                            ( accumulate,     *( boost::is_integral<mpl::_> ), false )
-                                           ( verbose,   ( bool ), option(_prefix=prefix,_name="on.verbose").template as<bool>() )))
+                                           ( verbose,   ( bool ), boption(_prefix=prefix,_name="on.verbose") )))
             {
                 return onImpl( range, expr, prefix, geomap, accumulate, verbose );
             }

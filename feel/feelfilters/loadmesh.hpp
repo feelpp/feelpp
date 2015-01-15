@@ -58,23 +58,23 @@ BOOST_PARAMETER_FUNCTION(
         ) // 4. one required parameter, and
 
     ( optional
-      ( filename, *( boost::is_convertible<mpl::_,std::string> ), option(_name="gmsh.filename").template as<std::string>() )
+      ( filename, *( boost::is_convertible<mpl::_,std::string> ), soption(_name="gmsh.filename") )
       ( desc, *,boost::shared_ptr<gmsh_type>() )  // geo() can't be used here as default !!
 
-      ( h,              *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.hsize").template as<double>() )
-      ( straighten,          (bool), option(_name="gmsh.straighten").template as<bool>() )
-      ( refine,          *( boost::is_integral<mpl::_> ), option(_name="gmsh.refine").template as<int>() )
+      ( h,              *( boost::is_arithmetic<mpl::_> ), doption(_name="gmsh.hsize") )
+      ( straighten,          (bool), boption(_name="gmsh.straighten") )
+      ( refine,          *( boost::is_integral<mpl::_> ), ioption(_name="gmsh.refine") )
       ( update,          *( boost::is_integral<mpl::_> ), MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES )
-      ( physical_are_elementary_regions,		   (bool), option(_name="gmsh.physical_are_elementary_regions").template as<bool>() )
+      ( physical_are_elementary_regions,		   (bool), boption(_name="gmsh.physical_are_elementary_regions") )
       ( worldcomm,       (WorldComm), Environment::worldComm() )
-      ( force_rebuild,   *( boost::is_integral<mpl::_> ), option(_name="gmsh.rebuild").template as<bool>() )
-      ( respect_partition,	(bool), option(_name="gmsh.respect_partition").template as<bool>() )
-      ( rebuild_partitions,	(bool), option(_name="gmsh.partition").template as<bool>() )
+      ( force_rebuild,   *( boost::is_integral<mpl::_> ), boption(_name="gmsh.rebuild") )
+      ( respect_partition,	(bool), boption(_name="gmsh.respect_partition") )
+      ( rebuild_partitions,	(bool), boption(_name="gmsh.partition") )
       ( rebuild_partitions_filename, *( boost::is_convertible<mpl::_,std::string> )	, filename )
       ( partitions,      *( boost::is_integral<mpl::_> ), worldcomm.globalSize() )
-      ( partitioner,     *( boost::is_integral<mpl::_> ), option(_name="gmsh.partitioner").template as<int>() )
+      ( partitioner,     *( boost::is_integral<mpl::_> ), ioption(_name="gmsh.partitioner") )
       ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
-      ( depends, *( boost::is_convertible<mpl::_,std::string> ), option(_name="gmsh.depends").template as<std::string>() )
+      ( depends, *( boost::is_convertible<mpl::_,std::string> ), soption(_name="gmsh.depends") )
         )
     )
 {
@@ -140,7 +140,7 @@ BOOST_PARAMETER_FUNCTION(
 
     LOG(WARNING) << "File " << mesh_name << " not found, generating instead an hypercube in " << _mesh_type::nDim << "D geometry and mesh...";
     return createGMSHMesh(_mesh=mesh,
-                          _desc=domain( _name=option(_name="gmsh.domain.shape").template as<std::string>(), _h=h, _worldcomm=worldcomm ),
+                          _desc=domain( _name=soption(_name="gmsh.domain.shape"), _h=h, _worldcomm=worldcomm ),
                           _h=h,
                           _refine=refine,
                           _update=update,

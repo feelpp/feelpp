@@ -573,7 +573,7 @@ ExporterVTK<MeshType,N>::saveNodeData( typename timeset_type::step_ptrtype step,
 
         /* handle faces data */
 #if 0
-        if ( option( _name="exporter.ensightgold.save-face" ).template as<bool>() )
+        if ( boption( _name="exporter.ensightgold.save-face" ) )
         {
             BOOST_FOREACH( auto m, __mesh->markerNames() )
             {
