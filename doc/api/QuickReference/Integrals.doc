@@ -201,16 +201,7 @@ Optional parameters:
 
 \Examples
 From \c "doc/manual/stokes/stokes.cpp":
-\co
-  double mean_p = mean( _range=elements( u.mesh() ),
-                        _expr=idv( p ) );
-\eco
-
-From \c "doc/manual/laplacian/periodic.cpp":
-\co
-  LOG(INFO) << "mean(u)  = " << mean( _range=elements( mesh ), _expr=idv( u ) ) << "\n";
-\eco
-
+\snippet stokes.cpp mean
 
 <a href="#" class="top">top</a>
 <hr>
@@ -248,6 +239,7 @@ From \c "doc/manual/laplacian/laplacian.cpp":
 \eco
 
 From \c "doc/manual/stokes/stokes.cpp":
+\snippet stokes.cpp mean
 \co
 double p_errorL2 = normL2( _range=elements( u.mesh() ),
                            _expr=( idv( p )-mean_p - p_exact ) );
