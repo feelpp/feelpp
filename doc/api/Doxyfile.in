@@ -689,7 +689,7 @@ INPUT                  = \
  "@FEELPP_HOME_DIR@/doc/api" \
  "@FEELPP_HOME_DIR@/ChangeLog" \
  "@FEELPP_HOME_DIR@/doc/biblio/" \
- "@FEELPP_HOME_DIR@/feel/" \
+# "@FEELPP_HOME_DIR@/feel/" \
  @FEELPP_PROJECTS_DIR@  #THAT HAS TO BE THE LAST ENTRY
 
 # This tag can be used to specify the character encoding of the source files
@@ -759,6 +759,7 @@ EXCLUDE_SYMBOLS        = "BOOST_P*"
 
 EXAMPLE_PATH           = "@FEELPP_HOME_DIR@/doc/manual/tutorial" \
                          "@FEELPP_HOME_DIR@/doc/" \
+                         "@FEELPP_HOME_DIR@/applications/" \
                          "@FEELPP_HOME_DIR@/quickstart/" \
                          "@CMAKE_CURRENT_BINARY_DIR@/../" \
 												  @FEELPP_PROJECTS_DIR@
@@ -783,7 +784,8 @@ EXAMPLE_RECURSIVE      = YES
 
 IMAGE_PATH             = "@FEELPP_HOME_DIR@/doc/manual/pngs/" \
                          "@CMAKE_CURRENT_SOURCE_DIR@/pngs/" \
-                         "@FEELPP_HOME_DIR@/doc/figures/"
+                         "@FEELPP_HOME_DIR@/doc/figures/" \
+                         "@FEELPP_HOME_DIR@/applications/crb/heat2d/pngs/ "
 
 
 

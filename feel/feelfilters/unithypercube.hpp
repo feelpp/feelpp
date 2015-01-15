@@ -43,7 +43,7 @@ namespace Feel {
 template<int Dim, typename Convex=Simplex<Dim>>
 inline
 boost::shared_ptr<Mesh<Convex> >
-unitHypercube( double h = option(_name="gmsh.hsize").template as<double>() )
+unitHypercube( double h = doption(_name="gmsh.hsize") )
 {
     return createGMSHMesh(_mesh=new Mesh<Convex>,
                           _desc=domain( _name="hypercube",
