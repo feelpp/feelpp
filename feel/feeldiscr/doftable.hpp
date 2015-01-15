@@ -2197,6 +2197,10 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
             }
     }
 
+    // the dof points are necessary to build the parallel dof table
+    if ( this->worldComm().localSize() > 1 )
+        this->generateDofPoints( M );
+
     if (Environment::isMasterRank() && FLAGS_v > 0)
     {
         std::cout << "   . buildDofMap dof arrays done in " << ltim.elapsed() << "s\n";
