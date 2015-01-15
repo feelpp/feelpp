@@ -703,6 +703,17 @@ void updateBackendPreconditionerOptions( po::options_description & _options, std
           "(symmetric,forward,backward,local_symmetric,local_forward,local_backward) Sets the SOR preconditioner to use symmetric (SSOR), backward, or forward relaxation. The local variants perform SOR on each processor" )
         ;
 
+#if defined(FEELPP_HAS_MUMPS) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
+        for ( int icntl=1 ; icntl<= 33 ; ++icntl )
+        {
+            std::string mumpsOption = (boost::format("pc-factor-mumps.icntl-%1%")%icntl ).str();
+            _options.add_options()
+                ( prefixvm( prefix,pcctx+mumpsOption ).c_str(),
+                  Feel::po::value<int>(),"configure mumps factorisation (see mumps ICNTL documentation)" );
+        }
+#endif
+
+
     // add gasm and asm (can not used as sub preconditioner)
     if ( sub.empty() )
         _options.add_options()
