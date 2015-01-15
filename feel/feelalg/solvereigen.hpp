@@ -499,21 +499,21 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename SolverEigen<double>::eigenmodes_type
                                    ( matrixA,( d_sparse_matrix_ptrtype ) )
                                    ( matrixB,( d_sparse_matrix_ptrtype ) ) )
                                  ( optional
-                                   ( nev, ( int ), option(_name="solvereigen.nev").template as<int>() )
-                                   ( ncv, ( int ), option(_name="solvereigen.ncv").template as<int>() )
+                                   ( nev, ( int ), ioption(_name="solvereigen.nev") )
+                                   ( ncv, ( int ), ioption(_name="solvereigen.ncv") )
                                    ( backend,( BackendType ), BACKEND_PETSC )
                                    ( solver,( EigenSolverType ), KRYLOVSCHUR )
                                    ( problem,( EigenProblemType ), GHEP )
                                    ( transform,( SpectralTransformType ), SHIFT )
                                    ( spectrum,( PositionOfSpectrum ), LARGEST_MAGNITUDE )
-                                   ( maxit,( size_type ), 1000 )
-                                   ( tolerance,( double ), 1e-11 )
-                                   ( verbose,( bool ), false )
+                                   ( maxit,( size_type ), ioption(_name="solvereigen.maxiter") )
+                                   ( tolerance,( double ), doption(_name="solvereigen.tolerance") )
+                                   ( verbose,( bool ), boption(_name="solvereigen.verbose") )
                                  )
                                )
 {
     typedef boost::shared_ptr<Vector<double> > vector_ptrtype;
-    //boost::shared_ptr<SolverEigen<double> > eigen = SolverEigen<double>::build(  backend );
+    //boost::shared_ptr<SolverEigen<double> > eigen = SolverEigen<double>::build(  backend );                                                                                                                                                                                 
     boost::shared_ptr<SolverEigen<double> > eigen = SolverEigen<double>::build();
     eigen->setEigenSolverType( solver );
     eigen->setEigenProblemType( problem );

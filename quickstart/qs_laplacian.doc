@@ -84,6 +84,9 @@ e->save();
 return 0;
 \eco
 
+Complete code:
+\snippet qs_laplacian.cpp global
+
 <a href="#" class="top">top</a>
 <hr>
 \section First First execution & visualization
