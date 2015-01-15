@@ -553,7 +553,7 @@ CRBTrilinear<TruthModelType>::offline()
             __mu(0)=912     ; __mu(1)= 1  ; V.push_back( __mu );
             __mu(0)=1.123e3 ; __mu(1)= 1  ; V.push_back( __mu );
             __mu(0)=4.123e3 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=7.123e4 ; __mu(1)= 1  ; V.push_back( __mu );
+         __mu(0)=7.123e4 ; __mu(1)= 1  ; V.push_back( __mu );
             __mu(0)=2123    ; __mu(1)= 1  ; V.push_back( __mu );
             __mu(0)=6.123e3 ; __mu(1)= 1  ; V.push_back( __mu );
             __mu(0)=3.123e3 ; __mu(1)= 1  ; V.push_back( __mu );
