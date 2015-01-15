@@ -239,12 +239,7 @@ From \c "doc/manual/laplacian/laplacian.cpp":
 \eco
 
 From \c "doc/manual/stokes/stokes.cpp":
-\snippet stokes.cpp mean
-\co
-double p_errorL2 = normL2( _range=elements( u.mesh() ),
-                           _expr=( idv( p )-mean_p - p_exact ) );
-\eco
-
+\snippet stokes.cpp norml2
 
 \subsection NormH1 normH1
 In the same idea, you can evaluate the H1 norm or semi norm, for any function \f$f \in H^1(\Omega)\f$:
