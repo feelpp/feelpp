@@ -118,7 +118,7 @@ void
 ThermalBlockMinimalVersion::initModel()
 {
 
-    gamma_dir=option(_name="gamma_dir").template as<double>();
+    gamma_dir=doption(_name="gamma_dir");
 
     this->setFunctionSpaces( Pch<1>( loadMesh( _mesh=new Mesh<Simplex<2>> ) ) );
 

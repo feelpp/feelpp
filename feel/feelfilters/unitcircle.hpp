@@ -42,7 +42,7 @@ namespace Feel {
 template<int Ngeo=1>
 inline
 boost::shared_ptr<Mesh<Simplex<2,Ngeo> > >
-unitCircle( double h = option(_name="gmsh.hsize").template as<double>() )
+unitCircle( double h = doption(_name="gmsh.hsize") )
 {
     return createGMSHMesh(_mesh=new Mesh<Simplex<2,Ngeo> >,
                           _desc=domain( _name="circle",

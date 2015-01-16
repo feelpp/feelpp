@@ -113,7 +113,7 @@ ExporterGmsh<MeshType,N>::gmshSaveAscii() const
         std::ostringstream __fname;
 
         /* If we want only one file, specify the same filename for each process */
-        if(option(_name="exporter.gmsh.merge").template as<bool>() == true)
+        if(boption(_name="exporter.gmsh.merge") == true)
         {
             __fname << __ts->name()  //<< this->prefix() //this->path()
                     << "-" << this->worldComm().size()
@@ -150,7 +150,7 @@ ExporterGmsh<MeshType,N>::gmshSaveAscii() const
                 this->worldComm().barrier();
 
                 /* Saving multiple files */
-                if(option(_name="exporter.gmsh.merge").template as<bool>() == false)
+                if(boption(_name="exporter.gmsh.merge") == false)
                 {
                     if ( __step->index()==1 )
                     {
@@ -308,7 +308,7 @@ ExporterGmsh<MeshType,N>::gmshSaveAscii() const
                         geoout.open(__geofname.str().c_str(), std::ios::out);
 
                         // merge the msh files, depending on the fact that we have 1 or several data files
-                        if(option(_name="exporter.gmsh.merge").template as<bool>() == true)
+                        if(boption(_name="exporter.gmsh.merge") == true)
                         {
                             __mshfname << __ts->name()  //<< this->prefix() //this->path()
                                 << "-" << this->worldComm().size()
@@ -365,7 +365,7 @@ ExporterGmsh<MeshType,N>::gmshSaveAscii() const
                         geoout.close();
 
                         /* If onelab is enabled, we register this filename to be loaded */
-                        if(option(_name="onelab.enable" ).template as<int>() == 2)
+                        if(ioption(_name="onelab.enable" ) == 2)
                         {
                             Environment::olLoadInGmsh(__geofname.str());
                         }
@@ -375,7 +375,7 @@ ExporterGmsh<MeshType,N>::gmshSaveAscii() const
                 else
                 {
                     /* If onelab is enabled, we register the msh file to be loaded */
-                    if(option(_name="onelab.enable" ).template as<int>() == 2)
+                    if(ioption(_name="onelab.enable" ) == 2)
                     {
                         Environment::olLoadInGmsh(__fname.str());
                     }
@@ -514,7 +514,7 @@ ExporterGmsh<MeshType,N>::numberOfGlobalPtAndIndex( mesh_ptrtype mesh ) const
 
     
     /* If we want only one file, specify the same filename for each process */
-    if(option(_name="exporter.gmsh.merge").template as<bool>() == true)
+    if(boption(_name="exporter.gmsh.merge") == true)
     {
         for ( ; itPt!=enPt ; ++itPt )
         {
@@ -599,7 +599,7 @@ ExporterGmsh<MeshType,N>::gmshSaveNodes( std::ostream& out, mesh_ptrtype mesh, b
     for ( ; pt_it!=pt_en ; ++pt_it )
     {
         // if we want only one file, we discard nodes shared by different processes
-        if(option(_name="exporter.gmsh.merge").template as<bool>() == true)
+        if(boption(_name="exporter.gmsh.merge") == true)
         {
             if ( pt_it->isLinkedToOtherPartitions() )
             {
@@ -725,7 +725,7 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
     {
         // elm-number elm-type number-of-tags < tag > ... node-number-list
         /*
-        if(option(_name="exporter.gmsh.merge").template as<bool>() == true)
+        if(boption(_name="exporter.gmsh.merge") == true)
         {
         */
             out<< elem_number++ <<" ";
@@ -748,7 +748,7 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
         else if ( FEELPP_GMSH_FORMAT_VERSION==std::string( "2.2" ) )
         {
             uint16_type nbTag = 3;
-            if ( option(_name="partition.linear" ).template as<bool>() )
+            if ( boption(_name="partition.linear" ) )
             {
                 nbTag += 1;
             }
@@ -759,7 +759,7 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
                 << " " << face_it->marker2().value();
 
 
-            if ( option(_name="partition.linear" ).template as<bool>() )
+            if ( boption(_name="partition.linear" ) )
             {
                 out << " " <<  1
                     << " " << pids[face_it->element0().id()]+1;
@@ -789,7 +789,7 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
     for ( ; elt_it != elt_en; ++elt_it, ++pid )
     {
         /*
-        if(option(_name="exporter.gmsh.merge").template as<bool>() == true)
+        if(boption(_name="exporter.gmsh.merge") == true)
         {
         */
             out << elem_number++ <<" ";
@@ -813,7 +813,7 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
             std::vector<int> f;
             uint16_type nbTag = 3;
 
-            if ( option(_name="partition.linear" ).template as<bool>() )
+            if ( boption(_name="partition.linear" ) )
             {
                 for ( size_type i=0 ; i< elt_it->nNeighbors(); ++i )
                     if ( elt_it->neighbor(i).first != invalid_size_type_value )
@@ -827,7 +827,7 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
                 << " " << elt_it->marker().value()
                 << " " << elt_it->marker2().value();
 
-            if ( option(_name="partition.linear" ).template as<bool>() )
+            if ( boption(_name="partition.linear" ) )
             {
 
                 out << " " << f.size()+1 << " " << pids[elt_it->id()]+1;
@@ -1055,7 +1055,7 @@ ExporterGmsh<MeshType,N>::computeMinMax(step_ptrtype __step, std::map<std::strin
 
             // either use the relinearized version for one file dataset or classic for one file per process
             /*
-            if(option(_name="exporter.gmsh.merge").template as<bool>() == true)
+            if(boption(_name="exporter.gmsh.merge") == true)
             {
             */
                 out << elt_pids[elt_it->id()] << " " << /*__u( globaldof)*/__u.container()( globaldof ) << "\n";
@@ -1100,7 +1100,7 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
     int number_markedfaces= std::distance( face_it, face_en );
     std::map<int,int> face_pids;
     int pid = indexEltStart + 1;
-    //if(option(_name="exporter.gmsh.merge").template as<bool>() == true)
+    //if(boption(_name="exporter.gmsh.merge") == true)
     //{
         std::for_each( face_it, face_en, [&pid, &face_pids]( typename MeshType::face_type const& e ){ face_pids[e.id()]=pid++; });
     //}
@@ -1109,7 +1109,7 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
     auto elt_it = elts.template get<1>();
     auto elt_en = elts.template get<2>();
     std::map<int,int> elt_pids;
-    //if(option(_name="exporter.gmsh.merge").template as<bool>() == true)
+    //if(boption(_name="exporter.gmsh.merge") == true)
     //{
         std::for_each( elt_it, elt_en, [&pid,&elt_pids]( typename MeshType::element_type const& e ){ elt_pids[e.id()]=pid++; });
     //}
@@ -1150,7 +1150,7 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
         {
             // either use the relinearized version for one file dataset or classic for one file per process
             /*
-            if(option(_name="exporter.gmsh.merge").template as<bool>() == true)
+            if(boption(_name="exporter.gmsh.merge") == true)
             {
             */
                 out << elt_pids[elt_it->id()];
@@ -1225,7 +1225,7 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
         {
             // either use the relinearized version for one file dataset or classic for one file per process
             /*
-            if(option(_name="exporter.gmsh.merge").template as<bool>() == true)
+            if(boption(_name="exporter.gmsh.merge") == true)
             {
             */
                 out << elt_pids[elt_it->id()];
@@ -1305,7 +1305,7 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
 
             // either use the relinearized version for one file dataset or classic for one file per process
             /*
-            if(option(_name="exporter.gmsh.merge").template as<bool>() == true)
+            if(boption(_name="exporter.gmsh.merge") == true)
             {
             */
                 out << elt_pids[elt_it->id()] << " " << /*__u( globaldof)*/__u.container()( globaldof ) << "\n";

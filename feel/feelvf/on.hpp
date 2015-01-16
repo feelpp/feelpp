@@ -651,8 +651,8 @@ BOOST_PARAMETER_FUNCTION(
 
     ( optional
       ( prefix,   ( std::string ), "" )
-      ( type,   ( std::string ), option(_prefix=prefix,_name="on.type").template as<std::string>() )
-      ( verbose,   ( bool ), option(_prefix=prefix,_name="on.verbose").template as<bool>() )
+      ( type,   ( std::string ), soption(_prefix=prefix,_name="on.type") )
+      ( verbose,   ( bool ), boption(_prefix=prefix,_name="on.verbose") )
         )
     )
 {

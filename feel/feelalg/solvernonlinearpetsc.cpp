@@ -592,7 +592,7 @@ void SolverNonLinearPetsc<T>::init ()
             break;
         }
 #else
-        std::string s = option(_name="snes-type",_prefix=this->prefix()).template as<std::string>();
+        std::string s = soption(_name="snes-type",_prefix=this->prefix());
         DVLOG(1) << "snes type: " << s;
         check( SNESSetType( M_snes, s.c_str() ) );
 #if 0
@@ -847,7 +847,7 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     SNESGetConvergedReason( M_snes,&reason );
     LOG(INFO) << "[solvernonlinearpetsc] convergence reason : " << reason << "\n";
 
-    if ( option( _prefix=this->prefix(), _name="snes-view" ).template as<bool>() )
+    if ( boption( _prefix=this->prefix(), _name="snes-view" ) )
         check( SNESView( M_snes, PETSC_VIEWER_STDOUT_WORLD ) );
     bool hasConverged = reason>0;
     if ( !hasConverged )
@@ -981,7 +981,7 @@ SolverNonLinearPetsc<T>::solve ( dense_matrix_type&  jac_in,  // System Jacobian
     SNESGetConvergedReason( M_snes,&reason );
 
 
-    if ( option( _prefix=this->prefix(), _name="snes-view" ).template as<bool>() )
+    if ( boption( _prefix=this->prefix(), _name="snes-view" ) )
         check( SNESView( M_snes,PETSC_VIEWER_STDOUT_SELF ) );
 
     //LOG(INFO) << "[solvernonlinearpetsc] convergence reason : " << reason << "\n";
@@ -1096,7 +1096,7 @@ SolverNonLinearPetsc<T>::solve ( map_dense_matrix_type&  jac_in,  // System Jaco
     SNESConvergedReason reason;
     SNESGetConvergedReason( M_snes,&reason );
 
-    if ( option( _prefix=this->prefix(), _name="snes-view" ).template as<bool>() )
+    if ( boption( _prefix=this->prefix(), _name="snes-view" ) )
         check( SNESView( M_snes,PETSC_VIEWER_STDOUT_SELF ) );
 
     //LOG(INFO) << "[solvernonlinearpetsc] convergence reason : " << reason << "\n";

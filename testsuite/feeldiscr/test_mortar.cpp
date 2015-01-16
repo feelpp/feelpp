@@ -79,7 +79,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_1, T, order_types )
     using namespace Feel;
     Feel::Environment::changeRepository( boost::format( "/testsuite/feeldiscr/%1%/test_mortar_1/h_%2%/P%3%/" )
                                          % Feel::Environment::about().appName()
-                                         % option(_name="gmsh.hsize").template as<double>()
+                                         % doption(_name="gmsh.hsize")
                                          % T::value );
     BOOST_TEST_MESSAGE( "test_mortar_1 for order : " << T::value );
     auto mesh = loadMesh( _mesh=new Mesh<Simplex<1,1,2>> );
@@ -129,14 +129,14 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate, T, order_types )
     using namespace Feel;
     Feel::Environment::changeRepository( boost::format( "/testsuite/feeldiscr/%1%/test_mortar_integrate/h_%2%/P%3%/" )
                                          % Feel::Environment::about().appName()
-                                         % option(_name="gmsh.hsize").template as<double>()
+                                         % doption(_name="gmsh.hsize")
                                          % T::value );
 
 
     BOOST_TEST_MESSAGE( "test_mortar_integrate for order : " << T::value );
     auto mesh = loadMesh( _mesh=new Mesh<Simplex<1,1,2>> );
     //auto mesh = loadMesh( _mesh=new Mesh<Simplex<2,1,2> > );
-    auto mesh2 = loadMesh( _mesh=new Mesh<Simplex<1,1,2> >, _h=option(_name="gmsh.hsize2").template as<double>() );
+    auto mesh2 = loadMesh( _mesh=new Mesh<Simplex<1,1,2> >, _h=doption(_name="gmsh.hsize2") );
     // extract boundary faces marked by 1
     //auto mortarmesh = createSubmesh(mesh, markedfaces(mesh,1),Environment::worldComm() );
     auto Xh = Pch<T::value>(mesh);
@@ -186,13 +186,13 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh, T, order_types )
     using namespace Feel;
     Feel::Environment::changeRepository( boost::format( "/testsuite/feeldiscr/%1%/test_mortar_integrate_submesh/h_%2%/P%3%/" )
                                          % Feel::Environment::about().appName()
-                                         % option(_name="gmsh.hsize").template as<double>()
+                                         % doption(_name="gmsh.hsize")
                                          % T::value );
 
 
     BOOST_TEST_MESSAGE( "test_mortar_integrate_submesh for order : " << T::value );
     auto mesh = loadMesh( _mesh=new Mesh<Simplex<2,1,2> > );
-    auto mesh2 = loadMesh( _mesh=new Mesh<Simplex<2,1,2> >, _h=option(_name="gmsh.hsize2").template as<double>() );
+    auto mesh2 = loadMesh( _mesh=new Mesh<Simplex<2,1,2> >, _h=doption(_name="gmsh.hsize2") );
 
     auto testmesh = createSubmesh(mesh, markedfaces(mesh,(boost::any)1),Environment::worldComm() );
     auto trialmesh = createSubmesh(mesh2, markedfaces(mesh2,(boost::any)1),Environment::worldComm() );
@@ -248,20 +248,20 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
     using namespace Feel;
     Feel::Environment::changeRepository( boost::format( "/testsuite/feeldiscr/%1%/test_mortar_integrate_submesh2/h_%2%/P%3%/" )
                                          % Feel::Environment::about().appName()
-                                         % option(_name="gmsh.hsize2").template as<double>()
+                                         % doption(_name="gmsh.hsize2")
                                          % T::value );
 
 
     BOOST_TEST_MESSAGE( "test_mortar_integrate_submesh2 for order : " << T::value );
     LOG(INFO) << "[test_mortar_integrate_submesh2] for order : " << T::value;
-    //auto mesh = loadMesh( _mesh=new Mesh<Simplex<2,1,2> >, _h=option(_name="gmsh.hsize2").template as<double>() );
-    //auto mesh2 = loadMesh( _mesh=new Mesh<Simplex<2,1,2> >, _h=option(_name="gmsh.hsize2").template as<double>() );
+    //auto mesh = loadMesh( _mesh=new Mesh<Simplex<2,1,2> >, _h=doption(_name="gmsh.hsize2") );
+    //auto mesh2 = loadMesh( _mesh=new Mesh<Simplex<2,1,2> >, _h=doption(_name="gmsh.hsize2") );
 
 #if 1
     auto mesh = createGMSHMesh( _mesh=new Mesh<Hypercube<2,1,2> >,
                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                                 _desc=domain( _name="mesh", _addmidpoint=false, _usenames=false, _shape="hypercube",
-                                              _dim=2, _h=option(_name="gmsh.hsize").template as<double>(),
+                                              _dim=2, _h=doption(_name="gmsh.hsize"),
                                               _convex="Hypercube",_substructuring=true,
                                               _xmin=0., _xmax=1., _ymin=0., _ymax=1.
                                               ),
@@ -271,7 +271,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
     auto mesh2 = createGMSHMesh( _mesh=new Mesh<Hypercube<2,1,2> >,
                                  _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                                  _desc=domain( _name="mesh2", _addmidpoint=false, _usenames=false, _shape="hypercube",
-                                               _dim=2, _h=option(_name="gmsh.hsize2").template as<double>(),
+                                               _dim=2, _h=doption(_name="gmsh.hsize2"),
                                                _convex="Hypercube",_substructuring=true,
                                                _xmin=0., _xmax=1., _ymin=1., _ymax=2.
                                                ),
