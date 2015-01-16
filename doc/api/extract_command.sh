@@ -1,6 +1,9 @@
 #$/bin/bash
 
-rm tmpFile
+if [ -a tmpFile ]
+then
+  rm tmpFile
+fi
 touch tmpFile
 today=$(date +"%F")
 echo "/**" >> tmpFile
