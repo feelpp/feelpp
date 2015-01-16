@@ -80,3 +80,6 @@
 [submodule "projects/eye2brain"]
 	path = projects/eye2brain
 	url = https://github.com/feelpp/eye2brain.git
+[submodule "projects/lncmi"]
+	path = projects/lncmi
+	url = https://github.com/feelpp/lncmi.git
