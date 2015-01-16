@@ -1,4 +1,5 @@
 // -*- mode: c++ -*-
+/// [geo]
 h=0.1;
 a=0;
 b=1;
@@ -30,5 +31,6 @@ Physical Line("BL") = {6};
 
 Physical Surface("SL") = {5};
 Physical Surface("SR") = {6};
+/// [geo]
 
 //Physical Surface("Omega") = {5,6};
