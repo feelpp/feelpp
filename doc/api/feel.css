@@ -1237,3 +1237,6 @@ div.toc li.level4 {
 div.image img{ 
         width:100%; 
 }
+div.image img[src="heat2d_geo.png"]{ 
+    width:10cm; 
+}
