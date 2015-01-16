@@ -531,7 +531,7 @@ void PreconditionerPetsc<T>::init ()
             is = pmatrix->indexSplit();
             //is.showMe();
 
-            std::string fieldsDefStr = option( _prefix=this->name(), _name="fieldsplit-fields" ).template as<std::string>();
+            std::string fieldsDefStr = soption( _prefix=this->name(), _name="fieldsplit-fields" );
             auto fieldsDef = IndexSplit::parseFieldsDef( fieldsDefStr );
             if ( fieldsDef.size() == 0 )
             {
@@ -586,7 +586,7 @@ void PreconditionerPetsc<T>::init ()
     std::string type =  Environment::vm()["pc-factor-mat-solver-package-type"].template as<std::string>();
     this->setMatSolverPackageType( matSolverPackageEnumType( type ) );
 #endif
-    if ( option( _prefix=this->name(), _name="pc-view" ).template as<bool>() )
+    if ( boption( _prefix=this->name(), _name="pc-view" ) )
         check( PCView( M_pc, PETSC_VIEWER_STDOUT_WORLD ) );
 #endif
     this->M_is_initialized = true;
@@ -868,7 +868,7 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
     ierr = PCSetUp( pc );
     CHKERRABORT( worldComm.globalComm(),ierr );
 
-    if ( option( _prefix=name, _name="pc-view" ).template as<bool>() )
+    if ( boption( _prefix=name, _name="pc-view" ) )
     {
         ierr = PCView( pc, PETSC_VIEWER_STDOUT_WORLD );
         CHKERRABORT( worldComm.globalComm(),ierr );
