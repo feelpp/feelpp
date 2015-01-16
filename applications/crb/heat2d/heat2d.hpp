@@ -129,14 +129,54 @@ namespace Feel
   \snippet heat2d.hpp parameters
   At first, the database is builded :
   \verbatim
+[CRB::offline] strategy 1
+ -- primal problem solved in 0.0928769 s
+ -- dual problem solved in 0.095052 s
+ -- complement of M_WNmu built in 0.000298023 s
+-- time to add the primal basis : 2.19345e-05 s
+-- time to add the dual basis : 9.05991e-06 s
+-- time to add primal and dual basis : 3.00407e-05 s
+  -- orthonormalization (Gram-Schmidt)
+  -- orthonormalization (Gram-Schmidt)
+-- primal orthonormalization : 0.00181198 s
+-- dual orthonormalization : 0.001683 s
+ -- projection on reduced basis space : 0.0170138 s
+  -- offlineResidual update starts
+     o N=1 QLhs=2 QRhs=2 Qoutput=2
+     o initialize offlineResidual in 0.060207s
+     o M_C0_pr updated in 0.154062s
+     o Lambda_pr updated in 0.085693s
+     o Gamma_pr updated in 0.119294s
+     o C0_du updated in 0.05943s
+     o Lambda_du updated in 0.059346s
+     o Gamma_du updated in 0.117562s
+  -- offlineResidual updated in 0.676627s
+[CRB maxerror] proc 0 delta_pr : 1.26973456445329 -- delta_du : 1.26973455446957 -- output error : 1.69949977698333
+  -- max error bounds computed in 1.47827506065369s
+============================================================
   \endverbatim
   And after that the evaluations are done on the sampling :
   \verbatim
+CRB mode -- 1/10
+output=38336.4609373806 with 2 basis functions  (error estimation on this output : 4.94095341847669e-09)
   \endverbatim
   Then, a summary is provided.
   \verbatim
+        mu0        mu1     FEM Output       FEM Time      RB Output   Error Bounds       CRB Time   output error  Conditionning       l2_error       h1_error
+ 9.8395e+00 3.3342e+00     3.8336e+04     5.6988e-02     3.8336e+04     1.2888e-13     6.2704e-04     1.2716e-14     0.0000e+00     1.3640e-10     2.3204e-09
+ 3.7843e+00 1.7388e+00     1.5503e+04     5.1528e-02     1.5503e+04     1.2259e-13     7.1502e-04     4.3765e-14     0.0000e+00     8.8669e-11     1.4988e-09
+ 1.4905e+00 1.8228e+01     3.5259e+04     4.9509e-02     3.5259e+04     2.7409e-13     7.4887e-04     2.0636e-16     0.0000e+00     1.2138e-11     1.8794e-10
+ 1.1129e+00 3.7174e+00     9.8869e+03     5.0749e-02     9.8869e+03     1.8923e-13     7.2312e-04     1.8398e-15     0.0000e+00     5.7805e-11     9.1918e-10
+ 6.6080e+00 2.5546e+00     2.6270e+04     5.1569e-02     2.6270e+04     1.2758e-13     7.1120e-04     7.9628e-14     0.0000e+00     1.1580e-10     1.9645e-09
+ 1.1150e+01 1.9748e+01     6.9981e+04     5.0854e-02     6.9981e+04     1.4065e-13     7.6890e-04     1.2476e-15     0.0000e+00     5.5962e-11     9.0763e-10
+ 1.4922e+00 5.5829e+00     1.4251e+04     5.0819e-02     1.4251e+04     1.9755e-13     7.1406e-04     2.2975e-15     0.0000e+00     5.5007e-11     8.7190e-10
+ 1.0216e+00 1.7240e+01     3.2054e+04     4.7903e-02     3.2054e+04     2.9595e-13     7.3981e-04     1.8159e-15     0.0000e+00     2.3779e-12     3.6511e-11
+ 2.9945e+00 5.8006e+00     1.9620e+04     5.0702e-02     1.9620e+04     1.4777e-13     7.2622e-04     4.6356e-15     0.0000e+00     5.8542e-11     9.4676e-10
+ 7.4591e+00 1.8562e+01     5.5708e+04     5.0537e-02     5.5708e+04     1.6726e-13     7.3314e-04     5.6162e-15     0.0000e+00     6.1326e-11     9.8386e-10
   \endverbatim
   You will find the outputs in `$FEELPP_WORKDIR/feel/heat2d/Heat2D/np_1`. Open the file `heat2d.case` (or `heat2d-paraview-1.sos`) with paraview to visualize your results.
+  You will find - depending on the boundary conditions and mesh you have used something like:
+  \image html heat2d_res.png "Result of the CRB evaluation
   */
 
   po::options_description
