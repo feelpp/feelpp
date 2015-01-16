@@ -67,7 +67,7 @@ test2dTo1d()
 {
     typedef Mesh<Simplex<2,OrderGeo,2> > mesh_2d_type;
 
-    double meshSize = option(_name="hsize").template as<double>();
+    double meshSize = doption(_name="hsize");
     BOOST_TEST_MESSAGE( "meshSize=" << meshSize );
 
     GeoTool::Node x1( 0,0 );
@@ -143,7 +143,7 @@ test2dTo2d()
     //case 1 : same mesh
     //-------------------------------------------------------
     WorldComm myWorldComm = Environment::worldComm();
-    auto meshSize = option(_name="hsize").template as<double>();
+    auto meshSize = doption(_name="hsize");
     LOG(INFO) << "meshSize=" << meshSize << "\n";
     BOOST_TEST_MESSAGE( "meshSize=" << meshSize );
     GeoTool::Node x1( 0,0 );
@@ -284,7 +284,7 @@ buildMeshSMD( mpl::int_<2> /**/)
     typedef Mesh<Simplex<2,OrderGeo> > mesh_type;
     GeoTool::Node x1( 0,0 );
     GeoTool::Node x2( 5,1 );
-    double meshSize = option(_name="hsize").template as<double>();
+    double meshSize = doption(_name="hsize");
     GeoTool::Rectangle R( meshSize,"OMEGA",x1,x2 );
     R.setMarker(_type="line",_name="BoundaryInterp",_marker1=true);
     R.setMarker(_type="line",_name="BoundaryOther",_marker2=true,_marker3=true,_marker4=true);
@@ -303,7 +303,7 @@ buildMeshSMD( mpl::int_<3> /**/)
     GeoTool::Node Radius( 0.5);
     GeoTool::Node Dir(1,0,0);
     GeoTool::Node Lg(2,0,0);
-    double meshSize = option(_name="hsize").template as<double>()*3;
+    double meshSize = doption(_name="hsize")*3;
     GeoTool::Cylindre C( meshSize,"Cyl",Center,Dir,Radius,Lg);
     C.setMarker(_type="surface",_name="Inlet",_marker1=true);
     C.setMarker(_type="surface",_name="Outlet",_marker2=true);
@@ -317,7 +317,7 @@ buildMeshSMD( mpl::int_<3> /**/)
     GeoTool::Node x2(  1,-1,-1 );
     GeoTool::Node x3(  0, 1,-1 );
     GeoTool::Node x4(  0, 0, 1 );
-    double meshSize = option(_name="hsize").template as<double>();//1;//2;//
+    double meshSize = doption(_name="hsize");//1;//2;//
     GeoTool::Tetrahedron R( meshSize,"OMEGA",x1,x2,x3,x4 );
     R.setMarker(_type="surface",_name="BoundaryInterp",_marker1=true);
     R.setMarker(_type="surface",_name="Boundary2",_marker2=true);
@@ -490,7 +490,7 @@ void
 test2dOpLagrangeP1()
 {
     typedef Mesh<Simplex<2,OrderGeo,2> > mesh_type;
-    double meshSize = option(_name="hsize").template as<double>();
+    double meshSize = doption(_name="hsize");
     GeoTool::Node x1( 0,0 );
     GeoTool::Node x2( 0.6,0 );
     GeoTool::Circle C( meshSize,"OMEGA",x1,x2 );
