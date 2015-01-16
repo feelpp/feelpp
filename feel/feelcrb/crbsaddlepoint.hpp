@@ -245,12 +245,19 @@ public:
     //@}
 
 private :
+    void generateSampling();
+
     CRBDB M_crbdb;
 
-    std::vector< std::vector<matrixN_type> > M_Bqm;
+    std::vector< std::vector<matrixN_type> > M_A11qm_pr;
+    std::vector< std::vector<matrixN_type> > M_A12qm_pr;
 
-    int M_Na;
-    int M_Nb;
+    std::vector < std::vector<vectorN_type> > M_F1qm_pr;
+    std::vector < std::vector<vectorN_type> > M_F2qm_pr;
+
+    std::vector < std::vector<vectorN_type> > M_L1qm_pr;
+    std::vector < std::vector<vectorN_type> > M_L2qm_pr;
+
 
     friend class boost::serialization::access;
     // When the class Archive corresponds to an output archive, the
@@ -271,8 +278,49 @@ template<typename TruthModelType>
 typename CRBSaddlePoint<TruthModelType>::convergence_type
 CRBSaddlePoint<TruthModelType>::offline()
 {
-    return this->M_rbconv;
+    bool rebuild_database = boption( "crb.rebuild-database" );
+    boost::timer ti;
+    parameter_type mu ( this->M_Dmu );
+    double delta_pr = 0;
+    double delta_du = 0;
+    size_type index;
 
+    if ( Environment::isMasterRank() )
+        std::cout << "Offline CRBSaddlePoint starts, this may take a while until Database is computed.." << std::endl;
+    LOG(INFO) << "[CRBSaddlePoint::offline] Starting offline for output " << this->M_output_index << std::endl;
+    LOG(INFO) << "[CRBSaddlePoint::offline] initialize underlying finite element model\n";
+
+    if ( rebuild_database || this->M_N==0 )
+    {
+        ti.restart();
+        // Generate sampling depending of the "crb.sampling-mode" option
+        generateSampling();
+
+        LOG(INFO) << " -- sampling init done in " << ti.elapsed() << "s";
+        ti.restart();
+
+        LOG( INFO )<<"[CRBTrilinear offline] M_error_type = "<<this->M_error_type;
+
+        // empty sets
+        this->M_WNmu->clear();
+        if( this->M_error_type == CRB_NO_RESIDUAL )
+            mu = this->M_Dmu->element();
+        else
+        {
+            // start with M_C = { arg min mu, mu \in Xi }
+            boost::tie( mu, index ) = this->M_Xi->min();
+        }
+
+        this->M_N=0;
+        this->M_maxerror = 1e10;
+
+        LOG(INFO) << "[CRBSaddlePoint::offline] allocate reduced basis data structures\n";
+
+
+
+    } // if rebuild_database
+
+    return this->M_rbconv;
 } // offline()
 
 
@@ -295,6 +343,51 @@ CRBSaddlePoint<TruthModelType>::lb( size_type N, parameter_type const& mu,
 
 
 template<typename TruthModelType>
+void
+CRBSaddlePoint<TruthModelType>::generateSampling()
+{
+
+    int proc_number = worldComm().globalRank();
+    int total_proc = worldComm().globalSize();
+    bool all_proc_same_sampling = boption( "crb.all-procs-have-same-sampling" );
+    int sampling_size = ioption("crb.sampling-size");
+    std::string sampling_mode = soption("crb.sampling-mode");
+    std::string file_name = ( boost::format("M_Xi_%1%_"+sampling_mode+"-proc%2%on%3%")
+                              %sampling_size
+                              %proc_number
+                              %total_proc ).str();
+
+    if ( all_proc_same_sampling )
+        file_name += "-all_proc_same_sampling";
+
+    std::ifstream file ( file_name );
+
+    if ( !file )
+    {
+        std::string supersamplingname =(boost::format("Dmu-%1%-generated-by-master-proc") %sampling_size ).str();
+
+        if( sampling_mode == "log-random" )
+            this->M_Xi->randomize( sampling_size , all_proc_same_sampling , supersamplingname );
+        else if( sampling_mode == "log-equidistribute" )
+            this->M_Xi->logEquidistribute( sampling_size , all_proc_same_sampling , supersamplingname );
+        else if( sampling_mode == "equidistribute" )
+            this->M_Xi->equidistribute( sampling_size , all_proc_same_sampling , supersamplingname );
+        else
+            throw std::logic_error( "[CRBTrilinear::offline] ERROR invalid option crb.sampling-mode, please select between log-random, log-equidistribute or equidistribute" );
+
+        this->M_Xi->writeOnFile(file_name);
+    }
+    else
+    {
+        this->M_Xi->clear();
+        this->M_Xi->readFromFile(file_name);
+    }
+
+    this->M_WNmu->setSuperSampling( this->M_Xi );
+}
+
+
+template<typename TruthModelType>
 template<class Archive>
 void
 CRBSaddlePoint<TruthModelType>::save( Archive & ar, const unsigned int version ) const
@@ -312,6 +405,13 @@ CRBSaddlePoint<TruthModelType>::save( Archive & ar, const unsigned int version )
     ar & BOOST_SERIALIZATION_NVP( this->M_Aqm_pr );
     ar & BOOST_SERIALIZATION_NVP( this->M_Fqm_pr );
     ar & BOOST_SERIALIZATION_NVP( this->M_Lqm_pr );
+
+    ar & BOOST_SERIALIZATION_NVP( this->M_A11qm_pr );
+    ar & BOOST_SERIALIZATION_NVP( this->M_A12qm_pr );
+    ar & BOOST_SERIALIZATION_NVP( this->M_F1qm_pr );
+    ar & BOOST_SERIALIZATION_NVP( this->M_F2qm_pr );
+    ar & BOOST_SERIALIZATION_NVP( this->M_L1qm_pr );
+    ar & BOOST_SERIALIZATION_NVP( this->M_L2qm_pr );
 
     ar & BOOST_SERIALIZATION_NVP( this->M_current_mu );
     ar & BOOST_SERIALIZATION_NVP( this->M_no_residual_index );
@@ -332,9 +432,7 @@ CRBSaddlePoint<TruthModelType>::load( Archive & ar, const unsigned int version )
 
     ar & BOOST_SERIALIZATION_NVP( this->M_output_index );
     ar & BOOST_SERIALIZATION_NVP( this->M_N );
-
     ar & BOOST_SERIALIZATION_NVP( this->M_rbconv );
-
     ar & BOOST_SERIALIZATION_NVP( this->M_error_type );
     ar & BOOST_SERIALIZATION_NVP( this->M_Xi );
     ar & BOOST_SERIALIZATION_NVP( this->M_WNmu );
@@ -342,6 +440,12 @@ CRBSaddlePoint<TruthModelType>::load( Archive & ar, const unsigned int version )
     ar & BOOST_SERIALIZATION_NVP( this->M_Fqm_pr );
     ar & BOOST_SERIALIZATION_NVP( this->M_Lqm_pr );
 
+    ar & BOOST_SERIALIZATION_NVP( this->M_A11qm_pr );
+    ar & BOOST_SERIALIZATION_NVP( this->M_A12qm_pr );
+    ar & BOOST_SERIALIZATION_NVP( this->M_F1qm_pr );
+    ar & BOOST_SERIALIZATION_NVP( this->M_F2qm_pr );
+    ar & BOOST_SERIALIZATION_NVP( this->M_L1qm_pr );
+    ar & BOOST_SERIALIZATION_NVP( this->M_L2qm_pr );
 
     ar & BOOST_SERIALIZATION_NVP( this->M_current_mu );
     ar & BOOST_SERIALIZATION_NVP( this->M_no_residual_index );
