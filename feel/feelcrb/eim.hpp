@@ -509,7 +509,6 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M)
     maxerr.setZero();
     int index = 0;
     DVLOG(2) << "Compute best fit M=" << __M << "\n";
-    std::cout << "Compute best fit M=" << __M << "\n";
     vector_type rhs( __M );
 
     model_solution_type solution;
@@ -518,8 +517,6 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M)
         DVLOG(2) << "compute best fit check mu...\n";
         mu.check();
         //LOG_EVERY_N(INFO, 1 ) << " (every 10 mu) compute fit at mu="<< mu <<"\n" ;
-
-        //auto proj_g = M_model->operator()( mu );
 #if 1
         if( boption(_name="eim.use-rb-in-mu-selection") )
         {
@@ -563,6 +560,7 @@ EIM<ModelType>::offline()
 
     int max_z=0;
     int max_solution=0;
+    int max_g=0;
     auto mu = M_model->parameterSpace()->element();
     node_type t;
     auto solution = M_model->modelFunctionSpace()->element();
@@ -614,7 +612,6 @@ EIM<ModelType>::offline()
         DVLOG( 2 ) <<" parameter added";
         timer2.restart();
 
-
         solution = M_model->solve( mu );
         time=timer2.elapsed();
         if( Environment::worldComm().isMasterRank() )
@@ -623,14 +620,16 @@ EIM<ModelType>::offline()
         }
         DVLOG( 2 ) << "solution computed";
 
-        M_model->addExpressionEvaluation( M_model->operator()( solution , mu ) );
-
-        if( expression_expansion )
+        if( !expression_expansion )
+        {
+            M_model->addExpressionEvaluation( M_model->operator()( solution , mu ) );
+            max_g++;
+        }
+        else
         {
             M_model->addSolution( solution );
             max_solution++;
         }
-        M_model->addExpressionEvaluation( M_model->operator()( solution , mu ) );
 
         if( Environment::worldComm().isMasterRank() )
             std::cout << "compute finite element solution at mu_1 done";
@@ -653,36 +652,6 @@ EIM<ModelType>::offline()
         DVLOG( 2 )<<"add the interpolation point : \n"<<t;
         DVLOG( 2 ) << "norm Linf = " << zmax.template get<0>() << " at " << zmax.template get<1>() << "\n";
 
-        //if( ! expression_expansion ) // fill M_g and M_q
-        //if( 1 )
-        {
-            DVLOG(2) << "compute and insert q_0...\n";
-            // insert first element
-            timer2.restart();
-            auto q = M_model->operator()( solution , mu );
-            time=timer2.elapsed();
-            if( Environment::worldComm().isMasterRank() )
-            {
-                std::cout<<" -- expression evaluated in mu in "<<time<<"s"<<std::endl;
-            }
-            //q.scale( 1./zmax.template get<0>() );
-            q.scale( 1./ q( t )( 0, 0, 0 ) );
-            M_max_q++;
-            DVLOG( 2 ) << "max-q : "<<M_max_q;
-            M_model->addBasis( q );
-            DVLOG( 2 ) << "basis q added";
-        }
-#if 0
-        else
-        {
-            bool do_projection=true;
-            auto any_q = M_model->buildBasisFunction(0);
-            if (!boost::any_cast<element_type>(&any_q))
-                throw std::logic_error( "[EIM::offline] not cast possible for eim basis function projected in function space" );
-            auto q_projected = boost::any_cast<element_type>( any_q );
-            //M_q.push_back( q_projected );
-        }
-#endif
         auto zero = vf::project( _space=M_model->functionSpace() , _expr=cst(0.) );
         if( expression_expansion )
         {
@@ -690,7 +659,21 @@ EIM<ModelType>::offline()
             max_z++;
         }
 
-        M_model->setMax(M_M, M_max_q,  max_z, max_solution);
+        timer2.restart();
+        auto q = M_model->Residual(0,zero);
+        time=timer2.elapsed();
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<" -- expression evaluated in mu in "<<time<<"s"<<std::endl;
+        }
+        // scale the residual
+        q.scale( 1./ q( t )( 0, 0, 0 ) );
+        M_max_q++;
+        DVLOG( 2 ) << "max-q : "<<M_max_q;
+        M_model->addBasis( q );
+        DVLOG( 2 ) << "basis q added";
+
+        M_model->setMax(M_M, M_max_q, max_g, max_z, max_solution);
         ++M_M;
         M_model->clearOfflineError();
         timer2.restart();
@@ -707,6 +690,7 @@ EIM<ModelType>::offline()
     {
         M_M = M_model->mMax()+1;
         M_max_q = M_model->maxQ();
+        max_g = M_model->maxG();
         max_z = M_model->maxZ();
         max_solution = M_model->maxSolution();
     }//if ! M_restart
@@ -745,9 +729,6 @@ EIM<ModelType>::offline()
         //LOG(INFO) << "M=" << M_M << "...\n";
         if( Environment::worldComm().isMasterRank() )
         {
-            if( Mmax == user_max + 1 )
-                std::cout<<"================================ last basis function needed for error estimation"<<std::endl;
-            else
                 std::cout<<" ================================ "<<std::endl;
         }
 
@@ -770,12 +751,6 @@ EIM<ModelType>::offline()
         if( Environment::worldComm().isMasterRank() )
         {
             std::cout<<" -- model solution computed in "<<time<<"s"<<std::endl;
-        }
-
-        if( expression_expansion )//store the solution only if we want to have EIM expansion of the expression
-        {
-            M_model->addSolution( solution );
-            max_solution++;
         }
 
         timer2.restart();
@@ -803,20 +778,21 @@ EIM<ModelType>::offline()
          */
         DVLOG(2) << "[offline] S(" << this->M_M-1 << ") = " << bestfit.template get<1>() << "\n";
 
-        //if( ! expression_expansion )
+        if( ! expression_expansion )
         {
-            // update M_g(:,M-1)
             timer2.restart();
-            auto g_bestfit = M_model->operator()( bestfit.template get<1>() );
+            M_model->addExpressionEvaluation( M_model->operator()( mu ) ); //projection de l'expression
             time=timer2.elapsed();
             if( Environment::worldComm().isMasterRank() )
             {
                 std::cout<<" -- expression evaluated in mu in "<<time<<"s"<<std::endl;
             }
-
-            //M_g.push_back( g_bestfit );
-            M_model->addExpressionEvaluation( g_bestfit );
-            //orthonormalize( M_g );
+            max_g++;
+        }
+        else
+        {
+            M_model->addSolution( solution );
+            max_solution++;
         }
 
         // build T^m such that T^m-1 \subset T^m
@@ -827,7 +803,7 @@ EIM<ModelType>::offline()
         LOG(INFO) << "[offline] compute arg sup |residual|..." <<"\n";
         //auto resmax = normLinf( _range=elements(M_model->mesh()), _pset=_Q<5>(), _expr=idv(res) );
         auto coeff = M_model->computeExpansionCoefficients( mu ,  solution , M_M-1 );
-        auto z = expansion( M_model->q(), coeff , M_M-1 );
+        auto z = expansion( M_model->q(), coeff , M_M-1 ); // z= W_{M-1}(\mu_M)
 
         if( expression_expansion )
         {
@@ -846,30 +822,14 @@ EIM<ModelType>::offline()
         t = resmax.template get<1>();
 
         // store space coordinate where max absolute value occurs
-        //M_model->addInterpolationPoint( t ); //(t has not to be added in M_ctx before projection of the residual)
         DVLOG(2) << "[offline] store coordinates where max absolute value is attained : \n" << resmax.template get<1>();
 
-        //if( ! expression_expansion )
-        //if( 1 )
-        //{
-        auto res = M_model->projectedResidual( M_M-1 );
+        M_model->addParameter( mu );
+        element_type res = M_model->Residual( M_M-1, z );
 
         DVLOG(2) << "[offline] scale new basis function by " << 1./resmax.template get<0>() << "..." <<"\n";
         res.scale( 1./res( t )(0,0,0) );
         DVLOG(2) << "store new basis function..." <<"\n";
-
-        //}
-#if 0
-        else
-        {
-            bool do_projection=true;
-            auto any_q = M_model->buildBasisFunction(M_M-1);
-            if (!boost::any_cast<element_type>(&any_q))
-                throw std::logic_error( "[EIM::offline] not cast possible for eim basis function projected in function space" );
-            auto q_projected = boost::any_cast<element_type>( any_q );
-            //M_q.push_back( q_projected );
-        }
-#endif
 
         //if we want to impose the use of dimension-max functions, we don't want to stop here
         if ( resmax.template get<0>() < option(_name="eim.error-max").template as<double>() &&  ! option(_name="eim.use-dimension-max-functions").template as<bool>() )
@@ -879,17 +839,12 @@ EIM<ModelType>::offline()
             break;
         }
 
-        M_model->addParameter( mu );
+        M_model->addInterpolationPoint( t ); // Store interpolation point
         M_model->addBasis( res );
-
-        // Store interpolation point
-        M_model->addInterpolationPoint( t );
-
         M_max_q++;
-        M_model->setMax(M_M, M_max_q,  max_z, max_solution);
+        M_model->setMax(M_M, M_max_q, max_g, max_z, max_solution);
         timer2.restart();
         M_model->fillInterpolationMatrix( );
-
         time=timer2.elapsed();
         time_=timer3.elapsed();
         if( Environment::worldComm().isMasterRank() )
@@ -1217,8 +1172,9 @@ public:
     virtual model_functionspace_ptrtype modelFunctionSpace() = 0;
     virtual void addInterpolationPoint( node_type t ) = 0;
 
-    virtual void setMax(int m, int max_q, int max_z, int max_solution) = 0;
+    virtual void setMax(int m, int max_q, int max_g, int max_z, int max_solution) = 0;
     virtual int maxQ() = 0;
+    virtual int maxG() = 0;
     virtual int maxZ() = 0;
     virtual int maxSolution() = 0;
 
@@ -1234,8 +1190,8 @@ public:
     virtual void addParameter( parameter_type const& mu ) = 0;
     virtual void clearParameterSampling() = 0;
     virtual boost::any buildBasisFunction( int m ) = 0;
+    virtual element_type Residual( int m, element_type const& z) = 0;
 
-    virtual element_type projectedResidual( size_type __M ) const = 0;
     virtual void printInterpolationPointsSelection() const=0;
     virtual void printMuSelection() const=0;
     virtual void printOfflineError() const=0;
@@ -1333,6 +1289,7 @@ public:
         M_crb_built( false ),
         M_mu_sampling( new sampling_type ( model->parameterSpace() , 1 , sampling ) ),
         M_q_vector(),
+        M_g_vector(),
         M_z_vector(),
         M_solution_vector(),
         M_t(),
@@ -1446,28 +1403,6 @@ public:
     model_functionspace_ptrtype modelFunctionSpace() const { return M_model->functionSpace();}
     model_functionspace_ptrtype modelFunctionSpace() { return M_model->functionSpace();}
 
-    element_type
-    projectedResidual( size_type __M ) const
-    {
-        DVLOG(2) << "compute residual for m=" << __M << "...\n";
-        vector_type rhs( __M );
-
-        rhs = M_g_vector[__M].evaluate( M_ctx );
-
-        DCHECK( rhs.size() == __M ) << "Invalid size rhs: " << rhs.size() << " M=" << __M  << " rhs = " << rhs << "\n";
-
-        this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(rhs);
-        DVLOG(2) << "solve B sol = rhs with rhs = " << rhs <<"\n";
-
-        // res(:,i)=M_g(:,i)-q(:,0:i)*sigma
-        LOG(INFO) << "compute residual..." <<"\n";
-        using namespace vf;
-        auto z = expansion( M_q_vector, rhs, __M );
-        DVLOG(2) << "return residual..." <<"\n";
-        return vf::project (_space=this->functionSpace(),
-                            _expr=idv(M_g_vector[__M])-idv( z ) );
-    }
-
     void addInterpolationPoint( node_type t )
     {
         M_t.push_back( t );
@@ -1574,7 +1509,8 @@ public:
         M_mu = mu;
         *M_u = solution;
 
-        if( 0 )// option(_name="eim.compute-expansion-of-expression").template as<bool>() )
+        //if( 0 )// option(_name="eim.compute-expansion-of-expression").template as<bool>() )
+        if( boption(_name="eim.compute-expansion-of-expression") )
         {
             rhs = evaluateFromContext( _context=M_ctx, _expr=M_expr );
         }
@@ -1838,7 +1774,7 @@ public:
                 eval = expression_evaluated( 0 );
             }
             Environment::worldComm().barrier();
-            boost::mpi::broadcast( Environment::worldComm().globalComm(), eval, proc_having_the_point );
+            boost::mpi::broadcast( Environment::worldComm(), eval, proc_having_the_point );
             auto expression_q  = residual / eval; // __j^th normalized basis function
             return expression_q;
 
@@ -1852,11 +1788,25 @@ public:
         return 0;
     }
 
+    element_type Residual( int m, element_type const& z)
+    {
+        bool expression_expansion = option(_name="eim.compute-expansion-of-expression").template as<bool>() ;
+        if( expression_expansion )
+        {
+            M_mu = M_mu_sampling->at(m);
+            *M_u = M_solution_vector[m];
+            return vf::project( _space=this->functionSpace(), _expr=M_expr - idv(z) );
+        }
+        else
+        {
+            return vf::project(_space=this->functionSpace(), _expr=idv(M_g_vector[m]) - idv( z ) );
+        }
+    }
+
 
     void fillInterpolationMatrix()
     {
         bool expression_expansion = option(_name="eim.compute-expansion-of-expression").template as<bool>() ;
-
         //rank of the current processor
         int proc_number = Environment::worldComm().globalRank();
 
@@ -1894,7 +1844,6 @@ public:
 
         DVLOG( 2 )<<" M_B : \n "<<M_B;
         //google::FlushLogFiles(google::GLOG_INFO);
-
         saveDB();
 
     }//fillInterpolationMatrix
@@ -2253,10 +2202,11 @@ public:
         return max;
     }
 
-    void setMax(int m, int max_q, int max_z, int max_solution )
+    void setMax(int m, int max_q, int max_g, int max_z, int max_solution )
     {
         M_M_max = m;
         M_max_q = max_q;
+        M_max_g = max_g;
         M_max_z = max_z;
         M_max_solution = max_solution;
     }
@@ -2264,6 +2214,10 @@ public:
     int maxQ()
     {
         return M_max_q;
+    }
+    int maxG()
+    {
+        return M_max_g;
     }
     int maxZ()
     {
@@ -2284,6 +2238,9 @@ public:
         //max of eim basis function projected on function space
         __ar & BOOST_SERIALIZATION_NVP( M_max_q );
         DVLOG(2) << "max-q saved/loaded";
+
+        __ar & BOOST_SERIALIZATION_NVP( M_max_g );
+        DVLOG(2) << "max-g saved/loaded";
 
         __ar & BOOST_SERIALIZATION_NVP( M_max_z );
         DVLOG(2) << "max-z saved/loaded\n";
@@ -2312,15 +2269,15 @@ public:
             }
 
             // save q
-            DVLOG(2) << "q saved/loaded ( "<<M_max_q<<" elements ) ";
+            DVLOG(2) << "q saved/loaded ( "<<M_max_g<<" elements ) ";
 
             if( M_g_vector.size() == 0 )
             {
-                for(int i = 0; i < M_max_q; i++ )
+                for(int i = 0; i < M_max_g; i++ )
                 {
                     M_g_vector.push_back( this->functionSpace()->element() );
                 }
-                for( int i = 0; i < M_max_q; ++ i )
+                for( int i = 0; i < M_max_g; ++ i )
                 {
                     __ar & BOOST_SERIALIZATION_NVP( M_g_vector[i] );
                 }
@@ -2371,12 +2328,10 @@ public:
             {
                 __ar & BOOST_SERIALIZATION_NVP( M_q_vector[i] );
             }
-
-            for( int i = 0; i < M_max_q; ++ i )
+            for( int i = 0; i < M_max_g; ++ i )
             {
                 __ar & BOOST_SERIALIZATION_NVP( M_g_vector[i] );
             }
-
             for( int i = 0; i < M_max_z; ++ i )
             {
                 __ar & BOOST_SERIALIZATION_NVP( M_z_vector[i] );
@@ -2413,6 +2368,7 @@ private:
     std::vector< double > M_evaluation_vector; // we need to store this to be able to compute expression of eim basis functions and the user can use them in integrals
     int M_M_max;
     int M_max_q;
+    int M_max_g;
     int M_max_z;
     int M_max_solution;
     std::vector<node_type> M_t;
