@@ -109,7 +109,7 @@ public:
 
 //                    try
 //                    {
-//                        expression_type e( option( _name=s.get_name() ).template as<std::string>(), 0 );
+//                        expression_type e( soption( _name=s.get_name() ), 0 );
 //                        if( is_a<numeric>(e) )
 //                        {
 //                            LOG(INFO) << "symbol " << s.get_name() << " found in option with value " << v;

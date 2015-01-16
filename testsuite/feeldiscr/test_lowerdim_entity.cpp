@@ -61,7 +61,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( evaluate1, T, dim_types )
                                                         _usenames=true,
                                                         _addmidpoint=false,
                                                         _shape=shape,
-                                                        _h=option(_name="gmsh.hsize").template as<double>() ),
+                                                        _h=doption(_name="gmsh.hsize") ),
                                           _update=MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
     auto mesh = createSubmesh( mesh2d, boundaryfaces( mesh2d ), 0 );
 
