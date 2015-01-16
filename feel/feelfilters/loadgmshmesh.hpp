@@ -56,16 +56,16 @@ BOOST_PARAMETER_FUNCTION(
         ) // 4. one required parameter, and
 
     ( optional
-      ( straighten,          *( boost::is_integral<mpl::_> ), option(_name="gmsh.straighten").template as<bool>() )
-      ( refine,          *( boost::is_integral<mpl::_> ), option(_name="gmsh.refine").template as<int>() )
+      ( straighten,          *( boost::is_integral<mpl::_> ), boption(_name="gmsh.straighten") )
+      ( refine,          *( boost::is_integral<mpl::_> ), ioption(_name="gmsh.refine") )
       ( update,          *( boost::is_integral<mpl::_> ), 0 )
-      ( physical_are_elementary_regions,		   *, option(_name="gmsh.physical_are_elementary_regions").template as<bool>() )
+      ( physical_are_elementary_regions,		   *, boption(_name="gmsh.physical_are_elementary_regions") )
       ( worldcomm,       *, Environment::worldComm() )
-      ( respect_partition,	(bool), option(_name="gmsh.respect_partition").template as<bool>() )
-      ( rebuild_partitions,	(bool), option(_name="gmsh.partition").template as<bool>() )
+      ( respect_partition,	(bool), boption(_name="gmsh.respect_partition") )
+      ( rebuild_partitions,	(bool), boption(_name="gmsh.partition") )
       ( rebuild_partitions_filename,	*, filename )
       ( partitions,      *( boost::is_integral<mpl::_> ), worldcomm.globalSize() )
-      ( partitioner,     *( boost::is_integral<mpl::_> ), option(_name="gmsh.partitioner").template as<int>() )
+      ( partitioner,     *( boost::is_integral<mpl::_> ), ioption(_name="gmsh.partitioner") )
       ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
         )
     )

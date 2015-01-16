@@ -4879,7 +4879,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         NumaAffinityMngType numaAffMng(RunTimeSystem::NumaAffinityMng::eMode::Block);
 
         // Compute Number of available CPU cores
-        int paramNbCores = option(_name="parallel.cpu.restrict").template as<int>();
+        int paramNbCores = ioption(_name="parallel.cpu.restrict");
         int nTotalCoresNode = numaAffMng.get_num_cores();
         int nAvailCores = nTotalCoresNode - nMPIProc;
         int coresPerProcess = 0;
@@ -5131,7 +5131,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         //std::cout << "omp_get_num_procs()=" << omp_get_num_procs() << std::endl;
 
         // Compute Number of available CPU cores
-        int paramNbCores = option(_name="parallel.cpu.restrict").template as<int>();
+        int paramNbCores = ioption(_name="parallel.cpu.restrict");
         int nTotalCoresNode = omp_get_num_procs();
         int nAvailCores = nTotalCoresNode - nMPIProc;
         int coresPerProcess = 0;

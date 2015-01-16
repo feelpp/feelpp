@@ -139,7 +139,7 @@ int main(int argc, char** argv )
 
     Feel::Environment::changeRepository( boost::format( "/testsuite/feelvf/%1%/test_cube/h_%2%/" )
                                          % Feel::Environment::about().appName()
-                                         % option(_name="gmsh.hsize").template as<double>() );
+                                         % doption(_name="gmsh.hsize") );
     auto mesh = unitCube();
     double a = integrate( _range= boundaryfaces( mesh ), _expr= norm2(pT()*N()) ).evaluate()( 0,0 );
     LOG_IF(WARNING, math::abs(a) < 1e-13 ) << "should be 0 and the value is " << a;

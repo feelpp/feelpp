@@ -668,7 +668,7 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
 
         __out << "\n";
 
-        if ( option( _name="exporter.ensightgold.use-sos" ).template as<bool>() == false )
+        if ( boption( _name="exporter.ensightgold.use-sos" ) == false )
         {
             // In the following line, we substituted the Environment::numberOfProcessors
             // by the size of the worldComm passed to the exporter to ensure that we are using
@@ -1147,7 +1147,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkers(MPI_File fh, mesh_ptrtype mesh)
     this->writeGeoHeader(fh);
 
     /* Write faces */
-    if ( option( _name="exporter.ensightgold.save-face" ).template as<bool>() )
+    if ( boption( _name="exporter.ensightgold.save-face" ) )
     {
         for( std::pair<const std::string, std::vector<size_type> > & m : mesh->markerNames() )
         {
@@ -1699,7 +1699,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
         MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
 
         /* handle faces data */
-        if ( option( _name="exporter.ensightgold.save-face" ).template as<bool>() )
+        if ( boption( _name="exporter.ensightgold.save-face" ) )
         {
             BOOST_FOREACH( auto m, __mesh->markerNames() )
             {

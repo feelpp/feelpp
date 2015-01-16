@@ -514,10 +514,10 @@ BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::compute_exporter_return<Args>
                             ( mesh, * )
                           ) // required
                           ( optional                                  // 4. one required parameter, and
-                            ( fileset, *, option(_name="exporter.fileset").template as<bool>() )
+                            ( fileset, *, boption(_name="exporter.fileset") )
                             ( order, *, mpl::int_<1>() )
                             ( name,  *, Environment::about().appName() )
-                            ( geo,   *, option(_name="exporter.geometry").template as<std::string>() )
+                            ( geo,   *, soption(_name="exporter.geometry") )
                             ( path, *( boost::is_convertible<mpl::_,std::string> ), std::string(".") )
                           ) )
 {

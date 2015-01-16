@@ -109,23 +109,23 @@ public:
     StVenantKirchhoff()
         :
         super(),
-        M_lambda( option(_name="lambda").template as<double>() ),
+        M_lambda( doption(_name="lambda") ),
         M_Xh(),
-        dt( option(_name="dt").template as<double>() ),
-        ft( option(_name="ft").template as<double>() ),
-        omega( option(_name="omega").template as<double>() )
+        dt( doption(_name="dt") ),
+        ft( doption(_name="ft") ),
+        omega( doption(_name="omega") )
         {
             this->changeRepository( boost::format( "doc/manual/solid/%1%/%2%/P%3%/h_%4%/" )
                                     % this->about().appName()
                                     % entity_type::name()
                                     % Order
-                                    % option(_name="hsize").template as<double>()
+                                    % doption(_name="hsize")
                 );
 
             /**
              * Physical data
              */
-            M_time_order = option(_name="order").template as<int>();
+            M_time_order = ioption(_name="order");
             E = 21*1e5;
             sigma = 0.28;
             mu = E/( 2*( 1+sigma ) );
@@ -285,8 +285,8 @@ StVenantKirchhoff<Dim, Order>::run()
 
     value_type penalisation = option(_name="penal").template as<value_type>();
     value_type penalisation_bc = option(_name="penalbc").template as<value_type>();
-    int bctype = option(_name="bctype").template as<int>();
-    value_type order = option(_name="order").template as<int>();
+    int bctype = ioption(_name="bctype");
+    value_type order = ioption(_name="order");
 
 
     LOG(INFO) << "lambda = " << lambda << "\n"
