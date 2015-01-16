@@ -69,7 +69,7 @@ public :
     void run()
     {
         auto mesh = createGMSHMesh( _mesh=new Mesh<Simplex<Dim,1>>,
-                                    _desc=domain( _name=( boost::format( "%1%-%2%" ) % option(_name="gmsh.domain.shape").template as<std::string>() % Dim ).str() ,
+                                    _desc=domain( _name=( boost::format( "%1%-%2%" ) % soption(_name="gmsh.domain.shape") % Dim ).str() ,
                                                   _dim=Dim ) );
 
 

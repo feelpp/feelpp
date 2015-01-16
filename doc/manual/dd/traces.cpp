@@ -56,7 +56,7 @@ Traces<Dim,Order>::run()
                                    % this->about().appName()
                                    % Dim
                                    % Order
-                                   % option(_name="gmsh.hsize").template as<double>() );
+                                   % doption(_name="gmsh.hsize") );
 
     auto mesh = loadMesh(_mesh=new Mesh<Simplex<Dim>>);
 
