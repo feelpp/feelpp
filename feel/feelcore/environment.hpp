@@ -339,6 +339,15 @@ public:
         return rank() == 0;
     }
 
+    static po::command_line_parser const& commandLineParser()
+    {
+        return *S_commandLineParser;
+    }
+    static std::string configFileName()
+    {
+        return S_configFileName;
+    }
+
     /**
      * return variables_map
      */
@@ -495,6 +504,7 @@ public:
           ( worldcomm, ( WorldComm ), Environment::worldComm() )
           ( sub,( std::string ),"" )
           ( prefix,( std::string ),"" )
+          ( vm, ( po::variables_map const& ), Environment::vm() )
         ) )
     {
         std::ostringstream os;
@@ -506,8 +516,8 @@ public:
             os << sub << "-";
 
         os << name;
-        auto it = Environment::vm().find( os.str() );
-        CHECK( it != Environment::vm().end() ) << "Invalid option " << os.str() << "\n";
+        auto it = vm.find( os.str() );
+        CHECK( it != vm.end() ) << "Invalid option " << os.str() << "\n";
         return it->second;
     }
 
@@ -610,6 +620,8 @@ private:
     static  fs::path S_scratchdir;
 
     static AboutData S_about;
+    static boost::shared_ptr<po::command_line_parser> S_commandLineParser;
+    static std::string S_configFileName;
     static po::variables_map S_vm;
     static boost::shared_ptr<po::options_description> S_desc;
     static boost::shared_ptr<po::options_description> S_desc_app;
@@ -664,9 +676,10 @@ BOOST_PARAMETER_FUNCTION(
       ( worldcomm, ( WorldComm ), Environment::worldComm() )
       ( sub,( std::string ),"" )
       ( prefix,( std::string ),"" )
+      ( vm, ( po::variables_map const& ), Environment::vm() )
     ) )
 {
-    return Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix );
+    return Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix, _vm=vm );
 }
 
 BOOST_PARAMETER_FUNCTION(
