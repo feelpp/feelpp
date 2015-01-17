@@ -201,16 +201,7 @@ Optional parameters:
 
 \Examples
 From \c "doc/manual/stokes/stokes.cpp":
-\co
-  double mean_p = mean( _range=elements( u.mesh() ),
-                        _expr=idv( p ) );
-\eco
-
-From \c "doc/manual/laplacian/periodic.cpp":
-\co
-  LOG(INFO) << "mean(u)  = " << mean( _range=elements( mesh ), _expr=idv( u ) ) << "\n";
-\eco
-
+\snippet stokes.cpp mean
 
 <a href="#" class="top">top</a>
 <hr>
@@ -248,11 +239,7 @@ From \c "doc/manual/laplacian/laplacian.cpp":
 \eco
 
 From \c "doc/manual/stokes/stokes.cpp":
-\co
-double p_errorL2 = normL2( _range=elements( u.mesh() ),
-                           _expr=( idv( p )-mean_p - p_exact ) );
-\eco
-
+\snippet stokes.cpp norml2
 
 \subsection NormH1 normH1
 In the same idea, you can evaluate the H1 norm or semi norm, for any function \f$f \in H^1(\Omega)\f$:

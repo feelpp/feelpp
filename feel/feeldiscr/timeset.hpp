@@ -598,7 +598,7 @@ public:
         template<typename FunctionType>
         void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<true> )
         {
-            bool extendeddof = (option(_name="exporter.format").template as<std::string>() == "ensightgold");
+            bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
             if ( FunctionType::is_scalar )
             {
                 boost::timer t;
@@ -741,7 +741,7 @@ public:
         template<typename FunctionType>
         void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<false> )
         {
-            bool extendeddof = (option(_name="exporter.format").template as<std::string>() == "ensightgold");
+            bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
             if ( !func.worldComm().isActive() ) return;
 
             if ( FunctionType::is_scalar )

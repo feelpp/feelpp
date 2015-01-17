@@ -531,7 +531,7 @@ void PreconditionerPetsc<T>::init ()
             is = pmatrix->indexSplit();
             //is.showMe();
 
-            std::string fieldsDefStr = option( _prefix=this->name(), _name="fieldsplit-fields" ).template as<std::string>();
+            std::string fieldsDefStr = soption( _prefix=this->name(), _name="fieldsplit-fields" );
             auto fieldsDef = IndexSplit::parseFieldsDef( fieldsDefStr );
             if ( fieldsDef.size() == 0 )
             {
@@ -586,7 +586,7 @@ void PreconditionerPetsc<T>::init ()
     std::string type =  Environment::vm()["pc-factor-mat-solver-package-type"].template as<std::string>();
     this->setMatSolverPackageType( matSolverPackageEnumType( type ) );
 #endif
-    if ( option( _prefix=this->name(), _name="pc-view" ).template as<bool>() )
+    if ( boption( _prefix=this->name(), _name="pc-view" ) )
         check( PCView( M_pc, PETSC_VIEWER_STDOUT_WORLD ) );
 #endif
     this->M_is_initialized = true;
@@ -868,7 +868,7 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
     ierr = PCSetUp( pc );
     CHKERRABORT( worldComm.globalComm(),ierr );
 
-    if ( option( _prefix=name, _name="pc-view" ).template as<bool>() )
+    if ( boption( _prefix=name, _name="pc-view" ) )
     {
         ierr = PCView( pc, PETSC_VIEWER_STDOUT_WORLD );
         CHKERRABORT( worldComm.globalComm(),ierr );
@@ -1052,8 +1052,19 @@ ConfigurePCLU::ConfigurePCLU( PC& pc, PreconditionerPetsc<double>::indexsplit_pt
                               std::vector<std::string> const& prefixOverwrite )
     :
     ConfigurePCBase( worldComm,sub,prefix,prefixOverwrite ),
-    M_matSolverPackage( getOption<std::string>("pc-factor-mat-solver-package-type",prefix,sub,prefixOverwrite) )
+    M_matSolverPackage( getOption<std::string>("pc-factor-mat-solver-package-type",prefix,sub,prefixOverwrite) ),
+    M_mumpsParameters( 33, std::make_pair(false,-1) )
 {
+    if ( M_matSolverPackage == "mumps" )
+    {
+        for ( int icntl=1 ; icntl<= M_mumpsParameters.size() ; ++icntl )
+        {
+            std::string mumpsOption = (boost::format("pc-factor-mumps.icntl-%1%")%icntl ).str();
+            auto mumpsOptionAsked = getOptionIfAvalaible<int>(mumpsOption,prefix,sub,prefixOverwrite);
+            if ( mumpsOptionAsked.first )
+                M_mumpsParameters[icntl-1] = mumpsOptionAsked;
+        }
+    }
     VLOG(2) << "ConfigurePC : LU\n"
             << "  |->prefix    : " << this->prefix() << std::string((this->sub().empty())? "" : " -sub="+this->sub()) << "\n"
             << "  |->matSolverPackage : " << M_matSolverPackage << "\n";
@@ -1065,6 +1076,24 @@ ConfigurePCLU::runConfigurePCLU( PC& pc )
 {
     // set factor package
     this->check( PCFactorSetMatSolverPackage( pc, M_matSolverPackage.c_str() ) );
+
+    // allow to tune the factorisation package
+    this->check( PCFactorSetUpMatSolverPackage(pc) );
+
+    // configure mumps
+    if ( M_matSolverPackage == "mumps" )
+    {
+        Mat F;
+        this->check( PCFactorGetMatrix(pc,&F) );
+        for ( int icntl=1 ; icntl<= M_mumpsParameters.size() ; ++icntl )
+        {
+            if ( M_mumpsParameters[icntl-1].first )
+            {
+                PetscInt ival = M_mumpsParameters[icntl-1].second;
+                this->check( MatMumpsSetIcntl(F,icntl,ival) );
+            }
+        }
+    }
 }
 /**
  * ConfigurePCILU

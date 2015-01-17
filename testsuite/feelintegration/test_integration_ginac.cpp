@@ -337,9 +337,9 @@ void poiseuille()
 
 #if 0
     std::string dim_str =  boost::str( boost::format( "2D" ) );
-    std::string u1_str = option(_name="u_exact_x",_prefix=dim_str).template as<std::string>();
-    std::string u2_str = option(_name="u_exact_y",_prefix=dim_str).template as<std::string>();
-    std::string p_str = option(_name="p_exact_ex",_prefix=dim_str).template as<std::string>();
+    std::string u1_str = soption(_name="u_exact_x",_prefix=dim_str);
+    std::string u2_str = soption(_name="u_exact_y",_prefix=dim_str);
+    std::string p_str = soption(_name="p_exact_ex",_prefix=dim_str);
     LOG(INFO) << "ux = " << u1_str;
     LOG(INFO) << "uy = " << u2_str;
     LOG(INFO) << "p = " << p_str;
