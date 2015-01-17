@@ -76,6 +76,7 @@ generic_options()
         ( "directory", po::value<std::string>(), "change directory to specified one" )
         ( "npdir", po::value<bool>()->default_value(true), "enable/disable sub-directory np_<number of processors>")
         ( "fail-on-unknown-option", po::value<bool>()->default_value(false), "exit feel++ application if unknown option found" )
+        ( "show-preconditioner-options", "show on the fly the preconditioner options used" )
         ;
     return generic;
 }
