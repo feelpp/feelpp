@@ -103,16 +103,16 @@ public :
             }
             ue_g.setParameterValues( {
                     {"t", time.second},
-                    {"alpha", option(_name="parameters.alpha").template as<double>()},
-                    {"beta", option(_name="parameters.beta").template as<double>()} } );
+                    {"alpha", doption(_name="parameters.alpha")},
+                    {"beta", doption(_name="parameters.beta")} } );
             ue = project( _space=Xh, _expr=ue_g );
             mybdf->setUnknown( time.first, ue );
         }
 
         fe.setParameterValues( {
                 {"t", mybdf->timeInitial()},
-                {"alpha", option(_name="parameters.alpha").template as<double>()},
-                {"beta", option(_name="parameters.beta").template as<double>()} } );
+                {"alpha", doption(_name="parameters.alpha")},
+                {"beta", doption(_name="parameters.beta")} } );
 
         solution.on( _range=elements(mesh), _expr=ue_g );
         ue.on(_range=elements(mesh), _expr=ue_g );

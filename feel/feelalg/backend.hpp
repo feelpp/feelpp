@@ -321,7 +321,7 @@ public:
                                        ( buildGraphWithTranspose, ( bool ),false )
                                        ( pattern_block,    *, ( BlocksStencilPattern(1,1,size_type( Pattern::HAS_NO_BLOCK_PATTERN ) ) ) )
                                        ( diag_is_nonzero,  *( boost::is_integral<mpl::_> ), true )
-                                       ( verbose,   ( bool ), option(_prefix=this->prefix(),_name="backend.verbose").template as<bool>() )
+                                       ( verbose,   ( bool ), boption(_prefix=this->prefix(),_name="backend.verbose") )
                                        ( collect_garbage, *( boost::is_integral<mpl::_> ), true )
                                      ) )
     {
@@ -984,7 +984,7 @@ public:
                                        ( pc,( std::string ),M_pc/*"lu"*/ )
                                        ( ksp,( std::string ),M_ksp/*"gmres"*/ )
                                        ( pcfactormatsolverpackage,( std::string ), M_pcFactorMatSolverPackage )
-                                       ( verbose,   ( bool ), option(_prefix=this->prefix(),_name="backend.verbose").template as<bool>() )
+                                       ( verbose,   ( bool ), boption(_prefix=this->prefix(),_name="backend.verbose") )
                                      )
                                    )
     {
@@ -1105,7 +1105,7 @@ public:
                                        ( pc,( std::string ),M_pc/*"lu"*/ )
                                        ( ksp,( std::string ),M_ksp/*"gmres"*/ )
                                        ( pcfactormatsolverpackage,( std::string ), M_pcFactorMatSolverPackage )
-                                       ( verbose,   ( bool ), option(_prefix=this->prefix(),_name="backend.verbose").template as<bool>() )
+                                       ( verbose,   ( bool ), boption(_prefix=this->prefix(),_name="backend.verbose") )
                                      )
                                    )
     {

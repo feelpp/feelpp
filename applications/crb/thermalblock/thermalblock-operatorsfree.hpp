@@ -348,11 +348,11 @@ void
 ThermalBlockFree::initModel()
 {
 
-    gamma_dir=option(_name="gamma_dir").template as<double>();
+    gamma_dir=doption(_name="gamma_dir");
 
     std::string mshfile_name = option(_name="mshfile").as<std::string>();
 
-    double hsize = option(_name="hsize").template as<double>();
+    double hsize = doption(_name="hsize");
 
     if( mshfile_name=="" )
     {
