@@ -1648,6 +1648,8 @@ public:
                               mpl::identity<DofTable<mesh_type, basis_type, periodicity_0_type, mortar_0_type> > >::type::type dof_type;
 
     typedef boost::shared_ptr<dof_type> dof_ptrtype;
+    typedef boost::shared_ptr<DataMap> datamap_ptrtype;
+    typedef boost::shared_ptr<IndexSplit> indexsplit_ptrtype;
 
     // return types
     //typedef typename bases_list::polyset_type return_value_type;
@@ -1662,7 +1664,8 @@ public:
     template<int i>
     struct sub_functionspace
     {
-        typedef typename mpl::at_c<functionspace_vector_type,i>::type type;
+        typedef typename mpl::at_c<functionspace_vector_type,i>::type ptrtype;
+        typedef typename ptrtype::element_type type;
     };
 
     /**
@@ -3965,6 +3968,13 @@ public:
     {
         return *M_dof;
     }
+    /**
+     \return the degrees of freedom
+     */
+    datamap_ptrtype mapPtr() const
+        {
+            return M_dof;
+        }
 
     /**
        \return the degrees of freedom

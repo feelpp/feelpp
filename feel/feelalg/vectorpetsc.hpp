@@ -372,6 +372,16 @@ public:
     //@{
 
     /**
+     *  \f$v = x*y\f$: coefficient-wise multiplication
+     */
+    void pointwiseMult ( Vector<T> const& x, Vector<T> const& y );
+    
+    /**
+     *  \f$v = x/y\f$: coefficient-wise divide
+     */
+    void pointwiseDivide ( Vector<T> const& x, Vector<T> const& y );
+    
+    /**
      * Call the assemble functions
      */
     void close ()
@@ -551,6 +561,11 @@ public:
      * \p operator +=.
      */
     void add ( const value_type& a_in, const Vector<value_type>& v_in );
+
+    /**
+     * Replaces each component of a vector by its reciprocal.
+     */
+    int reciprocal();
 
     /**
      * @return the minimum element in the vector.
