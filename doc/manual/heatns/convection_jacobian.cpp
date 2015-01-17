@@ -71,14 +71,14 @@ void Convection ::updateJacobian( const vector_ptrtype& X,
     if ( weakdir == 0 )
     {
         //vitesse
-        form2( Xh, Xh, M_D )  += on( boundaryfaces( mesh ),u, Rtemp,one()*0. );
+        form2( Xh, Xh, _matrix=M_D )  += on( boundaryfaces( mesh ),u, Rtemp,one()*0. );
 
         if ( adim==1 )
             //temperature
-            form2( Xh, Xh, M_D )  += on ( markedfaces( mesh, "Tfixed" ),t,Rtemp,cst( 0.0 ) );
+            form2( Xh, Xh, _matrix=M_D )  += on ( markedfaces( mesh, "Tfixed" ),t,Rtemp,cst( 0.0 ) );
 
         else
-            form2( Xh, Xh, M_D )  += on ( markedfaces( mesh, "Tfixed" ),t,Rtemp,cst( T0 ) );
+            form2( Xh, Xh, _matrix=M_D )  += on ( markedfaces( mesh, "Tfixed" ),t,Rtemp,cst( T0 ) );
     }
     LOG(INFO) << "[updateJacobian] done in " << ti.elapsed() << "s\n";
 

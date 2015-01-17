@@ -1,9 +1,9 @@
-###  TEMPLATE.txt.tpl; coding: utf-8 ---
+###  CMakeLists.txt; coding: utf-8 --- 
 
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-#       Date: 2012-07-27
+#  Author(s):<christophe.prudhomme@feelpp.org>
+#       Date: 08 Jan 2015
 #
-#  Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
+#  Copyright (C) 2015 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -22,4 +22,7 @@
 #
 #
 
-feelpp_add_application( heatns_cabin SRCS convection_main.cpp ${lib_convection} LINK_LIBRARIES  ${FEELPP_LIBRARIES}   )
+
+feelpp_add_application( steady_ns SRCS steady_ns.cpp INCLUDE_IN_ALL CFG steady_ns.cfg )
+install(TARGETS feelpp_steady_ns DESTINATION bin/ COMPONENT Bin )
+

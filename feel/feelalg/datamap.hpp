@@ -157,8 +157,8 @@ public:
      */
     DataMap( size_type n, std::vector<int> const& firstdof, std::vector<int> const& lastdof );
 
-    DataMap( DataMap const & dm );
-
+    DataMap( DataMap const & dm ) = default;
+    DataMap( DataMap&& dm ) = default;
     virtual ~DataMap();
 
     //@}
@@ -167,7 +167,8 @@ public:
      */
     //@{
 
-    DataMap& operator=( DataMap const& dm );
+    DataMap& operator=( DataMap const& dm ) = default;
+    DataMap& operator=( DataMap && dm ) = default;
 
     //@}
 

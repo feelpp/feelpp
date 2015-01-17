@@ -120,7 +120,7 @@ public:
     */
     ExporterExodus( WorldComm const& worldComm = Environment::worldComm() );
     ExporterExodus( std::string const& __p = "default", int freq = 1, WorldComm const& worldComm = Environment::worldComm() );
-    ExporterExodus( po::variables_map const& vm=Environment::vm(), std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() );
+    ExporterExodus( po::variables_map const& vm=Environment::vm(), std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() ) FEELPP_DEPRECATED;
 
     ExporterExodus( ExporterExodus const & __ex );
 

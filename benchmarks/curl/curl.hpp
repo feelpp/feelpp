@@ -42,6 +42,7 @@
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelvf/print.hpp>
 #include <feel/feeldiscr/projector.hpp>
+#include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/ned1h.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 
@@ -127,13 +128,13 @@ public:
     CurlFormulation()
         :
         super(),
-        M_backend( backend_type::build( this->vm() ) ),
-        meshSize( this->vm()["hsize"].template as<double>() ),
+        M_backend( backend_type::build( soption("backend") ) ),
+        meshSize( doption("hsize") ),
         exporter( Exporter<mesh_type>::New( this->vm() ) )
     {
         this->changeRepository( boost::format( "/benchmark_curl/%1%/h_%2%/" )
                                 % this->about().appName()
-                                % this->vm()["hsize"].template as<double>()
+                                % doption("hsize")
                                 );
     }
 
@@ -226,7 +227,7 @@ CurlFormulation<Dim, OrderU, OrderP>::convergence(int nb_refine)
             auto Xh = Ned1h<0>( mesh );
             auto u = Xh->element();
             auto phi = Xh->element();
-            //auto penaldir = option("penaldir").template as<double>();
+            //auto penaldir = doption("penaldir");
             auto penaldir = 50;
 
             auto v = Vh->element( u_exact );

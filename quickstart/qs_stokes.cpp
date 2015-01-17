@@ -80,111 +80,36 @@ int main(int argc, char**argv )
     auto deft = gradt( u );
     auto def = grad( v );
     double mu = doption(_name="mu");
-    double fixPtTol = doption(_name="fixpoint.tol");
-    int fixPtMaxIt = doption(_name="fixpoint.maxit");
     auto l = form1( _test=Vh );
     auto r = form1( _test=Vh );
 
     auto a = form2( _trial=Vh, _test=Vh);
     auto at = form2( _trial=Vh, _test=Vh);
     a += integrate( _range=elements( mesh ), _expr=mu*inner( deft,def ) );
-    a +=integrate( _range=elements( mesh ), _expr=-div( v )*idt( p ) + divt( u )*id( q ) );
-
-    auto e = exporter( _mesh=mesh );
-
-    std::map<std::string,std::set<flag_type>> bcs;
-    bcs["Dirichlet"].insert(mesh->markerName("inlet"));
-    bcs["Dirichlet"].insert(mesh->markerName("wall"));
-    bcs["Neumann"].insert(mesh->markerName("outlet"));
+    a +=integrate( _range=elements( mesh ), _expr=-div( v )*idt( p ) - divt( u )*id( q ) );
     
-    auto incru = normL2( _range=elements(mesh), _expr=idv(u)-idv(un));
-    auto incrp = normL2( _range=elements(mesh), _expr=idv(p)-idv(pn));
-    int fixedpt_iter = 0;
-    at=a;
-    at+=on(_range=markedfaces(mesh,"wall"), _rhs=l, _element=u,
+    a+=on(_range=markedfaces(mesh,"wall"), _rhs=l, _element=u,
            _expr=zero<2,1>() ) ;
-    at+=on(_range=markedfaces(mesh,"inlet"), _rhs=l, _element=u,
+    a+=on(_range=markedfaces(mesh,"inlet"), _rhs=l, _element=u,
            _expr=g );
 
     if ( Environment::isMasterRank() )
         std::cout << " - Setting up Precondition BtPCD...\n";
-    auto a_btpcd = btpcd( _space=Vh, _bc=bcs, _matrix= at.matrixPtr() );
-    a_btpcd->setMatrix( at.matrixPtr() );
-    map_vector_field<2,1,2> m_dirichlet;
-    m_dirichlet["inlet"]=g;
-    m_dirichlet["wall"]=wall;
-
+    auto a_btpcd = btpcd( _space=Vh, _type="PM", _matrix= at.matrixPtr() );
+    
     if ( Environment::isMasterRank() )
         std::cout << " - Solving Stokes...\n";
     if ( boption("btpcd") )
     {
-        a_btpcd->update( at.matrixPtr(), zero<2,1>(), m_dirichlet );
-        at.solveb(_rhs=l,_solution=U,_backend=backend(),_prec=a_btpcd);
+        a.solveb(_rhs=l,_solution=U,_backend=backend(),_prec=a_btpcd);
     }
-    else
-        at.solve(_rhs=l,_solution=U);
+     else
+        a.solve(_rhs=l,_solution=U);
 
+    auto e = exporter( _mesh=mesh );
     e->step(0)->add( "u", u );
     e->step(0)->add( "p", p );
     e->save();
-#if 1
-    auto deltaU = Vh->element();
-    //m_dirichlet["inlet"]=wall;
-    do
-    {
-        if ( Environment::isMasterRank() )
-            std::cout << " - Assemble nonlinear terms  ...\n";
-        at = a;
-        at += integrate( _range=elements(mesh),_expr=trans(id(v))*(gradt(u)*idv(u)) );
-        at += integrate( _range=elements(mesh), _expr=trans(id(v))*gradv(u)*idt(u) );
 
-        if ( Environment::isMasterRank() )
-            std::cout << " - Assemble residual  ...\n";
-        r = integrate( _range=elements( mesh ), _expr=mu*inner( gradv(u),def ) );
-        r +=integrate( _range=elements( mesh ), _expr=-div( v )*idv( p ) + divv( u )*id( q ) );
-        r += integrate( _range=elements(mesh),_expr=trans(id(v))*(gradv(u)*idv(u)) );
-        if ( Environment::isMasterRank() )
-            std::cout << " - Assemble BC   ...\n";
-        at+=on(_range=markedfaces(mesh,"wall"), _rhs=r, _element=u,
-               _expr=zero<2,1>() ) ;
-        at+=on(_range=markedfaces(mesh,"inlet"), _rhs=r, _element=u,
-               _expr=zero<2,1>() );
-        r.vectorPtr()->scale(-1);
-        if ( Environment::isMasterRank() )
-        {
-            std::cout << "non linear iteration " << fixedpt_iter << " \n";
-        }
-        if ( Environment::isMasterRank() )
-            std::cout << " - Solve   ...\n";
-        if ( boption("btpcd") )
-        {
-            a_btpcd->update( at.matrixPtr(), idv(u), m_dirichlet );
-            at.solveb(_rhs=r,_solution=deltaU/*U*/,_backend=backend(),_prec=a_btpcd );
-        }
-        else
-            at.solveb(_rhs=r,_solution=deltaU/*U*/,_backend=backend(_rebuild=true) );
-        U.add(1.,deltaU);
-        incru = normL2( _range=elements(mesh), _expr=idv(u)-idv(un));
-        incrp = normL2( _range=elements(mesh), _expr=idv(p)-idv(pn));
-        fixedpt_iter++;
-        if ( Environment::isMasterRank() )
-        {
-            std::cout << "Iteration "  << fixedpt_iter << "\n";
-            std::cout << " . ||u-un|| = " << incru << std::endl;
-            std::cout << " . ||p-pn|| = " << incrp << std::endl;
-        }
-        if  ( fixedpt_iter < 10 )
-        {
-            Un = U;
-            Un.close();
-        }
-        e->step(fixedpt_iter)->add( "u", u );
-        e->step(fixedpt_iter)->add( "p", p );
-        e->save();
-
-    }
-    while ( ( incru > fixPtTol && incrp > fixPtTol ) && ( fixedpt_iter < fixPtMaxIt ) );
-#endif 
-    
     return 0;
 }

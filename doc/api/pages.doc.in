@@ -54,6 +54,7 @@ namespace Feel
    - \subpage SolidMechanics
    - \subpage ElectroMagnetism
    - \subpage MultiPhysics
+   - \subpage CRB
 */
 /** \page NumericalMethods Numerical Method
    - \subpage Linear

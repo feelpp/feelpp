@@ -1017,10 +1017,10 @@ public :
 
         if( vector.size() > 0 )
         {
-            bool force = option("eim.use-dimension-max-functions").template as<bool>();
+            bool force = boption("eim.use-dimension-max-functions");
             int Neim=0;
             if( force )
-                Neim = option("eim.dimension-max").template as<int>();
+                Neim = ioption("eim.dimension-max");
 
             int N = vector.size();
 

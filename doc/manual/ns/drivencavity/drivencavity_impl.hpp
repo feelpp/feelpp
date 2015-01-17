@@ -37,8 +37,8 @@ template<int Dim>
 DrivenCavity<Dim>::DrivenCavity( )
     :
     super( ),
-    Re( this->vm()["Re"].template as<value_type>() ),
-    penalbc( this->vm()["bccoeff"].template as<value_type>() ),
+    Re(      doption("Re") ),
+    penalbc( doption("bccoeff") ),
     exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
 {
 
@@ -183,7 +183,7 @@ void DrivenCavity<Dim>::run()
     backend(_name="newtonns")->nlSolver()->jacobian = boost::bind( &DrivenCavity::Jacobian,
                                                                    boost::ref( *this ), _1, _2 );
 
-    if ( option(_name="continuation" ).template as<bool>() )
+    if ( boption(_name="continuation" ) )
     {
         double ReTarget = Re;
         int N = std::ceil( std::log( Re ) );

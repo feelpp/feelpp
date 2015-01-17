@@ -127,7 +127,6 @@ SolverNonLinear<T>::build( po::variables_map const& vm, std::string const& prefi
     else
     {
         LOG(INFO) << "[SolverNonLinear] solver " << vm["backend"].template as<std::string>() << " not available\n";
-        LOG(INFO) << "[Backend] use fallback  gmm\n";
 #if defined( FEELPP_HAS_PETSC )
         solver_package = SOLVERS_PETSC;
 #endif

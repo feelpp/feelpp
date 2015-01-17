@@ -348,11 +348,11 @@ void
 ThermalBlockFree::initModel()
 {
 
-    gamma_dir=option(_name="gamma_dir").template as<double>();
+    gamma_dir=doption(_name="gamma_dir");
 
     std::string mshfile_name = option(_name="mshfile").as<std::string>();
 
-    double hsize = option(_name="hsize").template as<double>();
+    double hsize = doption(_name="hsize");
 
     if( mshfile_name=="" )
     {
@@ -559,31 +559,31 @@ ThermalBlockFree::initModel()
     M_Aq_free[9]=operatorfree9;
 
 
-    form2( Xh, Xh, M ) = integrate( markedelements( mmesh, "domain-1" ), gradt( u )*trans( grad( v ) )  );
-    form2( Xh, Xh, M ) += integrate( markedelements( mmesh, "domain-2" ), gradt( u )*trans( grad( v ) ) * mu_min_coeff );
-    form2( Xh, Xh, M ) += integrate( markedelements( mmesh, "domain-3" ), gradt( u )*trans( grad( v ) ) * mu_min_coeff );
-    form2( Xh, Xh, M ) += integrate( markedelements( mmesh, "domain-4" ), gradt( u )*trans( grad( v ) ) * mu_min_coeff );
-    form2( Xh, Xh, M ) += integrate( markedelements( mmesh, "domain-5" ), gradt( u )*trans( grad( v ) ) * mu_min_coeff );
-    form2( Xh, Xh, M ) += integrate( markedelements( mmesh, "domain-6" ), gradt( u )*trans( grad( v ) ) * mu_min_coeff );
-    form2( Xh, Xh, M ) += integrate( markedelements( mmesh, "domain-7" ), gradt( u )*trans( grad( v ) ) * mu_min_coeff );
-    form2( Xh, Xh, M ) += integrate( markedelements( mmesh, "domain-8" ), gradt( u )*trans( grad( v ) ) * mu_min_coeff );
-    form2( Xh, Xh, M ) += integrate( markedelements( mmesh, "domain-9" ), gradt( u )*trans( grad( v ) ) * mu_min_coeff );
+    form2( _test=Xh, _trial=Xh, _matrix=M ) = integrate( markedelements( mmesh, "domain-1" ), gradt( u )*trans( grad( v ) )  );
+    form2( _test=Xh, _trial=Xh, _matrix=M ) += integrate( markedelements( mmesh, "domain-2" ), gradt( u )*trans( grad( v ) ) * mu_min_coeff );
+    form2( _test=Xh, _trial=Xh, _matrix=M ) += integrate( markedelements( mmesh, "domain-3" ), gradt( u )*trans( grad( v ) ) * mu_min_coeff );
+    form2( _test=Xh, _trial=Xh, _matrix=M ) += integrate( markedelements( mmesh, "domain-4" ), gradt( u )*trans( grad( v ) ) * mu_min_coeff );
+    form2( _test=Xh, _trial=Xh, _matrix=M ) += integrate( markedelements( mmesh, "domain-5" ), gradt( u )*trans( grad( v ) ) * mu_min_coeff );
+    form2( _test=Xh, _trial=Xh, _matrix=M ) += integrate( markedelements( mmesh, "domain-6" ), gradt( u )*trans( grad( v ) ) * mu_min_coeff );
+    form2( _test=Xh, _trial=Xh, _matrix=M ) += integrate( markedelements( mmesh, "domain-7" ), gradt( u )*trans( grad( v ) ) * mu_min_coeff );
+    form2( _test=Xh, _trial=Xh, _matrix=M ) += integrate( markedelements( mmesh, "domain-8" ), gradt( u )*trans( grad( v ) ) * mu_min_coeff );
+    form2( _test=Xh, _trial=Xh, _matrix=M ) += integrate( markedelements( mmesh, "domain-9" ), gradt( u )*trans( grad( v ) ) * mu_min_coeff );
 
-    form2( Xh, Xh, M ) +=  integrate( markedfaces( mmesh, "north_domain-7" ),
+    form2( _test=Xh, _trial=Xh, _matrix=M ) +=  integrate( markedfaces( mmesh, "north_domain-7" ),
                                       -gradt( u )*vf::N()*id( v ) * mu_min_coeff
                                       -grad( u )*vf::N()*idt( v ) * mu_min_coeff
                                       );
-    form2( Xh, Xh, M ) +=  integrate( markedfaces( mmesh, "north_domain-8" ),
+    form2( _test=Xh, _trial=Xh, _matrix=M ) +=  integrate( markedfaces( mmesh, "north_domain-8" ),
                                       -gradt( u )*vf::N()*id( v ) * mu_min_coeff
                                       -grad( u )*vf::N()*idt( v ) * mu_min_coeff
                                       );
-    form2( Xh, Xh, M ) +=  integrate( markedfaces( mmesh, "north_domain-9" ),
+    form2( _test=Xh, _trial=Xh, _matrix=M ) +=  integrate( markedfaces( mmesh, "north_domain-9" ),
                                       -gradt( u )*vf::N()*id( v ) * mu_min_coeff
                                       -grad( u )*vf::N()*idt( v ) * mu_min_coeff
                                       );
-    form2( Xh, Xh, M ) += integrate( markedfaces( mmesh, "north_domain-7" ),gamma_dir*idt( u )*id( v )/h() );
-    form2( Xh, Xh, M ) += integrate( markedfaces( mmesh, "north_domain-8" ),gamma_dir*idt( u )*id( v )/h() );
-    form2( Xh, Xh, M ) += integrate( markedfaces( mmesh, "north_domain-9" ),gamma_dir*idt( u )*id( v )/h() );
+    form2( _test=Xh, _trial=Xh, _matrix=M ) += integrate( markedfaces( mmesh, "north_domain-7" ),gamma_dir*idt( u )*id( v )/h() );
+    form2( _test=Xh, _trial=Xh, _matrix=M ) += integrate( markedfaces( mmesh, "north_domain-8" ),gamma_dir*idt( u )*id( v )/h() );
+    form2( _test=Xh, _trial=Xh, _matrix=M ) += integrate( markedfaces( mmesh, "north_domain-9" ),gamma_dir*idt( u )*id( v )/h() );
 
     BOOST_FOREACH( auto marker, northMarkers )
     {
@@ -652,6 +652,3 @@ ThermalBlockFree::subdomainId( std::string const& domain ) const
 } // Feel
 
 #endif /* __ThermalBlock_H */
-
-
-

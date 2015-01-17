@@ -122,16 +122,37 @@ public :
     /// Destructor
     virtual ~CRBModelSaddlePoint() {}
 
-    bool toto()
+    virtual size_type Qb() const
         {
-            return true;
+            return M_Qb;
+        }
+
+    virtual size_type Qg( int output_index) const
+        {
+            return M_Qg[output_index];
         }
 
 protected :
+    int M_Qb;
+    std::vector<int> M_Qg;
 
 
 }; // class CRBModelSaddlepoint
 
+template<typename ModelType>
+void
+CRBModelSaddlePoint<ModelType>::countAffineDecompositionTerms()
+{
+    if( this->M_alreadyCountAffineDecompositionTerms )
+        return;
+    else
+        this->M_alreadyCountAffineDecompositionTerms=true;
+
+    if ( M_Aqm.size() > 0)
+    {
+
+    }
+} // countAffineDecompositionterms
 
 } // namespace Feel
 

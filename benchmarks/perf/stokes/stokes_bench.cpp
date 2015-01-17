@@ -163,8 +163,8 @@ public:
     Stokes( int argc, char** argv, AboutData const& ad, po::options_description const& od )
         :
         super( argc, argv, ad, od ),
-        M_backend( backend_type::build( this->vm() ) ),
-        meshSize( this->vm()["hsize"].template as<double>() ),
+        M_backend( backend_type::build( soption("backend")) ),
+        meshSize( doption("hsize") ),
         exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
     {
         mu = this->vm()["mu"].template as<value_type>();
@@ -219,7 +219,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
                                 % this->about().appName()
                                 % convex_type::name()
                                 % BasisU::nOrder
-                                % this->vm()["hsize"].template as<double>() );
+                                % doption("hsize") );
     }
 
     /*
@@ -304,13 +304,13 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     auto f = vec( 0.*Px(),0.*Py() ) ;
     boost::timer t_vector;
     // right hand side
-    form1( Xh, F, _init=true );
+    form1( Xh, _vector=F, _init=true );
     LOG(INFO) << "[stokes] init vector done in "<<t_vector.elapsed()<<" seconds \n";
     t_vector.restart() ;
-    form1( Xh, F ) = integrate( elements( mesh ), trans( f )*id( v ) );
+    form1( Xh, _vector=F ) = integrate( elements( mesh ), trans( f )*id( v ) );
     LOG(INFO) << "[stokes] v terms done in "<<t_vector.elapsed()<<" seconds \n";
     t_vector.restart() ;
-    form1( Xh, F ) += integrate( boundaryfaces( mesh ), trans( u_exact )*( -SigmaN+penalbc*id( v )/hFace() ) );
+    form1( Xh, _vector=F ) += integrate( boundaryfaces( mesh ), trans( u_exact )*( -SigmaN+penalbc*id( v )/hFace() ) );
     LOG(INFO) << "[stokes] bc terms done in "<<t_vector.elapsed()<<" seconds \n";
     t_vector.restart() ;
     LOG(INFO) << "[stokes] vector local assembly done in "<<t.elapsed()<<" seconds \n";

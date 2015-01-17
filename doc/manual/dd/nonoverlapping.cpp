@@ -114,9 +114,9 @@ public:
     ddmethod()
         :
         super(),
-        M_backend( backend_type::build( this->vm() ) ),
-        meshSize( this->vm()["hsize"].template as<double>() ),
-        shape( this->vm()["shape"].template as<std::string>() ),
+        M_backend( backend_type::build( soption("backend")) ),
+        meshSize( doption("hsize") ),
+        shape( soption("shape") ),
         M_firstExporter( export_type::New( this->vm(),
                                            ( boost::format( "%1%-%2%-%3%" )
                                              % this->about().appName()
@@ -240,7 +240,7 @@ ddmethod<Dim>::localProblem( element_type& u,
 
     BOOST_FOREACH( int marker, dirichletFlags )
     {
-        form2( Xh, Xh, Afull ) +=
+        form2( Xh, Xh, _matrix=Afull ) +=
             on( markedfaces( mesh, marker ) ,	u, Ffull, gD );
     }
 
@@ -249,7 +249,7 @@ ddmethod<Dim>::localProblem( element_type& u,
 
 
     timers["solver"].first.restart();
-    backend_type::build()->solve( _matrix=Afull, _solution=u, _rhs=Ffull, _reuse_prec=true );
+    backend_type::build(soption("backend"))->solve( _matrix=Afull, _solution=u, _rhs=Ffull, _reuse_prec=true );
     timers["solver"].second = timers["solver"].first.elapsed();
 
     std::cout << "[timer] update_F: " << timers["update_F"].second << "\n";
@@ -317,8 +317,8 @@ void
 ddmethod<Dim>::run()
 {
 
-    value_type tol = this->vm()["tol"].template as<double>();
-    value_type imax = this->vm()["imax"].template as<double>();
+    value_type tol = doption("tol");
+    value_type imax = doption("imax");
 
     Environment::changeRepository( boost::format( "doc/manual/dd/%1%/%2%-%3%/P%4%/h_%5%/" )
                                    % this->about().appName()

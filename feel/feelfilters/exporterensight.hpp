@@ -121,7 +121,8 @@ public:
     */
     ExporterEnsight( WorldComm const& worldComm = Environment::worldComm() );
     ExporterEnsight( std::string const& __p = "default", int freq = 1, WorldComm const& worldComm = Environment::worldComm() );
-    ExporterEnsight( po::variables_map const& vm=Environment::vm(), std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() );
+    ExporterEnsight( po::variables_map const& vm=Environment::vm(), std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() ) FEELPP_DEPRECATED;
+    ExporterEnsight( std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() ) ;
 
     ExporterEnsight( ExporterEnsight const & __ex );
 

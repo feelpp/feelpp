@@ -43,7 +43,7 @@ makeOptions()
 int main(int argc, char**argv )
 {
     Environment env( _argc=argc, _argv=argv,
-										 _desc=makeOptions(),
+                     _desc=makeOptions(),
                      _about=about(_name="myexpression",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
@@ -59,9 +59,9 @@ int main(int argc, char**argv )
     auto f = expr<2,1>(soption(_name="functions.f"));
     std::cout << "f=" << f << std::endl;
 
-		double aVal = doption("a")+doption("b");
-		std::map<std::string,double> myMap; myMap["aVal"]=aVal;
-		auto i = expr(soption("functions.i"),myMap);
+    double aVal = doption("a")+doption("b");
+    std::map<std::string,double> myMap; myMap["aVal"]=aVal;
+    auto i = expr(soption("functions.i"),myMap);
     std::cout << "i=" << i << std::endl;
     //! [expr]
 

@@ -759,7 +759,7 @@ EXCLUDE_SYMBOLS        = "BOOST_P*"
 
 EXAMPLE_PATH           = "@FEELPP_HOME_DIR@/doc/manual/tutorial" \
                          "@FEELPP_HOME_DIR@/doc/" \
-                         #"@FEELPP_HOME_DIR@/tutorial/" \
+                         "@FEELPP_HOME_DIR@/applications/" \
                          "@FEELPP_HOME_DIR@/quickstart/" \
                          "@CMAKE_CURRENT_BINARY_DIR@/../" \
 												  @FEELPP_PROJECTS_DIR@
@@ -784,7 +784,8 @@ EXAMPLE_RECURSIVE      = YES
 
 IMAGE_PATH             = "@FEELPP_HOME_DIR@/doc/manual/pngs/" \
                          "@CMAKE_CURRENT_SOURCE_DIR@/pngs/" \
-                         "@FEELPP_HOME_DIR@/doc/figures/"
+                         "@FEELPP_HOME_DIR@/doc/figures/" \
+                         "@FEELPP_HOME_DIR@/applications/crb/heat2d/pngs/ "
 
 
 

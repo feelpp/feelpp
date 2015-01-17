@@ -60,7 +60,7 @@ BOOST_PARAMETER_FUNCTION(
                              _partitioner=partitioner, _verbose=verbose ).evaluate( parallel,worldcomm )( 0, 0 );
     DLOG(INFO) << "[mean] nelements = " << nelements(range) << "\n";
     DLOG(INFO) << "[mean] measure = " << meas << "\n";
-    CHECK( math::abs(meas) > 1e-13 ) << "Invalid domain measure : " << meas << ", domain range: " << nelements( range ) << "\n";
+    CHECK( math::abs(meas) > 1e-16 ) << "Invalid domain measure : " << meas << ", domain range: " << nelements( range ) << "\n";
     auto eint = integrate( _range=range, _expr=expr, _quad=quad, _geomap=geomap,
                            _quad1=quad1, _use_tbb=use_tbb, _use_harts=use_harts, _grainsize=grainsize,
                            _partitioner=partitioner, _verbose=verbose ).evaluate( parallel,worldcomm );
