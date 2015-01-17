@@ -671,7 +671,7 @@ Backend<T>::matSolverPackageEnumType() const
 }
 
 
-
+#if 0
 void updateBackendPreconditionerOptions( po::options_description & _options, std::string const& prefix, std::string const& sub = "",
                                          std::string pcType = "lu", bool useDefaultValue=true )
 {
@@ -746,7 +746,7 @@ void updateBackendPreconditionerOptions( po::options_description & _options, std
               "number of overlap levels" )
             ;
 }
-
+#endif
 void updateBackendKSPOptions( po::options_description & _options, std::string const& prefix, std::string const& sub = "",
                               std::string const& kspType = "gmres",double rtol = 1e-13, size_type maxit=1000, bool useDefaultValue=true  )
 {
@@ -791,7 +791,7 @@ void updateBackendKSPOptions( po::options_description & _options, std::string co
           "number of iterations before solver restarts (gmres)" )
         ;
 }
-
+#if 0
 void updateBackendMGPreconditionerOptions( po::options_description & _options, std::string const& prefix, std::string const& sub = "" )
 {
     std::string pcctx = (sub.empty())? "pc-" : sub+"-pc-";
@@ -900,7 +900,7 @@ void updateBackendFieldSplitPreconditionerOptions( po::options_description & _op
     updateBackendKSPOptions( _options, prefixfieldsplitLSC, "sub", "preonly", 1e-5, 50 ); // lsc+gasm
 
 }
-
+#endif
 /**
  * \return the command lines options of the petsc backend
  */
@@ -939,8 +939,8 @@ po::options_description backend_options( std::string const& prefix )
         ;
 
     updateBackendKSPOptions( _options, prefix, "", "gmres" );// ksp options
+#if 0
     updateBackendPreconditionerOptions( _options, prefix, "", "lu" ); // pc options
-
     updateBackendKSPOptions( _options, prefix, "sub", "preonly" );// gasm/bjacobi + ksp
     updateBackendPreconditionerOptions( _options, prefix, "sub", "lu" ); // gasm/asm
 
@@ -950,6 +950,32 @@ po::options_description backend_options( std::string const& prefix )
     updateBackendFieldSplitPreconditionerOptions( _options, prefix ); // fieldsplit
     updateBackendFieldSplitPreconditionerOptions( _options, prefix, "sub" ); // (gasm/bjacobi) + fieldsplit
     updateBackendFieldSplitPreconditionerOptions( _options, prefixvm( prefix,"fieldsplit-0" ) ); // fieldsplit + (fieldsplit in subsplit0)
+#else
+    _options.add_options()
+        ( prefixvm( prefix,"pc-type" ).c_str(),
+          Feel::po::value<std::string>()->default_value( "lu" ),
+          "type of preconditioners (lu, ilut, ilutp, diag, id,...)" )
+        ( prefixvm( prefix,"pc-view" ).c_str(),
+          Feel::po::value<bool>()->default_value( false ),
+          "display preconditioner information" )
+        ( prefixvm( prefix,"pc-use-config-default-petsc" ).c_str(),
+          Feel::po::value<bool>()->default_value( false ),
+          "configure pc with defult petsc options" )
+#if defined(FEELPP_HAS_MUMPS) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
+        ( prefixvm( prefix,"pc-factor-mat-solver-package-type" ).c_str(),
+          Feel::po::value<std::string>()->default_value( "mumps" ),
+          "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
+#else
+        ( prefixvm( prefix,pcctx+"pc-factor-mat-solver-package-type" ).c_str(),
+          (useDefaultValue)?Feel::po::value<std::string>()->default_value( "petsc" ):Feel::po::value<std::string>(),
+          "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
+#endif
+        ( prefixvm( prefix,"fieldsplit-type" ).c_str(), Feel::po::value<std::string>()->default_value( "additive" ),
+          "type of fieldsplit (additive, multiplicative, symmetric-multiplicative, schur)" )
+        ( prefixvm( prefix,"fieldsplit-fields" ).c_str(), Feel::po::value<std::string>()->default_value( "" ),
+          "fields definition (ex: --fieldsplit-fields=0->(0,2),1->(1)" )
+        ;
+#endif
 
 
     return _options;
