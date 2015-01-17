@@ -36,5 +36,5 @@ Ellipse(11) = {14, 7, 11, 10};
 Line Loop(12) = {3, -7, -4, -6, 1, 5};
 Line Loop(13) = {8, 10, -9, 11};
 Plane Surface(14) = {12, 13};
-Physical Line(15) = {5, 6};
-Physical Line(16) = {7};
+Physical Line("wall") = {5, 6};
+Physical Line("tip") = {7};
