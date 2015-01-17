@@ -22,7 +22,7 @@
    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 #include <feel/feel.hpp>
-#include <feel/feelpde/preconditionerbtpcd.hpp>
+#include <feel/feelpde/preconditionerblockns.hpp>
 
 int main(int argc, char**argv )
 {
@@ -94,14 +94,14 @@ int main(int argc, char**argv )
            _expr=g );
 
     if ( Environment::isMasterRank() )
-        std::cout << " - Setting up Precondition BtPCD...\n";
-    auto a_btpcd = btpcd( _space=Vh, _type="PM", _matrix= at.matrixPtr() );
+        std::cout << " - Setting up Precondition Blockns...\n";
+    auto a_blockns = blockns( _space=Vh, _type="PM", _matrix= at.matrixPtr() );
     
     if ( Environment::isMasterRank() )
         std::cout << " - Solving Stokes...\n";
-    if ( boption("btpcd") )
+    if ( boption("blockns") )
     {
-        a.solveb(_rhs=l,_solution=U,_backend=backend(),_prec=a_btpcd);
+        a.solveb(_rhs=l,_solution=U,_backend=backend(),_prec=a_blockns);
     }
      else
         a.solve(_rhs=l,_solution=U);

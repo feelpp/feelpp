@@ -22,7 +22,7 @@
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 #include <feel/feel.hpp>
-#include <feel/feelpde/preconditionerbtpcd.hpp>
+#include <feel/feelpde/preconditionerblockns.hpp>
 
 int main(int argc, char**argv )
 {
@@ -32,12 +32,12 @@ int main(int argc, char**argv )
 	stokesoptions.add_options()
 		( "mu", po::value<double>()->default_value( 1.0 ), "coeff" )
         ( "penaldir", po::value<double>()->default_value( 100 ), "coeff" )
-        ( "stokes.preconditioner", po::value<std::string>()->default_value( "petsc" ), "Stokes preconditioner: petsc, PM, BtPCD" )
+        ( "stokes.preconditioner", po::value<std::string>()->default_value( "petsc" ), "Stokes preconditioner: petsc, PM, Blockns" )
         ( "picard", po::value<bool>()->default_value( 1 ), "picard" )
 		( "picard.tol", po::value<double>()->default_value( 1e-8 ), "tolerance" )
 		( "picard.maxit", po::value<double>()->default_value( 10 ), "max iteration" )
         ( "newton", po::value<bool>()->default_value( 1 ), "newton" )
-        ( "newton.preconditioner", po::value<std::string>()->default_value( "petsc" ), "Stokes preconditioner: petsc, PM, BtPCD" )
+        ( "newton.preconditioner", po::value<std::string>()->default_value( "petsc" ), "Stokes preconditioner: petsc, PM, Blockns" )
         ( "newton.tol", po::value<double>()->default_value( 1e-8 ), "tolerance" )
 		( "newton.maxit", po::value<double>()->default_value( 10 ), "max iteration" )
 		;
@@ -77,12 +77,12 @@ int main(int argc, char**argv )
         std::cout.width(16);
         std::cout << std::left << Vh->functionSpace<1>()->nDof() << "\n";
 
-        std::cout << "[btpcd]\n";
-        std::cout << " - cd: " << boption( "btpcd.cd" ) << "\n";
-        std::cout << " - pcd: " << boption( "btpcd.pcd" ) << "\n";
-        std::cout << " - pcd.inflow: " << soption( "btpcd.pcd.inflow" ) << "\n";
-        std::cout << " - pcd.outflow: " << soption( "btpcd.pcd.outflow" ) << "\n";
-        std::cout << " - pcd.order: " << ioption( "btpcd.pcd.order" ) << "\n";
+        std::cout << "[blockns]\n";
+        std::cout << " - cd: " << boption( "blockns.cd" ) << "\n";
+        std::cout << " - pcd: " << boption( "blockns.pcd" ) << "\n";
+        std::cout << " - pcd.inflow: " << soption( "blockns.pcd.inflow" ) << "\n";
+        std::cout << " - pcd.outflow: " << soption( "blockns.pcd.outflow" ) << "\n";
+        std::cout << " - pcd.order: " << ioption( "blockns.pcd.order" ) << "\n";
 
     }
     auto deft = gradt( u );
@@ -108,7 +108,7 @@ int main(int argc, char**argv )
     auto at = form2( _trial=Vh, _test=Vh);
     a += integrate( _range=elements( mesh ), _expr=mu*inner( deft,def ) );
     a +=integrate( _range=elements( mesh ), _expr=-div( v )*idt( p ) - divt( u )*id( q ) );
-    if ( boption("btpcd.weakdir") )
+    if ( boption("blockns.weakdir") )
     {
         for( auto const& d : m_dirichlet )
         {
@@ -127,7 +127,7 @@ int main(int argc, char**argv )
     auto incru = normL2( _range=elements(mesh), _expr=idv(u)-idv(un));
     auto incrp = normL2( _range=elements(mesh), _expr=idv(p)-idv(pn));
     at=a;
-    if ( boption("btpcd.weakdir") )
+    if ( boption("blockns.weakdir") )
     {
         for( auto const& d : m_dirichlet )
         {
@@ -145,18 +145,18 @@ int main(int argc, char**argv )
     }
 
     tic();
-    auto a_btpcd = btpcd( _space=Vh, _type=soption("stokes.preconditioner"), _bc=bcs, _matrix= at.matrixPtr() );
-    toc(" - Setting up Precondition BtPCD...");
+    auto a_blockns = blockns( _space=Vh, _type=soption("stokes.preconditioner"), _bc=bcs, _matrix= at.matrixPtr() );
+    toc(" - Setting up Precondition Blockns...");
     
-    a_btpcd->setMatrix( at.matrixPtr() );
+    a_blockns->setMatrix( at.matrixPtr() );
 
     tic();
     if ( soption("stokes.preconditioner") != "petsc" )
     {
-        a_btpcd->update( at.matrixPtr(), zero<2,1>(), m_dirichlet );
+        a_blockns->update( at.matrixPtr(), zero<2,1>(), m_dirichlet );
 
 
-        at.solveb(_rhs=l,_solution=U,_backend=backend(_name="stokes"),_prec=a_btpcd);
+        at.solveb(_rhs=l,_solution=U,_backend=backend(_name="stokes"),_prec=a_blockns);
     }
     else
         at.solve(_rhs=l,_solution=U);
@@ -194,10 +194,10 @@ int main(int argc, char**argv )
                 std::cout << "Picard:: non linear iteration " << fixedpt_iter << " \n";
             }
             tic();
-            if ( boption("btpcd") )
+            if ( boption("blockns") )
             {
-                a_btpcd->update( at.matrixPtr(), idv(u), m_dirichlet );
-                at.solveb(_rhs=r,_solution=U,_backend=backend(_name="picard",_rebuild=true),_prec=a_btpcd );
+                a_blockns->update( at.matrixPtr(), idv(u), m_dirichlet );
+                at.solveb(_rhs=r,_solution=U,_backend=backend(_name="picard",_rebuild=true),_prec=a_blockns );
             }
             else
                 at.solveb(_rhs=r,_solution=U,_backend=backend(_rebuild=true) );
@@ -251,7 +251,7 @@ int main(int argc, char**argv )
             r += integrate( _range=elements(mesh),_expr=trans(id(v))*(gradv(u)*idv(u)) );
             if ( Environment::isMasterRank() )
                 std::cout << " - Assemble BC   ...\n";
-            if ( boption( "btpcd.weakdir" ) )
+            if ( boption( "blockns.weakdir" ) )
             {
                 for( auto const& d : m_dirichlet )
                 {
@@ -275,12 +275,12 @@ int main(int argc, char**argv )
                 std::cout << " - Solve   ...\n";
             if ( soption("newton.preconditioner") != "petsc" )
             {
-                auto at_btpcd = btpcd( _space=Vh, _type=soption("newton.preconditioner"), _bc=bcs, _matrix= at.matrixPtr() );
-                at_btpcd->update( at.matrixPtr(), idv(u), m_dirichlet );
+                auto at_blockns = blockns( _space=Vh, _type=soption("newton.preconditioner"), _bc=bcs, _matrix= at.matrixPtr() );
+                at_blockns->update( at.matrixPtr(), idv(u), m_dirichlet );
                 //backend(_name="Fu",_rebuild=true);
                 //backend(_name="Fp",_rebuild=true);
                 deltaU.zero();
-                at.solveb(_rhs=r,_solution=deltaU/*U*/,_backend=backend(_name="newton"),_prec=at_btpcd );
+                at.solveb(_rhs=r,_solution=deltaU/*U*/,_backend=backend(_name="newton"),_prec=at_blockns );
             }
             else
                 at.solveb(_rhs=r,_solution=deltaU/*U*/,_backend=backend(_rebuild=true) );
