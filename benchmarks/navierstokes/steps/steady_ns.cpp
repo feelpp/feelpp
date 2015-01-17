@@ -31,10 +31,13 @@ int main(int argc, char**argv )
 	po::options_description stokesoptions( "Stokes options" );
 	stokesoptions.add_options()
 		( "mu", po::value<double>()->default_value( 1.0 ), "coeff" )
+        ( "penaldir", po::value<double>()->default_value( 100 ), "coeff" )
+        ( "stokes.preconditioner", po::value<std::string>()->default_value( "petsc" ), "Stokes preconditioner: petsc, PM, BtPCD" )
         ( "picard", po::value<bool>()->default_value( 1 ), "picard" )
-		( "fixpoint.tol", po::value<double>()->default_value( 1e-8 ), "tolerance" )
-		( "fixpoint.maxit", po::value<double>()->default_value( 10 ), "max iteration" )
+		( "picard.tol", po::value<double>()->default_value( 1e-8 ), "tolerance" )
+		( "picard.maxit", po::value<double>()->default_value( 10 ), "max iteration" )
         ( "newton", po::value<bool>()->default_value( 1 ), "newton" )
+        ( "newton.preconditioner", po::value<std::string>()->default_value( "petsc" ), "Stokes preconditioner: petsc, PM, BtPCD" )
         ( "newton.tol", po::value<double>()->default_value( 1e-8 ), "tolerance" )
 		( "newton.maxit", po::value<double>()->default_value( 10 ), "max iteration" )
 		;
@@ -73,47 +76,82 @@ int main(int argc, char**argv )
         std::cout << std::left << Vh->functionSpace<0>()->nDof();
         std::cout.width(16);
         std::cout << std::left << Vh->functionSpace<1>()->nDof() << "\n";
+
+        std::cout << "[btpcd]\n";
+        std::cout << " - cd: " << boption( "btpcd.cd" ) << "\n";
+        std::cout << " - pcd: " << boption( "btpcd.pcd" ) << "\n";
+        std::cout << " - pcd.inflow: " << soption( "btpcd.pcd.inflow" ) << "\n";
+        std::cout << " - pcd.outflow: " << soption( "btpcd.pcd.outflow" ) << "\n";
+        std::cout << " - pcd.order: " << ioption( "btpcd.pcd.order" ) << "\n";
+
     }
     auto deft = gradt( u );
     auto def = grad( v );
-    double fixPtTol = doption(_name="fixpoint.tol");
-    int fixPtMaxIt = doption(_name="fixpoint.maxit");
+    double fixPtTol = doption(_name="picard.tol");
+    int fixPtMaxIt = doption(_name="picard.maxit");
     double newtonTol = doption(_name="newton.tol");
     int newtonMaxIt = doption(_name="newton.maxit");
-    auto l = form1( _test=Vh );
-    auto r = form1( _test=Vh );
-
-    auto a = form2( _trial=Vh, _test=Vh);
-    auto at = form2( _trial=Vh, _test=Vh);
-    a += integrate( _range=elements( mesh ), _expr=mu*inner( deft,def ) );
-    a +=integrate( _range=elements( mesh ), _expr=-div( v )*idt( p ) + divt( u )*id( q ) );
-
-    auto e = exporter( _mesh=mesh );
 
     std::map<std::string,std::set<flag_type>> bcs;
     bcs["Dirichlet"].insert(mesh->markerName("inlet"));
     bcs["Dirichlet"].insert(mesh->markerName("wall"));
     bcs["Neumann"].insert(mesh->markerName("outlet"));
     
-    auto incru = normL2( _range=elements(mesh), _expr=idv(u)-idv(un));
-    auto incrp = normL2( _range=elements(mesh), _expr=idv(p)-idv(pn));
-    at=a;
-    at+=on(_range=markedfaces(mesh,"wall"), _rhs=l, _element=u,
-           _expr=zero<2,1>() ) ;
-    at+=on(_range=markedfaces(mesh,"inlet"), _rhs=l, _element=u,
-           _expr=g );
-
-    tic();
-    auto a_btpcd = btpcd( _space=Vh, _type="BtPCD", _bc=bcs, _matrix= at.matrixPtr() );
-    toc(" - Setting up Precondition BtPCD...");
-    
-    a_btpcd->setMatrix( at.matrixPtr() );
     map_vector_field<2,1,2> m_dirichlet;
     m_dirichlet["inlet"]=g;
     m_dirichlet["wall"]=wall;
 
+    auto l = form1( _test=Vh );
+    auto r = form1( _test=Vh );
+
+    auto a = form2( _trial=Vh, _test=Vh);
+    auto at = form2( _trial=Vh, _test=Vh);
+    a += integrate( _range=elements( mesh ), _expr=mu*inner( deft,def ) );
+    a +=integrate( _range=elements( mesh ), _expr=-div( v )*idt( p ) - divt( u )*id( q ) );
+    if ( boption("btpcd.weakdir") )
+    {
+        for( auto const& d : m_dirichlet )
+        {
+            LOG(INFO) << "Setting Dirichlet condition on " << d.first << " with " << d.second;
+            a += integrate( _range=markedfaces( mesh, d.first ),
+                            _expr=(trans(-mu*gradt(u)*N()+idt(p)*N()))*id(v)+(trans(-mu*grad(u)*N()+id(p)*N()))*idt(v)+doption("penaldir")*trans(idt(u))*id(v)/hFace() );
+        }
+    }
+    if ( Environment::numberOfProcessors() == 1 )
+    {
+        a.matrix().printMatlab( "A.m" );
+    }
+    auto e = exporter( _mesh=mesh );
+
+    
+    auto incru = normL2( _range=elements(mesh), _expr=idv(u)-idv(un));
+    auto incrp = normL2( _range=elements(mesh), _expr=idv(p)-idv(pn));
+    at=a;
+    if ( boption("btpcd.weakdir") )
+    {
+        for( auto const& d : m_dirichlet )
+        {
+            LOG(INFO) << "Setting Dirichlet condition on " << d.first << " with " << d.second;
+            l += integrate( _range=markedfaces( mesh, d.first ),
+                            _expr=trans(d.second)*(-mu*grad(u)*N()+id(p)*N()+doption("penaldir")*id(v)/hFace() ) );
+        }
+    }
+    else
+    {
+        at+=on(_range=markedfaces(mesh,"wall"), _rhs=l, _element=u,
+               _expr=zero<2,1>() ) ;
+        at+=on(_range=markedfaces(mesh,"inlet"), _rhs=l, _element=u,
+               _expr=g );
+    }
+
     tic();
-    if ( boption("btpcd") )
+    auto a_btpcd = btpcd( _space=Vh, _type=soption("stokes.preconditioner"), _bc=bcs, _matrix= at.matrixPtr() );
+    toc(" - Setting up Precondition BtPCD...");
+    
+    a_btpcd->setMatrix( at.matrixPtr() );
+
+    tic();
+    if ( soption("stokes.preconditioner") != "petsc" )
     {
         a_btpcd->update( at.matrixPtr(), zero<2,1>(), m_dirichlet );
 
@@ -129,7 +167,6 @@ int main(int argc, char**argv )
     e->step(0)->add( "p", p );
     e->save();
     toc(" - Exporting Stokes results...");
-
 
     // Picard
     if ( boption("picard") )
@@ -198,6 +235,7 @@ int main(int argc, char**argv )
         double res = 0;
         auto deltaU = Vh->element();
         m_dirichlet["inlet"]=wall;
+        
         do
         {
             if ( Environment::isMasterRank() )
@@ -209,14 +247,25 @@ int main(int argc, char**argv )
             if ( Environment::isMasterRank() )
                 std::cout << " - Assemble residual  ...\n";
             r = integrate( _range=elements( mesh ), _expr=mu*inner( gradv(u),def ) );
-            r +=integrate( _range=elements( mesh ), _expr=-div( v )*idv( p ) + divv( u )*id( q ) );
+            r +=integrate( _range=elements( mesh ), _expr=-div( v )*idv( p ) - divv( u )*id( q ) );
             r += integrate( _range=elements(mesh),_expr=trans(id(v))*(gradv(u)*idv(u)) );
             if ( Environment::isMasterRank() )
                 std::cout << " - Assemble BC   ...\n";
-            at+=on(_range=markedfaces(mesh,"wall"), _rhs=r, _element=u,
-                   _expr=zero<2,1>() ) ;
-            at+=on(_range=markedfaces(mesh,"inlet"), _rhs=r, _element=u,
-                   _expr=zero<2,1>() );
+            if ( boption( "btpcd.weakdir" ) )
+            {
+                for( auto const& d : m_dirichlet )
+                {
+                    r += integrate( _range=markedfaces( mesh, d.first ),
+                                    _expr=(trans(-mu*gradv(u)*N()+idv(p)*N()))*id(v)+(trans(-mu*grad(u)*N()+id(p)*N()))*idv(v)+doption("penaldir")*trans(idv(u))*id(v)/hFace() );
+                }
+            }
+            else
+            {
+                at+=on(_range=markedfaces(mesh,"wall"), _rhs=r, _element=u,
+                       _expr=zero<2,1>() ) ;
+                at+=on(_range=markedfaces(mesh,"inlet"), _rhs=r, _element=u,
+                       _expr=zero<2,1>() );
+            }
             r.scale(-1);
             if ( Environment::isMasterRank() )
             {
@@ -224,11 +273,14 @@ int main(int argc, char**argv )
             }
             if ( Environment::isMasterRank() )
                 std::cout << " - Solve   ...\n";
-            if ( boption("btpcd") )
+            if ( soption("newton.preconditioner") != "petsc" )
             {
-                a_btpcd->update( at.matrixPtr(), idv(u), m_dirichlet );
+                auto at_btpcd = btpcd( _space=Vh, _type=soption("newton.preconditioner"), _bc=bcs, _matrix= at.matrixPtr() );
+                at_btpcd->update( at.matrixPtr(), idv(u), m_dirichlet );
+                //backend(_name="Fu",_rebuild=true);
+                //backend(_name="Fp",_rebuild=true);
                 deltaU.zero();
-                at.solveb(_rhs=r,_solution=deltaU/*U*/,_backend=backend(_name="newton",_rebuild=true),_prec=a_btpcd );
+                at.solveb(_rhs=r,_solution=deltaU/*U*/,_backend=backend(_name="newton"),_prec=at_btpcd );
             }
             else
                 at.solveb(_rhs=r,_solution=deltaU/*U*/,_backend=backend(_rebuild=true) );
@@ -243,7 +295,7 @@ int main(int argc, char**argv )
                 std::cout << "Iteration "  << newton_iter << "\n";
                 std::cout << " . ||u-un|| = " << incru << std::endl;
                 std::cout << " . ||p-pn|| = " << incrp << std::endl;
-                std::cout << " . residual = " << res << std::endl;
+                std::cout << " . residual = " << std::abs(res) << std::endl;
             }
             if  ( newton_iter < 10 )
             {
@@ -254,9 +306,8 @@ int main(int argc, char**argv )
             e->step(newton_iter)->add( "p", p );
             e->save();
         }
-        while ( ( res > newtonTol ) && ( newton_iter < newtonMaxIt ) );
+        while ( ( std::abs(res) > newtonTol ) && ( newton_iter < newtonMaxIt ) );
         //while ( ( incru > newtonTol && incrp > newtonTol ) && ( newton_iter < newtonMaxIt ) );
     }
-    
     return 0;
 }
