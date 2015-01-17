@@ -303,12 +303,15 @@ Stokes::exportResults( ExprUExact u_exact, ExprPExact p_exact,
     double u_errorL2 = normL2( _range=elements( u.mesh() ), _expr=( idv( u )-u_exact ) );
     LOG(INFO) << "||u_error||_2 = " << u_errorL2 << "\n";;
 
-
+//! [mean]
     double mean_p = mean( _range=elements( u.mesh() ), _expr=idv( p ) )(0,0);
     LOG(INFO) << "[stokes] mean(p)=" << mean_p << "\n";
+//! [mean]
 
+//! [norml2]
     double p_errorL2 = normL2( _range=elements( u.mesh() ), _expr=( idv( p )-mean_p - p_exact ) );
     LOG(INFO) << "||p_error||_2 = " << p_errorL2 << "\n";;
+//! [norml2]
 
     double mean_div_u = mean( _range=elements( u.mesh() ), _expr=divv( u ) )(0,0);
     LOG(INFO) << "[stokes] mean_div(u)=" << mean_div_u << "\n";

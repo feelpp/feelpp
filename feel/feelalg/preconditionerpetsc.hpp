@@ -213,6 +213,27 @@ getOption( std::string const& name, std::string const& prefix, std::string const
 
     return res;
 }
+template <typename T>
+std::pair<bool,T>
+getOptionIfAvalaible( std::string const& name, std::string const& prefix, std::string const& sub, std::vector<std::string> const& prefixOverwrite )
+{
+    bool hasOption=false;
+    T res;
+    std::string optctx = (sub.empty())? "": sub+"-";
+    if ( Environment::vm().count( prefixvm(prefix,optctx+name) ) )
+    {
+        hasOption = true;
+        res = option(_name=name,_prefix=prefix,_sub=sub).template as<T>();
+    }
+    for ( std::string const& prefixAdded : prefixOverwrite )
+        if ( Environment::vm().count( prefixvm(prefixAdded,optctx+name) ) )
+        {
+            hasOption = true;
+            res = option(_name=name,_prefix=prefixAdded,_sub=sub).template as<T>();
+        }
+
+    return std::make_pair(hasOption,res);
+}
 
 
 
@@ -306,6 +327,7 @@ public :
                    std::string const& sub, std::string const& prefix, std::vector<std::string> const& prefixOverwrite );
 private :
     std::string M_matSolverPackage;
+    std::vector<std::pair<bool,int> > M_mumpsParameters;
 private :
     void runConfigurePCLU( PC& pc );
 };

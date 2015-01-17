@@ -45,12 +45,12 @@ po::options_description
 makeHeat1DOptions()
 {
     po::options_description heat1doptions( "Heat1D options" );
-    heat1doptions.add_options()
-    ( "mu1", po::value<double>()->default_value( 0.2 ), "mu1" )
-    ( "mu2", po::value<double>()->default_value( 0.2 ), "mu2" )
-    ( "mu3", po::value<double>()->default_value(-1.0 ), "mu3" )
-    ( "mu4", po::value<double>()->default_value( 0.1 ), "mu4" )
-    ;
+    // heat1doptions.add_options()
+    // ( "mu1", po::value<double>()->default_value( 0.2 ), "mu1" )
+    // ( "mu2", po::value<double>()->default_value( 0.2 ), "mu2" )
+    // ( "mu3", po::value<double>()->default_value(-1.0 ), "mu3" )
+    // ( "mu4", po::value<double>()->default_value( 0.1 ), "mu4" )
+    // ;
     return heat1doptions;
 }
 AboutData

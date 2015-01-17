@@ -79,7 +79,7 @@ createMesh( double hsize )
                                          _shape="hypercube",
                                          _dim=Dim,
                                          _order=Order,
-                                         _h=option(_name="gmsh.hsize").template as<double>() ) );
+                                         _h=doption(_name="gmsh.hsize") ) );
     //typedef typename imesh<Dim, Order, RDim>::type meshType;
     //return loadMesh( _mesh=new meshType,
     //                       _desc=domain(_addmidpoint=false,

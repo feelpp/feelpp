@@ -41,5 +41,3 @@ set(lib_convection
 if(FEELPP_DOC_ENABLE_CAVITY_CRB)
 add_subdirectory( cavity )
 endif()
-#add_subdirectory( cabin )
-#add_subdirectory( room )

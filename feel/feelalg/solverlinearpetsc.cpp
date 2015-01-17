@@ -294,7 +294,7 @@ void SolverLinearPetsc<T>::init ()
 
         if ( std::string((char*)ksp_type) == std::string( ( char* )KSPGMRES ) )
         {
-            int nRestartGMRES = option(_name="gmres-restart", _prefix=this->prefix() ).template as<int>();
+            int nRestartGMRES = ioption(_name="gmres-restart", _prefix=this->prefix() );
             ierr = KSPGMRESSetRestart( M_ksp, nRestartGMRES );
             CHKERRABORT( this->worldComm().globalComm(),ierr );
         }
@@ -573,7 +573,7 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
     KSPConvergedReason reason;
     KSPGetConvergedReason( M_ksp,&reason );
 
-    if ( option( _prefix=this->prefix(), _name="ksp-view" ).template as<bool>() )
+    if ( boption( _prefix=this->prefix(), _name="ksp-view" ) )
         check( KSPView( M_ksp, PETSC_VIEWER_STDOUT_WORLD ) );
 
     if ( reason==KSP_DIVERGED_INDEFINITE_PC )
