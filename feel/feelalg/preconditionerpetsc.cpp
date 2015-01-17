@@ -462,9 +462,9 @@ static PetscErrorCode PCFieldSplit_UpdateMatPrecondSchurComplement( PC pc, Mat s
 namespace Feel
 {
 template <typename T>
-void PreconditionerPetsc<T>::apply( const Vector<T> & x, Vector<T> & y )
+void PreconditionerPetsc<T>::apply( const Vector<T> & x, Vector<T> & y ) const
 {
-    if ( !this->M_is_initialized ) this->init();
+    //if ( !this->M_is_initialized ) this->init();
 
 
     VectorPetsc<T> & x_pvec = dynamic_cast<VectorPetsc<T>&>( const_cast<Vector<T>&>( x ) );

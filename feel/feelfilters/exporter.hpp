@@ -6,7 +6,8 @@
        Date: 2004-11-09
 
   Copyright (C) 2004 EPFL
-  Copyright (C) 2007-2012 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007-2012 Universite Joseph Fourier (Grenoble I)
+  Copyright (C) 2011-2015 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -139,6 +140,14 @@ public:
      */
     Exporter( po::variables_map const& vm,
               std::string const& exporter_prefix = "",
+              WorldComm const& worldComm = Environment::worldComm() ) FEELPP_DEPRECATED;
+
+    /**
+     * Constructor
+     * \param prefix the prefix for the file names of the exported data
+     * \param freq an integer giving the frequency at which the data should be saved
+     */
+    Exporter( std::string const& exporter_prefix,
               WorldComm const& worldComm = Environment::worldComm() );
 
     /**
@@ -157,7 +166,7 @@ public:
      * files.
      */
     static boost::shared_ptr<Exporter<MeshType,N> > New( std::string const& exportername,
-                                                         std::string prefix = Environment::about().appName(),
+                                                         std::string prefix,
                                                          WorldComm const& worldComm = Environment::worldComm() );
 
     /**
@@ -167,6 +176,12 @@ public:
      */
     static boost::shared_ptr<Exporter<MeshType,N> > New( po::variables_map const& vm = Environment::vm(),
                                                          std::string prefix = Environment::about().appName(),
+                                                         WorldComm const& worldComm = Environment::worldComm() ) FEELPP_DEPRECATED;
+    /**
+     * Static function instantiating from the Exporter Factory an exporter using
+     * \p prefix for the prefix of the data files.
+     */    
+    static boost::shared_ptr<Exporter<MeshType,N> > New( std::string prefix,
                                                          WorldComm const& worldComm = Environment::worldComm() );
 
     //@}
@@ -522,7 +537,7 @@ BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::compute_exporter_return<Args>
                           ) )
 {
     typedef typename Feel::detail::compute_exporter_return<Args>::type exporter_type;
-    auto e =  exporter_type::New( Environment::vm(),name,mesh->worldComm() );
+    auto e =  exporter_type::New( name,mesh->worldComm() );
     e->setPrefix( name );
     e->setUseSingleTransientFile( fileset );
     if ( geo == "change_coords_only" )

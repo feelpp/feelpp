@@ -217,6 +217,50 @@ VectorPetsc<T>::operator() ( const size_type i )
 
 template <typename T>
 void
+VectorPetsc<T>::pointwiseMult ( Vector<T> const& xx, Vector<T> const& yy )
+{    DCHECK( this->isInitialized() ) << "VectorPetsc<> not initialized";
+    if ( this->comm().size()>1 )
+    {
+        const_cast<VectorPetscMPI<T>*>( dynamic_cast<const VectorPetscMPI<T>*>( &xx ) )->close();
+        const_cast<VectorPetscMPI<T>*>( dynamic_cast<const VectorPetscMPI<T>*>( &yy ) )->close();
+    }
+    else
+    {
+        const_cast<VectorPetsc<T>*>( dynamic_cast<const VectorPetsc<T>*>( &xx ) )->close();
+        const_cast<VectorPetsc<T>*>( dynamic_cast<const VectorPetsc<T>*>( &yy ) )->close();
+    }
+
+    const VectorPetsc<T>* x = dynamic_cast<const VectorPetsc<T>*>( &xx );
+    const VectorPetsc<T>* y = dynamic_cast<const VectorPetsc<T>*>( &yy );
+    CHECK( x != 0 && y != 0 ) << "invalid Vector<> types";
+    auto ierr =  VecPointwiseMult(this->vec(), x->vec(), y->vec() );
+    CHKERRABORT( this->comm(),ierr );
+}
+
+template <typename T>
+void
+VectorPetsc<T>::pointwiseDivide ( Vector<T> const& xx, Vector<T> const& yy )
+{
+    DCHECK( this->isInitialized() ) << "VectorPetsc<> not initialized";
+    if ( this->comm().size()>1 )
+    {
+        const_cast<VectorPetscMPI<T>*>( dynamic_cast<const VectorPetscMPI<T>*>( &xx ) )->close();
+        const_cast<VectorPetscMPI<T>*>( dynamic_cast<const VectorPetscMPI<T>*>( &yy ) )->close();
+    }
+    else
+    {
+        const_cast<VectorPetsc<T>*>( dynamic_cast<const VectorPetsc<T>*>( &xx ) )->close();
+        const_cast<VectorPetsc<T>*>( dynamic_cast<const VectorPetsc<T>*>( &yy ) )->close();
+    }
+
+    const VectorPetsc<T>* x = dynamic_cast<const VectorPetsc<T>*>( &xx );
+    const VectorPetsc<T>* y = dynamic_cast<const VectorPetsc<T>*>( &yy );
+    CHECK( x != 0 && y != 0 ) << "invalid Vector<> types";
+    auto ierr =  VecPointwiseDivide(this->vec(), x->vec(), y->vec() );
+    CHKERRABORT( this->comm(),ierr );
+}
+template <typename T>
+void
 VectorPetsc<T>::zero()
 {
     DCHECK( this->isInitialized() ) << "VectorPetsc<> not initialized";
@@ -233,6 +277,14 @@ VectorPetsc<T>::zero()
     ierr = VecSet ( M_vec, z );
     CHKERRABORT( this->comm(),ierr );
 #endif
+}
+
+template <typename T>
+int
+VectorPetsc<T>::reciprocal()
+{
+    DCHECK( this->isInitialized() ) << "VectorPetsc<> not initialized";
+    return VecReciprocal( M_vec );
 }
 
 

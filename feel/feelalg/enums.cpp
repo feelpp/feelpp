@@ -25,11 +25,12 @@
 
 namespace Feel {
 
-std::map<std::string, OnContext> OnContextMap = {
-    {"none", OnContext::NONE},
-    {"elimination", OnContext::ELIMINATION},
-    {"penalisation", OnContext::PENALISATION},
-    {"elimination_symmetric", OnContext::ELIMINATION_SYMMETRIC},
+std::map<std::string, size_type> ContextOnMap = {
+    {"elimination", ContextOn::ELIMINATION},
+    {"penalisation", ContextOn::PENALISATION},
+    {"elimination_keep_diagonal", ContextOn::ELIMINATION|ContextOn::KEEP_DIAGONAL},
+    {"elimination_symmetric", ContextOn::ELIMINATION|ContextOn::SYMMETRIC},
+    {"elimination_symmetric_keep_diagonal", ContextOn::ELIMINATION|ContextOn::SYMMETRIC|ContextOn::KEEP_DIAGONAL}
 
 };
 
