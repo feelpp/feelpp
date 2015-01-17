@@ -42,8 +42,8 @@ public:
 
     enum Type
     {
-        BtPCD = 0, // pressure convection diffusion
-        PM=1, // pressure mass matrix
+        PCD = 0, // pressure convection diffusion
+        PMM=1, // pressure mass matrix
         SIMPLE=2 // 
     };
     typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
@@ -189,7 +189,7 @@ PreconditionerBTPCD<space_type>::PreconditionerBTPCD( std::string t,
                                                       sparse_matrix_ptrtype A,
                                                       double nu, double alpha )
     :
-    M_type( BtPCD ),
+    M_type( PCD ),
     M_nu( nu ),
     M_alpha( alpha ),
     M_b(backend()),
@@ -219,7 +219,6 @@ PreconditionerBTPCD<space_type>::PreconditionerBTPCD( std::string t,
     tic();
     LOG(INFO) << "[PreconditionerBTPCD] setup starts";
     this->setMatrix( A );
-    this->setSide( super::RIGHT );
     std::iota( M_Vh_indices.begin(), M_Vh_indices.end(), 0 );
     std::iota( M_Qh_indices.begin(), M_Qh_indices.end(), M_Vh->nLocalDofWithGhost() );
 
@@ -253,27 +252,38 @@ template < typename space_type >
 void
 PreconditionerBTPCD<space_type>::setType( std::string t )
 {
-    if ( t == "BtPCD") M_type = BtPCD;
-    if ( t == "PM") M_type = PM;
+    if ( t == "PCD") M_type = PCD;
+    if ( t == "PMM") M_type = PMM;
     if ( t == "SIMPLE") M_type = SIMPLE;
 
     LOG(INFO) << "setting preconditioner " << t << " type: " << M_type;
     switch( M_type )
     {
-    case BtPCD:
+    case PCD:
         tic();
         pcdOp = boost::make_shared<op_pcd_type>( M_Xh, this->matrix(), M_b, M_bcFlags, M_nu, M_alpha );
-        toc( "Assembling schur complement done", FLAGS_v > 0 );        
+        this->setSide( super::RIGHT );
+
+        toc( "Assembling schur complement done", FLAGS_v > 0 );
+
         break;
-    case PM:
+    case PMM:
     {
         tic();
         auto m = form2( _test=M_Qh, _trial=M_Qh, _matrix=M_mass );
-        m = integrate( elements(M_Qh->mesh()), idt(p)*id(q) );
+        m = integrate( elements(M_Qh->mesh()), idt(p)*id(q)/M_nu );
         M_mass->close();
-        pm = scale( op( M_mass, "Mp" ), 1./M_nu );
-        toc( "Assembling pressure mass matrix schur complement appoximation done", FLAGS_v > 0 );
+        if ( boption( "btpcd.pmm.diag" ) )
+        {
+            pm = diag( op( M_mass, "Mp" ) );
+        }
+        else
+        {
+            pm = op( M_mass, "Mp" );
+        }
+        this->setSide( super::RIGHT );
         
+        toc( "Assembling pressure mass matrix schur complement appoximation done", FLAGS_v > 0 );
     }
     break;
     case SIMPLE:
@@ -295,7 +305,7 @@ PreconditionerBTPCD<space_type>::update( sparse_matrix_ptrtype A,
     helmOp = op( M_F, "Fu" );
         
     toc("BTPCD convection-diffusion operator updated", FLAGS_v > 0 );
-    if ( type() == BtPCD )
+    if ( type() == PCD )
     {
         tic();
         pcdOp->update( expr_b, g );
@@ -311,7 +321,6 @@ PreconditionerBTPCD<space_type>::applyInverse ( const vector_type& X, vector_typ
 {
     U = X;
     U.close();
-    VLOG(2) << "coucou";
     LOG(INFO) << "Create velocity/pressure component...\n";
     *M_vin = U.template element<0>();
     M_vin->close();
@@ -320,13 +329,14 @@ PreconditionerBTPCD<space_type>::applyInverse ( const vector_type& X, vector_typ
     *M_aux = *M_vin;
     M_aux->close();
     
-    if ( this->type() == PM )
+    if ( this->type() == PMM )
     {
         VLOG(2) << "applying mass matrix";
         pm->applyInverse( *M_pin, *M_pout );
+        M_pout->scale(-1);
         M_pout->close();
     }
-    if ( this->type() == BtPCD )
+    if ( this->type() == PCD )
     {
         if ( boption("btpcd.pcd") )
         {
@@ -345,13 +355,13 @@ PreconditionerBTPCD<space_type>::applyInverse ( const vector_type& X, vector_typ
             *M_pout = *M_pin;
             M_pout->close();
         }
-
-        LOG(INFO) << "pressure/velocity block : apply divergence...\n";
-        divOp->apply( *M_pout, *M_vout );
-        
-        M_aux->add( -1.0, *M_vout );
-        M_aux->close();
     }
+    LOG(INFO) << "pressure/velocity block : apply divergence...\n";
+    divOp->apply( *M_pout, *M_vout );
+    
+    M_aux->add( -1.0, *M_vout );
+    M_aux->close();
+
     if ( boption("btpcd.cd") )
     {
         LOG(INFO) << "velocity block : apply inverse convection diffusion...\n";
