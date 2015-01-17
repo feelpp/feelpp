@@ -253,25 +253,18 @@ private:
 
     bool M_hasInverse, M_hasApply;
 };
-template<typename MatrixType>
-boost::shared_ptr<OperatorMatrix<typename MatrixType::value_type>>
-op( boost::shared_ptr<MatrixType> M, std::string label, bool transpose = false )
-{
-    return boost::make_shared<OperatorMatrix<typename MatrixType::value_type>>(M,label,transpose) ;
-}
 /**
  * \param M matrix
  * \oaram l label of the operator
  * \param transpose boolean to say wether we want the matrix or its transpose
  * \return the Operator associated to the matrix \p M
  */
-template<typename T>
-boost::shared_ptr<OperatorMatrix<T>> 
-op( boost::shared_ptr<MatrixSparse<T>> M, std::string const& l, bool transpose = false ) 
-{ 
-    return boost::shared_ptr<OperatorMatrix<T>> ( new OperatorMatrix<T>( M, l, transpose ) ); 
+template<typename MatrixType>
+boost::shared_ptr<OperatorMatrix<typename MatrixType::value_type>>
+op( boost::shared_ptr<MatrixType> M, std::string label, bool transpose = false )
+{
+    return boost::make_shared<OperatorMatrix<typename MatrixType::value_type>>(M,label,transpose) ;
 }
-
 /**
  * Operator class to model an inverse operator
  */
@@ -287,7 +280,7 @@ public:
     // This constructor implements the F^-1 operator
     OperatorInverse( operator_ptrtype& F )
         :
-        super( F->domainMapPtr(), F->imageMapPtr(), F->label(), F->useTranspose(), false ),
+        super( F->imageMapPtr(), F->domainMapPtr(), F->label(), F->useTranspose(), false ),
         M_F( F )
     {
         this->setName();
@@ -372,7 +365,9 @@ inv( boost::shared_ptr<OpType>  M )
 }
 
 
-
+/**
+ * implement  \f$f \circ g \f$ operator
+ */
 template< typename op1_type, typename op2_type >
 class OperatorCompose : public OperatorBase<typename op1_type::value_type>
 {
@@ -391,7 +386,7 @@ public:
         M_F( F ),
         M_G( G ),
         M_ZG ( backend()->newVector( M_G->imageMapPtr() ) ),
-        M_ZF ( backend()->newVector( M_F->imageMapPtr() ) )
+        M_ZF ( backend()->newVector( M_F->domainMapPtr() ) )
     {
         // TODO:We should ensure here that the domain map of F corresponds to the
         // image map of G.
@@ -614,6 +609,104 @@ boost::shared_ptr<OperatorScale<OpType>>
 scale( boost::shared_ptr<OpType> M, typename OpType::value_type s )
 {
     return boost::make_shared<OperatorScale<OpType>>(M,s) ;
+}
+
+
+/**
+ * Diagonal of an operator
+ */
+template< typename op1_type>
+class OperatorDiag : public OperatorBase<typename op1_type::value_type>
+{
+    typedef OperatorBase<typename op1_type::value_type> super;
+public:
+
+    typedef boost::shared_ptr<op1_type> op1_ptrtype;
+    typedef typename op1_type::value_type value_type;
+
+
+    OperatorDiag()
+        :
+        OperatorBase<value_type>()
+        {}
+    OperatorDiag( op1_ptrtype& F )
+        :
+        super( F->domainMapPtr(), F->imageMapPtr(), F->label(), F->useTranspose(), F->hasNormInf() ),
+        M_D( backend()->newVector(F->domainMapPtr()) )
+    {
+        std::string temp( "diag(" );
+        std::string t = F->label();
+
+
+        temp.append( t );
+        temp.append( ")" );        
+        this->setLabel(temp);
+
+        LOG(INFO) << "Create diag operator " << this->label() << " ...\n";
+    }
+
+    OperatorDiag( const OperatorDiag& tc )
+        :
+        super( tc ),
+        M_D( tc.M_D )
+    {
+        LOG(INFO) << "Copy diag operator " << this->label() << " ...\n";
+    }
+
+    bool hasInverse() const
+    {
+        return true;
+    }
+
+    bool hasApply() const
+    {
+        return true;
+    }
+
+
+
+    int apply( const vector_type& X, vector_type & Y ) const
+    {
+        LOG(INFO) << "apply diag operator " << this->label() << "\n";
+        Y.pointwiseMult( X, *M_D );
+        
+        return !hasApply();
+    }
+
+    int applyInverse ( const vector_type& X, vector_type& Y ) const
+    {
+        LOG(INFO) << "applyInverse diag operator " << this->label() << "\n";
+
+        Y.pointwiseDivide( X, *M_D);
+        
+        return !hasInverse();
+    }
+
+    value_type normInf() const
+        {
+            return 0;
+        }
+
+    ~OperatorDiag()
+    {
+        //LOG(INFO) << "Destroyed scale operator: " << label() << " ...\n";
+    };
+
+private:
+
+    vector_ptrtype M_D;
+};
+
+/**
+ * \param op an operator
+ * \param s a scalar
+ * \return the operator which is the scaling of op by s
+ */
+template<typename OpType>
+boost::shared_ptr<OperatorDiag<OpType>>
+diag( boost::shared_ptr<OpType> M )
+{
+    return boost::make_shared<OperatorDiag<OpType>>(M) ;
 }
 
 } // Feel

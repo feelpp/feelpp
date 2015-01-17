@@ -998,6 +998,7 @@ MatrixPetsc<T>::getSubMatrixPetsc( std::vector<size_type> const& rows,
                                    std::vector<size_type> const& cols,
                                    Mat &submat ) const
 {
+    this->close();
     int ierr=0;
     IS isrow;
     IS iscol;
@@ -1323,6 +1324,7 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows, Vector<value_type> const
 
     if ( on_context.test( ContextOn::ELIMINATION) )
     {
+        LOG(INFO) << "MatrixPETSc:: zeroRows seq elimination";
         VectorPetsc<T>* prhs = dynamic_cast<VectorPetsc<T>*> ( &rhs );
         const VectorPetsc<T>* pvalues = dynamic_cast<const VectorPetsc<T>*> ( &values );
 
@@ -1333,28 +1335,21 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows, Vector<value_type> const
         VectorPetsc<value_type> diag( this->size1(), stop-start );
         if ( on_context.test( ContextOn::KEEP_DIAGONAL ) )
         {
-            std::cout << "elimination + keep diagonal\n";
-        
+            LOG(INFO) << "MatrixPETSc:: zeroRows seq getdiag";
             MatGetDiagonal( M_mat, diag.vec() );
         }
     
         if ( on_context.test( ContextOn::SYMMETRIC ) )
         {
-            std::cout << " - elimination + symmetric \n";
+            LOG(INFO) << "MatrixPETSc:: zeroRows seq symmetric";
 #if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR >= 2)
             MatZeroRowsColumns(M_mat, rows.size(), rows.data(), 1.0, pvalues->vec(), prhs->vec() );
 #else
             MatZeroRows( M_mat, rows.size(), rows.data(), 1.0 );
 #endif
-            if ( on_context.test( ContextOn::CHECK ) )
-            {
-                PetscBool b;
-                MatIsSymmetric( M_mat, 1e-13, &b );
-                LOG(INFO) << "Mat is symmetric : " << b;
-            }
             if ( on_context.test( ContextOn::KEEP_DIAGONAL ) )
             {
-                std::cout << "    + keep diagonal\n";
+                LOG(INFO) << "MatrixPETSc:: zeroRows seq setdiag";
                 MatDiagonalSet( M_mat, diag.vec(), INSERT_VALUES );
             
                 for ( size_type i = 0; i < rows.size(); ++i )
@@ -1369,7 +1364,7 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows, Vector<value_type> const
         }
         else // non symmetric case
         {
-
+            LOG(INFO) << "MatrixPETSc:: zeroRows seq unsymmetric";
 #if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR >= 2)
             MatZeroRows( M_mat, rows.size(), rows.data(), 1.0,PETSC_NULL,PETSC_NULL );
 #else
@@ -1377,7 +1372,7 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows, Vector<value_type> const
 #endif
             if ( on_context.test( ContextOn::KEEP_DIAGONAL ) )
             {
-                std::cout << "keep diagonal\n";
+                LOG(INFO) << "MatrixPETSc:: zeroRows seq set diag";
                 MatDiagonalSet( M_mat, diag.vec(), INSERT_VALUES );
                 for ( size_type i = 0; i < rows.size(); ++i )
                 {
