@@ -22,7 +22,7 @@
    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 #include <feel/feel.hpp>
-#include <feel/feelpde/preconditionerbtpcd.hpp>
+#include <feel/feelpde/preconditionerblockns.hpp>
 
 int main(int argc, char**argv )
 {
@@ -95,7 +95,7 @@ int main(int argc, char**argv )
                         _expr=trans(d.second)*(-mu*grad(u)*N()+id(p)*N()+doption("penaldir")*id(v)/hFace() ) );
     }
     a.close();
-    auto a_btpcd = btpcd( _space=Vh, _type="BtPCD",
+    auto a_blockns = blockns( _space=Vh, _type="Blockns",
                           _bc=bcs, _alpha=mybdf->polyDerivCoefficient(0),
                           _matrix=a.matrixPtr());
 
@@ -131,10 +131,10 @@ int main(int argc, char**argv )
         toc("update lhs");tic();
 
 
-        if ( boption("btpcd") )
+        if ( boption("blockns") )
         {
-            a_btpcd->update( at.matrixPtr(), idv(extrapu), m_dirichlet );
-            at.solveb(_rhs=ft,_solution=U,_backend=backend(_rebuild=true),_prec=a_btpcd );
+            a_blockns->update( at.matrixPtr(), idv(extrapu), m_dirichlet );
+            at.solveb(_rhs=ft,_solution=U,_backend=backend(_rebuild=true),_prec=a_blockns );
         }
         else
             at.solve(_rhs=ft,_solution=U);

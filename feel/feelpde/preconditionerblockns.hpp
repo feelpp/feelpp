@@ -22,8 +22,8 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-#ifndef FEELPP_PRECONDITIONERBTPCD_HPP
-#define FEELPP_PRECONDITIONERBTPCD_HPP 1
+#ifndef FEELPP_PRECONDITIONERBlockNS_HPP
+#define FEELPP_PRECONDITIONERBlockNS_HPP 1
 
 
 #include <feel/feelalg/backend.hpp>
@@ -35,7 +35,7 @@
 namespace Feel
 {
 template< typename space_type >
-class PreconditionerBTPCD : public Preconditioner<typename space_type::value_type>
+class PreconditionerBlockNS : public Preconditioner<typename space_type::value_type>
 {
     typedef Preconditioner<typename space_type::value_type> super;
 public:
@@ -86,7 +86,7 @@ public:
      * \param nu viscosity
      * \param alpha mass term
      */
-    PreconditionerBTPCD( std::string t,
+    PreconditionerBlockNS( std::string t,
                          space_ptrtype Xh, 
                          std::map<std::string, std::set<flag_type> > bcFlags, 
                          sparse_matrix_ptrtype A,
@@ -130,7 +130,7 @@ public:
 
     const char * Label () const
     {
-        return("Triangular Block Preconditioner");
+        return("Triangular Blockns Preconditioner");
     }
 
     bool UseTranspose() const
@@ -143,7 +143,7 @@ public:
         return(false);
     }
 
-    virtual ~PreconditionerBTPCD(){};
+    virtual ~PreconditionerBlockNS(){};
 
 
 private:
@@ -183,7 +183,7 @@ private:
 
 
 template < typename space_type >
-PreconditionerBTPCD<space_type>::PreconditionerBTPCD( std::string t,
+PreconditionerBlockNS<space_type>::PreconditionerBlockNS( std::string t,
                                                       space_ptrtype Xh, 
                                                       std::map<std::string, std::set<flag_type> > bcFlags,
                                                       sparse_matrix_ptrtype A,
@@ -217,7 +217,7 @@ PreconditionerBTPCD<space_type>::PreconditionerBTPCD( std::string t,
     M_bcFlags( bcFlags )
 {
     tic();
-    LOG(INFO) << "[PreconditionerBTPCD] setup starts";
+    LOG(INFO) << "[PreconditionerBlockNS] setup starts";
     this->setMatrix( A );
     std::iota( M_Vh_indices.begin(), M_Vh_indices.end(), 0 );
     std::iota( M_Qh_indices.begin(), M_Qh_indices.end(), M_Vh->nLocalDofWithGhost() );
@@ -226,23 +226,23 @@ PreconditionerBTPCD<space_type>::PreconditionerBTPCD( std::string t,
     M_F = A->createSubMatrix( M_Vh_indices, M_Vh_indices, true );
     M_B = A->createSubMatrix( M_Qh_indices, M_Vh_indices );
     M_Bt = A->createSubMatrix( M_Vh_indices, M_Qh_indices );
-    toc( "BTPCD create sub matrix done", FLAGS_v > 0 );
+    toc( "BlockNS create sub matrix done", FLAGS_v > 0 );
     tic();
     helmOp = op( M_F, "Fu" );
     divOp = op( M_Bt, "Bt");
-    toc( "BTPCD convection-diffusion and gradient operators done ", FLAGS_v > 0 );
+    toc( "BlockNS convection-diffusion and gradient operators done ", FLAGS_v > 0 );
 
     
     initialize();
 
     tic();    
     this->setType ( t );
-    toc( "[PreconditionerBTPCD] setup done ", FLAGS_v > 0 );
+    toc( "[PreconditionerBlockNS] setup done ", FLAGS_v > 0 );
 }
 
 template < typename space_type >
 void
-PreconditionerBTPCD<space_type>::initialize()
+PreconditionerBlockNS<space_type>::initialize()
 {
     M_rhs->zero();
     M_rhs->close();
@@ -250,7 +250,7 @@ PreconditionerBTPCD<space_type>::initialize()
 
 template < typename space_type >
 void
-PreconditionerBTPCD<space_type>::setType( std::string t )
+PreconditionerBlockNS<space_type>::setType( std::string t )
 {
     if ( t == "PCD") M_type = PCD;
     if ( t == "PMM") M_type = PMM;
@@ -273,7 +273,7 @@ PreconditionerBTPCD<space_type>::setType( std::string t )
         auto m = form2( _test=M_Qh, _trial=M_Qh, _matrix=M_mass );
         m = integrate( elements(M_Qh->mesh()), idt(p)*id(q)/M_nu );
         M_mass->close();
-        if ( boption( "btpcd.pmm.diag" ) )
+        if ( boption( "blockns.pmm.diag" ) )
         {
             pm = diag( op( M_mass, "Mp" ) );
         }
@@ -294,7 +294,7 @@ PreconditionerBTPCD<space_type>::setType( std::string t )
 template < typename space_type >
 template< typename Expr_convection, typename Expr_bc >
 void
-PreconditionerBTPCD<space_type>::update( sparse_matrix_ptrtype A,
+PreconditionerBlockNS<space_type>::update( sparse_matrix_ptrtype A,
                                          Expr_convection const& expr_b,
                                          Expr_bc const& g )
 {
@@ -304,12 +304,12 @@ PreconditionerBTPCD<space_type>::update( sparse_matrix_ptrtype A,
         
     helmOp = op( M_F, "Fu" );
         
-    toc("BTPCD convection-diffusion operator updated", FLAGS_v > 0 );
+    toc("BlockNS convection-diffusion operator updated", FLAGS_v > 0 );
     if ( type() == PCD )
     {
         tic();
         pcdOp->update( expr_b, g );
-        toc("BTPCD pressure convection-diffusion operator updated", FLAGS_v > 0 );
+        toc("BlockNS pressure convection-diffusion operator updated", FLAGS_v > 0 );
     }
 }
 
@@ -317,7 +317,7 @@ PreconditionerBTPCD<space_type>::update( sparse_matrix_ptrtype A,
 
 template < typename space_type >
 int
-PreconditionerBTPCD<space_type>::applyInverse ( const vector_type& X, vector_type& Y ) const
+PreconditionerBlockNS<space_type>::applyInverse ( const vector_type& X, vector_type& Y ) const
 {
     U = X;
     U.close();
@@ -338,9 +338,9 @@ PreconditionerBTPCD<space_type>::applyInverse ( const vector_type& X, vector_typ
     }
     if ( this->type() == PCD )
     {
-        if ( boption("btpcd.pcd") )
+        if ( boption("blockns.pcd") )
         {
-            LOG(INFO) << "pressure block: Solve for the pressure convection diffusion...\n";
+            LOG(INFO) << "pressure blockns: Solve for the pressure convection diffusion...\n";
             CHECK(pcdOp) << "Invalid PCD oeprator\n";
             CHECK(M_aux) << "Invalid aux vector\n";
             CHECK(M_pout) << "Invalid aux vector\n";
@@ -348,7 +348,7 @@ PreconditionerBTPCD<space_type>::applyInverse ( const vector_type& X, vector_typ
             pcdOp->applyInverse( *M_pin, *M_pout );
             M_pout->scale(-1);
             M_pout->close();
-            LOG(INFO) << "pressure block: Solve for the pressure convection diffusion done\n";
+            LOG(INFO) << "pressure blockns: Solve for the pressure convection diffusion done\n";
         }
         else
         {
@@ -356,15 +356,15 @@ PreconditionerBTPCD<space_type>::applyInverse ( const vector_type& X, vector_typ
             M_pout->close();
         }
     }
-    LOG(INFO) << "pressure/velocity block : apply divergence...\n";
+    LOG(INFO) << "pressure/velocity blockns : apply divergence...\n";
     divOp->apply( *M_pout, *M_vout );
     
     M_aux->add( -1.0, *M_vout );
     M_aux->close();
 
-    if ( boption("btpcd.cd") )
+    if ( boption("blockns.cd") )
     {
-        LOG(INFO) << "velocity block : apply inverse convection diffusion...\n";
+        LOG(INFO) << "velocity blockns : apply inverse convection diffusion...\n";
         helmOp->applyInverse(*M_aux, *M_vout);
     }
     else
@@ -387,7 +387,7 @@ PreconditionerBTPCD<space_type>::applyInverse ( const vector_type& X, vector_typ
 
 template < typename space_type >
 int
-PreconditionerBTPCD<space_type>::guess ( vector_type& Y ) const
+PreconditionerBlockNS<space_type>::guess ( vector_type& Y ) const
 {
     U = Y;
     U.close();
@@ -398,14 +398,14 @@ PreconditionerBTPCD<space_type>::guess ( vector_type& Y ) const
     *M_pin = U.template element<1>();
     M_pin->close();
 
-    LOG(INFO) << "pressure/velocity block : apply divergence...\n";
+    LOG(INFO) << "pressure/velocity blockns : apply divergence...\n";
     divOp->apply( *M_pout, *M_vin );
 
     M_aux->zero();
     M_aux->add( -1.0, *M_vin );
     M_aux->close();
 
-    LOG(INFO) << "velocity block : apply inverse convection diffusion...\n";
+    LOG(INFO) << "velocity blockns : apply inverse convection diffusion...\n";
     helmOp->applyInverse(*M_aux, *M_vin);
     LOG(INFO) << "Update output velocity/pressure...\n";
 
@@ -420,14 +420,14 @@ PreconditionerBTPCD<space_type>::guess ( vector_type& Y ) const
 namespace meta
 {
 template< typename space_type >
-struct btpcd
+struct blockns
 {
-    typedef PreconditionerBTPCD<space_type> type;
+    typedef PreconditionerBlockNS<space_type> type;
     typedef boost::shared_ptr<type> ptrtype;
 };
 }
-BOOST_PARAMETER_MEMBER_FUNCTION( ( typename meta::btpcd<typename parameter::value_type<Args, tag::space>::type::element_type>::ptrtype ),
-                                 btpcd,
+BOOST_PARAMETER_MEMBER_FUNCTION( ( typename meta::blockns<typename parameter::value_type<Args, tag::space>::type::element_type>::ptrtype ),
+                                 blockns,
                                  tag,
                                  ( required
                                    ( space, *)
@@ -442,9 +442,9 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename meta::btpcd<typename parameter::valu
                                    )
                                  )
 {
-    typedef typename meta::btpcd<typename parameter::value_type<Args, tag::space>::type::element_type>::ptrtype pbtpcd_t;
-    typedef typename meta::btpcd<typename parameter::value_type<Args, tag::space>::type::element_type>::type btpcd_t;
-    pbtpcd_t p( new btpcd_t( type, space, bc, matrix, nu, alpha ) );
+    typedef typename meta::blockns<typename parameter::value_type<Args, tag::space>::type::element_type>::ptrtype pblockns_t;
+    typedef typename meta::blockns<typename parameter::value_type<Args, tag::space>::type::element_type>::type blockns_t;
+    pblockns_t p( new blockns_t( type, space, bc, matrix, nu, alpha ) );
     return p;
 } // btcpd
 } // Feel
