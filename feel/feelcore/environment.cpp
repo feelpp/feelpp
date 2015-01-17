@@ -696,14 +696,17 @@ Environment::parseAndStoreOptions( po::command_line_parser parser, bool extra_pa
         }
 
         std::vector<po::basic_option<char> >::iterator it = parsed->options.begin();
-        std::vector<po::basic_option<char> >::iterator en  = parsed->options.end();
-
-        for ( ; it != en ; ++it )
+        //std::vector<po::basic_option<char> >::iterator en  = parsed->options.end();
+        for ( ; it != parsed->options.end() ; )
+        {
             if ( it->unregistered )
             {
                 LOG( ERROR ) << "  |- remove " << it->string_key << " from Feel++ options management system"  << "\n";
-                parsed->options.erase( it );
+                it = parsed->options.erase( it );
             }
+            else
+                ++it;
+        }
     }
 
     po::store( *parsed, S_vm );
@@ -736,6 +739,7 @@ Environment::doOptions( int argc, char** argv,
     //std::locale::global(std::locale(""));
     try
     {
+        S_commandLineParser = boost::shared_ptr<po::command_line_parser>( new po::command_line_parser( argc, argv ) );
         parseAndStoreOptions( po::command_line_parser( argc, argv ), true );
         processGenericOptions();
 
@@ -750,7 +754,7 @@ Environment::doOptions( int argc, char** argv,
             if ( fs::exists(  S_vm["config-file"].as<std::string>() ) )
             {
                 LOG( INFO ) << "Reading " << S_vm["config-file"].as<std::string>() << "...";
-
+                S_configFileName = fs::absolute( S_vm["config-file"].as<std::string>() ).string();
                 std::ifstream ifs( S_vm["config-file"].as<std::string>().c_str() );
                 po::store( parse_config_file( ifs, *S_desc, true ), S_vm );
                 po::notify( S_vm );
@@ -808,6 +812,7 @@ Environment::doOptions( int argc, char** argv,
             if ( found )
             {
                 LOG( INFO ) << "Reading  " << config_name << "...\n";
+                S_configFileName = fs::absolute( config_name ).string();
                 std::ifstream ifs( config_name.c_str() );
                 store( parse_config_file( ifs, *S_desc, true ), S_vm );
                 LOG( INFO ) << "Reading  " << config_name << " done.\n";
@@ -1922,6 +1927,8 @@ Environment::expand( std::string const& expr )
 
 
 AboutData Environment::S_about;
+boost::shared_ptr<po::command_line_parser> Environment::S_commandLineParser;
+std::string Environment::S_configFileName;
 po::variables_map Environment::S_vm;
 boost::shared_ptr<po::options_description> Environment::S_desc;
 boost::shared_ptr<po::options_description> Environment::S_desc_app;
