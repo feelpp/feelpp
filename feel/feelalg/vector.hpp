@@ -237,6 +237,16 @@ public:
     Vector<T> & operator= ( const std::vector<T> &v );
 
     /**
+     *  \f$v = x*y\f$: coefficient-wise multiplication
+     */
+    virtual void pointwiseMult ( Vector<T> const& x, Vector<T> const& y ) {}
+    
+    /**
+     *  \f$v = x/y\f$: coefficient-wise divide
+     */
+    virtual void pointwiseDivide ( Vector<T> const& x, Vector<T> const& y ) {}
+
+    /**
      * \return the sum of the components of the vector
      */
     virtual value_type sum() const = 0;

@@ -372,6 +372,16 @@ public:
     //@{
 
     /**
+     *  \f$v = x*y\f$: coefficient-wise multiplication
+     */
+    void pointwiseMult ( Vector<T> const& x, Vector<T> const& y );
+    
+    /**
+     *  \f$v = x/y\f$: coefficient-wise divide
+     */
+    void pointwiseDivide ( Vector<T> const& x, Vector<T> const& y );
+    
+    /**
      * Call the assemble functions
      */
     void close ()

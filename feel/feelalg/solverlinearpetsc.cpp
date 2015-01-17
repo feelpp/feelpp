@@ -70,7 +70,7 @@ extern "C"
         SolverLinear<double> *s  = static_cast<SolverLinear<double>*>( ctx );
         if ( !s ) return 1;
         if ( s->worldComm().isMasterRank() )
-            std::cout << " " << it  << " " << s->prefix() << " KSP Residual norm " << rnorm << "\n";
+            std::cout << " " << it  << " " << s->prefix() << " KSP Residual norm " << std::scientific << rnorm << "\n";
         return 0;
     }
 #if PETSC_VERSION_LESS_THAN(3,0,1)
