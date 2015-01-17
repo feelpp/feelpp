@@ -246,8 +246,9 @@ OperatorPCD<space_type>::update( ExprConvection const& expr_b,
         for( auto dir : M_bcFlags["Dirichlet"])
         {
             std::string m = M_Qh->mesh()->markerName(dir);
-            conv += integrate( _range=markedfaces(M_Qh->mesh(), dir), _expr=-trans(ebc.find(M_Qh->mesh()->markerName(dir))->second)*N()*idt(p)*id(q));
-            //conv += integrate( _range=markedfaces(M_Qh->mesh(), dir), _expr=-trans(expr_b)*N()*idt(p)*id(q));
+            LOG(INFO) << "Setting Robin condition on " << m;
+            
+            conv += integrate( _range=markedfaces(M_Qh->mesh(), dir), _expr=trans(ebc.find(M_Qh->mesh()->markerName(dir))->second)*N()*idt(p)*id(q));
         }
 
     G->close();
@@ -271,9 +272,9 @@ OperatorPCD<space_type>::update( ExprConvection const& expr_b,
         // S = F G^-1 M
         LOG(INFO) << "[OperatorPCD] setting pcd operator...\n";
         if ( ioption("btpcd.pcd.order") == 1 )
-            precOp = compose( massOp, compose(inv(op(G,"Ap")),diffOp) );
+            precOp = compose( massOp, compose(inv(op(G,"Fp")),diffOp) );
         else
-            precOp = compose( diffOp, compose(inv(op(G,"Ap")),massOp) );
+            precOp = compose( diffOp, compose(inv(op(G,"Fp")),massOp) );
         LOG(INFO) << "[OperatorPCD] setting pcd operator done.\n";
         init_G = true;
     }
@@ -305,8 +306,14 @@ OperatorPCD<space_type>::assembleDiffusion()
         for( auto dir : M_bcFlags["Neumann"])
         {
             std::string m = M_Qh->mesh()->markerName(dir);
+            LOG(INFO) << "Diffusion Setting Dirichlet condition on pressure on " << m;
             if ( (m=="outlet") || (m == "outflow") )
-                d += on( markedfaces(M_Qh->mesh(),dir), _element=p, _rhs=rhs, _expr=cst(0.) );
+            {
+                if ( boption("btpcd.weakdir" ) )
+                    d+= integrate( markedfaces(M_Qh->mesh(),dir), _expr=-gradt(p)*N()*id(p)-grad(p)*N()*idt(p)+doption("penaldir")*idt(p)*id(p)/hFace() );
+                else
+                    d += on( markedfaces(M_Qh->mesh(),dir), _element=p, _rhs=rhs, _expr=cst(0.) );
+            }
         }
         //this->applyBC(M_diff);
     }
@@ -336,10 +343,10 @@ OperatorPCD<space_type>::assembleDiffusion()
         M_b->PAPt( M_massv_inv, M_B, M_diff );
         toc(" - OperatorPCD B T^-1 B^T built");
         if ( Environment::numberOfProcessors() == 1 )
-            M_diff->printMatlab( "BTBt." );
+            M_diff->printMatlab( "BTBt.m" );
     }
 
-    diffOp = op( M_diff, "Fp" );
+    diffOp = op( M_diff, "Ap" );
 }
 
 template < typename space_type>
@@ -378,7 +385,12 @@ OperatorPCD<space_type>::applyBC( sparse_matrix_ptrtype& A )
         {
             std::string m = M_Qh->mesh()->markerName(dir);
             if ( (m=="outlet") || (m == "outflow") )
-                a += on( markedfaces(M_Qh->mesh(),dir), _element=p, _rhs=rhs, _expr=cst(0.) );
+            {
+                if ( boption("btpcd.weakdir" ) )
+                    a+= integrate( markedfaces(M_Qh->mesh(),dir), _expr=-M_nu*gradt(p)*N()*id(p)-M_nu*grad(p)*N()*idt(p)+doption("penaldir")*idt(p)*id(p)/hFace() );
+                else
+                    a += on( markedfaces(M_Qh->mesh(),dir), _element=p, _rhs=rhs, _expr=cst(0.) );
+            }
         }
     rhs->close();
     A->close();
