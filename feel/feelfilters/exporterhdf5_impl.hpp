@@ -69,6 +69,14 @@ Exporterhdf5<MeshType,N>::Exporterhdf5( po::variables_map const& vm, std::string
 }
 
 template<typename MeshType, int N>
+Exporterhdf5<MeshType,N>::Exporterhdf5( std::string const& exp_prefix, WorldComm const& worldComm )
+    :
+    super( exp_prefix, worldComm )
+{
+    init();
+}
+
+template<typename MeshType, int N>
 Exporterhdf5<MeshType,N>::Exporterhdf5( Exporterhdf5 const & __ex )
     :
     super( __ex ),

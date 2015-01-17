@@ -65,6 +65,14 @@ ExporterEnsight<MeshType,N>::ExporterEnsight( po::variables_map const& vm, std::
 }
 
 template<typename MeshType, int N>
+ExporterEnsight<MeshType,N>::ExporterEnsight( std::string const& exp_prefix, WorldComm const& worldComm )
+    :
+    super( exp_prefix, worldComm )
+{
+    init();
+}
+
+template<typename MeshType, int N>
 ExporterEnsight<MeshType,N>::ExporterEnsight( ExporterEnsight const & __ex )
     :
     super( __ex ),
