@@ -78,8 +78,8 @@ public:
     DAR( po::variables_map const& vm, AboutData const& ad )
         :
         super(),
-        bcCoeff( option(_name="bccoeff").template as<double>() ),
-        geomap( ( GeomapStrategyType )option(_name="geomap").template as<int>() )
+        bcCoeff( doption(_name="bccoeff") ),
+        geomap( ( GeomapStrategyType )ioption(_name="geomap") )
     {
     }
 
@@ -124,13 +124,13 @@ DAR<Dim, Order, Cont, Entity>::run()
                             % meshSizeInit()
                           );
     value_type penalisation = option(_name="penal").template as<value_type>();
-    int bctype = option(_name="bctype").template as<int>();
+    int bctype = ioption(_name="bctype");
 
     double beta_x = option(_name="bx").template as<value_type>();
     double beta_y = option(_name="by").template as<value_type>();
     value_type mu = option(_name="mu").template as<value_type>();
     value_type stiff = option(_name="stiff").template as<value_type>();
-    bool ring = option(_name="ring").template as<bool>();
+    bool ring = boption(_name="ring");
 
     std::cout << "[DAR] hsize = " << meshSizeInit() << "\n";
     std::cout << "[DAR] bx = " << beta_x << "\n";
@@ -294,7 +294,7 @@ DAR<Dim, Order, Cont, Entity>::run()
     uEx = L2Proj->project( g );
     uC = L2Proj->project( vf::idv( u ) );
     auto L2Projv = projector( Xvch, Xvch );
-    betaC = L2Projv->project( trans( beta ) );
+    betaC = L2Projv->project( ( beta ) );
 
     exporter->step( 0 )->setMesh( u.functionSpace()->mesh() );
     exporter->step( 0 )->add( "u", u );

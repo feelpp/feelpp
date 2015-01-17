@@ -205,7 +205,7 @@ private:
 Stokes_Poiseuille::Stokes_Poiseuille( int argc, char** argv, AboutData const& ad, po::options_description const& od )
     :
     super( argc, argv, ad, od ),
-    M_backend( backend_type::build( this->vm() ) ),
+    M_backend( backend_type::build( soption("backend") ) ),
     meshSize( this->vm()["hsize"].as<double>() ),
     mu( this->vm()["mu"].as<value_type>() ),
     penalbc( this->vm()["bccoeff"].as<value_type>() ),

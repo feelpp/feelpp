@@ -155,13 +155,13 @@ Tilted<Dim, BasisU, Entity>::run()
     }
 
     //! init backend
-    M_backend = backend_type::build( Environment::vm() );
+    M_backend = backend_type::build( soption("backend"));
     exporter =  boost::shared_ptr<export_type>( Exporter<mesh_type>::New( Environment::vm(),
                                                                           (boost::format( "%1%-%2%" ) % this->about().appName() % this->level() ).str() ) );
 
     boost::timer t;
     double shear = option(_name="shear").template as<value_type>();
-    bool recombine = option(_name="recombine").template as<bool>();
+    bool recombine = boption(_name="recombine");
     /*
      * First we create the mesh, in the case of quads we wish to have
      * non-regular meshes to ensure that we don't have some super-convergence
@@ -313,21 +313,21 @@ Tilted<Dim, BasisU, Entity>::run()
     boost::timer subt;
     // right hand side
     auto F = M_backend->newVector( Xh );
-    form1( Xh, F, _init=true );
+    form1( Xh, _vector=F, _init=true );
     M_stats.put( "t.init.vector",t.elapsed() );
     LOG(INFO) << "  -- time for vector init done in "<<t.elapsed()<<" seconds \n";
     t.restart() ;
-    form1( Xh, F ) = integrate( elements( mesh ), f*id( v ) );
+    form1( Xh, _vector=F ) = integrate( elements( mesh ), f*id( v ) );
     M_stats.put( "t.assembly.vector.source",subt.elapsed() );
     subt.restart();
 
-    if ( option(_name="bctype").template as<int>() == 1  )
+    if ( ioption(_name="bctype") == 1  )
     {
-        form1( Xh, F ) += integrate( _range=boundaryfaces( mesh ), _expr=-idv(v)*k*grad( u )*N() );
+        form1( Xh, _vector=F ) += integrate( _range=boundaryfaces( mesh ), _expr=-idv(v)*k*grad( u )*N() );
         M_stats.put( "t.assembly.vector.dirichlet1",subt.elapsed() );
         subt.restart();
-        form1( Xh, F ) += integrate( _range=boundaryfaces( mesh ), _expr=k*penalbc*idv(v)*id( v )/hFace() );
-        //form1( Xh, F ) += integrate( _range=boundaryfaces(mesh), _expr=penalbc*max(betacoeff,mu/hFace())*(trans(id(v))*N())*N());
+        form1( Xh, _vector=F ) += integrate( _range=boundaryfaces( mesh ), _expr=k*penalbc*idv(v)*id( v )/hFace() );
+        //form1( Xh, _vector=F ) += integrate( _range=boundaryfaces(mesh), _expr=penalbc*max(betacoeff,mu/hFace())*(trans(id(v))*N())*N());
         M_stats.put( "t.assembly.vector.dirichlet2",subt.elapsed() );
         LOG(INFO) << "   o time for rhs weak dirichlet terms: " << subt.elapsed() << "\n";
         subt.restart();
@@ -342,19 +342,19 @@ Tilted<Dim, BasisU, Entity>::run()
     size_type pattern = Pattern::COUPLED;
     size_type patternsym = Pattern::COUPLED;
 
-    if ( option(_name="faster").template as<int>() == 1 )
+    if ( ioption(_name="faster") == 1 )
     {
         pattern = Pattern::COUPLED;
         patternsym = Pattern::COUPLED|Pattern::SYMMETRIC;
     }
 
-    if ( option(_name="faster").template as<int>() == 2 )
+    if ( ioption(_name="faster") == 2 )
     {
         pattern = Pattern::DEFAULT;
         patternsym = Pattern::DEFAULT;
     }
 
-    if ( option(_name="faster").template as<int>() == 3 )
+    if ( ioption(_name="faster") == 3 )
     {
         pattern = Pattern::DEFAULT;
         patternsym = Pattern::DEFAULT|Pattern::SYMMETRIC;
@@ -376,12 +376,12 @@ Tilted<Dim, BasisU, Entity>::run()
     LOG(INFO) << "   o time for diffusion terms: " << subt.elapsed() << "\n";
     subt.restart();
 
-    if ( option(_name="bctype").template as<int>() == 1  )
+    if ( ioption(_name="bctype") == 1  )
     {
-        form2( Xh, Xh, D )+=integrate( _range=boundaryfaces( mesh ),_expr=-k*( gradt( u )*N() )*id( v )-k*trans( grad( u )*N() )*idt( v ) );
+        form2( Xh, Xh, _matrix=D )+=integrate( _range=boundaryfaces( mesh ),_expr=-k*( gradt( u )*N() )*id( v )-k*trans( grad( u )*N() )*idt( v ) );
         M_stats.put( "t.assembly.matrix.dirichlet1",subt.elapsed() );
         subt.restart();
-        form2( Xh, Xh, D )+=integrate( _range=boundaryfaces( mesh ),_expr=+k*penalbc*idt( u )*id( v )/hFace() );
+        form2( Xh, Xh, _matrix=D )+=integrate( _range=boundaryfaces( mesh ),_expr=+k*penalbc*idt( u )*id( v )/hFace() );
         M_stats.put( "t.assembly.matrix.dirichlet2",subt.elapsed() );
         subt.restart();
         LOG(INFO) << "   o time for weak dirichlet terms: " << subt.elapsed() << "\n";
@@ -392,9 +392,9 @@ Tilted<Dim, BasisU, Entity>::run()
     D->close();
     F->close();
 
-    if ( option(_name="bctype").template as<int>() == 0  )
+    if ( ioption(_name="bctype") == 0  )
     {
-        form2( Xh, Xh, D ) += on( _range=boundaryfaces( mesh ), _element=u, _rhs=F, _expr=u_exact);
+        form2( Xh, Xh, _matrix=D ) += on( _range=boundaryfaces( mesh ), _element=u, _rhs=F, _expr=u_exact);
         M_stats.put( "t.assembly.matrix.dirichlet",subt.elapsed() );
         LOG(INFO) << "   o time for strong dirichlet terms: " << subt.elapsed() << "\n";
         subt.restart();

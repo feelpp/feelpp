@@ -104,7 +104,7 @@ Test<Dim,Order>::run()
                                    % convex_type::name()
                                    % Dim
                                    % Order
-                                   % option(_name="gmsh.hsize").template as<double>() );
+                                   % doption(_name="gmsh.hsize") );
 
     auto mesh = createGMSHMesh( _mesh=new mesh_type,
                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
@@ -113,7 +113,7 @@ Test<Dim,Order>::run()
                                               _usenames=false,
                                               _shape="hypercube",
                                               _dim=Dim,
-                                              _h=option(_name="gmsh.hsize").template as<double>() ,
+                                              _h=doption(_name="gmsh.hsize") ,
                                               _convex="Hypercube",
                                               //_convex=convex_type::name(),
                                               _xmin=0.,

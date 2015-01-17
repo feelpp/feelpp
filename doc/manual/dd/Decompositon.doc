@@ -130,11 +130,11 @@ localProblem(element_type& u, Expr expr)
     A->close();
                                     
  // Apply the dirichlet boundary conditions
-    form2( Xh, Xh, A ) +=
+    form2( Xh, Xh, _matrix=A ) +=
            on( markedfaces(mesh, "Dirichlet") ,u,F,g);
                                     
  // Apply the dirichlet interface conditions
-    form2( Xh, Xh, A ) +=
+    form2( Xh, Xh, _matrix=A ) +=
            on( markedfaces(mesh, "Interface") ,u,F,expr);
                                     
  // solve the linear system $ A u = F $
@@ -292,7 +292,7 @@ Assembly of the right hand side \f$ B = \int_\Gamma \kappa v w \f$
  form2( _test=Xh, _trial=Xh, _matrix=B, _init=true );
  BOOST_FOREACH( int marker, flags )
  {
-   form2( Xh, Xh, B ) +=
+   form2( Xh, Xh, _matrix=B ) +=
    integrate( markedfaces(mesh,marker), kappa*idt(u)*id(v) );
  }
  B->close();
@@ -306,8 +306,8 @@ Assembly of the left hand side \f$ A = \int_\Omega \eta v w + \kappa \nabla v \c
  A->close();
                      
 // eigenvalue solver options
- int nev = this->vm()["solvereigen-nev"].template as<int>();
- int ncv = this->vm()["solvereigen-ncv"].template as<int>();;
+ int nev = ioption("solvereigen-nev");
+ int ncv = ioption("solvereigen-ncv");;
 // definition of the eigenmodes
  SolverEigen<double>::eigenmodes_type modes;
 \eco

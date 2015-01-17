@@ -625,6 +625,8 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
     CTX::instance()->mesh.order = M_order;
     CTX::instance()->mesh.secondOrderIncomplete = 0;
 
+		if(doption("gmsh.randFactor") > 0.)
+			CTX::instance()->mesh.randFactor = doption("gmsh.randFactor");
     //if ( M_recombine )
     if ( 0 )
     {
@@ -662,6 +664,8 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
             M_gmodel->readGEO( __geoname );
 
         M_gmodel->mesh( dim );
+        CHECK(M_gmodel->getMeshStatus() == dim)  << "Invalid Gmsh Mesh. Something went wrong with Gmsh.  Gmsh status : " << M_gmodel->getMeshStatus()
+                                                 << " should be == " << dim;
         LOG(INFO) << "Mesh refinement levels : " << M_refine_levels << "\n";
         for( int l = 0; l < M_refine_levels; ++l )
         {
@@ -670,9 +674,8 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
         PartitionMesh( M_gmodel, CTX::instance()->partitionOptions );
         LOG(INFO) << "Mesh partitions : " << M_gmodel->getMeshPartitions().size() << "\n";
 
-        // convert mesh to latest binary format
-        CHECK(M_gmodel->getMeshStatus() > 0)  << "Invalid Gmsh Mesh, Gmsh status : " << M_gmodel->getMeshStatus() << " should be > 0. Gmsh mesh cannot be written to disk\n";
-
+        CHECK(M_gmodel->getMeshStatus() == dim)  << "Invalid Gmsh Mesh. Something went wrong with Gmsh.  Gmsh status : " << M_gmodel->getMeshStatus()
+                                                 << " should be == " << dim;
         if ( M_in_memory == false )
         {
             CTX::instance()->mesh.binary = M_format;
