@@ -140,7 +140,8 @@ MatrixEigenSparse<T>::close() const
     {
         LOG(INFO) << "Closing matrix";
         M_mat.setFromTriplets(M_tripletList.begin(), M_tripletList.end());
-        M_tripletList.clear();
+        M_mat.makeCompressed();
+        std::vector<triplet>().swap(M_tripletList);
         M_is_closed = true;
     }
 }
@@ -233,7 +234,7 @@ MatrixEigenSparse<T>::zeroRows( std::vector<int> const& rows,
         {
             m[it.row()].insert(it.col());
             value_type value = 1.0;
-            if ( on_context.test( OnContext::ELIMINATION_KEEP_DIAGONAL ) )
+            if ( on_context.test( ContextOn::ELIMINATION|ContextOn::KEEP_DIAGONAL ) )
                 value = it.value();
             rhs.add( it.row(), -it.value() * vals(rows[k]) );
             it.valueRef() = 0;
@@ -287,7 +288,8 @@ MatrixEigenSparse<T>::printMatlab( const std::string filename ) const
 
     FEELPP_ASSERT( file_out )( filename ).error( "[Feel::spy] ERROR: File cannot be opened for writing." );
 
-    file_out << "S = [ ";
+		std::string varName = "var_" + filename.substr(0,filename.find("."));
+    file_out << varName << " = [ ";
     file_out.precision( 16 );
     file_out.setf( std::ios::scientific );
 
@@ -304,8 +306,8 @@ MatrixEigenSparse<T>::printMatlab( const std::string filename ) const
     }
 
     file_out << "];" << std::endl;
-    file_out << "I=S(:,1); J=S(:,2); S=S(:,3);" << std::endl;
-    file_out << "spy(S);" << std::endl;
+    file_out << "I="<<varName<<"(:,1); J="<<varName<<"(:,2); "<<varName<<"="<<varName<<"(:,3);" << std::endl;
+    file_out << "spy("<<varName<<");" << std::endl;
 }
 
 

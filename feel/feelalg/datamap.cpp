@@ -134,51 +134,10 @@ DataMap::DataMap( size_type n, size_type n_local, WorldComm const& _worldComm )
 
 }
 
-DataMap::DataMap( DataMap const & dm )
-    :
-    M_closed( dm.M_closed ),
-    M_n_dofs( dm.M_n_dofs ),
-    M_n_localWithoutGhost_df( dm.M_n_localWithoutGhost_df ),
-    M_n_localWithGhost_df( dm.M_n_localWithGhost_df ),
-    M_first_df( dm.M_first_df ),
-    M_last_df( dm.M_last_df ),
-    M_first_df_globalcluster( dm.M_first_df_globalcluster ),
-    M_last_df_globalcluster( dm.M_last_df_globalcluster ),
-    M_myglobalelements(),
-    M_mapGlobalProcessToGlobalCluster( dm.M_mapGlobalProcessToGlobalCluster ),
-    M_mapGlobalClusterToGlobalProcess( dm.M_mapGlobalClusterToGlobalProcess ),
-    M_neighbor_processors( dm.M_neighbor_processors ),
-    M_activeDofSharedOnCluster( dm.M_activeDofSharedOnCluster ),
-    M_worldComm( dm.M_worldComm ),
-    M_indexSplit()
-{}
 DataMap::~DataMap()
 {}
 
-DataMap&
-DataMap::operator=( DataMap const& dm )
-{
-    if ( this != &dm )
-    {
-        M_worldComm = dm.M_worldComm;
-        M_closed = dm.M_closed;
-        M_n_dofs = dm.M_n_dofs;
-        M_n_localWithoutGhost_df = dm.M_n_localWithoutGhost_df;
-        M_n_localWithGhost_df = dm.M_n_localWithGhost_df;
-        M_first_df = dm.M_first_df;
-        M_last_df = dm.M_last_df;
-        M_first_df_globalcluster = dm.M_first_df_globalcluster;
-        M_last_df_globalcluster = dm.M_last_df_globalcluster;
-        M_myglobalelements = dm.M_myglobalelements;
-        M_mapGlobalProcessToGlobalCluster = dm.M_mapGlobalProcessToGlobalCluster;
-        M_mapGlobalClusterToGlobalProcess = dm.M_mapGlobalClusterToGlobalProcess;
-        M_neighbor_processors = dm.M_neighbor_processors;
-        M_activeDofSharedOnCluster = dm.M_activeDofSharedOnCluster;
-        M_indexSplit = dm.M_indexSplit;
-    }
 
-    return *this;
-}
 void
 DataMap::close() const
 {

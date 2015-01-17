@@ -242,7 +242,8 @@ VectorEigen<T>::printMatlab( const std::string filename, bool renumber  ) const
 
         FEELPP_ASSERT( file_out )( filename ).error( "[VectorEigen::printMatlab] ERROR: File cannot be opened for writing." );
 
-        file_out << "F = [ ";
+				std::string varName = "var_" + filename.substr(0,filename.find("."));
+        file_out << varName <<" = [ ";
         file_out.precision( 16 );
         file_out.setf( std::ios::scientific );
 

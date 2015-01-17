@@ -59,9 +59,9 @@ public:
     Grid()
         :
         super(),
-        M_backend( backend_type::build( this->vm() ) ),
-        meshSize( this->vm()["hsize"].template as<double>() ),
-        shape( this->vm()["shape"].template as<std::string>() ),
+        M_backend( backend_type::build( soption("backend") ) ),
+        meshSize( doption("hsize") ),
+        shape( soption("shape") ),
         eigen( SolverEigen<value_type>::build( this->vm() ) )
     {
     }
@@ -139,8 +139,8 @@ Grid<Dim>::run()
         flags += 6,15,19,23,27,28;
     }
 
-    value_type kappa = this->vm()["kappa"].template as<double>();
-    value_type nu = this->vm()["nu"].template as<double>();
+    value_type kappa = doption("kappa");
+    value_type nu = doption("nu");
 
     auto A = M_backend->newMatrix( Xh, Xh ) ;
     form2( _test=Xh, _trial=Xh, _matrix=A ) =
@@ -150,16 +150,16 @@ Grid<Dim>::run()
     form2( _test=Xh, _trial=Xh, _matrix=B );
     BOOST_FOREACH( int marker, flags )
     {
-        form2( Xh, Xh, B ) +=
+        form2( Xh, Xh, _matrix=B ) +=
             integrate( markedfaces( mesh,marker ), kappa*idt( u )*id( v ) );
     }
 
-    int maxit = this->vm()["solvereigen-maxiter"].template as<int>();
-    int tol = this->vm()["solvereigen-tol"].template as<double>();
+    int maxit = ioption("solvereigen-maxiter");
+    int tol = doption("solvereigen-tol");
 
-    int nev = this->vm()["solvereigen-nev"].template as<int>();
+    int nev = ioption("solvereigen-nev");
 
-    int ncv = this->vm()["solvereigen-ncv"].template as<int>();;
+    int ncv = ioption("solvereigen-ncv");;
 
     double eigen_real, eigen_imag;
 

@@ -88,7 +88,7 @@ poiseuille( int argc, char** argv )
 
 
     // Stokes matrix
-    auto S = Backend<double>::build()->newMatrix( Xh, Xh );
+    auto S = Backend<double>::build(soption("backend"))->newMatrix( Xh, Xh );
     form2( _test=Xh, _trial=Xh, _matrix=S, _init=true ) = integrate( elements( mesh ), trace( deft*trans( def ) ) ) ;
     form2( _test=Xh, _trial=Xh, _matrix=S ) += integrate( elements( mesh ), - idt( p )*div( v ) + id( q )*divt( u ) );
     //form2(_test=Xh, _trial=Xh, _matrix=S ) += integrate( elements(mesh), 1e-6*idt(p)*id(q) );
@@ -106,7 +106,7 @@ poiseuille( int argc, char** argv )
     }
     std::cout << "bilinear form created" << std::endl;
     // right hand side
-    auto F = Backend<double>::build()->newVector( Xh );
+    auto F = Backend<double>::build(soption("backend"))->newVector( Xh );
 
     if ( Dim == 2 )
         form1( _test=Xh, _vector=F,_init=true ) =
@@ -119,7 +119,7 @@ poiseuille( int argc, char** argv )
                        trans( vec( Py()*Pz()*( 1.-Py() )*( 1.-Pz() ),cst( 0. ) ) )*( -SigmaN+penalbc_u*id( v )/hFace() ) );
 
     std::cout << "linear form created" << std::endl;
-    Backend<double>::build()->solve( _matrix=S, _rhs=F, _solution=U );
+    Backend<double>::build(soption("backend"))->solve( _matrix=S, _rhs=F, _solution=U );
     std::cout << "linear system solved" << std::endl;
 
 

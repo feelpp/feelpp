@@ -165,7 +165,7 @@ From \c "doc/manual/heatns.cpp":
 From \c "applications/check/check.cpp":
 \co
 mesh = loadGMSHMesh( _mesh=new mesh_type,
-                     _filename=this->vm()["filename"].template as<std::string>(),
+                     _filename=soption("filename"),
                      _rebuild_partitions=(Environment::worldComm().size() > 1),
                      _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
 \eco

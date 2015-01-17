@@ -194,9 +194,9 @@ public:
         M_index_max(),
         M_model( model )
         {
-            int user_max =option(_name="eim.dimension-max").template as<int>();
+            int user_max =ioption(_name="eim.dimension-max");
             int max_built = M_model->maxQ();
-            bool enrich_database=option(_name="eim.enrich-database").template as<bool>();
+            bool enrich_database=boption(_name="eim.enrich-database");
             bool do_offline=false;
             M_restart=false;
 
@@ -217,7 +217,7 @@ public:
                 do_offline=true;
                 M_restart=true;
             }
-            if( option(_name="eim.rebuild-database").template as<bool>() )
+            if( boption(_name="eim.rebuild-database") )
             {
                 do_offline=true;
                 M_restart=true;
@@ -514,7 +514,7 @@ EIM<ModelType>::offline(  )
 {
     using namespace vf;
 
-    bool expression_expansion = option(_name="eim.compute-expansion-of-expression").template as<bool>() ;
+    bool expression_expansion = boption(_name="eim.compute-expansion-of-expression") ;
 
     int max_z=0;
     int max_solution=0;
@@ -673,7 +673,7 @@ EIM<ModelType>::offline(  )
        \par build \f$W^g_M\f$
     */
     double err = 1;
-    int Mmax=option(_name="eim.dimension-max").template as<int>();
+    int Mmax=ioption(_name="eim.dimension-max");
     //to deal with error estimation we need to build an "extra" basis function
     Mmax++;
     LOG(INFO) << "start greedy algorithm...\n";
@@ -729,7 +729,7 @@ EIM<ModelType>::offline(  )
                  << bestfit.template get<1>() << "  tolerance=" << M_vm["eim.error-max"].template as<double>() << "\n";
 
         //if we want to impose the use of dimension-max functions, we don't want to stop here
-        if ( (bestfit.template get<0>()/gmax.template get<0>()) < option(_name="eim.error-max").template as<double>() &&  ! option(_name="eim.use-dimension-max-functions").template as<bool>() )
+        if ( (bestfit.template get<0>()/gmax.template get<0>()) < doption(_name="eim.error-max") &&  ! boption(_name="eim.use-dimension-max-functions") )
         {
             M_M--;
             break;
@@ -810,7 +810,7 @@ EIM<ModelType>::offline(  )
 #endif
 
         //if we want to impose the use of dimension-max functions, we don't want to stop here
-        if ( resmax.template get<0>() < option(_name="eim.error-max").template as<double>() &&  ! option(_name="eim.use-dimension-max-functions").template as<bool>() )
+        if ( resmax.template get<0>() < doption(_name="eim.error-max") &&  ! boption(_name="eim.use-dimension-max-functions") )
         {
             M_M--;
             break;
@@ -955,7 +955,7 @@ EIM<ModelType>::studyConvergence( parameter_type const & mu , model_solution_typ
     fileLINFratio.close();
 
 #if 0
-    bool use_expression = option(_name="eim.compute-error-with-truth-expression").template as<bool>();
+    bool use_expression = boption(_name="eim.compute-error-with-truth-expression");
 
         if( use_expression )
         {
@@ -1498,7 +1498,7 @@ public:
         M_mu = mu;
         *M_u = solution;
 
-        if( 0 )// option(_name="eim.compute-expansion-of-expression").template as<bool>() )
+        if( 0 )// boption(_name="eim.compute-expansion-of-expression") )
         {
             rhs = evaluateFromContext( _context=M_ctx, _expr=M_expr );
         }
@@ -1545,13 +1545,13 @@ public:
         auto proj_g = vf::project( _space=this->functionSpace(), _expr=M_expr );
         auto residual_projected_expr = idv(proj_g)-idv(z);
 
-        std::string norm_used = option(_name="eim.norm-used-for-residual").template as<std::string>();
+        std::string norm_used = soption(_name="eim.norm-used-for-residual");
         bool check_name_norm = false;
         DVLOG( 2 ) << "[computeMaximalResidual] norm used : "<<norm_used;
         if( norm_used == "Linfty" )
         {
             check_name_norm=true;
-            if( option(_name="eim.compute-expansion-of-expression").template as<bool>() )
+            if( boption(_name="eim.compute-expansion-of-expression") )
             {
                 auto resmax = normLinf( _range=elements( this->mesh()), _pset=_Q<0>(), _expr= residual_expr );
                 max = resmax.template get<0>();
@@ -1568,7 +1568,7 @@ public:
         if( norm_used == "L2" )
         {
             check_name_norm=true;
-            if( option(_name="eim.compute-expansion-of-expression").template as<bool>() )
+            if( boption(_name="eim.compute-expansion-of-expression") )
             {
                 double norm = math::sqrt( integrate( _range=elements( this->mesh() ) ,_expr=residual_expr*residual_expr ).evaluate()( 0,0 ) );
                 max = norm;
@@ -1582,7 +1582,7 @@ public:
         if( norm_used == "LinftyVec" )
         {
             check_name_norm=true;
-            if( option(_name="eim.compute-expansion-of-expression").template as<bool>() )
+            if( boption(_name="eim.compute-expansion-of-expression") )
             {
                 auto projection = vf::project( _space=this->functionSpace(),_expr=residual_expr );
                 double norm = projection.linftyNorm();
@@ -1613,13 +1613,13 @@ public:
         auto proj_g = vf::project( _space=this->functionSpace(),_expr=M_expr );
         auto projected_expr = idv( proj_g );
 
-        std::string norm_used = option(_name="eim.norm-used-for-residual").template as<std::string>();
+        std::string norm_used = soption(_name="eim.norm-used-for-residual");
         bool check_name_norm = false;
         DVLOG( 2 ) << "[computeMaximumOfExpression] norm used : "<<norm_used;
         if( norm_used == "Linfty" )
         {
             check_name_norm=true;
-            if( option(_name="eim.compute-expansion-of-expression").template as<bool>() )
+            if( boption(_name="eim.compute-expansion-of-expression") )
             {
                 auto exprmax = normLinf( _range=elements(this->mesh()), _pset=_Q<0>(), _expr= expr );
                 max = exprmax.template get<0>();
@@ -1635,7 +1635,7 @@ public:
         if( norm_used == "L2" )
         {
             check_name_norm=true;
-            if( option(_name="eim.compute-expansion-of-expression").template as<bool>() )
+            if( boption(_name="eim.compute-expansion-of-expression") )
             {
                 double norm = math::sqrt( integrate( _range=elements(this->mesh() ) ,_expr=expr*expr).evaluate()( 0,0 ) );
                 max = norm;
@@ -1649,7 +1649,7 @@ public:
         if( norm_used == "LinftyVec" )
         {
             check_name_norm=true;
-            if( option(_name="eim.compute-expansion-of-expression").template as<bool>() )
+            if( boption(_name="eim.compute-expansion-of-expression") )
             {
                 auto projection = vf::project( _space=this->functionSpace(),_expr=expr );
                 double norm = projection.linftyNorm();
@@ -1680,7 +1680,7 @@ public:
 
     void fillInterpolationMatrixFirstTime(  )
     {
-        bool expression_expansion = option(_name="eim.compute-expansion-of-expression").template as<bool>() ;
+        bool expression_expansion = boption(_name="eim.compute-expansion-of-expression") ;
 
         // update interpolation matrix
         // TODO: update only the new line and eventually the new column rather than recomputing everything
@@ -1725,7 +1725,7 @@ public:
     //q : vector of projected on functionspace eim basis functions
     boost::any buildBasisFunction( int m )
     {
-        bool expression_expansion = option(_name="eim.compute-expansion-of-expression").template as<bool>() ;
+        bool expression_expansion = boption(_name="eim.compute-expansion-of-expression") ;
 
         //rank of the current processor
         int proc_number = Environment::worldComm().globalRank();
@@ -1787,7 +1787,7 @@ public:
 
     void fillInterpolationMatrix()
     {
-        bool expression_expansion = option(_name="eim.compute-expansion-of-expression").template as<bool>() ;
+        bool expression_expansion = boption(_name="eim.compute-expansion-of-expression") ;
 
         //rank of the current processor
         int proc_number = Environment::worldComm().globalRank();
@@ -1954,7 +1954,7 @@ public:
             M_crb->offline();
         }
 
-        int n_eval = option(_name="eim.computational-time-neval").template as<int>();
+        int n_eval = ioption(_name="eim.computational-time-neval");
 
         Eigen::Matrix<double, Eigen::Dynamic, 1> time_crb;
         Eigen::Matrix<double, Eigen::Dynamic, 1> time;
@@ -1964,7 +1964,7 @@ public:
         Sampling->logEquidistribute( n_eval  );
 
         //dimension
-        int N =  option(_name="crb.dimension").template as<int>();
+        int N =  ioption(_name="crb.dimension");
         //reduced basis approximation space
         auto WN = M_crb->wn();
         int mu_number = 0;
@@ -1972,7 +1972,7 @@ public:
         {
             //LOG( INFO ) << "[computational] mu = \n"<<mu;
             boost::mpi::timer tcrb;
-            auto o = M_crb->run( mu, time, option(_name="crb.online-tolerance").template as<double>() , N);
+            auto o = M_crb->run( mu, time, doption(_name="crb.online-tolerance") , N);
             auto solutions=o.template get<2>();
             auto uN = solutions.template get<0>();//vector of solutions ( one solution at each time step )
 
@@ -2095,7 +2095,7 @@ public:
     size_type mMax( bool & error) const
     {
         int max=0;
-        int user_max = option(_name="eim.dimension-max").template as<int>();
+        int user_max = ioption(_name="eim.dimension-max");
         int built = M_max_q;
         //if the user wants to enrich the database we return M_M_max or
         //if the eim expansion contains less terms that expected by the user then there is no error.
@@ -2118,7 +2118,7 @@ public:
     size_type mMax() const
     {
         int max=0;
-        int user_max = option(_name="eim.dimension-max").template as<int>();
+        int user_max = ioption(_name="eim.dimension-max");
         int built = M_max_q;
         //if the user wants to enrich the database we return M_M_max or
         //if the eim expansion contains less terms that expected by the user then there is no error.

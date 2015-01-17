@@ -185,9 +185,9 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
 
     int nparts = Environment::worldComm().size();
 
-    bool prepare = this->vm()["benchmark.prepare"].template as<bool>();
+    bool prepare = boption("benchmark.prepare");
     if ( prepare )
-        nparts = this->vm()["benchmark.partitions"].template as<int>();
+        nparts = ioption("benchmark.partitions");
 
     // give as parameter when other shapes are avaliable
     shape_type shape = circle;
@@ -204,14 +204,14 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
     }
 
     //! init backend
-    M_backend = backend_type::build( this->vm() );
+    M_backend = backend_type::build( soption("backend") );
 
     exporter =  boost::shared_ptr<export_type>( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) );
 
     boost::mpi::timer t;
 
     double shear = this->vm()["shear"].template as<value_type>();
-    bool recombine = this->vm()["recombine"].template as<bool>();
+    bool recombine = boption("recombine");
 
     /*
      * First we create the mesh, in the case of quads we wish to have
@@ -266,10 +266,10 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
     t.restart() ;
 
     // backends
-    auto backend_l2 = backend_type::build( this->vm(), "projections" );
-    auto backend_l2Vec = backend_type::build( this->vm(),  "projections" );
-    auto backend_l2Smooth = backend_type::build( this->vm(),  "projections" );
-    auto backend_l2SmoothVec = backend_type::build( this->vm(),  "projections" );
+    auto backend_l2          = backend_type::build( soption("backend"), "projections" );
+    auto backend_l2Vec       = backend_type::build( soption("backend"), "projections" );
+    auto backend_l2Smooth    = backend_type::build( soption("backend"), "projections" );
+    auto backend_l2SmoothVec = backend_type::build( soption("backend"), "projections" );
 
     // projectors
 
@@ -288,7 +288,7 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
     auto l2p = opProjection(Xh , Xh, _type=L2);
     auto l2pVec = opProjection(Xh_Vec, Xh_Vec, _type=L2);
     auto smooth = projector(Xh , Xh, backend_l2Smooth, DIFF, diffnum, 20);
-    auto smoothVec = projector(Xh_Vec, Xh_Vec, backend_l2SmoothVec, DIFF, diffnum, 20);
+    auto smoothVec = projector(Xh_Vec, Xh_Vec, backend_l2SmoothVec,DIFF, diffnum, 20);
     auto cip = opProjection(Xh , Xh, _type=CIP);
     auto cipVec = opProjection(Xh_Vec , Xh_Vec, _type=CIP);
 
@@ -373,20 +373,20 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
 
 
     /* ------------------ smooth projection ---------------- */
-    auto n_smooth = smoothVec->project( gradv(init_shape) / modgradphi );
+    auto n_smooth = smoothVec->project( trans(gradv(init_shape)) / modgradphi );
 
     auto k_smooth = smooth->project( divv(n_smooth) );
     auto phi_smooth = smooth->project( shape_expr );
 
-    auto nk_smooth = smoothVec->project( gradv(k_smooth) /
+    auto nk_smooth = smoothVec->project( trans(gradv(k_smooth)) /
                                         vf::max(sqrt( gradv(k_smooth) * trans(gradv(k_smooth))), max_modgradphi) );
     auto kk_smooth = smooth->project( divv(nk_smooth) );
 
 
     /* ------------------ L2 projection ---------------- */
-    auto n_l2 = l2pVec->project( gradv(init_shape) / modgradphi );
+    auto n_l2 = l2pVec->project( trans(gradv(init_shape)) / modgradphi );
     auto k_l2 = l2p->project( divv(n_l2) );
-    auto nk_l2 = l2pVec->project( gradv(k_l2) /
+    auto nk_l2 = l2pVec->project( trans(gradv(k_l2)) /
                                  vf::max(sqrt( gradv(k_l2) * trans(gradv(k_l2))), max_modgradphi) );
     auto kk_l2 = l2p->project( divv(nk_l2) );
 
@@ -420,9 +420,9 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
 
 
     /* ------------------ projection L2 with CIP stabilization ---------------- */
-    auto n_cip = cipVec->project( gradv(init_shape) / modgradphi );
+    auto n_cip = cipVec->project( trans(gradv(init_shape)) / modgradphi );
     auto k_cip = cip->project( divv(n_cip) );
-    auto nk_cip = cipVec->project( gradv(k_cip) /
+    auto nk_cip = cipVec->project( trans(gradv(k_cip) )/
                                  vf::max(sqrt( gradv(k_cip) * trans(gradv(k_cip))), max_modgradphi) );
     auto kk_cip = cip->project( divv(nk_cip) );
 
@@ -570,8 +570,8 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
                 op_inte_N_to_P1_Vec_ptrtype op_inte_N_to_P1_Vec;
                 OperatorLagrangeP1<space_Vec_type> * opLagP1Vec;
 
-                auto backend_oplag = backend_type::build( this->vm() );
-                auto backend_oplagVec = backend_type::build( this->vm() );
+                auto backend_oplag = backend_type::build( soption("backend") );
+                auto backend_oplagVec = backend_type::build( soption("backend") );
                 opLagP1 = new OperatorLagrangeP1<space_type> (Xh, backend_oplag);
                 opLagP1Vec = new OperatorLagrangeP1<space_Vec_type> (Xh_Vec, backend_oplagVec);
 
