@@ -122,7 +122,7 @@ main( int argc, char** argv )
                 auto RR = backend()->newVector( Vh );
                 a += on( _range=markedfaces(mesh,"fixe"),
                          _element=u, _rhs=RR,
-                         _expr=cst(0.)*one() );
+                         _expr=zero<nDim,1>() );
             };
         auto Residual = [=](const vector_ptrtype& X, vector_ptrtype& R)
             {
@@ -144,11 +144,11 @@ main( int argc, char** argv )
                 R->close();
                 auto temp = Vh->element();
                 temp = *R;
-                temp.on( _range=markedfaces(mesh,"fixe"),_expr=cst(0)*one() );
+                temp.on( _range=markedfaces(mesh,"fixe"),_expr=zero<nDim,1>() );
                 *R = temp;
             };
 
-        u.on( _range=markedfaces(mesh,"fixe"),_expr=cst(0)*one() );
+        u.on( _range=markedfaces(mesh,"fixe"),_expr=zero<nDim,1>() );
         backend()->nlSolver()->residual = Residual;
         backend()->nlSolver()->jacobian = Jacobian;
         backend()->nlSolve( _solution=u,_jacobian=Jac,_residual=Res );
