@@ -29,7 +29,6 @@
 #ifndef FEELPP_VF_CST_HPP
 #define FEELPP_VF_CST_HPP 1
 
-#include <feel/feelcore/feelunits.hpp>
 #include <feel/feelvf/expr.hpp>
 
 namespace Feel
