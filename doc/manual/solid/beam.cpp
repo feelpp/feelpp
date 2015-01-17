@@ -23,7 +23,7 @@
 */
 
 #include <feel/feel.hpp>
-#include <feel/feelcore/feelunits.hpp>
+#include <feel/feelcore/units.hpp>
 
 inline
 Feel::po::options_description
