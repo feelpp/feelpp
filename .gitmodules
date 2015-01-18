@@ -80,13 +80,13 @@
 	path = contrib/cereal
 	url = https://github.com/USCiLab/cereal
 	fetchRecurseSubmodules = on-demand
-[submodule "projects/eye2brain"]
-	path = projects/eye2brain
-	url = https://github.com/feelpp/eye2brain.git
-	fetchRecurseSubmodules = on-demand
 [submodule "projects/lncmi"]
 	path = projects/lncmi
 	url = https://github.com/feelpp/lncmi.git
+	fetchRecurseSubmodules = on-demand
+[submodule "projects/eye2brain"]
+	path = projects/eye2brain
+	url = https://github.com/feelpp/eye2brain.git
 	fetchRecurseSubmodules = on-demand
 [submodule "quickstart"]
 	path = quickstart
