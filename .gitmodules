@@ -69,9 +69,6 @@
 	path = contrib/nt2
 	url = https://github.com/feelpp/nt2.git
 	fetchRecurseSubmodules = on-demand
-[submodule "contrib/hpddm"]
-	path = contrib/hpddm
-	url = https://github.com/hpddm/hpddm.git
 [submodule "projects/tr"]
 	path = projects/tr
 	url = https://github.com/feelpp/tr.git
@@ -91,3 +88,6 @@
 [submodule "quickstart"]
 	path = quickstart
 	url = https://github.com/feelpp/quickstart.git
+[submodule "contrib/hpddm"]
+	path = contrib/hpddm
+	url = https://github.com/feelpp/hpddm.git
