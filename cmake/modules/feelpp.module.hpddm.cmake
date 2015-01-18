@@ -33,8 +33,10 @@ if ( FEELPP_ENABLE_HPDDM )
       execute_process(
         COMMAND git submodule update --init --recursive contrib/hpddm
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_FILE git.hpddm.log
+        ERROR_FILE git.hpddm.log
         )
-      MESSAGE(STATUS "Git submodule contrib/hpddm updated.")
+      MESSAGE(STATUS "[feelpp] Git submodule contrib/hpddm updated.")
     else()
       if ( NOT EXISTS ${FEELPP_SOURCE_DIR}/contrib/hpddm/ )
         message( FATAL_ERROR "Please make sure that git submodule contrib/hpddm is available")
