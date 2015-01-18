@@ -47,7 +47,7 @@ int main(int argc, char**argv )
     auto mesh = loadMesh( _mesh=new Mesh<Simplex<FEELPP_DIM>> );
 
     auto Xh = Pchv<1>( mesh );
-    auto Nh = Ned1h<1>( mesh );
+    auto Nh = Ned1h<0>( mesh );
 
     auto a = form2( _trial=Nh, _test=Nh );
     auto c = doption("parameters.c");

@@ -57,6 +57,15 @@ ExporterVTK<MeshType,N>::ExporterVTK( po::variables_map const& vm, std::string c
 {
     init();
 }
+
+template<typename MeshType, int N>
+ExporterVTK<MeshType,N>::ExporterVTK( std::string const& exp_prefix,
+                                      WorldComm const& worldComm )
+    :
+    super( exp_prefix, worldComm )
+{
+    init();
+}
 template<typename MeshType, int N>
 ExporterVTK<MeshType,N>::ExporterVTK( ExporterVTK const & __ex )
     :

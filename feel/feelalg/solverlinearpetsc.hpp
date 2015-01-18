@@ -242,6 +242,14 @@ public:
             bool transpose );
 
     /**
+     * @retun the Krylov SubsPace  data structure
+     */
+    KSP ksp()
+        {
+            this->init();
+            return M_ksp;
+        }
+    /**
      * Returns the raw PETSc preconditioner context pointer.  This allows
      * you to specify the PCShellSetApply() and PCShellSetSetUp() functions
      * if you desire.  Just don't do anything crazy like calling PCDestroy()!

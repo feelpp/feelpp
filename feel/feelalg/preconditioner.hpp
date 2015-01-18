@@ -56,10 +56,19 @@ class Preconditioner
 public:
 
 
-    /** @name Constants
+    /** @name Enums
      */
     //@{
 
+    /**
+     * preconditioner side
+     */
+    enum Side
+    {
+        LEFT=0, // default
+        RIGHT=1,
+        SYMMETRIC=2
+    };
 
     //@}
 
@@ -73,7 +82,7 @@ public:
     typedef boost::shared_ptr<MatrixSparse<T> > sparse_matrix_ptrtype;
     typedef boost::shared_ptr<Vector<T> > vector_ptrtype;
 
-
+    
     //@}
 
     /** @name Constructors, destructor
@@ -89,6 +98,7 @@ public:
     M_name(),
     M_worldComm( o.M_worldComm ),
     M_matrix( o.M_matrix ),
+    M_side( o.M_side ),
     M_preconditioner_type( o.M_preconditioner_type ),
     M_matSolverPackage_type( o.M_matSolverPackage_type ),
     M_prec_matrix_structure ( o.M_prec_matrix_structure ),
@@ -113,13 +123,14 @@ public:
     //@{
 
     //! copy operator
-    Preconditioner& operator=( Preconditioner const & o )
+    Preconditioner& operator=( Preconditioner const & o ) 
         {
             if ( this != &o )
             {
                 M_name = o.M_name;
                 M_worldComm = o.M_worldComm;
                 M_matrix = o.M_matrix;
+                M_side = o.M_side;
                 M_is_initialized = o.M_is_initialized;
                 M_matSolverPackage_type = o.M_matSolverPackage_type;
                 M_prec_matrix_structure = o.M_prec_matrix_structure;
@@ -160,13 +171,13 @@ public:
      * Computes the preconditioned vector "y" based on input "x".
      * Usually by solving Py=x to get the action of P^-1 x.
      */
-    virtual void apply( const Vector<T> & x, Vector<T> & y ) = 0;
+    virtual void apply( const Vector<T> & x, Vector<T> & y ) const = 0;
 
     /**
      * Computes the preconditioned vector "y" based on input "x".
      * Usually by solving Py=x to get the action of P^-1 x.
      */
-    void apply( vector_ptrtype const& x, vector_ptrtype& y )
+    void apply( vector_ptrtype const& x, vector_ptrtype& y ) const
         {
             this->apply( *x, *y );
         }
@@ -190,6 +201,11 @@ public:
 
     sparse_matrix_ptrtype const& matrix() const { return M_matrix; }
 
+    /**
+     * @return the side of the system to which the preconditioner applies
+     */
+    Side side() const { return M_side; }
+    
     //@}
 
     /** @name  Mutators
@@ -218,7 +234,10 @@ public:
      */
     virtual void setPrecMatrixStructure( MatrixStructure mstruct  );
 
-
+    /**
+     * set the side \p s of the linear system to which the preconditioner applies
+     */
+    void setSide( Side s ) { M_side = s; }
     //@}
 
     /** @name  Methods
@@ -247,6 +266,11 @@ protected:
      */
     sparse_matrix_ptrtype  M_matrix;
 
+    /**
+     * side of the preconditioner
+     */
+    Side M_side;
+    
     /**
      * Enum statitng with type of preconditioner to use.
      */
@@ -280,6 +304,7 @@ Preconditioner<T>::Preconditioner ( std::string const& name, WorldComm const& wo
 M_name(name),
 M_worldComm(worldComm),
 M_matrix(),
+M_side( LEFT ),
 M_preconditioner_type   ( ILU_PRECOND ),
 M_matSolverPackage_type ( MATSOLVER_PETSC ),
 M_prec_matrix_structure ( MatrixStructure::SAME_NONZERO_PATTERN ),

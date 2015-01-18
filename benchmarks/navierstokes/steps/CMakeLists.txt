@@ -1,9 +1,9 @@
-###  TEMPLATE.txt.tpl; coding: utf-8 ---
+###  CMakeLists.txt; coding: utf-8 --- 
 
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-#       Date: 2011-04-02
+#  Author(s):<christophe.prudhomme@feelpp.org>
+#       Date: 08 Jan 2015
 #
-#  Copyright (C) 2011 Universit� Joseph Fourier (Grenoble I)
+#  Copyright (C) 2015 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -21,6 +21,8 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-foreach( DIR poiseuille kovasznay2 turek stokes nozzle steps)
-  add_subdirectory( ${DIR} )
-endforeach()
+
+
+feelpp_add_application( steady_ns SRCS steady_ns.cpp INCLUDE_IN_ALL CFG steady_ns.cfg )
+install(TARGETS feelpp_steady_ns DESTINATION bin/ COMPONENT Bin )
+

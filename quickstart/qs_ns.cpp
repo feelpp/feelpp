@@ -22,6 +22,7 @@
    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 #include <feel/feel.hpp>
+#include <feel/feelpde/preconditionerblockns.hpp>
 
 int main(int argc, char**argv )
 {
@@ -30,7 +31,8 @@ int main(int argc, char**argv )
 	po::options_description qsnsoptions( "Quickstart Navier-Stokes options" );
 	qsnsoptions.add_options()
 		( "mu", po::value<double>()->default_value( 1.0 ), "coeff" )
-		;
+        ( "penaldir", po::value<double>()->default_value( 50 ), "coeff" )
+        ;
 	Environment env( _argc=argc, _argv=argv,
                      _desc=qsnsoptions,
                      _about=about(_name="qs_ns",
@@ -63,14 +65,40 @@ int main(int argc, char**argv )
 
     auto mybdf = bdf( _space=Vh, _name="mybdf" );
 
+    auto f = form1( _test=Vh );
     auto ft = form1( _test=Vh );
 
     auto a = form2( _trial=Vh, _test=Vh), at = form2( _trial=Vh, _test=Vh);
 
-    a = integrate( _range=elements( mesh ), _expr=mu*inner( deft, grad(v) ) + mybdf->polyDerivCoefficient(0)*trans(idt(u))*id(u) );
-    a +=integrate( _range=elements( mesh ), _expr=-div( v )*idt( p ) - divt( u )*id( q ) );
+    a =  integrate( _range=elements( mesh ), _expr=mu*inner( deft, grad(v) ) + mybdf->polyDerivCoefficient(0)*trans(idt(u))*id(u) );
+    a += integrate( _range=elements( mesh ), _expr=-div( v )*idt( p ) - divt( u )*id( q ) );
+    
     auto e = exporter( _mesh=mesh );
     auto w = Vh->functionSpace<0>()->element( curlv(u), "w" );
+
+    auto inlet = expr<2,1>( soption(_name="functions.g"));
+    auto wall = expr<2,1>( "{0,0}:x:y");
+    std::map<std::string,std::set<flag_type>> bcs;
+    bcs["Dirichlet"].insert(mesh->markerName("inlet"));
+    bcs["Dirichlet"].insert(mesh->markerName("wall"));
+    bcs["Neumann"].insert(mesh->markerName("outlet"));
+
+    map_vector_field<2,1,2> m_dirichlet;
+    m_dirichlet["inlet"]=inlet;
+    m_dirichlet["wall"]=wall;
+    for( auto const& d : m_dirichlet )
+    {
+        LOG(INFO) << "Setting Dirichlet condition on " << d.first << " with " << d.second;
+        a += integrate( _range=markedfaces( mesh, d.first ),
+                        _expr=(trans(-mu*gradt(u)*N()+idt(p)*N()))*id(v)+(trans(-mu*grad(u)*N()+id(p)*N()))*idt(v)+doption("penaldir")*trans(idt(u))*id(v)/hFace() );
+        f += integrate( _range=markedfaces( mesh, d.first ),
+                        _expr=trans(d.second)*(-mu*grad(u)*N()+id(p)*N()+doption("penaldir")*id(v)/hFace() ) );
+    }
+    a.close();
+    auto a_blockns = blockns( _space=Vh, _type="Blockns",
+                          _bc=bcs, _alpha=mybdf->polyDerivCoefficient(0),
+                          _matrix=a.matrixPtr());
+
 
     toc("bdf, forms,...");
 
@@ -87,17 +115,29 @@ int main(int argc, char**argv )
         auto rhsu =  bdf_poly.element<0>();
         auto extrap = mybdf->poly();
         auto extrapu = extrap.element<0>();
-        ft = integrate( _range=elements(mesh), _expr=(trans(idv(rhsu))*id(u) ) );
+        ft.zero();
+        ft += f;
+        ft += integrate( _range=elements(mesh), _expr=(trans(idv(rhsu))*id(u) ) );
         toc("update rhs");tic();
 
         at = a;
         at += integrate( _range=elements( mesh ), _expr= trans(gradt(u)*idv(extrapu))*id(v) );
+        #if 0
         at+=on(_range=markedfaces(mesh,"wall"), _rhs=ft, _element=u,
-               _expr=zero<2,1>() );
+               _expr=wall );
         at+=on(_range=markedfaces(mesh,"inlet"), _rhs=ft, _element=u,
-               _expr=-expr( soption(_name="functions.g")) *N() );
+               _expr=inlet );
+        #endif
         toc("update lhs");tic();
-        at.solve(_rhs=ft,_solution=U);
+
+
+        if ( boption("blockns") )
+        {
+            a_blockns->update( at.matrixPtr(), idv(extrapu), m_dirichlet );
+            at.solveb(_rhs=ft,_solution=U,_backend=backend(_rebuild=true),_prec=a_blockns );
+        }
+        else
+            at.solve(_rhs=ft,_solution=U);
         toc("solve");tic();
         w.on( _range=elements(mesh), _expr=curlv(u) );
         e->step(mybdf->time())->add( "u", u );

@@ -157,8 +157,8 @@ public:
      */
     DataMap( size_type n, std::vector<int> const& firstdof, std::vector<int> const& lastdof );
 
-    DataMap( DataMap const & dm );
-
+    DataMap( DataMap const & dm ) = default;
+    DataMap( DataMap&& dm ) = default;
     virtual ~DataMap();
 
     //@}
@@ -167,7 +167,8 @@ public:
      */
     //@{
 
-    DataMap& operator=( DataMap const& dm );
+    DataMap& operator=( DataMap const& dm ) = default;
+    DataMap& operator=( DataMap && dm ) = default;
 
     //@}
 
@@ -521,6 +522,14 @@ public:
     //@{
 
     void close() const;
+
+    // add missing dof entries in // ( typically a ghost dof present in index set but not active dof associated )
+    void updateIndexSetWithParallelMissingDof( std::vector<size_type> & _indexSet ) const;
+    std::vector<size_type> buildIndexSetWithParallelMissingDof( std::vector<size_type> const& _indexSet ) const;
+
+    // build sub data map from an index set
+    boost::shared_ptr<DataMap> createSubDataMap( std::vector<size_type> const& idExtract,
+                                                 bool _checkAndFixInputRange=true ) const;
 
     //@}
 

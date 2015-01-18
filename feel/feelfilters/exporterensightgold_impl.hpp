@@ -63,6 +63,15 @@ ExporterEnsightGold<MeshType,N>::ExporterEnsightGold( po::variables_map const& v
 }
 
 template<typename MeshType, int N>
+ExporterEnsightGold<MeshType,N>::ExporterEnsightGold( std::string const& exp_prefix, WorldComm const& worldComm )
+    :
+    super( exp_prefix, worldComm ),
+    M_worldCommBase(worldComm)
+{
+    init();
+}
+
+template<typename MeshType, int N>
 ExporterEnsightGold<MeshType,N>::ExporterEnsightGold( ExporterEnsightGold const & __ex )
     :
     super( __ex ),
