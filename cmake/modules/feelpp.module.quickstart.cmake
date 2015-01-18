@@ -32,6 +32,8 @@ if ( FEELPP_ENABLE_QUICKSTART )
       execute_process(
         COMMAND git submodule update --init --recursive quickstart
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_FILE git.quickstart.log
+        ERROR_FILE git.quickstart.log
         )
       MESSAGE(STATUS "Git submodule quickstart updated.")
     else()
