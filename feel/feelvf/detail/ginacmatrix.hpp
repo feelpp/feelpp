@@ -82,6 +82,7 @@ public:
      */
     //@{
 
+    GinacMatrix() : super() {}
     explicit GinacMatrix( GiNaC::matrix const & fun, std::vector<GiNaC::symbol> const& syms, std::string const& exprDesc,
                           std::string filename="", WorldComm const& world=Environment::worldComm() )
         :

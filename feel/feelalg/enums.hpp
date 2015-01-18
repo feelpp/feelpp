@@ -35,15 +35,18 @@ namespace Feel
 /**
  * Context for 'on' operation on sparse matrices
  */
-enum class OnContext
+struct ContextOn
 {
-    NONE                        = 0x0, /**< none */
-    ELIMINATION                 = 0x1, /**< elimination */
-    PENALISATION                = 0x2, /**< penalisation */
-    ELIMINATION_KEEP_DIAGONAL   = 0x4, /**< enables elimination and keep diagonal entry(ie don't put 1), modify rhs accordingly */
-    ELIMINATION_SYMMETRIC       = 0x8  /**< enables elimination and make a symmetric elimination */
+    enum Options
+    {
+        PENALISATION                = 0x0,  /**< penalisation */
+        ELIMINATION                 = 0x1, /**< elimination */
+        KEEP_DIAGONAL   = 0x2, /**< enables elimination and keep diagonal entry(ie don't put 1), modify rhs accordingly */
+        SYMMETRIC       = 0x4,  /**< enables elimination and make a symmetric elimination */
+        CHECK           = 0x6
+    };
 };
-extern std::map<std::string, OnContext> OnContextMap;
+extern std::map<std::string, size_type> ContextOnMap;
 
 
 enum   MatrixProperties

@@ -22,6 +22,7 @@
    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 #include <feel/feel.hpp>
+#include <feel/feelpde/preconditionerblockns.hpp>
 
 int main(int argc, char**argv )
 {
@@ -30,6 +31,8 @@ int main(int argc, char**argv )
 	po::options_description stokesoptions( "Stokes options" );
 	stokesoptions.add_options()
 		( "mu", po::value<double>()->default_value( 1.0 ), "coeff" )
+		( "fixpoint.tol", po::value<double>()->default_value( 1e-8 ), "tolerance" )
+		( "fixpoint.maxit", po::value<double>()->default_value( 10 ), "max iteration" )
 		;
 	Environment env( _argc=argc, _argv=argv,
                      _desc=stokesoptions,
@@ -37,47 +40,76 @@ int main(int argc, char**argv )
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
 
+#if 0
     double meshSize = option(_name="gmsh.hsize").as<double>();
     GeoTool::Rectangle R( meshSize,"myRectangle",GeoTool::Node(0,0),GeoTool::Node(5,1));
     R.setMarker(_type="line",_name="inlet",_marker4=true);
     R.setMarker(_type="line",_name="outlet",_marker2=true);
     R.setMarker(_type="line",_name="wall",_marker1=true,_marker3=true);
     R.setMarker(_type="surface",_name="Omega",_markerAll=true);
-
     auto mesh = R.createMesh(_mesh=new Mesh<Simplex<2>>,_name="qs_stokes");
+#else
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
+#endif
+
+
 
     auto g = expr<2,1>( soption(_name="functions.g") );
-    auto Vh = THch<1>( mesh );
+    auto wall = expr<2,1>( soption(_name="functions.h") );
+    auto Vh = THch<2>( mesh );
     auto U = Vh->element();
+    auto Un = Vh->element();
     auto V = Vh->element();
     auto u = U.element<0>();
+    auto un = Un.element<0>();
     auto v = V.element<0>(g,"poiseuille");
     auto p = U.element<1>();
+    auto pn = Un.element<1>();
     auto q = V.element<1>();
 
+    if ( Environment::isMasterRank() )
+    {
+        std::cout << "FunctionSpace\tVelocity\tPressure\n";
+        std::cout.width(16);
+        std::cout << std::left << Vh->nDof();
+        std::cout.width(16);
+        std::cout << std::left << Vh->functionSpace<0>()->nDof();
+        std::cout.width(16);
+        std::cout << std::left << Vh->functionSpace<1>()->nDof() << "\n";
+    }
     auto deft = gradt( u );
     auto def = grad( v );
     double mu = doption(_name="mu");
-
     auto l = form1( _test=Vh );
+    auto r = form1( _test=Vh );
 
     auto a = form2( _trial=Vh, _test=Vh);
-    a = integrate( _range=elements( mesh ), _expr=mu*inner( deft,def ) );
-    a +=integrate( _range=elements( mesh ), _expr=-div( v )*idt( p ) + divt( u )*id( q ) );
-
+    auto at = form2( _trial=Vh, _test=Vh);
+    a += integrate( _range=elements( mesh ), _expr=mu*inner( deft,def ) );
+    a +=integrate( _range=elements( mesh ), _expr=-div( v )*idt( p ) - divt( u )*id( q ) );
+    
     a+=on(_range=markedfaces(mesh,"wall"), _rhs=l, _element=u,
-          _expr=zero<2,1>() ) ;
+           _expr=zero<2,1>() ) ;
     a+=on(_range=markedfaces(mesh,"inlet"), _rhs=l, _element=u,
-          _expr=g );
+           _expr=g );
 
-    a.solve(_rhs=l,_solution=U);
+    if ( Environment::isMasterRank() )
+        std::cout << " - Setting up Precondition Blockns...\n";
+    auto a_blockns = blockns( _space=Vh, _type="PM", _matrix= at.matrixPtr() );
+    
+    if ( Environment::isMasterRank() )
+        std::cout << " - Solving Stokes...\n";
+    if ( boption("blockns") )
+    {
+        a.solveb(_rhs=l,_solution=U,_backend=backend(),_prec=a_blockns);
+    }
+     else
+        a.solve(_rhs=l,_solution=U);
 
     auto e = exporter( _mesh=mesh );
-    e->add( "u", u );
-    e->add( "v", v );
-    e->add( "p", p );
+    e->step(0)->add( "u", u );
+    e->step(0)->add( "p", p );
     e->save();
-    //! [marker1]
 
     return 0;
 }
