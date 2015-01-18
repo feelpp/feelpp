@@ -396,9 +396,7 @@ if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/research AND FEELPP_ENABLE_RESEARCH )
   ADD_SUBDIRECTORY ( research )
 endif()
 
-if ( FEELPP_ENABLE_QUICKSTART )
-  ADD_SUBDIRECTORY ( quickstart )
-endif()
+include(feelpp.module.quickstart)
 
 
 ################################################################################
