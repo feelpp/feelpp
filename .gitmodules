@@ -83,3 +83,6 @@
 [submodule "projects/lncmi"]
 	path = projects/lncmi
 	url = https://github.com/feelpp/lncmi.git
+[submodule "quickstart"]
+	path = quickstart
+	url = https://github.com/feelpp/quickstart.git
