@@ -37,6 +37,7 @@
 #include <feel/feelvf/measure.hpp>
 #include <feel/feelvf/mean.hpp>
 #include <feel/feelvf/trans.hpp>
+#include <feel/feelvf/vf.hpp>
 
 /// [marker1]
 inline
@@ -205,24 +206,24 @@ template<int Dim, int Order>
 HeatSink<Dim,Order>::HeatSink()
     :
     super(),
-    depth( option(_name="depth").template as<double>() ),
-    L( option(_name="L").template as<double>() ),
+    depth( doption(_name="depth") ),
+    L( doption(_name="L") ),
     width( option(_name="width").template as <double>() ),
-    kappa_s( option(_name="kappa_s").template as<double>() ),
-    kappa_f( option(_name="kappa_f").template as<double>() ),
-    rho_s( option(_name="rho_s").template as<double>() ),
-    rho_f( option(_name="rho_f").template as<double>() ),
-    c_s( option(_name="c_s").template as<double>() ),
-    c_f( option(_name="c_f").template as<double>() ),
+    kappa_s( doption(_name="kappa_s") ),
+    kappa_f( doption(_name="kappa_f") ),
+    rho_s( doption(_name="rho_s") ),
+    rho_f( doption(_name="rho_f") ),
+    c_s( doption(_name="c_s") ),
+    c_f( doption(_name="c_f") ),
     therm_coeff( option(_name="therm_coeff").template as <double>() ),
     Tamb( option(_name="Tamb").template as <double>() ),
     heat_flux( option(_name="heat_flux").template as <double>() ),
-    steady( option(_name="steady").template as<bool>() ),
+    steady( boption(_name="steady") ),
     M_exporter()
 {
     this->changeRepository( boost::format( "%1%/%2%/" )
                             % this->about().appName()
-                            % option(_name="gmsh.hsize").template as<double>() );
+                            % doption(_name="gmsh.hsize") );
 
     // Create mesh: it automatically changes the geometric parameters using the
     // associated options
@@ -253,7 +254,7 @@ template<int Dim, int Order>
 void
 HeatSink<Dim, Order>::run()
 {
-    LOG(INFO) << "meshSize = " << option(_name="gmsh.hsize").template as<double>() << "\n"
+    LOG(INFO) << "meshSize = " << doption(_name="gmsh.hsize") << "\n"
               << "L = "<< L <<"\n"
               << "width = " << width << "\n"
               << "depth = " << depth << "\n"
@@ -300,14 +301,15 @@ HeatSink<Dim, Order>::run()
     }
 
     a +=
-        integrate( _range=markedelements( mesh, "spreader" ), _expr=rho_s*c_s*idt( T )*id( v )*M_bdf->polyDerivCoefficient( 0 ) )
-        + integrate( _range=markedelements( mesh, "fin" ), _expr=rho_f*c_f*idt( T )*id( v )*M_bdf->polyDerivCoefficient( 0 ) );
+        integrate( _range=markedelements( mesh, "spreader" ), _expr=rho_s*c_s*idt( T )*id( v )*M_bdf->polyDerivCoefficient( 0 ) );
+    a +=
+        integrate( _range=markedelements( mesh, "fin" ), _expr=rho_f*c_f*idt( T )*id( v )*M_bdf->polyDerivCoefficient( 0 ) );
     /// [marker3]
 
     /*
      * Left and right hand sides construction (non-steady state) with BDF
      */
-    T = vf::project( _space=Xh, _expr=cst( Tamb ) );
+    T = vf::project( _space=Xh, _range=elements(mesh), _expr=cst( Tamb ) );
 
     M_bdf->initialize( T );
 
@@ -334,7 +336,8 @@ HeatSink<Dim, Order>::run()
         // update right hand side with time dependent terms
         auto bdf_poly = M_bdf->polyDeriv();
         lt =
-            integrate( _range=markedelements( mesh, "spreader" ), _expr=rho_s*c_s*idv( bdf_poly )*id( v ) ) +
+            integrate( _range=markedelements( mesh, "spreader" ), _expr=rho_s*c_s*idv( bdf_poly )*id( v ) );
+        lt +=
             integrate( _range=markedelements( mesh, "fin" ), _expr=rho_f*c_f*idv( bdf_poly )*id( v ) );
         lt +=
             integrate( _range= markedfaces( mesh,"gamma4" ), _expr= heat_flux*( 1-math::exp( -M_bdf->time() ) )*id( v ) );

@@ -34,6 +34,7 @@
 #include <feel/feelpde/disttocurve.hpp>
 #include <feel/feelpde/curveparametrizations.hpp>
 #include <boost/filesystem.hpp>
+#include <feel/feelvf/vf.hpp>
 
 
 using namespace Feel;

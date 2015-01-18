@@ -1,4 +1,3 @@
-
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
@@ -31,6 +30,8 @@
 
 
 #include <feel/feelfilters/geotool.hpp>
+#include <feel/feelfilters/geotoolshape.cpp>
+
 #if defined( FEELPP_HAS_GMSH_H )
 #include <GmshConfig.h>
 #endif
@@ -47,9 +48,59 @@ FusionMarkers::FusionMarkers(GeoGMSHTool const& gt1, int marker1,GeoGMSHTool con
     M_marker1( marker1 ),M_marker2( marker2 )
 {}
 
+namespace detail
+{
 
 bool
-GeoGMSHTool::lineLoopIsClosed( detail::GeoToolLineLoop const& lineloop ) const
+GeoToolEntitiesStorage::representSameEntity( detail::GeoToolLine const& l1, detail::GeoToolLine const& l2 ) const
+{
+    if( l1.lineType() != l2.lineType() )
+        return false;
+
+    // search if all points are present else return false
+    for ( int ptId1 : l1.listPt() )
+    {
+        bool find = false;
+        for ( int ptId2 : l2.listPt() )
+        {
+            auto mypt1 = this->getPoint( ptId1 );
+            auto mypt2 = this->getPoint( ptId2 );
+            if ( mypt1.representSameNode( mypt2 ) )
+            {
+                find=true;
+                break;
+            }
+        }
+        if ( !find )
+            return false;
+    }
+
+    return true;
+}
+
+bool
+GeoToolEntitiesStorage::hasSameOrientation( detail::GeoToolLine const& l1, detail::GeoToolLine const& l2 ) const
+{
+    CHECK( l1.lineType() == l2.lineType() ) << "error not same type";
+    if ( l1.lineType() == "line" )
+    {
+        CHECK( l1.listPt().size() == 2 ) << "error";
+        auto thenode1p1 = this->getPoint(l1.listPt().front()).node();
+        auto thenode2p1 = this->getPoint(l2.listPt().front()).node();
+
+        if ( ( std::abs(thenode1p1[0] - thenode2p1[0]) < 1e-9 ) &&
+             ( std::abs(thenode1p1[1] - thenode2p1[1]) < 1e-9 ) &&
+             ( std::abs(thenode1p1[2] - thenode2p1[2]) < 1e-9 ) )
+            return true;
+        else
+            return false;
+    }
+    else CHECK( false ) << "TODO";
+}
+
+
+bool
+GeoToolEntitiesStorage::lineLoopIsClosed( detail::GeoToolLineLoop const& lineloop ) const
 {
     if ( lineloop.listLine().size() == 0 )
         return false;
@@ -57,7 +108,7 @@ GeoGMSHTool::lineLoopIsClosed( detail::GeoToolLineLoop const& lineloop ) const
     // init with first line in lineloop
     int lineIdStart = lineloop.listLine().front();
     int lineIdStartPos = (lineIdStart>0)? lineIdStart: -lineIdStart;
-    auto const& thelineStart = M_buildDataLine.find(lineIdStartPos)->second;
+    auto const& thelineStart = this->getLine(lineIdStartPos);
     int pointIdStart = (lineIdStart>0)? thelineStart.firstPointIdConnection() : thelineStart.secondPointIdConnection();
     int currentPointId = (lineIdStart>0)? thelineStart.secondPointIdConnection() : thelineStart.firstPointIdConnection();
 
@@ -67,7 +118,8 @@ GeoGMSHTool::lineLoopIsClosed( detail::GeoToolLineLoop const& lineloop ) const
         if ( thelineId == lineIdStart ) continue;
 
         int thelineIdPos = ( thelineId>0 )? thelineId : -thelineId;
-        auto const& theline = M_buildDataLine.find(thelineIdPos)->second;
+        auto const& theline = this->getLine(thelineIdPos);
+
         if ( thelineId > 0 )
         {
             if ( currentPointId != theline.firstPointIdConnection() )
@@ -91,13 +143,13 @@ GeoGMSHTool::lineLoopIsClosed( detail::GeoToolLineLoop const& lineloop ) const
 }
 
 std::set<int>
-GeoGMSHTool::lineLoopPointIdsNotConnected( detail::GeoToolLineLoop const& lineloop ) const
+GeoToolEntitiesStorage::lineLoopPointIdsNotConnected( detail::GeoToolLineLoop const& lineloop ) const
 {
     std::set<int> pointIdNotConnected;
     for ( int thelineIdA : lineloop.listLine() )
     {
         int thelineIdPosA = ( thelineIdA>0 )? thelineIdA : -thelineIdA;
-        auto const& thelineA = M_buildDataLine.find(thelineIdPosA)->second;
+        auto const& thelineA = this->getLine(thelineIdPosA);
         int firstPointIdA = (thelineIdA>0)? thelineA.firstPointIdConnection() : thelineA.secondPointIdConnection();
         int secondPointIdA = (thelineIdA>0)? thelineA.secondPointIdConnection() : thelineA.firstPointIdConnection();
         bool findInternalPointFirst = false, findInternalPointSecond = false;
@@ -105,7 +157,8 @@ GeoGMSHTool::lineLoopPointIdsNotConnected( detail::GeoToolLineLoop const& linelo
         {
             if ( thelineIdA == thelineIdB ) continue;
             int thelineIdPosB = ( thelineIdB>0 )? thelineIdB : -thelineIdB;
-            auto const& thelineB = M_buildDataLine.find(thelineIdPosB)->second;
+            auto const& thelineB = this->getLine(thelineIdPosB);
+
             int firstPointIdB = (thelineIdB>0)? thelineB.firstPointIdConnection() : thelineB.secondPointIdConnection();
             int secondPointIdB = (thelineIdB>0)? thelineB.secondPointIdConnection() : thelineB.firstPointIdConnection();
 
@@ -125,21 +178,17 @@ GeoGMSHTool::lineLoopPointIdsNotConnected( detail::GeoToolLineLoop const& linelo
     return pointIdNotConnected;
 }
 bool
-GeoGMSHTool::lineLoopHasConnection( detail::GeoToolLineLoop const& lineloop1, detail::GeoToolLineLoop const& lineloop2 ) const
+GeoToolEntitiesStorage::lineLoopHasConnection( detail::GeoToolLineLoop const& lineloop1, detail::GeoToolLineLoop const& lineloop2 ) const
 {
     // list of point in lineloop1 not connected
     std::set<int> pointIdNotConnected1 = this->lineLoopPointIdsNotConnected(lineloop1);
     std::set<int> pointIdNotConnected2 = this->lineLoopPointIdsNotConnected(lineloop2);
     for( int ptId1 : pointIdNotConnected1 )
     {
-        CHECK( M_buildDataPoint.find(ptId1) != M_buildDataPoint.end() ) << " not find point " << ptId1;
-        auto const& thePt1 = M_buildDataPoint.find(ptId1)->second;
-
-        //bool findRelatedPoint=false;
+        auto const& thePt1 = this->getPoint(ptId1);
         for( int ptId2 : pointIdNotConnected2 )
         {
-            CHECK( M_buildDataPoint.find(ptId2) != M_buildDataPoint.end() ) << " not find point " << ptId2;
-            auto const& thePt2 = M_buildDataPoint.find(ptId2)->second;
+            auto const& thePt2 = this->getPoint(ptId2);
             if ( thePt1.representSameNode( thePt2 ) )
                 return true;
         }
@@ -149,12 +198,13 @@ GeoGMSHTool::lineLoopHasConnection( detail::GeoToolLineLoop const& lineloop1, de
 }
 
 void
-GeoGMSHTool::lineLoopApplyConnection( detail::GeoToolLineLoop & lineloop1, detail::GeoToolLineLoop const& lineloop2 )
+GeoToolEntitiesStorage::lineLoopApplyConnection( detail::GeoToolLineLoop & lineloop1, detail::GeoToolLineLoop const& lineloop2 )
 {
     std::list<int> myNewLinesId;
     int lineIdStart = lineloop1.listLine().front();
     int lineIdStartPos = (lineIdStart>0)? lineIdStart: -lineIdStart;
-    auto const& thelineStart = M_buildDataLine.find(lineIdStartPos)->second;
+    auto const& thelineStart = this->getLine(lineIdStartPos);
+
     int pointIdFront = (lineIdStart>0)? thelineStart.firstPointIdConnection() : thelineStart.secondPointIdConnection();
     int pointIdBack = (lineIdStart>0)? thelineStart.secondPointIdConnection() : thelineStart.firstPointIdConnection();
 
@@ -177,41 +227,39 @@ GeoGMSHTool::lineLoopApplyConnection( detail::GeoToolLineLoop & lineloop1, detai
                 continue;
 
             int thelineIdPos = ( thelineId>0 )? thelineId : -thelineId;
-            auto const& theline = M_buildDataLine.find(thelineIdPos)->second;
+            auto const& theline = this->getLine(thelineIdPos);
 
-            CHECK( M_buildDataPoint.find(pointIdBack) != M_buildDataPoint.end() ) << " not find point " << pointIdBack;
-            auto const& thePtBack = M_buildDataPoint.find(pointIdBack)->second;
-            CHECK( M_buildDataPoint.find(pointIdFront) != M_buildDataPoint.end() ) << " not find point " << pointIdFront;
-            auto const& thePtFront = M_buildDataPoint.find(pointIdFront)->second;
-            auto const& thePtFirstPtConnection = M_buildDataPoint.find(theline.firstPointIdConnection())->second;
-            auto const& thePtSecondPtConnection = M_buildDataPoint.find(theline.secondPointIdConnection())->second;
+            auto const& thePtBack = this->getPoint(pointIdBack);
+            auto const& thePtFront = this->getPoint(pointIdFront);
+            auto const& thePtFirstPtConnection = this->getPoint(theline.firstPointIdConnection());
+            auto const& thePtSecondPtConnection = this->getPoint(theline.secondPointIdConnection());
 
             if ( pointIdBack == theline.firstPointIdConnection() )
             {
-                myNewLinesId.push_back( thelineIdPos/*thelineId*/ ); // positive sign
+                myNewLinesId.push_back( thelineIdPos ); // positive sign
                 pointIdBack = theline.secondPointIdConnection();
                 ++nLineAdded;
             }
             else if ( pointIdBack == theline.secondPointIdConnection() )
             {
-                myNewLinesId.push_back( -thelineIdPos/*-thelineId*/ ); // negative sign
+                myNewLinesId.push_back( -thelineIdPos ); // negative sign
                 pointIdBack = theline.firstPointIdConnection();
                 ++nLineAdded;
             }
             else if ( thePtBack.representSameNode( thePtFirstPtConnection ) )
             {
-                myNewLinesId.push_back( thelineIdPos/*thelineId*/ ); // positive sign
+                myNewLinesId.push_back( thelineIdPos ); // positive sign
                 pointIdBack = theline.secondPointIdConnection();
                 // replace point in Line
-                M_buildDataLine[thelineIdPos].replacePointId( thePtFirstPtConnection.globalId(),thePtBack.globalId() );
+                this->getLine(thelineIdPos).replacePointId( thePtFirstPtConnection.globalId(),thePtBack.globalId() );
                 ++nLineAdded;
             }
             else if ( thePtBack.representSameNode( thePtSecondPtConnection ) )
             {
-                myNewLinesId.push_back( -thelineIdPos/*-thelineId*/ ); // negative sign
+                myNewLinesId.push_back( -thelineIdPos ); // negative sign
                 pointIdBack = theline.firstPointIdConnection();
                 // replace point in Line
-                M_buildDataLine[thelineIdPos].replacePointId( thePtSecondPtConnection.globalId(),thePtBack.globalId() );
+                this->getLine(thelineIdPos).replacePointId( thePtSecondPtConnection.globalId(),thePtBack.globalId() );
                 ++nLineAdded;
             }
 
@@ -221,30 +269,30 @@ GeoGMSHTool::lineLoopApplyConnection( detail::GeoToolLineLoop & lineloop1, detai
 
             if ( pointIdFront == theline.secondPointIdConnection() )
             {
-                myNewLinesId.push_front( thelineIdPos/*thelineId*/ ); // positive sign
+                myNewLinesId.push_front( thelineIdPos ); // positive sign
                 pointIdFront = theline.firstPointIdConnection();
                 ++nLineAdded;
             }
             else if ( pointIdFront == theline.firstPointIdConnection() )
             {
-                myNewLinesId.push_front( -thelineIdPos/*-thelineId*/ ); // negative sign
+                myNewLinesId.push_front( -thelineIdPos ); // negative sign
                 pointIdFront = theline.secondPointIdConnection();
                 ++nLineAdded;
             }
             else if ( thePtFront.representSameNode( thePtSecondPtConnection ) )
             {
-                myNewLinesId.push_back( thelineIdPos/*thelineId*/ ); // positive sign
+                myNewLinesId.push_back( thelineIdPos ); // positive sign
                 pointIdFront = theline.firstPointIdConnection();
                 // replace point in Line
-                M_buildDataLine[thelineIdPos].replacePointId( thePtSecondPtConnection.globalId(),thePtFront.globalId() );
+                this->getLine(thelineIdPos).replacePointId( thePtSecondPtConnection.globalId(),thePtFront.globalId() );
                 ++nLineAdded;
             }
             else if ( thePtFront.representSameNode( thePtFirstPtConnection ) )
             {
-                myNewLinesId.push_back( -thelineIdPos/*-thelineId*/ ); // negative sign
+                myNewLinesId.push_back( -thelineIdPos ); // negative sign
                 pointIdFront = theline.secondPointIdConnection();
                 // replace point in Line
-                M_buildDataLine[thelineIdPos].replacePointId( thePtFirstPtConnection.globalId(),thePtFront.globalId() );
+                this->getLine(thelineIdPos).replacePointId( thePtFirstPtConnection.globalId(),thePtFront.globalId() );
                 ++nLineAdded;
             }
 
@@ -257,14 +305,15 @@ GeoGMSHTool::lineLoopApplyConnection( detail::GeoToolLineLoop & lineloop1, detai
 
 
     // if front point and back point have same node but not same id, fix numbering
-    auto const& thePtBack = M_buildDataPoint.find(pointIdBack)->second;
-    auto const& thePtFront = M_buildDataPoint.find(pointIdFront)->second;
+    auto const& thePtBack = this->getPoint(pointIdBack);
+    auto const& thePtFront = this->getPoint(pointIdFront);
+
     if ( pointIdFront != pointIdBack && thePtFront.representSameNode( thePtBack ) )
     {
         for ( int thelineId : myNewLinesId )
         {
             int thelineIdPos = ( thelineId>0 )? thelineId : -thelineId;
-            M_buildDataLine[thelineIdPos].replacePointId( thePtFront.globalId(),thePtBack.globalId() );
+            this->getLine(thelineIdPos).replacePointId( thePtFront.globalId(),thePtBack.globalId() );
         }
     }
 #if 0
@@ -276,8 +325,157 @@ GeoGMSHTool::lineLoopApplyConnection( detail::GeoToolLineLoop & lineloop1, detai
 
     lineloop1.setLines( myNewLinesId );
 
+} // GeoToolEntitiesStorage::lineLoopApplyConnection
+
+
+int
+GeoToolEntitiesStorage::getDuplicatePointId( detail::GeoToolSurface const& s, detail::GeoToolPoint const& p ) const
+{
+    for ( int lineloopId : s.listLineLoop() )
+    {
+        auto const& mylineloop = this->getLineLoop( lineloopId );
+        for ( int lineId : mylineloop.listLine() )
+        {
+            int lineIdPos = (lineId>0) ? lineId : -lineId;
+            auto const& myline = this->getLine( lineIdPos );
+            for ( int pointId : myline.listPoint() )
+            {
+                auto const& mypoint = this->getPoint( pointId );
+                if ( mypoint.representSameNode( p ) )
+                    return mypoint.globalId();
+
+            }
+        }
+    }
+    return 0;
+}
+int
+GeoToolEntitiesStorage::getDuplicateLineId( detail::GeoToolSurface const& s, detail::GeoToolLine const& l ) const
+{
+    for ( int lineloopId : s.listLineLoop() )
+    {
+        auto const& mylineloop = this->getLineLoop( lineloopId );
+        for ( int lineId : mylineloop.listLine() )
+        {
+            int lineIdPos = (lineId>0) ? lineId : -lineId;
+            auto const& myline = this->getLine( lineIdPos );
+            if ( this->representSameEntity( myline, l ) )
+            {
+                if ( this->hasSameOrientation( myline, l ) )
+                    return myline.globalId();
+                else
+                    return -myline.globalId();
+            }
+        }
+    }
+    return 0;
 }
 
+boost::tuple< std::map<int,int>, std::map<int,int> >
+GeoToolEntitiesStorage::getDuplicatePointLineId( detail::GeoToolSurface const& s1, detail::GeoToolSurface const& s2 ) const
+{
+    std::map<int,int> resPoints,resLines;
+    for ( int lineloopId1 : s1.listLineLoop() )
+    {
+        auto const& mylineloop1 = this->getLineLoop( lineloopId1 );
+        for ( int lineId1 : mylineloop1.listLine() )
+        {
+            int lineId1Pos = (lineId1>0) ? lineId1 : -lineId1;
+            auto const& myline1 = this->getLine( lineId1Pos );
+
+            // lines
+            int lineId2 = this->getDuplicateLineId(s2,myline1);
+            if ( lineId2 != 0 )
+            {
+                //std::cout << "add relation line1 " << lineId1Pos << " - " << lineId2 << "\n";
+                // put positive value for s1 (important)
+                resLines[lineId1Pos] = lineId2;
+            }
+
+            // points
+            for ( int pointId1 : myline1.listPoint() )
+            {
+                auto const& mypoint1 = this->getPoint( pointId1 );
+                int pointId2 = this->getDuplicatePointId(s2,mypoint1);
+                if ( pointId2 != 0 )
+                {
+                    //std::cout << "add relation point " << pointId1 << " - " << pointId2 << "\n";
+                    resPoints[pointId1] = pointId2;
+                }
+            }
+
+
+        }
+    }
+    return boost::make_tuple( resPoints,resLines );
+}
+
+boost::tuple< std::set<int>, std::set<int>, std::set<int> >
+GeoToolEntitiesStorage::getEntityIdsUsedFromSurface() const
+{
+    std::set<int> pointIds, lineIds, lineloopIds;
+    for ( auto const& mys : this->surfaces() )
+    {
+        auto const& mysurface = mys.second;
+        for ( int lineloopId : mysurface.listLineLoop() )
+        {
+            auto const& mylineloop = this->getLineLoop( lineloopId );
+            lineloopIds.insert( lineloopId );
+            for ( int lineId : mylineloop.listLine() )
+            {
+                int lineIdPos = (lineId>0)? lineId : -lineId;
+                auto const& myline = this->getLine( lineIdPos );
+                lineIds.insert( lineIdPos );
+                for ( int pointId : myline.listPoint() )
+                {
+                    pointIds.insert(pointId);
+                }
+            }
+        }
+    }
+    return boost::make_tuple(pointIds, lineIds, lineloopIds);
+}
+
+boost::tuple< std::set<int>, std::set<int>, std::set<int>, std::set<int>, std::set<int> >
+GeoToolEntitiesStorage::getEntityIdsUsedFromVolume() const
+{
+    std::set<int> pointIds, lineIds, lineloopIds, surfaceIds, surfaceloopIds;
+    for ( auto const& myv : this->volumes() )
+    {
+        auto const& myvolume = myv.second;
+        for ( int surfaceloopId : myvolume.listSurfaceLoop() )
+        {
+            auto const& mysurfaceloop = this->getSurfaceLoop( surfaceloopId );
+            surfaceloopIds.insert( surfaceloopId );
+            for ( int surfaceId : mysurfaceloop.listSurface() )
+            {
+                int surfaceIdPos = (surfaceId>0)? surfaceId : -surfaceId;
+                auto const& mysurface = this->getSurface( surfaceIdPos );
+                surfaceIds.insert( surfaceIdPos );
+                for ( int lineloopId : mysurface.listLineLoop() )
+                {
+                    auto const& mylineloop = this->getLineLoop( lineloopId );
+                    lineloopIds.insert( lineloopId );
+                    for ( int lineId : mylineloop.listLine() )
+                    {
+                        int lineIdPos = (lineId>0)? lineId : -lineId;
+                        auto const& myline = this->getLine( lineIdPos );
+                        lineIds.insert( lineIdPos );
+                        for ( int pointId : myline.listPoint() )
+                        {
+                            pointIds.insert(pointId);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return boost::make_tuple(pointIds, lineIds, lineloopIds, surfaceIds, surfaceloopIds);
+}
+
+
+
+} // namespace detail
 
 
 
@@ -299,9 +497,7 @@ GeoGMSHTool::GeoGMSHTool( uint16_type __dim,
     M_surfaceList( new surface_name_type() ),
     M_volumeList( new volume_name_type() ),
     M_surfaceLoopList( new surfaceloop_name_type() ),
-    M_ostrExtrude( new std::ostringstream() ),
-    M_ostrSurfaceLoop( new std::ostringstream() ),
-    M_paramShape( new parameter_shape_type() ),
+    M_paramShape( new parameter_name_type() ),
     M_markShape( new marker_type_type() ),
     M_ostr( new std::ostringstream() ),
     M_ostrDefineByUser( new std::ostringstream() ),
@@ -326,15 +522,13 @@ GeoGMSHTool::GeoGMSHTool( uint16_type __dim,
     M_cptVolume( 1 ),
     M_ligneList( new ligne_name_type() ),
     M_surfaceList( new surface_name_type() ),
-        M_volumeList( new volume_name_type() ),
-        M_surfaceLoopList( new surfaceloop_name_type() ),
-        M_ostrExtrude( new std::ostringstream() ),
-        M_ostrSurfaceLoop( new std::ostringstream() ),
-        M_paramShape( new parameter_shape_type() ),
-        M_markShape( new marker_type_type() ),
-        M_ostr( new std::ostringstream() ),
-        M_ostrDefineByUser( new std::ostringstream() ),
-        M_geoIsDefineByUser( true )
+    M_volumeList( new volume_name_type() ),
+    M_surfaceLoopList( new surfaceloop_name_type() ),
+    M_paramShape( new parameter_name_type() ),
+    M_markShape( new marker_type_type() ),
+    M_ostr( new std::ostringstream() ),
+    M_ostrDefineByUser( new std::ostringstream() ),
+    M_geoIsDefineByUser( true )
 {
     *M_ostrDefineByUser << geoUserStr;
 }
@@ -354,25 +548,18 @@ GeoGMSHTool::GeoGMSHTool( GeoGMSHTool const & m )
     M_surfaceList( new surface_name_type( *( m.M_surfaceList ) ) ),
     M_volumeList( new volume_name_type( *( m.M_volumeList ) ) ),
     M_surfaceLoopList( new surfaceloop_name_type( *m.M_surfaceLoopList ) ),
-    M_ostrExtrude( new std::ostringstream() ),
-    M_ostrSurfaceLoop( new std::ostringstream() ),
-    M_paramShape( new parameter_shape_type( *( m.M_paramShape ) ) ),
+    M_paramShape( new parameter_name_type( *( m.M_paramShape ) ) ),
     M_markShape( new marker_type_type( *( m.M_markShape ) ) ),
     M_ostr( new std::ostringstream() ),
     M_ostrDefineByUser( new std::ostringstream() ),
     M_geoIsDefineByUser( m.M_geoIsDefineByUser ),
-    M_buildDataPoint( m.M_buildDataPoint),
-    M_buildDataLine( m.M_buildDataLine ),
-    M_buildDataLineLoop( m.M_buildDataLineLoop ),
-                           M_buildDataSurface( m.M_buildDataSurface ),
-                           M_buildDataSurfaceLoop( m.M_buildDataSurfaceLoop ),
-                           M_buildDataVolume( m.M_buildDataVolume ),
-                           M_fusionMarkersLineWithInterface( m.M_fusionMarkersLineWithInterface ),
-                           M_fusionMarkersLineWithoutInterface( m.M_fusionMarkersLineWithoutInterface )
+    M_entitiesStorage( m.M_entitiesStorage ),
+    M_fusionMarkersLineWithInterface( m.M_fusionMarkersLineWithInterface ),
+    M_fusionMarkersLineWithoutInterface( m.M_fusionMarkersLineWithoutInterface ),
+    M_fusionMarkersSurfaceWithInterface( m.M_fusionMarkersSurfaceWithInterface ),
+    M_fusionMarkersSurfaceWithoutInterface( m.M_fusionMarkersSurfaceWithoutInterface )
 {
     updateOstr( ( m.M_ostr )->str() );
-    *M_ostrExtrude << ( m.M_ostrExtrude )->str();
-    *M_ostrSurfaceLoop << ( m.M_ostrSurfaceLoop )->str();
 
     if ( M_geoIsDefineByUser ) *M_ostrDefineByUser  << ( m.M_ostrDefineByUser )->str();
 }
@@ -418,9 +605,6 @@ GeoGMSHTool::zeroCpt()
             //boost::get<2>(*itSurf2)=0;
         }
     }
-
-    M_ostrExtrude.reset( new std::ostringstream() );
-    M_ostrSurfaceLoop.reset( new std::ostringstream() );
 
     auto itVol = this->M_volumeList->begin();
     auto itVol_end = this->M_volumeList->end();
@@ -468,46 +652,36 @@ GeoGMSHTool::operator=( GeoGMSHTool const & m )
     M_surfaceList.reset( new surface_name_type( *( m.M_surfaceList ) ) );
     M_volumeList.reset( new volume_name_type( *( m.M_volumeList ) ) );
     M_surfaceLoopList.reset( new surfaceloop_name_type( *m.M_surfaceLoopList ) );
-    M_ostrExtrude.reset( new std::ostringstream() );
-    *M_ostrExtrude << ( m.M_ostrExtrude )->str();
-    M_ostrSurfaceLoop.reset( new std::ostringstream() );
-    *M_ostrSurfaceLoop << ( m.M_ostrSurfaceLoop )->str();
 
-    M_paramShape.reset( new parameter_shape_type( *( m.M_paramShape ) ) );
+    M_paramShape.reset( new parameter_name_type( *( m.M_paramShape ) ) );
 
     M_markShape.reset( new marker_type_type( *( m.M_markShape ) ) );
     M_ostr.reset( new std::ostringstream() );
     updateOstr( ( m.M_ostr )->str() );
 
-    //new
-    M_buildDataPoint = m.M_buildDataPoint;
-    M_buildDataLine = m.M_buildDataLine;
-    M_buildDataLineLoop = m.M_buildDataLineLoop;
-    M_buildDataSurface = m.M_buildDataSurface;
-    M_buildDataSurfaceLoop = m.M_buildDataSurfaceLoop;
-    M_buildDataVolume = m.M_buildDataVolume;
+    M_entitiesStorage = m.M_entitiesStorage;
     M_fusionMarkersLineWithInterface = m.M_fusionMarkersLineWithInterface;
     M_fusionMarkersLineWithoutInterface = m.M_fusionMarkersLineWithoutInterface;
 
 }
 
 void
-GeoGMSHTool::initData( std::string __shape,
-                       std::string __name,
-                       double __meshSize,
-                       std::vector<GeoTool::Node> & __param,
-                       uint16_type dim,
-                       uint16_type __nbligne,
-                       uint16_type __nbsurface,
-                       uint16_type __nbvolume )
+GeoGMSHTool::initFromPreDefShape( std::string __shape,
+                                  std::string __name,
+                                  double __meshSize,
+                                  std::vector<GeoTool::Node> & __param,
+                                  uint16_type dim,
+                                  uint16_type __nbligne,
+                                  uint16_type __nbsurface,
+                                  uint16_type __nbvolume )
 {
-    boost::tuple<std::string,double> __id = boost::make_tuple( __name, __meshSize );
+    //boost::tuple<std::string,double> __id = boost::make_tuple( __name, __meshSize );
 
-    ( *( M_paramShape ) )[__shape][__name].resize( __param.size() );
+    ( *( M_paramShape ) )[__name].resize( __param.size() );
 
     for ( uint16_type n=0; n<__param.size(); ++n )
     {
-        ( *( M_paramShape ) )[__shape][__name][n] = __param[n].getNode();
+        ( *( M_paramShape ) )[__name][n] = __param[n].getNode();
     }
 
 
@@ -518,9 +692,9 @@ GeoGMSHTool::initData( std::string __shape,
         for ( uint16_type n=0; n<__nbligne; ++n )
         {
             //std::list< boost::tuple<std::string,std::string, uint16_type  >	>__listTemp;
-            ligne_type_type __listTemp;
-            __listTemp.push_back( boost::make_tuple( __shape,__name,0,__meshSize ) );
-            M_ligneList->push_back( __listTemp );
+            ligne_type_type listTemp;
+            listTemp.push_back( boost::make_tuple( __shape,__name,0,__meshSize ) );
+            M_ligneList->push_back( listTemp );
         }
     }
 
@@ -530,9 +704,9 @@ GeoGMSHTool::initData( std::string __shape,
         {
             //Attention 0 par defaut pour dire que ce n'est pas initialiser
             std::pair<int,int> listEmpty = std::make_pair( 0,0 );
-            surface_type_type __listTemp;
-            __listTemp.push_back( boost::make_tuple( __shape,__name,listEmpty,__meshSize ) );
-            M_surfaceList->push_back( __listTemp );
+            surface_type_type listTemp;
+            listTemp.push_back( boost::make_tuple( __shape,__name,listEmpty,__meshSize ) );
+            M_surfaceList->push_back( listTemp );
         }
     }
 
@@ -542,62 +716,25 @@ GeoGMSHTool::initData( std::string __shape,
         for ( uint16_type n=0; n<__nbvolume; ++n )
         {
             std::pair<int,int> listEmpty = std::make_pair( 0,0 );
-            surface_type_type __listTemp;
-            __listTemp.push_back( boost::make_tuple( __shape,__name,listEmpty,__meshSize ) );
-            M_volumeList->push_back( __listTemp );
+            surface_type_type listTemp;
+            listTemp.push_back( boost::make_tuple( __shape,__name,listEmpty,__meshSize ) );
+            M_volumeList->push_back( listTemp );
         }
 
         std::map<int,std::list<int> > listEmpty;
         listEmpty.clear();
-        surfaceloop_type_type __listTemp;
-        __listTemp.clear();
-        __listTemp.push_back( boost::make_tuple( __shape,__name,listEmpty ) );
-        M_surfaceLoopList->push_back( __listTemp );
+        surfaceloop_type_type listTemp;
+        listTemp.clear();
+        listTemp.push_back( boost::make_tuple( __shape,__name,listEmpty ) );
+        M_surfaceLoopList->push_back( listTemp );
     }
-
-}
-
-void
-GeoGMSHTool::updateData( GeoGMSHTool const & m )
-{
-    M_cptPt = m.M_cptPt;
-    M_cptLine = m.M_cptLine;
-    M_cptLineLoop = m.M_cptLineLoop;
-    M_cptTableau = m.M_cptTableau;
-    M_cptSurfaceLoop = m.M_cptSurfaceLoop;
-
-    M_cptSurface = m.M_cptSurface;
-    M_cptVolume = m.M_cptVolume;
-
-    M_paramShape = m.M_paramShape;
-    M_markShape = m.M_markShape;
-
-    M_ligneList.reset( new ligne_name_type( *( m.M_ligneList ) ) );
-    M_surfaceList.reset( new surface_name_type( *( m.M_surfaceList ) ) );
-    M_volumeList.reset( new volume_name_type( *( m.M_volumeList ) ) );
-    M_surfaceLoopList.reset( new surfaceloop_name_type( *m.M_surfaceLoopList ) );
-
-    M_ostrExtrude.reset( new std::ostringstream() );
-    *M_ostrExtrude << ( m.M_ostrExtrude )->str();
-
-    M_ostrSurfaceLoop.reset( new std::ostringstream() );
-    *M_ostrSurfaceLoop << ( m.M_ostrSurfaceLoop )->str();
-
-    // new
-    M_buildDataPoint = m.M_buildDataPoint;
-    M_buildDataLine = m.M_buildDataLine;
-    M_buildDataLineLoop = m.M_buildDataLineLoop;
-    M_buildDataSurface = m.M_buildDataSurface;
-    M_buildDataSurfaceLoop = m.M_buildDataSurfaceLoop;
-    M_buildDataVolume = m.M_buildDataVolume;
-    M_fusionMarkersLineWithInterface = m.M_fusionMarkersLineWithInterface;
-    M_fusionMarkersLineWithoutInterface = m.M_fusionMarkersLineWithoutInterface;
 
 }
 
 void
 GeoGMSHTool::showMe() const
 {
+#if 0
     std::cout << "cptPt = " << M_cptPt << "\n"
               << "cptLine = " << M_cptLine << "\n"
               << "cptLineLoop = " << M_cptLineLoop << "\n"
@@ -605,7 +742,7 @@ GeoGMSHTool::showMe() const
               << "cptSurfaceLoop = " << M_cptSurfaceLoop << "\n"
               << "cptSurface = " << M_cptSurface << "\n"
               << "cptVolume = " << M_cptVolume << "\n";
-
+#endif
     if ( this->dim()==2 )
     {
         surface_name_const_iterator_type itSurfff = M_surfaceList->begin();
@@ -640,6 +777,9 @@ GeoGMSHTool::showMe() const
             std::cout << "\n";
         }
 
+
+    this->entitiesStorage().showMe();
+
 }
 
 
@@ -667,9 +807,10 @@ GeoGMSHTool::opFusion( const GeoGMSHTool & m,int __typeOp )
     {
         //__geoTool.M_ligneList.reset(new surface_name_type(*(this->M_ligneList)));
         __geoTool.M_ligneList.reset( new ligne_name_type( *( this->M_ligneList ) ) );
+
+#if 0
         ligne_name_const_iterator_type itLine = m.M_ligneList->begin();
         ligne_name_const_iterator_type itLine_end = m.M_ligneList->end();
-
         for ( ; itLine != itLine_end; ++itLine )
         {
             ligne_type_const_iterator_type itLine2 = itLine->begin();
@@ -683,12 +824,19 @@ GeoGMSHTool::opFusion( const GeoGMSHTool & m,int __typeOp )
 
             __geoTool.M_ligneList->push_back( __listTemp );
         }
+#else
+        for ( auto const& mylineList : *m.M_ligneList )
+        {
+            __geoTool.M_ligneList->push_back( mylineList );
+        }
+#endif
     }
 
     //Add Plane Surface for operator + : (((rect,u1,_)))+(((circ,u2,_))) -> (((rect,u1,_)),((circ,u2,_)))
     if ( ( __typeOp==1 && this->dim()>=2 ) || ( __typeOp==2 && this->dim()==3 ) )
     {
         __geoTool.M_surfaceList.reset( new surface_name_type( *( this->M_surfaceList ) ) );
+#if 0
         surface_name_const_iterator_type itSurf = m.M_surfaceList->begin();
         surface_name_const_iterator_type itSurf_end = m.M_surfaceList->end();
 
@@ -705,6 +853,12 @@ GeoGMSHTool::opFusion( const GeoGMSHTool & m,int __typeOp )
 
             __geoTool.M_surfaceList->push_back( __listTemp );
         }
+#else
+        for ( auto const& mysurfList : *m.M_surfaceList )
+        {
+            __geoTool.M_surfaceList->push_back( mysurfList );
+        }
+#endif
     }
 
     // Add Plane Surface for operator - : (((rect,u1,_)))-(((circ,u2,_))) -> (((rect,u1,_),(circ,u2,_)))
@@ -790,12 +944,13 @@ GeoGMSHTool::opFusion( const GeoGMSHTool & m,int __typeOp )
     }
 
     //get data from this (easy)
-    __geoTool.M_paramShape.reset( new parameter_shape_type( *this->M_paramShape ) );
+    __geoTool.M_paramShape.reset( new parameter_name_type( *this->M_paramShape ) );
     __geoTool.M_markShape.reset( new marker_type_type ( *this->M_markShape ) );
 
 
     if ( this->dim()==1 )
     {
+#if 0
         //get data from (more hard because no duplication)
         ligne_name_const_iterator_type itShape = m.M_ligneList->begin();
         ligne_name_const_iterator_type itShape_end = m.M_ligneList->end();
@@ -807,14 +962,20 @@ GeoGMSHTool::opFusion( const GeoGMSHTool & m,int __typeOp )
 
             for ( ; itName != itName_end ; ++itName )
             {
-                ( *( __geoTool. M_paramShape ) )[boost::get<0>( *itName )][ boost::get<1>( *itName )]
-                    = m.getParameter( boost::get<0>( *itName ),boost::get<1>( *itName ) );
+                ( *( __geoTool. M_paramShape ) )/*[boost::get<0>( *itName )]*/[ boost::get<1>( *itName )]
+                    = m.getParameter( /*boost::get<0>( *itName ),*/boost::get<1>( *itName ) );
             }
         }
+#else
+        for (auto const& shapebase : *(m.M_ligneList) )
+            for (auto const& shape : shapebase )
+                ( *( __geoTool.M_paramShape ) ) [ boost::get<1>( shape )] = m.getParameter( boost::get<1>( shape ) );
+#endif
     }
 
     else if ( this->dim()==2 )
     {
+#if 0
         //get data from (more hard because no duplication)
         surface_name_const_iterator_type itShape = m.M_surfaceList->begin();
         surface_name_const_iterator_type itShape_end = m.M_surfaceList->end();
@@ -826,14 +987,20 @@ GeoGMSHTool::opFusion( const GeoGMSHTool & m,int __typeOp )
 
             for ( ; itName != itName_end ; ++itName )
             {
-                ( *( __geoTool. M_paramShape ) )[boost::get<0>( *itName )][ boost::get<1>( *itName )]
-                    = m.getParameter( boost::get<0>( *itName ),boost::get<1>( *itName ) );
+                ( *( __geoTool. M_paramShape ) )/*[boost::get<0>( *itName )]*/[ boost::get<1>( *itName )]
+                    = m.getParameter( /*boost::get<0>( *itName ),*/boost::get<1>( *itName ) );
             }
         }
+#else
+        for (auto const& shapebase : *(m.M_surfaceList) )
+            for (auto const& shape : shapebase )
+                ( *( __geoTool.M_paramShape ) ) [ boost::get<1>( shape )] = m.getParameter( boost::get<1>( shape ) );
+#endif
     }
 
     else if ( this->dim()==3 )
     {
+#if 0
         //get data from (more hard because no duplication)
         volume_name_const_iterator_type itShape = m.M_volumeList->begin();
         volume_name_const_iterator_type itShape_end = m.M_volumeList->end();
@@ -845,10 +1012,15 @@ GeoGMSHTool::opFusion( const GeoGMSHTool & m,int __typeOp )
 
             for ( ; itName != itName_end ; ++itName )
             {
-                ( *( __geoTool. M_paramShape ) )[boost::get<0>( *itName )][ boost::get<1>( *itName )]
-                    = m.getParameter( boost::get<0>( *itName ),boost::get<1>( *itName ) );
+                ( *( __geoTool. M_paramShape ) )/*[boost::get<0>( *itName )]*/[ boost::get<1>( *itName )]
+                    = m.getParameter( /*boost::get<0>( *itName ),*/boost::get<1>( *itName ) );
             }
         }
+#else
+        for (auto const& shapebase : *(m.M_volumeList) )
+            for (auto const& shape : shapebase )
+                ( *( __geoTool.M_paramShape ) ) [ boost::get<1>( shape )] = m.getParameter( boost::get<1>( shape ) );
+#endif
     }
 
     //update marker
@@ -935,130 +1107,70 @@ void
 GeoGMSHTool::geoStr()
 {
     //this->showMe();
-#if 0 //
-    //data memory ( type->shape->name )
-    std::vector<std::map<std::string,std::map<std::string, std::map<uint16_type,uint16_type> > > > __dataMemGlob( 6 );
-    std::vector<std::map<std::string,std::map<std::string, std::map<uint16_type,bool> > > > __dataMemGlobSurf1( 2 );
-    std::vector<std::map<std::string,std::map<std::string, std::map<uint16_type,std::string> > > > __dataMemGlobSurf2( 2 );
-    std::vector<std::map<std::string,std::map<std::string, std::map<uint16_type,bool> > > > __dataMemGlobIsRuled( 1 );
-    std::vector<std::map<std::string,std::map<std::string, std::map<uint16_type,std::list<uint16_type> > > > > __dataMemGlobPtsInSurf( 1 );
-    // type -> name -> num surfLoop -> list de surfLoop
-    std::map<std::string,std::map<std::string, std::map<int,std::list<int> > > > __dataMemGlobSurfaceLoop;
-    __dataMemGlobSurfaceLoop.clear();
-#endif //
-    //construction list ordonne d'objet a construire
-    std::list<boost::tuple<std::string,std::string,double> > listPPP;
 
+    // get whole name of basic shape to build
     std::set<boost::tuple<std::string,std::string,double> > setPPP;
 
     if ( this->dim()==1 )
     {
-        ligne_name_const_iterator_type itLigne = M_ligneList->begin();
-        ligne_name_const_iterator_type itLigne_end = M_ligneList->end();
-
-        for ( ; itLigne != itLigne_end; ++itLigne )
+        for ( auto const& shapeBase : *this->M_ligneList )
         {
-            ligne_type_const_iterator_type itLigne2 = itLigne->begin();
-            ligne_type_const_iterator_type itLigne2_end = itLigne->end();
-
-            for ( ; itLigne2 != itLigne2_end ; ++itLigne2 )
+            for ( auto const& shape : shapeBase )
             {
-                std::string Qshape = boost::get<0>( *itLigne2 );
-                std::string Qname = boost::get<1>( *itLigne2 );
-                double QmeshSize=boost::get<3>( *itLigne2 );
-                //listPPP.push_back(boost::make_tuple(Qshape,Qname,QmeshSize));
+                std::string Qshape = boost::get<0>( shape );
+                std::string Qname = boost::get<1>( shape );
+                double QmeshSize=boost::get<3>( shape );
                 setPPP.insert( boost::make_tuple( Qshape,Qname,QmeshSize ) );
             }
         }
     }
-
-
-    if ( this->dim()==2 )
+    else if ( this->dim()==2 )
     {
-        surface_name_const_iterator_type itSurfff = M_surfaceList->begin();
-        surface_name_const_iterator_type itSurfff_end = M_surfaceList->end();
-
-        for ( ; itSurfff != itSurfff_end; ++itSurfff )
+        for ( auto const& shapeBase : *this->M_surfaceList )
         {
-            surface_type_const_iterator_type itSurfff2 = itSurfff->begin();
-            surface_type_const_iterator_type itSurfff2_end = itSurfff->end();
-
-            for ( ; itSurfff2 != itSurfff2_end ; ++itSurfff2 )
+            for ( auto const& shape : shapeBase )
             {
-                std::string Qshape = boost::get<0>( *itSurfff2 );
-                std::string Qname = boost::get<1>( *itSurfff2 );
-                double QmeshSize=boost::get<3>( *itSurfff2 );
-                //listPPP.push_back(boost::make_tuple(Qshape,Qname,QmeshSize));
+                std::string Qshape = boost::get<0>( shape );
+                std::string Qname = boost::get<1>( shape );
+                double QmeshSize=boost::get<3>( shape );
                 setPPP.insert( boost::make_tuple( Qshape,Qname,QmeshSize ) );
             }
         }
     }
-
     else if ( this->dim()==3 )
     {
-
-        volume_name_const_iterator_type itSurfff = M_volumeList->begin();
-        volume_name_const_iterator_type itSurfff_end = M_volumeList->end();
-
-        for ( ; itSurfff != itSurfff_end; ++itSurfff )
+        for ( auto const& shapeBase : *this->M_volumeList )
         {
-            volume_type_const_iterator_type itSurfff2 = itSurfff->begin();
-            volume_type_const_iterator_type itSurfff2_end = itSurfff->end();
-
-            for ( ; itSurfff2 != itSurfff2_end ; ++itSurfff2 )
+            for ( auto const& shape : shapeBase )
             {
-                std::string Qshape = boost::get<0>( *itSurfff2 );
-                std::string Qname = boost::get<1>( *itSurfff2 );
-                double QmeshSize=boost::get<3>( *itSurfff2 );
-                //listPPP.push_back(boost::make_tuple(Qshape,Qname,QmeshSize));
+                std::string Qshape = boost::get<0>( shape );
+                std::string Qname = boost::get<1>( shape );
+                double QmeshSize=boost::get<3>( shape );
                 setPPP.insert( boost::make_tuple( Qshape,Qname,QmeshSize ) );
             }
         }
-
-
     }
 
-#if 0
-    auto itList = listPPP.begin();
-    auto itList_end = listPPP.end();
-#else
-    auto itList = setPPP.begin();
-    auto itList_end = setPPP.end();
-#endif
 
-    for ( ; itList!=itList_end; ++itList )
+    //auto itList = setPPP.begin();
+    //auto itList_end = setPPP.end();
+    //for ( ; itList!=itList_end; ++itList )
+    for ( auto const& predefShape : setPPP )
     {
-        std::string Qshape = boost::get<0>( *itList );
-        std::string Qname = boost::get<1>( *itList );
+        //std::string Qshape = boost::get<0>( *itList );
+        //std::string Qname = boost::get<1>( *itList );
         //std::cout << "\n Qshape="<<Qshape <<" Qname="<<Qname<<std::endl;
         //*M_ostr << "h=" << boost::get<2>( *itList ) << ";\n";
 
 
-        //local data memory
-        vec_map_data_ptrtype __dataMem( new vec_map_data_type( 8 ) );
-        vec_map_data_surf1_ptrtype __dataMemSurf1( new vec_map_data_surf1_type( 2 ) );
-        vec_map_data_surf2_ptrtype __dataMemSurf2( new vec_map_data_surf2_type( 2 ) );
-        vec_map_data_surf1_ptrtype __dataMemIsRuled( new vec_map_data_surf1_type( 1 ) );
-        vec_map_data_ptsinsurf_ptrtype __dataMemPtsInSurf( new vec_map_data_ptsinsurf_type( 1 ) );
+        //local to global numbering (pts,lines,lineloop,surface,surfaceloop,volume)
+        vec_map_data_ptrtype __dataMem( new vec_map_data_type( 6/*8*/ ) );
 
-        map_surfaceLoop_type __dataMemLocSurfaceLoop;
-        __dataMemLocSurfaceLoop.clear();
-
-        GeoGMSHTool_ptrtype __geoTool( new GeoGMSHTool( this->dim() ) );
-        __geoTool->updateData( *this );
-#if 0 //
-        __geoTool->cleanOstr();
-#endif
-        GeoTool::data_geo_ptrtype __data_geoTool( new GeoTool::data_geo_type( boost::make_tuple( __geoTool,
-                __dataMem,
-                Qshape,//itShape->first,
-                Qname,//boost::get<0>(*itName),
-                __dataMemSurf1,
-                __dataMemSurf2,
-                __dataMemIsRuled,
-                __dataMemPtsInSurf,
-                __dataMemLocSurfaceLoop,
-                itList->get<2>() ) ) );
+        GeoTool::data_geo_ptrtype __data_geoTool( new GeoTool::data_geo_type( boost::make_tuple( this/*__geoTool*/,
+                                                                                                 __dataMem,
+                                                                                                 predefShape.get<0>()/*shape*/,
+                                                                                                 predefShape.get<1>()/*name*/,
+                                                                                                 predefShape.get<2>()/*hsize*/ ) ) );
 
         // generate the code for the geometry
         run( __data_geoTool );
@@ -1069,27 +1181,6 @@ GeoGMSHTool::geoStr()
             std::cout << "(" << mapPt.first << "," << mapPt.second << ");";
         }
         std::cout << "\n\n";
-#endif
-#if 0 //
-        __dataMemGlob[0][Qshape][Qname] = ( *( boost::get<1>( *__data_geoTool ) ) )[0]; //pts
-        __dataMemGlob[1][Qshape][Qname] = ( *( boost::get<1>( *__data_geoTool ) ) )[1]; //lines
-        __dataMemGlob[2][Qshape][Qname] = ( *( boost::get<1>( *__data_geoTool ) ) )[2]; //lineLoop
-        __dataMemGlob[3][Qshape][Qname] = ( *( boost::get<1>( *__data_geoTool ) ) )[3]; //Surface
-        __dataMemGlob[4][Qshape][Qname] = ( *( boost::get<1>( *__data_geoTool ) ) )[4]; //SurfaceLoop
-        __dataMemGlob[5][Qshape][Qname] = ( *( boost::get<1>( *__data_geoTool ) ) )[5]; //Volume
-        __dataMemGlobSurf1[0][Qshape][Qname] = ( *( boost::get<4>( *__data_geoTool ) ) )[0]; // bool : surface is tab gmsh
-        __dataMemGlobSurf2[0][Qshape][Qname] = ( *( boost::get<5>( *__data_geoTool ) ) )[0]; // string : surface name tab :
-        __dataMemGlobSurf1[1][Qshape][Qname] = ( *( boost::get<4>( *__data_geoTool ) ) )[1]; // bool : volume is tab gmsh
-        __dataMemGlobSurf2[1][Qshape][Qname] = ( *( boost::get<5>( *__data_geoTool ) ) )[1]; // string : volume name tab :
-        __dataMemGlobIsRuled[0][Qshape][Qname] = ( *( boost::get<6>( *__data_geoTool ) ) )[0]; // bool : surface is ruled
-        __dataMemGlobPtsInSurf[0][Qshape][Qname] = ( *( boost::get<7>( *__data_geoTool ) ) )[0]; // list of uint16_type : pts in surface
-
-        __dataMemGlobSurfaceLoop[Qshape][Qname] = __data_geoTool->get<8>();
-#endif //
-        // get infos
-        this->updateData( *boost::get<0>( *__data_geoTool ) );
-#if 0 //
-        this->updateOstr( boost::get<0>( *__data_geoTool )->M_ostr->str() );
 #endif
 
     }
@@ -1102,473 +1193,19 @@ GeoGMSHTool::geoStr()
     //--------------------------------------------------------------------------//
     //--------------------------------------------------------------------------//
 
-    std::set<int> ptIdErased,lineIdErased,lineloopIdErased,surfaceIdErased,volumeIdErased;
+    std::set<int> ptIdErased,lineIdErased,lineloopIdErased,surfaceIdErased,surfaceloopIdErased,volumeIdErased;
 
     if ( this->dim() == 2 )
     {
-        //---------------------------------------------------------------------//
-        //---------------------------------------------------------------------//
-        // CASE 1 : with interface
-        M_buildApplyFusionMarker.resize( this->fusionMarkersLineWithInterface().size() );
-        for ( auto const& mylinelooppair : this->M_buildDataLineLoop )
-        {
-            auto const& mylineloop = mylinelooppair.second;
-            for ( int mylineGlobalId : mylineloop.listLine() )
-            {
-                int mylineGlobalIdPos = ( mylineGlobalId > 0 )? mylineGlobalId : -mylineGlobalId;
-                auto const& myline = M_buildDataLine[mylineGlobalIdPos];
-                int lineLocalId = myline.localId();
+        this->updateFusionMarkersLineWithInterface( ptIdErased,lineIdErased );
 
-                //M_buildApplyFusionMarker
-                //auto itfm = std::find_if( this->fusionMarkersLineWithInterface().begin(), this->fusionMarkersLineWithInterface().end(),
-                //                          [lineLocalId](FusionMarkers const& fm ) { return fm.marker1() == lineLocalId; } );
-                bool find1=false,find2=false;
-                int fusId1=0,fusId2=0;
-                for ( int k=0; k<this->fusionMarkersLineWithInterface().size() && ( !find1 || !find2 )  ; ++k )
-                {
-                    if ( this->fusionMarkersLineWithInterface()[k].nameGT1() == mylineloop.name() &&
-                         this->fusionMarkersLineWithInterface()[k].marker1() == lineLocalId )
-                    {
-                        fusId1=k;find1=true;
-                        //std::cout << "find marker1 " << lineLocalId << "\n";
-                        M_buildApplyFusionMarker[k].setGlobalId1(mylineGlobalId, mylineloop.globalId() /*myline.globalId()*/);
-                    }
-                    if ( this->fusionMarkersLineWithInterface()[k].nameGT2() == mylineloop.name() &&
-                         this->fusionMarkersLineWithInterface()[k].marker2() == lineLocalId )
-                    {
-                        fusId2=k;find2=true;
-                        //std::cout << "find marker2 " << lineLocalId << "\n";
-                        M_buildApplyFusionMarker[k].setGlobalId2( mylineGlobalId, mylineloop.globalId() /*myline.globalId()*/);
-                    }
-                }
-            }
-        }
+        this->updateFusionMarkersLineWithoutInterface( surfaceIdErased );
+    }
+    else if ( this->dim() == 3 )
+    {
+        this->updateFusionMarkersSurfaceWithInterface( ptIdErased,lineIdErased,surfaceIdErased );
+    }
 
-        //this->updateFusionMarkersLineWithInterface();
-        for ( int k=0; k<this->fusionMarkersLineWithInterface().size(); ++k )
-        {
-            int mylineGlobalId1 = M_buildApplyFusionMarker[k].globalId1Line();
-            int mylineGlobalId1Pos = ( mylineGlobalId1 > 0 )? mylineGlobalId1 : -mylineGlobalId1;
-            auto const& myline1 = M_buildDataLine.find(mylineGlobalId1Pos)->second;
-
-            int mylineGlobalId2 = M_buildApplyFusionMarker[k].globalId2Line();
-            int mylineGlobalId2Pos = ( mylineGlobalId2 > 0 )? mylineGlobalId2 : -mylineGlobalId2;
-            auto const& myline2 = M_buildDataLine.find(mylineGlobalId2Pos)->second;
-            //std::cout << "identify same line " << mylineGlobalId1Pos << " vs " << mylineGlobalId2Pos << "\n";
-            int mylineloopGlobalId2 = M_buildApplyFusionMarker[k].globalId2LineLoop();
-
-            std::map<int,int> mapPointToReplace;
-            if ( this->hasSameOrientation( myline1,myline2 ) )
-            {
-                // add here a map for lineloop if 
-                M_buildDataLineLoop[mylineloopGlobalId2].replaceLineId( mylineGlobalId2, mylineGlobalId1 );
-
-                auto it = myline1.listPt().begin();
-                auto en = myline1.listPt().end();
-                auto it2 = myline2.listPt().begin();
-                for ( ; it != en ;++it,++it2 )
-                {
-                    mapPointToReplace[*it2] = *it;
-                }
-                //std::cout << "has same orientation\n";
-            }
-            else
-            {
-                M_buildDataLineLoop[mylineloopGlobalId2].replaceLineId( mylineGlobalId2, -mylineGlobalId1 );
-                //std::cout << "has NOT same orientation\n";
-
-                auto it = myline1.listPt().begin();
-                auto en = myline1.listPt().end();
-                auto it2 = myline2.listPt().end();--it2;
-                for ( ; it != en ;++it,--it2 )
-                {
-                    mapPointToReplace[*it2] = *it;
-                }
-            }
-            //M_buildDataLine.erase( mylineGlobalId2Pos );
-            lineIdErased.insert(mylineGlobalId2Pos);
-            // replace point id in line ( TODO reduce search)
-            for ( auto& mylinepair : M_buildDataLine )
-                for ( auto const& ptToRep : mapPointToReplace )
-                    mylinepair.second.replacePointId( ptToRep.first, ptToRep.second );
-
-            for ( auto const& ptToRep : mapPointToReplace )
-                ptIdErased.insert( ptToRep.first );
-        }
-
-        //---------------------------------------------------------------------//
-        //---------------------------------------------------------------------//
-        // CASE 2 : without interface
-
-        // define new surface to build from initial surface (with localId of line interface)
-        // newNameSurf -> ( name base surf -> list of local line Id )
-        std::map<std::string,std::map<std::string,std::set<int> > > mapNewSurface;
-        int cptNewSurfaceAdded=0;
-        for ( int k=0; k<this->fusionMarkersLineWithoutInterface().size(); ++k )
-        {
-            std::string name1 = this->fusionMarkersLineWithoutInterface()[k].nameGT1();
-            std::string name2 = this->fusionMarkersLineWithoutInterface()[k].nameGT2();
-            int markerId1 = this->fusionMarkersLineWithoutInterface()[k].marker1();
-            int markerId2 = this->fusionMarkersLineWithoutInterface()[k].marker2();
-            // search if one of surface has already register
-            std::string findName1,findName2;
-            for ( auto const& newSurf : mapNewSurface )
-            {
-                if ( findName1.empty() && newSurf.second.find( name1 ) != newSurf.second.end() )
-                    findName1 = newSurf.first;
-                if ( findName2.empty() && newSurf.second.find( name2 ) != newSurf.second.end() )
-                    findName2 = newSurf.first;
-                if ( !findName1.empty() && !findName2.empty() ) break;
-            }
-            if ( findName1.empty() && findName2.empty() )
-            {
-                std::string newNameRegister = ( boost::format("ConcatenateSurface%1%")%cptNewSurfaceAdded ).str();
-                //mapNewSurface[newNameRegister].insert(name1);
-                mapNewSurface[newNameRegister][name1].insert(markerId1);
-                mapNewSurface[newNameRegister][name2].insert(markerId2);
-                ++cptNewSurfaceAdded;
-            }
-            else if ( !findName1.empty() && findName2.empty() )
-            {
-                //mapNewSurface[findName1].insert(name2);
-                mapNewSurface[findName1][name1].insert(markerId1);
-                mapNewSurface[findName1][name2].insert(markerId2);
-            }
-            else if ( findName1.empty() && !findName2.empty() )
-            {
-                //mapNewSurface[findName2].insert(name1);
-                mapNewSurface[findName2][name1].insert(markerId1);
-                mapNewSurface[findName2][name2].insert(markerId2);
-            }
-            else
-            {
-                CHECK( false ) << "TODO";
-            }
-        } // for ( int k=0; ... )
-
-#if 0
-        for ( auto const& newSurf : mapNewSurface )
-        {
-            std::cout << "[" << newSurf.first << "] -> ";
-            for ( auto surfName : newSurf.second )
-            {
-                std::cout << "[" << surfName.first << " : ";
-                for ( auto surfLocId : surfName.second )
-                    std::cout << " " << surfLocId;
-                std::cout << "]";
-            }
-            std::cout << "\n";
-        }
-#endif
-
-        // create new surfaces
-        for ( auto const& newSurf : mapNewSurface )
-        {
-            // create new surface
-            int idNewSurf = this->M_cptSurface;
-            ++this->M_cptSurface; //update counter
-            std::string surfType = "plane";//surfaceRegisterFront.surfaceType(); // plane, ruled
-            detail::GeoToolSurface myDataSurf( newSurf.first,invalid_size_type_value,idNewSurf,surfType );
-
-            std::vector<detail::GeoToolLineLoop> newLineLoopMemory;
-            // first pass : compute new line loop (not closed) and identify lineloops and surfaces to erase
-            // add all lineloops and take one surface marker
-            for ( auto surfName : newSurf.second )
-            {
-                int idSurf = this->surfaceIdFromName( surfName.first );
-                CHECK( idSurf > 0 ) << "surface not find";
-                auto const& mysurf = M_buildDataSurface.find( idSurf )->second;
-                if ( myDataSurf.physicalMarker().empty() )
-                    myDataSurf.setPhysicalMarker( mysurf.physicalMarker() );
-
-                //myDataSurf.addLineLoop( mysurf.listLineLoop() );
-
-                std::set<int> thelineIdErasedWithFusion;
-                for ( int localIdLineFusion : surfName.second )
-                {
-                    // search global line id define in fusion with surface name and local id
-                    // must be apply with initial object
-                    for ( int thelineloopId : mysurf.listLineLoop() )
-                    {
-                        CHECK( M_buildDataLineLoop.find(thelineloopId) != M_buildDataLineLoop.end() ) << "lineloop " << thelineloopId << "not exist";
-                        auto const& thelineloop = M_buildDataLineLoop.find(thelineloopId)->second;
-                        for ( int thelineId : thelineloop.listLine() )
-                        {
-                            int thelineIdPos = ( thelineId > 0 )? thelineId : -thelineId;
-                            CHECK( M_buildDataLine.find(thelineIdPos) != M_buildDataLine.end() ) << "line " << thelineIdPos << "not exist";
-                            auto const& theline = M_buildDataLine.find(thelineIdPos)->second;
-
-                            if ( theline.name() == mysurf.name() && // igore line already modified by a fusion with interface
-                                 theline.localId() == localIdLineFusion )
-                            {
-                                //std::cout << "newSurf.first " << newSurf.first << " surfName.first " << surfName.first << " theline.globalId() "<< theline.globalId() << "\n";
-                                thelineIdErasedWithFusion.insert( theline.globalId() );
-                                lineIdErased.insert( theline.globalId() );
-                            }
-                        }
-                    }
-                }
-#if 0
-                std::cout << "thelineIdErasedWithFusion : ";
-                for ( auto const& hola : thelineIdErasedWithFusion )
-                    std::cout << hola << " ";
-                std::cout << "\n";
-#endif
-                // build new lineloops without interface line ( lineloop are not closed and must be fix after)
-                for ( int thelineloopId : mysurf.listLineLoop() )
-                {
-                    CHECK( M_buildDataLineLoop.find(thelineloopId) != M_buildDataLineLoop.end() ) << "lineloop " << thelineloopId << "not exist";
-                    auto const& thelineloop = M_buildDataLineLoop.find(thelineloopId)->second;
-                    std::list<int> myNewLinesId;
-                    for ( int thelineId : thelineloop.listLine() )
-                    {
-                        int thelineIdPos = ( thelineId > 0 )? thelineId : -thelineId;
-                        if ( thelineIdErasedWithFusion.find( thelineIdPos ) == thelineIdErasedWithFusion.end() )
-                            myNewLinesId.push_back( thelineId );
-                    }
-
-                    if ( myNewLinesId.size() > 0 )
-                    {
-                        int idNewLineLoop = this->M_cptLineLoop;
-                        ++this->M_cptLineLoop; //update counter
-                        detail::GeoToolLineLoop myNewLineLoop(myDataSurf.name(), invalid_size_type_value,idNewLineLoop );
-                        myNewLineLoop.setLines( myNewLinesId );
-                        newLineLoopMemory.push_back( myNewLineLoop );
-                        //this->addLineLoop(myNewLineLoop);
-                        //myDataSurf.addLineLoop( mysurf.listLineLoop() );
-                    }
-                    lineloopIdErased.insert(thelineloop.globalId());
-                }
-                //thelineIdErasedWithFusion
-
-                surfaceIdErased.insert( mysurf.globalId() );
-            } // for ( auto surfName : )
-
-            // remove interfaces lines in line loop
-#if 0
-            std::cout << " newLineLoopMemory : \n";
-            for ( auto const& idMem : newLineLoopMemory )
-                idMem.showMe();
-            //std::cout << idMem.globalId() << " ";
-            //std::cout << "\n";
-#endif
-
-            // reconnect line loops and reconnect points
-            CHECK( newLineLoopMemory.size() > 0 ) << "Not Good";
-            std::vector<bool> isDone( newLineLoopMemory.size(), false );
-            //for ( auto const& thelineloop : newLineLoopMemory )
-            for ( int k=0;k<newLineLoopMemory.size();++k )
-            {
-                if ( !isDone[k] )
-                {
-                    int idNewLineLoop = this->M_cptLineLoop;
-                    ++this->M_cptLineLoop; //update counter
-                    detail::GeoToolLineLoop myNewLineLoop(myDataSurf.name(), invalid_size_type_value,idNewLineLoop );
-                    myNewLineLoop.setLines( newLineLoopMemory[k].listLine() );
-                    isDone[k]=true;
-
-                    bool lineloopClosed = false;
-                    while ( !lineloopClosed/*this->lineLoopIsClosed(myNewLineLoop)*/ )
-                    {
-                        for ( int k2=0;k2<newLineLoopMemory.size() /*&& !lineloopClosed*//*!this->lineLoopIsClosed(myNewLineLoop)*/;++k2 )
-                        {
-                            if( !isDone[k2] )
-                            {
-                                if ( this->lineLoopHasConnection( myNewLineLoop, newLineLoopMemory[k2] ) )
-                                {
-                                    //std::cout << "HasConnection\n";
-                                    this->lineLoopApplyConnection( myNewLineLoop, newLineLoopMemory[k2] );
-                                    isDone[k2]=true;
-
-                                    if ( this->lineLoopIsClosed(myNewLineLoop) )
-                                    {
-                                        lineloopClosed=true;
-                                        break;
-                                    }
-                                }
-                            }
-                            //myNewLineLoop.showMe();
-                        }
-                    }
-                    CHECK( this->lineLoopIsClosed(myNewLineLoop) ) << "lineloop must be closed here";
-
-                    //std::cout << "finish lineloop\n";
-                    //myNewLineLoop.showMe();
-
-                    this->addLineLoop( myNewLineLoop );
-                    myDataSurf.addLineLoop( myNewLineLoop.globalId()  );
-                }
-            }
-
-            this->addSurface(myDataSurf);
-            //myDataSurf.showMe();
-
-        } // for ( auto const& newSurf : mapNewSurface )
-
-
-        //---------------------------------------------------
-        // update M_surfaceList after fusion without interface
-
-        //std::map< std::pair<std::string,int>,int > surfaceListModified;
-        std::map< std::pair<std::string,int>,std::pair<std::string,int> > surfaceListModified;
-        std::map< std::pair<std::string,int>,std::pair<std::string,int> > surfaceListErased;
-        if ( mapNewSurface.size() > 0 )
-        {
-            for ( auto const& newSurf : mapNewSurface )
-            {
-                std::string nameNewSurf = newSurf.first;
-                int idNewSurf = this->surfaceIdFromName( nameNewSurf );
-                std::string nameInitialUsedForInsertNewSurf;
-                for ( auto surfName : newSurf.second )
-                {
-                    std::string nameInitialSurf = surfName.first;
-                    int idInitialSurf = this->surfaceIdFromName( nameInitialSurf );
-
-                    // use first surface for replacing in surface list
-                    if ( nameInitialUsedForInsertNewSurf.empty() )
-                    {
-                        nameInitialUsedForInsertNewSurf = nameInitialSurf;
-                        surfaceListModified[std::make_pair(nameInitialSurf,idInitialSurf)]=std::make_pair(nameNewSurf,idNewSurf);
-                    }
-                    else
-                        surfaceListErased[std::make_pair(nameInitialSurf,idInitialSurf)]=std::make_pair(nameNewSurf,idNewSurf);
-
-                    //surfaceListErased.insert( std::make_pair(nameInitialSurf,idInitialSurf) );
-                }
-            }
-        }
-
-        // 2 cases : front and others(diff)
-
-        std::map<int,std::set<int> > surfaceListMovedSurfFromFrontFusion;
-        for ( auto const& itSurf : *this->M_surfaceList )
-        {
-            CHECK( itSurf.size() > 0 ) << "no surface";
-            if ( itSurf.size() == 1 ) continue;
-
-            surface_type_const_iterator_type itSurf2front = itSurf.begin();
-            if (itSurf2front->get<2>().second==0) continue; // surface useless
-            CHECK( this->M_buildDataSurface.find( itSurf2front->get<2>().first ) != this->M_buildDataSurface.end() ) << "error";
-
-            std::string nameSurf = itSurf2front->get<1>();
-            int idSurf = itSurf2front->get<2>().first;
-            if ( surfaceListErased.find( std::make_pair( nameSurf,idSurf ) ) != surfaceListErased.end() )
-            {
-                int idNewSurf = surfaceListErased.find( std::make_pair( nameSurf,idSurf ) )->second.second;
-                int thecpt=0;
-                //++itSurf2front;
-                for ( auto const& itSurf2 : itSurf )
-                {
-                    if ( thecpt > 0 )
-                    {
-                        int idSurfDiff = itSurf2.get<2>().first;
-                        surfaceListMovedSurfFromFrontFusion[idNewSurf].insert( idSurfDiff );
-                    }
-                    ++thecpt;
-                }
-            }
-        }
-
-        // move maybe diff surface
-        auto itSurf = this->M_surfaceList->begin();
-        auto enSurf = this->M_surfaceList->end();
-        for ( ; itSurf != enSurf ; ++itSurf )
-        {
-            //typedef surface_type_type::iterator surface_type_iterator_type;
-            //surface_type_iterator_type itSurf2front = itSurf->begin();
-            surface_type_const_iterator_type itSurf2front = itSurf->begin();
-            if (itSurf2front->get<2>().second==0) continue; // surface useless
-
-            std::string nameSurf = itSurf2front->get<1>();
-            int idSurf = itSurf2front->get<2>().first;
-            if ( surfaceListModified.find( std::make_pair( nameSurf,idSurf ) ) != surfaceListModified.end() )
-            {
-                auto findSurfToModify = surfaceListModified.find( std::make_pair( nameSurf,idSurf ) );
-                int idNewSurf = findSurfToModify->second.second;
-                if ( surfaceListMovedSurfFromFrontFusion.find(idNewSurf) !=surfaceListMovedSurfFromFrontFusion.end() )
-                {
-                    for ( int theidSurf : surfaceListMovedSurfFromFrontFusion.find(idNewSurf)->second )
-                    {
-                        auto const& mysurf = this->M_buildDataSurface.find( theidSurf )->second;
-                        CHECK( mysurf.listLineLoop().size() == 1 ) << "diff can be used only with surface with one lineloop";
-                        itSurf->push_back( boost::make_tuple( "blabla",mysurf.name(),std::make_pair( mysurf.globalId(),mysurf.listLineLoop().front() ),0. ) );
-                    }
-                }
-
-
-            }
-        }
-
-        // modified and delete fusion surface
-        /*auto*/ itSurf = this->M_surfaceList->begin();
-        //auto enSurf = this->M_surfaceList->end();
-        for ( ; itSurf != enSurf ; ++itSurf )
-        {
-            //surface_type_const_iterator_type itSurf2front = itSurf->begin();
-            // get first surface (which is not a diff surface)
-            typedef surface_type_type::iterator surface_type_iterator_type;
-            surface_type_iterator_type itSurf2front = itSurf->begin();
-            if ( itSurf2front->get<2>().second==0 ) continue; // surface useless
-
-            std::string nameSurf = itSurf2front->get<1>();
-            int idSurf = itSurf2front->get<2>().first;
-
-            auto findSurfToModify = surfaceListModified.find( std::make_pair( nameSurf,idSurf ) );
-            if ( findSurfToModify != surfaceListModified.end() )
-            {
-                int idNewSurf = findSurfToModify->second.second;
-                CHECK( this->M_buildDataSurface.find( idNewSurf ) != this->M_buildDataSurface.end() ) << "error";
-                auto const& mysurf = this->M_buildDataSurface.find( idNewSurf )->second;
-                boost::get<0>(*itSurf2front) = "blabla"; // shape (usefull??)
-                boost::get<1>(*itSurf2front) = mysurf.name();
-                CHECK( mysurf.listLineLoop().size() == 1 ) << "diff can be used only with surface with one lineloop";
-                boost::get<2>(*itSurf2front) = std::make_pair( mysurf.globalId(),mysurf.listLineLoop().front() ); // surf id, lineloop id
-                boost::get<3>(*itSurf2front) = 0.; // mesh size (usefull??)
-            }
-            else if ( surfaceListErased.find( std::make_pair( nameSurf,idSurf ) ) != surfaceListErased.end() )
-            {
-                // delete front surface with all diff surface
-                this->M_surfaceList->erase( itSurf );
-            }
-
-            // treat diff surface
-            if ( itSurf->size() > 1 )
-            {
-                auto itSurfDiff = ++itSurf2front;
-                auto enSurfDiff = itSurf->end();
-                while ( itSurfDiff != enSurfDiff )
-                {
-                    std::string nameSurfDiff = itSurfDiff->get<1>();
-                    int idSurfDiff = itSurfDiff->get<2>().first;
-                    if ( surfaceListErased.find( std::make_pair( nameSurfDiff,idSurfDiff ) ) != surfaceListErased.end() )
-                    {
-                        // delete diff surface
-                        itSurfDiff = itSurf->erase( itSurfDiff );
-                    }
-                    else
-                    {
-                        auto findSurfDiffToModify = surfaceListModified.find( std::make_pair( nameSurfDiff,idSurfDiff ) );
-                        if ( findSurfDiffToModify != surfaceListModified.end() )
-                        {
-                            // modify diff surface
-                            int idNewSurfDiff = findSurfDiffToModify->second.second;
-                            CHECK( this->M_buildDataSurface.find( idNewSurfDiff ) != this->M_buildDataSurface.end() ) << "error";
-                            auto const& mysurf = this->M_buildDataSurface.find( idNewSurfDiff )->second;
-                            boost::get<0>(*itSurfDiff) = "blablaDiff"; // shape (usefull??)
-                            boost::get<1>(*itSurfDiff) = mysurf.name();
-                            CHECK( mysurf.listLineLoop().size() == 1 ) << "diff can be used only with surface with one lineloop";
-                            boost::get<2>(*itSurfDiff) = std::make_pair( mysurf.globalId(),mysurf.listLineLoop().front() ); // surf id, lineloop id
-                            boost::get<3>(*itSurfDiff) = 0.; // mesh size (usefull??)
-                        }
-                        ++itSurfDiff;
-                    }
-                }
-            }
-        } // for ( ; itSurf != enSurf ; ++itSurf )
-
-        //this->showMe();
-
-    } // if ( dim == 2 )
 
 
     // create diff surface
@@ -1579,7 +1216,6 @@ GeoGMSHTool::geoStr()
 
         surface_type_const_iterator_type itSurf2front = itSurf.begin();
         if (itSurf2front->get<2>().second==0) continue; // surface useless
-        CHECK( this->M_buildDataSurface.find( itSurf2front->get<2>().first ) != this->M_buildDataSurface.end() ) << "error";
 
         //std::string theshape = itSurf2->get<0>();
         //std::string thename = itSurf2->get<1>();
@@ -1587,7 +1223,7 @@ GeoGMSHTool::geoStr()
         int idNewSurf = this->M_cptSurface;
         ++this->M_cptSurface; //update counter
 
-        auto const& surfaceRegisterFront = this->M_buildDataSurface.find( itSurf2front->get<2>().first )->second;
+        auto const& surfaceRegisterFront = this->entitiesStorage().getSurface( itSurf2front->get<2>().first );
 
         std::string newSurfName;
         int thecpt=0;
@@ -1603,8 +1239,7 @@ GeoGMSHTool::geoStr()
 
         for ( auto const& itSurf2 : itSurf )
         {
-            CHECK( this->M_buildDataSurface.find( itSurf2.get<2>().first ) != this->M_buildDataSurface.end() ) << "error";
-            for ( auto llId : this->M_buildDataSurface.find( itSurf2.get<2>().first )->second.listLineLoop() )
+            for ( auto llId : this->entitiesStorage().getSurface( itSurf2.get<2>().first ).listLineLoop() )
                 mySurf.addLineLoop( llId );
 
             // search if the surface is present in surface list and there is only this one
@@ -1617,9 +1252,8 @@ GeoGMSHTool::geoStr()
                 surfaceIdErased.insert( itSurf2.get<2>().first );
 
         }
-        this->addSurface(mySurf);
+        this->entitiesStorageAdmin().addSurface(mySurf);
     }
-
 
     // create diff volume
     for ( auto const& itVol : *this->M_volumeList )
@@ -1629,19 +1263,27 @@ GeoGMSHTool::geoStr()
 
         auto itVol2front = itVol.front();
         if (itVol2front.get<2>().second==0) continue; // surface useless
-        CHECK( this->M_buildDataVolume.find( itVol2front.get<2>().first ) != this->M_buildDataVolume.end() ) << "error";
+        auto const& volumeRegisterFront = this->entitiesStorage().getVolume(itVol2front.get<2>().first);
 
-        auto const& volumeRegisterFront = this->M_buildDataVolume.find( itVol2front.get<2>().first )->second;
+        std::string newVolName;
+        int thecpt=0;
+        for ( auto const& itVol2 : itVol )
+        {
+            if ( thecpt > 0 ) newVolName += "-";
+            newVolName += itVol2.get<1>();
+            ++thecpt;
+        }
+
 
         int idNewVol = this->M_cptVolume;
         ++this->M_cptVolume; //update counter
-        detail::GeoToolVolume myVol( invalid_size_type_value,idNewVol );
+
+        detail::GeoToolVolume myVol( newVolName, invalid_size_type_value,idNewVol );
         myVol.setPhysicalMarker( volumeRegisterFront.physicalMarker() );
 
         for ( auto const& itVol2 : itVol )
         {
-            CHECK( this->M_buildDataVolume.find( itVol2.get<2>().first ) != this->M_buildDataVolume.end() ) << "error";
-            for ( auto slId : this->M_buildDataVolume.find( itVol2.get<2>().first )->second.listSurfaceLoop() )
+            for ( auto slId : this->entitiesStorage().getVolume( itVol2.get<2>().first ).listSurfaceLoop() )
                 myVol.addSurfaceLoop( slId );
 
             // search if the volume is present in volume list and there is only this one
@@ -1654,26 +1296,80 @@ GeoGMSHTool::geoStr()
                 volumeIdErased.insert( itVol2.get<2>().first );
 
         }
-        this->addVolume(myVol);
+        this->entitiesStorageAdmin().addVolume(myVol);
+
     }
 
+    // clear entities erased from operators
+    this->entitiesStorageAdmin().erasePoints(ptIdErased);ptIdErased.clear();
+    this->entitiesStorageAdmin().eraseLines(lineIdErased);lineIdErased.clear();
+    this->entitiesStorageAdmin().eraseLineLoops(lineloopIdErased);lineloopIdErased.clear();
+    this->entitiesStorageAdmin().eraseSurfaces(surfaceIdErased);surfaceIdErased.clear();
+    this->entitiesStorageAdmin().eraseSurfaceLoops(surfaceloopIdErased);surfaceloopIdErased.clear();
+    this->entitiesStorageAdmin().eraseVolumes(volumeIdErased);volumeIdErased.clear();
 
+    //--------------------------------------------------------------------------//
+    //--------------------------------------------------------------------------//
+    // identitfy and clear useless entities
+    //--------------------------------------------------------------------------//
+    //--------------------------------------------------------------------------//
 
+    if (this->dim() == 2)
+    {
+        auto entityIdsUsed = this->entitiesStorage().getEntityIdsUsedFromSurface();
+        for ( auto const& myp : this->entitiesStorage().points() )
+        {
+            if ( entityIdsUsed.get<0>().find( myp.first ) == entityIdsUsed.get<0>().end() )
+                ptIdErased.insert( myp.first );
+        }
+        for ( auto const& myp : this->entitiesStorage().lines() )
+        {
+            if ( entityIdsUsed.get<1>().find( myp.first ) == entityIdsUsed.get<1>().end() )
+                lineIdErased.insert( myp.first );
+        }
+        for ( auto const& myp : this->entitiesStorage().lineloops() )
+        {
+            if ( entityIdsUsed.get<2>().find( myp.first ) == entityIdsUsed.get<2>().end() )
+                lineloopIdErased.insert( myp.first );
+        }
+    }
+    else if (this->dim() == 3)
+    {
+        auto entityIdsUsed = this->entitiesStorage().getEntityIdsUsedFromVolume();
+        for ( auto const& myp : this->entitiesStorage().points() )
+        {
+            if ( entityIdsUsed.get<0>().find( myp.first ) == entityIdsUsed.get<0>().end() )
+                ptIdErased.insert( myp.first );
+        }
+        for ( auto const& myp : this->entitiesStorage().lines() )
+        {
+            if ( entityIdsUsed.get<1>().find( myp.first ) == entityIdsUsed.get<1>().end() )
+                lineIdErased.insert( myp.first );
+        }
+        for ( auto const& myp : this->entitiesStorage().lineloops() )
+        {
+            if ( entityIdsUsed.get<2>().find( myp.first ) == entityIdsUsed.get<2>().end() )
+                lineloopIdErased.insert( myp.first );
+        }
+        for ( auto const& myp : this->entitiesStorage().surfaces() )
+        {
+            if ( entityIdsUsed.get<3>().find( myp.first ) == entityIdsUsed.get<3>().end() )
+                surfaceIdErased.insert( myp.first );
+        }
+        for ( auto const& myp : this->entitiesStorage().surfaceloops() )
+        {
+            if ( entityIdsUsed.get<4>().find( myp.first ) == entityIdsUsed.get<4>().end() )
+                surfaceloopIdErased.insert( myp.first );
+        }
+    }
 
-    for ( auto pid : ptIdErased )
-        M_buildDataPoint.erase( pid );
-
-    for ( auto lid : lineIdErased )
-        M_buildDataLine.erase( lid );
-
-    for ( auto llid : lineloopIdErased )
-        M_buildDataLineLoop.erase( llid );
-
-    for ( auto sid : surfaceIdErased )
-        M_buildDataSurface.erase( sid );
-
-    for ( auto vid : volumeIdErased )
-        M_buildDataVolume.erase( vid );
+    // clear useless entities
+    this->entitiesStorageAdmin().erasePoints(ptIdErased);
+    this->entitiesStorageAdmin().eraseLines(lineIdErased);
+    this->entitiesStorageAdmin().eraseLineLoops(lineloopIdErased);
+    this->entitiesStorageAdmin().eraseSurfaces(surfaceIdErased);
+    this->entitiesStorageAdmin().eraseSurfaceLoops(surfaceloopIdErased);
+    this->entitiesStorageAdmin().eraseVolumes(volumeIdErased);
 
 
     //--------------------------------------------------------------------------//
@@ -1685,9 +1381,8 @@ GeoGMSHTool::geoStr()
     // save markers in these containers
     std::map<std::string,std::set<int> > markerPoints,markerLines,markerSurf,markerVol;
 
-    for ( auto const& mypt : this->M_buildDataPoint )
+    for ( auto const& mypt : this->entitiesStorage().points() )
     {
-        //mypt.second.showMe();
         CHECK( mypt.first == mypt.second.globalId() ) << "error";
         std::ostringstream __ostr;
         __ostr << "Point(" << mypt.second.globalId()
@@ -1702,9 +1397,8 @@ GeoGMSHTool::geoStr()
         if ( !mypt.second.physicalMarker().empty() )
             markerPoints[mypt.second.physicalMarker()].insert( mypt.second.globalId() );
     }
-    for ( auto const& myline : this->M_buildDataLine )
+    for ( auto const& myline : this->entitiesStorage().lines() )
     {
-        //myline.second.showMe();
         std::ostringstream __ostr;
         if ( myline.second.lineType() == "line" )
             __ostr << "Line";
@@ -1734,9 +1428,8 @@ GeoGMSHTool::geoStr()
         if ( !myline.second.physicalMarker().empty() )
             markerLines[myline.second.physicalMarker()].insert( myline.second.globalId() );
     }
-    for ( auto const& mylineloop : this->M_buildDataLineLoop )
+    for ( auto const& mylineloop : this->entitiesStorage().lineloops() )
     {
-        //mylineloop.second.showMe();
         std::ostringstream __ostr;
         __ostr << "Line Loop(" << mylineloop.second.globalId()
                << ") = {" ;
@@ -1751,9 +1444,8 @@ GeoGMSHTool::geoStr()
         __ostr << "};\n";
         this->updateOstr( __ostr.str() );
     }
-    for ( auto const& mysurf : this->M_buildDataSurface )
+    for ( auto const& mysurf : this->entitiesStorage().surfaces() )
     {
-        //mysurf.second.showMe();
         std::ostringstream __ostr;
         if ( mysurf.second.surfaceType() == "plane" )
             __ostr << "Plane Surface(";
@@ -1779,9 +1471,8 @@ GeoGMSHTool::geoStr()
         if ( !mysurf.second.physicalMarker().empty() )
             markerSurf[mysurf.second.physicalMarker()].insert( mysurf.second.globalId() );
     }
-    for ( auto const& mysurfloop : this->M_buildDataSurfaceLoop )
+    for ( auto const& mysurfloop : this->entitiesStorage().surfaceloops() )
     {
-        //mysurfloop.second.showMe();
         std::ostringstream __ostr;
         __ostr << "Surface Loop(" <<  mysurfloop.first
                << ") = {" ;
@@ -1796,9 +1487,8 @@ GeoGMSHTool::geoStr()
         __ostr << "};\n";
         this->updateOstr( __ostr.str() );
     }
-    for ( auto const& myvol : this->M_buildDataVolume )
+    for ( auto const& myvol : this->entitiesStorage().volumes() )
     {
-        //myvol.second.showMe();
         std::ostringstream __ostr;
         __ostr << "Volume(" <<  myvol.first
                << ") = {" ;
@@ -1883,6 +1573,599 @@ GeoGMSHTool::geoStr()
 
 
 
+
+void
+GeoGMSHTool::updateFusionMarkersLineWithInterface( std::set<int> & ptIdErased, std::set<int> & lineIdErased )
+{
+    std::vector<detail::EvalFusionMarkersLine> evalFusionMarkerLine( this->fusionMarkersLineWithInterface().size() );
+    for ( auto const& mylinelooppair : this->entitiesStorage().lineloops() )
+    {
+        auto const& mylineloop = mylinelooppair.second;
+        for ( int mylineGlobalId : mylineloop.listLine() )
+        {
+            int mylineGlobalIdPos = ( mylineGlobalId > 0 )? mylineGlobalId : -mylineGlobalId;
+            auto const& myline = this->entitiesStorage().getLine(mylineGlobalIdPos);
+            int lineLocalId = myline.localId();
+
+            //evalFusionMarkerLine
+            //auto itfm = std::find_if( this->fusionMarkersLineWithInterface().begin(), this->fusionMarkersLineWithInterface().end(),
+            //                          [lineLocalId](FusionMarkers const& fm ) { return fm.marker1() == lineLocalId; } );
+            bool find1=false,find2=false;
+            int fusId1=0,fusId2=0;
+            for ( int k=0; k<this->fusionMarkersLineWithInterface().size() && ( !find1 || !find2 )  ; ++k )
+            {
+                if ( this->fusionMarkersLineWithInterface()[k].nameGT1() == mylineloop.name() &&
+                     this->fusionMarkersLineWithInterface()[k].marker1() == lineLocalId )
+                {
+                    fusId1=k;find1=true;
+                    //std::cout << "find marker1 " << lineLocalId << "\n";
+                    evalFusionMarkerLine[k].setGlobalId1(mylineGlobalId, mylineloop.globalId() /*myline.globalId()*/);
+                }
+                if ( this->fusionMarkersLineWithInterface()[k].nameGT2() == mylineloop.name() &&
+                     this->fusionMarkersLineWithInterface()[k].marker2() == lineLocalId )
+                {
+                    fusId2=k;find2=true;
+                    //std::cout << "find marker2 " << lineLocalId << "\n";
+                    evalFusionMarkerLine[k].setGlobalId2( mylineGlobalId, mylineloop.globalId() /*myline.globalId()*/);
+                }
+            }
+        }
+    }
+
+    for ( int k=0; k<this->fusionMarkersLineWithInterface().size(); ++k )
+    {
+        int mylineGlobalId1 = evalFusionMarkerLine[k].globalId1Line();
+        int mylineGlobalId1Pos = ( mylineGlobalId1 > 0 )? mylineGlobalId1 : -mylineGlobalId1;
+        auto const& myline1 = this->entitiesStorage().getLine(mylineGlobalId1Pos);
+
+        int mylineGlobalId2 = evalFusionMarkerLine[k].globalId2Line();
+        int mylineGlobalId2Pos = ( mylineGlobalId2 > 0 )? mylineGlobalId2 : -mylineGlobalId2;
+        auto const& myline2 = this->entitiesStorage().getLine(mylineGlobalId2Pos);
+
+        //std::cout << "identify same line " << mylineGlobalId1Pos << " vs " << mylineGlobalId2Pos << "\n";
+        int mylineloopGlobalId2 = evalFusionMarkerLine[k].globalId2LineLoop();
+
+        std::map<int,int> mapPointToReplace;
+        if ( this->entitiesStorage().hasSameOrientation( myline1,myline2 ) )
+        {
+            // add here a map for lineloop if
+            this->entitiesStorageAdmin().getLineLoop(mylineloopGlobalId2).replaceLineId( mylineGlobalId2, mylineGlobalId1 );
+            auto it = myline1.listPt().begin();
+            auto en = myline1.listPt().end();
+            auto it2 = myline2.listPt().begin();
+            for ( ; it != en ;++it,++it2 )
+            {
+                mapPointToReplace[*it2] = *it;
+            }
+            //std::cout << "has same orientation\n";
+        }
+        else
+        {
+            this->entitiesStorageAdmin().getLineLoop(mylineloopGlobalId2).replaceLineId( mylineGlobalId2, -mylineGlobalId1 );
+            //std::cout << "has NOT same orientation\n";
+
+            auto it = myline1.listPt().begin();
+            auto en = myline1.listPt().end();
+            auto it2 = myline2.listPt().end();--it2;
+            for ( ; it != en ;++it,--it2 )
+            {
+                mapPointToReplace[*it2] = *it;
+            }
+        }
+        // replace point id in line ( TODO reduce search)
+        for ( auto const& mylinepair : this->entitiesStorage().lines() )
+            for ( auto const& ptToRep : mapPointToReplace )
+                this->entitiesStorageAdmin().getLine( mylinepair.first ).replacePointId( ptToRep.first, ptToRep.second );
+#if 0
+        lineIdErased.insert(mylineGlobalId2Pos);
+        for ( auto const& ptToRep : mapPointToReplace )
+            ptIdErased.insert( ptToRep.first );
+#endif
+    }
+
+}
+
+
+void
+GeoGMSHTool::updateFusionMarkersSurfaceWithInterface( std::set<int> & ptIdErased, std::set<int> & lineIdErased, std::set<int> & surfaceIdErased )
+{
+    std::vector<detail::EvalFusionMarkersLine> evalFusionMarkerSurface( this->fusionMarkersSurfaceWithInterface().size() );
+    for ( auto const& mysurfacelooppair : this->entitiesStorage().surfaceloops() )
+    {
+        auto const& mysurfaceloop = mysurfacelooppair.second;
+        for ( int mysurfaceGlobalId : mysurfaceloop.listSurface() )
+        {
+            int mysurfaceGlobalIdPos = ( mysurfaceGlobalId > 0 )? mysurfaceGlobalId : -mysurfaceGlobalId;
+            auto const& mysurface = this->entitiesStorage().getSurface(mysurfaceGlobalIdPos);
+            int surfaceLocalId = mysurface.localId();
+
+            //evalFusionMarkerLine
+            //auto itfm = std::find_if( this->fusionMarkersLineWithInterface().begin(), this->fusionMarkersLineWithInterface().end(),
+            //                          [lineLocalId](FusionMarkers const& fm ) { return fm.marker1() == lineLocalId; } );
+            bool find1=false,find2=false;
+            int fusId1=0,fusId2=0;
+            for ( int k=0; k<this->fusionMarkersSurfaceWithInterface().size() && ( !find1 || !find2 )  ; ++k )
+            {
+                if ( this->fusionMarkersSurfaceWithInterface()[k].nameGT1() == mysurfaceloop.name() &&
+                     this->fusionMarkersSurfaceWithInterface()[k].marker1() == surfaceLocalId )
+                {
+                    fusId1=k;find1=true;
+                    //std::cout << "find marker1 " << surfaceLocalId << "\n";
+                    evalFusionMarkerSurface[k].setGlobalId1(mysurfaceGlobalId, mysurfaceloop.globalId() );
+                }
+                if ( this->fusionMarkersSurfaceWithInterface()[k].nameGT2() == mysurfaceloop.name() &&
+                     this->fusionMarkersSurfaceWithInterface()[k].marker2() == surfaceLocalId )
+                {
+                    fusId2=k;find2=true;
+                    //std::cout << "find marker2 " << surfaceLocalId << "\n";
+                    evalFusionMarkerSurface[k].setGlobalId2( mysurfaceGlobalId, mysurfaceloop.globalId() );
+                }
+            }
+        }
+    }
+
+    for ( int k=0; k<this->fusionMarkersSurfaceWithInterface().size(); ++k )
+    {
+        int mysurfaceGlobalId1 = evalFusionMarkerSurface[k].globalId1Line();
+        int mysurfaceGlobalId1Pos = ( mysurfaceGlobalId1 > 0 )? mysurfaceGlobalId1 : -mysurfaceGlobalId1;
+        auto const& mysurface1 = this->entitiesStorage().getSurface(mysurfaceGlobalId1Pos);
+
+        int mysurfaceGlobalId2 = evalFusionMarkerSurface[k].globalId2Line();
+        int mysurfaceGlobalId2Pos = ( mysurfaceGlobalId2 > 0 )? mysurfaceGlobalId2 : -mysurfaceGlobalId2;
+        auto const& mysurface2 = this->entitiesStorage().getSurface(mysurfaceGlobalId2Pos);
+
+        //std::cout << "identify same surface " << mysurfaceGlobalId1Pos << " vs " << mysurfaceGlobalId2Pos << "\n";
+        int mysurfaceloopGlobalId2 = evalFusionMarkerSurface[k].globalId2LineLoop();
+        auto const& mysurfaceloop2 = this->entitiesStorage().getSurfaceLoop(mysurfaceloopGlobalId2);
+        //std::cout << "search volume with name " << mysurfaceloop2.name() << "\n";
+        auto const& myvol2 = this->entitiesStorage().getVolume( this->entitiesStorage().volumeIdFromName( mysurfaceloop2.name() ) );
+
+        std::map<int,int> mapPointToReplace;
+        if ( true /*this->entitiesStorage().hasSameOrientation( mysurface1,mysurface2 )*/ )
+        {
+            // replace surf id in surface loop
+            this->entitiesStorageAdmin().getSurfaceLoop(mysurfaceloopGlobalId2).replaceSurfaceId( mysurfaceGlobalId2, mysurfaceGlobalId1 );
+
+            // get duplicate line for other surface
+            auto duplicateEntities = this->entitiesStorage().getDuplicatePointLineId( mysurface2,mysurface1 );
+            auto duplicatePoints = duplicateEntities.get<0>();
+            auto duplicateLines = duplicateEntities.get<1>();
+
+            // replace wrong point/line id in volume 2 by a duplicated point/line in volume 1
+            for ( int mysurfaceloopIdInVol2 : myvol2.listSurfaceLoop() )
+            {
+                auto const& mysurfaceloopInVol2 = this->entitiesStorage().getSurfaceLoop( mysurfaceloopIdInVol2 );
+                for ( int mysurfaceIdInVol2 : mysurfaceloopInVol2.listSurface() )
+                {
+                    int mysurfaceIdInVol2Pos = (mysurfaceIdInVol2>0)? mysurfaceIdInVol2 : -mysurfaceIdInVol2;
+                    auto const& mysurfaceInVol2 = this->entitiesStorage().getSurface( mysurfaceIdInVol2Pos );
+                    for ( int mylineloopIdInVol2 : mysurfaceInVol2.listLineLoop() )
+                    {
+                        auto const& mylineloopInVol2 = this->entitiesStorage().getLineLoop( mylineloopIdInVol2 );
+                        for ( int mylineIdInVol2 : mylineloopInVol2.listLine() )
+                        {
+                            int mylineIdInVol2Pos = (mylineIdInVol2>0)? mylineIdInVol2 : -mylineIdInVol2;
+                            auto const& mylineInVol2 = this->entitiesStorage().getLine( mylineIdInVol2Pos );
+
+                            // apply for points duplication
+                            for ( int mypointIdInVol2 : mylineInVol2.listPoint() )
+                            {
+                                if ( duplicatePoints.find( mypointIdInVol2 ) != duplicatePoints.end() )
+                                {
+                                    //std::cout << " replace0 in line " << mylineIdInVol2Pos << " : " << mypointIdInVol2
+                                    //          << " into " << duplicatePoints.find( mypointIdInVol2 )->second << "\n";
+                                    this->entitiesStorageAdmin().getLine( mylineIdInVol2Pos ).
+                                        replacePointId( mypointIdInVol2, duplicatePoints.find( mypointIdInVol2 )->second );
+                                }
+                            }
+
+                            // apply for lines duplication
+                            if ( duplicateLines.find( mylineIdInVol2 ) != duplicateLines.end() )
+                            {
+                                //std::cout << " replace1 in lineloop " << mylineloopIdInVol2 << " : " << mylineIdInVol2
+                                //          << " into " << duplicateLines.find( mylineIdInVol2 )->second << "\n";
+                                this->entitiesStorageAdmin().getLineLoop( mylineloopIdInVol2 ).
+                                    replaceLineId( mylineIdInVol2, duplicateLines.find( mylineIdInVol2 )->second );
+                            }
+                            if ( duplicateLines.find( -mylineIdInVol2 ) != duplicateLines.end() )
+                            {
+                                //std::cout << " replace2 in lineloop " << mylineloopIdInVol2 << " : " << -mylineIdInVol2
+                                //          << " into " << -duplicateLines.find( -mylineIdInVol2 )->second << "\n";
+                                this->entitiesStorageAdmin().getLineLoop( mylineloopIdInVol2 ).
+                                    replaceLineId( mylineIdInVol2, -duplicateLines.find( -mylineIdInVol2 )->second );
+                            }
+
+                        }
+
+                    }
+
+                }
+            }
+        }
+        else
+        {
+        }
+
+        //surfaceIdErased.insert(mysurfaceGlobalId2Pos);
+    }
+
+} // updateFusionMarkersSurfaceWithInterface
+
+
+void
+GeoGMSHTool::updateFusionMarkersLineWithoutInterface( std::set<int> & surfaceIdErased )
+{
+    // define new surface to build from initial surface (with localId of line interface)
+    // newNameSurf -> ( name base surf -> list of local line Id )
+    std::map<std::string,std::map<std::string,std::set<int> > > mapNewSurface;
+    int cptNewSurfaceAdded=0;
+    for ( int k=0; k<this->fusionMarkersLineWithoutInterface().size(); ++k )
+    {
+        std::string name1 = this->fusionMarkersLineWithoutInterface()[k].nameGT1();
+        std::string name2 = this->fusionMarkersLineWithoutInterface()[k].nameGT2();
+        int markerId1 = this->fusionMarkersLineWithoutInterface()[k].marker1();
+        int markerId2 = this->fusionMarkersLineWithoutInterface()[k].marker2();
+        // search if one of surface has already register
+        std::string findName1,findName2;
+        for ( auto const& newSurf : mapNewSurface )
+        {
+            if ( findName1.empty() && newSurf.second.find( name1 ) != newSurf.second.end() )
+                findName1 = newSurf.first;
+            if ( findName2.empty() && newSurf.second.find( name2 ) != newSurf.second.end() )
+                findName2 = newSurf.first;
+            if ( !findName1.empty() && !findName2.empty() ) break;
+        }
+        if ( findName1.empty() && findName2.empty() )
+        {
+            std::string newNameRegister = ( boost::format("ConcatenateSurface%1%")%cptNewSurfaceAdded ).str();
+            //mapNewSurface[newNameRegister].insert(name1);
+            mapNewSurface[newNameRegister][name1].insert(markerId1);
+            mapNewSurface[newNameRegister][name2].insert(markerId2);
+            ++cptNewSurfaceAdded;
+        }
+        else if ( !findName1.empty() && findName2.empty() )
+        {
+            //mapNewSurface[findName1].insert(name2);
+            mapNewSurface[findName1][name1].insert(markerId1);
+            mapNewSurface[findName1][name2].insert(markerId2);
+        }
+        else if ( findName1.empty() && !findName2.empty() )
+        {
+            //mapNewSurface[findName2].insert(name1);
+            mapNewSurface[findName2][name1].insert(markerId1);
+            mapNewSurface[findName2][name2].insert(markerId2);
+        }
+        else
+        {
+            CHECK( false ) << "TODO";
+        }
+    } // for ( int k=0; ... )
+
+#if 0
+    for ( auto const& newSurf : mapNewSurface )
+    {
+        std::cout << "[" << newSurf.first << "] -> ";
+        for ( auto surfName : newSurf.second )
+        {
+            std::cout << "[" << surfName.first << " : ";
+            for ( auto surfLocId : surfName.second )
+                std::cout << " " << surfLocId;
+            std::cout << "]";
+        }
+        std::cout << "\n";
+    }
+#endif
+
+    // create fusionned surfaces and identify surfaces to erase
+    for ( auto const& newSurf : mapNewSurface )
+    {
+        // create new surface
+        int idNewSurf = this->M_cptSurface;
+        ++this->M_cptSurface; //update counter
+        std::string surfType = "plane";//surfaceRegisterFront.surfaceType(); // plane, ruled
+        detail::GeoToolSurface myFusionSurface( newSurf.first,invalid_size_type_value,idNewSurf,surfType );
+
+        std::vector<detail::GeoToolLineLoop> newLineLoopMemory;
+        // define physical marker of new surface and identify line erased with fusion
+        for ( auto inputSurfWithLocalIds : newSurf.second )
+        {
+            // get input surface
+            int idInputSurf = this->entitiesStorage().surfaceIdFromName( inputSurfWithLocalIds.first );
+            CHECK( idInputSurf > 0 ) << "surface not find";
+            auto const& myInputSurface = this->entitiesStorage().getSurface( idInputSurf );
+
+            // use physical marker of first surface saw
+            if ( myFusionSurface.physicalMarker().empty() )
+                myFusionSurface.setPhysicalMarker( myInputSurface.physicalMarker() );
+
+            // identify line erased with fusion
+            std::set<int> thelineIdErasedWithFusion;
+            for ( int localIdLineFusion : inputSurfWithLocalIds.second )
+            {
+                // search global line id define in fusion with surface name and local id (must be apply with initial object)
+                for ( int thelineloopId : myInputSurface.listLineLoop() )
+                {
+                    auto const& thelineloop = this->entitiesStorage().getLineLoop(thelineloopId);
+                    for ( int thelineId : thelineloop.listLine() )
+                    {
+                        int thelineIdPos = ( thelineId > 0 )? thelineId : -thelineId;
+                        auto const& theline = this->entitiesStorage().getLine(thelineIdPos);
+
+                        if ( theline.name() == myInputSurface.name() && // igore line already modified by a fusion with interface
+                             theline.localId() == localIdLineFusion )
+                        {
+                            thelineIdErasedWithFusion.insert( theline.globalId() );
+                            //lineIdErased.insert( theline.globalId() );
+                        }
+                    }
+                }
+            }
+#if 0
+            std::cout << "thelineIdErasedWithFusion : ";
+            for ( auto const& hola : thelineIdErasedWithFusion )
+                std::cout << hola << " ";
+            std::cout << "\n";
+#endif
+            // build new lineloops without interface line ( lineloop are not closed and must be fix after)
+            for ( int thelineloopId : myInputSurface.listLineLoop() )
+            {
+                auto const& thelineloop = this->entitiesStorage().getLineLoop(thelineloopId);
+
+                // copy lineloop of input surface without erased line with fusion
+                std::list<int> myNewLinesId;
+                for ( int thelineId : thelineloop.listLine() )
+                {
+                    int thelineIdPos = ( thelineId > 0 )? thelineId : -thelineId;
+                    if ( thelineIdErasedWithFusion.find( thelineIdPos ) == thelineIdErasedWithFusion.end() )
+                        myNewLinesId.push_back( thelineId );
+                }
+
+                if ( myNewLinesId.size() > 0 )
+                {
+                    int idNewLineLoop = this->M_cptLineLoop;
+                    ++this->M_cptLineLoop; //update counter
+                    detail::GeoToolLineLoop myNewLineLoop(myFusionSurface.name(), invalid_size_type_value,idNewLineLoop );
+                    myNewLineLoop.setLines( myNewLinesId );
+                    // store partial lineloop
+                    newLineLoopMemory.push_back( myNewLineLoop );
+                    //this->addLineLoop(myNewLineLoop);
+                    //myFusionSurface.addLineLoop( myInputSurface.listLineLoop() );
+                }
+                //lineloopIdErased.insert(thelineloop.globalId());
+            }
+            //thelineIdErasedWithFusion
+            // this input surface must be erased
+            surfaceIdErased.insert( myInputSurface.globalId() );
+        } // for ( auto inputSurfWithLocalIds : )
+
+        // remove interfaces lines in line loop
+#if 0
+        std::cout << " newLineLoopMemory : \n";
+        for ( auto const& idMem : newLineLoopMemory )
+            idMem.showMe();
+        //std::cout << idMem.globalId() << " ";
+        //std::cout << "\n";
+#endif
+
+        // reconnect line loops and reconnect points
+        CHECK( newLineLoopMemory.size() > 0 ) << "Not Good";
+        std::vector<bool> isDone( newLineLoopMemory.size(), false );
+        //for ( auto const& thelineloop : newLineLoopMemory )
+        for ( int k=0;k<newLineLoopMemory.size();++k )
+        {
+            if ( !isDone[k] )
+            {
+                int idNewLineLoop = this->M_cptLineLoop;
+                ++this->M_cptLineLoop; //update counter
+                detail::GeoToolLineLoop myNewLineLoop(myFusionSurface.name(), invalid_size_type_value,idNewLineLoop );
+                myNewLineLoop.setLines( newLineLoopMemory[k].listLine() );
+                isDone[k]=true;
+
+                bool lineloopClosed = false;
+                while ( !lineloopClosed/*this->lineLoopIsClosed(myNewLineLoop)*/ )
+                {
+                    for ( int k2=0;k2<newLineLoopMemory.size() /*&& !lineloopClosed*//*!this->lineLoopIsClosed(myNewLineLoop)*/;++k2 )
+                    {
+                        if( !isDone[k2] )
+                        {
+                            if ( this->entitiesStorage().lineLoopHasConnection( myNewLineLoop, newLineLoopMemory[k2] ) )
+                            {
+                                //std::cout << "HasConnection\n";
+                                this->entitiesStorageAdmin().lineLoopApplyConnection( myNewLineLoop, newLineLoopMemory[k2] );
+                                isDone[k2]=true;
+
+                                if ( this->entitiesStorage().lineLoopIsClosed(myNewLineLoop) )
+                                {
+                                    lineloopClosed=true;
+                                    break;
+                                }
+                            }
+                        }
+                        //myNewLineLoop.showMe();
+                    }
+                }
+                CHECK( this->entitiesStorage().lineLoopIsClosed(myNewLineLoop) ) << "lineloop must be closed here";
+
+                //std::cout << "finish lineloop\n";
+                //myNewLineLoop.showMe();
+
+                this->entitiesStorageAdmin().addLineLoop( myNewLineLoop );
+                myFusionSurface.addLineLoop( myNewLineLoop.globalId()  );
+            }
+        }
+
+        this->entitiesStorageAdmin().addSurface(myFusionSurface);
+        //myFusionSurface.showMe();
+
+    } // for ( auto const& newSurf : mapNewSurface )
+
+    // update M_surfaceList after fusion without interface
+    this->updateSurfaceListFromFusionMarkersLineWithoutInterface( mapNewSurface );
+
+}
+
+
+void
+GeoGMSHTool::updateSurfaceListFromFusionMarkersLineWithoutInterface( std::map<std::string,std::map<std::string,std::set<int> > > const& mapNewSurface )
+{
+    std::map< std::pair<std::string,int>,std::pair<std::string,int> > surfaceListModified;
+    std::map< std::pair<std::string,int>,std::pair<std::string,int> > surfaceListErased;
+    for ( auto const& newSurf : mapNewSurface )
+    {
+        std::string nameNewSurf = newSurf.first;
+        int idNewSurf = this->entitiesStorage().surfaceIdFromName( nameNewSurf );
+        std::string nameInitialUsedForInsertNewSurf;
+        for ( auto surfName : newSurf.second )
+        {
+            std::string nameInitialSurf = surfName.first;
+            int idInitialSurf = this->entitiesStorage().surfaceIdFromName( nameInitialSurf );
+
+            // use first surface for replacing in surface list
+            if ( nameInitialUsedForInsertNewSurf.empty() )
+            {
+                nameInitialUsedForInsertNewSurf = nameInitialSurf;
+                surfaceListModified[std::make_pair(nameInitialSurf,idInitialSurf)]=std::make_pair(nameNewSurf,idNewSurf);
+            }
+            else
+                surfaceListErased[std::make_pair(nameInitialSurf,idInitialSurf)]=std::make_pair(nameNewSurf,idNewSurf);
+        }
+    }
+    // 2 cases : front and others(diff)
+    std::map<int,std::set<int> > surfaceListMovedSurfFromFrontFusion;
+    for ( auto const& itSurf : *this->M_surfaceList )
+    {
+        CHECK( itSurf.size() > 0 ) << "no surface";
+        if ( itSurf.size() == 1 ) continue;
+
+        surface_type_const_iterator_type itSurf2front = itSurf.begin();
+        if (itSurf2front->get<2>().second==0) continue; // surface useless
+        CHECK( this->entitiesStorage().surfaces().find( itSurf2front->get<2>().first ) != this->entitiesStorage().surfaces().end() ) << "error";
+
+        std::string nameSurfFront = itSurf2front->get<1>();
+        int idSurfFront = itSurf2front->get<2>().first;
+        if ( surfaceListErased.find( std::make_pair( nameSurfFront,idSurfFront ) ) != surfaceListErased.end() )
+        {
+            int idNewSurf = surfaceListErased.find( std::make_pair( nameSurfFront,idSurfFront ) )->second.second;
+            int thecpt=0;
+            for ( auto const& itSurf2 : itSurf )
+            {
+                if ( thecpt > 0 )
+                {
+                    int idSurfDiff = itSurf2.get<2>().first;
+                    surfaceListMovedSurfFromFrontFusion[idNewSurf].insert( idSurfDiff );
+                }
+                ++thecpt;
+            }
+        }
+    }
+
+    // move maybe diff surface
+    auto itSurf = this->M_surfaceList->begin();
+    auto enSurf = this->M_surfaceList->end();
+    for ( ; itSurf != enSurf ; ++itSurf )
+    {
+        //typedef surface_type_type::iterator surface_type_iterator_type;
+        //surface_type_iterator_type itSurf2front = itSurf->begin();
+        surface_type_const_iterator_type itSurf2front = itSurf->begin();
+        if (itSurf2front->get<2>().second==0) continue; // surface useless
+
+        std::string nameSurf = itSurf2front->get<1>();
+        int idSurf = itSurf2front->get<2>().first;
+        auto findSurfToModify = surfaceListModified.find( std::make_pair( nameSurf,idSurf ) );
+        if ( findSurfToModify/*surfaceListModified.find( std::make_pair( nameSurf,idSurf ) )*/ != surfaceListModified.end() )
+        {
+            int idNewSurf = findSurfToModify->second.second;
+            if ( surfaceListMovedSurfFromFrontFusion.find(idNewSurf) != surfaceListMovedSurfFromFrontFusion.end() )
+            {
+                for ( int theidSurf : surfaceListMovedSurfFromFrontFusion.find(idNewSurf)->second )
+                {
+                    auto const& mysurf = this->entitiesStorage().getSurface(theidSurf);
+                    CHECK( mysurf.listLineLoop().size() == 1 ) << "diff can be used only with surface with one lineloop";
+                    itSurf->push_back( boost::make_tuple( "blabla",mysurf.name(),std::make_pair( mysurf.globalId(),mysurf.listLineLoop().front() ),0. ) );
+                }
+            }
+        }
+    }
+
+    // modified and delete fusion surface
+    itSurf = this->M_surfaceList->begin();
+    for ( ; itSurf != enSurf ; /*++itSurf*/ )
+    {
+        //surface_type_const_iterator_type itSurf2front = itSurf->begin();
+        // get first surface (which is not a diff surface)
+        typedef surface_type_type::iterator surface_type_iterator_type;
+        surface_type_iterator_type itSurf2front = itSurf->begin();
+        if ( itSurf2front->get<2>().second==0 ) continue; // surface useless
+
+        std::string nameSurf = itSurf2front->get<1>();
+        int idSurf = itSurf2front->get<2>().first;
+
+        bool hasErasedAllSurf=false;
+
+        auto findSurfToModify = surfaceListModified.find( std::make_pair( nameSurf,idSurf ) );
+        if ( findSurfToModify != surfaceListModified.end() )
+        {
+            int idNewSurf = findSurfToModify->second.second;
+            auto const& mysurf = this->entitiesStorage().getSurface(idNewSurf);
+
+            boost::get<0>(*itSurf2front) = "blabla"; // shape (usefull??)
+            boost::get<1>(*itSurf2front) = mysurf.name();
+            CHECK( mysurf.listLineLoop().size() == 1 ) << "diff can be used only with surface with one lineloop";
+            boost::get<2>(*itSurf2front) = std::make_pair( mysurf.globalId(),mysurf.listLineLoop().front() ); // surf id, lineloop id
+            boost::get<3>(*itSurf2front) = 0.; // mesh size (usefull??)
+        }
+        else if ( surfaceListErased.find( std::make_pair( nameSurf,idSurf ) ) != surfaceListErased.end() )
+        {
+            // delete front surface with all diff surface
+            itSurf = this->M_surfaceList->erase( itSurf );
+            hasErasedAllSurf=true;
+        }
+
+        // treat diff surface
+        if ( !hasErasedAllSurf && itSurf->size() > 1 )
+        {
+            auto itSurfDiff = ++itSurf2front;
+            auto enSurfDiff = itSurf->end();
+            while ( itSurfDiff != enSurfDiff )
+            {
+                std::string nameSurfDiff = itSurfDiff->get<1>();
+                int idSurfDiff = itSurfDiff->get<2>().first;
+                if ( surfaceListErased.find( std::make_pair( nameSurfDiff,idSurfDiff ) ) != surfaceListErased.end() )
+                {
+                    // delete diff surface
+                    itSurfDiff = itSurf->erase( itSurfDiff );
+                }
+                else
+                {
+                    auto findSurfDiffToModify = surfaceListModified.find( std::make_pair( nameSurfDiff,idSurfDiff ) );
+                    if ( findSurfDiffToModify != surfaceListModified.end() )
+                    {
+                        // modify diff surface
+                        int idNewSurfDiff = findSurfDiffToModify->second.second;
+                        auto const& mysurf = this->entitiesStorage().getSurface(idNewSurfDiff);
+                        boost::get<0>(*itSurfDiff) = "blablaDiff"; // shape (usefull??)
+                        boost::get<1>(*itSurfDiff) = mysurf.name();
+                        CHECK( mysurf.listLineLoop().size() == 1 ) << "diff can be used only with surface with one lineloop";
+                        boost::get<2>(*itSurfDiff) = std::make_pair( mysurf.globalId(),mysurf.listLineLoop().front() ); // surf id, lineloop id
+                        boost::get<3>(*itSurfDiff) = 0.; // mesh size (usefull??)
+                    }
+                    ++itSurfDiff;
+                }
+            }
+        }
+        if( !hasErasedAllSurf ) ++itSurf;
+    } // for ( ; itSurf != enSurf ; ++itSurf )
+
+} // updateSurfaceListFromFusionMarkersLineWithInterface
+
+
+
+
+
+
+
+
+
 #define GEOTOOL_GENERATE_RUN(r,state)                                   \
         if( boost::get<2>(*__dg) ==  GEOTOOL_SHAPE_NAME_STR(BOOST_PP_TUPLE_ELEM(2,0,state)) ) \
             {                                                           \
@@ -1916,7 +2199,8 @@ param( data_geo_ptrtype __dg )
     std::string __shape = boost::get<2>( *__dg );
     std::string __name = boost::get<3>( *__dg );
     //node_type __node = boost::get<Numero>(boost::get<0>(*__dg)->M_paramShape->find(__shape)->second[__name]);
-    node_type __node =( boost::get<0>( *__dg )->M_paramShape->find( __shape )->second[__name] )[Numero];
+//    node_type __node =( boost::get<0>( *__dg )->M_paramShape->find( __shape )->second[__name] )[Numero];
+    node_type __node =  boost::get<0>( *__dg )->getParameter(__name )[Numero];
 
     __node.resize( 3 );
 
@@ -1941,13 +2225,15 @@ void writePoint( uint16_type __numLoc, data_geo_ptrtype __dg ,double __x1,double
     ( *( boost::get<1>( *__dg ) ) )[0][__numLoc] = boost::get<0>( *__dg )->cptPt(); //            __mapPt[0][__numLoc] = boost::get<0>(*__dg)->cptPt();
 
     //auto name = __dg->get<3>();
-    detail::GeoToolPoint myPt(__x1,__x2,__x3, __dg->get<9>(), __numLoc, __dg->get<0>()->cptPt() );
+    detail::GeoToolPoint myPt(__x1,__x2,__x3, __dg->get<4/*9*/>(), __numLoc, __dg->get<0>()->cptPt() );
 
     auto mymark = __dg->get<0>()->findPhysicalMarker( "point", __dg->get<3>()/*name*/, __numLoc );
     if ( mymark.first )
         myPt.setPhysicalMarker( mymark.second );
 
-    __dg->get<0>()->addPoint(/*name,*/myPt);
+    //__dg->get<0>()->addPoint(/*name,*/myPt);
+    //__dg->get<0>()->M_entitiesStorage.addPoint(myPt);
+    __dg->get<0>()->entitiesStorageAdmin().addPoint(myPt);
 
 #if 0
     std::ostringstream __ostr;
@@ -1992,7 +2278,9 @@ writeLine( uint16_type __numLoc, data_geo_ptrtype __dg ,uint16_type __n1, uint16
         }
     }
 #endif
-    __dg->get<0>()->addLine(myLine);
+
+    //__dg->get<0>()->addLine(myLine);
+    __dg->get<0>()->entitiesStorageAdmin().addLine(myLine);
 
 #if 0
     std::ostringstream __ostr;
@@ -2020,7 +2308,9 @@ writeCircle( uint16_type __numLoc, data_geo_ptrtype __dg ,uint16_type __n1, uint
     if ( mymark.first )
         myLine.setPhysicalMarker( mymark.second );
 
-    __dg->get<0>()->addLine(myLine);
+    //__dg->get<0>()->addLine(myLine);
+    __dg->get<0>()->entitiesStorageAdmin().addLine(myLine);
+
 #if 0
     std::ostringstream __ostr;
     __ostr << "Circle(" << boost::get<0>( *__dg )->cptLine() //cptCircle
@@ -2049,7 +2339,8 @@ writeEllipse( uint16_type __numLoc, data_geo_ptrtype __dg ,uint16_type __n1, uin
     if ( mymark.first )
         myLine.setPhysicalMarker( mymark.second );
 
-    __dg->get<0>()->addLine(myLine);
+    //__dg->get<0>()->addLine(myLine);
+    __dg->get<0>()->entitiesStorageAdmin().addLine(myLine);
 #if 0
     std::ostringstream __ostr;
     __ostr << "Ellipse(" << boost::get<0>( *__dg )->cptLine() //cptCircle
@@ -2082,7 +2373,8 @@ writeSpline( uint16_type __numLoc, data_geo_ptrtype __dg ,Loop __loop )
     if ( mymark.first )
         myLine.setPhysicalMarker( mymark.second );
 
-    __dg->get<0>()->addLine(myLine);
+    //__dg->get<0>()->addLine(myLine);
+    __dg->get<0>()->entitiesStorageAdmin().addLine(myLine);
 
 #if 0
     std::ostringstream __ostr;
@@ -2123,7 +2415,8 @@ writeBSpline( uint16_type __numLoc, data_geo_ptrtype __dg ,Loop __loop )
     if ( mymark.first )
         myLine.setPhysicalMarker( mymark.second );
 
-    __dg->get<0>()->addLine(myLine);
+    //__dg->get<0>()->addLine(myLine);
+    __dg->get<0>()->entitiesStorageAdmin().addLine(myLine);
 #if 0
     std::ostringstream __ostr;
     __ostr << "BSpline(" << boost::get<0>( *__dg )->cptLine() //cptCircle
@@ -2164,7 +2457,8 @@ writeLineLoop( uint16_type __numLoc, data_geo_ptrtype __dg , Loop /*const*/ __lo
             myLinesId.push_back( -(*__dg->get<1>() )[1][-*itl] );
     }
     myLineLoop.setLines( myLinesId );
-    __dg->get<0>()->addLineLoop(myLineLoop);
+    //__dg->get<0>()->addLineLoop(myLineLoop);
+    __dg->get<0>()->entitiesStorageAdmin().addLineLoop(myLineLoop);
 
 #if 0
     std::ostringstream __ostr;
@@ -2203,11 +2497,14 @@ writePtInSurface( data_geo_ptrtype __dg , uint16_type __indLocPt,uint16_type __i
 
     auto indPtGlob = ( *( boost::get<1>( *__dg ) ) )[0][__indLocPt];
     // A SUPP la ligne dessous
+#if 0
     ( *( boost::get<7>( *__dg ) ) )[0][( *( boost::get<1>( *__dg ) ) )[3][__indLocSurf]].push_back( indPtGlob );
-
+#endif
     auto indSurfGlob = (*__dg->get<1>() )[3][__indLocSurf];
-    CHECK(__dg->get<0>()->M_buildDataSurface.find(indSurfGlob) != __dg->get<0>()->M_buildDataSurface.end() ) << "not find surface";
-    __dg->get<0>()->M_buildDataSurface[indSurfGlob].addPtInSurface( indPtGlob );
+    //CHECK(__dg->get<0>()->M_buildDataSurface.find(indSurfGlob) != __dg->get<0>()->M_buildDataSurface.end() ) << "not find surface";
+    //CHECK(__dg->get<0>()->entitiesStorage().surfaces().find(indSurfGlob) != __dg->get<0>()->entitiesStorage().surfaces().end() ) << "not find surface";
+    //__dg->get<0>()->M_buildDataSurface[indSurfGlob].addPtInSurface( indPtGlob );
+    __dg->get<0>()->entitiesStorageAdmin().getSurface(indSurfGlob).addPtInSurface( indPtGlob );
 }
 
 
@@ -2217,9 +2514,11 @@ void
 writePlaneSurface( uint16_type __numLoc, data_geo_ptrtype __dg , uint16_type __ind )
 {
     ( *( boost::get<1>( *__dg ) ) )[3][__numLoc] = boost::get<0>( *__dg )->cptSurface(); //num local to global
+#if 0
     ( *( boost::get<4>( *__dg ) ) )[0][( *( boost::get<1>( *__dg ) ) )[3][__numLoc]] = false; //is tab gmsh
     ( *( boost::get<5>( *__dg ) ) )[0][( *( boost::get<1>( *__dg ) ) )[3][__numLoc]] = ""; //name of tab
     ( *( boost::get<6>( *__dg ) ) )[0][( *( boost::get<1>( *__dg ) ) )[3][__numLoc]] = false; //isRuled
+#endif
 
     bool __find=false;
     //Memorize in surfaceList
@@ -2239,7 +2538,9 @@ writePlaneSurface( uint16_type __numLoc, data_geo_ptrtype __dg , uint16_type __i
     if ( mymark.first )
         mySurf.setPhysicalMarker( mymark.second );
 
-    __dg->get<0>()->addSurface(mySurf);
+    //__dg->get<0>()->addSurface(mySurf);
+    __dg->get<0>()->entitiesStorageAdmin().addSurface(mySurf);
+
 
 
 #if 1
@@ -2292,10 +2593,11 @@ void
 writeRuledSurface( uint16_type __numLoc, data_geo_ptrtype __dg , uint16_type __ind )
 {
     ( *( boost::get<1>( *__dg ) ) )[3][__numLoc] = boost::get<0>( *__dg )->cptSurface(); //num local to global
+#if 0
     ( *( boost::get<4>( *__dg ) ) )[0][( *( boost::get<1>( *__dg ) ) )[3][__numLoc]] = false; //is tab gmsh
     ( *( boost::get<5>( *__dg ) ) )[0][( *( boost::get<1>( *__dg ) ) )[3][__numLoc]] = ""; //name of tab
     ( *( boost::get<6>( *__dg ) ) )[0][( *( boost::get<1>( *__dg ) ) )[3][__numLoc]] = true; //isRuled
-
+#endif
     uint16_type cptSurf = __dg->get<0>()->cptSurface();
     uint16_type refLineLoop= ( *( boost::get<1>( *__dg ) ) )[2][__ind];
 
@@ -2307,7 +2609,8 @@ writeRuledSurface( uint16_type __numLoc, data_geo_ptrtype __dg , uint16_type __i
     if ( mymark.first )
         mySurf.setPhysicalMarker( mymark.second );
 
-    __dg->get<0>()->addSurface(mySurf);
+    //__dg->get<0>()->addSurface(mySurf);
+    __dg->get<0>()->entitiesStorageAdmin().addSurface(mySurf);
 
 
 
@@ -2423,6 +2726,8 @@ writeRuledSurface( uint16_type __numLoc, data_geo_ptrtype __dg , uint16_type __i
 void
 writeExtrudeSurface( uint16_type __numLoc,data_geo_ptrtype __dg , uint16_type __ind,Loop /*const*/ __loop )
 {
+    CHECK( false ) << "Not implemented";
+#if 0
     Loop __loopDef = Loop()>>0;
 
     for ( uint16_type i=2; i< __loop.size()+2; ++i )
@@ -2464,7 +2769,7 @@ writeExtrudeSurface( uint16_type __numLoc,data_geo_ptrtype __dg , uint16_type __
 
     ++boost::get<0>( *__dg )->M_cptTableau;
     ++boost::get<0>( *__dg )->M_cptVolume;
-
+#endif
 }
 
 
@@ -2485,7 +2790,8 @@ writeSurfaceLoop( uint16_type __numLoc, data_geo_ptrtype __dg , Loop /*const*/ _
             mySurfaceId.push_back( -(*__dg->get<1>() )[3][-*itl] );
     }
     mySurfaceLoop.setSurfaces( mySurfaceId );
-    __dg->get<0>()->addSurfaceLoop(mySurfaceLoop);
+    //__dg->get<0>()->addSurfaceLoop(mySurfaceLoop);
+    __dg->get<0>()->entitiesStorageAdmin().addSurfaceLoop(mySurfaceLoop);
 
 
 
@@ -2530,14 +2836,16 @@ writeVolume( uint16_type __numLoc, data_geo_ptrtype __dg , uint16_type __ind )
     uint16_type cptVol = __dg->get<0>()->cptVolume();
     uint16_type refSurfaceLoop= ( *( boost::get<1>( *__dg ) ) )[4][__ind];
 
-    detail::GeoToolVolume myVol(__numLoc,cptVol );
+    std::string name = __dg->get<3>();
+    detail::GeoToolVolume myVol(name,__numLoc,cptVol );
     myVol.setSurfaceLoop( refSurfaceLoop );
 
     auto mymark = __dg->get<0>()->findPhysicalMarker( "volume", __dg->get<3>()/*name*/, __numLoc );
     if ( mymark.first )
         myVol.setPhysicalMarker( mymark.second );
 
-    __dg->get<0>()->addVolume(myVol);
+    //__dg->get<0>()->addVolume(myVol);
+    __dg->get<0>()->entitiesStorageAdmin().addVolume(myVol);
 
 
 
@@ -2691,1024 +2999,388 @@ computeBasisOrthogonal( node_type dir,node_type centre )
 
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#define GEOTOOL_FOR_COMP2(r, state)                                     \
+        BOOST_PP_NOT_EQUAL( BOOST_PP_TUPLE_ELEM(4, 0, state),           \
+                            BOOST_PP_INC(BOOST_PP_TUPLE_ELEM(4, 1, state)) \
+                            )                                           \
+        /**/
+/*_________________________________________________*/
+/*                                                 */
+/**/
+#define GEOTOOL_FOR_INCR2(r, state)                         \
+        (                                                   \
+         BOOST_PP_INC(BOOST_PP_TUPLE_ELEM(4, 0, state)),    \
+         BOOST_PP_TUPLE_ELEM(4, 1, state),                  \
+         BOOST_PP_TUPLE_ELEM(4, 2, state),                  \
+         BOOST_PP_TUPLE_ELEM(4, 3, state) )                 \
+        /**/
+/*_________________________________________________*/
+/*                                                 */
+/**/
+#define GEOTOOL_FOR_MARKER_POINT_MACRO2(r, state)                       \
+        __listMarker.push_back(boost::make_tuple(this->shape(),this->name(), \
+                                                 GEOTOOL_MARKER_POINT_MARKVALUE( BOOST_PP_CAT(GEOTOOL_MARKER_POINT_, \
+                                                                                             GEOTOOL_SHAPE_NAME_MACRO(BOOST_PP_TUPLE_ELEM(4,3,state) )), \
+                                                                                BOOST_PP_TUPLE_ELEM(4, 2, state), \
+                                                                                BOOST_PP_TUPLE_ELEM(4, 0, state) ) \
+                                                 )                      \
+                               );                                       \
+        /**/
+/*_________________________________________________*/
+/*                                                 */
+/**/
+#define GEOTOOL_FOR_MARKER_LINE_MACRO2(r, state)                        \
+        __listMarker.push_back(boost::make_tuple(this->shape(),this->name(), \
+                                                 GEOTOOL_MARKER_LINE_MARKVALUE( BOOST_PP_CAT(GEOTOOL_MARKER_LINE_, \
+                                                                                             GEOTOOL_SHAPE_NAME_MACRO(BOOST_PP_TUPLE_ELEM(4,3,state) )), \
+                                                                                BOOST_PP_TUPLE_ELEM(4, 2, state), \
+                                                                                BOOST_PP_TUPLE_ELEM(4, 0, state) ) \
+                                                 )                      \
+                               );                                       \
+        /**/
+/*_________________________________________________*/
+/*                                                 */
+/**/
+#if 1
+#define GEOTOOL_FOR_MARKER_SURFACE_MACRO2(r, state)                     \
+        __listMarker.push_back(boost::make_tuple(this->shape(),this->name(), \
+                                                 GEOTOOL_MARKER_SURFACE_MARKVALUE( BOOST_PP_CAT(GEOTOOL_MARKER_SURFACE_, \
+                                                                                                GEOTOOL_SHAPE_NAME_MACRO(BOOST_PP_TUPLE_ELEM(4,3,state) )), \
+                                                                                   BOOST_PP_TUPLE_ELEM(4, 2, state), \
+                                                                                   BOOST_PP_TUPLE_ELEM(4, 0, state) ) \
+                                                 )                      \
+                               );                                       \
+        /**/
+/*_________________________________________________*/
+/*                                                 */
+/**/
+#else
+#define GEOTOOL_FOR_MARKER_SURFACE_MACRO2(r, state)                     \
+        __listMarker.push_back(boost::make_tuple(this->shape(),this->name(), \
+                                                 GEOTOOL_MARKER_SURFACE_MARKVALUE( BOOST_PP_CAT(GEOTOOL_MARKER_SURFACE_, \
+                                                                                                BOOST_PP_IF(BOOST_PP_GREATER(GEOTOOL_SHAPE_NBSURFACE(BOOST_PP_TUPLE_ELEM(4,3,state)) ,0), \
+                                                                                                GEOTOOL_SHAPE_NAME_MACRO(BOOST_PP_TUPLE_ELEM(4,3,state) ), \
+                                                                                                DEFAULT)), \
+                                                                                   BOOST_PP_TUPLE_ELEM(4, 2, state), \
+                                                                                   BOOST_PP_TUPLE_ELEM(4, 0, state) ) \
+                                                 )                      \
+                               );                                       \
+        /**/
+/*_________________________________________________*/
+/*                                                 */
+/**/
+
+#endif
+
+
+#if 0
+#define GEOTOOL_FOR_MARKER_VOLUME_MACRO2(r, state)                      \
+        __listMarker.push_back(boost::make_tuple(this->shape(),this->name(), \
+                                                 GEOTOOL_MARKER_VOLUME_MARKVALUE( BOOST_PP_CAT(GEOTOOL_MARKER_VOLUME_, \
+                                                                                               BOOST_PP_IF(BOOST_PP_GREATER(GEOTOOL_SHAPE_NBVOLUME(BOOST_PP_TUPLE_ELEM(4,3,state)) ,0), \
+                                                                                                           GEOTOOL_SHAPE_NAME_MACRO(BOOST_PP_TUPLE_ELEM(4,3,state)), \
+                                                                                                           DEFAULT)), \
+                                                                                  BOOST_PP_TUPLE_ELEM(4, 2, state), \
+                                                                                  BOOST_PP_TUPLE_ELEM(4, 0, state) ) \
+                                                 )                      \
+                               );                                       \
+        /**/
+/*_________________________________________________*/
+/*                                                 */
+/**/
+#else
+#define GEOTOOL_FOR_MARKER_VOLUME_MACRO2(r, state)                      \
+        __listMarker.push_back(boost::make_tuple(this->shape(),this->name(), \
+                                                 GEOTOOL_MARKER_VOLUME_MARKVALUE( BOOST_PP_CAT(GEOTOOL_MARKER_VOLUME_, \
+                                                                                               GEOTOOL_SHAPE_NAME_MACRO(BOOST_PP_TUPLE_ELEM(4,3,state) )), \
+                                                                                  BOOST_PP_TUPLE_ELEM(4, 2, state), \
+                                                                                  BOOST_PP_TUPLE_ELEM(4, 0, state) ) \
+                                                 )                      \
+                               );                                       \
+        /**/
+/*_________________________________________________*/
+/*                                                 */
+/**/
+#endif
+
+
+#define GEOTOOL_FOR_MARKER_POINT_MACRO(r, state)                         \
+        if (BOOST_PP_CAT(marker,                                        \
+                         BOOST_PP_ADD(BOOST_PP_TUPLE_ELEM(3, 0, state),	\
+                                      1 ) ) )                           \
+            {                                                           \
+                BOOST_PP_FOR( (0,                                       \
+                               BOOST_PP_SUB(GEOTOOL_MARKER_POINT_NBMARK(BOOST_PP_CAT(GEOTOOL_MARKER_POINT_, \
+                                                                                    GEOTOOL_SHAPE_NAME_MACRO(BOOST_PP_TUPLE_ELEM(3,2,state))), \
+                                                                       BOOST_PP_TUPLE_ELEM(3, 0, state) ),1), \
+                               BOOST_PP_TUPLE_ELEM(3, 0, state),		\
+                               BOOST_PP_TUPLE_ELEM(3, 2, state)			\
+                               ),                                       \
+                              GEOTOOL_FOR_COMP2, GEOTOOL_FOR_INCR2, GEOTOOL_FOR_MARKER_POINT_MACRO2) \
+                    }                                                   \
+
+/**/
+/*_________________________________________________*/
+/*                                                 */
+/**/
+#define GEOTOOL_FOR_MARKER_LINE_MACRO(r, state)                         \
+        if (BOOST_PP_CAT(marker,                                        \
+                         BOOST_PP_ADD(BOOST_PP_TUPLE_ELEM(3, 0, state),	\
+                                      1 ) ) )                           \
+            {                                                           \
+                BOOST_PP_FOR( (0,                                       \
+                               BOOST_PP_SUB(GEOTOOL_MARKER_LINE_NBMARK(BOOST_PP_CAT(GEOTOOL_MARKER_LINE_, \
+                                                                                    GEOTOOL_SHAPE_NAME_MACRO(BOOST_PP_TUPLE_ELEM(3,2,state))), \
+                                                                       BOOST_PP_TUPLE_ELEM(3, 0, state) ),1), \
+                               BOOST_PP_TUPLE_ELEM(3, 0, state),		\
+                               BOOST_PP_TUPLE_ELEM(3, 2, state)			\
+                               ),                                       \
+                              GEOTOOL_FOR_COMP2, GEOTOOL_FOR_INCR2, GEOTOOL_FOR_MARKER_LINE_MACRO2) \
+                    }                                                   \
+
+/**/
+/*_________________________________________________*/
+/*                                                 */
+/**/
+#if 1
+#define GEOTOOL_FOR_MARKER_SURFACE_MACRO(r, state)                      \
+        if (BOOST_PP_CAT(marker,                                        \
+                         BOOST_PP_ADD(BOOST_PP_TUPLE_ELEM(3, 0, state),	\
+                                      1 ) ) )                           \
+            {                                                           \
+                BOOST_PP_FOR( (0,                                       \
+                               BOOST_PP_SUB(GEOTOOL_MARKER_SURFACE_NBMARK(BOOST_PP_CAT(GEOTOOL_MARKER_SURFACE_, \
+                                                                                       GEOTOOL_SHAPE_NAME_MACRO(BOOST_PP_TUPLE_ELEM(3,2,state)) ), \
+                                                                          BOOST_PP_TUPLE_ELEM(3, 0, state) ),1), \
+                               BOOST_PP_TUPLE_ELEM(3, 0, state),		\
+                               BOOST_PP_TUPLE_ELEM(3, 2, state)			\
+                               ),                                       \
+                              GEOTOOL_FOR_COMP2, GEOTOOL_FOR_INCR2, GEOTOOL_FOR_MARKER_SURFACE_MACRO2) \
+                    }                                                   \
+        /**/
+/*_________________________________________________*/
+/*                                                 */
+/**/
+#else
+#define GEOTOOL_FOR_MARKER_SURFACE_MACRO(r, state)                      \
+        if (BOOST_PP_CAT(marker,                                        \
+                         BOOST_PP_ADD(BOOST_PP_TUPLE_ELEM(3, 0, state),	\
+                                      1 ) ) )                           \
+            {                                                           \
+                BOOST_PP_FOR( (0,                                       \
+                               BOOST_PP_SUB(GEOTOOL_MARKER_SURFACE_NBMARK(BOOST_PP_CAT(GEOTOOL_MARKER_SURFACE_, \
+                                                                                       BOOST_PP_IF(BOOST_PP_GREATER(GEOTOOL_SHAPE_NBSURFACE(BOOST_PP_TUPLE_ELEM(3,2,state)),0), \
+                                                                                                   GEOTOOL_SHAPE_NAME_MACRO(BOOST_PP_TUPLE_ELEM(3,2,state)), \
+                                                                                                   DEFAULT )), \
+                                                                          BOOST_PP_TUPLE_ELEM(3, 0, state) ),1) , \
+                               BOOST_PP_TUPLE_ELEM(3, 0, state),		\
+                               BOOST_PP_TUPLE_ELEM(3, 2, state)			\
+                               ),                                       \
+                              GEOTOOL_FOR_COMP2, GEOTOOL_FOR_INCR2, GEOTOOL_FOR_MARKER_SURFACE_MACRO2) \
+                   }                                                  \
+        /**/
+/*_________________________________________________*/
+/*                                                 */
+/**/
+
+#endif
+
+#if 0
+#define GEOTOOL_FOR_MARKER_VOLUME_MACRO(r, state)                       \
+        if (BOOST_PP_CAT(marker,                                        \
+                         BOOST_PP_ADD(BOOST_PP_TUPLE_ELEM(3, 0, state),	\
+                                      1 ) ) )                           \
+            {                                                           \
+                BOOST_PP_FOR( (0,                                       \
+                               BOOST_PP_SUB(GEOTOOL_MARKER_VOLUME_NBMARK(BOOST_PP_CAT(GEOTOOL_MARKER_VOLUME_, \
+                                                                                      BOOST_PP_IF(BOOST_PP_GREATER(GEOTOOL_SHAPE_NBVOLUME(BOOST_PP_TUPLE_ELEM(3,2,state)) ,0), \
+                                                                                                  GEOTOOL_SHAPE_NAME_MACRO(BOOST_PP_TUPLE_ELEM(3,2,state)),\
+                                                                                                  DEFAULT )), \
+                                                                          BOOST_PP_TUPLE_ELEM(3, 0, state) ),1), \
+                               BOOST_PP_TUPLE_ELEM(3, 0, state),		\
+                               BOOST_PP_TUPLE_ELEM(3, 2, state)			\
+                               ),                                       \
+                              GEOTOOL_FOR_COMP2, GEOTOOL_FOR_INCR2, GEOTOOL_FOR_MARKER_VOLUME_MACRO2) \
+                    }                                                   \
+        /**/
+/*_________________________________________________*/
+/*                                                 */
+/**/
+#else
+#define GEOTOOL_FOR_MARKER_VOLUME_MACRO(r, state)                       \
+        if (BOOST_PP_CAT(marker,                                        \
+                         BOOST_PP_ADD(BOOST_PP_TUPLE_ELEM(3, 0, state),	\
+                                      1 ) ) )                           \
+            {                                                           \
+                BOOST_PP_FOR( (0,                                       \
+                               BOOST_PP_SUB(GEOTOOL_MARKER_VOLUME_NBMARK(BOOST_PP_CAT(GEOTOOL_MARKER_VOLUME_, \
+                                                                                      GEOTOOL_SHAPE_NAME_MACRO(BOOST_PP_TUPLE_ELEM(3,2,state)) ), \
+                                                                         BOOST_PP_TUPLE_ELEM(3, 0, state) ),1), \
+                               BOOST_PP_TUPLE_ELEM(3, 0, state),		\
+                               BOOST_PP_TUPLE_ELEM(3, 2, state)			\
+                               ),                                       \
+                              GEOTOOL_FOR_COMP2, GEOTOOL_FOR_INCR2, GEOTOOL_FOR_MARKER_VOLUME_MACRO2) \
+                    }                                                   \
+        /**/
+/*_________________________________________________*/
+/*                                                 */
+/**/
+
+#endif
+
+
+#define GEOTOOL_FOR_COMP1(r, state)                                     \
+        BOOST_PP_NOT_EQUAL( BOOST_PP_TUPLE_ELEM(3, 0, state),           \
+                            BOOST_PP_INC(BOOST_PP_TUPLE_ELEM(3, 1, state)) \
+                            )                                           \
+        /**/
+/*_________________________________________________*/
+
+#define GEOTOOL_FOR_INCR1(r, state)                         \
+        (                                                   \
+         BOOST_PP_INC(BOOST_PP_TUPLE_ELEM(3, 0, state)),	\
+         BOOST_PP_TUPLE_ELEM(3, 1, state),                  \
+         BOOST_PP_TUPLE_ELEM(3, 2, state) )                 \
+        /**/
+/*_________________________________________________*/
+/*_________________________________________________*/
+#define GEOTOOL_SHAPE_PARAM(r, state)                                   \
+    M_param[BOOST_PP_TUPLE_ELEM(2,0,state)] = BOOST_PP_CAT( __param,    \
+                                                            BOOST_PP_TUPLE_ELEM(2,0,state) ); \
+    /**/
+
+
+/*_________________________________________________*/
 /*_________________________________________________*/
 
 
+#define GEOTOOL_SHAPE_FOR_PARAM_SIGNATURE_NO_DEFAULT_ARG(r, state)      \
+    Node BOOST_PP_CAT( __param, BOOST_PP_TUPLE_ELEM(2,0,state) ) BOOST_PP_COMMA() \
+        /**/
+/*_________________________________________________*/
+/*                                                 */
+/**/
+#define GEOTOOL_SHAPE_PARAM_SIGNATURE_NO_DEFAULT_ARG(state)             \
+    BOOST_PP_FOR( (0, BOOST_PP_SUB(GEOTOOL_SHAPE_NBPARAM(BOOST_PP_TUPLE_ELEM(2,0,state)),1) ), \
+                  GEOTOOL_FOR_COMP,                                     \
+                  GEOTOOL_FOR_INCR,                                     \
+                  GEOTOOL_SHAPE_FOR_PARAM_SIGNATURE_NO_DEFAULT_ARG)     \
+                                                                          /**/
+
+
+
+#define GEOTOOL_SHAPE_CLASS_IMPL(r,state)                               \
+    GEOTOOL_SHAPE_NAME_CLASS(BOOST_PP_TUPLE_ELEM(2,0,state))::          \
+    GEOTOOL_SHAPE_NAME_CLASS(BOOST_PP_TUPLE_ELEM(2,0,state))(double __meshSize, \
+                                                             std::string __name, \
+                                                             GEOTOOL_SHAPE_PARAM_SIGNATURE_NO_DEFAULT_ARG(state) \
+                                                             uint16_type type ) /*Ne sert a rien, juste a cause de la virgule au dessus)*/ \
+    :                                                                   \
+    GeoGMSHTool( GEOTOOL_SHAPE_DIM(BOOST_PP_TUPLE_ELEM(2,0,state)),shape(), __name, __meshSize) \
+    /*M_name(__name)*/                                                  \
+    {                                                                   \
+        M_param.resize( GEOTOOL_SHAPE_NBPARAM(BOOST_PP_TUPLE_ELEM(2,0,state))); \
+        BOOST_PP_FOR( (0, BOOST_PP_SUB(GEOTOOL_SHAPE_NBPARAM(BOOST_PP_TUPLE_ELEM(2,0,state)),1) ), \
+                      GEOTOOL_FOR_COMP,                                 \
+                      GEOTOOL_FOR_INCR,                                 \
+                      GEOTOOL_SHAPE_PARAM);                             \
+                                                                        \
+        this->initFromPreDefShape(shape(),                              \
+                                  __name,                               \
+                                  __meshSize,                           \
+                                  M_param,                              \
+                                  GEOTOOL_SHAPE_DIM(BOOST_PP_TUPLE_ELEM(2,0,state)), \
+                                  1,                                    \
+                                  GEOTOOL_SHAPE_NBSURFACE(BOOST_PP_TUPLE_ELEM(2,0,state)), \
+                                  GEOTOOL_SHAPE_NBVOLUME(BOOST_PP_TUPLE_ELEM(2,0,state))); \
+    }                                                                   \
+                                                                        \
+    void                                                                \
+    GEOTOOL_SHAPE_NAME_CLASS(BOOST_PP_TUPLE_ELEM(2,0,state))            \
+        ::setMarkerImpl( std::string type, std::string name, std::vector<bool> const& markers ) \
+    {                                                                   \
+        bool marker1=markers[0];                                        \
+        bool marker2=markers[1];                                        \
+        bool marker3=markers[2];                                        \
+        bool marker4=markers[3];                                        \
+        bool marker5=markers[4];                                        \
+        bool marker6=markers[5];                                        \
+        bool marker7=markers[6];                                        \
+        bool marker8=markers[7];                                        \
+        bool marker9=markers[8];                                        \
+        bool marker10=markers[9];                                       \
+        bool marker11=markers[10];                                      \
+        bool marker12=markers[11];                                      \
+                                                                        \
+        std::vector<marker_base_type> __listMarker = (*(M_markShape))[type][name]; \
+                                                                        \
+    if (type=="point")                                                  \
+        {                                                               \
+            BOOST_PP_FOR( (0, BOOST_PP_SUB(BOOST_PP_ARRAY_SIZE( BOOST_PP_CAT(GEOTOOL_MARKER_POINT_, \
+                                                                             GEOTOOL_SHAPE_NAME_MACRO( BOOST_PP_TUPLE_ELEM(2,0,state)))), \
+                                           1), BOOST_PP_TUPLE_ELEM(2,0,state)), \
+                          GEOTOOL_FOR_COMP1,                            \
+                      GEOTOOL_FOR_INCR1,                                \
+                      GEOTOOL_FOR_MARKER_POINT_MACRO)                   \
+            }                                                           \
+    else if (type=="line")                                              \
+    {                                                                   \
+        BOOST_PP_FOR( (0, BOOST_PP_SUB(BOOST_PP_ARRAY_SIZE( BOOST_PP_CAT(GEOTOOL_MARKER_LINE_, \
+                                                                         GEOTOOL_SHAPE_NAME_MACRO( BOOST_PP_TUPLE_ELEM(2,0,state)))), \
+                                       1), BOOST_PP_TUPLE_ELEM(2,0,state)), \
+                      GEOTOOL_FOR_COMP1,                                \
+                      GEOTOOL_FOR_INCR1,                                \
+                      GEOTOOL_FOR_MARKER_LINE_MACRO)                    \
+            }                                                           \
+    else if (type=="surface")                                           \
+    {                                                                   \
+        BOOST_PP_IF(BOOST_PP_NOT_EQUAL(GEOTOOL_SHAPE_NBSURFACE(BOOST_PP_TUPLE_ELEM(2,0,state)),0), \
+                    BOOST_PP_FOR( (0, BOOST_PP_SUB(BOOST_PP_ARRAY_SIZE( BOOST_PP_CAT(GEOTOOL_MARKER_SURFACE_, \
+                                                                                     GEOTOOL_SHAPE_NAME_MACRO( BOOST_PP_TUPLE_ELEM(2,0,state)))), \
+                                                   1), BOOST_PP_TUPLE_ELEM(2,0,state)), \
+                                  GEOTOOL_FOR_COMP1,                    \
+                                  GEOTOOL_FOR_INCR1,                    \
+                                  GEOTOOL_FOR_MARKER_SURFACE_MACRO),    \
+                    )                                                   \
+            }                                                           \
+    else if (type=="volume")                                            \
+    {                                                                   \
+        BOOST_PP_IF(BOOST_PP_NOT_EQUAL(GEOTOOL_SHAPE_NBVOLUME(BOOST_PP_TUPLE_ELEM(2,0,state)),0), \
+                    BOOST_PP_FOR( (0, BOOST_PP_SUB(BOOST_PP_ARRAY_SIZE( BOOST_PP_CAT(GEOTOOL_MARKER_VOLUME_, \
+                                                                                     GEOTOOL_SHAPE_NAME_MACRO( BOOST_PP_TUPLE_ELEM(2,0,state)))), \
+                                                   1), BOOST_PP_TUPLE_ELEM(2,0,state)), \
+                                  GEOTOOL_FOR_COMP1,                    \
+                                  GEOTOOL_FOR_INCR1,                    \
+                                  GEOTOOL_FOR_MARKER_VOLUME_MACRO),     \
+                    )                                                   \
+            }                                                           \
+                                                                        \
+    (*(M_markShape))[type][name] = __listMarker;                        \
+                                                                        \
+    }                                                                   \
+
+    /**/
+
+// generate methods impl for predef geotool objects
+BOOST_PP_FOR( ( 0, BOOST_PP_SUB( BOOST_PP_ARRAY_SIZE( GEOTOOL_SHAPE ),1 ) ),
+              GEOTOOL_FOR_COMP,
+              GEOTOOL_FOR_INCR,
+              GEOTOOL_SHAPE_CLASS_IMPL )
 
-/*_________________________________________________*
- *_________________________________________________*
- * Function user                                   *
- *_________________________________________________*
- *_________________________________________________*/
-
-
-void
-runLine( data_geo_ptrtype dg )
-{
-    node_type PtA = param<0>( dg );
-    node_type PtB = param<1>( dg );
-
-    writePoint( 1, dg , PtA( 0 ), PtA( 1 ) );
-    writePoint( 2, dg , PtB( 0 ), PtB( 1 ) );
-    writeLine( 1, dg , 1 , 2 );
-}
-
-
-void
-runTriangle( data_geo_ptrtype dg )
-{
-    node_type PtA = param<0>( dg );
-    node_type PtB = param<1>( dg );
-    node_type PtC = param<2>( dg );
-
-    writePoint( 1, dg , PtA( 0 ), PtA( 1 ) );
-    writePoint( 2, dg , PtB( 0 ), PtB( 1 ) );
-    writePoint( 3, dg , PtC( 0 ), PtC( 1 ) );
-
-    writeLine( 1, dg , 1 , 2 );
-    writeLine( 2, dg , 2 , 3 );
-    writeLine( 3, dg , 3 , 1 );
-
-    writeLineLoop( 1, dg, Loop()>>1>>2>>3 );
-
-    writePlaneSurface( 1, dg, 1 );
-}
-
-
-
-void
-runRectangle( data_geo_ptrtype dg )
-{
-
-    node_type PtA = param<0>( dg );
-    node_type PtB = param<1>( dg );
-
-    writePoint( 1, dg , PtA( 0 ), PtA( 1 ) );
-    writePoint( 2, dg , PtB( 0 ), PtA( 1 ) );
-    writePoint( 3, dg , PtB( 0 ), PtB( 1 ) );
-    writePoint( 4, dg , PtA( 0 ), PtB( 1 ) );
-
-    writeLine( 1, dg , 1 , 2 );
-    writeLine( 2, dg , 2 , 3 );
-    writeLine( 3, dg , 3 , 4 );
-    writeLine( 4, dg , 4 , 1 );
-
-    writeLineLoop( 1, dg, Loop()>>1>>2>>3>>4 );
-
-    writePlaneSurface( 1, dg, 1 );
-
-}
-
-void
-runQuadrangle( data_geo_ptrtype dg )
-{
-
-    node_type PtA = param<0>( dg );
-    node_type PtB = param<1>( dg );
-    node_type PtC = param<2>( dg );
-    node_type PtD = param<3>( dg );
-
-    writePoint( 1, dg , PtA( 0 ), PtA( 1 ) );
-    writePoint( 2, dg , PtB( 0 ), PtB( 1 ) );
-    writePoint( 3, dg , PtC( 0 ), PtC( 1 ) );
-    writePoint( 4, dg , PtD( 0 ), PtD( 1 ) );
-
-    writeLine( 1, dg , 1 , 2 );
-    writeLine( 2, dg , 2 , 3 );
-    writeLine( 3, dg , 3 , 4 );
-    writeLine( 4, dg , 4 , 1 );
-
-    writeLineLoop( 1, dg, Loop()>>1>>2>>3>>4 );
-
-    writePlaneSurface( 1, dg, 1 );
-
-}
-
-void
-runPentagon( data_geo_ptrtype dg )
-{
-
-    node_type PtA = param<0>( dg );
-    node_type PtB = param<1>( dg );
-    node_type PtC = param<2>( dg );
-    node_type PtD = param<3>( dg );
-    node_type PtE = param<4>( dg );
-
-    writePoint( 1, dg , PtA( 0 ), PtA( 1 ) );
-    writePoint( 2, dg , PtB( 0 ), PtB( 1 ) );
-    writePoint( 3, dg , PtC( 0 ), PtC( 1 ) );
-    writePoint( 4, dg , PtD( 0 ), PtD( 1 ) );
-    writePoint( 5, dg , PtE( 0 ), PtE( 1 ) );
-
-    writeLine( 1, dg , 1 , 2 );
-    writeLine( 2, dg , 2 , 3 );
-    writeLine( 3, dg , 3 , 4 );
-    writeLine( 4, dg , 4 , 5 );
-    writeLine( 5, dg , 5 , 1 );
-
-    writeLineLoop( 1, dg, Loop()>>1>>2>>3>>4>>5 );
-
-    writePlaneSurface( 1, dg, 1 );
-
-}
-
-
-void
-runHexagon( data_geo_ptrtype dg )
-{
-
-    node_type PtA = param<0>( dg );
-    node_type PtB = param<1>( dg );
-    node_type PtC = param<2>( dg );
-    node_type PtD = param<3>( dg );
-    node_type PtE = param<4>( dg );
-    node_type PtF = param<5>( dg );
-
-    writePoint( 1, dg , PtA( 0 ), PtA( 1 ) );
-    writePoint( 2, dg , PtB( 0 ), PtB( 1 ) );
-    writePoint( 3, dg , PtC( 0 ), PtC( 1 ) );
-    writePoint( 4, dg , PtD( 0 ), PtD( 1 ) );
-    writePoint( 5, dg , PtE( 0 ), PtE( 1 ) );
-    writePoint( 6, dg , PtF( 0 ), PtF( 1 ) );
-
-    writeLine( 1, dg , 1 , 2 );
-    writeLine( 2, dg , 2 , 3 );
-    writeLine( 3, dg , 3 , 4 );
-    writeLine( 4, dg , 4 , 5 );
-    writeLine( 5, dg , 5 , 6 );
-    writeLine( 6, dg , 6 , 1 );
-
-    writeLineLoop( 1, dg, Loop()>>1>>2>>3>>4>>5>>6 );
-
-    writePlaneSurface( 1, dg, 1 );
-
-}
-
-
-void
-runCircle( data_geo_ptrtype dg )
-{
-    node_type PtA = param<0>( dg );
-    node_type PtB = param<1>( dg );
-
-    writePoint( 1, dg , PtB( 0 ), PtB( 1 ) );
-    writePoint( 2, dg , PtA( 0 ), PtA( 1 ) );
-    writePoint( 3, dg , 2*PtA( 0 )-PtB( 0 ), 2*PtA( 1 )-PtB( 1 ) );
-
-    writeCircle( 1, dg, 1, 2, 3 );
-    writeCircle( 2, dg, 3, 2, 1 );
-
-    writeLineLoop( 1, dg, Loop()>>1>>2 );
-
-    writePlaneSurface( 1, dg, 1 );
-    writePtInSurface( dg,2,1 );
-}
-
-
-void
-runEllipse( data_geo_ptrtype dg )
-{
-    node_type PtC = param<0>( dg );
-    node_type PtMinor = param<1>( dg );
-    node_type PtMajor = param<2>( dg );
-
-    writePoint( 1, dg , PtC( 0 ), PtC( 1 ) );
-    writePoint( 2, dg , PtMinor( 0 ), PtMinor( 1 ) );
-    writePoint( 3, dg , 2*PtC( 0 )-PtMinor( 0 ), 2*PtC( 1 )-PtMinor( 1 ) );
-    writePoint( 4, dg , PtMajor( 0 ), PtMajor( 1 ) );
-    writePoint( 5, dg , 2*PtC( 0 )-PtMajor( 0 ), 2*PtC( 1 )-PtMajor( 1 ) );
-
-    writeEllipse( 1, dg, 2, 1, 4, 4 );
-    writeEllipse( 2, dg, 4, 1, 3, 3 );
-    writeEllipse( 3, dg, 3, 1, 5, 5 );
-    writeEllipse( 4, dg, 5, 1, 2, 2 );
-
-    writeLineLoop( 1, dg, Loop()>>1>>2>>3>>4 );
-
-    writePlaneSurface( 1, dg, 1 );
-    writePtInSurface( dg,2,1 );
-}
-
-
-
-void
-runPie( data_geo_ptrtype dg )
-{
-    node_type PtA = param<0>( dg );
-    node_type PtB = param<1>( dg );
-    node_type PtC = param<2>( dg );
-
-    writePoint( 1, dg , PtB( 0 ), PtB( 1 ) );
-    writePoint( 2, dg , PtA( 0 ), PtA( 1 ) );
-    writePoint( 3, dg , PtC( 0 ), PtC( 1 ) );
-
-    writeCircle( 1, dg, 1, 2, 3 );
-    writeLine( 2, dg , 3 , 2 );
-    writeLine( 3, dg , 2 , 1 );
-
-    writeLineLoop( 1, dg, Loop()>>1>>2>>3 );
-
-    writePlaneSurface( 1, dg, 1 );
-    writePtInSurface( dg,2,1 );
-
-}
-
-void
-runSpecial_1a( data_geo_ptrtype dg )
-{
-    double yh=1.0;
-    Node a1( 0.0, yh );
-    Node a2( 3.0, yh );
-    Node a3( 6.0, yh+0.7 );
-    Node a4( 7.3, yh-0.5 );
-    Node a5( 8.5, yh );
-    Node a6( 11.0, yh );
-    double ep=0.3;
-    //_______________________________________________//
-    writePoint( 1, dg , a1( 0 ), a1( 1 ) );
-    writePoint( 2, dg , a2( 0 ), a2( 1 ) );
-    writePoint( 3, dg , a3( 0 ), a3( 1 ) );
-    writePoint( 4, dg , a4( 0 ), a4( 1 ) );
-    writePoint( 5, dg , a5( 0 ), a5( 1 ) );
-    writePoint( 6, dg , a6( 0 ), a6( 1 ) );
-
-    writeSpline( 1, dg, Loop()>>1>>2>>3>>4>>5>>6 );
-
-    writePoint( 7, dg , a1( 0 ), a1( 1 )+ep );
-    writePoint( 8, dg , a2( 0 ), a2( 1 )+ep );
-    writePoint( 9, dg , a3( 0 ), a3( 1 )+ep );
-    writePoint( 10, dg , a4( 0 ), a4( 1 )+ep );
-    writePoint( 11, dg , a5( 0 ), a5( 1 )+ep );
-    writePoint( 12, dg , a6( 0 ), a6( 1 )+ep );
-
-    writeSpline( 2, dg, Loop()>>7>>8>>9>>10>>11>>12 );
-
-    writeLine( 3, dg, 1,7 );
-    writeLine( 4, dg, 6,12 );
-
-    writeLineLoop( 1, dg, Loop()>>1>>4>>-2>>-3 );
-    writePlaneSurface( 1, dg, 1 );
-
-    writePoint( 13, dg , a1( 0 ), -a1( 1 ) );
-    writePoint( 14, dg , a2( 0 ), -a2( 1 ) );
-    writePoint( 15, dg , a3( 0 ), -a3( 1 ) );
-    writePoint( 16, dg , a4( 0 ), -a4( 1 ) );
-    writePoint( 17, dg , a5( 0 ), -a5( 1 ) );
-    writePoint( 18, dg , a6( 0 ), -a6( 1 ) );
-
-    writeSpline( 5, dg, Loop()>>13>>14>>15>>16>>17>>18 );
-
-    writePoint( 19, dg , a1( 0 ), -a1( 1 )-ep );
-    writePoint( 20, dg , a2( 0 ), -a2( 1 )-ep );
-    writePoint( 21, dg , a3( 0 ), -a3( 1 )-ep );
-    writePoint( 22, dg , a4( 0 ), -a4( 1 )-ep );
-    writePoint( 23, dg , a5( 0 ), -a5( 1 )-ep );
-    writePoint( 24, dg , a6( 0 ), -a6( 1 )-ep );
-
-    writeSpline( 6, dg, Loop()>>19>>20>>21>>22>>23>>24 );
-
-    writeLine( 7, dg, 13,19 );
-    writeLine( 8, dg, 18,24 );
-
-    writeLineLoop( 2, dg, Loop()>>5>>8>>-6>>-7 );
-    writePlaneSurface( 2, dg, 2 );
-
-}
-
-void
-runSpecial_1b( data_geo_ptrtype dg )
-{
-    double yh=1.0;
-    Node a1( 0.0, yh );
-    Node a2( 3.0, yh );
-    Node a3( 6.0, yh+0.7 );
-    Node a4( 7.3, yh-0.5 );
-    Node a5( 8.5, yh );
-    Node a6( /*11.0*/16.0, yh );
-    //_______________________________________________//
-    writePoint( 1, dg , a1( 0 ), a1( 1 ) );
-    writePoint( 2, dg , a2( 0 ), a2( 1 ) );
-    writePoint( 3, dg , a3( 0 ), a3( 1 ) );
-    writePoint( 4, dg , a4( 0 ), a4( 1 ) );
-    writePoint( 5, dg , a5( 0 ), a5( 1 ) );
-    writePoint( 6, dg , a6( 0 ), a6( 1 ) );
-
-    writeSpline( 1, dg, Loop()>>1>>2>>3>>4>>5>>6 );
-
-    writePoint( 7, dg , a1( 0 ), -a1( 1 ) );
-    writePoint( 8, dg , a2( 0 ), -a2( 1 ) );
-    writePoint( 9, dg , a3( 0 ), -a3( 1 ) );
-    writePoint( 10, dg , a4( 0 ), -a4( 1 ) );
-    writePoint( 11, dg , a5( 0 ), -a5( 1 ) );
-    writePoint( 12, dg , a6( 0 ), -a6( 1 ) );
-
-    writeSpline( 2, dg, Loop()>>7>>8>>9>>10>>11>>12 );
-
-    writeLine( 3, dg, 1,7 );
-    writeLine( 4, dg, 6,12 );
-
-    writeLineLoop( 1, dg, Loop()>>1>>4>>-2>>-3 );
-
-    writePlaneSurface( 1, dg, 1 );
-
-}
-
-void
-runPeanut( data_geo_ptrtype dg )
-{
-    node_type PtCenter = param<0>( dg );
-    node_type majorRadiusParam = param<1>( dg ); //2
-    node_type minorRadiusParam = param<2>( dg ); //1
-    node_type penautRadiusParam = param<3>( dg ); //0.1
-    double majorRadius = majorRadiusParam( 0 );
-    double minorRadius = minorRadiusParam( 0 );
-    double penautRadius = penautRadiusParam( 0 );
-    writePoint( 1, dg , PtCenter( 0 )               , PtCenter( 1 )+penautRadius, 0. );
-    writePoint( 2, dg , PtCenter( 0 )               , PtCenter( 1 )-penautRadius, 0. );
-    writePoint( 3, dg , PtCenter( 0 )-majorRadius   , PtCenter( 1 )             , 0. );
-    writePoint( 4, dg , PtCenter( 0 )+majorRadius   , PtCenter( 1 )             , 0. );
-    writePoint( 5, dg , PtCenter( 0 )-majorRadius/4., PtCenter( 1 )+minorRadius , 0. );
-    writePoint( 6, dg , PtCenter( 0 )-majorRadius/4., PtCenter( 1 )-minorRadius , 0. );
-    writePoint( 7, dg , PtCenter( 0 )+majorRadius/4., PtCenter( 1 )+minorRadius , 0. );
-    writePoint( 8, dg , PtCenter( 0 )+majorRadius/4., PtCenter( 1 )-minorRadius , 0. );
-    writeBSpline( 1, dg, Loop()>>1>>5>>3>>6>>2>>8>>4>>7>>1 );
-
-    writeLineLoop( 1, dg, Loop()>>1 );
-    writePlaneSurface( 1, dg, 1 );
-}
-
-void
-runHexahedron( data_geo_ptrtype dg )
-{
-
-    node_type Pt1 = param<0>( dg );
-    node_type Pt2 = param<1>( dg );
-    node_type Pt3 = param<2>( dg );
-    node_type Pt4 = param<3>( dg );
-    node_type Pt5 = param<4>( dg );
-    node_type Pt6 = param<5>( dg );
-    node_type Pt7 = param<6>( dg );
-    node_type Pt8 = param<7>( dg );
-
-    writePoint( 1, dg , Pt1( 0 ), Pt1( 1 ), Pt1( 2 ) );
-    writePoint( 2, dg , Pt2( 0 ), Pt2( 1 ), Pt2( 2 ) );
-    writePoint( 3, dg , Pt3( 0 ), Pt3( 1 ), Pt3( 2 ) );
-    writePoint( 4, dg , Pt4( 0 ), Pt4( 1 ), Pt4( 2 ) );
-    writePoint( 5, dg , Pt5( 0 ), Pt5( 1 ), Pt5( 2 ) );
-    writePoint( 6, dg , Pt6( 0 ), Pt6( 1 ), Pt6( 2 ) );
-    writePoint( 7, dg , Pt7( 0 ), Pt7( 1 ), Pt7( 2 ) );
-    writePoint( 8, dg , Pt8( 0 ), Pt8( 1 ), Pt8( 2 ) );
-
-    writeLine( 1, dg , 1 , 2 );
-    writeLine( 2, dg , 2 , 3 );
-    writeLine( 3, dg , 3 , 4 );
-    writeLine( 4, dg , 4 , 1 );
-    writeLine( 5, dg , 5 , 6 );
-    writeLine( 6, dg , 6 , 7 );
-    writeLine( 7, dg , 7 , 8 );
-    writeLine( 8, dg , 8 , 5 );
-    writeLine( 9, dg , 1 , 5 );
-    writeLine( 10, dg , 2 , 6 );
-    writeLine( 11, dg , 3 , 7 );
-    writeLine( 12, dg , 4 , 8 );
-
-    writeLineLoop( 1, dg, Loop()>>1>>2>>3>>4 );
-    writePlaneSurface( 1, dg, 1 );
-    writeLineLoop( 2, dg, Loop()>>-5>>-8>>-7>>-6 );
-    writePlaneSurface( 2, dg, 2 );
-    writeLineLoop( 3, dg, Loop()>>-1>>9>>5>>-10 );
-    writePlaneSurface( 3, dg, 3 );
-    writeLineLoop( 4, dg, Loop()>>10>>6>>-11>>-2 );
-    writePlaneSurface( 4, dg, 4 );
-    writeLineLoop( 5, dg, Loop()>>11>>7>>-12>>-3 );
-    writePlaneSurface( 5, dg, 5 );
-    writeLineLoop( 6, dg, Loop()>>8>>-9>>-4>>12 );
-    writePlaneSurface( 6, dg, 6 );
-
-    writeSurfaceLoop( 1, dg, Loop()>>1>>2>>3>>4>>5>>6 );
-    writeVolume( 1, dg, 1 );
-}
-
-void
-runTetrahedron( data_geo_ptrtype dg )
-{
-    node_type Pt1 = param<0>( dg );
-    node_type Pt2 = param<1>( dg );
-    node_type Pt3 = param<2>( dg );
-    node_type Pt4 = param<3>( dg );
-
-    writePoint( 1, dg , Pt1( 0 ), Pt1( 1 ), Pt1( 2 ) );
-    writePoint( 2, dg , Pt2( 0 ), Pt2( 1 ), Pt2( 2 ) );
-    writePoint( 3, dg , Pt3( 0 ), Pt3( 1 ), Pt3( 2 ) );
-    writePoint( 4, dg , Pt4( 0 ), Pt4( 1 ), Pt4( 2 ) );
-
-    writeLine( 1, dg , 1 , 2 );
-    writeLine( 2, dg , 2 , 3 );
-    writeLine( 3, dg , 3 , 1 );
-    writeLine( 4, dg , 1 , 4 );
-    writeLine( 5, dg , 2 , 4 );
-    writeLine( 6, dg , 3 , 4 );
-
-    writeLineLoop( 1, dg, Loop()>>1>>2>>3 );
-    writePlaneSurface( 1, dg, 1 );
-
-    //writeLineLoop( 2, dg, Loop()>>5>>-4>>1 );
-    writeLineLoop( 2, dg, Loop()>>-1>>4>>-5 );
-    writePlaneSurface( 2, dg, 2 );
-    //writeLineLoop( 3, dg, Loop()>>2>>6>>-5 );
-    writeLineLoop( 3, dg, Loop()>>5>>-6>>-2 );
-    writePlaneSurface( 3, dg, 3 );
-    //writeLineLoop( 4, dg, Loop()>>3>>4>>-6 );
-    writeLineLoop( 4, dg, Loop()>>6>>-4>>-3 );
-    writePlaneSurface( 4, dg, 4 );
-
-    writeSurfaceLoop( 1, dg, Loop()>>1>>2>>3>>4 );
-
-    writeVolume( 1, dg, 1 );
-}
-
-
-void
-runCube( data_geo_ptrtype dg )
-{
-
-    node_type Pt1 = param<0>( dg );
-    node_type Pt7 = param<1>( dg );
-    double lenx = Pt7( 0 )-Pt1( 0 );
-    double leny = Pt7( 1 )-Pt1( 1 );
-    double lenz = Pt7( 2 )-Pt1( 2 );
-    node_type Pt2 = Pt1;
-    Pt2( 0 )+=lenx;
-    node_type Pt3 = Pt1;
-    Pt3( 0 )+=lenx;
-    Pt3( 1 )+=leny;
-    node_type Pt4 = Pt1;
-    Pt4( 1 )+=leny;
-    node_type Pt5 = Pt1;
-    Pt5( 2 )+=lenz;
-    node_type Pt6 = Pt1;
-    Pt6( 0 )+=lenx;
-    Pt6( 2 )+=lenz;
-    // Pt7 was give above by the user
-    node_type Pt8 = Pt1;
-    Pt8( 1 )+=leny;
-    Pt8( 2 )+=lenz;
-
-    writePoint( 1, dg , Pt1( 0 ), Pt1( 1 ), Pt1( 2 ) );
-    writePoint( 2, dg , Pt2( 0 ), Pt2( 1 ), Pt2( 2 ) );
-    writePoint( 3, dg , Pt3( 0 ), Pt3( 1 ), Pt3( 2 ) );
-    writePoint( 4, dg , Pt4( 0 ), Pt4( 1 ), Pt4( 2 ) );
-    writePoint( 5, dg , Pt5( 0 ), Pt5( 1 ), Pt5( 2 ) );
-    writePoint( 6, dg , Pt6( 0 ), Pt6( 1 ), Pt6( 2 ) );
-    writePoint( 7, dg , Pt7( 0 ), Pt7( 1 ), Pt7( 2 ) );
-    writePoint( 8, dg , Pt8( 0 ), Pt8( 1 ), Pt8( 2 ) );
-
-    writeLine( 1, dg , 1 , 2 );
-    writeLine( 2, dg , 2 , 3 );
-    writeLine( 3, dg , 3 , 4 );
-    writeLine( 4, dg , 4 , 1 );
-    writeLine( 5, dg , 5 , 6 );
-    writeLine( 6, dg , 6 , 7 );
-    writeLine( 7, dg , 7 , 8 );
-    writeLine( 8, dg , 8 , 5 );
-    writeLine( 9, dg , 1 , 5 );
-    writeLine( 10, dg , 2 , 6 );
-    writeLine( 11, dg , 3 , 7 );
-    writeLine( 12, dg , 4 , 8 );
-
-    writeLineLoop( 1, dg, Loop()>>1>>2>>3>>4 );
-    writePlaneSurface( 1, dg, 1 );
-    writeLineLoop( 2, dg, Loop()>>-5>>-8>>-7>>-6 );
-    writePlaneSurface( 2, dg, 2 );
-    writeLineLoop( 3, dg, Loop()>>-1>>9>>5>>-10 );
-    writePlaneSurface( 3, dg, 3 );
-    writeLineLoop( 4, dg, Loop()>>10>>6>>-11>>-2 );
-    writePlaneSurface( 4, dg, 4 );
-    writeLineLoop( 5, dg, Loop()>>11>>7>>-12>>-3 );
-    writePlaneSurface( 5, dg, 5 );
-    writeLineLoop( 6, dg, Loop()>>8>>-9>>-4>>12 );
-    writePlaneSurface( 6, dg, 6 );
-
-    writeSurfaceLoop( 1, dg, Loop()>>1>>2>>3>>4>>5>>6 );
-
-    writeVolume( 1, dg, 1 );
-}
-
-void
-runCylindre( data_geo_ptrtype dg )
-{
-#if 0
-    node_type centre = param<0>( dg );
-    double par = param<1>( dg )( 0 );
-
-    Node c1( -1,-par,0 );
-    Node c2( -1, 0,-par );
-    Node c3( -1, par,0 );
-    Node c4( -1, 0, par );
-    writePoint( 1, dg , centre( 0 ), centre( 1 ), centre( 2 ) );
-    writePoint( 2, dg , c1( 0 ), c1( 1 ), c1( 2 ) );
-    writePoint( 3, dg , c2( 0 ), c2( 1 ), c2( 2 ) );
-    writePoint( 4, dg , c3( 0 ), c3( 1 ), c3( 2 ) );
-    writePoint( 5, dg , c4( 0 ), c4( 1 ), c4( 2 ) );
-
-    writeCircle( 1, dg, 2, 1, 3 );
-    writeCircle( 2, dg, 3, 1, 4 );
-    writeCircle( 3, dg, 4, 1, 5 );
-    writeCircle( 4, dg, 5, 1, 2 );
-
-    writeLineLoop( 1, dg, Loop()>>1>>2>>3>>4 );
-    writePlaneSurface( 1, dg, 1 );
-
-    //volume 1, extrude surface 1, creation surface 2,3,4,5,6
-    writeExtrudeSurface( 1,dg,1,Loop()>>2>>3>>4>>5>>6 );
-#endif
-
-    node_type centre = param<0>( dg );
-    node_type direction = param<1>( dg );
-    double rayon = param<2>( dg )( 0 );
-    double longueur=param<3>( dg )( 0 );
-
-    auto basis = computeBasisOrthogonal( direction,centre );
-    Node dir( boost::get<0>( basis ) );
-    Node u( boost::get<1>( basis ) );
-    Node v( boost::get<2>( basis ) );
-
-    Node geoX1( centre( 0 )+u( 0 )*rayon,
-                centre( 1 )+u( 1 )*rayon,
-                centre( 2 )+u( 2 )*rayon  );
-
-    Node geoX2( centre( 0 )+v( 0 )*rayon,
-                centre( 1 )+v( 1 )*rayon,
-                centre( 2 )+v( 2 )*rayon  );
-
-    Node geoX3( centre( 0 )-u( 0 )*rayon,
-                centre( 1 )-u( 1 )*rayon,
-                centre( 2 )-u( 2 )*rayon  );
-
-    Node geoX4( centre( 0 )-v( 0 )*rayon,
-                centre( 1 )-v( 1 )*rayon,
-                centre( 2 )-v( 2 )*rayon  );
-
-    Node centre2( centre( 0 )+longueur*dir( 0 ),
-                  centre( 1 )+longueur*dir( 1 ),
-                  centre( 2 )+longueur*dir( 2 ) );
-
-    Node geoX5( geoX1( 0 )+longueur*dir( 0 ),
-                geoX1( 1 )+longueur*dir( 1 ),
-                geoX1( 2 )+longueur*dir( 2 ) );
-
-    Node geoX6( geoX2( 0 )+longueur*dir( 0 ),
-                geoX2( 1 )+longueur*dir( 1 ),
-                geoX2( 2 )+longueur*dir( 2 ) );
-
-    Node geoX7( geoX3( 0 )+longueur*dir( 0 ),
-                geoX3( 1 )+longueur*dir( 1 ),
-                geoX3( 2 )+longueur*dir( 2 ) );
-
-    Node geoX8( geoX4( 0 )+longueur*dir( 0 ),
-                geoX4( 1 )+longueur*dir( 1 ),
-                geoX4( 2 )+longueur*dir( 2 ) );
-
-    //--------------------------------------------------------------------------//
-
-    writePoint( 1, dg, centre( 0 ), centre( 1 ) ,centre( 2 ) );
-    writePoint( 2, dg, geoX1( 0 ), geoX1( 1 ) ,geoX1( 2 ) );
-    writePoint( 3, dg, geoX2( 0 ), geoX2( 1 ) ,geoX2( 2 ) );
-    writePoint( 4, dg, geoX3( 0 ), geoX3( 1 ) ,geoX3( 2 ) );
-    writePoint( 5, dg, geoX4( 0 ), geoX4( 1 ) ,geoX4( 2 ) );
-
-    writeCircle( 1, dg, 2,1,3 );
-    writeCircle( 2, dg, 3,1,4 );
-    writeCircle( 3, dg, 4,1,5 );
-    writeCircle( 4, dg, 5,1,2 );
-
-    writeLineLoop( 1, dg, Loop()>>1>>2>>3>>4 );
-
-    writePoint( 6, dg, centre2( 0 ), centre2( 1 ) ,centre2( 2 ) );
-    writePoint( 7, dg, geoX5( 0 ), geoX5( 1 ) ,geoX5( 2 ) );
-    writePoint( 8, dg, geoX6( 0 ), geoX6( 1 ) ,geoX6( 2 ) );
-    writePoint( 9, dg, geoX7( 0 ), geoX7( 1 ) ,geoX7( 2 ) );
-    writePoint( 10, dg, geoX8( 0 ), geoX8( 1 ) ,geoX8( 2 ) );
-
-    writeCircle( 5, dg, 7,6,8 );
-    writeCircle( 6, dg,8,6,9 );
-    writeCircle( 7, dg,9,6,10 );
-    writeCircle( 8 ,dg,10,6,7 );
-
-    writeLineLoop( 2, dg, Loop()>>-5>>-8>>-7>>-6 );
-
-    writeLine( 9, dg, 4, 9 );
-    writeLine( 10, dg, 5, 10 );
-    writeLine( 11, dg, 2, 7 );
-    writeLine( 12, dg, 8, 3 );
-    writeLineLoop( 13, dg, Loop()>>-9>>-2>>-12>>6 );
-    writeLineLoop( 15, dg, Loop()>>9>>7>>-10>>-3 );
-    writeLineLoop( 17, dg, Loop()>>10>>8>>-11>>-4 );
-    writeLineLoop( 19, dg, Loop()>>11>>5>>12>>-1 );
-
-    writePlaneSurface( 1, dg, 1 );
-    writePlaneSurface( 2, dg, 2 );
-    writePtInSurface(dg,1,1 );
-    writePtInSurface(dg,6,2 );
-
-    writeRuledSurface( 3, dg, 13 );
-    writeRuledSurface( 4, dg, 15 );
-    writeRuledSurface( 5, dg, 17 );
-    writeRuledSurface( 6, dg, 19 );
-
-    writeSurfaceLoop( 1, dg, Loop()>>5>>4>>3>>2>>6>>1 );
-    writeVolume( 1, dg, 1 );
-
-}
-
-void
-runSphere( data_geo_ptrtype dg )
-{
-
-    node_type centre = param<0>( dg );
-    double R = param<1>( dg )( 0 );
-
-    double x_center = centre( 0 );
-    double y_center = centre( 1 );
-    double z_center = centre( 2 );
-
-    writePoint( 1, dg, x_center, y_center, z_center );
-    writePoint( 2, dg, x_center - R, y_center, z_center );
-    writePoint( 4, dg, x_center, y_center - R, z_center );
-    writePoint( 5, dg, x_center + R, y_center, z_center );
-    writePoint( 8, dg, x_center, y_center, z_center - R );
-    writePoint( 11, dg, x_center, y_center + R, z_center );
-    writePoint( 14, dg, x_center, y_center, z_center + R );
-    writeCircle( 1, dg, 2, 1, 4 );
-    writeCircle( 2, dg, 4, 1, 5 );
-    writeCircle( 3, dg, 2, 1, 8 );
-    writeCircle( 4, dg, 4, 1, 8 );
-    writeCircle( 6, dg, 2, 1, 11 );
-    writeCircle( 7, dg, 8, 1, 11 );
-    writeCircle( 9, dg, 2, 1, 14 );
-    writeCircle( 10, dg, 11, 1, 14 );
-    writeCircle( 13, dg, 14, 1, 4 );
-    writeCircle( 15, dg, 8, 1, 5 );
-    writeCircle( 18, dg, 11, 1, 5 );
-    writeCircle( 21, dg, 14, 1, 5 );
-
-#if 0
-    writeLineLoop( 1, dg, Loop()>>1>>4>>-3 );
-    writeRuledSurface( 1, dg,1 );
-    writeLineLoop( 2, dg, Loop()>>3>>7>>-6 );
-    writeRuledSurface( 2, dg,2 );
-    writeLineLoop( 3, dg, Loop()>>6>>10>>-9 );
-    writeRuledSurface( 3,dg,3 );
-    writeLineLoop( 4, dg, Loop()>>9>>13>>-1 );
-    writeRuledSurface( 4, dg, 4 );
-    writeLineLoop( 5, dg, Loop()>>-15>>-4>>2 );
-    writeRuledSurface( 5, dg, 5 );
-    writeLineLoop( 6, dg, Loop()>>-18>>-7>>15 );
-    writeRuledSurface( 6, dg, 6 );
-    writeLineLoop( 7, dg, Loop()>>-21>>-10>>18 );
-    writeRuledSurface( 7,dg,7 );
-    writeLineLoop( 8, dg, Loop()>>-2>>-13>>21 );
-    writeRuledSurface( 8, dg,8 );
-    writeSurfaceLoop( 1, dg, Loop()>>1>>4>>3>>2>>6>>7>>8>>5 );
-
-#else
-    writeLineLoop( 1, dg, Loop()>>1>>4>>-3 );
-    writeRuledSurface( 1, dg,1 );
-    writeLineLoop( 2, dg, Loop()>>7>>-6>>3 );//
-    writeRuledSurface( 2, dg,2 );
-    writeLineLoop( 3, dg, Loop()>>6>>10>>-9 );//
-    writeRuledSurface( 3,dg,3 );
-    writeLineLoop( 4, dg, Loop()>>13>>-1>>9 );//
-    writeRuledSurface( 4, dg, 4 );
-    writeLineLoop( 5, dg, Loop()>>-4>>2>>-15 );//
-    writeRuledSurface( 5, dg, 5 );
-    writeLineLoop( 6, dg, Loop()>>-18>>-7>>15 );//
-    writeRuledSurface( 6, dg, 6 );
-    writeLineLoop( 7, dg, Loop()>>-10>>18>>-21 );//
-    writeRuledSurface( 7,dg,7 );
-    writeLineLoop( 8, dg, Loop()>>-2>>-13>>21 );
-    writeRuledSurface( 8, dg,8 );
-    writeSurfaceLoop( 1, dg, Loop()>>3>>2>>6>>7>>8>>5>>1>>4 );
-#endif
-
-    writeVolume( 1, dg, 1 );
-}
-
-
-
-void
-runTube( data_geo_ptrtype dg )
-{
-
-    node_type centre = param<0>( dg );
-    node_type direction = param<1>( dg );
-    double rayon = param<2>( dg )( 0 );
-    double longueur=param<3>( dg )( 0 );
-    double epaisseur=param<4>( dg )( 0 );
-
-    auto basis = computeBasisOrthogonal( direction,centre );
-    Node dir( boost::get<0>( basis ) );
-    Node u( boost::get<1>( basis ) );
-    Node v( boost::get<2>( basis ) );
-
-    Node geoX1( centre( 0 )+u( 0 )*rayon,
-                centre( 1 )+u( 1 )*rayon,
-                centre( 2 )+u( 2 )*rayon  );
-
-    Node geoX2( centre( 0 )+v( 0 )*rayon,
-                centre( 1 )+v( 1 )*rayon,
-                centre( 2 )+v( 2 )*rayon  );
-
-    Node geoX3( centre( 0 )-u( 0 )*rayon,
-                centre( 1 )-u( 1 )*rayon,
-                centre( 2 )-u( 2 )*rayon  );
-
-    Node geoX4( centre( 0 )-v( 0 )*rayon,
-                centre( 1 )-v( 1 )*rayon,
-                centre( 2 )-v( 2 )*rayon  );
-
-    Node centre2( centre( 0 )+longueur*dir( 0 ),
-                  centre( 1 )+longueur*dir( 1 ),
-                  centre( 2 )+longueur*dir( 2 ) );
-
-    Node geoX5( geoX1( 0 )+longueur*dir( 0 ),
-                geoX1( 1 )+longueur*dir( 1 ),
-                geoX1( 2 )+longueur*dir( 2 ) );
-
-    Node geoX6( geoX2( 0 )+longueur*dir( 0 ),
-                geoX2( 1 )+longueur*dir( 1 ),
-                geoX2( 2 )+longueur*dir( 2 ) );
-
-    Node geoX7( geoX3( 0 )+longueur*dir( 0 ),
-                geoX3( 1 )+longueur*dir( 1 ),
-                geoX3( 2 )+longueur*dir( 2 ) );
-
-    Node geoX8( geoX4( 0 )+longueur*dir( 0 ),
-                geoX4( 1 )+longueur*dir( 1 ),
-                geoX4( 2 )+longueur*dir( 2 ) );
-
-
-    Node geoX1B( centre( 0 )+u( 0 )*( rayon+epaisseur ),
-                 centre( 1 )+u( 1 )*( rayon+epaisseur ),
-                 centre( 2 )+u( 2 )*( rayon+epaisseur )  );
-
-    Node geoX2B( centre( 0 )+v( 0 )*( rayon+epaisseur ),
-                 centre( 1 )+v( 1 )*( rayon+epaisseur ),
-                 centre( 2 )+v( 2 )*( rayon+epaisseur ) );
-
-    Node geoX3B( centre( 0 )-u( 0 )*( rayon+epaisseur ),
-                 centre( 1 )-u( 1 )*( rayon+epaisseur ),
-                 centre( 2 )-u( 2 )*( rayon+epaisseur ) );
-
-    Node geoX4B( centre( 0 )-v( 0 )*( rayon+epaisseur ),
-                 centre( 1 )-v( 1 )*( rayon+epaisseur ),
-                 centre( 2 )-v( 2 )*( rayon+epaisseur ) );
-
-    Node geoX5B( geoX1B( 0 )+longueur*dir( 0 ),
-                 geoX1B( 1 )+longueur*dir( 1 ),
-                 geoX1B( 2 )+longueur*dir( 2 ) );
-
-    Node geoX6B( geoX2B( 0 )+longueur*dir( 0 ),
-                 geoX2B( 1 )+longueur*dir( 1 ),
-                 geoX2B( 2 )+longueur*dir( 2 ) );
-
-    Node geoX7B( geoX3B( 0 )+longueur*dir( 0 ),
-                 geoX3B( 1 )+longueur*dir( 1 ),
-                 geoX3B( 2 )+longueur*dir( 2 ) );
-
-    Node geoX8B( geoX4B( 0 )+longueur*dir( 0 ),
-                 geoX4B( 1 )+longueur*dir( 1 ),
-                 geoX4B( 2 )+longueur*dir( 2 ) );
-
-    //--------------------------------------------------------------------------//
-
-    writePoint( 1, dg, centre( 0 ), centre( 1 ) ,centre( 2 ) );
-    writePoint( 2, dg, geoX1( 0 ), geoX1( 1 ) ,geoX1( 2 ) );
-    writePoint( 3, dg, geoX2( 0 ), geoX2( 1 ) ,geoX2( 2 ) );
-    writePoint( 4, dg, geoX3( 0 ), geoX3( 1 ) ,geoX3( 2 ) );
-    writePoint( 5, dg, geoX4( 0 ), geoX4( 1 ) ,geoX4( 2 ) );
-
-    writeCircle( 1, dg, 2,1,3 );
-    writeCircle( 2, dg, 3,1,4 );
-    writeCircle( 3, dg, 4,1,5 );
-    writeCircle( 4, dg, 5,1,2 );
-
-    writeLineLoop( 1, dg, Loop()>>1>>2>>3>>4 );
-
-    writePoint( 6, dg, centre2( 0 ), centre2( 1 ) ,centre2( 2 ) );
-    writePoint( 7, dg, geoX5( 0 ), geoX5( 1 ) ,geoX5( 2 ) );
-    writePoint( 8, dg, geoX6( 0 ), geoX6( 1 ) ,geoX6( 2 ) );
-    writePoint( 9, dg, geoX7( 0 ), geoX7( 1 ) ,geoX7( 2 ) );
-    writePoint( 10, dg, geoX8( 0 ), geoX8( 1 ) ,geoX8( 2 ) );
-
-    writeCircle( 5, dg, 7,6,8 );
-    writeCircle( 6, dg,8,6,9 );
-    writeCircle( 7, dg,9,6,10 );
-    writeCircle( 8 ,dg,10,6,7 );
-
-    writeLineLoop( 2, dg,Loop()>>5>>6>>7>>8 );
-
-    writeLine( 9, dg, 4, 9 );
-    writeLine( 10, dg, 5, 10 );
-    writeLine( 11, dg, 2, 7 );
-    writeLine( 12, dg, 8, 3 );
-
-    writeLineLoop( 3, dg, Loop()>>9>>-6>>12>>2 );
-    writeLineLoop( 4, dg, Loop()>>9>>7>>-10>>-3 );
-    writeLineLoop( 5, dg, Loop()>>10>>8>>-11>>-4 );
-    writeLineLoop( 6, dg, Loop()>>11>>5>>12>>-1 );
-
-    //writePlaneSurface(1, dg, 1);
-    //writePlaneSurface(2, dg, 2);
-
-    writeRuledSurface( 3, dg, 3 );
-    writeRuledSurface( 4, dg, 4 );
-    writeRuledSurface( 5, dg, 5 );
-    writeRuledSurface( 6, dg, 6 );
-
-
-    writePoint( 11, dg, geoX1B( 0 ), geoX1B( 1 ) ,geoX1B( 2 ) );
-    writePoint( 12, dg, geoX2B( 0 ), geoX2B( 1 ) ,geoX2B( 2 ) );
-    writePoint( 13, dg, geoX3B( 0 ), geoX3B( 1 ) ,geoX3B( 2 ) );
-    writePoint( 14, dg, geoX4B( 0 ), geoX4B( 1 ) ,geoX4B( 2 ) );
-
-    writeCircle( 13, dg, 11,1,12 );
-    writeCircle( 14, dg, 12,1,13 );
-    writeCircle( 15, dg, 13,1,14 );
-    writeCircle( 16, dg, 14,1,11 );
-
-    writePoint( 15, dg, geoX5B( 0 ), geoX5B( 1 ) ,geoX5B( 2 ) );
-    writePoint( 16, dg, geoX6B( 0 ), geoX6B( 1 ) ,geoX6B( 2 ) );
-    writePoint( 17, dg, geoX7B( 0 ), geoX7B( 1 ) ,geoX7B( 2 ) );
-    writePoint( 18, dg, geoX8B( 0 ), geoX8B( 1 ) ,geoX8B( 2 ) );
-
-    writeCircle( 17, dg, 15,6,16 );
-    writeCircle( 18, dg, 16,6,17 );
-    writeCircle( 19, dg, 17,6,18 );
-    writeCircle( 20 ,dg, 18,6,15 );
-
-    writeLine( 21, dg, 13, 17 );
-    writeLine( 22, dg, 14, 18 );
-    writeLine( 23, dg, 11, 15 );
-    writeLine( 24, dg, 16, 12 );
-
-    writeLineLoop( 7, dg, Loop()>>21>>-18>>24>>14 );
-    writeLineLoop( 8, dg, Loop()>>21>>19>>-22>>-15 );
-    writeLineLoop( 9, dg, Loop()>>22>>20>>-23>>-16 );
-    writeLineLoop( 10, dg, Loop()>>23>>17>>24>>-13 );
-
-    writeRuledSurface( 7, dg, 7 );
-    writeRuledSurface( 8, dg, 8 );
-    writeRuledSurface( 9, dg, 9 );
-    writeRuledSurface( 10, dg, 10 );
-
-    writeLine( 25, dg, 2, 11 );
-    writeLine( 26, dg, 3, 12 );
-    writeLine( 27, dg, 4, 13 );
-    writeLine( 28, dg, 5, 14 );
-    writeLine( 29, dg, 7, 15 );
-    writeLine( 30, dg, 8, 16 );
-    writeLine( 31, dg, 9, 17 );
-    writeLine( 32, dg, 10, 18 );
-
-
-    writeLineLoop( 11, dg, Loop()>>19>>-32>>-7>>31 );
-    writeLineLoop( 12, dg, Loop()>>20>>-29>>-8>>32 );
-    writeLineLoop( 13, dg, Loop()>>6>>31>>-18>>-30 );
-    writeLineLoop( 14, dg, Loop()>>5>>30>>-17>>-29 );
-    writeLineLoop( 15, dg, Loop()>>15>>-28>>-3>>27 );
-    writeLineLoop( 16, dg, Loop()>>27>>-14>>-26>>2 );
-    writeLineLoop( 17, dg, Loop()>>26>>-13>>-25>>1 );
-    writeLineLoop( 18, dg, Loop()>>25>>-16>>-28>>4 );
-
-    // internal surface
-    writeLineLoop( 19 ,dg, Loop()>>23>>-29>>-11>>25 );
-    writeLineLoop( 20 ,dg, Loop()>>10>>32>>-22>>-28 );
-    writeLineLoop( 21 ,dg, Loop()>>9>>31>>-21>>-27 );
-    writeLineLoop( 22 ,dg, Loop()>>24>>-26>>-12>>30 );
-
-    // internal surface
-    writePlaneSurface( 19,dg,19 );
-    writeRuledSurface( 20,dg,20 );
-    writePlaneSurface( 21,dg,21 );
-    writePlaneSurface( 22,dg,22 );
-
-    // Inlet or outlet?
-    writeRuledSurface( 11,dg,11 );
-    writeRuledSurface( 12,dg,12 );
-    writeRuledSurface( 13,dg,13 );
-    writeRuledSurface( 14,dg,14 );
-
-    // Inlet or outlet?
-    writeRuledSurface( 15,dg,15 );
-    writeRuledSurface( 16,dg,16 );
-    writeRuledSurface( 17,dg,17 );
-    writeRuledSurface( 18,dg,18 );
-
-
-
-    //writeSurfaceLoop(1, dg, Loop()>>3>>4>>5>>6>>7>>8>>9>>10>>11>>12>>13>>14>>15>>16>>17>>18);
-    //writeSurfaceLoop(1, dg, Loop()>>3>>4>>5>>6>>7>>8>>9>>10>>11>>12>>13>>14>>15>>16>>17>>18>>19>>20>>21>>22);
-    //writeVolume(1, dg, 1);
-#if 0
-    writeSurfaceLoop( 1, dg, Loop()>>6>>9>>2>>13>>18>>19 );
-    writeVolume( 1,dg,1 );
-    writeSurfaceLoop( 2, dg, Loop()>>18>>7>>10>>3>>16>>17 );
-    writeVolume( 2,dg,2 );
-    writeSurfaceLoop( 37, dg, Loop()>>20>>12>>4>>15>>8>>17 );
-    writeVolume( 3,dg,3 );
-    writeSurfaceLoop( 4, dg, Loop()>>11>>1>>14>>5>>19>>20 );
-    writeVolume( 4,dg,4 );
-#else
-    writeSurfaceLoop( 1, dg, Loop()>>4>>16>>8>>19>>12>>9 );
-    writeVolume( 1,dg,1 );
-    writeSurfaceLoop( 2, dg, Loop()>>5>>15>>1>>18>>11>>12 );
-    writeVolume( 2,dg,2 );
-    writeSurfaceLoop( 3, dg, Loop()>>6>>13>>2>>17>>11>>10 );
-    writeVolume( 3,dg,3 );
-    writeSurfaceLoop( 4, dg, Loop()>>10>>7>>14>>3>>20>>9 );
-    writeVolume( 4,dg,4 );
-#endif
-
-
-} // runTube
-
-
-void
-runSpecial3D_1( data_geo_ptrtype dg )
-{
-    double lgstruct=0.35101;
-    double xL = 0.6-lgstruct;
-    double yMin = -0.12,yMax=0.12;
-    writePoint(1,dg,  xL, yMin, 0.19 );
-    writePoint(2,dg, 0.6, yMin, 0.19 );
-    writePoint(3,dg, 0.6, yMin, 0.21 );
-    writePoint(4,dg,  xL, yMin, 0.21 );
-    writePoint(5,dg,  xL, yMax, 0.19 );
-    writePoint(6,dg, 0.6, yMax, 0.19 );
-    writePoint(7,dg, 0.6, yMax, 0.21 );
-    writePoint(8,dg,  xL, yMax, 0.21 );
-    // point sup
-    writePoint(9,dg,  0.2     , yMin, 0.2 );// center
-    writePoint(10,dg, 0.2-0.05, yMin, 0.2 ); // on circle
-    writePoint(11,dg, 0.2     , yMax, 0.2 );// center
-    writePoint(12,dg, 0.2-0.05, yMax, 0.2); // on circle
-
-    writeLine(1,dg, 1,2);
-    writeLine(2,dg, 2,3);
-    writeLine(3,dg, 3,4);
-    writeLine(4,dg, 4,1);
-    writeLine(5,dg, 5,6);
-    writeLine(6,dg, 6,7);
-    writeLine(7,dg, 7,8);
-    writeLine(8,dg, 8,5);
-    writeLine(9,dg, 1,5);
-    writeLine(10,dg,2,6);
-    writeLine(11,dg,3,7);
-    writeLine(12,dg,4,8);
-    // line sup
-    writeCircle(13,dg, 1,9,10 );
-    writeCircle(14,dg, 10,9,4 );
-    writeCircle(15,dg, 5,11,12 );
-    writeCircle(16,dg, 12,11,8 );
-    // line on cylinder
-    writeLine(17,dg, 12, 10);
-
-    writeLineLoop(1,dg, Loop()>>1>>2>>3>>4);
-    writeLineLoop(2,dg, Loop()>>-8>>-7>>-6>>-5);
-    writeLineLoop(3,dg, Loop()>>9>>5>>-10>>-1);
-    writeLineLoop(4,dg, Loop()>>10>>6>>-11>>-2);
-    writeLineLoop(5,dg, Loop()>>11>>7>>-12>>-3);
-    //writeLineLoop(6,dg, Loop()>>9>>-8>>-12>>4);
-    writePlaneSurface(1,dg,1);
-    writePlaneSurface(2,dg,2);
-    writePlaneSurface(3,dg,3);
-    writePlaneSurface(4,dg,4);
-    writePlaneSurface(5,dg,5);
-    //writePlaneSurface(6,dg,6);
-
-    writeLineLoop(6,dg,  Loop()>>17>>14>>12>>-16 );
-    writeLineLoop(7,dg,  Loop()>>-15>>-9>>13>>-17);
-    writeLineLoop(8,dg,  Loop()>>-13>>-4>>-14);
-    writeLineLoop(9,dg, Loop()>>15>>16>>8);
-    writeRuledSurface(6,dg,6);
-    writeRuledSurface(7,dg,7);
-    writePlaneSurface(8,dg,8);
-    writePlaneSurface(9,dg,9);
-    writePtInSurface(dg,9,8 );
-    writePtInSurface(dg,11,9 );
-
-#if 0
-    writeSurfaceLoop( 1, dg, Loop()>>7>>10>>8>>9>>6 );
-    writeVolume( 1,dg,1 );
-    writeSurfaceLoop( 2, dg, Loop()>>5>>4>>3>>1>>2>>6 );
-    writeVolume( 2,dg,2 );
-#else
-    writeSurfaceLoop( 1, dg, Loop()>>6>>9>>7>>8>>5>>4>>3>>1>>2 );
-    writeVolume( 1,dg,1 );
-#endif
-
-} // runSpecial3D_1
 
 
 } //namespace GeoTool

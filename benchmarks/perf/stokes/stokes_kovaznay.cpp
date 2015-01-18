@@ -219,8 +219,8 @@ template<int POrder, int GeoOrder>
 Stokes_Kovaznay<POrder,GeoOrder>::Stokes_Kovaznay( )
     :
     super( ),
-    M_backend( backend_type::build( this->vm() ) ),
-    meshSize( this->vm()["hsize"].template as<double>() ),
+    M_backend( backend_type::build( soption("backend") ) ),
+    meshSize( doption("hsize") ),
     mu( this->vm()["mu"].template as<value_type>() ),
     penalbc( this->vm()["bccoeff"].template as<value_type>() ),
     exporter2( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
@@ -243,7 +243,7 @@ Stokes_Kovaznay<POrder,GeoOrder>::init()
                                 % this->about().appName()
                                 % convex_type::name()
                                 % basis_u_type::nOrder % basis_p_type::nOrder
-                                % this->vm()["hsize"].template as<double>()
+                                % doption("hsize")
                                 % Environment::numberOfProcessors() );
 
 
@@ -285,7 +285,7 @@ Stokes_Kovaznay<POrder,GeoOrder>::init()
     std::cout << "number of elements of 2D curved: " << mesh->numElements() << "\n";
     LOG(INFO) << "number of dof in Wh: " << Wh->nDof() << "\n";
     std::cout << "number of dof in Wh: " << Wh->nDof() << "\n";
-    mesh=straightenMesh(_mesh=mesh);
+    mesh=straightenMesh( mesh, Environment::worldComm());
 
 #elif defined BOTTOM2
     //********************** Rectangle ***************************************

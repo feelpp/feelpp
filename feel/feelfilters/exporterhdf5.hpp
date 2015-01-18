@@ -45,132 +45,133 @@ namespace fs = boost::filesystem;
 template <typename MeshType, int N>
 class Exporterhdf5
     : 
-public Exporter <MeshType, N>
+        public Exporter <MeshType, N>
 {
     typedef Exporter<MeshType, N> super;
-    public: 
-        typedef MeshType mesh_type;
-        typedef typename mesh_type::value_type value_type;
-        typedef boost::shared_ptr<mesh_type> mesh_ptrtype;    
-        typedef typename super::timeset_type timeset_type;
-        typedef typename super::timeset_ptrtype timeset_ptrtype;
-        typedef typename super::timeset_iterator timeset_iterator;
-        typedef typename super::timeset_const_iterator timeset_const_iterator;
+public: 
+    typedef MeshType mesh_type;
+    typedef typename mesh_type::value_type value_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;    
+    typedef typename super::timeset_type timeset_type;
+    typedef typename super::timeset_ptrtype timeset_ptrtype;
+    typedef typename super::timeset_iterator timeset_iterator;
+    typedef typename super::timeset_const_iterator timeset_const_iterator;
 
-        Exporterhdf5( WorldComm const& worldComm = Environment::worldComm() );
-        Exporterhdf5( std::string const& __p = "default", int freq = 1, WorldComm const& worldComm = Environment::worldComm() );
-        Exporterhdf5( po::variables_map const& vm=Environment::vm(), std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() );
+    Exporterhdf5( WorldComm const& worldComm = Environment::worldComm() );
+    Exporterhdf5( std::string const& __p = "default", int freq = 1, WorldComm const& worldComm = Environment::worldComm() );
+    Exporterhdf5( po::variables_map const& vm=Environment::vm(), std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() ) FEELPP_DEPRECATED;
+    Exporterhdf5( std::string const& exp_prefix, WorldComm const& worldComm = Environment::worldComm() );
 
-        Exporterhdf5( Exporterhdf5 const & __ex );
+    Exporterhdf5( Exporterhdf5 const & __ex );
 
-        ~Exporterhdf5(); 
+    ~Exporterhdf5(); 
 
-        /** @name  Mutators
-         */
-        //@{
+    /** @name  Mutators
+     */
+    //@{
 
-        Exporter<MeshType,N>* setOptions( std::string const& exp_prefix = "" )
+    Exporter<MeshType,N>* setOptions( std::string const& exp_prefix = "" )
         {
             super::setOptions( exp_prefix );
 
             return this;
         }
-        Exporter<MeshType,N>* setOptions( po::variables_map const& vm, std::string const& exp_prefix = "" ) FEELPP_DEPRECATED
+    Exporter<MeshType,N>* setOptions( po::variables_map const& vm, std::string const& exp_prefix = "" ) FEELPP_DEPRECATED
         {
             super::setOptions( exp_prefix );
 
             return this;
         }
 
-        //@}
+    //@}
 
 
-        void save() const;
-        void visit( mesh_type* mesh);
+    void save() const;
+    void visit( mesh_type* mesh);
 
-    private :
-        /*!
-         * \brief Fonction used in almost all constructor to initialize the element's type
-         */
-        void init();
+private :
+    /*!
+     * \brief Fonction used in almost all constructor to initialize the element's type
+     */
+    void init();
 
-        /*!
-         * \brief write .xmf and .h5 files for each process
-         */
-        void write() const;
+    /*!
+     * \brief write .xmf and .h5 files for each process
+     */
+    void write() const;
 
-        /*!
-         * \brief write .h5 files for each process
-         */
-        void writeHDF5() const;
+    /*!
+     * \brief write .h5 files for each process
+     */
+    void writeHDF5() const;
 
-        /*!
-         * \brief write .xmf file
-         */
-        void writeXDMF() const;
+    /*!
+     * \brief write .xmf file
+     */
+    void writeXDMF() const;
 
-        /*!
-         * \brief write points' coordonates   
-         */
-        void writePoints(typename timeset_type::step_ptrtype __step) const;
+    /*!
+     * \brief write points' coordonates   
+     */
+    void writePoints(typename timeset_type::step_ptrtype __step) const;
 
-        /*!
-         * \brief write elements (an element is formed by several nodes) 
-         */
-        void writeElements(typename timeset_type::step_ptrtype __step) const;
+    /*!
+     * \brief write elements (an element is formed by several nodes) 
+     */
+    void writeElements(typename timeset_type::step_ptrtype __step) const;
 
-        /*!
-         * \brief write informations of the mesh in .h5 file (unused for now)
-         */
-        void writeStats() const;
+    /*!
+     * \brief write informations of the mesh in .h5 file (unused for now)
+     */
+    void writeStats() const;
 
-        /*!
-         * \brief save solutions on nodes 
-         * \param __step a time step
-         * \param __var  iterator on solutions (begin)
-         * \param en     iterator on solutions (end)
-         */
-        template<typename Iterator>
-            void saveNodal( typename timeset_type::step_ptrtype __step, Iterator __var, Iterator en ) const;
+    /*!
+     * \brief save solutions on nodes 
+     * \param __step a time step
+     * \param __var  iterator on solutions (begin)
+     * \param en     iterator on solutions (end)
+     */
+    template<typename Iterator>
+    void saveNodal( typename timeset_type::step_ptrtype __step, Iterator __var, Iterator en ) const;
 
-        /*!
-         * \brief save solutions on elements 
-         * \param __step   a time step
-         * \param __evar   iterator on solutions (begin)
-         * \param __evaren iterator on solutions (end)
-         */
-        template<typename Iterator>
-            void saveElement( typename timeset_type::step_ptrtype __step, Iterator __evar, Iterator __evaren ) const;
+    /*!
+     * \brief save solutions on elements 
+     * \param __step   a time step
+     * \param __evar   iterator on solutions (begin)
+     * \param __evaren iterator on solutions (end)
+     */
+    template<typename Iterator>
+    void saveElement( typename timeset_type::step_ptrtype __step, Iterator __evar, Iterator __evaren ) const;
 
-        /*!
-         * \brief a bubble sort of 2 arrays in the same time
-         * \param ids    array of points' identifier
-         * \param coords coordinates of points
-         * \param n      size of those array
-         */
-        void bubbleSort (size_type * ids, value_type * coords, size_type n) const;
+    /*!
+     * \brief a bubble sort of 2 arrays in the same time
+     * \param ids    array of points' identifier
+     * \param coords coordinates of points
+     * \param n      size of those array
+     */
+    void bubbleSort (size_type * ids, value_type * coords, size_type n) const;
 
-    private :
-        mutable int tabCount;                   /*!< Number of tabs to print for Xdmf */
-        mutable std::ostringstream M_fileName;        /*!< file name */
-        mutable std::string M_fileNameStep;    /*!< file name + time step */
-        mutable HDF5 M_HDF5;                   /*!< HDF5 IO */
+private :
+    mutable int tabCount;                   /*!< Number of tabs to print for Xdmf */
+    mutable std::ostringstream M_fileName;        /*!< file name */
+    mutable std::string M_fileNameStep;    /*!< file name + time step */
+    mutable HDF5 M_HDF5;                   /*!< HDF5 IO */
 
-        // Mesh geometry
-        mutable size_type M_elementNodes;      /*!< number of nodes for one element */ 
-        mutable size_type M_maxNumElements;    /*!< number of elements for the current process */
-        mutable size_type M_maxNumPoints;      /*!< number of points for the current process */
-        mutable size_type M_numParts;          /*!< number of partitions */
-        mutable std::string M_element_type;    /*!< element's type */
+    // Mesh geometry
+    mutable size_type M_elementNodes;      /*!< number of nodes for one element */ 
+    mutable size_type M_maxNumElements;    /*!< number of elements for the current process */
+    mutable size_type M_maxNumPoints;      /*!< number of points for the current process */
+    mutable size_type M_numParts;          /*!< number of partitions */
+    mutable std::string M_element_type;    /*!< element's type */
 
-        mutable size_type M_step = 0;          /*!< number of the current step */
-        mutable std::ofstream M_xmf;          /*!< Out stream to write the .xmf file */
+    mutable size_type M_step = 0;          /*!< number of the current step */
+    mutable std::ofstream M_xmf;          /*!< Out stream to write the .xmf file */
 
-        mutable std::vector<size_type> M_uintBuffer;           /*!< buffer of integer */
-        mutable std::vector<value_type> M_realBuffer;          /*!< buffer of double */
-        mutable std::map<size_type, size_type> M_newPointId;   /*!< new point identifier after sort */
-        mutable std::ostringstream M_str;                      /*!< buffer of string */
-        mutable std::ostringstream M_XDMFContent;               /*!< Content of Xdmf file */
+    mutable std::vector<size_type> M_uintBuffer;           /*!< buffer of integer */
+    mutable std::vector<value_type> M_realBuffer;          /*!< buffer of double */
+    mutable std::map<size_type, size_type> M_newPointId;   /*!< new point identifier after sort */
+    mutable std::ostringstream M_str;                      /*!< buffer of string */
+    mutable std::ostringstream M_XDMFContent;               /*!< Content of Xdmf file */
 };
 } // Feel
 

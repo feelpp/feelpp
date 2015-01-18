@@ -8,7 +8,7 @@
 #include <feel/feelpoly/im.hpp>
 
 #include <feel/feelfilters/loadmesh.hpp>
-#include <feel/feelfilters/exporterensight.hpp>
+#include <feel/feelfilters/exporter.hpp>
 #include <feel/feelvf/vf.hpp>
 
 #include <feel/feelalg/backend.hpp>
@@ -138,7 +138,7 @@ private :
 
 	mesh_ptrtype mesh,mesh_visu;
 	export_ptrtype exporter;
-	backend_ptrtype backend;
+	backend_ptrtype M_backend;
 
 	sparse_matrix_ptrtype C;
 	sparse_matrix_ptrtype D;

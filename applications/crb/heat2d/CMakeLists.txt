@@ -1,9 +1,9 @@
 ###  TEMPLATE.txt.tpl; coding: utf-8 ---
 
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-#       Date: 2012-07-27
+#       Date: 2011-04-23
 #
-#  Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
+#  Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -22,4 +22,7 @@
 #
 #
 
-feelpp_add_application( heatns_room SRCS convection_main.cpp ${lib_convection} LINK_LIBRARIES  ${FEELPP_LIBRARIES}   )
+crb_add_model(heat2d Heat2D HDRS heat2d.hpp
+  LINK_LIBRARIES ${FEELPP_LIBRARIES}
+  CFG heat2d.cfg 
+  GEO heat2d.geo )

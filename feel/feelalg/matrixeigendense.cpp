@@ -233,7 +233,8 @@ MatrixEigenDense<T>::printMatlab( const std::string filename ) const
 
     FEELPP_ASSERT( file_out )( filename ).error( "[Feel::spy] ERROR: File cannot be opened for writing." );
 
-    file_out << "S = [ ";
+		std::string varName = "var_" + filename.substr(0,filename.find("."));
+    file_out << varName  << " = [ ";
     file_out.precision( 16 );
     file_out.setf( std::ios::scientific );
 
@@ -251,8 +252,8 @@ MatrixEigenDense<T>::printMatlab( const std::string filename ) const
 
     file_out << "];" << std::endl;
     //file_out << "I=S(:,1); J=S(:,2); S=S(:,3);" << std::endl;
-    file_out << "I=S(:,1); J=S(:,2);" << std::endl;
-    file_out << "spy(S);" << std::endl;
+    file_out << "I="<<varName<<"(:,1); J="<<varName<<"(:,2);" << std::endl;
+    file_out << "spy("<<varName<<");" << std::endl;
 }
 
 template<typename T>
@@ -272,7 +273,7 @@ MatrixEigenDense<T>::zeroRows( std::vector<int> const& rows,
     {
         value_type value = 1.0;
 
-        if ( on_context.test( OnContext::ELIMINATION_KEEP_DIAGONAL ) )
+        if ( on_context.test( ContextOn::ELIMINATION|ContextOn::KEEP_DIAGONAL ) )
             value = M_mat( rows[i], rows[i] );
         M_mat.row( rows[i] ).setZero();
 

@@ -39,6 +39,7 @@ public:
     typedef double value_type;
     typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> vec_type;
 
+    GiNaCBase() {}
     GiNaCBase( std::vector<GiNaC::symbol> const& syms )
         :
         M_syms( syms),
@@ -109,7 +110,7 @@ public:
 
 //                    try
 //                    {
-//                        expression_type e( option( _name=s.get_name() ).template as<std::string>(), 0 );
+//                        expression_type e( soption( _name=s.get_name() ), 0 );
 //                        if( is_a<numeric>(e) )
 //                        {
 //                            LOG(INFO) << "symbol " << s.get_name() << " found in option with value " << v;

@@ -147,7 +147,7 @@ public:
      * and to simply provide additional functionality with the PetscMatrix.
      */
     MatrixPetsc ( Mat m );
-    MatrixPetsc ( Mat m, datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol );
+    MatrixPetsc ( Mat m, datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, bool destroyMatOnExit=false );
     MatrixPetsc ( MatrixSparse<value_type> const& M, IS& isrow, IS& iscol );
     MatrixPetsc ( MatrixSparse<value_type> const& M, std::vector<int> const& rowIndex, std::vector<int> const& colIndex );
     /**
@@ -445,6 +445,16 @@ public:
     /**
      * This function creates a matrix called "submatrix" which is defined
      * by the row and column indices given in the "rows" and "cols" entries.
+     */
+    boost::shared_ptr<MatrixSparse<T> >
+    createSubMatrix( std::vector<size_type> const& rows,
+                     std::vector<size_type> const& cols,
+                     bool useSameDataMap=false,
+                     bool checkAndFixRange=true ) const;
+
+    /**
+     * This function creates a matrix called "submatrix" which is defined
+     * by the row and column indices given in the "rows" and "cols" entries.
      * Currently this operation is only defined for the PetscMatrix type.
      */
     void createSubmatrix( MatrixSparse<T>& submatrix,
@@ -499,6 +509,9 @@ private:
     // disable
     MatrixPetsc( MatrixPetsc const & );
 
+    void getSubMatrixPetsc( std::vector<size_type> const& rows,
+                            std::vector<size_type> const& cols,
+                            Mat &submat ) const;
 protected:
 
     /**
@@ -533,6 +546,7 @@ public :
     typedef typename super::graph_type graph_type;
     typedef typename super::graph_ptrtype graph_ptrtype;
     typedef typename super::value_type value_type;
+    typedef typename super::real_type real_type;
 
     typedef typename super::datamap_type datamap_type;
     typedef typename super::datamap_ptrtype datamap_ptrtype;
@@ -541,7 +555,7 @@ public :
 
     MatrixPetscMPI( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm=Environment::worldComm() );
 
-    MatrixPetscMPI( Mat m, datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol );
+    MatrixPetscMPI( Mat m, datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, bool initLocalToGlobalMapping=false, bool destroyMatOnExit=false );
 
     ~MatrixPetscMPI()
     {
@@ -599,15 +613,15 @@ public :
                    Vector<value_type>& rhs,
                    Context const& on_context );
 
-    value_type energy( Vector<value_type> const& __v,
-                       Vector<value_type> const& __u,
-                       bool transpose = false ) const;
+    real_type energy( Vector<value_type> const& __v,
+                      Vector<value_type> const& __u,
+                      bool transpose = false ) const;
 
 private :
 
     void addMatrixSameNonZeroPattern( const T a, MatrixSparse<T> &X );
 
-
+    void initLocalToGlobalMapping();
 };
 
 

@@ -223,8 +223,8 @@ template<int POrder, int GeoOrder>
 Stokes_Poiseuille<POrder,GeoOrder>::Stokes_Poiseuille( )
     :
     super( ),
-    M_backend( backend_type::build( this->vm() ) ),
-    meshSize( this->vm()["hsize"].template as<double>() ),
+    M_backend( backend_type::build( soption("backend") ) ),
+    meshSize( doption("hsize") ),
     mu( this->vm()["mu"].template as<value_type>() ),
     penalbc( this->vm()["bccoeff"].template as<value_type>() ),
     exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
@@ -247,7 +247,7 @@ Stokes_Poiseuille<POrder,GeoOrder>::init()
                                 % this->about().appName()
                                 % convex_type::name()
                                 % basis_u_type::nOrder % basis_p_type::nOrder
-                                % this->vm()["hsize"].template as<double>()
+                                % doption("hsize")
                                 % Environment::numberOfProcessors() );
 
 #if (STOKESPRESSMESHTYPE == 1)

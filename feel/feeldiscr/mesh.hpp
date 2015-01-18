@@ -522,6 +522,19 @@ public:
         return invalid_size_type_value;
     }
     /**
+     * @return the marker nae associated to the \p marker id
+     */
+    std::string markerName( size_type marker ) const
+        {
+            for( auto n : M_markername )
+            {
+                if (n.second[0] == marker )
+                    return n.first;
+            }
+            return std::string();
+        }
+
+    /**
      * @return the topological dimension associated to the \p marker
      */
     size_type markerDim( std::string const& marker ) const
@@ -1209,12 +1222,12 @@ public:
             M_kd_tree( new kdtree_type() ),
             M_isInit( false ),
             M_isInitBoundaryFaces( false ),
-            M_doExtrapolation( option( _name=(boost::format("mesh%1%d.localisation.use-extrapolation") % nDim).str() ).template as<bool>() ),
+            M_doExtrapolation( boption( _name=(boost::format("mesh%1%d.localisation.use-extrapolation") % nDim).str() ) ),
             M_barycenter(),
             M_barycentersWorld()
         {
             DVLOG(2) << "[Mesh::Localization] create Localization tool\n";
-            int optNbNeighbor = option( _name=(boost::format("mesh%1%d.localisation.nelt-in-leaf-kdtree") % nDim).str() ).template as<int>();
+            int optNbNeighbor = ioption( _name=(boost::format("mesh%1%d.localisation.nelt-in-leaf-kdtree") % nDim).str() );
             int usedNbNeighbor = ( optNbNeighbor < 0 )? 2*self_type::element_type::numPoints : optNbNeighbor;
             M_kd_tree->nbNearNeighbor( usedNbNeighbor );
 
@@ -1226,14 +1239,14 @@ public:
             M_mesh ( m ),
             M_isInit( init_b ),
             M_isInitBoundaryFaces( false ),
-            M_doExtrapolation( option( _name=(boost::format("mesh%1%d.localisation.use-extrapolation") % nDim).str() ).template as<bool>() ),
+            M_doExtrapolation( boption( _name=(boost::format("mesh%1%d.localisation.use-extrapolation") % nDim).str() ) ),
             M_barycenter(),
             M_barycentersWorld()
         {
             if ( this->isInit() )
                 this->init();
 
-            int optNbNeighbor = option( _name=(boost::format("mesh%1%d.localisation.nelt-in-leaf-kdtree") % nDim).str() ).template as<int>();
+            int optNbNeighbor = ioption( _name=(boost::format("mesh%1%d.localisation.nelt-in-leaf-kdtree") % nDim).str() );
             int usedNbNeighbor = ( optNbNeighbor < 0 )? 2*self_type::element_type::numPoints : optNbNeighbor;
             M_kd_tree->nbNearNeighbor( usedNbNeighbor );
 
@@ -1590,6 +1603,7 @@ private:
     //! communicator
     size_type M_numGlobalElements, M_numGlobalFaces, M_numGlobalEdges, M_numGlobalPoints, M_numGlobalVertices;
 
+    bool M_is_gm_cached = false;
     gm_ptrtype M_gm;
     gm1_ptrtype M_gm1;
 

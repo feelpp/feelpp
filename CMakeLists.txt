@@ -94,6 +94,7 @@ OPTION(FEELPP_BENCHMARK_FLAGS "enable benchmarks flags" OFF)
 OPTION(FEELPP_ENABLE_DOCUMENTATION "enable Feel++ documentation (aka examples)" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_BENCHMARKS "enable Feel++ benchmarks" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_APPLICATIONS "enable Feel++ applications" ${FEELPP_DEFAULT})
+OPTION(FEELPP_ENABLE_QUICKSTART "enable Feel++ quickstart" ON)
 # enable PCH only for GCC as for now
 if(CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	OPTION(FEELPP_ENABLE_PCH_FOR_APPLICATIONS "enable Pre-Compiled Headers (PCH) for Feel++ applications" OFF)
@@ -372,18 +373,14 @@ IF(FEELPP_ENABLE_TESTS )
 endif()
 if ( FEELPP_ENABLE_DOCUMENTATION OR FEELPP_ENABLE_DOXYGEN )
   add_dependencies(check-full doc)
+  set(FEELPP_DOC_ENABLE_CAVITY_CRB off)
+  ADD_SUBDIRECTORY ( doc )
 endif()
 #add_dependencies(check benchmarks)
 #add_dependencies(check examples)
 IF(FEELPP_ENABLE_TESTS )
   add_subdirectory( testsuite )
 endif()
-
-
-if ( FEELPP_ENABLE_DOCUMENTATION OR FEELPP_ENABLE_DOXYGEN )
-  set(FEELPP_DOC_ENABLE_CAVITY_CRB off)
-  ADD_SUBDIRECTORY ( doc )
-endif ()
 
 if ( FEELPP_ENABLE_BENCHMARKS AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/benchmarks )
   ADD_SUBDIRECTORY ( benchmarks )
@@ -399,9 +396,7 @@ if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/research AND FEELPP_ENABLE_RESEARCH )
   ADD_SUBDIRECTORY ( research )
 endif()
 
-
-ADD_SUBDIRECTORY ( quickstart )
-
+include(feelpp.module.quickstart)
 
 
 ################################################################################

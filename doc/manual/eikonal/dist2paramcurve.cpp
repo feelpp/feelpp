@@ -33,9 +33,10 @@
 #include <feel/feelpde/reinit_fms.hpp>
 #include <feel/feelpde/disttocurve.hpp>
 #include <feel/feelpde/curveparametrizations.hpp>
+#include <feel/feelvf/vf.hpp>
 
 using namespace Feel;
-using namespace Feel::vf;
+
 
 int main( int argc, char** argv )
 {

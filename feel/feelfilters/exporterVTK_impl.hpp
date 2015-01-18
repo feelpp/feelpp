@@ -57,6 +57,15 @@ ExporterVTK<MeshType,N>::ExporterVTK( po::variables_map const& vm, std::string c
 {
     init();
 }
+
+template<typename MeshType, int N>
+ExporterVTK<MeshType,N>::ExporterVTK( std::string const& exp_prefix,
+                                      WorldComm const& worldComm )
+    :
+    super( exp_prefix, worldComm )
+{
+    init();
+}
 template<typename MeshType, int N>
 ExporterVTK<MeshType,N>::ExporterVTK( ExporterVTK const & __ex )
     :
@@ -255,7 +264,7 @@ int ExporterVTK<MeshType,N>::writeTimePVD(std::string xmlFilename, double timest
 
 template<typename MeshType, int N>
 vtkSmartPointer<vtkMultiBlockDataSet>
-ExporterVTK<MeshType,N>::buildMultiBlockDataSet( typename timeset_type::step_ptrtype step, vtkSmartPointer<vtkout_type> out ) const
+ExporterVTK<MeshType,N>::buildMultiBlockDataSet( double time, vtkSmartPointer<vtkout_type> out ) const
 {
     std::ostringstream oss;
 
@@ -273,7 +282,7 @@ ExporterVTK<MeshType,N>::buildMultiBlockDataSet( typename timeset_type::step_ptr
             oss << "P" << this->worldComm().rank();
             mbds->SetBlock( block, out );
             mbds->GetMetaData(block)->Set(vtkCompositeDataSet::NAME(), oss.str().c_str() );
-            mbds->GetMetaData(block)->Set(vtkCompositeDataSet::DATA_TIME_STEP(), step->time());
+            mbds->GetMetaData(block)->Set(vtkCompositeDataSet::DATA_TIME_STEP(), time);
         }
         /* if we don't own the block set it to NULL */
         else
@@ -292,7 +301,7 @@ ExporterVTK<MeshType,N>::buildMultiBlockDataSet( typename timeset_type::step_ptr
         mbds->SetBlock(blockNo, out);
         mbds->GetMetaData(blockNo)->Set(vtkCompositeDataSet::NAME(), oss.str().c_str());
         // not supported in version 5.x
-        //mbds->GetMetaData(0)->Set(vtkDataObject::DATA_TIME_STEP(), step->time());
+        //mbds->GetMetaData(0)->Set(vtkDataObject::DATA_TIME_STEP(), time);
 #endif
 
     return mbds;
@@ -300,7 +309,7 @@ ExporterVTK<MeshType,N>::buildMultiBlockDataSet( typename timeset_type::step_ptr
 
 template<typename MeshType, int N>
 void
-ExporterVTK<MeshType,N>::write( typename timeset_type::step_ptrtype step, std::string filename, vtkSmartPointer<vtkMultiBlockDataSet> mbds ) const
+ExporterVTK<MeshType,N>::write( int stepIndex, std::string filename, vtkSmartPointer<vtkMultiBlockDataSet> mbds ) const
 {
     /*
        out->getoutputinformation(0).set(vtk.vtkstreamingdemanddrivenpipeline.update_number_of_pieces(), this->worldcomm().globalsize());
@@ -319,7 +328,7 @@ ExporterVTK<MeshType,N>::write( typename timeset_type::step_ptrtype step, std::s
 
     vtkSmartPointer<vtkXMLPMultiBlockDataWriter> xmlpw = vtkSmartPointer<vtkXMLPMultiBlockDataWriter>::New();
         xmlpw->SetController(mpictrl);
-        xmlpw->SetTimeStep(step->index() - TS_INITIAL_INDEX);
+        xmlpw->SetTimeStep(stepIndex - TS_INITIAL_INDEX);
         xmlpw->SetFileName(filename.c_str());
         xmlpw->SetInputData(mbds);
         /* only write the meta file on the first processor */
@@ -330,7 +339,7 @@ ExporterVTK<MeshType,N>::write( typename timeset_type::step_ptrtype step, std::s
         xmlpw->Update();
 #else
     vtkSmartPointer<vtkXMLMultiBlockDataWriter> mbw = vtkSmartPointer<vtkXMLMultiBlockDataWriter>::New();
-        mbw->SetTimeStep(step->index() - TS_INITIAL_INDEX);
+        mbw->SetTimeStep(stepIndex - TS_INITIAL_INDEX);
         mbw->SetFileName(filename.c_str());
 #if VTK_MAJOR_VERSION <= 5
         mbw->SetInput(mbds);
@@ -357,6 +366,10 @@ template<typename MeshType, int N>
 void
 ExporterVTK<MeshType,N>::save() const
 {
+    int stepIndex = TS_INITIAL_INDEX;
+    double time = 0.0;
+    bool hasSteps = true;
+    std::ostringstream fname;
     std::ostringstream oss;
 
     DVLOG(2) << "[ExporterVTK] checking if frequency is ok\n";
@@ -380,20 +393,32 @@ ExporterVTK<MeshType,N>::save() const
 
         typename timeset_type::step_const_iterator __it = __ts->beginStep();
         typename timeset_type::step_const_iterator __end = __ts->endStep();
-        __it = boost::prior( __end );
 
-        while ( __it != __end )
+        /* instanciante data object */
+        vtkSmartPointer<vtkout_type> out = vtkSmartPointer<vtkout_type>::New();
+
+        /* check if we have steps for the current dataset */
+        if(__it == __end)
         {
-            std::ostringstream fname;
+            LOG(INFO) << "Timeset " << __ts->name() << " (" << __ts->index() << ") contains no timesteps (Consider using add() or addRegions())" << std::endl;
+            hasSteps = false;
+
+            /* save mesh if we have one */
+            if(__ts->hasMesh())
+            {
+                this->saveMesh(__ts->mesh(), out);
+            }
+        }
+        else
+        {
+            __it = boost::prior( __end );
+
             typename timeset_type::step_ptrtype __step = *__it;
 
             if ( __step->isInMemory() )
             {
-                /* instanciante data object */
-                vtkSmartPointer<vtkout_type> out = vtkSmartPointer<vtkout_type>::New();
-
                 /* write data into vtk object */
-                this->saveMesh(__step, out);
+                this->saveMesh(__step->mesh(), out);
                 this->saveNodeData( __step, __step->beginNodalScalar(), __step->endNodalScalar(), out );
                 this->saveNodeData( __step, __step->beginNodalVector(), __step->endNodalVector(), out );
                 this->saveNodeData( __step, __step->beginNodalTensor2(), __step->endNodalTensor2(), out );
@@ -405,95 +430,98 @@ ExporterVTK<MeshType,N>::save() const
                 out->GetInformation()->Set(vtkDataObject::DATA_TIME_STEP(), __step->time());
 #endif
 
-                /* Build a multi block dataset based on gathered data */
-                vtkSmartPointer<vtkMultiBlockDataSet> mbds = this->buildMultiBlockDataSet( __step, out );
+                /* record time value */
+                time = __step->time();
+                stepIndex = __step->index();
 
-                /* InitializeExternal is only supported from 5.10+, */
-                /* but lets aim for the latest major version 6 to reduce the complexity */
-                fname.str("");
-                fname << __ts->name()  //<< this->prefix() //this->path()
-                      << "-" << (__step->index() - TS_INITIAL_INDEX);
+            }
+        }
+
+        /* Build a multi block dataset based on gathered data */
+        vtkSmartPointer<vtkMultiBlockDataSet> mbds = this->buildMultiBlockDataSet( time, out );
+
+        /* InitializeExternal is only supported from 5.10+, */
+        /* but lets aim for the latest major version 6 to reduce the complexity */
+        fname.str("");
+        fname << __ts->name()  //<< this->prefix() //this->path()
+            << "-" << (stepIndex - TS_INITIAL_INDEX);
 #if VTK_MAJOR_VERSION < 6 || !defined(VTK_HAS_PARALLEL)
-                fname << "-" << this->worldComm().size() << "_" << this->worldComm().rank();
+        fname << "-" << this->worldComm().size() << "_" << this->worldComm().rank();
 #endif
-                fname << ".vtm";
+        fname << ".vtm";
 
 #if defined(FEELPP_VTK_INSITU_ENABLED)
-                /* initialize in-situ visualization if needed and if we specified pipelines to handle */
-                if(boption( _name="exporter.vtk.insitu.enable" ) && inSituProcessor->GetNumberOfPipelines() > 0)
-                {
-                    //std::cout << "Processing timestep In-Situ " << (__step->index() - TS_INITIAL_INDEX) << " " << __step->time() << std::endl;
-                    vtkSmartPointer<vtkCPDataDescription> dataDescription = vtkSmartPointer<vtkCPDataDescription>::New();
-                    dataDescription->AddInput("input");
-                    dataDescription->SetTimeData(__step->time(), __step->index() - TS_INITIAL_INDEX);
+        /* initialize in-situ visualization if needed and if we specified pipelines to handle */
+        if(boption( _name="exporter.vtk.insitu.enable" ) && inSituProcessor->GetNumberOfPipelines() > 0)
+        {
+            //std::cout << "Processing timestep In-Situ " << (__step->index() - TS_INITIAL_INDEX) << " " << __step->time() << std::endl;
+            vtkSmartPointer<vtkCPDataDescription> dataDescription = vtkSmartPointer<vtkCPDataDescription>::New();
+            dataDescription->AddInput("input");
+            dataDescription->SetTimeData(time, stepIndex - TS_INITIAL_INDEX);
 
-                    vtkStdString sh = soption( _name="exporter.vtk.insitu.hostname");
+            vtkStdString sh = soption( _name="exporter.vtk.insitu.hostname");
 
-                    vtkSmartPointer<vtkStringArray> hname = vtkSmartPointer<vtkStringArray>::New();
-                        hname->SetName( "hostname" );
-                        hname->InsertNextValue(sh);
-                    vtkSmartPointer<vtkIntArray> port = vtkSmartPointer<vtkIntArray>::New();
-                        port->SetName( "port" );
-                        port->InsertNextValue( ioption( _name="exporter.vtk.insitu.port") );
+            vtkSmartPointer<vtkStringArray> hname = vtkSmartPointer<vtkStringArray>::New();
+            hname->SetName( "hostname" );
+            hname->InsertNextValue(sh);
+            vtkSmartPointer<vtkIntArray> port = vtkSmartPointer<vtkIntArray>::New();
+            port->SetName( "port" );
+            port->InsertNextValue( ioption( _name="exporter.vtk.insitu.port") );
 
-                    vtkSmartPointer<vtkFieldData> fdata = vtkSmartPointer<vtkFieldData>::New();
-                        fdata->AddArray(hname);
-                        fdata->AddArray(port);
+            vtkSmartPointer<vtkFieldData> fdata = vtkSmartPointer<vtkFieldData>::New();
+            fdata->AddArray(hname);
+            fdata->AddArray(port);
 
-                    dataDescription->SetUserData(fdata);
+            dataDescription->SetUserData(fdata);
 
-                    if(inSituProcessor->RequestDataDescription(dataDescription.GetPointer()) != 0)
-                    {
-                        dataDescription->GetInputDescriptionByName("input")->SetGrid(mbds);
-                        //dataDescription->SetForceOutput(true);
-                        //std::cout << "CoProcess " << inSituProcessor->CoProcess(dataDescription.GetPointer())<< std::endl;
-                        inSituProcessor->CoProcess(dataDescription.GetPointer());
-                    }
-                }
-                else
+            if(inSituProcessor->RequestDataDescription(dataDescription.GetPointer()) != 0)
+            {
+                dataDescription->GetInputDescriptionByName("input")->SetGrid(mbds);
+                //dataDescription->SetForceOutput(true);
+                //std::cout << "CoProcess " << inSituProcessor->CoProcess(dataDescription.GetPointer())<< std::endl;
+                inSituProcessor->CoProcess(dataDescription.GetPointer());
+            }
+        }
+        else
 #endif
-                if(1)
-                {
-                    /* write VTK files */
-                    this->write(__step, fname.str(), mbds);
+            if(1)
+            {
+                /* write VTK files */
+                this->write(stepIndex, fname.str(), mbds);
 
-                    /* write additional file for handling time steps */
-                    /* only write on master rank */
-                    if(this->worldComm().isMasterRank())
+                /* write additional file for handling time steps */
+                /* only write on master rank */
+                if(this->worldComm().isMasterRank())
+                {
+                    /* check if we are on the initial timestep */
+                    /* if so, we delete the previous pvd file */
+                    /* otherwise we would append dataset to already existing data */
+                    std::string pvdFilename = __ts->name() + ".pvd";
+                    if( (stepIndex - TS_INITIAL_INDEX) == 0 && fs::exists(pvdFilename.c_str()))
                     {
-                        /* check if we are on the initial timestep */
-                        /* if so, we delete the previous pvd file */
-                        /* otherwise we would append dataset to already existing data */
-                        std::string pvdFilename = __ts->name() + ".pvd";
-                        if( (__step->index() - TS_INITIAL_INDEX) == 0 && fs::exists(pvdFilename.c_str()))
-                        {
-                            fs::remove(pvdFilename.c_str()); 
-                        }
+                        fs::remove(pvdFilename.c_str()); 
+                    }
 #if VTK_MAJOR_VERSION < 6 || !defined(VTK_HAS_PARALLEL)
-                        /* when we are not writing data with parallel filters */
-                        /* we provide the info about the different parts from with */
-                        /* a dataset is built: the different file names and the part id */
-                        std::ostringstream oss;
-                        for(int i = 0; i < this->worldComm().size(); i++)
-                        {
-                            oss.str("");
-                            oss << __ts->name() << "-" << (__step->index() - TS_INITIAL_INDEX)
-                                  << "-" << this->worldComm().size() << "_" << i
-                                  << ".vtm";
-                            this->writeTimePVD(pvdFilename, __step->time(), oss.str(), i);
-                        }
-#else
-                        /* When writing in parallel, we only write one entry in the pvd file */
-                        this->writeTimePVD(pvdFilename, __step->time(), fname.str());
-#endif
+                    /* when we are not writing data with parallel filters */
+                    /* we provide the info about the different parts from with */
+                    /* a dataset is built: the different file names and the part id */
+                    std::ostringstream oss;
+                    for(int i = 0; i < this->worldComm().size(); i++)
+                    {
+                        oss.str("");
+                        oss << __ts->name() << "-" << (stepIndex - TS_INITIAL_INDEX)
+                            << "-" << this->worldComm().size() << "_" << i
+                            << ".vtm";
+                        this->writeTimePVD(pvdFilename, time, oss.str(), i);
                     }
+#else
+                    /* When writing in parallel, we only write one entry in the pvd file */
+                    this->writeTimePVD(pvdFilename, time, fname.str());
+#endif
                 }
             }
-            __it++;
 
-        }
         __ts_it++;
-
     }
 
     DVLOG(2) << "[ExporterVTK] saving done\n";
@@ -503,16 +531,16 @@ ExporterVTK<MeshType,N>::save() const
 
 template<typename MeshType, int N>
 void
-ExporterVTK<MeshType,N>::saveMesh( typename timeset_type::step_ptrtype step, vtkSmartPointer<vtkout_type> out ) const
+ExporterVTK<MeshType,N>::saveMesh( mesh_ptrtype mesh, vtkSmartPointer<vtkout_type> out ) const
 {
     /* get local elements */
     //auto r = markedelements(step->mesh(), markerid, EntityProcessType::LOCAL_ONLY );
-    auto r = elements(step->mesh());
+    auto r = elements(mesh);
     auto elt_it = r.template get<1>();
     auto elt_en = r.template get<2>();
 
     /* Gather points and elements into vectors + info about data */
-    Feel::detail::MeshPoints<float> mp( step->mesh().get(), this->worldComm(), elt_it, elt_en, false, true, true, 0 );
+    Feel::detail::MeshPoints<float> mp( mesh.get(), this->worldComm(), elt_it, elt_en, false, true, true, 0 );
 
     /* Add points to data structure */
     vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
@@ -554,7 +582,7 @@ ExporterVTK<MeshType,N>::saveNodeData( typename timeset_type::step_ptrtype step,
 
         /* handle faces data */
 #if 0
-        if ( option( _name="exporter.ensightgold.save-face" ).template as<bool>() )
+        if ( boption( _name="exporter.ensightgold.save-face" ) )
         {
             BOOST_FOREACH( auto m, __mesh->markerNames() )
             {
