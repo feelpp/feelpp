@@ -68,21 +68,26 @@
 [submodule "contrib/nt2"]
 	path = contrib/nt2
 	url = https://github.com/feelpp/nt2.git
+	fetchRecurseSubmodules = on-demand
 [submodule "contrib/hpddm"]
 	path = contrib/hpddm
 	url = https://github.com/hpddm/hpddm.git
 [submodule "projects/tr"]
 	path = projects/tr
 	url = https://github.com/feelpp/tr.git
+	fetchRecurseSubmodules = on-demand
 [submodule "contrib/cereal"]
 	path = contrib/cereal
 	url = https://github.com/USCiLab/cereal
+	fetchRecurseSubmodules = on-demand
 [submodule "projects/eye2brain"]
 	path = projects/eye2brain
 	url = https://github.com/feelpp/eye2brain.git
+	fetchRecurseSubmodules = on-demand
 [submodule "projects/lncmi"]
 	path = projects/lncmi
 	url = https://github.com/feelpp/lncmi.git
+	fetchRecurseSubmodules = on-demand
 [submodule "quickstart"]
 	path = quickstart
 	url = https://github.com/feelpp/quickstart.git
