@@ -465,8 +465,9 @@ if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_D
 endif()
 
 #
-# nlopt / ipopt
+# submodules
 #
+include(feelpp.module.hpddm)
 include(feelpp.module.nlopt)
 include(feelpp.module.ipopt)
 include(feelpp.module.cereal)
@@ -487,19 +488,6 @@ if ( FEELPP_ENABLE_HARTS )
   endif()
 endif()
 
-#
-# HPDDM
-#
-OPTION( FEELPP_ENABLE_HPDDM "Enable HPDDM" OFF )
-if ( FEELPP_ENABLE_HPDDM )
-  FIND_PATH(HPDDM_INCLUDE_DIR HPDDM.hpp HINTS ${FEELPP_SOURCE_DIR}/contrib $ENV{HPDDM_DIR} ${HPDDM_INCLUDE_DIR} PATH_SUFFIXES hpddm/src)
-  if( HPDDM_INCLUDE_DIR )
-    INCLUDE_DIRECTORIES( ${HPDDM_INCLUDE_DIR} )
-    SET(FEELPP_HAS_HPDDM 1)
-    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} HPDDM" )
-    ADD_DEFINITIONS( -DFEELPP_HAS_HPDDM )
-  endif()
-endif()
 
 if ( FEELPP_ENABLE_EXODUS )
   include_directories(${FEELPP_SOURCE_DIR}/contrib/exodus-5.24/exodus/cbind/include/)
