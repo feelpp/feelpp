@@ -31,6 +31,7 @@
 
 #include <feel/feelcore/feelpetsc.hpp>
 #include <feel/feelalg/preconditioner.hpp>
+#include <feel/feelalg/backend.hpp>
 
 namespace Feel
 {
@@ -160,7 +161,7 @@ public:
      * Computes the preconditioned vector "y" based on input "x".
      * Usually by solving Py=x to get the action of P^-1 x.
      */
-    virtual void apply( const Vector<T> & x, Vector<T> & y );
+    virtual void apply( const Vector<T> & x, Vector<T> & y ) const;
 
 
     //@}
@@ -203,33 +204,35 @@ private:
 
 template <typename T>
 T
-getOption( std::string const& name, std::string const& prefix, std::string const& sub, std::vector<std::string> const& prefixOverwrite )
+getOption( std::string const& name, std::string const& prefix, std::string const& sub, std::vector<std::string> const& prefixOverwrite,
+           po::variables_map vm = Environment::vm() )
 {
-    T res = option(_name=name,_prefix=prefix,_sub=sub).template as<T>();
+    T res = option(_name=name,_prefix=prefix,_sub=sub,_vm=vm).template as<T>();
     std::string optctx = (sub.empty())? "": sub+"-";
     for ( std::string const& prefixAdded : prefixOverwrite )
-        if ( Environment::vm().count( prefixvm(prefixAdded,optctx+name) ) )
-            res = option(_name=name,_prefix=prefixAdded,_sub=sub).template as<T>();
+        if ( /*Environment::vm()*/vm.count( prefixvm(prefixAdded,optctx+name) ) )
+            res = option(_name=name,_prefix=prefixAdded,_sub=sub,_vm=vm).template as<T>();
 
     return res;
 }
 template <typename T>
 std::pair<bool,T>
-getOptionIfAvalaible( std::string const& name, std::string const& prefix, std::string const& sub, std::vector<std::string> const& prefixOverwrite )
+getOptionIfAvalaible( std::string const& name, std::string const& prefix, std::string const& sub, std::vector<std::string> const& prefixOverwrite,
+                      po::variables_map vm = Environment::vm() )
 {
     bool hasOption=false;
     T res;
     std::string optctx = (sub.empty())? "": sub+"-";
-    if ( Environment::vm().count( prefixvm(prefix,optctx+name) ) )
+    if ( vm.count( prefixvm(prefix,optctx+name) ) )
     {
         hasOption = true;
-        res = option(_name=name,_prefix=prefix,_sub=sub).template as<T>();
+        res = option(_name=name,_prefix=prefix,_sub=sub,_vm=vm).template as<T>();
     }
     for ( std::string const& prefixAdded : prefixOverwrite )
-        if ( Environment::vm().count( prefixvm(prefixAdded,optctx+name) ) )
+        if ( vm.count( prefixvm(prefixAdded,optctx+name) ) )
         {
             hasOption = true;
-            res = option(_name=name,_prefix=prefixAdded,_sub=sub).template as<T>();
+            res = option(_name=name,_prefix=prefixAdded,_sub=sub,_vm=vm).template as<T>();
         }
 
     return std::make_pair(hasOption,res);
@@ -258,12 +261,49 @@ public :
         M_prefixOverwrite( prefixOverwrite )
     {}
 
+    ConfigurePCBase( WorldComm const& worldComm, std::string const& sub, std::string const& prefix, po::options_description const& _options )
+        :
+        M_worldComm( worldComm ),
+        M_sub( sub ),
+        M_prefix( prefix )
+    {
+        this->initVariableMap( _options );
+    }
+    ConfigurePCBase( WorldComm const& worldComm, std::string const& sub, std::string const& prefix, std::vector<std::string> const& prefixOverwrite, po::options_description const& _options )
+        :
+        M_worldComm( worldComm ),
+        M_sub( sub ),
+        M_prefix( prefix ),
+        M_prefixOverwrite( prefixOverwrite )
+    {
+        this->initVariableMap( _options );
+    }
+
+    void initVariableMap( po::options_description const& _options )
+    {
+        M_vm.clear();
+
+        if ( Environment::vm().count( "show-preconditioner-options" ) && Environment::isMasterRank() )
+            std::cout <<_options << "\n";
+
+        auto mycmdparser = Environment::commandLineParser();
+        po::parsed_options parsed = mycmdparser.options( _options ).allow_unregistered().run();
+        po::store(parsed,M_vm);
+        if ( !Environment::configFileName().empty() )
+        {
+            std::ifstream ifs( Environment::configFileName() );
+            po::store(po::parse_config_file(ifs, _options,true), M_vm);
+        }
+        po::notify(M_vm);
+    }
+
     WorldComm const& worldComm() const { return M_worldComm; }
     std::string const& prefix() const { return M_prefix; }
     std::string const& sub() const { return M_sub; }
     bool hasPrefixOverwrite() const { return M_prefixOverwrite.size() > 0; }
     std::vector<std::string> const& prefixOverwrite() const { return M_prefixOverwrite; }
     std::string const& prefixOverwrite( int k ) const { return M_prefixOverwrite[k]; }
+    po::variables_map const& vm() const { return M_vm; }
 
     void check( int err ) const { CHKERRABORT( this->worldComm().globalComm(), err ); }
 
@@ -272,6 +312,7 @@ private :
     WorldComm const& M_worldComm;
     std::string M_sub, M_prefix;
     std::vector<std::string> M_prefixOverwrite;
+    po::variables_map M_vm;
 };
 
 
@@ -283,7 +324,11 @@ struct ConfigureKSP : public ConfigurePCBase
 public :
     ConfigureKSP( KSP& ksp,WorldComm const& worldComm, std::string const& sub, std::string const& prefix );
     ConfigureKSP( KSP& ksp,WorldComm const& worldComm, std::string const& sub, std::string const& prefix,
-                  std::vector<std::string> const& prefixOverwrite );
+                  std::vector<std::string> const& prefixOverwrite,
+                  std::string const& kspType = "gmres", double rtol = 1e-13, size_type maxit=1000 );
+    ConfigureKSP( WorldComm const& worldComm, std::string const& sub, std::string const& prefix,
+                  std::vector<std::string> const& prefixOverwrite,
+                  std::string const& kspType = "gmres", double rtol = 1e-13, size_type maxit=1000 );
     bool kspView() const { return M_kspView; }
 
 private :
@@ -295,8 +340,9 @@ private :
     bool M_showMonitor,M_kspView;
     bool M_constantNullSpace;
 
-private :
-    void runConfigureKSP( KSP& ksp );
+    //private :
+public :
+    void runConfigureKSP( KSP& ksp ) const;
 };
 
 
@@ -311,6 +357,10 @@ public :
     ConfigurePC( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
                  WorldComm const& worldComm, std::string const& sub, std::string const& prefix,
                  std::vector<std::string> const& prefixOverwrite );
+    ConfigurePC( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+                 WorldComm const& worldComm, std::string const& sub, std::string const& prefix,
+                 std::vector<std::string> const& prefixOverwrite,
+                 po::variables_map const& vm/* = Environment::vm()*/ );
 private :
     void run( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is );
 private :
@@ -407,8 +457,9 @@ private :
     bool M_subPCview;
     std::string M_subPCfromPCtype;
     int M_nBlock;
-private :
-    void runConfigureSubPC( KSP& ksp,PreconditionerPetsc<double>::indexsplit_ptrtype const& is );
+    //private :
+public :
+    void runConfigureSubPC( KSP& ksp,ConfigureKSP const& kspConf,PreconditionerPetsc<double>::indexsplit_ptrtype const& is );
 };
 
 /**
@@ -543,7 +594,7 @@ class ConfigurePCHYPRE_EUCLID : public ConfigurePCBase
 {
 public :
     ConfigurePCHYPRE_EUCLID( PC& pc,
-                             WorldComm const& worldComm, std::string const& sub, std::string const& prefix );
+                             WorldComm const& worldComm, std::string const& sub, std::string const& prefix, std::vector<std::string> const& prefixOverwrite );
 
 private :
     void runConfigurePCHYPRE_EUCLID( PC& pc );
