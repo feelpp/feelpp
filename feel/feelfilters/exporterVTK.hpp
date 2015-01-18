@@ -188,7 +188,8 @@ public:
 
     ExporterVTK( WorldComm const& worldComm = Environment::worldComm() );
     ExporterVTK( std::string const& __p = "default", int freq = 1, WorldComm const& worldComm = Environment::worldComm() );
-    ExporterVTK( po::variables_map const& vm, std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() );
+    ExporterVTK( po::variables_map const& vm, std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() ) FEELPP_DEPRECATED;
+    ExporterVTK( std::string const& exp_prefix, WorldComm const& worldComm = Environment::worldComm() );
 
     ExporterVTK( ExporterVTK const & __ex );
 
@@ -248,7 +249,7 @@ public:
     /**
      * save the \p mesh to the file \p filename
      */
-    void saveMesh( typename timeset_type::step_ptrtype step, vtkSmartPointer<vtkout_type> out ) const;
+    void saveMesh( mesh_ptrtype mesh, vtkSmartPointer<vtkout_type> out ) const;
     template<typename Iterator>
     void saveNodeData( typename timeset_type::step_ptrtype step, Iterator __var, Iterator en, vtkSmartPointer<vtkout_type> out ) const;
     template<typename Iterator>
@@ -267,12 +268,12 @@ public:
      * on the different processes.
      */
     vtkSmartPointer<vtkMultiBlockDataSet>
-        buildMultiBlockDataSet( typename timeset_type::step_ptrtype step, vtkSmartPointer<vtkout_type> out ) const;
+        buildMultiBlockDataSet( double time, vtkSmartPointer<vtkout_type> out ) const;
 
     /**
      * Actual write of the dataset into a file 
      */
-    void write( typename timeset_type::step_ptrtype step, std::string filename, vtkSmartPointer<vtkMultiBlockDataSet> out) const;
+    void write( int stepIndex, std::string filename, vtkSmartPointer<vtkMultiBlockDataSet> out) const;
 
     //@}
 

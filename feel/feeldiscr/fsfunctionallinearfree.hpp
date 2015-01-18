@@ -147,7 +147,7 @@ BOOST_PARAMETER_FUNCTION(
       ( expr ,   * )
     ) // required
     ( optional
-      ( backend,        *, Backend<typename Feel::detail::compute_functionalLinearFree_return<Args>::space_type::value_type>::build() )
+      ( backend,        *, backend() )
     ) // optionnal
 )
 {
@@ -162,4 +162,3 @@ BOOST_PARAMETER_FUNCTION(
 }//Feel
 
 #endif /* _FSFUNCTIONALLINEARFREE_HPP_ */
-

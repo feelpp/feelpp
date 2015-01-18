@@ -57,15 +57,22 @@
 
 namespace Feel
 {
-
 extern "C"
 {
+    
 #if PETSC_VERSION_LESS_THAN(2,2,1)
     typedef int PetscErrorCode;
     typedef int PetscInt;
 #endif
 
-
+    PetscErrorCode __feel_petsc_monitor(KSP ksp,PetscInt it,PetscReal rnorm,void* ctx)
+    {
+        SolverLinear<double> *s  = static_cast<SolverLinear<double>*>( ctx );
+        if ( !s ) return 1;
+        if ( s->worldComm().isMasterRank() )
+            std::cout << " " << it  << " " << s->prefix() << " KSP Residual norm " << std::scientific << rnorm << "\n";
+        return 0;
+    }
 #if PETSC_VERSION_LESS_THAN(3,0,1)
     PetscErrorCode __feel_petsc_preconditioner_setup ( void * ctx )
     {
@@ -113,10 +120,26 @@ extern "C"
         PetscErrorCode ierr = PCShellGetContext( pc,&ctx );
         CHKERRQ( ierr );
         Preconditioner<double> * preconditioner = static_cast<Preconditioner<double>*>( ctx );
+#if 0
         VectorPetsc<double> x_vec( x );
         VectorPetsc<double> y_vec( y );
-
         preconditioner->apply( x_vec,y_vec );
+#else
+        boost::shared_ptr<VectorPetsc<double> > x_vec;
+        boost::shared_ptr<VectorPetsc<double> > y_vec;
+        if ( preconditioner->worldComm().localSize() > 1 )
+        {
+            CHECK ( preconditioner->matrix() ) << "matrix is not defined";
+            x_vec.reset( new VectorPetscMPI<double>( x, preconditioner->matrix()->mapColPtr() ) );
+            y_vec.reset( new VectorPetscMPI<double>( y, preconditioner->matrix()->mapRowPtr() ) );
+        }
+        else
+        {
+            x_vec.reset( new VectorPetsc<double>( x ) );
+            y_vec.reset( new VectorPetsc<double>( y ) );
+        }
+        preconditioner->apply( *x_vec,*y_vec );
+#endif
 
         return 0;
     }
@@ -271,7 +294,7 @@ void SolverLinearPetsc<T>::init ()
 
         if ( std::string((char*)ksp_type) == std::string( ( char* )KSPGMRES ) )
         {
-            int nRestartGMRES = option(_name="gmres-restart", _prefix=this->prefix() ).template as<int>();
+            int nRestartGMRES = ioption(_name="gmres-restart", _prefix=this->prefix() );
             ierr = KSPGMRESSetRestart( M_ksp, nRestartGMRES );
             CHKERRABORT( this->worldComm().globalComm(),ierr );
         }
@@ -305,6 +328,23 @@ void SolverLinearPetsc<T>::init ()
             ierr = PCGetType ( M_pc, &pc_type );
             CHKERRABORT( this->worldComm().globalComm(),ierr );
 
+            switch( this->M_preconditioner->side() )
+            {
+            default:
+            case preconditioner_type::LEFT:
+                VLOG(2) << " . PC is set to left side\n";
+                KSPSetPCSide( M_ksp, PC_LEFT );
+                break;
+            case preconditioner_type::RIGHT:
+                VLOG(2) << " . PC is set to right side\n";
+                KSPSetPCSide( M_ksp, PC_RIGHT );
+                break;
+            case preconditioner_type::SYMMETRIC:
+                VLOG(2) << " . PC is set to symmetric\n";
+                KSPSetPCSide( M_ksp, PC_SYMMETRIC );
+                break;
+            }
+
             VLOG(2) << "preconditioner set as "  << pc_type << "\n";
         }
         else
@@ -316,7 +356,8 @@ void SolverLinearPetsc<T>::init ()
 
         if ( Environment::vm(_name="ksp-monitor",_prefix=this->prefix()).template as<bool>() )
         {
-            KSPMonitorSet( M_ksp,KSPMonitorDefault,PETSC_NULL,PETSC_NULL );
+            //KSPMonitorSet( M_ksp,KSPMonitorDefault,PETSC_NULL,PETSC_NULL );
+            KSPMonitorSet( M_ksp,__feel_petsc_monitor,(void*) this,PETSC_NULL );
         }
 
     }
@@ -532,7 +573,7 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
     KSPConvergedReason reason;
     KSPGetConvergedReason( M_ksp,&reason );
 
-    if ( option( _prefix=this->prefix(), _name="ksp-view" ).template as<bool>() )
+    if ( boption( _prefix=this->prefix(), _name="ksp-view" ) )
         check( KSPView( M_ksp, PETSC_VIEWER_STDOUT_WORLD ) );
 
     if ( reason==KSP_DIVERGED_INDEFINITE_PC )

@@ -808,6 +808,11 @@ public:
      */
     void zero() { M_F->zero(); }
 
+    /**
+     * scale linear form by \p s
+     */
+    void scale( value_type s ) { M_F->scale( s ); }
+    
     LinearForm& operator+=( LinearForm& f )
         {
             if ( this == &f )

@@ -36,6 +36,7 @@
 #include <boost/smart_ptr/enable_shared_from_this.hpp>
 
 #include <feel/feelcore/feel.hpp>
+#include <feel/feeltiming/tic.hpp>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/singleton.hpp>
 #include <feel/feelcore/parameter.hpp>
@@ -320,7 +321,7 @@ public:
                                        ( buildGraphWithTranspose, ( bool ),false )
                                        ( pattern_block,    *, ( BlocksStencilPattern(1,1,size_type( Pattern::HAS_NO_BLOCK_PATTERN ) ) ) )
                                        ( diag_is_nonzero,  *( boost::is_integral<mpl::_> ), true )
-                                       ( verbose,   ( bool ), option(_prefix=this->prefix(),_name="backend.verbose").template as<bool>() )
+                                       ( verbose,   ( bool ), boption(_prefix=this->prefix(),_name="backend.verbose") )
                                        ( collect_garbage, *( boost::is_integral<mpl::_> ), true )
                                      ) )
     {
@@ -344,16 +345,19 @@ public:
         {
             if ( !buildGraphWithTranspose )
             {
+                tic();
                 auto s = stencil( _test=test,
                                   _trial=trial,
                                   _pattern=pattern,
                                   _pattern_block=pattern_block,
                                   _diag_is_nonzero=diag_is_nonzero,
                                   _collect_garbage=collect_garbage);
-
+                toc( "Backend::newMatrix:: build stencil", FLAGS_v > 0 );
+                tic();
                 mat->init( test->nDof(), trial->nDof(),
                            test->nLocalDofWithoutGhost(), trial->nLocalDofWithoutGhost(),
                            s->graph() );
+                toc( "Backend::newMatrix:: initialize matrix", FLAGS_v > 0 );
             }
             else
             {
@@ -379,9 +383,10 @@ public:
                            test->nLocalDofWithoutGhost(), trial->nLocalDofWithoutGhost(),
                            graph );
             }
-
+            tic();
             mat->zero();
             mat->setIndexSplit( trial->dofIndexSplit() );
+            toc("Backend::newMatrix:: zero out matrix + set split", FLAGS_v > 0 );
         }
 
         if ( verbose )
@@ -907,6 +912,39 @@ public:
     }
 
     /**
+     * get the matrix \c M whose diagonal is \c v
+     */
+    virtual int diag( vector_ptrtype const& v, sparse_matrix_ptrtype& M ) const
+        {
+            return diag( *v, *M );
+        }
+    
+    /**
+     * get the matrix \c M whose diagonal is \c v
+     */
+    virtual int diag( vector_type const& v, sparse_matrix_type& M ) const
+        {
+            CHECK(0) << "Invalid call to diag(v,M). Not implemented in Backend base class";
+            return 0;
+        }
+
+    /**
+     * @return the vector \c v with diagonal of \c M
+     */
+    virtual int diag( sparse_matrix_ptrtype const& M, vector_ptrtype& v ) const
+        {
+            return diag( *M, *v );
+        }
+    /**
+     * @return the vector \c v with diagonal of \c M
+     */
+    virtual int diag( sparse_matrix_type const& M, vector_type& v ) const
+        {
+            CHECK(0) << "Invalid call to diag(M,v). Not implemented in Backend base class";
+            return 0;
+        }
+    
+    /**
      * solve for \f$P A x = P b\f$ where \f$P\f$ is an approximation
      * of the inverse of \f$A\f$. this interface uses the
      * boost.parameter library to ease the function usage
@@ -946,7 +984,7 @@ public:
                                        ( pc,( std::string ),M_pc/*"lu"*/ )
                                        ( ksp,( std::string ),M_ksp/*"gmres"*/ )
                                        ( pcfactormatsolverpackage,( std::string ), M_pcFactorMatSolverPackage )
-                                       ( verbose,   ( bool ), option(_prefix=this->prefix(),_name="backend.verbose").template as<bool>() )
+                                       ( verbose,   ( bool ), boption(_prefix=this->prefix(),_name="backend.verbose") )
                                      )
                                    )
     {
@@ -1067,7 +1105,7 @@ public:
                                        ( pc,( std::string ),M_pc/*"lu"*/ )
                                        ( ksp,( std::string ),M_ksp/*"gmres"*/ )
                                        ( pcfactormatsolverpackage,( std::string ), M_pcFactorMatSolverPackage )
-                                       ( verbose,   ( bool ), option(_prefix=this->prefix(),_name="backend.verbose").template as<bool>() )
+                                       ( verbose,   ( bool ), boption(_prefix=this->prefix(),_name="backend.verbose") )
                                      )
                                    )
     {
@@ -1136,6 +1174,21 @@ public:
                                           const double, const int,
                                           bool reusePC, bool reuseJAC );
 
+    /**
+     * assemble \f$C=P^T A P\f$
+     */
+    virtual int PtAP( sparse_matrix_ptrtype const& A,
+                       sparse_matrix_ptrtype const& P,
+                       sparse_matrix_ptrtype & C
+                       ) const;
+
+    /**
+     * assemble \f$C=P A P^T\f$
+     */
+    virtual int PAPt( sparse_matrix_ptrtype const& A,
+                      sparse_matrix_ptrtype const& P,
+                      sparse_matrix_ptrtype& C ) const;
+    
     /**
      * Attaches a Preconditioner object to be used by the solver
      */
@@ -1410,7 +1463,7 @@ bool isMatrixInverseSymmetric ( boost::shared_ptr<MatrixSparse<T> >& A, boost::s
 
 #if !defined(FEELPP_BACKEND_NOEXTERN)
 extern template class Backend<double>;
-extern template class Backend<std::complex<double>>;
+//extern template class Backend<std::complex<double>>;
 #endif
 
 }

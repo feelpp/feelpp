@@ -70,12 +70,19 @@ generic_options()
         ( "help-lib", "prints the help message associated with the Feel++ library options" )
         ( "license", "prints the license text" )
         ( "version", "prints the version" )
-        ( "v", po::value<int>()->default_value(0), "verbosity level" )
+        ( "v", po::value<int>()->default_value(0), "Show all VLOG(m) messages for m <= this."
+          " Overridable by --vmodule." )
+        ( "vmodule", po::value<std::string>()->default_value(""), "per-module verbose level."
+          " Argument is a comma-separated list of <module name>=<log level>."
+          " <module name> is a glob pattern, matched against the filename base"
+          " (that is, name ignoring .cc/.h./-inl.h)."
+          " <log level> overrides any value given by --v." )
         ( "feelinfo", "prints feel libraries information" )
         ( "nochdir", "Don't change repository directory even though it is called" )
         ( "directory", po::value<std::string>(), "change directory to specified one" )
         ( "npdir", po::value<bool>()->default_value(true), "enable/disable sub-directory np_<number of processors>")
         ( "fail-on-unknown-option", po::value<bool>()->default_value(false), "exit feel++ application if unknown option found" )
+        ( "show-preconditioner-options", "show on the fly the preconditioner options used" )
         ;
     return generic;
 }
@@ -202,6 +209,7 @@ gmsh_options( std::string const& prefix )
           " FRONTAL_HEX       6\n"
           " MMG3D             7\n"
           " RTREE             9" )
+        ( prefixvm( prefix,"gmsh.randFactor" ).c_str(), Feel::po::value<double>()->default_value( -1 ), "Mesh.RandomFactor. -1 stand for default value" )
 
         ( prefixvm( prefix,"partition.linear" ).c_str(), Feel::po::value<bool>()->default_value( false ), "linear partitioning if true (false otherwise)" );
 
@@ -246,7 +254,7 @@ on_options( std::string const& prefix )
 {
     po::options_description _options( "Dirichlet treatment options " + prefix + " options" );
     _options.add_options()
-        ( prefixvm( prefix,"on.type" ).c_str(), Feel::po::value<std::string>()->default_value( "elimination" ), "Strong Dirichlet conditions treatment type: elimination, elimination_symmetric, penalisation" )
+        ( prefixvm( prefix,"on.type" ).c_str(), Feel::po::value<std::string>()->default_value( "elimination" ), "Strong Dirichlet conditions treatment type: elimination, elimination_keep_diagonal, elimination_symmetric, elimination_symmetric_keep_diagonal, penalisation" )
         ( prefixvm( prefix,"on.verbose" ).c_str(), Feel::po::value<bool>()->default_value( false ), "print in logfiles information about Dirichlet conditions treatment" )
         ;
     return _options;
@@ -500,7 +508,7 @@ crbOptions( std::string const& prefix )
     ( "crb.load-elements-database",Feel::po::value<bool>()->default_value( false ), "load database of elements if true, need to be true for visualization, need to be false to run CRB approximation on a different number of processors than this was used to build the reduced basis ")
 
     ( "crb.solve-fem-monolithic",Feel::po::value<bool>()->default_value( false ), "solve FEM problem without using EIM and without affine decomposition ")
-    ( "crb.export-name-max-size",Feel::po::value<int>()->default_value( 10 ), "maximum size for variable names in export (truncature)")
+    ( "crb.export-name-max-size",Feel::po::value<int>()->default_value( 30 ), "maximum size for variable names in export (truncature)")
     ;
 
     crboptions
@@ -549,6 +557,26 @@ error_options( std::string const& prefix )
         ( prefixvm( prefix, "error.convergence" ).c_str(), Feel::po::value<bool>()->default_value( false ), "convergence" )
         ( prefixvm( prefix, "error.convergence.steps" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "number of convergence steps" )
     ;
+    return _options;
+}
+
+po::options_description
+btpcd_options( std::string const& prefix )
+{
+    po::options_description _options( "BTPCD options (" + prefix + ")" );
+    _options.add_options()
+        // error options
+        ( prefixvm( prefix, "btpcd" ).c_str(), Feel::po::value<bool>()->default_value(false), "enable BTPCD preconditioner" )
+        ( prefixvm( prefix, "btpcd.cd" ).c_str(), Feel::po::value<bool>()->default_value(false), "enable BTPCD/Velocity CD preconditioner" )
+        ( prefixvm( prefix, "btpcd.pcd" ).c_str(), Feel::po::value<bool>()->default_value(false), "enable BTPCD/Pressure CD preconditioner" )
+        ( prefixvm( prefix, "btpcd.pcd.inflow" ).c_str(), Feel::po::value<std::string>()->default_value("Robin"), "Type of boundary conditions at inflow: Robin or Dirichlet" )
+        ( prefixvm( prefix, "btpcd.pcd.outflow" ).c_str(), Feel::po::value<std::string>()->default_value("Dirichlet"), "Type of boundary conditions at inflow: Neumann or Dirichlet" )
+        ( prefixvm( prefix, "btpcd.pcd.order" ).c_str(), Feel::po::value<int>()->default_value(1), "order for pcd operator 1:Ap^-1 Fp Mp^-1 other: Mp^-1 Fp Ap^-1" )
+        ( prefixvm( prefix, "btpcd.pcd.diffusion" ).c_str(), Feel::po::value<std::string>()->default_value("Laplacian"), "Laplacian or BTBt" )
+        ( prefixvm( prefix, "btpcd.weakdir" ).c_str(), Feel::po::value<bool>()->default_value(0), "set to true for Weak dirichlet conditions for Fp and Ap, false otherwise" )
+        // options for pmm
+        ( prefixvm( prefix, "btpcd.pmm.diag" ).c_str(), Feel::po::value<bool>()->default_value(1), "set to true to use diagonal of the pressure mass matrix, false otherwise" )
+        ;
     return _options;
 }
 
@@ -645,6 +673,13 @@ feel_options( std::string const& prefix  )
 #if defined( FEELPP_HAS_TRILINOS_EPETRA )
         .add( backendtrilinos_options( prefix ) )
 #endif
+        .add( backend_options("Ap") )
+        .add( backend_options("Fp") )
+        .add( backend_options("Mp") )
+        .add( backend_options("Fu") )
+        .add( backend_options("Bt") )
+        .add( btpcd_options( prefix ) )
+
         /* nonlinear solver options */
         .add( nlsolver_options() )
 

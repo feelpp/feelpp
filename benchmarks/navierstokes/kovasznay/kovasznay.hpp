@@ -170,9 +170,9 @@ Kovasznay<_OrderU, _OrderP, Entity>::Kovasznay( int argc, char** argv, AboutData
     :
     super( argc, argv, ad, od ),
     M_backend( backend_type::build( this->vm() ) ),
-    meshSize( this->vm()["hsize"].template as<double>() ),
-    M_stabP( this->vm()["penalisation"].template as<double>() ),
-    M_stabD( this->vm()["penalisation"].template as<double>() ),
+    meshSize( doption("hsize") ),
+    M_stabP( doption("penalisation") ),
+    M_stabD( doption("penalisation") ),
     exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
 {
     M_weak_dirichlet = this->vm().count( "weak" );
@@ -263,7 +263,7 @@ Kovasznay<_OrderU, _OrderP, Entity>::Kovasznay( int argc, char** argv, AboutData
     .addParameterValue( Dim )
     .addParameterValue( OrderU )
     .addParameterValue( OrderP )
-    .addParameterValue( this->vm()["hsize"].template as<double>() );
+    .addParameterValue( doption("hsize") );
 
     boost::timer t;
 
@@ -334,7 +334,7 @@ Kovasznay<_OrderU, _OrderP, Entity>::addPressureStabilisation( element_1_type& p
         PressureStabExpr& p_stabexpr )
 {
 
-    if ( is_equal_order && this->vm()["stab-p"].template as<bool>() )
+    if ( is_equal_order && boption("stab-p") )
     {
         boost::timer t;
         LOG(INFO) << "[assembly] add stabilisation terms for equal order approximation ( orderU="
@@ -359,7 +359,7 @@ Kovasznay<_OrderU, _OrderP, Entity>::addDivergenceStabilisation( element_0_type&
 {
 #if 0
 
-    if ( this->vm()["stab-div"].template as<bool>() )
+    if ( boption("stab-div") )
     {
         boost::timer t;
         LOG(INFO) << "[assembly] add stabilisation terms for divergence ( orderU="
@@ -493,8 +493,8 @@ Kovasznay<_OrderU, _OrderP, Entity>::buildLhs()
     size_type pattern = Pattern::COUPLED;
 
     if ( ( is_equal_order &&
-            this->vm()["stab-p"].template as<bool>() ) ||
-            this->vm()["stab-div"].template as<bool>() )
+            boption("stab-p") ) ||
+            boption("stab-div") )
         pattern |= Pattern::EXTENDED;
 
     Feel::Context graph( pattern );

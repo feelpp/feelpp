@@ -92,7 +92,7 @@ int main( int argc, char** argv )
     auto mesh = R1mC1mesh;
 
     if ( straighten )
-        mesh = straightenMesh( _mesh=R1mC1mesh );
+        mesh = straightenMesh( R1mC1mesh, Environment::worldComm()  );
 
 
     typedef FunctionSpace<mesh_type,bases<Lagrange<Order,Vectorial> > > Vh_t;
