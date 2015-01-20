@@ -561,21 +561,21 @@ error_options( std::string const& prefix )
 }
 
 po::options_description
-btpcd_options( std::string const& prefix )
+blockns_options( std::string const& prefix )
 {
-    po::options_description _options( "BTPCD options (" + prefix + ")" );
+    po::options_description _options( "BLOCKNS options (" + prefix + ")" );
     _options.add_options()
         // error options
-        ( prefixvm( prefix, "btpcd" ).c_str(), Feel::po::value<bool>()->default_value(false), "enable BTPCD preconditioner" )
-        ( prefixvm( prefix, "btpcd.cd" ).c_str(), Feel::po::value<bool>()->default_value(false), "enable BTPCD/Velocity CD preconditioner" )
-        ( prefixvm( prefix, "btpcd.pcd" ).c_str(), Feel::po::value<bool>()->default_value(false), "enable BTPCD/Pressure CD preconditioner" )
-        ( prefixvm( prefix, "btpcd.pcd.inflow" ).c_str(), Feel::po::value<std::string>()->default_value("Robin"), "Type of boundary conditions at inflow: Robin or Dirichlet" )
-        ( prefixvm( prefix, "btpcd.pcd.outflow" ).c_str(), Feel::po::value<std::string>()->default_value("Dirichlet"), "Type of boundary conditions at inflow: Neumann or Dirichlet" )
-        ( prefixvm( prefix, "btpcd.pcd.order" ).c_str(), Feel::po::value<int>()->default_value(1), "order for pcd operator 1:Ap^-1 Fp Mp^-1 other: Mp^-1 Fp Ap^-1" )
-        ( prefixvm( prefix, "btpcd.pcd.diffusion" ).c_str(), Feel::po::value<std::string>()->default_value("Laplacian"), "Laplacian or BTBt" )
-        ( prefixvm( prefix, "btpcd.weakdir" ).c_str(), Feel::po::value<bool>()->default_value(0), "set to true for Weak dirichlet conditions for Fp and Ap, false otherwise" )
+        ( prefixvm( prefix, "blockns" ).c_str(), Feel::po::value<bool>()->default_value(false), "enable BLOCKNS preconditioner" )
+        ( prefixvm( prefix, "blockns.cd" ).c_str(), Feel::po::value<bool>()->default_value(false), "enable BLOCKNS/Velocity CD preconditioner" )
+        ( prefixvm( prefix, "blockns.pcd" ).c_str(), Feel::po::value<bool>()->default_value(false), "enable BLOCKNS/Pressure CD preconditioner" )
+        ( prefixvm( prefix, "blockns.pcd.inflow" ).c_str(), Feel::po::value<std::string>()->default_value("Robin"), "Type of boundary conditions at inflow: Robin or Dirichlet" )
+        ( prefixvm( prefix, "blockns.pcd.outflow" ).c_str(), Feel::po::value<std::string>()->default_value("Dirichlet"), "Type of boundary conditions at inflow: Neumann or Dirichlet" )
+        ( prefixvm( prefix, "blockns.pcd.order" ).c_str(), Feel::po::value<int>()->default_value(1), "order for pcd operator 1:Ap^-1 Fp Mp^-1 other: Mp^-1 Fp Ap^-1" )
+        ( prefixvm( prefix, "blockns.pcd.diffusion" ).c_str(), Feel::po::value<std::string>()->default_value("Laplacian"), "Laplacian or BTBt" )
+        ( prefixvm( prefix, "blockns.weakdir" ).c_str(), Feel::po::value<bool>()->default_value(0), "set to true for Weak dirichlet conditions for Fp and Ap, false otherwise" )
         // options for pmm
-        ( prefixvm( prefix, "btpcd.pmm.diag" ).c_str(), Feel::po::value<bool>()->default_value(1), "set to true to use diagonal of the pressure mass matrix, false otherwise" )
+        ( prefixvm( prefix, "blockns.pmm.diag" ).c_str(), Feel::po::value<bool>()->default_value(1), "set to true to use diagonal of the pressure mass matrix, false otherwise" )
         ;
     return _options;
 }
@@ -678,7 +678,7 @@ feel_options( std::string const& prefix  )
         .add( backend_options("Mp") )
         .add( backend_options("Fu") )
         .add( backend_options("Bt") )
-        .add( btpcd_options( prefix ) )
+        .add( blockns_options( prefix ) )
 
         /* nonlinear solver options */
         .add( nlsolver_options() )
