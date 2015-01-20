@@ -46,7 +46,7 @@ int main(int argc, char**argv )
          .add( backend_options( "picard" ) );
 	Environment env( _argc=argc, _argv=argv,
                      _desc=stokesoptions,
-                     _about=about(_name="qs_steady_ns",
+                     _about=about(_name="steady_ns",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
 
