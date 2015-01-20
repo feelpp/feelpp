@@ -32,6 +32,8 @@ if ( FEELPP_ENABLE_NLOPT )
       execute_process(
         COMMAND git submodule update --init --recursive contrib/nlopt
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_FILE git.nlopt.log
+        ERROR_FILE git.nlopt.log
         )
       MESSAGE(STATUS "Git submodule contrib/nlopt updated.")
     else()
