@@ -74,8 +74,7 @@ public:
     CRBDB();
     CRBDB( std::string prefixdir,
            std::string name,
-           std::string dbprefix,
-           po::variables_map const& vm );
+           std::string dbprefix );
     //! copy constructor
     CRBDB( CRBDB const & );
     //! destructor
@@ -128,18 +127,6 @@ public:
 
     //! \return path to database, empty path if not found
     fs::path lookForDB() const;
-
-    //! \return \c variables_map
-    po::variables_map vm()
-    {
-        return M_vm;
-    }
-
-    //! \return \c variables_map
-    po::variables_map vm() const
-    {
-        return M_vm;
-    }
 
     //! \return true if the DB has been loaded, false otherwise
     bool isDBLoaded() const
@@ -201,7 +188,6 @@ private:
     std::string M_prefixdir;
     std::string M_name;
     std::string M_dbfilename;
-    po::variables_map M_vm;
     bool M_isloaded;
 
 

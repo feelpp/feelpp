@@ -150,9 +150,8 @@ public:
      */
     //@{
 
-    typedef TruthModelType truth_model_type;
-    typedef truth_model_type model_type;
-    typedef boost::shared_ptr<truth_model_type> truth_model_ptrtype;
+    typedef TruthModelType model_type;
+    typedef boost::shared_ptr<model_type> model_ptrtype;
 
     typedef double value_type;
     typedef boost::tuple<double,double> bounds_type;
@@ -178,15 +177,15 @@ public:
     typedef CRB self_type;
 
     //! scm
-    typedef CRBSCM<truth_model_type> scm_type;
+    typedef CRBSCM<model_type> scm_type;
     typedef boost::shared_ptr<scm_type> scm_ptrtype;
 
     //! elements database
-    typedef CRBElementsDB<truth_model_type> crb_elements_db_type;
+    typedef CRBElementsDB<model_type> crb_elements_db_type;
     typedef boost::shared_ptr<crb_elements_db_type> crb_elements_db_ptrtype;
 
     //! POD
-    typedef POD<truth_model_type> pod_type;
+    typedef POD<model_type> pod_type;
     typedef boost::shared_ptr<pod_type> pod_ptrtype;
 
     //! function space type
@@ -294,80 +293,40 @@ public:
     }
 
     //! constructor from command line options
-#if 0
     CRB( std::string  name,
-         po::variables_map const& vm )
+         model_ptrtype const & model )
         :
-        super( ( boost::format( "%1%" ) % vm["crb.error-type"].template as<int>() ).str(),
-               name,
-               ( boost::format( "%1%-%2%-%3%" ) % name % vm["crb.output-index"].template as<int>() % vm["crb.error-type"].template as<int>() ).str(),
-               vm ),
+        super( ( boost::format( "%1%" ) %ioption("crb.error-type") ).str(),
+        name,
+        ( boost::format( "%1%-%2%-%3%" )
+        %name %ioption("crb.output-index")
+        % ioption("crb.error-type") ).str() ),
         M_elements_database(
-                            ( boost::format( "%1%" ) % vm["crb.error-type"].template as<int>() ).str(),
-                            name,
-                            ( boost::format( "%1%-%2%-%3%-elements" ) % name % vm["crb.output-index"].template as<int>() % vm["crb.error-type"].template as<int>() ).str(),
-                            vm ),
-        M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC, Environment::worldComm() ) ),
-        M_model(),
-        M_backend( backend_type::build( vm ) ),
-        M_backend_primal( backend_type::build( vm , "backend-primal" ) ),
-        M_backend_dual( backend_type::build( vm , "backend-dual") ),
-        M_output_index( vm["crb.output-index"].template as<int>() ),
-        M_tolerance( vm["crb.error-max"].template as<double>() ),
-        M_iter_max( vm["crb.dimension-max"].template as<int>() ),
-        M_factor( vm["crb.factor"].template as<int>() ),
-        M_error_type( CRBErrorType( vm["crb.error-type"].template as<int>() ) ),
-        M_Dmu( new parameterspace_type ),
-        M_Xi( new sampling_type( M_Dmu ) ),
-        M_WNmu( new sampling_type( M_Dmu, 1, M_Xi ) ),
-        M_WNmu_complement(),
-        M_scmA( new scm_type( name+"_a", vm ) ),
-        M_scmM( new scm_type( name+"_m", vm ) ),
-        exporter( Exporter<mesh_type>::New( vm, "BasisFunction" ) ),
-        M_database_contains_variance_info( vm["crb.save-information-for-variance"].template as<bool>())
-    {
-        // this is too early to load the DB, we don't have the model yet and the
-        //associated function space for the reduced basis function if
-        // do the loadDB() in setTruthModel()
-        //this->loadDB() )
-
-    }
-#endif
-    //! constructor from command line options
-    CRB( std::string  name,
-         po::variables_map const& vm,
-         truth_model_ptrtype const & model )
-        :
-        super( ( boost::format( "%1%" ) % vm["crb.error-type"].template as<int>() ).str(),
-               name,
-               ( boost::format( "%1%-%2%-%3%" ) % name % vm["crb.output-index"].template as<int>() % vm["crb.error-type"].template as<int>() ).str(),
-               vm ),
-        M_elements_database(
-                            ( boost::format( "%1%" ) % vm["crb.error-type"].template as<int>() ).str(),
-                            name,
-                            ( boost::format( "%1%-%2%-%3%-elements" ) % name % vm["crb.output-index"].template as<int>() % vm["crb.error-type"].template as<int>() ).str(),
-                            vm ,
-                            model ),
+        ( boost::format( "%1%" ) %ioption("crb.error-type") ).str(),
+            name,
+            ( boost::format( "%1%-%2%-%3%-elements" )
+            %name % ioption("crb.output-index") %ioption("crb.error-type") ).str(),
+            model ),
         M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC, Environment::worldComm() ) ),
         M_model(),
         M_backend( backend() ),
         M_backend_primal( backend(_name="backend-primal") ),
         M_backend_dual( backend(_name="backend-dual") ),
-        M_output_index( vm["crb.output-index"].template as<int>() ),
-        M_tolerance( vm["crb.error-max"].template as<double>() ),
-        M_iter_max( vm["crb.dimension-max"].template as<int>() ),
-        M_factor( vm["crb.factor"].template as<int>() ),
-        M_error_type( CRBErrorType( vm["crb.error-type"].template as<int>() ) ),
+        M_output_index( ioption("crb.output-index") ),
+        M_tolerance( doption("crb.error-max") ),
+        M_iter_max( ioption("crb.dimension-max") ),
+        M_factor( ioption("crb.factor") ),
+        M_error_type( CRBErrorType( ioption("crb.error-type") ) ),
         M_Dmu( new parameterspace_type ),
         M_Xi( new sampling_type( M_Dmu ) ),
         M_WNmu( new sampling_type( M_Dmu, 1, M_Xi ) ),
         M_WNmu_complement(),
         M_primal_apee_mu( new sampling_type( M_Dmu, 1, M_Xi ) ),
         M_dual_apee_mu( new sampling_type( M_Dmu, 1, M_Xi ) ),
-        M_scmA( new scm_type( name+"_a", vm , model , false /*not scm for mass mastrix*/ )  ),
-        M_scmM( new scm_type( name+"_m", vm , model , true /*scm for mass matrix*/ ) ),
-        exporter( Exporter<mesh_type>::New( vm, "BasisFunction" ) ),
-        M_database_contains_variance_info( vm["crb.save-information-for-variance"].template as<bool>())
+        M_scmA( new scm_type( name+"_a", model , false /*not scm for mass mastrix*/ )  ),
+        M_scmM( new scm_type( name+"_m", model , true /*scm for mass matrix*/ ) ),
+        exporter( Exporter<mesh_type>::New( "BasisFunction" ) ),
+        M_database_contains_variance_info( boption("crb.save-information-for-variance"))
     {
         this->setTruthModel( model );
         if ( this->loadDB() )
@@ -455,11 +414,6 @@ public:
         M_coeff_pr_ini_online( o.M_coeff_pr_ini_online ),
         M_coeff_du_ini_online( o.M_coeff_du_ini_online )
     {}
-
-    //! destructor
-    ~CRB()
-    {}
-
 
     //@}
 
@@ -570,7 +524,7 @@ public:
     }
 
     //! set the truth offline model
-    void setTruthModel( truth_model_ptrtype const& model )
+    void setTruthModel( model_ptrtype const& model )
     {
         M_model = model;
         M_Dmu = M_model->parameterSpace();
@@ -1254,7 +1208,7 @@ protected:
 
     boost::shared_ptr<SolverNonLinear<double> > M_nlsolver;
 
-    truth_model_ptrtype M_model;
+    model_ptrtype M_model;
 
     backend_ptrtype M_backend;
     backend_ptrtype M_backend_primal;
@@ -1454,8 +1408,8 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
     //M_backend_primal = backend_type::build( BACKEND_PETSC );
     bool reuse_prec = boption(_name="crb.reuse-prec") ;
 
-    M_bdf_primal = bdf( _space=M_model->functionSpace(), _vm=Environment::vm() , _name="bdf_primal" );
-    M_bdf_primal_save = bdf( _space=M_model->functionSpace(), _vm=Environment::vm() , _name="bdf_primal_save" );
+    M_bdf_primal = bdf( _space=M_model->functionSpace() , _name="bdf_primal" );
+    M_bdf_primal_save = bdf( _space=M_model->functionSpace() , _name="bdf_primal_save" );
 
     //set parameters for time discretization
     M_bdf_primal->setTimeInitial( M_model->timeInitial() );
@@ -1672,8 +1626,8 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
         F[l]=M_model->newVector();
 
 
-    M_bdf_dual = bdf( _space=M_model->functionSpace(), _vm=this->vm() , _name="bdf_dual" );
-    M_bdf_dual_save = bdf( _space=M_model->functionSpace(), _vm=this->vm() , _name="bdf_dual_save" );
+    M_bdf_dual = bdf( _space=M_model->functionSpace() , _name="bdf_dual" );
+    M_bdf_dual_save = bdf( _space=M_model->functionSpace() , _name="bdf_dual_save" );
 
     M_bdf_dual->setTimeInitial( M_model->timeFinal()+M_model->timeStep() );
 
@@ -3622,7 +3576,7 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( int N, parameter_type
     vector_ptrtype unduold( backend()->newVector( M_model->functionSpace() ) );
 
     //set parameters for time discretization
-    auto bdf_primal = bdf( _space=M_model->functionSpace(), _vm=this->vm() , _name="bdf_primal_check_residual_transient" );
+    auto bdf_primal = bdf( _space=M_model->functionSpace() , _name="bdf_primal_check_residual_transient" );
     bdf_primal->setTimeInitial( M_model->timeInitial() );
     bdf_primal->setTimeStep( M_model->timeStep() );
     bdf_primal->setTimeFinal( M_model->timeFinal() );
@@ -3695,7 +3649,7 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( int N, parameter_type
 
         Adu = M_model->newMatrix();
 
-        auto bdf_dual = bdf( _space=M_model->functionSpace(), _vm=this->vm() , _name="bdf_dual_check_residual_transient" );
+        auto bdf_dual = bdf( _space=M_model->functionSpace() , _name="bdf_dual_check_residual_transient" );
 
         bdf_dual->setTimeInitial( M_model->timeFinal()+M_model->timeStep() );
         bdf_dual->setTimeStep( -M_model->timeStep() );
@@ -4928,7 +4882,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
         this->dumpData("./out.cpu.dump", "[CPU] A: ", A.data(), N * N);
     }
 #endif
-    
+
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
     if(ioption(_name="parallel.debug"))
     {

@@ -39,19 +39,16 @@ namespace Feel
 CRBDB::CRBDB()
     :
     M_name( "noname" ),
-    M_vm(),
     M_isloaded( false )
 {}
 
 //! constructor from command line options
 CRBDB::CRBDB( std::string prefixdir,
               std::string name,
-              std::string dbprefix,
-              po::variables_map const& vm )
+              std::string dbprefix)
     :
     M_prefixdir( prefixdir ),
     M_name( name ),
-    M_vm( vm ),
     M_isloaded( false )
 {
     LOG(INFO) << prefixdir << "," << name << "\n";
@@ -66,7 +63,6 @@ CRBDB::CRBDB( std::string prefixdir,
 CRBDB::CRBDB( CRBDB const & o )
     :
     M_name( o.M_name ),
-    M_vm( o.M_vm ),
     M_isloaded( o.M_isloaded )
 {}
 
@@ -98,9 +94,9 @@ CRBDB::dbLocalPath() const
     int proc_number =  Environment::worldComm().globalRank();
     int nb_proc = Environment::worldComm().globalSize();
     std::string suf;
-    if( M_vm.count( "crb.results-repo-name" ) )
+    if( Environment::vm().count( "crb.results-repo-name" ) )
         {
-            std::string database_name = M_vm["crb.results-repo-name"].as<std::string>();
+            std::string database_name = soption("crb.results-repo-name");
             suf = database_name + ( boost::format("_proc%1%on%2%") %proc_number %nb_proc ).str() ;
         }
     else
