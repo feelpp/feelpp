@@ -1198,6 +1198,16 @@ SolverNonLinearPetsc<T>::setPetscKspSolverType()
         CHKERRABORT( this->comm(),ierr );
         return;
 
+    case PREONLY :
+        ierr = KSPSetType ( M_ksp, ( char* ) KSPPREONLY );
+        CHKERRABORT( this->worldComm().globalComm(),ierr );
+        return;
+
+    case GCR :
+        ierr = KSPSetType ( M_ksp, ( char* ) KSPGCR );
+        CHKERRABORT( this->worldComm().globalComm(),ierr );
+        return;
+
     default:
         std::cerr << "ERROR:  Unsupported PETSC Solver: "
                   << this->kspSolverType()               << std::endl
