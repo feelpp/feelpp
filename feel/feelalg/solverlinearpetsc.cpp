@@ -787,6 +787,11 @@ SolverLinearPetsc<T>::setPetscSolverType()
         CHKERRABORT( this->worldComm().globalComm(),ierr );
         return;
 
+    case GCR :
+        ierr = KSPSetType ( M_ksp, ( char* ) KSPGCR );
+        CHKERRABORT( this->worldComm().globalComm(),ierr );
+        return;
+
     default:
         std::cerr << "ERROR:  Unsupported PETSC Solver: "
                   << this->solverType()               << std::endl

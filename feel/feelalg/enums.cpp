@@ -107,6 +107,7 @@ kspTypeConvertStrToEnum( std::string const& type )
     else if ( type=="richardson" ) return SolverType::RICHARDSON;
     else if ( type=="chebyshev" )  return SolverType::CHEBYSHEV;
     else if ( type=="preonly" )    return SolverType::PREONLY;
+    else if ( type=="gcr" )        return SolverType::GCR;
     else                           return SolverType::GMRES;
 }
 
