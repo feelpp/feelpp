@@ -2667,6 +2667,7 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
         if ( on_context.test( ContextOn::KEEP_DIAGONAL ) )
         {
             MatGetDiagonal( this->M_mat, diag.vec() );
+            diag.close();
         }
 
 #if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR >= 2)
