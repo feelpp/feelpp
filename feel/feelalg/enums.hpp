@@ -103,7 +103,7 @@ enum SolverType {CG=0,
                  RICHARDSON,
                  CHEBYSHEV,
                  PREONLY,
-
+                 GCR,
                  INVALID_SOLVER
                 };
 
