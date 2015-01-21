@@ -966,7 +966,7 @@ po::options_description backend_options( std::string const& prefix )
           Feel::po::value<std::string>()->default_value( "mumps" ),
           "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
 #else
-        ( prefixvm( prefix,pcctx+"pc-factor-mat-solver-package-type" ).c_str(),
+        ( prefixvm( prefix,"pc-factor-mat-solver-package-type" ).c_str(),
           (useDefaultValue)?Feel::po::value<std::string>()->default_value( "petsc" ):Feel::po::value<std::string>(),
           "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
 #endif
