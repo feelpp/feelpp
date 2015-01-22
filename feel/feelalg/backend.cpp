@@ -786,9 +786,20 @@ void updateBackendKSPOptions( po::options_description & _options, std::string co
         ( prefixvm( prefix,kspctx+"ksp-use-config-default-petsc" ).c_str(),
           (useDefaultValue)?Feel::po::value<bool>()->default_value( false ):Feel::po::value<bool>(),
           "configure ksp with default petsc options" )
+
+        ( prefixvm( prefix,kspctx+"ksp-use-initial-guess-nonzero" ).c_str(),
+          (useDefaultValue)?Feel::po::value<bool>()->default_value( true ):Feel::po::value<bool>(),
+          "tells the iterative solver that the initial guess is nonzero" )
+
         ( prefixvm( prefix,kspctx+"gmres-restart" ).c_str(),
           (useDefaultValue)?Feel::po::value<int>()->default_value( 30 ):Feel::po::value<int>(),
           "number of iterations before solver restarts (gmres)" )
+        ( prefixvm( prefix,kspctx+"fgmres-restart" ).c_str(),
+          (useDefaultValue)?Feel::po::value<int>()->default_value( 30 ):Feel::po::value<int>(),
+          "number of iterations before solver restarts (fgmres)" )
+        ( prefixvm( prefix,kspctx+"gcr-restart" ).c_str(),
+          (useDefaultValue)?Feel::po::value<int>()->default_value( 30 ):Feel::po::value<int>(),
+          "number of iterations before solver restarts (gcr)" )
         ;
 }
 #if 0
