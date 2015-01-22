@@ -1101,8 +1101,9 @@ public:
                         //(Dof  itdof->second+shift, sign, is_dof_periodic, 0, 0, marker.value() ) ) );
                         DCHECK( res.second ) << "global dof " << itdof->second+shift << " not inserted in local dof (" <<
                             ie << "," << lc_dof << ")";
+                        M_dof_marker.insert( dof2marker( itdof->second+shift+c,  marker.value() ) );
                     }
-                    //TODO: M_dof_marker.insert( dof2marker( itdof->second+shift,  marker.value() ) );
+                    
 
 
 #if 0// !defined(NDEBUG)
