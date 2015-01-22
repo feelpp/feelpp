@@ -312,7 +312,7 @@ OperatorPCD<space_type>::assembleDiffusion()
                 if ( boption("blockns.weakdir" ) )
                     d+= integrate( markedfaces(M_Qh->mesh(),dir), _expr=-gradt(p)*N()*id(p)-grad(p)*N()*idt(p)+doption("penaldir")*idt(p)*id(p)/hFace() );
                 else
-                    d += on( markedfaces(M_Qh->mesh(),dir), _element=p, _rhs=rhs, _expr=cst(0.) );
+                    d += on( markedfaces(M_Qh->mesh(),dir), _element=p, _rhs=rhs, _expr=cst(0.),_type="elimination_keep_diagonal" );
             }
         }
         //this->applyBC(M_diff);
@@ -376,7 +376,7 @@ OperatorPCD<space_type>::applyBC( sparse_matrix_ptrtype& A )
         for( auto dir : M_bcFlags["Dirichlet"])
         {
             std::string m = M_Qh->mesh()->markerName(dir);
-            a += on( markedfaces(M_Qh->mesh(),dir), _element=p, _rhs=rhs, _expr=cst(0.) );
+            a += on( markedfaces(M_Qh->mesh(),dir), _element=p, _rhs=rhs, _expr=cst(0.),_type="elimination_keep_diagonal" );
         }
 
     // on neumann boundary on velocity, apply Dirichlet condition on pressure
@@ -389,7 +389,7 @@ OperatorPCD<space_type>::applyBC( sparse_matrix_ptrtype& A )
                 if ( boption("blockns.weakdir" ) )
                     a+= integrate( markedfaces(M_Qh->mesh(),dir), _expr=-M_nu*gradt(p)*N()*id(p)-M_nu*grad(p)*N()*idt(p)+doption("penaldir")*idt(p)*id(p)/hFace() );
                 else
-                    a += on( markedfaces(M_Qh->mesh(),dir), _element=p, _rhs=rhs, _expr=cst(0.) );
+                    a += on( markedfaces(M_Qh->mesh(),dir), _element=p, _rhs=rhs, _expr=cst(0.),_type="elimination_keep_diagonal" );
             }
         }
     rhs->close();
