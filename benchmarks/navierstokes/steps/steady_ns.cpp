@@ -34,6 +34,7 @@ int main(int argc, char**argv )
         ( "penaldir", po::value<double>()->default_value( 100 ), "coeff" )
         ( "stokes.preconditioner", po::value<std::string>()->default_value( "petsc" ), "Stokes preconditioner: petsc, PM, Blockns" )
         ( "picard", po::value<bool>()->default_value( 1 ), "picard" )
+        ( "picard.preconditioner", po::value<std::string>()->default_value( "petsc" ), "Stokes preconditioner: petsc, PM, Blockns" )
 		( "picard.tol", po::value<double>()->default_value( 1e-8 ), "tolerance" )
 		( "picard.maxit", po::value<double>()->default_value( 10 ), "max iteration" )
         ( "newton", po::value<bool>()->default_value( 1 ), "newton" )
@@ -126,7 +127,7 @@ int main(int argc, char**argv )
     
     auto incru = normL2( _range=elements(mesh), _expr=idv(u)-idv(un));
     auto incrp = normL2( _range=elements(mesh), _expr=idv(p)-idv(pn));
-    at=a;
+    at+=a;
     if ( boption("blockns.weakdir") )
     {
         for( auto const& d : m_dirichlet )
@@ -179,7 +180,12 @@ int main(int argc, char**argv )
         do
         {
             tic();
+#if 0
             at = a;
+#else
+            at.zero();
+            at+=a;
+#endif
             at += integrate( _range=elements(mesh),_expr=trans(id(v))*(gradt(u)*idv(u)) );
             toc( " - Picard:: Assemble nonlinear terms  ..." );
 
@@ -194,7 +200,7 @@ int main(int argc, char**argv )
                 std::cout << "Picard:: non linear iteration " << fixedpt_iter << " \n";
             }
             tic();
-            if ( boption("blockns") )
+            if ( soption("picard.preconditioner") != "petsc" )
             {
                 a_blockns->update( at.matrixPtr(), idv(u), m_dirichlet );
                 at.solveb(_rhs=r,_solution=U,_backend=backend(_name="picard",_rebuild=true),_prec=a_blockns );
@@ -240,7 +246,8 @@ int main(int argc, char**argv )
         {
             if ( Environment::isMasterRank() )
                 std::cout << " - Assemble nonlinear terms  ...\n";
-            at = a;
+            at.zero();
+            at += a;
             at += integrate( _range=elements(mesh),_expr=trans(id(v))*(gradt(u)*idv(u)) );
             at += integrate( _range=elements(mesh), _expr=trans(id(v))*gradv(u)*idt(u) );
 
