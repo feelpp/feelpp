@@ -246,9 +246,12 @@ OperatorPCD<space_type>::update( ExprConvection const& expr_b,
         for( auto dir : M_bcFlags["Dirichlet"])
         {
             std::string m = M_Qh->mesh()->markerName(dir);
-            LOG(INFO) << "Setting Robin condition on " << m;
-            
-            conv += integrate( _range=markedfaces(M_Qh->mesh(), dir), _expr=trans(ebc.find(M_Qh->mesh()->markerName(dir))->second)*N()*idt(p)*id(q));
+            if ( ebc.find(M_Qh->mesh()->markerName(dir)) != ebc.end() )
+            {
+                LOG(INFO) << "Setting Robin condition on " << m;
+
+                conv += integrate( _range=markedfaces(M_Qh->mesh(), dir), _expr=trans(ebc.find(M_Qh->mesh()->markerName(dir))->second)*N()*idt(p)*id(q));
+            }
         }
 
     G->close();
