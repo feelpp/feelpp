@@ -100,7 +100,7 @@ int main(int argc, char**argv )
     
     map_vector_field<2,1,2> m_dirichlet;
     m_dirichlet["inlet"]=g;
-    m_dirichlet["wall"]=wall;
+    //m_dirichlet["wall"]=wall;
 
     auto l = form1( _test=Vh );
     auto r = form1( _test=Vh );
