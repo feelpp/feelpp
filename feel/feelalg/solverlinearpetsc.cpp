@@ -248,7 +248,8 @@ void SolverLinearPetsc<T>::init ()
         CHKERRABORT( this->worldComm().globalComm(),ierr );
 
         // Have the Krylov subspace method use our good initial guess rather than 0
-        ierr = KSPSetInitialGuessNonzero ( M_ksp, PETSC_TRUE );
+        bool useInitialGuessNonZero = boption(_name="ksp-use-initial-guess-nonzero", _prefix=this->prefix() );
+        ierr = KSPSetInitialGuessNonzero ( M_ksp, (useInitialGuessNonZero)?PETSC_TRUE:PETSC_FALSE );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
 
         // Set user-specified  solver and preconditioner types
@@ -291,12 +292,27 @@ void SolverLinearPetsc<T>::init ()
             ierr = KSPSetInitialGuessNonzero ( M_ksp, PETSC_FALSE );
             CHKERRABORT( this->worldComm().globalComm(),ierr );
         }
-
-        if ( std::string((char*)ksp_type) == std::string( ( char* )KSPGMRES ) )
+        else if ( std::string((char*)ksp_type) == std::string( ( char* )KSPGMRES ) )
         {
             int nRestartGMRES = ioption(_name="gmres-restart", _prefix=this->prefix() );
             ierr = KSPGMRESSetRestart( M_ksp, nRestartGMRES );
             CHKERRABORT( this->worldComm().globalComm(),ierr );
+        }
+        else if ( std::string((char*)ksp_type) == std::string( ( char* )KSPFGMRES ) )
+        {
+            int nRestartFGMRES = ioption(_name="fgmres-restart", _prefix=this->prefix() );
+            ierr = KSPGMRESSetRestart( M_ksp, nRestartFGMRES );
+            CHKERRABORT( this->worldComm().globalComm(),ierr );
+            if ( this->M_preconditioner )
+                this->M_preconditioner->setSide( preconditioner_type::RIGHT );
+        }
+        else if ( std::string((char*)ksp_type) == std::string( ( char* )KSPGCR ) )
+        {
+            int nRestartGCR = ioption(_name="gcr-restart", _prefix=this->prefix() );
+            ierr = KSPGCRSetRestart( M_ksp, nRestartGCR );
+            CHKERRABORT( this->worldComm().globalComm(),ierr );
+            if ( this->M_preconditioner )
+                this->M_preconditioner->setSide( preconditioner_type::RIGHT );
         }
         // Notify PETSc of location to store residual history.
         // This needs to be called before any solves, since
