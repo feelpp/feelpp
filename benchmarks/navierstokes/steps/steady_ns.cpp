@@ -179,6 +179,7 @@ int main(int argc, char**argv )
         do
         {
             tic();
+            r.zero();
             at = a;
             at += integrate( _range=elements(mesh),_expr=trans(id(v))*(gradt(u)*idv(u)) );
             toc( " - Picard:: Assemble nonlinear terms  ..." );
