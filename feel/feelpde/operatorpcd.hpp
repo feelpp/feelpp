@@ -248,7 +248,8 @@ OperatorPCD<space_type>::update( ExprConvection const& expr_b,
             std::string m = M_Qh->mesh()->markerName(dir);
             LOG(INFO) << "Setting Robin condition on " << m;
             
-            conv += integrate( _range=markedfaces(M_Qh->mesh(), dir), _expr=trans(ebc.find(M_Qh->mesh()->markerName(dir))->second)*N()*idt(p)*id(q));
+            conv += integrate( _range=markedfaces(M_Qh->mesh(), dir), _expr=-trans(ebc.find(M_Qh->mesh()->markerName(dir))->second)*N()*idt(p)*id(q));
+            //conv += integrate( _range=markedfaces(M_Qh->mesh(), dir), _expr=trans(expr_b)*N()*idt(p)*id(q));
         }
 
     G->close();
