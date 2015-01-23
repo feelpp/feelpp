@@ -868,6 +868,8 @@ public:
     element_type solveFemUsingAffineDecompositionNewton( parameter_type const& mu );
     void solveFemUpdateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype & J , const parameter_type & mu);
     void solveFemUpdateResidual( const vector_ptrtype& X, vector_ptrtype& R , const parameter_type & mu);
+    bool updateJacobian( const vector_ptrtype& X, std::vector< std::vector<sparse_matrix_ptrtype> >& Jqm);
+    bool updateResidual( const vector_ptrtype& X, std::vector< std::vector< std::vector<vector_ptrtype> > >& Rqm);
     element_type solveFemDualUsingAffineDecompositionFixedPoint( parameter_type const& mu );
     element_type solveFemUsingOfflineEim( parameter_type const& mu );
 
@@ -3318,8 +3320,8 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionNewton( parameter_type
     sparse_matrix_ptrtype J = this->newMatrix();
     vector_ptrtype R = this->newVector();
 
-    auto initialguess = this->functionSpace()->elementPtr();
-    initialguess = this->assembleInitialGuess( mu ) ;
+    // auto initialguess = this->functionSpace()->elementPtr();
+    // initialguess = this->assembleInitialGuess( mu ) ;
 
 
     boost::tie( boost::tuples::ignore , M_Jqm, M_Rqm ) = this->computeAffineDecomposition();
@@ -3342,6 +3344,7 @@ CRBModel<TruthModelType>::solveFemUpdateJacobian( const vector_ptrtype& X, spars
     J->zero();
 
     beta_vector_type betaJqm;
+    this->updateJacobian( X, M_Jqm );
     boost::tie( boost::tuples::ignore, betaJqm, boost::tuples::ignore ) = this->computeBetaQm( X , mu , 0 );
 
     for ( size_type q = 0; q < this->Qa(); ++q )
@@ -3359,6 +3362,7 @@ CRBModel<TruthModelType>::solveFemUpdateResidual( const vector_ptrtype& X, vecto
 {
     R->zero();
     std::vector< beta_vector_type > betaRqm;
+    this->updateResidual( X, M_Rqm );
     boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaRqm ) = this->computeBetaQm( X , mu , 0 );
 
     for ( size_type q = 0; q < this->Ql( 0 ); ++q )
@@ -3366,6 +3370,20 @@ CRBModel<TruthModelType>::solveFemUpdateResidual( const vector_ptrtype& X, vecto
         for(int m=0; m<this->mMaxF(0,q); m++)
             R->add( betaRqm[0][q][m] , *M_Rqm[0][q][m] );
     }
+}
+
+template<typename TruthModelType>
+bool
+CRBModel<TruthModelType>::updateJacobian( const vector_ptrtype& X, std::vector< std::vector<sparse_matrix_ptrtype> >& Jqm )
+{
+    return M_model->updateJacobian( X, Jqm );
+}
+
+template<typename TruthModelType>
+bool
+CRBModel<TruthModelType>::updateResidual( const vector_ptrtype& X, std::vector< std::vector< std::vector<vector_ptrtype> > >& Rqm)
+{
+    return M_model->updateResidual( X, Rqm );
 }
 
 template<typename TruthModelType>
