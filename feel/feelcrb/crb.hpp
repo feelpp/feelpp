@@ -1918,6 +1918,7 @@ CRB<TruthModelType>::offlineUpdateJacobian( const vector_ptrtype& X, sparse_matr
 
     beta_vector_type betaJqm;
     boost::tie( boost::tuples::ignore, betaJqm, boost::tuples::ignore ) = M_model->computeBetaQm( X , mu , 0 );
+    M_model->updateJacobian(X,M_Jqm);
 
     for ( size_type q = 0; q < M_model->Qa(); ++q )
     {
@@ -1936,7 +1937,7 @@ CRB<TruthModelType>::offlineUpdateResidual( const vector_ptrtype& X, vector_ptrt
     R->zero();
     std::vector< beta_vector_type > betaRqm;
     boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaRqm ) = M_model->computeBetaQm( X , mu , 0 );
-
+    M_model->updateResidual(X,M_Rqm);
     for ( size_type q = 0; q < M_model->Ql( 0 ); ++q )
     {
         for(int m=0; m<M_model->mMaxF(0,q); m++)
