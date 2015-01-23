@@ -622,6 +622,52 @@ void SolverNonLinearPetsc<T>::init ()
         // sets the software that is used to perform the factorization
         //PetscPCFactorSetMatSolverPackage( M_pc,this->matSolverPackageType() );
 
+        // Have the Krylov subspace method use our good initial guess rather than 0
+        bool useInitialGuessNonZero = boption(_name="ksp-use-initial-guess-nonzero", _prefix=this->prefix() );
+        ierr = KSPSetInitialGuessNonzero ( M_ksp, (useInitialGuessNonZero)?PETSC_TRUE:PETSC_FALSE );
+        CHKERRABORT( this->worldComm().globalComm(),ierr );
+
+
+#if PETSC_VERSION_LESS_THAN(3,0,0)
+        KSPType ksp_type;
+#else
+#if PETSC_VERSION_LESS_THAN(3,4,0)
+        const KSPType ksp_type;
+#else
+        KSPType ksp_type;
+#endif
+#endif
+
+        ierr = KSPGetType ( M_ksp, &ksp_type );
+        CHKERRABORT( this->worldComm().globalComm(),ierr );
+
+        if ( std::string((char*)ksp_type) == std::string( ( char* )KSPPREONLY ) )
+        {
+            ierr = KSPSetInitialGuessNonzero ( M_ksp, PETSC_FALSE );
+            CHKERRABORT( this->worldComm().globalComm(),ierr );
+        }
+        else if ( std::string((char*)ksp_type) == std::string( ( char* )KSPGMRES ) )
+        {
+            int nRestartGMRES = ioption(_name="gmres-restart", _prefix=this->prefix() );
+            ierr = KSPGMRESSetRestart( M_ksp, nRestartGMRES );
+            CHKERRABORT( this->worldComm().globalComm(),ierr );
+        }
+        else if ( std::string((char*)ksp_type) == std::string( ( char* )KSPFGMRES ) )
+        {
+            int nRestartFGMRES = ioption(_name="fgmres-restart", _prefix=this->prefix() );
+            ierr = KSPGMRESSetRestart( M_ksp, nRestartFGMRES );
+            CHKERRABORT( this->worldComm().globalComm(),ierr );
+            if ( this->M_preconditioner )
+                this->M_preconditioner->setSide( preconditioner_type::RIGHT );
+        }
+        else if ( std::string((char*)ksp_type) == std::string( ( char* )KSPGCR ) )
+        {
+            int nRestartGCR = ioption(_name="gcr-restart", _prefix=this->prefix() );
+            ierr = KSPGCRSetRestart( M_ksp, nRestartGCR );
+            CHKERRABORT( this->worldComm().globalComm(),ierr );
+            if ( this->M_preconditioner )
+                this->M_preconditioner->setSide( preconditioner_type::RIGHT );
+        }
 
         if ( this->M_preconditioner )
         {
@@ -632,6 +678,24 @@ void SolverNonLinearPetsc<T>::init ()
             PCShellSetSetUp( M_pc,__feel_petsc_preconditioner_setup );
             PCShellSetApply( M_pc,__feel_petsc_preconditioner_apply );
             PCShellSetView( M_pc,__feel_petsc_preconditioner_view );
+
+            switch( this->M_preconditioner->side() )
+            {
+            default:
+            case preconditioner_type::LEFT:
+                VLOG(2) << " . PC is set to left side\n";
+                KSPSetPCSide( M_ksp, PC_LEFT );
+                break;
+            case preconditioner_type::RIGHT:
+                VLOG(2) << " . PC is set to right side\n";
+                KSPSetPCSide( M_ksp, PC_RIGHT );
+                break;
+            case preconditioner_type::SYMMETRIC:
+                VLOG(2) << " . PC is set to symmetric\n";
+                KSPSetPCSide( M_ksp, PC_SYMMETRIC );
+                break;
+            }
+
         }
         else
         {

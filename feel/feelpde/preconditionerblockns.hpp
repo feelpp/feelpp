@@ -384,7 +384,48 @@ PreconditionerBlockNS<space_type>::applyInverse ( const vector_type& X, vector_t
 
     return 0;
 }
+#if 0
+// this commented code is just a save for pcd with full schur
+template < typename space_type >
+int
+PreconditionerBlockNS<space_type>::applyInverse ( const vector_type& X, vector_type& Y ) const
+{
+    U = X;
+    U.close();
+    LOG(INFO) << "Create velocity/pressure component...\n";
+    *M_vin = U.template element<0>();
+    M_vin->close();
+    *M_pin = U.template element<1>();
+    M_pin->close();
+    *M_aux = *M_vin;
+    M_aux->close();
 
+    vector_ptrtype M_paux( M_b->newVector( M_Qh )  );
+    op_mat_ptrtype divOpBis;
+    divOpBis = op( M_B, "B");
+
+    helmOp->applyInverse(*M_vin, *M_aux);
+    divOpBis->apply( *M_aux, *M_paux );
+
+    M_paux->add( -1.0,*M_pin );
+    M_paux->close();
+    pcdOp->applyInverse( *M_paux, *M_pout );
+
+
+    divOp->apply( *M_pout, *M_vout );
+    M_vin->add(-1.0,*M_vout);
+    M_vin->close();
+    helmOp->applyInverse(*M_vin, *M_vout);
+
+    U.template element<0>() = *M_vout;
+    U.template element<1>() = *M_pout;
+    U.close();
+    Y=U;
+    Y.close();
+
+    return 0;
+}
+#endif
 template < typename space_type >
 int
 PreconditionerBlockNS<space_type>::guess ( vector_type& Y ) const
