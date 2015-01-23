@@ -503,6 +503,7 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M)
     DVLOG(2) << "compute best fit  for m=" << __M
              << " and trainset of size " << trainset->size() << "...\n";
     using namespace vf;
+    int proc_number =  Environment::worldComm().globalRank();
     parameter_type mu = M_model->parameterSpace()->element();
 
     vector_type maxerr( trainset->size() );
@@ -531,11 +532,11 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M)
         rhs = M_model->computeExpansionCoefficients( mu , solution, __M );
         auto z = expansion( M_model->q(), rhs, __M );
         auto resmax = M_model->computeMaximumOfResidual( mu , solution, z );
-
         //DCHECK( rhs.size() == __M ) << "Invalid size rhs: " << rhs.size() << " M=" << __M  << " rhs = " << rhs << "\n";
 
         LOG_ASSERT( index < trainset->size() ) << "Invalid index " << index << " should be less than trainset size = " << trainset->size() << "\n";
         maxerr( index++ ) = resmax.template get<0>();
+        //std::cout << "proc " << proc_number << " : err_max = " << resmax.template get<0>() << std::endl;
 
         int index2;
         auto err = maxerr.array().abs().maxCoeff( &index2 );
@@ -666,8 +667,6 @@ EIM<ModelType>::offline()
         {
             std::cout<<" -- expression evaluated in mu in "<<time<<"s"<<std::endl;
         }
-        // scale the residual
-        q.scale( 1./ q( t )( 0, 0, 0 ) );
         M_max_q++;
         DVLOG( 2 ) << "max-q : "<<M_max_q;
         M_model->addBasis( q );
@@ -746,7 +745,14 @@ EIM<ModelType>::offline()
         mu = bestfit.template get<1>();
 
         timer2.restart();
-        solution = M_model->solve( mu );
+        //solution = M_model->solve( mu );
+        if( boption(_name="eim.use-rb-in-mu-selection") )
+        {
+            solution = M_model->computeRbExpansion( mu );
+        }
+        else
+            solution = M_model->solve( mu );
+
         time=timer2.elapsed();
         if( Environment::worldComm().isMasterRank() )
         {
@@ -803,7 +809,7 @@ EIM<ModelType>::offline()
         LOG(INFO) << "[offline] compute arg sup |residual|..." <<"\n";
         //auto resmax = normLinf( _range=elements(M_model->mesh()), _pset=_Q<5>(), _expr=idv(res) );
         auto coeff = M_model->computeExpansionCoefficients( mu ,  solution , M_M-1 );
-        auto z = expansion( M_model->q(), coeff , M_M-1 ); // z= W_{M-1}(\mu_M)
+        auto z = expansion( M_model->q(), coeff , M_M-1 );
 
         if( expression_expansion )
         {
@@ -825,10 +831,12 @@ EIM<ModelType>::offline()
         DVLOG(2) << "[offline] store coordinates where max absolute value is attained : \n" << resmax.template get<1>();
 
         M_model->addParameter( mu );
+        M_model->addInterpolationPoint( t ); // Store interpolation point
         element_type res = M_model->Residual( M_M-1, z );
 
-        DVLOG(2) << "[offline] scale new basis function by " << 1./resmax.template get<0>() << "..." <<"\n";
-        res.scale( 1./res( t )(0,0,0) );
+        //DVLOG(2) << "[offline] scale new basis function by " << 1./resmax.template get<0>() << "..." <<"\n";
+        //std::cout << "[offline] eval (scaling) = " << res( t )(0,0,0) << std::endl;
+        //res.scale( 1./res( t )(0,0,0) );
         DVLOG(2) << "store new basis function..." <<"\n";
 
         //if we want to impose the use of dimension-max functions, we don't want to stop here
@@ -839,7 +847,7 @@ EIM<ModelType>::offline()
             break;
         }
 
-        M_model->addInterpolationPoint( t ); // Store interpolation point
+        //M_model->addInterpolationPoint( t ); // Store interpolation point
         M_model->addBasis( res );
         M_max_q++;
         M_model->setMax(M_M, M_max_q, max_g, max_z, max_solution);
@@ -1468,7 +1476,10 @@ public:
 #if !defined(NDEBUG)
             M_mu.check();
 #endif
-            *M_u = M_model->solve( mu );
+            if( boption(_name="eim.use-rb-in-mu-selection") )
+                *M_u = this->computeRbExpansion( mu );
+            else
+                *M_u = M_model->solve( mu );
 
             //LOG(INFO) << "operator() mu=" << mu << "\n" << "sol=" << M_u << "\n";
             return vf::project( _space=this->functionSpace(), _expr=M_expr );
@@ -1488,7 +1499,12 @@ public:
     vector_type operator()( context_type const& ctx, parameter_type const& mu , int M)
         {
             M_mu=mu;
-            *M_u = M_model->solve( mu );
+            //*M_u = M_model->solve( mu );
+            if( boption(_name="eim.use-rb-in-mu-selection") )
+                *M_u = this->computeRbExpansion( mu );
+            else
+                *M_u = M_model->solve( mu );
+
             //auto projected_expr = vf::project( _space=this->functionSpace(), _expr=M_expr );
             //return evaluateFromContext( _context=ctx, _expr=idv(projected_expr) , _max_points_used=M );
             return evaluateFromContext( _context=ctx, _expr=M_expr , _max_points_used=M, _projection=true );
@@ -1509,7 +1525,6 @@ public:
         M_mu = mu;
         *M_u = solution;
 
-        //if( 0 )// option(_name="eim.compute-expansion-of-expression").template as<bool>() )
         if( boption(_name="eim.compute-expansion-of-expression") )
         {
             rhs = evaluateFromContext( _context=M_ctx, _expr=M_expr );
@@ -1729,6 +1744,7 @@ public:
         }
 
         DVLOG( 2 )<<" M_B : \n "<<M_B;
+        //std::cout <<" M_B : \n "<<M_B<<"\n";
         saveDB();
 
     }//fillInterpolationMatrixFirstTime
@@ -1765,19 +1781,13 @@ public:
             }
 
             vector_type expression_evaluated;
-            double eval = 1;
 
             auto residual = M_expr - idv( M_z_vector[m] );
             expression_evaluated = evaluateFromContext( _context=interpolation_point , _expr=residual );
-            if( proc_number == proc_having_the_point )
-            {
-                eval = expression_evaluated( 0 );
-            }
-            Environment::worldComm().barrier();
-            boost::mpi::broadcast( Environment::worldComm(), eval, proc_having_the_point );
+            double eval = expression_evaluated( 0 );
             auto expression_q  = residual / eval; // __j^th normalized basis function
-            return expression_q;
 
+            return expression_q;
         }
         else
         {
@@ -1795,11 +1805,42 @@ public:
         {
             M_mu = M_mu_sampling->at(m);
             *M_u = M_solution_vector[m];
-            return vf::project( _space=this->functionSpace(), _expr=M_expr - idv(z) );
+            auto residual =  M_expr - idv(z);
+
+            int proc_number = Environment::worldComm().globalRank();
+            auto interpolation_point = this->functionSpace()->context();
+            int proc_having_the_point ;
+            //we want to normalize the expression with its evaluation at
+            //the interpolation point
+            interpolation_point.clear();
+            proc_having_the_point = M_ctx.processorHavingPoint( m );
+            if( proc_number == proc_having_the_point )
+            {
+                auto basis = M_ctx.at( m );
+                interpolation_point.addCtx( basis , proc_number );
+            }
+            vector_type expression_evaluated;
+            element_type res;
+            if( m == 0 )
+            {
+                expression_evaluated = evaluateFromContext( _context=interpolation_point , _expr=M_expr );
+                double eval = expression_evaluated( 0 );
+                res = vf::project( _space=this->functionSpace(), _expr=M_expr/eval );
+            }
+            else
+            {
+                expression_evaluated = evaluateFromContext( _context=interpolation_point , _expr=residual );
+                double eval = expression_evaluated( 0 );
+                res = vf::project( _space=this->functionSpace(), _expr=residual/eval );
+            }
+            return res;
         }
         else
         {
-            return vf::project(_space=this->functionSpace(), _expr=idv(M_g_vector[m]) - idv( z ) );
+            auto residual = vf::project(_space=this->functionSpace(), _expr=idv(M_g_vector[m]) - idv( z ) );
+            auto t = M_t[m];
+            residual.scale( 1./residual(t)(0,0,0) );
+            return residual;
         }
     }
 
@@ -1829,7 +1870,6 @@ public:
 
                 if (!boost::any_cast<expression_type>(&any_q))
                     throw std::logic_error( "[EIM::fillInterpolationMatrix] not cast possible for eim basis function expression" );
-
                 auto q = boost::any_cast<expression_type>( any_q );
                 M_B.col( __j ) = evaluateFromContext( _context=M_ctx, _expr=q );
             }
@@ -1843,6 +1883,7 @@ public:
         }
 
         DVLOG( 2 )<<" M_B : \n "<<M_B;
+        std::cout <<" M_B : \n "<<M_B<<"\n";
         //google::FlushLogFiles(google::GLOG_INFO);
         saveDB();
 
@@ -1866,7 +1907,6 @@ public:
     model_solution_type computeRbExpansion( parameter_type const& mu, boost::mpl::bool_<true>)
     {
         int N = this->M_crb->dimension();
-        std::cout << "computeRbExpansion : N=" << N << std::endl;
         auto WN = M_crb->wn(); //reduced basis approximation space
 
         vectorN_type time;
@@ -1875,7 +1915,6 @@ public:
         auto uN = solutions.template get<0>();//vector of solutions ( one solution at each time step )
 
         int size=uN.size();
-        //std::cout << "solution rb = " << uN[size-1] << std::endl;
         auto u_crb = M_crb->expansion( uN[size-1] , N , WN );
 
         return u_crb;
