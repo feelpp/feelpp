@@ -259,6 +259,10 @@ public:
                                                      fusion::vector< mpl::int_<0>, mpl::int_<1>, mpl::int_<2>, mpl::int_<3>, mpl::int_<4> >
                                                      >::type >::type >::type index_vector_type;
 
+
+    typedef typename model_type::affinedecomposition_type affinedecomposition_type;
+    typedef typename model_type::affinedecomposition_ptrtype affinedecomposition_ptrtype;
+
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
     mutable crbCLContext clContext_;
 #endif
@@ -297,10 +301,10 @@ public:
          model_ptrtype const & model )
         :
         super( ( boost::format( "%1%" ) %ioption("crb.error-type") ).str(),
-        name,
-        ( boost::format( "%1%-%2%-%3%" )
-        %name %ioption("crb.output-index")
-        % ioption("crb.error-type") ).str() ),
+               name,
+               ( boost::format( "%1%-%2%-%3%" )
+                 %name %ioption("crb.output-index")
+                 % ioption("crb.error-type") ).str() ),
         M_elements_database(
         ( boost::format( "%1%" ) %ioption("crb.error-type") ).str(),
             name,
@@ -326,9 +330,11 @@ public:
         M_scmA( new scm_type( name+"_a", model , false /*not scm for mass mastrix*/ )  ),
         M_scmM( new scm_type( name+"_m", model , true /*scm for mass matrix*/ ) ),
         exporter( Exporter<mesh_type>::New( "BasisFunction" ) ),
-        M_database_contains_variance_info( boption("crb.save-information-for-variance"))
+        M_database_contains_variance_info( boption("crb.save-information-for-variance")),
+        M_AD( model->AD() )
     {
         this->setTruthModel( model );
+
         if ( this->loadDB() )
             LOG(INFO) << "Database " << this->lookForDB() << " available and loaded\n";
         //this will be in the offline step (it's only when we enrich or create the database that we want to have access to elements of the RB)
@@ -1248,20 +1254,6 @@ protected:
     //export
     export_ptrtype exporter;
 
-#if 0
-    array_2_type M_C0_pr;
-    array_2_type M_C0_du;
-    array_3_type M_Lambda_pr;
-    array_3_type M_Lambda_du;
-    array_4_type M_Gamma_pr;
-    array_4_type M_Gamma_du;
-    array_3_type M_Cmf_pr;
-    array_3_type M_Cmf_du;
-    array_4_type M_Cma_pr;
-    array_4_type M_Cma_du;
-    array_4_type M_Cmm_pr;
-    array_4_type M_Cmm_du;
-#endif
     std::vector< std::vector< std::vector< std::vector< double > > > > M_C0_pr;
     std::vector< std::vector< std::vector< std::vector< double > > > > M_C0_du;
     std::vector< std::vector< std::vector< std::vector< vectorN_type > > > > M_Lambda_pr;
@@ -1386,6 +1378,7 @@ protected:
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Jqm;
     std::vector< std::vector< std::vector<vector_ptrtype> > > M_Rqm;
 
+    affinedecomposition_ptrtype M_AD;
 };
 
 po::options_description crbOptions( std::string const& prefix = "" );

@@ -87,6 +87,9 @@ public:
     typedef truth_model_type model_type;
     typedef boost::shared_ptr<truth_model_type> truth_model_ptrtype;
 
+    typedef typename model_type::affinedecomposition_type affinedecomposition_type;
+    typedef typename model_type::affinedecomposition_ptrtype affinedecomposition_ptrtype;
+
     typedef double value_type;
     typedef boost::tuple<double,double> bounds_type;
 
@@ -179,7 +182,8 @@ public:
          M_C_complement( new sampling_type( M_Dmu, 1, M_Xi ) ),
          M_scm_for_mass_matrix( false ),
          M_mu_ref( M_Dmu->element() ),
-         M_use_scm( boption("crb.scm.use-scm") )
+         M_use_scm( boption("crb.scm.use-scm") ),
+         M_AD( model->AD() )
         {
             this->setTruthModel( model );
             if ( this->loadDB() )
@@ -206,7 +210,8 @@ public:
         M_C_complement( new sampling_type( M_Dmu, 1, M_Xi ) ),
         M_scm_for_mass_matrix( scm_for_mass_matrix ),
         M_mu_ref( M_Dmu->element() ),
-        M_use_scm( boption("crb.scm.use-scm") )
+        M_use_scm( boption("crb.scm.use-scm") ),
+        M_AD( model->AD())
         {
         this->setTruthModel( model );
         if ( this->loadDB() )
@@ -228,7 +233,8 @@ public:
         M_C_complement( o.M_C_complement ),
         M_scm_for_mass_matrix( o.M_scm_for_mass_matrix ),
         M_mu_ref( o.M_mu_ref ),
-        M_use_scm( o.M_use_scm )
+        M_use_scm( o.M_use_scm ),
+        M_AD( o.M_AD )
     {
     }
 
@@ -340,17 +346,17 @@ public:
     int mMax( int q ) const
     {
         if ( M_scm_for_mass_matrix )
-            return M_model->mMaxM( q );
+            return M_AD->mMaxM( q );
         else
-            return M_model->mMaxA( q );
+            return M_AD->mMaxA( q );
     }
 
     int nb_decomposition_terms_q ( void ) const
     {
         if ( M_scm_for_mass_matrix )
-            return M_model->Qm();
+            return M_AD->Qm();
         else
-            return M_model->Qa();
+            return M_AD->Qa();
     }
 
     //total number of decomposition terms
@@ -517,7 +523,6 @@ public:
 protected:
 
 private:
-private:
     friend class boost::serialization::access;
 
     template<class Archive>
@@ -528,7 +533,6 @@ private:
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 
-private:
 
     bool M_is_initialized;
 
@@ -568,6 +572,8 @@ private:
 
     parameter_type M_mu_ref;
     bool M_use_scm;
+
+    affinedecomposition_ptrtype M_AD;
 };
 
 template<typename TruthModelType>

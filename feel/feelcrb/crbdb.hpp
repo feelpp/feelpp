@@ -72,8 +72,7 @@ public:
 
     //! default constructor
     CRBDB();
-    CRBDB( std::string prefixdir,
-           std::string name,
+    CRBDB( std::string prefixdir,           std::string name,
            std::string dbprefix );
     //! copy constructor
     CRBDB( CRBDB const & );
