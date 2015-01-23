@@ -81,9 +81,8 @@ enum class SamplingMode
  * @author Christophe Prud'homme
  */
     template<typename ModelType,
-             template < typename ReducedMethod > class RM=CRB,
-             template < typename ModelInterface > class Model=CRBModel>
-class OpusApp   : public Application
+             template < typename ReducedMethod > class RM=CRB >
+class OpusApp : public Application
 {
     typedef Application super;
 public:
@@ -102,15 +101,7 @@ public:
 
     typedef Eigen::VectorXd vectorN_type;
 
-#if 0
-    //old
-    typedef CRBModel<ModelType> crbmodel_type;
-    typedef boost::shared_ptr<crbmodel_type> crbmodel_ptrtype;
-    typedef CRB<crbmodel_type> crb_type;
-    typedef boost::shared_ptr<crb_type> crb_ptrtype;
-#endif
-
-    typedef Model<ModelType> crbmodel_type;
+    typedef ModelType crbmodel_type;
     typedef boost::shared_ptr<crbmodel_type> crbmodel_ptrtype;
     typedef RM<crbmodel_type> crb_type;
     typedef boost::shared_ptr<crb_type> crb_ptrtype;
@@ -216,11 +207,11 @@ public:
                 LOG(INFO) << "[OpusApp] set Logs" << "\n";
                 LOG(INFO) << "[OpusApp] mode:" << ( int )M_mode << "\n";
 
-                model = crbmodel_ptrtype( new crbmodel_type( this->vm(),M_mode ) );
+                model = crbmodel_ptrtype( new crbmodel_type() );
+                model->init( M_mode );
                 LOG(INFO) << "[OpusApp] get model done" << "\n";
 
                 crb = crb_ptrtype( new crb_type( this->about().appName(),
-                                                 this->vm() ,
                                                  model ) );
                 LOG(INFO) << "[OpusApp] get crb done" << "\n";
 
