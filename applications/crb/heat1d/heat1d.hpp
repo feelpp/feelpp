@@ -35,7 +35,7 @@
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feelfilters/gmsh.hpp>
 
-#include <feel/feelcrb/modelcrbbase.hpp>
+#include <feel/feelcrb/crbmodelbase.hpp>
 
 
 namespace Feel
@@ -74,16 +74,15 @@ makeHeat1DAbout( std::string const& str = "heat1d" )
  * @author Christophe Prud'homme
  * @see
  */
-class Heat1D : public ModelCrbBase<ParameterSpace<4>, decltype(Pch<5>(Mesh<Simplex<1>>::New()))>
+class Heat1D : public CRBModelBase<ParameterSpace<4>, decltype(Pch<5>(Mesh<Simplex<1>>::New()))>
 {
 public:
 
-    typedef ModelCrbBase<ParameterSpace<4>, decltype(Pch<5>(Mesh<Simplex<1>>::New()))> super_type;
+    typedef CRBModelBase<ParameterSpace<4>, decltype(Pch<5>(Mesh<Simplex<1>>::New()))> super_type;
 
     //! initialisation of the model
     void initModel();
 
-    beta_vector_light_type beta;
     /**
      * Given the output index \p output_index and the parameter \p mu, return
      * the value of the corresponding FEM output
