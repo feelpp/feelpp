@@ -2339,8 +2339,7 @@ public:
             {
                 for(int i = 0; i < M_max_solution; i++ )
                 {
-                    //M_solution_vector.push_back( this->modelFunctionSpace()->element() );
-                    M_solution_vector.push_back( this->functionSpace()->element() );
+                    M_solution_vector.push_back( this->modelFunctionSpace()->element() );
                 }
                 for( int i = 0; i < M_max_solution; ++ i )
                     __ar & BOOST_SERIALIZATION_NVP( M_solution_vector[i] );
