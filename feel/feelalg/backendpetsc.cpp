@@ -53,8 +53,8 @@ BackendPetsc<T>::clear()
 {
     LOG(INFO) << "Deleting linear solver petsc";
     M_solver_petsc.clear();
-    LOG(INFO) << "Deleting non linear solver petsc";
-    M_nl_solver_petsc.clear();
+    //LOG(INFO) << "Deleting non linear solver petsc";
+    //M_nl_solver_petsc.clear();
     LOG(INFO) << "Deleting backend petsc";
 
     super::clear();

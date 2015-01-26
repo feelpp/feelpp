@@ -704,13 +704,13 @@ void SolverNonLinearPetsc<T>::init ()
             PetscPCFactorSetMatSolverPackage( M_pc,this->matSolverPackageType() );
         }
 
-        if ( Environment::vm(_name="snes-monitor",_prefix=this->prefix()).template as<bool>() )
+        if ( this->showSNESMonitor() )
         {
             ierr = SNESMonitorSet( M_snes,SNESMonitorDefault,PETSC_NULL,PETSC_NULL );
             CHKERRABORT( this->worldComm().globalComm(),ierr );
         }
 
-        if ( Environment::vm(_name="ksp-monitor",_prefix=this->prefix()).template as<bool>() )
+        if ( this->showKSPMonitor() )
         {
             ierr = KSPMonitorSet( M_ksp,KSPMonitorDefault,PETSC_NULL,PETSC_NULL );
             CHKERRABORT( this->worldComm().globalComm(),ierr );

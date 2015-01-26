@@ -132,6 +132,27 @@ snesTypeConvertStrToEnum( std::string const& type )
     else if ( type == "aspin" )                     return SolverNonLinearType::ASPIN;
     else                                            return SolverNonLinearType::LINE_SEARCH;
 }
+std::string
+snesTypeConvertEnumToStr( SolverNonLinearType type )
+{
+    /**/ if ( type == SolverNonLinearType::LINE_SEARCH )  return std::string("newtonls");
+    else if ( type == SolverNonLinearType::TRUST_REGION ) return std::string("newtontr");
+    else if ( type == SolverNonLinearType::NRICHARDSON )  return std::string("nrichardson");
+    else if ( type == SolverNonLinearType::NKSPONLY )     return std::string("ksponly");
+    else if ( type == SolverNonLinearType::VINEWTONRSLS ) return std::string("vinewtonrsls");
+    else if ( type == SolverNonLinearType::VINEWTONRSTR ) return std::string("vinewtonssls");
+    else if ( type == SolverNonLinearType::NGMRES )       return std::string("ngmres");
+    else if ( type == SolverNonLinearType::QN )           return std::string("qn");
+    else if ( type == SolverNonLinearType::NSHELL )       return std::string("shell");
+    else if ( type == SolverNonLinearType::GS )           return std::string("gs");
+    else if ( type == SolverNonLinearType::NCG )          return std::string("ncg");
+    else if ( type == SolverNonLinearType::FAS )          return std::string("fas" );
+    else if ( type == SolverNonLinearType::MS )           return std::string("ms" );
+    else if ( type == SolverNonLinearType::NASM )         return std::string("nasm");
+    else if ( type == SolverNonLinearType::ANDERSON )     return std::string("anderson");
+    else if ( type == SolverNonLinearType::ASPIN )        return std::string("aspin" );
+    else                                                  return std::string("newtonls");
+}
 
 MatSolverPackageType
 matSolverPackageConvertStrToEnum( std::string const& type )
