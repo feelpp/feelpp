@@ -788,7 +788,7 @@ void updateBackendKSPOptions( po::options_description & _options, std::string co
           "configure ksp with default petsc options" )
 
         ( prefixvm( prefix,kspctx+"ksp-use-initial-guess-nonzero" ).c_str(),
-          (useDefaultValue)?Feel::po::value<bool>()->default_value( true ):Feel::po::value<bool>(),
+          (useDefaultValue)?Feel::po::value<bool>()->default_value( false ):Feel::po::value<bool>(),
           "tells the iterative solver that the initial guess is nonzero" )
 
         ( prefixvm( prefix,kspctx+"gmres-restart" ).c_str(),
