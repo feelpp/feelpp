@@ -205,7 +205,7 @@ SolverNonLinear<std::complex<double>>::build( std::string const& kind, std::stri
 
     else
     {
-        LOG(INFO) << "[SolverNonLinear] solver " << soption(_name="backend") << " not available\n";
+        LOG(INFO) << "[SolverNonLinear] solver " << kind << " not available\n";
         LOG(INFO) << "[Backend] use fallback  gmm\n";
 #if defined( FEELPP_HAS_PETSC )
         solver_package = SOLVERS_PETSC;
