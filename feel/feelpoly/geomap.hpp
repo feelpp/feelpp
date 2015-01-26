@@ -2124,7 +2124,8 @@ class Inverse
         M_CS( __gm->dim(), __gm->dim() ),
         M_g( M_gm->nbPoints(), __gm->dim() ),
 #if defined( FEELPP_HAS_PETSC )
-        M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC, worldComm ) )
+        //M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC, worldComm ) )
+        M_nlsolver( SolverNonLinear<double>::build( "petsc","", worldComm ) )
 #else
         M_nlsolver( SolverNonLinear<double>::build( SOLVERS_GMM, worldComm ) )
 #endif
@@ -2162,7 +2163,8 @@ class Inverse
         M_CS( __gm->dim(), __gm->dim() ),
         M_g( M_gm->nbPoints(), __gm->dim() ),
 #if defined( FEELPP_HAS_PETSC )
-        M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC,worldComm) )
+        //M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC,worldComm) )
+        M_nlsolver( SolverNonLinear<double>::build( "petsc","", worldComm ) )
 #else
         M_nlsolver( SolverNonLinear<double>::build( SOLVERS_GMM,worldComm ) )
 #endif
