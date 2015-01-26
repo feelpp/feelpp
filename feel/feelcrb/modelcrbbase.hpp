@@ -567,8 +567,8 @@ public :
     }
 
     // Default updateResidual / updateJacobian functions
-    virtual bool updateResidual(vector_ptrtype const& X, std::vector< std::vector<std::vector<vector_ptrtype> > >& Rqm){ return false; }
-    virtual bool updateJacobian(vector_ptrtype const& X, std::vector< std::vector<sparse_matrix_ptrtype> >& Jqm){ return false; }
+    virtual bool updateResidual(element_type const& X, std::vector< std::vector<std::vector<vector_ptrtype> > >& Rqm){ return false; }
+    virtual bool updateJacobian(element_type const& X, std::vector< std::vector<sparse_matrix_ptrtype> >& Jqm){ return false; }
 
     virtual betaq_type computeBetaQ( parameter_type const& mu ,  double time , bool only_terms_time_dependent=false )
     {

@@ -868,8 +868,10 @@ public:
     element_type solveFemUsingAffineDecompositionNewton( parameter_type const& mu );
     void solveFemUpdateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype & J , const parameter_type & mu);
     void solveFemUpdateResidual( const vector_ptrtype& X, vector_ptrtype& R , const parameter_type & mu);
-    bool updateJacobian( const vector_ptrtype& X, std::vector< std::vector<sparse_matrix_ptrtype> >& Jqm);
-    bool updateResidual( const vector_ptrtype& X, std::vector< std::vector< std::vector<vector_ptrtype> > >& Rqm);
+    bool updateJacobian( vector_ptrtype const& X, std::vector< std::vector<sparse_matrix_ptrtype> >& Jqm);
+    bool updateJacobian( element_type const& X, std::vector< std::vector<sparse_matrix_ptrtype> >& Jqm);
+    bool updateResidual( vector_ptrtype const& X, std::vector< std::vector< std::vector<vector_ptrtype> > >& Rqm);
+    bool updateResidual( element_type const& X, std::vector< std::vector< std::vector<vector_ptrtype> > >& Rqm);
     element_type solveFemDualUsingAffineDecompositionFixedPoint( parameter_type const& mu );
     element_type solveFemUsingOfflineEim( parameter_type const& mu );
 
@@ -1766,7 +1768,6 @@ public:
         return boost::make_tuple( M_Mqm, M_Aqm, M_Fqm );
     }
 
-
     std::vector< std::vector<element_ptrtype> > computeInitialGuessAffineDecomposition( )
     {
         return M_model->computeInitialGuessAffineDecomposition( );
@@ -1784,7 +1785,6 @@ public:
         }
         return M_InitialGuessV;
     }
-
 
     /**
      * \brief Returns the matrix \c Aq[q][m] of the affine decomposition of the bilinear form
@@ -2072,7 +2072,6 @@ public:
     {
         return M_model->betaInitialGuessQm();
     }
-
 
     /**
      * \brief the vector \c Fq[q][m] of the affine decomposition of the right hand side
@@ -3374,14 +3373,30 @@ CRBModel<TruthModelType>::solveFemUpdateResidual( const vector_ptrtype& X, vecto
 
 template<typename TruthModelType>
 bool
-CRBModel<TruthModelType>::updateJacobian( const vector_ptrtype& X, std::vector< std::vector<sparse_matrix_ptrtype> >& Jqm )
+CRBModel<TruthModelType>::updateJacobian( vector_ptrtype const& X, std::vector< std::vector<sparse_matrix_ptrtype> >& Jqm )
+{
+    element_type u = this->functionSpace()->element();
+    u = *X;
+    return this->updateJacobian( u, Jqm );
+}
+template<typename TruthModelType>
+bool
+CRBModel<TruthModelType>::updateJacobian( element_type const& X, std::vector< std::vector<sparse_matrix_ptrtype> >& Jqm )
 {
     return M_model->updateJacobian( X, Jqm );
 }
 
 template<typename TruthModelType>
 bool
-CRBModel<TruthModelType>::updateResidual( const vector_ptrtype& X, std::vector< std::vector< std::vector<vector_ptrtype> > >& Rqm)
+CRBModel<TruthModelType>::updateResidual( vector_ptrtype const& X, std::vector< std::vector< std::vector<vector_ptrtype> > >& Rqm)
+{
+    element_type u = this->functionSpace()->element();
+    u = *X;
+    return this->updateResidual( u, Rqm );
+}
+template<typename TruthModelType>
+bool
+CRBModel<TruthModelType>::updateResidual( element_type const& X, std::vector< std::vector< std::vector<vector_ptrtype> > >& Rqm)
 {
     return M_model->updateResidual( X, Rqm );
 }
