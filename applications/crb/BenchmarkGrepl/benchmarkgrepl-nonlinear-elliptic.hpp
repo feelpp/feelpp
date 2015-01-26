@@ -96,9 +96,10 @@ public :
 
     /*basis*/
     typedef bases<Lagrange<Order, Scalar> > basis_type;
-
+    typedef bases<Lagrange<Order + 2, Scalar> > basis_type_eimg;
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
+    typedef FunctionSpace<mesh_type, basis_type_eimg, value_type> space_type_eimg;
 
     typedef typename space_type::element_type element_type;
 
@@ -110,13 +111,13 @@ class EimDefinition
 public :
     typedef typename ParameterDefinition::parameterspace_type parameterspace_type;
     typedef typename FunctionSpaceDefinition::space_type space_type;
-
+    typedef typename FunctionSpaceDefinition::space_type_eimg space_type_eimg;
 
     /* EIM */
     // Scalar continuous //
-    typedef EIMFunctionBase<space_type, space_type , parameterspace_type> fun_type;
+    typedef EIMFunctionBase<space_type_eimg, space_type , parameterspace_type> fun_type;
     // Scalar Discontinuous //
-    typedef EIMFunctionBase<space_type, space_type , parameterspace_type> fund_type;
+    typedef EIMFunctionBase<space_type_eimg, space_type , parameterspace_type> fund_type;
 
 };
 
@@ -157,6 +158,8 @@ public:
 
     typedef typename FunctionSpaceDefinition<Order>::space_type space_type;
     typedef typename boost::shared_ptr<space_type> space_ptrtype;
+    typedef typename FunctionSpaceDefinition<Order>::space_type_eimg space_type_eimg;
+    typedef typename boost::shared_ptr<space_type_eimg> space_ptrtype_eimg;
 
     typedef typename super_type::beta_vector_type beta_vector_type;
     typedef typename super_type::affine_decomposition_type affine_decomposition_type;
@@ -241,6 +244,7 @@ public:
     {
         auto eim_g = M_funs[0];
         int M = eim_g->mMax();
+
         auto beta_g=*betas[0];
 
         if( M_use_newton )
@@ -311,7 +315,7 @@ public:
 
     void assembleResidualWithAffineDecomposition(std::vector< std::vector<std::vector<vector_ptrtype> > >& Rqm);
     void assembleJacobianWithAffineDecomposition(std::vector<std::vector<sparse_matrix_ptrtype> > & Jqm);
-    bool updateResidual(vector_ptrtype const& X, std::vector< std::vector<std::vector<vector_ptrtype> > >& Rqm);
+    bool updateResidual(element_type const& X, std::vector< std::vector<std::vector<vector_ptrtype> > >& Rqm);
     void updateResidualMonolithic(vector_ptrtype const& X, vector_ptrtype & R, parameter_type const& mu);
     void updateJacobianMonolithic(vector_ptrtype const& X, sparse_matrix_ptrtype & J, parameter_type const& mu);
     monolithic_type computeMonolithicFormulationU( parameter_type const& mu , element_type const& solution );
@@ -336,37 +340,6 @@ private:
     std::vector< std::vector< element_ptrtype > > M_InitialGuess;
 
 };
-
-
-#if 0
-template<int Order>
-gmsh_ptrtype
-BenchmarkGreplNonlinearElliptic<Order>::createGeo( double hsize )
-{
-    gmsh_ptrtype gmshp( new Gmsh );
-    std::ostringstream ostr;
-    double H = hsize;
-    ostr <<"Point (1) = {0, 0, 0,"<< H <<"};\n"
-         <<"Point (2) = {1, 0, 0,"<< H <<"};\n"
-         <<"Point (3) = {1, 1, 0,"<< H <<"};\n"
-         <<"Point (4) = {0, 1, 0,"<< H <<"};\n"
-         <<"Line (11) = {1,2};\n"
-         <<"Line (12) = {2,3};\n"
-         <<"Line (13) = {3,4};\n"
-         <<"Line (14) = {4,1};\n"
-         <<"Line Loop (21) = {11, 12, 13, 14};\n"
-         <<"Plane Surface (30) = {21};\n"
-         <<"Physical Line (\"boundaries\") = {11,12,13,14};\n"
-         <<"Physical Surface (\"Omega\") = {30};\n"
-         ;
-    std::ostringstream nameStr;
-    nameStr.precision( 3 );
-    nameStr << "benchmarkgrepl_geo";
-    gmshp->setPrefix( nameStr.str() );
-    gmshp->setDescription( ostr.str() );
-    return gmshp;
-}
-#endif
 
 template<int Order>
 void BenchmarkGreplNonlinearElliptic<Order>::initModel()
@@ -402,6 +375,7 @@ void BenchmarkGreplNonlinearElliptic<Order>::initModel()
      * The function space and some associate elements are then defined
      */
     Xh = space_type::New( mesh );
+    space_ptrtype_eimg Xh_eimg = space_type_eimg::New( mesh );
     this->setFunctionSpaces( Xh );
 
     if( Environment::worldComm().isMasterRank() )
@@ -453,7 +427,7 @@ void BenchmarkGreplNonlinearElliptic<Order>::initModel()
 
     auto eim_g = eim( _model=boost::dynamic_pointer_cast< BenchmarkGreplNonlinearElliptic<Order> >( this->shared_from_this() ),
                       _element=*pT,
-                      _space=Xh,
+                      _space=Xh_eimg,
                       _parameter=M_mu,
                       _expr=( cst_ref(M_mu(0))/cst_ref(M_mu(1)) )*( exp( cst_ref(M_mu(1))*idv(*pT) ) - 1 ),
                       _sampling=Pset,
@@ -494,7 +468,6 @@ void BenchmarkGreplNonlinearElliptic<Order>::initModel()
         this->M_Rqm[1].resize( 1 );
         this->M_Rqm[0][0].resize(1);
         this->M_Rqm[0][0][0] = backend()->newVector( this->Xh );
-
         this->M_Rqm[0][1].resize( M );
         for(int m=0; m<M; m++)
         {
@@ -586,8 +559,6 @@ BenchmarkGreplNonlinearElliptic<Order>::assembleResidualWithAffineDecomposition(
     auto v = Xh->element(); //test
     auto eim_g = M_funs[0];
     int M = eim_g->mMax();
-    //auto eim_u = M_funs[1];
-    //int Mu = eim_u->mMax();
     auto u = Xh->element();
     u = *this->M_InitialGuess[0][0];
     double gamma = option(_name="gamma").template as<double>();
@@ -621,15 +592,17 @@ BenchmarkGreplNonlinearElliptic<Order>::assembleResidualWithAffineDecomposition(
 
 }
 
+#if 1
 template <int Order>
 bool
-BenchmarkGreplNonlinearElliptic<Order>::updateResidual(vector_ptrtype const& X, std::vector< std::vector<std::vector<vector_ptrtype> > >& Rqm)
+BenchmarkGreplNonlinearElliptic<Order>::updateResidual(element_type const& X, std::vector< std::vector<std::vector<vector_ptrtype> > >& Rqm)
 {
     auto Xh = this->Xh;
     auto u = Xh->element();
     auto v = Xh->element(); //test
     double gamma = option(_name="gamma").template as<double>();
-    u = *X;
+    //u = *X;
+    u = X;
     Rqm[0][0][0] = backend()->newVector( this->Xh );
     form1( _test=Xh, _vector=Rqm[0][0][0] ) =
         integrate( _range= elements( mesh ), _expr = gradv(u)*trans(grad(v)) );
@@ -644,6 +617,7 @@ BenchmarkGreplNonlinearElliptic<Order>::updateResidual(vector_ptrtype const& X, 
     // this->M_betaRqm[0][0][0] = 1;
     return true;
 }
+#endif
 
 template <int Order>
 void
