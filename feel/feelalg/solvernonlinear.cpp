@@ -37,15 +37,16 @@ namespace Feel
 {
 template <typename T>
 inline
-SolverNonLinear<T>::SolverNonLinear (WorldComm const& worldComm)
+SolverNonLinear<T>::SolverNonLinear ( std::string const& prefix, WorldComm const& worldComm )
     :
     residual        ( 0 ),
     jacobian        ( 0 ),
     matvec          ( 0 ),
+    M_prefix( prefix ),
     M_worldComm( worldComm ),
     M_is_initialized ( false ),
     M_prec_matrix_structure( SAME_NONZERO_PATTERN ),
-    M_snl_type( SELECT_IN_ARGLIST ),
+    M_snl_type( snesTypeConvertStrToEnum( soption(_prefix=prefix,_name="snes-type" ) ) ),
     M_kspSolver_type( GMRES ),
     M_preconditioner_type( LU_PRECOND ),
     M_preconditioner(),
@@ -56,8 +57,10 @@ SolverNonLinear<T>::SolverNonLinear (WorldComm const& worldComm)
     M_nbItMax( 0 ),
     M_reuse_jac( 0 ),
     M_reuse_prec( 0 ),
-    M_showKSPMonitor(false), M_showSNESMonitor(false),
-    M_showKSPConvergedReason( false ), M_showSNESConvergedReason( false ),
+    M_showKSPMonitor( boption(_prefix=prefix,_name="ksp-monitor") ),
+    M_showSNESMonitor( boption(_prefix=prefix,_name="snes-monitor" ) ),
+    M_showKSPConvergedReason( Environment::vm().count(prefixvm( prefix,"ksp-converged-reason" )) ),
+    M_showSNESConvergedReason( Environment::vm().count(prefixvm( prefix,"snes-converged-reason" )) ),
     M_rtoleranceKSP( 1e-13 ),
     M_dtoleranceKSP( 1e5 ),
     M_atoleranceKSP( 1e-50 ),
@@ -72,6 +75,7 @@ SolverNonLinear<T>::SolverNonLinear ( SolverNonLinear const& snl )
     residual        ( snl.residual ),
     jacobian        ( snl.jacobian ),
     matvec          ( snl.matvec ),
+    M_prefix( snl.M_prefix ),
     M_worldComm( snl.M_worldComm ),
     M_is_initialized( snl.M_is_initialized ),
     M_prec_matrix_structure( snl.M_prec_matrix_structure ),
@@ -104,20 +108,33 @@ SolverNonLinear<T>::~SolverNonLinear ()
 {
     this->clear ();
 }
+
 template <typename T>
 boost::shared_ptr<SolverNonLinear<T> >
 SolverNonLinear<T>::build( po::variables_map const& vm, std::string const& prefix, WorldComm const& worldComm )
 {
+    return build( prefix,worldComm );
+}
+template <typename T>
+boost::shared_ptr<SolverNonLinear<T> >
+SolverNonLinear<T>::build( std::string const& prefix, WorldComm const& worldComm )
+{
+    return build( soption(_name="backend"),prefix,worldComm );
+}
+template <typename T>
+boost::shared_ptr<SolverNonLinear<T> >
+SolverNonLinear<T>::build( std::string const& kind, std::string const& prefix, WorldComm const& worldComm )
+{
     SolverPackage solver_package=SOLVER_INVALID_PACKAGE;
 
-    if ( vm["backend"].template as<std::string>() == "petsc" )
+    if ( kind == "petsc" )
     {
 #if defined( FEELPP_HAS_PETSC )
         solver_package = SOLVERS_PETSC;
 #endif
     }
 
-    else if ( vm["backend"].template as<std::string>() == "trilinos" )
+    else if ( kind == "trilinos" )
     {
 #if defined( FEELPP_HAS_TRILINOS )
         solver_package = SOLVERS_TRILINOS;
@@ -126,7 +143,7 @@ SolverNonLinear<T>::build( po::variables_map const& vm, std::string const& prefi
 
     else
     {
-        LOG(INFO) << "[SolverNonLinear] solver " << vm["backend"].template as<std::string>() << " not available\n";
+        LOG(INFO) << "[SolverNonLinear] solver " << kind << " not available\n";
 #if defined( FEELPP_HAS_PETSC )
         solver_package = SOLVERS_PETSC;
 #endif
@@ -141,7 +158,7 @@ SolverNonLinear<T>::build( po::variables_map const& vm, std::string const& prefi
     {
 
 
-        solvernonlinear_ptrtype ap( new SolverNonLinearPetsc<T>( worldComm ) );
+        solvernonlinear_ptrtype ap( new SolverNonLinearPetsc<T>( prefix,worldComm ) );
         return ap;
     }
     break;
@@ -151,7 +168,7 @@ SolverNonLinear<T>::build( po::variables_map const& vm, std::string const& prefi
 
     case SOLVERS_TRILINOS:
     {
-        solvernonlinear_ptrtype ap( new SolverNonLinearTrilinos<T>( worldComm )  );
+        solvernonlinear_ptrtype ap( new SolverNonLinearTrilinos<T>( prefix,worldComm )  );
         return ap;
     }
     break;
@@ -166,21 +183,20 @@ SolverNonLinear<T>::build( po::variables_map const& vm, std::string const& prefi
 
     return solvernonlinear_ptrtype();
 }
-
 template <>
 boost::shared_ptr<SolverNonLinear<std::complex<double>> >
-SolverNonLinear<std::complex<double>>::build( po::variables_map const& vm, std::string const& prefix, WorldComm const& worldComm )
+SolverNonLinear<std::complex<double>>::build( std::string const& kind, std::string const& prefix, WorldComm const& worldComm )
 {
     SolverPackage solver_package=SOLVER_INVALID_PACKAGE;
 
-    if ( soption(_name="backend") == "petsc" )
+    if ( kind == "petsc" )
     {
 #if defined( FEELPP_HAS_PETSC )
         solver_package = SOLVERS_PETSC;
 #endif
     }
 
-    else if ( soption(_name="backend") == "trilinos" )
+    else if ( kind == "trilinos" )
     {
 #if defined( FEELPP_HAS_TRILINOS )
         solver_package = SOLVERS_TRILINOS;
@@ -205,7 +221,7 @@ SolverNonLinear<std::complex<double>>::build( po::variables_map const& vm, std::
     {
 
 
-        solvernonlinear_ptrtype ap( new SolverNonLinearPetsc<T>( worldComm ) );
+        solvernonlinear_ptrtype ap( new SolverNonLinearPetsc<T>( prefix,worldComm ) );
         return ap;
     }
     break;
@@ -215,7 +231,7 @@ SolverNonLinear<std::complex<double>>::build( po::variables_map const& vm, std::
 
     case SOLVERS_TRILINOS:
     {
-        solvernonlinear_ptrtype ap( new SolverNonLinearTrilinos<T>( worldComm )  );
+        solvernonlinear_ptrtype ap( new SolverNonLinearTrilinos<T>( prefix,worldComm )  );
         return ap;
     }
     break;
@@ -252,7 +268,7 @@ SolverNonLinear<T>::build( SolverPackage solver_package, WorldComm const& worldC
     {
 
 #if defined( FEELPP_HAS_PETSC )
-        solvernonlinear_ptrtype ap(new SolverNonLinearPetsc<T>( worldComm ) );
+        solvernonlinear_ptrtype ap(new SolverNonLinearPetsc<T>( "",worldComm ) );
         return ap;
 #else
         std::cerr << "PETSc is not available/installed" << std::endl;
@@ -264,7 +280,7 @@ SolverNonLinear<T>::build( SolverPackage solver_package, WorldComm const& worldC
     case SOLVERS_TRILINOS:
     {
 #if defined( FEELPP_HAS_TRILINOS )
-        solvernonlinear_ptrtype ap( new SolverNonLinearTrilinos<T>( worldComm ) );
+        solvernonlinear_ptrtype ap( new SolverNonLinearTrilinos<T>( "",worldComm ) );
         return ap;
 #else
         std::cerr << "Trilinos NOX is not available/installed" << std::endl;
@@ -305,7 +321,7 @@ SolverNonLinear<std::complex<double>>::build( SolverPackage solver_package, Worl
     {
 
 #if defined( FEELPP_HAS_PETSC ) && defined (PETSC_HAS_COMPLEX_SUPPORT )
-        solvernonlinear_ptrtype ap(new SolverNonLinearPetsc<T>( worldComm ) );
+        solvernonlinear_ptrtype ap(new SolverNonLinearPetsc<T>( "",worldComm ) );
         return ap;
 #else
         std::cerr << "PETSc is not available/installed" << std::endl;
@@ -317,7 +333,7 @@ SolverNonLinear<std::complex<double>>::build( SolverPackage solver_package, Worl
     case SOLVERS_TRILINOS:
     {
 #if defined( FEELPP_HAS_TRILINOS )
-        solvernonlinear_ptrtype ap( new SolverNonLinearTrilinos<T>( worldComm ) );
+        solvernonlinear_ptrtype ap( new SolverNonLinearTrilinos<T>( "",worldComm ) );
         return ap;
 #else
         std::cerr << "Trilinos NOX is not available/installed" << std::endl;

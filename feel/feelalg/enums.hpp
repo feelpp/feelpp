@@ -322,6 +322,8 @@ kspTypeConvertStrToEnum( std::string const& type );
 
 SolverNonLinearType
 snesTypeConvertStrToEnum( std::string const& type );
+std::string
+snesTypeConvertEnumToStr( SolverNonLinearType type );
 
 MatSolverPackageType
 matSolverPackageConvertStrToEnum( std::string const& type );

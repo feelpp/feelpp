@@ -72,13 +72,12 @@ Backend<T>::Backend( WorldComm const& worldComm )
     M_maxitSNESReuse( M_maxitSNES ),
     M_export( "" ),
     M_ksp( "gmres" ),
-    M_snesType( "ls" ),
     M_pc( "lu" ),
     M_fieldSplit( "additive" ),
     M_pcFactorMatSolverPackage( "petsc" ),
     M_constant_null_space( false ),
-    M_showKSPMonitor( false ), M_showSNESMonitor( false ),
-    M_showKSPConvergedReason( false ), M_showSNESConvergedReason( false )
+    M_showKSPMonitor( false ),
+    M_showKSPConvergedReason( false )
 {
     if ( M_worldComm.globalSize() > 1 )
         M_pc = "gasm";
@@ -114,15 +113,12 @@ Backend<T>::Backend( Backend const& backend )
     M_maxitSNESReuse( backend.M_maxitSNESReuse ),
     M_export( backend.M_export ),
     M_ksp( backend.M_ksp ),
-    M_snesType( backend.M_snesType ),
     M_pc( backend.M_pc ),
     M_fieldSplit( backend.M_fieldSplit ),
     M_pcFactorMatSolverPackage( backend.M_pcFactorMatSolverPackage ),
     M_constant_null_space( backend.M_constant_null_space ),
     M_showKSPMonitor( backend.M_showKSPMonitor ),
-    M_showSNESMonitor( backend.M_showSNESMonitor ),
-    M_showKSPConvergedReason( backend.M_showKSPConvergedReason ),
-    M_showSNESConvergedReason( backend.M_showSNESConvergedReason )
+    M_showKSPConvergedReason( backend.M_showKSPConvergedReason )
 {
 }
 template <typename T>
@@ -131,7 +127,7 @@ Backend<T>::Backend( po::variables_map const& vm, std::string const& prefix, Wor
     M_worldComm( worldComm ),
     M_vm( vm ),
     M_prefix( prefix ),
-    M_nlsolver( solvernonlinear_type::build( vm, prefix, worldComm ) ),
+    M_nlsolver( solvernonlinear_type::build( prefix, worldComm ) ),
     M_prec_matrix_structure( SAME_NONZERO_PATTERN ),
     M_rtolerance( vm[prefixvm( prefix,"ksp-rtol" )].template as<double>() ),
     M_dtolerance( vm[prefixvm( prefix,"ksp-dtol" )].template as<double>() ),
@@ -155,15 +151,12 @@ Backend<T>::Backend( po::variables_map const& vm, std::string const& prefix, Wor
     M_maxitSNESReuse( (vm.count(prefixvm( prefix,"snes-maxit-reuse")))? vm[prefixvm( prefix,"snes-maxit-reuse" )].template as<size_type>() : M_maxitSNES ),
     M_export( vm[prefixvm( prefix,"export-matlab" )].template as<std::string>() ),
     M_ksp( vm[prefixvm( prefix,"ksp-type" )].template as<std::string>() ),
-    M_snesType( vm[prefixvm( prefix,"snes-type" )].template as<std::string>() ),
     M_pc( vm[prefixvm( prefix,"pc-type" )].template as<std::string>() ),
     M_fieldSplit( vm[prefixvm( prefix,"fieldsplit-type" )].template as<std::string>() ),
     M_pcFactorMatSolverPackage( vm[prefixvm( prefix,"pc-factor-mat-solver-package-type" )].template as<std::string>() ),
     M_constant_null_space( vm[prefixvm( prefix,"constant-null-space" )].template as<bool>() ),
     M_showKSPMonitor( vm.count(prefixvm( prefix,"ksp-monitor" )) ),
-    M_showSNESMonitor( vm.count(prefixvm( prefix,"snes-monitor" )) ),
-    M_showKSPConvergedReason( vm.count(prefixvm( prefix,"ksp-converged-reason" )) ),
-    M_showSNESConvergedReason( vm.count(prefixvm( prefix,"snes-converged-reason" )) )
+    M_showKSPConvergedReason( vm.count(prefixvm( prefix,"ksp-converged-reason" )) )
 {
 }
 template <typename T>
@@ -375,15 +368,10 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
 {
     MatrixStructure matStructInitial = this->precMatrixStructure();
 
-    M_nlsolver->setType( this->snesEnumType() );
     M_nlsolver->setPreconditionerType( this->pcEnumType() );
     M_nlsolver->setKspSolverType( this->kspEnumType() );
     M_nlsolver->setMatSolverPackageType( this->matSolverPackageEnumType() );
     M_nlsolver->setPrecMatrixStructure( this->precMatrixStructure() );
-    M_nlsolver->setShowSNESMonitor( this->showSNESMonitor() );
-    M_nlsolver->setShowKSPMonitor( this->showKSPMonitor() );
-    M_nlsolver->setShowKSPConvergedReason( this->showKSPConvergedReason() );
-    M_nlsolver->setShowSNESConvergedReason( this->showSNESConvergedReason() );
 
     M_nlsolver->setNbItMax( this->maxIterationsSNES() );
     M_nlsolver->setRelativeResidualTol( this->rToleranceSNES() );
@@ -486,15 +474,10 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
                      const double tol, const int its )
 {
 
-    M_nlsolver->setType( this->snesEnumType() );
     M_nlsolver->setPreconditionerType( this->pcEnumType() );
     M_nlsolver->setKspSolverType( this->kspEnumType() );
     M_nlsolver->setMatSolverPackageType( this->matSolverPackageEnumType() );
     M_nlsolver->setPrecMatrixStructure( this->precMatrixStructure() );
-    M_nlsolver->setShowSNESMonitor( this->showSNESMonitor() );
-    M_nlsolver->setShowKSPMonitor( this->showKSPMonitor() );
-    M_nlsolver->setShowKSPConvergedReason( this->showKSPConvergedReason() );
-    M_nlsolver->setShowSNESConvergedReason( this->showSNESConvergedReason() );
     M_nlsolver->setNbItMax( this->maxIterationsSNES() );
     M_nlsolver->setRelativeResidualTol( this->rToleranceSNES() );
     M_nlsolver->setAbsoluteResidualTol( this->aToleranceSNES() );
