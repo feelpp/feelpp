@@ -1265,7 +1265,6 @@ public:
     double computeOnlineDualApee( int N , parameter_type const& mu , vectorN_type const & uNdu, vectorN_type const & uNduold=vectorN_type(), double dt=1e30, double time=1e30 ) const ;
     //@}
 
-
 protected:
     crb_elements_db_type M_elements_database;
 
@@ -1450,7 +1449,6 @@ protected:
 
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Jqm;
     std::vector< std::vector< std::vector<vector_ptrtype> > > M_Rqm;
-
 };
 
 po::options_description crbOptions( std::string const& prefix = "" );
@@ -1893,15 +1891,13 @@ CRB<TruthModelType>::offlineNewtonPrimal( parameter_type const& mu )
     beta_vector_type betaJqm;
     std::vector< beta_vector_type > betaRqm;
 
-    boost::tie( boost::tuples::ignore , M_Jqm, M_Rqm ) = M_model->computeAffineDecomposition();
-
+    boost::tie( boost::tuples::ignore, M_Jqm, M_Rqm ) = M_model->computeAffineDecomposition();
 
     M_backend_primal->nlSolver()->jacobian = boost::bind( &self_type::offlineUpdateJacobian,
                                                           boost::ref( *this ), _1, _2, mu );
     M_backend_primal->nlSolver()->residual = boost::bind( &self_type::offlineUpdateResidual,
                                                           boost::ref( *this ), _1, _2, mu );
     M_backend_primal->nlSolver()->setType( TRUST_REGION );
-    //M_backend_primal->setSnesType( "newtontr" );
 
     auto solution = M_model->functionSpace()->element();
     M_backend_primal->nlSolve(_jacobian=J, _solution=solution, _residual=R);
@@ -3112,8 +3108,8 @@ CRB<TruthModelType>::offline()
                     {
                         for ( size_type j = 0; j < M_N; ++j )
                         {
-                            M_Jqm_pr[q][m]( i, j ) = Jqm[q][m]->energy( M_model->rBFunctionSpace()->primalBasisElement(i), M_model->rBFunctionSpace()->primalBasisElement(j) );
-                            //M_Jqm_pr[q][m]( i, j ) = Jqm[q][m]->energy( M_WN[i], M_WN[j] );
+                            // M_Jqm_pr[q][m]( i, j ) = Jqm[q][m]->energy( M_model->rBFunctionSpace()->primalBasisElement(i), M_model->rBFunctionSpace()->primalBasisElement(j) );
+                            M_Jqm_pr[q][m]( i, j ) = M_Jqm[q][m]->energy( M_model->rBFunctionSpace()->primalBasisElement(i), M_model->rBFunctionSpace()->primalBasisElement(j) );
                         }
                     }
 
@@ -3122,7 +3118,7 @@ CRB<TruthModelType>::offline()
                         for ( size_type i = 0; i < M_N; ++i )
                         {
                             M_Jqm_pr[q][m]( i, j ) = Jqm[q][m]->energy( M_model->rBFunctionSpace()->primalBasisElement(i), M_model->rBFunctionSpace()->primalBasisElement(j) );
-                            //M_Jqm_pr[q][m]( i, j ) = Jqm[q][m]->energy( M_WN[i], M_WN[j] );
+                            M_Jqm_pr[q][m]( i, j ) = M_Jqm[q][m]->energy( M_model->rBFunctionSpace()->primalBasisElement(i), M_model->rBFunctionSpace()->primalBasisElement(j) );
                         }
                     }
                 }//loop over m
@@ -4672,12 +4668,36 @@ CRB<TruthModelType>::updateJacobian( const map_dense_vector_type& map_X, map_den
     //map_J.setZero( N , N );
     map_J.setZero( );
     beta_vector_type betaJqm;
+    typedef std::vector< std::vector<sparse_matrix_ptrtype> > Jqm_type;
+    typedef std::vector < std::vector<matrixN_type> > Jqm_pr_type;
+    bool up = false;
 
     bool load_elements_db=option(_name="crb.load-elements-database").template as<bool>();
     if( load_elements_db )
+    {
         boost::tie( boost::tuples::ignore, betaJqm, boost::tuples::ignore ) = M_model->computeBetaQm( this->expansion( map_X , N , M_model->rBFunctionSpace()->primalRB()  ), mu , 0 );
+        up = M_model->updateJacobian( this->expansion( map_X , N , M_model->rBFunctionSpace()->primalRB()  ), const_cast<Jqm_type&>(this->M_Jqm) );
+    }
     else
         boost::tie( boost::tuples::ignore,betaJqm, boost::tuples::ignore ) = M_model->computeBetaQm( mu , 0 );
+
+    if( up ) // If affine decomposition of J needed bo te updated
+    {
+        for  (size_type q = 0; q < M_model->Qa(); ++q )
+        {
+            for( size_type m = 0; m < M_model->mMaxA(q); ++m )
+            {
+                for ( size_type i = 0; i < N; i++ )
+                {
+                    for ( size_type j = 0; j < N; ++j )
+                    {
+                        const_cast<Jqm_pr_type&>(M_Jqm_pr)[q][m]( i, j ) = M_Jqm[q][m]->energy( M_model->rBFunctionSpace()->primalBasisElement(i),
+                                                                                                M_model->rBFunctionSpace()->primalBasisElement(j) );
+                    }
+                }
+            }
+        }
+    }
 
     for ( size_type q = 0; q < M_model->Qa(); ++q )
     {
@@ -4693,11 +4713,32 @@ CRB<TruthModelType>::updateResidual( const map_dense_vector_type& map_X, map_den
 {
     map_R.setZero( );
     std::vector<beta_vector_type> betaRqm;
+    typedef std::vector< std::vector<std::vector<vector_ptrtype> > > Rqm_type;
+    typedef std::vector < std::vector<vectorN_type> > Rqm_pr_type;
+
+    bool up = false;
     bool load_elements_db=option(_name="crb.load-elements-database").template as<bool>();
     if( load_elements_db )
+    {
         boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaRqm ) = M_model->computeBetaQm( this->expansion( map_X , N , M_model->rBFunctionSpace()->primalRB()  ), mu , 0 );
+        up = M_model->updateResidual( this->expansion( map_X , N , M_model->rBFunctionSpace()->primalRB()  ), const_cast<Rqm_type&>(this->M_Rqm) );
+    }
     else
         boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaRqm ) = M_model->computeBetaQm( mu , 0 );
+
+    if( up ) // If affine decomposition of R needed bo te updated
+    {
+        for ( size_type q = 0; q < M_model->Ql( 0 ); ++q )
+        {
+            for( size_type m = 0; m < M_model->mMaxF( 0, q ); ++m )
+            {
+                for( int basis = 0; basis<N; basis++ )
+                    const_cast<Rqm_pr_type&>(M_Rqm_pr)[q][m](basis) = inner_product( *M_Rqm[0][q][m],
+                                                                                     M_model->rBFunctionSpace()->primalBasisElement(basis) );
+
+            }
+        }
+    }
 
     for ( size_type q = 0; q < M_model->Ql( 0 ); ++q )
     {
@@ -4725,6 +4766,10 @@ CRB<TruthModelType>::newton(  size_type N, parameter_type const& mu , vectorN_ty
     Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic , 1> > map_uN ( uN_data, N );
     Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic , Eigen::Dynamic> > map_J ( j_data, N , N );
 
+    typedef std::vector< std::vector<std::vector<vector_ptrtype> > > Rqm_type;
+    typedef std::vector < std::vector<vectorN_type> > Lqm_type;
+    bool up = false;
+
     computeProjectionInitialGuess( mu , N , uN );
 
     M_nlsolver->map_dense_jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2  , mu , N );
@@ -4743,9 +4788,33 @@ CRB<TruthModelType>::newton(  size_type N, parameter_type const& mu , vectorN_ty
     std::vector<beta_vector_type> betaRqm;
     bool load_elements_db=option(_name="crb.load-elements-database").template as<bool>();
     if( load_elements_db )
+    {
         boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaRqm ) = M_model->computeBetaQm( this->expansion( uN , N , M_model->rBFunctionSpace()->primalRB()  ), mu , 0 );
+        up = M_model->updateResidual( this->expansion( uN , N , M_model->rBFunctionSpace()->primalRB()  ), const_cast<Rqm_type&>(this->M_Rqm) );
+    }
     else
         boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaRqm ) = M_model->computeBetaQm( mu , 0 );
+
+    //update Lqm_pr if needed
+    if( up )
+    {
+        std::cout << "N = " << N << std::endl;
+        for ( size_type q = 0; q < M_model->Ql( M_output_index ); ++q )
+        {
+            for( size_type m = 0; m < M_model->mMaxF( M_output_index, q ); ++m )
+            {
+                for( int basis = 0; basis<N; basis++ )
+                {
+                    const_cast<Lqm_type&>(M_Lqm_pr)[q][m]( basis ) = inner_product( *M_Rqm[M_output_index][q][m],
+                                                                                       M_model->rBFunctionSpace()->primalBasisElement(basis) );
+                    const_cast<Lqm_type&>(M_Lqm_du)[q][m]( basis ) = inner_product( *M_Rqm[M_output_index][q][m],
+                                                                                       M_model->rBFunctionSpace()->dualBasisElement(basis) );
+
+                }
+
+            }//loop over m
+        }//loop over q
+    }
 
     //compute output
     vectorN_type L ( ( int )N );
@@ -9121,6 +9190,16 @@ typename boost::tuple<std::vector<double>,double, typename CRB<TruthModelType>::
 CRB<TruthModelType>::run( parameter_type const& mu, vectorN_type & time, double eps , int N, bool print_rb_matrix)
 {
     M_compute_variance = option(_name="crb.compute-variance").template as<bool>();
+
+    if( boption(_name="crb.use-newton") )
+    {
+        boost::tie( boost::tuples::ignore, M_Jqm, M_Rqm ) = M_model->computeAffineDecomposition();
+    }
+    else
+    {
+        if( boption("crb.stock-matrices") )
+            M_model->computeAffineDecomposition();
+    }
 
     //int Nwn = M_N;
     int Nwn_max = option(_name="crb.dimension-max").template as<int>();
