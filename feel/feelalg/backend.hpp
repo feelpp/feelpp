@@ -572,7 +572,7 @@ public:
      */
     std::string snesType() const
     {
-        return M_snesType;
+        return snesTypeConvertEnumToStr( this->nlSolver()->getType() );
     }
 
     /**
@@ -754,9 +754,7 @@ public:
     }
 
     bool showKSPMonitor() const { return M_showKSPMonitor; }
-    bool showSNESMonitor() const { return M_showSNESMonitor; }
     bool showKSPConvergedReason() const { return M_showKSPConvergedReason; }
-    bool showSNESConvergedReason() const { return M_showSNESConvergedReason; }
 
     bool reusePrec() const { return M_reuse_prec; }
     bool reuseJac() const { return M_reuse_jac; }
@@ -856,6 +854,10 @@ public:
     {
         return M_nlsolver;
     }
+    solvernonlinear_ptrtype const& nlSolver() const
+    {
+        return M_nlsolver;
+    }
 
     void setTranspose( bool transpose )
     {
@@ -863,9 +865,7 @@ public:
     }
 
     void setShowKSPMonitor( bool b ) { M_showKSPMonitor=b; }
-    void setShowSNESMonitor( bool b ) { M_showSNESMonitor=b; }
     void setShowKSPConvergedReason( bool b ) { M_showKSPConvergedReason=b; }
-    void setShowSNESConvergedReason( bool b ) { M_showSNESConvergedReason=b; }
 
     void setReusePrec( bool b ) { M_reuse_prec=b; }
     void setReuseJac( bool b) { M_reuse_jac=b; }
@@ -1132,7 +1132,7 @@ public:
             //this->nlSolver()->residual( _sol, residual );
         }
 
-        this->nlSolver()->setPrefix( this->prefix() );
+        //this->nlSolver()->setPrefix( this->prefix() );
         if ( !jacobian )
             this->nlSolver()->jacobian( _sol, jacobian );
 
@@ -1281,13 +1281,12 @@ private:
     size_type    M_iteration;
     std::string M_export;
     std::string M_ksp;
-    std::string M_snesType;
     std::string M_pc;
     std::string M_fieldSplit;
     std::string M_pcFactorMatSolverPackage;
     bool M_constant_null_space;
-    bool M_showKSPMonitor, M_showSNESMonitor;
-    bool M_showKSPConvergedReason, M_showSNESConvergedReason;
+    bool M_showKSPMonitor;
+    bool M_showKSPConvergedReason;
     //std::map<std::string,boost::tuple<std::string,std::string> > M_sub;
 
     boost::signals2::signal<void()> M_deleteObservers;
