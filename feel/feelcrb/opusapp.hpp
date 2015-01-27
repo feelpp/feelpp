@@ -418,7 +418,7 @@ public:
                     {
                         this->loadDB(); // update AffineDecomposition and enrich RB database
                     }
-                    crb->setRebuild( false ); //do not rebuild since co-build is not finished
+                    //crb->setRebuild( false ); //do not rebuild since co-build is not finished
 
                     if( do_offline_eim )
                     {
@@ -454,8 +454,7 @@ public:
                 }
                 while( crb->getOfflineStep() || do_offline_eim );
             }
-            else
-                this->loadDB();
+            this->loadDB();
 
             int run_sampling_size = option(_name=_o( this->about().appName(),"run.sampling.size" )).template as<int>();
             SamplingMode run_sampling_type = ( SamplingMode )option(_name=_o( this->about().appName(),"run.sampling.mode" )).template as<int>();
@@ -1017,7 +1016,7 @@ public:
 
                                 //dimension of the RB (not necessarily the max)
                                 int N =  option(_name="crb.dimension").template as<int>();
-                                model->computeAffineDecomposition();
+                                //model->computeAffineDecomposition();
 
                                 bool print_rb_matrix = option(_name="crb.print-rb-matrix").template as<bool>();
                                 double online_tol = option(_name="crb.online-tolerance").template as<double>();
@@ -1097,7 +1096,8 @@ public:
                                     {
                                         if( option(_name="crb.solve-fem-monolithic").template as<bool>() )
                                         {
-                                            u_fem = model->solveFemMonolithicFormulation( mu );
+                                            //u_fem = model->solveFemMonolithicFormulation( mu );
+                                            u_fem = model->solve( mu );
                                         }
                                         else
                                         {
@@ -1124,7 +1124,10 @@ public:
                                     ti.restart();
                                     std::vector<double> ofem{model->output( output_index, mu, u_fem, true ), ti.elapsed()};
 
-                                    relative_error = std::abs( ofem[0]- ocrb) /ofem[0];
+                                    if( boption(_name="crb.absolute-error") )
+                                        relative_error = std::abs( ofem[0]- ocrb);
+                                    else
+                                        relative_error = std::abs( ofem[0]- ocrb) /ofem[0];
                                     relative_estimated_error = output_estimated_error / ofem[0];
 
                                     //compute || u_fem - u_crb||_L2
@@ -1145,8 +1148,16 @@ public:
                                     LOG(INFO) << "L2(fem)=" << l2Norm( u_fem )    << "\n";
                                     LOG(INFO) << "H1(fem)=" << h1Norm( u_fem )    << "\n";
 
-                                    l2_error = l2Norm( u_error )/l2Norm( u_fem );
-                                    h1_error = h1Norm( u_error )/h1Norm( u_fem );
+                                    if( boption(_name="crb.absolute-error") )
+                                    {
+                                        l2_error = l2Norm( u_error );
+                                        h1_error = h1Norm( u_error );
+                                    }
+                                    else
+                                    {
+                                        l2_error = l2Norm( u_error )/l2Norm( u_fem );
+                                        h1_error = h1Norm( u_error )/h1Norm( u_fem );
+                                    }
 
                                     output_fem = ofem[0];
                                     time_fem = ofem[1]+time_fem_solve;
