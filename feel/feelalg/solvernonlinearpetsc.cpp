@@ -911,7 +911,7 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     SNESGetConvergedReason( M_snes,&reason );
     LOG(INFO) << "[solvernonlinearpetsc] convergence reason : " << reason << "\n";
 
-    if ( boption( _prefix=this->prefix(), _name="snes-view" ) )
+    if ( this->viewSNESInfo() )//boption( _prefix=this->prefix(), _name="snes-view" ) )
         check( SNESView( M_snes, PETSC_VIEWER_STDOUT_WORLD ) );
     bool hasConverged = reason>0;
     if ( !hasConverged )
@@ -959,30 +959,29 @@ SolverNonLinearPetsc<T>::solve ( dense_matrix_type&  jac_in,  // System Jacobian
     Vec petsc_r;
     //VecCreateSeqWithArray(PETSC_COMM_SELF,x_in.size(),x_in.data().data(),&petsc_x);
     VecCreateSeq( this->worldComm().globalComm(),r_in.size(),&petsc_r );
-
+#if 0
     for ( int i=0; i< ( int )x_in.size(); i++ )
     {
         VecSetValues( petsc_r,1,&i,&r_in[i],INSERT_VALUES );
     }
-
+#endif
     ierr = SNESSetFunction ( M_snes, petsc_r, __feel_petsc_snes_dense_residual, this );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
     Mat petsc_j;
     MatCreateSeqDense( this->worldComm().globalComm(), jac_in.size1(), jac_in.size2(), 0, &petsc_j );
-
+#if 0
     for ( int i = 0; i < ( int )jac_in.size1(); ++i )
         for ( int j = 0; j < ( int )jac_in.size2(); ++j )
         {
             MatSetValue( petsc_j, i, j, jac_in( i, j ), INSERT_VALUES );
-
         }
-
     /*
       Assemble matrix
     */
     MatAssemblyBegin( petsc_j,MAT_FINAL_ASSEMBLY );
     MatAssemblyEnd( petsc_j,MAT_FINAL_ASSEMBLY );
+#endif
 
 
 #if PETSC_VERSION_LESS_THAN(3,5,0)
@@ -1003,8 +1002,10 @@ SolverNonLinearPetsc<T>::solve ( dense_matrix_type&  jac_in,  // System Jacobian
     //SNESGetKSP( M_snes,&ksp );
     //KSPGetPC( ksp,&pc );
     //PCSetType(pc,PCNONE);
-    PCSetType( M_pc,PCLU );
-    KSPSetTolerances( M_ksp,1e-16,PETSC_DEFAULT,PETSC_DEFAULT,20 );
+    //PCSetType( M_pc,PCLU );
+    //KSPSetTolerances( M_ksp,1e-16,PETSC_DEFAULT,PETSC_DEFAULT,20 );
+    //ierr = KSPSetType ( M_ksp, ( char* ) KSPPREONLY );
+    //CHKERRABORT( this->worldComm().globalComm(),ierr );
 
     // Older versions (at least up to 2.1.5) of SNESSolve took 3 arguments,
     // the last one being a pointer to an int to hold the number of iterations required.
@@ -1045,7 +1046,7 @@ SolverNonLinearPetsc<T>::solve ( dense_matrix_type&  jac_in,  // System Jacobian
     SNESGetConvergedReason( M_snes,&reason );
 
 
-    if ( boption( _prefix=this->prefix(), _name="snes-view" ) )
+    if ( this->viewSNESInfo() )
         check( SNESView( M_snes,PETSC_VIEWER_STDOUT_SELF ) );
 
     //LOG(INFO) << "[solvernonlinearpetsc] convergence reason : " << reason << "\n";
@@ -1160,7 +1161,7 @@ SolverNonLinearPetsc<T>::solve ( map_dense_matrix_type&  jac_in,  // System Jaco
     SNESConvergedReason reason;
     SNESGetConvergedReason( M_snes,&reason );
 
-    if ( boption( _prefix=this->prefix(), _name="snes-view" ) )
+    if ( this->viewSNESInfo() ) //boption( _prefix=this->prefix(), _name="snes-view" ) )
         check( SNESView( M_snes,PETSC_VIEWER_STDOUT_SELF ) );
 
     //LOG(INFO) << "[solvernonlinearpetsc] convergence reason : " << reason << "\n";
