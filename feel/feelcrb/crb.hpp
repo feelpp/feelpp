@@ -4798,7 +4798,6 @@ CRB<TruthModelType>::newton(  size_type N, parameter_type const& mu , vectorN_ty
     //update Lqm_pr if needed
     if( up )
     {
-        std::cout << "N = " << N << std::endl;
         for ( size_type q = 0; q < M_model->Ql( M_output_index ); ++q )
         {
             for( size_type m = 0; m < M_model->mMaxF( M_output_index, q ); ++m )

@@ -518,16 +518,15 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M)
         DVLOG(2) << "compute best fit check mu...\n";
         mu.check();
         //LOG_EVERY_N(INFO, 1 ) << " (every 10 mu) compute fit at mu="<< mu <<"\n" ;
-#if 1
+
         if( boption(_name="eim.use-rb-in-mu-selection") )
         {
             solution = M_model->computeRbExpansion( mu );
         }
         else
             solution = M_model->solve( mu );
-#else
-        solution = M_model->solve( mu );
-#endif
+
+        //solution = M_model->solve( mu );
 
         rhs = M_model->computeExpansionCoefficients( mu , solution, __M );
         auto z = expansion( M_model->q(), rhs, __M );
@@ -692,6 +691,19 @@ EIM<ModelType>::offline()
         max_g = M_model->maxG();
         max_z = M_model->maxZ();
         max_solution = M_model->maxSolution();
+
+        int cobuild_freq = ioption(_name="eim.cobuild-frequency");
+        int use_rb = boption(_name="eim.use-rb-in-mu-selection");
+        if( cobuild_freq != 0 && use_rb )
+        {
+            // Cobuild : If the first group (FEM solve) of EIM basis has already been built, go to loadDB (crb)
+            if( M_model->mMax()-1 >= cobuild_freq && !M_model->RBbuilt() )
+            {
+                if( Environment::worldComm().isMasterRank() )
+                    std::cout << "First group of EIM has already been built, start to load rb..." << std::endl;
+                return;
+            }
+        }
     }//if ! M_restart
     /**
        \par build \f$W^g_M\f$
@@ -1189,6 +1201,7 @@ public:
     virtual bool getOfflineStep()=0;
     virtual void setRestart(bool b)=0;
     virtual void setRB( boost::any rb )=0;
+    virtual bool RBbuilt()=0;
     virtual void offline()=0;
 
     virtual void addBasis( element_type const &q ) = 0;
@@ -1895,7 +1908,6 @@ public:
             return computeRbExpansion( mu, boost::mpl::bool_< true >() );
         else
             return computeRbExpansion( mu, boost::mpl::bool_< false >() );
-        //return computeRbExpansion( mu, boost::mpl::bool_< true >() );
     }
 
     model_solution_type computeRbExpansion( parameter_type const& mu, boost::mpl::bool_<false>)
