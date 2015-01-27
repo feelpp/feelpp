@@ -30,6 +30,8 @@
 #define FEELPP_GINAC_HPP 1
 
 #include <ginac/ginac.h>
+#include <boost/fusion/container/vector.hpp>
+
 #include <boost/parameter/preprocessor.hpp>
 
 #include <boost/foreach.hpp>
@@ -641,19 +643,53 @@ laplacian( Expr<GinacMatrix<M,N,Order>> const& s, std::string filename="", World
     return expr<M,N,Order>( GiNaC::laplacian(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), exprDesc, filename, world );
 }
 
+/**
+ * defines a dictionary of scalar fields
+ * 
+ * this data structure creates a dictionary of scalar fields, it associates a
+ * string to a Ginac Expr of rank 0.
+ * 
+ * \code
+ * auto e = expr("x+y:x:y");
+ * auto z = expr("0:x:y");
+ * map_scalar_field m { { "inlet", e }, { "wall", z } };
+ * \endcode
+ */
 template<int Order=2>
 struct map_scalar_field: public std::map<std::string,Expr<GinacEx<Order>>>
 {
     typedef std::map<std::string,Expr<GinacEx<Order>>> super;
     typedef super type;
+    using value_type = typename super::value_type;
+    map_scalar_field(std::initializer_list<value_type> __l ) : super( __l ) {}
 };
 
 typedef std::map<std::string,GinacEx<2>> map_scalar_field_type;
+/**
+ * defines a dictionary of vector fields
+ * 
+ * this data structure creates a dictionary of fields, it associates a string to
+ * a Ginac Expr of rank 1. In the case of vector fields the size of the vector
+ * field must be given
+ * 
+ * \code
+ * auto e = expr("{x,y}:x:y");
+ * auto z = expr("{0,0}:x:y");
+ * map_vector_field<2> m { { "inlet", e }, { "wall", z } };
+ * \endcode
+ */
 template<int M, int N=1, int Order=2>
 struct map_vector_field: public std::map<std::string,Expr<GinacMatrix<M,N,Order>>>
 {
     typedef std::map<std::string,Expr<GinacMatrix<M,N,Order>>> super;
     typedef super type;
+    using value_type = typename super::value_type;
+    map_vector_field() = default;
+    map_vector_field(std::initializer_list<value_type> __l ) : super( __l ) {}
+    map_vector_field(map_vector_field&& f ) = default;
+    map_vector_field(map_vector_field const& f ) = default;
+    map_vector_field& operator=(map_vector_field && f ) = default;
+    map_vector_field& operator=(map_vector_field const& f ) = default;
 };
 
 
