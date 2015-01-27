@@ -1043,6 +1043,11 @@ public:
      */
     void updateForUse();
 
+    /**
+     * update hAverage, hMin, hMax, measure of the mesh and measure of the boundary mesh
+     */
+    void updateMeasures();
+
     void meshModified()
         {
             for( auto fit = this->beginFace(), fen = this->endFace(); fit != fen; ++fit )
