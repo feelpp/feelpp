@@ -63,7 +63,7 @@ public:
     }
     ExporterQuick( std::string const& name, std::string const& exp )
         :
-        exporter( new ExporterEnsight<mesh_type,1> ( exp ) ),//Exporter<mesh_type>::New( exp ) ),
+        exporter( new ExporterEnsight<mesh_type,1> ( exp,1 ) ),//Exporter<mesh_type>::New( exp ) ),
         timeSet( new timeset_type( name ) )
     {
         timeSet->setTimeIncrement( 1.0 );
