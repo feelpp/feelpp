@@ -419,13 +419,17 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
         // compute cst jacobian in case of quasi-newton!
         if ( reuseJac &&  (!M_reuseJacIsBuild || M_reuseJacRebuildAtFirstNewtonStep) ) { this->nlSolver()->jacobian( x, A );M_reuseJacIsBuild=true;}
     }
+    else
+    {
+        M_nlsolver->setReuse( 1, 1 );
+    }
 
     auto ret = M_nlsolver->solve( A, x, b, tol, its );
 
     //std::cout << "[nlSolve] ret.first " << ret.first <<std::endl;
     if ( !ret.isConverged() && ( reusePC || reuseJac ) )
     {
-        if (this->comm().globalRank() == this->comm().masterRank() )
+        if ( this->comm().isMasterRank() )
             std::cout << "Backend "  << M_prefix << " reuse failed, rebuilding preconditioner...\n";
         LOG(INFO) << "Backend "  << M_prefix << " reuse failed, rebuilding preconditioner...\n";
 
