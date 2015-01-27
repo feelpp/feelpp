@@ -2698,6 +2698,11 @@ Mesh<Shape, T, Tag>::Localization::init()
     typename self_type::element_iterator el_it;
     typename self_type::element_iterator el_en;
     boost::tie( boost::tuples::ignore, el_it, el_en ) = Feel::elements( *mesh );
+    if ( el_it != el_en )
+    {
+        M_gic.reset( new gmc_inverse_type( mesh->gm(), *el_it, mesh->worldComm().subWorldCommSeq() ) );
+        M_gic1.reset( new gmc1_inverse_type( mesh->gm1(), *el_it, mpl::int_<1>(), mesh->worldComm().subWorldCommSeq() ) );
+    }
 
     for ( ; el_it != el_en; ++el_it )
     {
@@ -2736,7 +2741,7 @@ Mesh<Shape, T, Tag>::Localization::initBoundaryFaces()
     typename self_type::location_face_iterator face_it;
     typename self_type::location_face_iterator face_en;
     boost::tie( boost::tuples::ignore, face_it, face_en ) = Feel::boundaryfaces( mesh );
-
+    bool hasInitGic=false;
     for ( ; face_it != face_en; ++face_it )
     {
         for ( int i=0; i<face_it->nPoints(); ++i )
@@ -2749,6 +2754,13 @@ Mesh<Shape, T, Tag>::Localization::initBoundaryFaces()
                             M_kd_tree->addPoint( face_it->point( i ).node(),face_it->point( i ).id() );
                         }
                     boost::get<1>( M_geoGlob_Elts[face_it->point( i ).id()] ).push_back( face_it->element( 0 ).id() );
+
+                    if ( !hasInitGic )
+                    {
+                        M_gic.reset( new gmc_inverse_type( mesh->gm(), face_it->element( 0 ), mesh->worldComm().subWorldCommSeq() ) );
+                        M_gic1.reset( new gmc1_inverse_type( mesh->gm1(), face_it->element( 0 ), mpl::int_<1>(), mesh->worldComm().subWorldCommSeq() ) );
+                        hasInitGic=true;
+                    }
                 }
         }
     }
@@ -2776,6 +2788,7 @@ Mesh<Shape, T, Tag>::Localization::isIn( size_type _id, const node_type & _pt ) 
 
     if ( elt.isOnBoundary() )
         {
+#if 0
             // get inverse geometric transformation
             gmc_inverse_type gic( mesh->gm(), elt, mesh->worldComm().subWorldCommSeq() );
             //apply the inverse geometric transformation for the point p
@@ -2783,9 +2796,19 @@ Mesh<Shape, T, Tag>::Localization::isIn( size_type _id, const node_type & _pt ) 
             x_ref=gic.xRef();
             // the point is in the reference element ?
             boost::tie( isin, dmin ) = M_refelem.isIn( gic.xRef() );
+#else
+            M_gic->update( elt );
+            M_gic->setXReal( _pt);
+            x_ref=M_gic->xRef();
+            if ( nDim == nRealDim )
+                isin = M_gic->isIn();
+            else // in this case, result given with gic->isIn() seems not work (see geomap.hpp)
+                boost::tie( isin, dmin ) = M_refelem.isIn( M_gic->xRef() );
+#endif
         }
     else
         {
+#if 0
             // get inverse geometric transformation
             gmc1_inverse_type gic( mesh->gm1(), elt, mpl::int_<1>(), mesh->worldComm().subWorldCommSeq() );
             //apply the inverse geometric transformation for the point p
@@ -2793,6 +2816,15 @@ Mesh<Shape, T, Tag>::Localization::isIn( size_type _id, const node_type & _pt ) 
             x_ref=gic.xRef();
             // the point is in the reference element ?
             boost::tie( isin, dmin ) = M_refelem1.isIn( gic.xRef() );
+#else
+            M_gic1->update( elt, mpl::int_<1>() );
+            M_gic1->setXReal( _pt);
+            x_ref=M_gic1->xRef();
+            if ( nDim == nRealDim )
+                isin = M_gic1->isIn();
+            else // in this case, result given with gic->isIn() seems not work (see geomap.hpp)
+                boost::tie( isin, dmin ) = M_refelem1.isIn( M_gic1->xRef() );
+#endif
         }
 
     return boost::make_tuple(isin,x_ref,dmin);
@@ -2821,6 +2853,7 @@ Mesh<Shape, T, Tag>::Localization::isIn( std::vector<size_type> _ids, const node
 
         if ( elt.isOnBoundary() )
             {
+#if 0
                 // get inverse geometric transformation
                 gmc_inverse_type gic( mesh->gm(), elt );
                 //apply the inverse geometric transformation for the point p
@@ -2828,10 +2861,20 @@ Mesh<Shape, T, Tag>::Localization::isIn( std::vector<size_type> _ids, const node
                 __x_ref=gic.xRef();
                 // the point is in the reference element ?
                 boost::tie( isin2, dmin ) = M_refelem.isIn( gic.xRef() );
+#else
+                M_gic->update( elt );
+                M_gic->setXReal( _pt);
+                __x_ref=M_gic->xRef();
+                if ( nDim == nRealDim )
+                    isin2 = M_gic->isIn();
+                else // in this case, result given with gic->isIn() seems not work (see geomap.hpp)
+                    boost::tie( isin2, dmin ) = M_refelem.isIn( M_gic->xRef() );
+#endif
                 isin[i] = isin2;
             }
         else
             {
+#if 0
                 // get inverse geometric transformation
                 gmc1_inverse_type gic( mesh->gm1(), elt, mpl::int_<1>() );
                 //apply the inverse geometric transformation for the point p
@@ -2839,6 +2882,15 @@ Mesh<Shape, T, Tag>::Localization::isIn( std::vector<size_type> _ids, const node
                 __x_ref=gic.xRef();
                 // the point is in the reference element ?
                 boost::tie( isin2, dmin ) = M_refelem1.isIn( gic.xRef() );
+#else
+                M_gic1->update( elt, mpl::int_<1>() );
+                M_gic1->setXReal( _pt);
+                __x_ref=M_gic1->xRef();
+                if ( nDim == nRealDim )
+                    isin2 = M_gic1->isIn();
+                else // in this case, result given with gic->isIn() seems not work (see geomap.hpp)
+                    boost::tie( isin2, dmin ) = M_refelem1.isIn( M_gic1->xRef() );
+#endif
                 isin[i] = isin2;
             }
         if (isin[i]) ++nbIsIn;

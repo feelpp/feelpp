@@ -1261,6 +1261,7 @@ public:
             M_isInitBoundaryFaces( L.M_isInitBoundaryFaces ),
             M_resultAnalysis( L.M_resultAnalysis ),
             M_doExtrapolation( L.M_doExtrapolation ),
+            M_gic( L.M_gic ), M_gic1( L.M_gic1 ),
             M_barycenter( L.M_barycenter ),
             M_barycentersWorld( L.M_barycentersWorld )
         {}
@@ -1496,6 +1497,8 @@ public:
 
         ref_convex_type M_refelem;
         ref_convex1_type M_refelem1;
+        mutable boost::shared_ptr<gmc_inverse_type> M_gic;
+        mutable boost::shared_ptr<gmc1_inverse_type> M_gic1;
 
         node_type M_barycenter;
         boost::optional<std::vector<boost::tuple<bool,node_type> > > M_barycentersWorld;
