@@ -440,7 +440,8 @@ public:
     bool showKSPConvergedReason() const { return M_showKSPConvergedReason; }
     void setShowKSPConvergedReason( bool b ) { M_showKSPConvergedReason=b; }
 
-
+    bool viewSNESInfo() const { return M_viewSNESInfo; }
+    void setViewSNESInfo( bool b ) { M_viewSNESInfo=b; }
     /**
      * KSP relative tolerance
      */
@@ -625,6 +626,7 @@ protected:
 
     bool M_showKSPMonitor, M_showSNESMonitor;
     bool M_showKSPConvergedReason, M_showSNESConvergedReason;
+    bool M_viewSNESInfo;
 
     /**
      * KSP relative tolerance
