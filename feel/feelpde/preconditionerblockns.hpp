@@ -30,6 +30,7 @@
 #include <feel/feelalg/operator.hpp>
 #include <feel/feelalg/preconditioner.hpp>
 #include <feel/feelpde/operatorpcd.hpp>
+#include <feel/feelpde/boundaryconditions.hpp>
 #include <feel/feelalg/backendpetsc.hpp>
 
 namespace Feel
@@ -87,12 +88,13 @@ public:
      * \param alpha mass term
      */
     PreconditionerBlockNS( std::string t,
-                         space_ptrtype Xh, 
-                         std::map<std::string, std::set<flag_type> > bcFlags, 
-                         sparse_matrix_ptrtype A,
-                         double nu, 
-                         double alpha = 0 );
-
+                           space_ptrtype Xh, 
+                           BoundaryConditions bcFlags,
+                           std::string const& s,
+                           sparse_matrix_ptrtype A,
+                           double nu, 
+                           double alpha = 0 );
+    
     Type type() const { return M_type; }
     void setType( std::string t );
     
@@ -172,8 +174,8 @@ private:
     op_pcd_ptrtype pcdOp;
     op_ptrtype pm;
     
-    std::map<std::string, std::set<flag_type> > M_bcFlags;
-
+    BoundaryConditions M_bcFlags;
+    std::string M_prefix;
     op_mat_ptrtype precHelm;
 };
 
@@ -184,10 +186,11 @@ private:
 
 template < typename space_type >
 PreconditionerBlockNS<space_type>::PreconditionerBlockNS( std::string t,
-                                                      space_ptrtype Xh, 
-                                                      std::map<std::string, std::set<flag_type> > bcFlags,
-                                                      sparse_matrix_ptrtype A,
-                                                      double nu, double alpha )
+                                                          space_ptrtype Xh, 
+                                                          BoundaryConditions bcFlags,
+                                                          std::string const& p,
+                                                          sparse_matrix_ptrtype A,
+                                                          double nu, double alpha )
     :
     M_type( PCD ),
     M_nu( nu ),
@@ -214,7 +217,8 @@ PreconditionerBlockNS<space_type>::PreconditionerBlockNS( std::string t,
     v( M_Vh, "v" ),
     p( M_Qh, "p" ),
     q( M_Qh, "q" ),
-    M_bcFlags( bcFlags )
+    M_bcFlags( bcFlags ),
+    M_prefix( p )
 {
     tic();
     LOG(INFO) << "[PreconditionerBlockNS] setup starts";
@@ -261,7 +265,7 @@ PreconditionerBlockNS<space_type>::setType( std::string t )
     {
     case PCD:
         tic();
-        pcdOp = boost::make_shared<op_pcd_type>( M_Xh, this->matrix(), M_b, M_bcFlags, M_nu, M_alpha );
+        pcdOp = boost::make_shared<op_pcd_type>( M_Xh, this->matrix(), M_b, M_bcFlags, M_prefix, M_nu, M_alpha );
         this->setSide( super::RIGHT );
 
         toc( "Assembling schur complement done", FLAGS_v > 0 );
@@ -384,48 +388,7 @@ PreconditionerBlockNS<space_type>::applyInverse ( const vector_type& X, vector_t
 
     return 0;
 }
-#if 0
-// this commented code is just a save for pcd with full schur
-template < typename space_type >
-int
-PreconditionerBlockNS<space_type>::applyInverse ( const vector_type& X, vector_type& Y ) const
-{
-    U = X;
-    U.close();
-    LOG(INFO) << "Create velocity/pressure component...\n";
-    *M_vin = U.template element<0>();
-    M_vin->close();
-    *M_pin = U.template element<1>();
-    M_pin->close();
-    *M_aux = *M_vin;
-    M_aux->close();
 
-    vector_ptrtype M_paux( M_b->newVector( M_Qh )  );
-    op_mat_ptrtype divOpBis;
-    divOpBis = op( M_B, "B");
-
-    helmOp->applyInverse(*M_vin, *M_aux);
-    divOpBis->apply( *M_aux, *M_paux );
-
-    M_paux->add( -1.0,*M_pin );
-    M_paux->close();
-    pcdOp->applyInverse( *M_paux, *M_pout );
-
-
-    divOp->apply( *M_pout, *M_vout );
-    M_vin->add(-1.0,*M_vout);
-    M_vin->close();
-    helmOp->applyInverse(*M_vin, *M_vout);
-
-    U.template element<0>() = *M_vout;
-    U.template element<1>() = *M_pout;
-    U.close();
-    Y=U;
-    Y.close();
-
-    return 0;
-}
-#endif
 template < typename space_type >
 int
 PreconditionerBlockNS<space_type>::guess ( vector_type& Y ) const
@@ -477,7 +440,7 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename meta::blockns<typename parameter::va
                                    )
                                  ( optional
                                    ( prefix, *( boost::is_convertible<mpl::_,std::string> ), "" )
-                                   ( bc, *, (std::map<std::string,std::set<flag_type>>()) )
+                                   ( bc, *, (BoundaryConditions ()) )
                                    ( nu,  *, doption("mu") )
                                    ( alpha, *, 0. )
                                    )
@@ -485,7 +448,7 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename meta::blockns<typename parameter::va
 {
     typedef typename meta::blockns<typename parameter::value_type<Args, tag::space>::type::element_type>::ptrtype pblockns_t;
     typedef typename meta::blockns<typename parameter::value_type<Args, tag::space>::type::element_type>::type blockns_t;
-    pblockns_t p( new blockns_t( type, space, bc, matrix, nu, alpha ) );
+    pblockns_t p( new blockns_t( type, space, bc, prefix, matrix, nu, alpha ) );
     return p;
 } // btcpd
 } // Feel
