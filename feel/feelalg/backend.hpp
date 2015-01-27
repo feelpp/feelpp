@@ -1139,11 +1139,10 @@ public:
         if ( prec && !this->nlSolver()->initialized() )
             this->nlSolver()->attachPreconditioner( prec );
 
-        if ( reuse_prec == false && reuse_jac == false )
-            ret = nlSolve( jacobian, _sol, residual, rtolerance, maxit );
-
-        else
-            ret = nlSolve( jacobian, _sol, residual, rtolerance, maxit, reuse_prec, reuse_jac );
+        //if ( reuse_prec == false && reuse_jac == false )
+        //    ret = nlSolve( jacobian, _sol, residual, rtolerance, maxit );
+        //else
+        ret = nlSolve( jacobian, _sol, residual, rtolerance, maxit, reuse_prec, reuse_jac );
 
         //new
         _sol->close();
@@ -1159,10 +1158,10 @@ public:
     /**
      * solve for the nonlinear problem \f$F( u ) = 0\f$
      */
-    virtual nl_solve_return_type nlSolve( sparse_matrix_ptrtype& A,
-                                          vector_ptrtype& x,
-                                          vector_ptrtype& b,
-                                          const double, const int );
+    virtual FEELPP_DEPRECATED nl_solve_return_type nlSolve( sparse_matrix_ptrtype& A,
+                                                            vector_ptrtype& x,
+                                                            vector_ptrtype& b,
+                                                            const double, const int );
 
     /**
      * solve for the nonlinear problem \f$F( u ) = 0\f$ with an
