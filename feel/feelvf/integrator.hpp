@@ -3255,7 +3255,34 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                         ( it->id() ).error( "face on boundary but connected on both sides" );
                     //ti0.restart();
                     __c0->update( elt0Test, __face_id_in_elt_0 );
+#if 0
                     __c1->update( elt1Test, __face_id_in_elt_1 );
+                    bool check=true;
+                    for ( uint16_type i=0;i<__c0->nPoints() && check;++i )
+                        for (uint16_type d=0;d<gmc1_type::NDim;++d)
+                            check = check && ( std::abs(__c0->xReal(i)[d] - __c1->xReal(i)[d])<1e-8 );
+                    CHECK( check ) << "quad points in each sides are not connected";
+#else
+                    bool findPermutation=false;
+                    for ( permutation_type __p( permutation_type::IDENTITY );
+                          __p < permutation_type( permutation_type::N_PERMUTATIONS ) && !findPermutation; ++__p )
+                        {
+                            // update only xReal in gmc
+                            __c1->update( elt1Test, __face_id_in_elt_1, __p, false );
+
+                            bool check=true;
+                            for ( uint16_type i=0;i<__c0->nPoints() && check;++i )
+                            {
+                                //LOG(INFO) << "c0.xreal = " << __c0->xReal(i);
+                                //LOG(INFO) << "c1.xreal(" << __p << ") = " << __c1->xReal(i);
+                                for (uint16_type d=0;d<gmc1_type::NDim;++d)
+                                    check = check && ( std::abs(__c0->xReal(i)[d] - __c1->xReal(i)[d])<1e-8 );
+                            }
+                            // if check compute full gmc context with the good permutation
+                            if (check) { __c1->update( elt1Test, __face_id_in_elt_1, __p ); findPermutation=true; }
+                         }
+                    CHECK(findPermutation) << "the permutation of quad point is not find\n";
+#endif
                     //t0 += ti0.elapsed();
 
                     //ti1.restart();
