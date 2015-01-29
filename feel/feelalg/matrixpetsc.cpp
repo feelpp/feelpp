@@ -972,7 +972,7 @@ MatrixPetsc<T>::createSubMatrix( std::vector<size_type> const& _rows,
     std::vector<size_type> rows = ( checkAndFixRange )?
         this->mapRowPtr()->buildIndexSetWithParallelMissingDof( _rows ) : _rows;
     std::vector<size_type> cols = ( checkAndFixRange && !useSameDataMap )?
-        this->mapRowPtr()->buildIndexSetWithParallelMissingDof( _cols ) : ( useSameDataMap )? rows : _cols;
+        this->mapColPtr()->buildIndexSetWithParallelMissingDof( _cols ) : ( useSameDataMap )? rows : _cols;
 
     // build subdatamap row and col
     datamap_ptrtype subMapRow = this->mapRowPtr()->createSubDataMap( rows, false );
