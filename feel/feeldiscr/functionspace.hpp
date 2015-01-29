@@ -178,12 +178,6 @@ struct ID
         size_type e1 = M_id.shape()[0];
         DVLOG(2) << "saving in archive e1= " << e1 << "\n";
         ar  & e1;
-        size_type e2 = M_id.shape()[1];
-        DVLOG(2) << "saving in archive e2= " << e2 << "\n";
-        ar  & e2;
-        size_type e3 = M_id.shape()[2];
-        DVLOG(2) << "saving in archive e3= " << e3 << "\n";
-        ar  & e3;
         DVLOG(2) << "saving in archive array of size = " << M_id.num_elements() << "\n";
         ar  & boost::serialization::make_array( M_id.data(), M_id.num_elements() );
         DVLOG(2) << "saving in archive done\n";
@@ -194,10 +188,6 @@ struct ID
         size_type e1, e2, e3;
         ar  & e1;
         DVLOG(2) << "loading from archive e1= " << e1 << "\n";
-        ar  & e2;
-        DVLOG(2) << "loading from archive e2= " << e2 << "\n";
-        ar  & e3;
-        DVLOG(2) << "loading from archive e3= " << e3 << "\n";
         M_id.resize( boost::extents[e1] );
         DVLOG(2) << "loading from archive array of size = " << M_id.num_elements() << "\n";
         ar  & boost::serialization::make_array( M_id.data(), M_id.num_elements() );
@@ -251,12 +241,6 @@ struct DD
         size_type e1 = M_grad.shape()[0];
         DVLOG(2) << "saving in archive e1= " << e1 << "\n";
         ar  & e1;
-        size_type e2 = M_grad.shape()[1];
-        DVLOG(2) << "saving in archive e2= " << e2 << "\n";
-        ar  & e2;
-        size_type e3 = M_grad.shape()[2];
-        DVLOG(2) << "saving in archive e3= " << e3 << "\n";
-        ar  & e3;
         DVLOG(2) << "saving in archive array of size = " << M_grad.num_elements() << "\n";
         ar  & boost::serialization::make_array( M_grad.data(), M_grad.num_elements() );
         DVLOG(2) << "saving in archive done\n";
@@ -267,10 +251,6 @@ struct DD
         size_type e1, e2, e3;
         ar  & e1;
         DVLOG(2) << "loading from archive e1= " << e1 << "\n";
-        ar  & e2;
-        DVLOG(2) << "loading from archive e2= " << e2 << "\n";
-        ar  & e3;
-        DVLOG(2) << "loading from archive e3= " << e3 << "\n";
         M_grad.resize( boost::extents[e1] );
         DVLOG(2) << "loading from archive array of size = " << M_grad.num_elements() << "\n";
         ar  & boost::serialization::make_array( M_grad.data(), M_grad.num_elements() );
