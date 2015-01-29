@@ -476,6 +476,13 @@ void PreconditionerPetsc<T>::apply( const Vector<T> & x, Vector<T> & y ) const
     int ierr = PCApply( M_pc,x_vec,y_vec );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 }
+template <typename T>
+void PreconditionerPetsc<T>::apply( Vec x, Vec y ) const
+{
+    int ierr = PCApply( M_pc,x,y );
+    CHKERRABORT( this->worldComm().globalComm(),ierr );
+}
+
 
 
 /*----------------------- inline functions ----------------------------------*/

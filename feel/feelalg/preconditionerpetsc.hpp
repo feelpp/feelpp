@@ -163,6 +163,8 @@ public:
      */
     virtual void apply( const Vector<T> & x, Vector<T> & y ) const;
 
+    void apply( Vec x, Vec y ) const;
+
 
     //@}
 
