@@ -500,6 +500,7 @@ template<typename ModelType>
 typename EIM<ModelType>::parameter_residual_type
 EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M)
 {
+    boost::mpi::timer timer;
     DVLOG(2) << "compute best fit  for m=" << __M
              << " and trainset of size " << trainset->size() << "...\n";
     using namespace vf;
@@ -513,24 +514,28 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M)
     vector_type rhs( __M );
 
     model_solution_type solution;
+    double time_solve = 0;
+    double time_exp = 0;
     for( auto mu : *trainset )
     {
         DVLOG(2) << "compute best fit check mu...\n";
         mu.check();
         //LOG_EVERY_N(INFO, 1 ) << " (every 10 mu) compute fit at mu="<< mu <<"\n" ;
 
+        timer.restart();
         if( boption(_name="eim.use-rb-in-mu-selection") )
         {
             solution = M_model->computeRbExpansion( mu );
         }
         else
             solution = M_model->solve( mu );
+        time_solve += timer.elapsed();
 
-        //solution = M_model->solve( mu );
-
+        timer.restart();
         rhs = M_model->computeExpansionCoefficients( mu , solution, __M );
         auto z = expansion( M_model->q(), rhs, __M );
         auto resmax = M_model->computeMaximumOfResidual( mu , solution, z );
+        time_exp += timer.elapsed();
         //DCHECK( rhs.size() == __M ) << "Invalid size rhs: " << rhs.size() << " M=" << __M  << " rhs = " << rhs << "\n";
 
         LOG_ASSERT( index < trainset->size() ) << "Invalid index " << index << " should be less than trainset size = " << trainset->size() << "\n";
@@ -540,6 +545,11 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M)
         int index2;
         auto err = maxerr.array().abs().maxCoeff( &index2 );
         //LOG_EVERY_N(INFO, 1 ) << " (every 10 mu) maxerr=" <<  err << " at index = " << index2 << " at mu = " << trainset->at(index2) << "\n";
+    }
+    if( Environment::worldComm().isMasterRank() )
+    {
+        std::cout << "-- Mean time to solve(mu) : " << time_solve/trainset->size() << std::endl;
+        std::cout << "-- Mean time to compute resmax : " << time_exp/trainset->size() << std::endl;
     }
 
     LOG_ASSERT( index == trainset->size() ) << "Invalid index " << index << " should be equal to trainset size = " << trainset->size() << "\n";
@@ -719,7 +729,8 @@ EIM<ModelType>::offline()
     if( cobuild_freq != 0 && M_model->mMax() + cobuild_freq  <= user_max)
     {
         if( M_restart )
-            Mmax = cobuild_freq;
+            Mmax = cobuild_freq - 1;
+            //Mmax = cobuild_freq;
         else
             Mmax = M_model->mMax() + cobuild_freq;
     }
@@ -758,7 +769,7 @@ EIM<ModelType>::offline()
 
         timer2.restart();
         //solution = M_model->solve( mu );
-        if( boption(_name="eim.use-rb-in-mu-selection") )
+        if( boption(_name="eim.use-rb-in-basis-build") )
         {
             solution = M_model->computeRbExpansion( mu );
         }
@@ -1489,7 +1500,7 @@ public:
 #if !defined(NDEBUG)
             M_mu.check();
 #endif
-            if( boption(_name="eim.use-rb-in-mu-selection") )
+            if( boption(_name="eim.use-rb-in-basis-build") )
                 *M_u = this->computeRbExpansion( mu );
             else
                 *M_u = M_model->solve( mu );
@@ -1513,7 +1524,7 @@ public:
         {
             M_mu=mu;
             //*M_u = M_model->solve( mu );
-            if( boption(_name="eim.use-rb-in-mu-selection") )
+            if( boption(_name="eim.use-rb-in-basis-build") )
                 *M_u = this->computeRbExpansion( mu );
             else
                 *M_u = M_model->solve( mu );
