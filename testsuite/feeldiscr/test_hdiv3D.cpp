@@ -143,7 +143,8 @@ public:
         :
         super(),
         M_backend( backend_type::build( soption( _name="backend" ) ) ),
-        meshSize( this->vm()["hsize"].as<double>() )
+        meshSize( this->vm()["hsize"].as<double>() ),
+        mesh( loadMesh(_mesh = new mesh_type) )
     {
         std::cout << "[TestHDiv3D]\n";
 
@@ -167,12 +168,14 @@ private:
     //! mesh characteristic size
     double meshSize;
 
+    mesh_ptrtype mesh;
+
 }; //TestHDiv
 
 void
 TestHDiv3D::exampleProblem1()
 {
-    mesh_ptrtype mesh = loadMesh(_mesh = new mesh_type);
+    //mesh_ptrtype mesh = loadMesh(_mesh = new mesh_type);
     auto hsize = doption("gmsh.hsize");
 
     //auto K = ones<2,2>(); // Hydraulic conductivity tensor
@@ -243,7 +246,7 @@ TestHDiv3D::exampleProblem1()
     auto l2err_u = normL2( _range=elements(mesh), _expr=idv(u_l) - idv(u_rt) );
     auto l2err_p = normL2( _range=elements(mesh), _expr=idv(p_l) - idv(p_rt) );
 
-    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+    if( Environment::isMasterRank() )
         {
             std::cout << "||u(primal) - u(dual-mixed)|| = " << l2err_u << std::endl;
             std::cout << "||p(primal) - p(dual-mixed)|| = " << l2err_p << std::endl;
@@ -270,7 +273,7 @@ TestHDiv3D::exampleProblem1()
 void
 TestHDiv3D::testProjector()
 {
-    mesh_ptrtype mesh = loadMesh(_mesh = new mesh_type);
+    //auto mesh = loadMesh(_mesh = new mesh_type);
 
     auto RTh = Dh<0>( mesh );
     //lagrange_space_v_ptrtype Yh_v = lagrange_space_v_type::New( mesh ); //lagrange vectorial space
@@ -303,21 +306,22 @@ TestHDiv3D::testProjector()
 
 #if USE_BOOST_TEST
     BOOST_TEST_MESSAGE("L2 projection [Lagrange]: error[div(E)-f]");
-    std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pL2_lag, error_pL2_lag ) ) << "\n";
     BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pL2_lag, error_pL2_lag ) ), 1e-13 );
     BOOST_TEST_MESSAGE("H1 projection [Lagrange]: error[div(E)-f]");
-    std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pH1_lag, error_pH1_lag ) ) << "\n";
     BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pH1_lag, error_pH1_lag ) ), 1e-13 );
     BOOST_TEST_MESSAGE("HDIV projection [Lagrange]: error[div(E)-f]");
-    std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pHDIV_lag, error_pHDIV_lag ) ) << "\n";
     BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pHDIV_lag, error_pHDIV_lag ) ), 1e-13 );
     BOOST_TEST_MESSAGE("L2 projection [RT]: error[div(E)-f]");
-    std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pL2_rt, error_pL2_rt ) ) << "\n";
     BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pL2_rt, error_pL2_rt ) ), 1e-13 );
+#else
+    std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pL2_lag, error_pL2_lag ) ) << "\n";
+    std::cout << "error H1: " << math::sqrt( l2_lagS->energy( error_pH1_lag, error_pH1_lag ) ) << "\n";
+    std::cout << "error HDIV: " << math::sqrt( l2_lagS->energy( error_pHDIV_lag, error_pHDIV_lag ) ) << "\n";
+    std::cout << "error L2 [RT]: " << math::sqrt( l2_lagS->energy( error_pL2_rt, error_pL2_rt ) ) << "\n";
 #endif
     std::string proj_name = "projection";
     std::string exporter_proj_name = ( boost::format( "%1%-%2%-%3%" )
-                                       % this->about().appName()
+                                       % Environment::about().appName()
                                        % ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1 ).str()
                                        % proj_name ).str();
     auto exporter_proj = exporter( _mesh=mesh,_name=exporter_proj_name );
