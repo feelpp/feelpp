@@ -28,15 +28,15 @@ public:
     typedef std::vector< std::vector< sparse_matrix_ptrtype >> affine_matrix_type;
     typedef std::vector< std::vector< affine_matrix_type >> block_affine_matrix_type;
     typedef std::vector< std::vector < vector_ptrtype >> affine_vector_type;
-    typedef std::vector< std::vector< std::vector< affine_vector_type >>> block_affine_output_type;
+    typedef std::vector< affine_vector_type > affine_output_type;
+    typedef std::vector< affine_output_type > block_affine_output_type;
     typedef std::vector< std::vector< value_type >> beta_vector_type;
 
 
-    typedef boost::tuple<
-        std::vector< std::vector<sparse_matrix_ptrtype> >,//Mq
-        std::vector< std::vector<sparse_matrix_ptrtype> >,//Aq
-        std::vector< std::vector<std::vector<vector_ptrtype> > >//Fq
-        > affine_decomposition_type;
+    typedef boost::tuple< affine_matrix_type, // Mqm
+                          affine_matrix_type, // Aqm
+                          affine_output_type > // Fqm
+    affine_decomposition_type;
 
     /**
      * Constructor
@@ -115,6 +115,7 @@ public:
             M_betaAqm[row-1][col-1].resize(size+1);
             M_betaAqm[row-1][col-1][size].push_back( 0 );
         }
+
     void addMass( boost::tuple< sparse_matrix_ptrtype , std::string > const & tuple,
                  int const row=1, int const col=1 )
         {
@@ -161,7 +162,7 @@ public:
             M_betaMqm[row-1][col-1][size].push_back( 0 );
         }
     void addOutput( boost::tuple< vector_ptrtype , std::string > const & tuple, int output=0,
-                    int const row=1, int const col=1 )
+                    int const row=1 )
         {
             // we initialize the ginac tools if not already done
             if ( M_use_ginac_expr==false )
@@ -179,52 +180,49 @@ public:
                 M_mMaxF.resize( row );
                 M_betaFqm.resize(row);
             }
-            if ( col>M_Fqm[row-1].size() )
+            if ( output>=M_Fqm[row-1].size() )
             {
-                M_Fqm[row-1].resize( col );
-                M_ginacFq[row-1].resize( col );
-                M_Ql[row-1].resize( col );
-                M_mMaxF[row-1].resize(col);
-                M_betaFqm[row-1].resize(col);
-            }
-            if ( output>=M_Fqm[row-1][col-1].size() )
-            {
-                M_Fqm[row-1][col-1].resize( output+1 );
-                M_ginacFq[row-1][col-1].resize( output+1 );
-                M_Ql[row-1][col-1].resize( output+1 );
-                M_Ql[row-1][col-1][output]=0;
-                M_mMaxF[row-1][col-1].resize( output+1 );
-                M_betaFqm[row-1][col-1].resize( output+1 );
+                M_Fqm[row-1].resize( output+1 );
+                M_ginacFq[row-1].resize( output+1 );
+                M_Ql[row-1].resize( output+1 );
+                M_Ql[row-1][output]=0;
+                M_mMaxF[row-1].resize( output+1 );
+                M_betaFqm[row-1].resize( output+1 );
             }
 
             // add the matrix/vector to the concerned affine decomposition
-            int size = M_Fqm[row-1][col-1][output].size();
-            M_Fqm[row-1][col-1][output].resize( size +1 );
-            M_Fqm[row-1][col-1][output][size].push_back( tuple.template get<0>() );
+            int size = M_Fqm[row-1][output].size();
+            M_Fqm[row-1][output].resize( size +1 );
+            M_Fqm[row-1][output][size].push_back( tuple.template get<0>() );
 
             // increment the counter of terms
-            M_Ql[row-1][col-1][output]++;
-            M_mMaxF[row-1][col-1][output].push_back( 1 );
+            M_Ql[row-1][output]++;
+            M_mMaxF[row-1][output].push_back( 1 );
 
             // add the ginac expression
             std::string filename = ( boost::format("GinacL-%1%%2%") %output %size ).str();
-            M_ginacFq[row-1][col-1][output].push_back( expr( tuple.template get<1>(),
-                                                       Symbols( M_symbols_vec ),
-                                                       filename ) );
+            M_ginacFq[row-1][output].push_back( expr( tuple.template get<1>(),
+                                                      Symbols( M_symbols_vec ),
+                                                      filename ) );
             // create zero betaFqm
-            M_betaFqm[row-1][col-1][output].resize(size+1);
-            M_betaFqm[row-1][col-1][output][size].push_back( 0 );
+            M_betaFqm[row-1][output].resize(size+1);
+            M_betaFqm[row-1][output][size].push_back( 0 );
         }
+    /*void addOutput( boost::tuple< functional_ptrtype, std::string > const & tuple, int output=0,
+                    int const row=1, int const col=1 )
+        {
+
+     }*/
 
     affine_decomposition_type compute( int row=1, int col=1 )
         {
             blockCheck( M_Mqm, row, col, "compute");
             fatalBlockCheck( M_Aqm, row, col, "compute");
-            fatalBlockCheck( M_Fqm, row, col, "compute");
+            fatalBlockCheck( M_Fqm, row, "compute");
 
             return boost::make_tuple( M_Mqm[row-1][col-1],
                                       M_Aqm[row-1][col-1],
-                                      M_Fqm[row-1][col-1] );
+                                      M_Fqm[row-1] );
         }
 
     void count()
@@ -258,15 +256,20 @@ public:
                                            << " and max col number="<< vec[row-1].size()<< std::endl;
         }
     template <typename ContainerType>
-    void fatalBlockCheck( ContainerType& vec, int row, int col, int output, std::string name ) const
+    void fatalBlockCheck( ContainerType& vec, int row, std::string name ) const
         {
             CHECK( row<=vec.size() )<< "[AD."<< name <<"()] Invalid row number="<< row
                                     << " and max row number="<< vec.size()<< std::endl;
-            CHECK( col<=vec[row-1].size() )<< "[AD."<< name <<"()] Invalid col number="<< col
-                                           << " and max col number="<< vec[row-1].size()<< std::endl;
-            CHECK( col<=vec[row-1][col-1].size() )<< "[AD."<< name
-                                                  << "()] Invalid output number="<< output
-                                                  << " and max output number="<< vec[row-1][col-1].size()<< std::endl;
+        }
+
+    template <typename ContainerType>
+    void fatalBlockCheck( ContainerType& vec, int row, std::string name, int output ) const
+        {
+            CHECK( row<=vec.size() )<< "[AD."<< name <<"()] Invalid row number="<< row
+                                    << " and max row number="<< vec.size()<< std::endl;
+            CHECK( output<vec[row-1].size() )<< "[AD."<< name
+                                             << "()] Invalid output number="<< output
+                                             << " and max output number="<< vec[row-1].size()-1<< std::endl;
         }
 
 
@@ -282,10 +285,10 @@ public:
             return M_Aqm[row-1][col-1];
         }
 
-    affine_vector_type Fqm( int output, int row=1, int col=1 ) const
+    affine_vector_type Fqm( int output, int row=1 ) const
         {
-            fatalBlockCheck(M_Fqm, row, col, output, "Fqm");
-            return M_Fqm[row-1][col-1][output];
+            fatalBlockCheck(M_Fqm, row, "Fqm", output );
+            return M_Fqm[row-1][output];
         }
 
     int Qm( int row=1, int col=1 ) const
@@ -300,10 +303,10 @@ public:
             return M_Qa[row-1][col-1];
         }
 
-    int Ql( int output, int row=1, int col=1 ) const
+    int Ql( int output, int row=1 ) const
         {
-            fatalBlockCheck(M_Ql, row, col, output, "Ql");
-            return M_Ql[row-1][col-1][output];
+            fatalBlockCheck(M_Ql, row, "Ql", output );
+            return M_Ql[row-1][output];
         }
 
     int Nl() const
@@ -328,13 +331,13 @@ public:
             return M_mMaxA[row-1][col-1][q];
         }
 
-    int mMaxF( int output, int q, int row=1, int col=1 ) const
+    int mMaxF( int output, int q, int row=1 ) const
         {
-            fatalBlockCheck(M_mMaxF, row, col, output, "mMaxF");
-            CHECK( q<M_mMaxF[row-1][col-1][output].size())<< "[AD.mMaxF()] Invalid q index="<< q
-                                                          << "and max is "<< M_mMaxF[row-1][col-1][output].size()<< std::endl;
+            fatalBlockCheck(M_mMaxF, row, "mMaxF", output);
+            CHECK( q<M_mMaxF[row-1][output].size())<< "[AD.mMaxF()] Invalid q index="<< q
+                                                   << "and max is "<< M_mMaxF[row-1][output].size()<< std::endl;
 
-            return M_mMaxF[row-1][col-1][output][q];
+            return M_mMaxF[row-1][output][q];
         }
 
 
@@ -356,15 +359,15 @@ public:
             else
                 return M_Aqm[row-1][col-1][q][m];
         }
-    vector_ptrtype F( uint16_type output, uint16_type q, int m, int row=1, int col=1 ) const
+    vector_ptrtype F( uint16_type output, uint16_type q, int m, int row=1 ) const
         {
-            fatalBlockCheck(M_Fqm, row, col, output, "F");
-            return M_Fqm[row-1][col-1][output][q][m];
+            fatalBlockCheck(M_Fqm, row, "F", output);
+            return M_Fqm[row-1][output][q][m];
         }
 
 
 
-    beta_vector_type betaMqm( parameter_type const& mu, double time=0, int col=1, int row=1 )
+    beta_vector_type betaMqm( parameter_type const& mu, double time=0, int row=1, int col=1 )
         {
             fatalBlockCheck(M_betaMqm, row, col, "betaMqm");
             fatalBlockCheck(M_ginacMq, row, col, "betaMqm");
@@ -396,7 +399,7 @@ public:
             }
         }
 
-    beta_vector_type betaAqm( parameter_type const& mu, double time=0, int col=1, int row=1 )
+    beta_vector_type betaAqm( parameter_type const& mu, double time=0, int row=1, int col=1 )
         {
             fatalBlockCheck(M_betaAqm, row, col, "betaAqm");
             fatalBlockCheck(M_ginacAq, row, col, "betaAqm");
@@ -428,15 +431,14 @@ public:
             }
         }
 
-    std::vector< beta_vector_type > betaFqm( parameter_type const& mu, double time=0,
-                                             int col=1, int row=1 )
+    std::vector< beta_vector_type > betaFqm( parameter_type const& mu, double time=0, int row=1 )
         {
             if ( M_use_ginac_expr )
             {
                 for ( int output=0; output<M_Nl; output++)
                 {
-                    fatalBlockCheck( M_betaFqm, row, col, output, "betaFqm");
-                    fatalBlockCheck( M_ginacFq, row, col, output, "betaFqm");
+                    fatalBlockCheck( M_betaFqm, row, "betaFqm", output );
+                    fatalBlockCheck( M_ginacFq, row, "betaFqm", output );
                     std::string symbol;
                     for( int i=0; i<M_pspace_dim; i++ )
                     {
@@ -445,22 +447,22 @@ public:
                     }
                     M_symbols_map["t"]=time;
 
-                    CHECK( M_betaFqm[row-1][col-1][output].size()==M_ginacFq[row-1][col-1][output].size() )
+                    CHECK( M_betaFqm[row-1][output].size()==M_ginacFq[row-1][output].size() )
                         << "[AD.betaFqm()] Error : not same size : "
-                        << "M_betaFqm["<<row-1<<"]["<<col-1<<"]="<<M_betaFqm[row-1][col-1][output].size()
-                        << "and M_ginacFq["<<row-1<<"]["<<col-1<<"]="<<M_ginacFq[row-1][col-1][output].size()
+                        << "M_betaFqm["<<row-1<<"]="<<M_betaFqm[row-1][output].size()
+                        << "and M_ginacFq["<<row-1<<"]="<<M_ginacFq[row-1][output].size()
                         << std::endl;
 
-                    for ( int i=0; i<M_ginacFq[row-1][col-1][output].size(); i++ )
-                        M_betaFqm[row-1][col-1][output][i][0]
-                            =M_ginacFq[row-1][col-1][output][i].evaluate(M_symbols_map);
+                    for ( int i=0; i<M_ginacFq[row-1][output].size(); i++ )
+                        M_betaFqm[row-1][output][i][0]
+                            =M_ginacFq[row-1][output][i].evaluate(M_symbols_map);
                 }
             }
             else
             {
-                CHECK( M_betaFqm[row-1][col-1].size()>0 )<< "You did not fill betaFqm coefficients, you can use either ginac expressions or betaFqm() function to do so"<<std::endl;
+                CHECK( M_betaFqm[row-1].size()>0 )<< "You did not fill betaFqm coefficients, you can use either ginac expressions or betaFqm() function to do so"<<std::endl;
             }
-            return M_betaFqm[row-1][col-1];
+            return M_betaFqm[row-1];
         }
 
 
@@ -485,36 +487,38 @@ private:
     model_ptrtype M_model;
 
     int M_Nl; ///< Number of Outputs
-    std::vector< std::vector<int>> M_Qa;
-    std::vector< std::vector<int>> M_Qm;
-    std::vector< std::vector< std::vector<int>>> M_Ql;
 
-    // number of eim term for each term of the AD
-    std::vector< std::vector< std::vector< int >>> M_mMaxA;
-    std::vector< std::vector< std::vector< int >>> M_mMaxM;
-    std::vector< std::vector< std::vector< std::vector< int >>>> M_mMaxF;
+    /// number of terms in the AD
+    std::vector< std::vector<int>> M_Qa; // row x col
+    std::vector< std::vector<int>> M_Qm; // row x col
+    std::vector< std::vector<int>> M_Ql; // row x output
 
-    // affine decompositions
-    block_affine_matrix_type M_Aqm;
-    block_affine_matrix_type M_Mqm;
-    block_affine_output_type M_Fqm;
+    /// number of eim term for each term of the AD
+    std::vector< std::vector< std::vector< int >>> M_mMaxA; // row x col x q
+    std::vector< std::vector< std::vector< int >>> M_mMaxM; // row x col x q
+    std::vector< std::vector< std::vector< int >>> M_mMaxF; // row x output x q
 
-    std::vector< std::vector< beta_vector_type >> M_betaMqm;
-    std::vector< std::vector< beta_vector_type >> M_betaAqm;
-    std::vector< std::vector< std::vector< beta_vector_type >>> M_betaFqm;
+    /// affine decompositions
+    block_affine_matrix_type M_Aqm; // row x col x q x m
+    block_affine_matrix_type M_Mqm; // row x col x q x m
+    block_affine_output_type M_Fqm; // row x output x q x m
 
-    // ginac expressions of the beta coefficient
-    std::vector< std::vector< std::vector< Expr<GinacEx<2> > > > >M_ginacAq;
-    std::vector< std::vector< std::vector< Expr<GinacEx<2> > > > >M_ginacMq;
-    std::vector< std::vector< std::vector< std::vector< Expr<GinacEx<2> >>>>> M_ginacFq;
+    /// beta coefficients
+    std::vector< std::vector< beta_vector_type >> M_betaMqm; // row x col x q x m
+    std::vector< std::vector< beta_vector_type >> M_betaAqm; // row x col x q x m
+    std::vector< std::vector< beta_vector_type >> M_betaFqm; // row x output x q x m
 
+    /// ginac expressions of the beta coefficient
+    std::vector< std::vector< std::vector< Expr<GinacEx<2> >>>> M_ginacAq; // row x col x q
+    std::vector< std::vector< std::vector< Expr<GinacEx<2> >>>> M_ginacMq; // row x col x q
+    std::vector< std::vector< std::vector< Expr<GinacEx<2> >>>> M_ginacFq; // row x output x q
+
+    /// Ginac tools
     bool M_use_ginac_expr;
     std::vector< std::string > M_symbols_vec;
     std::map<std::string,double> M_symbols_map;
 
     bool M_use_operators_free;
-
-
 }; // class AffineDecompostion
 
 
