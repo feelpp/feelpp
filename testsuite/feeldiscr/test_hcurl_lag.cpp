@@ -124,8 +124,8 @@ public:
     typedef FunctionSpace<mesh_type, bases<basis_type> > space_type;
     typedef FunctionSpace<mesh_type, bases<lagrange_basis_s_type> > lagrange_space_s_type;
     typedef FunctionSpace<mesh_type, bases<lagrange_basis_v_type> > lagrange_space_v_type;
-    typedef FunctionSpace<mesh_type, bases<basis_type, lagrange_basis_s_type> > mixed_space_s_type;
-    typedef FunctionSpace<mesh_type, bases<basis_type, lagrange_basis_v_type> > mixed_space_v_type;
+    typedef FunctionSpace<mesh_type, bases<lagrange_basis_s_type,basis_type > > mixed_space_s_type;
+    typedef FunctionSpace<mesh_type, bases<lagrange_basis_v_type,basis_type > > mixed_space_v_type;
 
     //! the approximation function space type (shared_ptr<> type)
     typedef boost::shared_ptr<space_type> space_ptrtype;
