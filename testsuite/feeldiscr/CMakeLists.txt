@@ -22,6 +22,7 @@ feelpp_add_test( hdiv3D_oneelt CFG test_hdiv3D_oneelt.cfg NO_MPI_TEST )
 feelpp_add_test( hcurl_oneelt CFG test_hcurl_oneelt.cfg NO_MPI_TEST )
 feelpp_add_test( hcurl_assembly CFG test_hcurl_assembly.cfg GEO two_elements_mesh.geo eight_elements_mesh.msh NO_MPI_TEST)
 feelpp_add_test( hcurl CFG test_hcurl.cfg )
+feelpp_add_test( hcurl_lag CFG test_hcurl.cfg DEFS HL_DIM=3 HL_ORDER=1)
 feelpp_add_test( hcurl3D_oneelt CFG test_hcurl3D_oneelt.cfg NO_MPI_TEST )
 
 feelpp_add_test( continuity_h1 NO_MPI_TEST )
