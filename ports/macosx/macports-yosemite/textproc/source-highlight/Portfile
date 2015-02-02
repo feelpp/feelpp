@@ -22,11 +22,23 @@ master_sites    gnu:src-highlite
 checksums       rmd160  96932976fb1c83443b0f1c65ada46c51ce469fd2 \
                 sha256  e1b2e007cdd94595393d42510e2a84763c36aad3409f0c3087f05fcb50a389e8
 
-configure.compiler macports-gcc-4.8
-
 configure.args  --infodir=${prefix}/share/info \
                 --mandir=${prefix}/share/man \
                 --with-boost-regex=boost_regex-mt
+
+variant clang36 description {Build with clang36} conflicts gcc48 {
+    depends_lib-append  port:clang-3.6
+    configure.compiler macports-clang-3.6
+}
+variant gcc48 description {Build with gcc48} conflicts clang36 {
+    depends_lib-append      port:gcc48
+    configure.compiler      macports-gcc-4.8
+}
+if { ![variant_isset gcc48] && ![variant_isset clang36]  } {
+    #default_variants +gcc48
+    default_variants +clang36
+}
+
 
 test.run        yes
 test.target     check
