@@ -1443,7 +1443,8 @@ MatrixPetsc<T>::transpose( MatrixSparse<value_type>& Mt, size_type options ) con
             ierr = MatTranspose( M_mat, &Atrans->M_mat );
 #endif
             CHKERRABORT( this->comm(),ierr );
-            Mt.setGraph( this->graph()->transpose() );
+            if ( this->hasGraph() )
+                Mt.setGraph( this->graph()->transpose() );
         }
     else if ( ctx.test( MATRIX_TRANSPOSE_UNASSEMBLED ) )
         {
