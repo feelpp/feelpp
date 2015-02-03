@@ -100,6 +100,7 @@ int main(int argc, char**argv )
 
     auto l = form1( _test=Vh );
     auto r = form1( _test=Vh );
+    auto residual = form1( _test=Vh );
 
     auto a = form2( _trial=Vh, _test=Vh);
     auto at = form2( _trial=Vh, _test=Vh);
@@ -216,25 +217,20 @@ int main(int argc, char**argv )
             incru = normL2( _range=elements(mesh), _expr=idv(u)-idv(un));
             incrp = normL2( _range=elements(mesh), _expr=idv(p)-idv(pn));
             fixedpt_iter++;
-            res = r( U );
-
+            
             if ( Environment::isMasterRank() )
             {
                 std::cout << "Iteration "  << fixedpt_iter << "\n";
                 std::cout << " . ||u-un|| = " << incru << std::endl;
                 std::cout << " . ||p-pn|| = " << incrp << std::endl;
-                std::cout << " . residual = " << res << std::endl;
-            }
-            if  ( fixedpt_iter < 10 )
-            {
-                Un = U;
-                Un.close();
-            }
+                            }
+            Un = U;
+            Un.close();
+
             e->step(fixedpt_iter)->add( "u", u );
             e->step(fixedpt_iter)->add( "p", p );
             e->save();
         }
-        //while ( ( res > fixPtTol ) && ( fixedpt_iter < fixPtMaxIt ) );
         while ( ( incru > fixPtTol && incrp > fixPtTol ) && ( fixedpt_iter < fixPtMaxIt ) );
     }
 
@@ -307,11 +303,10 @@ int main(int argc, char**argv )
                 std::cout << " . ||p-pn|| = " << incrp << std::endl;
                 std::cout << " . residual = " << std::abs(res) << std::endl;
             }
-            if  ( newton_iter < 10 )
-            {
-                Un = U;
-                Un.close();
-            }
+
+            Un = U;
+            Un.close();
+
             e->step(newton_iter)->add( "u", u );
             e->step(newton_iter)->add( "p", p );
             e->save();
