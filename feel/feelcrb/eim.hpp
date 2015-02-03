@@ -1082,7 +1082,7 @@ public:
     typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
     typedef typename parameterspace_type::element_type parameter_type;
     typedef Eigen::Matrix<double, nDim, 1> node_type;
-    typedef Eigen::Matrix<double, SpaceType::basis_type::nLocalDof, Eigen::Dynamic> matrix_basis_pc_type;
+    //typedef Eigen::Matrix<double, SpaceType::basis_type::nLocalDof, Eigen::Dynamic> matrix_basis_pc_type;
 
     typedef typename parameterspace_type::sampling_ptrtype sampling_ptrtype;
     typedef typename parameterspace_type::sampling_type sampling_type;
@@ -1916,17 +1916,16 @@ public:
     model_solution_type computeRbExpansion( parameter_type const& mu )
     {
         if( this->RBbuilt() )
-            return computeRbExpansion( mu, boost::mpl::bool_< true >() );
+            return computeRbExpansion( mu, typename boost::is_base_of<ModelCrbBaseBase,model_type>::type() );
         else
-            return computeRbExpansion( mu, boost::mpl::bool_< false >() );
+            return M_model->solve( mu );
     }
 
     model_solution_type computeRbExpansion( parameter_type const& mu, boost::mpl::bool_<false>)
     {
-        //std::cout << "Warning : RB approximation cannot be used to select best EIM parameter" << std::endl;
-        return M_model->solve( mu );
+        //return M_model->solve( mu );
+        return M_model->functionSpace()->element();
     }
-
     model_solution_type computeRbExpansion( parameter_type const& mu, boost::mpl::bool_<true>)
     {
         int N = this->M_crb->dimension();
@@ -2104,8 +2103,15 @@ public:
     bool getOfflineStep(){return M_eim->getOfflineStep();}
     void offline(){M_eim->offline();}
     void setRestart(bool b){ M_eim->setRestart(b);}
-    //void setRB(boost::any b){ M_eim->setRB(b);}
-    void setRB(boost::any rb){
+
+    void setRB( boost::any rb )
+    {
+        setRB( rb, typename boost::is_base_of<ModelCrbBaseBase,model_type>::type() );
+    }
+    void setRB( boost::any rb, boost::mpl::bool_<false> )
+    {}
+    void setRB( boost::any rb, boost::mpl::bool_<true> )
+    {
         std::cout << "setRB, M_crb_built = " << M_crb_built << std::endl;
         try
         {
