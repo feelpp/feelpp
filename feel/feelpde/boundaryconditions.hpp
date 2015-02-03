@@ -42,7 +42,7 @@ class BoundaryConditions
 {
     typedef std::map<std::string,std::map<std::string,std::vector<std::pair<std::string,std::string>>>> super;
     
-public:
+  public:
     using value_type = typename super::value_type;
 
     BoundaryConditions();
@@ -75,6 +75,20 @@ public:
      */
     void load(const std::string &filename);
 
+    /**
+     * retrieve scalar field \p field with boundary conditions of type \p type
+     */
+    template<int Order=2> map_scalar_field<Order> getScalarFields( std::string && field, std::string && type )
+    {
+        using namespace Feel::vf;
+        map_scalar_field<Order> m_f;
+        for ( auto f : this->operator[](field)[type]  )
+        {
+            LOG(INFO) << "Building expr " << f.second << " for " << f.first;
+            m_f[f.first] = expr<Order>( f.second );
+        }
+        return std::move(m_f);
+    }
     template<int d> map_vector_field<d> getVectorFields( std::string && field, std::string && type )
     {
         using namespace Feel::vf;
@@ -86,7 +100,7 @@ public:
         }
         return std::move(m_f);
     }
-private:
+  private:
 
     std::string M_prefix;
 };
