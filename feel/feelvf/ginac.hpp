@@ -661,7 +661,12 @@ struct map_scalar_field: public std::map<std::string,Expr<GinacEx<Order>>>
     typedef std::map<std::string,Expr<GinacEx<Order>>> super;
     typedef super type;
     using value_type = typename super::value_type;
+    map_scalar_field() = default;
     map_scalar_field(std::initializer_list<value_type> __l ) : super( __l ) {}
+    map_scalar_field(map_scalar_field&& f ) = default;
+    map_scalar_field(map_scalar_field const& f ) = default;
+    map_scalar_field& operator=(map_scalar_field && f ) = default;
+    map_scalar_field& operator=(map_scalar_field const& f ) = default;
 };
 
 typedef std::map<std::string,GinacEx<2>> map_scalar_field_type;

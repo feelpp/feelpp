@@ -350,10 +350,10 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator()( node_type const&
 
     node_type __x_ref;
     size_type __cv_id;
-    int rank = functionSpace()->mesh()->comm().rank();
-    int nprocs = functionSpace()->mesh()->comm().size();
-    std::vector<int> found_pt( nprocs, 0 );
-    std::vector<int> global_found_pt( nprocs, 0 );
+    rank_type rank = functionSpace()->mesh()->comm().rank();
+    rank_type nprocs = functionSpace()->mesh()->comm().size();
+    std::vector<uint8_type/*int*/> found_pt( nprocs, 0 );
+    std::vector<uint8_type/*int*/> global_found_pt( nprocs, 0 );
 
     if ( functionSpace()->findPoint( __x, __cv_id, __x_ref ) || extrapolate )
     {
@@ -391,21 +391,41 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator()( node_type const&
 
         if ( nprocs > 1 )
         {
-            mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt.data(), found_pt.size(), global_found_pt.data(), std::plus<int>() );
+            mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt.data(), found_pt.size(), global_found_pt.data(), std::plus<uint8_type/*int*/>() );
         }
 
 #else
         global_found_pt[ 0 ] = found_pt[ 0 ];
 #endif /* FEELPP_HAS_MPI */
 
-        id_type __id( this->id( *fectx ) );
-        DVLOG(2) << "[interpolation]  id = " << __id << "\n";
+
+        rank_type procIdEval = rank;
+
+        // in case where a point are localised on interprocess face, various process can find this point
+        // we take only the process of smaller rank for evaluated the function at point
+        if ( nprocs > 1 )
+            for ( procIdEval=0 ; procIdEval < global_found_pt.size(); ++procIdEval )
+                if ( global_found_pt[procIdEval] != 0 )
+                {
+                    DVLOG(2) << "processor " << procIdEval << " has the point " << __x << "and evaluated this one\n";
+                    break;
+                }
+
+        id_type __id;
+        if ( procIdEval == rank )
+        {
+            // this resize is crutial for serialisation!
+            __id.resize( this->idExtents(*fectx ) );
+            __id = this->id( *fectx );
+            DVLOG(2) << "[interpolation]  id = " << __id << "\n";
+        }
+
 #if defined(FEELPP_HAS_MPI)
         DVLOG(2) << "sending interpolation context to all processors from " << functionSpace()->mesh()->comm().rank() << "\n";
 
-        if ( functionSpace()->mesh()->comm().size() > 1 )
+        if ( nprocs > 1 )
         {
-            mpi::broadcast( functionSpace()->mesh()->comm(), __id, functionSpace()->mesh()->comm().rank() );
+            mpi::broadcast( functionSpace()->mesh()->comm(), __id, procIdEval );
         }
 
         DVLOG(2) << "[interpolation] after broadcast id = " << __id << "\n";
@@ -416,33 +436,34 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator()( node_type const&
     else
     {
 #if defined(FEELPP_HAS_MPI)
-
-        if ( functionSpace()->mesh()->comm().size() > 1 )
+        if ( nprocs > 1 )
         {
-            mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt.data(), found_pt.size(), global_found_pt.data(), std::plus<int>() );
+            mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt.data(), found_pt.size(), global_found_pt.data(), std::plus<uint8_type/*int*/>() );
         }
 
 #endif /* FEELPP_HAS_MPI */
         bool found = false;
-        size_type i = 0;
+        rank_type i = 0;
 
-        for ( ; i < global_found_pt.size(); ++i )
-            if ( global_found_pt[i] != 0 )
-            {
-                DVLOG(2) << "processor " << i << " has the point " << __x << "\n";
-                found = true;
-                break;
-            }
+        if ( nprocs > 1 )
+            for ( ; i < global_found_pt.size(); ++i )
+                if ( global_found_pt[i] != 0 )
+                {
+                    DVLOG(2) << "processor " << i << " has the point " << __x << "\n";
+                    found = true;
+                    break;
+                }
 
         id_type __id;
-
         if ( found )
         {
             DVLOG(2) << "receiving interpolation context from processor " << i << "\n";
 #if defined(FEELPP_HAS_MPI)
 
             if ( functionSpace()->mesh()->comm().size() > 1 )
+            {
                 mpi::broadcast( functionSpace()->mesh()->comm(), __id, i );
+            }
 
 #endif /* FEELPP_HAS_MPI */
         }

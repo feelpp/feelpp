@@ -67,7 +67,7 @@ int main(int argc, char**argv )
             a = integrate(_range=elements(mesh),
                           _expr=gradt(u)*trans(grad(v)) );
             a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u, _expr=expr( g, syms ) );
-            a.solve(_rhs=l,_solution=u);
+            a.solve(_rhs=l,_solution=u,_rebuild=true);
 
             LOG(INFO) << "pointing on matrix from bilinear form = "<<a.matrixPtr().use_count()<<std::endl;
 

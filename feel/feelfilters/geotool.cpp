@@ -1377,6 +1377,7 @@ GeoGMSHTool::geoStr()
     // generate code for all entities in geo file
     //--------------------------------------------------------------------------//
     //--------------------------------------------------------------------------//
+    //this->showMe();
 
     // save markers in these containers
     std::map<std::string,std::set<int> > markerPoints,markerLines,markerSurf,markerVol;
@@ -2366,7 +2367,7 @@ writeSpline( uint16_type __numLoc, data_geo_ptrtype __dg ,Loop __loop )
     detail::GeoToolLine myLine(name,__numLoc, __dg->get<0>()->cptLine(), "spline" );
     std::list<size_type> myptId;
     for ( auto it=__loop.begin(), en=__loop.end() ; it!=en ; ++it )
-        myptId.push_back( *it );
+        myptId.push_back( (*(__dg->get<1>()))[0][*it] );
     myLine.setPoints( myptId );
 
     auto mymark = __dg->get<0>()->findPhysicalMarker( "line", __dg->get<3>()/*name*/, __numLoc );
@@ -2408,7 +2409,7 @@ writeBSpline( uint16_type __numLoc, data_geo_ptrtype __dg ,Loop __loop )
     detail::GeoToolLine myLine(name,__numLoc, __dg->get<0>()->cptLine(), "bspline" );
     std::list<size_type> myptId;
     for ( auto it=__loop.begin(), en=__loop.end() ; it!=en ; ++it )
-        myptId.push_back( *it );
+        myptId.push_back( (*(__dg->get<1>()))[0][*it] );
     myLine.setPoints( myptId );
 
     auto mymark = __dg->get<0>()->findPhysicalMarker( "line", __dg->get<3>()/*name*/, __numLoc );
