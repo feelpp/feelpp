@@ -1768,7 +1768,6 @@ public:
         }
 
         DVLOG( 2 )<<" M_B : \n "<<M_B;
-        //std::cout <<" M_B : \n "<<M_B<<"\n";
         saveDB();
 
     }//fillInterpolationMatrixFirstTime
@@ -1907,7 +1906,6 @@ public:
         }
 
         DVLOG( 2 )<<" M_B : \n "<<M_B;
-        std::cout <<" M_B : \n "<<M_B<<"\n";
         //google::FlushLogFiles(google::GLOG_INFO);
         saveDB();
 
@@ -2112,7 +2110,6 @@ public:
     {}
     void setRB( boost::any rb, boost::mpl::bool_<true> )
     {
-        std::cout << "setRB, M_crb_built = " << M_crb_built << std::endl;
         try
         {
             M_crb = boost::any_cast<crb_ptrtype>(rb);
