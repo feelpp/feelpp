@@ -215,6 +215,7 @@ namespace Feel
 
       auto a = form2(Eh,Eh);
       a = integrate(elements(mesh), inner(trans(id(e21)),gradt(e12)));
+      a = integrate(elements(mesh), inner(id(e21),trans(gradt(e12))));
     }
 }
 
