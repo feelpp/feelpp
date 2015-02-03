@@ -125,8 +125,8 @@ namespace Feel
     typedef FunctionSpace<mesh_type, bases<lagrange_basis_s_type> > lagrange_space_s_type;
     typedef FunctionSpace<mesh_type, bases<lagrange_basis_v_type> > lagrange_space_v_type;
     typedef FunctionSpace<mesh_type, bases<lagrange_basis_v_type, lagrange_basis_s_type> > lagrange_space_v_s_type;
-    typedef FunctionSpace<mesh_type, bases<lagrange_basis_s_type,basis_type > > mixed_space_s_type;
-    typedef FunctionSpace<mesh_type, bases<lagrange_basis_v_type,basis_type > > mixed_space_v_type;
+    typedef FunctionSpace<mesh_type, bases<basis_type, lagrange_basis_s_type> > mixed_space_s_type;
+    typedef FunctionSpace<mesh_type, bases<basis_type, lagrange_basis_v_type> > mixed_space_v_type;
 
     //! the approximation function space type (shared_ptr<> type)
     typedef boost::shared_ptr<space_type> space_ptrtype;
@@ -190,8 +190,8 @@ namespace Feel
       // curl x lagrange scalaire
       auto E1  = Eh->element();
       auto E2  = Eh->element();
-      auto e11 = E1.element<0>();
-      auto e12 = E1.element<1>();
+      auto e11 = E1.element<0>(); //curl
+      auto e12 = E1.element<1>(); //scal
       auto e21 = E2.element<0>();
       auto e22 = E2.element<1>();
 
@@ -212,6 +212,9 @@ namespace Feel
       e21 = vf::project(Eh->functionSpace<1>(), elements(mesh), idv(e22)); 
       f11 = vf::project(Fh->functionSpace<0>(), elements(mesh), idv(f21)); 
       f21 = vf::project(Fh->functionSpace<1>(), elements(mesh), idv(f22)); 
+
+      auto a = form2(Eh,Eh);
+      a = integrate(elements(mesh), inner(trans(id(e21)),gradt(e12)));
     }
 }
 
