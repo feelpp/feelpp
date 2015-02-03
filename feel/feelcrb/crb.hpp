@@ -3471,7 +3471,6 @@ template<typename TruthModelType>
 void
 CRB<TruthModelType>::updateAffineDecompositionSize()
 {
-    std::cout << "updateAffineDecompositionSize" << std::endl;
     if ( M_error_type == CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
     {
 
@@ -5213,7 +5212,6 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
         }
         old_output = L.dot( uN[time_index] );
 #endif
-        std::cout << "mu = " << mu << std::endl;
         do
         {
             if( is_linear )
