@@ -59,8 +59,7 @@ You can visualize data via
 - [paraview](www.paraview.org/),
 - [gmsh](http://geuz.org/gmsh).
  
-The results files are in \c $HOME/feel/myexporter/np_1.
-
+The results files are in \c $HOME/feel/myexporter/np_1 or \c $FEELPP_WORKDIR/feel/myexporter/np_1
 
 */
 }
