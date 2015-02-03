@@ -83,7 +83,7 @@ generic_options()
         ( "directory", po::value<std::string>(), "change directory to specified one" )
         ( "npdir", po::value<bool>()->default_value(true), "enable/disable sub-directory np_<number of processors>")
         ( "fail-on-unknown-option", po::value<bool>()->default_value(false), "exit feel++ application if unknown option found" )
-        ( "show-preconditioner-options", "show on the fly the preconditioner options used" )
+        ( "serialization-library", po::value<std::string>()->default_value("boost"), "Library used for serialization" )
         ;
     return generic;
 }
@@ -630,9 +630,6 @@ exporter_options( std::string const& prefix )
         ( prefixvm( prefix,"exporter.ensightgold.merge.timesteps" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Merge exported timesteps into a single file (reduces the number of output files)" )
         ( prefixvm( prefix,"exporter.ensightgold.pack.timesteps" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "Allows to set the number of timesteps that will be stored in a single file, before switching to a new one. This option is meant to be used with --exporter.ensightgold.merge.timesteps. A value <= 0 means that all timesteps will go in the same file" )
         ( prefixvm( prefix,"exporter.gmsh.merge" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Merge exported data from different into a single file (reduces the number of output files)" )
-#if defined(FEELPP_HAS_HDF5) && defined(FEELPP_HAS_MPIIO)
-        ( prefixvm( prefix,"exporter.hdf5.merge" ).c_str(), Feel::po::value<bool>()->default_value( true ), "Merge exported data from different into a single file (reduces the number of output files)" )
-#endif
 #if defined(FEELPP_HAS_VTK) && defined(FEELPP_VTK_INSITU_ENABLED)
         ( prefixvm( prefix,"exporter.vtk.insitu.enable" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Enable In-situ visualization with VTK exporter (Data won't be written to disk any longer)." )
         ( prefixvm( prefix,"exporter.vtk.insitu.pyscript" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "Specify a python user script for visualization." )
