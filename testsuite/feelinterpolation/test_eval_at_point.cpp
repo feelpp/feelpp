@@ -69,7 +69,6 @@ void run()
         pt[2] = 0.5;
     auto eval = u(pt)[0];
 
-    auto e_eval = e.evaluate();
     if ( DimGeo >= 2 )
     {
         e.setParameterValues( { { "x", 0.5 },{ "y", 0.5 } } );

@@ -1571,7 +1571,7 @@ Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfile
     if ( p.relative_path() != "." )
         rep_path = Environment::rootRepository();
 
-    if ( !fs::exists( rep_path ) )
+    if ( Environment::isMasterRank() && !fs::exists( rep_path ) )
     {
         LOG( INFO ) << "Creating directory " << rep_path << "...";
         fs::create_directory( rep_path );
@@ -1583,7 +1583,7 @@ Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfile
         //VLOG(2)<< " option: " << s << "\n";
         rep_path = rep_path / dir;
 
-        if ( !fs::exists( rep_path ) )
+        if ( Environment::isMasterRank() && !fs::exists( rep_path ) )
             fs::create_directory( rep_path );
     }
 
@@ -1591,11 +1591,14 @@ Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfile
     {
         rep_path = rep_path / ( boost::format( "np_%1%" ) % Environment::numberOfProcessors() ).str();
 
-        if ( !fs::exists( rep_path ) )
+        if ( Environment::isMasterRank() && !fs::exists( rep_path ) )
             fs::create_directory( rep_path );
 
         LOG( INFO ) << "changing directory to " << rep_path << "\n";
     }
+
+    // wait all process in order to be sure that the dir has been created by master process
+    Environment::worldComm().barrier();
 
     ::chdir( rep_path.string().c_str() );
 
