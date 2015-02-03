@@ -210,12 +210,12 @@ void runSpecial1a()
     R.setMarker(_type="line",_name="Boundary2",_marker1=true,_marker2=true,_marker4=true);
     R.setMarker(_type="surface",_name="Omega",_markerAll=true);
 
-    GeoTool::Special_1a S( meshSize,"OMEGA",x1 );
+    GeoTool::Special_1a S( meshSize,"OMEGA2",x1 );
     S.setMarker(_type="line",_name="Boundary1",_markerAll=true);
     S.setMarker(_type="surface",_name="Omega",_markerAll=true);
 
     auto mesh = (R-S).createMesh(_mesh=new mesh_type,
-                             _name="domainSpecial1a" );
+                                 _name="domainSpecial1a" );
     auto Xh = Pch<3>(mesh);
 }
 

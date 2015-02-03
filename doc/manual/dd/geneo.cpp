@@ -268,8 +268,7 @@ Geneopp<Dim, Order, Type>::run()
         bComm.barrier();
         time.restart();
         {
-            std::vector<std::vector<int>*> map;
-            map.resize(mesh->faceNeighborSubdomains().size());
+            std::vector<std::vector<int>> map(mesh->faceNeighborSubdomains().size());
             std::string kind = soption(_name = "backend");
             boost::shared_ptr<Backend<double>> ptr_backend = Backend<double>::build(kind, "", Environment::worldCommSeq());
             Backend<double>::vector_ptrtype f = ptr_backend->newVector(VhLocal);
@@ -287,20 +286,20 @@ Geneopp<Dim, Order, Type>::run()
                 auto op = opInterpolation(_domainSpace = VhLocal,
                                           _imageSpace  = Xh,
                                           _backend     = ptr_backend, _ddmethod = true);
-                map[i] = new std::vector<int>(Xh->nDof());
+                map[i].resize(Xh->nDof());
 #pragma omp critical
                 {
                     ptr_backend->prod(op->mat(), *l, *f, true);
                     pt = &(*f)(0);
                     for(int j = 0; j < VhLocal->nDof(); ++j, ++pt)
                         if(std::round(*pt) != 0)
-                            (*map[i])[std::round(*pt) - 1] = j;
+                            map[i][std::round(*pt) - 1] = j;
                 }
             }
             {
                 std::set<int> unique;
-                for(std::vector<int>* pt : map)
-                    for(int& i : *pt)
+                for(std::vector<int>& pt : map)
+                    for(int& i : pt)
                         unique.insert(i);
                 interface.insert(interface.begin(), unique.cbegin(), unique.cend());
                 std::unordered_map<int, int> mapping;
@@ -308,8 +307,8 @@ Geneopp<Dim, Order, Type>::run()
                 int j = 0;
                 for(const int& i : interface)
                     mapping[i] = j++;
-                for(std::vector<int>* pt : map)
-                    for(int& i : *pt)
+                for(std::vector<int>& pt : map)
+                    for(int& i : pt)
                         i = mapping[i];
             }
             timers[2] = time.elapsed();
@@ -358,7 +357,8 @@ Geneopp<Dim, Order, Type>::run()
                 std::copy_n(EigenA.valuePtr(), ic[VhLocal->nDof()], c);
                 std::copy_n(EigenF.data(), EigenF.rows(), b);
             }
-            K->Subdomain::initialize(new HPDDM::MatrixCSR<double>(VhLocal->nDof(), VhLocal->nDof(), ic[VhLocal->nDof()], c, ic, jc, false, true), mesh->faceNeighborSubdomains().cbegin(), mesh->faceNeighborSubdomains().cend(), map, &comm);
+            K->Subdomain::initialize(new HPDDM::MatrixCSR<double>(VhLocal->nDof(), VhLocal->nDof(), ic[VhLocal->nDof()], c, ic, jc, false, true), mesh->faceNeighborSubdomains(), map, &comm);
+            decltype(map)().swap(map);
             if(nu == 0) {
                 if(nelements(markedfaces(meshLocal, "Dirichlet")) == 0) {
                     unsigned short nb;
@@ -370,8 +370,6 @@ Geneopp<Dim, Order, Type>::run()
                     K->super::super::initialize(0);
             }
 #endif
-            for(std::vector<int>* pt : map)
-                delete pt;
         }
 #ifdef FEELPP_HAS_HPDDM
         bComm.barrier();
