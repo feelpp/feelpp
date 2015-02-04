@@ -92,13 +92,13 @@ BoundaryConditions::load(const std::string &filename)
     {
         for( auto const& s : *this )
         {
-            std::cout << "field " << s.first << "\n";
+            LOG(INFO) << "field " << s.first << "\n";
             for( auto const& t : s.second )
             {
-                std::cout << " - type " << t.first << "\n";
+                LOG(INFO) << " - type " << t.first << "\n";
                 for( auto const& c : t.second )
                 {
-                    std::cout << "  . boundary  " << c.first << " expr : " << c.second << "\n";
+                    LOG(INFO) << "  . boundary  " << c.first << " expr : " << c.second << "\n";
                 }
                 
             }
