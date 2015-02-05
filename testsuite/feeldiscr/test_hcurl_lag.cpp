@@ -202,20 +202,19 @@ namespace Feel
       auto f12 = F1.element<1>();
       auto f21 = F2.element<0>();
       auto f22 = F2.element<1>();
+      A1 = vf::project(_space=Ah, _range=elements(mesh), _expr=idv(A2));   // Curl
+      B1 = vf::project(_space=Bh, _range=elements(mesh), _expr=idv(B2));   // Lag s
+      C1 = vf::project(_space=Ch, _range=elements(mesh), _expr=idv(C2));   // Lag v
+      d11 = vf::project(_space=Dh->functionSpace<0>(), _range=elements(mesh), _expr=idv(d21));
+      d12 = vf::project(_space=Dh->functionSpace<1>(), _range=elements(mesh), _expr=idv(d22));
+      e11 = vf::project(_space=Eh->functionSpace<0>(), _range=elements(mesh), _expr=idv(e21));
+      e12 = vf::project(_space=Eh->functionSpace<1>(), _range=elements(mesh), _expr=idv(e22));
+      f11 = vf::project(_space=Fh->functionSpace<0>(), _range=elements(mesh), _expr=idv(f21));
+      f12 = vf::project(_space=Fh->functionSpace<1>(), _range=elements(mesh), _expr=idv(f22));
 
-      A1 = vf::project(Ah, elements(mesh), idv(A2));   // Curl
-      B1 = vf::project(Bh, elements(mesh), idv(B2));   // Lag s
-      C1 = vf::project(Ch, elements(mesh), idv(C2));   // Lag v
-      d11 = vf::project(Dh->functionSpace<0>(), elements(mesh), idv(d21)); 
-      d21 = vf::project(Dh->functionSpace<1>(), elements(mesh), idv(d22)); 
-      e11 = vf::project(Eh->functionSpace<0>(), elements(mesh), idv(e21)); 
-      e21 = vf::project(Eh->functionSpace<1>(), elements(mesh), idv(e22)); 
-      f11 = vf::project(Fh->functionSpace<0>(), elements(mesh), idv(f21)); 
-      f21 = vf::project(Fh->functionSpace<1>(), elements(mesh), idv(f22)); 
+      auto a = form2(_test=Eh,_trial=Eh);
+      a = integrate(_range=elements(mesh), _expr=inner(id(e21),trans(gradt(e12))));
 
-      auto a = form2(Eh,Eh);
-      a = integrate(elements(mesh), inner(trans(id(e21)),gradt(e12)));
-      a = integrate(elements(mesh), inner(id(e21),trans(gradt(e12))));
     }
 }
 
