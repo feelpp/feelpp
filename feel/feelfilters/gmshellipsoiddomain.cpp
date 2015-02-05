@@ -212,24 +212,6 @@ GmshEllipsoidDomain::getDescription3D() const
          << "Circle(10) = {7,1,4};\n"
          << "Circle(11) = {4,1,6};\n"
          << "Circle(12) = {6,1,2};\n"
-#if 1
-         << "Line Loop(13) = {-2,-8,10};\n"
-         << "Ruled Surface(14) = {13};\n"
-         << "Line Loop(15) = {-7,-3,-10};\n"
-         << "Ruled Surface(16) = {15};\n"
-         << "Line Loop(17) = {8,-1,9};\n"
-         << "Ruled Surface(18) = {17};\n"
-         << "Line Loop(19) = {-5,2,11};\n"
-         << "Ruled Surface(20) = {19};\n"
-         << "Line Loop(21) = {1,5,12};\n"
-         << "Ruled Surface(22) = {21};\n"
-         << "Line Loop(23) = {3,-6,-11};\n"
-         << "Ruled Surface(24) = {23};\n"
-         << "Line Loop(25) = {-4,7,-9};\n"
-         << "Ruled Surface(26) = {25};\n"
-         << "Line Loop(27) = {6,4,-12};\n"
-         << "Ruled Surface(28) = {27};\n"
-#else
          << "Line Loop(13) = {2,8,-10};\n"
          << "Ruled Surface(14) = {13};\n"
          << "Line Loop(15) = {10,3,7};\n"
@@ -246,7 +228,6 @@ GmshEllipsoidDomain::getDescription3D() const
          << "Ruled Surface(26) = {25};\n"
          << "Line Loop(27) = {-4,12,-6};\n"
          << "Ruled Surface(28) = {27};\n"
-#endif
          << "Surface Loop(29) = {28,26,16,14,20,24,22,18};\n"
          << "Volume(30) = {29};\n";
 
