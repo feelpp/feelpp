@@ -291,9 +291,9 @@ public :
         auto mycmdparser = Environment::commandLineParser();
         po::parsed_options parsed = mycmdparser.options( _options ).allow_unregistered().run();
         po::store(parsed,M_vm);
-        if ( !Environment::configFileName().empty() )
+        for ( std::string cfgfile : Environment::configFileNames() )
         {
-            std::ifstream ifs( Environment::configFileName() );
+            std::ifstream ifs( cfgfile );
             po::store(po::parse_config_file(ifs, _options,true), M_vm);
         }
         po::notify(M_vm);

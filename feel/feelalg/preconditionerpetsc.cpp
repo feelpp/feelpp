@@ -456,6 +456,196 @@ static PetscErrorCode PCFieldSplit_UpdateMatPrecondSchurComplement( PC pc, Mat s
 #endif
 
 
+
+
+
+
+typedef struct {
+  Mat              fact;              /* factored matrix */
+  MatFactorInfo    info;
+  MatOrderingType  ordering;          /* matrix reordering */
+  MatSolverPackage solvertype;
+  MatFactorType    factortype;
+} PC_Factor;
+
+typedef struct {
+  PC_Factor hdr;
+  PetscReal actualfill;         /* actual fill in factor */
+  PetscBool inplace;            /* flag indicating in-place factorization */
+  IS        row,col;            /* index sets used for reordering */
+  PetscBool reuseordering;      /* reuses previous reordering computed */
+  PetscBool reusefill;          /* reuse fill from previous LU */
+  PetscBool nonzerosalongdiagonal;
+  PetscReal nonzerosalongdiagonaltol;
+} PC_LU;
+
+
+
+
+#include <petsc-private/matimpl.h>
+
+
+    //EXTERN_C_BEGIN
+#if defined(PETSC_USE_COMPLEX)
+#if defined(PETSC_USE_REAL_SINGLE)
+#include <cmumps_c.h>
+#else
+#include <zmumps_c.h>
+#endif
+#else
+#if defined(PETSC_USE_REAL_SINGLE)
+#include <smumps_c.h>
+#else
+#include <dmumps_c.h>
+#endif
+#endif
+    //EXTERN_C_END
+
+/* calls to MUMPS */
+#if defined(PETSC_USE_COMPLEX)
+#if defined(PETSC_USE_REAL_SINGLE)
+#define PetscMUMPS_c cmumps_c
+#else
+#define PetscMUMPS_c zmumps_c
+#endif
+#else
+#if defined(PETSC_USE_REAL_SINGLE)
+#define PetscMUMPS_c smumps_c
+#else
+#define PetscMUMPS_c dmumps_c
+#endif
+#endif
+
+typedef struct {
+#if defined(PETSC_USE_COMPLEX)
+#if defined(PETSC_USE_REAL_SINGLE)
+    CMUMPS_STRUC_C id;
+#else
+ZMUMPS_STRUC_C id;
+#endif
+#else
+#if defined(PETSC_USE_REAL_SINGLE)
+SMUMPS_STRUC_C id;
+#else
+DMUMPS_STRUC_C id;
+#endif
+#endif
+
+MatStructure matstruc;
+PetscMPIInt  myid,size;
+PetscInt     *irn,*jcn,nz,sym;
+PetscScalar  *val;
+MPI_Comm     comm_mumps;
+VecScatter   scat_rhs, scat_sol;
+PetscBool    isAIJ,CleanUpMUMPS;
+Vec          b_seq,x_seq;
+PetscInt     ICNTL9_pre;   /* check if ICNTL(9) is changed from previous MatSolve */
+
+PetscErrorCode (*Destroy)(Mat);
+PetscErrorCode (*ConvertToTriples)(Mat, int, MatReuse, int*, int**, int**, PetscScalar**);
+} Mat_MUMPS;
+
+namespace PetscImpl
+{
+
+static PetscErrorCode MatDestroyVINCENT_MUMPS(Mat A);
+
+static PetscErrorCode PCResetVINCENT_LU(PC pc)
+{
+    std::cout<< "PCLU reset start\n";
+    PC_LU          *dir = (PC_LU*)pc->data;
+    PC_Factor  *myfact = (PC_Factor*)dir;
+    //if (!dir->inplace && ((PC_Factor*)dir)->fact) {MatDestroy(&((PC_Factor*)dir)->fact);}
+    if (myfact && !dir->inplace && myfact->fact) { MatDestroyVINCENT_MUMPS( myfact->fact);}
+    std::cout<< "PCLU reset ---1----\n";
+    if (dir->row && dir->col && dir->row != dir->col) {ISDestroy(&dir->row);}
+    std::cout<< "PCLU reset ---2----\n";
+    ISDestroy(&dir->col);
+    std::cout<< "PCLU reset finish\n";
+ 
+    return(0);
+}
+
+static PetscErrorCode PCDestroyVINCENT_LU(PC pc)
+{
+    std::cout<< "je suis dans mon pclu destroy\n";
+    PC_LU          *dir = (PC_LU*)pc->data;
+
+    PCResetVINCENT_LU(pc);
+    //PCReset_LU(pc);
+    //PCReset(pc);
+#if 1
+    PetscFree(((PC_Factor*)dir)->ordering);
+    PetscFree(((PC_Factor*)dir)->solvertype);
+    PetscFree(pc->data);
+#endif
+    return(0);
+}
+static  PetscErrorCode PCLUVINCENT(PC pc)
+{
+    std::cout<< "je suis dans setting pclu destroy\n";
+    PC_LU          *dir = (PC_LU*)pc->data;
+
+    pc->ops->reset           = PCResetVINCENT_LU;
+    pc->ops->destroy           = PCDestroyVINCENT_LU;
+    //this->check( PetscImpl::PCLUVINCENT(pc) );
+    return(0);
+}
+
+
+#define JOB_END -2
+static PetscErrorCode MatDestroyVINCENT_MUMPS(Mat A)
+{
+    Mat_MUMPS      *mumps=(Mat_MUMPS*)A->spptr;
+    std::cout<< "je suis dans mon destroy\n";
+    return(0);
+
+   if (mumps->CleanUpMUMPS) {
+       /* Terminate instance, deallocate memories */
+       PetscFree2(mumps->id.sol_loc,mumps->id.isol_loc);
+       VecScatterDestroy(&mumps->scat_rhs);
+       VecDestroy(&mumps->b_seq);
+       VecScatterDestroy(&mumps->scat_sol);
+       VecDestroy(&mumps->x_seq);
+       PetscFree(mumps->id.perm_in);
+       PetscFree(mumps->irn);
+
+       mumps->id.job = JOB_END;
+       PetscMUMPS_c(&mumps->id);
+       MPI_Comm_free(&(mumps->comm_mumps));
+   }
+   if (mumps->Destroy) {
+       (mumps->Destroy)(A);
+   }
+   PetscFree(A->spptr);
+
+   /* clear composed functions */
+   PetscObjectComposeFunction((PetscObject)A,"MatFactorGetSolverPackage_C",NULL);
+   PetscObjectComposeFunction((PetscObject)A,"MatMumpsSetIcntl_C",NULL);
+   PetscObjectComposeFunction((PetscObject)A,"MatMumpsGetIcntl_C",NULL);
+   PetscObjectComposeFunction((PetscObject)A,"MatMumpsSetCntl_C",NULL);
+   PetscObjectComposeFunction((PetscObject)A,"MatMumpsGetCntl_C",NULL);
+
+   PetscObjectComposeFunction((PetscObject)A,"MatMumpsGetInfo_C",NULL);
+   PetscObjectComposeFunction((PetscObject)A,"MatMumpsGetInfog_C",NULL);
+   PetscObjectComposeFunction((PetscObject)A,"MatMumpsGetRinfo_C",NULL);
+   PetscObjectComposeFunction((PetscObject)A,"MatMumpsGetRinfog_C",NULL);
+
+    return(0);
+}
+
+PetscErrorCode MatMumpsVINCENT(Mat F/*,PetscInt icntl,PetscInt *info*/)
+{
+    Mat_MUMPS *mumps =(Mat_MUMPS*)F->spptr;
+    mumps->Destroy = MatDestroyVINCENT_MUMPS;
+    std::cout<< "je suis la mumps\n";
+    //*info = mumps->id.INFO(icntl);
+    return(0);
+}
+
+} // namespace PetscImpl
+
+
 } // extern C
 
 
@@ -1470,6 +1660,7 @@ ConfigurePCLU::runConfigurePCLU( PC& pc )
     // set factor package
     //this->check( PCFactorSetMatSolverPackage( pc, M_matSolverPackage.c_str() ) );
 
+    //this->check( PetscImpl::PCLUVINCENT(pc) );
     // allow to tune the factorisation package
     this->check( PCFactorSetUpMatSolverPackage(pc) );
 
@@ -1486,6 +1677,10 @@ ConfigurePCLU::runConfigurePCLU( PC& pc )
                 this->check( MatMumpsSetIcntl(F,icntl,ival) );
             }
         }
+
+        //this->check( PetscImpl::MatMumpsVINCENT(F) );
+        //this->check( PetscImpl::PCLUVINCENT(pc) );
+
     }
 }
 
