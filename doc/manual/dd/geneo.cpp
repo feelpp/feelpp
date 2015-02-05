@@ -28,11 +28,8 @@
    \author Pierre Jolivet <pierre.jolivet@imag.fr>
    \date 2013-12-21
  */
-#ifndef MKL_Complex16
-#define MKL_Complex16 std::complex<double>
-#endif
-#ifndef MKL_Complex8
-#define MKL_Complex8 std::complex<float>
+#ifdef EIGEN_USE_MKL_ALL
+#undef EIGEN_USE_MKL_ALL
 #endif
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
@@ -169,8 +166,7 @@ public:
 }; // Geneopp
 
 template<uint16_type Dim, uint16_type Order, template<uint16_type> class Type>
-void
-Geneopp<Dim, Order, Type>::run()
+void Geneopp<Dim, Order, Type>::run()
 {
     static_assert(Dim == 2 || Dim == 3, "Wrong dimension");
 #if defined(FETI)
@@ -182,51 +178,17 @@ Geneopp<Dim, Order, Type>::run()
 #endif
     prec_type* K = new prec_type;
     tic();
-    int p = ioption("p");
-    int topology = ioption("topology");
-    p = std::max(p, 1);
+    unsigned short p = ioption("p");
+    unsigned short topology = ioption("topology");
     MPI_Comm comm;
     bool exclude = boption("exclude");
-    bool excluded;
-    if(!exclude) {
+    bool excluded = HPDDM::DMatrix::splitCommunicator(Environment::worldComm(), comm, exclude, p, topology);
+    if(!exclude)
         MPI_Comm_dup(Environment::worldComm(), &comm);
-        excluded = false;
-    }
-    else {
-        MPI_Group orig_group, new_group;
-        MPI_Comm_group(Environment::worldComm(), &orig_group);
-        int* pm = new int[p];
-        if(p > Environment::numberOfProcessors()) {
-            p = Environment::numberOfProcessors() / 2;
-            if(Environment::isMasterRank())
-                std::cout << "WARNING -- the number of master processes was set to a value greater than MPI_Comm_size, the value of \"-p\" has been reset to " << Environment::numberOfProcessors() / 2 << std::endl;
-        }
-        if(topology == 0)
-            for(unsigned short i = 0; i < p; ++i)
-                pm[i] = i * (Environment::numberOfProcessors() / p);
-        else if(topology == 1)
-            std::iota(pm, pm + p, 0);
-        else if(topology == 2) {
-            float area = Environment::numberOfProcessors() * Environment::numberOfProcessors() / (2.0 * p);
-            *pm = 0;
-            for(unsigned short i = 1; i < p; ++i)
-                pm[i] = static_cast<int>(Environment::numberOfProcessors() - std::sqrt(std::max(Environment::numberOfProcessors() * Environment::numberOfProcessors() - 2 * Environment::numberOfProcessors() * pm[i - 1] - 2 * area + pm[i - 1] * pm[i - 1], 1.0f)) + 0.5);
-        }
-        excluded = std::binary_search(pm, pm + p, Environment::rank());
-        if(excluded)
-            MPI_Group_incl(orig_group, p, pm, &new_group);
-        else
-            MPI_Group_excl(orig_group, p, pm, &new_group);
-        MPI_Comm_create(Environment::worldComm(), new_group, &comm);
-        MPI_Group_free(&orig_group);
-        MPI_Group_free(&new_group);
-        delete [] pm;
-    }
     boost::mpi::communicator bComm(comm, boost::mpi::comm_take_ownership);
-    std::vector<int> active(bComm.size(), true);
-    WorldComm wComm(bComm, bComm, bComm, bComm.rank(), active);
+    WorldComm wComm(bComm, bComm, bComm, bComm.rank(), std::vector<int>(bComm.size(), true));
     toc("communicators");
-    std::vector<double> timers(6 + (nu != 0 ? 2 : 0));
+    std::vector<double> timers(6 + (nu != 0 ? 2 : 0) + (exclude == true));
     mpi::timer time;
     boost::shared_ptr<Mesh<Simplex<Dim>>> mesh;
     typename FunctionSpace<typename Mesh<Simplex<Dim>>::mesh_type, bases<Lagrange<Order, Type>>>::element_type uLocal;
@@ -275,8 +237,7 @@ Geneopp<Dim, Order, Type>::run()
             int i;
 #pragma omp parallel for shared(map) private(i) schedule(static, 4)
             for(i = 0; i < map.size(); ++i) {
-                std::set<rank_type>::iterator it = mesh->faceNeighborSubdomains().begin();
-                std::advance(it, i);
+                std::set<rank_type>::iterator it = std::next(mesh->faceNeighborSubdomains().begin(), i);
                 auto trace = createSubmesh(mesh, interprocessfaces(mesh, *it),
                                            Environment::worldCommSeq());
                 auto Xh = FunctionSpace<typename Mesh<Simplex<Dim>>::trace_mesh_type, bases<Lagrange<Order, Type>>>::New(_mesh = trace, _worldscomm = Environment::worldsCommSeq(1));
@@ -388,8 +349,7 @@ Geneopp<Dim, Order, Type>::run()
             K->super::super::initialize(nu);
         }
         K->callNumfactPreconditioner();
-        std::string scaling = soption("scaling");
-        K->buildScaling(scaling[0]);
+        K->buildScaling(soption("scaling")[0]);
         uLocal = VhLocal->element();
     }
     std::vector<unsigned short> parm(5);
@@ -410,14 +370,35 @@ Geneopp<Dim, Order, Type>::run()
         delete K;
     }
     else {
-        if(exclude)
-            K->buildTwo<1>(Environment::worldComm(), parm);
+        std::pair<MPI_Request, const double*>* ret;
+        int flag = 0;
+        if(exclude) {
+            ret = K->buildTwo<1>(Environment::worldComm(), parm);
+            if(ret) {
+                MPI_Test(&(ret->first), &flag, MPI_STATUS_IGNORE);
+                if(flag) {
+                    delete [] ret->second;
+                    delete ret;
+                }
+            }
+        }
         else
-            K->buildTwo<0>(Environment::worldComm(), parm);
+            ret = K->buildTwo<0>(Environment::worldComm(), parm);
         bComm.barrier();
         time.restart();
         K->callNumfact();
         timers[5] = time.elapsed();
+        if(ret) {
+            time.restart();
+            if(flag)
+                timers.back() = 0.0;
+            else {
+                MPI_Wait(&(ret->first), MPI_STATUS_IGNORE);
+                delete [] ret->second;
+                delete ret;
+            }
+            timers.back() = time.elapsed();
+        }
         HPDDM::IterativeMethod::PCG<false>(*K, &(uLocal[0]), b, iter, eps, Environment::worldComm(), Environment::isMasterRank());
 
         double* storage = new double[2];
@@ -473,21 +454,24 @@ Geneopp<Dim, Order, Type>::run()
         MPI_Gather(timers.data(), timers.size(), MPI_DOUBLE, allTimers, timers.size(), MPI_DOUBLE, 0, bComm);
         if(bComm.rank() == 0) {
             std::cout << "createSubmesh  FunctionSpace  Interface    Assem. solver  Renumbering    Fact. pinv.  ";
-            if(timers.size() == 8)
-                std::cout << "Schur complement  GenEO";
+            if(timers.size() >= 8)
+                std::cout << "Schur compl.   GenEO       ";
+            if(timers.size() == 7 || timers.size() == 9)
+                std::cout << "  Waiting time";
             std::cout << std::endl;
             std::cout.precision(4);
             for(int i = 0; i < bComm.size(); ++i) {
                 std::cout << std::scientific << allTimers[0 + i * timers.size()] << "     " << allTimers[1 + i * timers.size()] << "     " << allTimers[2 + i * timers.size()] << "   " << allTimers[3 + i * timers.size()] << "     " << allTimers[4 + i * timers.size()] << "     " << allTimers[5 + i * timers.size()] << "   ";
-                if(timers.size() == 8)
-                    std::cout << std::scientific << allTimers[6 + i * timers.size()] << "        " << allTimers[7 + i * timers.size()];
+                if(timers.size() >= 8)
+                    std::cout << std::scientific << allTimers[6 + i * timers.size()] << "     " << allTimers[7 + i * timers.size()] << "  ";
+                if(timers.size() == 7 || timers.size() == 9)
+                    std::cout << "  " << std::scientific << allTimers[(i + 1) * timers.size() - 1];
                 std::cout << std::endl;
             }
         }
         delete [] allTimers;
     }
 } // Geneopp::run
-
 } // Feel
 
 int main(int argc, char** argv) {
@@ -498,7 +482,7 @@ int main(int argc, char** argv) {
         ("scaling", po::value<std::string>()->default_value("m"), "kind of scaling")
         ("p", po::value<int>()->default_value(1), "number of master processes")
         ("topology", po::value<int>()->default_value(0), "distribution of the coarse operator")
-        ("strategy", po::value<int>()->default_value(3), "ordering tool for the direct solver (only useful when using MUMPS)")
+        ("strategy", po::value<int>()->default_value(3), "ordering tool for the direct coarse solver (only useful when using MUMPS)")
         ("eps", po::value<double>()->default_value(1e-8), "relative preconditioned residual")
         ("it", po::value<int>()->default_value(50), "maximum number of iterations")
         ("nu", po::value<int>()->default_value(0), "number of eigenvalues")
@@ -515,6 +499,7 @@ int main(int argc, char** argv) {
     // app.add(new Geneopp<2, 1, Scalar>());
     // app.add(new Geneopp<3, 2, Scalar>());
     app.add(new Geneopp<2, 1, Vectorial>());
+    // app.add(new Geneopp<2, 7, Vectorial>());
     // app.add(new Geneopp<3, 2, Vectorial>());
     app.run();
 }
