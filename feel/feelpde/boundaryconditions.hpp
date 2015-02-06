@@ -33,14 +33,30 @@
 
 namespace Feel
 {
+struct ExpressionStringAtMarker : public std::pair<std::string,std::string>
+{
+    typedef std::pair<std::string,std::string> super;
+
+    ExpressionStringAtMarker( super && s ) : super( s ) {}
+    
+    /**
+     * @return the marker
+     */
+    std::string const& marker() const { return this->first; }
+    
+    /**
+     * @return the expression
+     */
+    std::string const& expression() const { return this->second; }
+};
 /**
  * Defines boundary conditions dictionary
  */
 class BoundaryConditions
     :
-        public std::map<std::string,std::map<std::string,std::vector<std::pair<std::string,std::string>>>>
+        public std::map<std::string,std::map<std::string,std::vector<ExpressionStringAtMarker>>>
 {
-    typedef std::map<std::string,std::map<std::string,std::vector<std::pair<std::string,std::string>>>> super;
+    typedef std::map<std::string,std::map<std::string,std::vector<ExpressionStringAtMarker>>> super;
     
   public:
     using value_type = typename super::value_type;
