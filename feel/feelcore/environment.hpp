@@ -195,9 +195,10 @@ public:
         ( optional
           ( filename,*( boost::is_convertible<mpl::_,std::string> ),"logfile" )
           ( subdir,*( boost::is_convertible<mpl::_,bool> ),S_vm["npdir"].as<bool>() )
+          ( worldcomm, ( WorldComm ), Environment::worldComm() )
         ) )
     {
-        changeRepositoryImpl( directory, filename, subdir );
+        changeRepositoryImpl( directory, filename, subdir, worldcomm );
     }
 
     template <class ArgumentPack>
@@ -343,9 +344,9 @@ public:
     {
         return *S_commandLineParser;
     }
-    static std::string configFileName()
+    static std::set<std::string> configFileNames()
     {
-        return S_configFileName;
+        return S_configFileNames;
     }
 
     /**
@@ -589,7 +590,7 @@ public:
 private:
 
     //! change the directory where the results are stored
-    static void changeRepositoryImpl( boost::format fmt, std::string const& logfile, bool add_subdir_np );
+    static void changeRepositoryImpl( boost::format fmt, std::string const& logfile, bool add_subdir_np, WorldComm const& worldcomm );
 
     //! process command-line/config-file options
     static void doOptions( int argc, char** argv,
@@ -621,7 +622,7 @@ private:
 
     static AboutData S_about;
     static boost::shared_ptr<po::command_line_parser> S_commandLineParser;
-    static std::string S_configFileName;
+    static std::set<std::string> S_configFileNames;
     static po::variables_map S_vm;
     static boost::shared_ptr<po::options_description> S_desc;
     static boost::shared_ptr<po::options_description> S_desc_app;
