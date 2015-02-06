@@ -669,7 +669,7 @@ struct map_scalar_field: public std::map<std::string,Expr<GinacEx<Order>>>
     map_scalar_field& operator=(map_scalar_field const& f ) = default;
 };
 
-typedef std::map<std::string,GinacEx<2>> map_scalar_field_type;
+typedef std::map<std::string,Expr<GinacEx<2>>> map_scalar_field_type;
 /**
  * defines a dictionary of vector fields
  * 
