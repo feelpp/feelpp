@@ -11,8 +11,8 @@ compiler:
 - clang
 
 env:
-- BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
-- BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O1 -DNDEBUG"
+- BUILD="o2-ndebug" BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
+- BUILD="o1-ndebug" BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O1 -DNDEBUG"
 
 #- BUILDTYPE=Release TARGET=tutorial
 
@@ -57,7 +57,7 @@ cache:
   - /usr/local/Cellar/glpk
 
 install:
-- mkdir opt && cd opt && ../configure --build=$BUILDTYPE -v --cxxflags="$CXXFLAGS"
+- mkdir opt-$BUILD && cd opt-$BUILD && ../configure --build=$BUILDTYPE -v --cxxflags="$CXXFLAGS"
 
 script:
 - make -j16 feelpp_ginac
