@@ -34,6 +34,7 @@ before_install:
 - git submodule update --init --recursive contrib/nlopt
 - git submodule update --init --recursive contrib/nt2
 - git submodule update --init --recursive contrib/ipopt
+- git submodule update --init --recursive quickstart
 
 cache:
   directories:
