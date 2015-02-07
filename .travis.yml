@@ -57,7 +57,7 @@ cache:
   - /usr/local/Cellar/glpk
 
 install:
-- mkdir opt && cd opt && ../configure --build=$BUILDTYPE -v --cxxflags=$CXXFLAGS
+- mkdir opt && cd opt && ../configure --build=$BUILDTYPE -v --cxxflags="$CXXFLAGS"
 
 script:
 - make -j16 feelpp_ginac
