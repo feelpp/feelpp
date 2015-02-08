@@ -119,9 +119,12 @@ macro(feelpp_add_application)
     foreach(  cfg ${FEELPP_APP_CFG} )
       #      if ( EXISTS ${cfg} )
       # extract cfg filename  to be copied in binary dir
-      get_filename_component( CFG_NAME ${cfg} NAME )
-      configure_file( ${cfg} ${CFG_NAME} )
-      INSTALL(FILES "${cfg}"  DESTINATION share/feel/config)
+      #get_filename_component( CFG_NAME ${cfg} NAME )
+      #configure_file( ${cfg} ${CFG_NAME} )
+      
+      file(COPY ${cfg} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+      
+      #INSTALL(FILES "${cfg}"  DESTINATION share/feel/config)
       #      else()
       #        message(WARNING "Executable ${FEELPP_APP_NAME}: configuration file ${cfg} does not exist")
       #      endif()

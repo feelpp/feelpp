@@ -108,6 +108,12 @@ public:
      */
     void openFile (const std::string& fileName, const comm_type& comm,
                    const bool& existing);
+
+    //! Create a new group
+    /*!
+     * Create a new group in the open file
+     */
+    void createGroup (const std::string& tableName);
     //! Create a new table
     /*!
      * Create a new table in the open file

@@ -2212,6 +2212,7 @@ struct MeshPoints
     int globalNumberOfPoints() const { return global_npts; }
     int globalNumberOfElements() const { return global_nelts; }
 
+    std::vector<int> numberOfPoints, numberOfElements;
     int global_nelts{0}, global_npts{0};
     std::vector<int32_t> ids;
     std::map<int32_t, int32_t> new2old;
@@ -2233,7 +2234,7 @@ struct MeshPoints
  * @param outer If false, the vertices are place in an x1 y1 z1 ... xn yn zn order, otherwise in the x1 ... xn y1 ... yn z1 ... zn
  * @param renumber If true, the vertices will be renumbered with maps to keep the correspondance between the twoi, otherwise the original ids are kept
  * @param fill It true, the method will generate points coordinates that are 3D, even if the point is specified with 1D or 2D coordinates (filled with 0)
- * @param Specify the startIndex of the renumbered points (typically set to 0 or 1, but no restriction)
+ * @param Specify the startIndex of the renumbered points (typically set to 0 or 1, but no restriction). This is only used when renumber is true, otherwise it is not used.
  */
 template<typename T>
 template<typename MeshType, typename IteratorType>
@@ -2386,6 +2387,14 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
     std::vector<std::vector<int>> ospe;
 
     mpi::all_gather( worldComm.comm(), ost, ospe );
+
+    /* copy information about number of points/elements
+     * per process in a local array */
+    for( size_type i = 0; i < ospe.size(); i++)
+    {
+        numberOfPoints.push_back(ospe[i][0]);
+        numberOfElements.push_back(ospe[i][1]);
+    }
 
     /* compute offsets to shift the point and element ids */
     /* regarding to the processor rank */

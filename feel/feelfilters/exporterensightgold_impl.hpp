@@ -857,7 +857,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
                     if( ioption( _name="exporter.ensightgold.pack.timesteps" ) > 1 )
                     {
                         // timestep indices start at 1
-                        __geofname << "." << ((__step->index() - 1) / ioption( _name="exporter.ensightgold.pack.timesteps" ) + 1);
+                        __geofname << "." << ((__step->index() - TS_INITIAL_INDEX) / ioption( _name="exporter.ensightgold.pack.timesteps" ) + 1);
                     }
                     __geofname << ".geo";
 
@@ -889,7 +889,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
 
                         /* Move to the beginning of the fie index section */
                         /* to overwrite it */
-                        if ( index.defined() && __step->index() > 0 ) {
+                        if ( index.defined() && (__step->index() - TS_INITIAL_INDEX) > 0 ) {
                             MPI_File_seek_shared(fh, index.fileblock_n_steps, MPI_SEEK_SET);
                         }
                         else {
@@ -1634,7 +1634,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
         && ioption( _name="exporter.ensightgold.pack.timesteps" ) > 1 )
         {
             // timestep indices start at 1
-            __varfname << "." << ((__step->index() - 1) / ioption( _name="exporter.ensightgold.pack.timesteps" ) + 1);
+            __varfname << "." << ((__step->index() - TS_INITIAL_INDEX) / ioption( _name="exporter.ensightgold.pack.timesteps" ) + 1);
         }
         // add extension
         if(__var->second.is_scalar)
@@ -1677,7 +1677,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
 
             /* Move to the beginning of the fie index section */
             /* to overwrite it */
-            if ( index.defined() && __step->index() > 0 ) {
+            if ( index.defined() && (__step->index() - TS_INITIAL_INDEX) > 0 ) {
                 MPI_File_seek_shared(fh, index.fileblock_n_steps, MPI_SEEK_SET);
             }
             else {
@@ -1946,7 +1946,7 @@ ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtyp
         && ioption( _name="exporter.ensightgold.pack.timesteps" ) > 1 )
         {
             // timestep indices start at 1
-            __evarfname << "." << ((__step->index() - 1) / ioption( _name="exporter.ensightgold.pack.timesteps" ) + 1);
+            __evarfname << "." << ((__step->index() - TS_INITIAL_INDEX) / ioption( _name="exporter.ensightgold.pack.timesteps" ) + 1);
         }
         // add extension
         if(__evar->second.is_scalar)
@@ -1990,7 +1990,7 @@ ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtyp
 
             /* Move to the beginning of the fie index section */
             /* to overwrite it */
-            if ( index.defined() && __step->index() > 0 ) {
+            if ( index.defined() && (__step->index() - TS_INITIAL_INDEX) > 0 ) {
                 MPI_File_seek_shared(fh, index.fileblock_n_steps, MPI_SEEK_SET);
             }
             else {
