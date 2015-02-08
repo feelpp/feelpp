@@ -3,9 +3,9 @@
  This file is part of the Feel++ library
  
  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
- Date: 18 Dec 2014
+ Date: 07 Feb 2015
  
- Copyright (C) 2014 Feel++ Consortium
+ Copyright (C) 2015 Feel++ Consortium
  
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -27,11 +27,15 @@
 
 namespace Feel
 {
-template boost::shared_ptr<Mesh<Simplex<1,1>>>
-straightenMesh<Mesh<Simplex<1,1>>>( boost::shared_ptr<Mesh<Simplex<1,1>>>, 
+
+template boost::shared_ptr<Mesh<Hypercube<1,1,2>>>
+straightenMesh<Mesh<Hypercube<1,1,2>>>( boost::shared_ptr<Mesh<Hypercube<1,1,2>>>, 
+                                        WorldComm const& , bool, bool  );
+
+
+template boost::shared_ptr<Mesh<Simplex<1,2>>>
+straightenMesh<Mesh<Simplex<1,2>>>( boost::shared_ptr<Mesh<Simplex<1,2>>>, 
                                     WorldComm const& , bool, bool  );
-template boost::shared_ptr<Mesh<Simplex<1,1,2>>>
-straightenMesh<Mesh<Simplex<1,1,2>>>( boost::shared_ptr<Mesh<Simplex<1,1,2>>>, 
-                                    WorldComm const& , bool, bool  );
+
 
 }

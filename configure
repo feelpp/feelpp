@@ -13,6 +13,7 @@ Options:
  -d, --debug                         debug mode
 -rd, --relwithdebinfo                relwithdebinfo mode
  -r, --release                       release mode
+     --cxxflags                      override cxxflags 
      --prefix=PATH                   define install path
  -v, --verbose                       enable verbose output
  -h, --help                          help page
@@ -50,6 +51,7 @@ _HAS_CONFIG=no
 _WANT_DEV_WARNINGS=
 _WANT_NUMERICS=TRUE
 _WANT_LOCAL_CONFIG=no
+CXXFLAGS=
 ENABLE_NUMA=TRUE
 ENABLE_CUDA=TRUE
 
@@ -128,8 +130,11 @@ while [ -n "$1" ]; do
        BUILDTYPE=Release
        ;;
 #   --og)
-#       _WANT_OG=no
-#       ;;
+   #       _WANT_OG=no
+   #       ;;
+   --cxxflags=*)
+       CXXFLAGS=`echo $1 | sed "s,^--cxxflags=\(.*\),\1,"`
+       ;;
    --local-config)
       _WANT_LOCAL_CONFIG=yes
        LOCAL_CONFIG_DIR=CMake.local
@@ -214,6 +219,10 @@ echo "set(GMSH_LIBRARY_PATH          \"${GMSH_DIR}/lib\" CACHE PATH \"root direc
 fi
 if [ "X${_DISABLE_RESEARCH}" != "X" ]; then
 echo "option(FEELPP__ENABLE_RESEARCH OFF CACHE PATH \"enable research projects\" FORCE)" >> cmake.configure
+fi
+if [ "X${CXXFLAGS}" != "X" ]; then
+    echo "set(CMAKE_CXX_FLAGS_RELEASE \"${CXXFLAGS}\" CACHE STRING \"cxx flags\" FORCE)" >> cmake.configure
+    echo "set(CMAKE_CXX_FLAGS_DEBUG \"${CXXFLAGS}\" CACHE STRING \"cxxflags \" FORCE)" >> cmake.configure
 fi
 #if [ "X${_WANT_OG}" != "X" ]; then
 #echo "set( CMAKE_CXX_FLAGS_RELEASE \"-Og -DNDEBUG\" CACHE PATH \"CXX Release Flags \" FORCE)" >> cmake.configure
