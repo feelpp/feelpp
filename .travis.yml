@@ -11,7 +11,8 @@ compiler:
 - clang
 
 env:
-- BUILDTYPE=Release TARGET=quickstart
+- BUILD="o2-ndebug" BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
+- BUILD="o1-ndebug" BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O1 -DNDEBUG"
 
 #- BUILDTYPE=Release TARGET=tutorial
 
@@ -33,6 +34,7 @@ before_install:
 - git submodule update --init --recursive contrib/nlopt
 - git submodule update --init --recursive contrib/nt2
 - git submodule update --init --recursive contrib/ipopt
+- git submodule update --init --recursive quickstart
 
 cache:
   directories:
@@ -56,7 +58,7 @@ cache:
   - /usr/local/Cellar/glpk
 
 install:
-- mkdir opt && cd opt && ../configure --build=$BUILDTYPE -v
+- mkdir opt-$BUILD && cd opt-$BUILD && ../configure --build=$BUILDTYPE -v --cxxflags="$CXXFLAGS"
 
 script:
 - make -j16 feelpp_ginac
@@ -67,8 +69,6 @@ branches:
   only:
   - develop
   - master
-  - feature/explicit
-  - merging-with-explicit
 cache:
 - apt
 notifications:
