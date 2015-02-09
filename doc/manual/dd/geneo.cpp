@@ -250,11 +250,9 @@ void Geneopp<Dim, Order, Type>::run()
             std::string kind = soption(_name = "backend");
             boost::shared_ptr<Backend<double>> ptr_backend = Backend<double>::build(kind, "", Environment::worldCommSeq());
             Backend<double>::vector_ptrtype f = ptr_backend->newVector(VhLocal);
-            int i;
-#pragma omp parallel for shared(map) private(i) schedule(static, 4)
-            for(i = 0; i < map.size(); ++i) {
-                std::set<rank_type>::iterator it = std::next(mesh->faceNeighborSubdomains().begin(), i);
-                auto trace = createSubmesh(mesh, interprocessfaces(mesh, *it),
+#pragma omp parallel for shared(map) schedule(static, 4)
+            for(int i = 0; i < map.size(); ++i) {
+                auto trace = createSubmesh(mesh, interprocessfaces(mesh, *std::next(mesh->faceNeighborSubdomains().begin(), i)),
                                            Environment::worldCommSeq());
                 auto Xh = FunctionSpace<typename Mesh<Simplex<Dim>>::trace_mesh_type, bases<Lagrange<Order, Type>>>::New(_mesh = trace, _worldscomm = Environment::worldsCommSeq(1));
                 auto l = ptr_backend->newVector(Xh);
