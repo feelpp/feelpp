@@ -761,7 +761,6 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
 
         typename timeset_type::step_const_iterator __it = __ts->beginStep();
         typename timeset_type::step_const_iterator __end = __ts->endStep();
-
         int timeIndex = TS_INITIAL_INDEX;
         mesh_ptrtype mesh = NULL;
 
@@ -781,7 +780,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
             { mesh = (*__it)->mesh(); }
 
             /* record step index */
-            timeIndex == (*__it)->index();
+            timeIndex = (*__it)->index();
         }
 
         /* if we were not able to get a mesh, there is a problem */
