@@ -53,64 +53,80 @@
 namespace Feel
 {
 template<uint16_type Dim, uint16_type Order>
-static inline void generateRBM(unsigned short& nb, double**& ev, boost::shared_ptr<Mesh<Simplex<Dim>>>& mesh, boost::shared_ptr<FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order, Scalar>>>>& Vh) {
+static inline void generateRBM(unsigned short& nb, double**& ev, boost::shared_ptr<FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order, Scalar>>>>& Vh) {
     nb = 1;
     ev = new double*[nb];
     *ev = new double[nb * Vh->nDof()];
     auto rbm = Vh->element();
-    rbm = vf::project(Vh, elements(mesh), cst(1.0));
+    rbm = vf::project(Vh, elements(Vh->mesh()), cst(1.0));
     std::copy(rbm.begin(), rbm.end(), *ev);
 }
 template<uint16_type Order>
-static inline void generateRBM(unsigned short& nb, double**& ev, boost::shared_ptr<Mesh<Simplex<2>>>& mesh, boost::shared_ptr<FunctionSpace<Mesh<Simplex<2>>, bases<Lagrange<Order, Vectorial>>>>& Vh) {
+static inline void generateRBM(unsigned short& nb, double**& ev, boost::shared_ptr<FunctionSpace<Mesh<Simplex<2>>, bases<Lagrange<Order, Vectorial>>>>& Vh) {
     nb = 3;
     ev = new double*[nb];
     *ev = new double[nb * Vh->nDof()];
     for(unsigned short i = 0; i < nb; ++i)
         ev[i] = *ev + i * Vh->nDof();
     auto rbm = Vh->element();
-    rbm = vf::project(Vh, elements(mesh), oneX());
+    rbm = vf::project(Vh, elements(Vh->mesh()), oneX());
     std::copy(rbm.begin(), rbm.end(), ev[0]);
-    rbm = vf::project(Vh, elements(mesh), oneY());
+    rbm = vf::project(Vh, elements(Vh->mesh()), oneY());
     std::copy(rbm.begin(), rbm.end(), ev[1]);
-    rbm = vf::project(Vh, elements(mesh), vec(Py(), -Px()));
+    rbm = vf::project(Vh, elements(Vh->mesh()), vec(Py(), -Px()));
     std::copy(rbm.begin(), rbm.end(), ev[2]);
 }
 template<uint16_type Order>
-static inline void generateRBM(unsigned short& nb, double**& ev, boost::shared_ptr<Mesh<Simplex<3>>>& mesh, boost::shared_ptr<FunctionSpace<Mesh<Simplex<3>>, bases<Lagrange<Order, Vectorial>>>>& Vh) {
+static inline void generateRBM(unsigned short& nb, double**& ev, boost::shared_ptr<FunctionSpace<Mesh<Simplex<3>>, bases<Lagrange<Order, Vectorial>>>>& Vh) {
     nb = 6;
     ev = new double*[nb];
     *ev = new double[nb * Vh->nDof()];
     for(unsigned short i = 0; i < nb; ++i)
         ev[i] = *ev + i * Vh->nDof();
     auto rbm = Vh->element();
-    rbm = vf::project(Vh, elements(mesh), oneX());
+    rbm = vf::project(Vh, elements(Vh->mesh()), oneX());
     std::copy(rbm.begin(), rbm.end(), ev[0]);
-    rbm = vf::project(Vh, elements(mesh), oneY());
+    rbm = vf::project(Vh, elements(Vh->mesh()), oneY());
     std::copy(rbm.begin(), rbm.end(), ev[1]);
-    rbm = vf::project(Vh, elements(mesh), oneZ());
+    rbm = vf::project(Vh, elements(Vh->mesh()), oneZ());
     std::copy(rbm.begin(), rbm.end(), ev[2]);
-    rbm = vf::project(Vh, elements(mesh), vec(Py(), -Px(), cst(0.0)));
+    rbm = vf::project(Vh, elements(Vh->mesh()), vec(Py(), -Px(), cst(0.0)));
     std::copy(rbm.begin(), rbm.end(), ev[3]);
-    rbm = vf::project(Vh, elements(mesh), vec(-Pz(), cst(0.0), Px()));
+    rbm = vf::project(Vh, elements(Vh->mesh()), vec(-Pz(), cst(0.0), Px()));
     std::copy(rbm.begin(), rbm.end(), ev[4]);
-    rbm = vf::project(Vh, elements(mesh), vec(cst(0.0), Pz(), -Py()));
+    rbm = vf::project(Vh, elements(Vh->mesh()), vec(cst(0.0), Pz(), -Py()));
     std::copy(rbm.begin(), rbm.end(), ev[5]);
 }
+template<uint16_type Dim, uint16_type Order, template<uint16_type> class Type>
+static inline void coefficients(double* r, boost::shared_ptr<FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order, Type>>>>& Vh) {
+    auto x = Vh->element();
+    if(!std::is_same<Type<Dim>, Vectorial<Dim>>::value) {
+        kappa k;
+        k.val = doption("parameters.kappa");
+        x = vf::project(Vh, elements(Vh->mesh()), idf(k) * one());
+    }
+    else {
+        stripes s;
+        s.first  = doption("parameters.n");
+        s.second = doption("parameters.nu");
+        x = vf::project(Vh, elements(Vh->mesh()), idf(s) * one());
+    }
+    std::copy(x.begin(), x.end(), r);
+}
 template<uint16_type Dim, uint16_type Order>
-static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<double>::vector_ptrtype& f, boost::shared_ptr<Mesh<Simplex<Dim>>>& mesh, boost::shared_ptr<FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order, Scalar>>>>& Vh) {
+static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<double>::vector_ptrtype& f, boost::shared_ptr<FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order, Scalar>>>>& Vh) {
     typename FunctionSpace<typename Mesh<Simplex<Dim>>::mesh_type, bases<Lagrange<Order, Scalar>>>::element_type u = Vh->element(), v = Vh->element();
     kappa k;
     k.val = doption("parameters.kappa");
     auto a = form2(_trial = Vh, _test = Vh, _matrix = A);
-    a = integrate(_range = elements(mesh), _expr = idf(k) * gradt(u) * trans(grad(v)));
+    a = integrate(_range = elements(Vh->mesh()), _expr = idf(k) * gradt(u) * trans(grad(v)));
     auto l = form1(_test = Vh, _vector = f);
-    l = integrate(_range = elements(mesh), _expr = id(v));
-    a += on(_range = markedfaces(mesh, "Dirichlet"), _rhs = l, _element = u, _expr = cst(0.0));
+    l = integrate(_range = elements(Vh->mesh()), _expr = id(v));
+    a += on(_range = markedfaces(Vh->mesh(), "Dirichlet"), _rhs = l, _element = u, _expr = cst(0.0));
     A->close();
 }
 template<uint16_type Order>
-static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<double>::vector_ptrtype& f, boost::shared_ptr<Mesh<Simplex<2>>>& mesh, boost::shared_ptr<FunctionSpace<Mesh<Simplex<2>>, bases<Lagrange<Order, Vectorial>>>>& Vh) {
+static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<double>::vector_ptrtype& f, boost::shared_ptr<FunctionSpace<Mesh<Simplex<2>>, bases<Lagrange<Order, Vectorial>>>>& Vh) {
     typename FunctionSpace<typename Mesh<Simplex<2>>::mesh_type, bases<Lagrange<Order, Vectorial>>>::element_type u = Vh->element(), v = Vh->element();
     stripes s;
     s.first  = doption("parameters.epsilon");
@@ -125,16 +141,16 @@ static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<d
     const double density = 1.0e+3;
 
     auto a = form2(_trial = Vh, _test = Vh, _matrix = A);
-    a = integrate(_range = elements(mesh),
+    a = integrate(_range = elements(Vh->mesh()),
                   _expr = lambda * divt(u) * div(v) +
                           2 * mu * trace(trans(sym(gradt(u))) * sym(grad(u))));
     auto l = form1(_test = Vh, _vector = f);
-    l = integrate(_range = elements(mesh), _expr = -density * trans(oneY()) * id(v));
-    a += on(_range = markedfaces(mesh, "Dirichlet"), _rhs = l, _element = u, _expr = zero<2, 1>());
+    l = integrate(_range = elements(Vh->mesh()), _expr = -density * trans(oneY()) * id(v));
+    a += on(_range = markedfaces(Vh->mesh(), "Dirichlet"), _rhs = l, _element = u, _expr = zero<2, 1>());
     A->close();
 }
 template<uint16_type Order>
-static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<double>::vector_ptrtype& f, boost::shared_ptr<Mesh<Simplex<3>>>& mesh, boost::shared_ptr<FunctionSpace<Mesh<Simplex<3>>, bases<Lagrange<Order, Vectorial>>>>& Vh) {
+static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<double>::vector_ptrtype& f, boost::shared_ptr<FunctionSpace<Mesh<Simplex<3>>, bases<Lagrange<Order, Vectorial>>>>& Vh) {
     typename FunctionSpace<typename Mesh<Simplex<3>>::mesh_type, bases<Lagrange<Order, Vectorial>>>::element_type u = Vh->element(), v = Vh->element();
     stripes s;
     s.first  = doption("parameters.epsilon");
@@ -149,12 +165,12 @@ static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<d
     const double density = 1.0e+3;
 
     auto a = form2(_trial = Vh, _test = Vh, _matrix = A);
-    a = integrate(_range = elements(mesh),
+    a = integrate(_range = elements(Vh->mesh()),
                   _expr = lambda * divt(u) * div(v) +
                           2 * mu * trace(trans(sym(gradt(u))) * sym(grad(u))));
     auto l = form1(_test = Vh, _vector = f);
-    l = integrate(_range = elements(mesh), _expr = -density * trans(vec(cst(1.0/std::sqrt(2.0)), cst(0.0), cst(1.0/std::sqrt(2.0)))) * id(v));
-    a += on(_range = markedfaces(mesh, "Dirichlet"), _rhs = l, _element = u, _expr = zero<3, 1>());
+    l = integrate(_range = elements(Vh->mesh()), _expr = -density * trans(vec(cst(1.0/std::sqrt(2.0)), cst(0.0), cst(1.0/std::sqrt(2.0)))) * id(v));
+    a += on(_range = markedfaces(Vh->mesh(), "Dirichlet"), _rhs = l, _element = u, _expr = zero<3, 1>());
     A->close();
 }
 
@@ -197,20 +213,20 @@ void Geneopp<Dim, Order, Type>::run()
     if(!excluded) {
         tic();
         if(std::is_same<Type<Dim>, Vectorial<Dim>>::value) {
-            mesh = createGMSHMesh(_mesh = new Mesh<Simplex<Dim>>,
+            mesh = createGMSHMesh(_mesh = new Mesh<Simplex<Dim>>(wComm),
                                   _update = MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK,
                                   _worldcomm = wComm,
-                                  _desc = domain(_name = "hypercube", _shape = "hypercube",
+                                  _desc = domain(_worldcomm = wComm, _name = "hypercube", _shape = "hypercube",
                                                  _xmin = 0.0, _xmax = 10.0,
                                                  _ymin = 0.0, _ymax = 1.0,
                                                  _zmin = 0.0, _zmax = 1.0));
             mesh->addMarkerName("Dirichlet", Dim == 2 ? 1 : 19, Dim == 2 ? 1 : 2);
         }
         else {
-            mesh = createGMSHMesh(_mesh = new Mesh<Simplex<Dim>>,
+            mesh = createGMSHMesh(_mesh = new Mesh<Simplex<Dim>>(wComm),
                                   _update = MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK,
                                   _worldcomm = wComm,
-                                  _desc = domain(_name = "hypercube", _shape = "hypercube",
+                                  _desc = domain(_worldcomm = wComm, _name = "hypercube", _shape = "hypercube",
                                                  _xmin = 0.0, _xmax = 1.0,
                                                  _ymin = 0.0, _ymax = 1.0,
                                                  _zmin = 0.0, _zmax = 1.0));
@@ -276,7 +292,7 @@ void Geneopp<Dim, Order, Type>::run()
             bComm.barrier();
             time.restart();
             Backend<double>::sparse_matrix_ptrtype A = ptr_backend->newMatrix(VhLocal, VhLocal);
-            assemble(A, f, meshLocal, VhLocal);
+            assemble(A, f, VhLocal);
             timers[3] = time.elapsed();
             b = new double[VhLocal->nDof()];
 #ifdef FEELPP_HAS_HPDDM
@@ -323,7 +339,7 @@ void Geneopp<Dim, Order, Type>::run()
             if(nu == 0) {
                 if(nelements(markedfaces(meshLocal, "Dirichlet")) == 0) {
                     unsigned short nb;
-                    generateRBM(nb, ev, meshLocal, VhLocal);
+                    generateRBM(nb, ev, VhLocal);
                     K->setVectors(ev);
                     K->super::super::initialize(nb);
                 }
@@ -349,7 +365,15 @@ void Geneopp<Dim, Order, Type>::run()
             K->super::super::initialize(nu);
         }
         K->callNumfactPreconditioner();
-        K->buildScaling(soption("scaling")[0]);
+        const char scaling = soption("scaling")[0];
+        double* rho = nullptr;
+        if(scaling == 'r') {
+            double* rho = new double[VhLocal->nDof()];
+            coefficients(rho, VhLocal);
+            K->renumber(interface, rho);
+        }
+        K->buildScaling(scaling, rho);
+        delete [] rho;
         uLocal = VhLocal->element();
     }
     std::vector<unsigned short> parm(5);
@@ -361,12 +385,12 @@ void Geneopp<Dim, Order, Type>::run()
         parm[HPDDM::Parameter::NU]       = excluded ? 0 : K->getLocal();
     else
         parm[HPDDM::Parameter::NU]       = nu;
-    unsigned short iter = ioption("it");
+    unsigned short it = ioption("it");
     double eps = doption("eps");
     if(excluded) {
         K->Subdomain::initialize(&comm);
         K->buildTwo<2>(Environment::worldComm(), parm);
-        HPDDM::IterativeMethod::PCG<true>(*K, static_cast<double*>(nullptr), static_cast<double*>(nullptr), iter, eps, Environment::worldComm(), Environment::isMasterRank());
+        HPDDM::IterativeMethod::PCG<true>(*K, static_cast<double*>(nullptr), static_cast<double*>(nullptr), it, eps, Environment::worldComm(), Environment::isMasterRank());
         delete K;
     }
     else {
@@ -399,7 +423,7 @@ void Geneopp<Dim, Order, Type>::run()
             }
             timers.back() = time.elapsed();
         }
-        HPDDM::IterativeMethod::PCG<false>(*K, &(uLocal[0]), b, iter, eps, Environment::worldComm(), Environment::isMasterRank());
+        HPDDM::IterativeMethod::PCG<false>(*K, &(uLocal[0]), b, it, eps, Environment::worldComm(), Environment::isMasterRank());
 
         double* storage = new double[2];
         K->computeError(&(uLocal[0]), b, storage);
@@ -437,7 +461,7 @@ void Geneopp<Dim, Order, Type>::run()
                 boost::shared_ptr<Backend<double>> ptr_global = Backend<double>::build("petsc", "", wComm);
                 auto D = ptr_global->newMatrix(VhVisu, VhVisu);
                 auto F = ptr_global->newVector(VhVisu);
-                assemble(D, F, mesh, VhVisu);
+                assemble(D, F, VhVisu);
                 auto u = VhVisu->element();
                 ptr_global->solve(_matrix = D, _solution = u, _rhs = F);
                 timeFeel += time.elapsed();
