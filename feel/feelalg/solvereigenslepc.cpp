@@ -271,7 +271,7 @@ SolverEigenSlepc<T>::solve ( MatrixSparse<T> &matrix_A_in,
 
     // TODO: possible memory leak here
     //VecDestroy( M_mode );
-#if PETSC_VERSION_LESS_THAN(3,5,3)
+#if PETSC_VERSION_LESS_THAN(3,6,0)
     ierr = MatGetVecs( matrix_A->mat(),PETSC_NULL,&M_mode );
 #else
     ierr = MatCreateVecs( matrix_A->mat(),PETSC_NULL,&M_mode );
@@ -457,7 +457,7 @@ SolverEigenSlepc<T>::solve ( MatrixSparse<T> &matrix_A_in,
 
     // TODO: possible memory leak here
     //VecDestroy( M_mode );
-#if PETSC_VERSION_LESS_THAN(3,5,3)
+#if PETSC_VERSION_LESS_THAN(3,6,0)
     ierr = MatGetVecs( matrix_A->mat(),PETSC_NULL,&M_mode );
 #else
     ierr = MatCreateVecs( matrix_A->mat(),PETSC_NULL,&M_mode );
