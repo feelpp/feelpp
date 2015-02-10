@@ -91,3 +91,6 @@
 [submodule "contrib/hpddm"]
 	path = contrib/hpddm
 	url = https://github.com/feelpp/hpddm.git
+[submodule "projects/solodem"]
+	path = projects/solodem
+	url = https://github.com/feelpp/solodem.git

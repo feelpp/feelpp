@@ -95,7 +95,13 @@ Partitioning<Dim>::run()
         std::cout << "proc " << Environment::rank() 
                   << " is not excluded and is locally rank " << wComm.rank() << " and loads mesh with " 
                   << wComm.globalSize() << " partitions\n";
-        mesh = loadMesh(_mesh = new Mesh<Simplex<Dim>>(wComm), _worldcomm=wComm );
+        // mesh = loadMesh(_mesh = new Mesh<Simplex<Dim>>(wComm), _worldcomm=wComm );
+        mesh = createGMSHMesh(_mesh = new Mesh<Simplex<Dim>>(wComm),
+                              _worldcomm = wComm,
+                              _desc = domain(_worldcomm = wComm, _name = "hypercube", _shape = "hypercube",
+                                             _xmin = 0.0, _xmax = 1.0,
+                                             _ymin = 0.0, _ymax = 1.0,
+                                             _zmin = 0.0, _zmax = 1.0));
         std::cout << " - nelement(mesh)=" << nelements(elements(mesh)) << "\n";
         std::cout << " - loading space\n";
         auto Vh = Pch<2>( mesh );
