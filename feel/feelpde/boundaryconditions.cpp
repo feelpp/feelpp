@@ -82,7 +82,7 @@ BoundaryConditions::load(const std::string &filename)
                 catch( ... )
                 {
                     LOG(INFO) << "adding boundary " << c.first << " without expression" << " to " << k;
-                    this->operator[]( t )[f.first].push_back( std::make_pair( c.first, "" ) );
+                    this->operator[]( t )[f.first].push_back( std::make_pair( c.first, std::string("") ) );
                 }
             }
         }

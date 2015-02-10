@@ -522,11 +522,11 @@ public:
         return invalid_size_type_value;
     }
     /**
-     * @return the marker nae associated to the \p marker id
+     * @return the marker name associated to the \p marker id
      */
     std::string markerName( size_type marker ) const
         {
-            for( auto n : M_markername )
+            for( auto const& n : M_markername )
             {
                 if (n.second[0] == marker )
                     return n.first;
@@ -656,10 +656,7 @@ public:
      */
     void addMarkerName( std::string __name, int __id ,int __topoDim )
     {
-        std::vector<size_type> data(2);
-        data[0]=__id;
-        data[1]=__topoDim;
-        M_markername[__name]=data;
+        M_markername[__name] = { static_cast<size_type>(__id), static_cast<size_type>(__topoDim) };
     }
     /**
       * @return true if all markers are defined in the mesh, false otherwise

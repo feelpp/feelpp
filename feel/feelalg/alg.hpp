@@ -3,9 +3,9 @@
  This file is part of the Feel++ library
  
  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
- Date: 18 Dec 2014
+ Date: 09 Feb 2015
  
- Copyright (C) 2014 Feel++ Consortium
+ Copyright (C) 2015 Feel++ Consortium
  
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -21,17 +21,9 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-#define FEELPP_INSTANTIATE_STRAIGHTENMESH 
-#include <feel/feelfilters/straightenmesh_impl.hpp>
+#ifndef FEELPP_FEELALG_HPP
+#define FEELPP_FEELALG_HPP 1
 
+#include <feel/feelalg/backend.hpp>
 
-namespace Feel
-{
-template boost::shared_ptr<Mesh<Simplex<1,1>>>
-straightenMesh<Mesh<Simplex<1,1>>>( boost::shared_ptr<Mesh<Simplex<1,1>>>, 
-                                    WorldComm const& , bool, bool  );
-template boost::shared_ptr<Mesh<Simplex<1,1,2>>>
-straightenMesh<Mesh<Simplex<1,1,2>>>( boost::shared_ptr<Mesh<Simplex<1,1,2>>>, 
-                                    WorldComm const& , bool, bool  );
-
-}
+#endif

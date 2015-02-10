@@ -1470,8 +1470,10 @@ ConfigurePCLU::runConfigurePCLU( PC& pc )
     // set factor package
     //this->check( PCFactorSetMatSolverPackage( pc, M_matSolverPackage.c_str() ) );
 
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
     // allow to tune the factorisation package
     this->check( PCFactorSetUpMatSolverPackage(pc) );
+#endif
 
     // configure mumps
     if ( M_matSolverPackage == "mumps" )
@@ -2105,7 +2107,7 @@ ConfigurePCFieldSplit::runConfigurePCFieldSplit( PC& pc, PreconditionerPetsc<dou
             this->check( MatDuplicate(B,MAT_COPY_VALUES,&Bcopy) );
 
             Vec scaleDiag;
-#if PETSC_VERSION_LESS_THAN(3,5,3)
+#if PETSC_VERSION_LESS_THAN(3,6,0)
             this->check( MatGetVecs(A,&scaleDiag,NULL) );
 #else
             this->check( MatCreateVecs(A,&scaleDiag,NULL) );
