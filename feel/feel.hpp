@@ -33,22 +33,20 @@
 
 #include <feel/options.hpp>
 
+#include <feel/feelcore/core.hpp>
 
-#include <feel/feelcore/environment.hpp>
+#include <feel/feelalg/alg.hpp>
 
-#include <feel/feelcore/application.hpp>
-
-#include <feel/feelalg/backend.hpp>
-
-#include <feel/feelpoly/lagrange.hpp>
-#include <feel/feelpoly/crouzeixraviart.hpp>
+#include <feel/feelpoly/poly.hpp>
 
 #include <feel/feelvf/vf.hpp>
 
-
 #include <feel/feelts/ts.hpp>
+
 #include <feel/feeldiscr/discr.hpp>
+
 #include <feel/feelpde/pde.hpp>
+
 #include <feel/feeltiming/tic.hpp>
 
 #include <ginac/ginac.h>
