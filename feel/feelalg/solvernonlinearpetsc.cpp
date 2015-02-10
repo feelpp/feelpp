@@ -684,15 +684,27 @@ void SolverNonLinearPetsc<T>::init ()
             default:
             case preconditioner_type::LEFT:
                 VLOG(2) << " . PC is set to left side\n";
+#if PETSC_VERSION_LESS_THAN(3,4,0)
+                KSPSetPreconditionerSide( M_ksp, PC_LEFT );
+#else
                 KSPSetPCSide( M_ksp, PC_LEFT );
+#endif
                 break;
             case preconditioner_type::RIGHT:
                 VLOG(2) << " . PC is set to right side\n";
+#if PETSC_VERSION_LESS_THAN(3,4,0)
+                KSPSetPreconditionerSide( M_ksp, PC_RIGHT );
+#else
                 KSPSetPCSide( M_ksp, PC_RIGHT );
+#endif
                 break;
             case preconditioner_type::SYMMETRIC:
                 VLOG(2) << " . PC is set to symmetric\n";
+#if PETSC_VERSION_LESS_THAN(3,4,0)
+                KSPSetPreconditionerSide( M_ksp, PC_SYMMETRIC );
+#else
                 KSPSetPCSide( M_ksp, PC_SYMMETRIC );
+#endif
                 break;
             }
 

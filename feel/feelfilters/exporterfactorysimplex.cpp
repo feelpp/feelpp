@@ -5,7 +5,7 @@
    Author(s): Goncalo Pena <gpena@mat.uc.pt>
    Date: 2010-04-16
 
-   Copyright (C) 2007 Université Joseph Fourier (Grenoble I)
+   Copyright (C) 2007 Universite Joseph Fourier (Grenoble I)
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
