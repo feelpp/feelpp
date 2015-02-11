@@ -1103,9 +1103,14 @@ updateOptionsDescLU( po::options_description & _options, std::string const& pref
     for ( int icntl=1 ; icntl<= 33 ; ++icntl )
     {
         std::string mumpsOption = (boost::format("pc-factor-mumps.icntl-%1%")%icntl ).str();
-        _options.add_options()
-            ( prefixvm( prefix,pcctx+mumpsOption ).c_str(),
-              Feel::po::value<int>(),"configure mumps factorisation (see mumps ICNTL documentation)" );
+        if( icntl == 7 )
+            _options.add_options()
+                ( prefixvm( prefix,pcctx+mumpsOption ).c_str(),
+                  Feel::po::value<int>()->default_value( 0 ),"configure mumps factorisation (see mumps ICNTL documentation)" );
+        else
+            _options.add_options()
+                ( prefixvm( prefix,pcctx+mumpsOption ).c_str(),
+                  Feel::po::value<int>(),"configure mumps factorisation (see mumps ICNTL documentation)" );
     }
 #endif
 }
