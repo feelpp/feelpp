@@ -52,3 +52,5 @@ feelpp_add_application( doc_laplacian_dirac SRCS laplacian_dirac.cpp LABELS doc 
 feelpp_add_application( doc_laplacian_lagrange_multiplier2 SRCS laplacian_lagrange_multiplier2.cpp LABELS doc CFG laplacian_lagrange_multiplier2.cfg)
 
 feelpp_add_application( partition SRCS partition.cpp LABELS doc CFG partition.cfg)
+
+feelpp_add_application( doc_laplacian_bean SRCS laplacian_bean.cpp LABELS doc CFG laplacian_bean.cfg)
