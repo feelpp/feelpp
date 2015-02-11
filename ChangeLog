@@ -7,11 +7,13 @@
    \section feelpp0990 Feel++ Release 0.100.0
    release date dd-mm-2014
 
-   \subsection changes01000 Changes
-
    \subsection features01000 Features
 
    - Support Block preconditioning for Navier-Stokes (PMM and PCD)
+   - A lot of various fixes for the exporters: EnsightGold, HDF5
+   - Support for many configuration files that can be combined (e.g. to change
+     automatically solver strategies)
+   - Start work on boundary conditions generic framework, see examples in quickstart
 
    \subsection issues01000 Noteworthy Issues
 
@@ -47,6 +49,11 @@
    - MPI_Scatter hangs inside Feel++ environment [Issue <a href="https://github.com/feelpp/feelpp/issues/304">304</a>]
 
    \subsection spec01000 Platform specific
+
+   - Support for Debian and Ubuntu (12.04, 14.04 and 14.10)
+   - Support for Prace supercomputer Curie@TGCC (France)
+   - Support for Mesocenters Grenoble and Strasbourg
+   - Support for MacOSX homebrew and macport including Yosemite
 
    \section feelpp0990 Feel++ Release 0.99.0
    release date 07-09-2014
