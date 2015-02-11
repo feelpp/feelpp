@@ -161,6 +161,12 @@ public:
     typedef Bdf<space_type>  bdf_type;
     typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
 
+    typedef FsFunctionalLinear< space_type > functional_type;
+    typedef boost::shared_ptr<functional_type> functional_ptrtype;
+
+    typedef OperatorLinear< space_type , space_type > operator_type;
+    typedef boost::shared_ptr<operator_type> operator_ptrtype;
+
     typedef OperatorLinearComposite< space_type , space_type > operatorcomposite_type;
     typedef boost::shared_ptr<operatorcomposite_type> operatorcomposite_ptrtype;
     typedef FsFunctionalLinearComposite< space_type > functionalcomposite_type;
@@ -218,7 +224,8 @@ public:
 
 
             M_mode = mode;
-            M_AD = affinedecomposition_ptrtype( new affinedecomposition_type( this->shared_from_this(), ParameterSpaceDimension ) );
+            M_AD = affinedecomposition_ptrtype(
+                new affinedecomposition_type( this->shared_from_this() ) );
 
             LOG(INFO)<< "Model Initialization";
             initModel();
@@ -241,55 +248,97 @@ public:
             }
         }
 
-    void setFunctionSpaces( functionspace_ptrtype Vh )
+    void setFunctionSpaces( functionspace_ptrtype Vh, int row=1 )
         {
             Xh = Vh;
             XN = rbfunctionspace_type::New( _model=this->shared_from_this() );
         }
 
-
-    void addLhs( boost::tuple< form2_type, std::string > const & tuple,
-                 int const row=1, int const col=1 )
-        {
-            M_AD->addLhs( { tuple.template get<0>().matrixPtr(), tuple.template get<1>() },
-                          row, col );
-        }
-    void addLhs( boost::tuple< sparse_matrix_ptrtype , std::string > const & tuple,
-                 int const row=1, int const col=1 )
-        {
-            M_AD->addLhs( { tuple.template get<0>(), tuple.template get<1>() }, row, col );
-        }
-    void addMass( boost::tuple< form2_type , std::string > const & tuple,
+    template<typename ExprType>
+    void addMass( ExprType const& expr, std::string const& symbol,
                   int const row=1, int const col=1 )
         {
-            M_AD->addMass( { tuple.template get<0>().matrixPtr(), tuple.template get<1>() },
-                           row, col );
+            auto ope = opLinearFree( _domainSpace=functionSpace(col-1),
+                                     _imageSpace=functionSpace(row-1),
+                                     _expr=expr );
+            M_AD->template addMass<operator_ptrtype>
+                ( {ope, symbol}, row, col) ;
         }
     void addMass( boost::tuple< sparse_matrix_ptrtype , std::string > const & tuple,
-                  int const row=1, int const col=1 )
+                  int row=1, int col=1 )
         {
-            M_AD->addMass( { tuple.template get<0>(), tuple.template get<1>() }, row, col );
+            M_AD->template addMass<sparse_matrix_ptrtype>( tuple, row, col );
         }
-    void addRhs( boost::tuple<  form1_type , std::string > const & tuple,
-                 int const row=1, int const col=1 )
-        {
-            M_AD->addOutput( { tuple.template get<0>().vectorPtr(), tuple.template get<1>() },
-                             0, row, col );
-        }
-    void addRhs( boost::tuple<  vector_ptrtype , std::string > const & tuple, int const row=1, int const col=1 )
-        {
-            M_AD->addOutput( { tuple.template get<0>(), tuple.template get<1>() }, 0, row, col );
+    void addMass( boost::tuple< form2_type , std::string > const & tuple,
+                  int row=1, int col=1 )
+    {
+            M_AD->template addMass<sparse_matrix_ptrtype>
+                ( { tuple.template get<0>().matrixPtr(), tuple.template get<1>() },row, col );
         }
 
-    void addOutput( boost::tuple<  form1_type , std::string > const & tuple, int const row=1, int const col=1 )
+    template<typename ExprType>
+    void addLhs( ExprType const& expr, std::string const & symbol,
+                 int const row=1, int const col=1 )
         {
-            M_AD->addOutput( { tuple.template get<0>().vectorPtr(), tuple.template get<1>() }, 1,
-                             row, col );
+            auto ope = opLinearFree( _domainSpace=functionSpace(col-1),
+                                     _imageSpace=functionSpace(row-1),
+                                     _expr=expr );
+            M_AD->template addLhs<operator_ptrtype>
+                ( {ope, symbol}, row, col) ;
         }
-    void addOutput( boost::tuple<  vector_ptrtype , std::string > const & tuple, int const row=1, int const col=1 )
+    void addLhs( boost::tuple< sparse_matrix_ptrtype , std::string > const & tuple,
+                 int row=1, int col=1 )
         {
-            M_AD->addOutput( { tuple.template get<0>(), tuple.template get<1>() }, 1, row, col );
+            M_AD->template addLhs<sparse_matrix_ptrtype>( tuple, row, col );
         }
+    void addLhs( boost::tuple< form2_type, std::string > const & tuple,
+                 int row=1, int col=1 )
+        {
+            M_AD->template addLhs<sparse_matrix_ptrtype>
+                ( { tuple.template get<0>().matrixPtr(), tuple.template get<1>() },row, col );
+        }
+
+    template<typename ExprType>
+    void addRhs( ExprType const& expr, std::string const& symbol,
+                 int const row=1 )
+        {
+            auto fun = functionalLinearFree( _space=functionSpace(row-1),
+                                             _expr=expr );
+            M_AD->template addOutput<functional_ptrtype>
+                ( {fun, symbol}, 0 , row) ;
+        }
+    void addRhs( boost::tuple< vector_ptrtype, std::string > const& tuple,
+                 int row=1 )
+        {
+            M_AD->template addOutput<vector_ptrtype>( tuple, 0, row );
+        }
+
+    void addRhs( boost::tuple<  form1_type , std::string > const & tuple, int row=1  )
+        {
+            M_AD->template addOutput<vector_ptrtype>
+                ( { tuple.template get<0>().vectorPtr(), tuple.template get<1>() },
+                  0, row );
+        }
+
+    template<typename ExprType>
+    void addOutput( ExprType const& expr, std::string const& symbol,
+                    int const row=1 )
+        {
+            auto fun = functionalLinearFree( _space=functionSpace(row-1),
+                                             _expr=expr );
+            M_AD->template addOutput<functional_ptrtype>
+                ( {fun, symbol}, 1 , row) ;
+        }
+    void addOutput( boost::tuple< vector_ptrtype , std::string > const & tuple, int row=1 )
+        {
+            M_AD->template addOutput<vector_ptrtype>( tuple, 1, row );
+        }
+    void addOutput( boost::tuple< form1_type , std::string > const & tuple, int row=1 )
+        {
+            M_AD->template addOutput<vector_ptrtype>
+                ( { tuple.template get<0>().vectorPtr(), tuple.template get<1>() }, 1, row );
+        }
+
 
 
     parameterspace_ptrtype parameterSpace()
@@ -297,11 +346,11 @@ public:
             return Dmu;
         }
 
-    functionspace_ptrtype functionSpace()
+    functionspace_ptrtype functionSpace( int num=1 ) const
         {
             return Xh;
         }
-    rbfunctionspace_ptrtype rBFunctionSpace()
+    rbfunctionspace_ptrtype rBFunctionSpace( int num=1 )
         {
             return XN;
         }
@@ -470,14 +519,14 @@ public:
         }
 
     vector_ptrtype Fqm( uint16_type l, uint16_type q, int m,
-                        int row=1, int col=1 ) const
+                        int row=1 ) const
         {
-            return M_AD->F( l, q, m, row, col );
+            return M_AD->F( l, q, m, row );
         }
     value_type Fqm( uint16_type l, uint16_type q,  uint16_type m, element_type const& xi,
-                    int row=1, int col=1 )
+                    int row=1 )
         {
-            return inner_product( *(M_AD->F( l, q, m, row, col )), xi );
+            return inner_product( *(M_AD->F( l, q, m, row )), xi );
         }
 
 
@@ -520,6 +569,19 @@ public:
 
     virtual void adaptMesh( parameter_type const& mu )
         {}
+    void partitionMesh( std::string mshfile , std::string target , int dimension, int order )
+    {
+        int N = Environment::worldComm().globalSize();
+
+        if( Environment::worldComm().isMasterRank() )
+            std::cout<<"[ModelCrbBase] generate target file : "<<target<<" from "<<mshfile<<std::endl;
+
+        Gmsh gmsh( dimension,
+                   order,
+                   Environment::worldComm() );
+        gmsh.setNumberOfPartitions( N );
+        gmsh.rebuildPartitionMsh( mshfile /*mesh with 1 partition*/, target /*mesh with N partitions*/ );
+    }
 
 
 
@@ -757,13 +819,13 @@ public:
         }
 
 
-    sparse_matrix_ptrtype newMatrix() const
+    sparse_matrix_ptrtype newMatrix( int row=1, int col=1 ) const
         {
-            return M_backend->newMatrix( Xh, Xh );
+            return M_backend->newMatrix( _test=functionSpace(row-1), _trial=functionSpace(col-1) );
         }
-    vector_ptrtype newVector() const
+    vector_ptrtype newVector( int row=1 ) const
         {
-            return M_backend->newVector( Xh );
+            return M_backend->newVector( functionSpace(row-1) );
         }
     void addEnergyMatrix( form2_type const & f )
         {
@@ -808,14 +870,6 @@ public:
             return M_mass_matrix;
         }
 
-
-
-    double scalarProduct( vector_type const& X, vector_type const& Y )
-        {
-            return M_inner_product_matrix->energy( X, Y );
-        }
-
-
     /**
      * returns the scalar product of the vector x and vector y
      */
@@ -823,14 +877,19 @@ public:
         {
             return M_inner_product_matrix->energy( X, Y );
         }
-/**
+    double scalarProduct( vector_type const& X, vector_type const& Y )
+        {
+            return M_inner_product_matrix->energy( X, Y );
+        }
+
+    /**
      * returns the scalar product used for the mass matrix of the vector x and vector y
      */
     double scalarProductForMassMatrix( vector_type const& X, vector_type const& Y )
-    {
-        auto M = massMatrix();
-        return M->energy( X, Y );
-    }
+        {
+            auto M = massMatrix();
+            return M->energy( X, Y );
+        }
 
     /**
      * returns the scalar product used for the mass matrix of the vector x and vector y
