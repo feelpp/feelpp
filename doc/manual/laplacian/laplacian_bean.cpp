@@ -58,7 +58,7 @@ makeOptions()
  *
  * \tparam Dim the geometric dimension of the problem (e.g. Dim=2 or 3)
  */
-template<int Dim, int Order = 2>
+template<int Dim, int POrder = 2, int GOrder = 1>
 class Laplacian
     :
 public Simget
@@ -69,21 +69,22 @@ public:
 
 }; // Laplacian
 
-template<int Dim, int Order>
+template<int Dim, int POrder, int GOrder>
 void
-Laplacian<Dim,Order>::run()
+Laplacian<Dim,POrder,GOrder>::run()
 {
     LOG(INFO) << "------------------------------------------------------------\n";
     LOG(INFO) << "Execute Laplacian<" << Dim << ">\n";
 
-    Environment::changeRepository( boost::format( "doc/manual/laplacian_bean/%1%/D%2%/P%3%/h_%4%/" )
+    Environment::changeRepository( boost::format( "doc/manual/laplacian_bean/%1%/D%2%/P%3%/G%4%/h_%5%/" )
                                    % this->about().appName()
                                    % Dim
-                                   % Order
+                                   % POrder
+                                   % GOrder
                                    % doption("gmsh.hsize") );
 
-    auto mesh = loadMesh( new Mesh<Simplex<Dim>>, _filename=soption("geofile") );
-    auto Xh = Pch<Order>( mesh );
+    auto mesh = loadMesh( _mesh=new Mesh<Hypercube<Dim,GOrder,Dim>>, _filename=soption("geofile") );
+    auto Xh = Pch<POrder>( mesh );
     Xh->printInfo();
 
     auto u = Xh->element();
@@ -180,7 +181,8 @@ main( int argc, char** argv )
                                   _email="feelpp-devel@feelpp.org") );
 
     Application app;
-    app.add( new Laplacian<2>() );
+    app.add( new Laplacian<2,2,1>() );
+    //app.add( new Laplacian<2,2,2>() );
     app.run();
 
 }
