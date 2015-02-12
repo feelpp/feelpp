@@ -27,8 +27,8 @@ if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/gmsh )
   # we include this directory : add some missing headers from Gmsh
   INCLUDE_DIRECTORIES( ${CMAKE_SOURCE_DIR}/contrib/gmsh )
 
-else( EXISTS ${CMAKE_SOURCE_DIR}/contrib/nlopt )
-  
+#else( EXISTS ${CMAKE_SOURCE_DIR}/contrib/nlopt )
+else( EXISTS ${CMAKE_SOURCE_DIR}/contrib/gmsh )
   FIND_PATH(GMSH_CONTRIB_INCLUDE_DIR BasisFactory.h
     $ENV{FEELPP_DIR}/include/feel/gmsh
     NO_DEFAULT_PATH)

@@ -53,8 +53,8 @@ BackendPetsc<T>::clear()
 {
     LOG(INFO) << "Deleting linear solver petsc";
     M_solver_petsc.clear();
-    LOG(INFO) << "Deleting non linear solver petsc";
-    M_nl_solver_petsc.clear();
+    //LOG(INFO) << "Deleting non linear solver petsc";
+    //M_nl_solver_petsc.clear();
     LOG(INFO) << "Deleting backend petsc";
 
     super::clear();
@@ -133,11 +133,15 @@ BackendPetsc<T>::PtAP( sparse_matrix_ptrtype const& A_,
                        sparse_matrix_ptrtype const& P_,
                        sparse_matrix_ptrtype & C_ ) const
 {
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 3)
     MatrixPetsc<T> const* A = dynamic_cast<MatrixPetsc<T> const*> ( A_.get() );
     MatrixPetsc<T> const* P = dynamic_cast<MatrixPetsc<T> const*> ( P_.get() );
     MatrixPetsc<T>* C = dynamic_cast<MatrixPetsc<T>*> ( C_.get() );
     
     return MatPtAP( A->mat(), P->mat(), MAT_INITIAL_MATRIX, 1.0, &C->mat() );
+#else
+    return -1;
+#endif
 }
 
 
@@ -147,11 +151,15 @@ BackendPetsc<T>::PAPt( sparse_matrix_ptrtype const& A_,
                        sparse_matrix_ptrtype const& P_,
                        sparse_matrix_ptrtype & C_ ) const
 {
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 3)
     MatrixPetsc<T> const* A = dynamic_cast<MatrixPetsc<T> const*> ( A_.get() );
     MatrixPetsc<T> const* P = dynamic_cast<MatrixPetsc<T> const*> ( P_.get() );
     MatrixPetsc<T>* C = dynamic_cast<MatrixPetsc<T>*> ( C_.get() );
     
     return MatRARt( A->mat(), P->mat(), MAT_INITIAL_MATRIX, 1.0, &C->mat() );
+#else
+    return -1;
+#endif
 }
 
 template <typename T>

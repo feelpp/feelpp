@@ -5,7 +5,7 @@
  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  Date     : Tue Feb 25 12:13:15 2014
 
- Copyright (C) 2014 Feel++ Consortium
+ Copyright (C) 2014-2015 Feel++ Consortium
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -22,18 +22,23 @@
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 #include <feel/feel.hpp>
+#include <feel/feelpde/boundaryconditions.hpp>
 #include <feel/feelpde/preconditionerblockns.hpp>
 
 int main(int argc, char**argv )
 {
-    //! [marker1]
+    constexpr int dim = FEELPP_DIM;
+    constexpr int order_p= FEELPP_ORDER_P;
+    
     using namespace Feel;
-	po::options_description stokesoptions( "Stokes options" );
+	po::options_description stokesoptions( "Steady NS options" );
 	stokesoptions.add_options()
 		( "mu", po::value<double>()->default_value( 1.0 ), "coeff" )
         ( "penaldir", po::value<double>()->default_value( 100 ), "coeff" )
+        ( "sym", po::value<bool>()->default_value( 0 ), "use symmetric deformation tensor" )
         ( "stokes.preconditioner", po::value<std::string>()->default_value( "petsc" ), "Stokes preconditioner: petsc, PM, Blockns" )
         ( "picard", po::value<bool>()->default_value( 1 ), "picard" )
+        ( "picard.preconditioner", po::value<std::string>()->default_value( "petsc" ), "Stokes preconditioner: petsc, PM, Blockns" )
 		( "picard.tol", po::value<double>()->default_value( 1e-8 ), "tolerance" )
 		( "picard.maxit", po::value<double>()->default_value( 10 ), "max iteration" )
         ( "newton", po::value<bool>()->default_value( 1 ), "newton" )
@@ -46,20 +51,17 @@ int main(int argc, char**argv )
          .add( backend_options( "picard" ) );
 	Environment env( _argc=argc, _argv=argv,
                      _desc=stokesoptions,
-                     _about=about(_name="steady_ns",
+                     _about=about(_name=(boost::format("steady_ns_%1%d")%dim).str(),
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
-
-    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
-    auto g = expr<2,1>( soption(_name="functions.g") );
-    auto wall = expr<2,1>( soption(_name="functions.h") );
-    auto Vh = THch<2>( mesh );
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<dim>>);
+    auto Vh = THch<order_p>( mesh );
     auto U = Vh->element();
     auto Un = Vh->element();
     auto V = Vh->element();
     auto u = U.element<0>();
     auto un = Un.element<0>();
-    auto v = V.element<0>(g,"poiseuille");
+    auto v = V.element<0>();
     auto p = U.element<1>();
     auto pn = Un.element<1>();
     auto q = V.element<1>();
@@ -92,17 +94,13 @@ int main(int argc, char**argv )
     double newtonTol = doption(_name="newton.tol");
     int newtonMaxIt = doption(_name="newton.maxit");
 
-    std::map<std::string,std::set<flag_type>> bcs;
-    bcs["Dirichlet"].insert(mesh->markerName("inlet"));
-    bcs["Dirichlet"].insert(mesh->markerName("wall"));
-    bcs["Neumann"].insert(mesh->markerName("outlet"));
     
-    map_vector_field<2,1,2> m_dirichlet;
-    m_dirichlet["inlet"]=g;
-    m_dirichlet["wall"]=wall;
+    BoundaryConditions bcs;
+    map_vector_field<dim,1,2> m_dirichlet { bcs.getVectorFields<dim> ( "velocity", "Dirichlet" ) };
 
     auto l = form1( _test=Vh );
     auto r = form1( _test=Vh );
+    auto residual = form1( _test=Vh );
 
     auto a = form2( _trial=Vh, _test=Vh);
     auto at = form2( _trial=Vh, _test=Vh);
@@ -126,7 +124,7 @@ int main(int argc, char**argv )
     
     auto incru = normL2( _range=elements(mesh), _expr=idv(u)-idv(un));
     auto incrp = normL2( _range=elements(mesh), _expr=idv(p)-idv(pn));
-    at=a;
+    at+=a;
     if ( boption("blockns.weakdir") )
     {
         for( auto const& d : m_dirichlet )
@@ -138,14 +136,15 @@ int main(int argc, char**argv )
     }
     else
     {
-        at+=on(_range=markedfaces(mesh,"wall"), _rhs=l, _element=u,
-               _expr=zero<2,1>() ) ;
-        at+=on(_range=markedfaces(mesh,"inlet"), _rhs=l, _element=u,
-               _expr=g );
+        for( auto const& c : m_dirichlet )
+        {
+            at+=on(_range=markedfaces(mesh,c.first), _rhs=l, _element=u,
+                   _expr=c.second ) ;
+        }
     }
 
     tic();
-    auto a_blockns = blockns( _space=Vh, _type=soption("stokes.preconditioner"), _bc=bcs, _matrix= at.matrixPtr() );
+    auto a_blockns = blockns( _space=Vh, _type=soption("stokes.preconditioner"), _bc=bcs, _matrix= at.matrixPtr(), _prefix="velocity" );
     toc(" - Setting up Precondition Blockns...");
     
     a_blockns->setMatrix( at.matrixPtr() );
@@ -153,7 +152,7 @@ int main(int argc, char**argv )
     tic();
     if ( soption("stokes.preconditioner") != "petsc" )
     {
-        a_blockns->update( at.matrixPtr(), zero<2,1>(), m_dirichlet );
+        a_blockns->update( at.matrixPtr(), zero<dim,1>(), m_dirichlet );
 
 
         at.solveb(_rhs=l,_solution=U,_backend=backend(_name="stokes"),_prec=a_blockns);
@@ -175,26 +174,39 @@ int main(int argc, char**argv )
 
         double res = 0;
         auto deltaU = Vh->element();
-        m_dirichlet["inlet"]=g;
         do
         {
             tic();
-            at = a;
+            r.zero();
+            at.zero();
+            at += a;
             at += integrate( _range=elements(mesh),_expr=trans(id(v))*(gradt(u)*idv(u)) );
             toc( " - Picard:: Assemble nonlinear terms  ..." );
 
             tic();
-            at+=on(_range=markedfaces(mesh,"wall"), _rhs=r, _element=u,
-                   _expr=zero<2,1>() ) ;
-            at+=on(_range=markedfaces(mesh,"inlet"), _rhs=r, _element=u,
-                   _expr=g );
+            for( auto const& c : m_dirichlet )
+            {
+                LOG(INFO) << "Applying Dirichlet condition " << c.second << " on " << c.first;
+                if ( boption( "blockns.weakdir" ) )
+                {
+                    at += integrate( _range=markedfaces( mesh, c.first ),
+                                     _expr=(trans(-mu*gradt(u)*N()+idt(p)*N()))*id(v)+(trans(-mu*grad(u)*N()+id(p)*N()))*idt(v)+doption("penaldir")*trans(idt(u))*id(v)/hFace() );
+                    r += integrate( _range=markedfaces( mesh, c.first ),
+                                    _expr=trans(-mu*grad(u)*N()+id(p)*N()+doption("penaldir")*id(v)/hFace())*c.second );
+                }
+                else
+                {
+                    at+=on(_range=markedfaces(mesh,c.first), _rhs=r, _element=u,
+                           _expr=c.second ) ;
+                }
+            }
             toc(" - Picard:: Assemble BC   ...");
             if ( Environment::isMasterRank() )
             {
                 std::cout << "Picard:: non linear iteration " << fixedpt_iter << " \n";
             }
             tic();
-            if ( boption("blockns") )
+            if ( soption("picard.preconditioner") != "petsc" )
             {
                 a_blockns->update( at.matrixPtr(), idv(u), m_dirichlet );
                 at.solveb(_rhs=r,_solution=U,_backend=backend(_name="picard",_rebuild=true),_prec=a_blockns );
@@ -205,25 +217,20 @@ int main(int argc, char**argv )
             incru = normL2( _range=elements(mesh), _expr=idv(u)-idv(un));
             incrp = normL2( _range=elements(mesh), _expr=idv(p)-idv(pn));
             fixedpt_iter++;
-            res = r( U );
-
+            
             if ( Environment::isMasterRank() )
             {
                 std::cout << "Iteration "  << fixedpt_iter << "\n";
                 std::cout << " . ||u-un|| = " << incru << std::endl;
                 std::cout << " . ||p-pn|| = " << incrp << std::endl;
-                std::cout << " . residual = " << res << std::endl;
-            }
-            if  ( fixedpt_iter < 10 )
-            {
-                Un = U;
-                Un.close();
-            }
+                            }
+            Un = U;
+            Un.close();
+
             e->step(fixedpt_iter)->add( "u", u );
             e->step(fixedpt_iter)->add( "p", p );
             e->save();
         }
-        //while ( ( res > fixPtTol ) && ( fixedpt_iter < fixPtMaxIt ) );
         while ( ( incru > fixPtTol && incrp > fixPtTol ) && ( fixedpt_iter < fixPtMaxIt ) );
     }
 
@@ -234,13 +241,14 @@ int main(int argc, char**argv )
 
         double res = 0;
         auto deltaU = Vh->element();
-        m_dirichlet["inlet"]=wall;
-        
+        auto at_blockns = blockns( _space=Vh, _type=soption("newton.preconditioner"), _bc=bcs, _matrix= at.matrixPtr(), _prefix="increment" );
+        map_vector_field<dim,1,2> m_dirichlet { bcs.getVectorFields<dim> ( "increment", "Dirichlet" ) } ;
         do
         {
             if ( Environment::isMasterRank() )
                 std::cout << " - Assemble nonlinear terms  ...\n";
-            at = a;
+            at.zero();
+            at += a;
             at += integrate( _range=elements(mesh),_expr=trans(id(v))*(gradt(u)*idv(u)) );
             at += integrate( _range=elements(mesh), _expr=trans(id(v))*gradv(u)*idt(u) );
 
@@ -251,20 +259,19 @@ int main(int argc, char**argv )
             r += integrate( _range=elements(mesh),_expr=trans(id(v))*(gradv(u)*idv(u)) );
             if ( Environment::isMasterRank() )
                 std::cout << " - Assemble BC   ...\n";
-            if ( boption( "blockns.weakdir" ) )
+            
+            for( auto const& d : m_dirichlet )
             {
-                for( auto const& d : m_dirichlet )
+                if ( boption( "blockns.weakdir" ) )
                 {
                     r += integrate( _range=markedfaces( mesh, d.first ),
                                     _expr=(trans(-mu*gradv(u)*N()+idv(p)*N()))*id(v)+(trans(-mu*grad(u)*N()+id(p)*N()))*idv(v)+doption("penaldir")*trans(idv(u))*id(v)/hFace() );
                 }
-            }
-            else
-            {
-                at+=on(_range=markedfaces(mesh,"wall"), _rhs=r, _element=u,
-                       _expr=zero<2,1>() ) ;
-                at+=on(_range=markedfaces(mesh,"inlet"), _rhs=r, _element=u,
-                       _expr=zero<2,1>() );
+                else
+                {
+                    at+=on(_range=markedfaces(mesh,d.first), _rhs=r, _element=u,
+                           _expr=d.second ) ;
+                }
             }
             r.scale(-1);
             if ( Environment::isMasterRank() )
@@ -275,12 +282,11 @@ int main(int argc, char**argv )
                 std::cout << " - Solve   ...\n";
             if ( soption("newton.preconditioner") != "petsc" )
             {
-                auto at_blockns = blockns( _space=Vh, _type=soption("newton.preconditioner"), _bc=bcs, _matrix= at.matrixPtr() );
                 at_blockns->update( at.matrixPtr(), idv(u), m_dirichlet );
                 //backend(_name="Fu",_rebuild=true);
                 //backend(_name="Fp",_rebuild=true);
                 deltaU.zero();
-                at.solveb(_rhs=r,_solution=deltaU/*U*/,_backend=backend(_name="newton"),_prec=at_blockns );
+                at.solveb(_rhs=r,_solution=deltaU/*U*/,_backend=backend(_name="newton",_rebuild=true),_prec=at_blockns );
             }
             else
                 at.solveb(_rhs=r,_solution=deltaU/*U*/,_backend=backend(_rebuild=true) );
@@ -297,11 +303,10 @@ int main(int argc, char**argv )
                 std::cout << " . ||p-pn|| = " << incrp << std::endl;
                 std::cout << " . residual = " << std::abs(res) << std::endl;
             }
-            if  ( newton_iter < 10 )
-            {
-                Un = U;
-                Un.close();
-            }
+
+            Un = U;
+            Un.close();
+
             e->step(newton_iter)->add( "u", u );
             e->step(newton_iter)->add( "p", p );
             e->save();

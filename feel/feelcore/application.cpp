@@ -1336,7 +1336,7 @@ Application::printStats( std::ostream& out,
             auto en = M_stats.find( i->name() )->second.end();
             out << std::setw( 10 ) << std::right << "levels"
                 << std::setw( 10 ) << std::right << "h";
-            BOOST_FOREACH( auto key, keys )
+            for( auto const& key : keys )
             {
                 if ( key.find( "e." ) != std::string::npos )
                     printErrors( out, it, en, key, stats|Application::HEADER );
@@ -1357,7 +1357,7 @@ Application::printStats( std::ostream& out,
                 int l  = it->get<int>( "level" );
                 out << std::right << std::setw( 10 ) << l
                     << std::right << std::setw( 10 ) << std::fixed  << std::setprecision( 4 ) << h;
-                BOOST_FOREACH( auto key, keys )
+                for(auto const& key: keys )
                 {
                     if ( key.find( "e." ) != std::string::npos )
                         printErrors( out, it, boost::next(it), key, stats&(~Application::HEADER) );

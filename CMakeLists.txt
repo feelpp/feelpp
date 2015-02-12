@@ -378,7 +378,7 @@ if ( FEELPP_ENABLE_DOCUMENTATION OR FEELPP_ENABLE_DOXYGEN )
 endif()
 #add_dependencies(check benchmarks)
 #add_dependencies(check examples)
-IF(FEELPP_ENABLE_TESTS )
+IF(FEELPP_ENABLE_TESTS AND EXISTS  ${CMAKE_CURRENT_SOURCE_DIR}/testsuite)
   add_subdirectory( testsuite )
 endif()
 
@@ -386,7 +386,7 @@ if ( FEELPP_ENABLE_BENCHMARKS AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/benchmarks 
   ADD_SUBDIRECTORY ( benchmarks )
 endif()
 
-if ( FEELPP_ENABLE_APPLICATIONS )
+if ( FEELPP_ENABLE_APPLICATIONS AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/applications)
   ADD_SUBDIRECTORY ( applications )
 elseif (EXISTS ${FEELPP_SOURCE_DIR}/applications/opus )
   ADD_SUBDIRECTORY ( applications/opus )

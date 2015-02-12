@@ -972,7 +972,7 @@ MatrixPetsc<T>::createSubMatrix( std::vector<size_type> const& _rows,
     std::vector<size_type> rows = ( checkAndFixRange )?
         this->mapRowPtr()->buildIndexSetWithParallelMissingDof( _rows ) : _rows;
     std::vector<size_type> cols = ( checkAndFixRange && !useSameDataMap )?
-        this->mapRowPtr()->buildIndexSetWithParallelMissingDof( _cols ) : ( useSameDataMap )? rows : _cols;
+        this->mapColPtr()->buildIndexSetWithParallelMissingDof( _cols ) : ( useSameDataMap )? rows : _cols;
 
     // build subdatamap row and col
     datamap_ptrtype subMapRow = this->mapRowPtr()->createSubDataMap( rows, false );
@@ -1443,7 +1443,8 @@ MatrixPetsc<T>::transpose( MatrixSparse<value_type>& Mt, size_type options ) con
             ierr = MatTranspose( M_mat, &Atrans->M_mat );
 #endif
             CHKERRABORT( this->comm(),ierr );
-            Mt.setGraph( this->graph()->transpose() );
+            if ( this->hasGraph() )
+                Mt.setGraph( this->graph()->transpose() );
         }
     else if ( ctx.test( MATRIX_TRANSPOSE_UNASSEMBLED ) )
         {
@@ -2667,6 +2668,7 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
         if ( on_context.test( ContextOn::KEEP_DIAGONAL ) )
         {
             MatGetDiagonal( this->M_mat, diag.vec() );
+            diag.close();
         }
 
 #if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR >= 2)

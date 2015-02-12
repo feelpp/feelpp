@@ -522,11 +522,11 @@ public:
         return invalid_size_type_value;
     }
     /**
-     * @return the marker nae associated to the \p marker id
+     * @return the marker name associated to the \p marker id
      */
     std::string markerName( size_type marker ) const
         {
-            for( auto n : M_markername )
+            for( auto const& n : M_markername )
             {
                 if (n.second[0] == marker )
                     return n.first;
@@ -656,10 +656,7 @@ public:
      */
     void addMarkerName( std::string __name, int __id ,int __topoDim )
     {
-        std::vector<size_type> data(2);
-        data[0]=__id;
-        data[1]=__topoDim;
-        M_markername[__name]=data;
+        M_markername[__name] = { static_cast<size_type>(__id), static_cast<size_type>(__topoDim) };
     }
     /**
       * @return true if all markers are defined in the mesh, false otherwise
@@ -1043,6 +1040,11 @@ public:
      */
     void updateForUse();
 
+    /**
+     * update hAverage, hMin, hMax, measure of the mesh and measure of the boundary mesh
+     */
+    void updateMeasures();
+
     void meshModified()
         {
             for( auto fit = this->beginFace(), fen = this->endFace(); fit != fen; ++fit )
@@ -1261,6 +1263,7 @@ public:
             M_isInitBoundaryFaces( L.M_isInitBoundaryFaces ),
             M_resultAnalysis( L.M_resultAnalysis ),
             M_doExtrapolation( L.M_doExtrapolation ),
+            M_gic( L.M_gic ), M_gic1( L.M_gic1 ),
             M_barycenter( L.M_barycenter ),
             M_barycentersWorld( L.M_barycentersWorld )
         {}
@@ -1496,6 +1499,8 @@ public:
 
         ref_convex_type M_refelem;
         ref_convex1_type M_refelem1;
+        mutable boost::shared_ptr<gmc_inverse_type> M_gic;
+        mutable boost::shared_ptr<gmc1_inverse_type> M_gic1;
 
         node_type M_barycenter;
         boost::optional<std::vector<boost::tuple<bool,node_type> > > M_barycentersWorld;
@@ -2204,6 +2209,7 @@ struct MeshPoints
     int globalNumberOfPoints() const { return global_npts; }
     int globalNumberOfElements() const { return global_nelts; }
 
+    std::vector<int> numberOfPoints, numberOfElements;
     int global_nelts{0}, global_npts{0};
     std::vector<int32_t> ids;
     std::map<int32_t, int32_t> new2old;
@@ -2225,7 +2231,7 @@ struct MeshPoints
  * @param outer If false, the vertices are place in an x1 y1 z1 ... xn yn zn order, otherwise in the x1 ... xn y1 ... yn z1 ... zn
  * @param renumber If true, the vertices will be renumbered with maps to keep the correspondance between the twoi, otherwise the original ids are kept
  * @param fill It true, the method will generate points coordinates that are 3D, even if the point is specified with 1D or 2D coordinates (filled with 0)
- * @param Specify the startIndex of the renumbered points (typically set to 0 or 1, but no restriction)
+ * @param Specify the startIndex of the renumbered points (typically set to 0 or 1, but no restriction). This is only used when renumber is true, otherwise it is not used.
  */
 template<typename T>
 template<typename MeshType, typename IteratorType>
@@ -2378,6 +2384,14 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
     std::vector<std::vector<int>> ospe;
 
     mpi::all_gather( worldComm.comm(), ost, ospe );
+
+    /* copy information about number of points/elements
+     * per process in a local array */
+    for( size_type i = 0; i < ospe.size(); i++)
+    {
+        numberOfPoints.push_back(ospe[i][0]);
+        numberOfElements.push_back(ospe[i][1]);
+    }
 
     /* compute offsets to shift the point and element ids */
     /* regarding to the processor rank */

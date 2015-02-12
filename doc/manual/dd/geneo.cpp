@@ -28,11 +28,8 @@
    \author Pierre Jolivet <pierre.jolivet@imag.fr>
    \date 2013-12-21
  */
-#ifndef MKL_Complex16
-#define MKL_Complex16 std::complex<double>
-#endif
-#ifndef MKL_Complex8
-#define MKL_Complex8 std::complex<float>
+#ifdef EIGEN_USE_MKL_ALL
+#undef EIGEN_USE_MKL_ALL
 #endif
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
@@ -56,64 +53,80 @@
 namespace Feel
 {
 template<uint16_type Dim, uint16_type Order>
-static inline void generateRBM(unsigned short& nb, double**& ev, boost::shared_ptr<Mesh<Simplex<Dim>>>& mesh, boost::shared_ptr<FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order, Scalar>>>>& Vh) {
+static inline void generateRBM(unsigned short& nb, double**& ev, boost::shared_ptr<FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order, Scalar>>>>& Vh) {
     nb = 1;
     ev = new double*[nb];
     *ev = new double[nb * Vh->nDof()];
     auto rbm = Vh->element();
-    rbm = vf::project(Vh, elements(mesh), cst(1.0));
+    rbm = vf::project(Vh, elements(Vh->mesh()), cst(1.0));
     std::copy(rbm.begin(), rbm.end(), *ev);
 }
 template<uint16_type Order>
-static inline void generateRBM(unsigned short& nb, double**& ev, boost::shared_ptr<Mesh<Simplex<2>>>& mesh, boost::shared_ptr<FunctionSpace<Mesh<Simplex<2>>, bases<Lagrange<Order, Vectorial>>>>& Vh) {
+static inline void generateRBM(unsigned short& nb, double**& ev, boost::shared_ptr<FunctionSpace<Mesh<Simplex<2>>, bases<Lagrange<Order, Vectorial>>>>& Vh) {
     nb = 3;
     ev = new double*[nb];
     *ev = new double[nb * Vh->nDof()];
     for(unsigned short i = 0; i < nb; ++i)
         ev[i] = *ev + i * Vh->nDof();
     auto rbm = Vh->element();
-    rbm = vf::project(Vh, elements(mesh), oneX());
+    rbm = vf::project(Vh, elements(Vh->mesh()), oneX());
     std::copy(rbm.begin(), rbm.end(), ev[0]);
-    rbm = vf::project(Vh, elements(mesh), oneY());
+    rbm = vf::project(Vh, elements(Vh->mesh()), oneY());
     std::copy(rbm.begin(), rbm.end(), ev[1]);
-    rbm = vf::project(Vh, elements(mesh), vec(Py(), -Px()));
+    rbm = vf::project(Vh, elements(Vh->mesh()), vec(Py(), -Px()));
     std::copy(rbm.begin(), rbm.end(), ev[2]);
 }
 template<uint16_type Order>
-static inline void generateRBM(unsigned short& nb, double**& ev, boost::shared_ptr<Mesh<Simplex<3>>>& mesh, boost::shared_ptr<FunctionSpace<Mesh<Simplex<3>>, bases<Lagrange<Order, Vectorial>>>>& Vh) {
+static inline void generateRBM(unsigned short& nb, double**& ev, boost::shared_ptr<FunctionSpace<Mesh<Simplex<3>>, bases<Lagrange<Order, Vectorial>>>>& Vh) {
     nb = 6;
     ev = new double*[nb];
     *ev = new double[nb * Vh->nDof()];
     for(unsigned short i = 0; i < nb; ++i)
         ev[i] = *ev + i * Vh->nDof();
     auto rbm = Vh->element();
-    rbm = vf::project(Vh, elements(mesh), oneX());
+    rbm = vf::project(Vh, elements(Vh->mesh()), oneX());
     std::copy(rbm.begin(), rbm.end(), ev[0]);
-    rbm = vf::project(Vh, elements(mesh), oneY());
+    rbm = vf::project(Vh, elements(Vh->mesh()), oneY());
     std::copy(rbm.begin(), rbm.end(), ev[1]);
-    rbm = vf::project(Vh, elements(mesh), oneZ());
+    rbm = vf::project(Vh, elements(Vh->mesh()), oneZ());
     std::copy(rbm.begin(), rbm.end(), ev[2]);
-    rbm = vf::project(Vh, elements(mesh), vec(Py(), -Px(), cst(0.0)));
+    rbm = vf::project(Vh, elements(Vh->mesh()), vec(Py(), -Px(), cst(0.0)));
     std::copy(rbm.begin(), rbm.end(), ev[3]);
-    rbm = vf::project(Vh, elements(mesh), vec(-Pz(), cst(0.0), Px()));
+    rbm = vf::project(Vh, elements(Vh->mesh()), vec(-Pz(), cst(0.0), Px()));
     std::copy(rbm.begin(), rbm.end(), ev[4]);
-    rbm = vf::project(Vh, elements(mesh), vec(cst(0.0), Pz(), -Py()));
+    rbm = vf::project(Vh, elements(Vh->mesh()), vec(cst(0.0), Pz(), -Py()));
     std::copy(rbm.begin(), rbm.end(), ev[5]);
 }
+template<uint16_type Dim, uint16_type Order, template<uint16_type> class Type>
+static inline void coefficients(double* r, boost::shared_ptr<FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order, Type>>>>& Vh) {
+    auto x = Vh->element();
+    if(!std::is_same<Type<Dim>, Vectorial<Dim>>::value) {
+        kappa k;
+        k.val = doption("parameters.kappa");
+        x = vf::project(Vh, elements(Vh->mesh()), idf(k) * one());
+    }
+    else {
+        stripes s;
+        s.first  = doption("parameters.n");
+        s.second = doption("parameters.nu");
+        x = vf::project(Vh, elements(Vh->mesh()), idf(s) * one());
+    }
+    std::copy(x.begin(), x.end(), r);
+}
 template<uint16_type Dim, uint16_type Order>
-static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<double>::vector_ptrtype& f, boost::shared_ptr<Mesh<Simplex<Dim>>>& mesh, boost::shared_ptr<FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order, Scalar>>>>& Vh) {
+static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<double>::vector_ptrtype& f, boost::shared_ptr<FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order, Scalar>>>>& Vh) {
     typename FunctionSpace<typename Mesh<Simplex<Dim>>::mesh_type, bases<Lagrange<Order, Scalar>>>::element_type u = Vh->element(), v = Vh->element();
     kappa k;
     k.val = doption("parameters.kappa");
     auto a = form2(_trial = Vh, _test = Vh, _matrix = A);
-    a = integrate(_range = elements(mesh), _expr = idf(k) * gradt(u) * trans(grad(v)));
+    a = integrate(_range = elements(Vh->mesh()), _expr = idf(k) * gradt(u) * trans(grad(v)));
     auto l = form1(_test = Vh, _vector = f);
-    l = integrate(_range = elements(mesh), _expr = id(v));
-    a += on(_range = markedfaces(mesh, "Dirichlet"), _rhs = l, _element = u, _expr = cst(0.0));
+    l = integrate(_range = elements(Vh->mesh()), _expr = id(v));
+    a += on(_range = markedfaces(Vh->mesh(), "Dirichlet"), _rhs = l, _element = u, _expr = cst(0.0));
     A->close();
 }
 template<uint16_type Order>
-static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<double>::vector_ptrtype& f, boost::shared_ptr<Mesh<Simplex<2>>>& mesh, boost::shared_ptr<FunctionSpace<Mesh<Simplex<2>>, bases<Lagrange<Order, Vectorial>>>>& Vh) {
+static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<double>::vector_ptrtype& f, boost::shared_ptr<FunctionSpace<Mesh<Simplex<2>>, bases<Lagrange<Order, Vectorial>>>>& Vh) {
     typename FunctionSpace<typename Mesh<Simplex<2>>::mesh_type, bases<Lagrange<Order, Vectorial>>>::element_type u = Vh->element(), v = Vh->element();
     stripes s;
     s.first  = doption("parameters.epsilon");
@@ -128,16 +141,16 @@ static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<d
     const double density = 1.0e+3;
 
     auto a = form2(_trial = Vh, _test = Vh, _matrix = A);
-    a = integrate(_range = elements(mesh),
+    a = integrate(_range = elements(Vh->mesh()),
                   _expr = lambda * divt(u) * div(v) +
                           2 * mu * trace(trans(sym(gradt(u))) * sym(grad(u))));
     auto l = form1(_test = Vh, _vector = f);
-    l = integrate(_range = elements(mesh), _expr = -density * trans(oneY()) * id(v));
-    a += on(_range = markedfaces(mesh, "Dirichlet"), _rhs = l, _element = u, _expr = zero<2, 1>());
+    l = integrate(_range = elements(Vh->mesh()), _expr = -density * trans(oneY()) * id(v));
+    a += on(_range = markedfaces(Vh->mesh(), "Dirichlet"), _rhs = l, _element = u, _expr = zero<2, 1>());
     A->close();
 }
 template<uint16_type Order>
-static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<double>::vector_ptrtype& f, boost::shared_ptr<Mesh<Simplex<3>>>& mesh, boost::shared_ptr<FunctionSpace<Mesh<Simplex<3>>, bases<Lagrange<Order, Vectorial>>>>& Vh) {
+static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<double>::vector_ptrtype& f, boost::shared_ptr<FunctionSpace<Mesh<Simplex<3>>, bases<Lagrange<Order, Vectorial>>>>& Vh) {
     typename FunctionSpace<typename Mesh<Simplex<3>>::mesh_type, bases<Lagrange<Order, Vectorial>>>::element_type u = Vh->element(), v = Vh->element();
     stripes s;
     s.first  = doption("parameters.epsilon");
@@ -152,12 +165,12 @@ static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<d
     const double density = 1.0e+3;
 
     auto a = form2(_trial = Vh, _test = Vh, _matrix = A);
-    a = integrate(_range = elements(mesh),
+    a = integrate(_range = elements(Vh->mesh()),
                   _expr = lambda * divt(u) * div(v) +
                           2 * mu * trace(trans(sym(gradt(u))) * sym(grad(u))));
     auto l = form1(_test = Vh, _vector = f);
-    l = integrate(_range = elements(mesh), _expr = -density * trans(vec(cst(1.0/std::sqrt(2.0)), cst(0.0), cst(1.0/std::sqrt(2.0)))) * id(v));
-    a += on(_range = markedfaces(mesh, "Dirichlet"), _rhs = l, _element = u, _expr = zero<3, 1>());
+    l = integrate(_range = elements(Vh->mesh()), _expr = -density * trans(vec(cst(1.0/std::sqrt(2.0)), cst(0.0), cst(1.0/std::sqrt(2.0)))) * id(v));
+    a += on(_range = markedfaces(Vh->mesh(), "Dirichlet"), _rhs = l, _element = u, _expr = zero<3, 1>());
     A->close();
 }
 
@@ -169,8 +182,7 @@ public:
 }; // Geneopp
 
 template<uint16_type Dim, uint16_type Order, template<uint16_type> class Type>
-void
-Geneopp<Dim, Order, Type>::run()
+void Geneopp<Dim, Order, Type>::run()
 {
     static_assert(Dim == 2 || Dim == 3, "Wrong dimension");
 #if defined(FETI)
@@ -182,51 +194,17 @@ Geneopp<Dim, Order, Type>::run()
 #endif
     prec_type* K = new prec_type;
     tic();
-    int p = ioption("p");
-    int topology = ioption("topology");
-    p = std::max(p, 1);
+    unsigned short p = ioption("p");
+    unsigned short topology = ioption("topology");
     MPI_Comm comm;
     bool exclude = boption("exclude");
-    bool excluded;
-    if(!exclude) {
+    bool excluded = HPDDM::DMatrix::splitCommunicator(Environment::worldComm(), comm, exclude, p, topology);
+    if(!exclude)
         MPI_Comm_dup(Environment::worldComm(), &comm);
-        excluded = false;
-    }
-    else {
-        MPI_Group orig_group, new_group;
-        MPI_Comm_group(Environment::worldComm(), &orig_group);
-        int* pm = new int[p];
-        if(p > Environment::numberOfProcessors()) {
-            p = Environment::numberOfProcessors() / 2;
-            if(Environment::isMasterRank())
-                std::cout << "WARNING -- the number of master processes was set to a value greater than MPI_Comm_size, the value of \"-p\" has been reset to " << Environment::numberOfProcessors() / 2 << std::endl;
-        }
-        if(topology == 0)
-            for(unsigned short i = 0; i < p; ++i)
-                pm[i] = i * (Environment::numberOfProcessors() / p);
-        else if(topology == 1)
-            std::iota(pm, pm + p, 0);
-        else if(topology == 2) {
-            float area = Environment::numberOfProcessors() * Environment::numberOfProcessors() / (2.0 * p);
-            *pm = 0;
-            for(unsigned short i = 1; i < p; ++i)
-                pm[i] = static_cast<int>(Environment::numberOfProcessors() - std::sqrt(std::max(Environment::numberOfProcessors() * Environment::numberOfProcessors() - 2 * Environment::numberOfProcessors() * pm[i - 1] - 2 * area + pm[i - 1] * pm[i - 1], 1.0f)) + 0.5);
-        }
-        excluded = std::binary_search(pm, pm + p, Environment::rank());
-        if(excluded)
-            MPI_Group_incl(orig_group, p, pm, &new_group);
-        else
-            MPI_Group_excl(orig_group, p, pm, &new_group);
-        MPI_Comm_create(Environment::worldComm(), new_group, &comm);
-        MPI_Group_free(&orig_group);
-        MPI_Group_free(&new_group);
-        delete [] pm;
-    }
     boost::mpi::communicator bComm(comm, boost::mpi::comm_take_ownership);
-    std::vector<int> active(bComm.size(), true);
-    WorldComm wComm(bComm, bComm, bComm, bComm.rank(), active);
+    WorldComm wComm(bComm, bComm, bComm, bComm.rank(), std::vector<int>(bComm.size(), true));
     toc("communicators");
-    std::vector<double> timers(6 + (nu != 0 ? 2 : 0));
+    std::vector<double> timers(6 + (nu != 0 ? 2 : 0) + (exclude == true));
     mpi::timer time;
     boost::shared_ptr<Mesh<Simplex<Dim>>> mesh;
     typename FunctionSpace<typename Mesh<Simplex<Dim>>::mesh_type, bases<Lagrange<Order, Type>>>::element_type uLocal;
@@ -235,20 +213,20 @@ Geneopp<Dim, Order, Type>::run()
     if(!excluded) {
         tic();
         if(std::is_same<Type<Dim>, Vectorial<Dim>>::value) {
-            mesh = createGMSHMesh(_mesh = new Mesh<Simplex<Dim>>,
+            mesh = createGMSHMesh(_mesh = new Mesh<Simplex<Dim>>(wComm),
                                   _update = MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK,
                                   _worldcomm = wComm,
-                                  _desc = domain(_name = "hypercube", _shape = "hypercube",
+                                  _desc = domain(_worldcomm = wComm, _name = "hypercube", _shape = "hypercube",
                                                  _xmin = 0.0, _xmax = 10.0,
                                                  _ymin = 0.0, _ymax = 1.0,
                                                  _zmin = 0.0, _zmax = 1.0));
             mesh->addMarkerName("Dirichlet", Dim == 2 ? 1 : 19, Dim == 2 ? 1 : 2);
         }
         else {
-            mesh = createGMSHMesh(_mesh = new Mesh<Simplex<Dim>>,
+            mesh = createGMSHMesh(_mesh = new Mesh<Simplex<Dim>>(wComm),
                                   _update = MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK,
                                   _worldcomm = wComm,
-                                  _desc = domain(_name = "hypercube", _shape = "hypercube",
+                                  _desc = domain(_worldcomm = wComm, _name = "hypercube", _shape = "hypercube",
                                                  _xmin = 0.0, _xmax = 1.0,
                                                  _ymin = 0.0, _ymax = 1.0,
                                                  _zmin = 0.0, _zmax = 1.0));
@@ -268,17 +246,13 @@ Geneopp<Dim, Order, Type>::run()
         bComm.barrier();
         time.restart();
         {
-            std::vector<std::vector<int>*> map;
-            map.resize(mesh->faceNeighborSubdomains().size());
+            std::vector<std::vector<int>> map(mesh->faceNeighborSubdomains().size());
             std::string kind = soption(_name = "backend");
             boost::shared_ptr<Backend<double>> ptr_backend = Backend<double>::build(kind, "", Environment::worldCommSeq());
             Backend<double>::vector_ptrtype f = ptr_backend->newVector(VhLocal);
-            int i;
-#pragma omp parallel for shared(map) private(i) schedule(static, 4)
-            for(i = 0; i < map.size(); ++i) {
-                std::set<rank_type>::iterator it = mesh->faceNeighborSubdomains().begin();
-                std::advance(it, i);
-                auto trace = createSubmesh(mesh, interprocessfaces(mesh, *it),
+#pragma omp parallel for shared(map) schedule(static, 4)
+            for(int i = 0; i < map.size(); ++i) {
+                auto trace = createSubmesh(mesh, interprocessfaces(mesh, *std::next(mesh->faceNeighborSubdomains().begin(), i)),
                                            Environment::worldCommSeq());
                 auto Xh = FunctionSpace<typename Mesh<Simplex<Dim>>::trace_mesh_type, bases<Lagrange<Order, Type>>>::New(_mesh = trace, _worldscomm = Environment::worldsCommSeq(1));
                 auto l = ptr_backend->newVector(Xh);
@@ -287,20 +261,20 @@ Geneopp<Dim, Order, Type>::run()
                 auto op = opInterpolation(_domainSpace = VhLocal,
                                           _imageSpace  = Xh,
                                           _backend     = ptr_backend, _ddmethod = true);
-                map[i] = new std::vector<int>(Xh->nDof());
+                map[i].resize(Xh->nDof());
 #pragma omp critical
                 {
                     ptr_backend->prod(op->mat(), *l, *f, true);
                     pt = &(*f)(0);
                     for(int j = 0; j < VhLocal->nDof(); ++j, ++pt)
                         if(std::round(*pt) != 0)
-                            (*map[i])[std::round(*pt) - 1] = j;
+                            map[i][std::round(*pt) - 1] = j;
                 }
             }
             {
                 std::set<int> unique;
-                for(std::vector<int>* pt : map)
-                    for(int& i : *pt)
+                for(std::vector<int>& pt : map)
+                    for(int& i : pt)
                         unique.insert(i);
                 interface.insert(interface.begin(), unique.cbegin(), unique.cend());
                 std::unordered_map<int, int> mapping;
@@ -308,15 +282,15 @@ Geneopp<Dim, Order, Type>::run()
                 int j = 0;
                 for(const int& i : interface)
                     mapping[i] = j++;
-                for(std::vector<int>* pt : map)
-                    for(int& i : *pt)
+                for(std::vector<int>& pt : map)
+                    for(int& i : pt)
                         i = mapping[i];
             }
             timers[2] = time.elapsed();
             bComm.barrier();
             time.restart();
             Backend<double>::sparse_matrix_ptrtype A = ptr_backend->newMatrix(VhLocal, VhLocal);
-            assemble(A, f, meshLocal, VhLocal);
+            assemble(A, f, VhLocal);
             timers[3] = time.elapsed();
             b = new double[VhLocal->nDof()];
 #ifdef FEELPP_HAS_HPDDM
@@ -358,11 +332,12 @@ Geneopp<Dim, Order, Type>::run()
                 std::copy_n(EigenA.valuePtr(), ic[VhLocal->nDof()], c);
                 std::copy_n(EigenF.data(), EigenF.rows(), b);
             }
-            K->Subdomain::initialize(new HPDDM::MatrixCSR<double>(VhLocal->nDof(), VhLocal->nDof(), ic[VhLocal->nDof()], c, ic, jc, false, true), mesh->faceNeighborSubdomains().cbegin(), mesh->faceNeighborSubdomains().cend(), map, &comm);
+            K->Subdomain::initialize(new HPDDM::MatrixCSR<double>(VhLocal->nDof(), VhLocal->nDof(), ic[VhLocal->nDof()], c, ic, jc, false, true), mesh->faceNeighborSubdomains(), map, &comm);
+            decltype(map)().swap(map);
             if(nu == 0) {
                 if(nelements(markedfaces(meshLocal, "Dirichlet")) == 0) {
                     unsigned short nb;
-                    generateRBM(nb, ev, meshLocal, VhLocal);
+                    generateRBM(nb, ev, VhLocal);
                     K->setVectors(ev);
                     K->super::super::initialize(nb);
                 }
@@ -370,8 +345,6 @@ Geneopp<Dim, Order, Type>::run()
                     K->super::super::initialize(0);
             }
 #endif
-            for(std::vector<int>* pt : map)
-                delete pt;
         }
 #ifdef FEELPP_HAS_HPDDM
         bComm.barrier();
@@ -390,8 +363,15 @@ Geneopp<Dim, Order, Type>::run()
             K->super::super::initialize(nu);
         }
         K->callNumfactPreconditioner();
-        std::string scaling = soption("scaling");
-        K->buildScaling(scaling[0]);
+        const char scaling = soption("scaling")[0];
+        double* rho = nullptr;
+        if(scaling == 'r') {
+            double* rho = new double[VhLocal->nDof()];
+            coefficients(rho, VhLocal);
+            K->renumber(interface, rho);
+        }
+        K->buildScaling(scaling, rho);
+        delete [] rho;
         uLocal = VhLocal->element();
     }
     std::vector<unsigned short> parm(5);
@@ -403,24 +383,45 @@ Geneopp<Dim, Order, Type>::run()
         parm[HPDDM::Parameter::NU]       = excluded ? 0 : K->getLocal();
     else
         parm[HPDDM::Parameter::NU]       = nu;
-    unsigned short iter = ioption("it");
+    unsigned short it = ioption("it");
     double eps = doption("eps");
     if(excluded) {
         K->Subdomain::initialize(&comm);
         K->buildTwo<2>(Environment::worldComm(), parm);
-        HPDDM::IterativeMethod::PCG<true>(*K, static_cast<double*>(nullptr), static_cast<double*>(nullptr), iter, eps, Environment::worldComm(), Environment::isMasterRank());
+        HPDDM::IterativeMethod::PCG<true>(*K, static_cast<double*>(nullptr), static_cast<double*>(nullptr), it, eps, Environment::worldComm(), Environment::isMasterRank());
         delete K;
     }
     else {
-        if(exclude)
-            K->buildTwo<1>(Environment::worldComm(), parm);
+        std::pair<MPI_Request, const double*>* ret;
+        int flag = 0;
+        if(exclude) {
+            ret = K->buildTwo<1>(Environment::worldComm(), parm);
+            if(ret) {
+                MPI_Test(&(ret->first), &flag, MPI_STATUS_IGNORE);
+                if(flag) {
+                    delete [] ret->second;
+                    delete ret;
+                }
+            }
+        }
         else
-            K->buildTwo<0>(Environment::worldComm(), parm);
+            ret = K->buildTwo<0>(Environment::worldComm(), parm);
         bComm.barrier();
         time.restart();
         K->callNumfact();
         timers[5] = time.elapsed();
-        HPDDM::IterativeMethod::PCG<false>(*K, &(uLocal[0]), b, iter, eps, Environment::worldComm(), Environment::isMasterRank());
+        if(ret) {
+            time.restart();
+            if(flag)
+                timers.back() = 0.0;
+            else {
+                MPI_Wait(&(ret->first), MPI_STATUS_IGNORE);
+                delete [] ret->second;
+                delete ret;
+            }
+            timers.back() = time.elapsed();
+        }
+        HPDDM::IterativeMethod::PCG<false>(*K, &(uLocal[0]), b, it, eps, Environment::worldComm(), Environment::isMasterRank());
 
         double* storage = new double[2];
         K->computeError(&(uLocal[0]), b, storage);
@@ -458,7 +459,7 @@ Geneopp<Dim, Order, Type>::run()
                 boost::shared_ptr<Backend<double>> ptr_global = Backend<double>::build("petsc", "", wComm);
                 auto D = ptr_global->newMatrix(VhVisu, VhVisu);
                 auto F = ptr_global->newVector(VhVisu);
-                assemble(D, F, mesh, VhVisu);
+                assemble(D, F, VhVisu);
                 auto u = VhVisu->element();
                 ptr_global->solve(_matrix = D, _solution = u, _rhs = F);
                 timeFeel += time.elapsed();
@@ -475,21 +476,24 @@ Geneopp<Dim, Order, Type>::run()
         MPI_Gather(timers.data(), timers.size(), MPI_DOUBLE, allTimers, timers.size(), MPI_DOUBLE, 0, bComm);
         if(bComm.rank() == 0) {
             std::cout << "createSubmesh  FunctionSpace  Interface    Assem. solver  Renumbering    Fact. pinv.  ";
-            if(timers.size() == 8)
-                std::cout << "Schur complement  GenEO";
+            if(timers.size() >= 8)
+                std::cout << "Schur compl.   GenEO       ";
+            if(timers.size() == 7 || timers.size() == 9)
+                std::cout << "  Waiting time";
             std::cout << std::endl;
             std::cout.precision(4);
             for(int i = 0; i < bComm.size(); ++i) {
                 std::cout << std::scientific << allTimers[0 + i * timers.size()] << "     " << allTimers[1 + i * timers.size()] << "     " << allTimers[2 + i * timers.size()] << "   " << allTimers[3 + i * timers.size()] << "     " << allTimers[4 + i * timers.size()] << "     " << allTimers[5 + i * timers.size()] << "   ";
-                if(timers.size() == 8)
-                    std::cout << std::scientific << allTimers[6 + i * timers.size()] << "        " << allTimers[7 + i * timers.size()];
+                if(timers.size() >= 8)
+                    std::cout << std::scientific << allTimers[6 + i * timers.size()] << "     " << allTimers[7 + i * timers.size()] << "  ";
+                if(timers.size() == 7 || timers.size() == 9)
+                    std::cout << "  " << std::scientific << allTimers[(i + 1) * timers.size() - 1];
                 std::cout << std::endl;
             }
         }
         delete [] allTimers;
     }
 } // Geneopp::run
-
 } // Feel
 
 int main(int argc, char** argv) {
@@ -500,7 +504,7 @@ int main(int argc, char** argv) {
         ("scaling", po::value<std::string>()->default_value("m"), "kind of scaling")
         ("p", po::value<int>()->default_value(1), "number of master processes")
         ("topology", po::value<int>()->default_value(0), "distribution of the coarse operator")
-        ("strategy", po::value<int>()->default_value(3), "ordering tool for the direct solver (only useful when using MUMPS)")
+        ("strategy", po::value<int>()->default_value(3), "ordering tool for the direct coarse solver (only useful when using MUMPS)")
         ("eps", po::value<double>()->default_value(1e-8), "relative preconditioned residual")
         ("it", po::value<int>()->default_value(50), "maximum number of iterations")
         ("nu", po::value<int>()->default_value(0), "number of eigenvalues")
@@ -517,6 +521,7 @@ int main(int argc, char** argv) {
     // app.add(new Geneopp<2, 1, Scalar>());
     // app.add(new Geneopp<3, 2, Scalar>());
     app.add(new Geneopp<2, 1, Vectorial>());
+    // app.add(new Geneopp<2, 7, Vectorial>());
     // app.add(new Geneopp<3, 2, Vectorial>());
     app.run();
 }

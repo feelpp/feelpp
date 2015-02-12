@@ -7,13 +7,53 @@
    \section feelpp0990 Feel++ Release 0.100.0
    release date dd-mm-2014
 
-   \subsection changes01000 Changes
-
    \subsection features01000 Features
+
+   - Support Block preconditioning for Navier-Stokes (PMM and PCD)
+   - A lot of various fixes for the exporters: EnsightGold, HDF5
+   - Support for many configuration files that can be combined (e.g. to change
+     automatically solver strategies)
+   - Start work on boundary conditions generic framework, see examples in quickstart
 
    \subsection issues01000 Noteworthy Issues
 
+   - Support pointwise operations in Vector<> [Issue <a href="https://github.com/feelpp/feelpp/issues/509">509</a>]
+   - Customize PETSc/KSP monitors [Issue <a href="https://github.com/feelpp/feelpp/issues/503">503</a>]
+   - printMatlab : The script should not have the same name than the variable [Issue <a href="https://github.com/feelpp/feelpp/issues/501">501</a>]
+   - Add support for -mat_mumps_icntl_7  [Issue <a href="https://github.com/feelpp/feelpp/issues/499">499</a>]
+   - FTE in feelpp_test_integration_relatedmesh  [Issue <a href="https://github.com/feelpp/feelpp/issues/498">498</a>]
+   - Feature/faster  [Issue <a href="https://github.com/feelpp/feelpp/pull/497">497</a>]
+   - Support Schur complement Pressure Mass Matrix for Stokes [Issue <a href="https://github.com/feelpp/feelpp/issues/495">495</a>]
+   - Optimize and cleanup DofTable [Issue <a href="https://github.com/feelpp/feelpp/issues/490">490</a>]
+   - Reduce compilation cost in creategmshmesh [Issue <a href="https://github.com/feelpp/feelpp/issues/488">488</a>]
+   - Configure Aitken tool from command line options [Issue <a href="https://github.com/feelpp/feelpp/issues/483">483</a>]
+   - Support map of ginac expression [Issue <a href="https://github.com/feelpp/feelpp/issues/482">482</a>]
+   - Port on MAC OS Yosemite [Issue <a href="https://github.com/feelpp/feelpp/issues/466">466</a>]
+   - Operator Framework (#457) [Issue <a href="https://github.com/feelpp/feelpp/pull/458">458</a>]
+   - Support Operator framework  [Issue <a href="https://github.com/feelpp/feelpp/issues/457">457</a>]
+   - Support interprocessedges mesh filter [Issue <a href="https://github.com/feelpp/feelpp/issues/454">454</a>]
+   - Class Mesh  [Issue <a href="https://github.com/feelpp/feelpp/issues/453">453</a>]
+   - Support atan2 keyword in language [Issue <a href="https://github.com/feelpp/feelpp/issues/450">450</a>]
+   - FTE test_mortar  [Issue <a href="https://github.com/feelpp/feelpp/issues/449">449</a>]
+   - Support generic WorldComm in Exporter{EnsightGold,HDF5} [Issue <a href="https://github.com/feelpp/feelpp/issues/446">446</a>]
+   - Support worldcomm in Ginac expression [Issue <a href="https://github.com/feelpp/feelpp/issues/445">445</a>]
+   - Possible deadlock in loadMesh [Issue <a href="https://github.com/feelpp/feelpp/issues/444">444</a>]
+   - FTE test_on_inside [Issue <a href="https://github.com/feelpp/feelpp/issues/441">441</a>]
+   - FTE in test_interpolation_nedelec  [Issue <a href="https://github.com/feelpp/feelpp/issues/440">440</a>]
+   - Support square root of sparse matrices  [Issue <a href="https://github.com/feelpp/feelpp/issues/439">439</a>]
+   - Add support for jacobi elliptic functions [Issue <a href="https://github.com/feelpp/feelpp/issues/438">438</a>]
+   - Bug when computing the curl of the curl of an expression [Issue <a href="https://github.com/feelpp/feelpp/issues/397">397</a>]
+   - Add local/global interpolant tests [Issue <a href="https://github.com/feelpp/feelpp/issues/392">392</a>]
+   - Add support for parallel I/O via MPIIO to ensight gold format [Issue <a href="https://github.com/feelpp/feelpp/issues/326">326</a>]
+   - Add FILE_INDEX support in Ensight Gold format [Issue <a href="https://github.com/feelpp/feelpp/issues/305">305</a>]
+   - MPI_Scatter hangs inside Feel++ environment [Issue <a href="https://github.com/feelpp/feelpp/issues/304">304</a>]
+
    \subsection spec01000 Platform specific
+
+   - Support for Debian and Ubuntu (12.04, 14.04 and 14.10)
+   - Support for Prace supercomputer Curie@TGCC (France)
+   - Support for Mesocenters Grenoble and Strasbourg
+   - Support for MacOSX homebrew and macport including Yosemite
 
    \section feelpp0990 Feel++ Release 0.99.0
    release date 07-09-2014

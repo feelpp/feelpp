@@ -292,8 +292,6 @@ Mesh<Shape, T, Tag>::updateForUse()
             boost::tie( iv, en ) = this->elementsRange();
             auto pc = M_gm->preCompute( M_gm, M_gm->referenceConvex().vertices() );
             auto pcf =  M_gm->preComputeOnFaces( M_gm, M_gm->referenceConvex().barycenterFaces() );
-            M_local_meas = 0;
-            M_local_measbdy = 0;
 
             for ( ; iv != en; ++iv )
             {
@@ -306,57 +304,105 @@ Mesh<Shape, T, Tag>::updateForUse()
 #if 0
                 lambda::bind( &element_type::setMeshAndGm,
                               lambda::_1,
-                              this, M_gm, M_gm1 ) );
+                              this, M_gm, M_gm1 );
 
-            this->elements().modify( iv,
-                                     lambda::bind( &element_type::updateWithPc,
-                                                   lambda::_1, pc, boost::ref( pcf ) ) );
+                this->elements().modify( iv,
+                                         lambda::bind( &element_type::updateWithPc,
+                                                       lambda::_1, pc, boost::ref( pcf ) ) );
 #endif
-
-            // only compute meas for active element (no ghost)
-            if ( !iv->isGhostCell() )
-                M_local_meas += iv->measure();
-
-            auto _faces = iv->faces();
-
-            if ( nDim == 1 )
-                M_local_measbdy = 0;
-            else
-                for ( ; _faces.first != _faces.second; ++_faces.first )
-                    if ( ( *_faces.first ) && ( *_faces.first )->isOnBoundary() )
-                        M_local_measbdy += ( *_faces.first )->measure();
-        }
-#if BOOST_VERSION >= 105500
-        std::vector<value_type> gmeas{ M_local_meas, M_local_measbdy };
-        mpi::all_reduce(this->worldComm(), mpi::inplace(gmeas.data()), 2, std::plus<value_type>());
-#else
-        std::vector<value_type> lmeas{ M_local_meas, M_local_measbdy };
-        std::vector<value_type> gmeas( 2, 0.0 );
-        mpi::all_reduce(this->worldComm(), lmeas.data(), 2, gmeas.data(), std::plus<value_type>());
-#endif
-        M_meas = gmeas[0];
-        M_measbdy = gmeas[1];
-
-        // now that all elements have been updated, build inter element
-        // data such as the measure of point element neighbors
-        if ( this->components().test( MESH_ADD_ELEMENTS_INFO ) )
-        {
-            boost::tie( iv, en ) = this->elementsRange();
-            for ( ; iv != en; ++iv )
-            {
-                value_type meas = 0;
-                for( auto const& _elt: iv->pointElementNeighborIds() )
-                {
-                    // warning : only compute meas for active element (no ghost)
-                    if ( this->hasElement( _elt ) )
-                        meas += this->element( _elt ).measure();
-                }
-                this->elements().modify( iv, [meas]( element_type& e ){ e.setMeasurePointElementNeighbors( meas ); } );
             }
         }
-        VLOG(1) << "[Mesh::updateForUse] update measures : " << ti.elapsed() << "\n"; 
-    }
+
+        // update hAverage, hMin, hMax, measure of the mesh and measure of the boundary mesh
+        this->updateMeasures();
+
+        // attach mesh in the localisation tool
+        M_tool_localization->setMesh( this->shared_from_this(),false );
+
+    } // isUpdatedForUse
 #endif
+
+    {
+        ti.restart();
+        // check mesh connectivity
+        this->check();
+        VLOG(1) << "[Mesh::updateForUse] check : " << ti.elapsed() << "\n";
+    }
+
+    if ( M_is_gm_cached == false )
+    {
+        ti.restart();
+        M_gm->initCache( this );
+        M_gm1->initCache( this );
+        M_is_gm_cached = true;
+        VLOG(1) << "[Mesh::updateForUse] update geomap : " << ti.elapsed() << "\n"; 
+    }
+
+    this->setUpdatedForUse( true );
+
+    if (Environment::isMasterRank() && FLAGS_v >= 1)
+    {
+        std::cout << "[Mesh::updateForUse] total time : " << ti.elapsed() << "\n";
+        auto mem  = Environment::logMemoryUsage("memory usage after update for use");
+        std::cout << "[Mesh::updateForUse] resident memory : " << mem.memory_usage/1.e9 << "\n";
+    }
+}
+
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::updateMeasures()
+{
+    boost::timer ti;
+
+    M_local_meas = 0;
+    M_local_measbdy = 0;
+    element_iterator iv,  en;
+    boost::tie( iv, en ) = this->elementsRange();
+    for ( ; iv != en; ++iv )
+    {
+        // only compute meas for active element (no ghost)
+        if ( !iv->isGhostCell() )
+            M_local_meas += iv->measure();
+
+        auto _faces = iv->faces();
+
+        if ( nDim == 1 )
+            M_local_measbdy = 0;
+        else
+            for ( ; _faces.first != _faces.second; ++_faces.first )
+                if ( ( *_faces.first ) && ( *_faces.first )->isOnBoundary() )
+                    M_local_measbdy += ( *_faces.first )->measure();
+    }
+#if BOOST_VERSION >= 105500
+    std::vector<value_type> gmeas{ M_local_meas, M_local_measbdy };
+    mpi::all_reduce(this->worldComm(), mpi::inplace(gmeas.data()), 2, std::plus<value_type>());
+#else
+    std::vector<value_type> lmeas{ M_local_meas, M_local_measbdy };
+    std::vector<value_type> gmeas( 2, 0.0 );
+    mpi::all_reduce(this->worldComm(), lmeas.data(), 2, gmeas.data(), std::plus<value_type>());
+#endif
+    M_meas = gmeas[0];
+    M_measbdy = gmeas[1];
+
+    // now that all elements have been updated, build inter element
+    // data such as the measure of point element neighbors
+    if ( this->components().test( MESH_ADD_ELEMENTS_INFO ) )
+    {
+        boost::tie( iv, en ) = this->elementsRange();
+        for ( ; iv != en; ++iv )
+        {
+            value_type meas = 0;
+            for( auto const& _elt: iv->pointElementNeighborIds() )
+            {
+                // warning : only compute meas for active element (no ghost)
+                if ( this->hasElement( _elt ) )
+                    meas += this->element( _elt ).measure();
+            }
+            this->elements().modify( iv, [meas]( element_type& e ){ e.setMeasurePointElementNeighbors( meas ); } );
+        }
+    }
+    VLOG(1) << "[Mesh::updateMeasures] update measures : " << ti.elapsed() << "\n"; 
+
     // compute h information: average, min and max
     {
         ti.restart();
@@ -386,32 +432,9 @@ Mesh<Shape, T, Tag>::updateForUse()
         VLOG(1) << "[Mesh::updateForUse] update measures : " << ti.elapsed() << "\n"; 
     }
 
-    {
-        ti.restart();
-        // check mesh connectivity
-        this->check();
-        VLOG(1) << "[Mesh::updateForUse] check : " << ti.elapsed() << "\n"; 
-    }
-
-    if ( M_is_gm_cached == false )
-    {
-        ti.restart();
-        M_gm->initCache( this );
-        M_gm1->initCache( this );
-        M_is_gm_cached = true;
-        VLOG(1) << "[Mesh::updateForUse] update geomap : " << ti.elapsed() << "\n"; 
-    }
-
-    M_tool_localization->setMesh( this->shared_from_this(),false );
-    this->setUpdatedForUse( true );
 }
-    if (Environment::isMasterRank() && FLAGS_v >= 1)
-    {
-        std::cout << "[Mesh::updateForUse] total time : " << ti.elapsed() << "\n";
-        auto mem  = Environment::logMemoryUsage("memory usage after update for use");
-        std::cout << "[Mesh::updateForUse] resident memory : " << mem.memory_usage/1.e9 << "\n";
-    }
-}
+
+
 template<typename Shape, typename T, int Tag>
 typename Mesh<Shape, T, Tag>::self_type&
 Mesh<Shape, T, Tag>::operator+=( self_type const& m )
@@ -2698,6 +2721,11 @@ Mesh<Shape, T, Tag>::Localization::init()
     typename self_type::element_iterator el_it;
     typename self_type::element_iterator el_en;
     boost::tie( boost::tuples::ignore, el_it, el_en ) = Feel::elements( *mesh );
+    if ( el_it != el_en )
+    {
+        M_gic.reset( new gmc_inverse_type( mesh->gm(), *el_it, mesh->worldComm().subWorldCommSeq() ) );
+        M_gic1.reset( new gmc1_inverse_type( mesh->gm1(), *el_it, mpl::int_<1>(), mesh->worldComm().subWorldCommSeq() ) );
+    }
 
     for ( ; el_it != el_en; ++el_it )
     {
@@ -2736,7 +2764,7 @@ Mesh<Shape, T, Tag>::Localization::initBoundaryFaces()
     typename self_type::location_face_iterator face_it;
     typename self_type::location_face_iterator face_en;
     boost::tie( boost::tuples::ignore, face_it, face_en ) = Feel::boundaryfaces( mesh );
-
+    bool hasInitGic=false;
     for ( ; face_it != face_en; ++face_it )
     {
         for ( int i=0; i<face_it->nPoints(); ++i )
@@ -2749,6 +2777,13 @@ Mesh<Shape, T, Tag>::Localization::initBoundaryFaces()
                             M_kd_tree->addPoint( face_it->point( i ).node(),face_it->point( i ).id() );
                         }
                     boost::get<1>( M_geoGlob_Elts[face_it->point( i ).id()] ).push_back( face_it->element( 0 ).id() );
+
+                    if ( !hasInitGic )
+                    {
+                        M_gic.reset( new gmc_inverse_type( mesh->gm(), face_it->element( 0 ), mesh->worldComm().subWorldCommSeq() ) );
+                        M_gic1.reset( new gmc1_inverse_type( mesh->gm1(), face_it->element( 0 ), mpl::int_<1>(), mesh->worldComm().subWorldCommSeq() ) );
+                        hasInitGic=true;
+                    }
                 }
         }
     }
@@ -2776,6 +2811,7 @@ Mesh<Shape, T, Tag>::Localization::isIn( size_type _id, const node_type & _pt ) 
 
     if ( elt.isOnBoundary() )
         {
+#if 0
             // get inverse geometric transformation
             gmc_inverse_type gic( mesh->gm(), elt, mesh->worldComm().subWorldCommSeq() );
             //apply the inverse geometric transformation for the point p
@@ -2783,9 +2819,19 @@ Mesh<Shape, T, Tag>::Localization::isIn( size_type _id, const node_type & _pt ) 
             x_ref=gic.xRef();
             // the point is in the reference element ?
             boost::tie( isin, dmin ) = M_refelem.isIn( gic.xRef() );
+#else
+            M_gic->update( elt );
+            M_gic->setXReal( _pt);
+            x_ref=M_gic->xRef();
+            if ( nDim == nRealDim )
+                isin = M_gic->isIn();
+            else // in this case, result given with gic->isIn() seems not work (see geomap.hpp)
+                boost::tie( isin, dmin ) = M_refelem.isIn( M_gic->xRef() );
+#endif
         }
     else
         {
+#if 0
             // get inverse geometric transformation
             gmc1_inverse_type gic( mesh->gm1(), elt, mpl::int_<1>(), mesh->worldComm().subWorldCommSeq() );
             //apply the inverse geometric transformation for the point p
@@ -2793,6 +2839,15 @@ Mesh<Shape, T, Tag>::Localization::isIn( size_type _id, const node_type & _pt ) 
             x_ref=gic.xRef();
             // the point is in the reference element ?
             boost::tie( isin, dmin ) = M_refelem1.isIn( gic.xRef() );
+#else
+            M_gic1->update( elt, mpl::int_<1>() );
+            M_gic1->setXReal( _pt);
+            x_ref=M_gic1->xRef();
+            if ( nDim == nRealDim )
+                isin = M_gic1->isIn();
+            else // in this case, result given with gic->isIn() seems not work (see geomap.hpp)
+                boost::tie( isin, dmin ) = M_refelem1.isIn( M_gic1->xRef() );
+#endif
         }
 
     return boost::make_tuple(isin,x_ref,dmin);
@@ -2821,6 +2876,7 @@ Mesh<Shape, T, Tag>::Localization::isIn( std::vector<size_type> _ids, const node
 
         if ( elt.isOnBoundary() )
             {
+#if 0
                 // get inverse geometric transformation
                 gmc_inverse_type gic( mesh->gm(), elt );
                 //apply the inverse geometric transformation for the point p
@@ -2828,10 +2884,20 @@ Mesh<Shape, T, Tag>::Localization::isIn( std::vector<size_type> _ids, const node
                 __x_ref=gic.xRef();
                 // the point is in the reference element ?
                 boost::tie( isin2, dmin ) = M_refelem.isIn( gic.xRef() );
+#else
+                M_gic->update( elt );
+                M_gic->setXReal( _pt);
+                __x_ref=M_gic->xRef();
+                if ( nDim == nRealDim )
+                    isin2 = M_gic->isIn();
+                else // in this case, result given with gic->isIn() seems not work (see geomap.hpp)
+                    boost::tie( isin2, dmin ) = M_refelem.isIn( M_gic->xRef() );
+#endif
                 isin[i] = isin2;
             }
         else
             {
+#if 0
                 // get inverse geometric transformation
                 gmc1_inverse_type gic( mesh->gm1(), elt, mpl::int_<1>() );
                 //apply the inverse geometric transformation for the point p
@@ -2839,6 +2905,15 @@ Mesh<Shape, T, Tag>::Localization::isIn( std::vector<size_type> _ids, const node
                 __x_ref=gic.xRef();
                 // the point is in the reference element ?
                 boost::tie( isin2, dmin ) = M_refelem1.isIn( gic.xRef() );
+#else
+                M_gic1->update( elt, mpl::int_<1>() );
+                M_gic1->setXReal( _pt);
+                __x_ref=M_gic1->xRef();
+                if ( nDim == nRealDim )
+                    isin2 = M_gic1->isIn();
+                else // in this case, result given with gic->isIn() seems not work (see geomap.hpp)
+                    boost::tie( isin2, dmin ) = M_refelem1.isIn( M_gic1->xRef() );
+#endif
                 isin[i] = isin2;
             }
         if (isin[i]) ++nbIsIn;

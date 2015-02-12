@@ -75,6 +75,18 @@ value=0.53
 
 Note that you can specify the config file through the option <tt>--config-file=<path></tt>
 
+It's also possible to give several configuration files with the option <tt>--config-files <path1> <path2> <path3></tt>
+\verbatim
+ ./feelpp_doc_myapp --config-files ex1.cfg ex2.cfg ex3.cfg
+\endverbatim
+
+In the case where some options are duplicated in the files, the priority is given at the end :
+\li <tt>ex3.cfg</tt> can overwrite options in <tt>ex2.cfg</tt> and <tt>ex3.cfg</tt>
+\li <tt>ex2.cfg</tt> can overwrite options in <tt>ex1.cfg</tt>
+
+All files in <tt> --config-files </tt> can overwrite options given by <tt> --config-file </tt>.
+And all options in the command line can overwrite all options given in cfg files.
+
 <a href="#" class="top">top</a>
 <hr>
 \section Initializing Initializing PETSc and Trilinos

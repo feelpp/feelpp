@@ -30,6 +30,7 @@
 #include <feel/feelalg/operator.hpp>
 #include <feel/feelalg/preconditioner.hpp>
 #include <feel/feelpde/operatorpcd.hpp>
+#include <feel/feelpde/boundaryconditions.hpp>
 #include <feel/feelalg/backendpetsc.hpp>
 
 namespace Feel
@@ -87,12 +88,13 @@ public:
      * \param alpha mass term
      */
     PreconditionerBlockNS( std::string t,
-                         space_ptrtype Xh, 
-                         std::map<std::string, std::set<flag_type> > bcFlags, 
-                         sparse_matrix_ptrtype A,
-                         double nu, 
-                         double alpha = 0 );
-
+                           space_ptrtype Xh, 
+                           BoundaryConditions bcFlags,
+                           std::string const& s,
+                           sparse_matrix_ptrtype A,
+                           double nu, 
+                           double alpha = 0 );
+    
     Type type() const { return M_type; }
     void setType( std::string t );
     
@@ -172,8 +174,8 @@ private:
     op_pcd_ptrtype pcdOp;
     op_ptrtype pm;
     
-    std::map<std::string, std::set<flag_type> > M_bcFlags;
-
+    BoundaryConditions M_bcFlags;
+    std::string M_prefix;
     op_mat_ptrtype precHelm;
 };
 
@@ -184,10 +186,11 @@ private:
 
 template < typename space_type >
 PreconditionerBlockNS<space_type>::PreconditionerBlockNS( std::string t,
-                                                      space_ptrtype Xh, 
-                                                      std::map<std::string, std::set<flag_type> > bcFlags,
-                                                      sparse_matrix_ptrtype A,
-                                                      double nu, double alpha )
+                                                          space_ptrtype Xh, 
+                                                          BoundaryConditions bcFlags,
+                                                          std::string const& p,
+                                                          sparse_matrix_ptrtype A,
+                                                          double nu, double alpha )
     :
     M_type( PCD ),
     M_nu( nu ),
@@ -214,7 +217,8 @@ PreconditionerBlockNS<space_type>::PreconditionerBlockNS( std::string t,
     v( M_Vh, "v" ),
     p( M_Qh, "p" ),
     q( M_Qh, "q" ),
-    M_bcFlags( bcFlags )
+    M_bcFlags( bcFlags ),
+    M_prefix( p )
 {
     tic();
     LOG(INFO) << "[PreconditionerBlockNS] setup starts";
@@ -261,7 +265,7 @@ PreconditionerBlockNS<space_type>::setType( std::string t )
     {
     case PCD:
         tic();
-        pcdOp = boost::make_shared<op_pcd_type>( M_Xh, this->matrix(), M_b, M_bcFlags, M_nu, M_alpha );
+        pcdOp = boost::make_shared<op_pcd_type>( M_Xh, this->matrix(), M_b, M_bcFlags, M_prefix, M_nu, M_alpha );
         this->setSide( super::RIGHT );
 
         toc( "Assembling schur complement done", FLAGS_v > 0 );
@@ -436,7 +440,7 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename meta::blockns<typename parameter::va
                                    )
                                  ( optional
                                    ( prefix, *( boost::is_convertible<mpl::_,std::string> ), "" )
-                                   ( bc, *, (std::map<std::string,std::set<flag_type>>()) )
+                                   ( bc, *, (BoundaryConditions ()) )
                                    ( nu,  *, doption("mu") )
                                    ( alpha, *, 0. )
                                    )
@@ -444,7 +448,7 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename meta::blockns<typename parameter::va
 {
     typedef typename meta::blockns<typename parameter::value_type<Args, tag::space>::type::element_type>::ptrtype pblockns_t;
     typedef typename meta::blockns<typename parameter::value_type<Args, tag::space>::type::element_type>::type blockns_t;
-    pblockns_t p( new blockns_t( type, space, bc, matrix, nu, alpha ) );
+    pblockns_t p( new blockns_t( type, space, bc, prefix, matrix, nu, alpha ) );
     return p;
 } // btcpd
 } // Feel
