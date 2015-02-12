@@ -27,6 +27,7 @@
  */
 
 #include <feel/feel.hpp>
+#include <feel/feelfilters/straightenmesh_impl.hpp>
 
 
 /** use Feel namespace */
@@ -46,7 +47,7 @@ makeOptions()
         ( "exact", po::value<std::string>()->default_value( "sin(2*Pi*x)*cos(2*Pi*y)" ), "exact solution" )
         ( "rhs", po::value<std::string>()->default_value( "" ), "right hand side" )
         ;
-    return laplacianoptions.add( backend_options("Laplacian") );
+    return laplacianoptions.add( backend_options("LaplacianG1") ).add( backend_options("LaplacianG2") );
 }
 
 
@@ -143,7 +144,7 @@ Laplacian<Dim,POrder,GOrder>::run()
     }
 
 
-    a.solve( _rhs=l, _solution=u, _name="Laplacian" );
+    a.solve( _rhs=l, _solution=u, _name=(boost::format("LaplacianG%1%")%GOrder).str() );
 
 
     //! compute the \f$L_2$ norm of the error
@@ -182,7 +183,7 @@ main( int argc, char** argv )
 
     Application app;
     app.add( new Laplacian<2,2,1>() );
-    //app.add( new Laplacian<2,2,2>() );
+    app.add( new Laplacian<2,2,2>() );
     app.run();
 
 }
