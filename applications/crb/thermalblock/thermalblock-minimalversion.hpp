@@ -31,7 +31,7 @@
 
 #include <feel/feelfilters/gmsh.hpp>
 
-#include <feel/feelcrb/modelcrbbase.hpp>
+#include <feel/feelcrb/crbmodelbase.hpp>
 
 namespace Feel
 {
@@ -85,17 +85,9 @@ makeThermalBlockMinimalVersionAbout( std::string const& str = "thermalBlockminim
  * solve \f$ -\Delta u = f\f$ on \f$\Omega\f$ and \f$u= g\f$ on \f$\Gamma\f$
  *
  */
-class ThermalBlockMinimalVersion : public ModelCrbBase< ParameterSpace<8> , decltype(Pch<1>(Mesh<Simplex<2>>::New())) >
+class ThermalBlockMinimalVersion : public CRBModelBase< ParameterSpace<8> , decltype(Pch<1>(Mesh<Simplex<2>>::New())) >
 {
 public:
-
-    typedef ModelCrbBase< ParameterSpace<8> , decltype(Pch<1>(Mesh<Simplex<2>>::New())) > super_type;
-
-    static const uint16_type ParameterSpaceDimension = 8;
-
-    typedef typename super_type::element_type element_type;
-    typedef typename super_type::parameter_type parameter_type;
-
     //! initialisation of the model and definition of parameters values
     void initModel();
 
@@ -105,9 +97,6 @@ public:
      */
     value_type output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve=false);
 
-
-private:
-    value_type gamma_dir;
 }; // ThermalBlockMinimalVersion
 
 
@@ -117,8 +106,7 @@ private:
 void
 ThermalBlockMinimalVersion::initModel()
 {
-
-    gamma_dir=doption(_name="gamma_dir");
+    double gamma_dir=doption(_name="gamma_dir");
 
     this->setFunctionSpaces( Pch<1>( loadMesh( _mesh=new Mesh<Simplex<2>> ) ) );
 
