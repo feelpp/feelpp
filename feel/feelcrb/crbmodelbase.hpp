@@ -378,13 +378,13 @@ public:
         }
 
 
-    virtual steady_betaqm_type BetaQm( parameter_type const& mu )
+    virtual steady_betaqm_type computeBetaQm( parameter_type const& mu )
         {
 
             return boost::make_tuple( M_AD->betaAqm(mu), M_AD->betaFqm(mu) );
         }
 
-    virtual betaqm_type computeBetaQm( parameter_type const& mu, double time=0,
+    virtual betaqm_type computeBetaQm( parameter_type const& mu, double time,
                                bool only_time_dependent_terms=false )
         {
             betaqm_type beta_coeff;
@@ -393,7 +393,7 @@ public:
 
             if ( !is_time_dependent )
             {
-                steady_beta_coeff = BetaQm( mu );
+                steady_beta_coeff = computeBetaQm( mu );
                 betaM.resize(1);
                 betaM[0].resize(1);
                 betaM[0][0]=1;
@@ -415,7 +415,7 @@ public:
         }
 
     betaqm_type computeBetaQm( vector_ptrtype const& T, parameter_type const& mu ,
-                               double time=0 , bool only_time_dependent_terms=false )
+                               double time , bool only_time_dependent_terms=false )
         {
             auto solution = functionSpace()->element();
             solution = *T;
@@ -518,7 +518,7 @@ public:
             return M_AD->A( q, m, false, row, col )->energy( xi_j, xi_i, transpose);
         }
 
-    vector_ptrtype Fqm( uint16_type l, uint16_type q, int m,
+    vector_ptrtype Fqm( uint16_type l, uint16_type q, int m=0,
                         int row=1 ) const
         {
             return M_AD->F( l, q, m, row );

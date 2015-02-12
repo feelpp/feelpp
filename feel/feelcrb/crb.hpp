@@ -7639,7 +7639,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
     //std::cout << "[offlineResidual] mu=" << mu << "\n";
     beta_vector_type betaAqm;
     std::vector<beta_vector_type> betaFqm;
-    boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) = M_model->computeBetaQm( mu );
+    boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) = M_model->computeBetaQm( mu,0 );
     value_type __c0_pr = 0.0;
 
     for ( int __q1 = 0; __q1 < __QRhs; ++__q1 )
