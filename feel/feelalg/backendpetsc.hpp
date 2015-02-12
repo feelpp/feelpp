@@ -92,8 +92,8 @@ public:
     BackendPetsc( WorldComm const& worldComm=Environment::worldComm() )
         :
         super( worldComm ),
-        M_solver_petsc( worldComm ),
-        M_nl_solver_petsc( worldComm )
+        M_solver_petsc( worldComm )
+        //M_nl_solver_petsc( "",worldComm )
     {
         this->M_backend = BackendType::BACKEND_PETSC;
     }
@@ -102,8 +102,8 @@ public:
                   WorldComm const& worldComm=Environment::worldComm() )
         :
         super( vm, prefix, worldComm ),
-        M_solver_petsc( vm, worldComm ),
-        M_nl_solver_petsc( worldComm )
+        M_solver_petsc( vm, worldComm )
+        //M_nl_solver_petsc( prefix,worldComm )
     {
         this->M_backend = BackendType::BACKEND_PETSC;
 
@@ -414,7 +414,7 @@ public:
 private:
 
     SolverLinearPetsc<double> M_solver_petsc;
-    SolverNonLinearPetsc<double> M_nl_solver_petsc;
+    //SolverNonLinearPetsc<double> M_nl_solver_petsc;
 
 }; // class BackendPetsc
 

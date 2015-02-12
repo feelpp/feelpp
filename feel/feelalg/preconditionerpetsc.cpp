@@ -476,6 +476,13 @@ void PreconditionerPetsc<T>::apply( const Vector<T> & x, Vector<T> & y ) const
     int ierr = PCApply( M_pc,x_vec,y_vec );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 }
+template <typename T>
+void PreconditionerPetsc<T>::apply( Vec x, Vec y ) const
+{
+    int ierr = PCApply( M_pc,x,y );
+    CHKERRABORT( this->worldComm().globalComm(),ierr );
+}
+
 
 
 /*----------------------- inline functions ----------------------------------*/
@@ -1096,9 +1103,14 @@ updateOptionsDescLU( po::options_description & _options, std::string const& pref
     for ( int icntl=1 ; icntl<= 33 ; ++icntl )
     {
         std::string mumpsOption = (boost::format("pc-factor-mumps.icntl-%1%")%icntl ).str();
-        _options.add_options()
-            ( prefixvm( prefix,pcctx+mumpsOption ).c_str(),
-              Feel::po::value<int>(),"configure mumps factorisation (see mumps ICNTL documentation)" );
+        if( icntl == 7 )
+            _options.add_options()
+                ( prefixvm( prefix,pcctx+mumpsOption ).c_str(),
+                  Feel::po::value<int>()->default_value( 0 ),"configure mumps factorisation (see mumps ICNTL documentation)" );
+        else
+            _options.add_options()
+                ( prefixvm( prefix,pcctx+mumpsOption ).c_str(),
+                  Feel::po::value<int>(),"configure mumps factorisation (see mumps ICNTL documentation)" );
     }
 #endif
 }
@@ -1463,8 +1475,10 @@ ConfigurePCLU::runConfigurePCLU( PC& pc )
     // set factor package
     //this->check( PCFactorSetMatSolverPackage( pc, M_matSolverPackage.c_str() ) );
 
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
     // allow to tune the factorisation package
     this->check( PCFactorSetUpMatSolverPackage(pc) );
+#endif
 
     // configure mumps
     if ( M_matSolverPackage == "mumps" )
@@ -2098,7 +2112,7 @@ ConfigurePCFieldSplit::runConfigurePCFieldSplit( PC& pc, PreconditionerPetsc<dou
             this->check( MatDuplicate(B,MAT_COPY_VALUES,&Bcopy) );
 
             Vec scaleDiag;
-#if PETSC_VERSION_LESS_THAN(3,5,3)
+#if PETSC_VERSION_LESS_THAN(3,6,0)
             this->check( MatGetVecs(A,&scaleDiag,NULL) );
 #else
             this->check( MatCreateVecs(A,&scaleDiag,NULL) );

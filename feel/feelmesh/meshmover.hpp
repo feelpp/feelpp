@@ -65,11 +65,14 @@ public:
     //@{
 
     MeshMover()
+        :
+        M_updateMeshMeasures( true )
     {}
 
     MeshMover( mesh_ptrtype const& mesh )
         :
-        M_mesh( mesh )
+        M_mesh( mesh ),
+        M_updateMeshMeasures( true )
     {}
 
     MeshMover( MeshMover const & )
@@ -97,6 +100,7 @@ public:
     /** @name  Mutators
      */
     //@{
+    void setUpdateMeshMeasures( bool b ) { M_updateMeshMeasures = b; }
 
 
     //@}
@@ -115,6 +119,7 @@ public:
     //@}
 private:
     mesh_ptrtype M_mesh;
+    bool M_updateMeshMeasures;
 };
 
 
@@ -169,9 +174,12 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
     auto en_elt = rangeElt.template get<2>();
     if ( std::distance(it_elt,en_elt)==0 )
     {
-        // call updateForUse in parallel here because this function is call ( at the end of this function)
+        // call updateMeasures in parallel here because this function is call ( at the end of this function)
         // by others proc which have elements and need collective comm
-        if ( imesh->worldComm().localSize() > 1 ) imesh->updateForUse();
+        if ( imesh->worldComm().localSize() > 1 ) {
+            //imesh->updateForUse();
+            imesh->updateMeasures();
+        }
         return;
     }
 
@@ -266,19 +274,24 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
 
         // Todo : edges
     }
-#if 1
-    imesh->updateForUse();
-#else
+
+    //imesh->updateForUse();
+
+    if ( M_updateMeshMeasures )
+        imesh->updateMeasures();
+
+    // reset geomap cache
     imesh->gm()->initCache( imesh.get() );
     imesh->gm1()->initCache( imesh.get() );
-#endif
+
+    // reset localisation tool
+    imesh->tool_localization()->reset();
+
 #if !defined( __INTEL_COMPILER )
     // notify observers that the mesh has changed
-		LOG(INFO) << "Notify observers that the mesh has changed\n"; 
+    LOG(INFO) << "Notify observers that the mesh has changed\n"; 
     imesh->meshChanged(MESH_CHANGES_POINTS_COORDINATES );
 #endif
-    //return boost::make_tuple( omesh, 1.0  );
-    imesh->tool_localization()->reset();
 }
 
 template<typename MeshType, typename DisplType>

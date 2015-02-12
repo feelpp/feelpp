@@ -2110,9 +2110,12 @@ class Inverse
     typedef typename geometric_mapping_type::matrix_node_t_type matrix_node_t_type;
     typedef typename geometric_mapping_type::matrix_node_t_type matrix_node_type;
 
+    typedef ublas::vector<double> dense_vector_type;
+    typedef ublas::matrix<double> dense_matrix_type;
+
     template<typename GeoElem>
     Inverse( geometric_mapping_ptrtype __gm, GeoElem const& __ge,
-             WorldComm const& worldComm = Environment::worldComm().subWorldCommSeq() )
+             WorldComm const& worldComm = Environment::worldCommSeq() )
         :
         M_gm( __gm ),
         M_xref( __gm->dim() ),
@@ -2124,33 +2127,18 @@ class Inverse
         M_CS( __gm->dim(), __gm->dim() ),
         M_g( M_gm->nbPoints(), __gm->dim() ),
 #if defined( FEELPP_HAS_PETSC )
-        M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC, worldComm ) )
+        //M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC, worldComm ) )
+        M_nlsolver( SolverNonLinear<double>::build( "petsc","", worldComm ) )
 #else
         M_nlsolver( SolverNonLinear<double>::build( SOLVERS_GMM, worldComm ) )
 #endif
 {
-    FEELPP_ASSERT( M_G.size2() == __gm->nbPoints() )
-    ( M_G.size2() )( __gm->nbPoints() ).error( "invalid dimensions" );
-
-    if ( M_gm->isLinear() )
-        {
-            update();
-        }
-    else
-        {
-#if defined( FEELPP_HAS_PETSC )
-            M_nlsolver->dense_residual = boost::bind( &Inverse::updateResidual, boost::ref( *this ), _1, _2 );
-            M_nlsolver->dense_jacobian = boost::bind( &Inverse::updateJacobian, boost::ref( *this ), _1, _2 );
-#else
-
-#endif
-        }
+    this->init();
 }
-
 
     template<typename GeoElem>
     Inverse( geometric_mapping_ptrtype __gm, GeoElem const& __ge, mpl::int_<1>/**/ ,
-             WorldComm const& worldComm = Environment::worldComm().subWorldCommSeq())
+             WorldComm const& worldComm = Environment::worldCommSeq() )
     :
         M_gm( __gm ),
         M_xref( __gm->dim() ),
@@ -2162,28 +2150,65 @@ class Inverse
         M_CS( __gm->dim(), __gm->dim() ),
         M_g( M_gm->nbPoints(), __gm->dim() ),
 #if defined( FEELPP_HAS_PETSC )
-        M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC,worldComm) )
+        //M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC,worldComm) )
+        M_nlsolver( SolverNonLinear<double>::build( "petsc","", worldComm ) )
 #else
         M_nlsolver( SolverNonLinear<double>::build( SOLVERS_GMM,worldComm ) )
 #endif
 {
-    FEELPP_ASSERT( M_G.size2() == __gm->nbPoints() )
-    ( M_G.size2() )( __gm->nbPoints() ).error( "invalid dimensions" );
+    this->init();
+}
 
-    if ( M_gm->isLinear() )
+
+private :
+    void init()
+    {
+        FEELPP_ASSERT( M_G.size2() == M_gm->nbPoints() )
+            ( M_G.size2() )( M_gm->nbPoints() ).error( "invalid dimensions" );
+
+        if ( M_gm->isLinear() )
         {
             update();
         }
-    else
+        else
         {
 #if defined( FEELPP_HAS_PETSC )
-        M_nlsolver->dense_residual = boost::bind( &Inverse::updateResidual, boost::ref( *this ), _1, _2 );
-        M_nlsolver->dense_jacobian = boost::bind( &Inverse::updateJacobian, boost::ref( *this ), _1, _2 );
-#else
-        //M_nlsolver( SolverNonLinear<double>::build( SOLVERS_GMM ) )
+            M_nlsolver->dense_residual = boost::bind( &Inverse::updateResidual, boost::ref( *this ), _1, _2 );
+            M_nlsolver->dense_jacobian = boost::bind( &Inverse::updateJacobian, boost::ref( *this ), _1, _2 );
+            // find xref by solving the non linear equation
+            //M_nlsolver->setType( TRUST_REGION );
+            M_nlsolver->setKspSolverType( SolverType::PREONLY );
+            M_nlsolver->setPreconditionerType( PreconditionerType::LU_PRECOND );
+            M_nlsolver->setRelativeResidualTol( 1e-12/*1e-16*/ );
+
+            M_J.reset( new dense_matrix_type( M_xref.size(),M_xref.size() ) );
+            M_R.reset( new dense_vector_type( M_xref.size() ) );
 #endif
         }
 }
+
+public :
+    template<typename GeoElem>
+    void
+    update( GeoElem const& __ge )
+    {
+        //M_G = ( geometric_mapping_type::nNodes == GeoElem::numVertices ) ?__ge.vertices() : __ge.G();
+        M_G = __ge.G();
+        if ( M_gm->isLinear() )
+        {
+            update();
+        }
+    }
+    template<typename GeoElem>
+    void
+    update( GeoElem const& __ge, mpl::int_<1>/**/ )
+    {
+        M_G = __ge.vertices();
+        if ( M_gm->isLinear() )
+        {
+            update();
+        }
+    }
 
 
 
@@ -2321,7 +2346,7 @@ void setXReal( node_type const& __xreal )
 
     if ( M_gm->isLinear() )
     {
-        update();
+        //update();
         M_is_in = linearInverse();
     }
 
@@ -2377,8 +2402,6 @@ Inverse& gmi;
 node_type xreal;
 
 };
-typedef ublas::vector<double> dense_vector_type;
-typedef ublas::matrix<double> dense_matrix_type;
 
 void updateResidual( dense_vector_type const& x, dense_vector_type& r )
 {
@@ -2576,26 +2599,29 @@ bool nonLinearInversePetsc()
     M_xref = barycenterRef();
 #endif
 
+#if 0
     dense_matrix_type J( P, P );
     dense_vector_type R( P );
-
     updateResidual( M_xref, R );
     updateJacobian( M_xref, J );
 
     // find xref by solving the non linear equation
-    M_nlsolver->setType( TRUST_REGION );
+    //M_nlsolver->setType( TRUST_REGION );
+    M_nlsolver->setKspSolverType( SolverType::PREONLY );
+    M_nlsolver->setPreconditionerType( PreconditionerType::LU_PRECOND );
     M_nlsolver->setRelativeResidualTol( 1e-16 );
-    M_nlsolver->solve( J, M_xref, R, 1e-10, 10 );
+#endif
+    M_nlsolver->solve( *M_J, M_xref, *M_R, 1e-10, 10 );
 
 
     // compute the location of xref: inside or outside the element
     bool __isin;
     double vmin;
-    this->updateResidual( M_xref, R );
+    this->updateResidual( M_xref, *M_R );
     boost::tie( __isin, vmin ) = M_gm->isIn( M_xref );
 
     if ( __isin  &&
-            ( P == N || ublas::norm_2( R ) < IN_EPS ) )
+            ( P == N || ublas::norm_2( *M_R ) < IN_EPS ) )
     {
         //LOG(INFO) << "point " << M_xref << "in IN (" << vmin << ") residual = " << ublas::norm_2(R) << "\n";
         return true;
@@ -2757,6 +2783,9 @@ matrix_type M_CS;
 matrix_type M_g;
 
 boost::shared_ptr<SolverNonLinear<double> > M_nlsolver;
+boost::shared_ptr<dense_matrix_type> M_J;
+boost::shared_ptr<dense_vector_type> M_R;
+
 }; // Inverse
 
 private:

@@ -145,7 +145,7 @@ public:
     /**
      *  Constructor. Initializes Solver data structures
      */
-    SolverNonLinear(WorldComm const& worldComm = Environment::worldComm() );
+    SolverNonLinear( std::string const& prefix = "", WorldComm const& worldComm = Environment::worldComm() );
 
     /**
      * copy constructor
@@ -162,14 +162,18 @@ public:
      * Builds a \p NonlinearSolver using the nonlinear solver package specified by
      * the \p variables_map \p vm and  \p prefix
      */
-    static solvernonlinear_ptrtype build( po::variables_map const& vm, std::string const& prefix = "",
+    static FEELPP_DEPRECATED solvernonlinear_ptrtype build( po::variables_map const& vm, std::string const& prefix = "",
+                                                            WorldComm const& worldComm = Environment::worldComm() );
+    static solvernonlinear_ptrtype build( std::string const& prefix = "",
+                                          WorldComm const& worldComm = Environment::worldComm() );
+    static solvernonlinear_ptrtype build( std::string const& kind, std::string const& prefix = "",
                                           WorldComm const& worldComm = Environment::worldComm() );
 
     /**
      * Builds a \p NonlinearSolver using the nonlinear solver package specified by
      * \p solver_package
      */
-    static solvernonlinear_ptrtype build( SolverPackage solver_package, WorldComm const& worldComm = Environment::worldComm() );
+    static FEELPP_DEPRECATED solvernonlinear_ptrtype build( SolverPackage solver_package, WorldComm const& worldComm = Environment::worldComm() );
 
     /**
      * Initialize data structures if not done so already.
@@ -288,6 +292,10 @@ public:
     void setType( SolverNonLinearType snl_type )
     {
         M_snl_type=snl_type;
+    }
+    void setType( std::string const& snl_type )
+    {
+        M_snl_type=snesTypeConvertStrToEnum(snl_type);
     }
     /**
      * Returns the type of solver to use.
@@ -432,7 +440,8 @@ public:
     bool showKSPConvergedReason() const { return M_showKSPConvergedReason; }
     void setShowKSPConvergedReason( bool b ) { M_showKSPConvergedReason=b; }
 
-
+    bool viewSNESInfo() const { return M_viewSNESInfo; }
+    void setViewSNESInfo( bool b ) { M_viewSNESInfo=b; }
     /**
      * KSP relative tolerance
      */
@@ -552,6 +561,8 @@ public:
 
 protected:
 
+    std::string M_prefix;
+
     WorldComm M_worldComm;
 
     /**
@@ -561,7 +572,6 @@ protected:
 
     MatrixStructure M_prec_matrix_structure;
 
-    std::string M_prefix;
 
     /**
      * Define the type of non linear solver
@@ -616,6 +626,7 @@ protected:
 
     bool M_showKSPMonitor, M_showSNESMonitor;
     bool M_showKSPConvergedReason, M_showSNESConvergedReason;
+    bool M_viewSNESInfo;
 
     /**
      * KSP relative tolerance

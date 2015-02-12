@@ -84,6 +84,8 @@ public:
      */
     //@{
 
+    GinacEx() : super(){}
+
     explicit GinacEx( expression_type const & fun, std::vector<GiNaC::symbol> const& syms, std::string const& exprDesc, std::string filename="",
                       WorldComm const& world=Environment::worldComm() )
         :

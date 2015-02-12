@@ -72,6 +72,15 @@ void Feel::HDF5::openFile (const std::string& fileName,
     H5Pclose (plistId);
 }
 
+void Feel::HDF5::createGroup (const std::string& GroupName)
+{
+#ifdef H5_USE_16_API
+        M_groupList [GroupName] = H5Gcreate (M_fileId, GroupName.c_str(), H5P_DEFAULT) ;
+#else
+        M_groupList [GroupName] = H5Gcreate (M_fileId, GroupName.c_str(), H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT) ;
+#endif
+}
+
 void Feel::HDF5::createTable (const std::string& GroupName, const std::string& tableName, hid_t& fileDataType, 
                                      hsize_t tableDimensions[], const bool& existing)
 {
