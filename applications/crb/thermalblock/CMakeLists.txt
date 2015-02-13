@@ -37,12 +37,13 @@ crb_add_model(thermalblock ThermalBlock HDRS thermalblock.hpp  LINK_LIBRARIES ${
   )
 crb_add_model(thermalblockfree ThermalBlockFree HDRS thermalblock-operatorsfree.hpp  LINK_LIBRARIES ${FEELPP_LIBRARIES}
   CFG thermalblockfree.cfg
+  GEO thermalblockfree.geo
   XML thermalblockfree.xml
   SCRIPTS thermalblockfree.m
   )
 crb_add_model(
-  thermalblockminimalversion ThermalBlockMinimalVersion HDRS thermalblock-minimalversion.hpp  LINK_LIBRARIES ${FEELPP_LIBRARIES} 
-  CFG thermalblockminimalversion.cfg 
+  thermalblockminimalversion ThermalBlockMinimalVersion HDRS thermalblock-minimalversion.hpp  LINK_LIBRARIES ${FEELPP_LIBRARIES}
+  CFG thermalblockminimalversion.cfg
   GEO thermalblock33.geo
   XML thermalblockminimalversion.xml
   SCRIPTS thermalblockminimalversion.m
