@@ -29,7 +29,7 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 // Mesh size
-h=0.1;
+h=0.5;
 // Topological dimension
 dim=2;
 // Bean length
@@ -150,6 +150,7 @@ Function Add2DPhysicals
     Printf("-- Add 2D Physicals");
     Physical Line( "Wall" ) = l2d[];
     Physical Surface( "Omega" ) = { s };
+    Recombine Surface {s};
 Return
 
 //------------------------------------------------------------------------------
