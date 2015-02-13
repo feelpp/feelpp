@@ -1103,9 +1103,14 @@ updateOptionsDescLU( po::options_description & _options, std::string const& pref
     for ( int icntl=1 ; icntl<= 33 ; ++icntl )
     {
         std::string mumpsOption = (boost::format("pc-factor-mumps.icntl-%1%")%icntl ).str();
-        _options.add_options()
-            ( prefixvm( prefix,pcctx+mumpsOption ).c_str(),
-              Feel::po::value<int>(),"configure mumps factorisation (see mumps ICNTL documentation)" );
+        if( icntl == 7 )
+            _options.add_options()
+                ( prefixvm( prefix,pcctx+mumpsOption ).c_str(),
+                  Feel::po::value<int>()->default_value( 0 ),"configure mumps factorisation (see mumps ICNTL documentation)" );
+        else
+            _options.add_options()
+                ( prefixvm( prefix,pcctx+mumpsOption ).c_str(),
+                  Feel::po::value<int>(),"configure mumps factorisation (see mumps ICNTL documentation)" );
     }
 #endif
 }
@@ -1473,7 +1478,6 @@ ConfigurePCLU::runConfigurePCLU( PC& pc )
 #if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
     // allow to tune the factorisation package
     this->check( PCFactorSetUpMatSolverPackage(pc) );
-#endif
 
     // configure mumps
     if ( M_matSolverPackage == "mumps" )
@@ -1489,6 +1493,8 @@ ConfigurePCLU::runConfigurePCLU( PC& pc )
             }
         }
     }
+#endif
+
 }
 
 /**
