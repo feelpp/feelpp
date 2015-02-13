@@ -3,9 +3,9 @@
 
 /** \page Magnetostatic Magnetostatic Example
 
-\author Cécile Daversin
-\author Vincent Huber
-\date 2015-02-13
+  \author Cécile Daversin
+  \author Vincent Huber
+  \date 2015-02-13
   \tableofcontents
 
   This example solve the magnetostatic equation.
@@ -54,20 +54,23 @@
 
   \subsection pb Formulation
   \f[
-  \nabla \times \nabla \times u = J \\
+  \nabla \mu\left(A\right)^{-1}\times \nabla \times u = J \\
   \nabla \cdot u = 0 \\
   B \cdot \vec{n} = u_d 
   \f]
   \subsubsection var_dir Variational formulation
-
+  \paragraph var_dir_weak Weak boundary conditions
+  \paragraph var_dir_strong Strong boundary conditions
   \subsection stab Stabilized formulation
   Denote \f$\Omega \in \R^2\f$  the computational domain and \f$u\f$ the electric field solution of the following equation
   \f[
-  -\nabla \times \nabla \times u + c u  = J \\
+  -\nabla \mu\left(A\right)^{-1} \times \nabla \times u + c u  = J \\
   u \times n = u_d
   \f].
- \subsubsection var_stab Variational formulation
+  \subsubsection var_stab Variational formulation
+  \paragraph var_stab_dir_weak Weak boundary conditions
+  \paragraph var_stab_dir_strong Strong boundary conditions
 
 
 
- */
+*/
