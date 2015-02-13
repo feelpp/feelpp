@@ -118,29 +118,29 @@ Heat1D::initModel()
     auto a0 = form2( _trial=Xh, _test=Xh);
     a0 = integrate( elements( mesh ), 0.1*( gradt( u )*trans( grad( v ) ) ) ) +
         integrate( markedfaces( mesh,"right" ), idt( u )*id( v ) );
-    this->addLhs( { a0 , "1" } );
+    addLhs( a0 , "1" );
 
     auto a1 = form2( _trial=Xh, _test=Xh);
     a1 = integrate( markedelements( mesh,"k1_1" ),  gradt( u )*trans( grad( v ) )  );
-    this->addLhs( { a1 , "mu0" } );
+    addLhs( a1 , "mu0" );
 
     auto a2 = form2( _trial=Xh, _test=Xh);
     a2 = integrate( markedelements( mesh,"k2_1" ),  gradt( u )*trans( grad( v ) )  );
-    this->addLhs( { a2 , "mu1" } );
+    addLhs( a2 , "mu1" );
 
     //rhs
     auto f0 = form1( _test=Xh );
     f0 = integrate( markedfaces( mesh,"left" ), id( v ) );
-    this->addRhs( { f0, "mu2" } );
+    addRhs( f0, "mu2" );
     auto f1 = form1( _test=Xh );
     f1 =  integrate( elements( mesh ), id( v ) );
-    this->addRhs( { f1, "mu3" } );
+    addRhs( f1, "mu3" );
 
     //output
     auto out = form1( _test=Xh );
     out = integrate( markedelements( mesh,"k1_2" ), id( v )/0.2 ) +
           integrate( markedelements( mesh,"k2_1" ), id( v )/0.2 );
-    this->addOutput( { out, "1" } );
+    addOutput( out, "1" );
 
     auto energy = form2( _trial=Xh, _test=Xh);
     energy = integrate( elements( mesh ), 0.1*( gradt( u )*trans( grad( v ) ) ) ) +

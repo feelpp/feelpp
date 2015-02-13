@@ -138,53 +138,50 @@ ThermalBlockMinimalVersion::initModel()
     f0 =  integrate( _range=markedfaces( mesh,"south_domain-1" ), _expr= id( v ) )
         + integrate( _range=markedfaces( mesh,"south_domain-2" ), _expr= id( v ) )
         + integrate( _range=markedfaces( mesh,"south_domain-3" ), _expr= id( v ) );
-    this->addRhs( { f0, "1" } );
+    addRhs( f0, "1" );
 
     //lhs
     auto a0 = form2( _trial=Xh, _test=Xh);
     a0 = integrate( markedelements( mesh, "domain-1" ), gradt( u )*trans( grad( v ) ) );
-    this->addLhs( { a0 , "1" } );
+    addLhs( a0 , "1" );
     auto a1 = form2( _trial=Xh, _test=Xh);
     a1 = integrate( markedelements( mesh, "domain-2" ), gradt( u )*trans( grad( v ) ) );
-    this->addLhs( { a1 , "mu0" } );
+    addLhs( a1 , "mu0" );
     auto a2 = form2( _trial=Xh, _test=Xh);
     a2 = integrate( markedelements( mesh, "domain-3" ), gradt( u )*trans( grad( v ) ) );
-    this->addLhs( { a2 , "mu1" } );
+    addLhs( a2 , "mu1" );
     auto a3 = form2( _trial=Xh, _test=Xh);
     a3 = integrate( markedelements( mesh, "domain-4" ), gradt( u )*trans( grad( v ) ) );
-    this->addLhs( { a3 , "mu2" } );
+    addLhs( a3 , "mu2" );
     auto a4 = form2( _trial=Xh, _test=Xh);
     a4 = integrate( markedelements( mesh, "domain-5" ), gradt( u )*trans( grad( v ) ) );
-    this->addLhs( { a4 , "mu3" } );
+    addLhs( a4 , "mu3" );
     auto a5 = form2( _trial=Xh, _test=Xh);
     a5 = integrate( markedelements( mesh, "domain-6" ), gradt( u )*trans( grad( v ) ) );
-    this->addLhs( { a5 , "mu4" } );
+    addLhs( a5 , "mu4" );
     auto a6 = form2( _trial=Xh, _test=Xh);
     a6 = integrate( markedelements( mesh, "domain-7" ), gradt( u )*trans( grad( v ) ) )
         +integrate( markedfaces( mesh, "north_domain-7" ),
                    -gradt( u )*vf::N()*id( v )
-                   -grad( u )*vf::N()*idt( v )
-                   );
-    this->addLhs( { a6 , "mu5" } );
+                   -grad( u )*vf::N()*idt( v ) );
+    addLhs( a6 , "mu5" );
     auto a7 = form2( _trial=Xh, _test=Xh);
     a7 = integrate( markedelements( mesh, "domain-8" ), gradt( u )*trans( grad( v ) ) )
         +integrate( markedfaces( mesh, "north_domain-8" ),
                    -gradt( u )*vf::N()*id( v )
-                   -grad( u )*vf::N()*idt( v )
-                   );
-    this->addLhs( { a7 , "mu6" } );
+                   -grad( u )*vf::N()*idt( v ) );
+    addLhs( a7 , "mu6" );
     auto a8 = form2( _trial=Xh, _test=Xh);
     a8 = integrate( markedelements( mesh, "domain-9" ), gradt( u )*trans( grad( v ) ) )
         +integrate( markedfaces( mesh, "north_domain-9" ),
                    -gradt( u )*vf::N()*id( v )
-                   -grad( u )*vf::N()*idt( v )
-                   );
-    this->addLhs( { a8 , "mu7" } );
+                   -grad( u )*vf::N()*idt( v ) );
+    addLhs( a8 , "mu7" );
     auto a9 = form2( _trial=Xh, _test=Xh);
     a9 = integrate( markedfaces( mesh, "north_domain-7" ),gamma_dir*idt( u )*id( v )/h() )
         +integrate( markedfaces( mesh, "north_domain-8" ),gamma_dir*idt( u )*id( v )/h() )
         +integrate( markedfaces( mesh, "north_domain-9" ),gamma_dir*idt( u )*id( v )/h() );
-    this->addLhs( { a9 , "1" } );
+    addLhs( a9 , "1" );
 
 
     form2( _test=Xh, _trial=Xh, _matrix=M ) = integrate( markedelements( mesh, "domain-1" ), gradt( u )*trans( grad( v ) )  );
@@ -211,7 +208,7 @@ ThermalBlockMinimalVersion::initModel()
     form2( _test=Xh, _trial=Xh, _matrix=M ) += integrate( markedfaces( mesh, "north_domain-7" ),gamma_dir*idt( u )*id( v )/h() );
     form2( _test=Xh, _trial=Xh, _matrix=M ) += integrate( markedfaces( mesh, "north_domain-8" ),gamma_dir*idt( u )*id( v )/h() );
     form2( _test=Xh, _trial=Xh, _matrix=M ) += integrate( markedfaces( mesh, "north_domain-9" ),gamma_dir*idt( u )*id( v )/h() );
-    this->addEnergyMatrix( M );
+    addEnergyMatrix( M );
 
 }//initModel()
 

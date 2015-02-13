@@ -230,7 +230,7 @@ public:
             LOG(INFO)<< "Model Initialization";
             initModel();
             //M_AD->check();
-            M_bdf=bdfModel();
+            checkBdf();
 
             u = Xh->element();
             v = Xh->element();
@@ -252,6 +252,9 @@ public:
         {
             Xh = Vh;
             XN = rbfunctionspace_type::New( _model=this->shared_from_this() );
+            if (Environment::isMasterRank() )
+                std::cout << "Number of dof : " << Xh->nDof() << std::endl
+                          << "Number of local dof : " << Xh->nLocalDof() << std::endl;
         }
 
     template<typename ExprType>
@@ -261,19 +264,17 @@ public:
             auto ope = opLinearFree( _domainSpace=functionSpace(col-1),
                                      _imageSpace=functionSpace(row-1),
                                      _expr=expr );
-            M_AD->template addMass<operator_ptrtype>
-                ( {ope, symbol}, row, col) ;
+            M_AD->addMass( ope, symbol, row, col) ;
         }
-    void addMass( boost::tuple< sparse_matrix_ptrtype , std::string > const & tuple,
+    void addMass( sparse_matrix_ptrtype const& mat, std::string const& symbol,
                   int row=1, int col=1 )
         {
-            M_AD->template addMass<sparse_matrix_ptrtype>( tuple, row, col );
+            M_AD->addMass( mat, symbol, row, col );
         }
-    void addMass( boost::tuple< form2_type , std::string > const & tuple,
+    void addMass( form2_type const& form2, std::string const& symbol,
                   int row=1, int col=1 )
-    {
-            M_AD->template addMass<sparse_matrix_ptrtype>
-                ( { tuple.template get<0>().matrixPtr(), tuple.template get<1>() },row, col );
+        {
+            M_AD->addMass( form2.matrixPtr(), symbol,row, col );
         }
 
     template<typename ExprType>
@@ -283,19 +284,17 @@ public:
             auto ope = opLinearFree( _domainSpace=functionSpace(col-1),
                                      _imageSpace=functionSpace(row-1),
                                      _expr=expr );
-            M_AD->template addLhs<operator_ptrtype>
-                ( {ope, symbol}, row, col) ;
+            M_AD->addLhs( ope, symbol, row, col) ;
         }
-    void addLhs( boost::tuple< sparse_matrix_ptrtype , std::string > const & tuple,
+    void addLhs( sparse_matrix_ptrtype const& mat, std::string const& symbol,
                  int row=1, int col=1 )
         {
-            M_AD->template addLhs<sparse_matrix_ptrtype>( tuple, row, col );
+            M_AD->addLhs( mat, symbol, row, col );
         }
-    void addLhs( boost::tuple< form2_type, std::string > const & tuple,
+    void addLhs( form2_type const& form2, std::string const& symbol,
                  int row=1, int col=1 )
         {
-            M_AD->template addLhs<sparse_matrix_ptrtype>
-                ( { tuple.template get<0>().matrixPtr(), tuple.template get<1>() },row, col );
+            M_AD->addLhs( form2.matrixPtr(), symbol, row, col );
         }
 
     template<typename ExprType>
@@ -304,39 +303,33 @@ public:
         {
             auto fun = functionalLinearFree( _space=functionSpace(row-1),
                                              _expr=expr );
-            M_AD->template addOutput<functional_ptrtype>
-                ( {fun, symbol}, 0 , row) ;
+            M_AD->addOutput( fun, symbol, 0 , row) ;
         }
-    void addRhs( boost::tuple< vector_ptrtype, std::string > const& tuple,
+    void addRhs( vector_ptrtype const& vec, std::string const& symbol,
                  int row=1 )
         {
-            M_AD->template addOutput<vector_ptrtype>( tuple, 0, row );
+            M_AD->addOutput( vec, symbol, 0, row );
         }
 
-    void addRhs( boost::tuple<  form1_type , std::string > const & tuple, int row=1  )
+    void addRhs( form1_type const& form1, std::string const& symbol, int row=1  )
         {
-            M_AD->template addOutput<vector_ptrtype>
-                ( { tuple.template get<0>().vectorPtr(), tuple.template get<1>() },
-                  0, row );
+            M_AD->addOutput( form1.vectorPtr(), symbol, 0, row );
         }
 
     template<typename ExprType>
-    void addOutput( ExprType const& expr, std::string const& symbol,
-                    int const row=1 )
+    void addOutput( ExprType const& expr, std::string const& symbol, int output=1, int const row=1 )
         {
             auto fun = functionalLinearFree( _space=functionSpace(row-1),
                                              _expr=expr );
-            M_AD->template addOutput<functional_ptrtype>
-                ( {fun, symbol}, 1 , row) ;
+            M_AD->addOutput( fun, symbol, output, row) ;
         }
-    void addOutput( boost::tuple< vector_ptrtype , std::string > const & tuple, int row=1 )
+    void addOutput( vector_ptrtype const& vec, std::string const& symbol, int output=1, int row=1 )
         {
-            M_AD->template addOutput<vector_ptrtype>( tuple, 1, row );
+            M_AD->addOutput( vec, symbol, output, row );
         }
-    void addOutput( boost::tuple< form1_type , std::string > const & tuple, int row=1 )
+    void addOutput( form1_type const& form1, std::string const& symbol, int output=1, int row=1 )
         {
-            M_AD->template addOutput<vector_ptrtype>
-                ( { tuple.template get<0>().vectorPtr(), tuple.template get<1>() }, 1, row );
+            M_AD->addOutput( form1.vectorPtr(), symbol, output, row );
         }
 
 
@@ -373,7 +366,7 @@ public:
         {
             LOG(INFO)<< "You did not specified reference parameter"
                      << "You can do it with the implementation of the function refParameter()"
-                     << "Default : reference parameter = minmal value";
+                     << "Default : reference parameter = minimal value";
             return Dmu->min();
         }
 
@@ -530,12 +523,10 @@ public:
         }
 
 
-    virtual bdf_ptrtype bdfModel()
+    void checkBdf()
         {
             if ( is_time_dependent )
-                CHECK( false )<< "You have implemented a transient problem but you forgot to implement bdfModel() function that returns you bdf";
-            bdf_ptrtype dummy;
-            return dummy;
+                CHECK( M_bdf )<< "You have implemented a transient problem but you did not initialize M_bdf";
         }
     double timeStep()
         {

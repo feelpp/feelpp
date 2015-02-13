@@ -79,8 +79,8 @@ public:
         {}
 
     template < typename OperatorType >
-    void addMass( boost::tuple< OperatorType , std::string > const & tuple,
-                 int const row=1, int const col=1 )
+    void addMass( OperatorType const& ope, std::string const& symbol,
+                  int const row=1, int const col=1 )
         {
             // we resize the block AD and create the concerned block if necessary
             if ( row>M_M.size() )
@@ -91,13 +91,12 @@ public:
                 M_M[row-1][col-1] = oneblockmatrix_ptrtype ( new oneblockmatrix_type(M_model,row,col) );
 
             std::string filename = ( boost::format( "M%1%%2%-" ) %row %col ) .str();
-            M_M[row-1][col-1]->add( tuple.template get<0>(),
-                                    tuple.template get<1>(), filename );
+            M_M[row-1][col-1]->add( ope, symbol, filename );
 
         }
 
     template < typename OperatorType >
-    void addLhs( boost::tuple< OperatorType , std::string > const & tuple,
+    void addLhs( OperatorType const& ope, std::string const& symbol,
                  int const row=1, int const col=1 )
         {
             // we initialize the ginac tools if not already done
@@ -116,12 +115,11 @@ public:
                 M_A[row-1][col-1] = oneblockmatrix_ptrtype ( new oneblockmatrix_type(M_model,row,col) );
 
             std::string filename = ( boost::format( "A%1%%2%-" ) %row %col ) .str();
-            M_A[row-1][col-1]->add( tuple.template get<0>(),
-                                    tuple.template get<1>(), filename );
+            M_A[row-1][col-1]->add( ope, symbol, filename );
         }
 
     template < typename FunctionalType >
-    void addOutput( boost::tuple< FunctionalType , std::string > const & tuple, int output,
+    void addOutput( FunctionalType const& fun, std::string const& symbol, int output,
                     int const row=1 )
         {
             M_Nl = std::max( M_Nl, output+1 );
@@ -133,8 +131,7 @@ public:
             if ( !M_F[row-1][output] )
                 M_F[row-1][output] = oneblockvector_ptrtype ( new oneblockvector_type(M_model,row) );
             std::string filename = ( boost::format( "F%1%-%2%-" ) %row %output ) .str();
-            M_F[row-1][output]->add( tuple.template get<0>(),
-                                     tuple.template get<1>(), filename );
+            M_F[row-1][output]->add( fun, symbol, filename );
         }
 
 
