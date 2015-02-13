@@ -900,9 +900,10 @@ Environment::doOptions( int argc, char** argv,
 }
 
 Environment::Environment()
-    :
-    M_env( false )
 {
+    std::unique_ptr<boost::mpi::environment> bMPIEnv(new boost::mpi::environment(false));
+    M_env = std::move(bMPIEnv);
+
     // Initialize Google's logging library.
     if ( !google::glog_internal_namespace_::IsGoogleLoggingInitialized() )
         google::InitGoogleLogging( "feel++" );
@@ -922,24 +923,8 @@ Environment::Environment()
     S_worldcommSeq.reset( new WorldComm( S_worldcomm->subWorldCommSeq() ) );
 
 #if defined ( FEELPP_HAS_PETSC_H )
-    PetscTruth is_petsc_initialized;
-    PetscInitialized( &is_petsc_initialized );
-
-    if ( !is_petsc_initialized )
-    {
-        i_initialized = true;
-        int ierr = PetscInitializeNoArguments();
-
-        boost::ignore_unused_variable_warning( ierr );
-        CHKERRABORT( *S_worldcomm,ierr );
-    }
-
-    // make sure that petsc do not catch signals and hence do not print long
-    //and often unuseful messages
-    PetscPopSignalHandler();
-#endif // FEELPP_HAS_PETSC_H
-
-
+    initPetsc();
+#endif
 }
 
 fs::path scratchdir()
@@ -990,9 +975,10 @@ fs::path scratchdir()
 
 
 Environment::Environment( int& argc, char**& argv )
-    :
-    M_env( argc, argv, false )
 {
+    std::unique_ptr<boost::mpi::environment> bMPIEnv(new boost::mpi::environment(argc, argv, false));
+    M_env = std::move(bMPIEnv);
+
     S_scratchdir = scratchdir()/fs::path( argv[0] ).filename();
 
     if ( !fs::exists( S_scratchdir ) )
@@ -1027,28 +1013,9 @@ Environment::Environment( int& argc, char**& argv )
     CHECK( S_worldcomm ) << "Feel++ Environment: worldcomm creation failed!";
     S_worldcommSeq.reset( new WorldComm( S_worldcomm->subWorldCommSeq() ) );
 
-
 #if defined ( FEELPP_HAS_PETSC_H )
-    PetscTruth is_petsc_initialized;
-    PetscInitialized( &is_petsc_initialized );
-
-    if ( !is_petsc_initialized )
-    {
-        i_initialized = true;
-#if defined( FEELPP_HAS_SLEPC )
-        int ierr = SlepcInitialize( &argc,&argv, PETSC_NULL, PETSC_NULL );
-#else
-        int ierr = PetscInitialize( &argc, &argv, PETSC_NULL, PETSC_NULL );
+    initPetsc( &argc, &argv );
 #endif
-        boost::ignore_unused_variable_warning( ierr );
-        CHKERRABORT( *S_worldcomm,ierr );
-    }
-
-    // make sure that petsc do not catch signals and hence do not print long
-    //and often unuseful messages
-    PetscPopSignalHandler();
-#endif // FEELPP_HAS_PETSC_H
-
 }
 
 
@@ -1121,6 +1088,39 @@ Environment::Environment( boost::python::list arg )
 }
 #endif
 
+#if defined ( FEELPP_HAS_PETSC_H )
+void
+Environment::initPetsc( int * argc, char *** argv )
+{
+    PetscTruth is_petsc_initialized;
+    PetscInitialized( &is_petsc_initialized );
+
+    if ( !is_petsc_initialized )
+    {
+        i_initialized = true;
+
+        int ierr;
+        if(argc > 0 && argv)
+        {
+#if defined( FEELPP_HAS_SLEPC )
+            ierr = SlepcInitialize( argc, argv, PETSC_NULL, PETSC_NULL );
+#else
+            ierr = PetscInitialize( argc, argv, PETSC_NULL, PETSC_NULL );
+#endif
+        }
+        else
+        {
+            ierr = PetscInitializeNoArguments();
+        }
+        boost::ignore_unused_variable_warning( ierr );
+        CHKERRABORT( *S_worldcomm,ierr );
+    }
+
+    // make sure that petsc do not catch signals and hence do not print long
+    //and often unuseful messages
+    PetscPopSignalHandler();
+}
+#endif // FEELPP_HAS_PETSC_H
 
 void
 Environment::init( int argc, char** argv,
@@ -1128,6 +1128,13 @@ Environment::init( int argc, char** argv,
                    po::options_description const& desc_lib,
                    AboutData const& about )
 {
+    // duplicate argv before passing to gflags because gflags is going to
+    // rearrange them and it screws badly the flags for PETSc/SLEPc
+    char** envargv = dupargv( argv );
+
+    S_about = about;
+    doOptions( argc, envargv, desc, desc_lib, about.appName() );
+
     S_worldcomm = worldcomm_type::New();
     CHECK( S_worldcomm ) << "Feel++ Environment: creating worldcomm failed!";
     S_worldcommSeq.reset( new WorldComm( S_worldcomm->subWorldCommSeq() ) );
@@ -1155,10 +1162,6 @@ Environment::init( int argc, char** argv,
     }
 
     FLAGS_log_dir=S_scratchdir.string();
-
-    // duplicate argv before passing to gflags because gflags is going to
-    // rearrange them and it screws badly the flags for PETSc/SLEPc
-    char** envargv = dupargv( argv );
 
     google::AllowCommandLineReparsing();
     google::ParseCommandLineFlags( &argc, &argv, false );
@@ -1199,31 +1202,9 @@ Environment::init( int argc, char** argv,
     //tbb::task_scheduler_init init(2);
 #endif
 
-
 #if defined ( FEELPP_HAS_PETSC_H )
-    PetscTruth is_petsc_initialized;
-    PetscInitialized( &is_petsc_initialized );
-
-    if ( !is_petsc_initialized )
-    {
-        i_initialized = true;
-#if defined( FEELPP_HAS_SLEPC )
-        int ierr = SlepcInitialize( &argc,&envargv, PETSC_NULL, PETSC_NULL );
-#else
-        int ierr = PetscInitialize( &argc, &envargv, PETSC_NULL, PETSC_NULL );
+    initPetsc( &argc, &envargv );
 #endif
-        boost::ignore_unused_variable_warning( ierr );
-        CHKERRABORT( *S_worldcomm,ierr );
-    }
-
-    // make sure that petsc do not catch signals and hence do not print long
-    //and often unuseful messages
-    PetscPopSignalHandler();
-#endif // FEELPP_HAS_PETSC_H
-
-
-    S_about = about;
-    doOptions( argc, envargv, desc, desc_lib, about.appName() );
 
     // make sure that we pass the proper verbosity level to glog
     if ( S_vm.count( "v" ) )

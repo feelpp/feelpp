@@ -30,6 +30,7 @@
 #define FEELPP_ENVIRONMENT_HPP 1
 
 #include <cstdlib>
+#include <memory>
 
 #include <boost/noncopyable.hpp>
 #include <boost/signals2.hpp>
@@ -227,6 +228,41 @@ public:
         S_desc->add( file_options( about.appName() ) );
         S_desc->add( generic_options() );
 
+        std::cout << "Environment(ArgumentPack): " << boost::mpi::environment::initialized() << std::endl;
+#if BOOST_VERSION >= 105500
+#if 0
+        if(soption( _name="mpi.threading-level") == "single")
+        {
+            std::unique_ptr<boost::mpi::environment> bMPIEnv(new boost::mpi::environment(argc, argv, boost::mpi::threading::single, false));
+            M_env = std::move(bMPIEnv);
+        }
+        else if(soption( _name="mpi.threading-level") == "funneled")
+        {
+            std::unique_ptr<boost::mpi::environment> bMPIEnv(new boost::mpi::environment(argc, argv, boost::mpi::threading::funneled, false));
+            M_env = std::move(bMPIEnv);
+        }
+        else if(soption( _name="mpi.threading-level") == "serialized")
+        {
+            std::unique_ptr<boost::mpi::environment> bMPIEnv(new boost::mpi::environment(argc, argv, boost::mpi::threading::serialized, false));
+            M_env = std::move(bMPIEnv);
+        }
+        else if(soption( _name="mpi.threading-level") == "multiple")
+        {
+            std::unique_ptr<boost::mpi::environment> bMPIEnv(new boost::mpi::environment(argc, argv, boost::mpi::threading::multiple, false));
+            M_env = std::move(bMPIEnv);
+        }
+        else
+        {
+#endif
+            std::unique_ptr<boost::mpi::environment> bMPIEnv(new boost::mpi::environment(argc, argv, false));
+            M_env = std::move(bMPIEnv);
+//        }
+#else
+        std::unique_ptr<boost::mpi::environment> bMPIEnv(new boost::mpi::environment(false));
+        M_env = std::move(bMPIEnv);
+#endif
+        std::cout << "Environment(ArgumentPack): " << boost::mpi::environment::initialized() << std::endl;
+
 
         init( argc, argv, *S_desc, *S_desc_lib, about );
 
@@ -244,9 +280,9 @@ public:
         }
     }
 
-
-
-
+#if defined ( FEELPP_HAS_PETSC_H )
+    void initPetsc( int * argc = 0, char *** argv = NULL );
+#endif
 
     void init( int argc, char** argv, po::options_description const& desc,
                po::options_description const& desc_lib, AboutData const& about );
@@ -614,7 +650,7 @@ private:
 private:
     /// Whether this environment object called MPI_Init
     bool i_initialized;
-    mpi::environment M_env;
+    std::unique_ptr<mpi::environment> M_env;
 
     static std::vector<fs::path> S_paths;
 
