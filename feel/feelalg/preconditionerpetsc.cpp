@@ -1478,7 +1478,6 @@ ConfigurePCLU::runConfigurePCLU( PC& pc )
 #if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
     // allow to tune the factorisation package
     this->check( PCFactorSetUpMatSolverPackage(pc) );
-#endif
 
     // configure mumps
     if ( M_matSolverPackage == "mumps" )
@@ -1494,6 +1493,8 @@ ConfigurePCLU::runConfigurePCLU( PC& pc )
             }
         }
     }
+#endif
+
 }
 
 /**
