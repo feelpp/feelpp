@@ -229,6 +229,9 @@ public:
 
             LOG(INFO)<< "Model Initialization";
             initModel();
+            if ( !is_time_dependent )
+                M_AD->initializeMassMatrix();
+
             //M_AD->check();
             checkBdf();
 
@@ -338,7 +341,6 @@ public:
         {
             return Dmu;
         }
-
     functionspace_ptrtype functionSpace( int num=1 ) const
         {
             return Xh;
@@ -373,7 +375,6 @@ public:
 
     virtual steady_betaqm_type computeBetaQm( parameter_type const& mu )
         {
-
             return boost::make_tuple( M_AD->betaAqm(mu), M_AD->betaFqm(mu) );
         }
 
@@ -382,15 +383,12 @@ public:
         {
             betaqm_type beta_coeff;
             steady_betaqm_type steady_beta_coeff;
-            beta_vector_type betaM;
 
             if ( !is_time_dependent )
             {
                 steady_beta_coeff = computeBetaQm( mu );
-                betaM.resize(1);
-                betaM[0].resize(1);
-                betaM[0][0]=1;
-                beta_coeff = boost::make_tuple( betaM, steady_beta_coeff.template get<0>(),
+                beta_coeff = boost::make_tuple( M_AD->betaMqm( mu, time ),
+                                                steady_beta_coeff.template get<0>(),
                                                 steady_beta_coeff.template get<1>() );
             }
             else
@@ -408,7 +406,7 @@ public:
         }
 
     betaqm_type computeBetaQm( vector_ptrtype const& T, parameter_type const& mu ,
-                               double time , bool only_time_dependent_terms=false )
+                        double time , bool only_time_dependent_terms=false )
         {
             auto solution = functionSpace()->element();
             solution = *T;
@@ -416,46 +414,41 @@ public:
         }
 
     virtual betaqm_type computeBetaQm( element_type const& T, parameter_type const& mu ,
-                                       double time=0 , bool only_time_dependent_terms=false )
+                                       double time , bool only_time_dependent_terms=false )
         {
-        betaqm_type beta_coeff;
-        steady_betaqm_type steady_beta_coeff;
-        beta_vector_type betaM;
+            betaqm_type beta_coeff;
+            steady_betaqm_type steady_beta_coeff;
+            beta_vector_type betaM;
 
-        if ( !is_time_dependent )
-        {
-            steady_beta_coeff = BetaQm( T, mu );
-            betaM.resize(1);
-            betaM[0].resize(1);
-            betaM[0][0]=1;
-            beta_coeff = boost::make_tuple( betaM, steady_beta_coeff.template get<0>(),
-                                            steady_beta_coeff.template get<1>() );
+            if ( !is_time_dependent )
+            {
+                steady_beta_coeff = BetaQm( T, mu );
+                betaM.resize( Qm() );
+                for ( int q=0; q<betaM.size(); q++ )
+                    betaM[q].push_back( 1 );
+                beta_coeff = boost::make_tuple( M_AD->betaMqm(mu, time ),
+                                                steady_beta_coeff.template get<0>(),
+                                                steady_beta_coeff.template get<1>() );
+            }
+            else
+                throw std::logic_error( "Since youre model is not linear (and time dependent), you have to implement the function computeBetaQm( u, mu, time ) ");
+
+            return beta_coeff;
         }
-        else
-            throw std::logic_error( "Since youre model is not linear (and time dependent), you have to implement the function computeBetaQm( u, mu, time ) ");
-
-        return beta_coeff;
-    }
 
     virtual affine_decomposition_type computeAffineDecomposition()
         {
             return M_AD->compute();
         }
+
+
     void countAffineDecompositionTerms()
         {
             M_AD->count();
         }
     virtual size_type Qm() const
         {
-            if (is_time_dependent)
-                return M_AD->Qm();
-            else
-            {
-                if ( constructOperatorCompositeM() )
-                    return functionspace_type::nSpaces;
-                else
-                    return 0;
-            }
+            return M_AD->Qm();
         }
     virtual size_type Ql( int l ) const
         {
@@ -477,10 +470,7 @@ public:
         }
     int mMaxM( int q )
         {
-            if ( is_time_dependent )
-                return M_AD->mMaxM(q);
-            else
-                return 1;
+            return M_AD->mMaxM(q);
         }
     int mMaxA( int q )
         {
@@ -1084,18 +1074,6 @@ public:
         element_type M_composite_u1;
         element_type M_composite_u2;
     };
-    virtual operatorcomposite_ptrtype operatorCompositeA() const
-        {
-            return M_compositeA;
-        }
-    virtual operatorcomposite_ptrtype operatorCompositeM()
-        {
-            return M_compositeM;
-        }
-    virtual std::vector< functionalcomposite_ptrtype > functionalCompositeF() const
-        {
-            return M_compositeF;
-        }
 
     //for linear steady models, mass matrix does not exist
     //non-linear steady models need mass matrix for the initial guess
@@ -1112,6 +1090,13 @@ public:
         {
             return false;
         }
+    virtual operatorcomposite_ptrtype operatorCompositeM() const
+        {
+            CHECK( false ) << "You chose to use operatorCompositeM but you did not write the function operatorCompositeM().\nYou have to do it or set constructOperatorCompositeM() to false.\n";
+                operatorcomposite_ptrtype dummy;
+            return dummy;
+        }
+
     virtual beta_vector_type computeBetaInitialGuess( parameter_type const& mu ) const
         {
             beta_vector_type beta;
@@ -1194,64 +1179,6 @@ public:
                           <<" operators free and option crb.stock-matrices=false.\nFor now we suppose that crb.stock-matrices=true.\n "
                           <<" So make sure that all developments have been done to deal with crb.stock-matrices=false before delete this CHECK.\n";
             return 0;
-        }
-    virtual operatorcomposite_ptrtype operatorCompositeLightA() const
-        {
-            return M_compositeA;
-        }
-    virtual operatorcomposite_ptrtype operatorCompositeLightM() const
-        {
-            if ( is_time_dependent )
-                return M_compositeM;
-            else
-            {    if ( constructOperatorCompositeM() )
-                    return M_compositeM;
-                else
-                    return preAssembleMassMatrix( true );
-            }
-        }
-    operatorcomposite_ptrtype preAssembleMassMatrix( bool light_version ) const
-        {
-            static const bool is_composite = functionspace_type::is_composite;
-            return preAssembleMassMatrix( mpl::bool_< is_composite >() , light_version );
-        }
-    operatorcomposite_ptrtype preAssembleMassMatrix( mpl::bool_<false> , bool light_version ) const
-        {
-            auto mesh = Xh->mesh();
-
-            auto expr=integrate( _range=elements( mesh ) , _expr=idt( u )*id( v ) );
-            auto op_mass = opLinearComposite( _domainSpace=Xh , _imageSpace=Xh  );
-            auto opfree = opLinearFree( _domainSpace=Xh , _imageSpace=Xh , _expr=expr );
-            opfree->setName("mass operator (automatically created)");
-            //in this case, the affine decompositon has only one element
-            if( light_version )
-            {
-                //note that only time independent problems need to
-                //inform if we use light version or not of the affine decomposition
-                //i.e. if we use EIM expansion or not
-                //because transient models provide already a decomposition of the mass matrix
-                //so it is not automatically created
-                op_mass->addElement( 0 , opfree );
-            }
-            else
-            {
-                op_mass->addElement( boost::make_tuple(0,0) , opfree );
-            }
-            return op_mass;
-        }
-    operatorcomposite_ptrtype preAssembleMassMatrix( mpl::bool_<true> , bool light_version ) const
-        {
-            index_vector_type index_vector;
-            PreAssembleMassMatrixInCompositeCase<self_type> preassemble_mass_matrix_in_composite_case ( u , v );
-            fusion::for_each( index_vector, preassemble_mass_matrix_in_composite_case );
-
-            auto op_mass = preassemble_mass_matrix_in_composite_case.opmass();
-            return op_mass;
-        }
-
-    virtual std::vector< functionalcomposite_ptrtype > functionalCompositeLightF() const
-        {
-            return M_compositeF;
         }
 
 
@@ -1681,13 +1608,7 @@ public:
                                bool only_time_dependent_terms=false )
         {
             auto all_beta = this->computeBetaQm( mu , time , only_time_dependent_terms );
-            offline_merge_type offline_merge;
-            if( boption(_name="crb.stock-matrices") )
-                offline_merge = offlineMerge( all_beta , only_time_dependent_terms );
-            else
-                offline_merge = offlineMergeOnFly( all_beta, only_time_dependent_terms );
-
-            return offline_merge;
+            return M_AD->offlineMerge( all_beta, only_time_dependent_terms);
         }
     offline_merge_type update( parameter_type const& mu, element_type const& T, double time=0,
                                bool only_time_dependent_terms=false )
@@ -1696,134 +1617,8 @@ public:
             mu.check();
 #endif
             auto all_beta = this->computeBetaQm(  T , mu , time , only_time_dependent_terms );
-
-            offline_merge_type offline_merge;
-
-            if( boption(_name="crb.stock-matrices") )
-                offline_merge = offlineMerge( all_beta , only_time_dependent_terms );
-            else
-                offline_merge = offlineMergeOnFly( all_beta, only_time_dependent_terms );
-
-            return offline_merge;
-
+            return M_AD->offlineMerge( all_beta, only_time_dependent_terms);
         }
-
-
-    offline_merge_type offlineMergeOnFly( betaqm_type const& all_beta,
-                                          bool only_time_dependent_terms )
-        {
-
-            //recovery from the model of free operators Aqm in A = \sum_q \sum_m \beta_qm( u ; mu ) A_qm( u, v )
-            //idem with other operator / functional
-
-            operatorcomposite_ptrtype compositeM;
-            operatorcomposite_ptrtype compositeA;
-            std::vector< functionalcomposite_ptrtype > vector_compositeF;
-
-            if( ! only_time_dependent_terms )
-            {
-
-                auto compositeAlight=operatorCompositeLightA();
-                if( compositeAlight )
-                {
-                    compositeA=compositeAlight;
-                    compositeM = this->operatorCompositeLightM();
-                    vector_compositeF = this->functionalCompositeLightF();
-                }
-                else
-                {
-                    compositeA = this->operatorCompositeA();
-                    compositeM = this->operatorCompositeM();
-                    vector_compositeF = this->functionalCompositeF();
-                }
-                //acces to beta coefficients
-                auto beta_M = all_beta.template get<0>();
-                auto beta_A = all_beta.template get<1>();
-
-                //associate beta coefficients to operators
-                compositeA->setScalars( beta_A );
-                compositeM->setScalars( beta_M );
-            }
-
-            //merge
-            auto A = this->newMatrix();
-            auto M = this->newMatrix();
-            if( ! only_time_dependent_terms )
-            {
-                compositeA->sumAllMatrices( A );
-                compositeM->sumAllMatrices( M );
-            }
-
-            //warning : beta_F is a vector of beta_coefficients
-            auto beta_F = all_beta.template get<2>();
-            std::vector<vector_ptrtype> F( Nl() );
-            for(int output=0; output<Nl(); output++)
-            {
-                auto compositeF = vector_compositeF[output];
-                compositeF->setScalars( beta_F[output] );
-                F[output] = this->newVector();
-                compositeF->sumAllVectors( F[output] );
-            }
-
-            return boost::make_tuple( M, A, F );
-
-        }
-    offline_merge_type offlineMerge( betaqm_type const& all_beta , bool only_time_dependent_terms )
-        {
-            auto A = this->newMatrix();
-            auto M = this->newMatrix();
-
-            if( ! only_time_dependent_terms )
-            {
-                //acces to beta coefficients
-                auto beta_M = all_beta.template get<0>();
-                auto beta_A = all_beta.template get<1>();
-
-                A->zero();
-                for ( size_type q = 0; q < Qa(); ++q )
-                {
-                    for(size_type m = 0; m < mMaxA(q); ++m )
-                    {
-                        A->addMatrix( beta_A[q][m], M_AD->Aqm()[q][m] );
-                    }
-                }
-
-                if( Qm() > 0 )
-                {
-                    for ( size_type q = 0; q < Qm(); ++q )
-                    {
-                        for(size_type m = 0; m < mMaxM(q) ; ++m )
-                            M->addMatrix( beta_M[q][m] , M_AD->Mqm()[q][m] );
-                    }
-                }
-            }
-
-            std::vector<vector_ptrtype> F( Nl() );
-
-            //warning : beta_F is a vector of beta_coefficients
-            auto beta_F = all_beta.template get<2>();
-
-            for ( size_type l = 0; l < Nl(); ++l )
-            {
-                F[l] = M_backend->newVector( Xh );
-                F[l]->zero();
-
-                for ( size_type q = 0; q < Ql( l ); ++q )
-                {
-                    for ( size_type m = 0; m < mMaxF(l,q); ++m )
-                    {
-                        F[l]->add( beta_F[l][q][m] , M_AD->Fqm(l)[q][m] );
-                    }
-                }
-                F[l]->close();
-            }
-
-            return boost::make_tuple( M, A, F );
-        }
-
-
-
-
 
     std::vector< std::vector<element_ptrtype> > computeInitialGuessVAffineDecomposition( )
         {
@@ -1933,9 +1728,6 @@ protected:
     funsd_type M_funs_d;
 
     int M_QLinearDecompositionA;
-    operatorcomposite_ptrtype M_compositeA;
-    operatorcomposite_ptrtype M_compositeM;
-    std::vector< functionalcomposite_ptrtype > M_compositeF;
 
     sparse_matrix_ptrtype M_monoA;
     sparse_matrix_ptrtype M_monoM;
@@ -1955,6 +1747,9 @@ protected:
     element_type u;
     element_type v;
 }; //class CRBModel
+
+
+
 
 
 } // namespace Feel

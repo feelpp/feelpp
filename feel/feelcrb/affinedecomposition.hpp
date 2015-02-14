@@ -17,6 +17,10 @@ public:
     typedef ModelType model_type;
     typedef boost::shared_ptr<model_type> model_ptrtype;
 
+    typedef typename model_type::element_type element_type;
+    typedef typename model_type::mesh_type mesh_type;
+    typedef typename model_type::mesh_ptrtype mesh_ptrtype;
+
     /// Backend and Tensors
     typedef Backend<value_type> backend_type;
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
@@ -47,8 +51,15 @@ public:
     typedef std::vector< std::vector < vector_ptrtype >> affine_vector_type;
     typedef std::vector< affine_vector_type > affine_output_type;
     typedef std::vector< affine_output_type > block_affine_output_type;
-    typedef std::vector< std::vector< value_type >> beta_vector_type;
 
+    typedef std::vector< std::vector< value_type >> beta_vector_type;
+    typedef typename boost::tuple< beta_vector_type,
+                                   beta_vector_type,
+                                   std::vector<beta_vector_type>
+                                   > betaqm_type;
+
+    typedef typename model_type::offline_merge_type offline_merge_type;
+    typedef typename model_type::index_vector_type index_vector_type;
 
     typedef boost::tuple< affine_matrix_type, // Mqm
                           affine_matrix_type, // Aqm
@@ -62,9 +73,7 @@ public:
      */
     AffineDecomposition( model_ptrtype model ) :
         M_model( model ),
-        M_Nl(0),
-        M_use_ginac_expr( false ),
-        M_use_operators_free( false )
+        M_Nl(0)
         {
             init();
         }
@@ -100,11 +109,8 @@ public:
                  int const row=1, int const col=1 )
         {
             // we initialize the ginac tools if not already done
-            if ( !M_use_ginac_expr )
-            {
+            if ( M_symbols_map.size() ==0)
                 buildSymbolsMap();
-                M_use_ginac_expr=true;
-            }
 
             // we resize the block AD and create the concerned block if necessary
             if ( row>M_A.size() )
@@ -122,6 +128,10 @@ public:
     void addOutput( FunctionalType const& fun, std::string const& symbol, int output,
                     int const row=1 )
         {
+            // we initialize the ginac tools if not already done
+            if ( M_symbols_map.size() ==0)
+                buildSymbolsMap();
+
             M_Nl = std::max( M_Nl, output+1 );
 
             if ( row>M_F.size() )
@@ -134,12 +144,23 @@ public:
             M_F[row-1][output]->add( fun, symbol, filename );
         }
 
+    void initializeMassMatrix( int row=1, int col=1 )
+        {
+            if ( row>M_M.size() )
+                M_M.resize( row );
+            if ( col>M_M[row-1].size() )
+                M_M[row-1].resize( col );
+            if ( !M_M[row-1][col-1] )
+                M_M[row-1][col-1] = oneblockmatrix_ptrtype ( new oneblockmatrix_type(M_model,row,col) );
+
+            M_M[row-1][col-1]->initializeMassMatrix();
+        }
 
     affine_decomposition_type compute( int row=1, int col=1 )
         {
-            blockCheck( M_M, row, col, "compute");
             fatalBlockCheck( M_A, row, col, "compute");
             fatalBlockCheck( M_F, row, "compute");
+            fatalBlockCheck( M_M, row, col, "compute");
 
             affine_output_type Fqm;
             for ( int output=0; output<M_Nl; output++)
@@ -168,7 +189,7 @@ public:
         }
     affine_vector_type Fqm( int output, int row=1 ) const
         {
-            fatalBlockCheck(M_F, row, output, "Fqm" );
+            fatalBlockCheck(M_F, row, output+1, "Fqm" );
             return M_F[row-1][output]->compute();
         }
 
@@ -185,7 +206,7 @@ public:
         }
     int Ql( int output, int row=1 ) const
         {
-            fatalBlockCheck(M_F, row, output, "Ql" );
+            fatalBlockCheck(M_F, row, output+1, "Ql" );
             return M_F[row-1][output]->Q();
         }
     int Nl() const
@@ -207,7 +228,7 @@ public:
 
     int mMaxF( int output, int q, int row=1 ) const
         {
-            fatalBlockCheck(M_F, row, output, "mMaxF");
+            fatalBlockCheck(M_F, row, output+1, "mMaxF");
             return M_F[row-1][output]->mMax(q);
         }
 
@@ -226,7 +247,7 @@ public:
         }
     vector_ptrtype F( uint16_type output, uint16_type q, int m, int row=1 ) const
         {
-            fatalBlockCheck(M_F, row, output, "F" );
+            fatalBlockCheck(M_F, row, output+1, "F" );
             return M_F[row-1][output]->compute(q,m);
         }
 
@@ -251,7 +272,7 @@ public:
     beta_vector_type betaQm( AdType AD, parameter_type const& mu, double time, int row, int col )
         {
             fatalBlockCheck(AD, row, col, "betaQm");
-            if ( M_use_ginac_expr )
+            if ( AD[row-1][col-1]->useGinacExpr() )
             {
                 std::string symbol;
                 for( int i=0; i<M_model->ParameterSpaceDimension; i++ )
@@ -275,6 +296,31 @@ public:
             }
         }
 
+    offline_merge_type offlineMerge( betaqm_type const& all_beta, bool only_time_dependent_terms,
+                                     int row=1, int col=1 )
+        {
+
+            fatalBlockCheck( M_A, row, col, "offlineMerge" );
+            fatalBlockCheck( M_M, row, col, "offlineMerge" );
+
+            sparse_matrix_ptrtype A;
+            sparse_matrix_ptrtype M;
+            std::vector<vector_ptrtype> F( M_Nl );
+            if ( !only_time_dependent_terms )
+            {
+                M = M_M[row-1][col-1]->merge( all_beta.template get<0>() );
+                A = M_A[row-1][col-1]->merge( all_beta.template get<1>() );
+            }
+
+            for ( int output =0; output<M_Nl; output++ )
+            {
+                fatalBlockCheck( M_F, row, output+1, "offlineMerge" );
+                F[output] = M_F[row-1][output]->merge( all_beta.template get<2>()[output] );
+            }
+
+            return boost::make_tuple( M, A, F );
+        }
+
 
 private:
 
@@ -289,7 +335,8 @@ private:
             M_Q( 0 ),
             M_use_operators_free( false ),
             M_row( row ),
-            M_col( col )
+            M_col( col ),
+            M_use_ginac_expr( false )
             {}
 
         void add( TensorType const& mat, std::string const& symbol , std::string filename )
@@ -298,7 +345,7 @@ private:
                 M_Mqm.resize( M_Q );
                 M_Mqm[M_Q-1].push_back( mat );
             }
-        void add(  operator_ptrtype const& ope, std::string const& symbol , std::string filename )
+        void add( operator_ptrtype const& ope, std::string const& symbol , std::string filename )
             {
                 M_use_operators_free = true;
                 if ( !M_composite )
@@ -321,6 +368,33 @@ private:
                 fun->setName( filename );
                 M_composite->addElement( {M_Q-1,0}, fun );
             }
+
+
+        void initializeMassMatrix()
+            {
+                std::string filename = ( boost::format("GinacM%1%%2%-") %M_row %M_col).str() ;
+
+                if ( M_model->constructOperatorCompositeM() )
+                {
+                    M_use_operators_free=true;
+                    M_composite = M_model->operatorCompositeM();
+                    M_mMax = M_composite->countAllContributions();
+                    M_Q = M_mMax.size();
+                }
+                else if ( boption("crb.stock-matrices") )
+                    assembleMassMatrix();
+                else
+                    preAssembleMassMatrix();
+
+                M_beta.resize( M_Q );
+                for( int q=0; q<M_Q; q++ )
+                {
+                    M_beta[q].resize( M_mMax[q] );
+                    for( int m=0; m<M_mMax[q]; m++ )
+                        M_beta[q][m]=1.;
+                }
+         }
+
 
         std::vector< std::vector< TensorType >> compute()
             {
@@ -422,6 +496,51 @@ private:
                 return vector;
             }
 
+        TensorType merge( beta_vector_type const& beta )
+            {
+                return merge( beta, mpl::bool_<is_matrix>() );
+            }
+        TensorType merge( beta_vector_type const& beta, mpl::bool_<true> )
+            {
+                auto M = M_model->newMatrix();
+                if ( M_use_operators_free )
+                {
+                    M_composite->setScalars( beta );
+                    M_composite->sumAllMatrices( M );
+                }
+                else
+                {
+                    M->zero();
+                    for ( int q=0; q<M_Q; q++ )
+                        for( int m=0; m<M_mMax[q]; m++)
+                        {
+                            M->addMatrix( beta[q][m], M_Mqm[q][m] );
+                        }
+                }
+                return M;
+            }
+        TensorType merge( beta_vector_type const& beta, mpl::bool_<false> )
+            {
+                auto F = M_model->newVector();
+                if( M_use_operators_free )
+                {
+                    M_composite->setScalars( beta );
+                    M_composite->sumAllVectors( F );
+                }
+                else
+                {
+                    F->zero();
+                    for( int q=0; q<M_Q; q++ )
+                        for( int m=0; m<M_mMax[q]; m++ )
+                            F->add( beta[q][m], M_Mqm[q][m] );
+                }
+                return F;
+            }
+
+
+        bool useOperatorsFree() { return M_use_operators_free; }
+        bool useGinacExpr() { return M_use_ginac_expr; }
+
         /// beta coefficients
         beta_vector_type M_beta;
         /// ginac expressions
@@ -430,6 +549,7 @@ private:
     private:
         void newEntry( std::string symbol, std::string filename )
             {
+                M_use_ginac_expr = true;
                 if ( M_symbols_vec.size()==0 )
                     buildSymbolsVector();
                 filename = "Ginac" + filename + std::to_string( M_Q );
@@ -443,7 +563,158 @@ private:
                 M_beta[M_Q-1].push_back(0);
             }
 
-        void buildSymbolsVector()
+        void assembleMassMatrix()
+            {
+                const bool is_composite = model_type::functionspace_type::is_composite;
+                assembleMassMatrix( mpl::bool_<is_composite>() );
+            }
+        void assembleMassMatrix( mpl::bool_<false> )
+            {
+                auto Xh = M_model->functionSpace();
+                auto mesh = Xh->mesh();
+                auto u = Xh->element();
+                auto v = Xh->element();
+
+                M_Q = (int) 1 ;
+                M_mMax.resize(M_Q);
+                M_mMax[0] = 1;
+
+                M_Mqm.resize( M_Q );
+                M_Mqm[0].resize( 1 );
+                M_Mqm[0][0] = backend()->newMatrix( _test=Xh , _trial=Xh );
+
+                form2( _test=Xh, _trial=Xh, _matrix=M_Mqm[0][0] ) =
+                    integrate( _range=elements( mesh ), _expr=idt( u )*id( v )  );
+                M_Mqm[0][0]->close();
+            }
+        void assembleMassMatrix( mpl::bool_<true> )
+            {
+                index_vector_type index_vector;
+                int n_spaces = model_type::functionspace_type::nSpaces;
+                auto Xh = M_model->functionSpace();
+                auto u = Xh->element();
+                auto v = Xh->element();
+
+                M_Q = n_spaces;
+                M_Mqm.resize( M_Q );
+                for ( int q=0; q<M_Q; q++ )
+                {
+                    M_mMax.push_back(1);
+                    M_Mqm[q].resize(1);
+                    M_Mqm[q][0] = backend()->newMatrix( _test=Xh, _trial=Xh );
+                }
+                AssembleMassMatrixInCompositeCase assemble_mass_matrix_in_composite_case ( u , v , this );
+                fusion::for_each( index_vector, assemble_mass_matrix_in_composite_case );
+            }
+        struct AssembleMassMatrixInCompositeCase
+        {
+            AssembleMassMatrixInCompositeCase( element_type const u ,
+                                               element_type const v ,
+                                               std::vector< std::vector< sparse_matrix_ptrtype >> Mqm)
+                :
+                M_composite_u ( u ),
+                M_composite_v ( v ),
+                M_Mqm ( Mqm )
+                {}
+
+            template< typename T >
+            void operator()( const T& t ) const
+                {
+                    auto u = this->M_composite_u.template element< T::value >();
+                    auto v = this->M_composite_v.template element< T::value >();
+                    auto Xh = M_composite_u.functionSpace();
+                    auto mesh = Xh->mesh();
+
+                    int q = T::value;
+                    form2( _test=Xh, _trial=Xh, _matrix=M_Mqm[q][0] ) +=
+                        integrate( _range=elements( mesh ), _expr=trans( idt( u ) )*id( v ) );
+                    M_Mqm[q][0]->close();
+                }
+
+            element_type  M_composite_u;
+            element_type  M_composite_v;
+            std::vector< std::vector< sparse_matrix_ptrtype >> M_Mqm;
+        };
+
+        void preAssembleMassMatrix()
+            {
+                M_use_operators_free = true;
+                const bool is_composite = model_type::functionspace_type::is_composite;
+                preAssembleMassMatrix( mpl::bool_<is_composite>() );
+
+                M_mMax = M_composite->countAllContributions();
+                M_Q = M_mMax.size();
+            }
+        void preAssembleMassMatrix( mpl::bool_<false> )
+            {
+                auto Xh = M_model->functionSpace();
+                auto u = Xh->element();
+                auto v = Xh->element();
+
+                auto mesh = Xh->mesh();
+                auto expr=integrate( _range=elements( mesh ) , _expr=idt( u )*id( v ) );
+
+                auto M_composite = opLinearComposite( _domainSpace=Xh, _imageSpace=Xh  );
+                auto opfree = opLinearFree( _domainSpace=Xh, _imageSpace=Xh, _expr=expr );
+
+                opfree->setName("mass operator (automatically created)");
+                M_composite->addElement( boost::make_tuple(0,0) , opfree );
+            }
+        void preAssembleMassMatrix( mpl::bool_<true> )
+            {
+                index_vector_type index_vector;
+                auto Xh = M_model->functionSpace();
+                auto u = Xh->element();
+                auto v = Xh->element();
+
+                PreAssembleMassMatrixInCompositeCase preassemble_mass_matrix_in_composite_case ( u , v );
+                fusion::for_each( index_vector, preassemble_mass_matrix_in_composite_case );
+
+                M_composite = preassemble_mass_matrix_in_composite_case.opmass();
+            }
+        struct PreAssembleMassMatrixInCompositeCase
+        {
+            PreAssembleMassMatrixInCompositeCase( element_type const u ,
+                                                  element_type const v )
+                :
+                M_composite_u ( u ),
+                M_composite_v ( v )
+                {
+                    auto Xh = M_composite_u.functionSpace();
+                    op_mass = opLinearComposite( _imageSpace=Xh, _domainSpace=Xh );
+                }
+
+            template< typename T >
+            void
+            operator()( const T& t ) const
+                {
+                    auto u = M_composite_u.template element< T::value >();
+                    auto v = M_composite_v.template element< T::value >();
+                    auto Xh = M_composite_u.functionSpace();
+                    mesh_ptrtype mesh = Xh->mesh();
+
+                    auto expr = integrate( _range=elements( mesh ) , _expr=trans( idt( u ) )*id( v ) ) ;
+                    auto opfree = opLinearFree( _imageSpace=Xh, _domainSpace=Xh, _expr=expr );
+
+                    //each composant of the affine decomposition
+                    //is the subspace contribution
+                    int q=T::value;
+                    int m=0;
+                    auto tuple = boost::make_tuple( q , m );
+                    op_mass->addElement( tuple , opfree );
+                }
+            operatorcomposite_ptrtype opmass()
+                {
+                    return op_mass;
+                }
+
+            element_type  M_composite_u;
+            element_type  M_composite_v;
+            operatorcomposite_ptrtype op_mass;
+        };
+
+
+       void buildSymbolsVector()
             {
                 for( int i=0; i<M_model->ParameterSpaceDimension; i++)
                 {
@@ -468,6 +739,7 @@ private:
         int M_col;
         std::vector< std::string > M_symbols_vec;
 
+        bool M_use_ginac_expr;
     };
 
     /**
@@ -481,23 +753,6 @@ private:
                 M_symbols_map.insert( std::pair< std::string,double> (symbol,0) );
             }
             M_symbols_map.insert( std::pair< std::string,double> ("t",0) );
-        }
-    template <typename ContainerType>
-    void blockCheck( ContainerType& vec, int row, int col, std::string name )
-        {
-            if ( vec.size()<row)
-            {
-                LOG(INFO)<<  "[AD."<< name <<"()] Call of nonexistant row="<< row
-                         << ". Creation of an empty one";
-                vec.resize(row);
-            }
-            if ( vec[row-1].size()<col )
-            {
-                LOG(INFO)<< "[AD."<< name <<"()] Call of nonexistant col="<< col
-                         << ". Creation of an empty one for row="<< row;
-                vec[row-1].resize(col);
-            }
-            vec[row-1][col-1] = oneblockmatrix_ptrtype( new oneblockmatrix_type( M_model, row, col ) );
         }
     template <typename ContainerType>
     void fatalBlockCheck( ContainerType& vec, int row, int col, std::string name ) const
@@ -525,10 +780,7 @@ private:
     std::vector< std::vector< oneblockvector_ptrtype >> M_F; // rowXoutput
 
     /// Ginac tools
-    bool M_use_ginac_expr;
     std::map<std::string,double> M_symbols_map;
-
-    bool M_use_operators_free;
 }; // class AffineDecompostion
 
 
