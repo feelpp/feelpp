@@ -441,6 +441,11 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
     if ( !this->M_preconditioner && this->preconditionerType() == FIELDSPLIT_PRECOND )
         matrix->updatePCFieldSplit( M_pc );
 
+    if ( this->M_nullSpace && this->M_nullSpace->size() > 0 )
+        this->updateNullSpace( matrix->mat(), rhs->vec() );
+    if ( this->M_nearNullSpace && this->M_nearNullSpace->size() > 0 )
+        this->updateNearNullSpace( matrix->mat() );
+
     //   // If matrix != precond, then this means we have specified a
     //   // special preconditioner, so reset preconditioner type to PCMAT.
     //   if (matrix != precond)
@@ -724,15 +729,86 @@ template <typename T>
 void
 SolverLinearPetsc<T>::setPetscConstantNullSpace()
 {
-    if ( M_constant_null_space )
+    int ierr = 0;
+    if ( this->M_nullSpace && this->M_nullSpace->size() > 0 )
     {
+        //std::cout << "define nullspace in petsc with size "<< this->M_nullSpace->size() <<"\n";
+    }
+    else if ( M_constant_null_space )
+    {
+        std::cout << "use nullspace in petsc\n";
         MatNullSpace nullsp;
 
-        MatNullSpaceCreate( PETSC_COMM_WORLD, PETSC_TRUE, 0, PETSC_NULL, &nullsp );
-        KSPSetNullSpace( M_ksp, nullsp );
+        ierr = MatNullSpaceCreate( PETSC_COMM_WORLD, PETSC_TRUE, 0, PETSC_NULL, &nullsp );
+        CHKERRABORT( this->worldComm().globalComm(),ierr );
+        ierr = KSPSetNullSpace( M_ksp, nullsp );
+        CHKERRABORT( this->worldComm().globalComm(),ierr );
         PETSc::MatNullSpaceDestroy( nullsp );
     }
+}
 
+template <typename T>
+void
+SolverLinearPetsc<T>::updateNullSpace( Mat A, Vec rhs )
+{
+    if ( !this->M_nullSpace ) return;
+    if ( this->M_nullSpace->size() == 0 ) return;
+
+    int ierr = 0;
+    int dimNullSpace = this->M_nullSpace->size();
+    std::vector<Vec> petsc_vec(dimNullSpace);
+    for ( int k = 0 ; k<dimNullSpace ; ++k )
+        petsc_vec[k] =  dynamic_cast<const VectorPetsc<T>*>( &this->M_nullSpace->basisVector(k) )->vec();
+
+#if 0
+    // reorthornomalisation with petsc
+    PetscScalar dots[5];
+    for (int i=0/*dim*/; i<dimNullSpace; i++) {
+        /* Orthonormalize vec[i] against vec[0:i-1] */
+        VecMDot(petsc_vec[i],i,petsc_vec.data(),dots);
+        for (int j=0; j<i; j++) dots[j] *= -1.;
+        VecMAXPY(petsc_vec[i],i,dots,petsc_vec.data()/*vec*/);
+        VecNormalize(petsc_vec[i],NULL);
+    }
+#endif
+
+
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 )
+    MatNullSpace nullsp;
+    ierr = MatNullSpaceCreate( this->worldComm(), PETSC_FALSE , dimNullSpace, petsc_vec.data()/*PETSC_NULL*/, &nullsp );
+    CHKERRABORT( this->worldComm().globalComm(),ierr );
+    //ierr = MatNullSpaceView( nullsp, PETSC_VIEWER_STDOUT_WORLD );
+    //CHKERRABORT( this->worldComm().globalComm(),ierr );
+
+    ierr = MatSetNullSpace(A,nullsp);
+    CHKERRABORT( this->worldComm().globalComm(),ierr );
+    //ierr = MatNullSpaceRemove(nullsp,rhs);
+    //CHKERRABORT( this->worldComm().globalComm(),ierr );
+
+    PETSc::MatNullSpaceDestroy( nullsp );
+#endif
+}
+
+template <typename T>
+void
+SolverLinearPetsc<T>::updateNearNullSpace( Mat A )
+{
+    if ( !this->M_nearNullSpace ) return;
+    if ( this->M_nearNullSpace->size() == 0 ) return;
+
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 )
+    int ierr = 0;
+    int dimNullSpace = this->M_nearNullSpace->size();
+    std::vector<Vec> petsc_vec(dimNullSpace);
+    for ( int k = 0 ; k<dimNullSpace ; ++k )
+        petsc_vec[k] =  dynamic_cast<const VectorPetsc<T>*>( &this->M_nearNullSpace->basisVector(k) )->vec();
+    MatNullSpace nullsp;
+    ierr = MatNullSpaceCreate( this->worldComm(), PETSC_FALSE , dimNullSpace, petsc_vec.data()/*PETSC_NULL*/, &nullsp );
+    CHKERRABORT( this->worldComm().globalComm(),ierr );
+    ierr = MatSetNearNullSpace( A, nullsp);
+    CHKERRABORT( this->worldComm().globalComm(),ierr );
+    PETSc::MatNullSpaceDestroy( nullsp );
+#endif
 }
 
 template <typename T>
