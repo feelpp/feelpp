@@ -324,7 +324,7 @@ private :
 struct ConfigureKSP : public ConfigurePCBase
 {
 public :
-    ConfigureKSP( KSP& ksp,WorldComm const& worldComm, std::string const& sub, std::string const& prefix );
+    //ConfigureKSP( KSP& ksp,WorldComm const& worldComm, std::string const& sub, std::string const& prefix );
     ConfigureKSP( KSP& ksp,WorldComm const& worldComm, std::string const& sub, std::string const& prefix,
                   std::vector<std::string> const& prefixOverwrite,
                   std::string const& kspType = "gmres", double rtol = 1e-13, size_type maxit=1000 );
@@ -341,7 +341,7 @@ private :
     size_type M_maxit;
     bool M_showMonitor,M_kspView;
     bool M_constantNullSpace;
-
+    int M_nRestartGMRES;
     //private :
 public :
     void runConfigureKSP( KSP& ksp ) const;
