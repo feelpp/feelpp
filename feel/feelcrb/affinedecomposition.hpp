@@ -6,6 +6,7 @@
 
 namespace Feel
 {
+
 template <typename EimDefinition, typename ModelType>
 class AffineDecomposition
 {
@@ -107,10 +108,6 @@ public:
     void addLhs( OperatorType const& ope, BetaType const& beta,
                  int const row=1, int const col=1 )
         {
-            // we initialize the ginac tools if not already done
-            if ( M_symbols_map.size() ==0)
-                buildSymbolsMap();
-
             // we resize the block AD and create the concerned block if necessary
             if ( row>M_A.size() )
                 M_A.resize( row );
@@ -127,10 +124,6 @@ public:
     void addOutput( FunctionalType const& fun, BetaType const& beta, int output,
                     int const row=1 )
         {
-            // we initialize the ginac tools if not already done
-            if ( M_symbols_map.size() ==0)
-                buildSymbolsMap();
-
             M_Nl = std::max( M_Nl, output+1 );
 
             if ( row>M_F.size() )
@@ -250,49 +243,27 @@ public:
             return M_F[row-1][output]->compute(q,m);
         }
 
+
     beta_vector_type betaMqm( parameter_type const& mu, double time=0, int row=1, int col=1 )
         {
-            return betaQm( M_M, mu, time, row, col );
+            fatalBlockCheck( M_M, row, col, "betaMqm" );
+            return M_M[row-1][col-1]->betaQm( mu, time );
         }
     beta_vector_type betaAqm( parameter_type const& mu, double time=0, int row=1, int col=1 )
         {
-            return betaQm( M_A, mu, time, row, col );
+            fatalBlockCheck( M_A, row, col, "betaAqm" );
+            return M_A[row-1][col-1]->betaQm( mu, time );
         }
     std::vector< beta_vector_type > betaFqm( parameter_type const& mu, double time=0, int row=1 )
         {
             std::vector< beta_vector_type > betaF;
 
             for ( int output=0; output<M_Nl; output++ )
-                betaF.push_back( betaQm( M_F, mu, time, row, output+1 ) );
-
+            {
+                fatalBlockCheck( M_F, row, output+1, "betaFqm");
+                betaF.push_back( M_F[row-1][output]->betaQm( mu, time ) );
+            }
             return betaF;
-        }
-    template <typename AdType>
-    beta_vector_type betaQm( AdType AD, parameter_type const& mu, double time, int row, int col )
-        {
-            fatalBlockCheck(AD, row, col, "betaQm");
-            if ( AD[row-1][col-1]->useGinacExpr() )
-            {
-                std::string symbol;
-                for( int i=0; i<M_model->ParameterSpaceDimension; i++ )
-                {
-                    symbol = symbol = ( boost::format("mu%1%") %i ).str();
-                    M_symbols_map[symbol]=mu(i);
-                }
-                M_symbols_map["t"]=time;
-
-                for ( int i=0; i<AD[row-1][col-1]->Q(); i++ )
-                    AD[row-1][col-1]->M_beta[i][0]
-                        = AD[row-1][col-1]->M_ginac[i].evaluate(M_symbols_map);
-
-                return AD[row-1][col-1]->M_beta;
-            }
-            else
-            {
-                CHECK( AD[row-1][col-1]->M_beta.size()>0 )<< "You did not fill betaMqm coefficient, you use either ginac expression or betaMqm() function to do so"<<std::endl;
-
-                return AD[row-1][col-1]->M_beta;
-            }
         }
 
     offline_merge_type offlineMerge( betaqm_type const& all_beta, bool only_time_dependent_terms,
@@ -418,14 +389,46 @@ private:
                     preAssembleMassMatrix();
 
                 M_beta.resize( M_Q );
+                M_beta_mode.resize( M_Q, BetaMode::SET );
                 for( int q=0; q<M_Q; q++ )
                 {
                     M_beta[q].resize( M_mMax[q] );
                     for( int m=0; m<M_mMax[q]; m++ )
                         M_beta[q][m]=1.;
                 }
-         }
+            }
 
+        beta_vector_type betaQm( parameter_type const& mu, double time )
+            {
+                if ( M_use_ginac_expr )
+                {
+                    std::string symbol;
+                    for( int i=0; i<M_model->ParameterSpaceDimension; i++ )
+                    {
+                        symbol = symbol = ( boost::format("mu%1%") %i ).str();
+                        M_symbols_map[symbol]=mu(i);
+                    }
+                    M_symbols_map["t"]=time;
+                }
+
+                for ( int q=0; q<M_Q; q++ )
+                {
+                    switch ( M_beta_mode[q] )
+                    {
+                    case BetaMode::GINAC :
+                        M_beta[q][0] = M_ginac[q].evaluate(M_symbols_map);
+                        break;
+
+                    case BetaMode::SET :
+                        break;
+
+                    default :
+                        CHECK( false )<< "You did not fill betaMqm coefficient\n, you can use either ginac expressions, eim or betaMqm() function to do so"<<std::endl;
+                        break;
+                    }
+                }
+                return M_beta;
+            }
 
         std::vector< std::vector< TensorType >> compute()
             {
@@ -568,27 +571,31 @@ private:
                 return F;
             }
 
-
         bool useOperatorsFree() { return M_use_operators_free; }
         bool useGinacExpr() { return M_use_ginac_expr; }
 
-        /// beta coefficients
-        beta_vector_type M_beta;
-        /// ginac expressions
-        std::vector< Expr< GinacEx<2> >> M_ginac;
 
     private:
+        enum BetaMode { NONE=0, GINAC=1, EIM=2, SET=3 };
+
         void newEntry( std::string symbol, std::string filename )
             {
-                M_use_ginac_expr = true;
-                if ( M_symbols_vec.size()==0 )
+                if ( !M_use_ginac_expr )
+                {
+                    M_use_ginac_expr=true;
                     buildSymbolsVector();
+                    buildSymbolsMap();
+                }
+
                 filename = "Ginac" + filename + std::to_string( M_Q );
                 M_Q++;
                 M_mMax.push_back( 1 );
                 M_ginac.push_back( expr( symbol,
                                          Symbols( M_symbols_vec ),
                                          filename ) );
+
+                M_beta_mode.push_back( BetaMode::GINAC );
+
                 // create zero betaQm
                 M_beta.resize( M_Q );
                 M_beta[M_Q-1].push_back(0);
@@ -745,7 +752,7 @@ private:
         };
 
 
-       void buildSymbolsVector()
+        void buildSymbolsVector()
             {
                 for( int i=0; i<M_model->ParameterSpaceDimension; i++)
                 {
@@ -754,6 +761,21 @@ private:
                 }
                 M_symbols_vec.push_back( "t" );
             }
+        void buildSymbolsMap()
+            {
+                for( int i=0; i<M_model->ParameterSpaceDimension; i++)
+                {
+                    std::string symbol = ( boost::format("mu%1%") %i ).str();
+                    M_symbols_map.insert( std::pair< std::string,double> (symbol,0) );
+                }
+                M_symbols_map.insert( std::pair< std::string,double> ("t",0) );
+            }
+
+        /// beta coefficients
+        beta_vector_type M_beta;
+        std::vector< BetaMode > M_beta_mode;
+        /// ginac expressions
+        std::vector< Expr< GinacEx<2> >> M_ginac;
 
         model_ptrtype M_model;
         /// number of terms
@@ -768,6 +790,9 @@ private:
         bool M_use_operators_free;
         const int M_row;
         const int M_col;
+
+        /// Ginac tools
+        std::map<std::string,double> M_symbols_map;
         std::vector< std::string > M_symbols_vec;
 
         bool M_use_ginac_expr;
@@ -776,15 +801,6 @@ private:
     /**
      * Initialize Ginac tools
      */
-    void buildSymbolsMap()
-        {
-            for( int i=0; i<M_model->ParameterSpaceDimension; i++)
-            {
-                std::string symbol = ( boost::format("mu%1%") %i ).str();
-                M_symbols_map.insert( std::pair< std::string,double> (symbol,0) );
-            }
-            M_symbols_map.insert( std::pair< std::string,double> ("t",0) );
-        }
     template <typename ContainerType>
     void fatalBlockCheck( ContainerType& vec, int row, int col, std::string name ) const
         {
@@ -810,8 +826,6 @@ private:
     std::vector< std::vector< oneblockmatrix_ptrtype >> M_A; // rowXcol
     std::vector< std::vector< oneblockvector_ptrtype >> M_F; // rowXoutput
 
-    /// Ginac tools
-    std::map<std::string,double> M_symbols_map;
 }; // class AffineDecompostion
 
 

@@ -342,7 +342,7 @@ public:
             return beta_coeff;
         }
 
-    virtual steady_betaqm_type BetaQm( element_type const& T, parameter_type const& mu )
+    virtual steady_betaqm_type computeBetaQm( element_type const& T, parameter_type const& mu )
         {
             steady_betaqm_type dummy;
             throw std::logic_error( "Since youre model is not linear (neither time dependent) you have to implement the function BetaQm( u, mu ) ");
@@ -366,7 +366,7 @@ public:
 
             if ( !is_time_dependent )
             {
-                steady_beta_coeff = BetaQm( T, mu );
+                steady_beta_coeff = computeBetaQm( T, mu );
                 betaM.resize( Qm() );
                 for ( int q=0; q<betaM.size(); q++ )
                     betaM[q].push_back( 1 );
