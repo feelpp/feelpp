@@ -60,8 +60,7 @@
 
 namespace Feel
 {
-namespace detail
-{
+//namespace detail{
 struct MemoryUsage
 {
     MemoryUsage()
@@ -185,6 +184,15 @@ public:
      */
     Environment( int& argc, char** &argv );
 
+    Environment( int argc, char** argv,
+#if BOOST_VERSION >= 105500
+                 mpi::threading::level lvl,
+#endif
+                 po::options_description const& desc,
+                 po::options_description const& desc_lib,
+                 AboutData const& about,
+                 std::string directory );
+    
 #if defined(FEELPP_HAS_BOOST_PYTHON) && defined(FEELPP_ENABLE_PYTHON_WRAPPING)
     Environment( boost::python::list arg );
 #endif
@@ -204,89 +212,30 @@ public:
 
     template <class ArgumentPack>
     Environment( ArgumentPack const& args )
-    {
-        char** argv = args[_argv];
-        int argc = args[_argc];
-        S_desc_app = boost::shared_ptr<po::options_description>( new po::options_description( args[_desc|Feel::feel_nooptions()] ) );
-        S_desc_lib = boost::shared_ptr<po::options_description>( new po::options_description( args[_desc_lib | Feel::feel_options()] ) );
-        AboutData about = args[_about| makeAbout( argv[0] )];
-        S_desc = boost::shared_ptr<po::options_description>( new po::options_description( ) );
-        S_desc->add( *S_desc_app );
-
-        // try to see if the feel++ lib options are already in S_desc_app, if yes then we do not add S_desc_lib
-        // otherwise we will have duplicated options
-        std::vector<boost::shared_ptr<po::option_description>> opts = Environment::optionsDescriptionApplication().options();
-        auto it = std::find_if( opts.begin(), opts.end(),
-                                []( boost::shared_ptr<po::option_description> const&o )
-        {
-            return o->format_name().erase( 0,2 ) == "backend";
-        } );
-
-        if   ( it == opts.end() )
-            S_desc->add( *S_desc_lib );
-
-        S_desc->add( file_options( about.appName() ) );
-        S_desc->add( generic_options() );
-
-        std::cout << "Environment(ArgumentPack): " << boost::mpi::environment::initialized() << std::endl;
-#if BOOST_VERSION >= 105500
-#if 0
-        if(soption( _name="mpi.threading-level") == "single")
-        {
-            std::unique_ptr<boost::mpi::environment> bMPIEnv(new boost::mpi::environment(argc, argv, boost::mpi::threading::single, false));
-            M_env = std::move(bMPIEnv);
-        }
-        else if(soption( _name="mpi.threading-level") == "funneled")
-        {
-            std::unique_ptr<boost::mpi::environment> bMPIEnv(new boost::mpi::environment(argc, argv, boost::mpi::threading::funneled, false));
-            M_env = std::move(bMPIEnv);
-        }
-        else if(soption( _name="mpi.threading-level") == "serialized")
-        {
-            std::unique_ptr<boost::mpi::environment> bMPIEnv(new boost::mpi::environment(argc, argv, boost::mpi::threading::serialized, false));
-            M_env = std::move(bMPIEnv);
-        }
-        else if(soption( _name="mpi.threading-level") == "multiple")
-        {
-            std::unique_ptr<boost::mpi::environment> bMPIEnv(new boost::mpi::environment(argc, argv, boost::mpi::threading::multiple, false));
-            M_env = std::move(bMPIEnv);
-        }
-        else
-        {
+        :
+        Environment( args[_argc],
+                     args[_argv],
+#if BOOST_VERSION >= 105500                     
+                     args[_threading|mpi::threading::single],
 #endif
-            std::unique_ptr<boost::mpi::environment> bMPIEnv(new boost::mpi::environment(argc, argv, false));
-            M_env = std::move(bMPIEnv);
-//        }
-#else
-        std::unique_ptr<boost::mpi::environment> bMPIEnv(new boost::mpi::environment(false));
-        M_env = std::move(bMPIEnv);
-#endif
-        std::cout << "Environment(ArgumentPack): " << boost::mpi::environment::initialized() << std::endl;
-
-
-        init( argc, argv, *S_desc, *S_desc_lib, about );
-
-        if ( S_vm.count( "nochdir" ) == 0 )
-        {
-            std::string defaultdir = about.appName();
-
-            if ( S_vm.count( "directory" ) )
-                defaultdir = S_vm["directory"].as<std::string>();
-
-            std::string d = args[_directory|defaultdir];
-            LOG( INFO ) << "change directory to " << d << "\n";
-            boost::format f( d );
-            changeRepository( _directory=f );
-        }
-    }
-
-#if defined ( FEELPP_HAS_PETSC_H )
-    void initPetsc( int * argc = 0, char *** argv = NULL );
-#endif
-
-    void init( int argc, char** argv, po::options_description const& desc,
-               po::options_description const& desc_lib, AboutData const& about );
-
+                     args[_desc|feel_nooptions()],
+                     args[_desc_lib | feel_options()],
+                     args[_about| makeAbout( args[_argv][0] )],
+                     args[_directory|args[_about| makeAbout( args[_argv][0] )].appName()] )
+        {}
+    BOOST_PARAMETER_CONSTRUCTOR(
+        Environment, ( Environment ), tag,
+        ( required
+          ( argc,* )
+          ( argv,* ) )
+        ( optional
+          ( desc,* )
+          ( desc_lib,* )
+          ( about,* )
+          ( threading,(mpi::threading::level) )
+          ( directory,( std::string ) )
+          ) ) // no semicolon
+    
     /** Shuts down the Feel environment.
      *
      *  If this @c Environment object was used to initialize the Feel
@@ -628,6 +577,12 @@ private:
     //! change the directory where the results are stored
     static void changeRepositoryImpl( boost::format fmt, std::string const& logfile, bool add_subdir_np, WorldComm const& worldcomm );
 
+#if defined ( FEELPP_HAS_PETSC_H )
+    void initPetsc( int * argc = 0, char *** argv = NULL );
+#endif
+
+    
+
     //! process command-line/config-file options
     static void doOptions( int argc, char** argv,
                            po::options_description const& desc,
@@ -684,10 +639,10 @@ private:
     static hwloc_topology_t S_hwlocTopology;
 #endif
 };
-} // detail
+//} // detail
 
 
-
+#if 0
 class Environment : public detail::Environment
 {
 public:
@@ -700,10 +655,11 @@ public:
           ( desc,* )
           ( desc_lib,* )
           ( about,* )
+          ( threading,* )
           ( directory,( std::string ) )
         ) ) // no semicolon
 };
-
+#endif
 
 BOOST_PARAMETER_FUNCTION(
     ( po::variable_value ), option, tag,
