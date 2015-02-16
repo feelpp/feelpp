@@ -31,6 +31,9 @@ public:
 
     typedef typename model_type::parameter_type parameter_type;
 
+    typedef typename model_type:: form2_type form2_type;
+    typedef typename model_type:: form1_type form1_type;
+
     typedef typename model_type::operator_type operator_type;
     typedef boost::shared_ptr<operator_type> operator_ptrtype;
     typedef typename model_type::functional_type functional_type;
@@ -78,17 +81,14 @@ public:
             init();
         }
 
-
-
-
     /**
      * Initialization of the affine decomposition
      */
     void init()
         {}
 
-    template < typename OperatorType >
-    void addMass( OperatorType const& ope, std::string const& symbol,
+    template < typename OperatorType, typename BetaType >
+    void addMass( OperatorType const& ope, BetaType const& beta,
                   int const row=1, int const col=1 )
         {
             // we resize the block AD and create the concerned block if necessary
@@ -100,12 +100,11 @@ public:
                 M_M[row-1][col-1] = oneblockmatrix_ptrtype ( new oneblockmatrix_type(M_model,row,col) );
 
             std::string filename = ( boost::format( "M%1%%2%-" ) %row %col ) .str();
-            M_M[row-1][col-1]->add( ope, symbol, filename );
-
+            M_M[row-1][col-1]->add( ope, beta, filename );
         }
 
-    template < typename OperatorType >
-    void addLhs( OperatorType const& ope, std::string const& symbol,
+    template < typename OperatorType, typename BetaType >
+    void addLhs( OperatorType const& ope, BetaType const& beta,
                  int const row=1, int const col=1 )
         {
             // we initialize the ginac tools if not already done
@@ -121,11 +120,11 @@ public:
                 M_A[row-1][col-1] = oneblockmatrix_ptrtype ( new oneblockmatrix_type(M_model,row,col) );
 
             std::string filename = ( boost::format( "A%1%%2%-" ) %row %col ) .str();
-            M_A[row-1][col-1]->add( ope, symbol, filename );
+            M_A[row-1][col-1]->addOpe( ope, beta, filename );
         }
 
-    template < typename FunctionalType >
-    void addOutput( FunctionalType const& fun, std::string const& symbol, int output,
+    template < typename FunctionalType, typename BetaType >
+    void addOutput( FunctionalType const& fun, BetaType const& beta, int output,
                     int const row=1 )
         {
             // we initialize the ginac tools if not already done
@@ -141,7 +140,7 @@ public:
             if ( !M_F[row-1][output] )
                 M_F[row-1][output] = oneblockvector_ptrtype ( new oneblockvector_type(M_model,row) );
             std::string filename = ( boost::format( "F%1%-%2%-" ) %row %output ) .str();
-            M_F[row-1][output]->add( fun, symbol, filename );
+            M_F[row-1][output]->addFun( fun, beta, filename );
         }
 
     void initializeMassMatrix( int row=1, int col=1 )
@@ -330,7 +329,7 @@ private:
     public:
         static const bool is_matrix = std::is_same<TensorType,sparse_matrix_ptrtype>::value;
 
-        OneBlockAD( model_ptrtype model, int row, int col=0 ) :
+        OneBlockAD( model_ptrtype model, int const row, int const col=0 ) :
             M_model(model),
             M_Q( 0 ),
             M_use_operators_free( false ),
@@ -339,31 +338,63 @@ private:
             M_use_ginac_expr( false )
             {}
 
-        void add( TensorType const& mat, std::string const& symbol , std::string filename )
+        template <typename BetaType>
+        void add( TensorType const& tensor, BetaType const& beta, std::string filename )
             {
-                newEntry( symbol, filename );
+                newEntry( beta, filename );
                 M_Mqm.resize( M_Q );
-                M_Mqm[M_Q-1].push_back( mat );
+                M_Mqm[M_Q-1].push_back( tensor );
             }
-        void add( operator_ptrtype const& ope, std::string const& symbol , std::string filename )
+
+        template <typename BetaType>
+        void addOpe( form2_type const& form2, BetaType const& beta, std::string filename )
+            {
+                add( form2.matrixPtr(), beta, filename );
+            }
+        template <typename BetaType>
+        void addOpe( sparse_matrix_ptrtype mat, BetaType const& beta, std::string filename )
+            {
+                add( mat, beta, filename );
+            }
+        template <typename ExprType, typename BetaType>
+        void addOpe( ExprType const& expr, BetaType const& beta , std::string filename )
             {
                 M_use_operators_free = true;
+                auto ope = opLinearFree( _domainSpace=M_model->functionSpace(M_col-1),
+                                         _imageSpace=M_model->functionSpace(M_row-1),
+                                         _expr=expr );
+
                 if ( !M_composite )
                     M_composite = opLinearComposite( _imageSpace=M_model->functionSpace(M_row-1),
                                                      _domainSpace=M_model->functionSpace(M_col-1) );
 
-                newEntry( symbol, filename );
+                newEntry( beta, filename );
                 filename += std::to_string( M_Q );
                 ope->setName( filename );
                 M_composite->addElement( {M_Q-1,0}, ope );
             }
-        void add( functional_ptrtype const& fun, std::string const& symbol , std::string filename )
+
+        template <typename BetaType>
+        void addFun( form1_type const& form1, BetaType const& beta, std::string filename )
             {
+                add( form1.vectorPtr(), beta, filename );
+            }
+        template <typename BetaType>
+        void addFun( vector_ptrtype const& vec, BetaType const& beta, std::string filename )
+            {
+                add( vec, beta, filename );
+            }
+        template <typename ExprType, typename BetaType>
+        void addFun( ExprType const& expr, BetaType const& beta, std::string filename )
+            {
+                auto fun = functionalLinearFree( _space=M_model->functionSpace(M_row-1),
+                                                 _expr=expr );
+
                 M_use_operators_free = true;
                 if ( !M_composite )
                     M_composite = functionalLinearComposite( _space=M_model->functionSpace(M_row-1) );
 
-                newEntry( symbol, filename );
+                newEntry( beta, filename );
                 filename += std::to_string( M_Q );
                 fun->setName( filename );
                 M_composite->addElement( {M_Q-1,0}, fun );
@@ -735,8 +766,8 @@ private:
         CompositeType M_composite;
 
         bool M_use_operators_free;
-        int M_row;
-        int M_col;
+        const int M_row;
+        const int M_col;
         std::vector< std::string > M_symbols_vec;
 
         bool M_use_ginac_expr;

@@ -222,13 +222,12 @@ public:
             if ( M_is_initialized )
                 return;
 
-
             M_mode = mode;
-            M_AD = affinedecomposition_ptrtype(
-                new affinedecomposition_type( this->shared_from_this() ) );
+            M_AD = affinedecomposition_ptrtype( new affinedecomposition_type( this->shared_from_this() ) );
 
             LOG(INFO)<< "Model Initialization";
             initModel();
+
             if ( !is_time_dependent )
                 M_AD->initializeMassMatrix();
 
@@ -251,7 +250,7 @@ public:
             }
         }
 
-    void setFunctionSpaces( functionspace_ptrtype Vh, int row=1 )
+    void setFunctionSpaces( functionspace_ptrtype Vh )
         {
             Xh = Vh;
             XN = rbfunctionspace_type::New( _model=this->shared_from_this() );
@@ -260,92 +259,37 @@ public:
                           << "Number of local dof : " << Xh->nLocalDof() << std::endl;
         }
 
-    template<typename ExprType>
-    void addMass( ExprType const& expr, std::string const& symbol,
-                  int const row=1, int const col=1 )
+    template <typename OpeType, typename BetaType>
+    void addMass( OpeType const& ope, BetaType const& beta, int const row=1, int const col=1 )
         {
-            auto ope = opLinearFree( _domainSpace=functionSpace(col-1),
-                                     _imageSpace=functionSpace(row-1),
-                                     _expr=expr );
-            M_AD->addMass( ope, symbol, row, col) ;
+            M_AD->addMass( ope, beta, row, col );
         }
-    void addMass( sparse_matrix_ptrtype const& mat, std::string const& symbol,
-                  int row=1, int col=1 )
+    template <typename OpeType, typename BetaType>
+    void addLhs( OpeType const& ope, BetaType const& beta, int const row=1, int const col=1 )
         {
-            M_AD->addMass( mat, symbol, row, col );
+            M_AD->addLhs( ope, beta, row, col );
         }
-    void addMass( form2_type const& form2, std::string const& symbol,
-                  int row=1, int col=1 )
+    template <typename FunType, typename BetaType>
+    void addRhs( FunType const& fun, BetaType const& beta, int const row=1 )
         {
-            M_AD->addMass( form2.matrixPtr(), symbol,row, col );
+            M_AD->addOutput( fun, beta, 0 , row) ;
         }
-
-    template<typename ExprType>
-    void addLhs( ExprType const& expr, std::string const & symbol,
-                 int const row=1, int const col=1 )
+    template <typename FunType, typename BetaType>
+    void addOutput( FunType const& fun, BetaType const& beta, int output=1, int const row=1 )
         {
-            auto ope = opLinearFree( _domainSpace=functionSpace(col-1),
-                                     _imageSpace=functionSpace(row-1),
-                                     _expr=expr );
-            M_AD->addLhs( ope, symbol, row, col) ;
+            M_AD->addOutput( fun, beta, output, row) ;
         }
-    void addLhs( sparse_matrix_ptrtype const& mat, std::string const& symbol,
-                 int row=1, int col=1 )
-        {
-            M_AD->addLhs( mat, symbol, row, col );
-        }
-    void addLhs( form2_type const& form2, std::string const& symbol,
-                 int row=1, int col=1 )
-        {
-            M_AD->addLhs( form2.matrixPtr(), symbol, row, col );
-        }
-
-    template<typename ExprType>
-    void addRhs( ExprType const& expr, std::string const& symbol,
-                 int const row=1 )
-        {
-            auto fun = functionalLinearFree( _space=functionSpace(row-1),
-                                             _expr=expr );
-            M_AD->addOutput( fun, symbol, 0 , row) ;
-        }
-    void addRhs( vector_ptrtype const& vec, std::string const& symbol,
-                 int row=1 )
-        {
-            M_AD->addOutput( vec, symbol, 0, row );
-        }
-
-    void addRhs( form1_type const& form1, std::string const& symbol, int row=1  )
-        {
-            M_AD->addOutput( form1.vectorPtr(), symbol, 0, row );
-        }
-
-    template<typename ExprType>
-    void addOutput( ExprType const& expr, std::string const& symbol, int output=1, int const row=1 )
-        {
-            auto fun = functionalLinearFree( _space=functionSpace(row-1),
-                                             _expr=expr );
-            M_AD->addOutput( fun, symbol, output, row) ;
-        }
-    void addOutput( vector_ptrtype const& vec, std::string const& symbol, int output=1, int row=1 )
-        {
-            M_AD->addOutput( vec, symbol, output, row );
-        }
-    void addOutput( form1_type const& form1, std::string const& symbol, int output=1, int row=1 )
-        {
-            M_AD->addOutput( form1.vectorPtr(), symbol, output, row );
-        }
-
 
 
     parameterspace_ptrtype parameterSpace()
         {
             return Dmu;
         }
-    functionspace_ptrtype functionSpace( int num=1 ) const
+    virtual functionspace_ptrtype functionSpace( int num=1 ) const
         {
             return Xh;
         }
-    rbfunctionspace_ptrtype rBFunctionSpace( int num=1 )
+    virtual rbfunctionspace_ptrtype rBFunctionSpace( int num=1 )
         {
             return XN;
         }
