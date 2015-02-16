@@ -179,8 +179,18 @@ public:
     typedef typename std::vector< std::vector < element_ptrtype > > initial_guess_type;
 
     typedef std::vector< std::vector< value_type > > beta_vector_type;
-    typedef AffineDecomposition<EimDefinition,self_type> affinedecomposition_type;
-    typedef boost::shared_ptr<affinedecomposition_type> affinedecomposition_ptrtype;
+
+    typedef BlockAD< self_type,sparse_matrix_ptrtype,operatorcomposite_ptrtype > blockmatrix_ad_type;
+    typedef boost::shared_ptr< blockmatrix_ad_type > blockmatrix_ad_ptrtype;
+    typedef BlockAD< self_type,vector_ptrtype,functionalcomposite_ptrtype > blockvector_ad_type;
+    typedef boost::shared_ptr< blockvector_ad_type > blockvector_ad_ptrtype;
+
+    typedef std::vector< std::vector< sparse_matrix_ptrtype >> affine_matrix_type;
+    typedef std::vector< std::vector< affine_matrix_type >> block_affine_matrix_type;
+    typedef std::vector< std::vector < vector_ptrtype >> affine_vector_type;
+    typedef std::vector< affine_vector_type > affine_output_type;
+    typedef std::vector< affine_output_type > block_affine_output_type;
+
 
     typedef boost::tuple<
         std::vector< std::vector<sparse_matrix_ptrtype> >,//Mq
@@ -212,6 +222,7 @@ public:
         M_backend_dual( backend( _name="backend-dual") ),
         M_backend_l2( backend( _name="backend-l2" ) ),
         Dmu( new parameterspace_type ),
+        M_Nl( 0 ),
         M_has_eim( false )
         {}
 
@@ -223,15 +234,13 @@ public:
                 return;
 
             M_mode = mode;
-            M_AD = affinedecomposition_ptrtype( new affinedecomposition_type( this->shared_from_this() ) );
 
             LOG(INFO)<< "Model Initialization";
             initModel();
 
             if ( !is_time_dependent )
-                M_AD->initializeMassMatrix();
+                initializeMassMatrix();
 
-            //M_AD->check();
             checkBdf();
 
             u = Xh->element();
@@ -262,22 +271,39 @@ public:
     template <typename OpeType, typename BetaType>
     void addMass( OpeType const& ope, BetaType const& beta, int const row=1, int const col=1 )
         {
-            M_AD->addMass( ope, beta, row, col );
+            createMatBlock( M_M, row, col );
+            std::string filename = ( boost::format( "M%1%%2%-" ) %row %col ) .str();
+            M_M[row-1][col-1]->addOpe( ope, beta, filename );
         }
     template <typename OpeType, typename BetaType>
     void addLhs( OpeType const& ope, BetaType const& beta, int const row=1, int const col=1 )
         {
-            M_AD->addLhs( ope, beta, row, col );
+            createMatBlock( M_A, row, col );
+            std::string filename = ( boost::format( "A%1%%2%-" ) %row %col ) .str();
+            M_A[row-1][col-1]->addOpe( ope, beta, filename );
         }
     template <typename FunType, typename BetaType>
     void addRhs( FunType const& fun, BetaType const& beta, int const row=1 )
         {
-            M_AD->addOutput( fun, beta, 0 , row) ;
+            int output = 0;
+            M_Nl = std::max( M_Nl, output+1 );
+            createVecBlock( M_F, output, row );
+            std::string filename = ( boost::format( "F%1%-%2%-" ) %row %output ) .str();
+            M_F[row-1][output]->addFun( fun, beta, filename );
         }
     template <typename FunType, typename BetaType>
     void addOutput( FunType const& fun, BetaType const& beta, int output=1, int const row=1 )
         {
-            M_AD->addOutput( fun, beta, output, row) ;
+            M_Nl = std::max( M_Nl, output+1 );
+            createVecBlock( M_F, output, row );
+            std::string filename = ( boost::format( "F%1%-%2%-" ) %row %output ) .str();
+            M_F[row-1][output]->addFun( fun, beta, filename );
+        }
+
+    void initializeMassMatrix( int row=1, int col=1 )
+        {
+            createMatBlock( M_M, row, col );
+            M_M[row-1][col-1]->initializeMassMatrix();
         }
 
 
@@ -292,11 +318,6 @@ public:
     virtual rbfunctionspace_ptrtype rBFunctionSpace( int num=1 )
         {
             return XN;
-        }
-
-    affinedecomposition_ptrtype AD()
-        {
-            return M_AD;
         }
 
     bool isSteady()
@@ -319,7 +340,7 @@ public:
 
     virtual steady_betaqm_type computeBetaQm( parameter_type const& mu )
         {
-            return boost::make_tuple( M_AD->betaAqm(mu), M_AD->betaFqm(mu) );
+            return boost::make_tuple( betaAqm(mu), betaFqm(mu) );
         }
 
     virtual betaqm_type computeBetaQm( parameter_type const& mu, double time,
@@ -331,14 +352,14 @@ public:
             if ( !is_time_dependent )
             {
                 steady_beta_coeff = computeBetaQm( mu );
-                beta_coeff = boost::make_tuple( M_AD->betaMqm( mu, time ),
+                beta_coeff = boost::make_tuple( betaMqm( mu, time ),
                                                 steady_beta_coeff.template get<0>(),
                                                 steady_beta_coeff.template get<1>() );
             }
             else
-                beta_coeff = boost::make_tuple( M_AD->betaMqm( mu, time ),
-                                                M_AD->betaAqm( mu, time ),
-                                                M_AD->betaFqm( mu, time ) );
+                beta_coeff = boost::make_tuple( betaMqm( mu, time ),
+                                                betaAqm( mu, time ),
+                                                betaFqm( mu, time ) );
             return beta_coeff;
         }
 
@@ -370,7 +391,7 @@ public:
                 betaM.resize( Qm() );
                 for ( int q=0; q<betaM.size(); q++ )
                     betaM[q].push_back( 1 );
-                beta_coeff = boost::make_tuple( M_AD->betaMqm(mu, time ),
+                beta_coeff = boost::make_tuple( betaMqm(mu, time ),
                                                 steady_beta_coeff.template get<0>(),
                                                 steady_beta_coeff.template get<1>() );
             }
@@ -379,81 +400,126 @@ public:
 
             return beta_coeff;
         }
+    beta_vector_type betaMqm( parameter_type const& mu, double time=0,
+                              int const& row=1, int const& col=1 )
+        {
+            fatalBlockCheck( M_M, row, col, "betaMqm" );
+            return M_M[row-1][col-1]->betaQm( mu, time );
+        }
+    beta_vector_type betaAqm( parameter_type const& mu, double time=0,
+                              int const& row=1, int const& col=1 )
+        {
+            fatalBlockCheck( M_A, row, col, "betaAqm" );
+            return M_A[row-1][col-1]->betaQm( mu, time );
+        }
+    std::vector< beta_vector_type > betaFqm( parameter_type const& mu, double time=0,
+                                             int const& row=1 )
+        {
+            std::vector< beta_vector_type > betaF;
+
+            for ( int output=0; output<M_Nl; output++ )
+            {
+                fatalBlockCheck( M_F, row, output+1, "betaFqm");
+                betaF.push_back( M_F[row-1][output]->betaQm( mu, time ) );
+            }
+            return betaF;
+        }
+
+
 
     virtual affine_decomposition_type computeAffineDecomposition()
         {
-            return M_AD->compute();
+            int row=1;
+            int col=1;
+            fatalBlockCheck( M_A, row, col, "compute");
+            fatalBlockCheck( M_F, row, "compute");
+            fatalBlockCheck( M_M, row, col, "compute");
+
+            affine_output_type Fqm;
+            for ( int output=0; output<M_Nl; output++)
+                Fqm.push_back( M_F[row-1][output]->compute() );
+
+            return boost::make_tuple( M_M[row-1][col-1]->compute(),
+                                      M_A[row-1][col-1]->compute(),
+                                      Fqm );
         }
 
 
     void countAffineDecompositionTerms()
         {
-            M_AD->count();
         }
-    virtual size_type Qm() const
+    virtual size_type Qm( int const row=1, int const col=1 ) const
         {
-            return M_AD->Qm();
+            fatalBlockCheck( M_M, row, col, "Qm");
+            return M_M[row-1][col-1]->Q() ;
         }
-    virtual size_type Ql( int l ) const
+    virtual size_type Qa( int const row=1, int const col=1 ) const
         {
-            return M_AD->Ql(l);
+            fatalBlockCheck(M_A, row, col, "Qa");
+            return M_A[row-1][col-1]->Q();
         }
-    virtual size_type Qa() const
+    virtual size_type Ql( int output, int const row=1 ) const
         {
-            return M_AD->Qa();
+            fatalBlockCheck(M_F, row, output+1, "Ql" );
+            return M_F[row-1][output]->Q();
         }
     size_type Nl() const
         {
-            return M_AD->Nl();
+            return M_Nl;
         }
 
 
-    int mMaxF( int output, int q )
+    int mMaxM( int q, int const row=1, int const col=1 )
         {
-            return M_AD->mMaxF( output, q );
+            fatalBlockCheck(M_M, row, col, "mMaxM" );
+            return M_M[row-1][col-1]->mMax(q);
         }
-    int mMaxM( int q )
+    int mMaxA( int q, int const row=1, int const col=1 )
         {
-            return M_AD->mMaxM(q);
+            fatalBlockCheck(M_A, row, col, "mMaxA" );
+            return M_A[row-1][col-1]->mMax(q);
         }
-    int mMaxA( int q )
+    int mMaxF( int output, int q, int const row=1 )
         {
-            return M_AD->mMaxA(q);
+            fatalBlockCheck(M_F, row, output+1, "mMaxF");
+            return M_F[row-1][output]->mMax(q);
         }
 
     sparse_matrix_ptrtype Mqm( uint16_type q, uint16_type m, bool transpose = false,
                                int row=1, int col=1) const
         {
-            return M_AD->M( q, m, transpose, row, col );
+            fatalBlockCheck(M_M, row, col, "M");
+            return M_M[row-1][col-1]->compute( q, m, transpose );
         }
     value_type Mqm( uint16_type q, uint16_type m,
                     element_type const& xi_i, element_type const& xi_j, bool transpose = false,
-                    int row=1, int col=1) const
+                    int const& row=1, int const&  col=1) const
         {
-            return M_AD->M( q, m, false, row, col)->energy( xi_j, xi_i, transpose );
-        }
-    sparse_matrix_ptrtype Aqm( uint16_type q, uint16_type m, bool transpose = false,
-                                     int row=1, int col=1) const
-        {
-            return M_AD->A( q, m, transpose, row, col );
+            return Mqm( q, m, transpose, row, col )->energy( xi_j, xi_i, transpose );
         }
 
+    sparse_matrix_ptrtype Aqm( uint16_type q, uint16_type m, bool transpose = false,
+                                     int const& row=1, int const& col=1) const
+        {
+            fatalBlockCheck(M_A, row, col, "Aqm");
+            return M_A[row-1][col-1]->compute( q, m, transpose );
+        }
     value_type Aqm( uint16_type q, uint16_type m,
                     element_type const& xi_i, element_type const& xi_j, bool transpose = false,
-                    int row=1, int col=1 ) const
+                    int const& row=1, int const& col=1 ) const
         {
-            return M_AD->A( q, m, false, row, col )->energy( xi_j, xi_i, transpose);
+            return Aqm( q, m, transpose, row, col )->energy( xi_j, xi_i, transpose );
         }
 
-    vector_ptrtype Fqm( uint16_type l, uint16_type q, int m=0,
-                        int row=1 ) const
+    vector_ptrtype Fqm( uint16_type output, uint16_type q, int m=0, int const& row=1 ) const
         {
-            return M_AD->F( l, q, m, row );
+            fatalBlockCheck( M_F, row, output+1, "F" );
+            return M_F[row-1][output]->compute(q,m);
         }
-    value_type Fqm( uint16_type l, uint16_type q,  uint16_type m, element_type const& xi,
-                    int row=1 )
+    value_type Fqm( uint16_type output, uint16_type q,  uint16_type m, element_type const& xi,
+                    int const& row=1 )
         {
-            return inner_product( *(M_AD->F( l, q, m, row )), xi );
+            return inner_product( *Fqm( output, q, m, row ), xi );
         }
 
 
@@ -507,8 +573,6 @@ public:
         gmsh.setNumberOfPartitions( N );
         gmsh.rebuildPartitionMsh( mshfile /*mesh with 1 partition*/, target /*mesh with N partitions*/ );
     }
-
-
 
 
     bool hasEim()
@@ -1552,7 +1616,7 @@ public:
                                bool only_time_dependent_terms=false )
         {
             auto all_beta = this->computeBetaQm( mu , time , only_time_dependent_terms );
-            return M_AD->offlineMerge( all_beta, only_time_dependent_terms);
+            return offlineMerge( all_beta, only_time_dependent_terms);
         }
     offline_merge_type update( parameter_type const& mu, element_type const& T, double time=0,
                                bool only_time_dependent_terms=false )
@@ -1561,8 +1625,34 @@ public:
             mu.check();
 #endif
             auto all_beta = this->computeBetaQm(  T , mu , time , only_time_dependent_terms );
-            return M_AD->offlineMerge( all_beta, only_time_dependent_terms);
+            return offlineMerge( all_beta, only_time_dependent_terms);
         }
+
+    offline_merge_type offlineMerge( betaqm_type const& all_beta, bool only_time_dependent_terms,
+                                     int const& row=1, int const& col=1 )
+        {
+            fatalBlockCheck( M_A, row, col, "offlineMerge" );
+            fatalBlockCheck( M_M, row, col, "offlineMerge" );
+
+            sparse_matrix_ptrtype A;
+            sparse_matrix_ptrtype M;
+            std::vector<vector_ptrtype> F( M_Nl );
+
+            if ( !only_time_dependent_terms )
+            {
+                M = M_M[row-1][col-1]->merge( all_beta.template get<0>() );
+                A = M_A[row-1][col-1]->merge( all_beta.template get<1>() );
+            }
+
+            for ( int output =0; output<M_Nl; output++ )
+            {
+                fatalBlockCheck( M_F, row, output+1, "offlineMerge" );
+                F[output] = M_F[row-1][output]->merge( all_beta.template get<2>()[output] );
+            }
+
+            return boost::make_tuple( M, A, F );
+        }
+
 
     std::vector< std::vector<element_ptrtype> > computeInitialGuessVAffineDecomposition( )
         {
@@ -1625,7 +1715,6 @@ public:
         }
     void assembleInitialGuessV( initial_guess_type & initial_guess, mpl::bool_<false> )
         {
-            using namespace Feel::vf;
             auto mesh = Xh->mesh();
 
             int q_max= this->QInitialGuess();
@@ -1650,6 +1739,48 @@ public:
 
 
 protected:
+    void createMatBlock( std::vector< std::vector< blockmatrix_ad_ptrtype >>& block,
+                         int const& row, int const& col )
+        {
+            if ( row>block.size() )
+                block.resize(row);
+            if ( col>block[row-1].size() )
+                block[row-1].resize(col);
+            if( !block[row-1][col-1] )
+                block[row-1][col-1] = blockmatrix_ad_ptrtype( new blockmatrix_ad_type( this->shared_from_this(), row, col) );
+        }
+
+    void createVecBlock( std::vector< std::vector< blockvector_ad_ptrtype >>& block,
+                         int const& output, int const& row )
+        {
+            if ( row>block.size() )
+                block.resize(row);
+            if ( output>=block[row-1].size() )
+                block[row-1].resize(output+1);
+            if( !block[row-1][output] )
+                block[row-1][output] = blockvector_ad_ptrtype( new blockvector_ad_type( this->shared_from_this(), row ) );
+        }
+
+    template <typename ContainerType>
+    void fatalBlockCheck( ContainerType const& vec, int row, int col, std::string name ) const
+        {
+            int maxRow = vec.size();
+            int maxCol = vec[maxRow-1].size();
+            CHECK( row<=maxRow && col<= maxCol )
+                << "[AD."<< name <<"()] Invalid block entries. You asked for "<< row <<","<<col
+                << " and actual size is "<<maxRow<<","<<maxCol<<std::endl;
+        }
+    template <typename ContainerType>
+    void fatalBlockCheck( ContainerType const& vec, int row, std::string name ) const
+        {
+            int maxRow = vec.size();
+            CHECK( row<=maxRow )<< "[AD."<< name <<"()] Invalid row number="<< row
+                                << " and max row number="<< maxRow << std::endl;
+        }
+
+
+
+
     bool M_is_initialized;
     CRBModelMode M_mode;
     backend_ptrtype M_backend;
@@ -1660,8 +1791,6 @@ protected:
     parameterspace_ptrtype Dmu;
     functionspace_ptrtype Xh;
     rbfunctionspace_ptrtype XN;
-
-    affinedecomposition_ptrtype M_AD;
 
     sparse_matrix_ptrtype M_inner_product_matrix;
     sparse_matrix_ptrtype M_mass_matrix;
@@ -1677,6 +1806,11 @@ protected:
     sparse_matrix_ptrtype M_monoM;
     std::vector<vector_ptrtype> M_monoF;
 
+    int M_Nl;
+    std::vector< std::vector< blockmatrix_ad_ptrtype >> M_M; // rowXcol
+    std::vector< std::vector< blockmatrix_ad_ptrtype >> M_A; // rowXcol
+    std::vector< std::vector< blockvector_ad_ptrtype >> M_F; // rowXoutput
+
 
     mutable std::vector< std::vector<element_ptrtype> > M_InitialGuessV;
     mutable std::vector< std::vector<vector_ptrtype> > M_InitialGuessVector;
@@ -1690,11 +1824,8 @@ protected:
 
     element_type u;
     element_type v;
+
 }; //class CRBModel
-
-
-
-
 
 } // namespace Feel
 

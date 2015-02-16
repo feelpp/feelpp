@@ -260,8 +260,6 @@ public:
                                                      >::type >::type >::type index_vector_type;
 
 
-    typedef typename model_type::affinedecomposition_type affinedecomposition_type;
-    typedef typename model_type::affinedecomposition_ptrtype affinedecomposition_ptrtype;
 
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
     mutable crbCLContext clContext_;
@@ -330,8 +328,7 @@ public:
         M_scmA( new scm_type( name+"_a", model , false /*not scm for mass mastrix*/ )  ),
         M_scmM( new scm_type( name+"_m", model , true /*scm for mass matrix*/ ) ),
         exporter( Exporter<mesh_type>::New( "BasisFunction" ) ),
-        M_database_contains_variance_info( boption("crb.save-information-for-variance")),
-        M_AD( model->AD() )
+        M_database_contains_variance_info( boption("crb.save-information-for-variance"))
     {
         this->setTruthModel( model );
 
@@ -1378,7 +1375,6 @@ protected:
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Jqm;
     std::vector< std::vector< std::vector<vector_ptrtype> > > M_Rqm;
 
-    affinedecomposition_ptrtype M_AD;
 };
 
 po::options_description crbOptions( std::string const& prefix = "" );
