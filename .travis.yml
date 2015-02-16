@@ -1,6 +1,7 @@
 os:
   - linux
-
+  - osx
+  
 git:
   depth: 1
   submodules: false
@@ -12,8 +13,8 @@ compiler:
 
 env:
 - BUILD="o2-ndebug" BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
-- BUILD="o1-ndebug" BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O1 -DNDEBUG"
 
+#- BUILD="g-debug" BUILDTYPE=Debug
 #- BUILDTYPE=Release TARGET=tutorial
 
 before_install:
@@ -36,34 +37,13 @@ before_install:
 - git submodule update --init --recursive contrib/ipopt
 - git submodule update --init --recursive quickstart
 
-cache:
-  directories:
-  - /usr/local/Cellar/libevent
-  - /usr/local/Cellar/open-mpi
-  - /usr/local/Cellar/cln
-  - /usr/local/Cellar/eigen
-  - /usr/local/Cellar/gmsh
-  - /usr/local/Cellar/veclibfort
-  - /usr/local/Cellar/scalapack
-  - /usr/local/Cellar/szip
-  - /usr/local/Cellar/hdf5
-  - /usr/local/Cellar/scotch5
-  - /usr/local/Cellar/mumps
-  - /usr/local/Cellar/tbb
-  - /usr/local/Cellar/suite-sparse
-  - /usr/local/Cellar/petsc
-  - /usr/local/Cellar/slepc
-  - /usr/local/Cellar/boost
-  - /usr/local/Cellar/ann
-  - /usr/local/Cellar/glpk
-
 install:
 - mkdir opt-$BUILD && cd opt-$BUILD && ../configure --build=$BUILDTYPE -v --cxxflags="$CXXFLAGS"
 
 script:
 - make -j16 feelpp_ginac
 - make -j2 feelpp
-- make $TARGET-check
+- if ! test "x$TARGET" = "x"; then make $TARGET-check; fi
 
 branches:
   only:
@@ -81,3 +61,4 @@ notifications:
 matrix:
   allow_failures:
   - gcc
+  - oxx
