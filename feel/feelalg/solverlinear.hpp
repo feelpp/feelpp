@@ -25,6 +25,7 @@
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feelalg/enums.hpp>
 #include <feel/feelalg/preconditioner.hpp>
+#include <feel/feelalg/nullspace.hpp>
 #include <feel/feelcore/traits.hpp>
 
 namespace Feel
@@ -247,6 +248,15 @@ public:
         M_preconditioner = preconditioner;
     }
 
+    void attachNullSpace( boost::shared_ptr<NullSpace<value_type> > const& ns )
+    {
+        M_nullSpace = ns;
+    }
+    void attachNearNullSpace( boost::shared_ptr<NullSpace<value_type> > const& ns )
+    {
+        M_nearNullSpace = ns;
+    }
+
     void setFieldSplitType( const FieldSplitType fst )
     {
         M_fieldSplit_type = fst;
@@ -407,6 +417,10 @@ protected:
      */
     preconditioner_ptrtype M_preconditioner;
 
+    /**
+     * Near Null Space
+     */
+    boost::shared_ptr<NullSpace<value_type> > M_nullSpace, M_nearNullSpace;
 
     FieldSplitType M_fieldSplit_type;
 

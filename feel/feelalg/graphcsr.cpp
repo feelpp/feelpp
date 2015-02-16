@@ -335,7 +335,7 @@ GraphCSR::updateDataMap( vf::BlocksBase<self_ptrtype> const & blockSet )
         else
             M_mapRow->setLastDofGlobalCluster(proc,  M_mapRow->firstDofGlobalCluster(proc) + M_mapRow->nLocalDofWithoutGhost(proc)-1 );
 
-        if ( M_mapCol->nLocalDofWithoutGhost() == 0 )
+        if ( M_mapCol->nLocalDofWithoutGhost(proc) == 0 )
             M_mapCol->setLastDofGlobalCluster(proc,  M_mapCol->firstDofGlobalCluster(proc) );
         else
             M_mapCol->setLastDofGlobalCluster(proc,  M_mapCol->firstDofGlobalCluster(proc) + M_mapCol->nLocalDofWithoutGhost(proc)-1 );

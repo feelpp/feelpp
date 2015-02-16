@@ -74,6 +74,8 @@ BackendPetsc<T>::solve( sparse_matrix_ptrtype const& A,
     if (!M_solver_petsc.initialized())
         M_solver_petsc.attachPreconditioner( this->M_preconditioner );
     M_solver_petsc.setConstantNullSpace( this->hasConstantNullSpace() );
+    M_solver_petsc.attachNullSpace( this->M_nullSpace );
+    M_solver_petsc.attachNearNullSpace( this->M_nearNullSpace );
     M_solver_petsc.setFieldSplitType( this->fieldSplitEnumType() );
     M_solver_petsc.setTolerances( _rtolerance=this->rTolerance(),
                                   _atolerance=this->aTolerance(),
@@ -107,6 +109,8 @@ BackendPetsc<T>::solve( sparse_matrix_type const& A,
     if (!M_solver_petsc.initialized())
         M_solver_petsc.attachPreconditioner( this->M_preconditioner );
     M_solver_petsc.setConstantNullSpace( this->hasConstantNullSpace() );
+    M_solver_petsc.attachNullSpace( this->M_nullSpace );
+    M_solver_petsc.attachNearNullSpace( this->M_nearNullSpace );
     M_solver_petsc.setFieldSplitType( this->fieldSplitEnumType() );
     M_solver_petsc.setTolerances( _rtolerance=this->rTolerance(),
                                   _atolerance=this->aTolerance(),
