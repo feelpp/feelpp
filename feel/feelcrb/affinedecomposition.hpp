@@ -268,7 +268,13 @@ public:
                                                _pattern=ope->pattern() );
                 ope->matPtr( matrix );
                 if ( transpose )
-                    return matrix->transpose();
+                {
+                    auto mt = backend()->newMatrix( _trial=ope->domainSpace(),
+                                                           _test=ope->dualImageSpace(),
+                                                           _pattern=ope->pattern() );
+                    matrix->transpose( mt );
+                    return mt;
+                }
             }
             else
             {
