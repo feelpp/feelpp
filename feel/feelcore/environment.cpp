@@ -104,8 +104,8 @@ bool IsGoogleLoggingInitialized();
 namespace Feel
 {
 
-namespace detail
-{
+//namespace detail
+//{
 FEELPP_NO_EXPORT
 std::pair<std::string, std::string>
 at_option_parser_2( std::string const&s )
@@ -694,19 +694,19 @@ Environment::parseAndStoreOptions( po::command_line_parser parser, bool extra_pa
         {
             LOG( ERROR ) << "  |- unrecognized option: " << s << "\n";
         }
-
-        std::vector<po::basic_option<char> >::iterator it = parsed->options.begin();
-        //std::vector<po::basic_option<char> >::iterator en  = parsed->options.end();
-        for ( ; it != parsed->options.end() ; )
+    }
+    std::vector<po::basic_option<char> >::iterator it = parsed->options.begin();
+    //std::vector<po::basic_option<char> >::iterator en  = parsed->options.end();
+    for ( ; it != parsed->options.end() ; )
+    {
+        if ( it->unregistered )
         {
-            if ( it->unregistered )
-            {
+            if ( Environment::isMasterRank() )
                 LOG( ERROR ) << "  |- remove " << it->string_key << " from Feel++ options management system"  << "\n";
-                it = parsed->options.erase( it );
-            }
-            else
-                ++it;
+            it = parsed->options.erase( it );
         }
+        else
+            ++it;
     }
 
     po::store( *parsed, S_vm );
@@ -901,8 +901,7 @@ Environment::doOptions( int argc, char** argv,
 
 Environment::Environment()
 {
-    std::unique_ptr<boost::mpi::environment> bMPIEnv(new boost::mpi::environment(false));
-    M_env = std::move(bMPIEnv);
+    M_env = std::make_unique<boost::mpi::environment>( false );
 
     // Initialize Google's logging library.
     if ( !google::glog_internal_namespace_::IsGoogleLoggingInitialized() )
@@ -976,8 +975,7 @@ fs::path scratchdir()
 
 Environment::Environment( int& argc, char**& argv )
 {
-    std::unique_ptr<boost::mpi::environment> bMPIEnv(new boost::mpi::environment(argc, argv, false));
-    M_env = std::move(bMPIEnv);
+    M_env = std::make_unique<boost::mpi::environment>(argc, argv, false);
 
     S_scratchdir = scratchdir()/fs::path( argv[0] ).filename();
 
@@ -1122,23 +1120,55 @@ Environment::initPetsc( int * argc, char *** argv )
 }
 #endif // FEELPP_HAS_PETSC_H
 
-void
-Environment::init( int argc, char** argv,
-                   po::options_description const& desc,
-                   po::options_description const& desc_lib,
-                   AboutData const& about )
-{
-    // duplicate argv before passing to gflags because gflags is going to
-    // rearrange them and it screws badly the flags for PETSc/SLEPc
-    char** envargv = dupargv( argv );
 
-    S_about = about;
-    doOptions( argc, envargv, desc, desc_lib, about.appName() );
+Environment::Environment( int argc, char** argv,
+                          mpi::threading::level lvl,
+                          po::options_description const& desc,
+                          po::options_description const& desc_lib,
+                          AboutData const& about,
+                          std::string directory )
+{
+    std::cout << "Environment(ArgumentPack): " << boost::mpi::environment::initialized() << std::endl;
+#if BOOST_VERSION >= 105500
+    M_env = std::make_unique<boost::mpi::environment>(argc, argv, lvl, false);
+#else
+    M_env = std::make_unique<boost::mpi::environment>(argc, argv, false);
+#endif
+    std::cout << "Environment(ArgumentPack): " << boost::mpi::environment::initialized() << std::endl;
 
     S_worldcomm = worldcomm_type::New();
     CHECK( S_worldcomm ) << "Feel++ Environment: creating worldcomm failed!";
     S_worldcommSeq.reset( new WorldComm( S_worldcomm->subWorldCommSeq() ) );
 
+    S_desc_app = boost::shared_ptr<po::options_description>( new po::options_description( desc ) );
+    S_desc_lib = boost::shared_ptr<po::options_description>( new po::options_description( desc_lib ) );
+    S_desc = boost::shared_ptr<po::options_description>( new po::options_description( ) );
+    S_desc->add( *S_desc_app );
+
+    // try to see if the feel++ lib options are already in S_desc_app, if yes then we do not add S_desc_lib
+    // otherwise we will have duplicated options
+    std::vector<boost::shared_ptr<po::option_description>> opts = Environment::optionsDescriptionApplication().options();
+    auto it = std::find_if( opts.begin(), opts.end(),
+                            []( boost::shared_ptr<po::option_description> const&o )
+                            {
+                                return o->format_name().erase( 0,2 ) == "backend";
+                            } );
+    
+    if   ( it == opts.end() )
+        S_desc->add( *S_desc_lib );
+
+    S_desc->add( file_options( about.appName() ) );
+    S_desc->add( generic_options() );
+        
+
+    // duplicate argv before passing to gflags because gflags is going to
+    // rearrange them and it screws badly the flags for PETSc/SLEPc
+    char** envargv = dupargv( argv );
+
+    S_about = about;
+    doOptions( argc, envargv, *S_desc, *S_desc_lib, about.appName() );
+    
+    
     S_scratchdir = scratchdir();
     fs::path a0 = std::string( argv[0] );
     const int Nproc = 200;
@@ -1214,6 +1244,17 @@ Environment::init( int argc, char** argv,
         //FLAGS_vmodule = S_vm["vmodule"].as<std::string>();
         //google::SetVLOGLevel( "*btpcd", 2 );
     }
+
+    if ( S_vm.count( "nochdir" ) == 0 )
+    {
+        if ( S_vm.count( "directory" ) )
+            directory = S_vm["directory"].as<std::string>();
+
+        LOG( INFO ) << "change directory to " << directory << "\n";
+        boost::format f( directory );
+        changeRepository( _directory=f );
+    }
+
     freeargv( envargv );
 
 }
@@ -1956,6 +1997,39 @@ std::vector<std::string> Environment::olAutoloadFiles;
 hwloc_topology_t Environment::S_hwlocTopology = NULL;
 #endif
 
-} // detail
+//} // detail
 
 }
+
+
+#if 0
+#i
+    {
+        char** argv = args[_argv];
+        int argc = args[_argc];
+        S_desc_app = boost::shared_ptr<po::options_description>( new po::options_description(  ) );
+        S_desc_lib = boost::shared_ptr<po::options_description>( new po::options_description(  ) );
+        AboutData about = args[_about| makeAbout( argv[0] )];
+        S_desc = boost::shared_ptr<po::options_description>( new po::options_description( ) );
+        S_desc->add( *S_desc_app );
+
+        // try to see if the feel++ lib options are already in S_desc_app, if yes then we do not add S_desc_lib
+        // otherwise we will have duplicated options
+        std::vector<boost::shared_ptr<po::option_description>> opts = Environment::optionsDescriptionApplication().options();
+        auto it = std::find_if( opts.begin(), opts.end(),
+                                []( boost::shared_ptr<po::option_description> const&o )
+        {
+            return o->format_name().erase( 0,2 ) == "backend";
+        } );
+
+        if   ( it == opts.end() )
+            S_desc->add( *S_desc_lib );
+
+        S_desc->add( file_options( about.appName() ) );
+        S_desc->add( generic_options() );
+
+        init( argc, argv, *S_desc, *S_desc_lib, about );
+
+    }
+
+#endif
