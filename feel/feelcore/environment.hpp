@@ -60,7 +60,6 @@
 
 namespace Feel
 {
-//namespace detail{
 struct MemoryUsage
 {
     MemoryUsage()
@@ -98,22 +97,12 @@ struct MemoryUsage
 #endif
     
 };
-inline
-AboutData
-makeAbout( char* name )
-{
-    AboutData about( name,
-                     name,
-                     "0.1",
-                     name,
-                     AboutData::License_GPL,
-                     "Copyright (c) 2012 Feel++ Consortium" );
-
-    about.addAuthor( "Feel++ Consortium",
-                     "",
-                     "feelpp-devel@feelpp.org", "" );
-    return about;
-}
+/**
+ * default \c makeAbout function to define the \c AboutData structure of the Feel++
+ * application
+ * @param name name or short name of the application
+ */
+AboutData makeAboutDefault( std::string name );
 
 /**
  *  @class Environment "Environment"
@@ -197,18 +186,6 @@ public:
     Environment( boost::python::list arg );
 #endif
 
-    BOOST_PARAMETER_MEMBER_FUNCTION(
-        ( void ), static changeRepository, tag,
-        ( required
-          ( directory,( boost::format ) ) )
-        ( optional
-          ( filename,*( boost::is_convertible<mpl::_,std::string> ),"logfile" )
-          ( subdir,*( boost::is_convertible<mpl::_,bool> ),S_vm["npdir"].as<bool>() )
-          ( worldcomm, ( WorldComm ), Environment::worldComm() )
-        ) )
-    {
-        changeRepositoryImpl( directory, filename, subdir, worldcomm );
-    }
 
     template <class ArgumentPack>
     Environment( ArgumentPack const& args )
@@ -220,9 +197,10 @@ public:
 #endif
                      args[_desc|feel_nooptions()],
                      args[_desc_lib | feel_options()],
-                     args[_about| makeAbout( args[_argv][0] )],
-                     args[_directory|args[_about| makeAbout( args[_argv][0] )].appName()] )
+                     args[_about| makeAboutDefault( args[_argv][0] )],
+                     args[_directory|args[_about| makeAboutDefault( args[_argv][0] )].appName()] )
         {}
+#if BOOST_VERSION >= 105500                     
     BOOST_PARAMETER_CONSTRUCTOR(
         Environment, ( Environment ), tag,
         ( required
@@ -235,6 +213,19 @@ public:
           ( threading,(mpi::threading::level) )
           ( directory,( std::string ) )
           ) ) // no semicolon
+#else
+    BOOST_PARAMETER_CONSTRUCTOR(
+        Environment, ( Environment ), tag,
+        ( required
+          ( argc,* )
+          ( argv,* ) )
+        ( optional
+          ( desc,* )
+          ( desc_lib,* )
+          ( about,* )
+          ( directory,( std::string ) )
+          ) ) // no semicolon
+#endif
     
     /** Shuts down the Feel environment.
      *
@@ -440,6 +431,19 @@ public:
      */
     //@{
 
+    BOOST_PARAMETER_MEMBER_FUNCTION(
+        ( void ), static changeRepository, tag,
+        ( required
+          ( directory,( boost::format ) ) )
+        ( optional
+          ( filename,*( boost::is_convertible<mpl::_,std::string> ),"logfile" )
+          ( subdir,*( boost::is_convertible<mpl::_,bool> ),S_vm["npdir"].as<bool>() )
+          ( worldcomm, ( WorldComm ), Environment::worldComm() )
+          ) )
+        {
+            changeRepositoryImpl( directory, filename, subdir, worldcomm );
+        }
+
     //! \return the root repository (default: \c $HOME/feel)
     static std::string rootRepository();
 
@@ -639,27 +643,6 @@ private:
     static hwloc_topology_t S_hwlocTopology;
 #endif
 };
-//} // detail
-
-
-#if 0
-class Environment : public detail::Environment
-{
-public:
-    BOOST_PARAMETER_CONSTRUCTOR(
-        Environment, ( detail::Environment ), tag,
-        ( required
-          ( argc,* )
-          ( argv,* ) )
-        ( optional
-          ( desc,* )
-          ( desc_lib,* )
-          ( about,* )
-          ( threading,* )
-          ( directory,( std::string ) )
-        ) ) // no semicolon
-};
-#endif
 
 BOOST_PARAMETER_FUNCTION(
     ( po::variable_value ), option, tag,
