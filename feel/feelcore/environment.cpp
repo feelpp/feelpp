@@ -396,7 +396,6 @@ Environment::Environment( int argc, char** argv,
                           AboutData const& about,
                           std::string directory )
 {
-    std::cout << "Environment(ArgumentPack): " << boost::mpi::environment::initialized() << std::endl;
     if ( argc == 0 )
     {
 #if BOOST_VERSION >= 105500
@@ -413,7 +412,6 @@ Environment::Environment( int argc, char** argv,
         M_env = std::make_unique<boost::mpi::environment>(argc, argv, false);
 #endif
     }
-    std::cout << "Environment(ArgumentPack): " << boost::mpi::environment::initialized() << std::endl;
 
     S_worldcomm = worldcomm_type::New();
     CHECK( S_worldcomm ) << "Feel++ Environment: creating worldcomm failed!";
