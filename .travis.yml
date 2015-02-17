@@ -1,6 +1,5 @@
 os:
   - linux
-  - osx
   
 git:
   depth: 1
@@ -12,7 +11,8 @@ compiler:
 - clang
 
 env:
-- BUILD="o2-ndebug" BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
+- BUILD="llvm-3.4" FEELPP_CXX=clang++-3.4 FEELPP_CC=clang-3.4 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
+- BUILD="llvm-3.5" FEELPP_CXX=clang++-3.5 FEELPP_CC=clang-3.5 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
 
 #- BUILD="g-debug" BUILDTYPE=Debug
 #- BUILDTYPE=Release TARGET=tutorial
@@ -23,9 +23,20 @@ before_install:
 - if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo add-apt-repository -y ppa:kalakris/eigen; fi
 - if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo add-apt-repository -y ppa:feelpp/petsc; fi
 - if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo apt-get -qq update; fi
+- if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo apt-add-repository 'deb http://llvm.org/apt/precise/ llvm-toolchain-precise main'; fi
+- if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo apt-add-repository 'deb http://llvm.org/apt/precise/ llvm-toolchain-precise-3.4 main'; fi
+- if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo apt-add-repository 'deb http://llvm.org/apt/precise/ llvm-toolchain-precise-3.5 main'; fi
+- if test "x$TRAVIS_OS_NAME" = "xlinux"; then wget -O - http://llvm.org/apt/llvm-snapshot.gpg.key|sudo apt-key add -; fi
+- if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo apt-get update; fi
+- if test "x$TRAVIS_OS_NAME" = "xlinux"; then apt-cache search clang; fi
+- if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo apt-get install $FEELPP_CC; fi
+
 - if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo apt-get install -qq libboost1.54-all-dev mpi-default-dev mpi-default-bin libeigen3-dev
     libpetsc3.4.2-dev libcln-dev petsc-dev libxml2-dev gmsh bison flex doxygen doxygen-latex transfig
     imagemagick libtbb-dev libann-dev libglpk-dev automake libtool; fi
+- if test "x$TRAVIS_OS_NAME" = "xlinux"; export CXX=$FEELPP_CXX; fi
+- if test "x$TRAVIS_OS_NAME" = "xlinux"; export CC=$FEELPP_CC; fi
+
 - if test "x$TRAVIS_OS_NAME" = "xosx"; then cd /usr/local && git remote add feelpp https://github.com/feelpp/homebrew.git && git pull feelpp master; fi
 - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew tap feelpp/science; fi
 - if test "x$TRAVIS_OS_NAME" = "xosx"; then ls /usr/local/Cellar; fi
@@ -36,6 +47,7 @@ before_install:
 - git submodule update --init --recursive contrib/nt2
 - git submodule update --init --recursive contrib/ipopt
 - git submodule update --init --recursive quickstart
+
 
 install:
 - mkdir opt-$BUILD && cd opt-$BUILD && ../configure --build=$BUILDTYPE -v --cxxflags="$CXXFLAGS"
