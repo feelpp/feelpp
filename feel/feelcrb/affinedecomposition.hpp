@@ -78,7 +78,7 @@ public:
         {
             newEntry( beta, filename );
             M_Mqm.resize( M_Q );
-            M_Mqm[M_Q-1].push_back( tensor );
+            M_Mqm[M_Q-1] = tensor ;
         }
 
     template <typename BetaType>
@@ -135,7 +135,50 @@ public:
             M_composite->addElement( {M_Q-1,0}, fun );
         }
 
+    sparse_matrix_ptrtype ptrMat( int const& q, int const& m )
+        {
+            if ( q>=M_Q )
+                resizeQ( q+1 );
+            if ( m>=M_mMax[q] )
+                resizeM( q, m+1 );
+            if ( !M_Mqm[q][m] )
+                M_Mqm[q][m] = backend()->newMatrix( _test=M_model->functionSpace(M_row-1),
+                                                    _trial=M_model->functionSpace(M_col-1) );
+            return M_Mqm[q][m];
+        }
+    vector_ptrtype ptrVec( int const& q, int const& m )
+        {
+            if ( q>=M_Q )
+                resizeQ( q+1 );
+            if ( m>=M_mMax[q] )
+                resizeM( q, m+1 );
+            if ( !M_Mqm[q][m] )
+                M_Mqm[q][m] = backend()->newVector( M_model->functionSpace(M_row-1) );
+            return M_Mqm[q][m];
+        }
 
+    void check()
+        {
+            CHECK( M_Q==M_mMax.size() )<<"M_Q==M_mMax.size()\n";
+            CHECK( M_Q==M_beta.size() )<<"M_Q==M_beta.size()\n";
+            CHECK( M_Q==M_beta_mode.size() ) << "M_Q==M_beta_mode.size()\n";
+            for ( int q=0; q<M_Q; q++ )
+                CHECK( M_mMax[q]==M_beta[q].size() )<< "M_mMax[q]==M_beta[q].size(), for q="<<q<<std::endl;
+            if ( M_use_operators_free )
+            {
+                auto mMax = M_composite->countAllContributions();
+                CHECK( M_Q==mMax.size() )<< "M_Q==mMax.size()\n";
+                for ( int q=0; q<M_Q; q++ )
+                    CHECK( mMax[q]==M_mMax[q] )<< "mMax[q]==M_mMax[q], for q="<<q <<std::endl;
+            }
+            else
+            {
+                CHECK( M_Q==M_Mqm.size() ) << "M_Q==M_Mqm.size()\n";
+                for ( int q=0; q<M_Q; q++ )
+                    CHECK( M_mMax[q]==M_Mqm[q].size() )<<"M_mMax[q]==M_Mqm[q].size(), for q="<<q<<std::endl;
+            }
+
+        }
     void initializeMassMatrix()
         {
             std::string filename = ( boost::format("GinacM%1%%2%-") %M_row %M_col).str() ;
@@ -162,7 +205,7 @@ public:
             }
         }
 
-    beta_vector_type betaQm( parameter_type const& mu, double time )
+    beta_vector_type computeBetaQm( parameter_type const& mu, double time )
         {
             if ( M_use_ginac_expr )
             {
@@ -192,6 +235,30 @@ public:
                 }
             }
             return M_beta;
+        }
+    beta_vector_type betaQm()
+        {
+            return M_beta;
+        }
+
+    double& setBeta( int const& q, int const& m )
+        {
+            if ( q>=M_Q )
+                resizeQ( q+1 );
+
+            if ( m>=M_mMax[q] )
+                resizeM( q, m+1 );
+
+            M_beta_mode[q] = BetaMode::SET;
+
+            return M_beta[q][m];
+        }
+
+    double beta( int const& q, int const& m )
+        {
+            CHECK( q<M_Q ) << "Bad q index "<<q<<", max index is " << M_Q<<std::endl;
+            CHECK( m<M_mMax[q] ) << "Bad m index "<<q<<", max index is " << M_mMax[q]<<std::endl;
+            return M_beta[q][m];
         }
 
     std::vector< std::vector< TensorType >> compute()
@@ -322,9 +389,7 @@ public:
                 M->zero();
                 for ( int q=0; q<M_Q; q++ )
                     for( int m=0; m<M_mMax[q]; m++)
-                    {
                         M->addMatrix( beta[q][m], M_Mqm[q][m] );
-                    }
             }
             return M;
         }
@@ -353,6 +418,23 @@ public:
 private:
     enum BetaMode { NONE=0, GINAC=1, EIM=2, SET=3 };
 
+
+    void resizeQ( int const& q )
+        {
+            M_Q = q;
+            M_beta.resize( M_Q );
+            M_beta_mode.resize( M_Q, BetaMode::NONE );
+            M_mMax.resize( M_Q, 0 );
+            M_Mqm.resize( M_Q );
+
+        }
+    void resizeM( int const& q, int const& m )
+        {
+            M_mMax[q] = m;
+            M_beta[q].resize( M_mMax[q], 0 );
+            M_Mqm[q].resize( M_mMax[q] );
+        }
+
     void newEntry( std::string symbol, std::string filename )
         {
             if ( !M_use_ginac_expr )
@@ -363,17 +445,12 @@ private:
             }
 
             filename = "Ginac" + filename + std::to_string( M_Q );
-            M_Q++;
-            M_mMax.push_back( 1 );
-            M_ginac.push_back( expr( symbol,
-                                     Symbols( M_symbols_vec ),
-                                     filename ) );
 
-            M_beta_mode.push_back( BetaMode::GINAC );
+            resizeQ( M_Q+1 );
+            resizeM( M_Q-1, 1 );
 
-            // create zero betaQm
-            M_beta.resize( M_Q );
-            M_beta[M_Q-1].push_back(0);
+            M_ginac.push_back( expr( symbol, Symbols( M_symbols_vec ), filename ) );
+            M_beta_mode[M_Q-1]= BetaMode::GINAC;
         }
 
     void assembleMassMatrix()

@@ -31,7 +31,7 @@
 
 #include <feel/feelfilters/gmsh.hpp>
 
-#include <feel/feelcrb/modelcrbbase.hpp>
+#include <feel/feelcrb/crbmodelbase.hpp>
 
 namespace Feel
 {
@@ -56,17 +56,6 @@ makeThermalBlockOptions()
     ( "mshfile", Feel::po::value<std::string>()->default_value( "" ), "name of the gmsh file input")
     ( "gamma_dir", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary Dirichlet formulation" )
     ( "load-mesh-already-partitioned", Feel::po::value<bool>()->default_value( "true" ), "load a mesh from mshfile that is already partitioned if true, else the mesh loaded need to be partitioned")
-    ( "beta.A0", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for A0" )
-    ( "beta.A1", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for A1" )
-    ( "beta.A2", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for A2" )
-    ( "beta.A3", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for A3" )
-    ( "beta.A4", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for A4" )
-    ( "beta.A5", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for A5" )
-    ( "beta.A6", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for A6" )
-    ( "beta.A7", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for A7" )
-    ( "beta.A8", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for A8" )
-    ( "beta.Alast", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for last A" )
-    ( "beta.F0.0", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for F0" )
     ;
     return thermalblockoptions;
 }
@@ -138,7 +127,7 @@ public :
  *
  * \tparam Dim the geometric dimension of the problem (e.g. Dim=1, 2 or 3)
  */
-class ThermalBlock : public ModelCrbBase< ParameterDefinition , FunctionSpaceDefinition >
+class ThermalBlock : public CRBModelBase< ParameterDefinition , FunctionSpaceDefinition >
 {
 
     static const uint16_type nx = 3;
@@ -146,20 +135,11 @@ class ThermalBlock : public ModelCrbBase< ParameterDefinition , FunctionSpaceDef
 
 public:
 
-    typedef ModelCrbBase<ParameterDefinition, FunctionSpaceDefinition> super_type;
+    typedef CRBModelBase<ParameterDefinition, FunctionSpaceDefinition> super_type;
 
     static const uint16_type ParameterSpaceDimension = nx*ny-1;
 
-    //! Polynomial order \f$P_1\f$
-    static const uint16_type Order = 1;
-
-    //! numerical type is double
-    typedef double value_type;
-
-    typedef typename super_type::element_type element_type;
-    typedef typename super_type::parameter_type parameter_type;
-    typedef typename super_type::mesh_type mesh_type;
-    typedef typename super_type::mesh_ptrtype mesh_ptrtype;
+    using super_type::computeBetaQm;
 
     //! initialisation of the model and definition of parameters values
     void initModel();
@@ -189,88 +169,24 @@ public:
     std::string subdomainFromBoundary( std::string const& ) const;
 
     int subdomainId( std::string const& ) const;
-    // \return the number of terms in affine decomposition of left hand
-    // side bilinear form
-    int Qa() const
-    {
-        return nx*ny+1;
-    }
 
-    /**
-     * \param l the index of output
-     *
-     * \return number of terms  in affine decomposition of the \p q th output term
-     * in our case we have 1 term : 1 * \int_south v
-     * but if u!=0 on the north we add (nx+1) terms (those on the north from dirichlet condition)
-     */
-    int Ql( int l ) const
-    {
-        return 1;
-    }
-
-    /**
-     * there is at least one output which is the right hand side of the
-     * primal problem
-     * in our case, the output is the right hand side of the primal problem
-     *
-     * \return number of outputs associated to the model
-     */
-    int Nl() const
-    {
-        return 1;
-    }
-
-
-    boost::tuple<beta_vector_light_type, std::vector<beta_vector_light_type> >
-    computeBetaQ( parameter_type const& mu )
-    {
-
-        bool use_ginac = option(_name="crb.use-ginac-for-beta-expressions").as<bool>();
-        if( M_use_ginac )
+    steady_betaqm_type computeBetaQm( parameter_type const& mu )
         {
-            int qa = Qa();
-            int nl = Nl();
-
-            // prepare map of symbols
-            // The parameter associated to the first block is fixed
-            std::map<std::string,double> map_symbols;
-            for ( int i=1; i<nx*ny; i++ )
-            {
-                std::string symbol = ( boost::format("k%1%") %i ).str();
-                map_symbols.insert( std::pair< std::string, double > (symbol,mu(i-1)) );
-            }
-
-            //update ginac expressions
-            for ( int i=0; i<=nx*ny; i++ )
-            {
-                ginac_expressionA[i].expression().setParameterValues( map_symbols );
-                M_betaAq[i] = ginac_expressionA[i].evaluate();
-            }
-
-            ginac_expressionF[0].expression().setParameterValues( map_symbols );
-            M_betaFq[0][0] = ginac_expressionF[0].evaluate();
-
-        }//ginac
-        else
-        {
-            M_betaAq[0] = 1;
+            setBetaA(0) = 1;
 
             for ( int i=1; i<nx*ny; i++ )
-            {
-                M_betaAq[i] = mu( i-1 );
-            }
+                setBetaA(i) = mu(i-1);
 
             int index=nx*ny;
+
             //penalization term
-            M_betaAq[index]=1;
+            setBetaA(index) = 1;
 
             //compliant output
-            M_betaFq[0][0] = 1;
+            setBetaF(0,0) = 1;
 
-        }//don't use ginac
-        return boost::make_tuple( M_betaAq, M_betaFq );
-
-    }
+            return boost::make_tuple( betaAqm(), betaFqm() );
+     }
 
 
     /**
@@ -288,18 +204,6 @@ public:
         muref(6)=1; muref(7)=1;
         return muref;
     }
-    // parameter_type refParameter()
-    // {
-    //     auto muref = Dmu->element();
-    //     muref(0)=1;
-    //     return muref;
-    // }
-
-    void initDataStructureForBetaCoeff();
-    void buildGinacExpressions();
-
-    affine_decomposition_light_type computeAffineDecompositionLight(){ return boost::make_tuple( M_Aq, M_Fq ); }
-
 
 private:
     value_type gamma_dir;
@@ -322,71 +226,7 @@ private:
     std::vector<int> south_subdomain_index;
     std::vector<int> north_subdomain_index;
 
-    bool M_use_ginac ;
-
-    std::vector< Expr<GinacEx<2> > > ginac_expressionA;
-    std::vector< Expr<GinacEx<2> > > ginac_expressionF;
-
 }; // ThermalBlock
-
-
-
-void
-ThermalBlock::initDataStructureForBetaCoeff()
-{
-    int qa = Qa();
-    M_betaAq.resize( qa );
-
-    int nl = Nl();
-    M_betaFq.resize( nl );
-    for(int i=0; i<nl; i++)
-    {
-        int ql=Ql(i);
-        M_betaFq[i].resize( ql );
-    }
-}
-
-void
-ThermalBlock::buildGinacExpressions()
-{
-
-    int qa = this->Qa();
-    int nl = this->Nl();
-
-
-    //create list of symbols
-    std::vector< std::string > symbols_vec;
-    symbols_vec.push_back( "x" );
-    symbols_vec.push_back( "y" );
-    for ( int i=1; i<nx*ny; i++ )
-    {
-        std::string symbol = ( boost::format("k%1%") %i ).str();
-        symbols_vec.push_back( symbol );
-    }
-
-    //build ginac expressions
-    for ( int i=0; i<nx*ny; i++ )
-    {
-        std::string name = ( boost::format("beta.A%1%") %i ).str();
-        std::string filename = ( boost::format("GinacA%1%") %i ).str();
-        ginac_expressionA.push_back( expr( option(_name=name).as<std::string>(), Symbols( symbols_vec ) , filename ) );
-    }
-    std::string name = ( boost::format("beta.Alast") ).str();
-    std::string filename = ( boost::format("GinacAlast") ).str();
-    ginac_expressionA.push_back( expr( option(_name=name).as<std::string>(), Symbols( symbols_vec ) , filename ) );
-
-    for(int i=0; i<nl; i++)
-    {
-        int ql=Ql(i);
-        for(int j=0; j<ql; j++)
-        {
-            std::string name = ( boost::format("beta.F%1%.%2%") %i %j ).str();
-            std::string filename = ( boost::format("GinacF%1%.%2%") %i %j ).str();
-            ginac_expressionF.push_back( expr( option(_name=name).as<std::string>(), Symbols( symbols_vec ) , filename ) );
-        }
-    }
-
-}
 
 gmsh_ptrtype
 thermalBlockGeometry( int nx, int ny, double hsize )
@@ -473,7 +313,6 @@ ThermalBlock::initModel()
 {
 
     gamma_dir=doption(_name="gamma_dir");
-    M_use_ginac = option(_name="crb.use-ginac-for-beta-expressions").as<bool>();
 
     std::string mshfile_name = option(_name="mshfile").as<std::string>();
 
@@ -549,23 +388,6 @@ ThermalBlock::initModel()
     auto Xh = functionspace_type::New( mmesh );
     this->setFunctionSpaces( Xh );
 
-    //  initialization
-    M_Aq.resize( Qa() );
-
-    for ( int q=0; q<Qa(); q++ )
-    {
-        M_Aq[q] = backend()->newMatrix( Xh, Xh );
-    }
-
-    M_Fq.resize( Nl() );
-    for(int l=0; l<Nl(); l++)
-    {
-        M_Fq[l].resize( Ql(l) );
-        for(int q=0; q<Ql(l) ; q++)
-        {
-            M_Fq[l][q] = backend()->newVector( Xh );
-        }
-    }
     DVLOG(2) <<"[ThermalBlock::init] done allocating matrices/vectors \n";
 
     auto mu_min = Dmu->element();
@@ -576,24 +398,6 @@ ThermalBlock::initModel()
         mu_min[i]=0.1;
         mu_max[i]=10;
     }
-
-    // mu_min[0]=0.1;
-    // mu_max[0]=10;
-    // mu_min[1]=1;
-    // mu_max[1]=1;
-    // mu_min[2]=1;
-    // mu_max[2]=1;
-    // mu_min[3]=1;
-    // mu_max[3]=1;
-    // mu_min[4]=1;
-    // mu_max[4]=1;
-    // mu_min[5]=1;
-    // mu_max[5]=1;
-    // mu_min[6]=1;
-    // mu_max[6]=1;
-    // mu_min[7]=1;
-    // mu_max[7]=1;
-
 
     Dmu->setMin( mu_min );
     Dmu->setMax( mu_max );
@@ -615,16 +419,15 @@ ThermalBlock::initModel()
     M->zero();
     auto muref=refParameter();
     double muref_coeff=muref(0);
-    form1( _test=Xh, _vector=M_Fq[0][0] );
+    form1( _test=Xh, _vector=ptrF(0,0) );
     // on boundary north we have u=0 so term from weak dirichlet condition
     // vanish in the right hand side
     BOOST_FOREACH( auto marker, southMarkers )
     {
-        form1( _test=Xh, _vector=M_Fq[0][0] ) += integrate( markedfaces( mmesh,marker ), id( v ) );
+        form1( _test=Xh, _vector= ptrF(0,0) ) += integrate( markedfaces( mmesh,marker ), id( v ) );
         subdomain_index = subdomainId( marker );
         south_subdomain_index.push_back( subdomain_index );
     }
-
 
 
     DVLOG(2) <<"[ThermalBlock::init] done with rhs\n";
@@ -632,7 +435,7 @@ ThermalBlock::initModel()
     {
         DVLOG(2) <<"[ThermalBlock::init] domain " << domain << "\n";
 
-        form2( _test=Xh, _trial=Xh, _matrix=M_Aq[index] ) =
+        form2( _test=Xh, _trial=Xh, _matrix=ptrA(index) ) =
             integrate( markedelements( mmesh, domain ), gradt( u )*trans( grad( v ) ) );
 
         if( index == 0 )
@@ -652,49 +455,38 @@ ThermalBlock::initModel()
 
 
     DVLOG(2) <<"[ThermalBlock::init] done with domainMarkers\n";
-    int last_index = Qa()-1;
+    int last_index = nx*ny;
     BOOST_FOREACH( auto marker, northMarkers )
     {
         std::string sid = subdomainFromBoundary( marker );
         subdomain_index = subdomainId( marker );
 
-        form2( _test=Xh, _trial=Xh, _matrix=M_Aq[subdomain_index-1] ) +=  integrate( markedfaces( mmesh, marker ),
-                                                                -gradt( u )*vf::N()*id( v )
-                                                                -grad( u )*vf::N()*idt( v )
-                                                                );
+        form2( _test=Xh, _trial=Xh, _matrix=ptrA(subdomain_index-1) )
+            += integrate( markedfaces( mmesh, marker ),
+                          -gradt( u )*vf::N()*id( v )
+                          -grad( u )*vf::N()*idt( v ) );
 
-        form2( _test=Xh, _trial=Xh, _matrix=M ) +=  integrate( markedfaces( mmesh, marker ),
-                                          -gradt( u )*vf::N()*id( v ) * muref_coeff
-                                          -grad( u )*vf::N()*idt( v ) * muref_coeff
-                                          );
+        form2( _test=Xh, _trial=Xh, _matrix=M )
+            +=  integrate( markedfaces( mmesh, marker ),
+                           -gradt( u )*vf::N()*id( v ) * muref_coeff
+                           -grad( u )*vf::N()*idt( v ) * muref_coeff );
 
-        form2( _test=Xh, _trial=Xh, _matrix=M_Aq[last_index] ) += integrate( markedfaces( mmesh, marker ),gamma_dir*idt( u )*id( v )/h() );
-        form2( _test=Xh, _trial=Xh, _matrix=M ) += integrate( markedfaces( mmesh, marker ),gamma_dir*idt( u )*id( v )/h() );
+        form2( _test=Xh, _trial=Xh, _matrix=ptrA(last_index) )
+            += integrate( markedfaces( mmesh, marker ),gamma_dir*idt( u )*id( v )/h() );
+        form2( _test=Xh, _trial=Xh, _matrix=M )
+            += integrate( markedfaces( mmesh, marker ),gamma_dir*idt( u )*id( v )/h() );
 
         north_subdomain_index.push_back( subdomain_index );
     }
 
     this->addEnergyMatrix( M );
     DVLOG(2) <<"[ThermalBlock::init] done with boundaryMarkers\n";
-
-    //form2( Xh, Xh, M, _init=true ) =
-    //    integrate( elements( mmesh ), id( u )*idt( v ) + grad( u )*trans( gradt( u ) ) );
-
-    initDataStructureForBetaCoeff();
-
-    if( M_use_ginac )
-        buildGinacExpressions();
-
 }//initModel()
-
-
-const uint16_type ThermalBlock::Order;
 
 
 double
 ThermalBlock::output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve)
 {
-
     double output=0;
 
     if ( output_index==0 )
@@ -702,9 +494,8 @@ ThermalBlock::output( int output_index, parameter_type const& mu , element_type&
         for ( int q=0; q<Ql( output_index ); q++ )
         {
             element_ptrtype eltF( new element_type( Xh ) );
-            *eltF = *M_Fq[output_index][q];
-            output += M_betaFq[output_index][q]*dot( *eltF, u );
-            //output += M_betaFqm[output_index][q][m]*dot( M_Fqm[output_index][q][m], U );
+            *eltF = *Fqm(output_index,q);
+            output += betaF(output_index,q)*dot( *eltF, u );
         }
     }
     else
@@ -909,38 +700,8 @@ ThermalBlock::checkout( const double* X, unsigned long P, double* Y, unsigned lo
     std::cout << "||error||_L2 = " << L2error << "\n";
 
     std::cout << "Compute error done\n";
-    //  double myerror = 0;
-
-    //  BOOST_FOREACH( auto marker, eastMarkers )
-    //  {
-    //      myerror += integrate(markedfaces(mmesh, marker), cst(1.) ).evaluate()(0,0);
-    //  }
-
-    // std::cout << "myerror=" << myerror << "\n";
-#if 0
-    export_ptrtype exporter( export_type::New( M_vm,
-                             ( boost::format( "thermalblock-%1%-%2%" )
-                               % Order
-                               % 2 ).str() ) );
-
-    if ( exporter->doExport() )
-    {
-        LOG(INFO) << "exportResults starts\n";
-
-        exporter->step( 0 )->setMesh( mmesh );
-
-        exporter->step( 0 )->add( "u", u );
-        // exporter->step(0)->add( "g", e );
-        exporter->save();
-        LOG(INFO) << "exportResults done\n";
-    }
-#endif
-
 } // ThermalBlock::checkout
 
 } // Feel
 
 #endif /* __ThermalBlock_H */
-
-
-

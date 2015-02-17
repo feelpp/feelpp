@@ -340,7 +340,7 @@ public:
 
     virtual steady_betaqm_type computeBetaQm( parameter_type const& mu )
         {
-            return boost::make_tuple( betaAqm(mu), betaFqm(mu) );
+            return boost::make_tuple( computeBetaAqm(mu), computeBetaFqm(mu) );
         }
 
     virtual betaqm_type computeBetaQm( parameter_type const& mu, double time,
@@ -352,14 +352,14 @@ public:
             if ( !is_time_dependent )
             {
                 steady_beta_coeff = computeBetaQm( mu );
-                beta_coeff = boost::make_tuple( betaMqm( mu, time ),
+                beta_coeff = boost::make_tuple( computeBetaMqm( mu, time ),
                                                 steady_beta_coeff.template get<0>(),
                                                 steady_beta_coeff.template get<1>() );
             }
             else
-                beta_coeff = boost::make_tuple( betaMqm( mu, time ),
-                                                betaAqm( mu, time ),
-                                                betaFqm( mu, time ) );
+                beta_coeff = boost::make_tuple( computeBetaMqm( mu, time ),
+                                                computeBetaAqm( mu, time ),
+                                                computeBetaFqm( mu, time ) );
             return beta_coeff;
         }
 
@@ -391,7 +391,7 @@ public:
                 betaM.resize( Qm() );
                 for ( int q=0; q<betaM.size(); q++ )
                     betaM[q].push_back( 1 );
-                beta_coeff = boost::make_tuple( betaMqm(mu, time ),
+                beta_coeff = boost::make_tuple( computeBetaMqm(mu, time ),
                                                 steady_beta_coeff.template get<0>(),
                                                 steady_beta_coeff.template get<1>() );
             }
@@ -400,30 +400,90 @@ public:
 
             return beta_coeff;
         }
-    beta_vector_type betaMqm( parameter_type const& mu, double time=0,
+
+
+    double& setBetaM( int const& q, int const& m=0, int const& row=1, int const& col=1 )
+        {
+            createMatBlock( M_M, row, col );
+            return M_M[row-1][col-1]->setBeta(q,m);
+        }
+    beta_vector_type computeBetaMqm( parameter_type const& mu, double time=0,
                               int const& row=1, int const& col=1 )
         {
-            fatalBlockCheck( M_M, row, col, "betaMqm" );
-            return M_M[row-1][col-1]->betaQm( mu, time );
+            fatalBlockCheck( M_M, row, col, "computeBetaMqm" );
+            return M_M[row-1][col-1]->computeBetaQm( mu, time );
         }
-    beta_vector_type betaAqm( parameter_type const& mu, double time=0,
+    double betaM( int const& q, int const& m=0, int const& row=1, int const& col=1 )
+        {
+            fatalBlockCheck( M_M, row, col, "betaM" );
+            return M_M[row-1][col-1]->beta( q, m );
+        }
+    beta_vector_type betaMqm( int const& row=1, int const& col=1)
+        {
+            fatalBlockCheck( M_M, row, col, "betaMqm");
+            return M_M[row-1][col-1]->betaQm();
+        }
+
+
+    double& setBetaA( int const& q, int const& m=0, int const& row=1, int const& col=1 )
+        {
+            createMatBlock( M_A, row, col );
+            return M_A[row-1][col-1]->setBeta(q,m);
+        }
+    beta_vector_type computeBetaAqm( parameter_type const& mu, double time=0,
                               int const& row=1, int const& col=1 )
         {
-            fatalBlockCheck( M_A, row, col, "betaAqm" );
-            return M_A[row-1][col-1]->betaQm( mu, time );
+            fatalBlockCheck( M_A, row, col, "computeBetaAqm" );
+            return M_A[row-1][col-1]->computeBetaQm( mu, time );
         }
-    std::vector< beta_vector_type > betaFqm( parameter_type const& mu, double time=0,
+    double betaA( int const& q, int const& m=0, int const& row=1, int const& col=1 )
+        {
+            fatalBlockCheck( M_A, row, col, "betaA" );
+            return M_A[row-1][col-1]->beta( q, m );
+        }
+    beta_vector_type betaAqm( int const& row=1, int const& col=1)
+        {
+            fatalBlockCheck( M_A, row, col, "betaAqm");
+            return M_A[row-1][col-1]->betaQm();
+        }
+
+
+    double& setBetaF( int const& output, int const& q, int const& m=0, int const& row=1 )
+        {
+            M_Nl = std::max( M_Nl, output+1 );
+            createVecBlock( M_F, row, output+1);
+            return M_F[row-1][output]->setBeta( q, m );
+        }
+    std::vector< beta_vector_type > computeBetaFqm( parameter_type const& mu, double time=0,
                                              int const& row=1 )
         {
             std::vector< beta_vector_type > betaF;
 
             for ( int output=0; output<M_Nl; output++ )
             {
-                fatalBlockCheck( M_F, row, output+1, "betaFqm");
-                betaF.push_back( M_F[row-1][output]->betaQm( mu, time ) );
+                fatalBlockCheck( M_F, row, output+1, "computeBetaFqm");
+                betaF.push_back( M_F[row-1][output]->computeBetaQm( mu, time ) );
             }
             return betaF;
         }
+    double betaF( int const& output, int const& q, int const& m=0,
+                    int const& row=1, int const& col=1 )
+        {
+            fatalBlockCheck( M_F, row, output+1, "betaF" );
+            return M_F[row-1][output]->beta(q,m);
+        }
+    std::vector< beta_vector_type > betaFqm( int const& row=1)
+        {
+            std::vector< beta_vector_type > betaF;
+
+            for ( int output=0; output<M_Nl; output++ )
+            {
+                fatalBlockCheck( M_F, row, output+1, "BetaFqm");
+                betaF.push_back( M_F[row-1][output]->betaQm() );
+            }
+            return betaF;
+        }
+
 
 
 
@@ -443,10 +503,35 @@ public:
                                       M_A[row-1][col-1]->compute(),
                                       Fqm );
         }
+    sparse_matrix_ptrtype ptrM( int const& q, int const& m=0, int const& row=1, int const& col=1 )
+        {
+            createMatBlock( M_M, row, col );
+            return M_M[row-1][col-1]->ptrMat( q, m );
+        }
+    sparse_matrix_ptrtype ptrA( int const& q, int const& m=0, int const& row=1, int const& col=1 )
+        {
+            createMatBlock( M_A, row, col  );
+            return M_A[row-1][col-1]->ptrMat( q, m );
+        }
+    vector_ptrtype ptrF( int const& output, int const& q, int const& m=0, int const& row=1 )
+        {
+            createVecBlock( M_F, output, row );
+            return M_F[row-1][output]->ptrVec(q,m);
+        }
+
 
 
     void countAffineDecompositionTerms()
         {
+            for ( int row=0; row<M_A.size(); row++ )
+                for ( int col=0; col<M_A[row].size(); col++ )
+                    M_A[row][col]->check();
+            for ( int row=0; row<M_M.size(); row++ )
+                for ( int col=0; col<M_M[row].size(); col++ )
+                    M_M[row][col]->check();
+            for ( int row=0; row<M_F.size(); row++ )
+                for ( int output=0; output<M_F[row].size(); output++ )
+                    M_F[row][output]->check();
         }
     virtual size_type Qm( int const row=1, int const col=1 ) const
         {
