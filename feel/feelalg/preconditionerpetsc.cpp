@@ -1049,7 +1049,7 @@ po::options_description
 getOptionsDescKSP( std::string const& prefix, std::string const& sub, bool useDefaultValue=true,
                    std::string const& kspType = "gmres", double rtol = 1e-13, size_type maxit=1000 )
 {
-    po::options_description _options( "options KSP",100);
+    po::options_description _options( "options KSP",200);
     updateOptionsDescKSP( _options, prefix, sub, useDefaultValue, kspType, rtol, maxit );
     return _options;
 }
@@ -1058,17 +1058,17 @@ po::options_description
 getOptionsDescKSP( std::string const& prefix, std::string const& sub, std::vector<std::string> prefixOverwrite,
                    std::string const& kspType = "gmres", double rtol = 1e-13, size_type maxit=1000 )
 {
-    po::options_description _options( "options KSP",100);
+    po::options_description _options( "options KSP",200);
     updateOptionsDescKSP( _options, prefix, sub, true, kspType, rtol, maxit );
     for ( std::string prefixOver : prefixOverwrite )
-        updateOptionsDescKSP( _options, prefix, sub, false );
+        updateOptionsDescKSP( _options, prefixOver, sub, false );
     return _options;
 }
 po::options_description
-getOptionsDescPrecBase( std::string const& prefix, std::string const& sub, bool useDefaultValue=true, std::string pcType = "lu" )
+updateOptionsDescPrecBase( po::options_description & _options, std::string const& prefix, std::string const& sub, bool useDefaultValue=true, std::string pcType = "lu" )
 {
     std::string pcctx = (sub.empty())? "" : sub+"-";
-    po::options_description _options( "options PC", 200);
+    //po::options_description _options( "options PC", 200);
 
     _options.add_options()
         ( prefixvm( prefix,pcctx+"pc-type" ).c_str(),
@@ -1093,7 +1093,16 @@ getOptionsDescPrecBase( std::string const& prefix, std::string const& sub, bool 
 
     return _options;
 }
+po::options_description
+getOptionsDescPrecBase( std::string const& prefix, std::string const& sub, bool useDefaultValue=true, std::string pcType = "lu" )
+{
+    po::options_description _options( "options PC", 200);
+    updateOptionsDescPrecBase( _options,prefix,sub,useDefaultValue,pcType );
+    //for ( std::string prefixOver : prefixOverwrite )
+    //    updateOptionsDescPrecBase( _options,prefixOver,sub );
+    return _options;
 
+}
 void
 updateOptionsDescLU( po::options_description & _options, std::string const& prefix, std::string const& sub )
 {
@@ -1117,7 +1126,7 @@ updateOptionsDescLU( po::options_description & _options, std::string const& pref
 po::options_description
 getOptionsDescLU( std::string const& prefix, std::string const& sub, std::vector<std::string> prefixOverwrite )
 {
-    po::options_description _options( "options PC LU", 100);
+    po::options_description _options( "options PC LU", 200);
     updateOptionsDescLU( _options,prefix,sub );
     for ( std::string prefixOver : prefixOverwrite )
         updateOptionsDescLU( _options,prefixOver,sub );
@@ -1217,11 +1226,11 @@ getOptionsDescASM( std::string const& prefix, std::vector<std::string> prefixOve
 }
 
 po::options_description
-getOptionsDescMultiGrid( std::string const& prefix, std::string const& sub )
+getOptionsDescML( std::string const& prefix, std::string const& sub )
 {
     std::string pcctx = (sub.empty())? "pc-" : sub+"-pc-";
 
-    po::options_description _options( "options PC MultiGrid", 100);
+    po::options_description _options( "options PC ML", 200);
     // multigrid options
     _options.add_options()
         ( prefixvm( prefix,pcctx+"mg-levels" ).c_str(), Feel::po::value<int>()->default_value( 10/*2*/ ),
@@ -1242,6 +1251,31 @@ getOptionsDescMultiGrid( std::string const& prefix, std::string const& sub )
         ( prefixvm( prefix,pcctx+"ml-old-hierarchy" ).c_str(), Feel::po::value<bool>()->default_value( false ),
           "Use old routine to generate hierarchy" )
         ;
+    // coarse ksp/pc
+    std::string mgctx = (sub.empty())? "mg-" : sub+"-mg-";
+    std::string prefixMGCoarse = ( boost::format( "%1%%2%coarse" ) %prefixvm(prefix,"") %mgctx ).str();
+    //_options.add( getOptionsDescPrecBase(prefixMGCoarse,"",true,"redundant") );
+    po::options_description optionsCoarse( "options PC ML Coarse Level", 200);
+    updateOptionsDescPrecBase(optionsCoarse,prefixMGCoarse,"",true,"redundant");
+    _options.add( optionsCoarse );
+
+    return _options;
+}
+po::options_description
+getOptionsDescGAMG( std::string const& prefix, std::string const& sub )
+{
+    std::string pcctx = (sub.empty())? "pc-" : sub+"-pc-";
+
+    po::options_description _options( "options PC GAMG", 200);
+    // multigrid options
+    _options.add_options()
+        ( prefixvm( prefix,pcctx+"mg-levels" ).c_str(), Feel::po::value<int>()->default_value( 10/*2*/ ),
+          "number of levels including finest" )
+        ( prefixvm( prefix,pcctx+"mg-type" ).c_str(), Feel::po::value<std::string>()->default_value( "multiplicative" ),
+          "Determines the form of multigrid to use: multiplicative, additive, full, kaskade " )
+        ( prefixvm( prefix,pcctx+"mg-smoothdown" ).c_str(), Feel::po::value<int>()->default_value( 1 ),
+          "number of smoothing steps before applying restriction operator" )
+        ;
     // gamg options
     _options.add_options()
         ( prefixvm( prefix,pcctx+"gamg-type" ).c_str(), Feel::po::value<std::string>()->default_value( "agg" ),
@@ -1257,7 +1291,10 @@ getOptionsDescMultiGrid( std::string const& prefix, std::string const& sub )
     // coarse ksp/pc
     std::string mgctx = (sub.empty())? "mg-" : sub+"-mg-";
     std::string prefixMGCoarse = ( boost::format( "%1%%2%coarse" ) %prefixvm(prefix,"") %mgctx ).str();
-    _options.add( getOptionsDescPrecBase(prefixMGCoarse,"",true,"redundant") );
+    //_options.add( getOptionsDescPrecBase(prefixMGCoarse,"",true,"redundant") );
+    po::options_description optionsCoarse( "options PC GAMG Coarse Level", 200);
+    updateOptionsDescPrecBase(optionsCoarse,prefixMGCoarse,"",true,"redundant");
+    _options.add( optionsCoarse );
 
     return _options;
 }
@@ -1266,20 +1303,28 @@ po::options_description
 getOptionsDescMultiGridLevels( int nLevel,std::string const& prefix, std::string const& sub )
 {
     std::string mgctx = (sub.empty())? "mg-" : sub+"-mg-";
-
     po::options_description _options( "options PC MultiGrid Levels", 100);
+
     // all levels ksp/pc (not including coarse level) with default values
     std::string prefixMGLevelsGeneric = prefixvm( prefix, mgctx+"levels" );
-    _options.add( getOptionsDescPrecBase(prefixMGLevelsGeneric,"",true,"sor") );
+    po::options_description optionsAllLevel( "options PC MultiGrid Levels (all level)", 200);
+    updateOptionsDescPrecBase(optionsAllLevel,prefixMGLevelsGeneric,"",true,"sor");
+    _options.add( optionsAllLevel );
+
     // fine level
     std::string prefixMGFineLevel = prefixvm( prefix, mgctx+"fine-level" );
-    _options.add( getOptionsDescPrecBase(prefixMGFineLevel,"",false) );
+    po::options_description optionsFineLevel( "options PC MultiGrid Levels (fine level)", 200);
+    updateOptionsDescPrecBase(optionsFineLevel,prefixMGFineLevel,"",false);
+    _options.add( optionsFineLevel );
+
     // each levels can be control separately
+    po::options_description optionsEachLevel( "options PC MultiGrid Levels (each level)", 200);
     for ( uint16_type i=1; i<=nLevel; ++i )
     {
         std::string prefixMGLevels = ( boost::format( "%1%%2%levels%3%" ) %prefixvm(prefix,"") %mgctx %i ).str();
-        _options.add( getOptionsDescPrecBase(prefixMGLevels,"",false) );
+        updateOptionsDescPrecBase(optionsEachLevel,prefixMGLevels,"",false);
     }
+    _options.add( optionsEachLevel );
 
     return _options;
 }
@@ -1360,6 +1405,7 @@ getOptionsDescLSC( std::string const& prefix, std::string const& sub )
 /**
  * ConfigureKSP
  */
+#if 0
 ConfigureKSP::ConfigureKSP( KSP& ksp,WorldComm const& worldComm, std::string const& sub,std::string const& prefix )
     :
     ConfigurePCBase( worldComm,sub,prefix, getOptionsDescKSP( prefix, sub ) ),
@@ -1373,6 +1419,7 @@ ConfigureKSP::ConfigureKSP( KSP& ksp,WorldComm const& worldComm, std::string con
 {
     runConfigureKSP( ksp );
 }
+#endif
 ConfigureKSP::ConfigureKSP( KSP& ksp,WorldComm const& worldComm, std::string const& sub,std::string const& prefix,
                             std::vector<std::string> const& prefixOverwrite,
                             std::string const& kspType, double rtol, size_type maxit )
@@ -1384,7 +1431,8 @@ ConfigureKSP::ConfigureKSP( KSP& ksp,WorldComm const& worldComm, std::string con
     M_maxit( getOption<size_type>("ksp-maxit",prefix,sub,prefixOverwrite,this->vm()) ),
     M_showMonitor( getOption<bool>("ksp-monitor",prefix,sub,prefixOverwrite,this->vm()) ),
     M_kspView( getOption<bool>("ksp-view",prefix,sub,prefixOverwrite,this->vm()) ),
-    M_constantNullSpace( getOption<bool>("constant-null-space",prefix,sub,prefixOverwrite,this->vm()) )
+    M_constantNullSpace( getOption<bool>("constant-null-space",prefix,sub,prefixOverwrite,this->vm()) ),
+    M_nRestartGMRES( getOption<int>("gmres-restart",prefix,sub,prefixOverwrite,this->vm()) )
 {
     runConfigureKSP( ksp );
 }
@@ -1399,7 +1447,8 @@ ConfigureKSP::ConfigureKSP( WorldComm const& worldComm, std::string const& sub,s
     M_maxit( getOption<size_type>("ksp-maxit",prefix,sub,prefixOverwrite,this->vm()) ),
     M_showMonitor( getOption<bool>("ksp-monitor",prefix,sub,prefixOverwrite,this->vm()) ),
     M_kspView( getOption<bool>("ksp-view",prefix,sub,prefixOverwrite,this->vm()) ),
-    M_constantNullSpace( getOption<bool>("constant-null-space",prefix,sub,prefixOverwrite,this->vm()) )
+    M_constantNullSpace( getOption<bool>("constant-null-space",prefix,sub,prefixOverwrite,this->vm()) ),
+    M_nRestartGMRES( getOption<int>("gmres-restart",prefix,sub,prefixOverwrite,this->vm()) )
 {
     //runConfigureKSP( ksp );
 }
@@ -1416,6 +1465,28 @@ ConfigureKSP::runConfigureKSP( KSP& ksp ) const
 
     if ( M_useConfigDefaultPetsc )
         return;
+
+    // get ksp type
+#if PETSC_VERSION_LESS_THAN(3,0,0)
+    KSPType ksp_type;
+#else
+#if PETSC_VERSION_LESS_THAN(3,4,0)
+    const KSPType ksp_type;
+#else
+    KSPType ksp_type;
+#endif
+#endif
+    this->check( KSPGetType ( ksp, &ksp_type ) );
+
+    // configure ksp from type
+    if ( std::string((char*)ksp_type) == std::string( ( char* )KSPPREONLY ) )
+    {
+        this->check( KSPSetInitialGuessNonzero ( ksp, PETSC_FALSE ) );
+    }
+    else if ( std::string((char*)ksp_type) == std::string( ( char* )KSPGMRES ) )
+    {
+        this->check( KSPGMRESSetRestart( ksp, M_nRestartGMRES ) );
+    }
 
     // Norm that is passed in the Krylov convergence test routines
     //this->check( KSPSetNormType( ksp, KSP_NORM_DEFAULT /*KSP_NORM_PRECONDITIONED*/ ) );
@@ -1478,7 +1549,6 @@ ConfigurePCLU::runConfigurePCLU( PC& pc )
 #if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
     // allow to tune the factorisation package
     this->check( PCFactorSetUpMatSolverPackage(pc) );
-#endif
 
     // configure mumps
     if ( M_matSolverPackage == "mumps" )
@@ -1494,6 +1564,8 @@ ConfigurePCLU::runConfigurePCLU( PC& pc )
             }
         }
     }
+#endif
+
 }
 
 /**
@@ -1724,7 +1796,7 @@ ConfigureSubPC::runConfigureSubPC( KSP& ksp, ConfigureKSP const& kspConf,Precond
 ConfigurePCML::ConfigurePCML( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
                               WorldComm const& worldComm, std::string const& sub, std::string const& prefix )
     :
-    ConfigurePCBase( worldComm,sub,prefix, getOptionsDescMultiGrid(prefix,sub) ),
+    ConfigurePCBase( worldComm,sub,prefix, getOptionsDescML(prefix,sub) ),
     M_mgType( option(_name="pc-mg-type",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<std::string>() ),
     M_nLevels( option(_name="pc-mg-levels",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
     M_mlReuseInterp( option(_name="pc-ml-reuse-interpolation",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<bool>() ),
@@ -1832,7 +1904,7 @@ ConfigurePCML::configurePCMLCoarse( PC& pc, PreconditionerPetsc<double>::indexsp
 ConfigurePCGAMG::ConfigurePCGAMG( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
                                   WorldComm const& worldComm, std::string const& sub, std::string const& prefix )
     :
-    ConfigurePCBase( worldComm,sub,prefix, getOptionsDescMultiGrid(prefix,sub) ),
+    ConfigurePCBase( worldComm,sub,prefix, getOptionsDescGAMG(prefix,sub) ),
     M_mgType( option(_name="pc-mg-type",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<std::string>() ),
     M_gamgType( option(_name="pc-gamg-type",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<std::string>() ),
     M_nLevels( option(_name="pc-mg-levels",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),

@@ -291,6 +291,8 @@ private:
     void setPetscPreconditionerType ();
 
     void setPetscConstantNullSpace ();
+    void updateNullSpace( Mat A, Vec rhs );
+    void updateNearNullSpace( Mat A );
 
     // SLES removed from >= PETSc 2.2.0
 #if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 1)

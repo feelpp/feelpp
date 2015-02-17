@@ -64,6 +64,7 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( argv )
 
     BOOST_PARAMETER_NAME( verbose )
+    BOOST_PARAMETER_NAME( threading )
 
 
     BOOST_PARAMETER_NAME( matrix )
@@ -88,6 +89,8 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( pc )
     BOOST_PARAMETER_NAME( pcfactormatsolverpackage )
     BOOST_PARAMETER_NAME( constant_null_space )
+    BOOST_PARAMETER_NAME( null_space )
+    BOOST_PARAMETER_NAME( near_null_space )
     BOOST_PARAMETER_NAME( test )
     BOOST_PARAMETER_NAME( trial )
     BOOST_PARAMETER_NAME( vector )

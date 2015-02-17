@@ -27,6 +27,7 @@
  */
 
 #include <feel/feel.hpp>
+#include <feel/feelfilters/straightenmesh_impl.hpp>
 
 
 /** use Feel namespace */
@@ -46,7 +47,7 @@ makeOptions()
         ( "exact", po::value<std::string>()->default_value( "sin(2*Pi*x)*cos(2*Pi*y)" ), "exact solution" )
         ( "rhs", po::value<std::string>()->default_value( "" ), "right hand side" )
         ;
-    return laplacianoptions.add( backend_options("Laplacian") );
+    return laplacianoptions.add( backend_options("LaplacianG1") ).add( backend_options("LaplacianG2") );
 }
 
 
@@ -58,7 +59,7 @@ makeOptions()
  *
  * \tparam Dim the geometric dimension of the problem (e.g. Dim=2 or 3)
  */
-template<int Dim, int Order = 2>
+template<int Dim, int POrder = 2, int GOrder = 1>
 class Laplacian
     :
 public Simget
@@ -69,21 +70,22 @@ public:
 
 }; // Laplacian
 
-template<int Dim, int Order>
+template<int Dim, int POrder, int GOrder>
 void
-Laplacian<Dim,Order>::run()
+Laplacian<Dim,POrder,GOrder>::run()
 {
     LOG(INFO) << "------------------------------------------------------------\n";
     LOG(INFO) << "Execute Laplacian<" << Dim << ">\n";
 
-    Environment::changeRepository( boost::format( "doc/manual/laplacian_bean/%1%/D%2%/P%3%/h_%4%/" )
+    Environment::changeRepository( boost::format( "doc/manual/laplacian_bean/%1%/D%2%/P%3%/G%4%/h_%5%/" )
                                    % this->about().appName()
                                    % Dim
-                                   % Order
+                                   % POrder
+                                   % GOrder
                                    % doption("gmsh.hsize") );
 
-    auto mesh = loadMesh( new Mesh<Simplex<Dim>>, _filename=soption("geofile") );
-    auto Xh = Pch<Order>( mesh );
+    auto mesh = loadMesh( _mesh=new Mesh<Hypercube<Dim,GOrder,Dim>>, _filename=soption("geofile") );
+    auto Xh = Pch<POrder>( mesh );
     Xh->printInfo();
 
     auto u = Xh->element();
@@ -142,7 +144,7 @@ Laplacian<Dim,Order>::run()
     }
 
 
-    a.solve( _rhs=l, _solution=u, _name="Laplacian" );
+    a.solve( _rhs=l, _solution=u, _name=(boost::format("LaplacianG%1%")%GOrder).str() );
 
 
     //! compute the \f$L_2$ norm of the error
@@ -180,7 +182,8 @@ main( int argc, char** argv )
                                   _email="feelpp-devel@feelpp.org") );
 
     Application app;
-    app.add( new Laplacian<2>() );
+    app.add( new Laplacian<2,2,1>() );
+    app.add( new Laplacian<2,2,2>() );
     app.run();
 
 }
