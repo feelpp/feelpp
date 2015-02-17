@@ -58,7 +58,11 @@ int main(int argc, char**argv )
     auto v = Nh->element(e);
     auto w = Xh->element(e);
     auto z = Xh->element();
-    double penaldir=30;
+    double penaldir=doption("parameters.d");
+
+    std::cout << "Weakdirichlet = " << (boption("weakdirichlet") ? "true":"false") << std::endl;
+    std::cout << "Penaldir      = " <<  penaldir << std::endl;
+    std::cout << "Stab Param    = " <<  c << std::endl;
 
 #if FEELPP_DIM == 2
     a = integrate(_range=elements(mesh), _expr=c*trans(idt(u))*id(v)+curlxt(u)*curlx(v));

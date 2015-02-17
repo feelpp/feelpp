@@ -84,6 +84,7 @@ generic_options()
         ( "directory", po::value<std::string>(), "change directory to specified one" )
         ( "npdir", po::value<bool>()->default_value(true), "enable/disable sub-directory np_<number of processors>")
         ( "fail-on-unknown-option", po::value<bool>()->default_value(false), "exit feel++ application if unknown option found" )
+        ( "show-preconditioner-options", "show on the fly the preconditioner options used" )
         ( "serialization-library", po::value<std::string>()->default_value("boost"), "Library used for serialization" )
         ;
     return generic;
@@ -267,14 +268,19 @@ parallel_options( std::string const& prefix )
 {
     po::options_description _options( "Parallel " + prefix + " options" );
     _options.add_options()
+#if BOOST_VERSION >= 105500
+        ( prefixvm( prefix,"mpi.threading-level" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "Enable the use of additional cores for parallelization" )     
+#endif
+#if defined(FEELPP_HAS_HARTS)
         ( prefixvm( prefix,"parallel.cpu.enable" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Enable the use of additional cores for parallelization" )
         ( prefixvm( prefix,"parallel.cpu.impl" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "Specify the implementation for multithreading" )
         ( prefixvm( prefix,"parallel.cpu.restrict" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "Restrict the multithreading to N additional cores per MPI process (0: guess the maximum number of usable cores)" )
 #if defined(HARTS_HAS_OPENCL)
         ( prefixvm( prefix,"parallel.opencl.enable" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Enable the use of OpenCL for parallelization" )
-        ( prefixvm( prefix,"parallel.opencl.device" ).c_str(), Feel::po::value<std::string>()->default_value("cpu"), "Specify the device to use for OpenCL (Valid entries: cpu or gpu" )
+        ( prefixvm( prefix,"parallel.opencl.device" ).c_str(), Feel::po::value<std::string>()->default_value("cpu"), "Specify the device to use for OpenCL (Valid entries: cpu or gpu" )                                                                                                                                                                        
 #endif
         ( prefixvm( prefix,"parallel.debug" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "Enable debugging for parallelization" )
+#endif
         ;
     return _options;
 }
@@ -700,7 +706,7 @@ feel_options( std::string const& prefix  )
         /* gmsh domain options */
         .add( gmsh_domain_options( prefix ) )
         #
-#if defined(FEELPP_HAS_HARTS)
+#if BOOST_VERSION >= 105500 || defined(FEELPP_HAS_HARTS)
         .add( parallel_options( prefix ) )
 #endif
 

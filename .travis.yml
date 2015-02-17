@@ -1,6 +1,6 @@
 os:
   - linux
-
+  
 git:
   depth: 1
   submodules: false
@@ -11,20 +11,33 @@ compiler:
 - clang
 
 env:
-- BUILD="o2-ndebug" BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
-- BUILD="o1-ndebug" BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O1 -DNDEBUG"
+- BUILD="llvm-3.4" FEELPP_CXX=clang++-3.4 FEELPP_CC=clang-3.4 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
+- BUILD="llvm-3.5" FEELPP_CXX=clang++-3.5 FEELPP_CC=clang-3.5 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
 
+#- BUILD="g-debug" BUILDTYPE=Debug
 #- BUILDTYPE=Release TARGET=tutorial
 
 before_install:
 - echo $TRAVIS_OS_NAME
-- if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo add-apt-repository -y ppa:mapnik/boost-backports-1-54; fi
+- if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo add-apt-repository -y ppa:boost-latest/ppa; fi
 - if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo add-apt-repository -y ppa:kalakris/eigen; fi
 - if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo add-apt-repository -y ppa:feelpp/petsc; fi
 - if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo apt-get -qq update; fi
-- if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo apt-get install -qq libboost1.54-all-dev mpi-default-dev mpi-default-bin libeigen3-dev
+- if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo apt-add-repository --yes ppa:ubuntu-toolchain-r/test; fi
+- if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo apt-add-repository 'deb http://llvm.org/apt/precise/ llvm-toolchain-precise main'; fi
+- if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo apt-add-repository 'deb http://llvm.org/apt/precise/ llvm-toolchain-precise-3.4 main'; fi
+- if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo apt-add-repository 'deb http://llvm.org/apt/precise/ llvm-toolchain-precise-3.5 main'; fi
+- if test "x$TRAVIS_OS_NAME" = "xlinux"; then wget -O - http://llvm.org/apt/llvm-snapshot.gpg.key|sudo apt-key add -; fi
+- if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo apt-get update; fi
+- if test "x$TRAVIS_OS_NAME" = "xlinux"; then apt-cache search clang; fi
+- if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo apt-get install $FEELPP_CC; fi
+
+- if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo apt-get install -qq libboost1.55-all-dev mpi-default-dev mpi-default-bin libeigen3-dev
     libpetsc3.4.2-dev libcln-dev petsc-dev libxml2-dev gmsh bison flex doxygen doxygen-latex transfig
     imagemagick libtbb-dev libann-dev libglpk-dev automake libtool; fi
+- if test "x$TRAVIS_OS_NAME" = "xlinux"; then export CXX=$FEELPP_CXX; fi
+- if test "x$TRAVIS_OS_NAME" = "xlinux"; then export CC=$FEELPP_CC; fi
+
 - if test "x$TRAVIS_OS_NAME" = "xosx"; then cd /usr/local && git remote add feelpp https://github.com/feelpp/homebrew.git && git pull feelpp master; fi
 - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew tap feelpp/science; fi
 - if test "x$TRAVIS_OS_NAME" = "xosx"; then ls /usr/local/Cellar; fi
@@ -36,26 +49,6 @@ before_install:
 - git submodule update --init --recursive contrib/ipopt
 - git submodule update --init --recursive quickstart
 
-cache:
-  directories:
-  - /usr/local/Cellar/libevent
-  - /usr/local/Cellar/open-mpi
-  - /usr/local/Cellar/cln
-  - /usr/local/Cellar/eigen
-  - /usr/local/Cellar/gmsh
-  - /usr/local/Cellar/veclibfort
-  - /usr/local/Cellar/scalapack
-  - /usr/local/Cellar/szip
-  - /usr/local/Cellar/hdf5
-  - /usr/local/Cellar/scotch5
-  - /usr/local/Cellar/mumps
-  - /usr/local/Cellar/tbb
-  - /usr/local/Cellar/suite-sparse
-  - /usr/local/Cellar/petsc
-  - /usr/local/Cellar/slepc
-  - /usr/local/Cellar/boost
-  - /usr/local/Cellar/ann
-  - /usr/local/Cellar/glpk
 
 install:
 - mkdir opt-$BUILD && cd opt-$BUILD && ../configure --build=$BUILDTYPE -v --cxxflags="$CXXFLAGS"
@@ -63,7 +56,7 @@ install:
 script:
 - make -j16 feelpp_ginac
 - make -j2 feelpp
-- make $TARGET-check
+- if ! test "x$TARGET" = "x"; then make $TARGET-check; fi
 
 branches:
   only:
@@ -81,3 +74,4 @@ notifications:
 matrix:
   allow_failures:
   - gcc
+  - osx

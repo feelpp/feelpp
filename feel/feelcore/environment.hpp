@@ -30,6 +30,7 @@
 #define FEELPP_ENVIRONMENT_HPP 1
 
 #include <cstdlib>
+#include <memory>
 
 #include <boost/noncopyable.hpp>
 #include <boost/signals2.hpp>
@@ -58,8 +59,6 @@
 #endif
 
 namespace Feel
-{
-namespace detail
 {
 struct MemoryUsage
 {
@@ -98,22 +97,12 @@ struct MemoryUsage
 #endif
     
 };
-inline
-AboutData
-makeAbout( char* name )
-{
-    AboutData about( name,
-                     name,
-                     "0.1",
-                     name,
-                     AboutData::License_GPL,
-                     "Copyright (c) 2012 Feel++ Consortium" );
-
-    about.addAuthor( "Feel++ Consortium",
-                     "",
-                     "feelpp-devel@feelpp.org", "" );
-    return about;
-}
+/**
+ * default \c makeAbout function to define the \c AboutData structure of the Feel++
+ * application
+ * @param name name or short name of the application
+ */
+AboutData makeAboutDefault( std::string name );
 
 /**
  *  @class Environment "Environment"
@@ -184,73 +173,60 @@ public:
      */
     Environment( int& argc, char** &argv );
 
+    Environment( int argc, char** argv,
+#if BOOST_VERSION >= 105500
+                 mpi::threading::level lvl,
+#endif
+                 po::options_description const& desc,
+                 po::options_description const& desc_lib,
+                 AboutData const& about,
+                 std::string directory );
+    
 #if defined(FEELPP_HAS_BOOST_PYTHON) && defined(FEELPP_ENABLE_PYTHON_WRAPPING)
     Environment( boost::python::list arg );
 #endif
 
-    BOOST_PARAMETER_MEMBER_FUNCTION(
-        ( void ), static changeRepository, tag,
-        ( required
-          ( directory,( boost::format ) ) )
-        ( optional
-          ( filename,*( boost::is_convertible<mpl::_,std::string> ),"logfile" )
-          ( subdir,*( boost::is_convertible<mpl::_,bool> ),S_vm["npdir"].as<bool>() )
-          ( worldcomm, ( WorldComm ), Environment::worldComm() )
-        ) )
-    {
-        changeRepositoryImpl( directory, filename, subdir, worldcomm );
-    }
 
     template <class ArgumentPack>
     Environment( ArgumentPack const& args )
-    {
-        char** argv = args[_argv];
-        int argc = args[_argc];
-        S_desc_app = boost::shared_ptr<po::options_description>( new po::options_description( args[_desc|Feel::feel_nooptions()] ) );
-        S_desc_lib = boost::shared_ptr<po::options_description>( new po::options_description( args[_desc_lib | Feel::feel_options()] ) );
-        AboutData about = args[_about| makeAbout( argv[0] )];
-        S_desc = boost::shared_ptr<po::options_description>( new po::options_description( ) );
-        S_desc->add( *S_desc_app );
-
-        // try to see if the feel++ lib options are already in S_desc_app, if yes then we do not add S_desc_lib
-        // otherwise we will have duplicated options
-        std::vector<boost::shared_ptr<po::option_description>> opts = Environment::optionsDescriptionApplication().options();
-        auto it = std::find_if( opts.begin(), opts.end(),
-                                []( boost::shared_ptr<po::option_description> const&o )
-        {
-            return o->format_name().erase( 0,2 ) == "backend";
-        } );
-
-        if   ( it == opts.end() )
-            S_desc->add( *S_desc_lib );
-
-        S_desc->add( file_options( about.appName() ) );
-        S_desc->add( generic_options() );
-
-
-        init( argc, argv, *S_desc, *S_desc_lib, about );
-
-        if ( S_vm.count( "nochdir" ) == 0 )
-        {
-            std::string defaultdir = about.appName();
-
-            if ( S_vm.count( "directory" ) )
-                defaultdir = S_vm["directory"].as<std::string>();
-
-            std::string d = args[_directory|defaultdir];
-            LOG( INFO ) << "change directory to " << d << "\n";
-            boost::format f( d );
-            changeRepository( _directory=f );
-        }
-    }
-
-
-
-
-
-    void init( int argc, char** argv, po::options_description const& desc,
-               po::options_description const& desc_lib, AboutData const& about );
-
+        :
+        Environment( args[_argc],
+                     args[_argv],
+#if BOOST_VERSION >= 105500                     
+                     args[_threading|mpi::threading::single],
+#endif
+                     args[_desc|feel_nooptions()],
+                     args[_desc_lib | feel_options()],
+                     args[_about| makeAboutDefault( args[_argv][0] )],
+                     args[_directory|args[_about| makeAboutDefault( args[_argv][0] )].appName()] )
+        {}
+#if BOOST_VERSION >= 105500                     
+    BOOST_PARAMETER_CONSTRUCTOR(
+        Environment, ( Environment ), tag,
+        ( required
+          ( argc,* )
+          ( argv,* ) )
+        ( optional
+          ( desc,* )
+          ( desc_lib,* )
+          ( about,* )
+          ( threading,(mpi::threading::level) )
+          ( directory,( std::string ) )
+          ) ) // no semicolon
+#else
+    BOOST_PARAMETER_CONSTRUCTOR(
+        Environment, ( Environment ), tag,
+        ( required
+          ( argc,* )
+          ( argv,* ) )
+        ( optional
+          ( desc,* )
+          ( desc_lib,* )
+          ( about,* )
+          ( directory,( std::string ) )
+          ) ) // no semicolon
+#endif
+    
     /** Shuts down the Feel environment.
      *
      *  If this @c Environment object was used to initialize the Feel
@@ -455,6 +431,19 @@ public:
      */
     //@{
 
+    BOOST_PARAMETER_MEMBER_FUNCTION(
+        ( void ), static changeRepository, tag,
+        ( required
+          ( directory,( boost::format ) ) )
+        ( optional
+          ( filename,*( boost::is_convertible<mpl::_,std::string> ),"logfile" )
+          ( subdir,*( boost::is_convertible<mpl::_,bool> ),S_vm["npdir"].as<bool>() )
+          ( worldcomm, ( WorldComm ), Environment::worldComm() )
+          ) )
+        {
+            changeRepositoryImpl( directory, filename, subdir, worldcomm );
+        }
+
     //! \return the root repository (default: \c $HOME/feel)
     static std::string rootRepository();
 
@@ -592,6 +581,12 @@ private:
     //! change the directory where the results are stored
     static void changeRepositoryImpl( boost::format fmt, std::string const& logfile, bool add_subdir_np, WorldComm const& worldcomm );
 
+#if defined ( FEELPP_HAS_PETSC_H )
+    void initPetsc( int * argc = 0, char *** argv = NULL );
+#endif
+
+    
+
     //! process command-line/config-file options
     static void doOptions( int argc, char** argv,
                            po::options_description const& desc,
@@ -614,7 +609,7 @@ private:
 private:
     /// Whether this environment object called MPI_Init
     bool i_initialized;
-    mpi::environment M_env;
+    std::unique_ptr<mpi::environment> M_env;
 
     static std::vector<fs::path> S_paths;
 
@@ -648,26 +643,6 @@ private:
     static hwloc_topology_t S_hwlocTopology;
 #endif
 };
-} // detail
-
-
-
-class Environment : public detail::Environment
-{
-public:
-    BOOST_PARAMETER_CONSTRUCTOR(
-        Environment, ( detail::Environment ), tag,
-        ( required
-          ( argc,* )
-          ( argv,* ) )
-        ( optional
-          ( desc,* )
-          ( desc_lib,* )
-          ( about,* )
-          ( directory,( std::string ) )
-        ) ) // no semicolon
-};
-
 
 BOOST_PARAMETER_FUNCTION(
     ( po::variable_value ), option, tag,

@@ -3,16 +3,73 @@
 
 /** \page Magnetostatic Magnetostatic Example
 
-    \tableofcontents
+  \author Cécile Daversin
+  \author Vincent Huber
+  \date 2015-02-13
+  \tableofcontents
 
-    This example solve the magnetostatic equation.
+  This example solve the magnetostatic equation.
 
-    \section MagnetostaticFormulation Formulation
+  \section MagnetostaticFormulation Equations
 
-    Denote \f$\Omega = [-1,1]^2\f$  the computational domain and \f$u\f$ the electric field solution of the following equation
-    \f[
-    -\curl \curl u + c u  = f, u \times n = 0
-    \f].
+  The starting point is the Maxwell set of equation, that read :
+  \f[
+  \nabla \cdot D = \rho_v \\
+  \nabla \cdot B = 0 \\
+  \nabla \times E = - \partial_t B \\
+  \nabla \times H = \partial_t D + J 
+  \f]
+
+  As long as we are in the static configuration, and we are interested in the magnetic flux, we have :
+  \f[
+  \nabla \cdot B = 0 \\
+  \nabla \times H = J
+  \f]
+
+  \subsection StateLaw State
+  The relation betweens H and B reads :
+  \f[
+  B = \mu_0 \mu_r H \\
+  = \mu\left(A\right) H
+  \f]
+
+  \subsection Gauge Potential Vector and Coulomb Gauge
+  The unknown will be the so called potential vector that is 
+  \f[
+  H = \nabla \times u
+  \f]
+  As long as the definition of u is not unique, we impose moreover to have :
+  \f[
+  \nabla \cdot u = 0
+  \f]
+
+  \subsection BC Boundary conditions 
+  \f[
+  B \cdot \vec{n} = u_d 
+  \f]
+  that reads
+  \f[
+  n \times u = u_d 
+  \f]
+
+  \subsection pb Formulation
+  \f[
+  \nabla \mu\left(A\right)^{-1}\times \nabla \times u = J \\
+  \nabla \cdot u = 0 \\
+  B \cdot \vec{n} = u_d 
+  \f]
+  \subsubsection var_dir Variational formulation
+  \paragraph var_dir_weak Weak boundary conditions
+  \paragraph var_dir_strong Strong boundary conditions
+  \subsection stab Stabilized formulation
+  Denote \f$\Omega \in \R^2\f$  the computational domain and \f$u\f$ the electric field solution of the following equation
+  \f[
+  -\nabla \mu\left(A\right)^{-1} \times \nabla \times u + c u  = J \\
+  u \times n = u_d
+  \f].
+  \subsubsection var_stab Variational formulation
+  \paragraph var_stab_dir_weak Weak boundary conditions
+  \paragraph var_stab_dir_strong Strong boundary conditions
 
 
 

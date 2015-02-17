@@ -66,6 +66,8 @@
 #include <feel/feelvf/pattern.hpp>
 #include <feel/feelvf/block.hpp>
 
+#include <feel/feelalg/nullspace.hpp>
+
 namespace Feel
 {
 /*enum  Pattern
@@ -974,13 +976,15 @@ public:
                                        ( prec,( preconditioner_ptrtype ), preconditioner( _prefix=this->prefix(),_matrix=matrix,_pc=this->pcEnumType()/*LU_PRECOND*/,
                                                                                           _pcfactormatsolverpackage=this->matSolverPackageEnumType(), _backend=this->shared_from_this(),
                                                                                           _worldcomm=this->comm() ) )
+                                       ( null_space,( NullSpace<value_type> ), NullSpace<value_type>() )
+                                       ( near_null_space,( NullSpace<value_type> ), NullSpace<value_type>() )
                                        ( maxit,( size_type ), M_maxitKSP/*1000*/ )
                                        ( rtolerance,( double ), M_rtolerance/*1e-13*/ )
                                        ( atolerance,( double ), M_atolerance/*1e-50*/ )
                                        ( dtolerance,( double ), M_dtolerance/*1e5*/ )
                                        ( reuse_prec,( bool ), M_reuse_prec )
                                        ( transpose,( bool ), false )
-                                       ( constant_null_space,( bool ), false )
+                                       ( constant_null_space,( bool ), M_constant_null_space/*false*/ )
                                        ( pc,( std::string ),M_pc/*"lu"*/ )
                                        ( ksp,( std::string ),M_ksp/*"gmres"*/ )
                                        ( pcfactormatsolverpackage,( std::string ), M_pcFactorMatSolverPackage )
@@ -1000,7 +1004,25 @@ public:
         this->setSolverType( _pc=pc, _ksp=ksp,
                              _constant_null_space=constant_null_space,
                              _pcfactormatsolverpackage = pcfactormatsolverpackage );
+
         this->attachPreconditioner( prec );
+
+        // attach null space (or near null space for multigrid) in backend
+        boost::shared_ptr<NullSpace<value_type> > mynullspace( new NullSpace<value_type>(this->shared_from_this(),null_space) );
+        boost::shared_ptr<NullSpace<value_type> > myNearNullSpace( new NullSpace<value_type>(this->shared_from_this(),near_null_space) );
+        if ( mynullspace->size() > 0 )
+        {
+            this->attachNullSpace( mynullspace );
+            if ( myNearNullSpace->size() > 0 )
+                this->attachNearNullSpace( myNearNullSpace );
+            else
+                this->attachNearNullSpace( mynullspace );
+        }
+        else if ( myNearNullSpace->size() > 0 )
+        {
+            this->attachNearNullSpace( myNearNullSpace );
+        }
+
         // make sure matrix and rhs are closed
         matrix->close();
         rhs->close();
@@ -1197,6 +1219,14 @@ public:
             M_preconditioner->clear();
         M_preconditioner = preconditioner;
     }
+    void attachNullSpace( boost::shared_ptr<NullSpace<value_type> > nullSpace )
+    {
+        M_nullSpace = nullSpace;
+    }
+    void attachNearNullSpace( boost::shared_ptr<NullSpace<value_type> > nearNullSpace )
+    {
+        M_nearNullSpace = nearNullSpace;
+    }
 
     /**
      * register a backend observer for the delete signal of backend
@@ -1231,6 +1261,7 @@ public:
 
 protected:
     preconditioner_ptrtype M_preconditioner;
+    boost::shared_ptr<NullSpace<value_type> > M_nullSpace, M_nearNullSpace;
 private:
 
     void start();

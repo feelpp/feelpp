@@ -74,7 +74,7 @@ public:
 
     typedef FiniteElement<P, PDual, Pts> self_type;
 
-    typedef typename P::value_type value_type;
+    using value_type = typename P::value_type;
 
     typedef P primal_space_type;
 
