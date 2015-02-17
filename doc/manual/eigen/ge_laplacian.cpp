@@ -79,12 +79,8 @@ EigenProblem<Dim, Order>::run()
         int i = 0;
         for( auto const& mode : modes )
         {
-            std::cout << " -- eigenvalue " << i << " = " << mode.first << "\n";
-            double l2div = normL2(_range=elements(mesh),_expr=dzv(mode.second) );
-            if ( Environment::worldComm().isMasterRank() )
-            {
-                std::cout << "  - div = " <<  l2div << "\n";
-            }
+            if ( Environment::isMasterRank() )
+                std::cout << " -- eigenvalue " << i << " = " << mode.first << "\n";
             ++i;
         }
     }
@@ -97,7 +93,7 @@ EigenProblem<Dim, Order>::run()
         int i = 0;
         for( auto const& mode: modes )
         {
-            e->add( ( boost::format( "mode-%1%" ) % i ).str(), mode.second );
+            e->add( ( boost::format( "mode-%1%" ) % i++ ).str(), mode.second );
         }
 
         e->save();
