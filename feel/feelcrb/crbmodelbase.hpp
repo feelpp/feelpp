@@ -233,13 +233,25 @@ public:
             if ( M_is_initialized )
                 return;
 
+            bool is_symmetric = boption(_name="crb.use-symmetric-matrix");
+
             M_mode = mode;
 
             LOG(INFO)<< "Model Initialization";
             initModel();
+            countAffineDecompositionTerms();
 
             if ( !is_time_dependent )
                 initializeMassMatrix();
+
+            double norm=0;
+            if ( hasEim() || !is_symmetric )
+            {
+                M_inner_product_matrix = mergeLinearA();
+                norm = M_inner_product_matrix->l1Norm();
+            }
+            else if ( norm==0 && is_symmetric )
+                M_inner_product_matrix = M_energy_matrix;
 
             checkBdf();
 
@@ -247,6 +259,13 @@ public:
             v = Xh->element();
             M_is_initialized = true;
         }
+
+
+
+
+
+
+
 
     virtual void run( const double * X, unsigned long N, double * Y, unsigned long P )
         {
@@ -580,7 +599,7 @@ public:
                     element_type const& xi_i, element_type const& xi_j, bool transpose = false,
                     int const& row=1, int const&  col=1) const
         {
-            return Mqm( q, m, transpose, row, col )->energy( xi_j, xi_i, transpose );
+            return Mqm( q, m, transpose, row, col )->energy( xi_j, xi_i );
         }
 
     sparse_matrix_ptrtype Aqm( uint16_type q, uint16_type m, bool transpose = false,
@@ -593,7 +612,7 @@ public:
                     element_type const& xi_i, element_type const& xi_j, bool transpose = false,
                     int const& row=1, int const& col=1 ) const
         {
-            return Aqm( q, m, transpose, row, col )->energy( xi_j, xi_i, transpose );
+            return Aqm( q, m, transpose, row, col )->energy( xi_j, xi_i );
         }
 
     vector_ptrtype Fqm( uint16_type output, uint16_type q, int m=0, int const& row=1 ) const
@@ -684,6 +703,51 @@ public:
     virtual eim_interpolation_error_type eimInterpolationErrorEstimation()
         {
             return boost::make_tuple( M_eim_error_mq , M_eim_error_aq, M_eim_error_fq);
+        }
+
+    sparse_matrix_ptrtype mergeLinearA( int const& row=1, int const& col=1 )
+        {
+            auto linear_Aqm = M_A[row-1][col-1]->linearMqm();
+            auto muref = refParameter();
+            auto linear_beta = computeBetaLinearDecompositionA( muref );
+            int linear_Q = M_A[row-1][col-1]->QLinear();
+
+            auto mat = backend()->newMatrix( _trial=functionSpace(col-1),
+                                             _test=functionSpace(row-1) );
+            for ( int q=0; q<linear_Q; q++ )
+            {
+                int linear_mMax = M_A[row-1][col-1]->mMaxLinear(q);
+                for( int m=0; m<linear_mMax; m++)
+                    mat->addMatrix( linear_beta[q][m], linear_Aqm[q][m] );
+            }
+
+            return mat;
+        }
+    virtual std::vector< std::vector< sparse_matrix_ptrtype >>
+    computeLinearDecompositionA()
+        {
+            std::vector< std::vector< sparse_matrix_ptrtype >> empty_one;
+            LOG(INFO) << "Warning : you did not write computeLinearDecompositionA(), the linear part of A is automatically evaluate.\n";
+            return empty_one;
+        }
+
+    virtual beta_vector_type
+    computeBetaLinearDecompositionA ( parameter_type const& mu, double time=0,
+                                      int const& row=1, int const& col=1 )
+        {
+            fatalBlockCheck( M_A, row, col, "computeBetaLinearDecompositionA" );
+            LOG(INFO) << "Warning : you did not write computeBetaLinearDecompositionA(), the linear coefficients of A are automatically evaluate.\n";
+            return M_A[row-1][col-1]->computeBetaLinear( mu );
+        }
+    int QLinearDecompositionA( int const& row=1, int const& col=1 ) const
+        {
+            fatalBlockCheck( M_A, row, col, "QLinearDecomposition1A");
+            return M_A[row-1][col-1]->QLinear();
+        }
+    int mMaxLinearDecompositionA( int q, int const& row=1, int const& col=1 ) const
+        {
+            fatalBlockCheck( M_A, row, col, "mMaxLinearDecompositionA");
+            return M_A[row-1][col-1]->mMaxLinear(q);
         }
 
 
@@ -903,20 +967,20 @@ public:
         }
     void addEnergyMatrix( form2_type const & f )
         {
-            M_inner_product_matrix = f.matrixPtr() ;
+            M_energy_matrix = f.matrixPtr() ;
         }
     void addEnergyMatrix( sparse_matrix_ptrtype const & matrix )
         {
-            M_inner_product_matrix = matrix ;
+            M_energy_matrix = matrix ;
         }
 
-    virtual sparse_matrix_ptrtype energyMatrix ()
+    sparse_matrix_ptrtype energyMatrix ()
         {
             double norm = M_inner_product_matrix->l1Norm();
             CHECK( norm > 0 )<<"The energy matrix has not be filled !\n";
             return M_inner_product_matrix;
         }
-    virtual sparse_matrix_ptrtype energyMatrix () const
+    sparse_matrix_ptrtype energyMatrix () const
         {
             double norm = M_inner_product_matrix->l1Norm();
             CHECK( norm > 0 )<<"The energy matrix has not be filled ! \n";
@@ -1227,19 +1291,7 @@ public:
         {
             return M_funs_d;
         }
-    virtual beta_vector_type computeBetaLinearDecompositionA ( parameter_type const& mu ,  double time=0 )
-        {
-            auto tuple = computeBetaQm( mu, time );
-            return tuple.template get<1>();
-        }
-    int QLinearDecompositionA() const
-        {
-            return M_QLinearDecompositionA;
-        }
-    int mMaxLinearDecompositionA( int q ) const
-        {
-            return M_mMaxLinearDecompositionA[q];
-        }
+
     virtual int mMaxInitialGuess( int q ) const
         {
             if( q == 0 )
@@ -1260,13 +1312,15 @@ public:
                 initial_field->zero();
         }
     value_type linearDecompositionAqm( uint16_type q, uint16_type m, element_type const& xi_i,
-                                       element_type const& xi_j, bool transpose = false ) const
+                                       element_type const& xi_j, bool transpose = false,
+                                       int const& row=1, int const& col=1 ) const
         {
+            fatalBlockCheck( M_A, row, col, "linearDecompositionAqm");
             bool stock = boption(_name="crb.stock-matrices");
             if( stock )
             {
                 //in this case matrices have already been stocked
-                return M_linearAqm[q][m]->energy( xi_j, xi_i, transpose );
+                return M_A[row-1][col-1]->computeLinear(q,m,transpose)->energy( xi_i, xi_j );
             }
             CHECK( stock )<<" This check is here because nothing is done to deal with linear decomposition of a (model using EIM) when using "
                           <<" operators free and option crb.stock-matrices=false.\nFor now we suppose that crb.stock-matrices=true.\n "
@@ -1878,6 +1932,7 @@ protected:
     rbfunctionspace_ptrtype XN;
 
     sparse_matrix_ptrtype M_inner_product_matrix;
+    sparse_matrix_ptrtype M_energy_matrix;;
     sparse_matrix_ptrtype M_mass_matrix;
 
     bdf_ptrtype M_bdf;

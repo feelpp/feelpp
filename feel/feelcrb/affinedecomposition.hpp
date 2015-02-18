@@ -63,6 +63,7 @@ public:
     affine_decomposition_type;
 
     static const bool is_matrix = std::is_same<TensorType,sparse_matrix_ptrtype>::value;
+    static const int geo_dim = mesh_type::nDim;
 
     BlockAD( model_ptrtype model, int const row, int const col=0 ) :
         M_model(model),
@@ -77,8 +78,7 @@ public:
     void add( TensorType const& tensor, BetaType const& beta, std::string filename )
         {
             newEntry( beta, filename );
-            M_Mqm.resize( M_Q );
-            M_Mqm[M_Q-1] = tensor ;
+            M_Mqm[M_Q-1][0] = tensor;
         }
 
     template <typename BetaType>
@@ -159,23 +159,30 @@ public:
 
     void check()
         {
-            CHECK( M_Q==M_mMax.size() )<<"M_Q==M_mMax.size()\n";
-            CHECK( M_Q==M_beta.size() )<<"M_Q==M_beta.size()\n";
-            CHECK( M_Q==M_beta_mode.size() ) << "M_Q==M_beta_mode.size()\n";
+            CHECK( M_Q==M_mMax.size() )<<"M_Q="<<M_Q<<", M_mMax.size()="<<M_mMax.size()<<std::endl;
+            CHECK( M_Q==M_beta.size() )<<"M_Q="<<M_Q<<", M_beta.size()="<<M_beta.size()<<std::endl;
+            CHECK( M_Q==M_beta_mode.size() )<<"M_Q="<<M_Q
+                                            <<", M_beta_mode.size()="<<M_beta_mode.size()<<std::endl;
             for ( int q=0; q<M_Q; q++ )
-                CHECK( M_mMax[q]==M_beta[q].size() )<< "M_mMax[q]==M_beta[q].size(), for q="<<q<<std::endl;
+                CHECK( M_mMax[q]==M_beta[q].size() )<<"M_mMax[q]="<<M_mMax[q]
+                                                    <<", M_beta[q].size()="<<M_beta[q].size()
+                                                    <<", for q="<<q<<std::endl;
             if ( M_use_operators_free )
             {
                 auto mMax = M_composite->countAllContributions();
                 CHECK( M_Q==mMax.size() )<< "M_Q==mMax.size()\n";
                 for ( int q=0; q<M_Q; q++ )
-                    CHECK( mMax[q]==M_mMax[q] )<< "mMax[q]==M_mMax[q], for q="<<q <<std::endl;
+                    CHECK( mMax[q]==M_mMax[q] )<<"mMax[q]="<<mMax[q]
+                                               <<", M_mMax[q].size()="<<M_mMax[q].size()
+                                               <<", for q="<<q<<std::endl;
             }
             else
             {
-                CHECK( M_Q==M_Mqm.size() ) << "M_Q==M_Mqm.size()\n";
+                CHECK( M_Q==M_Mqm.size() )<<"M_Q="<<M_Q<<", M_Mqm.size()="<<M_Mqm.size()<<std::endl;
                 for ( int q=0; q<M_Q; q++ )
-                    CHECK( M_mMax[q]==M_Mqm[q].size() )<<"M_mMax[q]==M_Mqm[q].size(), for q="<<q<<std::endl;
+                    CHECK( M_mMax[q]==M_Mqm[q].size() )<<"M_mMax[q]="<<M_mMax[q]
+                                                       <<", M_Mqm[q].size()="<<M_Mqm[q].size()
+                                                       <<", for q="<<q<<std::endl;
             }
 
         }
@@ -411,9 +418,95 @@ public:
             return F;
         }
 
-    bool useOperatorsFree() { return M_use_operators_free; }
-    bool useGinacExpr() { return M_use_ginac_expr; }
 
+
+    sparse_matrix_ptrtype computeLinear( int const& q, int const& m, bool transpose )
+        {
+            CHECK( q<M_Q ) << "compute called with bad q index : "<<q <<" and max index is "<< M_Q << std::endl;
+            CHECK( m<M_mMax[q] ) << "compute called with bad m index : "<< m <<" and max index is "<< M_mMax[q];
+
+            auto matrix  = backend()->newMatrix( _trial=M_model->functionSpace(),
+                                                 _test=M_model->functionSpace() );
+            if ( transpose )
+                M_Mqm[q][m]->transpose(matrix);
+            else
+                matrix = M_Mqm[q][m];
+
+            return matrix;
+        }
+
+    std::vector< std::vector< sparse_matrix_ptrtype >> linearMqm()
+        {
+            if ( M_MqmLinear.size()==0 )
+            {
+                M_MqmLinear = M_model->computeLinearDecompositionA();
+                if ( M_MqmLinear.size()==0 )
+                {
+                    for ( int q=0; q<M_Q; q++ )
+                    {
+                        if ( M_beta_mode[q]!=BetaMode::EIM )
+                            M_MqmLinear.push_back( M_Mqm[q] );
+                    }
+                }
+
+                M_QLinear = M_MqmLinear.size();
+                M_mMaxLinear.resize( M_QLinear );
+                M_betaLinear.resize( M_QLinear );
+                for ( int q=0; q<M_QLinear; q++ )
+                {
+                    M_mMaxLinear[q] = M_MqmLinear[q].size();
+                    M_betaLinear[q].resize( M_mMaxLinear[q], 0 );
+                }
+            }
+
+            return M_MqmLinear;
+        }
+    beta_vector_type computeBetaLinear( parameter_type const& mu, double time=0 )
+        {
+            if ( M_betaLinear.size()==0 )
+                linearMqm();
+
+            if ( M_use_ginac_expr )
+            {
+                std::string symbol;
+                for( int i=0; i<M_model->ParameterSpaceDimension; i++ )
+                {
+                    symbol = symbol = ( boost::format("mu%1%") %i ).str();
+                    M_symbols_map[symbol]=mu(i);
+                }
+                M_symbols_map["t"]=time;
+            }
+
+            for ( int q=0; q<M_Q; q++ )
+            {
+                switch ( M_beta_mode[q] )
+                {
+                case BetaMode::GINAC :
+                    M_betaLinear[q][0] = M_ginac[q].evaluate(M_symbols_map);
+                    break;
+
+                case BetaMode::SET :
+                    for ( int m=0; q<M_mMax[q]; m++)
+                        M_betaLinear[q][m]=M_beta[q][m];
+                    break;
+
+                default :
+                    CHECK( false )<< "You did not fill betaMqm coefficient\n, you can use either ginac expressions, eim or betaMqm() function to do so"<<std::endl;
+                    break;
+                }
+            }
+
+            return M_betaLinear;
+        }
+
+    int QLinear()
+        {
+            return M_QLinear;
+        }
+    int mMaxLinear( int const q )
+        {
+            return M_mMaxLinear[q];
+        }
 
 private:
     enum BetaMode { NONE=0, GINAC=1, EIM=2, SET=3 };
@@ -425,14 +518,16 @@ private:
             M_beta.resize( M_Q );
             M_beta_mode.resize( M_Q, BetaMode::NONE );
             M_mMax.resize( M_Q, 0 );
-            M_Mqm.resize( M_Q );
-
+            M_ginac.resize( M_Q, expr<geo_dim>( "0", Symbols( {"x"} ), "ginacDefault" ) );
+            if ( !M_use_operators_free )
+                M_Mqm.resize( M_Q );
         }
     void resizeM( int const& q, int const& m )
         {
             M_mMax[q] = m;
             M_beta[q].resize( M_mMax[q], 0 );
-            M_Mqm[q].resize( M_mMax[q] );
+            if ( !M_use_operators_free )
+                M_Mqm[q].resize( M_mMax[q] );
         }
 
     void newEntry( std::string symbol, std::string filename )
@@ -449,7 +544,7 @@ private:
             resizeQ( M_Q+1 );
             resizeM( M_Q-1, 1 );
 
-            M_ginac.push_back( expr( symbol, Symbols( M_symbols_vec ), filename ) );
+            M_ginac[M_Q-1]= expr<geo_dim>( symbol, Symbols( M_symbols_vec ), filename );
             M_beta_mode[M_Q-1]= BetaMode::GINAC;
         }
 
@@ -627,7 +722,7 @@ private:
     beta_vector_type M_beta;
     std::vector< BetaMode > M_beta_mode;
     /// ginac expressions
-    std::vector< Expr< GinacEx<2> >> M_ginac;
+    std::vector< Expr< GinacEx<geo_dim> >> M_ginac;
 
     model_ptrtype M_model;
     /// number of terms
@@ -639,6 +734,13 @@ private:
     /// operators free
     CompositeType M_composite;
 
+
+    /// linear part
+    std::vector< std::vector< TensorType >> M_MqmLinear;
+    int M_QLinear;
+    std::vector< int > M_mMaxLinear;
+    beta_vector_type M_betaLinear;
+
     bool M_use_operators_free;
     const int M_row;
     const int M_col;
@@ -648,6 +750,8 @@ private:
     std::vector< std::string > M_symbols_vec;
 
     bool M_use_ginac_expr;
+
+
 
 };
 
