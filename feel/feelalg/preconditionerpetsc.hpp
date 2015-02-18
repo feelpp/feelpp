@@ -363,10 +363,22 @@ public :
                  WorldComm const& worldComm, std::string const& sub, std::string const& prefix,
                  std::vector<std::string> const& prefixOverwrite,
                  po::variables_map const& vm/* = Environment::vm()*/ );
-private :
+
+    ConfigurePC( //PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+                 WorldComm const& worldComm, std::string const& sub, std::string const& prefix,
+                 std::vector<std::string> const& prefixOverwrite,
+                 po::variables_map const& vm/* = Environment::vm()*/ );
+
+    void setFactorShiftType( std::string s )
+    {
+        CHECK( s == "none" || s == "nonzero" || s == "positive_definite" || s == "inblocks" ) << "invalid shift type : " << s;
+        M_factorShiftType = s;
+    }
+
     void run( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is );
 private :
     bool M_useConfigDefaultPetsc;
+    std::string M_factorShiftType;
 };
 
 /**
@@ -604,6 +616,28 @@ private :
 private :
     int M_levels;
 };
+
+/**
+ * ConfigurePCRedundant
+ */
+class ConfigurePCRedundant : public ConfigurePCBase
+{
+public :
+    ConfigurePCRedundant( //PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+                          WorldComm const& worldComm, std::string const& prefix, std::vector<std::string> const& prefixOverwrite );
+    void run( PC& pc,PreconditionerPetsc<double>::indexsplit_ptrtype const& is );
+
+    void setFactorShiftType( std::string s )
+    {
+        CHECK( s == "none" || s == "nonzero" || s == "positive_definite" || s == "inblocks" ) << "invalid shift type : " << s;
+        M_factorShiftType = s;
+    }
+private :
+    std::string M_innerPCtype, M_innerPCMatSolverPackage;
+    bool M_innerPCview;
+    std::string M_factorShiftType;
+};
+
 
 
 
