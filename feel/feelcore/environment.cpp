@@ -283,72 +283,46 @@ Environment::Environment( int& argc, char**& argv )
 }
 
 
+
 #if defined(FEELPP_HAS_BOOST_PYTHON) && defined(FEELPP_ENABLE_PYTHON_WRAPPING)
-Environment::Environment( boost::python::list arg )
+struct PythonArgs
 {
+    PythonArgs( boost::python::list arg )
+        {
+            if ( argv == nullptr )
+            {
+                /* Convert python options into argc/argv format */
 
-    /* Convert python options into argc/argv format */
-    int argc = boost::python::len( arg );
-    //std::cout << argc << std::endl ;
+                argc = boost::python::len( arg );
 
-    char** argv =new char* [argc+1];
-    boost::python::stl_input_iterator<std::string> begin( arg ), end;
-    int i=0;
-
-    while ( begin != end )
-    {
-        //std::cout << *begin << std::endl ;
-        argv[i] =strdup( ( *begin ).c_str() );
-        begin++;
-        i++;
-    }
-
-    argv[argc]=NULL;
-
-    S_desc_app = boost::shared_ptr<po::options_description>( new po::options_description( Feel::feel_nooptions() ) );
-    S_desc_lib = boost::shared_ptr<po::options_description>( new po::options_description( Feel::feel_options() ) );
-    AboutData about =makeAboutDefault( argv[0] );
-    S_desc = boost::shared_ptr<po::options_description>( new po::options_description( ) );
-    S_desc->add( *S_desc_app );
-
-    // try to see if the feel++ lib options are already in S_desc_app, if yes then we do not add S_desc_lib
-    // otherwise we will have duplicated options
-    std::vector<boost::shared_ptr<po::option_description>> opts = Environment::optionsDescriptionApplication().options();
-    auto it = std::find_if( opts.begin(), opts.end(),
-                            []( boost::shared_ptr<po::option_description> const&o )
-    {
-        return o->format_name().erase( 0,2 ) == "backend";
-    } );
-
-    if   ( it == opts.end() )
-        S_desc->add( *S_desc_lib );
-
-    S_desc->add( file_options( about.appName() ) );
-    S_desc->add( generic_options() );
-
-
-    init( argc, argv, *S_desc, *S_desc_lib, about );
-
-    /* free allocated arrays (as they are duplicated in the init functions) */
-    // Last element is NULL
-    for(int i = 0; i < argc; i++)
-    {
-        delete argv[i];
-    }
-    delete[] argv;
-
-    if ( S_vm.count( "nochdir" ) == 0 )
-    {
-        std::string defaultdir = about.appName();
-
-        if ( S_vm.count( "directory" ) )
-            defaultdir = S_vm["directory"].as<std::string>();
-
-        std::string d =defaultdir;
-        LOG( INFO ) << "change directory to " << d << "\n";
-        boost::format f( d );
-        changeRepository( _directory=f );
-    }
+                argv =new char* [argc+1];
+                boost::python::stl_input_iterator<std::string> begin( arg ), end;
+                int i=0;
+                
+                while ( begin != end )
+                {
+                    //std::cout << *begin << std::endl ;
+                    argv[i] =strdup( ( *begin ).c_str() );
+                    begin++;
+                    i++;
+                }
+                
+                argv[argc]=nullptr;
+            }
+        }
+    static int argc;
+    static char** argv;
+};
+int PythonArgs::argc = 1;
+char** PythonArgs::argv = nullptr;
+Environment::Environment( boost::python::list arg )
+    :
+#if BOOST_VERSION >= 105500
+    Environment( PythonArgs(arg).argc, PythonArgs::argv, mpi::threading::single, feel_nooptions(), feel_options(), makeAboutDefault(PythonArgs::argv[0]), makeAboutDefault(PythonArgs::argv[0]).appName() )
+#else
+    Environment( PythonArgs(arg).argc, PythonArgs::argv, feel_nooptions(), feel_options(), makeAboutDefault(PythonArgs::argv[0]), makeAboutDefault(PythonArgs::argv[0]).appName() )
+#endif
+{
 }
 #endif
 
