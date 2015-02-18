@@ -1471,12 +1471,12 @@ public:
                 typename mesh_type::element_type>::type::nComponents> type;
     };
     struct nodim { static const int nDim = -1; static const int nRealDim = -1; };
-    static const uint16_type nDim = mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
-                                             mpl::identity<meshes_list >,
-                                             mpl::identity<nodim> >::type::type::nDim;
-    static const uint16_type nRealDim = mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
-                                                 mpl::identity<meshes_list>,
-                                                 mpl::identity<nodim> >::type::type::nRealDim;
+    static constexpr uint16_type nDim = mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
+                                          mpl::identity<meshes_list >,
+                                          mpl::identity<nodim> >::type::type::nDim;
+    static constexpr uint16_type nRealDim = mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
+                                              mpl::identity<meshes_list>,
+                                              mpl::identity<nodim> >::type::type::nRealDim;
 
 
 
@@ -1486,16 +1486,16 @@ public:
                                                                    value_type,
                                                                    typename GetMesh<meshes_list,0>::type::element_type>::type basis_0_type;
 
-    static const uint16_type rank = ( is_composite? invalid_uint16_type_value : basis_0_type::rank );
-    static const bool is_scalar = ( is_composite? false : basis_0_type::is_scalar );
-    static const bool is_vectorial = ( is_composite? false : basis_0_type::is_vectorial );
-    static const bool is_tensor2 = ( is_composite? false : basis_0_type::is_tensor2 );
-    static const bool is_continuous = ( is_composite? false : basis_0_type::isContinuous );
-    static const bool is_modal = ( is_composite? false : basis_0_type::is_modal );
-    static const bool is_nodal = !is_modal;
-    static const uint16_type nComponents1 = ( is_composite? invalid_uint16_type_value : basis_0_type::nComponents1 );
-    static const uint16_type nComponents2 = ( is_composite? invalid_uint16_type_value : basis_0_type::nComponents2 );
-    static const bool is_product = ( is_composite? invalid_uint16_type_value : basis_0_type::is_product );
+    static constexpr uint16_type rank = ( is_composite? invalid_uint16_type_value : basis_0_type::rank );
+    static constexpr bool is_scalar = ( is_composite? false : basis_0_type::is_scalar );
+    static constexpr bool is_vectorial = ( is_composite? false : basis_0_type::is_vectorial );
+    static constexpr bool is_tensor2 = ( is_composite? false : basis_0_type::is_tensor2 );
+    static constexpr bool is_continuous = ( is_composite? false : basis_0_type::isContinuous );
+    static constexpr bool is_modal = ( is_composite? false : basis_0_type::is_modal );
+    static constexpr bool is_nodal = !is_modal;
+    static constexpr uint16_type nComponents1 = ( is_composite? invalid_uint16_type_value : basis_0_type::nComponents1 );
+    static constexpr uint16_type nComponents2 = ( is_composite? invalid_uint16_type_value : basis_0_type::nComponents2 );
+    static constexpr bool is_product = ( is_composite? invalid_uint16_type_value : basis_0_type::is_product );
     typedef typename  basis_0_type::continuity_type continuity_type;
 
     static const uint16_type nComponents = mpl::transform<bases_list,
