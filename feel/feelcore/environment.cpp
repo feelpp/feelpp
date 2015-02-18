@@ -436,15 +436,14 @@ Environment::Environment( int argc, char** argv,
 
     S_desc->add( file_options( about.appName() ) );
     S_desc->add( generic_options() );
-        
+    S_about = about;        
 
     // duplicate argv before passing to gflags because gflags is going to
     // rearrange them and it screws badly the flags for PETSc/SLEPc
     char** envargv = dupargv( argv );
 
-    S_about = about;
-    doOptions( argc, envargv, *S_desc, *S_desc_lib, about.appName() );
-    
+
+        
     
     S_scratchdir = scratchdir();
     fs::path a0 = std::string( argv[0] );
@@ -508,6 +507,9 @@ Environment::Environment( int argc, char** argv,
     //VLOG(2) << "[Feel++] TBB running with " << n << " threads\n";
     //tbb::task_scheduler_init init(2);
 #endif
+
+    // parse options
+    doOptions( argc, envargv, *S_desc, *S_desc_lib, about.appName() );
 
 #if defined ( FEELPP_HAS_PETSC_H )
     initPetsc( &argc, &envargv );
