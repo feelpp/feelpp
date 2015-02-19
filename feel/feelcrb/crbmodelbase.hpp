@@ -24,6 +24,12 @@
 
 namespace Feel
 {
+
+enum class CRBModelMode
+{
+    PFEM = 0, SCM = 1, CRB = 2, SCM_ONLINE=3, CRB_ONLINE=4
+};
+
 enum {
     /** TimeIndependent */
     TimeIndependent=0,
@@ -98,9 +104,13 @@ public:
     static const bool is_linear = !((_Options&NonLinear)==NonLinear);
     static const int Options = _Options;
 
+
     typedef CRBModelBase self_type;
     typedef double value_type;
 
+    typedef ParameterDefinition parameter_definition;
+    typedef FunctionSpaceDefinition function_space_definition;
+    typedef EimDefinition eim_definition;
     // Functions Space
     typedef typename mpl::if_<is_shared_ptr<FunctionSpaceDefinition>,
                               mpl::identity<typename FunctionSpaceDefinition::element_type>,
@@ -263,7 +273,10 @@ public:
 
 
 
-
+    virtual std::string modelName()
+        {
+            return "generic-model-name";
+        }
 
 
 
@@ -384,9 +397,7 @@ public:
 
     virtual steady_betaqm_type computeBetaQm( element_type const& T, parameter_type const& mu )
         {
-            steady_betaqm_type dummy;
-            throw std::logic_error( "Since youre model is not linear (neither time dependent) you have to implement the function BetaQm( u, mu ) ");
-            return dummy;
+            return boost::make_tuple( computeBetaAqm( T,mu ), computeBetaFqm( T,mu ) );
         }
 
     betaqm_type computeBetaQm( vector_ptrtype const& T, parameter_type const& mu ,
@@ -432,6 +443,12 @@ public:
             fatalBlockCheck( M_M, row, col, "computeBetaMqm" );
             return M_M[row-1][col-1]->computeBetaQm( mu, time );
         }
+    beta_vector_type computeBetaMqm( element_type const& T, parameter_type const& mu, double time=0,
+                                     int const& row=1, int const& col=1 )
+        {
+            fatalBlockCheck( M_M, row, col, "computeBetaMqm" );
+            return M_M[row-1][col-1]->computeBetaQm( T, mu, time );
+        }
     double betaM( int const& q, int const& m=0, int const& row=1, int const& col=1 )
         {
             fatalBlockCheck( M_M, row, col, "betaM" );
@@ -454,6 +471,12 @@ public:
         {
             fatalBlockCheck( M_A, row, col, "computeBetaAqm" );
             return M_A[row-1][col-1]->computeBetaQm( mu, time );
+        }
+    beta_vector_type computeBetaAqm( element_type const& T, parameter_type const& mu, double time=0,
+                                     int const& row=1, int const& col=1 )
+        {
+            fatalBlockCheck( M_A, row, col, "computeBetaAqm" );
+            return M_A[row-1][col-1]->computeBetaQm( T, mu, time );
         }
     double betaA( int const& q, int const& m=0, int const& row=1, int const& col=1 )
         {
@@ -482,6 +505,19 @@ public:
             {
                 fatalBlockCheck( M_F, row, output+1, "computeBetaFqm");
                 betaF.push_back( M_F[row-1][output]->computeBetaQm( mu, time ) );
+            }
+            return betaF;
+        }
+    std::vector< beta_vector_type > computeBetaFqm( element_type const& T,
+                                                    parameter_type const& mu, double time=0,
+                                                    int const& row=1 )
+        {
+            std::vector< beta_vector_type > betaF;
+
+            for ( int output=0; output<M_Nl; output++ )
+            {
+                fatalBlockCheck( M_F, row, output+1, "computeBetaFqm");
+                betaF.push_back( M_F[row-1][output]->computeBetaQm( T, mu, time ) );
             }
             return betaF;
         }
@@ -536,7 +572,7 @@ public:
         {
             createVecBlock( M_F, output, row );
             return M_F[row-1][output]->ptrVec(q,m);
-        }
+       }
 
 
 
@@ -678,7 +714,10 @@ public:
         gmsh.rebuildPartitionMsh( mshfile /*mesh with 1 partition*/, target /*mesh with N partitions*/ );
     }
 
-
+    void setHasEim( bool has_eim )
+        {
+            M_has_eim = has_eim;
+        }
     bool hasEim()
         {
             return M_has_eim;
@@ -732,8 +771,13 @@ public:
         }
 
     virtual beta_vector_type
-    computeBetaLinearDecompositionA ( parameter_type const& mu, double time=0,
-                                      int const& row=1, int const& col=1 )
+    computeBetaLinearDecompositionA ( parameter_type const& mu, double time=0 )
+        {
+            return computeBetaLinearDecompositionA( mu, time, 1, 1 );
+        }
+    virtual beta_vector_type
+    computeBetaLinearDecompositionA ( parameter_type const& mu, double time,
+                                      int const& row, int const& col )
         {
             fatalBlockCheck( M_A, row, col, "computeBetaLinearDecompositionA" );
             LOG(INFO) << "Warning : you did not write computeBetaLinearDecompositionA(), the linear coefficients of A are automatically evaluate.\n";
@@ -1842,7 +1886,7 @@ public:
             }
 
             index_vector_type index_vector;
-            AssembleInitialGuessVInCompositeCase<self_type> assemble_initial_guess_v_in_composite_case ( v , initial_guess , this->shared_from_this());
+            AssembleInitialGuessVInCompositeCase assemble_initial_guess_v_in_composite_case ( v , initial_guess , this->shared_from_this());
             fusion::for_each( index_vector, assemble_initial_guess_v_in_composite_case );
 
             for(int q = 0; q < q_max; q++ )
@@ -1874,6 +1918,46 @@ public:
                 }
             }
         }
+
+    struct AssembleInitialGuessVInCompositeCase
+    {
+        AssembleInitialGuessVInCompositeCase( element_type  const v ,
+                                              initial_guess_type  const initial_guess ,
+                                              boost::shared_ptr<self_type > crb_model)
+            :
+            M_composite_v ( v ),
+            M_composite_initial_guess ( initial_guess ),
+            M_crb_model ( crb_model )
+            {}
+
+        template< typename T >
+        void
+        operator()( const T& t ) const
+            {
+                auto v = M_composite_v.template element< T::value >();
+                auto Xh = M_composite_v.functionSpace();
+                mesh_ptrtype mesh = Xh->mesh();
+                int q_max = M_crb_model->QInitialGuess();
+                for(int q = 0; q < q_max; q++)
+                {
+                    int m_max = M_crb_model->mMaxInitialGuess(q);
+                    for( int m = 0; m < m_max ; m++)
+                    {
+                        auto initial_guess_qm = M_crb_model->InitialGuessVector(q,m);
+                        auto view = M_composite_initial_guess[q][m]->template element< T::value >();
+                        form1( _test=Xh, _vector=initial_guess_qm ) +=
+                            integrate ( _range=elements( mesh ), _expr=trans( Feel::vf::idv( view ) )*Feel::vf::id( v ) );
+                    }
+                }
+
+            }
+
+        element_type  M_composite_v;
+        initial_guess_type  M_composite_initial_guess;
+        mutable boost::shared_ptr<self_type> M_crb_model;
+    };
+
+
 
 
 

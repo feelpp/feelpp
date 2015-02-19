@@ -62,6 +62,9 @@ public:
                           affine_output_type > // Fqm
     affine_decomposition_type;
 
+    typedef typename model_type::fun_ptrtype fun_ptrtype;
+
+
     static const bool is_matrix = std::is_same<TensorType,sparse_matrix_ptrtype>::value;
     static const int geo_dim = mesh_type::nDim;
 
@@ -74,12 +77,51 @@ public:
         M_use_ginac_expr( false )
         {}
 
-    template <typename BetaType>
-    void add( TensorType const& tensor, BetaType const& beta, std::string filename )
+    void add( TensorType const& tensor, std::string symbol, std::string filename )
         {
-            newEntry( beta, filename );
+            newEntry( symbol, filename );
             M_Mqm[M_Q-1][0] = tensor;
         }
+
+    void add( sparse_matrix_ptrtype const& mat, fun_ptrtype eim, std::string filename )
+        {
+            int mMax = newEntry( eim );
+            auto Xtrial = M_model->functionSpace( M_col-1 );
+            auto Xtest = M_model->functionSpace( M_row-1 );
+            auto eimMat = backend()->newMatrix( _trial= Xtrial,
+                                                _test=Xtrial );
+            auto mesh = Xtrial->mesh();
+            auto u = Xtrial->element();
+            auto v = Xtrial->element();
+            for ( int m=0; m<mMax; m++ )
+            {
+                M_Mqm[M_Q-1][m] = backend()->newMatrix( _trial=Xtrial,
+                                                        _test=Xtest );
+                form2( _trial=Xtrial, _test=Xtrial, _matrix=eimMat )
+                    = integrate( elements(mesh), idt(u)*id(v)*idv( eim->q(m)) );
+                mat->matMatMult( *eimMat, *M_Mqm[M_Q-1][m] );
+            }
+        }
+
+    void add( vector_ptrtype const& vec, fun_ptrtype eim, std::string filename )
+        {
+            int mMax = newEntry( eim );
+            auto Xtest = M_model->functionSpace( M_row-1 );
+            auto eimMat = backend()->newMatrix( _trial=Xtest,
+                                                _test=Xtest );
+            auto mesh = Xtest->mesh();
+            auto u = Xtest->element();
+            auto v = Xtest->element();
+            for ( int m=0; m<mMax; m++ )
+            {
+                M_Mqm[M_Q-1][m] = backend()->newVector( Xtest );
+                form2( _trial=Xtest, _test=Xtest, _matrix=eimMat )
+                    = integrate( elements(mesh), idt(u)*id(v)*idv( eim->q(m)) );
+                M_Mqm[M_Q-1][m]->zero();
+                M_Mqm[M_Q-1][m]->addVector( *vec, * eimMat );
+            }
+        }
+
 
     template <typename BetaType>
     void addOpe( form2_type const& form2, BetaType const& beta, std::string filename )
@@ -173,7 +215,7 @@ public:
                 CHECK( M_Q==mMax.size() )<< "M_Q==mMax.size()\n";
                 for ( int q=0; q<M_Q; q++ )
                     CHECK( mMax[q]==M_mMax[q] )<<"mMax[q]="<<mMax[q]
-                                               <<", M_mMax[q].size()="<<M_mMax[q].size()
+                                               <<", M_mMax[q]="<<M_mMax[q]
                                                <<", for q="<<q<<std::endl;
             }
             else
@@ -236,6 +278,11 @@ public:
                 case BetaMode::SET :
                     break;
 
+                case BetaMode::EIM :
+                    for ( int m=0; m<M_mMax[q]; m++ )
+                        M_beta[q][m] = M_eims[q]->beta( mu )(m);
+                    break;
+
                 default :
                     CHECK( false )<< "You did not fill betaMqm coefficient\n, you can use either ginac expressions, eim or betaMqm() function to do so"<<std::endl;
                     break;
@@ -243,6 +290,43 @@ public:
             }
             return M_beta;
         }
+    beta_vector_type computeBetaQm( element_type const& T, parameter_type const& mu, double time )
+        {
+            if ( M_use_ginac_expr )
+            {
+                std::string symbol;
+                for( int i=0; i<M_model->ParameterSpaceDimension; i++ )
+                {
+                    symbol = symbol = ( boost::format("mu%1%") %i ).str();
+                    M_symbols_map[symbol]=mu(i);
+                }
+                M_symbols_map["t"]=time;
+            }
+
+            for ( int q=0; q<M_Q; q++ )
+            {
+                switch ( M_beta_mode[q] )
+                {
+                case BetaMode::GINAC :
+                    M_beta[q][0] = M_ginac[q].evaluate(M_symbols_map);
+                    break;
+
+                case BetaMode::SET :
+                    break;
+
+                case BetaMode::EIM :
+                    for ( int m=0; m<M_mMax[q]; m++ )
+                        M_beta[q][m] = M_eims[q]->beta( mu, T )(m);
+                    break;
+
+                default :
+                    CHECK( false )<< "You did not fill betaMqm coefficient\n, you can use either ginac expressions, eim or betaMqm() function to do so"<<std::endl;
+                    break;
+                }
+            }
+            return M_beta;
+        }
+
     beta_vector_type betaQm()
         {
             return M_beta;
@@ -547,6 +631,30 @@ private:
             M_ginac[M_Q-1]= expr<geo_dim>( symbol, Symbols( M_symbols_vec ), filename );
             M_beta_mode[M_Q-1]= BetaMode::GINAC;
         }
+    int newEntry( fun_ptrtype eim )
+        {
+            M_model->setHasEim( true );
+            resizeQ( M_Q+1 );
+            bool error;
+            int mMax = eim->mMax(error);
+            M_mMax[M_Q-1]=mMax;
+            if ( error )
+                mMax++;
+
+            M_beta[M_Q-1].resize( M_mMax[M_Q-1], 0 );
+
+            if ( !M_use_operators_free )
+                M_Mqm[M_Q-1].resize( mMax );
+            else
+                CHECK( false )<<"You cannot use eim with operators free, for now\n";
+
+            M_eims.resize( M_Q );
+            M_eims[M_Q-1]=eim;
+            M_beta_mode[M_Q-1] = BetaMode::EIM;
+
+            return mMax;
+        }
+
 
     void assembleMassMatrix()
         {
@@ -750,7 +858,7 @@ private:
     std::vector< std::string > M_symbols_vec;
 
     bool M_use_ginac_expr;
-
+    std::vector< fun_ptrtype > M_eims;
 
 
 };

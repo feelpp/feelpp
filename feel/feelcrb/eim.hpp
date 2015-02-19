@@ -55,7 +55,7 @@
 #include <feel/feelvf/vf.hpp>
 
 #include <feel/feelcrb/crb.hpp>
-#include <feel/feelcrb/crbmodel.hpp>
+#include <feel/feelcrb/crbmodelbase.hpp>
 
 #include <Eigen/Core>
 
@@ -170,7 +170,6 @@ public:
     EIM()
         :
         super(),
-        M_vm(),
         M_is_read( false ),
         M_is_written( false ),
         M_name( "default" ),
@@ -180,10 +179,9 @@ public:
         M_index_max(),
         M_model( 0 )
         {}
-    EIM( po::variables_map const& vm, model_type* model, sampling_ptrtype sampling, double __tol = 1e-8, bool offline_done=false )
+    EIM(  model_type* model, sampling_ptrtype sampling, double __tol = 1e-8, bool offline_done=false )
         :
-        super(model->modelName(), model->name(), model->name(), vm ),
-        M_vm( vm ),
+        super(model->modelName(), model->name(), model->name() ),
         M_is_read( false ),
         M_is_written( false ),
         M_name( model->name() ),
@@ -346,7 +344,6 @@ public:
     //@}
 protected:
 
-    po::variables_map M_vm;
     mutable bool M_is_read;
     mutable bool M_is_written;
 
@@ -539,7 +536,7 @@ EIM<ModelType>::offline(  )
             M_trainset = M_model->parameterSpace()->sampling();
         if ( M_trainset->empty() )
         {
-            int sampling_size = M_vm["eim.sampling-size"].template as<int>();
+            int sampling_size = ioption("eim.sampling-size");
             std::string file_name = ( boost::format("eim_trainset_%1%") % sampling_size ).str();
             std::ifstream file ( file_name );
             bool all_procs_have_same_sampling=true;
@@ -726,7 +723,7 @@ EIM<ModelType>::offline(  )
         }
 
         DVLOG(2) << "best fit max error = " << bestfit.template get<0>() << " relative error = " << bestfit.template get<0>()/gmax.template get<0>() << " at mu = "
-                 << bestfit.template get<1>() << "  tolerance=" << M_vm["eim.error-max"].template as<double>() << "\n";
+                 << bestfit.template get<1>() << "  tolerance=" << doption("eim.error-max")<< "\n";
 
         //if we want to impose the use of dimension-max functions, we don't want to stop here
         if ( (bestfit.template get<0>()/gmax.template get<0>()) < doption(_name="eim.error-max") &&  ! boption(_name="eim.use-dimension-max-functions") )
@@ -1047,14 +1044,12 @@ public:
     typedef boost::tuple<double,parameter_type> parameter_residual_type;
 
 
-    EIMFunctionBase( po::variables_map const& vm,
-                     functionspace_ptrtype fspace,
+    EIMFunctionBase( functionspace_ptrtype fspace,
                      parameterspace_ptrtype pspace,
                      sampling_ptrtype sampling,
                      std::string const& modelname,
                      std::string const& name )
         :
-        M_vm( vm ),
         M_fspace( fspace ),
         M_pspace( pspace ),
         M_trainset( sampling ),
@@ -1176,7 +1171,6 @@ public:
 
     virtual vector_type evaluateExpressionAtInterpolationPoints(model_solution_type const &solution, parameter_type const& mu, int M)=0;
     virtual vector_type evaluateElementAtInterpolationPoints(element_type const & element, int M)=0;
-    po::variables_map M_vm;
     functionspace_ptrtype M_fspace;
     parameterspace_ptrtype M_pspace;
     sampling_ptrtype M_trainset;
@@ -1230,7 +1224,7 @@ public:
     typedef typename super::context_type context_type;
     typedef typename super::vector_type vector_type;
 
-    typedef CRBModel<ModelType> crbmodel_type;
+    typedef ModelType crbmodel_type;
     typedef boost::shared_ptr<crbmodel_type> crbmodel_ptrtype;
     typedef CRB<crbmodel_type> crb_type;
     typedef boost::shared_ptr<crb_type> crb_ptrtype;
@@ -1241,8 +1235,7 @@ public:
     typedef boost::tuple<double,parameter_type> parameter_residual_type;
     typedef typename super::node_type node_type;
 
-    EIMFunction( po::variables_map const& vm,
-                 model_ptrtype model,
+    EIMFunction( model_ptrtype model,
                  functionspace_ptrtype space,
                  model_solution_type& u,
                  parameter_type& mu,
@@ -1250,9 +1243,8 @@ public:
                  sampling_ptrtype sampling,
                  std::string const& name )
         :
-        super( vm, space, model->parameterSpace(), sampling, model->modelName(), name ),
-        CRBDB( model->modelName()+"EIMFunction", name, name, vm ),
-        M_vm( vm ),
+        super( space, model->parameterSpace(), sampling, model->modelName(), name ),
+        CRBDB( model->modelName()+"EIMFunction", name, name ),
         M_model( model ),
         M_expr( expr ),
         M_u( &u ),
@@ -1265,7 +1257,7 @@ public:
         M_ctx( this->functionSpace() ),
         M_B(),
         M_offline_error(),
-        M_eim( new eim_type( vm, this, sampling , 1e-8, loadDB() ) )
+        M_eim( new eim_type( this, sampling , 1e-8, loadDB() ) )
         {
             if ( !loadDB() )
             {
@@ -1933,17 +1925,19 @@ public:
 
     void computationalTimeStatistics( std::string appname )
         {
-            computationalTimeStatistics( appname, typename boost::is_base_of<ModelCrbBaseBase,model_type>::type() );
+            /*computationalTimeStatistics( appname,
+                                         //typename boost::is_base_of<CRBModelBase,model_type>::type()
+                                         true );
         }
     void computationalTimeStatistics( std::string appname, boost::mpl::bool_<false> )
         {}
     void computationalTimeStatistics( std::string appname, boost::mpl::bool_<true> )
-    {
+             {*/
         //auto crbmodel = crbmodel_ptrtype( new crbmodel_type( M_vm , CRBModelMode::CRB ) );
-        auto crbmodel = crbmodel_ptrtype( new crbmodel_type( M_model , CRBModelMode::CRB ) );
+        auto crbmodel = crbmodel_ptrtype( new crbmodel_type() );
+        crbmodel->init();
         //make sure that the CRB DB is already build
         M_crb = crb_ptrtype( new crb_type( appname,
-                                           M_vm ,
                                            crbmodel ) );
 
         if ( !M_crb->isDBLoaded() || M_crb->rebuildDB() )
@@ -2267,7 +2261,6 @@ public:
     }
 
 private:
-    po::variables_map M_vm;
     model_ptrtype M_model;
     expr_type M_expr;
     // model_solution_type& M_u;
@@ -2319,9 +2312,6 @@ BOOST_PARAMETER_FUNCTION(
       ( space, *)
         ) // required
     ( optional
-      ( options, *, Environment::vm())
-      //( space, *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ), model->functionSpace() )
-      //( space, *, model->functionSpace() )
       ( sampling, *, model->parameterSpace()->sampling() )
       ( verbose, (int), 0 )
         ) // optionnal
@@ -2330,7 +2320,7 @@ BOOST_PARAMETER_FUNCTION(
     Feel::detail::ignore_unused_variable_warning( args );
     typedef typename Feel::detail::compute_eim_return<Args>::type eim_type;
     typedef typename Feel::detail::compute_eim_return<Args>::ptrtype eim_ptrtype;
-    return  eim_ptrtype(new eim_type( options, model, space, element, parameter, expr, sampling, name ) );
+    return  eim_ptrtype(new eim_type(  model, space, element, parameter, expr, sampling, name ) );
 } // eim
 
 template<typename ModelType>

@@ -35,8 +35,8 @@
 
 #include <boost/assign/std/vector.hpp>
 #include <feel/feelcrb/crb.hpp>
+#include <feel/feelcrb/crbmodelbase.hpp>
 #include <feel/feelcrb/eim.hpp>
-#include <feel/feelcrb/crbmodel.hpp>
 #include <boost/serialization/version.hpp>
 #include <boost/range/join.hpp>
 #include <boost/regex.hpp>
@@ -106,7 +106,10 @@ public:
     typedef RM<crbmodel_type> crb_type;
     typedef boost::shared_ptr<crb_type> crb_ptrtype;
 
-    typedef CRBModel<ModelType> crbmodelbilinear_type;
+    typedef CRBModelBase<typename crbmodel_type::parameter_definition,
+                         typename crbmodel_type::function_space_definition,
+                         crbmodel_type::Options,
+                         typename crbmodel_type::eim_definition> crbmodelbilinear_type;
 
     typedef typename ModelType::parameter_type parameter_type;
     typedef typename ModelType::mesh_type mesh_type;
