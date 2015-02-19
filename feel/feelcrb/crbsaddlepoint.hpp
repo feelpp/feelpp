@@ -162,10 +162,9 @@ public:
 
     /// constructor from command line options
     CRBSaddlePoint( std::string  name,
-                    po::variables_map const& vm,
                     model_ptrtype const & model )
         :
-        super_crb( name, vm , model ),
+        super_crb( name, model ),
         M_crbdb( ( boost::format( "%1%" )
                    % ioption("crb.error-type") ).str(),
                  name,
@@ -183,7 +182,7 @@ public:
             // this will be in the offline step
             // (it's only when we enrich or create the database that we want to
             // have access to elements of the RB)
-            /*this->M_elements_database.setMN( this->M_N );
+            this->M_elements_database.setMN( this->M_N );
             if( this->M_elements_database.loadDB() )
             {
                 LOG(INFO) << "database for basis functions "
@@ -193,7 +192,6 @@ public:
             }
             else
                 LOG( INFO ) <<"no database for basis functions loaded. Start from the begining";
-             */
         }
 
 
@@ -209,11 +207,7 @@ public:
         {}
 
 
-
-    /// \name Accessors
-    //@{
-    WorldComm const& worldComm() const { return Environment::worldComm() ; }
-    //@}
+    WorldComm const& worldComm() const { return Environment::wordlComm(); }
 
 
     /**
@@ -299,7 +293,7 @@ CRBSaddlePoint<TruthModelType>::offline()
         LOG(INFO) << " -- sampling init done in " << ti.elapsed() << "s";
         ti.restart();
 
-        LOG( INFO )<<"[CRBTrilinear offline] M_error_type = "<<this->M_error_type;
+        LOG( INFO )<<"[CRBSaddlePoint offline] M_error_type = "<<this->M_error_type;
 
         // empty sets
         this->M_WNmu->clear();
@@ -373,7 +367,7 @@ CRBSaddlePoint<TruthModelType>::generateSampling()
         else if( sampling_mode == "equidistribute" )
             this->M_Xi->equidistribute( sampling_size , all_proc_same_sampling , supersamplingname );
         else
-            throw std::logic_error( "[CRBTrilinear::offline] ERROR invalid option crb.sampling-mode, please select between log-random, log-equidistribute or equidistribute" );
+            throw std::logic_error( "[CRBSaddlePoint::offline] ERROR invalid option crb.sampling-mode, please select between log-random, log-equidistribute or equidistribute" );
 
         this->M_Xi->writeOnFile(file_name);
     }
@@ -406,13 +400,6 @@ CRBSaddlePoint<TruthModelType>::save( Archive & ar, const unsigned int version )
     ar & BOOST_SERIALIZATION_NVP( this->M_Fqm_pr );
     ar & BOOST_SERIALIZATION_NVP( this->M_Lqm_pr );
 
-    ar & BOOST_SERIALIZATION_NVP( this->M_A11qm_pr );
-    ar & BOOST_SERIALIZATION_NVP( this->M_A12qm_pr );
-    ar & BOOST_SERIALIZATION_NVP( this->M_F1qm_pr );
-    ar & BOOST_SERIALIZATION_NVP( this->M_F2qm_pr );
-    ar & BOOST_SERIALIZATION_NVP( this->M_L1qm_pr );
-    ar & BOOST_SERIALIZATION_NVP( this->M_L2qm_pr );
-
     ar & BOOST_SERIALIZATION_NVP( this->M_current_mu );
     ar & BOOST_SERIALIZATION_NVP( this->M_no_residual_index );
 
@@ -439,13 +426,6 @@ CRBSaddlePoint<TruthModelType>::load( Archive & ar, const unsigned int version )
     ar & BOOST_SERIALIZATION_NVP( this->M_Aqm_pr );
     ar & BOOST_SERIALIZATION_NVP( this->M_Fqm_pr );
     ar & BOOST_SERIALIZATION_NVP( this->M_Lqm_pr );
-
-    ar & BOOST_SERIALIZATION_NVP( this->M_A11qm_pr );
-    ar & BOOST_SERIALIZATION_NVP( this->M_A12qm_pr );
-    ar & BOOST_SERIALIZATION_NVP( this->M_F1qm_pr );
-    ar & BOOST_SERIALIZATION_NVP( this->M_F2qm_pr );
-    ar & BOOST_SERIALIZATION_NVP( this->M_L1qm_pr );
-    ar & BOOST_SERIALIZATION_NVP( this->M_L2qm_pr );
 
     ar & BOOST_SERIALIZATION_NVP( this->M_current_mu );
     ar & BOOST_SERIALIZATION_NVP( this->M_no_residual_index );

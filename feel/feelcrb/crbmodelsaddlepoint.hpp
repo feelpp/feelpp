@@ -35,41 +35,67 @@
 #include <feel/feelvf/vf.hpp>
 
 #include <feel/feelcrb/parameterspace.hpp>
-#include <feel/feelcrb/crbmodel.hpp>
+#include <feel/feelcrb/crbmodelbase.hpp>
+
+
 
 namespace Feel
 {
-template<typename ModelType>
-class CRBModelSaddlePoint :
-        public CRBModel<ModelType>
+class FunctionSpaceDefinitionSaddlePoint
 {
-    typedef CRBModel<ModelType> super;
 public :
-    typedef ModelType model_type;
-    typedef boost::shared_ptr<ModelType> model_ptrtype;
+    /*mesh*/
+    typedef Simplex<1> entity_type ;
+    typedef Mesh<entity_type > mesh_type ;
 
-    typedef typename model_type::value_type value_type;
+    /*basis*/
+    typedef Lagrange< 2, Vectorial, Continuous >  basis_u_type ;
+    typedef Lagrange< 1, Scalar, Continuous > basis_p_type ;
+    typedef bases< basis_u_type, basis_p_type > basis_type;
 
-    typedef typename ModelType::mesh_type mesh_type;
-    typedef typename ModelType::mesh_ptrtype mesh_ptrtype;
+    /*space*/
+    typedef FunctionSpace<mesh_type , basis_type > space_type ;
+    typedef typename space_type::element_type element_type;
+
+    static const bool is_time_dependent=false;
+    static const bool is_linear=true;
+};
+
+
+template < typename ParameterDefinition=ParameterSpace<1>,
+           typename FunctionSpaceDefinition=FunctionSpaceDefinitionSaddlePoint,
+           int _Options=0,
+           typename EimDefinition=EimDefinitionBase<ParameterDefinition,FunctionSpaceDefinition>
+           >
+class CRBModelSaddlePoint :
+        public CRBModelBase< ParameterDefinition, FunctionSpaceDefinition, _Options, EimDefinition >
+{
+    typedef CRBModelBase< ParameterDefinition, FunctionSpaceDefinition, _Options, EimDefinition > super_type;
+    typedef CRBModelSaddlePoint< ParameterDefinition, FunctionSpaceDefinition, _Options, EimDefinition > self_type;
+
+public :
+    typedef typename super_type::value_type value_type;
+
+    typedef typename super_type::mesh_type mesh_type;
+    typedef typename super_type::mesh_ptrtype mesh_ptrtype;
 
     //! space_type
-    typedef typename ModelType::space_type space_type;
-    typedef typename model_type::element_type element_type;
-    typedef typename model_type::element_ptrtype element_ptrtype;
+    typedef typename super_type::space_type space_type;
+    typedef typename super_type::element_type element_type;
+    typedef typename super_type::element_ptrtype element_ptrtype;
 
     //! reduced basis function space type
-    typedef typename model_type::rbfunctionspace_type rbfunctionspace_type;
-    typedef typename model_type::rbfunctionspace_ptrtype rbfunctionspace_ptrtype;
+    typedef typename super_type::rbfunctionspace_type rbfunctionspace_type;
+    typedef typename super_type::rbfunctionspace_ptrtype rbfunctionspace_ptrtype;
 
-    typedef typename model_type::backend_type backend_type;
+    typedef typename super_type::backend_type backend_type;
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
-    typedef typename model_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
-    typedef typename model_type::vector_ptrtype vector_ptrtype;
-    typedef typename model_type::vector_type vector_type;
+    typedef typename super_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
+    typedef typename super_type::vector_ptrtype vector_ptrtype;
+    typedef typename super_type::vector_type vector_type;
 
-    typedef typename model_type::parameterspace_type parameterspace_type;
-    typedef typename model_type::parameter_type parameter_type;
+    typedef typename super_type::parameterspace_type parameterspace_type;
+    typedef typename super_type::parameter_type parameter_type;
 
     typedef Eigen::VectorXd vectorN_type;
     typedef std::vector< std::vector< double > > beta_vector_type;
@@ -90,69 +116,19 @@ public :
                                    > betaqm_type;
 
 
-    static const int nb_spaces = space_type::nSpaces;
+
 
     //@{ /// Constructors
     /// Default
     CRBModelSaddlePoint() :
-        super()
-        {
-            this->init();
-        }
+        super_type()
+        {}
 
-    CRBModelSaddlePoint( po::variables_map const& vm,
-                         CRBModelMode mode=CRBModelMode::PFEM ) :
-        super( vm, mode )
-        {
-            this->init();
-        }
-
-    CRBModelSaddlePoint( model_ptrtype & model ) :
-        super( model )
-        {
-            this->init();
-        }
-    CRBModelSaddlePoint( CRBModelSaddlePoint const & o ) :
-        super( o )
-        {
-            this->init();
-        }
-    //@}
-
-    /// Destructor
-    virtual ~CRBModelSaddlePoint() {}
-
-    virtual size_type Qb() const
-        {
-            return M_Qb;
-        }
-
-    virtual size_type Qg( int output_index) const
-        {
-            return M_Qg[output_index];
-        }
 
 protected :
-    int M_Qb;
-    std::vector<int> M_Qg;
 
 
 }; // class CRBModelSaddlepoint
-
-template<typename ModelType>
-void
-CRBModelSaddlePoint<ModelType>::countAffineDecompositionTerms()
-{
-    if( this->M_alreadyCountAffineDecompositionTerms )
-        return;
-    else
-        this->M_alreadyCountAffineDecompositionTerms=true;
-
-    if ( M_Aqm.size() > 0)
-    {
-
-    }
-} // countAffineDecompositionterms
 
 } // namespace Feel
 
