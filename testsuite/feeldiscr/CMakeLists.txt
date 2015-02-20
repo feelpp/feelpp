@@ -56,7 +56,7 @@ feelpp_add_test( exporter   CFG exporter.cfg NO_MPI_TEST)
 feelpp_add_test( extended )
 
 feelpp_add_test( nlSolveComposite CFG test_nlSolveComposite.cfg)
-feelpp_add_test( project_prodspace NO_MPI_TEST )
+feelpp_add_test( project_prodspace )
 
 if ( FEELPP_HAS_SLEPC )
   feelpp_add_test( eigs )
