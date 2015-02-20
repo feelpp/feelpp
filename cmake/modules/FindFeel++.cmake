@@ -332,7 +332,7 @@ endif (XDMF_FOUND)
 option(FEELPP_ENABLE_PYTHON_WRAPPING "Enable Boost.Python wrapping implementation" OFF)
 
 # Boost
-SET(BOOST_MIN_VERSION "1.49.0")
+SET(BOOST_MIN_VERSION "1.55.0")
 
 # Making consecutive calls to find_package for Boost to find optional components (boost_python for now)
 # Making only one call to find_package and having one of the component not installed will mark Boost as not found
