@@ -749,22 +749,28 @@ public:
     value_type sum() const
     {
         checkInvariant();
-        double local_sum = ublas::sum( M_vec );
+        value_type local_sum = 0, global_sum=0;
 
-        double global_sum = local_sum;
-
-
-#ifdef FEELPP_HAS_MPI
-
-        if ( this->comm().size() > 1 )
+        if ( this->comm().size() == 1 )
         {
+            local_sum = ublas::sum( M_vec );
+            global_sum = local_sum;
+        }
+        else
+        {
+            size_type s = this->localSize();
+            size_type start = this->firstLocalIndex();
+            for ( size_type i = 0; i < s; ++i )
+            {
+                if ( !this->localIndexIsGhost( start + i ) )
+                    local_sum += M_vec.operator()( start + i );
+            }
+#ifdef FEELPP_HAS_MPI
             mpi::all_reduce( this->comm(), local_sum, global_sum, std::plus<value_type>() );
+#endif
         }
 
-#endif
-
         return global_sum;
-
     }
 
     /**
