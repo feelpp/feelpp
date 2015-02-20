@@ -27,6 +27,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <feel/feelcore/singleton.hpp>
 #include <feel/feelvf/ginac.hpp>
 
 
@@ -120,5 +121,7 @@ class BoundaryConditions
 
     std::string M_prefix;
 };
+
+using BoundaryConditionFactory = Singleton<BoundaryConditions>;
 }
 #endif
