@@ -2151,13 +2151,13 @@ public:
 
         value_type localToGlobal( size_type e, size_type l, int c ) const
         {
-            size_type index=start()+boost::get<0>( M_functionspace->dof()->localToGlobal( e, l, c ) );
+            size_type index=/*start()+*/boost::get<0>( M_functionspace->dof()->localToGlobal( e, l, c ) );
             return super::operator()( index );
         }
 #if 0
         value_type& localToGlobal( size_type e, size_type l, int c )
         {
-            size_type index=start()+boost::get<0>( M_functionspace->dof()->localToGlobal( e, l, c ) );
+            size_type index=/*start()+*/boost::get<0>( M_functionspace->dof()->localToGlobal( e, l, c ) );
             return super::operator()( index );
         }
 #endif
@@ -2206,12 +2206,12 @@ public:
         }
         void assign( size_type ie, uint16_type il, uint16_type c, value_type const& __v )
         {
-            size_type index=start()+ M_functionspace->dof()->localToGlobal( ie, il, c ).index();
+            size_type index=/*start()+*/M_functionspace->dof()->localToGlobal( ie, il, c ).index();
             this->operator[]( index ) = __v;
         }
         void plus_assign( size_type ie, uint16_type il, uint16_type c, value_type const& __v )
         {
-            size_type index=start()+ M_functionspace->dof()->localToGlobal( ie, il, c ).index();
+            size_type index=/*start()+*/M_functionspace->dof()->localToGlobal( ie, il, c ).index();
             this->operator[]( index ) += __v;
         }
 
@@ -2221,7 +2221,7 @@ public:
             auto const& s = M_functionspace->dof()->localToGlobalSigns( e.id() );
             for( auto const& ldof : M_functionspace->dof()->localDof( e.id() ) )
             {
-                size_type index=start()+ ldof.second.index();
+                size_type index=/*start()+*/ ldof.second.index();
                 this->operator[]( index ) = s(ldof.first.localDof())*Ihloc( ldof.first.localDof() );
             }
         }
@@ -2230,7 +2230,7 @@ public:
             auto const& s = M_functionspace->dof()->localToGlobalSigns( e.element(0).id() );
             for( auto const& ldof : M_functionspace->dof()->faceLocalDof( e.id() ) )
             {
-                size_type index=start()+ ldof.index();
+                size_type index=/*start()+*/ ldof.index();
                 this->operator[]( index ) = s(ldof.localDof())*Ihloc( ldof.localDofInFace() );
             }
         }
@@ -2239,7 +2239,7 @@ public:
             auto const& s = M_functionspace->dof()->localToGlobalSigns( e.id() );
             for( auto const& ldof : M_functionspace->dof()->localDof( e.id() ) )
             {
-                size_type index=start()+ ldof.second.index();
+                size_type index=/*start()+*/ ldof.second.index();
                 this->operator[]( index ) += s(ldof.first.localDof())*Ihloc( ldof.first.localDof() );
             }
         }
@@ -2248,7 +2248,7 @@ public:
             auto const& s = M_functionspace->dof()->localToGlobalSigns( e.element(0).id() );
             for( auto const& ldof : M_functionspace->dof()->faceLocalDof( e.id() ) )
             {
-                size_type index=start()+ ldof.index();
+                size_type index=/*start()+*/ ldof.index();
                 this->operator[]( index ) += s(ldof.localDof())*Ihloc( ldof.localDofInFace() );
             }
         }
