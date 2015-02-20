@@ -508,12 +508,12 @@ Environment::Environment( int argc, char** argv,
     //tbb::task_scheduler_init init(2);
 #endif
 
-    // parse options
-    doOptions( argc, envargv, *S_desc, *S_desc_lib, about.appName() );
-
 #if defined ( FEELPP_HAS_PETSC_H )
     initPetsc( &argc, &envargv );
 #endif
+    // parse options
+    doOptions( argc, envargv, *S_desc, *S_desc_lib, about.appName() );
+
 
     // make sure that we pass the proper verbosity level to glog
     if ( S_vm.count( "v" ) )
