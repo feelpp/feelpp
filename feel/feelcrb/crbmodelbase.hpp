@@ -300,44 +300,11 @@ public:
                           << "Number of local dof : " << Xh->nLocalDof() << std::endl;
         }
 
-    template <typename OpeType, typename BetaType>
-    void addMass( OpeType const& ope, BetaType const& beta, int const row=1, int const col=1 )
-        {
-            createMatBlock( M_M, row, col );
-            std::string filename = ( boost::format( "M%1%%2%-" ) %row %col ) .str();
-            M_M[row-1][col-1]->addOpe( ope, beta, filename );
-        }
-    template <typename OpeType, typename BetaType>
-    void addLhs( OpeType const& ope, BetaType const& beta, int const row=1, int const col=1 )
-        {
-            createMatBlock( M_A, row, col );
-            std::string filename = ( boost::format( "A%1%%2%-" ) %row %col ) .str();
-            M_A[row-1][col-1]->addOpe( ope, beta, filename );
-        }
-    template <typename FunType, typename BetaType>
-    void addRhs( FunType const& fun, BetaType const& beta, int const row=1 )
-        {
-            int output = 0;
-            M_Nl = std::max( M_Nl, output+1 );
-            createVecBlock( M_F, output, row );
-            std::string filename = ( boost::format( "F%1%-%2%-" ) %row %output ) .str();
-            M_F[row-1][output]->addFun( fun, beta, filename );
-        }
-    template <typename FunType, typename BetaType>
-    void addOutput( FunType const& fun, BetaType const& beta, int output=1, int const row=1 )
-        {
-            M_Nl = std::max( M_Nl, output+1 );
-            createVecBlock( M_F, output, row );
-            std::string filename = ( boost::format( "F%1%-%2%-" ) %row %output ) .str();
-            M_F[row-1][output]->addFun( fun, beta, filename );
-        }
-
     void initializeMassMatrix( int row=1, int col=1 )
         {
             createMatBlock( M_M, row, col );
             M_M[row-1][col-1]->initializeMassMatrix();
         }
-
 
     parameterspace_ptrtype parameterSpace()
         {
@@ -1959,6 +1926,72 @@ public:
 
 
 
+    BOOST_PARAMETER_MEMBER_FUNCTION( ( void ),
+                                     addMass,
+                                     tag,
+                                     ( required
+                                       ( form2, * )
+                                       ( beta, * ) )
+                                     ( optional
+                                       ( row, (int const&), 1 )
+                                       ( col, (int const&), 1 )
+                                       ) )
+        {
+            createMatBlock( M_M, row, col );
+            std::string filename = ( boost::format( "M%1%%2%-" ) %row %col ) .str();
+            M_M[row-1][col-1]->addOpe( ope, beta, filename );
+        }
+
+
+    BOOST_PARAMETER_MEMBER_FUNCTION( ( void ),
+                                     addLhs,
+                                     tag,
+                                     ( required
+                                       ( form2, * )
+                                       ( beta, * ) )
+                                     ( optional
+                                       ( row, (int const&), 1 )
+                                       ( col, (int const&), 1 )
+                                       ) )
+        {
+            createMatBlock( M_A, row, col );
+            std::string filename = ( boost::format( "A%1%%2%-" ) %row %col ) .str();
+            M_A[row-1][col-1]->addOpe( form2, beta, filename );
+        }
+
+    BOOST_PARAMETER_MEMBER_FUNCTION( ( void ),
+                                     addRhs,
+                                     tag,
+                                     ( required
+                                       ( form1, * )
+                                       ( beta, * ) )
+                                     ( optional
+                                       ( row, (int const&), 1 )
+                                       ) )
+        {
+            int output = 0;
+            M_Nl = std::max( M_Nl, output+1 );
+            createVecBlock( M_F, output, row );
+            std::string filename = ( boost::format( "F%1%-%2%-" ) %row %output ) .str();
+            M_F[row-1][output]->addFun( form1, beta, filename );
+        }
+
+    BOOST_PARAMETER_MEMBER_FUNCTION( ( void ),
+                                     addOutput,
+                                     tag,
+                                     ( required
+                                       ( form1, * )
+                                       ( beta, * ) )
+                                     ( optional
+                                       ( output, (int const&), 1 )
+                                       ( row, (int const&), 1 )
+                                       ) )
+        {
+            M_Nl = std::max( M_Nl, output+1 );
+            createVecBlock( M_F, output, row );
+            std::string filename = ( boost::format( "F%1%-%2%-" ) %row %output ) .str();
+            M_F[row-1][output]->addFun( form1, beta, filename );
+        }
 
 
 protected:

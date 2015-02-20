@@ -275,6 +275,14 @@ BOOST_PARAMETER_NAME( options )
 
     BOOST_PARAMETER_NAME( max_points_used )
     BOOST_PARAMETER_NAME( projection )
+
+    //crb
+BOOST_PARAMETER_NAME( form1 )
+BOOST_PARAMETER_NAME( form2 )
+BOOST_PARAMETER_NAME( row )
+BOOST_PARAMETER_NAME( col )
+BOOST_PARAMETER_NAME( output )
+BOOST_PARAMETER_NAME( beta )
 } // Feel
 
 

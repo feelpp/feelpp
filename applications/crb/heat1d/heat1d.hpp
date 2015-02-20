@@ -118,7 +118,7 @@ Heat1D::initModel()
     auto a0 = form2( _trial=Xh, _test=Xh);
     a0 = integrate( elements( mesh ), 0.1*( gradt( u )*trans( grad( v ) ) ) ) +
         integrate( markedfaces( mesh,"right" ), idt( u )*id( v ) );
-    addLhs( a0 , "1" );
+    addLhs( _form2=a0 , _beta="1" );
 
     auto a1 = form2( _trial=Xh, _test=Xh);
     a1 = integrate( markedelements( mesh,"k1_1" ),  gradt( u )*trans( grad( v ) )  );
