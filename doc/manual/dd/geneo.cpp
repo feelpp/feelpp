@@ -388,6 +388,7 @@ void Geneopp<Dim, Order, Type>::run()
     if(excluded) {
         K->Subdomain::initialize(&comm);
         K->buildTwo<2>(Environment::worldComm(), parm);
+        Environment::worldComm().barrier();
         HPDDM::IterativeMethod::PCG<true>(*K, static_cast<double*>(nullptr), static_cast<double*>(nullptr), it, eps, Environment::worldComm(), Environment::isMasterRank());
         delete K;
     }
@@ -406,7 +407,6 @@ void Geneopp<Dim, Order, Type>::run()
         }
         else
             ret = K->buildTwo<0>(Environment::worldComm(), parm);
-        bComm.barrier();
         time.restart();
         K->callNumfact();
         timers[5] = time.elapsed();
@@ -420,7 +420,11 @@ void Geneopp<Dim, Order, Type>::run()
                 delete ret;
             }
             timers.back() = time.elapsed();
+            time.restart();
         }
+        Environment::worldComm().barrier();
+        if(ret)
+            timers.back() += time.elapsed();
         HPDDM::IterativeMethod::PCG<false>(*K, &(uLocal[0]), b, it, eps, Environment::worldComm(), Environment::isMasterRank());
 
         double* storage = new double[2];
