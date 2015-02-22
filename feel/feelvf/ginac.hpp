@@ -710,6 +710,13 @@ expression( std::pair<const std::string, Expr<GinacMatrix<M,N,Order>>> const& p 
 {
     return p.second;
 }
+template<int M, int N, int Order>
+Expr<GinacMatrix<M,N,Order>> &
+expression( std::pair<const std::string, Expr<GinacMatrix<M,N,Order>>> & p  ) 
+{
+    return p.second;
+}
+
 } // vf
 } // Feel
 
