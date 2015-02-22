@@ -404,6 +404,27 @@ inner( ExprL l, ExprR r, mpl::int_<Props> )
     return Expr< product_t >(  product_t( l, r ) );
 }
 
+/**
+ * \brief symetric part of a matricial expression
+ */
+template<typename ExprL>
+inline
+Expr< Product<ExprL, ExprL,1,NONE> >
+inner( ExprL l )
+{
+    typedef Product<ExprL, ExprL,1,NONE> product_t;
+    return Expr< product_t >(  product_t( l, l ) );
+}
+
+template<typename ExprL, int Props>
+inline
+Expr< Product<ExprL, ExprL,1,Props> >
+inner( ExprL l, mpl::int_<Props> )
+{
+    typedef Product<ExprL, ExprL,1,Props> product_t;
+    return Expr< product_t >(  product_t( l, l ) );
+}
+
 
 } // vf
 
