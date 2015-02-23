@@ -46,6 +46,7 @@ stvenantkirchhoff_options(std::string prefix)
         ( prefixvm( prefix, "rho").c_str(), Feel::po::value<double>()->default_value( 1000 ), "density [kg/m^3]" )
         ( prefixvm( prefix, "gravity").c_str(), Feel::po::value<std::string>()->default_value( "{0,0}" ), "gravity force expression" )
         ( prefixvm( prefix, "gravity-cst").c_str(), Feel::po::value<double>()->default_value( 2 ), "gravity-cst" )
+        ( prefixvm( prefix, "verbose").c_str(), Feel::po::value<bool>()->default_value( true ), "verbose" )
         ;
     return stvenantkirchhoffoptions.add( backend_options(prefix) ).add( ts_options(prefix) );;
 }
@@ -97,7 +98,13 @@ public:
         {
             P0Coefflame2.on(_range=elements(mesh), _expr=e );
         }
-    void solve();
+    void init();
+
+    using SolveData = SolverNonLinear<double>::SolveData;
+    SolveData solve();
+
+    displacement_type const& displacement() const { return u; }
+    
     void exportResults();
     
 
@@ -109,6 +116,7 @@ public:
 
 private:
     std::string name;
+    bool verbose;
     displacement_space_ptrtype Dh;
     property_space_ptrtype P0h;
     mesh_ptrtype mesh;
@@ -135,6 +143,7 @@ template<typename DisplSpaceType, int props>
 StVenantKirchhoff<DisplSpaceType,props>::StVenantKirchhoff( std::string n, displacement_space_ptrtype Xh )
     :
     name( n ),
+    verbose( boption(_name=prefixvm(name,"verbose")) ),
     Dh( Xh ),
     P0h( Pdh<0>( Dh->mesh() ) ),
     mesh( Dh->mesh() ),
@@ -148,6 +157,7 @@ StVenantKirchhoff<DisplSpaceType,props>::StVenantKirchhoff( std::string n, displ
     Jac( M_backend->newMatrix( Dh, Dh ) ),
     e ( exporter( _mesh=mesh ) )
 {
+    tic();
     dirichlet_conditions = BoundaryConditionFactory::instance().getVectorFields<dim> ( "displacement", "Dirichlet" );
     neumann_conditions = BoundaryConditionFactory::instance().getVectorFields<dim> ( "displacement", "Neumann" );
     gravityForce = expr<dim,1,2>(soption(prefixvm(name,"gravity")));
@@ -162,10 +172,30 @@ StVenantKirchhoff<DisplSpaceType,props>::StVenantKirchhoff( std::string n, displ
     this->updateCoefflame1( cst(coefflame1 ) );
     this->updateCoefflame2( cst(coefflame2 ) );
 
+    toc("StVenantKirchhoff constructor", verbose || FLAGS_v > 0 );
     
     
 }
-
+template<typename DisplSpaceType, int props>
+void
+StVenantKirchhoff<DisplSpaceType,props>::init()
+{
+    tic();
+    // start or restart
+    if ( !nm->isRestart() )
+    {
+        nm->start();
+        //svk.setInitialGuess();
+    }
+    else
+    {
+        double ti = nm->restart();
+        u = nm->previousUnknown();
+        if ( e->doExport() )
+            e->restart(ti);
+    }
+    toc("StVenantKirchhoff::init", verbose || FLAGS_v > 0);
+}
 template<typename DisplSpaceType, int props>
 void
 StVenantKirchhoff<DisplSpaceType,props>::updateResidualAxiSymm( const vector_ptrtype& X, vector_ptrtype& R )
@@ -295,9 +325,10 @@ StVenantKirchhoff<DisplSpaceType,props>::updateJacobian(const vector_ptrtype& X,
 }
 
 template<typename DisplSpaceType, int props>
-void
+typename StVenantKirchhoff<DisplSpaceType,props>::SolveData
 StVenantKirchhoff<DisplSpaceType,props>::solve()
 {
+    tic();
     // make sure that the initial guess satisfies the boundary conditions
     for( auto const& d : dirichlet_conditions )
     {
@@ -312,13 +343,15 @@ StVenantKirchhoff<DisplSpaceType,props>::solve()
     M_backend->nlSolver()->jacobian = j;
         
 
-    M_backend->nlSolve( _solution=u,_jacobian=Jac,_residual=Res );
-
+    auto d = M_backend->nlSolve( _solution=u,_jacobian=Jac,_residual=Res );
+    toc("StVenantKirchhoff::solve", verbose || FLAGS_v > 0 );
+    return d;
 }
 template<typename DisplSpaceType, int props>
 void
 StVenantKirchhoff<DisplSpaceType,props>::exportResults()
 {
+    tic();
     if ( nm->isSteady() )
     {
         e->add( "displacement", u );
@@ -331,7 +364,7 @@ StVenantKirchhoff<DisplSpaceType,props>::exportResults()
         e->step(nm->time())->add( "acceleration", nm->currentAcceleration() );
         e->save();
     }
-
+    toc("StVenantKirchhoff::exportResults", verbose);
 }
 }
 
