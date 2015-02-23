@@ -592,10 +592,12 @@ Newmark<SpaceType>::next() const
 template <typename SpaceType>
 template<typename container_type>
 double
-Newmark<SpaceType>::next( typename space_type::template Element<value_type, container_type> const& u_curr )
+Newmark<SpaceType>::next( typename space_type::template Element<value_type, container_type> const& u_curr, bool updateVelAcc = true )
 {
-  this->shiftRight( u_curr );
-  return super::next();
+    if ( updateVelAcc )
+        this->updateFromDisp( u_curr );
+    this->shiftRight( u_curr );
+    return super::next();
 }
 
 template <typename SpaceType>
