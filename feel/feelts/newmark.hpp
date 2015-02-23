@@ -170,9 +170,16 @@ public:
 
     double next() const;
 
+    /**
+     * shift previousstored solutions with respect to the new one \c u_curr
+     * if \c updateVelAcc is true then the velocity and acceleration are updated too
+     */
     template<typename container_type>
-    double next( typename space_type::template Element<value_type, container_type> const& u_curr );
+    double next( typename space_type::template Element<value_type, container_type> const& u_curr, bool updateVelAcc = true );
 
+    /**
+     * from the displacement \c u_curr update the velocity and acceleration
+     */
     template<typename container_type>
     void updateFromDisp( typename space_type::template Element<value_type, container_type> const& u_curr );
 
@@ -592,7 +599,7 @@ Newmark<SpaceType>::next() const
 template <typename SpaceType>
 template<typename container_type>
 double
-Newmark<SpaceType>::next( typename space_type::template Element<value_type, container_type> const& u_curr, bool updateVelAcc = true )
+Newmark<SpaceType>::next( typename space_type::template Element<value_type, container_type> const& u_curr, bool updateVelAcc )
 {
     if ( updateVelAcc )
         this->updateFromDisp( u_curr );
