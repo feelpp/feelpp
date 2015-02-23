@@ -33,6 +33,12 @@
 
 namespace Feel {
 
+template<typename MeshType,int Order,template<class, uint16_type, class> class Pts = PointSetEquiSpaced>
+using Pdh_type=FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Discontinuous,Pts>>>;
+template<typename MeshType,int Order,template<class, uint16_type, class> class Pts = PointSetEquiSpaced>
+using Pdh_ptrtype=boost::shared_ptr<Pdh_type<MeshType,Order,Pts>>;
+    
+
 /**
    Given a \p mesh, build a function space of discontinuous function which are
    piecewise polynomial of degree (total or in each variable) less than k.
