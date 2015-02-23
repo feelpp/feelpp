@@ -311,7 +311,7 @@ public:
         //return M_strategy;
         return TSStragegy::TS_STRATEGY_DT_CONSTANT;
     }
-
+    bool isSteady() const { return M_steady; }
 
     void setPathSave( std::string s )
     {
@@ -331,6 +331,7 @@ public:
     }
     void setSteady( bool steady = true )
     {
+        M_steady = steady;
         if ( steady )
         {
             M_dt=1e30;
@@ -381,6 +382,9 @@ protected:
     //! iteration
     mutable int M_iteration;
 
+    //! is steady
+    bool M_steady;
+    
     //! initial time to start
     double M_Ti;
 
