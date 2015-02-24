@@ -266,7 +266,7 @@ public:
         }
 
 
-    beta_vector_type computeBetaQm( parameter_type const& mu, double time )
+    beta_vector_type computeBetaQm( parameter_type const& mu, double time=0 )
         {
             if ( M_use_ginac_expr )
             {
@@ -302,7 +302,7 @@ public:
             }
             return M_beta;
         }
-    beta_vector_type computeBetaQm( element_type const& T, parameter_type const& mu, double time )
+    beta_vector_type computeBetaQm( element_type const& T, parameter_type const& mu, double time=0 )
         {
             if ( M_use_ginac_expr )
             {

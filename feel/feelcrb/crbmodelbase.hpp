@@ -255,6 +255,7 @@ public:
 
             LOG(INFO)<< "Model Initialization";
             initModel();
+            initDerived();
             countAffineDecompositionTerms();
 
             if ( !is_time_dependent )
@@ -275,6 +276,9 @@ public:
             v = Xh->element();
             M_is_initialized = true;
         }
+
+    virtual void initDerived()
+        {}
 
     template< int Row=0, int Col=0, typename OpeType, typename BetaType >
     void addMass( OpeType ope, BetaType beta )
@@ -627,7 +631,7 @@ public:
             return M_A.template get<Row,Col>()->mMax(q);
         }
     template<int Row=0>
-    int mMaxF( int output, int q, int const row=1 )
+    int mMaxF( int output, int q )
         {
             return M_F[output].template get<Row>()->mMax(q);
         }

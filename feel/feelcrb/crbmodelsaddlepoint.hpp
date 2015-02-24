@@ -36,7 +36,7 @@
 
 #include <feel/feelcrb/parameterspace.hpp>
 #include <feel/feelcrb/crbmodelbase.hpp>
-
+#include <feel/feelalg/vectorblock.hpp>
 
 
 namespace Feel
@@ -83,6 +83,10 @@ public :
     typedef typename super_type::space_type space_type;
     typedef typename super_type::element_type element_type;
     typedef typename super_type::element_ptrtype element_ptrtype;
+    template<int T>
+    using subspace_type = typename space_type::template sub_functionspace<T>::type::element_type;
+    template<int T>
+    using subspace_ptrtype = boost::shared_ptr<subspace_type<T>>;
 
     //! reduced basis function space type
     typedef typename super_type::rbfunctionspace_type rbfunctionspace_type;
@@ -116,18 +120,105 @@ public :
                                    > betaqm_type;
 
 
-
-
-    //@{ /// Constructors
-    /// Default
     CRBModelSaddlePoint() :
         super_type()
         {}
 
+    element_type solve( parameter_type const& mu )
+        {
+            bool transpose = boption("crb.saddlepoint.transpose");
 
+            auto block01 = this->M_A.template get<0,1>();
+            auto block10 = this->M_A.template get<1,0>();
+
+            mergeBlock( A00, this->M_A.template get<0,0>(), mu );
+            mergeBlock( A01, block01, mu );
+            mergeBlock( A10, block10, mu );
+            mergeBlock( A11, this->M_A.template get<1,1>(), mu );
+
+            mergeBlock( F0, this->M_F[0].template get<0>(), mu );
+            mergeBlock( F1, this->M_F[0].template get<0>(), mu );
+
+            if ( transpose && block01 && !block10 )
+                A01->transpose( A10 );
+            if ( transpose && !block01 && block10 )
+                A10->transpose( A01 );
+
+            auto u=Xh0->elementPtr();
+            auto p=Xh1->elementPtr();
+
+            BlocksBaseSparseMatrix<value_type> block_lhs(2,2);
+            block_lhs(0,0)=A00;
+            block_lhs(0,1)=A01;
+            block_lhs(1,0)=A10;
+            block_lhs(1,1)=A11;
+            auto blockLHS = backend()->newBlockMatrix( _block=block_lhs, _copy_values=true );
+
+            BlocksBaseVector<value_type> block_rhs(2);
+            block_rhs(0)=F0;
+            block_rhs(1)=F1;
+            auto blockRHS = backend()->newBlockVector( _block=block_rhs, _copy_values=true );
+
+            BlocksBaseVector<value_type> block_sol(2);
+            block_sol(0)=u;
+            block_sol(1)=p;
+            auto blockSOL = backend()->newBlockVector( _block=block_sol, _copy_values=false );
+
+            backend( _rebuild=true )->solve( _matrix=blockLHS, _rhs=blockRHS, _solution=blockSOL );
+
+            M_U=*blockSOL;
+            return M_U;
+        }
+
+
+    virtual void initDerived()
+        {
+            Xh0 = this->Xh->template functionSpace<0>();
+            Xh1 = this->Xh->template functionSpace<1>();
+            M_U = this->Xh->element();
+
+            A00 = backend()->newMatrix(_test=Xh0, _trial=Xh0 );
+            A01 = backend()->newMatrix(_test=Xh0, _trial=Xh1, _buildGraphWithTranspose=true );
+            A10 = backend()->newMatrix(_test=Xh1, _trial=Xh0, _buildGraphWithTranspose=true );
+            A11 = backend()->newMatrix(_test=Xh1, _trial=Xh1 );
+
+            F0 = backend()->newVector( Xh0 );
+            F1 = backend()->newVector( Xh1 );
+        }
 
 protected :
+    template<typename BlockType>
+    void mergeBlock( sparse_matrix_ptrtype mat, BlockType b, parameter_type const& mu )
+        {
+            mat->zero();
+            if ( b )
+            {
+                auto beta = b->computeBetaQm( mu );
+                auto Aqm = b->compute();
+                for( int q=0; q<b->Q(); q++ )
+                    for( int m=0; m<b->mMax(q); m++ )
+                        mat->addMatrix( beta[q][m], Aqm[q][m] );
+            }
+        }
+    template<typename BlockType>
+    void mergeBlock( vector_ptrtype vec, BlockType b, parameter_type const& mu )
+        {
+            vec->zero();
+            if ( b )
+            {
+                auto beta = b->computeBetaQm( mu );
+                auto Aqm = b->compute();
+                for( int q=0; q<b->Q(); q++ )
+                    for( int m=0; m<b->mMax(q); m++ )
+                        vec->add( beta[q][m], Aqm[q][m] );
+            }
+        }
 
+    sparse_matrix_ptrtype A00, A01, A10, A11;
+    element_type M_U;
+    vector_ptrtype F0, F1;
+    subspace_ptrtype<0> Xh0;
+    subspace_ptrtype<1> Xh1;
 
 }; // class CRBModelSaddlepoint
 

@@ -234,18 +234,21 @@ public:
     //@}
 
 private :
-    void generateSampling();
+    void generateSuperSampling();
+    bool buildSampling();
 
     CRBDB M_crbdb;
 
+    std::vector< std::vector<matrixN_type> > M_A00qm_pr;
+    std::vector< std::vector<matrixN_type> > M_A01qm_pr;
+    std::vector< std::vector<matrixN_type> > M_A10qm_pr;
     std::vector< std::vector<matrixN_type> > M_A11qm_pr;
-    std::vector< std::vector<matrixN_type> > M_A12qm_pr;
 
+    std::vector < std::vector<vectorN_type> > M_F0qm_pr;
     std::vector < std::vector<vectorN_type> > M_F1qm_pr;
-    std::vector < std::vector<vectorN_type> > M_F2qm_pr;
 
+    std::vector < std::vector<vectorN_type> > M_L0qm_pr;
     std::vector < std::vector<vectorN_type> > M_L1qm_pr;
-    std::vector < std::vector<vectorN_type> > M_L2qm_pr;
 
 
     friend class boost::serialization::access;
@@ -273,6 +276,10 @@ CRBSaddlePoint<TruthModelType>::offline()
     double delta_pr = 0;
     double delta_du = 0;
     size_type index;
+    int output_index = this->M_output_index;
+
+    element_ptrtype u( new element_type( this->M_model->functionSpace() ) );
+    int proc_number = this->worldComm().globalRank();
 
     if ( Environment::isMasterRank() )
         std::cout << "Offline CRBSaddlePoint starts, this may take a while until Database is computed.." << std::endl;
@@ -283,31 +290,92 @@ CRBSaddlePoint<TruthModelType>::offline()
     {
         ti.restart();
         // Generate sampling depending of the "crb.sampling-mode" option
-        generateSampling();
+        generateSuperSampling();
+        LOG(INFO) << " -- super sampling init done in " << ti.elapsed() << "s";
 
-        LOG(INFO) << " -- sampling init done in " << ti.elapsed() << "s";
         ti.restart();
-
-        LOG( INFO )<<"[CRBSaddlePoint offline] M_error_type = "<<this->M_error_type;
-
-        // empty sets
-        this->M_WNmu->clear();
-        if( this->M_error_type == CRB_NO_RESIDUAL )
-            mu = this->M_Dmu->element();
-        else
-        {
-            // start with M_C = { arg min mu, mu \in Xi }
-            boost::tie( mu, index ) = this->M_Xi->min();
-        }
 
         this->M_N=0;
         this->M_maxerror = 1e10;
 
         LOG(INFO) << "[CRBSaddlePoint::offline] allocate reduced basis data structures\n";
 
+        M_A00qm_pr.resize( this->M_model->template Qa<0,0>() );
+        for ( int q=0; q<M_A00qm_pr.size(); q++ )
+            M_A00qm_pr[q].resize( this->M_model->template mMaxA<0,0>(q) );
+
+        M_A01qm_pr.resize( this->M_model->template Qa<0,1>() );
+        for ( int q=0; q<M_A01qm_pr.size(); q++ )
+            M_A01qm_pr[q].resize( this->M_model->template mMaxA<0,1>(q) );
+
+        M_A10qm_pr.resize( this->M_model->template Qa<1,0>() );
+        for ( int q=0; q<M_A10qm_pr.size(); q++ )
+            M_A10qm_pr[q].resize( this->M_model->template mMaxA<1,0>(q) );
+
+        M_A11qm_pr.resize( this->M_model->template Qa<1,1>() );
+        for ( int q=0; q<M_A11qm_pr.size(); q++ )
+            M_A11qm_pr[q].resize( this->M_model->template mMaxA<1,1>(q) );
+
+        M_F0qm_pr.resize( this->M_model->template Ql<0>(0) );
+        for ( int q=0; q<M_F0qm_pr.size(); q++ )
+            M_F0qm_pr[q].resize( this->M_model->template mMaxF<0>( 0, q) );
+
+        M_F1qm_pr.resize( this->M_model->template Ql<1>(0) );
+        for ( int q=0; q<M_F1qm_pr.size(); q++ )
+            M_F1qm_pr[q].resize( this->M_model->template mMaxF<1>( 0, q ) );
+
+        M_L0qm_pr.resize( this->M_model->template Ql<0>( output_index ) );
+        for ( int q=0; q<M_L0qm_pr.size(); q++ )
+            M_L0qm_pr[q].resize( this->M_model->template mMaxF<0>( output_index, q ) );
+
+        M_L1qm_pr.resize( this->M_model->template Ql<1>( output_index ) );
+        for ( int q=0; q<M_L1qm_pr.size(); q++ )
+            M_L1qm_pr[q].resize( this->M_model->template mMaxF<1>( output_index, q ) );
+    } // if ( rebuild_database )
+    else
+    {
+        if ( Environment::isMasterRank() )
+            std::cout<<"we are going to enrich the reduced basis"<<std::endl
+                     <<"there are "<<this->M_N<<" elements in the database"<<std::endl;
+        LOG(INFO) <<"we are going to enrich the reduced basis"<<std::endl;
+        LOG(INFO) <<"there are "<<this->M_N<<" elements in the database"<<std::endl;
+    } // else associated to if ( rebuild_database )
+
+    bool use_predefined_WNmu = buildSampling();
+
+    LOG( INFO )<<"[CRBSaddlePoint offline] M_error_type = "<<this->M_error_type;
 
 
-    } // if rebuild_database
+
+    if ( use_predefined_WNmu )
+        this->M_iter_max = this->M_WNmu->size();
+
+    mu = this->M_WNmu->at( this->M_N ); // first element
+    if( this->M_error_type == CRB_NO_RESIDUAL || use_predefined_WNmu )
+    {
+        //in this case it makes no sens to check the estimated error
+        this->M_maxerror = 1e10;
+    }
+
+
+
+
+    while( this->M_maxerror>this->M_tolerance && this->M_N<this->M_iter_max )
+    {
+        if( Environment::isMasterRank() )
+            std::cout<<"construction of "<<this->M_N<<"/"<<this->M_iter_max<<" basis "<<std::endl;
+        LOG(INFO) <<"========================================"<<"\n";
+        LOG(INFO) << "N=" << this->M_N << "/"  << this->M_iter_max << "( nb proc : "<<worldComm().globalSize()<<")";
+
+        u->setName( ( boost::format( "fem-primal-N%1%-proc%2%" ) % (this->M_N)  % proc_number ).str() );
+        mu.check();
+        u->zero();
+
+        LOG(INFO) << "[CRB::offline] solving primal" << "\n";
+        *u = this->M_model->solve( mu );
+
+
+    } // while( this->M_maxerror>this->M_tolerance && this->M_N<this->M_iter_max )
 
     return this->M_rbconv;
 } // offline()
@@ -333,7 +401,7 @@ CRBSaddlePoint<TruthModelType>::lb( size_type N, parameter_type const& mu,
 
 template<typename TruthModelType>
 void
-CRBSaddlePoint<TruthModelType>::generateSampling()
+CRBSaddlePoint<TruthModelType>::generateSuperSampling()
 {
 
     int proc_number = worldComm().globalRank();
@@ -377,6 +445,71 @@ CRBSaddlePoint<TruthModelType>::generateSampling()
 
 
 template<typename TruthModelType>
+bool
+CRBSaddlePoint<TruthModelType>::buildSampling()
+{
+    bool use_predefined_WNmu = boption("crb.use-predefined-WNmu");
+    int N_log_equi = ioption("crb.use-logEquidistributed-WNmu");
+    int N_equi = ioption("crb.use-equidistributed-WNmu");
+    int N_random = ioption( "crb.use-random-WNmu" );
+
+    std::string file_name = ( boost::format("SamplingWNmu") ).str();
+    std::ifstream file ( file_name );
+    this->M_WNmu->clear();
+
+    if ( use_predefined_WNmu ) // In this case we want to read the sampling
+    {
+        if( ! file ) // The user forgot to give the sampling file
+            throw std::logic_error( "[CRB::offline] ERROR the file SamplingWNmu doesn't exist so it's impossible to known which parameters you want to use to build the database" );
+        else
+        {
+            int sampling_size = this->M_WNmu->readFromFile(file_name);
+            if( Environment::isMasterRank() )
+                std::cout<<"[CRB::offline] Read WNmu ( sampling size : "
+                         << sampling_size <<" )"<<std::endl;
+            LOG( INFO )<<"[CRB::offline] Read WNmu ( sampling size : "
+                       << sampling_size <<" )";
+        }
+    }
+    else // We generate the sampling with choosen strategy
+    {
+        if ( N_log_equi>0 )
+        {
+            this->M_WNmu->logEquidistribute( N_log_equi , true );
+            if( Environment::isMasterRank() )
+                std::cout<<"[CRB::offline] Log-Equidistribute WNmu ( sampling size : "
+                         <<N_log_equi<<" )"<<std::endl;
+            LOG( INFO )<<"[CRB::offline] Log-Equidistribute WNmu ( sampling size : "
+                       <<N_log_equi<<" )";
+        }
+        else if ( N_equi>0 )
+        {
+            this->M_WNmu->equidistribute( N_equi , true );
+            if( Environment::isMasterRank() )
+                std::cout<<"[CRB::offline] Equidistribute WNmu ( sampling size : "
+                         <<N_equi<<" )"<<std::endl;
+            LOG( INFO )<<"[CRB::offline] Equidistribute WNmu ( sampling size : "
+                       <<N_equi<<" )";
+        }
+        else if ( N_random>0 )
+        {
+            this->M_WNmu->randomize( N_random , true );
+            if( Environment::isMasterRank() )
+                std::cout<<"[CRB::offline] Randomize WNmu ( sampling size : "
+                         <<N_random<<" )"<<std::endl;
+            LOG( INFO )<<"[CRB::offline] Randomize WNmu ( sampling size : "
+                       <<N_random<<" )";
+        }
+        else // In this case we don't know what sampling to use
+            throw std::logic_error( "[CRB::offline] ERROR : You have to choose an appropriate strategy for the offline sampling : random, equi, logequi or predefined" );
+
+        this->M_WNmu->writeOnFile(file_name);
+    } //build sampling
+
+    return true;
+}
+
+template<typename TruthModelType>
 template<class Archive>
 void
 CRBSaddlePoint<TruthModelType>::save( Archive & ar, const unsigned int version ) const
@@ -391,9 +524,15 @@ CRBSaddlePoint<TruthModelType>::save( Archive & ar, const unsigned int version )
     ar & BOOST_SERIALIZATION_NVP( this->M_error_type );
     ar & BOOST_SERIALIZATION_NVP( this->M_Xi );
     ar & BOOST_SERIALIZATION_NVP( this->M_WNmu );
-    ar & BOOST_SERIALIZATION_NVP( this->M_Aqm_pr );
-    ar & BOOST_SERIALIZATION_NVP( this->M_Fqm_pr );
-    ar & BOOST_SERIALIZATION_NVP( this->M_Lqm_pr );
+
+    ar & BOOST_SERIALIZATION_NVP( this->M_A00qm_pr );
+    ar & BOOST_SERIALIZATION_NVP( this->M_A01qm_pr );
+    ar & BOOST_SERIALIZATION_NVP( this->M_A10qm_pr );
+    ar & BOOST_SERIALIZATION_NVP( this->M_A11qm_pr );
+    ar & BOOST_SERIALIZATION_NVP( this->M_F0qm_pr );
+    ar & BOOST_SERIALIZATION_NVP( this->M_F1qm_pr );
+    ar & BOOST_SERIALIZATION_NVP( this->M_L0qm_pr );
+    ar & BOOST_SERIALIZATION_NVP( this->M_L1qm_pr );
 
     ar & BOOST_SERIALIZATION_NVP( this->M_current_mu );
     ar & BOOST_SERIALIZATION_NVP( this->M_no_residual_index );
@@ -418,9 +557,16 @@ CRBSaddlePoint<TruthModelType>::load( Archive & ar, const unsigned int version )
     ar & BOOST_SERIALIZATION_NVP( this->M_error_type );
     ar & BOOST_SERIALIZATION_NVP( this->M_Xi );
     ar & BOOST_SERIALIZATION_NVP( this->M_WNmu );
-    ar & BOOST_SERIALIZATION_NVP( this->M_Aqm_pr );
-    ar & BOOST_SERIALIZATION_NVP( this->M_Fqm_pr );
-    ar & BOOST_SERIALIZATION_NVP( this->M_Lqm_pr );
+
+    ar & BOOST_SERIALIZATION_NVP( this->M_A00qm_pr );
+    ar & BOOST_SERIALIZATION_NVP( this->M_A01qm_pr );
+    ar & BOOST_SERIALIZATION_NVP( this->M_A10qm_pr );
+    ar & BOOST_SERIALIZATION_NVP( this->M_A11qm_pr );
+    ar & BOOST_SERIALIZATION_NVP( this->M_F0qm_pr );
+    ar & BOOST_SERIALIZATION_NVP( this->M_F1qm_pr );
+    ar & BOOST_SERIALIZATION_NVP( this->M_L0qm_pr );
+    ar & BOOST_SERIALIZATION_NVP( this->M_L1qm_pr );
+
 
     ar & BOOST_SERIALIZATION_NVP( this->M_current_mu );
     ar & BOOST_SERIALIZATION_NVP( this->M_no_residual_index );
