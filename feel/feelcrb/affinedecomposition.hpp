@@ -4,43 +4,66 @@
 #include <feel/feel.hpp>
 #include <boost/shared_ptr.hpp>
 
+
 namespace Feel
 {
 
-template <typename ModelType, typename TensorType, typename CompositeType>
+
+
+template <typename ModelType, typename TensorType, typename TestSpaceType, typename TrialSpaceType=TestSpaceType >
 class BlockAD
 {
 public:
     typedef ModelType model_type;
     typedef boost::shared_ptr<model_type> model_ptrtype;
 
-    typedef double  value_type;
-    typedef typename model_type::element_type element_type;
+    typedef typename model_type::value_type value_type;
     typedef typename model_type::mesh_type mesh_type;
-    typedef typename model_type::mesh_ptrtype mesh_ptrtype;
+    //typedef typename model_type::mesh_ptrtype mesh_ptrtype;
 
-    /// Backend and Tensors
-    typedef Backend<value_type> backend_type;
+    typedef typename model_type::backend_type backend_type;
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
     typedef typename backend_type::vector_type vector_type;
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
     typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
     typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
 
+    typedef typename model_type::parameterspace_type parameterspace_type;
     typedef typename model_type::parameter_type parameter_type;
 
-    typedef typename model_type:: form2_type form2_type;
-    typedef typename model_type:: form1_type form1_type;
+    static const bool use_block_structure = model_type::use_block_structure;
+    static const bool is_matrix = std::is_same<TensorType,sparse_matrix_ptrtype>::value;
+    static const int geo_dim = mesh_type::nDim;
 
-    typedef typename model_type::operator_type operator_type;
+    typedef typename model_type::space_type fullspace_type;
+    typedef typename model_type::element_type element_type;
+
+    typedef TestSpaceType testspace_type;
+    typedef TrialSpaceType trialspace_type;
+
+    typedef boost::shared_ptr<testspace_type> testspace_ptrtype;
+    typedef boost::shared_ptr<trialspace_type> trialspace_ptrtype;
+
+    typedef typename testspace_type::element_type testelement_type;
+    typedef typename trialspace_type::element_type trialelement_type;
+
+    typedef vf::detail::LinearForm<testspace_type,vector_type,vector_type> form1_type;
+    typedef vf::detail::BilinearForm<testspace_type, trialspace_type, VectorUblas<value_type>> form2_type;
+
+    typedef OperatorLinear< testspace_type , trialspace_type > operator_type;
     typedef boost::shared_ptr<operator_type> operator_ptrtype;
-    typedef typename model_type::functional_type functional_type;
+    typedef FsFunctionalLinear< testspace_type > functional_type;
     typedef boost::shared_ptr<functional_type> functional_ptrtype;
 
-    typedef typename model_type::operatorcomposite_type operatorcomposite_type;
+    typedef OperatorLinearComposite< testspace_type , trialspace_type > operatorcomposite_type;
     typedef boost::shared_ptr<operatorcomposite_type> operatorcomposite_ptrtype;
-    typedef typename model_type::functionalcomposite_type functionalcomposite_type;
+    typedef FsFunctionalLinearComposite< testspace_type > functionalcomposite_type;
     typedef boost::shared_ptr<functionalcomposite_type> functionalcomposite_ptrtype;
+
+    typedef typename mpl::if_< mpl::bool_<is_matrix>,
+                               operatorcomposite_ptrtype,
+                               functionalcomposite_ptrtype >::type composite_ptrtype;
+
 
     typedef std::vector< std::vector< sparse_matrix_ptrtype >> affine_matrix_type;
     typedef std::vector< std::vector< affine_matrix_type >> block_affine_matrix_type;
@@ -62,88 +85,47 @@ public:
                           affine_output_type > // Fqm
     affine_decomposition_type;
 
-    typedef typename model_type::fun_ptrtype fun_ptrtype;
+
+    typedef EIMFunctionBase< testspace_type, trialspace_type, parameterspace_type > fun_type;
+    typedef boost::shared_ptr<fun_type> fun_ptrtype;
 
 
-    static const bool is_matrix = std::is_same<TensorType,sparse_matrix_ptrtype>::value;
-    static const int geo_dim = mesh_type::nDim;
-
-    BlockAD( model_ptrtype model, int const row, int const col=0 ) :
+    BlockAD( model_ptrtype model, testspace_ptrtype testspace ) :
         M_model(model),
         M_Q( 0 ),
         M_use_operators_free( false ),
-        M_row( row ),
-        M_col( col ),
-        M_use_ginac_expr( false )
+        M_use_ginac_expr( false ),
+        Xtest( testspace ),
+        Xtrial( testspace )
         {}
 
-    void add( TensorType const& tensor, std::string symbol, std::string filename )
-        {
-            newEntry( symbol, filename );
-            M_Mqm[M_Q-1][0] = tensor;
-        }
-
-    void add( sparse_matrix_ptrtype const& mat, fun_ptrtype eim, std::string filename )
-        {
-            int mMax = newEntry( eim );
-            auto Xtrial = M_model->functionSpace( M_col-1 );
-            auto Xtest = M_model->functionSpace( M_row-1 );
-            auto eimMat = backend()->newMatrix( _trial= Xtrial,
-                                                _test=Xtrial );
-            auto mesh = Xtrial->mesh();
-            auto u = Xtrial->element();
-            auto v = Xtrial->element();
-            for ( int m=0; m<mMax; m++ )
-            {
-                M_Mqm[M_Q-1][m] = backend()->newMatrix( _trial=Xtrial,
-                                                        _test=Xtest );
-                form2( _trial=Xtrial, _test=Xtrial, _matrix=eimMat )
-                    = integrate( elements(mesh), idt(u)*id(v)*idv( eim->q(m)) );
-                mat->matMatMult( *eimMat, *M_Mqm[M_Q-1][m] );
-            }
-        }
-
-    void add( vector_ptrtype const& vec, fun_ptrtype eim, std::string filename )
-        {
-            int mMax = newEntry( eim );
-            auto Xtest = M_model->functionSpace( M_row-1 );
-            auto eimMat = backend()->newMatrix( _trial=Xtest,
-                                                _test=Xtest );
-            auto mesh = Xtest->mesh();
-            auto u = Xtest->element();
-            auto v = Xtest->element();
-            for ( int m=0; m<mMax; m++ )
-            {
-                M_Mqm[M_Q-1][m] = backend()->newVector( Xtest );
-                form2( _trial=Xtest, _test=Xtest, _matrix=eimMat )
-                    = integrate( elements(mesh), idt(u)*id(v)*idv( eim->q(m)) );
-                M_Mqm[M_Q-1][m]->zero();
-                M_Mqm[M_Q-1][m]->addVector( *vec, * eimMat );
-            }
-        }
+    BlockAD( model_ptrtype model, testspace_ptrtype testspace, trialspace_ptrtype trialspace ) :
+        M_model(model),
+        M_Q( 0 ),
+        M_use_operators_free( false ),
+        M_use_ginac_expr( false ),
+        Xtest( testspace ),
+        Xtrial( trialspace )
+        {}
 
 
-    template <typename BetaType>
+        template <typename BetaType>
     void addOpe( form2_type const& form2, BetaType const& beta, std::string filename )
         {
             add( form2.matrixPtr(), beta, filename );
         }
-    template <typename BetaType>
-    void addOpe( sparse_matrix_ptrtype mat, BetaType const& beta, std::string filename )
-        {
-            add( mat, beta, filename );
-        }
+
     template <typename ExprType, typename BetaType>
     void addOpe( ExprType const& expr, BetaType const& beta , std::string filename )
         {
             M_use_operators_free = true;
-            auto ope = opLinearFree( _domainSpace=M_model->functionSpace(M_col-1),
-                                     _imageSpace=M_model->functionSpace(M_row-1),
+            auto ope = opLinearFree( _domainSpace=Xtrial,
+                                     _imageSpace=Xtest,
                                      _expr=expr );
 
             if ( !M_composite )
-                M_composite = opLinearComposite( _imageSpace=M_model->functionSpace(M_row-1),
-                                                 _domainSpace=M_model->functionSpace(M_col-1) );
+                M_composite = opLinearComposite( _imageSpace=Xtest,
+                                                 _domainSpace=Xtrial );
 
             newEntry( beta, filename );
             filename += std::to_string( M_Q );
@@ -152,24 +134,31 @@ public:
         }
 
     template <typename BetaType>
-    void addFun( form1_type const& form1, BetaType const& beta, std::string filename )
+    void addOpe( sparse_matrix_ptrtype mat, BetaType const& beta, std::string filename )
         {
-            add( form1.vectorPtr(), beta, filename );
+            add( mat, beta, filename );
         }
+
     template <typename BetaType>
     void addFun( vector_ptrtype const& vec, BetaType const& beta, std::string filename )
         {
             add( vec, beta, filename );
         }
+
+    template <typename BetaType>
+    void addFun( form1_type const& form1, BetaType const& beta, std::string filename )
+        {
+            add( form1.vectorPtr(), beta, filename );
+        }
     template <typename ExprType, typename BetaType>
     void addFun( ExprType const& expr, BetaType const& beta, std::string filename )
         {
-            auto fun = functionalLinearFree( _space=M_model->functionSpace(M_row-1),
+            auto fun = functionalLinearFree( _space=Xtest,
                                              _expr=expr );
 
             M_use_operators_free = true;
             if ( !M_composite )
-                M_composite = functionalLinearComposite( _space=M_model->functionSpace(M_row-1) );
+                M_composite = functionalLinearComposite( _space=Xtest );
 
             newEntry( beta, filename );
             filename += std::to_string( M_Q );
@@ -184,8 +173,8 @@ public:
             if ( m>=M_mMax[q] )
                 resizeM( q, m+1 );
             if ( !M_Mqm[q][m] )
-                M_Mqm[q][m] = backend()->newMatrix( _test=M_model->functionSpace(M_row-1),
-                                                    _trial=M_model->functionSpace(M_col-1) );
+                M_Mqm[q][m] = backend()->newMatrix( _test=Xtest,
+                                                    _trial=Xtrial );
             return M_Mqm[q][m];
         }
     vector_ptrtype ptrVec( int const& q, int const& m )
@@ -195,7 +184,7 @@ public:
             if ( m>=M_mMax[q] )
                 resizeM( q, m+1 );
             if ( !M_Mqm[q][m] )
-                M_Mqm[q][m] = backend()->newVector( M_model->functionSpace(M_row-1) );
+                M_Mqm[q][m] = backend()->newVector( Xtest );
             return M_Mqm[q][m];
         }
 
@@ -230,7 +219,7 @@ public:
         }
     void initializeMassMatrix()
         {
-            std::string filename = ( boost::format("GinacM%1%%2%-") %M_row %M_col).str() ;
+            std::string filename = "GinacM-";
 
             if ( M_model->constructOperatorCompositeM() )
             {
@@ -290,7 +279,7 @@ public:
             }
             return M_beta;
         }
-    beta_vector_type computeBetaQm( element_type const& T, parameter_type const& mu, double time )
+    beta_vector_type computeBetaQm( trialelement_type const& T, parameter_type const& mu, double time )
         {
             if ( M_use_ginac_expr )
             {
@@ -436,8 +425,8 @@ public:
             }
             else
             {
-                matrix  = backend()->newMatrix( _trial=M_model->functionSpace(),
-                                                _test=M_model->functionSpace() );
+                matrix  = backend()->newMatrix( _trial=Xtrial,
+                                                _test=Xtest );
                 if ( transpose )
                     M_Mqm[q][m]->transpose(matrix);
                 else
@@ -469,7 +458,7 @@ public:
         }
     TensorType merge( beta_vector_type const& beta, mpl::bool_<true> )
         {
-            auto M = M_model->newMatrix();
+            auto M = backend()->newMatrix( _test=Xtest, _trial=Xtrial );
             if ( M_use_operators_free )
             {
                 M_composite->setScalars( beta );
@@ -486,7 +475,7 @@ public:
         }
     TensorType merge( beta_vector_type const& beta, mpl::bool_<false> )
         {
-            auto F = M_model->newVector();
+            auto F = backend()->newVector( Xtest );
             if( M_use_operators_free )
             {
                 M_composite->setScalars( beta );
@@ -509,8 +498,8 @@ public:
             CHECK( q<M_Q ) << "compute called with bad q index : "<<q <<" and max index is "<< M_Q << std::endl;
             CHECK( m<M_mMax[q] ) << "compute called with bad m index : "<< m <<" and max index is "<< M_mMax[q];
 
-            auto matrix  = backend()->newMatrix( _trial=M_model->functionSpace(),
-                                                 _test=M_model->functionSpace() );
+            auto matrix  = backend()->newMatrix( _trial=Xtrial,
+                                                 _test=Xtest );
             if ( transpose )
                 M_Mqm[q][m]->transpose(matrix);
             else
@@ -595,7 +584,47 @@ public:
 private:
     enum BetaMode { NONE=0, GINAC=1, EIM=2, SET=3 };
 
+    void add( TensorType const& tensor, std::string symbol, std::string filename )
+        {
+            newEntry( symbol, filename );
+            M_Mqm[M_Q-1][0] = tensor;
+        }
 
+    void add( sparse_matrix_ptrtype const& mat, fun_ptrtype eim, std::string filename )
+        {
+            int mMax = newEntry( eim );
+            auto eimMat = backend()->newMatrix( _trial=Xtrial,
+                                                _test=Xtrial );
+            auto mesh = Xtrial->mesh();
+            auto u = Xtrial->element();
+            auto v = Xtrial->element();
+            for ( int m=0; m<mMax; m++ )
+            {
+                M_Mqm[M_Q-1][m] = backend()->newMatrix( _trial=Xtrial,
+                                                        _test=Xtest );
+                form2( _trial=Xtrial, _test=Xtrial, _matrix=eimMat )
+                    = integrate( elements(mesh), idt(u)*id(v)*idv( eim->q(m)) );
+                mat->matMatMult( *eimMat, *M_Mqm[M_Q-1][m] );
+            }
+        }
+
+    void add( vector_ptrtype const& vec, fun_ptrtype eim, std::string filename )
+        {
+            int mMax = newEntry( eim );
+            auto eimMat = backend()->newMatrix( _trial=Xtest,
+                                                _test=Xtest );
+            auto mesh = Xtest->mesh();
+            auto u = Xtest->element();
+            auto v = Xtest->element();
+            for ( int m=0; m<mMax; m++ )
+            {
+                M_Mqm[M_Q-1][m] = backend()->newVector( Xtest );
+                form2( _trial=Xtest, _test=Xtest, _matrix=eimMat )
+                    = integrate( elements(mesh), idt(u)*id(v)*idv( eim->q(m)) );
+                M_Mqm[M_Q-1][m]->zero();
+                M_Mqm[M_Q-1][m]->addVector( *vec, * eimMat );
+            }
+        }
     void resizeQ( int const& q )
         {
             M_Q = q;
@@ -614,7 +643,7 @@ private:
                 M_Mqm[q].resize( M_mMax[q] );
         }
 
-    void newEntry( std::string symbol, std::string filename )
+    void newEntry( std::string const& symbol, std::string filename )
         {
             if ( !M_use_ginac_expr )
             {
@@ -658,15 +687,14 @@ private:
 
     void assembleMassMatrix()
         {
-            const bool is_composite = model_type::functionspace_type::is_composite;
+            const bool is_composite = trialspace_type::is_composite || testspace_type::is_composite;
             assembleMassMatrix( mpl::bool_<is_composite>() );
         }
     void assembleMassMatrix( mpl::bool_<false> )
         {
-            auto Xh = M_model->functionSpace();
-            auto mesh = Xh->mesh();
-            auto u = Xh->element();
-            auto v = Xh->element();
+            auto mesh = Xtrial->mesh();
+            auto u = Xtrial->element();
+            auto v = Xtest->element();
 
             M_Q = (int) 1 ;
             M_mMax.resize(M_Q);
@@ -674,16 +702,17 @@ private:
 
             M_Mqm.resize( M_Q );
             M_Mqm[0].resize( 1 );
-            M_Mqm[0][0] = backend()->newMatrix( _test=Xh , _trial=Xh );
+            M_Mqm[0][0] = backend()->newMatrix( _test=Xtest , _trial=Xtrial );
 
-            form2( _test=Xh, _trial=Xh, _matrix=M_Mqm[0][0] ) =
+            form2( _test=Xtest, _trial=Xtrial, _matrix=M_Mqm[0][0] ) =
                 integrate( _range=elements( mesh ), _expr=idt( u )*id( v )  );
             M_Mqm[0][0]->close();
         }
     void assembleMassMatrix( mpl::bool_<true> )
         {
+            CHECK( !use_block_structure )<<"You cannot use composite spaces and block structure for now";
             index_vector_type index_vector;
-            int n_spaces = model_type::functionspace_type::nSpaces;
+            int n_spaces = fullspace_type::nSpaces;
             auto Xh = M_model->functionSpace();
             auto u = Xh->element();
             auto v = Xh->element();
@@ -732,7 +761,7 @@ private:
     void preAssembleMassMatrix()
         {
             M_use_operators_free = true;
-            const bool is_composite = model_type::functionspace_type::is_composite;
+            const bool is_composite = trialspace_type::is_composite || testspace_type::is_composite;
             preAssembleMassMatrix( mpl::bool_<is_composite>() );
 
             M_mMax = M_composite->countAllContributions();
@@ -740,21 +769,21 @@ private:
         }
     void preAssembleMassMatrix( mpl::bool_<false> )
         {
-            auto Xh = M_model->functionSpace();
-            auto u = Xh->element();
-            auto v = Xh->element();
+            auto u = Xtrial->element();
+            auto v = Xtest->element();
 
-            auto mesh = Xh->mesh();
+            auto mesh = Xtest->mesh();
             auto expr=integrate( _range=elements( mesh ) , _expr=idt( u )*id( v ) );
 
-            auto M_composite = opLinearComposite( _domainSpace=Xh, _imageSpace=Xh  );
-            auto opfree = opLinearFree( _domainSpace=Xh, _imageSpace=Xh, _expr=expr );
+            auto M_composite = opLinearComposite( _domainSpace=Xtrial, _imageSpace=Xtest  );
+            auto opfree = opLinearFree( _domainSpace=Xtrial, _imageSpace=Xtest, _expr=expr );
 
             opfree->setName("mass operator (automatically created)");
             M_composite->addElement( boost::make_tuple(0,0) , opfree );
         }
     void preAssembleMassMatrix( mpl::bool_<true> )
         {
+            CHECK( !use_block_structure )<<"You cannot use composite spaces and block structure for now";
             index_vector_type index_vector;
             auto Xh = M_model->functionSpace();
             auto u = Xh->element();
@@ -784,7 +813,7 @@ private:
                 auto u = M_composite_u.template element< T::value >();
                 auto v = M_composite_v.template element< T::value >();
                 auto Xh = M_composite_u.functionSpace();
-                mesh_ptrtype mesh = Xh->mesh();
+                auto mesh = Xh->mesh();
 
                 auto expr = integrate( _range=elements( mesh ) , _expr=trans( idt( u ) )*id( v ) ) ;
                 auto opfree = opLinearFree( _imageSpace=Xh, _domainSpace=Xh, _expr=expr );
@@ -826,6 +855,7 @@ private:
             M_symbols_map.insert( std::pair< std::string,double> ("t",0) );
         }
 
+
     /// beta coefficients
     beta_vector_type M_beta;
     std::vector< BetaMode > M_beta_mode;
@@ -840,7 +870,7 @@ private:
     /// affine decomposition
     std::vector< std::vector< TensorType >> M_Mqm;
     /// operators free
-    CompositeType M_composite;
+    composite_ptrtype M_composite;
 
 
     /// linear part
@@ -850,8 +880,6 @@ private:
     beta_vector_type M_betaLinear;
 
     bool M_use_operators_free;
-    const int M_row;
-    const int M_col;
 
     /// Ginac tools
     std::map<std::string,double> M_symbols_map;
@@ -860,8 +888,210 @@ private:
     bool M_use_ginac_expr;
     std::vector< fun_ptrtype > M_eims;
 
+    testspace_ptrtype Xtest;
+    trialspace_ptrtype Xtrial;
 
 };
+
+
+template< typename ModelType >
+class AffineDecompositionVector
+{
+public:
+    typedef ModelType model_type;
+    typedef boost::shared_ptr<model_type> model_ptrtype;
+
+    typedef typename model_type::space_type space_type;
+    typedef typename model_type::vector_ptrtype vector_ptrtype;
+
+    static const bool use_block_structure = model_type::use_block_structure;
+
+    typedef typename mpl::range_c< int, 0, space_type::nSpaces > rangespace_type;
+
+    template< int T >
+    using sub_space = typename space_type::template sub_functionspace<T>::type::element_type;
+
+    template< int Row >
+    using oneblock_type = typename mpl::if_< mpl::bool_<use_block_structure>,
+                                             BlockAD< model_type, vector_ptrtype, sub_space<Row> >,
+                                             BlockAD< model_type, vector_ptrtype, space_type> >::type;
+    template< int Row >
+    using oneblock_ptrtype = boost::shared_ptr< oneblock_type<Row> >;
+
+    template < typename  T >
+    struct CreateVecBlock
+    {
+        typedef BlockAD< model_type, vector_ptrtype, sub_space<T::value> > block_type;
+        typedef boost::shared_ptr<block_type> type;
+    };
+    typedef typename mpl::if_<mpl::bool_<use_block_structure>,
+                              typename mpl::transform< rangespace_type,
+                                                       CreateVecBlock<mpl::_1>,
+                                                       mpl::back_inserter<fusion::vector<> > >::type,
+                              fusion::vector<boost::shared_ptr<BlockAD<model_type,
+                                                                       vector_ptrtype,
+                                                                       space_type > > > >::type blockvector_ad_type;
+
+    AffineDecompositionVector()
+        {}
+
+    AffineDecompositionVector( model_ptrtype model ) :
+        M_model( model )
+        {}
+
+    AffineDecompositionVector( AffineDecompositionVector const& o ) :
+        M_model( o.M_model ),
+        M_blockAD( o.M_blockAD )
+        {}
+
+    template< int Row=0 >
+    void createBlock()
+        {
+            return createBlock<Row>( mpl::bool_<use_block_structure>() );
+        }
+    template< int Row >
+    void createBlock( mpl::bool_<true> )
+        {
+            if ( !fusion::at_c<Row>( M_blockAD ) )
+                fusion::at_c<Row>( M_blockAD ) = oneblock_ptrtype<Row>(
+                    new oneblock_type<Row>( M_model, M_model->functionSpace()->template functionSpace<Row>() ) );
+        }
+
+    template< int Row >
+    void createBlock( mpl::bool_<false> )
+        {
+            CHECK( Row==0 ) << "Error : you want to create block "<< Row <<" in the affine decomposition, but you are not using block structure";
+            if ( !fusion::at_c<0>( M_blockAD ) )
+                fusion::at_c<0>( M_blockAD ) = oneblock_ptrtype<0>(
+                    new oneblock_type<0>( M_model, M_model->functionSpace() ) );
+        }
+
+    template< int Row=0 >
+    oneblock_ptrtype<Row> get() const
+        {
+            CHECK( fusion::at_c<Row>( M_blockAD ) )<< "Error trying to access block "<< Row <<" when it was not created yet.";
+
+            return fusion::at_c<Row>( M_blockAD );
+        }
+
+    void check()
+        {
+            /*for ( auto it = begin(M_blockAD); it!=M_end(M_blockAD); next(it) )
+             it*/
+        }
+
+private :
+    model_ptrtype M_model;
+    blockvector_ad_type M_blockAD;
+
+};
+
+template <typename ModelType >
+class AffineDecompositionMatrix
+{
+public :
+    typedef ModelType model_type;
+    typedef boost::shared_ptr<model_type> model_ptrtype;
+
+    typedef typename model_type::space_type space_type;
+    typedef typename model_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
+
+    static const bool use_block_structure = model_type::use_block_structure;
+
+    typedef typename mpl::range_c< int, 0, space_type::nSpaces > rangespace_type;
+
+    template< int T >
+    using sub_space = typename space_type::template sub_functionspace<T>::type::element_type;
+
+    template< int Row, int Col >
+    using oneblock_type = typename mpl::if_< mpl::bool_<use_block_structure>,
+                                             BlockAD< model_type, sparse_matrix_ptrtype,
+                                                      sub_space<Row>, sub_space<Col> >,
+                                             BlockAD< model_type, sparse_matrix_ptrtype,
+                                                      space_type, space_type > >::type;
+
+    template< int Row, int Col >
+    using oneblock_ptrtype = boost::shared_ptr< oneblock_type<Row,Col> >;
+
+    template< typename Row>
+    struct CreateMatBlock
+    {
+        template< typename Col >
+        struct CreateRow
+        {
+            typedef BlockAD< model_type, sparse_matrix_ptrtype,
+                             sub_space<Row::value>, sub_space<Col::value> > row_type;
+            typedef boost::shared_ptr< row_type > type;
+        };
+        typedef typename mpl::transform< rangespace_type,
+                                         CreateRow<mpl::_1>,
+                                         mpl::back_inserter< fusion::vector<> > >::type type;
+    };
+
+    typedef typename mpl::if_< mpl::bool_<use_block_structure>,
+                              typename mpl::transform<rangespace_type,
+                                                      CreateMatBlock<mpl::_1>,
+                                                      mpl::back_inserter< fusion::vector<> > >::type,
+                               fusion::vector<fusion::vector<boost::shared_ptr< BlockAD<model_type,
+                                                                                        sparse_matrix_ptrtype,
+                                                                                        space_type, space_type >>>>
+                               >::type blockmatrix_ad_type;
+
+
+    AffineDecompositionMatrix()
+        {}
+
+    AffineDecompositionMatrix( model_ptrtype model ) :
+        M_model( model )
+        {}
+
+    AffineDecompositionMatrix( AffineDecompositionMatrix const& o ) :
+        M_model( o.M_model ),
+        M_blockAD( o.M_blockAD )
+        {}
+
+    template< int Row=0, int Col=0 >
+    void createBlock()
+        {
+            return createBlock<Row,Col>( mpl::bool_<use_block_structure>() );
+        }
+    template< int Row, int Col >
+    void createBlock( mpl::bool_<true> )
+        {
+            if ( !fusion::at_c<Col>( fusion::at_c<Row>( M_blockAD ) ) )
+                fusion::at_c<Col>( fusion::at_c<Row>( M_blockAD ) ) = oneblock_ptrtype<Row,Col>(
+                    new oneblock_type<Row,Col>( M_model,
+                                                M_model->functionSpace()->template functionSpace<Row>(),
+                                                M_model->functionSpace()->template functionSpace<Col>() ) );
+        }
+
+    template< int Row, int Col >
+    void createBlock( mpl::bool_<false> )
+        {
+            CHECK( Row==0 && Col==0 ) << "Error : you want to create block "<< Row<<","<<Col <<" in the affine decomposition, but you are not using block structure";
+
+            if ( !fusion::at_c<0>( fusion::at_c<0>( M_blockAD ) ) )
+                 fusion::at_c<0>( fusion::at_c<0>( M_blockAD ) ) = oneblock_ptrtype<0,0>(
+                     new oneblock_type<0,0>( M_model, M_model->functionSpace() ) );
+        }
+
+    template< int Row=0, int Col=0 >
+    oneblock_ptrtype< Row, Col > get() const
+        {
+            //     CHECK( fusion::at_c<Col>( fusion::at_c<Row>( M_blockAD ) )  )<< "Error trying to access block "<< Row<<","<<Col <<" when it was not created yet.";
+
+            return fusion::at_c<Col>( fusion::at_c<Row>( M_blockAD ) ) ;
+        }
+
+    void check()
+        {
+        }
+
+private :
+    model_ptrtype M_model;
+    blockmatrix_ad_type M_blockAD;
+};
+
 
 } //namespace Feel
 

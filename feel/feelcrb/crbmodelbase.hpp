@@ -42,7 +42,9 @@ enum {
     /** Coercive PDE */
     Coercive = 0,
     /** Inf-Sup PDE */
-    InfSup = 0x4
+    InfSup = 0x4,
+    /** Use block Structure */
+    BlockStruct = 0x8
 };
 
 class FunctionSpaceDefinitionBase
@@ -102,6 +104,7 @@ public:
     static const uint16_type ParameterSpaceDimension = ParameterDefinition::ParameterSpaceDimension ;
     static const bool is_time_dependent = ((_Options&TimeDependent)==TimeDependent);
     static const bool is_linear = !((_Options&NonLinear)==NonLinear);
+    static const bool use_block_structure = (_Options&BlockStruct)==BlockStruct;
     static const int Options = _Options;
 
 
@@ -165,35 +168,23 @@ public:
                                    std::vector< std::map<int,double> >
                                    > eim_interpolation_error_type ;
 
-
-
     //! time discretization
     typedef Bdf<space_type>  bdf_type;
     typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
-
-    typedef FsFunctionalLinear< space_type > functional_type;
-    typedef boost::shared_ptr<functional_type> functional_ptrtype;
-
-    typedef OperatorLinear< space_type , space_type > operator_type;
-    typedef boost::shared_ptr<operator_type> operator_ptrtype;
 
     typedef OperatorLinearComposite< space_type , space_type > operatorcomposite_type;
     typedef boost::shared_ptr<operatorcomposite_type> operatorcomposite_ptrtype;
     typedef FsFunctionalLinearComposite< space_type > functionalcomposite_type;
     typedef boost::shared_ptr<functionalcomposite_type> functionalcomposite_ptrtype;
 
-    typedef vf::detail::BilinearForm<functionspace_type, functionspace_type,VectorUblas<value_type>> form2_type;
-    typedef vf::detail::LinearForm<functionspace_type,vector_type,vector_type> form1_type;
+
+    typedef vf::detail::BilinearForm<space_type, space_type, VectorUblas<value_type>> form2_type;
 
 
     typedef typename std::vector< std::vector < element_ptrtype > > initial_guess_type;
 
     typedef std::vector< std::vector< value_type > > beta_vector_type;
 
-    typedef BlockAD< self_type,sparse_matrix_ptrtype,operatorcomposite_ptrtype > blockmatrix_ad_type;
-    typedef boost::shared_ptr< blockmatrix_ad_type > blockmatrix_ad_ptrtype;
-    typedef BlockAD< self_type,vector_ptrtype,functionalcomposite_ptrtype > blockvector_ad_type;
-    typedef boost::shared_ptr< blockvector_ad_type > blockvector_ad_ptrtype;
 
     typedef std::vector< std::vector< sparse_matrix_ptrtype >> affine_matrix_type;
     typedef std::vector< std::vector< affine_matrix_type >> block_affine_matrix_type;
@@ -201,6 +192,8 @@ public:
     typedef std::vector< affine_vector_type > affine_output_type;
     typedef std::vector< affine_output_type > block_affine_output_type;
 
+    typedef AffineDecompositionVector<self_type> vector_ad_type;
+    typedef AffineDecompositionMatrix<self_type> matrix_ad_type;
 
     typedef boost::tuple<
         std::vector< std::vector<sparse_matrix_ptrtype> >,//Mq
@@ -217,11 +210,12 @@ public:
                                    > steady_betaqm_type;
 
     static const int nb_spaces = functionspace_type::nSpaces;
-    typedef typename mpl::if_< boost::is_same< mpl::int_<nb_spaces> , mpl::int_<2> > , fusion::vector< mpl::int_<0>, mpl::int_<1> >  ,
+    typedef typename mpl::if_< boost::is_same< mpl::int_<nb_spaces>, mpl::int_<2> > , fusion::vector< mpl::int_<0>, mpl::int_<1> >  ,
                                typename mpl::if_ < boost::is_same< mpl::int_<nb_spaces> , mpl::int_<3> > , fusion::vector < mpl::int_<0> , mpl::int_<1> , mpl::int_<2> > ,
                                                    typename mpl::if_< boost::is_same< mpl::int_<nb_spaces> , mpl::int_<4> >, fusion::vector< mpl::int_<0>, mpl::int_<1>, mpl::int_<2>, mpl::int_<3> >,
                                                                       fusion::vector< mpl::int_<0>, mpl::int_<1>, mpl::int_<2>, mpl::int_<3>, mpl::int_<4> >
-                                                                      >::type >::type >::type index_vector_type;
+                                                                      >::type >::type >::type
+    index_vector_type;
 
 
 
@@ -247,6 +241,10 @@ public:
 
             M_mode = mode;
 
+            M_A = matrix_ad_type( this->shared_from_this() );
+            M_M = matrix_ad_type( this->shared_from_this() );
+            M_F.push_back( vector_ad_type(this->shared_from_this() ) );
+
             LOG(INFO)<< "Model Initialization";
             initModel();
             countAffineDecompositionTerms();
@@ -268,6 +266,43 @@ public:
             u = Xh->element();
             v = Xh->element();
             M_is_initialized = true;
+        }
+
+    template< int Row=0, int Col=0, typename OpeType, typename BetaType >
+    void addMass( OpeType ope, BetaType beta )
+        {
+            M_M.template createBlock<Row,Col>();
+            std::string filename = ( boost::format( "M%1%%2%-" ) %Row %Col ) .str();
+            M_M.template get<Row,Col>->addOpe( ope, beta, filename );
+        }
+    template< int Row=0, int Col=0, typename OpeType, typename BetaType >
+    void addLhs( OpeType ope, BetaType beta )
+        {
+            M_A.template createBlock<Row,Col>();
+            std::string filename = ( boost::format( "A%1%%2%-" ) %Row %Col ) .str();
+            M_A.template get<Row,Col>()->addOpe( ope, beta, filename );
+        }
+    template< int Row=0, typename FunType, typename BetaType >
+    void addRhs( FunType fun, BetaType beta )
+        {
+            int output = 0;
+            M_Nl = std::max( M_Nl, output+1 );
+            M_F[output].template createBlock<Row>();
+            std::string filename = ( boost::format( "F%1%-%2%-" ) %Row %output ) .str();
+            M_F[output].template get<Row>()->addFun( fun, beta, filename );
+        }
+    template< int Row=0, typename FunType, typename BetaType >
+    void addOutput( FunType fun, BetaType beta, int output=1 )
+        {
+            M_Nl = std::max( M_Nl, output+1 );
+            if ( M_F.size()<=output )
+            {
+                M_F.resize( output+1 );
+                M_F[output] = vector_ad_type(this->shared_from_this() );
+            }
+            M_F[output].template createBlock<Row>();
+            std::string filename = ( boost::format( "F%1%-%2%-" ) %Row %output ) .str();
+            M_F[output].template get<Row>()->addFun( fun, beta, filename );
         }
 
 
@@ -300,21 +335,22 @@ public:
                           << "Number of local dof : " << Xh->nLocalDof() << std::endl;
         }
 
-    void initializeMassMatrix( int row=1, int col=1 )
+    template<int Row=0, int Col=0>
+    void initializeMassMatrix()
         {
-            createMatBlock( M_M, row, col );
-            M_M[row-1][col-1]->initializeMassMatrix();
+            M_M.template createBlock<Row,Col>();
+            M_M.template get<Row,Col>()->initializeMassMatrix();
         }
 
     parameterspace_ptrtype parameterSpace()
         {
             return Dmu;
         }
-    virtual functionspace_ptrtype functionSpace( int num=1 ) const
+    functionspace_ptrtype functionSpace() const
         {
             return Xh;
         }
-    virtual rbfunctionspace_ptrtype rBFunctionSpace( int num=1 )
+    rbfunctionspace_ptrtype rBFunctionSpace()
         {
             return XN;
         }
@@ -398,235 +434,215 @@ public:
             return beta_coeff;
         }
 
-
-    double& setBetaM( int const& q, int const& m=0, int const& row=1, int const& col=1 )
+    template<int Row=0, int Col=0>
+    double& setBetaM( int const& q, int const& m=0 )
         {
-            createMatBlock( M_M, row, col );
-            return M_M[row-1][col-1]->setBeta(q,m);
+            M_M.template createBlock<Row,Col>();
+            return M_M.template get<Row,Col>()->setBeta(q,m);
         }
-    beta_vector_type computeBetaMqm( parameter_type const& mu, double time=0,
-                              int const& row=1, int const& col=1 )
+    template<int Row=0, int Col=0>
+    beta_vector_type computeBetaMqm( parameter_type const& mu, double time=0 )
         {
-            fatalBlockCheck( M_M, row, col, "computeBetaMqm" );
-            return M_M[row-1][col-1]->computeBetaQm( mu, time );
+            return M_M.template get<Row,Col>()->computeBetaQm( mu, time );
         }
-    beta_vector_type computeBetaMqm( element_type const& T, parameter_type const& mu, double time=0,
-                                     int const& row=1, int const& col=1 )
+    template<int Row=0, int Col=0>
+    beta_vector_type computeBetaMqm( element_type const& T, parameter_type const& mu, double time=0 )
         {
-            fatalBlockCheck( M_M, row, col, "computeBetaMqm" );
-            return M_M[row-1][col-1]->computeBetaQm( T, mu, time );
+            return M_M.template get<Row,Col>()->computeBetaQm( T, mu, time );
         }
-    double betaM( int const& q, int const& m=0, int const& row=1, int const& col=1 )
+    template<int Row=0, int Col=0>
+    double betaM( int const& q, int const& m=0 )
         {
-            fatalBlockCheck( M_M, row, col, "betaM" );
-            return M_M[row-1][col-1]->beta( q, m );
+            return M_M.template get<Row,Col>()->beta( q, m );
         }
-    beta_vector_type betaMqm( int const& row=1, int const& col=1)
+    template<int Row=0, int Col=0>
+    beta_vector_type betaMqm()
         {
-            fatalBlockCheck( M_M, row, col, "betaMqm");
-            return M_M[row-1][col-1]->betaQm();
+            return M_M.template get<Row,Col>()->betaQm();
         }
 
-
-    double& setBetaA( int const& q, int const& m=0, int const& row=1, int const& col=1 )
+    template<int Row=0, int Col=0>
+    double& setBetaA( int const& q, int const& m=0 )
         {
-            createMatBlock( M_A, row, col );
-            return M_A[row-1][col-1]->setBeta(q,m);
+            M_A.template createBlock<Row,Col>();
+            return M_A.template get<Row,Col>()->setBeta(q,m);
         }
-    beta_vector_type computeBetaAqm( parameter_type const& mu, double time=0,
-                              int const& row=1, int const& col=1 )
+    template<int Row=0, int Col=0>
+    beta_vector_type computeBetaAqm( parameter_type const& mu, double time=0 )
         {
-            fatalBlockCheck( M_A, row, col, "computeBetaAqm" );
-            return M_A[row-1][col-1]->computeBetaQm( mu, time );
+            return M_A.template get<Row,Col>()->computeBetaQm( mu, time );
         }
-    beta_vector_type computeBetaAqm( element_type const& T, parameter_type const& mu, double time=0,
-                                     int const& row=1, int const& col=1 )
+    template<int Row=0, int Col=0>
+    beta_vector_type computeBetaAqm( element_type const& T, parameter_type const& mu, double time=0 )
         {
-            fatalBlockCheck( M_A, row, col, "computeBetaAqm" );
-            return M_A[row-1][col-1]->computeBetaQm( T, mu, time );
+            return M_A.template get<Row,Col>()->computeBetaQm( T, mu, time );
         }
-    double betaA( int const& q, int const& m=0, int const& row=1, int const& col=1 )
+    template<int Row=0, int Col=0>
+    double betaA( int const& q, int const& m=0 )
         {
-            fatalBlockCheck( M_A, row, col, "betaA" );
-            return M_A[row-1][col-1]->beta( q, m );
+            return M_A.template get<Row,Col>()->beta( q, m );
         }
-    beta_vector_type betaAqm( int const& row=1, int const& col=1)
+    template<int Row=0, int Col=0>
+    beta_vector_type betaAqm()
         {
-            fatalBlockCheck( M_A, row, col, "betaAqm");
-            return M_A[row-1][col-1]->betaQm();
+            return M_A.template get<Row,Col>()->betaQm();
         }
 
-
-    double& setBetaF( int const& output, int const& q, int const& m=0, int const& row=1 )
+    template<int Row=0>
+    double& setBetaF( int const& output, int const& q, int const m )
         {
             M_Nl = std::max( M_Nl, output+1 );
-            createVecBlock( M_F, row, output+1);
-            return M_F[row-1][output]->setBeta( q, m );
+            if ( M_F.size()<=output )
+            {
+                M_F.resize( output+1 );
+                M_F[output] = vector_ad_type(this->shared_from_this() );
+            }
+            M_F[output].template createBlock<Row>();
+            return M_F[output].template get<Row>()->setBeta( q, m );
         }
-    std::vector< beta_vector_type > computeBetaFqm( parameter_type const& mu, double time=0,
-                                             int const& row=1 )
+    template<int Row=0>
+    std::vector< beta_vector_type > computeBetaFqm( parameter_type const& mu, double time=0 )
         {
             std::vector< beta_vector_type > betaF;
-
             for ( int output=0; output<M_Nl; output++ )
-            {
-                fatalBlockCheck( M_F, row, output+1, "computeBetaFqm");
-                betaF.push_back( M_F[row-1][output]->computeBetaQm( mu, time ) );
-            }
+                betaF.push_back( M_F[output].template get<Row>()->computeBetaQm( mu, time ) );
             return betaF;
         }
+    template<int Row=0>
     std::vector< beta_vector_type > computeBetaFqm( element_type const& T,
-                                                    parameter_type const& mu, double time=0,
-                                                    int const& row=1 )
+                                                    parameter_type const& mu, double time=0 )
         {
             std::vector< beta_vector_type > betaF;
-
             for ( int output=0; output<M_Nl; output++ )
-            {
-                fatalBlockCheck( M_F, row, output+1, "computeBetaFqm");
-                betaF.push_back( M_F[row-1][output]->computeBetaQm( T, mu, time ) );
-            }
+                betaF.push_back( M_F[output].template get<Row>()->computeBetaQm( T, mu, time ) );
             return betaF;
         }
-    double betaF( int const& output, int const& q, int const& m=0,
-                    int const& row=1, int const& col=1 )
+    template<int Row=0>
+    double betaF( int const& output, int const& q, int const& m=0 )
         {
-            fatalBlockCheck( M_F, row, output+1, "betaF" );
-            return M_F[row-1][output]->beta(q,m);
+            return M_F[output].template get<Row>()->beta(q,m);
         }
-    std::vector< beta_vector_type > betaFqm( int const& row=1)
+    template<int Row=0>
+    std::vector< beta_vector_type > betaFqm()
         {
             std::vector< beta_vector_type > betaF;
-
             for ( int output=0; output<M_Nl; output++ )
-            {
-                fatalBlockCheck( M_F, row, output+1, "BetaFqm");
-                betaF.push_back( M_F[row-1][output]->betaQm() );
-            }
+                betaF.push_back( M_F[output].template get<Row>()->betaQm() );
             return betaF;
         }
-
-
-
 
     virtual affine_decomposition_type computeAffineDecomposition()
         {
-            int row=1;
-            int col=1;
-            fatalBlockCheck( M_A, row, col, "compute");
-            fatalBlockCheck( M_F, row, "compute");
-            fatalBlockCheck( M_M, row, col, "compute");
-
             affine_output_type Fqm;
             for ( int output=0; output<M_Nl; output++)
-                Fqm.push_back( M_F[row-1][output]->compute() );
+                Fqm.push_back( M_F[output].template get<0>()->compute() );
 
-            return boost::make_tuple( M_M[row-1][col-1]->compute(),
-                                      M_A[row-1][col-1]->compute(),
+            return boost::make_tuple( M_M.template get<0,0>()->compute(),
+                                      M_A.template get<0,0>()->compute(),
                                       Fqm );
         }
-    sparse_matrix_ptrtype ptrM( int const& q, int const& m=0, int const& row=1, int const& col=1 )
+    template<int Row=0, int Col=0>
+    sparse_matrix_ptrtype ptrM( int const& q, int const& m=0 )
         {
-            createMatBlock( M_M, row, col );
-            return M_M[row-1][col-1]->ptrMat( q, m );
+            M_M.template createBlock<Row,Col>();
+            return M_M.template get<Row,Col>()->ptrMat( q, m );
         }
-    sparse_matrix_ptrtype ptrA( int const& q, int const& m=0, int const& row=1, int const& col=1 )
+
+    template<int Row=0, int Col=0>
+    sparse_matrix_ptrtype ptrA( int const& q, int const& m=0 )
         {
-            createMatBlock( M_A, row, col  );
-            return M_A[row-1][col-1]->ptrMat( q, m );
+            M_A.template createBlock<Row,Col>();
+            return M_A.template get<Row,Col>()->ptrMat( q, m );
         }
-    vector_ptrtype ptrF( int const& output, int const& q, int const& m=0, int const& row=1 )
+    template<int Row=0 >
+    vector_ptrtype ptrF( int const& output, int const& q, int const& m=0 )
         {
-            createVecBlock( M_F, output, row );
-            return M_F[row-1][output]->ptrVec(q,m);
+            M_Nl = std::max( M_Nl, output+1 );
+            if ( M_F.size()<=output )
+            {
+                M_F.resize( output+1 );
+                M_F[output] = vector_ad_type(this->shared_from_this() );
+            }
+            M_F[output].template createBlock<Row>();
+            return M_F[output].template get<Row>()->ptrVec(q,m);
        }
 
 
 
     void countAffineDecompositionTerms()
         {
-            for ( int row=0; row<M_A.size(); row++ )
-                for ( int col=0; col<M_A[row].size(); col++ )
-                    M_A[row][col]->check();
-            for ( int row=0; row<M_M.size(); row++ )
-                for ( int col=0; col<M_M[row].size(); col++ )
-                    M_M[row][col]->check();
-            for ( int row=0; row<M_F.size(); row++ )
-                for ( int output=0; output<M_F[row].size(); output++ )
-                    M_F[row][output]->check();
+            M_M.check();
+            M_A.check();
+            for (int output=0; output<M_Nl; output++ )
+                M_F[output].check();
         }
-    virtual size_type Qm( int const row=1, int const col=1 ) const
+    template<int Row=0,int Col=0>
+    size_type Qm() const
         {
-            fatalBlockCheck( M_M, row, col, "Qm");
-            return M_M[row-1][col-1]->Q() ;
+            return M_M.template get<Row,Col>()->Q() ;
         }
-    virtual size_type Qa( int const row=1, int const col=1 ) const
+    template<int Row=0,int Col=0>
+    size_type Qa() const
         {
-            fatalBlockCheck(M_A, row, col, "Qa");
-            return M_A[row-1][col-1]->Q();
+            return M_A.template get<Row,Col>()->Q();
         }
-    virtual size_type Ql( int output, int const row=1 ) const
+    template<int Row=0>
+    size_type Ql( int output) const
         {
-            fatalBlockCheck(M_F, row, output+1, "Ql" );
-            return M_F[row-1][output]->Q();
+            return M_F[output].template get<Row>()->Q();
         }
     size_type Nl() const
         {
             return M_Nl;
         }
 
-
-    int mMaxM( int q, int const row=1, int const col=1 )
+    template<int Row=0,int Col=0>
+    int mMaxM( int q )
         {
-            fatalBlockCheck(M_M, row, col, "mMaxM" );
-            return M_M[row-1][col-1]->mMax(q);
+            return M_M.template get<Row,Col>()->mMax(q);
         }
-    int mMaxA( int q, int const row=1, int const col=1 )
+    template<int Row=0,int Col=0>
+    int mMaxA( int q )
         {
-            fatalBlockCheck(M_A, row, col, "mMaxA" );
-            return M_A[row-1][col-1]->mMax(q);
+            return M_A.template get<Row,Col>()->mMax(q);
         }
+    template<int Row=0>
     int mMaxF( int output, int q, int const row=1 )
         {
-            fatalBlockCheck(M_F, row, output+1, "mMaxF");
-            return M_F[row-1][output]->mMax(q);
+            return M_F[output].template get<Row>()->mMax(q);
         }
 
-    sparse_matrix_ptrtype Mqm( uint16_type q, uint16_type m, bool transpose = false,
-                               int row=1, int col=1) const
+    template<int Row=0,int Col=0>
+    sparse_matrix_ptrtype Mqm( uint16_type q, uint16_type m, bool transpose = false ) const
         {
-            fatalBlockCheck(M_M, row, col, "M");
-            return M_M[row-1][col-1]->compute( q, m, transpose );
+            return M_M.template get<Row,Col>()->compute( q, m, transpose );
         }
+    template<int Row=0,int Col=0>
     value_type Mqm( uint16_type q, uint16_type m,
-                    element_type const& xi_i, element_type const& xi_j, bool transpose = false,
-                    int const& row=1, int const&  col=1) const
+                    element_type const& xi_i, element_type const& xi_j, bool transpose = false ) const
         {
-            return Mqm( q, m, transpose, row, col )->energy( xi_j, xi_i );
+            return Mqm<Row,Col>( q, m, transpose )->energy( xi_j, xi_i );
         }
-
-    sparse_matrix_ptrtype Aqm( uint16_type q, uint16_type m, bool transpose = false,
-                                     int const& row=1, int const& col=1) const
+    template<int Row=0,int Col=0>
+    sparse_matrix_ptrtype Aqm( uint16_type q, uint16_type m, bool transpose = false ) const
         {
-            fatalBlockCheck(M_A, row, col, "Aqm");
-            return M_A[row-1][col-1]->compute( q, m, transpose );
+            return M_A.template get<Row,Col>()->compute( q, m, transpose );
         }
+    template<int Row=0,int Col=0>
     value_type Aqm( uint16_type q, uint16_type m,
-                    element_type const& xi_i, element_type const& xi_j, bool transpose = false,
-                    int const& row=1, int const& col=1 ) const
+                    element_type const& xi_i, element_type const& xi_j, bool transpose = false ) const
         {
-            return Aqm( q, m, transpose, row, col )->energy( xi_j, xi_i );
+            return Aqm<Row,Col>( q, m, transpose )->energy( xi_j, xi_i );
         }
-
-    vector_ptrtype Fqm( uint16_type output, uint16_type q, int m=0, int const& row=1 ) const
+    template<int Row=0>
+    vector_ptrtype Fqm( uint16_type output, uint16_type q, int m=0 ) const
         {
-            fatalBlockCheck( M_F, row, output+1, "F" );
-            return M_F[row-1][output]->compute(q,m);
+            return M_F[output].template get<Row>()->compute(q,m);
         }
-    value_type Fqm( uint16_type output, uint16_type q,  uint16_type m, element_type const& xi,
-                    int const& row=1 )
+    template<int Row=0>
+    value_type Fqm( uint16_type output, uint16_type q,  uint16_type m, element_type const& xi )
         {
-            return inner_product( *Fqm( output, q, m, row ), xi );
+            return inner_product( *Fqm<Row>( output, q, m ), xi );
         }
 
 
@@ -710,19 +726,19 @@ public:
         {
             return boost::make_tuple( M_eim_error_mq , M_eim_error_aq, M_eim_error_fq);
         }
-
-    sparse_matrix_ptrtype mergeLinearA( int const& row=1, int const& col=1 )
+    template<int Row=0,int Col=0>
+    sparse_matrix_ptrtype mergeLinearA()
         {
-            auto linear_Aqm = M_A[row-1][col-1]->linearMqm();
+            auto linear_Aqm = M_A.template get<Row,Col>()->linearMqm();
             auto muref = refParameter();
             auto linear_beta = computeBetaLinearDecompositionA( muref );
-            int linear_Q = M_A[row-1][col-1]->QLinear();
+            int linear_Q = M_A.template get<Row,Col>()->QLinear();
 
-            auto mat = backend()->newMatrix( _trial=functionSpace(col-1),
-                                             _test=functionSpace(row-1) );
+            auto mat = backend()->newMatrix( _trial=functionSpace(),
+                                             _test=functionSpace() );
             for ( int q=0; q<linear_Q; q++ )
             {
-                int linear_mMax = M_A[row-1][col-1]->mMaxLinear(q);
+                int linear_mMax = M_A.template get<Row,Col>()->mMaxLinear(q);
                 for( int m=0; m<linear_mMax; m++)
                     mat->addMatrix( linear_beta[q][m], linear_Aqm[q][m] );
             }
@@ -740,25 +756,18 @@ public:
     virtual beta_vector_type
     computeBetaLinearDecompositionA ( parameter_type const& mu, double time=0 )
         {
-            return computeBetaLinearDecompositionA( mu, time, 1, 1 );
-        }
-    virtual beta_vector_type
-    computeBetaLinearDecompositionA ( parameter_type const& mu, double time,
-                                      int const& row, int const& col )
-        {
-            fatalBlockCheck( M_A, row, col, "computeBetaLinearDecompositionA" );
             LOG(INFO) << "Warning : you did not write computeBetaLinearDecompositionA(), the linear coefficients of A are automatically evaluate.\n";
-            return M_A[row-1][col-1]->computeBetaLinear( mu );
+            return M_A.template get()->computeBetaLinear( mu );
         }
-    int QLinearDecompositionA( int const& row=1, int const& col=1 ) const
+    template<int Row=0,int Col=0>
+    int QLinearDecompositionA() const
         {
-            fatalBlockCheck( M_A, row, col, "QLinearDecomposition1A");
-            return M_A[row-1][col-1]->QLinear();
+            return M_A.template get<Row,Col>()->QLinear();
         }
-    int mMaxLinearDecompositionA( int q, int const& row=1, int const& col=1 ) const
+    template<int Row=0,int Col=0>
+    int mMaxLinearDecompositionA( int q ) const
         {
-            fatalBlockCheck( M_A, row, col, "mMaxLinearDecompositionA");
-            return M_A[row-1][col-1]->mMaxLinear(q);
+            return M_A.template get<Row,Col>()->mMaxLinear(q);
         }
 
 
@@ -968,13 +977,13 @@ public:
         }
 
 
-    sparse_matrix_ptrtype newMatrix( int row=1, int col=1 ) const
+    sparse_matrix_ptrtype newMatrix() const
         {
-            return M_backend->newMatrix( _test=functionSpace(row-1), _trial=functionSpace(col-1) );
+            return M_backend->newMatrix( _test=functionSpace(), _trial=functionSpace() );
         }
-    vector_ptrtype newVector( int row=1 ) const
+    vector_ptrtype newVector() const
         {
-            return M_backend->newVector( functionSpace(row-1) );
+            return M_backend->newVector( functionSpace() );
         }
     void addEnergyMatrix( form2_type const & f )
         {
@@ -1322,16 +1331,15 @@ public:
             if ( is_time_dependent )
                 initial_field->zero();
         }
+    template< int Row=0, int Col=0>
     value_type linearDecompositionAqm( uint16_type q, uint16_type m, element_type const& xi_i,
-                                       element_type const& xi_j, bool transpose = false,
-                                       int const& row=1, int const& col=1 ) const
+                                       element_type const& xi_j, bool transpose = false ) const
         {
-            fatalBlockCheck( M_A, row, col, "linearDecompositionAqm");
             bool stock = boption(_name="crb.stock-matrices");
             if( stock )
             {
                 //in this case matrices have already been stocked
-                return M_A[row-1][col-1]->computeLinear(q,m,transpose)->energy( xi_i, xi_j );
+                return M_A.template get<Row,Col>()->computeLinear(q,m,transpose)->energy( xi_i, xi_j );
             }
             CHECK( stock )<<" This check is here because nothing is done to deal with linear decomposition of a (model using EIM) when using "
                           <<" operators free and option crb.stock-matrices=false.\nFor now we suppose that crb.stock-matrices=true.\n "
@@ -1778,27 +1786,21 @@ public:
             return offlineMerge( all_beta, only_time_dependent_terms);
         }
 
-    offline_merge_type offlineMerge( betaqm_type const& all_beta, bool only_time_dependent_terms,
-                                     int const& row=1, int const& col=1 )
+    template<int Row=0,int Col=0>
+    offline_merge_type offlineMerge( betaqm_type const& all_beta, bool only_time_dependent_terms )
         {
-            fatalBlockCheck( M_A, row, col, "offlineMerge" );
-            fatalBlockCheck( M_M, row, col, "offlineMerge" );
-
             sparse_matrix_ptrtype A;
             sparse_matrix_ptrtype M;
             std::vector<vector_ptrtype> F( M_Nl );
 
             if ( !only_time_dependent_terms )
             {
-                M = M_M[row-1][col-1]->merge( all_beta.template get<0>() );
-                A = M_A[row-1][col-1]->merge( all_beta.template get<1>() );
+                M = M_M.template get<Row,Col>()->merge( all_beta.template get<0>() );
+                A = M_A.template get<Row,Col>()->merge( all_beta.template get<1>() );
             }
 
             for ( int output =0; output<M_Nl; output++ )
-            {
-                fatalBlockCheck( M_F, row, output+1, "offlineMerge" );
-                F[output] = M_F[row-1][output]->merge( all_beta.template get<2>()[output] );
-            }
+                F[output] = M_F[output].template get<Row>()->merge( all_beta.template get<2>()[output] );
 
             return boost::make_tuple( M, A, F );
         }
@@ -1924,119 +1926,7 @@ public:
         mutable boost::shared_ptr<self_type> M_crb_model;
     };
 
-
-
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( void ),
-                                     addMass,
-                                     tag,
-                                     ( required
-                                       ( form2, * )
-                                       ( beta, * ) )
-                                     ( optional
-                                       ( row, (int const&), 1 )
-                                       ( col, (int const&), 1 )
-                                       ) )
-        {
-            createMatBlock( M_M, row, col );
-            std::string filename = ( boost::format( "M%1%%2%-" ) %row %col ) .str();
-            M_M[row-1][col-1]->addOpe( ope, beta, filename );
-        }
-
-
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( void ),
-                                     addLhs,
-                                     tag,
-                                     ( required
-                                       ( form2, * )
-                                       ( beta, * ) )
-                                     ( optional
-                                       ( row, (int const&), 1 )
-                                       ( col, (int const&), 1 )
-                                       ) )
-        {
-            createMatBlock( M_A, row, col );
-            std::string filename = ( boost::format( "A%1%%2%-" ) %row %col ) .str();
-            M_A[row-1][col-1]->addOpe( form2, beta, filename );
-        }
-
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( void ),
-                                     addRhs,
-                                     tag,
-                                     ( required
-                                       ( form1, * )
-                                       ( beta, * ) )
-                                     ( optional
-                                       ( row, (int const&), 1 )
-                                       ) )
-        {
-            int output = 0;
-            M_Nl = std::max( M_Nl, output+1 );
-            createVecBlock( M_F, output, row );
-            std::string filename = ( boost::format( "F%1%-%2%-" ) %row %output ) .str();
-            M_F[row-1][output]->addFun( form1, beta, filename );
-        }
-
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( void ),
-                                     addOutput,
-                                     tag,
-                                     ( required
-                                       ( form1, * )
-                                       ( beta, * ) )
-                                     ( optional
-                                       ( output, (int const&), 1 )
-                                       ( row, (int const&), 1 )
-                                       ) )
-        {
-            M_Nl = std::max( M_Nl, output+1 );
-            createVecBlock( M_F, output, row );
-            std::string filename = ( boost::format( "F%1%-%2%-" ) %row %output ) .str();
-            M_F[row-1][output]->addFun( form1, beta, filename );
-        }
-
-
 protected:
-    void createMatBlock( std::vector< std::vector< blockmatrix_ad_ptrtype >>& block,
-                         int const& row, int const& col )
-        {
-            if ( row>block.size() )
-                block.resize(row);
-            if ( col>block[row-1].size() )
-                block[row-1].resize(col);
-            if( !block[row-1][col-1] )
-                block[row-1][col-1] = blockmatrix_ad_ptrtype( new blockmatrix_ad_type( this->shared_from_this(), row, col) );
-        }
-
-    void createVecBlock( std::vector< std::vector< blockvector_ad_ptrtype >>& block,
-                         int const& output, int const& row )
-        {
-            if ( row>block.size() )
-                block.resize(row);
-            if ( output>=block[row-1].size() )
-                block[row-1].resize(output+1);
-            if( !block[row-1][output] )
-                block[row-1][output] = blockvector_ad_ptrtype( new blockvector_ad_type( this->shared_from_this(), row ) );
-        }
-
-    template <typename ContainerType>
-    void fatalBlockCheck( ContainerType const& vec, int row, int col, std::string name ) const
-        {
-            int maxRow = vec.size();
-            int maxCol = vec[maxRow-1].size();
-            CHECK( row<=maxRow && col<= maxCol )
-                << "[AD."<< name <<"()] Invalid block entries. You asked for "<< row <<","<<col
-                << " and actual size is "<<maxRow<<","<<maxCol<<std::endl;
-        }
-    template <typename ContainerType>
-    void fatalBlockCheck( ContainerType const& vec, int row, std::string name ) const
-        {
-            int maxRow = vec.size();
-            CHECK( row<=maxRow )<< "[AD."<< name <<"()] Invalid row number="<< row
-                                << " and max row number="<< maxRow << std::endl;
-        }
-
-
-
-
     bool M_is_initialized;
     CRBModelMode M_mode;
     backend_ptrtype M_backend;
@@ -2064,10 +1954,9 @@ protected:
     std::vector<vector_ptrtype> M_monoF;
 
     int M_Nl;
-    std::vector< std::vector< blockmatrix_ad_ptrtype >> M_M; // rowXcol
-    std::vector< std::vector< blockmatrix_ad_ptrtype >> M_A; // rowXcol
-    std::vector< std::vector< blockvector_ad_ptrtype >> M_F; // rowXoutput
-
+    matrix_ad_type M_M;
+    matrix_ad_type M_A;
+    std::vector< vector_ad_type > M_F;
 
     mutable std::vector< std::vector<element_ptrtype> > M_InitialGuessV;
     mutable std::vector< std::vector<vector_ptrtype> > M_InitialGuessVector;
