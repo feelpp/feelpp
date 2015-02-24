@@ -219,6 +219,10 @@ public:
         }
     void initializeMassMatrix()
         {
+            initializeMassMatrix( mpl::bool_<use_block_structure>() );
+        }
+    void initializeMassMatrix( mpl::bool_<false> )
+        {
             std::string filename = "GinacM-";
 
             if ( M_model->constructOperatorCompositeM() )
@@ -242,6 +246,25 @@ public:
                     M_beta[q][m]=1.;
             }
         }
+    void initializeMassMatrix( mpl::bool_<true> )
+        {
+            std::string filename = "GinacM-";
+            CHECK( !M_model->constructOperatorCompositeM() )<<"You can't construct the operator compositeM with block structure, set it to false and use default mass matrix\n";
+            if ( boption("crb.stock-matrices") )
+                assembleMassMatrix();
+            else
+                preAssembleMassMatrix();
+
+            M_beta.resize( M_Q );
+            M_beta_mode.resize( M_Q, BetaMode::SET );
+            for( int q=0; q<M_Q; q++ )
+            {
+                M_beta[q].resize( M_mMax[q] );
+                for( int m=0; m<M_mMax[q]; m++ )
+                    M_beta[q][m]=1.;
+            }
+        }
+
 
     beta_vector_type computeBetaQm( parameter_type const& mu, double time )
         {
@@ -279,7 +302,7 @@ public:
             }
             return M_beta;
         }
-    beta_vector_type computeBetaQm( trialelement_type const& T, parameter_type const& mu, double time )
+    beta_vector_type computeBetaQm( element_type const& T, parameter_type const& mu, double time )
         {
             if ( M_use_ginac_expr )
             {
@@ -705,7 +728,7 @@ private:
             M_Mqm[0][0] = backend()->newMatrix( _test=Xtest , _trial=Xtrial );
 
             form2( _test=Xtest, _trial=Xtrial, _matrix=M_Mqm[0][0] ) =
-                integrate( _range=elements( mesh ), _expr=idt( u )*id( v )  );
+                integrate( _range=elements( mesh ), _expr= inner( idt(u), id(v) )  ) ;
             M_Mqm[0][0]->close();
         }
     void assembleMassMatrix( mpl::bool_<true> )
@@ -773,7 +796,7 @@ private:
             auto v = Xtest->element();
 
             auto mesh = Xtest->mesh();
-            auto expr=integrate( _range=elements( mesh ) , _expr=idt( u )*id( v ) );
+            auto expr=integrate( _range=elements( mesh ) , _expr= trans(idt( u ))*id( v ) );
 
             auto M_composite = opLinearComposite( _domainSpace=Xtrial, _imageSpace=Xtest  );
             auto opfree = opLinearFree( _domainSpace=Xtrial, _imageSpace=Xtest, _expr=expr );
@@ -974,10 +997,18 @@ public:
             return fusion::at_c<Row>( M_blockAD );
         }
 
+    struct checkBlock
+    {
+        template <typename T>
+        void operator() ( T& t ) const
+            {
+                if( t )
+                    t->check();
+            }
+    };
     void check()
         {
-            /*for ( auto it = begin(M_blockAD); it!=M_end(M_blockAD); next(it) )
-             it*/
+            fusion::for_each( M_blockAD, checkBlock() );
         }
 
 private :
@@ -987,9 +1018,12 @@ private :
 };
 
 template <typename ModelType >
-class AffineDecompositionMatrix
+class AffineDecompositionMatrix :
+        public boost::enable_shared_from_this< AffineDecompositionMatrix<ModelType> >
 {
 public :
+    typedef AffineDecompositionMatrix<ModelType> self_type;
+    typedef boost::shared_ptr<self_type> self_ptrtype;
     typedef ModelType model_type;
     typedef boost::shared_ptr<model_type> model_ptrtype;
 
@@ -1085,9 +1119,66 @@ public :
 
     void check()
         {
+            fusion::for_each( M_blockAD, checkRow() );
+        }
+
+    void initializeMassMatrix()
+        {
+            rangespace_type range;
+            initializeMassRow init( this->shared_from_this() );
+            fusion::for_each( range, init );
         }
 
 private :
+    struct initializeMassRow
+    {
+        initializeMassRow( self_ptrtype AD) :
+            M_AD( AD )
+            {}
+
+        template<typename T>
+        void operator() ( T& t) const
+            {
+                initializeMassBlock<T> block( M_AD );
+                rangespace_type range;
+                fusion::for_each( range, block );
+            }
+
+        self_ptrtype M_AD;
+    };
+    template <typename Row>
+    struct initializeMassBlock
+    {
+        initializeMassBlock( self_ptrtype AD) :
+            M_AD( AD )
+            {}
+
+        template<typename Col>
+        void operator() ( Col& t) const
+            {
+                M_AD->template createBlock<Row::value,Col::value>();
+                M_AD->template get<Row::value,Col::value>()->initializeMassMatrix();
+            }
+        self_ptrtype M_AD;
+    };
+    struct checkBlock
+    {
+        template< typename T>
+        void operator() ( T& t) const
+            {
+                if ( t )
+                    t->check();
+            }
+    };
+    struct checkRow
+    {
+        template <typename T>
+        void operator() ( T& t ) const
+            {
+                fusion::for_each( t, checkBlock() );
+            }
+    };
+
     model_ptrtype M_model;
     blockmatrix_ad_type M_blockAD;
 };

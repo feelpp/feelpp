@@ -210,12 +210,20 @@ public:
                                    > steady_betaqm_type;
 
     static const int nb_spaces = functionspace_type::nSpaces;
-    typedef typename mpl::if_< boost::is_same< mpl::int_<nb_spaces>, mpl::int_<2> > , fusion::vector< mpl::int_<0>, mpl::int_<1> >  ,
-                               typename mpl::if_ < boost::is_same< mpl::int_<nb_spaces> , mpl::int_<3> > , fusion::vector < mpl::int_<0> , mpl::int_<1> , mpl::int_<2> > ,
-                                                   typename mpl::if_< boost::is_same< mpl::int_<nb_spaces> , mpl::int_<4> >, fusion::vector< mpl::int_<0>, mpl::int_<1>, mpl::int_<2>, mpl::int_<3> >,
+
+    /*typedef typename mpl::if_< boost::is_same< mpl::int_<nb_spaces>, mpl::int_<2> >,
+                               fusion::vector< mpl::int_<0>, mpl::int_<1> >,
+                               typename mpl::if_ < boost::is_same< mpl::int_<nb_spaces> , mpl::int_<3> >,
+                                                   fusion::vector < mpl::int_<0>, mpl::int_<1>, mpl::int_<2> > ,
+                                                   typename mpl::if_< boost::is_same< mpl::int_<nb_spaces>, mpl::int_<4> >,
+                                                                      fusion::vector< mpl::int_<0>, mpl::int_<1>, mpl::int_<2>, mpl::int_<3> >,
                                                                       fusion::vector< mpl::int_<0>, mpl::int_<1>, mpl::int_<2>, mpl::int_<3>, mpl::int_<4> >
-                                                                      >::type >::type >::type
-    index_vector_type;
+                                                                      >::type
+                                                   >::type
+     >::type index_vector_type;*/
+
+    typedef typename mpl::range_c< int, 0, functionspace_type::nSpaces > index_vector_type;
+
 
 
 
@@ -400,7 +408,19 @@ public:
 
     virtual steady_betaqm_type computeBetaQm( element_type const& T, parameter_type const& mu )
         {
+            return computeBetaQm( T, mu, mpl::bool_<use_block_structure>() );
+        }
+
+    steady_betaqm_type computeBetaQm( element_type const& T, parameter_type const& mu, mpl::bool_<false> )
+        {
             return boost::make_tuple( computeBetaAqm( T,mu ), computeBetaFqm( T,mu ) );
+        }
+    steady_betaqm_type computeBetaQm( element_type const& T, parameter_type const& mu, mpl::bool_<true> )
+        {
+            if (Environment::isMasterRank())
+                std::cout << "Warning : call to computeBetaQm with block structure !!!\n";
+            steady_betaqm_type dummy;
+            return dummy;
         }
 
     betaqm_type computeBetaQm( vector_ptrtype const& T, parameter_type const& mu ,

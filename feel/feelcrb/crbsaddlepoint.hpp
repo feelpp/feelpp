@@ -171,8 +171,7 @@ public:
                  ( boost::format( "%1%-%2%-%3%-saddlepoint" )
                    % name
                    % ioption("crb.output-index")
-                   % ioption("crb.error-type") ).str(),
-                 vm )
+                   % ioption("crb.error-type") ).str() )
         {
             this->setTruthModel( model );
             if ( M_crbdb.loadDB() )
@@ -202,12 +201,8 @@ public:
         M_crbdb( o )
         {}
 
-    //! destructor
-    ~CRBSaddlePoint()
-        {}
 
-
-    WorldComm const& worldComm() const { return Environment::wordlComm(); }
+    WorldComm const& worldComm() const { return Environment::worldComm(); }
 
 
     /**
