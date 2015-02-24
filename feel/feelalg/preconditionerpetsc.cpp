@@ -1493,6 +1493,8 @@ getOptionsDescGAMG( std::string const& prefix, std::string const& sub )
           "max number of equations on coarse grids" )
         ( prefixvm( prefix,pcctx+"gamg-threshold" ).c_str(), Feel::po::value<double>()->default_value( 0. ),
           "relative threshold to use for dropping edges in aggregation graph" )
+        ( prefixvm( prefix,pcctx+"gamg-set-sym-graph" ).c_str(), Feel::po::value<bool>()->default_value( true ),
+          "set for asymmetric matrice (if the matrix is sym, put to false)" )
         ;
 
     // coarse ksp/pc
@@ -2115,6 +2117,7 @@ ConfigurePCGAMG::ConfigurePCGAMG( PC& pc, PreconditionerPetsc<double>::indexspli
     M_procEqLim( option(_name="pc-gamg-proc-eq-lim",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
     M_coarseEqLim(option(_name="pc-gamg-coarse-eq-lim",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
     M_threshold( option(_name="pc-gamg-threshold",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<double>() ),
+    M_setSymGraph( option(_name="pc-gamg-set-sym-graph",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<bool>() ),
     M_prefixMGCoarse( (boost::format( "%1%%2%mg-coarse" ) %prefixvm( prefix,"" ) %std::string((sub.empty())?"":sub+"-")  ).str() ),
     M_coarsePCtype( option(_name="pc-type",_prefix=M_prefixMGCoarse,_vm=this->vm()).as<std::string>() ),
     M_coarsePCMatSolverPackage( option(_name="pc-factor-mat-solver-package-type",_prefix=M_prefixMGCoarse,_vm=this->vm()).as<std::string>() ),
@@ -2134,8 +2137,11 @@ ConfigurePCGAMG::runConfigurePCGAMG( PC& pc, PreconditionerPetsc<double>::indexs
 #if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 )
     this->check( PCGAMGSetType( pc, M_gamgType.c_str() ) );
 #endif
+    // Set for asymmetric matrices
+    this->check( PetscOptionsSetValue("-pc_gamg_sym_graph", boost::lexical_cast<std::string>(M_setSymGraph).c_str()) );
     // PCSetFromOptions is called here because PCGAMGSetType destroy all unless the type_name
     this->check( PCSetFromOptions( pc ) );
+
 #if 0
     // Sets the number of levels to use with MG.
     // Must be called before any other MG routine
@@ -2155,6 +2161,9 @@ ConfigurePCGAMG::runConfigurePCGAMG( PC& pc, PreconditionerPetsc<double>::indexs
     this->check( PCGAMGSetProcEqLim( pc, M_coarseEqLim ) );
     // Relative threshold to use for dropping edges in aggregation graph
     this->check( PCGAMGSetThreshold( pc, M_threshold ) );
+    // not works!!(seems to be missing PetscObjectComposeFunction with this function)
+    //this->check( PCGAMGSetSymGraph( pc, ( M_setSymGraph )?PETSC_TRUE : PETSC_FALSE ) );
+
 #endif
     // setup sub-pc
     this->check( PCSetUp( pc ) );
@@ -2297,6 +2306,21 @@ ConfigurePCMGLevels::runConfigurePCMGLevels( PC& pc, PreconditionerPetsc<double>
     KSP levelksp;
     // get ksp
     this->check( PCMGGetSmoother( pc, level, &levelksp ) );
+    // get level pc
+    PC levelpc;
+    this->check( KSPGetPC( levelksp, &levelpc ) );
+    //-------------------------------------------------------------------//
+    //if ( levelpc->setupcalled )
+    //    this->check( PCSetType(levelpc, ( char* )PCNONE) );
+    // configure level pc
+    SetPCType( levelpc, pcTypeConvertStrToEnum( M_mgLevelsPCtype[level-1] ),
+               matSolverPackageConvertStrToEnum( M_mgLevelsMatSolverPackage[level-1] ),
+               this->worldComm() );
+    ConfigurePC( levelpc, is, this->worldComm(), "", prefixAllLevel , prefixLevelOverwrite, this->vm() );
+    // setup level pc
+    this->check( PCSetUp( levelpc ) );
+
+    //-------------------------------------------------------------------//
     // configure ksp
     ConfigureKSP kspConf( levelksp,this->worldComm(), "", prefixAllLevel, prefixLevelOverwrite,"richardson", 1e-5, 2 );
 #if 0
@@ -2308,17 +2332,6 @@ ConfigurePCMGLevels::runConfigurePCMGLevels( PC& pc, PreconditionerPetsc<double>
 #endif
     // setup coarse ksp
     this->check( KSPSetUp( levelksp ) );
-    //-------------------------------------------------------------------//
-    // get level pc
-    PC levelpc;
-    this->check( KSPGetPC( levelksp, &levelpc ) );
-    // configure level pc
-    SetPCType( levelpc, pcTypeConvertStrToEnum( M_mgLevelsPCtype[level-1] ),
-               matSolverPackageConvertStrToEnum( M_mgLevelsMatSolverPackage[level-1] ),
-               this->worldComm() );
-    ConfigurePC( levelpc, is, this->worldComm(), "", prefixAllLevel , prefixLevelOverwrite, this->vm() );
-    // setup level pc
-    this->check( PCSetUp( levelpc ) );
 
     PetscViewer viewer = (this->sub().empty())? PETSC_VIEWER_STDOUT_WORLD : PETSC_VIEWER_STDOUT_SELF;
     if ( kspConf.kspView() )
