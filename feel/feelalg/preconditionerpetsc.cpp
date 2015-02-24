@@ -504,7 +504,11 @@ static PetscErrorCode PCSetUp_Redundant(PC pc)
       ierr = PetscLogObjectMemory((PetscObject)pc,sizeof(PetscSubcomm));CHKERRQ(ierr);
 
       /* create a new PC that processors in each subcomm have copy of */
+#if PETSC_VERSION_LESS_THAN(3,6,0)
       subcomm = red->psubcomm->comm;
+#else
+      subcomm = red->psubcomm->child;
+#endif
 
       ierr = KSPCreate(subcomm,&red->ksp);CHKERRQ(ierr);
       ierr = PetscObjectIncrementTabLevel((PetscObject)red->ksp,(PetscObject)pc,1);CHKERRQ(ierr);
@@ -517,16 +521,28 @@ static PetscErrorCode PCSetUp_Redundant(PC pc)
       ierr = KSPSetOptionsPrefix(red->ksp,prefix);CHKERRQ(ierr);
       ierr = KSPAppendOptionsPrefix(red->ksp,"redundant_");CHKERRQ(ierr);
     } else {
+#if PETSC_VERSION_LESS_THAN(3,6,0)
       subcomm = red->psubcomm->comm;
+#else
+      subcomm = red->psubcomm->child;
+#endif
     }
 
     if (red->useparallelmat) {
       /* grab the parallel matrix and put it into processors of a subcomminicator */
+#if PETSC_VERSION_LESS_THAN(3,6,0)
       ierr = MatGetRedundantMatrix(pc->pmat,red->psubcomm->n,subcomm,MAT_INITIAL_MATRIX,&red->pmats);CHKERRQ(ierr);
+#else
+      ierr = MatCreateRedundantMatrix(pc->pmat,red->psubcomm->n,subcomm,MAT_INITIAL_MATRIX,&red->pmats);CHKERRQ(ierr);
+#endif
       ierr = KSPSetOperators(red->ksp,red->pmats,red->pmats);CHKERRQ(ierr);
        
       /* get working vectors xsub and ysub */
+#if PETSC_VERSION_LESS_THAN(3,6,0)
       ierr = MatGetVecs(red->pmats,&red->xsub,&red->ysub);CHKERRQ(ierr);
+#else
+      ierr = MatCreateVecs(red->pmats,&red->xsub,&red->ysub);CHKERRQ(ierr);
+#endif
 
       /* create working vectors xdup and ydup.
        xdup concatenates all xsub's contigously to form a mpi vector over dupcomm  (see PetscSubcommCreate_interlaced())
@@ -541,7 +557,11 @@ static PetscErrorCode PCSetUp_Redundant(PC pc)
         IS       is1,is2;
         PetscInt *idx1,*idx2,i,j,k;
 
+#if PETSC_VERSION_LESS_THAN(3,6,0)
         ierr = MatGetVecs(pc->pmat,&x,0);CHKERRQ(ierr);
+#else
+        ierr = MatCreateVecs(pc->pmat,&x,0);CHKERRQ(ierr);
+#endif
         ierr = VecGetSize(x,&M);CHKERRQ(ierr);
         ierr = VecGetOwnershipRange(x,&mstart,&mend);CHKERRQ(ierr);
         mlocal = mend - mstart;
@@ -583,7 +603,11 @@ static PetscErrorCode PCSetUp_Redundant(PC pc)
       } else {
         reuse = MAT_REUSE_MATRIX;
       }
+#if PETSC_VERSION_LESS_THAN(3,6,0)
       ierr = MatGetRedundantMatrix(pc->pmat,red->psubcomm->n,red->psubcomm->comm,reuse,&red->pmats);CHKERRQ(ierr);
+#else
+      ierr = MatCreateRedundantMatrix(pc->pmat,red->psubcomm->n,red->psubcomm->child,reuse,&red->pmats);CHKERRQ(ierr);
+#endif
       ierr = KSPSetOperators(red->ksp,red->pmats,red->pmats);CHKERRQ(ierr);
     } else { /* !red->useparallelmat */
       ierr = KSPSetOperators(red->ksp,pc->mat,pc->pmat);CHKERRQ(ierr);
