@@ -133,8 +133,9 @@ private:
     ts_ptrtype nm;
     
     backend_ptrtype M_backend;
-    sparse_matrix_ptrtype Jac;
     vector_ptrtype Res;
+    sparse_matrix_ptrtype Jac;
+
 
     exporter_ptrtype e;
 };

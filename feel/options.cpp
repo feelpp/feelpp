@@ -268,9 +268,6 @@ parallel_options( std::string const& prefix )
 {
     po::options_description _options( "Parallel " + prefix + " options" );
     _options.add_options()
-#if BOOST_VERSION >= 105500
-        ( prefixvm( prefix,"mpi.threading-level" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "Enable the use of additional cores for parallelization" )     
-#endif
 #if defined(FEELPP_HAS_HARTS)
         ( prefixvm( prefix,"parallel.cpu.enable" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Enable the use of additional cores for parallelization" )
         ( prefixvm( prefix,"parallel.cpu.impl" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "Specify the implementation for multithreading" )
@@ -707,7 +704,7 @@ feel_options( std::string const& prefix  )
         /* gmsh domain options */
         .add( gmsh_domain_options( prefix ) )
         #
-#if BOOST_VERSION >= 105500 || defined(FEELPP_HAS_HARTS)
+#if defined(FEELPP_HAS_HARTS)
         .add( parallel_options( prefix ) )
 #endif
 
