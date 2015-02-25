@@ -123,9 +123,13 @@ public:
     typedef functionspace_ptrtype space_ptrtype;
     typedef typename space_type::element_type element_type;
     typedef boost::shared_ptr<element_type> element_ptrtype;
+    template <int Row>
+    using subelement_type = mpl::if_< mpl::bool_<use_block_structure>,
+                                      typename space_type::template sub_functionspace<Row>::type::element_type::element_type,
+                                      typename space_type::element_type >;
 
     // RB Function Space
-    typedef ReducedBasisSpace<self_type> rbfunctionspace_type;
+    typedef ReducedBasisSpace<functionspace_type> rbfunctionspace_type;
     typedef boost::shared_ptr< rbfunctionspace_type > rbfunctionspace_ptrtype;
 
     // Parameters Space
@@ -317,6 +321,14 @@ public:
             M_F[output].template get<Row>()->addFun( fun, beta, filename );
         }
 
+    matrix_ad_type getA()
+        {
+            return M_A;
+        }
+    std::vector< vector_ad_type > getF()
+        {
+            return M_F;
+        }
 
 
 
@@ -338,10 +350,10 @@ public:
             }
         }
 
-    void setFunctionSpaces( functionspace_ptrtype Vh )
+    virtual void setFunctionSpaces( functionspace_ptrtype Vh )
         {
             Xh = Vh;
-            XN = rbfunctionspace_type::New( _model=this->shared_from_this() );
+            XN = rbfunctionspace_type::New( _space=Xh );
             if (Environment::isMasterRank() )
                 std::cout << "Number of dof : " << Xh->nDof() << std::endl
                           << "Number of local dof : " << Xh->nLocalDof() << std::endl;
@@ -603,17 +615,26 @@ public:
     template<int Row=0,int Col=0>
     size_type Qm() const
         {
-            return M_M.template get<Row,Col>()->Q() ;
+            auto M=M_M.template get<Row,Col>();
+            if(M)
+                return M->Q();
+            return 0;
         }
     template<int Row=0,int Col=0>
     size_type Qa() const
         {
-            return M_A.template get<Row,Col>()->Q();
+            auto A = M_A.template get<Row,Col>();
+            if ( A )
+                return A->Q();
+            return 0;
         }
     template<int Row=0>
     size_type Ql( int output) const
         {
-            return M_F[output].template get<Row>()->Q();
+            auto F=M_F[output].template get<Row>();
+            if (F)
+                return F->Q();
+            return 0;
         }
     size_type Nl() const
         {
@@ -623,17 +644,26 @@ public:
     template<int Row=0,int Col=0>
     int mMaxM( int q )
         {
-            return M_M.template get<Row,Col>()->mMax(q);
+            auto M=M_M.template get<Row,Col>();
+            if(M)
+                return M->mMax(q);
+            return 0;
         }
     template<int Row=0,int Col=0>
     int mMaxA( int q )
         {
-            return M_A.template get<Row,Col>()->mMax(q);
+            autot A=M_A.template get<Row,Col>();
+            if(A)
+                return A->mMax(q);
+            return 0;
         }
     template<int Row=0>
     int mMaxF( int output, int q )
         {
-            return M_F[output].template get<Row>()->mMax(q);
+            auto F=M_F[output].template get<Row>();
+            if(F)
+                return F->mMax(q);
+            return 0;
         }
 
     template<int Row=0,int Col=0>
@@ -652,9 +682,10 @@ public:
         {
             return M_A.template get<Row,Col>()->compute( q, m, transpose );
         }
-    template<int Row=0,int Col=0>
+    template<int Row=0,int Col=0, typename Type1, typename Type2>
     value_type Aqm( uint16_type q, uint16_type m,
-                    element_type const& xi_i, element_type const& xi_j, bool transpose = false ) const
+                    Type1 const& xi_i, Type2 const& xi_j,
+                    bool transpose = false ) const
         {
             return Aqm<Row,Col>( q, m, transpose )->energy( xi_j, xi_i );
         }
@@ -663,8 +694,8 @@ public:
         {
             return M_F[output].template get<Row>()->compute(q,m);
         }
-    template<int Row=0>
-    value_type Fqm( uint16_type output, uint16_type q,  uint16_type m, element_type const& xi )
+    template<int Row=0, typename Type>
+    value_type Fqm( uint16_type output, uint16_type q,  uint16_type m, Type const& xi )
         {
             return inner_product( *Fqm<Row>( output, q, m ), xi );
         }

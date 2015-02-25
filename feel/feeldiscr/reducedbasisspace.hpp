@@ -210,6 +210,14 @@ public :
         {
             M_primal_rb_basis.push_back( e );
         }
+    void addPrimalBasisElement( vector_ptrtype const & vec )
+        {
+            space_element_type e = M_Xh->element();
+            e = *vec;
+
+            M_primal_rb_basis.push_back( e );
+        }
+
 
     void addPrimalBasisElement( space_element_ptrtype const & e )
         {

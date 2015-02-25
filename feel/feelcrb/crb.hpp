@@ -180,9 +180,6 @@ public:
     typedef CRBSCM<model_type> scm_type;
     typedef boost::shared_ptr<scm_type> scm_ptrtype;
 
-    //! elements database
-    typedef CRBElementsDB<model_type> crb_elements_db_type;
-    typedef boost::shared_ptr<crb_elements_db_type> crb_elements_db_ptrtype;
 
     //! POD
     typedef POD<model_type> pod_type;
@@ -191,6 +188,10 @@ public:
     //! function space type
     typedef typename model_type::functionspace_type functionspace_type;
     typedef typename model_type::functionspace_ptrtype functionspace_ptrtype;
+
+    //! elements database
+    typedef CRBElementsDB<functionspace_type> crb_elements_db_type;
+    typedef boost::shared_ptr<crb_elements_db_type> crb_elements_db_ptrtype;
 
 
     //! element of the functionspace type
@@ -304,11 +305,10 @@ public:
                  %name %ioption("crb.output-index")
                  % ioption("crb.error-type") ).str() ),
         M_elements_database(
-        ( boost::format( "%1%" ) %ioption("crb.error-type") ).str(),
+            ( boost::format( "%1%" ) %ioption("crb.error-type") ).str(),
             name,
             ( boost::format( "%1%-%2%-%3%-elements" )
-            %name % ioption("crb.output-index") %ioption("crb.error-type") ).str(),
-            model ),
+              %name % ioption("crb.output-index") %ioption("crb.error-type") ).str() ),
         M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC, Environment::worldComm() ) ),
         M_model(),
         M_backend( backend() ),
@@ -349,8 +349,8 @@ public:
             }
             else
             {
-               if( Environment::worldComm().isMasterRank() )
-                   std::cout<<"Warning ! No database for basis functions loaded. Start from the begining"<<std::endl;
+                if( Environment::worldComm().isMasterRank() )
+                    std::cout<<"Warning ! No database for basis functions loaded. Start from the begining"<<std::endl;
                 LOG( INFO ) <<"no database for basis functions loaded. Start from the begining";
             }
         }
@@ -682,7 +682,8 @@ public:
      * orthonormalize the basis
      * return the norm of the matrix A(i,j)=M_model->scalarProduct( WN[j], WN[i] ), should be 0
      */
-    double orthonormalize( size_type N, wn_type& wn, int Nm = 1 );
+    template <typename WnType>
+    double orthonormalize( size_type N, WnType& wn, int Nm = 1 );
 
     void checkResidual( parameter_type const& mu, std::vector< std::vector<double> > const& primal_residual_coeffs,
                         std::vector< std::vector<double> > const& dual_residual_coeffs , element_type & u, element_type & udu ) const;
@@ -700,7 +701,8 @@ public:
      * check orthonormality
      * return the norm of the matrix A(i,j)=M_model->scalarProduct( WN[j], WN[i] ), should be 0
      */
-    double checkOrthonormality( int N, const wn_type& wn ) const;
+    template <typename WnType>
+    double checkOrthonormality( int N, const WnType& wn ) const;
 
     /**
      * check the reduced basis space invariant properties
@@ -1293,14 +1295,6 @@ protected:
 
 
     friend class boost::serialization::access;
-    // When the class Archive corresponds to an output archive, the
-    // & operator is defined similar to <<.  Likewise, when the class Archive
-    // is a type of input archive the & operator is defined similar to >>.
-    template<class Archive>
-    void save( Archive & ar, const unsigned int version ) const;
-
-    template<class Archive>
-    void load( Archive & ar, const unsigned int version ) ;
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 
@@ -6055,8 +6049,9 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
 
 }
 template<typename TruthModelType>
+template <typename WnType>
 double
-CRB<TruthModelType>::orthonormalize( size_type N, wn_type& wn, int Nm )
+CRB<TruthModelType>::orthonormalize( size_type N, WnType& wn, int Nm )
 {
     int proc_number = this->worldComm().globalRank();
     if( proc_number == 0 ) std::cout << "  -- orthonormalization (Gram-Schmidt)\n";
@@ -6089,8 +6084,9 @@ CRB<TruthModelType>::orthonormalize( size_type N, wn_type& wn, int Nm )
 }
 
 template <typename TruthModelType>
+template <typename WnType>
 double
-CRB<TruthModelType>::checkOrthonormality ( int N, const wn_type& wn ) const
+CRB<TruthModelType>::checkOrthonormality ( int N, const WnType& wn ) const
 {
 
     if ( wn.size()==0 )
@@ -9654,297 +9650,6 @@ CRB<TruthModelType>::computationalTimeStatistics(std::string appname)
 }
 
 
-template<typename TruthModelType>
-template<class Archive>
-void
-CRB<TruthModelType>::save( Archive & ar, const unsigned int version ) const
-{
-    int proc_number = this->worldComm().globalRank();
-
-    LOG(INFO) <<"[CRB::save] version : "<<version<<std::endl;
-
-    ar & boost::serialization::base_object<super>( *this );
-    ar & BOOST_SERIALIZATION_NVP( M_output_index );
-    ar & BOOST_SERIALIZATION_NVP( M_N );
-    ar & BOOST_SERIALIZATION_NVP( M_rbconv );
-    ar & BOOST_SERIALIZATION_NVP( M_error_type );
-    ar & BOOST_SERIALIZATION_NVP( M_Xi );
-    ar & BOOST_SERIALIZATION_NVP( M_WNmu );
-    ar & BOOST_SERIALIZATION_NVP( M_Aqm_pr );
-    ar & BOOST_SERIALIZATION_NVP( M_Aqm_du );
-    ar & BOOST_SERIALIZATION_NVP( M_Aqm_pr_du );
-    ar & BOOST_SERIALIZATION_NVP( M_Fqm_pr );
-    ar & BOOST_SERIALIZATION_NVP( M_Fqm_du );
-    ar & BOOST_SERIALIZATION_NVP( M_Lqm_pr );
-    ar & BOOST_SERIALIZATION_NVP( M_Lqm_du );
-
-    ar & BOOST_SERIALIZATION_NVP( M_C0_pr );
-    ar & BOOST_SERIALIZATION_NVP( M_C0_du );
-    ar & BOOST_SERIALIZATION_NVP( M_Lambda_pr );
-    ar & BOOST_SERIALIZATION_NVP( M_Lambda_du );
-    ar & BOOST_SERIALIZATION_NVP( M_Gamma_pr );
-    ar & BOOST_SERIALIZATION_NVP( M_Gamma_du );
-
-
-    ar & BOOST_SERIALIZATION_NVP( M_Mqm_pr );
-    ar & BOOST_SERIALIZATION_NVP( M_Mqm_du );
-    ar & BOOST_SERIALIZATION_NVP( M_Mqm_pr_du );
-
-    if ( model_type::is_time_dependent )
-    {
-
-            ar & BOOST_SERIALIZATION_NVP( M_coeff_pr_ini_online );
-            ar & BOOST_SERIALIZATION_NVP( M_coeff_du_ini_online );
-            ar & BOOST_SERIALIZATION_NVP( M_Cmf_pr );
-            ar & BOOST_SERIALIZATION_NVP( M_Cma_pr );
-            ar & BOOST_SERIALIZATION_NVP( M_Cmm_pr );
-            ar & BOOST_SERIALIZATION_NVP( M_Cmf_du );
-            ar & BOOST_SERIALIZATION_NVP( M_Cmf_du_ini );
-            ar & BOOST_SERIALIZATION_NVP( M_Cma_du );
-            ar & BOOST_SERIALIZATION_NVP( M_Cmm_du );
-    }
-
-    ar & BOOST_SERIALIZATION_NVP ( M_database_contains_variance_info );
-    if( M_database_contains_variance_info )
-        ar & BOOST_SERIALIZATION_NVP( M_variance_matrix_phi );
-
-    ar & BOOST_SERIALIZATION_NVP( M_Fqm_pr );
-    ar & BOOST_SERIALIZATION_NVP( M_InitialGuessV_pr );
-
-    ar & BOOST_SERIALIZATION_NVP( M_current_mu );
-    ar & BOOST_SERIALIZATION_NVP( M_no_residual_index );
-
-    ar & BOOST_SERIALIZATION_NVP( M_maxerror );
-    ar & BOOST_SERIALIZATION_NVP( M_use_newton );
-    ar & BOOST_SERIALIZATION_NVP( M_Jqm_pr );
-    ar & BOOST_SERIALIZATION_NVP( M_Rqm_pr );
-
-    ar & BOOST_SERIALIZATION_NVP( M_primal_apee_basis );
-    ar & BOOST_SERIALIZATION_NVP( M_dual_apee_basis );
-    ar & BOOST_SERIALIZATION_NVP( M_primal_V );
-    ar & BOOST_SERIALIZATION_NVP( M_dual_V );
-    ar & BOOST_SERIALIZATION_NVP( M_primal_T );
-    ar & BOOST_SERIALIZATION_NVP( M_dual_T );
-
-    ar & BOOST_SERIALIZATION_NVP( M_model_executed_in_steady_mode );
-
-    if( version > 0 )
-    {
-        ar & BOOST_SERIALIZATION_NVP( M_C0_pr_eim );
-        ar & BOOST_SERIALIZATION_NVP( M_C0_du_eim );
-        ar & BOOST_SERIALIZATION_NVP( M_Lambda_pr_eim );
-        ar & BOOST_SERIALIZATION_NVP( M_Lambda_du_eim );
-        ar & BOOST_SERIALIZATION_NVP( M_Gamma_pr_eim );
-        ar & BOOST_SERIALIZATION_NVP( M_Gamma_du_eim );
-
-        if ( model_type::is_time_dependent )
-        {
-            ar & BOOST_SERIALIZATION_NVP( M_Cmf_pr_eim );
-            ar & BOOST_SERIALIZATION_NVP( M_Cma_pr_eim );
-            ar & BOOST_SERIALIZATION_NVP( M_Cmm_pr_eim );
-            ar & BOOST_SERIALIZATION_NVP( M_Cmf_du_eim );
-            ar & BOOST_SERIALIZATION_NVP( M_Cmf_du_ini_eim );
-            ar & BOOST_SERIALIZATION_NVP( M_Cma_du_eim );
-            ar & BOOST_SERIALIZATION_NVP( M_Cmm_du_eim );
-        }
-
-    }
-
-#if 0
-        for(int i=0; i<M_N; i++)
-            ar & BOOST_SERIALIZATION_NVP( M_WN[i] );
-        for(int i=0; i<M_N; i++)
-            ar & BOOST_SERIALIZATION_NVP( M_WNdu[i] );
-
-        auto mesh = mesh_type::New();
-        auto is_mesh_loaded = mesh->load( _name="mymesh",_path=this->dbLocalPath(),_type="binary" );
-
-        if ( ! is_mesh_loaded )
-        {
-            auto first_element = M_WN[0];
-            mesh = first_element.functionSpace()->mesh() ;
-            mesh->save( _name="mymesh",_path=this->dbLocalPath(),_type="binary" );
-        }
-
-#endif
-
-}
-
-
-template<typename TruthModelType>
-template<class Archive>
-void
-CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
-{
-
-    //if( version <= 4 )
-    //    throw std::logic_error( "[CRB::load] ERROR while loading the existing database, since version 5 there was many changes. Please use the option --crb.rebuild-database=true " );
-    int proc_number = this->worldComm().globalRank();
-
-    LOG(INFO) <<"[CRB::load] version"<< version <<"\n";
-
-#if 0
-    mesh_ptrtype mesh;
-    space_ptrtype Xh;
-
-    if ( !M_model )
-    {
-        LOG(INFO) << "[load] model not initialized, loading fdb files...\n";
-        mesh = mesh_type::New();
-        bool is_mesh_loaded = mesh->load( _name="mymesh",_path=this->dbLocalPath(),_type="binary" );
-        Xh = space_type::New( mesh );
-        LOG(INFO) << "[load] loading fdb files done.\n";
-    }
-    else
-    {
-        LOG(INFO) << "[load] get mesh/Xh from model...\n";
-        mesh = M_model->functionSpace()->mesh();
-        Xh = M_model->functionSpace();
-        LOG(INFO) << "[load] get mesh/Xh from model done.\n";
-    }
-#endif
-
-    typedef boost::bimap< int, double > old_convergence_type;
-    ar & boost::serialization::base_object<super>( *this );
-    ar & BOOST_SERIALIZATION_NVP( M_output_index );
-    ar & BOOST_SERIALIZATION_NVP( M_N );
-
-	ar & BOOST_SERIALIZATION_NVP( M_rbconv );
-
-    ar & BOOST_SERIALIZATION_NVP( M_error_type );
-    ar & BOOST_SERIALIZATION_NVP( M_Xi );
-    ar & BOOST_SERIALIZATION_NVP( M_WNmu );
-    ar & BOOST_SERIALIZATION_NVP( M_Aqm_pr );
-    ar & BOOST_SERIALIZATION_NVP( M_Aqm_du );
-    ar & BOOST_SERIALIZATION_NVP( M_Aqm_pr_du );
-    ar & BOOST_SERIALIZATION_NVP( M_Fqm_pr );
-    ar & BOOST_SERIALIZATION_NVP( M_Fqm_du );
-    ar & BOOST_SERIALIZATION_NVP( M_Lqm_pr );
-    ar & BOOST_SERIALIZATION_NVP( M_Lqm_du );
-    ar & BOOST_SERIALIZATION_NVP( M_C0_pr );
-    ar & BOOST_SERIALIZATION_NVP( M_C0_du );
-    ar & BOOST_SERIALIZATION_NVP( M_Lambda_pr );
-    ar & BOOST_SERIALIZATION_NVP( M_Lambda_du );
-    ar & BOOST_SERIALIZATION_NVP( M_Gamma_pr );
-    ar & BOOST_SERIALIZATION_NVP( M_Gamma_du );
-
-    ar & BOOST_SERIALIZATION_NVP( M_Mqm_pr );
-    ar & BOOST_SERIALIZATION_NVP( M_Mqm_du );
-    ar & BOOST_SERIALIZATION_NVP( M_Mqm_pr_du );
-
-    if ( model_type::is_time_dependent )
-    {
-            ar & BOOST_SERIALIZATION_NVP( M_coeff_pr_ini_online );
-            ar & BOOST_SERIALIZATION_NVP( M_coeff_du_ini_online );
-            ar & BOOST_SERIALIZATION_NVP( M_Cmf_pr );
-            ar & BOOST_SERIALIZATION_NVP( M_Cma_pr );
-            ar & BOOST_SERIALIZATION_NVP( M_Cmm_pr );
-            ar & BOOST_SERIALIZATION_NVP( M_Cmf_du );
-            ar & BOOST_SERIALIZATION_NVP( M_Cmf_du_ini );
-            ar & BOOST_SERIALIZATION_NVP( M_Cma_du );
-            ar & BOOST_SERIALIZATION_NVP( M_Cmm_du );
-    }
-
-    ar & BOOST_SERIALIZATION_NVP ( M_database_contains_variance_info );
-    if( M_database_contains_variance_info )
-        ar & BOOST_SERIALIZATION_NVP( M_variance_matrix_phi );
-
-    ar & BOOST_SERIALIZATION_NVP( M_Fqm_pr );
-    ar & BOOST_SERIALIZATION_NVP( M_InitialGuessV_pr );
-
-    ar & BOOST_SERIALIZATION_NVP( M_current_mu );
-    ar & BOOST_SERIALIZATION_NVP( M_no_residual_index );
-
-    ar & BOOST_SERIALIZATION_NVP( M_maxerror );
-    ar & BOOST_SERIALIZATION_NVP( M_use_newton );
-    ar & BOOST_SERIALIZATION_NVP( M_Jqm_pr );
-    ar & BOOST_SERIALIZATION_NVP( M_Rqm_pr );
-
-    if( boption(_name="crb.use-newton") != M_use_newton  )
-        {
-            if( M_use_newton )
-            {
-                if( Environment::worldComm().isMasterRank() )
-                    std::cout<<"[CRB::loadDB] WARNING in the database used the option use-newton=true and it's not the case in your options so make sure that crb.rebuild-database=true !" <<std::endl;
-                LOG( INFO )<<"[CRB::loadDB] WARNING in the database used the option use-newton=true and it's not the case in your options so make sure that crb.rebuild-database=true !" ;
-            }
-            else
-            {
-                if( Environment::worldComm().isMasterRank() )
-                    std::cout<< "[CRB::loadDB] WARNING in the database used the option use-newton=false and it's not the case in your options so make sure that crb.rebuild-database=true !"<<std::endl;
-                LOG( INFO )<< "[CRB::loadDB] WARNING in the database used the option use-newton=false and it's not the case in your options so make sure that crb.rebuild-database=true !";
-            }
-        }
-
-    ar & BOOST_SERIALIZATION_NVP( M_primal_apee_basis );
-    ar & BOOST_SERIALIZATION_NVP( M_dual_apee_basis );
-    ar & BOOST_SERIALIZATION_NVP( M_primal_V );
-    ar & BOOST_SERIALIZATION_NVP( M_dual_V );
-    ar & BOOST_SERIALIZATION_NVP( M_primal_T );
-    ar & BOOST_SERIALIZATION_NVP( M_dual_T );
-
-    ar & BOOST_SERIALIZATION_NVP( M_model_executed_in_steady_mode );
-    bool current_option=boption(_name="crb.is-model-executed-in-steady-mode");
-    if( M_model_executed_in_steady_mode != current_option )
-    {
-        if( M_model_executed_in_steady_mode && Environment::worldComm().isMasterRank() )
-            std::cout<<"[CRB::loadDB] WARNING in the database used, the model was executed in steady mode but now you want to execute it in transient mode. make sure that --crb.rebuild-database=true"<<std::endl;
-        LOG( INFO ) <<"[CRB::loadDB] WARNING in the database used, the model was executed in steady mode but now you want to execute it in transient mode. make sure that --crb.rebuild-database=true";
-    }
-
-    //For version == 0 there was no error estimation on EIM
-    if( version > 0 )
-    {
-        ar & BOOST_SERIALIZATION_NVP( M_C0_pr_eim );
-        ar & BOOST_SERIALIZATION_NVP( M_C0_du_eim );
-        ar & BOOST_SERIALIZATION_NVP( M_Lambda_pr_eim );
-        ar & BOOST_SERIALIZATION_NVP( M_Lambda_du_eim );
-        ar & BOOST_SERIALIZATION_NVP( M_Gamma_pr_eim );
-        ar & BOOST_SERIALIZATION_NVP( M_Gamma_du_eim );
-
-        if ( model_type::is_time_dependent )
-        {
-            ar & BOOST_SERIALIZATION_NVP( M_Cmf_pr_eim );
-            ar & BOOST_SERIALIZATION_NVP( M_Cma_pr_eim );
-            ar & BOOST_SERIALIZATION_NVP( M_Cmm_pr_eim );
-            ar & BOOST_SERIALIZATION_NVP( M_Cmf_du_eim );
-            ar & BOOST_SERIALIZATION_NVP( M_Cmf_du_ini_eim );
-            ar & BOOST_SERIALIZATION_NVP( M_Cma_du_eim );
-            ar & BOOST_SERIALIZATION_NVP( M_Cmm_du_eim );
-        }
-
-    }// version > 0 => EIM error estimation
-
-#if 0
-    std::cout << "[loadDB] output index : " << M_output_index << "\n"
-              << "[loadDB] N : " << M_N << "\n"
-              << "[loadDB] error type : " << M_error_type << "\n";
-
-    for ( auto it = M_rbconv.begin(), en = M_rbconv.end();it != en; ++it )
-        std::cout << "[loadDB] convergence: (" << it->left << ","  << it->right  << ")\n";
-
-        element_type temp = Xh->element();
-
-        M_WN.resize( M_N );
-        M_WNdu.resize( M_N );
-
-        for( int i = 0 ; i < M_N ; i++ )
-        {
-            temp.setName( (boost::format( "fem-primal-%1%" ) % ( i ) ).str() );
-            ar & BOOST_SERIALIZATION_NVP( temp );
-            M_WN[i] = temp;
-        }
-
-        for( int i = 0 ; i < M_N ; i++ )
-        {
-            temp.setName( (boost::format( "fem-dual-%1%" ) % ( i ) ).str() );
-            ar & BOOST_SERIALIZATION_NVP( temp );
-            M_WNdu[i] = temp;
-        }
-
-#endif
-    LOG(INFO) << "[CRB::load] end of load function" << std::endl;
-}
 
 
 template<typename TruthModelType>

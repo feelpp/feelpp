@@ -47,28 +47,23 @@
 namespace Feel
 {
 
-template<typename ModelType>
+template<typename SpaceType>
 class CRBElementsDB : public CRBDB
 {
 
     typedef  CRBDB super;
 
 public :
-
-    typedef ModelType model_type;
-    typedef boost::shared_ptr<model_type> model_ptrtype;
+    typedef SpaceType space_type;
+    typedef boost::shared_ptr<space_type> space_ptrtype;
 
     //! element of the functionspace type
-    typedef typename model_type::element_type element_type;
-    typedef typename model_type::element_ptrtype element_ptrtype;
+    typedef typename space_type::element_type element_type;
+    typedef typename space_type::element_ptrtype element_ptrtype;
 
     //! mesh type
-    typedef typename model_type::mesh_type mesh_type;
+    typedef typename space_type::mesh_type mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-
-    //! function space type
-    typedef typename model_type::space_type space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
 
     typedef std::vector<element_type> wn_type;
 
@@ -81,16 +76,13 @@ public :
 
     CRBElementsDB( std::string prefixdir,
                 std::string name,
-                std::string dbprefix,
-                model_ptrtype const & model )
+                std::string dbprefix )
     :
         super( prefixdir,
                name,
                dbprefix),
         M_N( 0 )
-    {
-        M_model = model;
-    }
+    {}
 
 
     //! destructor
@@ -130,14 +122,6 @@ public :
 private :
 
     friend class boost::serialization::access;
-    // When the class Archive corresponds to an output archive, the
-    // & operator is defined similar to <<.  Likewise, when the class Archive
-    // is a type of input archive the & operator is defined similar to >>.
-    template<class Archive>
-    void save( Archive & ar, const unsigned int version ) const;
-
-    template<class Archive>
-    void load( Archive & ar, const unsigned int version ) ;
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 
@@ -145,15 +129,11 @@ private :
 
     wn_type M_WN;
     wn_type M_WNdu;
-
-    model_ptrtype M_model;
-
-
 };//class CRBElementsDB
 
-template<typename ModelType>
+template<typename SpaceType>
 void
-CRBElementsDB<ModelType>::saveDB()
+CRBElementsDB<SpaceType>::saveDB()
 {
 
     fs::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
@@ -167,9 +147,9 @@ CRBElementsDB<ModelType>::saveDB()
     }
 }
 
-template<typename ModelType>
+template<typename SpaceType>
 bool
-CRBElementsDB<ModelType>::loadDB()
+CRBElementsDB<SpaceType>::loadDB()
 {
 
     bool rebuild_db = boption(_name="crb.rebuild-database");
@@ -204,83 +184,6 @@ CRBElementsDB<ModelType>::loadDB()
 
     return false;
 }
-
-
-template<typename ModelType>
-template<class Archive>
-void
-CRBElementsDB<ModelType>::save( Archive & ar, const unsigned int version ) const
-{
-#if 0
-    auto mesh = mesh_type::New();
-    auto is_mesh_loaded = mesh->load( _name="mymesh",_path=this->dbLocalPath(),_type="binary" );
-
-    if ( ! is_mesh_loaded )
-    {
-        auto first_element = M_WN[0];
-        mesh = first_element.functionSpace()->mesh() ;
-        mesh->save( _name="mymesh",_path=this->dbLocalPath(),_type="binary" );
-    }
-#endif
-
-    int size = M_WN.size();
-
-    LOG( INFO ) << "saving Elements DB";
-    for(int i=0; i<size; i++)
-        ar & BOOST_SERIALIZATION_NVP( M_WN[i] );
-    for(int i=0; i<size; i++)
-        ar & BOOST_SERIALIZATION_NVP( M_WNdu[i] );
-    LOG( INFO ) << "Elements DB saved";
-}
-
-template<typename ModelType>
-template<class Archive>
-void
-CRBElementsDB<ModelType>::load( Archive & ar, const unsigned int version )
-{
-    LOG( INFO ) << " loading Elements DB ... ";
-
-    M_WN.resize( M_N );
-    M_WNdu.resize( M_N );
-
-    mesh_ptrtype mesh;
-    space_ptrtype Xh;
-
-    if ( !M_model )
-    {
-        LOG(INFO) << "[load] model not initialized, loading fdb files...\n";
-        mesh = mesh_type::New();
-        bool is_mesh_loaded = mesh->load( _name="mymesh",_path=this->dbLocalPath(),_type="binary" );
-        Xh = space_type::New( mesh );
-        LOG(INFO) << "[load] loading fdb files done.\n";
-    }
-    else
-    {
-        LOG(INFO) << "[load] get mesh/Xh from model...\n";
-        mesh = M_model->functionSpace()->mesh();
-        Xh = M_model->functionSpace();
-        LOG(INFO) << "[load] get mesh/Xh from model done.\n";
-    }
-
-    element_type temp = Xh->element();
-
-    for( int i = 0 ; i < M_N ; i++ )
-    {
-        temp.setName( (boost::format( "fem-primal-%1%" ) % ( i ) ).str() );
-        ar & BOOST_SERIALIZATION_NVP( temp );
-        M_WN[i] = temp;
-    }
-
-    for( int i = 0 ; i < M_N ; i++ )
-    {
-        temp.setName( (boost::format( "fem-dual-%1%" ) % ( i ) ).str() );
-        ar & BOOST_SERIALIZATION_NVP( temp );
-        M_WNdu[i] = temp;
-    }
-    LOG( INFO ) << " Elements DB loaded";
-}
-
-
 
 
 }//Feel

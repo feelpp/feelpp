@@ -38,6 +38,8 @@
 #include <feel/feelcrb/crbmodelbase.hpp>
 #include <feel/feelalg/vectorblock.hpp>
 
+#define blockA(X,Y) this->M_A.template get<X,Y>()
+#define blockF(X,Y) this->M_F[X].template get<Y>()
 
 namespace Feel
 {
@@ -76,21 +78,20 @@ class CRBModelSaddlePoint :
 public :
     typedef typename super_type::value_type value_type;
 
-    typedef typename super_type::mesh_type mesh_type;
-    typedef typename super_type::mesh_ptrtype mesh_ptrtype;
-
     //! space_type
     typedef typename super_type::space_type space_type;
+    typedef typename super_type::functionspace_ptrtype functionspace_ptrtype;
     typedef typename super_type::element_type element_type;
     typedef typename super_type::element_ptrtype element_ptrtype;
-    template<int T>
+    template <int T>
     using subspace_type = typename space_type::template sub_functionspace<T>::type::element_type;
-    template<int T>
+    template <int T>
     using subspace_ptrtype = boost::shared_ptr<subspace_type<T>>;
 
-    //! reduced basis function space type
-    typedef typename super_type::rbfunctionspace_type rbfunctionspace_type;
-    typedef typename super_type::rbfunctionspace_ptrtype rbfunctionspace_ptrtype;
+    template <int T>
+    using rbspace_type = ReducedBasisSpace<subspace_type<T>>;
+    template <int T>
+    using rbspace_ptrtype = boost::shared_ptr<rbspace_type<T>>;
 
     typedef typename super_type::backend_type backend_type;
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
@@ -104,44 +105,27 @@ public :
     typedef Eigen::VectorXd vectorN_type;
     typedef std::vector< std::vector< double > > beta_vector_type;
 
-    typedef typename boost::tuple<sparse_matrix_ptrtype,
-                                  sparse_matrix_ptrtype,
-                                  std::vector<vector_ptrtype>
-                                  > offline_merge_type;
-
-    typedef typename boost::tuple<std::vector< std::vector<sparse_matrix_ptrtype> >,
-                                  std::vector< std::vector<sparse_matrix_ptrtype> >,
-                                  std::vector< std::vector< std::vector<vector_ptrtype> > >
-                                  > affine_decomposition_type;
-
-    typedef typename boost::tuple< beta_vector_type,
-                                   beta_vector_type,
-                                   std::vector<beta_vector_type>
-                                   > betaqm_type;
-
+    using super_type::rBFunctionSpace;
 
     CRBModelSaddlePoint() :
         super_type()
         {}
 
-    element_type solve( parameter_type const& mu )
+    virtual element_type solve( parameter_type const& mu )
         {
             bool transpose = boption("crb.saddlepoint.transpose");
 
-            auto block01 = this->M_A.template get<0,1>();
-            auto block10 = this->M_A.template get<1,0>();
+            mergeBlock( A00, blockA(0,0), mu );
+            mergeBlock( A01, blockA(0,1), mu );
+            mergeBlock( A10, blockA(1,0), mu );
+            mergeBlock( A11, blockA(1,1), mu );
 
-            mergeBlock( A00, this->M_A.template get<0,0>(), mu );
-            mergeBlock( A01, block01, mu );
-            mergeBlock( A10, block10, mu );
-            mergeBlock( A11, this->M_A.template get<1,1>(), mu );
+            mergeBlock( F0, blockF(0,0), mu );
+            mergeBlock( F1, blockF(0,1), mu );
 
-            mergeBlock( F0, this->M_F[0].template get<0>(), mu );
-            mergeBlock( F1, this->M_F[0].template get<0>(), mu );
-
-            if ( transpose && block01 && !block10 )
+            if ( transpose && blockA(0,1) && !blockA(1,0) )
                 A01->transpose( A10 );
-            if ( transpose && !block01 && block10 )
+            if ( transpose && !blockA(0,1) && blockA(1,0) )
                 A10->transpose( A01 );
 
             auto u=Xh0->elementPtr();
@@ -173,8 +157,6 @@ public :
 
     virtual void initDerived()
         {
-            Xh0 = this->Xh->template functionSpace<0>();
-            Xh1 = this->Xh->template functionSpace<1>();
             M_U = this->Xh->element();
 
             A00 = backend()->newMatrix(_test=Xh0, _trial=Xh0 );
@@ -184,6 +166,27 @@ public :
 
             F0 = backend()->newVector( Xh0 );
             F1 = backend()->newVector( Xh1 );
+        }
+
+    virtual void setFunctionSpaces( functionspace_ptrtype Vh )
+        {
+            this->Xh=Vh;
+            Xh0 = this->Xh->template functionSpace<0>();
+            Xh1 = this->Xh->template functionSpace<1>();
+
+            XN0 = rbspace_type<0>::New( _space=Xh0 );
+            XN1 = rbspace_type<1>::New( _space=Xh1 );
+            if (Environment::isMasterRank() )
+                std::cout << "Number of dof : " << this->Xh->nDof() << std::endl
+                          << "Number of local dof : " << this->Xh->nLocalDof() << std::endl
+                          << "Number of dof Xh0,Xh1 = "<< Xh0->nDof() << "," << Xh1->nDof() << std::endl;
+        }
+
+    template<int T>
+    rbspace_ptrtype<T> rBFunctionSpace()
+        {
+            fusion::vector<rbspace_ptrtype<0>,rbspace_ptrtype<1> > v( XN0, XN1 );
+            return fusion::at_c<T>( v );
         }
 
 protected :
@@ -217,9 +220,12 @@ protected :
     sparse_matrix_ptrtype A00, A01, A10, A11;
     element_type M_U;
     vector_ptrtype F0, F1;
+
     subspace_ptrtype<0> Xh0;
     subspace_ptrtype<1> Xh1;
 
+    rbspace_ptrtype<0> XN0;
+    rbspace_ptrtype<1> XN1;
 }; // class CRBModelSaddlepoint
 
 } // namespace Feel
