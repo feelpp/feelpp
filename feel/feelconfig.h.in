@@ -135,6 +135,9 @@
 /* Define to 1 if you have harts. */
 #cmakedefine FEELPP_HAS_HARTS
 
+/* Defined if debugging for harts is enabled. */
+#cmakedefine FEELPP_HARTS_DEBUG
+
 /* Define to 1 if you have nlopt. */
 #cmakedefine FEELPP_HAS_NLOPT
 

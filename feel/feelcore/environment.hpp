@@ -58,6 +58,42 @@
 #include <hwloc.h>
 #endif
 
+#if defined(FEELPP_HAS_HARTS) && defined(FEELPP_HARTS_DEBUG)
+#define PCM_INIT(pcm, name) \
+    pcm.init(name);
+
+#define PCM_INIT_START(pcm, name) \
+    pcm.init(name); \
+    pcm.start(name);
+
+#define PCM_START(pcm, name) \
+    pcm.stop(name);
+
+#define PCM_STOP(pcm, name) \
+    pcm.stop(name);
+
+#define PCM_GET(out, pcm, name, defval) \
+    out = pcm.getValueInSeconds(name);
+
+#define PCM_MONITOR(pcm, name, src) \
+    pcm.start(name); \
+    src; \
+    pcm.stop(name);
+
+#else
+
+#define PCM_INIT(pcm, name)
+#define PCM_INIT_START(pcm, name)
+#define PCM_START(pcm, name)
+#define PCM_STOP(pcm, name)
+#define PCM_GET(out, pcm, name, defval) \
+    out = defval;
+
+#define PCM_MONITOR(pcm, name, src) \
+    src;
+
+#endif
+
 namespace Feel
 {
 struct MemoryUsage

@@ -231,11 +231,12 @@ namespace parallel
             std::cout << Environment::worldComm().rank() << "|" << M_threadId << " " << oss.str() << std::endl;
 #endif
 
-            perf_mng.init("1.1") ;
-            perf_mng.init("1.1") ;
-            perf_mng.init("2.1") ;
-            perf_mng.init("2.2") ;
-            perf_mng.init("3") ;
+            PCM_INIT_START(perf_mng, "cpu");
+            PCM_INIT(perf_mng, "1.1");
+            PCM_INIT(perf_mng, "1.2");
+            PCM_INIT(perf_mng, "2.1");
+            PCM_INIT(perf_mng, "2.2");
+            PCM_INIT(perf_mng, "3");
 
             /* free memory */
             if(set != nullptr)
@@ -266,30 +267,40 @@ namespace parallel
 
             //perf_mng.stop("data");
 
-            perf_mng.init("cpu") ;
-            perf_mng.start("cpu") ;
+            struct timespec ts1;
+            struct timespec ts2;
 
             for (int i = 0; i < elts->size(); i++)
             {
+
+            double mean = 0.0;
+            double min = std::numeric_limits<double>::max();
+            double max = std::numeric_limits<double>::min();
                 //std::cout << Environment::worldComm().rank() <<  " nbItems: " << elts->size() << " nbElts " << std::distance(elts->at(i), elts->at(i+1)) << std::endl;
                 for ( auto _elt = elts->at(i).first; _elt != elts->at(i).second; ++_elt )
                 {
-                    //perf_mng.start("1.1") ;
-                    //M_c->update( *_elt );
-                    __c->update( *_elt );
-                    //perf_mng.stop("1.1") ;
-                    //perf_mng.start("1.2") ;
-                    map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
-                    //perf_mng.stop("1.2") ;
+                    PCM_MONITOR(perf_mng, "1.1", __c->update( *_elt ));
+                    PCM_MONITOR(perf_mng, "1.2", map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) ));
 
-                    //perf_mng.start("2.1") ;
+                    PCM_MONITOR(perf_mng, "2.1", 
+                    /*
+                    clock_gettime(CLOCK_MONOTONIC_RAW, &ts1);
+                    */
                     __expr.update( mapgmc );
-                    //perf_mng.stop("2.1") ;
-                    //perf_mng.start("2.2") ;
-                    im->update( *__c );
-                    //perf_mng.stop("2.2") ;
+                    /*
+                    clock_gettime(CLOCK_MONOTONIC_RAW, &ts2);
+                    double t1 = (double)(ts1.tv_sec) + (double)(ts1.tv_nsec) / (1000000000.0); 
+                    double t2 = (double)(ts2.tv_sec) + (double)(ts2.tv_nsec) / (1000000000.0); 
+                    double t = (t2 - t1);
+                    mean = mean + t;
+                    if(t < min) { min = t; }
+                    if(t > max) { max = t; }
+                    */
+                    );
 
-                    //perf_mng.start("3") ;
+                    PCM_MONITOR(perf_mng, "2.2", im->update( *__c ) );
+
+                    PCM_MONITOR(perf_mng, "3", 
                     for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
                     {
                         for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
@@ -297,8 +308,12 @@ namespace parallel
                             M_ret( c1,c2 ) += (*im)( __expr, c1, c2 );
                         }
                     }
-                    //perf_mng.stop("3") ;
+                    );
                 }
+                /*
+                std::cout << Environment::worldComm().globalRank() << " 2.1 mean=" <<  (mean / std::distance(elts->at(i).first, elts->at(i).second)) 
+                      << " min=" << min << " max=" << max << std::endl;
+                */
             }
 
             perf_mng.stop("cpu") ;
@@ -308,8 +323,10 @@ namespace parallel
 
 #endif
 
-        void computeCPUOMP(int threadId, expression_type * expr, im_type * im, element_iterator * elt_it, std::vector<std::pair<element_iterator, element_iterator> > * elts)
+        void computeCPUOMP(int threadId, expression_type * expr, im_type * im, element_iterator * elt_it, std::vector<boost::reference_wrapper<typename eval::element_type const>> * elts)
+        //void computeCPUOMP(int threadId, expression_type * expr, im_type * im, element_iterator * elt_it, std::vector<std::pair<element_iterator, element_iterator> > * elts)
         {
+#if defined(FEELPP_HAS_HARTS)
             char * a;
             int cid;
             std::ostringstream oss;
@@ -354,13 +371,13 @@ namespace parallel
 #endif
 
 #if defined(FEELPP_HAS_HARTS)
-            perf_mng.init("cpu") ;
-            perf_mng.start("cpu") ;
-            perf_mng.init("1.1") ;
-            perf_mng.init("1.2") ;
-            perf_mng.init("2.1") ;
-            perf_mng.init("2.2") ;
-            perf_mng.init("3") ;
+            PCM_INIT_START(perf_mng, "cpu");
+            PCM_INIT(perf_mng, "0");
+            PCM_INIT(perf_mng, "1.1");
+            PCM_INIT(perf_mng, "1.2");
+            PCM_INIT(perf_mng, "2.1");
+            PCM_INIT(perf_mng, "2.2");
+            PCM_INIT(perf_mng, "3");
 #endif
             
             //M_gm((*elt_it)->gm());
@@ -373,46 +390,118 @@ namespace parallel
             eval_expr_type __expr( (*expr), map_gmc_type( fusion::make_pair<vf::detail::gmc<0> >( __c ) ) );
 
 
-            for (int i = 0; i < elts->size(); i++)
+        struct timespec ts1;
+        struct timespec ts2;
+
+        /* Using iterators */
+#if 0
+        for (int i = 0; i < elts->size(); i++)
+        {
+            double mean = 0.0;
+            double min = std::numeric_limits<double>::max();
+            double max = std::numeric_limits<double>::min();
+            std::cout << Environment::worldComm().rank() <<  " nbItems: " << elts->size() 
+                << " nbElts " << std::distance(elts->at(i), elts->at(i+1))
+                << " 1st id " << elts->at(i)->id() << std::endl;
+
+            PCM_START(perf_mng, "0");
+            //std::cout << Environment::worldComm().rank() << "|" << theadId << " fid=" elts.at(i).first.id() << std::endl;
+
+            for ( auto _elt = elts->at(i).first; _elt != elts->at(i).second; ++_elt )
             {
-                /*
-                std::cout << Environment::worldComm().rank() <<  " nbItems: " << elts->size() 
-                          << " nbElts " << std::distance(elts->at(i), elts->at(i+1))
-                          << " 1st id " << elts->at(i)->id() << std::endl;
-                */
+                PCM_MONITOR(perf_mng, "1.1", __c->update( *_elt ));
+                PCM_MONITOR(perf_mng, "1.2", map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) ));
 
-                //std::cout << Environment::worldComm().rank() << "|" << theadId << " fid=" elts.at(i).first.id() << std::endl;
-                for ( auto _elt = elts->at(i).first; _elt != elts->at(i).second; ++_elt )
-                {
-                    //perf_mng.start("1.1") ;
-                    __c->update( *_elt );
-                    //perf_mng.stop("1.1") ;
-                    //perf_mng.start("1.2") ;
-                    map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
-                    //perf_mng.stop("1.2") ;
+                PCM_MONITOR(perf_mng, "2.1", 
+                        /*
+                           clock_gettime(CLOCK_MONOTONIC_RAW, &ts1);
+                           */
+                        __expr.update( mapgmc );
+                        /*
+                           clock_gettime(CLOCK_MONOTONIC_RAW, &ts2);
+                           double t1 = (double)(ts1.tv_sec) + (double)(ts1.tv_nsec) / (1000000000.0); 
+                           double t2 = (double)(ts2.tv_sec) + (double)(ts2.tv_nsec) / (1000000000.0); 
+                           double t = (t2 - t1);
+                           mean = mean + t;
+                           if(t < min) { min = t; }
+                           if(t > max) { max = t; }
+                           */
+                        );
 
-                    //perf_mng.start("2.1") ;
-                    __expr.update( mapgmc );
-                    //perf_mng.stop("2.1") ;
-                    //perf_mng.start("2.2") ;
-                    im->update( *__c );
-                    //perf_mng.stop("2.2") ;
+                PCM_MONITOR(perf_mng, "2.2", im->update( *__c ) );
 
-                    //perf_mng.start("3") ;
-                    for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
-                    {
+                PCM_MONITOR(perf_mng, "3",
+                        for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
+                        {
                         for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
                         {
-                            M_ret( c1,c2 ) += (*im)( __expr, c1, c2 );
+                        M_ret( c1,c2 ) += (*im)( __expr, c1, c2 );
                         }
-                    }
-                    //perf_mng.stop("3") ;
-                }
+                        }
+                        );
+            }
+            PCM_STOP(perf_mng, "0");
+
+            /*
+               std::cout << Environment::worldComm().globalRank() << " 2.1 mean=" <<  (mean / std::distance(elts->at(i).first, elts->at(i).second)) 
+               << " min=" << min << " max=" << max << std::endl;
+               */
+        }
+        # Using vectors of element
+#else
+            double mean = 0.0;
+            double min = std::numeric_limits<double>::max();
+            double max = std::numeric_limits<double>::min();
+            /*
+            std::cout << Environment::worldComm().rank() <<  " nbItems: " << elts->size() 
+                << " nbElts " << std::distance(elts->at(i), elts->at(i+1))
+                << " 1st id " << elts->at(i)->id() << std::endl;
+                */
+
+            //std::cout << Environment::worldComm().rank() << "|" << theadId << " fid=" elts.at(i).first.id() << std::endl;
+
+            for ( int i = 0; i < elts->size(); i++ )
+            {
+                PCM_MONITOR(perf_mng, "1.1", __c->update( elts->at(i) ));
+                PCM_MONITOR(perf_mng, "1.2", map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) ));
+
+                PCM_MONITOR(perf_mng, "2.1", 
+                        /*
+                           clock_gettime(CLOCK_MONOTONIC_RAW, &ts1);
+                           */
+                        __expr.update( mapgmc );
+                        /*
+                           clock_gettime(CLOCK_MONOTONIC_RAW, &ts2);
+                           double t1 = (double)(ts1.tv_sec) + (double)(ts1.tv_nsec) / (1000000000.0); 
+                           double t2 = (double)(ts2.tv_sec) + (double)(ts2.tv_nsec) / (1000000000.0); 
+                           double t = (t2 - t1);
+                           mean = mean + t;
+                           if(t < min) { min = t; }
+                           if(t > max) { max = t; }
+                           */
+                        );
+
+                PCM_MONITOR(perf_mng, "2.2", im->update( *__c ) );
+
+                PCM_MONITOR(perf_mng, "3",
+                        for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
+                        {
+                        for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
+                        {
+                        M_ret( c1,c2 ) += (*im)( __expr, c1, c2 );
+                        }
+                        }
+                        );
             }
 
-#if defined(FEELPP_HAS_HARTS)
-            perf_mng.stop("cpu") ;
-            M_cpuTime = perf_mng.getValueInSeconds("cpu");
+            /*
+               std::cout << Environment::worldComm().globalRank() << " 2.1 mean=" <<  (mean / std::distance(elts->at(i).first, elts->at(i).second)) 
+               << " min=" << min << " max=" << max << std::endl;
+               */
+#endif
+
+            PCM_STOP(perf_mng, "cpu");
+            PCM_GET(M_cpuTime, perf_mng, "cpu", -1.0);
 #endif
         }
 

@@ -5203,6 +5203,9 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         perf_mng.start("init1") ;
 #endif
 
+        /* implementation using iterators */
+        /* this implementations misses a level of vectors for M_elts (several groups of elements) */
+#if 0
         std::vector<std::vector<std::pair<element_iterator, element_iterator> > > _v;
         _v.resize(nbThreads);
 
@@ -5235,6 +5238,44 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                 _v.at(i).push_back(std::make_pair(cit, sit));
             }
         }
+
+        /* implementation using references to elements */
+#else
+        std::vector<std::vector<boost::reference_wrapper<typename eval::element_type const>>> _v;
+        
+        /* create groups of elements below the number of thread */
+        _v.resize(nbThreads);
+
+        for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit)
+        {
+            /* set the iterator at the beginning of the elements */
+            auto sit = lit->template get<1>();
+            auto eit = lit->template get<2>();
+            auto cit = sit;
+
+            /* get number of elements */
+            int nbElts = std::distance(sit, eit);
+            int nbEltPerRange = nbElts / nbThreads;
+            int remainderElt = nbElts % nbThreads;
+
+            int l = 0;
+            for(int j = 0; j < nbThreads; j++)
+            {
+                int nb = nbEltPerRange + (j < remainderElt ? 1 : 0);
+
+                std::cout << Environment::worldComm().rank() << "|" << j << " nbElts=" << nb << std::endl;
+
+                for(int k = 0; k < nb; k++, cit++)
+                {
+                    _v.at(j).push_back(boost::cref(*cit));
+                }
+                //std::cout << "T" << i << " adv:" << nb << " " << nbEltPerRange <<  std::endl;
+                std::cout << "T" << j << " adv:" << nb << " " << nbEltPerRange << "(" << l << ", " << (l + nb) << ")" << std::endl;
+                l = l + nb;
+            }
+        }
+
+#endif
 
 #if defined(FEELPP_HAS_HARTS)
         perf_mng.stop("init1") ;
@@ -5353,6 +5394,13 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         //typedef typename Im::value_type value_type;
         typename eval::matrix_type res( eval::matrix_type::Zero() );
 
+        struct timespec ts1;
+        struct timespec ts2;
+
+        double mean = 0.0;
+        double min = std::numeric_limits<double>::max();
+        double max = std::numeric_limits<double>::min();
+
         for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
         {
             auto it = lit->template get<1>();
@@ -5433,7 +5481,17 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 #if 1
                     __c->update( *it );
                     map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
+
+                    clock_gettime(CLOCK_MONOTONIC_RAW, &ts1);
                     expr.update( mapgmc );
+                    clock_gettime(CLOCK_MONOTONIC_RAW, &ts2);
+                    double t1 = (double)(ts1.tv_sec) + (double)(ts1.tv_nsec) / (1000000000.0); 
+                    double t2 = (double)(ts2.tv_sec) + (double)(ts2.tv_nsec) / (1000000000.0); 
+                    double t = (t2 - t1);
+                    mean = mean + t;
+                    if(t < min) { min = t; }
+                    if(t > max) { max = t; }
+
                     const gmc_type& gmc = *__c;
 
                     M_im.update( gmc );
@@ -5454,7 +5512,17 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                     //DDLOG(INFO) << "geomap o1" << "\n";
                     __c1->update( *it );
                     map_gmc1_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
+                    
+                    clock_gettime(CLOCK_MONOTONIC_RAW, &ts1);
                     expr1.update( mapgmc );
+                    clock_gettime(CLOCK_MONOTONIC_RAW, &ts2);
+                    double t1 = (double)(ts1.tv_sec) + (double)(ts1.tv_nsec) / (1000000000.0); 
+                    double t2 = (double)(ts2.tv_sec) + (double)(ts2.tv_nsec) / (1000000000.0); 
+                    double t = (t2 - t1);
+                    mean = mean + t;
+                    if(t < min) { min = t; }
+                    if(t > max) { max = t; }
+
                     const gmc1_type& gmc = *__c1;
 
                     M_im.update( gmc );
@@ -5478,7 +5546,17 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                         //DDLOG(INFO) << "boundary element using ho" << "\n";
                         __c->update( *it );
                         map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
+
+                        clock_gettime(CLOCK_MONOTONIC_RAW, &ts1);
                         expr.update( mapgmc );
+                        clock_gettime(CLOCK_MONOTONIC_RAW, &ts2);
+                        double t1 = (double)(ts1.tv_sec) + (double)(ts1.tv_nsec) / (1000000000.0); 
+                        double t2 = (double)(ts2.tv_sec) + (double)(ts2.tv_nsec) / (1000000000.0); 
+                        double t = (t2 - t1);
+                        mean = mean + t;
+                        if(t < min) { min = t; }
+                        if(t > max) { max = t; }
+
                         const gmc_type& gmc = *__c;
 
                         M_im.update( gmc );
@@ -5498,7 +5576,17 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                         //DDLOG(INFO) << "interior element using order 1" << "\n";
                         __c1->update( *it );
                         map_gmc1_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
+
+                        clock_gettime(CLOCK_MONOTONIC_RAW, &ts1);
                         expr1.update( mapgmc );
+                        clock_gettime(CLOCK_MONOTONIC_RAW, &ts2);
+                        double t1 = (double)(ts1.tv_sec) + (double)(ts1.tv_nsec) / (1000000000.0); 
+                        double t2 = (double)(ts2.tv_sec) + (double)(ts2.tv_nsec) / (1000000000.0); 
+                        double t = (t2 - t1);
+                        mean = mean + t;
+                        if(t < min) { min = t; }
+                        if(t > max) { max = t; }
+
                         const gmc1_type& gmc = *__c1;
 
                         M_im.update( gmc );
@@ -5516,6 +5604,10 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                 }
             }
         }
+
+        std::cout << Environment::worldComm().globalRank() << " 2.1 count=" << std::distance(M_elts.begin()->template get<1>(), M_elts.begin()->template get<2>()) << std::endl;
+            std::cout << Environment::worldComm().globalRank() << " 2.1 mean=" <<  (mean / std::distance(M_elts.begin()->template get<1>(), M_elts.begin()->template get<2>())) 
+                      << " min=" << min << " max=" << max << std::endl;
 #if defined(FEELPP_HAS_HARTS)
         perf_mng.stop("total") ;
         std::cout << Environment::worldComm().rank() <<  " Total: " << perf_mng.getValueInSeconds("total") << std::endl;
