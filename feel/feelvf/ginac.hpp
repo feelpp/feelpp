@@ -671,6 +671,9 @@ struct map_scalar_field: public std::map<std::string,Expr<GinacEx<Order>>>
 
 typedef std::map<std::string,Expr<GinacEx<2>>> map_scalar_field_type;
 
+template<int M, int N=1, int Order=2>
+using vector_field_expression=Expr<GinacMatrix<M,N,Order>>;
+
 /**
  * defines a dictionary of vector fields
  * 
@@ -710,6 +713,13 @@ expression( std::pair<const std::string, Expr<GinacMatrix<M,N,Order>>> const& p 
 {
     return p.second;
 }
+template<int M, int N, int Order>
+Expr<GinacMatrix<M,N,Order>> &
+expression( std::pair<const std::string, Expr<GinacMatrix<M,N,Order>>> & p  ) 
+{
+    return p.second;
+}
+
 } // vf
 } // Feel
 

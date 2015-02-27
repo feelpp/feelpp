@@ -29,8 +29,10 @@
 #ifndef __SolverNonLinear_H
 #define __SolverNonLinear_H 1
 
-#include <boost/function.hpp>
-#include <boost/bind.hpp>
+#include <functional>
+
+//#include <boost/function.hpp>
+//#include <boost/bind.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/LU>
@@ -88,28 +90,28 @@ public:
     typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> > map_dense_matrix_type;
     typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, 1> > map_dense_vector_type;
 
-    typedef boost::function<void ( const vector_ptrtype& X,
+    typedef std::function<void ( const vector_ptrtype& X,
                                    vector_ptrtype& R )> residual_function_type;
-    typedef boost::function<void ( const vector_ptrtype& X,
+    typedef std::function<void ( const vector_ptrtype& X,
                                    sparse_matrix_ptrtype& J )> jacobian_function_type;
-    typedef boost::function<void ( const vector_ptrtype& X,
+    typedef std::function<void ( const vector_ptrtype& X,
                                    vector_ptrtype& R,
                                    sparse_matrix_ptrtype& J )> matvec_function_type;
 
-    typedef boost::function<void ( dense_vector_type const& X,
+    typedef std::function<void ( dense_vector_type const& X,
                                    dense_vector_type & R )> dense_residual_function_type;
-    typedef boost::function<void ( dense_vector_type const& X,
+    typedef std::function<void ( dense_vector_type const& X,
                                    dense_matrix_type& J )> dense_jacobian_function_type;
-    typedef boost::function<void ( dense_vector_type const& X,
+    typedef std::function<void ( dense_vector_type const& X,
                                    dense_vector_type& R,
                                    dense_matrix_type& J )> dense_matvec_function_type;
 
     //eigen
-    typedef boost::function<void ( map_dense_vector_type const& X,
+    typedef std::function<void ( map_dense_vector_type const& X,
                                    map_dense_vector_type & R )> map_dense_residual_function_type;
-    typedef boost::function<void ( map_dense_vector_type const& X,
+    typedef std::function<void ( map_dense_vector_type const& X,
                                    map_dense_matrix_type& J )> map_dense_jacobian_function_type;
-    typedef boost::function<void ( map_dense_vector_type const& X,
+    typedef std::function<void ( map_dense_vector_type const& X,
                                    map_dense_vector_type& R,
                                    map_dense_matrix_type& J )> map_dense_matvec_function_type;
 
@@ -135,7 +137,8 @@ public:
 
     // return type of solve()
     typedef NLSolveData solve_return_type;
-
+    using SolveData = NLSolveData;
+    
     //@}
 
     /** @name Constructors, destructor
