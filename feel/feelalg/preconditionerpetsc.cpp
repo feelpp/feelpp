@@ -2135,36 +2135,24 @@ void
 ConfigurePCGAMG::runConfigurePCGAMG( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is )
 {
 #if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 )
+    // set type of multigrid (agg only supported)
     this->check( PCGAMGSetType( pc, M_gamgType.c_str() ) );
-#endif
     // Set for asymmetric matrices
     this->check( PetscOptionsSetValue("-pc_gamg_sym_graph", boost::lexical_cast<std::string>(M_setSymGraph).c_str()) );
     // PCSetFromOptions is called here because PCGAMGSetType destroy all unless the type_name
     this->check( PCSetFromOptions( pc ) );
 
-#if 0
-    // Sets the number of levels to use with MG.
-    // Must be called before any other MG routine
-    this->check( PCMGSetLevels( pc, M_nLevels, PETSC_NULL) );
-
-    if ( M_mgType=="multiplicative" ) this->check( PCMGSetType( pc, PC_MG_MULTIPLICATIVE ) );
-    if ( M_mgType=="additive" ) this->check( PCMGSetType( pc, PC_MG_ADDITIVE ) );
-    if ( M_mgType=="full" ) this->check( PCMGSetType( pc, PC_MG_FULL ) );
-    if ( M_mgType=="kaskade" ) this->check( PCMGSetType( pc, PC_MG_KASKADE ) );
-#endif
-#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 )
     //
     this->check( PCGAMGSetNlevels( pc,M_nLevels ) );
     // Set number of equations to aim for on coarse grids via processor reduction
     this->check( PCGAMGSetProcEqLim( pc, M_procEqLim ) );
     // Set max number of equations on coarse grids
-    this->check( PCGAMGSetProcEqLim( pc, M_coarseEqLim ) );
+    this->check( PCGAMGSetCoarseEqLim( pc, M_coarseEqLim ) );
     // Relative threshold to use for dropping edges in aggregation graph
     this->check( PCGAMGSetThreshold( pc, M_threshold ) );
     // not works!!(seems to be missing PetscObjectComposeFunction with this function)
     //this->check( PCGAMGSetSymGraph( pc, ( M_setSymGraph )?PETSC_TRUE : PETSC_FALSE ) );
 
-#endif
     // setup sub-pc
     this->check( PCSetUp( pc ) );
     //this->check( PCView( pc, PETSC_VIEWER_STDOUT_WORLD ) );
@@ -2180,7 +2168,9 @@ ConfigurePCGAMG::runConfigurePCGAMG( PC& pc, PreconditionerPetsc<double>::indexs
     else if ( M_mgType=="full" ) this->check( PCMGSetType( pc, PC_MG_FULL ) );
     else if ( M_mgType=="kaskade" ) this->check( PCMGSetType( pc, PC_MG_KASKADE ) );
     else CHECK( false ) << "invalid mgType :" << M_mgType << "\n";
-
+#else // petsc version >= 3.3
+    CHECK( false ) << "gamg supported only from petsc 3.3";
+#endif
 }
 
 void
