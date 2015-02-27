@@ -289,7 +289,9 @@ public :
             std::cout <<_options << "\n";
 
         auto mycmdparser = Environment::commandLineParser();
-        po::parsed_options parsed = mycmdparser.options( _options ).allow_unregistered().run();
+        po::parsed_options parsed = mycmdparser.options( _options ).
+            style(po::command_line_style::allow_long | po::command_line_style::long_allow_adjacent | po::command_line_style::long_allow_next).
+            allow_unregistered().run();
         po::store(parsed,M_vm);
         for ( std::string cfgfile : Environment::configFileNames() )
         {
