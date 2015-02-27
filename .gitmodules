@@ -88,6 +88,7 @@
 [submodule "quickstart"]
 	path = quickstart
 	url = https://github.com/feelpp/quickstart.git
+	branch=develop
 [submodule "contrib/hpddm"]
 	path = contrib/hpddm
 	url = https://github.com/feelpp/hpddm.git

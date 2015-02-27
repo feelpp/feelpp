@@ -518,6 +518,7 @@ private :
     int M_nLevels;
     int M_procEqLim, M_coarseEqLim;
     double M_threshold;
+    bool M_setSymGraph;
 
     std::string M_prefixMGCoarse;
     std::string M_coarsePCtype, M_coarsePCMatSolverPackage;
