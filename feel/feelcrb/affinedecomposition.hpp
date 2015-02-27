@@ -1131,7 +1131,7 @@ public :
 private :
     struct initializeMassBlock
     {
-        initializeMassBlokc( self_ptrtype AD) :
+        initializeMassBlock( self_ptrtype AD) :
             M_AD( AD )
             {}
 

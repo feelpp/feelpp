@@ -234,6 +234,14 @@ public :
         {
             M_dual_rb_basis.push_back( e );
         }
+    void addDualBasisElement( vector_ptrtype const & vec )
+        {
+            space_element_type e = M_Xh->element();
+            e = *vec;
+
+            M_dual_rb_basis.push_back( e );
+        }
+
 
     void addDualBasisElement( space_element_ptrtype const & e )
         {

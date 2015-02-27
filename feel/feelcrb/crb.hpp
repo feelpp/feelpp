@@ -121,7 +121,7 @@
 #endif
 #endif
 
-#define CRB_COUT if(Environment::isMasterRank())std::cout<<
+#define CRB_COUT if(Environment::isMasterRank())std::cout
 
 namespace Feel
 {
@@ -1024,7 +1024,8 @@ public:
      * basis space
      */
     element_type expansion( vectorN_type const& u , int const N, wn_type const & WN ) const;
-
+    virtual element_type expansionPrimal( vectorN_type const& u , int const N ) const;
+    virtual element_type expansionDual( vectorN_type const& u , int const N) const;
 
     void checkInitialGuess( const element_type expansion_uN , parameter_type const& mu, vectorN_type & error ) const ;
     void checkInitialGuess( const element_type expansion_uN , parameter_type const& mu, vectorN_type & error , mpl::bool_<true> ) const ;
@@ -8664,6 +8665,21 @@ CRB<TruthModelType>::expansion( vectorN_type const& u , int const N, wn_type con
     return Feel::expansion( WN, u, N );
 }
 
+template<typename TruthModelType>
+typename CRB<TruthModelType>::element_type
+CRB<TruthModelType>::expansionPrimal( vectorN_type const& u, int const N ) const
+{
+    auto WN=this->wn();
+    return expansion( u, N, WN );
+}
+
+template<typename TruthModelType>
+typename CRB<TruthModelType>::element_type
+CRB<TruthModelType>::expansionDual( vectorN_type const& u, int const N ) const
+{
+    auto WN=this->wndu();
+    return expansion( u, N, WN );
+}
 
 template<typename TruthModelType>
 typename boost::tuple<std::vector<double>,double, typename CRB<TruthModelType>::solutions_tuple, typename CRB<TruthModelType>::matrix_info_tuple,

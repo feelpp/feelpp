@@ -957,8 +957,6 @@ public:
                                 double time_crb_prediction=time_crb(0);
                                 double time_crb_error_estimation=time_crb(1);
 
-                                auto WN = crb->wn();
-                                auto WNdu = crb->wndu();
                                 //auto u_crb = crb->expansion( mu , N );
                                 auto solutions=o.template get<2>();
                                 auto uN = solutions.template get<0>();
@@ -968,9 +966,9 @@ public:
 
                                 // Re-use uN given by lb in crb->run
 
-                                u_crb = crb->expansion( uN[size-1] , N , WN );
+                                u_crb = crb->expansionPrimal( uN[size-1] , N );
                                 if( solve_dual_problem )
-                                    u_crb_dual = crb->expansion( uNdu[0] , N , WNdu );
+                                    u_crb_dual = crb->expansionDual( uNdu[0] , N );
 
                                 std::ostringstream u_crb_str;
                                 u_crb_str << "u_crb(" << mu_str.str() << ")";
@@ -1254,7 +1252,7 @@ public:
                                         auto u_crb = solutions.template get<0>();
                                         auto u_crb_du = solutions.template get<1>();
                                         int size = u_crb.size();
-                                        auto uN = crb->expansion( u_crb[size-1], N, WN );
+                                        auto uN = crb->expansionPrimal( u_crb[size-1], N  );
 
                                         element_type uNdu;
 
@@ -1262,7 +1260,7 @@ public:
                                         auto u_dual_error = model->functionSpace()->element();
                                         if( solve_dual_problem )
                                         {
-                                            uNdu = crb->expansion( u_crb_du[0], N, WNdu );
+                                            uNdu = crb->expansionDual( u_crb_du[0], N );
                                             u_dual_error = u_dual_fem - uNdu;
                                         }
 
@@ -1633,10 +1631,10 @@ public:
                                                 //size is the number of time step
                                                 for(int t=0; t<size; t++)
                                                 {
-                                                    uNelement.push_back( crb->expansion( u_crb[t], N, WN ) );
-                                                    uNelement_old.push_back( crb->expansion( u_crb_old[t], N, WN ) );
-                                                    uNelement_du.push_back( crb->expansion( u_crb_du[t], N, WNdu ) );
-                                                    uNelement_du_old.push_back( crb->expansion( u_crb_du_old[t], N, WNdu ) );
+                                                    uNelement.push_back( crb->expansionPrimal( u_crb[t], N ) );
+                                                    uNelement_old.push_back( crb->expansionPrimal( u_crb_old[t], N ) );
+                                                    uNelement_du.push_back( crb->expansionDual( u_crb_du[t], N ) );
+                                                    uNelement_du_old.push_back( crb->expansionDual( u_crb_du_old[t], N ) );
                                                 }//loop over time step
 
                                                 crb->compareResidualsForTransientProblems(N, mu ,

@@ -166,11 +166,12 @@ public:
             ( boost::format( "%1%-%2%-%3%-elements1" )
               %name % ioption("crb.output-index") %ioption("crb.error-type") ).str(),
             model ),
-        M_N0( 0 ),
-        M_N1( 0 ),
         XN0( model->template rBFunctionSpace<0>() ),
         XN1( model->template rBFunctionSpace<1>() )
-        {}
+        {
+            this->M_N=0;
+            M_p_added.push_back( 0 );
+        }
 
 
     //! copy constructor
@@ -187,8 +188,8 @@ public:
         // this will be in the offline step
         // (it's only when we enrich or create the database that we want to
         // have access to elements of the RB)
-        M_elements_database0.setMN( this->M_N0 );
-        M_elements_database1.setMN( this->M_N1 );
+        M_elements_database0.setMN( this->M_N );
+        M_elements_database1.setMN( M_p_added[this->M_N] );
 
         bool load_elements_db= boption(_name="crb.load-elements-database");
         if( load_elements_db )
@@ -244,6 +245,12 @@ public:
         std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold,
         bool print_rb_matrix=false, int K=0 ) const;
 
+    virtual element_type expansionPrimal( vectorN_type const& U_coeff, int const N ) const;
+    virtual element_type expansionDual( vectorN_type const& U_coeff, int const N ) const;
+    element_type expansionSaddlePoint( vectorN_type const& U_coeff, int const N,
+                                       std::vector<subelement_type<0>> WN0,
+                                       std::vector<subelement_type<1>> WN1 ) const;
+
     /**
      * Offline computation
      *
@@ -272,7 +279,7 @@ private :
                 fusion::vector<rbspace_ptrtype<0>,rbspace_ptrtype<1>> XN( M_crb->XN0, M_crb->XN1 );
                 auto XNr = fusion::at_c<row::value>( XN );
                 auto XNc = fusion::at_c<col::value>( XN );
-                std::array<int,2> N = {{M_crb->M_N0,M_crb->M_N1}};
+                std::array<int,2> N = {{(int)M_crb->M_N,M_crb->M_p_added[M_crb->M_N]}};
                 std::array<int,2> Nadded={{M_crb->M_Nadded0, M_crb->M_Nadded1}};
 
                 for( size_type q=0; q<M_crb->M_model->template Qa<row::value,col::value>(); q++ )
@@ -293,10 +300,6 @@ private :
                                                                      XNc->primalBasisElement(i),
                                                                      XNr->primalBasisElement(j) );
                 }
-                std::cout<< "Row="<<r<<", Col="<<c<<std::endl;
-                if ( M_crb->M_blockAqm_pr[r][c].size() )
-                    std::cout<< M_crb->M_blockAqm_pr[r][c][0][0]<<std::endl;
-                std::cout<<std::endl;
 
                 if( c==0 )
                 {
@@ -334,11 +337,9 @@ private :
     crbelementsdb_type<0> M_elements_database0;
     crbelementsdb_type<1> M_elements_database1;
 
-    int M_N0;
-    int M_N1;
     int M_Nadded0;
     int M_Nadded1;
-
+    std::vector< int> M_p_added;
 
     rbspace_ptrtype<0> XN0;
     rbspace_ptrtype<1> XN1;
@@ -382,7 +383,7 @@ CRBSaddlePoint<TruthModelType>::offline()
     LOG(INFO) << "[CRBSaddlePoint::offline] Starting offline for output " << this->M_output_index << std::endl;
     LOG(INFO) << "[CRBSaddlePoint::offline] initialize underlying finite element model\n";
 
-    if ( rebuild_database || M_N0==0 )
+    if ( rebuild_database || this->M_N==0 )
     {
         ti.restart();
         // Generate sampling depending of the "crb.sampling-mode" option
@@ -391,8 +392,9 @@ CRBSaddlePoint<TruthModelType>::offline()
 
         ti.restart();
 
-        M_N0=0;
-        M_N1=0;
+        this->M_N=0;
+        M_p_added.clear();
+        M_p_added.push_back( 0 );
         this->M_maxerror = 1e10;
 
         LOG(INFO) << "[CRBSaddlePoint::offline] allocate reduced basis data structures\n";
@@ -448,7 +450,7 @@ CRBSaddlePoint<TruthModelType>::offline()
     if ( use_predefined_WNmu )
         this->M_iter_max = this->M_WNmu->size();
 
-    mu = this->M_WNmu->at( M_N0 ); // first element
+    mu = this->M_WNmu->at( this->M_N ); // first element
     if( this->M_error_type == CRB_NO_RESIDUAL || use_predefined_WNmu )
     {
         //in this case it makes no sens to check the estimated error
@@ -456,17 +458,20 @@ CRBSaddlePoint<TruthModelType>::offline()
     }
 
 
-
-
-    while( this->M_maxerror>this->M_tolerance && M_N0<this->M_iter_max )
+    while( this->M_maxerror>this->M_tolerance && this->M_N<this->M_iter_max )
     {
         boost::timer timer;
-        if( Environment::isMasterRank() )
-            std::cout<<"construction of "<<M_N0<<"/"<<this->M_iter_max<<" basis "<<std::endl;
-        LOG(INFO) <<"========================================"<<"\n";
-        LOG(INFO) << "N=" << M_N0 << "/"  << this->M_iter_max << "( nb proc : "<<worldComm().globalSize()<<")";
+        CRB_COUT<<"Construction of "<<this->M_N+1<<"/"<<this->M_iter_max<<" basis, mu = [";
+        for ( int i=0; i<mu.size(); i++ )
+            CRB_COUT<<mu( i )<<",";
+        CRB_COUT<<"]"<<std::endl;
+        M_Nadded0=0;
+        M_Nadded1=0;
 
-        U->setName( ( boost::format( "fem-primal-N%1%-proc%2%" ) % (M_N0)  % proc_number ).str() );
+        LOG(INFO) <<"========================================"<<"\n";
+        LOG(INFO) << "N=" << this->M_N << "/"  << this->M_iter_max << "( nb proc : "<<worldComm().globalSize()<<")";
+
+        U->setName( ( boost::format( "fem-primal-N%1%-proc%2%" ) % (this->M_N)  % proc_number ).str() );
         mu.check();
         U->zero();
 
@@ -482,32 +487,27 @@ CRBSaddlePoint<TruthModelType>::offline()
             this->M_WNmu->push_back( mu, index );
         this->M_WNmu_complement = this->M_WNmu->complement();
 
-        subelement_type<0> u = this->M_model->functionSpace()->template functionSpace<0>()->element();
-        subelement_type<1> p = this->M_model->functionSpace()->template functionSpace<1>()->element();
-        vector_ptrtype vec_u = U->template elementPtr<0>();
-        vector_ptrtype vec_p = U->template elementPtr<1>();
-
-        u = *vec_u;
-        p = *vec_p;
-
-        u.setName( ( boost::format( "u_fem-primal-N%1%-proc%2%" ) % (M_N0)  % proc_number ).str() );
-        p.setName( ( boost::format( "p_fem-primal-N%1%-proc%2%" ) % (M_N1)  % proc_number ).str() );
+        auto u = U->template elementPtr<0>();
+        auto p = U->template elementPtr<1>();
 
         XN0->addPrimalBasisElement( u );
-        XN1->addPrimalBasisElement( p );
         XN0->addDualBasisElement( u );
-        XN1->addDualBasisElement( p );
-
         M_Nadded0=1;
+
+        XN1->addPrimalBasisElement( p );
+        XN1->addDualBasisElement( p );
         M_Nadded1=1;
-        M_N0 += M_Nadded0;
-        M_N1 += M_Nadded1;
+
+        for ( size_type n=0; n<M_Nadded0; n++ )
+            M_p_added.push_back( M_p_added[this->M_N] );
+        this->M_N += M_Nadded0;
+        M_p_added[this->M_N] = M_p_added[this->M_N-1]+M_Nadded1;
 
         if ( orthonormalize_primal )
             for ( int i=0; i<3; i++ )
             {
-                this->orthonormalize( M_N0, XN0->primalRB(), 1 );
-                this->orthonormalize( M_N1, XN1->primalRB(), 1 );
+                this->orthonormalize( this->M_N, XN0->primalRB(), 1 );
+                this->orthonormalize( M_p_added[this->M_N], XN1->primalRB(), 1 );
             }
 
         matrixblockrange_type matrixrange;
@@ -537,14 +537,15 @@ CRBSaddlePoint<TruthModelType>::offline()
         else
         {
             //remmber that in this case M_iter_max = sampling size
-            if( M_N0 < this->M_iter_max )
+            if( this->M_N < this->M_iter_max )
             {
-                mu = this->M_WNmu->at( M_N0 );
+                mu = this->M_WNmu->at( this->M_N );
                 this->M_current_mu = mu;
             }
         }
 
-        this->M_rbconv.insert( convergence( M_N0, boost::make_tuple(this->M_maxerror,delta_pr,delta_du) ) );
+        this->M_rbconv.insert( convergence(this->M_N, boost::make_tuple(this->M_maxerror,
+                                                                        delta_pr,delta_du) ) );
 
         saveDB();
         M_elements_database0.setWn( boost::make_tuple(XN0->primalRB(), XN0->dualRB()) );
@@ -552,15 +553,36 @@ CRBSaddlePoint<TruthModelType>::offline()
         M_elements_database0.saveDB();
         M_elements_database1.saveDB();
 
+        CRB_COUT << "============================================================\n";
     } // while( this->M_maxerror>this->M_tolerance && this->M_N<this->M_iter_max )
 
     if ( boption("crb.visualize-basis") )
     {
         exportBasisFunctions();
     }
+    CRB_COUT << "Number of elements, in first base : "<<this->M_N<<", in second base : "
+             <<M_p_added[this->M_N]<<std::endl;
 
     return this->M_rbconv;
 } // offline()
+
+
+template<typename TruthModelType>
+typename boost::tuple<std::vector<double>,
+                      typename CRBSaddlePoint<TruthModelType>::matrix_info_tuple >
+CRBSaddlePoint<TruthModelType>::lb( size_type N, parameter_type const& mu,
+                                  std::vector< vectorN_type >& uN,
+                                  std::vector< vectorN_type >& uNdu,
+                                  std::vector<vectorN_type> & uNold,
+                                  std::vector<vectorN_type> & uNduold,
+                                  bool print_rb_matrix, int K ) const
+{
+    std::vector<double>output_vector(1);
+    auto matrix_info = boost::make_tuple( 0., 0. );
+
+    return boost::make_tuple( output_vector, matrix_info);
+
+} // lb()
 
 template<typename TruthModelType>
 void
@@ -593,22 +615,49 @@ CRBSaddlePoint<TruthModelType>::exportBasisFunctions()
     e->save();
 }
 
+
 template<typename TruthModelType>
-typename boost::tuple<std::vector<double>,
-                      typename CRBSaddlePoint<TruthModelType>::matrix_info_tuple >
-CRBSaddlePoint<TruthModelType>::lb( size_type N, parameter_type const& mu,
-                                  std::vector< vectorN_type >& uN,
-                                  std::vector< vectorN_type >& uNdu,
-                                  std::vector<vectorN_type> & uNold,
-                                  std::vector<vectorN_type> & uNduold,
-                                  bool print_rb_matrix, int K ) const
+typename CRBSaddlePoint<TruthModelType>::element_type
+CRBSaddlePoint<TruthModelType>::expansionPrimal( vectorN_type const& U_coeff, int const N ) const
 {
-    std::vector<double>output_vector(1);
-    auto matrix_info = boost::make_tuple( 0., 0. );
+    auto WN0 = XN0->primalRB();
+    auto WN1 = XN1->primalRB();
+    return expansionSaddlePoint( U_coeff, N, WN0, WN1 );
+}
 
-    return boost::make_tuple( output_vector, matrix_info);
+template<typename TruthModelType>
+typename CRBSaddlePoint<TruthModelType>::element_type
+CRBSaddlePoint<TruthModelType>::expansionDual( vectorN_type const& U_coeff, int const N ) const
+{
+    auto WN0 = XN0->dualRB();
+    auto WN1 = XN1->dualRB();
+    return expansionSaddlePoint( U_coeff, N, WN0, WN1 );
+}
 
-} // lb()
+template<typename TruthModelType>
+typename CRBSaddlePoint<TruthModelType>::element_type
+CRBSaddlePoint<TruthModelType>::expansionSaddlePoint( vectorN_type const& U_coeff, int const N,
+                                                      std::vector<subelement_type<0>> WN0,
+                                                      std::vector<subelement_type<1>> WN1 ) const
+{
+    int Nwn = N>0 ? N:this->M_N;
+
+    CHECK( Nwn <= WN0.size() )<< "invalid expansion size\n";
+    CHECK( Nwn <= U_coeff.size() )<< "invalid expansion size\n";
+    CHECK( U_coeff.size() == this->M_N + M_p_added[this->M_N] ) << "invalide size of U_coeff, vector can't be cut\n";
+
+    vectorN_type u_coeff = U_coeff.head( this->M_N );
+    vectorN_type p_coeff = U_coeff.tail( M_p_added[this->M_N] );
+
+    auto u = Feel::expansion( WN0, u_coeff, N );
+    auto p = Feel::expansion( WN1, p_coeff, M_p_added[N] );
+
+    element_type U = this->M_model->functionSpace()->element();
+
+
+    return U;
+}
+
 
 
 template<typename TruthModelType>
@@ -729,11 +778,10 @@ void
 CRBSaddlePoint<TruthModelType>::save( Archive & ar, const unsigned int version ) const
 {
     ar & boost::serialization::base_object<super_crb>( *this );
-    ar & BOOST_SERIALIZATION_NVP( M_N0 );
-    ar & BOOST_SERIALIZATION_NVP( M_N1 );
     ar & BOOST_SERIALIZATION_NVP( M_blockAqm_pr );
     ar & BOOST_SERIALIZATION_NVP( M_blockFqm_pr );
     ar & BOOST_SERIALIZATION_NVP( M_blockLqm_pr );
+    ar & BOOST_SERIALIZATION_NVP( M_p_added );
 }
 
 
@@ -743,11 +791,10 @@ void
 CRBSaddlePoint<TruthModelType>::load( Archive & ar, const unsigned int version )
 {
     ar & boost::serialization::base_object<super_crb>( *this );
-    ar & BOOST_SERIALIZATION_NVP( M_N0 );
-    ar & BOOST_SERIALIZATION_NVP( M_N1 );
     ar & BOOST_SERIALIZATION_NVP( M_blockAqm_pr );
     ar & BOOST_SERIALIZATION_NVP( M_blockFqm_pr );
     ar & BOOST_SERIALIZATION_NVP( M_blockLqm_pr );
+    ar & BOOST_SERIALIZATION_NVP( M_p_added );
 }
 
 
