@@ -2173,8 +2173,8 @@ private :
         else
         {
 #if defined( FEELPP_HAS_PETSC )
-            M_nlsolver->dense_residual = boost::bind( &Inverse::updateResidual, boost::ref( *this ), _1, _2 );
-            M_nlsolver->dense_jacobian = boost::bind( &Inverse::updateJacobian, boost::ref( *this ), _1, _2 );
+            M_nlsolver->dense_residual = std::bind( &Inverse::updateResidual, std::ref( *this ), std::placeholders::_1, std::placeholders::_2 );
+            M_nlsolver->dense_jacobian = std::bind( &Inverse::updateJacobian, std::ref( *this ), std::placeholders::_1, std::placeholders::_2 );
             // find xref by solving the non linear equation
             //M_nlsolver->setType( TRUST_REGION );
             M_nlsolver->setKspSolverType( SolverType::PREONLY );
