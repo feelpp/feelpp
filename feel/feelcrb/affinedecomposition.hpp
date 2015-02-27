@@ -109,7 +109,7 @@ public:
         {}
 
 
-        template <typename BetaType>
+    template <typename BetaType>
     void addOpe( form2_type const& form2, BetaType const& beta, std::string filename )
         {
             add( form2.matrixPtr(), beta, filename );
@@ -913,7 +913,6 @@ private:
 
     testspace_ptrtype Xtest;
     trialspace_ptrtype Xtrial;
-
 };
 
 
@@ -1125,40 +1124,24 @@ public :
     void initializeMassMatrix()
         {
             rangespace_type range;
-            initializeMassRow init( this->shared_from_this() );
+            initializeMassBlock init( this->shared_from_this() );
             fusion::for_each( range, init );
         }
 
 private :
-    struct initializeMassRow
+    struct initializeMassBlock
     {
-        initializeMassRow( self_ptrtype AD) :
+        initializeMassBlokc( self_ptrtype AD) :
             M_AD( AD )
             {}
 
         template<typename T>
         void operator() ( T& t) const
             {
-                initializeMassBlock<T> block( M_AD );
-                rangespace_type range;
-                fusion::for_each( range, block );
+                M_AD->template createBlock<T::value,T::value>();
+                M_AD->template get<T::value,T::value>()->initializeMassMatrix();
             }
 
-        self_ptrtype M_AD;
-    };
-    template <typename Row>
-    struct initializeMassBlock
-    {
-        initializeMassBlock( self_ptrtype AD) :
-            M_AD( AD )
-            {}
-
-        template<typename Col>
-        void operator() ( Col& t) const
-            {
-                M_AD->template createBlock<Row::value,Col::value>();
-                M_AD->template get<Row::value,Col::value>()->initializeMassMatrix();
-            }
         self_ptrtype M_AD;
     };
     struct checkBlock
