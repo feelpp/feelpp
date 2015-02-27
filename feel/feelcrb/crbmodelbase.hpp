@@ -652,7 +652,7 @@ public:
     template<int Row=0,int Col=0>
     int mMaxA( int q )
         {
-            autot A=M_A.template get<Row,Col>();
+            auto A=M_A.template get<Row,Col>();
             if(A)
                 return A->mMax(q);
             return 0;
@@ -687,7 +687,12 @@ public:
                     Type1 const& xi_i, Type2 const& xi_j,
                     bool transpose = false ) const
         {
-            return Aqm<Row,Col>( q, m, transpose )->energy( xi_j, xi_i );
+            auto A=M_A.template get<Row,Col>();
+            if(A)
+                return A->compute( q, m, transpose )->energy( xi_j, xi_i );
+            else if ( boption("crb.saddlepoint.transpose") )
+                return M_A.template get<Col,Row>()->compute( q, m, !transpose )->energy(xi_j, xi_i );
+            return 0;
         }
     template<int Row=0>
     vector_ptrtype Fqm( uint16_type output, uint16_type q, int m=0 ) const

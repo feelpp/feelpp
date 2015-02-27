@@ -127,7 +127,7 @@ public:
     using rbspace_ptrtype = typename model_type::template rbspace_ptrtype<T>;
 
     template<int T>
-    using crbelementsdb_type = CRBElementsDB<subspace_type<T>>;
+        using crbelementsdb_type = CRBElementsDB<subspace_type<T>,model_type>;
     template<int T>
     using crbelementsdb_ptrtype = boost::shared_ptr<crbelementsdb_type<T>>;
 
@@ -146,81 +146,84 @@ public:
 
 
     /// Default constructor
-    CRBSaddlePoint()
-        :
+    CRBSaddlePoint() :
         super_crb()
-        {}
+    {}
 
 
     /// constructor from command line options
-    CRBSaddlePoint( std::string  name,
-                    model_ptrtype const & model )
-        :
+    CRBSaddlePoint( std::string  name, model_ptrtype const & model ) :
         super_crb( name, model ),
         M_elements_database0(
             ( boost::format( "%1%" ) %ioption("crb.error-type") ).str(),
             name,
             ( boost::format( "%1%-%2%-%3%-elements0" )
-              %name % ioption("crb.output-index") %ioption("crb.error-type") ).str() ),
+              %name % ioption("crb.output-index") %ioption("crb.error-type") ).str(),
+            model ),
         M_elements_database1(
             ( boost::format( "%1%" ) %ioption("crb.error-type") ).str(),
             name,
             ( boost::format( "%1%-%2%-%3%-elements1" )
-              %name % ioption("crb.output-index") %ioption("crb.error-type") ).str() ),
+              %name % ioption("crb.output-index") %ioption("crb.error-type") ).str(),
+            model ),
         M_N0( 0 ),
         M_N1( 0 ),
         XN0( model->template rBFunctionSpace<0>() ),
-        XN1( model->template rBFunctionSpace<1>() ),
-        M_A( model->getA() ),
-        M_F( model->getF() )
-        {
-            if ( this->loadDB() )
-                LOG(INFO) << "Database " << this->lookForDB() << " available and loaded\n";
-
-            // this will be in the offline step
-            // (it's only when we enrich or create the database that we want to
-            // have access to elements of the RB)
-            M_elements_database0.setMN( this->M_N0 );
-            M_elements_database1.setMN( this->M_N1 );
-
-            bool load_elements_db= boption(_name="crb.load-elements-database");
-            if( load_elements_db )
-            {
-                bool found = false;
-                if( this->M_elements_database0.loadDB() )
-                {
-                    LOG(INFO) << "database for basis functions 0 "
-                              << this->M_elements_database0.lookForDB() << " available and loaded\n";
-                    auto basis_functions = this->M_elements_database0.wn();
-                    XN0->setBasis( basis_functions );
-                    found = true;
-                }
-                if( this->M_elements_database1.loadDB() )
-                {
-                    LOG(INFO) << "database for basis functions 1 "
-                              << this->M_elements_database1.lookForDB() << " available and loaded\n";
-                    auto basis_functions = this->M_elements_database1.wn();
-                    XN1->setBasis( basis_functions );
-                    found = true;
-                }
-                if ( !found )
-                {
-                    if( Environment::isMasterRank() )
-                        std::cout<<"Saddle Point : Warning ! No database for basis functions loaded. Start from the begining"<<std::endl;
-                    LOG( INFO ) <<"no database for basis functions loaded. Start from the begining";
-                }
-            }
-
-
-        }
+        XN1( model->template rBFunctionSpace<1>() )
+        {}
 
 
     //! copy constructor
-    CRBSaddlePoint( CRBSaddlePoint const & o )
-        :
+    CRBSaddlePoint( CRBSaddlePoint const & o ) :
         super_crb( o )
-        {}
+    {}
 
+    virtual void init()
+    {
+        this->setTruthModel();
+        if ( this->loadDB() )
+            LOG(INFO) << "Database " << this->lookForDB() << " available and loaded\n";
+
+        // this will be in the offline step
+        // (it's only when we enrich or create the database that we want to
+        // have access to elements of the RB)
+        M_elements_database0.setMN( this->M_N0 );
+        M_elements_database1.setMN( this->M_N1 );
+
+        bool load_elements_db= boption(_name="crb.load-elements-database");
+        if( load_elements_db )
+        {
+            bool found = false;
+            if( this->M_elements_database0.loadDB() )
+            {
+                if (Environment::isMasterRank() )
+                    std::cout << "database for basis functions 0 "
+                              << this->M_elements_database0.lookForDB() << " available and loaded\n";
+                LOG(INFO) << "database for basis functions 0 "
+                          << this->M_elements_database0.lookForDB() << " available and loaded\n";
+                auto basis_functions = this->M_elements_database0.wn();
+                XN0->setBasis( basis_functions );
+                found = true;
+            }
+            if( this->M_elements_database1.loadDB() )
+            {
+                if (Environment::isMasterRank() )
+                    std::cout << "database for basis functions 1 "
+                              << this->M_elements_database1.lookForDB() << " available and loaded\n";
+                LOG(INFO) << "database for basis functions 1 "
+                          << this->M_elements_database1.lookForDB() << " available and loaded\n";
+                auto basis_functions = this->M_elements_database1.wn();
+                XN1->setBasis( basis_functions );
+                found = true && found;
+            }
+            if ( !found )
+            {
+                if( Environment::isMasterRank() )
+                    std::cout<<"Saddle Point : Warning ! No database for basis functions loaded. Start from the begining"<<std::endl;
+                LOG( INFO ) <<"no database for basis functions loaded. Start from the begining";
+            }
+        }
+    }
 
     WorldComm const& worldComm() const { return Environment::worldComm(); }
 
@@ -249,8 +252,8 @@ public:
     convergence_type offline();
 
     //@{ /// Database
-    void saveDB();
-    bool loadDB();
+    virtual void saveDB();
+    virtual bool loadDB();
     //@}
 
 private :
@@ -280,16 +283,21 @@ private :
                         for( size_type j=0; j<N[c]; j++ )
                             M_crb->M_blockAqm_pr[r][c][q][0]( i, j )
                                 = M_crb->M_model->template Aqm<row::value,col::value>( q, 0,
-                                                                        XNr->primalBasisElement(i),
-                                                                        XNc->primalBasisElement(j) );
+                                                                        XNc->primalBasisElement(i),
+                                                                        XNr->primalBasisElement(j) );
 
                     for( size_type j=N[c]-Nadded[c]; j<N[c]; j++ )
                         for( size_type i=0; i<N[r]; i++ )
                             M_crb->M_blockAqm_pr[r][c][q][0]( i, j )
                                 = M_crb->M_model->template Aqm<row::value,col::value>( q, 0,
-                                                                     XNr->primalBasisElement(i),
-                                                                     XNc->primalBasisElement(j) );
+                                                                     XNc->primalBasisElement(i),
+                                                                     XNr->primalBasisElement(j) );
                 }
+                std::cout<< "Row="<<r<<", Col="<<c<<std::endl;
+                if ( M_crb->M_blockAqm_pr[r][c].size() )
+                    std::cout<< M_crb->M_blockAqm_pr[r][c][0][0]<<std::endl;
+                std::cout<<std::endl;
+
                 if( c==0 )
                 {
                     for( size_type q=0; q<M_crb->M_model->template Ql<row::value>(0); q++)
@@ -335,9 +343,6 @@ private :
     rbspace_ptrtype<0> XN0;
     rbspace_ptrtype<1> XN1;
 
-    matrix_ad_type M_A;
-    std::vector< vector_ad_type > M_F;
-
     blockmatrixN_type M_blockAqm_pr;
     blockvectorN_type M_blockFqm_pr;
     blockvectorN_type M_blockLqm_pr;
@@ -345,6 +350,11 @@ private :
 
 
     friend class boost::serialization::access;
+    template<class Archive>
+        void save( Archive & ar, const unsigned int version ) const;
+
+    template<class Archive>
+        void load( Archive & ar, const unsigned int version ) ;
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 
 }; // class CRBSaddlePoint
@@ -372,7 +382,7 @@ CRBSaddlePoint<TruthModelType>::offline()
     LOG(INFO) << "[CRBSaddlePoint::offline] Starting offline for output " << this->M_output_index << std::endl;
     LOG(INFO) << "[CRBSaddlePoint::offline] initialize underlying finite element model\n";
 
-    if ( rebuild_database || M_N0==0 || M_N1==0 )
+    if ( rebuild_database || M_N0==0 )
     {
         ti.restart();
         // Generate sampling depending of the "crb.sampling-mode" option
@@ -472,12 +482,21 @@ CRBSaddlePoint<TruthModelType>::offline()
             this->M_WNmu->push_back( mu, index );
         this->M_WNmu_complement = this->M_WNmu->complement();
 
+        subelement_type<0> u = this->M_model->functionSpace()->template functionSpace<0>()->element();
+        subelement_type<1> p = this->M_model->functionSpace()->template functionSpace<1>()->element();
+        vector_ptrtype vec_u = U->template elementPtr<0>();
+        vector_ptrtype vec_p = U->template elementPtr<1>();
 
-        auto u = U->template elementPtr<0>();
-        auto p = U->template elementPtr<1>();
+        u = *vec_u;
+        p = *vec_p;
+
+        u.setName( ( boost::format( "u_fem-primal-N%1%-proc%2%" ) % (M_N0)  % proc_number ).str() );
+        p.setName( ( boost::format( "p_fem-primal-N%1%-proc%2%" ) % (M_N1)  % proc_number ).str() );
 
         XN0->addPrimalBasisElement( u );
         XN1->addPrimalBasisElement( p );
+        XN0->addDualBasisElement( u );
+        XN1->addDualBasisElement( p );
 
         M_Nadded0=1;
         M_Nadded1=1;
@@ -571,6 +590,7 @@ CRBSaddlePoint<TruthModelType>::exportBasisFunctions()
         int p_index = index;
         e->step(0)->add( name, p_vec[p_index] );
     }
+    e->save();
 }
 
 template<typename TruthModelType>
@@ -633,7 +653,7 @@ CRBSaddlePoint<TruthModelType>::generateSuperSampling()
     }
 
     this->M_WNmu->setSuperSampling( this->M_Xi );
-}
+} //generateSuperSampling()
 
 
 template<typename TruthModelType>
@@ -699,6 +719,35 @@ CRBSaddlePoint<TruthModelType>::buildSampling()
     } //build sampling
 
     return true;
+} //buildSampling()
+
+
+
+template<typename TruthModelType>
+template<class Archive>
+void
+CRBSaddlePoint<TruthModelType>::save( Archive & ar, const unsigned int version ) const
+{
+    ar & boost::serialization::base_object<super_crb>( *this );
+    ar & BOOST_SERIALIZATION_NVP( M_N0 );
+    ar & BOOST_SERIALIZATION_NVP( M_N1 );
+    ar & BOOST_SERIALIZATION_NVP( M_blockAqm_pr );
+    ar & BOOST_SERIALIZATION_NVP( M_blockFqm_pr );
+    ar & BOOST_SERIALIZATION_NVP( M_blockLqm_pr );
+}
+
+
+template<typename TruthModelType>
+template<class Archive>
+void
+CRBSaddlePoint<TruthModelType>::load( Archive & ar, const unsigned int version )
+{
+    ar & boost::serialization::base_object<super_crb>( *this );
+    ar & BOOST_SERIALIZATION_NVP( M_N0 );
+    ar & BOOST_SERIALIZATION_NVP( M_N1 );
+    ar & BOOST_SERIALIZATION_NVP( M_blockAqm_pr );
+    ar & BOOST_SERIALIZATION_NVP( M_blockFqm_pr );
+    ar & BOOST_SERIALIZATION_NVP( M_blockLqm_pr );
 }
 
 

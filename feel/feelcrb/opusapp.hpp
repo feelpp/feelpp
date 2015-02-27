@@ -214,8 +214,8 @@ public:
                 model->init( M_mode );
                 LOG(INFO) << "[OpusApp] get model done" << "\n";
 
-                crb = crb_ptrtype( new crb_type( this->about().appName(),
-                                                 model ) );
+                crb = crb_ptrtype( new crb_type( this->about().appName(), model ) );
+                crb->init();
                 LOG(INFO) << "[OpusApp] get crb done" << "\n";
 
                 //VLOG(1) << "[OpusApp] get crb done" << "\n";
