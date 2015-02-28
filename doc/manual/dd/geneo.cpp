@@ -55,50 +55,32 @@
 
 namespace Feel
 {
+template<class T>
+static inline unsigned short assignRBM(double**& ev, const unsigned int dof, NullSpace<double>& ns, std::initializer_list<T> modes) {
+    if(ev) {
+        typename decltype(modes)::const_iterator it = modes.begin();
+        ev = new double*[modes.size()];
+        *ev = new double[modes.size() * dof];
+        for(unsigned short i = 0; i < modes.size(); ++i)
+            ev[i] = *ev + i * dof;
+        std::for_each(ev, ev + modes.size(), [&](double* v) { std::copy(it->begin(), it->end(), v); ++it; });
+    }
+    else
+        ns = modes;
+    return modes.size();
+}
 template<uint16_type Dim, uint16_type Order>
-static inline void generateRBM(unsigned short& nb, double**& ev, boost::shared_ptr<FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order, Scalar>>>>& Vh) {
-    nb = 1;
-    ev = new double*[nb];
-    *ev = new double[nb * Vh->nDof()];
-    auto rbm = Vh->element();
-    rbm = vf::project(Vh, elements(Vh->mesh()), cst(1.0));
-    std::copy(rbm.begin(), rbm.end(), *ev);
+static inline unsigned short generateRBM(double**& ev, boost::shared_ptr<FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order, Scalar>>>>& Vh, NullSpace<double>& ns) {
+    return assignRBM(ev, Vh->nDof(), ns, { Vh->element(cst(1.0)) });
 }
 template<uint16_type Order>
-static inline void generateRBM(unsigned short& nb, double**& ev, boost::shared_ptr<FunctionSpace<Mesh<Simplex<2>>, bases<Lagrange<Order, Vectorial>>>>& Vh) {
-    nb = 3;
-    ev = new double*[nb];
-    *ev = new double[nb * Vh->nDof()];
-    for(unsigned short i = 0; i < nb; ++i)
-        ev[i] = *ev + i * Vh->nDof();
-    auto rbm = Vh->element();
-    rbm = vf::project(Vh, elements(Vh->mesh()), oneX());
-    std::copy(rbm.begin(), rbm.end(), ev[0]);
-    rbm = vf::project(Vh, elements(Vh->mesh()), oneY());
-    std::copy(rbm.begin(), rbm.end(), ev[1]);
-    rbm = vf::project(Vh, elements(Vh->mesh()), vec(Py(), -Px()));
-    std::copy(rbm.begin(), rbm.end(), ev[2]);
+static inline unsigned short generateRBM(double**& ev, boost::shared_ptr<FunctionSpace<Mesh<Simplex<2>>, bases<Lagrange<Order, Vectorial>>>>& Vh, NullSpace<double>& ns) {
+    return assignRBM(ev, Vh->nDof(), ns, { Vh->element(oneX()), Vh->element(oneY()), Vh->element(vec(Py(), -Px())) });
 }
 template<uint16_type Order>
-static inline void generateRBM(unsigned short& nb, double**& ev, boost::shared_ptr<FunctionSpace<Mesh<Simplex<3>>, bases<Lagrange<Order, Vectorial>>>>& Vh) {
-    nb = 6;
-    ev = new double*[nb];
-    *ev = new double[nb * Vh->nDof()];
-    for(unsigned short i = 0; i < nb; ++i)
-        ev[i] = *ev + i * Vh->nDof();
-    auto rbm = Vh->element();
-    rbm = vf::project(Vh, elements(Vh->mesh()), oneX());
-    std::copy(rbm.begin(), rbm.end(), ev[0]);
-    rbm = vf::project(Vh, elements(Vh->mesh()), oneY());
-    std::copy(rbm.begin(), rbm.end(), ev[1]);
-    rbm = vf::project(Vh, elements(Vh->mesh()), oneZ());
-    std::copy(rbm.begin(), rbm.end(), ev[2]);
-    rbm = vf::project(Vh, elements(Vh->mesh()), vec(Py(), -Px(), cst(0.0)));
-    std::copy(rbm.begin(), rbm.end(), ev[3]);
-    rbm = vf::project(Vh, elements(Vh->mesh()), vec(-Pz(), cst(0.0), Px()));
-    std::copy(rbm.begin(), rbm.end(), ev[4]);
-    rbm = vf::project(Vh, elements(Vh->mesh()), vec(cst(0.0), Pz(), -Py()));
-    std::copy(rbm.begin(), rbm.end(), ev[5]);
+static inline unsigned short generateRBM(double**& ev, boost::shared_ptr<FunctionSpace<Mesh<Simplex<3>>, bases<Lagrange<Order, Vectorial>>>>& Vh, NullSpace<double>& ns) {
+    return assignRBM(ev, Vh->nDof(), ns, { Vh->element(oneX()), Vh->element(oneY()), Vh->element(oneZ()),
+                                           Vh->element(vec(Py(), -Px(), cst(0.0))), Vh->element(vec(-Pz(), cst(0.0), Px())), Vh->element(vec(cst(0.0), Pz(), -Py())) });
 }
 template<uint16_type Dim, uint16_type Order, template<uint16_type> class Type>
 static inline void coefficients(double* r, boost::shared_ptr<FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order, Type>>>>& Vh) {
@@ -190,6 +172,8 @@ void Geneopp<Dim, Order, Type>::run()
     static_assert(Dim == 2 || Dim == 3, "Wrong dimension");
     mpi::timer time;
     boost::shared_ptr<Mesh<Simplex<Dim>>> mesh;
+    NullSpace<double> ns;
+    double** ev = nullptr;
 #ifdef FEELPP_HAS_HPDDM
 #if defined(FETI)
     typedef HpFeti<FetiPrcdtnr::DIRICHLET, double, 'S'> prec_type;
@@ -241,7 +225,6 @@ void Geneopp<Dim, Order, Type>::run()
         wComm.barrier();
 #ifdef FEELPP_HAS_HPDDM
         time.restart();
-        double** ev;
         auto meshLocal = createSubmesh(mesh, elements(mesh), Environment::worldCommSeq());
         timers[0] = time.elapsed();
         bComm.barrier();
@@ -341,8 +324,7 @@ void Geneopp<Dim, Order, Type>::run()
             decltype(map)().swap(map);
             if(nu == 0) {
                 if(nelements(markedfaces(meshLocal, "Dirichlet")) == 0) {
-                    unsigned short nb;
-                    generateRBM(nb, ev, VhLocal);
+                    unsigned short nb = generateRBM(ev, VhLocal, ns);
                     K->setVectors(ev);
                     K->super::super::initialize(nb);
                 }
@@ -472,12 +454,13 @@ void Geneopp<Dim, Order, Type>::run()
                 auto D = ptr_global->newMatrix(VhVisu, VhVisu);
                 auto F = ptr_global->newVector(VhVisu);
                 assemble(D, F, VhVisu);
+                generateRBM(ev, VhVisu, ns);
                 timeFeel = time.elapsed();
                 if(wComm.rank() == 0)
                     std::cout << std::scientific << " --- assembly in " << timeFeel << std::endl;
                 time.restart();
                 auto u = VhVisu->element();
-                ptr_global->solve(_matrix = D, _solution = u, _rhs = F);
+                ptr_global->solve(_matrix = D, _solution = u, _rhs = F, _near_null_space = ns);
                 timeFeel = time.elapsed();
 #ifdef FEELPP_HAS_HPDDM
                 e->add("u_ref", u);
