@@ -476,6 +476,10 @@ typedef struct {
 namespace PetscImpl
 {
 
+#ifdef __FUNCT__
+#undef __FUNCT__
+#endif
+#define __FUNCT__ "PCSetUp_Redundant"
 static PetscErrorCode PCSetUp_Redundant(PC pc)
 {
   PC_Redundant   *red = (PC_Redundant*)pc->data;
@@ -622,6 +626,7 @@ static PetscErrorCode PCSetUp_Redundant(PC pc)
 #endif
   PetscFunctionReturn(0);
 }
+#undef __FUNCT__
 static PetscErrorCode PCRedundantChangeSetup(PC pc)
 {
     pc->ops->setup          = PetscImpl::PCSetUp_Redundant;
