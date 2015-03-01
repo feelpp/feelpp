@@ -453,8 +453,190 @@ static PetscErrorCode PCFieldSplit_UpdateMatPrecondSchurComplement( PC pc, Mat s
 
 } // namespace PetscImpl
 
+#endif // PETSc Version
+
+typedef struct {
+  KSP          ksp;
+  PC           pc;                   /* actual preconditioner used on each processor */
+  Vec          xsub,ysub;            /* vectors of a subcommunicator to hold parallel vectors of PetscObjectComm((PetscObject)pc) */
+  Vec          xdup,ydup;            /* parallel vector that congregates xsub or ysub facilitating vector scattering */
+  Mat          pmats;                /* matrix and optional preconditioner matrix belong to a subcommunicator */
+  VecScatter   scatterin,scatterout; /* scatter used to move all values to each processor group (subcommunicator) */
+  PetscBool    useparallelmat;
+  PetscSubcomm psubcomm;
+  PetscInt     nsubcomm;           /* num of data structure PetscSubcomm */
+} PC_Redundant;
+
+
+
+
+
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,5,0 )
+
+namespace PetscImpl
+{
+
+#ifdef __FUNCT__
+#undef __FUNCT__
+#endif
+#define __FUNCT__ "PCSetUp_Redundant"
+static PetscErrorCode PCSetUp_Redundant(PC pc)
+{
+  PC_Redundant   *red = (PC_Redundant*)pc->data;
+  PetscErrorCode ierr;
+  PetscInt       mstart,mend,mlocal,M;
+  PetscMPIInt    size;
+  MPI_Comm       comm,subcomm;
+  Vec            x;
+  const char     *prefix;
+
+  PetscFunctionBegin;
+  ierr = PetscObjectGetComm((PetscObject)pc,&comm);CHKERRQ(ierr);
+  
+  /* if pmatrix set by user is sequential then we do not need to gather the parallel matrix */
+  ierr = MPI_Comm_size(comm,&size);CHKERRQ(ierr);
+  if (size == 1) red->useparallelmat = PETSC_FALSE;
+
+  if (!pc->setupcalled) {
+    PetscInt mloc_sub;
+    if (!red->psubcomm) {
+      ierr = PetscSubcommCreate(comm,&red->psubcomm);CHKERRQ(ierr);
+      ierr = PetscSubcommSetNumber(red->psubcomm,red->nsubcomm);CHKERRQ(ierr);
+      ierr = PetscSubcommSetType(red->psubcomm,PETSC_SUBCOMM_CONTIGUOUS);CHKERRQ(ierr);
+      /* enable runtime switch of psubcomm type, e.g., '-psubcomm_type interlaced */
+      ierr = PetscSubcommSetFromOptions(red->psubcomm);CHKERRQ(ierr);
+      ierr = PetscLogObjectMemory((PetscObject)pc,sizeof(PetscSubcomm));CHKERRQ(ierr);
+
+      /* create a new PC that processors in each subcomm have copy of */
+#if PETSC_VERSION_LESS_THAN(3,6,0)
+      subcomm = red->psubcomm->comm;
+#else
+      subcomm = red->psubcomm->child;
 #endif
 
+      ierr = KSPCreate(subcomm,&red->ksp);CHKERRQ(ierr);
+      ierr = PetscObjectIncrementTabLevel((PetscObject)red->ksp,(PetscObject)pc,1);CHKERRQ(ierr);
+      ierr = PetscLogObjectParent((PetscObject)pc,(PetscObject)red->ksp);CHKERRQ(ierr);
+      ierr = KSPSetType(red->ksp,KSPPREONLY);CHKERRQ(ierr);
+      ierr = KSPGetPC(red->ksp,&red->pc);CHKERRQ(ierr);
+      ierr = PCSetType(red->pc,PCLU);CHKERRQ(ierr);
+
+      ierr = PCGetOptionsPrefix(pc,&prefix);CHKERRQ(ierr);
+      ierr = KSPSetOptionsPrefix(red->ksp,prefix);CHKERRQ(ierr);
+      ierr = KSPAppendOptionsPrefix(red->ksp,"redundant_");CHKERRQ(ierr);
+    } else {
+#if PETSC_VERSION_LESS_THAN(3,6,0)
+      subcomm = red->psubcomm->comm;
+#else
+      subcomm = red->psubcomm->child;
+#endif
+    }
+
+    if (red->useparallelmat) {
+      /* grab the parallel matrix and put it into processors of a subcomminicator */
+#if PETSC_VERSION_LESS_THAN(3,6,0)
+      ierr = MatGetRedundantMatrix(pc->pmat,red->psubcomm->n,subcomm,MAT_INITIAL_MATRIX,&red->pmats);CHKERRQ(ierr);
+#else
+      ierr = MatCreateRedundantMatrix(pc->pmat,red->psubcomm->n,subcomm,MAT_INITIAL_MATRIX,&red->pmats);CHKERRQ(ierr);
+#endif
+      ierr = KSPSetOperators(red->ksp,red->pmats,red->pmats);CHKERRQ(ierr);
+       
+      /* get working vectors xsub and ysub */
+#if PETSC_VERSION_LESS_THAN(3,6,0)
+      ierr = MatGetVecs(red->pmats,&red->xsub,&red->ysub);CHKERRQ(ierr);
+#else
+      ierr = MatCreateVecs(red->pmats,&red->xsub,&red->ysub);CHKERRQ(ierr);
+#endif
+
+      /* create working vectors xdup and ydup.
+       xdup concatenates all xsub's contigously to form a mpi vector over dupcomm  (see PetscSubcommCreate_interlaced())
+       ydup concatenates all ysub and has empty local arrays because ysub's arrays will be place into it.
+       Note: we use communicator dupcomm, not PetscObjectComm((PetscObject)pc)! */
+      ierr = MatGetLocalSize(red->pmats,&mloc_sub,NULL);CHKERRQ(ierr);
+      ierr = VecCreateMPI(red->psubcomm->dupparent,mloc_sub,PETSC_DECIDE,&red->xdup);CHKERRQ(ierr);
+      ierr = VecCreateMPIWithArray(red->psubcomm->dupparent,1,mloc_sub,PETSC_DECIDE,NULL,&red->ydup);CHKERRQ(ierr);
+
+      /* create vecscatters */
+      if (!red->scatterin) { /* efficiency of scatterin is independent from psubcomm_type! */
+        IS       is1,is2;
+        PetscInt *idx1,*idx2,i,j,k;
+
+#if PETSC_VERSION_LESS_THAN(3,6,0)
+        ierr = MatGetVecs(pc->pmat,&x,0);CHKERRQ(ierr);
+#else
+        ierr = MatCreateVecs(pc->pmat,&x,0);CHKERRQ(ierr);
+#endif
+        ierr = VecGetSize(x,&M);CHKERRQ(ierr);
+        ierr = VecGetOwnershipRange(x,&mstart,&mend);CHKERRQ(ierr);
+        mlocal = mend - mstart;
+        ierr = PetscMalloc2(red->psubcomm->n*mlocal,&idx1,red->psubcomm->n*mlocal,&idx2);CHKERRQ(ierr);
+        j    = 0;
+        for (k=0; k<red->psubcomm->n; k++) {
+          for (i=mstart; i<mend; i++) {
+            idx1[j]   = i;
+            idx2[j++] = i + M*k;
+          }
+        }
+        ierr = ISCreateGeneral(comm,red->psubcomm->n*mlocal,idx1,PETSC_COPY_VALUES,&is1);CHKERRQ(ierr);
+        ierr = ISCreateGeneral(comm,red->psubcomm->n*mlocal,idx2,PETSC_COPY_VALUES,&is2);CHKERRQ(ierr);
+        ierr = VecScatterCreate(x,is1,red->xdup,is2,&red->scatterin);CHKERRQ(ierr);
+        ierr = ISDestroy(&is1);CHKERRQ(ierr);
+        ierr = ISDestroy(&is2);CHKERRQ(ierr);
+
+        /* Impl below is good for PETSC_SUBCOMM_INTERLACED (no inter-process communication) and PETSC_SUBCOMM_CONTIGUOUS (communication within subcomm) */
+        ierr = ISCreateStride(comm,mlocal,mstart+ red->psubcomm->color*M,1,&is1);CHKERRQ(ierr);
+        ierr = ISCreateStride(comm,mlocal,mstart,1,&is2);CHKERRQ(ierr);
+        ierr = VecScatterCreate(red->xdup,is1,x,is2,&red->scatterout);CHKERRQ(ierr);
+        ierr = ISDestroy(&is1);CHKERRQ(ierr);
+        ierr = ISDestroy(&is2);CHKERRQ(ierr);
+        ierr = PetscFree2(idx1,idx2);CHKERRQ(ierr);
+        ierr = VecDestroy(&x);CHKERRQ(ierr);
+      }
+    } else { /* !red->useparallelmat */
+      ierr = KSPSetOperators(red->ksp,pc->mat,pc->pmat);CHKERRQ(ierr);
+    }
+  } else { /* pc->setupcalled */
+    if (red->useparallelmat) {
+      MatReuse       reuse;
+      /* grab the parallel matrix and put it into processors of a subcomminicator */
+      /*--------------------------------------------------------------------------*/
+      if (pc->flag == DIFFERENT_NONZERO_PATTERN) {
+        /* destroy old matrices */
+        ierr  = MatDestroy(&red->pmats);CHKERRQ(ierr);
+        reuse = MAT_INITIAL_MATRIX;
+      } else {
+        reuse = MAT_REUSE_MATRIX;
+      }
+#if PETSC_VERSION_LESS_THAN(3,6,0)
+      ierr = MatGetRedundantMatrix(pc->pmat,red->psubcomm->n,red->psubcomm->comm,reuse,&red->pmats);CHKERRQ(ierr);
+#else
+      ierr = MatCreateRedundantMatrix(pc->pmat,red->psubcomm->n,red->psubcomm->child,reuse,&red->pmats);CHKERRQ(ierr);
+#endif
+      ierr = KSPSetOperators(red->ksp,red->pmats,red->pmats);CHKERRQ(ierr);
+    } else { /* !red->useparallelmat */
+      ierr = KSPSetOperators(red->ksp,pc->mat,pc->pmat);CHKERRQ(ierr);
+    }
+  }
+
+  if (pc->setfromoptionscalled) {
+    ierr = KSPSetFromOptions(red->ksp);CHKERRQ(ierr);
+  }
+#if 0 // feelpp modif
+  ierr = KSPSetUp(red->ksp);CHKERRQ(ierr);
+#endif
+  PetscFunctionReturn(0);
+}
+#undef __FUNCT__
+static PetscErrorCode PCRedundantChangeSetup(PC pc)
+{
+    pc->ops->setup          = PetscImpl::PCSetUp_Redundant;
+    return(0);
+}
+
+
+} // namespace PetscImpl
+
+#endif // PETSc version >= 3.5
 
 } // extern C
 
@@ -893,7 +1075,8 @@ ConfigurePC::ConfigurePC( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtyp
                           WorldComm const& worldComm, std::string const& sub, std::string const& prefix )
     :
     ConfigurePCBase( worldComm, sub, prefix ),
-    M_useConfigDefaultPetsc( option(_name="pc-use-config-default-petsc",_prefix=prefix,_sub=sub).as<bool>() )
+    M_useConfigDefaultPetsc( option(_name="pc-use-config-default-petsc",_prefix=prefix,_sub=sub).as<bool>() ),
+    M_factorShiftType( "none"/*option(_name="pc-factor-shift-type",_prefix=prefix,_sub=sub).as<std::string>()*/ )
 {
     run( pc,is );
 }
@@ -902,7 +1085,8 @@ ConfigurePC::ConfigurePC( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtyp
                           std::vector<std::string> const& prefixOverwrite )
     :
     ConfigurePCBase( worldComm, sub, prefix, prefixOverwrite ),
-    M_useConfigDefaultPetsc( option(_name="pc-use-config-default-petsc",_prefix=prefix,_sub=sub).as<bool>() )
+    M_useConfigDefaultPetsc( option(_name="pc-use-config-default-petsc",_prefix=prefix,_sub=sub).as<bool>() ),
+    M_factorShiftType( "none"/*option(_name="pc-factor-shift-type",_prefix=prefix,_sub=sub).as<std::string>()*/ )
 {
     run( pc,is );
 }
@@ -912,10 +1096,21 @@ ConfigurePC::ConfigurePC( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtyp
                           po::variables_map const& vm )
     :
     ConfigurePCBase( worldComm, sub, prefix, prefixOverwrite ),
-    M_useConfigDefaultPetsc( option(_name="pc-use-config-default-petsc",_prefix=prefix,_sub=sub,_vm=vm).as<bool>() )
+    M_useConfigDefaultPetsc( option(_name="pc-use-config-default-petsc",_prefix=prefix,_sub=sub,_vm=vm).as<bool>() ),
+    M_factorShiftType( option(_name="pc-factor-shift-type",_prefix=prefix,_sub=sub,_vm=vm).as<std::string>() )
 {
     run( pc,is );
 }
+
+ConfigurePC::ConfigurePC( //PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+                          WorldComm const& worldComm, std::string const& sub, std::string const& prefix,
+                          std::vector<std::string> const& prefixOverwrite,
+                          po::variables_map const& vm )
+    :
+    ConfigurePCBase( worldComm, sub, prefix, prefixOverwrite ),
+    M_useConfigDefaultPetsc( option(_name="pc-use-config-default-petsc",_prefix=prefix,_sub=sub,_vm=vm).as<bool>() ),
+    M_factorShiftType( option(_name="pc-factor-shift-type",_prefix=prefix,_sub=sub,_vm=vm).as<std::string>() )
+{}
 
 void
 ConfigurePC::run( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is )
@@ -933,6 +1128,17 @@ ConfigurePC::run( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const&
     // init with petsc option if given and not interfaced
     if ( true )
         this->check( PCSetFromOptions( pc ) );
+
+    if ( std::string(pctype) == "lu" || std::string(pctype) == "ilu" )
+    {
+        if ( M_factorShiftType == "nonzero" )
+            this->check( PCFactorSetShiftType(pc,MAT_SHIFT_NONZERO) );
+        else if ( M_factorShiftType == "positive_definite" )
+            this->check( PCFactorSetShiftType(pc,MAT_SHIFT_POSITIVE_DEFINITE) );
+        else if ( M_factorShiftType == "inblocks" )
+            this->check( PCFactorSetShiftType(pc,MAT_SHIFT_INBLOCKS) );
+    }
+
 
     if ( std::string(pctype) == "gasm" )
     {
@@ -991,6 +1197,9 @@ ConfigurePC::run( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const&
     }
     else if ( std::string(pctype) == "redundant" )
     {
+        ConfigurePCRedundant mypc( /*pc, is,*/ this->worldComm(), this->prefix(), this->prefixOverwrite() );
+        mypc.setFactorShiftType( M_factorShiftType );
+        mypc.run(pc,is);
     }
 
     VLOG(2) << "configuring PC " << pctype << " done\n";
@@ -1089,6 +1298,9 @@ updateOptionsDescPrecBase( po::options_description & _options, std::string const
         ( prefixvm( prefix,pcctx+"pc-use-config-default-petsc" ).c_str(),
           (useDefaultValue)?Feel::po::value<bool>()->default_value( false ):Feel::po::value<bool>(),
           "configure pc with defult petsc options" )
+        ( prefixvm( prefix,pcctx+"pc-factor-shift-type" ).c_str(),
+          (useDefaultValue)?Feel::po::value<std::string>()->default_value( "none" ):Feel::po::value<std::string>(),
+          "adds a particular type of quantity to the diagonal of the matrix during numerical factorization, thus the matrix has nonzero pivots : none, nonzero, positive_definite, inblocks" )
         ;
 
     return _options;
@@ -1286,6 +1498,8 @@ getOptionsDescGAMG( std::string const& prefix, std::string const& sub )
           "max number of equations on coarse grids" )
         ( prefixvm( prefix,pcctx+"gamg-threshold" ).c_str(), Feel::po::value<double>()->default_value( 0. ),
           "relative threshold to use for dropping edges in aggregation graph" )
+        ( prefixvm( prefix,pcctx+"gamg-set-sym-graph" ).c_str(), Feel::po::value<bool>()->default_value( true ),
+          "set for asymmetric matrice (if the matrix is sym, put to false)" )
         ;
 
     // coarse ksp/pc
@@ -1842,6 +2056,8 @@ ConfigurePCML::runConfigurePCML( PC& pc, PreconditionerPetsc<double>::indexsplit
     this->check( PetscImpl::PCMLSetOldHierarchy( pc, static_cast<PetscBool>( M_mlOldHierarchy ) ) );
 #endif
 
+    // setup ml pc
+    this->check( PCSetUp( pc ) );
     // configure coarse solver
     configurePCMLCoarse( pc,is );
     // configure fine solvers
@@ -1858,44 +2074,39 @@ ConfigurePCML::runConfigurePCML( PC& pc, PreconditionerPetsc<double>::indexsplit
 void
 ConfigurePCML::configurePCMLCoarse( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is )
 {
-    this->check( PCSetUp( pc ) );
+    std::vector<std::string> prefixOverwrite;
+
     // get coarse-ksp
     KSP coarseksp;
     this->check( PCMGGetCoarseSolve( pc, &coarseksp) );
 
-    // configure coarse ksp
-    std::vector<std::string> prefixOverwrite;
-    ConfigureKSP kspConf( coarseksp, this->worldComm(), "", M_prefixMGCoarse, prefixOverwrite, "preonly",1e-5,50 );
-    this->check( KSPSetUp( coarseksp ) );
     // get coarse pc
     PC coarsepc;
     this->check( KSPGetPC( coarseksp, &coarsepc ) );
+
+    // in order to setup our ksp config, call PCSetType (with != name) reset the prec
+    if ( coarsepc->setupcalled )
+        this->check( PCSetType(coarsepc, ( char* )PCNONE) );
     // configure coarse pc
     SetPCType( coarsepc, pcTypeConvertStrToEnum( M_coarsePCtype ),
                matSolverPackageConvertStrToEnum( M_coarsePCMatSolverPackage ),
                this->worldComm() );
-    ConfigurePC( coarsepc, is, this->worldComm(), "", M_prefixMGCoarse, prefixOverwrite, this->vm() );
-    // setup pc (all do here because the setup of ml has not the same effect that classic setup)
-    //this->check( PCSetUp( pc ) );
-
-    //this->check( KSPSetUp( coarseksp ) );
-
-#if 0
-    // configure coarse ksp
-    this->check( KSPSetFromOptions( coarseksp ) );
-    ConfigureKSP kspConf( coarseksp, this->worldComm(), "", M_prefixMGCoarse );
-    // setup coarse ksp
-    this->check( KSPSetUp( coarseksp ) );
-#endif
+    ConfigurePC coarsepcConf( /*coarsepc, is,*/ this->worldComm(), "", M_prefixMGCoarse, prefixOverwrite, this->vm() );
+    coarsepcConf.setFactorShiftType( "inblocks" );
+    coarsepcConf.run( coarsepc, is );
     // setup coarse pc
     this->check( PCSetUp( coarsepc ) );
+
+    // configure coarse ksp
+    ConfigureKSP kspConf( coarseksp, this->worldComm(), "", M_prefixMGCoarse, prefixOverwrite, "preonly",1e-5,50 );
+    // setup coarse ksp
+    this->check( KSPSetUp( coarseksp ) );
 
     PetscViewer viewer = (this->sub().empty())? PETSC_VIEWER_STDOUT_WORLD : PETSC_VIEWER_STDOUT_SELF;
     if ( kspConf.kspView() )
         this->check( KSPView( coarseksp, viewer ) );
     else if ( M_coarsePCview )
         this->check( PCView( coarsepc, viewer ) );
-
 }
 
 /**
@@ -1911,6 +2122,7 @@ ConfigurePCGAMG::ConfigurePCGAMG( PC& pc, PreconditionerPetsc<double>::indexspli
     M_procEqLim( option(_name="pc-gamg-proc-eq-lim",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
     M_coarseEqLim(option(_name="pc-gamg-coarse-eq-lim",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
     M_threshold( option(_name="pc-gamg-threshold",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<double>() ),
+    M_setSymGraph( option(_name="pc-gamg-set-sym-graph",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<bool>() ),
     M_prefixMGCoarse( (boost::format( "%1%%2%mg-coarse" ) %prefixvm( prefix,"" ) %std::string((sub.empty())?"":sub+"-")  ).str() ),
     M_coarsePCtype( option(_name="pc-type",_prefix=M_prefixMGCoarse,_vm=this->vm()).as<std::string>() ),
     M_coarsePCMatSolverPackage( option(_name="pc-factor-mat-solver-package-type",_prefix=M_prefixMGCoarse,_vm=this->vm()).as<std::string>() ),
@@ -1928,30 +2140,24 @@ void
 ConfigurePCGAMG::runConfigurePCGAMG( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is )
 {
 #if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 )
+    // set type of multigrid (agg only supported)
     this->check( PCGAMGSetType( pc, M_gamgType.c_str() ) );
-#endif
+    // Set for asymmetric matrices
+    this->check( PetscOptionsSetValue("-pc_gamg_sym_graph", boost::lexical_cast<std::string>(M_setSymGraph).c_str()) );
     // PCSetFromOptions is called here because PCGAMGSetType destroy all unless the type_name
     this->check( PCSetFromOptions( pc ) );
-#if 0
-    // Sets the number of levels to use with MG.
-    // Must be called before any other MG routine
-    this->check( PCMGSetLevels( pc, M_nLevels, PETSC_NULL) );
 
-    if ( M_mgType=="multiplicative" ) this->check( PCMGSetType( pc, PC_MG_MULTIPLICATIVE ) );
-    if ( M_mgType=="additive" ) this->check( PCMGSetType( pc, PC_MG_ADDITIVE ) );
-    if ( M_mgType=="full" ) this->check( PCMGSetType( pc, PC_MG_FULL ) );
-    if ( M_mgType=="kaskade" ) this->check( PCMGSetType( pc, PC_MG_KASKADE ) );
-#endif
-#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 )
     //
     this->check( PCGAMGSetNlevels( pc,M_nLevels ) );
     // Set number of equations to aim for on coarse grids via processor reduction
     this->check( PCGAMGSetProcEqLim( pc, M_procEqLim ) );
     // Set max number of equations on coarse grids
-    this->check( PCGAMGSetProcEqLim( pc, M_coarseEqLim ) );
+    this->check( PCGAMGSetCoarseEqLim( pc, M_coarseEqLim ) );
     // Relative threshold to use for dropping edges in aggregation graph
     this->check( PCGAMGSetThreshold( pc, M_threshold ) );
-#endif
+    // not works!!(seems to be missing PetscObjectComposeFunction with this function)
+    //this->check( PCGAMGSetSymGraph( pc, ( M_setSymGraph )?PETSC_TRUE : PETSC_FALSE ) );
+
     // setup sub-pc
     this->check( PCSetUp( pc ) );
     //this->check( PCView( pc, PETSC_VIEWER_STDOUT_WORLD ) );
@@ -1967,33 +2173,42 @@ ConfigurePCGAMG::runConfigurePCGAMG( PC& pc, PreconditionerPetsc<double>::indexs
     else if ( M_mgType=="full" ) this->check( PCMGSetType( pc, PC_MG_FULL ) );
     else if ( M_mgType=="kaskade" ) this->check( PCMGSetType( pc, PC_MG_KASKADE ) );
     else CHECK( false ) << "invalid mgType :" << M_mgType << "\n";
-
+#else // petsc version >= 3.3
+    CHECK( false ) << "gamg supported only from petsc 3.3";
+#endif
 }
 
 void
 ConfigurePCGAMG::configurePCGAMGCoarse( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is )
 {
+    std::vector<std::string> prefixOverwrite;
+
     // get coarse-ksp
     KSP coarseksp;
     this->check( PCMGGetCoarseSolve( pc, &coarseksp) );
-    // configure coarse ksp
-    //ConfigureKSP kspConf( coarseksp, this->worldComm(), "", M_prefixMGCoarse );
-    std::vector<std::string> prefixOverwrite;
-    ConfigureKSP kspConf( coarseksp, this->worldComm(), "", M_prefixMGCoarse, prefixOverwrite, "preonly",1e-5,50 );
-    // setup coarse ksp
-    this->check( KSPSetUp( coarseksp ) );
 
     // get coarse pc
     PC coarsepc;
     this->check( KSPGetPC( coarseksp, &coarsepc ) );
+
+    // in order to setup our ksp config, call PCSetType (with != name) reset the prec
+    if ( coarsepc->setupcalled )
+        this->check( PCSetType(coarsepc, ( char* )PCNONE) );
     // configure coarse pc
     SetPCType( coarsepc, pcTypeConvertStrToEnum( M_coarsePCtype ),
                matSolverPackageConvertStrToEnum( M_coarsePCMatSolverPackage ),
                this->worldComm() );
-    //ConfigurePC( coarsepc, is, this->worldComm(), "", M_prefixMGCoarse, this->vm() );
-    ConfigurePC( coarsepc, is, this->worldComm(), "", M_prefixMGCoarse, prefixOverwrite, this->vm() );
+    ConfigurePC coarsepcConf( /*coarsepc, is,*/ this->worldComm(), "", M_prefixMGCoarse, prefixOverwrite, this->vm() );
+    coarsepcConf.setFactorShiftType( "inblocks" );
+    coarsepcConf.run( coarsepc, is );
     // setup coarse pc
     this->check( PCSetUp( coarsepc ) );
+
+    // configure coarse ksp
+    ConfigureKSP kspConf( coarseksp, this->worldComm(), "", M_prefixMGCoarse, prefixOverwrite, "preonly",1e-5,50 );
+    // setup coarse ksp
+    this->check( KSPSetUp( coarseksp ) );
+
 
     PetscViewer viewer = (this->sub().empty())? PETSC_VIEWER_STDOUT_WORLD : PETSC_VIEWER_STDOUT_SELF;
     if ( kspConf.kspView() )
@@ -2086,6 +2301,21 @@ ConfigurePCMGLevels::runConfigurePCMGLevels( PC& pc, PreconditionerPetsc<double>
     KSP levelksp;
     // get ksp
     this->check( PCMGGetSmoother( pc, level, &levelksp ) );
+    // get level pc
+    PC levelpc;
+    this->check( KSPGetPC( levelksp, &levelpc ) );
+    //-------------------------------------------------------------------//
+    //if ( levelpc->setupcalled )
+    //    this->check( PCSetType(levelpc, ( char* )PCNONE) );
+    // configure level pc
+    SetPCType( levelpc, pcTypeConvertStrToEnum( M_mgLevelsPCtype[level-1] ),
+               matSolverPackageConvertStrToEnum( M_mgLevelsMatSolverPackage[level-1] ),
+               this->worldComm() );
+    ConfigurePC( levelpc, is, this->worldComm(), "", prefixAllLevel , prefixLevelOverwrite, this->vm() );
+    // setup level pc
+    this->check( PCSetUp( levelpc ) );
+
+    //-------------------------------------------------------------------//
     // configure ksp
     ConfigureKSP kspConf( levelksp,this->worldComm(), "", prefixAllLevel, prefixLevelOverwrite,"richardson", 1e-5, 2 );
 #if 0
@@ -2097,17 +2327,6 @@ ConfigurePCMGLevels::runConfigurePCMGLevels( PC& pc, PreconditionerPetsc<double>
 #endif
     // setup coarse ksp
     this->check( KSPSetUp( levelksp ) );
-    //-------------------------------------------------------------------//
-    // get level pc
-    PC levelpc;
-    this->check( KSPGetPC( levelksp, &levelpc ) );
-    // configure level pc
-    SetPCType( levelpc, pcTypeConvertStrToEnum( M_mgLevelsPCtype[level-1] ),
-               matSolverPackageConvertStrToEnum( M_mgLevelsMatSolverPackage[level-1] ),
-               this->worldComm() );
-    ConfigurePC( levelpc, is, this->worldComm(), "", prefixAllLevel , prefixLevelOverwrite, this->vm() );
-    // setup level pc
-    this->check( PCSetUp( levelpc ) );
 
     PetscViewer viewer = (this->sub().empty())? PETSC_VIEWER_STDOUT_WORLD : PETSC_VIEWER_STDOUT_SELF;
     if ( kspConf.kspView() )
@@ -2511,6 +2730,67 @@ ConfigurePCLSC::runConfigurePCLSC( PC& pc, PreconditionerPetsc<double>::indexspl
     else if ( M_subPCview )
         this->check( PCView( subpc, PETSC_VIEWER_STDOUT_WORLD ) );
 }
+
+/**
+ * ConfigurePCRedundant
+ */
+ConfigurePCRedundant::ConfigurePCRedundant( WorldComm const& worldComm, std::string const& prefix, std::vector<std::string> const& prefixOverwrite )
+    :
+    ConfigurePCBase( worldComm,"",prefix,prefixOverwrite, getOptionsDescPrecBase( prefixvm(prefix,"redundant"),"" ) ),
+    M_innerPCtype( option(_name="pc-type",_prefix= prefixvm(prefix,"redundant"),_vm=this->vm()).as<std::string>() ),
+    M_innerPCMatSolverPackage(option(_name="pc-factor-mat-solver-package-type",_prefix= prefixvm(prefix,"redundant"),_vm=this->vm()).as<std::string>() ),
+    M_innerPCview( option(_name="pc-view",_prefix= prefixvm(prefix,"redundant"),_vm=this->vm()).as<bool>() ),
+    M_factorShiftType( "none" )
+{
+    VLOG(2) << "ConfigurePC : Redundant\n"
+            << "  |->prefix    : " << this->prefix() << std::string((this->sub().empty())? "" : " -sub="+this->sub()) << "\n"
+            << "  |->innerPCtype : " << M_innerPCtype << "\n"
+            << "  |->innerPCMatSolverPackage : " << M_innerPCMatSolverPackage << "\n";
+    google::FlushLogFiles(google::INFO);
+    //runConfigurePCRedundant( pc,is );
+}
+void
+ConfigurePCRedundant::run( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is )
+{
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,5,0 )
+    // redifine PCSetUp for PCREDUNDANT because originaly KSPSetUp for innerksp is called in this function
+    this->check( PetscImpl::PCRedundantChangeSetup(pc) );
+    // build operators
+    this->check( PCSetUp( pc ) );
+
+    std::vector<std::string> prefixOverwrite;
+
+    KSP innerksp;
+    this->check( PCRedundantGetKSP(pc,&innerksp) );
+
+    PC innerpc;
+    this->check( KSPGetPC(innerksp,&innerpc) );
+
+    // configure coarse pc
+    SetPCType( innerpc, pcTypeConvertStrToEnum( M_innerPCtype ),
+               matSolverPackageConvertStrToEnum( M_innerPCMatSolverPackage ),
+               this->worldComm().subWorldCommSeq() );
+    ConfigurePC mypc( /*innerpc, is,*/ this->worldComm(), "", prefixvm(this->prefix(),"redundant"), prefixOverwrite, this->vm() );
+    mypc.setFactorShiftType( M_factorShiftType );
+    mypc.run( innerpc, is );
+    // setup inner pc
+    this->check( PCSetUp( innerpc ) );
+
+    // configure inner ksp
+    ConfigureKSP kspConf( innerksp, this->worldComm(), "", prefixvm(this->prefix(),"redundant"), prefixOverwrite, "preonly",1e-8,50 );
+    // setup inner ksp
+    this->check( KSPSetUp( innerksp ) );
+
+    PetscViewer viewer = (this->sub().empty())? PETSC_VIEWER_STDOUT_WORLD : PETSC_VIEWER_STDOUT_SELF;
+    if ( kspConf.kspView() )
+        this->check( KSPView( innerksp, viewer ) );
+    else if ( M_innerPCview )
+        this->check( PCView( innerpc, viewer ) );
+#else
+    CHECK( false ) << "redundant not supported for this PETSc version ( must be >= 3.5 )";
+#endif
+}
+
 
 
 

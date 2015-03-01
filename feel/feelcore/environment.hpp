@@ -42,7 +42,7 @@
 #include <boost/python.hpp>
 #include <boost/python/stl_iterator.hpp>
 
-#include <mpi4py/mpi4py.h>
+//#include <mpi4py/mpi4py.h>
 #endif
 
 #include <feel/feelcore/parameter.hpp>

@@ -289,7 +289,9 @@ public :
             std::cout <<_options << "\n";
 
         auto mycmdparser = Environment::commandLineParser();
-        po::parsed_options parsed = mycmdparser.options( _options ).allow_unregistered().run();
+        po::parsed_options parsed = mycmdparser.options( _options ).
+            style(po::command_line_style::allow_long | po::command_line_style::long_allow_adjacent | po::command_line_style::long_allow_next).
+            allow_unregistered().run();
         po::store(parsed,M_vm);
         for ( std::string cfgfile : Environment::configFileNames() )
         {
@@ -363,10 +365,22 @@ public :
                  WorldComm const& worldComm, std::string const& sub, std::string const& prefix,
                  std::vector<std::string> const& prefixOverwrite,
                  po::variables_map const& vm/* = Environment::vm()*/ );
-private :
+
+    ConfigurePC( //PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+                 WorldComm const& worldComm, std::string const& sub, std::string const& prefix,
+                 std::vector<std::string> const& prefixOverwrite,
+                 po::variables_map const& vm/* = Environment::vm()*/ );
+
+    void setFactorShiftType( std::string s )
+    {
+        CHECK( s == "none" || s == "nonzero" || s == "positive_definite" || s == "inblocks" ) << "invalid shift type : " << s;
+        M_factorShiftType = s;
+    }
+
     void run( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is );
 private :
     bool M_useConfigDefaultPetsc;
+    std::string M_factorShiftType;
 };
 
 /**
@@ -506,6 +520,7 @@ private :
     int M_nLevels;
     int M_procEqLim, M_coarseEqLim;
     double M_threshold;
+    bool M_setSymGraph;
 
     std::string M_prefixMGCoarse;
     std::string M_coarsePCtype, M_coarsePCMatSolverPackage;
@@ -604,6 +619,28 @@ private :
 private :
     int M_levels;
 };
+
+/**
+ * ConfigurePCRedundant
+ */
+class ConfigurePCRedundant : public ConfigurePCBase
+{
+public :
+    ConfigurePCRedundant( //PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+                          WorldComm const& worldComm, std::string const& prefix, std::vector<std::string> const& prefixOverwrite );
+    void run( PC& pc,PreconditionerPetsc<double>::indexsplit_ptrtype const& is );
+
+    void setFactorShiftType( std::string s )
+    {
+        CHECK( s == "none" || s == "nonzero" || s == "positive_definite" || s == "inblocks" ) << "invalid shift type : " << s;
+        M_factorShiftType = s;
+    }
+private :
+    std::string M_innerPCtype, M_innerPCMatSolverPackage;
+    bool M_innerPCview;
+    std::string M_factorShiftType;
+};
+
 
 
 
