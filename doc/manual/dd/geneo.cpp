@@ -56,9 +56,10 @@
 namespace Feel
 {
 template<class T>
-static inline unsigned short assignRBM(double**& ev, const unsigned int dof, NullSpace<double>& ns, std::initializer_list<T> modes) {
-    if(ev) {
+static inline unsigned short assignRBM(double**& ev, NullSpace<double>& ns, std::initializer_list<T> modes) {
+    if(ev && modes.size() > 0) {
         typename decltype(modes)::const_iterator it = modes.begin();
+        const size_type dof = it->size();
         ev = new double*[modes.size()];
         *ev = new double[modes.size() * dof];
         for(unsigned short i = 0; i < modes.size(); ++i)
@@ -71,16 +72,16 @@ static inline unsigned short assignRBM(double**& ev, const unsigned int dof, Nul
 }
 template<uint16_type Dim, uint16_type Order>
 static inline unsigned short generateRBM(double**& ev, boost::shared_ptr<FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order, Scalar>>>>& Vh, NullSpace<double>& ns) {
-    return assignRBM(ev, Vh->nDof(), ns, { Vh->element(cst(1.0)) });
+    return assignRBM(ev, ns, { Vh->element(cst(1.0)) });
 }
 template<uint16_type Order>
 static inline unsigned short generateRBM(double**& ev, boost::shared_ptr<FunctionSpace<Mesh<Simplex<2>>, bases<Lagrange<Order, Vectorial>>>>& Vh, NullSpace<double>& ns) {
-    return assignRBM(ev, Vh->nDof(), ns, { Vh->element(oneX()), Vh->element(oneY()), Vh->element(vec(Py(), -Px())) });
+    return assignRBM(ev, ns, { Vh->element(oneX()), Vh->element(oneY()), Vh->element(vec(Py(), -Px())) });
 }
 template<uint16_type Order>
 static inline unsigned short generateRBM(double**& ev, boost::shared_ptr<FunctionSpace<Mesh<Simplex<3>>, bases<Lagrange<Order, Vectorial>>>>& Vh, NullSpace<double>& ns) {
-    return assignRBM(ev, Vh->nDof(), ns, { Vh->element(oneX()), Vh->element(oneY()), Vh->element(oneZ()),
-                                           Vh->element(vec(Py(), -Px(), cst(0.0))), Vh->element(vec(-Pz(), cst(0.0), Px())), Vh->element(vec(cst(0.0), Pz(), -Py())) });
+    return assignRBM(ev, ns, { Vh->element(oneX()), Vh->element(oneY()), Vh->element(oneZ()),
+                               Vh->element(vec(Py(), -Px(), cst(0.0))), Vh->element(vec(-Pz(), cst(0.0), Px())), Vh->element(vec(cst(0.0), Pz(), -Py())) });
 }
 template<uint16_type Dim, uint16_type Order, template<uint16_type> class Type>
 static inline void coefficients(double* r, boost::shared_ptr<FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order, Type>>>>& Vh) {
@@ -173,7 +174,7 @@ void Geneopp<Dim, Order, Type>::run()
     mpi::timer time;
     boost::shared_ptr<Mesh<Simplex<Dim>>> mesh;
     NullSpace<double> ns;
-    double** ev = nullptr;
+    double** ev;
 #ifdef FEELPP_HAS_HPDDM
 #if defined(FETI)
     typedef HpFeti<FetiPrcdtnr::DIRICHLET, double, 'S'> prec_type;
@@ -324,7 +325,7 @@ void Geneopp<Dim, Order, Type>::run()
             decltype(map)().swap(map);
             if(nu == 0) {
                 if(nelements(markedfaces(meshLocal, "Dirichlet")) == 0) {
-                    unsigned short nb = generateRBM(ev, VhLocal, ns);
+                    unsigned short nb = generateRBM(ev = &c, VhLocal, ns);
                     K->setVectors(ev);
                     K->super::super::initialize(nb);
                 }
@@ -413,7 +414,9 @@ void Geneopp<Dim, Order, Type>::run()
         Environment::worldComm().barrier();
         if(ret)
             timers.back() += time.elapsed();
+        tic();
         HPDDM::IterativeMethod::PCG<false>(*K, &(uLocal[0]), b, it, eps, Environment::worldComm(), Environment::isMasterRank());
+        toc("solution");
 
         double* storage = new double[2];
         K->computeError(&(uLocal[0]), b, storage);
@@ -454,7 +457,7 @@ void Geneopp<Dim, Order, Type>::run()
                 auto D = ptr_global->newMatrix(VhVisu, VhVisu);
                 auto F = ptr_global->newVector(VhVisu);
                 assemble(D, F, VhVisu);
-                generateRBM(ev, VhVisu, ns);
+                generateRBM(ev = nullptr, VhVisu, ns);
                 timeFeel = time.elapsed();
                 if(wComm.rank() == 0)
                     std::cout << std::scientific << " --- assembly in " << timeFeel << std::endl;
