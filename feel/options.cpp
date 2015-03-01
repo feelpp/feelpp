@@ -268,9 +268,6 @@ parallel_options( std::string const& prefix )
 {
     po::options_description _options( "Parallel " + prefix + " options" );
     _options.add_options()
-#if BOOST_VERSION >= 105500
-        ( prefixvm( prefix,"mpi.threading-level" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "Enable the use of additional cores for parallelization" )     
-#endif
 #if defined(FEELPP_HAS_HARTS)
         ( prefixvm( prefix,"parallel.cpu.enable" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Enable the use of additional cores for parallelization" )
         ( prefixvm( prefix,"parallel.cpu.impl" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "Specify the implementation for multithreading" )
@@ -390,7 +387,8 @@ solvereigen_options( std::string const& prefix )
         ( ( _prefix+"solvereigen.ncv" ).c_str(), Feel::po::value<int>()->default_value( 3 ), "number of basis vectors" )
         ( ( _prefix+"solvereigen.tolerance" ).c_str(), Feel::po::value<double>()->default_value( 1e-10 ), "solver tolerance" )
         ( ( _prefix+"solvereigen.maxiter" ).c_str(), Feel::po::value<int>()->default_value( 10000 ), "maximum number of iterations" )
-        ( ( _prefix+"solvereigen.verbose" ).c_str(), Feel::po::value<bool>()->default_value( false ), "verbose eigen solver" );
+        ( ( _prefix+"solvereigen.verbose" ).c_str(), Feel::po::value<bool>()->default_value( false ), "verbose eigen solver" )
+        ( ( _prefix+"solvereigen.eps-monitor" ).c_str(), Feel::po::value<bool>()->default_value( false ), "monitor eigen problem solver" );
 
     return _options;
 }
@@ -706,7 +704,7 @@ feel_options( std::string const& prefix  )
         /* gmsh domain options */
         .add( gmsh_domain_options( prefix ) )
         #
-#if BOOST_VERSION >= 105500 || defined(FEELPP_HAS_HARTS)
+#if defined(FEELPP_HAS_HARTS)
         .add( parallel_options( prefix ) )
 #endif
 

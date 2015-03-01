@@ -32,6 +32,7 @@ macro(feel_append_src DIRNAME FILES)
   set(FEELPP_DIRS ${FEELPP_DIRS};${DIRNAME} PARENT_SCOPE)
 endmacro(feel_append_src)
 
+
 add_subdirectory (feelcore)
 add_subdirectory (feelmath)
 add_subdirectory (feelalg)
@@ -45,6 +46,7 @@ add_subdirectory (feelfilters)
 add_subdirectory (feelmaterial)
 add_subdirectory (feelvf )
 add_subdirectory (feelpde)
+add_subdirectory (feelmodels)
 add_subdirectory (feelpython)
 
 
