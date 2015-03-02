@@ -96,8 +96,8 @@ BOOST_AUTO_TEST_CASE( interp_vect_comp )
 
     u = vf::project( Xh,elements( mesh ),vf::vec( vf::cst( 1. ),vf::cst( -1. ) ) );
 
-    auto ux=u.comp<X>();
-    auto uy=u.comp<Y>();
+    auto ux=u[Component::X];
+    auto uy=u[Component::Y];
 
     double s1 = integrate( elements( mesh ), trans( idv( u ) )*oneX() ).evaluate()( 0,0 );
     double sx = integrate( elements( mesh ), idv( ux ) ).evaluate()( 0,0 );
