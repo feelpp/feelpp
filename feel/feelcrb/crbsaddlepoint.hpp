@@ -170,7 +170,8 @@ public:
         XN1( model->template rBFunctionSpace<1>() )
         {
             this->M_N=0;
-            M_p_added.push_back( 0 );
+            M_N0.push_back( 0 );
+            M_N1.push_back( 0 );
         }
 
 
@@ -188,8 +189,8 @@ public:
         // this will be in the offline step
         // (it's only when we enrich or create the database that we want to
         // have access to elements of the RB)
-        M_elements_database0.setMN( this->M_N );
-        M_elements_database1.setMN( M_p_added[this->M_N] );
+        M_elements_database0.setMN( M_N0[this->M_N] );
+        M_elements_database1.setMN( M_N1[this->M_N] );
 
         bool load_elements_db= boption(_name="crb.load-elements-database");
         if( load_elements_db )
@@ -279,7 +280,8 @@ private :
                 fusion::vector<rbspace_ptrtype<0>,rbspace_ptrtype<1>> XN( M_crb->XN0, M_crb->XN1 );
                 auto XNr = fusion::at_c<row::value>( XN );
                 auto XNc = fusion::at_c<col::value>( XN );
-                std::array<int,2> N = {{(int)M_crb->M_N, M_crb->M_p_added[M_crb->M_N]}};
+                std::array<int,2> N = {{M_crb->M_N0[M_crb->M_N],
+                                        M_crb->M_N1[M_crb->M_N]}};
                 std::array<int,2> Nadded={{M_crb->M_Nadded0, M_crb->M_Nadded1}};
 
                 for( size_type q=0; q<M_crb->M_model->template Qa<row::value,col::value>(); q++ )
@@ -338,15 +340,15 @@ private :
             M_crb( crb),
             M_mu( mu ),
             M_N( N ),
-            M_A( M_N + M_crb->M_p_added[M_N],
-                 M_N + M_crb->M_p_added[M_N] ),
-            M_F( M_N + M_crb->M_p_added[M_N] ),
-            M_L( M_N + M_crb->M_p_added[M_N] )
+            M_A( M_crb->M_N0[M_N] + M_crb->M_N1[M_N],
+                 M_crb->M_N0[M_N] + M_crb->M_N1[M_N] ),
+            M_F( M_crb->M_N0[M_N] + M_crb->M_N1[M_N] ),
+            M_L( M_crb->M_N0[M_N] + M_crb->M_N1[M_N] )
             {
-                M_A.setZero(M_N + M_crb->M_p_added[M_N],
-                            M_N + M_crb->M_p_added[M_N] );
-                M_F.setZero( M_N + M_crb->M_p_added[M_N] );
-                M_L.setZero( M_N + M_crb->M_p_added[M_N] );
+                M_A.setZero( M_crb->M_N0[M_N] + M_crb->M_N1[M_N],
+                             M_crb->M_N0[M_N] + M_crb->M_N1[M_N] );
+                M_F.setZero( M_crb->M_N0[M_N] + M_crb->M_N1[M_N] );
+                M_L.setZero( M_crb->M_N0[M_N] + M_crb->M_N1[M_N] );
             }
 
         template<typename T>
@@ -354,12 +356,12 @@ private :
             {
                 using row = typename mpl::at_c<T,0>::type;
                 using col = typename mpl::at_c<T,1>::type;
-                std::array<int,2> blockSize = {{ M_N, M_crb->M_p_added[M_N] }};
-                std::array<int,2> blockStart = {{ 0, M_N }};
+                std::array<int,2> blockSize = {{ M_crb->M_N0[M_N], M_crb->M_N1[M_N] }};
+                std::array<int,2> blockStart = {{ 0, M_crb->M_N0[M_N] }};
                 int r = row::value;
                 int c = col::value;
                 int Qa = M_crb->M_model-> template Qa<row::value,col::value>();
-                int N = M_crb->M_N + M_crb->M_p_added[M_crb->M_N];
+                int N = M_crb->M_N0[M_N] + M_crb->M_N1[M_crb->M_N];
 
                 if ( Qa!=0 )
                 {
@@ -431,7 +433,8 @@ private :
 
     int M_Nadded0;
     int M_Nadded1;
-    std::vector< int> M_p_added;
+    std::vector<int> M_N0;
+    std::vector<int> M_N1;
 
     rbspace_ptrtype<0> XN0;
     rbspace_ptrtype<1> XN1;
@@ -485,8 +488,10 @@ CRBSaddlePoint<TruthModelType>::offline()
         ti.restart();
 
         this->M_N=0;
-        M_p_added.clear();
-        M_p_added.push_back( 0 );
+        M_N0.clear();
+        M_N0.push_back( 0 );
+        M_N1.clear();
+        M_N1.push_back( 0 );
         this->M_maxerror = 1e10;
 
         LOG(INFO) << "[CRBSaddlePoint::offline] allocate reduced basis data structures\n";
@@ -584,25 +589,39 @@ CRBSaddlePoint<TruthModelType>::offline()
         auto u = U->template elementPtr<0>();
         auto p = U->template elementPtr<1>();
 
-        XN0->addPrimalBasisElement( u );
-        XN0->addDualBasisElement( u );
-        M_Nadded0=1;
+        M_N0.push_back( M_N0[this->M_N] );
+        M_N1.push_back( M_N1[this->M_N] );
+        this->M_N++;
 
         XN1->addPrimalBasisElement( p );
         XN1->addDualBasisElement( p );
         M_Nadded1=1;
+        M_N1[this->M_N] += M_Nadded1;
+        this->orthonormalize( M_N1[this->M_N], XN1->primalRB(), M_Nadded1 );
+        this->orthonormalize( M_N1[this->M_N], XN1->primalRB(), M_Nadded1 );
+        this->orthonormalize( M_N1[this->M_N], XN1->primalRB(), M_Nadded1 );
 
-        for ( size_type n=0; n<M_Nadded0; n++ )
-            M_p_added.push_back( M_p_added[this->M_N] );
-        this->M_N += M_Nadded0;
-        M_p_added[this->M_N] = M_p_added[this->M_N-1]+M_Nadded1;
 
-        if ( orthonormalize_primal )
-            for ( int i=0; i<3; i++ )
-            {
-                this->orthonormalize( this->M_N, XN0->primalRB(), 1 );
-                this->orthonormalize( M_p_added[this->M_N], XN1->primalRB(), 1 );
-            }
+        XN0->addPrimalBasisElement( u );
+        XN0->addDualBasisElement( u );
+        M_Nadded0=1;
+
+        if ( boption("crb.saddlepoint.add-supremizer") )
+        {
+            auto us = this->M_model->supremizer( mu, p );
+            XN0->addPrimalBasisElement( us );
+            XN0->addDualBasisElement( us );
+            M_Nadded0++;
+        }
+
+        M_N0[this->M_N] += M_Nadded0;
+
+        if( boption(_name="crb.orthonormalize-primal") )
+        {
+            this->orthonormalize( M_N0[this->M_N], XN0->primalRB(), M_Nadded0 );
+            this->orthonormalize( M_N0[this->M_N], XN0->primalRB(), M_Nadded0 );
+            this->orthonormalize( M_N0[this->M_N], XN0->primalRB(), M_Nadded0 );
+        }
 
         matrixblockrange_type matrixrange;
         ComputeADElements compute_elements( this->shared_from_this() );
@@ -654,8 +673,8 @@ CRBSaddlePoint<TruthModelType>::offline()
     {
         exportBasisFunctions();
     }
-    CRB_COUT << "Number of elements, in first base : "<<this->M_N<<", in second base : "
-             <<M_p_added[this->M_N]<<std::endl;
+    CRB_COUT << "Number of elements, in first base : "<< M_N0[this->M_N]<<", in second base : "
+             <<M_N1[this->M_N]<<std::endl;
 
     return this->M_rbconv;
 } // offline()
@@ -674,9 +693,9 @@ CRBSaddlePoint<TruthModelType>::lb( size_type N, parameter_type const& mu,
     uN.resize(1);
     N = std::min( N, this->M_N );
 
-    matrixN_type A ( N + M_p_added[N], N + M_p_added[N] );
-    vectorN_type F ( N + M_p_added[N] );
-    vectorN_type L ( N + M_p_added[N] );
+    matrixN_type A ( M_N0[N] + M_N1[N], M_N0[N] + M_N1[N] );
+    vectorN_type F ( M_N0[N] + M_N1[N] );
+    vectorN_type L ( M_N0[N] + M_N1[N] );
 
     matrixblockrange_type matrixrange;
     ComputeRBElements compute_elements( this->shared_from_this(), mu, (int) N );
@@ -688,9 +707,9 @@ CRBSaddlePoint<TruthModelType>::lb( size_type N, parameter_type const& mu,
         int Qa01 = this->M_model-> template Qa<0,1>();
         int Qa10 = this->M_model-> template Qa<1,0>();
         if ( Qa01==0 && Qa10!=0 )
-            A.block( 0, N, N, M_p_added[N] )=A.block( N, 0, M_p_added[N], N ).transpose();
+            A.block( 0, M_N0[N], M_N0[N], M_N1[N] )=A.block( M_N0[N], 0, M_N1[N], M_N0[N] ).transpose();
         else if( Qa01!=0 && Qa10==0 )
-            A.block( N, 0, M_p_added[N], N )=A.block( 0, N, N, M_p_added[N] ).transpose();
+            A.block( M_N0[N], 0, M_N1[N], M_N0[N] )=A.block( 0, M_N0[N], M_N0[N], M_N1[N] ).transpose();
     }
 
     uN[0]=A.lu().solve(F);
@@ -762,18 +781,21 @@ CRBSaddlePoint<TruthModelType>::expansionSaddlePoint( vectorN_type const& U_coef
     int Nwn = N>0 ? N:this->M_N;
 
     CHECK( Nwn <= WN0.size() )<< "invalid expansion size\n";
-    CHECK( Nwn <= U_coeff.size() )<< "invalid expansion size, Nwn="<<Nwn<<", U_coeff.size="<<U_coeff.size()<<std::endl;
-    CHECK( U_coeff.size() == this->M_N + M_p_added[this->M_N] ) << "invalide size of U_coeff, vector can't be cut\n";
+    CHECK( M_N0[Nwn]+M_N1[Nwn] <= U_coeff.size() )<< "invalid expansion size, Nwn="
+                                                  << M_N0[Nwn]+M_N1[Nwn]
+                                                  << ", U_coeff.size="<<U_coeff.size()<<std::endl;
+    CHECK( U_coeff.size() == M_N0[this->M_N] + M_N1[this->M_N] )
+        << "invalide size of U_coeff, vector can't be cut\n";
 
-    vectorN_type u_coeff = U_coeff.head( this->M_N );
-    vectorN_type p_coeff = U_coeff.tail( M_p_added[this->M_N] );
+    vectorN_type u_coeff = U_coeff.head( M_N0[this->M_N] );
+    vectorN_type p_coeff = U_coeff.tail( M_N1[this->M_N] );
 
     element_type U = this->M_model->functionSpace()->element();
     auto u = U.template element<0>();
     auto p = U.template element<1>();
 
-    u = Feel::expansion( WN0, u_coeff, Nwn ).container();
-    p = Feel::expansion( WN1, p_coeff, M_p_added[Nwn] ).container();
+    u = Feel::expansion( WN0, u_coeff, M_N0[Nwn] ).container();
+    p = Feel::expansion( WN1, p_coeff, M_N1[Nwn] ).container();
 
     return U;
 }
@@ -901,7 +923,8 @@ CRBSaddlePoint<TruthModelType>::save( Archive & ar, const unsigned int version )
     ar & BOOST_SERIALIZATION_NVP( M_blockAqm_pr );
     ar & BOOST_SERIALIZATION_NVP( M_blockFqm_pr );
     ar & BOOST_SERIALIZATION_NVP( M_blockLqm_pr );
-    ar & BOOST_SERIALIZATION_NVP( M_p_added );
+    ar & BOOST_SERIALIZATION_NVP( M_N0 );
+    ar & BOOST_SERIALIZATION_NVP( M_N1 );
 }
 
 
@@ -914,7 +937,8 @@ CRBSaddlePoint<TruthModelType>::load( Archive & ar, const unsigned int version )
     ar & BOOST_SERIALIZATION_NVP( M_blockAqm_pr );
     ar & BOOST_SERIALIZATION_NVP( M_blockFqm_pr );
     ar & BOOST_SERIALIZATION_NVP( M_blockLqm_pr );
-    ar & BOOST_SERIALIZATION_NVP( M_p_added );
+    ar & BOOST_SERIALIZATION_NVP( M_N0 );
+    ar & BOOST_SERIALIZATION_NVP( M_N1 );
 }
 
 

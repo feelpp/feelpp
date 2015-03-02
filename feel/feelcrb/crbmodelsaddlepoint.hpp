@@ -87,6 +87,9 @@ public :
     using subspace_type = typename space_type::template sub_functionspace<T>::type::element_type;
     template <int T>
     using subspace_ptrtype = boost::shared_ptr<subspace_type<T>>;
+    template<int T>
+    using subelement_type = typename subspace_type<T>::element_type;
+
 
     template <int T>
     using rbspace_type = ReducedBasisSpace<subspace_type<T>>;
@@ -114,6 +117,7 @@ public :
     virtual element_type solve( parameter_type const& mu )
         {
             bool transpose = boption("crb.saddlepoint.transpose");
+            M_current_mu = mu;
 
             mergeBlock( A00, blockA(0,0), mu );
             mergeBlock( A01, blockA(0,1), mu );
@@ -154,6 +158,18 @@ public :
             return M_U;
         }
 
+    subelement_type<0> supremizer( parameter_type const& mu, vector_ptrtype const& vec )
+        {
+            vector_ptrtype u_vec = backend()->newVector( Xh0 );
+            u_vec->zero();
+            if ( M_current_mu!=mu )
+                mergeBlock( A01, blockA(0,1), mu );
+            u_vec->addVector( vec, A01 );
+
+            subelement_type<0> u = Xh0->element();
+            u = *u_vec;
+            return u;
+        }
 
     virtual void initDerived()
         {
@@ -216,6 +232,7 @@ protected :
                         vec->add( beta[q][m], Aqm[q][m] );
             }
         }
+    parameter_type M_current_mu;
 
     sparse_matrix_ptrtype A00, A01, A10, A11;
     element_type M_U;
