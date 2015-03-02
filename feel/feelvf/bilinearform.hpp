@@ -1682,13 +1682,18 @@ void BFAssign1<BFType,ExprType,TestSpaceType>::operator()( boost::shared_ptr<Spa
     {
         DVLOG(2) << "[BFAssign1::operator()] expression has test functions index "
                       << M_test_index << " : "
-                      << ExprType::template HasTestFunction<typename TestSpaceType::reference_element_type>::result << " (0:no, 1:yes)\n";
+                 << ExprType::template HasTestFunction<typename TestSpaceType::reference_element_type>::result << " (0:no, 1:yes)\n"
+                 << ExprType::template HasTestFunction<typename TestSpaceType::component_basis_type>::result << " (0:no, 1:yes)\n";
         DVLOG(2) << "[BFAssign1::operator()] expression has trial functions index "
-                      << M_trial_index << " :"
-                      << ExprType::template HasTrialFunction<typename SpaceType::reference_element_type>::result << " (0:no, 1:yes)\n";
+                 << M_trial_index << " :"
+                 << ExprType::template HasTrialFunction<typename SpaceType::reference_element_type>::result << " (0:no, 1:yes)\n"
+                 << ExprType::template HasTrialFunction<typename SpaceType::component_basis_type>::result << " (0:no, 1:yes)\n";
 
         if ( !ExprType::template HasTestFunction<typename TestSpaceType::reference_element_type>::result ||
-                !ExprType::template HasTrialFunction<typename SpaceType::reference_element_type>::result )
+             !ExprType::template HasTestFunction<typename TestSpaceType::component_basis_type>::result ||
+             !ExprType::template HasTrialFunction<typename SpaceType::reference_element_type>::result ||
+             !ExprType::template HasTrialFunction<typename SpaceType::component_basis_type>::result
+             )
         {
             ++M_trial_index;
             return;
@@ -1742,14 +1747,19 @@ void BFAssign3<BFType,ExprType,TrialSpaceType>::operator()( boost::shared_ptr<Sp
     {
 
         DVLOG(2) << "[BFAssign3::operator()] expression has trial functions index "
-                      << M_test_index << " : "
-                      << ExprType::template HasTestFunction<typename SpaceType::reference_element_type>::result << " (0:no, 1:yes)\n";
+                 << M_test_index << " : "
+                 << ExprType::template HasTestFunction<typename SpaceType::reference_element_type>::result << " (0:no, 1:yes)\n"
+                 << ExprType::template HasTestFunction<typename SpaceType::component_basis_type>::result << " (0:no, 1:yes)\n";
         DVLOG(2) << "[BFAssign3::operator()] expression has test functions index "
-                      << M_trial_index << " :"
-                      << ExprType::template HasTrialFunction<typename TrialSpaceType::reference_element_type>::result << " (0:no, 1:yes)\n";
+                 << M_trial_index << " :"
+                 << ExprType::template HasTrialFunction<typename TrialSpaceType::reference_element_type>::result << " (0:no, 1:yes)\n"
+                 << ExprType::template HasTrialFunction<typename TrialSpaceType::component_basis_type>::result << " (0:no, 1:yes)\n";
+
 
         if ( !ExprType::template HasTrialFunction<typename TrialSpaceType::reference_element_type>::result ||
-                !ExprType::template HasTestFunction<typename SpaceType::reference_element_type>::result )
+             !ExprType::template HasTrialFunction<typename TrialSpaceType::component_basis_type>::result ||
+             !ExprType::template HasTestFunction<typename SpaceType::reference_element_type>::result ||
+             !ExprType::template HasTestFunction<typename SpaceType::component_basis_type>::result )
         {
             ++M_test_index;
             return;
