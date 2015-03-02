@@ -96,7 +96,7 @@ public:
     static const uint16_type nComponents1 = polyset_type::nComponents1;
     static const uint16_type nComponents2 = polyset_type::nComponents2;
 
-    typedef typename Component<polyset_type>::type component_type;
+    typedef typename GetComponent<polyset_type>::type component_type;
     typedef Polynomial<Poly,Scalar> scalar_component_type;
 
     typedef typename basis_type::points_type points_type;
