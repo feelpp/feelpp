@@ -7,6 +7,7 @@
 
   Copyright (C) 2005,2006 EPFL
   Copyright (C) 2006-2011 Universite Joseph Fourier (Grenoble I)
+  Copyright (C) 2011-2015 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -271,9 +272,11 @@ public:
                    FormType& __f ) const
     {
         typedef typename Elem::functionspace_type functionspace_type;
+        static constexpr bool is_same_space = boost::is_same<functionspace_type,Elem1>::value;
+        static constexpr bool is_comp_space = boost::is_same<functionspace_type,typename Elem1::component_functionspace_type>::value;
         DVLOG(2) << "[IntegratorOn::assemble()] is_same: "
-                      << mpl::bool_<boost::is_same<functionspace_type,Elem1>::value>::value << "\n";
-        assemble( __u, __v, __f, mpl::bool_<boost::is_same<functionspace_type,Elem1>::value>() );
+                 << mpl::bool_<is_same_space||is_comp_space>::value << "\n";
+        assemble( __u, __v, __f, mpl::bool_<is_same_space||is_comp_space>() );
     }
     //@}
 private:
@@ -315,6 +318,9 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
         return;
 
 #endif
+    typedef typename Elem::functionspace_type functionspace_type;
+    static constexpr bool is_same_space = boost::is_same<functionspace_type,Elem1>::value;
+    static constexpr bool is_comp_space = boost::is_same<functionspace_type,typename Elem1::component_functionspace_type>::value;
     DVLOG(2) << "call on::assemble() " << "\n";
     //
     // a few typedefs
@@ -505,12 +511,13 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
 
             for( auto const& ldof : M_u.functionSpace()->dof()->faceLocalDof( theface.id() ) )
                 {
-                    size_type thedof = M_u.start()+ ldof.index(); // global dof
+                    size_type thedof = M_u.start()+ (is_comp_space?Elem1::nComponents:1)*ldof.index(); // global dof
                     DCHECK( ldof.localDofInFace() < IhLoc.size() ) 
                         << "Invalid local dof index in face for face Interpolant "
                         << ldof.localDofInFace() << ">=" << IhLoc.size();
                     double __value = ldof.sign()*IhLoc( ldof.localDofInFace() );
-
+                    //std::cout << " on " << theface.id() << " thedof "<< thedof << " = " << __value
+                    //<< " start=" << M_u.start() << " ldof=" << ldof.index() << "\n";
                     if ( std::find( dofs.begin(),
                                     dofs.end(),
                                     thedof ) != dofs.end() )
