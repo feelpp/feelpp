@@ -279,7 +279,7 @@ private :
                 fusion::vector<rbspace_ptrtype<0>,rbspace_ptrtype<1>> XN( M_crb->XN0, M_crb->XN1 );
                 auto XNr = fusion::at_c<row::value>( XN );
                 auto XNc = fusion::at_c<col::value>( XN );
-                std::array<int,2> N = {{(int)M_crb->M_N,M_crb->M_p_added[M_crb->M_N]}};
+                std::array<int,2> N = {{(int)M_crb->M_N, M_crb->M_p_added[M_crb->M_N]}};
                 std::array<int,2> Nadded={{M_crb->M_Nadded0, M_crb->M_Nadded1}};
 
                 for( size_type q=0; q<M_crb->M_model->template Qa<row::value,col::value>(); q++ )
@@ -290,15 +290,15 @@ private :
                         for( size_type j=0; j<N[c]; j++ )
                             M_crb->M_blockAqm_pr[r][c][q][0]( i, j )
                                 = M_crb->M_model->template Aqm<row::value,col::value>( q, 0,
-                                                                        XNc->primalBasisElement(i),
-                                                                        XNr->primalBasisElement(j) );
+                                                                        XNc->primalBasisElement(j),
+                                                                        XNr->primalBasisElement(i) );
 
                     for( size_type j=N[c]-Nadded[c]; j<N[c]; j++ )
                         for( size_type i=0; i<N[r]; i++ )
                             M_crb->M_blockAqm_pr[r][c][q][0]( i, j )
                                 = M_crb->M_model->template Aqm<row::value,col::value>( q, 0,
-                                                                     XNc->primalBasisElement(i),
-                                                                     XNr->primalBasisElement(j) );
+                                                                     XNc->primalBasisElement(j),
+                                                                     XNr->primalBasisElement(i) );
                 }
 
                 if( c==0 )
@@ -329,6 +329,98 @@ private :
                 }
             }
         self_ptrtype M_crb;
+    };
+
+    struct ComputeRBElements
+    {
+        typedef boost::shared_ptr<const self_type> crb_ptrtype;
+        ComputeRBElements( crb_ptrtype crb, parameter_type const& mu, int N ) :
+            M_crb( crb),
+            M_mu( mu ),
+            M_N( N ),
+            M_A( M_N + M_crb->M_p_added[M_N],
+                 M_N + M_crb->M_p_added[M_N] ),
+            M_F( M_N + M_crb->M_p_added[M_N] ),
+            M_L( M_N + M_crb->M_p_added[M_N] )
+            {
+                M_A.setZero(M_N + M_crb->M_p_added[M_N],
+                            M_N + M_crb->M_p_added[M_N] );
+                M_F.setZero( M_N + M_crb->M_p_added[M_N] );
+                M_L.setZero( M_N + M_crb->M_p_added[M_N] );
+            }
+
+        template<typename T>
+        void operator() (T& t) const
+            {
+                using row = typename mpl::at_c<T,0>::type;
+                using col = typename mpl::at_c<T,1>::type;
+                std::array<int,2> blockSize = {{ M_N, M_crb->M_p_added[M_N] }};
+                std::array<int,2> blockStart = {{ 0, M_N }};
+                int r = row::value;
+                int c = col::value;
+                int Qa = M_crb->M_model-> template Qa<row::value,col::value>();
+                int N = M_crb->M_N + M_crb->M_p_added[M_crb->M_N];
+
+                if ( Qa!=0 )
+                {
+                    auto betaA = M_crb->M_model->template computeBetaAqm<row::value,col::value>( M_mu );
+                    for( int q=0; q<Qa; q++ )
+                    {
+                        int mMax = M_crb->M_model->template mMaxA<row::value,col::value>(q);
+                        for( int m=0; m<mMax; m++ )
+                        {
+                            M_A.block( blockStart[r], blockStart[c], blockSize[r], blockSize[c] )
+                                += betaA[q][m]*M_crb->M_blockAqm_pr[r][c][q][m].block(0, 0, blockSize[r], blockSize[c] );
+                        }
+                    }
+                }
+
+                if ( c==0 )
+                {
+                    int Qf = M_crb->M_model->template Ql<row::value>(0);
+                    if ( Qf!=0 )
+                    {
+                        auto betaF = M_crb->M_model->template computeBetaFqm<row::value>( 0, M_mu );
+                        for( int q=0; q<Qf; q++ )
+                        {
+                            int mMax = M_crb->M_model->template mMaxF<row::value>( 0, q );
+                            for( int m=0; m<mMax; m++ )
+                            {
+                                M_F.segment( blockStart[r], blockSize[r] )
+                                    += betaF[q][m]*M_crb->M_blockFqm_pr[r][q][m].head( blockSize[r]);
+                            }
+                        }
+                    }
+
+                    int Ql = M_crb->M_model->template Ql<row::value>(M_crb->M_output_index);
+                    if ( Ql!= 0 )
+                    {
+                        auto betaL = M_crb->M_model->template computeBetaFqm<row::value>( M_crb->M_output_index, M_mu );
+                        for( int q=0; q<Ql; q++ )
+                        {
+                            int mMax = M_crb->M_model->template mMaxF<row::value>( M_crb->M_output_index, q );
+                            for( int m=0; m<mMax; m++ )
+                            {
+                                M_L.segment( blockStart[r], blockSize[r] )
+                                    += betaL[q][m]*M_crb->M_blockLqm_pr[r][q][m].head( blockSize[r]);
+                            }
+                        }
+                    }
+                }
+            }
+
+        boost::tuple<matrixN_type,vectorN_type,vectorN_type> getElements()
+            {
+                return boost::make_tuple( M_A, M_F, M_L );
+            }
+
+
+        crb_ptrtype M_crb;
+        parameter_type M_mu;
+        int M_N;
+        mutable matrixN_type M_A;
+        mutable vectorN_type M_F;
+        mutable vectorN_type M_L;
     };
 
     void generateSuperSampling();
@@ -448,9 +540,11 @@ CRBSaddlePoint<TruthModelType>::offline()
 
 
     if ( use_predefined_WNmu )
+    {
         this->M_iter_max = this->M_WNmu->size();
+        mu = this->M_WNmu->at( std::min( this->M_N, this->M_iter_max-1 ) ); // first element
+    }
 
-    mu = this->M_WNmu->at( this->M_N ); // first element
     if( this->M_error_type == CRB_NO_RESIDUAL || use_predefined_WNmu )
     {
         //in this case it makes no sens to check the estimated error
@@ -577,11 +671,36 @@ CRBSaddlePoint<TruthModelType>::lb( size_type N, parameter_type const& mu,
                                   std::vector<vectorN_type> & uNduold,
                                   bool print_rb_matrix, int K ) const
 {
+    uN.resize(1);
+    N = std::min( N, this->M_N );
+
+    matrixN_type A ( N + M_p_added[N], N + M_p_added[N] );
+    vectorN_type F ( N + M_p_added[N] );
+    vectorN_type L ( N + M_p_added[N] );
+
+    matrixblockrange_type matrixrange;
+    ComputeRBElements compute_elements( this->shared_from_this(), mu, (int) N );
+    fusion::for_each( matrixrange, compute_elements );
+
+    boost::tie( A, F, L ) = compute_elements.getElements();
+    if ( boption("crb.saddlepoint.transpose") )
+    {
+        int Qa01 = this->M_model-> template Qa<0,1>();
+        int Qa10 = this->M_model-> template Qa<1,0>();
+        if ( Qa01==0 && Qa10!=0 )
+            A.block( 0, N, N, M_p_added[N] )=A.block( N, 0, M_p_added[N], N ).transpose();
+        else if( Qa01!=0 && Qa10==0 )
+            A.block( N, 0, M_p_added[N], N )=A.block( 0, N, N, M_p_added[N] ).transpose();
+    }
+
+    uN[0]=A.lu().solve(F);
+
     std::vector<double>output_vector(1);
+    output_vector[0] = L.dot( uN[0] );
+
     auto matrix_info = boost::make_tuple( 0., 0. );
 
     return boost::make_tuple( output_vector, matrix_info);
-
 } // lb()
 
 template<typename TruthModelType>
@@ -591,7 +710,7 @@ CRBSaddlePoint<TruthModelType>::exportBasisFunctions()
     auto u_vec = XN0->primalRB();
     auto p_vec = XN1->primalRB();
 
-    auto e = exporter( _mesh=this->M_model->functionSpace()->mesh() );
+    auto e = exporter( _mesh=this->M_model->functionSpace()->mesh(), _name="basis-functions" );
     CHECK( u_vec.size()>0) << "[CRBSaddlePoint::exportBasisFunctions] Error : there are no element to export in first rb\n";
     CHECK( p_vec.size()>0) << "[CRBSaddlePoint::exportBasisFunctions] Error : there are no element to export in second rb\n";
 
@@ -643,17 +762,18 @@ CRBSaddlePoint<TruthModelType>::expansionSaddlePoint( vectorN_type const& U_coef
     int Nwn = N>0 ? N:this->M_N;
 
     CHECK( Nwn <= WN0.size() )<< "invalid expansion size\n";
-    CHECK( Nwn <= U_coeff.size() )<< "invalid expansion size\n";
+    CHECK( Nwn <= U_coeff.size() )<< "invalid expansion size, Nwn="<<Nwn<<", U_coeff.size="<<U_coeff.size()<<std::endl;
     CHECK( U_coeff.size() == this->M_N + M_p_added[this->M_N] ) << "invalide size of U_coeff, vector can't be cut\n";
 
     vectorN_type u_coeff = U_coeff.head( this->M_N );
     vectorN_type p_coeff = U_coeff.tail( M_p_added[this->M_N] );
 
-    auto u = Feel::expansion( WN0, u_coeff, N );
-    auto p = Feel::expansion( WN1, p_coeff, M_p_added[N] );
-
     element_type U = this->M_model->functionSpace()->element();
+    auto u = U.template element<0>();
+    auto p = U.template element<1>();
 
+    u = Feel::expansion( WN0, u_coeff, Nwn ).container();
+    p = Feel::expansion( WN1, p_coeff, M_p_added[Nwn] ).container();
 
     return U;
 }

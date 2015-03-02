@@ -537,6 +537,12 @@ public:
             return M_F[output].template get<Row>()->setBeta( q, m );
         }
     template<int Row=0>
+    beta_vector_type computeBetaFqm( int output, parameter_type const& mu,
+                                     double time=0 )
+        {
+            return M_F[output].template get<Row>()->computeBetaQm( mu, time );
+        }
+    template<int Row=0>
     std::vector< beta_vector_type > computeBetaFqm( parameter_type const& mu, double time=0 )
         {
             std::vector< beta_vector_type > betaF;
