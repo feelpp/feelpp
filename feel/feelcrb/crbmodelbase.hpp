@@ -359,11 +359,9 @@ public:
                           << "Number of local dof : " << Xh->nLocalDof() << std::endl;
         }
 
-    template<int Row=0, int Col=0>
     void initializeMassMatrix()
         {
-            M_M.template createBlock<Row,Col>();
-            M_M.template get<Row,Col>()->initializeMassMatrix();
+            M_M.initializeMassMatrix();
         }
 
     parameterspace_ptrtype parameterSpace()
@@ -1099,10 +1097,14 @@ public:
      */
     double scalarProduct( vector_ptrtype const& X, vector_ptrtype const& Y )
         {
+            double norm = M_inner_product_matrix->l1Norm();
+            CHECK( norm > 0 )<<"The energy matrix has not be filled !\n";
             return M_inner_product_matrix->energy( X, Y );
         }
     double scalarProduct( vector_type const& X, vector_type const& Y )
         {
+            double norm = M_inner_product_matrix->l1Norm();
+            CHECK( norm > 0 )<<"The energy matrix has not be filled !\n";
             return M_inner_product_matrix->energy( X, Y );
         }
 
