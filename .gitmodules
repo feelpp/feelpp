@@ -95,3 +95,9 @@
 [submodule "projects/solodem"]
 	path = projects/solodem
 	url = https://github.com/feelpp/solodem.git
+[submodule "contrin/paralution"]
+	path = contrin/paralution
+	url = https://github.com/feelpp/paralution.git
+[submodule "contrib/paralution"]
+	path = contrib/paralution
+	url = https://github.com/feelpp/paralution.git
