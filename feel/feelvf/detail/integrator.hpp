@@ -372,22 +372,36 @@ namespace parallel
 
 #if defined(FEELPP_HAS_HARTS)
             PCM_INIT_START(perf_mng, "cpu");
-            PCM_INIT(perf_mng, "0");
-            PCM_INIT(perf_mng, "1.1");
-            PCM_INIT(perf_mng, "1.2");
-            PCM_INIT(perf_mng, "2.1");
-            PCM_INIT(perf_mng, "2.2");
-            PCM_INIT(perf_mng, "3");
+            PCM_INIT(perf_mng, "0. init gm");
+            PCM_INIT(perf_mng, "0. init geopc");
+            PCM_INIT(perf_mng, "0. init __c");
+            PCM_INIT(perf_mng, "0. init __expr");
+            PCM_INIT(perf_mng, "1. geomap update");
+            PCM_INIT(perf_mng, "2. mapgmc");
+            PCM_INIT(perf_mng, "3. expression update");
+            PCM_INIT(perf_mng, "4. quadrature update");
+            PCM_INIT(perf_mng, "5. summation");
 #endif
             
+            PCM_MONITOR(perf_mng, "0. init gm",
             //M_gm((*elt_it)->gm());
             gm_ptrtype gm = (*elt_it)->gm();
+            );
+
+            PCM_MONITOR(perf_mng, "0. init geopc",
             //M_geopc(new typename eval::gmpc_type( M_gm, im->points() ));
             typename eval::gmpc_ptrtype __geopc( new typename eval::gmpc_type(gm, im->points()) );
+            );
+
+            PCM_MONITOR(perf_mng, "0. init __c",
             //M_c(new gmc_type( M_gm, *(*elt_it), M_geopc ));
             gmc_ptrtype __c( new gmc_type( gm, *(*elt_it), __geopc ) );
+            );
+
+            PCM_MONITOR(perf_mng, "0. init __expr",
             //M_expr( (*expr), map_gmc_type( fusion::make_pair<vf::detail::gmc<0> >( M_c ) ) );
             eval_expr_type __expr( (*expr), map_gmc_type( fusion::make_pair<vf::detail::gmc<0> >( __c ) ) );
+            );
 
 
         struct timespec ts1;
@@ -460,12 +474,13 @@ namespace parallel
 
             //std::cout << Environment::worldComm().rank() << "|" << theadId << " fid=" elts.at(i).first.id() << std::endl;
 
+            PCM_MONITOR(perf_mng, "0. loop",
             for ( int i = 0; i < elts->size(); i++ )
             {
-                PCM_MONITOR(perf_mng, "1.1", __c->update( elts->at(i) ));
-                PCM_MONITOR(perf_mng, "1.2", map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) ));
+                PCM_MONITOR(perf_mng, "1. geomap update", __c->update( elts->at(i) ));
+                PCM_MONITOR(perf_mng, "2. mapgmc", map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) ));
 
-                PCM_MONITOR(perf_mng, "2.1", 
+                PCM_MONITOR(perf_mng, "3. expression update", 
                         /*
                            clock_gettime(CLOCK_MONOTONIC_RAW, &ts1);
                            */
@@ -481,9 +496,9 @@ namespace parallel
                            */
                         );
 
-                PCM_MONITOR(perf_mng, "2.2", im->update( *__c ) );
+                PCM_MONITOR(perf_mng, "4. quadrature update", im->update( *__c ) );
 
-                PCM_MONITOR(perf_mng, "3",
+                PCM_MONITOR(perf_mng, "5. summation",
                         for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
                         {
                         for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
@@ -493,12 +508,16 @@ namespace parallel
                         }
                         );
             }
+            );
 
             /*
                std::cout << Environment::worldComm().globalRank() << " 2.1 mean=" <<  (mean / std::distance(elts->at(i).first, elts->at(i).second)) 
                << " min=" << min << " max=" << max << std::endl;
                */
 #endif
+            double meanPerElt;
+            PCM_GET(meanPerElt, perf_mng, "0. loop", -1.0);
+            std::cout << threadId << ": mean time per elt (" << meanPerElt << "/" << elts->size() << ")" << ": " << meanPerElt / (double)(elts->size()) << std::endl;
 
             PCM_STOP(perf_mng, "cpu");
             PCM_GET(M_cpuTime, perf_mng, "cpu", -1.0);
