@@ -118,6 +118,20 @@ public:
     void updateJacobian(const vector_ptrtype& X, sparse_matrix_ptrtype& J);
 
 private:
+    template<typename SpacePtrType>
+    void initNullSpace( SpacePtrType Xh_vec, mpl::int_<2> )
+        {
+            K = nullspace_ptr( Xh_vec, oneX(), oneY(), vec(Py(),-Px()) );
+        }
+    template<typename SpacePtrType>
+    void initNullSpace( SpacePtrType Xh_vec, mpl::int_<3> )
+        {
+            K = nullspace_ptr( Xh_vec, oneX(), oneY(), oneZ(),
+                               vec(Py(),-Px(),cst(0.)),
+                               vec(-Pz(),cst(0.),Px()),
+                               vec(cst(0.),Pz(),-Py()) );
+        }
+private:
     std::string name;
     std::string model;
     bool verbose;
@@ -140,8 +154,9 @@ private:
     backend_ptrtype M_backend;
     vector_ptrtype Res;
     sparse_matrix_ptrtype Jac;
+    boost::shared_ptr<NullSpace<double>> K;
 
-
+    
     exporter_ptrtype e;
 };
 
@@ -183,6 +198,14 @@ SolidMechanics<DisplSpaceType,props>::SolidMechanics( std::string n, displacemen
     this->updateCoefflame1( cst(coefflame1 ) );
     this->updateCoefflame2( cst(coefflame2 ) );
 
+    initNullSpace( Dh, mpl::int_<dim>() );
+    if ( !dirichlet_conditions.size() &&
+         !dx_dirichlet_conditions.size() &&
+         !dy_dirichlet_conditions.size() &&
+         !dz_dirichlet_conditions.size() && nm->isSteady() )
+        M_backend->attachNullSpace( K );
+    if ( nm->isSteady() )
+        M_backend->attachNearNullSpace( K );
     toc("SolidMechanics constructor", verbose || FLAGS_v > 0 );
     
     

@@ -4133,7 +4133,8 @@ public:
     {
         element_ptrtype u( new element_type( this->shared_from_this(), name ) );
         bool addExtendedElt = this->dof()->buildDofTableMPIExtended();
-        u->on( _range=elements(M_mesh,addExtendedElt), _expr=e );
+        EntityProcessType entityProcess = (addExtendedElt)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
+        u->on( _range=elements(M_mesh,entityProcess), _expr=e );
         return u;
     }
 
