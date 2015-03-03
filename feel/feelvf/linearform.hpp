@@ -233,12 +233,13 @@ public:
         typedef boost::shared_ptr<eval1_expr_type> eval1_expr_ptrtype;
         //typedef typename ExprT::template tensor<map_right_gmc_type, map_test_fecontext_type> eval1_expr_type;
 
-
+        //deprecate
+#if 0
         typedef typename test_fe_type::template Context< test_geometric_mapping_context_type::context,
                 test_fe_type,
                 test_geometric_mapping_type,
                 mesh_element_type>::template Index<> test_index_type;
-
+#endif
 
         //typedef typename ExprT::template tensor<map_geometric_mapping_context_type, map0_test_fecontext_type> eval0_expr_type;
         //typedef typename ExprT::template tensor<map_geometric_mapping_context_type, map1_test_fecontext_type> eval1_expr_type;

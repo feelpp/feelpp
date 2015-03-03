@@ -1194,7 +1194,8 @@ public:
         typedef typename Eigen::Map<const Eigen::Matrix<value_type,gmc_type::NDim,gmc_type::PDim,Eigen::RowMajor> > matrix_eigen_ublas_NP_type;
         typedef typename Eigen::Map<const Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> > matrix_eigen_ublas_type;
 
-
+        // deprecate
+#if 0
         template<uint16_type TheRank = polyset_type::rank+2>
         struct Index
         {
@@ -1388,7 +1389,7 @@ public:
 
             uint16_type M_comp;
         };
-
+#endif
         Context( reference_element_ptrtype const& __RefEle,
                  geometric_mapping_context_ptrtype const& __gmc,
                  precompute_ptrtype const& __pc )
@@ -1408,7 +1409,7 @@ public:
             M_dy(),
             M_dz()
         {
-            LOG(INFO) << " Polynomial derivatives optimized for P1: " << do_opt;
+            //LOG(INFO) << " Polynomial derivatives optimized for P1: " << do_opt;
             if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value  )
             {
                 const int ntdof = nDof*nComponents1;
