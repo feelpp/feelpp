@@ -5,8 +5,6 @@ namespace Feel {
 
 \tableofcontents
 
-\li \b Previous: \ref Integrals
-\li \b Next: \ref Exporter
 
 <hr>
 
@@ -37,21 +35,11 @@ l(v)=\int_\Omega v
 Then you can customize it using integration tools.
 
 \Examples
-From \c "doc/manual/tutorial/mylaplacian.cpp":
-\co
-// right hand side
-   auto l = form1( _test=Vh );
-   l = integrate(_range=elements(mesh),
-                 _expr=id(v));
-\eco
+From `mylaplacian.cpp`
+\snippet mylaplacian.cpp marker_form1
 
-From \c "doc/manual/tutorial/myadvection.cpp":
-\co
-// right hand side
-   auto l = form1( _test=Xh );
-   l += integrate( _range=elements( mesh ),
-                   _expr=f*id( v ) );
-\eco
+From `myadvection.cpp`
+\snippet myadvection.cpp marker_form1
 
 Notice that \c += operator is working with linear and bilinear forms.
 
@@ -75,24 +63,11 @@ a(u,v)=\int_\Omega uv
 Then you can custom it using integrations tools
 
 \Example
-From \c "doc/manual/tutorial/mylaplacian.cpp":
-\co
-// left hand side
-   auto a = form2( _trial=Vh, _test=Vh );
-   a = integrate(_range=elements(mesh),
-                 _expr=gradt(u)*trans(grad(v)) );
-\eco
+From `mylaplacian.cpp`
+\snippet mylaplacian.cpp marker_form2
 
-From \c "doc/manual/tutorial/mystokes.cpp":
-\co
-// left hand side
-   auto a = form2( _trial=Vh, _test=Vh );
-   a = integrate(_range=elements(mesh),
-                 _expr=trace(gradt(u)*trans(grad(u))) );
-
-   a += integrate(_range=elements(mesh),
-                  _expr=-div(u)*idt(p)+divt(u)*id(p));
-\eco
+From `mystokes.cpp`:
+\snippet mystokes.cpp marker_form2
 
 Notice that \c += operator is working with linear and bilinear forms.
 
@@ -118,11 +93,8 @@ Optional Parameters:
 \li \c _name: Default = "".
 
 \Examples
-From \c "doc/manual/tutorial/laplacian.cpp":
-\co
-a.solve(_rhs=l,_solution=u);
-\eco
-Solve the linear problem \f$a(u,v)=l(v)\f$.
+From `laplacian.cpp`:
+\snippet mylaplacian.cpp marker_solve
 
 \subsection on on
 The function \c on() allows you to add conditions to your bilinear form before using the \c solve function.<br>
@@ -139,43 +111,17 @@ Required Parameters:
 This function is used with += operator.
 
 \Examples
-From \c "doc/manual/tutorial/mylaplacian.cpp":
-\co
-// apply the boundary condition
-   a+=on(_range=boundaryfaces(mesh),
-         _rhs=l, _element=u,
-         _expr=constant(0.) );
-\eco
+From `mylaplacian.cpp`:
+\snippet mylaplacian.cpp marker_on
 There we add the condition:\f$ u  =  0  \text{ on }\;\partial\Omega \;\f$.
 
-From \c "doc/manual/tutorial/mystokes.cpp":
-\co
-a+=on(_range=markedfaces(mesh,"inlet"),
-      _rhs=l, _element=u,
-      _expr=vec(Py()*(1-Py()),cst(0.)));
-a+=on(_range=markedfaces(mesh,"wall"),
-      _rhs=l, _element=u,
-      _expr=vec(cst(0.),cst(0.)));
+From `mystokes.cpp`:
+\snippet mystokes.cpp marker_on
+
+You can also apply boundary conditions using :
+ \co
+  a+=on(_range=markedfaces(mesh,"top"),_element=u[Component::Y],_rhs=l,_expr=cst(0.))
 \eco
-There we add the conditions
-\f$
-u=\left(
-\begin{aligned}
- y(1-y) \\
- 0      \\
-\end{aligned}
-\right)
-\f$ on the face identified by "inlet" and
-\f$
-u=\left(
-\begin{aligned}
- 0 \\
- 0      \\
-\end{aligned}
-\right)
-\f$ on the face identified by "wall".
-
-
 
 <a href="#" class="top">top</a>
 <hr>
