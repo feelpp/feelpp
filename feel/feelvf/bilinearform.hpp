@@ -1690,9 +1690,9 @@ void BFAssign1<BFType,ExprType,TestSpaceType>::operator()( boost::shared_ptr<Spa
                  << ExprType::template HasTrialFunction<typename SpaceType::component_basis_type>::result << " (0:no, 1:yes)\n";
 
         if ( !ExprType::template HasTestFunction<typename TestSpaceType::reference_element_type>::result ||
-             !ExprType::template HasTestFunction<typename TestSpaceType::component_basis_type>::result ||
-             !ExprType::template HasTrialFunction<typename SpaceType::reference_element_type>::result ||
-             !ExprType::template HasTrialFunction<typename SpaceType::component_basis_type>::result
+             //!ExprType::template HasTestFunction<typename TestSpaceType::component_basis_type>::result ||
+             !ExprType::template HasTrialFunction<typename SpaceType::reference_element_type>::result //||
+             //!ExprType::template HasTrialFunction<typename SpaceType::component_basis_type>::result
              )
         {
             ++M_trial_index;
@@ -1757,9 +1757,10 @@ void BFAssign3<BFType,ExprType,TrialSpaceType>::operator()( boost::shared_ptr<Sp
 
 
         if ( !ExprType::template HasTrialFunction<typename TrialSpaceType::reference_element_type>::result ||
-             !ExprType::template HasTrialFunction<typename TrialSpaceType::component_basis_type>::result ||
-             !ExprType::template HasTestFunction<typename SpaceType::reference_element_type>::result ||
-             !ExprType::template HasTestFunction<typename SpaceType::component_basis_type>::result )
+             //!ExprType::template HasTrialFunction<typename TrialSpaceType::component_basis_type>::result ||
+             !ExprType::template HasTestFunction<typename SpaceType::reference_element_type>::result //||
+             //!ExprType::template HasTestFunction<typename SpaceType::component_basis_type>::result
+             )
         {
             ++M_test_index;
             return;
