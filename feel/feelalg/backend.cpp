@@ -382,6 +382,9 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
     M_nlsolver->setDtoleranceKSP( this->dTolerance() );
     M_nlsolver->setMaxitKSP( this->maxIterationsKSPinSNES() );
 
+    M_nlsolver->attachNullSpace( this->M_nullSpace );
+    M_nlsolver->attachNearNullSpace( this->M_nearNullSpace );
+
     M_nlsolver->init();
 
     //vector_ptrtype x_save = x->clone();

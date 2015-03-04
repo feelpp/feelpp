@@ -42,6 +42,7 @@
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelcore/traits.hpp>
 #include <feel/feelalg/preconditioner.hpp>
+#include <feel/feelalg/nullspace.hpp>
 
 
 namespace Feel
@@ -361,6 +362,15 @@ public:
         M_preconditioner = preconditioner;
     }
 
+    void attachNullSpace( boost::shared_ptr<NullSpace<value_type> > const& ns )
+    {
+        M_nullSpace = ns;
+    }
+    void attachNearNullSpace( boost::shared_ptr<NullSpace<value_type> > const& ns )
+    {
+        M_nearNullSpace = ns;
+    }
+
     /**
      * Sets the type of preconditioner to use.
      */
@@ -595,6 +605,11 @@ protected:
      * Holds the Preconditioner object to be used for the linear solves.
      */
     preconditioner_ptrtype M_preconditioner;
+
+    /**
+     * Null Space and Near Null Space
+     */
+    boost::shared_ptr<NullSpace<value_type> > M_nullSpace, M_nearNullSpace;
 
     /**
      * Enum the software that is used to perform the factorization
