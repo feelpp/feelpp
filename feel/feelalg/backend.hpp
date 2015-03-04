@@ -1117,6 +1117,8 @@ public:
                                        //(prec,(sparse_matrix_ptrtype), jacobian )
                                        ( prec,( preconditioner_ptrtype ), preconditioner( _prefix=this->prefix(),_pc=this->pcEnumType()/*LU_PRECOND*/,_backend=this->shared_from_this(),
                                                                                           _pcfactormatsolverpackage=this->matSolverPackageEnumType() ) )
+                                       ( null_space,( NullSpace<value_type> ), NullSpace<value_type>() )
+                                       ( near_null_space,( NullSpace<value_type> ), NullSpace<value_type>() )
                                        ( maxit,( size_type ), M_maxitSNES/*50*/ )
                                        ( rtolerance,( double ), M_rtoleranceSNES/*1e-8*/ )
                                        ( atolerance,( double ), M_atoleranceSNES/*1e-50*/ )
@@ -1160,6 +1162,22 @@ public:
 
         if ( prec && !this->nlSolver()->initialized() )
             this->nlSolver()->attachPreconditioner( prec );
+
+        // attach null space (or near null space for multigrid) in backend
+        boost::shared_ptr<NullSpace<value_type> > mynullspace( new NullSpace<value_type>(this->shared_from_this(),null_space) );
+        boost::shared_ptr<NullSpace<value_type> > myNearNullSpace( new NullSpace<value_type>(this->shared_from_this(),near_null_space) );
+        if ( mynullspace->size() > 0 )
+        {
+            this->attachNullSpace( mynullspace );
+            if ( myNearNullSpace->size() > 0 )
+                this->attachNearNullSpace( myNearNullSpace );
+            else
+                this->attachNearNullSpace( mynullspace );
+        }
+        else if ( myNearNullSpace->size() > 0 )
+        {
+            this->attachNearNullSpace( myNearNullSpace );
+        }
 
         //if ( reuse_prec == false && reuse_jac == false )
         //    ret = nlSolve( jacobian, _sol, residual, rtolerance, maxit );
