@@ -24,7 +24,7 @@ cd $base_dir/www.feelpp.org
 git checkout master
 git pull
 # the resulting static pages are in _site that is not tracked by github
-jekyll build --watch
+jekyll build
 git checkout gh-pages
 
 # Copy the generated doc from doxygen
