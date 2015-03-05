@@ -36,6 +36,7 @@
 #include <feel/feelalg/vector.hpp>
 
 #include <feel/feelalg/enums.hpp>
+#include <feel/feelalg/nullspace.hpp>
 
 namespace Feel
 {
@@ -75,7 +76,7 @@ public:
     /** @name Typedefs
      */
     //@{
-
+    typedef T value_type;
     typedef Preconditioner<T> preconditioner_type;
     typedef boost::shared_ptr<Preconditioner<T> > preconditioner_ptrtype;
 
@@ -103,7 +104,8 @@ public:
     M_matSolverPackage_type( o.M_matSolverPackage_type ),
     M_prec_matrix_structure ( o.M_prec_matrix_structure ),
     M_is_initialized( o.M_is_initialized ),
-    M_mat_has_changed( o.M_mat_has_changed )
+    M_mat_has_changed( o.M_mat_has_changed ),
+    M_nearNullSpace( o.M_nearNullSpace )
         {}
 
     //! destructor
@@ -205,7 +207,14 @@ public:
      * @return the side of the system to which the preconditioner applies
      */
     Side side() const { return M_side; }
-    
+
+    bool hasNearNullSpace( std::set<int> const& splitIds ) const { return M_nearNullSpace.find(splitIds) != M_nearNullSpace.end(); }
+    boost::shared_ptr<NullSpace<value_type> > const& nearNullSpace( std::set<int> const& splitIds ) const
+    {
+        CHECK( this->hasNearNullSpace( splitIds ) ) << " near null space not given for index split ";
+        return M_nearNullSpace.find(splitIds)->second;
+    }
+
     //@}
 
     /** @name  Mutators
@@ -238,6 +247,16 @@ public:
      * set the side \p s of the linear system to which the preconditioner applies
      */
     void setSide( Side s ) { M_side = s; }
+
+    void attachNearNullSpace( int k, boost::shared_ptr<NullSpace<value_type> > const& nearNullSpace )
+    {
+        std::set<int> splitIds; splitIds.insert( k );
+        this->attachNearNullSpace( splitIds, nearNullSpace );
+    }
+    void attachNearNullSpace( std::set<int> const& splitIds, boost::shared_ptr<NullSpace<value_type> > const& nearNullSpace )
+    {
+        M_nearNullSpace[splitIds] = nearNullSpace;
+    }
     //@}
 
     /** @name  Methods
@@ -290,6 +309,11 @@ protected:
      * Flag indicating if the data structures have been initialized.
      */
     bool M_is_initialized, M_mat_has_changed;
+
+    /**
+     *  Near Null Space for Field Split
+     */
+    std::map<std::set<int>,boost::shared_ptr<NullSpace<value_type> > >  M_nearNullSpace;
 
 };
 
