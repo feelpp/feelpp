@@ -117,11 +117,13 @@ public:
     VectorUblas( VectorUblas<value_type>& m, range_type const& range, datamap_ptrtype const& dm );
     VectorUblas( VectorUblas<value_type>& m, slice_type const& range, datamap_ptrtype const& dm );
 
-    VectorUblas( ublas::vector<value_type>& m, range_type const& range );
+    FEELPP_DEPRECATED VectorUblas( ublas::vector<value_type>& m, range_type const& range );
+    VectorUblas( ublas::vector<value_type>& m, range_type const& range, datamap_ptrtype const& dm );
 
     VectorUblas( VectorUblas<value_type>& m, slice_type const& slice );
 
-    VectorUblas( ublas::vector<value_type>& m, slice_type const& slice );
+    FEELPP_DEPRECATED VectorUblas( ublas::vector<value_type>& m, slice_type const& slice );
+    VectorUblas( ublas::vector<value_type>& m, slice_type const& slice, datamap_ptrtype const& dm );
 
 
     ~VectorUblas();
