@@ -696,6 +696,8 @@ void PreconditionerPetsc<T>::init ()
     CHECK( this->M_matrix ) << "ERROR: No matrix set for PreconditionerPetsc, but init() called" << "\n";
 
     indexsplit_ptrtype is;
+    std::list<MatNullSpace> nullspList;
+
     // Clear the preconditioner in case it has been created in the past
     if ( !this->M_is_initialized )
     {
@@ -725,14 +727,41 @@ void PreconditionerPetsc<T>::init ()
             if ( fieldsDef.size() == 0 )
             {
                 pmatrix->updatePCFieldSplit( M_pc );
+                for ( int splitId=0;splitId<is->size();++splitId )
+                    fieldsDef[splitId].insert(splitId);
             }
             else
             {
                 //fieldsDef.showMe();
                 auto isUsed = pmatrix->indexSplit()->applyFieldsDef( fieldsDef  );
-                //isUsed.showMe();
+                //isUsed->showMe();
                 pmatrix->updatePCFieldSplit( M_pc,isUsed );
             }
+            //fieldsDef.showMe();
+            for ( auto const& splitBaseIdsMap : fieldsDef )
+            {
+                int splitId = splitBaseIdsMap.first;
+                std::set<int> splitBaseIds = splitBaseIdsMap.second;
+
+                if ( this->hasNearNullSpace( splitBaseIds ) )
+                {
+                    IS isToApply;
+                    std::string splitIdStr = (boost::format("%1%")%splitId).str();
+                    this->check( PCFieldSplitGetIS( M_pc,splitIdStr.c_str(),&isToApply ) );
+                    auto const& nearnullspace = this->nearNullSpace( splitBaseIds );
+                    int dimNullSpace = nearnullspace->size();
+                    std::vector<Vec> petsc_vec(dimNullSpace);
+                    for ( int k = 0 ; k<dimNullSpace ; ++k )
+                        petsc_vec[k] =  dynamic_cast<const VectorPetsc<T>*>( &nearnullspace->basisVector(k) )->vec();
+
+                    MatNullSpace nullsp;
+                    this->check( MatNullSpaceCreate( this->worldComm(), PETSC_FALSE , dimNullSpace, petsc_vec.data(), &nullsp ) );
+                    //this->check( PetscObjectCompose((PetscObject) isToApply, "nullspace", (PetscObject) nullsp) );
+                    this->check( PetscObjectCompose((PetscObject) isToApply, "nearnullspace", (PetscObject) nullsp) );
+                    nullspList.push_back( nullsp );
+                }
+            }
+
         }
 
     }
@@ -768,16 +797,10 @@ void PreconditionerPetsc<T>::init ()
     VLOG(2) << "prec : "  << this->M_preconditioner_type << "\n";
     setPetscPreconditionerType( this->M_preconditioner_type,this->M_matSolverPackage_type,M_pc,is,this->worldComm(),this->name() );
 
-#if 0
-    VLOG(2) << "mat solver package : "  << this->M_matSolverPackage_type << "("  << Environment::vm()["pc-factor-mat-solver-package-type"].template as<std::string>() << ")\n";
-#if 0
-    //?????
-    std::string type =  Environment::vm()["pc-factor-mat-solver-package-type"].template as<std::string>();
-    this->setMatSolverPackageType( matSolverPackageEnumType( type ) );
-#endif
-    if ( boption( _prefix=this->name(), _name="pc-view" ) )
-        check( PCView( M_pc, PETSC_VIEWER_STDOUT_WORLD ) );
-#endif
+    // destroy null space used
+    for ( MatNullSpace nullsp : nullspList )
+        PETSc::MatNullSpaceDestroy( nullsp );
+
     this->M_is_initialized = true;
 }
 
@@ -2140,24 +2163,27 @@ void
 ConfigurePCGAMG::runConfigurePCGAMG( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is )
 {
 #if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 )
-    // set type of multigrid (agg only supported)
-    this->check( PCGAMGSetType( pc, M_gamgType.c_str() ) );
-    // Set for asymmetric matrices
-    this->check( PetscOptionsSetValue("-pc_gamg_sym_graph", boost::lexical_cast<std::string>(M_setSymGraph).c_str()) );
-    // PCSetFromOptions is called here because PCGAMGSetType destroy all unless the type_name
-    this->check( PCSetFromOptions( pc ) );
+    if ( !pc->setupcalled )
+    {
+        // set type of multigrid (agg only supported)
+        this->check( PCGAMGSetType( pc, M_gamgType.c_str() ) );
+        // Set for asymmetric matrices
+        this->check( PetscOptionsSetValue("-pc_gamg_sym_graph", boost::lexical_cast<std::string>(M_setSymGraph).c_str()) );
+        this->check( PetscOptionsSetValue("-fieldsplit_0_pc_gamg_sym_graph", boost::lexical_cast<std::string>(M_setSymGraph).c_str()) );
+        // PCSetFromOptions is called here because PCGAMGSetType destroy all unless the type_name
+        this->check( PCSetFromOptions( pc ) );
 
-    //
-    this->check( PCGAMGSetNlevels( pc,M_nLevels ) );
-    // Set number of equations to aim for on coarse grids via processor reduction
-    this->check( PCGAMGSetProcEqLim( pc, M_procEqLim ) );
-    // Set max number of equations on coarse grids
-    this->check( PCGAMGSetCoarseEqLim( pc, M_coarseEqLim ) );
-    // Relative threshold to use for dropping edges in aggregation graph
-    this->check( PCGAMGSetThreshold( pc, M_threshold ) );
-    // not works!!(seems to be missing PetscObjectComposeFunction with this function)
-    //this->check( PCGAMGSetSymGraph( pc, ( M_setSymGraph )?PETSC_TRUE : PETSC_FALSE ) );
-
+        //
+        this->check( PCGAMGSetNlevels( pc,M_nLevels ) );
+        // Set number of equations to aim for on coarse grids via processor reduction
+        this->check( PCGAMGSetProcEqLim( pc, M_procEqLim ) );
+        // Set max number of equations on coarse grids
+        this->check( PCGAMGSetCoarseEqLim( pc, M_coarseEqLim ) );
+        // Relative threshold to use for dropping edges in aggregation graph
+        this->check( PCGAMGSetThreshold( pc, M_threshold ) );
+        // not works!!(seems to be missing PetscObjectComposeFunction with this function)
+        //this->check( PCGAMGSetSymGraph( pc, ( M_setSymGraph )?PETSC_TRUE : PETSC_FALSE ) );
+    }
     // setup sub-pc
     this->check( PCSetUp( pc ) );
     //this->check( PCView( pc, PETSC_VIEWER_STDOUT_WORLD ) );
@@ -2304,6 +2330,7 @@ ConfigurePCMGLevels::runConfigurePCMGLevels( PC& pc, PreconditionerPetsc<double>
     // get level pc
     PC levelpc;
     this->check( KSPGetPC( levelksp, &levelpc ) );
+
     //-------------------------------------------------------------------//
     //if ( levelpc->setupcalled )
     //    this->check( PCSetType(levelpc, ( char* )PCNONE) );
