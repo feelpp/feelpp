@@ -101,22 +101,30 @@ int main(int argc, char**argv )
     auto u = Vh->element();
     auto v = Vh->element();
 
+    /// [marker_form2]
     // left hand side
     auto a = form2( _trial=Vh, _test=Vh );
     a = integrate(_range=elements(mesh),
                   _expr=gradt(u)*trans(grad(v)) );
+    /// [marker_form2]
 
+    /// [marker_form1]
     // right hand side
     auto l = form1( _test=Vh );
     l = integrate(_range=elements(mesh),
                   _expr=id(v));
+    /// [marker_form1]
 
+    /// [marker_on]
     // apply the boundary condition
     a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u,
-          _expr=constant(0.) );
+          _expr=expr(soption("functions.alpha")) );
+    /// [marker_on]
 
-    // solve the equation a(u,v) = l(v)
+    /// [marker_solve]
+    // solve the equation \f$ a(u,v) = l(v) \f$ 
     a.solve(_rhs=l,_solution=u);
+    /// [marker_solve]
 
     // export results
     auto e = exporter( _mesh=mesh );

@@ -227,6 +227,12 @@ private:
 
 
     /**
+     * Tells PETSC to attach NullSpace or NearNullSpace in matrix
+     */
+    void updateNullSpace( Mat A );
+    void updateNearNullSpace( Mat A );
+
+    /**
      * Nonlinear solver context
      */
     SNES M_snes;

@@ -21,8 +21,8 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-#ifndef FEELPP_STVENANTKIRCHHOFF_HPP
-#define FEELPP_STVENANTKIRCHHOFF_HPP 1
+#ifndef FEELPP_SOLIDMECHANICS_HPP
+#define FEELPP_SOLIDMECHANICS_HPP 1
 
 #include <functional>
 #include <tuple>
@@ -37,10 +37,11 @@ namespace Feel
 enum ModelProperty { AXISYMM=1 };
 
 po::options_description
-stvenantkirchhoff_options(std::string prefix)
+solidmechanics_options(std::string prefix)
 {
-    po::options_description stvenantkirchhoffoptions( "StVenantKirchhoff problem options" );
-    stvenantkirchhoffoptions.add_options()
+    po::options_description solidmechanicsoptions( "SolidMechanics problem options" );
+    solidmechanicsoptions.add_options()
+        ( prefixvm( prefix, "model").c_str(), Feel::po::value<std::string>()->default_value( "linear" ), "linear, hyperelastic" )
         ( prefixvm( prefix, "young-modulus").c_str(), Feel::po::value<double>()->default_value( 1.4e6 ), "young-modulus" )
         ( prefixvm( prefix, "poisson-coeff").c_str(), Feel::po::value<double>()->default_value( 0.4 ), "poisson-coeff" )
         ( prefixvm( prefix, "rho").c_str(), Feel::po::value<double>()->default_value( 1000 ), "density [kg/m^3]" )
@@ -48,17 +49,17 @@ stvenantkirchhoff_options(std::string prefix)
         ( prefixvm( prefix, "gravity-cst").c_str(), Feel::po::value<double>()->default_value( 2 ), "gravity-cst" )
         ( prefixvm( prefix, "verbose").c_str(), Feel::po::value<bool>()->default_value( true ), "verbose" )
         ;
-    return stvenantkirchhoffoptions.add( backend_options(prefix) ).add( ts_options(prefix) );;
+    return solidmechanicsoptions.add( backend_options(prefix) ).add( ts_options(prefix) );;
 }
 
 //po::options_description
-//stvenantkirchhoff_options( std::string prefix );
+//solidmechanics_options( std::string prefix );
 
 template<typename DisplSpaceType, int prop=0>
-class StVenantKirchhoff
+class SolidMechanics
 {
 public:
-    using self_type = StVenantKirchhoff<DisplSpaceType,prop>;
+    using self_type = SolidMechanics<DisplSpaceType,prop>;
     using displacement_space_type = typename mpl::if_<is_shared_ptr<DisplSpaceType>,
                                                       mpl::identity<typename DisplSpaceType::element_type>,
                                                       mpl::identity<DisplSpaceType>>::type::type;
@@ -70,8 +71,8 @@ public:
     using properties = typename Pdh_type<mesh_type,0>::element_type;
     using exporter_ptrtype = boost::shared_ptr<Exporter<mesh_type>>;
     using ts_ptrtype = boost::shared_ptr<Newmark<displacement_space_type>>;
-    StVenantKirchhoff() = delete;
-    StVenantKirchhoff( std::string name, displacement_space_ptrtype Xh );
+    SolidMechanics() = delete;
+    SolidMechanics( std::string name, displacement_space_ptrtype Xh );
 
     static constexpr int dim = mesh_type::nDim;
 
@@ -82,6 +83,8 @@ public:
     void setGravityConstant( double g ) { gravity = g; }
 
     void setGravityForce( vector_field_expression<dim,1,2> e ) { gravityForce = e; }
+
+    bool isLinear() const { return model=="linear"; }
     
     template < typename ExprT >
     void updateRho( Expr<ExprT> const& e )
@@ -115,7 +118,22 @@ public:
     void updateJacobian(const vector_ptrtype& X, sparse_matrix_ptrtype& J);
 
 private:
+    template<typename SpacePtrType>
+    void initNullSpace( SpacePtrType Xh_vec, mpl::int_<2> )
+        {
+            K = nullspace_ptr( Xh_vec, oneX(), oneY(), vec(Py(),-Px()) );
+        }
+    template<typename SpacePtrType>
+    void initNullSpace( SpacePtrType Xh_vec, mpl::int_<3> )
+        {
+            K = nullspace_ptr( Xh_vec, oneX(), oneY(), oneZ(),
+                               vec(Py(),-Px(),cst(0.)),
+                               vec(-Pz(),cst(0.),Px()),
+                               vec(cst(0.),Pz(),-Py()) );
+        }
+private:
     std::string name;
+    std::string model;
     bool verbose;
     displacement_space_ptrtype Dh;
     property_space_ptrtype P0h;
@@ -123,6 +141,7 @@ private:
     displacement_type u;
     properties P0Rho, P0Coefflame1, P0Coefflame2;
     map_vector_field<dim,1,2> dirichlet_conditions;
+    map_scalar_field<2> dx_dirichlet_conditions, dy_dirichlet_conditions, dz_dirichlet_conditions;
     map_vector_field<dim,1,2> neumann_conditions;
     vector_field_expression<dim,1,2> gravityForce;
     double rho;
@@ -135,15 +154,17 @@ private:
     backend_ptrtype M_backend;
     vector_ptrtype Res;
     sparse_matrix_ptrtype Jac;
+    boost::shared_ptr<NullSpace<double>> K;
 
-
+    
     exporter_ptrtype e;
 };
 
 template<typename DisplSpaceType, int props>
-StVenantKirchhoff<DisplSpaceType,props>::StVenantKirchhoff( std::string n, displacement_space_ptrtype Xh )
+SolidMechanics<DisplSpaceType,props>::SolidMechanics( std::string n, displacement_space_ptrtype Xh )
     :
     name( n ),
+    model( soption( _name=prefixvm(name,"model")) ),
     verbose( boption(_name=prefixvm(name,"verbose")) ),
     Dh( Xh ),
     P0h( Pdh<0>( Dh->mesh() ) ),
@@ -160,6 +181,10 @@ StVenantKirchhoff<DisplSpaceType,props>::StVenantKirchhoff( std::string n, displ
 {
     tic();
     dirichlet_conditions = BoundaryConditionFactory::instance().getVectorFields<dim> ( "displacement", "Dirichlet" );
+    dx_dirichlet_conditions = BoundaryConditionFactory::instance().getScalarFields ( "displacement_x", "Dirichlet" );
+    dy_dirichlet_conditions = BoundaryConditionFactory::instance().getScalarFields ( "displacement_y", "Dirichlet" );
+    dz_dirichlet_conditions = BoundaryConditionFactory::instance().getScalarFields ( "displacement_z", "Dirichlet" );
+    
     neumann_conditions = BoundaryConditionFactory::instance().getVectorFields<dim> ( "displacement", "Neumann" );
     gravityForce = expr<dim,1,2>(soption(prefixvm(name,"gravity")));
     youngmodulus=doption(_name=prefixvm(name,"young-modulus"));
@@ -173,13 +198,21 @@ StVenantKirchhoff<DisplSpaceType,props>::StVenantKirchhoff( std::string n, displ
     this->updateCoefflame1( cst(coefflame1 ) );
     this->updateCoefflame2( cst(coefflame2 ) );
 
-    toc("StVenantKirchhoff constructor", verbose || FLAGS_v > 0 );
+    initNullSpace( Dh, mpl::int_<dim>() );
+    if ( !dirichlet_conditions.size() &&
+         !dx_dirichlet_conditions.size() &&
+         !dy_dirichlet_conditions.size() &&
+         !dz_dirichlet_conditions.size() && nm->isSteady() )
+        M_backend->attachNullSpace( K );
+    if ( nm->isSteady() )
+        M_backend->attachNearNullSpace( K );
+    toc("SolidMechanics constructor", verbose || FLAGS_v > 0 );
     
     
 }
 template<typename DisplSpaceType, int props>
 void
-StVenantKirchhoff<DisplSpaceType,props>::init()
+SolidMechanics<DisplSpaceType,props>::init()
 {
     tic();
     // start or restart
@@ -195,14 +228,13 @@ StVenantKirchhoff<DisplSpaceType,props>::init()
         if ( e->doExport() )
             e->restart(ti);
     }
-    toc("StVenantKirchhoff::init", verbose || FLAGS_v > 0);
+    toc("SolidMechanics::init", verbose || FLAGS_v > 0);
 }
 template<typename DisplSpaceType, int props>
 void
-StVenantKirchhoff<DisplSpaceType,props>::updateResidualAxiSymm( const vector_ptrtype& X, vector_ptrtype& R )
+SolidMechanics<DisplSpaceType,props>::updateResidualAxiSymm( const vector_ptrtype& X, vector_ptrtype& R )
 {
     u = *X;
-
     auto Id = eye<dim,dim>();
     auto Fv = Id + gradv(u);
     auto Ev = sym(gradv(u)) + 0.5*trans(gradv(u))*gradv(u);
@@ -235,7 +267,7 @@ StVenantKirchhoff<DisplSpaceType,props>::updateResidualAxiSymm( const vector_ptr
 }
 template<typename DisplSpaceType, int props>
 void
-StVenantKirchhoff<DisplSpaceType,props>::updateJacobianAxiSymm(const vector_ptrtype& X, sparse_matrix_ptrtype& J)
+SolidMechanics<DisplSpaceType,props>::updateJacobianAxiSymm(const vector_ptrtype& X, sparse_matrix_ptrtype& J)
 {
     u = *X;
     auto Id = eye<dim,dim>();    
@@ -264,13 +296,14 @@ StVenantKirchhoff<DisplSpaceType,props>::updateJacobianAxiSymm(const vector_ptrt
 
 template<typename DisplSpaceType, int props>
 void
-StVenantKirchhoff<DisplSpaceType,props>::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
+SolidMechanics<DisplSpaceType,props>::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
 {
     u = *X;
+    
 
     auto Id = eye<dim,dim>();    
     auto Fv = Id + gradv(u);
-    auto Ev = sym(gradv(u)) + 0.5*trans(gradv(u))*gradv(u);
+    auto Ev = sym(gradv(u)) + (!isLinear())*(0.5*trans(gradv(u))*gradv(u));
     auto Sv = idv(P0Coefflame1)*trace(Ev)*Id + 2*idv(P0Coefflame2)*Ev;
 
     auto r = form1( _test=Dh, _vector=R );
@@ -295,20 +328,33 @@ StVenantKirchhoff<DisplSpaceType,props>::updateResidual( const vector_ptrtype& X
     {
         temp.on( _range=markedfaces( mesh, marker(d)), _expr=zero<dim,1>() );
     }
+    for( auto const& d : dx_dirichlet_conditions )
+    {
+        temp[Component::X].on( _range=markedfaces( mesh, marker(d)), _expr=cst(0.) );
+    }
+    for( auto const& d : dy_dirichlet_conditions )
+    {
+        temp[Component::Y].on( _range=markedfaces( mesh, marker(d)), _expr=cst(0.) );
+    }
+    for( auto const& d : dz_dirichlet_conditions )
+    {
+        temp[Component::Z].on( _range=markedfaces( mesh, marker(d)), _expr=cst(0.) );
+    }
     *R = temp;
 
 }
 template<typename DisplSpaceType, int props>
 void
-StVenantKirchhoff<DisplSpaceType,props>::updateJacobian(const vector_ptrtype& X, sparse_matrix_ptrtype& J)
+SolidMechanics<DisplSpaceType,props>::updateJacobian(const vector_ptrtype& X, sparse_matrix_ptrtype& J)
 {
     u = *X;
+
     auto Id = eye<dim,dim>();    
     auto Fv = Id + gradv(u);
-    auto Ev = sym(gradv(u)) + 0.5*trans(gradv(u))*gradv(u);
+    auto Ev = sym(gradv(u)) + (!isLinear())*(0.5*trans(gradv(u))*gradv(u));
     auto Sv = idv(P0Coefflame1)*trace(Ev)*Id + 2*idv(P0Coefflame2)*Ev;
     auto dF = gradt(u);
-    auto dE = sym(gradt(u)) + 0.5*(trans(gradv(u))*gradt(u) + trans(gradt(u))*gradv(u));
+    auto dE = sym(gradt(u)) + (!isLinear())*0.5*(trans(gradv(u))*gradt(u) + trans(gradt(u))*gradv(u));
     auto dS = idv(P0Coefflame1)*trace(dE)*Id + 2*idv(P0Coefflame2)*dE;
     
     auto a = form2( _test=Dh, _trial=Dh, _matrix=J );
@@ -323,17 +369,42 @@ StVenantKirchhoff<DisplSpaceType,props>::updateJacobian(const vector_ptrtype& X,
         a += on( _range=markedfaces( mesh, marker(d)), _element=u, _rhs=RR,
                  _expr=zero<dim,1>() );
     }
+    for( auto const& d : dx_dirichlet_conditions )
+    {
+        a += on( _range=markedfaces( mesh, marker(d)), _element=u[Component::X], _rhs=RR, _expr=cst(0.) );
+    }
+    for( auto const& d : dy_dirichlet_conditions )
+    {
+        a += on( _range=markedfaces( mesh, marker(d)), _element=u[Component::Y], _rhs=RR, _expr=cst(0.) );
+    }
+    for( auto const& d : dz_dirichlet_conditions )
+    {
+        a += on( _range=markedfaces( mesh, marker(d)), _element=u[Component::Z], _rhs=RR, _expr=cst(0.) );
+    }
+
 }
 
 template<typename DisplSpaceType, int props>
-typename StVenantKirchhoff<DisplSpaceType,props>::SolveData
-StVenantKirchhoff<DisplSpaceType,props>::solve()
+typename SolidMechanics<DisplSpaceType,props>::SolveData
+SolidMechanics<DisplSpaceType,props>::solve()
 {
     tic();
     // make sure that the initial guess satisfies the boundary conditions
     for( auto const& d : dirichlet_conditions )
     {
         u.on( _range=markedfaces( mesh, marker(d)), _expr=expression(d));
+    }
+    for( auto const& d : dx_dirichlet_conditions )
+    {
+        u[Component::X].on( _range=markedfaces( mesh, marker(d)), _expr=expression(d) );
+    }
+    for( auto const& d : dy_dirichlet_conditions )
+    {
+        u[Component::Y].on( _range=markedfaces( mesh, marker(d)), _expr=expression(d) );
+    }
+    for( auto const& d : dz_dirichlet_conditions )
+    {
+        u[Component::Z].on( _range=markedfaces( mesh, marker(d)), _expr=expression(d) );
     }
 
     using namespace std;
@@ -345,12 +416,12 @@ StVenantKirchhoff<DisplSpaceType,props>::solve()
         
 
     auto d = M_backend->nlSolve( _solution=u,_jacobian=Jac,_residual=Res );
-    toc("StVenantKirchhoff::solve", verbose || FLAGS_v > 0 );
+    toc("SolidMechanics::solve", verbose || FLAGS_v > 0 );
     return d;
 }
 template<typename DisplSpaceType, int props>
 void
-StVenantKirchhoff<DisplSpaceType,props>::exportResults()
+SolidMechanics<DisplSpaceType,props>::exportResults()
 {
     tic();
     if ( nm->isSteady() )
@@ -365,7 +436,7 @@ StVenantKirchhoff<DisplSpaceType,props>::exportResults()
         e->step(nm->time())->add( "acceleration", nm->currentAcceleration() );
         e->save();
     }
-    toc("StVenantKirchhoff::exportResults", verbose);
+    toc("SolidMechanics::exportResults", verbose);
 }
 }
 
