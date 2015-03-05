@@ -2086,12 +2086,12 @@ public:
             CHECK( i >= ComponentType::X && (int)i < N_COMPONENTS ) << "Invalid component " << (int)i;
             auto s = ublas::slice( (int)i, N_COMPONENTS, M_functionspace->nDofPerComponent() );
             std::string __name = this->name() + "_" + componentToString( i );
-            std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << "\n";
+            //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << "\n";
             component_type c( compSpace(),
-                              typename component_type::container_type( this->vec().data().expression(), s ),
+                              typename component_type::container_type( this->vec().data().expression(), s, this->compSpace()->dof() ),
                               __name,
                               start()+(size_type)i,
-                              (size_type)i );
+                              i );
             return c;
         }
         component_type
@@ -2100,13 +2100,13 @@ public:
             CHECK( i >= ComponentType::X && (int)i < N_COMPONENTS ) << "Invalid component " << (int)i;
             auto s = ublas::slice( (int)i, N_COMPONENTS, M_functionspace->nDofPerComponent() );
             std::string __name = this->name() + "_" + componentToString( i );
-            std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << "\n";
+            //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << "\n";
             component_type c( compSpace(),
-                              typename component_type::container_type( ( VectorUblas<value_type>& )*this, s ),
+                              typename component_type::container_type( ( VectorUblas<value_type>& )*this, s, this->compSpace()->dof() ),
                               //typename component_type::container_type( this->data().expression(), r ),
                               __name,
                               start()+(size_type)i,
-                              (int)i );
+                              i );
             return c;
         }
 
