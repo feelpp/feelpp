@@ -597,9 +597,9 @@ CRBSaddlePoint<TruthModelType>::offline()
         XN1->addDualBasisElement( p );
         M_Nadded1=1;
         M_N1[this->M_N] += M_Nadded1;
-        this->orthonormalize( M_N1[this->M_N], XN1->primalRB(), M_Nadded1 );
-        this->orthonormalize( M_N1[this->M_N], XN1->primalRB(), M_Nadded1 );
-        this->orthonormalize( M_N1[this->M_N], XN1->primalRB(), M_Nadded1 );
+        //this->orthonormalize( M_N1[this->M_N], XN1->primalRB(), M_Nadded1 );
+        //this->orthonormalize( M_N1[this->M_N], XN1->primalRB(), M_Nadded1 );
+        //this->orthonormalize( M_N1[this->M_N], XN1->primalRB(), M_Nadded1 );
 
 
         XN0->addPrimalBasisElement( u );
@@ -608,19 +608,21 @@ CRBSaddlePoint<TruthModelType>::offline()
 
         if ( boption("crb.saddlepoint.add-supremizer") )
         {
+            timer.restart();
             auto us = this->M_model->supremizer( mu, p );
             XN0->addPrimalBasisElement( us );
             XN0->addDualBasisElement( us );
             M_Nadded0++;
+            CRB_COUT << "  -- supremizer added in "<< timer.elapsed() << std::endl;
         }
 
         M_N0[this->M_N] += M_Nadded0;
 
         if( boption(_name="crb.orthonormalize-primal") )
         {
-            this->orthonormalize( M_N0[this->M_N], XN0->primalRB(), M_Nadded0 );
-            this->orthonormalize( M_N0[this->M_N], XN0->primalRB(), M_Nadded0 );
-            this->orthonormalize( M_N0[this->M_N], XN0->primalRB(), M_Nadded0 );
+            // this->orthonormalize( M_N0[this->M_N], XN0->primalRB(), M_Nadded0 );
+            //this->orthonormalize( M_N0[this->M_N], XN0->primalRB(), M_Nadded0 );
+            //this->orthonormalize( M_N0[this->M_N], XN0->primalRB(), M_Nadded0 );
         }
 
         matrixblockrange_type matrixrange;
@@ -733,22 +735,29 @@ CRBSaddlePoint<TruthModelType>::exportBasisFunctions()
     CHECK( u_vec.size()>0) << "[CRBSaddlePoint::exportBasisFunctions] Error : there are no element to export in first rb\n";
     CHECK( p_vec.size()>0) << "[CRBSaddlePoint::exportBasisFunctions] Error : there are no element to export in second rb\n";
 
-    for ( int index=0; index<u_vec.size(); index++ )
+    for( int index=0; index<this->M_N; index++)
     {
-        std::string u_name = "u";
-        std::string p_name = "p";
-        std::string basis_name = ( boost::format( "_pr_%1%_param") %index ).str();
         std::string mu_str;
         auto mu=this->M_WNmu->at( index );
+
         for ( int i=0; i<mu.size(); i++)
             mu_str += ( boost::format( "_%1%" ) %mu[i] ).str() ;
 
-        std::string name = u_name + basis_name + mu_str;
-        e->step(0)->add( name, u_vec[index] );
+        int u_count=0;
+        for( int u_index=M_N0[index]; u_index<M_N0[index+1]; u_index++ )
+        {
+            u_count++;
+            std::string basis_name = ( boost::format( "u_pr_%1%.%2%_param") %index %u_count ).str();
+            std::string name = basis_name + mu_str;
+            e->step(0)->add( name, u_vec[u_index] );
+        }
 
-        name = p_name + basis_name + mu_str;
-        int p_index = index;
-        e->step(0)->add( name, p_vec[p_index] );
+        for( int p_index=M_N1[index]; p_index<M_N1[index+1]; p_index++ )
+        {
+            std::string basis_name = ( boost::format( "p_pr_%1%_param") %index ).str();
+            std::string name = basis_name + mu_str;
+            e->step(0)->add( name, p_vec[p_index] );
+        }
     }
     e->save();
 }
