@@ -247,6 +247,14 @@ VectorUblas<T,Storage>::VectorUblas( ublas::vector<value_type>& m, range_type co
     //this->init( m.size(), m.size(), false );
 }
 template <typename T, typename Storage>
+VectorUblas<T,Storage>::VectorUblas( ublas::vector<value_type>& m, range_type const& range, datamap_ptrtype const& dm )
+    :
+    super1( dm ),
+    M_vec( detail::fake<Storage>( m, range ) ),
+    M_global_values_updated( false )
+{}
+
+template <typename T, typename Storage>
 VectorUblas<T,Storage>::VectorUblas( VectorUblas<value_type>& m, slice_type const& range )
     :
     super1( invalid_size_type_value, range.size() ),
@@ -259,6 +267,14 @@ VectorUblas<T,Storage>::VectorUblas( VectorUblas<value_type>& m, slice_type cons
     this->init( invalid_size_type_value, M_vec.size(), true );
 
 }
+
+template <typename T, typename Storage>
+VectorUblas<T,Storage>::VectorUblas( ublas::vector<value_type>& m, slice_type const& range, datamap_ptrtype const& dm )
+    :
+    super1( dm ),
+    M_vec( detail::fake<Storage>( m, range ) ),
+    M_global_values_updated( false )
+{}
 
 template <typename T, typename Storage>
 VectorUblas<T,Storage>::VectorUblas( ublas::vector<value_type>& m, slice_type const& range )
