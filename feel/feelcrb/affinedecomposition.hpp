@@ -1124,25 +1124,25 @@ public :
     void initializeMassMatrix()
         {
             rangespace_type range;
-            initializeMassBlock init( this->shared_from_this() );
+            initializeMassBlock init( this );
             fusion::for_each( range, init );
         }
 
 private :
     struct initializeMassBlock
     {
-        initializeMassBlock( self_ptrtype AD) :
+        initializeMassBlock( self_type* AD) :
             M_AD( AD )
             {}
 
         template<typename T>
-        void operator() ( T& t) const
+        void operator() ( T const& t) const
             {
                 M_AD->template createBlock<T::value,T::value>();
                 M_AD->template get<T::value,T::value>()->initializeMassMatrix();
             }
 
-        self_ptrtype M_AD;
+        self_type* M_AD;
     };
     struct checkBlock
     {
