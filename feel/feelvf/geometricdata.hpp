@@ -66,7 +66,7 @@ namespace Feel { namespace vf {
 
 const size_type jn = vm::JACOBIAN|vm::NORMAL;
 const size_type jkbn = vm::JACOBIAN|vm::KB|vm::NORMAL;
-const size_type jt = vm::JACOBIAN|vm::NORMAL|vm::TANGENT;
+const size_type jt = vm::JACOBIAN|vm::KB|vm::NORMAL|vm::TANGENT;
 const size_type jp = vm::JACOBIAN|vm::POINT;
 const size_type jkp = vm::KB|vm::JACOBIAN|vm::POINT;
 

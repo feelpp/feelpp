@@ -65,6 +65,7 @@ BOOST_AUTO_TEST_CASE( test_lambda_cst1 )
     typedef decltype(cst(1.)) t2;
     BOOST_MPL_ASSERT_MSG( (boost::is_same<t1,t2>::value), INVALID_TYPE,(decltype(I( cst(1.) )),decltype(cst(1.))));
 }
+
 BOOST_AUTO_TEST_CASE( test_lambda_cst2 )
 {
     BOOST_TEST_MESSAGE( "test_lambda_cst2" );
@@ -88,7 +89,7 @@ BOOST_AUTO_TEST_CASE( test_lambda_cst3 )
     typedef decltype(cst(1.)*cst(.5)) t2;
     BOOST_MPL_ASSERT_MSG( (boost::is_same<t1,t2>::value), INVALID_TYPE,(decltype(I( cst(1.),cst(.5) )),decltype(cst(1.)*cst(.5))));
 }
-
+#if 1
 BOOST_AUTO_TEST_CASE( test_lambda_cos )
 {
     BOOST_TEST_MESSAGE( "test_lambda_cos" );
@@ -137,6 +138,7 @@ BOOST_AUTO_TEST_CASE( test_lambda_int_cst2 )
     auto mesh = unitSquare();
     BOOST_TEST_MESSAGE( "test_lambda_int_cst2 mesh generated" );
     auto I = integrate( elements(mesh), _expr=_e1*_e2, _verbose=true );
+auto I2 = integrate( elements(mesh), _expr=idv(_e1)*idv(_e1), _verbose=true );
     auto I3 = integrate( elements(mesh), _expr=_e1*_e2*_e3, _verbose=true );
     BOOST_TEST_MESSAGE( "test_lambda_int_cst2 integral defined" );
 
@@ -149,6 +151,7 @@ BOOST_AUTO_TEST_CASE( test_lambda_int_cst2 )
     BOOST_CHECK_CLOSE( I1.evaluate()( 0, 0 ), 1, 1e-10 );
     BOOST_CHECK_CLOSE( I( cst(.5), cst(2.) ).evaluate()( 0, 0 ), 1, 1e-10 );
     BOOST_CHECK_CLOSE( I( idv(u), gradv(v)(0,0)*2.).evaluate()( 0, 0 ), 1, 1e-10 );
+    BOOST_CHECK_CLOSE( I2( u, u ).evaluate()( 0, 0 ), 0.5, 1e-10 );
     BOOST_CHECK_CLOSE( I3( cst(.5), cst(2.), cst(1.0) ).evaluate()( 0, 0 ), 1, 1e-10 );
     BOOST_CHECK_CLOSE( I3( cst(2.)*idv(u), gradv(v)*trans(gradv(v)), idv(w)/(cst(2.0)*(Px()+1)) ).evaluate()( 0, 0 ), 1, 1e-10 );
 
@@ -251,6 +254,6 @@ BOOST_AUTO_TEST_CASE( test_lambda_div )
     BOOST_CHECK_CLOSE( integrate_lambda, I_lambda_sigma(idv(T)).evaluate()( 0, 0 ) , 1e-10 );
 
 }
-
+#endif
 
 BOOST_AUTO_TEST_SUITE_END()
