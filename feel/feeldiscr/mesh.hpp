@@ -1647,7 +1647,7 @@ private:
     boost::multi_array<element_edge_type,2> M_e2e;
 
     /**
-     * marker name disctionnary ( std::string -> <int,int> )
+     * marker name dictionnary ( std::string -> <int,int> )
      * get<0>() provides the id
      * get<1>() provides the topological dimension
      */

@@ -241,7 +241,11 @@ SolverEigenSlepc<T>::solve ( MatrixSparse<T> &matrix_A_in,
         ierr = EPSGetEigenpair( M_eps, i, &kr, &ki, PETSC_NULL, PETSC_NULL );
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
+#if SLEPC_VERSION_LT(3,6,0)
         ierr = EPSComputeRelativeError( M_eps, i, &error );
+#else
+        ierr = EPSComputeError( M_eps, i, EPS_ERROR_RELATIVE, &error );
+#endif
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
 #ifdef USE_COMPLEX_NUMBERS
@@ -282,7 +286,11 @@ SolverEigenSlepc<T>::solve ( MatrixSparse<T> &matrix_A_in,
 
     if ( nconv >= 1 )
     {
+#if SLEPC_VERSION_LT(3,6,0)
         ierr = EPSComputeRelativeError( M_eps, nconv, ret_error.data() );
+#else
+        ierr = EPSComputeError( M_eps, nconv, EPS_ERROR_RELATIVE, ret_error.data() );
+#endif
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
     }
 
@@ -420,7 +428,11 @@ SolverEigenSlepc<T>::solve ( MatrixSparse<T> &matrix_A_in,
         ierr = EPSGetEigenpair( M_eps, i, &kr, &ki, PETSC_NULL, PETSC_NULL );
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
+#if SLEPC_VERSION_LT(3,6,0)
         ierr = EPSComputeRelativeError( M_eps, i, &error );
+#else
+        ierr = EPSComputeError( M_eps, i, EPS_ERROR_RELATIVE, &error );
+#endif
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
         double norm;
@@ -471,7 +483,11 @@ SolverEigenSlepc<T>::solve ( MatrixSparse<T> &matrix_A_in,
     {
         for ( int i = 0; i < nconv; ++i )
         {
+#if SLEPC_VERSION_LT(3,6,0)
             ierr = EPSComputeRelativeError( M_eps, i, &ret_error[i] );
+#else
+            ierr = EPSComputeError( M_eps, i, EPS_ERROR_RELATIVE, &ret_error[i] );
+#endif
             CHKERRABORT( PETSC_COMM_WORLD,ierr );
         }
     }
@@ -775,7 +791,11 @@ SolverEigenSlepc<T>::relativeError( unsigned int i )
     int ierr=0;
     PetscReal error;
 
+#if SLEPC_VERSION_LT(3,6,0)
     ierr = EPSComputeRelativeError( M_eps, i, &error );
+#else
+    ierr = EPSComputeError( M_eps, i, EPS_ERROR_RELATIVE, &error );
+#endif
     CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
     return error;

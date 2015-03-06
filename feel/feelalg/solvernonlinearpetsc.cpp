@@ -856,9 +856,14 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
 
 
     if ( !this->M_preconditioner && this->preconditionerType() == FIELDSPLIT_PRECOND )
-        {
-            jac->updatePCFieldSplit( M_pc );
-        }
+    {
+        jac->updatePCFieldSplit( M_pc );
+    }
+
+    if ( this->M_nullSpace && this->M_nullSpace->size() > 0 )
+        this->updateNullSpace( jac->mat() );
+    if ( this->M_nearNullSpace && this->M_nearNullSpace->size() > 0 )
+        this->updateNearNullSpace( jac->mat() );
 
     //PreconditionerPetsc<T>::setPetscPreconditionerType( this->preconditionerType(),this->matSolverPackageType(),M_pc, this->worldComm() );
 
@@ -1385,6 +1390,64 @@ SolverNonLinearPetsc<T>::setPetscPreconditionerType()
 
 }
 
+template <typename T>
+void
+SolverNonLinearPetsc<T>::updateNullSpace( Mat A )
+{
+    if ( !this->M_nullSpace ) return;
+    if ( this->M_nullSpace->size() == 0 ) return;
+
+    int ierr = 0;
+    int dimNullSpace = this->M_nullSpace->size();
+    std::vector<Vec> petsc_vec(dimNullSpace);
+    for ( int k = 0 ; k<dimNullSpace ; ++k )
+        petsc_vec[k] =  dynamic_cast<const VectorPetsc<T>*>( &this->M_nullSpace->basisVector(k) )->vec();
+
+
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 )
+    MatNullSpace nullsp;
+    ierr = MatNullSpaceCreate( this->worldComm(), PETSC_FALSE , dimNullSpace, petsc_vec.data()/*PETSC_NULL*/, &nullsp );
+    CHKERRABORT( this->worldComm().globalComm(),ierr );
+    //ierr = MatNullSpaceView( nullsp, PETSC_VIEWER_STDOUT_WORLD );
+    //CHKERRABORT( this->worldComm().globalComm(),ierr );
+
+    ierr = MatSetNullSpace(A,nullsp);
+    CHKERRABORT( this->worldComm().globalComm(),ierr );
+
+    bool checkNullSpace = false;
+    if ( checkNullSpace )
+    {
+        PetscBool isNull;
+        ierr = MatNullSpaceTest(nullsp, A, &isNull);
+        CHKERRABORT( this->worldComm().globalComm(),ierr );
+        CHECK( isNull ) << "nullspace is not apply on this matrix";
+    }
+
+    PETSc::MatNullSpaceDestroy( nullsp );
+#endif
+}
+
+template <typename T>
+void
+SolverNonLinearPetsc<T>::updateNearNullSpace( Mat A )
+{
+    if ( !this->M_nearNullSpace ) return;
+    if ( this->M_nearNullSpace->size() == 0 ) return;
+
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 )
+    int ierr = 0;
+    int dimNullSpace = this->M_nearNullSpace->size();
+    std::vector<Vec> petsc_vec(dimNullSpace);
+    for ( int k = 0 ; k<dimNullSpace ; ++k )
+        petsc_vec[k] =  dynamic_cast<const VectorPetsc<T>*>( &this->M_nearNullSpace->basisVector(k) )->vec();
+    MatNullSpace nullsp;
+    ierr = MatNullSpaceCreate( this->worldComm(), PETSC_FALSE , dimNullSpace, petsc_vec.data()/*PETSC_NULL*/, &nullsp );
+    CHKERRABORT( this->worldComm().globalComm(),ierr );
+    ierr = MatSetNearNullSpace( A, nullsp);
+    CHKERRABORT( this->worldComm().globalComm(),ierr );
+    PETSc::MatNullSpaceDestroy( nullsp );
+#endif
+}
 
 
 //------------------------------------------------------------------
