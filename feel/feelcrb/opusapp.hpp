@@ -418,7 +418,7 @@ public:
                     {
                         this->loadDB(); // update AffineDecomposition and enrich RB database
                     }
-                    //crb->setRebuild( false ); //do not rebuild since co-build is not finished
+                    crb->setRebuild( false ); //do not rebuild since co-build is not finished
 
                     if( do_offline_eim )
                     {
@@ -1007,7 +1007,6 @@ public:
                                 LOG(INFO) << "CRB mode\n";
                                 if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
                                     std::cout << "CRB mode -- "<<curpar<<"/"<<sampling_size<<std::endl;
-
 
                                 boost::mpi::timer ti;
 
