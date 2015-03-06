@@ -183,9 +183,9 @@ int main( int argc, char** argv )
     exporter->step( 0 )->add( "sin(theta)", v_st );
     exporter->step( 0 )->add( "ur", v_ur );
     exporter->step( 0 )->add( "utheta", v_ut );
-    exporter->step( 0 )->add( "ux", v_u.comp( X ) );
-    exporter->step( 0 )->add( "uy", v_u.comp( Y ) );
-    exporter->step( 0 )->add( "uy", v_u.comp( Z ) );
+    exporter->step( 0 )->add( "ux", v_u[Component::X] );
+    exporter->step( 0 )->add( "uy", v_u[Component::Y] );
+    exporter->step( 0 )->add( "uy", v_u[Component::Z] );
     exporter->step( 0 )->add( "p", v_p );
     exporter->step( 0 )->add( "u_1", v_u_goncalo );
     exporter->step( 0 )->add( "u_1x", v_u_goncalo.comp( X ) );

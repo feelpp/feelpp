@@ -643,6 +643,9 @@ laplacian( Expr<GinacMatrix<M,N,Order>> const& s, std::string filename="", World
     return expr<M,N,Order>( GiNaC::laplacian(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), exprDesc, filename, world );
 }
 
+template<int Order=2>
+using scalar_field_expression=Expr<GinacEx<Order>>;
+
 /**
  * defines a dictionary of scalar fields
  * 
@@ -656,9 +659,9 @@ laplacian( Expr<GinacMatrix<M,N,Order>> const& s, std::string filename="", World
  * \endcode
  */
 template<int Order=2>
-struct map_scalar_field: public std::map<std::string,Expr<GinacEx<Order>>>
+struct map_scalar_field: public std::map<std::string,scalar_field_expression<Order>>
 {
-    typedef std::map<std::string,Expr<GinacEx<Order>>> super;
+    typedef std::map<std::string,scalar_field_expression<Order>> super;
     typedef super type;
     using value_type = typename super::value_type;
     map_scalar_field() = default;
@@ -670,6 +673,29 @@ struct map_scalar_field: public std::map<std::string,Expr<GinacEx<Order>>>
 };
 
 typedef std::map<std::string,Expr<GinacEx<2>>> map_scalar_field_type;
+
+template<int Order>
+std::string const&
+marker( std::pair<const std::string, scalar_field_expression<Order>> const& p  )
+{
+    return p.first;
+}
+template<int Order>
+scalar_field_expression<Order> const&
+expression( std::pair<const std::string, scalar_field_expression<Order>> const& p  ) 
+{
+    return p.second;
+}
+template<int Order>
+scalar_field_expression<Order>&
+expression( std::pair<const std::string, scalar_field_expression<Order>> & p  ) 
+{
+    return p.second;
+}
+
+
+template<int M, int N=1, int Order=2>
+using vector_field_expression=Expr<GinacMatrix<M,N,Order>>;
 
 /**
  * defines a dictionary of vector fields
@@ -710,6 +736,13 @@ expression( std::pair<const std::string, Expr<GinacMatrix<M,N,Order>>> const& p 
 {
     return p.second;
 }
+template<int M, int N, int Order>
+Expr<GinacMatrix<M,N,Order>> &
+expression( std::pair<const std::string, Expr<GinacMatrix<M,N,Order>>> & p  ) 
+{
+    return p.second;
+}
+
 } // vf
 } // Feel
 
