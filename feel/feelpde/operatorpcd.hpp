@@ -86,7 +86,8 @@ public:
                  backend_ptrtype b,
                  BoundaryConditions const& bcFlags,
                  std::string const& p,
-                 double nu,
+                 double mu,
+                 double rho,
                  double alpha );
 
     OperatorPCD( const OperatorPCD& tc ) = default;
@@ -133,7 +134,7 @@ private:
     
     op_ptrtype precOp;
 
-    double M_nu, M_alpha;
+    double M_mu, M_rho, M_alpha;
 
     std::string M_prob_type;
 
@@ -155,7 +156,8 @@ OperatorPCD<space_type>::OperatorPCD( space_ptrtype Qh,
                                       backend_ptrtype b,
                                       BoundaryConditions const& bcFlags,
                                       std::string const& p,
-                                      double nu,
+                                      double mu,
+                                      double rho,
                                       double alpha )
     :
     super( Qh->template functionSpace<1>()->mapPtr(), "PCD", false, false ),
@@ -177,12 +179,14 @@ OperatorPCD<space_type>::OperatorPCD( space_ptrtype Qh,
     rhs( backend()->newVector( M_Qh ) ),
     M_bcFlags( bcFlags ),
     M_prefix( p ),
-    M_nu( nu ),
+    M_mu( mu ),
+    M_rho( rho ),
     M_alpha( alpha )
 {
     initialize();
 
-    LOG(INFO) << "[Pressure Correction Diffusion Operator] Constructor: using nu=" << M_nu << "\n";
+    LOG(INFO) << "[Pressure Correction Diffusion Operator] Constructor: using mu=" << M_mu << "\n";
+    LOG(INFO) << "[Pressure Correction Diffusion Operator] Constructor: using rho=" << M_rho << "\n";
     LOG(INFO) << "[Pressure Correction Diffusion Operator] Constructor: using alpha=" << M_alpha << "\n";
 
     if ( alpha == 0 )
@@ -212,7 +216,7 @@ OperatorPCD<space_type>::update( ExprConvection const& expr_b,
     G->zero();
 
     conv = integrate( _range=elements(M_Qh->mesh()), _expr=(trans(expr_b)*trans(gradt(p)))*id(q));
-    conv += integrate( _range=elements(M_Qh->mesh()), _expr=M_nu*gradt(p)*trans(grad(q)));
+    conv += integrate( _range=elements(M_Qh->mesh()), _expr=M_mu*gradt(p)*trans(grad(q)));
 
     if ( soption("blockns.pcd.inflow") == "Robin" )
         for( auto dir : M_bcFlags[M_prefix]["Dirichlet"])
@@ -256,7 +260,7 @@ void
 OperatorPCD<space_type>::assembleMass()
 {
     auto m = form2( _test=M_Qh, _trial=M_Qh, _matrix=M_mass );
-    m = integrate( elements(M_Qh->mesh()), idt(p)*id(q) );
+    m = integrate( elements(M_Qh->mesh()), M_rho*idt(p)*id(q) );
     M_mass->close();
     massOp = op( M_mass, "Mp" );
 }
@@ -268,7 +272,7 @@ OperatorPCD<space_type>::assembleDiffusion()
     if ( soption("blockns.pcd.diffusion") == "Laplacian" )
     {
         auto d = form2( _test=M_Qh, _trial=M_Qh, _matrix=M_diff );
-        d = integrate( _range=elements(M_Qh->mesh()), _expr=gradt(p)*trans(grad(q)));
+        d = integrate( _range=elements(M_Qh->mesh()), _expr=M_mu*gradt(p)*trans(grad(q)));
         
         for( auto cond : M_bcFlags[M_prefix]["Neumann"])
         {
@@ -277,7 +281,7 @@ OperatorPCD<space_type>::assembleDiffusion()
             if ( (dir=="outlet") || (dir == "outflow") )
             {
                 if ( boption("blockns.weakdir" ) )
-                    d+= integrate( markedfaces(M_Qh->mesh(),dir), _expr=-gradt(p)*N()*id(p)-grad(p)*N()*idt(p)+doption("penaldir")*idt(p)*id(p)/hFace() );
+                    d+= integrate( markedfaces(M_Qh->mesh(),dir), _expr=-M_mu*gradt(p)*N()*id(p)-M_mu*grad(p)*N()*idt(p)+doption("penaldir")*idt(p)*id(p)/hFace() );
                 else
                     d += on( markedfaces(M_Qh->mesh(),dir), _element=p, _rhs=rhs, _expr=cst(0.), _type="elimination_keep_diagonal" );
             }
@@ -296,7 +300,7 @@ OperatorPCD<space_type>::assembleDiffusion()
         toc(" - OperatorPCD Extracted B" );
         tic();
         auto m = form2( _test=M_Vh, _trial=M_Vh );
-        m = integrate( elements(M_Vh->mesh()), trans(idt(u))*id(v) );
+        m = integrate( elements(M_Vh->mesh()), M_rho*trans(idt(u))*id(v) );
         m.matrixPtr()->close();
         toc(" - OperatorPCD Velocity Mass Matrix" );
         tic();
@@ -337,7 +341,7 @@ OperatorPCD<space_type>::applyBC( sparse_matrix_ptrtype& A )
             if ( (dir=="outlet") || (dir == "outflow") )
             {
                 if ( boption("blockns.weakdir" ) )
-                    a+= integrate( markedfaces(M_Qh->mesh(),dir), _expr=-M_nu*gradt(p)*N()*id(p)-M_nu*grad(p)*N()*idt(p)+doption("penaldir")*idt(p)*id(p)/hFace() );
+                    a+= integrate( markedfaces(M_Qh->mesh(),dir), _expr=-M_mu*gradt(p)*N()*id(p)-M_mu*grad(p)*N()*idt(p)+doption("penaldir")*idt(p)*id(p)/hFace() );
                 else
                     a += on( markedfaces(M_Qh->mesh(),dir), _element=p, _rhs=rhs, _expr=cst(0.), _type="elimination_keep_diagonal" );
             }

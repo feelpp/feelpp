@@ -84,7 +84,8 @@ public:
      * \param Xh velocity/pressure space type
      * \param bcFlags the boundary conditions flags
      * \param A the full matrix \f$(F B^T;B 0)\f$
-     * \param nu viscosity
+     * \param mu viscosity
+     * \param rho density
      * \param alpha mass term
      */
     PreconditionerBlockNS( std::string t,
@@ -92,7 +93,8 @@ public:
                            BoundaryConditions bcFlags,
                            std::string const& s,
                            sparse_matrix_ptrtype A,
-                           double nu, 
+                           double mu,
+                           double rho,
                            double alpha = 0 );
     
     Type type() const { return M_type; }
@@ -100,13 +102,13 @@ public:
     
     void initialize();
 
-    void assembleHelmholtz( double nu, double alpha = 0 );
+    void assembleHelmholtz( double mu, double rho, double alpha = 0 );
 
     void assembleDivergence();
 
     void assembleGradient();
 
-    void assembleSchurApp( double nu, double alpha = 0 );
+    void assembleSchurApp( double mu, double rho, double alpha = 0 );
 
     template< typename Expr_convection, typename Expr_bc >
     void update( sparse_matrix_ptrtype A, Expr_convection const& expr_b, Expr_bc const& g );
@@ -151,7 +153,7 @@ public:
 private:
 
     Type M_type;
-    value_type M_nu, M_alpha;
+    value_type M_mu, M_alpha, M_rho;
     
     backend_ptrtype M_b;
 
@@ -190,10 +192,11 @@ PreconditionerBlockNS<space_type>::PreconditionerBlockNS( std::string t,
                                                           BoundaryConditions bcFlags,
                                                           std::string const& p,
                                                           sparse_matrix_ptrtype A,
-                                                          double nu, double alpha )
+                                                          double mu, double rho, double alpha )
     :
     M_type( PCD ),
-    M_nu( nu ),
+    M_mu( mu ),
+    M_rho( rho ),
     M_alpha( alpha ),
     M_b(backend()),
     M_Xh( Xh ),
@@ -265,7 +268,7 @@ PreconditionerBlockNS<space_type>::setType( std::string t )
     {
     case PCD:
         tic();
-        pcdOp = boost::make_shared<op_pcd_type>( M_Xh, this->matrix(), M_b, M_bcFlags, M_prefix, M_nu, M_alpha );
+        pcdOp = boost::make_shared<op_pcd_type>( M_Xh, this->matrix(), M_b, M_bcFlags, M_prefix, M_mu, M_rho, M_alpha );
         this->setSide( super::RIGHT );
 
         toc( "Assembling schur complement done", FLAGS_v > 0 );
@@ -275,7 +278,7 @@ PreconditionerBlockNS<space_type>::setType( std::string t )
     {
         tic();
         auto m = form2( _test=M_Qh, _trial=M_Qh, _matrix=M_mass );
-        m = integrate( elements(M_Qh->mesh()), idt(p)*id(q)/M_nu );
+        m = integrate( elements(M_Qh->mesh()), M_rho*idt(p)*id(q)/M_mu );     /////////////////////////////////////////////////////
         M_mass->close();
         if ( boption( "blockns.pmm.diag" ) )
         {
@@ -441,14 +444,15 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename meta::blockns<typename parameter::va
                                  ( optional
                                    ( prefix, *( boost::is_convertible<mpl::_,std::string> ), "" )
                                    ( bc, *, (BoundaryConditions ()) )
-                                   ( nu,  *, doption("mu") )
+                                   ( mu,  *, doption("mu") )       ////////////////////////
+                                   ( rho,  *, doption("rho") )
                                    ( alpha, *, 0. )
                                    )
                                  )
 {
     typedef typename meta::blockns<typename parameter::value_type<Args, tag::space>::type::element_type>::ptrtype pblockns_t;
     typedef typename meta::blockns<typename parameter::value_type<Args, tag::space>::type::element_type>::type blockns_t;
-    pblockns_t p( new blockns_t( type, space, bc, prefix, matrix, nu, alpha ) );
+    pblockns_t p( new blockns_t( type, space, bc, prefix, matrix, mu, rho, alpha ) );
     return p;
 } // btcpd
 } // Feel
