@@ -280,7 +280,8 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( projection )
 
     BOOST_PARAMETER_NAME( bc )
-    BOOST_PARAMETER_NAME( nu )
+    BOOST_PARAMETER_NAME( mu )
+    BOOST_PARAMETER_NAME( rho )
     BOOST_PARAMETER_NAME( alpha )
 } // Feel
 
