@@ -332,7 +332,7 @@ endif (XDMF_FOUND)
 option(FEELPP_ENABLE_PYTHON_WRAPPING "Enable Boost.Python wrapping implementation" OFF)
 
 # Boost
-SET(BOOST_MIN_VERSION "1.49.0")
+SET(BOOST_MIN_VERSION "1.55.0")
 
 # Making consecutive calls to find_package for Boost to find optional components (boost_python for now)
 # Making only one call to find_package and having one of the component not installed will mark Boost as not found
@@ -342,8 +342,16 @@ FIND_PACKAGE(Boost ${BOOST_MIN_VERSION} COMPONENTS python )
 if(Boost_PYTHON_FOUND)
     set(FEELPP_HAS_BOOST_PYTHON 1)
     set(FEELPP_LIBRARIES ${Boost_PYTHON_LIBRARY} ${FEELPP_LIBRARIES})
+
+    if(FEELPP_ENABLE_PYTHON_WRAPPING)
+        SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Python-Wrapping" )
+    endif()
 else()
-    message(STATUS "[feelpp] Boost.Python was not found on your system." )
+    if(FEELPP_ENABLE_PYTHON_WRAPPING)
+        message(FATAL_ERROR "[feelpp] Boost.Python was not found on your system (Required for Python Wrapping)." )
+    else()
+        message(STATUS "[feelpp] Boost.Python was not found on your system." )
+    endif()
 endif()
 
 # Then we try to find rest of the Boost components
@@ -471,6 +479,7 @@ include(feelpp.module.hpddm)
 include(feelpp.module.nlopt)
 include(feelpp.module.ipopt)
 include(feelpp.module.cereal)
+include(feelpp.module.paralution)
 
 #
 # HARTS

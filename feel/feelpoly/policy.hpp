@@ -379,6 +379,7 @@ const mpl::int_<PER_COMPONENT_FUNCTION_INDEX> INDEX_PER_COMPONENT_FUNCTION_INDEX
 const mpl::int_<COMPONENT_IN_COMPONENT_FUNCTION_INDEX> INDEX_COMPONENT_IN_COMPONENT_FUNCTION_INDEX = mpl::int_<COMPONENT_IN_COMPONENT_FUNCTION_INDEX>();
 const mpl::int_<FUNCTION_INDEX> INDEX_FUNCTION_INDEX = mpl::int_<FUNCTION_INDEX>();
 
+
 /**
  * Get the component type out the available types
  * \code
@@ -387,7 +388,7 @@ const mpl::int_<FUNCTION_INDEX> INDEX_FUNCTION_INDEX = mpl::int_<FUNCTION_INDEX>
  * \endcode
  */
 template<typename T>
-struct Component
+struct GetComponent
 {
     static const uint16_type nDim = T::nDim;
     typedef mpl::vector<Scalar<nDim>, Vectorial<nDim>, Tensor2<nDim> > types;

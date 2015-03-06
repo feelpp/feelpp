@@ -88,9 +88,16 @@
 [submodule "quickstart"]
 	path = quickstart
 	url = https://github.com/feelpp/quickstart.git
+	branch=develop
 [submodule "contrib/hpddm"]
 	path = contrib/hpddm
 	url = https://github.com/feelpp/hpddm.git
 [submodule "projects/solodem"]
 	path = projects/solodem
 	url = https://github.com/feelpp/solodem.git
+[submodule "contrin/paralution"]
+	path = contrin/paralution
+	url = https://github.com/feelpp/paralution.git
+[submodule "contrib/paralution"]
+	path = contrib/paralution
+	url = https://github.com/feelpp/paralution.git

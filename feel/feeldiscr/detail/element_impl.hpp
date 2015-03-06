@@ -179,7 +179,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element()
     :
     super(),
     M_start( 0 ),
-    M_ct( NO_COMPONENT ),
+    M_ct( ComponentType::NO_COMPONENT ),
     M_containersOffProcess( boost::none )
 {}
 

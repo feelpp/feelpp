@@ -785,6 +785,15 @@ SolverLinearPetsc<T>::updateNullSpace( Mat A, Vec rhs )
     //ierr = MatNullSpaceRemove(nullsp,rhs);
     //CHKERRABORT( this->worldComm().globalComm(),ierr );
 
+    bool checkNullSpace = false;
+    if ( checkNullSpace )
+    {
+        PetscBool isNull;
+        ierr = MatNullSpaceTest(nullsp, A, &isNull);
+        CHKERRABORT( this->worldComm().globalComm(),ierr );
+        CHECK( isNull ) << "nullspace is not apply on this matrix";
+    }
+
     PETSc::MatNullSpaceDestroy( nullsp );
 #endif
 }

@@ -36,7 +36,7 @@
 //#include <boost/numeric/bindings/traits/ublas_matrix.hpp>
 //#include <boost/numeric/bindings/blas/blas.hpp>
 
-#include <boost/fusion/tuple.hpp>
+
 #include <boost/fusion/sequence.hpp>
 #include <boost/fusion/algorithm.hpp>
 
