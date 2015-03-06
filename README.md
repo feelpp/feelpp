@@ -1,5 +1,7 @@
 ## Introduction
 
+[![Join the chat at https://gitter.im/feelpp/feelpp](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/feelpp/feelpp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 [Feel++](www.feelpp.org) is a C++ library for arbitrary order Galerkin methods (e.g. finite and spectral element methods) continuous or discontinuous in 1D 2D and 3D. The objectives of this framework is quite ambitious; ambitions which could be express in various ways such as :
 
   - the creation of a versatile mathematical kernel solving easily problems using different techniques thus allowing testing and comparing methods, e.g. cG versus dG,
