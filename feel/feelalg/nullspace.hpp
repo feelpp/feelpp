@@ -34,6 +34,7 @@
 
 namespace Feel
 {
+template<typename T> class Backend;
 
 template <typename T=double>
 class NullSpace
