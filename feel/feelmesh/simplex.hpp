@@ -114,6 +114,8 @@ private:
                 Simplex<1, Order, rdim>,
                 Simplex<2, Order, rdim> > type;
     };
+
+    typedef mpl::vector<boost::none_t,Simplex<1, Order,1>, Simplex<1, Order, 2>, Simplex<1, Order, 3>, boost::none_t > v_edges_t;
     typedef mpl::vector<Simplex<1, Order>, Simplex<2, Order>, Simplex<3, Order>, boost::none_t > elements_t;
 
 public:
@@ -133,6 +135,7 @@ public:
 
     typedef typename mpl::at<elements_t, mpl::int_<nDim> >::type element_type;
     typedef typename mpl::at<typename faces_t<real_dimension>::type, mpl::int_<nDim> >::type topological_face_type;
+    typedef typename mpl::at<v_edges_t, mpl::int_<real_dimension> >::type edge_type;
     typedef topological_face_type GeoBShape;
 
     static const uint16_type numVertices = nDim+1;
