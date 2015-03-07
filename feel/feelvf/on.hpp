@@ -153,14 +153,14 @@ public:
     static const uint16_type imorder = OnExpr::imorder;
     static const bool imIsPoly = OnExpr::imIsPoly;
 
-    typedef typename boost::tuples::template element<1, ElementRange>::type element_iterator;
+    using on_type =  typename boost::tuples::template element<0, ElementRange>::type;
+    using element_iterator =  typename boost::tuples::template element<1, ElementRange>::type;
 
     typedef Elem element_type;
     typedef RhsElem rhs_element_type;
     typedef typename element_type::value_type value_type;
     typedef value_type evaluate_type;
     typedef typename element_type::return_type return_type;
-    typedef boost::function<return_type ( node_type const& )> bc_type;
     typedef OnExpr expression_type;
 
     template<typename Func>
@@ -274,9 +274,9 @@ public:
         typedef typename Elem::functionspace_type functionspace_type;
         static constexpr bool is_same_space = boost::is_same<functionspace_type,Elem1>::value;
         static constexpr bool is_comp_space = boost::is_same<functionspace_type,typename Elem1::component_functionspace_type>::value;
-        DVLOG(2) << "[IntegratorOn::assemble()] is_same: "
-                 << mpl::bool_<is_same_space||is_comp_space>::value << "\n";
-        assemble( __u, __v, __f, mpl::bool_<is_same_space||is_comp_space>() );
+        VLOG(2) << "[IntegratorOn::assemble()] is_same: "
+                << is_same_space << " is_comp_space:" << is_comp_space << "\n";
+        assemble( __u, __v, __f, mpl::bool_<is_same_space||is_comp_space>(), on_type() );
     }
     //@}
 private:
@@ -284,12 +284,17 @@ private:
     template<typename Elem1, typename Elem2, typename FormType>
     void assemble( boost::shared_ptr<Elem1> const& /*__u*/,
                    boost::shared_ptr<Elem2> const& /*__v*/,
-                   FormType& /*__f*/, mpl::bool_<false> ) const {}
+                   FormType& /*__f*/, mpl::bool_<false>, on_type ) const {}
+    
+    template<typename Elem1, typename Elem2, typename FormType>
+    void assemble( boost::shared_ptr<Elem1> const& __u,
+                   boost::shared_ptr<Elem2> const& __v,
+                   FormType& __f, mpl::bool_<true>, mpl::size_t<MESH_FACES> ) const;
 
     template<typename Elem1, typename Elem2, typename FormType>
     void assemble( boost::shared_ptr<Elem1> const& __u,
                    boost::shared_ptr<Elem2> const& __v,
-                   FormType& __f, mpl::bool_<true> ) const;
+                   FormType& __f, mpl::bool_<true>, mpl::size_t<MESH_EDGES> ) const;
 
 private:
 
@@ -309,7 +314,8 @@ void
 IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_ptr<Elem1> const& /*__u*/,
                                                                   boost::shared_ptr<Elem2> const& /*__v*/,
                                                                   FormType& __form,
-                                                                  mpl::bool_<true> ) const
+                                                                  mpl::bool_<true>,
+                                                                  mpl::size_t<MESH_FACES>) const
 {
 #if 0
 
@@ -321,7 +327,8 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
     typedef typename Elem::functionspace_type functionspace_type;
     static constexpr bool is_same_space = boost::is_same<functionspace_type,Elem1>::value;
     static constexpr bool is_comp_space = boost::is_same<functionspace_type,typename Elem1::component_functionspace_type>::value;
-    DVLOG(2) << "call on::assemble() " << "\n";
+    VLOG(2) << "call on::assemble: " << is_comp_space<< "\n";
+    
     //
     // a few typedefs
     //
@@ -516,8 +523,8 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
                         << "Invalid local dof index in face for face Interpolant "
                         << ldof.localDofInFace() << ">=" << IhLoc.size();
                     double __value = ldof.sign()*IhLoc( ldof.localDofInFace() );
-                    //std::cout << " on " << theface.id() << " thedof "<< thedof << " = " << __value
-                    //<< " start=" << M_u.start() << " ldof=" << ldof.index() << "\n";
+                    LOG(INFO) << " on " << theface.id() << " thedof "<< thedof << " = " << __value
+                              << " start=" << M_u.start() << " ldof=" << ldof.index() << "\n";
                     if ( std::find( dofs.begin(),
                                     dofs.end(),
                                     thedof ) != dofs.end() )
@@ -565,6 +572,239 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
     x->close();
     __form.zeroRows( dofs, *x, *M_rhs, M_on_strategy );
     x.reset();
+}
+
+
+template<typename ElementRange, typename Elem, typename RhsElem, typename OnExpr>
+template<typename Elem1, typename Elem2, typename FormType>
+void
+IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_ptr<Elem1> const& /*__u*/,
+                                                                  boost::shared_ptr<Elem2> const& /*__v*/,
+                                                                  FormType& __form,
+                                                                  mpl::bool_<true>,
+                                                                  mpl::size_t<MESH_EDGES>) const
+{
+    typedef typename Elem::functionspace_type functionspace_type;
+    static constexpr bool is_same_space = boost::is_same<functionspace_type,Elem1>::value;
+    static constexpr bool is_comp_space = boost::is_same<functionspace_type,typename Elem1::component_functionspace_type>::value;
+    VLOG(2) << "call on::assemble(edges): " << is_comp_space<< "\n";
+
+    //
+    // a few typedefs
+    //
+
+    // mesh element
+    typedef typename element_type::functionspace_type::mesh_type::element_type geoelement_type;
+    typedef typename element_type::functionspace_type::mesh_type::shape_type geoshape_type;
+    typedef typename geoelement_type::edge_type edge_type;
+
+    typedef typename element_type::functionspace_type::fe_type fe_type;
+
+    // geometric mapping context
+    typedef typename element_type::functionspace_type::mesh_type::gm_type gm_type;
+    typedef boost::shared_ptr<gm_type> gm_ptrtype;
+    //typedef typename gm_type::template Context<context, geoelement_type> gmc_type;
+    typedef typename mpl::if_< mpl::or_<is_hdiv_conforming<fe_type>, is_hcurl_conforming<fe_type> >,
+                               typename gm_type::template Context<context|vm::JACOBIAN|vm::KB|vm::TANGENT|vm::NORMAL, geoelement_type>,
+                               typename gm_type::template Context<context, geoelement_type> >::type gmc_type;
+    typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+
+    static const uint16_type nDim = geoshape_type::nDim;
+
+    // dof
+    typedef typename element_type::functionspace_type::dof_type dof_type;
+
+    // basis
+    typedef typename fe_type::template Context< context, fe_type, gm_type, geoelement_type> fecontext_type;
+    typedef boost::shared_ptr<fecontext_type> fecontext_ptrtype;
+    //typedef fusion::map<fusion::pair<vf::detail::gmc<0>, fecontext_ptrtype> > map_gmc_type;
+
+    // expression
+    //typedef typename expression_type::template tensor<map_gmc_type,fecontext_type> t_expr_type;
+    typedef typename expression_type::template tensor<map_gmc_type> t_expr_type;
+    typedef typename t_expr_type::shape shape;
+
+    // make sure that the form is close, ie the associated matrix is assembled
+    __form.matrix().close();
+    // make sure that the right hand side is closed, ie the associated vector is assembled
+    M_rhs->close();
+
+    //
+    // start
+    //
+    DVLOG(2)  << "assembling Dirichlet conditions\n";
+    boost::timer __timer;
+
+    std::vector<int> dofs;
+    std::vector<value_type> values;
+    element_iterator __edge_it = this->beginElement();
+    element_iterator __edge_en = this->endElement();
+
+    bool findAEdge = false;
+    for( auto& lit : M_elts )
+    {
+        __edge_it = lit.template get<1>();
+        __edge_en = lit.template get<2>();
+        if ( __edge_it != __edge_en )
+        {
+            findAEdge=true;
+            break;
+        }
+    }
+    if ( findAEdge )
+    {
+        auto const& edgeForInit = boost::unwrap_ref( *__edge_it );
+
+        dof_type const* __dof = M_u.functionSpace()->dof().get();
+
+        fe_type const* __fe = M_u.functionSpace()->fe().get();
+
+        gm_ptrtype __gm( new gm_type );
+
+
+        //
+        // Precompute some data in the reference element for
+        // geometric mapping and reference finite element
+        //
+        typedef typename geoelement_type::permutation_type permutation_type;
+        typedef typename gm_type::precompute_ptrtype geopc_ptrtype;
+        typedef typename gm_type::precompute_type geopc_type;
+        DVLOG(2)  << "[integratoron] numEdges = " << geoelement_type::numEdges << "\n";
+        std::vector<std::map<permutation_type, geopc_ptrtype> > __geopc( geoelement_type::numEdges );
+
+        for ( uint16_type __f = 0; __f < geoelement_type::numEdges; ++__f )
+        {
+            __geopc[__f][permutation_type::NO_PERMUTATION] = geopc_ptrtype(  new geopc_type( __gm, __fe->edgePoints( __f ) ) );
+            __geopc[__f][permutation_type::REVERSE_PERMUTATION] = geopc_ptrtype(  new geopc_type( __gm, __fe->edgePoints( __f ) ) );
+        }
+
+        uint16_type __edge_id = edgeForInit.pos_first();
+
+        // TODO: create context for edge associated to element
+        gmc_ptrtype __c( new gmc_type( __gm, edgeForInit.element( 0 ), __geopc, __edge_id ) );
+
+        map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
+        t_expr_type expr( M_expr, mapgmc );
+
+
+        DVLOG(2)  << "edge_type::numVertices = " << edge_type::numVertices << ", fe_type::nDofPerVertex = " << fe_type::nDofPerVertex << "\n"
+                  << "edge_type::numEdges = " << edge_type::numEdges << ", fe_type::nDofPerEdge = " << fe_type::nDofPerEdge << "\n"
+                  << "edge_type::numEdges = " << edge_type::numEdges << ", fe_type::nDofPerEdge = " << fe_type::nDofPerEdge << "\n";
+
+        size_type nbEdgeDof = invalid_size_type_value;
+
+        if ( !fe_type::is_modal )
+            nbEdgeDof = ( edge_type::numVertices * fe_type::nDofPerVertex +
+                          edge_type::numEdges * fe_type::nDofPerEdge );
+                          
+        else
+            nbEdgeDof = edge_type::numVertices * fe_type::nDofPerVertex;
+
+        DVLOG(2)  << "nbEdgeDof = " << nbEdgeDof << "\n";
+        //const size_type nbEdgeDof = __fe->boundaryFE()->points().size2();
+
+        auto IhLoc = __fe->edgeLocalInterpolant();
+        for( auto& lit : M_elts )
+        {
+        __edge_it = lit.template get<1>();
+        __edge_en = lit.template get<2>();
+
+        for ( ;
+              __edge_it != __edge_en;//this->endElement();
+              ++__edge_it )
+        {
+            auto const& theedge = boost::unwrap_ref( *__edge_it );
+
+            // TODO : store one element that owns this edge
+            if ( !theedge.isConnectedTo0() )
+            {
+                LOG( WARNING ) << "edge not connected" << theedge;
+
+                continue;
+            }
+            // do not process the edge if it is a ghost edge: belonging to two
+            // processes and being in a process id greater than the one
+            // corresponding edge
+            if ( theedge.isGhostCell() )
+            {
+                LOG(WARNING) << "edge id : " << theedge.id() << " is a ghost edge";
+                continue;
+            }
+            __c->update( theedge.element(), theedge.edgeIdInElement());
+
+            map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
+
+            t_expr_type expr( M_expr, mapgmc );
+            expr.update( mapgmc );
+
+            std::pair<size_type,size_type> range_dof( std::make_pair( M_u.start(),
+                                                                      M_u.functionSpace()->nDof() ) );
+            DVLOG(2)  << "[integratoron] dof start = " << range_dof.first << "\n";
+            DVLOG(2)  << "[integratoron] dof range = " << range_dof.second << "\n";
+
+            //use interpolant
+            __fe->edgeInterpolate( expr, IhLoc );
+
+            for( auto const& ldof : M_u.functionSpace()->dof()->edgeLocalDof( theedge.id() ) )
+                {
+                    size_type thedof = M_u.start()+ (is_comp_space?Elem1::nComponents:1)*ldof.index(); // global dof
+                    DCHECK( ldof.localDofInEdge() < IhLoc.size() ) 
+                        << "Invalid local dof index in edge for edge Interpolant "
+                        << ldof.localDofInEdge() << ">=" << IhLoc.size();
+                    double __value = ldof.sign()*IhLoc( ldof.localDofInEdge() );
+                    LOG(INFO) << " on " << theedge.id() << " thedof "<< thedof << " = " << __value
+                              << " start=" << M_u.start() << " ldof=" << ldof.index() << "\n";
+                    if ( std::find( dofs.begin(),
+                                    dofs.end(),
+                                    thedof ) != dofs.end() )
+                        continue;
+
+                    if ( M_on_strategy.test( ContextOn::ELIMINATION|ContextOn::SYMMETRIC ) )
+                        {
+                            DVLOG(2) << "Eliminating row " << thedof << " using value : " << __value << "\n";
+
+                            // this can be quite expensive depending on the
+                            // matrix storage format.
+                            //__form.diagonalize( thedof, range_dof, M_rhs, __value, thedof_nproc );
+
+                            // only the real dof ( not the ghosts )
+                            //if ( __form.testSpace()->mapOn().dofGlobalClusterIsOnProc( __form.testSpace()->mapOn().mapGlobalProcessToGlobalCluster( thedof ) ) )
+                            {
+                                dofs.push_back( thedof );
+                                values.push_back(  __value );
+                            }
+
+                            //M_rhs.set( thedof, __value );
+                        }
+
+                    else if (  M_on_strategy.test( ContextOn::PENALISATION ) &&
+                               !M_on_strategy.test( ContextOn::ELIMINATION|ContextOn::SYMMETRIC ) )
+                        {
+                            __form.set( thedof, thedof, 1.0*1e30 );
+                            M_rhs->set( thedof, __value*1e30 );
+                        }
+                }
+        }// __edge_it != __edge_en
+
+        } // for( auto& lit : M_elts )
+
+    }// findAEdge
+
+    if ( __form.rowStartInMatrix()!=0)
+    {
+        auto const thedofshift = __form.rowStartInMatrix();
+        for (auto& itd : dofs)
+            itd+=thedofshift;
+    }
+
+    auto x = M_rhs->clone();
+    CHECK( values.size() == dofs.size() ) << "Invalid dofs/values size: " << dofs.size() << "/" << values.size();
+    x->setVector( dofs.data(), dofs.size(), values.data() );
+    x->close();
+    __form.zeroRows( dofs, *x, *M_rhs, M_on_strategy );
+    x.reset();
+
 }
 
 
