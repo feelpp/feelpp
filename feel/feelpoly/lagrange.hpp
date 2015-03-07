@@ -146,9 +146,7 @@ public:
         DVLOG(2) << " o- nbPtsPerFace   = " << nbPtsPerFace << "\n";
         DVLOG(2) << " o- nbPtsPerVolume = " << nbPtsPerVolume << "\n";
 
-        pointset_type pts;
-
-        M_pts = pts.points();
+        M_pts = M_pset.points();
 
         if ( nOrder > 0 )
         {
@@ -156,7 +154,7 @@ public:
                     e < M_convex_ref.entityRange( nDim-1 ).end();
                     ++e )
             {
-                M_points_face[e] = pts.pointsBySubEntity( nDim-1, e, 1 );
+                M_points_face[e] = M_pset.pointsBySubEntity( nDim-1, e, 1 );
                 DVLOG(2) << "face " << e << " pts " <<  M_points_face[e] << "\n";
             }
         }
@@ -171,7 +169,8 @@ public:
         M_eid( M_convex_ref.topologicalDimension()+1 ),
         M_pts( pts.points() ),
         M_points_face( nFacesInConvex ),
-        M_fset( primal )
+        M_fset( primal ),
+        M_pset( pts )
     {
         DVLOG(2) << "Lagrange finite element: \n";
         DVLOG(2) << " o- dim   = " << nDim << "\n";
@@ -188,7 +187,7 @@ public:
                     e < M_convex_ref.entityRange( nDim-1 ).end();
                     ++e )
             {
-                M_points_face[e] = pts.pointsBySubEntity( nDim-1, e, 1 );
+                M_points_face[e] = M_pset.pointsBySubEntity( nDim-1, e, 1 );
                 DVLOG(2) << "face " << e << " pts " <<  M_points_face[e] << "\n";
             }
         }
@@ -217,6 +216,17 @@ public:
     {
         return ublas::column( M_points_face[f], __i );
     }
+
+    points_type edgePoints(int edge) const
+        {
+            return M_pset.pointsBySubEntity( 1, edge, 1 );
+        }
+
+    
+    points_type vertexPoints(int vertex) const
+        {
+            return M_pset.pointsBySubEntity( 0, vertex, 1 );
+        }
 
     matrix_type operator()( primal_space_type const& pset ) const
     {
@@ -251,7 +261,7 @@ private:
     points_type M_pts;
     std::vector<points_type> M_points_face;
     FunctionalSet<primal_space_type> M_fset;
-
+    pointset_type M_pset;
 
 };
 }// details
@@ -318,6 +328,7 @@ public:
     static const uint16_type nComponents1 = polyset_type::nComponents1;
     static const uint16_type nComponents2 = polyset_type::nComponents2;
     static const bool is_product = true;
+    static constexpr int Nm2 = (N>2)?N-2:0;
 
     typedef Lagrange<N, RealDim, O, PolySetType, ContinuityType, T, Convex,  Pts, TheTAG> this_type;
     typedef Lagrange<N, RealDim, O, Scalar, continuity_type, T, Convex,  Pts, TheTAG> component_basis_type;
@@ -327,6 +338,11 @@ public:
             mpl::identity< Lagrange<N-1, RealDim, O, Scalar, continuity_type, T, Convex,  Pts, TheTAG> > >::type::type face_basis_type;
 
     typedef boost::shared_ptr<face_basis_type> face_basis_ptrtype;
+    typedef typename mpl::if_<mpl::less_equal<mpl::int_<nDim>, mpl::int_<2> >,
+                              mpl::identity<boost::none_t>,
+                              mpl::identity< Lagrange<Nm2, RealDim, O, Scalar, continuity_type, T, Convex,  Pts, TheTAG> > >::type::type edge_basis_type;
+
+    typedef boost::shared_ptr<edge_basis_type> edge_basis_ptrtype;
 
     typedef typename dual_space_type::convex_type convex_type;
     typedef typename dual_space_type::pointset_type pointset_type;
@@ -334,6 +350,7 @@ public:
     typedef typename reference_convex_type::node_type node_type;
     typedef typename reference_convex_type::points_type points_type;
     typedef typename convex_type::topological_face_type face_type;
+    typedef typename convex_type::edge_type edge_type;
 
     static const uint16_type numPoints = reference_convex_type::numPoints;
     static const uint16_type nbPtsPerVertex = reference_convex_type::nbPtsPerVertex;
@@ -348,6 +365,8 @@ public:
     static const uint16_type nLocalFaceDof = ( face_type::numVertices * nDofPerVertex +
                                                face_type::numEdges * nDofPerEdge +
                                                face_type::numFaces * nDofPerFace );
+    static const uint16_type nLocalEdgeDof = ( edge_type::numVertices * nDofPerVertex +
+                                               edge_type::numEdges * nDofPerEdge);
     template<int subN>
     struct SubSpace
     {
@@ -474,6 +493,28 @@ public:
                 for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
                     for( int c2 = 0; c2 < ExprType::shape::N; ++c2 )
                         Ihloc( (c1+nComponents1*c2)*nLocalFaceDof+q ) = expr.evalq( c1, c2, q );
+
+        }
+
+    local_interpolant_type
+    edgeLocalInterpolant() const
+        {
+            return local_interpolant_type::Zero( nComponents*nLocalEdgeDof, 1 );
+        }
+    template<typename ExprType>
+    void
+    edgeInterpolate( ExprType& expr, local_interpolant_type& Ihloc ) const
+        {
+            BOOST_MPL_ASSERT_MSG( nComponents1==ExprType::shape::M,
+                                  INCOMPATIBLE_NUMBER_OF_COMPONENTS,
+                                  (mpl::int_<nComponents1>,mpl::int_<ExprType::shape::M>));
+            BOOST_MPL_ASSERT_MSG( nComponents2==ExprType::shape::N,
+                                  INCOMPATIBLE_NUMBER_OF_COMPONENTS,
+                                  (mpl::int_<nComponents2>,mpl::int_<ExprType::shape::N>));
+            for( int q = 0; q < nLocalEdgeDof; ++q )
+                for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
+                    for( int c2 = 0; c2 < ExprType::shape::N; ++c2 )
+                        Ihloc( (c1+nComponents1*c2)*nLocalEdgeDof+q ) = expr.evalq( c1, c2, q );
 
         }
 
