@@ -15,6 +15,11 @@ macro(feelpp_list_subdirs result curdir)
   SET(${result} ${dirlist})
 endmacro(feelpp_list_subdirs)
 
+macro(feelpp_add_testcase testcase)
+  file(COPY ${testcase} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+endmacro(feelpp_add_testcase)
+
+
 # add a new application
 macro(feelpp_add_application)
 
@@ -347,3 +352,4 @@ MACRO(feelpp_list_subdir result curdir)
   ENDFOREACH()
   SET(${result} ${dirlist})
 ENDMACRO()
+
