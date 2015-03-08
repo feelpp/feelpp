@@ -325,9 +325,18 @@ BackendEigen<T,_Options>::solve( sparse_matrix_type const& _A,
     eigen_vector_type const& b( dynamic_cast<eigen_vector_type const&>( _b ) );
 
     //x.vec()=A.mat().template fullPivLu().solve(b.vec());
-    Eigen::SimplicialLDLT<typename eigen_sparse_matrix_type::matrix_type> solver;
-    solver.compute(A.mat());
-    x.vec() = solver.solve(b.vec());
+    if ( false )
+    {
+        Eigen::SimplicialLDLT<typename eigen_sparse_matrix_type::matrix_type> solver;
+        solver.compute(A.mat());
+        x.vec() = solver.solve(b.vec());
+    }
+    else
+    {
+        Eigen::SparseLU<typename eigen_sparse_matrix_type::matrix_type> solver;
+        solver.compute(A.mat());
+        x.vec() = solver.solve(b.vec());
+    }
 
     // if(solver.info()!=Eigen::Succeeded) {
     //     // solving failed
