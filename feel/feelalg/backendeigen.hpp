@@ -327,9 +327,12 @@ BackendEigen<T,_Options>::solve( sparse_matrix_type const& _A,
     //x.vec()=A.mat().template fullPivLu().solve(b.vec());
     if ( false )
     {
+#if 0
+        // not compile with sparse matrix and row major
         Eigen::SimplicialLDLT<typename eigen_sparse_matrix_type::matrix_type> solver;
         solver.compute(A.mat());
         x.vec() = solver.solve(b.vec());
+#endif
     }
     else
     {
