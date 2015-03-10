@@ -613,8 +613,8 @@ private:
 
     static std::vector<fs::path> S_paths;
 
-    static  fs::path S_scratchdir;
-
+    static fs::path S_scratchdir;
+    static fs::path S_cfgdir;
     static AboutData S_about;
     static boost::shared_ptr<po::command_line_parser> S_commandLineParser;
     static std::set<std::string> S_configFileNames;
