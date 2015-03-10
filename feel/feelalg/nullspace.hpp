@@ -26,14 +26,15 @@
    \author Vincent Chabannes <vincent.chabannes@feelpp.org>
    \date 2015-02-13
  */
-
-#ifndef NullSpace_H
-#define NullSpace_H 1
+#ifndef FEELPP_NULLSPACE_HPP
+#define FEELPP_NULLSPACE_HPP 1
 
 #include <feel/feeldiscr/functionspacebase.hpp>
+#include <boost/smart_ptr/make_shared.hpp>
 
 namespace Feel
 {
+template<typename T> class Backend;
 
 template <typename T=double>
 class NullSpace
@@ -88,7 +89,20 @@ public :
     int size() const { return M_basisVector.size(); }
     vector_ptrtype const& basisVectorPtr(int k) const { return M_basisVector[k]; }
     vector_type const& basisVector(int k) const { return *M_basisVector[k]; }
-
+    void push_back( vector_ptrtype v ) { M_basisVector.push_back( v ); }
+    void close()
+        {
+            if ( M_basisVector.size() )
+            {
+                LOG(INFO) << "Close NullSpace";
+                // orthonormalise basis if necessary
+                if ( !this->hasOrthonormalBasisVectors() )
+                {
+                    LOG(INFO) << "NullSpace: orthonormalize basis functions";
+                    this->orthonormalizeBasisVector();
+                }
+            }
+        }
 private :
 
     template <typename EltType>
@@ -196,6 +210,38 @@ private :
 private :
     std::vector<vector_ptrtype> M_basisVector;
 };
+
+template<typename SpaceType, typename ExprType>
+void nullspace( NullSpace<double>& K, boost::shared_ptr<SpaceType> Xh, ExprType&& e )
+{
+    auto u = Xh->elementPtr(e);
+    K.push_back( u );
+    K.close();
+}
+
+template<typename SpaceType, typename ExprType, typename... Args>
+void nullspace( NullSpace<double>& K, boost::shared_ptr<SpaceType> Xh, ExprType&& e, Args... args )
+{
+    auto u = Xh->elementPtr(e);
+    K.push_back( u );
+    nullspace( K, Xh, args...);
+}
+
+template<typename SpaceType, typename ExprType, typename... Args>
+NullSpace<double> nullspace( boost::shared_ptr<SpaceType> Xh, ExprType&& e,  Args... args )
+{
+    NullSpace<double> K;
+    nullspace( K, Xh, e, args...);
+    return K;
+}
+
+template<typename SpaceType, typename ExprType, typename... Args>
+boost::shared_ptr<NullSpace<double>>  nullspace_ptr( boost::shared_ptr<SpaceType> Xh, ExprType&& e, Args... args )
+{
+    boost::shared_ptr<NullSpace<double>> K( boost::make_shared<NullSpace<double>>() );
+    nullspace( *K, Xh, e, args...);
+    return K;
+}
 
 } // namespace Feel
 

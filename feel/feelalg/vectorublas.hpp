@@ -115,12 +115,15 @@ public:
     VectorUblas( VectorUblas const & m );
 
     VectorUblas( VectorUblas<value_type>& m, range_type const& range, datamap_ptrtype const& dm );
+    VectorUblas( VectorUblas<value_type>& m, slice_type const& range, datamap_ptrtype const& dm );
 
-    VectorUblas( ublas::vector<value_type>& m, range_type const& range );
+    FEELPP_DEPRECATED VectorUblas( ublas::vector<value_type>& m, range_type const& range );
+    VectorUblas( ublas::vector<value_type>& m, range_type const& range, datamap_ptrtype const& dm );
 
     VectorUblas( VectorUblas<value_type>& m, slice_type const& slice );
 
-    VectorUblas( ublas::vector<value_type>& m, slice_type const& slice );
+    FEELPP_DEPRECATED VectorUblas( ublas::vector<value_type>& m, slice_type const& slice );
+    VectorUblas( ublas::vector<value_type>& m, slice_type const& slice, datamap_ptrtype const& dm );
 
 
     ~VectorUblas();
@@ -186,13 +189,7 @@ public:
      */
     T operator()( size_type i ) const
     {
-        FEELPP_ASSERT ( this->isInitialized() ).error( "vector not initialized" );
-        FEELPP_ASSERT ( ( i >= this->firstLocalIndex() ) &&
-                        ( i < this->lastLocalIndex() ) )
-        ( i )
-        ( this->firstLocalIndex() )
-        ( this->lastLocalIndex() ).error( "vector invalid index" );
-
+        checkIndex(i);
         return M_vec.operator()( i-this->firstLocalIndex() );
     }
 
@@ -201,13 +198,7 @@ public:
      */
     T& operator()( size_type i )
     {
-        FEELPP_ASSERT ( this->isInitialized() ).error( "vector not initialized" );
-        FEELPP_ASSERT ( ( i >= this->firstLocalIndex() ) &&
-                        ( i <  this->lastLocalIndex() ) )
-        ( i )
-        ( this->firstLocalIndex() )
-        ( this->lastLocalIndex() ).error( "vector invalid index" );
-        this->outdateGlobalValues();
+        checkIndex(i);
         return M_vec.operator()( i-this->firstLocalIndex() );
     }
 
@@ -216,13 +207,7 @@ public:
      */
     T operator[]( size_type i ) const
     {
-        FEELPP_ASSERT ( this->isInitialized() ).error( "vector not initialized" );
-        FEELPP_ASSERT ( ( i >= this->firstLocalIndex() ) &&
-                        ( i < this->lastLocalIndex() ) )
-        ( i )
-        ( this->firstLocalIndex() )
-        ( this->lastLocalIndex() ).error( "vector invalid index" );
-
+        checkIndex(i);
         return M_vec.operator()( i-this->firstLocalIndex() );
     }
 
@@ -231,13 +216,7 @@ public:
      */
     T& operator[]( size_type i )
     {
-        FEELPP_ASSERT ( this->isInitialized() ).error( "vector not initialized" );
-        FEELPP_ASSERT ( ( i >= this->firstLocalIndex() ) &&
-                        ( i <=  this->lastLocalIndex() ) )
-        ( i )
-        ( this->firstLocalIndex() )
-        ( this->lastLocalIndex() ).error( "vector invalid index" );
-        this->outdateGlobalValues();
+        checkIndex(i);
         return M_vec.operator()( i-this->firstLocalIndex() );
     }
 
@@ -911,6 +890,17 @@ private:
      */
     void checkInvariant() const;
 
+    inline void checkIndex( size_type i ) const
+        {
+            #if 0
+            DCHECK(  this->isInitialized() ) << "vector not initialized";
+            DCHECK (( i >= this->firstLocalIndex() ) &&
+                    ( i <=  this->lastLocalIndex() ) )
+                << "invalid index " << i << " min=" <<  this->firstLocalIndex() << " max=" << this->lastLocalIndex() ;
+            #endif
+        }
+
+    
 private:
     vector_type M_vec;
     mutable bool M_global_values_updated;

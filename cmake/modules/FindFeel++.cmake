@@ -479,6 +479,7 @@ include(feelpp.module.hpddm)
 include(feelpp.module.nlopt)
 include(feelpp.module.ipopt)
 include(feelpp.module.cereal)
+include(feelpp.module.paralution)
 
 #
 # HARTS

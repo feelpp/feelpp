@@ -161,9 +161,12 @@ main( int argc, char** argv )
         a += integrate( _range=internalfaces( mesh ),
                         _expr=stab_coeff*( trans( jumpt( gradt( u ) ) )*jump( grad( v ) ) ) );
     }
+    /// [marker_form1]
     // right hand side
     auto l = form1( _test=Xh );
     l+= integrate( _range=elements( mesh ), _expr=f*id( v ) );
+    /// [marker_form1]
+    //
 
     // boundary condition
     a += on( _range=boundaryfaces( mesh ), _rhs=l, _element=u,
