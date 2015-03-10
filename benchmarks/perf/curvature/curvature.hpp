@@ -206,8 +206,6 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
     //! init backend
     M_backend = backend_type::build( soption("backend") );
 
-    exporter =  boost::shared_ptr<export_type>( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) );
-
     boost::mpi::timer t;
 
     double shear = this->vm()["shear"].template as<value_type>();
@@ -231,6 +229,8 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
                                               _ymin=-1.,_ymax=1. ),
                            //                                _refine=level(),
                            _partitions=nparts );
+
+    exp = exporter( _mesh=mesh );
 
     M_stats.put( "t.init.mesh",t.elapsed() );t.restart();
 
@@ -558,7 +558,7 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
 
     std::cout<<"exporting ...\n";
 
-    if ( exporter->doExport() )
+    if ( exp->doExport() )
     {
 
         if (BasisU::nOrder>1)
@@ -615,49 +615,49 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
                 op_inte_N_to_P1_Vec->apply( nk_opt, nk_opt_p1);
                 op_inte_N_to_P1_Vec->apply( nk_cip, nk_cip_p1);
 
-                exporter->step( 0 )->setMesh( opLagP1->mesh() );
-                exporter->step( 0 )->add( "Delta", delta_p1 );
-                exporter->step( 0 )->add("k_l2", k_l2_p1);
-                exporter->step( 0 )->add("k_smooth",k_smooth_p1);
-                exporter->step( 0 )->add("k_nod", k_nod_p1);
-                exporter->step( 0 )->add("k_hess", k_hess_p1);
-                exporter->step( 0 )->add("k_int", k_int_p1);
-                exporter->step( 0 )->add("k_opt", k_opt_p1);
-                exporter->step( 0 )->add("k_cip", k_cip_p1);
+                exp->step( 0 )->setMesh( opLagP1->mesh() );
+                exp->step( 0 )->add( "Delta", delta_p1 );
+                exp->step( 0 )->add("k_l2", k_l2_p1);
+                exp->step( 0 )->add("k_smooth",k_smooth_p1);
+                exp->step( 0 )->add("k_nod", k_nod_p1);
+                exp->step( 0 )->add("k_hess", k_hess_p1);
+                exp->step( 0 )->add("k_int", k_int_p1);
+                exp->step( 0 )->add("k_opt", k_opt_p1);
+                exp->step( 0 )->add("k_cip", k_cip_p1);
 
-                exporter->step( 0 )->add("nk_l2", nk_l2_p1);
-                exporter->step( 0 )->add("nk_nod", nk_nod_p1);
-                exporter->step( 0 )->add("nk_smooth", nk_smooth_p1);
-                exporter->step( 0 )->add("nk_int", nk_int_p1);
-                exporter->step( 0 )->add("nk_opt", nk_opt_p1);
-                exporter->step( 0 )->add("nk_cip", nk_cip_p1);
+                exp->step( 0 )->add("nk_l2", nk_l2_p1);
+                exp->step( 0 )->add("nk_nod", nk_nod_p1);
+                exp->step( 0 )->add("nk_smooth", nk_smooth_p1);
+                exp->step( 0 )->add("nk_int", nk_int_p1);
+                exp->step( 0 )->add("nk_opt", nk_opt_p1);
+                exp->step( 0 )->add("nk_cip", nk_cip_p1);
 
-                exporter->step( 0 )->add("marker_delta", marker_delta);
-                exporter->step( 0 )->add("n_l2", n_l2);
+                exp->step( 0 )->add("marker_delta", marker_delta);
+                exp->step( 0 )->add("n_l2", n_l2);
 
-                exporter->step(0)->add("modgradphi", l2p->project( modgradphi ));
+                exp->step(0)->add("modgradphi", l2p->project( modgradphi ));
 
-                exporter->step( 0 )->add("init_shape", init_shape);
+                exp->step( 0 )->add("init_shape", init_shape);
 
-                exporter->save();
+                exp->save();
             }
         else
             {
-                exporter->step( 0 )->setMesh( mesh );
-                exporter->step( 0 )->add( "Delta", Delta_proj );
-                exporter->step( 0 )->add("k_l2", k_l2);
-                exporter->step( 0 )->add("k_smooth", k_smooth);
-                exporter->step( 0 )->add("k_nod", k_nod);
-                exporter->step( 0 )->add("k_hess", k_hess);
-                exporter->step( 0 )->add("k_int", k_int);
-                exporter->step( 0 )->add("k_cip", k_cip);
-                exporter->step( 0 )->add("marker_delta", marker_delta);
+                exp->step( 0 )->setMesh( mesh );
+                exp->step( 0 )->add( "Delta", Delta_proj );
+                exp->step( 0 )->add("k_l2", k_l2);
+                exp->step( 0 )->add("k_smooth", k_smooth);
+                exp->step( 0 )->add("k_nod", k_nod);
+                exp->step( 0 )->add("k_hess", k_hess);
+                exp->step( 0 )->add("k_int", k_int);
+                exp->step( 0 )->add("k_cip", k_cip);
+                exp->step( 0 )->add("marker_delta", marker_delta);
 
-                exporter->step( 0 )->add("n_l2", n_l2);
-                exporter->step( 0 )->add("n_smooth", n_smooth);
+                exp->step( 0 )->add("n_l2", n_l2);
+                exp->step( 0 )->add("n_smooth", n_smooth);
 
-                exporter->step( 0 )->add("init_shape", init_shape);
-                exporter->save();
+                exp->step( 0 )->add("init_shape", init_shape);
+                exp->save();
             }
     }
 
