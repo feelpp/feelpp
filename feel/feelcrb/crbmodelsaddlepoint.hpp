@@ -112,13 +112,47 @@ public :
 
     CRBModelSaddlePoint() :
         super_type()
-        {}
+        {
+            // We need 2 matrix and 2 backend for the different inner product of each space
+            this->M_inner_product_matrix.resize(2);
+            this->M_backend_l2.resize(2);
+            this->M_backend_l2[0]=backend( _name="backend-Xh0" );
+            this->M_backend_l2[1]=backend( _name="backend-Xh1" );
+        }
 
+    /**
+     * The user can specifie the inner product of each space
+     *
+     * \param form2 the bilinear used as inner product
+     * \param n_space the number of the concerned space
+     */
+    template <typename Form2Type>
+    void addEnergyMatrix( Form2Type const& form2, int const& n_space )
+        {
+            addEnergyMatrix( form2.matrixPtr(), n_space );
+        }
+    /**
+     * The user can specifie the inner product of each space
+     *
+     * \param mat the matrix used to evaluate the inner product
+     * \param n_space the number of the concerned space
+     */
+    void addEnergyMatrix( sparse_matrix_ptrtype const& mat, int const& nSpace )
+        {
+            CHECK( nSpace<2 )<<"Invalid space number="<<nSpace<<", when we only have 2 spaces\n";
+            this->M_inner_product_matrix[nSpace] = mat;
+        }
+
+    /**
+     * Solve the FEM problem for a given parametre \param mu
+     */
     virtual element_type solve( parameter_type const& mu )
         {
             bool transpose = boption("crb.saddlepoint.transpose");
             M_current_mu = mu;
 
+            /// We first merge the affine decomposition for all block
+            /// with the given parameter
             mergeBlock( A00, blockA(0,0), mu );
             mergeBlock( A01, blockA(0,1), mu );
             mergeBlock( A10, blockA(1,0), mu );
@@ -127,6 +161,8 @@ public :
             mergeBlock( F0, blockF(0,0), mu );
             mergeBlock( F1, blockF(0,1), mu );
 
+            /// We transpose the non diagonal blocks if one is empty
+            /// and if the transpose option is set to true
             if ( transpose && blockA(0,1) && !blockA(1,0) )
                 A01->transpose( A10 );
             if ( transpose && !blockA(0,1) && blockA(1,0) )
@@ -135,6 +171,7 @@ public :
             auto u=Xh0->elementPtr();
             auto p=Xh1->elementPtr();
 
+            /// We assemble the block matrix and vectors
             BlocksBaseSparseMatrix<value_type> block_lhs(2,2);
             block_lhs(0,0)=A00;
             block_lhs(0,1)=A01;
@@ -152,29 +189,22 @@ public :
             block_sol(1)=p;
             auto blockSOL = backend()->newBlockVector( _block=block_sol, _copy_values=false );
 
+            /// We solve the linear system
             backend( _rebuild=true )->solve( _matrix=blockLHS, _rhs=blockRHS, _solution=blockSOL );
 
             M_U=*blockSOL;
             return M_U;
         }
 
-    subelement_type<0> supremizer( parameter_type const& mu, vector_ptrtype const& vec )
-        {
-            vector_ptrtype u_vec = backend()->newVector( Xh0 );
-            u_vec->zero();
-            if ( M_current_mu!=mu )
-                mergeBlock( A01, blockA(0,1), mu );
-            u_vec->addVector( vec, A01 );
 
-            subelement_type<0> u = Xh0->element();
-            u = *u_vec;
-            return u;
-        }
-
+    /**
+     * Initialize elements specific to saddle point problems
+     */
     virtual void initDerived()
         {
             M_U = this->Xh->element();
 
+            /// We create all block of matrix and vectors
             A00 = backend()->newMatrix(_test=Xh0, _trial=Xh0 );
             A01 = backend()->newMatrix(_test=Xh0, _trial=Xh1, _buildGraphWithTranspose=true );
             A10 = backend()->newMatrix(_test=Xh1, _trial=Xh0, _buildGraphWithTranspose=true );
@@ -182,6 +212,30 @@ public :
 
             F0 = backend()->newVector( Xh0 );
             F1 = backend()->newVector( Xh1 );
+
+            // if user did not specifie inner product, we use the default one
+            // H1 seminorm on Xh0 : (u,v)=\int grad(u).grad(v)
+            if ( !this->M_inner_product_matrix[0] )
+            {
+                auto u = Xh0->element();
+                this->M_inner_product_matrix[0] = backend()->newMatrix( _test=Xh0, _trial=Xh0 );
+                form2( _trial=Xh0, _test=Xh0, _matrix=this->M_inner_product_matrix[0] )
+                    = integrate( elements(Xh0->mesh()),
+                                 inner( idt(u), id(u) )
+                                 +inner( gradt(u), grad(u) ) );
+                this->M_inner_product_matrix[0]->close();
+            }
+            /// l2 norm on Xh1 : (p,q)=\int p.q
+            if ( !this->M_inner_product_matrix[1] )
+            {
+                auto p = Xh1->element();
+                this->M_inner_product_matrix[1] = backend()->newMatrix( _test=Xh1, _trial=Xh1 );
+                form2( _test=Xh1, _trial=Xh1, _matrix=this->M_inner_product_matrix[1] )
+                    =integrate( elements(Xh1->mesh()),
+                                inner( idt(p), id(p) ) );
+                this->M_inner_product_matrix[1]->close();
+            }
+
         }
 
     virtual void setFunctionSpaces( functionspace_ptrtype Vh )
@@ -205,6 +259,47 @@ public :
             return fusion::at_c<T>( v );
         }
 
+
+    subelement_type<0> supremizer( parameter_type const& mu, vector_type const& vec )
+        {
+            auto us = Xh0->element();
+
+            vector_ptrtype rhs = this->M_backend_l2[0]->newVector( Xh0 );
+            rhs->zero();
+
+            if ( M_current_mu!=mu )
+            {
+                CRB_COUT<<"remerge\n";
+                mergeBlock( A01, blockA(0,1), mu );
+                if ( boption("crb.saddlepoint.transpose") && !blockA(0,1) && blockA(1,0) )
+                {
+                    mergeBlock( A10, blockA(1,0), mu );
+                    A10->transpose( A01 );
+                }
+            }
+            rhs->addVector( vec, *A01 );
+            this->M_backend_l2[0]->solve( _matrix=this->M_inner_product_matrix[0],
+                                          _rhs=rhs, _solution=us );
+            return us;
+        }
+
+    subelement_type<0> falseSupremizer( parameter_type const& mu, vector_ptrtype const& vec )
+        {
+            vector_ptrtype u_vec = backend()->newVector( Xh0 );
+            u_vec->zero();
+            if ( M_current_mu!=mu )
+            {
+                mergeBlock( A01, blockA(0,1), mu );
+                if ( boption("crb.saddlepoint.transpose") && !blockA(0,1) && blockA(1,0) )
+                    A10->transpose( A01 );
+            }
+            u_vec->addVector( vec, A01 );
+
+            subelement_type<0> u = Xh0->element();
+            u = *u_vec;
+            return u;
+        }
+
 protected :
     template<typename BlockType>
     void mergeBlock( sparse_matrix_ptrtype mat, BlockType b, parameter_type const& mu )
@@ -217,6 +312,7 @@ protected :
                 for( int q=0; q<b->Q(); q++ )
                     for( int m=0; m<b->mMax(q); m++ )
                         mat->addMatrix( beta[q][m], Aqm[q][m] );
+                mat->close();
             }
         }
     template<typename BlockType>
@@ -232,6 +328,7 @@ protected :
                         vec->add( beta[q][m], Aqm[q][m] );
             }
         }
+
     parameter_type M_current_mu;
 
     sparse_matrix_ptrtype A00, A01, A10, A11;
@@ -243,6 +340,9 @@ protected :
 
     rbspace_ptrtype<0> XN0;
     rbspace_ptrtype<1> XN1;
+
+    backend_ptrtype M_backend0;
+
 }; // class CRBModelSaddlepoint
 
 } // namespace Feel

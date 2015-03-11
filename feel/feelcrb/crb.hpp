@@ -688,7 +688,7 @@ public:
      * return the norm of the matrix A(i,j)=M_model->scalarProduct( WN[j], WN[i] ), should be 0
      */
     template <typename WnType>
-    double orthonormalize( size_type N, WnType& wn, int Nm = 1 );
+    double orthonormalize( size_type N, WnType& wn, int Nm = 1, int n_space=0, int nTimes=1 );
 
     void checkResidual( parameter_type const& mu, std::vector< std::vector<double> > const& primal_residual_coeffs,
                         std::vector< std::vector<double> > const& dual_residual_coeffs , element_type & u, element_type & udu ) const;
@@ -707,7 +707,7 @@ public:
      * return the norm of the matrix A(i,j)=M_model->scalarProduct( WN[j], WN[i] ), should be 0
      */
     template <typename WnType>
-    double checkOrthonormality( int N, const WnType& wn ) const;
+    double checkOrthonormality( int N, const WnType& wn, int n_space ) const;
 
     /**
      * check the reduced basis space invariant properties
@@ -6064,48 +6064,45 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
 template<typename TruthModelType>
 template <typename WnType>
 double
-CRB<TruthModelType>::orthonormalize( size_type N, WnType& wn, int Nm )
+CRB<TruthModelType>::orthonormalize( size_type N, WnType& wn, int Nm, int n_space, int nTimes )
 {
-    int proc_number = this->worldComm().globalRank();
-    if( proc_number == 0 ) std::cout << "  -- orthonormalization (Gram-Schmidt)\n";
+    if(nTimes==0)
+        return 0;
     DVLOG(2) << "[CRB::orthonormalize] orthonormalize basis for N=" << N << "\n";
     DVLOG(2) << "[CRB::orthonormalize] orthonormalize basis for WN="
              << wn.size() << "\n";
     DVLOG(2) << "[CRB::orthonormalize] starting ...\n";
 
-    for ( size_type i = 0; i < N; ++i )
+    for( int t=0; t<nTimes; t++ )
     {
-        for ( size_type j = std::max( i+1,N-Nm ); j < N; ++j )
+        CRB_COUT << "  -- orthonormalization (Gramm-Schmidt), RBSpace #"<<n_space<<std::endl;
+        for ( size_type i = 0; i < N; ++i )
         {
-            value_type __rij_pr = M_model->scalarProduct(  wn[i], wn[ j ] );
-            wn[j].add( -__rij_pr, wn[i] );
+            for ( size_type j = std::max( i+1,N-Nm ); j < N; ++j )
+            {
+                value_type __rij_pr = M_model->scalarProduct(  wn[i], wn[ j ], n_space );
+                wn[j].add( -__rij_pr, wn[i] );
+            }
+        }
+        // normalize
+        for ( size_type i =N-Nm; i < N; ++i )
+        {
+            value_type __rii_pr = math::sqrt( M_model->scalarProduct(  wn[i], wn[i], n_space ) );
+            wn[i].scale( 1./__rii_pr );
         }
     }
-    // normalize
-    for ( size_type i =N-Nm; i < N; ++i )
-    {
-        value_type __rii_pr = math::sqrt( M_model->scalarProduct(  wn[i], wn[i] ) );
-        wn[i].scale( 1./__rii_pr );
-    }
-
     DVLOG(2) << "[CRB::orthonormalize] finished ...\n";
     DVLOG(2) << "[CRB::orthonormalize] copying back results in basis\n";
 
-    //if ( ioption(_name="crb.check.gs") )
-    //return the norm of the matrix A(i,j)=M_model->scalarProduct( wn[j], wn[i] )
-    return checkOrthonormality( N , wn );
+    return checkOrthonormality( N , wn, n_space );
 }
 
 template <typename TruthModelType>
 template <typename WnType>
 double
-CRB<TruthModelType>::checkOrthonormality ( int N, const WnType& wn ) const
+CRB<TruthModelType>::checkOrthonormality ( int N, const WnType& wn, int n_space ) const
 {
-
-    if ( wn.size()==0 )
-    {
-        throw std::logic_error( "[CRB::checkOrthonormality] ERROR : size of wn is zero" );
-    }
+    CHECK ( wn.size()>0 )<< "[CRB::checkOrthonormality] ERROR : size of wn is zero\n";
 
     if ( orthonormalize_primal*orthonormalize_dual==0 )
     {
@@ -6119,20 +6116,12 @@ CRB<TruthModelType>::checkOrthonormality ( int N, const WnType& wn ) const
     I.setIdentity( N, N );
 
     for ( int i = 0; i < N; ++i )
-    {
         for ( int j = 0; j < N; ++j )
-        {
-            A( i, j ) = M_model->scalarProduct(  wn[i], wn[j] );
-        }
-    }
+            A( i, j ) = M_model->scalarProduct(  wn[i], wn[j], n_space );
 
     A -= I;
     DVLOG(2) << "orthonormalization: " << A.norm() << "\n";
-    if ( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
-    {
-        LOG( INFO ) << "    o check : " << A.norm() << " (should be 0)";
-    }
-    //FEELPP_ASSERT( A.norm() < 1e-14 )( A.norm() ).error( "orthonormalization failed.");
+    LOG( INFO ) << "    o check : " << A.norm() << " (should be 0)";
 
     return A.norm();
 }

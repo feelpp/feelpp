@@ -236,11 +236,13 @@ public:
         M_backend( backend() ),
         M_backend_primal( backend( _name="backend-primal") ),
         M_backend_dual( backend( _name="backend-dual") ),
-        M_backend_l2( backend( _name="backend-l2" ) ),
         Dmu( new parameterspace_type ),
         M_Nl( 0 ),
         M_has_eim( false )
-        {}
+        {
+            M_backend_l2.resize(1);
+            M_backend_l2[0] = backend( _name="backend-l2" );
+        }
 
     virtual void initModel()=0;
 
@@ -249,9 +251,8 @@ public:
             if ( M_is_initialized )
                 return;
 
-            bool is_symmetric = boption(_name="crb.use-symmetric-matrix");
-
             M_mode = mode;
+            M_inner_product_matrix.resize(1);
 
             M_A = matrix_ad_type( this->shared_from_this() );
             M_M = matrix_ad_type( this->shared_from_this() );
@@ -260,19 +261,10 @@ public:
             LOG(INFO)<< "Model Initialization";
             initModel();
             initDerived();
-            countAffineDecompositionTerms();
-
             if ( !is_time_dependent )
                 initializeMassMatrix();
 
-            double norm=0;
-            if ( hasEim() || !is_symmetric )
-            {
-                M_inner_product_matrix = mergeLinearA();
-                norm = M_inner_product_matrix->l1Norm();
-            }
-            else if ( norm==0 && is_symmetric )
-                M_inner_product_matrix = M_energy_matrix;
+            countAffineDecompositionTerms();
 
             checkBdf();
 
@@ -282,7 +274,18 @@ public:
         }
 
     virtual void initDerived()
-        {}
+        {
+            bool is_symmetric = boption(_name="crb.use-symmetric-matrix");
+
+            double norm=0;
+            if ( hasEim() || !is_symmetric )
+            {
+                M_inner_product_matrix[0] = mergeLinearA();
+                norm = M_inner_product_matrix[0]->l1Norm();
+            }
+            else if ( norm==0 && is_symmetric )
+                M_inner_product_matrix[0] = M_energy_matrix;
+        }
 
     template< int Row=0, int Col=0, typename OpeType, typename BetaType >
     void addMass( OpeType ope, BetaType beta )
@@ -1060,15 +1063,15 @@ public:
 
     sparse_matrix_ptrtype energyMatrix ()
         {
-            double norm = M_inner_product_matrix->l1Norm();
+            double norm = M_inner_product_matrix[0]->l1Norm();
             CHECK( norm > 0 )<<"The energy matrix has not be filled !\n";
-            return M_inner_product_matrix;
+            return M_inner_product_matrix[0];
         }
     sparse_matrix_ptrtype energyMatrix () const
         {
-            double norm = M_inner_product_matrix->l1Norm();
+            double norm = M_inner_product_matrix[0]->l1Norm();
             CHECK( norm > 0 )<<"The energy matrix has not be filled ! \n";
-            return M_inner_product_matrix;
+            return M_inner_product_matrix[0];
         }
 
     void addMassMatrix( form2_type const & f )
@@ -1095,17 +1098,17 @@ public:
     /**
      * returns the scalar product of the vector x and vector y
      */
-    double scalarProduct( vector_ptrtype const& X, vector_ptrtype const& Y )
+    double scalarProduct( vector_ptrtype const& X, vector_ptrtype const& Y, int n_space=0 )
         {
-            double norm = M_inner_product_matrix->l1Norm();
-            CHECK( norm > 0 )<<"The energy matrix has not be filled !\n";
-            return M_inner_product_matrix->energy( X, Y );
+            double norm = M_inner_product_matrix[n_space]->l1Norm();
+            CHECK( norm > 0 )<<"The energy matrix has not be filled ! (space #)"<<n_space<<std::endl;
+            return M_inner_product_matrix[n_space]->energy( X, Y );
         }
-    double scalarProduct( vector_type const& X, vector_type const& Y )
+    double scalarProduct( vector_type const& X, vector_type const& Y, int n_space=0 )
         {
-            double norm = M_inner_product_matrix->l1Norm();
-            CHECK( norm > 0 )<<"The energy matrix has not be filled !\n";
-            return M_inner_product_matrix->energy( X, Y );
+            double norm = M_inner_product_matrix[n_space]->l1Norm();
+            CHECK( norm > 0 )<<"The energy matrix has not be filled ! (space #)"<<n_space<<std::endl;
+            return M_inner_product_matrix[n_space]->energy( X, Y );
         }
 
     /**
@@ -1128,10 +1131,10 @@ public:
     /**
      * returns the scalar product used to assemble POD matrix of the vector x and vector y
      */
-    double scalarProductForPod( vector_type const& X, vector_type const& Y )
+    double scalarProductForPod( vector_type const& X, vector_type const& Y, int n_space=0 )
         {
             if ( is_time_dependent )
-                return M_inner_product_matrix->energy( X, Y );
+                return M_inner_product_matrix[n_space]->energy( X, Y );
             else
                 return 0;
         }
@@ -1160,9 +1163,9 @@ public:
             fusion::for_each( index_vector, compute_normL2_in_composite_case );
             return compute_normL2_in_composite_case.norm();
         }
-    void l2solve( vector_ptrtype& u, vector_ptrtype const& f )
+    void l2solve( vector_ptrtype& u, vector_ptrtype const& f, int const& n_space=0 )
         {
-            M_backend_l2->solve( _matrix=M_inner_product_matrix,  _solution=u, _rhs=f );
+            M_backend_l2[n_space]->solve( _matrix=M_inner_product_matrix[n_space],  _solution=u, _rhs=f );
         }
 
 
@@ -2000,13 +2003,13 @@ protected:
     backend_ptrtype M_backend;
     backend_ptrtype M_backend_primal;
     backend_ptrtype M_backend_dual;
-    backend_ptrtype M_backend_l2;
+    std::vector< backend_ptrtype > M_backend_l2;
 
     parameterspace_ptrtype Dmu;
     functionspace_ptrtype Xh;
     rbfunctionspace_ptrtype XN;
 
-    sparse_matrix_ptrtype M_inner_product_matrix;
+    std::vector< sparse_matrix_ptrtype > M_inner_product_matrix;
     sparse_matrix_ptrtype M_energy_matrix;;
     sparse_matrix_ptrtype M_mass_matrix;
 

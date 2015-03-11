@@ -42,6 +42,8 @@
 namespace Feel
 {
 
+po::options_description crbSaddlePointOptions( std::string const& prefix = "" );
+
 /**
  * \class CRBSaddlePoint
  * \brief Certfified Reduced BAsis for Saddle Point Problems
@@ -597,19 +599,28 @@ CRBSaddlePoint<TruthModelType>::offline()
         XN1->addDualBasisElement( p );
         M_Nadded1=1;
         M_N1[this->M_N] += M_Nadded1;
-        //this->orthonormalize( M_N1[this->M_N], XN1->primalRB(), M_Nadded1 );
-        //this->orthonormalize( M_N1[this->M_N], XN1->primalRB(), M_Nadded1 );
-        //this->orthonormalize( M_N1[this->M_N], XN1->primalRB(), M_Nadded1 );
 
+        this->orthonormalize( M_N1[this->M_N], XN1->primalRB(), M_Nadded1, 1,
+                              ioption("crb.saddlepoint.orthonormalize1") );
 
         XN0->addPrimalBasisElement( u );
         XN0->addDualBasisElement( u );
         M_Nadded0=1;
 
+        if ( boption("crb.saddlepoint.add-false-supremizer") )
+        {
+            timer.restart();
+            auto us = this->M_model->falseSupremizer( mu, p );
+            XN0->addPrimalBasisElement( us );
+            XN0->addDualBasisElement( us );
+            M_Nadded0++;
+            CRB_COUT << "  -- false supremizer added in "<< timer.elapsed() << std::endl;
+        }
         if ( boption("crb.saddlepoint.add-supremizer") )
         {
             timer.restart();
-            auto us = this->M_model->supremizer( mu, p );
+            //auto us = this->M_model->supremizer( mu, p );
+            auto us = this->M_model->supremizer( mu, XN1->primalRB().back() );
             XN0->addPrimalBasisElement( us );
             XN0->addDualBasisElement( us );
             M_Nadded0++;
@@ -617,13 +628,9 @@ CRBSaddlePoint<TruthModelType>::offline()
         }
 
         M_N0[this->M_N] += M_Nadded0;
+        this->orthonormalize( M_N0[this->M_N], XN0->primalRB(), M_Nadded0, 0,
+                              ioption("crb.saddlepoint.orthonormalize0") );
 
-        if( boption(_name="crb.orthonormalize-primal") )
-        {
-            // this->orthonormalize( M_N0[this->M_N], XN0->primalRB(), M_Nadded0 );
-            //this->orthonormalize( M_N0[this->M_N], XN0->primalRB(), M_Nadded0 );
-            //this->orthonormalize( M_N0[this->M_N], XN0->primalRB(), M_Nadded0 );
-        }
 
         matrixblockrange_type matrixrange;
         ComputeADElements compute_elements( this->shared_from_this() );
@@ -723,6 +730,7 @@ CRBSaddlePoint<TruthModelType>::lb( size_type N, parameter_type const& mu,
 
     return boost::make_tuple( output_vector, matrix_info);
 } // lb()
+
 
 template<typename TruthModelType>
 void
