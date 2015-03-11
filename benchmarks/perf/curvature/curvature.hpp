@@ -235,7 +235,8 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
     mpi::all_reduce( this->comm(), mesh->numElements() , gnelts, [] ( size_type x, size_type y ) {return x + y;} );
 
     // space
-    Xh = space_type::New( mesh );
+    std::vector<bool> extendedDT(1,true);
+    Xh = space_type::New( _mesh=mesh, _extended_doftable=extendedDT );
     M_stats.put( "n.space.nelts", gnelts );
     M_stats.put( "n.space.nlocalelts",Xh->mesh()->numElements() );
     M_stats.put( "n.space.ndof",Xh->nDof() );
@@ -243,7 +244,7 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
     M_stats.put( "t.init.space",t.elapsed() );
     LOG(INFO) << "  -- time space and functions construction "<<t.elapsed()<<" seconds \n";
 
-    space_Vec_ptrtype Xh_Vec = space_Vec_type::New( mesh );
+    space_Vec_ptrtype Xh_Vec = space_Vec_type::New( _mesh=mesh, _extended_doftable=extendedDT );
 
     M_stats.put( "n.spacev.nelts", gnelts );
     M_stats.put( "n.spacev.nlocalelts",Xh_Vec->mesh()->numElements() );
