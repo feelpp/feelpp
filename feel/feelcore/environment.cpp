@@ -1220,6 +1220,7 @@ Environment::doOptions( int argc, char** argv,
             {
                 LOG( INFO ) << "Reading " << S_vm["config-file"].as<std::string>() << "...";
                 S_configFileNames.insert( fs::absolute( S_vm["config-file"].as<std::string>() ).string() );
+                S_cfgdir = fs::absolute( S_vm["config-file"].as<std::string>() ).parent_path();
                 std::ifstream ifs( S_vm["config-file"].as<std::string>().c_str() );
                 po::store( parse_config_file( ifs, *S_desc, true ), S_vm );
             }
@@ -1279,6 +1280,7 @@ Environment::doOptions( int argc, char** argv,
             {
                 LOG( INFO ) << "Reading  " << config_name << "...\n";
                 S_configFileNames.insert( fs::absolute( config_name ).string() );
+                S_cfgdir = fs::absolute( config_name ).parent_path();
                 std::ifstream ifs( config_name.c_str() );
                 store( parse_config_file( ifs, *S_desc, true ), S_vm );
                 LOG( INFO ) << "Reading  " << config_name << " done.\n";
@@ -1488,10 +1490,10 @@ Environment::geoPathList()
     plist.push_back( fs::current_path().string() );
     std::for_each( S_paths.rbegin(), S_paths.rend(),
                    [&plist] ( fs::path const& p )
-    {
-        plist.push_back( p.string() );
-    } );
-
+                   {
+                       plist.push_back( p.string() );
+                   } );
+    
     if ( fs::exists( Environment::localGeoRepository() ) )
         plist.push_back( Environment::localGeoRepository() );
 
@@ -1906,12 +1908,14 @@ Environment::expand( std::string const& expr )
 {
     std::string topSrcDir = BOOST_PP_STRINGIZE( FEELPP_SOURCE_DIR );
     std::string topBuildDir = BOOST_PP_STRINGIZE( FEELPP_BUILD_DIR );
+    std::string cfgDir = S_cfgdir.string();
     std::string homeDir = ::getenv( "HOME" );
     std::string dataDir = ( fs::path( topSrcDir )/fs::path( "data" ) ).string();
     std::string exprdbDir = ( fs::path( Environment::rootRepository() )/fs::path( "exprDB" ) ).string();
 
     VLOG( 2 ) << "topSrcDir " << topSrcDir << "\n"
               << "topBuildDir " << topBuildDir << "\n"
+              << "cfgDir " << cfgDir << "\n"
               << "HOME " << homeDir << "\n"
               << "Environment::rootRepository() " << Environment::rootRepository()
               << "dataDir " << dataDir << "\n"
@@ -1921,6 +1925,7 @@ Environment::expand( std::string const& expr )
     std::string res=expr;
     boost::replace_all( res, "$top_srcdir", topSrcDir );
     boost::replace_all( res, "$top_builddir", topBuildDir );
+    boost::replace_all( res, "$cfgdir", cfgDir );
     boost::replace_all( res, "$home", homeDir );
     boost::replace_all( res, "$repository", Environment::rootRepository() );
     boost::replace_all( res, "$datadir", dataDir );
@@ -1948,6 +1953,7 @@ std::vector<fs::path> Environment::S_paths = { fs::current_path(),
                                                Environment::systemGeoRepository().get<0>()
                                              };
 fs::path Environment::S_scratchdir;
+fs::path Environment::S_cfgdir;
 
 std::string Environment::olAppPath;
 std::vector<std::string> Environment::olAutoloadFiles;

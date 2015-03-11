@@ -360,6 +360,7 @@ public:
     void zero ( size_type /*start1*/, size_type /*stop1*/ )
     {
         //eigen::project( (*this), eigen::range( start1, stop1 ) ) = eigen::zero_vector<value_type>( stop1 );
+        this->zero();
     }
 
     /**
