@@ -147,15 +147,24 @@ ExporterVTK<MeshType,N>::init()
             inSituProcessor->RemoveAllPipelines();
         }
 
-        vtkSmartPointer<vtkCPPythonScriptPipeline> pipeline = vtkSmartPointer<vtkCPPythonScriptPipeline>::New();
-
         /* specify a user script */
         std::string pyscript = soption( _name="exporter.vtk.insitu.pyscript" );
         if(pyscript != "")
         {
+            vtkSmartPointer<vtkCPPythonScriptPipeline> pipeline = vtkSmartPointer<vtkCPPythonScriptPipeline>::New();
+
             pipeline->Initialize(pyscript.c_str());
             inSituProcessor->AddPipeline(pipeline.GetPointer());
         }
+        /* else revert to a basic VTK pipeline */
+#if 0
+        else
+        {
+            vtkSmartPointer<vtkCPVTKPipeline> pipeline = vtkSmartPointer<vtkCPVTKPipeline>::New();
+            pipeline->Initialize();
+            inSituProcessor->AddPipeline(pipeline.GetPointer());
+        }
+#endif
     }
 #endif
 #endif
@@ -527,6 +536,75 @@ ExporterVTK<MeshType,N>::save() const
     DVLOG(2) << "[ExporterVTK] saving done\n";
 
     this->saveTimeSet();
+}
+
+template<typename MeshType, int N>
+vtkSmartPointer<vtkUnstructuredGrid>
+ExporterVTK<MeshType,N>::getOutput() const
+{
+    int stepIndex = TS_INITIAL_INDEX;
+    double time = 0.0;
+    bool hasSteps = true;
+    std::ostringstream fname;
+    std::ostringstream oss;
+
+    timeset_const_iterator __ts_it = this->beginTimeSet();
+    timeset_const_iterator __ts_en = this->endTimeSet();
+
+    /* instanciante data object */
+    vtkSmartPointer<vtkout_type> out = vtkSmartPointer<vtkout_type>::New();
+
+    while ( __ts_it != __ts_en )
+    {
+        timeset_ptrtype __ts = *__ts_it;
+
+        typename timeset_type::step_const_iterator __it = __ts->beginStep();
+        typename timeset_type::step_const_iterator __end = __ts->endStep();
+
+        /* check if we have steps for the current dataset */
+        if(__it == __end)
+        {
+            LOG(INFO) << "Timeset " << __ts->name() << " (" << __ts->index() << ") contains no timesteps (Consider using add() or addRegions())" << std::endl;
+            hasSteps = false;
+
+            /* save mesh if we have one */
+            if(__ts->hasMesh())
+            {
+                this->saveMesh(__ts->mesh(), out);
+            }
+        }
+        else
+        {
+            __it = boost::prior( __end );
+
+            typename timeset_type::step_ptrtype __step = *__it;
+
+            if ( __step->isInMemory() )
+            {
+                /* write data into vtk object */
+                this->saveMesh(__step->mesh(), out);
+                this->saveNodeData( __step, __step->beginNodalScalar(), __step->endNodalScalar(), out );
+                this->saveNodeData( __step, __step->beginNodalVector(), __step->endNodalVector(), out );
+                this->saveNodeData( __step, __step->beginNodalTensor2(), __step->endNodalTensor2(), out );
+                this->saveElementData( __step, __step->beginElementScalar(), __step->endElementScalar(), out );
+                this->saveElementData( __step, __step->beginElementVector(), __step->endElementVector(), out );
+                this->saveElementData( __step, __step->beginElementTensor2(), __step->endElementTensor2(), out );
+
+#if VTK_MAJOR_VERSION >= 6 && defined(VTK_HAS_PARALLEL)
+                out->GetInformation()->Set(vtkDataObject::DATA_TIME_STEP(), __step->time());
+#endif
+
+                /* record time value */
+                time = __step->time();
+                stepIndex = __step->index();
+
+            }
+        }
+
+        __ts_it++;
+    }
+
+    return out;
 }
 
 template<typename MeshType, int N>
