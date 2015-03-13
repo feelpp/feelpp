@@ -129,12 +129,16 @@ public :
         M_dir( dirichlet_type )
 
     {
-        M_matrixFull = this->backend()->newMatrix( _trial=this->domainSpace(), _test=this->dualImageSpace() );
+        if ( M_proj_type == CIP && domainSpace->dof()->worldComm().localSize() > 1 )
+            CHECK( domainSpace->dof()->buildDofTableMPIExtended() && dualImageSpace->dof()->buildDofTableMPIExtended() ) << "functionspaces must have extended dof table";
+
+        size_type thepattern = ( M_proj_type == CIP )? size_type(Pattern::EXTENDED) : size_type(Pattern::COUPLED);
+        M_matrixFull = this->backend()->newMatrix( _trial=this->domainSpace(), _test=this->dualImageSpace(),_pattern=thepattern );
 
         this->matPtr() = M_matrixFull;
 
         if ( M_proj_type == LIFT )
-            M_matrixCst = this->backend()->newMatrix( _trial=this->domainSpace(), _test=this->dualImageSpace() ) ;
+            M_matrixCst = this->backend()->newMatrix( _trial=this->domainSpace(), _test=this->dualImageSpace(),_pattern=thepattern );
         else
             M_matrixCst = M_matrixFull; // same pointer
 
