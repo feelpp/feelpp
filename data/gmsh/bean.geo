@@ -42,6 +42,13 @@ r2=0.5;
 // IMPORTANT NOTE: Sometimes 3D mesh generation crash for some shape!
 //                 (For example d=1,r1=0.5,r2=0.6)
 
+// Add gmsh parameters with above values as default.
+h = DefineNumber[ h, Name "Parameters/h" ];
+dim = DefineNumber[ dim, Name "Parameters/dim" ];
+d = DefineNumber[ d, Name "Parameters/d" ];
+r1 = DefineNumber[ r1, Name "Parameters/r1" ];
+r2 = DefineNumber[ r2, Name "Parameters/r2" ];
+
 ////////////////////////////////////////////////////////////////////////////////
 
 
