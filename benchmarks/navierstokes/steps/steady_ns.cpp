@@ -33,6 +33,7 @@ int main(int argc, char**argv )
     using namespace Feel;
 	po::options_description stokesoptions( "Steady NS options" );
 	stokesoptions.add_options()
+        ( "rho", po::value<double>()->default_value( 1.0 ), "coeff" )
 		( "mu", po::value<double>()->default_value( 1.0 ), "coeff" )
         ( "penaldir", po::value<double>()->default_value( 100 ), "coeff" )
         ( "sym", po::value<bool>()->default_value( 0 ), "use symmetric deformation tensor" )

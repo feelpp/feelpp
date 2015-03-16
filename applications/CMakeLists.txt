@@ -1,7 +1,7 @@
 # -*- mode: cmake; coding: utf-8 -*-
 ###  CMakeLists.txt ---
 #
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2009-11-12
 #
 #  Copyright (C) 2009-2010 Université Joseph Fourier (Grenoble I)
