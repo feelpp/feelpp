@@ -22,41 +22,48 @@ BOOST_AUTO_TEST_CASE( test_0 )
     auto u = Vh->element();
     auto v = Vh->element();
 
+    tic();
     auto a = form2( _test=Vh, _trial=Vh);
     a = integrate( _range=elements( mesh ), _expr=trans(curlt(u))*curl(v));
-    auto matA = a.matrixPtr();
-    matA->close();
-
+    toc("assembly a");
+    tic();
     auto b = form2( _test=Vh, _trial=Vh);
     b = integrate( elements(mesh), trans(idt( u ))*id( v ) );
-    auto matB = b.matrixPtr();
-    matB->close();
-
-    auto modes = eigs( _matrixA=matA,
-                       _matrixB=matB,
-                       _solver=KRYLOVSCHUR,
-                       _problem=GHEP,
-                       _transform=SINVERT,
-                       _spectrum=SMALLEST_MAGNITUDE,
-                       _nev=15,
-                       _ncv=30
-                       );
-
+    toc("assembly b");
+    tic();
+    auto modes = veigs( _formA=a,
+                        _formB=b,
+                        _solver="krylovschur",
+                        _problem="ghep",
+                        _transform="sinvert",
+                        _spectrum="smallest_magnitude",
+                        _nev=15,
+                        _ncv=30,
+                        _verbose=1
+                        );
+    toc("eigen solve");
     if ( Environment::rank() == 0 )
         BOOST_TEST_MESSAGE( "number of modes : " << modes.size() );
+    tic();
+    auto matA = a.matrixPtr();
+    auto matB = b.matrixPtr();
     for( auto const& mode: modes )
     {
-        auto Av = backend()->newVector( matA->mapRowPtr());
-        auto Bv = backend()->newVector( matB->mapRowPtr());
-        matA->multVector(boost::get<2>(mode.second), Av);
-        matB->multVector(boost::get<2>(mode.second), Bv);
-        Bv->scale(boost::get<0>(mode.second));
+        auto Av = backend()->newVector( matA->mapRowPtr() );
+        auto Bv = backend()->newVector( matB->mapRowPtr() );
+        matA->multVector(mode.second, *Av);
+        matB->multVector(mode.second, *Bv);
+        Av->close();
+        Bv->close();
+        Bv->scale(mode.first);
+        Bv->close();
         auto AvNorm = Av->l2Norm();
         auto BvNorm = Bv->l2Norm();
 
-        if ( Environment::rank() == 0 )
+        if ( Environment::isMasterRank() )
             BOOST_CHECK_CLOSE( AvNorm, BvNorm, 1e-8 );
     }
+    toc("post process");
 }
 
 BOOST_AUTO_TEST_SUITE_END()
