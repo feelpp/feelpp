@@ -4,7 +4,7 @@
   Author(s): Guillaume Dolle <gdolle@unistra.fr>
        Date: 2014-08-01
 
-  Copyright (C) 2014 Feel++ Consortium
+  Copyright (C) 2014-2015 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public

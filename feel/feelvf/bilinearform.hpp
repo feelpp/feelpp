@@ -220,21 +220,22 @@ public:
     //@{
     enum { nDim = FE1::nDim };
 
-    typedef FE1 space_1_type;
-    typedef boost::shared_ptr<FE1> space_1_ptrtype;
+    using space_1_type = functionspace_type<FE1>;
+    typedef boost::shared_ptr<space_1_type> space_1_ptrtype;
     typedef space_1_type test_space_type;
     typedef boost::shared_ptr<space_1_type> test_space_ptrtype;
 
-    typedef FE2 space_2_type;
-    typedef boost::shared_ptr<FE2> space_2_ptrtype;
+    using space_2_type = functionspace_type<FE2>;
+    typedef boost::shared_ptr<space_2_type> space_2_ptrtype;
     typedef space_2_type trial_space_type;
     typedef boost::shared_ptr<space_2_type> trial_space_ptrtype;
 
-    typedef typename FE1::value_type value_type;
+    typedef typename space_1_type::value_type value_type;
     typedef typename space_1_type::template Element<value_type,ElemContType> element_1_type;
 
     typedef typename space_2_type::template Element<value_type,ElemContType> element_2_type;
-    typedef BilinearForm<FE1, FE2, ElemContType> self_type;
+
+    using self_type = BilinearForm<FE1, FE2, ElemContType>;
 
 #if 0
     typedef typename space_1_type::component_fespace_type component_space_1_type;
@@ -303,17 +304,17 @@ public:
 
     // return test finite element
     template<bool UseMortar=false>
-    typename finite_element<FE1,UseMortar>::ptrtype
+    typename finite_element<space_1_type,UseMortar>::ptrtype
     testFiniteElement() const
         {
-            return boost::make_shared<typename finite_element<FE1,UseMortar>::type>();
+            return boost::make_shared<typename finite_element<space_1_type,UseMortar>::type>();
         }
     // return trial finite element
     template<bool UseMortar=false>
-    typename finite_element<FE2,UseMortar>::ptrtype
+    typename finite_element<space_2_type,UseMortar>::ptrtype
     trialFiniteElement() const
         {
-            return boost::make_shared<typename finite_element<FE2,UseMortar>::type>();
+            return boost::make_shared<typename finite_element<space_2_type,UseMortar>::type>();
         }
     //@}
 
@@ -351,9 +352,9 @@ public:
 
 
         typedef Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortar> form_context_type;
-        typedef BilinearForm<FE1, FE2, ElemContType> form_type;
-        typedef typename FE1::dof_type dof_1_type;
-        typedef typename FE2::dof_type dof_2_type;
+        using form_type = self_type;
+        typedef typename space_1_type::dof_type dof_1_type;
+        typedef typename space_2_type::dof_type dof_2_type;
 
         typedef typename form_type::value_type value_type;
 
@@ -400,9 +401,9 @@ public:
         typedef typename trial_precompute<0,UseMortar>::type trial_precompute_type;
         typedef typename trial_precompute<0,UseMortar>::ptrtype trial_precompute_ptrtype;
 
-        typedef typename mpl::if_<mpl::bool_<UseMortar&&FE2::is_mortar>,
-                                  mpl::identity<typename FE2::mortar_fe_type>,
-                                  mpl::identity<typename FE2::fe_type> >::type::type trial_fe_type;
+        typedef typename mpl::if_<mpl::bool_<UseMortar&&space_2_type::is_mortar>,
+                                  mpl::identity<typename space_2_type::mortar_fe_type>,
+                                  mpl::identity<typename space_2_type::fe_type> >::type::type trial_fe_type;
         typedef boost::shared_ptr<trial_fe_type> trial_fe_ptrtype;
         typedef typename trial_fe_type::template Context< trial_geometric_mapping_context_type::context,
                 trial_fe_type,
@@ -417,9 +418,9 @@ public:
         typedef fusion::map<fusion::pair<gmc<0>, trial_fecontext_ptrtype> > map_left_trial_fecontext_type;
         typedef fusion::map<fusion::pair<trial_gmc1, trial_fecontext_ptrtype> > map_right_trial_fecontext_type;
 
-        typedef typename mpl::if_<mpl::bool_<UseMortar&&FE1::is_mortar>,
-                                  mpl::identity<typename FE1::mortar_fe_type>,
-                                  mpl::identity<typename FE1::fe_type> >::type::type test_fe_type;
+        typedef typename mpl::if_<mpl::bool_<UseMortar&&space_1_type::is_mortar>,
+                                  mpl::identity<typename space_1_type::mortar_fe_type>,
+                                  mpl::identity<typename space_1_type::fe_type> >::type::type test_fe_type;
         typedef boost::shared_ptr<test_fe_type> test_fe_ptrtype;
         typedef typename test_fe_type::template Context< test_geometric_mapping_context_type::context,
                 test_fe_type,
@@ -461,10 +462,10 @@ public:
         static const int rep_shape = 4;//2+(eval_expr_type::shape::M-1>0)+(eval_expr_type::shape::N-1>0);
         //typedef boost::multi_array<value_type, rep_shape> local_matrix_type;
 
-        typedef typename FE1::dof_type test_dof_type;
-        typedef typename FE2::dof_type trial_dof_type;
-        static const int nDofPerElementTest = FE1::dof_type::nDofPerElement;
-        static const int nDofPerElementTrial = FE2::dof_type::nDofPerElement;
+        typedef typename space_1_type::dof_type test_dof_type;
+        typedef typename space_2_type::dof_type trial_dof_type;
+        static const int nDofPerElementTest = space_1_type::dof_type::nDofPerElement;
+        static const int nDofPerElementTrial = space_2_type::dof_type::nDofPerElement;
         static const int nDofPerComponentTest = test_fe_type::nLocalDof;
         static const int nDofPerComponentTrial = trial_fe_type::nLocalDof;
         static const int local_mat_traits = mpl::if_<mpl::equal_to<mpl::int_<nDofPerElementTrial>,mpl::int_<1> >,
@@ -1594,7 +1595,7 @@ BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
 
     if ( init ) M_matrix->zero();
 
-    assign( __expr, mpl::bool_<true>(), mpl::bool_<( FE1::nSpaces > 1 && FE2::nSpaces > 1 )>() );
+    assign( __expr, mpl::bool_<true>(), mpl::bool_<( space_1_type::nSpaces > 1 && space_2_type::nSpaces > 1 )>() );
     DVLOG(2) << "BilinearForm::assign() stop loop on test spaces\n";
 
 }
@@ -1614,7 +1615,7 @@ BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
         mpl::bool_<true>,
         mpl::bool_<false> )
 {
-    assign( __expr, mpl::bool_<true>(), mpl::bool_<false>(), mpl::bool_<( FE1::nSpaces > 1 )>() );
+    assign( __expr, mpl::bool_<true>(), mpl::bool_<false>(), mpl::bool_<( space_1_type::nSpaces > 1 )>() );
 }
 
 template<typename FE1,  typename FE2,  typename ElemContType>
@@ -1645,8 +1646,8 @@ BilinearForm<FE1, FE2, ElemContType>::operator=( Expr<ExprT> const& __expr )
 {
     // loop(fusion::for_each) over sub-functionspaces in SpaceType
     // pass expression and initialize
-    this->assign( __expr, true, mpl::bool_<mpl::or_< mpl::bool_< ( FE1::nSpaces > 1 )>,
-                  mpl::bool_< ( FE2::nSpaces > 1 )> >::type::value >() );
+    this->assign( __expr, true, mpl::bool_<mpl::or_< mpl::bool_< ( space_1_type::nSpaces > 1 )>,
+                  mpl::bool_< ( space_2_type::nSpaces > 1 )> >::type::value >() );
     return *this;
 }
 
@@ -1656,8 +1657,8 @@ BilinearForm<FE1, FE2, ElemContType>&
 BilinearForm<FE1, FE2, ElemContType>::operator+=( Expr<ExprT> const& __expr )
 {
     DVLOG(2) << "[BilinearForm::operator+=] start\n";
-    this->assign( __expr, false, mpl::bool_<mpl::or_< mpl::bool_< ( FE1::nSpaces > 1 )>,
-                  mpl::bool_< ( FE2::nSpaces > 1 )> >::type::value >() );
+    this->assign( __expr, false, mpl::bool_<mpl::or_< mpl::bool_< ( space_1_type::nSpaces > 1 )>,
+                  mpl::bool_< ( space_2_type::nSpaces > 1 )> >::type::value >() );
     DVLOG(2) << "[BilinearForm::operator+=] stop\n";
     return *this;
 }
@@ -1818,7 +1819,7 @@ namespace meta
 {
 template<typename FE1,
          typename FE2,
-         typename ElemContType = VectorUblas<typename FE1::value_type> >
+         typename ElemContType = VectorUblas<typename functionspace_type<FE1>::value_type> >
 struct BilinearForm
 {
     typedef Feel::vf::detail::BilinearForm<FE1,FE2,ElemContType> type;
@@ -1826,7 +1827,12 @@ struct BilinearForm
 
 
 }
+
 /// \endcond
+template<typename FE1,
+         typename FE2,
+         typename ElemContType = VectorUblas<typename functionspace_type<FE1>::value_type> >
+using form2_type = Feel::vf::detail::BilinearForm<FE1,FE2,ElemContType>;
 } // feel
 
 #include <feel/feelvf/bilinearformcontext.hpp>

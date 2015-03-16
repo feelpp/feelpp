@@ -115,6 +115,7 @@ public:
     int apply(const vector_type& X, vector_type& Y) const;
     int applyInverse(const vector_type& X, vector_type& Y) const;
 
+    void setAlpha( double a ) { M_alpha = a; }
 private:
     backend_ptrtype M_b;
     space_ptrtype M_Xh;
@@ -189,11 +190,6 @@ OperatorPCD<space_type>::OperatorPCD( space_ptrtype Qh,
     LOG(INFO) << "[Pressure Correction Diffusion Operator] Constructor: using rho=" << M_rho << "\n";
     LOG(INFO) << "[Pressure Correction Diffusion Operator] Constructor: using alpha=" << M_alpha << "\n";
 
-    if ( alpha == 0 )
-        this->setProblemType( "steady" );
-    else
-        this->setProblemType( "unsteady" );
-
     this->assembleMass();
     this->assembleDiffusion();
 }
@@ -223,12 +219,12 @@ OperatorPCD<space_type>::update( ExprConvection const& expr_b,
         {
             LOG(INFO) << "Setting Robin condition on " << dir.first;
             if ( ebc.find( dir.first ) != ebc.end() )
-                conv += integrate( _range=markedfaces(M_Qh->mesh(), dir.first), _expr=-trans(ebc.find(dir.first)->second)*N()*idt(p)*id(q));
+                conv += integrate( _range=markedfaces(M_Qh->mesh(), dir.first), _expr=-M_rho*trans(ebc.find(dir.first)->second)*N()*idt(p)*id(q));
         }
 
     G->close();
 
-    if ( this->problemType() == "unsteady" )
+    if ( std::abs( M_alpha ) > 1e-15 )
     {
         LOG(INFO) << "[OperatorPCD] Add mass matrix...\n";
         G->addMatrix( M_alpha, M_mass );
@@ -260,7 +256,7 @@ void
 OperatorPCD<space_type>::assembleMass()
 {
     auto m = form2( _test=M_Qh, _trial=M_Qh, _matrix=M_mass );
-    m = integrate( elements(M_Qh->mesh()), M_rho*idt(p)*id(q) );
+    m = integrate( elements(M_Qh->mesh()), idt(p)*id(q) );
     M_mass->close();
     massOp = op( M_mass, "Mp" );
 }
@@ -272,19 +268,16 @@ OperatorPCD<space_type>::assembleDiffusion()
     if ( soption("blockns.pcd.diffusion") == "Laplacian" )
     {
         auto d = form2( _test=M_Qh, _trial=M_Qh, _matrix=M_diff );
-        d = integrate( _range=elements(M_Qh->mesh()), _expr=M_mu*gradt(p)*trans(grad(q)));
+        d = integrate( _range=elements(M_Qh->mesh()), _expr=gradt(p)*trans(grad(q)));
         
         for( auto cond : M_bcFlags[M_prefix]["Neumann"])
         {
             auto dir = cond.first;
             LOG(INFO) << "Diffusion Setting Dirichlet condition on pressure on " << dir;
-            if ( (dir=="outlet") || (dir == "outflow") )
-            {
-                if ( boption("blockns.weakdir" ) )
-                    d+= integrate( markedfaces(M_Qh->mesh(),dir), _expr=-M_mu*gradt(p)*N()*id(p)-M_mu*grad(p)*N()*idt(p)+doption("penaldir")*idt(p)*id(p)/hFace() );
-                else
-                    d += on( markedfaces(M_Qh->mesh(),dir), _element=p, _rhs=rhs, _expr=cst(0.), _type="elimination_keep_diagonal" );
-            }
+            if ( boption("blockns.weakdir" ) )
+                d+= integrate( markedfaces(M_Qh->mesh(),dir), _expr=-gradt(p)*N()*id(p)-grad(p)*N()*idt(p)+doption("penaldir")*idt(p)*id(p)/hFace() );
+            else
+                d += on( markedfaces(M_Qh->mesh(),dir), _element=p, _rhs=rhs, _expr=cst(0.), _type="elimination_keep_diagonal" );
         }
         //this->applyBC(M_diff);
     }
@@ -338,13 +331,10 @@ OperatorPCD<space_type>::applyBC( sparse_matrix_ptrtype& A )
         for( auto cond : M_bcFlags[M_prefix]["Neumann"])
         {
             auto dir = cond.first;
-            if ( (dir=="outlet") || (dir == "outflow") )
-            {
-                if ( boption("blockns.weakdir" ) )
-                    a+= integrate( markedfaces(M_Qh->mesh(),dir), _expr=-M_mu*gradt(p)*N()*id(p)-M_mu*grad(p)*N()*idt(p)+doption("penaldir")*idt(p)*id(p)/hFace() );
-                else
-                    a += on( markedfaces(M_Qh->mesh(),dir), _element=p, _rhs=rhs, _expr=cst(0.), _type="elimination_keep_diagonal" );
-            }
+            if ( boption("blockns.weakdir" ) )
+                a+= integrate( markedfaces(M_Qh->mesh(),dir), _expr=-M_mu*gradt(p)*N()*id(p)-M_mu*grad(p)*N()*idt(p)+doption("penaldir")*idt(p)*id(p)/hFace() );
+            else
+                a += on( markedfaces(M_Qh->mesh(),dir), _element=p, _rhs=rhs, _expr=cst(0.), _type="elimination_keep_diagonal" );
         }
     rhs->close();
     A->close();
