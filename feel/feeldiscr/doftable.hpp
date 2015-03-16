@@ -2255,7 +2255,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildBoundaryDofMap( me
             DVLOG(4) << "[buildBoundaryDofMap] global face id : " << __face_it->id() << "\n";
 
 #endif
-        M_face_l2g[ __face_it->id()].resize( nDofF*nComponents );
+        int ncdof = is_product ? nComponents : 1 ;
+        M_face_l2g[ __face_it->id()].resize( nDofF*ncdof );
         dfb.add( __face_it );
     }
 
