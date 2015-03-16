@@ -39,6 +39,7 @@ OPTION(FEELPP_ENABLE_CRB_HEATSINK "enable Heatsink testcases" ON)
 OPTION(FEELPP_ENABLE_CRB_HEATSHIELD "enable Heatshield testcases" ON)
 OPTION(FEELPP_ENABLE_CRB_BENCHMARKGREPL "enable BenchmarkGrepl testcases" ON)
 OPTION(FEELPP_ENABLE_CRB_GEOHEATDIFFUSION "enable GeoHeatDiffusion testcases" ON)
+OPTION(FEELPP_ENABLE_CRB_THERMALFIN "enable ThermalFin testcases" ON)
 OPTION(FEELPP_ENABLE_CRB_EEG "enable EEG testcase" OFF)
 
 OPTION(FEELPP_ENABLE_CRB_ALL "enable all crb testcase" ON)
@@ -56,6 +57,7 @@ if (FEELPP_ENABLE_CRB_ALL)
   set(FEELPP_ENABLE_CRB_HEATSHIELD ON)
   set(FEELPP_ENABLE_CRB_BENCHMARKGREPL ON)
   set(FEELPP_ENABLE_CRB_GEOHEATDIFFUSION ON)
+  set(FEELPP_ENABLE_CRB_THERMALFIN ON)
   set(FEELPP_ENABLE_CRB_EEG OFF)
 endif()
 
@@ -116,9 +118,10 @@ if ( FEELPP_ENABLE_CRB_GEOHEATDIFFUSION )
   add_subdirectory(GeoHeatDiffusion)
 ENDIF()
 
+if ( FEELPP_ENABLE_CRB_THERMALFIN )
+  add_subdirectory(thermalfin)
+ENDIF()
+
 IF ( FEELPP_ENABLE_CRB_EEG )
   add_subdirectory(eeg)
 ENDIF()
-
-
-
