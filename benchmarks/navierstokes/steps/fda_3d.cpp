@@ -31,9 +31,8 @@ int main(int argc, char**argv )
     constexpr int order_p= FEELPP_ORDER_P;
     
     using namespace Feel;
-	po::options_description stokesoptions( "Steady NS options" );
-	stokesoptions.add_options()
-        ( "rho", po::value<double>()->default_value( 1.0 ), "coeff" )
+	po::options_description steadyfdaoptions( "Steady FDA options" );
+	steadyfdaoptions.add_options()
 		( "mu", po::value<double>()->default_value( 1.0 ), "coeff" )
         ( "rho", po::value<double>()->default_value( 1.0 ), "coeff" )
         ( "penaldir", po::value<double>()->default_value( 100 ), "coeff" )
@@ -48,11 +47,11 @@ int main(int argc, char**argv )
         ( "newton.tol", po::value<double>()->default_value( 1e-8 ), "tolerance" )
 		( "newton.maxit", po::value<double>()->default_value( 10 ), "max iteration" )
 		;
-    stokesoptions.add( backend_options( "stokes" ) )
+    steadyfdaoptions.add( backend_options( "stokes" ) )
         .add( backend_options( "newton" ) )
          .add( backend_options( "picard" ) );
 	Environment env( _argc=argc, _argv=argv,
-                     _desc=stokesoptions,
+                     _desc=steadyfdaoptions,
                      _about=about(_name=(boost::format("steady_ns_%1%d")%dim).str(),
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
@@ -74,7 +73,7 @@ int main(int argc, char**argv )
     {
         std::cout << "Re\tFunctionSpace\tVelocity\tPressure\n";
         std::cout.width(16);
-        std::cout << std::left << 2.*rho/mu;
+        std::cout << std::left << 0.0461*0.012*rho/mu;
         std::cout.width(16);
         std::cout << std::left << Vh->nDof();
         std::cout.width(16);
@@ -169,7 +168,13 @@ int main(int argc, char**argv )
     e->step(0)->add( "p", p );
     e->save();
     toc(" - Exporting Stokes results...");
-
+    double Rey = mean(markedfaces(mesh,"inlet"),_expr=idv(u))*0.012*rho/mu;
+    double meanP = mean(markedfaces(mesh,"inlet"),_expr=idv(p));
+    if ( Environment::isMasterRank()  )
+    {
+        std::cout<<"Reynolds calcule after stokes iteration = "<< Rey << " \n";
+        std::cout<<"Error over p = "<< meanP << " \n";
+    }
     // Picard
     if ( boption("picard") )
     {

@@ -41,9 +41,6 @@
 #include <feel/feeldiscr/operatorinterpolation.hpp>
 #include <feel/feeltiming/tic.hpp>
 #ifdef FEELPP_HAS_HPDDM
-#undef FEELPP_HAS_HPDDM
-#endif
-#ifdef FEELPP_HAS_HPDDM
 #define BDD            // BDD module
 // #define FETI           // FETI module
 #define MUMPSSUB       // MUMPS as solver inside subdomain
@@ -311,15 +308,15 @@ void Geneopp<Dim, Order, Type>::run()
                 Eigen::SparseMatrix<double>& EigenA = static_cast<MatrixEigenSparse<double>*>(&*A)->mat();
                 EigenA.makeCompressed();
                 Eigen::Matrix<double, Eigen::Dynamic, 1>& EigenF = static_cast<VectorEigen<double>*>(&*f)->vec();
-#if 0
-                Eigen::SparseMatrix<double, Eigen::RowMajor> EigenC(EigenA);
-#endif
-                std::copy_n(EigenA.outerIndexPtr(), VhLocal->nDof() + 1, ic);
+                Eigen::SparseMatrix<double>* Eigen = (soption("on.type").find("symmetric") == std::string::npos ? new Eigen::SparseMatrix<double>(EigenA.transpose()) : &EigenA);
+                std::copy_n(Eigen->outerIndexPtr(), VhLocal->nDof() + 1, ic);
                 c = new double[ic[VhLocal->nDof()]];
                 jc = new int[ic[VhLocal->nDof()]];
-                std::copy_n(EigenA.innerIndexPtr(), ic[VhLocal->nDof()], jc);
-                std::copy_n(EigenA.valuePtr(), ic[VhLocal->nDof()], c);
+                std::copy_n(Eigen->innerIndexPtr(), ic[VhLocal->nDof()], jc);
+                std::copy_n(Eigen->valuePtr(), ic[VhLocal->nDof()], c);
                 std::copy_n(EigenF.data(), EigenF.rows(), b);
+                if(Eigen != &EigenA)
+                    delete Eigen;
             }
             K->Subdomain::initialize(new HPDDM::MatrixCSR<double>(VhLocal->nDof(), VhLocal->nDof(), ic[VhLocal->nDof()], c, ic, jc, false, true), mesh->faceNeighborSubdomains(), map, &comm);
             decltype(map)().swap(map);
@@ -438,7 +435,6 @@ void Geneopp<Dim, Order, Type>::run()
         delete [] storage;
         delete K;
         if(boption("export")) {
-            tic();
 #endif
             time.restart();
             auto VhVisu = FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order, Type>>>::New(_mesh = mesh, _worldscomm = worldsComm(wComm));
@@ -476,6 +472,7 @@ void Geneopp<Dim, Order, Type>::run()
                     std::cout << std::scientific << " --- relative error with respect to solution from PETSc = " << error << " (computed in " << timeFeel << ")" << std::endl;
 #ifdef FEELPP_HAS_HPDDM
             }
+            tic();
             e->save();
             toc("exporter");
         }
