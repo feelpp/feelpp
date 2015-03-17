@@ -1427,7 +1427,8 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
     // material
     memset(buffer, '\0', sizeof(buffer));
     //sprintf(buffer, "Material %d", part->first);
-    sprintf(buffer, "Material %d", (int)(markerid));
+    // Restrict the marker name to 32 chars to avoid buffer overflow (48 chars left for text + id)
+    sprintf(buffer, "Marker %d (%s)", (int)(markerid), mesh->markerName(markerid).substr(0, 32).c_str());
     if( this->worldComm().isMasterRank() )
     { size = sizeof(buffer); }
     else
