@@ -188,9 +188,9 @@ int main( int argc, char** argv )
     exporter->step( 0 )->add( "uy", v_u[Component::Z] );
     exporter->step( 0 )->add( "p", v_p );
     exporter->step( 0 )->add( "u_1", v_u_goncalo );
-    exporter->step( 0 )->add( "u_1x", v_u_goncalo.[Component::X] );
-    exporter->step( 0 )->add( "u_2y", v_u_goncalo.[Component::Y] );
-    exporter->step( 0 )->add( "u_3y", v_u_goncalo.[Component::Z] );
+    exporter->step( 0 )->add( "u_1x", v_u_goncalo[Component::X] );
+    exporter->step( 0 )->add( "u_2y", v_u_goncalo[Component::Y] );
+    exporter->step( 0 )->add( "u_3y", v_u_goncalo[Component::Z] );
     exporter->step( 0 )->add( "p_goncalo", v_p_goncalo );
 
     exporter->save();
