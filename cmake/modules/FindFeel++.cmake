@@ -872,7 +872,9 @@ if ( FEELPP_ENABLE_VTK )
     # We need to look for the Paraview package for the corresponding headers
     # As Paravie integrates vtk headers we don't need them
     if ( FEELPP_ENABLE_VTK_INSITU )
-        FIND_PACKAGE(ParaView REQUIRED COMPONENTS vtkParallelMPI vtkPVCatalyst vtkPVPythonCatalyst)
+        FIND_PACKAGE(ParaView REQUIRED 
+            COMPONENTS vtkParallelMPI vtkPVCatalyst vtkPVPythonCatalyst
+            PATHS $ENV{PARAVIEW_DIR})
         message(STATUS "[ParaView] Use file: ${PARAVIEW_USE_FILE}")
         INCLUDE(${PARAVIEW_USE_FILE})
 
