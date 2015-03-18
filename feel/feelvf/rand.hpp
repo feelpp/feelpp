@@ -39,17 +39,24 @@ namespace vf
 {
 namespace details
 {
+template<typename T>
 class Rand_d
 {
 public:
-    Rand_d () : Rand_d( 0., 1. ) {}
-    Rand_d( double lo, double hi )
+    
+    using value_type = T;
+    using distribution_t = typename mpl::if_<std::is_integral<T>,
+                                             mpl::identity<std::uniform_int_distribution<T>>,
+                                             mpl::identity<std::uniform_real_distribution<T>>>::type::type;
+                                             
+    Rand_d () : Rand_d( T(0), T(1) ) {}
+    Rand_d( value_type lo, value_type hi )
         :
-        r( std::bind( std::uniform_real_distribution<>(lo,hi), std::default_random_engine() ) )
+        r( std::bind( distribution_t(lo,hi), std::default_random_engine() ) )
         {}
-    double operator()() const { return r(); }
+    value_type operator()() const { return r(); }
 private:
-    std::function<double()> r;
+    std::function<value_type()> r;
     
 };
 
@@ -87,7 +94,12 @@ public:
 
     typedef Rand<T> expression_type;
 
-    constexpr explicit Rand()  : M_low( 0. ), M_high( 1. ), M_r( 0., 1. )  {}
+    constexpr explicit Rand()  
+        : 
+        M_low( value_type(0) ), 
+        M_high( value_type(1) ), 
+        M_r( M_low, M_high ) 
+        {}
     Rand( value_type lo, value_type hi )  : M_low(lo), M_high(hi), M_r( lo, hi )  {}
     Rand( Rand && c ) = default;
     Rand( Rand const& c ) = default;
@@ -215,13 +227,13 @@ public:
         {
             return M_r();
         }
-        details::Rand_d M_r;
+        details::Rand_d<value_type> M_r;
     };
 
 private:
-    details::Rand_d M_r;
     value_type M_low;
     value_type M_high;
+    details::Rand_d<value_type> M_r;
 };
 
 
@@ -231,7 +243,7 @@ Expr< Rand<T> >
 rand()
 {
     typedef Rand<T> rand_t;
-    return Expr< rand_t >(  rand_t( 0., 1. ) );
+    return Expr< rand_t >(  rand_t( T(0), T(1) ) );
 }
 
 template<typename T>
