@@ -40,7 +40,7 @@ set( SRC
   backend.cpp  matrixshellsparse.cpp backendpetsc.cpp
   graphcsr.cpp  solvereigen.cpp
   matrixeigendense.cpp backendeigen.cpp vectoreigen.cpp matrixeigensparse.cpp
-  solvernonlinear.cpp matrixblock.cpp vectorblock.cpp
+  solvernonlinear.cpp matrixblock.cpp vectorblock.cpp nullspace.cpp
   ${FEELPP_PETSC_SRCS}
   ${FEELPP_SLEPC_SRCS}
   ${FEELPP_TRILINOS_SRCS}
