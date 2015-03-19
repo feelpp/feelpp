@@ -157,14 +157,12 @@ ExporterVTK<MeshType,N>::init()
             inSituProcessor->AddPipeline(pipeline.GetPointer());
         }
         /* else revert to a basic VTK pipeline */
-#if 0
         else
         {
-            vtkSmartPointer<vtkCPVTKPipeline> pipeline = vtkSmartPointer<vtkCPVTKPipeline>::New();
+            vtkSmartPointer<vtkBaseInsituPipeline> pipeline = vtkSmartPointer<vtkBaseInsituPipeline>::New();
             pipeline->Initialize();
             inSituProcessor->AddPipeline(pipeline.GetPointer());
         }
-#endif
     }
 #endif
 #endif
