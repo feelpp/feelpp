@@ -86,13 +86,13 @@ static inline void coefficients(double* r, boost::shared_ptr<FunctionSpace<Mesh<
     if(!std::is_same<Type<Dim>, Vectorial<Dim>>::value) {
         kappa k;
         k.val = doption("parameters.kappa");
-        x = vf::project(Vh, elements(Vh->mesh()), idf(k) * one());
+        x = vf::project(Vh, elements(Vh->mesh()), val(idf(k) * one()));
     }
     else {
         stripes s;
         s.first  = doption("parameters.n");
         s.second = doption("parameters.nu");
-        x = vf::project(Vh, elements(Vh->mesh()), idf(s) * one());
+        x = vf::project(Vh, elements(Vh->mesh()), val(idf(s) * one()));
     }
     std::copy(x.begin(), x.end(), r);
 }
@@ -102,7 +102,7 @@ static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<d
     kappa k;
     k.val = doption("parameters.kappa");
     auto a = form2(_trial = Vh, _test = Vh, _matrix = A);
-    a = integrate(_range = elements(Vh->mesh()), _expr = idf(k) * gradt(u) * trans(grad(v)));
+    a = integrate(_range = elements(Vh->mesh()), _expr = val(idf(k)) * gradt(u) * trans(grad(v)));
     auto l = form1(_test = Vh, _vector = f);
     l = integrate(_range = elements(Vh->mesh()), _expr = id(v));
     a += on(_range = markedfaces(Vh->mesh(), "Dirichlet"), _rhs = l, _element = u, _expr = cst(0.0));
@@ -114,12 +114,13 @@ static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<d
     stripes s;
     s.first  = doption("parameters.epsilon");
     s.second = doption("parameters.e");
-    auto E = idf(s);
+    auto Ph = Pdh<0>(Vh->mesh());
+    auto E = vf::project(Ph, elements(Ph->mesh()), val(idf(s)));
     s.first  = doption("parameters.n");
     s.second = doption("parameters.nu");
-    auto nu = idf(s);
-    auto mu = E / (2 * (1 + nu));
-    auto lambda = E * nu / ((1 + nu) * (1 - 2 * nu));
+    auto nu = vf::project(Ph, elements(Ph->mesh()), val(idf(s)));
+    auto mu = idv(E) / (2 * (1 + idv(nu)));
+    auto lambda = idv(E) * idv(nu) / ((1 + idv(nu)) * (1 - 2 * idv(nu)));
 
     const double density = 1.0e+3;
 
@@ -138,12 +139,13 @@ static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<d
     stripes s;
     s.first  = doption("parameters.epsilon");
     s.second = doption("parameters.e");
-    auto E = idf(s);
+    auto Ph = Pdh<0>(Vh->mesh());
+    auto E = vf::project(Ph, elements(Ph->mesh()), val(idf(s)));
     s.first  = doption("parameters.n");
     s.second = doption("parameters.nu");
-    auto nu = idf(s);
-    auto mu = E / (2 * (1 + nu));
-    auto lambda = E * nu / ((1 + nu) * (1 - 2 * nu));
+    auto nu = vf::project(Ph, elements(Ph->mesh()), val(idf(s)));
+    auto mu = idv(E) / (2 * (1 + idv(nu)));
+    auto lambda = idv(E) * idv(nu) / ((1 + idv(nu)) * (1 - 2 * idv(nu)));
 
     const double density = 1.0e+3;
 
