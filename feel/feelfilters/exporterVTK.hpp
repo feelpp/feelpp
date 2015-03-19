@@ -88,7 +88,7 @@
 #include <vtkCPDataDescription.h>
 #include <vtkCPInputDataDescription.h>
 
-//#include <feel/feelfilters/vtkCPVTKPipeline.h>
+#include <feel/feelfilters/vtkBaseInsituPipeline.h>
 #endif
 
 #endif
