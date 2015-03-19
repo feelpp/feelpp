@@ -30,10 +30,11 @@
 #include <feel/feelcore/singleton.hpp>
 #include <feel/feelvf/ginac.hpp>
 
-
+#include <boost/property_tree/ptree.hpp>
 
 namespace Feel
 {
+namespace pt =  boost::property_tree;
 struct ExpressionStringAtMarker : public std::tuple<std::string,std::string,std::string>
 {
     typedef std::tuple<std::string,std::string,std::string> super;
@@ -101,6 +102,8 @@ class BoundaryConditions
      */
     void setPrefix( std::string p ) { M_prefix = p; }
 
+    void setPTree( pt::ptree const& p );
+        
     /**
      * load property tree from file \p filename 
      */
@@ -159,8 +162,11 @@ class BoundaryConditions
         return std::move(m_f);
     }
   private:
+    void setup();
+  private:
 
     std::string M_prefix;
+    pt::ptree M_pt;
 };
 
 using BoundaryConditionFactory = Singleton<BoundaryConditions>;
