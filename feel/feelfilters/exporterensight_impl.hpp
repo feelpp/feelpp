@@ -763,7 +763,7 @@ ExporterEnsight<MeshType,N>::visit( mesh_type* __mesh )
         //    strcpy( buffer, "part 1" );
 
         __out.write( ( char * ) & buffer, sizeof( buffer ) );
-        sprintf( buffer, "Material %d",p_it->first );
+        sprintf( buffer, "Marker %d (%s)", p_it->first, __mesh->markerName(p_it->first).substr(0, 32).c_str());
         __out.write( ( char * ) & buffer, sizeof( buffer ) );
 
         strcpy( buffer, this->elementType().c_str() );
