@@ -5,7 +5,7 @@
 #  Author(s): Alexandre Ancel <alexandre.ancel@cemosis.fr>
 #       Date: 2013-10-21
 #
-#  Copyright (C) 2013 Université de Strasbourg
+#  Copyright (C) 2013-2015 Feel++ Consortium
 #
 #  This library is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public

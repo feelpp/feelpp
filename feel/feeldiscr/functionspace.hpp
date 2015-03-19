@@ -1649,7 +1649,8 @@ public:
         typedef typename mpl::at_c<functionspace_vector_type,i>::type ptrtype;
         typedef typename ptrtype::element_type type;
     };
-
+    template<int i> using sub_functionspace_type = typename sub_functionspace<i>::type;
+    template<int i> using sub_functionspace_ptrtype = typename sub_functionspace<i>::ptrtype;
     /**
        @name Subclasses
     */
@@ -1949,6 +1950,9 @@ public:
             typedef typename mpl::at_c<element_vector_type,i>::type::second_type ptrtype;
             typedef typename ptrtype::element_type type;
         };
+        template<int i> using sub_element_ptrtype = typename mpl::at_c<element_vector_type,i>::type::second_type;
+        template<int i> using sub_element_type = typename mpl::at_c<element_vector_type,i>::type::second_type::element_type;
+        
         typedef typename functionspace_type::component_functionspace_type component_functionspace_type;
         typedef typename functionspace_type::component_functionspace_ptrtype component_functionspace_ptrtype;
         typedef typename component_functionspace_type::template Element<T,typename VectorUblas<value_type>::slice::type> component_type;
@@ -4944,6 +4948,10 @@ template<typename FuncSpaceType>
 struct is_function_space_ptr<boost::shared_ptr<FuncSpaceType> > : mpl::true_ {};
 } // detail
 
+template<typename FESpace>
+using functionspace_type = typename mpl::if_<Feel::detail::is_function_space_ptr<FESpace>,
+                                             mpl::identity<typename FESpace::element_type>,
+                                             mpl::identity<FESpace>>::type::type;
 
 
 

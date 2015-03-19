@@ -22,9 +22,9 @@ function cylinder (Ti,Tf,dt, file,color)
   %%
   %%
 
-  %%  Author: Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  %%  Author: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
   %%  Keywords: CD, CL, DP and Frequency calculation
-  %%  Maintainer: Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  %%  Maintainer: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 
   figure(1);
   
