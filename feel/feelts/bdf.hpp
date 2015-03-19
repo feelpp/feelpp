@@ -6,6 +6,7 @@
    Date: 2006-12-30
 
    Copyright (C) 2006-2008 Université Joseph Fourier (Grenoble)
+   Copyright (C) 2011-2015 Feel++ Consortium
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -308,6 +309,10 @@ public:
     //! Return a vector with the last n state vectors
     element_type& unknown( int i );
 
+    element_type const& prior() const { return *M_unknowns[0]; }
+
+    element_type& prior() { return *M_unknowns[0]; }
+    
     template<typename container_type>
     void setUnknown( int i,  typename space_type::template Element<value_type, container_type> const& e )
     {

@@ -1,7 +1,7 @@
 ###  CMakeLists.txt; coding: utf-8 --- 
 
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-#       Date: 23 Feb 2015
+#       Date: 15 Mar 2015
 #
 #  Copyright (C) 2015 Feel++ Consortium
 #
@@ -21,11 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-SET( SRC
-  modelproperties.cpp modelparameters.cpp modelmaterials.cpp
-  )
 
-file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
-feel_append_src(feelmodels "${SRC};${HDR}")
+set_directory_properties(PROPERTIES LABEL testmodels )
 
-add_subdirectory(solid)
+feelpp_add_test( modelproperties )

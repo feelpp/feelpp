@@ -59,11 +59,22 @@ BoundaryConditions::load(const std::string &filename)
 {
     // Create an empty property tree object
     using boost::property_tree::ptree;
-    ptree pt;
 
-    read_json(filename, pt);
+    read_json(filename, M_pt);
+    setup();
+}
+void
+BoundaryConditions::setPTree( pt::ptree const& p )
+{
+    M_pt = p;
+    setup();
+}
 
-    for( auto const& v : pt )
+
+void
+BoundaryConditions::setup()
+{
+    for( auto const& v : M_pt )
     {
         
         //std::cout << "v.first:" << v.first  << "\n";
