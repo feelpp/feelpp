@@ -636,6 +636,7 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename compute_eigs_return_type<Args>::type
                 std::cout << " -- eigenvalue " << i << " = (" << mode.second.get<0>() << "," <<  mode.second.get<1>() << ")\n";
             femodes[i].first = mode.second.get<0>();
             femodes[i].second = *mode.second.get<2>();
+            femodes[i].second.close();
             ++i;
         }
     }

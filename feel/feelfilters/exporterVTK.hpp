@@ -87,6 +87,8 @@
 #include <vtkCPPythonScriptPipeline.h>
 #include <vtkCPDataDescription.h>
 #include <vtkCPInputDataDescription.h>
+
+//#include <feel/feelfilters/vtkCPVTKPipeline.h>
 #endif
 
 #endif
@@ -240,6 +242,11 @@ public:
        save the timeset
      */
     void save() const;
+
+    /** 
+     * Returns a VTK structure representing the last timestep 
+     */ 
+    vtkSmartPointer<vtkUnstructuredGrid> getOutput() const;
 
     /**
      * export mesh
