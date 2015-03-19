@@ -97,3 +97,7 @@
 [submodule "contrib/paralution"]
 	path = contrib/paralution
 	url = https://github.com/feelpp/paralution.git
+[submodule "projects/holo3"]
+	path = projects/holo3
+	url = https://github.com/feelpp/holo3
+	fetchRecurseSubmodules = on-demand
