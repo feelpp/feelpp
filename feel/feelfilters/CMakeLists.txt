@@ -37,5 +37,9 @@ SET(SRC
   straightenmesh_inst_1d.cpp straightenmesh_inst_1d_p2.cpp straightenmesh_inst_2d.cpp straightenmesh_inst_2d_ho.cpp straightenmesh_inst_3d.cpp straightenmesh_inst_3d_ho.cpp
   )
 
+if(FEELPP_ENABLE_VTK_INSITU)
+    SET(SRC ${SRC} vtkBaseInsituPipeline)
+endif()
+
 file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
 feel_append_src(feelfilters "${SRC};${HDR}")
