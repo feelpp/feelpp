@@ -66,5 +66,21 @@ struct ExtractGm
     }
 };
 /// \endcond
-} } }
+}
+template<typename GmcT>
+fusion::map<fusion::pair<vf::detail::gmc<0>, boost::shared_ptr<GmcT>>>
+mapgmc( boost::shared_ptr<GmcT>& ctx )
+{
+    return { fusion::make_pair<vf::detail::gmc<0> >( ctx ) };
+}
+template<typename GmcT> using map_gmc_type = fusion::map<fusion::pair<vf::detail::gmc<0>, boost::shared_ptr<GmcT>>>;
+
+template<typename GmcT>
+fusion::map<fusion::pair<vf::detail::gmc<0>, boost::shared_ptr<GmcT>>, fusion::pair<vf::detail::gmc<1>, boost::shared_ptr<GmcT>> >
+mapgmc( boost::shared_ptr<GmcT>& ctx1, boost::shared_ptr<GmcT>& ctx2 )
+{
+    return { fusion::make_pair<vf::detail::gmc<0> >( ctx1 ), fusion::make_pair<vf::detail::gmc<1> >( ctx2 ) };
+}
+template<typename GmcT> using map2_gmc_type = fusion::map<fusion::pair<vf::detail::gmc<0>, boost::shared_ptr<GmcT>>, fusion::pair<vf::detail::gmc<1>, boost::shared_ptr<GmcT>> >;
+} }
 #endif /* FEELPP_DETAIL_GMC_HPP */
