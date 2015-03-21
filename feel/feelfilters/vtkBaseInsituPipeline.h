@@ -21,7 +21,8 @@
 #include <vtkPVTrivialProducer.h>
 #include <vtkLiveInsituLink.h>
 
-using namespace Feel;
+namespace Feel
+{
 
 class vtkBaseInsituPipeline : public vtkCPPipeline
 {
@@ -58,4 +59,5 @@ class vtkBaseInsituPipeline : public vtkCPPipeline
         vtkSmartPointer<vtkSMProxy> M_proxy;
 };
 
+}
 #endif
