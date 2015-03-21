@@ -1,6 +1,9 @@
 
 #include <feel/feelfilters/vtkBaseInsituPipeline.h>
 
+namespace Feel
+{
+
 vtkStandardNewMacro(vtkBaseInsituPipeline);
 
 //----------------------------------------------------------------------------
@@ -193,3 +196,5 @@ void vtkBaseInsituPipeline::PrintSelf(ostream& os, vtkIndent indent)
     os << indent << "FileName: " << this->FileName << "\n";
     */
 }
+
+} // namespace Feel
