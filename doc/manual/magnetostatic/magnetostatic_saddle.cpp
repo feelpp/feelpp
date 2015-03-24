@@ -97,6 +97,11 @@ int main(int argc, char**argv )
     }
     else //strong Dirichlet
     {
+#if 0
+    for(auto const & it:  m_dir){
+      a += on( _range=markedfaces(mesh,it.first), _rhs=l, _element=u, _expr=it.second);
+    }
+#endif
         a += on(_range=boundaryfaces(mesh), _rhs=l, _element=u,_expr=e );
     }
 
