@@ -28,6 +28,7 @@
  */
 #include <feel/feel.hpp>
 #include <feel/feeldiscr/ned1h.hpp>
+#include <feel/feelpde/boundaryconditions.hpp>
 
 #if FEELPP_DIM==2
 #define curl_op curlx
