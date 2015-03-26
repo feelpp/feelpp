@@ -450,7 +450,7 @@ ExporterVTK<MeshType,N>::save() const
         /* InitializeExternal is only supported from 5.10+, */
         /* but lets aim for the latest major version 6 to reduce the complexity */
         fname.str("");
-        fname << __ts->name()  //<< this->prefix() //this->path()
+        fname << this->path() << "/" << __ts->name()  //<< this->prefix() //this->path()
             << "-" << (stepIndex - TS_INITIAL_INDEX);
 #if VTK_MAJOR_VERSION < 6 || !defined(VTK_HAS_PARALLEL)
         fname << "-" << this->worldComm().size() << "_" << this->worldComm().rank();
