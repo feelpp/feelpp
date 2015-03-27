@@ -138,6 +138,9 @@ void vtkBaseInsituPipeline::DoLiveVisualization(vtkCPDataDescription* dataDescri
         for(auto it = M_producerMap.begin(); it != M_producerMap.end(); it++)
         {
             it->second->UpdateVTKObjects();
+            vtkObjectBase* clientSideObject = it->second->GetClientSideObject();
+            vtkPVTrivialProducer* realProducer = vtkPVTrivialProducer::SafeDownCast(clientSideObject);
+            realProducer->SetOutput(dataDescription->GetInputDescriptionByName(it->first.c_str())->GetGrid());
         }
         M_insituLink->InsituPostProcess(time, timeStep); 
 
