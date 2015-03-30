@@ -38,7 +38,7 @@ SET(SRC
   )
 
 if(FEELPP_ENABLE_VTK_INSITU)
-    SET(SRC ${SRC} vtkBaseInsituPipeline)
+    SET(SRC ${SRC} vtkBaseInsituPipeline.cpp)
 endif()
 
 file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
