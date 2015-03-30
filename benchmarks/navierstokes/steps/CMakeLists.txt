@@ -28,5 +28,7 @@ feelpp_add_application( steady_ns_3d SRCS steady_ns.cpp INCLUDE_IN_ALL CFG stead
 install(TARGETS feelpp_steady_ns_2d DESTINATION bin/ COMPONENT Bin )
 install(TARGETS feelpp_steady_ns_3d DESTINATION bin/ COMPONENT Bin )
 
+feelpp_add_application( fda_2d SRCS fda_3d.cpp INCLUDE_IN_ALL CFG fda_2d.cfg fda_2d.bc DEFS FEELPP_DIM=2 FEELPP_ORDER_P=1)
 feelpp_add_application( fda_3d SRCS fda_3d.cpp INCLUDE_IN_ALL CFG fda_3d.cfg fda_3d.bc DEFS FEELPP_DIM=3 FEELPP_ORDER_P=1)
 install(TARGETS feelpp_fda_3d DESTINATION bin/ COMPONENT Bin )
+install(TARGETS feelpp_fda_2d DESTINATION bin/ COMPONENT Bin )
