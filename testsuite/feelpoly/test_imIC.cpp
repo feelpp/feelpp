@@ -234,7 +234,7 @@ T coscos( typename Feel::node<T>::type const& t )
 template<Feel::uint16_type D,
          Feel::uint16_type N,
          typename T,
-         template<class Convex, Feel::uint16_type O, typename T2> class QPS = Feel::TestQuadra>
+         template<class Convex, Feel::uint16_type O, typename T2> class QPS = Feel::Gauss> 
 class TestImPK
 {
 public:
@@ -246,7 +246,7 @@ public:
     //IM<D, N, T, Simplex, QPS> im;
     template<int IMORDER> struct MyIm
             :
-        public IM<D,N,T,Simplex>
+        public IM<D,N,T,Hypercube>
     {};
     TestImPK( value_type res,
               boost::function<value_type( arg_type const& )> const& func,
@@ -446,12 +446,30 @@ BOOST_AUTO_TEST_CASE( im1d_face_test3 )
     t1();
 }
 
+
 BOOST_AUTO_TEST_CASE( im2d_test0 )
 {
 
     TestImPK<2,1, double> t1( P2N<double>( 0, 0 ).integral(), P2N<double>( 0, 0 ) );
     t1();
 }
+
+
+BOOST_AUTO_TEST_CASE( im2d_test00 )
+{
+    std::cout<< "YOOOO" << std::endl;
+    TestImPK<2,1, double> t1( 0.0 , xp<1,double> );
+    t1();
+}
+
+BOOST_AUTO_TEST_CASE( im2d_testS0 )
+{
+    std::cout<< "YOOOO2" << std::endl;
+    TestImPK<2,2, double> t1( 4./3 , xp2<double> );
+    t1();
+}
+
+
 BOOST_AUTO_TEST_CASE( im2d_test1 )
 {
     const int N = 1;
