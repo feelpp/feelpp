@@ -203,9 +203,9 @@ SolidMechanics<DisplSpaceType,props>::SolidMechanics( std::string n, displacemen
          !dx_dirichlet_conditions.size() &&
          !dy_dirichlet_conditions.size() &&
          !dz_dirichlet_conditions.size() && nm->isSteady() )
-        M_backend->attachNullSpace( K );
+        M_backend->attachNullSpace( toBackend( M_backend, K ) );
     if ( nm->isSteady() )
-        M_backend->attachNearNullSpace( K );
+        M_backend->attachNearNullSpace( toBackend( M_backend, K ) );
     toc("SolidMechanics constructor", verbose || FLAGS_v > 0 );
     
     
@@ -327,18 +327,22 @@ SolidMechanics<DisplSpaceType,props>::updateResidual( const vector_ptrtype& X, v
     for( auto const& d : dirichlet_conditions )
     {
         temp.on( _range=markedfaces( mesh, marker(d)), _expr=zero<dim,1>() );
+        temp.on( _range=markededges( mesh, marker(d)), _expr=zero<dim,1>() );
     }
     for( auto const& d : dx_dirichlet_conditions )
     {
         temp[Component::X].on( _range=markedfaces( mesh, marker(d)), _expr=cst(0.) );
+        temp[Component::X].on( _range=markededges( mesh, marker(d)), _expr=cst(0.) );
     }
     for( auto const& d : dy_dirichlet_conditions )
     {
         temp[Component::Y].on( _range=markedfaces( mesh, marker(d)), _expr=cst(0.) );
+        temp[Component::Y].on( _range=markededges( mesh, marker(d)), _expr=cst(0.) );
     }
     for( auto const& d : dz_dirichlet_conditions )
     {
         temp[Component::Z].on( _range=markedfaces( mesh, marker(d)), _expr=cst(0.) );
+        temp[Component::Z].on( _range=markededges( mesh, marker(d)), _expr=cst(0.) );
     }
     *R = temp;
 
@@ -368,18 +372,23 @@ SolidMechanics<DisplSpaceType,props>::updateJacobian(const vector_ptrtype& X, sp
     {
         a += on( _range=markedfaces( mesh, marker(d)), _element=u, _rhs=RR,
                  _expr=zero<dim,1>() );
+        a += on( _range=markededges( mesh, marker(d)), _element=u, _rhs=RR,
+                 _expr=zero<dim,1>() );
     }
     for( auto const& d : dx_dirichlet_conditions )
     {
         a += on( _range=markedfaces( mesh, marker(d)), _element=u[Component::X], _rhs=RR, _expr=cst(0.) );
+        a += on( _range=markededges( mesh, marker(d)), _element=u[Component::X], _rhs=RR, _expr=cst(0.) );
     }
     for( auto const& d : dy_dirichlet_conditions )
     {
         a += on( _range=markedfaces( mesh, marker(d)), _element=u[Component::Y], _rhs=RR, _expr=cst(0.) );
+        a += on( _range=markededges( mesh, marker(d)), _element=u[Component::Y], _rhs=RR, _expr=cst(0.) );
     }
     for( auto const& d : dz_dirichlet_conditions )
     {
         a += on( _range=markedfaces( mesh, marker(d)), _element=u[Component::Z], _rhs=RR, _expr=cst(0.) );
+        a += on( _range=markededges( mesh, marker(d)), _element=u[Component::Z], _rhs=RR, _expr=cst(0.) );
     }
 
 }
@@ -393,18 +402,22 @@ SolidMechanics<DisplSpaceType,props>::solve()
     for( auto const& d : dirichlet_conditions )
     {
         u.on( _range=markedfaces( mesh, marker(d)), _expr=expression(d));
+        u.on( _range=markededges( mesh, marker(d)), _expr=expression(d));
     }
     for( auto const& d : dx_dirichlet_conditions )
     {
         u[Component::X].on( _range=markedfaces( mesh, marker(d)), _expr=expression(d) );
+        u[Component::X].on( _range=markededges( mesh, marker(d)), _expr=expression(d) );
     }
     for( auto const& d : dy_dirichlet_conditions )
     {
         u[Component::Y].on( _range=markedfaces( mesh, marker(d)), _expr=expression(d) );
+        u[Component::Y].on( _range=markededges( mesh, marker(d)), _expr=expression(d) );
     }
     for( auto const& d : dz_dirichlet_conditions )
     {
         u[Component::Z].on( _range=markedfaces( mesh, marker(d)), _expr=expression(d) );
+        u[Component::Z].on( _range=markededges( mesh, marker(d)), _expr=expression(d) );
     }
 
     using namespace std;
