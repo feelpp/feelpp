@@ -62,7 +62,7 @@ const uint16_type DynamicDegree = invalid_uint16_type_value;
  * @author Gilles Steiner <gilles.steiner@epfl.ch>
  * @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  */
-template<class Convex, uint16_type Integration_Degree = DynamicDegree, typename T>
+template<class Convex, uint16_type Integration_Degree, typename T>
 class PointSetQuadrature : public PointSet<Convex,T>
 {
 public :
@@ -434,7 +434,7 @@ public :
                 Integration_Degree,
                 T> super;
     public:
-        using super = parent_quadrature_type;
+        using parent_quadrature_type = super;
 
         // true if Integration Degree is known at compile time, false otherwise
         static constexpr bool IntegrationDegreeAtCompileTime = Integration_Degree!=DynamicDegree;
@@ -646,7 +646,7 @@ PointSetQuadrature<Convex,Integration_Degree,T>::constructQROnFace( Elem const& 
                 {
                     ublas::column( M_n_face[__f][__p.value()], __ip ) = __c.xReal( __ip );
 
-v                    // w = w_face * ||B*n|| * J
+                    // w = w_face * ||B*n|| * J
                     M_w_face[ __f][__p.value()]( __ip ) = __qr_face->weight( __ip )*__c.J( __ip );
 
                     __len += M_w_face[ __f][__p.value()]( __ip );
@@ -668,13 +668,13 @@ v                    // w = w_face * ||B*n|| * J
 template<class Convex, uint16_type Integration_Degree, typename T>
 template<typename Elem, typename GM, typename IM>
 void
-PointSetQuadrature<Convex,Integration_Degree,T>::constructQROnFace( Elem const& ref_convex,
+PointSetQuadrature<Convex,Integration_Degree,T>::constructQROnEdge( Elem const& ref_convex,
                                                                     boost::shared_ptr<GM> const& __gm,
                                                                     boost::shared_ptr<IM> const& __qr_edge,
                                                                     mpl::bool_<true>  )
 {
-    M_n_face.resize( Elem::numEdges );
-    M_w_face.resize( Elem::numEdges );
+    M_n_edge.resize( Elem::numEdges );
+    M_w_edge.resize( Elem::numEdges );
 
     using permutation_type = typename Elem::edge_permutation_type;
     using edge_pc_type =  typename GM::edge_gm_type::precompute_type;
@@ -694,7 +694,7 @@ PointSetQuadrature<Convex,Integration_Degree,T>::constructQROnFace( Elem const& 
                 DVLOG(2) << "[quadpt] ref_convex_edge "  << __f << "=" << ref_convex_edge.points() << "\n";
                 //toPython( ref_convex_edge );
 
-                auto ctx = __gm->context<vm::JACOBIAN|vm::POINT|vm::KB>( __gm->edgeMap(), ref_convex_edge, __geopc );
+                auto ctx = __gm->context<(vm::JACOBIAN|vm::POINT|vm::KB)>( __gm->edgeMap(), ref_convex_edge, __geopc );
                 ctx.update( ref_convex_edge );
                 DVLOG(2) << "[quadpt] ref_convex_edge "  << __f << " xref" << ctx.xRefs() << "\n";
                 DVLOG(2) << "[quadpt] ref_convex_edge "  << __f << " xreal" << ctx.xReal() << "\n";
