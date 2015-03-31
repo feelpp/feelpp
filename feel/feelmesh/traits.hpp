@@ -141,10 +141,16 @@ struct is_edge : mpl::bool_<(decay_type<T>::nDim==1 && decay_type<T>::nRealDim =
 template<typename T>
 struct is_point : mpl::bool_<(decay_type<T>::nDim=0)> {};
 
-typename<typename T>
+template<typename T>
 struct is_simplex : std::is_base_of<SimplexBase, T>::type {};
+template<typename T>
+struct is_triangle : mpl::and_<is_simplex<T>,is_2d<T>> {};
+template<typename T>
+struct is_tetrahedron : mpl::and_<is_simplex<T>,is_3d<T>> {};
+template<typename T>
+struct is_segment : mpl::and_<is_simplex<T>,is_1d<T>> {};
 
-typename<typename T>
+template<typename T>
 struct is_hypercube : std::is_base_of<HypercubeBase, T>::type {};
 
 } // Feel
