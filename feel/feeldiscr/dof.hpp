@@ -401,6 +401,11 @@ public:
         {
             return this->get<4>();
         }
+    /// @return the local dof in the face
+    uint16_type localDofInEntity() const
+        {
+            return this->get<4>();
+        }
     /// @return the local dof in element
     uint16_type localDofInElement() const                                \
         {
@@ -429,6 +434,9 @@ public:
     //@}
 
 };
+//@ Alias for FaceDof
+using EntityDof =  FaceDof;
+
 #if 0
 typedef multi_index::multi_index_container<
     Dof,
