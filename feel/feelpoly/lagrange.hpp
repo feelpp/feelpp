@@ -128,6 +128,17 @@ public:
                              mpl::int_<nEdges>,
                              mpl::int_<nFaces> >::type >::type::value;
 
+    LagrangeDual( LagrangeDual const& d )
+        :
+        super( d ),
+        M_convex_ref(),
+        M_eid( d.M_eid ),
+        M_pts( d.M_pts ),
+        M_points_face( d.M_points_face ),
+        M_fset( d.M_fset )
+        {}
+
+    LagrangeDual( LagrangeDual && d ) = default;
     LagrangeDual( primal_space_type const& primal )
         :
         super( primal ),
@@ -195,10 +206,9 @@ public:
         setFset( primal, M_pts, mpl::bool_<primal_space_type::is_scalar>() );
     }
 
-    ~LagrangeDual()
-    {
-
-    }
+    ~LagrangeDual() = default;
+    LagrangeDual& operator=( LagrangeDual const& ) = default;
+    
     points_type const& points() const
     {
         return M_pts;
@@ -217,6 +227,25 @@ public:
         return ublas::column( M_points_face[f], __i );
     }
 
+#if 0
+    std::vector<point_type> points( int topodim ) const
+        {
+            std::vector<point_type> pts( ;
+            for ( uint16_type e = M_convex_ref.entityRange( nDim-1 ).begin();
+                  e < M_convex_ref.entityRange( nDim-1 ).end();
+                  ++e )
+            {
+                M_points_face[e] = M_pset.pointsBySubEntity( nDim-1, e, 1 );
+            }
+            return M_pset.pointsBySubEntity( topodim, edge, 1 );
+        }
+#endif
+     points_type points( int topodim, int entity ) const
+            {
+                return M_pset.pointsBySubEntity( topodim, entity, 1 );
+            }
+            
+    
     points_type edgePoints(int edge) const
         {
             return M_pset.pointsBySubEntity( 1, edge, 1 );
@@ -367,6 +396,7 @@ public:
                                                face_type::numFaces * nDofPerFace );
     static const uint16_type nLocalEdgeDof = ( edge_type::numVertices * nDofPerVertex +
                                                edge_type::numEdges * nDofPerEdge);
+    static const uint16_type nLocalVertexDof = nDofPerVertex;
     template<int subN>
     struct SubSpace
     {
@@ -515,6 +545,27 @@ public:
                 for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
                     for( int c2 = 0; c2 < ExprType::shape::N; ++c2 )
                         Ihloc( (c1+nComponents1*c2)*nLocalEdgeDof+q ) = expr.evalq( c1, c2, q );
+
+        }
+    local_interpolant_type
+    vertexLocalInterpolant() const
+        {
+            return local_interpolant_type::Zero( nComponents*nLocalVertexDof, 1 );
+        }
+    template<typename ExprType>
+    void
+    vertexInterpolate( ExprType& expr, local_interpolant_type& Ihloc ) const
+        {
+            BOOST_MPL_ASSERT_MSG( nComponents1==ExprType::shape::M,
+                                  INCOMPATIBLE_NUMBER_OF_COMPONENTS,
+                                  (mpl::int_<nComponents1>,mpl::int_<ExprType::shape::M>));
+            BOOST_MPL_ASSERT_MSG( nComponents2==ExprType::shape::N,
+                                  INCOMPATIBLE_NUMBER_OF_COMPONENTS,
+                                  (mpl::int_<nComponents2>,mpl::int_<ExprType::shape::N>));
+            for( int q = 0; q < nLocalVertexDof; ++q )
+                for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
+                    for( int c2 = 0; c2 < ExprType::shape::N; ++c2 )
+                        Ihloc( (c1+nComponents1*c2)*nLocalVertexDof+q ) = expr.evalq( c1, c2, q );
 
         }
 
