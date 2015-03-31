@@ -60,6 +60,7 @@ struct points<0>
 
 
 }
+class SimplexBase {};
 
 /**
  * @class Simplex
@@ -70,7 +71,7 @@ struct points<0>
 template<uint16_type Dim,
          uint16_type Order = 1,
          uint16_type RDim = Dim>
-class Simplex : public Convex<Dim,Order,RDim>
+class Simplex : public Convex<Dim,Order,RDim>, SimplexBase
 {
 private:
     /**

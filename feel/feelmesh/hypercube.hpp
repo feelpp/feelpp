@@ -38,9 +38,9 @@
 
 namespace Feel
 {
-
+class HypercubeBase {};
 template<uint16_type Dim, uint16_type Order=1, uint16_type RDim = Dim>
-class Hypercube  : public Convex<Dim,Order,RDim>
+class Hypercube  : public Convex<Dim,Order,RDim>, HypercubeBase
 {
     typedef mpl::vector_c<size_type, SHAPE_POINT, SHAPE_LINE, SHAPE_QUAD, SHAPE_HEXA, SHAPE_SP4, SHAPE_SP5> shapes_t;
     typedef mpl::vector_c<size_type, GEOMETRY_POINT, GEOMETRY_LINE, GEOMETRY_SURFACE, GEOMETRY_VOLUME, GEOMETRY_4, GEOMETRY_5> geometries_t;
