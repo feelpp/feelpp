@@ -295,6 +295,11 @@ private:
     void assemble( boost::shared_ptr<Elem1> const& __u,
                    boost::shared_ptr<Elem2> const& __v,
                    FormType& __f, mpl::bool_<true>, mpl::size_t<MESH_EDGES> ) const;
+    
+    template<typename Elem1, typename Elem2, typename FormType>
+    void assemble( boost::shared_ptr<Elem1> const& __u,
+                   boost::shared_ptr<Elem2> const& __v,
+                   FormType& __f, mpl::bool_<true>, mpl::size_t<MESH_POINTS> ) const;
 
 private:
 
@@ -638,15 +643,15 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
 
     std::vector<int> dofs;
     std::vector<value_type> values;
-    element_iterator __edge_it = this->beginElement();
-    element_iterator __edge_en = this->endElement();
+    auto edge_it = this->beginElement();
+    auto edge_en = this->endElement();
 
     bool findAEdge = false;
     for( auto& lit : M_elts )
     {
-        __edge_it = lit.template get<1>();
-        __edge_en = lit.template get<2>();
-        if ( __edge_it != __edge_en )
+        edge_it = lit.template get<1>();
+        edge_en = lit.template get<2>();
+        if ( edge_it != edge_en )
         {
             findAEdge=true;
             break;
@@ -654,107 +659,55 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
     }
     if ( findAEdge )
     {
-        auto const& edgeForInit = boost::unwrap_ref( *__edge_it );
+        auto const& edgeForInit = boost::unwrap_ref( *edge_it );
 
-        dof_type const* __dof = M_u.functionSpace()->dof().get();
-
-        fe_type const* __fe = M_u.functionSpace()->fe().get();
-
-        gm_ptrtype __gm( new gm_type );
-
-
-        //
-        // Precompute some data in the reference element for
-        // geometric mapping and reference finite element
-        //
-        typedef typename geoelement_type::permutation_type permutation_type;
-        typedef typename gm_type::precompute_ptrtype geopc_ptrtype;
-        typedef typename gm_type::precompute_type geopc_type;
-        DVLOG(2)  << "[integratoron] numEdges = " << geoelement_type::numEdges << "\n";
-        std::vector<std::map<permutation_type, geopc_ptrtype> > __geopc( geoelement_type::numEdges );
-
-        for ( uint16_type __f = 0; __f < geoelement_type::numEdges; ++__f )
-        {
-            __geopc[__f][permutation_type::NO_PERMUTATION] = geopc_ptrtype(  new geopc_type( __gm, __fe->edgePoints( __f ) ) );
-            __geopc[__f][permutation_type::REVERSE_PERMUTATION] = geopc_ptrtype(  new geopc_type( __gm, __fe->edgePoints( __f ) ) );
-        }
-
-        uint16_type __edge_id = edgeForInit.pos_first();
-
+        auto const* __dof = M_u.functionSpace()->dof().get();
+        auto const* __fe = M_u.functionSpace()->fe().get();
+        auto const* mesh = M_u.functionSpace()->mesh().get();
+        auto gm = mesh->gm();
+        size_type eid = edgeForInit.elements().begin()->first;
+        size_type edgeid_in_element = edgeForInit.elements().begin()->second;
+        auto const& elt = mesh->element( eid );
+        //auto geopc = gm->preComputeOnEdges([&__fe]( int f ){ return __fe->edgePoints(f); } );
+        auto geopc = gm->preCompute( __fe->edgePoints(edgeid_in_element) );
         // TODO: create context for edge associated to element
-        gmc_ptrtype __c( new gmc_type( __gm, edgeForInit.element( 0 ), __geopc, __edge_id ) );
-
-        map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
-        t_expr_type expr( M_expr, mapgmc );
-
-
-        DVLOG(2)  << "edge_type::numVertices = " << edge_type::numVertices << ", fe_type::nDofPerVertex = " << fe_type::nDofPerVertex << "\n"
-                  << "edge_type::numEdges = " << edge_type::numEdges << ", fe_type::nDofPerEdge = " << fe_type::nDofPerEdge << "\n"
-                  << "edge_type::numEdges = " << edge_type::numEdges << ", fe_type::nDofPerEdge = " << fe_type::nDofPerEdge << "\n";
-
-        size_type nbEdgeDof = invalid_size_type_value;
-
-        if ( !fe_type::is_modal )
-            nbEdgeDof = ( edge_type::numVertices * fe_type::nDofPerVertex +
-                          edge_type::numEdges * fe_type::nDofPerEdge );
-                          
-        else
-            nbEdgeDof = edge_type::numVertices * fe_type::nDofPerVertex;
-
-        DVLOG(2)  << "nbEdgeDof = " << nbEdgeDof << "\n";
-        //const size_type nbEdgeDof = __fe->boundaryFE()->points().size2();
-
+        auto ctx =  gm->template context<context>( elt, geopc);
+        auto expr_evaluator = M_expr.evaluator( mapgmc(ctx) );
         auto IhLoc = __fe->edgeLocalInterpolant();
+
         for( auto& lit : M_elts )
         {
-        __edge_it = lit.template get<1>();
-        __edge_en = lit.template get<2>();
-
-        for ( ;
-              __edge_it != __edge_en;//this->endElement();
-              ++__edge_it )
-        {
-            auto const& theedge = boost::unwrap_ref( *__edge_it );
-
-            // TODO : store one element that owns this edge
-            if ( !theedge.isConnectedTo0() )
+            edge_it = lit.template get<1>();
+            edge_en = lit.template get<2>();
+            DVLOG(2) << "edge " << edge_it->id() << " with marker " << edge_it->marker() << " nb: " << std::distance(edge_it,edge_en);
+            for ( ;
+                  edge_it != edge_en;//this->endElement();
+                  ++edge_it )
             {
-                LOG( WARNING ) << "edge not connected" << theedge;
+                auto const& theedge = boost::unwrap_ref( *edge_it );
+                // do not process the edge if it is a ghost edge: belonging to two
+                // processes and being in a process id greater than the one
+                // corresponding edge
+                if ( theedge.isGhostCell() )
+                {
+                    LOG(WARNING) << "edge id : " << theedge.id() << " is a ghost edge";
+                    continue;
+                }
 
-                continue;
-            }
-            // do not process the edge if it is a ghost edge: belonging to two
-            // processes and being in a process id greater than the one
-            // corresponding edge
-            if ( theedge.isGhostCell() )
-            {
-                LOG(WARNING) << "edge id : " << theedge.id() << " is a ghost edge";
-                continue;
-            }
-            __c->update( theedge.element(), theedge.edgeIdInElement());
+                size_type eid = theedge.elements().begin()->first;
+                size_type edgeid_in_element = theedge.elements().begin()->second;
+                auto const& elt = mesh->element( eid );
+                geopc = gm->preCompute( __fe->edgePoints(edgeid_in_element) );
+                ////geopc = gm->preComputeAtEdges( __fe->edgePoints(ptid_in_element) );
+                //ctx->update( elt, edgeid_in_element, geopc );
+                ctx->update( elt, geopc );
+                expr_evaluator.update( mapgmc( ctx ) );
+                __fe->edgeInterpolate( expr_evaluator, IhLoc );
 
-            map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
-
-            t_expr_type expr( M_expr, mapgmc );
-            expr.update( mapgmc );
-
-            std::pair<size_type,size_type> range_dof( std::make_pair( M_u.start(),
-                                                                      M_u.functionSpace()->nDof() ) );
-            DVLOG(2)  << "[integratoron] dof start = " << range_dof.first << "\n";
-            DVLOG(2)  << "[integratoron] dof range = " << range_dof.second << "\n";
-
-            //use interpolant
-            __fe->edgeInterpolate( expr, IhLoc );
-
-            for( auto const& ldof : M_u.functionSpace()->dof()->edgeLocalDof( theedge.id() ) )
+                for( auto const& ldof : M_u.functionSpace()->dof()->edgeLocalDof( eid, edgeid_in_element ) )
                 {
                     size_type thedof = M_u.start()+ (is_comp_space?Elem1::nComponents:1)*ldof.index(); // global dof
-                    DCHECK( ldof.localDofInEdge() < IhLoc.size() ) 
-                        << "Invalid local dof index in edge for edge Interpolant "
-                        << ldof.localDofInEdge() << ">=" << IhLoc.size();
-                    double __value = ldof.sign()*IhLoc( ldof.localDofInEdge() );
-                    LOG(INFO) << " on " << theedge.id() << " thedof "<< thedof << " = " << __value
-                              << " start=" << M_u.start() << " ldof=" << ldof.index() << "\n";
+                    double __value = ldof.sign()*IhLoc( ldof.localDofInFace() );
                     if ( std::find( dofs.begin(),
                                     dofs.end(),
                                     thedof ) != dofs.end() )
@@ -785,7 +738,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
                             M_rhs->set( thedof, __value*1e30 );
                         }
                 }
-        }// __edge_it != __edge_en
+        }// edge_it != edge_en
 
         } // for( auto& lit : M_elts )
 
@@ -806,6 +759,158 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
     x.reset();
 
 }
+
+template<typename ElementRange, typename Elem, typename RhsElem, typename OnExpr>
+template<typename Elem1, typename Elem2, typename FormType>
+void
+IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_ptr<Elem1> const& /*__u*/,
+                                                                  boost::shared_ptr<Elem2> const& /*__v*/,
+                                                                  FormType& __form,
+                                                                  mpl::bool_<true>,
+                                                                  mpl::size_t<MESH_POINTS>) const
+{
+#if 0
+
+    if ( !boost::is_same<Elem1, typename Elem::functionspace_type>::value ||
+         !boost::is_same<Elem2, typename Elem::functionspace_type>::value )
+        return;
+
+#endif
+    typedef typename Elem::functionspace_type functionspace_type;
+    static constexpr bool is_product = functionspace_type::is_product;
+    static constexpr bool is_same_space = boost::is_same<functionspace_type,Elem1>::value;
+    static constexpr bool is_comp_space = boost::is_same<functionspace_type,typename Elem1::component_functionspace_type>::value;
+    VLOG(2) << "call on::assemble(MESH_POINTS): " << is_comp_space<< "\n";
+
+    VLOG(2) << "On::assemble on Mesh Points";
+    // TODO : check that we do not use hdiv hcurl or other type of elements
+    const size_type context = OnExpr::context|vm::POINT;
+    VLOG(2)  << "assembling Dirichlet conditions\n";
+    auto mesh = M_u.functionSpace()->mesh().get();
+    auto const* dof = M_u.functionSpace()->dof().get();
+    auto const* __fe = M_u.functionSpace()->fe().get();
+    auto gm = mesh->gm();
+
+    // make sure that the form is close, ie the associated matrix is assembled
+    __form.matrix().close();
+    // make sure that the right hand side is closed, ie the associated vector is assembled
+    M_rhs->close();
+    
+    std::vector<int> dofs;
+    std::vector<value_type> values;
+    auto pt_it = this->beginElement();
+    auto pt_en = this->endElement();
+
+    bool findAPt = false;
+    for( auto& lit : M_elts )
+    {
+        pt_it = lit.template get<1>();
+        pt_en = lit.template get<2>();
+        if ( pt_it != pt_en )
+        {
+            findAPt=true;
+            break;
+        }
+    }
+    if ( findAPt )
+    {
+        // get the first pt properly connected
+        bool findAPtToInit=false;
+        for( auto& lit : M_elts )
+        {
+            pt_it = lit.template get<1>();
+            pt_en = lit.template get<2>();
+            for( ; pt_it != pt_en; ++pt_it )
+            {
+                if ( pt_it->elements().size() )
+                {
+                    findAPtToInit=true;
+                    break;
+                }
+            }
+            if ( findAPtToInit ) break;
+        }
+        CHECK( findAPtToInit ) << "a point to initialize the Dirichlet constraint\n";
+
+        auto const& thept = boost::unwrap_ref( *pt_it );
+            
+        size_type eid = thept.elements().begin()->first;
+        size_type ptid_in_element = thept.elements().begin()->second;
+
+        auto const& elt = mesh->element( eid );
+        auto geopc = gm->preCompute( __fe->vertexPoints(ptid_in_element) );
+        auto ctx = gm->template context<context>( elt, geopc );
+        auto expr_evaluator = M_expr.evaluator( mapgmc(ctx) );
+        auto IhLoc = __fe->vertexLocalInterpolant();
+
+        
+        for( auto& lit : M_elts )
+        {
+            pt_it = lit.template get<1>();
+            pt_en = lit.template get<2>();
+            DVLOG(2) << "point " << pt_it->id() << " with marker " << pt_it->marker() << " nb: " << std::distance(pt_it,pt_en);
+            
+            if ( pt_it == pt_en )
+                continue;
+
+            for ( ;
+                  pt_it != pt_en;
+                  ++pt_it )
+            {
+                auto const& thept = boost::unwrap_ref( *pt_it );
+                
+                size_type eid = thept.elements().begin()->first;
+                size_type ptid_in_element = thept.elements().begin()->second;
+                auto const& elt = mesh->element( eid );
+                geopc = gm->preCompute( __fe->vertexPoints(ptid_in_element) );
+                ctx->update( elt, ptid_in_element, geopc, mpl::int_<0>() );
+                expr_evaluator.update( mapgmc( ctx ) );
+                __fe->vertexInterpolate( expr_evaluator, IhLoc );
+
+                for( int c = 0; c < (is_product?nComponents:1); ++c )
+                {
+                    size_type index = dof->localToGlobal( eid, ptid_in_element, c ).index();
+                    size_type thedof = M_u.start()+ (is_comp_space?Elem1::nComponents:1)*index; // global dof
+                    double __value = IhLoc( c );
+                    
+                    if ( std::find( dofs.begin(),
+                                    dofs.end(),
+                                    thedof ) != dofs.end() )
+                        continue;
+
+                    if ( M_on_strategy.test( ContextOn::ELIMINATION|ContextOn::SYMMETRIC ) )
+                    {
+                        DVLOG(3) << "Eliminating row " << thedof << " using value : " << __value << "\n";
+                        
+                        dofs.push_back( thedof );
+                        values.push_back(  __value );
+                    }
+                    else if (  M_on_strategy.test( ContextOn::PENALISATION ) &&
+                               !M_on_strategy.test( ContextOn::ELIMINATION|ContextOn::SYMMETRIC ) )
+                    {
+                        __form.set( thedof, thedof, 1.0*1e30 );
+                        M_rhs->set( thedof, __value*1e30 );
+                    }
+                }
+            }// pt_it != pt_en
+        } // for( auto& lit : M_elts )
+    }// findAFace
+
+    if ( __form.rowStartInMatrix()!=0)
+    {
+        auto const thedofshift = __form.rowStartInMatrix();
+        for (auto& itd : dofs)
+            itd+=thedofshift;
+    }
+
+    auto x = M_rhs->clone();
+    CHECK( values.size() == dofs.size() ) << "Invalid dofs/values size: " << dofs.size() << "/" << values.size();
+    x->setVector( dofs.data(), dofs.size(), values.data() );
+    x->close();
+    __form.zeroRows( dofs, *x, *M_rhs, M_on_strategy );
+    x.reset();
+}
+
 
 
 namespace detail
