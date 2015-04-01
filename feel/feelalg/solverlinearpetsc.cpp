@@ -110,7 +110,21 @@ extern "C"
         PetscErrorCode ierr = PCShellGetContext( pc,&ctx );
         CHKERRQ( ierr );
         Preconditioner<double> * preconditioner = static_cast<Preconditioner<double>*>( ctx );
+
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,5,0)
+        bool reusePrec = preconditioner->reusePrec();
+        // if we are here and reusePrec option, need to rebuild the preconditioner
+        if ( reusePrec )
+            preconditioner->setPrecMatrixStructure( MatrixStructure::SAME_NONZERO_PATTERN );
+#endif
+        // build preconditioner
         preconditioner->init();
+
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,5,0)
+        // tell to not rebuild the preconditioner after
+        if ( reusePrec )
+            preconditioner->setPrecMatrixStructure( MatrixStructure::SAME_PRECONDITIONER );
+#endif
         VLOG(2) << "__feel_petsc_preconditioner_setup: init prec\n";
         return 0;
     }
