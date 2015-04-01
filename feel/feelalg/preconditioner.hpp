@@ -204,6 +204,11 @@ public:
     sparse_matrix_ptrtype const& matrix() const { return M_matrix; }
 
     /**
+     * Return true if the preconditioner will be reuse
+     */
+    bool reusePrec() const { return M_prec_matrix_structure == MatrixStructure::SAME_PRECONDITIONER; }
+
+    /**
      * @return the side of the system to which the preconditioner applies
      */
     Side side() const { return M_side; }
