@@ -589,46 +589,12 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
                                                                   mpl::bool_<true>,
                                                                   mpl::size_t<MESH_EDGES>) const
 {
+
+
     typedef typename Elem::functionspace_type functionspace_type;
     static constexpr bool is_same_space = boost::is_same<functionspace_type,Elem1>::value;
     static constexpr bool is_comp_space = boost::is_same<functionspace_type,typename Elem1::component_functionspace_type>::value;
     VLOG(2) << "call on::assemble(edges): " << is_comp_space<< "\n";
-
-    //
-    // a few typedefs
-    //
-
-    // mesh element
-    typedef typename element_type::functionspace_type::mesh_type::element_type geoelement_type;
-    typedef typename element_type::functionspace_type::mesh_type::shape_type geoshape_type;
-    typedef typename geoelement_type::edge_type edge_type;
-
-    typedef typename element_type::functionspace_type::fe_type fe_type;
-
-    // geometric mapping context
-    typedef typename element_type::functionspace_type::mesh_type::gm_type gm_type;
-    typedef boost::shared_ptr<gm_type> gm_ptrtype;
-    //typedef typename gm_type::template Context<context, geoelement_type> gmc_type;
-    typedef typename mpl::if_< mpl::or_<is_hdiv_conforming<fe_type>, is_hcurl_conforming<fe_type> >,
-                               typename gm_type::template Context<context|vm::JACOBIAN|vm::KB|vm::TANGENT|vm::NORMAL, geoelement_type>,
-                               typename gm_type::template Context<context, geoelement_type> >::type gmc_type;
-    typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
-    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
-
-    static const uint16_type nDim = geoshape_type::nDim;
-
-    // dof
-    typedef typename element_type::functionspace_type::dof_type dof_type;
-
-    // basis
-    typedef typename fe_type::template Context< context, fe_type, gm_type, geoelement_type> fecontext_type;
-    typedef boost::shared_ptr<fecontext_type> fecontext_ptrtype;
-    //typedef fusion::map<fusion::pair<vf::detail::gmc<0>, fecontext_ptrtype> > map_gmc_type;
-
-    // expression
-    //typedef typename expression_type::template tensor<map_gmc_type,fecontext_type> t_expr_type;
-    typedef typename expression_type::template tensor<map_gmc_type> t_expr_type;
-    typedef typename t_expr_type::shape shape;
 
     // make sure that the form is close, ie the associated matrix is assembled
     __form.matrix().close();
