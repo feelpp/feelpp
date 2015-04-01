@@ -231,7 +231,7 @@ public:
         computeMeasure();
     }
 
-    Reference( element_type const& e, uint16_type __f, uint16_type __p = edge_permutation_type::IDENTITY )
+    Reference( element_type const& e, uint16_type __f, mpl::int_<1>, uint16_type __p = edge_permutation_type::IDENTITY)
         :
         super(),
         M_id( __f ),
@@ -476,7 +476,7 @@ public:
     }
     edge_type edge( uint16_type __f, uint16_type __p = edge_permutation_type::IDENTITY ) const
     {
-        edge_type ref( *this, __f, __p );
+        edge_type ref( *this, __f, mpl::int_<1>(), __p );
         return ref;
     }
 
