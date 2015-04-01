@@ -1955,6 +1955,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildPeriodicDofMap( me
 
                 CHECK( successful_modify ) << "modify periodic dof table failed: element id "
                                            << ie << " local dof id " << lid << " component " << c2;
+                // map_gdof define only for one component
+                if ( c1 == 0 )
+                {
 #if 1
                 // warning: must modify the data structure that allows to
                 // generate unique global dof ids
@@ -1969,6 +1972,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildPeriodicDofMap( me
 #endif
                 VLOG(2) << "link mapgdof " <<   map_gdof[ std::make_tuple( dof2_type, gDof ) ]  << " -> " << gid << "\n";
                 map_gdof[ std::make_tuple( dof2_type, gDof ) ] = gid;
+                }
 #if 0
                 FEELPP_ASSERT( map_gdof[ boost::make_tuple( dof2_type, c2, gDof ) ] == gid )
                     ( corresponding_gid )( dof2_type )( gDof )( gid )
