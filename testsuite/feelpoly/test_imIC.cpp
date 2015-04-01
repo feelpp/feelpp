@@ -360,7 +360,7 @@ public:
     {
         using namespace Feel;
 
-        IM<D, N, T, Hypercube> im;
+        IMGeneral<D, N, T, Hypercube,TestQuadra> im;
 
         value_type res = math::abs( im.integrateAtPoints( M_func ) - M_res );
 
@@ -391,70 +391,74 @@ public:
 BOOST_FIXTURE_TEST_SUITE( im1d_double_suite, F )
 BOOST_AUTO_TEST_CASE( im1d_test1 )
 {
-    TestImPK<1,1, double> t1( 2.0, one<double> );
+    TestImQK<1,1, double> t1( 2.0, one<double> );
     t1();
 }
 BOOST_AUTO_TEST_CASE( im1d_test2 )
 {
-    TestImPK<1,1, double> t2( 2.0*sin( double( 1.0 ) )  , cost<double>, 1.1E-2 );
+    TestImQK<1,1, double> t2( 2.0*sin( double( 1.0 ) )  , cost<double>, 1.1E-2 );
     t2();
 }
 BOOST_AUTO_TEST_CASE( im1d_test3 )
 {
-    TestImPK<1,2, double> t3( 2.0*sin( double( 1.0 ) )  , cost<double>, 1.1E-2 );
+    TestImQK<1,2, double> t3( 2.0*sin( double( 1.0 ) )  , cost<double>, 1.1E-2 );
     t3();
 }
 BOOST_AUTO_TEST_CASE( im1d_test4 )
 {
-    TestImPK<1,3, double> t4( 2.0*sin( double( 1.0 ) )  , cost<double>, 1.0E-4 );
+    TestImQK<1,3, double> t4( 2.0*sin( double( 1.0 ) )  , cost<double>, 1.0E-4 );
     t4();
 }
 BOOST_AUTO_TEST_CASE( im1d_test5 )
 {
-    TestImPK<1,50,double> t5( 2.0*sin( double( 1.0 ) )  , cost<double> );
+    TestImQK<1,50,double> t5( 2.0*sin( double( 1.0 ) )  , cost<double> );
     t5();
 }
+
+/*
 BOOST_AUTO_TEST_CASE( im1d_test6 )
 {
-    TestImPK<1,1, double> t6( Feel::FACE_0, -1.0 , xp<1,double> );
+    TestImQK<1,1, double> t6( Feel::FACE_0, -1.0 , xp<1,double> );
     t6();
 }
 BOOST_AUTO_TEST_CASE( im1d_test7 )
 {
-    TestImPK<1,1, double> t7( Feel::FACE_1, 1.0 , xp<1,double> );
+    TestImQK<1,1, double> t7( Feel::FACE_1, 1.0 , xp<1,double> );
     t7();
 }
+
+
 BOOST_AUTO_TEST_CASE( im1d_face_test1 )
 {
-    TestImPK<1,1, double> t0( Feel::FACE_0, -1.0 , xp<1,double> );
+    TestImQK<1,1, double> t0( Feel::FACE_0, -1.0 , xp<1,double> );
     t0();
-    TestImPK<1,1, double> t1( Feel::FACE_1, 1.0 , xp<1,double> );
+    TestImQK<1,1, double> t1( Feel::FACE_1, 1.0 , xp<1,double> );
     t1();
 }
 BOOST_AUTO_TEST_CASE( im1d_face_test2 )
 {
-    TestImPK<1,2, double> t0( Feel::FACE_0, -1.0 , xp<1,double> );
+    TestImQK<1,2, double> t0( Feel::FACE_0, -1.0 , xp<1,double> );
     t0();
-    TestImPK<1,2, double> t1( Feel::FACE_1, 1.0 , xp<1,double> );
+    TestImQK<1,2, double> t1( Feel::FACE_1, 1.0 , xp<1,double> );
     t1();
 }
 BOOST_AUTO_TEST_CASE( im1d_face_test3 )
 {
-    TestImPK<1,3, double> t0( Feel::FACE_0, -1.0 , xp<1,double> );
+    TestImQK<1,3, double> t0( Feel::FACE_0, -1.0 , xp<1,double> );
     t0();
-    TestImPK<1,3, double> t1( Feel::FACE_1, 1.0 , xp<1,double> );
+    TestImQK<1,3, double> t1( Feel::FACE_1, 1.0 , xp<1,double> );
     t1();
 }
-
+*/
 
 BOOST_AUTO_TEST_CASE( im2d_test0 )
 {
 
-    TestImPK<2,1, double> t1( P2N<double>( 0, 0 ).integral(), P2N<double>( 0, 0 ) );
+    TestImQK<2,1, double> t1( P2N<double>( 0, 0 ).integral(), P2N<double>( 0, 0 ) );
     t1();
 }
 
-
+/*
 BOOST_AUTO_TEST_CASE( im2d_test00 )
 {
     std::cout<< "YOOOO" << std::endl;
@@ -468,7 +472,7 @@ BOOST_AUTO_TEST_CASE( im2d_testS0 )
     TestImPK<2,2, double> t1( 4./3 , xp2<double> );
     t1();
 }
-
+*/
 
 BOOST_AUTO_TEST_CASE( im2d_test1 )
 {
@@ -477,7 +481,7 @@ BOOST_AUTO_TEST_CASE( im2d_test1 )
     for ( int alpha1 = 0; alpha1 < N; ++ alpha1 )
     {
         int alpha2 = N-alpha1;
-        TestImPK<2,N, double> t10( P2N<double>( alpha1, alpha2 ).integral(), P2N<double>( alpha1, alpha2 ) );
+        TestImQK<2,N, double> t10( P2N<double>( alpha1, alpha2 ).integral(), P2N<double>( alpha1, alpha2 ) );
         t10();
     }
 }
@@ -488,7 +492,7 @@ BOOST_AUTO_TEST_CASE( im2d_test2 )
     for ( int alpha1 = 0; alpha1 < N; ++ alpha1 )
     {
         int alpha2 = N-alpha1;
-        TestImPK<2,N, double> t10( P2N<double>( alpha1, alpha2 ).integral(), P2N<double>( alpha1, alpha2 ) );
+        TestImQK<2,N, double> t10( P2N<double>( alpha1, alpha2 ).integral(), P2N<double>( alpha1, alpha2 ) );
         t10();
     }
 }
@@ -499,7 +503,7 @@ BOOST_AUTO_TEST_CASE( im2d_test3 )
     for ( int alpha1 = 0; alpha1 < N; ++ alpha1 )
     {
         int alpha2 = N-alpha1;
-        TestImPK<2,N, double> t10( P2N<double>( alpha1, alpha2 ).integral(), P2N<double>( alpha1, alpha2 ) );
+        TestImQK<2,N, double> t10( P2N<double>( alpha1, alpha2 ).integral(), P2N<double>( alpha1, alpha2 ) );
         t10();
     }
 }
@@ -510,7 +514,7 @@ BOOST_AUTO_TEST_CASE( im2d_test4 )
     for ( int alpha1 = 0; alpha1 < N; ++ alpha1 )
     {
         int alpha2 = N-alpha1;
-        TestImPK<2,N, double> t10( P2N<double>( alpha1, alpha2 ).integral(), P2N<double>( alpha1, alpha2 ) );
+        TestImQK<2,N, double> t10( P2N<double>( alpha1, alpha2 ).integral(), P2N<double>( alpha1, alpha2 ) );
         t10();
     }
 }
@@ -521,7 +525,7 @@ BOOST_AUTO_TEST_CASE( im2d_test5 )
     for ( int alpha1 = 0; alpha1 < N; ++ alpha1 )
     {
         int alpha2 = N-alpha1;
-        TestImPK<2,N, double> t10( P2N<double>( alpha1, alpha2 ).integral(), P2N<double>( alpha1, alpha2 ) );
+        TestImQK<2,N, double> t10( P2N<double>( alpha1, alpha2 ).integral(), P2N<double>( alpha1, alpha2 ) );
         t10();
     }
 
@@ -533,7 +537,7 @@ BOOST_AUTO_TEST_CASE( im2d_test6 )
     for ( int alpha1 = 0; alpha1 < N; ++ alpha1 )
     {
         int alpha2 = N-alpha1;
-        TestImPK<2,N, double> t10( P2N<double>( alpha1, alpha2 ).integral(), P2N<double>( alpha1, alpha2 ) );
+        TestImQK<2,N, double> t10( P2N<double>( alpha1, alpha2 ).integral(), P2N<double>( alpha1, alpha2 ) );
         t10();
     }
 
