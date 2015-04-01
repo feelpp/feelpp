@@ -37,7 +37,7 @@ feelpp_add_application(
  applicationName
   SRCS file.cpp file1.hpp file2.hpp
   GEO geoFile1 geoFile2
-  DEFS DIM=2
+  DEFS A_DEF=2
   CFG cfgFile1.cfg cfgFile2.cfg )
 \endcode{cmake}
 
