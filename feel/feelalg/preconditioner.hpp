@@ -215,6 +215,13 @@ public:
         return M_nearNullSpace.find(splitIds)->second;
     }
 
+    bool hasAuxiliarySparseMatrix( std::string const& key ) const { return M_auxiliarySparseMatrix.find( key ) != M_auxiliarySparseMatrix.end(); }
+    sparse_matrix_ptrtype const& auxiliarySparseMatrix( std::string const& key ) const
+    {
+        CHECK( this->hasAuxiliarySparseMatrix( key ) ) << " auxiliary sparse matrix not given for this key : " << key ;
+        return M_auxiliarySparseMatrix.find( key )->second;
+    }
+
     //@}
 
     /** @name  Mutators
@@ -259,6 +266,10 @@ public:
     }
     //@}
 
+    void attachAuxiliarySparseMatrix( std::string const& key,sparse_matrix_ptrtype const& mat )
+    {
+        M_auxiliarySparseMatrix[key] = mat;
+    }
     /** @name  Methods
      */
     //@{
@@ -315,6 +326,7 @@ protected:
      */
     std::map<std::set<int>,boost::shared_ptr<NullSpace<value_type> > >  M_nearNullSpace;
 
+    std::map<std::string,sparse_matrix_ptrtype> M_auxiliarySparseMatrix;
 };
 
 typedef Preconditioner<double> preconditioner_type;
