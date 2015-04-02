@@ -45,16 +45,20 @@ struct ModelMaterial
         M_name( name ),
         M_rho( 1. ),
         M_mu(1. ),
+        M_Cp( 1 ),
+        M_Cv( 1 ),
         M_k11( 1 ),
         M_k12( 0 ),
         M_k13( 0 ),
         M_k22( 1 ),
         M_k23( 0 ),
         M_k33( 1 ),
-        M_Cp( 1 ),
-        M_Cv( 1 ),
         M_Tref( 0 ),
-        M_beta( 0 )
+        M_beta( 0 ),
+        M_C( 1 ),
+        M_young_modulus( 1 ),
+        M_nu( 1 ),
+        M_sigma( 1 )
         {}
     std::string const& name() const { return M_name; }
     void setName( std::string const& name ) { M_name = name; }
@@ -95,16 +99,47 @@ struct ModelMaterial
     // Material coefficient for thermal expansion
     double beta() const {  return M_beta; }
     void setBeta( double t) { M_beta = t; }
+
+    // heat capacity
+    double C() const {  return M_C; }
+    void setC( double const& t) { M_C = t; }
     
+    // Mechanical properties
+    // Young's Modulus
+    double E() const {  return M_young_modulus; }
+    void setE( double const& t) { M_young_modulus = t; }
+
+    // Poisson's ratio
+    double nu() const {  return M_nu; }
+    void setNu( double const& t) { M_nu = t; }
+    // electrical conductivity
+    double sigma() const {  return M_sigma; }
+    void setSigma( double const& t) { M_sigma = t; }
+    
+
+    void load( std::string const& );
 private:
     std::string M_name;
     double M_rho;
     double M_mu;
-    double M_k11, M_k12, M_k13, M_k22, M_k23, M_k33;
+    
     double M_Cp;
     double M_Cv;
+
+    // Thermal properties
+    double M_k11, M_k12, M_k13, M_k22, M_k23, M_k33;
     double M_Tref;
     double M_beta;
+    double M_C;
+    
+    // Mechanical Properties
+    // Young's Modulus
+    double M_young_modulus;
+    // Poisson's Ratio
+    double M_nu;
+
+    // Electrical conductivity
+    double M_sigma;
 };
 
 std::ostream& operator<<( std::ostream& os, ModelMaterial const& m );
@@ -119,7 +154,8 @@ public:
     ModelMaterials( pt::ptree const& p );
     virtual ~ModelMaterials() = default;
     void setPTree( pt::ptree const& _p ) { M_p = _p; setup(); }
-
+    ModelMaterial loadMaterial( std::string const& );
+    ModelMaterial getMaterial( pt::ptree const& );
 private:
     void setup();
 private:

@@ -751,8 +751,12 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
 
             else
             {
-                if ( this->components().test( MESH_ADD_ELEMENTS_INFO ) )
-                    this->edges().modify( this->edgeIterator( _edgeit->second ), [vid] ( edge_type& e ) { e.addElement( vid ); } );
+                auto eit =  this->edgeIterator( _edgeit->second );
+                if ( this->components().test( MESH_ADD_ELEMENTS_INFO ) || eit->marker().isOn() )
+                {
+                    LOG_IF(INFO, eit->marker().isOn()) << "found edge " << eit->id() << " with marker:" << eit->marker() << ", adding element id : " << vid <<  "  local edge id " << j;
+                    this->edges().modify( eit, [vid,j] ( edge_type& e ) { e.addElement( vid, j ); } );
+                }
             }
 
             // set the process id from element (only active element)
