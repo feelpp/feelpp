@@ -22,6 +22,7 @@
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 #include <iostream>
+#include <boost/property_tree/json_parser.hpp>
 #include <feel/feelcore/feel.hpp>
 
 
@@ -44,6 +45,9 @@ std::ostream& operator<<( std::ostream& os, ModelMaterial const& m )
        << ", k22: " << m.k22()
        << ", k23: " << m.k23()
        << ", k33: " << m.k33()
+       << ", E: " << m.E()
+       << ", nu: " << m.nu()
+       << ", sigma: " << m.sigma()
        << "]";
     return os;
 }
@@ -51,35 +55,56 @@ ModelMaterials::ModelMaterials( pt::ptree const& p )  : M_p( p )
 {
     setup();
 }
+ModelMaterial
+ModelMaterials::loadMaterial( std::string const& s )
+{
+    pt::ptree p;
+    pt::read_json( s, p );
+    return this->getMaterial( p );
+}
 void
 ModelMaterials::setup()
 {
     for( auto const& v : M_p )
     {
-        
-        std::cout << "Material :" << v.first  << "\n";
-        std::string t = v.first; // parameter name
-        auto f= v.second;
+        std::cout << "Material Physical/Region :" << v.first  << "\n";
+        if ( auto fname = v.second.get_optional<std::string>("filename") )
         {
-            ModelMaterial m(t);
-            m.setRho( f.get( "rho", 1.f ) );
-            m.setMu( f.get( "mu", 1.f ) );
-            m.setCp( f.get( "Cp", 1.f ) );
-            m.setCv( f.get( "Cv", 1.f ) );
-            m.setTref( f.get( "Tref", 0.f ) );
-            m.setBeta( f.get( "beta", 0.f ) );
-            m.setK11( f.get( "k11", 1.f ) );
-            m.setK12( f.get( "k12", 0.f ) );
-            m.setK13( f.get( "k13", 0.f ) );
-            m.setK22( f.get( "k22", 1.f ) );
-            m.setK23( f.get( "k23", 0.f ) );
-            m.setK33( f.get( "k33", 1.f ) );
-            
-            LOG(INFO) << "adding material " << m;
-            this->push_back( std::move(m) );
+            this->push_back( this->loadMaterial( fname.get() ) );
+        }
+        else
+        {
+            this->push_back( this->getMaterial( v.second ) );
         }
     }
-}    
+}
+ModelMaterial
+ModelMaterials::getMaterial( pt::ptree const& v )
+{
+    std::string t = v.get<std::string>( "name" );
+    std::cout << "loading material name: " << t << std::endl;
+    ModelMaterial m(t);
+    m.setRho( v.get( "rho", 1.f ) );
+    m.setMu( v.get( "mu", 1.f ) );
+    m.setCp( v.get( "Cp", 1.f ) );
+    m.setCv( v.get( "Cv", 1.f ) );
+    m.setTref( v.get( "Tref", 0.f ) );
+    m.setBeta( v.get( "beta", 0.f ) );
+    m.setK11( v.get( "k11", 1.f ) );
+    m.setK12( v.get( "k12", 0.f ) );
+    m.setK13( v.get( "k13", 0.f ) );
+    m.setK22( v.get( "k22", 1.f ) );
+    m.setK23( v.get( "k23", 0.f ) );
+    m.setK33( v.get( "k33", 1.f ) );
+    m.setE( v.get( "E", 1.f ) );
+    m.setNu( v.get( "nu", 1.f ) );
+    m.setSigma( v.get( "sigma", 1.f ) );
+    m.setC( v.get( "C", 1.f ) );
+
+    LOG(INFO) << "adding material " << m;
+    return m;
+}
+
 }
 
 
