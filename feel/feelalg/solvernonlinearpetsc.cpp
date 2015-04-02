@@ -841,8 +841,9 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     ierr = KSPSetOperators( M_ksp, jac->mat(), jac->mat(),
                             PetscGetMatStructureEnum(this->precMatrixStructure()) );
 #else
-    ierr = KSPSetReusePreconditioner( M_ksp, (this->precMatrixStructure() == Feel::SAME_PRECONDITIONER)? PETSC_TRUE : PETSC_FALSE );
-    CHKERRABORT( this->worldComm().globalComm(),ierr );
+    // no longer necessary here!
+    //ierr = KSPSetReusePreconditioner( M_ksp, (this->precMatrixStructure() == Feel::SAME_PRECONDITIONER)? PETSC_TRUE : PETSC_FALSE );
+    //CHKERRABORT( this->worldComm().globalComm(),ierr );
     ierr = KSPSetOperators( M_ksp, jac->mat(), jac->mat() );
 #endif
     CHKERRABORT( this->worldComm().globalComm(),ierr );

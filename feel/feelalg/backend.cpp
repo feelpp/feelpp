@@ -398,6 +398,9 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
         x_save = this->newVector(x->mapPtr());
         *x_save=*x;
 
+        // configure reusePC,reuseJac in non linear solver
+        int typeReusePrec = 1,typeReuseJac = 1 ;
+#if PETSC_VERSION_LESS_THAN(3,5,0)
         // if first time or rebuild prec at first newton step, need to get matStructInitial
         if ( reusePC && (!M_reusePrecIsBuild || M_reusePrecRebuildAtFirstNewtonStep) )
             {
@@ -406,21 +409,24 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
             }
         else if ( reusePC ) M_nlsolver->setPrecMatrixStructure( SAME_PRECONDITIONER );
 
-        // configure reusePC,reuseJac in non linear solver
-        int typeReusePrec = 1,typeReuseJac = 1 ;
         if ( reusePC ) typeReusePrec = -1;
-        if ( reuseJac ) typeReuseJac = -1;
+#else
+        if ( reusePC )
+        {
+            M_nlsolver->setPrecMatrixStructure( SAME_PRECONDITIONER );
+            typeReusePrec = (M_reusePrecRebuildAtFirstNewtonStep)? -2 : -1;
+        }
+#endif
+        if ( reuseJac ) typeReuseJac = (M_reuseJacRebuildAtFirstNewtonStep)? -2 : -1;
 
-        //M_nlsolver->setReuse( -2, -2 );
-        //M_nlsolver->setReuse( -1, -2 );
         M_nlsolver->setReuse( typeReuseJac, typeReusePrec );
 
-        //int maxIterationsReuseJac=10;
+        // special tolerance in reuse mode
         M_nlsolver->setNbItMax( this->maxIterationsSNESReuse() );
         M_nlsolver->setMaxitKSP( this->maxIterationsKSPinSNESReuse() );
 
-        // compute cst jacobian in case of quasi-newton!
-        if ( reuseJac &&  (!M_reuseJacIsBuild || M_reuseJacRebuildAtFirstNewtonStep) ) { this->nlSolver()->jacobian( x, A );M_reuseJacIsBuild=true;}
+        // compute cst jacobian when jacobian is never rebuilt after!
+        if ( reuseJac &&  (!M_reuseJacIsBuild && !M_reuseJacRebuildAtFirstNewtonStep) ) { this->nlSolver()->jacobian( x, A );M_reuseJacIsBuild=true;}
     }
     else
     {
