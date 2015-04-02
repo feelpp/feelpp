@@ -348,6 +348,7 @@ class TestImQK
 public:
     typedef T value_type;
     typedef typename Feel::node<T>::type node_type;
+    
     TestImQK( value_type res,
               boost::function<value_type( node_type const& )> const& func,
               value_type tol = Feel::type_traits<T>::epsilon() )
@@ -542,7 +543,7 @@ BOOST_AUTO_TEST_CASE( im2d_test6 )
     }
 
 
-}
+} /*
 BOOST_AUTO_TEST_CASE( im2d_face_test1 )
 {
     TestImPK<2,1, double> t0( Feel::FACE_1, 2.0 , one<double> );
@@ -866,7 +867,7 @@ BOOST_AUTO_TEST_CASE( im3d_face_test6 )
         t10();
     }
 }
-
+*/
 BOOST_AUTO_TEST_SUITE_END()
 
 #else
