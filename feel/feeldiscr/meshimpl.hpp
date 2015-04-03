@@ -2856,7 +2856,7 @@ boost::tuple<bool,typename Mesh<Shape, T, Tag>::node_type,double>
 Mesh<Shape, T, Tag>::Localization::isIn( size_type _id, const node_type & _pt ) const
 {
     bool isin=false;
-    double dmin;
+    double dmin=0;
     node_type x_ref;
 
     auto mesh = M_mesh.lock();
