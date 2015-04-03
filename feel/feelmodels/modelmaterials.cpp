@@ -24,6 +24,8 @@
 #include <iostream>
 #include <boost/property_tree/json_parser.hpp>
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/environment.hpp>
+
 
 
 #include <feel/feelmodels/modelmaterials.hpp>
@@ -70,7 +72,7 @@ ModelMaterials::setup()
         std::cout << "Material Physical/Region :" << v.first  << "\n";
         if ( auto fname = v.second.get_optional<std::string>("filename") )
         {
-            this->push_back( this->loadMaterial( fname.get() ) );
+            this->push_back( this->loadMaterial( Environment::expand( fname.get() ) ) );
         }
         else
         {
