@@ -139,7 +139,7 @@ struct is_face : mpl::bool_<(decay_type<T>::nDim == 2 && decay_type<T>::nRealDim
 template<typename T>
 struct is_edge : mpl::bool_<(decay_type<T>::nDim==1 && decay_type<T>::nRealDim == 3)||(decay_type<T>::nDim==1 && decay_type<T>::nRealDim == 2)> {};
 template<typename T>
-struct is_point : mpl::bool_<(decay_type<T>::nDim=0)> {};
+struct is_point : mpl::bool_<(decay_type<T>::nDim == 0)> {};
 
 template<typename T>
 struct is_simplex : std::is_base_of<SimplexBase, T>::type {};
