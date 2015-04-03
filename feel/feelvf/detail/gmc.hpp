@@ -30,6 +30,7 @@
 #define FEELPP_DETAIL_GMC_HPP 1
 
 #include <boost/fusion/sequence.hpp>
+#include <boost/fusion/support/pair.hpp>
 
 namespace Feel {
 
