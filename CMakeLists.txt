@@ -154,7 +154,7 @@ endif(APPLE)
 if(CMAKE_COMPILER_IS_GNUCXX)
   SET(CMAKE_CXX_FLAGS "-std=c++0x")
   if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.8.0)
-     set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+     set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
      # A cosmetic change - do not work properly within emacs
      #if (CMAKE_CXX_COMPILER_VERSION VERSION_EQUAL 4.9.0 OR CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.9.0)
      #  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=always" )
