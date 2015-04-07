@@ -274,6 +274,16 @@ public:
         return M_dual.points( f );
     }
 
+    points_type edgePoints( uint16_type e ) const
+        {
+            return M_dual.edgePoints( e );
+        }
+    
+    points_type vertexPoints( uint16_type v ) const
+        {
+            return M_dual.vertexPoints( v );
+        }
+    
     /**
      * \return the family name of the finite element
      */

@@ -7,6 +7,7 @@
 
   Copyright (C) 2005,2006 EPFL
   Copyright (C) 2006-2011 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2011-2015 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -83,8 +84,8 @@ public:
 
     typedef LinearForm<SpaceType, VectorType, ElemContType> self_type;
 
-    typedef SpaceType space_type;
-    typedef boost::shared_ptr<SpaceType> space_ptrtype;
+    using space_type = functionspace_type<SpaceType>;
+    typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef space_type test_space_type;
     typedef space_type trial_space_type;
 
@@ -144,7 +145,7 @@ public:
 
         typedef Context<GeomapContext,ExprT,IM,GeomapExprContext> form_context_type;
         typedef LinearForm<SpaceType,VectorType, ElemContType> form_type;
-        typedef typename SpaceType::dof_type dof_type;
+        typedef typename space_type::dof_type dof_type;
         typedef typename form_type::value_type value_type;
 
 
@@ -1061,7 +1062,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::operator=( Expr<ExprT> const& _
 {
     // loop(fusion::for_each) over sub-functionspaces in SpaceType
     // pass expression and initialize
-    this->assign( __expr, true, mpl::bool_<( SpaceType::nSpaces > 1 )>() );
+    this->assign( __expr, true, mpl::bool_<( space_type::nSpaces > 1 )>() );
     return *this;
 }
 template<typename SpaceType, typename VectorType,  typename ElemContType>
@@ -1069,7 +1070,7 @@ template<typename ExprT>
 LinearForm<SpaceType, VectorType, ElemContType>&
 LinearForm<SpaceType, VectorType, ElemContType>::operator+=( Expr<ExprT> const& __expr )
 {
-    this->assign( __expr, false, mpl::bool_<( SpaceType::nSpaces > 1 )>() );
+    this->assign( __expr, false, mpl::bool_<( space_type::nSpaces > 1 )>() );
     return *this;
 }
 
@@ -1080,12 +1081,19 @@ LinearForm<SpaceType, VectorType, ElemContType>::operator+=( Expr<ExprT> const& 
 
 namespace meta
 {
-template<typename SpaceType,typename VectorType=typename Backend<typename SpaceType::value_type>::vector_type,typename ElemContType=typename Backend<typename SpaceType::value_type>::vector_type>
+template<typename SpaceType,
+         typename VectorType=typename Backend<typename SpaceType::value_type>::vector_type,
+         typename ElemContType=typename Backend<typename SpaceType::value_type>::vector_type>
 struct LinearForm
 {
     typedef Feel::vf::detail::LinearForm<SpaceType,VectorType,ElemContType> type;
 };
 }
+template<typename FE1,
+         typename VectorType=typename Backend<typename functionspace_type<FE1>::value_type>::vector_type,
+         typename ElemContType = VectorType>
+using form1_type = Feel::vf::detail::LinearForm<FE1,VectorType,ElemContType>;
+
 } // feel
 
 #include <feel/feelvf/linearformcontext.hpp>

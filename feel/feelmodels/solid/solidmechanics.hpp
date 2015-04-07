@@ -29,6 +29,7 @@
 #include <feel/feel.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelts/newmark.hpp>
+#include <feel/feelmodels/modelproperties.hpp>
 
 
 namespace Feel
@@ -41,10 +42,8 @@ solidmechanics_options(std::string prefix)
 {
     po::options_description solidmechanicsoptions( "SolidMechanics problem options" );
     solidmechanicsoptions.add_options()
+        ( prefixvm( prefix, "filename").c_str(), Feel::po::value<std::string>()->default_value( "" ), "json file describing model properties" )
         ( prefixvm( prefix, "model").c_str(), Feel::po::value<std::string>()->default_value( "linear" ), "linear, hyperelastic" )
-        ( prefixvm( prefix, "young-modulus").c_str(), Feel::po::value<double>()->default_value( 1.4e6 ), "young-modulus" )
-        ( prefixvm( prefix, "poisson-coeff").c_str(), Feel::po::value<double>()->default_value( 0.4 ), "poisson-coeff" )
-        ( prefixvm( prefix, "rho").c_str(), Feel::po::value<double>()->default_value( 1000 ), "density [kg/m^3]" )
         ( prefixvm( prefix, "gravity").c_str(), Feel::po::value<std::string>()->default_value( "{0,0}" ), "gravity force expression" )
         ( prefixvm( prefix, "gravity-cst").c_str(), Feel::po::value<double>()->default_value( 2 ), "gravity-cst" )
         ( prefixvm( prefix, "verbose").c_str(), Feel::po::value<bool>()->default_value( true ), "verbose" )
@@ -55,11 +54,11 @@ solidmechanics_options(std::string prefix)
 //po::options_description
 //solidmechanics_options( std::string prefix );
 
-template<typename DisplSpaceType, int prop=0>
+template<typename DisplSpaceType>
 class SolidMechanics
 {
 public:
-    using self_type = SolidMechanics<DisplSpaceType,prop>;
+    using self_type = SolidMechanics<DisplSpaceType>;
     using displacement_space_type = typename mpl::if_<is_shared_ptr<DisplSpaceType>,
                                                       mpl::identity<typename DisplSpaceType::element_type>,
                                                       mpl::identity<DisplSpaceType>>::type::type;
@@ -79,12 +78,25 @@ public:
     // @return the time stepping strategy
     ts_ptrtype ts() { return nm; }
     
-    void setDensity( double r ) { rho = r; }
     void setGravityConstant( double g ) { gravity = g; }
 
     void setGravityForce( vector_field_expression<dim,1,2> e ) { gravityForce = e; }
 
     bool isLinear() const { return model=="linear"; }
+
+    void setMaterialProperties()
+        {
+            for( auto const& mat : props.materials() )
+            {
+                if ( Environment::isMasterRank() )
+                    std::cout << "set material " << mat.name() << "\n";
+                P0Rho.on( _range=markedelements(mesh,mat.name()), _expr=cst(mat.rho()) );
+                //youngmodulus*coeffpoisson/((1+coeffpoisson)*(1-2*coeffpoisson));// lambda
+                P0Coefflame1.on( _range=markedelements(mesh,mat.name()), _expr=cst(mat.E()*mat.nu()/((1+mat.nu())*(1-2*mat.nu()) ) ) );
+                // youngmodulus/(2*(1+coeffpoisson));// mu
+                P0Coefflame2.on( _range=markedelements(mesh,mat.name()), _expr=cst(mat.E()/(2*mat.nu()) ) );
+            }
+        }
     
     template < typename ExprT >
     void updateRho( Expr<ExprT> const& e )
@@ -133,6 +145,8 @@ private:
         }
 private:
     std::string name;
+    ModelProperties props;
+
     std::string model;
     bool verbose;
     displacement_space_ptrtype Dh;
@@ -144,11 +158,9 @@ private:
     map_scalar_field<2> dx_dirichlet_conditions, dy_dirichlet_conditions, dz_dirichlet_conditions;
     map_vector_field<dim,1,2> neumann_conditions;
     vector_field_expression<dim,1,2> gravityForce;
-    double rho;
     double gravity;
-    double youngmodulus, coeffpoisson;
     double coefflame1, coefflame2;
-
+     
     ts_ptrtype nm;
     
     backend_ptrtype M_backend;
@@ -160,10 +172,11 @@ private:
     exporter_ptrtype e;
 };
 
-template<typename DisplSpaceType, int props>
-SolidMechanics<DisplSpaceType,props>::SolidMechanics( std::string n, displacement_space_ptrtype Xh )
+template<typename DisplSpaceType>
+SolidMechanics<DisplSpaceType>::SolidMechanics( std::string n, displacement_space_ptrtype Xh )
     :
     name( n ),
+    props( Environment::expand( soption( _name=prefixvm(name,"filename")) ) ),
     model( soption( _name=prefixvm(name,"model")) ),
     verbose( boption(_name=prefixvm(name,"verbose")) ),
     Dh( Xh ),
@@ -173,46 +186,39 @@ SolidMechanics<DisplSpaceType,props>::SolidMechanics( std::string n, displacemen
     P0Rho( P0h->element() ),
     P0Coefflame1( P0h->element() ),
     P0Coefflame2( P0h->element() ),
-    nm( newmark( _space=Dh, _name=name,_rank_proc_in_files_name=true ) ),
+    nm( newmark( _prefix=name, _space=Dh, _name=name,_rank_proc_in_files_name=true ) ),
     M_backend( backend( _name=name ) ),
     Res( M_backend->newVector( Dh ) ),
     Jac( M_backend->newMatrix( Dh, Dh ) ),
     e ( exporter( _mesh=mesh ) )
 {
     tic();
-    dirichlet_conditions = BoundaryConditionFactory::instance().getVectorFields<dim> ( "displacement", "Dirichlet" );
-    dx_dirichlet_conditions = BoundaryConditionFactory::instance().getScalarFields ( "displacement_x", "Dirichlet" );
-    dy_dirichlet_conditions = BoundaryConditionFactory::instance().getScalarFields ( "displacement_y", "Dirichlet" );
-    dz_dirichlet_conditions = BoundaryConditionFactory::instance().getScalarFields ( "displacement_z", "Dirichlet" );
+    dirichlet_conditions = props.boundaryConditions().template getVectorFields<dim> ( "displacement", "Dirichlet" );
+    dx_dirichlet_conditions = props.boundaryConditions().getScalarFields ( "displacement_x", "Dirichlet" );
+    dy_dirichlet_conditions = props.boundaryConditions().getScalarFields ( "displacement_y", "Dirichlet" );
+    dz_dirichlet_conditions = props.boundaryConditions().getScalarFields ( "displacement_z", "Dirichlet" );
     
-    neumann_conditions = BoundaryConditionFactory::instance().getVectorFields<dim> ( "displacement", "Neumann" );
+    neumann_conditions = props.boundaryConditions().template getVectorFields<dim> ( "displacement", "Neumann" );
     gravityForce = expr<dim,1,2>(soption(prefixvm(name,"gravity")));
-    youngmodulus=doption(_name=prefixvm(name,"young-modulus"));
-    coeffpoisson=doption(_name=prefixvm(name,"poisson-coeff"));
-    coefflame2 = youngmodulus/(2*(1+coeffpoisson));// mu
-    coefflame1 = youngmodulus*coeffpoisson/((1+coeffpoisson)*(1-2*coeffpoisson));// lambda
-    rho=doption(_name=prefixvm(name,"rho"));
     gravity=doption(_name=prefixvm(name,"gravity-cst"));
-
-    this->updateRho( cst(rho) );
-    this->updateCoefflame1( cst(coefflame1 ) );
-    this->updateCoefflame2( cst(coefflame2 ) );
+    
+    this->setMaterialProperties();
 
     initNullSpace( Dh, mpl::int_<dim>() );
     if ( !dirichlet_conditions.size() &&
          !dx_dirichlet_conditions.size() &&
          !dy_dirichlet_conditions.size() &&
          !dz_dirichlet_conditions.size() && nm->isSteady() )
-        M_backend->attachNullSpace( K );
+        M_backend->attachNullSpace( toBackend( M_backend, K ) );
     if ( nm->isSteady() )
-        M_backend->attachNearNullSpace( K );
+        M_backend->attachNearNullSpace( toBackend( M_backend, K ) );
     toc("SolidMechanics constructor", verbose || FLAGS_v > 0 );
     
     
 }
-template<typename DisplSpaceType, int props>
+template<typename DisplSpaceType>
 void
-SolidMechanics<DisplSpaceType,props>::init()
+SolidMechanics<DisplSpaceType>::init()
 {
     tic();
     // start or restart
@@ -230,9 +236,9 @@ SolidMechanics<DisplSpaceType,props>::init()
     }
     toc("SolidMechanics::init", verbose || FLAGS_v > 0);
 }
-template<typename DisplSpaceType, int props>
+template<typename DisplSpaceType>
 void
-SolidMechanics<DisplSpaceType,props>::updateResidualAxiSymm( const vector_ptrtype& X, vector_ptrtype& R )
+SolidMechanics<DisplSpaceType>::updateResidualAxiSymm( const vector_ptrtype& X, vector_ptrtype& R )
 {
     u = *X;
     auto Id = eye<dim,dim>();
@@ -246,7 +252,7 @@ SolidMechanics<DisplSpaceType,props>::updateResidualAxiSymm( const vector_ptrtyp
     r += integrate( _range=elements( mesh ),
                     _expr= -inner(idv(P0Rho)*gravityForce,id( u ) ) );
     r += integrate( _range=elements( mesh ),
-                    _expr= rho*inner( nm->polyDerivCoefficient()*idv(u) -idv(nm->polyDeriv()),id( u ) ) );
+                    _expr= idv(P0Rho)*inner( nm->polyDerivCoefficient()*idv(u) -idv(nm->polyDeriv()),id( u ) ) );
     for( auto & n : neumann_conditions )
     {
         // update n with respect to the current time in case it depends on time
@@ -265,9 +271,9 @@ SolidMechanics<DisplSpaceType,props>::updateResidualAxiSymm( const vector_ptrtyp
     *R = temp;
 
 }
-template<typename DisplSpaceType, int props>
+template<typename DisplSpaceType>
 void
-SolidMechanics<DisplSpaceType,props>::updateJacobianAxiSymm(const vector_ptrtype& X, sparse_matrix_ptrtype& J)
+SolidMechanics<DisplSpaceType>::updateJacobianAxiSymm(const vector_ptrtype& X, sparse_matrix_ptrtype& J)
 {
     u = *X;
     auto Id = eye<dim,dim>();    
@@ -284,7 +290,7 @@ SolidMechanics<DisplSpaceType,props>::updateJacobianAxiSymm(const vector_ptrtype
                    _expr= inner( dF*val(Sv) + val(Fv)*dS , grad(u) ) );
     
     a += integrate( _range=elements( mesh ),
-                    _expr= rho*inner( nm->polyDerivCoefficient()*idt(u),id( u ) ) );
+                    _expr= idv(P0Rho)*inner( nm->polyDerivCoefficient()*idt(u),id( u ) ) );
     
     auto RR = backend()->newVector( Dh );
     for( auto const& d : dirichlet_conditions )
@@ -294,9 +300,9 @@ SolidMechanics<DisplSpaceType,props>::updateJacobianAxiSymm(const vector_ptrtype
     }
 }
 
-template<typename DisplSpaceType, int props>
+template<typename DisplSpaceType>
 void
-SolidMechanics<DisplSpaceType,props>::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
+SolidMechanics<DisplSpaceType>::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
 {
     u = *X;
     
@@ -312,7 +318,7 @@ SolidMechanics<DisplSpaceType,props>::updateResidual( const vector_ptrtype& X, v
     r += integrate( _range=elements( mesh ),
                     _expr= -inner(idv(P0Rho)*gravityForce,id( u ) ) );
     r += integrate( _range=elements( mesh ),
-                    _expr= rho*inner( nm->polyDerivCoefficient()*idv(u) -idv(nm->polyDeriv()),id( u ) ) );
+                    _expr= idv(P0Rho)*inner( nm->polyDerivCoefficient()*idv(u) -idv(nm->polyDeriv()),id( u ) ) );
     for( auto & n : neumann_conditions )
     {
         // update n with respect to the current time in case it depends on time
@@ -327,25 +333,29 @@ SolidMechanics<DisplSpaceType,props>::updateResidual( const vector_ptrtype& X, v
     for( auto const& d : dirichlet_conditions )
     {
         temp.on( _range=markedfaces( mesh, marker(d)), _expr=zero<dim,1>() );
+        temp.on( _range=markededges( mesh, marker(d)), _expr=zero<dim,1>() );
     }
     for( auto const& d : dx_dirichlet_conditions )
     {
         temp[Component::X].on( _range=markedfaces( mesh, marker(d)), _expr=cst(0.) );
+        temp[Component::X].on( _range=markededges( mesh, marker(d)), _expr=cst(0.) );
     }
     for( auto const& d : dy_dirichlet_conditions )
     {
         temp[Component::Y].on( _range=markedfaces( mesh, marker(d)), _expr=cst(0.) );
+        temp[Component::Y].on( _range=markededges( mesh, marker(d)), _expr=cst(0.) );
     }
     for( auto const& d : dz_dirichlet_conditions )
     {
         temp[Component::Z].on( _range=markedfaces( mesh, marker(d)), _expr=cst(0.) );
+        temp[Component::Z].on( _range=markededges( mesh, marker(d)), _expr=cst(0.) );
     }
     *R = temp;
 
 }
-template<typename DisplSpaceType, int props>
+template<typename DisplSpaceType>
 void
-SolidMechanics<DisplSpaceType,props>::updateJacobian(const vector_ptrtype& X, sparse_matrix_ptrtype& J)
+SolidMechanics<DisplSpaceType>::updateJacobian(const vector_ptrtype& X, sparse_matrix_ptrtype& J)
 {
     u = *X;
 
@@ -362,49 +372,58 @@ SolidMechanics<DisplSpaceType,props>::updateJacobian(const vector_ptrtype& X, sp
     a = integrate( _range=elements( mesh ),
                    _expr= inner( dF*val(Sv) + val(Fv)*dS , grad(u) ) );
     a += integrate( _range=elements( mesh ),
-                    _expr= rho*inner( nm->polyDerivCoefficient()*idt(u),id( u ) ) );
+                    _expr= idv(P0Rho)*inner( nm->polyDerivCoefficient()*idt(u),id( u ) ) );
     auto RR = backend()->newVector( Dh );
     for( auto const& d : dirichlet_conditions )
     {
         a += on( _range=markedfaces( mesh, marker(d)), _element=u, _rhs=RR,
                  _expr=zero<dim,1>() );
+        a += on( _range=markededges( mesh, marker(d)), _element=u, _rhs=RR,
+                 _expr=zero<dim,1>() );
     }
     for( auto const& d : dx_dirichlet_conditions )
     {
         a += on( _range=markedfaces( mesh, marker(d)), _element=u[Component::X], _rhs=RR, _expr=cst(0.) );
+        a += on( _range=markededges( mesh, marker(d)), _element=u[Component::X], _rhs=RR, _expr=cst(0.) );
     }
     for( auto const& d : dy_dirichlet_conditions )
     {
         a += on( _range=markedfaces( mesh, marker(d)), _element=u[Component::Y], _rhs=RR, _expr=cst(0.) );
+        a += on( _range=markededges( mesh, marker(d)), _element=u[Component::Y], _rhs=RR, _expr=cst(0.) );
     }
     for( auto const& d : dz_dirichlet_conditions )
     {
         a += on( _range=markedfaces( mesh, marker(d)), _element=u[Component::Z], _rhs=RR, _expr=cst(0.) );
+        a += on( _range=markededges( mesh, marker(d)), _element=u[Component::Z], _rhs=RR, _expr=cst(0.) );
     }
 
 }
 
-template<typename DisplSpaceType, int props>
-typename SolidMechanics<DisplSpaceType,props>::SolveData
-SolidMechanics<DisplSpaceType,props>::solve()
+template<typename DisplSpaceType>
+typename SolidMechanics<DisplSpaceType>::SolveData
+SolidMechanics<DisplSpaceType>::solve()
 {
     tic();
     // make sure that the initial guess satisfies the boundary conditions
     for( auto const& d : dirichlet_conditions )
     {
         u.on( _range=markedfaces( mesh, marker(d)), _expr=expression(d));
+        u.on( _range=markededges( mesh, marker(d)), _expr=expression(d));
     }
     for( auto const& d : dx_dirichlet_conditions )
     {
         u[Component::X].on( _range=markedfaces( mesh, marker(d)), _expr=expression(d) );
+        u[Component::X].on( _range=markededges( mesh, marker(d)), _expr=expression(d) );
     }
     for( auto const& d : dy_dirichlet_conditions )
     {
         u[Component::Y].on( _range=markedfaces( mesh, marker(d)), _expr=expression(d) );
+        u[Component::Y].on( _range=markededges( mesh, marker(d)), _expr=expression(d) );
     }
     for( auto const& d : dz_dirichlet_conditions )
     {
         u[Component::Z].on( _range=markedfaces( mesh, marker(d)), _expr=expression(d) );
+        u[Component::Z].on( _range=markededges( mesh, marker(d)), _expr=expression(d) );
     }
 
     using namespace std;
@@ -419,14 +438,17 @@ SolidMechanics<DisplSpaceType,props>::solve()
     toc("SolidMechanics::solve", verbose || FLAGS_v > 0 );
     return d;
 }
-template<typename DisplSpaceType, int props>
+template<typename DisplSpaceType>
 void
-SolidMechanics<DisplSpaceType,props>::exportResults()
+SolidMechanics<DisplSpaceType>::exportResults()
 {
     tic();
     if ( nm->isSteady() )
     {
         e->add( "displacement", u );
+        e->add( "lambda", P0Coefflame1 );
+        e->add( "mu", P0Coefflame2 );
+
         e->save();
     }
     else

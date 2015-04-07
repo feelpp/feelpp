@@ -30,6 +30,9 @@
 #define __MESHIMPL_HPP 1
 
 #include <boost/preprocessor/comparison/greater_equal.hpp>
+#include <feel/feeltiming/tic.hpp>
+
+
 #include <feel/feelmesh/geoentity.hpp>
 #include <feel/feelmesh/simplex.hpp>
 #include <feel/feelmesh/hypercube.hpp>
@@ -264,12 +267,59 @@ Mesh<Shape, T, Tag>::updateForUse()
                                          []( element_type& e )
                                          {
                                              for ( int i = 0; i < e.numPoints; ++i )
-                                                 e.point( i ).addElement( e.id() );
+                                                 e.point( i ).addElement( e.id(), i );
                                          });
             }
             VLOG(1) << "[Mesh::updateForUse] update add element info : " << ti.elapsed() << "\n"; 
         }
 
+        ti.restart();
+        tic();
+        boost::tie( iv, en ) = this->elementsRange();
+        for ( ; iv != en; ++iv )
+        {
+            // first look if the element has a point with a marker
+            // if not we skip this element
+            if ( iv->hasPointWithMarker() && !iv->isGhostCell())
+            {
+                this->elements().modify( iv,
+                                         []( element_type& e )
+                                         {
+                                             for ( int i = 0; i < e.numPoints; ++i )
+                                             {
+                                                 if ( e.point( i ).marker().isOn() )
+                                                 {
+                                                     e.point( i ).addElement( e.id(), i );
+#if 0                                                     
+                                                     LOG(INFO) << "added to point " << e.point(i).id() << " marker " << e.point(i).marker()
+                                                               << " element " << e.id() << " pt id in element " << i
+                                                               << " pt(std::set) " << boost::prior( e.point(i).elements().end())->first
+                                                               << ", " << boost::prior( e.point(i).elements().end())->second;
+#endif
+                                                 }
+                                             }
+                                         });
+            }
+        }
+        //auto& mpts = this->pointsByMarker();
+        //auto& mpts = this->pointsRange();
+        for( auto p_it = this->beginPoint(), p_en=this->endPoint(); p_it != p_en; ++p_it )
+        {
+            if ( p_it->marker() > 0 )
+            {
+                if (!p_it->elements().size())
+                {
+                    this->points().modify( p_it,
+                                           []( point_type& e )
+                                           {
+                                               e.setProcessId( invalid_rank_type_value );
+                                           });
+                }
+            }
+        }
+        toc("register elements associated to marked points" , FLAGS_v > 0 );
+        VLOG(1) << "[Mesh::updateForUse] update add element info for marked points : " << ti.elapsed() << "\n";google::FlushLogFiles(google::GLOG_INFO);
+        
         this->updateNumGlobalElements();
 
         if ( this->components().test( MESH_PROPAGATE_MARKERS ) )
@@ -2806,7 +2856,7 @@ boost::tuple<bool,typename Mesh<Shape, T, Tag>::node_type,double>
 Mesh<Shape, T, Tag>::Localization::isIn( size_type _id, const node_type & _pt ) const
 {
     bool isin=false;
-    double dmin;
+    double dmin=0;
     node_type x_ref;
 
     auto mesh = M_mesh.lock();
