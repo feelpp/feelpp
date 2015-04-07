@@ -1,4 +1,4 @@
-/**
+# Bibliography {#Bibliography}
 
 \cite Pena2009
 \cite prudhomme06:_life
@@ -14,7 +14,3 @@
 \cite 4529/THESES
 \cite Stamm2008
 \cite Winkelmann2007
-
-
-
-*/

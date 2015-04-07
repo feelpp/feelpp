@@ -64,12 +64,16 @@ public:
     multi_index::indexed_by<
     // sort by employee::operator<
         multi_index::ordered_unique<multi_index::identity<point_type> >,
+
         // sort by less<int> on marker
         multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_marker>,
-                                        multi_index::const_mem_fun<point_type,
-                                                                   Marker1 const&,
-                                                                   &point_type::marker> >,
-
+                                        multi_index::composite_key<point_type,
+                                                                   multi_index::const_mem_fun<point_type,
+                                                                                              Marker1 const&,
+                                                                                              &point_type::marker>,
+                                                                   multi_index::const_mem_fun<point_type,
+                                                                                              rank_type,
+                                                                                              &point_type::processId> > >,
         // sort by less<int> on processId
         multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_pid>,
                                         multi_index::const_mem_fun<point_type,
@@ -207,21 +211,45 @@ public:
     }
 
 
-    marker_point_iterator beginPointWithMarker( size_type m )
+    /**
+     * \return the range of iterator \c (begin,end) over the points
+     * with marker \p m on processor \p p
+     */
+    std::pair<point_iterator, point_iterator>
+    pointsRange()
+        {
+            return std::make_pair( M_points.begin(), M_points.end() );
+        }
+
+    /**
+     * \return the range of iterator \c (begin,end) over the points
+     * with marker \p m on processor \p p
+     */
+    std::pair<point_const_iterator, point_const_iterator>
+    pointsRange() const
+        {
+            return std::make_pair( M_points.begin(), M_points.end() );
+        }
+
+    marker_point_iterator beginPointWithMarker( size_type m, rank_type p = invalid_rank_type_value )
     {
-        return M_points.template get<Feel::detail::by_marker>().lower_bound( Marker1(m) );
+        const rank_type part = (p==invalid_rank_type_value)? this->worldCommPoints().localRank() : p;
+        return M_points.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) ).first;
     }
-    marker_point_const_iterator beginPointWithMarker( size_type m ) const
+    marker_point_const_iterator beginPointWithMarker( size_type m, rank_type p = invalid_rank_type_value ) const
     {
-        return M_points.template get<Feel::detail::by_marker>().lower_bound( Marker1(m) );
+        const rank_type part = (p==invalid_rank_type_value)? this->worldCommPoints().localRank() : p;
+        return M_points.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) ).first;
     }
-    marker_point_iterator endPointWithMarker( size_type m )
+    marker_point_iterator endPointWithMarker( size_type m, rank_type p = invalid_rank_type_value )
     {
-        return M_points.template get<Feel::detail::by_marker>().upper_bound( Marker1(m) );
+        const rank_type part = (p==invalid_rank_type_value)? this->worldCommPoints().localRank() : p;
+        return M_points.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) ).second;
     }
-    marker_point_const_iterator endPointWithMarker( size_type m ) const
+    marker_point_const_iterator endPointWithMarker( size_type m, rank_type p = invalid_rank_type_value ) const
     {
-        return M_points.template get<Feel::detail::by_marker>().upper_bound( Marker1(m) );
+        const rank_type part = (p==invalid_rank_type_value)? this->worldCommPoints().localRank() : p;
+        return M_points.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) ).second;
     }
 
     point_iterator pointIterator( size_type i ) const

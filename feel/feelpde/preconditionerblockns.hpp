@@ -6,7 +6,7 @@
             Goncalo Pena  <gpena@mat.uc.pt>
  Date: 02 Oct 2014
 
- Copyright (C) 2014 Feel++ Consortium
+ Copyright (C) 2014-2015 Feel++ Consortium
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -149,7 +149,11 @@ public:
 
     virtual ~PreconditionerBlockNS(){};
 
-
+    void setAlpha( double a ) { M_alpha = a; if ( pcdOp ) pcdOp->setAlpha( a ); }
+    void setMu( double m ) { M_mu = m; }
+    void setRho( double r ) { M_rho = r; }
+private:
+    void createSubMatrices();
 private:
 
     Type M_type;
@@ -229,15 +233,7 @@ PreconditionerBlockNS<space_type>::PreconditionerBlockNS( std::string t,
     std::iota( M_Vh_indices.begin(), M_Vh_indices.end(), 0 );
     std::iota( M_Qh_indices.begin(), M_Qh_indices.end(), M_Vh->nLocalDofWithGhost() );
 
-    tic();
-    M_F = A->createSubMatrix( M_Vh_indices, M_Vh_indices, true );
-    M_B = A->createSubMatrix( M_Qh_indices, M_Vh_indices );
-    M_Bt = A->createSubMatrix( M_Vh_indices, M_Qh_indices );
-    toc( "BlockNS create sub matrix done", FLAGS_v > 0 );
-    tic();
-    helmOp = op( M_F, "Fu" );
-    divOp = op( M_Bt, "Bt");
-    toc( "BlockNS convection-diffusion and gradient operators done ", FLAGS_v > 0 );
+    this->createSubMatrices();
 
     
     initialize();
@@ -255,6 +251,23 @@ PreconditionerBlockNS<space_type>::initialize()
     M_rhs->close();
 }
 
+template < typename space_type >
+void
+PreconditionerBlockNS<space_type>::createSubMatrices()
+{
+    tic();
+
+    M_F = this->matrix()->createSubMatrix( M_Vh_indices, M_Vh_indices, true );
+    M_B = this->matrix()->createSubMatrix( M_Qh_indices, M_Vh_indices );
+    M_Bt = this->matrix()->createSubMatrix( M_Vh_indices, M_Qh_indices );
+
+    toc( "BlockNS create sub matrix done", FLAGS_v > 0 );
+    tic();
+    helmOp = op( M_F, "Fu" );
+    divOp = op( M_Bt, "Bt");
+    toc( "BlockNS convection-diffusion and gradient operators done ", FLAGS_v > 0 );
+
+}
 template < typename space_type >
 void
 PreconditionerBlockNS<space_type>::setType( std::string t )
@@ -307,9 +320,10 @@ PreconditionerBlockNS<space_type>::update( sparse_matrix_ptrtype A,
 {
 
     tic();
-    M_F = A->createSubMatrix( M_Vh_indices, M_Vh_indices, true );
-        
-    helmOp = op( M_F, "Fu" );
+    this->setMatrix( A );
+    this->createSubMatrices();
+    
+    
         
     toc("BlockNS convection-diffusion operator updated", FLAGS_v > 0 );
     if ( type() == PCD )
@@ -338,10 +352,11 @@ PreconditionerBlockNS<space_type>::applyInverse ( const vector_type& X, vector_t
     
     if ( this->type() == PMM )
     {
-        VLOG(2) << "applying mass matrix";
+        LOG(INFO) << "Applying PMM:  pressure mass matrix";
         pm->applyInverse( *M_pin, *M_pout );
         M_pout->scale(-1);
         M_pout->close();
+        LOG(INFO) << "Applying PMM done";
     }
     if ( this->type() == PCD )
     {
