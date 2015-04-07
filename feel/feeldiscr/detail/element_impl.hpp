@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2014-04-07
 
-  Copyright (C) 2014 Feel++ Consortium
+  Copyright (C) 2014-2015 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -2317,6 +2317,130 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
             this->assign( curFace, IhLoc );
     } // face_it
 
+}
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename Y,  typename Cont>
+template<typename IteratorType,  typename ExprType>
+void
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorType,IteratorType> const& r,
+                                                            ExprType const& ex,
+                                                            std::string const& prefix,
+                                                            GeomapStrategyType geomap_strategy,
+                                                            bool accumulate,
+                                                            bool verbose,
+                                                            mpl::int_<MESH_EDGES> )
+{
+    LOG(INFO) << "onImpl on Mesh Edges";
+    // TODO : check that we do not use hdiv hcurl or other type of elements
+    const size_type context = ExprType::context|vm::POINT;
+
+    auto mesh = this->functionSpace()->mesh().get();
+    auto const* __dof = this->functionSpace()->dof().get();
+    auto const* __fe = this->functionSpace()->fe().get();
+
+    // get [first,last) entity iterators over the range
+    auto entity_it = r.first;
+    auto entity_en = r.second;
+    DVLOG(3) << "entity " << entity_it->id() << " with marker "
+             << entity_it->marker() << " nb: " << std::distance(entity_it,entity_en);
+    if ( entity_it == entity_en )
+        return;
+
+    auto gm = mesh->gm();
+    auto const& firstEntity = *entity_it;
+    size_type eid = firstEntity.elements().begin()->first;
+    size_type ptid_in_element = firstEntity.elements().begin()->second;
+    auto const& elt = mesh->element( eid );
+    auto geopc = gm->preCompute( __fe->edgePoints(ptid_in_element) );
+    auto ctx = gm->template context<context>( elt, geopc );
+    auto expr_evaluator = ex.evaluator( mapgmc(ctx) );
+
+     auto IhLoc = __fe->edgeLocalInterpolant();
+    for ( ; entity_it != entity_en; ++entity_it )
+    {
+        
+        auto const& curEntity = boost::unwrap_ref(*entity_it);
+        auto entity_elt_info = curEntity.elements().begin();
+        ptid_in_element = entity_elt_info->second;
+        DVLOG(3) << "entity " << entity_it->id() << " element " << entity_elt_info->first << " id in element "
+                 << ptid_in_element<< " with marker " << entity_it->marker();
+        auto const& elt = mesh->element( entity_elt_info->first );
+        geopc = gm->preCompute( __fe->edgePoints(ptid_in_element) );
+        ctx->update( elt, geopc );
+
+        expr_evaluator.update( mapgmc( ctx ) );
+        __fe->edgeInterpolate( expr_evaluator, IhLoc );
+        if ( accumulate )
+            this->plus_assign( curEntity, IhLoc );
+        else
+            this->assign( curEntity, IhLoc );
+    } // entity_it
+    LOG(INFO) << "onImpl on Mesh Edges done";
+
+}
+
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename Y,  typename Cont>
+template<typename IteratorType,  typename ExprType>
+void
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorType,IteratorType> const& r,
+                                                            ExprType const& ex,
+                                                            std::string const& prefix,
+                                                            GeomapStrategyType geomap_strategy,
+                                                            bool accumulate,
+                                                            bool verbose,
+                                                            mpl::int_<MESH_POINTS> )
+{
+    LOG(INFO) << "onImpl on Mesh Points";google::FlushLogFiles(google::GLOG_INFO);
+    // TODO : check that we do not use hdiv hcurl or other type of elements
+    const size_type context = ExprType::context|vm::POINT;
+    DVLOG(3)  << "assembling Dirichlet conditions\n";google::FlushLogFiles(google::GLOG_INFO);
+    auto mesh = this->functionSpace()->mesh().get();
+    auto const* __dof = this->functionSpace()->dof().get();
+    auto const* __fe = this->functionSpace()->fe().get();
+
+    // get [first,last) point iterators over the range
+    auto pt_it = r.first;
+    auto pt_en = r.second;
+    DVLOG(3) << "point " << pt_it->id() << " with marker " << pt_it->marker() << " nb: " << std::distance(pt_it,pt_en);
+    google::FlushLogFiles(google::GLOG_INFO);
+    if ( pt_it == pt_en )
+        return;
+
+    auto gm = mesh->gm();
+    auto const& firstPt = *pt_it;
+    size_type eid = firstPt.elements().begin()->first;
+    size_type ptid_in_element = firstPt.elements().begin()->second;
+    auto const& elt = mesh->element( eid );
+    auto geopc = gm->preCompute( __fe->vertexPoints(ptid_in_element) );
+    auto ctx = gm->template context<context>( elt, geopc );
+    //t_expr_type expr( ex, mapgmc(ctx) );
+    auto expr_evaluator = ex.evaluator( mapgmc(ctx) );
+
+    size_type nbVertexDof = fe_type::nDofPerVertex;
+    DVLOG(3)  << "[projector::operator(MESH_POINTS)] nbVertexDof = " << nbVertexDof << "\n";
+
+    auto IhLoc = __fe->vertexLocalInterpolant();
+    for ( ; pt_it != pt_en; ++pt_it )
+    {
+        DVLOG(3) << "point " << pt_it->id() << " with marker " << pt_it->marker();
+        auto const& curPt = boost::unwrap_ref(*pt_it);
+        auto pt_elt_info = curPt.elements().begin();
+        ptid_in_element = pt_elt_info->second;
+        auto const& elt = mesh->element( pt_elt_info->first );
+        geopc = gm->preCompute( __fe->vertexPoints(ptid_in_element) );
+        ctx->update( elt, pt_elt_info->first, geopc, mpl::int_<0>() );
+
+        expr_evaluator.update( mapgmc( ctx ) );
+        __fe->vertexInterpolate( expr_evaluator, IhLoc );
+        if ( accumulate )
+            this->plus_assign( curPt, IhLoc );
+        else
+            this->assign( curPt, IhLoc );
+    } // pt_it
+    LOG(INFO) << "onImpl on Mesh Points done";
 }
 
 
