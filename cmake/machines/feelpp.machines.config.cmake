@@ -32,7 +32,7 @@ endif()
 # try harder by looking elsewhere to ensure we are on the proper machine
 # we are more specific now
 STRING(REGEX MATCH "login.*" FEELPP_NAME_LOGIN ${FEELPP_MACHINE_NAME} )
-message(STATUS "FEELPP_MACHINE_NAME: ${FEELPP_NAME_LOGIN}")
+#message(STATUS "FEELPP_MACHINE_NAME: ${FEELPP_NAME_LOGIN}")
 if( FEELPP_NAME_LOGIN AND EXISTS /lrz )
   if ( EXISTS ${FEELPP_SOURCE_DIR}/cmake/machines/feelpp.machines.lrz.cmake )
     message( STATUS "[Feel++] Configuration found for : lrz(supermuc)" )
