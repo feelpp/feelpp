@@ -44,25 +44,30 @@ public:
         :
         M_syms( syms),
         M_params( vec_type::Zero( M_syms.size() ) ),
-        M_indexSymbolXYZ()
+        M_indexSymbolXYZ(),
+        M_indexSymbolN()
         {
             // detect if symbol x,y,z are present and get index access in M_params
-            auto itSymX = std::find_if( M_syms.begin(), M_syms.end(),
-                                        []( GiNaC::symbol const& s ) { return s.get_name() == "x"; } );
-            if ( itSymX != M_syms.end() )
-                M_indexSymbolXYZ.insert( std::make_pair( 0,std::distance(M_syms.begin(),itSymX) ) );
-
-            auto itSymY = std::find_if( M_syms.begin(), M_syms.end(),
-                                        []( GiNaC::symbol const& s ) { return s.get_name() == "y"; } );
-            if ( itSymY != M_syms.end() )
-                M_indexSymbolXYZ.insert( std::make_pair( 1,std::distance(M_syms.begin(),itSymY) ) );
-
-            auto itSymZ = std::find_if( M_syms.begin(), M_syms.end(),
-                                        []( GiNaC::symbol const& s ) { return s.get_name() == "z"; } );
-            if ( itSymZ != M_syms.end() )
-                M_indexSymbolXYZ.insert( std::make_pair( 2,std::distance(M_syms.begin(),itSymZ) ) );
+            std::map<int,std::string> lstxyz { {0,"x"}, {1,"y"}, {2,"z"} };
+            for ( auto const& str :  lstxyz )
+            {
+                auto itSym = std::find_if( M_syms.begin(), M_syms.end(),
+                                           [&str]( GiNaC::symbol const& s ) { return s.get_name() == str.second; } );
+                if ( itSym != M_syms.end() )
+                    M_indexSymbolXYZ.insert( std::make_pair( str.first,std::distance(M_syms.begin(),itSym) ) );
+            }
+            std::map<int,std::string> lstN { {3,"nx"}, {4,"ny"}, {5,"nz"} };
+            for ( auto const& str :  lstN )
+            {
+                auto itSym = std::find_if( M_syms.begin(), M_syms.end(),
+                                           [&str]( GiNaC::symbol const& s ) { return s.get_name() == str.second; } );
+                if ( itSym != M_syms.end() )
+                    M_indexSymbolN.insert( std::make_pair( str.first,std::distance(M_syms.begin(),itSym) ) );
+            }
 
             for ( auto const& is : M_indexSymbolXYZ )
+                LOG(INFO) << "index symbol relation  " << is.first << " and " << is.second << "\n";
+            for ( auto const& is : M_indexSymbolN )
                 LOG(INFO) << "index symbol relation  " << is.first << " and " << is.second << "\n";
 
             this->setParameterFromOption();
@@ -71,7 +76,8 @@ public:
         :
         M_syms( g.M_syms),
         M_params( g.M_params ),
-        M_indexSymbolXYZ( g.M_indexSymbolXYZ )
+        M_indexSymbolXYZ( g.M_indexSymbolXYZ ),
+        M_indexSymbolN( g.M_indexSymbolN )
         {
             this->setParameterFromOption();
         }
@@ -86,6 +92,7 @@ public:
     value_type parameterValue( int p ) const { return M_params[p]; }
 
     std::set<std::pair<uint16_type,uint16_type> > const& indexSymbolXYZ() const { return M_indexSymbolXYZ; }
+    std::set<std::pair<uint16_type,uint16_type> > const& indexSymbolN() const { return M_indexSymbolN; }
 
     void setParameterFromOption()
         {
@@ -155,6 +162,7 @@ protected:
     std::vector<GiNaC::symbol> M_syms;
     vec_type M_params;
     std::set<std::pair<uint16_type,uint16_type> > M_indexSymbolXYZ;
+    std::set<std::pair<uint16_type,uint16_type> > M_indexSymbolN;
 };
 
 }} // vf / Feel
