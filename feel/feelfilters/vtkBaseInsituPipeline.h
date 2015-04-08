@@ -52,7 +52,7 @@ class vtkBaseInsituPipeline : public vtkCPPipeline
         vtkSMProxyManager* M_pxm;
         vtkSMSessionProxyManager* M_spxm;
 
-        std::map<std::string, vtkSmartPointer<vtkSMProxy>> M_producerMap;
+        std::map<std::string, vtkSmartPointer<vtkSMSourceProxy>> M_producerMap;
         //std::map<std::string, vtkSmartPointer<vtkSMSourceProxy>> M_producerMap;
 
         vtkSmartPointer<vtkLiveInsituLink> M_insituLink;
