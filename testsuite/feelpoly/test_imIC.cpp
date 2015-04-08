@@ -390,6 +390,8 @@ public:
 
 // automatically registered test cases could be organized in test suites
 BOOST_FIXTURE_TEST_SUITE( im1d_double_suite, F )
+
+
 BOOST_AUTO_TEST_CASE( im1d_test1 )
 {
     TestImQK<1,1, double> t1( 2.0, one<double> );
@@ -415,7 +417,6 @@ BOOST_AUTO_TEST_CASE( im1d_test5 )
     TestImQK<1,50,double> t5( 2.0*sin( double( 1.0 ) )  , cost<double> );
     t5();
 }
-
 /*
 BOOST_AUTO_TEST_CASE( im1d_test6 )
 {
@@ -450,7 +451,6 @@ BOOST_AUTO_TEST_CASE( im1d_face_test3 )
     TestImQK<1,3, double> t1( Feel::FACE_1, 1.0 , xp<1,double> );
     t1();
 }
-*/
 
 BOOST_AUTO_TEST_CASE( im2d_test0 )
 {
@@ -458,23 +458,7 @@ BOOST_AUTO_TEST_CASE( im2d_test0 )
     TestImQK<2,1, double> t1( P2N<double>( 0, 0 ).integral(), P2N<double>( 0, 0 ) );
     t1();
 }
-
-/*
-BOOST_AUTO_TEST_CASE( im2d_test00 )
-{
-    std::cout<< "YOOOO" << std::endl;
-    TestImPK<2,1, double> t1( 0.0 , xp<1,double> );
-    t1();
-}
-
-BOOST_AUTO_TEST_CASE( im2d_testS0 )
-{
-    std::cout<< "YOOOO2" << std::endl;
-    TestImPK<2,2, double> t1( 4./3 , xp2<double> );
-    t1();
-}
-*/
-
+/
 BOOST_AUTO_TEST_CASE( im2d_test1 )
 {
     const int N = 1;
@@ -486,6 +470,7 @@ BOOST_AUTO_TEST_CASE( im2d_test1 )
         t10();
     }
 }
+
 BOOST_AUTO_TEST_CASE( im2d_test2 )
 {
     const int N = 2;
@@ -497,6 +482,46 @@ BOOST_AUTO_TEST_CASE( im2d_test2 )
         t10();
     }
 }
+*/
+
+BOOST_AUTO_TEST_CASE( im2d_test0 )
+{
+    TestImQK<2,1, double> t1( 0 , sint<double> );
+    t1();
+}
+
+BOOST_AUTO_TEST_CASE( im2d_test1 )
+{
+    TestImQK<2,1, double> t1( 4.*sin(1.) , cost<double> );
+    t1();
+}
+
+BOOST_AUTO_TEST_CASE( im2d_test2 )
+{
+    TestImQK<2,1, double> t1( -2.+exp(2.)+(1/exp(2.)) , exp2<2,double> );
+    t1();
+}
+
+BOOST_AUTO_TEST_CASE( im2d_test3 )
+{
+    TestImQK<2,1, double> t1( 4./3. , xp2<double> );
+    t1();
+}
+
+BOOST_AUTO_TEST_CASE( im2d_test4 )
+{
+    TestImQK<2,1, double> t1( 0 , xp3<double> );
+    t1();
+}
+
+BOOST_AUTO_TEST_CASE( im2d_test5 )
+{
+    TestImQK<2,1, double> t1( 4.*sin(1.)*sin(1.) , coscos<double> );
+    t1();
+}
+
+
+/*
 BOOST_AUTO_TEST_CASE( im2d_test3 )
 {
     const int N = 3;
@@ -508,6 +533,7 @@ BOOST_AUTO_TEST_CASE( im2d_test3 )
         t10();
     }
 }
+
 BOOST_AUTO_TEST_CASE( im2d_test4 )
 {
     const int N = 4;
@@ -542,8 +568,7 @@ BOOST_AUTO_TEST_CASE( im2d_test6 )
         t10();
     }
 
-
-} /*
+}*/ /*
 BOOST_AUTO_TEST_CASE( im2d_face_test1 )
 {
     TestImPK<2,1, double> t0( Feel::FACE_1, 2.0 , one<double> );
