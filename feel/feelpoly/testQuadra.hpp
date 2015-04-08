@@ -287,29 +287,29 @@ public :
     typedef typename super::weights_type weights_type;
 
     static const uint16_type Degree = 1;
-    static const uint32_type Npoints = 32;
+    static const uint32_type Npoints = 64;
 
     typedef TestQuadra<Simplex<0,1>,Integration_Degree, T> face_quad_type;
 
     TestQuadra()
         :
-        super(32 )
+        super(64 )
     {
         // build rules in x and y direction
-        weights_type wx( 32  );
-        weights_type px( 32  );
+        weights_type wx( 64  );
+        weights_type px( 64  );
         //details::gaussjacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
 #if 0
         VLOG(1) << "[gauss<SP<2,1>] jacobi p = " << px << "\n";
         VLOG(1) << "[gauss<SP<2,1>] jacobi w = " << wx << "\n";
 #endif
         double tmp=-1;
-        for ( double i = 0; i < 32; i++ )
+        for ( double i = 0; i < 64; i++ )
         {
             // computes the weight of the k-th node
-            this->M_w( i ) = 1./16 ;// wx( i );
+            this->M_w( i ) = 2./64 ;// wx( i );
             this->M_points( 0, i ) = tmp ;
-            tmp+=1./16;
+            tmp+=2./64;
         }
 
 
@@ -326,13 +326,13 @@ public :
 
     }
 
-    TestQuadra(int N,double d)
+    TestQuadra(int N,double)
         :
         super( N )
     {
         // build rules in x and y direction
-        weights_type wx( N  );
-        weights_type px( N  );
+        weights_type wx( N );
+        weights_type px( N );
         //details::gaussjacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
 #if 0
         VLOG(1) << "[gauss<SP<2,1>] jacobi p = " << px << "\n";
@@ -342,9 +342,9 @@ public :
         for ( int i = 0; i < N; i++ )
         {
             // computes the weight of the k-th node
-            this->M_w( i ) = d ;// wx( i );
-            this->M_points( 0, i ) = tmp ;
-            tmp+=d;
+            this->M_w( i ) = 2./N ;// wx( i );
+            this->M_points( 0, i ) = tmp  ;
+            tmp+=2./N;
         }
 
 
@@ -384,16 +384,16 @@ public :
 
     typedef TestQuadra<Hypercube<1,1>,Integration_Degree, T> face_quad_type;
 
-    static const uint16_type Degree = 2;
-    static const uint32_type Npoints =32*32;
+    static const uint16_type Degree = 3;
+    static const uint32_type Npoints =64*64;
 
     TestQuadra( )
         :
-        super( 32*32 )
+        super( 64*64 )
     {
         // build rules in x and y direction
-        weights_type wx( 32 );
-        weights_type px( 32 );
+        weights_type wx( 64*64 );
+        weights_type px( 64*64 );
         //details::gaussjacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
 #if 0
         VLOG(1) << "[gauss<SP<2,1>] jacobi p = " << px << "\n";
@@ -401,28 +401,28 @@ public :
 #endif
         double tmpx=-1.;
         double tmpy=-1.;
-        for ( int i = 0,  k = 0; i < 32; i++ )
+        for ( int i = 0,  k = 0; i < 64; i++ )
         {
-            for ( int j = 0; j < 32; j++, ++k )
+            for ( int j = 0; j < 64; j++, ++k )
             {
                 // computes the weight of the k-th node
-                this->M_w( k ) = 2./(32.*32.) ;//wx( i ) * wx( j );
+                this->M_w( k ) = 4./(64.*64.) ;//wx( i ) * wx( j );
                 this->M_points( 0, k ) = tmpx ;
                 this->M_points( 1, k ) = tmpy ;
-                tmpy+=2./32;
+                tmpy+=2./64;
             }
             tmpy=-1.;
-            tmpx+=2./32;
+            tmpx+=2./64;
         }
 
 #if 0
         VLOG(1) << "[gauss<SP<2,1>] p = " << this->M_points << "\n";
         VLOG(1) << "[gauss<SP<2,1>] w = " << this->M_w << "\n";
-#endif/*
+#endif
         boost::shared_ptr<GT_Lagrange<2, 1, 2, Hypercube, T> > gm( new GT_Lagrange<2, 1, 2, Hypercube, T> );
         boost::shared_ptr<face_quad_type> face_qr( new face_quad_type());
         // construct face quadratures
-        this->constructQROnFace( Reference<Hypercube<2, 1>,2,1>(), gm, face_qr );*/
+        this->constructQROnFace( Reference<Hypercube<2, 1>,2,1>(), gm, face_qr );
 
     }
 
@@ -468,7 +468,7 @@ public :
     }*/
 
 
-    TestQuadra(int Nx,int Ny,double dx,double dy)
+    TestQuadra(int Nx,int Ny)
         :
         super( Nx*Ny )
     {
@@ -487,13 +487,13 @@ public :
             for ( int j = 0; j < Ny; j++, ++k )
             {
                 // computes the weight of the k-th node
-                this->M_w( k ) = dx * dy ;//wx( i ) * wx( j );
+                this->M_w( k ) = 4.*(1./Nx)*(1./Ny) ;//wx( i ) * wx( j );
                 this->M_points( 0, k ) = tmpx ;
                 this->M_points( 1, k ) = tmpy ;
-                tmpy+=dx;
+                tmpy+=2./Ny;
 
             }
-            tmpx+=dy;
+            tmpx+=2./Nx;
         }
 
 #if 0
@@ -501,7 +501,7 @@ public :
         VLOG(1) << "[gauss<SP<2,1>] w = " << this->M_w << "\n";
 #endif
         boost::shared_ptr<GT_Lagrange<2, 1, 2, Hypercube, T> > gm( new GT_Lagrange<2, 1, 2, Hypercube, T> );
-        boost::shared_ptr<face_quad_type> face_qr( new face_quad_type(Nx,dx));
+        boost::shared_ptr<face_quad_type> face_qr( new face_quad_type(Nx,2./Nx));
         // construct face quadratures
         this->constructQROnFace( Reference<Hypercube<2, 1>,2,1>(), gm, face_qr );
 
