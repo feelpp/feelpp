@@ -27,7 +27,11 @@ static PetscErrorCode PCLSC2Allocate_Private(PC pc)
   ierr = KSPSetOptionsPrefix(lsc->kspL,((PetscObject)pc)->prefix);CHKERRQ(ierr);
   ierr = KSPAppendOptionsPrefix(lsc->kspL,"lsc_");CHKERRQ(ierr);
   ierr = KSPSetFromOptions(lsc->kspL);CHKERRQ(ierr);
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,5,0 )
   ierr = MatSchurComplementGetSubMatrices(pc->mat,&A,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
+#else
+  ierr = MatSchurComplementGetSubmatrices(pc->mat,&A,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
+#endif
   ierr = MatGetVecs(A,&lsc->x0,&lsc->y0);CHKERRQ(ierr);
   ierr = MatGetVecs(pc->pmat,&lsc->x1,NULL);CHKERRQ(ierr);
   if (lsc->scalediag) {
@@ -57,7 +61,11 @@ static PetscErrorCode PCSetUp_LSC2(PC pc)
       else
       {
           Mat Ap;
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,5,0 )
           ierr = MatSchurComplementGetSubMatrices(pc->mat,NULL,&Ap,NULL,NULL,NULL);CHKERRQ(ierr);
+#else
+          ierr = MatSchurComplementGetSubmatrices(pc->mat,NULL,&Ap,NULL,NULL,NULL);CHKERRQ(ierr);
+#endif
           ierr = MatGetDiagonal(Ap,lsc->scale);CHKERRQ(ierr); /* Should be the mass matrix, but we don't have plumbing for that yet */
       }
       ierr = VecReciprocal(lsc->scale);CHKERRQ(ierr);
@@ -69,7 +77,11 @@ static PetscErrorCode PCSetUp_LSC2(PC pc)
   ierr = PetscObjectQuery((PetscObject)pc->pmat,"LSC_Lp",(PetscObject*)&Lp);CHKERRQ(ierr);
   if (!Lp) {ierr = PetscObjectQuery((PetscObject)pc->mat,"LSC_Lp",(PetscObject*)&Lp);CHKERRQ(ierr);}
   if (!L) {
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,5,0 )
     ierr = MatSchurComplementGetSubMatrices(pc->mat,NULL,NULL,&B,&C,NULL);CHKERRQ(ierr);
+#else
+    ierr = MatSchurComplementGetSubmatrices(pc->mat,NULL,NULL,&B,&C,NULL);CHKERRQ(ierr);
+#endif
     if (!lsc->L) {
         if (lsc->scale)
         {
@@ -103,7 +115,11 @@ static PetscErrorCode PCSetUp_LSC2(PC pc)
     }
     Lp = L = lsc->L;
   }
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,5,0 )
   ierr = KSPSetOperators(lsc->kspL,L,Lp);CHKERRQ(ierr);
+#else
+  ierr = KSPSetOperators(lsc->kspL,L,Lp,SAME_PRECONDITIONER);CHKERRQ(ierr);
+#endif
   PetscFunctionReturn(0);
 }
 
@@ -116,7 +132,11 @@ static PetscErrorCode PCApply_LSC2(PC pc,Vec x,Vec y)
   PetscErrorCode ierr;
 
   PetscFunctionBegin;
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,5,0 )
   ierr = MatSchurComplementGetSubMatrices(pc->mat,&A,NULL,&B,&C,NULL);CHKERRQ(ierr);
+#else
+  ierr = MatSchurComplementGetSubmatrices(pc->mat,&A,NULL,&B,&C,NULL);CHKERRQ(ierr);
+#endif
   ierr = KSPSolve(lsc->kspL,x,lsc->x1);CHKERRQ(ierr);
   ierr = MatMult(B,lsc->x1,lsc->x0);CHKERRQ(ierr);
   if (lsc->scale) {
@@ -307,7 +327,11 @@ PETSC_EXTERN PetscErrorCode PCCreate_LSC2(PC pc)
   PetscErrorCode ierr;
 
   PetscFunctionBegin;
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,5,0 )
   ierr     = PetscNewLog(pc,&lsc);CHKERRQ(ierr);
+#else
+  ierr     = PetscNewLog(pc,PC_LSC2,&lsc);CHKERRQ(ierr);
+#endif
   pc->data = (void*)lsc;
 
   pc->ops->apply           = PCApply_LSC2;
