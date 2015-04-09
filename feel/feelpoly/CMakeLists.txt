@@ -1,6 +1,6 @@
 # -*- mode: cmake; coding: utf-8 -*-
 #
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2010-12-28
 #
 #  Copyright (C) 2010 Université Joseph Fourier (Grenoble I)

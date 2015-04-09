@@ -144,43 +144,8 @@ public:
         M_elistGhost()
     {}
 
-    GeoEntity( GeoEntity const& __me )
-        :
-        super(),
-        M_id( __me.M_id ),
-        M_entity( __me.M_entity ),
-        M_geometry( __me.M_geometry ),
-        M_shape( __me.M_shape ),
-        M_boundaryEntityDimension( __me.M_boundaryEntityDimension ),
-        M_npids( __me.M_npids ),
-        M_pid( __me.M_pid ),
-        M_pidInPartition( __me.M_pidInPartition ),
-        M_neighor_pids( __me.M_neighor_pids ),
-        M_idInOthersPartitions( __me.M_idInOthersPartitions ),
-        M_elist( __me.M_elist ),
-        M_elistGhost( __me.M_elistGhost )
-    {}
-
-    GeoEntity& operator=( GeoEntity const& __me )
-    {
-        if ( this != &__me )
-        {
-            M_id = __me.M_id;
-            M_entity = __me.M_entity;
-            M_geometry = __me.M_geometry;
-            M_shape = __me.M_shape;
-            M_boundaryEntityDimension = __me.M_boundaryEntityDimension;
-            M_npids = __me.M_npids;
-            M_pid = __me.M_pid;
-            M_pidInPartition = __me.M_pidInPartition;
-            M_neighor_pids = __me.M_neighor_pids;
-            M_idInOthersPartitions = __me.M_idInOthersPartitions;
-            M_elist = __me.M_elist;
-            M_elistGhost = __me.M_elistGhost;
-        }
-
-        return *this;
-    }
+    GeoEntity( GeoEntity const& __me ) = default;
+    GeoEntity& operator=( GeoEntity const& __me ) = default;
 
     virtual ~GeoEntity()
     {}
@@ -683,9 +648,9 @@ public:
     /**
      * add a new element to which the point belongs
      */
-    self_type& addElement( size_type e )
+    self_type& addElement( size_type e, int id_in_element = 0 )
     {
-        M_elist.insert( e );
+        M_elist.insert( std::make_pair(e,id_in_element) );
         return *this;
     }
 
@@ -700,11 +665,11 @@ public:
     /**
      * \return the set of ids of elements whom the point belongs to
      */
-    std::set<size_type> const& elements() const
+    std::set<std::pair<size_type,uint16_type>> const& elements() const
     {
         return M_elist;
     }
-    std::set<size_type>& elements()
+    std::set<std::pair<size_type,uint16_type>> & elements()
     {
         return M_elist;
     }
@@ -803,7 +768,7 @@ private:
     std::map<uint16_type, size_type> M_idInOthersPartitions;
 
     //! element list to which the point belongs
-    std::set<size_type> M_elist;
+    std::set<std::pair<size_type,uint16_type>>  M_elist;
     //! ghost elements which share the entity
     std::map<rank_type,std::set<size_type > > M_elistGhost;
 

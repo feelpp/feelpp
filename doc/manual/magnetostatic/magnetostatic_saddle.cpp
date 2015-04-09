@@ -59,7 +59,7 @@ int main(int argc, char**argv )
     typedef FunctionSpace<mesh_type, bases<curl_basis_type, lag_basis_type> > space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
 
-    BoundaryConditions bcs();
+    BoundaryConditions bcs;
     map_vector_field<FEELPP_DIM,1,2> m_dirichlet { bcs.getVectorFields<FEELPP_DIM> ( "u", "Dirichlet")};
     map_vector_field<FEELPP_DIM,1,2> m_weak { bcs.getVectorFields<FEELPP_DIM> ( "u", "Dirichlet_w")};
     map_vector_field<FEELPP_DIM,1,2> m_phi { bcs.getVectorFields<FEELPP_DIM> ( "phi", "Dirichlet")};
@@ -99,9 +99,10 @@ int main(int argc, char**argv )
     else //strong Dirichlet
     {
 #if 0
-    for(auto const & it:  m_dirichlet){
-      a += on( _range=markedfaces(mesh,it.first), _rhs=l, _element=u, _expr=it.second);
-    }
+        for(auto const & it:  m_dirichlet)
+        {
+            a += on( _range=markedfaces(mesh,it.first), _rhs=l, _element=u, _expr=it.second);
+        }
 #endif
         a += on(_range=boundaryfaces(mesh), _rhs=l, _element=u,_expr=e );
     }
