@@ -1937,6 +1937,7 @@ Environment::expand( std::string const& expr )
 
     typedef std::vector< std::string > split_vector_type;
 
+#if defined FEELPP_ENABLED_PROJECTS
     split_vector_type SplitVec; // #2: Search for tokens
     boost::split( SplitVec, FEELPP_ENABLED_PROJECTS, boost::is_any_of(" "), boost::token_compress_on ); 
     for( auto const& s : SplitVec )
@@ -1953,6 +1954,8 @@ Environment::expand( std::string const& expr )
         boost::replace_all( res, o3.str(),  topSrcDir + "/research/" + s + "/databases/" );
         VLOG(2) << o3.str() << " : " << topSrcDir + "/research/" + s + "/databases/";;
     }
+#endif
+
     VLOG(1) << "Expand " << expr << " to "  << res;
     return res;
 }
