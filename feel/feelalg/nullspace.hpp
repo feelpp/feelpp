@@ -67,6 +67,11 @@ public :
 
     NullSpace( std::vector<vector_ptrtype> const& vecBasis, backend_ptrtype const& mybackend );
 
+    NullSpace( backend_ptrtype const& mybackend, boost::shared_ptr<NullSpace> const& ns, bool redoOrthonormalization = false )
+        :
+        NullSpace( mybackend, *ns, redoOrthonormalization )
+        {
+        }
     NullSpace( backend_ptrtype const& mybackend, NullSpace const& ns, bool redoOrthonormalization = false );
 
     NullSpace( NullSpace const& ns );
@@ -170,6 +175,12 @@ boost::shared_ptr<NullSpace<double>>  nullspace_ptr( boost::shared_ptr<SpaceType
     boost::shared_ptr<NullSpace<double>> K( boost::make_shared<NullSpace<double>>() );
     nullspace( *K, Xh, e, args...);
     return K;
+}
+
+inline boost::shared_ptr<NullSpace<double>>
+toBackend( boost::shared_ptr<Backend<double>> const& b, boost::shared_ptr<NullSpace<double>> const& Kspace, bool redoOrtho = false )
+{
+    return boost::make_shared<NullSpace<double>>( b, Kspace, redoOrtho );
 }
 
 } // namespace Feel
