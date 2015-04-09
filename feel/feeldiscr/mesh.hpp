@@ -2246,7 +2246,7 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
     for( auto eit = it ; eit != en; ++eit )
     {
         auto const& elt = boost::unwrap_ref( *eit );
-        for ( size_type j = 0; j < elt.numLocalVertices; j++ )
+        for ( size_type j = 0; j < MeshType::element_type::numPoints; j++ )
         {
             int pid = elt.point( j ).id();
             auto ins = nodeset.insert( pid );
@@ -2256,8 +2256,11 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
                 { ids.push_back( p + startIndex ); }
                 else
                 { ids.push_back( pid ); }
+                /* old id -> new id */
                 old2new[pid]=ids[p];
+                /* old id -> new id */
                 new2old[ids[p]]=pid;
+                /* old id -> index of the new id */
                 nodemap[pid] = p;
                 ++p;
             }
@@ -2291,9 +2294,9 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
         if ( MeshType::nRealDim >= 2 )
         {
             if ( outer )
-            { coords[nv+i] = ( T ) p.node()[1]; }
+            { coords[nv+i] = ( T )( p.node()[1] ); }
             else
-            { coords[3*i+1] = ( T ) p.node()[1]; }
+            { coords[3*i+1] = ( T )( p.node()[1] ); }
         }
         /* Fill 2nd components with 0 if told to do so */
         else
@@ -2310,9 +2313,9 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
         if ( MeshType::nRealDim >= 3 )
         {
             if ( outer )
-            { coords[2*nv+i] = T( p.node()[2] ); }
+            { coords[2*nv+i] = ( T )( p.node()[2] ); }
             else
-            { coords[3*i+2] = T( p.node()[2] ); }
+            { coords[3*i+2] = ( T )( p.node()[2] ); }
         }
         /* Fill 3nd components with 0 if told to do so */
         else
@@ -2330,14 +2333,16 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
     /* number of local elements */
     int __ne = std::distance( it, en );
 
-    /* only do this resize if we have at least one elements in the iterator */
+    /* only do this resize if we have at least one element in the iterator */
     /* otherwise it will segfault */
     if(it != en)
     {
-        elem.resize( __ne*boost::unwrap_ref( *it ).numLocalVertices );
+        elem.resize( __ne * MeshType::element_type::numPoints );
         //elem.resize( __ne*mesh->numLocalVertices() );
         elemids.resize( __ne );
     }
+
+    int tcount = 0;
 
     /* build the array containing the id of each vertex for each element */
     elt_it = it;
@@ -2348,12 +2353,12 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
         elemids[e] = elt.id()+1;
         //std::cout << "LocalV = " << elt.numLocalVertices << std::endl;
         //for ( size_type j = 0; j < mesh->numLocalVertices(); j++ )
-        for ( size_type j = 0; j < elt.numLocalVertices; j++ )
+        for ( size_type j = 0; j < MeshType::element_type::numPoints ; j++ )
         {
             //std::cout << "LocalVId = " << j << " " << e*elt.numLocalVertices+j << std::endl;
             //std::cout << elt.point( j ).id() << std::endl;
             // ensight id start at 1
-            elem[e*elt.numLocalVertices+j] = old2new[elt.point( j ).id()];
+            elem[e * MeshType::element_type::numPoints + j] = old2new[elt.point( j ).id()];
 #if 0
             DCHECK( (elem[e*mesh->numLocalVertices()+j] > 0) && (elem[e*mesh->numLocalVertices()+j] <= nv ) )
                 << "Invalid entry : " << elem[e*mesh->numLocalVertices()+j]

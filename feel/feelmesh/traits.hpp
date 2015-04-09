@@ -115,5 +115,43 @@ struct MeshTraits
     //@}
 };
 
+template<typename T>
+struct is_ptr_or_shared_ptr : mpl::or_<is_shared_ptr<T>, boost::is_pointer<T> >::type {};
+
+template<typename T>
+using remove_shared_ptr_type = typename mpl::if_<is_shared_ptr<T>, mpl::identity<typename T::element_type>, mpl::identity<T>>::type::type;
+
+template<typename T>
+using decay_type = typename std::decay<remove_shared_ptr_type<T>>::type;
+
+template<typename T>
+struct is_3d : mpl::bool_<decay_type<T>::nDim == 3 || decay_type<T>::nRealDim ==3> {};
+template<typename T>
+struct is_2d : mpl::bool_<decay_type<T>::nDim == 2 || decay_type<T>::nRealDim ==2> {};
+template<typename T>
+struct is_1d : mpl::bool_<decay_type<T>::nDim == 1 || decay_type<T>::nRealDim ==1> {};
+
+
+template<typename T>
+struct is_topological_face : mpl::bool_<(decay_type<T>::nDim==decay_type<T>::nRealDim-1)> {};
+template<typename T>
+struct is_face : mpl::bool_<(decay_type<T>::nDim == 2 && decay_type<T>::nRealDim == 3)> {};
+template<typename T>
+struct is_edge : mpl::bool_<(decay_type<T>::nDim==1 && decay_type<T>::nRealDim == 3)||(decay_type<T>::nDim==1 && decay_type<T>::nRealDim == 2)> {};
+template<typename T>
+struct is_point : mpl::bool_<(decay_type<T>::nDim == 0)> {};
+
+template<typename T>
+struct is_simplex : std::is_base_of<SimplexBase, T>::type {};
+template<typename T>
+struct is_triangle : mpl::and_<is_simplex<T>,is_2d<T>> {};
+template<typename T>
+struct is_tetrahedron : mpl::and_<is_simplex<T>,is_3d<T>> {};
+template<typename T>
+struct is_segment : mpl::and_<is_simplex<T>,is_1d<T>> {};
+
+template<typename T>
+struct is_hypercube : std::is_base_of<HypercubeBase, T>::type {};
+
 } // Feel
 #endif /* __Traits_H */

@@ -4,7 +4,7 @@
   Author(s): Guillaume Dolle <gdolle@unistra.fr>
        Date: 2014-08-01
 
-  Copyright (C) 2014 Feel++ Consortium
+  Copyright (C) 2014-2015 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -41,6 +41,13 @@ r2=0.5;
 
 // IMPORTANT NOTE: Sometimes 3D mesh generation crash for some shape!
 //                 (For example d=1,r1=0.5,r2=0.6)
+
+// Add gmsh parameters with above values as default.
+h = DefineNumber[ h, Name "Parameters/h" ];
+dim = DefineNumber[ dim, Name "Parameters/dim" ];
+d = DefineNumber[ d, Name "Parameters/d" ];
+r1 = DefineNumber[ r1, Name "Parameters/r1" ];
+r2 = DefineNumber[ r2, Name "Parameters/r2" ];
 
 ////////////////////////////////////////////////////////////////////////////////
 
