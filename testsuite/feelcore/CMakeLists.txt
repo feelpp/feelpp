@@ -39,3 +39,7 @@ feelpp_add_test( fusion )
 if ( FEELPP_HAS_NT2 )
   feelpp_add_test(nt2)
 endif()
+
+if ( FEELPP_HAS_HDF5 )
+  feelpp_add_test(hdf5)
+endif()
