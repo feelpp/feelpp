@@ -1,35 +1,30 @@
-/* -*- mode: c++; coding: utf-8 -*- */
-namespace Feel
-{
-/*! \page Notations Mathematical Concepts and Notations
+# Mathematical Concepts and Notations {#Notations}
 
-  <hr>
+The mathematical concepts and the associated notations are defined on
+this page and will be used throughout the Feel++ Online Documentation.
 
-  \tableofcontents
+[TOC]
 
-  The mathematical concepts and the associated notations are defined on
-  this page and will be used throughout the Feel++ Online Documentation.
+##  Polynomial Library {##PolynomialNotations}
 
-  \section PolynomialNotations Polynomial Library
-
-  The polynomial library is composed of various bricks: \e (i) the
-  geometrical entities or convexes \e (ii) the prime basis in which we
-  express subsequently the polynomials, \e (iii) the definition and
-  construction of point sets in convexes (such as quadrature point sets)
-  and finally \e (iv) polynomials and finite elements.
+The polynomial library is composed of various bricks: \e (i) the
+geometrical entities or convexes \e (ii) the prime basis in which we
+express subsequently the polynomials, \e (iii) the definition and
+construction of point sets in convexes (such as quadrature point sets)
+and finally \e (iv) polynomials and finite elements.
 
 
-  \subsection Notations_Convexes Convexes
+###  Convexes {###Notations_Convexes}
 
-  The supported convexes are simplices and hypercubes of topological dimension
-  \f$n\f$, \f$n=1,2,3\f$ lying in \f$\mathbb{R}^d\f$ such that \f$n \leq d
-  \leq 3\f$. The convexes are described geometrically in a standard way in
-  terms of their subentities (vertices, edges, faces, volumes), see for
-  example \cite MR1696933, and provide the ability to iterate over the entities
-  of a convex or of the same topological dimension inside a convex, e.g. iterate
-  over the edges of a tetrahedron.
+The supported convexes are simplices and hypercubes of topological dimension
+\f$n\f$, \f$n=1,2,3\f$ lying in \f$\mathbb{R}^d\f$ such that \f$n \leq d
+\leq 3\f$. The convexes are described geometrically in a standard way in
+terms of their subentities (vertices, edges, faces, volumes), see for
+example \cite MR1696933, and provide the ability to iterate over the entities
+of a convex or of the same topological dimension inside a convex, e.g. iterate
+over the edges of a tetrahedron.
 
-  \subsection Notations_PrimeBasis Prime basis: L^2 Orthonormal Polynomials
+###  Prime basis: L^2 Orthonormal Polynomials {###Notations_PrimeBasis}
 
   In order to express polynomials in the convexes defined previously, we
   need to choose a \e prime \e basis, i.e., a basis in which all
@@ -54,7 +49,7 @@ namespace Feel
   in \cite MR1696933 page 101. In practice, the prime basis is normalized.
 
 
-  \subsection Notations_psetconvex Point Sets on Convexes
+###  Point Sets on Convexes {###Notations_psetconvex}
 
 
   Now we turn to the construction of point sets \f$\mathbb{P}\f$ defined on a convex \f$K\f$.
@@ -84,7 +79,7 @@ namespace Feel
   the Fekete points in hypercubes.
 
 
-  \subsection Notatiopns_Pset Polynomial Set
+##  Polynomial Set {##Notatiopns_Pset}
 
 
   After introducing in the previous sections the necessary bricks
@@ -111,7 +106,7 @@ namespace Feel
   % to the required numerical type, e.g. \c double.
 
 
-  \subsection Notations_fem Finite Elements and Other Polynomial Basis
+###  Finite Elements and Other Polynomial Basis {#Notations_fem}
 
   \Feel supports modal basis, \eg Legendre or Dubiner, see
   \cite MR1696933, \cite canuto_hussaini_quarteroni_zang_2, as well as finite elements
@@ -145,7 +140,7 @@ namespace Feel
   description.
 
 
-  \subsection Notations_Geometry Geometry
+###  Geometry {#Notations_Geometry}
 
   To conclude this section, one important object that is constructed with the help
   of the polynomial library is the \e geometric \e transformation. Indeed all
@@ -185,7 +180,7 @@ namespace Feel
   and hence the inverse geometrical transformation.
 
 
-  \section MeshNotations Mesh Notations
+## Mesh Notations {#MeshNotations}
 
   Let \f$\Omega\subset\mathbb{R}^d\f$, \f$d\ge 1\f$, denote a bounded connected domain.  We first
   need to introduce a suitable discretization of \f$\Omega\f$, \f$\Omega_h \subset
@@ -236,5 +231,3 @@ namespace Feel
   http://www.boost.org/libs/range/index.html, to be manipulated by
   integration, \ref Integrals, and projection, tools.
 
-*/
-}

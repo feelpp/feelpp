@@ -42,6 +42,9 @@ extern "C" {
 #include <private/kspimpl.h>
 #endif
 
+#include <feel/feelalg/preconditionerpetsclsc.cpp>
+
+
 //------------------------------------------------------------------------------//
 typedef struct {
     PetscBool allocated;
@@ -695,6 +698,13 @@ void PreconditionerPetsc<T>::init ()
 {
     CHECK( this->M_matrix ) << "ERROR: No matrix set for PreconditionerPetsc, but init() called" << "\n";
 
+    static bool petscPCInHouseIsInit =false;
+    if ( !petscPCInHouseIsInit )
+    {
+        check( PCRegister("lsc2",PCCreate_LSC2) );
+        petscPCInHouseIsInit=true;
+    }
+
     indexsplit_ptrtype is;
     std::list<MatNullSpace> nullspList;
 
@@ -1023,6 +1033,11 @@ SetPCType( PC& pc, const PreconditionerType & preconditioner_type, const MatSolv
         CHKERRABORT( worldComm.globalComm(),ierr );
         break;
 
+    case LSC2_PRECOND:
+        ierr = PCSetType( pc, "lsc2" );
+        CHKERRABORT( worldComm.globalComm(),ierr );
+        break;
+
     case ML_PRECOND:
         ierr = PCSetType( pc,( char* ) PCML );
         CHKERRABORT( worldComm.globalComm(),ierr );
@@ -1202,6 +1217,10 @@ ConfigurePC::run( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const&
     else if ( std::string(pctype) == "lsc" )
     {
         ConfigurePCLSC( pc, this->precFeel(), is, this->worldComm(), this->sub(), this->prefix() );
+    }
+    else if ( std::string(pctype) == "lsc2" )
+    {
+        ConfigurePCLSC( pc, this->precFeel(), is, this->worldComm(), this->sub(), this->prefix(), "in-house" );
     }
     else if ( std::string(pctype) == "hypre" )
     {
@@ -2435,16 +2454,16 @@ ConfigurePCFieldSplit::runConfigurePCFieldSplit( PC& pc, PreconditionerPetsc<dou
 #else
             this->check( MatCreateVecs(A,&scaleDiag,NULL) );
 #endif
-            if ( this->precFeel()->hasAuxiliarySparseMatrix("mass-matrix") )
+            if ( false ) //this->precFeel()->hasAuxiliarySparseMatrix("mass-matrix") )
             {
-                std::cout << "hasAuxiliarySparseMatrix\n";
+                //std::cout << "hasAuxiliarySparseMatrix\n";
                 auto massMat = this->precFeel()->auxiliarySparseMatrix("mass-matrix");
                 MatrixPetsc<double> * massMatPetsc   = const_cast<MatrixPetsc<double> *>( dynamic_cast<MatrixPetsc<double> const*>( &(*massMat) ) );
                 this->check( MatGetDiagonal(massMatPetsc->mat(),scaleDiag) );
             }
             else
             {
-                this->check( MatGetDiagonal(A,scaleDiag) ); /* Should be the mass matrix, but we don't have plumbing for that yet */
+                this->check( MatGetDiagonal(A,scaleDiag) );
             }
             this->check( VecReciprocal(scaleDiag) );
             this->check( MatDiagonalScale( Bcopy, scaleDiag ,NULL) );
@@ -2716,16 +2735,32 @@ ConfigurePCFieldSplit::ConfigureSubKSP::runConfigureSubKSP(KSP& ksp, Preconditio
  * ConfigurePCLSC
  */
 ConfigurePCLSC::ConfigurePCLSC( PC& pc, PreconditionerPetsc<double> * precFeel, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
-                                WorldComm const& worldComm, std::string const& sub, std::string const& prefix )
+                                WorldComm const& worldComm, std::string const& sub, std::string const& prefix, std::string lscVersion )
     :
     ConfigurePCBase( precFeel, worldComm,sub,prefix,getOptionsDescLSC(prefix,sub) ),
+    M_version( lscVersion ),
     M_prefixLSC( prefixvm(this->prefix(),"lsc") ),
     M_scaleDiag( option(_name="scale-diag",_prefix=M_prefixLSC,_vm=this->vm()).as<bool>() ),
     M_subPCtype( option(_name="pc-type",_prefix=M_prefixLSC,_vm=this->vm()).as<std::string>() ),
     M_subMatSolverPackage( option(_name="pc-factor-mat-solver-package-type",_prefix=M_prefixLSC,_vm=this->vm()).as<std::string>() ),
     M_subPCview( option(_name="pc-view",_prefix=M_prefixLSC,_vm=this->vm()).as<bool>() )
 {
-    this->check( PetscImpl::PCLSCSetScaleDiag( pc, static_cast<PetscBool>( M_scaleDiag ) ) );
+    if ( M_version == "petsc" )
+        this->check( PetscImpl::PCLSCSetScaleDiag( pc, static_cast<PetscBool>( M_scaleDiag ) ) );
+    else
+        this->check( PCLSC2SetScaleDiag( pc, static_cast<PetscBool>( M_scaleDiag ) ) );
+
+    if ( M_version != "petsc" )
+    {
+        if ( this->precFeel()->hasAuxiliarySparseMatrix("mass-matrix") )
+        {
+            //std::cout << "LSC hasAuxiliarySparseMatrix\n";
+            auto massMat = this->precFeel()->auxiliarySparseMatrix("mass-matrix");
+            MatrixPetsc<double> * massMatPetsc   = const_cast<MatrixPetsc<double> *>( dynamic_cast<MatrixPetsc<double> const*>( &(*massMat) ) );
+            this->check( PCSetMassMatrix_LSC2( pc, massMatPetsc->mat()) );
+        }
+    }
+
 
     VLOG(2) << "ConfigurePC : LSC\n"
             << "  |->prefix    : " << this->prefix() << std::string((this->sub().empty())? "" : " -sub="+this->sub()) << "\n"
@@ -2744,7 +2779,10 @@ ConfigurePCLSC::runConfigurePCLSC( PC& pc, PreconditionerPetsc<double>::indexspl
     //-----------------------------------------------------------//
     // get sub-ksp
     KSP subksp;
-    this->check( PetscImpl::PCLSCGetKSP( pc, subksp ) );
+    if ( M_version == "petsc" )
+        this->check( PetscImpl::PCLSCGetKSP( pc, subksp ) );
+    else
+        this->check( PCLSC2GetKSP( pc, subksp ) );
     // configure sub-ksp
     ConfigureKSP kspConf( subksp, this->precFeel(), this->worldComm(), "", M_prefixLSC,prefixOverwrite,"preonly", 1e-5, 50 );
     // setup sub-ksp

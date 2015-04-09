@@ -332,6 +332,14 @@ public:
     {
         return S_vm;
     }
+  
+    template<typename T>
+    static void vmUp(std::string s,T val)
+    {
+        auto it = S_vm.find( s );
+        CHECK( it != S_vm.end() ) << "Invalid option " << s << "\n";
+        S_vm.at(s).value() = val;
+    } 
 
     static AboutData const& about()
     {

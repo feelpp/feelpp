@@ -44,4 +44,6 @@
 /* define dir for build */
 #cmakedefine FEELPP_BUILD_DIR @FEELPP_BUILD_DIR@
 
+#cmakedefine FEELPP_ENABLED_PROJECTS "@FEELPP_ENABLED_PROJECTS@"
+
 #endif

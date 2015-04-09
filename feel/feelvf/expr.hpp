@@ -533,6 +533,10 @@ public:
         //Geo_t const& M_geo;
         tensor_expr_type M_tensor_expr;
     };
+
+    template<typename Geo_t>
+    tensor<Geo_t> evaluator( Geo_t geo ) const { return tensor<Geo_t>( *this, geo ); }
+    
 #if 0
     class Diff
     {

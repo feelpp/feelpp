@@ -14,7 +14,7 @@
       (indent-tabs-mode . nil)
       (tab-width . 4)
       (show-trailing-whitespace . t)
-      (add-hook 'write-file-functions 'delete-trailing-whitespace)
+;;      (add-hook 'write-file-functions 'delete-trailing-whitespace)
       (indicate-empty-lines . t)
       (c-basic-offset . 4)
       (c-hanging-braces-alist     . ((substatement-open after)
