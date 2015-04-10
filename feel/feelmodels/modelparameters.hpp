@@ -68,7 +68,14 @@ public:
     ModelParameters( pt::ptree const& p );
     virtual ~ModelParameters();
     void setPTree( pt::ptree const& _p );
-
+    std::map<std::string,double> toParameterValues() const
+        {
+            std::map<std::string,double> pv;
+            for( auto const& p : *this )
+                pv[p.first]=p.second.value();
+            return pv;
+        }
+    
 private:
     void setup();
 private:

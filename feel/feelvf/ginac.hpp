@@ -670,6 +670,12 @@ struct map_scalar_field: public std::map<std::string,scalar_field_expression<Ord
     map_scalar_field(map_scalar_field const& f ) = default;
     map_scalar_field& operator=(map_scalar_field && f ) = default;
     map_scalar_field& operator=(map_scalar_field const& f ) = default;
+    void setParameterValues( std::map<std::string,double> const& pv )
+    {
+        for( auto & f : *this )
+            f.second.setParameterValues( pv );
+    }
+    
 };
 
 typedef std::map<std::string,Expr<GinacEx<2>>> map_scalar_field_type;
@@ -785,6 +791,11 @@ struct map_vector_field: public std::map<std::string,Expr<GinacMatrix<M,N,Order>
     map_vector_field(map_vector_field const& f ) = default;
     map_vector_field& operator=(map_vector_field && f ) = default;
     map_vector_field& operator=(map_vector_field const& f ) = default;
+    void setParameterValues( std::map<std::string,double> const& pv )
+    {
+        for( auto & f : *this )
+            f.second.setParameterValues( pv );
+    }    
 };
 
 /**
