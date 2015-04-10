@@ -57,7 +57,7 @@ if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/glog )
           )
       else()
         execute_process(
-          COMMAND ${FEELPP_HOME_DIR}/contrib/glog/configure --prefix=${CMAKE_BINARY_DIR}/contrib/glog --with-gflags=${GFLAGS_DIR}  LDFLAGS=-dynamic CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER}
+          COMMAND ${FEELPP_HOME_DIR}/contrib/glog/configure --prefix=${CMAKE_BINARY_DIR}/contrib/glog --with-gflags=${GFLAGS_DIR}  LDFLAGS=-dynamic CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} CXXFLAGS=${CMAKE_CXX_FLAGS}
           WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/glog-compile
           #      OUTPUT_QUIET
           OUTPUT_FILE "glog-configure"
@@ -80,7 +80,7 @@ if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/glog )
           )
       else()
         execute_process(
-          COMMAND make -k -j${NProcs2} install
+          COMMAND make -k -d -j${NProcs2} install
           WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/glog-compile
           OUTPUT_FILE "glog-install"
           #OUTPUT_QUIET

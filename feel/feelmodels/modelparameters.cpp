@@ -23,6 +23,7 @@
  */
 #include <iostream>
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/environment.hpp>
 
 #include <feel/feelmodels/modelparameters.hpp>
 
@@ -44,26 +45,36 @@ ModelParameters::setPTree( pt::ptree const& p )
     setup();
 }
 
+
 void
 ModelParameters::setup()
 {
     for( auto const& v : M_p )
     {
-        
-        std::cout << "v.first:" << v.first  << "\n";
+
+        if ( Environment::isMasterRank() )
+            std::cout << "reading parameter " << v.first  << "\n";
         std::string t = v.first; // parameter name
-        //for( auto const& f : v.second ) // enter parameter definition
         auto f= v.second;
         {
             try
             {
-                auto val= f.get<double>("value");
+                auto val= M_p.get<double>(v.first);
                 LOG(INFO) << "adding parameter " << t << " with value " << val;
-                this->operator[](t) = ModelParameter( t, val );
+                this->operator[](t) = ModelParameter( t, val, val, val );
             }
             catch( ... )
             {
-                this->operator[](t) = ModelParameter( t, 0., 0., 0. );
+                try
+                {
+                    auto val= f.get<double>("value");
+                    LOG(INFO) << "adding parameter " << t << " with value " << val;
+                    this->operator[](t) = ModelParameter( t, val, val, val );
+                }
+                catch( ... )
+                {
+                    this->operator[](t) = ModelParameter( t, 0., 0., 0. );
+                }
             }
         }
         

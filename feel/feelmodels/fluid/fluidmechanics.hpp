@@ -53,11 +53,7 @@ fluidmechanics_options(std::string prefix)
     po::options_description fluidmechanicsoptions( "FluidMechanics problem options" );
     fluidmechanicsoptions.add_options()
         ( prefixvm( prefix, "filename").c_str(), Feel::po::value<std::string>()->default_value( "" ), "filename that describes the model" )
-        ( prefixvm( prefix, "model").c_str(), Feel::po::value<std::string>()->default_value( "linear" ), "linear, hyperelastic" )
-        ( prefixvm( prefix, "mu").c_str(), Feel::po::value<double>()->default_value( 1.4e6 ), "dynamic viscosity [kg.m^-1.s^-1 or Pa.s]" )
-        ( prefixvm( prefix, "rho").c_str(), Feel::po::value<double>()->default_value( 1000 ), "density [kg/m^3]" )
-        ( prefixvm( prefix, "gravity").c_str(), Feel::po::value<std::string>()->default_value( "{0,0}" ), "gravity force expression" )
-        ( prefixvm( prefix, "gravity-cst").c_str(), Feel::po::value<double>()->default_value( 2 ), "gravity-cst" )
+        ( prefixvm( prefix, "model").c_str(), Feel::po::value<std::string>()->default_value( "Stokes" ), "Stokes, NavierStokes" )
         ( prefixvm( prefix, "verbose").c_str(), Feel::po::value<bool>()->default_value( true ), "verbose" )
         ( prefixvm( prefix, "postprocess.type").c_str(), Feel::po::value<std::string>()->default_value( "" ),
           "evaluate a field : point, integral" )
@@ -78,18 +74,14 @@ fluidmechanics_options(std::string prefix)
 /**
  * @brief a fluid mechanics class parametrized by an approximation space and a model type
  */
-template<typename FluidSpaceType, int _Model=STOKES, int _Options = FM_STEADY|FM_LINEARIZED>
-    class FluidMechanics : public ModelProperties
+template<typename FluidSpaceType>
+class FluidMechanics 
 {
-    using super = ModelProperties;
-public:
-    static constexpr int Options = _Options;
-    static constexpr int Model = _Model;
     
-    using self_type = FluidMechanics<FluidSpaceType,Model,Options>;
-    using fluid_space_type = typename mpl::if_<is_shared_ptr<FluidSpaceType>,
-                                               mpl::identity<typename FluidSpaceType::element_type>,
-                                               mpl::identity<FluidSpaceType>>::type::type;
+public:
+    
+    using self_type = FluidMechanics<FluidSpaceType>;
+    using fluid_space_type = decay_type<FluidSpaceType>;
     using fluid_space_ptrtype = boost::shared_ptr<fluid_space_type>;
     using fluid_type = typename fluid_space_type::element_type;
 
@@ -128,18 +120,23 @@ public:
     using ts_ptrtype = boost::shared_ptr<Bdf<fluid_space_type>>;
     
     FluidMechanics() = delete;
-    FluidMechanics( std::string name, fluid_space_ptrtype Xh );
+    FluidMechanics( std::string name, fluid_space_ptrtype Xh, int _Options = FM_LINEARIZED );
 
     static constexpr int dim = mesh_type::nDim;
 
     // @return the time stepping strategy
     ts_ptrtype ts() { return t; }
-    
-    void setDensity( double r ) { rho = r; }
-    void setGravityConstant( double g ) { gravity = g; }
 
-    void setGravityForce( vector_field_expression<dim,1,2> e ) { gravityForce = e; }
-
+    void setMaterialProperties()
+        {
+            for( auto const& mat : props.materials() )
+            {
+                if ( Environment::isMasterRank() )
+                    std::cout << "FluidMechanics: set material " << mat.name() << "\n";
+                P0Rho.on( _range=markedelements(mesh,mat.name()), _expr=cst(mat.rho()) );
+                P0Mu.on( _range=markedelements(mesh,mat.name()), _expr=cst(mat.mu() ) );
+            }
+        }
     template < typename ExprT >
     void updateRho( Expr<ExprT> const& e )
         {
@@ -184,6 +181,8 @@ private:
     void addDirichlet( form2_type<fluid_space_type,fluid_space_type>& bf,
                        form1_type<fluid_space_type>& lf );
 private:
+    ModelProperties props;
+    int Options;
     bool verbose;
     fluid_space_ptrtype Xh;
     property_space_ptrtype P0h;
@@ -202,8 +201,6 @@ private:
     map_scalar_field<2> dx_dirichlet_conditions, dy_dirichlet_conditions, dz_dirichlet_conditions;
     map_matrix_field<dim,dim,2> neumann_conditions;
     vector_field_expression<dim,1,2> gravityForce;
-    double rho,mu;
-    double gravity;
 
     ts_ptrtype t;
     
@@ -216,11 +213,12 @@ private:
     exporter_ptrtype e;
 };
 
-template<typename FluidSpaceType,int _Model,int _Options>
-FluidMechanics<FluidSpaceType,_Model,_Options>::FluidMechanics( std::string n, fluid_space_ptrtype Wh )
+template<typename FluidSpaceType>
+FluidMechanics<FluidSpaceType>::FluidMechanics( std::string n, fluid_space_ptrtype Wh, int _Options )
     :
-    super( soption( _name=prefixvm(n,"filename")) ),
-    verbose( boption(_name=prefixvm(this->name(),"verbose")) ),
+    props( Environment::expand( soption( _name=prefixvm(n,"filename")) ) ),
+    Options( _Options ),
+    verbose( boption(_name=prefixvm(n,"verbose")) ),
     Xh( Wh ),
     P0h( Pdh<0>( Xh->mesh() ) ),
     mesh( Xh->mesh() ),
@@ -232,51 +230,45 @@ FluidMechanics<FluidSpaceType,_Model,_Options>::FluidMechanics( std::string n, f
     q( V.template element<1>() ),
     P0Rho( P0h->element() ),
     P0Mu( P0h->element() ),
-    t( bdf( _space=Xh, _name=this->name(),_rank_proc_in_files_name=true ) ),
-    M_backend( backend( _name=this->name() ) ),
+    t( bdf( _space=Xh, _name=n,_rank_proc_in_files_name=true ) ),
+    M_backend( backend( _name=n ) ),
     l(form1( _test=Xh)),
+    lt(form1( _test=Xh)),
     a(form2( _trial=Xh, _test=Xh)),
-    e ( exporter( _mesh=mesh, _prefix=this->name() ) )
+    at(form2( _trial=Xh, _test=Xh)),
+    e ( exporter( _mesh=mesh, _prefix=props.name() ) )
 {
     tic();
     tic();
-    dirichlet_conditions = this->boundaryConditions().template getVectorFields<dim> ( "velocity", "Dirichlet" );
-    dx_dirichlet_conditions = this->boundaryConditions().getScalarFields ( "velocity_x", "Dirichlet" );
-    dy_dirichlet_conditions = this->boundaryConditions().getScalarFields ( "velocity_y", "Dirichlet" );
-    dz_dirichlet_conditions = this->boundaryConditions().getScalarFields ( "velocity_z", "Dirichlet" );
+    dirichlet_conditions = props.boundaryConditions().template getVectorFields<dim> ( "velocity", "Dirichlet" );
+    dx_dirichlet_conditions = props.boundaryConditions().getScalarFields ( "velocity_x", "Dirichlet" );
+    dy_dirichlet_conditions = props.boundaryConditions().getScalarFields ( "velocity_y", "Dirichlet" );
+    dz_dirichlet_conditions = props.boundaryConditions().getScalarFields ( "velocity_z", "Dirichlet" );
     
-    neumann_conditions = this->boundaryConditions().template getMatrixFields<dim> ( "velocity", "Neumann" );
-    gravityForce = expr<dim,1,2>(soption(prefixvm(this->name(),"gravity")));
-    gravity=doption(_name=prefixvm(this->name(),"gravity-cst"));
+    neumann_conditions = props.boundaryConditions().template getMatrixFields<dim> ( "velocity", "Neumann" );
     toc("FM boundary conditions");
     tic();
-    for( auto const& material : this->materials() )
-    {
-        if ( Environment::isMasterRank() )
-            std::cout << " material " << material.name() << "[ rho: " << material.rho() << " mu: " << material.mu() << "]\n";
-        P0Rho.on( _range=markedelements( mesh, material.name() ), _expr=cst( material.rho() ) );
-        P0Mu.on( _range=markedelements( mesh, material.name() ), _expr=cst( material.mu() ) );
-    }
+    this->setMaterialProperties();
     toc("FM material properties");
     
 
-    if ( this->model() == "Stokes" )
+    if ( props.model() == "Stokes" )
         this->initModel( mpl::int_<STOKES>() );
-    else if ( this->model() == "Navier_Stokes" )
+    else if ( props.model() == "Navier_Stokes" )
         this->initModel( mpl::int_<NAVIER_STOKES>() );
     
     toc("FluidMechanics constructor", verbose || FLAGS_v > 0 );
     
     
 }
-template<typename FluidSpaceType,int _Model,int _Options>
+template<typename FluidSpaceType>
 void
-FluidMechanics<FluidSpaceType,_Model,_Options>::initModel( mpl::int_<STOKES> )
+FluidMechanics<FluidSpaceType>::initModel( mpl::int_<STOKES> )
 {
     auto deft = sym(gradt( u ));
     auto def = grad( v );
     
-    l = integrate( _range=elements(mesh), _expr=idv(P0Rho)*trans(gravityForce)*id(v) );
+    //l = integrate( _range=elements(mesh), _expr=idv(P0Rho)*trans(gravityForce)*id(v) );
 
     a = integrate( _range=elements( mesh ), _expr=idv(P0Mu)*inner( deft,def ) );
     a +=integrate( _range=elements( mesh ), _expr=-div( v )*idt( p ) - divt( u )*id( q ) );
@@ -286,7 +278,8 @@ FluidMechanics<FluidSpaceType,_Model,_Options>::initModel( mpl::int_<STOKES> )
         LOG(INFO) << "add mass time term";
         a +=integrate( _range=elements( mesh ), _expr=idv(P0Rho)*trans(idt(u))*id(v)*t->polyDerivCoefficient(0) );
     }
-    
+
+    neumann_conditions.setParameterValues( props.parameters().toParameterValues() );
     for( auto const& d : neumann_conditions )
     {
         a += integrate( _range=markedfaces( mesh, marker(d) ), _expr=trans(expression(d)*N())*id(v) );
@@ -295,9 +288,9 @@ FluidMechanics<FluidSpaceType,_Model,_Options>::initModel( mpl::int_<STOKES> )
     
 }
 
-template<typename FluidSpaceType,int _Model,int _Options>
+template<typename FluidSpaceType>
 void
-FluidMechanics<FluidSpaceType,_Model,_Options>::initModel( mpl::int_<NAVIER_STOKES> )
+FluidMechanics<FluidSpaceType>::initModel( mpl::int_<NAVIER_STOKES> )
 {
     initModel( mpl::int_<STOKES>() );
     at.zero();
@@ -306,19 +299,21 @@ FluidMechanics<FluidSpaceType,_Model,_Options>::initModel( mpl::int_<NAVIER_STOK
     lt += l;
 }
 
-template<typename FluidSpaceType,int _Model,int _Options>
+template<typename FluidSpaceType>
 void
-FluidMechanics<FluidSpaceType,_Model,_Options>::addDirichlet( form2_type<fluid_space_type, fluid_space_type>& bf,
+FluidMechanics<FluidSpaceType>::addDirichlet( form2_type<fluid_space_type, fluid_space_type>& bf,
                                                               form1_type<fluid_space_type>& lf)  
 {
+    dirichlet_conditions.setParameterValues( props.parameters().toParameterValues() );
+    dirichlet_conditions.setParameterValues( { {"t",t->time()}}  );
     for( auto const& d : dirichlet_conditions )
     {
         bf += on( _range=markedfaces( mesh, marker(d)), _rhs=lf, _element=u,  _expr=expression(d) );
     }
 }
-template<typename FluidSpaceType,int _Model,int _Options>
+template<typename FluidSpaceType>
 void
-FluidMechanics<FluidSpaceType,_Model,_Options>::init()
+FluidMechanics<FluidSpaceType>::init()
 {
     tic();
     // start or restart
@@ -337,43 +332,47 @@ FluidMechanics<FluidSpaceType,_Model,_Options>::init()
     toc("FluidMechanics::init", verbose || FLAGS_v > 0);
 }
 
-template<typename FluidSpaceType,int _Model,int _Options>
+template<typename FluidSpaceType>
 void
-FluidMechanics<FluidSpaceType,_Model,_Options>::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
+FluidMechanics<FluidSpaceType>::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
 {
     u = *X;
     
 
 }
-template<typename FluidSpaceType,int _Model,int _Options>
+template<typename FluidSpaceType>
 void
-FluidMechanics<FluidSpaceType,_Model,_Options>::updateJacobian(const vector_ptrtype& X, sparse_matrix_ptrtype& J)
+FluidMechanics<FluidSpaceType>::updateJacobian(const vector_ptrtype& X, sparse_matrix_ptrtype& J)
 {
     u = *X;
 
 
 }
 
-template<typename FluidSpaceType,int _Model,int _Options>
-typename FluidMechanics<FluidSpaceType,_Model,_Options>::SolveData
-FluidMechanics<FluidSpaceType,_Model,_Options>::solve()
+template<typename FluidSpaceType>
+typename FluidMechanics<FluidSpaceType>::SolveData
+FluidMechanics<FluidSpaceType>::solve()
 {
     tic();
     SolveData d;
-    if ( this->model() == "Stokes" )
+    if ( props.model() == "Stokes" )
         d = solve( mpl::int_<STOKES>() );
-    else if ( this->model() == "Navier_Stokes" )
+    else if ( props.model() == "Navier_Stokes" )
         d = solve( mpl::int_<NAVIER_STOKES>() );
         
     toc("FluidMechanics::solve", verbose || FLAGS_v > 0 );
     return d;
 }
-template<typename FluidSpaceType,int _Model,int _Options>
-typename FluidMechanics<FluidSpaceType,_Model,_Options>::SolveData
-FluidMechanics<FluidSpaceType,_Model,_Options>::solve( mpl::int_<NAVIER_STOKES>)
+template<typename FluidSpaceType>
+typename FluidMechanics<FluidSpaceType>::SolveData
+FluidMechanics<FluidSpaceType>::solve( mpl::int_<NAVIER_STOKES>)
 {
+    if ( Environment::isMasterRank() )
+        std::cout << "Solving for NS...\n";
     if ( Options & FM_LINEARIZED )
     {
+        if ( Environment::isMasterRank() )
+            std::cout << " - linearized...\n";
         auto bdf_poly = t->polyDeriv();
         auto rhsu =  bdf_poly.template element<0>();
         lt = integrate( _range=elements(mesh), _expr=idv(P0Rho)*(trans(idv(rhsu))*id(u) ) );
@@ -387,16 +386,16 @@ FluidMechanics<FluidSpaceType,_Model,_Options>::solve( mpl::int_<NAVIER_STOKES>)
     }
     return at.solve( _rhs=lt, _solution=U );
 }
-template<typename FluidSpaceType,int _Model,int _Options>
-typename FluidMechanics<FluidSpaceType,_Model,_Options>::SolveData
-FluidMechanics<FluidSpaceType,_Model,_Options>::solve( mpl::int_<STOKES>)
+template<typename FluidSpaceType>
+typename FluidMechanics<FluidSpaceType>::SolveData
+FluidMechanics<FluidSpaceType>::solve( mpl::int_<STOKES>)
 {
     this->addDirichlet( a, l );
     return a.solve( _rhs=l, _solution=U );
 }
-template<typename FluidSpaceType,int _Model,int _Options>
+template<typename FluidSpaceType>
 void
-FluidMechanics<FluidSpaceType,_Model,_Options>::exportResults()
+FluidMechanics<FluidSpaceType>::exportResults()
 {
     tic();
     if ( t->isSteady() )
@@ -410,8 +409,8 @@ FluidMechanics<FluidSpaceType,_Model,_Options>::exportResults()
     }
     else
     {
-        e->step(t->time())->add( "velocity", u );
-        e->step(t->time())->add( "pressure", p );
+        e->step(t->time())->add( "velocity", this->velocity() );
+        e->step(t->time())->add( "pressure", this->pressure() );
 #if defined( FEELPP_FLUIDMECHANICS_BOUSSINESQ )
         e->step(t->time())->add( "temperature", T );
 #endif

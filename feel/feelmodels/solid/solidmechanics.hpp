@@ -186,7 +186,7 @@ SolidMechanics<DisplSpaceType>::SolidMechanics( std::string n, displacement_spac
     P0Rho( P0h->element() ),
     P0Coefflame1( P0h->element() ),
     P0Coefflame2( P0h->element() ),
-    nm( newmark( _prefix=name, _space=Dh, _name=name,_rank_proc_in_files_name=true ) ),
+    nm( newmark( _space=Dh, _name=name,_rank_proc_in_files_name=true ) ),
     M_backend( backend( _name=name ) ),
     Res( M_backend->newVector( Dh ) ),
     Jac( M_backend->newMatrix( Dh, Dh ) ),

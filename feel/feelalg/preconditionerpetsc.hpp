@@ -597,12 +597,13 @@ class ConfigurePCLSC : public ConfigurePCBase
 {
 public :
     ConfigurePCLSC( PC& pc, PreconditionerPetsc<double> * precFeel, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
-                    WorldComm const& worldComm, std::string const& sub, std::string const& prefix );
+                    WorldComm const& worldComm, std::string const& sub, std::string const& prefix, std::string lscVersion = "petsc" );
 
 private :
     void runConfigurePCLSC( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is );
 
 private :
+    std::string M_version;
     std::string M_prefixLSC;
     bool M_scaleDiag;
     std::string M_subPCtype, M_subMatSolverPackage;

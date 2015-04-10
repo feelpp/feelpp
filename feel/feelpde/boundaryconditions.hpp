@@ -130,7 +130,7 @@ class BoundaryConditions
         {
             using namespace Feel::vf;
             map_scalar_fields<Order> m_f;
-            for ( auto f : this->operator[](field)[type]  )
+            for ( auto const& f : this->operator[](field)[type]  )
             {
                 CHECK( f.hasExpression1() && f.hasExpression2() ) << "Invalid call";
                 LOG(INFO) << "Building expr " << f.expression() << " for " << f.marker();
@@ -143,7 +143,7 @@ class BoundaryConditions
     {
         using namespace Feel::vf;
         map_vector_field<d> m_f;
-        for ( auto f : this->operator[](field)[type]  )
+        for ( auto const& f : this->operator[](field)[type]  )
         {
             LOG(INFO) << "Building expr " << f.expression() << " for " << std::get<0>(f);
             m_f[std::get<0>(f)] = expr<d,1,2>( f.expression() );
@@ -154,7 +154,7 @@ class BoundaryConditions
     {
         using namespace Feel::vf;
         map_matrix_field<d,d> m_f;
-        for ( auto f : this->operator[](field)[type]  )
+        for ( auto const& f : this->operator[](field)[type]  )
         {
             LOG(INFO) << "Building expr " << f.expression() << " for " << std::get<0>(f);
             m_f[std::get<0>(f)] = expr<d,d,2>( f.expression() );
