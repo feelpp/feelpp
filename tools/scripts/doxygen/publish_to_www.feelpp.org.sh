@@ -22,11 +22,12 @@ fi
 cd $base_dir/www.feelpp.org
 
 git checkout master
-git pull
+git pull --no-edit
 
 # the resulting static pages are in _site that is not tracked by github
 jekyll build
 git checkout gh-pages
+git pull --no-edit
 
 rsync -avz _site/ .
 git add -A

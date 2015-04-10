@@ -46,7 +46,7 @@ public:
     //@{
     typedef Feel::vf::GiNaCBase super;
 
-    static const size_type context = vm::POINT;
+    static const size_type context = vm::POINT|vm::JACOBIAN|vm::KB|vm::NORMAL;
     static const bool is_terminal = false;
     static const uint16_type imorder = Order;
     static const bool imIsPoly = false;
@@ -246,6 +246,9 @@ public:
             {
                 for ( auto const& comp : M_expr.indexSymbolXYZ() )
                     M_x[comp.second] = M_gmc->xReal( q )[comp.first];
+                // is it called for updates on faces? need to check that...
+                for ( auto const& comp : M_expr.indexSymbolN() )
+                    M_x[comp.second] = M_gmc->unitNormal( q )[comp.first];
                 M_fun(&ni,M_x.data(),&no,&M_y[q]);
             }
 
@@ -261,6 +264,8 @@ public:
             {
                 for ( auto const& comp : M_expr.indexSymbolXYZ() )
                     M_x[comp.second] = M_gmc->xReal( q )[comp.first];
+                for ( auto const& comp : M_expr.indexSymbolN() )
+                    M_x[comp.second] = M_gmc->unitNormal( q )[comp.first];
                 M_fun(&ni,M_x.data(),&no,&M_y[q]);
             }
         }

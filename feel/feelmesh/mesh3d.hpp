@@ -754,7 +754,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
                 auto eit =  this->edgeIterator( _edgeit->second );
                 if ( this->components().test( MESH_ADD_ELEMENTS_INFO ) || eit->marker().isOn() )
                 {
-                    LOG_IF(INFO, eit->marker().isOn()) << "found edge " << eit->id() << " with marker:" << eit->marker() << ", adding element id : " << vid <<  "  local edge id " << j;
+                    //DLOG_IF(INFO, eit->marker().isOn()) << "found edge " << eit->id() << " with marker:" << eit->marker() << ", adding element id : " << vid <<  "  local edge id " << j;
                     this->edges().modify( eit, [vid,j] ( edge_type& e ) { e.addElement( vid, j ); } );
                 }
             }

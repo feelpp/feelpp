@@ -30,7 +30,7 @@ if ( DOXYGEN AND FEELPP_ENABLE_DOXYGEN)
   ## We extract the cmake option for the documentation
   execute_process(
     COMMAND
-    ${CMAKE_CURRENT_SOURCE_DIR}/extract_command.sh ${CMAKE_SOURCE_DIR}
+    /bin/bash ${CMAKE_CURRENT_SOURCE_DIR}/extract_command.sh ${CMAKE_SOURCE_DIR}
     OUTPUT_VARIABLE FEELPP_ENABLE_LISTE
     )
    # doxygen is optional

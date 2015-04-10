@@ -1,0 +1,22 @@
+// Blood
+{
+    "name": "Blood",
+    "source":"http://www.itis.ethz.ch/virtual-population/tissue-properties/database/"
+    "C":3617,//[J/(kg*K)]
+    "epsilonr":7.68E+1,
+    "k11":0.52,//[W/(m*K)]
+    "k22":0.52,//[W/(m*K)]
+    "k33":0.52,//[W/(m*K)]
+    "mu":
+    {
+        // at 37 C, unit [Pa*s]
+        "value":3.65E-3,
+        "stddev":7.72E-4,
+        "min":2.10E-3,
+        "max":4.53E-3
+    }
+    "rho":1050,//[kg/m^3]
+    "sigma":1.23E+0//[S/m]
+}
+
+
