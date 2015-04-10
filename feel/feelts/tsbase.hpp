@@ -301,6 +301,10 @@ public:
         return  M_rankProcInNameOfFiles ;
     }
 
+    //! return file format saved and loaded : binary or hdf5
+    std::string fileFormat() const { return M_fileFormat; }
+
+
     WorldComm const& worldComm() const
     {
         return M_worldComm;
@@ -361,6 +365,10 @@ public:
     void setRankProcInNameOfFiles( bool b )
     {
         M_rankProcInNameOfFiles = b;
+    }
+    void setfileFormat( std::string s )
+    {
+        M_fileFormat = s;
     }
 
     virtual void print() const
@@ -435,6 +443,9 @@ protected:
 
     //! put the rank of the processor in generated files
     bool M_rankProcInNameOfFiles;
+
+    //! file format saved and loaded : binary or hdf5
+    std::string M_fileFormat;
 
     //!  mpi communicator tool
     WorldComm M_worldComm;
