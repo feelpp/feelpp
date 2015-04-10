@@ -216,7 +216,6 @@ gmsh_options( std::string const& prefix )
 
         ( prefixvm( prefix,"partition.linear" ).c_str(), Feel::po::value<bool>()->default_value( false ), "linear partitioning if true (false otherwise)" );
 
-
     return _options;
 
 }
@@ -303,6 +302,8 @@ po::options_description bdf_options( std::string const& prefix )
     ( prefixvm( prefix, "bdf.save" ).c_str(), Feel::po::value<bool>()->default_value( true ), "save elements in file " )
     ( prefixvm( prefix, "bdf.save.freq" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "freq for save elements in file " )
     ( prefixvm( prefix, "bdf.rank-proc-in-files-name" ).c_str(), Feel::po::value<bool>()->default_value( false ), "the name of files generated has the rank of the processor automatically if true" )
+    ( prefixvm( prefix, "bdf.file-format" ).c_str(), Feel::po::value<std::string>()->default_value( "binary" ), "save elements in file " )
+
     ;
     _options.add_options()
     ( prefixvm( prefix, "bdf.order" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "order in time" )
@@ -329,6 +330,7 @@ po::options_description ts_options( std::string const& prefix )
     ( prefixvm( prefix, "ts.save" ).c_str(), Feel::po::value<bool>()->default_value( true ), "save elements in file " )
     ( prefixvm( prefix, "ts.save.freq" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "freq for save elements in file " )
     ( prefixvm( prefix, "ts.rank-proc-in-files-name" ).c_str(), Feel::po::value<bool>()->default_value( false ), "the name of files generated has the rank of the processor automatically if true" )
+    ( prefixvm( prefix, "ts.file-format" ).c_str(), Feel::po::value<std::string>()->default_value( "binary" ), "save elements in file " )
     ;
     return _options;
 }
