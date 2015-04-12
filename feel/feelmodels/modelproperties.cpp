@@ -70,6 +70,17 @@ ModelProperties::ModelProperties( std::string const& filename )
     {
         LOG(WARNING) << "Model does not have any materials\n";
     }
+    auto pp = M_p.get_child_optional("PostProcess");
+    if ( pp )
+    {
+        LOG(INFO) << "Model with PostProcess\n";
+        M_postproc.setPTree( *pp );
+        
+    }
+    else
+    {
+        LOG(WARNING) << "Model does not have any materials\n";
+    }
 }
 
 ModelProperties::~ModelProperties()
