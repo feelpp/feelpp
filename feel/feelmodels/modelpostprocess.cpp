@@ -64,9 +64,9 @@ ModelPostprocess::setup()
         for (auto i : as_vector<std::string>(M_p, "Fields"))
         {
             this->operator[]("Fields").push_back( i );
-            std::cout << i << ' ';
+            LOG(INFO) << "add to postprocess field  " << i;
         }
-        std::cout << "\n";
+        
     }
     auto forces = M_p.get_child_optional("Force");
     if ( forces )
@@ -75,9 +75,10 @@ ModelPostprocess::setup()
         for (auto i : as_vector<std::string>(M_p, "Force"))
         {
             this->operator[]("Force").push_back( i );
-            std::cout << i << ' ';
+            LOG(INFO) << "add to postprocess force  " << i;
+            
         }
-        std::cout << "\n";
+        
     }
 }
 
