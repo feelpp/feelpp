@@ -28,6 +28,7 @@
 
 #include <feel/feelmodels/modelparameters.hpp>
 #include <feel/feelmodels/modelmaterials.hpp>
+#include <feel/feelmodels/modelpostprocess.hpp>
 #include <feel/feelpde/boundaryconditions.hpp>
 
 
@@ -59,12 +60,16 @@ public:
     ModelMaterials & materials() {  return M_mat; }
     BoundaryConditions & boundaryConditions()  { return M_bc; }
 
+    ModelPostprocess& postProcess() { return M_postproc; }
+    ModelPostprocess const& postProcess() const { return M_postproc; }
+    
 private:
     pt::ptree M_p;
     std::string M_name, M_description, M_model;
     ModelParameters M_params;
     ModelMaterials M_mat;
     BoundaryConditions M_bc;
+    ModelPostprocess M_postproc;
 };
 
 
