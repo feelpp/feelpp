@@ -22,7 +22,7 @@
 #
 #
 SET( SRC
-  modelproperties.cpp modelparameters.cpp modelmaterials.cpp
+  modelproperties.cpp modelparameters.cpp modelmaterials.cpp modelpostprocess.cpp
   )
 
 file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
