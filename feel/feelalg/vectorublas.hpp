@@ -879,6 +879,11 @@ public:
     value_type dot( Vector<T> const& __v );
     //@}
 
+#ifdef FEELPP_HAS_HDF5
+    void saveHDF5( std::string const& filename );
+    void loadHDF5( std::string const& filename );
+    void ioHDF5( bool isLoad, std::string const& filename );
+#endif
 
 
 protected:
