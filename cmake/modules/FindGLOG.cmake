@@ -50,14 +50,14 @@ if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/glog )
       if (FEELPP_USE_STATIC_LINKAGE )
         message(STATUS "GLog: use static linkage")
         execute_process(
-          COMMAND ${FEELPP_HOME_DIR}/contrib/glog/configure --prefix=${CMAKE_BINARY_DIR}/contrib/glog --with-gflags=${GFLAGS_DIR}  --enable-static --disable-shared  CXXFLAGS=${CMAKE_CXX_FLAGS}
+          COMMAND ${FEELPP_HOME_DIR}/contrib/glog/configure --prefix=${CMAKE_BINARY_DIR}/contrib/glog --with-gflags=${GFLAGS_DIR}  --enable-static --disable-shared  #CXXFLAGS=${CMAKE_CXX_FLAGS}
           WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/glog-compile
           #      OUTPUT_QUIET
           OUTPUT_FILE "glog-configure"
           )
       else()
         execute_process(
-          COMMAND ${FEELPP_HOME_DIR}/contrib/glog/configure --prefix=${CMAKE_BINARY_DIR}/contrib/glog --with-gflags=${GFLAGS_DIR}  LDFLAGS=-dynamic CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} CXXFLAGS=${CMAKE_CXX_FLAGS}
+          COMMAND ${FEELPP_HOME_DIR}/contrib/glog/configure --prefix=${CMAKE_BINARY_DIR}/contrib/glog --with-gflags=${GFLAGS_DIR}  LDFLAGS=-dynamic CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} #CXXFLAGS=${CMAKE_CXX_FLAGS}
           WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/glog-compile
           #      OUTPUT_QUIET
           OUTPUT_FILE "glog-configure"
