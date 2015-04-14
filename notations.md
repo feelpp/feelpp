@@ -1,11 +1,13 @@
-# Mathematical Concepts and Notations {#Notations}
+
+Mathematical Concepts and Notations {#Notations}
+============================
 
 The mathematical concepts and the associated notations are defined on
 this page and will be used throughout the Feel++ Online Documentation.
 
 [TOC]
 
-##  Polynomial Library {##PolynomialNotations}
+#  Polynomial Library {#PolynomialNotations}
 
 The polynomial library is composed of various bricks: \e (i) the
 geometrical entities or convexes \e (ii) the prime basis in which we
@@ -14,7 +16,7 @@ construction of point sets in convexes (such as quadrature point sets)
 and finally \e (iv) polynomials and finite elements.
 
 
-###  Convexes {###Notations_Convexes}
+##  Convexes {#NotationsConvexes}
 
 The supported convexes are simplices and hypercubes of topological dimension
 \f$n\f$, \f$n=1,2,3\f$ lying in \f$\mathbb{R}^d\f$ such that \f$n \leq d
@@ -24,7 +26,7 @@ example \cite MR1696933, and provide the ability to iterate over the entities
 of a convex or of the same topological dimension inside a convex, e.g. iterate
 over the edges of a tetrahedron.
 
-###  Prime basis: L^2 Orthonormal Polynomials {###Notations_PrimeBasis}
+##  Prime basis: L^2 Orthonormal Polynomials {#NotationsPrimeBasis}
 
   In order to express polynomials in the convexes defined previously, we
   need to choose a \e prime \e basis, i.e., a basis in which all
@@ -49,7 +51,7 @@ over the edges of a tetrahedron.
   in \cite MR1696933 page 101. In practice, the prime basis is normalized.
 
 
-###  Point Sets on Convexes {###Notations_psetconvex}
+##  Point Sets on Convexes {#NotationsPsetconvex}
 
 
   Now we turn to the construction of point sets \f$\mathbb{P}\f$ defined on a convex \f$K\f$.
@@ -79,7 +81,7 @@ over the edges of a tetrahedron.
   the Fekete points in hypercubes.
 
 
-##  Polynomial Set {##Notatiopns_Pset}
+#  Polynomial Set {#Notatiopns_Pset}
 
 
   After introducing in the previous sections the necessary bricks
@@ -106,7 +108,7 @@ over the edges of a tetrahedron.
   % to the required numerical type, e.g. \c double.
 
 
-###  Finite Elements and Other Polynomial Basis {#Notations_fem}
+##  Finite Elements and Other Polynomial Basis {#Notations_fem}
 
   \Feel supports modal basis, \eg Legendre or Dubiner, see
   \cite MR1696933, \cite canuto_hussaini_quarteroni_zang_2, as well as finite elements
@@ -140,7 +142,7 @@ over the edges of a tetrahedron.
   description.
 
 
-###  Geometry {#Notations_Geometry}
+##  Geometry {#NotationsGeometry}
 
   To conclude this section, one important object that is constructed with the help
   of the polynomial library is the \e geometric \e transformation. Indeed all
@@ -180,7 +182,7 @@ over the edges of a tetrahedron.
   and hence the inverse geometrical transformation.
 
 
-## Mesh Notations {#MeshNotations}
+# Mesh Notations {#MeshNotations}
 
   Let \f$\Omega\subset\mathbb{R}^d\f$, \f$d\ge 1\f$, denote a bounded connected domain.  We first
   need to introduce a suitable discretization of \f$\Omega\f$, \f$\Omega_h \subset
