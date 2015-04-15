@@ -282,20 +282,20 @@ ExporterVTK<MeshType,N>::buildMultiBlockDataSet( double time, vtkSmartPointer<vt
     /* Set the block corresponding to the processor on which we are working on */
     for( unsigned int block = 0 ; block < mbds->GetNumberOfBlocks(); ++block )
     {
+        oss.str("");
+        oss << "P" << block;
         /* If we own the block */
         if( block == this->worldComm().rank() )
         {
-            oss.str("");
-            oss << "P" << this->worldComm().rank();
             mbds->SetBlock( block, out );
-            mbds->GetMetaData(block)->Set(vtkCompositeDataSet::NAME(), oss.str().c_str() );
-            mbds->GetMetaData(block)->Set(vtkCompositeDataSet::DATA_TIME_STEP(), time);
         }
         /* if we don't own the block set it to NULL */
         else
         {
             mbds->SetBlock( block, NULL );
         }
+        mbds->GetMetaData(block)->Set(vtkCompositeDataSet::NAME(), oss.str().c_str() );
+        mbds->GetMetaData(block)->Set(vtkDataObject::DATA_TIME_STEP(), time);
     }
 #else
     unsigned int blockNo = 0;
@@ -394,6 +394,7 @@ ExporterVTK<MeshType,N>::save() const
     timeset_const_iterator __ts_it = this->beginTimeSet();
     timeset_const_iterator __ts_en = this->endTimeSet();
 
+    int i = 0;
     while ( __ts_it != __ts_en )
     {
         timeset_ptrtype __ts = *__ts_it;

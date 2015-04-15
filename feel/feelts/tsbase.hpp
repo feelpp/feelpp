@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-12-20
 
-  Copyright (C) 2013 Feel++ Consortium
+  Copyright (C) 2013-2015 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -301,6 +301,10 @@ public:
         return  M_rankProcInNameOfFiles ;
     }
 
+    //! return file format saved and loaded : binary or hdf5
+    std::string fileFormat() const { return M_fileFormat; }
+
+
     WorldComm const& worldComm() const
     {
         return M_worldComm;
@@ -361,6 +365,10 @@ public:
     void setRankProcInNameOfFiles( bool b )
     {
         M_rankProcInNameOfFiles = b;
+    }
+    void setfileFormat( std::string s )
+    {
+        M_fileFormat = s;
     }
 
     virtual void print() const
@@ -435,6 +443,9 @@ protected:
 
     //! put the rank of the processor in generated files
     bool M_rankProcInNameOfFiles;
+
+    //! file format saved and loaded : binary or hdf5
+    std::string M_fileFormat;
 
     //!  mpi communicator tool
     WorldComm M_worldComm;

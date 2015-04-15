@@ -74,11 +74,11 @@ void vtkBaseInsituPipeline::CreatePipeline(vtkCPDataDescription* dataDescription
 
     // Create a vtkPVTrivialProducer and set its output
     // to be the input grid.
-    vtkSmartPointer<vtkSMProxy> producer;
+    vtkSmartPointer<vtkSMSourceProxy> producer;
 
     /* Create a proxy for the data producer that will be created in paraview interface */
-    producer.TakeReference(M_spxm->NewProxy("sources", "PVTrivialProducer"));
-    producer->PrintSelf(std::cout, vtkIndent());
+    vtkSMProxy * px = M_spxm->NewProxy("sources", "PVTrivialProducer");
+    producer.TakeReference(vtkSMSourceProxy::SafeDownCast(px));
     /* It is very important to register the proxy */
     /* The NewProxy previously called doesn't do it */
     /* Ref: Qt/Core/pqObjectBuilder.cxx */
@@ -91,7 +91,7 @@ void vtkBaseInsituPipeline::CreatePipeline(vtkCPDataDescription* dataDescription
     realProducer->SetOutput(grid);
 
     /* Update the producer */
-    producer->UpdateVTKObjects();
+    producer->UpdatePipeline();
 
     /* Record the producer for updates */
     M_producerMap[inname.c_str()] = producer;
@@ -137,10 +137,8 @@ void vtkBaseInsituPipeline::DoLiveVisualization(vtkCPDataDescription* dataDescri
         M_insituLink->InsituUpdate(time, timeStep); 
         for(auto it = M_producerMap.begin(); it != M_producerMap.end(); it++)
         {
-            it->second->UpdateVTKObjects();
-            vtkObjectBase* clientSideObject = it->second->GetClientSideObject();
-            vtkPVTrivialProducer* realProducer = vtkPVTrivialProducer::SafeDownCast(clientSideObject);
-            realProducer->SetOutput(dataDescription->GetInputDescriptionByName(it->first.c_str())->GetGrid());
+            /* Update the pipeline for the current timestep */ 
+            it->second->UpdatePipeline(time);
         }
         M_insituLink->InsituPostProcess(time, timeStep); 
 
