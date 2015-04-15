@@ -682,6 +682,11 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories
 # with spaces.
 
+#INPUT                  = \
+# "@FEELPP_HOME_DIR@/doc/api" \
+# "@FEELPP_HOME_DIR@/ChangeLog" \
+# @FEELPP_PROJECTS_DIR@  #THAT HAS TO BE THE LAST ENTRY
+
 INPUT                  = \
  "@FEELPP_HOME_DIR@/applications" \
  "@FEELPP_HOME_DIR@/quickstart" \
@@ -830,7 +835,7 @@ FILTER_SOURCE_PATTERNS =
 # This can be useful if you have a project on for instance GitHub and want reuse
 # the introduction page also for the doxygen output.
 
-USE_MDFILE_AS_MAINPAGE = NO
+USE_MDFILE_AS_MAINPAGE = @FEELPP_HOME_DIR@/doc/api/MainPage.md
 
 #---------------------------------------------------------------------------
 # configuration options related to source browsing
