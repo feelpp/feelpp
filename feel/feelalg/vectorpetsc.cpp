@@ -674,9 +674,9 @@ VectorPetscMPI<T>::VectorPetscMPI( datamap_ptrtype const& dm )
 //----------------------------------------------------------------------------------------------------//
 
 template<typename T>
-VectorPetscMPI<T>::VectorPetscMPI( Vec v, datamap_ptrtype const& dm )
+VectorPetscMPI<T>::VectorPetscMPI( Vec v, datamap_ptrtype const& dm, bool duplicate )
     :
-    super( v,dm )
+    super( v,dm,duplicate )
 {
     int ierr=0;
     int petsc_n_localWithGhost=static_cast<int>( this->map().nLocalDofWithGhost() );
