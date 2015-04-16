@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-10-16
 
-  Copyright (C) 2013 Université de Strasbourg
+  Copyright (C) 2013-2015 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -21,13 +21,8 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-/**
-   \file partitionio.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2013-10-16
- */
-#ifndef __PartitionIO_H
-#define __PartitionIO_H 1
+#ifndef FEELPP_PARTITIONIO_HPP
+#define FEELPP_PARTITIONIO_HPP 1
 
 #if defined(FEELPP_HAS_HDF5)
 #include <feel/feelcore/hdf5.hpp>
@@ -161,7 +156,6 @@ public:
      *        unless certain that it works for a given machine.
      */
     PartitionIO (const std::string& fileName,
-                 const WorldComm& comm,
                  const bool transposeInFile = false);
 
     //! Empty destructor
@@ -183,7 +177,6 @@ public:
      *        unless certain that it works for a given machine.
      */
     void setup (const std::string& fileName,
-                const WorldComm& comm,
                 const bool transposeInFile = false);
     //! Write method
     /*!
@@ -192,7 +185,7 @@ public:
      *        parts (RegionMesh objects). This pointer is released after
      *        writing, so the mesh parts can be cleared from memory
      */
-    void write (const mesh_ptrtype& mesh);
+    void write ( mesh_ptrtype mesh);
     //! Read method
     /*!
      * Call this method to read from the HDF5 file the mesh part associated
@@ -200,7 +193,7 @@ public:
      * \param mesh pointer to a mesh . If the RegionMesh has been initialized and contains any
      *        state, it will be destroyed before reading
      */
-    void read (mesh_ptrtype& mesh);
+    void read (mesh_ptrtype mesh);
 
 
     //@}
@@ -254,17 +247,14 @@ private:
     //HDF5 I/O filter
     HDF5 M_HDF5IO;
     // Buffers for reading/writing
-    std::vector<size_type> M_uintBuffer;
+    std::vector<unsigned int> M_uintBuffer;
     std::vector<value_type> M_realBuffer;
 //@}
 };
 
 template<typename MeshType>
 inline PartitionIO<MeshType>::PartitionIO (const std::string& fileName,
-                                           const WorldComm& comm,
                                            const bool transposeInFile) :
-    M_comm (comm),
-    M_myRank( comm.globalRank() ),
     M_fileName (fileName),
     M_transposeInFile (transposeInFile),
     M_elementNodes(0),
@@ -279,10 +269,8 @@ inline PartitionIO<MeshType>::PartitionIO (const std::string& fileName,
 
 template<typename MeshType>
 inline void PartitionIO<MeshType>::setup (const std::string& fileName,
-                                          const WorldComm& comm,
                                           const bool transposeInFile)
 {
-    M_comm = comm;
     M_fileName = fileName;
     M_transposeInFile = transposeInFile;
     M_maxNumPoints = 0;
@@ -295,30 +283,30 @@ inline void PartitionIO<MeshType>::setup (const std::string& fileName,
 }
 
 template<typename MeshType>
-void PartitionIO<MeshType>::write (const mesh_ptrtype& meshParts)
+void PartitionIO<MeshType>::write (mesh_ptrtype meshParts)
 {
     M_meshPartsOut = meshParts;
-    // TODO:
-    //M_numParts = M_meshParts->size();
+    // 1 partition per process
+    // in the future we have to handle many partitions in one process 
+    M_numParts = 1;//M_meshParts->size();
 
-    M_HDF5IO.openFile (M_fileName, M_comm, false);
+    M_HDF5IO.openFile (M_fileName, meshParts->worldComm(), false);
     writeStats();
     writePoints();
-    writeEdges();
-    writeFaces();
+    //writeEdges();
+    //writeFaces();
     writeElements();
     M_HDF5IO.closeFile();
-
-    M_meshPartsOut.reset();
+    
+    
 }
 
 template<typename MeshType>
-void PartitionIO<MeshType>::read (mesh_ptrtype& meshPart)
+void PartitionIO<MeshType>::read (mesh_ptrtype meshParts)
 {
-    meshPart.reset();
-    M_meshPartIn.reset (new mesh_type);
+    M_meshPartIn = meshParts;
 
-    M_HDF5IO.openFile (M_fileName, M_comm, true);
+    M_HDF5IO.openFile (M_fileName, meshParts->worldComm(), true);
     readStats();
     readPoints();
     readEdges();
@@ -326,13 +314,13 @@ void PartitionIO<MeshType>::read (mesh_ptrtype& meshPart)
     readElements();
     M_HDF5IO.closeFile();
 
-    meshPart = M_meshPartIn;
-    M_meshPartIn.reset();
+
 }
 
 template<typename MeshType>
 void PartitionIO<MeshType>::writeStats()
 {
+    M_numParts = M_meshPartsOut->worldComm().localSize();
     // Write mesh partition stats (N = number of parts)
     // This is an N x 15 table of int
     hsize_t currentSpaceDims[2];
@@ -354,61 +342,44 @@ void PartitionIO<MeshType>::writeStats()
 
     // Create new table
     M_HDF5IO.createTable ("stats", H5T_STD_U32BE, currentSpaceDims);
-#if 0
+
     // Fill buffer
     M_uintBuffer.resize (15);
-    for (size_type i = 0; i < M_numParts; ++i)
+    //for (size_type i = 0; i < M_numParts; ++i)
     {
-        mesh_type& currentPart = (* (*M_meshPartsOut) [i]);
-        M_uintBuffer[0] = M_numParts;
-        // Next one is unused. I'll put it to keep compatibility
-        // in case I decide to write the graphs
+        //mesh_type& currentPart = (* (*M_meshPartsOut) [i]);
+        auto & currentPart = *M_meshPartsOut;
+        M_uintBuffer[0] = M_meshPartsOut->worldComm().localRank();
         M_uintBuffer[1] = 0;
         M_uintBuffer[2] = currentPart.numPoints();
-        if (M_uintBuffer[2] > M_maxNumPoints)
-        {
-            M_maxNumPoints = M_uintBuffer[2];
-        }
-        M_uintBuffer[3] = currentPart.numBPoints();
+        M_uintBuffer[3] = 0;//currentPart.numBPoints();
         M_uintBuffer[4] = currentPart.numVertices();
-        M_uintBuffer[5] = currentPart.numBVertices();
+        M_uintBuffer[5] = 0;//currentPart.numBVertices();
         M_uintBuffer[6] = currentPart.numGlobalVertices();
         M_uintBuffer[7] = currentPart.numEdges();
-        if (M_uintBuffer[7] > M_maxNumEdges)
-        {
-            M_maxNumEdges = M_uintBuffer[7];
-        }
-        M_uintBuffer[8] = currentPart.numBEdges();
-        M_uintBuffer[9] = currentPart.numGlobalEdges();
+        M_uintBuffer[8] = 0;//currentPart.numBEdges();
+        M_uintBuffer[9] = 0;//currentPart.numGlobalEdges();
         M_uintBuffer[10] = currentPart.numFaces();
-        if (M_uintBuffer[10] > M_maxNumFaces)
-        {
-            M_maxNumFaces = M_uintBuffer[10];
-        }
-        M_uintBuffer[11] = currentPart.numBFaces();
+        M_uintBuffer[11] = 0;//currentPart.numBFaces();
         M_uintBuffer[12] = currentPart.numGlobalFaces();
-        M_uintBuffer[13] = currentPart.numVolumes();
-        if (M_uintBuffer[13] > M_maxNumElements)
-        {
-            M_maxNumElements = M_uintBuffer[13];
-        }
-        M_uintBuffer[14] = currentPart.numGlobalVolumes();
+        M_uintBuffer[13] = currentPart.numElements();
+        M_uintBuffer[14] = currentPart.numGlobalElements();
 
         hsize_t currentOffset[2];
         if (! M_transposeInFile)
         {
-            currentOffset[0] = i;
+            currentOffset[0] = currentPart.worldComm().localRank();
             currentOffset[1] = 0;
         }
         else
         {
             currentOffset[0] = 0;
-            currentOffset[1] = i;
+            currentOffset[1] = currentPart.worldComm().localRank();
         }
+            
         M_HDF5IO.write ("stats", H5T_NATIVE_UINT, currentCount, currentOffset,
                         &M_uintBuffer[0]);
     }
-#endif
     M_HDF5IO.closeTable ("stats");
 }
 
@@ -418,81 +389,109 @@ void PartitionIO<MeshType>::writePoints()
 
     // Write points (N = number of parts)
     // Two tables: one is (3 * N) x max_num_points of int
-    //             second is (3 * N) x max_num_points of real
-    hsize_t currentSpaceDims[2];
-    hsize_t currentCount[2];
+    //             second is (d * N) x max_num_points of real
+    hsize_t currentSpaceDims[2],currentSpaceDims1[2];
+    hsize_t currentCount[2],currentCount1[2];
+    int d = M_meshPartsOut->nRealDim;
     if (! M_transposeInFile)
     {
-        currentSpaceDims[0] = 3 * M_numParts;
-        currentSpaceDims[1] = M_maxNumPoints;
-        currentCount[0] = 3;
+        currentSpaceDims[0] = d * M_numParts;
+        currentSpaceDims[1] = M_meshPartsOut->maxNumPoints();
+        currentSpaceDims1[0] = 3 * M_numParts;
+        currentSpaceDims1[1] = M_meshPartsOut->maxNumPoints();
+        currentCount[0] = d;
+        
         currentCount[1] = currentSpaceDims[1];
+        currentCount1[0] = 3;
+        currentCount1[1] = currentSpaceDims[1];
     }
     else
     {
-        currentSpaceDims[0] = M_maxNumPoints;
-        currentSpaceDims[1] = 3 * M_numParts;
+        currentSpaceDims[0] = M_meshPartsOut->maxNumPoints();
+        currentSpaceDims[1] = d * M_numParts;
+        currentSpaceDims1[0] = M_meshPartsOut->maxNumPoints();
+        currentSpaceDims1[1] = 3 * M_numParts;
         currentCount[0] = currentSpaceDims[0];
-        currentCount[1] = 3;
+        currentCount[1] = d;
+        currentCount1[0] = currentSpaceDims[0];
+        currentCount1[1] = d;
     }
 
-    M_HDF5IO.createTable ("point_ids", H5T_STD_U32BE, currentSpaceDims);
+    M_HDF5IO.createTable ("point_ids", H5T_STD_U32BE, currentSpaceDims1);
     M_HDF5IO.createTable ("point_coords", H5T_IEEE_F64BE, currentSpaceDims);
-#if 0
+
     // Fill buffer
-    M_uintBuffer.resize (currentCount[0] * currentCount[1], 0);
+    M_uintBuffer.resize (currentCount1[0] * currentCount1[1], 0);
     M_realBuffer.resize (currentCount[0] * currentCount[1], 0);
+    
     size_type stride = currentCount[1];
     if (! M_transposeInFile)
     {
-        for (size_type i = 0; i < M_numParts; ++i)
+        //for (size_type i = 0; i < M_numParts; ++i)
         {
-            mesh_Type& currentPart = (* (*M_meshPartsOut) [i]);
-            for (size_type j = 0; j < currentPart.numPoints(); ++j)
+            //mesh_Type& currentPart = (* (*M_meshPartsOut) [i]);
+            auto & currentPart = *M_meshPartsOut;
+            auto pt_it = currentPart.beginPoint();
+            auto pt_en = currentPart.endPoint();
+            for( int j = 0 ; pt_it != pt_en; ++pt_it, ++j )
             {
-                M_uintBuffer[j] = currentPart.pointList[j].markerID();
-                M_uintBuffer[stride + j] = currentPart.point (j).id();
-                M_uintBuffer[2 * stride + j] =
-                    static_cast<int> (currentPart.pointList[j].flag() );
-                M_realBuffer[j] = currentPart.pointList[j].x();
-                M_realBuffer[stride + j] = currentPart.pointList[j].y();
-                M_realBuffer[2 * stride + j] = currentPart.pointList[j].z();
+                M_uintBuffer[0 * stride + j] = pt_it->marker().value();
+                M_uintBuffer[1 * stride + j] = pt_it->id();
+                M_uintBuffer[2 * stride + j] = 0;
+                M_realBuffer[j] = pt_it->operator[](0);
+                if ( pt_it->nRealDim >= 2 )
+                    M_realBuffer[stride + j] = pt_it->operator[](1);
+                if ( pt_it->nRealDim >= 3 )
+                    M_realBuffer[2 * stride + j] = pt_it->operator[](2);
             }
 
-            hsize_t currentOffset[2] = {i* currentCount[0], 0};
-            M_HDF5IO.write ("point_ids", H5T_NATIVE_UINT, currentCount,
-                            currentOffset, &M_uintBuffer[0]);
+            hsize_t currentOffset1[2] = {currentPart.worldComm().localRank()* currentCount1[0], 0};
+            hsize_t currentOffset2[2] = {currentPart.worldComm().localRank()* currentCount[0], 0};
+            
+            M_HDF5IO.write ("point_ids", H5T_NATIVE_UINT, currentCount1,
+                            currentOffset1, &M_uintBuffer[0]);
             M_HDF5IO.write ("point_coords", H5T_NATIVE_DOUBLE, currentCount,
-                            currentOffset, &M_realBuffer[0]);
+                            currentOffset2, &M_realBuffer[0]);
+
         }
     }
     else
     {
-        for (size_type i = 0; i < M_numParts; ++i)
+        //for (size_type i = 0; i < M_numParts; ++i)
         {
-            mesh_Type& currentPart = (* (*M_meshPartsOut) [i]);
-            for (size_type j = 0; j < currentPart.numPoints(); ++j)
+            auto & currentPart = *M_meshPartsOut;
+            auto pt_it = currentPart.beginPoint();
+            auto pt_en = currentPart.endPoint();
+            for( int j = 0; pt_it != pt_en; ++pt_it, ++j )
             {
-                M_uintBuffer[stride * j] = currentPart.pointList[j].markerID();
-                M_uintBuffer[stride * j + 1] = currentPart.point (j).id();
-                M_uintBuffer[stride * j + 2] =
-                    static_cast<int> (currentPart.pointList[j].flag() );
-                M_realBuffer[stride * j] = currentPart.pointList[j].x();
-                M_realBuffer[stride * j + 1] = currentPart.pointList[j].y();
-                M_realBuffer[stride * j + 2] = currentPart.pointList[j].z();
+                M_uintBuffer[stride * j] = pt_it->marker().value();
+                M_uintBuffer[stride * j + 1] = pt_it->id();
+                M_uintBuffer[stride * j + 2] = 0;
+                M_realBuffer[stride * j] = pt_it->operator[](0);
+                if ( pt_it->nRealDim >= 2 )
+                    M_realBuffer[stride * j + 1] = pt_it->operator[](1);
+                if ( pt_it->nRealDim >= 3 )
+                    M_realBuffer[stride * j + 2] = pt_it->operator[](2);
             }
 
-            hsize_t currentOffset[2] = {0, i* currentCount[1]};
-            M_HDF5IO.write ("point_ids", H5T_NATIVE_UINT, currentCount,
-                            currentOffset, &M_uintBuffer[0]);
+            hsize_t currentOffset[2] = {0, currentPart.worldComm().localRank()* currentCount[1]};
+            hsize_t currentOffset1[2] = {0, currentPart.worldComm().localRank()* currentCount1[1]};
+            M_HDF5IO.write ("point_ids", H5T_NATIVE_UINT, currentCount1,
+                            currentOffset1, &M_uintBuffer[0]);
             M_HDF5IO.write ("point_coords", H5T_NATIVE_DOUBLE, currentCount,
                             currentOffset, &M_realBuffer[0]);
         }
     }
+    
     M_realBuffer.resize (0);
-#endif
-    M_HDF5IO.closeTable ("point_ids");
+    M_uintBuffer.resize (0);
+
+    
+    
     M_HDF5IO.closeTable ("point_coords");
+    M_HDF5IO.closeTable ("point_ids");
+
+
 }
 
 template<typename MeshType>
@@ -672,56 +671,64 @@ template<typename MeshType>
 void PartitionIO<MeshType>::writeElements()
 {
     // Write elements (N = number of parts)
-    // Table is ((3 + num_element_nodes * N) x max_num_elements of int
+    // Table is ((2 + num_element_nodes * N) x max_num_elements of int
+    M_elementNodes = mesh_type::element_type::numLocalVertices;
     hsize_t currentSpaceDims[2];
     hsize_t currentCount[2];
     if (! M_transposeInFile)
     {
-        currentSpaceDims[0] = (3 + M_elementNodes) * M_numParts;
-        currentSpaceDims[1] = M_maxNumElements;
-        currentCount[0] = 3 + M_elementNodes;
+        currentSpaceDims[0] = (4 + M_elementNodes) * M_numParts;
+        currentSpaceDims[1] = M_meshPartsOut->maxNumElements();
+        currentCount[0] = 4 + M_elementNodes;
         currentCount[1] = currentSpaceDims[1];
     }
     else
     {
-        currentSpaceDims[0] = M_maxNumElements;
-        currentSpaceDims[1] = (3 + M_elementNodes) * M_numParts;
-        currentCount[0] = currentSpaceDims[0];;
-        currentCount[1] = 3 + M_elementNodes;
+        currentSpaceDims[0] = M_meshPartsOut->maxNumElements();
+        currentSpaceDims[1] = (4 + M_elementNodes) * M_numParts;
+        currentCount[0] = currentSpaceDims[0];
+        currentCount[1] = 4 + M_elementNodes;
     }
 
     M_HDF5IO.createTable ("elements", H5T_STD_U32BE, currentSpaceDims);
-#if 0
+
     // Fill buffer
     M_uintBuffer.resize (currentCount[0] * currentCount[1], 0);
     size_type stride = currentCount[1];
+    
     if (! M_transposeInFile)
     {
-        for (size_type i = 0; i < M_numParts; ++i)
+        //for (size_type i = 0; i < M_numParts; ++i)
         {
-            mesh_Type& currentPart = (* (*M_meshPartsOut) [i]);
-            for (size_type j = 0; j < currentPart.numVolumes(); ++j)
+            auto& currentPart = *M_meshPartsOut;
+            auto elt_it = currentPart.beginElement();
+            auto elt_en = currentPart.endElement();
+            CHECK(currentPart.maxNumElements() >= std::distance( elt_it, elt_en ) )
+                << "invalid num element " << M_maxNumElements
+                << " dist : " << std::distance( elt_it, elt_en ) << std::endl;
+            for( int j = 0 ; elt_it != elt_en; ++ elt_it, ++j )
             {
+                M_uintBuffer[ 0 * stride + j] = elt_it->id();
+                M_uintBuffer[ 1 * stride + j] = elt_it->marker().value();
+                M_uintBuffer[ 2 * stride + j] = elt_it->marker2().value();
+                M_uintBuffer[ 3 * stride + j] = elt_it->marker3().value();
+                
                 for (size_type k = 0; k < M_elementNodes; ++k)
                 {
-                    M_uintBuffer[k * stride + j] =
-                        currentPart.volumeList[j].point (k).localId();
+                    M_uintBuffer[ (4+k) * stride + j] = elt_it->point (k).id();
                 }
-                M_uintBuffer[M_elementNodes * stride + j] =
-                    currentPart.volumeList[j].markerID();
-                M_uintBuffer[ (M_elementNodes + 1) * stride + j] =
-                    currentPart.volumeList[j].id();
-                M_uintBuffer[ (M_elementNodes + 2) * stride + j] =
-                    static_cast<int> (currentPart.volumeList[j].flag() );
+                
             }
 
-            hsize_t currentOffset[2] = {i* currentCount[0], 0};
+            hsize_t currentOffset[2] = { currentPart.worldComm().localRank() * currentCount[0], 0};
             M_HDF5IO.write ("elements", H5T_NATIVE_UINT, currentCount,
                             currentOffset, &M_uintBuffer[0]);
         }
     }
     else
     {
+        // TODO
+#if 0
         for (size_type i = 0; i < M_numParts; ++i)
         {
             mesh_Type& currentPart = (* (*M_meshPartsOut) [i]);
@@ -744,9 +751,11 @@ void PartitionIO<MeshType>::writeElements()
             M_HDF5IO.write ("elements", H5T_NATIVE_UINT, currentCount,
                             currentOffset, &M_uintBuffer[0]);
         }
-    }
 #endif
+    }
+
     M_HDF5IO.closeTable ("elements");
+    
 }
 
 template<typename MeshType>
