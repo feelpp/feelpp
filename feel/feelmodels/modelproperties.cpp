@@ -86,4 +86,18 @@ ModelProperties::ModelProperties( std::string const& filename )
 ModelProperties::~ModelProperties()
 {}
 
+std::string ModelProperties::getEntry(std::string &s)
+{
+  std::string res;
+  try{
+  res = M_p.get<std::string>(s);
+  }
+  catch( pt::ptree_bad_path& e)
+  {
+        if ( Environment::isMasterRank() )
+            std::cout << s << " is not an entry in the tree\n";
+  }
+  return res;
+}
+
 }
