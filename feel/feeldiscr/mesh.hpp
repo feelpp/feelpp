@@ -918,6 +918,7 @@ public:
      */
     void recv( int p, int tag );
 
+#if defined(FEELPP_HAS_HDF5)
     /**
      * load mesh in hdf5
      */
@@ -927,13 +928,16 @@ public:
      * save mesh in hdf5
      */
     void saveHDF5( std::string const& filename ) { ioHDF5( IOStatus::isSaving, filename ); }
+#endif
     
 
 private:
+#if defined(FEELPP_HAS_HDF5)
     /**
      * save mesh in hdf5
      */
     void ioHDF5( IOStatus status, std::string const& filename );
+#endif
 public:
     /**
      * encode the mesh data structure into a tighter data structure and to avoid
