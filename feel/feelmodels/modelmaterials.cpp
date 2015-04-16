@@ -69,12 +69,10 @@ ModelMaterials::setup()
 {
     for( auto const& v : M_p )
     {
-        if ( Environment::isMasterRank() )
-            std::cout << "Material Physical/Region :" << v.first  << "\n";
+        LOG(INFO) << "Material Physical/Region :" << v.first  << "\n";
         if ( auto fname = v.second.get_optional<std::string>("filename") )
         {
-            if ( Environment::isMasterRank() )
-                std::cout << "  - filename = " << Environment::expand( fname.get() ) << std::endl;
+            LOG(INFO) << "  - filename = " << Environment::expand( fname.get() ) << std::endl;
             this->push_back( this->loadMaterial( Environment::expand( fname.get() ) ) );
         }
         else
@@ -87,8 +85,7 @@ ModelMaterial
 ModelMaterials::getMaterial( pt::ptree const& v )
 {
     std::string t = v.get<std::string>( "name" );
-    if ( Environment::isMasterRank() )
-        std::cout << "loading material name: " << t << std::endl;
+    LOG(INFO) << "loading material name: " << t << std::endl;
     ModelMaterial m(t);
     m.setRho( v.get( "rho", 1.f ) );
     m.setMu( v.get( "mu", 1.f ) );

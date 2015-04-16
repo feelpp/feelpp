@@ -15,20 +15,27 @@ To make our program applicable to theses range of problem, we have defined a mod
 A model is defined by :
 - a Name
 - a Description
-- a Modèle
-- Parameters
-- Materials
-- Boundary Conditions
-- Post Processing
+- a Modele
+- [Parameters](@ref Parameters)
+- [Materials](@ref Materials)
+- [Boundary Conditions](@ref BoundaryConditions)
+- [Post Processing](@ref PostPro)
 
 ## Parameters {#Parameters}
-A parameter is 
+A parameter is a non physical property for a model. 
 
 ## Materials {#Materials}
+To retrieve the materials properties, we use :
+\snippet aniso_laplacian.cpp get_mat
+And to apply them :
+\snippet aniso_laplacian.cpp materials
 
 ## BoundaryConditions {#BoundaryConditions}
 Thanks to GiNaC, we handle boundary conditions (Dirichlet, Neumann, Robin) as expression.
 You have to indicate in the json file the quantity to handle (velocity, pressure...) and the associated expression.
+\snippet aniso_laplacian.cpp get_bc
+We can apply theses boundary condition this way
+\snippet aniso_laplacian.cpp boundary
 
 ## PostProcessing {#PostPro}
 
