@@ -145,7 +145,10 @@ public:
         M_destroy_vec_on_exit( duplicate )
     {
         if ( duplicate )
+        {
             VecDuplicate( v, &M_vec );
+            VecCopy( v, M_vec );
+        }
         else
             this->M_vec = v;
         this->M_is_initialized = true;
@@ -157,7 +160,10 @@ public:
         M_destroy_vec_on_exit( duplicate )
     {
         if ( duplicate )
+        {
             VecDuplicate( v, &M_vec );
+            VecCopy( v, M_vec );
+        }
         else
             this->M_vec = v;
         this->M_is_initialized = true;
@@ -738,7 +744,7 @@ public:
         super()
     {}
 
-    VectorPetscMPI( Vec v, datamap_ptrtype const& dm );
+    VectorPetscMPI( Vec v, datamap_ptrtype const& dm, bool duplicate = false );
 
     VectorPetscMPI( datamap_ptrtype const& dm );
 
