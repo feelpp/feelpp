@@ -80,6 +80,18 @@ ModelPostprocess::setup()
         }
         
     }
+    auto stresses = M_p.get_child_optional("Stresses");
+    if ( stresses )
+    {
+        
+        for (auto i : as_vector<std::string>(M_p, "Stresses"))
+        {
+            this->operator[]("Stresses").push_back( i );
+            LOG(INFO) << "add to postprocess stresses  " << i;
+            
+        }
+        
+    }
 }
 
 
