@@ -424,13 +424,6 @@ public:
             M_maxNumPoints = np;
             M_maxNumVertices = this->numVertices();
         }
-        std::cout << " max elt : " << M_maxNumElements
-                  << " max fac : " << M_maxNumFaces
-                  << " max edg : " << M_maxNumEdges
-                  << " max pts : " << M_maxNumPoints
-                  << " max ver : " << M_maxNumVertices << std::endl;
-            
-            
     }
     /**
      * @return the topological dimension
