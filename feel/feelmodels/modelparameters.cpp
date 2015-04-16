@@ -51,9 +51,7 @@ ModelParameters::setup()
 {
     for( auto const& v : M_p )
     {
-
-        if ( Environment::isMasterRank() )
-            std::cout << "reading parameter " << v.first  << "\n";
+        LOG(INFO) << "reading parameter " << v.first  << "\n";
         std::string t = v.first; // parameter name
         auto f= v.second;
         {
