@@ -70,9 +70,11 @@ ModelMaterials::setup()
     for( auto const& v : M_p )
     {
         LOG(INFO) << "Material Physical/Region :" << v.first  << "\n";
+        
         if ( auto fname = v.second.get_optional<std::string>("filename") )
         {
             LOG(INFO) << "  - filename = " << Environment::expand( fname.get() ) << std::endl;
+            
             this->push_back( this->loadMaterial( Environment::expand( fname.get() ) ) );
         }
         else
