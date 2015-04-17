@@ -334,9 +334,9 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
     if ( test_dof_type::is_modal || is_hdiv_conforming<test_fe_type>::value || is_hcurl_conforming<test_fe_type>::value )
     {
         M_local_rowsigns = M_test_dof->localToGlobalSigns( elt_0 );
-        LOG(INFO) << "rep = " << M_rep;
+        DLOG(INFO) << "rep = " << M_rep;
         M_rep.array() *= M_local_rowsigns.array().template cast<value_type>();
-        LOG(INFO) << "rep after sign change = " << M_rep;
+        DLOG(INFO) << "rep after sign change = " << M_rep;
     }
 
     M_form.addVector( M_local_rows.data(), M_local_rows.size(),
