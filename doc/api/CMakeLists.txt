@@ -24,8 +24,10 @@
 # Set to "ON" if you want the LaTeX documentation to be built.
 set(DOXYFILE_LATEX 1)
 
+if( FEELPP_ENABLE_DOXYGEN )
+
 find_program(DOXYGEN doxygen)
-if ( DOXYGEN AND FEELPP_ENABLE_DOXYGEN)
+if( DOXYGEN )
 
   ## We extract the cmake option for the documentation
   execute_process(
@@ -99,4 +101,7 @@ if ( DOXYGEN AND FEELPP_ENABLE_DOXYGEN)
      GET_FILENAME_COMPONENT(logoname ${logo} NAME)
      configure_file( ${logo} "${CMAKE_CURRENT_BINARY_DIR}/html/${logoname}" COPYONLY)
    endforeach()
+else()
+    message(FATAL_ERROR "The Doxygen documentation is enabled, but the doxygen executable was not found. Make sure it is installed and accessible using find_program(...).")
+endif()
 endif()
