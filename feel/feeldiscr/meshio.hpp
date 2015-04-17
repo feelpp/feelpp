@@ -26,6 +26,8 @@
 
 #include <feel/feelfilters/partitionio.hpp>
 
+#if defined(FEELPP_HAS_HDF5)
+
 namespace Feel {
 
 template<typename Shape, typename T, int Tag>
@@ -40,5 +42,7 @@ Mesh<Shape, T, Tag>::ioHDF5( IOStatus status, std::string const& filename )
 }
 
 }
+
+#endif
 
 #endif
