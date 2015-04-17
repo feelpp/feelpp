@@ -26,82 +26,82 @@ set(DOXYFILE_LATEX 1)
 
 if( FEELPP_ENABLE_DOXYGEN )
 
-find_program(DOXYGEN doxygen)
-if( DOXYGEN )
+  find_program(DOXYGEN doxygen)
+  if( DOXYGEN )
 
-  ## We extract the cmake option for the documentation
-  execute_process(
-    COMMAND
-    /bin/bash ${CMAKE_CURRENT_SOURCE_DIR}/extract_command.sh ${CMAKE_SOURCE_DIR}
-    OUTPUT_VARIABLE FEELPP_ENABLE_LISTE
+    ## We extract the cmake option for the documentation
+    execute_process(
+      COMMAND
+      /bin/bash ${CMAKE_CURRENT_SOURCE_DIR}/extract_command.sh ${CMAKE_SOURCE_DIR}
+      OUTPUT_VARIABLE FEELPP_ENABLE_LISTE
     )
-   # doxygen is optional
-   include(UseDoxygen OPTIONAL)
+    # doxygen is optional
+    include(UseDoxygen OPTIONAL)
 
-   # make sure that doxygen is not run byt default
-   set_target_properties(doxygen PROPERTIES EXCLUDE_FROM_ALL TRUE)
+    # make sure that doxygen is not run byt default
+    set_target_properties(doxygen PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
-   # add subpages to projects/modules
-   configure_file(
-     ${CMAKE_CURRENT_SOURCE_DIR}/pages.doc.in
-     ${CMAKE_CURRENT_SOURCE_DIR}/pages.doc
-     )
+    # add subpages to projects/modules
+    configure_file(
+      ${CMAKE_CURRENT_SOURCE_DIR}/pages.doc.in
+      ${CMAKE_CURRENT_SOURCE_DIR}/pages.doc
+    )
 
-   set(FEELPP_PROJECTS_DIR,"")
-	 set(FEELPP_DOXYGEN_PROJECT "OFF")
-   # if projects have been detected
-   foreach(project ${projects})
-     #get shortname
-     GET_FILENAME_COMPONENT(dirname ${project} NAME)
+    set(FEELPP_PROJECTS_DIR,"")
+    set(FEELPP_DOXYGEN_PROJECT "OFF")
+    # if projects have been detected
+    foreach(project ${projects})
+      #get shortname
+      GET_FILENAME_COMPONENT(dirname ${project} NAME)
 
-     #define option to control doc generation
-     string(TOUPPER ${dirname} PROJECT)
-     if (FEELPP_ENABLE_${PROJECT}_DOCUMENTATION )
-			 set(FEELPP_DOXYGEN_PROJECT "ON")
-		 endif()
-	 endforeach()
-	 if(${FEELPP_DOXYGEN_PROJECT})
-       FILE(APPEND ${CMAKE_CURRENT_SOURCE_DIR}/pages.doc "/** \\page Project Project\n")
-		 endif()
-   
-	 foreach(project ${projects})
-     #get shortname
-     GET_FILENAME_COMPONENT(dirname ${project} NAME)
+      #define option to control doc generation
+      string(TOUPPER ${dirname} PROJECT)
+      if (FEELPP_ENABLE_${PROJECT}_DOCUMENTATION )
+        set(FEELPP_DOXYGEN_PROJECT "ON")
+      endif()
+    endforeach()
 
-     #define option to control doc generation
-     string(TOUPPER ${dirname} PROJECT)
-     if (FEELPP_ENABLE_${PROJECT}_DOCUMENTATION )
-       set(FEELPP_PROJECTS_DIR ${FEELPP_PROJECTS_DIR} "\"${CMAKE_SOURCE_DIR}/research/${project}/\" \\ \n")
-       FILE(APPEND ${CMAKE_CURRENT_SOURCE_DIR}/pages.doc "   - \\subpage ${dirname}\n")
-       MESSAGE(STATUS "Doxygen Documention for ${project} will be generated")
-     endif()
-   endforeach()
-   FILE(APPEND ${CMAKE_CURRENT_SOURCE_DIR}/pages.doc "*/\n")
+    if(${FEELPP_DOXYGEN_PROJECT})
+      FILE(APPEND ${CMAKE_CURRENT_SOURCE_DIR}/pages.doc "/** \\page Project Project\n")
+    endif()
 
-   #set(FEELPP_PROJECTS_DIR ${FEELPP_PROJECTS_DIR} "\"\" \n") #force empty directory
-   STRING(REPLACE ";" " " _TMP_STR "${FEELPP_PROJECTS_DIR}")
-   SET(FEELPP_PROJECTS_DIR "${_TMP_STR}")
+    foreach(project ${projects})
+      #get shortname
+      GET_FILENAME_COMPONENT(dirname ${project} NAME)
 
-   FILE(APPEND ${CMAKE_CURRENT_SOURCE_DIR}/pages.doc "\n\n}\n")
+      #define option to control doc generation
+      string(TOUPPER ${dirname} PROJECT)
+      if (FEELPP_ENABLE_${PROJECT}_DOCUMENTATION )
+        set(FEELPP_PROJECTS_DIR ${FEELPP_PROJECTS_DIR} "\"${CMAKE_SOURCE_DIR}/research/${project}/\" \\ \n")
+        FILE(APPEND ${CMAKE_CURRENT_SOURCE_DIR}/pages.doc "   - \\subpage ${dirname}\n")
+        MESSAGE(STATUS "Doxygen Documention for ${project} will be generated")
+      endif()
+    endforeach()
+    FILE(APPEND ${CMAKE_CURRENT_SOURCE_DIR}/pages.doc "*/\n")
 
+    #set(FEELPP_PROJECTS_DIR ${FEELPP_PROJECTS_DIR} "\"\" \n") #force empty directory
+    STRING(REPLACE ";" " " _TMP_STR "${FEELPP_PROJECTS_DIR}")
+    SET(FEELPP_PROJECTS_DIR "${_TMP_STR}")
 
-   #
-   configure_file(
-     ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in
-     ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-     )
+    FILE(APPEND ${CMAKE_CURRENT_SOURCE_DIR}/pages.doc "\n\n}\n")
 
-   configure_file(
-     ${CMAKE_CURRENT_SOURCE_DIR}/latexheader.tex.in
-     ${CMAKE_CURRENT_BINARY_DIR}/latexheader.tex
-     )
-   file(GLOB LOGOS "${CMAKE_CURRENT_SOURCE_DIR}/pngs/logos/*")
-   file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html)
-   foreach(logo ${LOGOS})
-     GET_FILENAME_COMPONENT(logoname ${logo} NAME)
-     configure_file( ${logo} "${CMAKE_CURRENT_BINARY_DIR}/html/${logoname}" COPYONLY)
-   endforeach()
-else()
-    message(FATAL_ERROR "The Doxygen documentation is enabled, but the doxygen executable was not found. Make sure it is installed and accessible using find_program(...).")
-endif()
+    #
+    configure_file(
+      ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in
+      ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+    )
+
+    configure_file(
+      ${CMAKE_CURRENT_SOURCE_DIR}/latexheader.tex.in
+      ${CMAKE_CURRENT_BINARY_DIR}/latexheader.tex
+    )
+    file(GLOB LOGOS "${CMAKE_CURRENT_SOURCE_DIR}/pngs/logos/*")
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html)
+    foreach(logo ${LOGOS})
+      GET_FILENAME_COMPONENT(logoname ${logo} NAME)
+      configure_file( ${logo} "${CMAKE_CURRENT_BINARY_DIR}/html/${logoname}" COPYONLY)
+    endforeach()
+  else()
+      message(FATAL_ERROR "The Doxygen documentation is enabled, but the doxygen executable was not found. Make sure it is installed and accessible using find_program(...).")
+  endif()
 endif()
