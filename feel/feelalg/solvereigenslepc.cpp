@@ -733,9 +733,9 @@ SolverEigenSlepc<T>::eigenPair( unsigned int i )
     //vector_ptrtype solution( new VectorPetsc<value_type>( s, s ) );
     vector_ptrtype solution;
     if ( this->mapRow().worldComm().globalSize()>1 )
-        solution = vector_ptrtype( new VectorPetscMPI<value_type>( M_mode,this->mapRowPtr() ) );
+        solution = vector_ptrtype( new VectorPetscMPI<value_type>( M_mode,this->mapRowPtr(), true ) );
     else
-        solution = vector_ptrtype( new VectorPetsc<value_type>( M_mode,this->mapRowPtr() ) );
+        solution = vector_ptrtype( new VectorPetsc<value_type>( M_mode,this->mapRowPtr(), true ) );
 
 #if 0
     for ( size_type k = 0; k < solution->map().nLocalDofWithGhost(); ++k )

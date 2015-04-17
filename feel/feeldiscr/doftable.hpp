@@ -115,6 +115,7 @@ struct hash<std::tuple<TT...>>
 #include <feel/feeldiscr/doffromelement.hpp>
 #include <feel/feeldiscr/doffrommortar.hpp>
 #include <feel/feeldiscr/doffromboundary.hpp>
+#include <feel/feeldiscr/doffromedge.hpp>
 #include <feel/feeldiscr/doffromperiodic.hpp>
 
 namespace Feel
@@ -153,7 +154,9 @@ public:
      */
     typedef MeshType mesh_type;
     typedef FEType fe_type;
-
+    using self_type = DofTable<MeshType, FEType, PeriodicityType, MortarType>;
+    using doftable_type = self_type;
+    
     typedef boost::shared_ptr<FEType> fe_ptrtype;
     typedef MortarType mortar_type;
     static const bool is_mortar = mortar_type::is_mortar;
@@ -164,6 +167,7 @@ public:
     typedef typename mesh_type::element_const_iterator element_const_iterator;
     typedef typename mesh_type::element_type element_type;
     typedef typename mesh_type::face_type face_type;
+    typedef typename mesh_type::edge_type edge_type;
     typedef typename mesh_type::gm_ptrtype gm_ptrtype;
     typedef typename mesh_type::gm_type gm_type;
 
@@ -171,12 +175,18 @@ public:
     typedef typename fe_type::value_type value_type;
     typedef typename fe_type::reference_convex_type reference_convex_type;
     typedef typename fe_type::points_type points_type;
+    //typedef ContinuityType continuity_type;
+    typedef typename fe_type::continuity_type continuity_type;
+
+
 
     typedef typename reference_convex_type::super convex_type;
 
     typedef typename element_type::edge_permutation_type edge_permutation_type;
     typedef typename element_type::face_permutation_type face_permutation_type;
 
+    using dof_from_edge_type = DofFromEdge<doftable_type,fe_type>;
+    
     static const uint16_type nOrder = fe_type::nOrder;
     static const uint16_type nDim = mesh_type::nDim;
     static const uint16_type nRealDim = mesh_type::nRealDim;
@@ -209,10 +219,6 @@ public:
 
     static constexpr uint16_type nDofComponents() { return is_product?nComponents:1; }
 
-    //typedef ContinuityType continuity_type;
-    typedef typename fe_type::continuity_type continuity_type;
-
-    typedef DofTable<MeshType, FEType, PeriodicityType, MortarType> self_type;
 
 
     /**
@@ -234,7 +240,7 @@ public:
 
     //typedef boost::tuple<size_type, int16_type, bool, int16_type> global_dof_fromface_type;
     typedef FaceDof global_dof_fromface_type;
-
+    using global_dof_from_entity_type = EntityDof;
 
     /**
      * Type for the localToGlobal table.
@@ -678,6 +684,11 @@ public:
             return std::make_pair( be, en );
         }
 
+    std::vector<global_dof_from_entity_type> edgeLocalDof( size_type elid, uint16_type edge_id ) const
+        {
+            return M_dfe( elid, edge_id );
+        }
+            
     template<typename ElemTest,typename ElemTrial>
     std::vector<uint16_type> const& localIndices( ElemTest const& eltTest, ElemTrial const& eltTrial  ) const
         {
@@ -1163,6 +1174,7 @@ private:
     template<typename, typename > friend class DofFromElement;
     template<typename, typename, typename > friend class DofFromMortar;
     template<typename, typename > friend class DofFromBoundary;
+    template<typename, typename > friend class DofFromEdge;
     template<typename, typename > friend class DofFromPeriodic;
 
     void addSubstructuringDofMap( mesh_type const& M, size_type next_free_dof );
@@ -1367,6 +1379,7 @@ private:
 
     std::vector<uint16_type> M_localIndicesPerm, M_localIndicesIdentity;
 
+    dof_from_edge_type M_dfe;
 
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -1376,7 +1389,10 @@ template<typename MeshType, typename FEType, typename PeriodicityType, typename 
 const uint16_type DofTable<MeshType, FEType, PeriodicityType, MortarType>::nComponents;
 
 template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( mesh_type& mesh, fe_ptrtype const& _fe, periodicity_type const& periodicity, WorldComm const& _worldComm )
+DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( mesh_type& mesh,
+                                                                   fe_ptrtype const& _fe,
+                                                                   periodicity_type const& periodicity,
+                                                                   WorldComm const& _worldComm )
     :
     super( _worldComm ),
     M_fe( _fe ),
@@ -1392,7 +1408,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( mesh_type& me
     M_buildDofTableMPIExtended( false ),
     M_nGhostDofAddedInExtendedDofTable( 0 ),
     M_localIndicesPerm( nDofPerElement ),
-    M_localIndicesIdentity( nDofPerElement )
+    M_localIndicesIdentity( nDofPerElement ),
+    M_dfe( this )
 {
     VLOG(2) << "[dof] is_periodic = " << is_periodic << "\n";
     size_type start_next_free_dof = 0;
@@ -1407,7 +1424,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( mesh_type& me
 }
 
 template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( fe_ptrtype const& _fe, periodicity_type const& periodicity, WorldComm const& _worldComm )
+DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( fe_ptrtype const& _fe,
+                                                                   periodicity_type const& periodicity,
+                                                                   WorldComm const& _worldComm )
     :
     super( _worldComm ),
     M_fe( _fe ),
@@ -1423,7 +1442,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( fe_ptrtype co
     M_buildDofTableMPIExtended( false ),
     M_nGhostDofAddedInExtendedDofTable( 0 ),
     M_localIndicesPerm( nDofPerElement ),
-    M_localIndicesIdentity( nDofPerElement )
+    M_localIndicesIdentity( nDofPerElement ),
+    M_dfe( this )
 {
 }
 
@@ -1444,7 +1464,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( const self_ty
     M_buildDofTableMPIExtended( dof2.M_buildDofTableMPIExtended ),
     M_nGhostDofAddedInExtendedDofTable( dof2.M_nGhostDofAddedInExtendedDofTable ),
     M_localIndicesPerm( dof2.M_localIndicesPerm ),
-    M_localIndicesIdentity( dof2.M_localIndicesIdentity )
+    M_localIndicesIdentity( dof2.M_localIndicesIdentity ),
+    M_dfe( dof2.M_dfe )
 {
 }
 
@@ -1934,6 +1955,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildPeriodicDofMap( me
 
                 CHECK( successful_modify ) << "modify periodic dof table failed: element id "
                                            << ie << " local dof id " << lid << " component " << c2;
+                // map_gdof define only for one component
+                if ( c1 == 0 )
+                {
 #if 1
                 // warning: must modify the data structure that allows to
                 // generate unique global dof ids
@@ -1948,6 +1972,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildPeriodicDofMap( me
 #endif
                 VLOG(2) << "link mapgdof " <<   map_gdof[ std::make_tuple( dof2_type, gDof ) ]  << " -> " << gid << "\n";
                 map_gdof[ std::make_tuple( dof2_type, gDof ) ] = gid;
+                }
 #if 0
                 FEELPP_ASSERT( map_gdof[ boost::make_tuple( dof2_type, c2, gDof ) ] == gid )
                     ( corresponding_gid )( dof2_type )( gDof )( gid )
@@ -2255,7 +2280,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildBoundaryDofMap( me
             DVLOG(4) << "[buildBoundaryDofMap] global face id : " << __face_it->id() << "\n";
 
 #endif
-        M_face_l2g[ __face_it->id()].resize( nDofF*nComponents );
+        int ncdof = is_product ? nComponents : 1 ;
+        M_face_l2g[ __face_it->id()].resize( nDofF*ncdof );
         dfb.add( __face_it );
     }
 

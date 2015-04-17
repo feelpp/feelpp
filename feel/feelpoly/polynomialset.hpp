@@ -1078,13 +1078,13 @@ public:
     precompute_ptrtype
     preCompute( self_ptrtype p, points_type const& P )
     {
-        return precompute_ptrtype( new PreCompute( p, P ) );
+        return boost::make_shared<PreCompute>( p, P );
     }
 
     precompute_ptrtype
     preCompute( points_type const& P )
     {
-        return precompute_ptrtype( new PreCompute( super_enable_shared_from_this::shared_from_this(), P ) );
+        return boost::make_shared<PreCompute>( super_enable_shared_from_this::shared_from_this(), P );
     }
 
     typedef std::vector<std::map<typename convex_type::permutation_type, precompute_ptrtype> > faces_precompute_type;
@@ -1112,7 +1112,20 @@ public:
 
         return geopc;
     }
-
+    template<typename PAtEdges>
+    std::vector<std::map<typename convex_type::permutation_type, precompute_ptrtype>>
+    preComputeOnEdges( self_ptrtype gm, PAtEdges const& p )
+    {
+        typedef typename convex_type::permutation_type permutation_type;
+        std::vector<std::map<permutation_type, precompute_ptrtype> > __geopc( convex_type::numEdges );
+        
+        for ( uint16_type __f = 0; __f < convex_type::numEdges; ++__f )
+        {
+            __geopc[__f][permutation_type::NO_PERMUTATION] = boost::make_shared<precompute_type>(  gm, p(__f) );
+            __geopc[__f][permutation_type::REVERSE_PERMUTATION] = boost::make_shared<precompute_type>(  gm, p( __f ) );
+        }
+        return __geopc;
+    }
 
     template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g = context_v>
     class Context

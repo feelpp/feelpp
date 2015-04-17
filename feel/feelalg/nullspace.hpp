@@ -31,6 +31,7 @@
 
 #include <feel/feeldiscr/functionspacebase.hpp>
 #include <boost/smart_ptr/make_shared.hpp>
+#include <feel/feelalg/vector.hpp>
 
 namespace Feel
 {
@@ -64,45 +65,22 @@ public :
         this->updateForUse( listBasis );
     }
 
-    NullSpace( backend_ptrtype const& mybackend, NullSpace const& ns, bool redoOrthonormalization = false )
+    NullSpace( std::vector<vector_ptrtype> const& vecBasis, backend_ptrtype const& mybackend );
+
+    NullSpace( backend_ptrtype const& mybackend, boost::shared_ptr<NullSpace> const& ns, bool redoOrthonormalization = false )
         :
-        M_basisVector( ns.size() )
-    {
-        // copy vectors
-        for ( int k=0;k<ns.size();++k )
+        NullSpace( mybackend, *ns, redoOrthonormalization )
         {
-            M_basisVector[k] = mybackend->newVector( ns.basisVector(k).mapPtr() );
-            *M_basisVector[k] = ns.basisVector(k);
-            M_basisVector[k]->close();
         }
-        // we assume that nullspace has an orthonormal basis, so do nothing if not forced
-        if ( redoOrthonormalization )
-            this->orthonormalizeBasisVector();
-    }
+    NullSpace( backend_ptrtype const& mybackend, NullSpace const& ns, bool redoOrthonormalization = false );
 
-    NullSpace( NullSpace const& ns )
-        :
-        M_basisVector( ns.M_basisVector )
-        {}
-
+    NullSpace( NullSpace const& ns );
 
     int size() const { return M_basisVector.size(); }
     vector_ptrtype const& basisVectorPtr(int k) const { return M_basisVector[k]; }
     vector_type const& basisVector(int k) const { return *M_basisVector[k]; }
     void push_back( vector_ptrtype v ) { M_basisVector.push_back( v ); }
-    void close()
-        {
-            if ( M_basisVector.size() )
-            {
-                LOG(INFO) << "Close NullSpace";
-                // orthonormalise basis if necessary
-                if ( !this->hasOrthonormalBasisVectors() )
-                {
-                    LOG(INFO) << "NullSpace: orthonormalize basis functions";
-                    this->orthonormalizeBasisVector();
-                }
-            }
-        }
+    void close();
 private :
 
     template <typename EltType>
@@ -156,55 +134,11 @@ private :
         CHECK( false ) << "case not implemented : vector not define with a function space";
     }
 
-    void orthonormalizeBasisVector()
-    {
-        int dimNullSpace = this->size();
-        std::vector<double> dots(dimNullSpace);
-        for ( int k = 0 ; k<dimNullSpace ; ++k )
-        {
-            auto const& myvec = this->basisVector(k);
-            for ( int k2 = 0 ; k2 < k ; ++k2 )
-            {
-                auto const& myvec2 = this->basisVector(k2);
-                dots[k2] = dot(myvec,myvec2);
-            }
-            for (int k2=0; k2<k; k2++)
-                dots[k2] *= -1.;
+    void updateForUse( std::vector<vector_ptrtype> const& vecBasis, backend_ptrtype const& mybackend );
 
-            for ( int k2 = 0 ; k2<k ; ++k2 )
-                this->basisVectorPtr(k)->add( dots[k2],this->basisVector(k2) );
+    void orthonormalizeBasisVector();
 
-            // normalize
-            double normL2 = this->basisVector(k).l2Norm();
-            if ( normL2 > 1e-9 )
-                this->basisVectorPtr(k)->scale(1.0/normL2 );
-        }
-        CHECK( this->hasOrthonormalBasisVectors() ) << "basis vectors are not orthonormal\n";
-    }
-
-    bool hasOrthonormalBasisVectors()
-    {
-        int dimNullSpace = this->size();
-        for ( int k = 0 ; k<dimNullSpace ; ++k )
-        {
-            auto const& myvec = this->basisVector(k);
-            for ( int k2 = 0 ; k2<dimNullSpace ; ++k2 )
-            {
-                auto const& myvec2 = this->basisVector(k2);
-                if ( k == k2 )
-                {
-                    double dotEval = myvec.l2Norm();
-                    if ( math::abs(dotEval-1.0) > 1e-11 ) return false;
-                }
-                else
-                {
-                    double dotEval = dot(myvec,myvec2);
-                    if ( math::abs(dotEval) > 1e-11 ) return false;
-                }
-            }
-        }
-        return true;
-    }
+    bool hasOrthonormalBasisVectors();
 
 
 private :
@@ -241,6 +175,12 @@ boost::shared_ptr<NullSpace<double>>  nullspace_ptr( boost::shared_ptr<SpaceType
     boost::shared_ptr<NullSpace<double>> K( boost::make_shared<NullSpace<double>>() );
     nullspace( *K, Xh, e, args...);
     return K;
+}
+
+inline boost::shared_ptr<NullSpace<double>>
+toBackend( boost::shared_ptr<Backend<double>> const& b, boost::shared_ptr<NullSpace<double>> const& Kspace, bool redoOrtho = false )
+{
+    return boost::make_shared<NullSpace<double>>( b, Kspace, redoOrtho );
 }
 
 } // namespace Feel

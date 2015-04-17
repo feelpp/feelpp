@@ -204,6 +204,11 @@ public:
     sparse_matrix_ptrtype const& matrix() const { return M_matrix; }
 
     /**
+     * Return true if the preconditioner will be reuse
+     */
+    bool reusePrec() const { return M_prec_matrix_structure == MatrixStructure::SAME_PRECONDITIONER; }
+
+    /**
      * @return the side of the system to which the preconditioner applies
      */
     Side side() const { return M_side; }
@@ -213,6 +218,13 @@ public:
     {
         CHECK( this->hasNearNullSpace( splitIds ) ) << " near null space not given for index split ";
         return M_nearNullSpace.find(splitIds)->second;
+    }
+
+    bool hasAuxiliarySparseMatrix( std::string const& key ) const { return M_auxiliarySparseMatrix.find( key ) != M_auxiliarySparseMatrix.end(); }
+    sparse_matrix_ptrtype const& auxiliarySparseMatrix( std::string const& key ) const
+    {
+        CHECK( this->hasAuxiliarySparseMatrix( key ) ) << " auxiliary sparse matrix not given for this key : " << key ;
+        return M_auxiliarySparseMatrix.find( key )->second;
     }
 
     //@}
@@ -259,6 +271,10 @@ public:
     }
     //@}
 
+    void attachAuxiliarySparseMatrix( std::string const& key,sparse_matrix_ptrtype const& mat )
+    {
+        M_auxiliarySparseMatrix[key] = mat;
+    }
     /** @name  Methods
      */
     //@{
@@ -315,6 +331,7 @@ protected:
      */
     std::map<std::set<int>,boost::shared_ptr<NullSpace<value_type> > >  M_nearNullSpace;
 
+    std::map<std::string,sparse_matrix_ptrtype> M_auxiliarySparseMatrix;
 };
 
 typedef Preconditioner<double> preconditioner_type;

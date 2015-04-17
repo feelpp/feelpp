@@ -1606,6 +1606,8 @@ public:
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename mesh_type::gm1_type>, mpl::identity<mpl::void_> >::type::type gm1_type;
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename mesh_type::element_type>, mpl::identity<mpl::void_> >::type::type geoelement_type;
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename mesh_type::face_type>, mpl::identity<mpl::void_> >::type::type geoface_type;
+    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename mesh_type::edge_type>, mpl::identity<mpl::void_> >::type::type geoedge_type;
+    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename mesh_type::point_type>, mpl::identity<mpl::void_> >::type::type geopoint_type;
     typedef boost::shared_ptr<gm_type> gm_ptrtype;
     typedef boost::shared_ptr<gm1_type> gm1_ptrtype;
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename gm_type::template Context<vm::POINT, geoelement_type> >,
@@ -1649,7 +1651,8 @@ public:
         typedef typename mpl::at_c<functionspace_vector_type,i>::type ptrtype;
         typedef typename ptrtype::element_type type;
     };
-
+    template<int i> using sub_functionspace_type = typename sub_functionspace<i>::type;
+    template<int i> using sub_functionspace_ptrtype = typename sub_functionspace<i>::ptrtype;
     /**
        @name Subclasses
     */
@@ -1949,6 +1952,9 @@ public:
             typedef typename mpl::at_c<element_vector_type,i>::type::second_type ptrtype;
             typedef typename ptrtype::element_type type;
         };
+        template<int i> using sub_element_ptrtype = typename mpl::at_c<element_vector_type,i>::type::second_type;
+        template<int i> using sub_element_type = typename mpl::at_c<element_vector_type,i>::type::second_type::element_type;
+        
         typedef typename functionspace_type::component_functionspace_type component_functionspace_type;
         typedef typename functionspace_type::component_functionspace_ptrtype component_functionspace_ptrtype;
         typedef typename component_functionspace_type::template Element<T,typename VectorUblas<value_type>::slice::type> component_type;
@@ -2249,6 +2255,37 @@ public:
                 super::operator[]( index ) = s(ldof.first.localDof())*Ihloc( ldof.first.localDof() );
             }
         }
+        template<typename EltType>
+        void assign( EltType const& e, local_interpolant_type const& Ihloc,
+                     typename std::enable_if<is_3d<EltType>::value && is_edge<EltType>::value>::type* = nullptr )
+            {
+                // we assume here that we are in CG
+                // TODO : adapt to DG and loop over all element to which the point belongs to
+                size_type eid = e.elements().begin()->first;
+                uint16_type edgeid_in_element = e.elements().begin()->second;
+                auto const& s = M_functionspace->dof()->localToGlobalSigns( eid );
+                for( auto const& ldof : M_functionspace->dof()->edgeLocalDof( eid, edgeid_in_element ) )
+                {
+                    
+                    size_type index= ldof.index();
+                    super::operator[]( index ) = s(edgeid_in_element)*Ihloc( ldof.localDofInFace() );
+                }
+            }
+        
+        void assign( geopoint_type const& p, local_interpolant_type const& Ihloc )
+            {
+                // we assume here that we are in CG
+                // TODO : adapt to DG and loop over all element to which the point belongs to
+                size_type eid = p.elements().begin()->first;
+                uint16_type ptid_in_element = p.elements().begin()->second;
+                auto const& s = M_functionspace->dof()->localToGlobalSigns( eid );
+                for( int c = 0; c < (is_product?nComponents:1); ++c )
+                {
+                    size_type index = M_functionspace->dof()->localToGlobal( eid, ptid_in_element, c ).index();
+                    super::operator[]( index ) = s(ptid_in_element)*Ihloc( c );
+                }
+            }
+
         void assign( geoface_type const& e, local_interpolant_type const& Ihloc )
         {
             auto const& s = M_functionspace->dof()->localToGlobalSigns( e.element(0).id() );
@@ -2276,7 +2313,34 @@ public:
                 super::operator[]( index ) += s(ldof.localDof())*Ihloc( ldof.localDofInFace() );
             }
         }
-
+        template<typename EltType>
+        void plus_assign( EltType const& e, local_interpolant_type const& Ihloc,
+                     typename std::enable_if<is_3d<EltType>::value && is_edge<EltType>::value>::type* = nullptr )
+        {
+            // we assume here that we are in CG
+            // TODO : adapt to DG and loop over all element to which the point belongs to
+            size_type eid = e.elements().begin()->first;
+            uint16_type edgeid_in_element = e.elements().begin()->second;
+            auto const& s = M_functionspace->dof()->localToGlobalSigns( eid );
+            for( auto const& ldof : M_functionspace->dof()->edgeLocalDof( eid, edgeid_in_element ) )
+            {
+                size_type index= ldof.index();
+                super::operator[]( index ) += s(edgeid_in_element)*Ihloc( ldof.localDofInFace() );
+            }
+        }
+        void plus_assign( geopoint_type const& p, local_interpolant_type const& Ihloc )
+            {
+                // we assume here that we are in CG
+                // TODO : adapt to DG and loop over all element to which the point belongs to
+                size_type eid = p.elements().begin()->first;
+                uint16_type ptid_in_element = p.elements().begin()->second;
+                auto const& s = M_functionspace->dof()->localToGlobalSigns( eid );
+                for( int c = 0; c < (is_product?nComponents:1); ++c )
+                {
+                    size_type index = M_functionspace->dof()->localToGlobal( eid, ptid_in_element, c ).index();
+                    super::operator[]( index ) += s(ptid_in_element)*Ihloc( c );
+                }
+            }
         //@}
 
         /** @name Accessors
@@ -3486,8 +3550,15 @@ public:
 
         template<typename IteratorType, typename ExprType>
         void onImpl( std::pair<IteratorType,IteratorType> const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_<MESH_ELEMENTS>  );
+        
         template<typename IteratorType, typename ExprType>
         void onImpl( std::pair<IteratorType, IteratorType> const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_<MESH_FACES>  );
+
+        template<typename IteratorType, typename ExprType>
+        void onImpl( std::pair<IteratorType, IteratorType> const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_<MESH_EDGES>  );
+
+        template<typename IteratorType, typename ExprType>
+        void onImpl( std::pair<IteratorType, IteratorType> const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_<MESH_POINTS>  );
 
     private:
 
@@ -4944,6 +5015,10 @@ template<typename FuncSpaceType>
 struct is_function_space_ptr<boost::shared_ptr<FuncSpaceType> > : mpl::true_ {};
 } // detail
 
+template<typename FESpace>
+using functionspace_type = typename mpl::if_<Feel::detail::is_function_space_ptr<FESpace>,
+                                             mpl::identity<typename FESpace::element_type>,
+                                             mpl::identity<FESpace>>::type::type;
 
 
 

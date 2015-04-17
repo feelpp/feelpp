@@ -50,4 +50,14 @@ po::options_description opusapp_options( std::string const& prefix )
     return _options;
 }
 
+std::string _o( std::string const& prefix, std::string const& opt )
+{
+    std::string o = prefix;
+
+    if ( !o.empty() )
+        o += ".";
+
+    return o + opt;
+}
+
 }

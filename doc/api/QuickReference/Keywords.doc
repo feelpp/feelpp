@@ -135,6 +135,8 @@ You can of course use all current operators ( + - / * ) and the usual following 
 <tr><td>\code{.cpp} exp(expr)\endcode</td><td>\f$\exp(f(\overrightarrow{x}))\f$</td><td>element wise exp value of \f$f\f$</td></tr>
 <tr><td>\code{.cpp} log(expr)\endcode</td><td>\f$\log(f(\overrightarrow{x}))\f$</td><td>element wise log value of \f$f\f$</td></tr>
 <tr><td>\code{.cpp} sqrt(expr)\endcode</td><td>\f$\sqrt{f(\overrightarrow{x})}\f$</td><td>element wise sqrt value of \f$f\f$</td></tr>
+<tr><td>\code{.cpp} ceil(expr)\endcode</td><td>\f$\lceil{f(\overrightarrow{x})}\rceil\f$</td><td>element wise ceil of \f$f\f$</td></tr>
+<tr><td>\code{.cpp} floor(expr)\endcode</td><td>\f$\lfloor{f(\overrightarrow{x})}\rfloor\f$</td><td>element wise floor of \f$f\f$</td></tr>
 <tr><td>\code{.cpp} sign(expr)\endcode</td><td>\f$\begin{cases} 1 & \text{if}\ f(\overrightarrow{x}) \geq 0\\-1 & \text{if}\ f(\overrightarrow{x}) < 0\end{cases}\f$</td><td>element wise sign value of \f$f\f$</td></tr>
 <tr><td>\code chi(expr)\endcode</td><td>\f$\chi(f(\overrightarrow{x}))=\begin{cases}0 & \text{if}\ f(\overrightarrow{x}) = 0\\1 & \text{if}\ f(\overrightarrow{x}) \neq 0\\\end{cases}\f$</td><td>element wise boolean test of \f$f\f$</td></tr>
 </table>

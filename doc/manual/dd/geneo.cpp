@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <prudhomme@unistra.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
              Pierre Jolivet <pierre.jolivet@imag.fr>
        Date: 2013-12-21
 
@@ -40,9 +40,6 @@
 #include <feel/feelvf/vf.hpp>
 #include <feel/feeldiscr/operatorinterpolation.hpp>
 #include <feel/feeltiming/tic.hpp>
-#ifdef FEELPP_HAS_HPDDM
-#undef FEELPP_HAS_HPDDM
-#endif
 #ifdef FEELPP_HAS_HPDDM
 #define BDD            // BDD module
 // #define FETI           // FETI module
@@ -89,13 +86,13 @@ static inline void coefficients(double* r, boost::shared_ptr<FunctionSpace<Mesh<
     if(!std::is_same<Type<Dim>, Vectorial<Dim>>::value) {
         kappa k;
         k.val = doption("parameters.kappa");
-        x = vf::project(Vh, elements(Vh->mesh()), idf(k) * one());
+        x = vf::project(Vh, elements(Vh->mesh()), val(idf(k) * one()));
     }
     else {
         stripes s;
         s.first  = doption("parameters.n");
         s.second = doption("parameters.nu");
-        x = vf::project(Vh, elements(Vh->mesh()), idf(s) * one());
+        x = vf::project(Vh, elements(Vh->mesh()), val(idf(s) * one()));
     }
     std::copy(x.begin(), x.end(), r);
 }
@@ -105,7 +102,7 @@ static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<d
     kappa k;
     k.val = doption("parameters.kappa");
     auto a = form2(_trial = Vh, _test = Vh, _matrix = A);
-    a = integrate(_range = elements(Vh->mesh()), _expr = idf(k) * gradt(u) * trans(grad(v)));
+    a = integrate(_range = elements(Vh->mesh()), _expr = val(idf(k)) * gradt(u) * trans(grad(v)));
     auto l = form1(_test = Vh, _vector = f);
     l = integrate(_range = elements(Vh->mesh()), _expr = id(v));
     a += on(_range = markedfaces(Vh->mesh(), "Dirichlet"), _rhs = l, _element = u, _expr = cst(0.0));
@@ -117,12 +114,13 @@ static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<d
     stripes s;
     s.first  = doption("parameters.epsilon");
     s.second = doption("parameters.e");
-    auto E = idf(s);
+    auto Ph = Pdh<0>(Vh->mesh());
+    auto E = vf::project(Ph, elements(Ph->mesh()), val(idf(s)));
     s.first  = doption("parameters.n");
     s.second = doption("parameters.nu");
-    auto nu = idf(s);
-    auto mu = E / (2 * (1 + nu));
-    auto lambda = E * nu / ((1 + nu) * (1 - 2 * nu));
+    auto nu = vf::project(Ph, elements(Ph->mesh()), val(idf(s)));
+    auto mu = idv(E) / (2 * (1 + idv(nu)));
+    auto lambda = idv(E) * idv(nu) / ((1 + idv(nu)) * (1 - 2 * idv(nu)));
 
     const double density = 1.0e+3;
 
@@ -141,12 +139,13 @@ static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<d
     stripes s;
     s.first  = doption("parameters.epsilon");
     s.second = doption("parameters.e");
-    auto E = idf(s);
+    auto Ph = Pdh<0>(Vh->mesh());
+    auto E = vf::project(Ph, elements(Ph->mesh()), val(idf(s)));
     s.first  = doption("parameters.n");
     s.second = doption("parameters.nu");
-    auto nu = idf(s);
-    auto mu = E / (2 * (1 + nu));
-    auto lambda = E * nu / ((1 + nu) * (1 - 2 * nu));
+    auto nu = vf::project(Ph, elements(Ph->mesh()), val(idf(s)));
+    auto mu = idv(E) / (2 * (1 + idv(nu)));
+    auto lambda = idv(E) * idv(nu) / ((1 + idv(nu)) * (1 - 2 * idv(nu)));
 
     const double density = 1.0e+3;
 
@@ -311,15 +310,15 @@ void Geneopp<Dim, Order, Type>::run()
                 Eigen::SparseMatrix<double>& EigenA = static_cast<MatrixEigenSparse<double>*>(&*A)->mat();
                 EigenA.makeCompressed();
                 Eigen::Matrix<double, Eigen::Dynamic, 1>& EigenF = static_cast<VectorEigen<double>*>(&*f)->vec();
-#if 0
-                Eigen::SparseMatrix<double, Eigen::RowMajor> EigenC(EigenA);
-#endif
-                std::copy_n(EigenA.outerIndexPtr(), VhLocal->nDof() + 1, ic);
+                Eigen::SparseMatrix<double>* Eigen = (soption("on.type").find("symmetric") == std::string::npos ? new Eigen::SparseMatrix<double>(EigenA.transpose()) : &EigenA);
+                std::copy_n(Eigen->outerIndexPtr(), VhLocal->nDof() + 1, ic);
                 c = new double[ic[VhLocal->nDof()]];
                 jc = new int[ic[VhLocal->nDof()]];
-                std::copy_n(EigenA.innerIndexPtr(), ic[VhLocal->nDof()], jc);
-                std::copy_n(EigenA.valuePtr(), ic[VhLocal->nDof()], c);
+                std::copy_n(Eigen->innerIndexPtr(), ic[VhLocal->nDof()], jc);
+                std::copy_n(Eigen->valuePtr(), ic[VhLocal->nDof()], c);
                 std::copy_n(EigenF.data(), EigenF.rows(), b);
+                if(Eigen != &EigenA)
+                    delete Eigen;
             }
             K->Subdomain::initialize(new HPDDM::MatrixCSR<double>(VhLocal->nDof(), VhLocal->nDof(), ic[VhLocal->nDof()], c, ic, jc, false, true), mesh->faceNeighborSubdomains(), map, &comm);
             decltype(map)().swap(map);
@@ -438,7 +437,6 @@ void Geneopp<Dim, Order, Type>::run()
         delete [] storage;
         delete K;
         if(boption("export")) {
-            tic();
 #endif
             time.restart();
             auto VhVisu = FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order, Type>>>::New(_mesh = mesh, _worldscomm = worldsComm(wComm));
@@ -476,6 +474,7 @@ void Geneopp<Dim, Order, Type>::run()
                     std::cout << std::scientific << " --- relative error with respect to solution from PETSc = " << error << " (computed in " << timeFeel << ")" << std::endl;
 #ifdef FEELPP_HAS_HPDDM
             }
+            tic();
             e->save();
             toc("exporter");
         }

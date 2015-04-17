@@ -233,59 +233,84 @@ MatrixEigenSparse<T>::zeroRows( std::vector<int> const& rows,
     if ( !on_context.test( ContextOn::ELIMINATION) )
         return;
 
-    std::set<int> eliminatedRow;
-    for (int k=0; k<rows.size(); ++k)
+    if ( !M_mat.IsRowMajor )
     {
-        eliminatedRow.insert( rows[k] );
-        for (typename matrix_type::InnerIterator it(M_mat,rows[k]); it; ++it)
+        std::set<int> eliminatedRow;
+        for (int k=0; k<rows.size(); ++k)
         {
-            value_type value = 1.0;
-            if ( on_context.test( ContextOn::KEEP_DIAGONAL ) )
-                value = it.value();
-
-            if ( on_context.test( ContextOn::SYMMETRIC ) )
-                if ( eliminatedRow.find( it.row() ) == eliminatedRow.end() )
-                    rhs.add( it.row(), -it.value() * vals(rows[k]) );
-
-            if ( it.row() == it.col() )
+            eliminatedRow.insert( rows[k] );
+            for (typename matrix_type::InnerIterator it(M_mat,rows[k]); it; ++it)
             {
-                it.valueRef() = value;
-                rhs.set( it.row(), value * vals(rows[k]) );
-            }
-            else if ( on_context.test( ContextOn::SYMMETRIC ) )
-            {
-                it.valueRef() = 0;
-            }
+                value_type value = 1.0;
+                if ( on_context.test( ContextOn::KEEP_DIAGONAL ) )
+                    value = it.value();
 
-        }
-    }
+                if ( on_context.test( ContextOn::SYMMETRIC ) )
+                    if ( eliminatedRow.find( it.row() ) == eliminatedRow.end() )
+                        rhs.add( it.row(), -it.value() * vals(rows[k]) );
 
-    // eliminated row
-#if 1
-    M_mat.prune([&eliminatedRow](int i, int j, value_type) {
-            return (i==j || eliminatedRow.find(i) == eliminatedRow.end() );
-        });
-#else
-    typedef int Index;
-    for(Index j=0; j< M_mat.outerSize(); ++j)
-    {
-        Index previousStart = M_mat.outerIndexPtr()[j];
-        Index end = M_mat.outerIndexPtr()[j+1];
-        for(Index i=previousStart; i<end; ++i)
-        {
-            if ( M_mat.data().index(i)!=j )
-            {
-                if ( eliminatedRow.find(/*j*/M_mat.data().index(i)) != eliminatedRow.end() )
+                if ( it.row() == it.col() )
                 {
-                    double theval=0.0;
-                    M_mat.coeffRef(M_mat.data().index(i),j ) = theval;
-                    M_mat.data().value(i) = theval;
+                    it.valueRef() = value;
+                    rhs.set( it.row(), value * vals(rows[k]) );
+                }
+                else if ( on_context.test( ContextOn::SYMMETRIC ) )
+                {
+                    it.valueRef() = 0;
+                }
+
+            }
+        }
+        // eliminated row
+#if 1
+        M_mat.prune([&eliminatedRow](int i, int j, value_type) {
+                return (i==j || eliminatedRow.find(i) == eliminatedRow.end() );
+            });
+#else
+        typedef int Index;
+        for(Index j=0; j< M_mat.outerSize(); ++j)
+        {
+            Index previousStart = M_mat.outerIndexPtr()[j];
+            Index end = M_mat.outerIndexPtr()[j+1];
+            for(Index i=previousStart; i<end; ++i)
+            {
+                if ( M_mat.data().index(i)!=j )
+                {
+                    if ( eliminatedRow.find(/*j*/M_mat.data().index(i)) != eliminatedRow.end() )
+                    {
+                        double theval=0.0;
+                        M_mat.coeffRef(M_mat.data().index(i),j ) = theval;
+                        M_mat.data().value(i) = theval;
+                    }
+                }
+            }
+        }
+#endif
+    }
+    else // rowMajor
+    {
+        CHECK( !on_context.test( ContextOn::SYMMETRIC ) ) << "symetric case not supported with row major\n";
+
+        for (int k=0; k<rows.size(); ++k)
+        {
+            for (typename matrix_type::InnerIterator it(M_mat,rows[k]); it; ++it)
+            {
+                value_type value = 1.0;
+                if ( on_context.test( ContextOn::KEEP_DIAGONAL ) )
+                    value = it.value();
+
+                if ( it.row() == it.col() )
+                {
+                    it.valueRef() = value;
+                    rhs.set( it.row(), value * vals(rows[k]) );
+                }
+                else
+                {
+                    it.valueRef() = 0;
                 }
             }
         }
     }
-#endif
-
 }
 
 template<typename T>
