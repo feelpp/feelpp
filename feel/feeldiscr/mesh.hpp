@@ -378,13 +378,58 @@ public:
                                 this->endElementWithProcessId( this->worldComm().rank() ) );
         int nf = std::distance( this->beginFaceWithProcessId( this->worldComm().rank() ),
                                 this->endFaceWithProcessId( this->worldComm().rank() ) );
-        int ned = 0;/*std::distance( this->beginEdgeWithProcessId( this->worldComm().rank() ),
-                      this->endEdgeWithProcessId( this->worldComm().rank() ) );*/
+        
         int np = std::distance( this->beginPointWithProcessId( this->worldComm().rank() ),
                                 this->endPointWithProcessId( this->worldComm().rank() ) );
 
 
         if ( this->worldComm().localSize() >1 )
+        {
+#if BOOST_VERSION >= 105500
+            std::vector<int> globals{ ne, nf, 0, np, (int)this->numVertices() };
+            mpi::all_reduce( this->worldComm(), mpi::inplace(globals.data()), 5, std::plus<int>() );
+            std::vector<int> maxs{ (int)this->numElements(), (int)this->numFaces(), 0, (int)this->numPoints(), (int)this->numVertices() };
+            mpi::all_reduce( this->worldComm(), mpi::inplace(maxs.data()), 5, mpi::maximum<int>() );
+#else
+            std::vector<int> locals{ ne, nf, 0, (int)this->numPoints(), (int)this->numVertices() };
+            std::vector<int> globals( 5, 0 );
+            mpi::all_reduce( this->worldComm(), locals.data(), 5, globals.data(), std::plus<int>() );
+            std::vector<int> maxs( 5, 0 );
+            mpi::all_reduce( this->worldComm(), locals.data(), 5, maxs.data(), mpi::maximum<int>() );
+#endif
+            M_numGlobalElements = globals[0];
+            M_numGlobalFaces = globals[1];
+            M_numGlobalEdges = globals[2];
+            M_numGlobalPoints = globals[3];
+            M_numGlobalVertices = globals[4];
+
+            M_maxNumElements = maxs[0];
+            M_maxNumFaces = maxs[1];
+            M_maxNumEdges = maxs[2];
+            M_maxNumPoints = maxs[3];
+            M_maxNumVertices = maxs[4];
+        }
+        else
+        {
+            M_numGlobalElements = ne;
+            M_numGlobalFaces = nf;
+            M_numGlobalEdges = 0;
+            M_numGlobalPoints = np;
+            M_numGlobalVertices = this->numVertices();
+
+            M_maxNumElements = ne;
+            M_maxNumFaces = nf;
+            M_maxNumEdges = 0;
+            M_maxNumPoints = np;
+            M_maxNumVertices = this->numVertices();
+        }
+    }
+#if 0
+    void updateNumGlobalEdges( typename std::enable_if<is_3d<mesh_type>::value>::type* = nullptr )
+        {
+            int ned = std::distance( this->beginEdgeWithProcessId( this->worldComm().rank() ),
+                                     this->endEdgeWithProcessId( this->worldComm().rank() ) );
+            if ( this->worldComm().localSize() >1 )
         {
 #if BOOST_VERSION >= 105500
             std::vector<int> globals{ ne, nf, ned, np, (int)this->numVertices() };
@@ -423,8 +468,10 @@ public:
             M_maxNumEdges = ned;
             M_maxNumPoints = np;
             M_maxNumVertices = this->numVertices();
+        }   
         }
-    }
+#endif
+    
     /**
      * @return the topological dimension
      */

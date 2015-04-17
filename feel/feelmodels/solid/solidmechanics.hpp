@@ -48,7 +48,7 @@ solidmechanics_options(std::string prefix)
         ( prefixvm( prefix, "gravity-cst").c_str(), Feel::po::value<double>()->default_value( 2 ), "gravity-cst" )
         ( prefixvm( prefix, "verbose").c_str(), Feel::po::value<bool>()->default_value( true ), "verbose" )
         ;
-    return solidmechanicsoptions.add( backend_options(prefix) ).add( ts_options(prefix) );;
+    return solidmechanicsoptions.add( backend_options(prefix) ).add( backend_options(prefix+".l2p") ).add( ts_options(prefix) );;
 }
 
 //po::options_description
@@ -74,6 +74,7 @@ public:
     SolidMechanics( std::string name, displacement_space_ptrtype Xh );
 
     static constexpr int dim = mesh_type::nDim;
+    static constexpr int order = displacement_space_type::basis_type::nOrder;;
 
     // @return the time stepping strategy
     ts_ptrtype ts() { return nm; }
@@ -169,7 +170,7 @@ private:
     boost::shared_ptr<NullSpace<double>> K;
 
     
-    exporter_ptrtype e;
+    exporter_ptrtype e,et;
 };
 
 template<typename DisplSpaceType>
@@ -190,7 +191,9 @@ SolidMechanics<DisplSpaceType>::SolidMechanics( std::string n, displacement_spac
     M_backend( backend( _name=name ) ),
     Res( M_backend->newVector( Dh ) ),
     Jac( M_backend->newMatrix( Dh, Dh ) ),
-    e ( exporter( _mesh=mesh ) )
+    e ( exporter( _mesh=mesh, _prefix=props.shortName(), _geo="static" ) ),
+    et ( exporter( _mesh=mesh, _prefix=props.shortName()+"+t", _geo="static" ) )
+    
 {
     tic();
     dirichlet_conditions = props.boundaryConditions().template getVectorFields<dim> ( "displacement", "Dirichlet" );
@@ -319,6 +322,7 @@ SolidMechanics<DisplSpaceType>::updateResidual( const vector_ptrtype& X, vector_
                     _expr= -inner(idv(P0Rho)*gravityForce,id( u ) ) );
     r += integrate( _range=elements( mesh ),
                     _expr= idv(P0Rho)*inner( nm->polyDerivCoefficient()*idv(u) -idv(nm->polyDeriv()),id( u ) ) );
+    neumann_conditions.setParameterValues( props.parameters().toParameterValues() );
     for( auto & n : neumann_conditions )
     {
         // update n with respect to the current time in case it depends on time
@@ -330,21 +334,25 @@ SolidMechanics<DisplSpaceType>::updateResidual( const vector_ptrtype& X, vector_
     R->close();
     auto temp = Dh->element();
     temp = *R;
+    
     for( auto const& d : dirichlet_conditions )
     {
         temp.on( _range=markedfaces( mesh, marker(d)), _expr=zero<dim,1>() );
         temp.on( _range=markededges( mesh, marker(d)), _expr=zero<dim,1>() );
     }
+    
     for( auto const& d : dx_dirichlet_conditions )
     {
         temp[Component::X].on( _range=markedfaces( mesh, marker(d)), _expr=cst(0.) );
         temp[Component::X].on( _range=markededges( mesh, marker(d)), _expr=cst(0.) );
     }
+    
     for( auto const& d : dy_dirichlet_conditions )
     {
         temp[Component::Y].on( _range=markedfaces( mesh, marker(d)), _expr=cst(0.) );
         temp[Component::Y].on( _range=markededges( mesh, marker(d)), _expr=cst(0.) );
     }
+    
     for( auto const& d : dz_dirichlet_conditions )
     {
         temp[Component::Z].on( _range=markedfaces( mesh, marker(d)), _expr=cst(0.) );
@@ -404,6 +412,15 @@ typename SolidMechanics<DisplSpaceType>::SolveData
 SolidMechanics<DisplSpaceType>::solve()
 {
     tic();
+    dirichlet_conditions.setParameterValues( props.parameters().toParameterValues() );
+    //dirichlet_conditions.setParameterValues( { {"t",t->time()}}  );
+    dx_dirichlet_conditions.setParameterValues( props.parameters().toParameterValues() );
+    //dx_dirichlet_conditions.setParameterValues( { {"t",t->time()}}  );
+    dy_dirichlet_conditions.setParameterValues( props.parameters().toParameterValues() );
+    //dy_dirichlet_conditions.setParameterValues( { {"t",t->time()}}  );
+    dz_dirichlet_conditions.setParameterValues( props.parameters().toParameterValues() );
+    //dz_dirichlet_conditions.setParameterValues( { {"t",t->time()}}  );
+    
     // make sure that the initial guess satisfies the boundary conditions
     for( auto const& d : dirichlet_conditions )
     {
@@ -445,18 +462,63 @@ SolidMechanics<DisplSpaceType>::exportResults()
     tic();
     if ( nm->isSteady() )
     {
-        e->add( "displacement", u );
-        e->add( "lambda", P0Coefflame1 );
-        e->add( "mu", P0Coefflame2 );
+        mesh->saveHDF5(props.shortName()+"_mesh.h5");
+        
+        for ( auto const& o : props.postProcess()["Fields"] )
+        {
+            if ( o == "displacement" )
+            {
+                e->add( "displacement", u );
+                u.saveHDF5(props.shortName()+"_displacement.h5");
+            }
+            if ( o == "lame" )
+            {
+                e->add( "lambda", P0Coefflame1 );
+                e->add( "mu", P0Coefflame2 );
+            }
+            if ( o == "stress" )
+            {
+                tic();
+                auto Sh = Pch<order-1>(mesh);
+                //auto l2p = opProjection(_domainSpace=Sh,_imageSpace=Sh,_backend=backend(_prefix=name+".l2p"));
+                auto l2p = opProjection(_domainSpace=Sh,_imageSpace=Sh);
+                auto Sxx = l2p->project( _expr= idv(P0Coefflame1)*divv(u) + 2.*idv(P0Coefflame2)*dxv(u[Component::X]));	 		
+                auto Syy = l2p->project( _expr= idv(P0Coefflame1)*divv(u) + 2.*idv(P0Coefflame2)*dyv(u[Component::Y]));
+                auto Sxy = l2p->project( _expr= idv(P0Coefflame2)*( dyv(u[Component::X])+dxv(u[Component::Y]) ));
+                e->add( "Sxx", Sxx );
+                e->add( "Syy", Syy );
+                e->add( "Sxy", Sxy );
+                Sxx.saveHDF5(props.shortName()+"_sxx.h5");
+                Syy.saveHDF5(props.shortName()+"_syy.h5");
+                Sxy.saveHDF5(props.shortName()+"_sxy.h5");
+                if ( is_3d<mesh_type>::value )
+                {
+                    
+                    auto Szz = l2p->project( _expr= idv(P0Coefflame1)*divv(u) + 2.*idv(P0Coefflame2)*dxv(u[Component::Z]));    
+                    auto Sxz = l2p->project( _expr= idv(P0Coefflame2)*( dzv(u[Component::X])+dxv(u[Component::Z]) ));
+                    auto Syz = l2p->project( _expr= idv(P0Coefflame2)*( dzv(u[Component::Y])+dyv(u[Component::Z]) ));
+                    e->add( "Szz", Szz );
+                    e->add( "Sxz", Sxz );
+                    e->add( "Syz", Syz );
+                    Szz.saveHDF5(props.shortName()+"_szz.h5");
 
+                    Sxz.saveHDF5(props.shortName()+"_sxz.h5");
+                    Syz.saveHDF5(props.shortName()+"_syz.h5");
+                }
+                toc("compute stress tensor");
+
+                
+                
+            }
+        }
         e->save();
     }
     else
     {
-        e->step(nm->time())->add( "displacement", u );
-        e->step(nm->time())->add( "velocity", nm->currentVelocity() );
-        e->step(nm->time())->add( "acceleration", nm->currentAcceleration() );
-        e->save();
+        et->step(nm->time())->add( "displacement", u );
+        et->step(nm->time())->add( "velocity", nm->currentVelocity() );
+        et->step(nm->time())->add( "acceleration", nm->currentAcceleration() );
+        et->save();
     }
     toc("SolidMechanics::exportResults", verbose);
 }
