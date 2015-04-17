@@ -5,7 +5,7 @@
  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  Date: 2010-04-20
 
- Copyright (C) 2013 Feel++ Consortium
+ Copyright (C) 2013-2015 Feel++ Consortium
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -401,6 +401,11 @@ public:
         {
             return this->get<4>();
         }
+    /// @return the local dof in the face
+    uint16_type localDofInEntity() const
+        {
+            return this->get<4>();
+        }
     /// @return the local dof in element
     uint16_type localDofInElement() const                                \
         {
@@ -429,6 +434,9 @@ public:
     //@}
 
 };
+//@ Alias for FaceDof
+using EntityDof =  FaceDof;
+
 #if 0
 typedef multi_index::multi_index_container<
     Dof,

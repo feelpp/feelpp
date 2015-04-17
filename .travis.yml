@@ -70,6 +70,13 @@ notifications:
     - feelpp-devel@feelpp.org
     on_success: change
     on_failure: change
+  webhooks:
+    urls:
+      - https://webhooks.gitter.im/e/40fa1e9de3bd492a7ee0
+    on_success: change  # options: [always|never|change] default: always
+    on_failure: always  # options: [always|never|change] default: always
+    on_start: false     # default: false
+
 
 matrix:
   allow_failures:

@@ -136,13 +136,13 @@ public:
     /**
      * Tells PETSC to use the user-specified preconditioner
      */
-    static void setPetscPreconditionerType ( const PreconditionerType & preconditioner_type,
+    /*static*/ void setPetscPreconditionerType ( const PreconditionerType & preconditioner_type,
                                              const MatSolverPackageType & matSolverPackage_type,
                                              PC & pc,
                                              WorldComm const& worldComm=Environment::worldComm(),
                                              std::string const& prefix="");
 
-    static void setPetscPreconditionerType ( const PreconditionerType & preconditioner_type,
+    /*static*/ void setPetscPreconditionerType ( const PreconditionerType & preconditioner_type,
                                              const MatSolverPackageType & matSolverPackage_type,
                                              PC & pc,
                                              indexsplit_ptrtype const& is,
@@ -248,31 +248,35 @@ getOptionIfAvalaible( std::string const& name, std::string const& prefix, std::s
 struct ConfigurePCBase
 {
 public :
-    ConfigurePCBase( WorldComm const& worldComm, std::string const& sub, std::string const& prefix )
+    ConfigurePCBase( PreconditionerPetsc<double> * precFeel,WorldComm const& worldComm, std::string const& sub, std::string const& prefix )
         :
+        M_precFeel( precFeel ),
         M_worldComm( worldComm ),
         M_sub( sub ),
         M_prefix( prefix )
     {}
 
-    ConfigurePCBase( WorldComm const& worldComm, std::string const& sub, std::string const& prefix, std::vector<std::string> const& prefixOverwrite )
+    ConfigurePCBase( PreconditionerPetsc<double> * precFeel,WorldComm const& worldComm, std::string const& sub, std::string const& prefix, std::vector<std::string> const& prefixOverwrite )
         :
+        M_precFeel( precFeel ),
         M_worldComm( worldComm ),
         M_sub( sub ),
         M_prefix( prefix ),
         M_prefixOverwrite( prefixOverwrite )
     {}
 
-    ConfigurePCBase( WorldComm const& worldComm, std::string const& sub, std::string const& prefix, po::options_description const& _options )
+    ConfigurePCBase( PreconditionerPetsc<double> * precFeel,WorldComm const& worldComm, std::string const& sub, std::string const& prefix, po::options_description const& _options )
         :
+        M_precFeel( precFeel ),
         M_worldComm( worldComm ),
         M_sub( sub ),
         M_prefix( prefix )
     {
         this->initVariableMap( _options );
     }
-    ConfigurePCBase( WorldComm const& worldComm, std::string const& sub, std::string const& prefix, std::vector<std::string> const& prefixOverwrite, po::options_description const& _options )
+    ConfigurePCBase( PreconditionerPetsc<double> * precFeel,WorldComm const& worldComm, std::string const& sub, std::string const& prefix, std::vector<std::string> const& prefixOverwrite, po::options_description const& _options )
         :
+        M_precFeel( precFeel ),
         M_worldComm( worldComm ),
         M_sub( sub ),
         M_prefix( prefix ),
@@ -301,6 +305,7 @@ public :
         po::notify(M_vm);
     }
 
+    PreconditionerPetsc<double> * precFeel() const { return M_precFeel; }
     WorldComm const& worldComm() const { return M_worldComm; }
     std::string const& prefix() const { return M_prefix; }
     std::string const& sub() const { return M_sub; }
@@ -313,6 +318,7 @@ public :
 
 private :
 
+    PreconditionerPetsc<double> * M_precFeel;
     WorldComm const& M_worldComm;
     std::string M_sub, M_prefix;
     std::vector<std::string> M_prefixOverwrite;
@@ -327,10 +333,10 @@ struct ConfigureKSP : public ConfigurePCBase
 {
 public :
     //ConfigureKSP( KSP& ksp,WorldComm const& worldComm, std::string const& sub, std::string const& prefix );
-    ConfigureKSP( KSP& ksp,WorldComm const& worldComm, std::string const& sub, std::string const& prefix,
+    ConfigureKSP( KSP& ksp,PreconditionerPetsc<double> * precFeel,WorldComm const& worldComm, std::string const& sub, std::string const& prefix,
                   std::vector<std::string> const& prefixOverwrite,
                   std::string const& kspType = "gmres", double rtol = 1e-13, size_type maxit=1000 );
-    ConfigureKSP( WorldComm const& worldComm, std::string const& sub, std::string const& prefix,
+    ConfigureKSP( PreconditionerPetsc<double> * precFeel,WorldComm const& worldComm, std::string const& sub, std::string const& prefix,
                   std::vector<std::string> const& prefixOverwrite,
                   std::string const& kspType = "gmres", double rtol = 1e-13, size_type maxit=1000 );
     bool kspView() const { return M_kspView; }
@@ -356,17 +362,17 @@ public :
 class ConfigurePC : public ConfigurePCBase
 {
 public :
-    ConfigurePC( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+    ConfigurePC( PC& pc, PreconditionerPetsc<double> * precFeel, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
                  WorldComm const& worldComm, std::string const& sub = "", std::string const& prefix = "" );
-    ConfigurePC( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+    ConfigurePC( PC& pc, PreconditionerPetsc<double> * precFeel,PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
                  WorldComm const& worldComm, std::string const& sub, std::string const& prefix,
                  std::vector<std::string> const& prefixOverwrite );
-    ConfigurePC( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+    ConfigurePC( PC& pc, PreconditionerPetsc<double> * precFeel,PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
                  WorldComm const& worldComm, std::string const& sub, std::string const& prefix,
                  std::vector<std::string> const& prefixOverwrite,
                  po::variables_map const& vm/* = Environment::vm()*/ );
 
-    ConfigurePC( //PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+    ConfigurePC( PreconditionerPetsc<double> * precFeel,//PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
                  WorldComm const& worldComm, std::string const& sub, std::string const& prefix,
                  std::vector<std::string> const& prefixOverwrite,
                  po::variables_map const& vm/* = Environment::vm()*/ );
@@ -389,7 +395,7 @@ private :
 class ConfigurePCLU : public ConfigurePCBase
 {
 public :
-    ConfigurePCLU( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is, WorldComm const& worldComm,
+    ConfigurePCLU( PC& pc, PreconditionerPetsc<double> * precFeel, PreconditionerPetsc<double>::indexsplit_ptrtype const& is, WorldComm const& worldComm,
                    std::string const& sub, std::string const& prefix, std::vector<std::string> const& prefixOverwrite );
 private :
     std::string M_matSolverPackage;
@@ -404,7 +410,7 @@ private :
 class ConfigurePCILU : public ConfigurePCBase
 {
 public :
-    ConfigurePCILU( PC& pc, WorldComm const& worldComm,
+    ConfigurePCILU( PC& pc, PreconditionerPetsc<double> * precFeel, WorldComm const& worldComm,
                     std::string const& sub, std::string const& prefix, std::vector<std::string> const& prefixOverwrite );
 private :
     int M_levels;
@@ -420,7 +426,7 @@ private :
 class ConfigurePCSOR : public ConfigurePCBase
 {
 public :
-    ConfigurePCSOR( PC& pc,WorldComm const& worldComm,
+    ConfigurePCSOR( PC& pc, PreconditionerPetsc<double> * precFeel, WorldComm const& worldComm,
                     std::string const& sub, std::string const& prefix,std::vector<std::string> const& prefixOverwrite );
 private :
     std::string M_type;
@@ -436,7 +442,7 @@ private :
 class ConfigurePCGASM : public ConfigurePCBase
 {
 public :
-    ConfigurePCGASM( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+    ConfigurePCGASM( PC& pc, PreconditionerPetsc<double> * precFeel, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
                      WorldComm const& worldComm, std::string const& prefix, std::vector<std::string> const& prefixOverwrite );
 private :
     std::string M_type;
@@ -451,13 +457,13 @@ private :
 class ConfigurePCASM : public ConfigurePCBase
 {
 public :
-    ConfigurePCASM( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+    ConfigurePCASM( PC& pc, PreconditionerPetsc<double> * precFeel, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
                      WorldComm const& worldComm, std::string const& prefix, std::vector<std::string> const& prefixOverwrite );
 private :
     std::string M_type;
     int M_overlap;
 private :
-    void runConfigurePCASM( PC& pc,PreconditionerPetsc<double>::indexsplit_ptrtype const& is );
+    void runConfigurePCASM( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is );
 };
 
 /**
@@ -466,7 +472,7 @@ private :
 class ConfigureSubPC : public ConfigurePCBase
 {
 public :
-    ConfigureSubPC( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+    ConfigureSubPC( PC& pc, PreconditionerPetsc<double> * precFeel, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
                     WorldComm const& worldComm, std::string const& prefix, std::vector<std::string> const& prefixOverwrite );
 private :
     std::string M_subPCtype, M_subMatSolverPackage;
@@ -484,7 +490,7 @@ public :
 class ConfigurePCML : public ConfigurePCBase
 {
 public :
-    ConfigurePCML( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+    ConfigurePCML( PC& pc, PreconditionerPetsc<double> * precFeel, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
                    WorldComm const& worldComm, std::string const& sub, std::string const& prefix );
 
 private :
@@ -507,7 +513,7 @@ private :
 class ConfigurePCGAMG : public ConfigurePCBase
 {
 public :
-    ConfigurePCGAMG( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+    ConfigurePCGAMG( PC& pc, PreconditionerPetsc<double> * precFeel, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
                      WorldComm const& worldComm, std::string const& sub, std::string const& prefix );
 
 private :
@@ -533,7 +539,7 @@ private :
 class ConfigurePCMGLevels : public ConfigurePCBase
 {
 public :
-    ConfigurePCMGLevels( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+    ConfigurePCMGLevels( PC& pc, PreconditionerPetsc<double> * precFeel, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
                          WorldComm const& worldComm, std::string const& sub, std::string const& prefix );
 
 private :
@@ -557,7 +563,7 @@ private :
 class ConfigurePCFieldSplit : public ConfigurePCBase
 {
 public :
-    ConfigurePCFieldSplit( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+    ConfigurePCFieldSplit( PC& pc, PreconditionerPetsc<double> * precFeel, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
                            WorldComm const& worldComm, std::string const& sub, std::string const& prefix );
 
 private :
@@ -567,7 +573,7 @@ private :
     class ConfigureSubKSP : public ConfigurePCBase
     {
     public :
-        ConfigureSubKSP( KSP ** subksps/*PC& pc*/, int nSplit, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+        ConfigureSubKSP( KSP ** subksps/*PC& pc*/, int nSplit, PreconditionerPetsc<double> * precFeel, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
                          std::string const& typeFieldSplit, WorldComm const& worldComm, std::string const& sub, std::string const& prefix );
     private :
         void runConfigureSubKSP(KSP& ksp, PreconditionerPetsc<double>::indexsplit_ptrtype const& is, int splitId );
@@ -590,13 +596,14 @@ private :
 class ConfigurePCLSC : public ConfigurePCBase
 {
 public :
-    ConfigurePCLSC( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
-                    WorldComm const& worldComm, std::string const& sub, std::string const& prefix );
+    ConfigurePCLSC( PC& pc, PreconditionerPetsc<double> * precFeel, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+                    WorldComm const& worldComm, std::string const& sub, std::string const& prefix, std::string lscVersion = "petsc" );
 
 private :
     void runConfigurePCLSC( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is );
 
 private :
+    std::string M_version;
     std::string M_prefixLSC;
     bool M_scaleDiag;
     std::string M_subPCtype, M_subMatSolverPackage;
@@ -610,7 +617,7 @@ private :
 class ConfigurePCHYPRE_EUCLID : public ConfigurePCBase
 {
 public :
-    ConfigurePCHYPRE_EUCLID( PC& pc,
+    ConfigurePCHYPRE_EUCLID( PC& pc, PreconditionerPetsc<double> * precFeel,
                              WorldComm const& worldComm, std::string const& sub, std::string const& prefix, std::vector<std::string> const& prefixOverwrite );
 
 private :
@@ -626,7 +633,7 @@ private :
 class ConfigurePCRedundant : public ConfigurePCBase
 {
 public :
-    ConfigurePCRedundant( //PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+    ConfigurePCRedundant( PreconditionerPetsc<double> * precFeel, //PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
                           WorldComm const& worldComm, std::string const& prefix, std::vector<std::string> const& prefixOverwrite );
     void run( PC& pc,PreconditionerPetsc<double>::indexsplit_ptrtype const& is );
 

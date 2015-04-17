@@ -33,7 +33,9 @@ int main(int argc, char**argv )
     using namespace Feel;
 	po::options_description stokesoptions( "Steady NS options" );
 	stokesoptions.add_options()
+        ( "rho", po::value<double>()->default_value( 1.0 ), "coeff" )
 		( "mu", po::value<double>()->default_value( 1.0 ), "coeff" )
+        ( "attach-mass-matrix", po::value<bool>()->default_value( false ), "attach mass matrix at petsc preconditioner" )
         ( "penaldir", po::value<double>()->default_value( 100 ), "coeff" )
         ( "sym", po::value<bool>()->default_value( 0 ), "use symmetric deformation tensor" )
         ( "stokes.preconditioner", po::value<std::string>()->default_value( "petsc" ), "Stokes preconditioner: petsc, PM, Blockns" )
@@ -66,12 +68,13 @@ int main(int argc, char**argv )
     auto pn = Un.element<1>();
     auto q = V.element<1>();
     double mu = doption(_name="mu");
+    double rho = doption(_name="rho");
 
     if ( Environment::isMasterRank() )
     {
         std::cout << "Re\tFunctionSpace\tVelocity\tPressure\n";
         std::cout.width(16);
-        std::cout << std::left << 2./mu;
+        std::cout << std::left << 2.*rho/mu;
         std::cout.width(16);
         std::cout << std::left << Vh->nDof();
         std::cout.width(16);
@@ -149,6 +152,19 @@ int main(int argc, char**argv )
     
     a_blockns->setMatrix( at.matrixPtr() );
 
+    auto precPetsc = preconditioner( _prefix=backend()->prefix(),_matrix=at.matrixPtr(),_pc=backend()->pcEnumType(),
+                                     _pcfactormatsolverpackage=backend()->matSolverPackageEnumType(), _backend=backend()->shared_from_this(),
+                                     _worldcomm=backend()->comm() );
+
+    bool attachMassMatrix = boption(_name="attach-mass-matrix");
+    if ( attachMassMatrix )
+    {
+        auto massbf = form2( _trial=Vh->functionSpace<0>(), _test=Vh->functionSpace<0>());
+        massbf += integrate( _range=elements( mesh ), _expr=inner( idt(u),id(u) ) );
+        massbf.matrixPtr()->close();
+        precPetsc->attachAuxiliarySparseMatrix( "mass-matrix", massbf.matrixPtr() );
+    }
+
     tic();
     if ( soption("stokes.preconditioner") != "petsc" )
     {
@@ -158,7 +174,9 @@ int main(int argc, char**argv )
         at.solveb(_rhs=l,_solution=U,_backend=backend(_name="stokes"),_prec=a_blockns);
     }
     else
-        at.solve(_rhs=l,_solution=U);
+    {
+        backend()->solve(_matrix=at.matrixPtr(),_solution=U,_rhs=l.vectorPtr(),_prec=precPetsc );
+    }
     toc(" - Solving Stokes...");
 
     tic();
@@ -180,7 +198,7 @@ int main(int argc, char**argv )
             r.zero();
             at.zero();
             at += a;
-            at += integrate( _range=elements(mesh),_expr=trans(id(v))*(gradt(u)*idv(u)) );
+            at += integrate( _range=elements(mesh),_expr=rho*trans(id(v))*(gradt(u)*idv(u)) );
             toc( " - Picard:: Assemble nonlinear terms  ..." );
 
             tic();
@@ -212,7 +230,10 @@ int main(int argc, char**argv )
                 at.solveb(_rhs=r,_solution=U,_backend=backend(_name="picard",_rebuild=true),_prec=a_blockns );
             }
             else
-                at.solveb(_rhs=r,_solution=U,_backend=backend(_rebuild=true) );
+            {
+                //at.solveb(_rhs=r,_solution=U,_backend=backend(_rebuild=true) );
+                backend()->solve(_matrix=at.matrixPtr(),_solution=U,_rhs=r.vectorPtr(),_prec=precPetsc );
+            }
             toc(" - Picard:: Solve   ...");
             incru = normL2( _range=elements(mesh), _expr=idv(u)-idv(un));
             incrp = normL2( _range=elements(mesh), _expr=idv(p)-idv(pn));
@@ -249,14 +270,14 @@ int main(int argc, char**argv )
                 std::cout << " - Assemble nonlinear terms  ...\n";
             at.zero();
             at += a;
-            at += integrate( _range=elements(mesh),_expr=trans(id(v))*(gradt(u)*idv(u)) );
-            at += integrate( _range=elements(mesh), _expr=trans(id(v))*gradv(u)*idt(u) );
+            at += integrate( _range=elements(mesh),_expr=rho*trans(id(v))*(gradt(u)*idv(u)) );
+            at += integrate( _range=elements(mesh), _expr=rho*trans(id(v))*gradv(u)*idt(u) );
 
             if ( Environment::isMasterRank() )
                 std::cout << " - Assemble residual  ...\n";
             r = integrate( _range=elements( mesh ), _expr=mu*inner( gradv(u),def ) );
             r +=integrate( _range=elements( mesh ), _expr=-div( v )*idv( p ) - divv( u )*id( q ) );
-            r += integrate( _range=elements(mesh),_expr=trans(id(v))*(gradv(u)*idv(u)) );
+            r += integrate( _range=elements(mesh),_expr=rho*trans(id(v))*(gradv(u)*idv(u)) );
             if ( Environment::isMasterRank() )
                 std::cout << " - Assemble BC   ...\n";
             
@@ -289,7 +310,11 @@ int main(int argc, char**argv )
                 at.solveb(_rhs=r,_solution=deltaU/*U*/,_backend=backend(_name="newton",_rebuild=true),_prec=at_blockns );
             }
             else
-                at.solveb(_rhs=r,_solution=deltaU/*U*/,_backend=backend(_rebuild=true) );
+            {
+                //at.solveb(_rhs=r,_solution=deltaU/*U*/,_backend=backend(_rebuild=true) );
+                backend()->solve(_matrix=at.matrixPtr(),_solution=deltaU,_rhs=r.vectorPtr(),_prec=precPetsc );
+            }
+
             U.add(1.,deltaU);
             incru = normL2( _range=elements(mesh), _expr=idv(u)-idv(un));
             incrp = normL2( _range=elements(mesh), _expr=idv(p)-idv(pn));

@@ -1923,6 +1923,9 @@ Environment::expand( std::string const& expr )
               << "\n";
 
     std::string res=expr;
+    boost::replace_all( res, "$feelpp_srcdir", topSrcDir );
+    boost::replace_all( res, "$feelpp_builddir", topBuildDir );
+    boost::replace_all( res, "$feelpp_databasesdir", topSrcDir + "/databases/" );
     boost::replace_all( res, "$top_srcdir", topSrcDir );
     boost::replace_all( res, "$top_builddir", topBuildDir );
     boost::replace_all( res, "$cfgdir", cfgDir );
@@ -1930,6 +1933,30 @@ Environment::expand( std::string const& expr )
     boost::replace_all( res, "$repository", Environment::rootRepository() );
     boost::replace_all( res, "$datadir", dataDir );
     boost::replace_all( res, "$exprdbdir", exprdbDir );
+    
+
+    typedef std::vector< std::string > split_vector_type;
+
+#if defined FEELPP_ENABLED_PROJECTS
+    split_vector_type SplitVec; // #2: Search for tokens
+    boost::split( SplitVec, FEELPP_ENABLED_PROJECTS, boost::is_any_of(" "), boost::token_compress_on ); 
+    for( auto const& s : SplitVec )
+    {
+        std::ostringstream o1,o2,o3;
+        o1 << "$" << s << "_srcdir";
+        o2 << "$" << s << "_builddir";
+        o3 << "$" << s << "_databasesdir";
+        
+        boost::replace_all( res, o1.str(), topSrcDir + "/research/" + s );
+        VLOG(2) << o1.str() << " : " << topSrcDir + "/research/" + s;
+        boost::replace_all( res, o2.str(),  topBuildDir + "/research/" + s );
+        VLOG(2) << o2.str() << " : " << topBuildDir + "/research/" + s;
+        boost::replace_all( res, o3.str(),  topSrcDir + "/research/" + s + "/databases/" );
+        VLOG(2) << o3.str() << " : " << topSrcDir + "/research/" + s + "/databases/";;
+    }
+#endif
+
+    VLOG(1) << "Expand " << expr << " to "  << res;
     return res;
 }
 

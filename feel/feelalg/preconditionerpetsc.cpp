@@ -34,13 +34,19 @@
 
 extern "C" {
 
-#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 )
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 ) && PETSC_VERSION_LESS_THAN( 3,6,0 )
 #include <petsc-private/pcimpl.h>
 #include <petsc-private/kspimpl.h>
+#elif PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 )
+#include <petsc/private/pcimpl.h>
+#include <petsc/private/kspimpl.h>
 #else
 #include <private/pcimpl.h>
 #include <private/kspimpl.h>
 #endif
+
+#include <feel/feelalg/preconditionerpetsclsc.cpp>
+
 
 //------------------------------------------------------------------------------//
 typedef struct {
@@ -695,6 +701,13 @@ void PreconditionerPetsc<T>::init ()
 {
     CHECK( this->M_matrix ) << "ERROR: No matrix set for PreconditionerPetsc, but init() called" << "\n";
 
+    static bool petscPCInHouseIsInit =false;
+    if ( !petscPCInHouseIsInit )
+    {
+        check( PCRegister("lsc2",PCCreate_LSC2) );
+        petscPCInHouseIsInit=true;
+    }
+
     indexsplit_ptrtype is;
     std::list<MatNullSpace> nullspList;
 
@@ -1023,6 +1036,11 @@ SetPCType( PC& pc, const PreconditionerType & preconditioner_type, const MatSolv
         CHKERRABORT( worldComm.globalComm(),ierr );
         break;
 
+    case LSC2_PRECOND:
+        ierr = PCSetType( pc, "lsc2" );
+        CHKERRABORT( worldComm.globalComm(),ierr );
+        break;
+
     case ML_PRECOND:
         ierr = PCSetType( pc,( char* ) PCML );
         CHKERRABORT( worldComm.globalComm(),ierr );
@@ -1078,7 +1096,7 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
     SetPCType( pc, preconditioner_type, matSolverPackage_type, worldComm );
 
     // configure main preconditioner
-    ConfigurePC( pc, is, worldComm, "", name );
+    ConfigurePC( pc, this, is, worldComm, "", name );
 
     // prepare PC to use
     ierr = PCSetUp( pc );
@@ -1094,43 +1112,43 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
 /**
  * ConfigurePC
  */
-ConfigurePC::ConfigurePC( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+ConfigurePC::ConfigurePC( PC& pc, PreconditionerPetsc<double> * precFeel,PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
                           WorldComm const& worldComm, std::string const& sub, std::string const& prefix )
     :
-    ConfigurePCBase( worldComm, sub, prefix ),
+    ConfigurePCBase( precFeel,worldComm, sub, prefix ),
     M_useConfigDefaultPetsc( option(_name="pc-use-config-default-petsc",_prefix=prefix,_sub=sub).as<bool>() ),
     M_factorShiftType( "none"/*option(_name="pc-factor-shift-type",_prefix=prefix,_sub=sub).as<std::string>()*/ )
 {
     run( pc,is );
 }
-ConfigurePC::ConfigurePC( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+ConfigurePC::ConfigurePC( PC& pc, PreconditionerPetsc<double> * precFeel,PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
                           WorldComm const& worldComm, std::string const& sub, std::string const& prefix,
                           std::vector<std::string> const& prefixOverwrite )
     :
-    ConfigurePCBase( worldComm, sub, prefix, prefixOverwrite ),
+    ConfigurePCBase( precFeel,worldComm, sub, prefix, prefixOverwrite ),
     M_useConfigDefaultPetsc( option(_name="pc-use-config-default-petsc",_prefix=prefix,_sub=sub).as<bool>() ),
     M_factorShiftType( "none"/*option(_name="pc-factor-shift-type",_prefix=prefix,_sub=sub).as<std::string>()*/ )
 {
     run( pc,is );
 }
-ConfigurePC::ConfigurePC( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+ConfigurePC::ConfigurePC( PC& pc, PreconditionerPetsc<double> * precFeel,PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
                           WorldComm const& worldComm, std::string const& sub, std::string const& prefix,
                           std::vector<std::string> const& prefixOverwrite,
                           po::variables_map const& vm )
     :
-    ConfigurePCBase( worldComm, sub, prefix, prefixOverwrite ),
+    ConfigurePCBase( precFeel,worldComm, sub, prefix, prefixOverwrite ),
     M_useConfigDefaultPetsc( option(_name="pc-use-config-default-petsc",_prefix=prefix,_sub=sub,_vm=vm).as<bool>() ),
     M_factorShiftType( option(_name="pc-factor-shift-type",_prefix=prefix,_sub=sub,_vm=vm).as<std::string>() )
 {
     run( pc,is );
 }
 
-ConfigurePC::ConfigurePC( //PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+ConfigurePC::ConfigurePC( PreconditionerPetsc<double> * precFeel,//PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
                           WorldComm const& worldComm, std::string const& sub, std::string const& prefix,
                           std::vector<std::string> const& prefixOverwrite,
                           po::variables_map const& vm )
     :
-    ConfigurePCBase( worldComm, sub, prefix, prefixOverwrite ),
+    ConfigurePCBase( precFeel,worldComm, sub, prefix, prefixOverwrite ),
     M_useConfigDefaultPetsc( option(_name="pc-use-config-default-petsc",_prefix=prefix,_sub=sub,_vm=vm).as<bool>() ),
     M_factorShiftType( option(_name="pc-factor-shift-type",_prefix=prefix,_sub=sub,_vm=vm).as<std::string>() )
 {}
@@ -1165,43 +1183,47 @@ ConfigurePC::run( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const&
 
     if ( std::string(pctype) == "gasm" )
     {
-        ConfigurePCGASM( pc, is, this->worldComm(), this->prefix(), this->prefixOverwrite() );
+        ConfigurePCGASM( pc, this->precFeel(), is, this->worldComm(), this->prefix(), this->prefixOverwrite() );
     }
     else if ( std::string(pctype) == "asm" )
     {
-        ConfigurePCASM( pc, is, this->worldComm(), this->prefix(), this->prefixOverwrite() );
+        ConfigurePCASM( pc, this->precFeel(), is, this->worldComm(), this->prefix(), this->prefixOverwrite() );
     }
     else if ( std::string(pctype) == "bjacobi" || std::string(pctype) == "block_jacobi" )
     {
-        ConfigureSubPC( pc, is, this->worldComm().subWorldCommSeq(), this->prefix(), this->prefixOverwrite() );
+        ConfigureSubPC( pc, this->precFeel(), is, this->worldComm().subWorldCommSeq(), this->prefix(), this->prefixOverwrite() );
     }
     else if ( std::string(pctype) == "lu" )
     {
-        ConfigurePCLU( pc, is, this->worldComm(), this->sub(), this->prefix(), this->prefixOverwrite() );
+        ConfigurePCLU( pc, this->precFeel(), is, this->worldComm(), this->sub(), this->prefix(), this->prefixOverwrite() );
     }
     else if ( std::string(pctype) == "ilu" )
     {
-        ConfigurePCILU( pc, this->worldComm(), this->sub(), this->prefix(), this->prefixOverwrite() );
+        ConfigurePCILU( pc, this->precFeel(), this->worldComm(), this->sub(), this->prefix(), this->prefixOverwrite() );
     }
     else if ( std::string(pctype) == "sor" )
     {
-        ConfigurePCSOR( pc, this->worldComm(), this->sub(), this->prefix(), this->prefixOverwrite() );
+        ConfigurePCSOR( pc, this->precFeel(), this->worldComm(), this->sub(), this->prefix(), this->prefixOverwrite() );
     }
     else if ( std::string(pctype) == "gamg" )
     {
-        ConfigurePCGAMG( pc, is, this->worldComm(), this->sub(), this->prefix() );
+        ConfigurePCGAMG( pc, this->precFeel(), is, this->worldComm(), this->sub(), this->prefix() );
     }
     else if ( std::string(pctype) == "ml" )
     {
-        ConfigurePCML( pc, is, this->worldComm(), this->sub(), this->prefix() );
+        ConfigurePCML( pc, this->precFeel(), is, this->worldComm(), this->sub(), this->prefix() );
     }
     else if ( std::string(pctype) == "fieldsplit" )
     {
-        ConfigurePCFieldSplit( pc, is, this->worldComm(), this->sub(), this->prefix() );
+        ConfigurePCFieldSplit( pc, this->precFeel(), is, this->worldComm(), this->sub(), this->prefix() );
     }
     else if ( std::string(pctype) == "lsc" )
     {
-        ConfigurePCLSC( pc, is, this->worldComm(), this->sub(), this->prefix() );
+        ConfigurePCLSC( pc, this->precFeel(), is, this->worldComm(), this->sub(), this->prefix() );
+    }
+    else if ( std::string(pctype) == "lsc2" )
+    {
+        ConfigurePCLSC( pc, this->precFeel(), is, this->worldComm(), this->sub(), this->prefix(), "in-house" );
     }
     else if ( std::string(pctype) == "hypre" )
     {
@@ -1209,7 +1231,7 @@ ConfigurePC::run( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const&
         const char* hypretype;
         this->check( PCHYPREGetType( pc, &hypretype ) );
         if ( std::string( hypretype ) == "euclid" )
-            ConfigurePCHYPRE_EUCLID( pc, this->worldComm(), this->sub(), this->prefix(), this->prefixOverwrite() );
+            ConfigurePCHYPRE_EUCLID( pc, this->precFeel(), this->worldComm(), this->sub(), this->prefix(), this->prefixOverwrite() );
 #if 0
         else if ( std::string( hypretype ) == "pilut" )
             ConfigurePCHYPRE_PILUT( pc, this->worldComm(), this->sub(), this->prefix() );
@@ -1220,7 +1242,7 @@ ConfigurePC::run( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const&
     }
     else if ( std::string(pctype) == "redundant" )
     {
-        ConfigurePCRedundant mypc( /*pc, is,*/ this->worldComm(), this->prefix(), this->prefixOverwrite() );
+        ConfigurePCRedundant mypc( this->precFeel(), /*pc, is,*/ this->worldComm(), this->prefix(), this->prefixOverwrite() );
         mypc.setFactorShiftType( M_factorShiftType );
         mypc.run(pc,is);
     }
@@ -1657,11 +1679,11 @@ ConfigureKSP::ConfigureKSP( KSP& ksp,WorldComm const& worldComm, std::string con
     runConfigureKSP( ksp );
 }
 #endif
-ConfigureKSP::ConfigureKSP( KSP& ksp,WorldComm const& worldComm, std::string const& sub,std::string const& prefix,
+ConfigureKSP::ConfigureKSP( KSP& ksp, PreconditionerPetsc<double> * precFeel,WorldComm const& worldComm, std::string const& sub,std::string const& prefix,
                             std::vector<std::string> const& prefixOverwrite,
                             std::string const& kspType, double rtol, size_type maxit )
     :
-    ConfigurePCBase( worldComm,sub,prefix,prefixOverwrite,getOptionsDescKSP( prefix,sub,prefixOverwrite,kspType,rtol,maxit ) ),
+    ConfigurePCBase( precFeel,worldComm,sub,prefix,prefixOverwrite,getOptionsDescKSP( prefix,sub,prefixOverwrite,kspType,rtol,maxit ) ),
     M_type( getOption<std::string>("ksp-type",prefix,sub,prefixOverwrite,this->vm()) ),
     M_useConfigDefaultPetsc( getOption<bool>("ksp-use-config-default-petsc",prefix,sub,prefixOverwrite,this->vm()) ),
     M_rtol( getOption<double>("ksp-rtol",prefix,sub,prefixOverwrite,this->vm()) ),
@@ -1673,11 +1695,11 @@ ConfigureKSP::ConfigureKSP( KSP& ksp,WorldComm const& worldComm, std::string con
 {
     runConfigureKSP( ksp );
 }
-ConfigureKSP::ConfigureKSP( WorldComm const& worldComm, std::string const& sub,std::string const& prefix,
+ConfigureKSP::ConfigureKSP( PreconditionerPetsc<double> * precFeel, WorldComm const& worldComm, std::string const& sub,std::string const& prefix,
                             std::vector<std::string> const& prefixOverwrite,
                             std::string const& kspType, double rtol, size_type maxit )
     :
-    ConfigurePCBase( worldComm,sub,prefix,prefixOverwrite,getOptionsDescKSP( prefix,sub,prefixOverwrite,kspType,rtol,maxit ) ),
+    ConfigurePCBase( precFeel,worldComm,sub,prefix,prefixOverwrite,getOptionsDescKSP( prefix,sub,prefixOverwrite,kspType,rtol,maxit ) ),
     M_type( getOption<std::string>("ksp-type",prefix,sub,prefixOverwrite,this->vm()) ),
     M_useConfigDefaultPetsc( getOption<bool>("ksp-use-config-default-petsc",prefix,sub,prefixOverwrite,this->vm()) ),
     M_rtol( getOption<double>("ksp-rtol",prefix,sub,prefixOverwrite,this->vm()) ),
@@ -1749,11 +1771,11 @@ ConfigureKSP::runConfigureKSP( KSP& ksp ) const
 /**
  * ConfigurePCLU
  */
-ConfigurePCLU::ConfigurePCLU( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+ConfigurePCLU::ConfigurePCLU( PC& pc, PreconditionerPetsc<double> * precFeel, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
                               WorldComm const& worldComm, std::string const& sub, std::string const& prefix,
                               std::vector<std::string> const& prefixOverwrite )
     :
-    ConfigurePCBase( worldComm,sub,prefix,prefixOverwrite, getOptionsDescLU(prefix,sub,prefixOverwrite) ),
+    ConfigurePCBase( precFeel,worldComm,sub,prefix,prefixOverwrite, getOptionsDescLU(prefix,sub,prefixOverwrite) ),
     M_matSolverPackage( ""),//getOption<std::string>("pc-factor-mat-solver-package-type",prefix,sub,prefixOverwrite) ),
     M_mumpsParameters( 33, std::make_pair(false,-1) )
 {
@@ -1808,11 +1830,11 @@ ConfigurePCLU::runConfigurePCLU( PC& pc )
 /**
  * ConfigurePCILU
  */
-ConfigurePCILU::ConfigurePCILU( PC& pc, WorldComm const& worldComm,
+ConfigurePCILU::ConfigurePCILU( PC& pc, PreconditionerPetsc<double> * precFeel, WorldComm const& worldComm,
                                 std::string const& sub, std::string const& prefix,
                                 std::vector<std::string> const& prefixOverwrite )
     :
-    ConfigurePCBase( worldComm,sub,prefix,prefixOverwrite, getOptionsDescILU(prefix,sub,prefixOverwrite) ),
+    ConfigurePCBase( precFeel, worldComm,sub,prefix,prefixOverwrite, getOptionsDescILU(prefix,sub,prefixOverwrite) ),
     M_levels( getOption<int>("pc-factor-levels",prefix,sub,prefixOverwrite,this->vm() ) ),
     M_fill( getOption<double>("pc-factor-fill",prefix,sub,prefixOverwrite,this->vm() ) )
 {
@@ -1835,11 +1857,11 @@ ConfigurePCILU::runConfigurePCILU( PC& pc )
 /**
  * ConfigurePCHYPRE_EUCLID
  */
-ConfigurePCHYPRE_EUCLID::ConfigurePCHYPRE_EUCLID( PC& pc,
+ConfigurePCHYPRE_EUCLID::ConfigurePCHYPRE_EUCLID( PC& pc, PreconditionerPetsc<double> * precFeel,
                                                   WorldComm const& worldComm, std::string const& sub, std::string const& prefix,
                                                   std::vector<std::string> const& prefixOverwrite )
     :
-    ConfigurePCBase( worldComm,sub,prefix,prefixOverwrite,getOptionsDescILU(prefix,sub,prefixOverwrite) ),
+    ConfigurePCBase( precFeel, worldComm,sub,prefix,prefixOverwrite,getOptionsDescILU(prefix,sub,prefixOverwrite) ),
     M_levels( option(_name="pc-factor-levels",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() )
 {
     VLOG(2) << "ConfigurePC : HYPRE_EUCLID(ILU)\n"
@@ -1860,10 +1882,10 @@ ConfigurePCHYPRE_EUCLID::runConfigurePCHYPRE_EUCLID( PC& pc )
 /**
  * ConfigurePCSOR
  */
-ConfigurePCSOR::ConfigurePCSOR( PC& pc, WorldComm const& worldComm,
+ConfigurePCSOR::ConfigurePCSOR( PC& pc, PreconditionerPetsc<double> * precFeel, WorldComm const& worldComm,
                                 std::string const& sub, std::string const& prefix, std::vector<std::string> const& prefixOverwrite )
     :
-    ConfigurePCBase( worldComm,sub,prefix,prefixOverwrite,getOptionsDescSOR(prefix,sub,prefixOverwrite) ),
+    ConfigurePCBase( precFeel, worldComm,sub,prefix,prefixOverwrite,getOptionsDescSOR(prefix,sub,prefixOverwrite) ),
     M_type( getOption<std::string>("pc-sor-type",prefix,sub,prefixOverwrite,this->vm() ) ),
     M_omega( getOption<double>("pc-sor-omega",prefix,sub,prefixOverwrite,this->vm()) ),
     M_nIteration( getOption<int>("pc-sor-its",prefix,sub,prefixOverwrite,this->vm()) ),
@@ -1898,10 +1920,10 @@ ConfigurePCSOR::runConfigurePCSOR( PC& pc )
 /**
  * ConfigurePCGASM
  */
-ConfigurePCGASM::ConfigurePCGASM( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+ConfigurePCGASM::ConfigurePCGASM( PC& pc, PreconditionerPetsc<double> * precFeel, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
                                   WorldComm const& worldComm, std::string const& prefix, std::vector<std::string> const& prefixOverwrite )
     :
-    ConfigurePCBase( worldComm,"",prefix,prefixOverwrite, getOptionsDescGASM( prefix,prefixOverwrite ) ),
+    ConfigurePCBase( precFeel, worldComm,"",prefix,prefixOverwrite, getOptionsDescGASM( prefix,prefixOverwrite ) ),
     M_type( getOption<std::string>("pc-gasm-type",prefix,"",prefixOverwrite, this->vm() ) ),
     M_overlap( getOption<int>("pc-gasm-overlap",prefix,"",prefixOverwrite, this->vm()) )
 {
@@ -1923,16 +1945,16 @@ ConfigurePCGASM::runConfigurePCGASM( PC& pc, PreconditionerPetsc<double>::indexs
     else                                CHECK( false ) << "invalid gasm type : " << M_type << "\n";
     this->check( PCGASMSetOverlap( pc, M_overlap ) );
 #endif
-    ConfigureSubPC( pc,is,this->worldComm().subWorldCommSeq(),this->prefix(),this->prefixOverwrite() );
+    ConfigureSubPC( pc,this->precFeel(),is,this->worldComm().subWorldCommSeq(),this->prefix(),this->prefixOverwrite() );
 }
 
 /**
  * ConfigurePCGASM
  */
-ConfigurePCASM::ConfigurePCASM( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+ConfigurePCASM::ConfigurePCASM( PC& pc, PreconditionerPetsc<double> * precFeel, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
                                 WorldComm const& worldComm, std::string const& prefix, std::vector<std::string> const& prefixOverwrite )
     :
-    ConfigurePCBase( worldComm,"",prefix,prefixOverwrite, getOptionsDescASM( prefix,prefixOverwrite ) ),
+    ConfigurePCBase( precFeel, worldComm,"",prefix,prefixOverwrite, getOptionsDescASM( prefix,prefixOverwrite ) ),
     M_type( getOption<std::string>("pc-asm-type",prefix,"",prefixOverwrite,this->vm() ) ),
     M_overlap( getOption<int>("pc-asm-overlap",prefix,"",prefixOverwrite,this->vm() ) )
 {
@@ -1953,16 +1975,16 @@ ConfigurePCASM::runConfigurePCASM( PC& pc, PreconditionerPetsc<double>::indexspl
     else                                CHECK( false ) << "invalid asm type : " << M_type << "\n";
     this->check( PCASMSetOverlap( pc, M_overlap ) );
 
-    ConfigureSubPC( pc,is,this->worldComm().subWorldCommSeq(),this->prefix(),this->prefixOverwrite() );
+    ConfigureSubPC( pc,this->precFeel(),is,this->worldComm().subWorldCommSeq(),this->prefix(),this->prefixOverwrite() );
 }
 
 /**
  * ConfigureSubPC
  */
-ConfigureSubPC::ConfigureSubPC( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+ConfigureSubPC::ConfigureSubPC( PC& pc, PreconditionerPetsc<double> * precFeel, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
                                 WorldComm const& worldComm, std::string const& prefix, std::vector<std::string> const& prefixOverwrite )
     :
-    ConfigurePCBase( worldComm,"",prefix, prefixOverwrite, getOptionsDescPrecBase(prefix,"sub") ),
+    ConfigurePCBase( precFeel, worldComm,"",prefix, prefixOverwrite, getOptionsDescPrecBase(prefix,"sub") ),
     M_subPCtype( getOption<std::string>("pc-type",prefix,"sub",prefixOverwrite,this->vm() ) ),
     M_subMatSolverPackage( getOption<std::string>("pc-factor-mat-solver-package-type",prefix,"sub",prefixOverwrite,this->vm() ) ),
     M_subPCview( getOption<bool>("pc-view",prefix,"sub",prefixOverwrite,this->vm() ) ),
@@ -1995,7 +2017,7 @@ ConfigureSubPC::ConfigureSubPC( PC& pc, PreconditionerPetsc<double>::indexsplit_
             << "  |->subPCtype : " << M_subPCtype  << "\n";
     google::FlushLogFiles(google::INFO);
 
-    ConfigureKSP kspConf( this->worldComm(), "sub", this->prefix(), this->prefixOverwrite() );
+    ConfigureKSP kspConf( this->precFeel(),this->worldComm(), "sub", this->prefix(), this->prefixOverwrite() );
 
     for ( int i=0; i<M_nBlock; ++i )
     {
@@ -2018,7 +2040,7 @@ ConfigureSubPC::runConfigureSubPC( KSP& ksp, ConfigureKSP const& kspConf,Precond
     SetPCType( subpc, pcTypeConvertStrToEnum( M_subPCtype ),
                matSolverPackageConvertStrToEnum( M_subMatSolverPackage ),
                this->worldComm() );
-    ConfigurePC( subpc, is, this->worldComm(), "sub", this->prefix(), this->prefixOverwrite(), this->vm() );
+    ConfigurePC( subpc, this->precFeel(), is, this->worldComm(), "sub", this->prefix(), this->prefixOverwrite(), this->vm() );
     this->check( PCSetUp( subpc ) );
 
     if ( kspConf.kspView() )
@@ -2030,10 +2052,10 @@ ConfigureSubPC::runConfigureSubPC( KSP& ksp, ConfigureKSP const& kspConf,Precond
 /**
  * ConfigurePCML
  */
-ConfigurePCML::ConfigurePCML( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+ConfigurePCML::ConfigurePCML( PC& pc, PreconditionerPetsc<double> * precFeel, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
                               WorldComm const& worldComm, std::string const& sub, std::string const& prefix )
     :
-    ConfigurePCBase( worldComm,sub,prefix, getOptionsDescML(prefix,sub) ),
+    ConfigurePCBase( precFeel, worldComm,sub,prefix, getOptionsDescML(prefix,sub) ),
     M_mgType( option(_name="pc-mg-type",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<std::string>() ),
     M_nLevels( option(_name="pc-mg-levels",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
     M_mlReuseInterp( option(_name="pc-ml-reuse-interpolation",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<bool>() ),
@@ -2084,7 +2106,7 @@ ConfigurePCML::runConfigurePCML( PC& pc, PreconditionerPetsc<double>::indexsplit
     // configure coarse solver
     configurePCMLCoarse( pc,is );
     // configure fine solvers
-    ConfigurePCMGLevels( pc, is, this->worldComm(), this->sub(), this->prefix() );
+    ConfigurePCMGLevels( pc, this->precFeel(), is, this->worldComm(), this->sub(), this->prefix() );
 
     // must be called after setup ml pc because this one PCMGSetLevels and reset mg prec associated
     if ( M_mgType=="multiplicative" ) this->check( PCMGSetType( pc, PC_MG_MULTIPLICATIVE ) );
@@ -2114,14 +2136,14 @@ ConfigurePCML::configurePCMLCoarse( PC& pc, PreconditionerPetsc<double>::indexsp
     SetPCType( coarsepc, pcTypeConvertStrToEnum( M_coarsePCtype ),
                matSolverPackageConvertStrToEnum( M_coarsePCMatSolverPackage ),
                this->worldComm() );
-    ConfigurePC coarsepcConf( /*coarsepc, is,*/ this->worldComm(), "", M_prefixMGCoarse, prefixOverwrite, this->vm() );
+    ConfigurePC coarsepcConf( this->precFeel(), /*coarsepc, is,*/ this->worldComm(), "", M_prefixMGCoarse, prefixOverwrite, this->vm() );
     coarsepcConf.setFactorShiftType( "inblocks" );
     coarsepcConf.run( coarsepc, is );
     // setup coarse pc
     this->check( PCSetUp( coarsepc ) );
 
     // configure coarse ksp
-    ConfigureKSP kspConf( coarseksp, this->worldComm(), "", M_prefixMGCoarse, prefixOverwrite, "preonly",1e-5,50 );
+    ConfigureKSP kspConf( coarseksp, this->precFeel(), this->worldComm(), "", M_prefixMGCoarse, prefixOverwrite, "preonly",1e-5,50 );
     // setup coarse ksp
     this->check( KSPSetUp( coarseksp ) );
 
@@ -2135,10 +2157,10 @@ ConfigurePCML::configurePCMLCoarse( PC& pc, PreconditionerPetsc<double>::indexsp
 /**
  * ConfigurePCGAMG
  */
-ConfigurePCGAMG::ConfigurePCGAMG( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+ConfigurePCGAMG::ConfigurePCGAMG( PC& pc, PreconditionerPetsc<double> * precFeel, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
                                   WorldComm const& worldComm, std::string const& sub, std::string const& prefix )
     :
-    ConfigurePCBase( worldComm,sub,prefix, getOptionsDescGAMG(prefix,sub) ),
+    ConfigurePCBase( precFeel, worldComm,sub,prefix, getOptionsDescGAMG(prefix,sub) ),
     M_mgType( option(_name="pc-mg-type",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<std::string>() ),
     M_gamgType( option(_name="pc-gamg-type",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<std::string>() ),
     M_nLevels( option(_name="pc-mg-levels",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
@@ -2191,7 +2213,7 @@ ConfigurePCGAMG::runConfigurePCGAMG( PC& pc, PreconditionerPetsc<double>::indexs
     // configure coarse pc
     configurePCGAMGCoarse( pc,is );
     // configure level pc
-    ConfigurePCMGLevels( pc, is, this->worldComm(), this->sub(), this->prefix() );
+    ConfigurePCMGLevels( pc, this->precFeel(), is, this->worldComm(), this->sub(), this->prefix() );
 
     // must be called after setup gamg pc because this one call PCMGSetLevels and reset mg prec associated
     if ( M_mgType=="multiplicative" ) this->check( PCMGSetType( pc, PC_MG_MULTIPLICATIVE ) );
@@ -2224,14 +2246,14 @@ ConfigurePCGAMG::configurePCGAMGCoarse( PC& pc, PreconditionerPetsc<double>::ind
     SetPCType( coarsepc, pcTypeConvertStrToEnum( M_coarsePCtype ),
                matSolverPackageConvertStrToEnum( M_coarsePCMatSolverPackage ),
                this->worldComm() );
-    ConfigurePC coarsepcConf( /*coarsepc, is,*/ this->worldComm(), "", M_prefixMGCoarse, prefixOverwrite, this->vm() );
+    ConfigurePC coarsepcConf( this->precFeel(), /*coarsepc, is,*/ this->worldComm(), "", M_prefixMGCoarse, prefixOverwrite, this->vm() );
     coarsepcConf.setFactorShiftType( "inblocks" );
     coarsepcConf.run( coarsepc, is );
     // setup coarse pc
     this->check( PCSetUp( coarsepc ) );
 
     // configure coarse ksp
-    ConfigureKSP kspConf( coarseksp, this->worldComm(), "", M_prefixMGCoarse, prefixOverwrite, "preonly",1e-5,50 );
+    ConfigureKSP kspConf( coarseksp, this->precFeel(), this->worldComm(), "", M_prefixMGCoarse, prefixOverwrite, "preonly",1e-5,50 );
     // setup coarse ksp
     this->check( KSPSetUp( coarseksp ) );
 
@@ -2246,10 +2268,10 @@ ConfigurePCGAMG::configurePCGAMGCoarse( PC& pc, PreconditionerPetsc<double>::ind
 /**
  * ConfigurePCMGLevels
  */
-ConfigurePCMGLevels::ConfigurePCMGLevels( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+ConfigurePCMGLevels::ConfigurePCMGLevels( PC& pc, PreconditionerPetsc<double> * precFeel, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
                                           WorldComm const& worldComm, std::string const& sub, std::string const& prefix )
     :
-    ConfigurePCBase( worldComm,sub,prefix )//, getOptionsDescMultiGridLevels( prefix,sub) )
+    ConfigurePCBase( precFeel,worldComm,sub,prefix )//, getOptionsDescMultiGridLevels( prefix,sub) )
 {
     //this->check( PCSetUp( pc ) );
     this->check( PCMGGetLevels( pc, &M_nLevels) );
@@ -2338,13 +2360,13 @@ ConfigurePCMGLevels::runConfigurePCMGLevels( PC& pc, PreconditionerPetsc<double>
     SetPCType( levelpc, pcTypeConvertStrToEnum( M_mgLevelsPCtype[level-1] ),
                matSolverPackageConvertStrToEnum( M_mgLevelsMatSolverPackage[level-1] ),
                this->worldComm() );
-    ConfigurePC( levelpc, is, this->worldComm(), "", prefixAllLevel , prefixLevelOverwrite, this->vm() );
+    ConfigurePC( levelpc, this->precFeel(), is, this->worldComm(), "", prefixAllLevel , prefixLevelOverwrite, this->vm() );
     // setup level pc
     this->check( PCSetUp( levelpc ) );
 
     //-------------------------------------------------------------------//
     // configure ksp
-    ConfigureKSP kspConf( levelksp,this->worldComm(), "", prefixAllLevel, prefixLevelOverwrite,"richardson", 1e-5, 2 );
+    ConfigureKSP kspConf( levelksp,this->precFeel(), this->worldComm(), "", prefixAllLevel, prefixLevelOverwrite,"richardson", 1e-5, 2 );
 #if 0
     // warning : use KSP_NORM_PRECONDITIONED and force convergence
     this->check( KSPSetNormType( levelksp, KSP_NORM_PRECONDITIONED ) );
@@ -2365,10 +2387,10 @@ ConfigurePCMGLevels::runConfigurePCMGLevels( PC& pc, PreconditionerPetsc<double>
 /**
  * ConfigurePCFieldSplit
  */
-ConfigurePCFieldSplit::ConfigurePCFieldSplit( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+ConfigurePCFieldSplit::ConfigurePCFieldSplit( PC& pc, PreconditionerPetsc<double> * precFeel, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
                                               WorldComm const& worldComm, std::string const& sub, std::string const& prefix )
     :
-    ConfigurePCBase( worldComm,sub,prefix, getOptionsDescFieldSplit( prefix,sub ) ),
+    ConfigurePCBase( precFeel, worldComm,sub,prefix, getOptionsDescFieldSplit( prefix,sub ) ),
     M_type( option(_name="fieldsplit-type",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<std::string>() ),
     M_schurFactType( option(_name="fieldsplit-schur-fact-type",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<std::string>() ),
     M_schurPrecond( option(_name="fieldsplit-schur-precondition",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<std::string>() )
@@ -2435,7 +2457,17 @@ ConfigurePCFieldSplit::runConfigurePCFieldSplit( PC& pc, PreconditionerPetsc<dou
 #else
             this->check( MatCreateVecs(A,&scaleDiag,NULL) );
 #endif
-            this->check( MatGetDiagonal(A,scaleDiag) ); /* Should be the mass matrix, but we don't have plumbing for that yet */
+            if ( false ) //this->precFeel()->hasAuxiliarySparseMatrix("mass-matrix") )
+            {
+                //std::cout << "hasAuxiliarySparseMatrix\n";
+                auto massMat = this->precFeel()->auxiliarySparseMatrix("mass-matrix");
+                MatrixPetsc<double> * massMatPetsc   = const_cast<MatrixPetsc<double> *>( dynamic_cast<MatrixPetsc<double> const*>( &(*massMat) ) );
+                this->check( MatGetDiagonal(massMatPetsc->mat(),scaleDiag) );
+            }
+            else
+            {
+                this->check( MatGetDiagonal(A,scaleDiag) );
+            }
             this->check( VecReciprocal(scaleDiag) );
             this->check( MatDiagonalScale( Bcopy, scaleDiag ,NULL) );
 
@@ -2508,7 +2540,7 @@ ConfigurePCFieldSplit::runConfigurePCFieldSplit( PC& pc, PreconditionerPetsc<dou
 
             KSP kspInner;
             this->check( PetscImpl::PCFieldSplit_GetKSPInnerSchur( pc, kspInner ) );
-            ConfigureKSP kspConf( kspInner, this->worldComm(), "", prefixSchurInnerSolver,prefixSchurInnerSolverOverwrite,"preonly", 1e-5,  10 );
+            ConfigureKSP kspConf( kspInner, this->precFeel(), this->worldComm(), "", prefixSchurInnerSolver,prefixSchurInnerSolverOverwrite,"preonly", 1e-5,  10 );
 
             // setup sub-ksp
             this->check( KSPSetUp( kspInner ) );
@@ -2522,7 +2554,7 @@ ConfigurePCFieldSplit::runConfigurePCFieldSplit( PC& pc, PreconditionerPetsc<dou
             SetPCType( pcInner, pcTypeConvertStrToEnum( M_innerSchurPCType ),
                        matSolverPackageConvertStrToEnum( M_innerSchurPCFactMatSolverPackage ),
                        this->worldComm() );
-            ConfigurePC( pcInner, is, this->worldComm(), "", prefixSchurInnerSolver, prefixSchurInnerSolverOverwrite, this->vm() );
+            ConfigurePC( pcInner, this->precFeel(), is, this->worldComm(), "", prefixSchurInnerSolver, prefixSchurInnerSolverOverwrite, this->vm() );
             // setup sub-pc
             this->check( PCSetUp( pcInner ) );
             //-----------------------------------------------------------//
@@ -2546,7 +2578,7 @@ ConfigurePCFieldSplit::runConfigurePCFieldSplit( PC& pc, PreconditionerPetsc<dou
 
                 KSP kspUpper;
                 this->check( PetscImpl::PCFieldSplit_GetKSPUpperSchur( pc, kspUpper ) );
-                ConfigureKSP kspConf( kspUpper, this->worldComm(), "", prefixSchurUpperSolver, prefixSchurUpperSolverOverwrite, "preonly", 1e-5,  10 );
+                ConfigureKSP kspConf( kspUpper, this->precFeel(), this->worldComm(), "", prefixSchurUpperSolver, prefixSchurUpperSolverOverwrite, "preonly", 1e-5,  10 );
                 // setup sub-ksp
                 this->check( KSPSetUp( kspUpper ) );
                 //-----------------------------------------------------------//
@@ -2559,7 +2591,7 @@ ConfigurePCFieldSplit::runConfigurePCFieldSplit( PC& pc, PreconditionerPetsc<dou
                 SetPCType( pcUpper, pcTypeConvertStrToEnum( M_upperSchurPCType ),
                            matSolverPackageConvertStrToEnum( M_upperSchurPCFactMatSolverPackage ),
                            this->worldComm() );
-                ConfigurePC( pcUpper, is, this->worldComm(), "", prefixSchurUpperSolver, prefixSchurUpperSolverOverwrite, this->vm() );
+                ConfigurePC( pcUpper, this->precFeel(), is, this->worldComm(), "", prefixSchurUpperSolver, prefixSchurUpperSolverOverwrite, this->vm() );
                 // setup sub-pc
                 this->check( PCSetUp( pcUpper ) );
                 //-----------------------------------------------------------//
@@ -2576,16 +2608,16 @@ ConfigurePCFieldSplit::runConfigurePCFieldSplit( PC& pc, PreconditionerPetsc<dou
     }
 
     // config sub ksp/pc for each split
-    ConfigurePCFieldSplit::ConfigureSubKSP( &subksps/*pc*/,nSplit,is,M_type,this->worldComm(),this->sub(),this->prefix() );
+    ConfigurePCFieldSplit::ConfigureSubKSP( &subksps/*pc*/,nSplit,this->precFeel(), is,M_type,this->worldComm(),this->sub(),this->prefix() );
 }
 
 /**
  * ConfigurePCFieldSplitSubKSP
  */
-ConfigurePCFieldSplit::ConfigureSubKSP::ConfigureSubKSP( KSP ** subksps/*PC& pc*/, int nSplit,PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+ConfigurePCFieldSplit::ConfigureSubKSP::ConfigureSubKSP( KSP ** subksps/*PC& pc*/, int nSplit,PreconditionerPetsc<double> * precFeel, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
                                                          std::string const& typeFieldSplit, WorldComm const& worldComm, std::string const& sub, std::string const& prefix )
     :
-    ConfigurePCBase( worldComm,sub,prefix, getOptionsDescSplitInFieldSplit(nSplit,prefix,sub) ),
+    ConfigurePCBase( precFeel, worldComm,sub,prefix, getOptionsDescSplitInFieldSplit(nSplit,prefix,sub) ),
     M_nSplit( nSplit ),
     M_typeFieldSplit( typeFieldSplit )
 {
@@ -2632,7 +2664,7 @@ ConfigurePCFieldSplit::ConfigureSubKSP::runConfigureSubKSP(KSP& ksp, Preconditio
         this->check( KSPSetOperators( ksp, A00, A00,
                                       PetscGetMatStructureEnum(MatrixStructure::SAME_PRECONDITIONER)) );
 #endif
-    ConfigureKSP kspConf( ksp, this->worldComm(), "", prefixSplit,prefixSplitOverwrite,"preonly", 1e-5, 50 );
+    ConfigureKSP kspConf( ksp, this->precFeel(), this->worldComm(), "", prefixSplit,prefixSplitOverwrite,"preonly", 1e-5, 50 );
     /*int ierr = KSPSetInitialGuessNonzero ( ksp, PETSC_TRUE );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
     this->check( KSPSetNormType( ksp, KSP_NORM_NONE ) );*/
@@ -2688,7 +2720,7 @@ ConfigurePCFieldSplit::ConfigureSubKSP::runConfigureSubKSP(KSP& ksp, Preconditio
         CHECK( splitId==1 ) << "lsc must be use with only field 1, not " << splitId << "\n";
 
     // configure sub-pc
-    ConfigurePC( subpc, is, this->worldComm(), "", prefixSplit,prefixSplitOverwrite,this->vm() );
+    ConfigurePC( subpc, this->precFeel(), is, this->worldComm(), "", prefixSplit,prefixSplitOverwrite,this->vm() );
 
     // setup sub-pc
     this->check( PCSetUp( subpc ) );
@@ -2705,17 +2737,33 @@ ConfigurePCFieldSplit::ConfigureSubKSP::runConfigureSubKSP(KSP& ksp, Preconditio
 /**
  * ConfigurePCLSC
  */
-ConfigurePCLSC::ConfigurePCLSC( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
-                                WorldComm const& worldComm, std::string const& sub, std::string const& prefix )
+ConfigurePCLSC::ConfigurePCLSC( PC& pc, PreconditionerPetsc<double> * precFeel, PreconditionerPetsc<double>::indexsplit_ptrtype const& is,
+                                WorldComm const& worldComm, std::string const& sub, std::string const& prefix, std::string lscVersion )
     :
-    ConfigurePCBase( worldComm,sub,prefix,getOptionsDescLSC(prefix,sub) ),
+    ConfigurePCBase( precFeel, worldComm,sub,prefix,getOptionsDescLSC(prefix,sub) ),
+    M_version( lscVersion ),
     M_prefixLSC( prefixvm(this->prefix(),"lsc") ),
     M_scaleDiag( option(_name="scale-diag",_prefix=M_prefixLSC,_vm=this->vm()).as<bool>() ),
     M_subPCtype( option(_name="pc-type",_prefix=M_prefixLSC,_vm=this->vm()).as<std::string>() ),
     M_subMatSolverPackage( option(_name="pc-factor-mat-solver-package-type",_prefix=M_prefixLSC,_vm=this->vm()).as<std::string>() ),
     M_subPCview( option(_name="pc-view",_prefix=M_prefixLSC,_vm=this->vm()).as<bool>() )
 {
-    this->check( PetscImpl::PCLSCSetScaleDiag( pc, static_cast<PetscBool>( M_scaleDiag ) ) );
+    if ( M_version == "petsc" )
+        this->check( PetscImpl::PCLSCSetScaleDiag( pc, static_cast<PetscBool>( M_scaleDiag ) ) );
+    else
+        this->check( PCLSC2SetScaleDiag( pc, static_cast<PetscBool>( M_scaleDiag ) ) );
+
+    if ( M_version != "petsc" )
+    {
+        if ( this->precFeel()->hasAuxiliarySparseMatrix("mass-matrix") )
+        {
+            //std::cout << "LSC hasAuxiliarySparseMatrix\n";
+            auto massMat = this->precFeel()->auxiliarySparseMatrix("mass-matrix");
+            MatrixPetsc<double> * massMatPetsc   = const_cast<MatrixPetsc<double> *>( dynamic_cast<MatrixPetsc<double> const*>( &(*massMat) ) );
+            this->check( PCSetMassMatrix_LSC2( pc, massMatPetsc->mat()) );
+        }
+    }
+
 
     VLOG(2) << "ConfigurePC : LSC\n"
             << "  |->prefix    : " << this->prefix() << std::string((this->sub().empty())? "" : " -sub="+this->sub()) << "\n"
@@ -2734,9 +2782,12 @@ ConfigurePCLSC::runConfigurePCLSC( PC& pc, PreconditionerPetsc<double>::indexspl
     //-----------------------------------------------------------//
     // get sub-ksp
     KSP subksp;
-    this->check( PetscImpl::PCLSCGetKSP( pc, subksp ) );
+    if ( M_version == "petsc" )
+        this->check( PetscImpl::PCLSCGetKSP( pc, subksp ) );
+    else
+        this->check( PCLSC2GetKSP( pc, subksp ) );
     // configure sub-ksp
-    ConfigureKSP kspConf( subksp, this->worldComm(), "", M_prefixLSC,prefixOverwrite,"preonly", 1e-5, 50 );
+    ConfigureKSP kspConf( subksp, this->precFeel(), this->worldComm(), "", M_prefixLSC,prefixOverwrite,"preonly", 1e-5, 50 );
     // setup sub-ksp
     this->check( KSPSetUp( subksp ) );
     //-----------------------------------------------------------//
@@ -2747,7 +2798,7 @@ ConfigurePCLSC::runConfigurePCLSC( PC& pc, PreconditionerPetsc<double>::indexspl
     SetPCType( subpc, pcTypeConvertStrToEnum( M_subPCtype ),
                matSolverPackageConvertStrToEnum( M_subMatSolverPackage ),
                this->worldComm() );
-    ConfigurePC( subpc, is, this->worldComm(), "", M_prefixLSC,prefixOverwrite,this->vm() );
+    ConfigurePC( subpc, this->precFeel(), is, this->worldComm(), "", M_prefixLSC,prefixOverwrite,this->vm() );
     // setup sub-pc
     this->check( PCSetUp( subpc ) );
     //-----------------------------------------------------------//
@@ -2761,9 +2812,9 @@ ConfigurePCLSC::runConfigurePCLSC( PC& pc, PreconditionerPetsc<double>::indexspl
 /**
  * ConfigurePCRedundant
  */
-ConfigurePCRedundant::ConfigurePCRedundant( WorldComm const& worldComm, std::string const& prefix, std::vector<std::string> const& prefixOverwrite )
+ConfigurePCRedundant::ConfigurePCRedundant( PreconditionerPetsc<double> * precFeel, WorldComm const& worldComm, std::string const& prefix, std::vector<std::string> const& prefixOverwrite )
     :
-    ConfigurePCBase( worldComm,"",prefix,prefixOverwrite, getOptionsDescPrecBase( prefixvm(prefix,"redundant"),"" ) ),
+    ConfigurePCBase( precFeel, worldComm,"",prefix,prefixOverwrite, getOptionsDescPrecBase( prefixvm(prefix,"redundant"),"" ) ),
     M_innerPCtype( option(_name="pc-type",_prefix= prefixvm(prefix,"redundant"),_vm=this->vm()).as<std::string>() ),
     M_innerPCMatSolverPackage(option(_name="pc-factor-mat-solver-package-type",_prefix= prefixvm(prefix,"redundant"),_vm=this->vm()).as<std::string>() ),
     M_innerPCview( option(_name="pc-view",_prefix= prefixvm(prefix,"redundant"),_vm=this->vm()).as<bool>() ),
@@ -2797,14 +2848,14 @@ ConfigurePCRedundant::run( PC& pc, PreconditionerPetsc<double>::indexsplit_ptrty
     SetPCType( innerpc, pcTypeConvertStrToEnum( M_innerPCtype ),
                matSolverPackageConvertStrToEnum( M_innerPCMatSolverPackage ),
                this->worldComm().subWorldCommSeq() );
-    ConfigurePC mypc( /*innerpc, is,*/ this->worldComm(), "", prefixvm(this->prefix(),"redundant"), prefixOverwrite, this->vm() );
+    ConfigurePC mypc( this->precFeel(), /*innerpc, is,*/ this->worldComm(), "", prefixvm(this->prefix(),"redundant"), prefixOverwrite, this->vm() );
     mypc.setFactorShiftType( M_factorShiftType );
     mypc.run( innerpc, is );
     // setup inner pc
     this->check( PCSetUp( innerpc ) );
 
     // configure inner ksp
-    ConfigureKSP kspConf( innerksp, this->worldComm(), "", prefixvm(this->prefix(),"redundant"), prefixOverwrite, "preonly",1e-8,50 );
+    ConfigureKSP kspConf( innerksp, this->precFeel(), this->worldComm(), "", prefixvm(this->prefix(),"redundant"), prefixOverwrite, "preonly",1e-8,50 );
     // setup inner ksp
     this->check( KSPSetUp( innerksp ) );
 
