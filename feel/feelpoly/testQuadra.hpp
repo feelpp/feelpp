@@ -287,29 +287,29 @@ public :
     typedef typename super::weights_type weights_type;
 
     static const uint16_type Degree = 1;
-    static const uint32_type Npoints = 64;
+    static const uint32_type Npoints = 8;
 
     typedef TestQuadra<Simplex<0,1>,Integration_Degree, T> face_quad_type;
 
     TestQuadra()
         :
-        super(64 )
+        super( 8 )
     {
         // build rules in x and y direction
-        weights_type wx( 64  );
-        weights_type px( 64  );
+        weights_type wx( 8 );
+        weights_type px( 8 );
         //details::gaussjacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
 #if 0
         VLOG(1) << "[gauss<SP<2,1>] jacobi p = " << px << "\n";
         VLOG(1) << "[gauss<SP<2,1>] jacobi w = " << wx << "\n";
 #endif
         double tmp=-1;
-        for ( double i = 0; i < 64; i++ )
+        for ( double i = 0; i < 8; i++ )
         {
             // computes the weight of the k-th node
-            this->M_w( i ) = 2./64 ;// wx( i );
+            this->M_w( i ) = 2./8 ;// wx( i );
             this->M_points( 0, i ) = tmp ;
-            tmp+=2./64;
+            tmp+=2./8;
         }
 
 
@@ -326,7 +326,7 @@ public :
 
     }
 
-    TestQuadra(int N,double)
+    TestQuadra(int N)
         :
         super( N )
     {
@@ -385,15 +385,15 @@ public :
     typedef TestQuadra<Hypercube<1,1>,Integration_Degree, T> face_quad_type;
 
     static const uint16_type Degree = 3;
-    static const uint32_type Npoints =64*64;
+    static const uint32_type Npoints =8*8;
 
     TestQuadra( )
         :
-        super( 64*64 )
+        super( 8*8 )
     {
         // build rules in x and y direction
-        weights_type wx( 64*64 );
-        weights_type px( 64*64 );
+        weights_type wx( 8*8 );
+        weights_type px( 8*8 );
         //details::gaussjacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
 #if 0
         VLOG(1) << "[gauss<SP<2,1>] jacobi p = " << px << "\n";
@@ -401,18 +401,18 @@ public :
 #endif
         double tmpx=-1.;
         double tmpy=-1.;
-        for ( int i = 0,  k = 0; i < 64; i++ )
+        for ( int i = 0,  k = 0; i < 8; i++ )
         {
-            for ( int j = 0; j < 64; j++, ++k )
+            for ( int j = 0; j < 8; j++, ++k )
             {
                 // computes the weight of the k-th node
-                this->M_w( k ) = 4./(64.*64.) ;//wx( i ) * wx( j );
+                this->M_w( k ) = 4./(8.*8.) ;//wx( i ) * wx( j );
                 this->M_points( 0, k ) = tmpx ;
                 this->M_points( 1, k ) = tmpy ;
-                tmpy+=2./64;
+                tmpy+=2./8;
             }
             tmpy=-1.;
-            tmpx+=2./64;
+            tmpx+=2./8;
         }
 
 #if 0
@@ -468,13 +468,13 @@ public :
     }*/
 
 
-    TestQuadra(int Nx,int Ny)
+    TestQuadra(int Nx)
         :
-        super( Nx*Ny )
+        super( Nx*Nx )
     {
         // build rules in x and y direction
-        weights_type wx( Nx*Ny );
-        weights_type px( Nx*Ny );
+        weights_type wx( Nx*Nx );
+        weights_type px( Nx*Nx );
         //details::gaussjacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
 #if 0
         VLOG(1) << "[gauss<SP<2,1>] jacobi p = " << px << "\n";
@@ -484,13 +484,13 @@ public :
         double tmpy=-1;
         for ( int i = 0,  k = 0; i < Nx; i++ )
         {
-            for ( int j = 0; j < Ny; j++, ++k )
+            for ( int j = 0; j < Nx; j++, ++k )
             {
                 // computes the weight of the k-th node
-                this->M_w( k ) = 4.*(1./Nx)*(1./Ny) ;//wx( i ) * wx( j );
+                this->M_w( k ) = 4.*(1./Nx)*(1./Nx) ;//wx( i ) * wx( j );
                 this->M_points( 0, k ) = tmpx ;
                 this->M_points( 1, k ) = tmpy ;
-                tmpy+=2./Ny;
+                tmpy+=2./Nx;
 
             }
             tmpx+=2./Nx;
