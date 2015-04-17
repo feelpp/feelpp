@@ -30,9 +30,11 @@ namespace Feel {
 
 ModelProperties::ModelProperties( std::string const& filename )
 {
+    std::cout << "here" << std::endl; 
     pt::read_json(filename, M_p);
     try {
         M_name = M_p.get<std::string>( "Name" );
+        M_shortname = M_p.get( "ShortName", M_name );
         M_model = M_p.get<std::string>( "Model" );
     }
     catch ( pt::ptree_bad_path& e )

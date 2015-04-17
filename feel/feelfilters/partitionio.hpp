@@ -435,9 +435,9 @@ void PartitionIO<MeshType>::writePoints()
             auto pt_en = currentPart.endPoint();
             for( int j = 0 ; pt_it != pt_en; ++pt_it, ++j )
             {
-                M_uintBuffer[0 * stride + j] = pt_it->marker().value();
-                M_uintBuffer[1 * stride + j] = pt_it->id();
-                M_uintBuffer[2 * stride + j] = 0;
+                M_uintBuffer[0 * stride + j] = pt_it->id();
+                M_uintBuffer[1 * stride + j] = pt_it->marker().value();
+                M_uintBuffer[2 * stride + j] = pt_it->pidInPartition();
                 M_realBuffer[j] = pt_it->operator[](0);
                 if ( pt_it->nRealDim >= 2 )
                     M_realBuffer[stride + j] = pt_it->operator[](1);
@@ -675,19 +675,20 @@ void PartitionIO<MeshType>::writeElements()
     M_elementNodes = mesh_type::element_type::numLocalVertices;
     hsize_t currentSpaceDims[2];
     hsize_t currentCount[2];
+    const int nptinfo = 5;
     if (! M_transposeInFile)
     {
-        currentSpaceDims[0] = (4 + M_elementNodes) * M_numParts;
+        currentSpaceDims[0] = (nptinfo + M_elementNodes) * M_numParts;
         currentSpaceDims[1] = M_meshPartsOut->maxNumElements();
-        currentCount[0] = 4 + M_elementNodes;
+        currentCount[0] = nptinfo + M_elementNodes;
         currentCount[1] = currentSpaceDims[1];
     }
     else
     {
         currentSpaceDims[0] = M_meshPartsOut->maxNumElements();
-        currentSpaceDims[1] = (4 + M_elementNodes) * M_numParts;
+        currentSpaceDims[1] = (nptinfo + M_elementNodes) * M_numParts;
         currentCount[0] = currentSpaceDims[0];
-        currentCount[1] = 4 + M_elementNodes;
+        currentCount[1] = nptinfo + M_elementNodes;
     }
 
     M_HDF5IO.createTable ("elements", H5T_STD_U32BE, currentSpaceDims);
@@ -712,6 +713,7 @@ void PartitionIO<MeshType>::writeElements()
                 M_uintBuffer[ 1 * stride + j] = elt_it->marker().value();
                 M_uintBuffer[ 2 * stride + j] = elt_it->marker2().value();
                 M_uintBuffer[ 3 * stride + j] = elt_it->marker3().value();
+                M_uintBuffer[ 4 * stride + j] = elt_it->pidInPartition();
                 
                 for (size_type k = 0; k < M_elementNodes; ++k)
                 {
