@@ -796,6 +796,31 @@ Context( gm_ptrtype __gm,
 
     update( __e, __f );
 }
+
+    // context for geomap at vertices
+    Context( gm_ptrtype __gm,
+             element_type const& __e,
+             precompute_ptrtype & __pc,
+             uint16_type __f,
+             mpl::int_<0>)
+        :
+        Context( __gm, __e, _pc )
+        {
+            
+            if ( is_linear )
+            {
+                M_gm->gradient( node_t_type(), M_g_linear );
+            }
+
+            else
+            {
+                M_Jt.resize( nPoints() );
+                M_Bt.resize( nPoints() );
+            }
+
+            update( __e, __f, mpl::int_<0>() );
+        }
+
 Context( gmc_ptrtype& p )
     :
     M_gm( p->M_gm ),
@@ -929,6 +954,17 @@ void update( element_type const& __e, uint16_type __f )
     }
 
 }
+    
+    void update( element_type const& __e, uint16_type __f, mpl::int_<0> )
+        {
+            update( __e );
+        }
+
+    void update( element_type const& __e, uint16_type __f, precompute_ptrtype pc, mpl::int_<0> )
+        {
+            M_pc=pc;
+            update( __e );
+        }
 
 void update( element_type const& __e, uint16_type __f, permutation_type __perm, bool __updateJacobianCtx=true )
 {
@@ -2054,13 +2090,11 @@ template<size_type context_v, typename ElementType>
 boost::shared_ptr<Context<context_v,ElementType> >
 context( ElementType const& e, precompute_ptrtype const& pc )
 {
-    return boost::shared_ptr<Context<context_v,ElementType> >(
-                new Context<context_v, ElementType>
-                (
-                 //super_enable_this::shared_from_this(),
-                 boost::dynamic_pointer_cast<GeoMap<Dim, Order, RealDim, T, Entity, PP > >(this->shared_from_this()),
-                e,
-                pc ) );
+    return boost::make_shared<Context<context_v,ElementType> >(
+        //super_enable_this::shared_from_this(),
+        boost::dynamic_pointer_cast<GeoMap<Dim, Order, RealDim, T, Entity, PP > >(this->shared_from_this()),
+        e,
+        pc );
 }
 
 template<size_type context_v, typename ElementType>

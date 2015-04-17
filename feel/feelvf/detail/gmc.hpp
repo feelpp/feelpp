@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-12-24
 
-  Copyright (C) 2013 Feel++ Consortium
+  Copyright (C) 2013-2015 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -30,6 +30,7 @@
 #define FEELPP_DETAIL_GMC_HPP 1
 
 #include <boost/fusion/sequence.hpp>
+#include <boost/fusion/support/pair.hpp>
 
 namespace Feel {
 
@@ -66,5 +67,21 @@ struct ExtractGm
     }
 };
 /// \endcond
-} } }
+}
+template<typename GmcT>
+fusion::map<fusion::pair<vf::detail::gmc<0>, boost::shared_ptr<GmcT>>>
+mapgmc( boost::shared_ptr<GmcT>& ctx )
+{
+    return { fusion::make_pair<vf::detail::gmc<0> >( ctx ) };
+}
+template<typename GmcT> using map_gmc_type = fusion::map<fusion::pair<vf::detail::gmc<0>, boost::shared_ptr<GmcT>>>;
+
+template<typename GmcT>
+fusion::map<fusion::pair<vf::detail::gmc<0>, boost::shared_ptr<GmcT>>, fusion::pair<vf::detail::gmc<1>, boost::shared_ptr<GmcT>> >
+mapgmc( boost::shared_ptr<GmcT>& ctx1, boost::shared_ptr<GmcT>& ctx2 )
+{
+    return { fusion::make_pair<vf::detail::gmc<0> >( ctx1 ), fusion::make_pair<vf::detail::gmc<1> >( ctx2 ) };
+}
+template<typename GmcT> using map2_gmc_type = fusion::map<fusion::pair<vf::detail::gmc<0>, boost::shared_ptr<GmcT>>, fusion::pair<vf::detail::gmc<1>, boost::shared_ptr<GmcT>> >;
+} }
 #endif /* FEELPP_DETAIL_GMC_HPP */
