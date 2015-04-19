@@ -502,7 +502,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & conte
     //array_type v( boost::extents[nComponents1][nComponents2][context.xRefs().size2()] );
     for ( int l = 0; l < basis_type::nDof; ++l )
     {
-        const int ncdof = is_product?nComponents1:1;
+        const int ncdof = is_product?nComponents:1;
 
         for ( typename array_type::index c1 = 0; c1 < ncdof; ++c1 )
         {
@@ -527,9 +527,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & conte
             for ( uint16_type q = 0; q < nq; ++q )
             {
                 for ( typename array_type::index i = 0; i < nComponents1; ++i )
-                    //for( typename array_type::index j = 0; j < nComponents2; ++j )
+                    for( typename array_type::index j = 0; j < nComponents2; ++j )
                 {
-                    v[q]( i,0 ) += s(ldof)*v_*context.id( ldof, i, 0, q );
+                    v[q]( i,j ) += s(ldof)*v_*context.id( ldof, i, j, q );
                     //vsum +=v_*context.id( ldof, i, 0, q );
                     //v[q](i,0) += v_*context.gmc()->J(*)*context.pc()->phi( ldof, i, 0, q );
                 }
@@ -620,8 +620,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::idInterpolate( matrix_node_t
         for ( uint k=0; k<nbPtsElt; ++k,++itL )
         {
             for ( typename array_type::index i = 0; i < nComponents1; ++i )
+                for ( typename array_type::index j = 0; j < nComponents2; ++j )
             {
-                v[boost::get<0>( *itL )]( i,0 ) =  __id( i,0,k );
+                v[boost::get<0>( *itL )]( i,j ) =  __id( i,j,k );
             }
         }
     }

@@ -5440,8 +5440,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 #endif
 
 
-                    for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
-                        for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
+                    for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
+                        for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
                         {
                             res( c1,c2 ) += M_im( expr, c1, c2 );
                         }
@@ -5460,9 +5460,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                     M_im.update( gmc );
 #endif
 
-
-                    for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
-                        for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
+                    for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
+                        for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
                         {
                             res( c1,c2 ) += M_im( expr1, c1, c2 );
                         }
@@ -5485,8 +5484,9 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 #endif
 
 
-                        for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
-                            for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
+                        for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
+                            for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
+                                
                             {
                                 res( c1,c2 ) += M_im( expr, c1, c2 );
                             }
@@ -5503,9 +5503,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 
                         M_im.update( gmc );
 #endif
-
-                        for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
-                            for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
+                        for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
+                            for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
                             {
                                 res( c1,c2 ) += M_im( expr1, c1, c2 );
                             }

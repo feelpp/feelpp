@@ -42,6 +42,7 @@
 #include <feel/feelpoly/context.hpp>
 
 #include <feel/feelalg/svd.hpp>
+
 #include <feel/feelpoly/dubiner.hpp>
 #include <feel/feelpoly/legendre.hpp>
 #include <feel/feelpoly/boundadapted.hpp>
@@ -51,6 +52,7 @@
 #include <feel/feelpoly/quadmapped.hpp>
 #include <feel/feelpoly/hdivpolynomialset.hpp>
 #include <feel/feelpoly/hcurlpolynomialset.hpp>
+#include <feel/feelpoly/traits.hpp>
 
 namespace Feel
 {
@@ -118,8 +120,11 @@ public:
     typedef typename basis_type::matrix_type matrix_type;
     typedef typename basis_type::points_type points_type;
 
-
-    typedef PolynomialSet<Poly, Vectorial> gradient_polynomialset_type;
+    using gradient_polynomialset_type = typename mpl::if_<is_scalar_field<polyset_type>,
+                                                          mpl::identity<PolynomialSet<Poly, Vectorial> >,
+                                                          typename mpl::if_<is_vector_field<polyset_type>,
+                                                                            mpl::identity<PolynomialSet<Poly, Tensor2> >,
+                                                                            mpl::identity<PolynomialSet<Poly, Tensor3> > >::type>::type::type;
 
     BOOST_STATIC_ASSERT( ( boost::is_same<typename matrix_type::value_type, value_type>::value ) );
     BOOST_STATIC_ASSERT( ( boost::is_same<typename matrix_type::value_type, typename points_type::value_type>::value ) );
@@ -358,7 +363,8 @@ public:
         {
             if ( !__as_is )
             {
-                M_coeff = ublas::prod( __c, polyset_type::toMatrix( M_coeff ) );
+                auto m = polyset_type::toMatrix( M_coeff );
+                M_coeff = ublas::prod( __c, m );
                 M_coeff = polyset_type::toType( M_coeff );
             }
 
@@ -733,10 +739,10 @@ public:
 
         typedef typename reference_element_type::points_type matrix_node_t_type;
         typedef ublas::matrix<value_type> matrix_type;
-        typedef Eigen::Matrix<value_type,nComponents1,1> id_type;
+        typedef Eigen::Matrix<value_type,nComponents1,nComponents2> id_type;
         typedef Eigen::Matrix<value_type,nComponents1,nDim> g_type;
         typedef Eigen::Matrix<value_type,nDim,nDim> h_type;
-        typedef Eigen::Matrix<value_type,nComponents1,1> l_type;
+        typedef Eigen::Matrix<value_type,nComponents1,nComponents2> l_type;
         typedef boost::multi_array<id_type,2> functionvalue_type;
         typedef boost::multi_array<g_type,2> grad_type;
         typedef boost::multi_array<h_type,2> hessian_type;
@@ -1062,6 +1068,52 @@ public:
                 }
             }
         }
+
+        void
+        init( reference_element_ptrtype const& M_ref_ele,
+              matrix_node_t_type const& __pts,
+              mpl::int_<2> )
+        {
+            typedef typename grad_type::index index;
+#if 0
+            std::cout << "family = " << M_ref_ele->familyName() << std::endl;
+            std::cout << "is_product = " << reference_element_type::is_product << std::endl;
+            std::cout << "nbDof = " << M_ref_ele->nbDof() << std::endl;
+#endif
+            const index I = ( reference_element_type::is_product?M_ref_ele->nbDof()/nComponents/nComponents:M_ref_ele->nbDof() );
+            //std::cout << "I = " << I << std::endl;
+            //std::cout << "nbDof = " << M_ref_ele->nbDof() << std::endl;
+
+            const index Q = __pts.size2();
+            //std::cout << "Q = " << I << std::endl;
+
+            const int nc1dof= ( reference_element_type::is_product?nComponents1:1 );
+            const int nc2dof= ( reference_element_type::is_product?nComponents2:1 );
+            int nldof= ( reference_element_type::is_product?I*nComponents:I );
+            //std::cout << " nldof = " << nldof << " I=" << I << " nc1dof=" << nc1dof << " nc2dof=" << nc2dof << std::endl;
+            M_phi.resize( boost::extents[nldof][__pts.size2()] );
+            M_grad.resize( boost::extents[nldof][__pts.size2()] );
+
+            matrix_type phiv = M_ref_ele->evaluate( __pts );
+
+            for ( index i = 0; i < I; ++i )
+            {
+                for ( index c1 = 0; c1 < nc1dof; ++c1 )
+                {
+                    for ( index c2 = 0; c2 < nc2dof; ++c2 )
+                    {
+                        int II = i + c2*I+nc2dof*c1*I;
+                        for ( index q = 0; q < Q; ++q )
+                        {
+                            for ( index j = 0; j < nRealDim; ++j )
+                                for ( index k = 0; k < nRealDim; ++k )
+                                    M_phi[II][q]( j,k ) = phiv( I*nComponents*(nComponents2*c1+c2)+nComponents*i+nRealDim*j+k, q );
+                            //std::cout << "phi[" << II << "(" << i << ",c2=" << c2 << ", " << I << "," << nc2dof << ",c1=" << c1 << ")[" << q << "]=" << M_phi[II][q] << std::endl;
+                        }
+                    }
+                }
+            }
+        }
     private:
 
         reference_element_ptrtype M_ref_ele;
@@ -1177,17 +1229,17 @@ public:
         typedef typename matrix_type::value_type dphi_type;
         typedef typename matrix_type::value_type id_type;
 #else
-        typedef Eigen::Matrix<value_type,nComponents1,1> id_type;
+        typedef Eigen::Matrix<value_type,nComponents1,nComponents2> id_type;
         typedef Eigen::Matrix<value_type,nComponents1,nDim> ref_grad_type;
         typedef Eigen::Matrix<value_type,nComponents1,NDim> grad_type;
         typedef Eigen::Matrix<value_type,NDim,NDim> hess_type;
-        typedef Eigen::Matrix<value_type,nComponents1,1> laplacian_type;
+        typedef Eigen::Matrix<value_type,nComponents1,nComponents2> laplacian_type;
         typedef Eigen::Matrix<value_type,1,1> div_type;
-        typedef Eigen::Matrix<value_type,nComponents1,1> dn_type;
+        typedef Eigen::Matrix<value_type,nComponents1,nComponents2> dn_type;
         typedef Eigen::Matrix<value_type,3,1> curl_type;
-        typedef Eigen::Matrix<value_type,nComponents1,1> dx_type;
-        typedef Eigen::Matrix<value_type,nComponents1,1> dy_type;
-        typedef Eigen::Matrix<value_type,nComponents1,1> dz_type;
+        typedef Eigen::Matrix<value_type,nComponents1,nComponents2> dx_type;
+        typedef Eigen::Matrix<value_type,nComponents1,nComponents2> dy_type;
+        typedef Eigen::Matrix<value_type,nComponents1,nComponents2> dz_type;
 
 #if 0
         typedef boost::multi_array<id_type,2> functionvalue_type;
