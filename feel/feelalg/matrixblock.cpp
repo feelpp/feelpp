@@ -97,8 +97,8 @@ BlocksBaseSparseMatrix<T>::close()
             if ( this->operator()(i,j) ) continue;
 
             DVLOG(1) << "add zero matrix in block ("<<i<<","<<j<<")\n";
-            
-            this->operator()(i,j) = Feel::detail::backend(T(0))->newZeroMatrix(dataMapRowRef[i], dataMapColRef[j]);
+
+            this->operator()(i,j) = Feel::detail::backend(T(0))->newZeroMatrix(dataMapColRef[j], dataMapRowRef[i]);
         }
     }
 
