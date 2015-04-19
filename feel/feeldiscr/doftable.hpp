@@ -1712,6 +1712,19 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
                            0 );
             }
             this->M_n_dofs = nDofP0;
+
+            if ( themasterRank == this->worldComm().localRank() )
+            {
+                for ( size_type k = 0; k < this->nLocalDofWithGhost() ; ++k )
+                {
+                    for ( rank_type proc=0; proc<this->worldComm().localSize(); ++proc )
+                    {
+                        if ( proc == themasterRank ) continue;
+                        if ( this->nLocalDofWithGhost(proc) == 0 ) continue;
+                        this->M_activeDofSharedOnCluster[k].insert(proc);
+                    }
+                }
+            }
         }
     }
     else
