@@ -433,7 +433,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 
         if ( M_form.isPatternSymmetric() )
         {
-            for ( uint16_type c = 0; c < trial_dof_type::nComponents1; ++c )
+            for ( uint16_type c = 0; c < trial_dof_type::nComponents; ++c )
                 for ( uint16_type j = 0; j < trial_dof_type::fe_type::nLocalDof; ++j )
                     for ( uint16_type i = 0; i <= j; ++i )
                     {
@@ -446,7 +446,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 
         else
         {
-            for ( uint16_type c = 0; c < trial_dof_type::nComponents1; ++c )
+            for ( uint16_type c = 0; c < trial_dof_type::nComponents; ++c )
                 for ( uint16_type j = 0; j < trial_dof_type::fe_type::nLocalDof; ++j )
                     for ( uint16_type i = 0; i < test_dof_type::fe_type::nLocalDof; ++i )
                     {
@@ -609,7 +609,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 
     if ( do_less )
     {
-        for ( uint16_type c = 0; c < trial_dof_type::nComponents1; ++c )
+        for ( uint16_type c = 0; c < trial_dof_type::nComponents; ++c )
         {
             M_c_rep = M_rep.block( c*test_dof_type::fe_type::nLocalDof, c*trial_dof_type::fe_type::nLocalDof,
                                     test_dof_type::fe_type::nLocalDof, trial_dof_type::fe_type::nLocalDof );
