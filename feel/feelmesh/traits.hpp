@@ -30,6 +30,9 @@
 #define __FEELPP_MESH_TRAITS_HPP 1
 
 #include <feel/feelcore/traits.hpp>
+#include <feel/feelmesh/simplex.hpp>
+#include <feel/feelmesh/hypercube.hpp>
+
 
 namespace Feel
 {

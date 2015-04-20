@@ -2348,7 +2348,7 @@ public:
         //@{
 
         typedef boost::multi_array<value_type,3> array_type;
-        typedef Eigen::Matrix<value_type,nComponents1,1> _id_type;
+        typedef Eigen::Matrix<value_type,nComponents1,nComponents2> _id_type;
         typedef Eigen::Matrix<value_type,nComponents1,nRealDim> _grad_type;
         typedef Eigen::Matrix<value_type,nRealDim,nRealDim> _hess_type;
         typedef Eigen::Matrix<value_type,1,1> _div_type;
