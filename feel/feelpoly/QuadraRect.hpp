@@ -48,10 +48,10 @@ namespace Feel
  * @author Christophe Prud'homme
  */
 template<class Convex, uint16_type Integration_Degree, typename T>
-class TestQuadra : public PointSetQuadrature<Convex, Integration_Degree, T>  {};
+class QuadraRect : public PointSetQuadrature<Convex, Integration_Degree, T>  {};
 
 template< uint16_type Integration_Degree, typename T>
-class TestQuadra<Simplex<0,1> , Integration_Degree ,T >  : public PointSetQuadrature<Simplex<0,1> , Integration_Degree, T>
+class QuadraRect<Simplex<0,1> , Integration_Degree ,T >  : public PointSetQuadrature<Simplex<0,1> , Integration_Degree, T>
 {
 public :
     typedef T value_type;
@@ -65,14 +65,14 @@ public :
     static const uint16_type Degree = invalid_uint16_type_value;
     static const uint32_type Npoints = 1;
 
-    TestQuadra()
+    QuadraRect()
         :
         super( Npoints )
     {
 
     }
 
-    ~TestQuadra() {}
+    ~QuadraRect() {}
 
     FEELPP_DEFINE_VISITABLE();
 };
@@ -273,7 +273,7 @@ public :
 /** Gauss Quadrature on Simplex Product **/
 
 template< uint16_type Integration_Degree, typename T>
-class TestQuadra<Hypercube<1,1>, Integration_Degree ,T >
+class QuadraRect<Hypercube<1,1>, Integration_Degree ,T >
     :
 public PointSetQuadrature<Hypercube<1,1>, Integration_Degree, T>
 {
@@ -289,9 +289,9 @@ public :
     static const uint16_type Degree = 1;
     static const uint32_type Npoints = 8;
 
-    typedef TestQuadra<Simplex<0,1>,Integration_Degree, T> face_quad_type;
+    typedef QuadraRect<Simplex<0,1>,Integration_Degree, T> face_quad_type;
 
-    TestQuadra()
+    QuadraRect()
         :
         super( 8 )
     {
@@ -326,7 +326,7 @@ public :
 
     }
 
-    TestQuadra(int N)
+    QuadraRect(int N)
         :
         super( N )
     {
@@ -362,14 +362,14 @@ public :
     }
 
 
-    ~TestQuadra() {}
+    ~QuadraRect() {}
 
     FEELPP_DEFINE_VISITABLE();
 };
 /** Gauss Quadrature on the quadrangle [-1,1]x[-1,1] **/
 
 template< uint16_type Integration_Degree, typename T>
-class TestQuadra<Hypercube<2,1>, Integration_Degree ,T >
+class QuadraRect<Hypercube<2,1>, Integration_Degree ,T >
     :
 public PointSetQuadrature<Hypercube<2,1>, Integration_Degree, T>
 {
@@ -382,12 +382,12 @@ public :
     typedef typename super::nodes_type nodes_type;
     typedef typename super::weights_type weights_type;
 
-    typedef TestQuadra<Hypercube<1,1>,Integration_Degree, T> face_quad_type;
+    typedef QuadraRect<Hypercube<1,1>,Integration_Degree, T> face_quad_type;
 
     static const uint16_type Degree = 3;
     static const uint32_type Npoints =8*8;
 
-    TestQuadra( )
+    QuadraRect( )
         :
         super( 8*8 )
     {
@@ -468,7 +468,7 @@ public :
     }*/
 
 
-    TestQuadra(int Nx)
+    QuadraRect(int Nx)
         :
         super( Nx*Nx )
     {
@@ -508,7 +508,7 @@ public :
     }
 
 
-    ~TestQuadra() {}
+    ~QuadraRect() {}
 
     FEELPP_DEFINE_VISITABLE();
 };

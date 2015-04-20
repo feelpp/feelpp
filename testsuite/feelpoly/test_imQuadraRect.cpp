@@ -35,7 +35,7 @@ using boost::unit_test::test_suite;
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelpoly/im.hpp>
 #include <feel/feelpoly/imsimplex.hpp>
-#include <feel/feelpoly/testQuadra.hpp>
+#include <feel/feelpoly/QuadraRect.hpp>
 
 
 
@@ -361,7 +361,7 @@ public:
     {
         using namespace Feel;
 
-        IMGeneral<D, N, T, Hypercube,TestQuadra> im;
+        IMGeneral<D, N, T, Hypercube,QuadraRect> im;
 
         value_type res = math::abs( im.integrateAtPoints( M_func ) - M_res );
 
