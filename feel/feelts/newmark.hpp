@@ -304,57 +304,62 @@ Newmark<SpaceType>::init()
 
     if ( this->isRestart() )
     {
-         // create and open a character archive for output
-         std::string procsufix = (boost::format("-proc%1%_%2%") %this->worldComm().globalRank() %this->worldComm().globalSize() ).str();
+        fs::path dirPath = ( this->restartPath().empty() )? this->path() : this->restartPath()/this->path();
 
-         std::ostringstream ostrUnknown;
-         ostrUnknown << M_name << "-unknown-" << M_iteration;
-         if( M_rankProcInNameOfFiles )
-           ostrUnknown << procsufix;
-         DVLOG(2) << "[Newmark::init()] load file: " << ostrUnknown.str() << "\n";
-         fs::ifstream ifsUnknown;
-         if ( this->restartPath().empty() )
-           ifsUnknown.open( this->path()/ostrUnknown.str() );
-         else
-           ifsUnknown.open( this->restartPath()/this->path()/ostrUnknown.str() );
-         // load data from archive
-         boost::archive::binary_iarchive iaUnknown( ifsUnknown );
-         iaUnknown >> *M_previousUnknown;
+        if ( this->fileFormat() == "hdf5")
+        {
+#ifdef FEELPP_HAS_HDF5
+            M_previousUnknown->loadHDF5( ( dirPath / (boost::format("%1%-unknown-%2%.h5")%M_name %M_iteration).str() ).string() );
+            M_previousVel->loadHDF5( ( dirPath / (boost::format("%1%-velocity-%2%.h5")%M_name %M_iteration).str() ).string() );
+            M_previousAcc->loadHDF5( ( dirPath / (boost::format("%1%-acceleration-%2%.h5")%M_name %M_iteration).str() ).string() );
+#else
+            CHECK( false ) << "hdf5 not detected";
+#endif
+        }
+        else if ( this->fileFormat() == "binary")
+        {
+            // create and open a character archive for output
+            std::string procsufix = (boost::format("-proc%1%_%2%") %this->worldComm().globalRank() %this->worldComm().globalSize() ).str();
 
-         std::ostringstream ostrVel;
-         ostrVel << M_name << "-velocity-" << M_iteration;
-         if( M_rankProcInNameOfFiles )
-           ostrVel << procsufix;
-         DVLOG(2) << "[Newmark::init()] load file: " << ostrVel.str() << "\n";
-         fs::ifstream ifsVel;
-         if ( this->restartPath().empty() )
-           ifsVel.open( this->path()/ostrVel.str() );
-         else
-           ifsVel.open( this->restartPath()/this->path()/ostrVel.str() );
-         // load data from archive
-         boost::archive::binary_iarchive iaVel( ifsVel );
-         iaVel >> *M_previousVel;
+            std::ostringstream ostrUnknown;
+            ostrUnknown << M_name << "-unknown-" << M_iteration;
+            if( M_rankProcInNameOfFiles )
+                ostrUnknown << procsufix;
+            DVLOG(2) << "[Newmark::init()] load file: " << ostrUnknown.str() << "\n";
+            fs::ifstream ifsUnknown;
+            ifsUnknown.open( dirPath/ostrUnknown.str() );
+            // load data from archive
+            boost::archive::binary_iarchive iaUnknown( ifsUnknown );
+            iaUnknown >> *M_previousUnknown;
 
-         std::ostringstream ostrAcc;
-         ostrAcc << M_name << "-acceleration-" << M_iteration;
-         if( M_rankProcInNameOfFiles )
-           ostrAcc << procsufix;
-         DVLOG(2) << "[Newmark::init()] load file: " << ostrAcc.str() << "\n";
-         fs::ifstream ifsAcc;
-         if ( this->restartPath().empty() )
-           ifsAcc.open( this->path()/ostrAcc.str() );
-         else
-           ifsAcc.open( this->restartPath()/this->path()/ostrAcc.str() );
-         // load data from archive
-         boost::archive::binary_iarchive iaAcc( ifsAcc );
-         iaAcc >> *M_previousAcc;
+            std::ostringstream ostrVel;
+            ostrVel << M_name << "-velocity-" << M_iteration;
+            if( M_rankProcInNameOfFiles )
+                ostrVel << procsufix;
+            DVLOG(2) << "[Newmark::init()] load file: " << ostrVel.str() << "\n";
+            fs::ifstream ifsVel;
+            ifsVel.open( dirPath/ostrVel.str() );
+            // load data from archive
+            boost::archive::binary_iarchive iaVel( ifsVel );
+            iaVel >> *M_previousVel;
 
+            std::ostringstream ostrAcc;
+            ostrAcc << M_name << "-acceleration-" << M_iteration;
+            if( M_rankProcInNameOfFiles )
+                ostrAcc << procsufix;
+            DVLOG(2) << "[Newmark::init()] load file: " << ostrAcc.str() << "\n";
+            fs::ifstream ifsAcc;
+            ifsAcc.open( dirPath/ostrAcc.str() );
+            // load data from archive
+            boost::archive::binary_iarchive iaAcc( ifsAcc );
+            iaAcc >> *M_previousAcc;
+        }
 
-         DVLOG(2) << "[Newmark::init()] compute polyDeriv\n";
-         // compute first derivative poly of rhs
-         this->computePolyFirstDeriv();
-         // compute second derivative poly of rhs
-         this->computePolySecondDeriv();
+        DVLOG(2) << "[Newmark::init()] compute polyDeriv\n";
+        // compute first derivative poly of rhs
+        this->computePolyFirstDeriv();
+        // compute second derivative poly of rhs
+        this->computePolySecondDeriv();
     }
 }
 
@@ -499,68 +504,94 @@ Newmark<SpaceType>::saveCurrent()
     TSBaseMetadata tssaver( *this );
     tssaver.save();
 
-    std::string procsufix = (boost::format("-proc%1%_%2%") %this->worldComm().globalRank() %this->worldComm().globalSize() ).str();
+    if ( this->fileFormat() == "hdf5")
+    {
+#ifdef FEELPP_HAS_HDF5
+        M_previousUnknown->saveHDF5( (M_path_save / (boost::format("%1%-unknown-%2%.h5")%M_name %M_iteration).str() ).string() );
+        M_previousVel->saveHDF5( (M_path_save / (boost::format("%1%-velocity-%2%.h5")%M_name %M_iteration).str() ).string() );
+        M_previousAcc->saveHDF5( (M_path_save / (boost::format("%1%-acceleration-%2%.h5")%M_name %M_iteration).str() ).string() );
+#else
+        CHECK( false ) << "hdf5 not detected";
+#endif
+    }
+    else if ( this->fileFormat() == "binary")
+    {
+        std::string procsufix = (boost::format("-proc%1%_%2%") %this->worldComm().globalRank() %this->worldComm().globalSize() ).str();
 
-    std::ostringstream ostrUnknown;
-    ostrUnknown << M_name << "-unknown-" << M_iteration;
-    if( M_rankProcInNameOfFiles )
-      ostrUnknown << procsufix;
-    fs::ofstream ofsUnknown( M_path_save / ostrUnknown.str() );
-    // save data in archive
-    boost::archive::binary_oarchive oaUnknown( ofsUnknown );
-    oaUnknown << *M_previousUnknown;
+        std::ostringstream ostrUnknown;
+        ostrUnknown << M_name << "-unknown-" << M_iteration;
+        if( M_rankProcInNameOfFiles )
+            ostrUnknown << procsufix;
+        fs::ofstream ofsUnknown( M_path_save / ostrUnknown.str() );
+        // save data in archive
+        boost::archive::binary_oarchive oaUnknown( ofsUnknown );
+        oaUnknown << *M_previousUnknown;
 
-    std::ostringstream ostrVel;
-    ostrVel << M_name << "-velocity-" << M_iteration;
-    if( M_rankProcInNameOfFiles )
-      ostrVel << procsufix;
-    fs::ofstream ofsVel( M_path_save / ostrVel.str() );
-    // save data in archive
-    boost::archive::binary_oarchive oaVel( ofsVel );
-    oaVel << *M_previousVel;
+        std::ostringstream ostrVel;
+        ostrVel << M_name << "-velocity-" << M_iteration;
+        if( M_rankProcInNameOfFiles )
+            ostrVel << procsufix;
+        fs::ofstream ofsVel( M_path_save / ostrVel.str() );
+        // save data in archive
+        boost::archive::binary_oarchive oaVel( ofsVel );
+        oaVel << *M_previousVel;
 
-    std::ostringstream ostrAcc;
-    ostrAcc << M_name << "-acceleration-" << M_iteration;
-    if( M_rankProcInNameOfFiles )
-      ostrAcc << procsufix;
-    fs::ofstream ofsAcc( M_path_save / ostrAcc.str() );
-    // save data in archive
-    boost::archive::binary_oarchive oaAcc( ofsAcc );
-    oaAcc << *M_previousAcc;
+        std::ostringstream ostrAcc;
+        ostrAcc << M_name << "-acceleration-" << M_iteration;
+        if( M_rankProcInNameOfFiles )
+            ostrAcc << procsufix;
+        fs::ofstream ofsAcc( M_path_save / ostrAcc.str() );
+        // save data in archive
+        boost::archive::binary_oarchive oaAcc( ofsAcc );
+        oaAcc << *M_previousAcc;
+    }
 }
 
 template <typename SpaceType>
 void
 Newmark<SpaceType>::loadCurrent()
 {
-    std::string procsufix = (boost::format("-proc%1%_%2%") %this->worldComm().globalRank() %this->worldComm().globalSize() ).str();
+    if ( this->fileFormat() == "hdf5")
+    {
+#ifdef FEELPP_HAS_HDF5
+        M_previousUnknown->loadHDF5( (M_path_save / (boost::format("%1%-unknown-%2%.h5")%M_name %M_iteration).str() ).string() );
+        M_previousVel->loadHDF5( (M_path_save / (boost::format("%1%-velocity-%2%.h5")%M_name %M_iteration).str() ).string() );
+        M_previousAcc->loadHDF5( (M_path_save / (boost::format("%1%-acceleration-%2%.h5")%M_name %M_iteration).str() ).string() );
+#else
+        CHECK( false ) << "hdf5 not detected";
+#endif
+    }
+    else if ( this->fileFormat() == "binary")
+    {
+        std::string procsufix = (boost::format("-proc%1%_%2%") %this->worldComm().globalRank() %this->worldComm().globalSize() ).str();
 
-    std::ostringstream ostrUnknown;
-    ostrUnknown << M_name << "-unknown-" << M_iteration;
-    if( M_rankProcInNameOfFiles )
-      ostrUnknown << procsufix;
-    fs::ifstream ifsUnknown( M_path_save / ostrUnknown.str() );
-    // load data from archive
-    boost::archive::binary_iarchive iaUnknown( ifsUnknown );
-    iaUnknown >> *M_previousUnknown;
+        std::ostringstream ostrUnknown;
+        ostrUnknown << M_name << "-unknown-" << M_iteration;
+        if( M_rankProcInNameOfFiles )
+            ostrUnknown << procsufix;
+        fs::ifstream ifsUnknown( M_path_save / ostrUnknown.str() );
+        // load data from archive
+        boost::archive::binary_iarchive iaUnknown( ifsUnknown );
+        iaUnknown >> *M_previousUnknown;
 
-    std::ostringstream ostrVel;
-    ostrVel << M_name << "-velocity-" << M_iteration;
-    if( M_rankProcInNameOfFiles )
-      ostrVel << procsufix;
-    fs::ifstream ifsVel( M_path_save / ostrVel.str() );
-    // load data from archive
-    boost::archive::binary_iarchive iaVel( ifsVel );
-    iaVel >> *M_previousVel;
+        std::ostringstream ostrVel;
+        ostrVel << M_name << "-velocity-" << M_iteration;
+        if( M_rankProcInNameOfFiles )
+            ostrVel << procsufix;
+        fs::ifstream ifsVel( M_path_save / ostrVel.str() );
+        // load data from archive
+        boost::archive::binary_iarchive iaVel( ifsVel );
+        iaVel >> *M_previousVel;
 
-    std::ostringstream ostrAcc;
-    ostrAcc << M_name << "-acceleration-" << M_iteration;
-    if( M_rankProcInNameOfFiles )
-      ostrAcc << procsufix;
-    fs::ifstream ifsAcc( M_path_save / ostrAcc.str() );
-    // load data from archive
-    boost::archive::binary_iarchive iaAcc( ifsAcc );
-    iaAcc >> *M_previousAcc;
+        std::ostringstream ostrAcc;
+        ostrAcc << M_name << "-acceleration-" << M_iteration;
+        if( M_rankProcInNameOfFiles )
+            ostrAcc << procsufix;
+        fs::ifstream ifsAcc( M_path_save / ostrAcc.str() );
+        // load data from archive
+        boost::archive::binary_iarchive iaAcc( ifsAcc );
+        iaAcc >> *M_previousAcc;
+    }
 }
 
 template <typename SpaceType>
@@ -704,6 +735,7 @@ BOOST_PARAMETER_FUNCTION(
       ( restart_at_last_save,*( boost::is_integral<mpl::_> ),vm[prefixvm( prefix,"ts.restart.at-last-save" )].template as<bool>() )
       ( save,*( boost::is_integral<mpl::_> ),vm[prefixvm( prefix,"ts.save" )].template as<bool>() )
       ( freq,*(boost::is_integral<mpl::_> ),vm[prefixvm( prefix,"ts.save.freq" )].template as<int>() )
+      ( format,*,vm[prefixvm( prefix,"ts.file-format" )].template as<std::string>() )
       ( rank_proc_in_files_name,*( boost::is_integral<mpl::_> ),vm[prefixvm( prefix,"ts.rank-proc-in-files-name" )].template as<bool>() )
     ) )
 {
@@ -718,6 +750,7 @@ BOOST_PARAMETER_FUNCTION(
     thenewmark->setRestartAtLastSave( restart_at_last_save );
     thenewmark->setSaveInFile( save );
     thenewmark->setSaveFreq( freq );
+    thenewmark->setfileFormat( format );
     thenewmark->setRankProcInNameOfFiles( rank_proc_in_files_name );
     return thenewmark;
 }
