@@ -1,4 +1,4 @@
-// -*- mode: c++ -*-
+// -*- mode: c++ -*- vim:set ft=markdown:
 namespace Feel
 {
 /** \page ProgEnv Programming Environment
@@ -28,6 +28,7 @@ namespace Feel
     - \subpage TutorialSpaces
     - \subpage TutorialFunctions
     - \subpage TutorialBackend
+    - \subpage TutorialModel
  */
 /** \page QuickRef Quick Reference
    - \subpage Keywords
