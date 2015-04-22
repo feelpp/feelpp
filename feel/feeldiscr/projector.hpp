@@ -291,8 +291,8 @@ public :
         {
             form1( _test=this->dualImageSpace(), _vector=ie ) +=
                 integrate( _range=boundaryfaces( this->dualImageSpace()->mesh() ),
-                           _expr=inner( expr, M_epsilon*( -grad( uImage )*vf::N() +
-                                                          M_gamma / vf::hFace() *id( uImage ) ) ),
+                           _expr=inner( expr, M_epsilon*( -grad( uImage )*vf::N() ) +
+                                                          M_gamma / vf::hFace() *id( uImage ) ),
                            _quad=_Q<thequad_type::order+quadOrderId>(),
                            _quad1=_Q<thequad1_type::order+quad1OrderId>(),
                            _geomap=geomap );
@@ -463,9 +463,9 @@ private :
             a += integrate( _range=boundaryfaces( this->dualImageSpace()->mesh() ),
                             _expr= M_epsilon*( -trans( idt( uDomain ) )* grad( uImage )*vf::N() ) );
             a += integrate( _range=boundaryfaces( this->dualImageSpace()->mesh() ),
-                            _expr= M_epsilon*( M_gamma * trans( idt( uDomain ) ) /*trial*/
+                            _expr= M_gamma * trans( idt( uDomain ) ) /*trial*/
                                         *id( uImage ) / vf::hFace()   /*test*/
-                                        ) );
+                            );
         }
         break;
 
