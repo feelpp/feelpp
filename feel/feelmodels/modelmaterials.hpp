@@ -147,21 +147,43 @@ std::ostream& operator<<( std::ostream& os, ModelMaterial const& m );
 /**
  * @brief a set of materials
  */
-class ModelMaterials: public std::vector<ModelMaterial>
+class ModelMaterials: public std::map<std::string,ModelMaterial>
 {
 public:
+    using value_type = std::map<std::string,ModelMaterial>::value_type;
     ModelMaterials() = default;
     ModelMaterials( pt::ptree const& p );
     virtual ~ModelMaterials() = default;
     void setPTree( pt::ptree const& _p ) { M_p = _p; setup(); }
     ModelMaterial loadMaterial( std::string const& );
     ModelMaterial getMaterial( pt::ptree const& );
+
+    ModelMaterial const&
+    material( std::string const& m ) const
+        {
+            auto it = this->find( m );
+            if ( it == this->end() )
+                throw std::invalid_argument( std::string("ModelMaterial: Invalid material marker ") + m );
+            return it->second;
+            
+        }
 private:
     void setup();
 private:
     pt::ptree M_p;
 };
 
+inline ModelMaterial
+material( ModelMaterials::value_type const& m )
+{
+    return m.second;
+}
+
+inline std::string
+marker( ModelMaterials::value_type const& m )
+{
+    return m.first;
+}
 
 }
 #endif
