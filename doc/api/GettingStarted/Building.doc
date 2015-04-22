@@ -152,7 +152,7 @@ computer, and the <tt>*-dev</tt> packages for some of them. <br>
 Required packages:
 \li g++ (4.7, 4.8) OR Clang (3.3, 3.4)
 \li MPI: openmpi (preferred) or mpich
-\li Boost >= 1.49
+\li Boost >= 1.55
 \li Petsc >= 3.2
 \li CMake >= 2.8.7
 \li Gmsh >= 2.8.3 (can be found at <a href="http://www.geuz.org/gmsh">http://www.geuz.org/gmsh</a>)

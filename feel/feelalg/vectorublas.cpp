@@ -793,7 +793,13 @@ VectorUblas<T,Storage>::ioHDF5( bool isLoad, std::string const& filename )
         CHECK( sizeValuesReload[0] == this->map().nLocalDofWithGhost() ) << "error : must be equal "  << sizeValuesReload[0] << " " << this->map().nLocalDofWithGhost();
 
         hdf5.openTable( "element",dimsElt );
-        hdf5.read( "element", H5T_NATIVE_DOUBLE, dimsElt2, offsetElt, &(M_vec[0]) );
+        if ( this->map().nLocalDofWithGhost() > 0 )
+            hdf5.read( "element", H5T_NATIVE_DOUBLE, dimsElt2, offsetElt, &(M_vec[0]) );
+        else
+        {
+            double uselessValue=0;
+            hdf5.read( "element", H5T_NATIVE_DOUBLE, dimsElt2, offsetElt, &uselessValue );
+        }
         hdf5.closeTable( "element" );
     }
     else // save
@@ -806,7 +812,8 @@ VectorUblas<T,Storage>::ioHDF5( bool isLoad, std::string const& filename )
         // create double tab
         hdf5.createTable( "element", H5T_NATIVE_DOUBLE, dimsElt );
         //hdf5.write( "element", H5T_NATIVE_DOUBLE, dimsElt2, offsetElt, M_vec.data().begin()) );
-        hdf5.write( "element", H5T_NATIVE_DOUBLE, dimsElt2, offsetElt, &(M_vec[0]) );
+        if ( this->map().nLocalDofWithGhost() > 0 )
+            hdf5.write( "element", H5T_NATIVE_DOUBLE, dimsElt2, offsetElt, &(M_vec[0]) );
         hdf5.closeTable( "element" );
     }
     hdf5.closeFile();
