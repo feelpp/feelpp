@@ -93,7 +93,7 @@ public :
             BOOST_TEST_MESSAGE( "[time int laplacian(u)=" << ti.elapsed() << "s] a=" << a );
 
         ti.restart();
-        auto b = integrate( _range= elements( mesh ), _expr= lapg ).evaluate()( 0,0 );
+        auto b = integrate( _range= elements( mesh ), _expr= lapg ).evaluate();
 
         if ( Environment::rank() == 0 )
             BOOST_TEST_MESSAGE( "[time int " << lapg <<" =" << ti.elapsed() << "s] b=" <<  b );
