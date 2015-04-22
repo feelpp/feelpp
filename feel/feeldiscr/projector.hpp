@@ -78,7 +78,13 @@ struct lift_args
  * @see OperatorLinear
  */
 template<class DomainSpace, class DualImageSpace>
-class Projector : public OperatorLinear<DomainSpace, DualImageSpace>
+class Projector : public OperatorLinear<typename mpl::if_<is_shared_ptr<DomainSpace>,
+                                                          mpl::identity<typename DomainSpace::element_type>,
+                                                          mpl::identity<DomainSpace>>::type::type,
+                                        typename mpl::if_<is_shared_ptr<DualImageSpace>,
+                                                          mpl::identity<typename DualImageSpace::element_type>,
+                                                          mpl::identity<DualImageSpace>>::type::type>
+                                        
 {
     typedef Projector<DomainSpace,DualImageSpace> super;
 
@@ -87,9 +93,12 @@ public :
     /** @name Typedefs
      */
     //@{
-
-
-    typedef OperatorLinear<DomainSpace, DualImageSpace> ol_type;
+    typedef OperatorLinear<typename mpl::if_<is_shared_ptr<DomainSpace>,
+                                             mpl::identity<typename DomainSpace::element_type>,
+                                             mpl::identity<DomainSpace>>::type::type,
+                           typename mpl::if_<is_shared_ptr<DualImageSpace>,
+                                             mpl::identity<typename DualImageSpace::element_type>,
+                                             mpl::identity<DualImageSpace>>::type::type> ol_type;
 
     typedef typename super::domain_space_type domain_space_type;
     typedef typename super::dual_image_space_type  dual_image_space_type;
@@ -144,7 +153,7 @@ public :
 
         ie = this->backend()->newVector( this->dualImageSpace() );
 
-        initMatrix();
+        initMatrix<domain_element_type>();
     }
 
     //~Projector() {}
@@ -172,6 +181,23 @@ public :
         applyOn( range, expr, mpl::int_<idim_type::value>() );
     }
 
+    template<typename RangeT, typename ExprT>
+    domain_element_type
+    projectL2( RangeT range, ExprT expr )
+    {
+        auto sol = this->domainSpace()->element();
+        auto uImage = this->dualImageSpace()->element();
+
+        ie->zero();
+
+        form1( _test=this->dualImageSpace(), _vector=ie ) +=
+            integrate( _range=range, _expr=inner(expr,id( this->dualImageSpace()->element() ) ) );
+                       
+        this->backend()->solve( _matrix=M_matrixFull, _solution=sol, _rhs=ie );
+
+        return sol;
+    }
+        
 
     BOOST_PARAMETER_MEMBER_FUNCTION( ( domain_element_type ),
                                      project,
@@ -248,6 +274,7 @@ public :
                     break;
                 }
         }
+
         else if ( ( M_proj_type == LIFT ) && ( M_dir == WEAK ) )
         {
             form1( _test=this->dualImageSpace(), _vector=ie ) +=
@@ -307,8 +334,8 @@ public :
     operator()( RhsExpr const& rhs_expr )
     {
         return this->project( rhs_expr );
-    }
-
+    
+}
     template<typename RhsExpr>
     void
     operator()( domain_element_type& de, RhsExpr const& rhs_expr )
@@ -337,7 +364,7 @@ public :
         return this->project( expr, range );
     }
 
-		using OperatorLinear<DomainSpace, DualImageSpace>::apply;
+    using ol_type::apply;
     void
     apply( domain_element_type& de,
            image_element_type const& ie )
@@ -382,7 +409,21 @@ public :
 
 private :
 
-    void initMatrix()
+    template<typename T>
+        void initMatrix( typename std::enable_if<is_tensor2_field<T>::value>::type* = nullptr )
+    {
+        auto uDomain = this->domainSpace()->element();
+        auto uImage = this->dualImageSpace()->element();
+
+        auto a = form2 ( _trial=this->domainSpace(),
+                         _test=this->dualImageSpace(),
+                         _matrix=M_matrixCst );
+
+        a = integrate( _range=elements( this->dualImageSpace()->mesh() ),
+                       _expr=inner( idt( uDomain ), id( uImage ) ) );
+    }
+    template<typename T>
+        void initMatrix( typename std::enable_if<mpl::not_<is_tensor2_field<T>>::value>::type* = nullptr )
     {
         using namespace vf;
         auto uDomain = this->domainSpace()->element();
@@ -460,6 +501,7 @@ private :
 
         case NODAL:
             break;
+
         }
 
         M_matrixCst->close();
@@ -488,7 +530,14 @@ private :
 
 };//Projector
 
-#if 1
+template<class DomainSpace, class DualImageSpace>
+using projector_type =  Projector<DomainSpace,DualImageSpace>;
+
+template<class DomainSpace, class DualImageSpace>
+using projector_ptrtype =  boost::shared_ptr<Projector<DomainSpace,DualImageSpace>>;
+
+
+
 /**
  * this function returns a \c Projector \c shared_ptr with
  *
@@ -505,8 +554,7 @@ projector( boost::shared_ptr<TDomainSpace> const& domainspace,
            ProjectorType proj_type=L2, double epsilon=0.01, double gamma = 20, DirichletType dirichlet_type = WEAK)
 {
     typedef Projector<TDomainSpace, TDualImageSpace > Proj_type;
-    boost::shared_ptr<Proj_type> proj( new Proj_type( domainspace, imagespace, abackend, proj_type, epsilon, gamma, dirichlet_type ) );
-    return proj;
+    return boost::make_shared<Proj_type>( domainspace, imagespace, abackend, proj_type, epsilon, gamma, dirichlet_type ) ;
 }
 
 BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::projector_args<Args>::return_type ),
@@ -539,11 +587,6 @@ BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::lift_args<Args>::lift_return_
 {
     return projector( domainSpace, domainSpace, backend, ProjectorType::LIFT, 0.01 , penaldir, type );
 }
-
-
-#endif
-
-
 
 } //namespace Feel
 
