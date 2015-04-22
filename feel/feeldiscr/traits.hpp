@@ -21,38 +21,21 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-#ifndef __FEELPP_POLY_TRAITS_HPP
-#define __FEELPP_POLY_TRAITS_HPP 1
+#ifndef FEELPP_DISCRTRAITS_HPP
+#define FEELPP_DISCRTRAITS_HPP 1
 
 #include <feel/feelmesh/traits.hpp>
+#include <feel/feelpoly/traits.hpp>
 
-namespace Feel
-{
-class ScalarBase {};
-class VectorialBase {};
-class Tensor2Base {};
+namespace Feel {
 
-
-//template<template<uint16_type> class PolySetType>
-//struct is_scalar_field : std::is_base_of<ScalarBase,PolySetType<1> >::type {};
-
-//template<template<uint16_type> class PolySetType>
-//struct is_vector_field : std::is_base_of<ScalarBase,PolySetType<1> >::type {};
-        
-template<typename T>
-struct is_scalar_polynomial : std::is_base_of<ScalarBase, T>::type {};
 
 template<typename T>
-struct is_vector_polynomial : std::is_base_of<VectorialBase, T>::type {};
-
+using is_scalar_field = typename std::is_base_of<ScalarBase, T>::type;
 template<typename T>
-using is_vectorial_polynomial = is_vector_polynomial<T>;
-
+using is_vector_field = typename std::is_base_of<VectorialBase, T>::type;
 template<typename T>
-struct is_tensor2_polynomial : std::is_base_of<Tensor2Base, T>::type {};
+using is_tensor2_field  =typename std::is_base_of<Tensor2Base, T>::type;
 
-template<typename T>
-using is_matrix_polynomial = is_tensor2_polynomial<T>;
-
-} // Feel
-#endif /* __Traits_H */
+}
+#endif
