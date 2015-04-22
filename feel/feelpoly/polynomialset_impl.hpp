@@ -76,12 +76,13 @@ update( geometric_mapping_context_ptrtype const& __gmc,
                                 M_dn.resize( boost::extents[ntdof][M_npoints] );
                         }
 
-                        if ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value  )
+                        if ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value || vm::has_laplacian<context>::value  )
                         {
                                 M_hessian.resize( boost::extents[ntdof][M_npoints] );
                         }
                         if ( vm::has_laplacian<context>::value || vm::has_second_derivative<context>::value  )
                         {
+                            M_hessian.resize( boost::extents[ntdof][M_npoints] );
                             M_laplacian.resize( boost::extents[ntdof][M_npoints] );
                         }
                 }
@@ -186,33 +187,15 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<0>, mpl::bool_
                 const uint16_type Q = M_npoints;//__gmc->nPoints();//M_grad.size2();
                 const uint16_type I = nDof; //M_ref_ele->nbDof();
 
-                // hessian only for P1 geometric mappings
-                boost::multi_array<value_type,4> const& B3 = thegmc->B3();
-
                 std::fill( M_laplacian.data(), M_laplacian.data()+M_laplacian.num_elements(), laplacian_type::Zero() );
-
-                //#pragma omp for
+                
                 for ( uint16_type i = 0; i < I; ++i )
                 {
                     for ( uint16_type q = 0; q < Q; ++q )
                     {
-                        for ( uint16_type l = 0; l < NDim; ++l )
-                        {
-                            for ( uint16_type j = 0; j < NDim; ++j )
-                            {
-                                for ( uint16_type p = 0; p < PDim; ++p )
-                                {
-                                    for ( uint16_type r = 0; r < PDim; ++r )
-                                    {
-                                        // we have twice the same contibution thanks to the symmetry
-                                        value_type h = B3[l][j][p][r] * __pc->hessian( i, p, r, q );
-                                        M_hessian[i][q]( j,l )  += h;
-                                    } // q
-                                } // r
-                            } // p
-                        } // j
-                    } // l
-                } // i
+                        M_laplacian[i][q]( 0, 0 )  = M_hessian[i][q].trace();
+                    } 
+                } 
         }
 }
 
@@ -270,7 +253,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<0>, mpl::bool_
 
         } // grad
 
-        if ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value  )
+        if ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value || vm::has_laplacian<context>::value  )
         {
                 precompute_type* __pc = M_pc.get().get();
                 const uint16_type Q = M_npoints;//__gmc->nPoints();//M_grad.size2();
@@ -280,7 +263,8 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<0>, mpl::bool_
                 boost::multi_array<value_type,4> const& B3 = thegmc->B3();
 
                 std::fill( M_hessian.data(), M_hessian.data()+M_hessian.num_elements(), hess_type::Zero() );
-
+                std::fill( M_laplacian.data(), M_laplacian.data()+M_laplacian.num_elements(), laplacian_type::Zero() );
+                
                 //#pragma omp for
                 for ( uint16_type i = 0; i < I; ++i )
                 {
@@ -304,6 +288,8 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<0>, mpl::bool_
                                                 } // r
                                         } // p
                                 } // j
+                                if ( vm::has_laplacian<context>::value  )
+                                    M_laplacian[i][q](0,0) = M_hessian[i][q].trace();
                         } // l
                 } // i
         }
@@ -327,7 +313,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<1>, mpl::bool_
 
                 for ( uint16_type ii = 0; ii < I; ++ii )
                 {
-                        int ncomp= ( reference_element_type::is_product?nComponents1:1 );
+                       int ncomp= ( reference_element_type::is_product?nComponents1:1 );
 
                         for ( uint16_type c = 0; c < ncomp; ++c )
                         {
@@ -385,7 +371,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<1>, mpl::bool_
                         for ( int i = 0; i < I; ++i )
                                 for ( uint16_type q = 0; q < Q; ++q )
                                 {
-                                        for ( uint16_type c1 = 0; c1 < NDim; ++c1 )
+                                    for ( uint16_type c1 = 0; c1 < NDim; ++c1 )
                                         {
                                                 for ( uint16_type l = 0; l < NDim; ++l )
                                                 {
@@ -394,6 +380,48 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<1>, mpl::bool_
                                         }
                                 }
                 }
+        }
+        if ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value || vm::has_laplacian<context>::value  )
+        {
+                precompute_type* __pc = M_pc.get().get();
+                const uint16_type Q = M_npoints;//__gmc->nPoints();//M_grad.size2();
+                const uint16_type I = nDof; //M_ref_ele->nbDof();
+
+                // hessian only for P1 geometric mappings
+                boost::multi_array<value_type,4> const& B3 = thegmc->B3();
+                std::fill( M_laplacian.data(), M_laplacian.data()+M_laplacian.num_elements(), laplacian_type::Zero() );
+                hess_type L;
+                //#pragma omp for
+                for ( uint16_type ii = 0; ii < I; ++ii )
+                {
+                    int ncomp= ( reference_element_type::is_product?nComponents1:1 );
+
+                    for ( uint16_type c = 0; c < ncomp; ++c )
+                    {
+                        uint16_type i = I*c + ii;
+                        for ( uint16_type q = 0; q < Q; ++q )
+                        {
+                            for ( uint16_type c1 = 0; c1 < NDim; ++c1 )
+                            {
+                                L =hess_type::Zero();
+                                for ( uint16_type l = 0; l < NDim; ++l )
+                                {
+                                    for ( uint16_type ll = 0; ll < NDim; ++ll )
+                                    {
+                                        for ( uint16_type j = 0; j < NDim; ++j )
+                                        {
+                                            for ( uint16_type k = 0; k < NDim; ++k )
+                                            {
+                                                L(l,ll) += B3[l][ll][j][k]*__pc->hessian(i,c1, j,k, q);
+                                            }
+                                        }
+                                    }
+                                }
+                                M_laplacian[i][q](c1,0) = L.trace();
+                            }
+                        } // q
+                    } // c
+                } //ii
         }
 }
 template<typename Poly, template<uint16_type> class PolySetType>
