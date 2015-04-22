@@ -27,6 +27,7 @@
 #include <functional>
 #include <tuple>
 #include <feel/feel.hpp>
+#include <feel/feeldiscr/pchm.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelts/newmark.hpp>
 #include <feel/feelmodels/modelproperties.hpp>
@@ -66,15 +67,34 @@ public:
     using mesh_ptrtype = typename displacement_space_type::mesh_ptrtype;
     using displacement_space_ptrtype = boost::shared_ptr<displacement_space_type>;
     using displacement_type = typename displacement_space_type::element_type;
+    static constexpr int dim = mesh_type::nDim;
+    static constexpr int order = displacement_space_type::basis_type::nOrder;
+
+    // stresses
+    using stress_space_type = Pchm_type<mesh_type,order-1>;
+    using stress_space_ptrtype = Pchm_ptrtype<mesh_type,order-1>;
+    using stress_type = typename Pchm_type<mesh_type,order-1>::element_type;
+
+    using equivalent_stress_space_type = Pch_type<mesh_type,order>;
+    using equivalent_stress_space_ptrtype = Pch_ptrtype<mesh_type,order>;
+    using equivalent_stress_type = typename Pch_type<mesh_type,order>::element_type;
+
+    // material properties
     using property_space_ptrtype = Pdh_ptrtype<mesh_type,0>;
+    using property_type = typename Pdh_type<mesh_type,0>::element_type;
     using properties = typename Pdh_type<mesh_type,0>::element_type;
+
+    // exporter
     using exporter_ptrtype = boost::shared_ptr<Exporter<mesh_type>>;
+
+    // time stepping
     using ts_ptrtype = boost::shared_ptr<Newmark<displacement_space_type>>;
+
+    // Projection operator
+    using l2_projector_ptrtype = projector_ptrtype<stress_space_type,stress_space_type>;
+    
     SolidMechanics() = delete;
     SolidMechanics( std::string name, displacement_space_ptrtype Xh );
-
-    static constexpr int dim = mesh_type::nDim;
-    static constexpr int order = displacement_space_type::basis_type::nOrder;;
 
     // @return the time stepping strategy
     ts_ptrtype ts() { return nm; }
@@ -87,15 +107,16 @@ public:
 
     void setMaterialProperties()
         {
-            for( auto const& mat : props.materials() )
+            for( auto const& m : props.materials() )
             {
-                if ( Environment::isMasterRank() )
-                    std::cout << "set material " << mat.name() << "\n";
-                P0Rho.on( _range=markedelements(mesh,mat.name()), _expr=cst(mat.rho()) );
+                auto const& mat = m.second;
+                auto const& matmarker = m.first;
+                LOG(INFO) << "set material " << mat.name() << " associated to marker : " << matmarker<< "\n";
+                P0Rho.on( _range=markedelements(mesh,matmarker), _expr=cst(mat.rho()) );
                 //youngmodulus*coeffpoisson/((1+coeffpoisson)*(1-2*coeffpoisson));// lambda
-                P0Coefflame1.on( _range=markedelements(mesh,mat.name()), _expr=cst(mat.E()*mat.nu()/((1+mat.nu())*(1-2*mat.nu()) ) ) );
+                P0Coefflame1.on( _range=markedelements(mesh,matmarker), _expr=cst(mat.E()*mat.nu()/((1+mat.nu())*(1-2*mat.nu()) ) ) );
                 // youngmodulus/(2*(1+coeffpoisson));// mu
-                P0Coefflame2.on( _range=markedelements(mesh,mat.name()), _expr=cst(mat.E()/(2*mat.nu()) ) );
+                P0Coefflame2.on( _range=markedelements(mesh,matmarker), _expr=cst(mat.E()/(2*mat.nu()) ) );
             }
         }
     
@@ -104,25 +125,66 @@ public:
         {
             P0Rho.on( _range=elements(mesh), _expr=e );
         }
+    /**
+     * @return the density of the material
+     */
+    property_type const&  density() const { return P0Rho; }
+    
+    /**
+     * update the first Lame coefficient 
+     * \f$Lambda = \frac{\nu * E}{(1+\nu)*(1-2*\nu)}\f$ 
+     * where \f$E\f$ and \f$\nu\f$ are the Young
+     * modulus and Poission's ratio respectively
+     */
     template < typename ExprT >
     void updateCoefflame1(Expr<ExprT> const& e )
         {
             P0Coefflame1.on(_range=elements(mesh), _expr=e );
         }
+    /**
+     * @return the first Lame coefficient of the material \f$\lambda\f$
+     */
+    property_type const&  coeffLame1() const { return P0Coefflame1; }
+    /**
+     * update the second Lame coefficient 
+     * \f$mu = \frac{E}{(2*(1+\nu)}\f$ 
+     * where \f$E\f$ and \f$\nu\f$ are the Young
+     * modulus and Poission's ratio respectively
+     */
     template < typename ExprT >
     void updateCoefflame2(Expr<ExprT> const& e)
         {
             P0Coefflame2.on(_range=elements(mesh), _expr=e );
         }
+    /**
+     * @return the second Lame coefficient of the material \f$\mu\f$
+     */
+    property_type const&  coeffLame2() const { return P0Coefflame2; }
+
+    /**
+     * initialize the model
+     */
     void init();
 
+    /**
+     * solve for the elasticity model
+     */
     using SolveData = SolverNonLinear<double>::SolveData;
     SolveData solve();
 
+    /**
+     * @return the displacement
+     */
     displacement_type const& displacement() const { return u; }
-    
+
+    /**
+     * export the results from the model as defined in the json data file
+     */
     void exportResults();
-    
+
+    /**
+     * @return compute the equivalent stress
+     */
 
     void updateResidualAxiSymm(const vector_ptrtype& X, vector_ptrtype& R);
     void updateJacobianAxiSymm(const vector_ptrtype& X, sparse_matrix_ptrtype& J);
@@ -130,6 +192,26 @@ public:
     void updateResidual(const vector_ptrtype& X, vector_ptrtype& R);
     void updateJacobian(const vector_ptrtype& X, sparse_matrix_ptrtype& J);
 
+    /**
+     * @return materials set
+     */
+    ModelMaterials const& materials() const { return props.materials(); }
+    
+    /**
+     * @return material associated to mesh marker \c m
+     */
+    ModelMaterial const& material( std::string const& m ) const { return props.materials().material(m); }
+
+    /**
+     * @return the equivalent stress or von mises stress
+     * \f$ \sqrt{\frac{3}{2} \sigma':\sigma'} \f$ where 
+     * \f$\sigma'\f$ is the deviatoric stress tensor equal to
+     * \f$\sigma'=\sigma - \frac{1}{3}tr(\sigma)I\f$ where \f$I\f$ 
+     * is the identity matrix
+     */
+    equivalent_stress_type const& computeEquivalentStress() const;
+    
+    
 private:
     template<typename SpacePtrType>
     void initNullSpace( SpacePtrType Xh_vec, mpl::int_<2> )
@@ -161,7 +243,11 @@ private:
     vector_field_expression<dim,1,2> gravityForce;
     double gravity;
     double coefflame1, coefflame2;
-     
+    mutable stress_space_ptrtype Sh;
+    mutable stress_type S;
+    mutable equivalent_stress_space_ptrtype Seh;
+    mutable equivalent_stress_type Se;
+    mutable l2_projector_ptrtype l2p;
     ts_ptrtype nm;
     
     backend_ptrtype M_backend;
@@ -462,14 +548,18 @@ SolidMechanics<DisplSpaceType>::exportResults()
     tic();
     if ( nm->isSteady() )
     {
+#if defined(FEELPP_HAS_HDF5)
         mesh->saveHDF5(props.shortName()+"_mesh.h5");
+#endif
         
         for ( auto const& o : props.postProcess()["Fields"] )
         {
             if ( o == "displacement" )
             {
                 e->add( "displacement", u );
+#if defined(FEELPP_HAS_HDF5)
                 u.saveHDF5(props.shortName()+"_displacement.h5");
+#endif
             }
             if ( o == "lame" )
             {
@@ -479,36 +569,15 @@ SolidMechanics<DisplSpaceType>::exportResults()
             if ( o == "stress" )
             {
                 tic();
-                auto Sh = Pch<order-1>(mesh);
-                //auto l2p = opProjection(_domainSpace=Sh,_imageSpace=Sh,_backend=backend(_prefix=name+".l2p"));
-                auto l2p = opProjection(_domainSpace=Sh,_imageSpace=Sh);
-                auto Sxx = l2p->project( _expr= idv(P0Coefflame1)*divv(u) + 2.*idv(P0Coefflame2)*dxv(u[Component::X]));	 		
-                auto Syy = l2p->project( _expr= idv(P0Coefflame1)*divv(u) + 2.*idv(P0Coefflame2)*dyv(u[Component::Y]));
-                auto Sxy = l2p->project( _expr= idv(P0Coefflame2)*( dyv(u[Component::X])+dxv(u[Component::Y]) ));
-                e->add( "Sxx", Sxx );
-                e->add( "Syy", Syy );
-                e->add( "Sxy", Sxy );
-                Sxx.saveHDF5(props.shortName()+"_sxx.h5");
-                Syy.saveHDF5(props.shortName()+"_syy.h5");
-                Sxy.saveHDF5(props.shortName()+"_sxy.h5");
-                if ( is_3d<mesh_type>::value )
-                {
-                    
-                    auto Szz = l2p->project( _expr= idv(P0Coefflame1)*divv(u) + 2.*idv(P0Coefflame2)*dxv(u[Component::Z]));    
-                    auto Sxz = l2p->project( _expr= idv(P0Coefflame2)*( dzv(u[Component::X])+dxv(u[Component::Z]) ));
-                    auto Syz = l2p->project( _expr= idv(P0Coefflame2)*( dzv(u[Component::Y])+dyv(u[Component::Z]) ));
-                    e->add( "Szz", Szz );
-                    e->add( "Sxz", Sxz );
-                    e->add( "Syz", Syz );
-                    Szz.saveHDF5(props.shortName()+"_szz.h5");
-
-                    Sxz.saveHDF5(props.shortName()+"_sxz.h5");
-                    Syz.saveHDF5(props.shortName()+"_syz.h5");
-                }
+                computeEquivalentStress();
+                e->add( "S", S );
+                e->add( "Se", Se );
+#if defined(FEELPP_HAS_HDF5)
+                //S.saveHDF5(props.shortName()+"_s.h5");
+                Se.saveHDF5(props.shortName()+"_se.h5");
+#endif
+                
                 toc("compute stress tensor");
-
-                
-                
             }
         }
         e->save();
@@ -522,6 +591,40 @@ SolidMechanics<DisplSpaceType>::exportResults()
     }
     toc("SolidMechanics::exportResults", verbose);
 }
+
+template<typename DisplSpaceType>
+typename SolidMechanics<DisplSpaceType>::equivalent_stress_type const& 
+SolidMechanics<DisplSpaceType>::computeEquivalentStress() const
+{
+    if ( !Sh )
+    {
+        Sh = Pchm<order-1>(mesh);
+        S = Sh->element();
+    }
+    if ( !l2p )
+    {
+        //auto l2p = opProjection(_domainSpace=Sh,_imageSpace=Sh,_backend=backend(_prefix=name+".l2p"));
+        l2p = opProjection(_domainSpace=Sh,_imageSpace=Sh);
+    }
+    if ( !Seh )
+    {
+        Seh = Pch<order>(mesh);
+        Se = Seh->element();
+    }
+    auto Id = eye<dim,dim>();    
+    auto Fv = Id + gradv(u);
+    auto Ev = sym(gradv(u)) + (!isLinear())*(0.5*trans(gradv(u))*gradv(u));
+    auto Sv = idv(P0Coefflame1)*trace(Ev)*Id + 2*idv(P0Coefflame2)*Ev;
+
+    S = l2p->projectL2( elements(mesh), Sv );
+    //S.on( _range=elements(mesh), _expr=Sv );
+    
+    //auto sigma_dev = idv(S)-trace(idv(S))*Id/3;
+    auto sigma_dev = Sv-trace(Sv)*Id/3;
+    Se.on( _range=elements(mesh), _expr=sqrt(3.*inner(sigma_dev)/2) );
+    return Se;
 }
+
+} // Feel
 
 #endif
