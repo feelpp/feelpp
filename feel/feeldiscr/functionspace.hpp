@@ -91,6 +91,7 @@
 #include <feel/feeldiscr/bases.hpp>
 #include <feel/feeldiscr/functionspacebase.hpp>
 #include <feel/feeldiscr/mortar.hpp>
+#include <feel/feeldiscr/traits.hpp>
 
 #include <feel/feeldiscr/region.hpp>
 #include <feel/feelvf/exprbase.hpp>
@@ -1500,6 +1501,10 @@ public:
     static constexpr bool is_product = ( is_composite? invalid_uint16_type_value : basis_0_type::is_product );
     typedef typename  basis_0_type::continuity_type continuity_type;
 
+    typedef typename mpl::if_<mpl::bool_<is_composite>,
+                              mpl::identity<boost::none_t>,
+                              mpl::identity<typename basis_0_type::polyset_type> >::type::type polyset_type;
+
     static const uint16_type nComponents = mpl::transform<bases_list,
                              GetNComponents<mpl::_1>,
                              mpl::inserter<mpl::int_<0>,mpl::plus<mpl::_,mpl::_> > >::type::value;
@@ -1851,7 +1856,7 @@ public:
     template<typename T = double,  typename Cont = VectorUblas<T> >
     class Element
         :
-        public Cont,boost::addable<Element<T,Cont> >, boost::subtractable<Element<T,Cont> >, FunctionSpaceBase::ElementBase
+        public Cont,boost::addable<Element<T,Cont> >, boost::subtractable<Element<T,Cont> >, FunctionSpaceBase::ElementBase,polyset_type
     {
     public:
         typedef T value_type;
@@ -1907,7 +1912,8 @@ public:
         static const uint16_type nComponents = functionspace_type::nComponents;
         static const uint16_type nSpaces = functionspace_type::nSpaces;
         static const bool is_mortar = functionspace_type::is_mortar;
-
+        static const int rank = functionspace_type::rank;
+        
         /** @name Typedefs
          */
         //@{
@@ -2479,8 +2485,8 @@ public:
          * data structure that stores the interpolated values of the
          * element at a set of points
          */
-        typedef Feel::detail::ID<value_type,nComponents1,nComponents2> id_type;
-
+        using id_type =  Feel::detail::ID<value_type,nComponents1,nComponents2>;
+        using laplacian_type = id_type;
 
         /**
          * \return the extents of the interpolation of the function at
@@ -3026,6 +3032,7 @@ public:
         void
         hess_( ContextType const & context, hess_array_type& v, mpl::int_<0> ) const;
 
+
         void
         hessInterpolate( matrix_node_type __ptsReal, hess_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const;
 
@@ -3053,6 +3060,54 @@ public:
             hess_( *gmc, *pcPtr( elt ), v );
         }
 
+        template<typename ContextType>
+        boost::array<typename array_type::index, 1>
+        laplacianExtents( ContextType const & context ) const
+            {
+                BOOST_STATIC_ASSERT( rank <= 1 );
+
+                boost::array<typename array_type::index, 1> shape;
+                shape[0] = context.xRefs().size2();
+                //shape[1] = nRealDim;
+                //shape[2] = nRealDim;
+                return shape;
+            }
+
+        template<typename ContextType>
+        void
+        laplacian_( ContextType const & context, id_array_type& v ) const;
+
+        template<typename ContextType>
+        void
+        laplacian_( ContextType const & context, id_array_type& v, mpl::int_<0> ) const;
+        template<typename ContextType>
+        void
+        laplacian_( ContextType const & context, id_array_type& v, mpl::int_<1> ) const;
+
+        void
+        laplacianInterpolate( matrix_node_type __ptsReal, id_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const;
+
+        template<typename ContextType>
+        laplacian_type
+        laplacian( ContextType const & context ) const
+        {
+            return laplacian_type( *this, context );
+        }
+
+        template<typename ContextType>
+        void
+        laplacian( ContextType const & context, id_array_type& v ) const
+        {
+            laplacian_( context, v );
+        }
+        template<typename ElementType>
+        void
+        laplacian( ElementType const& elt, id_array_type& v )
+        {
+            gmc_ptrtype gmc( geomapPtr( elt ) );
+            v.resize( laplacianExtents(  *gmc ) );
+            laplacian_( *gmc, *pcPtr( elt ), v );
+        }
         /**
            \return the finite element space
         */
