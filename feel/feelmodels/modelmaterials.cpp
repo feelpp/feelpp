@@ -75,11 +75,11 @@ ModelMaterials::setup()
         {
             LOG(INFO) << "  - filename = " << Environment::expand( fname.get() ) << std::endl;
             
-            this->push_back( this->loadMaterial( Environment::expand( fname.get() ) ) );
+            this->insert( std::make_pair( v.first, this->loadMaterial( Environment::expand( fname.get() ) ) ) );
         }
         else
         {
-            this->push_back( this->getMaterial( v.second ) );
+            this->insert( std::make_pair( v.first, this->getMaterial( v.second ) ) );
         }
     }
 }
