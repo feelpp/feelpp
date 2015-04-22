@@ -118,14 +118,6 @@ struct MeshTraits
     //@}
 };
 
-template<typename T>
-struct is_ptr_or_shared_ptr : mpl::or_<is_shared_ptr<T>, boost::is_pointer<T> >::type {};
-
-template<typename T>
-using remove_shared_ptr_type = typename mpl::if_<is_shared_ptr<T>, mpl::identity<typename T::element_type>, mpl::identity<T>>::type::type;
-
-template<typename T>
-using decay_type = typename std::decay<remove_shared_ptr_type<T>>::type;
 
 template<typename T>
 struct is_3d : mpl::bool_<decay_type<T>::nDim == 3 || decay_type<T>::nRealDim ==3> {};
