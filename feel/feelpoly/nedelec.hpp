@@ -492,16 +492,16 @@ public:
                 << "Invalid finite element dimension. Expected : " 
                 << nOrder*(nOrder+2) << " Actual: " << nLocalDof;
 
-        LOG(INFO) << "Nedelec finite element(dual): \n";
-        LOG(INFO) << " o- dim   = " << nDim << "\n";
-        LOG(INFO) << " o- order = " << nOrder << "\n";
-        LOG(INFO) << " o- kind = " << static_cast<int>(kind) << "\n";
-        LOG(INFO) << " o- numPoints      = " << numPoints << "\n";
-        LOG(INFO) << " o- nbPtsPerVertex = " << ( int )nbPtsPerVertex << "\n";
-        LOG(INFO) << " o- nbPtsPerEdge   = " << ( int )nbPtsPerEdge << "\n";
-        LOG(INFO) << " o- nbPtsPerFace   = " << ( int )nbPtsPerFace << "\n";
-        LOG(INFO) << " o- nbPtsPerVolume = " << ( int )nbPtsPerVolume << "\n";
-        LOG(INFO) << " o- nLocalDof      = " << nLocalDof << "\n";
+        //LOG(INFO) << "Nedelec finite element(dual): \n";
+        //LOG(INFO) << " o- dim   = " << nDim << "\n";
+        //LOG(INFO) << " o- order = " << nOrder << "\n";
+        //LOG(INFO) << " o- kind = " << static_cast<int>(kind) << "\n";
+        //LOG(INFO) << " o- numPoints      = " << numPoints << "\n";
+        //LOG(INFO) << " o- nbPtsPerVertex = " << ( int )nbPtsPerVertex << "\n";
+        //LOG(INFO) << " o- nbPtsPerEdge   = " << ( int )nbPtsPerEdge << "\n";
+        //LOG(INFO) << " o- nbPtsPerFace   = " << ( int )nbPtsPerFace << "\n";
+        //LOG(INFO) << " o- nbPtsPerVolume = " << ( int )nbPtsPerVolume << "\n";
+        //LOG(INFO) << " o- nLocalDof      = " << nLocalDof << "\n";
 
         size_type nbDofPerFace = mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<2> >,
                                           mpl::int_<face_type::numEdges*nbPtsPerEdge>,
