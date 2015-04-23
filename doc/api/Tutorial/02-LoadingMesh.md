@@ -1,26 +1,24 @@
-/* -*- mode: c++; coding: utf-8 -*- */
-namespace Feel {
-/*! \page TutorialMesh Loading a Mesh
+Loading a Mesh {#TutorialMesh}
+==================
 
 \tableofcontents
 
 
 The next step is to load a mesh. The source code is available in \c mymesh.cpp.
 
-\section TutorialMeshSteps Step by step explanations
-\par Loading a Mesh in 2D
-The `loadMesh` function has a `_name` option set by default as the default value of the `--gmsh.filename` option.
+# TutorialMeshSteps Step by step {#explanations}
+
+## Loading a Mesh in 2D {#first}
+The `loadMesh` function has a `_name` option set by default as the default value of the `--gmsh.filename` option that point either to a `.geo`, either to a `.msh` file.
 
 \snippet mymesh.cpp load
 
-\par Exporting the Mesh for visualisation
+## Exporting the Mesh for visualisation {#visu}
 
+Please refere [here](TutorialVisualize.html) for explanations.
 \snippet mymesh.cpp export
 
-\section TutorialMeshResults Some results
+# Complete code {#TutorialMeshCode}
 
-\section TutorialMeshCode Complete code
 \snippet mymesh.cpp all
 
-*/
-}

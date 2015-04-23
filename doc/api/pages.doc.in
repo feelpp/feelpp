@@ -14,19 +14,18 @@ namespace Feel
     - \subpage QSNS
 */
 /** \page Tutorial A Step by Step Tutorial
-    To compile the step by step tutorial, there are various options:
+    Before reading the following, it is recommended to have a look to :
 
-    @li use a recent installed version of Feel++, see @ref UsingInstalledFeelpp
+    - Install Feel++, see @ref BuildingP
+    - Using Feel++, see @ref UsingInstalledFeelpp
 
-    @li install Feel++, see @ref BuildingP
-
+    The step by step tutorial is decomposed as it
     - \subpage TutorialEnv
     - \subpage TutorialMesh
-    - \subpage TutorialExpr
-    - \subpage TutorialVisualize
-    - \subpage TutorialIntegrals
     - \subpage TutorialSpaces
     - \subpage TutorialFunctions
+    - \subpage TutorialVisualize
+    - \subpage TutorialIntegrals
     - \subpage TutorialBackend
     - \subpage TutorialModel
  */

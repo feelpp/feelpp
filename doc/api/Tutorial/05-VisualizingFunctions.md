@@ -1,26 +1,30 @@
-/* -*- mode: c++; coding: utf-8 -*- */
-namespace Feel {
-/*! \page TutorialVisualize Visualizing functions over a mesh
+Visualizing functions over a mesh {#TutorialVisualize}
+======================================
 
+[TOC]
 
 The next step is to visualize function over the mesh. The source code is
 available in \c myexporter.cpp.
 
-@par Loading a Mesh in 2D
+# Loading a Mesh in 2D {#load}
+
 Here, we generate a second order mesh,
 \snippet myexporter.cpp mesh
 and one of first order.
 \snippet myexporter.cpp P1_mesh
 
 
-@par Constructing a function space
+# Constructing a function space {#fs}
+
 here, we generate a second order function space,
 \snippet myexporter.cpp space
 
-@par Defining a (scalar) function over the function space
+# Defining a (scalar) function over the function space {#scal}
+
 \snippet myexporter.cpp function
 
-@par Exporter
+# Exporter {#exp}
+
 We create now three exporter:
 - once generated on the P1 mesh
 - once generated on the P2 mesh
@@ -28,16 +32,18 @@ We create now three exporter:
 
 \snippet myexporter.cpp exporter
 
-@par Adding function to save
+# Adding function to save {#add}
+
 Here we save the function many times.
 That is here not relevant but you may want to simulate process over time. 
 \snippet myexporter.cpp adding
 
-@par Actually saving 
+# Actually saving {#save}
+
 \snippet myexporter.cpp save
 
 
-\section TutorialExprCode Complete code
+#  Complete code {#TutorialExprCode}
 
 The complete code reads as follows
 
@@ -53,7 +59,8 @@ to execute just type
 \endverbatim
 
 
-@par Reading saved data
+# Reading saved data {#read}
+
 You can visualize data via
 - [ensight](https://www.ceisoftware.com/),
 - [paraview](www.paraview.org/),
@@ -61,5 +68,3 @@ You can visualize data via
  
 The results files are in \c $HOME/feel/myexporter/np_1 or \c $FEELPP_WORKDIR/feel/myexporter/np_1
 
-*/
-}
