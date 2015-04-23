@@ -62,9 +62,11 @@ int main( int argc, char** argv )
     //! [expression]
 
     //! [interpolant]
+    //! [element]
     // elements of \( u,w \in X_h \)
     auto u = Xh->element( "u" );
     auto w = Xh->element( "w" );
+    //! [element]
     
 		// build the interpolant of u
     u.on( _range=elements( mesh ), _expr=g );
