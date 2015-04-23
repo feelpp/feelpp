@@ -146,6 +146,8 @@ std::ostream& operator<<( std::ostream& os, ModelMaterial const& m );
 
 /**
  * @brief a set of materials
+ * key: mesh marker
+ * name -> name of the materials - can be different
  */
 class ModelMaterials: public std::map<std::string,ModelMaterial>
 {
