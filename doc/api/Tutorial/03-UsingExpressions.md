@@ -1,12 +1,12 @@
-/* -*- mode: c++; coding: utf-8 -*- */
-namespace Feel {
-/*! \page TutorialExpr Defining and using expressions
+Defining and using expressions {#TutorialExpr}
+================================
 
+[TOC] 
 
 The next step is to construct a function space over the mesh. The source code is
 available in \c myexpression.cpp.
 
-\section TutorialIntegralsExpr Step by step explanations
+# Step by step explanations {#ex}
 
 We start by loading a Mesh in 2D
 \snippet myintegrals.cpp mesh
@@ -15,9 +15,9 @@ then we define some expression through the command line or config file: \c g is 
 \snippet myexpression.cpp expr
 
 here is an example how to enter them, more are available below
-\co
+```c++
 feelpp_doc_myexpression --a=3 --functions.g="a*x*y:x:y:a" --functions.f="{sin(pi*x),cos(pi*y)}:x:y"
-\eco
+```
 
 \remark You can print back the expression to the screen to check that everything is ok.
 \remark You want to use as expression `a*x+b*y`, you have to define `a` and `b` as option (either in your code, either in the library).
@@ -41,11 +41,11 @@ and the curl of \c f
 Finally we evaluate these expression at one point given by the option \c x and \c y
 \snippet myexpression.cpp eval
 
-\section TutorialExprResults Some results
+# Some results {#res}
 
 We start with the following function \f$g=1\f$ and \f$f=(1,1)\f$.
 
-\code{.sh}
+\verbatim
 shell> ./feelpp_doc_myexpression --functions.g=1:x:y --functions.f="{1,1}:x:y
 g=1
 f={x,-y}
@@ -71,12 +71,12 @@ Laplacian:
 laplacian(g)(x,y)=0
 laplacian(f)(x,y)=0
 0
-\endcode
+\endverbatim
 
 The symbolic calculus system worked as expected.
 
 
-\section TutorialExprCode Complete code
+# Complete code {#code}
 
 The complete code reads as follows
 
@@ -86,8 +86,3 @@ to compile just use the `make` command in your compilation directory
 \verbatim
 make feelpp_doc_myexpression
 \endverbatim
-
-
-
-*/
-}
