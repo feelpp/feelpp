@@ -1,26 +1,39 @@
-/* -*- mode: c++; coding: utf-8 -*- */
-namespace Feel {
-/*! \page TutorialSpaces Constructing a function space
+Spaces and elements {#TutorialSpaces}
+============================
 
+[TOC]
 
-The next step is to construct a function space over the mesh. The source code is
-available in \c myfunctionspace.cpp.
+You've learned how to discretize the space you want to compute on.
+You now have to learn how to define and use function spaces and elements of functions spaces.
 
-\snippet myfunctionspace.cpp all
+The source code is available in \c myfunctionspace.cpp 
+(The listing is given at the end).
 
-@par Loading a Mesh in 2D
+# Loading a Mesh in 2D {#load}
+
+We recall how to load a mesh :
 \snippet myfunctionspace.cpp mesh
 
 
-@par Constructing a function space
+# Constructing a function space {#fs}
+
+For basic function spaces, we have predetermined constructors:
 \snippet myfunctionspace.cpp space
 
-@par Defining an expression
-\snippet myfunctionspace.cpp expression
+One can also use :
+- `Pdh<ORDER>(mesh)` : Polynomial Discontinuous
+- `Pvh<ORDER>(mesh)` : Polynomial Continuous Vectorial
+- `Pdhv<ORDER>(mesh)` : Polynomial Discontinuous Vectorial
+- `Pchm<ORDER>(mesh)` : Polynomial Continuous Matrix
+- `Ned1h<ORDER>(mesh)` : Nedelec function spaces
 
-@par Building and checking the interpolant
-\snippet myfunctionspace.cpp interpolant
+# Defining an element {#elem}
+
+Elements are basically defined and created like that :
+\snippet myfunctionspace.cpp element
+
+# Code with other features {#code}
+
+\snippet myfunctionspace.cpp all
 
 
-*/
-}
