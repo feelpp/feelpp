@@ -175,7 +175,7 @@ public:
     //@{
     typedef Mesh<GeoShape,T,Tag> type;
     typedef boost::shared_ptr<type> ptrtype;
-    
+
     typedef T value_type;
     typedef GeoShape shape_type;
     typedef typename super::return_type return_type;
@@ -231,7 +231,7 @@ public:
     typedef typename super::face_processor_type face_processor_type;
     typedef typename super::face_processor_type element_edge_type;
 
-    
+
     using P1_mesh_type = typename mpl::if_<is_simplex<GeoShape>,
                                            mpl::identity< Mesh< Simplex< GeoShape::nDim,1,GeoShape::nRealDim>, value_type, Tag > >,
                                            mpl::identity< Mesh< Hypercube<GeoShape::nDim,1,GeoShape::nRealDim>,value_type, Tag > > >::type::type ;
@@ -313,7 +313,7 @@ public:
      * @return the maximum number of elements over all subdomains
      */
     size_type maxNumElements() const { return M_maxNumElements; }
-    
+
     /**
      * @brief get the global number of faces
      * @details it requires communication in parallel to
@@ -326,7 +326,7 @@ public:
      * @return the maximum number of faces over all subdomains
      */
     size_type maxNumFaces() const { return M_maxNumFaces; }
-    
+
     /**
      * @brief get the global number of edges
      * @details it requires communication in parallel to
@@ -339,7 +339,7 @@ public:
      * @return the maximum number of edges over all subdomains
      */
     size_type maxNumEdges() const { return M_maxNumEdges; }
-    
+
     /**
      * @brief get the global number of points
      * @details it requires communication in parallel to
@@ -352,7 +352,7 @@ public:
      * @return the maximum number of edges over all subdomains
      */
     size_type maxNumPoints() const { return M_maxNumPoints; }
-    
+
     /**
      * @brief get the global number of vertices
      * @details it requires communication in parallel to
@@ -365,7 +365,7 @@ public:
      * @return the maximum number of vertices over all subdomains
      */
     size_type maxNumVertices() const { return M_maxNumVertices; }
-    
+
     /**
      * @brief compute the global number of elements,faces,points and vertices
      * @details it requires communications in parallel to
@@ -378,7 +378,7 @@ public:
                                 this->endElementWithProcessId( this->worldComm().rank() ) );
         int nf = std::distance( this->beginFaceWithProcessId( this->worldComm().rank() ),
                                 this->endFaceWithProcessId( this->worldComm().rank() ) );
-        
+
         int np = std::distance( this->beginPointWithProcessId( this->worldComm().rank() ),
                                 this->endPointWithProcessId( this->worldComm().rank() ) );
 
@@ -468,10 +468,11 @@ public:
             M_maxNumEdges = ned;
             M_maxNumPoints = np;
             M_maxNumVertices = this->numVertices();
-        }   
+        }
         }
 #endif
-    
+
+
     /**
      * @return the topological dimension
      */
@@ -976,7 +977,7 @@ public:
      */
     void saveHDF5( std::string const& filename ) { ioHDF5( IOStatus::isSaving, filename ); }
 #endif
-    
+
 
 private:
 #if defined(FEELPP_HAS_HDF5)
