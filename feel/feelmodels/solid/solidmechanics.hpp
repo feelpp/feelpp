@@ -71,9 +71,9 @@ public:
     static constexpr int order = displacement_space_type::basis_type::nOrder;
 
     // stresses
-    using stress_space_type = Pchm_type<mesh_type,order-1>;
-    using stress_space_ptrtype = Pchm_ptrtype<mesh_type,order-1>;
-    using stress_type = typename Pchm_type<mesh_type,order-1>::element_type;
+    using stress_space_type = Pchm_type<mesh_type,order>;
+    using stress_space_ptrtype = Pchm_ptrtype<mesh_type,order>;
+    using stress_type = typename Pchm_type<mesh_type,order>::element_type;
 
     using equivalent_stress_space_type = Pch_type<mesh_type,order>;
     using equivalent_stress_space_ptrtype = Pch_ptrtype<mesh_type,order>;
@@ -181,6 +181,7 @@ public:
      * export the results from the model as defined in the json data file
      */
     void exportResults();
+    void exportResults( double time );
 
     /**
      * @return compute the equivalent stress
@@ -209,8 +210,13 @@ public:
      * \f$\sigma'=\sigma - \frac{1}{3}tr(\sigma)I\f$ where \f$I\f$ 
      * is the identity matrix
      */
-    equivalent_stress_type const& computeEquivalentStress() const;
-    
+    equivalent_stress_type computeEquivalentStress() const;
+
+    equivalent_stress_type const& equivalentStress() const { if (!Seh) this->computeEquivalentStress(); return sigma_vm; }
+    /**
+     * @return the equivalent stress space
+     */
+    equivalent_stress_space_ptrtype equivalentStressSpacePtr() const { if (!Seh) Seh = Pch<order>(mesh); return Seh; }
     
 private:
     template<typename SpacePtrType>
@@ -226,6 +232,8 @@ private:
                                vec(-Pz(),cst(0.),Px()),
                                vec(cst(0.),Pz(),-Py()) );
         }
+    void addDirichlet( form2_type<displacement_space_type, displacement_space_type>& a,
+                       form1_type<displacement_space_type>& l );
 private:
     std::string name;
     ModelProperties props;
@@ -246,7 +254,7 @@ private:
     mutable stress_space_ptrtype Sh;
     mutable stress_type S;
     mutable equivalent_stress_space_ptrtype Seh;
-    mutable equivalent_stress_type Se;
+    mutable equivalent_stress_type sigma_vm;
     mutable l2_projector_ptrtype l2p;
     ts_ptrtype nm;
     
@@ -449,6 +457,35 @@ SolidMechanics<DisplSpaceType>::updateResidual( const vector_ptrtype& X, vector_
 }
 template<typename DisplSpaceType>
 void
+SolidMechanics<DisplSpaceType>::addDirichlet( form2_type<displacement_space_type, displacement_space_type>& a,
+                                              form1_type<displacement_space_type>& l )
+{
+    for( auto const& d : dirichlet_conditions )
+    {
+        a += on( _range=markedfaces( mesh, marker(d)), _element=u, _rhs=l,
+                 _expr=zero<dim,1>() );
+        a += on( _range=markededges( mesh, marker(d)), _element=u, _rhs=l,
+                 _expr=zero<dim,1>() );
+    }
+    for( auto const& d : dx_dirichlet_conditions )
+    {
+        a += on( _range=markedfaces( mesh, marker(d)), _element=u[Component::X], _rhs=l, _expr=cst(0.) );
+        a += on( _range=markededges( mesh, marker(d)), _element=u[Component::X], _rhs=l, _expr=cst(0.) );
+    }
+    for( auto const& d : dy_dirichlet_conditions )
+    {
+        a += on( _range=markedfaces( mesh, marker(d)), _element=u[Component::Y], _rhs=l, _expr=cst(0.) );
+        a += on( _range=markededges( mesh, marker(d)), _element=u[Component::Y], _rhs=l, _expr=cst(0.) );
+    }
+    for( auto const& d : dz_dirichlet_conditions )
+    {
+        a += on( _range=markedfaces( mesh, marker(d)), _element=u[Component::Z], _rhs=l, _expr=cst(0.) );
+        a += on( _range=markededges( mesh, marker(d)), _element=u[Component::Z], _rhs=l, _expr=cst(0.) );
+    }
+
+}
+template<typename DisplSpaceType>
+void
 SolidMechanics<DisplSpaceType>::updateJacobian(const vector_ptrtype& X, sparse_matrix_ptrtype& J)
 {
     u = *X;
@@ -467,30 +504,10 @@ SolidMechanics<DisplSpaceType>::updateJacobian(const vector_ptrtype& X, sparse_m
                    _expr= inner( dF*val(Sv) + val(Fv)*dS , grad(u) ) );
     a += integrate( _range=elements( mesh ),
                     _expr= idv(P0Rho)*inner( nm->polyDerivCoefficient()*idt(u),id( u ) ) );
-    auto RR = backend()->newVector( Dh );
-    for( auto const& d : dirichlet_conditions )
-    {
-        a += on( _range=markedfaces( mesh, marker(d)), _element=u, _rhs=RR,
-                 _expr=zero<dim,1>() );
-        a += on( _range=markededges( mesh, marker(d)), _element=u, _rhs=RR,
-                 _expr=zero<dim,1>() );
-    }
-    for( auto const& d : dx_dirichlet_conditions )
-    {
-        a += on( _range=markedfaces( mesh, marker(d)), _element=u[Component::X], _rhs=RR, _expr=cst(0.) );
-        a += on( _range=markededges( mesh, marker(d)), _element=u[Component::X], _rhs=RR, _expr=cst(0.) );
-    }
-    for( auto const& d : dy_dirichlet_conditions )
-    {
-        a += on( _range=markedfaces( mesh, marker(d)), _element=u[Component::Y], _rhs=RR, _expr=cst(0.) );
-        a += on( _range=markededges( mesh, marker(d)), _element=u[Component::Y], _rhs=RR, _expr=cst(0.) );
-    }
-    for( auto const& d : dz_dirichlet_conditions )
-    {
-        a += on( _range=markedfaces( mesh, marker(d)), _element=u[Component::Z], _rhs=RR, _expr=cst(0.) );
-        a += on( _range=markededges( mesh, marker(d)), _element=u[Component::Z], _rhs=RR, _expr=cst(0.) );
-    }
-
+    auto RR = form1( _test=Dh );
+    //auto RR = backend()->newVector( Dh );
+    addDirichlet( a, RR );
+    
 }
 
 template<typename DisplSpaceType>
@@ -529,15 +546,38 @@ SolidMechanics<DisplSpaceType>::solve()
         u[Component::Z].on( _range=markededges( mesh, marker(d)), _expr=expression(d) );
     }
 
-    using namespace std;
-    using std::get;
-    auto r = std::bind( &self_type::updateResidual, std::ref( *this ), std::placeholders::_1, std::placeholders::_2);
-    auto j = std::bind( &self_type::updateJacobian, std::ref( *this ), std::placeholders::_1, std::placeholders::_2 );
-    M_backend->nlSolver()->residual = r;
-    M_backend->nlSolver()->jacobian = j;
+    SolveData d;
+    if ( isLinear() )
+    {
+        
+        auto deft = sym(gradt(u));
+        auto def = sym(grad(u));
+        auto a = form2( _test=Dh, _trial=Dh);
+        a = integrate( _range=elements( mesh ),
+                       _expr=idv(P0Coefflame1)*divt( u )*div( u )  +
+                       2.*idv(P0Coefflame2)*trace( trans( deft )*def ) );
+        auto l = form1(_test=Dh);
+        neumann_conditions.setParameterValues( props.parameters().toParameterValues() );
+        for( auto const& n : neumann_conditions )
+        {
+            l += integrate( _range=markedfaces( mesh, marker(n) ),
+                            _expr=trans(expression(n))*id(u) );
+        }
+        addDirichlet( a, l );
+        d = a.solve( _solution=u, _rhs=l );
+    }
+    else
+    {
+        using namespace std;
+        using std::get;
+        auto r = std::bind( &self_type::updateResidual, std::ref( *this ), std::placeholders::_1, std::placeholders::_2);
+        auto j = std::bind( &self_type::updateJacobian, std::ref( *this ), std::placeholders::_1, std::placeholders::_2 );
+        M_backend->nlSolver()->residual = r;
+        M_backend->nlSolver()->jacobian = j;
         
 
-    auto d = M_backend->nlSolve( _solution=u,_jacobian=Jac,_residual=Res );
+        d = M_backend->nlSolve( _solution=u,_jacobian=Jac,_residual=Res );
+    }
     toc("SolidMechanics::solve", verbose || FLAGS_v > 0 );
     return d;
 }
@@ -571,10 +611,10 @@ SolidMechanics<DisplSpaceType>::exportResults()
                 tic();
                 computeEquivalentStress();
                 e->add( "S", S );
-                e->add( "Se", Se );
+                e->add( "sigma_vm", sigma_vm );
 #if defined(FEELPP_HAS_HDF5)
                 //S.saveHDF5(props.shortName()+"_s.h5");
-                Se.saveHDF5(props.shortName()+"_se.h5");
+                sigma_vm.saveHDF5(props.shortName()+"_se.h5");
 #endif
                 
                 toc("compute stress tensor");
@@ -593,12 +633,48 @@ SolidMechanics<DisplSpaceType>::exportResults()
 }
 
 template<typename DisplSpaceType>
-typename SolidMechanics<DisplSpaceType>::equivalent_stress_type const& 
+void
+SolidMechanics<DisplSpaceType>::exportResults( double t )
+{
+    tic();
+    for ( auto const& o : props.postProcess()["Fields"] )
+    {
+        if ( o == "displacement" )
+        {
+            et->step(t)->add( "displacement", u );
+        }
+        if ( o == "lame" )
+        {
+            et->add( "lambda", P0Coefflame1 );
+            et->add( "mu", P0Coefflame2 );
+        }
+        if ( o == "stress" )
+        {
+            tic();
+            computeEquivalentStress();
+            et->add( "S", S );
+            et->add( "sigma_vm", sigma_vm );
+#if defined(FEELPP_HAS_HDF5)
+            //S.saveHDF5(props.shortName()+"_s.h5");
+            //sigma_vm.saveHDF5(props.shortName()+"_se.h5");
+#endif
+            
+            toc("compute stress tensor");
+        }
+    }
+    et->save();
+
+    toc("SolidMechanics::exportResults", verbose);
+}
+
+template<typename DisplSpaceType>
+typename SolidMechanics<DisplSpaceType>::equivalent_stress_type 
 SolidMechanics<DisplSpaceType>::computeEquivalentStress() const
 {
+#if 1
     if ( !Sh )
     {
-        Sh = Pchm<order-1>(mesh);
+        Sh = Pchm<order>(mesh);
         S = Sh->element();
     }
     if ( !l2p )
@@ -606,23 +682,28 @@ SolidMechanics<DisplSpaceType>::computeEquivalentStress() const
         //auto l2p = opProjection(_domainSpace=Sh,_imageSpace=Sh,_backend=backend(_prefix=name+".l2p"));
         l2p = opProjection(_domainSpace=Sh,_imageSpace=Sh);
     }
+#endif
     if ( !Seh )
     {
         Seh = Pch<order>(mesh);
-        Se = Seh->element();
+        sigma_vm = Seh->element();
+        std::cout << "Seh done" << std::endl;
     }
+    
     auto Id = eye<dim,dim>();    
     auto Fv = Id + gradv(u);
     auto Ev = sym(gradv(u)) + (!isLinear())*(0.5*trans(gradv(u))*gradv(u));
     auto Sv = idv(P0Coefflame1)*trace(Ev)*Id + 2*idv(P0Coefflame2)*Ev;
-
+    std::cout << "expr done" << std::endl;
     S = l2p->projectL2( elements(mesh), Sv );
     //S.on( _range=elements(mesh), _expr=Sv );
     
     //auto sigma_dev = idv(S)-trace(idv(S))*Id/3;
     auto sigma_dev = Sv-trace(Sv)*Id/3;
-    Se.on( _range=elements(mesh), _expr=sqrt(3.*inner(sigma_dev)/2) );
-    return Se;
+    std::cout << "sigma done" << std::endl;
+    sigma_vm.on( _range=elements(mesh), _expr=sqrt(3.*trace(sigma_dev*trans(sigma_dev))/2) );
+    std::cout << "sigma_vm done" << std::endl;
+    return sigma_vm;
 }
 
 } // Feel
