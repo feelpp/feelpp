@@ -7,4 +7,5 @@ foreach(TEST jacobi imsimplex im imQuadraRect poly quad_order lag moment )# herm
 
 endforeach()
 
+feelpp_add_test( integrateQuadra CFG test_integrateQuadra.cfg )
 # add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} DEPENDS ${TESTS} )

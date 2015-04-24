@@ -341,7 +341,6 @@ public:
  test->add( BOOST_TEST_CASE( ( TestImPK<2,40,T>( 2.0*sin(T(1))*sin(T(1)) , coscos<T> ) ) )  );\
  /**/
 
-
 template<int D, int N, typename T>
 class TestImQK
 {
