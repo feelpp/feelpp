@@ -1,13 +1,12 @@
-/* -*- mode: c++; coding: utf-8 -*- */
-namespace Feel {
-/*! \page TutorialEnv Setting up the Feel++ Environment
+Setting up the Feel++ Environment {#TutorialEnv} 
+==============================
 
-\tableofcontents
+[TOC]
 
 
 See section \ref ProgEnv for more information about \feel installation.
 
-\section Minimal Minimal Example
+# Minimal Minimal {#Example}
 
 Let's begin with our first program using the \feel framework (source:
 <tt>doc/manual/tutorial/myapp.cpp</tt>).  Before all, you have to include the
@@ -21,7 +20,7 @@ We initialize the environment variables through the \feel <tt>Environment</tt> c
 
 <a href="#" class="top">top</a>
 <hr>
-\section MyAppWithOption Adding options
+# MyAppWithOption Adding {#options}
 
 \snippet myappwithoptions.cpp marker
 
@@ -33,7 +32,7 @@ value will be assigned if not specified by the user.
 
 <a href="#" class="top">top</a>
 <hr>
-\section Compilation Compilation, execution, logs
+# Compilation Compilation, execution, {#logs}
 To compile a tutorial, just use the GNU make command.
 \verbatim
   make feelpp_doc_<appname>
@@ -58,7 +57,7 @@ Note that there will be one log for each processor in that case.
 
 <a href="#" class="top">top</a>
 <hr>
-\section Config Config files
+# Config Config {#files}
 
 A config file can be parsed to the program to profile your options. The default config paths are,
     \li current dir
@@ -89,7 +88,7 @@ And all options in the command line can overwrite all options given in cfg files
 
 <a href="#" class="top">top</a>
 <hr>
-\section Initializing Initializing PETSc and Trilinos
+# Initializing Initializing PETSc and {#Trilinos}
 
 PETSc is a suite of data structures and routines for the scalable (parallel)
 solution of scientific applications modeled by partial differential
@@ -100,7 +99,3 @@ equations. It employs the MPI standard for parallelism.
 <a href="#" class="top">top</a>
 <hr>
 
-
-
-*/
-}
