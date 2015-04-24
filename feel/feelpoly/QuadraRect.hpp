@@ -287,9 +287,10 @@ public :
     typedef typename super::weights_type weights_type;
 
     static const uint16_type Degree = 1;
-    static const uint32_type Npoints = 8;
+    static const uint32_type Npoints = Integration_Degree;
 
     typedef QuadraRect<Simplex<0,1>,Integration_Degree, T> face_quad_type;
+
 
     QuadraRect()
         :
@@ -325,26 +326,26 @@ public :
         this->constructQROnFace( Reference<Hypercube<1, 1>, 1, 1>(), gm, face_qr );
 
     }
-
-    QuadraRect(int N)
+/*
+    QuadraRect()
         :
-        super( N )
+        super( Npoints )
     {
         // build rules in x and y direction
-        weights_type wx( N );
-        weights_type px( N );
+        weights_type wx( Npoints );
+        weights_type px( Npoints );
         //details::gaussjacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
 #if 0
         VLOG(1) << "[gauss<SP<2,1>] jacobi p = " << px << "\n";
         VLOG(1) << "[gauss<SP<2,1>] jacobi w = " << wx << "\n";
 #endif
         double tmp=-1;
-        for ( int i = 0; i < N; i++ )
+        for ( int i = 0; i < Npoints; i++ )
         {
             // computes the weight of the k-th node
-            this->M_w( i ) = 2./N ;// wx( i );
+            this->M_w( i ) = 2./Npoints ;// wx( i );
             this->M_points( 0, i ) = tmp  ;
-            tmp+=2./N;
+            tmp+=2./Npoints;
         }
 
 
@@ -360,7 +361,7 @@ public :
         this->constructQROnFace( Reference<Hypercube<1, 1>, 1, 1>(), gm, face_qr );
 
     }
-
+*/
 
     ~QuadraRect() {}
 
@@ -384,8 +385,9 @@ public :
 
     typedef QuadraRect<Hypercube<1,1>,Integration_Degree, T> face_quad_type;
 
-    static const uint16_type Degree = 3;
-    static const uint32_type Npoints =8*8;
+    static const uint16_type Degree = Integration_Degree;
+    static const uint32_type Npoints =Integration_Degree*Integration_Degree;
+
 
     QuadraRect( )
         :
@@ -426,7 +428,7 @@ public :
 
     }
 
-   /* 
+/*
     TestQuadra( )
         :
         super( 32*32 )
@@ -465,16 +467,16 @@ public :
         this->constructQROnFace( Reference<Hypercube<2, 1>,2,1>(), gm, face_qr );
 #endif
 
-    }*/
+    }
 
 
-    QuadraRect(int Nx)
+    QuadraRect()
         :
-        super( Nx*Nx )
+        super( Npoints )
     {
         // build rules in x and y direction
-        weights_type wx( Nx*Nx );
-        weights_type px( Nx*Nx );
+        weights_type wx( Npoints );
+        weights_type px( Npoints );
         //details::gaussjacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
 #if 0
         VLOG(1) << "[gauss<SP<2,1>] jacobi p = " << px << "\n";
@@ -482,18 +484,18 @@ public :
 #endif
         double tmpx=-1;
         double tmpy=-1;
-        for ( int i = 0,  k = 0; i < Nx; i++ )
+        for ( int i = 0,  k = 0; i < Degree; i++ )
         {
-            for ( int j = 0; j < Nx; j++, ++k )
+            for ( int j = 0; j < Degree; j++, ++k )
             {
                 // computes the weight of the k-th node
-                this->M_w( k ) = 4.*(1./Nx)*(1./Nx) ;//wx( i ) * wx( j );
+                this->M_w( k ) = 4.*(1./Npoints) ;//wx( i ) * wx( j );
                 this->M_points( 0, k ) = tmpx ;
                 this->M_points( 1, k ) = tmpy ;
-                tmpy+=2./Nx;
+                tmpy+=2./Degree;
 
             }
-            tmpx+=2./Nx;
+            tmpx+=2./Degree;
         }
 
 #if 0
@@ -501,11 +503,12 @@ public :
         VLOG(1) << "[gauss<SP<2,1>] w = " << this->M_w << "\n";
 #endif
         boost::shared_ptr<GT_Lagrange<2, 1, 2, Hypercube, T> > gm( new GT_Lagrange<2, 1, 2, Hypercube, T> );
-        boost::shared_ptr<face_quad_type> face_qr( new face_quad_type(Nx,2./Nx));
+        boost::shared_ptr<face_quad_type> face_qr( new face_quad_type);
         // construct face quadratures
         this->constructQROnFace( Reference<Hypercube<2, 1>,2,1>(), gm, face_qr );
 
     }
+    */
 
 
     ~QuadraRect() {}
