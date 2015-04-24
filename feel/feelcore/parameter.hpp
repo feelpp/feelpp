@@ -236,6 +236,7 @@ BOOST_PARAMETER_NAME( options )
 
     BOOST_PARAMETER_NAME( collect_garbage )
 
+    BOOST_PARAMETER_NAME( savehdf5 )
     BOOST_PARAMETER_NAME( partitions )
     BOOST_PARAMETER_NAME( partition_file )
     BOOST_PARAMETER_NAME( respect_partition )
