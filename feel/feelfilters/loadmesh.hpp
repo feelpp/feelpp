@@ -73,6 +73,7 @@ BOOST_PARAMETER_FUNCTION(
       ( rebuild_partitions_filename, *( boost::is_convertible<mpl::_,std::string> )	, filename )
       ( partitions,      *( boost::is_integral<mpl::_> ), worldcomm.globalSize() )
       ( partitioner,     *( boost::is_integral<mpl::_> ), ioption(_name="gmsh.partitioner") )
+      ( savehdf5,        *( boost::is_integral<mpl::_> ), ioption(_name="gmsh.savehdf5") )
       ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
       ( depends, *( boost::is_convertible<mpl::_,std::string> ), soption(_name="gmsh.depends") )
         )
@@ -97,7 +98,7 @@ BOOST_PARAMETER_FUNCTION(
     if ( mesh_name.extension() == ".geo" )
     {
 
-        return createGMSHMesh(
+        auto m = createGMSHMesh(
             _mesh=mesh,
             _desc= (!desc) ? geo( _filename=mesh_name.string(),
                                   _h=h,
@@ -117,11 +118,14 @@ BOOST_PARAMETER_FUNCTION(
             _partitioner=partitioner,
             _partition_file=partition_file
             );
+        if ( savehdf5 )
+            m->saveHDF5( mesh_name.stem().string()+".h5" );
+        return m;
     }
 
     if ( mesh_name.extension() == ".msh"  )
     {
-        return loadGMSHMesh( _mesh=mesh,
+        auto m = loadGMSHMesh( _mesh=mesh,
                              _filename=mesh_name.string(),
                              _straighten=straighten,
                              _refine=refine,
@@ -135,11 +139,20 @@ BOOST_PARAMETER_FUNCTION(
                              _partitioner=partitioner,
                              _partition_file=partition_file
             );
-
+        if ( savehdf5 )
+            m->saveHDF5( mesh_name.stem().string()+".h5" );
+        return m;
     }
+#if defined(FEELPP_HAS_HDF5)
+    if ( mesh_name.extension() == ".h5"  )
+    {
+        mesh->loadHDF5( mesh_name.string() );
+        return _mesh_ptrtype( mesh );
+    }
+#endif
 
     LOG(WARNING) << "File " << mesh_name << " not found, generating instead an hypercube in " << _mesh_type::nDim << "D geometry and mesh...";
-    return createGMSHMesh(_mesh=mesh,
+    auto m = createGMSHMesh(_mesh=mesh,
                           _desc=domain( _name=soption(_name="gmsh.domain.shape"), _h=h, _worldcomm=worldcomm ),
                           _h=h,
                           _refine=refine,
@@ -153,6 +166,9 @@ BOOST_PARAMETER_FUNCTION(
                           _partitions=partitions,
                           _partitioner=partitioner,
                           _partition_file=partition_file );
+    if ( savehdf5 )
+        m->saveHDF5( mesh_name.stem().string()+".h5" );
+    return m;
 #if defined(__clang__)
 #pragma clang diagnostic pop
 #endif
