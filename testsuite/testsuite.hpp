@@ -80,6 +80,24 @@ struct Feelpp {                                                         \
 };                                                                      \
 BOOST_GLOBAL_FIXTURE( Feelpp )
 
+#define FEELPP_ENVIRONMENT_WITH_ABOUT_NO_OPTIONS( myabout)              \
+struct Feelpp {                                                         \
+    Feelpp()                                                            \
+        :env( Feel::_argc=boost::unit_test::framework::master_test_suite().argc, \
+              Feel::_argv=boost::unit_test::framework::master_test_suite().argv, \
+              Feel::_about=myabout )                \
+        {                                                               \
+            BOOST_TEST_MESSAGE( "setup Feel++" );                       \
+                                                                        \
+        }                                                               \
+    ~Feelpp()                                                           \
+        {                                                               \
+            BOOST_TEST_MESSAGE( "teardown Feel++" );                    \
+        }                                                               \
+    Feel::Environment env;                                              \
+};                                                                      \
+BOOST_GLOBAL_FIXTURE( Feelpp )
+
 
 
 
