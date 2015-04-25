@@ -73,7 +73,7 @@ BOOST_PARAMETER_FUNCTION(
       ( rebuild_partitions_filename, *( boost::is_convertible<mpl::_,std::string> )	, filename )
       ( partitions,      *( boost::is_integral<mpl::_> ), worldcomm.globalSize() )
       ( partitioner,     *( boost::is_integral<mpl::_> ), ioption(_name="gmsh.partitioner") )
-      ( savehdf5,        *( boost::is_integral<mpl::_> ), ioption(_name="gmsh.savehdf5") )
+      ( savehdf5,        *( boost::is_integral<mpl::_> ), boption(_name="gmsh.savehdf5") )
       ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
       ( depends, *( boost::is_convertible<mpl::_,std::string> ), soption(_name="gmsh.depends") )
         )
@@ -118,8 +118,10 @@ BOOST_PARAMETER_FUNCTION(
             _partitioner=partitioner,
             _partition_file=partition_file
             );
+#ifdef FEELPP_HAS_HDF5
         if ( savehdf5 )
             m->saveHDF5( mesh_name.stem().string()+".h5" );
+#endif
         return m;
     }
 
@@ -139,8 +141,10 @@ BOOST_PARAMETER_FUNCTION(
                              _partitioner=partitioner,
                              _partition_file=partition_file
             );
+#ifdef FEELPP_HAS_HDF5
         if ( savehdf5 )
             m->saveHDF5( mesh_name.stem().string()+".h5" );
+#endif
         return m;
     }
 #if defined(FEELPP_HAS_HDF5)
@@ -166,8 +170,10 @@ BOOST_PARAMETER_FUNCTION(
                           _partitions=partitions,
                           _partitioner=partitioner,
                           _partition_file=partition_file );
+#ifdef FEELPP_HAS_HDF5
     if ( savehdf5 )
         m->saveHDF5( mesh_name.stem().string()+".h5" );
+#endif
     return m;
 #if defined(__clang__)
 #pragma clang diagnostic pop
