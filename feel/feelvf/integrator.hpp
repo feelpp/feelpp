@@ -1235,6 +1235,11 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
         if ( 1 )
 #endif
         {
+            // mortar context
+            static const bool has_mortar_test = FormType::test_space_type::is_mortar;
+            static const bool has_mortar_trial = FormType::trial_space_type::is_mortar;
+            static const int mortarTag = (has_mortar_test && has_mortar_trial)? 3 : ( (has_mortar_test)? 1 : ( (has_mortar_trial)? 2 : 0 ) );
+
             //
             // some typedefs
             //
@@ -1244,13 +1249,12 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
             typedef typename eval::gmc1_type gmc1_type;
             typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
             typedef boost::shared_ptr<gmc1_type> gmc1_ptrtype;
-
             typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
             typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc1_ptrtype> > map_gmc1_type;
             typedef typename FormType::template Context<map_gmc_type, expression_type, im_type> form_context_type;
-            typedef typename FormType::template Context<map_gmc_type, expression_type, im_type,map_gmc_type,map_gmc_type,true> form_mortar_context_type;
+            typedef typename FormType::template Context<map_gmc_type, expression_type, im_type,map_gmc_type,map_gmc_type,mortarTag> form_mortar_context_type;
             typedef typename FormType::template Context<map_gmc1_type, expression_type, im2_type> form1_context_type;
-            typedef typename FormType::template Context<map_gmc1_type, expression_type, im2_type,map_gmc1_type,map_gmc1_type,true> form1_mortar_context_type;
+            typedef typename FormType::template Context<map_gmc1_type, expression_type, im2_type,map_gmc1_type,map_gmc1_type,mortarTag> form1_mortar_context_type;
             //typedef vf::detail::FormContextBase<map_gmc_type,im_type> fcb_type;
             typedef form_context_type fcb_type;
             typedef form_mortar_context_type mortar_fcb_type;
@@ -1344,6 +1348,8 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                     if ( formc->isZero( idElt ) )
                         continue;
 
+                    bool useMortarAssembly= ( has_mortar_test && eltTest.isOnBoundary() ) || ( has_mortar_trial && formc->trialElementIsOnBoundary( idElt ) );
+
                     switch ( M_gt )
                     {
                     default:
@@ -1362,7 +1368,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                         //ti1.restart();
                         map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
 
-                        if ( eltTest.isOnBoundary() )
+                        if ( useMortarAssembly )
                         {
                             formcm->update( mapgmc,mapgmc,mapgmc );
                             formcm->integrate();
@@ -1402,7 +1408,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                         //ti1.restart();
                         map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
 
-                        if ( eltTest.isOnBoundary() )
+                        if ( useMortarAssembly )
                         {
                             formc1m->update( mapgmc,mapgmc,mapgmc );
                             formc1m->integrate();
@@ -1429,7 +1435,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
 
                     case GeomapStrategyType::GEOMAP_OPT:
                     {
-                        if ( it->isOnBoundary() )
+                        if ( useMortarAssembly )
                         {
                             //ti0.restart();
                             __c->update( eltTest );
@@ -2057,12 +2063,17 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     im_formtest_type imTest;
     im_formtrial_type imTrial;
 
+    // mortar context
+    static const bool has_mortar_test = FormType::test_space_type::is_mortar;
+    static const bool has_mortar_trial = FormType::trial_space_type::is_mortar;
+    static const int mortarTag = (has_mortar_test && has_mortar_trial)? 3 : ( (has_mortar_test)? 1 : ( (has_mortar_trial)? 2 : 0 ) );
+    BOOST_MPL_ASSERT_MSG( mortarTag < 3,TODO_CASE3, (mpl::int_<mortarTag>) );
 
     // typedef on formcontext
     typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, im_range_type, map_gmc_expr_type, map_gmc_formTrial_type> form_context_type;
-    typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, im_range_type, map_gmc_expr_type, map_gmc_formTrial_type,true> form_mortar_context_type;
+    typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, im_range_type, map_gmc_expr_type, map_gmc_formTrial_type,mortarTag> form_mortar_context_type;
     typedef typename FormType::template Context<map_gmc1_formTest_type, expression_type, im1_range_type, map_gmc1_expr_type, map_gmc1_formTrial_type> form1_context_type;
-    typedef typename FormType::template Context<map_gmc1_formTest_type, expression_type, im1_range_type, map_gmc1_expr_type, map_gmc1_formTrial_type,true> form1_mortar_context_type;
+    typedef typename FormType::template Context<map_gmc1_formTest_type, expression_type, im1_range_type, map_gmc1_expr_type, map_gmc1_formTrial_type,mortarTag> form1_mortar_context_type;
     typedef form_context_type fcb_type;
     typedef form_mortar_context_type mortar_fcb_type;
     typedef form1_context_type fcb1_type;
@@ -2163,7 +2174,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                         detail::updateGmcWithRelationDifferentMeshType<typename FormType::space_2_type,im_formtrial_type,
                                                                        gmc_formTrial_type,gmc_expr_type>(__form.trialSpace(), gmcFormTrial, gmcExpr,
                                                                                                          idEltTrial, mpl::int_<gmTrialRangeRelation>() );
-                        if ( elt_it->isOnBoundary()  )
+                        if ( ( has_mortar_test && __form.testSpace()->mesh()->element( gmcFormTest->id() ).isOnBoundary() ) ||
+                             ( has_mortar_trial && __form.trialSpace()->mesh()->element( gmcFormTrial->id() ).isOnBoundary() ) )
                         {
                             formcm->update( mapgmcFormTest,mapgmcFormTrial,mapgmcExpr );
                             formcm->integrate();
@@ -2197,7 +2209,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                                                                            gmc_formTrial_type,gmc_expr_type>(__form.trialSpace(), gmcFormTrial, gmcExpr,
                                                                                                              idEltTrial, mpl::int_<gmTrialRangeRelation>() );
 
-                            if ( elt_it->isOnBoundary()  )
+                            if ( ( has_mortar_test && __form.testSpace()->mesh()->element( gmcFormTest->id() ).isOnBoundary() ) ||
+                                 ( has_mortar_trial && __form.trialSpace()->mesh()->element( gmcFormTrial->id() ).isOnBoundary() ) )
                             {
                                 formcm->update( mapgmcFormTest,mapgmcFormTrial,mapgmcExpr );
                                 formcm->integrate();
@@ -2445,9 +2458,15 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     typedef typename gm_formTrial_type::precompute_ptrtype pc_formTrial_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_formTrial_ptrtype> > map_gmc_formTrial_type;
 
+    // mortar context
+    static const bool has_mortar_test = FormType::test_space_type::is_mortar;
+    static const bool has_mortar_trial = FormType::trial_space_type::is_mortar;
+    static const int mortarTag = (has_mortar_test && has_mortar_trial)? 3 : ( (has_mortar_test)? 1 : ( (has_mortar_trial)? 2 : 0 ) );
+    BOOST_MPL_ASSERT_MSG( mortarTag < 3,TODO_CASE3, (mpl::int_<mortarTag>) );
+
     // typedef on formcontext
     typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, im_range_type, map_gmc_expr_type, map_gmc_formTrial_type> form_context_type;
-    typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, im_range_type, map_gmc_expr_type, map_gmc_formTrial_type,true> form_mortar_context_type;
+    typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, im_range_type, map_gmc_expr_type, map_gmc_formTrial_type, mortarTag> form_mortar_context_type;
     typedef form_context_type fcb_type;
     typedef form_mortar_context_type mortar_fcb_type;
     typedef fcb_type* focb_ptrtype;
@@ -2479,19 +2498,21 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     //-----------------------------------------------//
     pc_formTest_ptrtype geopcFormTest( new pc_formTest_type( __form.gm(), __form.template testFiniteElement<false>()->points() ) );
     VLOG(2) << "pts non mortar : " << __form.template testFiniteElement<false>()->points();
-    gmc_formTest_ptrtype gmcFormTest( new gmc_formTest_type( __form.gm(), __form.testSpace()->mesh()->element( 0 ), geopcFormTest ) );
+    gmc_formTest_ptrtype gmcFormTest( new gmc_formTest_type( __form.gm(), *__form.testSpace()->mesh()->beginElementWithProcessId(), geopcFormTest ) );
     map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTest ) );
-
     // mortar
-    pc_formTest_ptrtype geopcFormTestMortar( new pc_formTest_type( __form.gm(), __form.template testFiniteElement<true>()->points() ) );
+    pc_formTest_ptrtype geopcFormTestMortar( new pc_formTest_type( __form.gm(), __form.template testFiniteElement<FormType::test_space_type::is_mortar>()->points() ) );
     VLOG(2) << "pts mortar : " << __form.template testFiniteElement<true>()->points();
-    gmc_formTest_ptrtype gmcFormTestMortar( new gmc_formTest_type( __form.gm(), __form.testSpace()->mesh()->element( 0 ), geopcFormTestMortar ) );
+    gmc_formTest_ptrtype gmcFormTestMortar( new gmc_formTest_type( __form.gm(), *__form.testSpace()->mesh()->beginElementWithProcessId(), geopcFormTestMortar ) );
     map_gmc_formTest_type mapgmcFormTestMortar( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTestMortar ) );
     //-----------------------------------------------//
     pc_formTrial_ptrtype geopcFormTrial( new pc_formTrial_type( __form.gmTrial(), __form.trialSpace()->fe()->points() ) );
-    gmc_formTrial_ptrtype gmcFormTrial( new gmc_formTrial_type( __form.gmTrial(), __form.trialSpace()->mesh()->element( 0 ), geopcFormTrial ) );
+    gmc_formTrial_ptrtype gmcFormTrial( new gmc_formTrial_type( __form.gmTrial(), *__form.trialSpace()->mesh()->beginElementWithProcessId(), geopcFormTrial ) );
     map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrial ) );
     //-----------------------------------------------//
+    pc_formTrial_ptrtype geopcFormTrialMortar( new pc_formTrial_type( __form.gmTrial(), __form.template trialFiniteElement<FormType::trial_space_type::is_mortar>()->points() ) );
+    gmc_formTrial_ptrtype gmcFormTrialMortar( new gmc_formTrial_type( __form.gmTrial(), *__form.trialSpace()->mesh()->beginElementWithProcessId(), geopcFormTrialMortar ) );
+    map_gmc_formTrial_type mapgmcFormTrialMortar( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrialMortar ) );
 
     focb_ptrtype formc( new form_context_type( __form,
                                                mapgmcFormTest,
@@ -2499,12 +2520,19 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
                                                mapgmcExpr,
                                                this->expression(),
                                                imRange ) );
-    mortar_focb_ptrtype formcm( new form_mortar_context_type( __form,
-                                                              mapgmcFormTestMortar,
-                                                              mapgmcFormTrial,
-                                                              mapgmcExpr,
-                                                              this->expression(),
-                                                              imRange ) );
+    mortar_focb_ptrtype formcmTest( new form_mortar_context_type( __form,
+                                                                  mapgmcFormTestMortar,
+                                                                  mapgmcFormTrial,
+                                                                  mapgmcExpr,
+                                                                  this->expression(),
+                                                                  imRange ) );
+
+    mortar_focb_ptrtype formcmTrial( new form_mortar_context_type( __form,
+                                                                   mapgmcFormTest,
+                                                                   mapgmcFormTrialMortar,
+                                                                   mapgmcExpr,
+                                                                   this->expression(),
+                                                                   imRange ) );
 
     //-----------------------------------------------//
 
@@ -2540,45 +2568,53 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
                 auto vec_gmcExpr = M_QPL->getUsableDataInFormContext( themapQuad,ptRefTest,ptRefTrial );
                 auto gmcExpr_it = vec_gmcExpr.begin();
                 auto const gmcExpr_en = vec_gmcExpr.end();
-                bool isFirstExperience = true;
+                bool isFirstExperience = true, isFirstExperienceMortarTest = true, isFirstExperienceMortarTrial = true;
                 for ( ; gmcExpr_it != gmcExpr_en ; ++gmcExpr_it )
                 {
-                    geopcFormTrial->update( gmcExpr_it->template get<3>() );
-                    gmcFormTrial->update( eltTrial,geopcFormTrial );
-                    map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrial ) );
                     map_gmc_expr_type mapgmcExpr( fusion::make_pair<vf::detail::gmc<0> >( gmcExpr_it->template get<1>() ) );
-
-                    if ( eltTest.isOnBoundary() )
+                    if ( mortarTag == 1 && eltTest.isOnBoundary() )
                     {
                         geopcFormTestMortar->update( gmcExpr_it->template get<2>() );
+                        geopcFormTrial->update( gmcExpr_it->template get<3>() );
                         gmcFormTestMortar->update( eltTest,geopcFormTestMortar );
-
+                        gmcFormTrial->update( eltTrial,geopcFormTrial );
                         map_gmc_formTest_type mapgmcFormTestMortar( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTestMortar ) );
-
-                        formcm->updateInCaseOfInterpolate( mapgmcFormTestMortar, mapgmcFormTrial, mapgmcExpr, gmcExpr_it->template get<0>() );
-                        formcm->integrateInCaseOfInterpolate( gmcExpr_it->template get<0>(),isFirstExperience );
+                        map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrial ) );
+                        formcmTest->updateInCaseOfInterpolate( mapgmcFormTestMortar, mapgmcFormTrial, mapgmcExpr, gmcExpr_it->template get<0>() );
+                        formcmTest->integrateInCaseOfInterpolate( gmcExpr_it->template get<0>(),isFirstExperienceMortarTest );
+                        isFirstExperienceMortarTest = false;
+                    }
+                    else if ( mortarTag == 2 && eltTrial.isOnBoundary() )
+                    {
+                        geopcFormTest->update( gmcExpr_it->template get<2>() );
+                        geopcFormTrialMortar->update( gmcExpr_it->template get<3>() );
+                        gmcFormTest->update( eltTest,geopcFormTest );
+                        gmcFormTrialMortar->update( eltTrial,geopcFormTrialMortar );
+                        map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTest ) );
+                        map_gmc_formTrial_type mapgmcFormTrialMortar( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrialMortar ) );
+                        formcmTrial->updateInCaseOfInterpolate( mapgmcFormTest, mapgmcFormTrialMortar, mapgmcExpr, gmcExpr_it->template get<0>() );
+                        formcmTrial->integrateInCaseOfInterpolate( gmcExpr_it->template get<0>(),isFirstExperienceMortarTrial );
+                        isFirstExperienceMortarTrial = false;
                     }
                     else
                     {
                         geopcFormTest->update( gmcExpr_it->template get<2>() );
+                        geopcFormTrial->update( gmcExpr_it->template get<3>() );
                         gmcFormTest->update( eltTest,geopcFormTest );
-
+                        gmcFormTrial->update( eltTrial,geopcFormTrial );
                         map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTest ) );
-
+                        map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrial ) );
                         formc->updateInCaseOfInterpolate( mapgmcFormTest, mapgmcFormTrial, mapgmcExpr, gmcExpr_it->template get<0>() );
                         formc->integrateInCaseOfInterpolate( gmcExpr_it->template get<0>(),isFirstExperience );
+                        isFirstExperience = false;
                     }
-                    isFirstExperience = false;
                 }
-                if ( eltTest.isOnBoundary() )
-                {
-                    formcm->assembleInCaseOfInterpolate();
-                }
-                else
-                {
+                if ( !isFirstExperience )
                     formc->assembleInCaseOfInterpolate();
-                }
-
+                if ( !isFirstExperienceMortarTest )
+                    formcmTest->assembleInCaseOfInterpolate();
+                if ( !isFirstExperienceMortarTrial )
+                    formcmTrial->assembleInCaseOfInterpolate();
             }
         }
     } // if (!M_QPL->hasPrecomputeBF())
@@ -3811,11 +3847,17 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     bool hasInitGeoPc=false;
 
     //-----------------------------------------------------//
+    // mortar context
+    static const bool has_mortar_test = FormType::test_space_type::is_mortar;
+    static const bool has_mortar_trial = FormType::trial_space_type::is_mortar;
+    static const int mortarTag = (has_mortar_test && has_mortar_trial)? 3 : ( (has_mortar_test)? 1 : ( (has_mortar_trial)? 2 : 0 ) );
+    BOOST_MPL_ASSERT_MSG( mortarTag < 3,TODO_CASE3, (mpl::int_<mortarTag>) );
+
     // typedef on formcontext
     typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, face_im_type, map_gmc_expr_type, map_gmc_formTrial_type> form_context_type;
-    typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, face_im_type, map_gmc_expr_type, map_gmc_formTrial_type,true> form_mortar_context_type;
+    typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, face_im_type, map_gmc_expr_type, map_gmc_formTrial_type,mortarTag> form_mortar_context_type;
     typedef typename FormType::template Context<map_gmc1_formTest_type, expression_type, face_im1_type, map_gmc1_expr_type, map_gmc1_formTrial_type> form1_context_type;
-    typedef typename FormType::template Context<map_gmc1_formTest_type, expression_type, face_im1_type, map_gmc1_expr_type, map_gmc1_formTrial_type,true> form1_mortar_context_type;
+    typedef typename FormType::template Context<map_gmc1_formTest_type, expression_type, face_im1_type, map_gmc1_expr_type, map_gmc1_formTrial_type,mortarTag> form1_mortar_context_type;
 
     typedef boost::shared_ptr<form_context_type> form_context_ptrtype;
     typedef boost::shared_ptr<form_mortar_context_type> form_mortar_context_ptrtype;
@@ -3986,17 +4028,18 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                 detail::updateGmcWithRelationDifferentMeshType2<typename element_iterator::reference,typename FormType::space_2_type,im_range_type,
                                                                 gmc_formTrial_type,gmc_expr_type>(*elt_it,__form.trialSpace(), gmcFormTrial, gmcExpr0,
                                                                                                   idEltTrial, mpl::int_<gmTrialRangeRelation>() );
-                LOG(INFO) << "elt "  << elt_it->id() << " bdy = " << elt_it->isOnBoundary();
-                if ( elt_it->isOnBoundary() )
+                DLOG(INFO) << "elt "  << elt_it->id() << " bdy = " << elt_it->isOnBoundary();
+                if ( ( has_mortar_test && __form.testSpace()->mesh()->element( gmcFormTest->id() ).isOnBoundary() ) ||
+                     ( has_mortar_trial && __form.trialSpace()->mesh()->element( gmcFormTrial->id() ).isOnBoundary() ) )
                 {
-                    LOG(INFO) << "mortar element";
+                    DLOG(INFO) << "mortar element";
                     mortar_form->update( mapgmcFormTest,mapgmcFormTrial,mapgmcExpr, face_ims[__face_id_in_elt_0] );
                     mortar_form->integrate();
                     mortar_form->assemble( /*elt_it->element( 0 ).id()*/ );
                 }
                 else
                 {
-                    LOG(INFO) << "internal element";
+                    DLOG(INFO) << "internal element";
                     form->update( mapgmcFormTest,mapgmcFormTrial,mapgmcExpr, face_ims[__face_id_in_elt_0] );
                     form->integrate();
                     form->assemble( /*elt_it->element( 0 ).id()*/ );
@@ -4087,10 +4130,17 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     bool hasInitGeoPc=false;
 
     //-----------------------------------------------------//
+    // mortar context
+    static const bool has_mortar_test = FormType::test_space_type::is_mortar;
+    static const int mortarTag = (has_mortar_test)? 1 : 0;
+
     // typedef on formcontext
     typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, face_im_type, map_gmc_expr_type> form_context_type;
+    typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, face_im_type, map_gmc_expr_type, map_gmc_formTest_type,mortarTag> form_mortar_context_type;
+
     typedef typename FormType::template Context<map_gmc1_formTest_type, expression_type, face_im1_type, map_gmc1_expr_type> form1_context_type;
     typedef boost::shared_ptr<form_context_type> form_context_ptrtype;
+    typedef boost::shared_ptr<form_mortar_context_type> form_mortar_context_ptrtype;
     typedef boost::shared_ptr<form1_context_type> form1_context_ptrtype;
 
 
@@ -4151,6 +4201,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
         map_gmc_expr_type mapgmcExpr( fusion::make_pair<vf::detail::gmc<0> >( gmcExpr0 ) );
         map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTest ) );
         form_context_ptrtype form;
+        form_mortar_context_ptrtype formMortar;
         form1_context_ptrtype form1;
 
 
@@ -4210,9 +4261,23 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                                                                 gmc_formTest_type,gmc_expr_type>(*elt_it,__form.testSpace(), gmcFormTest, gmcExpr0,
                                                                                                  idEltTest, mpl::int_<gmTestRangeRelation>() );
 
-                form->update( mapgmcFormTest,mapgmcFormTest,mapgmcExpr, face_ims[__face_id_in_elt_0] );
-                form->integrate();
-                form->assemble();
+
+                bool useMortarAssembly = has_mortar_test && __form.testSpace()->mesh()->element( gmcFormTest->id() ).isOnBoundary();
+                if ( useMortarAssembly )
+                {
+                    if ( !formMortar )
+                        formMortar = form_mortar_context_ptrtype( new form_mortar_context_type( __form, mapgmcFormTest, mapgmcExpr,
+                                                                                                this->expression(), face_ims[__face_id_in_elt_0], imRange,imTest ) );
+                    formMortar->update( mapgmcFormTest,mapgmcFormTest,mapgmcExpr, face_ims[__face_id_in_elt_0] );
+                    formMortar->integrate();
+                    formMortar->assemble();
+                }
+                else
+                {
+                    form->update( mapgmcFormTest,mapgmcFormTest,mapgmcExpr, face_ims[__face_id_in_elt_0] );
+                    form->integrate();
+                    form->assemble();
+                }
             }
 
         } // for ( ; elt_it ... )
@@ -4485,15 +4550,21 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     typedef typename gm_formTrial_type::precompute_ptrtype pc_formTrial_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_formTrial_ptrtype> > map_gmc_formTrial_type;
 
-
-
     // typedef on formcontext
     typedef typename im_range_type::face_quadrature_type face_im_type;
 
-    typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, face_im_type,map_gmc_expr_type, map_gmc_formTrial_type> form_context_type;
+    // mortar context
+    static const bool has_mortar_test = FormType::test_space_type::is_mortar;
+    static const bool has_mortar_trial = FormType::trial_space_type::is_mortar;
+    static const int mortarTag = (has_mortar_test && has_mortar_trial)? 3 : ( (has_mortar_test)? 1 : ( (has_mortar_trial)? 2 : 0 ) );
+    BOOST_MPL_ASSERT_MSG( mortarTag < 3,TODO_CASE_TEST_TRIAL_MORTAR, (mpl::int_<mortarTag>) );
+
+    // typedef on formcontext
+    typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, face_im_type, map_gmc_expr_type, map_gmc_formTrial_type> form_context_type;
+    typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, face_im_type, map_gmc_expr_type, map_gmc_formTrial_type, mortarTag> form_mortar_context_type;
     typedef form_context_type fcb_type;
     typedef fcb_type* focb_ptrtype;
-
+    typedef boost::shared_ptr<form_mortar_context_type> form_mortar_context_ptrtype;
 
     element_iterator elt_it, elt_en;
     bool findEltForInit = false;
@@ -4546,12 +4617,19 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     //-----------------------------------------------//
 
     pc_formTest_ptrtype geopcFormTest( new pc_formTest_type( __form.gm(),  __form.testSpace()->fe()->points() ) );
-    gmc_formTest_ptrtype gmcFormTest( new gmc_formTest_type( __form.gm(), __form.testSpace()->mesh()->element( 0 ), geopcFormTest ) );
+    gmc_formTest_ptrtype gmcFormTest( new gmc_formTest_type( __form.gm(), *__form.testSpace()->mesh()->beginElementWithProcessId(), geopcFormTest ) );
     map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTest ) );
-
     pc_formTrial_ptrtype geopcFormTrial( new pc_formTrial_type( __form.gmTrial(), __form.trialSpace()->fe()->points() ) );
-    gmc_formTrial_ptrtype gmcFormTrial( new gmc_formTrial_type( __form.gmTrial(), __form.trialSpace()->mesh()->element( 0 ), geopcFormTrial ) );
+    gmc_formTrial_ptrtype gmcFormTrial( new gmc_formTrial_type( __form.gmTrial(), *__form.trialSpace()->mesh()->beginElementWithProcessId(), geopcFormTrial ) );
     map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrial ) );
+
+    // mortar
+    pc_formTest_ptrtype geopcFormTestMortar( new pc_formTest_type( __form.gm(), __form.template testFiniteElement<FormType::test_space_type::is_mortar/*true*/>()->points() ) );
+    gmc_formTest_ptrtype gmcFormTestMortar( new gmc_formTest_type( __form.gm(), *__form.testSpace()->mesh()->beginElementWithProcessId(), geopcFormTestMortar ) );
+    map_gmc_formTest_type mapgmcFormTestMortar( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTestMortar ) );
+    pc_formTrial_ptrtype geopcFormTrialMortar( new pc_formTrial_type( __form.gmTrial(), __form.template trialFiniteElement<FormType::trial_space_type::is_mortar/*true*/>()->points() ) );
+    gmc_formTrial_ptrtype gmcFormTrialMortar( new gmc_formTrial_type( __form.gmTrial(), *__form.trialSpace()->mesh()->beginElementWithProcessId(), geopcFormTrialMortar ) );
+    map_gmc_formTrial_type mapgmcFormTrialMortar( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrialMortar ) );
 
     //-----------------------------------------------//
 
@@ -4562,7 +4640,20 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
                                                this->expression(),
                                                face_ims[__face_id_in_elt_0],
                                                imRange ) );
-
+    form_mortar_context_ptrtype formcMortarTest( new form_mortar_context_type( __form,
+                                                                               mapgmcFormTestMortar,
+                                                                               mapgmcFormTrial,
+                                                                               mapgmcExpr,
+                                                                               this->expression(),
+                                                                               face_ims[__face_id_in_elt_0],
+                                                                               imRange ) );
+    form_mortar_context_ptrtype formcMortarTrial( new form_mortar_context_type( __form,
+                                                                                mapgmcFormTest,
+                                                                                mapgmcFormTrialMortar,
+                                                                                mapgmcExpr,
+                                                                                this->expression(),
+                                                                                face_ims[__face_id_in_elt_0],
+                                                                                imRange ) );
     //-----------------------------------------------//
 
     auto meshTrial = __form.trialSpace()->mesh();
@@ -4596,32 +4687,63 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
                 auto const& ptRefTest = map_it->second.template get<1>();
                 auto const& ptRefTrial = map_it->second.template get<2>();
                 auto const& themapQuad = map_it->second.template get<0>();
+                //std::cout << "eltTest.id() " << eltTest.id() << " eltTest.G() " << eltTest.G()
+                //          << " eltTrial.id() "<< eltTrial.id() << " eltTrial.G() " << eltTrial.G() << std::endl;
 
                 auto vec_gmcExpr = M_QPL->getUsableDataInFormContext( themapQuad,ptRefTest,ptRefTrial );
                 auto gmcExpr_it = vec_gmcExpr.begin();
                 auto const gmcExpr_en = vec_gmcExpr.end();
-                bool isFirstExperience = true;
+                bool isFirstExperience = true, isFirstExperienceMortarTest = true, isFirstExperienceMortarTrial = true;
 
                 for ( ; gmcExpr_it != gmcExpr_en ; ++gmcExpr_it )
                 {
-                    geopcFormTest->update( gmcExpr_it->template get<2>() );
-                    geopcFormTrial->update( gmcExpr_it->template get<3>() );
-
-                    gmcFormTest->update( eltTest,geopcFormTest );
-                    gmcFormTrial->update( eltTrial,geopcFormTrial );
-                    //std::cout << "eltTest.id() " << eltTest.id() << " eltTest.G() " << eltTest.G()
-                    //          << " eltTrial.id() "<< eltTrial.id() << " eltTrial.G() " << eltTrial.G() << std::endl;
-                    map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTest ) );
-                    map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrial ) );
                     map_gmc_expr_type mapgmcExpr( fusion::make_pair<vf::detail::gmc<0> >( gmcExpr_it->template get<1>() ) );
                     __face_id_in_elt_0 = gmcExpr_it->template get<1>()->faceId();
-                    formc->updateInCaseOfInterpolate( mapgmcFormTest, mapgmcFormTrial, mapgmcExpr,face_ims[__face_id_in_elt_0],gmcExpr_it->template get<0>() );
 
-                    formc->integrateInCaseOfInterpolate( gmcExpr_it->template get<0>(),isFirstExperience );
-                    isFirstExperience = false;
+                    if ( mortarTag == 1 && eltTest.isOnBoundary() )
+                    {
+                        geopcFormTestMortar->update( gmcExpr_it->template get<2>() );
+                        geopcFormTrial->update( gmcExpr_it->template get<3>() );
+                        gmcFormTestMortar->update( eltTest,geopcFormTestMortar );
+                        gmcFormTrial->update( eltTrial,geopcFormTrial );
+                        map_gmc_formTest_type mapgmcFormTestMortar( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTestMortar ) );
+                        map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrial ) );
+                        formcMortarTest->updateInCaseOfInterpolate( mapgmcFormTestMortar, mapgmcFormTrial, mapgmcExpr,face_ims[__face_id_in_elt_0],gmcExpr_it->template get<0>() );
+                        formcMortarTest->integrateInCaseOfInterpolate( gmcExpr_it->template get<0>(),isFirstExperienceMortarTest );
+                        isFirstExperienceMortarTest = false;
+                    }
+                    else if ( mortarTag == 2 && eltTrial.isOnBoundary() )
+                    {
+                        geopcFormTest->update( gmcExpr_it->template get<2>() );
+                        geopcFormTrialMortar->update( gmcExpr_it->template get<3>() );
+                        gmcFormTest->update( eltTest,geopcFormTest );
+                        gmcFormTrialMortar->update( eltTrial,geopcFormTrialMortar );
+                        map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTest ) );
+                        map_gmc_formTrial_type mapgmcFormTrialMortar( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrialMortar ) );
+                        formcMortarTrial->updateInCaseOfInterpolate( mapgmcFormTest, mapgmcFormTrialMortar, mapgmcExpr,face_ims[__face_id_in_elt_0],gmcExpr_it->template get<0>() );
+                        formcMortarTrial->integrateInCaseOfInterpolate( gmcExpr_it->template get<0>(),isFirstExperienceMortarTrial );
+                        isFirstExperienceMortarTrial = false;
+                    }
+                    else
+                    {
+                        geopcFormTest->update( gmcExpr_it->template get<2>() );
+                        geopcFormTrial->update( gmcExpr_it->template get<3>() );
+                        gmcFormTest->update( eltTest,geopcFormTest );
+                        gmcFormTrial->update( eltTrial,geopcFormTrial );
+                        map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTest ) );
+                        map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrial ) );
+                        formc->updateInCaseOfInterpolate( mapgmcFormTest, mapgmcFormTrial, mapgmcExpr,face_ims[__face_id_in_elt_0],gmcExpr_it->template get<0>() );
+                        formc->integrateInCaseOfInterpolate( gmcExpr_it->template get<0>(),isFirstExperience );
+                        isFirstExperience = false;
+                    }
                 }
 
-                formc->assembleInCaseOfInterpolate();
+                if ( !isFirstExperience )
+                    formc->assembleInCaseOfInterpolate();
+                if ( !isFirstExperienceMortarTest )
+                    formcMortarTest->assembleInCaseOfInterpolate();
+                if ( !isFirstExperienceMortarTrial )
+                    formcMortarTrial->assembleInCaseOfInterpolate();
             }
 
         }
