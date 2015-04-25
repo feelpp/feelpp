@@ -48,7 +48,7 @@
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelvf/vf.hpp>
 
-FEELPP_ENVIRONMENT_NO_OPTIONS
+FEELPP_ENVIRONMENT_WITH_ABOUT_NO_OPTIONS(Feel::makeAboutDefault("test_mortar"))
 
 BOOST_AUTO_TEST_SUITE( mortar )
 #if 0
