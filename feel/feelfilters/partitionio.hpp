@@ -293,6 +293,7 @@ inline void PartitionIO<MeshType>::setup (const std::string& fileName,
 template<typename MeshType>
 void PartitionIO<MeshType>::write (mesh_ptrtype meshParts)
 {
+    LOG(INFO) << "writing mesh in HDF5 format in " << M_fileName;
     M_meshPartsOut = meshParts;
     // 1 partition per process
     // in the future we have to handle many partitions in one process
