@@ -5,7 +5,7 @@ Computing integrals over mesh {#TutorialIntegrals}
 
 The next step is to compute integrals over the mesh. The source code is available in \c myintegrals.cpp.
 
-# TutorialIntegralsSteps Step by step {#explanations}
+# Step by step explanations {#TutorialIntegralsSteps}
 
 We start by loading a Mesh in 2D
 \snippet myintegrals.cpp mesh
@@ -30,13 +30,13 @@ to the screen as the result is the same over all mpi processes if the
 application was run in parallel. Note also that the code actually prints the
 expression passed by the user through the command line option \c functions.g.
 
-# TutorialIntegralsResults Some {#results}
+# Some results {#TutorialIntegralsResults}
 
 We start with the following function \f$g=1\f$. Recall that by default the
 domain is the unit square, hence the \f$\int_\Omega g\f$ and \f$\int_{\partial
 \Omega} g\f$ should be equal to 1 and 4 respectively.
 
-```sh
+```
 shell> ./feelpp_doc_myintegrals --functions.g=1
 int_Omega 1 = 1
 int_{boundary of Omega} 1 = 4
@@ -45,7 +45,7 @@ int_{boundary of Omega} 1 = 4
 Now we try \f$g=x\f$. We need to tell Feel++ what are the symbols associated
 with the expression: here the symbol is \c x and it works as follows
 
-```sh
+```
 shell> ./feelpp_doc_myintegrals --functions.g=x:x
 int_Omega x = 0.5
 int_{boundary of Omega} x = 2
@@ -56,7 +56,7 @@ Recall that \c : is a separator between the expression and each symbol composing
 Now we try \f$g=x y\f$. We need to tell Feel++ what are the symbols associated
 with the expression: here the symbol is \c x and \c y and it works as follows
 
-```sh
+```
 shell> ./feelpp_doc_myintegrals --functions.g=x*y:x:y
 int_Omega x*y = 0.25
 int_{boundary of Omega} x*y = 1
@@ -64,7 +64,7 @@ int_{boundary of Omega} x*y = 1
 
 More complicated functions are of course doable, such as \f$g=\sin( x y )\f$.
 
-```sh
+```
 ./feelpp_doc_myintegrals --functions.g="sin(x*y):x:y"
 int_Omega sin(x*y) = 0.239812
 int_{boundary of Omega} sin(x*y) = 0.919395
@@ -73,14 +73,14 @@ int_{boundary of Omega} sin(x*y) = 0.919395
 Here is the last example in parallel over 4 processors which returns, of
 course, the exact same results as in sequential
 
-```sh
+```
 mpirun -np 4 ./feelpp_doc_myintegrals --functions.g="sin(x*y):x:y"
 int_Omega sin(x*y) = 0.239812
 int_{boundary of Omega} sin(x*y) = 0.919395
 ```
 
 Finally we can change the type of domain and compute the area and perimeter of the unit disk as follows
-```sh
+```
 ./feelpp_doc_myintegrals --functions.g="1:x:y" --gmsh.domain.shape=ellipsoid --gmsh.hsize=0.05
 int_Omega 1 = 0.784137
 int_{boundary of Omega} 1 = 3.14033
@@ -91,14 +91,14 @@ int_{boundary of Omega} 1 = 3.14033
 integration is different from the exact domain \f$\Omega = \{ (x,y)\in
 \mathbb{R}^2 | x^2+y^2 < 1\}\f$.
 
-# TutorialIntegralsCode Complete {#code}
+#  Complete code {#TutorialIntegralsCode}
 
 The complete code reads as follows
 
 \snippet myintegrals.cpp all
 
 to compile just type
-```sh
+```
 make feelpp_doc_myintegrals
 ```
 
