@@ -154,6 +154,7 @@ BOOST_PARAMETER_FUNCTION(
     if ( mesh_name.extension() == ".h5"  )
     {
         LOG(INFO) << " Loading mesh in HDF5 format";
+        CHECK( mesh ) << "Invalid mesh pointer to load " << mesh_name;
         auto m = _mesh_ptrtype( mesh );
         m->loadHDF5( mesh_name.string() );
         return m;
