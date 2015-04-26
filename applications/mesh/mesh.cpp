@@ -44,7 +44,9 @@ int main( int argc, char** argv )
 
     // create a mesh with GMSH using Feel++ geometry tool
     auto numPartition = ioption(_name="numPartition");
+    tic();
     auto mesh = loadMesh(_mesh=new  Mesh<CONVEX<FEELPP_DIM>>, _partitions=numPartition, _savehdf5=1);
+    toc("loading mesh done");
 
     size_type nbdyfaces = nelements(boundaryfaces(mesh));
 
