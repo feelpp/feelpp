@@ -163,7 +163,14 @@ public:
     {
         return *boost::get<0>( M_element1 );
     }
+    size_type idElement0() const { return boost::get<1>( M_element0 ); }
+    uint16_type idInElement0() const { return boost::get<2>( M_element0 ); }
+    rank_type pidElement0() const { return boost::get<3>( M_element0 ); }
 
+    size_type idElement1() const { return boost::get<1>( M_element1 ); }
+    uint16_type idInElement1() const { return boost::get<2>( M_element1 ); }
+    rank_type pidElement1() const { return boost::get<3>( M_element1 ); }
+    
     size_type ad_first() const
     {
         return boost::get<1>( M_element0 );

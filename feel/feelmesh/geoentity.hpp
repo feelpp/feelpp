@@ -49,8 +49,7 @@ class GeoEntity
     boost::equality_comparable<GeoEntity<Entity> >,
     boost::less_than_comparable<GeoEntity<Entity> >,
     boost::less_than_comparable<GeoEntity<Entity>, size_type>,
-public Entity
-
+    public Entity
 {
 public:
 
@@ -101,6 +100,9 @@ public:
     {
         typedef Reference<Entity, nDim, nOrder, nRealDim, T> type;
     };
+    template<typename T = double>
+    using reference_convex_type =  Reference<Entity, nDim, nOrder, nRealDim, T>;
+
     //@}
 
     /** @name Constructors, destructor
