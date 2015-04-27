@@ -91,8 +91,11 @@ BOOST_PARAMETER_FUNCTION(
 
     std::string filenameExpand = Environment::expand(filename);
     fs::path mesh_name=fs::path(Environment::findFile(filenameExpand));
-    LOG_IF( WARNING, mesh_name.extension() != ".geo" && mesh_name.extension() != ".msh" )
-        << "Invalid filename " << filenameExpand << " it should have either the .geo or .msh extension\n";
+    LOG_IF( WARNING,
+            mesh_name.extension() != ".geo" &&
+            mesh_name.extension() != ".h5" &&
+            mesh_name.extension() != ".msh" )
+        << "Invalid filename " << filenameExpand << " it should have either the .geo. .h5 or .msh extension\n";
 
 
     if ( mesh_name.extension() == ".geo" )
@@ -118,8 +121,11 @@ BOOST_PARAMETER_FUNCTION(
             _partitioner=partitioner,
             _partition_file=partition_file
             );
+
+#if defined(FEELPP_HAS_HDF5)
         if ( savehdf5 )
             m->saveHDF5( mesh_name.stem().string()+".h5" );
+#endif
         return m;
     }
 
@@ -139,15 +145,20 @@ BOOST_PARAMETER_FUNCTION(
                              _partitioner=partitioner,
                              _partition_file=partition_file
             );
+#if defined(FEELPP_HAS_HDF5)
         if ( savehdf5 )
             m->saveHDF5( mesh_name.stem().string()+".h5" );
+#endif
         return m;
     }
 #if defined(FEELPP_HAS_HDF5)
     if ( mesh_name.extension() == ".h5"  )
     {
-        mesh->loadHDF5( mesh_name.string() );
-        return _mesh_ptrtype( mesh );
+        LOG(INFO) << " Loading mesh in HDF5 format";
+        CHECK( mesh ) << "Invalid mesh pointer to load " << mesh_name;
+        auto m = boost::make_shared<_mesh_type>();
+        m->loadHDF5( mesh_name.string() );
+        return m;
     }
 #endif
 
@@ -166,8 +177,11 @@ BOOST_PARAMETER_FUNCTION(
                           _partitions=partitions,
                           _partitioner=partitioner,
                           _partition_file=partition_file );
+
+#if defined(FEELPP_HAS_HDF5)
     if ( savehdf5 )
-        m->saveHDF5( mesh_name.stem().string()+".h5" );
+        m->saveHDF5( fs::path(filenameExpand).stem().string()+".h5" );
+#endif
     return m;
 #if defined(__clang__)
 #pragma clang diagnostic pop

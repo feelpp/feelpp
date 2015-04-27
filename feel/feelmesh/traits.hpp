@@ -120,13 +120,13 @@ struct MeshTraits
 
 
 template<typename T>
-struct is_3d : mpl::bool_<decay_type<T>::nDim == 3 || decay_type<T>::nRealDim ==3> {};
+struct is_3d : mpl::bool_<decay_type<T>::nDim == 3 /*|| decay_type<T>::nRealDim ==3*/> {};
 template<typename T>
-struct is_2d : mpl::bool_<decay_type<T>::nDim == 2 || decay_type<T>::nRealDim ==2> {};
+struct is_2d : mpl::bool_<decay_type<T>::nDim == 2 /*|| decay_type<T>::nRealDim ==2*/> {};
 template<typename T>
-struct is_1d : mpl::bool_<decay_type<T>::nDim == 1 || decay_type<T>::nRealDim ==1> {};
+struct is_1d : mpl::bool_<decay_type<T>::nDim == 1 /*|| decay_type<T>::nRealDim ==1*/> {};
 template<typename T>
-struct is_0d : mpl::bool_<decay_type<T>::nDim == 0 || decay_type<T>::nRealDim ==0> {};
+struct is_0d : mpl::bool_<decay_type<T>::nDim == 0 /*|| decay_type<T>::nRealDim ==0*/> {};
 
 
 template<typename T>

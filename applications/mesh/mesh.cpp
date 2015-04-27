@@ -21,6 +21,7 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
+#include <feel/feelconfig.h>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
@@ -43,7 +44,9 @@ int main( int argc, char** argv )
 
     // create a mesh with GMSH using Feel++ geometry tool
     auto numPartition = ioption(_name="numPartition");
+    tic();
     auto mesh = loadMesh(_mesh=new  Mesh<CONVEX<FEELPP_DIM>>, _partitions=numPartition, _savehdf5=1);
+    toc("loading mesh done");
 
     size_type nbdyfaces = nelements(boundaryfaces(mesh));
 
