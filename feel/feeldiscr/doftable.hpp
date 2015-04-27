@@ -384,7 +384,10 @@ public:
     local_dof_set_type const&
     localDofSet( size_type eid ) const
         {
-            return M_local_dof_set.update( eid );
+            if ( is_mortar )
+                return M_local_dof_set.update( eid, getIndicesSize( eid ) );
+            else
+                return M_local_dof_set.update( eid );
         }
     mesh_type* mesh() { return M_mesh; }
     mesh_type* mesh() const { return M_mesh; }
@@ -479,7 +482,7 @@ public:
 
     std::vector<size_type> getIndicesOnGlobalCluster( size_type id_el ) const
         {
-            const size_type s = getIndicesSize();
+            const size_type s = getIndicesSize( id_el );
             std::vector<size_type> ind( s );
             getIndicesSetOnGlobalCluster( id_el, ind );
             return ind;
