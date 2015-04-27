@@ -964,10 +964,11 @@ public:
      * @param f a new point
      * @return the new point from the list
      */
-    element_type const& addElement( element_type& f )
+    element_type const& addElement( element_type& f, bool setid = true )
     {
         M_parts[f.marker().value()]++;
-        f.setId( M_elements.size() );
+        if ( setid )
+            f.setId( M_elements.size() );
         return *M_elements.insert( f ).first;
         //M_elements.push_back( f );
         //return M_elements.back();

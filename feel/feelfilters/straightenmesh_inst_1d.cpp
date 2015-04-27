@@ -34,4 +34,8 @@ template boost::shared_ptr<Mesh<Simplex<1,1,2>>>
 straightenMesh<Mesh<Simplex<1,1,2>>>( boost::shared_ptr<Mesh<Simplex<1,1,2>>>, 
                                     WorldComm const& , bool, bool  );
 
+template boost::shared_ptr<Mesh<Hypercube<1,1>>>
+straightenMesh<Mesh<Hypercube<1,1>>>( boost::shared_ptr<Mesh<Hypercube<1,1>>>, 
+                                    WorldComm const& , bool, bool  );
+
 }
