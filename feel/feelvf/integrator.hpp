@@ -1410,7 +1410,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
 
                         if ( useMortarAssembly )
                         {
-                            formc1m->update( mapgmc,mapgmc,mapgmc );
+                            formc1m->update( mapgmc1,mapgmc1,mapgmc1 );
                             formc1m->integrate();
                             formc1m->assemble();
                         }
