@@ -31,6 +31,9 @@ feelpp_add_test( continuity_hcurl NO_MPI_TEST )
 
 feelpp_add_test( functionals NO_MPI_TEST )
 
+feelpp_add_test( laplacian CFG test_laplacian.cfg )
+feelpp_add_test( laplaciant CFG test_laplaciant.cfg )
+
 feelpp_add_test( lambda )
 feelpp_add_test( lift )
 feelpp_add_test( lm )
