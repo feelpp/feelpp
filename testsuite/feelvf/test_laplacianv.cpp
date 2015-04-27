@@ -22,7 +22,7 @@
 */
 #define USE_BOOST_TEST 1
 #if defined(USE_BOOST_TEST)
-#define BOOST_TEST_MODULE test_laplacian
+#define BOOST_TEST_MODULE test_laplacianv
 #include <testsuite/testsuite.hpp>
 #endif
 
@@ -46,13 +46,26 @@
 using namespace Feel;
 
 inline
+po::options_description makeOptions()
+{
+    po::options_description options( "Test Laplacian Options" );
+    options.add_options()
+        ( "f1",po::value<std::string>()->default_value( "" ),"test function 1D" )
+        ( "f2",po::value<std::string>()->default_value( "" ),"test function 2D" )
+        ( "f3",po::value<std::string>()->default_value( "" ),"test function 3D" )
+        ;
+    options.add( feel_options() );
+    return options;
+}
+
+inline
 AboutData
 makeAbout()
 {
-    AboutData about( "test_laplacian" ,
-                     "test_laplacian" ,
+    AboutData about( "test_laplacianv" ,
+                     "test_laplacianv" ,
                      "0.2",
-                     "nD(n=2,3) test laplacian",
+                     "nD(n=2,3) test laplacianv",
                      Feel::AboutData::License_GPL,
                      "Copyright (c) 2014 Feel++ Consortium" );
 
@@ -73,15 +86,14 @@ public :
                                     _desc=domain( _name=( boost::format( "%1%-%2%" ) % soption(_name="gmsh.domain.shape") % Dim ).str() ,
                                                   _dim=Dim ) );
 
-
         auto Xh = Pch<2>( mesh );
         auto u = Xh->element();
         auto v = Xh->element();
 
-        auto g=soption(_name="functions.g");
+        auto g=soption(_name="f1");
         auto lapg = laplacian(expr(g));
         u.on(_range=elements(mesh), _expr=expr( g ));
-        
+
         boost::mpi::timer ti;
         if ( Environment::rank() == 0 )
             BOOST_TEST_MESSAGE( "Check integral" );
@@ -114,15 +126,14 @@ public :
                                     _desc=domain( _name=( boost::format( "%1%-%2%" ) % soption(_name="gmsh.domain.shape") % Dim ).str() ,
                                                   _dim=Dim ) );
 
-
         auto Xh = Pchv<2>( mesh );
         auto u = Xh->element();
         auto v = Xh->element();
 
-        auto g=soption(_name="functions.f");
+        auto g=soption( _name=( boost::format("f%1%") %Dim ).str() );
         auto lapg = laplacian(expr<Dim,1>(g));
         u.on(_range=elements(mesh), _expr=expr<Dim,1>( g ));
-        
+
         boost::mpi::timer ti;
         if ( Environment::rank() == 0 )
             BOOST_TEST_MESSAGE( "Check integral" );
@@ -144,7 +155,7 @@ public :
 
 
 #if defined(USE_BOOST_TEST)
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), feel_options() );
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
 BOOST_AUTO_TEST_SUITE( inner_suite )
 
 
@@ -166,7 +177,7 @@ BOOST_AUTO_TEST_CASE( test_31 )
     test.run();
 }
 
-BOOST_AUTO_TEST_CASE( test_32 )
+BOOST_AUTO_TEST_CASE( test_33 )
 {
     TestV<3> test;
     test.run();
@@ -182,8 +193,3 @@ int main(int argc, char** argv )
     test.run();
 }
 #endif
-
-
-
-
-
