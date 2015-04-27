@@ -2,8 +2,8 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2008-02-07
+  Author(s): Thomas Lantz
+       Date: 2015-04-27
 
   Copyright (C) 2008-2009 Université Joseph Fourier (Grenoble I)
 
@@ -30,7 +30,7 @@
 
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelvf/integrate.hpp>
-#include <feel/feelpoly/QuadraRect.hpp>
+#include <feel/feelpoly/multiscalequadrature.hpp>
 #include <feel/feelvf/ginac.hpp>
 #include <feel/feelfilters/exporter.hpp>
 using namespace Feel;
@@ -60,56 +60,45 @@ class Test
         void run(std::string s)
 
         {
-    // Initialize Feel++ Environment
-    /*Environment env( _argc=argc, _argv=argv,
-                     _about=about( _name="myintegrals" ,
-                                   _author="Feel++ Consortium",
-                                   _email="feelpp-devel@feelpp.org" ) );
-    */
-    /// [mesh]
-    // create the mesh (specify the dimension of geometric entity)
-
-    auto mesh = createGMSHMesh( _mesh=new Mesh<Hypercube<2>>,  
+          /// [mesh] 
+        auto mesh = createGMSHMesh( _mesh=new Mesh<Hypercube<2>>,  
                                  _desc=domain(_name="polymere",
                                               _xmax=1,
                                               _ymax=1));
 
-    /// [mesh]
-
+  
     /// [expression]
     // our function to integrate
     auto g = expr( s  );
-    /// [expression]
 
     /// [integrals]
-    // compute integral of g (global contribution): \(\int_{\partial \Omega} g\)
+    // compute on \Omega
     auto intf_1 = integrate( _range = elements( mesh ),
                                  _expr = g,
-                                 _quad=_Q<1,QuadraRect>() ).evaluate();
+                                 _quad=_Q<1,MultiScaleQuadrature>() ).evaluate();
     auto intf_12 = integrate( _range = elements( mesh ),
                                  _expr = g).evaluate();
-    // compute integral g on boundary: \( \int_{\partial \Omega} g \)
+    // compute on boundary
     auto intf_2 = integrate( _range = boundaryfaces( mesh ),
                              _expr = g,
-                             _quad=_Q<1,QuadraRect>()  ).evaluate();
+                             _quad=_Q<1,MultiScaleQuadrature>()  ).evaluate();
     auto intf_22 = integrate( _range = boundaryfaces( mesh ),
                              _expr = g).evaluate();
-    // compute integral of grad f (global contribution): \( \int_{\Omega} \nabla g \)
+    
+    // compute integral of grad f
     auto grad_g = grad<2>(g);
     auto intgrad_f = integrate( _range = elements( mesh ),
                                 _expr = grad_g,
-                                _quad=_Q<1,QuadraRect>()  ).evaluate();
+                                _quad=_Q<1,MultiScaleQuadrature>()  ).evaluate();
     auto intgrad_f2 = integrate( _range = elements( mesh ),
                                 _expr = grad_g).evaluate();
 
-    // only the process with rank 0 prints to the screen to avoid clutter
-    //if ( Environment::isMasterRank() )
+   // values view    
         std::cout << "int_Omega " << g << " = " << intf_1  << std::endl
                   << "int_{boundary of Omega} " << g << " = " << intf_2 << std::endl
                   << "int_Omega grad " << g << " = "
                   << "int_Omega  " << grad_g << " = "
                   << intgrad_f  << std::endl;
-    /// [integrals]
 
         BOOST_CHECK_CLOSE( intf_1(0,0), intf_12(0,0), 1e-2 );
         BOOST_CHECK_CLOSE( intf_2(0,0), intf_22(0,0), 1e-2 );

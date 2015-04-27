@@ -280,5 +280,5 @@ public :
 
     FEELPP_DEFINE_VISITABLE();
 };
-
+}
 #endif /* __TestMultiScale_H */
