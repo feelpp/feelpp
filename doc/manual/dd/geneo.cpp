@@ -235,13 +235,15 @@ void Geneopp<Dim, Order, Type>::run()
         bComm.barrier();
         time.restart();
         {
-            std::vector<std::vector<int>> map(mesh->faceNeighborSubdomains().size());
+            std::vector<std::vector<int>> map(mesh->neighborSubdomains().size());
             std::string kind = soption(_name = "backend");
             boost::shared_ptr<Backend<double>> ptr_backend = Backend<double>::build(kind, "", Environment::worldCommSeq());
             Backend<double>::vector_ptrtype f = ptr_backend->newVector(VhLocal);
 #pragma omp parallel for shared(map) schedule(static, 4)
-            for(int i = 0; i < map.size(); ++i) {
-                auto trace = createSubmesh(mesh, interprocessfaces(mesh, *std::next(mesh->faceNeighborSubdomains().begin(), i)),
+            for(int i = 0; i < map.size(); ++i) { // faces
+                if(mesh->faceNeighborSubdomains().find(*std::next(mesh->neighborSubdomains().begin(), i)) == mesh->faceNeighborSubdomains().end())
+                    continue;
+                auto trace = createSubmesh(mesh, interprocessfaces(mesh, *std::next(mesh->neighborSubdomains().begin(), i)),
                                            Environment::worldCommSeq());
                 auto Xh = FunctionSpace<typename Mesh<Simplex<Dim>>::trace_mesh_type, bases<Lagrange<Order, Type>>>::New(_mesh = trace, _worldscomm = Environment::worldsCommSeq(1));
                 auto l = ptr_backend->newVector(Xh);
@@ -259,6 +261,35 @@ void Geneopp<Dim, Order, Type>::run()
                         if(std::round(*pt) != 0)
                             map[i][std::round(*pt) - 1] = j;
                 }
+            }
+            for(int i = 0; i < map.size(); ++i) { // edges
+                if(!map[i].empty())
+                    continue;
+                auto trace = createSubmesh(mesh, interprocessedges(mesh, *std::next(mesh->neighborSubdomains().begin(), i)),
+                                           Environment::worldCommSeq());
+                auto Xh = FunctionSpace<typename Mesh<Simplex<Dim>>::trace_trace_mesh_type, bases<Lagrange<Order, Type>>>::New(_mesh = trace, _worldscomm = Environment::worldsCommSeq(1));
+                if(Xh->nDof() == 0)
+                    continue;
+                auto l = ptr_backend->newVector(Xh);
+                double* pt = &(*l)(0);
+                std::iota(pt, pt + Xh->nDof(), 1.0);
+                auto op = opInterpolation(_domainSpace = VhLocal,
+                        _imageSpace  = Xh,
+                        _backend     = ptr_backend, _ddmethod = true);
+                map[i].resize(Xh->nDof());
+                ptr_backend->prod(op->mat(), *l, *f, true);
+                pt = &(*f)(0);
+                for(int j = 0; j < VhLocal->nDof(); ++j, ++pt)
+                    if(std::round(*pt) != 0)
+                        map[i][std::round(*pt) - 1] = j;
+            }
+            for(int i = 0; i < map.size(); ++i) { // vertices
+                if(!map[i].empty())
+                    continue;
+                else
+                    CHECK(false) << "- interprocess vertices connection with " << *std::next(mesh->neighborSubdomains().begin(), i);
+                // auto trace = createSubmesh(mesh, interprocessvertices(mesh, *std::next(mesh->neighborSubdomains().begin(), i)),
+                //                            Environment::worldCommSeq());
             }
             {
                 std::set<int> unique;
@@ -320,7 +351,7 @@ void Geneopp<Dim, Order, Type>::run()
                 if(Eigen != &EigenA)
                     delete Eigen;
             }
-            K->Subdomain::initialize(new HPDDM::MatrixCSR<double>(VhLocal->nDof(), VhLocal->nDof(), ic[VhLocal->nDof()], c, ic, jc, false, true), mesh->faceNeighborSubdomains(), map, &comm);
+            K->Subdomain::initialize(new HPDDM::MatrixCSR<double>(VhLocal->nDof(), VhLocal->nDof(), ic[VhLocal->nDof()], c, ic, jc, false, true), mesh->neighborSubdomains(), map, &comm);
             decltype(map)().swap(map);
             if(nu == 0) {
                 if(nelements(markedfaces(meshLocal, "Dirichlet")) == 0) {
@@ -423,7 +454,7 @@ void Geneopp<Dim, Order, Type>::run()
 
         K->originalNumbering(interface, &(uLocal[0]));
 
-        double stats[3] = { K->getMult() / 2.0, mesh->faceNeighborSubdomains().size() / static_cast<double>(bComm.size()), static_cast<double>(K->getAllDof()) };
+        double stats[3] = { K->getMult() / 2.0, mesh->neighborSubdomains().size() / static_cast<double>(bComm.size()), static_cast<double>(K->getAllDof()) };
         if(bComm.rank() == 0) {
             std::streamsize ss = std::cout.precision();
             std::cout << std::scientific << " --- error = " << storage[1] << " / " << storage[0] << std::endl;
@@ -514,7 +545,7 @@ int main(int argc, char** argv) {
         ("strategy", po::value<int>()->default_value(3), "ordering tool for the direct coarse solver (only useful when using MUMPS)")
         ("eps", po::value<double>()->default_value(1e-8), "relative preconditioned residual")
         ("threshold", po::value<double>()->default_value(0.0), "threshold for dropping eigenpairs")
-        ("it", po::value<int>()->default_value(50), "maximum number of iterations")
+        ("it", po::value<int>()->default_value(100), "maximum number of iterations")
         ("nu", po::value<int>()->default_value(0), "number of eigenvalues")
         ("exclude", po::value<bool>()->default_value(false), "exclude the master processes")
         ;
@@ -528,8 +559,8 @@ int main(int argc, char** argv) {
     Application app;
     // app.add(new Geneopp<2, 1, Scalar>());
     // app.add(new Geneopp<3, 2, Scalar>());
-    app.add(new Geneopp<2, 3, Vectorial>());
+    // app.add(new Geneopp<2, 3, Vectorial>());
     // app.add(new Geneopp<2, 7, Vectorial>());
-    // app.add(new Geneopp<3, 2, Vectorial>());
+    app.add(new Geneopp<3, 1, Vectorial>());
     app.run();
 }

@@ -367,18 +367,33 @@ public:
     size_type maxNumVertices() const { return M_maxNumVertices; }
 
     /**
+     * set the global number of points, edges, faces and elements in the mesh
+     */
+    void setNumGlobalElements( std::vector<size_type> I )
+        {
+            CHECK(I.size()==4) << "Invalid information data on elements: num points, num edges, num faces, num elements ";
+            M_numGlobalPoints = I[0];
+            M_numGlobalEdges = I[1];
+            M_numGlobalFaces = I[2];
+            M_numGlobalElements = I[3];
+
+        }
+    /**
      * @brief compute the global number of elements,faces,points and vertices
      * @details it requires communications in parallel to
      * retrieve and sum the contribution of each subdomain.
      */
-    void updateNumGlobalElements()
+    template<typename MT>
+    void updateNumGlobalElements( typename std::enable_if<is_3d<MT>::value>::type* = nullptr )
     {
         //int ne = numElements();
         int ne = std::distance( this->beginElementWithProcessId( this->worldComm().rank() ),
                                 this->endElementWithProcessId( this->worldComm().rank() ) );
         int nf = std::distance( this->beginFaceWithProcessId( this->worldComm().rank() ),
                                 this->endFaceWithProcessId( this->worldComm().rank() ) );
-
+        int ned = std::distance( this->beginEdgeWithProcessId( this->worldComm().rank() ),
+                                this->endEdgeWithProcessId( this->worldComm().rank() ) );
+        std::cout << " ned =" << ned << std::endl;
         int np = std::distance( this->beginPointWithProcessId( this->worldComm().rank() ),
                                 this->endPointWithProcessId( this->worldComm().rank() ) );
 
@@ -386,55 +401,13 @@ public:
         if ( this->worldComm().localSize() >1 )
         {
 #if BOOST_VERSION >= 105500
-            std::vector<int> globals{ ne, nf, 0, np, (int)this->numVertices() };
-            mpi::all_reduce( this->worldComm(), mpi::inplace(globals.data()), 5, std::plus<int>() );
-            std::vector<int> maxs{ (int)this->numElements(), (int)this->numFaces(), 0, (int)this->numPoints(), (int)this->numVertices() };
-            mpi::all_reduce( this->worldComm(), mpi::inplace(maxs.data()), 5, mpi::maximum<int>() );
-#else
-            std::vector<int> locals{ ne, nf, 0, (int)this->numPoints(), (int)this->numVertices() };
-            std::vector<int> globals( 5, 0 );
-            mpi::all_reduce( this->worldComm(), locals.data(), 5, globals.data(), std::plus<int>() );
-            std::vector<int> maxs( 5, 0 );
-            mpi::all_reduce( this->worldComm(), locals.data(), 5, maxs.data(), mpi::maximum<int>() );
-#endif
-            M_numGlobalElements = globals[0];
-            M_numGlobalFaces = globals[1];
-            M_numGlobalEdges = globals[2];
-            M_numGlobalPoints = globals[3];
-            M_numGlobalVertices = globals[4];
-
-            M_maxNumElements = maxs[0];
-            M_maxNumFaces = maxs[1];
-            M_maxNumEdges = maxs[2];
-            M_maxNumPoints = maxs[3];
-            M_maxNumVertices = maxs[4];
-        }
-        else
-        {
-            M_numGlobalElements = ne;
-            M_numGlobalFaces = nf;
-            M_numGlobalEdges = 0;
-            M_numGlobalPoints = np;
-            M_numGlobalVertices = this->numVertices();
-
-            M_maxNumElements = ne;
-            M_maxNumFaces = nf;
-            M_maxNumEdges = 0;
-            M_maxNumPoints = np;
-            M_maxNumVertices = this->numVertices();
-        }
-    }
-#if 0
-    void updateNumGlobalEdges( typename std::enable_if<is_3d<mesh_type>::value>::type* = nullptr )
-        {
-            int ned = std::distance( this->beginEdgeWithProcessId( this->worldComm().rank() ),
-                                     this->endEdgeWithProcessId( this->worldComm().rank() ) );
-            if ( this->worldComm().localSize() >1 )
-        {
-#if BOOST_VERSION >= 105500
             std::vector<int> globals{ ne, nf, ned, np, (int)this->numVertices() };
             mpi::all_reduce( this->worldComm(), mpi::inplace(globals.data()), 5, std::plus<int>() );
-            std::vector<int> maxs{ (int)this->numElements(), (int)this->numFaces(), ned, (int)this->numPoints(), (int)this->numVertices() };
+            std::vector<int> maxs { (int)this->numElements(), 
+                    (int)this->numFaces(), 
+                    (int)this->numEdges(), 
+                    (int)this->numPoints(), 
+                    (int)this->numVertices() };
             mpi::all_reduce( this->worldComm(), mpi::inplace(maxs.data()), 5, mpi::maximum<int>() );
 #else
             std::vector<int> locals{ ne, nf, ned, (int)this->numPoints(), (int)this->numVertices() };
@@ -469,8 +442,66 @@ public:
             M_maxNumPoints = np;
             M_maxNumVertices = this->numVertices();
         }
-        }
+    }
+
+    template<typename MT>
+    void updateNumGlobalElements( typename std::enable_if<mpl::not_<is_3d<MT>>::value>::type* = nullptr )
+    {
+        //int ne = numElements();
+        int ne = std::distance( this->beginElementWithProcessId( this->worldComm().rank() ),
+                                this->endElementWithProcessId( this->worldComm().rank() ) );
+        int nf = std::distance( this->beginFaceWithProcessId( this->worldComm().rank() ),
+                                this->endFaceWithProcessId( this->worldComm().rank() ) );
+        int ned = 0;
+        int np = std::distance( this->beginPointWithProcessId( this->worldComm().rank() ),
+                                this->endPointWithProcessId( this->worldComm().rank() ) );
+
+
+        if ( this->worldComm().localSize() >1 )
+        {
+#if BOOST_VERSION >= 105500
+            std::vector<int> globals{ ne, nf, ned, np, (int)this->numVertices() };
+            mpi::all_reduce( this->worldComm(), mpi::inplace(globals.data()), 5, std::plus<int>() );
+            std::vector<int> maxs { (int)this->numElements(), 
+                    (int)this->numFaces(), 
+                    (int)this->numEdges(), 
+                    (int)this->numPoints(), 
+                    (int)this->numVertices() };
+            mpi::all_reduce( this->worldComm(), mpi::inplace(maxs.data()), 5, mpi::maximum<int>() );
+#else
+            std::vector<int> locals{ ne, nf, ned, (int)this->numPoints(), (int)this->numVertices() };
+            std::vector<int> globals( 5, 0 );
+            mpi::all_reduce( this->worldComm(), locals.data(), 5, globals.data(), std::plus<int>() );
+            std::vector<int> maxs( 5, 0 );
+            mpi::all_reduce( this->worldComm(), locals.data(), 5, maxs.data(), mpi::maximum<int>() );
 #endif
+            M_numGlobalElements = globals[0];
+            M_numGlobalFaces = globals[1];
+            M_numGlobalEdges = globals[2];
+            M_numGlobalPoints = globals[3];
+            M_numGlobalVertices = globals[4];
+
+            M_maxNumElements = maxs[0];
+            M_maxNumFaces = maxs[1];
+            M_maxNumEdges = maxs[2];
+            M_maxNumPoints = maxs[3];
+            M_maxNumVertices = maxs[4];
+        }
+        else
+        {
+            M_numGlobalElements = ne;
+            M_numGlobalFaces = nf;
+            M_numGlobalEdges = ned;
+            M_numGlobalPoints = np;
+            M_numGlobalVertices = this->numVertices();
+
+            M_maxNumElements = ne;
+            M_maxNumFaces = nf;
+            M_maxNumEdges = ned;
+            M_maxNumPoints = np;
+            M_maxNumVertices = this->numVertices();
+        }
+    }
 
 
     /**

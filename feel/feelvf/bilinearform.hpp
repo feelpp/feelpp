@@ -341,7 +341,7 @@ public:
              typename IM,
              typename GeomapExprContext = GeomapTestContext,
              typename GeomapTrialContext = GeomapTestContext,
-             bool UseMortar = false
+             int UseMortarType = 0
              >
     class Context //: public FormContextBase<GeomapTestContext,IM,GeomapExprContext>
     {
@@ -350,8 +350,10 @@ public:
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-
-        typedef Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortar> form_context_type;
+        typedef Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortarType> form_context_type;
+        static const bool UseMortar = UseMortarType > 0;
+        static const bool UseMortarTest = (UseMortarType == 1) || (UseMortarType == 3);
+        static const bool UseMortarTrial = (UseMortarType == 2) || (UseMortarType == 3);
         using form_type = self_type;
         typedef typename space_1_type::dof_type dof_1_type;
         typedef typename space_2_type::dof_type dof_2_type;
@@ -475,6 +477,15 @@ public:
         static const int local_mat_traits_per_component = mpl::if_<mpl::equal_to<mpl::int_<nDofPerComponentTrial>,mpl::int_<1> >,
                                                                    mpl::int_<Eigen::ColMajor>,
                                                                    mpl::int_<Eigen::RowMajor> >::type::value;
+
+        static const int local_mat_m1_traits = mpl::if_<mpl::equal_to<mpl::int_<nDofPerElementTrial>,mpl::int_<2> >,
+                                                     mpl::int_<Eigen::ColMajor>,
+                                                     mpl::int_<Eigen::RowMajor> >::type::value;
+
+        static const int local_mat_m1_traits_per_component = mpl::if_<mpl::equal_to<mpl::int_<nDofPerComponentTrial>,mpl::int_<2> >,
+                                                                   mpl::int_<Eigen::ColMajor>,
+                                                                   mpl::int_<Eigen::RowMajor> >::type::value;
+
 #if 0
         // Eigen::Matrix allocation on stack
         typedef Eigen::Matrix<value_type, nDofPerElementTest, nDofPerElementTrial,local_mat_traits> local_matrix_type;
@@ -490,11 +501,18 @@ public:
         static const int nRowEigenLocalMatrix = ( useEigenDynamicAlloc )? Eigen::Dynamic : nDofPerElementTest;
         static const int nColEigenLocalMatrix = ( useEigenDynamicAlloc )? Eigen::Dynamic : nDofPerElementTrial;
         typedef Eigen::Matrix<value_type, nRowEigenLocalMatrix, nColEigenLocalMatrix,local_mat_traits> local_matrix_type;
-        // mortar_local_matrix
-        static const bool useEigenDynamicAllocMortar = (nDofPerElementTest-1)*nDofPerElementTrial*sizeof(value_type) > 128*128*8;
-        static const int nRowEigenMortarLocalMatrix = ( useEigenDynamicAllocMortar )? Eigen::Dynamic : nDofPerElementTest-1;
-        static const int nColEigenMortarLocalMatrix = ( useEigenDynamicAllocMortar )? Eigen::Dynamic : nDofPerElementTrial;
-        typedef Eigen::Matrix<value_type, nRowEigenMortarLocalMatrix, nColEigenMortarLocalMatrix, local_mat_traits> mortar_local_matrix_type;
+        // mortar_test_local_matrix
+        static const bool useEigenDynamicAllocMortarTest = (nDofPerElementTest-1)*nDofPerElementTrial*sizeof(value_type) > 128*128*8;
+        static const int nRowEigenMortarTestLocalMatrix = ( useEigenDynamicAllocMortarTest )? Eigen::Dynamic : nDofPerElementTest-1;
+        static const int nColEigenMortarTestLocalMatrix = ( useEigenDynamicAllocMortarTest )? Eigen::Dynamic : nDofPerElementTrial;
+        typedef Eigen::Matrix<value_type, nRowEigenMortarTestLocalMatrix, nColEigenMortarTestLocalMatrix, local_mat_traits> mortar_test_local_matrix_type;
+#if 1
+        // mortar_trial_local_matrix
+        static const bool useEigenDynamicAllocMortarTrial = nDofPerElementTest*(nDofPerElementTrial-1)*sizeof(value_type) > 128*128*8;
+        static const int nRowEigenMortarTrialLocalMatrix = ( useEigenDynamicAllocMortarTrial )? Eigen::Dynamic : nDofPerElementTest;
+        static const int nColEigenMortarTrialLocalMatrix = ( useEigenDynamicAllocMortarTrial )? Eigen::Dynamic : nDofPerElementTrial-1;
+        typedef Eigen::Matrix<value_type, nRowEigenMortarTrialLocalMatrix, nColEigenMortarTrialLocalMatrix, local_mat_m1_traits> mortar_trial_local_matrix_type;
+#endif
         // local2_matrix
         static const bool useEigenDynamicAlloc2 = 4*nDofPerElementTest*nDofPerElementTrial*sizeof(value_type) > 128*128*8;
         static const int nRowEigenLocal2Matrix = ( useEigenDynamicAlloc2 )? Eigen::Dynamic : 2*nDofPerElementTest;
@@ -505,11 +523,18 @@ public:
         static const int nRowEigenCompLocalMatrix = ( c_useEigenDynamicAlloc )? Eigen::Dynamic : nDofPerComponentTest;
         static const int nColEigenCompLocalMatrix = ( c_useEigenDynamicAlloc )? Eigen::Dynamic : nDofPerComponentTrial;
         typedef Eigen::Matrix<value_type, nRowEigenCompLocalMatrix, nColEigenCompLocalMatrix,local_mat_traits_per_component> c_local_matrix_type;
-        // c_mortar_local
-        static const bool c_useEigenDynamicAllocMortar = (nDofPerComponentTest-1)*nDofPerComponentTrial*sizeof(value_type) > 128*128*8;
-        static const int nRowEigenCompMortarLocalMatrix = ( c_useEigenDynamicAllocMortar )? Eigen::Dynamic : nDofPerComponentTest-1;
-        static const int nColEigenCompMortarLocalMatrix = ( c_useEigenDynamicAllocMortar )? Eigen::Dynamic : nDofPerComponentTrial;
-        typedef Eigen::Matrix<value_type, nRowEigenCompMortarLocalMatrix, nColEigenCompMortarLocalMatrix,local_mat_traits_per_component> c_mortar_local_matrix_type;
+        // c_mortar_test_local
+        static const bool c_useEigenDynamicAllocMortarTest = (nDofPerComponentTest-1)*nDofPerComponentTrial*sizeof(value_type) > 128*128*8;
+        static const int nRowEigenCompMortarTestLocalMatrix = ( c_useEigenDynamicAllocMortarTest )? Eigen::Dynamic : nDofPerComponentTest-1;
+        static const int nColEigenCompMortarTestLocalMatrix = ( c_useEigenDynamicAllocMortarTest )? Eigen::Dynamic : nDofPerComponentTrial;
+        typedef Eigen::Matrix<value_type, nRowEigenCompMortarTestLocalMatrix, nColEigenCompMortarTestLocalMatrix,local_mat_traits_per_component> c_mortar_test_local_matrix_type;
+#if 1
+        // c_mortar_trial_local
+        static const bool c_useEigenDynamicAllocMortarTrial = nDofPerComponentTest*(nDofPerComponentTrial-1)*sizeof(value_type) > 128*128*8;
+        static const int nRowEigenCompMortarTrialLocalMatrix = ( c_useEigenDynamicAllocMortarTrial )? Eigen::Dynamic : nDofPerComponentTest;
+        static const int nColEigenCompMortarTrialLocalMatrix = ( c_useEigenDynamicAllocMortarTrial )? Eigen::Dynamic : nDofPerComponentTrial-1;
+        typedef Eigen::Matrix<value_type, nRowEigenCompMortarTrialLocalMatrix, nColEigenCompMortarTrialLocalMatrix,local_mat_m1_traits_per_component> c_mortar_trial_local_matrix_type;
+#endif
         // c_local2_matrix
         static const bool c_useEigenDynamicAlloc2 = 4*nDofPerComponentTest*nDofPerComponentTrial*sizeof(value_type) > 128*128*8;
         static const int nRowEigenCompLocal2Matrix = ( c_useEigenDynamicAlloc2 )? Eigen::Dynamic : 2*nDofPerComponentTest;
@@ -529,13 +554,14 @@ public:
         typedef Eigen::Matrix<int, nRowEigenLocal2ColSign, 1> local2_col_sign_type;
 #endif
         typedef Eigen::Matrix<int, nDofPerElementTest, 1> local_row_type;
-        typedef Eigen::Matrix<int, nDofPerElementTest-1, 1> mortar_local_row_type;
+        typedef Eigen::Matrix<int, nDofPerElementTest-1, 1> mortar_test_local_row_type;
+        typedef Eigen::Matrix<int, nDofPerElementTrial-1, 1> mortar_trial_local_col_type;
         typedef Eigen::Matrix<int, 2*nDofPerElementTest, 1> local2_row_type;
         typedef Eigen::Matrix<int, nDofPerElementTrial, 1> local_col_type;
         typedef Eigen::Matrix<int, 2*nDofPerElementTrial, 1> local2_col_type;
 
         typedef Eigen::Matrix<int, nDofPerComponentTest, 1> c_local_row_type;
-        typedef Eigen::Matrix<int, nDofPerComponentTest-1, 1> c_mortar_local_row_type;
+        typedef Eigen::Matrix<int, nDofPerComponentTest-1, 1> c_mortar_test_local_row_type;
         typedef Eigen::Matrix<int, 2*nDofPerComponentTest, 1> c_local2_row_type;
         typedef Eigen::Matrix<int, nDofPerComponentTrial, 1> c_local_col_type;
         typedef Eigen::Matrix<int, 2*nDofPerComponentTrial, 1> c_local2_col_type;
@@ -627,11 +653,15 @@ public:
         {
             if ( useEigenDynamicAlloc )
                 M_rep.resize( nDofPerElementTest, nDofPerElementTrial );
-            if ( useEigenDynamicAllocMortar )
-                M_mortar_rep.resize( nDofPerElementTest-1,nDofPerElementTrial );
+            if ( useEigenDynamicAllocMortarTest )
+                M_mortarTest_rep.resize( nDofPerElementTest-1,nDofPerElementTrial );
+            if ( useEigenDynamicAllocMortarTrial )
+                M_mortarTrial_rep.resize( nDofPerElementTest,nDofPerElementTrial-1 );
             if ( useEigenDynamicAlloc2 )
                 M_rep_2.resize( 2*nDofPerElementTest, 2*nDofPerElementTrial );
         }
+
+        bool trialElementIsOnBoundary( size_type test_eid ) const { return M_form.trialSpace()->mesh()->element( this->trialElementId( test_eid ) ).isOnBoundary(); }
 
         size_type trialElementId( size_type trial_eid ) const
             {
@@ -794,15 +824,15 @@ public:
         template<typename Pts>
         void precomputeBasisAtPoints( Pts const& pts )
         {
-            M_test_pc = test_precompute_ptrtype( new test_precompute_type( M_form.testFiniteElement<UseMortar>(), pts ) );
-            M_trial_pc = trial_precompute_ptrtype( new trial_precompute_type( M_form.trialFiniteElement<UseMortar>(), pts ) );
+            M_test_pc = test_precompute_ptrtype( new test_precompute_type( M_form.testFiniteElement<UseMortarTest>(), pts ) );
+            M_trial_pc = trial_precompute_ptrtype( new trial_precompute_type( M_form.trialFiniteElement<UseMortarTrial>(), pts ) );
         }
 
         template<typename PtsTest,typename PtsTrial>
         void precomputeBasisAtPoints( PtsTest const& pts1,PtsTrial const& pts2  )
         {
-            M_test_pc = test_precompute_ptrtype( new test_precompute_type( M_form.testFiniteElement<UseMortar>(), pts1 ) );
-            M_trial_pc = trial_precompute_ptrtype( new trial_precompute_type( M_form.trialFiniteElement<UseMortar>(), pts2 ) );
+            M_test_pc = test_precompute_ptrtype( new test_precompute_type( M_form.testFiniteElement<UseMortarTest>(), pts1 ) );
+            M_trial_pc = trial_precompute_ptrtype( new trial_precompute_type( M_form.trialFiniteElement<UseMortarTrial>(), pts2 ) );
         }
 
 
@@ -814,10 +844,10 @@ public:
         template<typename Pts>
         void precomputeBasisAtPoints( uint16_type __f, permutation_1_type const& __p, Pts const& pts )
         {
-            M_test_pc_face[__f][__p] = test_precompute_ptrtype( new test_precompute_type( M_form.testFiniteElement<UseMortar>(), pts ) );
+            M_test_pc_face[__f][__p] = test_precompute_ptrtype( new test_precompute_type( M_form.testFiniteElement<UseMortarTest>(), pts ) );
             //FEELPP_ASSERT( M_test_pc_face.find(__f )->second )( __f ).error( "invalid test precompute type" );
 
-            M_trial_pc_face[__f][__p] = trial_precompute_ptrtype( new trial_precompute_type( M_form.trialFiniteElement<UseMortar>(), pts ) );
+            M_trial_pc_face[__f][__p] = trial_precompute_ptrtype( new trial_precompute_type( M_form.trialFiniteElement<UseMortarTrial>(), pts ) );
             //FEELPP_ASSERT( M_trial_pc_face.find(__f )->second )( __f ).error( "invalid trial precompute type" );
         }
 
@@ -853,7 +883,7 @@ public:
                         __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
                 {
                     //testpc[__f][__p] = test_precompute_ptrtype( new test_precompute_type( M_form.testFiniteElement<UseMortar>(), ppts[__f].find( __p )->second ) );
-                    testpc[__f][__p] = test_precompute_ptrtype( new test_precompute_type( M_form.testFiniteElement<UseMortar>(), pts.fpoints( __f,__p.value() ) ) );
+                    testpc[__f][__p] = test_precompute_ptrtype( new test_precompute_type( M_form.testFiniteElement<UseMortarTest>(), pts.fpoints( __f,__p.value() ) ) );
                 }
             }
 
@@ -892,7 +922,7 @@ public:
                         __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
                 {
                     //trialpc[__f][__p] = trial_precompute_ptrtype( new trial_precompute_type( M_form.trialFiniteElement<UseMortar>(), ppts[__f].find( __p )->second ) );
-                    trialpc[__f][__p] = trial_precompute_ptrtype( new trial_precompute_type( M_form.trialFiniteElement<UseMortar>(), pts.fpoints(__f, __p.value() ) ) );
+                    trialpc[__f][__p] = trial_precompute_ptrtype( new trial_precompute_type( M_form.trialFiniteElement<UseMortarTrial>(), pts.fpoints(__f, __p.value() ) ) );
                 }
             }
 
@@ -988,10 +1018,12 @@ public:
 
 
         local_matrix_type M_rep;
-        mortar_local_matrix_type M_mortar_rep;
+        mortar_test_local_matrix_type M_mortarTest_rep;
+        mortar_trial_local_matrix_type M_mortarTrial_rep;
         local2_matrix_type M_rep_2;
         local_row_type M_local_rows;
-        mortar_local_row_type M_mortar_local_rows;
+        mortar_test_local_row_type M_mortarTest_local_rows;
+        mortar_trial_local_col_type M_mortarTrial_local_cols;
         local2_row_type M_local_rows_2;
         local_col_type M_local_cols;
         local2_col_type M_local_cols_2;
@@ -1002,10 +1034,10 @@ public:
         local2_col_sign_type/*local2_col_type*/ M_local_colsigns_2;
 
         c_local_matrix_type M_c_rep;
-        c_mortar_local_matrix_type M_c_mortar_rep;
+        c_mortar_test_local_matrix_type M_c_mortarTest_rep;
         c_local2_matrix_type M_c_rep_2;
         c_local_row_type M_c_local_rows;
-        c_mortar_local_row_type M_c_mortar_local_rows;
+        c_mortar_test_local_row_type M_c_mortarTest_local_rows;
         c_local2_row_type M_c_local_rows_2;
         c_local_col_type M_c_local_cols;
         c_local2_col_type M_c_local_cols_2;

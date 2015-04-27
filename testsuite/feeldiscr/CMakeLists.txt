@@ -31,6 +31,9 @@ feelpp_add_test( continuity_hcurl NO_MPI_TEST )
 
 feelpp_add_test( functionals NO_MPI_TEST )
 
+feelpp_add_test( laplacian CFG test_laplacian.cfg )
+feelpp_add_test( laplaciant CFG test_laplaciant.cfg )
+
 feelpp_add_test( lambda )
 feelpp_add_test( lift )
 feelpp_add_test( lm )
@@ -52,6 +55,7 @@ feelpp_add_test( matching NO_MPI_TEST )
 
 feelpp_add_test( wire_basket NO_MPI_TEST )
 feelpp_add_test( mortar CFG test_mortar.cfg NO_MPI_TEST)
+feelpp_add_test( mortar2 NO_MPI_TEST)
 
 feelpp_add_test( exporter   CFG exporter.cfg NO_MPI_TEST)
 feelpp_add_test( extended )
