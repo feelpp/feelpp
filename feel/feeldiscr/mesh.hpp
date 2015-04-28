@@ -241,9 +241,10 @@ public:
     template<int TheTag>
     struct trace_mesh
     {
+        static const int d = (GeoShape::nDim==0)?0:GeoShape::nDim-1;
         typedef typename mpl::if_<mpl::bool_<GeoShape::is_simplex>,
-                                  mpl::identity< Mesh< Simplex< GeoShape::nDim-1,nOrder,GeoShape::nRealDim>, value_type, TheTag > >,
-                                  mpl::identity< Mesh< Hypercube<GeoShape::nDim-1,nOrder,GeoShape::nRealDim>,value_type, TheTag > > >::type::type type;
+                                  mpl::identity< Mesh< Simplex< d,nOrder,GeoShape::nRealDim>, value_type, TheTag > >,
+                                  mpl::identity< Mesh< Hypercube<d,nOrder,GeoShape::nRealDim>,value_type, TheTag > > >::type::type type;
         typedef boost::shared_ptr<type> ptrtype;
         typedef boost::shared_ptr<const type> const_ptrtype;
     };
@@ -393,7 +394,6 @@ public:
                                 this->endFaceWithProcessId( this->worldComm().rank() ) );
         int ned = std::distance( this->beginEdgeWithProcessId( this->worldComm().rank() ),
                                 this->endEdgeWithProcessId( this->worldComm().rank() ) );
-        std::cout << " ned =" << ned << std::endl;
         int np = std::distance( this->beginPointWithProcessId( this->worldComm().rank() ),
                                 this->endPointWithProcessId( this->worldComm().rank() ) );
 
