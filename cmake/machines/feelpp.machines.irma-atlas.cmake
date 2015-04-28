@@ -3,7 +3,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
 #       Date: 2012-04-12
 #
-#  Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
+#  Copyright (C) 2012 UniversitÃ© Joseph Fourier (Grenoble I)
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -22,6 +22,6 @@
 #
 #
 
-if(DEFINED ENV{SCHROOT_CHROOT_NAME} AND $ENV{SCHROOT_CHROOT_NAME} STREQUAL "unstable_amd64")
+# if(DEFINED ENV{SCHROOT_CHROOT_NAME} AND $ENV{SCHROOT_CHROOT_NAME} STREQUAL "unstable_amd64")
     set(MACHINE_PARAVIEW_DIR "/opt/ParaView-4.3.1")
-endif()
+# endif()
