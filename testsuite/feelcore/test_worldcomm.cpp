@@ -22,14 +22,26 @@
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-//#include <feel/feelcore/environment.hpp>
-//#include <feel/feelcore/worldcomm.hpp>
-//#include <feel/feelfilters/loadmesh.hpp>
-//#include <feel/feelvf/form.hpp>
-//#include <feel/feeldiscr/pch.hpp>
-//#include <feel/feelvf/expr.hpp>
+#define USE_BOOST_TEST 1
+#if defined(USE_BOOST_TEST)
+#define BOOST_TEST_MODULE test_worldcomm
+#include <testsuite/testsuite.hpp>
+#endif
+
 #include <feel/feel.hpp>
 
+inline
+Feel::po::options_description
+makeOptions()
+{
+    Feel::po::options_description wcopts( "Test Environment options" );
+    wcopts.add_options()
+        ( "Npcomm", Feel::po::value<double>()->default_value( 2 ), "Number of communicators (>=2)" )
+    ;
+    return wcopts.add( Feel::feel_options() );
+}
+
+inline
 Feel::AboutData
 makeAbout()
 {
@@ -44,12 +56,20 @@ makeAbout()
     return about;
 }
 
+#if defined(USE_BOOST_TEST)
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
+BOOST_AUTO_TEST_SUITE( worldcomm )
+
 // Create Npcomm communicators and solve in parallel two laplacians with
 // two different boundary strong conditions.
-int main( int argc, char**argv )
+BOOST_AUTO_TEST_CASE( test_0 )
 {
     using namespace Feel;
-    Environment env(_argc=argc, _argv=argv,
+    namespace fs = boost::filesystem;
+
+    Environment env(_argc=boost::unit_test::framework::master_test_suite().argc,
+                    _argv=boost::unit_test::framework::master_test_suite().argv,
+                    _options=makeOptions(),
                     _about=makeAbout() );
 
     auto world = Environment::worldComm();
@@ -57,20 +77,21 @@ int main( int argc, char**argv )
     const int Npcomm = 2;
     const int Np = world.size();
 
+    BOOST_CHECK( Npcomm >= 2 );
 
-    if( (Np>=Npcomm) && Npcomm > 0 )
+    if( Np>=Npcomm && !(Np%Npcomm) )
     {
         auto color = world.rank() % Npcomm;
 
         WorldComm w( color );
-
-        //w.showMe();
 
         auto mesh = loadMesh( _mesh = new Mesh< Simplex<2> >,
                               _filename = "test_twodomains.geo",
                               _worldcomm = w.localComm(),
                               _partitions = w.localSize()
                               );
+
+        BOOST_WARN( mesh->numberOfPartitions()!= w.localSize() );
 
         // Create a feel++ worldcomm using local communicators.
         auto bend = backend( _worldcomm=w.localComm() );
@@ -90,33 +111,36 @@ int main( int argc, char**argv )
         l+= integrate( _range=markedelements(mesh,"omega"),
                        _expr=id(v) );
 
-        //
-        if( color == 0 )
-        {
-            a += on( _range=markedfaces( mesh, "wall"), _rhs=l, _element=u, _expr=cst(0.) );
-            //a += on( _range=markedfaces( mesh, "wall_left"), _rhs=l, _element=u, _expr=cst(1.) );
-            //a += on( _range=markedpoints( mesh, "left"), _rhs=l, _element=u, _expr=cst(1.) );
-        }
-        else
-        {
-            a += on( _range=markedfaces( mesh, "wall"), _rhs=l, _element=u, _expr=cst(1.) );
-            //a += on( _range=markedfaces( mesh, "wall_right"), _rhs=l, _element=u, _expr=cst(1.) );
-            //a += on( _range=markedpoints( mesh, "right"), _rhs=l, _element=u, _expr=cst(1.) );
-        }
+        a += on( _range=markedfaces( mesh, "wall"), _rhs=l, _element=u, _expr=cst(color) );
 
         // solveb use the backend worldcomm
         a.solveb( _rhs=l, _solution=u, _backend=bend );
 
+        BOOST_MESSAGE( "nMeshParts: " << mesh->numberOfPartitions()
+                       << " | color: " << color
+                       << " | god rank: " << w.godRank()
+                       << " | global rank: " << w.globalRank()
+                       << " | local rank: " << w.localRank()
+                       //<< " u size: " << u.size()
+                       //<< " u[0]: " << u[0] << std::endl;
+                       << "\n"
+                     );
 
-        std::cout << "global rank: " << w.localRank()
-                  << " local rank:" << w.globalRank()
-                  << " u size: " << u.size()
-                  << " u[0]: " << u[0] << std::endl;
 
         // Exporter use the mesh worldcomm
-        auto e = exporter( _mesh=mesh, _name=( boost::format("problem%1%") % color ).str() );
+        //w.showMe();
+
+        auto e = exporter( _mesh=mesh, _name=( boost::format("laplacian_%1%") % color ).str() );
         e->add("u",u);
         e->save();
+
+        auto strcase = (boost::format("laplacian_%1%") % color).str()+".case";
+        auto caseFileExist = ( (Environment::findFile( strcase )).empty() != 0 );
+
+        // Check if each communicator has created its ensight .case file.
+        if( w.localRank() == 0 )
+            BOOST_CHECK( caseFileExist );
     }
 }
-
+BOOST_AUTO_TEST_SUITE_END()
+#endif
