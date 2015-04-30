@@ -231,6 +231,15 @@ private:
     template<typename T> void readEdges(typename std::enable_if<mpl::or_<is_2d<T>,is_1d<T>>::value>::type* = nullptr) {}
     void readFaces();
     void readElements();
+    
+    template<typename IteratorType>
+    void writeGhosts( std::string const& tablename, 
+                      IteratorType begin, IteratorType end,
+                      size_type maxNumEntities );
+    template<typename IteratorType, typename ContainerType>
+    void readGhosts( std::string const& tablename, 
+                     IteratorType begin, IteratorType end,
+                     ContainerType& container );
     //@}
 
     //! Private Data Members
@@ -307,16 +316,17 @@ void PartitionIO<MeshType>::write (mesh_ptrtype meshParts)
     writeStats();
     tic();
     writePoints();
-    toc("writing points");
+    toc("writing points",FLAGS_v>0);
     writeEdges<MeshType>();
     tic();
     writeFaces();
-    toc("writing faces");
+    toc("writing faces",FLAGS_v>0);
     tic();
     writeElements();
-    toc("writing elements");
+    toc("writing elements",FLAGS_v>0);
+    
     M_HDF5IO.closeFile();
-    toc("writing hdf5 file");
+    toc("writing hdf5 file",FLAGS_v>0);
 
 }
 
@@ -324,29 +334,29 @@ template<typename MeshType>
 void PartitionIO<MeshType>::read (mesh_ptrtype meshParts)
 {
     M_meshPartIn = meshParts;
-
+    M_numParts = meshParts->worldComm().localSize();
     tic();
     M_HDF5IO.openFile (M_fileName, meshParts->worldComm(), true);
     readStats();
     tic();
     readPoints();
-    toc("reading points");
+    toc("reading points",FLAGS_v>0);
 
     readEdges<MeshType>();
     
     tic();
     readFaces();
-    toc("reading faces");
+    toc("reading faces",FLAGS_v>0);
     
     tic();
     readElements();
-    toc("reading elements");
+    toc("reading elements",FLAGS_v>0);
 
     M_HDF5IO.closeFile();
-    toc("reading hdf5 file");
+    toc("reading hdf5 file",FLAGS_v>0);
     tic();
     M_meshPartIn->updateForUse();
-    toc("mesh update for use");
+    toc("mesh update for use",FLAGS_v>0);
 }
 
 template<typename MeshType>
@@ -422,8 +432,8 @@ void PartitionIO<MeshType>::writePoints()
     // Write points (N = number of parts)
     // Two tables: one is (3 * N) x max_num_points of int
     //             second is (d * N) x max_num_points of real
-    hsize_t currentSpaceDims[2],currentSpaceDims1[2];
-    hsize_t currentCount[2],currentCount1[2];
+    hsize_t currentSpaceDims[2],currentSpaceDims1[2],currentSpaceDimsGhost[2];
+    hsize_t currentCount[2],currentCount1[2],currentCountGhost[2];
     int d = M_meshPartsOut->nRealDim;
     if (! M_transposeInFile)
     {
@@ -436,6 +446,8 @@ void PartitionIO<MeshType>::writePoints()
         currentCount[1] = currentSpaceDims[1];
         currentCount1[0] = 5;
         currentCount1[1] = currentSpaceDims[1];
+        
+        
     }
     else
     {
@@ -452,11 +464,14 @@ void PartitionIO<MeshType>::writePoints()
     M_HDF5IO.createTable ("point_ids", H5T_STD_U32BE, currentSpaceDims1);
     M_HDF5IO.createTable ("point_coords", H5T_IEEE_F64BE, currentSpaceDims);
 
+
     // Fill buffer
     M_uintBuffer.resize (currentCount1[0] * currentCount1[1], 0);
     M_realBuffer.resize (currentCount[0] * currentCount[1], 0);
 
     size_type stride = currentCount[1], strideIds = currentCount1[1];
+    
+    
     if (! M_transposeInFile)
     {
         //for (size_type i = 0; i < M_numParts; ++i)
@@ -478,8 +493,9 @@ void PartitionIO<MeshType>::writePoints()
                     M_realBuffer[stride + j] = pt_it->operator[](1);
                 if ( pt_it->nRealDim >= 3 )
                     M_realBuffer[2 * stride + j] = pt_it->operator[](2);
+                
             }
-
+            
             hsize_t currentOffset1[2] = {currentPart.worldComm().localRank()* currentCount1[0], 0};
             hsize_t currentOffset2[2] = {currentPart.worldComm().localRank()* currentCount[0], 0};
 
@@ -488,6 +504,8 @@ void PartitionIO<MeshType>::writePoints()
             M_HDF5IO.write ("point_coords", H5T_NATIVE_DOUBLE, currentCount,
                             currentOffset2, &M_realBuffer[0]);
 
+            writeGhosts( "points_ghosts", currentPart.beginPoint(), currentPart.endPoint(),
+                         M_meshPartsOut->maxNumPoints());
         }
     }
     else
@@ -525,7 +543,6 @@ void PartitionIO<MeshType>::writePoints()
 
     M_HDF5IO.closeTable ("point_coords");
     M_HDF5IO.closeTable ("point_ids");
-
 
 }
 
@@ -605,6 +622,9 @@ void PartitionIO<MeshType>::writeEdges( typename std::enable_if<is_3d<T>::value>
     }
 
     M_HDF5IO.closeTable ("edges");
+    writeGhosts( "edges_ghosts", M_meshPartsOut->beginEdge(), M_meshPartsOut->endEdge(),
+                 M_meshPartsOut->maxNumEdges());
+        
 }
 
 template<typename MeshType>
@@ -684,6 +704,8 @@ void PartitionIO<MeshType>::writeFaces()
     }
 
     M_HDF5IO.closeTable ("faces");
+    writeGhosts( "faces_ghosts", M_meshPartsOut->beginFace(), M_meshPartsOut->endFace(),
+                 M_meshPartsOut->maxNumFaces());
 }
 
 template<typename MeshType>
@@ -765,7 +787,8 @@ void PartitionIO<MeshType>::writeElements()
     }
 
     M_HDF5IO.closeTable ("elements");
-
+    writeGhosts( "elements_ghosts", M_meshPartsOut->beginElement(), M_meshPartsOut->endElement(),
+                 M_meshPartsOut->maxNumElements());
 }
 
 template<typename MeshType>
@@ -904,7 +927,7 @@ void PartitionIO<MeshType>::readPoints()
         }
     }
     M_realBuffer.resize (0);
-
+    readGhosts("points_ghosts", M_meshPartIn->beginPoint(), M_meshPartIn->endPoint(), M_meshPartIn->points());
 }
 
 template<typename MeshType>
@@ -997,7 +1020,7 @@ void PartitionIO<MeshType>::readEdges(typename std::enable_if<is_3d<T>::value>::
 
         }
     }
-
+    readGhosts("edges_ghosts", M_meshPartIn->beginEdge(), M_meshPartIn->endEdge(), M_meshPartIn->edges());
 }
 
 
@@ -1089,7 +1112,7 @@ void PartitionIO<MeshType>::readFaces()
         {
         }
     }
-
+    readGhosts("faces_ghosts", M_meshPartIn->beginFace(), M_meshPartIn->endFace(), M_meshPartIn->faces());
 
 }
 
@@ -1173,9 +1196,145 @@ void PartitionIO<MeshType>::readElements()
         {
         }
     }
-
+    readGhosts("elements_ghosts", M_meshPartIn->beginElement(), M_meshPartIn->endElement(), M_meshPartIn->elements());
 
 }
+template<typename MeshType>
+template<typename IteratorType>
+void PartitionIO<MeshType>::writeGhosts( std::string const& tablename, 
+                                         IteratorType begin, IteratorType end,
+                                         size_type maxNumEntities )
+{
+    auto it = begin;
+    size_type max_neighbors = 0;
+    size_type max_num_entity = 0;
+    DLOG(INFO) << "number of entities for table " << tablename << " :" << std::distance(begin,end) << "  max num entities " << maxNumEntities;
+    for( ; it != end; ++ it )
+    {
+        CHECK( it->numberOfNeighborPartitions() == it->numberOfPartitions()-1 ) << "number of partitions to which the point belong is invalid " << it->numberOfNeighborPartitions() << " vs " << it->numberOfPartitions()-1;
+        if ( it->numberOfNeighborPartitions() >= 1 )
+        {
+            max_neighbors = (max_neighbors > it->numberOfNeighborPartitions() )?max_neighbors:it->numberOfNeighborPartitions();
+            max_num_entity++;
+        }
+
+        
+    }
+    LOG(INFO) << "max number of neighbor partitions:" << max_neighbors << " max num pt " << max_num_entity;
+    std::vector<size_type> globals{max_neighbors,max_num_entity};
+    mpi::all_reduce( M_meshPartsOut->worldComm(), mpi::inplace(globals.data()), 2, mpi::maximum<size_type>() );
+    hsize_t currentSpaceDimsGhost[2];
+    hsize_t currentCountGhost[2];
+    //hsize_t currentOffsetGhost[2];
+    currentSpaceDimsGhost[0] = (1+3*globals[0])*M_numParts;
+    currentSpaceDimsGhost[1] = globals[1];
+    currentCountGhost[0] = (1+3*globals[0]);
+    currentCountGhost[1] = currentSpaceDimsGhost[1];
+    LOG(INFO) << "creating ghost table " << tablename << " dims:" << currentSpaceDimsGhost[0] << " x " << currentSpaceDimsGhost[1] << " globals[0]:" << globals[0];
+    M_HDF5IO.createTable (tablename, H5T_STD_U32BE, currentSpaceDimsGhost);
+    
+    hsize_t currentOffsetGhost[2]={M_meshPartsOut->worldComm().localRank()* currentCountGhost[0], 0};
+    std::vector<unsigned int> ghost_info( currentCountGhost[0]*currentCountGhost[1], 0 );
+    
+    
+    size_type strideGhost = currentCountGhost[1];
+    it = begin;
+    for( int j = 0 ; it != end; ++it )
+    {
+        DCHECK(it->numberOfNeighborPartitions() == it->numberOfPartitions()-1) << "Invalid partition data for entity id " << it->id() << " neighbord partitions " << it->numberOfNeighborPartitions() << "  number of partitions " << it->numberOfPartitions() << " should be equal, -1 for the number of partitions";
+        if ( it->numberOfNeighborPartitions() >= 1 )
+        {
+            ghost_info[0*strideGhost+j] = it->id();
+            auto const& npids = it->neighborPartitionIds();
+            
+            for(int n = 0; n < it->numberOfNeighborPartitions();++n)
+            {
+                ghost_info[(0*globals[0]+n+1)*strideGhost+j] = npids[n];
+                
+            }
+            int n = 0;
+            for( auto const& i: it->idInOthersPartitions())
+            {
+                ghost_info[(1*globals[0]+n+1)*strideGhost+j] = i.first;
+                ghost_info[(2*globals[0]+n+1)*strideGhost+j] = i.second;
+                n++;
+            }
+            ++j;
+        }
+    }
+    
+    M_HDF5IO.write (tablename, H5T_NATIVE_UINT, currentCountGhost,
+                    currentOffsetGhost, &ghost_info[0]);
+
+    M_HDF5IO.closeTable (tablename);
+
+}    
+
+template<typename MeshType>
+template<typename IteratorType, typename ContainerType>
+void PartitionIO<MeshType>::readGhosts( std::string const& tablename, 
+                                        IteratorType begin, IteratorType end,
+                                        ContainerType& container )
+{
+    auto it = begin;
+    hsize_t currentSpaceDimsGhost[2]{0,0};
+    M_HDF5IO.openTable (tablename, currentSpaceDimsGhost);
+    LOG(INFO) << "loading ghost table " << tablename << " dims:" << currentSpaceDimsGhost[0] << " x " << currentSpaceDimsGhost[1] << " for " << M_numParts << "  partitions";
+    
+    hsize_t currentCountGhost[2]{0,0};
+    
+    currentCountGhost[0] = currentSpaceDimsGhost[0]/M_numParts;
+    currentCountGhost[1] = currentSpaceDimsGhost[1];
+    LOG(INFO) << "current  ghost : " << currentCountGhost[0] << " x " << currentCountGhost[1];
+
+    hsize_t maxnumghost = (currentCountGhost[0]-1)/3;
+    LOG(INFO) << "readGhosts: max num ghosts : " << maxnumghost;
+    hsize_t currentOffsetGhost[2]={M_meshPartIn->worldComm().localRank()* currentCountGhost[0], 0};
+    
+    std::vector<unsigned int> ghost_info( currentCountGhost[0]*currentCountGhost[1], 0 );
+    if ( !ghost_info.size() ) 
+    {
+        M_HDF5IO.closeTable (tablename);
+        return;
+    }
+    M_HDF5IO.read (tablename, H5T_NATIVE_UINT, currentCountGhost,
+                    currentOffsetGhost, &ghost_info[0]);
+    M_HDF5IO.closeTable (tablename);
+    
+    size_type strideGhost = currentCountGhost[1];
+    it = begin;
+    
+    for( int j = 0 ; it != end; ++it )
+    {
+        if ( it->numberOfPartitions() > 1 )
+        {
+            int id = ghost_info[0*strideGhost+j];
+            std::vector<rank_type> npids;
+            std::map<rank_type,size_type> iop;
+            for(int n = 0; n < it->numberOfPartitions()-1;++n)
+            {
+             
+                npids.push_back(ghost_info[(0*maxnumghost+n+1)*strideGhost+j]);
+                rank_type p = ghost_info[(1*maxnumghost+n+1)*strideGhost+j];
+                size_type io = ghost_info[(2*maxnumghost+n+1)*strideGhost+j];
+                DLOG(INFO) << "id " << id << " part "  << n << "/" << it->numberOfPartitions()-1 
+                           << " npid: " << ghost_info[(0*maxnumghost+n+1)*strideGhost+j] << " p: " << p << " io: " << io;
+                iop[p]=io;
+            }
+            using entity_type = typename IteratorType::value_type;
+            container.modify(it,
+                             [&npids,&iop]( entity_type& e ) 
+                             { 
+                                 e.setNeighborPartitionIds( npids ); 
+                                 e.setIdInOtherPartitions( iop );
+                             } );
+            ++j;
+        }
+    }
+    
+
+}    
+
 
 } // Feel
 
