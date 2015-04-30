@@ -42,9 +42,11 @@
 #include <feel/feelvf/on.hpp>
 #include <feel/feelvf/one.hpp>
 #include <feel/feelvf/matvec.hpp>
+#include <feel/feelvf/trans.hpp>
 
 /** use Feel namespace */
 using namespace Feel;
+using namespace vf;
 
 inline
 po::options_description makeOptions()
@@ -93,21 +95,22 @@ public :
             auto f=soption(_name="f1");
             auto lapf = laplacian(expr(f));
             u.on(_range=elements(mesh), _expr=expr( f ));
+            v.on(_range=elements(mesh), _expr=cst(1.) );
 
             boost::mpi::timer ti;
             if ( Environment::rank() == 0 )
                 BOOST_TEST_MESSAGE( "Scalar Laplacian "<<Dim<<"D" );
 
             ti.restart();
-            auto f1 = form1( _test=Xh );
-            f1 = integrate( _range=elements(mesh), _expr=laplacian(u) );
+            auto f2 = form2( _test=Xh, _trial=Xh );
+            f2 = integrate( _range=elements(mesh), _expr=laplaciant(u)*id(u) );
             if ( Environment::rank() == 0 )
-                BOOST_TEST_MESSAGE( "[time assemble laplacian(u)=" << ti.elapsed() << "s]" );
+                BOOST_TEST_MESSAGE( "[time assemble laplaciant(u)*id(u)=" << ti.elapsed() << "s]" );
 
             ti.restart();
-            auto a = inner_product( f1.vector(), u );
+            auto a = f2.matrixPtr()->energy(v,u);
             if ( Environment::rank() == 0 )
-                BOOST_TEST_MESSAGE( "[time inner product  =" << ti.elapsed() << "s] a=" <<  a );
+                BOOST_TEST_MESSAGE( "[time compute energy  =" << ti.elapsed() << "s] a=" <<  a );
 
             ti.restart();
             auto b = integrate( _range= elements( mesh ), _expr= lapf ).evaluate()(0,0);
@@ -136,22 +139,23 @@ public :
 
             auto f=soption( _name=( boost::format("f%1%") %Dim ).str()   );
             auto lapf = laplacian(expr<Dim,1>(f));
-            u.on(_range=elements(mesh), _expr=expr<Dim,1>( f ));
+            u.on(_range=elements(mesh), _expr=expr<Dim,1>( f ) );
+            v.on( _range=elements(mesh), _expr=one() );
 
             boost::mpi::timer ti;
             if ( Environment::rank() == 0 )
                 BOOST_TEST_MESSAGE( "Vectorial Laplacian "<<Dim<<"D" );
 
             ti.restart();
-            auto f1 = form1( _test=Xh );
-            f1 = integrate( _range=elements(mesh), _expr=inner(laplacian(u),one()) );
+            auto f2 = form2( _test=Xh, _trial=Xh );
+            f2 = integrate( _range=elements(mesh), _expr=trans(laplaciant(u))*id(u) );
             if ( Environment::rank() == 0 )
-                BOOST_TEST_MESSAGE( "[time assemble laplacian(u)=" << ti.elapsed() << "s]" );
+                BOOST_TEST_MESSAGE( "[time assemble laplaciant(u)*id(u)=" << ti.elapsed() << "s]" );
 
             ti.restart();
-            auto a = inner_product( f1.vector(), u );
+            auto a = f2.matrixPtr()->energy(v,u);
             if ( Environment::rank() == 0 )
-                BOOST_TEST_MESSAGE( "[time inner product  =" << ti.elapsed() << "s] a=" <<  a );
+                BOOST_TEST_MESSAGE( "[time compute  energy =" << ti.elapsed() << "s] a=" <<  a );
 
             ti.restart();
             auto b = integrate( _range= elements( mesh ), _expr= inner(lapf,one()) ).evaluate()(0,0);
@@ -200,26 +204,17 @@ int main(int argc, char** argv )
     Feel::Environment env( _argc=argc, _argv=argv,
                            _desc=makeOptions() );
 
-    std::cout<<"test scalair\n"
-             << "2D\n";
-
     Test<2>  test2s;
     test2s.run();
 
-    std::cout<<"3D\n";
     Test<3>  test3s;
     test3s.run();
-
-    std::cout<<"test vectoriel\n"
-             << "2D\n";
 
     TestV<2>  test2v;
     test2v.run();
 
-    std::cout<<"3D\n";
     TestV<3>  test3v;
     test3v.run();
-
 
 }
 #endif
